@@ -1,4 +1,4 @@
-# Gateway v2 Docker Compose 示例
+# Octafuse Gateway：Docker Compose 示例
 
 预构建镜像见 `.github/workflows/octafuse-docker-images.yml`（`ghcr.io/<owner 小写>/octafuse-{proxy,admin,migrate}`）。
 
@@ -35,7 +35,7 @@ docker login registry.cn-shanghai.aliyuncs.com -u YOUR_ACR_USERNAME
 
 ### 仅 Admin（外置库）
 
-在 **`octafuse` 仓库根目录**执行（下同）：
+在 **`octafuse-gateway` 仓库根目录**执行（下同）：
 
 ```bash
 cp docker/examples/env.admin.example docker/deploy/.env.gateway
@@ -59,7 +59,7 @@ docker compose --env-file docker/deploy/.env.gateway -f docker/examples/gateway.
 
 ## 本地测试（`docker/examples` 编排 + `docker/deploy` 环境）
 
-在 **`octafuse` 仓库根目录**执行以下命令。用 [`docker/deploy/.env.local`](../deploy/.env.local)（或复制 [`docker/deploy/.env.prod`](../deploy/.env.prod) 后自行调整）作为 **`--env-file`**。环境变量需包含：`GATEWAY_PROXY_IMAGE`、`GATEWAY_ADMIN_IMAGE`、`GATEWAY_MIGRATE_IMAGE`（跑 migrate profile 时）、`DATABASE_URL`、`ADMIN_USERNAME` / `ADMIN_PASSWORD`（admin 相关）、以及可选的 `GATEWAY_PROXY_PORT` / `GATEWAY_ADMIN_PORT`。本机 Postgres 在宿主机、容器连库时通常将 `DATABASE_URL` 主机写成 `host.docker.internal`（见 [`docker/deploy/README.md`](../deploy/README.md)）。
+在 **`octafuse-gateway` 仓库根目录**执行以下命令。将环境变量放在 **`docker/deploy/.env.local`**（从本目录 `env.*.example` 复制后编辑；勿提交密钥），或任意路径的 env 文件，作为 **`--env-file`**。变量需包含：`GATEWAY_PROXY_IMAGE`、`GATEWAY_ADMIN_IMAGE`、`GATEWAY_MIGRATE_IMAGE`（跑 migrate profile 时）、`DATABASE_URL`、`ADMIN_USERNAME` / `ADMIN_PASSWORD`（admin 相关）、以及可选的 `GATEWAY_PROXY_PORT` / `GATEWAY_ADMIN_PORT`。本机 Postgres 在宿主机、容器连库时通常将 `DATABASE_URL` 主机写成 `host.docker.internal`（见 [docker/deploy/README.md](../deploy/README.md)）。
 
 将 `docker/deploy/.env.local` 换成你的实际 env 路径即可。
 

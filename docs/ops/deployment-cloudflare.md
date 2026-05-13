@@ -2,7 +2,7 @@
 
 本文描述在 **Cloudflare** 上部署 **octafuse**：优先 **§0 Connect to Git**（免本机 `wrangler`）；亦可使用 **§2 本机 `npm run deploy:*`**。数据面为 **D1**；表结构以 **`packages/core/migrations-d1/`** 为准。与 **`your-portal`** 的环境变量对齐见后文。
 
-**生产典型对外域名（海外）**：Proxy **`https://gateway.example.com`**，Admin **`https://gateway-admin.example.com`**（DNS 与证书在 Cloudflare 控制台配置；门户侧 **`GATEWAY_URL` / `GATEWAY_MASTER_URL`** 与之一致）。中国境内等自托管 Docker 部署见 [deployment-docker.md](./deployment-docker.md) 与 [docker/deploy/README.md](../../docker/deploy/README.md)；Nginx 流式反代见 [docker/examples/nginx/](../../docker/examples/nginx/)。
+**生产典型对外域名（海外）**：Proxy **`https://gateway.example.com`**，Admin **`https://gateway-admin.example.com`**（DNS 与证书在 Cloudflare 控制台配置；门户侧 **`GATEWAY_URL` / `GATEWAY_MASTER_URL`** 与之一致）。中国境内等自托管 Docker 部署见 [deployment-docker.md](./deployment-docker.md)；Compose 环境文件约定见 [docker/deploy/README.md](../../docker/deploy/README.md)。Nginx 流式反代见 [docker/examples/nginx/](../../docker/examples/nginx/)。
 
 ## 0. Connect to Git（推荐：免本机 `wrangler`）
 

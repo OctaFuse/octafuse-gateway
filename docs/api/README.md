@@ -4,7 +4,7 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 
 ## 部署形态与 Base URL
 
-生产默认：**Cloudflare**（Proxy Worker + Admin Pages）+ **D1**。同一套 API 也可跑在 **Node + Postgres**（或 Hybrid）；总表见 **[architecture/runtime-data.md](../architecture/runtime-data.md)**。
+生产默认：**Cloudflare**（Proxy Worker + Admin Pages）+ **D1**。同一套 API 也可跑在 **Node + Postgres / MySQL**（或 Hybrid）；总表见 **[architecture/runtime-data.md](../architecture/runtime-data.md)**。
 
 | 用途 | 运行时（典型） | Base URL（示例） | 路径前缀 |
 |------|----------------|------------------|----------|
@@ -15,12 +15,12 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 
 ## 扩展文档
 
-- [运行时与数据存储架构](../architecture/runtime-data.md)（Cloudflare / Node，D1 / Postgres）
+- [运行时与数据存储架构](../architecture/runtime-data.md)（Cloudflare / Node，D1 / Postgres / MySQL）
 - [渠道模型思考参数配置说明](../reference/provider-thinking-configs.md)
 - [流式计费与客户端取消](../reference/streaming-billing.md)
 - [Admin 分层约束](../architecture/admin-layered.md)
 - [预算审计日志](../reference/budget-audit-logs.md)
-- Schema 与迁移：D1 在 **`packages/core/migrations-d1/`**（`wrangler.d1.jsonc` 与之同目录）；Postgres 在 **`packages/core/migrations-postgres/`**
+- Schema 与迁移：D1 在 **`packages/core/migrations-d1/`**（`wrangler.d1.jsonc` 与之同目录）；Postgres 在 **`packages/core/migrations-postgres/`**；MySQL 在 **`packages/core/migrations-mysql/`**
 
 ## 基础信息
 

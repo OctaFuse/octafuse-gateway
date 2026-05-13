@@ -18,7 +18,7 @@ npx changeset
 
 1. 合并带 `.changeset/*.md` 的 PR 到 **`main`** 后，GitHub Action **[Release](../.github/workflows/release.yml)** 会打开 **「Version Packages」** PR（更新 `package.json` 版本、`CHANGELOG.md`、并删除已消费的 changeset 文件）。
 2. **审核并合并**该 Version PR。
-3. 再次触发 Release workflow：执行 **`npx changeset tag`**，推送 **`vX.Y.Z`** Git 标签。
+3. 再次触发 Release workflow：其 **`publish`** 步骤运行 **`npm run ci:changeset-tag-push`**（内部为 `changeset tag` + 推送 **`vX.Y.Z`** 标签；见根 `package.json`）。
 4. 标签推送触发 **[Octafuse Docker Images](../.github/workflows/octafuse-docker-images.yml)**：构建并推送 **proxy / admin / migrate** 镜像，并创建/更新 **GitHub Release**（正文中附带各镜像 **digest**）。
 
 应急或调试仍可使用 workflow 的 **`workflow_dispatch`** 手动构建（不替代上述正式发版）。

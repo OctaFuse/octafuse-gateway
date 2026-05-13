@@ -19,8 +19,6 @@
 }
 ```
 
-**有问题**：似乎没有缓存？
-
 ### GPT
 
 ```json
@@ -43,8 +41,6 @@
 ```
 
 - `low`、`medium`、`high`、`ultra_high`
-
-**有问题**：缓存命中率低
 
 ## 2. MiniMax 官方
 
@@ -86,8 +82,6 @@
 }
 ```
 
-**有问题**：ChatView中的Context数据不对
-
 ### Gemini
 
 ```json
@@ -100,12 +94,7 @@
 
 ## 5. Z.AI
 
-### Claude
-
-
-### Gemini
-
-
+参数以厂商当前文档为准；合并规则见 [用户接口 · Route 默认参数合并](../api/user.md#route-默认参数合并)。
 
 ## 备注
 

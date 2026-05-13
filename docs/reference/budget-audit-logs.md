@@ -43,9 +43,7 @@
 | `before_budget_max === after_budget_max` | 常见：本条为扣 `spent`，未改上限 |
 | `period_reset` | 周期到期导致的归零/推进下次重置时间，不是人工改配置 |
 
-## 运维备注
-
-历史上 `reason_text` 可能为较长英文说明；当前源码中用量扣费对应短文案 `'Usage charge'`。若线上与本地仓库文案不一致，多为**部署版本与当前分支不一致**，不影响上述触发逻辑判断。
+## 流程示意
 
 ```mermaid
 flowchart LR

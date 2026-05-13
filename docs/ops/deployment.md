@@ -2,12 +2,19 @@
 
 多运行时（Cloudflare / Node）与多数据库（D1 / Postgres / MySQL）的架构总览见 **[architecture/runtime-data.md](../architecture/runtime-data.md)**。
 
-**octafuse** 的部署常见模式：
+## 数据库与迁移
+
+- **新装**：以 `packages/core/migrations-d1/`、`migrations-postgres/`、`migrations-mysql/` 为表结构基线；用根目录 **`npm run db:migrate*`** 或 Docker **migrate** 镜像应用（见 [deployment-docker.md](./deployment-docker.md)）。
+- **已上线环境**：表结构演进以 **迁移 CLI / 镜像 migrate Job** 为主；若遇紧急数据修复，在运维窗口内用 **`wrangler d1 execute`** 或直连 SQL 执行，并尽快把结果合回基线迁移（PR）。
+
+**Compose 宿主机环境文件**（镜像、`DATABASE_URL`、`ADMIN_*`）：从 **`docker/examples/env.*.example`** 复制到 **`docker/deploy/`** 下自建文件（勿提交），约定见 **[docker/deploy/README.md](../../docker/deploy/README.md)**。
+
+## 常见部署模式
 
 1. **Cloudflare 全托管（默认）**：Proxy Worker + Admin Pages，共用 D1。见 [deployment-cloudflare.md](./deployment-cloudflare.md)。
 2. **Hybrid**：Proxy Node + Postgres，Admin 继续 Cloudflare + D1。见 [deployment-docker.md](./deployment-docker.md)。
-3. **Full self-hosted PG**：Proxy Node + Admin Node/兼容运行时，共用 Postgres。见 [deployment-docker.md](./deployment-docker.md) 与 [postgres-cutover.md](./postgres-cutover.md)。
-4. **Full self-hosted MySQL**：同上形态，共用 MySQL 8（`DATABASE_DRIVER=mysql`，迁移 `migrations-mysql/`）。见 [deployment-docker.md](./deployment-docker.md)（含 **`docker/compose/node-mysql.yml`**，以及 MySQL 时区需统一 UTC 的说明）。
-5. **中国境内等自托管 Docker + Postgres**：镜像由 CI 推 registry（如 GHCR/ACR），宿主机拉镜像、迁移、启停；目录约定见 [docker/deploy/README.md](../../docker/deploy/README.md)，编排与变量见 [deployment-docker.md](./deployment-docker.md)。
+3. **Full self-hosted PG**：Proxy Node + Admin Node，共用 Postgres。见 [deployment-docker.md](./deployment-docker.md) 与 [postgres-cutover.md](./postgres-cutover.md)。
+4. **Full self-hosted MySQL**：同上形态，共用 MySQL 8（`DATABASE_DRIVER=mysql`，迁移 `migrations-mysql/`）。见 [deployment-docker.md](./deployment-docker.md)（含 **`docker/compose/node-mysql.yml`** 与 UTC 时区说明）。
+5. **中国境内等自托管 Docker + Postgres**：镜像由 CI 推 registry（如 GHCR/ACR），宿主机拉镜像、迁移、启停；编排与变量见 [deployment-docker.md](./deployment-docker.md)。
 
-本地与多套 D1 数据目录见 [local-testing-environments.md](./local-testing-environments.md)。若需在 D1 与 Postgres 之间做数据迁移或对账，见 [postgres-cutover.md](./postgres-cutover.md)（脚本在 `scripts/db/cutover/`，需自备 Postgres 迁移链与运维窗口）。
+本地与多套 D1 数据目录见 [local-testing-environments.md](./local-testing-environments.md)。D1 与 Postgres 之间迁移或对账见 [postgres-cutover.md](./postgres-cutover.md)（脚本在 `scripts/db/cutover/`）。
