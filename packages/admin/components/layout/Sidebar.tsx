@@ -56,6 +56,7 @@ const menuGroups: MenuGroup[] = [
   {
     name: 'User',
     items: [
+      { name: 'Users', href: '/gateway/users', icon: UsersIcon },
       { name: 'API Keys', href: '/gateway/keys', icon: KeyIcon },
       { name: 'Request Logs', href: '/gateway/request-logs', icon: DocumentChartBarIcon },
       { name: 'Audit Logs', href: '/gateway/audit-logs', icon: ClipboardDocumentListIcon },
@@ -120,7 +121,10 @@ export default function Sidebar() {
             </h3>
             <div className="space-y-1">
               {group.items.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive =
+                  pathname === item.href ||
+                  (item.href === '/gateway/users' &&
+                    (pathname === '/gateway/users' || pathname?.startsWith('/gateway/users/')));
                 const Icon = item.icon;
 
                 return (

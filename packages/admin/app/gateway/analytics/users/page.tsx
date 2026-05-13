@@ -120,7 +120,9 @@ export default function UserUsagePage() {
     <div className="p-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">User Usage</h1>
-        <p className="text-sm text-gray-500 mt-1">Usage and cost by user</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Usage and cost by request log email; budget columns come from <code className="text-xs bg-gray-100 px-1 rounded">users</code> (JOIN on <code className="text-xs bg-gray-100 px-1 rounded">user_id</code>).
+        </p>
       </div>
       <div className="mb-4 w-full min-w-0">
         <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} />

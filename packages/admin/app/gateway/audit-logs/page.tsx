@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * 全站 API 密钥预算审计日志：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
+ * 全站用户审计日志（`user_audit_logs`）：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
  */
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { readApiJson } from '@/lib/api-json';
 import {
   API_KEY_BUDGET_AUDIT_ACTOR_TYPES,
@@ -36,9 +37,30 @@ function formatTime(iso: string | null | undefined): string {
   return formatGatewayDateTime(iso);
 }
 
-function shortId(id: string): string {
-  if (!id || id.length < 14) return id;
+function shortId(id: string | null | undefined): string {
+  if (id == null || id === '') return '—';
+  if (id.length < 14) return id;
   return `${id.slice(0, 8)}…${id.slice(-4)}`;
+}
+
+/** 折叠进 `metadata` 的扩展字段（与 `@octafuse/core` `mergeUserAuditMetadata` 对齐） */
+function auditDisplayExtras(item: GatewayApiKeyBudgetAuditLog) {
+  let m: Record<string, unknown> = {};
+  try {
+    if (item.metadata) m = JSON.parse(item.metadata) as Record<string, unknown>;
+  } catch {
+    /* keep empty */
+  }
+  const str = (v: unknown) => (typeof v === 'string' ? v : null);
+  return {
+    reason_text: item.reason_text ?? str(m.reason_text),
+    reason_code: item.reason_code ?? str(m.reason_code),
+    actor_id: item.actor_id ?? str(m.actor_id),
+    before_budget_period: item.before_budget_period ?? str(m.before_budget_period),
+    after_budget_period: item.after_budget_period ?? str(m.after_budget_period),
+    before_budget_reset_at: item.before_budget_reset_at ?? str(m.before_budget_reset_at),
+    after_budget_reset_at: item.after_budget_reset_at ?? str(m.after_budget_reset_at),
+  };
 }
 
 function formatAuditMetadataValue(value: unknown): string {
@@ -148,6 +170,7 @@ export default function GatewayAuditLogsPage() {
   const { currency: billingCurrency } = useBillingCurrency();
 
   const [filterApiKeyId, setFilterApiKeyId] = useState('');
+  const [filterUserId, setFilterUserId] = useState('');
   const [filterUserEmail, setFilterUserEmail] = useState('');
   const [filterEventType, setFilterEventType] = useState('');
   const [filterActorType, setFilterActorType] = useState('');
@@ -157,6 +180,7 @@ export default function GatewayAuditLogsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const apiKeyId = params.get('api_key_id');
+    const userId = params.get('user_id');
     const userEmail = params.get('user_email');
     const eventType = params.get('event_type');
     const actorType = params.get('actor_type');
@@ -164,6 +188,7 @@ export default function GatewayAuditLogsPage() {
     const endDate = params.get('end_date');
     const p = params.get('page');
     if (apiKeyId != null) setFilterApiKeyId(apiKeyId);
+    if (userId != null) setFilterUserId(userId);
     if (userEmail != null) setFilterUserEmail(userEmail);
     if (eventType != null) setFilterEventType(eventType);
     if (actorType != null) setFilterActorType(actorType);
@@ -189,6 +214,7 @@ export default function GatewayAuditLogsPage() {
         page_size: pageSize.toString(),
       });
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
+      if (filterUserId) params.append('user_id', filterUserId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       if (filterEventType) params.append('event_type', filterEventType);
       if (filterActorType) params.append('actor_type', filterActorType);
@@ -200,6 +226,7 @@ export default function GatewayAuditLogsPage() {
       page,
       pageSize,
       filterApiKeyId,
+      filterUserId,
       filterUserEmail,
       filterEventType,
       filterActorType,
@@ -216,6 +243,7 @@ export default function GatewayAuditLogsPage() {
         page_size: pageSize.toString(),
       });
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
+      if (filterUserId) params.append('user_id', filterUserId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       if (filterEventType) params.append('event_type', filterEventType);
       if (filterActorType) params.append('actor_type', filterActorType);
@@ -236,6 +264,7 @@ export default function GatewayAuditLogsPage() {
   }, [
     page,
     filterApiKeyId,
+    filterUserId,
     filterUserEmail,
     filterEventType,
     filterActorType,
@@ -255,7 +284,7 @@ export default function GatewayAuditLogsPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
         <p className="text-sm text-gray-500 mt-1">
-          API key audit trail (<code className="text-xs bg-gray-100 px-1 rounded">api_key_audit_logs</code>)
+          User audit trail (<code className="text-xs bg-gray-100 px-1 rounded">user_audit_logs</code>) — budget and other events
         </p>
       </div>
 
@@ -300,6 +329,16 @@ export default function GatewayAuditLogsPage() {
           </select>
         </div>
         <div>
+          <label className="block text-sm text-gray-500 mb-1">User ID</label>
+          <input
+            type="text"
+            value={filterUserId}
+            onChange={(e) => { setFilterUserId(e.target.value); setPage(1); }}
+            placeholder="Gateway users.id (uuid)"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-72 font-mono text-xs"
+          />
+        </div>
+        <div>
           <label className="block text-sm text-gray-500 mb-1">User email</label>
           <input
             type="text"
@@ -326,6 +365,7 @@ export default function GatewayAuditLogsPage() {
               setFilterEventType('');
               setFilterActorType('');
               setFilterUserEmail('');
+              setFilterUserId('');
               setFilterApiKeyId('');
               setFilterStartDate('');
               setFilterEndDate('');
@@ -367,17 +407,18 @@ export default function GatewayAuditLogsPage() {
                   </tr>
                 ) : (
                   logs.map((item) => {
+                    const ex = auditDisplayExtras(item);
                     const maxChanged = !budgetMaxSemanticallyEqual(
                       item.before_budget_max,
                       item.after_budget_max
                     );
                     const periodChanged =
-                      (item.before_budget_period ?? '') !== (item.after_budget_period ?? '');
+                      (ex.before_budget_period ?? '') !== (ex.after_budget_period ?? '');
                     const resetChanged = !budgetResetAtSemanticallyEqual(
-                      item.before_budget_reset_at,
-                      item.after_budget_reset_at
+                      ex.before_budget_reset_at,
+                      ex.after_budget_reset_at
                     );
-                    const reason = item.reason_text || item.reason_code || '—';
+                    const reason = ex.reason_text || ex.reason_code || '—';
                     const metadataLines = summarizeAuditMetadataChanges(item.metadata);
                     return (
                     <tr key={item.id} className="hover:bg-gray-50">
@@ -394,7 +435,7 @@ export default function GatewayAuditLogsPage() {
                         <div className="text-sm text-gray-900 font-medium leading-snug">{item.event_type}</div>
                         <div className="mt-0.5 text-xs text-gray-500 leading-snug">
                           {item.actor_type}
-                          {item.actor_id ? ` (${shortId(item.actor_id)})` : ''}
+                          {ex.actor_id ? ` (${shortId(ex.actor_id)})` : ''}
                         </div>
                         <div className="mt-1 text-xs text-gray-600 line-clamp-2 leading-snug" title={reason}>
                           {reason}
@@ -404,8 +445,15 @@ export default function GatewayAuditLogsPage() {
                         <div className="text-sm text-gray-900 truncate leading-snug" title={item.user_email || ''}>
                           {item.user_email || '—'}
                         </div>
-                        <div className="mt-0.5 font-mono text-xs text-gray-500 truncate leading-snug" title={item.api_key_id}>
-                          {shortId(item.api_key_id)}
+                        <Link
+                          href={`/gateway/users/${encodeURIComponent(item.user_id)}`}
+                          className="mt-0.5 block font-mono text-xs text-blue-600 hover:underline truncate"
+                          title={item.user_id}
+                        >
+                          {shortId(item.user_id)}
+                        </Link>
+                        <div className="mt-0.5 font-mono text-xs text-gray-500 truncate leading-snug" title={item.api_key_id ?? ''}>
+                          key: {item.api_key_id ? shortId(item.api_key_id) : '—'}
                         </div>
                       </td>
                       <td className="px-3 py-2 align-top text-xs text-gray-600">
@@ -449,22 +497,22 @@ export default function GatewayAuditLogsPage() {
                           <div>
                             <span className="font-medium text-gray-700">budget_period:</span>{' '}
                             <span className={periodChanged ? budgetPlanHighlight.before : undefined}>
-                              {item.before_budget_period ?? '—'}
+                              {ex.before_budget_period ?? '—'}
                             </span>
                             <span className="text-gray-400"> → </span>
                             <span className={periodChanged ? budgetPlanHighlight.after : undefined}>
-                              {item.after_budget_period ?? '—'}
+                              {ex.after_budget_period ?? '—'}
                             </span>
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">budget_reset_at:</span>{' '}
                             <span className="whitespace-nowrap">
                               <span className={resetChanged ? budgetPlanHighlight.before : undefined}>
-                                {formatTime(item.before_budget_reset_at)}
+                                {formatTime(ex.before_budget_reset_at)}
                               </span>
                               <span className="text-gray-400"> → </span>
                               <span className={resetChanged ? budgetPlanHighlight.after : undefined}>
-                                {formatTime(item.after_budget_reset_at)}
+                                {formatTime(ex.after_budget_reset_at)}
                               </span>
                             </span>
                           </div>
