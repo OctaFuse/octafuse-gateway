@@ -12,7 +12,6 @@ import {
 	mergeAssistantTextParts,
 	type PlaygroundProtocol,
 } from '@/lib/playground/merge-assistant-text';
-import { parseChargedFactorFromPriceOverride, parseMeteredFactorFromPriceOverride } from '@/lib/pricing-ui';
 import type { ApiResponse } from '@/lib/types';
 
 const inputClass =
@@ -92,6 +91,9 @@ function formatRouteJsonColumn(raw: string | null | undefined): string {
 
 const codeBlockClass =
 	'p-3 text-xs overflow-x-auto whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md font-mono text-gray-900';
+
+/** Route 卡片内 JSON 预览：限制高度避免长内容撑满视口 */
+const routeJsonPreClass = `${codeBlockClass} max-h-56 overflow-y-auto`;
 
 function decodeWireRequestBodyHeader(res: Response): string | null {
 	const raw = res.headers.get('x-playground-request-body');
@@ -525,7 +527,15 @@ export default function PlaygroundPage() {
 
 						<div className="min-w-0 flex flex-col h-full">
 							<div className="bg-white rounded-lg shadow-md p-6 space-y-4 flex flex-col h-full min-h-0">
-							<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Selected route</h2>
+							<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3 break-words">
+								{selected ? (
+									<>
+										Selected：<span className="font-mono text-base font-normal">{selected.id}</span>
+									</>
+								) : (
+									'Selected route'
+								)}
+							</h2>
 							{selected ? (
 								<>
 									<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
@@ -548,30 +558,15 @@ export default function PlaygroundPage() {
 												{selected.status}
 											</span>
 										</ReadonlyField>
-										<ReadonlyField label="Charged factor (× catalog)">
-											{(() => {
-												const n = parseChargedFactorFromPriceOverride(selected.price_override);
-												return n != null && Number.isFinite(n) ? String(n) : '—';
-											})()}
-										</ReadonlyField>
-										<ReadonlyField label="Metered factor (× catalog)">
-											{(() => {
-												const n = parseMeteredFactorFromPriceOverride(selected.price_override);
-												return n != null && Number.isFinite(n) ? String(n) : '—';
-											})()}
-										</ReadonlyField>
-										<ReadonlyField label="Route ID">
-											<code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">{selected.id}</code>
-										</ReadonlyField>
 									</div>
-									<div className="space-y-3 pt-3 border-t border-gray-100">
-										<div>
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100 min-w-0">
+										<div className="min-w-0 flex flex-col">
 											<div className="block text-xs font-medium text-gray-600 mb-1">custom_params</div>
-											<pre className={codeBlockClass}>{formatRouteJsonColumn(selected.custom_params)}</pre>
+											<pre className={routeJsonPreClass}>{formatRouteJsonColumn(selected.custom_params)}</pre>
 										</div>
-										<div>
+										<div className="min-w-0 flex flex-col">
 											<div className="block text-xs font-medium text-gray-600 mb-1">price_override</div>
-											<pre className={codeBlockClass}>{formatRouteJsonColumn(selected.price_override)}</pre>
+											<pre className={routeJsonPreClass}>{formatRouteJsonColumn(selected.price_override)}</pre>
 										</div>
 									</div>
 								</>
