@@ -1,7 +1,7 @@
 # 构建并推送 Octafuse 镜像到 GHCR（可选阿里云 ACR 双推）。
 #
 # 正式发布：推送语义化 Git 标签 vX.Y.Z（由 Release workflow 的 `changeset tag` 产生）触发本 workflow，
-# 默认构建 proxy + admin + migrate，linux/amd64 与 linux/arm64；推送后创建/更新 GitHub Release（正文含各镜像 digest）。
+# 默认构建 proxy + admin + migrate，linux/amd64 与 linux/arm64；推送后创建/更新 GitHub Release（正文含 CHANGELOG 对应版本段与各镜像 digest）。
 #
 # 应急：仍可使用 workflow_dispatch 手动构建（不创建 GitHub Release）。
 #
@@ -38,6 +38,10 @@ on:
         description: 构建 linux/arm64（Apple Silicon / ARM 云主机）
         type: boolean
         default: true
+
+concurrency:
+  group: octafuse-docker-images-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -233,6 +237,14 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout (CHANGELOG only)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          sparse-checkout: |
+            CHANGELOG.md
+          sparse-checkout-cone-mode: false
+
       - name: Download digest artifacts
         uses: actions/download-artifact@v4
         with:
@@ -245,11 +257,26 @@ jobs:
           set -euo pipefail
           OWNER_REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
           TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## " ver "$" {flag=1; next}
+            flag && /^## / {exit}
+            flag {print}
+          ' CHANGELOG.md > changelog-section.md || true
+          if [ ! -s changelog-section.md ]; then
+            echo "_(CHANGELOG 中未找到 \`## ${VERSION}\` 段落；请核对 Version PR 是否更新了 CHANGELOG。)_" > changelog-section.md
+          fi
           resolve_digest_file() {
             local s="$1"
             find digest-artifacts -name "${s}.digest" -type f 2>/dev/null | head -1
           }
           {
+            echo "## What's changed"
+            echo ""
+            cat changelog-section.md
+            echo ""
+            echo "---"
+            echo ""
             echo "## Container images (GHCR)"
             echo ""
             echo "Tag **${TAG}** — multi-arch manifest digests (proxy / admin / migrate):"
