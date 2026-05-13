@@ -41,15 +41,27 @@ flowchart LR
 
 1. **`.github/workflows/release.yml`**（`push` → `main`）  
    - 若有未消费的 `.changeset/*.md`：打开 **「chore: version packages」** PR（更新版本、`CHANGELOG.md`）。  
-   - 若无待处理 changeset 且版本已更新：执行 **`npx changeset tag`**，推送 **`vX.Y.Z`**。  
-   - **不在此 workflow 创建 GitHub Release**（避免与 digest 说明重复）。
+   - 若无待处理 changeset 且版本已更新：执行 **`npx changeset tag`**，推送 **`vX.Y.Z`** Git 标签。  
+   - **不在此 workflow 创建 GitHub Release**（避免与 digest 说明重复）。  
+   - **Docker 触发**：若使用 **`CHANGESETS_GITHUB_TOKEN`（PAT）** 打 tag，GitHub 会把 **`push` tags** 交给下游，**`octafuse-docker-images`** 会按 tag 自动跑。若仅用默认 **`GITHUB_TOKEN`** 打 tag，**不会**自动触发其它 workflow（[官方说明](https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow)）；此时 **Release** 会在检测到 **`GITHUB_SHA` 上有 `v*` tag** 后，用 **`gh workflow run`** 主动触发 **Octafuse Docker Images**（需 workflow 已授予 **`actions: write`**，本仓已加）。
 
-2. **`.github/workflows/octafuse-docker-images.yml`**（`push` → `tags/v*`）  
+2. **`.github/workflows/octafuse-docker-images.yml`**（**`push` → `tags/v*`**，或由 Release **dispatch**；或 **`workflow_dispatch`**）  
    - 构建并推送 **GHCR**（及可选 **ACR**）三镜像。  
-   - 创建或更新 **GitHub Release**，正文中写入各镜像 **manifest digest**（便于按 digest 固定部署）。
+   - 在 **tag 发版**路径下创建/更新 **GitHub Release**，正文中写入各镜像 **digest**。
 
 3. **`.github/workflows/verify-package-versions.yml`**  
    - PR / `main` / `v*` 标签上校验：根与 workspace **`version` 一致**；在 **tag** 上校验 **`v` + version** 与标签名一致。
+
+### 端到端顺序（你在 GitHub 上要做的）
+
+| 步骤 | 谁触发 | 结果 |
+|------|--------|------|
+| 1. 功能 PR 带 `.changeset/*.md` 合并进 **`main`** | 你合并 PR | **Release** 跑完 → 出现 **Version Packages** PR（`changeset-release/main` → `main`） |
+| 2. 审核并 **合并 Version PR** 到 **`main`** | 你合并 PR | **Release** 再跑 → **`changeset tag`** 推 **`vX.Y.Z`** → **Docker** 跑（PAT 直推 tag）或由 **Release** dispatch **Docker**（仅 `GITHUB_TOKEN` 时） |
+| 3. 等 **Octafuse Docker Images** 绿 | CI | **GHCR** 有对应 tag 的镜像；**GitHub Release** 带 digest |
+| 4. 部署 | 你 / 运维 | 用镜像 tag 或 digest 更新环境 |
+
+**仅把代码推上 `main`、且没有待处理 changeset、也没有合并 Version PR** 时：不会打新 tag，**Docker 不会为「发版」自动跑**（这是预期）。日常开发提交可用 **`workflow_dispatch`** 手动打一版镜像做验证。
 
 ## Release workflow 无法创建 PR（`HttpError: ... not permitted to create or approve pull requests`）
 
@@ -96,7 +108,7 @@ npx changeset
 
 ### 3. 打标签与镜像
 
-合并 Version PR 再次触发 **Release** → **`changeset tag`** 推送 **`vX.Y.Z`** → 触发 **Docker** workflow → 镜像与 **GitHub Release** 就绪。
+合并 Version PR 再次触发 **Release** → **`changeset tag`** 推送 **`vX.Y.Z`** → **Docker**（见上文「Docker 触发」：PAT 走 tag 事件；仅 `GITHUB_TOKEN` 时由 Release **dispatch**）→ **GitHub Release** 就绪。
 
 ### 4. 热修（patch）
 
