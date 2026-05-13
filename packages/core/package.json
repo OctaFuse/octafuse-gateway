@@ -36,6 +36,7 @@
 		"./lib/string-utils": "./src/lib/string-utils.ts",
 		"./lib/time-format": "./src/lib/time-format.ts",
 		"./services/key-service": "./src/services/key-service.ts",
+		"./services/user-service": "./src/services/user-service.ts",
 		"./storage/drizzle/client-d1": "./src/storage/drizzle/client-d1.ts",
 		"./storage/repositories-d1": "./src/storage/repositories-d1.ts",
 		"./storage/runtime-database-config": "./src/storage/runtime-database-config.ts",

@@ -1,6 +1,7 @@
 /**
  * MySQL：关键写路径（Drizzle 事务），供 `storage/critical-write-paths` 调度。
  */
+import type { ResultSetHeader } from 'mysql2/promise';
 import { and, eq, sql } from 'drizzle-orm';
 import type { InsertApiKeyBudgetAuditLogParams } from '../api-key-budget-audit-logs-types';
 import type { InsertKeyParams } from '../api-keys-types';
@@ -17,24 +18,9 @@ import {
 	usersTable as myUsersTable,
 } from '../../storage/drizzle/schema.mysql';
 
-export async function getActiveApiKeyByUserIdMy(
+export async function getUserBudgetSnapshotMy(
 	client: MySqlDatabaseClient,
 	userId: string
-): Promise<{ id: string; key: string } | null> {
-	const row = await client.drizzle
-		.select({
-			id: myApiKeysTable.id,
-			key: myApiKeysTable.key,
-		})
-		.from(myApiKeysTable)
-		.where(and(eq(myApiKeysTable.userId, userId), eq(myApiKeysTable.status, 'active')))
-		.limit(1);
-	return row[0] ?? null;
-}
-
-export async function getApiKeyBudgetSnapshotMy(
-	client: MySqlDatabaseClient,
-	keyId: string
 ): Promise<{ budgetSpent: number; budgetMax: number | null; budgetPeriod: string | null; budgetResetAt: string | null } | null> {
 	const row = await client.drizzle
 		.select({
@@ -43,9 +29,8 @@ export async function getApiKeyBudgetSnapshotMy(
 			budgetPeriod: myUsersTable.budgetPeriod,
 			budgetResetAt: myUsersTable.budgetResetAt,
 		})
-		.from(myApiKeysTable)
-		.innerJoin(myUsersTable, eq(myApiKeysTable.userId, myUsersTable.id))
-		.where(eq(myApiKeysTable.id, keyId))
+		.from(myUsersTable)
+		.where(eq(myUsersTable.id, userId))
 		.limit(1);
 	if (!row[0]) return null;
 	return {
@@ -105,28 +90,21 @@ export async function createApiKeyWithAuditMy(
 	});
 }
 
-export async function updateApiKeyBudgetWithAuditTxMy(
+export async function updateUserBudgetWithAuditTxMy(
 	client: MySqlDatabaseClient,
 	params: {
-		keyId: string;
+		userId: string;
+		expectedBudgetResetAt: string | null;
 		budgetSpent: number;
 		budgetResetAt: string | null;
 		budgetMax?: number | null;
+		apiKeyId: string | null;
 		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
 	}
 ): Promise<void> {
 	const nextSpent = roundGatewayMoney(params.budgetSpent);
 	const now = nowIso();
-	const keyRow = await client.drizzle
-		.select({ userId: myApiKeysTable.userId })
-		.from(myApiKeysTable)
-		.where(eq(myApiKeysTable.id, params.keyId))
-		.limit(1);
-	const userId = keyRow[0]?.userId;
-	if (!userId) {
-		throw new Error('updateApiKeyBudgetWithAuditTxMy: api key not found');
-	}
-	const auditRow = insertParamsFromBudgetTx(userId, params.keyId, nextSpent, params.budgetResetAt, params.audit);
+	const auditRow = insertParamsFromBudgetTx(params.userId, params.apiKeyId, nextSpent, params.budgetResetAt, params.audit);
 	await client.drizzle.transaction(async (tx) => {
 		const updateSet: Record<string, unknown> = {
 			budgetSpent: String(nextSpent),
@@ -136,7 +114,18 @@ export async function updateApiKeyBudgetWithAuditTxMy(
 		if (params.budgetMax !== undefined) {
 			updateSet.budgetMax = params.budgetMax == null ? null : String(roundGatewayMoney(params.budgetMax));
 		}
-		await tx.update(myUsersTable).set(updateSet).where(eq(myUsersTable.id, userId));
+		const [header] = (await tx
+			.update(myUsersTable)
+			.set(updateSet)
+			.where(
+				and(
+					eq(myUsersTable.id, params.userId),
+					sql`${myUsersTable.budgetResetAt} <=> ${params.expectedBudgetResetAt}`
+				)
+			)) as unknown as [ResultSetHeader, unknown];
+		if (!header?.affectedRows) {
+			return;
+		}
 
 		await tx.insert(myUserAuditLogsTable).values({
 			id: auditRow.id,

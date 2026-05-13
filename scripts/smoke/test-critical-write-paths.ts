@@ -5,7 +5,7 @@ import type { GatewayDatabaseClient } from '../../packages/core/src/storage/data
 import {
 	createApiKeyWithAudit,
 	insertRequestUsageAndChargeTx,
-	updateApiKeyBudgetWithAuditTx,
+	updateUserBudgetWithAuditTx,
 } from '../../packages/core/src/storage/critical-write-paths';
 
 class MockStatement {
@@ -24,9 +24,6 @@ class MockStatement {
 	}
 
 	public async first<T>(): Promise<T | null> {
-		if (this.sqlText.includes('SELECT user_id FROM api_keys')) {
-			return { user_id: 'user-1' } as T;
-		}
 		return null;
 	}
 
@@ -84,12 +81,14 @@ test('createApiKeyWithAudit uses a single d1 batch transaction', async () => {
 	assert.equal(db.batches[0]?.length, 2);
 });
 
-test('updateApiKeyBudgetWithAuditTx keeps update and audit in one d1 batch', async () => {
+test('updateUserBudgetWithAuditTx runs update then audit batch when changes > 0', async () => {
 	const db = createMockD1Database();
-	await updateApiKeyBudgetWithAuditTx(db, {
-		keyId: 'key-id',
+	await updateUserBudgetWithAuditTx(db, {
+		userId: 'user-1',
+		expectedBudgetResetAt: '2026-01-01T00:00:00.000Z',
 		budgetSpent: 12.34,
 		budgetResetAt: '2026-01-01T00:00:00.000Z',
+		apiKeyId: 'key-id',
 		audit: {
 			eventType: 'period_reset',
 			actorType: 'system',
@@ -99,8 +98,9 @@ test('updateApiKeyBudgetWithAuditTx keeps update and audit in one d1 batch', asy
 			afterBudgetMax: 10,
 		},
 	});
+	assert.ok(db.preparedSql.some((s) => s.includes('UPDATE users')));
 	assert.equal(db.batches.length, 1);
-	assert.equal(db.batches[0]?.length, 2);
+	assert.equal(db.batches[0]?.length, 1);
 });
 
 test('insertRequestUsageAndChargeTx batches log + budget + audit together', async () => {

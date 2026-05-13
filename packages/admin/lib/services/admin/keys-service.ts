@@ -3,15 +3,16 @@
  * `id` 参数支持内部 uuid 或完整 `sk-` 字符串。
  */
 import type { GatewayRepositories, RequestLogsByKeyIdFilter } from '@octafuse/core';
+import { createKey } from '@octafuse/core/services/key-service';
 import {
 	computeFirstReset,
-	createKey,
 	getKeyInfo,
+	getOrCreateUser,
 	replaceKeyMetadata,
-	updateKeyPlan,
 	updateKeyMetadata,
 	updateKeyStatus,
-} from '@octafuse/core/services/key-service';
+	updateUserPlanByApiKeyId,
+} from '@octafuse/core/services/user-service';
 import { filterAllowedRequestLogStatuses } from '@octafuse/core/db/request-log-status-filter';
 import { insertParamsFromFullLegacy } from '@octafuse/core/db/user-audit-legacy-mapper';
 import { roundGatewayMoney } from '@octafuse/core/lib/money-precision';
@@ -122,7 +123,7 @@ export async function listAdminKeys(
 }
 
 /**
- * 创建密钥（底层 `createKey` 幂等）；支持 metadata 字符串或对象。
+ * 创建用户（若不存在）并新建一条密钥；支持 metadata 字符串或对象。
  * @throws `badRequest` 参数非法
  */
 export async function createAdminKey(repos: GatewayRepositories, input: AdminKeyCreateInput): Promise<AdminKeyCreateOutput> {
@@ -156,28 +157,31 @@ export async function createAdminKey(repos: GatewayRepositories, input: AdminKey
 		}
 	}
 
-	const result = await createKey(repos, {
-		user_id: input.user_id,
-		user_email: input.user_email,
+	await getOrCreateUser(repos, {
+		preferUserId: input.user_id,
+		email: input.user_email ?? null,
 		budget_max,
 		budget_period,
+		budget_base,
+		metadata: null,
+	});
+
+	const result = await createKey(repos, {
+		user_id: input.user_id,
+		metadata: metaString ?? null,
 		provision_reason: input.reason,
 	});
 
 	// 仅在调用方显式传 budget_base、或与默认 0 不一致时再下发 plan 更新写 budget_base，
-	// 避免对历史 createKey 路径多一次无副作用的写库调用。
+	// 避免多一次无副作用的写库调用。
 	if (input.budget_base !== undefined || budget_base !== 0) {
-		await updateKeyPlan(repos, result.key_id, {
+		await updateUserPlanByApiKeyId(repos, result.key_id, {
 			budget_max,
 			budget_period,
 			reset_budget: false,
 			budget_reset_at: undefined,
 			budget_base,
 		});
-	}
-
-	if (metaString !== undefined && metaString !== null) {
-		await replaceKeyMetadata(repos, result.key_id, metaString);
 	}
 
 	return {
@@ -238,7 +242,7 @@ export async function getAdminKeyBudgetAuditLogs(
 
 /**
  * 部分更新：预算字段、metadata（对象浅合并 / 字符串整体替换 / metadata_replace）、status。
- * 纯 metadata 对象合并且无预算字段时走 `updateKeyMetadata`；含预算或整体替换走 `updateKeyPlan`。
+ * 纯 metadata 对象合并且无预算字段时走 `updateKeyMetadata`；含预算或整体替换走 `updateUserPlanByApiKeyId`。
  * @throws `badRequest` | `notFound`
  */
 export async function updateAdminKey(
@@ -344,7 +348,7 @@ export async function updateAdminKey(
 			resolvedResetBudget = true;
 		}
 
-		const ok = await updateKeyPlan(repos, row.id, {
+		const ok = await updateUserPlanByApiKeyId(repos, row.id, {
 			budget_max: effMax,
 			budget_period: effPeriod,
 			reset_budget: resolvedResetBudget,

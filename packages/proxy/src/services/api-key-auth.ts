@@ -1,12 +1,12 @@
 /**
- * 用户密钥鉴权：校验 Bearer sk-，并在读库时触发与 `key-service.maybeResetBudget` 一致的预算周期重置写回。
+ * 用户密钥鉴权：校验 Bearer sk-，并在读库时触发与 `user-service.maybeResetBudget` 一致的预算周期重置写回。
  */
 import type { GatewayRepositories } from '@octafuse/core';
 import {
 	budgetLazyResetNeedsPersist,
 	maybeResetBudget,
 	roundGatewayMoney,
-	updateApiKeyBudgetWithAuditTx,
+	updateUserBudgetWithAuditTx,
 } from '@octafuse/core';
 
 /** 鉴权成功后注入上下文（与中间件 `ApiKeyContext` 字段对应）。 */
@@ -48,11 +48,13 @@ export async function authenticateApiKey(repos: GatewayRepositories, key: string
 		budgetSpent = nextSpent;
 		budgetResetAt = nextReset;
 		const maxChanged = budgetMax !== nextMax;
-		await updateApiKeyBudgetWithAuditTx(repos, {
-			keyId: row.id,
+		await updateUserBudgetWithAuditTx(repos, {
+			userId: row.user_id,
+			expectedBudgetResetAt: row.budget_reset_at,
 			budgetSpent,
 			budgetResetAt,
 			budgetMax: maxChanged ? nextMax : undefined,
+			apiKeyId: row.id,
 			audit: {
 				eventType: 'period_reset',
 				actorType: 'system',

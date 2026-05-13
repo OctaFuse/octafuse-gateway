@@ -1,5 +1,5 @@
 /**
- * @octafuse/core — 共享类型、D1/Postgres 仓储、关键写入路径、密钥预算逻辑。
+ * @octafuse/core — 共享类型、D1/Postgres 仓储、关键写入路径、用户/密钥预算逻辑。
  */
 
 export * from './types';
@@ -33,4 +33,5 @@ export * from './lib/money-precision';
 export * from './lib/string-utils';
 export * from './lib/time-format';
 
+export * from './services/user-service';
 export * from './services/key-service';

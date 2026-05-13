@@ -33,7 +33,7 @@ export function insertParamsFromCreateKeyAudit(userId: string, legacy: InsertApi
 
 export function insertParamsFromBudgetTx(
 	userId: string,
-	keyId: string,
+	apiKeyId: string | null,
 	afterSpent: number,
 	budgetResetAt: string | null,
 	audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>
@@ -53,7 +53,7 @@ export function insertParamsFromBudgetTx(
 	return {
 		id,
 		userId,
-		apiKeyId: keyId,
+		apiKeyId,
 		eventType: audit.eventType,
 		actorType: audit.actorType,
 		beforeSpent: audit.beforeSpent,

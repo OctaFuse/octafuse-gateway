@@ -3,11 +3,11 @@
  * - `metered_cost`：路由 `price_override.metered` 优先，否则 `models.pricing_profile`。
  * - `standard_cost`：仅 `models.pricing_profile`（与目录价侧一致）。
  * - `charged_cost`：路由 `price_override.charged` 优先，否则 `models.pricing_profile`；倍率见 `price_override.charged_factor`（仅展示/配置，不参与本公式）。
- * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `api_keys.budget_spent`。
+ * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `users.budget_spent`。
  */
 import type { GatewayRepositories, UpstreamProtocol } from '@octafuse/core';
 import {
-	getApiKeyBudgetSnapshot,
+	getUserBudgetSnapshot,
 	insertRequestUsageAndChargeTx,
 	PRICING_AUDIT_JSON_SCHEMA_VERSION,
 	roundGatewayMoney,
@@ -63,7 +63,7 @@ function buildRequestPricingAuditJson(options: {
 }
 
 /**
- * 写入 `api_key_request_logs` 并在合适条件下增加 `api_keys.budget_spent`（与插入日志同一 batch）。
+ * 写入 `api_key_request_logs` 并在合适条件下增加 `users.budget_spent`（与插入日志同一 batch）。
  */
 export async function recordUsage(
 	repos: GatewayRepositories,
@@ -145,8 +145,8 @@ export async function recordUsage(
 	);
 	const id = crypto.randomUUID();
 	const shouldChargeBudget = params.status !== 'error' && chargedCost > 0;
-	const apiKeySnapshot = shouldChargeBudget ? await getApiKeyBudgetSnapshot(repos, params.api_key_id) : null;
-	const beforeSpent = apiKeySnapshot?.budgetSpent ?? 0;
+	const userSnapshot = shouldChargeBudget ? await getUserBudgetSnapshot(repos, params.user_id) : null;
+	const beforeSpent = userSnapshot?.budgetSpent ?? 0;
 	await insertRequestUsageAndChargeTx(repos, {
 		userId: params.user_id,
 		requestLog: {
@@ -189,12 +189,12 @@ export async function recordUsage(
 			reasonCode: 'request_usage_charged_cost',
 			reasonText: 'Usage charge',
 			beforeSpent: beforeSpent,
-			beforeBudgetMax: apiKeySnapshot?.budgetMax ?? null,
-			afterBudgetMax: apiKeySnapshot?.budgetMax ?? null,
-			beforeBudgetPeriod: apiKeySnapshot?.budgetPeriod ?? null,
-			afterBudgetPeriod: apiKeySnapshot?.budgetPeriod ?? null,
-			beforeBudgetResetAt: apiKeySnapshot?.budgetResetAt ?? null,
-			afterBudgetResetAt: apiKeySnapshot?.budgetResetAt ?? null,
+			beforeBudgetMax: userSnapshot?.budgetMax ?? null,
+			afterBudgetMax: userSnapshot?.budgetMax ?? null,
+			beforeBudgetPeriod: userSnapshot?.budgetPeriod ?? null,
+			afterBudgetPeriod: userSnapshot?.budgetPeriod ?? null,
+			beforeBudgetResetAt: userSnapshot?.budgetResetAt ?? null,
+			afterBudgetResetAt: userSnapshot?.budgetResetAt ?? null,
 			requestLogId: id,
 			metadata: null,
 		},

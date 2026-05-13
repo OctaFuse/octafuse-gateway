@@ -17,24 +17,9 @@ import {
 	usersTable as pgUsersTable,
 } from '../../storage/drizzle/schema.pg';
 
-export async function getActiveApiKeyByUserIdPg(
+export async function getUserBudgetSnapshotPg(
 	client: PostgresDatabaseClient,
 	userId: string
-): Promise<{ id: string; key: string } | null> {
-	const row = await client.drizzle
-		.select({
-			id: pgApiKeysTable.id,
-			key: pgApiKeysTable.key,
-		})
-		.from(pgApiKeysTable)
-		.where(and(eq(pgApiKeysTable.userId, userId), eq(pgApiKeysTable.status, 'active')))
-		.limit(1);
-	return row[0] ?? null;
-}
-
-export async function getApiKeyBudgetSnapshotPg(
-	client: PostgresDatabaseClient,
-	keyId: string
 ): Promise<{ budgetSpent: number; budgetMax: number | null; budgetPeriod: string | null; budgetResetAt: string | null } | null> {
 	const row = await client.drizzle
 		.select({
@@ -43,9 +28,8 @@ export async function getApiKeyBudgetSnapshotPg(
 			budgetPeriod: pgUsersTable.budgetPeriod,
 			budgetResetAt: pgUsersTable.budgetResetAt,
 		})
-		.from(pgApiKeysTable)
-		.innerJoin(pgUsersTable, eq(pgApiKeysTable.userId, pgUsersTable.id))
-		.where(eq(pgApiKeysTable.id, keyId))
+		.from(pgUsersTable)
+		.where(eq(pgUsersTable.id, userId))
 		.limit(1);
 	if (!row[0]) return null;
 	return {
@@ -105,28 +89,21 @@ export async function createApiKeyWithAuditPg(
 	});
 }
 
-export async function updateApiKeyBudgetWithAuditTxPg(
+export async function updateUserBudgetWithAuditTxPg(
 	client: PostgresDatabaseClient,
 	params: {
-		keyId: string;
+		userId: string;
+		expectedBudgetResetAt: string | null;
 		budgetSpent: number;
 		budgetResetAt: string | null;
 		budgetMax?: number | null;
+		apiKeyId: string | null;
 		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
 	}
 ): Promise<void> {
 	const nextSpent = roundGatewayMoney(params.budgetSpent);
 	const now = nowIso();
-	const keyRow = await client.drizzle
-		.select({ userId: pgApiKeysTable.userId })
-		.from(pgApiKeysTable)
-		.where(eq(pgApiKeysTable.id, params.keyId))
-		.limit(1);
-	const userId = keyRow[0]?.userId;
-	if (!userId) {
-		throw new Error('updateApiKeyBudgetWithAuditTxPg: api key not found');
-	}
-	const auditRow = insertParamsFromBudgetTx(userId, params.keyId, nextSpent, params.budgetResetAt, params.audit);
+	const auditRow = insertParamsFromBudgetTx(params.userId, params.apiKeyId, nextSpent, params.budgetResetAt, params.audit);
 	await client.drizzle.transaction(async (tx) => {
 		const updateSet: Record<string, unknown> = {
 			budgetSpent: String(nextSpent),
@@ -136,7 +113,19 @@ export async function updateApiKeyBudgetWithAuditTxPg(
 		if (params.budgetMax !== undefined) {
 			updateSet.budgetMax = params.budgetMax == null ? null : String(roundGatewayMoney(params.budgetMax));
 		}
-		await tx.update(pgUsersTable).set(updateSet).where(eq(pgUsersTable.id, userId));
+		const updated = await tx
+			.update(pgUsersTable)
+			.set(updateSet)
+			.where(
+				and(
+					eq(pgUsersTable.id, params.userId),
+					sql`${pgUsersTable.budgetResetAt} IS NOT DISTINCT FROM ${params.expectedBudgetResetAt}`
+				)
+			)
+			.returning({ id: pgUsersTable.id });
+		if (updated.length === 0) {
+			return;
+		}
 
 		await tx.insert(pgUserAuditLogsTable).values({
 			id: auditRow.id,
