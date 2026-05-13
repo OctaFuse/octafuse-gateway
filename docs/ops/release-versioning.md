@@ -90,6 +90,11 @@ flowchart LR
 
 若日志里已成功 **`git push origin HEAD:changeset-release/main`**，但 **创建 PR 失败**：到 GitHub 上打开分支 **`changeset-release/main`**，**手动发起 PR 合并到 `main`** 即可；合并后下一轮 Release 会尝试 **`changeset tag`**（若已无待处理 changeset）。
 
+### Tag 未上 GitHub / Release 成功但无 `v*` 且无 Docker
+
+1. **`changesets/action` + `createGithubReleases: false`**：上游实现里 **`git pushTag` 与创建 GitHub Release 绑在一起**；为 false 时即使用 `changeset tag` 打出了**本地** tag，也不会替你 `git push`。本仓库用 **`npm run ci:changeset-tag-push`**（`changeset tag` + `scripts/ci/push-root-release-tag.mjs`）在 CI 里显式推送 **`vX.Y.Z`**。  
+2. **日志已跑 `changeset tag` 但后续仍报 HEAD 无 semver tag**：多为 **远端已有同名 `vX.Y.Z`**，`changeset tag` 会整段跳过（不写本地 tag）——需 **bump 新版本**（新 changeset + 再走 Version PR）或 **谨慎**处理远端错误 tag 后再跑一次 Release。
+
 ## 维护者日常操作
 
 ### 1. 普通功能合并
@@ -108,7 +113,7 @@ npx changeset
 
 ### 3. 打标签与镜像
 
-合并 Version PR 再次触发 **Release** → **`changeset tag`** 推送 **`vX.Y.Z`** → **Docker**（见上文「Docker 触发」：PAT 走 tag 事件；仅 `GITHUB_TOKEN` 时由 Release **dispatch**）→ **GitHub Release** 就绪。
+合并 Version PR 再次触发 **Release** → **`npm run ci:changeset-tag-push`**（`changeset tag` + 推送 **`vX.Y.Z`**）→ **Docker**（见上文「Docker 触发」：PAT 走 tag 事件；仅 `GITHUB_TOKEN` 时由 Release **dispatch**）→ **GitHub Release** 就绪。
 
 ### 4. 热修（patch）
 

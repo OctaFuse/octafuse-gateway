@@ -46,12 +46,15 @@ jobs:
       - name: Verify package versions (no drift)
         run: npm run verify:package-versions
 
+      # publish 必须用「单条 npm script」：action 把 publish 拆成 argv，不能写 `changeset tag && ...`。
+      # createGithubReleases: false 时 changesets/action 不会 push tag（其 pushTag 与创建 GH Release 绑定），
+      # 故由 ci:changeset-tag-push 在 changeset tag 后显式 git push origin vX.Y.Z。
       - name: Create Version PR or push tags
         uses: changesets/action@v1
         with:
           title: "chore: version packages"
           commit: "chore: version packages"
-          publish: npx changeset tag
+          publish: npm run ci:changeset-tag-push
           createGithubReleases: false
         env:
           # 未配置 CHANGESETS_GITHUB_TOKEN 时回退默认 GITHUB_TOKEN（需仓库允许 Actions 开 PR）
@@ -69,11 +72,20 @@ jobs:
             echo "CHANGESETS_GITHUB_TOKEN is set; tag push should have triggered Docker — skip dispatch."
             exit 0
           fi
+          PKG_VERSION="$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")"
+          EXPECTED_TAG="v${PKG_VERSION}"
+          echo "Root package.json version: ${PKG_VERSION} (expected release tag: ${EXPECTED_TAG})"
+          echo "GITHUB_SHA: ${GITHUB_SHA}"
           git fetch origin --tags
           git checkout "${GITHUB_SHA}"
           TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || true)
           if [ -z "${TAG}" ]; then
-            echo "No semver tag on ${GITHUB_SHA} (likely only opened Version PR) — nothing to dispatch."
+            if git ls-remote --tags origin -l "${EXPECTED_TAG}" | grep -q .; then
+              echo "::notice::No tag on HEAD, but origin already has ${EXPECTED_TAG}. \`changeset tag\` skips when the tag exists remotely (even on another commit) — bump version or fix/delete the remote tag, then re-run Release."
+            else
+              echo "::notice::No exact tag on ${GITHUB_SHA}. Often: changesets/action only opened a Version PR (unreleased .changeset/*.md still on main), or \`changeset tag\` did not push."
+            fi
+            echo "Nothing to dispatch."
             exit 0
           fi
           case "${TAG}" in
