@@ -22,6 +22,7 @@ import {
 	ALERT_WEBHOOK_FEISHU_URL_KEY,
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
+import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 
 function maskSecret(value: string): string {
   if (!value || value.length < 12) return '***';
@@ -493,8 +494,10 @@ export default function GatewayConfigPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gateway Config</h1>
-          <p className="text-sm text-gray-500 mt-1">Key-value config shared by Gateway and Admin (no duplicate env vars)</p>
+          <h1 className="text-3xl font-bold text-gray-900">System config</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Key-value settings shared by the {OCTAFUSE_GATEWAY_PRODUCT} proxy and this admin app (no duplicate env vars)
+          </p>
         </div>
         <button
           onClick={() => { setShowAdd(true); setSaveError(''); }}

@@ -10,6 +10,7 @@ import {
   type GatewayDashboardStatsRange,
 } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
+import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import { formatGatewayTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { DashboardStats } from '@/lib/types';
@@ -65,7 +66,7 @@ export default function DashboardPage() {
     <div className="p-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Gateway Overview</p>
+        <p className="text-sm text-gray-500 mt-1">{OCTAFUSE_GATEWAY_PRODUCT} — operations overview</p>
       </div>
       <div className="mb-8 w-full min-w-0">
         <GatewayDashboardRangePicker value={range} onChange={setRange} />

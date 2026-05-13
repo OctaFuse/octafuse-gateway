@@ -4,10 +4,11 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import AuthWrapper from '@/components/layout/AuthWrapper';
+import { OCTAFUSE_ADMIN_BROWSER_TITLE, OCTAFUSE_ADMIN_DESCRIPTION } from '@/lib/brand';
 
 export const metadata: Metadata = {
-  title: 'Gateway Admin',
-  description: 'Gateway admin dashboard for Octafuse (keys, providers, models, routes)',
+  title: OCTAFUSE_ADMIN_BROWSER_TITLE,
+  description: OCTAFUSE_ADMIN_DESCRIPTION,
   robots: 'noindex, nofollow',
 };
 

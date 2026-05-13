@@ -17,6 +17,7 @@ import {
   GeminiEndpointIcon,
 } from '@/components/upstream-brand-logo';
 import { readApiJson } from '@/lib/api-json';
+import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import { isPendingProviderImportApiKey } from '@/lib/provider-import-preset';
 import type { GatewayProvider } from '@/lib/types';
 
@@ -309,8 +310,10 @@ export default function GatewayProvidersPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gateway Providers</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage upstream AI service providers</p>
+          <h1 className="text-3xl font-bold text-gray-900">Providers</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Upstream AI endpoints consumed by {OCTAFUSE_GATEWAY_PRODUCT}
+          </p>
           <p className="text-xs text-gray-400 mt-1">
             Use <strong>Import</strong> to seed common CN-region endpoints; then click a row and replace the placeholder API key.
           </p>

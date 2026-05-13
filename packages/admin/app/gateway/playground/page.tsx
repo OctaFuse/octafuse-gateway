@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { flushSync } from 'react-dom';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
+import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import {
 	inferPlaygroundParseMode,
 	mergeAssistantTextParts,
@@ -445,9 +446,10 @@ export default function PlaygroundPage() {
 	return (
 		<div className="p-8">
 			<div className="mb-6">
-				<h1 className="text-3xl font-bold text-gray-900">Gateway Playground</h1>
+				<h1 className="text-3xl font-bold text-gray-900">Playground</h1>
 				<p className="text-sm text-gray-500 mt-1">
-					Send one upstream request for a single model route. No API key billing, no api_key_request_logs, no failover.
+					{OCTAFUSE_GATEWAY_PRODUCT} — send one upstream request for a single model route. No API key billing, no
+					api_key_request_logs, no failover.
 					<span className="text-gray-400"> · </span>
 					Usage shown below is display-only.
 				</p>
