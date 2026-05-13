@@ -51,6 +51,33 @@ flowchart LR
 3. **`.github/workflows/verify-package-versions.yml`**  
    - PR / `main` / `v*` 标签上校验：根与 workspace **`version` 一致**；在 **tag** 上校验 **`v` + version** 与标签名一致。
 
+## Release workflow 无法创建 PR（`HttpError: ... not permitted to create or approve pull requests`）
+
+`changesets/action` 会在远端分支 **`changeset-release/main`** 上提交版本变更，再 **调用 GitHub API 创建 PR**。若报错说明当前 **默认 `GITHUB_TOKEN` 被禁止创建 PR**（常见：仓库未勾选策略，或 **组织策略** 关闭该能力）。
+
+### 做法 A（推荐）：放开仓库对默认 token 的 PR 权限
+
+1. 打开仓库 **Settings** → **Actions** → **General**。  
+2. **Workflow permissions** 选择 **Read and write permissions**。  
+3. 勾选 **Allow GitHub Actions to create and approve pull requests**。  
+4. 保存后，重新跑一次 **Release** workflow（或对 `main` 再推一次空 commit）。
+
+官方说明：[Preventing GitHub Actions from creating or approving pull requests](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#preventing-github-actions-from-creating-or-approving-pull-requests)（反向理解：需要 **允许** 时勾选上述选项）。
+
+若 **组织级** 禁止 Actions 创建 PR，做法 A 不可用，请用做法 B。
+
+### 做法 B：使用 PAT（Repo secret `CHANGESETS_GITHUB_TOKEN`）
+
+1. 在 GitHub 创建 **Personal Access Token**（或 machine user）：  
+   - **Classic**：勾选 **`repo`**（或至少 **Contents**、**Pull requests**）。  
+   - **Fine-grained**：该仓库 **Contents: Read and write**、**Pull requests: Read and write**、**Metadata: Read**。  
+2. 在仓库 **Settings** → **Secrets and variables** → **Actions** 中新增 secret：**`CHANGESETS_GITHUB_TOKEN`**，值为上述 PAT。  
+3. **`.github/workflows/release.yml`** 已配置：`GITHUB_TOKEN` 优先使用 **`secrets.CHANGESETS_GITHUB_TOKEN`**，未设置时回退 **`secrets.GITHUB_TOKEN`**。
+
+### 本次失败后的补救
+
+若日志里已成功 **`git push origin HEAD:changeset-release/main`**，但 **创建 PR 失败**：到 GitHub 上打开分支 **`changeset-release/main`**，**手动发起 PR 合并到 `main`** 即可；合并后下一轮 Release 会尝试 **`changeset tag`**（若已无待处理 changeset）。
+
 ## 维护者日常操作
 
 ### 1. 普通功能合并
