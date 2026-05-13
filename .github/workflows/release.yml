@@ -2,6 +2,10 @@
 # 若无待处理 changeset 且版本已更新，则执行 `changeset tag` 推送 vX.Y.Z（触发镜像构建）。
 # 不在此 workflow 创建 GitHub Release（由 octafuse-docker-images 在推送镜像后写入 digest）。
 #
+# 注意：用默认 GITHUB_TOKEN 执行 `changeset tag` 的 git push **不会**触发其它 workflow（GitHub 限制）。
+# 因此当未配置 CHANGESETS_GITHUB_TOKEN 时，本 workflow 在检测到 HEAD 有 v* tag 后会 `gh workflow run` 主动触发 Docker；
+# 若已配置 PAT，则由 tag 的 push 正常触发 Docker，本步骤会跳过以免重复构建。
+#
 # 若出现「GitHub Actions is not permitted to create or approve pull requests」：
 # 1) 仓库 Settings → Actions → General → Workflow permissions：勾选「Allow GitHub Actions to create and approve pull requests」；
 #    或 2) 在 Repo secrets 配置 CHANGESETS_GITHUB_TOKEN（PAT：contents + pull-requests），见 docs/ops/release-versioning.md。
@@ -18,6 +22,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   release:
@@ -51,3 +56,32 @@ jobs:
         env:
           # 未配置 CHANGESETS_GITHUB_TOKEN 时回退默认 GITHUB_TOKEN（需仓库允许 Actions 开 PR）
           GITHUB_TOKEN: ${{ secrets.CHANGESETS_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+
+      # 默认 GITHUB_TOKEN 的 push（含打 tag）不会触发其它 workflow；PAT push 会触发。未用 PAT 时在此补发一次 dispatch。
+      - name: Dispatch Docker images workflow when tag did not chain-trigger
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGESETS_PAT: ${{ secrets.CHANGESETS_GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${CHANGESETS_PAT}" ]; then
+            echo "CHANGESETS_GITHUB_TOKEN is set; tag push should have triggered Docker — skip dispatch."
+            exit 0
+          fi
+          git fetch origin --tags
+          git checkout "${GITHUB_SHA}"
+          TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || true)
+          if [ -z "${TAG}" ]; then
+            echo "No semver tag on ${GITHUB_SHA} (likely only opened Version PR) — nothing to dispatch."
+            exit 0
+          fi
+          case "${TAG}" in
+            v*) ;;
+            *)
+              echo "Tag ${TAG} is not a v* release tag — skip."
+              exit 0
+              ;;
+          esac
+          echo "Dispatching Octafuse Docker Images workflow for ref ${TAG}"
+          gh workflow run octafuse-docker-images.yml --ref "${TAG}" -R "${GITHUB_REPOSITORY}"
