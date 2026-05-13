@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+### Patch Changes
+
+- [#10](https://github.com/OctaFuse/octafuse-gateway/pull/10) [`cbcdbec`](https://github.com/OctaFuse/octafuse-gateway/commit/cbcdbec39047e907ac718050a7d90428c7b5c6ce) Thanks [@dyc87112](https://github.com/dyc87112)! - always create and push root **vX.Y.Z** after `changeset tag` (private workspace default skips `v*` tags)
+
 ## 0.2.1
 
 ### Patch Changes
