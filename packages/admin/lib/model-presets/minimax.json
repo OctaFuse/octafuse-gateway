@@ -1,0 +1,64 @@
+[
+	{
+		"id": "minimax-m2.5",
+		"display_name": "MiniMax M2.5",
+		"vendor": "minimax",
+		"context_window": 196000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.3,
+						"output_price": 1.2,
+						"cache_read_price": 0.03,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2.1,
+						"output_price": 8.4,
+						"cache_read_price": 0.21,
+						"cache_write_price": 2.625
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "minimax-m2.7",
+		"display_name": "MiniMax M2.7",
+		"vendor": "minimax",
+		"context_window": 196000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.3,
+						"output_price": 1.2,
+						"cache_read_price": 0.06,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2.1,
+						"output_price": 8.4,
+						"cache_read_price": 0.42,
+						"cache_write_price": 2.625
+					}
+				]
+			}
+		}
+	}
+]

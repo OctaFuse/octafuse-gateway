@@ -1,0 +1,95 @@
+[
+	{
+		"id": "glm-5",
+		"display_name": "GLM-5",
+		"vendor": "zhipu",
+		"context_window": 200000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 3.2,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 22,
+						"cache_read_price": 1.5,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "glm-5-turbo",
+		"display_name": "GLM-5 Turbo",
+		"vendor": "zhipu",
+		"context_window": 200000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.2,
+						"output_price": 4,
+						"cache_read_price": 0.24,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 7,
+						"output_price": 26,
+						"cache_read_price": 1.8,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "glm-5.1",
+		"display_name": "GLM-5.1",
+		"vendor": "zhipu",
+		"context_window": 200000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.4,
+						"output_price": 4.4,
+						"cache_read_price": 0.26,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 8,
+						"output_price": 28,
+						"cache_read_price": 1.3,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	}
+]

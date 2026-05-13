@@ -1,0 +1,39 @@
+# 仅 gateway-admin（外置 Postgres）。适合：管理 UI 单独部署或与 proxy 分集群。
+# 迁移：使用 `--profile migrate` 的 migrate 服务（octafuse-migrate）。
+# Usage:
+#   cp env.admin.example .env
+#   docker compose --env-file .env -f gateway.admin.yml --profile migrate run --rm migrate
+#   docker compose --env-file .env -f gateway.admin.yml up -d gateway-admin
+
+services:
+  migrate:
+    profiles: ["migrate"]
+    image: ${GATEWAY_MIGRATE_IMAGE:?set GATEWAY_MIGRATE_IMAGE in .env}
+    environment:
+      DATABASE_DRIVER: ${DATABASE_DRIVER:-postgres}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+    restart: "no"
+
+  gateway-admin:
+    image: ${GATEWAY_ADMIN_IMAGE:?set GATEWAY_ADMIN_IMAGE in .env}
+    ports:
+      # 宿主机端口可配；容器内进程固定监听 8789（与 Dockerfile.admin 一致）
+      - "${GATEWAY_ADMIN_PORT:-18789}:8789"
+    environment:
+      DATABASE_DRIVER: ${DATABASE_DRIVER:-postgres}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+      PORT: "8789"
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8789/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s

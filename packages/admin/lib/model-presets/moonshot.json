@@ -1,0 +1,64 @@
+[
+	{
+		"id": "kimi-k2.5",
+		"display_name": "Kimi K2.5",
+		"vendor": "moonshot",
+		"context_window": 256000,
+		"max_tokens": 16000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.6,
+						"output_price": 3,
+						"cache_read_price": 0.1,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 21,
+						"cache_read_price": 0.7,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "kimi-k2.6",
+		"display_name": "Kimi K2.6",
+		"vendor": "moonshot",
+		"context_window": 256000,
+		"max_tokens": 16000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.95,
+						"output_price": 4,
+						"cache_read_price": 0.16,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 6.5,
+						"output_price": 27,
+						"cache_read_price": 1.1,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	}
+]

@@ -1,0 +1,168 @@
+[
+	{
+		"id": "mimo-v2-omni",
+		"display_name": "MiMo-V2-Omni",
+		"vendor": "xiaomi",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.4,
+						"output_price": 2,
+						"cache_read_price": 0.08,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2.8,
+						"output_price": 14,
+						"cache_read_price": 0.56,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "mimo-v2-pro",
+		"display_name": "MiMo-V2-Pro",
+		"vendor": "xiaomi",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 1,
+						"output_price": 3,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 7,
+						"output_price": 21,
+						"cache_read_price": 1.4,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 14,
+						"output_price": 42,
+						"cache_read_price": 2.8,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "mimo-v2.5-pro",
+		"display_name": "Mimo-V2.5-Pro",
+		"vendor": "xiaomi",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 1,
+						"output_price": 3,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 7,
+						"output_price": 21,
+						"cache_read_price": 1.4,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 14,
+						"output_price": 42,
+						"cache_read_price": 2.8,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "mimo-v2.5",
+		"display_name": "MiMo-V2.5",
+		"vendor": "xiaomi",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 0.4,
+						"output_price": 2,
+						"cache_read_price": 0.08,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 0.8,
+						"output_price": 4,
+						"cache_read_price": 0.16,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 2.8,
+						"output_price": 14,
+						"cache_read_price": 0.56,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 5.6,
+						"output_price": 28,
+						"cache_read_price": 1.12,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	}
+]

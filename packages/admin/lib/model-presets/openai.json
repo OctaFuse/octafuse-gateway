@@ -1,0 +1,123 @@
+[
+	{
+		"id": "gpt-5.2",
+		"display_name": "GPT-5.2",
+		"vendor": "openai",
+		"context_window": 400000,
+		"max_tokens": 8192,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.75,
+						"output_price": 14,
+						"cache_read_price": 0.175,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 12.6,
+						"output_price": 100.8,
+						"cache_read_price": 1.26,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "gpt-5.4",
+		"display_name": "GPT-5.4",
+		"vendor": "openai",
+		"context_window": 1050000,
+		"max_tokens": 8192,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 2.5,
+						"output_price": 15,
+						"cache_read_price": 0.25,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 22.5,
+						"cache_read_price": 0.5,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 18,
+						"output_price": 108,
+						"cache_read_price": 1.8,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 36,
+						"output_price": 162,
+						"cache_read_price": 3.6,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "gpt-5.5",
+		"display_name": "GPT-5.5",
+		"vendor": "openai",
+		"context_window": 1050000,
+		"max_tokens": 8192,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 5,
+						"output_price": 30,
+						"cache_read_price": 0.5,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 10,
+						"output_price": 45,
+						"cache_read_price": 1,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 36,
+						"output_price": 216,
+						"cache_read_price": 3.6,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 72,
+						"output_price": 324,
+						"cache_read_price": 7.2,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	}
+]

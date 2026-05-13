@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem you are trying to solve — implementation ideas are welcome but optional.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What is hard, missing, or inconsistent today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution (optional)
+      description: APIs, UX, data model, or docs — sketch at any level of detail.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered (optional)
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope (optional)
+      options:
+        - label: Backward compatible (default expectation for minor releases)
+        - label: Willing to contribute a PR
+        - label: Needs discussion before implementation

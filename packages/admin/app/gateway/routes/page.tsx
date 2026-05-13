@@ -1,0 +1,1431 @@
+'use client';
+
+/**
+ * 模型路由：`model_routes` CRUD、协议与 route_group、URL 查询参数驱动列表筛选（`useSearchParams` + Suspense）。
+ */
+import { useState, useEffect, useMemo, Suspense, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
+import {
+  TrashIcon,
+  PlusIcon,
+  ClipboardDocumentIcon,
+} from '@heroicons/react/24/outline';
+import { readApiJson } from '@/lib/api-json';
+import {
+  catalogInputPriceSortKey,
+  getCatalogPricingTierRows,
+  parseChargedFactorFromPriceOverride,
+  parseMeteredFactorFromPriceOverride,
+} from '@/lib/pricing-ui';
+import type { GatewayModelRoute, GatewayModel, GatewayProvider } from '@/lib/types';
+import {
+  extractMeteredProfileFromPriceOverrideJson,
+  extractChargedProfileFromPriceOverrideJson,
+  parsePricingProfile,
+} from '@octafuse/core/db/pricing-profile';
+import {
+  profileJsonToDraftRows,
+  serializeDraftRowsToProfileJson,
+  tierPricesToDraft,
+  type PricingTierDraftRow,
+} from '@/lib/pricing-tiers-draft';
+import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
+import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
+import {
+  UPSTREAM_PROTOCOLS,
+  isUpstreamProtocol,
+  providerSupportsUpstreamProtocol,
+  type UpstreamProtocol,
+} from '@/lib/upstream-protocol';
+import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
+import {
+  compareRouteGroupsForDisplay,
+  normalizeRouteGroup,
+  routeGroupBadgeClass,
+} from '@/lib/route-group-ui';
+import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
+import { useBillingCurrency } from '@/lib/use-billing-currency';
+
+/**
+ * Preserve list order within each `route_group` bucket.
+ * Caller should pre-sort rows (e.g. upstream protocol order, then priority desc).
+ */
+function splitRoutesByRouteGroup<T extends { route_group?: string | null }>(
+  routes: T[]
+): { group: string; routes: T[] }[] {
+  const byGroup = new Map<string, T[]>();
+  for (const r of routes) {
+    const g = normalizeRouteGroup(r.route_group);
+    const list = byGroup.get(g) ?? [];
+    list.push(r);
+    byGroup.set(g, list);
+  }
+  return [...byGroup.keys()]
+    .sort(compareRouteGroupsForDisplay)
+    .map((group) => ({ group, routes: byGroup.get(group)! }));
+}
+
+/**
+ * Card list order for routes under one logical model: known `upstream_protocol` in
+ * `UPSTREAM_PROTOCOLS` order, unknown protocols after (alphabetically among themselves),
+ * then priority desc, then stable tie-breakers.
+ */
+function compareModelRoutesForCardDisplay(
+  a: Pick<GatewayModelRoute, 'upstream_protocol' | 'priority' | 'provider_model_name' | 'id'>,
+  b: Pick<GatewayModelRoute, 'upstream_protocol' | 'priority' | 'provider_model_name' | 'id'>
+): number {
+  const knownA = isUpstreamProtocol(a.upstream_protocol);
+  const knownB = isUpstreamProtocol(b.upstream_protocol);
+  if (knownA && knownB) {
+    const ia = (UPSTREAM_PROTOCOLS as readonly string[]).indexOf(a.upstream_protocol);
+    const ib = (UPSTREAM_PROTOCOLS as readonly string[]).indexOf(b.upstream_protocol);
+    if (ia !== ib) return ia - ib;
+  } else if (knownA !== knownB) {
+    return knownA ? -1 : 1;
+  } else {
+    const protoCmp = a.upstream_protocol.localeCompare(b.upstream_protocol, undefined, {
+      sensitivity: 'base',
+    });
+    if (protoCmp !== 0) return protoCmp;
+  }
+  const dp = b.priority - a.priority;
+  if (dp !== 0) return dp;
+  const nameCmp = a.provider_model_name.localeCompare(b.provider_model_name, undefined, {
+    sensitivity: 'base',
+  });
+  if (nameCmp !== 0) return nameCmp;
+  return a.id.localeCompare(b.id, undefined, { sensitivity: 'base' });
+}
+
+function formatFactorValue(n: number): string {
+  if (!Number.isFinite(n)) return '—';
+  if (Number.isInteger(n)) return String(n);
+  return String(Number(n.toFixed(6)));
+}
+
+function trimTrailingZeros(raw: string): string {
+  if (!raw.includes('.')) return raw;
+  return raw.replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.0+$/, '');
+}
+
+function formatCompactTokens(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—';
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `${trimTrailingZeros((value / 1_000_000).toFixed(2))}M`;
+  if (abs >= 1_000) return `${trimTrailingZeros((value / 1_000).toFixed(2))}K`;
+  return String(value);
+}
+
+const FACTOR_CHIP_BASE =
+  'inline-flex min-w-[2.25rem] justify-center rounded-md px-1.5 py-0 text-[10px] font-semibold tabular-nums leading-4 ring-1 ring-inset';
+
+/** Route list chips: neutral (=1), amber (>1), emerald (<1); floats near 1 count as =1. */
+function factorChipClassForValue(n: number): string {
+  if (!Number.isFinite(n)) {
+    return `${FACTOR_CHIP_BASE} bg-zinc-100 text-zinc-700 ring-zinc-200/90`;
+  }
+  if (Math.abs(n - 1) < 1e-6) {
+    return `${FACTOR_CHIP_BASE} bg-zinc-100 text-zinc-700 ring-zinc-200/90`;
+  }
+  if (n > 1) {
+    return `${FACTOR_CHIP_BASE} bg-amber-100 text-amber-950 ring-amber-200/90`;
+  }
+  return `${FACTOR_CHIP_BASE} bg-emerald-100 text-emerald-900 ring-emerald-200/90`;
+}
+
+/** Catalog pricing_profile tiers × factor → draft rows (used for metered + charged generators). */
+function recomputeCatalogTierDraftsFromFactor(
+  factorText: string,
+  model: GatewayModel | undefined
+): { ok: true; tiers: PricingTierDraftRow[] } | { ok: false } {
+  const trimmed = factorText.trim();
+  const factor = trimmed === '' ? 1 : parseFloat(trimmed);
+  if (!Number.isFinite(factor) || factor < 0) {
+    return { ok: false };
+  }
+  if (!model) {
+    return { ok: false };
+  }
+  const prof = parsePricingProfile(model.pricing_profile ?? undefined);
+  if (!prof || prof.tiers.length === 0) {
+    return { ok: false };
+  }
+  const scaledTiers = prof.tiers.map((t) => ({
+    upto: t.upto,
+    label: null,
+    input_price: Number((t.input_price * factor).toFixed(6)),
+    output_price: Number((t.output_price * factor).toFixed(6)),
+    cache_read_price:
+      t.cache_read_price != null ? Number((t.cache_read_price * factor).toFixed(6)) : null,
+    cache_write_price:
+      t.cache_write_price != null ? Number((t.cache_write_price * factor).toFixed(6)) : null,
+  }));
+  return { ok: true, tiers: scaledTiers.map((t) => tierPricesToDraft(t)) };
+}
+
+/** Catalog × provider factor → metered override tier drafts. */
+function recomputeOverrideTiersFromProviderFactor(
+  factorText: string,
+  model: GatewayModel | undefined
+): { ok: true; tiers: PricingTierDraftRow[] } | { ok: false } {
+  return recomputeCatalogTierDraftsFromFactor(factorText, model);
+}
+
+/**
+ * Charged factor scales Standard (catalog) into charged override rows.
+ * Factor 1 (or empty treated as 1) copies catalog tiers at 1×; routes must persist explicit tiers.
+ */
+function recomputeChargedTiersFromChargedFactor(
+  factorText: string,
+  model: GatewayModel | undefined
+): { ok: true; tiers: PricingTierDraftRow[] } | { ok: false } {
+  const trimmed = factorText.trim();
+  const factor = trimmed === '' ? 1 : parseFloat(trimmed);
+  if (!Number.isFinite(factor) || factor < 0) {
+    return { ok: false };
+  }
+  return recomputeCatalogTierDraftsFromFactor(factorText, model);
+}
+
+const routePricePanelShell: Record<'neutral' | 'charged' | 'metered', string> = {
+  neutral:
+    'rounded-lg border border-gray-300/90 bg-gray-50/90 p-4 shadow-sm ring-1 ring-gray-200/50',
+  charged:
+    'rounded-lg border border-blue-200/90 bg-blue-50/45 p-4 shadow-sm ring-1 ring-blue-100/60',
+  metered:
+    'rounded-lg border border-emerald-200/90 bg-emerald-50/40 p-4 shadow-sm ring-1 ring-emerald-100/60',
+};
+
+const routePricePanelHeaderBorder: Record<'neutral' | 'charged' | 'metered', string> = {
+  neutral: 'border-b border-gray-200/90',
+  charged: 'border-b border-blue-200/80',
+  metered: 'border-b border-emerald-200/80',
+};
+
+/** Route modal: visually separate Standard / Charged / Metered cost pricing blocks. */
+function RoutePricePanel({
+  title,
+  subtitle,
+  variant,
+  children,
+  fillHeight = false,
+}: {
+  title: string;
+  subtitle: string;
+  variant: 'neutral' | 'charged' | 'metered';
+  children: ReactNode;
+  /** When true, panel stretches to fill grid cell height (paired columns). */
+  fillHeight?: boolean;
+}) {
+  return (
+    <section
+      className={`${routePricePanelShell[variant]}${fillHeight ? ' flex h-full min-h-0 min-w-0 flex-col' : ''}`}
+    >
+      <header className={`shrink-0 pb-3 mb-4 ${routePricePanelHeaderBorder[variant]}`}>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-800">{title}</h4>
+        <p className="mt-1.5 text-xs leading-relaxed text-gray-600">{subtitle}</p>
+      </header>
+      {fillHeight ? (
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      ) : (
+        children
+      )}
+    </section>
+  );
+}
+
+function RoutesContent() {
+  const searchParams = useSearchParams();
+  const [routes, setRoutes] = useState<(GatewayModelRoute & { model_name?: string; provider_name?: string })[]>([]);
+  const [models, setModels] = useState<GatewayModel[]>([]);
+  const [providers, setProviders] = useState<GatewayProvider[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<GatewayModelRoute | null>(null);
+  const [formData, setFormData] = useState({
+    model_id: '',
+    provider_id: '',
+    provider_model_name: '',
+    upstream_protocol: 'openai' as UpstreamProtocol,
+    priority: 0,
+    metered_override_tiers: [] as PricingTierDraftRow[],
+    charged_override_tiers: [] as PricingTierDraftRow[],
+    custom_params_json: '',
+    route_group: 'default',
+    charged_factor: '1',
+    provider_factor: '1',
+  });
+  const [filterModelId, setFilterModelId] = useState('');
+  const [filterProviderId, setFilterProviderId] = useState('');
+  const [filterRouteGroup, setFilterRouteGroup] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [copiedModelId, setCopiedModelId] = useState<string | null>(null);
+  const { currency: billingCurrency } = useBillingCurrency();
+
+  useEffect(() => {
+    // Read initial filters from URL params
+    const modelId = searchParams.get('model_id');
+    const status = searchParams.get('status');
+    const routeGroup = searchParams.get('route_group');
+    if (modelId) setFilterModelId(modelId);
+    if (status) setFilterStatus(status);
+    if (routeGroup) setFilterRouteGroup(routeGroup);
+  }, [searchParams]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [routesRes, modelsRes, providersRes] = await Promise.all([
+        fetch('/api/admin/routes'),
+        fetch('/api/admin/models'),
+        fetch('/api/admin/providers'),
+      ]);
+      type RouteRow = GatewayModelRoute & { model_name?: string; provider_name?: string };
+      const routesData = await readApiJson<RouteRow[]>(routesRes);
+      const modelsData = await readApiJson<GatewayModel[]>(modelsRes);
+      const providersData = await readApiJson<GatewayProvider[]>(providersRes);
+
+      if (routesData.success) setRoutes(routesData.data || []);
+      if (modelsData.success) setModels(modelsData.data || []);
+      if (providersData.success) setProviders(providersData.data || []);
+    } catch (error) {
+      console.error('Fetch data error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreate = (presetModelId?: string) => {
+    setEditingRoute(null);
+    const mid = presetModelId ?? '';
+    const presetModel = models.find((m) => m.id === mid);
+    let metered_override_tiers: PricingTierDraftRow[] = [];
+    let charged_override_tiers: PricingTierDraftRow[] = [];
+    if (presetModel) {
+      const m = recomputeOverrideTiersFromProviderFactor('1', presetModel);
+      if (m.ok) metered_override_tiers = m.tiers;
+      const c = recomputeChargedTiersFromChargedFactor('1', presetModel);
+      if (c.ok) charged_override_tiers = c.tiers;
+    }
+    setFormData({
+      model_id: mid,
+      provider_id: '',
+      provider_model_name: '',
+      upstream_protocol: 'openai',
+      priority: 0,
+      metered_override_tiers,
+      charged_override_tiers,
+      custom_params_json: '',
+      route_group: 'default',
+      charged_factor: '1',
+      provider_factor: '1',
+    });
+    setShowModal(true);
+    setSaveError('');
+  };
+
+  const parsePriceOverride = (
+    json: string | null
+  ): {
+    metered_override_tiers: PricingTierDraftRow[];
+    charged_override_tiers: PricingTierDraftRow[];
+    provider_factor?: string;
+    charged_factor?: string;
+  } => {
+    if (!json) {
+      return { metered_override_tiers: [], charged_override_tiers: [] };
+    }
+    try {
+      const o = JSON.parse(json) as Record<string, unknown>;
+      const nested = extractMeteredProfileFromPriceOverrideJson(json);
+      const ucNested = extractChargedProfileFromPriceOverrideJson(json);
+      return {
+        metered_override_tiers: profileJsonToDraftRows(nested),
+        charged_override_tiers: profileJsonToDraftRows(ucNested),
+        charged_factor: (() => {
+          const v = o.charged_factor;
+          if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+          if (typeof v === 'string') {
+            const n = parseFloat(v.trim());
+            if (Number.isFinite(n)) return String(n);
+          }
+          return '';
+        })(),
+        provider_factor: (() => {
+          const v = o.provider_factor;
+          if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+          if (typeof v === 'string') {
+            const n = parseFloat(v.trim());
+            if (Number.isFinite(n)) return String(n);
+          }
+          return '';
+        })(),
+      };
+    } catch {
+      return { metered_override_tiers: [], charged_override_tiers: [] };
+    }
+  };
+
+  const handleEdit = (route: GatewayModelRoute) => {
+    setEditingRoute(route);
+    const po = parsePriceOverride(route.price_override ?? null);
+    const routeModel = models.find((m) => m.id === route.model_id);
+    let metered_override_tiers = po.metered_override_tiers;
+    let charged_override_tiers = po.charged_override_tiers;
+    let provider_factor = po.provider_factor ?? '';
+    const charged_factor =
+      po.charged_factor && po.charged_factor.trim() !== '' ? po.charged_factor : '1';
+    if (routeModel) {
+      if (charged_override_tiers.length === 0) {
+        const c = recomputeChargedTiersFromChargedFactor(charged_factor, routeModel);
+        if (c.ok) charged_override_tiers = c.tiers;
+      }
+      if (metered_override_tiers.length === 0) {
+        const pfText = provider_factor.trim() === '' ? '1' : provider_factor;
+        const m = recomputeOverrideTiersFromProviderFactor(pfText, routeModel);
+        if (m.ok) {
+          metered_override_tiers = m.tiers;
+          if (provider_factor.trim() === '') provider_factor = '1';
+        }
+      }
+    }
+    setFormData({
+      model_id: route.model_id,
+      provider_id: route.provider_id,
+      provider_model_name: route.provider_model_name,
+      upstream_protocol: (isUpstreamProtocol(route.upstream_protocol)
+        ? route.upstream_protocol
+        : 'openai') as UpstreamProtocol,
+      priority: route.priority,
+      metered_override_tiers,
+      charged_override_tiers,
+      custom_params_json: route.custom_params ?? '',
+      route_group: route.route_group ?? 'default',
+      charged_factor,
+      provider_factor,
+    });
+    setShowModal(true);
+    setSaveError('');
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this route?')) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/routes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const data = await readApiJson(response);
+      if (data.success) {
+        setShowModal(false);
+        setEditingRoute(null);
+        fetchData();
+      } else {
+        alert(data.message || 'Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Delete failed');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleToggleStatus = async (route: GatewayModelRoute & { model_name?: string; provider_name?: string }) => {
+    const newStatus = route.status === 'active' ? 'inactive' : 'active';
+    setTogglingId(route.id);
+    try {
+      const response = await fetch(`/api/admin/routes/${encodeURIComponent(route.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await readApiJson(response);
+      if (data.success) {
+        setRoutes((prev) =>
+          prev.map((r) => (r.id === route.id ? { ...r, status: newStatus } : r))
+        );
+      } else {
+        alert(data.message || 'Update failed');
+      }
+    } catch (error) {
+      console.error('Toggle status error:', error);
+      alert('Update failed, please try again');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const copyModelId = async (modelId: string) => {
+    try {
+      await navigator.clipboard.writeText(modelId);
+      setCopiedModelId(modelId);
+      setTimeout(() => setCopiedModelId((current) => (current === modelId ? null : current)), 2000);
+    } catch (error) {
+      console.error('Copy model id failed:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaveError('');
+    setIsSaving(true);
+
+    try {
+      const normalizeJsonText = (raw: string, fieldName: string): string | null => {
+        const text = raw.trim();
+        if (!text) return null;
+        try {
+          const parsed = JSON.parse(text) as unknown;
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error(`${fieldName} must be a JSON object`);
+          }
+          return JSON.stringify(parsed);
+        } catch (err) {
+          throw new Error(err instanceof Error ? err.message : `${fieldName} must be valid JSON`);
+        }
+      };
+
+      const priceOverride: Record<string, unknown> = {};
+      const profileSerialized = serializeDraftRowsToProfileJson(formData.metered_override_tiers);
+      if (!profileSerialized.ok) {
+        throw new Error(profileSerialized.error);
+      }
+      if (!profileSerialized.json) {
+        throw new Error('Metered cost is required: add at least one tier (use Provider factor × Standard or edit manually).');
+      }
+      priceOverride.metered = JSON.parse(profileSerialized.json) as { tiers: unknown };
+
+      const chargedSerialized = serializeDraftRowsToProfileJson(formData.charged_override_tiers);
+      if (!chargedSerialized.ok) {
+        throw new Error(chargedSerialized.error);
+      }
+      if (!chargedSerialized.json) {
+        throw new Error(
+          'Charged cost is required: add at least one tier (use Charged factor × Standard or edit manually).'
+        );
+      }
+      priceOverride.charged = JSON.parse(chargedSerialized.json) as {
+        tiers: unknown;
+      };
+      if (formData.provider_factor.trim() !== '') {
+        const v = parseFloat(formData.provider_factor.trim());
+        if (!Number.isFinite(v) || v < 0) {
+          throw new Error('Provider factor must be a number ≥ 0');
+        }
+        priceOverride.provider_factor = v;
+      }
+
+      const cfText = formData.charged_factor.trim();
+      const chargedFactorParsed = cfText === '' ? 1 : parseFloat(cfText);
+      if (!Number.isFinite(chargedFactorParsed) || chargedFactorParsed < 0) {
+        throw new Error('Charged factor must be a number ≥ 0');
+      }
+      priceOverride.charged_factor = chargedFactorParsed;
+
+      const mfText = formData.provider_factor.trim();
+      const meteredFactorParsed = mfText === '' ? 1 : parseFloat(mfText);
+      if (!Number.isFinite(meteredFactorParsed) || meteredFactorParsed < 0) {
+        throw new Error('Metered factor must be a number ≥ 0');
+      }
+      priceOverride.metered_factor = meteredFactorParsed;
+
+      const payload: Record<string, unknown> = {
+        model_id: formData.model_id,
+        provider_id: formData.provider_id,
+        provider_model_name: formData.provider_model_name,
+        upstream_protocol: formData.upstream_protocol,
+        priority: formData.priority,
+        route_group: formData.route_group.trim() || 'default',
+        price_override: JSON.stringify(priceOverride),
+        custom_params: normalizeJsonText(formData.custom_params_json, 'custom_params'),
+      };
+      if (!editingRoute) {
+        payload.status = 'inactive';
+      }
+      let response: Response;
+      if (editingRoute) {
+        response = await fetch(`/api/admin/routes/${encodeURIComponent(editingRoute.id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        response = await fetch('/api/admin/routes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      const data = await readApiJson(response);
+
+      if (data.success) {
+        setShowModal(false);
+        fetchData();
+      } else {
+        setSaveError(data.message || 'Save failed');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      setSaveError(error instanceof Error ? error.message : 'Save failed, please try again');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const modelMeta = useMemo(() => {
+    const map = new Map<string, GatewayModel>();
+    for (const m of models) {
+      map.set(m.id, m);
+    }
+    return map;
+  }, [models]);
+
+  /** Distinct route_group values present in loaded routes (normalized), sorted for the filter dropdown. */
+  const distinctRouteGroups = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of routes) {
+      set.add(normalizeRouteGroup(r.route_group));
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [routes]);
+
+  const routeGroupFilterOptions = useMemo(() => {
+    const list = [...distinctRouteGroups];
+    if (filterRouteGroup && !list.includes(filterRouteGroup)) {
+      list.push(filterRouteGroup);
+    }
+    return list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  }, [distinctRouteGroups, filterRouteGroup]);
+
+  /** Groups routes by logical model; each model list is ordered by protocol group then priority. */
+  const routesByModel = useMemo(() => {
+    const routeByModelId = new Map<string, (typeof routes)[number][]>();
+    for (const r of routes) {
+      if (filterProviderId && r.provider_id !== filterProviderId) continue;
+      if (filterStatus && r.status !== filterStatus) continue;
+      if (filterRouteGroup && normalizeRouteGroup(r.route_group) !== filterRouteGroup) continue;
+      const list = routeByModelId.get(r.model_id) ?? [];
+      list.push(r);
+      routeByModelId.set(r.model_id, list);
+    }
+
+    for (const list of routeByModelId.values()) {
+      list.sort(compareModelRoutesForCardDisplay);
+    }
+
+    // Ensure models without routes are still visible for quick onboarding.
+    const candidateModelIds = new Set<string>();
+    for (const model of models) {
+      if (filterModelId && model.id !== filterModelId) continue;
+      candidateModelIds.add(model.id);
+    }
+    for (const route of routes) {
+      if (filterModelId && route.model_id !== filterModelId) continue;
+      candidateModelIds.add(route.model_id);
+    }
+
+    const hasRouteLevelFilter = Boolean(filterProviderId || filterStatus || filterRouteGroup);
+    const entries = [...candidateModelIds].sort((idA, idB) => {
+      const nameA = modelMeta.get(idA)?.display_name || idA;
+      const nameB = modelMeta.get(idB)?.display_name || idB;
+      return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+    });
+    return entries
+      .map((model_id) => {
+      const groupRoutes = routeByModelId.get(model_id) ?? [];
+      if (hasRouteLevelFilter && groupRoutes.length === 0) {
+        return null;
+      }
+      const active = groupRoutes.filter((r) => r.status === 'active').length;
+      const meta = modelMeta.get(model_id);
+      const title = meta?.display_name || groupRoutes[0]?.model_name || model_id;
+      const vendor = normalizeModelVendorInput(meta?.vendor);
+      return { model_id, title, groupRoutes, activeCount: active, vendor };
+    })
+      .filter((group): group is { model_id: string; title: string; groupRoutes: (typeof routes)[number][]; activeCount: number; vendor: string } => group !== null);
+  }, [routes, models, modelMeta, filterModelId, filterProviderId, filterRouteGroup, filterStatus]);
+
+  const routesByVendor = useMemo(() => {
+    const byVendor = new Map<string, (typeof routesByModel)>();
+    for (const group of routesByModel) {
+      const list = byVendor.get(group.vendor) ?? [];
+      list.push(group);
+      byVendor.set(group.vendor, list);
+    }
+
+    const entries = [...byVendor.entries()].sort(([a], [b]) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
+
+    return entries.map(([vendor, modelGroups]) => {
+      const sortedGroups = [...modelGroups].sort((a, b) => {
+        const ma = modelMeta.get(a.model_id);
+        const mb = modelMeta.get(b.model_id);
+        const ka = ma ? catalogInputPriceSortKey(ma) : Number.NEGATIVE_INFINITY;
+        const kb = mb ? catalogInputPriceSortKey(mb) : Number.NEGATIVE_INFINITY;
+        if (kb !== ka) {
+          return kb - ka;
+        }
+        return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+      });
+      return {
+        vendor,
+        modelGroups: sortedGroups,
+        modelCount: sortedGroups.length,
+        routeCount: sortedGroups.reduce((sum, g) => sum + g.groupRoutes.length, 0),
+      };
+    });
+  }, [routesByModel, modelMeta]);
+
+  const selectedProvider = useMemo(
+    () => providers.find((p) => p.id === formData.provider_id),
+    [providers, formData.provider_id]
+  );
+  const selectedModel = useMemo(
+    () => models.find((m) => m.id === formData.model_id),
+    [models, formData.model_id]
+  );
+
+  /** 目录模型完整阶梯（标准价侧） */
+  const catalogStandardTierRows = useMemo(() => {
+    if (!selectedModel) return [];
+    return getCatalogPricingTierRows(selectedModel, billingCurrency);
+  }, [selectedModel, billingCurrency]);
+
+  const allowedProtocolsForProvider = useMemo((): UpstreamProtocol[] => {
+    if (!selectedProvider) return [];
+    return UPSTREAM_PROTOCOLS.filter((proto) => providerSupportsUpstreamProtocol(proto, selectedProvider));
+  }, [selectedProvider]);
+
+  /** Keep upstream_protocol valid when Provider changes or modal opens with stale data */
+  useEffect(() => {
+    if (!showModal || !selectedProvider || allowedProtocolsForProvider.length === 0) return;
+    setFormData((fd) => {
+      if (allowedProtocolsForProvider.includes(fd.upstream_protocol)) return fd;
+      return { ...fd, upstream_protocol: allowedProtocolsForProvider[0]! };
+    });
+  }, [showModal, formData.provider_id, selectedProvider, allowedProtocolsForProvider]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-full bg-gray-100/90 p-8 pb-12">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Model Routes</h1>
+          <p className="text-sm text-gray-500 mt-1">Configure model-to-provider routing</p>
+        </div>
+        <button
+          onClick={() => handleCreate()}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <PlusIcon className="h-5 w-5" />
+          New Route
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-8 flex flex-wrap gap-4">
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Filter by Model</label>
+          <select
+            value={filterModelId}
+            onChange={(e) => setFilterModelId(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="">All Models</option>
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>{m.display_name ? `${m.display_name} (${m.id})` : m.id}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Filter by Provider</label>
+          <select
+            value={filterProviderId}
+            onChange={(e) => setFilterProviderId(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="">All Providers</option>
+            {providers.map((p) => (
+              <option key={p.id} value={p.id}>{p.name ? `${p.name} (${p.id})` : p.id}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Filter by Route group</label>
+          <select
+            value={filterRouteGroup}
+            onChange={(e) => setFilterRouteGroup(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[10rem]"
+          >
+            <option value="">All groups</option>
+            {routeGroupFilterOptions.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Filter by Status</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      {/* One card per model; grouped by model vendor. Each route_group is a labeled section (including a sole default group); multiple groups are separated by a thick top border; order inside a section is upstream_protocol (openai→anthropic→gemini, then unknowns A–Z), then priority-desc. */}
+      {routesByModel.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-300/90 shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] text-center py-12 text-gray-500">
+          No models or routes found
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {routesByVendor.map(({ vendor, modelGroups, modelCount, routeCount }) => (
+            <section key={vendor} className="space-y-4">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-lg font-semibold text-gray-900">{getModelVendorLabel(vendor)}</h2>
+                <span className="text-xs text-gray-500">{modelCount} models · {routeCount} routes</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 xl:gap-8">
+                {modelGroups.map(({ model_id, title, groupRoutes, activeCount }) => {
+                  const meta = modelMeta.get(model_id);
+                  const modelStatsTitle = `Context: ${meta?.context_window ?? '—'} · Max output: ${meta?.max_tokens ?? '—'}`;
+                  return (
+                    <div
+                      key={model_id}
+                      className="flex flex-col rounded-xl border border-gray-300/90 bg-white shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] overflow-hidden min-w-0"
+                    >
+                      <div className="px-4 py-3 bg-gradient-to-b from-gray-50 to-white border-b border-gray-200 flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <h3 className="min-w-0 text-sm font-semibold text-gray-900 leading-snug truncate" title={title}>
+                              {title}
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => void copyModelId(model_id)}
+                              className="shrink-0 rounded-md p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                              title={copiedModelId === model_id ? '已复制 model id' : `Copy model id: ${model_id}`}
+                              aria-label={`Copy model id ${model_id}`}
+                            >
+                              <ClipboardDocumentIcon className="h-4 w-4" />
+                            </button>
+                            {copiedModelId === model_id ? (
+                              <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
+                                已复制 model id
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-0.5 truncate" title={modelStatsTitle}>
+                            Context {formatCompactTokens(meta?.context_window)} · Max output {formatCompactTokens(meta?.max_tokens)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleCreate(model_id)}
+                            className="rounded-md p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                            title={`New route for ${title}`}
+                            aria-label={`New route for ${title}`}
+                          >
+                            <PlusIcon className="h-5 w-5" />
+                          </button>
+                          <span
+                            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs tabular-nums font-semibold ring-1 ring-inset ${
+                              activeCount === 0
+                                ? 'bg-red-50 text-red-700 ring-red-200'
+                                : 'bg-green-50 text-green-700 ring-green-200'
+                            }`}
+                            title={`${activeCount} active / ${groupRoutes.length} total routes`}
+                          >
+                            {activeCount}/{groupRoutes.length}
+                          </span>
+                        </div>
+                      </div>
+                    {groupRoutes.length === 0 ? (
+                      <div className="flex-1 flex items-center justify-center px-4 py-6 text-center">
+                        <div>
+                          <p className="text-sm text-gray-600">No routes yet</p>
+                          <p className="text-xs text-gray-500 mt-1">Click + to add the first route</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col flex-1 min-h-0">
+                        {(() => {
+                          const routeSections = splitRoutesByRouteGroup(groupRoutes);
+                          return routeSections.map((section, sectionIdx) => (
+                            <div
+                              key={section.group}
+                              className={sectionIdx > 0 ? 'border-t-2 border-gray-300/90' : ''}
+                            >
+                              <div
+                                className="flex items-center justify-between gap-2 border-b border-gray-200 bg-gradient-to-r from-gray-100/95 to-gray-50/80 px-4 py-2"
+                                role="presentation"
+                              >
+                                <span
+                                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(section.group)}`}
+                                >
+                                  {section.group}
+                                </span>
+                                <span className="text-[11px] tabular-nums text-gray-500">
+                                  {section.routes.length} route{section.routes.length === 1 ? '' : 's'}
+                                </span>
+                              </div>
+                              <ul className="flex flex-col divide-y divide-gray-200/80">
+                                {section.routes.map((route) => {
+                                  const chargedF = parseChargedFactorFromPriceOverride(route.price_override);
+                                  const meteredF = parseMeteredFactorFromPriceOverride(route.price_override);
+                                  const chargedDisp =
+                                    chargedF != null && Number.isFinite(chargedF) ? chargedF : null;
+                                  const meteredDisp =
+                                    meteredF != null && Number.isFinite(meteredF) ? meteredF : null;
+                                  return (
+                                    <li
+                                      key={route.id}
+                                      className="px-4 py-3 hover:bg-gray-50 transition-colors flex items-start gap-3"
+                                    >
+                                      <div className="shrink-0 pt-0.5">
+                                        <input
+                                          type="checkbox"
+                                          checked={route.status === 'active'}
+                                          disabled={togglingId === route.id}
+                                          onChange={() => handleToggleStatus(route)}
+                                          className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                                          aria-label={
+                                            route.status === 'active'
+                                              ? 'Route enabled (uncheck to disable)'
+                                              : 'Route disabled (check to enable)'
+                                          }
+                                        />
+                                      </div>
+                                      <div className="min-w-0 flex-1 flex items-start gap-3">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleEdit(route)}
+                                          className="min-w-0 flex-1 text-left rounded-md -mx-1 px-1 py-0.5 hover:bg-gray-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                                        >
+                                          <div className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                              <div
+                                                className="flex shrink-0 items-center gap-1.5"
+                                                title={route.upstream_protocol}
+                                              >
+                                                <UpstreamProtocolBrandIcon protocol={route.upstream_protocol} />
+                                                <span
+                                                  className="text-[11px] font-semibold tabular-nums text-gray-600"
+                                                  title="Priority (failover order)"
+                                                >
+                                                  {route.priority}
+                                                </span>
+                                              </div>
+                                              <span
+                                                className="min-w-0 flex-1 truncate font-medium text-gray-900"
+                                                title={route.provider_name || route.provider_id}
+                                              >
+                                                {route.provider_name || route.provider_id}
+                                              </span>
+                                            </div>
+                                            <div
+                                              className="min-w-0 truncate text-left font-mono text-[11px] text-gray-600"
+                                              title={route.provider_model_name}
+                                            >
+                                              {route.provider_model_name}
+                                            </div>
+                                          </div>
+                                        </button>
+                                        <div
+                                          className="flex shrink-0 flex-col items-end justify-start gap-1.5 self-stretch pt-0.5 text-right"
+                                          role="group"
+                                          aria-label="Charged and metered catalog factors"
+                                        >
+                                          <span
+                                            className={
+                                              chargedDisp != null
+                                                ? factorChipClassForValue(chargedDisp)
+                                                : `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
+                                            }
+                                            title="charged_factor vs catalog (price_override)"
+                                          >
+                                            {chargedDisp != null ? `Ch ×${formatFactorValue(chargedDisp)}` : 'Ch —'}
+                                          </span>
+                                          <span
+                                            className={
+                                              meteredDisp != null
+                                                ? factorChipClassForValue(meteredDisp)
+                                                : `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
+                                            }
+                                            title="metered_factor vs catalog (price_override; may use provider_factor)"
+                                          >
+                                            {meteredDisp != null ? `M ×${formatFactorValue(meteredDisp)}` : 'M —'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="route-modal-title"
+          >
+            <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4">
+              <h2 id="route-modal-title" className="text-lg font-semibold text-gray-900">
+                {editingRoute ? 'Edit Route' : 'New Route'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label="Close"
+              >
+                <span className="block text-xl leading-none" aria-hidden>
+                  ×
+                </span>
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+              {saveError && (
+                <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">{saveError}</div>
+              )}
+
+              <div className="space-y-5">
+                {/* 1. Route mapping + routing */}
+                <section className="rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Basic mapping & routing</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Model *</label>
+                      <select
+                        value={formData.model_id}
+                        onChange={(e) => {
+                          const nextModelId = e.target.value;
+                          setFormData((prev) => {
+                            const model = models.find((m) => m.id === nextModelId);
+                            let charged = prev.charged_override_tiers;
+                            let metered = prev.metered_override_tiers;
+                            let pf = prev.provider_factor;
+                            if (model) {
+                              if (charged.length === 0) {
+                                const rc = recomputeChargedTiersFromChargedFactor(prev.charged_factor, model);
+                                if (rc.ok) charged = rc.tiers;
+                              }
+                              if (metered.length === 0) {
+                                const pfText = pf.trim() === '' ? '1' : pf;
+                                const rm = recomputeOverrideTiersFromProviderFactor(pfText, model);
+                                if (rm.ok) {
+                                  metered = rm.tiers;
+                                  if (pf.trim() === '') pf = '1';
+                                }
+                              }
+                            }
+                            return {
+                              ...prev,
+                              model_id: nextModelId,
+                              charged_override_tiers: charged,
+                              metered_override_tiers: metered,
+                              provider_factor: pf,
+                            };
+                          });
+                        }}
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        required
+                      >
+                        <option value="">Select a model</option>
+                        {models.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.display_name ? `${m.display_name} (${m.id})` : m.id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Provider *</label>
+                      <select
+                        value={formData.provider_id}
+                        onChange={(e) => {
+                          const nextId = e.target.value;
+                          const nextProvider = providers.find((p) => p.id === nextId);
+                          const allowed =
+                            nextProvider != null
+                              ? UPSTREAM_PROTOCOLS.filter((proto) => providerSupportsUpstreamProtocol(proto, nextProvider))
+                              : [];
+                          setFormData((fd) => {
+                            let nextProto = fd.upstream_protocol;
+                            if (allowed.length > 0 && !allowed.includes(nextProto)) {
+                              nextProto = allowed[0]!;
+                            }
+                            return { ...fd, provider_id: nextId, upstream_protocol: nextProto };
+                          });
+                        }}
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        required
+                      >
+                        <option value="">Select a provider</option>
+                        {providers.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name ? `${p.name} (${p.id})` : p.id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Upstream protocol</label>
+                      <select
+                        value={
+                          allowedProtocolsForProvider.includes(formData.upstream_protocol)
+                            ? formData.upstream_protocol
+                            : (allowedProtocolsForProvider[0] ?? formData.upstream_protocol)
+                        }
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            upstream_protocol: e.target.value as UpstreamProtocol,
+                          })
+                        }
+                        disabled={!selectedProvider || allowedProtocolsForProvider.length === 0}
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+                      >
+                        {allowedProtocolsForProvider.length === 0 ? (
+                          <option value="">—</option>
+                        ) : (
+                          allowedProtocolsForProvider.map((p) => (
+                            <option key={p} value={p}>
+                              {p}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                      <p className="mt-1.5 text-xs text-gray-500">
+                        {selectedProvider
+                          ? 'Only protocols with a configured base URL on this provider.'
+                          : 'Select a provider first.'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Provider model name *</label>
+                      <input
+                        type="text"
+                        value={formData.provider_model_name}
+                        onChange={(e) => setFormData({ ...formData, provider_model_name: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        placeholder="e.g. gpt-4o-2024-11-20"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Route group</label>
+                      <input
+                        type="text"
+                        value={formData.route_group}
+                        onChange={(e) => setFormData({ ...formData, route_group: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        placeholder="default"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Label for <code className="rounded bg-gray-100 px-1 text-[11px]">modelId:group</code> client selection.
+                        If the client omits <code className="rounded bg-gray-100 px-1 text-[11px]">:group</code>, the gateway uses the{' '}
+                        <span className="font-medium">default</span> group only. Requests for a group with no active routes return{' '}
+                        <span className="font-medium">400</span>. Zero user charge: set{' '}
+                        <span className="font-medium">Charged factor</span> to{' '}
+                        <code className="rounded bg-gray-100 px-1 text-[11px]">0</code> on charged tiers (set{' '}
+                        <code className="rounded bg-gray-100 px-1 text-[11px]">charged_factor</code> to{' '}
+                        <code className="rounded bg-gray-100 px-1 text-[11px]">0</code> in{' '}
+                        <code className="rounded bg-gray-100 px-1 text-[11px]">price_override</code> or edit tiers).{' '}
+                        <code className="rounded bg-gray-100 px-1 text-[11px]">charged_cost</code> uses tier prices only.
+                      </p>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Priority</label>
+                      <input
+                        type="number"
+                        value={formData.priority}
+                        onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value, 10) || 0 })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Higher = tried first within the same protocol group.</p>
+                    </div>
+                  </div>
+                </section>
+
+                {/* 2. Billing: Standard full width; Charged + Metered two columns on large screens */}
+                <div className="space-y-5">
+                  <RoutePricePanel
+                    variant="neutral"
+                    title="Standard (catalog)"
+                    subtitle="Catalog baseline from the model’s pricing_profile. Read-only; use it as reference when editing charged or metered overrides."
+                  >
+                    <div className="min-h-0 flex-1">
+                      <ReadOnlyPricingTiersTable
+                        rows={catalogStandardTierRows}
+                        emptyLabel={
+                          selectedModel
+                            ? 'This model has no catalog pricing_profile.'
+                            : 'Select a model to load catalog tiers.'
+                        }
+                        tableTitle="Read-only: catalog standard rates"
+                        billingCurrencyCode={billingCurrency}
+                      />
+                    </div>
+                  </RoutePricePanel>
+
+                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-stretch">
+                    <div className="flex h-full min-h-0 min-w-0 flex-col">
+                      <RoutePricePanel
+                        fillHeight
+                        variant="charged"
+                        title="Charged cost"
+                        subtitle="Required: saved as price_override.charged and drives charged_cost. Charged factor multiplies Standard (catalog) into rows—default 1 copies catalog tiers; edit tiers after scaling. charged_factor is stored in price_override JSON."
+                      >
+                        <PricingTiersEditor
+                          rows={formData.charged_override_tiers}
+                          onChange={(rows) => setFormData({ ...formData, charged_override_tiers: rows })}
+                          billingCurrencyCode={billingCurrency}
+                          minRows={0}
+                          toolbarStart={
+                            <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3">
+                              <label
+                                htmlFor="user-cost-charged-factor"
+                                className="whitespace-nowrap text-[11px] font-medium text-gray-600"
+                              >
+                                Charged factor
+                              </label>
+                              <input
+                                id="user-cost-charged-factor"
+                                type="text"
+                                inputMode="decimal"
+                                value={formData.charged_factor}
+                                title="Multiplies Standard (catalog) into charged tiers when the selected model has pricing_profile. Default 1 copies catalog at 1×."
+                                onChange={(e) => {
+                                  const next = e.target.value;
+                                  setFormData((prev) => {
+                                    const model = models.find((m) => m.id === prev.model_id);
+                                    const r = recomputeChargedTiersFromChargedFactor(next, model);
+                                    if (r.ok) {
+                                      return {
+                                        ...prev,
+                                        charged_factor: next,
+                                        charged_override_tiers: r.tiers,
+                                      };
+                                    }
+                                    return { ...prev, charged_factor: next };
+                                  });
+                                }}
+                                className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                                placeholder="1"
+                              />
+                            </div>
+                          }
+                        />
+                      </RoutePricePanel>
+                    </div>
+
+                    <div className="flex h-full min-h-0 min-w-0 flex-col">
+                      <RoutePricePanel
+                        fillHeight
+                        variant="metered"
+                        title="Metered cost"
+                        subtitle="Required: saved as price_override.metered and drives metered_cost. Provider factor multiplies Standard (catalog) into rows—default 1 copies catalog tiers; edit tiers after scaling. metered_factor is written to price_override on save (same numeric value)."
+                      >
+                        <PricingTiersEditor
+                          rows={formData.metered_override_tiers}
+                          onChange={(rows) => setFormData({ ...formData, metered_override_tiers: rows })}
+                          billingCurrencyCode={billingCurrency}
+                          minRows={0}
+                          toolbarStart={
+                            <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3">
+                              <label
+                                htmlFor="gateway-route-provider-factor"
+                                className="whitespace-nowrap text-[11px] font-medium text-gray-600"
+                              >
+                                Provider factor
+                              </label>
+                              <input
+                                id="gateway-route-provider-factor"
+                                type="text"
+                                inputMode="decimal"
+                                value={formData.provider_factor}
+                                title="Multiplies Standard (catalog) into metered tiers when the selected model has pricing_profile. Default 1 copies catalog at 1×."
+                                onChange={(e) => {
+                                  const nextFactor = e.target.value;
+                                  setFormData((prev) => {
+                                    const model = models.find((m) => m.id === prev.model_id);
+                                    const r = recomputeOverrideTiersFromProviderFactor(nextFactor, model);
+                                    if (r.ok) {
+                                      return {
+                                        ...prev,
+                                        provider_factor: nextFactor,
+                                        metered_override_tiers: r.tiers,
+                                      };
+                                    }
+                                    return { ...prev, provider_factor: nextFactor };
+                                  });
+                                }}
+                                className="w-[3.5rem] rounded-md border border-gray-300 bg-white px-1.5 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                                placeholder="1"
+                              />
+                            </div>
+                          }
+                        />
+                      </RoutePricePanel>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Request defaults */}
+                <section className="rounded-lg border border-gray-200 bg-white p-4">
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Request defaults (JSON)</h3>
+                  <p className="mb-3 text-xs text-gray-600">
+                    Route-level <code className="rounded bg-gray-100 px-1 py-0.5 font-mono">custom_params</code> is deep-merged
+                    into the upstream request body; explicit client fields win. Put both standard fields (e.g.{' '}
+                    <code className="rounded bg-gray-100 px-1 py-0.5 font-mono">temperature</code>) and vendor-specific keys
+                    (e.g. <code className="rounded bg-gray-100 px-1 py-0.5 font-mono">eca_thinking_config</code>) here.
+                  </p>
+                  <div className="flex min-h-0 flex-col">
+                    <label className="mb-1.5 text-sm font-medium text-gray-700">Custom params</label>
+                    <textarea
+                      rows={8}
+                      value={formData.custom_params_json}
+                      onChange={(e) => setFormData({ ...formData, custom_params_json: e.target.value })}
+                      className="min-h-[160px] w-full flex-1 resize-y rounded-md border border-gray-300 px-3 py-2 font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                      placeholder='{"temperature":0.7,"provider_options":{"foo":"bar"}}'
+                      spellCheck={false}
+                    />
+                  </div>
+                </section>
+
+                {/* 4. Summary */}
+                <section className="rounded-lg border border-gray-200 bg-white p-4">
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Summary</h3>
+                  <div className="grid grid-cols-1 gap-2 text-xs text-gray-600 md:grid-cols-2">
+                    <p>
+                      <span className="font-medium text-gray-700">Route:</span>{' '}
+                      <span className="font-mono">{formData.model_id || '—'}</span> →{' '}
+                      <span className="font-mono">{formData.provider_id || '—'}</span> /{' '}
+                      <span className="font-mono">{formData.provider_model_name || '—'}</span>
+                    </p>
+                    <p>
+                      <span className="font-medium text-gray-700">Routing:</span>{' '}
+                      <span className="font-mono">{formData.upstream_protocol}</span> · group{' '}
+                      <span className="font-mono">{formData.route_group.trim() || 'default'}</span> · priority{' '}
+                      <span className="font-mono">{formData.priority}</span> · status{' '}
+                      <span className="font-mono">
+                        {editingRoute ? editingRoute.status : 'inactive'}
+                      </span>
+                      {!editingRoute && (
+                        <span className="text-gray-500"> (enable from list)</span>
+                      )}
+                    </p>
+                    <p>
+                      <span className="font-medium text-gray-700">User billing:</span>{' '}
+                      <span className="font-mono">
+                        Routes must persist <span className="whitespace-nowrap">price_override.charged</span> tiers;
+                        charged_cost uses that profile. Charged factor scales Standard into the editor;{' '}
+                        <span className="whitespace-nowrap">charged_factor</span> is stored in{' '}
+                        <span className="whitespace-nowrap">price_override</span> JSON.
+                      </span>
+                    </p>
+                    <p>
+                      <span className="font-medium text-gray-700">Metered cost:</span>{' '}
+                      <span className="font-mono">
+                        Routes must persist <span className="whitespace-nowrap">price_override.metered</span> tiers;
+                        metered_cost uses that profile.
+                      </span>
+                    </p>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
+              <div>
+                {editingRoute && (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(editingRoute.id)}
+                    disabled={isSaving || isDeleting}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                    {isDeleting ? 'Deleting...' : 'Delete route'}
+                  </button>
+                )}
+              </div>
+              <div className="ml-auto flex gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isSaving || isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isSaving || isDeleting}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function GatewayRoutesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    }>
+      <RoutesContent />
+    </Suspense>
+  );
+}

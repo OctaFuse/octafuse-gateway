@@ -1,0 +1,42 @@
+{
+	"name": "@octafuse/admin",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev",
+		"dev:node": "dotenv -c -- next dev -p 8789",
+		"build": "npm run cf-typegen && next build && node ./scripts/link-standalone-next.mjs",
+		"build:cf": "npm run cf-typegen && opennextjs-cloudflare build",
+		"start": "next start",
+		"lint": "eslint .",
+		"preview": "npm run build:cf && opennextjs-cloudflare preview --port 8789 --persist-to ../../.wrangler/state",
+		"deploy": "npm run build:cf && opennextjs-cloudflare deploy",
+		"cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+		"typecheck": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@heroicons/react": "^2.2.0",
+		"@opennextjs/cloudflare": "^1.16.3",
+		"@octafuse/core": "*",
+		"@swc/helpers": "^0.5.18",
+		"hono": "^4.12.9",
+		"next": "^16.1.6",
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4",
+		"simple-icons": "^16.13.0"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20260305.0",
+		"@types/node": "^20.11.0",
+		"@types/react": "^18.3.0",
+		"@types/react-dom": "^18.3.0",
+		"autoprefixer": "^10.4.18",
+		"eslint": "^9.39.2",
+		"eslint-config-next": "^16.1.6",
+		"postcss": "^8.4.35",
+		"tailwindcss": "^3.4.1",
+		"typescript": "^5.7.2",
+		"wrangler": "^4.68.0",
+		"dotenv-cli": "^11.0.0"
+	}
+}

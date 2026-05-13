@@ -1,0 +1,56 @@
+name: Bug report
+description: Something is broken or behaves incorrectly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. **Do not** use this form for [security issues](https://github.com/OctaFuse/octafuse-gateway/security/advisories/new) — use GitHub Security Advisories instead.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong in one or two sentences?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Commands, config, or UI flow — the more concrete, the better.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: e.g. git SHA, image tag, or npm workspace version
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Proxy (Worker or Node)
+        - Admin (Pages or Node)
+        - Migrations (D1 / Postgres / MySQL)
+        - Docs / tooling
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment (optional)
+      description: OS, Docker/Cloudflare, database driver, relevant env vars (redact secrets).

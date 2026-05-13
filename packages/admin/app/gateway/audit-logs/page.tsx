@@ -1,0 +1,517 @@
+'use client';
+
+/**
+ * 全站 API 密钥预算审计日志：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
+ */
+import { useState, useEffect, useCallback } from 'react';
+import { readApiJson } from '@/lib/api-json';
+import {
+  API_KEY_BUDGET_AUDIT_ACTOR_TYPES,
+  API_KEY_BUDGET_AUDIT_EVENT_TYPES,
+  type GatewayApiKeyBudgetAuditLog,
+} from '@/lib/types';
+import { GatewayTimeRangeFilter } from '@/components/GatewayTimeRangePicker';
+import { rangeToParams } from '@/lib/analytics-range';
+import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
+import { formatGatewayDateTime } from '@/lib/datetime';
+import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
+import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
+import { useBillingCurrency } from '@/lib/use-billing-currency';
+
+function formatSignedMoney(value: number, currency: string): string {
+  return formatGatewayMoneyCodeSigned(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
+}
+
+function formatPlainMoney(value: number, currency: string): string {
+  return formatGatewayMoneyCode(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
+}
+
+function formatBudgetMax(value: number | null, currency: string): string {
+  if (value == null) return 'no limit';
+  return formatGatewayMoneyCode(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
+}
+
+function formatTime(iso: string | null | undefined): string {
+  if (iso == null || iso === '') return '—';
+  return formatGatewayDateTime(iso);
+}
+
+function shortId(id: string): string {
+  if (!id || id.length < 14) return id;
+  return `${id.slice(0, 8)}…${id.slice(-4)}`;
+}
+
+function formatAuditMetadataValue(value: unknown): string {
+  if (value == null) return '—';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function isAuditObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function pushAuditChangeLine(lines: string[], label: string, value: unknown): boolean {
+  if (!isAuditObject(value) || !('from' in value) || !('to' in value)) return false;
+  lines.push(`${label}: ${formatAuditMetadataValue(value.from)} → ${formatAuditMetadataValue(value.to)}`);
+  return true;
+}
+
+function summarizeAuditMetadataChanges(raw: string | null | undefined): string[] {
+  const trimmed = raw?.trim();
+  if (!trimmed) return ['—'];
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!isAuditObject(parsed)) {
+      return [formatAuditMetadataValue(parsed)];
+    }
+
+    const obj = parsed as Record<string, unknown>;
+    const lines: string[] = [];
+    const status = obj.status;
+    if (status && typeof status === 'object' && !Array.isArray(status)) {
+      const s = status as Record<string, unknown>;
+      lines.push(`status: ${formatAuditMetadataValue(s.from)} → ${formatAuditMetadataValue(s.to)}`);
+    }
+
+    const metadata = obj.metadata;
+    if (isAuditObject(metadata)) {
+      const operation = typeof metadata.operation === 'string' ? ` (${metadata.operation})` : '';
+      const changes = metadata.changes;
+      if (isAuditObject(changes)) {
+        Object.entries(changes).forEach(([key, value]) => {
+          if (!pushAuditChangeLine(lines, `metadata.${key}`, value)) {
+            lines.push(`metadata.${key}: ${formatAuditMetadataValue(value)}`);
+          }
+        });
+      } else if (!pushAuditChangeLine(lines, `metadata${operation}`, metadata)) {
+        lines.push(`metadata${operation}: ${formatAuditMetadataValue(metadata)}`);
+      }
+    }
+
+    const patchKeys = obj.metadata_patch_keys;
+    if (!metadata && Array.isArray(patchKeys) && patchKeys.length > 0) {
+      const keys = patchKeys.map((k) => formatAuditMetadataValue(k)).join(', ');
+      lines.push(`metadata: ${keys}`);
+    }
+
+    Object.entries(obj).forEach(([key, value]) => {
+      if (key === 'status' || key === 'metadata' || key === 'metadata_patch_keys') return;
+      lines.push(`${key}: ${formatAuditMetadataValue(value)}`);
+    });
+
+    return lines.length > 0 ? lines : [trimmed];
+  } catch {
+    return [trimmed.length > 160 ? `${trimmed.slice(0, 160)}…` : trimmed];
+  }
+}
+
+/** 与网关金额精度一致，用于判断 budget_max 是否变化 */
+function budgetMaxSemanticallyEqual(
+  before: number | null | undefined,
+  after: number | null | undefined
+): boolean {
+  if (before == null && after == null) return true;
+  if (before == null || after == null) return false;
+  return before.toFixed(GATEWAY_MONEY_DECIMAL_PLACES) === after.toFixed(GATEWAY_MONEY_DECIMAL_PLACES);
+}
+
+function budgetResetAtSemanticallyEqual(
+  before: string | null | undefined,
+  after: string | null | undefined
+): boolean {
+  if ((before == null || before === '') && (after == null || after === '')) return true;
+  if (!before || !after) return false;
+  const tb = new Date(before).getTime();
+  const ta = new Date(after).getTime();
+  if (Number.isNaN(tb) || Number.isNaN(ta)) return before === after;
+  return tb === ta;
+}
+
+const budgetPlanHighlight = {
+  before: 'rounded px-0.5 bg-amber-50 text-amber-900',
+  after: 'rounded px-0.5 bg-sky-50 text-sky-900',
+} as const;
+
+export default function GatewayAuditLogsPage() {
+  const [logs, setLogs] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const pageSize = 50;
+  const { currency: billingCurrency } = useBillingCurrency();
+
+  const [filterApiKeyId, setFilterApiKeyId] = useState('');
+  const [filterUserEmail, setFilterUserEmail] = useState('');
+  const [filterEventType, setFilterEventType] = useState('');
+  const [filterActorType, setFilterActorType] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const apiKeyId = params.get('api_key_id');
+    const userEmail = params.get('user_email');
+    const eventType = params.get('event_type');
+    const actorType = params.get('actor_type');
+    const startDate = params.get('start_date');
+    const endDate = params.get('end_date');
+    const p = params.get('page');
+    if (apiKeyId != null) setFilterApiKeyId(apiKeyId);
+    if (userEmail != null) setFilterUserEmail(userEmail);
+    if (eventType != null) setFilterEventType(eventType);
+    if (actorType != null) setFilterActorType(actorType);
+    if (startDate != null) setFilterStartDate(startDate);
+    if (endDate != null) setFilterEndDate(endDate);
+    const hasStart = startDate != null && startDate !== '';
+    const hasEnd = endDate != null && endDate !== '';
+    if (!hasStart && !hasEnd) {
+      const { start_date, end_date } = rangeToParams('1d');
+      setFilterStartDate(start_date);
+      setFilterEndDate(end_date);
+    }
+    if (p != null) {
+      const n = parseInt(p, 10);
+      if (!Number.isNaN(n) && n >= 1) setPage(n);
+    }
+  }, []);
+
+  useReplaceListPageQuery(
+    () => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        page_size: pageSize.toString(),
+      });
+      if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
+      if (filterUserEmail) params.append('user_email', filterUserEmail);
+      if (filterEventType) params.append('event_type', filterEventType);
+      if (filterActorType) params.append('actor_type', filterActorType);
+      if (filterStartDate) params.append('start_date', filterStartDate);
+      if (filterEndDate) params.append('end_date', filterEndDate);
+      return params;
+    },
+    [
+      page,
+      pageSize,
+      filterApiKeyId,
+      filterUserEmail,
+      filterEventType,
+      filterActorType,
+      filterStartDate,
+      filterEndDate,
+    ]
+  );
+
+  const fetchLogs = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        page_size: pageSize.toString(),
+      });
+      if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
+      if (filterUserEmail) params.append('user_email', filterUserEmail);
+      if (filterEventType) params.append('event_type', filterEventType);
+      if (filterActorType) params.append('actor_type', filterActorType);
+      if (filterStartDate) params.append('start_date', filterStartDate);
+      if (filterEndDate) params.append('end_date', filterEndDate);
+
+      const response = await fetch(`/api/admin/budget-audit-logs?${params.toString()}`);
+      const data = await readApiJson<GatewayApiKeyBudgetAuditLog[]>(response);
+      if (data.success) {
+        setLogs(data.data || []);
+        setTotal(data.total || 0);
+      }
+    } catch (e) {
+      console.error('Fetch budget audit logs error:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    page,
+    filterApiKeyId,
+    filterUserEmail,
+    filterEventType,
+    filterActorType,
+    filterStartDate,
+    filterEndDate,
+    pageSize,
+  ]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  const totalPages = Math.ceil(total / pageSize);
+
+  return (
+    <div className="p-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          API key audit trail (<code className="text-xs bg-gray-100 px-1 rounded">api_key_audit_logs</code>)
+        </p>
+      </div>
+
+      <div className="mb-4 w-full min-w-0">
+        <label className="block text-sm text-gray-500 mb-1">Time range (UTC)</label>
+        <GatewayTimeRangeFilter
+          startDate={filterStartDate}
+          endDate={filterEndDate}
+          onCommit={(start_date, end_date) => {
+            setFilterStartDate(start_date);
+            setFilterEndDate(end_date);
+            setPage(1);
+          }}
+        />
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-4">
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Event type</label>
+          <select
+            value={filterEventType}
+            onChange={(e) => { setFilterEventType(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[11rem]"
+          >
+            <option value="">All</option>
+            {API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Actor</label>
+          <select
+            value={filterActorType}
+            onChange={(e) => { setFilterActorType(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[8rem]"
+          >
+            <option value="">All</option>
+            {API_KEY_BUDGET_AUDIT_ACTOR_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">User email</label>
+          <input
+            type="text"
+            value={filterUserEmail}
+            onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
+            placeholder="Exact match"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-56"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">API key ID</label>
+          <input
+            type="text"
+            value={filterApiKeyId}
+            onChange={(e) => { setFilterApiKeyId(e.target.value); setPage(1); }}
+            placeholder="UUID"
+            className="px-3 py-2 border border-gray-300 rounded-md w-64 font-mono text-xs"
+          />
+        </div>
+        <div className="flex items-end">
+          <button
+            type="button"
+            onClick={() => {
+              setFilterEventType('');
+              setFilterActorType('');
+              setFilterUserEmail('');
+              setFilterApiKeyId('');
+              setFilterStartDate('');
+              setFilterEndDate('');
+              setPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Clear filters
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-3 text-sm text-gray-500">
+        Total: {total} records
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16 text-gray-600">Loading...</div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="overflow-x-auto max-h-[calc(100vh-16rem)] overflow-y-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Time</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[11rem]">Event / Actor</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[12rem]">User / Key</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Spend</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">Budget plan</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[12rem]">Metadata</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {logs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                      No audit logs match the filters.
+                    </td>
+                  </tr>
+                ) : (
+                  logs.map((item) => {
+                    const maxChanged = !budgetMaxSemanticallyEqual(
+                      item.before_budget_max,
+                      item.after_budget_max
+                    );
+                    const periodChanged =
+                      (item.before_budget_period ?? '') !== (item.after_budget_period ?? '');
+                    const resetChanged = !budgetResetAtSemanticallyEqual(
+                      item.before_budget_reset_at,
+                      item.after_budget_reset_at
+                    );
+                    const reason = item.reason_text || item.reason_code || '—';
+                    const metadataLines = summarizeAuditMetadataChanges(item.metadata);
+                    return (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 align-top">
+                        <div className="text-gray-700 whitespace-nowrap">{formatTime(item.created_at)}</div>
+                        <div
+                          className="mt-0.5 font-mono text-xs text-gray-600 whitespace-nowrap"
+                          title={item.request_log_id || undefined}
+                        >
+                          {item.request_log_id ? shortId(item.request_log_id) : '—'}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <div className="text-sm text-gray-900 font-medium leading-snug">{item.event_type}</div>
+                        <div className="mt-0.5 text-xs text-gray-500 leading-snug">
+                          {item.actor_type}
+                          {item.actor_id ? ` (${shortId(item.actor_id)})` : ''}
+                        </div>
+                        <div className="mt-1 text-xs text-gray-600 line-clamp-2 leading-snug" title={reason}>
+                          {reason}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top min-w-0 max-w-[18rem]">
+                        <div className="text-sm text-gray-900 truncate leading-snug" title={item.user_email || ''}>
+                          {item.user_email || '—'}
+                        </div>
+                        <div className="mt-0.5 font-mono text-xs text-gray-500 truncate leading-snug" title={item.api_key_id}>
+                          {shortId(item.api_key_id)}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top text-xs text-gray-600">
+                        <div className="space-y-1 leading-snug">
+                          <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
+                            <span className="text-right font-medium text-gray-700">before</span>
+                            <span>{formatPlainMoney(item.before_spent, billingCurrency)}</span>
+                          </div>
+                          <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
+                            <span className="text-right font-medium text-gray-700">after</span>
+                            <span>{formatPlainMoney(item.after_spent, billingCurrency)}</span>
+                          </div>
+                          <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
+                            <span className="text-right font-medium text-gray-700">delta</span>
+                            <span
+                              className={
+                                item.delta_spent > 0
+                                  ? 'text-red-600'
+                                  : item.delta_spent < 0
+                                    ? 'text-green-600'
+                                    : 'text-gray-600'
+                              }
+                            >
+                              {formatSignedMoney(item.delta_spent, billingCurrency)}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top text-xs text-gray-600">
+                        <div className="space-y-1 leading-snug">
+                          <div>
+                            <span className="font-medium text-gray-700">budget_max:</span>{' '}
+                            <span className={maxChanged ? budgetPlanHighlight.before : undefined}>
+                              {formatBudgetMax(item.before_budget_max, billingCurrency)}
+                            </span>
+                            <span className="text-gray-400"> → </span>
+                            <span className={maxChanged ? budgetPlanHighlight.after : undefined}>
+                              {formatBudgetMax(item.after_budget_max, billingCurrency)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">budget_period:</span>{' '}
+                            <span className={periodChanged ? budgetPlanHighlight.before : undefined}>
+                              {item.before_budget_period ?? '—'}
+                            </span>
+                            <span className="text-gray-400"> → </span>
+                            <span className={periodChanged ? budgetPlanHighlight.after : undefined}>
+                              {item.after_budget_period ?? '—'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">budget_reset_at:</span>{' '}
+                            <span className="whitespace-nowrap">
+                              <span className={resetChanged ? budgetPlanHighlight.before : undefined}>
+                                {formatTime(item.before_budget_reset_at)}
+                              </span>
+                              <span className="text-gray-400"> → </span>
+                              <span className={resetChanged ? budgetPlanHighlight.after : undefined}>
+                                {formatTime(item.after_budget_reset_at)}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-gray-600 max-w-xs align-top">
+                        <div className="space-y-1 text-xs leading-snug">
+                          {metadataLines.map((line, index) => (
+                            <div key={`${item.id}-metadata-${index}`} className="line-clamp-2" title={line}>
+                              {line}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {totalPages > 1 && !isLoading && (
+        <div className="mt-4 flex justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            Previous
+          </button>
+          <span className="px-4 py-2 text-sm text-gray-600">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(Math.min(totalPages, page + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

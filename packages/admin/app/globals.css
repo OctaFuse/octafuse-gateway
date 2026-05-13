@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Admin dashboard - Light theme */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    background-color: #F9FAFB;
+    color: #111827;
+  }
+
+  ::selection {
+    @apply bg-blue-200 text-gray-900;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Form inputs */
+input,
+textarea,
+select {
+  color: #111827;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9CA3AF;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

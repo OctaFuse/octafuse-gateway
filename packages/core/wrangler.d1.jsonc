@@ -1,0 +1,15 @@
+{
+	// 仅用于 `wrangler d1 migrations *`（在仓库根执行 `npm run db:migrate*`）；勿用于 `wrangler deploy`。
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "octafuse-d1-migrations",
+	"compatibility_date": "2025-04-01",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "octafuse-gateway",
+			// 占位 UUID：在 Cloudflare 控制台创建 D1 后，将 proxy/admin/core 三处 `database_id` 改为同一真实 ID。
+			"database_id": "00000000-0000-4000-8000-000000000001",
+			"migrations_dir": "./migrations-d1"
+		}
+	]
+}

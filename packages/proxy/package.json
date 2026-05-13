@@ -1,0 +1,30 @@
+{
+	"name": "@octafuse/proxy",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "wrangler dev --config ./wrangler.jsonc --port 8787 --persist-to ../../.wrangler/state --log-level info",
+		"deploy": "wrangler deploy --config ./wrangler.jsonc",
+		"dev:node": "dotenv -c -- tsx src/runtime/node.ts",
+		"start:node": "tsx src/runtime/node.ts",
+		"prebuild": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch(e){}\"",
+		"build": "esbuild src/runtime/node.ts --bundle --platform=node --format=esm --outfile=dist/runtime/node.js --packages=external --log-level=warning",
+		"start:node:dist": "node dist/runtime/node.js",
+		"typecheck": "tsc -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@hono/node-server": "^1.19.13",
+		"@octafuse/core": "*",
+		"hono": "^4.12.9",
+		"postgres": "^3.4.9"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20250427.0",
+		"@types/node": "^25.5.0",
+		"dotenv-cli": "^11.0.0",
+		"esbuild": "^0.27.3",
+		"tsx": "^4.21.0",
+		"typescript": "^5.7.2"
+	}
+}

@@ -1,0 +1,137 @@
+[
+	{
+		"id": "seed-2.0-mini",
+		"display_name": "ByteDance Seed-2.0-Mini",
+		"vendor": "bytedance",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 0.1,
+						"output_price": 0.4,
+						"cache_read_price": 0.1,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 0.2,
+						"output_price": 0.8,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 0.4,
+						"output_price": 4,
+						"cache_read_price": 0.08,
+						"cache_write_price": 0.017
+					},
+					{
+						"upto": null,
+						"input_price": 0.8,
+						"output_price": 8,
+						"cache_read_price": 0.16,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "seed-2.0-lite",
+		"display_name": "ByteDance Seed-2.0-Lite",
+		"vendor": "bytedance",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 0.25,
+						"output_price": 2,
+						"cache_read_price": 0.25,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 4,
+						"cache_read_price": 0.5,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 0.9,
+						"output_price": 5.4,
+						"cache_read_price": 0.18,
+						"cache_write_price": 0.017
+					},
+					{
+						"upto": null,
+						"input_price": 1.8,
+						"output_price": 10.8,
+						"cache_read_price": 0.36,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "seed-2.0-pro",
+		"display_name": "ByteDance Seed 2.0 Pro",
+		"vendor": "bytedance",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 0.5,
+						"output_price": 2.5,
+						"cache_read_price": 0.5,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 5,
+						"cache_read_price": 1,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 4.8,
+						"output_price": 24,
+						"cache_read_price": 0.96,
+						"cache_write_price": 0.017
+					},
+					{
+						"upto": null,
+						"input_price": 9.6,
+						"output_price": 48,
+						"cache_read_price": 1.92,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		}
+	}
+]

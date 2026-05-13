@@ -1,0 +1,4 @@
+# 本地 `npm run preview` 时 Wrangler 会合并此文件（勿提交真实密码）。
+# Cloudflare 运行时仅支持 D1（由 wrangler 绑定 DB），不要在这里配置 DATABASE_URL。
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-password

@@ -1,0 +1,18 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": "src/migrate",
+		"outDir": "dist/migrate",
+		"noEmit": false,
+		"declaration": false,
+		"declarationMap": false,
+		"sourceMap": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"types": ["node"],
+		"skipLibCheck": true
+	},
+	"include": ["src/migrate/**/*.ts"]
+}

@@ -1,0 +1,78 @@
+[
+	{
+		"id": "gemini-3.1-pro-preview",
+		"display_name": "Gemini 3.1 Pro Preview",
+		"vendor": "google",
+		"context_window": 1050000,
+		"max_tokens": 8192,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 2,
+						"output_price": 12,
+						"cache_read_price": 0.2,
+						"cache_write_price": 0.375
+					},
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 18,
+						"cache_read_price": 0.4,
+						"cache_write_price": 0.375
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 14.4,
+						"output_price": 86.4,
+						"cache_read_price": 1.44,
+						"cache_write_price": 2.7
+					},
+					{
+						"upto": null,
+						"input_price": 28.8,
+						"output_price": 129.6,
+						"cache_read_price": 2.88,
+						"cache_write_price": 2.7
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "gemini-3.1-flash-lite-preview",
+		"display_name": "Gemini 3.1 Flash Lite Preview",
+		"vendor": "google",
+		"context_window": 1050000,
+		"max_tokens": 8192,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.25,
+						"output_price": 1.5,
+						"cache_read_price": 0.025,
+						"cache_write_price": 0.08333
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.8,
+						"output_price": 10.8,
+						"cache_read_price": 0.18,
+						"cache_write_price": 0.59998
+					}
+				]
+			}
+		}
+	}
+]

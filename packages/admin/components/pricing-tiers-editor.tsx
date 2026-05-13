@@ -1,0 +1,260 @@
+'use client';
+
+import { useState, type ReactNode } from 'react';
+
+import type { PricingTierDraftRow } from '@/lib/pricing-tiers-draft';
+import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
+import {
+	createEmptyTierRow,
+	DRAFT_UPTO_OPEN_SENTINEL,
+	ensureLastRowOpenUptoDraft,
+	formatPricingProfilePreview,
+} from '@/lib/pricing-tiers-draft';
+
+export type PricingTiersEditorProps = {
+	rows: PricingTierDraftRow[];
+	onChange: (rows: PricingTierDraftRow[]) => void;
+	/** 至少保留行数；低于则禁用删除（默认 0，可删光） */
+	minRows?: number;
+	/** Optional title on the same row as Add / Preview (e.g. Models form). */
+	title?: string;
+	/** Left side of the Add / Preview row, left-aligned (e.g. billing / provider factor on routes form). */
+	toolbarStart?: ReactNode;
+	/** ISO 4217，与网关 `BILLING_CURRENCY` 一致 */
+	billingCurrencyCode?: string;
+};
+
+function updateRow(
+	rows: PricingTierDraftRow[],
+	id: string,
+	patch: Partial<Omit<PricingTierDraftRow, 'id'>>
+): PricingTierDraftRow[] {
+	return rows.map((r) => (r.id === id ? { ...r, ...patch } : r));
+}
+
+/** 原仅末档（开放上界）时拆档，给上一档一个可编辑的默认上界 */
+const DEFAULT_PROMOTED_FINITE_UPTO = '1000000';
+
+const linkActionClass =
+	'text-sm font-medium text-blue-600 underline-offset-2 hover:text-blue-800 hover:underline bg-transparent p-0 border-0 cursor-pointer';
+
+export function PricingTiersEditor({
+	rows,
+	onChange,
+	minRows = 0,
+	title,
+	toolbarStart,
+	billingCurrencyCode = 'USD',
+}: PricingTiersEditorProps) {
+	const billCode = billingCurrencyCode.trim().toUpperCase();
+	const billSym = getGatewayCurrencySymbol(billCode);
+	const perMPlaceholder = `${billSym}/M`;
+	const unitFooter = `${billSym}/1M`;
+	const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
+	const canRemove = rows.length > minRows;
+	const jsonPreview = formatPricingProfilePreview(rows);
+	const hasToolbarLeft = Boolean(toolbarStart) || Boolean(title);
+
+	const addTier = () => {
+		const base = rows.length > 0 ? rows[rows.length - 1]! : createEmptyTierRow();
+		const promoted =
+			rows.length > 0
+				? rows.map((r, i) =>
+						i === rows.length - 1 && r.upto.trim() === ''
+							? { ...r, upto: DEFAULT_PROMOTED_FINITE_UPTO }
+							: r
+					)
+				: [];
+		const newLast = {
+			...createEmptyTierRow(),
+			upto: DRAFT_UPTO_OPEN_SENTINEL,
+			input_price: base.input_price,
+			output_price: base.output_price,
+			cache_read_price: base.cache_read_price,
+			cache_write_price: base.cache_write_price,
+		};
+		onChange(rows.length > 0 ? [...promoted, newLast] : [newLast]);
+	};
+
+	const removeTier = (id: string) => {
+		if (!canRemove) {
+			return;
+		}
+		const next = rows.filter((r) => r.id !== id);
+		onChange(ensureLastRowOpenUptoDraft(next));
+	};
+
+	return (
+		<div className="space-y-3">
+			<div
+				className={`mb-1 flex min-h-[1.25rem] flex-wrap items-center gap-x-3 gap-y-2 ${hasToolbarLeft ? 'justify-between' : 'justify-end'}`}
+			>
+				{hasToolbarLeft ? (
+					<div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 text-left">
+						{toolbarStart}
+						{title ? <span className="text-sm font-medium text-gray-700">{title}</span> : null}
+					</div>
+				) : null}
+				<div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5">
+					<button type="button" onClick={addTier} className={linkActionClass}>
+						Add
+					</button>
+					<button
+						type="button"
+						onClick={() => setJsonPreviewOpen((v) => !v)}
+						aria-expanded={jsonPreviewOpen}
+						className={linkActionClass}
+					>
+						{jsonPreviewOpen ? 'Hide' : 'Preview'}
+					</button>
+				</div>
+			</div>
+			<div className="overflow-hidden rounded-md border border-gray-200 bg-white">
+				<div className="overflow-x-auto">
+					<table className="min-w-full divide-y divide-gray-200 text-left text-xs">
+						<thead className="bg-gray-50 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+						<tr>
+							<th className="whitespace-nowrap px-2 py-2">upto</th>
+							<th className="whitespace-nowrap px-2 py-2">input</th>
+							<th className="whitespace-nowrap px-2 py-2">output</th>
+							<th className="whitespace-nowrap px-2 py-2">cache read</th>
+							<th className="whitespace-nowrap px-2 py-2">cache write</th>
+							<th className="w-10 px-1 py-2 text-center"> </th>
+						</tr>
+						</thead>
+						<tbody className="divide-y divide-gray-100">
+						{rows.length === 0 ? (
+							<tr>
+								<td colSpan={6} className="px-3 py-4 text-center text-gray-500">
+									No tiers yet.
+								</td>
+							</tr>
+						) : (
+							rows.map((r, rowIndex) => {
+								const isLast = rowIndex === rows.length - 1;
+								return (
+									<tr key={r.id} className="align-top">
+										<td className="px-1 py-1.5">
+											{isLast ? (
+												<div
+													className="flex min-h-[1.75rem] min-w-[4.5rem] items-center rounded border border-dashed border-gray-200 bg-gray-50 px-1.5 font-mono text-[11px] text-gray-600 tabular-nums"
+													title="Last tier is open-ended (JSON upto: null); not editable"
+													aria-label={`upto open bound for tier ${r.id}`}
+												>
+													∞
+												</div>
+											) : (
+												<input
+													type="text"
+													inputMode="numeric"
+													value={r.upto}
+													onChange={(e) =>
+														onChange(updateRow(rows, r.id, { upto: e.target.value }))
+													}
+													className="w-full min-w-[4.5rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+													placeholder="0"
+													aria-label={`upto for tier ${r.id}`}
+												/>
+											)}
+										</td>
+										<td className="px-1 py-1.5">
+											<input
+												type="text"
+												inputMode="decimal"
+												value={r.input_price}
+												onChange={(e) =>
+													onChange(updateRow(rows, r.id, { input_price: e.target.value }))
+												}
+												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+												placeholder={perMPlaceholder}
+											/>
+										</td>
+										<td className="px-1 py-1.5">
+											<input
+												type="text"
+												inputMode="decimal"
+												value={r.output_price}
+												onChange={(e) =>
+													onChange(updateRow(rows, r.id, { output_price: e.target.value }))
+												}
+												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+												placeholder={perMPlaceholder}
+											/>
+										</td>
+										<td className="px-1 py-1.5">
+											<input
+												type="text"
+												inputMode="decimal"
+												value={r.cache_read_price}
+												onChange={(e) =>
+													onChange(updateRow(rows, r.id, { cache_read_price: e.target.value }))
+												}
+												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+												placeholder="empty = null"
+											/>
+										</td>
+										<td className="px-1 py-1.5">
+											<input
+												type="text"
+												inputMode="decimal"
+												value={r.cache_write_price}
+												onChange={(e) =>
+													onChange(updateRow(rows, r.id, { cache_write_price: e.target.value }))
+												}
+												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+												placeholder="empty = null"
+											/>
+										</td>
+										<td className="px-0 py-1.5 text-center">
+											<button
+												type="button"
+												disabled={!canRemove}
+												onClick={() => removeTier(r.id)}
+												className="rounded px-1 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30"
+												title="Remove this tier"
+											>
+												×
+											</button>
+										</td>
+									</tr>
+								);
+							})
+						)}
+						</tbody>
+					</table>
+				</div>
+				<p className="border-t border-gray-100 bg-gray-50/90 px-2 py-1.5 text-[11px] leading-snug text-gray-500">
+					{unitFooter}; by <span className="font-mono">input_tokens</span> (last row open-ended). No tiers on save → null (bill 0).
+				</p>
+			</div>
+			{jsonPreviewOpen ? (
+				<div className="space-y-1.5">
+					<div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+						<label className="text-xs font-medium text-gray-600">
+							<code className="rounded bg-gray-100 px-1">{`{ "tiers": [...] }`}</code> preview (read-only)
+						</label>
+						<button
+							type="button"
+							onClick={() => {
+								if (navigator.clipboard?.writeText) {
+									void navigator.clipboard.writeText(jsonPreview).catch(() => {});
+								}
+							}}
+							className={linkActionClass}
+						>
+							Copy
+						</button>
+					</div>
+					<textarea
+						readOnly
+						rows={Math.min(14, 4 + rows.length * 3)}
+						value={jsonPreview}
+						className="w-full resize-y rounded-md border border-dashed border-gray-300 bg-gray-50/90 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-gray-800"
+						spellCheck={false}
+						aria-label="pricing_profile JSON preview"
+					/>
+				</div>
+			) : null}
+		</div>
+	);
+}

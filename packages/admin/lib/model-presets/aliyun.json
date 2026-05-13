@@ -1,0 +1,213 @@
+[
+	{
+		"id": "qwen3.6-plus",
+		"display_name": "Qwen3.6 Plus",
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 0.5,
+						"output_price": 3,
+						"cache_read_price": 0.05,
+						"cache_write_price": 0.625
+					},
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.2,
+						"cache_write_price": 2.5
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 2,
+						"output_price": 12,
+						"cache_read_price": 0.2,
+						"cache_write_price": 2.5
+					},
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 24,
+						"cache_read_price": 0.4,
+						"cache_write_price": 5
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "qwen3.6-max",
+		"display_name": "Qwen3.6 Max",
+		"vendor": "aliyun",
+		"context_window": 256000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 1.3,
+						"output_price": 7.8,
+						"cache_read_price": 0.13,
+						"cache_write_price": 1.625
+					},
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 12,
+						"cache_read_price": 0.2,
+						"cache_write_price": 2.5
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 3,
+						"output_price": 18,
+						"cache_read_price": 0.3,
+						"cache_write_price": 3
+					},
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 36,
+						"cache_read_price": 0.6,
+						"cache_write_price": 6
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "qwen3.6-flash",
+		"display_name": "Qwen3.6 flash",
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 0.25,
+						"output_price": 1.5,
+						"cache_read_price": 0.025,
+						"cache_write_price": 0.3125
+					},
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 4,
+						"cache_read_price": 0.1,
+						"cache_write_price": 1.25
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 0.5,
+						"output_price": 1.5,
+						"cache_read_price": 0.05,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 8,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "qwen3.5-plus",
+		"display_name": "Qwen3.5 Plus",
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 0.4,
+						"output_price": 2.4,
+						"cache_read_price": 0.04,
+						"cache_write_price": 0.5
+					},
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 3,
+						"cache_read_price": 0.05,
+						"cache_write_price": 0.625
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 2,
+						"output_price": 12,
+						"cache_read_price": 0.2,
+						"cache_write_price": 2.5
+					},
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 24,
+						"cache_read_price": 0.4,
+						"cache_write_price": 5
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "qwen3.5-flash",
+		"display_name": "Qwen3.5 Flash",
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.1,
+						"output_price": 0.4,
+						"cache_read_price": 0.01,
+						"cache_write_price": 0.0125
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.7,
+						"output_price": 2.8,
+						"cache_read_price": 0.07,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	}
+]

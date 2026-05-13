@@ -1,0 +1,117 @@
+/**
+ * 管理后台共用工具：标签 JSON、元数据校验、统计时间范围、供应商 vendor 归一化等。
+ */
+export { nullIfEmpty } from '@octafuse/core/lib/string-utils';
+
+export { normalizeModelVendorInput } from '../../model-vendor';
+
+/** 将 D1 中 `json_group_array` 得到的 JSON 字符串解析为 string[]；非法则 []。 */
+export function parseTagsJson(tagsJson: string | null): string[] {
+	if (tagsJson == null || tagsJson === '') return [];
+	try {
+		const arr = JSON.parse(tagsJson);
+		return Array.isArray(arr) ? arr : [];
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * 仪表盘 KPI 相对时间窗：将 `1h`/`1d`/`24h`/`7d`/`14d`/`30d`/`90d` 转为起止 `YYYY-MM-DD HH:mm:ss`（UTC 切片，与 Admin 分析页一致）。
+ */
+export function rangeToDates(range: string): { startDate: string; endDate: string } {
+	const end = new Date();
+	const start = new Date(end.getTime());
+	switch (range) {
+		case '1h':
+			start.setTime(end.getTime() - 60 * 60 * 1000);
+			break;
+		case '1d':
+		case '24h':
+			start.setTime(end.getTime() - 24 * 60 * 60 * 1000);
+			break;
+		case '7d':
+			start.setDate(start.getDate() - 7);
+			break;
+		case '14d':
+			start.setDate(start.getDate() - 14);
+			break;
+		case '30d':
+			start.setDate(start.getDate() - 30);
+			break;
+		case '90d':
+			start.setDate(start.getDate() - 90);
+			break;
+		default:
+			start.setDate(start.getDate() - 7);
+	}
+	return {
+		startDate: start.toISOString().slice(0, 19).replace('T', ' '),
+		endDate: end.toISOString().slice(0, 19).replace('T', ' '),
+	};
+}
+
+/**
+ * 分析 API 绝对时间窗：默认最近 7 天；起始不早于结束日前 180 天。
+ * @returns 与 SQL `created_at` 比较的字符串边界
+ */
+export function clampAnalyticsRange(startDate?: string, endDate?: string): { start: string; end: string } {
+	const end = endDate ? new Date(endDate) : new Date();
+	let start = startDate ? new Date(startDate) : new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
+	const maxStart = new Date(end.getTime() - 180 * 24 * 60 * 60 * 1000);
+	if (start < maxStart) start = maxStart;
+	return {
+		start: start.toISOString().slice(0, 19).replace('T', ' '),
+		end: end.toISOString().slice(0, 19).replace('T', ' '),
+	};
+}
+
+/**
+ * 校验 metadata 为 JSON 字符串并规范化为紧凑字符串；空串视为 null。
+ */
+export function normalizeMetadataInput(raw: unknown): { ok: true; value: string | null } | { ok: false; message: string } {
+	if (raw === undefined || raw === null || raw === '') return { ok: true, value: null };
+	if (typeof raw !== 'string') return { ok: false, message: 'metadata must be a JSON string' };
+	const t = raw.trim();
+	if (t === '') return { ok: true, value: null };
+	try {
+		return { ok: true, value: JSON.stringify(JSON.parse(t)) };
+	} catch {
+		return { ok: false, message: 'metadata must be valid JSON' };
+	}
+}
+
+/**
+ * 路由 `custom_params`：接受 JSON 字符串或对象，存库前转为字符串；空为 null。
+ */
+export function normalizeJsonObjectField(
+	value: unknown,
+	fieldName: string
+): { ok: true; value: string | null } | { ok: false; message: string } {
+	if (value === undefined || value === null || value === '') return { ok: true, value: null };
+	if (typeof value === 'string') {
+		try {
+			const parsed = JSON.parse(value) as unknown;
+			if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+				return { ok: false, message: `${fieldName} must be a JSON object` };
+			}
+			return { ok: true, value: JSON.stringify(parsed) };
+		} catch {
+			return { ok: false, message: `${fieldName} must be valid JSON` };
+		}
+	}
+	if (typeof value === 'object' && !Array.isArray(value)) return { ok: true, value: JSON.stringify(value) };
+	return { ok: false, message: `${fieldName} must be a JSON object` };
+}
+
+/**
+ * 判断 provider 行是否配置了某协议所需的非空 base_url。
+ */
+export function providerSupportsUpstreamProtocol(
+	protocol: 'openai' | 'anthropic' | 'gemini',
+	provider: { base_url_openai: string | null; base_url_anthropic: string | null; base_url_gemini: string | null }
+): boolean {
+	if (protocol === 'openai') return !!(provider.base_url_openai && provider.base_url_openai.trim() !== '');
+	if (protocol === 'anthropic') return !!(provider.base_url_anthropic && provider.base_url_anthropic.trim() !== '');
+	return !!(provider.base_url_gemini && provider.base_url_gemini.trim() !== '');
+}

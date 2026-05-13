@@ -1,0 +1,43 @@
+.DS_Store
+.idea
+.vscode
+node_modules
+.next
+.open-next
+out
+.env.local
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.test
+.env.production
+
+# Wrangler
+.dev.vars
+.wrangler/
+wrangler.toml
+
+# D1 Database
+*.db
+*.db-shm
+*.db-wal
+.mf/
+
+# Exports
+backup-*.sql
+backup-*.json
+
+# Admin access documentation (contains sensitive URLs)
+ADMIN_ACCESS.md
+
+# Auto-generated content data
+lib/content-data.ts
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Wrangler-generated Cloudflare env types (run `npm run cf-typegen` in this package)
+cloudflare-env.d.ts

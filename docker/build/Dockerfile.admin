@@ -1,0 +1,66 @@
+# gateway-admin — Next.js standalone 多阶段（运行层仅含 standalone + static）
+# Build: docker build -f docker/build/Dockerfile.admin -t octafuse-admin:latest .
+
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
+
+COPY package.json package-lock.json ./
+COPY tsconfig.json tsconfig.base.json ./
+COPY packages/core/package.json packages/core/
+COPY packages/proxy/package.json packages/proxy/
+COPY packages/admin/package.json packages/admin/
+
+RUN --mount=type=cache,target=/root/.npm \
+	npm ci --ignore-scripts \
+	--workspace=@octafuse/core \
+	--workspace=@octafuse/admin
+
+COPY packages/core ./packages/core
+COPY packages/admin ./packages/admin
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN npm run build -w @octafuse/core && npm run build -w @octafuse/admin
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=8789
+ENV HOSTNAME=0.0.0.0
+
+COPY --from=builder /app/packages/admin/.next/standalone ./
+COPY --from=builder /app/packages/admin/.next/static ./packages/admin/.next/static
+COPY --from=builder /app/packages/admin/public ./packages/admin/public
+
+COPY --from=builder /app/packages/core/package.json ./packages/core/package.json
+COPY --from=builder /app/packages/core/dist ./packages/core/dist
+
+# postgres + mysql2（admin 运行时数据库依赖）
+COPY --from=builder /app/node_modules/postgres ./node_modules/postgres
+COPY --from=builder /app/node_modules/aws-ssl-profiles ./node_modules/aws-ssl-profiles
+COPY --from=builder /app/node_modules/denque ./node_modules/denque
+COPY --from=builder /app/node_modules/generate-function ./node_modules/generate-function
+COPY --from=builder /app/node_modules/iconv-lite ./node_modules/iconv-lite
+COPY --from=builder /app/node_modules/is-property ./node_modules/is-property
+COPY --from=builder /app/node_modules/long ./node_modules/long
+COPY --from=builder /app/node_modules/lru.min ./node_modules/lru.min
+COPY --from=builder /app/node_modules/named-placeholders ./node_modules/named-placeholders
+COPY --from=builder /app/node_modules/safer-buffer ./node_modules/safer-buffer
+COPY --from=builder /app/node_modules/sql-escaper ./node_modules/sql-escaper
+COPY --from=builder /app/node_modules/mysql2 ./node_modules/mysql2
+
+EXPOSE 8789
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+	CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8789)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["node", "packages/admin/server.js"]

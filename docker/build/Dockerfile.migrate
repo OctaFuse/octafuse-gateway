@@ -1,0 +1,41 @@
+# gateway-migrate — 一次性 Postgres / MySQL 迁移 Job（不含 proxy / admin 应用代码）
+# Build: docker build -f docker/build/Dockerfile.migrate -t octafuse-migrate:latest .
+
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
+
+COPY package.json package-lock.json ./
+COPY tsconfig.json tsconfig.base.json ./
+COPY packages/core/package.json packages/core/
+COPY packages/proxy/package.json packages/proxy/
+COPY packages/admin/package.json packages/admin/
+
+RUN --mount=type=cache,target=/root/.npm \
+	npm ci --ignore-scripts --workspace=@octafuse/core
+
+COPY packages/core ./packages/core
+
+RUN npm run build -w @octafuse/core
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
+
+COPY --from=build /app/package.json /app/package-lock.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/core/package.json ./packages/core/package.json
+COPY --from=build /app/packages/core/dist ./packages/core/dist
+COPY --from=build /app/packages/core/migrations-postgres ./packages/core/migrations-postgres
+COPY --from=build /app/packages/core/migrations-mysql ./packages/core/migrations-mysql
+
+COPY docker/entrypoint.migrate.sh /app/docker/entrypoint.migrate.sh
+RUN chmod +x /app/docker/entrypoint.migrate.sh
+
+ENV NODE_ENV=production
+
+ENTRYPOINT ["/app/docker/entrypoint.migrate.sh"]

@@ -1,0 +1,96 @@
+# 本地示例：Postgres + gateway-proxy（对外推理）+ gateway-admin（管理 UI / /api/admin/*）
+# 二者共用同一 DATABASE_URL，镜像由本仓 docker/build/Dockerfile.* 构建。
+#
+# 可选环境变量（避免与本机端口冲突）：
+#   GATEWAY_PROXY_HOST_PORT=8787 GATEWAY_ADMIN_HOST_PORT=8789 docker compose -f docker/compose/node-pg.yml up -d gateway-proxy gateway-admin
+#
+#   docker compose -f docker/compose/node-pg.yml up -d postgres
+#   docker compose -f docker/compose/node-pg.yml --profile migrate run --rm migrate
+#   docker compose -f docker/compose/node-pg.yml up -d gateway-proxy gateway-admin
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: octafuse
+    ports:
+      - "5432:5432"
+    volumes:
+      - octafuse_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d octafuse"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    profiles: ["migrate"]
+    build:
+      context: ../..
+      dockerfile: docker/build/Dockerfile.migrate
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/octafuse
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  gateway-proxy:
+    build:
+      context: ../..
+      dockerfile: docker/build/Dockerfile.proxy
+    ports:
+      - "${GATEWAY_PROXY_HOST_PORT:-8787}:8787"
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/octafuse
+      PORT: "8787"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  gateway-admin:
+    build:
+      context: ../..
+      dockerfile: docker/build/Dockerfile.admin
+    ports:
+      - "${GATEWAY_ADMIN_HOST_PORT:-8789}:8789"
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/octafuse
+      PORT: "8789"
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: "changeme"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8789/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  octafuse_pg:

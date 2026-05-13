@@ -1,0 +1,25 @@
+node_modules
+.git
+.wrangler
+**/.next
+**/dist
+.env.local
+*.log
+
+# CI / 文档 / 示例（不参与镜像构建）
+.github
+docs
+docker/examples
+
+# 编辑器与元数据
+.idea
+.vscode
+*.md
+!packages/**/README.md
+
+# 测试与覆盖率
+**/test
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+coverage

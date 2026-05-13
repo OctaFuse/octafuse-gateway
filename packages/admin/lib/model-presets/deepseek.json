@@ -1,0 +1,95 @@
+[
+	{
+		"id": "deepseek-v3.2",
+		"display_name": "DeepSeek-V3.2",
+		"vendor": "deepseek",
+		"context_window": 128000,
+		"max_tokens": 8000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.28,
+						"output_price": 0.42,
+						"cache_read_price": 0.028,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 8,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "deepseek-v4-flash",
+		"display_name": "DeepSeek V4 Flash",
+		"vendor": "deepseek",
+		"context_window": 1000000,
+		"max_tokens": 384000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.14,
+						"output_price": 0.28,
+						"cache_read_price": 0.028,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 2,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "deepseek-v4-pro",
+		"display_name": "DeepSeek V4 Pro",
+		"vendor": "deepseek",
+		"context_window": 1000000,
+		"max_tokens": 384000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.74,
+						"output_price": 3.48,
+						"cache_read_price": 0.0145,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 12,
+						"output_price": 24,
+						"cache_read_price": 0.1,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	}
+]

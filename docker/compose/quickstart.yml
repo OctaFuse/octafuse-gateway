@@ -1,0 +1,105 @@
+# Local quickstart: Postgres + one-shot schema migration + proxy + admin.
+# Requires Docker Compose v2.20+ (`depends_on` with `service_completed_successfully`).
+#
+#   docker compose -f docker/compose/quickstart.yml up --build
+#
+# Then:
+#   - Proxy health: curl -sS http://localhost:8787/health
+#   - Admin UI:     http://localhost:8789  (browser; login below)
+#
+# Default `MASTER_KEY` in DB seed matches Postgres migration
+# `packages/core/migrations-postgres/0002_seed.sql`: sk-dev-admin-key
+# Use it as Bearer token for `POST /api/admin/*` (see docs/api/admin.md).
+#
+# Configure at least one upstream provider and model routes in Admin before
+# `POST /v1/chat/completions` will succeed end-to-end.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: octafuse
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - octafuse_quickstart_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d octafuse"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: docker/build/Dockerfile.migrate
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/octafuse
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  gateway-proxy:
+    build:
+      context: ../..
+      dockerfile: docker/build/Dockerfile.proxy
+    ports:
+      - "${GATEWAY_PROXY_HOST_PORT:-8787}:8787"
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/octafuse
+      PORT: "8787"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  gateway-admin:
+    build:
+      context: ../..
+      dockerfile: docker/build/Dockerfile.admin
+    ports:
+      - "${GATEWAY_ADMIN_HOST_PORT:-8789}:8789"
+    environment:
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/octafuse
+      PORT: "8789"
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: "changeme"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8789/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  octafuse_quickstart_pg:

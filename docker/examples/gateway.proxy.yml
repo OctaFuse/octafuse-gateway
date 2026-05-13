@@ -1,0 +1,37 @@
+# 仅 gateway-proxy（外置 Postgres）。适合：推理网关单独扩缩容，管理面（admin）另行部署。
+# 迁移：使用 `--profile migrate` 的 migrate 服务（octafuse-migrate）。
+# Usage:
+#   cp env.proxy.example .env
+#   docker compose --env-file .env -f gateway.proxy.yml --profile migrate run --rm migrate
+#   docker compose --env-file .env -f gateway.proxy.yml up -d gateway-proxy
+
+services:
+  migrate:
+    profiles: ["migrate"]
+    image: ${GATEWAY_MIGRATE_IMAGE:?set GATEWAY_MIGRATE_IMAGE in .env}
+    environment:
+      DATABASE_DRIVER: ${DATABASE_DRIVER:-postgres}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+    restart: "no"
+
+  gateway-proxy:
+    image: ${GATEWAY_PROXY_IMAGE:?set GATEWAY_PROXY_IMAGE in .env}
+    ports:
+      # 宿主机端口可配；容器内进程固定监听 8787（与 Dockerfile.proxy 一致）
+      - "${GATEWAY_PROXY_PORT:-18787}:8787"
+    environment:
+      DATABASE_DRIVER: ${DATABASE_DRIVER:-postgres}
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+      PORT: "8787"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
