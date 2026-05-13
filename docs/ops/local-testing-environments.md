@@ -150,9 +150,9 @@ docker compose -f docker/compose/node-mysql.yml up -d gateway-proxy gateway-admi
 
 预构建镜像示例已收敛为外置 Postgres 的 proxy/admin 独立部署；MySQL 场景保留根目录本地构建编排。
 
-### 6.3 用预构建镜像（GHCR、私有仓或阿里云 ACR）
+### 6.3 用预构建镜像（GHCR、自建 Harbor 或任意私有 registry）
 
-国内从 ACR 拉取时，在 `docker/examples/env.*.example` 中按 **国内阿里云 ACR** 注释将 `GATEWAY_*_IMAGE` 改为与 `registry.cn-shanghai.aliyuncs.com/example-org/octafuse-{proxy,admin}:v1.0.0` 等对齐（见 [deployment-docker.md](./deployment-docker.md) §4.2），再按需改 tag。
+从第二私有 registry（如阿里云 ACR、自建 Harbor 等）拉取时，在 `docker/examples/env.*.example` 中按对应注释将 `GATEWAY_*_IMAGE` 改为 `registry.example.com/<namespace>/octafuse-{proxy,admin}:v1.0.0` 形态（见 [deployment-docker.md](./deployment-docker.md) §4.2），再按需改 tag。
 
 ```bash
 cd docker/examples
@@ -168,7 +168,7 @@ docker compose --env-file .env.gateway -f gateway.proxy.yml -f gateway.admin.yml
 
 不跑 Compose 时，可分别用 Node 起 Proxy 与 Admin（同一 `DATABASE_URL`），见上文第 5 节与 [deployment-docker.md](./deployment-docker.md) §6。
 
-## 7. 与 your-portal 联调
+## 7. 与外部集成方联调
 
 - **用户推理**：`GATEWAY_URL=http://127.0.0.1:8787`（Proxy）。
 - **管理 API**：`GATEWAY_MASTER_URL=http://127.0.0.1:8789`（或你本地 Admin preview 的 origin），路径 **`/api/admin/...`**；`GATEWAY_MASTER_KEY` 与 D1 `MASTER_KEY` 一致。

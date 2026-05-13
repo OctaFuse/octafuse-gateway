@@ -4,7 +4,7 @@
 
 ## 部署与路径（Octafuse）
 
-- **对外 URL**：`{GATEWAY_MASTER_URL}/api/admin/...`（Admin Pages 根 URL；your-portal 使用同名环境变量。例如创建 Key：`POST .../api/admin/keys`）。由 **Admin Pages**（`packages/admin`）提供，**Proxy Worker 不提供 `/admin`**。
+- **对外 URL**：`{GATEWAY_MASTER_URL}/api/admin/...`（Admin Pages 根 URL；外部集成方约定使用同名环境变量。例如创建 Key：`POST .../api/admin/keys`）。由 **Admin Pages**（`packages/admin`）提供，**Proxy Worker 不提供 `/admin`**。
 - **本文档中的路径**：一律指内部 Hono 挂载路径 **`/admin/...`**（与实现代码一致）；集成时请将前缀换成 **`/api/admin`**。
 
 ## 认证
@@ -42,11 +42,11 @@ Authorization: Bearer sk-admin-xxx
 
 | 路径 | 方法 | 主表 / 数据源 | 消费者 |
 |------|------|----------------|--------|
-| `/admin/keys` | GET | `api_keys`（分页列表） | Admin UI、`your-portal`（`GATEWAY_MASTER_URL` + `/api/admin/keys`） |
-| `/admin/keys` | POST | `api_keys` | **your-portal**、**your-platform-admin**（`GATEWAY_MASTER_URL`） |
-| `/admin/keys/:id` | GET | `api_keys` | **your-portal**、Admin UI |
-| `/admin/keys/:id` | PATCH, DELETE | `api_keys` | Admin UI、**your-portal** / **your-platform-admin**、运维/脚本 |
-| `/admin/keys/:id/logs` | GET | `api_key_request_logs`（Key 范围，分页） | **your-portal**、Admin UI |
+| `/admin/keys` | GET | `api_keys`（分页列表） | Admin UI、外部集成方（`GATEWAY_MASTER_URL` + `/api/admin/keys`） |
+| `/admin/keys` | POST | `api_keys` | 外部集成方（用户/账号系统）、运维脚本（`GATEWAY_MASTER_URL`） |
+| `/admin/keys/:id` | GET | `api_keys` | 外部集成方、Admin UI |
+| `/admin/keys/:id` | PATCH, DELETE | `api_keys` | Admin UI、外部集成方 / 运维脚本 |
+| `/admin/keys/:id/logs` | GET | `api_key_request_logs`（Key 范围，分页） | 外部集成方、Admin UI |
 | `/admin/providers` | GET, POST, GET/PATCH/DELETE `/:id` | `providers` | Admin UI |
 | `/admin/providers/import/catalog` | GET | 内置 Provider 模板摘要（无密钥） | Admin UI |
 | `/admin/providers/import` | POST | 请求体 `{"ids":["…"]}`：按模板创建 `providers`（**同 id 不覆盖**；写入占位 API Key，需后续 PATCH） | Admin UI、运维脚本 |

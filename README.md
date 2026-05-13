@@ -14,10 +14,13 @@ Licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [LIC
 
 | Topic | Link |
 |--------|------|
+| Documentation boundary & secret-hygiene rules | [docs/CONVENTIONS.md](./docs/CONVENTIONS.md) |
 | Architecture & runtime × database | [docs/README.md](./docs/README.md) → [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md) |
 | API | [docs/api/README.md](./docs/api/README.md) |
 | Deploy (Cloudflare / Docker / releases) | [docs/ops/deployment.md](./docs/ops/deployment.md) |
 | HTTP examples | [examples/README.md](./examples/README.md) |
+
+> Before changing any doc / example / compose template, read **[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)**: it defines which docs must stay in this repo (API contracts, migrations, runtime behavior), which are candidates for an external `octafuse-docs` site later, and the placeholder rules that keep real secrets, webhooks, and connection strings out of Git.
 
 ## ~60 second quickstart (Docker + Postgres)
 

@@ -516,7 +516,7 @@ export default function GatewayConfigPage() {
             Bearer secret for <code className="rounded bg-gray-100 px-1 text-xs">Authorization</code> on{' '}
             <code className="rounded bg-gray-100 px-1 text-xs">/api/admin/*</code> (this console and server-side
             callers). Set the same value as <code className="rounded bg-gray-100 px-1 text-xs">GATEWAY_MASTER_KEY</code>{' '}
-            on portals (e.g. your-portal) that call the Gateway Admin API.
+            on any external integrator that calls the Gateway Admin API.
           </>
         }
       >

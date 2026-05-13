@@ -11,12 +11,12 @@
 部署机器需能 `docker pull` 对应镜像。请使用**你自己的** registry 账号，**勿**将 token 或密码写入仓库文档或提交到 Git。
 
 ```bash
-# 海外：GHCR（示例：用 stdin 传入 token，避免出现在 shell 历史里）
+# GHCR（示例：用 stdin 传入 token，避免出现在 shell 历史里）
 printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u YOUR_GH_USERNAME --password-stdin
 
-# 国内：阿里云 ACR（地域与命名空间以控制台为准；建议使用 RAM 子账号专用密码或临时凭证）
-docker login registry.cn-shanghai.aliyuncs.com -u YOUR_ACR_USERNAME
-# 按提示输入密码，或使用：printf '%s' "$ACR_PASSWORD" | docker login registry.cn-shanghai.aliyuncs.com -u YOUR_ACR_USERNAME --password-stdin
+# 任意私有 OCI registry（如阿里云 ACR、自建 Harbor 等；地域与命名空间以你的控制台为准；建议使用专用凭证或临时令牌）
+docker login registry.example.com -u YOUR_REGISTRY_USERNAME
+# 按提示输入密码，或使用：printf '%s' "$REGISTRY_PASSWORD" | docker login registry.example.com -u YOUR_REGISTRY_USERNAME --password-stdin
 ```
 
 自托管部署步骤见 [docs/ops/deployment-docker.md](../../docs/ops/deployment-docker.md) 与 [docker/deploy/README.md](../deploy/README.md)。
@@ -110,7 +110,7 @@ docker compose --env-file .env.gateway -f gateway.compose.yml --profile migrate 
 docker compose --env-file .env.gateway -f gateway.compose.yml up -d
 ```
 
-国内或通用轻量服务器上的 Docker 编排同上（[deployment-docker.md](../../docs/ops/deployment-docker.md) + [docker/deploy/README.md](../deploy/README.md)）。
+任意通用轻量服务器（无 Cloudflare 依赖）上的 Docker 编排同上（[deployment-docker.md](../../docs/ops/deployment-docker.md) + [docker/deploy/README.md](../deploy/README.md)）。
 
 ## Nginx：Proxy 流式（SSE）反代样板
 

@@ -6,6 +6,7 @@
 
 | 文档 | 说明 |
 |------|------|
+| [CONVENTIONS.md](./CONVENTIONS.md) | **文档分层规则 + 敏感信息规范**：什么留仓内、什么可外移、占位符与禁止值清单（PR review 必参考） |
 | [architecture/runtime-data.md](./architecture/runtime-data.md) | **运行时（Cloudflare / Node）× 数据库（D1 / Postgres / MySQL）**、部署拓扑与迁移目录 |
 
 ## 架构

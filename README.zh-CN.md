@@ -14,10 +14,13 @@
 
 | 主题 | 链接 |
 |------|------|
+| 文档边界与敏感信息规范 | [docs/CONVENTIONS.md](./docs/CONVENTIONS.md) |
 | 架构与「运行时 × 数据库」 | [docs/README.md](./docs/README.md) → [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md) |
 | API | [docs/api/README.md](./docs/api/README.md) |
 | 部署（Cloudflare / Docker / 发版） | [docs/ops/deployment.md](./docs/ops/deployment.md) |
 | HTTP 示例 | [examples/README.md](./examples/README.md) |
+
+> 改动 `README*.md`、`docs/**`、`examples/**`、`docker/**` 之前请先读 **[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)**：它说明哪些文档必须留在本仓（API 契约、迁移、运行时行为），哪些是未来可外移到独立 `octafuse-docs` 的候选，以及如何用占位符避免把真实密钥 / Webhook / 连接串提交进 Git。
 
 ## 约 60 秒上手（Docker + Postgres）
 
