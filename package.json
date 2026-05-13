@@ -2,14 +2,20 @@
 	"name": "octafuse",
 	"version": "0.1.0",
 	"private": true,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/OctaFuse/octafuse-gateway.git"
+	},
 	"type": "module",
 	"workspaces": [
+		".",
 		"packages/core",
 		"packages/proxy",
 		"packages/admin"
 	],
 	"scripts": {
 		"postinstall": "patch-package",
+		"verify:package-versions": "node scripts/ci/verify-package-versions.mjs",
 		"dev:proxy": "npm run dev -w @octafuse/proxy",
 		"dev:proxy:node": "dotenv -c -- npm run dev:node -w @octafuse/proxy",
 		"dev:admin": "npm run preview -w @octafuse/admin",
@@ -31,6 +37,8 @@
 		"test:gateway:postgres-smoke": "dotenv -c -- tsx scripts/smoke/test-postgres-core-routes.ts"
 	},
 	"devDependencies": {
+		"@changesets/changelog-github": "^0.5.1",
+		"@changesets/cli": "^2.29.8",
 		"dotenv-cli": "^11.0.0",
 		"patch-package": "^8.0.0",
 		"tsx": "^4.21.0",

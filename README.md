@@ -49,6 +49,15 @@ Fork this repo and connect it from the **Cloudflare dashboard** to two **Workers
 
 Architecture index: **[docs/README.md](./docs/README.md)**.
 
+## Versioning & releases
+
+The monorepo uses a **single semver line** (root `octafuse` + `@octafuse/*` share `version`). **Git tags `vX.Y.Z`** drive official **GHCR** image builds and **GitHub Releases** (with per-image digests for reproducible deploys).
+
+- Add a changeset when your PR should ship in the next release: `npx changeset`
+- Maintainer flow: merge **Version Packages** PR → `changeset tag` on `main` → Docker workflow → release notes
+
+Details: **[docs/ops/release-versioning.md](./docs/ops/release-versioning.md)** · **[`.changeset/README.md`](./.changeset/README.md)**
+
 ## Migrations policy
 
 `packages/core/migrations-d1/`, `migrations-postgres/`, and `migrations-mysql/` are the **baseline** for new installs; follow-up operational SQL for already-deployed environments lives under **`docs/manual-sql/`** (with D1 vs SQL variants as documented there).

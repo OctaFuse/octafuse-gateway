@@ -23,6 +23,16 @@ The second point is intended to keep a path open for a future **“community AGP
 
 All participants are expected to follow the [Contributor Covenant Code of Conduct](./CODE_OF_CONDUCT.md).
 
+## Releases (maintainers)
+
+This repo uses **[Changesets](https://github.com/changesets/changesets)** in **fixed** mode: one shared version for `octafuse`, `@octafuse/core`, `@octafuse/proxy`, and `@octafuse/admin`.
+
+- Contributors: run `npx changeset` on branches that should appear in the changelog; commit the generated `.changeset/*.md` with your PR.
+- After merges to **`main`**, GitHub Actions opens a **Version Packages** PR; review and merge it.
+- The next **`main`** run pushes **`vX.Y.Z`** tags (`npx changeset tag`), which triggers **Docker images** and a **GitHub Release** with image digests.
+
+Full runbook: **[docs/ops/release-versioning.md](./docs/ops/release-versioning.md)** · **[`.changeset/README.md`](./.changeset/README.md)**.
+
 ## Development
 
 See the root [README.md](./README.md) for install, `npm` scripts, and Docker-based workflows. Run relevant smoke tests (for example `npm run test:gateway:postgres-smoke`) before submitting substantial changes when applicable.

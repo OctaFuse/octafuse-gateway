@@ -86,17 +86,22 @@ docker run --rm -p 8789:8789 \
 
 ## GitHub Actions（GHCR 构建与推送；可选阿里云 ACR 双推）
 
-**CI 镜像发布入口（本仓约定）**：向 **GHCR**（及可选 **阿里云 ACR**）推送 **octafuse** 的 **proxy/admin/migrate** 镜像由 **[`.github/workflows/octafuse-docker-images.yml`](../../.github/workflows/octafuse-docker-images.yml)** 负责：**`runs-on: ubuntu-latest`**，使用 **QEMU + Buildx** 支持多架构。
+**CI 镜像发布**由 **[`.github/workflows/octafuse-docker-images.yml`](../../.github/workflows/octafuse-docker-images.yml)** 负责：**`runs-on: ubuntu-latest`**，**QEMU + Buildx** 多架构。
 
-本地 `docker build` / `docker compose build` 仍可用于开发与验证，但不替代上述 CI 发版路径。
+- **正式发布（推荐）**：推送 **`vX.Y.Z`** Git 标签（由 **[`.github/workflows/release.yml`](../../.github/workflows/release.yml)** 在合并 Version PR 后执行 `changeset tag` 产生）会 **自动** 触发本 workflow：构建 **proxy / admin / migrate**、`linux/amd64` + `linux/arm64`，并在 **GitHub Release** 正文中写入各镜像 **digest**（便于按 digest 固定部署）。流程总览见 **[release-versioning.md](./release-versioning.md)**。
+- **应急 / 验证**：仍可使用 **`workflow_dispatch`** 在 Actions 里手动勾选镜像与架构；**不会**自动创建 GitHub Release。
 
-该 workflow 在 **`workflow_dispatch`** 下用 **Docker Buildx** 按勾选构建 **proxy**、**admin**、**migrate** 镜像。**GHCR** 始终作为推送目标之一；若在仓库 **Variables** 中配置 **`ACR_REGISTRY`**、**`ACR_NAMESPACE`**、**`ACR_USERNAME`**，并在 **Secrets** 中配置 **`ACR_PASSWORD`**，则同一次 **`docker/build-push-action`** 会将 **相同 tag** 额外推送到 **`${ACR_REGISTRY}/${ACR_NAMESPACE}/octafuse-{proxy,admin,migrate}`**（与 workflow 文件头注释一致）。运行时可选择目标架构 **`linux/amd64`**、**`linux/arm64`**（默认仅 **amd64**；**arm64** 需手动勾选），且须至少勾选一种架构。标签策略与 legacy **`octafuse`** 的 **`gateway-node-image.yml`** 一致：`main` 上含 **`latest`**，另有 **commit sha**、**分支名**、**semver**（推送版本 tag 时）。
+本地 `docker build` / `docker compose build` 可用于开发验证，但生产发版以 **tag → GHCR** 为准。
 
-推送后的镜像名（`owner/repo` 会转小写以符合 GHCR 约定）：
+**GHCR** 始终作为推送目标之一；若在仓库 **Variables** 中配置 **`ACR_REGISTRY`**、**`ACR_NAMESPACE`**、**`ACR_USERNAME`**，并在 **Secrets** 中配置 **`ACR_PASSWORD`**，则同一次构建会将 **相同 tag** 额外推送到 **`${ACR_REGISTRY}/${ACR_NAMESPACE}/octafuse-{proxy,admin,migrate}`**。
 
-- `ghcr.io/<owner>/octafuse-proxy:<tag>`
-- `ghcr.io/<owner>/octafuse-admin:<tag>`
-- `ghcr.io/<owner>/octafuse-migrate:<tag>`
+**手动 dispatch** 下可选择 **`linux/amd64`**、**`linux/arm64`**（默认两者均勾选），须至少勾选一种架构。标签策略：**commit sha**、**分支名**、**semver**（在版本 tag 上）、**`latest`**（`main` 上手动构建，或 **稳定版 `vX.Y.Z` tag** 推送时）。
+
+推送后的 **GHCR** 镜像名（`github.repository` 转小写，与 workflow 中 `repository_lc` 一致；`<owner>/<repo>` 为你的 `OctaFuse/octafuse-gateway` 等形式）：
+
+- `ghcr.io/<owner>/<repo>-proxy:<tag>`
+- `ghcr.io/<owner>/<repo>-admin:<tag>`
+- `ghcr.io/<owner>/<repo>-migrate:<tag>`
 
 国内从 **阿里云 ACR** 拉取时，各 `docker/examples/env.*.example` 内 **国内阿里云 ACR** 注释给出了与发版一致的示例镜像名（固定 tag），例如：
 
@@ -104,9 +109,9 @@ docker run --rm -p 8789:8789 \
 - `registry.cn-shanghai.aliyuncs.com/example-org/octafuse-admin:v1.0.0`
 - `registry.cn-shanghai.aliyuncs.com/example-org/octafuse-migrate:v1.0.0`
 
-在 GitHub：**Actions** → 选择 **Octafuse Docker Images (GH hosted Ubuntu)** → **Run workflow**。该 workflow 已声明 **`permissions: packages: write`**；若组织策略限制默认 `GITHUB_TOKEN`，请在仓库 **Settings → Actions → General** 中放行对 **Packages** 的写入，或改用具备 `write:packages` 的 **PAT** 并配置为 secret。
+在 GitHub：**Actions** → **Octafuse Docker Images (GH hosted Ubuntu)** → **Run workflow**（手动路径）。该 workflow 已声明 **`permissions: packages: write`**；若组织策略限制默认 `GITHUB_TOKEN`，请在仓库 **Settings → Actions → General** 中放行对 **Packages** 的写入，或改用具备 `write:packages` 的 **PAT** 并配置为 secret。
 
-`docker/examples/env.*.example` 里 **GHCR** 示例前缀请按你的 **`ghcr.io/<owner>/...`** 实际替换；**国内 ACR** 按同目录各模板文件内 **国内阿里云 ACR** 注释替换为 `registry.cn-shanghai.aliyuncs.com/example-org/...`，一般只随版本改 **tag**。
+`docker/examples/env.*.example` 里 **GHCR** 示例前缀请按你的 **`ghcr.io/<owner>/<repo>-…`** 实际替换；**国内 ACR** 按同目录各模板文件内 **国内阿里云 ACR** 注释替换为 `registry.cn-shanghai.aliyuncs.com/example-org/...`，一般只随版本改 **tag**。
 
 ## 4. Docker Compose 样例
 
