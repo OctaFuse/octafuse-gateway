@@ -18,7 +18,7 @@ export type AdminDataRow = Record<string, unknown>;
 export type AdminUserCreateInput = {
 	external_system?: string | null;
 	external_user_id?: string | null;
-	email?: string | null;
+	email: string;
 	budget_max?: number | null;
 	budget_base?: number | null;
 	budget_period?: BudgetPeriod;
@@ -45,6 +45,8 @@ export type AdminKeyCreateInput = {
 	user_id?: string;
 	external_system?: string | null;
 	external_user_id?: string | null;
+	/** 通过外部身份新建用户时必填（写入 `users.email`） */
+	email?: string | null;
 	name?: string | null;
 	metadata?: unknown;
 	/** 写入 `key_created` 审计的 `reason_text`（仅本次真正新建密钥时） */

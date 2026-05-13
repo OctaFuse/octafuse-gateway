@@ -27,7 +27,7 @@ function mapPgUserRow(r: {
 }): UserRow {
 	return {
 		id: r.id,
-		email: r.email,
+		email: r.email ?? '',
 		budget_max: r.budgetMax == null ? null : parseMoney(r.budgetMax),
 		budget_base: parseMoney(r.budgetBase),
 		budget_spent: parseMoney(r.budgetSpent),
@@ -109,7 +109,7 @@ export function createPostgresUsersRepository(db: PostgresDatabaseClient): Users
 			const budgetSpent = String(params.budgetSpent != null ? roundGatewayMoney(params.budgetSpent) : 0);
 			await drizzle.insert(pgUsersTable).values({
 				id: params.id,
-				email: params.email ?? null,
+				email: params.email,
 				budgetMax,
 				budgetBase,
 				budgetSpent,
@@ -199,7 +199,7 @@ export function createPostgresUsersRepository(db: PostgresDatabaseClient): Users
 			return updated.length > 0;
 		},
 
-		async setUserEmailById(id: string, email: string | null): Promise<boolean> {
+		async setUserEmailById(id: string, email: string): Promise<boolean> {
 			const now = new Date().toISOString();
 			const updated = await drizzle
 				.update(pgUsersTable)

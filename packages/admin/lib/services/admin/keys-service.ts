@@ -111,7 +111,7 @@ export async function listAdminKeys(
 }
 
 /**
- * 在已有用户下新建密钥；无 `user_id` 时须提供 `external_system` + `external_user_id` 以幂等取/建用户。
+ * 在已有用户下新建密钥；无 `user_id` 时须提供 `external_system` + `external_user_id` + `email` 以幂等取/建用户。
  */
 export async function createAdminKey(repos: GatewayRepositories, input: AdminKeyCreateInput): Promise<AdminKeyCreateOutput> {
 	let metaString: string | null | undefined;
@@ -143,10 +143,14 @@ export async function createAdminKey(repos: GatewayRepositories, input: AdminKey
 		if (extS == null || extU == null || String(extS).trim() === '' || String(extU).trim() === '') {
 			throw badRequest('Provide user_id or both external_system and external_user_id');
 		}
+		const emailTrim = String(input.email ?? '').trim();
+		if (!emailTrim) {
+			throw badRequest('email is required when creating a user from external_system and external_user_id');
+		}
 		const u = await getOrCreateUser(repos, {
 			external_system: extS,
 			external_user_id: extU,
-			email: null,
+			email: emailTrim,
 			budget_max: 0,
 			budget_period: 'none',
 			budget_base: 0,

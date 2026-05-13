@@ -106,7 +106,7 @@ export interface UsersRepository {
 	): Promise<boolean>;
 	updateUserStatus(id: string, status: string): Promise<boolean>;
 	setUserMetadataById(id: string, metadataJson: string | null): Promise<boolean>;
-	setUserEmailById(id: string, email: string | null): Promise<boolean>;
+	setUserEmailById(id: string, email: string): Promise<boolean>;
 	deleteUserHard(id: string): Promise<boolean>;
 }
 

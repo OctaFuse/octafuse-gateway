@@ -5,9 +5,18 @@
 
 SET NAMES utf8mb4;
 
+-- 唯一约束（语义层面两组）：
+--   1) (external_system, external_user_id) — 多上游幂等。二者须同空或同非空。
+--   2) (external_system, email)            — 同一上游内 email 唯一；internal 用户
+--      （external_system IS NULL）作为单独 namespace，email 在 internal 用户之间
+--      也唯一。InnoDB 不支持 partial index，因而用 STORED 生成列
+--      `external_system_norm = COALESCE(external_system, '')` + 普通 UNIQUE
+--      `(external_system_norm, email)` 实现。`users_external_system_nonempty_chk`
+--      禁止真实 external_system='' 与 '' 哨兵碰撞。
+-- email 必填；external_system 若设则不可为空字符串。
 CREATE TABLE users (
   id VARCHAR(512) NOT NULL,
-  email VARCHAR(512),
+  email VARCHAR(512) NOT NULL,
   budget_max DECIMAL(18, 6),
   budget_base DECIMAL(18, 6) NOT NULL DEFAULT 0,
   budget_spent DECIMAL(18, 6) NOT NULL DEFAULT 0,
@@ -17,6 +26,7 @@ CREATE TABLE users (
   metadata TEXT,
   external_system VARCHAR(128),
   external_user_id VARCHAR(512),
+  external_system_norm VARCHAR(128) AS (COALESCE(external_system, '')) STORED,
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
@@ -24,7 +34,11 @@ CREATE TABLE users (
     (external_system IS NULL AND external_user_id IS NULL)
     OR (external_system IS NOT NULL AND external_user_id IS NOT NULL)
   ),
-  UNIQUE KEY uk_users_external_system_user_id (external_system, external_user_id)
+  CONSTRAINT users_external_system_nonempty_chk CHECK (
+    external_system IS NULL OR CHAR_LENGTH(external_system) > 0
+  ),
+  UNIQUE KEY uk_users_external_system_user_id (external_system, external_user_id),
+  UNIQUE KEY uk_users_external_system_email (external_system_norm, email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE api_keys (
@@ -157,6 +171,8 @@ CREATE TABLE user_audit_logs (
   CONSTRAINT fk_user_audit_api_key FOREIGN KEY (api_key_id) REFERENCES api_keys (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 注：(external_system_norm, email) 已在上文以 UNIQUE 提供；此处仍保留按
+-- email 单列查询的非唯一索引。
 CREATE INDEX idx_users_external_system ON users(external_system);
 CREATE INDEX idx_users_external_user_id ON users(external_user_id);
 CREATE INDEX idx_users_email ON users(email);

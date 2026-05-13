@@ -702,7 +702,9 @@ export default function GatewayProvidersPage() {
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">OpenAI (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        OpenAI <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                      </label>
                       <input
                         type="url"
                         value={formData.base_url_openai}
@@ -713,7 +715,9 @@ export default function GatewayProvidersPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Anthropic (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Anthropic <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                      </label>
                       <input
                         type="url"
                         value={formData.base_url_anthropic}
@@ -724,7 +728,9 @@ export default function GatewayProvidersPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Gemini (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Gemini <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                      </label>
                       <input
                         type="url"
                         value={formData.base_url_gemini}

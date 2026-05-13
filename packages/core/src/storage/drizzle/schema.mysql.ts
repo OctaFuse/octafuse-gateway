@@ -30,8 +30,11 @@ export const usersTable = mysqlTable(
 	'users',
 	{
 		id: varchar('id', { length: COL.ID }).primaryKey(),
-		/** 非全局唯一：多上游可同邮；按邮筛选用索引 `idx_users_email`。 */
-		email: varchar('email', { length: COL.EMAIL }),
+		/**
+		 * 在 `external_system` 命名空间内唯一（含 internal 用户，即 `external_system IS NULL`）；
+		 * 因 InnoDB 不支持 partial index，靠生成列 `external_system_norm` + `uk_users_external_system_email` 实现。
+		 */
+		email: varchar('email', { length: COL.EMAIL }).notNull(),
 		budgetMax: decimal('budget_max', { precision: 18, scale: 6 }),
 		budgetBase: decimal('budget_base', { precision: 18, scale: 6 }).notNull().default('0'),
 		budgetSpent: decimal('budget_spent', { precision: 18, scale: 6 }).notNull().default('0'),
@@ -42,14 +45,28 @@ export const usersTable = mysqlTable(
 		/** 上游命名空间（产品/租户），与 external_user_id 成对做幂等；纯网关用户二者皆空。 */
 		externalSystem: varchar('external_system', { length: COL.EXTERNAL_SYSTEM }),
 		externalUserId: varchar('external_user_id', { length: COL.EXTERNAL_USER_ID }),
+		/**
+		 * MySQL-only generated column: `COALESCE(external_system, '')`. 与 `email` 组成
+		 * `uk_users_external_system_email` 唯一约束，让 internal 用户共享一个 namespace。
+		 * `users_external_system_nonempty_chk` 保证 `''` 哨兵不会与真实值碰撞。
+		 */
+		externalSystemNorm: varchar('external_system_norm', { length: COL.EXTERNAL_SYSTEM }).generatedAlwaysAs(
+			sql`COALESCE(external_system, '')`,
+			{ mode: 'stored' }
+		),
 		createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 		updatedAt: timestamp('updated_at', { fsp: 6, mode: 'string' }).notNull(),
 	},
 	(t) => [
 		uniqueIndex('uk_users_external_system_user_id').on(t.externalSystem, t.externalUserId),
+		uniqueIndex('uk_users_external_system_email').on(t.externalSystemNorm, t.email),
 		check(
 			'users_external_pair_chk',
 			sql`(external_system IS NULL AND external_user_id IS NULL) OR (external_system IS NOT NULL AND external_user_id IS NOT NULL)`
+		),
+		check(
+			'users_external_system_nonempty_chk',
+			sql`external_system IS NULL OR CHAR_LENGTH(external_system) > 0`
 		),
 	]
 );

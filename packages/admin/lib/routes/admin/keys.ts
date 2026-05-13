@@ -36,7 +36,7 @@ adminKeysRoutes.get('/', async (c) => {
 	}
 });
 
-/** 创建：须 `user_id` 或同时 `external_system` + `external_user_id`。 */
+/** 创建：须 `user_id`，或同时 `external_system` + `external_user_id` + `email`（新建用户时邮箱必填）。 */
 adminKeysRoutes.post('/', async (c) => {
 	let body: AdminKeyCreateInput;
 	try {

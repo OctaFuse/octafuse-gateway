@@ -108,6 +108,7 @@ export default function GatewayKeysPage() {
   const [selectedKey, setSelectedKey] = useState<GatewayApiKey | null>(null);
   const [formData, setFormData] = useState({
     user_id: '',
+    email: '',
     external_system: '',
     external_user_id: '',
     name: '',
@@ -155,6 +156,7 @@ export default function GatewayKeysPage() {
   const handleCreate = () => {
     setFormData({
       user_id: '',
+      email: '',
       external_system: '',
       external_user_id: '',
       name: '',
@@ -292,6 +294,14 @@ export default function GatewayKeysPage() {
         setIsSaving(false);
         return;
       }
+      if (!uid && extS && extU) {
+        const em = formData.email.trim();
+        if (!em) {
+          setSaveError('Email is required when creating a key without User ID (new user from external identity)');
+          setIsSaving(false);
+          return;
+        }
+      }
       if ((extS && !extU) || (!extS && extU)) {
         setSaveError('External system and external user ID must be set together');
         setIsSaving(false);
@@ -306,6 +316,7 @@ export default function GatewayKeysPage() {
       else {
         payload.external_system = extS;
         payload.external_user_id = extU;
+        payload.email = formData.email.trim();
       }
       if (formData.name.trim() !== '') payload.name = formData.name.trim();
 
@@ -606,7 +617,7 @@ export default function GatewayKeysPage() {
               <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                 <p className="font-medium text-slate-800">After creation</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
-                  <li>Either enter an existing <strong>User ID</strong> (gateway <code className="rounded bg-slate-200 px-1 text-xs">users.id</code>), or leave it empty and set <strong>External system</strong> + <strong>External user ID</strong> to upsert a user by upstream identity.</li>
+                  <li>Either enter an existing <strong>User ID</strong> (gateway <code className="rounded bg-slate-200 px-1 text-xs">users.id</code>), or leave it empty and set <strong>External system</strong>, <strong>External user ID</strong>, and <strong>Email</strong> to upsert a user by upstream identity (email is stored on the user row and is required for that path).</li>
                   <li>Multiple <strong>active</strong> keys per user are allowed. Budget is stored on the user; edit it under <Link href="/gateway/users" className="text-blue-700 underline">Users</Link>.</li>
                   <li>The full <code className="rounded bg-slate-200 px-1 text-xs">sk-…</code> secret is shown <strong>once</strong> in a dialog; save it immediately.</li>
                   <li><code className="rounded bg-slate-200 px-1 text-xs">metadata</code> is optional JSON on the key row (returned by <code className="rounded bg-slate-200 px-1 text-xs">GET /v1/me</code>).</li>
@@ -615,7 +626,9 @@ export default function GatewayKeysPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">User ID (optional if using external pair)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    User ID <span className="ml-1 text-xs font-normal text-gray-400">(optional if using external pair)</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.user_id}
@@ -647,7 +660,22 @@ export default function GatewayKeysPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Key name (optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    User email <span className="ml-1 text-xs font-normal text-gray-400">(required without User ID)</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Stored on users.email when provisioning via external identity"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Ignored when User ID is set; required when using External system + External user ID to create or match a user.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Key name <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.name}

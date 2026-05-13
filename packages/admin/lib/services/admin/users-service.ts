@@ -109,6 +109,10 @@ export async function listAdminUsers(
 }
 
 export async function createAdminUser(repos: GatewayRepositories, input: AdminUserCreateInput) {
+	const emailTrim = String(input.email ?? '').trim();
+	if (!emailTrim) {
+		throw badRequest('email is required');
+	}
 	const budget_period = (input.budget_period ?? 'none') as BudgetPeriod;
 	const budget_max = input.budget_max === undefined ? 0 : input.budget_max;
 	const budget_base =
@@ -134,7 +138,7 @@ export async function createAdminUser(repos: GatewayRepositories, input: AdminUs
 	const user = await getOrCreateUser(repos, {
 		external_system: input.external_system ?? null,
 		external_user_id: input.external_user_id ?? null,
-		email: input.email ?? null,
+		email: emailTrim,
 		budget_max,
 		budget_period,
 		budget_base,
@@ -253,6 +257,9 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 		await repos.users.updateUserStatus(userId, String(input.status));
 	}
 	if (hasEmail) {
+		if (nextEmail === null) {
+			throw badRequest('email cannot be empty');
+		}
 		const ok = await repos.users.setUserEmailById(userId, nextEmail);
 		if (!ok) throw new Error('Failed to update user');
 	}

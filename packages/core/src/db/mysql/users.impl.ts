@@ -27,7 +27,7 @@ function mapMyUserRow(r: {
 }): UserRow {
 	return {
 		id: r.id,
-		email: r.email,
+		email: r.email ?? '',
 		budget_max: r.budgetMax == null ? null : parseMoney(r.budgetMax),
 		budget_base: parseMoney(r.budgetBase),
 		budget_spent: parseMoney(r.budgetSpent),
@@ -109,7 +109,7 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			const budgetSpent = String(params.budgetSpent != null ? roundGatewayMoney(params.budgetSpent) : 0);
 			await drizzle.insert(myUsersTable).values({
 				id: params.id,
-				email: params.email ?? null,
+				email: params.email,
 				budgetMax,
 				budgetBase,
 				budgetSpent,
@@ -194,7 +194,7 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			return true;
 		},
 
-		async setUserEmailById(id: string, email: string | null): Promise<boolean> {
+		async setUserEmailById(id: string, email: string): Promise<boolean> {
 			const existing = await drizzle.select({ id: myUsersTable.id }).from(myUsersTable).where(eq(myUsersTable.id, id)).limit(1);
 			if (!existing[0]) return false;
 			const now = new Date().toISOString();

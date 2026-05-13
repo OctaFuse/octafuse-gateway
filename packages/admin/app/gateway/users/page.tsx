@@ -20,7 +20,6 @@ export default function GatewayUsersPage() {
   const [filterEmail, setFilterEmail] = useState('');
   const [filterExternalSystem, setFilterExternalSystem] = useState('');
   const [filterExternalUserId, setFilterExternalUserId] = useState('');
-  const [filterMaxBudget, setFilterMaxBudget] = useState<'positive' | 'zero_or_negative' | 'null'>('positive');
   const [filterStatus, setFilterStatus] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -43,7 +42,6 @@ export default function GatewayUsersPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         page_size: pageSize.toString(),
-        max_budget: filterMaxBudget,
       });
       if (filterEmail.trim()) params.append('email', filterEmail.trim());
       if (filterExternalSystem.trim()) params.append('external_system', filterExternalSystem.trim());
@@ -61,7 +59,7 @@ export default function GatewayUsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, filterEmail, filterExternalSystem, filterExternalUserId, filterMaxBudget, filterStatus]);
+  }, [page, filterEmail, filterExternalSystem, filterExternalUserId, filterStatus]);
 
   useEffect(() => {
     fetchUsers();
@@ -94,8 +92,14 @@ export default function GatewayUsersPage() {
         setIsSaving(false);
         return;
       }
+      const email = createForm.email.trim();
+      if (!email) {
+        setSaveError('Email is required');
+        setIsSaving(false);
+        return;
+      }
       const body: Record<string, unknown> = {
-        email: createForm.email.trim() || null,
+        email,
         external_system: extS || null,
         external_user_id: extU || null,
         budget_period: createForm.budget_period,
@@ -207,38 +211,6 @@ export default function GatewayUsersPage() {
               <option value="disabled">disabled</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">Max budget</label>
-            <div className="inline-flex rounded-md border border-gray-300 bg-white">
-              <button
-                type="button"
-                onClick={() => { setFilterMaxBudget('positive'); setPage(1); }}
-                className={`px-3 py-1.5 text-sm font-medium rounded-l-md border-r border-gray-300 ${
-                  filterMaxBudget === 'positive' ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                &gt; 0
-              </button>
-              <button
-                type="button"
-                onClick={() => { setFilterMaxBudget('zero_or_negative'); setPage(1); }}
-                className={`px-3 py-1.5 text-sm font-medium border-r border-gray-300 ${
-                  filterMaxBudget === 'zero_or_negative' ? 'bg-blue-600 text-white border-blue-600' : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                &lt;= 0
-              </button>
-              <button
-                type="button"
-                onClick={() => { setFilterMaxBudget('null'); setPage(1); }}
-                className={`px-3 py-1.5 text-sm font-medium rounded-r-md ${
-                  filterMaxBudget === 'null' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                no limit
-              </button>
-            </div>
-          </div>
         </div>
         <div className="text-sm text-gray-500 self-end">Total: {total} users</div>
       </div>
@@ -330,48 +302,36 @@ export default function GatewayUsersPage() {
 
       {showCreate && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Create user</h2>
               <button type="button" onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600">×</button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
               {saveError && <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{saveError}</div>}
               <p className="text-sm text-gray-600">
-                Idempotent when <strong>external system</strong> + <strong>external user ID</strong> are both set; otherwise creates a new gateway user.
+                Creates a new gateway user. <strong>Email</strong> is required; all other fields are optional. To link this user to an account in another system, use the <strong>External identity</strong> section at the bottom.
               </p>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+                </label>
                 <input
-                  type="text"
+                  type="email"
+                  required
+                  aria-required="true"
+                  autoComplete="email"
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  placeholder="user@example.com"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">External system</label>
-                  <input
-                    type="text"
-                    value={createForm.external_system}
-                    onChange={(e) => setCreateForm({ ...createForm, external_system: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">External user ID</label>
-                  <input
-                    type="text"
-                    value={createForm.external_user_id}
-                    onChange={(e) => setCreateForm({ ...createForm, external_user_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget max</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Budget max <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -380,9 +340,14 @@ export default function GatewayUsersPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     placeholder="Empty = unlimited"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Maximum spendable amount in the current cycle. Leave empty for unlimited.
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Budget base</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Budget base <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -391,23 +356,33 @@ export default function GatewayUsersPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     placeholder="Optional"
                   />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Reference amount used to reset Budget max when the budget cycle resets.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Budget period <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <select
+                    value={createForm.budget_period}
+                    onChange={(e) => setCreateForm({ ...createForm, budget_period: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="none">none</option>
+                    <option value="daily">daily</option>
+                    <option value="weekly">weekly</option>
+                    <option value="monthly">monthly</option>
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Reset cycle for spent / Budget max. <span className="font-mono">none</span> disables auto-reset.
+                  </p>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Budget period</label>
-                <select
-                  value={createForm.budget_period}
-                  onChange={(e) => setCreateForm({ ...createForm, budget_period: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option value="none">none</option>
-                  <option value="daily">daily</option>
-                  <option value="weekly">weekly</option>
-                  <option value="monthly">monthly</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Metadata (JSON object)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Metadata (JSON object) <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                </label>
                 <textarea
                   value={createForm.metadata}
                   onChange={(e) => setCreateForm({ ...createForm, metadata: e.target.value })}
@@ -415,6 +390,41 @@ export default function GatewayUsersPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
                   placeholder="{}"
                 />
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  External identity <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                </h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  Use these fields to link this user to an account in another system (e.g. your own SaaS, an OAuth provider). Leave both empty for an internal Gateway-only user. When both are set, creation is idempotent on the (external system, external user ID) pair.
+                </p>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      External system <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={createForm.external_system}
+                      onChange={(e) => setCreateForm({ ...createForm, external_system: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      placeholder="e.g. my-app"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      External user ID <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={createForm.external_user_id}
+                      onChange={(e) => setCreateForm({ ...createForm, external_user_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      placeholder="ID in the external system"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <div className="px-6 py-4 border-t flex justify-end gap-2">

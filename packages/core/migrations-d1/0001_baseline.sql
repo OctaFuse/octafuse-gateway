@@ -3,10 +3,16 @@
 -- Existing DBs that already applied the old chain: register this file in d1_migrations without executing; see docs/ops-d1-baseline-migration.md
 
 -- Gateway-owned users (budget lives here; api_keys.user_id → users.id)
--- external_system + external_user_id：多上游幂等；二者须同空或同非空。email 可重复，见 idx_users_email。
+-- 唯一约束（语义层面两组）：
+--   1) (external_system, external_user_id) — 多上游幂等。二者须同空或同非空。
+--   2) (external_system, email)            — 同一上游内 email 唯一；internal 用户
+--      （external_system IS NULL）作为单独 namespace，email 在 internal 用户之间
+--      也唯一。SQLite/D1 在普通 UNIQUE 中视 NULL 互不相等，故拆为两条 partial
+--      unique index 实现。
+-- email 必填；external_system 若设则不可为空字符串（保持 namespace 边界清晰）。
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
-  email TEXT,
+  email TEXT NOT NULL,
   budget_max REAL DEFAULT NULL,
   budget_base REAL NOT NULL DEFAULT 0,
   budget_spent REAL NOT NULL DEFAULT 0,
@@ -21,10 +27,17 @@ CREATE TABLE users (
   CHECK (
     (external_system IS NULL AND external_user_id IS NULL)
     OR (external_system IS NOT NULL AND external_user_id IS NOT NULL)
-  )
+  ),
+  CHECK (external_system IS NULL OR length(external_system) > 0)
 );
 
 CREATE UNIQUE INDEX uk_users_external_system_user_id ON users(external_system, external_user_id);
+CREATE UNIQUE INDEX uk_users_external_system_email
+  ON users(external_system, email)
+  WHERE external_system IS NOT NULL;
+CREATE UNIQUE INDEX uk_users_internal_email
+  ON users(email)
+  WHERE external_system IS NULL;
 
 -- API keys (no budget columns; belong to users)
 CREATE TABLE api_keys (
@@ -145,6 +158,8 @@ CREATE TABLE user_audit_logs (
 );
 
 -- Indexes
+-- 注：(external_system, email) 与 (email WHERE external_system IS NULL) 已在表
+-- 定义处加 partial UNIQUE；此处仍保留按 email 单列查询的非唯一索引。
 CREATE INDEX idx_users_external_system ON users(external_system);
 CREATE INDEX idx_users_external_user_id ON users(external_user_id);
 CREATE INDEX idx_users_email ON users(email);

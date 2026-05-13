@@ -88,7 +88,7 @@ function WebhookUrlField({
 		<div>
 			<div className="mb-1 flex max-w-3xl items-center justify-between gap-2">
 				<label htmlFor={id} className="block text-xs font-medium text-gray-600">
-					{label} <span className="text-gray-400">{optionalHint}</span>
+					{label} <span className="ml-1 text-[11px] font-normal text-gray-400">{optionalHint}</span>
 				</label>
 				<button
 					type="button"

@@ -5,8 +5,11 @@ export const usersTable = pgTable(
 	'users',
 	{
 		id: text('id').primaryKey(),
-		/** 非全局唯一：多上游可同邮；按邮筛选用索引 `idx_users_email`。 */
-		email: text('email'),
+		/**
+		 * 在 `external_system` 命名空间内唯一（含 internal 用户，即 `external_system IS NULL`）；
+		 * 由两条 partial unique index 落实，见表选项末尾。
+		 */
+		email: text('email').notNull(),
 		budgetMax: numeric('budget_max', { precision: 18, scale: 6 }),
 		budgetBase: numeric('budget_base', { precision: 18, scale: 6 }).notNull().default('0'),
 		budgetSpent: numeric('budget_spent', { precision: 18, scale: 6 }).notNull().default('0'),
@@ -22,9 +25,19 @@ export const usersTable = pgTable(
 	},
 	(t) => [
 		uniqueIndex('uk_users_external_system_user_id').on(t.externalSystem, t.externalUserId),
+		uniqueIndex('uk_users_external_system_email')
+			.on(t.externalSystem, t.email)
+			.where(sql`external_system IS NOT NULL`),
+		uniqueIndex('uk_users_internal_email')
+			.on(t.email)
+			.where(sql`external_system IS NULL`),
 		check(
 			'users_external_pair_chk',
 			sql`(external_system IS NULL AND external_user_id IS NULL) OR (external_system IS NOT NULL AND external_user_id IS NOT NULL)`
+		),
+		check(
+			'users_external_system_nonempty_chk',
+			sql`external_system IS NULL OR length(external_system) > 0`
 		),
 	]
 );

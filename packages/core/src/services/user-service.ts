@@ -118,7 +118,7 @@ export async function getOrCreateUser(
 		preferUserId?: string;
 		external_system?: string | null;
 		external_user_id?: string | null;
-		email?: string | null;
+		email: string;
 		budget_max?: number | null;
 		budget_period?: BudgetPeriod;
 		budget_base?: number | null;
@@ -126,6 +126,10 @@ export async function getOrCreateUser(
 	}
 ): Promise<UserRow> {
 	validateExternalPair(params.external_system, params.external_user_id);
+	const emailNorm = params.email.trim().toLowerCase();
+	if (!emailNorm) {
+		throw new Error('email is required');
+	}
 	const extS = (params.external_system ?? '').trim() || null;
 	const extU = (params.external_user_id ?? '').trim() || null;
 	const budget_period = params.budget_period ?? 'none';
@@ -139,7 +143,7 @@ export async function getOrCreateUser(
 		const id = crypto.randomUUID();
 		await repos.users.createUser({
 			id,
-			email: params.email ?? null,
+			email: emailNorm,
 			budgetMax: budget_max,
 			budgetBase: budget_base,
 			budgetSpent: 0,
@@ -160,7 +164,7 @@ export async function getOrCreateUser(
 		if (existing) return existing;
 		await repos.users.createUser({
 			id: params.preferUserId,
-			email: params.email ?? null,
+			email: emailNorm,
 			budgetMax: budget_max,
 			budgetBase: budget_base,
 			budgetSpent: 0,
@@ -179,7 +183,7 @@ export async function getOrCreateUser(
 	const id = crypto.randomUUID();
 	await repos.users.createUser({
 		id,
-		email: params.email ?? null,
+		email: emailNorm,
 		budgetMax: budget_max,
 		budgetBase: budget_base,
 		budgetSpent: 0,
@@ -254,7 +258,7 @@ export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 	}
 	return {
 		id: row.id,
-		email: row.email,
+		email: row.email ?? '',
 		external_system: row.external_system,
 		external_user_id: row.external_user_id,
 		budget_max: effectiveBudgetMax,

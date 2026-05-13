@@ -26,7 +26,7 @@ type UserSqlRow = {
 function mapUserRow(r: UserSqlRow): UserRow {
 	return {
 		id: r.id,
-		email: r.email,
+		email: r.email ?? '',
 		budget_max: r.budget_max == null ? null : roundGatewayMoney(Number(r.budget_max)),
 		budget_base: roundGatewayMoney(Number(r.budget_base ?? 0)),
 		budget_spent: roundGatewayMoney(Number(r.budget_spent)),
@@ -122,7 +122,7 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 				)
 				.bind(
 					params.id,
-					params.email ?? null,
+					params.email,
 					budgetMax,
 					budgetBase,
 					budgetSpent,
@@ -190,7 +190,7 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 			return result.meta.changes > 0;
 		},
 
-		async setUserEmailById(id: string, email: string | null): Promise<boolean> {
+		async setUserEmailById(id: string, email: string): Promise<boolean> {
 			const result = await raw
 				.prepare('UPDATE users SET email = ?, updated_at = datetime("now") WHERE id = ?')
 				.bind(email, id)

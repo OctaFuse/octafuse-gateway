@@ -55,7 +55,7 @@ export interface GatewayApiKeyBudgetAuditLog {
 /** `GET /admin/users` 列表行（含 `active_keys_count`）。 */
 export interface GatewayUserListItem {
   id: string;
-  email: string | null;
+  email: string;
   external_system: string | null;
   external_user_id: string | null;
   budget_max: number | null;

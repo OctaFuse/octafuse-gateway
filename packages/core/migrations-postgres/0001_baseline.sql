@@ -6,10 +6,16 @@
 CREATE SCHEMA IF NOT EXISTS octafuse_gateway;
 SET search_path TO octafuse_gateway;
 
+-- 唯一约束（语义层面两组）：
+--   1) (external_system, external_user_id) — 多上游幂等。二者须同空或同非空。
+--   2) (external_system, email)            — 同一上游内 email 唯一；internal 用户
+--      （external_system IS NULL）作为单独 namespace，email 在 internal 用户之间
+--      也唯一。Postgres 普通 UNIQUE 视 NULL 互不相等，故拆为两条 partial unique
+--      index 实现。
+-- email 必填；external_system 若设则不可为空字符串（保持 namespace 边界清晰）。
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
-  -- email 非全局 UNIQUE：多系统接入时各源可能重复或同一人多账号；列表/筛选依赖 idx_users_email
-  email TEXT,
+  email TEXT NOT NULL,
   budget_max NUMERIC(18, 6),
   budget_base NUMERIC(18, 6) NOT NULL DEFAULT 0,
   budget_spent NUMERIC(18, 6) NOT NULL DEFAULT 0,
@@ -24,10 +30,19 @@ CREATE TABLE users (
   CONSTRAINT users_external_pair_chk CHECK (
     (external_system IS NULL AND external_user_id IS NULL)
     OR (external_system IS NOT NULL AND external_user_id IS NOT NULL)
+  ),
+  CONSTRAINT users_external_system_nonempty_chk CHECK (
+    external_system IS NULL OR length(external_system) > 0
   )
 );
 
 CREATE UNIQUE INDEX uk_users_external_system_user_id ON users (external_system, external_user_id);
+CREATE UNIQUE INDEX uk_users_external_system_email
+  ON users (external_system, email)
+  WHERE external_system IS NOT NULL;
+CREATE UNIQUE INDEX uk_users_internal_email
+  ON users (email)
+  WHERE external_system IS NULL;
 
 CREATE TABLE api_keys (
   id TEXT PRIMARY KEY,
@@ -142,6 +157,8 @@ CREATE TABLE user_audit_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 注：(external_system, email) 与 (email WHERE external_system IS NULL) 已在
+-- 上文加 partial UNIQUE；此处仍保留按 email 单列查询的非唯一索引。
 CREATE INDEX idx_users_external_system ON users(external_system);
 CREATE INDEX idx_users_external_user_id ON users(external_user_id);
 CREATE INDEX idx_users_email ON users(email);

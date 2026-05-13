@@ -16,7 +16,7 @@ import { useBillingCurrency } from '@/lib/use-billing-currency';
 
 type UserDetail = {
   id: string;
-  email: string | null;
+  email: string;
   external_system: string | null;
   external_user_id: string | null;
   budget_max: number | null;
@@ -205,8 +205,14 @@ export default function GatewayUserDetailPage() {
         setIsSavingPlan(false);
         return;
       }
+      const email = planForm.email.trim();
+      if (!email) {
+        setPlanError('Email is required');
+        setIsSavingPlan(false);
+        return;
+      }
       const payload: Record<string, unknown> = {
-        email: planForm.email.trim() === '' ? null : planForm.email.trim(),
+        email,
         status: planForm.status,
         budget_max: planForm.budget_max.trim() === '' ? null : parseFloat(planForm.budget_max),
         budget_base: planForm.budget_base.trim() === '' ? null : parseFloat(planForm.budget_base),

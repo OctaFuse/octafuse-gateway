@@ -30,7 +30,7 @@ export interface ApiKeyRow {
 /** `users` 表行（网关自有用户；预算字段在此）。 */
 export interface UserRow {
 	id: string;
-	email: string | null;
+	email: string;
 	budget_max: number | null;
 	budget_base: number;
 	budget_spent: number;
