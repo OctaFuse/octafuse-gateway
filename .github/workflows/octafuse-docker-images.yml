@@ -1,5 +1,5 @@
 # GitHub 官方 ubuntu-latest runner：构建并推送 Octafuse 镜像到 GHCR。
-# 建议作为主发布通道；自托管 macOS 构建见 octafuse-docker-images-selfhosted.yml。
+# 公开仓库默认 CI 发版入口（workflow_dispatch）。
 # 镜像：ghcr.io/<owner>/octafuse-proxy、ghcr.io/<owner>/octafuse-admin、ghcr.io/<owner>/octafuse-migrate
 # 可选：阿里云 ACR 双推 —— Variables：ACR_REGISTRY、ACR_NAMESPACE、ACR_USERNAME；
 # Secret：ACR_PASSWORD。同一次 build 会额外推送到 ${ACR_REGISTRY}/${ACR_NAMESPACE}/octafuse-{proxy,admin,migrate}。
@@ -32,7 +32,7 @@ on:
       platform_linux_arm64:
         description: 构建 linux/arm64（Apple Silicon / ARM 云主机）
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -180,7 +180,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # 关闭 attestations，减少对 ghcr.io 的额外请求与推送（自建 runner 上可降低 token EOF 概率）
+          # 关闭 attestations，减少对 ghcr.io 的额外请求与推送（降低 token EOF 概率）
           provenance: false
           sbom: false
           cache-from: type=gha,scope=${{ matrix.image_suffix }}

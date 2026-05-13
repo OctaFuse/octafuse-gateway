@@ -62,7 +62,7 @@ flowchart LR
 | [ops/local-testing-environments.md](./ops/local-testing-environments.md) | 本地 D1、Proxy、Admin preview、可选 Node+Postgres / MySQL |
 | [ops/deployment.md](./ops/deployment.md) | 部署索引 |
 | [ops/deployment-cloudflare.md](./ops/deployment-cloudflare.md) | Cloudflare：**§0 Connect to Git**（推荐）、本机迁移与 `deploy:*`、`MASTER_KEY`、下游环境变量 |
-| [ops/deployment-docker.md](./ops/deployment-docker.md) | 可选：Docker 双镜像 + 同一 Postgres 或 MySQL；含 **GitHub Actions → GHCR**（`octafuse-docker-images.yml` + 可选 `octafuse-docker-images-selfhosted.yml`） |
+| [ops/deployment-docker.md](./ops/deployment-docker.md) | 可选：Docker 双镜像 + 同一 Postgres 或 MySQL；含 **GitHub Actions → GHCR**（`octafuse-docker-images.yml`） |
 | [manual-sql/README.md](./manual-sql/README.md) | 已部署环境的手工 SQL：D1 与 Postgres 双版本、执行前提、回滚与自检 |
 | [docker/deploy/README.md](../docker/deploy/README.md) | 服务器部署目录约定；`docker/deploy/.env.example` |
 | [ops/postgres-cutover.md](./ops/postgres-cutover.md) | 可选：D1 ↔ Postgres 运维脚本（`scripts/db/cutover/`） |
