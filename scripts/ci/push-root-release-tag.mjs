@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
- * After `changeset tag`, push the root semver tag (vX.Y.Z) to origin.
+ * After `changeset tag`, ensure the root semver tag **vX.Y.Z** exists on origin.
  *
- * changesets/action only calls git.pushTag() when createGithubReleases is true;
- * we keep createGithubReleases false (Docker workflow owns GitHub Release), so we push here.
- *
- * If `changeset tag` skipped (e.g. tag already exists on origin), there is no local tag — exit 0.
+ * - `changesets/action` does not push tags when `createGithubReleases` is false.
+ * - `changeset tag` with default config **does not** create `v*` tags for **private**
+ *   workspace packages (`privatePackages.tag` defaults to false); it may create
+ *   nothing or only `name@version` tags. This script always creates/pushes **vX.Y.Z**
+ *   aligned with root `package.json` `version`.
  */
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,26 +16,51 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "../..");
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-const tag = `v${pkg.version}`;
+const version = pkg.version;
+const vTag = `v${version}`;
 
-function localTagPointsToCommit() {
+function runCapture(cmd, args) {
+	return execFileSync(cmd, args, { cwd: root, encoding: "utf8" }).trim();
+}
+
+function refExists(ref) {
 	try {
-		execSync(`git rev-parse -q --verify "refs/tags/${tag}^{commit}"`, {
-			cwd: root,
-			stdio: "pipe",
-		});
+		runCapture("git", ["rev-parse", "-q", "--verify", `${ref}^{commit}`]);
 		return true;
 	} catch {
 		return false;
 	}
 }
 
-if (!localTagPointsToCommit()) {
-	console.log(
-		`No local tag ${tag} after "changeset tag". Usually: origin already has this tag (same version on a different commit), or versions were not bumped.`,
+if (!refExists(`refs/tags/${vTag}`)) {
+	const candidates = [
+		`octafuse@${version}`,
+		`@octafuse/core@${version}`,
+		`@octafuse/proxy@${version}`,
+		`@octafuse/admin@${version}`,
+	];
+	let commit = "";
+	for (const c of candidates) {
+		if (refExists(`refs/tags/${c}`)) {
+			commit = runCapture("git", ["rev-parse", `${c}^{commit}`]);
+			console.log(`Creating ${vTag} at ${commit} (from tag ${c})`);
+			break;
+		}
+	}
+	if (!commit) {
+		commit = runCapture("git", ["rev-parse", "HEAD"]);
+		console.log(
+			`Creating ${vTag} at HEAD ${commit} (no per-package tag from changeset; typical for private workspaces)`,
+		);
+	}
+	execFileSync(
+		"git",
+		["tag", "-a", vTag, "-m", `release ${version}`, commit],
+		{ cwd: root, stdio: "inherit" },
 	);
-	process.exit(0);
+} else {
+	console.log(`Local tag ${vTag} already exists.`);
 }
 
-console.log(`Pushing release tag ${tag} to origin...`);
-execSync(`git push origin "${tag}"`, { cwd: root, stdio: "inherit" });
+console.log(`Pushing release tag ${vTag} to origin...`);
+execSync(`git push origin "${vTag}"`, { cwd: root, stdio: "inherit" });
