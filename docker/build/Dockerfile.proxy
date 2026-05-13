@@ -34,7 +34,8 @@ RUN --mount=type=cache,target=/root/.npm \
 	--workspace=@octafuse/core \
 	--workspace=@octafuse/proxy
 
-RUN npm rebuild esbuild
+# esbuild：见 Dockerfile.admin 同段注释
+RUN find node_modules -path '*/esbuild/install.js' -exec node {} \;
 
 COPY packages/core ./packages/core
 COPY packages/proxy ./packages/proxy

@@ -18,8 +18,9 @@ RUN --mount=type=cache,target=/root/.npm \
 	--workspace=@octafuse/core \
 	--workspace=@octafuse/admin
 
-# esbuild 依赖 postinstall 拉取当前平台二进制；--ignore-scripts 会跳过，多架构 build 下 arm64 会在 build:node-index 失败
-RUN npm rebuild esbuild
+# esbuild 依赖 postinstall 拉取当前平台二进制；--ignore-scripts 会跳过。
+# 树内可能有多份 esbuild（如 @octafuse/core 与 @opennextjs/aws 嵌套版本）；勿用 `npm rebuild esbuild`（会对多版本做错误校验）。
+RUN find node_modules -path '*/esbuild/install.js' -exec node {} \;
 
 COPY packages/core ./packages/core
 COPY packages/admin ./packages/admin

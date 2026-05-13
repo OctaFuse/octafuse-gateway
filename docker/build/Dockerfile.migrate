@@ -16,7 +16,8 @@ COPY packages/admin/package.json packages/admin/
 RUN --mount=type=cache,target=/root/.npm \
 	npm ci --ignore-scripts --workspace=@octafuse/core
 
-RUN npm rebuild esbuild
+# esbuild：见 Dockerfile.admin 同段注释
+RUN find node_modules -path '*/esbuild/install.js' -exec node {} \;
 
 COPY packages/core ./packages/core
 
