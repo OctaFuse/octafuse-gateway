@@ -77,6 +77,7 @@ export async function listAdminGlobalBudgetAuditLogsService(
 	input: {
 		page?: number | string;
 		page_size?: number | string;
+		user_id?: string;
 		api_key_id?: string;
 		user_email?: string;
 		event_type?: string;
@@ -90,6 +91,7 @@ export async function listAdminGlobalBudgetAuditLogsService(
 	const result = await repos.userAuditLogs.getGlobalUserAuditLogs({
 		page,
 		pageSize,
+		userId: input.user_id,
 		apiKeyId: input.api_key_id,
 		userEmail: input.user_email,
 		eventType: input.event_type,

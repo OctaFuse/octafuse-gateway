@@ -116,7 +116,7 @@ export function insertParamsFromFullLegacy(userId: string, legacy: InsertApiKeyB
 	return {
 		id: legacy.id,
 		userId,
-		apiKeyId: legacy.apiKeyId,
+		apiKeyId: legacy.apiKeyId ?? null,
 		eventType: legacy.eventType,
 		actorType: legacy.actorType,
 		beforeSpent: legacy.beforeSpent,

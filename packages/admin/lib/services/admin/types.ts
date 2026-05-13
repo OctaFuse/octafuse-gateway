@@ -14,31 +14,20 @@ export type BudgetPeriod = 'none' | 'daily' | 'weekly' | 'monthly';
 export type JsonObject = Record<string, unknown>;
 export type AdminDataRow = Record<string, unknown>;
 
-/** ---------- `/admin/keys` 请求体 ---------- */
-export type AdminKeyCreateInput = {
-	user_id?: string;
-	user_email?: string;
+/** ---------- `/admin/users` 请求体 ---------- */
+export type AdminUserCreateInput = {
+	external_system?: string | null;
+	external_user_id?: string | null;
+	email?: string | null;
 	budget_max?: number | null;
-	/**
-	 * 周期 reset 时 `budget_max` 的恢复基准（订阅套餐基础上限）。
-	 * 缺省时 admin 服务会回退为 `budget_max`，保持与历史行为兼容。
-	 */
 	budget_base?: number | null;
 	budget_period?: BudgetPeriod;
 	metadata?: unknown;
-	/** 写入 `key_created` 审计的 `reason_text`（仅本次真正新建时） */
-	reason?: string;
 };
 
-export type AdminKeyUpdateInput = {
-	user_email?: string | null;
+export type AdminUserUpdateInput = {
+	email?: string | null;
 	budget_max?: number | null;
-	/**
-	 * 周期 reset 时 `budget_max` 的恢复基准。
-	 * - `undefined`：不修改（仅调整 `budget_max` 等临时改额场景）。
-	 * - `number`：写入指定值。
-	 * - `null`：写入 0（与库列 NOT NULL DEFAULT 0 一致）。
-	 */
 	budget_base?: number | null;
 	budget_spent?: number | null;
 	budget_period?: BudgetPeriod;
@@ -48,6 +37,26 @@ export type AdminKeyUpdateInput = {
 	metadata?: unknown;
 	metadata_replace?: unknown;
 	status?: string;
+};
+
+/** ---------- `/admin/keys` 请求体 ---------- */
+export type AdminKeyCreateInput = {
+	/** 已有用户时直接关联；与 `external_system` + `external_user_id` 二选一 */
+	user_id?: string;
+	external_system?: string | null;
+	external_user_id?: string | null;
+	name?: string | null;
+	metadata?: unknown;
+	/** 写入 `key_created` 审计的 `reason_text`（仅本次真正新建密钥时） */
+	reason?: string;
+};
+
+export type AdminKeyUpdateInput = {
+	metadata?: unknown;
+	metadata_replace?: unknown;
+	status?: string;
+	name?: string | null;
+	reason?: string;
 };
 
 /** ---------- `/admin/providers` 请求体（字段多为 unknown 以承接 JSON） ---------- */
@@ -265,8 +274,11 @@ export type AdminKeyUpdateOutput =
 			id: string;
 			key_id: string;
 			user_id: string;
+			name: string | null;
+			user_email: string | null;
 			budget_max: number | null;
 			budget_base?: number;
+			budget_spent: number;
 			budget_period: string;
 			budget_reset_at: string | null;
 			metadata?: JsonObject;

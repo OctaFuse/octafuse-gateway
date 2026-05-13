@@ -2,7 +2,8 @@ import type { ApiKeyBudgetAuditActorType, ApiKeyBudgetAuditEventType } from '../
 
 export interface InsertApiKeyBudgetAuditLogParams {
 	id: string;
-	apiKeyId: string;
+	/** 用户级审计（无关联密钥）时为 `null` */
+	apiKeyId: string | null;
 	eventType: ApiKeyBudgetAuditEventType;
 	actorType: ApiKeyBudgetAuditActorType;
 	actorId?: string | null;

@@ -196,6 +196,80 @@ export async function getOrCreateUser(
 }
 
 /**
+ * 按 `users.id` 取用户预算视图；若周期到期则懒重置并写库（审计 `api_key_id` 为空）。
+ */
+export async function getUserInfo(repos: GatewayRepositories, userId: string) {
+	const row = await repos.users.getById(userId);
+	if (!row) return null;
+	const { budget_spent, budget_reset_at, budget_max: nextBudgetMax } = maybeResetBudget(
+		row.budget_period,
+		row.budget_reset_at,
+		row.budget_spent,
+		row.budget_max,
+		row.budget_base
+	);
+	const rowSnapshot = {
+		budget_spent: row.budget_spent,
+		budget_reset_at: row.budget_reset_at,
+		budget_max: row.budget_max,
+	};
+	const nextSnapshot = { budget_spent, budget_reset_at, budget_max: nextBudgetMax };
+	let effectiveBudgetMax = row.budget_max != null ? roundGatewayMoney(Number(row.budget_max)) : null;
+	if (budgetLazyResetNeedsPersist(rowSnapshot, nextSnapshot)) {
+		const maxChanged =
+			(row.budget_max == null ? null : roundGatewayMoney(Number(row.budget_max))) !== nextBudgetMax;
+		await updateUserBudgetWithAuditTx(repos, {
+			userId: row.id,
+			expectedBudgetResetAt: row.budget_reset_at,
+			budgetSpent: budget_spent,
+			budgetResetAt: budget_reset_at,
+			budgetMax: maxChanged ? nextBudgetMax : undefined,
+			apiKeyId: null,
+			audit: {
+				eventType: 'period_reset',
+				actorType: 'system',
+				reasonCode: 'get_user_info_lazy_reset',
+				reasonText: 'Period reset (user info)',
+				beforeSpent: row.budget_spent,
+				deltaSpent: budget_spent - row.budget_spent,
+				beforeBudgetMax: row.budget_max,
+				afterBudgetMax: maxChanged ? nextBudgetMax : row.budget_max,
+				beforeBudgetBase: row.budget_base,
+				afterBudgetBase: row.budget_base,
+				beforeBudgetPeriod: row.budget_period,
+				afterBudgetPeriod: row.budget_period,
+				beforeBudgetResetAt: row.budget_reset_at,
+				metadata: null,
+			},
+		});
+		effectiveBudgetMax = nextBudgetMax;
+	}
+	let metadata: Record<string, unknown> | null = null;
+	if (row.metadata) {
+		try {
+			metadata = JSON.parse(row.metadata) as Record<string, unknown>;
+		} catch {
+			metadata = null;
+		}
+	}
+	return {
+		id: row.id,
+		email: row.email,
+		external_system: row.external_system,
+		external_user_id: row.external_user_id,
+		budget_max: effectiveBudgetMax,
+		budget_base: roundGatewayMoney(Number(row.budget_base ?? 0)),
+		budget_spent: roundGatewayMoney(budget_spent),
+		budget_period: row.budget_period,
+		budget_reset_at,
+		status: row.status,
+		metadata,
+		created_at: row.created_at,
+		updated_at: row.updated_at,
+	};
+}
+
+/**
  * 单密钥详情（JOIN users）；若周期到期则懒重置并写库。
  */
 export async function getKeyInfo(repos: GatewayRepositories, id: string) {
