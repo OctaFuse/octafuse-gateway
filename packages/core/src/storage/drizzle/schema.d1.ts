@@ -1,18 +1,42 @@
 import { sql } from 'drizzle-orm';
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { check, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+
+export const usersTable = sqliteTable(
+	'users',
+	{
+		id: text('id').primaryKey(),
+		/** 非全局唯一：多上游可同邮；按邮筛选用索引 `idx_users_email`。 */
+		email: text('email'),
+		budgetMax: real('budget_max'),
+		budgetBase: real('budget_base').notNull().default(0),
+		budgetSpent: real('budget_spent').notNull().default(0),
+		budgetPeriod: text('budget_period').notNull().default('none'),
+		budgetResetAt: text('budget_reset_at'),
+		status: text('status').notNull().default('active'),
+		metadata: text('metadata'),
+		/** 上游命名空间（产品/租户），与 external_user_id 成对做幂等；纯网关用户二者皆空。 */
+		externalSystem: text('external_system'),
+		externalUserId: text('external_user_id'),
+		createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+		updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+	},
+	(t) => [
+		uniqueIndex('uk_users_external_system_user_id').on(t.externalSystem, t.externalUserId),
+		check(
+			'users_external_pair_chk',
+			sql`(external_system IS NULL AND external_user_id IS NULL) OR (external_system IS NOT NULL AND external_user_id IS NOT NULL)`
+		),
+	]
+);
 
 export const apiKeysTable = sqliteTable('api_keys', {
 	id: text('id').primaryKey(),
 	key: text('key').notNull(),
 	userId: text('user_id').notNull(),
-	userEmail: text('user_email'),
-	budgetMax: real('budget_max'),
-	budgetBase: real('budget_base').notNull().default(0),
-	budgetSpent: real('budget_spent').notNull().default(0),
-	budgetPeriod: text('budget_period').notNull().default('none'),
-	budgetResetAt: text('budget_reset_at'),
+	name: text('name'),
 	status: text('status').notNull().default('active'),
 	metadata: text('metadata'),
+	lastUsedAt: text('last_used_at'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -58,6 +82,7 @@ export const modelRoutesTable = sqliteTable('model_routes', {
 
 export const apiKeyRequestLogsTable = sqliteTable('api_key_request_logs', {
 	id: text('id').primaryKey(),
+	userId: text('user_id'),
 	apiKeyId: text('api_key_id'),
 	userEmail: text('user_email'),
 	modelId: text('model_id'),
@@ -91,39 +116,34 @@ export const apiKeyRequestLogsTable = sqliteTable('api_key_request_logs', {
 export const systemConfigTable = sqliteTable('system_config', {
 	key: text('key').primaryKey(),
 	value: text('value').notNull(),
+	description: text('description'),
 	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const apiKeyAuditLogsTable = sqliteTable('api_key_audit_logs', {
+/** 用户维度审计：预算、资料等变更；可选 api_key_id；扩展字段用 metadata。 */
+export const userAuditLogsTable = sqliteTable('user_audit_logs', {
 	id: text('id').primaryKey(),
-	apiKeyId: text('api_key_id').notNull(),
+	userId: text('user_id').notNull(),
+	apiKeyId: text('api_key_id'),
 	eventType: text('event_type').notNull(),
-	actorType: text('actor_type').notNull(),
-	actorId: text('actor_id'),
-	reasonCode: text('reason_code'),
-	reasonText: text('reason_text'),
+	actorType: text('actor_type').notNull().default('system'),
 	beforeSpent: real('before_spent').notNull(),
 	deltaSpent: real('delta_spent').notNull(),
 	afterSpent: real('after_spent').notNull(),
 	beforeBudgetMax: real('before_budget_max'),
 	afterBudgetMax: real('after_budget_max'),
-	beforeBudgetBase: real('before_budget_base'),
-	afterBudgetBase: real('after_budget_base'),
-	beforeBudgetPeriod: text('before_budget_period'),
-	afterBudgetPeriod: text('after_budget_period'),
-	beforeBudgetResetAt: text('before_budget_reset_at'),
-	afterBudgetResetAt: text('after_budget_reset_at'),
 	requestLogId: text('request_log_id'),
 	metadata: text('metadata'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const d1CoreSchema = {
+	usersTable,
 	apiKeysTable,
 	providersTable,
 	modelsTable,
 	modelRoutesTable,
 	apiKeyRequestLogsTable,
 	systemConfigTable,
-	apiKeyAuditLogsTable,
+	userAuditLogsTable,
 };

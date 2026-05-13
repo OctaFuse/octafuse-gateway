@@ -1,17 +1,42 @@
-import { pgTable, text, timestamp, integer, numeric } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { pgTable, text, timestamp, integer, numeric, uniqueIndex, check } from 'drizzle-orm/pg-core';
+
+export const usersTable = pgTable(
+	'users',
+	{
+		id: text('id').primaryKey(),
+		/** 非全局唯一：多上游可同邮；按邮筛选用索引 `idx_users_email`。 */
+		email: text('email'),
+		budgetMax: numeric('budget_max', { precision: 18, scale: 6 }),
+		budgetBase: numeric('budget_base', { precision: 18, scale: 6 }).notNull().default('0'),
+		budgetSpent: numeric('budget_spent', { precision: 18, scale: 6 }).notNull().default('0'),
+		budgetPeriod: text('budget_period').notNull().default('none'),
+		budgetResetAt: timestamp('budget_reset_at', { withTimezone: true, mode: 'string' }),
+		status: text('status').notNull().default('active'),
+		metadata: text('metadata'),
+		/** 上游命名空间（产品/租户），与 external_user_id 成对做幂等；纯网关用户二者皆空。 */
+		externalSystem: text('external_system'),
+		externalUserId: text('external_user_id'),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
+	},
+	(t) => [
+		uniqueIndex('uk_users_external_system_user_id').on(t.externalSystem, t.externalUserId),
+		check(
+			'users_external_pair_chk',
+			sql`(external_system IS NULL AND external_user_id IS NULL) OR (external_system IS NOT NULL AND external_user_id IS NOT NULL)`
+		),
+	]
+);
 
 export const apiKeysTable = pgTable('api_keys', {
 	id: text('id').primaryKey(),
 	key: text('key').notNull(),
 	userId: text('user_id').notNull(),
-	userEmail: text('user_email'),
-	budgetMax: numeric('budget_max', { precision: 18, scale: 6 }),
-	budgetBase: numeric('budget_base', { precision: 18, scale: 6 }).notNull().default('0'),
-	budgetSpent: numeric('budget_spent', { precision: 18, scale: 6 }).notNull().default('0'),
-	budgetPeriod: text('budget_period').notNull().default('none'),
-	budgetResetAt: timestamp('budget_reset_at', { withTimezone: true, mode: 'string' }),
+	name: text('name'),
 	status: text('status').notNull().default('active'),
 	metadata: text('metadata'),
+	lastUsedAt: timestamp('last_used_at', { withTimezone: true, mode: 'string' }),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
@@ -56,6 +81,7 @@ export const modelRoutesTable = pgTable('model_routes', {
 
 export const apiKeyRequestLogsTable = pgTable('api_key_request_logs', {
 	id: text('id').primaryKey(),
+	userId: text('user_id'),
 	apiKeyId: text('api_key_id'),
 	userEmail: text('user_email'),
 	modelId: text('model_id'),
@@ -93,36 +119,30 @@ export const systemConfigTable = pgTable('system_config', {
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 
-export const apiKeyAuditLogsTable = pgTable('api_key_audit_logs', {
+/** 用户维度审计：预算、资料等变更；可选 api_key_id；扩展字段用 metadata。 */
+export const userAuditLogsTable = pgTable('user_audit_logs', {
 	id: text('id').primaryKey(),
-	apiKeyId: text('api_key_id').notNull(),
+	userId: text('user_id').notNull(),
+	apiKeyId: text('api_key_id'),
 	eventType: text('event_type').notNull(),
-	actorType: text('actor_type').notNull(),
-	actorId: text('actor_id'),
-	reasonCode: text('reason_code'),
-	reasonText: text('reason_text'),
+	actorType: text('actor_type').notNull().default('system'),
 	beforeSpent: numeric('before_spent', { precision: 18, scale: 6 }).notNull(),
 	deltaSpent: numeric('delta_spent', { precision: 18, scale: 6 }).notNull(),
 	afterSpent: numeric('after_spent', { precision: 18, scale: 6 }).notNull(),
 	beforeBudgetMax: numeric('before_budget_max', { precision: 18, scale: 6 }),
 	afterBudgetMax: numeric('after_budget_max', { precision: 18, scale: 6 }),
-	beforeBudgetBase: numeric('before_budget_base', { precision: 18, scale: 6 }),
-	afterBudgetBase: numeric('after_budget_base', { precision: 18, scale: 6 }),
-	beforeBudgetPeriod: text('before_budget_period'),
-	afterBudgetPeriod: text('after_budget_period'),
-	beforeBudgetResetAt: timestamp('before_budget_reset_at', { withTimezone: true, mode: 'string' }),
-	afterBudgetResetAt: timestamp('after_budget_reset_at', { withTimezone: true, mode: 'string' }),
 	requestLogId: text('request_log_id'),
 	metadata: text('metadata'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 
 export const pgCoreSchema = {
+	usersTable,
 	apiKeysTable,
 	providersTable,
 	modelsTable,
 	modelRoutesTable,
 	apiKeyRequestLogsTable,
 	systemConfigTable,
-	apiKeyAuditLogsTable,
+	userAuditLogsTable,
 };
