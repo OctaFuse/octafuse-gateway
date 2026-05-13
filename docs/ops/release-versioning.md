@@ -96,6 +96,7 @@ flowchart LR
 ### Tag 未上 GitHub / Release 成功但无 `v*` 且无 Docker
 
 1. **`changesets/action` + `createGithubReleases: false`**：上游实现里 **`git.pushTag` 与创建 GitHub Release 绑在一起**；为 false 时即使用 `changeset tag` 打出了**本地** tag，也不会替你 `git push`。本仓库用 **`npm run ci:changeset-tag-push`**（`changeset tag` + `scripts/ci/push-root-release-tag.mjs`）在 CI 里显式推送 **`vX.Y.Z`**。  
+   - 补充：默认 **`privatePackages.tag` 为 `false`** 时，`changeset tag` **可能不会**生成 **`v*`**（仅 private workspace 时常见）。`push-root-release-tag.mjs` 会在缺少 **`vX.Y.Z`** 时于当前 **HEAD**（或已存在的 `octafuse@X.Y.Z` 等标签指向的提交）**补打** **`vX.Y.Z`** 再推送。若希望 Changesets 自行生成 `name@version` 类标签，可在 **`.changeset/config.json`** 设置 `"privatePackages": { "tag": true }`（可选）。  
 2. **日志已跑 `changeset tag` 但后续仍报 HEAD 无 semver tag**：多为 **远端已有同名 `vX.Y.Z`**，`changeset tag` 会整段跳过（不写本地 tag）——需 **bump 新版本**（新 changeset + 再走 Version PR）或 **谨慎**处理远端错误 tag 后再跑一次 Release。  
 3. **PAT 已配但 Docker 仍未跑**：核对 **`release.yml`** 中 **`actions/checkout`** 是否传入 **`token: ${{ secrets.CHANGESETS_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}`**（见上文「做法 B」第 4 条）。
 
