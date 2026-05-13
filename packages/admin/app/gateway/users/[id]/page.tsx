@@ -12,6 +12,8 @@ import { formatGatewayDateTime, parseGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
 import type { GatewayApiKeyBudgetAuditLog, GatewayRequestLog } from '@/lib/types';
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
+import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
+import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 
 type UserDetail = {
@@ -50,16 +52,6 @@ function formatLocalDateTimeInput(raw: string | null | undefined): string {
     `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
     `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`,
   ].join('T');
-}
-
-function normalizeMetadataClient(raw: string): { ok: true; value: string | null } | { ok: false; message: string } {
-  const t = raw.trim();
-  if (t === '') return { ok: true, value: null };
-  try {
-    return { ok: true, value: JSON.stringify(JSON.parse(t)) };
-  } catch {
-    return { ok: false, message: 'Metadata must be valid JSON' };
-  }
 }
 
 function summarizeMetadata(raw: string | null | undefined): {
@@ -655,33 +647,7 @@ export default function GatewayUserDetailPage() {
             <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{keysInlineError}</div>
           )}
           {freshApiKey && (
-            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-amber-900 pr-2">
-                  New API key — copy it now; the full secret will not be shown again.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setFreshApiKey(null)}
-                  className="shrink-0 text-amber-800 hover:underline text-xs"
-                >
-                  Dismiss
-                </button>
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <code className="min-w-0 flex-1 break-all rounded border border-amber-200 bg-white px-2 py-1.5 font-mono text-xs">
-                  {freshApiKey}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => copy(freshApiKey)}
-                  className="inline-flex shrink-0 items-center gap-1 rounded border border-amber-300 bg-white px-2 py-1.5 text-xs text-gray-700 hover:bg-amber-100"
-                >
-                  <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-                  Copy
-                </button>
-              </div>
-            </div>
+            <NewApiKeySecretBanner secret={freshApiKey} onDismiss={() => setFreshApiKey(null)} />
           )}
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm table-auto">

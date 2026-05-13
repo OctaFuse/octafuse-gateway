@@ -10,8 +10,12 @@ import { PlusIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
+import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import type { GatewayApiKey } from '@/lib/types';
+
+type KeyCreationMode = 'existingUser' | 'externalIdentity';
 
 function formatApiKeyMetadataForEditor(raw: string | null | undefined): string {
   if (raw == null || raw === '') {
@@ -21,18 +25,6 @@ function formatApiKeyMetadataForEditor(raw: string | null | undefined): string {
     return JSON.stringify(JSON.parse(raw), null, 2);
   } catch {
     return raw;
-  }
-}
-
-function normalizeMetadataClient(raw: string): { ok: true; value: string | null } | { ok: false; message: string } {
-  const t = raw.trim();
-  if (t === '') {
-    return { ok: true, value: null };
-  }
-  try {
-    return { ok: true, value: JSON.stringify(JSON.parse(t)) };
-  } catch {
-    return { ok: false, message: 'Metadata must be valid JSON' };
   }
 }
 
@@ -114,6 +106,8 @@ export default function GatewayKeysPage() {
     name: '',
     metadata: '',
   });
+  const [creationMode, setCreationMode] = useState<KeyCreationMode>('existingUser');
+  const [freshCreatedKey, setFreshCreatedKey] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState({
     id: '',
     name: '',
@@ -153,6 +147,15 @@ export default function GatewayKeysPage() {
     fetchKeys();
   }, [fetchKeys]);
 
+  const handleCreationModeChange = (mode: KeyCreationMode) => {
+    setCreationMode(mode);
+    setFormData((prev) =>
+      mode === 'existingUser'
+        ? { ...prev, external_system: '', external_user_id: '', email: '' }
+        : { ...prev, user_id: '' }
+    );
+  };
+
   const handleCreate = () => {
     setFormData({
       user_id: '',
@@ -162,6 +165,8 @@ export default function GatewayKeysPage() {
       name: '',
       metadata: '',
     });
+    setCreationMode('existingUser');
+    setFreshCreatedKey(null);
     setShowModal(true);
     setSaveError('');
   };
@@ -286,38 +291,43 @@ export default function GatewayKeysPage() {
         return;
       }
 
-      const uid = formData.user_id.trim();
-      const extS = formData.external_system.trim();
-      const extU = formData.external_user_id.trim();
-      if (!uid && (!extS || !extU)) {
-        setSaveError('Provide either User ID, or both External system and External user ID');
-        setIsSaving(false);
-        return;
-      }
-      if (!uid && extS && extU) {
-        const em = formData.email.trim();
-        if (!em) {
-          setSaveError('Email is required when creating a key without User ID (new user from external identity)');
-          setIsSaving(false);
-          return;
-        }
-      }
-      if ((extS && !extU) || (!extS && extU)) {
-        setSaveError('External system and external user ID must be set together');
-        setIsSaving(false);
-        return;
-      }
-
       const payload: Record<string, unknown> = {
         metadata: meta.value,
         reason: 'gwui:new',
       };
-      if (uid) payload.user_id = uid;
-      else {
+
+      if (creationMode === 'existingUser') {
+        const uid = formData.user_id.trim();
+        if (!uid) {
+          setSaveError('User ID is required (gateway users.id)');
+          setIsSaving(false);
+          return;
+        }
+        payload.user_id = uid;
+      } else {
+        const extS = formData.external_system.trim();
+        const extU = formData.external_user_id.trim();
+        if ((extS && !extU) || (!extS && extU)) {
+          setSaveError('External system and external user ID must be set together');
+          setIsSaving(false);
+          return;
+        }
+        if (!extS || !extU) {
+          setSaveError('External system and external user ID are required for this mode');
+          setIsSaving(false);
+          return;
+        }
+        const em = formData.email.trim();
+        if (!em) {
+          setSaveError('Email is required when matching or creating a user by external identity');
+          setIsSaving(false);
+          return;
+        }
         payload.external_system = extS;
         payload.external_user_id = extU;
-        payload.email = formData.email.trim();
+        payload.email = em;
       }
+
       if (formData.name.trim() !== '') payload.name = formData.name.trim();
 
       const response = await fetch('/api/admin/keys', {
@@ -331,9 +341,8 @@ export default function GatewayKeysPage() {
       if (data.success) {
         setShowModal(false);
         fetchKeys();
-        // Show the new key
         if (data.data?.key) {
-          alert(`Key created: ${data.data.key}\nPlease save this key as it won't be shown again.`);
+          setFreshCreatedKey(data.data.key);
         }
       } else {
         setSaveError(data.message || 'Save failed');
@@ -394,6 +403,12 @@ export default function GatewayKeysPage() {
           </button>
         </div>
       </div>
+
+      {freshCreatedKey && (
+        <div className="mb-6 max-w-3xl">
+          <NewApiKeySecretBanner secret={freshCreatedKey} onDismiss={() => setFreshCreatedKey(null)} />
+        </div>
+      )}
 
       {/* Filters */}
       <div className="mb-4 flex justify-between items-center">
@@ -614,64 +629,138 @@ export default function GatewayKeysPage() {
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{saveError}</div>
               )}
 
+              <fieldset className="mb-5 space-y-2">
+                <legend className="text-sm font-medium text-gray-800">How to attach the key</legend>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-6">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="radio"
+                      name="keyCreationMode"
+                      className="text-blue-600 focus:ring-blue-500"
+                      checked={creationMode === 'existingUser'}
+                      onChange={() => handleCreationModeChange('existingUser')}
+                    />
+                    Existing gateway user
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="radio"
+                      name="keyCreationMode"
+                      className="text-blue-600 focus:ring-blue-500"
+                      checked={creationMode === 'externalIdentity'}
+                      onChange={() => handleCreationModeChange('externalIdentity')}
+                    />
+                    External identity (match or create user)
+                  </label>
+                </div>
+              </fieldset>
+
               <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                 <p className="font-medium text-slate-800">After creation</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
-                  <li>Either enter an existing <strong>User ID</strong> (gateway <code className="rounded bg-slate-200 px-1 text-xs">users.id</code>), or leave it empty and set <strong>External system</strong>, <strong>External user ID</strong>, and <strong>Email</strong> to upsert a user by upstream identity (email is stored on the user row and is required for that path).</li>
-                  <li>Multiple <strong>active</strong> keys per user are allowed. Budget is stored on the user; edit it under <Link href="/gateway/users" className="text-blue-700 underline">Users</Link>.</li>
-                  <li>The full <code className="rounded bg-slate-200 px-1 text-xs">sk-…</code> secret is shown <strong>once</strong> in a dialog; save it immediately.</li>
-                  <li><code className="rounded bg-slate-200 px-1 text-xs">metadata</code> is optional JSON on the key row (returned by <code className="rounded bg-slate-200 px-1 text-xs">GET /v1/me</code>).</li>
-                </ul>
+                {creationMode === 'existingUser' ? (
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
+                    <li>
+                      Enter the gateway <strong>User ID</strong> (<code className="rounded bg-slate-200 px-1 text-xs">users.id</code> from the{' '}
+                      <Link href="/gateway/users" className="text-blue-700 underline">
+                        Users
+                      </Link>{' '}
+                      list). Prefer creating keys from a user&apos;s detail page when you are already there.
+                    </li>
+                    <li>
+                      Multiple <strong>active</strong> keys per user are allowed. Budget lives on the user — edit under{' '}
+                      <Link href="/gateway/users" className="text-blue-700 underline">
+                        Users
+                      </Link>
+                      .
+                    </li>
+                    <li>
+                      The full <code className="rounded bg-slate-200 px-1 text-xs">sk-…</code> secret is shown <strong>once</strong> in the banner above the list; copy it immediately.
+                    </li>
+                    <li>
+                      <code className="rounded bg-slate-200 px-1 text-xs">metadata</code> is optional JSON on the key (returned by <code className="rounded bg-slate-200 px-1 text-xs">GET /v1/me</code>).
+                    </li>
+                  </ul>
+                ) : (
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
+                    <li>
+                      Provide <strong>External system</strong>, <strong>External user ID</strong>, and <strong>Email</strong>. The gateway will match an existing user by that pair or create one (email stored on <code className="rounded bg-slate-200 px-1 text-xs">users.email</code>; required on first create). If the user already exists, the request email is not used to overwrite the stored email.
+                    </li>
+                    <li>
+                      New users from this path start with <strong>zero</strong> budget until you set a plan on{' '}
+                      <Link href="/gateway/users" className="text-blue-700 underline">
+                        Users
+                      </Link>
+                      .
+                    </li>
+                    <li>
+                      The full <code className="rounded bg-slate-200 px-1 text-xs">sk-…</code> secret is shown <strong>once</strong> in the banner above the list.
+                    </li>
+                    <li>
+                      <code className="rounded bg-slate-200 px-1 text-xs">metadata</code> is optional JSON on the key (returned by <code className="rounded bg-slate-200 px-1 text-xs">GET /v1/me</code>).
+                    </li>
+                  </ul>
+                )}
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    User ID <span className="ml-1 text-xs font-normal text-gray-400">(optional if using external pair)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.user_id}
-                    onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. uuid from Users page"
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {creationMode === 'existingUser' ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">External system</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      User ID <span className="ml-1 text-xs font-normal text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
-                      value={formData.external_system}
-                      onChange={(e) => setFormData({ ...formData, external_system: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Upstream product id"
+                      value={formData.user_id}
+                      onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g. uuid from Users page"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">External user ID</label>
-                    <input
-                      type="text"
-                      value={formData.external_user_id}
-                      onChange={(e) => setFormData({ ...formData, external_user_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Upstream user id"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    User email <span className="ml-1 text-xs font-normal text-gray-400">(required without User ID)</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Stored on users.email when provisioning via external identity"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Ignored when User ID is set; required when using External system + External user ID to create or match a user.</p>
-                </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          External system <span className="ml-1 text-xs font-normal text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.external_system}
+                          onChange={(e) => setFormData({ ...formData, external_system: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Upstream product id"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          External user ID <span className="ml-1 text-xs font-normal text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.external_user_id}
+                          onChange={(e) => setFormData({ ...formData, external_user_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Upstream user id"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        User email <span className="ml-1 text-xs font-normal text-red-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Stored on users.email when creating via external identity"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Required for match-or-create. Not used to overwrite email when the external pair already exists.
+                      </p>
+                    </div>
+                  </>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Key name <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>

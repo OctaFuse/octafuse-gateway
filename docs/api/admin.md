@@ -48,6 +48,9 @@ Authorization: Bearer sk-admin-xxx
 | `/admin/keys/:id` | PATCH, DELETE | `api_keys` | Admin UI、外部集成方 / 运维脚本 |
 | `/admin/keys/:id/logs` | GET | `api_key_request_logs`（Key 范围，分页） | 外部集成方、Admin UI |
 | `/admin/providers` | GET, POST, GET/PATCH/DELETE `/:id` | `providers` | Admin UI |
+| `/admin/users/:id/keys` | GET, POST | `api_keys`（用户范围内） | Admin UI |
+| `/admin/users/:id/keys/:keyId` | PATCH, DELETE | `api_keys` | Admin UI |
+| `/admin/users/:id/logs` | GET | `api_key_request_logs` | Admin UI |
 | `/admin/providers/import/catalog` | GET | 内置 Provider 模板摘要（无密钥） | Admin UI |
 | `/admin/providers/import` | POST | 请求体 `{"ids":["…"]}`：按模板创建 `providers`（**同 id 不覆盖**；写入占位 API Key，需后续 PATCH） | Admin UI、运维脚本 |
 | `/admin/models` | GET, POST, GET/PATCH/DELETE `/:id` | `models`，`model_tags` | Admin UI |
@@ -115,9 +118,9 @@ GET /admin/keys?page=1&page_size=20&email=&max_budget=positive
 
 ---
 
-## 创建/获取用户 API Key
+## 创建 API Key
 
-按 `user_id` **幂等**：若已存在 **状态为 `active`** 的 Key，则返回该 Key 的 `key` / `key_id`，**不会**用本次请求体中的 `budget_max`、`budget_period`、`user_email` 覆盖库中已有字段。若请求体包含 `metadata`（对象或可解析为对象的 JSON 字符串），会在返回前 **整段写入** 该 Key 的 `metadata` 列（无论新建还是已存在）。新建 Key 时才会应用本次的预算字段与邮箱。
+每次调用在 `api_keys` 中 **新建一行**（同一用户可有多把 **active** 密钥）。预算与邮箱在 **`users`** 表上维护，请使用 **`PATCH /admin/users/:id`**，**不要**在创建或更新 Key 的请求体中携带预算或 `user_email` 字段。
 
 ### 请求
 
@@ -125,23 +128,35 @@ GET /admin/keys?page=1&page_size=20&email=&max_budget=positive
 POST /admin/keys
 ```
 
-### 请求体
+### 请求体（二选一关联用户）
 
-```json
-{
-  "user_id": "string",        // 必填，用户唯一标识
-  "user_email": "string",     // 可选，用户邮箱
-  "budget_max": 100.00,       // 可选；新建 Key 时生效。不传默认 0；传 null 表示无限制。已存在 Key 时忽略
-  "budget_base": 100.00,      // 可选；订阅套餐基础上限（周期 reset 时 `budget_max` 复位至此）。缺省时回退为 `budget_max`；不传也不会写入额外审计
-  "budget_period": "monthly", // 可选；新建 Key 时生效。已存在 Key 时忽略
-  "metadata": {},            // 可选，JSON 对象或合法 JSON 字符串；新建或已存在 Key 时均会更新 metadata 列
-  "reason": "string"         // 可选；**本次真正新建**密钥时写入 `api_key_audit_logs.reason_text`（`key_created`）；缺省为 `API key provisioned`
-}
-```
+**路径 A — 已有网关用户**
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `user_id` | 是 | 网关 `users.id`（须已存在） |
+| `name` | 否 | 密钥显示名 |
+| `metadata` | 否 | JSON **对象**或可解析为对象的 JSON **字符串**；写入该 Key 行 |
+| `reason` | 否 | 写入本次新建密钥的 `key_created` 审计 `reason_text` |
+
+**路径 B — 按外部身份匹配或创建用户后再建密钥**
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `external_system` | 是 | 与 `external_user_id` 成对；上游产品 / 租户标识 |
+| `external_user_id` | 是 | 上游用户标识 |
+| `email` | 是 | **新建**用户时写入 `users.email`；若外部对已存在则 **不会**用本次 email 覆盖库中已有邮箱 |
+| `name` | 否 | 密钥显示名 |
+| `metadata` | 否 | 同上 |
+| `reason` | 否 | 同上 |
+
+路径 B 新建用户时，服务端为该用户写入默认预算：`budget_max = 0`、`budget_period = none` 等；后续请在 **Users** 管理接口中调整计划。
+
+`user_id` 与「`external_system` + `external_user_id`」不得混用为不完整组合（例如仅 `external_system` 无 `external_user_id` 会 **400**）。
 
 ### 审计 `reason`（POST）
 
-- 仅当本次调用在库中**新建**一行 `api_keys` 时，`reason` 会进入首条 `key_created` 审计的 `reason_text`；幂等返回已有活跃 Key 时不会重复写 `key_created` 行，请求体中的 `reason` 也不影响历史审计。
+仅当本次在库中 **新建** `api_keys` 行时，`reason`（若提供）进入对应 `key_created` 审计的 `reason_text`。
 
 ### 响应
 
@@ -157,27 +172,51 @@ POST /admin/keys
 }
 ```
 
-无论新建还是返回既有 Key，`message` 目前均为上述固定文案（不区分 `created` 标志）。
+> **明文 `key`** 仅在本次响应中返回完整值；客户端须立即保存。列表与详情接口中的 `key` 为掩码或存储形态，不应依赖再次取回明文。
 
-### 示例
+### 示例（已有用户）
 
 ```bash
 curl -X POST http://localhost:8787/admin/keys \
   -H "Authorization: Bearer sk-admin-xxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "user_id": "user-123",
-    "user_email": "user@example.com",
-    "budget_max": 50.00,
-    "budget_period": "monthly"
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "integration-ci",
+    "metadata": {"env":"staging"},
+    "reason": "provision-from-billing"
   }'
 ```
 
+### 示例（外部身份）
+
+```bash
+curl -X POST http://localhost:8787/admin/keys \
+  -H "Authorization: Bearer sk-admin-xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_system": "my-saas",
+    "external_user_id": "acct_123",
+    "email": "user@example.com",
+    "name": "default-key"
+  }'
+```
+
+### 在指定用户下创建（Admin UI 常用）
+
+当已掌握 `users.id` 时，也可调用子资源（用户由路径解析，请求体无需再传 `user_id`）：
+
+```
+POST /admin/users/:id/keys
+```
+
+请求体仅支持：`name`、`metadata`（对象或 JSON 字符串）、`reason`（可选）。响应信封与 `POST /admin/keys` 相同（`data.key`、`data.key_id` 等）。
+
 ---
 
-## 更新 Key 预算/计划
+## 更新 API Key（名称 / 状态 / metadata）
 
-更新指定 Key 的预算设置或计划参数。
+**不支持**在 `PATCH /admin/keys/:id` 上修改预算、`user_email` 等用户级字段；若传入 `budget_max`、`budget_base`、`budget_spent`、`budget_period`、`reset_budget`、`budget_reset_at`、`user_email` 等，服务端返回 **400**（提示改用 **`PATCH /admin/users/:id`**）。
 
 ### 请求
 
@@ -189,71 +228,44 @@ PATCH /admin/keys/:id
 
 | 参数 | 描述 |
 |------|------|
-| `id` | API Key ID (UUID) 或完整的 API Key (sk-xxx 格式) |
+| `id` | API Key ID (UUID) 或完整的 API Key (`sk-…`) |
 
 ### 请求体
 
+至少提供以下字段之一：
+
 ```json
 {
-  "budget_max": 200.00,           // 可选，新预算上限；传 null 表示无限制（含临时 topup 后的额度）
-  "budget_base": 200.00,          // 可选，订阅套餐基础上限：周期 reset 时 `budget_max` 复位至此；传 null 视为 0；缺省则不修改 base
-  "budget_period": "weekly",      // 可选，预算周期: "none" | "daily" | "weekly" | "monthly"
-  "budget_spent": 0,              // 可选，显式设置当前周期已消费（与 reset_budget 等一并走 updateKeyPlan；单独提供也会触发计划更新分支）
-  "reset_budget": true,           // 可选，是否将已用预算置 0（默认 true；若同时传 budget_spent 则以 budget_spent 为准）
-  "budget_reset_at": "2024-02-15T00:00:00.000Z", // 可选，下次重置时间 (ISO 8601)
-  "status": "active",             // 可选，如 active / revoked
-  "metadata": {                   // 可选，对象：与现有 metadata **合并**
-    "plan": "pro",
-    "source": "account-service"
-  },
-  "metadata_replace": "{}",       // 可选，JSON 字符串：整段替换 metadata（与对象 metadata 二选一）
-  "reason": "string"              // 可选；写入 `api_key_audit_logs.reason_text`（见下）；缺省为 `Admin update`
+  "name": "new-label",
+  "status": "revoked",
+  "metadata": { "plan": "pro" },
+  "metadata_replace": "{\"plan\":\"pro\"}",
+  "reason": "Admin update"
 }
 ```
 
-### 审计 `reason`（PATCH）
-
-当本次更新导致 **预算快照变化**（`budget_spent` / `budget_max` / `budget_base` / `budget_period` / `budget_reset_at` 任一与更新前不同）时，写入一条 `event_type = admin_adjust`、`reason_code = admin_patch_budget` 的审计；审计列同时记录 `before_budget_base` / `after_budget_base`，`metadata` 列可附带紧凑 JSON（如 `status` 前后值、`metadata_patch_keys`），便于同一次 PATCH 既改预算又改 profile 时对照。
-
-当 **仅** `metadata` / `status`（或二者同时）变化、且预算快照未变时，追加一条 `admin_adjust` 审计：`reason_code` 为 `admin_patch_metadata`、`admin_patch_status` 或 `admin_patch_profile`（二者同时变），`delta_spent = 0`，预算列前后一致。
-
-> 注：`metadata` 若为 **字符串**，视为 **整段替换**（与 `metadata_replace` 相同语义）。至少需要提供：`budget_max` / `budget_base` / `budget_period` / `budget_spent` / `reset_budget` / `budget_reset_at` / `metadata` / `metadata_replace` / `status` 之一。
-
-> **部分 PATCH（仅 `budget_max` / `budget_spent`）**：未显式提供 `budget_period`、`budget_reset_at`、`reset_budget` 时，管理端会 **保留** 当前行的 `budget_reset_at` 与 `budget_spent`（仅更新请求里出现的字段）；若需与订阅周期对齐或清空已用额度，请显式传 `budget_reset_at` / `reset_budget`（以及需要时的 `budget_period`）。若显式修改 `budget_period` 且与库中不同、又未传 `budget_reset_at`，则对非 `none` 周期会按规则生成新的首次重置时间；改为 `none` 时 `budget_reset_at` 置为 `null`。
+| 字段 | 说明 |
+|------|------|
+| `name` | 可选；字符串或 `null` 清空显示名 |
+| `status` | 可选；如 `active`、`revoked` |
+| `metadata` | 可选；**对象**时与现有 key `metadata` **合并**；**字符串**时视为整段替换（与 `metadata_replace` 语义相同） |
+| `metadata_replace` | 可选；JSON 字符串，整段替换 metadata；勿与对象形式的 `metadata` 同时使用 |
+| `reason` | 可选；写入用户审计等文案，缺省由服务端默认 |
 
 ### 响应
 
-```json
-{
-  "success": true,
-  "message": "Key updated successfully",
-  "data": {
-    "id": "uuid",
-    "key_id": "uuid",
-    "user_id": "user-123",
-    "budget_max": 200.00,
-    "budget_base": 200.00,
-    "budget_period": "weekly",
-    "budget_reset_at": "2024-02-15T00:00:00.000Z",
-    "metadata": {
-      "plan": "pro",
-      "source": "account-service"
-    }
-  }
-}
-```
+`data` 为更新后的密钥关联信息摘要（含从用户 JOIN 的只读预算字段等），字段与实现 `updateAdminKey` 返回一致。
 
 ### 示例
 
 ```bash
-# 更新预算上限并重置已用预算
 curl -X PATCH http://localhost:8787/admin/keys/uuid-here \
   -H "Authorization: Bearer sk-admin-xxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "budget_max": 200.00,
-    "budget_period": "weekly",
-    "reset_budget": true
+    "name": "rotated-label",
+    "status": "active",
+    "reason": "gwui:reactivate"
   }'
 ```
 
