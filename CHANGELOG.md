@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+### Patch Changes
+
+- [#8](https://github.com/OctaFuse/octafuse-gateway/pull/8) [`ef46a21`](https://github.com/OctaFuse/octafuse-gateway/commit/ef46a216662527fed64084243b1bacc16dfd0adf) Thanks [@dyc87112](https://github.com/dyc87112)! - release pipeline: inject PAT into checkout/git push for tags, add Docker workflow concurrency, embed CHANGELOG section in GitHub Release notes
+
 ## 0.2.0
 
 ### Minor Changes
