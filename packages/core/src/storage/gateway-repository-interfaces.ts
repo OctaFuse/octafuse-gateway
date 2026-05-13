@@ -107,6 +107,15 @@ export interface UsersRepository {
 	updateUserStatus(id: string, status: string): Promise<boolean>;
 	setUserMetadataById(id: string, metadataJson: string | null): Promise<boolean>;
 	setUserEmailById(id: string, email: string): Promise<boolean>;
+	/**
+	 * 同时更新一对 external 身份。两者要么都为非空字符串，要么都为 null
+	 * （由调用方校验；底层依赖 `users_external_pair_chk` 兜底）。
+	 */
+	setUserExternalIdentityById(
+		id: string,
+		externalSystem: string | null,
+		externalUserId: string | null
+	): Promise<boolean>;
 	deleteUserHard(id: string): Promise<boolean>;
 }
 

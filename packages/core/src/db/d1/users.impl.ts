@@ -198,6 +198,20 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 			return result.meta.changes > 0;
 		},
 
+		async setUserExternalIdentityById(
+			id: string,
+			externalSystem: string | null,
+			externalUserId: string | null
+		): Promise<boolean> {
+			const result = await raw
+				.prepare(
+					'UPDATE users SET external_system = ?, external_user_id = ?, updated_at = datetime("now") WHERE id = ?'
+				)
+				.bind(externalSystem, externalUserId, id)
+				.run();
+			return result.meta.changes > 0;
+		},
+
 		async deleteUserHard(id: string): Promise<boolean> {
 			const result = await raw.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
 			return (result.meta.changes ?? 0) > 0;

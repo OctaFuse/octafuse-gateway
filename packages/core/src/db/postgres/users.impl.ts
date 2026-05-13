@@ -209,6 +209,20 @@ export function createPostgresUsersRepository(db: PostgresDatabaseClient): Users
 			return updated.length > 0;
 		},
 
+		async setUserExternalIdentityById(
+			id: string,
+			externalSystem: string | null,
+			externalUserId: string | null
+		): Promise<boolean> {
+			const now = new Date().toISOString();
+			const updated = await drizzle
+				.update(pgUsersTable)
+				.set({ externalSystem, externalUserId, updatedAt: now })
+				.where(eq(pgUsersTable.id, id))
+				.returning({ id: pgUsersTable.id });
+			return updated.length > 0;
+		},
+
 		async deleteUserHard(id: string): Promise<boolean> {
 			const r = await drizzle.delete(pgUsersTable).where(eq(pgUsersTable.id, id)).returning({ id: pgUsersTable.id });
 			return r.length > 0;

@@ -243,9 +243,38 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				? null
 				: String(userEmailRaw).trim().toLowerCase();
 
-	if (!hasBudgetField && !hasMetaObjectMerge && !hasMetaReplace && !hasStatus && !hasEmail) {
+	const hasExternalSystem = Object.prototype.hasOwnProperty.call(input, 'external_system');
+	const hasExternalUserId = Object.prototype.hasOwnProperty.call(input, 'external_user_id');
+	const hasExternalIdentity = hasExternalSystem || hasExternalUserId;
+	const normalizeExternalString = (raw: unknown): string | null => {
+		if (raw == null) return null;
+		const s = String(raw).trim();
+		return s === '' ? null : s;
+	};
+	const nextExternalSystem = hasExternalSystem
+		? normalizeExternalString(input.external_system)
+		: row.external_system;
+	const nextExternalUserId = hasExternalUserId
+		? normalizeExternalString(input.external_user_id)
+		: row.external_user_id;
+	if (hasExternalIdentity) {
+		const bothNull = nextExternalSystem === null && nextExternalUserId === null;
+		const bothSet = nextExternalSystem !== null && nextExternalUserId !== null;
+		if (!bothNull && !bothSet) {
+			throw badRequest('external_system and external_user_id must both be set or both empty');
+		}
+	}
+
+	if (
+		!hasBudgetField &&
+		!hasMetaObjectMerge &&
+		!hasMetaReplace &&
+		!hasStatus &&
+		!hasEmail &&
+		!hasExternalIdentity
+	) {
 		throw badRequest(
-			'Provide at least one of email, budget_max, budget_base, budget_spent, budget_period, reset_budget, budget_reset_at, metadata, metadata_replace, status'
+			'Provide at least one of email, budget_max, budget_base, budget_spent, budget_period, reset_budget, budget_reset_at, metadata, metadata_replace, status, external_system, external_user_id'
 		);
 	}
 
@@ -261,6 +290,14 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 			throw badRequest('email cannot be empty');
 		}
 		const ok = await repos.users.setUserEmailById(userId, nextEmail);
+		if (!ok) throw new Error('Failed to update user');
+	}
+	if (hasExternalIdentity) {
+		const ok = await repos.users.setUserExternalIdentityById(
+			userId,
+			nextExternalSystem,
+			nextExternalUserId
+		);
 		if (!ok) throw new Error('Failed to update user');
 	}
 
@@ -330,15 +367,30 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 	const metadataChanged = (row.metadata ?? '') !== (rowAfter.metadata ?? '');
 	const statusChanged = (row.status ?? '') !== (rowAfter.status ?? '');
 	const emailChanged = (row.email ?? null) !== (rowAfter.email ?? null);
+	const externalSystemChanged = (row.external_system ?? null) !== (rowAfter.external_system ?? null);
+	const externalUserIdChanged = (row.external_user_id ?? null) !== (rowAfter.external_user_id ?? null);
+	const externalChanged = externalSystemChanged || externalUserIdChanged;
 
 	let profileAuditPayload: Record<string, unknown> | null = null;
-	if (metadataChanged || statusChanged || emailChanged) {
+	if (metadataChanged || statusChanged || emailChanged || externalChanged) {
 		profileAuditPayload = {};
 		if (emailChanged) {
 			profileAuditPayload.email = { from: row.email ?? null, to: rowAfter.email ?? null };
 		}
 		if (statusChanged) {
 			profileAuditPayload.status = { from: row.status ?? null, to: rowAfter.status ?? null };
+		}
+		if (externalSystemChanged) {
+			profileAuditPayload.external_system = {
+				from: row.external_system ?? null,
+				to: rowAfter.external_system ?? null,
+			};
+		}
+		if (externalUserIdChanged) {
+			profileAuditPayload.external_user_id = {
+				from: row.external_user_id ?? null,
+				to: rowAfter.external_user_id ?? null,
+			};
 		}
 		if (metadataChanged) {
 			let operation: 'merge' | 'replace' | 'update' = 'update';

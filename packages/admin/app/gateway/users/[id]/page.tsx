@@ -101,6 +101,8 @@ export default function GatewayUserDetailPage() {
     budget_period: 'none',
     budget_reset_at: '',
     metadata: '',
+    external_system: '',
+    external_user_id: '',
   });
   const [showNewKey, setShowNewKey] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
@@ -131,6 +133,8 @@ export default function GatewayUserDetailPage() {
         budget_period: u.budget_period || 'none',
         budget_reset_at: formatLocalDateTimeInput(u.budget_reset_at),
         metadata: u.metadata ? JSON.stringify(u.metadata, null, 2) : '',
+        external_system: u.external_system ?? '',
+        external_user_id: u.external_user_id ?? '',
       });
     } catch (e) {
       console.error(e);
@@ -211,6 +215,13 @@ export default function GatewayUserDetailPage() {
         setIsSavingPlan(false);
         return;
       }
+      const extS = planForm.external_system.trim();
+      const extU = planForm.external_user_id.trim();
+      if ((extS && !extU) || (!extS && extU)) {
+        setPlanError('External system and external user ID must both be set or both empty');
+        setIsSavingPlan(false);
+        return;
+      }
       const payload: Record<string, unknown> = {
         email,
         status: planForm.status,
@@ -219,6 +230,8 @@ export default function GatewayUserDetailPage() {
         budget_spent: parseFloat(planForm.budget_spent) || 0,
         budget_period: planForm.budget_period,
         budget_reset_at: planForm.budget_reset_at ? new Date(planForm.budget_reset_at).toISOString() : null,
+        external_system: extS || null,
+        external_user_id: extU || null,
         reason: 'gwui:user-plan',
       };
       if (meta.value != null) {
@@ -369,82 +382,86 @@ export default function GatewayUserDetailPage() {
   const auditsTotalPages = Math.ceil(auditsTotal / 20) || 1;
 
   return (
-    <div className="p-8 max-w-6xl">
-      <div className="mb-6 flex flex-wrap justify-between gap-4">
-        <div>
-          <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">← Users</Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-2">User</h1>
-          <p className="text-sm text-gray-500 font-mono mt-1 break-all">{user.id}</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}`}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-          >
-            All audit logs
-          </Link>
-          <button type="button" onClick={deleteUser} className="px-3 py-2 border border-red-300 text-red-700 rounded-md text-sm hover:bg-red-50">
-            Delete user
-          </button>
-        </div>
+    <div className="p-8">
+      <div className="mb-6">
+        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">← Users</Link>
+        <h1 className="text-2xl font-bold text-gray-900 mt-2">User</h1>
+        <p className="text-sm text-gray-500 font-mono mt-1 break-all">{user.id}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Profile & plan</h2>
+          <h2 className="text-lg font-semibold text-gray-900">User Detail</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            <ReadonlyRow label="External system">{user.external_system || '—'}</ReadonlyRow>
-            <ReadonlyRow label="External user ID">
-              <span className="font-mono text-xs break-all">{user.external_user_id || '—'}</span>
-            </ReadonlyRow>
             <ReadonlyRow label="Created">{formatGatewayDateTime(user.created_at)}</ReadonlyRow>
             <ReadonlyRow label="Updated">{formatGatewayDateTime(user.updated_at)}</ReadonlyRow>
           </div>
           {planError && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{planError}</div>}
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input
-                type="text"
-                value={planForm.email}
-                onChange={(e) => setPlanForm({ ...planForm, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <select
-                value={planForm.status}
-                onChange={(e) => setPlanForm({ ...planForm, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-              >
-                <option value="active">active</option>
-                <option value="disabled">disabled</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Budget max</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  aria-required="true"
+                  autoComplete="email"
+                  value={planForm.email}
+                  onChange={(e) => setPlanForm({ ...planForm, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={planForm.status}
+                  onChange={(e) => setPlanForm({ ...planForm, status: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="active">active</option>
+                  <option value="disabled">disabled</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Disabled users cannot use any API key for new requests.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Budget max <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={planForm.budget_max}
                   onChange={(e) => setPlanForm({ ...planForm, budget_max: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  placeholder="Empty = unlimited"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Maximum spendable amount in the current cycle. Leave empty for unlimited.
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Budget base</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Budget base <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={planForm.budget_base}
                   onChange={(e) => setPlanForm({ ...planForm, budget_base: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  placeholder="Optional"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Reference amount used to reset Budget max when the budget cycle resets.
+                </p>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Budget spent</label>
                 <input
@@ -454,9 +471,16 @@ export default function GatewayUserDetailPage() {
                   onChange={(e) => setPlanForm({ ...planForm, budget_spent: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                 />
+                <p className="mt-1 text-xs text-gray-500">
+                  Amount already spent in the current cycle. Edit only to manually adjust.
+                </p>
               </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Budget period <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                </label>
                 <select
                   value={planForm.budget_period}
                   onChange={(e) => setPlanForm({ ...planForm, budget_period: e.target.value })}
@@ -467,35 +491,92 @@ export default function GatewayUserDetailPage() {
                   <option value="weekly">weekly</option>
                   <option value="monthly">monthly</option>
                 </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Reset cycle for spent / Budget max. <span className="font-mono">none</span> disables auto-reset.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Budget reset at (local) <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  step={1}
+                  value={planForm.budget_reset_at}
+                  onChange={(e) => setPlanForm({ ...planForm, budget_reset_at: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Next time spent (and Budget max from base) will auto-reset. Ignored when Budget period is <span className="font-mono">none</span>.
+                </p>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Budget reset at (local)</label>
-              <input
-                type="datetime-local"
-                step={1}
-                value={planForm.budget_reset_at}
-                onChange={(e) => setPlanForm({ ...planForm, budget_reset_at: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">User metadata (JSON, replace)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Metadata (JSON object) <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+              </label>
               <textarea
                 value={planForm.metadata}
                 onChange={(e) => setPlanForm({ ...planForm, metadata: e.target.value })}
                 rows={6}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+                placeholder="{}"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Saving replaces the entire metadata object. Leave empty to keep current value unchanged.
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={savePlan}
-              disabled={isSavingPlan}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSavingPlan ? 'Saving…' : 'Save plan'}
-            </button>
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-900">
+                External identity <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+              </h3>
+              <p className="mt-1 text-xs text-gray-500">
+                Use these fields to link this user to an account in another system (e.g. your own SaaS, an OAuth provider). Leave both empty for an internal Gateway-only user. Both fields must be set together or both left blank.
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    External system <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={planForm.external_system}
+                    onChange={(e) => setPlanForm({ ...planForm, external_system: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    placeholder="e.g. my-app"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    External user ID <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={planForm.external_user_id}
+                    onChange={(e) => setPlanForm({ ...planForm, external_user_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    placeholder="ID in the external system"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={deleteUser}
+                className="px-4 py-2 border border-red-300 text-red-700 rounded-md text-sm hover:bg-red-50"
+              >
+                Delete user
+              </button>
+              <button
+                type="button"
+                onClick={savePlan}
+                disabled={isSavingPlan}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSavingPlan ? 'Saving…' : 'Save user'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -554,7 +635,15 @@ export default function GatewayUserDetailPage() {
       </div>
 
       <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Recent request logs</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Recent request logs</h2>
+          <Link
+            href={`/gateway/request-logs?user_email=${encodeURIComponent(user.email)}`}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            More →
+          </Link>
+        </div>
         <div className="overflow-x-auto text-sm">
           <table className="min-w-full">
             <thead>
@@ -587,7 +676,15 @@ export default function GatewayUserDetailPage() {
       </div>
 
       <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">User audit logs</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">User audit logs</h2>
+          <Link
+            href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}`}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            More →
+          </Link>
+        </div>
         <div className="overflow-x-auto text-xs">
           <table className="min-w-full">
             <thead>

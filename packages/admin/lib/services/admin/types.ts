@@ -37,6 +37,13 @@ export type AdminUserUpdateInput = {
 	metadata?: unknown;
 	metadata_replace?: unknown;
 	status?: string;
+	/**
+	 * 外部身份对：要么两者都为非空字符串（链接到上游），要么两者都为 null
+	 * （清除链接，回到 Gateway-only internal user）。任一字段被显式提供即视为
+	 * 一次原子更新；未提供则保持原值。
+	 */
+	external_system?: string | null;
+	external_user_id?: string | null;
 };
 
 /** ---------- `/admin/keys` 请求体 ---------- */

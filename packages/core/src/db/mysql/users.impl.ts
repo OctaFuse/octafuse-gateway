@@ -202,6 +202,21 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			return true;
 		},
 
+		async setUserExternalIdentityById(
+			id: string,
+			externalSystem: string | null,
+			externalUserId: string | null
+		): Promise<boolean> {
+			const existing = await drizzle.select({ id: myUsersTable.id }).from(myUsersTable).where(eq(myUsersTable.id, id)).limit(1);
+			if (!existing[0]) return false;
+			const now = new Date().toISOString();
+			await drizzle
+				.update(myUsersTable)
+				.set({ externalSystem, externalUserId, updatedAt: now })
+				.where(eq(myUsersTable.id, id));
+			return true;
+		},
+
 		async deleteUserHard(id: string): Promise<boolean> {
 			const existing = await drizzle.select({ id: myUsersTable.id }).from(myUsersTable).where(eq(myUsersTable.id, id)).limit(1);
 			if (!existing[0]) return false;

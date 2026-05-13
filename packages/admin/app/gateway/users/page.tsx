@@ -4,7 +4,7 @@
  * 网关用户列表：预算在 `users`；筛选与分页；跳转详情。
  */
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayDateTime } from '@/lib/datetime';
@@ -13,6 +13,7 @@ import type { GatewayUserListItem } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 
 export default function GatewayUsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<GatewayUserListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -228,12 +229,25 @@ export default function GatewayUsersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50">
+            {users.map((u) => {
+              const detailHref = `/gateway/users/${encodeURIComponent(u.id)}`;
+              return (
+              <tr
+                key={u.id}
+                role="link"
+                tabIndex={0}
+                aria-label={`User detail: ${u.email || u.id}`}
+                className="hover:bg-gray-50 cursor-pointer"
+                onClick={() => router.push(detailHref)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    router.push(detailHref);
+                  }
+                }}
+              >
                 <td className="px-4 py-3">
-                  <Link href={`/gateway/users/${encodeURIComponent(u.id)}`} className="text-sm font-medium text-blue-600 hover:underline">
-                    {u.email || '—'}
-                  </Link>
+                  <div className="text-sm font-medium text-gray-900">{u.email || '—'}</div>
                   <div className="text-xs text-gray-500 font-mono mt-0.5">{u.id}</div>
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-900">
@@ -268,7 +282,8 @@ export default function GatewayUsersPage() {
                   </span>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         {users.length === 0 && (
