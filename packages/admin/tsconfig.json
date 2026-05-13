@@ -30,6 +30,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "types/cloudflare-env-shim.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",

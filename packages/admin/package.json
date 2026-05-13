@@ -6,6 +6,7 @@
 		"dev": "next dev",
 		"dev:node": "dotenv -c -- next dev -p 8789",
 		"build": "npm run cf-typegen && next build && node ./scripts/link-standalone-next.mjs",
+		"build:docker": "next build && node ./scripts/link-standalone-next.mjs",
 		"build:cf": "npm run cf-typegen && opennextjs-cloudflare build",
 		"start": "next start",
 		"lint": "eslint .",

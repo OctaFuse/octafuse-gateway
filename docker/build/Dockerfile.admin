@@ -24,7 +24,7 @@ COPY packages/admin ./packages/admin
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build -w @octafuse/core && npm run build -w @octafuse/admin
+RUN npm run build -w @octafuse/core && npm run build:docker -w @octafuse/admin
 
 FROM node:22-alpine AS runner
 

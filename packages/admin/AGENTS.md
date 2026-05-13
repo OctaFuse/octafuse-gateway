@@ -30,7 +30,7 @@ npm run cf-typegen    # Regenerate cloudflare-env.d.ts (required after fresh clo
 
 For full admin API debugging use **`npm run preview`** or root **`npm run dev:admin`** (D1), or **`npm run dev:node`** / **`npm run dev:admin:node`** (Postgres). Do not rely on Proxy Worker alone.
 
-**Self-hosted Postgres + containers**: **`docker/build/Dockerfile.admin`** multi-stage build runs **Next standalone** (default **`CMD`**: `node packages/admin/server.js`, `:8789`), app process only. Schema changes use the **`docker/build/Dockerfile.migrate`** image (`docker compose --profile migrate run --rm migrate`). Inject **`DATABASE_URL`**, **`DATABASE_DRIVER`** (default `postgres` if omitted), and **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**, same database as **`docker/build/Dockerfile.proxy`**. See `../../docs/ops/deployment-docker.md`.
+**Self-hosted Postgres + containers**: **`docker/build/Dockerfile.admin`** multi-stage build runs **`npm run build:docker`**（Next standalone，**不**跑 `wrangler types`，与 CI 中 `npm ci --ignore-scripts` 兼容；类型兜底见 **`types/cloudflare-env-shim.d.ts`**），默认 **`CMD`**: `node packages/admin/server.js`，`:8789`，应用进程 only。Schema changes use the **`docker/build/Dockerfile.migrate`** image (`docker compose --profile migrate run --rm migrate`). Inject **`DATABASE_URL`**, **`DATABASE_DRIVER`** (default `postgres` if omitted), and **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**, same database as **`docker/build/Dockerfile.proxy`**. See `../../docs/ops/deployment-docker.md`.
 
 ## Architecture
 
