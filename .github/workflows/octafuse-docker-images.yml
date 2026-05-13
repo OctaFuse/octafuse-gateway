@@ -185,6 +185,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.imgs.outputs.images }}
+          # 覆盖默认从 GitHub 仓库 About 拉取的 description（历史描述可能仍为 SoloEnt 文案）
+          labels: |
+            org.opencontainers.image.description=Octafuse gateway monorepo: AI Gateway (D1, Postgres, MySQL), Cloudflare Workers, and Node. https://github.com/OctaFuse/octafuse-gateway
           tags: |
             type=sha,prefix=
             type=ref,event=branch
