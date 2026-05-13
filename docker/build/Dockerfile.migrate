@@ -16,6 +16,8 @@ COPY packages/admin/package.json packages/admin/
 RUN --mount=type=cache,target=/root/.npm \
 	npm ci --ignore-scripts --workspace=@octafuse/core
 
+RUN npm rebuild esbuild
+
 COPY packages/core ./packages/core
 
 RUN npm run build -w @octafuse/core

@@ -18,6 +18,9 @@ RUN --mount=type=cache,target=/root/.npm \
 	--workspace=@octafuse/core \
 	--workspace=@octafuse/admin
 
+# esbuild 依赖 postinstall 拉取当前平台二进制；--ignore-scripts 会跳过，多架构 build 下 arm64 会在 build:node-index 失败
+RUN npm rebuild esbuild
+
 COPY packages/core ./packages/core
 COPY packages/admin ./packages/admin
 

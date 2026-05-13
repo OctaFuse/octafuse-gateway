@@ -57,7 +57,7 @@
 |`docker/build/Dockerfile.admin`|Next **standalone**（`node packages/admin/server.js`）|`8789`|**`.next/standalone` + `.next/static` + `public`**；另含运行所需的 `@octafuse/core` 构建产物与 **`postgres` / `mysql2`** 依赖子集；仅负责应用进程。|
 |`docker/build/Dockerfile.migrate`|一次性迁移 Job：`node packages/core/dist/migrate/cli.js`（无参数时由入口按 `DATABASE_DRIVER` 选择 `--driver`）|—|仅 **`@octafuse/core`** 构建产物与 SQL 目录；**`ENTRYPOINT`** [`docker/entrypoint.migrate.sh`](../../docker/entrypoint.migrate.sh)；供 **`--profile migrate`** / **`GATEWAY_MIGRATE_IMAGE`**。|
 
-**Admin 镜像与 Cloudflare 构建分工**：`Dockerfile.admin` 在构建阶段执行 **`npm run build:docker -w @octafuse/admin`**（`next build` + `scripts/link-standalone-next.mjs`），**不**运行 `wrangler types`，因此镜像构建不依赖 **`workerd`**，可与 `npm ci --ignore-scripts` 的 CI 安装方式兼容。部署到 Cloudflare（预览/生产）仍使用 **`npm run build:cf`** / **`npm run preview`** / **`npm run deploy`**（内含 `cf-typegen` 与 OpenNext Cloudflare 打包）。
+**Admin 镜像与 Cloudflare 构建分工**：`Dockerfile.admin` 在构建阶段执行 **`npm run build:docker -w @octafuse/admin`**（`next build` + `scripts/link-standalone-next.mjs`），**不**运行 `wrangler types`，因此镜像构建不依赖 **`workerd`**，可与 `npm ci --ignore-scripts` 的 CI 安装方式兼容。部署到 Cloudflare（预览/生产）仍使用 **`npm run build:cf`** / **`npm run preview`** / **`npm run deploy`**（内含 `cf-typegen` 与 OpenNext Cloudflare 打包）。各 Dockerfile 在 `npm ci --ignore-scripts` 之后会执行 **`npm rebuild esbuild`**：`@octafuse/core` 的 `build:node-index` 依赖 esbuild 的 postinstall 二进制，跳过脚本时多架构（尤其 `linux/arm64`）会在该步失败。
 
 典型未压缩体积：**proxy** 常见约 **一百多 MB**；**admin** 因 Next standalone 与 trace 较大，常见约 **两百 MB 量级**；**migrate** 最小。若仍见 **~1GB+** 单层或总量异常，多为旧版单阶段镜像或本地缓存标签，请 `docker build --no-cache` 重建后对比 `docker image ls` / `docker history`。
 

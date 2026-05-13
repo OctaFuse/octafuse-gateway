@@ -34,6 +34,8 @@ RUN --mount=type=cache,target=/root/.npm \
 	--workspace=@octafuse/core \
 	--workspace=@octafuse/proxy
 
+RUN npm rebuild esbuild
+
 COPY packages/core ./packages/core
 COPY packages/proxy ./packages/proxy
 
