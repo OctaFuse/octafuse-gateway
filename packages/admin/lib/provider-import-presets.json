@@ -5,8 +5,7 @@
 		"vendor_key": "deepseek",
 		"base_url_openai": "https://api.deepseek.com/v1",
 		"base_url_anthropic": null,
-		"base_url_gemini": null,
-		"description": "DeepSeek 官方 OpenAI 兼容接口；导入后请将 API Key 替换为控制台密钥。"
+		"base_url_gemini": null
 	},
 	{
 		"id": "volcengine-ark-beijing",
@@ -14,8 +13,7 @@
 		"vendor_key": "volcengine",
 		"base_url_openai": "https://ark.cn-beijing.volces.com/api/v3",
 		"base_url_anthropic": null,
-		"base_url_gemini": null,
-		"description": "火山方舟 Endpoint；地域/路径以控制台为准，可按需改 base URL。"
+		"base_url_gemini": null
 	},
 	{
 		"id": "aliyun-dashscope-compatible",
@@ -23,8 +21,7 @@
 		"vendor_key": "aliyun",
 		"base_url_openai": "https://dashscope.aliyuncs.com/compatible-mode/v1",
 		"base_url_anthropic": null,
-		"base_url_gemini": null,
-		"description": "DashScope 兼容 OpenAI 模式；密钥为百炼 API-Key。"
+		"base_url_gemini": null
 	},
 	{
 		"id": "tencent-hunyuan-openai",
@@ -32,8 +29,7 @@
 		"vendor_key": "tencent",
 		"base_url_openai": "https://api.hunyuan.cloud.tencent.com/v1",
 		"base_url_anthropic": null,
-		"base_url_gemini": null,
-		"description": "混元 OpenAI 兼容网关；以腾讯云控制台文档为准核对 endpoint。"
+		"base_url_gemini": null
 	},
 	{
 		"id": "baidu-qianfan-openai",
@@ -41,8 +37,7 @@
 		"vendor_key": "baidu",
 		"base_url_openai": "https://qianfan.baidubce.com/v2",
 		"base_url_anthropic": null,
-		"base_url_gemini": null,
-		"description": "千帆 ModelBuilder OpenAI 兼容 v2；密钥为千帆 API Key。"
+		"base_url_gemini": null
 	},
 	{
 		"id": "zhipu-bigmodel-openai",
@@ -50,8 +45,7 @@
 		"vendor_key": "zhipu",
 		"base_url_openai": "https://open.bigmodel.cn/api/paas/v4",
 		"base_url_anthropic": null,
-		"base_url_gemini": null,
-		"description": "智谱大模型开放平台 OpenAI 兼容路径；密钥为 API Key。"
+		"base_url_gemini": null
 	},
 	{
 		"id": "moonshot-official",
@@ -59,8 +53,7 @@
 		"vendor_key": "moonshot",
 		"base_url_openai": "https://api.moonshot.cn/v1",
 		"base_url_anthropic": null,
-		"base_url_gemini": null,
-		"description": "Kimi / Moonshot OpenAI 兼容官方地址。"
+		"base_url_gemini": null
 	},
 	{
 		"id": "minimax-official-openai",
@@ -68,7 +61,6 @@
 		"vendor_key": "minimax",
 		"base_url_openai": "https://api.minimax.chat/v1",
 		"base_url_anthropic": null,
-		"base_url_gemini": null,
-		"description": "MiniMax 文本 OpenAI 兼容接口；见官方 API 文档。"
+		"base_url_gemini": null
 	}
 ]

@@ -17,7 +17,8 @@ export type StaticProviderImportPresetRow = {
 	base_url_openai: string | null;
 	base_url_anthropic: string | null;
 	base_url_gemini: string | null;
-	description: string | null;
+	/** 可选；JSON 中可省略，导入后写入 providers.description 时为 null */
+	description?: string | null;
 };
 
 /** 占位密钥：导入后列表中会高亮提示需替换。勿用于真实上游调用。 */
