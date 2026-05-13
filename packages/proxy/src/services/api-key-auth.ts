@@ -31,7 +31,7 @@ export type AuthenticatedApiKey = {
  * @returns 无效或吊销则 `null`
  */
 export async function authenticateApiKey(repos: GatewayRepositories, key: string): Promise<AuthenticatedApiKey | null> {
-	const row = await repos.apiKeys.getApiKeyByKey(key);
+	const row = await repos.apiKeys.getApiKeyWithUserByKey(key);
 	if (!row) return null;
 
 	let budgetSpent = row.budget_spent;

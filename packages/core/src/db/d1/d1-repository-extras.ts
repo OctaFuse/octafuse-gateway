@@ -7,7 +7,6 @@ import type { InsertKeyParams } from '../api-keys-types';
 
 export interface ApiKeysD1Statements {
 	buildInsertApiKeyStatement(db: D1Database, params: InsertKeyParams): D1PreparedStatement;
-	buildIncrementApiKeyBudgetSpentStatement(db: D1Database, id: string, amount: number): D1PreparedStatement;
 }
 
 export interface RequestLogsD1Statements {

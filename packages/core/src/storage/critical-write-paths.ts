@@ -128,6 +128,8 @@ export async function insertRequestUsageAndChargeTx(
 	params: {
 		requestLog: InsertRequestLogParams;
 		shouldChargeBudget: boolean;
+		/** `users.id`，与 `requestLog.userId` 一致 */
+		userId: string;
 		beforeSpent: number;
 		chargedCost: number;
 		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;

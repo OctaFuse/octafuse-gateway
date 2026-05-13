@@ -69,6 +69,7 @@ export async function recordUsage(
 	repos: GatewayRepositories,
 	params: {
 		api_key_id: string;
+		user_id: string;
 		user_email: string | null;
 		model_id: string;
 		provider_id: string;
@@ -147,8 +148,10 @@ export async function recordUsage(
 	const apiKeySnapshot = shouldChargeBudget ? await getApiKeyBudgetSnapshot(repos, params.api_key_id) : null;
 	const beforeSpent = apiKeySnapshot?.budgetSpent ?? 0;
 	await insertRequestUsageAndChargeTx(repos, {
+		userId: params.user_id,
 		requestLog: {
 			id,
+			userId: params.user_id,
 			apiKeyId: params.api_key_id,
 			userEmail: params.user_email,
 			modelId: params.model_id,

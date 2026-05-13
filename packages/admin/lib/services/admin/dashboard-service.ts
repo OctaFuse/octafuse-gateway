@@ -87,7 +87,7 @@ export async function listAdminGlobalBudgetAuditLogsService(
 ): Promise<AdminGlobalBudgetAuditLogsOutput> {
 	const page = Math.max(1, Number.parseInt(String(input.page ?? '1'), 10));
 	const pageSize = Math.min(100, Math.max(1, Number.parseInt(String(input.page_size ?? '20'), 10)));
-	const result = await repos.budgetAuditLogs.getGlobalApiKeyBudgetAuditLogs({
+	const result = await repos.userAuditLogs.getGlobalUserAuditLogs({
 		page,
 		pageSize,
 		apiKeyId: input.api_key_id,

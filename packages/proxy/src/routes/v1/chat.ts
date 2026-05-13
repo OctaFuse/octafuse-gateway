@@ -182,6 +182,7 @@ chatRoutes.post('/', async (c) => {
         const upstreamRequestBodyForLog = openAiUpstreamWireBodyForLog(chosenRoute, body as Record<string, unknown>);
         return recordUsage(repos, {
           api_key_id: apiKey.keyId,
+          user_id: apiKey.userId,
           user_email: apiKey.userEmail,
           model_id: baseModelId,
           provider_id: chosenRoute.providerId,

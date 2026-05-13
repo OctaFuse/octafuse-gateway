@@ -1,14 +1,17 @@
 import type {
-	ApiKeyBudgetAuditLogRow,
-	ApiKeyRow,
-	GlobalApiKeyBudgetAuditLogRow,
+	GlobalUserAuditLogRow,
 	ModelRow,
 	ModelRouteRow,
 	ProviderRow,
 	RequestLogRow,
+	ResolvedGatewayKeyRow,
+	UserAuditLogRow,
+	UserRow,
+	ApiKeyRow,
 } from '../types';
-import type { InsertApiKeyBudgetAuditLogParams } from '../db/api-key-budget-audit-logs-types';
+import type { InsertUserAuditLogParams } from '../db/user-audit-logs-types';
 import type { BudgetFilter, InsertKeyParams } from '../db/api-keys-types';
+import type { InsertUserParams, UserMaxBudgetFilter } from '../db/users-types';
 import type { ProviderProtocolBases } from '../db/providers-types';
 import type { SystemConfigRow } from '../db/system-config-types';
 import type {
@@ -34,44 +37,64 @@ export interface AdminAnalyticsRepository {
 	queryModelProviderReliability(options: { start: string; end: string }): Promise<ModelProviderReliabilityRow[]>;
 }
 
-export interface ApiKeyBudgetAuditLogsRepository {
-	insertApiKeyBudgetAuditLog(params: InsertApiKeyBudgetAuditLogParams): Promise<void>;
-	getApiKeyBudgetAuditLogsByKeyId(
-		apiKeyId: string,
+export interface UserAuditLogsRepository {
+	insertUserAuditLog(params: InsertUserAuditLogParams): Promise<void>;
+	getUserAuditLogsByUserId(
+		userId: string,
 		page: number,
 		pageSize: number
-	): Promise<{ logs: ApiKeyBudgetAuditLogRow[]; total: number }>;
-	getGlobalApiKeyBudgetAuditLogs(options: {
+	): Promise<{ logs: UserAuditLogRow[]; total: number }>;
+	getGlobalUserAuditLogs(options: {
 		page?: number;
 		pageSize?: number;
+		userId?: string;
 		apiKeyId?: string;
 		userEmail?: string;
 		eventType?: string;
 		actorType?: string;
 		startDate?: string;
 		endDate?: string;
-	}): Promise<{ logs: GlobalApiKeyBudgetAuditLogRow[]; total: number }>;
+	}): Promise<{ logs: GlobalUserAuditLogRow[]; total: number }>;
 }
 
 export interface ApiKeysRepository {
 	getApiKeyByKey(key: string): Promise<ApiKeyRow | null>;
 	getApiKeyByKeyAnyStatus(key: string): Promise<ApiKeyRow | null>;
 	getApiKeyById(id: string): Promise<ApiKeyRow | null>;
-	getApiKeyByUserId(userId: string): Promise<ApiKeyRow | null>;
+	getApiKeyWithUserByKey(key: string): Promise<ResolvedGatewayKeyRow | null>;
+	getApiKeyWithUserById(id: string): Promise<ResolvedGatewayKeyRow | null>;
+	listKeysByUserId(userId: string, options?: { status?: string }): Promise<ApiKeyRow[]>;
 	insertApiKey(params: InsertKeyParams): Promise<void>;
 	revokeApiKey(id: string): Promise<boolean>;
 	deleteApiKeyHard(id: string, secretKey: string): Promise<boolean>;
 	updateApiKeyStatusById(id: string, status: string): Promise<boolean>;
-	setApiKeyUserEmailById(id: string, userEmail: string | null): Promise<boolean>;
-	updateApiKeyBudget(id: string, budget_spent: number, budget_reset_at: string | null): Promise<void>;
-	buildUpdateApiKeyBudgetStatement(id: string, budget_spent: number, budget_reset_at: string | null): Promise<void>;
-	updateApiKeyBudgetWithAudit(
-		id: string,
-		budget_spent: number,
-		budget_reset_at: string | null,
-		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>
-	): Promise<void>;
-	updateApiKeyPlan(
+	setApiKeyMetadataById(id: string, metadataJson: string | null): Promise<boolean>;
+	updateApiKeyName(id: string, name: string | null): Promise<boolean>;
+	getAllApiKeys(options?: {
+		email?: string;
+		userId?: string;
+		maxBudget?: BudgetFilter;
+		page?: number;
+		pageSize?: number;
+	}): Promise<{ keys: AdminApiKeyListItem[]; total: number }>;
+	getActiveApiKeysCount(): Promise<number>;
+}
+
+export interface UsersRepository {
+	getById(id: string): Promise<UserRow | null>;
+	getByExternalPair(externalSystem: string, externalUserId: string): Promise<UserRow | null>;
+	listByEmail(email: string): Promise<UserRow[]>;
+	list(options?: {
+		email?: string;
+		externalSystem?: string;
+		externalUserId?: string;
+		maxBudget?: UserMaxBudgetFilter;
+		status?: string;
+		page?: number;
+		pageSize?: number;
+	}): Promise<{ users: UserRow[]; total: number }>;
+	createUser(params: InsertUserParams): Promise<void>;
+	updateUserPlan(
 		id: string,
 		budget_max: number | null,
 		budget_period: string,
@@ -79,22 +102,12 @@ export interface ApiKeysRepository {
 		resetBudget?: boolean,
 		metadata?: string | null,
 		budget_spent_override?: number | null,
-		/**
-		 * 周期 reset 时 `budget_max` 的恢复基准：
-		 * - `undefined`：不修改 `budget_base`（仅调整 `budget_max` 的临时改额场景）。
-		 * - `number`：SET `budget_base = ?`。
-		 * - `null`：SET `budget_base = 0`（与库列的 NOT NULL DEFAULT 0 一致）。
-		 */
 		budget_base?: number | null
 	): Promise<boolean>;
-	setApiKeyMetadataById(id: string, metadataJson: string | null): Promise<boolean>;
-	getAllApiKeys(options?: {
-		email?: string;
-		maxBudget?: BudgetFilter;
-		page?: number;
-		pageSize?: number;
-	}): Promise<{ keys: AdminApiKeyListItem[]; total: number }>;
-	getActiveApiKeysCount(): Promise<number>;
+	updateUserStatus(id: string, status: string): Promise<boolean>;
+	setUserMetadataById(id: string, metadataJson: string | null): Promise<boolean>;
+	setUserEmailById(id: string, email: string | null): Promise<boolean>;
+	deleteUserHard(id: string): Promise<boolean>;
 }
 
 /** 模型列表页、标签、级联删除（models + model_tags + model_routes） */
@@ -105,9 +118,9 @@ export interface ModelsRepository {
 		id: string;
 		displayName: unknown;
 		vendor: string;
-			contextWindow: unknown;
-			maxTokens: unknown;
-			pricingProfile?: unknown;
+		contextWindow: unknown;
+		maxTokens: unknown;
+		pricingProfile?: unknown;
 		supportsImages: unknown;
 		description: unknown;
 		metadata: unknown;
@@ -179,6 +192,7 @@ export interface RequestLogsRepository {
 		page?: number;
 		pageSize?: number;
 		apiKeyId?: string;
+		userId?: string;
 		userEmail?: string;
 		modelId?: string;
 		providerId?: string;

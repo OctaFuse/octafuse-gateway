@@ -6,6 +6,7 @@ import type { UpstreamProtocol } from '../upstream-protocol';
  */
 export type InsertRequestLogParams = {
 	id: string;
+	userId: string | null;
 	apiKeyId: string;
 	userEmail: string | null;
 	modelId: string;

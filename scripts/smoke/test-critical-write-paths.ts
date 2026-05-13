@@ -23,6 +23,13 @@ class MockStatement {
 		return this as unknown as D1PreparedStatement;
 	}
 
+	public async first<T>(): Promise<T | null> {
+		if (this.sqlText.includes('SELECT user_id FROM api_keys')) {
+			return { user_id: 'user-1' } as T;
+		}
+		return null;
+	}
+
 	public async run(): Promise<{ meta: { changes: number } }> {
 		return this.runResult;
 	}
@@ -61,11 +68,6 @@ test('createApiKeyWithAudit uses a single d1 batch transaction', async () => {
 			id: 'key-id',
 			key: 'sk-test',
 			userId: 'user-1',
-			userEmail: 'u@example.com',
-			budgetMax: 10,
-			budgetSpent: 0,
-			budgetPeriod: 'none',
-			budgetResetAt: null,
 			status: 'active',
 		},
 		audit: {
@@ -93,6 +95,8 @@ test('updateApiKeyBudgetWithAuditTx keeps update and audit in one d1 batch', asy
 			actorType: 'system',
 			beforeSpent: 20,
 			deltaSpent: -7.66,
+			beforeBudgetMax: 10,
+			afterBudgetMax: 10,
 		},
 	});
 	assert.equal(db.batches.length, 1);
@@ -102,8 +106,10 @@ test('updateApiKeyBudgetWithAuditTx keeps update and audit in one d1 batch', asy
 test('insertRequestUsageAndChargeTx batches log + budget + audit together', async () => {
 	const db = createMockD1Database();
 	await insertRequestUsageAndChargeTx(db, {
+		userId: 'user-1',
 		requestLog: {
 			id: 'log-id',
+			userId: 'user-1',
 			apiKeyId: 'key-id',
 			userEmail: 'u@example.com',
 			modelId: 'm',
@@ -173,11 +179,6 @@ test('postgres branch uses transaction callback', async () => {
 			id: 'key-id',
 			key: 'sk-test',
 			userId: 'user-1',
-			userEmail: 'u@example.com',
-			budgetMax: 10,
-			budgetSpent: 0,
-			budgetPeriod: 'none',
-			budgetResetAt: null,
 			status: 'active',
 		},
 		audit: {

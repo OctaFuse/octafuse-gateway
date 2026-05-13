@@ -57,12 +57,12 @@ export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClien
 				COALESCE(${sqlMoneyRound('SUM(rl.standard_cost)')}, 0) as standard_cost,
 				COUNT(DISTINCT rl.model_id)::bigint as distinct_models,
 				MAX(rl.created_at) as last_active_at,
-				${sqlMoneyRound('MAX(ak.budget_max)')} as budget_max,
-				${sqlMoneyRound('MAX(ak.budget_spent)')} as budget_spent,
+				${sqlMoneyRound('MAX(u.budget_max)')} as budget_max,
+				${sqlMoneyRound('MAX(u.budget_spent)')} as budget_spent,
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END)::bigint as success_count,
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END)::bigint as error_count
 			FROM api_key_request_logs rl
-			LEFT JOIN api_keys ak ON ak.id = rl.api_key_id`;
+			LEFT JOIN users u ON u.id = rl.user_id`;
 			if (options.email) {
 				const like = `%${options.email}%`;
 				const q = `${userSel}

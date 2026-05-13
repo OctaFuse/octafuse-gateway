@@ -206,6 +206,7 @@ export type AdminKeyListItem = {
 	id: string;
 	key: string;
 	user_id: string;
+	name: string | null;
 	user_email: string | null;
 	budget_max: number | null;
 	/** 订阅套餐基础上限（周期 reset 后 `budget_max` 复位至此） */
@@ -275,6 +276,7 @@ export type AdminKeyDetailOutput = {
 	id: string;
 	key: string;
 	user_id: string;
+	name: string | null;
 	user_email: string | null;
 	budget_max: number | null;
 	/** 订阅套餐基础上限（周期 reset 后 `budget_max` 复位至此） */

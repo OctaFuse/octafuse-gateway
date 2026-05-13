@@ -13,6 +13,7 @@ import {
 	updateKeyStatus,
 } from '@octafuse/core/services/key-service';
 import { filterAllowedRequestLogStatuses } from '@octafuse/core/db/request-log-status-filter';
+import { insertParamsFromFullLegacy } from '@octafuse/core/db/user-audit-legacy-mapper';
 import { roundGatewayMoney } from '@octafuse/core/lib/money-precision';
 import { badRequest, notFound } from './errors';
 import { normalizeMetadataInput } from './shared';
@@ -33,17 +34,19 @@ import type {
 /** `sk-` 开头按密钥查，否则按行 id 查（不区分 status，供更新前定位行）。 */
 async function resolveKeyRow(repos: GatewayRepositories, idOrKey: string) {
 	if (idOrKey.startsWith('sk-')) {
-		return repos.apiKeys.getApiKeyByKey(idOrKey);
+		return repos.apiKeys.getApiKeyWithUserByKey(idOrKey);
 	}
-	return repos.apiKeys.getApiKeyById(idOrKey);
+	return repos.apiKeys.getApiKeyWithUserById(idOrKey);
 }
 
 /** 含已吊销：按 sk- 查时不过滤 status，供物理删除等。 */
 async function resolveKeyRowAnyStatus(repos: GatewayRepositories, idOrKey: string) {
 	if (idOrKey.startsWith('sk-')) {
-		return repos.apiKeys.getApiKeyByKeyAnyStatus(idOrKey);
+		const k = await repos.apiKeys.getApiKeyByKeyAnyStatus(idOrKey);
+		if (!k) return null;
+		return repos.apiKeys.getApiKeyWithUserById(k.id);
 	}
-	return repos.apiKeys.getApiKeyById(idOrKey);
+	return repos.apiKeys.getApiKeyWithUserById(idOrKey);
 }
 
 function parseMetadataSnapshot(raw: string | null | undefined): unknown {
@@ -229,7 +232,7 @@ export async function getAdminKeyBudgetAuditLogs(
 
 	const page = Math.max(1, Number(input.page ?? 1));
 	const page_size = Math.min(100, Math.max(1, Number(input.page_size ?? 20)));
-	const { logs, total } = await repos.budgetAuditLogs.getApiKeyBudgetAuditLogsByKeyId(row.id, page, page_size);
+	const { logs, total } = await repos.userAuditLogs.getUserAuditLogsByUserId(row.user_id, page, page_size);
 	return { logs, total, page, page_size };
 }
 
@@ -301,7 +304,7 @@ export async function updateAdminKey(
 		await updateKeyStatus(repos, row.id, String(input.status));
 	}
 	if (hasUserEmail) {
-		const ok = await repos.apiKeys.setApiKeyUserEmailById(row.id, nextUserEmail);
+		const ok = await repos.users.setUserEmailById(row.user_id, nextUserEmail);
 		if (!ok) throw new Error('Failed to update key');
 	}
 
@@ -405,7 +408,8 @@ export async function updateAdminKey(
 				: null;
 
 		if (budgetChanged) {
-			await repos.budgetAuditLogs.insertApiKeyBudgetAuditLog({
+			await repos.userAuditLogs.insertUserAuditLog(
+				insertParamsFromFullLegacy(row.user_id, {
 				id: crypto.randomUUID(),
 				apiKeyId: row.id,
 				eventType: 'admin_adjust',
@@ -425,7 +429,7 @@ export async function updateAdminKey(
 				beforeBudgetResetAt: row.budget_reset_at ?? null,
 				afterBudgetResetAt: rowAfterUpdate.budget_reset_at ?? null,
 				metadata: profileAuditJson,
-			});
+			}));
 		} else if (metadataChanged || statusChanged || userEmailChanged) {
 			let reasonCode = 'admin_patch_profile';
 			if (metadataChanged && !statusChanged && !userEmailChanged) {
@@ -440,7 +444,8 @@ export async function updateAdminKey(
 			const bbase = rowAfterUpdate.budget_base ?? null;
 			const bperiod = rowAfterUpdate.budget_period ?? null;
 			const breset = rowAfterUpdate.budget_reset_at ?? null;
-			await repos.budgetAuditLogs.insertApiKeyBudgetAuditLog({
+			await repos.userAuditLogs.insertUserAuditLog(
+				insertParamsFromFullLegacy(row.user_id, {
 				id: crypto.randomUUID(),
 				apiKeyId: row.id,
 				eventType: 'admin_adjust',
@@ -460,7 +465,7 @@ export async function updateAdminKey(
 				beforeBudgetResetAt: breset,
 				afterBudgetResetAt: breset,
 				metadata: profileAuditJson,
-			});
+			}));
 		}
 	}
 
@@ -494,6 +499,7 @@ export async function getAdminKeyById(repos: GatewayRepositories, idOrKey: strin
 		id: info.id,
 		key: info.key,
 		user_id: info.user_id,
+		name: info.name,
 		user_email: info.user_email,
 		budget_max: info.budget_max,
 		budget_base: roundGatewayMoney(Number(info.budget_base ?? 0)),

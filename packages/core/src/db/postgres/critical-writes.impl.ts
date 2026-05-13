@@ -5,14 +5,16 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { InsertApiKeyBudgetAuditLogParams } from '../api-key-budget-audit-logs-types';
 import type { InsertKeyParams } from '../api-keys-types';
 import type { InsertRequestLogParams } from '../request-logs-types';
+import { insertParamsFromBudgetTx, insertParamsFromCreateKeyAudit, insertParamsFromUsageCharge } from '../user-audit-legacy-mapper';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import { nowIso, parseMoney } from '../../storage/critical-write-paths-utils';
 import {
-	apiKeyAuditLogsTable as pgApiKeyAuditLogsTable,
 	apiKeysTable as pgApiKeysTable,
 	apiKeyRequestLogsTable as pgRequestLogsTable,
 	systemConfigTable as pgSystemConfigTable,
+	userAuditLogsTable as pgUserAuditLogsTable,
+	usersTable as pgUsersTable,
 } from '../../storage/drizzle/schema.pg';
 
 export async function getActiveApiKeyByUserIdPg(
@@ -36,12 +38,13 @@ export async function getApiKeyBudgetSnapshotPg(
 ): Promise<{ budgetSpent: number; budgetMax: number | null; budgetPeriod: string | null; budgetResetAt: string | null } | null> {
 	const row = await client.drizzle
 		.select({
-			budgetSpent: pgApiKeysTable.budgetSpent,
-			budgetMax: pgApiKeysTable.budgetMax,
-			budgetPeriod: pgApiKeysTable.budgetPeriod,
-			budgetResetAt: pgApiKeysTable.budgetResetAt,
+			budgetSpent: pgUsersTable.budgetSpent,
+			budgetMax: pgUsersTable.budgetMax,
+			budgetPeriod: pgUsersTable.budgetPeriod,
+			budgetResetAt: pgUsersTable.budgetResetAt,
 		})
 		.from(pgApiKeysTable)
+		.innerJoin(pgUsersTable, eq(pgApiKeysTable.userId, pgUsersTable.id))
 		.where(eq(pgApiKeysTable.id, keyId))
 		.limit(1);
 	if (!row[0]) return null;
@@ -70,42 +73,33 @@ export async function createApiKeyWithAuditPg(
 	}
 ): Promise<void> {
 	const now = nowIso();
+	const auditRow = insertParamsFromCreateKeyAudit(params.insert.userId, params.audit);
 	await client.drizzle.transaction(async (tx) => {
+		const status = params.insert.status ?? 'active';
 		await tx.insert(pgApiKeysTable).values({
 			id: params.insert.id,
 			key: params.insert.key,
 			userId: params.insert.userId,
-			userEmail: params.insert.userEmail ?? null,
-			budgetMax: params.insert.budgetMax == null ? null : String(roundGatewayMoney(params.insert.budgetMax)),
-			budgetBase: String(params.insert.budgetBase != null ? roundGatewayMoney(params.insert.budgetBase) : 0),
-			budgetSpent: String(roundGatewayMoney(params.insert.budgetSpent)),
-			budgetPeriod: params.insert.budgetPeriod,
-			budgetResetAt: params.insert.budgetResetAt,
-			status: params.insert.status,
+			name: params.insert.name ?? null,
+			status,
+			metadata: params.insert.metadata ?? null,
+			lastUsedAt: null,
 			createdAt: now,
 			updatedAt: now,
 		});
-		await tx.insert(pgApiKeyAuditLogsTable).values({
-			id: params.audit.id,
-			apiKeyId: params.audit.apiKeyId,
-			eventType: params.audit.eventType,
-			actorType: params.audit.actorType,
-			actorId: params.audit.actorId ?? null,
-			reasonCode: params.audit.reasonCode ?? null,
-			reasonText: params.audit.reasonText ?? null,
-			beforeSpent: String(roundGatewayMoney(params.audit.beforeSpent)),
-			deltaSpent: String(roundGatewayMoney(params.audit.deltaSpent)),
-			afterSpent: String(roundGatewayMoney(params.audit.afterSpent)),
-			beforeBudgetMax: params.audit.beforeBudgetMax == null ? null : String(roundGatewayMoney(params.audit.beforeBudgetMax)),
-			afterBudgetMax: params.audit.afterBudgetMax == null ? null : String(roundGatewayMoney(params.audit.afterBudgetMax)),
-			beforeBudgetBase: params.audit.beforeBudgetBase == null ? null : String(roundGatewayMoney(params.audit.beforeBudgetBase)),
-			afterBudgetBase: params.audit.afterBudgetBase == null ? null : String(roundGatewayMoney(params.audit.afterBudgetBase)),
-			beforeBudgetPeriod: params.audit.beforeBudgetPeriod ?? null,
-			afterBudgetPeriod: params.audit.afterBudgetPeriod ?? null,
-			beforeBudgetResetAt: params.audit.beforeBudgetResetAt ?? null,
-			afterBudgetResetAt: params.audit.afterBudgetResetAt ?? null,
-			requestLogId: params.audit.requestLogId ?? null,
-			metadata: params.audit.metadata ?? null,
+		await tx.insert(pgUserAuditLogsTable).values({
+			id: auditRow.id,
+			userId: auditRow.userId,
+			apiKeyId: auditRow.apiKeyId ?? null,
+			eventType: auditRow.eventType,
+			actorType: auditRow.actorType,
+			beforeSpent: String(roundGatewayMoney(auditRow.beforeSpent)),
+			deltaSpent: String(roundGatewayMoney(auditRow.deltaSpent)),
+			afterSpent: String(roundGatewayMoney(auditRow.afterSpent)),
+			beforeBudgetMax: auditRow.beforeBudgetMax == null ? null : String(roundGatewayMoney(auditRow.beforeBudgetMax)),
+			afterBudgetMax: auditRow.afterBudgetMax == null ? null : String(roundGatewayMoney(auditRow.afterBudgetMax)),
+			requestLogId: auditRow.requestLogId ?? null,
+			metadata: auditRow.metadata ?? null,
 			createdAt: now,
 		});
 	});
@@ -117,16 +111,22 @@ export async function updateApiKeyBudgetWithAuditTxPg(
 		keyId: string;
 		budgetSpent: number;
 		budgetResetAt: string | null;
-		/**
-		 * 可选：把 `api_keys.budget_max` 同时改写为该值（lazy reset 复位 base 时使用）。
-		 * 缺省（undefined）时不修改 `budget_max`。
-		 */
 		budgetMax?: number | null;
 		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
 	}
 ): Promise<void> {
 	const nextSpent = roundGatewayMoney(params.budgetSpent);
 	const now = nowIso();
+	const keyRow = await client.drizzle
+		.select({ userId: pgApiKeysTable.userId })
+		.from(pgApiKeysTable)
+		.where(eq(pgApiKeysTable.id, params.keyId))
+		.limit(1);
+	const userId = keyRow[0]?.userId;
+	if (!userId) {
+		throw new Error('updateApiKeyBudgetWithAuditTxPg: api key not found');
+	}
+	const auditRow = insertParamsFromBudgetTx(userId, params.keyId, nextSpent, params.budgetResetAt, params.audit);
 	await client.drizzle.transaction(async (tx) => {
 		const updateSet: Record<string, unknown> = {
 			budgetSpent: String(nextSpent),
@@ -136,29 +136,21 @@ export async function updateApiKeyBudgetWithAuditTxPg(
 		if (params.budgetMax !== undefined) {
 			updateSet.budgetMax = params.budgetMax == null ? null : String(roundGatewayMoney(params.budgetMax));
 		}
-		await tx.update(pgApiKeysTable).set(updateSet).where(eq(pgApiKeysTable.id, params.keyId));
+		await tx.update(pgUsersTable).set(updateSet).where(eq(pgUsersTable.id, userId));
 
-		await tx.insert(pgApiKeyAuditLogsTable).values({
-			id: crypto.randomUUID(),
-			apiKeyId: params.keyId,
-			eventType: params.audit.eventType,
-			actorType: params.audit.actorType,
-			actorId: params.audit.actorId ?? null,
-			reasonCode: params.audit.reasonCode ?? null,
-			reasonText: params.audit.reasonText ?? null,
-			beforeSpent: String(roundGatewayMoney(params.audit.beforeSpent)),
-			deltaSpent: String(roundGatewayMoney(params.audit.deltaSpent)),
-			afterSpent: String(nextSpent),
-			beforeBudgetMax: params.audit.beforeBudgetMax == null ? null : String(roundGatewayMoney(params.audit.beforeBudgetMax)),
-			afterBudgetMax: params.audit.afterBudgetMax == null ? null : String(roundGatewayMoney(params.audit.afterBudgetMax)),
-			beforeBudgetBase: params.audit.beforeBudgetBase == null ? null : String(roundGatewayMoney(params.audit.beforeBudgetBase)),
-			afterBudgetBase: params.audit.afterBudgetBase == null ? null : String(roundGatewayMoney(params.audit.afterBudgetBase)),
-			beforeBudgetPeriod: params.audit.beforeBudgetPeriod ?? null,
-			afterBudgetPeriod: params.audit.afterBudgetPeriod ?? null,
-			beforeBudgetResetAt: params.audit.beforeBudgetResetAt ?? null,
-			afterBudgetResetAt: params.budgetResetAt,
-			requestLogId: params.audit.requestLogId ?? null,
-			metadata: params.audit.metadata ?? null,
+		await tx.insert(pgUserAuditLogsTable).values({
+			id: auditRow.id,
+			userId: auditRow.userId,
+			apiKeyId: auditRow.apiKeyId ?? null,
+			eventType: auditRow.eventType,
+			actorType: auditRow.actorType,
+			beforeSpent: String(roundGatewayMoney(auditRow.beforeSpent)),
+			deltaSpent: String(roundGatewayMoney(auditRow.deltaSpent)),
+			afterSpent: String(roundGatewayMoney(auditRow.afterSpent)),
+			beforeBudgetMax: auditRow.beforeBudgetMax == null ? null : String(roundGatewayMoney(auditRow.beforeBudgetMax)),
+			afterBudgetMax: auditRow.afterBudgetMax == null ? null : String(roundGatewayMoney(auditRow.afterBudgetMax)),
+			requestLogId: auditRow.requestLogId ?? null,
+			metadata: auditRow.metadata ?? null,
 			createdAt: now,
 		});
 	});
@@ -169,16 +161,19 @@ export async function insertRequestUsageAndChargeTxPg(
 	params: {
 		requestLog: InsertRequestLogParams;
 		shouldChargeBudget: boolean;
+		userId: string;
 		beforeSpent: number;
 		chargedCost: number;
 		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
 	}
 ): Promise<void> {
 	const charged = roundGatewayMoney(params.chargedCost);
+	const afterSpent = roundGatewayMoney(params.beforeSpent + charged);
 	const now = nowIso();
 	await client.drizzle.transaction(async (tx) => {
 		await tx.insert(pgRequestLogsTable).values({
 			id: params.requestLog.id,
+			userId: params.requestLog.userId,
 			apiKeyId: params.requestLog.apiKeyId,
 			userEmail: params.requestLog.userEmail ?? null,
 			modelId: params.requestLog.modelId ?? null,
@@ -211,34 +206,27 @@ export async function insertRequestUsageAndChargeTxPg(
 			return;
 		}
 		await tx
-			.update(pgApiKeysTable)
+			.update(pgUsersTable)
 			.set({
-				budgetSpent: sql`${pgApiKeysTable.budgetSpent} + ${String(charged)}`,
+				budgetSpent: sql`${pgUsersTable.budgetSpent} + ${String(charged)}`,
 				updatedAt: now,
 			})
-			.where(eq(pgApiKeysTable.id, params.audit.apiKeyId));
+			.where(eq(pgUsersTable.id, params.userId));
 
-		await tx.insert(pgApiKeyAuditLogsTable).values({
-			id: crypto.randomUUID(),
-			apiKeyId: params.audit.apiKeyId,
-			eventType: params.audit.eventType,
-			actorType: params.audit.actorType,
-			actorId: params.audit.actorId ?? null,
-			reasonCode: params.audit.reasonCode ?? null,
-			reasonText: params.audit.reasonText ?? null,
-			beforeSpent: String(roundGatewayMoney(params.beforeSpent)),
+		const auditRow = insertParamsFromUsageCharge(params.userId, afterSpent, charged, params.audit);
+		await tx.insert(pgUserAuditLogsTable).values({
+			id: auditRow.id,
+			userId: auditRow.userId,
+			apiKeyId: auditRow.apiKeyId ?? null,
+			eventType: auditRow.eventType,
+			actorType: auditRow.actorType,
+			beforeSpent: String(roundGatewayMoney(auditRow.beforeSpent)),
 			deltaSpent: String(charged),
-			afterSpent: String(roundGatewayMoney(params.beforeSpent + charged)),
-			beforeBudgetMax: params.audit.beforeBudgetMax == null ? null : String(roundGatewayMoney(params.audit.beforeBudgetMax)),
-			afterBudgetMax: params.audit.afterBudgetMax == null ? null : String(roundGatewayMoney(params.audit.afterBudgetMax)),
-			beforeBudgetBase: params.audit.beforeBudgetBase == null ? null : String(roundGatewayMoney(params.audit.beforeBudgetBase)),
-			afterBudgetBase: params.audit.afterBudgetBase == null ? null : String(roundGatewayMoney(params.audit.afterBudgetBase)),
-			beforeBudgetPeriod: params.audit.beforeBudgetPeriod ?? null,
-			afterBudgetPeriod: params.audit.afterBudgetPeriod ?? null,
-			beforeBudgetResetAt: params.audit.beforeBudgetResetAt ?? null,
-			afterBudgetResetAt: params.audit.afterBudgetResetAt ?? null,
-			requestLogId: params.audit.requestLogId ?? null,
-			metadata: params.audit.metadata ?? null,
+			afterSpent: String(roundGatewayMoney(auditRow.afterSpent)),
+			beforeBudgetMax: auditRow.beforeBudgetMax == null ? null : String(roundGatewayMoney(auditRow.beforeBudgetMax)),
+			afterBudgetMax: auditRow.afterBudgetMax == null ? null : String(roundGatewayMoney(auditRow.afterBudgetMax)),
+			requestLogId: auditRow.requestLogId ?? null,
+			metadata: auditRow.metadata ?? null,
 			createdAt: now,
 		});
 	});

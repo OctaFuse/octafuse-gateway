@@ -17,6 +17,7 @@ export * from './storage/critical-write-paths-utils';
 export * from './db/providers';
 export * from './db/system-config';
 export * from './db/api-key-budget-audit-logs-types';
+export * from './db/user-audit-legacy-mapper';
 export * from './db/api-keys-types';
 export * from './db/providers-types';
 export * from './db/request-logs-types';
