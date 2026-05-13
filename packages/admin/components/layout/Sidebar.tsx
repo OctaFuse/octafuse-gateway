@@ -22,6 +22,7 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import { adminAppVersion } from '@/lib/app-version';
 
 interface MenuItem {
   name: string;
@@ -150,7 +151,7 @@ export default function Sidebar() {
           <ArrowLeftStartOnRectangleIcon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400" />
           {isLoggingOut ? 'Logging out...' : 'Logout'}
         </button>
-        <p className="text-xs text-gray-500 text-center">v1.0.0</p>
+        <p className="text-xs text-gray-500 text-center">v{adminAppVersion}</p>
       </div>
       </div>
     </aside>

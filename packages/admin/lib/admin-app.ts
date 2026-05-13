@@ -6,6 +6,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import type { AdminEnv } from '@/lib/admin-env';
 import { resolveAdminStorageContext } from '@/lib/storage-context';
+import { adminAppVersion } from '@/lib/app-version';
 import { adminAnalyticsRoutes } from '@/lib/routes/admin/analytics';
 import { adminBudgetAuditLogsRoutes } from '@/lib/routes/admin/budget-audit-logs';
 import { adminConfigRoutes } from '@/lib/routes/admin/config';
@@ -47,7 +48,7 @@ export function createAdminApp(): Hono<AdminEnv> {
 	app.route('/admin/budget-audit-logs', adminBudgetAuditLogsRoutes);
 	app.route('/admin/analytics', adminAnalyticsRoutes);
 
-	app.get('/admin', (c) => c.json({ name: 'octafuse-admin-api', version: '0.1.0' }));
+	app.get('/admin', (c) => c.json({ name: 'octafuse-admin-api', version: adminAppVersion }));
 
 	return app;
 }

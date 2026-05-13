@@ -3,7 +3,8 @@
 	"compilerOptions": {
 		"types": ["@cloudflare/workers-types", "node"],
 		"jsx": "react-jsx",
-		"jsxImportSource": "hono/jsx"
+		"jsxImportSource": "hono/jsx",
+		"resolveJsonModule": true
 	},
 	"include": ["src/**/*.ts"],
 	"exclude": ["node_modules"]
