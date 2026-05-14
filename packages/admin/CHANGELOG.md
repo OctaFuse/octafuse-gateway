@@ -1,5 +1,14 @@
 # @octafuse/admin
 
+## 1.0.1
+
+### Patch Changes
+
+- [`0d986e4`](https://github.com/OctaFuse/octafuse-gateway/commit/0d986e4333bd316bb4d7920f3291e80c37c2e913) Thanks [@dyc87112](https://github.com/dyc87112)! - fix some warning
+
+- Updated dependencies []:
+  - @octafuse/core@1.0.1
+
 ## 1.0.0
 
 ### Major Changes
