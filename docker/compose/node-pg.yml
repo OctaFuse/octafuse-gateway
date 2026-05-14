@@ -1,5 +1,5 @@
 # 本地示例：Postgres + gateway-proxy（对外推理）+ gateway-admin（管理 UI / /api/admin/*）
-# 二者共用同一 DATABASE_URL，镜像由本仓 docker/build/Dockerfile.* 构建。
+# 二者共用同一 DATABASE_URL，镜像由本仓根目录 Dockerfile.* 构建。
 #
 # 可选环境变量（避免与本机端口冲突）：
 #   GATEWAY_PROXY_HOST_PORT=8787 GATEWAY_ADMIN_HOST_PORT=8789 docker compose -f docker/compose/node-pg.yml up -d gateway-proxy gateway-admin
@@ -29,7 +29,7 @@ services:
     profiles: ["migrate"]
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.migrate
+      dockerfile: Dockerfile.migrate
     environment:
       DATABASE_DRIVER: postgres
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/octafuse
@@ -41,7 +41,7 @@ services:
   gateway-proxy:
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.proxy
+      dockerfile: Dockerfile.proxy
     ports:
       - "${GATEWAY_PROXY_HOST_PORT:-8787}:8787"
     environment:
@@ -67,7 +67,7 @@ services:
   gateway-admin:
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.admin
+      dockerfile: Dockerfile.admin
     ports:
       - "${GATEWAY_ADMIN_HOST_PORT:-8789}:8789"
     environment:

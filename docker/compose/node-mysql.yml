@@ -1,5 +1,5 @@
 # 本地示例：MySQL 8 + gateway-proxy（对外推理）+ gateway-admin（管理 UI / /api/admin/*）
-# 二者共用同一 DATABASE_URL；镜像由本仓 docker/build/Dockerfile.* 构建。
+# 二者共用同一 DATABASE_URL；镜像由本仓根目录 Dockerfile.* 构建。
 # 迁移链：packages/core/migrations-mysql/（npm run db:migrate:mysql:docker）
 #
 # 可选环境变量（避免与本机端口冲突）：
@@ -42,7 +42,7 @@ services:
     profiles: ["migrate"]
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.migrate
+      dockerfile: Dockerfile.migrate
     environment:
       DATABASE_DRIVER: mysql
       DATABASE_URL: mysql://octafuse:octafuse@mysql:3306/octafuse
@@ -54,7 +54,7 @@ services:
   gateway-proxy:
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.proxy
+      dockerfile: Dockerfile.proxy
     ports:
       - "${GATEWAY_PROXY_HOST_PORT:-8787}:8787"
     environment:
@@ -80,7 +80,7 @@ services:
   gateway-admin:
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.admin
+      dockerfile: Dockerfile.admin
     ports:
       - "${GATEWAY_ADMIN_HOST_PORT:-8789}:8789"
     environment:

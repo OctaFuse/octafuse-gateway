@@ -34,7 +34,7 @@ services:
   migrate:
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.migrate
+      dockerfile: Dockerfile.migrate
     environment:
       DATABASE_DRIVER: postgres
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/octafuse
@@ -46,7 +46,7 @@ services:
   gateway-proxy:
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.proxy
+      dockerfile: Dockerfile.proxy
     ports:
       - "${GATEWAY_PROXY_HOST_PORT:-8787}:8787"
     environment:
@@ -74,7 +74,7 @@ services:
   gateway-admin:
     build:
       context: ../..
-      dockerfile: docker/build/Dockerfile.admin
+      dockerfile: Dockerfile.admin
     ports:
       - "${GATEWAY_ADMIN_HOST_PORT:-8789}:8789"
     environment:

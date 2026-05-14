@@ -19,15 +19,15 @@ on:
   workflow_dispatch:
     inputs:
       build_proxy:
-        description: 构建并推送 proxy 镜像（docker/build/Dockerfile.proxy）
+        description: 构建并推送 proxy 镜像（Dockerfile.proxy）
         type: boolean
         default: true
       build_admin:
-        description: 构建并推送 admin 镜像（docker/build/Dockerfile.admin）
+        description: 构建并推送 admin 镜像（Dockerfile.admin）
         type: boolean
         default: true
       build_migrate:
-        description: 构建并推送 migrate 镜像（docker/build/Dockerfile.migrate）
+        description: 构建并推送 migrate 镜像（Dockerfile.migrate）
         type: boolean
         default: true
       platform_linux_amd64:
@@ -64,13 +64,13 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             items='[]'
             if [ "${{ inputs.build_proxy }}" = "true" ]; then
-              items=$(echo "$items" | jq -c '. + [{"dockerfile":"docker/build/Dockerfile.proxy","image_suffix":"proxy"}]')
+              items=$(echo "$items" | jq -c '. + [{"dockerfile":"Dockerfile.proxy","image_suffix":"proxy"}]')
             fi
             if [ "${{ inputs.build_admin }}" = "true" ]; then
-              items=$(echo "$items" | jq -c '. + [{"dockerfile":"docker/build/Dockerfile.admin","image_suffix":"admin"}]')
+              items=$(echo "$items" | jq -c '. + [{"dockerfile":"Dockerfile.admin","image_suffix":"admin"}]')
             fi
             if [ "${{ inputs.build_migrate }}" = "true" ]; then
-              items=$(echo "$items" | jq -c '. + [{"dockerfile":"docker/build/Dockerfile.migrate","image_suffix":"migrate"}]')
+              items=$(echo "$items" | jq -c '. + [{"dockerfile":"Dockerfile.migrate","image_suffix":"migrate"}]')
             fi
             n=$(echo "$items" | jq 'length')
             if [ "$n" -eq 0 ]; then
@@ -98,7 +98,7 @@ jobs:
             echo "Resolved platforms: $joined"
           else
             # 正式发版：标签推送，固定三镜像 + 双平台
-            matrix=$(jq -cn '[{"dockerfile":"docker/build/Dockerfile.proxy","image_suffix":"proxy"},{"dockerfile":"docker/build/Dockerfile.admin","image_suffix":"admin"},{"dockerfile":"docker/build/Dockerfile.migrate","image_suffix":"migrate"}] | {include:.}')
+            matrix=$(jq -cn '[{"dockerfile":"Dockerfile.proxy","image_suffix":"proxy"},{"dockerfile":"Dockerfile.admin","image_suffix":"admin"},{"dockerfile":"Dockerfile.migrate","image_suffix":"migrate"}] | {include:.}')
             echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
             echo "platforms=linux/amd64,linux/arm64" >> "$GITHUB_OUTPUT"
             echo "is_tag_release=true" >> "$GITHUB_OUTPUT"

@@ -114,7 +114,7 @@ curl -sS http://127.0.0.1:8789/api/admin/config \
 
 ## 6. Docker 本地样例（Node + PG，双容器）
 
-### 6.1 用仓库 `docker/build/Dockerfile.*` 构建并启动（推荐）
+### 6.1 用仓库根目录 `Dockerfile.*` 构建并启动（推荐）
 
 根目录构建 **gateway-proxy** 与 **gateway-admin** 两个镜像，并与 Postgres 一起编排：
 
@@ -134,8 +134,8 @@ GATEWAY_PROXY_HOST_PORT=28787 GATEWAY_ADMIN_HOST_PORT=28789 \
 等价地可先手动构建镜像：
 
 ```bash
-docker build -f docker/build/Dockerfile.proxy -t octafuse-proxy:local .
-docker build -f docker/build/Dockerfile.admin -t octafuse-admin:local .
+docker build -f Dockerfile.proxy -t octafuse-proxy:local .
+docker build -f Dockerfile.admin -t octafuse-admin:local .
 ```
 
 ### 6.2 Docker：Node + MySQL（双容器，本地构建镜像）

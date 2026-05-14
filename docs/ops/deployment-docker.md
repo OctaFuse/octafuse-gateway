@@ -22,7 +22,7 @@
 |`DATABASE_DRIVER`|否|与 `DATABASE_URL` 命名对齐。省略默认 `postgres`；MySQL 须 `mysql`（或 `mysql2`）。|
 |`DATABASE_URL`|是|Postgres 或 **`mysql://`** 连接串（与所选驱动一致）|
 |`PORT`|否|默认 `8787`|
-|迁移方式|—|统一使用 **`docker/build/Dockerfile.migrate`** 对应镜像，通过 `docker compose --profile migrate run --rm migrate` 执行。|
+|迁移方式|—|统一使用 **`Dockerfile.migrate`** 对应镜像，通过 `docker compose --profile migrate run --rm migrate` 执行。|
 
 ### gateway-admin 容器
 
@@ -49,22 +49,22 @@
 
 ## 3. 本仓库镜像（本地构建）
 
-**`docker/build/`** 下提供三个 **多阶段** Dockerfile（**`node:22-alpine`**；运行层不含全量 monorepo 源码与「三 workspace 全量」`node_modules`；**不含** `tsx` / 仓库根 `scripts/db/*`；健康检查用 **Node 内嵌 `fetch`**，不装 `curl`）：
+**仓库根目录**提供三个 **多阶段** Dockerfile（**`node:22-alpine`**；运行层不含全量 monorepo 源码与「三 workspace 全量」`node_modules`；**不含** `tsx` / 仓库根 `scripts/db/*`；健康检查用 **Node 内嵌 `fetch`**，不装 `curl`）：
 
 |文件|进程|默认端口|运行层说明|
 |------|------|--------|----------|
-|`docker/build/Dockerfile.proxy`|`node packages/proxy/dist/runtime/node.js`（构建阶段已 `npm run build` **core + proxy**）|`8787`|**已编译** `packages/{core,proxy}/dist` + 生产 `node_modules`（**仅** core、proxy 两个 workspace）；由 `CMD` 直接启动运行时入口。|
-|`docker/build/Dockerfile.admin`|Next **standalone**（`node packages/admin/server.js`）|`8789`|**`.next/standalone` + `.next/static` + `public`**；另含运行所需的 `@octafuse/core` 构建产物与 **`postgres` / `mysql2`** 依赖子集；仅负责应用进程。|
-|`docker/build/Dockerfile.migrate`|一次性迁移 Job：`node packages/core/dist/migrate/cli.js`（无参数时由入口按 `DATABASE_DRIVER` 选择 `--driver`）|—|仅 **`@octafuse/core`** 构建产物与 SQL 目录；**`ENTRYPOINT`** [`docker/entrypoint.migrate.sh`](../../docker/entrypoint.migrate.sh)；供 **`--profile migrate`** / **`GATEWAY_MIGRATE_IMAGE`**。|
+|`Dockerfile.proxy`|`node packages/proxy/dist/runtime/node.js`（构建阶段已 `npm run build` **core + proxy**）|`8787`|**已编译** `packages/{core,proxy}/dist` + 生产 `node_modules`（**仅** core、proxy 两个 workspace）；由 `CMD` 直接启动运行时入口。|
+|`Dockerfile.admin`|Next **standalone**（`node packages/admin/server.js`）|`8789`|**`.next/standalone` + `.next/static` + `public`**；另含运行所需的 `@octafuse/core` 构建产物与 **`postgres` / `mysql2`** 依赖子集；仅负责应用进程。|
+|`Dockerfile.migrate`|一次性迁移 Job：`node packages/core/dist/migrate/cli.js`（无参数时由入口按 `DATABASE_DRIVER` 选择 `--driver`）|—|仅 **`@octafuse/core`** 构建产物与 SQL 目录；**`ENTRYPOINT`** [`docker/entrypoint.migrate.sh`](../../docker/entrypoint.migrate.sh)；供 **`--profile migrate`** / **`GATEWAY_MIGRATE_IMAGE`**。|
 
 **Admin 镜像与 Cloudflare 构建分工**：`Dockerfile.admin` 在构建阶段执行 **`npm run build:docker -w @octafuse/admin`**（`next build` + `scripts/link-standalone-next.mjs`），**不**运行 `wrangler types`，因此镜像构建不依赖 **`workerd`**，可与 `npm ci --ignore-scripts` 的 CI 安装方式兼容。部署到 Cloudflare（预览/生产）仍使用 **`npm run build:cf`** / **`npm run preview`** / **`npm run deploy`**（内含 `cf-typegen` 与 OpenNext Cloudflare 打包）。各 Dockerfile 在 `npm ci --ignore-scripts` 之后会 **`find node_modules -path '*/esbuild/install.js' -exec node {} \;`**：为树内**每一份** esbuild 执行其 `install.js`（`@octafuse/core` 与 `@opennextjs/*` 可能各带不同版本）。勿用 **`npm rebuild esbuild`**，否则多版本 esbuild 会触发「Expected 0.25.4 but got 0.27.3」类校验错误。
 
 典型未压缩体积：**proxy** 常见约 **一百多 MB**；**admin** 因 Next standalone 与 trace 较大，常见约 **两百 MB 量级**；**migrate** 最小。若仍见 **~1GB+** 单层或总量异常，多为旧版单阶段镜像或本地缓存标签，请 `docker build --no-cache` 重建后对比 `docker image ls` / `docker history`。
 
 ```bash
-docker build -f docker/build/Dockerfile.proxy -t octafuse-proxy:local .
-docker build -f docker/build/Dockerfile.admin -t octafuse-admin:local .
-docker build -f docker/build/Dockerfile.migrate -t octafuse-migrate:local .
+docker build -f Dockerfile.proxy -t octafuse-proxy:local .
+docker build -f Dockerfile.admin -t octafuse-admin:local .
+docker build -f Dockerfile.migrate -t octafuse-migrate:local .
 ```
 
 单独运行示例：
@@ -178,7 +178,7 @@ npm run db:migrate:pg
 npm run db:migrate:pg:docker
 ```
 
-在 Compose 中 `migrate` 服务使用 **`docker/build/Dockerfile.migrate` 对应镜像**（**`GATEWAY_MIGRATE_IMAGE`**）：镜像内为 **`packages/core/dist/migrate/cli.js`** + **`migrations-postgres`** / **`migrations-mysql`** + core 生产依赖（与本地 **`npm run db:migrate:*:docker`** 同源，均为编译后的 CLI）。生产建议固定流程为：**先 migrate，再启动 proxy/admin**。
+在 Compose 中 `migrate` 服务使用 **`Dockerfile.migrate` 对应镜像**（**`GATEWAY_MIGRATE_IMAGE`**）：镜像内为 **`packages/core/dist/migrate/cli.js`** + **`migrations-postgres`** / **`migrations-mysql`** + core 生产依赖（与本地 **`npm run db:migrate:*:docker`** 同源，均为编译后的 CLI）。生产建议固定流程为：**先 migrate，再启动 proxy/admin**。
 
 仅部署 Admin（`docker/examples/gateway.admin.yml`）时，迁移方式保持一致：使用 compose 的 **`migrate` 服务**（镜像为 **`GATEWAY_MIGRATE_IMAGE`**），再启动 admin。`.env` 中需配置 **`GATEWAY_MIGRATE_IMAGE`** 与 `DATABASE_URL`。
 

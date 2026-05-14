@@ -1,5 +1,5 @@
 # gateway-proxy — Node + Postgres（多阶段：仅含 core + proxy，不含 Next/admin 依赖）
-# Build: docker build -f docker/build/Dockerfile.proxy -t octafuse-proxy:latest .
+# Build: docker build -f Dockerfile.proxy -t octafuse-proxy:latest .
 
 FROM node:22-alpine AS deps
 

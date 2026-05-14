@@ -1,5 +1,5 @@
 # gateway-migrate — 一次性 Postgres / MySQL 迁移 Job（不含 proxy / admin 应用代码）
-# Build: docker build -f docker/build/Dockerfile.migrate -t octafuse-migrate:latest .
+# Build: docker build -f Dockerfile.migrate -t octafuse-migrate:latest .
 
 FROM node:22-alpine AS build
 

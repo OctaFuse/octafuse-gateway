@@ -1,5 +1,5 @@
 # gateway-admin — Next.js standalone 多阶段（运行层仅含 standalone + static）
-# Build: docker build -f docker/build/Dockerfile.admin -t octafuse-admin:latest .
+# Build: docker build -f Dockerfile.admin -t octafuse-admin:latest .
 
 FROM node:22-alpine AS builder
 
