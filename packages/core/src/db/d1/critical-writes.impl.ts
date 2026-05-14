@@ -3,9 +3,13 @@
  */
 import type { D1PreparedStatement } from '@cloudflare/workers-types';
 import { eq } from 'drizzle-orm';
-import type { InsertApiKeyBudgetAuditLogParams } from '../api-key-budget-audit-logs-types';
+import type { InsertUserBudgetAuditLogParams } from '../user-budget-audit-params';
 import { buildInsertUserAuditLogStatement } from './user-audit-logs.impl';
-import { insertParamsFromBudgetTx, insertParamsFromCreateKeyAudit, insertParamsFromUsageCharge } from '../user-audit-legacy-mapper';
+import {
+	userBudgetAuditToInsertRowForBudgetTx,
+	userBudgetAuditToInsertRowForCreateKey,
+	userBudgetAuditToInsertRowForUsageCharge,
+} from '../user-budget-audit-mapper';
 import { buildInsertApiKeyStatement } from './api-keys.impl';
 import type { InsertKeyParams } from '../api-keys-types';
 import { buildInsertRequestLogStatement } from './request-logs.impl';
@@ -58,10 +62,10 @@ export async function createApiKeyWithAuditD1(
 	client: D1DatabaseClient,
 	params: {
 		insert: InsertKeyParams;
-		audit: InsertApiKeyBudgetAuditLogParams;
+		audit: InsertUserBudgetAuditLogParams;
 	}
 ): Promise<void> {
-	const auditRow = insertParamsFromCreateKeyAudit(params.insert.userId, params.audit);
+	const auditRow = userBudgetAuditToInsertRowForCreateKey(params.insert.userId, params.audit);
 	await ensureD1Batch(client, [
 		buildInsertApiKeyStatement(client.raw, params.insert),
 		buildInsertUserAuditLogStatement(client.raw, auditRow),
@@ -78,11 +82,17 @@ export async function updateUserBudgetWithAuditTxD1(
 		budgetResetAt: string | null;
 		budgetMax?: number | null;
 		apiKeyId: string | null;
-		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
+		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
 	}
 ): Promise<void> {
 	const nextSpent = roundGatewayMoney(params.budgetSpent);
-	const auditRow = insertParamsFromBudgetTx(params.userId, params.apiKeyId, nextSpent, params.budgetResetAt, params.audit);
+	const auditRow = userBudgetAuditToInsertRowForBudgetTx(
+		params.userId,
+		params.apiKeyId,
+		nextSpent,
+		params.budgetResetAt,
+		params.audit
+	);
 	const updateStmt =
 		params.budgetMax !== undefined
 			? client.raw
@@ -117,7 +127,7 @@ export async function insertRequestUsageAndChargeTxD1(
 		userId: string;
 		beforeSpent: number;
 		chargedCost: number;
-		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
+		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
 	}
 ): Promise<void> {
 	const charged = roundGatewayMoney(params.chargedCost);
@@ -129,7 +139,7 @@ export async function insertRequestUsageAndChargeTxD1(
 				.prepare(`UPDATE users SET budget_spent = budget_spent + ?, updated_at = datetime('now') WHERE id = ?`)
 				.bind(charged, params.userId)
 		);
-		const auditRow = insertParamsFromUsageCharge(params.userId, afterSpent, charged, params.audit);
+		const auditRow = userBudgetAuditToInsertRowForUsageCharge(params.userId, afterSpent, charged, params.audit);
 		statements.push(buildInsertUserAuditLogStatement(client.raw, auditRow));
 	}
 	await ensureD1Batch(client, statements);

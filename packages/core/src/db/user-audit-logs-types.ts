@@ -2,7 +2,7 @@ import type { ApiKeyBudgetAuditActorType, ApiKeyBudgetAuditEventType } from '../
 
 /**
  * `user_audit_logs` 插入与事务内审计载荷。
- * 旧版 `api_key_audit_logs` 的 actor/reason/周期等字段写入 `metadata` JSON。
+ * 预算周期等扩展字段经 {@link mergeUserAuditChangePayload} 写入 `change_payload`；actor / reason 走表列。
  */
 export interface InsertUserAuditLogParams {
 	id: string;

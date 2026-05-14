@@ -102,3 +102,5 @@ npm run deploy:admin
 ```
 
 D1 迁移目录：**`packages/core/migrations-d1/`**（`wrangler.d1.jsonc` 同目录）。Postgres：**`packages/core/migrations-postgres/`**（`npm run db:migrate:pg`）。MySQL：**`packages/core/migrations-mysql/`**（`npm run db:migrate:mysql`）。
+
+应用层已移除的 user audit 兼容导出与迁移对照：见 **[`docs/migrations/user-audit-legacy-exports.md`](migrations/user-audit-legacy-exports.md)**。

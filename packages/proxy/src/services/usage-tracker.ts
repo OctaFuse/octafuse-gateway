@@ -213,7 +213,6 @@ export async function recordUsage(
 			beforeBudgetResetAt: userSnapshot?.budgetResetAt ?? null,
 			afterBudgetResetAt: userSnapshot?.budgetResetAt ?? null,
 			requestLogId: id,
-			metadata: null,
 			beforeUserSnapshot: usageSnaps?.before ?? null,
 			afterUserSnapshot: usageSnaps?.after ?? null,
 			changedFields: usageSnaps?.changed ?? null,

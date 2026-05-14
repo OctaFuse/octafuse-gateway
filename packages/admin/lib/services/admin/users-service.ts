@@ -14,7 +14,7 @@ import {
 	updateKeyStatus,
 	updateUserPlan,
 } from '@octafuse/core/services/user-service';
-import { insertParamsFromFullLegacy } from '@octafuse/core/db/user-audit-legacy-mapper';
+import { userBudgetAuditToInsertRowFull } from '@octafuse/core/db/user-budget-audit-mapper';
 import { roundGatewayMoney } from '@octafuse/core/lib/money-precision';
 import {
 	changedFieldsToJson,
@@ -22,6 +22,7 @@ import {
 	snapshotToJson,
 	userRowToSnapshot,
 } from '@octafuse/core/db/user-audit-snapshot';
+import { buildMetadataAuditChange } from './admin-profile-audit-metadata';
 import { badRequest, notFound } from './errors';
 import { normalizeMetadataInput } from './shared';
 import type { AdminUserCreateInput, AdminUserUpdateInput, JsonObject } from './types';
@@ -161,46 +162,6 @@ export async function getAdminUserByRouteId(repos: GatewayRepositories, raw: str
 	const info = await getUserInfo(repos, userId);
 	if (!info) throw notFound('User not found');
 	return info;
-}
-
-function parseMetadataSnapshot(raw: string | null | undefined): unknown {
-	if (raw == null || raw === '') return null;
-	try {
-		return JSON.parse(raw) as unknown;
-	} catch {
-		return raw;
-	}
-}
-
-function isPlainObject(value: unknown): value is JsonObject {
-	return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function metadataValueEqual(a: unknown, b: unknown): boolean {
-	return JSON.stringify(a) === JSON.stringify(b);
-}
-
-function buildMetadataAuditChange(
-	beforeRaw: string | null | undefined,
-	afterRaw: string | null | undefined,
-	operation: 'merge' | 'replace' | 'update',
-	touchedKeys?: string[]
-): JsonObject {
-	const before = parseMetadataSnapshot(beforeRaw);
-	const after = parseMetadataSnapshot(afterRaw);
-	if (!isPlainObject(before) || !isPlainObject(after)) {
-		return { operation, from: before, to: after };
-	}
-	const keys =
-		touchedKeys && touchedKeys.length > 0
-			? touchedKeys
-			: Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
-	const changes: JsonObject = {};
-	for (const key of keys) {
-		if (metadataValueEqual(before[key], after[key])) continue;
-		changes[key] = { from: before[key] ?? null, to: after[key] ?? null };
-	}
-	return Object.keys(changes).length > 0 ? { operation, changes } : { operation, from: before, to: after };
 }
 
 export async function updateAdminUser(repos: GatewayRepositories, raw: string, input: AdminUserUpdateInput) {
@@ -420,7 +381,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 
 	if (budgetChanged) {
 		await repos.userAuditLogs.insertUserAuditLog(
-			insertParamsFromFullLegacy(userId, {
+			userBudgetAuditToInsertRowFull(userId, {
 				id: crypto.randomUUID(),
 				apiKeyId: null,
 				eventType: 'admin_adjust',
@@ -439,7 +400,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				afterBudgetPeriod: rowAfter.budget_period ?? null,
 				beforeBudgetResetAt: row.budget_reset_at ?? null,
 				afterBudgetResetAt: rowAfter.budget_reset_at ?? null,
-				metadata: profileAuditJson,
+				changePayloadMerge: profileAuditJson,
 				beforeUserSnapshot: beforeUserSnap,
 				afterUserSnapshot: afterUserSnap,
 				changedFields: userChangedFieldsJson,
@@ -459,7 +420,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 		const bperiod = rowAfter.budget_period ?? null;
 		const breset = rowAfter.budget_reset_at ?? null;
 		await repos.userAuditLogs.insertUserAuditLog(
-			insertParamsFromFullLegacy(userId, {
+			userBudgetAuditToInsertRowFull(userId, {
 				id: crypto.randomUUID(),
 				apiKeyId: null,
 				eventType: 'admin_adjust',
@@ -478,7 +439,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				afterBudgetPeriod: bperiod,
 				beforeBudgetResetAt: breset,
 				afterBudgetResetAt: breset,
-				metadata: profileAuditJson,
+				changePayloadMerge: profileAuditJson,
 				beforeUserSnapshot: beforeUserSnap,
 				afterUserSnapshot: afterUserSnap,
 				changedFields: userChangedFieldsJson,
@@ -502,7 +463,7 @@ export async function deleteAdminUser(repos: GatewayRepositories, raw: string): 
 	const bperiod = row.budget_period ?? null;
 	const breset = row.budget_reset_at ?? null;
 	await repos.userAuditLogs.insertUserAuditLog(
-		insertParamsFromFullLegacy(userId, {
+		userBudgetAuditToInsertRowFull(userId, {
 			id: crypto.randomUUID(),
 			apiKeyId: null,
 			eventType: 'user_deleted',
@@ -521,7 +482,7 @@ export async function deleteAdminUser(repos: GatewayRepositories, raw: string): 
 			afterBudgetPeriod: bperiod,
 			beforeBudgetResetAt: breset,
 			afterBudgetResetAt: breset,
-			metadata: JSON.stringify({ deleted_user_id: userId, deleted_user_email: row.email ?? null }),
+			changePayloadMerge: JSON.stringify({ deleted_user_id: userId, deleted_user_email: row.email ?? null }),
 			beforeUserSnapshot: beforeUserSnap,
 			afterUserSnapshot: null,
 			changedFields: null,
@@ -585,7 +546,7 @@ export async function deleteAdminUserKey(repos: GatewayRepositories, rawUser: st
 	const bperiod = row.budget_period ?? null;
 	const breset = row.budget_reset_at ?? null;
 	await repos.userAuditLogs.insertUserAuditLog(
-		insertParamsFromFullLegacy(userId, {
+		userBudgetAuditToInsertRowFull(userId, {
 			id: crypto.randomUUID(),
 			apiKeyId: keyId,
 			eventType: 'key_deleted',
@@ -604,7 +565,7 @@ export async function deleteAdminUserKey(repos: GatewayRepositories, rawUser: st
 			afterBudgetPeriod: bperiod,
 			beforeBudgetResetAt: breset,
 			afterBudgetResetAt: breset,
-			metadata: JSON.stringify({
+			changePayloadMerge: JSON.stringify({
 				key_id: row.id,
 				name: row.name,
 				status: row.status,
@@ -721,7 +682,7 @@ export async function patchAdminUserKey(
 		const eventType = isRevoked ? 'key_revoked' : 'admin_adjust';
 
 		await repos.userAuditLogs.insertUserAuditLog(
-			insertParamsFromFullLegacy(userId, {
+			userBudgetAuditToInsertRowFull(userId, {
 				id: crypto.randomUUID(),
 				apiKeyId: keyId,
 				eventType,
@@ -740,7 +701,7 @@ export async function patchAdminUserKey(
 				afterBudgetPeriod: bperiod,
 				beforeBudgetResetAt: breset,
 				afterBudgetResetAt: breset,
-				metadata: JSON.stringify(profileAuditPayload),
+				changePayloadMerge: JSON.stringify(profileAuditPayload),
 				beforeUserSnapshot: userSnapJson,
 				afterUserSnapshot: userSnapJson,
 				changedFields: null,

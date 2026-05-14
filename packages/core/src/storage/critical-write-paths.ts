@@ -1,5 +1,5 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import type { InsertApiKeyBudgetAuditLogParams } from '../db/api-key-budget-audit-logs-types';
+import type { InsertUserBudgetAuditLogParams } from '../db/user-budget-audit-params';
 import type { InsertKeyParams } from '../db/api-keys-types';
 import type { InsertRequestLogParams } from '../db/request-logs-types';
 import {
@@ -68,7 +68,7 @@ export async function createApiKeyWithAudit(
 	storage: StorageRef,
 	params: {
 		insert: InsertKeyParams;
-		audit: InsertApiKeyBudgetAuditLogParams;
+		audit: InsertUserBudgetAuditLogParams;
 	}
 ): Promise<void> {
 	const client = resolveDatabaseClient(storage);
@@ -97,7 +97,7 @@ export async function updateUserBudgetWithAuditTx(
 		budgetMax?: number | null;
 		/** 触发本次写回的密钥（若有），写入审计 `api_key_id` */
 		apiKeyId: string | null;
-		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
+		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
 	}
 ): Promise<void> {
 	const client = resolveDatabaseClient(storage);
@@ -121,7 +121,7 @@ export async function insertRequestUsageAndChargeTx(
 		userId: string;
 		beforeSpent: number;
 		chargedCost: number;
-		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
+		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
 	}
 ): Promise<void> {
 	const client = resolveDatabaseClient(storage);

@@ -12,8 +12,9 @@ import {
 	updateKeyStatus,
 } from '@octafuse/core/services/user-service';
 import { filterAllowedRequestLogStatuses } from '@octafuse/core/db/request-log-status-filter';
-import { insertParamsFromFullLegacy } from '@octafuse/core/db/user-audit-legacy-mapper';
+import { userBudgetAuditToInsertRowFull } from '@octafuse/core/db/user-budget-audit-mapper';
 import { snapshotToJson, userRowToSnapshot } from '@octafuse/core/db/user-audit-snapshot';
+import { buildMetadataAuditChange } from './admin-profile-audit-metadata';
 import { badRequest, notFound } from './errors';
 import { normalizeMetadataInput } from './shared';
 import type {
@@ -44,46 +45,6 @@ async function resolveKeyRowAnyStatus(repos: GatewayRepositories, idOrKey: strin
 		return repos.apiKeys.getApiKeyWithUserById(k.id);
 	}
 	return repos.apiKeys.getApiKeyWithUserById(idOrKey);
-}
-
-function parseMetadataSnapshot(raw: string | null | undefined): unknown {
-	if (raw == null || raw === '') return null;
-	try {
-		return JSON.parse(raw) as unknown;
-	} catch {
-		return raw;
-	}
-}
-
-function isPlainObject(value: unknown): value is JsonObject {
-	return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function metadataValueEqual(a: unknown, b: unknown): boolean {
-	return JSON.stringify(a) === JSON.stringify(b);
-}
-
-function buildMetadataAuditChange(
-	beforeRaw: string | null | undefined,
-	afterRaw: string | null | undefined,
-	operation: 'merge' | 'replace' | 'update',
-	touchedKeys?: string[]
-): JsonObject {
-	const before = parseMetadataSnapshot(beforeRaw);
-	const after = parseMetadataSnapshot(afterRaw);
-	if (!isPlainObject(before) || !isPlainObject(after)) {
-		return { operation, from: before, to: after };
-	}
-	const keys =
-		touchedKeys && touchedKeys.length > 0
-			? touchedKeys
-			: Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
-	const changes: JsonObject = {};
-	for (const key of keys) {
-		if (metadataValueEqual(before[key], after[key])) continue;
-		changes[key] = { from: before[key] ?? null, to: after[key] ?? null };
-	}
-	return Object.keys(changes).length > 0 ? { operation, changes } : { operation, from: before, to: after };
 }
 
 /**
@@ -314,7 +275,7 @@ export async function updateAdminKey(
 		const eventType = isRevoked ? 'key_revoked' : 'admin_adjust';
 
 		await repos.userAuditLogs.insertUserAuditLog(
-			insertParamsFromFullLegacy(row.user_id, {
+			userBudgetAuditToInsertRowFull(row.user_id, {
 				id: crypto.randomUUID(),
 				apiKeyId: row.id,
 				eventType,
@@ -333,7 +294,7 @@ export async function updateAdminKey(
 				afterBudgetPeriod: bperiod,
 				beforeBudgetResetAt: breset,
 				afterBudgetResetAt: breset,
-				metadata: JSON.stringify(profileAuditPayload),
+				changePayloadMerge: JSON.stringify(profileAuditPayload),
 				beforeUserSnapshot: userSnapJson,
 				afterUserSnapshot: userSnapJson,
 				changedFields: null,
@@ -404,7 +365,7 @@ export async function deleteAdminKey(repos: GatewayRepositories, idOrKey: string
 	const bperiod = row.budget_period ?? null;
 	const breset = row.budget_reset_at ?? null;
 	await repos.userAuditLogs.insertUserAuditLog(
-		insertParamsFromFullLegacy(row.user_id, {
+		userBudgetAuditToInsertRowFull(row.user_id, {
 			id: crypto.randomUUID(),
 			apiKeyId: row.id,
 			eventType: 'key_deleted',
@@ -423,7 +384,7 @@ export async function deleteAdminKey(repos: GatewayRepositories, idOrKey: string
 			afterBudgetPeriod: bperiod,
 			beforeBudgetResetAt: breset,
 			afterBudgetResetAt: breset,
-			metadata: JSON.stringify({
+			changePayloadMerge: JSON.stringify({
 				key_id: row.id,
 				name: row.name,
 				status: row.status,

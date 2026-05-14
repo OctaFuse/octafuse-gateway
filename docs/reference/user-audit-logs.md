@@ -14,7 +14,7 @@
 | **快照** | `before_user_snapshot` / `after_user_snapshot` / `changed_fields` | `UserAuditSnapshot` JSON；金额类展示以快照为准。 |
 | **扩展** | `change_payload` | JSON：周期前后值、管理端 patch 摘要、删除上下文等。 |
 
-写入前由 `assertAndFinalizeUserAuditInsert`（`packages/core/src/db/user-audit-catalog.ts`）做枚举与缺省归一化。
+写入前由 `assertAndFinalizeUserAuditInsert`（`packages/core/src/db/user-audit-catalog.ts`）做枚举与缺省归一化。跨服务审计载荷类型为 **`InsertUserBudgetAuditLogParams`**（`packages/core/src/db/user-budget-audit-params.ts`），映射到插入行见 **`userBudgetAuditToInsertRow*`**（`packages/core/src/db/user-budget-audit-mapper.ts`）。
 
 ## 典型写入场景
 

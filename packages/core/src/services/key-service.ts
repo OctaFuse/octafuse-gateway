@@ -84,7 +84,6 @@ export async function createKey(
 			beforeBudgetResetAt: null,
 			afterBudgetResetAt: u.budget_reset_at,
 			requestLogId: null,
-			metadata: null,
 			beforeUserSnapshot: userSnap,
 			afterUserSnapshot: userSnap,
 			changedFields: null,

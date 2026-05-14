@@ -1,8 +1,12 @@
 import type { ApiKeyBudgetAuditActorType, ApiKeyBudgetAuditEventType } from '../types';
 
-export interface InsertApiKeyBudgetAuditLogParams {
+/**
+ * 写入 `user_audit_logs` 前的用户级预算审计载荷（与 `users` 预算语义对齐）。
+ * `beforeSpent` / `deltaSpent` / `afterSpent` 等为对账快照，由调用方提供；表上金额由 `before_user_snapshot` / `after_user_snapshot` 派生。
+ */
+export interface InsertUserBudgetAuditLogParams {
 	id: string;
-	/** 用户级审计（无关联密钥）时为 `null` */
+	/** 触发本次变更的密钥；纯用户级审计时为 `null` */
 	apiKeyId: string | null;
 	eventType: ApiKeyBudgetAuditEventType;
 	actorType: ApiKeyBudgetAuditActorType;
@@ -15,8 +19,8 @@ export interface InsertApiKeyBudgetAuditLogParams {
 	beforeBudgetMax?: number | null;
 	afterBudgetMax?: number | null;
 	/**
-	 * 周期 reset 基准（与 `api_keys.budget_base` 列对应）变化前/后的快照。
-	 * lazy reset 把 `budget_max → budget_base` 时建议同时记录，便于事后对账。
+	 * 周期 reset 基准（`users.budget_base`）变化前/后。
+	 * lazy reset 将 `budget_max → budget_base` 时建议同时记录，便于事后对账。
 	 */
 	beforeBudgetBase?: number | null;
 	afterBudgetBase?: number | null;
@@ -25,13 +29,14 @@ export interface InsertApiKeyBudgetAuditLogParams {
 	beforeBudgetResetAt?: string | null;
 	afterBudgetResetAt?: string | null;
 	requestLogId?: string | null;
-	metadata?: string | null;
+	/** 可选 JSON 字符串，与周期字段等合并写入 `user_audit_logs.change_payload` */
+	changePayloadMerge?: string | null;
 	/** JSON：用户行快照（见 `user-audit-snapshot`） */
 	beforeUserSnapshot?: string | null;
 	afterUserSnapshot?: string | null;
 	/** JSON string array */
 	changedFields?: string | null;
 	correlationId?: string | null;
-	/** 如 usage_charge、period_reset、admin_patch_budget */
+	/** 如 gateway_usage、admin_keys、gateway_auth */
 	source?: string | null;
 }

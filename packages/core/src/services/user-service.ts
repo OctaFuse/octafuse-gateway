@@ -7,7 +7,7 @@ import type { BudgetPeriod } from '../types';
 import type { UserRow } from '../types';
 import { roundGatewayMoney } from '../lib/money-precision';
 import { updateUserBudgetWithAuditTx } from '../storage/critical-write-paths';
-import { insertParamsFromFullLegacy } from '../db/user-audit-legacy-mapper';
+import { userBudgetAuditToInsertRowFull } from '../db/user-budget-audit-mapper';
 import {
 	buildUserAuditSnapshotsForLazyPeriodReset,
 	snapshotToJson,
@@ -105,6 +105,118 @@ export function budgetLazyResetNeedsPersist(
 	return false;
 }
 
+/** 懒周期重置写库时的审计标签（`getUserInfo` / `getKeyInfo` / 代理鉴权）。 */
+export type LazyBudgetResetAuditKind = 'user_info' | 'key_info' | 'api_key_auth';
+
+const LAZY_RESET_AUDIT: Record<
+	LazyBudgetResetAuditKind,
+	{ reasonCode: string; reasonText: string; source: string }
+> = {
+	user_info: {
+		reasonCode: 'get_user_info_lazy_reset',
+		reasonText: 'Period reset (user info)',
+		source: 'gateway_user_service',
+	},
+	key_info: {
+		reasonCode: 'get_key_info_lazy_reset',
+		reasonText: 'Period reset (key info)',
+		source: 'gateway_key_service',
+	},
+	api_key_auth: {
+		reasonCode: 'api_key_auth_lazy_reset',
+		reasonText: 'Period reset (auth)',
+		source: 'gateway_auth',
+	},
+};
+
+type BudgetRowForLazyReset = Pick<
+	UserRow,
+	'budget_period' | 'budget_reset_at' | 'budget_spent' | 'budget_max' | 'budget_base'
+>;
+
+/**
+ * 若 `maybeResetBudget` 相对当前行有变化则 CAS 写回 `users` 并插入周期重置审计。
+ * `snapshotUserRow === undefined` 时在确需落库前会 `repos.users.getById(userId)` 取快照行。
+ */
+export async function persistLazyBudgetResetIfNeeded(
+	repos: GatewayRepositories,
+	args: {
+		budgetRow: BudgetRowForLazyReset;
+		userId: string;
+		expectedBudgetResetAt: string | null;
+		apiKeyId: string | null;
+		snapshotUserRow?: UserRow | null;
+		kind: LazyBudgetResetAuditKind;
+	}
+): Promise<{
+	didPersist: boolean;
+	budget_spent: number;
+	budget_reset_at: string | null;
+	budget_max: number | null;
+}> {
+	const row = args.budgetRow;
+	const { budget_spent, budget_reset_at, budget_max: nextBudgetMax } = maybeResetBudget(
+		row.budget_period,
+		row.budget_reset_at,
+		row.budget_spent,
+		row.budget_max,
+		row.budget_base
+	);
+	const rowSnapshot = {
+		budget_spent: row.budget_spent,
+		budget_reset_at: row.budget_reset_at,
+		budget_max: row.budget_max,
+	};
+	const nextSnapshot = { budget_spent, budget_reset_at, budget_max: nextBudgetMax };
+	if (!budgetLazyResetNeedsPersist(rowSnapshot, nextSnapshot)) {
+		return { didPersist: false, budget_spent, budget_reset_at, budget_max: nextBudgetMax };
+	}
+	const maxChanged =
+		(row.budget_max == null ? null : roundGatewayMoney(Number(row.budget_max))) !== nextBudgetMax;
+	let snapRow: UserRow | null | undefined = args.snapshotUserRow;
+	if (snapRow === undefined) {
+		snapRow = await repos.users.getById(args.userId);
+	}
+	const snaps =
+		snapRow != null
+			? buildUserAuditSnapshotsForLazyPeriodReset(
+					snapRow,
+					{ budget_spent, budget_reset_at, budget_max: nextBudgetMax },
+					maxChanged
+				)
+			: null;
+	const labels = LAZY_RESET_AUDIT[args.kind];
+	await updateUserBudgetWithAuditTx(repos, {
+		userId: args.userId,
+		expectedBudgetResetAt: args.expectedBudgetResetAt,
+		budgetSpent: budget_spent,
+		budgetResetAt: budget_reset_at,
+		budgetMax: maxChanged ? nextBudgetMax : undefined,
+		apiKeyId: args.apiKeyId,
+		audit: {
+			eventType: 'period_reset',
+			actorType: 'system',
+			reasonCode: labels.reasonCode,
+			reasonText: labels.reasonText,
+			beforeSpent: row.budget_spent,
+			deltaSpent: budget_spent - row.budget_spent,
+			beforeBudgetMax: row.budget_max,
+			afterBudgetMax: maxChanged ? nextBudgetMax : row.budget_max,
+			beforeBudgetBase: row.budget_base,
+			afterBudgetBase: row.budget_base,
+			beforeBudgetPeriod: row.budget_period,
+			afterBudgetPeriod: row.budget_period,
+			beforeBudgetResetAt: row.budget_reset_at,
+			beforeUserSnapshot: snaps?.beforeUserSnapshot ?? null,
+			afterUserSnapshot: snaps?.afterUserSnapshot ?? null,
+			changedFields: snaps?.changedFields ?? null,
+			source: labels.source,
+			correlationId: crypto.randomUUID(),
+		},
+	});
+	return { didPersist: true, budget_spent, budget_reset_at, budget_max: nextBudgetMax };
+}
+
 function validateExternalPair(external_system?: string | null, external_user_id?: string | null): void {
 	const s = (external_system ?? '').trim();
 	const u = (external_user_id ?? '').trim();
@@ -127,7 +239,7 @@ async function insertUserCreatedAudit(
 	const breset = created.budget_reset_at ?? null;
 	const afterSnap = snapshotToJson(userRowToSnapshot(created));
 	await repos.userAuditLogs.insertUserAuditLog(
-		insertParamsFromFullLegacy(created.id, {
+		userBudgetAuditToInsertRowFull(created.id, {
 			id: crypto.randomUUID(),
 			apiKeyId: null,
 			eventType: 'user_created',
@@ -147,7 +259,7 @@ async function insertUserCreatedAudit(
 			beforeBudgetResetAt: null,
 			afterBudgetResetAt: breset,
 			requestLogId: null,
-			metadata: JSON.stringify({ provision_path: reasonCode }),
+			changePayloadMerge: JSON.stringify({ provision_path: reasonCode }),
 			beforeUserSnapshot: null,
 			afterUserSnapshot: afterSnap,
 			changedFields: null,
@@ -256,57 +368,17 @@ export async function getOrCreateUser(
 export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 	const row = await repos.users.getById(userId);
 	if (!row) return null;
-	const { budget_spent, budget_reset_at, budget_max: nextBudgetMax } = maybeResetBudget(
-		row.budget_period,
-		row.budget_reset_at,
-		row.budget_spent,
-		row.budget_max,
-		row.budget_base
-	);
-	const rowSnapshot = {
-		budget_spent: row.budget_spent,
-		budget_reset_at: row.budget_reset_at,
-		budget_max: row.budget_max,
-	};
-	const nextSnapshot = { budget_spent, budget_reset_at, budget_max: nextBudgetMax };
-	let effectiveBudgetMax = row.budget_max != null ? roundGatewayMoney(Number(row.budget_max)) : null;
-	if (budgetLazyResetNeedsPersist(rowSnapshot, nextSnapshot)) {
-		const maxChanged =
-			(row.budget_max == null ? null : roundGatewayMoney(Number(row.budget_max))) !== nextBudgetMax;
-		const snaps = buildUserAuditSnapshotsForLazyPeriodReset(
-			row,
-			{ budget_spent, budget_reset_at, budget_max: nextBudgetMax },
-			maxChanged
-		);
-		await updateUserBudgetWithAuditTx(repos, {
+	const { didPersist, budget_spent, budget_reset_at, budget_max: nextBudgetMax } =
+		await persistLazyBudgetResetIfNeeded(repos, {
+			budgetRow: row,
 			userId: row.id,
 			expectedBudgetResetAt: row.budget_reset_at,
-			budgetSpent: budget_spent,
-			budgetResetAt: budget_reset_at,
-			budgetMax: maxChanged ? nextBudgetMax : undefined,
 			apiKeyId: null,
-			audit: {
-				eventType: 'period_reset',
-				actorType: 'system',
-				reasonCode: 'get_user_info_lazy_reset',
-				reasonText: 'Period reset (user info)',
-				beforeSpent: row.budget_spent,
-				deltaSpent: budget_spent - row.budget_spent,
-				beforeBudgetMax: row.budget_max,
-				afterBudgetMax: maxChanged ? nextBudgetMax : row.budget_max,
-				beforeBudgetBase: row.budget_base,
-				afterBudgetBase: row.budget_base,
-				beforeBudgetPeriod: row.budget_period,
-				afterBudgetPeriod: row.budget_period,
-				beforeBudgetResetAt: row.budget_reset_at,
-				metadata: null,
-				beforeUserSnapshot: snaps.beforeUserSnapshot,
-				afterUserSnapshot: snaps.afterUserSnapshot,
-				changedFields: snaps.changedFields,
-				source: 'gateway_user_service',
-				correlationId: crypto.randomUUID(),
-			},
+			snapshotUserRow: row,
+			kind: 'user_info',
 		});
+	let effectiveBudgetMax = row.budget_max != null ? roundGatewayMoney(Number(row.budget_max)) : null;
+	if (didPersist) {
 		effectiveBudgetMax = nextBudgetMax;
 	}
 	let metadata: Record<string, unknown> | null = null;
@@ -340,56 +412,16 @@ export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 export async function getKeyInfo(repos: GatewayRepositories, id: string) {
 	const row = await repos.apiKeys.getApiKeyWithUserById(id);
 	if (!row) return null;
-	const { budget_spent, budget_reset_at, budget_max: nextBudgetMax } = maybeResetBudget(
-		row.budget_period,
-		row.budget_reset_at,
-		row.budget_spent,
-		row.budget_max,
-		row.budget_base
-	);
-	const rowSnapshot = { budget_spent: row.budget_spent, budget_reset_at: row.budget_reset_at, budget_max: row.budget_max };
-	const nextSnapshot = { budget_spent, budget_reset_at, budget_max: nextBudgetMax };
-	let effectiveBudgetMax = row.budget_max != null ? roundGatewayMoney(Number(row.budget_max)) : null;
-	if (budgetLazyResetNeedsPersist(rowSnapshot, nextSnapshot)) {
-		const maxChanged =
-			(row.budget_max == null ? null : roundGatewayMoney(Number(row.budget_max))) !== nextBudgetMax;
-		const userRow = await repos.users.getById(row.user_id);
-		const snaps = userRow
-			? buildUserAuditSnapshotsForLazyPeriodReset(
-					userRow,
-					{ budget_spent, budget_reset_at, budget_max: nextBudgetMax },
-					maxChanged
-				)
-			: null;
-		await updateUserBudgetWithAuditTx(repos, {
+	const { didPersist, budget_spent, budget_reset_at, budget_max: nextBudgetMax } =
+		await persistLazyBudgetResetIfNeeded(repos, {
+			budgetRow: row,
 			userId: row.user_id,
 			expectedBudgetResetAt: row.budget_reset_at,
-			budgetSpent: budget_spent,
-			budgetResetAt: budget_reset_at,
-			budgetMax: maxChanged ? nextBudgetMax : undefined,
 			apiKeyId: id,
-			audit: {
-				eventType: 'period_reset',
-				actorType: 'system',
-				reasonCode: 'get_key_info_lazy_reset',
-				reasonText: 'Period reset (key info)',
-				beforeSpent: row.budget_spent,
-				deltaSpent: budget_spent - row.budget_spent,
-				beforeBudgetMax: row.budget_max,
-				afterBudgetMax: maxChanged ? nextBudgetMax : row.budget_max,
-				beforeBudgetBase: row.budget_base,
-				afterBudgetBase: row.budget_base,
-				beforeBudgetPeriod: row.budget_period,
-				afterBudgetPeriod: row.budget_period,
-				beforeBudgetResetAt: row.budget_reset_at,
-				metadata: null,
-				beforeUserSnapshot: snaps?.beforeUserSnapshot ?? null,
-				afterUserSnapshot: snaps?.afterUserSnapshot ?? null,
-				changedFields: snaps?.changedFields ?? null,
-				source: 'gateway_key_service',
-				correlationId: crypto.randomUUID(),
-			},
+			kind: 'key_info',
 		});
+	let effectiveBudgetMax = row.budget_max != null ? roundGatewayMoney(Number(row.budget_max)) : null;
+	if (didPersist) {
 		effectiveBudgetMax = nextBudgetMax;
 	}
 	let metadata: Record<string, unknown> | null = null;

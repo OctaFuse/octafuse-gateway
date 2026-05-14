@@ -24,11 +24,3 @@ export function mergeUserAuditChangePayload(base: string | null | undefined, ext
 	const out = { ...merged, ...trimmed };
 	return Object.keys(out).length > 0 ? JSON.stringify(out) : null;
 }
-
-/**
- * 将预算周期等扩展字段合并进 `user_audit_logs.change_payload`（actor / reason 使用表列）。
- * @deprecated 使用 {@link mergeUserAuditChangePayload}（语义相同）。
- */
-export function mergeUserAuditMetadata(base: string | null | undefined, extra: UserBudgetAuditExtraFields): string | null {
-	return mergeUserAuditChangePayload(base, extra);
-}
