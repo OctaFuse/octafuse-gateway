@@ -1,8 +1,8 @@
 # 线上部署：Cloudflare（Proxy Worker + Admin Pages + D1）
 
-本文描述在 **Cloudflare** 上部署 **octafuse**：优先 **§0 Connect to Git**（免本机 `wrangler`）；亦可使用 **§2 本机 `npm run deploy:*`**。数据面为 **D1**；表结构以 **`packages/core/migrations-d1/`** 为准。与 **`your-portal`** 的环境变量对齐见后文。
+本文描述在 **Cloudflare** 上部署 **octafuse**：优先 **§0 Connect to Git**（免本机 `wrangler`）；亦可使用 **§2 本机 `npm run deploy:*`**。数据面为 **D1**；表结构以 **`packages/core/migrations-d1/`** 为准。与外部集成方的环境变量对齐见后文。
 
-**生产典型对外域名（海外）**：Proxy **`https://gateway.example.com`**，Admin **`https://gateway-admin.example.com`**（DNS 与证书在 Cloudflare 控制台配置；门户侧 **`GATEWAY_URL` / `GATEWAY_MASTER_URL`** 与之一致）。中国境内等自托管 Docker 部署见 [deployment-docker.md](./deployment-docker.md) 与 [docker/deploy/README.md](../../docker/deploy/README.md)；Nginx 流式反代见 [docker/examples/nginx/](../../docker/examples/nginx/)。
+**生产典型对外域名**：Proxy **`https://gateway.example.com`**，Admin **`https://gateway-admin.example.com`**（DNS 与证书在 Cloudflare 控制台配置；调用方侧 **`GATEWAY_URL` / `GATEWAY_MASTER_URL`** 与之一致）。无法或不希望使用 Cloudflare D1 时改走自托管 Docker 部署，见 [deployment-docker.md](./deployment-docker.md)；Compose 环境文件约定见 [docker/deploy/README.md](../../docker/deploy/README.md)。Nginx 流式反代见 [docker/examples/nginx/](../../docker/examples/nginx/)。
 
 ## 0. Connect to Git（推荐：免本机 `wrangler`）
 
@@ -91,18 +91,19 @@ npx wrangler secret put ADMIN_PASSWORD
 
 - 管理接口使用的 Bearer Token 必须与 D1 **`system_config.MASTER_KEY`** 一致；`requireMasterKey` 从数据库读取，**不**以 Worker Secret 为权威来源（与 v1 行为一致）。
 - 首次上线后应在 Admin 的 Config 或 SQL 中将 `MASTER_KEY` 改为强随机值，并同步到密钥管理。
-- **外部调用**管理 API：对 **`{GATEWAY_MASTER_URL}/api/admin/...`**（Admin Pages 根 URL；your-portal 环境变量名）携带 `Authorization: Bearer <MASTER_KEY>`（见 [api/admin.md](../api/admin.md)）。
+- **外部调用**管理 API：对 **`{GATEWAY_MASTER_URL}/api/admin/...`**（Admin Pages 根 URL；外部集成方约定的环境变量名）携带 `Authorization: Bearer <MASTER_KEY>`（见 [api/admin.md](../api/admin.md)）。
 
 ## 4. 下游服务环境变量
 
-| 服务 | 变量 | 说明 |
-|------|------|------|
-| your-portal（国际） | `GATEWAY_URL` | 客户端 / JWT / 健康检查：Proxy Worker 根 URL（典型 **`https://gateway.example.com`**） |
-| your-portal（国际） | `GATEWAY_MASTER_URL` | Admin Pages 根 URL；管理请求 **`/api/admin/*`**（典型 **`https://gateway-admin.example.com`**） |
-| your-portal（国际） | `GATEWAY_MASTER_KEY` | 与 **本区** D1 `MASTER_KEY` 一致 |
-| your-portal (China-region example)（中国） | 同上 | 指向 **`https://gateway-cn.example.com`** / **`https://gateway-admin-cn.example.com`** 与境内库 **`MASTER_KEY`** |
+外部集成方（账号/计费/管理后台等）按下表对齐变量；同一套 Gateway 部署对应一组三件套，多环境（如多区域、预发/生产）请各自独立维护。
 
-更新 `MASTER_KEY` 后，必须同步更新 **`GATEWAY_MASTER_KEY`**，否则门户创建 Key、外部脚本调管理接口会 401。
+| 变量 | 说明 |
+|------|------|
+| `GATEWAY_URL` | 客户端 / JWT / 健康检查：Proxy Worker 根 URL（典型 **`https://gateway.example.com`**） |
+| `GATEWAY_MASTER_URL` | Admin Pages 根 URL；管理请求 **`/api/admin/*`**（典型 **`https://gateway-admin.example.com`**） |
+| `GATEWAY_MASTER_KEY` | 与本部署 D1 `MASTER_KEY` 一致 |
+
+更新 `MASTER_KEY` 后，必须同步更新 **`GATEWAY_MASTER_KEY`**，否则外部集成方创建 Key、运维脚本调管理接口会 401。
 
 ## 5. 健康检查与观测
 

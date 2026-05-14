@@ -1,30 +1,27 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import type { InsertApiKeyBudgetAuditLogParams } from '../db/api-key-budget-audit-logs-types';
+import type { InsertUserBudgetAuditLogParams } from '../db/user-budget-audit-params';
 import type { InsertKeyParams } from '../db/api-keys-types';
 import type { InsertRequestLogParams } from '../db/request-logs-types';
 import {
 	createApiKeyWithAuditD1,
-	getActiveApiKeyByUserIdD1,
-	getApiKeyBudgetSnapshotD1,
 	getSystemConfigValueD1,
+	getUserBudgetSnapshotD1,
 	insertRequestUsageAndChargeTxD1,
-	updateApiKeyBudgetWithAuditTxD1,
+	updateUserBudgetWithAuditTxD1,
 } from '../db/d1/critical-writes.impl';
 import {
 	createApiKeyWithAuditMy,
-	getActiveApiKeyByUserIdMy,
-	getApiKeyBudgetSnapshotMy,
 	getSystemConfigValueMy,
+	getUserBudgetSnapshotMy,
 	insertRequestUsageAndChargeTxMy,
-	updateApiKeyBudgetWithAuditTxMy,
+	updateUserBudgetWithAuditTxMy,
 } from '../db/mysql/critical-writes.impl';
 import {
 	createApiKeyWithAuditPg,
-	getActiveApiKeyByUserIdPg,
-	getApiKeyBudgetSnapshotPg,
 	getSystemConfigValuePg,
+	getUserBudgetSnapshotPg,
 	insertRequestUsageAndChargeTxPg,
-	updateApiKeyBudgetWithAuditTxPg,
+	updateUserBudgetWithAuditTxPg,
 } from '../db/postgres/critical-writes.impl';
 import type { GatewayDatabaseClient } from './database-client';
 import { createD1DatabaseClient } from './database-client';
@@ -42,29 +39,18 @@ export function resolveDatabaseClient(storage: StorageRef): GatewayDatabaseClien
 	return createD1DatabaseClient(storage as D1Database);
 }
 
-export async function getActiveApiKeyByUserId(storage: StorageRef, userId: string): Promise<{ id: string; key: string } | null> {
-	const client = resolveDatabaseClient(storage);
-	if (client.driver === 'd1') {
-		return getActiveApiKeyByUserIdD1(client, userId);
-	}
-	if (client.driver === 'mysql') {
-		return getActiveApiKeyByUserIdMy(client, userId);
-	}
-	return getActiveApiKeyByUserIdPg(client, userId);
-}
-
-export async function getApiKeyBudgetSnapshot(
+export async function getUserBudgetSnapshot(
 	storage: StorageRef,
-	keyId: string
+	userId: string
 ): Promise<{ budgetSpent: number; budgetMax: number | null; budgetPeriod: string | null; budgetResetAt: string | null } | null> {
 	const client = resolveDatabaseClient(storage);
 	if (client.driver === 'd1') {
-		return getApiKeyBudgetSnapshotD1(client, keyId);
+		return getUserBudgetSnapshotD1(client, userId);
 	}
 	if (client.driver === 'mysql') {
-		return getApiKeyBudgetSnapshotMy(client, keyId);
+		return getUserBudgetSnapshotMy(client, userId);
 	}
-	return getApiKeyBudgetSnapshotPg(client, keyId);
+	return getUserBudgetSnapshotPg(client, userId);
 }
 
 export async function getSystemConfigValue(storage: StorageRef, key: string): Promise<string | null> {
@@ -82,7 +68,7 @@ export async function createApiKeyWithAudit(
 	storage: StorageRef,
 	params: {
 		insert: InsertKeyParams;
-		audit: InsertApiKeyBudgetAuditLogParams;
+		audit: InsertUserBudgetAuditLogParams;
 	}
 ): Promise<void> {
 	const client = resolveDatabaseClient(storage);
@@ -97,30 +83,33 @@ export async function createApiKeyWithAudit(
 	await createApiKeyWithAuditPg(client, params);
 }
 
-export async function updateApiKeyBudgetWithAuditTx(
+/**
+ * 条件更新 `users` 预算字段并写 `user_audit_logs`。
+ * Postgres / MySQL：`WHERE id=? AND budget_reset_at` 与读库时的 `expectedBudgetResetAt` 一致才更新；否则跳过审计（并发 lazy reset 已由另一请求提交）。
+ */
+export async function updateUserBudgetWithAuditTx(
 	storage: StorageRef,
 	params: {
-		keyId: string;
+		userId: string;
+		expectedBudgetResetAt: string | null;
 		budgetSpent: number;
 		budgetResetAt: string | null;
-		/**
-		 * 可选：把 `api_keys.budget_max` 同时改写为该值（lazy reset 复位 base 时使用）。
-		 * 缺省（undefined）时不修改 `budget_max`。
-		 */
 		budgetMax?: number | null;
-		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
+		/** 触发本次写回的密钥（若有），写入审计 `api_key_id` */
+		apiKeyId: string | null;
+		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>;
 	}
 ): Promise<void> {
 	const client = resolveDatabaseClient(storage);
 	if (client.driver === 'd1') {
-		await updateApiKeyBudgetWithAuditTxD1(client, params);
+		await updateUserBudgetWithAuditTxD1(client, params);
 		return;
 	}
 	if (client.driver === 'mysql') {
-		await updateApiKeyBudgetWithAuditTxMy(client, params);
+		await updateUserBudgetWithAuditTxMy(client, params);
 		return;
 	}
-	await updateApiKeyBudgetWithAuditTxPg(client, params);
+	await updateUserBudgetWithAuditTxPg(client, params);
 }
 
 export async function insertRequestUsageAndChargeTx(
@@ -128,9 +117,11 @@ export async function insertRequestUsageAndChargeTx(
 	params: {
 		requestLog: InsertRequestLogParams;
 		shouldChargeBudget: boolean;
+		/** `users.id`，与 `requestLog.userId` 一致 */
+		userId: string;
 		beforeSpent: number;
 		chargedCost: number;
-		audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
+		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
 	}
 ): Promise<void> {
 	const client = resolveDatabaseClient(storage);

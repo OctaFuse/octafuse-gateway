@@ -17,7 +17,7 @@ INSERT INTO system_config (`key`, value, description, updated_at) VALUES
   (
     'BILLING_CURRENCY',
     'USD',
-    'ISO 4217 alphabetic code for pricing_profile and api_keys budget amounts (per-million-token unit).',
+    'ISO 4217 alphabetic code for pricing_profile and user budget amounts (per-million-token unit).',
     CURRENT_TIMESTAMP(6)
   )
 AS new

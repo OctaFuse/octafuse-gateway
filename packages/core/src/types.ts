@@ -9,31 +9,55 @@ export type ApiKeyBudgetAuditEventType =
 	| 'usage_charge'
 	| 'period_reset'
 	| 'admin_adjust'
-	| 'key_created';
+	| 'key_created'
+	| 'key_revoked'
+	| 'key_deleted'
+	| 'user_created'
+	| 'user_deleted';
 
 export type ApiKeyBudgetAuditActorType = 'system' | 'admin' | 'service';
 
-/** `api_keys` 表行（密钥明文存库）。 */
+/** `api_keys` 表行（密钥明文存库；预算在 `users`）。 */
 export interface ApiKeyRow {
-  id: string;
-  key: string;
-  user_id: string;
-  user_email: string | null;
-  budget_max: number | null;
-  /**
-   * 周期 reset 时 `budget_max` 的恢复基准（非空，缺省 0）。
-   * 当 `budget_period` 到期触发 lazy reset 时，`budget_max` 会被回写为 `budget_base`；
-   * 调用方临时调高 `budget_max` 而不希望被周期回收时，需要保持 `budget_base` 不变。
-   */
-  budget_base: number;
-  budget_spent: number;
-  budget_period: string;
-  budget_reset_at: string | null;
-  status: string;
-  /** JSON 字符串 */
-  metadata: string | null;
-  created_at: string;
-  updated_at: string;
+	id: string;
+	key: string;
+	user_id: string;
+	name: string | null;
+	status: string;
+	/** JSON 字符串 */
+	metadata: string | null;
+	last_used_at: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+/** `users` 表行（网关自有用户；预算字段在此）。 */
+export interface UserRow {
+	id: string;
+	email: string;
+	budget_max: number | null;
+	budget_base: number;
+	budget_spent: number;
+	budget_period: string;
+	budget_reset_at: string | null;
+	status: string;
+	metadata: string | null;
+	external_system: string | null;
+	external_user_id: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+/**
+ * `api_keys` JOIN `users` 后的扁平行：鉴权与管理端沿用 `user_email` / `budget_*` 命名。
+ */
+export interface ResolvedGatewayKeyRow extends ApiKeyRow {
+	user_email: string | null;
+	budget_max: number | null;
+	budget_base: number;
+	budget_spent: number;
+	budget_period: string;
+	budget_reset_at: string | null;
 }
 
 /** `providers` 表行（含上游密钥）。 */
@@ -88,9 +112,10 @@ export interface ModelRouteRow {
 
 /** `api_key_request_logs` 表行。 */
 export interface RequestLogRow {
-  id: string;
-  api_key_id: string | null;
-  user_email: string | null;
+	id: string;
+	user_id: string | null;
+	api_key_id: string | null;
+	user_email: string | null;
   model_id: string | null;
   provider_id: string | null;
   /** 请求当时转发到上游的模型名；升级前列不存在或旧行为 null */
@@ -130,30 +155,42 @@ export interface RequestLogRow {
   created_at: string;
 }
 
-/** `api_key_audit_logs` 表行。 */
-export interface ApiKeyBudgetAuditLogRow {
+/** `user_audit_logs` 表行。 */
+export interface UserAuditLogRow {
 	id: string;
-	api_key_id: string;
-	event_type: ApiKeyBudgetAuditEventType;
-	actor_type: ApiKeyBudgetAuditActorType;
-	actor_id: string | null;
-	reason_code: string | null;
-	reason_text: string | null;
+	/** 用户删除后外键 ON DELETE SET NULL 可能为空；快照/change_payload 保留身份 */
+	user_id: string | null;
+	api_key_id: string | null;
+	event_type: string;
+	actor_type: string;
+	/** 由 `before_user_snapshot` / `after_user_snapshot` 派生（表上已无独立列）。 */
 	before_spent: number;
+	/** 由快照派生，语义同历史 `delta_spent`。 */
 	delta_spent: number;
 	after_spent: number;
 	before_budget_max: number | null;
 	after_budget_max: number | null;
-	before_budget_base: number | null;
-	after_budget_base: number | null;
-	before_budget_period: string | null;
-	after_budget_period: string | null;
-	before_budget_reset_at: string | null;
-	after_budget_reset_at: string | null;
+	/** 由快照派生的 `budget_base`（周期 reset 参考额）。 */
+	before_budget_base: number;
+	after_budget_base: number;
 	request_log_id: string | null;
-	metadata: string | null;
+	/** 结构化扩展载荷（预算周期前后值、管理端 patch 摘要等）；原 `metadata` 列。 */
+	change_payload: string | null;
+	before_user_snapshot: string | null;
+	after_user_snapshot: string | null;
+	changed_fields: string | null;
+	correlation_id: string | null;
+	source: string | null;
+	actor_id: string | null;
+	reason_code: string | null;
+	reason_text: string | null;
 	created_at: string;
 }
 
-/** 全局列表 JOIN `api_keys` 后的审计行（多 `user_email`）。 */
-export type GlobalApiKeyBudgetAuditLogRow = ApiKeyBudgetAuditLogRow & { user_email: string | null };
+/** 全局列表 JOIN `users` 后的审计行。 */
+export type GlobalUserAuditLogRow = UserAuditLogRow & { user_email: string | null };
+
+/** @deprecated 使用 {@link UserAuditLogRow} */
+export type ApiKeyBudgetAuditLogRow = UserAuditLogRow;
+/** @deprecated 使用 {@link GlobalUserAuditLogRow} */
+export type GlobalApiKeyBudgetAuditLogRow = GlobalUserAuditLogRow;

@@ -1,13 +1,14 @@
 # Examples
 
-Short pointers for calling the gateway after you define at least one **provider** and **model route** (Admin UI or `POST /api/admin/*`).
+在 Admin 中配置好 **provider** 与 **model route**（或 `POST /api/admin/*`）后，可用下列最小请求验证 Proxy / Admin。
 
-| Doc / asset | What it covers |
-|-------------|----------------|
-| [quick-curl.md](./quick-curl.md) | Minimal `curl` against Proxy health and chat completions |
-| [README.md](../README.md) (repo root) | ~60s Docker quickstart and inline chat `curl` |
-| [docs/api/admin.md](../docs/api/admin.md) | Admin HTTP API (providers, routes, keys) |
-| [docs/api/user.md](../docs/api/user.md) | End-user key usage (`/v1/me`, spend) |
-| [docker/examples/](../docker/examples/) | Compose snippets and nginx fragments for streaming |
+| 链接 | 说明 |
+|------|------|
+| [quick-curl.md](./quick-curl.md) | `curl`：健康检查、`/v1/chat/completions`、Admin health |
+| [README.md](../README.md) | 根入口：快速开始、常用命令 |
+| [docs/README.md](../docs/README.md) | 文档中枢 |
+| [docs/api/admin.md](../docs/api/admin.md) | 管理 API |
+| [docs/api/user.md](../docs/api/user.md) | 用户侧 `/v1/me` 等 |
+| [docker/examples/](../docker/examples/) | Compose 与 Nginx 片段 |
 
-For environment variables, start from [`.env.example`](../.env.example) at the repository root.
+环境变量从根目录 **[`.env.example`](../.env.example)** 开始。

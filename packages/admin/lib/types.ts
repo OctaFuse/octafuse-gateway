@@ -11,6 +11,8 @@ export interface GatewayApiKey {
   id: string;
   key: string;
   user_id: string;
+  /** 密钥展示名（`api_keys.name`） */
+  name?: string | null;
   user_email: string | null;
   budget_max: number | null;
   /** 订阅套餐基础上限（周期 reset 后 `budget_max` 复位至此） */
@@ -25,28 +27,60 @@ export interface GatewayApiKey {
   updated_at: string;
 }
 
-/** `api_key_audit_logs` 行；全局列表接口可附带 `user_email`（JOIN `api_keys`）。 */
+/** `user_audit_logs` 行；全局列表 JOIN `users` 后带 `user_email`。预算周期等扩展在 `change_payload` JSON。 */
 export interface GatewayApiKeyBudgetAuditLog {
   id: string;
-  api_key_id: string;
+  /** 用户删除后外键置空；身份见快照 / change_payload */
+  user_id: string | null;
+  api_key_id: string | null;
   event_type: string;
   actor_type: string;
-  actor_id: string | null;
-  reason_code: string | null;
-  reason_text: string | null;
+  actor_id?: string | null;
+  reason_code?: string | null;
+  reason_text?: string | null;
+  /** 由 `before_user_snapshot` / `after_user_snapshot` 派生 */
   before_spent: number;
   delta_spent: number;
   after_spent: number;
   before_budget_max: number | null;
   after_budget_max: number | null;
-  before_budget_period: string | null;
-  after_budget_period: string | null;
-  before_budget_reset_at: string | null;
-  after_budget_reset_at: string | null;
+  /** 由快照派生 */
+  before_budget_base: number;
+  after_budget_base: number;
+  before_budget_period?: string | null;
+  after_budget_period?: string | null;
+  before_budget_reset_at?: string | null;
+  after_budget_reset_at?: string | null;
   request_log_id: string | null;
-  metadata: string | null;
+  /** 结构化扩展（预算周期前后、管理端 patch 等）；原 `metadata` */
+  change_payload: string | null;
+  /** JSON：用户行快照（`UserAuditSnapshot`） */
+  before_user_snapshot?: string | null;
+  after_user_snapshot?: string | null;
+  /** JSON string array：变更字段名 */
+  changed_fields?: string | null;
+  correlation_id?: string | null;
+  source?: string | null;
   created_at: string;
   user_email?: string | null;
+}
+
+/** `GET /admin/users` 列表行（含 `active_keys_count`）。 */
+export interface GatewayUserListItem {
+  id: string;
+  email: string;
+  external_system: string | null;
+  external_user_id: string | null;
+  budget_max: number | null;
+  budget_base: number;
+  budget_spent: number;
+  budget_period: string;
+  budget_reset_at: string | null;
+  status: string;
+  metadata: string | null;
+  created_at: string;
+  updated_at: string;
+  active_keys_count: number;
 }
 
 /** 与 octafuse `ApiKeyBudgetAuditEventType` 对齐（筛选下拉与网关枚举一致） */
@@ -55,6 +89,10 @@ export const API_KEY_BUDGET_AUDIT_EVENT_TYPES = [
   'period_reset',
   'admin_adjust',
   'key_created',
+  'key_revoked',
+  'key_deleted',
+  'user_created',
+  'user_deleted',
 ] as const;
 
 /** 与 octafuse `ApiKeyBudgetAuditActorType` 对齐 */
@@ -111,6 +149,7 @@ export interface GatewayModelRoute {
 
 export interface GatewayRequestLog {
   id: string;
+  user_id?: string | null;
   api_key_id: string | null;
   user_email: string | null;
   model_id: string | null;

@@ -10,6 +10,7 @@ import {
   type GatewayDashboardStatsRange,
 } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
+import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import { formatGatewayTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { DashboardStats } from '@/lib/types';
@@ -65,7 +66,7 @@ export default function DashboardPage() {
     <div className="p-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Gateway Overview</p>
+        <p className="text-sm text-gray-500 mt-1">{OCTAFUSE_GATEWAY_PRODUCT} — operations overview</p>
       </div>
       <div className="mb-8 w-full min-w-0">
         <GatewayDashboardRangePicker value={range} onChange={setRange} />
@@ -76,7 +77,10 @@ export default function DashboardPage() {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="text-sm text-gray-500 mb-1">Active API Keys</div>
           <div className="text-3xl font-bold text-gray-900">{stats?.gateway.activeKeysCount ?? 0}</div>
-          <Link href="/gateway/keys" className="text-sm text-blue-600 hover:underline mt-2 inline-block">Manage</Link>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+            <Link href="/gateway/users" className="text-blue-600 hover:underline">Users</Link>
+            <Link href="/gateway/keys" className="text-blue-600 hover:underline">Keys</Link>
+          </div>
         </div>
         {kpi ? (
           <>

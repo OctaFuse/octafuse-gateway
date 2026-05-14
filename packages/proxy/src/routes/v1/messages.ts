@@ -176,6 +176,7 @@ messagesRoutes.post('/', async (c) => {
         );
         return recordUsage(repos, {
           api_key_id: apiKey.keyId,
+          user_id: apiKey.userId,
           user_email: apiKey.userEmail,
           model_id: baseModelId,
           provider_id: chosenRoute.providerId,

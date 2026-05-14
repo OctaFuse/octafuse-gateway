@@ -17,6 +17,7 @@ import {
   GeminiEndpointIcon,
 } from '@/components/upstream-brand-logo';
 import { readApiJson } from '@/lib/api-json';
+import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import { isPendingProviderImportApiKey } from '@/lib/provider-import-preset';
 import type { GatewayProvider } from '@/lib/types';
 
@@ -309,8 +310,10 @@ export default function GatewayProvidersPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gateway Providers</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage upstream AI service providers</p>
+          <h1 className="text-3xl font-bold text-gray-900">Providers</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Upstream AI endpoints consumed by {OCTAFUSE_GATEWAY_PRODUCT}
+          </p>
           <p className="text-xs text-gray-400 mt-1">
             Use <strong>Import</strong> to seed common CN-region endpoints; then click a row and replace the placeholder API key.
           </p>
@@ -699,7 +702,9 @@ export default function GatewayProvidersPage() {
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">OpenAI (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        OpenAI <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                      </label>
                       <input
                         type="url"
                         value={formData.base_url_openai}
@@ -710,7 +715,9 @@ export default function GatewayProvidersPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Anthropic (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Anthropic <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                      </label>
                       <input
                         type="url"
                         value={formData.base_url_anthropic}
@@ -721,7 +728,9 @@ export default function GatewayProvidersPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Gemini (optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Gemini <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                      </label>
                       <input
                         type="url"
                         value={formData.base_url_gemini}

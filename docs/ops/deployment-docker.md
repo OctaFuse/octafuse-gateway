@@ -62,7 +62,6 @@
 典型未压缩体积：**proxy** 常见约 **一百多 MB**；**admin** 因 Next standalone 与 trace 较大，常见约 **两百 MB 量级**；**migrate** 最小。若仍见 **~1GB+** 单层或总量异常，多为旧版单阶段镜像或本地缓存标签，请 `docker build --no-cache` 重建后对比 `docker image ls` / `docker history`。
 
 ```bash
-cd octafuse
 docker build -f docker/build/Dockerfile.proxy -t octafuse-proxy:local .
 docker build -f docker/build/Dockerfile.admin -t octafuse-admin:local .
 docker build -f docker/build/Dockerfile.migrate -t octafuse-migrate:local .
@@ -86,16 +85,16 @@ docker run --rm -p 8789:8789 \
 
 （首次使用前须对该库执行 [§5](#5-数据库迁移与校验postgres)。）
 
-## GitHub Actions（GHCR 构建与推送；可选阿里云 ACR 双推）
+## GitHub Actions（GHCR 构建与推送；可选第二私有 registry 双推）
 
-**CI 镜像发布**由 **[`.github/workflows/octafuse-docker-images.yml`](../../.github/workflows/octafuse-docker-images.yml)** 负责：**`runs-on: ubuntu-latest`**，**QEMU + Buildx** 多架构。
+**CI 镜像发布**由 **[`.github/workflows/octafuse-docker-images.yml`](../../.github/workflows/octafuse-docker-images.yml)** 负责：**`runs-on: ubuntu-latest`**，**QEMU + Buildx** 多架构。镜像的 `org.opencontainers.image.description` 由该 workflow 里 **`docker/metadata-action` 的 `labels:`** 显式写入（避免沿用 GitHub 仓库 **About** 栏里尚未更新的历史描述）。
 
-- **正式发布（推荐）**：推送 **`vX.Y.Z`** Git 标签（由 **[`.github/workflows/release.yml`](../../.github/workflows/release.yml)** 在合并 Version PR 后执行 `changeset tag` 产生）会 **自动** 触发本 workflow：构建 **proxy / admin / migrate**、`linux/amd64` + `linux/arm64`，并在 **GitHub Release** 正文中写入各镜像 **digest**（便于按 digest 固定部署）。流程总览见 **[release-versioning.md](./release-versioning.md)**。
+- **正式发布（推荐）**：合并 Version PR 后，**[`.github/workflows/release.yml`](../../.github/workflows/release.yml)** 通过 Changesets 的 **`publish`** 步骤执行 **`npm run ci:changeset-tag-push`**（`changeset tag` + 推送 **`vX.Y.Z`**），从而触发本 workflow：构建 **proxy / admin / migrate**、`linux/amd64` + `linux/arm64`，并在 **GitHub Release** 正文中写入各镜像 **digest**。流程总览见 **[release-versioning.md](./release-versioning.md)**。
 - **应急 / 验证**：仍可使用 **`workflow_dispatch`** 在 Actions 里手动勾选镜像与架构；**不会**自动创建 GitHub Release。
 
 本地 `docker build` / `docker compose build` 可用于开发验证，但生产发版以 **tag → GHCR** 为准。
 
-**GHCR** 始终作为推送目标之一；若在仓库 **Variables** 中配置 **`ACR_REGISTRY`**、**`ACR_NAMESPACE`**、**`ACR_USERNAME`**，并在 **Secrets** 中配置 **`ACR_PASSWORD`**，则同一次构建会将 **相同 tag** 额外推送到 **`${ACR_REGISTRY}/${ACR_NAMESPACE}/octafuse-{proxy,admin,migrate}`**。
+**GHCR** 始终作为推送目标之一；若在仓库 **Variables** 中配置 **`ACR_REGISTRY`**、**`ACR_NAMESPACE`**、**`ACR_USERNAME`**，并在 **Secrets** 中配置 **`ACR_PASSWORD`**，则同一次构建会将 **相同 tag** 额外推送到 **`${ACR_REGISTRY}/${ACR_NAMESPACE}/octafuse-{proxy,admin,migrate}`**。变量名沿用了阿里云 ACR 的命名习惯，但任何兼容 OCI 的私有 registry（自建 Harbor、其他云商容器镜像服务等）都可复用。
 
 **手动 dispatch** 下可选择 **`linux/amd64`**、**`linux/arm64`**（默认两者均勾选），须至少勾选一种架构。标签策略：**commit sha**、**分支名**、**semver**（在版本 tag 上）、**`latest`**（`main` 上手动构建，或 **稳定版 `vX.Y.Z` tag** 推送时）。
 
@@ -105,15 +104,15 @@ docker run --rm -p 8789:8789 \
 - `ghcr.io/<owner>/<repo>-admin:<tag>`
 - `ghcr.io/<owner>/<repo>-migrate:<tag>`
 
-国内从 **阿里云 ACR** 拉取时，各 `docker/examples/env.*.example` 内 **国内阿里云 ACR** 注释给出了与发版一致的示例镜像名（固定 tag），例如：
+从兼容 OCI 的第二 registry（例如阿里云 ACR）拉取时，各 `docker/examples/env.*.example` 中相应注释给出了与发版一致的示例镜像名（固定 tag），格式如：
 
-- `registry.cn-shanghai.aliyuncs.com/example-org/octafuse-proxy:v1.0.0`
-- `registry.cn-shanghai.aliyuncs.com/example-org/octafuse-admin:v1.0.0`
-- `registry.cn-shanghai.aliyuncs.com/example-org/octafuse-migrate:v1.0.0`
+- `registry.example.com/example-org/octafuse-proxy:v1.0.0`
+- `registry.example.com/example-org/octafuse-admin:v1.0.0`
+- `registry.example.com/example-org/octafuse-migrate:v1.0.0`
 
 在 GitHub：**Actions** → **Octafuse Docker Images (GH hosted Ubuntu)** → **Run workflow**（手动路径）。该 workflow 已声明 **`permissions: packages: write`**；若组织策略限制默认 `GITHUB_TOKEN`，请在仓库 **Settings → Actions → General** 中放行对 **Packages** 的写入，或改用具备 `write:packages` 的 **PAT** 并配置为 secret。
 
-`docker/examples/env.*.example` 里 **GHCR** 示例前缀请按你的 **`ghcr.io/<owner>/<repo>-…`** 实际替换；**国内 ACR** 按同目录各模板文件内 **国内阿里云 ACR** 注释替换为 `registry.cn-shanghai.aliyuncs.com/example-org/...`，一般只随版本改 **tag**。
+`docker/examples/env.*.example` 里 **GHCR** 示例前缀请按你的 **`ghcr.io/<owner>/<repo>-…`** 实际替换；第二 registry 按各模板文件内注释替换为你自己的 `registry.example.com/<namespace>/...`，一般只随版本改 **tag**。
 
 ## 4. Docker Compose 样例
 
@@ -139,16 +138,16 @@ docker compose -f docker/compose/node-mysql.yml up -d gateway-proxy gateway-admi
 
 Proxy / Admin / migrate 均注入 **`DATABASE_DRIVER=mysql`** 与 **`DATABASE_URL=mysql://…`**（见该 compose 文件）。首次使用前须成功执行 migrate（与 Postgres 流程相同，命令改为 **`db:migrate:mysql:docker`**）。
 
-主机端口与 **`8787` / `8789`** 冲突时，可在 `docker/examples/` 或 `docker/deploy/` 的 Compose 对应 `.env` 中设置 **`GATEWAY_PROXY_PORT`**、**`GATEWAY_ADMIN_PORT`**（仅控制宿主机映射；容器内进程仍为 `8787`/`8789`）。
+主机端口与 **`8787` / `8789`** 冲突时，可在 **`docker/deploy/`** 下供 Compose 使用的 `.env` 中设置 **`GATEWAY_PROXY_PORT`**、**`GATEWAY_ADMIN_PORT`**（仅控制宿主机映射；容器内进程仍为 `8787`/`8789`）。模板见 **`docker/examples/env.*.example`**。
 
-### 4.2 预构建镜像（GHCR / 私有仓 / 阿里云 ACR）
+### 4.2 预构建镜像（GHCR / 自建 Harbor / 任意私有 registry）
 
 `docker/examples/` 下仅保留当前线上使用的预构建镜像部署形态：Proxy / Admin 独立容器，共用外置 Postgres。索引见该目录 **[README.md](../../docker/examples/README.md)**：
 
 - **仅 proxy**（外置库）：`gateway.proxy.yml` + `env.proxy.example`
 - **仅 admin**（外置库）：`gateway.admin.yml` + `env.admin.example`
 - **外置 Postgres 且同机同时起 proxy + admin**：`gateway.compose.yml` + `env.compose.external.example`
-- **国内阿里云 ACR**（固定 tag，与 `registry.cn-shanghai.aliyuncs.com/example-org/...` 对齐）：任选一个与上相同的 `gateway.*.yml` 及对应 `env.*.example`，按文件内 **国内阿里云 ACR** 注释配置镜像（详见 **[docker/deploy/README.md](../../docker/deploy/README.md)** §国内服务器）
+- **第二私有 registry（如阿里云 ACR、自建 Harbor 等）**：任选一个与上相同的 `gateway.*.yml` 及对应 `env.*.example`，按文件内注释将镜像前缀替换为 `registry.example.com/<namespace>/...`；宿主机 env 文件放 **`docker/deploy/`**，约定见 **[docker/deploy/README.md](../../docker/deploy/README.md)**。
 
 外置 Postgres 同机启动示例：
 
@@ -169,7 +168,6 @@ docker compose --env-file .env.gateway -f gateway.compose.yml up -d
 本机（可读 `.env`）：
 
 ```bash
-cd octafuse
 export DATABASE_URL='postgres://...'
 npm run db:migrate:pg
 ```
@@ -206,7 +204,6 @@ SELECT NOW() AS now_local, UTC_TIMESTAMP() AS now_utc;
 本机（可读 `.env`）：
 
 ```bash
-cd octafuse
 export DATABASE_URL='mysql://user:pass@host:3306/octafuse'
 export DATABASE_DRIVER=mysql
 npm run db:migrate:mysql

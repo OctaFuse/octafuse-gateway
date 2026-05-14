@@ -82,3 +82,31 @@ flowchart TB
 | **MySQL 8** | `packages/core/migrations-mysql/` | `npm run db:migrate:mysql`（同上 CLI → `migrate/mysql.ts`）；容器内 `db:migrate:mysql:docker` |
 
 环境变量约定见仓库根 **[`.env.example`](../../.env.example)**；本地组合 D1 / PG / MySQL、Hybrid 调法见 **[local-testing-environments.md](../ops/local-testing-environments.md)**。
+
+---
+
+## 用户 / API Key / 用量数据流（Proxy）
+
+鉴权与扣费路径在三种存储上一致，仅事务封装不同（D1 用 `batch()`；Postgres / MySQL 用 Drizzle 事务 + 条件 `UPDATE` 防并发 lazy reset 双写审计）。
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant P as Proxy
+  participant DB as DB / Repos
+
+  C->>P: Authorization Bearer sk-...
+  P->>DB: getApiKeyWithUserByKey(key)
+  DB-->>P: key + user budget 列
+  P->>P: maybeResetBudget(user)
+  alt 周期到期需落库
+    P->>DB: updateUserBudgetWithAuditTx
+  end
+  P-->>C: 403 if spent >= budget_max（可配置）
+  C->>P: chat / messages / gemini
+  P->>DB: insertRequestUsageAndChargeTx
+  Note over DB: INSERT request_log + UPDATE users.budget_spent += Δ + INSERT user_audit_logs
+```
+
+- **表级关系与不变量**（email / external 约束、多 active key、级联规则）：[user-keys-data-model.md](./user-keys-data-model.md)。
+- **审计事件与列语义**：[../reference/user-audit-logs.md](../reference/user-audit-logs.md)。

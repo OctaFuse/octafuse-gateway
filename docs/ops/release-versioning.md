@@ -43,7 +43,7 @@ flowchart LR
 
 1. **`.github/workflows/release.yml`**（`push` → `main`）  
    - 若有未消费的 `.changeset/*.md`：打开 **「chore: version packages」** PR（更新版本、`CHANGELOG.md`）。  
-   - 若无待处理 changeset 且版本已更新：执行 **`npx changeset tag`**，推送 **`vX.Y.Z`** Git 标签。  
+   - 若无待处理 changeset 且版本已更新：`changesets/action` 的 **`publish`** 步骤执行 **`npm run ci:changeset-tag-push`**（`changeset tag` + 推送 **`vX.Y.Z`**）。  
    - **不在此 workflow 创建 GitHub Release**（避免与 digest 说明重复）。  
    - **Docker 触发**：若使用 **`CHANGESETS_GITHUB_TOKEN`（PAT）** 打 tag，GitHub 会把 **`push` tags** 交给下游，**`octafuse-docker-images`** 会按 tag 自动跑。若仅用默认 **`GITHUB_TOKEN`** 打 tag，**不会**自动触发其它 workflow（[官方说明](https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow)）；此时 **Release** 会在检测到 **`GITHUB_SHA` 上有 `v*` tag** 后，用 **`gh workflow run`** 主动触发 **Octafuse Docker Images**（需 workflow 已授予 **`actions: write`**，本仓已加）。
 
@@ -59,7 +59,7 @@ flowchart LR
 | 步骤 | 谁触发 | 结果 |
 |------|--------|------|
 | 1. 功能 PR 带 `.changeset/*.md` 合并进 **`main`** | 你合并 PR | **Release** 跑完 → 出现 **Version Packages** PR（`changeset-release/main` → `main`） |
-| 2. 审核并 **合并 Version PR** 到 **`main`** | 你合并 PR | **Release** 再跑 → **`changeset tag`** 推 **`vX.Y.Z`** → **Docker** 跑（PAT 直推 tag）或由 **Release** dispatch **Docker**（仅 `GITHUB_TOKEN` 时） |
+| 2. 审核并 **合并 Version PR** 到 **`main`** | 你合并 PR | **Release** 再跑 → **`npm run ci:changeset-tag-push`** 推 **`vX.Y.Z`** → **Docker** 跑（PAT 直推 tag）或由 **Release** dispatch **Docker**（仅 `GITHUB_TOKEN` 时） |
 | 3. 等 **Octafuse Docker Images** 绿 | CI | **GHCR** 有对应 tag 的镜像；**GitHub Release** 带 digest |
 | 4. 部署 | 你 / 运维 | 用镜像 tag 或 digest 更新环境 |
 

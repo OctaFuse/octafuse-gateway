@@ -1,7 +1,6 @@
 import type { GatewayDatabaseClient } from './database-client';
 import type {
 	AdminAnalyticsRepository,
-	ApiKeyBudgetAuditLogsRepository,
 	ApiKeysRepository,
 	ModelRoutesRepository,
 	ModelRoutingRepository,
@@ -9,6 +8,8 @@ import type {
 	ProvidersRepository,
 	RequestLogsRepository,
 	SystemConfigRepository,
+	UserAuditLogsRepository,
+	UsersRepository,
 } from './gateway-repository-interfaces';
 import type { ApiKeysD1Statements, RequestLogsD1Statements } from '../db/d1/d1-repository-extras';
 
@@ -17,6 +18,7 @@ export type RequestLogsRepositoryHandle = RequestLogsRepository & Partial<Reques
 
 export interface GatewayRepositories {
 	readonly client: GatewayDatabaseClient;
+	readonly users: UsersRepository;
 	readonly apiKeys: ApiKeysRepositoryHandle;
 	readonly requestLogs: RequestLogsRepositoryHandle;
 	readonly providers: ProvidersRepository;
@@ -25,7 +27,7 @@ export interface GatewayRepositories {
 	readonly systemConfig: SystemConfigRepository;
 	readonly analytics: AdminAnalyticsRepository;
 	readonly modelRouting: ModelRoutingRepository;
-	readonly budgetAuditLogs: ApiKeyBudgetAuditLogsRepository;
+	readonly userAuditLogs: UserAuditLogsRepository;
 }
 
 /** 统一取 Hono 上下文中的 `GatewayDatabaseClient`。 */

@@ -21,11 +21,13 @@ curl -sS http://127.0.0.1:8787/v1/chat/completions \
 
 ## Admin API (master key)
 
-`MASTER_KEY` must match `system_config.MASTER_KEY` in the database (development seed often uses `sk-dev-admin-key`). Admin app default in Docker quickstart is often `http://127.0.0.1:8789`.
+`MASTER_KEY` must match `system_config.MASTER_KEY` in the database. The development seed (`packages/core/migrations-{d1,postgres,mysql}/0002_seed.sql`) writes the placeholder `sk-dev-admin-key` for local Docker quickstart only. Admin app default in Docker quickstart is often `http://127.0.0.1:8789`.
 
 ```bash
 curl -sS http://127.0.0.1:8789/api/admin/health \
   -H "Authorization: Bearer sk-dev-admin-key"
 ```
+
+> Production: rotate `MASTER_KEY` to a strong random value via the Admin Config page or direct SQL, then update any `GATEWAY_MASTER_KEY` consumers. See [docs/CONVENTIONS.md §2.3](../docs/CONVENTIONS.md#23-关于-sk-dev-admin-key) and [docs/api/admin.md](../docs/api/admin.md).
 
 Adjust host, port, and Bearer tokens for your environment.

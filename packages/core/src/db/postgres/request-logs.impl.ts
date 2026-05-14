@@ -61,6 +61,7 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 			page?: number;
 			pageSize?: number;
 			apiKeyId?: string;
+			userId?: string;
 			userEmail?: string;
 			modelId?: string;
 			providerId?: string;
@@ -79,6 +80,10 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 			if (options.apiKeyId) {
 				conditions.push('api_key_id = ?');
 				bindValues.push(options.apiKeyId);
+			}
+			if (options.userId) {
+				conditions.push('user_id = ?');
+				bindValues.push(options.userId);
 			}
 			if (options.userEmail) {
 				conditions.push('user_email = ?');

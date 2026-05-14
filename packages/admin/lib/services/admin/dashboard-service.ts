@@ -70,30 +70,38 @@ export async function listAdminGlobalRequestLogsService(
 }
 
 /**
- * 全局 `api_key_audit_logs` 分页（可选 api_key_id、user_email、event_type、actor_type、时间窗）。
+ * 全局 `user_audit_logs` 分页（可选 api_key_id、user_email、event_type、actor_type、时间窗）。
  */
 export async function listAdminGlobalBudgetAuditLogsService(
 	repos: GatewayRepositories,
 	input: {
 		page?: number | string;
 		page_size?: number | string;
+		user_id?: string;
 		api_key_id?: string;
 		user_email?: string;
 		event_type?: string;
 		actor_type?: string;
+		reason_code?: string;
+		source?: string;
+		correlation_id?: string;
 		start_date?: string;
 		end_date?: string;
 	}
 ): Promise<AdminGlobalBudgetAuditLogsOutput> {
 	const page = Math.max(1, Number.parseInt(String(input.page ?? '1'), 10));
 	const pageSize = Math.min(100, Math.max(1, Number.parseInt(String(input.page_size ?? '20'), 10)));
-	const result = await repos.budgetAuditLogs.getGlobalApiKeyBudgetAuditLogs({
+	const result = await repos.userAuditLogs.getGlobalUserAuditLogs({
 		page,
 		pageSize,
+		userId: input.user_id,
 		apiKeyId: input.api_key_id,
 		userEmail: input.user_email,
 		eventType: input.event_type,
 		actorType: input.actor_type,
+		reasonCode: input.reason_code,
+		source: input.source,
+		correlationId: input.correlation_id,
 		startDate: input.start_date,
 		endDate: input.end_date,
 	});

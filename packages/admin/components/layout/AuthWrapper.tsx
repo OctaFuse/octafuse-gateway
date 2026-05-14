@@ -5,8 +5,10 @@
  * 会话依赖 `/api/auth/check` 与 `admin_session` cookie。
  */
 import { useState, useEffect, useCallback, ReactNode } from 'react';
+import BrandExternalLinks from '@/components/layout/BrandExternalLinks';
 import { ADMIN_SESSION_EXPIRED_EVENT_NAME } from '@/lib/admin-session-events';
 import { readApiJson, readJson } from '@/lib/api-json';
+import { OCTAFUSE_ADMIN_LOGIN_HEADING } from '@/lib/brand';
 import Sidebar from './Sidebar';
 
 interface Props {
@@ -100,7 +102,8 @@ export default function AuthWrapper({ children }: Props) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Admin Login</h1>
+          <h1 className="text-2xl font-bold text-center mb-1 text-gray-800">{OCTAFUSE_ADMIN_LOGIN_HEADING}</h1>
+          <p className="text-center text-xs text-gray-500 mb-6">Operator console</p>
           <form onSubmit={handleLogin}>
             <div className="mb-4">
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
@@ -143,6 +146,9 @@ export default function AuthWrapper({ children }: Props) {
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <BrandExternalLinks variant="login" />
+          </div>
         </div>
       </div>
     );

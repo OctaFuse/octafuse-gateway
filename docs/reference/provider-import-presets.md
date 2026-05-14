@@ -26,7 +26,7 @@ Admin 在 **Gateway Providers** 页面提供「从模板导入」：预填各协
 1. **新增模板**：在 `provider-import-presets.json` 追加对象；`id` 稳定且全局唯一；`name` 在库中 `UNIQUE`，避免与常见手工命名撞车。
 2. **核对 endpoint**：以各云厂商**当前官方文档**为准；`description` 中可提示「以控制台为准」。
 3. **占位密钥**：勿改为真实密钥写入仓库；占位串为 `PROVIDER_IMPORT_PENDING_API_KEY`（见 `provider-import-preset.ts`）。
-4. **首版范围**：目录以中国区常用 OpenAI 兼容网关为主；后续可按同样格式扩展国际供应商。
+4. **扩展**：按同样 JSON 结构追加供应商模板即可。
 
 ## 与模型导入的关系
 

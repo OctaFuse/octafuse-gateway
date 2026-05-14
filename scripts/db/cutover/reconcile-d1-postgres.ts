@@ -131,15 +131,21 @@ function buildChecks(): ReconcileCheck[] {
 			pgSql: 'SELECT COALESCE(SUM(total_tokens), 0) AS value FROM api_key_request_logs',
 		},
 		{
-			label: 'api_keys:sum_budget_spent',
-			d1Sql: 'SELECT ROUND(COALESCE(SUM(budget_spent), 0), 6) AS value FROM api_keys',
-			pgSql: 'SELECT ROUND(COALESCE(SUM(budget_spent), 0), 6) AS value FROM api_keys',
+			label: 'users:sum_budget_spent',
+			d1Sql: 'SELECT ROUND(COALESCE(SUM(budget_spent), 0), 6) AS value FROM users',
+			pgSql: 'SELECT ROUND(COALESCE(SUM(budget_spent), 0), 6) AS value FROM users',
 			tolerance: 0.000001,
 		},
 		{
-			label: 'api_key_audit_logs:sum_delta_spent',
-			d1Sql: 'SELECT ROUND(COALESCE(SUM(delta_spent), 0), 6) AS value FROM api_key_audit_logs',
-			pgSql: 'SELECT ROUND(COALESCE(SUM(delta_spent), 0), 6) AS value FROM api_key_audit_logs',
+			label: 'user_audit_logs:sum_delta_spent_from_snapshots',
+			d1Sql: `SELECT ROUND(COALESCE(SUM(
+				COALESCE(CAST(json_extract(after_user_snapshot, '$.budget_spent') AS REAL), 0) -
+				COALESCE(CAST(json_extract(before_user_snapshot, '$.budget_spent') AS REAL), 0)
+			), 0), 6) AS value FROM user_audit_logs`,
+			pgSql: `SELECT ROUND(COALESCE(SUM(
+				COALESCE(NULLIF(TRIM(after_user_snapshot::json->>'budget_spent'), '')::double precision, 0) -
+				COALESCE(NULLIF(TRIM(before_user_snapshot::json->>'budget_spent'), '')::double precision, 0)
+			), 0), 6) AS value FROM user_audit_logs`,
 			tolerance: 0.000001,
 		}
 	);

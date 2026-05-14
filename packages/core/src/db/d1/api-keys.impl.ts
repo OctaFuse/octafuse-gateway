@@ -1,140 +1,126 @@
 /**
- * D1：`api_keys` 表实现。
+ * D1：`api_keys` 表实现（预算在 `users`）。
  */
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
-import type { ApiKeyRow } from '../../types';
+import type { ApiKeyRow, ResolvedGatewayKeyRow } from '../../types';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { ApiKeysRepository } from '../../storage/gateway-repository-interfaces';
 import type { ApiKeysD1Statements } from './d1-repository-extras';
-import { buildInsertApiKeyBudgetAuditLogStatement } from './api-key-budget-audit-logs.impl';
-import type { InsertApiKeyBudgetAuditLogParams } from '../api-key-budget-audit-logs-types';
 import type { BudgetFilter, InsertKeyParams } from '../api-keys-types';
 import type { AdminApiKeyListItem } from '../../storage/repository-dtos';
 
-/** D1 read 的 api_keys 行（`budget_base` 列在旧库可能缺失或回填为 0）。 */
-type ApiKeyD1ReadRow = {
+type KeySqlRow = {
 	id: string;
 	key: string;
 	user_id: string;
-	user_email: string | null;
-	budget_max: number | null;
-	budget_base: number | null;
-	budget_spent: number;
-	budget_period: string;
-	budget_reset_at: string | null;
+	name: string | null;
 	status: string;
 	metadata: string | null;
+	last_used_at: string | null;
 	created_at: string;
 	updated_at: string;
 };
 
-function mapD1ApiKeyRow(r: ApiKeyD1ReadRow): ApiKeyRow {
+function mapKeyRow(r: KeySqlRow): ApiKeyRow {
 	return {
 		id: r.id,
 		key: r.key,
 		user_id: r.user_id,
-		user_email: r.user_email,
-		budget_max: r.budget_max,
-		budget_base: r.budget_base == null ? 0 : roundGatewayMoney(Number(r.budget_base)),
-		budget_spent: r.budget_spent,
-		budget_period: r.budget_period,
-		budget_reset_at: r.budget_reset_at,
+		name: r.name,
 		status: r.status,
 		metadata: r.metadata,
+		last_used_at: r.last_used_at,
 		created_at: r.created_at,
 		updated_at: r.updated_at,
 	};
 }
 
-function mapD1AdminListRow(r: {
-	id: string;
-	key: string;
-	user_id: string;
+type ResolvedSqlRow = KeySqlRow & {
 	user_email: string | null;
 	budget_max: number | null;
-	budget_base: number | null;
+	budget_base: number;
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
-	status: string;
-	metadata: string | null;
-	created_at: string;
-	updated_at: string;
-}): AdminApiKeyListItem {
+};
+
+function mapResolvedRow(r: ResolvedSqlRow): ResolvedGatewayKeyRow {
+	const base = mapKeyRow(r);
 	return {
-		id: r.id,
-		key: r.key,
-		user_id: r.user_id,
+		...base,
 		user_email: r.user_email,
-		budget_max: r.budget_max,
-		budget_base: r.budget_base == null ? 0 : roundGatewayMoney(Number(r.budget_base)),
-		budget_spent: r.budget_spent,
+		budget_max: r.budget_max == null ? null : roundGatewayMoney(Number(r.budget_max)),
+		budget_base: roundGatewayMoney(Number(r.budget_base ?? 0)),
+		budget_spent: roundGatewayMoney(Number(r.budget_spent)),
 		budget_period: r.budget_period,
 		budget_reset_at: r.budget_reset_at,
-		status: r.status,
-		metadata: r.metadata,
-		created_at: r.created_at,
-		updated_at: r.updated_at,
 	};
 }
 
 export function buildInsertApiKeyStatement(db: D1Database, params: InsertKeyParams): D1PreparedStatement {
+	const status = params.status ?? 'active';
 	return db
 		.prepare(
-			`INSERT INTO api_keys (id, key, user_id, user_email, budget_max, budget_base, budget_spent, budget_period, budget_reset_at, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			`INSERT INTO api_keys (id, key, user_id, name, status, metadata, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
 		)
-		.bind(
-			params.id,
-			params.key,
-			params.userId,
-			params.userEmail ?? null,
-			params.budgetMax != null ? roundGatewayMoney(params.budgetMax) : null,
-			params.budgetBase != null ? roundGatewayMoney(params.budgetBase) : 0,
-			roundGatewayMoney(params.budgetSpent),
-			params.budgetPeriod,
-			params.budgetResetAt,
-			params.status
-		);
-}
-
-export function buildIncrementApiKeyBudgetSpentStatement(db: D1Database, id: string, amount: number): D1PreparedStatement {
-	return db
-		.prepare(`UPDATE api_keys SET budget_spent = budget_spent + ?, updated_at = datetime('now') WHERE id = ?`)
-		.bind(roundGatewayMoney(amount), id);
+		.bind(params.id, params.key, params.userId, params.name ?? null, status, params.metadata ?? null);
 }
 
 export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysRepository & ApiKeysD1Statements {
 	const raw = db.raw;
+	const resolvedSelect = `SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.last_used_at, k.created_at, k.updated_at,
+    u.email AS user_email, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at
+    FROM api_keys k INNER JOIN users u ON u.id = k.user_id`;
+
 	return {
 		buildInsertApiKeyStatement,
-		buildIncrementApiKeyBudgetSpentStatement,
 
 		async getApiKeyByKey(key: string): Promise<ApiKeyRow | null> {
 			const row = await raw
 				.prepare('SELECT * FROM api_keys WHERE key = ? AND status = ?')
 				.bind(key, 'active')
-				.first<ApiKeyD1ReadRow>();
-			return row ? mapD1ApiKeyRow(row) : null;
+				.first<KeySqlRow>();
+			return row ? mapKeyRow(row) : null;
 		},
 
 		async getApiKeyByKeyAnyStatus(key: string): Promise<ApiKeyRow | null> {
-			const row = await raw.prepare('SELECT * FROM api_keys WHERE key = ?').bind(key).first<ApiKeyD1ReadRow>();
-			return row ? mapD1ApiKeyRow(row) : null;
+			const row = await raw.prepare('SELECT * FROM api_keys WHERE key = ?').bind(key).first<KeySqlRow>();
+			return row ? mapKeyRow(row) : null;
 		},
 
 		async getApiKeyById(id: string): Promise<ApiKeyRow | null> {
-			const row = await raw.prepare('SELECT * FROM api_keys WHERE id = ?').bind(id).first<ApiKeyD1ReadRow>();
-			return row ? mapD1ApiKeyRow(row) : null;
+			const row = await raw.prepare('SELECT * FROM api_keys WHERE id = ?').bind(id).first<KeySqlRow>();
+			return row ? mapKeyRow(row) : null;
 		},
 
-		async getApiKeyByUserId(userId: string): Promise<ApiKeyRow | null> {
+		async getApiKeyWithUserByKey(key: string): Promise<ResolvedGatewayKeyRow | null> {
 			const row = await raw
-				.prepare('SELECT * FROM api_keys WHERE user_id = ? AND status = ?')
-				.bind(userId, 'active')
-				.first<ApiKeyD1ReadRow>();
-			return row ? mapD1ApiKeyRow(row) : null;
+				.prepare(`${resolvedSelect} WHERE k.key = ? AND k.status = ?`)
+				.bind(key, 'active')
+				.first<ResolvedSqlRow>();
+			return row ? mapResolvedRow(row) : null;
+		},
+
+		async getApiKeyWithUserById(id: string): Promise<ResolvedGatewayKeyRow | null> {
+			const row = await raw.prepare(`${resolvedSelect} WHERE k.id = ?`).bind(id).first<ResolvedSqlRow>();
+			return row ? mapResolvedRow(row) : null;
+		},
+
+		async listKeysByUserId(userId: string, options?: { status?: string }): Promise<ApiKeyRow[]> {
+			if (options?.status) {
+				const rows = await raw
+					.prepare('SELECT * FROM api_keys WHERE user_id = ? AND status = ? ORDER BY created_at ASC')
+					.bind(userId, options.status)
+					.all<KeySqlRow>();
+				return (rows.results ?? []).map(mapKeyRow);
+			}
+			const rows = await raw
+				.prepare('SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at ASC')
+				.bind(userId)
+				.all<KeySqlRow>();
+			return (rows.results ?? []).map(mapKeyRow);
 		},
 
 		async insertApiKey(params: InsertKeyParams): Promise<void> {
@@ -162,103 +148,6 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 			return result.meta.changes > 0;
 		},
 
-		async setApiKeyUserEmailById(id: string, userEmail: string | null): Promise<boolean> {
-			const result = await raw
-				.prepare('UPDATE api_keys SET user_email = ?, updated_at = datetime("now") WHERE id = ?')
-				.bind(userEmail, id)
-				.run();
-			return result.meta.changes > 0;
-		},
-
-		async updateApiKeyBudget(id: string, budget_spent: number, budget_reset_at: string | null): Promise<void> {
-			await raw
-				.prepare('UPDATE api_keys SET budget_spent = ?, budget_reset_at = ?, updated_at = datetime("now") WHERE id = ?')
-				.bind(roundGatewayMoney(budget_spent), budget_reset_at, id)
-				.run();
-		},
-
-		async buildUpdateApiKeyBudgetStatement(id: string, budget_spent: number, budget_reset_at: string | null): Promise<void> {
-			await raw
-				.prepare('UPDATE api_keys SET budget_spent = ?, budget_reset_at = ?, updated_at = datetime("now") WHERE id = ?')
-				.bind(roundGatewayMoney(budget_spent), budget_reset_at, id)
-				.run();
-		},
-
-		async updateApiKeyBudgetWithAudit(
-			id: string,
-			budget_spent: number,
-			budget_reset_at: string | null,
-			audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>
-		): Promise<void> {
-			await raw.batch([
-				raw
-					.prepare('UPDATE api_keys SET budget_spent = ?, budget_reset_at = ?, updated_at = datetime("now") WHERE id = ?')
-					.bind(roundGatewayMoney(budget_spent), budget_reset_at, id),
-				buildInsertApiKeyBudgetAuditLogStatement(raw, {
-					id: crypto.randomUUID(),
-					apiKeyId: id,
-					eventType: audit.eventType,
-					actorType: audit.actorType,
-					actorId: audit.actorId ?? null,
-					reasonCode: audit.reasonCode ?? null,
-					reasonText: audit.reasonText ?? null,
-					beforeSpent: audit.beforeSpent,
-					deltaSpent: audit.deltaSpent,
-					afterSpent: budget_spent,
-					beforeBudgetMax: audit.beforeBudgetMax ?? null,
-					afterBudgetMax: audit.afterBudgetMax ?? null,
-					beforeBudgetPeriod: audit.beforeBudgetPeriod ?? null,
-					afterBudgetPeriod: audit.afterBudgetPeriod ?? null,
-					beforeBudgetResetAt: audit.beforeBudgetResetAt ?? null,
-					afterBudgetResetAt: budget_reset_at,
-					requestLogId: audit.requestLogId ?? null,
-					metadata: audit.metadata ?? null,
-				}),
-			]);
-		},
-
-		async updateApiKeyPlan(
-			id: string,
-			budget_max: number | null,
-			budget_period: string,
-			budget_reset_at: string | null,
-			resetBudget: boolean = true,
-			metadata?: string | null,
-			budget_spent_override?: number | null,
-			budget_base?: number | null
-		): Promise<boolean> {
-			const setClauses: string[] = ['budget_max = ?', 'budget_period = ?', 'budget_reset_at = ?', 'updated_at = datetime("now")'];
-			const bindValues: unknown[] = [
-				budget_max != null ? roundGatewayMoney(budget_max) : null,
-				budget_period,
-				budget_reset_at ?? null,
-			];
-
-			if (budget_spent_override !== undefined) {
-				setClauses.push('budget_spent = ?');
-				bindValues.push(roundGatewayMoney(budget_spent_override ?? 0));
-			} else if (resetBudget) {
-				setClauses.push('budget_spent = 0');
-			}
-
-			if (budget_base !== undefined) {
-				setClauses.push('budget_base = ?');
-				bindValues.push(budget_base != null ? roundGatewayMoney(budget_base) : 0);
-			}
-
-			if (metadata !== undefined) {
-				setClauses.push('metadata = ?');
-				bindValues.push(metadata);
-			}
-
-			bindValues.push(id);
-			const result = await raw
-				.prepare(`UPDATE api_keys SET ${setClauses.join(', ')} WHERE id = ?`)
-				.bind(...bindValues)
-				.run();
-			return result.meta.changes > 0;
-		},
-
 		async setApiKeyMetadataById(id: string, metadataJson: string | null): Promise<boolean> {
 			const result = await raw
 				.prepare('UPDATE api_keys SET metadata = ?, updated_at = datetime("now") WHERE id = ?')
@@ -267,8 +156,17 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 			return result.meta.changes > 0;
 		},
 
+		async updateApiKeyName(id: string, name: string | null): Promise<boolean> {
+			const result = await raw
+				.prepare('UPDATE api_keys SET name = ?, updated_at = datetime("now") WHERE id = ?')
+				.bind(name, id)
+				.run();
+			return result.meta.changes > 0;
+		},
+
 		async getAllApiKeys(options?: {
 			email?: string;
+			userId?: string;
 			maxBudget?: BudgetFilter;
 			page?: number;
 			pageSize?: number;
@@ -278,50 +176,67 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 			const offset = (page - 1) * pageSize;
 			const conditions: string[] = [];
 			const bindValues: unknown[] = [];
-
 			if (options?.email) {
-				conditions.push('user_email LIKE ?');
+				conditions.push('u.email LIKE ?');
 				bindValues.push(`%${options.email}%`);
 			}
-			if (options?.maxBudget === 'positive') conditions.push('budget_max > 0');
-			else if (options?.maxBudget === 'zero_or_negative') conditions.push('budget_max <= 0');
-			else if (options?.maxBudget === 'null') conditions.push('budget_max IS NULL');
-
+			if (options?.userId) {
+				conditions.push('k.user_id = ?');
+				bindValues.push(options.userId);
+			}
+			if (options?.maxBudget === 'positive') conditions.push('u.budget_max > 0');
+			else if (options?.maxBudget === 'zero_or_negative') conditions.push('u.budget_max <= 0');
+			else if (options?.maxBudget === 'null') conditions.push('u.budget_max IS NULL');
 			const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 			const orderBy =
 				options?.maxBudget === 'positive'
-					? 'ORDER BY budget_reset_at ASC NULLS LAST, created_at DESC'
-					: 'ORDER BY created_at DESC';
-
+					? 'ORDER BY u.budget_reset_at ASC NULLS LAST, k.created_at DESC'
+					: 'ORDER BY k.created_at DESC';
 			const countRow = await raw
-				.prepare(`SELECT COUNT(*) as total FROM api_keys ${whereClause}`)
+				.prepare(`SELECT COUNT(*) as total FROM api_keys k INNER JOIN users u ON u.id = k.user_id ${whereClause}`)
 				.bind(...bindValues)
 				.first<{ total: number }>();
 			const total = Number(countRow?.total ?? 0);
-
 			const rows = await raw
 				.prepare(
-					`SELECT id, key, user_id, user_email, budget_max, budget_base, budget_spent, budget_period, budget_reset_at, status, metadata, created_at, updated_at
-       FROM api_keys ${whereClause} ${orderBy} LIMIT ? OFFSET ?`
+					`SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.created_at, k.updated_at,
+            u.email AS user_email, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at
+       FROM api_keys k INNER JOIN users u ON u.id = k.user_id ${whereClause} ${orderBy} LIMIT ? OFFSET ?`
 				)
 				.bind(...bindValues, pageSize, offset)
 				.all<{
 					id: string;
 					key: string;
 					user_id: string;
-					user_email: string | null;
-					budget_max: number | null;
-					budget_base: number | null;
-					budget_spent: number;
-					budget_period: string;
-					budget_reset_at: string | null;
+					name: string | null;
 					status: string;
 					metadata: string | null;
 					created_at: string;
 					updated_at: string;
+					user_email: string | null;
+					budget_max: number | null;
+					budget_base: number;
+					budget_spent: number;
+					budget_period: string;
+					budget_reset_at: string | null;
 				}>();
-
-			return { keys: (rows.results ?? []).map(mapD1AdminListRow), total };
+			const keys: AdminApiKeyListItem[] = (rows.results ?? []).map((r) => ({
+				id: r.id,
+				key: r.key,
+				user_id: r.user_id,
+				name: r.name,
+				user_email: r.user_email,
+				budget_max: r.budget_max == null ? null : roundGatewayMoney(Number(r.budget_max)),
+				budget_base: r.budget_base == null ? 0 : roundGatewayMoney(Number(r.budget_base)),
+				budget_spent: roundGatewayMoney(Number(r.budget_spent)),
+				budget_period: r.budget_period,
+				budget_reset_at: r.budget_reset_at,
+				status: r.status,
+				metadata: r.metadata,
+				created_at: r.created_at,
+				updated_at: r.updated_at,
+			}));
+			return { keys, total };
 		},
 
 		async getActiveApiKeysCount(): Promise<number> {

@@ -13,11 +13,12 @@ import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
 export function buildInsertRequestLogStatement(db: D1Database, params: InsertRequestLogParams): D1PreparedStatement {
 	return db
 		.prepare(
-			`INSERT INTO api_key_request_logs (id, api_key_id, user_email, model_id, provider_id, provider_model_name, model_name, provider_name, request_body, upstream_request_body, request_protocol, upstream_protocol, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, total_tokens, metered_cost, standard_cost, charged_cost, route_group, status, latency_ms, error_message, raw_usage, pricing_audit)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			`INSERT INTO api_key_request_logs (id, user_id, api_key_id, user_email, model_id, provider_id, provider_model_name, model_name, provider_name, request_body, upstream_request_body, request_protocol, upstream_protocol, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, total_tokens, metered_cost, standard_cost, charged_cost, route_group, status, latency_ms, error_message, raw_usage, pricing_audit)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		)
 		.bind(
 			params.id,
+			params.userId,
 			params.apiKeyId,
 			params.userEmail,
 			params.modelId,
@@ -106,6 +107,7 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 			page?: number;
 			pageSize?: number;
 			apiKeyId?: string;
+			userId?: string;
 			userEmail?: string;
 			modelId?: string;
 			providerId?: string;
@@ -126,6 +128,11 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 				conditions.push('api_key_id = ?');
 				conditionsRl.push('rl.api_key_id = ?');
 				bindValues.push(options.apiKeyId);
+			}
+			if (options.userId) {
+				conditions.push('user_id = ?');
+				conditionsRl.push('rl.user_id = ?');
+				bindValues.push(options.userId);
 			}
 			if (options.userEmail) {
 				conditions.push('user_email = ?');

@@ -1,6 +1,6 @@
 /**
- * 管理路由：`/admin/keys` — API 密钥列表（分页、邮箱模糊、max_budget）、
- * 创建、查询、更新、物理删除及单 key 请求日志。全程 `requireMasterKey`，业务委托 `keys-service`。
+ * 管理路由：`/admin/keys` — API 密钥列表（分页、邮箱、`user_id`）、
+ * 创建、查询、更新（仅 name/metadata/status）、物理删除及单 key 请求日志。全程 `requireMasterKey`。
  */
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
@@ -8,7 +8,6 @@ import { requireMasterKey } from '@/lib/middleware/admin-auth';
 import {
 	createAdminKey,
 	deleteAdminKey,
-	getAdminKeyBudgetAuditLogs,
 	getAdminKeyById,
 	getAdminKeyLogs,
 	listAdminKeys,
@@ -21,7 +20,7 @@ export const adminKeysRoutes = new Hono<AdminEnv>();
 
 adminKeysRoutes.use('*', requireMasterKey);
 
-/** 查询：page、page_size、email、max_budget。 */
+/** 查询：page、page_size、email、user_id。 */
 adminKeysRoutes.get('/', async (c) => {
 	try {
 		const repos = c.get('repositories');
@@ -29,7 +28,7 @@ adminKeysRoutes.get('/', async (c) => {
 			page: parseInt(c.req.query('page') ?? '1', 10),
 			page_size: parseInt(c.req.query('page_size') ?? '20', 10),
 			email: c.req.query('email') ?? undefined,
-			max_budget: c.req.query('max_budget') ?? undefined,
+			user_id: c.req.query('user_id') ?? undefined,
 		});
 		return c.json(normalizeApiTimeFields({ success: true as const, ...result }));
 	} catch (error) {
@@ -37,7 +36,7 @@ adminKeysRoutes.get('/', async (c) => {
 	}
 });
 
-/** 按 user_id 等创建（底层幂等）。 */
+/** 创建：须 `user_id`，或同时 `external_system` + `external_user_id` + `email`（新建用户时邮箱必填）。 */
 adminKeysRoutes.post('/', async (c) => {
 	let body: AdminKeyCreateInput;
 	try {
@@ -48,11 +47,13 @@ adminKeysRoutes.post('/', async (c) => {
 	try {
 		const repos = c.get('repositories');
 		const result = await createAdminKey(repos, body);
-		return c.json(normalizeApiTimeFields({
-			success: true as const,
-			message: 'Key created successfully',
-			data: result,
-		}));
+		return c.json(
+			normalizeApiTimeFields({
+				success: true as const,
+				message: 'Key created successfully',
+				data: result,
+			})
+		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to create key');
 	}
@@ -69,39 +70,21 @@ adminKeysRoutes.get('/:id/logs', async (c) => {
 			exclude_status: c.req.query('exclude_status') ?? undefined,
 			include_statuses: includeRaw !== undefined ? includeRaw : undefined,
 		});
-		return c.json(normalizeApiTimeFields({
-			success: true as const,
-			data: result.logs,
-			total: result.total,
-			page: result.page,
-			page_size: result.page_size,
-		}));
+		return c.json(
+			normalizeApiTimeFields({
+				success: true as const,
+				data: result.logs,
+				total: result.total,
+				page: result.page,
+				page_size: result.page_size,
+			})
+		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to get key logs');
 	}
 });
 
-/** `:id` 可为 uuid 或 `sk-…`；预算审计查询仅支持 page、page_size。 */
-adminKeysRoutes.get('/:id/budget-audits', async (c) => {
-	try {
-		const repos = c.get('repositories');
-		const result = await getAdminKeyBudgetAuditLogs(repos, c.req.param('id'), {
-			page: Math.max(1, parseInt(c.req.query('page') ?? '1', 10)),
-			page_size: Math.min(100, Math.max(1, parseInt(c.req.query('page_size') ?? '20', 10))),
-		});
-		return c.json(normalizeApiTimeFields({
-			success: true as const,
-			data: result.logs,
-			total: result.total,
-			page: result.page,
-			page_size: result.page_size,
-		}));
-	} catch (error) {
-		return handleAdminRouteError(c, error, 'Failed to get key budget audit logs');
-	}
-});
-
-/** 部分更新预算、metadata、status 等。 */
+/** 部分更新 name、metadata、status（预算见 `/admin/users`）。 */
 adminKeysRoutes.patch('/:id', async (c) => {
 	let body: AdminKeyUpdateInput;
 	try {
@@ -112,11 +95,13 @@ adminKeysRoutes.patch('/:id', async (c) => {
 	try {
 		const repos = c.get('repositories');
 		const data = await updateAdminKey(repos, c.req.param('id'), body);
-		return c.json(normalizeApiTimeFields({
-			success: true as const,
-			message: 'Key updated successfully',
-			data,
-		}));
+		return c.json(
+			normalizeApiTimeFields({
+				success: true as const,
+				message: 'Key updated successfully',
+				data,
+			})
+		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to update key');
 	}
@@ -132,7 +117,7 @@ adminKeysRoutes.get('/:id', async (c) => {
 	}
 });
 
-/** 物理删除密钥行（`api_key_audit_logs` 随外键级联删除）。 */
+/** 物理删除密钥行。 */
 adminKeysRoutes.delete('/:id', async (c) => {
 	try {
 		const repos = c.get('repositories');

@@ -1,20 +1,76 @@
 /**
- * Postgres：`api_keys` 表（Drizzle）。
+ * Postgres：`api_keys`（预算在 `users`）。
  */
 import { and, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
-import type { ApiKeyRow } from '../../types';
+import type { ApiKeyRow, ResolvedGatewayKeyRow } from '../../types';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { ApiKeysRepository } from '../../storage/gateway-repository-interfaces';
-import { apiKeyAuditLogsTable as pgAuditTable, apiKeysTable as pgApiKeysTable } from '../../storage/drizzle/schema.pg';
-import type { InsertApiKeyBudgetAuditLogParams } from '../api-key-budget-audit-logs-types';
+import { apiKeysTable as pgApiKeysTable, usersTable as pgUsersTable } from '../../storage/drizzle/schema.pg';
 import type { BudgetFilter, InsertKeyParams } from '../api-keys-types';
 import type { AdminApiKeyListItem } from '../../storage/repository-dtos';
+import { parseMoney } from '../../storage/critical-write-paths-utils';
+
+function mapPgKeyRow(r: {
+	id: string;
+	key: string;
+	userId: string;
+	name: string | null;
+	status: string;
+	metadata: string | null;
+	lastUsedAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+}): ApiKeyRow {
+	return {
+		id: r.id,
+		key: r.key,
+		user_id: r.userId,
+		name: r.name,
+		status: r.status,
+		metadata: r.metadata,
+		last_used_at: r.lastUsedAt,
+		created_at: r.createdAt,
+		updated_at: r.updatedAt,
+	};
+}
+
+function mapPgResolvedRow(
+	r: {
+		id: string;
+		key: string;
+		userId: string;
+		name: string | null;
+		status: string;
+		metadata: string | null;
+		lastUsedAt: string | null;
+		createdAt: string;
+		updatedAt: string;
+		userEmail: string | null;
+		budgetMax: string | null;
+		budgetBase: string;
+		budgetSpent: string;
+		budgetPeriod: string;
+		budgetResetAt: string | null;
+	}
+): ResolvedGatewayKeyRow {
+	const k = mapPgKeyRow(r);
+	return {
+		...k,
+		user_email: r.userEmail,
+		budget_max: r.budgetMax == null ? null : parseMoney(r.budgetMax),
+		budget_base: parseMoney(r.budgetBase),
+		budget_spent: parseMoney(r.budgetSpent),
+		budget_period: r.budgetPeriod,
+		budget_reset_at: r.budgetResetAt,
+	};
+}
 
 function mapPgAdminListRow(r: {
 	id: string;
 	key: string;
 	user_id: string;
+	name: string | null;
 	user_email: string | null;
 	budget_max: string | null;
 	budget_base: string | null;
@@ -30,6 +86,7 @@ function mapPgAdminListRow(r: {
 		id: r.id,
 		key: r.key,
 		user_id: r.user_id,
+		name: r.name,
 		user_email: r.user_email,
 		budget_max: r.budget_max == null ? null : roundGatewayMoney(Number(r.budget_max)),
 		budget_base: r.budget_base == null ? 0 : roundGatewayMoney(Number(r.budget_base)),
@@ -43,37 +100,23 @@ function mapPgAdminListRow(r: {
 	};
 }
 
-function mapPgApiKeyRow(r: {
-	id: string;
-	key: string;
-	userId: string;
-	userEmail: string | null;
-	budgetMax: string | null;
-	budgetBase: string | null;
-	budgetSpent: string;
-	budgetPeriod: string;
-	budgetResetAt: string | null;
-	status: string;
-	metadata: string | null;
-	createdAt: string;
-	updatedAt: string;
-}): ApiKeyRow {
-	return {
-		id: r.id,
-		key: r.key,
-		user_id: r.userId,
-		user_email: r.userEmail,
-		budget_max: r.budgetMax == null ? null : roundGatewayMoney(Number(r.budgetMax)),
-		budget_base: r.budgetBase == null ? 0 : roundGatewayMoney(Number(r.budgetBase)),
-		budget_spent: roundGatewayMoney(Number(r.budgetSpent)),
-		budget_period: r.budgetPeriod,
-		budget_reset_at: r.budgetResetAt,
-		status: r.status,
-		metadata: r.metadata,
-		created_at: r.createdAt,
-		updated_at: r.updatedAt,
-	};
-}
+const resolvedCols = {
+	id: pgApiKeysTable.id,
+	key: pgApiKeysTable.key,
+	userId: pgApiKeysTable.userId,
+	name: pgApiKeysTable.name,
+	status: pgApiKeysTable.status,
+	metadata: pgApiKeysTable.metadata,
+	lastUsedAt: pgApiKeysTable.lastUsedAt,
+	createdAt: pgApiKeysTable.createdAt,
+	updatedAt: pgApiKeysTable.updatedAt,
+	userEmail: pgUsersTable.email,
+	budgetMax: pgUsersTable.budgetMax,
+	budgetBase: pgUsersTable.budgetBase,
+	budgetSpent: pgUsersTable.budgetSpent,
+	budgetPeriod: pgUsersTable.budgetPeriod,
+	budgetResetAt: pgUsersTable.budgetResetAt,
+} as const;
 
 export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): ApiKeysRepository {
 	const drizzle = db.drizzle;
@@ -84,42 +127,58 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 				.from(pgApiKeysTable)
 				.where(and(eq(pgApiKeysTable.key, key), eq(pgApiKeysTable.status, 'active')))
 				.limit(1);
-			return rows[0] ? mapPgApiKeyRow(rows[0]) : null;
+			return rows[0] ? mapPgKeyRow(rows[0]) : null;
 		},
 
 		async getApiKeyByKeyAnyStatus(key: string): Promise<ApiKeyRow | null> {
 			const rows = await drizzle.select().from(pgApiKeysTable).where(eq(pgApiKeysTable.key, key)).limit(1);
-			return rows[0] ? mapPgApiKeyRow(rows[0]) : null;
+			return rows[0] ? mapPgKeyRow(rows[0]) : null;
 		},
 
 		async getApiKeyById(id: string): Promise<ApiKeyRow | null> {
 			const rows = await drizzle.select().from(pgApiKeysTable).where(eq(pgApiKeysTable.id, id)).limit(1);
-			return rows[0] ? mapPgApiKeyRow(rows[0]) : null;
+			return rows[0] ? mapPgKeyRow(rows[0]) : null;
 		},
 
-		async getApiKeyByUserId(userId: string): Promise<ApiKeyRow | null> {
+		async getApiKeyWithUserByKey(key: string): Promise<ResolvedGatewayKeyRow | null> {
 			const rows = await drizzle
-				.select()
+				.select(resolvedCols)
 				.from(pgApiKeysTable)
-				.where(and(eq(pgApiKeysTable.userId, userId), eq(pgApiKeysTable.status, 'active')))
+				.innerJoin(pgUsersTable, eq(pgApiKeysTable.userId, pgUsersTable.id))
+				.where(and(eq(pgApiKeysTable.key, key), eq(pgApiKeysTable.status, 'active')))
 				.limit(1);
-			return rows[0] ? mapPgApiKeyRow(rows[0]) : null;
+			return rows[0] ? mapPgResolvedRow(rows[0]) : null;
+		},
+
+		async getApiKeyWithUserById(id: string): Promise<ResolvedGatewayKeyRow | null> {
+			const rows = await drizzle
+				.select(resolvedCols)
+				.from(pgApiKeysTable)
+				.innerJoin(pgUsersTable, eq(pgApiKeysTable.userId, pgUsersTable.id))
+				.where(eq(pgApiKeysTable.id, id))
+				.limit(1);
+			return rows[0] ? mapPgResolvedRow(rows[0]) : null;
+		},
+
+		async listKeysByUserId(userId: string, options?: { status?: string }): Promise<ApiKeyRow[]> {
+			const where = options?.status
+				? and(eq(pgApiKeysTable.userId, userId), eq(pgApiKeysTable.status, options.status))
+				: eq(pgApiKeysTable.userId, userId);
+			const rows = await drizzle.select().from(pgApiKeysTable).where(where).orderBy(pgApiKeysTable.createdAt);
+			return rows.map(mapPgKeyRow);
 		},
 
 		async insertApiKey(params: InsertKeyParams): Promise<void> {
 			const now = new Date().toISOString();
+			const status = params.status ?? 'active';
 			await drizzle.insert(pgApiKeysTable).values({
 				id: params.id,
 				key: params.key,
 				userId: params.userId,
-				userEmail: params.userEmail ?? null,
-				budgetMax: params.budgetMax == null ? null : String(roundGatewayMoney(params.budgetMax)),
-				budgetBase: String(params.budgetBase != null ? roundGatewayMoney(params.budgetBase) : 0),
-				budgetSpent: String(roundGatewayMoney(params.budgetSpent)),
-				budgetPeriod: params.budgetPeriod,
-				budgetResetAt: params.budgetResetAt,
-				status: params.status,
-				metadata: null,
+				name: params.name ?? null,
+				status,
+				metadata: params.metadata ?? null,
+				lastUsedAt: null,
 				createdAt: now,
 				updatedAt: now,
 			});
@@ -150,137 +209,6 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 			return updated.length > 0;
 		},
 
-		async setApiKeyUserEmailById(id: string, userEmail: string | null): Promise<boolean> {
-			const now = new Date().toISOString();
-			const updated = await drizzle
-				.update(pgApiKeysTable)
-				.set({ userEmail, updatedAt: now })
-				.where(eq(pgApiKeysTable.id, id))
-				.returning({ id: pgApiKeysTable.id });
-			return updated.length > 0;
-		},
-
-		async updateApiKeyBudget(id: string, budget_spent: number, budget_reset_at: string | null): Promise<void> {
-			const now = new Date().toISOString();
-			await drizzle
-				.update(pgApiKeysTable)
-				.set({
-					budgetSpent: String(roundGatewayMoney(budget_spent)),
-					budgetResetAt: budget_reset_at,
-					updatedAt: now,
-				})
-				.where(eq(pgApiKeysTable.id, id));
-		},
-
-		async buildUpdateApiKeyBudgetStatement(id: string, budget_spent: number, budget_reset_at: string | null): Promise<void> {
-			const now = new Date().toISOString();
-			await drizzle
-				.update(pgApiKeysTable)
-				.set({
-					budgetSpent: String(roundGatewayMoney(budget_spent)),
-					budgetResetAt: budget_reset_at,
-					updatedAt: now,
-				})
-				.where(eq(pgApiKeysTable.id, id));
-		},
-
-		async updateApiKeyBudgetWithAudit(
-			id: string,
-			budget_spent: number,
-			budget_reset_at: string | null,
-			audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>
-		): Promise<void> {
-			const now = new Date().toISOString();
-			const auditId = crypto.randomUUID();
-			await drizzle.transaction(async (tx) => {
-				await tx
-					.update(pgApiKeysTable)
-					.set({
-						budgetSpent: String(roundGatewayMoney(budget_spent)),
-						budgetResetAt: budget_reset_at,
-						updatedAt: now,
-					})
-					.where(eq(pgApiKeysTable.id, id));
-				await tx.insert(pgAuditTable).values({
-					id: auditId,
-					apiKeyId: id,
-					eventType: audit.eventType,
-					actorType: audit.actorType,
-					actorId: audit.actorId ?? null,
-					reasonCode: audit.reasonCode ?? null,
-					reasonText: audit.reasonText ?? null,
-					beforeSpent: String(roundGatewayMoney(audit.beforeSpent)),
-					deltaSpent: String(roundGatewayMoney(audit.deltaSpent)),
-					afterSpent: String(roundGatewayMoney(budget_spent)),
-					beforeBudgetMax: audit.beforeBudgetMax == null ? null : String(roundGatewayMoney(audit.beforeBudgetMax)),
-					afterBudgetMax: audit.afterBudgetMax == null ? null : String(roundGatewayMoney(audit.afterBudgetMax)),
-					beforeBudgetPeriod: audit.beforeBudgetPeriod ?? null,
-					afterBudgetPeriod: audit.afterBudgetPeriod ?? null,
-					beforeBudgetResetAt: audit.beforeBudgetResetAt ?? null,
-					afterBudgetResetAt: budget_reset_at,
-					requestLogId: audit.requestLogId ?? null,
-					metadata: audit.metadata ?? null,
-					createdAt: now,
-				});
-			});
-		},
-
-		async updateApiKeyPlan(
-			id: string,
-			budget_max: number | null,
-			budget_period: string,
-			budget_reset_at: string | null,
-			resetBudget: boolean = true,
-			metadata?: string | null,
-			budget_spent_override?: number | null,
-			budget_base?: number | null
-		): Promise<boolean> {
-			const now = new Date().toISOString();
-			const baseSet: Record<string, unknown> = {
-				budgetMax: budget_max != null ? String(roundGatewayMoney(budget_max)) : null,
-				budgetPeriod: budget_period,
-				budgetResetAt: budget_reset_at,
-				updatedAt: now,
-			};
-			if (budget_base !== undefined) {
-				baseSet.budgetBase = String(budget_base != null ? roundGatewayMoney(budget_base) : 0);
-			}
-
-			if (budget_spent_override !== undefined) {
-				const updated = await drizzle
-					.update(pgApiKeysTable)
-					.set({
-						...baseSet,
-						budgetSpent: String(roundGatewayMoney(budget_spent_override ?? 0)),
-						...(metadata !== undefined ? { metadata } : {}),
-					})
-					.where(eq(pgApiKeysTable.id, id))
-					.returning({ id: pgApiKeysTable.id });
-				return updated.length > 0;
-			}
-			if (resetBudget) {
-				const updated = await drizzle
-					.update(pgApiKeysTable)
-					.set({
-						...baseSet,
-						budgetSpent: '0',
-						...(metadata !== undefined ? { metadata } : {}),
-					})
-					.where(eq(pgApiKeysTable.id, id))
-					.returning({ id: pgApiKeysTable.id });
-				return updated.length > 0;
-			}
-			const updated = await drizzle
-				.update(pgApiKeysTable)
-				.set({
-					...baseSet,
-					...(metadata !== undefined ? { metadata } : {}),
-				})
-				.where(eq(pgApiKeysTable.id, id))
-				.returning({ id: pgApiKeysTable.id });
-			return updated.length > 0;
-		},
-
 		async setApiKeyMetadataById(id: string, metadataJson: string | null): Promise<boolean> {
 			const now = new Date().toISOString();
 			const updated = await drizzle
@@ -291,8 +219,19 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 			return updated.length > 0;
 		},
 
+		async updateApiKeyName(id: string, name: string | null): Promise<boolean> {
+			const now = new Date().toISOString();
+			const updated = await drizzle
+				.update(pgApiKeysTable)
+				.set({ name, updatedAt: now })
+				.where(eq(pgApiKeysTable.id, id))
+				.returning({ id: pgApiKeysTable.id });
+			return updated.length > 0;
+		},
+
 		async getAllApiKeys(options?: {
 			email?: string;
+			userId?: string;
 			maxBudget?: BudgetFilter;
 			page?: number;
 			pageSize?: number;
@@ -300,24 +239,27 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 			const page = options?.page || 1;
 			const pageSize = Math.min(options?.pageSize || 20, 100);
 			const offset = (page - 1) * pageSize;
-
 			const conditions = [];
 			if (options?.email) {
-				conditions.push(like(pgApiKeysTable.userEmail, `%${options.email}%`));
+				conditions.push(like(pgUsersTable.email, `%${options.email}%`));
+			}
+			if (options?.userId) {
+				conditions.push(eq(pgApiKeysTable.userId, options.userId));
 			}
 			if (options?.maxBudget === 'positive') {
-				conditions.push(and(isNotNull(pgApiKeysTable.budgetMax), gt(pgApiKeysTable.budgetMax, '0'))!);
+				conditions.push(and(isNotNull(pgUsersTable.budgetMax), gt(pgUsersTable.budgetMax, '0'))!);
 			} else if (options?.maxBudget === 'zero_or_negative') {
-				conditions.push(and(isNotNull(pgApiKeysTable.budgetMax), lte(pgApiKeysTable.budgetMax, '0'))!);
+				conditions.push(and(isNotNull(pgUsersTable.budgetMax), lte(pgUsersTable.budgetMax, '0'))!);
 			} else if (options?.maxBudget === 'null') {
-				conditions.push(isNull(pgApiKeysTable.budgetMax));
+				conditions.push(isNull(pgUsersTable.budgetMax));
 			}
 			const whereExpr = conditions.length > 0 ? and(...conditions) : undefined;
 
-			let countQ = drizzle.select({ total: count() }).from(pgApiKeysTable);
-			if (whereExpr) {
-				countQ = countQ.where(whereExpr) as typeof countQ;
-			}
+			let countQ = drizzle
+				.select({ total: count() })
+				.from(pgApiKeysTable)
+				.innerJoin(pgUsersTable, eq(pgApiKeysTable.userId, pgUsersTable.id));
+			if (whereExpr) countQ = countQ.where(whereExpr) as typeof countQ;
 			const total = Number((await countQ)[0]?.total ?? 0);
 
 			let listQ = drizzle
@@ -325,30 +267,28 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 					id: pgApiKeysTable.id,
 					key: pgApiKeysTable.key,
 					user_id: pgApiKeysTable.userId,
-					user_email: pgApiKeysTable.userEmail,
-					budget_max: pgApiKeysTable.budgetMax,
-					budget_base: pgApiKeysTable.budgetBase,
-					budget_spent: pgApiKeysTable.budgetSpent,
-					budget_period: pgApiKeysTable.budgetPeriod,
-					budget_reset_at: pgApiKeysTable.budgetResetAt,
+					name: pgApiKeysTable.name,
+					user_email: pgUsersTable.email,
+					budget_max: pgUsersTable.budgetMax,
+					budget_base: pgUsersTable.budgetBase,
+					budget_spent: pgUsersTable.budgetSpent,
+					budget_period: pgUsersTable.budgetPeriod,
+					budget_reset_at: pgUsersTable.budgetResetAt,
 					status: pgApiKeysTable.status,
 					metadata: pgApiKeysTable.metadata,
 					created_at: pgApiKeysTable.createdAt,
 					updated_at: pgApiKeysTable.updatedAt,
 				})
-				.from(pgApiKeysTable);
-			if (whereExpr) {
-				listQ = listQ.where(whereExpr) as typeof listQ;
-			}
+				.from(pgApiKeysTable)
+				.innerJoin(pgUsersTable, eq(pgApiKeysTable.userId, pgUsersTable.id));
+			if (whereExpr) listQ = listQ.where(whereExpr) as typeof listQ;
+
 			if (options?.maxBudget === 'positive') {
 				const rows = await listQ
-					.orderBy(sql`${pgApiKeysTable.budgetResetAt} ASC NULLS LAST`, desc(pgApiKeysTable.createdAt))
+					.orderBy(sql`${pgUsersTable.budgetResetAt} ASC NULLS LAST`, desc(pgApiKeysTable.createdAt))
 					.limit(pageSize)
 					.offset(offset);
-				return {
-					keys: rows.map(mapPgAdminListRow),
-					total,
-				};
+				return { keys: rows.map(mapPgAdminListRow), total };
 			}
 			const rows = await listQ.orderBy(desc(pgApiKeysTable.createdAt)).limit(pageSize).offset(offset);
 			return { keys: rows.map(mapPgAdminListRow), total };

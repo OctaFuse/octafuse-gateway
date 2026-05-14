@@ -35,7 +35,8 @@
 		"db:export:remote:schema": "tsx scripts/db/d1-remote-export/export-remote-schema.ts",
 		"db:export:remote:data": "tsx scripts/db/d1-remote-export/export-remote-data.ts",
 		"test:gateway:node-smoke": "dotenv -c -- tsx scripts/smoke/test-node-core-routes.ts",
-		"test:gateway:postgres-smoke": "dotenv -c -- tsx scripts/smoke/test-postgres-core-routes.ts"
+		"test:gateway:postgres-smoke": "dotenv -c -- tsx scripts/smoke/test-postgres-core-routes.ts",
+		"test:gateway:sql-storage-smoke": "dotenv -c -- tsx scripts/smoke/test-storage-concurrent-charge.ts"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.1",

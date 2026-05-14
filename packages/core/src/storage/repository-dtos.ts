@@ -5,11 +5,12 @@
 
 import type { ModelRouteRow } from '../types';
 
-/** 管理端密钥列表行（`getAllApiKeys`）。 */
+/** 管理端密钥列表行（`getAllApiKeys`，JOIN `users`）。 */
 export interface AdminApiKeyListItem {
 	id: string;
 	key: string;
 	user_id: string;
+	name: string | null;
 	user_email: string | null;
 	budget_max: number | null;
 	/** 周期 reset 时 `budget_max` 的恢复基准；缺省 0。 */

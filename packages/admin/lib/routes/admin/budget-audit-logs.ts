@@ -11,17 +11,21 @@ export const adminBudgetAuditLogsRoutes = new Hono<AdminEnv>();
 
 adminBudgetAuditLogsRoutes.use('*', requireMasterKey);
 
-/** 查询参数：page、page_size、api_key_id、user_email、event_type、actor_type、start_date、end_date。 */
+/** 查询参数：page、page_size、user_id、api_key_id、user_email、event_type、actor_type、reason_code、source、correlation_id、start_date、end_date。 */
 adminBudgetAuditLogsRoutes.get('/', async (c) => {
 	try {
 		const repos = c.get('repositories');
 		const result = await listAdminGlobalBudgetAuditLogsService(repos, {
 			page: c.req.query('page') ?? undefined,
 			page_size: c.req.query('page_size') ?? undefined,
+			user_id: c.req.query('user_id') ?? undefined,
 			api_key_id: c.req.query('api_key_id') ?? undefined,
 			user_email: c.req.query('user_email') ?? undefined,
 			event_type: c.req.query('event_type') ?? undefined,
 			actor_type: c.req.query('actor_type') ?? undefined,
+			reason_code: c.req.query('reason_code') ?? undefined,
+			source: c.req.query('source') ?? undefined,
+			correlation_id: c.req.query('correlation_id') ?? undefined,
 			start_date: c.req.query('start_date') ?? undefined,
 			end_date: c.req.query('end_date') ?? undefined,
 		});

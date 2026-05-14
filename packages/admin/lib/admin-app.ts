@@ -11,6 +11,7 @@ import { adminAnalyticsRoutes } from '@/lib/routes/admin/analytics';
 import { adminBudgetAuditLogsRoutes } from '@/lib/routes/admin/budget-audit-logs';
 import { adminConfigRoutes } from '@/lib/routes/admin/config';
 import { adminKeysRoutes } from '@/lib/routes/admin/keys';
+import { adminUsersRoutes } from '@/lib/routes/admin/users';
 import { adminModelRoutes } from '@/lib/routes/admin/model-routes';
 import { adminModelsRoutes } from '@/lib/routes/admin/models';
 import { adminPlaygroundRoutes } from '@/lib/routes/admin/playground';
@@ -37,6 +38,7 @@ export function createAdminApp(): Hono<AdminEnv> {
 		await next();
 	});
 
+	app.route('/admin/users', adminUsersRoutes);
 	app.route('/admin/keys', adminKeysRoutes);
 	app.route('/admin/providers', adminProvidersRoutes);
 	app.route('/admin/models', adminModelsRoutes);

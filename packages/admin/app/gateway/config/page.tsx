@@ -22,6 +22,7 @@ import {
 	ALERT_WEBHOOK_FEISHU_URL_KEY,
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
+import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 
 function maskSecret(value: string): string {
   if (!value || value.length < 12) return '***';
@@ -87,7 +88,7 @@ function WebhookUrlField({
 		<div>
 			<div className="mb-1 flex max-w-3xl items-center justify-between gap-2">
 				<label htmlFor={id} className="block text-xs font-medium text-gray-600">
-					{label} <span className="text-gray-400">{optionalHint}</span>
+					{label} <span className="ml-1 text-[11px] font-normal text-gray-400">{optionalHint}</span>
 				</label>
 				<button
 					type="button"
@@ -493,8 +494,10 @@ export default function GatewayConfigPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gateway Config</h1>
-          <p className="text-sm text-gray-500 mt-1">Key-value config shared by Gateway and Admin (no duplicate env vars)</p>
+          <h1 className="text-3xl font-bold text-gray-900">System config</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Key-value settings shared by the {OCTAFUSE_GATEWAY_PRODUCT} proxy and this admin app (no duplicate env vars)
+          </p>
         </div>
         <button
           onClick={() => { setShowAdd(true); setSaveError(''); }}
@@ -516,7 +519,7 @@ export default function GatewayConfigPage() {
             Bearer secret for <code className="rounded bg-gray-100 px-1 text-xs">Authorization</code> on{' '}
             <code className="rounded bg-gray-100 px-1 text-xs">/api/admin/*</code> (this console and server-side
             callers). Set the same value as <code className="rounded bg-gray-100 px-1 text-xs">GATEWAY_MASTER_KEY</code>{' '}
-            on portals (e.g. your-portal) that call the Gateway Admin API.
+            on any external integrator that calls the Gateway Admin API.
           </>
         }
       >

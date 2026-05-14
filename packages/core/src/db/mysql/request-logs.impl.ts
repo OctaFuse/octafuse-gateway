@@ -76,6 +76,7 @@ export function createMySqlRequestLogsRepository(db: MySqlDatabaseClient): Reque
 			page?: number;
 			pageSize?: number;
 			apiKeyId?: string;
+			userId?: string;
 			userEmail?: string;
 			modelId?: string;
 			providerId?: string;
@@ -94,6 +95,10 @@ export function createMySqlRequestLogsRepository(db: MySqlDatabaseClient): Reque
 			if (options.apiKeyId) {
 				conditions.push('api_key_id = ?');
 				bindValues.push(options.apiKeyId);
+			}
+			if (options.userId) {
+				conditions.push('user_id = ?');
+				bindValues.push(options.userId);
 			}
 			if (options.userEmail) {
 				conditions.push('user_email = ?');

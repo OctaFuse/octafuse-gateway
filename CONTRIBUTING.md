@@ -17,7 +17,7 @@ The second point is intended to keep a path open for a future **“community AGP
 
 - **Bugs & features**: open an issue using the templates in [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/) when possible.  
 - **Pull requests**: use [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMPLATE.md); keep changes focused; match existing style (TypeScript formatting, commit messages).  
-- **Docs & SQL**: follow the conventions described in [docs/README.md](./docs/README.md) and migration notes in the repository.
+- **Docs & SQL**: follow the conventions described in [docs/README.md](./docs/README.md), the **documentation boundary & secret-hygiene rules** in [docs/CONVENTIONS.md](./docs/CONVENTIONS.md), and migration notes in the repository.
 
 ## Code of conduct
 

@@ -10,6 +10,7 @@ import {
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
+import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import {
   catalogInputPriceSortKey,
 } from '@/lib/pricing-ui';
@@ -599,9 +600,9 @@ export default function GatewayModelsPage() {
       {/* Header */}
       <div className="flex justify-between items-start gap-6 mb-6">
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">Gateway Models</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Models</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Maintain the models this gateway exposes to clients. Seed rows from the built-in catalog with
+            Maintain the models {OCTAFUSE_GATEWAY_PRODUCT} exposes to clients. Seed rows from the built-in catalog with
             Import, or add definitions manually with New.
           </p>
           <p className="text-xs text-gray-400 mt-0.5">

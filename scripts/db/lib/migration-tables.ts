@@ -1,4 +1,5 @@
 export const ETL_TABLE_ORDER = [
+	'users',
 	'api_keys',
 	'providers',
 	'models',
@@ -6,7 +7,7 @@ export const ETL_TABLE_ORDER = [
 	'model_routes',
 	'api_key_request_logs',
 	'system_config',
-	'api_key_audit_logs',
+	'user_audit_logs',
 ] as const;
 
 export type EtlTableName = (typeof ETL_TABLE_ORDER)[number];
@@ -14,6 +15,7 @@ export type EtlTableName = (typeof ETL_TABLE_ORDER)[number];
 export const ETL_TABLES_TO_TRUNCATE = [...ETL_TABLE_ORDER].reverse();
 
 export const TABLE_CONFLICT_KEYS: Record<EtlTableName, string[]> = {
+	users: ['id'],
 	api_keys: ['id'],
 	providers: ['id'],
 	models: ['id'],
@@ -21,5 +23,5 @@ export const TABLE_CONFLICT_KEYS: Record<EtlTableName, string[]> = {
 	model_routes: ['id'],
 	api_key_request_logs: ['id'],
 	system_config: ['key'],
-	api_key_audit_logs: ['id'],
+	user_audit_logs: ['id'],
 };

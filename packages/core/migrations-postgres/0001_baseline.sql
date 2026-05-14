@@ -3,14 +3,19 @@
 -- Nullability, defaults, and PG types align with packages/core/src/storage/drizzle/schema.pg.ts.
 -- New Postgres databases should start from this file.
 
-CREATE SCHEMA IF NOT EXISTS octafuse;
+CREATE SCHEMA IF NOT EXISTS octafuse_gateway;
 SET search_path TO octafuse_gateway;
 
-CREATE TABLE api_keys (
+-- 唯一约束（语义层面两组）：
+--   1) (external_system, external_user_id) — 多上游幂等。二者须同空或同非空。
+--   2) (external_system, email)            — 同一上游内 email 唯一；internal 用户
+--      （external_system IS NULL）作为单独 namespace，email 在 internal 用户之间
+--      也唯一。Postgres 普通 UNIQUE 视 NULL 互不相等，故拆为两条 partial unique
+--      index 实现。
+-- email 必填；external_system 若设则不可为空字符串（保持 namespace 边界清晰）。
+CREATE TABLE users (
   id TEXT PRIMARY KEY,
-  key TEXT NOT NULL UNIQUE,
-  user_id TEXT NOT NULL,
-  user_email TEXT,
+  email TEXT NOT NULL,
   budget_max NUMERIC(18, 6),
   budget_base NUMERIC(18, 6) NOT NULL DEFAULT 0,
   budget_spent NUMERIC(18, 6) NOT NULL DEFAULT 0,
@@ -18,6 +23,35 @@ CREATE TABLE api_keys (
   budget_reset_at TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'active',
   metadata TEXT,
+  external_system TEXT,
+  external_user_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT users_external_pair_chk CHECK (
+    (external_system IS NULL AND external_user_id IS NULL)
+    OR (external_system IS NOT NULL AND external_user_id IS NOT NULL)
+  ),
+  CONSTRAINT users_external_system_nonempty_chk CHECK (
+    external_system IS NULL OR length(external_system) > 0
+  )
+);
+
+CREATE UNIQUE INDEX uk_users_external_system_user_id ON users (external_system, external_user_id);
+CREATE UNIQUE INDEX uk_users_external_system_email
+  ON users (external_system, email)
+  WHERE external_system IS NOT NULL;
+CREATE UNIQUE INDEX uk_users_internal_email
+  ON users (email)
+  WHERE external_system IS NULL;
+
+CREATE TABLE api_keys (
+  id TEXT PRIMARY KEY,
+  key TEXT NOT NULL UNIQUE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  metadata TEXT,
+  last_used_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -69,7 +103,8 @@ CREATE TABLE model_routes (
 
 CREATE TABLE api_key_request_logs (
   id TEXT PRIMARY KEY,
-  api_key_id TEXT,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
   user_email TEXT,
   model_id TEXT,
   model_name TEXT,
@@ -106,36 +141,42 @@ CREATE TABLE system_config (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE api_key_audit_logs (
+-- user_id 可空：用户删除后审计保留（ON DELETE SET NULL）
+CREATE TABLE user_audit_logs (
   id TEXT PRIMARY KEY,
-  api_key_id TEXT NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
   event_type TEXT NOT NULL,
   actor_type TEXT NOT NULL DEFAULT 'system',
+  request_log_id TEXT,
+  change_payload TEXT,
+  before_user_snapshot TEXT,
+  after_user_snapshot TEXT,
+  changed_fields TEXT,
+  correlation_id TEXT,
+  source TEXT,
   actor_id TEXT,
   reason_code TEXT,
   reason_text TEXT,
-  before_spent NUMERIC(18, 6) NOT NULL,
-  delta_spent NUMERIC(18, 6) NOT NULL,
-  after_spent NUMERIC(18, 6) NOT NULL,
-  before_budget_max NUMERIC(18, 6),
-  after_budget_max NUMERIC(18, 6),
-  before_budget_base NUMERIC(18, 6),
-  after_budget_base NUMERIC(18, 6),
-  before_budget_period TEXT,
-  after_budget_period TEXT,
-  before_budget_reset_at TIMESTAMPTZ,
-  after_budget_reset_at TIMESTAMPTZ,
-  request_log_id TEXT,
-  metadata TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 注：(external_system, email) 与 (email WHERE external_system IS NULL) 已在
+-- 上文加 partial UNIQUE；此处仍保留按 email 单列查询的非唯一索引。
+CREATE INDEX idx_users_external_system ON users(external_system);
+CREATE INDEX idx_users_external_user_id ON users(external_user_id);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_status ON users(status);
+
 CREATE INDEX idx_api_keys_user ON api_keys(user_id);
+CREATE INDEX idx_api_keys_status ON api_keys(status);
 
 CREATE INDEX idx_api_key_request_logs_created ON api_key_request_logs(created_at);
+CREATE INDEX idx_api_key_request_logs_user_created ON api_key_request_logs(user_id, created_at);
 CREATE INDEX idx_api_key_request_logs_key_created ON api_key_request_logs(api_key_id, created_at);
 CREATE INDEX idx_api_key_request_logs_key_status ON api_key_request_logs(api_key_id, status);
 CREATE INDEX idx_api_key_request_logs_key_charged_created ON api_key_request_logs(api_key_id, charged_cost, created_at);
+CREATE INDEX idx_api_key_request_logs_user_charged_created ON api_key_request_logs(user_id, charged_cost, created_at);
 CREATE INDEX idx_api_key_request_logs_model_created ON api_key_request_logs(model_id, created_at);
 CREATE INDEX idx_api_key_request_logs_user_email_created ON api_key_request_logs(user_email, created_at);
 CREATE INDEX idx_api_key_request_logs_status_created ON api_key_request_logs(status, created_at);
@@ -143,11 +184,17 @@ CREATE INDEX idx_api_key_request_logs_status_created ON api_key_request_logs(sta
 CREATE INDEX idx_model_routes_model_status_group_priority
   ON model_routes(model_id, status, route_group, priority);
 
-CREATE INDEX idx_api_key_audit_key_created
-  ON api_key_audit_logs(api_key_id, created_at);
-
-CREATE INDEX idx_api_key_audit_event_created
-  ON api_key_audit_logs(event_type, created_at);
-
-CREATE INDEX idx_api_key_audit_request_log
-  ON api_key_audit_logs(request_log_id);
+CREATE INDEX idx_user_audit_user_created
+  ON user_audit_logs(user_id, created_at);
+CREATE INDEX idx_user_audit_key_created
+  ON user_audit_logs(api_key_id, created_at);
+CREATE INDEX idx_user_audit_event_created
+  ON user_audit_logs(event_type, created_at);
+CREATE INDEX idx_user_audit_request_log
+  ON user_audit_logs(request_log_id);
+CREATE INDEX idx_user_audit_correlation
+  ON user_audit_logs(correlation_id);
+CREATE INDEX idx_user_audit_source_created
+  ON user_audit_logs(source, created_at);
+CREATE INDEX idx_user_audit_reason_created
+  ON user_audit_logs(reason_code, created_at);
