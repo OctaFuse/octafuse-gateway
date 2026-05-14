@@ -3,7 +3,7 @@
 	// `ADMIN_PASSWORD` 勿写入本文件：本地 `npm run preview` 用 `packages/admin/.dev.vars.example`；生产用 Dashboard Variables/Secrets 或 `npx wrangler secret put ADMIN_PASSWORD`。
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
-	"name": "octafuse-admin",
+	"name": "octafuse-gateway-admin",
 	"compatibility_date": "2025-11-25",
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
