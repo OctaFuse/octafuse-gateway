@@ -1,13 +1,16 @@
+import type { ApiKeyBudgetAuditActorType, ApiKeyBudgetAuditEventType } from '../types';
+
 /**
  * `user_audit_logs` 插入与事务内审计载荷。
  * 旧版 `api_key_audit_logs` 的 actor/reason/周期等字段写入 `metadata` JSON。
  */
 export interface InsertUserAuditLogParams {
 	id: string;
-	userId: string;
+	/** 正常写入必填；用户物理删除后由 DB 置空的历史行可为 null */
+	userId: string | null;
 	apiKeyId?: string | null;
-	eventType: string;
-	actorType: string;
+	eventType: ApiKeyBudgetAuditEventType;
+	actorType: ApiKeyBudgetAuditActorType;
 	requestLogId?: string | null;
 	/** 结构化扩展（预算周期前后值、profile patch JSON 等）；原写入 `metadata`。 */
 	changePayload?: string | null;

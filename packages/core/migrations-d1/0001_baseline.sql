@@ -141,9 +141,10 @@ CREATE TABLE system_config (
 );
 
 -- User-scoped audit trail (budget, profile, etc.; optional api_key_id for attribution)
+-- user_id 可空：用户物理删除后外键 ON DELETE SET NULL，审计行保留（身份见快照 / change_payload）
 CREATE TABLE user_audit_logs (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
   api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
   event_type TEXT NOT NULL,
   actor_type TEXT NOT NULL DEFAULT 'system',
@@ -198,3 +199,5 @@ CREATE INDEX idx_user_audit_correlation
   ON user_audit_logs(correlation_id);
 CREATE INDEX idx_user_audit_source_created
   ON user_audit_logs(source, created_at);
+CREATE INDEX idx_user_audit_reason_created
+  ON user_audit_logs(reason_code, created_at);

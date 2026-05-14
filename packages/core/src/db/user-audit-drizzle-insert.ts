@@ -1,4 +1,5 @@
 import type { InsertUserAuditLogParams } from './user-audit-logs-types';
+import { assertAndFinalizeUserAuditInsert } from './user-audit-catalog';
 
 /** Drizzle / MySQL / Postgres 写入 `user_audit_logs` 的统一值形状。 */
 export function toUserAuditLogDrizzleInsert(
@@ -6,7 +7,7 @@ export function toUserAuditLogDrizzleInsert(
 	createdAt: string
 ): {
 	id: string;
-	userId: string;
+	userId: string | null;
 	apiKeyId: string | null;
 	eventType: string;
 	actorType: string;
@@ -22,22 +23,23 @@ export function toUserAuditLogDrizzleInsert(
 	reasonText: string | null;
 	createdAt: string;
 } {
+	const p = assertAndFinalizeUserAuditInsert(params);
 	return {
-		id: params.id,
-		userId: params.userId,
-		apiKeyId: params.apiKeyId ?? null,
-		eventType: params.eventType,
-		actorType: params.actorType,
-		requestLogId: params.requestLogId ?? null,
-		changePayload: params.changePayload ?? null,
-		beforeUserSnapshot: params.beforeUserSnapshot ?? null,
-		afterUserSnapshot: params.afterUserSnapshot ?? null,
-		changedFields: params.changedFields ?? null,
-		correlationId: params.correlationId ?? null,
-		source: params.source ?? null,
-		actorId: params.actorId ?? null,
-		reasonCode: params.reasonCode ?? null,
-		reasonText: params.reasonText ?? null,
+		id: p.id,
+		userId: p.userId,
+		apiKeyId: p.apiKeyId ?? null,
+		eventType: p.eventType,
+		actorType: p.actorType,
+		requestLogId: p.requestLogId ?? null,
+		changePayload: p.changePayload ?? null,
+		beforeUserSnapshot: p.beforeUserSnapshot ?? null,
+		afterUserSnapshot: p.afterUserSnapshot ?? null,
+		changedFields: p.changedFields ?? null,
+		correlationId: p.correlationId ?? null,
+		source: p.source ?? null,
+		actorId: p.actorId ?? null,
+		reasonCode: p.reasonCode ?? null,
+		reasonText: p.reasonText ?? null,
 		createdAt,
 	};
 }

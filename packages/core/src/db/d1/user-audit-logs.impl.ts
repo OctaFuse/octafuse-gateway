@@ -6,11 +6,12 @@ import type { GlobalUserAuditLogRow, UserAuditLogRow } from '../../types';
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { UserAuditLogsRepository } from '../../storage/gateway-repository-interfaces';
 import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
+import { assertAndFinalizeUserAuditInsert } from '../user-audit-catalog';
 import { deriveUserAuditBudgetFromSnapshots } from '../user-audit-log-derived';
 
 type AuditSqlRow = {
 	id: string;
-	user_id: string;
+	user_id: string | null;
 	api_key_id: string | null;
 	event_type: string;
 	actor_type: string;
@@ -57,6 +58,7 @@ function mapAuditRow(r: AuditSqlRow): UserAuditLogRow {
 }
 
 export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertUserAuditLogParams): D1PreparedStatement {
+	const p = assertAndFinalizeUserAuditInsert(params);
 	return db
 		.prepare(
 			`INSERT INTO user_audit_logs (
@@ -67,21 +69,21 @@ export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertU
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		)
 		.bind(
-			params.id,
-			params.userId,
-			params.apiKeyId ?? null,
-			params.eventType,
-			params.actorType,
-			params.requestLogId ?? null,
-			params.changePayload ?? null,
-			params.beforeUserSnapshot ?? null,
-			params.afterUserSnapshot ?? null,
-			params.changedFields ?? null,
-			params.correlationId ?? null,
-			params.source ?? null,
-			params.actorId ?? null,
-			params.reasonCode ?? null,
-			params.reasonText ?? null
+			p.id,
+			p.userId,
+			p.apiKeyId ?? null,
+			p.eventType,
+			p.actorType,
+			p.requestLogId ?? null,
+			p.changePayload ?? null,
+			p.beforeUserSnapshot ?? null,
+			p.afterUserSnapshot ?? null,
+			p.changedFields ?? null,
+			p.correlationId ?? null,
+			p.source ?? null,
+			p.actorId ?? null,
+			p.reasonCode ?? null,
+			p.reasonText ?? null
 		);
 }
 

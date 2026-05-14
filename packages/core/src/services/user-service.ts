@@ -7,8 +7,11 @@ import type { BudgetPeriod } from '../types';
 import type { UserRow } from '../types';
 import { roundGatewayMoney } from '../lib/money-precision';
 import { updateUserBudgetWithAuditTx } from '../storage/critical-write-paths';
+import { insertParamsFromFullLegacy } from '../db/user-audit-legacy-mapper';
 import {
 	buildUserAuditSnapshotsForLazyPeriodReset,
+	snapshotToJson,
+	userRowToSnapshot,
 } from '../db/user-audit-snapshot';
 
 /**
@@ -112,6 +115,48 @@ function validateExternalPair(external_system?: string | null, external_user_id?
 	}
 }
 
+async function insertUserCreatedAudit(
+	repos: GatewayRepositories,
+	created: UserRow,
+	reasonCode: 'user_provision_external' | 'user_provision_preferred_id' | 'user_provision_email'
+): Promise<void> {
+	const spent = roundGatewayMoney(Number(created.budget_spent ?? 0));
+	const bmax = created.budget_max ?? null;
+	const bbase = roundGatewayMoney(Number(created.budget_base ?? 0));
+	const bperiod = created.budget_period ?? 'none';
+	const breset = created.budget_reset_at ?? null;
+	const afterSnap = snapshotToJson(userRowToSnapshot(created));
+	await repos.userAuditLogs.insertUserAuditLog(
+		insertParamsFromFullLegacy(created.id, {
+			id: crypto.randomUUID(),
+			apiKeyId: null,
+			eventType: 'user_created',
+			actorType: 'service',
+			actorId: '',
+			reasonCode,
+			reasonText: 'User provisioned',
+			beforeSpent: 0,
+			deltaSpent: spent,
+			afterSpent: spent,
+			beforeBudgetMax: null,
+			afterBudgetMax: bmax,
+			beforeBudgetBase: null,
+			afterBudgetBase: bbase,
+			beforeBudgetPeriod: null,
+			afterBudgetPeriod: bperiod,
+			beforeBudgetResetAt: null,
+			afterBudgetResetAt: breset,
+			requestLogId: null,
+			metadata: JSON.stringify({ provision_path: reasonCode }),
+			beforeUserSnapshot: null,
+			afterUserSnapshot: afterSnap,
+			changedFields: null,
+			source: 'gateway_user_provision',
+			correlationId: crypto.randomUUID(),
+		})
+	);
+}
+
 /**
  * 按外部身份对幂等；无外部对时可按 `preferUserId` 建/取固定 id 用户，否则新建随机 uuid 用户。
  */
@@ -159,6 +204,7 @@ export async function getOrCreateUser(
 		});
 		const created = await repos.users.getById(id);
 		if (!created) throw new Error('getOrCreateUser: failed to read created user');
+		await insertUserCreatedAudit(repos, created, 'user_provision_external');
 		return created;
 	}
 
@@ -180,6 +226,7 @@ export async function getOrCreateUser(
 		});
 		const created = await repos.users.getById(params.preferUserId);
 		if (!created) throw new Error('getOrCreateUser: failed to read created user');
+		await insertUserCreatedAudit(repos, created, 'user_provision_preferred_id');
 		return created;
 	}
 
@@ -199,6 +246,7 @@ export async function getOrCreateUser(
 	});
 	const created = await repos.users.getById(id);
 	if (!created) throw new Error('getOrCreateUser: failed to read created user');
+	await insertUserCreatedAudit(repos, created, 'user_provision_email');
 	return created;
 }
 
@@ -255,7 +303,8 @@ export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 				beforeUserSnapshot: snaps.beforeUserSnapshot,
 				afterUserSnapshot: snaps.afterUserSnapshot,
 				changedFields: snaps.changedFields,
-				source: 'period_reset',
+				source: 'gateway_user_service',
+				correlationId: crypto.randomUUID(),
 			},
 		});
 		effectiveBudgetMax = nextBudgetMax;
@@ -337,7 +386,8 @@ export async function getKeyInfo(repos: GatewayRepositories, id: string) {
 				beforeUserSnapshot: snaps?.beforeUserSnapshot ?? null,
 				afterUserSnapshot: snaps?.afterUserSnapshot ?? null,
 				changedFields: snaps?.changedFields ?? null,
-				source: 'period_reset',
+				source: 'gateway_key_service',
+				correlationId: crypto.randomUUID(),
 			},
 		});
 		effectiveBudgetMax = nextBudgetMax;

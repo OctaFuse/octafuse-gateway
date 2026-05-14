@@ -444,6 +444,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				afterUserSnapshot: afterUserSnap,
 				changedFields: userChangedFieldsJson,
 				source: 'admin_users',
+				correlationId: crypto.randomUUID(),
 			})
 		);
 	} else if (metadataChanged || statusChanged || emailChanged || externalChanged) {
@@ -482,6 +483,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				afterUserSnapshot: afterUserSnap,
 				changedFields: userChangedFieldsJson,
 				source: 'admin_users',
+				correlationId: crypto.randomUUID(),
 			})
 		);
 	}
@@ -491,6 +493,42 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 
 export async function deleteAdminUser(repos: GatewayRepositories, raw: string): Promise<void> {
 	const userId = await resolveAdminUserId(repos, raw);
+	const row = await repos.users.getById(userId);
+	if (!row) throw notFound('User not found');
+	const beforeUserSnap = snapshotToJson(userRowToSnapshot(row));
+	const spent = Number(row.budget_spent ?? 0);
+	const bmax = row.budget_max ?? null;
+	const bbase = row.budget_base ?? null;
+	const bperiod = row.budget_period ?? null;
+	const breset = row.budget_reset_at ?? null;
+	await repos.userAuditLogs.insertUserAuditLog(
+		insertParamsFromFullLegacy(userId, {
+			id: crypto.randomUUID(),
+			apiKeyId: null,
+			eventType: 'user_deleted',
+			actorType: 'admin',
+			actorId: 'master_key',
+			reasonCode: 'admin_user_delete',
+			reasonText: 'User permanently deleted',
+			beforeSpent: spent,
+			deltaSpent: 0,
+			afterSpent: spent,
+			beforeBudgetMax: bmax,
+			afterBudgetMax: bmax,
+			beforeBudgetBase: bbase,
+			afterBudgetBase: bbase,
+			beforeBudgetPeriod: bperiod,
+			afterBudgetPeriod: bperiod,
+			beforeBudgetResetAt: breset,
+			afterBudgetResetAt: breset,
+			metadata: JSON.stringify({ deleted_user_id: userId, deleted_user_email: row.email ?? null }),
+			beforeUserSnapshot: beforeUserSnap,
+			afterUserSnapshot: null,
+			changedFields: null,
+			source: 'admin_users',
+			correlationId: crypto.randomUUID(),
+		})
+	);
 	const ok = await repos.users.deleteUserHard(userId);
 	if (!ok) throw notFound('User not found');
 }
@@ -539,6 +577,45 @@ async function assertKeyBelongsToUser(repos: GatewayRepositories, userId: string
 export async function deleteAdminUserKey(repos: GatewayRepositories, rawUser: string, keyId: string): Promise<void> {
 	const userId = await resolveAdminUserId(repos, rawUser);
 	const row = await assertKeyBelongsToUser(repos, userId, keyId);
+	const userAud = await repos.users.getById(userId);
+	const userSnapJson = userAud ? snapshotToJson(userRowToSnapshot(userAud)) : null;
+	const spent = Number(row.budget_spent ?? 0);
+	const bmax = row.budget_max ?? null;
+	const bbase = row.budget_base ?? null;
+	const bperiod = row.budget_period ?? null;
+	const breset = row.budget_reset_at ?? null;
+	await repos.userAuditLogs.insertUserAuditLog(
+		insertParamsFromFullLegacy(userId, {
+			id: crypto.randomUUID(),
+			apiKeyId: keyId,
+			eventType: 'key_deleted',
+			actorType: 'admin',
+			actorId: 'master_key',
+			reasonCode: 'admin_user_key_delete',
+			reasonText: 'API key permanently deleted',
+			beforeSpent: spent,
+			deltaSpent: 0,
+			afterSpent: spent,
+			beforeBudgetMax: bmax,
+			afterBudgetMax: bmax,
+			beforeBudgetBase: bbase,
+			afterBudgetBase: bbase,
+			beforeBudgetPeriod: bperiod,
+			afterBudgetPeriod: bperiod,
+			beforeBudgetResetAt: breset,
+			afterBudgetResetAt: breset,
+			metadata: JSON.stringify({
+				key_id: row.id,
+				name: row.name,
+				status: row.status,
+			}),
+			beforeUserSnapshot: userSnapJson,
+			afterUserSnapshot: userSnapJson,
+			changedFields: null,
+			source: 'admin_user_key',
+			correlationId: crypto.randomUUID(),
+		})
+	);
 	const ok = await repos.apiKeys.deleteApiKeyHard(keyId, row.key);
 	if (!ok) throw notFound('Key not found');
 }
@@ -634,16 +711,20 @@ export async function patchAdminUserKey(
 		const bbase = rowAfter.budget_base ?? null;
 		const bperiod = rowAfter.budget_period ?? null;
 		const breset = rowAfter.budget_reset_at ?? null;
+		const isRevoked = statusChanged && rowAfter.status === 'revoked';
 		let reasonCode = 'admin_patch_key_profile';
-		if (metadataChanged && !statusChanged && !nameChanged) reasonCode = 'admin_patch_key_metadata';
+		if (isRevoked) {
+			reasonCode = 'admin_user_key_revoked';
+		} else if (metadataChanged && !statusChanged && !nameChanged) reasonCode = 'admin_patch_key_metadata';
 		else if (statusChanged && !metadataChanged && !nameChanged) reasonCode = 'admin_patch_key_status';
 		else if (nameChanged && !metadataChanged && !statusChanged) reasonCode = 'admin_patch_key_name';
+		const eventType = isRevoked ? 'key_revoked' : 'admin_adjust';
 
 		await repos.userAuditLogs.insertUserAuditLog(
 			insertParamsFromFullLegacy(userId, {
 				id: crypto.randomUUID(),
 				apiKeyId: keyId,
-				eventType: 'admin_adjust',
+				eventType,
 				actorType: 'admin',
 				actorId: 'master_key',
 				reasonCode,
@@ -664,6 +745,7 @@ export async function patchAdminUserKey(
 				afterUserSnapshot: userSnapJson,
 				changedFields: null,
 				source: 'admin_user_key',
+				correlationId: crypto.randomUUID(),
 			})
 		);
 	}

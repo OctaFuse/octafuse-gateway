@@ -532,7 +532,7 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 | `page_size` | 默认 `20`，最大 `100` |
 | `api_key_id` | 精确匹配 |
 | `user_email` | 精确匹配（`api_keys.user_email`） |
-| `event_type` | 精确匹配（如 `usage_charge`、`period_reset`、`admin_adjust` 等） |
+| `event_type` | 精确匹配（如 `usage_charge`、`period_reset`、`admin_adjust`、`key_created`、`key_revoked`、`key_deleted`、`user_created`、`user_deleted`） |
 | `actor_type` | 精确匹配：`system` \| `admin` \| `service` |
 | `start_date` / `end_date` | 与 **`GET /admin/request-logs`** 相同：过滤 `created_at`（`>=` / `<=`，UTC；建议格式 `YYYY-MM-DD HH:mm:ss` 或完整 ISO） |
 

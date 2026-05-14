@@ -299,7 +299,7 @@ export default function GatewayUserDetailPage() {
   };
 
   const deleteUser = async () => {
-    if (!window.confirm('Permanently delete this user and all keys / audit rows?')) return;
+    if (!window.confirm('Permanently delete this user and all keys? Audit history will remain (user link cleared).')) return;
     try {
       const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
       const data = await readApiJson(res);

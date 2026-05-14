@@ -304,16 +304,20 @@ export async function updateAdminKey(
 		const bbase = rowAfter.budget_base ?? null;
 		const bperiod = rowAfter.budget_period ?? null;
 		const breset = rowAfter.budget_reset_at ?? null;
+		const isRevoked = statusChanged && rowAfter.status === 'revoked';
 		let reasonCode = 'admin_patch_key_profile';
-		if (metadataChanged && !statusChanged && !nameChanged) reasonCode = 'admin_patch_key_metadata';
+		if (isRevoked) {
+			reasonCode = 'admin_key_revoked';
+		} else if (metadataChanged && !statusChanged && !nameChanged) reasonCode = 'admin_patch_key_metadata';
 		else if (statusChanged && !metadataChanged && !nameChanged) reasonCode = 'admin_patch_key_status';
 		else if (nameChanged && !metadataChanged && !statusChanged) reasonCode = 'admin_patch_key_name';
+		const eventType = isRevoked ? 'key_revoked' : 'admin_adjust';
 
 		await repos.userAuditLogs.insertUserAuditLog(
 			insertParamsFromFullLegacy(row.user_id, {
 				id: crypto.randomUUID(),
 				apiKeyId: row.id,
-				eventType: 'admin_adjust',
+				eventType,
 				actorType: 'admin',
 				actorId: 'master_key',
 				reasonCode,
@@ -334,6 +338,7 @@ export async function updateAdminKey(
 				afterUserSnapshot: userSnapJson,
 				changedFields: null,
 				source: 'admin_keys',
+				correlationId: crypto.randomUUID(),
 			})
 		);
 	}
@@ -391,7 +396,45 @@ export async function getAdminKeyById(repos: GatewayRepositories, idOrKey: strin
 export async function deleteAdminKey(repos: GatewayRepositories, idOrKey: string): Promise<void> {
 	const row = await resolveKeyRowAnyStatus(repos, idOrKey);
 	if (!row) throw notFound('Key not found');
-
+	const userAud = await repos.users.getById(row.user_id);
+	const userSnapJson = userAud ? snapshotToJson(userRowToSnapshot(userAud)) : null;
+	const spent = Number(row.budget_spent ?? 0);
+	const bmax = row.budget_max ?? null;
+	const bbase = row.budget_base ?? null;
+	const bperiod = row.budget_period ?? null;
+	const breset = row.budget_reset_at ?? null;
+	await repos.userAuditLogs.insertUserAuditLog(
+		insertParamsFromFullLegacy(row.user_id, {
+			id: crypto.randomUUID(),
+			apiKeyId: row.id,
+			eventType: 'key_deleted',
+			actorType: 'admin',
+			actorId: 'master_key',
+			reasonCode: 'admin_key_delete',
+			reasonText: 'API key permanently deleted',
+			beforeSpent: spent,
+			deltaSpent: 0,
+			afterSpent: spent,
+			beforeBudgetMax: bmax,
+			afterBudgetMax: bmax,
+			beforeBudgetBase: bbase,
+			afterBudgetBase: bbase,
+			beforeBudgetPeriod: bperiod,
+			afterBudgetPeriod: bperiod,
+			beforeBudgetResetAt: breset,
+			afterBudgetResetAt: breset,
+			metadata: JSON.stringify({
+				key_id: row.id,
+				name: row.name,
+				status: row.status,
+			}),
+			beforeUserSnapshot: userSnapJson,
+			afterUserSnapshot: userSnapJson,
+			changedFields: null,
+			source: 'admin_keys',
+			correlationId: crypto.randomUUID(),
+		})
+	);
 	const ok = await repos.apiKeys.deleteApiKeyHard(row.id, row.key);
 	if (!ok) throw notFound('Key not found');
 }

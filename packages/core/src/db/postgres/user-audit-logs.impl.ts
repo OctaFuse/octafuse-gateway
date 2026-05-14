@@ -15,7 +15,7 @@ import { deriveUserAuditBudgetFromSnapshots } from '../user-audit-log-derived';
 
 type PgAuditSelectRow = {
 	id: string;
-	userId: string;
+	userId: string | null;
 	apiKeyId: string | null;
 	eventType: string;
 	actorType: string;

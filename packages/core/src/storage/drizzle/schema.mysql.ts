@@ -164,7 +164,7 @@ export const systemConfigTable = mysqlTable('system_config', {
 /** 用户维度审计：预算、资料等；扩展载荷见 `change_payload`。 */
 export const userAuditLogsTable = mysqlTable('user_audit_logs', {
 	id: varchar('id', { length: COL.ID }).primaryKey(),
-	userId: varchar('user_id', { length: COL.USER_ID }).notNull(),
+	userId: varchar('user_id', { length: COL.USER_ID }),
 	apiKeyId: varchar('api_key_id', { length: COL.ID }),
 	eventType: varchar('event_type', { length: COL.EVENT_TYPE }).notNull(),
 	actorType: varchar('actor_type', { length: COL.ACTOR_TYPE }).notNull().default('system'),

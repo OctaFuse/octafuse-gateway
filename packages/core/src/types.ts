@@ -9,7 +9,11 @@ export type ApiKeyBudgetAuditEventType =
 	| 'usage_charge'
 	| 'period_reset'
 	| 'admin_adjust'
-	| 'key_created';
+	| 'key_created'
+	| 'key_revoked'
+	| 'key_deleted'
+	| 'user_created'
+	| 'user_deleted';
 
 export type ApiKeyBudgetAuditActorType = 'system' | 'admin' | 'service';
 
@@ -154,7 +158,8 @@ export interface RequestLogRow {
 /** `user_audit_logs` 表行。 */
 export interface UserAuditLogRow {
 	id: string;
-	user_id: string;
+	/** 用户删除后外键 ON DELETE SET NULL 可能为空；快照/change_payload 保留身份 */
+	user_id: string | null;
 	api_key_id: string | null;
 	event_type: string;
 	actor_type: string;

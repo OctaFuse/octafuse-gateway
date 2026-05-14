@@ -63,6 +63,23 @@ function shortId(id: string | null | undefined): string {
   return `${id.slice(0, 8)}…${id.slice(-4)}`;
 }
 
+/** Reason 行：code / text 并存且不同时压缩为一行「code · text」，否则单行。 */
+function auditReasonOneLine(reasonCode: string | null | undefined, reasonText: string | null | undefined): {
+	line: string;
+	isMono: boolean;
+	title: string;
+} {
+	const rc = (reasonCode ?? '').trim();
+	const rt = (reasonText ?? '').trim();
+	if (!rc && !rt) return { line: '—', isMono: true, title: '' };
+	if (rc && rt && rc !== rt) {
+		const line = `${rc} · ${rt}`;
+		return { line, isMono: false, title: line };
+	}
+	const single = rt || rc;
+	return { line: single, isMono: !!rc && !rt, title: single };
+}
+
 /** 从 `change_payload` 解析的扩展字段（与 `@octafuse/core` `mergeUserAuditChangePayload` 写入结构对齐） */
 function auditDisplayExtras(item: GatewayApiKeyBudgetAuditLog) {
   let m: Record<string, unknown> = {};
@@ -480,9 +497,9 @@ export default function GatewayAuditLogsPage() {
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Time</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[8rem]">Event</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[7rem]">Actor</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[12rem]">User / Key</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">Event</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">Actor</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[14rem]">Email / User / Key</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Spend</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">Budget plan</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[16rem]">
@@ -514,7 +531,7 @@ export default function GatewayAuditLogsPage() {
                       ex.before_budget_reset_at,
                       ex.after_budget_reset_at
                     );
-                    const reason = ex.reason_text || ex.reason_code || '—';
+                    const reasonDisplay = auditReasonOneLine(ex.reason_code, ex.reason_text);
                     const snapLines = summarizeUserSnapshotDiffLines({
                       before_user_snapshot: item.before_user_snapshot ?? null,
                       after_user_snapshot: item.after_user_snapshot ?? null,
@@ -541,40 +558,64 @@ export default function GatewayAuditLogsPage() {
                           </div>
                         ) : null}
                       </td>
-                      <td className="px-3 py-2 align-top">
-                        <div className="text-sm text-gray-900 font-medium leading-snug">{item.event_type}</div>
-                        <div className="mt-1 text-xs text-gray-600 line-clamp-2 leading-snug" title={reason}>
-                          {reason}
+                      <td className="px-3 py-2 align-top min-w-0 max-w-[15rem]">
+                        <div className="text-xs space-y-1.5 leading-snug">
+                          <div className="min-w-0">
+                            <span className="text-gray-500">Type: </span>
+                            <span className="font-mono text-sm font-medium text-gray-900">{item.event_type}</span>
+                          </div>
+                          <div className="min-w-0 truncate font-mono text-[11px]" title={ex.source || undefined}>
+                            <span className="text-gray-500 font-sans">From: </span>
+                            <span className="text-violet-800">{ex.source ?? '—'}</span>
+                          </div>
+                          <div className="min-w-0 line-clamp-3 text-gray-800" title={reasonDisplay.title || undefined}>
+                            <span className="text-gray-500">Reason: </span>
+                            <span className={reasonDisplay.isMono ? 'font-mono text-[11px] text-gray-900' : 'text-[11px]'}>
+                              {reasonDisplay.line}
+                            </span>
+                          </div>
                         </div>
-                        {ex.source ? (
-                          <div className="mt-1 font-mono text-[11px] text-violet-700" title={ex.source}>
-                            {ex.source}
-                          </div>
-                        ) : null}
                       </td>
-                      <td className="px-3 py-2 align-top">
-                        <div className="text-sm text-gray-900 leading-snug">{item.actor_type}</div>
-                        {ex.actor_id ? (
-                          <div className="mt-0.5 font-mono text-xs text-gray-500 whitespace-nowrap" title={ex.actor_id}>
-                            {shortId(ex.actor_id)}
+                      <td className="px-3 py-2 align-top min-w-0 max-w-[12rem]">
+                        <div className="text-xs space-y-1.5 leading-snug">
+                          <div>
+                            <span className="text-gray-500">Kind: </span>
+                            <span className="text-sm text-gray-900">{item.actor_type}</span>
                           </div>
-                        ) : (
-                          <div className="mt-0.5 text-xs text-gray-400">—</div>
-                        )}
+                          <div className="min-w-0">
+                            <span className="text-gray-500">Principal: </span>
+                            {ex.actor_id ? (
+                              <span className="font-mono text-[11px] text-gray-700 break-all" title={ex.actor_id}>
+                                {shortId(ex.actor_id)}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-3 py-2 align-top min-w-0 max-w-[18rem]">
                         <div className="text-sm text-gray-900 truncate leading-snug" title={item.user_email || ''}>
                           {item.user_email || '—'}
                         </div>
-                        <Link
-                          href={`/gateway/users/${encodeURIComponent(item.user_id)}`}
-                          className="mt-0.5 block font-mono text-xs text-blue-600 hover:underline truncate"
-                          title={item.user_id}
-                        >
-                          {shortId(item.user_id)}
-                        </Link>
+                        {item.user_id ? (
+                          <div className="mt-0.5 flex items-baseline gap-1 min-w-0 font-mono text-xs">
+                            <span className="shrink-0 text-gray-600">User:</span>
+                            <Link
+                              href={`/gateway/users/${encodeURIComponent(item.user_id)}`}
+                              className="min-w-0 truncate text-blue-600 hover:underline"
+                              title={item.user_id}
+                            >
+                              {shortId(item.user_id)}
+                            </Link>
+                          </div>
+                        ) : (
+                          <div className="mt-0.5 font-mono text-xs text-gray-400 truncate" title="User removed; see snapshot / change_payload">
+                            User: —
+                          </div>
+                        )}
                         <div className="mt-0.5 font-mono text-xs text-gray-500 truncate leading-snug" title={item.api_key_id ?? ''}>
-                          key: {item.api_key_id ? shortId(item.api_key_id) : '—'}
+                          Key: {item.api_key_id ? shortId(item.api_key_id) : '—'}
                         </div>
                       </td>
                       <td className="px-3 py-2 align-top text-xs text-gray-600">
@@ -606,7 +647,7 @@ export default function GatewayAuditLogsPage() {
                       <td className="px-3 py-2 align-top text-xs text-gray-600">
                         <div className="space-y-1 leading-snug">
                           <div>
-                            <span className="font-medium text-gray-700">budget_max:</span>{' '}
+                            <span className="font-medium text-gray-700">max:</span>{' '}
                             <span className={maxChanged ? budgetPlanHighlight.before : undefined}>
                               {formatBudgetMax(item.before_budget_max, billingCurrency)}
                             </span>
@@ -616,7 +657,7 @@ export default function GatewayAuditLogsPage() {
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">budget_base:</span>{' '}
+                            <span className="font-medium text-gray-700">base:</span>{' '}
                             <span className={baseChanged ? budgetPlanHighlight.before : undefined}>
                               {formatGatewayMoneyCode(item.before_budget_base, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
                             </span>
@@ -626,7 +667,7 @@ export default function GatewayAuditLogsPage() {
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">budget_period:</span>{' '}
+                            <span className="font-medium text-gray-700">period:</span>{' '}
                             <span className={periodChanged ? budgetPlanHighlight.before : undefined}>
                               {ex.before_budget_period ?? '—'}
                             </span>
@@ -636,7 +677,7 @@ export default function GatewayAuditLogsPage() {
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">budget_reset_at:</span>{' '}
+                            <span className="font-medium text-gray-700">reset_at:</span>{' '}
                             <span className="whitespace-nowrap">
                               <span className={resetChanged ? budgetPlanHighlight.before : undefined}>
                                 {formatTime(ex.before_budget_reset_at)}

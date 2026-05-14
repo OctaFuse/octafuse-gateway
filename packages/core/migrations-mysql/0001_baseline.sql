@@ -154,7 +154,7 @@ CREATE TABLE system_config (
 
 CREATE TABLE user_audit_logs (
   id VARCHAR(512) NOT NULL,
-  user_id VARCHAR(512) NOT NULL,
+  user_id VARCHAR(512),
   api_key_id VARCHAR(512),
   event_type VARCHAR(64) NOT NULL,
   actor_type VARCHAR(32) NOT NULL DEFAULT 'system',
@@ -170,7 +170,7 @@ CREATE TABLE user_audit_logs (
   reason_text TEXT,
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
-  CONSTRAINT fk_user_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_user_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL,
   CONSTRAINT fk_user_audit_api_key FOREIGN KEY (api_key_id) REFERENCES api_keys (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -209,3 +209,5 @@ CREATE INDEX idx_user_audit_correlation
   ON user_audit_logs(correlation_id);
 CREATE INDEX idx_user_audit_source_created
   ON user_audit_logs(source, created_at);
+CREATE INDEX idx_user_audit_reason_created
+  ON user_audit_logs(reason_code, created_at);

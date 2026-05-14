@@ -28,6 +28,7 @@
 		},
 		"./db/pricing-profile": "./src/db/pricing-profile.ts",
 		"./db/request-log-status-filter": "./src/db/request-log-status-filter.ts",
+		"./db/user-audit-catalog": "./src/db/user-audit-catalog.ts",
 		"./db/user-audit-legacy-mapper": "./src/db/user-audit-legacy-mapper.ts",
 		"./db/user-audit-log-derived": "./src/db/user-audit-log-derived.ts",
 		"./db/user-audit-metadata": "./src/db/user-audit-metadata.ts",

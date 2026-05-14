@@ -1,42 +1,59 @@
 # 用户预算审计日志（`user_audit_logs`）
 
-网关将预算相关变更与部分管理端操作写入 **`user_audit_logs`**（用户维度；可选 `api_key_id` 归因）。
+网关将预算相关变更、用户/密钥生命周期与管理端操作写入 **`user_audit_logs`**（用户维度；可选 `api_key_id` 归因）。
 
-## 金额与上限（API 中的 `before_spent` / `delta_spent` / `after_spent` / `before_budget_max` / `after_budget_max`）
+## 语义模型（Event / Actor / Cause）
 
-表结构已精简：上述字段**不再单独落库**，由读取层根据 **`before_user_snapshot`**、**`after_user_snapshot`**（`UserAuditSnapshot` JSON，含 `budget_spent`、`budget_max` 等）**派生**，与历史「独立金额列」语义一致。建表定义见各库 **`packages/core/migrations-*/0001_baseline.sql`** 中的 `CREATE TABLE user_audit_logs`。
+| 维度 | 列 | 含义 |
+|------|-----|------|
+| **Event** | `event_type` | 权威业务事件（枚举：`usage_charge`、`period_reset`、`admin_adjust`、`key_created`、`key_revoked`、`key_deleted`、`user_created`、`user_deleted`）。 |
+| **Actor** | `actor_type` + `actor_id` | 谁触发：`system` / `admin` / `service`；`actor_id` 为稳定 principal（如新写入中 `system:gateway`、`admin:gateway_master_key`、`service:user_provision`）。 |
+| **Cause** | `source` + `reason_code` + `reason_text` | **source**：入口通道（如 `gateway_usage`、`gateway_auth`、`admin_users`）；**reason_code**：机器可筛的稳定码；**reason_text**：人类可读说明。 |
+| **变更内容** | `before_user_snapshot` / `after_user_snapshot` / `changed_fields` / `change_payload` | 快照与结构化扩展。 |
+
+写入前由 `assertAndFinalizeUserAuditInsert`（`packages/core/src/db/user-audit-catalog.ts`）校验 event/actor/source 并对缺省 `actor_id`、旧 `source=usage_charge` 做归一化。
+
+## 金额与上限（API 中的 `before_spent` / `delta_spent` / …）
+
+表结构已精简：上述金额字段**不再单独落库**，由读取层根据 **`before_user_snapshot`**、**`after_user_snapshot`**（`UserAuditSnapshot` JSON）**派生**。`user_audit_logs.user_id` 可空且外键为 **`ON DELETE SET NULL`**（用户删除后审计行保留；身份见快照 / `change_payload`），见各库 **`packages/core/migrations-*/0001_baseline.sql`** 中 `CREATE TABLE user_audit_logs` 与索引 `idx_user_audit_reason_created`。
 
 ## 扩展载荷（`change_payload`）
 
-原 **`metadata`** 列已更名为 **`change_payload`**，仍为 JSON 字符串，用于：
-
-- 预算周期类扩展（`before_budget_period`、`after_budget_reset_at` 等，由 `mergeUserAuditChangePayload` 合并写入）；
-- 管理端 profile / 密钥 patch 的可读摘要（与 Admin「Extra」展示逻辑一致）。
-
-## 为何「没人改配置却一直有新行」
-
-最常见是 **`usage_charge`**：每次成功计费且 `charged_cost > 0` 的请求结束后，同一事务写入审计。此时 **`budget_max` / `budget_period` 在快照里往往不变**，变化在 **`budget_spent`**（见快照 diff 或派生的 `delta_spent`），并可通过 **`request_log_id`** 关联 `api_key_request_logs`。
+仍为 JSON 字符串：预算周期类键、管理端 patch 摘要、`user_deleted` / `key_deleted` 时的删除上下文等。
 
 ## 写入场景（按常见频率）
 
 ### 1. 用量扣费（`usage_charge`）
 
 - **代码**：[packages/proxy/src/services/usage-tracker.ts](../../packages/proxy/src/services/usage-tracker.ts) 的 `recordUsage`。
-- **事务**：`insertRequestUsageAndChargeTx`（[critical-write-paths](../../packages/core/src/storage/critical-write-paths.ts) / D1 [critical-writes.impl](../../packages/core/src/db/d1/critical-writes.impl.ts)）。
+- **事务**：`insertRequestUsageAndChargeTx`。
+- **Cause**：`source=gateway_usage`，`reason_code=request_usage_charged_cost`，`correlation_id` 与请求日志 id 对齐。
 
 ### 2. 鉴权 / 读详情时的周期懒重置（`period_reset`）
 
-- [packages/proxy/src/services/api-key-auth.ts](../../packages/proxy/src/services/api-key-auth.ts)
-- [packages/core/src/services/key-service.ts](../../packages/core/src/services/key-service.ts) `getKeyInfo`
+- [packages/proxy/src/services/api-key-auth.ts](../../packages/proxy/src/services/api-key-auth.ts) — `source=gateway_auth`。
+- [packages/core/src/services/user-service.ts](../../packages/core/src/services/user-service.ts) `getUserInfo` / `getKeyInfo` — `source=gateway_user_service` / `gateway_key_service`；均带 `correlation_id`。
 
-### 3. 新建密钥（`key_created`）
+### 3. 用户幂等创建（`user_created`）
 
-- `createKey` → `createApiKeyWithAudit`
+- `getOrCreateUser` 在首次 `createUser` 后写入；`source=gateway_user_provision`，`actor_type=service`。
 
-### 4. 管理端 PATCH 用户 / 密钥（`admin_adjust`）
+### 4. 新建密钥（`key_created`）
+
+- `createKey` → `createApiKeyWithAudit`；`source=key_provision`。
+
+### 5. 吊销 / 删除密钥（`key_revoked` / `key_deleted`）
+
+- 管理端 PATCH 将状态置为 `revoked` 时写 `key_revoked`；`DELETE` 密钥前写 `key_deleted`（`admin_keys` / `admin_user_key`）。
+
+### 6. 管理端 PATCH 用户 / 密钥（`admin_adjust`）
 
 - [packages/admin/lib/services/admin/users-service.ts](../../packages/admin/lib/services/admin/users-service.ts)
 - [packages/admin/lib/services/admin/keys-service.ts](../../packages/admin/lib/services/admin/keys-service.ts)
+
+### 7. 用户物理删除（`user_deleted`）
+
+- 删除前写入；随后 `users` 行删除，`user_audit_logs.user_id` 由外键置为 `NULL`，历史行仍保留（身份见 `before_user_snapshot` / `change_payload`）。
 
 ## 相关接口
 
@@ -44,4 +61,4 @@
 
 ## 建表与迁移
 
-- D1 / Postgres / MySQL：当前表结构在 **`packages/core/migrations-{d1,postgres,mysql}/0001_baseline.sql`**（`user_audit_logs` 段）。已有环境若仍为旧列布局，需自行做一次性数据迁移或清空后按 baseline 重建（本仓库不再提供增量 `0003` 脚本）。
+- 基线：**`packages/core/migrations-{d1,postgres,mysql}/0001_baseline.sql`**（含 `user_audit_logs` 与 `idx_user_audit_reason_created`）。

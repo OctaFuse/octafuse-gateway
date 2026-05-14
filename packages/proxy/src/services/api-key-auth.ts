@@ -82,7 +82,8 @@ export async function authenticateApiKey(repos: GatewayRepositories, key: string
 				beforeUserSnapshot: snaps?.beforeUserSnapshot ?? null,
 				afterUserSnapshot: snaps?.afterUserSnapshot ?? null,
 				changedFields: snaps?.changedFields ?? null,
-				source: 'period_reset',
+				source: 'gateway_auth',
+				correlationId: crypto.randomUUID(),
 			},
 		});
 		if (maxChanged) {

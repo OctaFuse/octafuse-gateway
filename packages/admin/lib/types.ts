@@ -30,7 +30,8 @@ export interface GatewayApiKey {
 /** `user_audit_logs` 行；全局列表 JOIN `users` 后带 `user_email`。预算周期等扩展在 `change_payload` JSON。 */
 export interface GatewayApiKeyBudgetAuditLog {
   id: string;
-  user_id: string;
+  /** 用户删除后外键置空；身份见快照 / change_payload */
+  user_id: string | null;
   api_key_id: string | null;
   event_type: string;
   actor_type: string;
@@ -88,6 +89,10 @@ export const API_KEY_BUDGET_AUDIT_EVENT_TYPES = [
   'period_reset',
   'admin_adjust',
   'key_created',
+  'key_revoked',
+  'key_deleted',
+  'user_created',
+  'user_deleted',
 ] as const;
 
 /** 与 octafuse `ApiKeyBudgetAuditActorType` 对齐 */

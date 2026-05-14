@@ -218,7 +218,7 @@ export async function recordUsage(
 			afterUserSnapshot: usageSnaps?.after ?? null,
 			changedFields: usageSnaps?.changed ?? null,
 			correlationId: id,
-			source: 'usage_charge',
+			source: 'gateway_usage',
 		},
 	});
 	if (params.status === 'error') {
