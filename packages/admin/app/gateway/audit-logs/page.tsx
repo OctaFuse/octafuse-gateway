@@ -457,7 +457,7 @@ export default function GatewayAuditLogsPage() {
             type="text"
             value={filterCorrelationId}
             onChange={(e) => { setFilterCorrelationId(e.target.value); setPage(1); }}
-            placeholder="request_log_id / 业务单号"
+            placeholder="request_log_id / business reference"
             className="px-3 py-2 border border-gray-300 rounded-md text-sm w-64 font-mono text-xs"
           />
         </div>
