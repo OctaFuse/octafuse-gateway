@@ -1,6 +1,6 @@
 # Octafuse Gateway：Docker Compose 示例
 
-预构建镜像见 `.github/workflows/octafuse-docker-images.yml`（`ghcr.io/<owner 小写>/octafuse-{proxy,admin,migrate}`）。
+预构建镜像见 `.github/workflows/octafuse-docker-images.yml`（命名：`ghcr.io/<github.repository 小写>-{proxy,admin,migrate}`，例如 **`ghcr.io/octafuse/octafuse-gateway-proxy`**）。
 
 **与镜像实现一致的行为**（详见 [docs/ops/deployment-docker.md](../../docs/ops/deployment-docker.md) §3、§5）：**proxy** 仅含 **已编译** 的 core/proxy（`node packages/proxy/dist/runtime/node.js`），**不**含 DB 迁移 CLI；**migrate** 使用 **`packages/core/dist/migrate/cli.js`**（与 **`octafuse-migrate`**、根目录 **`npm run db:migrate:pg`** 同源）。镜像内**不**再依赖 `tsx`。**`scripts/db/`**（D1 远程导出、`cutover/` 等）仅在宿主机克隆仓库后用于运维，**不**打入 proxy 镜像。
 
@@ -14,7 +14,7 @@
 # GHCR（示例：用 stdin 传入 token，避免出现在 shell 历史里）
 printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u YOUR_GH_USERNAME --password-stdin
 
-# 任意私有 OCI registry（如阿里云 ACR、自建 Harbor 等；地域与命名空间以你的控制台为准；建议使用专用凭证或临时令牌）
+# 任意私有 OCI registry（如自建 Harbor 等；地域与命名空间以你的控制台为准；建议使用专用凭证或临时令牌）
 docker login registry.example.com -u YOUR_REGISTRY_USERNAME
 # 按提示输入密码，或使用：printf '%s' "$REGISTRY_PASSWORD" | docker login registry.example.com -u YOUR_REGISTRY_USERNAME --password-stdin
 ```

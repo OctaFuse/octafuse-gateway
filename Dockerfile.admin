@@ -1,11 +1,15 @@
 # gateway-admin — Next.js standalone 多阶段（运行层仅含 standalone + static）
 # Build: docker build -f Dockerfile.admin -t octafuse-admin:latest .
+# Base: Node 22 on Alpine 3.22, pinned digest for reproducible builds / scanner baselines.
+# Bump digest: docker buildx imagetools inspect docker.io/library/node:22-alpine3.22
+ARG NODE_IMAGE=node:22-alpine3.22@sha256:b77017c37f430e4466ff497058948a2f16e8b59779600d53711eeb7b999b0f4e
 
-FROM node:22-alpine AS builder
+FROM ${NODE_IMAGE} AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk upgrade --no-cache \
+	&& apk add --no-cache ca-certificates
 
 COPY package.json package-lock.json ./
 COPY tsconfig.json tsconfig.base.json ./
@@ -30,11 +34,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build -w @octafuse/core && npm run build:docker -w @octafuse/admin
 
-FROM node:22-alpine AS runner
+FROM ${NODE_IMAGE} AS runner
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk upgrade --no-cache \
+	&& apk add --no-cache ca-certificates
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

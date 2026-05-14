@@ -71,7 +71,7 @@ flowchart LR
 |------|------|
 | [ops/deployment.md](./ops/deployment.md) | **部署索引**（入口） |
 | [ops/deployment-cloudflare.md](./ops/deployment-cloudflare.md) | Cloudflare：Connect to Git、Wrangler、密钥 |
-| [ops/deployment-docker.md](./ops/deployment-docker.md) | Docker 镜像、Compose、GHCR/ACR |
+| [ops/deployment-docker.md](./ops/deployment-docker.md) | Docker 镜像、Compose、GHCR |
 | [ops/local-testing-environments.md](./ops/local-testing-environments.md) | 本地 D1 / Node + SQL |
 | [ops/release-versioning.md](./ops/release-versioning.md) | Changesets、`vX.Y.Z`、镜像与 Release |
 | [ops/postgres-cutover.md](./ops/postgres-cutover.md) | D1 ↔ Postgres 脚本（`scripts/db/cutover/`） |

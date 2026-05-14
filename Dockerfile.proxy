@@ -1,11 +1,14 @@
 # gateway-proxy — Node + Postgres（多阶段：仅含 core + proxy，不含 Next/admin 依赖）
 # Build: docker build -f Dockerfile.proxy -t octafuse-proxy:latest .
+# Base: Node 22 on Alpine 3.22, pinned digest (see Dockerfile.admin).
+ARG NODE_IMAGE=node:22-alpine3.22@sha256:b77017c37f430e4466ff497058948a2f16e8b59779600d53711eeb7b999b0f4e
 
-FROM node:22-alpine AS deps
+FROM ${NODE_IMAGE} AS deps
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk upgrade --no-cache \
+	&& apk add --no-cache ca-certificates
 
 COPY package.json package-lock.json ./
 COPY packages/core/package.json packages/core/
@@ -17,11 +20,12 @@ RUN --mount=type=cache,target=/root/.npm \
 	--workspace=@octafuse/core \
 	--workspace=@octafuse/proxy
 
-FROM node:22-alpine AS build
+FROM ${NODE_IMAGE} AS build
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk upgrade --no-cache \
+	&& apk add --no-cache ca-certificates
 
 COPY package.json package-lock.json ./
 COPY tsconfig.json tsconfig.base.json ./
@@ -42,11 +46,12 @@ COPY packages/proxy ./packages/proxy
 
 RUN npm run build -w @octafuse/core && npm run build -w @octafuse/proxy
 
-FROM node:22-alpine AS runner
+FROM ${NODE_IMAGE} AS runner
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk upgrade --no-cache \
+	&& apk add --no-cache ca-certificates
 
 COPY --from=deps /app/package.json /app/package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules

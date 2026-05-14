@@ -85,7 +85,7 @@ docker run --rm -p 8789:8789 \
 
 （首次使用前须对该库执行 [§5](#5-数据库迁移与校验postgres)。）
 
-## GitHub Actions（GHCR 构建与推送；可选第二私有 registry 双推）
+## GitHub Actions（GHCR 构建与推送）
 
 **CI 镜像发布**由 **[`.github/workflows/octafuse-docker-images.yml`](../../.github/workflows/octafuse-docker-images.yml)** 负责：**`runs-on: ubuntu-latest`**，**QEMU + Buildx** 多架构。镜像的 `org.opencontainers.image.description` 由该 workflow 里 **`docker/metadata-action` 的 `labels:`** 显式写入（避免沿用 GitHub 仓库 **About** 栏里尚未更新的历史描述）。
 
@@ -93,8 +93,6 @@ docker run --rm -p 8789:8789 \
 - **应急 / 验证**：仍可使用 **`workflow_dispatch`** 在 Actions 里手动勾选镜像与架构；**不会**自动创建 GitHub Release。
 
 本地 `docker build` / `docker compose build` 可用于开发验证，但生产发版以 **tag → GHCR** 为准。
-
-**GHCR** 始终作为推送目标之一；若在仓库 **Variables** 中配置 **`ACR_REGISTRY`**、**`ACR_NAMESPACE`**、**`ACR_USERNAME`**，并在 **Secrets** 中配置 **`ACR_PASSWORD`**，则同一次构建会将 **相同 tag** 额外推送到 **`${ACR_REGISTRY}/${ACR_NAMESPACE}/octafuse-{proxy,admin,migrate}`**。变量名沿用了阿里云 ACR 的命名习惯，但任何兼容 OCI 的私有 registry（自建 Harbor、其他云商容器镜像服务等）都可复用。
 
 **手动 dispatch** 下可选择 **`linux/amd64`**、**`linux/arm64`**（默认两者均勾选），须至少勾选一种架构。标签策略：**commit sha**、**分支名**、**semver**（在版本 tag 上）、**`latest`**（`main` 上手动构建，或 **稳定版 `vX.Y.Z` tag** 推送时）。
 
@@ -104,15 +102,15 @@ docker run --rm -p 8789:8789 \
 - `ghcr.io/<owner>/<repo>-admin:<tag>`
 - `ghcr.io/<owner>/<repo>-migrate:<tag>`
 
-从兼容 OCI 的第二 registry（例如阿里云 ACR）拉取时，各 `docker/examples/env.*.example` 中相应注释给出了与发版一致的示例镜像名（固定 tag），格式如：
+若将镜像同步到自建 Harbor 或其它私有 OCI registry，可在该侧做 **mirror / retag**，各 `docker/examples/env.*.example` 中注释给出了与发版一致的示例镜像名（固定 tag），格式如：
 
-- `registry.example.com/example-org/octafuse-proxy:v1.0.0`
-- `registry.example.com/example-org/octafuse-admin:v1.0.0`
-- `registry.example.com/example-org/octafuse-migrate:v1.0.0`
+- `registry.example.com/example-org/octafuse-gateway-proxy:v1.0.0`
+- `registry.example.com/example-org/octafuse-gateway-admin:v1.0.0`
+- `registry.example.com/example-org/octafuse-gateway-migrate:v1.0.0`
 
 在 GitHub：**Actions** → **Octafuse Docker Images (GH hosted Ubuntu)** → **Run workflow**（手动路径）。该 workflow 已声明 **`permissions: packages: write`**；若组织策略限制默认 `GITHUB_TOKEN`，请在仓库 **Settings → Actions → General** 中放行对 **Packages** 的写入，或改用具备 `write:packages` 的 **PAT** 并配置为 secret。
 
-`docker/examples/env.*.example` 里 **GHCR** 示例前缀请按你的 **`ghcr.io/<owner>/<repo>-…`** 实际替换；第二 registry 按各模板文件内注释替换为你自己的 `registry.example.com/<namespace>/...`，一般只随版本改 **tag**。
+`docker/examples/env.*.example` 里 **GHCR** 示例前缀请按你的 **`ghcr.io/<owner>/<repo>-…`** 实际替换；若使用其它镜像仓库，按各模板文件内注释替换为 `registry.example.com/<namespace>/...`，一般只随版本改 **tag**。
 
 ## 4. Docker Compose 样例
 
@@ -147,7 +145,7 @@ Proxy / Admin / migrate 均注入 **`DATABASE_DRIVER=mysql`** 与 **`DATABASE_UR
 - **仅 proxy**（外置库）：`gateway.proxy.yml` + `env.proxy.example`
 - **仅 admin**（外置库）：`gateway.admin.yml` + `env.admin.example`
 - **外置 Postgres 且同机同时起 proxy + admin**：`gateway.compose.yml` + `env.compose.external.example`
-- **第二私有 registry（如阿里云 ACR、自建 Harbor 等）**：任选一个与上相同的 `gateway.*.yml` 及对应 `env.*.example`，按文件内注释将镜像前缀替换为 `registry.example.com/<namespace>/...`；宿主机 env 文件放 **`docker/deploy/`**，约定见 **[docker/deploy/README.md](../../docker/deploy/README.md)**。
+- **第二私有 registry（自建 Harbor 等）**：任选一个与上相同的 `gateway.*.yml` 及对应 `env.*.example`，按文件内注释将镜像前缀替换为 `registry.example.com/<namespace>/...`；宿主机 env 文件放 **`docker/deploy/`**，约定见 **[docker/deploy/README.md](../../docker/deploy/README.md)**。
 
 外置 Postgres 同机启动示例：
 

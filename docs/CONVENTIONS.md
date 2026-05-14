@@ -102,7 +102,7 @@
 - 任何上游模型供应商的真实 API Key、组织 ID、项目 ID。
 - 任何完整可用的 Webhook URL（含 `key=` 查询参数或 `hook id` 路径段）。
 - 任何指向真实环境的连接串：含真实主机名 / VPC 内网地址 / 真实库名 / 真实用户密码的组合。
-- 任何 GitHub PAT、GHCR / ACR token、Cloudflare API Token、第三方云密钥。
+- 任何 GitHub PAT、GHCR / 私有镜像仓库 token、Cloudflare API Token、第三方云密钥。
 - 真实客户邮箱、手机号、内部员工身份。
 
 如发现历史提交中已包含上述任一信息，按 [`SECURITY.md`](../SECURITY.md) 走 GitHub Security Advisories 报告，并在轮换密钥后再考虑历史改写策略。

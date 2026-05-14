@@ -1,12 +1,11 @@
-# 构建并推送 Octafuse 镜像到 GHCR（可选阿里云 ACR 双推）。
+# 构建并推送 Octafuse 镜像到 GHCR。
 #
 # 正式发布：推送语义化 Git 标签 vX.Y.Z（由 Release workflow 的 `changeset tag` 产生）触发本 workflow，
 # 默认构建 proxy + admin + migrate，linux/amd64 与 linux/arm64；推送后创建/更新 GitHub Release（正文含 CHANGELOG 对应版本段与各镜像 digest）。
 #
 # 应急：仍可使用 workflow_dispatch 手动构建（不创建 GitHub Release）。
 #
-# 镜像：ghcr.io/<owner>/octafuse-proxy、ghcr.io/<owner>/octafuse-admin、ghcr.io/<owner>/octafuse-migrate
-# Variables：ACR_REGISTRY、ACR_NAMESPACE、ACR_USERNAME；Secret：ACR_PASSWORD。
+# 镜像名：ghcr.io/<github.repository 小写>-{proxy,admin,migrate}（本仓示例：ghcr.io/octafuse/octafuse-gateway-proxy 等）
 #
 # 若出现 `Post "https://ghcr.io/token": unexpected EOF`：多为网络/TLS 或并发推送；本 workflow 已关闭 provenance/sbom、限制矩阵并行。
 
@@ -138,45 +137,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Evaluate ACR configuration
-        id: acr
-        env:
-          ACR_REG: ${{ vars.ACR_REGISTRY }}
-          ACR_NS: ${{ vars.ACR_NAMESPACE }}
-          ACR_USER: ${{ vars.ACR_USERNAME }}
-          ACR_PASS: ${{ secrets.ACR_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [ -n "$ACR_REG" ] && [ -n "$ACR_NS" ] && [ -n "$ACR_USER" ] && [ -n "$ACR_PASS" ]; then
-            echo "acr_enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "acr_enabled=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Log in to ACR
-        if: ${{ steps.acr.outputs.acr_enabled == 'true' }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ vars.ACR_REGISTRY }}
-          username: ${{ vars.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
-      - name: Resolve image destinations (GHCR + optional ACR)
+      - name: Resolve image destinations (GHCR)
         id: imgs
         env:
-          ACR_ENABLED: ${{ steps.acr.outputs.acr_enabled }}
-          ACR_REG: ${{ vars.ACR_REGISTRY }}
-          ACR_NS: ${{ vars.ACR_NAMESPACE }}
           GHCR_IMAGE: ${{ env.REGISTRY }}/${{ steps.ghcr.outputs.repository_lc }}-${{ matrix.image_suffix }}
-          SUFFIX: ${{ matrix.image_suffix }}
         run: |
           set -euo pipefail
           {
             echo "images<<EOF"
             echo "$GHCR_IMAGE"
-            if [ "$ACR_ENABLED" = "true" ]; then
-              echo "${ACR_REG}/${ACR_NS}/octafuse-${SUFFIX}"
-            fi
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 

@@ -1,11 +1,14 @@
 # gateway-migrate — 一次性 Postgres / MySQL 迁移 Job（不含 proxy / admin 应用代码）
 # Build: docker build -f Dockerfile.migrate -t octafuse-migrate:latest .
+# Base: Node 22 on Alpine 3.22, pinned digest (see Dockerfile.admin).
+ARG NODE_IMAGE=node:22-alpine3.22@sha256:b77017c37f430e4466ff497058948a2f16e8b59779600d53711eeb7b999b0f4e
 
-FROM node:22-alpine AS build
+FROM ${NODE_IMAGE} AS build
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk upgrade --no-cache \
+	&& apk add --no-cache ca-certificates
 
 COPY package.json package-lock.json ./
 COPY tsconfig.json tsconfig.base.json ./
@@ -23,11 +26,12 @@ COPY packages/core ./packages/core
 
 RUN npm run build -w @octafuse/core
 
-FROM node:22-alpine AS runner
+FROM ${NODE_IMAGE} AS runner
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates
+RUN apk upgrade --no-cache \
+	&& apk add --no-cache ca-certificates
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules

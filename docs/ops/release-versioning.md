@@ -48,7 +48,7 @@ flowchart LR
    - **Docker 触发**：若使用 **`CHANGESETS_GITHUB_TOKEN`（PAT）** 打 tag，GitHub 会把 **`push` tags** 交给下游，**`octafuse-docker-images`** 会按 tag 自动跑。若仅用默认 **`GITHUB_TOKEN`** 打 tag，**不会**自动触发其它 workflow（[官方说明](https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow)）；此时 **Release** 会在检测到 **`GITHUB_SHA` 上有 `v*` tag** 后，用 **`gh workflow run`** 主动触发 **Octafuse Docker Images**（需 workflow 已授予 **`actions: write`**，本仓已加）。
 
 2. **`.github/workflows/octafuse-docker-images.yml`**（**`push` → `tags/v*`**，或由 Release **dispatch**；或 **`workflow_dispatch`**）  
-   - 构建并推送 **GHCR**（及可选 **ACR**）三镜像。  
+   - 构建并推送 **GHCR** 三镜像。  
    - 在 **tag 发版**路径下创建/更新 **GitHub Release**：正文含 **`CHANGELOG.md` 中对应 `## X.Y.Z` 段落**（What's changed）与各镜像 **digest**。
 
 3. **`.github/workflows/verify-package-versions.yml`**  
@@ -143,6 +143,6 @@ npx changeset
 
 ## 相关文档
 
-- [deployment-docker.md](./deployment-docker.md) — GHCR / ACR 与 Compose  
+- [deployment-docker.md](./deployment-docker.md) — GHCR 与 Compose  
 - [CHANGELOG.md](../../CHANGELOG.md) — 聚合变更记录  
 - [`.changeset/README.md`](../../.changeset/README.md) — Changesets 快速说明  

@@ -152,7 +152,7 @@ docker compose -f docker/compose/node-mysql.yml up -d gateway-proxy gateway-admi
 
 ### 6.3 用预构建镜像（GHCR、自建 Harbor 或任意私有 registry）
 
-从第二私有 registry（如阿里云 ACR、自建 Harbor 等）拉取时，在 `docker/examples/env.*.example` 中按对应注释将 `GATEWAY_*_IMAGE` 改为 `registry.example.com/<namespace>/octafuse-{proxy,admin}:v1.0.0` 形态（见 [deployment-docker.md](./deployment-docker.md) §4.2），再按需改 tag。
+从第二私有 registry（自建 Harbor 等）拉取时，在 `docker/examples/env.*.example` 中按对应注释将 `GATEWAY_*_IMAGE` 改为 `registry.example.com/<namespace>/octafuse-gateway-{proxy,admin,migrate}:v1.0.0` 形态（见 [deployment-docker.md](./deployment-docker.md) §4.2），再按需改 tag。
 
 ```bash
 cd docker/examples
