@@ -408,7 +408,7 @@ export default function GatewayAuditLogsPage() {
             value={filterUserId}
             onChange={(e) => { setFilterUserId(e.target.value); setPage(1); }}
             placeholder="Gateway users.id (uuid)"
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-72 font-mono text-xs"
+            className="px-3 py-2 border border-gray-300 rounded-md w-72 font-mono text-xs"
           />
         </div>
         <div>
@@ -438,7 +438,7 @@ export default function GatewayAuditLogsPage() {
             value={filterReasonCode}
             onChange={(e) => { setFilterReasonCode(e.target.value); setPage(1); }}
             placeholder="e.g. request_usage_charged_cost"
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-56 font-mono text-xs"
+            className="px-3 py-2 border border-gray-300 rounded-md w-56 font-mono text-xs"
           />
         </div>
         <div>
@@ -448,7 +448,7 @@ export default function GatewayAuditLogsPage() {
             value={filterSource}
             onChange={(e) => { setFilterSource(e.target.value); setPage(1); }}
             placeholder="usage_charge, period_reset…"
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-44 font-mono text-xs"
+            className="px-3 py-2 border border-gray-300 rounded-md w-44 font-mono text-xs"
           />
         </div>
         <div>
@@ -458,7 +458,7 @@ export default function GatewayAuditLogsPage() {
             value={filterCorrelationId}
             onChange={(e) => { setFilterCorrelationId(e.target.value); setPage(1); }}
             placeholder="request_log_id / business reference"
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-64 font-mono text-xs"
+            className="px-3 py-2 border border-gray-300 rounded-md w-64 font-mono text-xs"
           />
         </div>
         <div className="flex items-end">
