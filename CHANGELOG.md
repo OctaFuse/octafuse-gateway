@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+### Patch Changes
+
+- [`a6b0107`](https://github.com/OctaFuse/octafuse-gateway/commit/a6b0107d5dd5e84423d9528da1a0165db56160d8) Thanks [@dyc87112](https://github.com/dyc87112)! - 1. 调整 dockerfile 的位置以适应一些 PaaS 的自动化部署流程 2. 优化 dockerfile 中的安全漏洞问题 3. 优化 docker example 文件
+
 ## 1.0.1
 
 ## 1.0.0
