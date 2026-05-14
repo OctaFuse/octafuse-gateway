@@ -15,6 +15,7 @@ import {
   GlobeAltIcon,
   ArrowsRightLeftIcon,
   BeakerIcon,
+  PlayCircleIcon,
   DocumentChartBarIcon,
   ClipboardDocumentListIcon,
   ChartBarIcon,
@@ -51,6 +52,7 @@ const menuGroups: MenuGroup[] = [
       { name: 'Models', href: '/gateway/models', icon: CpuChipIcon },
       { name: 'Routes', href: '/gateway/routes', icon: ArrowsRightLeftIcon },
       { name: 'Playground', href: '/gateway/playground', icon: BeakerIcon },
+      { name: 'Simulator', href: '/gateway/simulator', icon: PlayCircleIcon },
     ],
   },
   {
