@@ -3,10 +3,10 @@
  */
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
 import type { GlobalUserAuditLogRow, UserAuditLogRow } from '../../types';
-import { roundGatewayMoney } from '../../lib/money-precision';
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { UserAuditLogsRepository } from '../../storage/gateway-repository-interfaces';
 import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
+import { deriveUserAuditBudgetFromSnapshots } from '../user-audit-log-derived';
 
 type AuditSqlRow = {
 	id: string;
@@ -14,13 +14,8 @@ type AuditSqlRow = {
 	api_key_id: string | null;
 	event_type: string;
 	actor_type: string;
-	before_spent: number;
-	delta_spent: number;
-	after_spent: number;
-	before_budget_max: number | null;
-	after_budget_max: number | null;
 	request_log_id: string | null;
-	metadata: string | null;
+	change_payload: string | null;
 	before_user_snapshot: string | null;
 	after_user_snapshot: string | null;
 	changed_fields: string | null;
@@ -33,19 +28,22 @@ type AuditSqlRow = {
 };
 
 function mapAuditRow(r: AuditSqlRow): UserAuditLogRow {
+	const derived = deriveUserAuditBudgetFromSnapshots(r.before_user_snapshot, r.after_user_snapshot);
 	return {
 		id: r.id,
 		user_id: r.user_id,
 		api_key_id: r.api_key_id,
 		event_type: r.event_type,
 		actor_type: r.actor_type,
-		before_spent: roundGatewayMoney(Number(r.before_spent)),
-		delta_spent: roundGatewayMoney(Number(r.delta_spent)),
-		after_spent: roundGatewayMoney(Number(r.after_spent)),
-		before_budget_max: r.before_budget_max == null ? null : roundGatewayMoney(Number(r.before_budget_max)),
-		after_budget_max: r.after_budget_max == null ? null : roundGatewayMoney(Number(r.after_budget_max)),
+		before_spent: derived.before_spent,
+		delta_spent: derived.delta_spent,
+		after_spent: derived.after_spent,
+		before_budget_max: derived.before_budget_max,
+		after_budget_max: derived.after_budget_max,
+		before_budget_base: derived.before_budget_base,
+		after_budget_base: derived.after_budget_base,
 		request_log_id: r.request_log_id,
-		metadata: r.metadata,
+		change_payload: r.change_payload,
 		before_user_snapshot: r.before_user_snapshot ?? null,
 		after_user_snapshot: r.after_user_snapshot ?? null,
 		changed_fields: r.changed_fields ?? null,
@@ -63,12 +61,10 @@ export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertU
 		.prepare(
 			`INSERT INTO user_audit_logs (
         id, user_id, api_key_id, event_type, actor_type,
-        before_spent, delta_spent, after_spent,
-        before_budget_max, after_budget_max,
-        request_log_id, metadata,
+        request_log_id, change_payload,
         before_user_snapshot, after_user_snapshot, changed_fields,
         correlation_id, source, actor_id, reason_code, reason_text
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		)
 		.bind(
 			params.id,
@@ -76,13 +72,8 @@ export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertU
 			params.apiKeyId ?? null,
 			params.eventType,
 			params.actorType,
-			roundGatewayMoney(params.beforeSpent),
-			roundGatewayMoney(params.deltaSpent),
-			roundGatewayMoney(params.afterSpent),
-			params.beforeBudgetMax != null ? roundGatewayMoney(params.beforeBudgetMax) : null,
-			params.afterBudgetMax != null ? roundGatewayMoney(params.afterBudgetMax) : null,
 			params.requestLogId ?? null,
-			params.metadata ?? null,
+			params.changePayload ?? null,
 			params.beforeUserSnapshot ?? null,
 			params.afterUserSnapshot ?? null,
 			params.changedFields ?? null,
@@ -99,13 +90,8 @@ const auditRowColumnsNoAlias = `id,
       api_key_id,
       event_type,
       actor_type,
-      before_spent,
-      delta_spent,
-      after_spent,
-      before_budget_max,
-      after_budget_max,
       request_log_id,
-      metadata,
+      change_payload,
       before_user_snapshot,
       after_user_snapshot,
       changed_fields,
@@ -121,13 +107,8 @@ const auditRowColumnsAliased = `a.id,
       a.api_key_id,
       a.event_type,
       a.actor_type,
-      a.before_spent,
-      a.delta_spent,
-      a.after_spent,
-      a.before_budget_max,
-      a.after_budget_max,
       a.request_log_id,
-      a.metadata,
+      a.change_payload,
       a.before_user_snapshot,
       a.after_user_snapshot,
       a.changed_fields,

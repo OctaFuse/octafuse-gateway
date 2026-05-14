@@ -129,20 +129,15 @@ export const systemConfigTable = sqliteTable('system_config', {
 	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
-/** 用户维度审计：预算、资料等变更；可选 api_key_id；扩展字段用 metadata。 */
+/** 用户维度审计：预算、资料等；扩展载荷见 `change_payload`。 */
 export const userAuditLogsTable = sqliteTable('user_audit_logs', {
 	id: text('id').primaryKey(),
 	userId: text('user_id').notNull(),
 	apiKeyId: text('api_key_id'),
 	eventType: text('event_type').notNull(),
 	actorType: text('actor_type').notNull().default('system'),
-	beforeSpent: real('before_spent').notNull(),
-	deltaSpent: real('delta_spent').notNull(),
-	afterSpent: real('after_spent').notNull(),
-	beforeBudgetMax: real('before_budget_max'),
-	afterBudgetMax: real('after_budget_max'),
 	requestLogId: text('request_log_id'),
-	metadata: text('metadata'),
+	changePayload: text('change_payload'),
 	beforeUserSnapshot: text('before_user_snapshot'),
 	afterUserSnapshot: text('after_user_snapshot'),
 	changedFields: text('changed_fields'),

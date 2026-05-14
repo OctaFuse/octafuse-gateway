@@ -1,9 +1,7 @@
 import type { UserBudgetAuditExtraFields } from './user-audit-logs-types';
 
-/**
- * 将预算周期等扩展字段合并进 `user_audit_logs.metadata`（actor / reason 使用表列）。
- */
-export function mergeUserAuditMetadata(base: string | null | undefined, extra: UserBudgetAuditExtraFields): string | null {
+/** 写入 `user_audit_logs.change_payload` 的 JSON 合并（原 `metadata` 列）。 */
+export function mergeUserAuditChangePayload(base: string | null | undefined, extra: UserBudgetAuditExtraFields): string | null {
 	const trimmed: Record<string, unknown> = {};
 	if (extra.beforeBudgetBase !== undefined) trimmed.before_budget_base = extra.beforeBudgetBase;
 	if (extra.afterBudgetBase !== undefined) trimmed.after_budget_base = extra.afterBudgetBase;
@@ -25,4 +23,12 @@ export function mergeUserAuditMetadata(base: string | null | undefined, extra: U
 	}
 	const out = { ...merged, ...trimmed };
 	return Object.keys(out).length > 0 ? JSON.stringify(out) : null;
+}
+
+/**
+ * 将预算周期等扩展字段合并进 `user_audit_logs.change_payload`（actor / reason 使用表列）。
+ * @deprecated 使用 {@link mergeUserAuditChangePayload}（语义相同）。
+ */
+export function mergeUserAuditMetadata(base: string | null | undefined, extra: UserBudgetAuditExtraFields): string | null {
+	return mergeUserAuditChangePayload(base, extra);
 }

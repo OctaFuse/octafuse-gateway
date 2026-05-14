@@ -27,7 +27,7 @@ export interface GatewayApiKey {
   updated_at: string;
 }
 
-/** `user_audit_logs` 行；全局列表 JOIN `users` 后带 `user_email`。预算周期等仍可能出现在 `metadata`。 */
+/** `user_audit_logs` 行；全局列表 JOIN `users` 后带 `user_email`。预算周期等扩展在 `change_payload` JSON。 */
 export interface GatewayApiKeyBudgetAuditLog {
   id: string;
   user_id: string;
@@ -37,17 +37,22 @@ export interface GatewayApiKeyBudgetAuditLog {
   actor_id?: string | null;
   reason_code?: string | null;
   reason_text?: string | null;
+  /** 由 `before_user_snapshot` / `after_user_snapshot` 派生 */
   before_spent: number;
   delta_spent: number;
   after_spent: number;
   before_budget_max: number | null;
   after_budget_max: number | null;
+  /** 由快照派生 */
+  before_budget_base: number;
+  after_budget_base: number;
   before_budget_period?: string | null;
   after_budget_period?: string | null;
   before_budget_reset_at?: string | null;
   after_budget_reset_at?: string | null;
   request_log_id: string | null;
-  metadata: string | null;
+  /** 结构化扩展（预算周期前后、管理端 patch 等）；原 `metadata` */
+  change_payload: string | null;
   /** JSON：用户行快照（`UserAuditSnapshot`） */
   before_user_snapshot?: string | null;
   after_user_snapshot?: string | null;

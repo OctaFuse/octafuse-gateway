@@ -158,13 +158,19 @@ export interface UserAuditLogRow {
 	api_key_id: string | null;
 	event_type: string;
 	actor_type: string;
+	/** 由 `before_user_snapshot` / `after_user_snapshot` 派生（表上已无独立列）。 */
 	before_spent: number;
+	/** 由快照派生，语义同历史 `delta_spent`。 */
 	delta_spent: number;
 	after_spent: number;
 	before_budget_max: number | null;
 	after_budget_max: number | null;
+	/** 由快照派生的 `budget_base`（周期 reset 参考额）。 */
+	before_budget_base: number;
+	after_budget_base: number;
 	request_log_id: string | null;
-	metadata: string | null;
+	/** 结构化扩展载荷（预算周期前后值、管理端 patch 摘要等）；原 `metadata` 列。 */
+	change_payload: string | null;
 	before_user_snapshot: string | null;
 	after_user_snapshot: string | null;
 	changed_fields: string | null;

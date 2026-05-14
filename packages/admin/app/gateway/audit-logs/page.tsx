@@ -44,11 +44,12 @@ function shortId(id: string | null | undefined): string {
   return `${id.slice(0, 8)}…${id.slice(-4)}`;
 }
 
-/** 折叠进 `metadata` 的扩展字段（与 `@octafuse/core` `mergeUserAuditMetadata` 对齐） */
+/** 从 `change_payload` 解析的扩展字段（与 `@octafuse/core` `mergeUserAuditChangePayload` 写入结构对齐） */
 function auditDisplayExtras(item: GatewayApiKeyBudgetAuditLog) {
   let m: Record<string, unknown> = {};
   try {
-    if (item.metadata) m = JSON.parse(item.metadata) as Record<string, unknown>;
+    const raw = item.change_payload;
+    if (raw) m = JSON.parse(raw) as Record<string, unknown>;
   } catch {
     /* keep empty */
   }
@@ -137,14 +138,14 @@ function summarizeAuditMetadataChanges(raw: string | null | undefined): string[]
   }
 }
 
-/** `metadata` 非空时的补充展示（无快照旧行、密钥侧 JSON 等）；与快照 diff 合并到同一列。 */
+/** `change_payload` 非空时的补充展示；与快照 diff 合并到同一列。 */
 function extraMetadataDisplayLines(raw: string | null | undefined): string[] {
   if (raw == null || raw.trim() === '') return [];
   return summarizeAuditMetadataChanges(raw).filter((l) => l !== '—');
 }
 
-/** 与网关金额精度一致，用于判断 budget_max 是否变化 */
-function budgetMaxSemanticallyEqual(
+/** 与网关金额精度一致，用于判断 budget_max / budget_base 是否变化 */
+function budgetMoneySemanticallyEqual(
   before: number | null | undefined,
   after: number | null | undefined
 ): boolean {
@@ -314,10 +315,10 @@ export default function GatewayAuditLogsPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
         <p className="text-sm text-gray-500 mt-1">
-          User audit trail (<code className="text-xs bg-gray-100 px-1 rounded">user_audit_logs</code>) — budget columns plus one
-          column for <span className="text-gray-600">user row snapshot Δ</span>
+          User audit trail (<code className="text-xs bg-gray-100 px-1 rounded">user_audit_logs</code>) — spent / budget_max
+          are <span className="text-gray-600">derived from before/after user snapshots</span>
           {'; '}
-          <span className="text-gray-600">legacy / extra JSON</span> from <code className="text-xs bg-gray-100 px-1 rounded">metadata</code> is
+          <span className="text-gray-600">legacy / extra JSON</span> from <code className="text-xs bg-gray-100 px-1 rounded">change_payload</code> is
           appended below when present (no separate Metadata column).
         </p>
       </div>
@@ -477,9 +478,13 @@ export default function GatewayAuditLogsPage() {
                 ) : (
                   logs.map((item) => {
                     const ex = auditDisplayExtras(item);
-                    const maxChanged = !budgetMaxSemanticallyEqual(
+                    const maxChanged = !budgetMoneySemanticallyEqual(
                       item.before_budget_max,
                       item.after_budget_max
+                    );
+                    const baseChanged = !budgetMoneySemanticallyEqual(
+                      item.before_budget_base,
+                      item.after_budget_base
                     );
                     const periodChanged =
                       (ex.before_budget_period ?? '') !== (ex.after_budget_period ?? '');
@@ -493,7 +498,7 @@ export default function GatewayAuditLogsPage() {
                       after_user_snapshot: item.after_user_snapshot ?? null,
                       changed_fields: item.changed_fields ?? null,
                     });
-                    const metaExtraLines = extraMetadataDisplayLines(item.metadata);
+                    const metaExtraLines = extraMetadataDisplayLines(item.change_payload);
                     return (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 align-top">
@@ -582,6 +587,16 @@ export default function GatewayAuditLogsPage() {
                             </span>
                           </div>
                           <div>
+                            <span className="font-medium text-gray-700">budget_base:</span>{' '}
+                            <span className={baseChanged ? budgetPlanHighlight.before : undefined}>
+                              {formatGatewayMoneyCode(item.before_budget_base, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
+                            </span>
+                            <span className="text-gray-400"> → </span>
+                            <span className={baseChanged ? budgetPlanHighlight.after : undefined}>
+                              {formatGatewayMoneyCode(item.after_budget_base, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
+                            </span>
+                          </div>
+                          <div>
                             <span className="font-medium text-gray-700">budget_period:</span>{' '}
                             <span className={periodChanged ? budgetPlanHighlight.before : undefined}>
                               {ex.before_budget_period ?? '—'}
@@ -625,7 +640,7 @@ export default function GatewayAuditLogsPage() {
                           {metaExtraLines.length > 0 ? (
                             <div className={snapLines.length > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
                               <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                                Extra (metadata JSON)
+                                Extra (change_payload JSON)
                               </div>
                               {metaExtraLines.slice(0, 5).map((line, index) => (
                                 <div key={`${item.id}-meta-${index}`} className="line-clamp-2" title={line}>

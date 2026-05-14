@@ -1,6 +1,6 @@
 import type { InsertApiKeyBudgetAuditLogParams } from './api-key-budget-audit-logs-types';
 import type { InsertUserAuditLogParams } from './user-audit-logs-types';
-import { mergeUserAuditMetadata } from './user-audit-metadata';
+import { mergeUserAuditChangePayload } from './user-audit-metadata';
 
 /** 从 legacy 审计载荷提取的、映射到 `user_audit_logs` 独立列的字段。 */
 type LegacyAuditColumnFields = Pick<
@@ -38,7 +38,7 @@ function auditColumnsFromLegacy(legacy: LegacyAuditColumnFields): Pick<
 	};
 }
 
-function budgetMetaFromLegacy(legacy: Pick<
+function changePayloadFromLegacy(legacy: Pick<
 	InsertApiKeyBudgetAuditLogParams,
 	| 'metadata'
 	| 'beforeBudgetBase'
@@ -48,7 +48,7 @@ function budgetMetaFromLegacy(legacy: Pick<
 	| 'beforeBudgetResetAt'
 	| 'afterBudgetResetAt'
 >): string | null {
-	return mergeUserAuditMetadata(legacy.metadata, {
+	return mergeUserAuditChangePayload(legacy.metadata, {
 		beforeBudgetBase: legacy.beforeBudgetBase,
 		afterBudgetBase: legacy.afterBudgetBase,
 		beforeBudgetPeriod: legacy.beforeBudgetPeriod,
@@ -60,20 +60,15 @@ function budgetMetaFromLegacy(legacy: Pick<
 
 /** `createApiKeyWithAudit`：审计行挂在 `user_id`，`api_key_id` 指向新密钥。 */
 export function insertParamsFromCreateKeyAudit(userId: string, legacy: InsertApiKeyBudgetAuditLogParams): InsertUserAuditLogParams {
-	const meta = budgetMetaFromLegacy(legacy);
+	const changePayload = changePayloadFromLegacy(legacy);
 	return {
 		id: legacy.id,
 		userId,
 		apiKeyId: legacy.apiKeyId,
 		eventType: legacy.eventType,
 		actorType: legacy.actorType,
-		beforeSpent: legacy.beforeSpent,
-		deltaSpent: legacy.deltaSpent,
-		afterSpent: legacy.afterSpent,
-		beforeBudgetMax: legacy.beforeBudgetMax,
-		afterBudgetMax: legacy.afterBudgetMax,
 		requestLogId: legacy.requestLogId,
-		metadata: meta,
+		changePayload,
 		...auditColumnsFromLegacy(legacy),
 	};
 }
@@ -81,12 +76,12 @@ export function insertParamsFromCreateKeyAudit(userId: string, legacy: InsertApi
 export function insertParamsFromBudgetTx(
 	userId: string,
 	apiKeyId: string | null,
-	afterSpent: number,
+	_afterSpent: number,
 	budgetResetAt: string | null,
 	audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'apiKeyId' | 'afterSpent' | 'afterBudgetResetAt'>
 ): InsertUserAuditLogParams {
 	const id = crypto.randomUUID();
-	const meta = mergeUserAuditMetadata(audit.metadata, {
+	const changePayload = mergeUserAuditChangePayload(audit.metadata, {
 		beforeBudgetBase: audit.beforeBudgetBase,
 		afterBudgetBase: audit.afterBudgetBase,
 		beforeBudgetPeriod: audit.beforeBudgetPeriod,
@@ -100,13 +95,8 @@ export function insertParamsFromBudgetTx(
 		apiKeyId,
 		eventType: audit.eventType,
 		actorType: audit.actorType,
-		beforeSpent: audit.beforeSpent,
-		deltaSpent: audit.deltaSpent,
-		afterSpent,
-		beforeBudgetMax: audit.beforeBudgetMax,
-		afterBudgetMax: audit.afterBudgetMax,
 		requestLogId: audit.requestLogId,
-		metadata: meta,
+		changePayload,
 		actorId: audit.actorId ?? null,
 		reasonCode: audit.reasonCode ?? null,
 		reasonText: audit.reasonText ?? null,
@@ -120,45 +110,35 @@ export function insertParamsFromBudgetTx(
 
 export function insertParamsFromUsageCharge(
 	userId: string,
-	afterSpent: number,
-	chargedDelta: number,
+	_afterSpent: number,
+	_chargedDelta: number,
 	audit: Omit<InsertApiKeyBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>
 ): InsertUserAuditLogParams {
 	const id = crypto.randomUUID();
-	const meta = budgetMetaFromLegacy(audit);
+	const changePayload = changePayloadFromLegacy(audit);
 	return {
 		id,
 		userId,
 		apiKeyId: audit.apiKeyId,
 		eventType: audit.eventType,
 		actorType: audit.actorType,
-		beforeSpent: audit.beforeSpent,
-		deltaSpent: chargedDelta,
-		afterSpent,
-		beforeBudgetMax: audit.beforeBudgetMax,
-		afterBudgetMax: audit.afterBudgetMax,
 		requestLogId: audit.requestLogId,
-		metadata: meta,
+		changePayload,
 		...auditColumnsFromLegacy(audit),
 	};
 }
 
-/** 管理端审计：已含 `id` / `afterSpent` 等完整 legacy 字段。 */
+/** 管理端审计：已含 `id` 等完整 legacy 字段；金额与上限仅依赖快照。 */
 export function insertParamsFromFullLegacy(userId: string, legacy: InsertApiKeyBudgetAuditLogParams): InsertUserAuditLogParams {
-	const meta = budgetMetaFromLegacy(legacy);
+	const changePayload = changePayloadFromLegacy(legacy);
 	return {
 		id: legacy.id,
 		userId,
 		apiKeyId: legacy.apiKeyId ?? null,
 		eventType: legacy.eventType,
 		actorType: legacy.actorType,
-		beforeSpent: legacy.beforeSpent,
-		deltaSpent: legacy.deltaSpent,
-		afterSpent: legacy.afterSpent,
-		beforeBudgetMax: legacy.beforeBudgetMax,
-		afterBudgetMax: legacy.afterBudgetMax,
 		requestLogId: legacy.requestLogId,
-		metadata: meta,
+		changePayload,
 		...auditColumnsFromLegacy(legacy),
 	};
 }

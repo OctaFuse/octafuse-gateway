@@ -8,13 +8,9 @@ export interface InsertUserAuditLogParams {
 	apiKeyId?: string | null;
 	eventType: string;
 	actorType: string;
-	beforeSpent: number;
-	deltaSpent: number;
-	afterSpent: number;
-	beforeBudgetMax?: number | null;
-	afterBudgetMax?: number | null;
 	requestLogId?: string | null;
-	metadata?: string | null;
+	/** 结构化扩展（预算周期前后值、profile patch JSON 等）；原写入 `metadata`。 */
+	changePayload?: string | null;
 	/** JSON：{@link import('./user-audit-snapshot').UserAuditSnapshot} */
 	beforeUserSnapshot?: string | null;
 	/** JSON：{@link import('./user-audit-snapshot').UserAuditSnapshot} */
@@ -28,7 +24,7 @@ export interface InsertUserAuditLogParams {
 	reasonText?: string | null;
 }
 
-/** 事务内写审计时的扩展字段（预算周期等仍合并进 metadata；actor/reason 走表列）。 */
+/** 事务内写审计时的扩展字段（预算周期等合并进 change_payload；actor/reason 走表列）。 */
 export interface UserBudgetAuditExtraFields {
 	beforeBudgetBase?: number | null;
 	afterBudgetBase?: number | null;

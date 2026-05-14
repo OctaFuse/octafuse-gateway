@@ -161,20 +161,15 @@ export const systemConfigTable = mysqlTable('system_config', {
 	updatedAt: timestamp('updated_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 
-/** 用户维度审计：预算、资料等变更；可选 api_key_id；扩展字段用 metadata。 */
+/** 用户维度审计：预算、资料等；扩展载荷见 `change_payload`。 */
 export const userAuditLogsTable = mysqlTable('user_audit_logs', {
 	id: varchar('id', { length: COL.ID }).primaryKey(),
 	userId: varchar('user_id', { length: COL.USER_ID }).notNull(),
 	apiKeyId: varchar('api_key_id', { length: COL.ID }),
 	eventType: varchar('event_type', { length: COL.EVENT_TYPE }).notNull(),
 	actorType: varchar('actor_type', { length: COL.ACTOR_TYPE }).notNull().default('system'),
-	beforeSpent: decimal('before_spent', { precision: 18, scale: 6 }).notNull(),
-	deltaSpent: decimal('delta_spent', { precision: 18, scale: 6 }).notNull(),
-	afterSpent: decimal('after_spent', { precision: 18, scale: 6 }).notNull(),
-	beforeBudgetMax: decimal('before_budget_max', { precision: 18, scale: 6 }),
-	afterBudgetMax: decimal('after_budget_max', { precision: 18, scale: 6 }),
 	requestLogId: varchar('request_log_id', { length: COL.ID }),
-	metadata: text('metadata'),
+	changePayload: text('change_payload'),
 	beforeUserSnapshot: text('before_user_snapshot'),
 	afterUserSnapshot: text('after_user_snapshot'),
 	changedFields: text('changed_fields'),

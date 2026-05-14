@@ -132,20 +132,15 @@ export const systemConfigTable = pgTable('system_config', {
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 
-/** 用户维度审计：预算、资料等变更；可选 api_key_id；扩展字段用 metadata。 */
+/** 用户维度审计：预算、资料等；扩展载荷见 `change_payload`。 */
 export const userAuditLogsTable = pgTable('user_audit_logs', {
 	id: text('id').primaryKey(),
 	userId: text('user_id').notNull(),
 	apiKeyId: text('api_key_id'),
 	eventType: text('event_type').notNull(),
 	actorType: text('actor_type').notNull().default('system'),
-	beforeSpent: numeric('before_spent', { precision: 18, scale: 6 }).notNull(),
-	deltaSpent: numeric('delta_spent', { precision: 18, scale: 6 }).notNull(),
-	afterSpent: numeric('after_spent', { precision: 18, scale: 6 }).notNull(),
-	beforeBudgetMax: numeric('before_budget_max', { precision: 18, scale: 6 }),
-	afterBudgetMax: numeric('after_budget_max', { precision: 18, scale: 6 }),
 	requestLogId: text('request_log_id'),
-	metadata: text('metadata'),
+	changePayload: text('change_payload'),
 	beforeUserSnapshot: text('before_user_snapshot'),
 	afterUserSnapshot: text('after_user_snapshot'),
 	changedFields: text('changed_fields'),

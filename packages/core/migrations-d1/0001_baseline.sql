@@ -147,14 +147,10 @@ CREATE TABLE user_audit_logs (
   api_key_id TEXT REFERENCES api_keys(id) ON DELETE SET NULL,
   event_type TEXT NOT NULL,
   actor_type TEXT NOT NULL DEFAULT 'system',
-  before_spent REAL NOT NULL,
-  delta_spent REAL NOT NULL,
-  after_spent REAL NOT NULL,
-  before_budget_max REAL DEFAULT NULL,
-  after_budget_max REAL DEFAULT NULL,
   request_log_id TEXT DEFAULT NULL,
-  metadata TEXT DEFAULT NULL,
-  /* Full-row JSON snapshots + structured audit context (see user-audit-snapshot.ts) */
+  /* 扩展 JSON：预算周期前后值、管理端 patch 摘要等（原 metadata） */
+  change_payload TEXT DEFAULT NULL,
+  /* Full-row JSON snapshots + changed field names（见 user-audit-snapshot.ts） */
   before_user_snapshot TEXT DEFAULT NULL,
   after_user_snapshot TEXT DEFAULT NULL,
   changed_fields TEXT DEFAULT NULL,

@@ -1,7 +1,6 @@
-import { roundGatewayMoney } from '../lib/money-precision';
 import type { InsertUserAuditLogParams } from './user-audit-logs-types';
 
-/** Drizzle / MySQL / Postgres 写入 `user_audit_logs` 的统一值形状（金额列为 string）。 */
+/** Drizzle / MySQL / Postgres 写入 `user_audit_logs` 的统一值形状。 */
 export function toUserAuditLogDrizzleInsert(
 	params: InsertUserAuditLogParams,
 	createdAt: string
@@ -11,13 +10,8 @@ export function toUserAuditLogDrizzleInsert(
 	apiKeyId: string | null;
 	eventType: string;
 	actorType: string;
-	beforeSpent: string;
-	deltaSpent: string;
-	afterSpent: string;
-	beforeBudgetMax: string | null;
-	afterBudgetMax: string | null;
 	requestLogId: string | null;
-	metadata: string | null;
+	changePayload: string | null;
 	beforeUserSnapshot: string | null;
 	afterUserSnapshot: string | null;
 	changedFields: string | null;
@@ -34,13 +28,8 @@ export function toUserAuditLogDrizzleInsert(
 		apiKeyId: params.apiKeyId ?? null,
 		eventType: params.eventType,
 		actorType: params.actorType,
-		beforeSpent: String(roundGatewayMoney(params.beforeSpent)),
-		deltaSpent: String(roundGatewayMoney(params.deltaSpent)),
-		afterSpent: String(roundGatewayMoney(params.afterSpent)),
-		beforeBudgetMax: params.beforeBudgetMax == null ? null : String(roundGatewayMoney(params.beforeBudgetMax)),
-		afterBudgetMax: params.afterBudgetMax == null ? null : String(roundGatewayMoney(params.afterBudgetMax)),
 		requestLogId: params.requestLogId ?? null,
-		metadata: params.metadata ?? null,
+		changePayload: params.changePayload ?? null,
 		beforeUserSnapshot: params.beforeUserSnapshot ?? null,
 		afterUserSnapshot: params.afterUserSnapshot ?? null,
 		changedFields: params.changedFields ?? null,

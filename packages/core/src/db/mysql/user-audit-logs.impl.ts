@@ -10,8 +10,8 @@ import {
 	usersTable as myUsersTable,
 } from '../../storage/drizzle/schema.mysql';
 import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
-import { parseMoney } from '../../storage/critical-write-paths-utils';
 import { toUserAuditLogDrizzleInsert } from '../user-audit-drizzle-insert';
+import { deriveUserAuditBudgetFromSnapshots } from '../user-audit-log-derived';
 
 type MyAuditSelectRow = {
 	id: string;
@@ -19,13 +19,8 @@ type MyAuditSelectRow = {
 	apiKeyId: string | null;
 	eventType: string;
 	actorType: string;
-	beforeSpent: string;
-	deltaSpent: string;
-	afterSpent: string;
-	beforeBudgetMax: string | null;
-	afterBudgetMax: string | null;
 	requestLogId: string | null;
-	metadata: string | null;
+	changePayload: string | null;
 	beforeUserSnapshot: string | null;
 	afterUserSnapshot: string | null;
 	changedFields: string | null;
@@ -38,19 +33,22 @@ type MyAuditSelectRow = {
 };
 
 function mapMyAuditRow(r: MyAuditSelectRow): UserAuditLogRow {
+	const derived = deriveUserAuditBudgetFromSnapshots(r.beforeUserSnapshot, r.afterUserSnapshot);
 	return {
 		id: r.id,
 		user_id: r.userId,
 		api_key_id: r.apiKeyId,
 		event_type: r.eventType,
 		actor_type: r.actorType,
-		before_spent: parseMoney(r.beforeSpent),
-		delta_spent: parseMoney(r.deltaSpent),
-		after_spent: parseMoney(r.afterSpent),
-		before_budget_max: r.beforeBudgetMax == null ? null : parseMoney(r.beforeBudgetMax),
-		after_budget_max: r.afterBudgetMax == null ? null : parseMoney(r.afterBudgetMax),
+		before_spent: derived.before_spent,
+		delta_spent: derived.delta_spent,
+		after_spent: derived.after_spent,
+		before_budget_max: derived.before_budget_max,
+		after_budget_max: derived.after_budget_max,
+		before_budget_base: derived.before_budget_base,
+		after_budget_base: derived.after_budget_base,
 		request_log_id: r.requestLogId,
-		metadata: r.metadata,
+		change_payload: r.changePayload,
 		before_user_snapshot: r.beforeUserSnapshot ?? null,
 		after_user_snapshot: r.afterUserSnapshot ?? null,
 		changed_fields: r.changedFields ?? null,
@@ -139,13 +137,8 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 					apiKeyId: myUserAuditLogsTable.apiKeyId,
 					eventType: myUserAuditLogsTable.eventType,
 					actorType: myUserAuditLogsTable.actorType,
-					beforeSpent: myUserAuditLogsTable.beforeSpent,
-					deltaSpent: myUserAuditLogsTable.deltaSpent,
-					afterSpent: myUserAuditLogsTable.afterSpent,
-					beforeBudgetMax: myUserAuditLogsTable.beforeBudgetMax,
-					afterBudgetMax: myUserAuditLogsTable.afterBudgetMax,
 					requestLogId: myUserAuditLogsTable.requestLogId,
-					metadata: myUserAuditLogsTable.metadata,
+					changePayload: myUserAuditLogsTable.changePayload,
 					beforeUserSnapshot: myUserAuditLogsTable.beforeUserSnapshot,
 					afterUserSnapshot: myUserAuditLogsTable.afterUserSnapshot,
 					changedFields: myUserAuditLogsTable.changedFields,
