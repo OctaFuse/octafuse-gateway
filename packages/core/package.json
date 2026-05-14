@@ -29,6 +29,7 @@
 		"./db/pricing-profile": "./src/db/pricing-profile.ts",
 		"./db/request-log-status-filter": "./src/db/request-log-status-filter.ts",
 		"./db/user-audit-legacy-mapper": "./src/db/user-audit-legacy-mapper.ts",
+		"./db/user-audit-snapshot": "./src/db/user-audit-snapshot.ts",
 		"./lib/business-timezone": "./src/lib/business-timezone.ts",
 		"./lib/billing-currency": "./src/lib/billing-currency.ts",
 		"./lib/alert-webhook-system-config": "./src/lib/alert-webhook-system-config.ts",

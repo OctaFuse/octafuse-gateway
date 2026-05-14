@@ -13,6 +13,7 @@ import {
 } from '@octafuse/core/services/user-service';
 import { filterAllowedRequestLogStatuses } from '@octafuse/core/db/request-log-status-filter';
 import { insertParamsFromFullLegacy } from '@octafuse/core/db/user-audit-legacy-mapper';
+import { snapshotToJson, userRowToSnapshot } from '@octafuse/core/db/user-audit-snapshot';
 import { badRequest, notFound } from './errors';
 import { normalizeMetadataInput } from './shared';
 import type {
@@ -277,6 +278,8 @@ export async function updateAdminKey(
 	const nameChanged = (row.name ?? null) !== (rowAfter.name ?? null);
 
 	if (metadataChanged || statusChanged || nameChanged) {
+		const userAud = await repos.users.getById(row.user_id);
+		const userSnapJson = userAud ? snapshotToJson(userRowToSnapshot(userAud)) : null;
 		let profileAuditPayload: Record<string, unknown> = {};
 		if (nameChanged) profileAuditPayload.name = { from: row.name ?? null, to: rowAfter.name ?? null };
 		if (statusChanged) profileAuditPayload.status = { from: row.status ?? null, to: rowAfter.status ?? null };
@@ -327,6 +330,10 @@ export async function updateAdminKey(
 				beforeBudgetResetAt: breset,
 				afterBudgetResetAt: breset,
 				metadata: JSON.stringify(profileAuditPayload),
+				beforeUserSnapshot: userSnapJson,
+				afterUserSnapshot: userSnapJson,
+				changedFields: null,
+				source: 'admin_keys',
 			})
 		);
 	}

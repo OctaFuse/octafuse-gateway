@@ -154,6 +154,15 @@ CREATE TABLE user_audit_logs (
   after_budget_max REAL DEFAULT NULL,
   request_log_id TEXT DEFAULT NULL,
   metadata TEXT DEFAULT NULL,
+  /* Full-row JSON snapshots + structured audit context (see user-audit-snapshot.ts) */
+  before_user_snapshot TEXT DEFAULT NULL,
+  after_user_snapshot TEXT DEFAULT NULL,
+  changed_fields TEXT DEFAULT NULL,
+  correlation_id TEXT DEFAULT NULL,
+  source TEXT DEFAULT NULL,
+  actor_id TEXT DEFAULT NULL,
+  reason_code TEXT DEFAULT NULL,
+  reason_text TEXT DEFAULT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -189,3 +198,7 @@ CREATE INDEX idx_user_audit_event_created
   ON user_audit_logs(event_type, created_at);
 CREATE INDEX idx_user_audit_request_log
   ON user_audit_logs(request_log_id);
+CREATE INDEX idx_user_audit_correlation
+  ON user_audit_logs(correlation_id);
+CREATE INDEX idx_user_audit_source_created
+  ON user_audit_logs(source, created_at);

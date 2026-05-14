@@ -27,7 +27,7 @@ export interface GatewayApiKey {
   updated_at: string;
 }
 
-/** `user_audit_logs` 行；全局列表 JOIN `users` 后带 `user_email`。部分扩展字段折叠在 `metadata` JSON 内。 */
+/** `user_audit_logs` 行；全局列表 JOIN `users` 后带 `user_email`。预算周期等仍可能出现在 `metadata`。 */
 export interface GatewayApiKeyBudgetAuditLog {
   id: string;
   user_id: string;
@@ -48,6 +48,13 @@ export interface GatewayApiKeyBudgetAuditLog {
   after_budget_reset_at?: string | null;
   request_log_id: string | null;
   metadata: string | null;
+  /** JSON：用户行快照（`UserAuditSnapshot`） */
+  before_user_snapshot?: string | null;
+  after_user_snapshot?: string | null;
+  /** JSON string array：变更字段名 */
+  changed_fields?: string | null;
+  correlation_id?: string | null;
+  source?: string | null;
   created_at: string;
   user_email?: string | null;
 }

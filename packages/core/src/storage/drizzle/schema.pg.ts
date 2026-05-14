@@ -146,6 +146,14 @@ export const userAuditLogsTable = pgTable('user_audit_logs', {
 	afterBudgetMax: numeric('after_budget_max', { precision: 18, scale: 6 }),
 	requestLogId: text('request_log_id'),
 	metadata: text('metadata'),
+	beforeUserSnapshot: text('before_user_snapshot'),
+	afterUserSnapshot: text('after_user_snapshot'),
+	changedFields: text('changed_fields'),
+	correlationId: text('correlation_id'),
+	source: text('source'),
+	actorId: text('actor_id'),
+	reasonCode: text('reason_code'),
+	reasonText: text('reason_text'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 

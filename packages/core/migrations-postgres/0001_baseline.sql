@@ -154,6 +154,14 @@ CREATE TABLE user_audit_logs (
   after_budget_max NUMERIC(18, 6),
   request_log_id TEXT,
   metadata TEXT,
+  before_user_snapshot TEXT,
+  after_user_snapshot TEXT,
+  changed_fields TEXT,
+  correlation_id TEXT,
+  source TEXT,
+  actor_id TEXT,
+  reason_code TEXT,
+  reason_text TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -188,3 +196,7 @@ CREATE INDEX idx_user_audit_event_created
   ON user_audit_logs(event_type, created_at);
 CREATE INDEX idx_user_audit_request_log
   ON user_audit_logs(request_log_id);
+CREATE INDEX idx_user_audit_correlation
+  ON user_audit_logs(correlation_id);
+CREATE INDEX idx_user_audit_source_created
+  ON user_audit_logs(source, created_at);

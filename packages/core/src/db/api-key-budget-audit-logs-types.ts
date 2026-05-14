@@ -26,4 +26,12 @@ export interface InsertApiKeyBudgetAuditLogParams {
 	afterBudgetResetAt?: string | null;
 	requestLogId?: string | null;
 	metadata?: string | null;
+	/** JSON：用户行快照（见 `user-audit-snapshot`） */
+	beforeUserSnapshot?: string | null;
+	afterUserSnapshot?: string | null;
+	/** JSON string array */
+	changedFields?: string | null;
+	correlationId?: string | null;
+	/** 如 usage_charge、period_reset、admin_patch_budget */
+	source?: string | null;
 }

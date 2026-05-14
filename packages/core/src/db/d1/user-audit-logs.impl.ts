@@ -21,6 +21,14 @@ type AuditSqlRow = {
 	after_budget_max: number | null;
 	request_log_id: string | null;
 	metadata: string | null;
+	before_user_snapshot: string | null;
+	after_user_snapshot: string | null;
+	changed_fields: string | null;
+	correlation_id: string | null;
+	source: string | null;
+	actor_id: string | null;
+	reason_code: string | null;
+	reason_text: string | null;
 	created_at: string;
 };
 
@@ -38,6 +46,14 @@ function mapAuditRow(r: AuditSqlRow): UserAuditLogRow {
 		after_budget_max: r.after_budget_max == null ? null : roundGatewayMoney(Number(r.after_budget_max)),
 		request_log_id: r.request_log_id,
 		metadata: r.metadata,
+		before_user_snapshot: r.before_user_snapshot ?? null,
+		after_user_snapshot: r.after_user_snapshot ?? null,
+		changed_fields: r.changed_fields ?? null,
+		correlation_id: r.correlation_id ?? null,
+		source: r.source ?? null,
+		actor_id: r.actor_id ?? null,
+		reason_code: r.reason_code ?? null,
+		reason_text: r.reason_text ?? null,
 		created_at: r.created_at,
 	};
 }
@@ -49,8 +65,10 @@ export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertU
         id, user_id, api_key_id, event_type, actor_type,
         before_spent, delta_spent, after_spent,
         before_budget_max, after_budget_max,
-        request_log_id, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        request_log_id, metadata,
+        before_user_snapshot, after_user_snapshot, changed_fields,
+        correlation_id, source, actor_id, reason_code, reason_text
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		)
 		.bind(
 			params.id,
@@ -64,9 +82,61 @@ export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertU
 			params.beforeBudgetMax != null ? roundGatewayMoney(params.beforeBudgetMax) : null,
 			params.afterBudgetMax != null ? roundGatewayMoney(params.afterBudgetMax) : null,
 			params.requestLogId ?? null,
-			params.metadata ?? null
+			params.metadata ?? null,
+			params.beforeUserSnapshot ?? null,
+			params.afterUserSnapshot ?? null,
+			params.changedFields ?? null,
+			params.correlationId ?? null,
+			params.source ?? null,
+			params.actorId ?? null,
+			params.reasonCode ?? null,
+			params.reasonText ?? null
 		);
 }
+
+const auditRowColumnsNoAlias = `id,
+      user_id,
+      api_key_id,
+      event_type,
+      actor_type,
+      before_spent,
+      delta_spent,
+      after_spent,
+      before_budget_max,
+      after_budget_max,
+      request_log_id,
+      metadata,
+      before_user_snapshot,
+      after_user_snapshot,
+      changed_fields,
+      correlation_id,
+      source,
+      actor_id,
+      reason_code,
+      reason_text,
+      created_at`;
+
+const auditRowColumnsAliased = `a.id,
+      a.user_id,
+      a.api_key_id,
+      a.event_type,
+      a.actor_type,
+      a.before_spent,
+      a.delta_spent,
+      a.after_spent,
+      a.before_budget_max,
+      a.after_budget_max,
+      a.request_log_id,
+      a.metadata,
+      a.before_user_snapshot,
+      a.after_user_snapshot,
+      a.changed_fields,
+      a.correlation_id,
+      a.source,
+      a.actor_id,
+      a.reason_code,
+      a.reason_text,
+      a.created_at`;
 
 export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAuditLogsRepository {
 	const raw = db.raw;
@@ -87,7 +157,7 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 				.first<{ total: number }>();
 			const logsRes = await raw
 				.prepare(
-					`SELECT * FROM user_audit_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
+					`SELECT ${auditRowColumnsNoAlias} FROM user_audit_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
 				)
 				.bind(userId, pageSize, offset)
 				.all<AuditSqlRow>();
@@ -105,6 +175,9 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 			userEmail?: string;
 			eventType?: string;
 			actorType?: string;
+			reasonCode?: string;
+			source?: string;
+			correlationId?: string;
 			startDate?: string;
 			endDate?: string;
 		}): Promise<{ logs: GlobalUserAuditLogRow[]; total: number }> {
@@ -133,6 +206,18 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 				conditions.push('a.actor_type = ?');
 				bindValues.push(options.actorType);
 			}
+			if (options.reasonCode) {
+				conditions.push('a.reason_code = ?');
+				bindValues.push(options.reasonCode);
+			}
+			if (options.source) {
+				conditions.push('a.source = ?');
+				bindValues.push(options.source);
+			}
+			if (options.correlationId) {
+				conditions.push('a.correlation_id = ?');
+				bindValues.push(options.correlationId);
+			}
 			if (options.startDate) {
 				conditions.push('a.created_at >= ?');
 				bindValues.push(options.startDate);
@@ -149,19 +234,7 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 				.first<{ total: number }>();
 			const total = Number(countRow?.total ?? 0);
 			const selectSql = `SELECT
-      a.id,
-      a.user_id,
-      a.api_key_id,
-      a.event_type,
-      a.actor_type,
-      a.before_spent,
-      a.delta_spent,
-      a.after_spent,
-      a.before_budget_max,
-      a.after_budget_max,
-      a.request_log_id,
-      a.metadata,
-      a.created_at,
+      ${auditRowColumnsAliased},
       u.email AS user_email
     ${baseFrom}
     ${whereClause}

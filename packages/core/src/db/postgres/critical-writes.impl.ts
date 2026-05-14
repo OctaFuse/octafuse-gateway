@@ -6,6 +6,7 @@ import type { InsertApiKeyBudgetAuditLogParams } from '../api-key-budget-audit-l
 import type { InsertKeyParams } from '../api-keys-types';
 import type { InsertRequestLogParams } from '../request-logs-types';
 import { insertParamsFromBudgetTx, insertParamsFromCreateKeyAudit, insertParamsFromUsageCharge } from '../user-audit-legacy-mapper';
+import { toUserAuditLogDrizzleInsert } from '../user-audit-drizzle-insert';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import { nowIso, parseMoney } from '../../storage/critical-write-paths-utils';
@@ -71,21 +72,7 @@ export async function createApiKeyWithAuditPg(
 			createdAt: now,
 			updatedAt: now,
 		});
-		await tx.insert(pgUserAuditLogsTable).values({
-			id: auditRow.id,
-			userId: auditRow.userId,
-			apiKeyId: auditRow.apiKeyId ?? null,
-			eventType: auditRow.eventType,
-			actorType: auditRow.actorType,
-			beforeSpent: String(roundGatewayMoney(auditRow.beforeSpent)),
-			deltaSpent: String(roundGatewayMoney(auditRow.deltaSpent)),
-			afterSpent: String(roundGatewayMoney(auditRow.afterSpent)),
-			beforeBudgetMax: auditRow.beforeBudgetMax == null ? null : String(roundGatewayMoney(auditRow.beforeBudgetMax)),
-			afterBudgetMax: auditRow.afterBudgetMax == null ? null : String(roundGatewayMoney(auditRow.afterBudgetMax)),
-			requestLogId: auditRow.requestLogId ?? null,
-			metadata: auditRow.metadata ?? null,
-			createdAt: now,
-		});
+		await tx.insert(pgUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(auditRow, now));
 	});
 }
 
@@ -127,21 +114,7 @@ export async function updateUserBudgetWithAuditTxPg(
 			return;
 		}
 
-		await tx.insert(pgUserAuditLogsTable).values({
-			id: auditRow.id,
-			userId: auditRow.userId,
-			apiKeyId: auditRow.apiKeyId ?? null,
-			eventType: auditRow.eventType,
-			actorType: auditRow.actorType,
-			beforeSpent: String(roundGatewayMoney(auditRow.beforeSpent)),
-			deltaSpent: String(roundGatewayMoney(auditRow.deltaSpent)),
-			afterSpent: String(roundGatewayMoney(auditRow.afterSpent)),
-			beforeBudgetMax: auditRow.beforeBudgetMax == null ? null : String(roundGatewayMoney(auditRow.beforeBudgetMax)),
-			afterBudgetMax: auditRow.afterBudgetMax == null ? null : String(roundGatewayMoney(auditRow.afterBudgetMax)),
-			requestLogId: auditRow.requestLogId ?? null,
-			metadata: auditRow.metadata ?? null,
-			createdAt: now,
-		});
+		await tx.insert(pgUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(auditRow, now));
 	});
 }
 
@@ -203,20 +176,6 @@ export async function insertRequestUsageAndChargeTxPg(
 			.where(eq(pgUsersTable.id, params.userId));
 
 		const auditRow = insertParamsFromUsageCharge(params.userId, afterSpent, charged, params.audit);
-		await tx.insert(pgUserAuditLogsTable).values({
-			id: auditRow.id,
-			userId: auditRow.userId,
-			apiKeyId: auditRow.apiKeyId ?? null,
-			eventType: auditRow.eventType,
-			actorType: auditRow.actorType,
-			beforeSpent: String(roundGatewayMoney(auditRow.beforeSpent)),
-			deltaSpent: String(charged),
-			afterSpent: String(roundGatewayMoney(auditRow.afterSpent)),
-			beforeBudgetMax: auditRow.beforeBudgetMax == null ? null : String(roundGatewayMoney(auditRow.beforeBudgetMax)),
-			afterBudgetMax: auditRow.afterBudgetMax == null ? null : String(roundGatewayMoney(auditRow.afterBudgetMax)),
-			requestLogId: auditRow.requestLogId ?? null,
-			metadata: auditRow.metadata ?? null,
-			createdAt: now,
-		});
+		await tx.insert(pgUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(auditRow, now));
 	});
 }

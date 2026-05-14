@@ -16,6 +16,12 @@ import {
 } from '@octafuse/core/services/user-service';
 import { insertParamsFromFullLegacy } from '@octafuse/core/db/user-audit-legacy-mapper';
 import { roundGatewayMoney } from '@octafuse/core/lib/money-precision';
+import {
+	changedFieldsToJson,
+	computeChangedFields,
+	snapshotToJson,
+	userRowToSnapshot,
+} from '@octafuse/core/db/user-audit-snapshot';
 import { badRequest, notFound } from './errors';
 import { normalizeMetadataInput } from './shared';
 import type { AdminUserCreateInput, AdminUserUpdateInput, JsonObject } from './types';
@@ -408,6 +414,10 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 	const profileAuditJson =
 		profileAuditPayload && Object.keys(profileAuditPayload).length > 0 ? JSON.stringify(profileAuditPayload) : null;
 
+	const beforeUserSnap = snapshotToJson(userRowToSnapshot(row));
+	const afterUserSnap = snapshotToJson(userRowToSnapshot(rowAfter));
+	const userChangedFieldsJson = changedFieldsToJson(computeChangedFields(userRowToSnapshot(row), userRowToSnapshot(rowAfter)));
+
 	if (budgetChanged) {
 		await repos.userAuditLogs.insertUserAuditLog(
 			insertParamsFromFullLegacy(userId, {
@@ -430,13 +440,18 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				beforeBudgetResetAt: row.budget_reset_at ?? null,
 				afterBudgetResetAt: rowAfter.budget_reset_at ?? null,
 				metadata: profileAuditJson,
+				beforeUserSnapshot: beforeUserSnap,
+				afterUserSnapshot: afterUserSnap,
+				changedFields: userChangedFieldsJson,
+				source: 'admin_users',
 			})
 		);
-	} else if (metadataChanged || statusChanged || emailChanged) {
+	} else if (metadataChanged || statusChanged || emailChanged || externalChanged) {
 		let reasonCode = 'admin_patch_profile';
 		if (metadataChanged && !statusChanged && !emailChanged) reasonCode = 'admin_patch_metadata';
 		else if (statusChanged && !metadataChanged && !emailChanged) reasonCode = 'admin_patch_status';
-		else if (emailChanged && !metadataChanged && !statusChanged) reasonCode = 'admin_patch_email';
+		else if (emailChanged && !metadataChanged && !statusChanged && !externalChanged) reasonCode = 'admin_patch_email';
+		else if (externalChanged && !metadataChanged && !statusChanged && !emailChanged) reasonCode = 'admin_patch_external_identity';
 		const spent = Number(rowAfter.budget_spent ?? 0);
 		const bmax = rowAfter.budget_max ?? null;
 		const bbase = rowAfter.budget_base ?? null;
@@ -463,6 +478,10 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				beforeBudgetResetAt: breset,
 				afterBudgetResetAt: breset,
 				metadata: profileAuditJson,
+				beforeUserSnapshot: beforeUserSnap,
+				afterUserSnapshot: afterUserSnap,
+				changedFields: userChangedFieldsJson,
+				source: 'admin_users',
 			})
 		);
 	}
@@ -594,6 +613,8 @@ export async function patchAdminUserKey(
 	const nameChanged = (row.name ?? null) !== (rowAfter.name ?? null);
 
 	if (metadataChanged || statusChanged || nameChanged) {
+		const userAud = await repos.users.getById(userId);
+		const userSnapJson = userAud ? snapshotToJson(userRowToSnapshot(userAud)) : null;
 		let profileAuditPayload: Record<string, unknown> = {};
 		if (nameChanged) profileAuditPayload.name = { from: row.name ?? null, to: rowAfter.name ?? null };
 		if (statusChanged) profileAuditPayload.status = { from: row.status ?? null, to: rowAfter.status ?? null };
@@ -639,6 +660,10 @@ export async function patchAdminUserKey(
 				beforeBudgetResetAt: breset,
 				afterBudgetResetAt: breset,
 				metadata: JSON.stringify(profileAuditPayload),
+				beforeUserSnapshot: userSnapJson,
+				afterUserSnapshot: userSnapJson,
+				changedFields: null,
+				source: 'admin_user_key',
 			})
 		);
 	}

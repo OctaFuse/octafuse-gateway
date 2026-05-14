@@ -165,6 +165,14 @@ export interface UserAuditLogRow {
 	after_budget_max: number | null;
 	request_log_id: string | null;
 	metadata: string | null;
+	before_user_snapshot: string | null;
+	after_user_snapshot: string | null;
+	changed_fields: string | null;
+	correlation_id: string | null;
+	source: string | null;
+	actor_id: string | null;
+	reason_code: string | null;
+	reason_text: string | null;
 	created_at: string;
 }
 

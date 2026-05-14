@@ -15,6 +15,7 @@ import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 
 type UserDetail = {
   id: string;
@@ -101,6 +102,12 @@ function ReadonlyRow({ label, children }: { label: string; children: ReactNode }
 function maskKey(key: string) {
   if (!key || key.length < 10) return key;
   return `${key.substring(0, 7)}…${key.substring(key.length - 4)}`;
+}
+
+function shortAuditId(id: string | null | undefined): string {
+  if (id == null || id === '') return '—';
+  if (id.length < 14) return id;
+  return `${id.slice(0, 8)}…${id.slice(-4)}`;
 }
 
 export default function GatewayUserDetailPage() {
@@ -788,23 +795,58 @@ export default function GatewayUserDetailPage() {
               <tr className="text-left text-gray-500 border-b">
                 <th className="py-2 pr-2">Time</th>
                 <th className="py-2 pr-2">Event</th>
+                <th className="py-2 pr-2">Source / trace</th>
                 <th className="py-2 pr-2">Δ spend</th>
                 <th className="py-2 pr-2">budget_max →</th>
+                <th className="py-2 pr-2 min-w-[12rem]">User snapshot Δ</th>
               </tr>
             </thead>
             <tbody>
-              {audits.map((a) => (
-                <tr key={a.id} className="border-b border-gray-50">
+              {audits.map((a) => {
+                const snapLines = summarizeUserSnapshotDiffLines({
+                  before_user_snapshot: a.before_user_snapshot ?? null,
+                  after_user_snapshot: a.after_user_snapshot ?? null,
+                  changed_fields: a.changed_fields ?? null,
+                });
+                return (
+                <tr key={a.id} className="border-b border-gray-50 align-top">
                   <td className="py-2 pr-2 whitespace-nowrap">{formatGatewayDateTime(a.created_at)}</td>
-                  <td className="py-2 pr-2">{a.event_type}</td>
+                  <td className="py-2 pr-2">
+                    <div className="font-medium">{a.event_type}</div>
+                    <div className="text-gray-500 mt-0.5">{a.actor_type}</div>
+                    {(a.reason_code || a.reason_text) ? (
+                      <div className="text-gray-600 mt-0.5 max-w-[14rem] line-clamp-2" title={a.reason_text ?? a.reason_code ?? ''}>
+                        {a.reason_text || a.reason_code}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="py-2 pr-2 font-mono text-[11px] text-gray-700">
+                    {a.source ? <div className="text-violet-800">{a.source}</div> : <span className="text-gray-400">—</span>}
+                    {a.correlation_id ? (
+                      <div className="mt-0.5 text-gray-500" title={a.correlation_id}>corr {shortAuditId(a.correlation_id)}</div>
+                    ) : a.request_log_id ? (
+                      <div className="mt-0.5 text-gray-500" title={a.request_log_id}>req {shortAuditId(a.request_log_id)}</div>
+                    ) : null}
+                  </td>
                   <td className="py-2 pr-2">{formatGatewayMoneyCodeSigned(a.delta_spent, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}</td>
                   <td className="py-2 pr-2 font-mono">
                     {a.before_budget_max != null ? formatGatewayMoneyCode(a.before_budget_max, billingCurrency, 2) : '—'}
                     {' → '}
                     {a.after_budget_max != null ? formatGatewayMoneyCode(a.after_budget_max, billingCurrency, 2) : '—'}
                   </td>
+                  <td className="py-2 pr-2 text-gray-600">
+                    <div className="space-y-0.5">
+                      {snapLines.slice(0, 5).map((line, i) => (
+                        <div key={`${a.id}-s-${i}`} className="line-clamp-2 font-mono text-[11px]" title={line}>{line}</div>
+                      ))}
+                      {snapLines.length > 5 ? (
+                        <div className="text-gray-400 text-[11px]">+{snapLines.length - 5} more</div>
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

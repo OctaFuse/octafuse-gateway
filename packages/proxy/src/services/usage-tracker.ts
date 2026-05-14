@@ -15,6 +15,11 @@ import {
 	resolveChargedBillingPrices,
 	resolveStandardBillingPrices,
 	resolveSupplierBillingPrices,
+	changedFieldsToJson,
+	computeChangedFields,
+	snapshotToJson,
+	snapshotWithOverrides,
+	userRowToSnapshot,
 } from '@octafuse/core';
 import type { UsageFromStream } from './proxy';
 import { fireGatewayErrorWebhooks } from './alert-webhook';
@@ -147,6 +152,18 @@ export async function recordUsage(
 	const shouldChargeBudget = params.status !== 'error' && chargedCost > 0;
 	const userSnapshot = shouldChargeBudget ? await getUserBudgetSnapshot(repos, params.user_id) : null;
 	const beforeSpent = userSnapshot?.budgetSpent ?? 0;
+	const userRow = shouldChargeBudget ? await repos.users.getById(params.user_id) : null;
+	const afterSpentVal = roundGatewayMoney(beforeSpent + chargedCost);
+	let usageSnaps: { before: string; after: string; changed: string | null } | null = null;
+	if (userRow) {
+		const beforeS = userRowToSnapshot(userRow);
+		const afterS = snapshotWithOverrides(beforeS, { budget_spent: afterSpentVal });
+		usageSnaps = {
+			before: snapshotToJson(beforeS),
+			after: snapshotToJson(afterS),
+			changed: changedFieldsToJson(computeChangedFields(beforeS, afterS)),
+		};
+	}
 	await insertRequestUsageAndChargeTx(repos, {
 		userId: params.user_id,
 		requestLog: {
@@ -197,6 +214,11 @@ export async function recordUsage(
 			afterBudgetResetAt: userSnapshot?.budgetResetAt ?? null,
 			requestLogId: id,
 			metadata: null,
+			beforeUserSnapshot: usageSnaps?.before ?? null,
+			afterUserSnapshot: usageSnaps?.after ?? null,
+			changedFields: usageSnaps?.changed ?? null,
+			correlationId: id,
+			source: 'usage_charge',
 		},
 	});
 	if (params.status === 'error') {

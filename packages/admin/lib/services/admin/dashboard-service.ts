@@ -82,6 +82,9 @@ export async function listAdminGlobalBudgetAuditLogsService(
 		user_email?: string;
 		event_type?: string;
 		actor_type?: string;
+		reason_code?: string;
+		source?: string;
+		correlation_id?: string;
 		start_date?: string;
 		end_date?: string;
 	}
@@ -96,6 +99,9 @@ export async function listAdminGlobalBudgetAuditLogsService(
 		userEmail: input.user_email,
 		eventType: input.event_type,
 		actorType: input.actor_type,
+		reasonCode: input.reason_code,
+		source: input.source,
+		correlationId: input.correlation_id,
 		startDate: input.start_date,
 		endDate: input.end_date,
 	});

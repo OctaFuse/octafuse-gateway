@@ -18,6 +18,7 @@ export * from './db/providers';
 export * from './db/system-config';
 export * from './db/api-key-budget-audit-logs-types';
 export * from './db/user-audit-legacy-mapper';
+export * from './db/user-audit-snapshot';
 export * from './db/api-keys-types';
 export * from './db/providers-types';
 export * from './db/request-logs-types';

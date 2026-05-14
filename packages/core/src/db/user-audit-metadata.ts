@@ -1,13 +1,10 @@
 import type { UserBudgetAuditExtraFields } from './user-audit-logs-types';
 
 /**
- * 将旧版 api_key 审计扩展列折叠进 `user_audit_logs.metadata`。
+ * 将预算周期等扩展字段合并进 `user_audit_logs.metadata`（actor / reason 使用表列）。
  */
 export function mergeUserAuditMetadata(base: string | null | undefined, extra: UserBudgetAuditExtraFields): string | null {
 	const trimmed: Record<string, unknown> = {};
-	if (extra.actorId != null && extra.actorId !== '') trimmed.actor_id = extra.actorId;
-	if (extra.reasonCode != null && extra.reasonCode !== '') trimmed.reason_code = extra.reasonCode;
-	if (extra.reasonText != null && extra.reasonText !== '') trimmed.reason_text = extra.reasonText;
 	if (extra.beforeBudgetBase !== undefined) trimmed.before_budget_base = extra.beforeBudgetBase;
 	if (extra.afterBudgetBase !== undefined) trimmed.after_budget_base = extra.afterBudgetBase;
 	if (extra.beforeBudgetPeriod !== undefined) trimmed.before_budget_period = extra.beforeBudgetPeriod;

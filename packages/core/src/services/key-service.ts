@@ -3,6 +3,10 @@
  * 预算与周期在 `users`，请先 `getOrCreateUser` / 确保用户存在。
  */
 import type { InsertKeyParams } from '../db/api-keys-types';
+import {
+	snapshotToJson,
+	userRowToSnapshot,
+} from '../db/user-audit-snapshot';
 import type { GatewayRepositories } from '../storage/repositories';
 import { createApiKeyWithAudit } from '../storage/critical-write-paths';
 
@@ -59,6 +63,7 @@ export async function createKey(
 			: 'API key provisioned';
 
 	const auditId = crypto.randomUUID();
+	const userSnap = snapshotToJson(userRowToSnapshot(u));
 	await createApiKeyWithAudit(repos, {
 		insert: insertParams,
 		audit: {
@@ -80,6 +85,10 @@ export async function createKey(
 			afterBudgetResetAt: u.budget_reset_at,
 			requestLogId: null,
 			metadata: null,
+			beforeUserSnapshot: userSnap,
+			afterUserSnapshot: userSnap,
+			changedFields: null,
+			source: 'key_provision',
 		},
 	});
 	return { key, key_id: id };

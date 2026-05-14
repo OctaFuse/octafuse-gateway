@@ -175,6 +175,14 @@ export const userAuditLogsTable = mysqlTable('user_audit_logs', {
 	afterBudgetMax: decimal('after_budget_max', { precision: 18, scale: 6 }),
 	requestLogId: varchar('request_log_id', { length: COL.ID }),
 	metadata: text('metadata'),
+	beforeUserSnapshot: text('before_user_snapshot'),
+	afterUserSnapshot: text('after_user_snapshot'),
+	changedFields: text('changed_fields'),
+	correlationId: varchar('correlation_id', { length: COL.ID }),
+	source: varchar('source', { length: 128 }),
+	actorId: varchar('actor_id', { length: COL.ID }),
+	reasonCode: varchar('reason_code', { length: 128 }),
+	reasonText: text('reason_text'),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 

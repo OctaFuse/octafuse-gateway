@@ -3,7 +3,6 @@
  */
 import { and, count, desc, eq, sql } from 'drizzle-orm';
 import type { GlobalUserAuditLogRow, UserAuditLogRow } from '../../types';
-import { roundGatewayMoney } from '../../lib/money-precision';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { UserAuditLogsRepository } from '../../storage/gateway-repository-interfaces';
 import {
@@ -12,8 +11,9 @@ import {
 } from '../../storage/drizzle/schema.pg';
 import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
 import { parseMoney } from '../../storage/critical-write-paths-utils';
+import { toUserAuditLogDrizzleInsert } from '../user-audit-drizzle-insert';
 
-function mapPgAuditRow(r: {
+type PgAuditSelectRow = {
 	id: string;
 	userId: string;
 	apiKeyId: string | null;
@@ -26,8 +26,18 @@ function mapPgAuditRow(r: {
 	afterBudgetMax: string | null;
 	requestLogId: string | null;
 	metadata: string | null;
+	beforeUserSnapshot: string | null;
+	afterUserSnapshot: string | null;
+	changedFields: string | null;
+	correlationId: string | null;
+	source: string | null;
+	actorId: string | null;
+	reasonCode: string | null;
+	reasonText: string | null;
 	createdAt: string;
-}): UserAuditLogRow {
+};
+
+function mapPgAuditRow(r: PgAuditSelectRow): UserAuditLogRow {
 	return {
 		id: r.id,
 		user_id: r.userId,
@@ -41,6 +51,14 @@ function mapPgAuditRow(r: {
 		after_budget_max: r.afterBudgetMax == null ? null : parseMoney(r.afterBudgetMax),
 		request_log_id: r.requestLogId,
 		metadata: r.metadata,
+		before_user_snapshot: r.beforeUserSnapshot ?? null,
+		after_user_snapshot: r.afterUserSnapshot ?? null,
+		changed_fields: r.changedFields ?? null,
+		correlation_id: r.correlationId ?? null,
+		source: r.source ?? null,
+		actor_id: r.actorId ?? null,
+		reason_code: r.reasonCode ?? null,
+		reason_text: r.reasonText ?? null,
 		created_at: r.createdAt,
 	};
 }
@@ -50,21 +68,7 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 	return {
 		async insertUserAuditLog(params: InsertUserAuditLogParams): Promise<void> {
 			const now = new Date().toISOString();
-			await drizzle.insert(pgUserAuditLogsTable).values({
-				id: params.id,
-				userId: params.userId,
-				apiKeyId: params.apiKeyId ?? null,
-				eventType: params.eventType,
-				actorType: params.actorType,
-				beforeSpent: String(roundGatewayMoney(params.beforeSpent)),
-				deltaSpent: String(roundGatewayMoney(params.deltaSpent)),
-				afterSpent: String(roundGatewayMoney(params.afterSpent)),
-				beforeBudgetMax: params.beforeBudgetMax == null ? null : String(roundGatewayMoney(params.beforeBudgetMax)),
-				afterBudgetMax: params.afterBudgetMax == null ? null : String(roundGatewayMoney(params.afterBudgetMax)),
-				requestLogId: params.requestLogId ?? null,
-				metadata: params.metadata ?? null,
-				createdAt: now,
-			});
+			await drizzle.insert(pgUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(params, now));
 		},
 
 		async getUserAuditLogsByUserId(
@@ -88,7 +92,7 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 				.orderBy(desc(pgUserAuditLogsTable.createdAt))
 				.limit(pageSize)
 				.offset(offset);
-			return { logs: rows.map(mapPgAuditRow), total };
+			return { logs: rows.map((r) => mapPgAuditRow(r as PgAuditSelectRow)), total };
 		},
 
 		async getGlobalUserAuditLogs(options: {
@@ -99,6 +103,9 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 			userEmail?: string;
 			eventType?: string;
 			actorType?: string;
+			reasonCode?: string;
+			source?: string;
+			correlationId?: string;
 			startDate?: string;
 			endDate?: string;
 		}): Promise<{ logs: GlobalUserAuditLogRow[]; total: number }> {
@@ -111,6 +118,9 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 			if (options.userEmail) conditions.push(eq(pgUsersTable.email, options.userEmail));
 			if (options.eventType) conditions.push(eq(pgUserAuditLogsTable.eventType, options.eventType));
 			if (options.actorType) conditions.push(eq(pgUserAuditLogsTable.actorType, options.actorType));
+			if (options.reasonCode) conditions.push(eq(pgUserAuditLogsTable.reasonCode, options.reasonCode));
+			if (options.source) conditions.push(eq(pgUserAuditLogsTable.source, options.source));
+			if (options.correlationId) conditions.push(eq(pgUserAuditLogsTable.correlationId, options.correlationId));
 			if (options.startDate) conditions.push(sql`${pgUserAuditLogsTable.createdAt} >= ${options.startDate}`);
 			if (options.endDate) conditions.push(sql`${pgUserAuditLogsTable.createdAt} <= ${options.endDate}`);
 			const whereExpr = conditions.length > 0 ? and(...conditions) : undefined;
@@ -136,6 +146,14 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 					afterBudgetMax: pgUserAuditLogsTable.afterBudgetMax,
 					requestLogId: pgUserAuditLogsTable.requestLogId,
 					metadata: pgUserAuditLogsTable.metadata,
+					beforeUserSnapshot: pgUserAuditLogsTable.beforeUserSnapshot,
+					afterUserSnapshot: pgUserAuditLogsTable.afterUserSnapshot,
+					changedFields: pgUserAuditLogsTable.changedFields,
+					correlationId: pgUserAuditLogsTable.correlationId,
+					source: pgUserAuditLogsTable.source,
+					actorId: pgUserAuditLogsTable.actorId,
+					reasonCode: pgUserAuditLogsTable.reasonCode,
+					reasonText: pgUserAuditLogsTable.reasonText,
 					createdAt: pgUserAuditLogsTable.createdAt,
 					user_email: pgUsersTable.email,
 				})
@@ -150,7 +168,7 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 			return {
 				logs: rows.map((r) => {
 					const { user_email, ...rest } = r;
-					return { ...mapPgAuditRow(rest), user_email };
+					return { ...mapPgAuditRow(rest as PgAuditSelectRow), user_email };
 				}),
 				total,
 			};

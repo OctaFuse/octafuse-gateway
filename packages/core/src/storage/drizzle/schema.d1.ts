@@ -143,6 +143,14 @@ export const userAuditLogsTable = sqliteTable('user_audit_logs', {
 	afterBudgetMax: real('after_budget_max'),
 	requestLogId: text('request_log_id'),
 	metadata: text('metadata'),
+	beforeUserSnapshot: text('before_user_snapshot'),
+	afterUserSnapshot: text('after_user_snapshot'),
+	changedFields: text('changed_fields'),
+	correlationId: text('correlation_id'),
+	source: text('source'),
+	actorId: text('actor_id'),
+	reasonCode: text('reason_code'),
+	reasonText: text('reason_text'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 

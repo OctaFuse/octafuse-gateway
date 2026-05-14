@@ -7,6 +7,9 @@ import type { BudgetPeriod } from '../types';
 import type { UserRow } from '../types';
 import { roundGatewayMoney } from '../lib/money-precision';
 import { updateUserBudgetWithAuditTx } from '../storage/critical-write-paths';
+import {
+	buildUserAuditSnapshotsForLazyPeriodReset,
+} from '../db/user-audit-snapshot';
 
 /**
  * 将锚点日期按预算周期向前推一个周期（UTC）。
@@ -222,6 +225,11 @@ export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 	if (budgetLazyResetNeedsPersist(rowSnapshot, nextSnapshot)) {
 		const maxChanged =
 			(row.budget_max == null ? null : roundGatewayMoney(Number(row.budget_max))) !== nextBudgetMax;
+		const snaps = buildUserAuditSnapshotsForLazyPeriodReset(
+			row,
+			{ budget_spent, budget_reset_at, budget_max: nextBudgetMax },
+			maxChanged
+		);
 		await updateUserBudgetWithAuditTx(repos, {
 			userId: row.id,
 			expectedBudgetResetAt: row.budget_reset_at,
@@ -244,6 +252,10 @@ export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 				afterBudgetPeriod: row.budget_period,
 				beforeBudgetResetAt: row.budget_reset_at,
 				metadata: null,
+				beforeUserSnapshot: snaps.beforeUserSnapshot,
+				afterUserSnapshot: snaps.afterUserSnapshot,
+				changedFields: snaps.changedFields,
+				source: 'period_reset',
 			},
 		});
 		effectiveBudgetMax = nextBudgetMax;
@@ -292,6 +304,14 @@ export async function getKeyInfo(repos: GatewayRepositories, id: string) {
 	if (budgetLazyResetNeedsPersist(rowSnapshot, nextSnapshot)) {
 		const maxChanged =
 			(row.budget_max == null ? null : roundGatewayMoney(Number(row.budget_max))) !== nextBudgetMax;
+		const userRow = await repos.users.getById(row.user_id);
+		const snaps = userRow
+			? buildUserAuditSnapshotsForLazyPeriodReset(
+					userRow,
+					{ budget_spent, budget_reset_at, budget_max: nextBudgetMax },
+					maxChanged
+				)
+			: null;
 		await updateUserBudgetWithAuditTx(repos, {
 			userId: row.user_id,
 			expectedBudgetResetAt: row.budget_reset_at,
@@ -314,6 +334,10 @@ export async function getKeyInfo(repos: GatewayRepositories, id: string) {
 				afterBudgetPeriod: row.budget_period,
 				beforeBudgetResetAt: row.budget_reset_at,
 				metadata: null,
+				beforeUserSnapshot: snaps?.beforeUserSnapshot ?? null,
+				afterUserSnapshot: snaps?.afterUserSnapshot ?? null,
+				changedFields: snaps?.changedFields ?? null,
+				source: 'period_reset',
 			},
 		});
 		effectiveBudgetMax = nextBudgetMax;

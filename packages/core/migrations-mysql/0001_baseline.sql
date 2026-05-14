@@ -165,6 +165,14 @@ CREATE TABLE user_audit_logs (
   after_budget_max DECIMAL(18, 6),
   request_log_id VARCHAR(512),
   metadata TEXT,
+  before_user_snapshot TEXT,
+  after_user_snapshot TEXT,
+  changed_fields TEXT,
+  correlation_id VARCHAR(512),
+  source VARCHAR(128),
+  actor_id VARCHAR(512),
+  reason_code VARCHAR(128),
+  reason_text TEXT,
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   CONSTRAINT fk_user_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
@@ -202,3 +210,7 @@ CREATE INDEX idx_user_audit_event_created
   ON user_audit_logs(event_type, created_at);
 CREATE INDEX idx_user_audit_request_log
   ON user_audit_logs(request_log_id);
+CREATE INDEX idx_user_audit_correlation
+  ON user_audit_logs(correlation_id);
+CREATE INDEX idx_user_audit_source_created
+  ON user_audit_logs(source, created_at);

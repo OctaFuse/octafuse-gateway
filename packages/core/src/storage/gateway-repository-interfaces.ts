@@ -52,6 +52,9 @@ export interface UserAuditLogsRepository {
 		userEmail?: string;
 		eventType?: string;
 		actorType?: string;
+		reasonCode?: string;
+		source?: string;
+		correlationId?: string;
 		startDate?: string;
 		endDate?: string;
 	}): Promise<{ logs: GlobalUserAuditLogRow[]; total: number }>;

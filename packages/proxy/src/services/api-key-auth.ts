@@ -4,6 +4,7 @@
 import type { GatewayRepositories } from '@octafuse/core';
 import {
 	budgetLazyResetNeedsPersist,
+	buildUserAuditSnapshotsForLazyPeriodReset,
 	maybeResetBudget,
 	roundGatewayMoney,
 	updateUserBudgetWithAuditTx,
@@ -48,6 +49,14 @@ export async function authenticateApiKey(repos: GatewayRepositories, key: string
 		budgetSpent = nextSpent;
 		budgetResetAt = nextReset;
 		const maxChanged = budgetMax !== nextMax;
+		const userRow = await repos.users.getById(row.user_id);
+		const snaps = userRow
+			? buildUserAuditSnapshotsForLazyPeriodReset(
+					userRow,
+					{ budget_spent: budgetSpent, budget_reset_at: budgetResetAt, budget_max: nextMax },
+					maxChanged
+				)
+			: null;
 		await updateUserBudgetWithAuditTx(repos, {
 			userId: row.user_id,
 			expectedBudgetResetAt: row.budget_reset_at,
@@ -70,6 +79,10 @@ export async function authenticateApiKey(repos: GatewayRepositories, key: string
 				afterBudgetPeriod: row.budget_period,
 				beforeBudgetResetAt: row.budget_reset_at,
 				metadata: null,
+				beforeUserSnapshot: snaps?.beforeUserSnapshot ?? null,
+				afterUserSnapshot: snaps?.afterUserSnapshot ?? null,
+				changedFields: snaps?.changedFields ?? null,
+				source: 'period_reset',
 			},
 		});
 		if (maxChanged) {

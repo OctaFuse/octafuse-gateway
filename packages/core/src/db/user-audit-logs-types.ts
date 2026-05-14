@@ -15,13 +15,21 @@ export interface InsertUserAuditLogParams {
 	afterBudgetMax?: number | null;
 	requestLogId?: string | null;
 	metadata?: string | null;
-}
-
-/** 事务内写审计时的扩展字段（由 critical-write-paths 合并进 metadata）。 */
-export interface UserBudgetAuditExtraFields {
+	/** JSON：{@link import('./user-audit-snapshot').UserAuditSnapshot} */
+	beforeUserSnapshot?: string | null;
+	/** JSON：{@link import('./user-audit-snapshot').UserAuditSnapshot} */
+	afterUserSnapshot?: string | null;
+	/** JSON string array of changed field names */
+	changedFields?: string | null;
+	correlationId?: string | null;
+	source?: string | null;
 	actorId?: string | null;
 	reasonCode?: string | null;
 	reasonText?: string | null;
+}
+
+/** 事务内写审计时的扩展字段（预算周期等仍合并进 metadata；actor/reason 走表列）。 */
+export interface UserBudgetAuditExtraFields {
 	beforeBudgetBase?: number | null;
 	afterBudgetBase?: number | null;
 	beforeBudgetPeriod?: string | null;

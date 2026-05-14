@@ -69,9 +69,8 @@ async function assertOk(res: Response, label: string): Promise<void> {
  * 触发 createApiKeyWithAudit / db 读 / deleteApiKeyHard。
  */
 async function smokeWritePaths(adminBase: string, masterKey: string, tag: string): Promise<void> {
-	// 使用固定前缀，便于识别与清理
-	const smokeUserId = `smoke-test-${Date.now()}`;
-	const smokeEmail = `smoke-${Date.now()}@smoke.local`;
+	const smokeExt = `smoke-${Date.now()}`;
+	const smokeEmail = `${smokeExt}@smoke.local`;
 
 	console.log('%s [write] POST /api/admin/keys (createApiKeyWithAudit)', tag);
 	const createRes = await fetch(`${adminBase}/api/admin/keys`, {
@@ -81,20 +80,65 @@ async function smokeWritePaths(adminBase: string, masterKey: string, tag: string
 			Authorization: `Bearer ${masterKey}`,
 		},
 		body: JSON.stringify({
-			userId: smokeUserId,
-			userEmail: smokeEmail,
-			budgetMax: null,
-			budgetPeriod: 'none',
+			external_system: 'gateway-smoke',
+			external_user_id: smokeExt,
+			email: smokeEmail,
+			reason: 'node gateway smoke',
 		}),
 	});
 	await assertOk(createRes, 'POST /api/admin/keys');
-	const created = (await createRes.json()) as { success?: boolean; data?: { id?: string; key?: string } };
-	if (!created.data?.id || !created.data?.key) {
-		throw new Error(`POST /api/admin/keys: 响应缺少 data.id / data.key，实际：${JSON.stringify(created).slice(0, 300)}`);
+	const created = (await createRes.json()) as {
+		success?: boolean;
+		data?: { key_id?: string; id?: string; key?: string; user_id?: string };
+	};
+	const keyId = created.data?.key_id ?? created.data?.id;
+	const keyValue = created.data?.key;
+	const userId = created.data?.user_id;
+	if (!keyId || !keyValue || !userId) {
+		throw new Error(
+			`POST /api/admin/keys: 响应缺少 data.key_id / data.key / data.user_id，实际：${JSON.stringify(created).slice(0, 400)}`
+		);
 	}
-	const keyId = created.data.id;
-	const keyValue = created.data.key;
-	console.log('%s [write] POST /api/admin/keys ok (id=%s)', tag, keyId);
+	console.log('%s [write] POST /api/admin/keys ok (key_id=%s user_id=%s)', tag, keyId, userId);
+
+	console.log('%s [write] GET /api/admin/budget-audit-logs (user snapshot audit)', tag);
+	const auditListUrl = `${adminBase}/api/admin/budget-audit-logs?${new URLSearchParams({
+		user_id: userId,
+		event_type: 'key_created',
+		source: 'key_provision',
+		page: '1',
+		page_size: '10',
+	}).toString()}`;
+	const auditRes = await fetch(auditListUrl, {
+		headers: { Authorization: `Bearer ${masterKey}` },
+	});
+	await assertOk(auditRes, 'GET /api/admin/budget-audit-logs');
+	const auditJson = (await auditRes.json()) as {
+		success?: boolean;
+		data?: Array<{
+			event_type?: string;
+			source?: string | null;
+			before_user_snapshot?: string | null;
+			after_user_snapshot?: string | null;
+			changed_fields?: string | null;
+		}>;
+	};
+	const rows = auditJson.data ?? [];
+	const enriched = rows.find(
+		(r) =>
+			r.event_type === 'key_created' &&
+			r.source === 'key_provision' &&
+			typeof r.before_user_snapshot === 'string' &&
+			r.before_user_snapshot.length > 2 &&
+			typeof r.after_user_snapshot === 'string' &&
+			r.after_user_snapshot.length > 2
+	);
+	if (!enriched) {
+		throw new Error(
+			`GET /api/admin/budget-audit-logs: 未找到带 user snapshot 的 key_created（source=key_provision），rows=${rows.length}`
+		);
+	}
+	console.log('%s [write] audit log snapshot ok (key_created + key_provision)', tag);
 
 	// 用刚创建的 key 访问 /v1/models，间接触发 api-key-auth（读 api_keys 表）
 	console.log('%s [write] GET /v1/models with new sk (api-key-auth read)', tag);

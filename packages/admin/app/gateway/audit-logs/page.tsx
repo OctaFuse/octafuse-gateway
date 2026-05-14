@@ -18,6 +18,7 @@ import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 
 function formatSignedMoney(value: number, currency: string): string {
   return formatGatewayMoneyCodeSigned(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
@@ -56,6 +57,8 @@ function auditDisplayExtras(item: GatewayApiKeyBudgetAuditLog) {
     reason_text: item.reason_text ?? str(m.reason_text),
     reason_code: item.reason_code ?? str(m.reason_code),
     actor_id: item.actor_id ?? str(m.actor_id),
+    source: item.source ?? str(m.source),
+    correlation_id: item.correlation_id ?? str(m.correlation_id),
     before_budget_period: item.before_budget_period ?? str(m.before_budget_period),
     after_budget_period: item.after_budget_period ?? str(m.after_budget_period),
     before_budget_reset_at: item.before_budget_reset_at ?? str(m.before_budget_reset_at),
@@ -134,6 +137,12 @@ function summarizeAuditMetadataChanges(raw: string | null | undefined): string[]
   }
 }
 
+/** `metadata` 非空时的补充展示（无快照旧行、密钥侧 JSON 等）；与快照 diff 合并到同一列。 */
+function extraMetadataDisplayLines(raw: string | null | undefined): string[] {
+  if (raw == null || raw.trim() === '') return [];
+  return summarizeAuditMetadataChanges(raw).filter((l) => l !== '—');
+}
+
 /** 与网关金额精度一致，用于判断 budget_max 是否变化 */
 function budgetMaxSemanticallyEqual(
   before: number | null | undefined,
@@ -174,6 +183,9 @@ export default function GatewayAuditLogsPage() {
   const [filterUserEmail, setFilterUserEmail] = useState('');
   const [filterEventType, setFilterEventType] = useState('');
   const [filterActorType, setFilterActorType] = useState('');
+  const [filterReasonCode, setFilterReasonCode] = useState('');
+  const [filterSource, setFilterSource] = useState('');
+  const [filterCorrelationId, setFilterCorrelationId] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
 
@@ -184,6 +196,9 @@ export default function GatewayAuditLogsPage() {
     const userEmail = params.get('user_email');
     const eventType = params.get('event_type');
     const actorType = params.get('actor_type');
+    const reasonCode = params.get('reason_code');
+    const source = params.get('source');
+    const correlationId = params.get('correlation_id');
     const startDate = params.get('start_date');
     const endDate = params.get('end_date');
     const p = params.get('page');
@@ -192,6 +207,9 @@ export default function GatewayAuditLogsPage() {
     if (userEmail != null) setFilterUserEmail(userEmail);
     if (eventType != null) setFilterEventType(eventType);
     if (actorType != null) setFilterActorType(actorType);
+    if (reasonCode != null) setFilterReasonCode(reasonCode);
+    if (source != null) setFilterSource(source);
+    if (correlationId != null) setFilterCorrelationId(correlationId);
     if (startDate != null) setFilterStartDate(startDate);
     if (endDate != null) setFilterEndDate(endDate);
     const hasStart = startDate != null && startDate !== '';
@@ -218,6 +236,9 @@ export default function GatewayAuditLogsPage() {
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       if (filterEventType) params.append('event_type', filterEventType);
       if (filterActorType) params.append('actor_type', filterActorType);
+      if (filterReasonCode) params.append('reason_code', filterReasonCode);
+      if (filterSource) params.append('source', filterSource);
+      if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
       if (filterStartDate) params.append('start_date', filterStartDate);
       if (filterEndDate) params.append('end_date', filterEndDate);
       return params;
@@ -230,6 +251,9 @@ export default function GatewayAuditLogsPage() {
       filterUserEmail,
       filterEventType,
       filterActorType,
+      filterReasonCode,
+      filterSource,
+      filterCorrelationId,
       filterStartDate,
       filterEndDate,
     ]
@@ -247,6 +271,9 @@ export default function GatewayAuditLogsPage() {
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       if (filterEventType) params.append('event_type', filterEventType);
       if (filterActorType) params.append('actor_type', filterActorType);
+      if (filterReasonCode) params.append('reason_code', filterReasonCode);
+      if (filterSource) params.append('source', filterSource);
+      if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
       if (filterStartDate) params.append('start_date', filterStartDate);
       if (filterEndDate) params.append('end_date', filterEndDate);
 
@@ -268,6 +295,9 @@ export default function GatewayAuditLogsPage() {
     filterUserEmail,
     filterEventType,
     filterActorType,
+    filterReasonCode,
+    filterSource,
+    filterCorrelationId,
     filterStartDate,
     filterEndDate,
     pageSize,
@@ -284,7 +314,11 @@ export default function GatewayAuditLogsPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
         <p className="text-sm text-gray-500 mt-1">
-          User audit trail (<code className="text-xs bg-gray-100 px-1 rounded">user_audit_logs</code>) — budget and other events
+          User audit trail (<code className="text-xs bg-gray-100 px-1 rounded">user_audit_logs</code>) — budget columns plus one
+          column for <span className="text-gray-600">user row snapshot Δ</span>
+          {'; '}
+          <span className="text-gray-600">legacy / extra JSON</span> from <code className="text-xs bg-gray-100 px-1 rounded">metadata</code> is
+          appended below when present (no separate Metadata column).
         </p>
       </div>
 
@@ -358,12 +392,45 @@ export default function GatewayAuditLogsPage() {
             className="px-3 py-2 border border-gray-300 rounded-md w-64 font-mono text-xs"
           />
         </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Reason code</label>
+          <input
+            type="text"
+            value={filterReasonCode}
+            onChange={(e) => { setFilterReasonCode(e.target.value); setPage(1); }}
+            placeholder="e.g. request_usage_charged_cost"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-56 font-mono text-xs"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Source</label>
+          <input
+            type="text"
+            value={filterSource}
+            onChange={(e) => { setFilterSource(e.target.value); setPage(1); }}
+            placeholder="usage_charge, period_reset…"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-44 font-mono text-xs"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-500 mb-1">Correlation ID</label>
+          <input
+            type="text"
+            value={filterCorrelationId}
+            onChange={(e) => { setFilterCorrelationId(e.target.value); setPage(1); }}
+            placeholder="request_log_id / 业务单号"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-64 font-mono text-xs"
+          />
+        </div>
         <div className="flex items-end">
           <button
             type="button"
             onClick={() => {
               setFilterEventType('');
               setFilterActorType('');
+              setFilterReasonCode('');
+              setFilterSource('');
+              setFilterCorrelationId('');
               setFilterUserEmail('');
               setFilterUserId('');
               setFilterApiKeyId('');
@@ -395,7 +462,9 @@ export default function GatewayAuditLogsPage() {
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[12rem]">User / Key</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Spend</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">Budget plan</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[12rem]">Metadata</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[16rem]">
+                    User change detail
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
@@ -419,7 +488,12 @@ export default function GatewayAuditLogsPage() {
                       ex.after_budget_reset_at
                     );
                     const reason = ex.reason_text || ex.reason_code || '—';
-                    const metadataLines = summarizeAuditMetadataChanges(item.metadata);
+                    const snapLines = summarizeUserSnapshotDiffLines({
+                      before_user_snapshot: item.before_user_snapshot ?? null,
+                      after_user_snapshot: item.after_user_snapshot ?? null,
+                      changed_fields: item.changed_fields ?? null,
+                    });
+                    const metaExtraLines = extraMetadataDisplayLines(item.metadata);
                     return (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 align-top">
@@ -428,8 +502,16 @@ export default function GatewayAuditLogsPage() {
                           className="mt-0.5 font-mono text-xs text-gray-600 whitespace-nowrap"
                           title={item.request_log_id || undefined}
                         >
-                          {item.request_log_id ? shortId(item.request_log_id) : '—'}
+                          req: {item.request_log_id ? shortId(item.request_log_id) : '—'}
                         </div>
+                        {ex.correlation_id ? (
+                          <div
+                            className="mt-0.5 font-mono text-xs text-gray-500 whitespace-nowrap"
+                            title={ex.correlation_id}
+                          >
+                            corr: {shortId(ex.correlation_id)}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-3 py-2 align-top">
                         <div className="text-sm text-gray-900 font-medium leading-snug">{item.event_type}</div>
@@ -440,6 +522,11 @@ export default function GatewayAuditLogsPage() {
                         <div className="mt-1 text-xs text-gray-600 line-clamp-2 leading-snug" title={reason}>
                           {reason}
                         </div>
+                        {ex.source ? (
+                          <div className="mt-1 font-mono text-[11px] text-violet-700" title={ex.source}>
+                            {ex.source}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-3 py-2 align-top min-w-0 max-w-[18rem]">
                         <div className="text-sm text-gray-900 truncate leading-snug" title={item.user_email || ''}>
@@ -518,13 +605,41 @@ export default function GatewayAuditLogsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 py-2 text-gray-600 max-w-xs align-top">
+                      <td className="px-3 py-2 text-gray-600 min-w-[14rem] max-w-lg align-top">
                         <div className="space-y-1 text-xs leading-snug">
-                          {metadataLines.map((line, index) => (
-                            <div key={`${item.id}-metadata-${index}`} className="line-clamp-2" title={line}>
-                              {line}
+                          {snapLines.length > 0 ? (
+                            <>
+                              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                                User snapshot
+                              </div>
+                              {snapLines.slice(0, 6).map((line, index) => (
+                                <div key={`${item.id}-snap-${index}`} className="line-clamp-2 font-mono" title={line}>
+                                  {line}
+                                </div>
+                              ))}
+                              {snapLines.length > 6 ? (
+                                <div className="text-gray-400">+{snapLines.length - 6} more</div>
+                              ) : null}
+                            </>
+                          ) : null}
+                          {metaExtraLines.length > 0 ? (
+                            <div className={snapLines.length > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
+                              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                                Extra (metadata JSON)
+                              </div>
+                              {metaExtraLines.slice(0, 5).map((line, index) => (
+                                <div key={`${item.id}-meta-${index}`} className="line-clamp-2" title={line}>
+                                  {line}
+                                </div>
+                              ))}
+                              {metaExtraLines.length > 5 ? (
+                                <div className="text-gray-400">+{metaExtraLines.length - 5} more</div>
+                              ) : null}
                             </div>
-                          ))}
+                          ) : null}
+                          {snapLines.length === 0 && metaExtraLines.length === 0 ? (
+                            <span className="text-gray-400">—</span>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
