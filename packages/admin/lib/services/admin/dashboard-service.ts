@@ -70,7 +70,7 @@ export async function listAdminGlobalRequestLogsService(
 }
 
 /**
- * 全局 `api_key_audit_logs` 分页（可选 api_key_id、user_email、event_type、actor_type、时间窗）。
+ * 全局 `user_audit_logs` 分页（可选 api_key_id、user_email、event_type、actor_type、时间窗）。
  */
 export async function listAdminGlobalBudgetAuditLogsService(
 	repos: GatewayRepositories,

@@ -6,9 +6,11 @@ import { pathToFileURL } from 'node:url';
  * - Proxy：`GET /health`、`GET /v1/models`（可选 API key）
  * - Admin（可选）：`GET /api/admin/config`、`GET /dashboard`（HTML 壳）
  * - 关键写路径（Admin 存在时）：
- *   ① `POST /api/admin/keys` 创建临时冒烟 key → 验证创建成功（触发 createApiKeyWithAudit）
- *   ② `GET /api/admin/keys` 查询确认写入（触发 db 读路径）
- *   ③ `DELETE /api/admin/keys/:id` 删除临时 key（清理）
+ *   ① `POST /api/admin/keys` 创建临时冒烟 key → 验证创建成功
+ *   ② `GET /api/admin/budget-audit-logs` 校验 `key_created` 审计
+ *   ③ `GET /api/admin/keys` 确认列表 `data` 数组
+ *   ④ `POST /api/admin/users/:id/keys` 第二把 key；`GET .../keys` 确认 ≥2
+ *   ⑤ `DELETE /api/admin/users/:id` 级联清理（失败则回退逐个删 key）
  *
  * 环境变量：
  * - GATEWAY_BASE_URL — Proxy 根 URL，默认 http://127.0.0.1:8787
@@ -65,8 +67,7 @@ async function assertOk(res: Response, label: string): Promise<void> {
 }
 
 /**
- * 测试关键写路径：通过 Admin API 创建 key → 确认写入 → 删除（清理）。
- * 触发 createApiKeyWithAudit / db 读 / deleteApiKeyHard。
+ * 测试关键写路径：通过 Admin API 创建 key → 审计 → 列表确认 → 同用户第二 key → 删用户清理。
  */
 async function smokeWritePaths(adminBase: string, masterKey: string, tag: string): Promise<void> {
 	const smokeExt = `smoke-${Date.now()}`;
@@ -158,22 +159,66 @@ async function smokeWritePaths(adminBase: string, masterKey: string, tag: string
 		{ headers: { Authorization: `Bearer ${masterKey}` } }
 	);
 	await assertOk(listRes, 'GET /api/admin/keys (confirm write)');
-	const list = (await listRes.json()) as { data?: { keys?: unknown[] } };
-	if (!list.data?.keys || (list.data.keys as unknown[]).length === 0) {
+	const list = (await listRes.json()) as { data?: unknown[] };
+	const keysArr = Array.isArray(list.data) ? list.data : [];
+	if (keysArr.length === 0) {
 		throw new Error(`GET /api/admin/keys confirm: 未查到刚写入的 key（smokeEmail=${smokeEmail}）`);
 	}
-	console.log('%s [write] confirm write ok (found %d key(s))', tag, (list.data.keys as unknown[]).length);
+	console.log('%s [write] confirm write ok (found %d key(s))', tag, keysArr.length);
 
-	// 删除临时 key（触发 deleteApiKeyHard）
-	console.log('%s [write] DELETE /api/admin/keys/%s (cleanup)', tag, keyId);
-	const deleteRes = await fetch(`${adminBase}/api/admin/keys/${keyId}`, {
+	console.log('%s [write] POST /api/admin/users/%s/keys (second key, same user)', tag, userId);
+	const key2Res = await fetch(`${adminBase}/api/admin/users/${encodeURIComponent(userId)}/keys`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${masterKey}`,
+		},
+		body: JSON.stringify({ name: 'smoke-second-key', reason: 'node gateway smoke second' }),
+	});
+	await assertOk(key2Res, 'POST /api/admin/users/:id/keys');
+	const key2Json = (await key2Res.json()) as { data?: { key_id?: string } };
+	const key2Id = key2Json.data?.key_id;
+	if (!key2Id) {
+		throw new Error(`POST user keys: 缺少 data.key_id，实际：${JSON.stringify(key2Json).slice(0, 400)}`);
+	}
+	console.log('%s [write] second key ok (key_id=%s)', tag, key2Id);
+
+	console.log('%s [write] GET /api/admin/users/%s/keys (expect 2 keys)', tag, userId);
+	const userKeysRes = await fetch(
+		`${adminBase}/api/admin/users/${encodeURIComponent(userId)}/keys`,
+		{ headers: { Authorization: `Bearer ${masterKey}` } }
+	);
+	await assertOk(userKeysRes, 'GET /api/admin/users/:id/keys');
+	const userKeysJson = (await userKeysRes.json()) as { data?: unknown[] };
+	const userKeys = Array.isArray(userKeysJson.data) ? userKeysJson.data : [];
+	if (userKeys.length < 2) {
+		throw new Error(
+			`GET /api/admin/users/:id/keys: 期望至少 2 条 key，实际 ${userKeys.length}，body=${JSON.stringify(userKeysJson).slice(0, 400)}`
+		);
+	}
+	console.log('%s [write] user keys ok (count=%d)', tag, userKeys.length);
+
+	// 删除临时用户（级联删除其 api_keys；验证多 key 清理路径）
+	console.log('%s [write] DELETE /api/admin/users/%s (cleanup cascade)', tag, userId);
+	const delUserRes = await fetch(`${adminBase}/api/admin/users/${encodeURIComponent(userId)}`, {
 		method: 'DELETE',
 		headers: { Authorization: `Bearer ${masterKey}` },
 	});
-	if (!deleteRes.ok) {
-		console.warn('%s [write] DELETE key warn: %s（不阻断冒烟）', tag, deleteRes.status);
+	if (!delUserRes.ok) {
+		console.warn('%s [write] DELETE user warn: %s — 回退删除 key', tag, delUserRes.status);
+		const deleteRes = await fetch(`${adminBase}/api/admin/keys/${keyId}`, {
+			method: 'DELETE',
+			headers: { Authorization: `Bearer ${masterKey}` },
+		});
+		if (!deleteRes.ok) {
+			console.warn('%s [write] DELETE key warn: %s', tag, deleteRes.status);
+		}
+		await fetch(`${adminBase}/api/admin/keys/${key2Id}`, {
+			method: 'DELETE',
+			headers: { Authorization: `Bearer ${masterKey}` },
+		}).catch(() => undefined);
 	} else {
-		console.log('%s [write] DELETE key ok', tag);
+		console.log('%s [write] DELETE user ok (cascade keys)', tag);
 	}
 }
 

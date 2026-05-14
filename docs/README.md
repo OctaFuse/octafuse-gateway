@@ -8,6 +8,7 @@
 |------|------|
 | [CONVENTIONS.md](./CONVENTIONS.md) | **文档分层规则 + 敏感信息规范**：什么留仓内、什么可外移、占位符与禁止值清单（PR review 必参考） |
 | [architecture/runtime-data.md](./architecture/runtime-data.md) | **运行时（Cloudflare / Node）× 数据库（D1 / Postgres / MySQL）**、部署拓扑与迁移目录 |
+| [architecture/user-keys-data-model.md](./architecture/user-keys-data-model.md) | **用户 / API Key / 预算**表关系、约束与鉴权扣费不变量 |
 
 ## 架构
 
@@ -82,7 +83,8 @@ flowchart LR
 | 文档 | 说明 |
 |------|------|
 | [reference/streaming-billing.md](./reference/streaming-billing.md) | 流式计费与取消 |
-| [reference/budget-audit-logs.md](./reference/budget-audit-logs.md) | 预算审计日志 |
+| [reference/user-audit-logs.md](./reference/user-audit-logs.md) | 用户审计日志（`user_audit_logs`） |
+| [reference/budget-audit-logs.md](./reference/budget-audit-logs.md) | 兼容跳转（→ user-audit-logs） |
 | [reference/provider-thinking-configs.md](./reference/provider-thinking-configs.md) | 渠道思考类参数 |
 | [reference/provider-import-presets.md](./reference/provider-import-presets.md) | Admin Provider 导入模板 |
 

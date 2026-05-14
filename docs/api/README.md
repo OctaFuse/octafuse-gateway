@@ -19,7 +19,7 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 - [渠道模型思考参数配置说明](../reference/provider-thinking-configs.md)
 - [流式计费与客户端取消](../reference/streaming-billing.md)
 - [Admin 分层约束](../architecture/admin-layered.md)
-- [预算审计日志](../reference/budget-audit-logs.md)
+- [用户审计日志（`user_audit_logs`）](../reference/user-audit-logs.md)
 - Schema 与迁移：D1 在 **`packages/core/migrations-d1/`**（`wrangler.d1.jsonc` 与之同目录）；Postgres 在 **`packages/core/migrations-postgres/`**；MySQL 在 **`packages/core/migrations-mysql/`**
 
 ## 基础信息

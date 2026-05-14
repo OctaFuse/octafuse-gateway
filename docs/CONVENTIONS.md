@@ -59,7 +59,7 @@
 |-------------|------|------|
 | `docs/api/{public,user,admin,README}.md` | L1 | 跟随路由与表结构演进 |
 | `docs/architecture/{runtime-data,admin-layered}.md` | L1 | 与 `packages/core` / 部署矩阵强相关 |
-| `docs/reference/{streaming-billing,budget-audit-logs,provider-thinking-configs,provider-import-presets}.md` | L1 | 行为与计费语义快照 |
+| `docs/reference/{streaming-billing,user-audit-logs,provider-thinking-configs,provider-import-presets}.md` | L1 | 行为与计费语义快照 |
 | `docs/ops/deployment.md` 索引 | L2 | 入口文档 |
 | `docs/ops/deployment-cloudflare.md` | L2 | 通用 CF 部署模式 |
 | `docs/ops/deployment-docker.md` | L2 | 通用 Docker 部署模式 |

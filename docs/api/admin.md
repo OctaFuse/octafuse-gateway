@@ -15,7 +15,7 @@
 Authorization: Bearer sk-admin-xxx
 ```
 
-`MASTER_KEY` 的权威来源是 **D1 `system_config`**（键名 `MASTER_KEY`）：表结构在迁移 **`packages/core/migrations-d1/0001_baseline.sql`**；开发默认值在 **`packages/core/migrations-d1/0002_seed.sql`**（幂等 upsert，占位 `sk-dev-admin-key`）。生产环境应在本 **Admin** 应用的 Config 页面或通过 D1 SQL 将 `MASTER_KEY` 改为强随机密钥；与本地 `.env*`、Worker Secret 等 **无绑定**，`requireMasterKey` 只与 D1 中该键的值比对。
+`MASTER_KEY` 的权威来源是当前 Admin 所连数据库的 **`system_config`** 表（键名 `MASTER_KEY`）：表结构见各引擎迁移 **`packages/core/migrations-{d1,postgres,mysql}/0001_baseline.sql`**；开发默认值在 **`packages/core/migrations-d1/0002_seed.sql`**（D1 种子；Postgres/MySQL 亦有对应 **`0002_seed.sql`**，幂等 upsert，占位 `sk-dev-admin-key`）。生产环境应在本 **Admin** 应用的 Config 页面或 SQL 将 `MASTER_KEY` 改为强随机密钥；与本地 `.env*`、Worker Secret 等 **无绑定**，`requireMasterKey` 只与库中该键的值比对。
 
 ## 时间与时区约定
 
@@ -32,25 +32,28 @@ Authorization: Bearer sk-admin-xxx
 - 成功：`{ "success": true, "data": ... }`，部分接口另有 `message`、`total`、`page`、`page_size` 等字段。
 - 失败：`{ "success": false, "message": "..." }`，HTTP 状态码 4xx/5xx。
 
-若 **`Authorization` 缺失或与 D1 中 `MASTER_KEY` 不一致**，在到达上述处理函数前由 `requireMasterKey` 返回 **`{ "error": "Unauthorized" }`**（401），不使用 `success` 信封。
+若 **`Authorization` 缺失或与 `system_config` 中 `MASTER_KEY` 不一致**，在到达上述处理函数前由 `requireMasterKey` 返回 **`{ "error": "Unauthorized" }`**（401），不使用 `success` 信封。
 
 ---
 
 ## Admin API 矩阵 {#admin-api-matrix}
 
-逻辑分层：**Catalog**（供应商 → 模型 → 模型路由）、**Tenancy / Billing**（用户 Key、`system_config` 中的配额相关项）、**Observability**（全站日志、按 Key 日志、分析聚合）。下列为 **Admin 应用** 对外 **`/api/admin/*`**（内部 **`/admin/*`**）的路径与主要 D1 表；**消费者**指典型调用方（均需有效 `MASTER_KEY`，Bearer 与 D1 `MASTER_KEY` 一致）。
+逻辑分层：**Catalog**（供应商 → 模型 → 模型路由）、**Tenancy / Billing**（用户 / Key、`system_config` 中的配额相关项）、**Observability**（全站日志、按 Key 日志、分析聚合）。下列为 **Admin 应用** 对外 **`/api/admin/*`**（内部 **`/admin/*`**）的路径与主要数据表；**消费者**指典型调用方（均需有效 `MASTER_KEY`，Bearer 与库内 `MASTER_KEY` 一致）。
 
 | 路径 | 方法 | 主表 / 数据源 | 消费者 |
 |------|------|----------------|--------|
-| `/admin/keys` | GET | `api_keys`（分页列表） | Admin UI、外部集成方（`GATEWAY_MASTER_URL` + `/api/admin/keys`） |
-| `/admin/keys` | POST | `api_keys` | 外部集成方（用户/账号系统）、运维脚本（`GATEWAY_MASTER_URL`） |
-| `/admin/keys/:id` | GET | `api_keys` | 外部集成方、Admin UI |
-| `/admin/keys/:id` | PATCH, DELETE | `api_keys` | Admin UI、外部集成方 / 运维脚本 |
-| `/admin/keys/:id/logs` | GET | `api_key_request_logs`（Key 范围，分页） | 外部集成方、Admin UI |
-| `/admin/providers` | GET, POST, GET/PATCH/DELETE `/:id` | `providers` | Admin UI |
+| `/admin/users` | GET, POST | `users`（分页列表 / 按外部对幂等创建） | Admin UI、外部集成方 |
+| `/admin/users/:id` | GET, PATCH, DELETE | `users`（`:id` 为 uuid 或 `ext:…` 外部路由，见下节） | Admin UI、外部集成方 |
 | `/admin/users/:id/keys` | GET, POST | `api_keys`（用户范围内） | Admin UI |
 | `/admin/users/:id/keys/:keyId` | PATCH, DELETE | `api_keys` | Admin UI |
-| `/admin/users/:id/logs` | GET | `api_key_request_logs` | Admin UI |
+| `/admin/users/:id/logs` | GET | `api_key_request_logs`（按 `user_id`） | Admin UI |
+| `/admin/users/:id/audit-logs` | GET | `user_audit_logs`（按 `user_id`） | Admin UI |
+| `/admin/keys` | GET | `api_keys` **JOIN** `users`（分页列表；预算只读） | Admin UI、外部集成方 |
+| `/admin/keys` | POST | `api_keys`（+ 可能 `users`） | 外部集成方、运维脚本 |
+| `/admin/keys/:id` | GET | `api_keys` **JOIN** `users` | 外部集成方、Admin UI |
+| `/admin/keys/:id` | PATCH, DELETE | `api_keys` | Admin UI、外部集成方 |
+| `/admin/keys/:id/logs` | GET | `api_key_request_logs`（Key 范围，分页） | 外部集成方、Admin UI |
+| `/admin/providers` | GET, POST, GET/PATCH/DELETE `/:id` | `providers` | Admin UI |
 | `/admin/providers/import/catalog` | GET | 内置 Provider 模板摘要（无密钥） | Admin UI |
 | `/admin/providers/import` | POST | 请求体 `{"ids":["…"]}`：按模板创建 `providers`（**同 id 不覆盖**；写入占位 API Key，需后续 PATCH） | Admin UI、运维脚本 |
 | `/admin/models` | GET, POST, GET/PATCH/DELETE `/:id` | `models`，`model_tags` | Admin UI |
@@ -60,23 +63,80 @@ Authorization: Bearer sk-admin-xxx
 | `/admin/stats` | GET | 多表聚合（含 `api_key_request_logs`、`api_keys` 等） | Admin UI |
 | `/admin/config` | GET, PUT | `system_config` | Admin UI |
 | `/admin/request-logs` | GET | `api_key_request_logs`（**GlobalLogs**，多条件筛选分页） | Admin UI |
-| `/admin/budget-audit-logs` | GET | `api_key_audit_logs`（左联 `api_keys` 取 `user_email`，多条件筛选分页） | Admin UI |
+| `/admin/budget-audit-logs` | GET | **`user_audit_logs`**（左联 **`users`** 取 `email` 等，多维筛选分页） | Admin UI |
 | `/admin/analytics/models` | GET | `api_key_request_logs`，可选联 `model_tags` | Admin UI |
-| `/admin/analytics/users` | GET | `api_key_request_logs`，左联 `api_keys` | Admin UI |
+| `/admin/analytics/users` | GET | `api_key_request_logs`，左联 **`users`**（用户维度） | Admin UI |
 | `/admin/analytics/reliability` | GET | `api_key_request_logs` | Admin UI |
 
-说明：**GlobalLogs**（`/admin/request-logs`）与 **KeyScopedLogs**（`/admin/keys/:id/logs`）互补；**预算审计**（`/admin/budget-audit-logs`）记录密钥预算变更与扣费轨迹，与请求日志正交。各类审计行何时产生（含高频 `usage_charge`）见 [`../reference/budget-audit-logs.md`](../reference/budget-audit-logs.md)。
+说明：**GlobalLogs**（`/admin/request-logs`）与 **KeyScopedLogs**（`/admin/keys/:id/logs`）互补；**UserScopedLogs**（`/admin/users/:id/logs`）按 `user_id` 拉全量请求历史。**全局审计列表**（`/admin/budget-audit-logs`，表为 **`user_audit_logs`**）记录预算与用户/密钥生命周期事件，与请求日志正交。各类审计行何时产生（含高频 `usage_charge`）见 [`../reference/user-audit-logs.md`](../reference/user-audit-logs.md)。**数据模型总览**见 [`../architecture/user-keys-data-model.md`](../architecture/user-keys-data-model.md)。
+
+---
+
+## Users（`/admin/users`）
+
+`:id` 路径参数支持：
+
+- 网关 **`users.id`**（UUID）；
+- 或 **`ext:`** 前缀的外部身份路由（与 `parseAdminUserRouteId` 一致）：
+  - **`ext:<urlencode(system)>/<urlencode(external_user_id)>`**（`/` 分隔）；
+  - 或 **`ext:<urlencode(system)>\u001F<urlencode(external_user_id)>`**（ASCII **0x1F** 单元分隔符；**推荐**，避免 `external_system` 本身含 `/` 时与分隔符混淆）。
+
+### `GET /admin/users`
+
+分页列出用户；查询参数：
+
+| 参数 | 说明 |
+|------|------|
+| `page` / `page_size` | 分页，默认 `1` / `20`，`page_size` 最大 `100` |
+| `email` | 可选，模糊匹配 `users.email` |
+| `external_system` / `external_user_id` | 可选，精确匹配外部对 |
+| `max_budget` | 可选：`positive` \| `zero_or_negative` \| `null` |
+| `status` | 可选，精确匹配 `users.status` |
+
+响应：`{ success, data: [...], total, page, page_size }`；列表行含 **`active_keys_count`** 等（与实现 `AdminUserListItem` 对齐）。
+
+### `POST /admin/users`
+
+按 **`(external_system, external_user_id)`** 幂等创建（若已存在则返回已有用户）；无外部对时每次新建随机 uuid 用户。请求体至少含 **`email`**；可选 `budget_max`、`budget_base`、`budget_period`、`metadata` 等（与 `AdminUserCreateInput` 对齐）。外部对须同空或同非空。
+
+### `GET /admin/users/:id`
+
+用户详情（`getUserInfo`：含预算列、外部身份等；周期型预算可能触发懒重置）。**不含**密钥列表；枚举密钥请用 **`GET /admin/users/:id/keys`**。用户列表行（`GET /admin/users`）含 **`active_keys_count`**。
+
+### `PATCH /admin/users/:id`
+
+更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对等。**密钥级字段不可在此修改**。
+
+### `DELETE /admin/users/:id`
+
+物理删除用户；**级联删除**其 **`api_keys`**。`user_audit_logs.user_id` 按迁移为 **`ON DELETE SET NULL`**，历史审计保留。
+
+### `GET /admin/users/:id/keys` / `POST /admin/users/:id/keys`
+
+列出或在该用户下新建密钥（`POST` 体：`name`、`metadata`、`reason` 等）。响应与全局 `POST /admin/keys` 一致（返回明文 `key` 一次）。
+
+### `PATCH /admin/users/:id/keys/:keyId` / `DELETE ...`
+
+与全局 **`PATCH/DELETE /admin/keys/:id`** 语义一致，但限定密钥属于该用户。
+
+### `GET /admin/users/:id/logs`
+
+分页返回该 **`user_id`** 的 `api_key_request_logs`（可选 `status`）。
+
+### `GET /admin/users/:id/audit-logs`
+
+分页返回该用户的 **`user_audit_logs`**（仅 `user_id` 范围）。
 
 ---
 
 ## 列出 API Keys
 
-分页列出 Key，支持邮箱模糊与 `budget_max` 筛选。
+分页列出 Key；预算与邮箱来自 **`JOIN users`**（只读）。支持按 **`users.email`** 模糊筛选与 **`user_id`** 精确筛选。
 
 ### 请求
 
 ```
-GET /admin/keys?page=1&page_size=20&email=&max_budget=positive
+GET /admin/keys?page=1&page_size=20&email=&user_id=
 ```
 
 ### 查询参数
@@ -85,8 +145,8 @@ GET /admin/keys?page=1&page_size=20&email=&max_budget=positive
 |------|------|
 | `page` | 页码，默认 `1` |
 | `page_size` | 每页条数，默认 `20`，最大 `100` |
-| `email` | 可选，对 `user_email` 模糊匹配 |
-| `max_budget` | 可选：`positive` \| `zero_or_negative` \| `null`，筛选预算列 |
+| `email` | 可选，对 **`users.email`** 模糊匹配（响应字段仍为 `user_email`） |
+| `user_id` | 可选，精确匹配 `api_keys.user_id` |
 
 ### 响应
 
@@ -324,7 +384,7 @@ curl http://localhost:8787/admin/keys/uuid-here \
 
 ## 删除 Key
 
-从数据库物理删除该密钥行：`api_key_audit_logs` 随外键级联删除。`api_key_request_logs` 仍可能保留 `api_key_id` 引用（无 FK）。吊销请使用 `PATCH` 将 `status` 设为 `revoked`。
+从数据库物理删除该 **`api_keys`** 行。`user_audit_logs.api_key_id` 外键为 **`ON DELETE SET NULL`**（审计行保留，密钥引用清空）。`api_key_request_logs` 仍可能保留 `api_key_id` 引用（无 FK 或 `SET NULL`，依迁移）。吊销请优先使用 `PATCH` 将 `status` 设为 `revoked`。
 
 ### 请求
 
@@ -524,19 +584,21 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### `GET /admin/budget-audit-logs`
 
-全库 `api_key_audit_logs` 筛选分页；左联 `api_keys` 以返回 **`user_email`**（并支持按邮箱精确筛选）。
+全库 **`user_audit_logs`** 筛选分页；左联 **`users`** 以返回用户 **`email`**（并支持按邮箱精确筛选）。路径名含 “budget” 为历史兼容，数据源已为用户级审计表。
 
 | 查询参数 | 说明 |
 |----------|------|
 | `page` | 默认 `1` |
 | `page_size` | 默认 `20`，最大 `100` |
+| `user_id` | 精确匹配 `user_audit_logs.user_id` |
 | `api_key_id` | 精确匹配 |
-| `user_email` | 精确匹配（`api_keys.user_email`） |
+| `user_email` | 精确匹配（**`users.email`**，来自 JOIN） |
 | `event_type` | 精确匹配（如 `usage_charge`、`period_reset`、`admin_adjust`、`key_created`、`key_revoked`、`key_deleted`、`user_created`、`user_deleted`） |
 | `actor_type` | 精确匹配：`system` \| `admin` \| `service` |
+| `reason_code` / `source` / `correlation_id` | 可选，精确匹配 |
 | `start_date` / `end_date` | 与 **`GET /admin/request-logs`** 相同：过滤 `created_at`（`>=` / `<=`，UTC；建议格式 `YYYY-MM-DD HH:mm:ss` 或完整 ISO） |
 
-`data` 每条为审计表列 + **`user_email`**（无关联 Key 时可能为 `null`）。
+`data` 每条为审计表列 + 来自 **`users`** 的 **`user_email`**（无关联用户时可能为 `null`）。详细语义见 [`../reference/user-audit-logs.md`](../reference/user-audit-logs.md)。
 
 ### `GET /admin/analytics/models`
 
