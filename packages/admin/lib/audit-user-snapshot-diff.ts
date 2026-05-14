@@ -42,15 +42,19 @@ function parseChangedFields(raw: string | null | undefined): string[] | null {
 
 /**
  * 返回若干行 `field: before → after`；无快照时返回空数组。
+ * @param omitSnapshotFields 不在摘要中展示的字段（例如表格其它列已展示预算项）
  */
 export function summarizeUserSnapshotDiffLines(options: {
 	before_user_snapshot?: string | null;
 	after_user_snapshot?: string | null;
 	changed_fields?: string | null;
+	omitSnapshotFields?: readonly string[];
 }): string[] {
 	const before = parseJsonObject(options.before_user_snapshot ?? null);
 	const after = parseJsonObject(options.after_user_snapshot ?? null);
 	if (!before && !after) return [];
+
+	const omit = new Set(options.omitSnapshotFields ?? []);
 
 	const fields = parseChangedFields(options.changed_fields ?? null);
 	const keys =
@@ -60,10 +64,11 @@ export function summarizeUserSnapshotDiffLines(options: {
 
 	const lines: string[] = [];
 	for (const k of keys) {
+		if (omit.has(k)) continue;
 		const bv = before?.[k];
 		const av = after?.[k];
 		if (fmtVal(bv) === fmtVal(av) && fields == null) continue;
 		lines.push(`${k}: ${fmtVal(bv)} → ${fmtVal(av)}`);
 	}
-	return lines.length > 0 ? lines : ['(no snapshot diff)'];
+	return lines;
 }

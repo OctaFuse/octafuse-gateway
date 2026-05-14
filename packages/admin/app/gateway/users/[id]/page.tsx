@@ -17,6 +17,9 @@ import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 
+/** 与「Δ spend」「budget_max」列重复，不在「User snapshot Δ」再展示 */
+const OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS = ['budget_spent', 'budget_max'] as const;
+
 type UserDetail = {
   id: string;
   email: string;
@@ -807,6 +810,7 @@ export default function GatewayUserDetailPage() {
                   before_user_snapshot: a.before_user_snapshot ?? null,
                   after_user_snapshot: a.after_user_snapshot ?? null,
                   changed_fields: a.changed_fields ?? null,
+                  omitSnapshotFields: OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS,
                 });
                 return (
                 <tr key={a.id} className="border-b border-gray-50 align-top">
@@ -836,12 +840,20 @@ export default function GatewayUserDetailPage() {
                   </td>
                   <td className="py-2 pr-2 text-gray-600">
                     <div className="space-y-0.5">
-                      {snapLines.slice(0, 5).map((line, i) => (
-                        <div key={`${a.id}-s-${i}`} className="line-clamp-2 font-mono text-[11px]" title={line}>{line}</div>
-                      ))}
-                      {snapLines.length > 5 ? (
-                        <div className="text-gray-400 text-[11px]">+{snapLines.length - 5} more</div>
-                      ) : null}
+                      {snapLines.length === 0 ? (
+                        <span className="text-gray-400">—</span>
+                      ) : (
+                        <>
+                          {snapLines.slice(0, 5).map((line, i) => (
+                            <div key={`${a.id}-s-${i}`} className="line-clamp-2 font-mono text-[11px]" title={line}>
+                              {line}
+                            </div>
+                          ))}
+                          {snapLines.length > 5 ? (
+                            <div className="text-gray-400 text-[11px]">+{snapLines.length - 5} more</div>
+                          ) : null}
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

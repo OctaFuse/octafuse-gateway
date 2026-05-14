@@ -20,6 +20,25 @@ import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 
+/** 已在 Spend / Budget plan 列展示的快照字段，不在「User change detail」重复 */
+const OMIT_AUDIT_LOG_SNAPSHOT_FIELDS = [
+	'budget_spent',
+	'budget_max',
+	'budget_base',
+	'budget_period',
+	'budget_reset_at',
+] as const;
+
+/** change_payload 展开行：去掉已由 Budget plan / Time / Event 列展示的键 */
+function shouldOmitChangePayloadDisplayLine(line: string): boolean {
+	const colon = line.indexOf(':');
+	const key = (colon === -1 ? line : line.slice(0, colon)).trim();
+	if (!key) return false;
+	if (key.startsWith('before_budget_') || key.startsWith('after_budget_')) return true;
+	if (['actor_id', 'reason_code', 'reason_text', 'source', 'correlation_id'].includes(key)) return true;
+	return false;
+}
+
 function formatSignedMoney(value: number, currency: string): string {
   return formatGatewayMoneyCodeSigned(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
 }
@@ -138,10 +157,12 @@ function summarizeAuditMetadataChanges(raw: string | null | undefined): string[]
   }
 }
 
-/** `change_payload` 非空时的补充展示；与快照 diff 合并到同一列。 */
+/** `change_payload` 非空时的补充展示（与其它列去重后） */
 function extraMetadataDisplayLines(raw: string | null | undefined): string[] {
-  if (raw == null || raw.trim() === '') return [];
-  return summarizeAuditMetadataChanges(raw).filter((l) => l !== '—');
+	if (raw == null || raw.trim() === '') return [];
+	return summarizeAuditMetadataChanges(raw)
+		.filter((l) => l !== '—')
+		.filter((l) => !shouldOmitChangePayloadDisplayLine(l));
 }
 
 /** 与网关金额精度一致，用于判断 budget_max / budget_base 是否变化 */
@@ -459,7 +480,8 @@ export default function GatewayAuditLogsPage() {
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Time</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[11rem]">Event / Actor</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[8rem]">Event</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[7rem]">Actor</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[12rem]">User / Key</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Spend</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">Budget plan</th>
@@ -471,7 +493,7 @@ export default function GatewayAuditLogsPage() {
               <tbody className="divide-y divide-gray-100 bg-white">
                 {logs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                       No audit logs match the filters.
                     </td>
                   </tr>
@@ -497,6 +519,7 @@ export default function GatewayAuditLogsPage() {
                       before_user_snapshot: item.before_user_snapshot ?? null,
                       after_user_snapshot: item.after_user_snapshot ?? null,
                       changed_fields: item.changed_fields ?? null,
+                      omitSnapshotFields: OMIT_AUDIT_LOG_SNAPSHOT_FIELDS,
                     });
                     const metaExtraLines = extraMetadataDisplayLines(item.change_payload);
                     return (
@@ -520,10 +543,6 @@ export default function GatewayAuditLogsPage() {
                       </td>
                       <td className="px-3 py-2 align-top">
                         <div className="text-sm text-gray-900 font-medium leading-snug">{item.event_type}</div>
-                        <div className="mt-0.5 text-xs text-gray-500 leading-snug">
-                          {item.actor_type}
-                          {ex.actor_id ? ` (${shortId(ex.actor_id)})` : ''}
-                        </div>
                         <div className="mt-1 text-xs text-gray-600 line-clamp-2 leading-snug" title={reason}>
                           {reason}
                         </div>
@@ -532,6 +551,16 @@ export default function GatewayAuditLogsPage() {
                             {ex.source}
                           </div>
                         ) : null}
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <div className="text-sm text-gray-900 leading-snug">{item.actor_type}</div>
+                        {ex.actor_id ? (
+                          <div className="mt-0.5 font-mono text-xs text-gray-500 whitespace-nowrap" title={ex.actor_id}>
+                            {shortId(ex.actor_id)}
+                          </div>
+                        ) : (
+                          <div className="mt-0.5 text-xs text-gray-400">—</div>
+                        )}
                       </td>
                       <td className="px-3 py-2 align-top min-w-0 max-w-[18rem]">
                         <div className="text-sm text-gray-900 truncate leading-snug" title={item.user_email || ''}>
