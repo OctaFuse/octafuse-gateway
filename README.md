@@ -37,6 +37,7 @@ What the codebase and docs ship today:
 - **Routing** — providers, models, routes; **route groups** and priority-based **failover**
 - **Cost layers** — **`metered_cost`**, **`standard_cost`**, **`charged_cost`** for supply vs catalog vs user charge
 - **Audit and observability** — global and per-key request logs, plus user-level audit trails for traceability and investigations
+- **Proxy error alerts** — optional **Feishu (Lark)** and **WeChat Work** bot webhooks (configured in Admin) so operators get notified when the Proxy surfaces forwarding failures—useful for catching upstream provider incidents, quota or rate-limit pressure, and signs that an upstream API key may need attention or top-up
 - **Analytics** — in Admin, time-range views for model usage, provider usage, user usage, and reliability summaries—helpful for capacity checks, cost awareness, and comparing upstream health
 - **Playground** — in Admin, send a test call for one model route to check upstream connectivity and configuration quickly; it does not spend user budgets or leave the same metering / logs as real traffic—useful for troubleshooting and pre-flight checks
 - **Simulator** — in Admin, call your deployed gateway from the browser with a real user API key in OpenAI / Anthropic / Gemini shapes, so you can rehearse and validate auth, routing, billing, and logging the way production clients do
