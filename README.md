@@ -10,6 +10,69 @@ Licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [LIC
 
 **中文说明：** [README.zh-CN.md](./README.zh-CN.md)
 
+## What is OctaFuse
+
+**OctaFuse** is an AI gateway aimed at teams and organizations that need a single place to serve model traffic across multiple products. It uses a **Proxy + Admin + Core** split so model access, routing, budgets, metering, and audit/observability live in one infrastructure layer instead of being reimplemented in every service.
+
+- **Proxy (`packages/proxy`)** — OpenAI / Anthropic / Gemini–compatible inference endpoints
+- **Admin (`packages/admin`)** — operator UI and **`/api/admin/*`** automation APIs
+- **Core (`packages/core`)** — shared storage, types, migrations, and drivers for **D1 / Postgres / MySQL**
+
+## Why OctaFuse
+
+OctaFuse was built to own and evolve an in-house AI gateway for several internal SaaS systems.
+
+Many open-source and commercial options tightly constrain which providers you can use, which makes it hard to mix public cloud models, privately hosted models, and custom routing or billing rules. OctaFuse is designed for more freedom:
+
+- Wire in more providers, including models you run yourself
+- Define routing and pricing behavior to match your products
+- Integrate upstream systems through a stable Admin API with less coupling
+
+## Features
+
+What the codebase and docs ship today:
+
+- **Multi-protocol surface** — `/v1/chat/completions` (OpenAI), `/v1/messages` (Anthropic), `/v1beta/*` (Gemini)
+- **Keys and budgets** — users / API keys, caps and period resets, **`GET /v1/me`**
+- **Routing** — providers, models, routes; **route groups** and priority-based **failover**
+- **Cost layers** — **`metered_cost`**, **`standard_cost`**, **`charged_cost`** for supply vs catalog vs user charge
+- **Audit and ops** — request logs, user audit logs, model / user / reliability analytics APIs
+- **Runtimes** — Cloudflare (Worker + Pages + **D1**) or self-hosted (**Docker / Node + Postgres or MySQL**)
+- **Decoupled from apps** — SaaS and portals integrate via **`/api/admin/*`** so product code stays focused on AI use cases
+
+## Quick Start
+
+### Option A: Docker (fastest path)
+
+```bash
+docker compose -f docker/compose/quickstart.yml up --build
+curl -sS http://localhost:8787/health
+```
+
+When healthy:
+
+- Proxy: `http://localhost:8787`
+- Admin: `http://localhost:8789` (default `admin` / `changeme`)
+
+In Admin: configure a **provider** → a **model route** → create an **API key**, then call the inference APIs.
+
+### Option B: Cloudflare
+
+Follow [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md): connect this repo as two **Workers** (Proxy + Admin), bind the same **D1** as **`DB`**, then run remote migrations and deploy (see **One-click Cloudflare (Connect to Git)** below).
+
+### Option C: Self-hosted Node + Postgres / MySQL
+
+For Docker, Kubernetes, or VPS-style hosting, see [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) and [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md).
+
+## Contributing
+
+Issues and PRs are welcome. Before you submit:
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [docs/CONVENTIONS.md](./docs/CONVENTIONS.md) — documentation boundaries and secret hygiene
+- [SECURITY.md](./SECURITY.md) — vulnerabilities via **GitHub Security Advisories** only
+
 ## Documentation map
 
 | Topic | Link |
@@ -117,12 +180,6 @@ Downstream billing / user portals are **out of scope** for this repo. Call Admin
 | `GATEWAY_MASTER_KEY` | Bearer token, must match DB **`system_config.MASTER_KEY`** |
 
 See **[docs/api/admin.md](./docs/api/admin.md)** and **[docs/api/user.md](./docs/api/user.md)**.
-
-## Contributing & security
-
-- **[CONTRIBUTING.md](./CONTRIBUTING.md)** — contribution licensing (AGPL + maintainer relicensing clause).
-- **[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)** — Contributor Covenant 2.1.
-- **[SECURITY.md](./SECURITY.md)** — report vulnerabilities via **GitHub Security Advisories** only.
 
 ## Docker (reference)
 

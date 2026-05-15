@@ -10,6 +10,67 @@
 
 **English:** [README.md](./README.md)
 
+## What is OctaFuse
+
+**OctaFuse** 是一个面向团队与企业场景的 AI Gateway（网关）项目，用于统一承接多业务系统的模型调用需求。它通过 `Proxy + Admin + Core` 的分层架构，把「模型接入、路由治理、预算计费、审计观测」沉淀为独立基础设施，而不是散落在各个业务服务中重复实现。
+
+- **Proxy（`packages/proxy`）**：对外提供 OpenAI / Anthropic / Gemini 兼容推理入口
+- **Admin（`packages/admin`）**：提供管理台与 `/api/admin/*` 自动化管理接口
+- **Core（`packages/core`）**：统一仓储、类型、迁移与跨数据库实现（D1 / Postgres / MySQL）
+
+## Why OctaFuse
+
+创建 OctaFuse 的初衷，是为了构建一套可自主掌控、可持续演进的 AI 网关能力，服务内部不同 SaaS 系统。
+
+在调研过多个开源和商业方案后，一个共性痛点是：对 provider 的接入限制较多，难以同时兼容公有云模型、私有部署模型和团队自定义接入策略。OctaFuse 的目标就是提供更高自由度：
+
+- 支持接入更多不同 Provider（包括内部部署模型）
+- 支持按业务需要定义路由与计费策略
+- 通过标准管理 API 与业务系统对接，减少耦合
+
+## Features
+
+基于当前代码与文档，OctaFuse 已提供以下核心能力：
+
+- **多协议兼容**：`/v1/chat/completions`（OpenAI）、`/v1/messages`（Anthropic）、`/v1beta/*`（Gemini）
+- **统一密钥与预算体系**：用户 / Key 管理、预算上限与周期重置、`/v1/me` 预算查询
+- **模型路由治理**：Provider / Model / Route 管理，支持 route group 与优先级 failover
+- **分层计费与对账**：`metered_cost` / `standard_cost` / `charged_cost` 三套成本口径
+- **审计与观测**：请求日志、用户审计日志、模型/用户/可靠性分析接口
+- **多运行时部署**：Cloudflare（Worker + Pages + D1）或自托管（Docker/Node + Postgres/MySQL）
+- **业务系统解耦**：通过 Admin API（`/api/admin/*`）对接上层 SaaS，让业务更专注 AI 应用本身
+
+## Quick Start
+
+### 方式 A：本地 Docker（推荐先跑通）
+
+```bash
+docker compose -f docker/compose/quickstart.yml up --build
+curl -sS http://localhost:8787/health
+```
+
+健康后：
+- Proxy：`http://localhost:8787`
+- Admin：`http://localhost:8789`（默认 `admin / changeme`）
+
+然后在 Admin 中完成三步：配置 Provider → 配置 Model Route → 创建 API Key，即可开始调用推理接口。
+
+### 方式 B：Cloudflare 部署
+
+按 [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) 将仓库关联为两个 Worker（Proxy + Admin），并绑定同一 D1（`DB`）。随后执行远程迁移与部署命令（见下方“Cloudflare：从 Git 一键部署”章节）。
+
+### 方式 C：自托管 Node + Postgres/MySQL
+
+如需落地到自有基础设施（Docker/K8s/VPS），见 [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) 与 [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md)。
+
+## Contributing
+
+欢迎提交 Issue / PR 一起完善 OctaFuse。提交前建议先阅读：
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [docs/CONVENTIONS.md](./docs/CONVENTIONS.md)（文档边界与敏感信息规范）
+
 ## 文档地图
 
 | 主题 | 链接 |
