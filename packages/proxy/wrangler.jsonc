@@ -10,7 +10,7 @@
 			"binding": "DB",
 			"database_name": "octafuse-gateway",
 			// 与 `packages/core/wrangler.d1.jsonc` / admin 中 `database_id` 保持一致（占位，部署前替换）。
-			"database_id": "00000000-0000-4000-8000-000000000001"
+			"database_id": "3030b188-920e-4eb6-9d62-68b88e316ad5"
 		}
 	],
 	"observability": {

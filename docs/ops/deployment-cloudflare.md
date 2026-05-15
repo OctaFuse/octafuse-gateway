@@ -1,119 +1,185 @@
-# 线上部署：Cloudflare（Proxy Worker + Admin Pages + D1）
+# 线上部署：Cloudflare（Proxy Worker + Admin + D1）
 
-本文描述在 **Cloudflare** 上部署 **octafuse**：优先 **§0 Connect to Git**（免本机 `wrangler`）；亦可使用 **§2 本机 `npm run deploy:*`**。数据面为 **D1**；表结构以 **`packages/core/migrations-d1/`** 为准。与外部集成方的环境变量对齐见后文。
+本文说明在 **Cloudflare** 上部署 **octafuse-gateway**：**Proxy Worker**、**Admin（OpenNext on Workers）** 与共享 **D1** 数据库。表结构以 **`packages/core/migrations-d1/`** 为准。
 
-**生产典型对外域名**：Proxy **`https://gateway.example.com`**，Admin **`https://gateway-admin.example.com`**（DNS 与证书在 Cloudflare 控制台配置；调用方侧 **`GATEWAY_URL` / `GATEWAY_MASTER_URL`** 与之一致）。无法或不希望使用 Cloudflare D1 时改走自托管 Docker 部署，见 [deployment-docker.md](./deployment-docker.md)；Compose 环境文件约定见 [docker/deploy/README.md](../../docker/deploy/README.md)。Nginx 流式反代见 [docker/examples/nginx/](../../docker/examples/nginx/)。
+**生产典型域名**：Proxy `https://gateway.example.com`，Admin `https://gateway-admin.example.com`（在 Cloudflare DNS 与证书中配置；下游 **`GATEWAY_URL` / `GATEWAY_MASTER_URL`** 与之对齐）。
 
-## 0. Connect to Git（推荐：免本机 `wrangler`）
+不使用 D1 时改走 Docker 自托管，见 [deployment-docker.md](./deployment-docker.md)。
 
-在 Cloudflare 控制台将 **Git 仓库** 关联到 **Workers**（或等价「从 Git 构建并部署」能力）后，每次推送即可触发构建与部署；**D1 绑定名 `DB`、环境变量与 Secrets** 在 Worker 的 **Settings** 中配置，可覆盖 `packages/*/wrangler.jsonc` 中的占位 `database_id`（与 Dashboard 绑定一致即可）。
+---
 
-**Fork 本仓**（或导入为自有 Git 远程），在同一 Cloudflare 账号下创建 **D1** 数据库（逻辑名 **`octafuse-gateway`**），再创建 **两个** Worker 项目并分别关联该仓库，按下表设置 **Root directory** 与 **Build command**（构建环境需能执行 `npm ci`，且已配置 `wrangler` 所需的账号凭证；Cloudflare 侧通常已注入）。
+## 1. 部署失败常见原因：`database_id` 仍是占位符
 
-| Worker | Root directory | Build command（示例） | 控制台配置要点 |
-|--------|----------------|----------------------|----------------|
-| **Proxy** | `packages/proxy` | `cd ../.. && npm ci && cd packages/proxy && npx wrangler deploy` | **Settings → Variables → D1 database bindings**：绑定名 **`DB`**，指向目标 D1 实例。 |
-| **Admin** | `packages/admin` | `cd ../.. && npm ci && cd packages/admin && npm run build:cf && npx wrangler deploy`（若需每次部署前迁移，见 §0.1） | 同上绑定 **`DB`**（与 Proxy **同一** D1）。**Variables**：`ADMIN_USERNAME`（如 `admin`）。**Secrets**：`ADMIN_PASSWORD`（控制台登录密码，勿提交进 Git）。 |
+若日志中出现：
 
-**Admin OpenNext 构建耗时**较长；若 Workers 免费套餐或默认构建超时，可改用下文「本机 wrangler 路径」部署 Admin，或升级具备更长构建时间的计划 / 使用自建 CI（如 GitHub Actions）在本机构建后仅上传产物。
-
-### 0.1 D1 远程迁移（Connect to Git / CI）
-
-远程 D1 的 schema 须先于（或至少不晚于）依赖新表结构的 Worker 上线。任选其一：
-
-1. **在 Admin Worker 的 Build command 前追加迁移（幂等）**（每次部署都会执行一次 `apply`，无待执行迁移时开销较小）。**Root directory** 设为 `packages/admin` 时，构建起始目录即该目录，首行 `cd ../..` 进入仓库根：
-
-   ```bash
-   cd ../.. && npm ci && npx wrangler d1 migrations apply octafuse-gateway --config ./packages/core/wrangler.d1.jsonc --remote && cd packages/admin && npm run build:cf && npx wrangler deploy
-   ```
-
-2. **本机一次性迁移**（与下节「本机 wrangler 路径」一致）：仓库根执行 `npm run db:migrate:remote`（需已 `npx wrangler login` 且 `packages/core/wrangler.d1.jsonc` 中 `database_id` 与远程 D1 一致，或由 CLI 指定远程库）。
-
-3. **可选：自建 GitHub Actions**（`workflow_dispatch`，仅执行 `npm ci` + `wrangler d1 migrations apply … --remote`），与业务 Worker 的 Connect to Git 解耦；便于审计与限权。本仓库未内置该 workflow 时，可自行拷贝 [deployment-docker.md](./deployment-docker.md) 中 CI 凭证管理思路维护。
-
-> **套餐与超时**：Workers 免费档对单次构建时长与资源有限制；Admin 的 `npm run build:cf`（OpenNext）较重，若构建失败或超时，优先改用 §2 本机 `npm run deploy:admin`，或升级具备更长构建时间的计划 / 自建 CI 完成构建后再 `wrangler deploy`。
-
-### 0.2 升级须知（`ADMIN_PASSWORD` 不再写入 `wrangler.jsonc`）
-
-自移除 `packages/admin/wrangler.jsonc` 中的默认 `ADMIN_PASSWORD` 后：**若生产环境从未在 Dashboard / Secret 中设置 `ADMIN_PASSWORD`**，下一次 Admin Worker 部署后将不再有控制台登录密码。升级前请在 Cloudflare **Worker → Settings → Secrets** 添加 **`ADMIN_PASSWORD`**，或在本机对该项目执行：
-
-```bash
-cd packages/admin
-npx wrangler secret put ADMIN_PASSWORD
+```text
+D1 binding 'DB' references database '00000000-0000-4000-8000-000000000001' which was not found [code: 10181]
 ```
 
-## 1. 前置条件（本机 `wrangler` / `npm run deploy:*`）
+说明 **`wrangler.jsonc` / `wrangler.d1.jsonc` 里的 `database_id` 仍是仓库占位 UUID**。`wrangler deploy` 与 **`opennextjs-cloudflare deploy`** 会把配置文件中的 D1 绑定提交给 Cloudflare API，**API 会校验该 ID 是否存在于当前账号**。
 
-若**仅**使用 **§0 Connect to Git** 并在 Cloudflare 控制台完成 D1 绑定与 Secrets，可不执行本节的本地 `npm install` / `wrangler login`；以下面向在**本机**或自建 CI 中调用 `wrangler` 的路径。
+**重要**：
 
-- 已 `npm install`（仓库根）。
-- 已 `npx wrangler login`。
-- 在目标账号下创建 D1 数据库 **`octafuse-gateway`**（逻辑名须与 `packages/proxy/wrangler.jsonc`、`packages/admin/wrangler.jsonc` 中 `database_name` 一致）。
-- 将两处配置里的 **`database_id`** 都设为**同一个** D1 实例 ID（Dashboard → D1 → 数据库详情）。
+- **仅**在控制台给 Worker 绑定 D1，**不能**绕过**配置文件里**无效或占位 `database_id`。
+- 三处配置里的 **`database_id` 必须为同一真实 UUID**（见下表）。
 
-**Postgres** 不作为 Cloudflare Worker 的存储后端。可选 Node 进程仅用于自托管 Proxy，见 [deployment-docker.md](./deployment-docker.md)。
+| 文件 | 用途 |
+|------|------|
+| `packages/core/wrangler.d1.jsonc` | 根目录 `npm run db:migrate*`（勿用于 `wrangler deploy`） |
+| `packages/proxy/wrangler.jsonc` | Proxy Worker 部署 |
+| `packages/admin/wrangler.jsonc` | Admin OpenNext 部署 |
 
-### 本地与生产对照（摘要）
+`database_name`（如 **`octafuse-gateway`**）须与 `wrangler d1 migrations apply` 使用的数据库名一致；一般保持默认即可。
 
-| 项目 | 本地 | 生产 |
-|------|------|------|
-| Proxy | `npm run dev:proxy`（根目录），`:8787` | `npm run deploy:proxy`，Worker 名见 `packages/proxy/wrangler.jsonc` 的 `name` |
-| Admin | `npm run dev:admin` 或 `cd packages/admin && npm run preview` | `npm run deploy:admin` |
-| D1 | `--persist-to ./.wrangler/state`（与脚本一致） | Dashboard 绑定同一 `database_id` |
-| `MASTER_KEY` | D1 `system_config.MASTER_KEY`（种子见 `packages/core/migrations-d1/0002_seed.sql`） | 同上，以数据库为权威 |
+**不想手改三处时**：见文末 **附录**（编辑器批量替换或一条 shell），**无需**在仓库里加脚本或改 `package.json`。
 
-## 2. 迁移与发布顺序（本机 `wrangler` / `npm run deploy:*`）
+---
 
-以下与 **§0 Connect to Git** 二选一或混用（例如迁移在本机、部署走 Git）。
+## 2. 推荐流程：Fork 与配置
 
-1. 合并并通过自测。
-2. **远程 D1** 有待执行迁移时，在**仓库根**执行：
+1. **Fork** [octafuse-gateway](https://github.com/OctaFuse/octafuse-gateway)（或导入为自有远程），克隆到本地。
+2. 按 **§3 / §4** 在 Cloudflare 创建 D1，得到 **Database ID**。
+3. 将上表 **三个** 文件中的 `database_id` 全部改为该 UUID（或用 **附录** 里的一条命令）。
+4. 仓库根执行：
 
    ```bash
+   npm install
    npm run db:migrate:remote
-   ```
-
-3. **部署 Proxy Worker**：
-
-   ```bash
    npm run deploy:proxy
-   ```
-
-4. **部署 Admin Pages**（需在 Cloudflare 上绑定与 Proxy **相同**的 D1）：
-
-   ```bash
    npm run deploy:admin
    ```
 
-原则：**先让远程库 schema 与代码一致，再发布依赖新 schema 的制品**。若某次仅改代码、不改 schema，可跳过迁移步骤。
+---
 
-## 3. `MASTER_KEY` 与 Admin 认证
+## 3. 方法一：Wrangler CLI 创建 D1
 
-- 管理接口使用的 Bearer Token 必须与 D1 **`system_config.MASTER_KEY`** 一致；`requireMasterKey` 从数据库读取，**不**以 Worker Secret 为权威来源（与 v1 行为一致）。
-- 首次上线后应在 Admin 的 Config 或 SQL 中将 `MASTER_KEY` 改为强随机值，并同步到密钥管理。
-- **外部调用**管理 API：对 **`{GATEWAY_MASTER_URL}/api/admin/...`**（Admin Pages 根 URL；外部集成方约定的环境变量名）携带 `Authorization: Bearer <MASTER_KEY>`（见 [api/admin.md](../api/admin.md)）。
+```bash
+npx wrangler login
+npx wrangler d1 create octafuse-gateway
+npx wrangler d1 list   # 可选：核对 database_id
+```
 
-## 4. 下游服务环境变量
+将输出中的 **`database_id`** 写入上表三个文件（或附录 shell）。
 
-外部集成方（账号/计费/管理后台等）按下表对齐变量；同一套 Gateway 部署对应一组三件套，多环境（如多区域、预发/生产）请各自独立维护。
+---
+
+## 4. 方法二：Cloudflare 控制台创建 D1
+
+1. [Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **D1** → **Create database**（名称建议 **`octafuse-gateway`**）。
+2. 在数据库详情页复制 **Database ID**。
+3. 写入上表三个文件（或附录 shell）。
+
+**说明**：控制台给 Worker 绑 D1 仍不能替代配置文件中的有效 `database_id`。
+
+---
+
+## 5. Connect to Git（Workers Builds）
+
+关联 Git 后，**仓库内三个文件已是真实 `database_id`**（或由 CI 在构建前按附录写入）再部署，否则会重复 §1 错误。
+
+| Worker | Root directory | 构建 / 部署命令（示例） |
+|--------|----------------|-------------------------|
+| **Proxy** | `packages/proxy` | `cd ../.. && npm ci && cd packages/proxy && npx wrangler deploy` |
+| **Admin** | `packages/admin` | `cd ../.. && npm ci && cd packages/admin && npm run build:cf && npx wrangler deploy` |
+
+**Admin**：`ADMIN_PASSWORD` 勿写入 Git；用控制台 **Secrets** 或 `npx wrangler secret put ADMIN_PASSWORD`。
+
+**远程迁移**（可与 Admin 同一条流水线）：
+
+```bash
+cd ../.. && npm ci && npx wrangler d1 migrations apply octafuse-gateway --config ./packages/core/wrangler.d1.jsonc --remote && cd packages/admin && npm run build:cf && npx wrangler deploy
+```
+
+**CI 非交互**：可设 `WRANGLER_SEND_METRICS=false`（或 `CI=true`，依 Wrangler 版本）。
+
+---
+
+## 6. 本机前置（可选）
+
+- 仓库根 `npm install`，`npx wrangler login`（或 `CLOUDFLARE_API_TOKEN`）。
+- 完成 §2–§4 的 D1 与三文件 `database_id`。
+
+**Postgres** 不作为 Cloudflare Worker 存储；Node + Postgres 见 [deployment-docker.md](./deployment-docker.md)。
+
+---
+
+## 7. 迁移与发布顺序
+
+1. 远程 D1 有待执行迁移时，在**仓库根**：`npm run db:migrate:remote`
+2. `npm run deploy:proxy`
+3. `npm run deploy:admin`
+
+先迁移、再发依赖新 schema 的 Worker。
+
+---
+
+## 8. `MASTER_KEY` 与 Admin 认证
+
+- 管理接口 Bearer 须与 D1 **`system_config.MASTER_KEY`** 一致（从库读，不以 Worker Secret 为准）。
+- 首次上线后应轮换 `MASTER_KEY`，并同步下游 **`GATEWAY_MASTER_KEY`**（见 [api/admin.md](../api/admin.md)）。
+
+---
+
+## 9. 下游环境变量
 
 | 变量 | 说明 |
 |------|------|
-| `GATEWAY_URL` | 客户端 / JWT / 健康检查：Proxy Worker 根 URL（典型 **`https://gateway.example.com`**） |
-| `GATEWAY_MASTER_URL` | Admin Pages 根 URL；管理请求 **`/api/admin/*`**（典型 **`https://gateway-admin.example.com`**） |
-| `GATEWAY_MASTER_KEY` | 与本部署 D1 `MASTER_KEY` 一致 |
+| `GATEWAY_URL` | Proxy 根 URL |
+| `GATEWAY_MASTER_URL` | Admin 根 URL；`/api/admin/*` |
+| `GATEWAY_MASTER_KEY` | 与 D1 `MASTER_KEY` 一致 |
 
-更新 `MASTER_KEY` 后，必须同步更新 **`GATEWAY_MASTER_KEY`**，否则外部集成方创建 Key、运维脚本调管理接口会 401。
+---
 
-## 5. 健康检查与观测
+## 10. 健康检查与观测
 
-- Proxy：`GET /health`（探针打在 **Proxy 域名**上）。
-- Admin 应用自身健康由 Pages/Worker 平台探针或自定义路由负责（若已配置）。
-- 日志：`npx wrangler tail`，Worker 名称以 `packages/proxy/wrangler.jsonc` 的 `name` 为准；可在该配置中启用 `observability`。
+- Proxy：`GET /health`
+- 日志：`npx wrangler tail`（Worker 名见各包 `wrangler.jsonc` 的 `name`）
 
-## 6. 多套环境
+---
 
-- 新建独立 D1，复制/调整 `database_id`，可部署到独立 Worker 与 Pages 项目（预发、演练）。
+## 11. 多套环境
+
+预发 / 生产各用独立 D1 与各自 `database_id`、Worker `name` 或分支，避免混库。
+
+---
+
+## 附录：少改几次 `database_id` 的两种轻量做法
+
+以下**不依赖**仓库内任何脚本或 npm 生命周期，按需自选。
+
+### A. 编辑器「在文件中替换」
+
+在 VS Code / Cursor：**在文件中替换**，范围限定为下面三个路径（或 `**/wrangler*.jsonc` 再人工核对只改这三份）：
+
+- `packages/core/wrangler.d1.jsonc`
+- `packages/proxy/wrangler.jsonc`
+- `packages/admin/wrangler.jsonc`
+
+将占位 UUID `00000000-0000-4000-8000-000000000001` **全部**替换为你的真实 **Database ID**（三处一致即可）。
+
+### B. 一条 shell（本机 / CI 均可）
+
+先设置变量，再对三个文件各替换**首个** `"database_id": "..."`（当前每个文件仅一处，满足即可）：
+
+```bash
+export D1_ID='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'   # 换成你的 Database ID
+
+for f in packages/core/wrangler.d1.jsonc packages/proxy/wrangler.jsonc packages/admin/wrangler.jsonc; do
+  if [ "$(uname -s)" = Darwin ]; then
+    sed -i '' "s/\"database_id\": \"[^\"]*\"/\"database_id\": \"$D1_ID\"/g" "$f"
+  else
+    sed -i "s/\"database_id\": \"[^\"]*\"/\"database_id\": \"$D1_ID\"/g" "$f"
+  fi
+done
+```
+
+**注意**：若将来某文件里出现多个 `"database_id"` 字段，不要用本 `sed` 盲替换，应改回手改或收窄匹配范围。
+
+---
+
+### 若仍希望「仓库内自动化」
+
+可在 **Fork 私有分支** 自行加 `predeploy` / 小脚本从 `packages/core/wrangler.d1.jsonc` 同步到 proxy/admin；上游保持零魔法、少侵入，避免所有使用者都承担隐式写文件行为。
 
 ---
 
