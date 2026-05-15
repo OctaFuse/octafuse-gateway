@@ -8,16 +8,16 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "volcengine-ark-beijing",
-		"name": "火山引擎方舟（北京）",
+		"id": "volcengine",
+		"name": "火山方舟",
 		"vendor_key": "volcengine",
 		"base_url_openai": "https://ark.cn-beijing.volces.com/api/v3",
 		"base_url_anthropic": null,
 		"base_url_gemini": null
 	},
 	{
-		"id": "volcengine-ark-beijing-coding-plan",
-		"name": "火山引擎方舟 Coding Plan（北京）",
+		"id": "volcengine-coding-plan",
+		"name": "火山方舟 Coding Plan",
 		"vendor_key": "volcengine",
 		"base_url_openai": "https://ark.cn-beijing.volces.com/api/coding/v3",
 		"base_url_anthropic": "https://ark.cn-beijing.volces.com/api/coding",
@@ -25,8 +25,8 @@
 		"description": "Coding Plan 专用端点（/api/coding…），勿与普通 /api/v3 混用，否则无法走套餐额度。详见火山引擎《方舟Coding Plan：API与REST接口配置指南》。"
 	},
 	{
-		"id": "aliyun-dashscope-compatible",
-		"name": "阿里云百炼（DashScope）",
+		"id": "aliyun-dashscope",
+		"name": "阿里云百炼",
 		"vendor_key": "aliyun",
 		"base_url_openai": "https://dashscope.aliyuncs.com/compatible-mode/v1",
 		"base_url_anthropic": null,
@@ -42,7 +42,7 @@
 		"description": "Coding Plan 专用端点与套餐 Key（sk-sp-*），与按量 compatible-mode 不同。详见阿里云「Coding Plan 接入工具」。"
 	},
 	{
-		"id": "tencent-hunyuan-openai",
+		"id": "tencent-hunyuan",
 		"name": "腾讯混元",
 		"vendor_key": "tencent",
 		"base_url_openai": "https://api.hunyuan.cloud.tencent.com/v1",
@@ -50,7 +50,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "baidu-qianfan-openai",
+		"id": "baidu-qianfan",
 		"name": "百度千帆",
 		"vendor_key": "baidu",
 		"base_url_openai": "https://qianfan.baidubce.com/v2",
@@ -58,7 +58,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "zhipu-bigmodel-openai",
+		"id": "zhipu-bigmodel",
 		"name": "智谱 GLM",
 		"vendor_key": "zhipu",
 		"base_url_openai": "https://open.bigmodel.cn/api/paas/v4",
@@ -66,7 +66,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "zhipu-glm-coding-plan",
+		"id": "zhipu-bigmodel-coding-plan",
 		"name": "智谱 Coding Plan",
 		"vendor_key": "zhipu",
 		"base_url_openai": "https://open.bigmodel.cn/api/coding/paas/v4",
@@ -92,11 +92,164 @@
 		"description": "Kimi Code CLI / Coding 套餐使用的 OpenAI 兼容根路径（api.kimi.com），与 moonshot.cn 常规开放平台不同。见 Kimi Code CLI 文档「平台与模型」。"
 	},
 	{
-		"id": "minimax-official-openai",
+		"id": "minimax-official",
 		"name": "MiniMax",
 		"vendor_key": "minimax",
 		"base_url_openai": "https://api.minimax.chat/v1",
 		"base_url_anthropic": null,
 		"base_url_gemini": null
+	},
+	{
+		"id": "openai-official",
+		"name": "OpenAI（官方 API）",
+		"vendor_key": "openai",
+		"base_url_openai": "https://api.openai.com/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "anthropic-official",
+		"name": "Anthropic（官方 API）",
+		"vendor_key": "anthropic",
+		"base_url_openai": null,
+		"base_url_anthropic": "https://api.anthropic.com",
+		"base_url_gemini": null,
+		"description": "根地址不含路径；网关会拼接 `/v1/messages`。以 Anthropic 控制台文档为准。"
+	},
+	{
+		"id": "google-gemini-generativelanguage",
+		"name": "Google Gemini（Generative Language API）",
+		"vendor_key": "google",
+		"base_url_openai": null,
+		"base_url_anthropic": null,
+		"base_url_gemini": "https://generativelanguage.googleapis.com",
+		"description": "Gemini 根地址；网关会拼接 `/v1beta/models/...`。API Key 通常经查询参数 `key=` 传递，以 Google AI Studio / Cloud 文档为准。"
+	},
+	{
+		"id": "mistral-official",
+		"name": "Mistral AI（官方 API）",
+		"vendor_key": "mistral",
+		"base_url_openai": "https://api.mistral.ai/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "groq-official",
+		"name": "Groq（OpenAI 兼容）",
+		"vendor_key": "groq",
+		"base_url_openai": "https://api.groq.com/openai/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "xai-official",
+		"name": "xAI（Grok，官方 API）",
+		"vendor_key": "xai",
+		"base_url_openai": "https://api.x.ai/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "together-official",
+		"name": "Together AI",
+		"vendor_key": "together",
+		"base_url_openai": "https://api.together.xyz/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "fireworks-official",
+		"name": "Fireworks AI",
+		"vendor_key": "fireworks",
+		"base_url_openai": "https://api.fireworks.ai/inference/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "perplexity-official",
+		"name": "Perplexity",
+		"vendor_key": "perplexity",
+		"base_url_openai": "https://api.perplexity.ai",
+		"base_url_anthropic": null,
+		"base_url_gemini": null,
+		"description": "OpenAI 兼容 Chat Completions；根路径以 Perplexity 官方文档为准。"
+	},
+	{
+		"id": "cohere-openai-compat",
+		"name": "Cohere（OpenAI 兼容层）",
+		"vendor_key": "cohere",
+		"base_url_openai": "https://api.cohere.ai/compatibility/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null,
+		"description": "使用 Cohere Compatibility API（OpenAI SDK 迁移路径）。见 Cohere 文档 compatibility 章节。"
+	},
+	{
+		"id": "nvidia-nim-integrate",
+		"name": "NVIDIA NIM（integrate.api）",
+		"vendor_key": "nvidia",
+		"base_url_openai": "https://integrate.api.nvidia.com/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null,
+		"description": "常见 NIM OpenAI 兼容入口；具体模型与区域以 NVIDIA Build / NGC 文档为准。"
+	},
+	{
+		"id": "azure-openai-placeholder",
+		"name": "Azure OpenAI（请替换资源名）",
+		"vendor_key": "azure",
+		"base_url_openai": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai",
+		"base_url_anthropic": null,
+		"base_url_gemini": null,
+		"description": "将 YOUR_RESOURCE_NAME 替换为 Azure 门户中的 OpenAI 资源名；部署路径与 `api-version` 以微软官方文档为准。"
+	},
+	{
+		"id": "stepfun-official",
+		"name": "阶跃星辰 StepFun",
+		"vendor_key": "stepfun",
+		"base_url_openai": "https://api.stepfun.com/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null,
+		"description": "OpenAI 兼容入口；Step Plan 等其它产品线可能使用不同 base URL，以 StepFun 开放平台为准。"
+	},
+	{
+		"id": "baichuan-official",
+		"name": "百川智能 Baichuan",
+		"vendor_key": "baichuan",
+		"base_url_openai": "https://api.baichuan-ai.com/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "xiaomi-mimo-official",
+		"name": "小米 MiMo",
+		"vendor_key": "xiaomi",
+		"base_url_openai": "https://api.xiaomimimo.com/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null,
+		"description": "OpenAI 兼容入口；域名与路径以小米 MiMo 开放平台最新文档为准。"
+	},
+	{
+		"id": "openrouter-official",
+		"name": "OpenRouter",
+		"vendor_key": "openrouter",
+		"base_url_openai": "https://openrouter.ai/api/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "siliconflow-cn",
+		"name": "硅基流动 SiliconFlow",
+		"vendor_key": "siliconflow",
+		"base_url_openai": "https://api.siliconflow.cn/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null
+	},
+	{
+		"id": "ollama-local-default",
+		"name": "Ollama（本地部署）",
+		"vendor_key": "ollama",
+		"base_url_openai": "http://127.0.0.1:11434/v1",
+		"base_url_anthropic": null,
+		"base_url_gemini": null,
+		"description": "本地 Ollama 默认 OpenAI 兼容根路径；远程或容器部署时请改为实际可达的 `http(s)://主机:端口/v1`。"
 	}
 ]

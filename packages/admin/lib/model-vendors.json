@@ -28,5 +28,8 @@
   { "key": "xai", "label": "xAI (Grok)" },
   { "key": "xiaomi", "label": "Xiaomi (小米Mimo)" },
   { "key": "zhipu", "label": "Zhipu AI (智谱AI)" },
+  { "key": "ollama", "label": "Ollama" },
+  { "key": "openrouter", "label": "OpenRouter" },
+  { "key": "siliconflow", "label": "SiliconFlow (硅基流动)" },
   { "key": "other", "label": "Other" }
 ]

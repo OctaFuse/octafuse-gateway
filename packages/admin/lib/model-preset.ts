@@ -39,6 +39,9 @@ import volcenginePresets from './model-presets/volcengine.json';
 import xaiPresets from './model-presets/xai.json';
 import xiaomiPresets from './model-presets/xiaomi.json';
 import zhipuPresets from './model-presets/zhipu.json';
+import ollamaPresets from './model-presets/ollama.json';
+import openrouterPresets from './model-presets/openrouter.json';
+import siliconflowPresets from './model-presets/siliconflow.json';
 import otherPresets from './model-presets/other.json';
 import type { GatewaySupportedBillingCurrency } from '@octafuse/core/lib/billing-currency';
 
@@ -84,6 +87,9 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	xaiPresets,
 	xiaomiPresets,
 	zhipuPresets,
+	ollamaPresets,
+	openrouterPresets,
+	siliconflowPresets,
 	otherPresets,
 ] as const;
 
