@@ -6,8 +6,6 @@
 
 Typical deployments: **Cloudflare** (Proxy Worker + Admin Pages + **D1**) or **self-hosted** (Proxy + Admin + **Postgres** or **MySQL**).
 
-Licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [LICENSE](./LICENSE).
-
 **中文说明：** [README.zh-CN.md](./README.zh-CN.md)
 
 ## What is OctaFuse
@@ -189,3 +187,7 @@ See **[docs/api/admin.md](./docs/api/admin.md)** and **[docs/api/user.md](./docs
 ## Docker (reference)
 
 **`Dockerfile.proxy`**, **`Dockerfile.admin`**, **`Dockerfile.migrate`**（仓库根目录）share one logical **`DATABASE_URL`**. Compose quickstarts: **`docker/compose/`**. Prebuilt image examples and Nginx snippets: **[`docker/examples/`](./docker/examples/)** (including **[`docker/examples/nginx/`](./docker/examples/nginx/)**). Server-side env layout for compose: **[`docker/deploy/README.md`](./docker/deploy/README.md)**. Full ops: **[docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md)**.
+
+## License
+
+Licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [LICENSE](./LICENSE).

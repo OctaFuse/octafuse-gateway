@@ -6,8 +6,6 @@
 
 **常见部署**：Cloudflare **Proxy Worker** + **Admin Pages** + **D1**；或自托管 **Proxy + Admin** + **Postgres** / **MySQL**。
 
-本仓库以 **GNU Affero General Public License v3.0（AGPLv3）** 授权，全文见 [LICENSE](./LICENSE)。
-
 **English:** [README.md](./README.md)
 
 ## What is OctaFuse
@@ -184,3 +182,7 @@ npm run test:gateway:postgres-smoke
 ## Docker（可选）
 
 仓库根目录 **`Dockerfile.proxy` / `Dockerfile.admin` / `Dockerfile.migrate`** 三镜像；**`docker/compose/`** 一键与分拆编排；示例与 Nginx 片段：**[`docker/examples/`](./docker/examples/)**。Compose 用的宿主机环境文件约定：**[`docker/deploy/README.md`](./docker/deploy/README.md)**。完整说明：[docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md)。
+
+## 开源协议
+
+本仓库以 **GNU Affero General Public License v3.0（AGPLv3）** 授权，全文见 [LICENSE](./LICENSE)。
