@@ -88,7 +88,7 @@ Issues and PRs are welcome. Before you submit:
 | Deploy (Cloudflare / Docker / releases) | [docs/ops/deployment.md](./docs/ops/deployment.md) |
 | HTTP examples | [examples/README.md](./examples/README.md) |
 
-> Before changing any doc / example / compose template, read **[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)**: it defines which docs must stay in this repo (API contracts, migrations, runtime behavior), which are candidates for an external `octafuse-docs` site later, and the placeholder rules that keep real secrets, webhooks, and connection strings out of Git.
+> Before changing any doc / example / compose template, read **[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)**: it defines which docs must stay in this repo (API contracts, migrations, runtime behavior), which are candidates for the external `octafuse-website` site, and the placeholder rules that keep real secrets, webhooks, and connection strings out of Git.
 
 ## ~60 second quickstart (Docker + Postgres)
 
