@@ -284,13 +284,13 @@ async function pumpWithUsageTracking(
     requestSignal?.removeEventListener('abort', onAbort);
     resolveUsage(usage);
     try {
-      if (!clientDisconnected) {
-        await writer.close();
-      } else {
-        writer.close();
-      }
-    } catch {
-      // downstream already broken
+      await writer.close();
+    } catch (err) {
+      console.warn(
+        '[Gateway Proxy] pump writer.close (non-fatal)',
+        err instanceof Error ? err.message : String(err),
+        { clientDisconnected, usageCancelled: usage.cancelled }
+      );
     }
   }
 }

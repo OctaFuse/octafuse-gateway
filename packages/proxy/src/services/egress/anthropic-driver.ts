@@ -144,8 +144,12 @@ async function pumpWithUsageTracking(
     resolveUsage(usage);
     try {
       await writer.close();
-    } catch {
-      // ignore downstream close errors
+    } catch (err) {
+      console.warn(
+        '[Gateway Proxy] anthropic pump writer.close (non-fatal)',
+        err instanceof Error ? err.message : String(err),
+        { clientDisconnected, usageCancelled: usage.cancelled }
+      );
     }
   }
 }

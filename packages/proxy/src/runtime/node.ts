@@ -89,6 +89,13 @@ export async function startNodeServer(port = Number(process.env.PORT ?? 8787)): 
 
 	printNodeStartupBanner(port, dbKind, redactedUrl);
 
+	process.on('unhandledRejection', (reason) => {
+		console.error('[Gateway Proxy] unhandledRejection', reason);
+	});
+	process.on('uncaughtException', (err) => {
+		console.error('[Gateway Proxy] uncaughtException', err);
+	});
+
 	const app = createNodeApp();
 	serve({
 		fetch: app.fetch,
