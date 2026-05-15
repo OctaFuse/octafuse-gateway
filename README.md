@@ -22,10 +22,12 @@ Licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [LIC
 
 OctaFuse was built to own and evolve an in-house AI gateway for several internal SaaS systems.
 
-Many open-source and commercial options tightly constrain which providers you can use, which makes it hard to mix public cloud models, privately hosted models, and custom routing or billing rules. OctaFuse is designed for more freedom:
+Many open-source and commercial gateways share a few pain points: **provider** choice is narrow, so mixing public cloud, private hosting, and internal models is awkward; several products **only expose an OpenAI-shaped surface**, which forces extra adapters if your stack already speaks Anthropic or Gemini; and **billing plus audit trails** are often rigid or shallow—hard to model per-route, per-user, or supply-side vs user-side costs the way internal products need.
 
-- Wire in more providers, including models you run yourself
-- Define routing and pricing behavior to match your products
+OctaFuse aims to address that with more freedom:
+
+- Wire in more providers, including models you run yourself, and expose multiple client-facing protocols from one gateway
+- Define routing, billing, and how you trace and reconcile usage across teams and routes
 - Integrate upstream systems through a stable Admin API with less coupling
 
 ## Features
