@@ -22,10 +22,19 @@
 		"base_url_openai": "https://ark.cn-beijing.volces.com/api/coding/v3",
 		"base_url_anthropic": "https://ark.cn-beijing.volces.com/api/coding",
 		"base_url_gemini": null,
-		"description": "Coding Plan 专用端点（/api/coding…），勿与普通 /api/v3 混用，否则无法走套餐额度。详见火山引擎《方舟Coding Plan：API与REST接口配置指南》。"
+		"description": "Coding Plan 专用端点（/api/coding…），勿与普通 /api/v3 混用，否则无法走套餐额度，详见火山引擎官方文档。"
 	},
 	{
-		"id": "aliyun-dashscope",
+		"id": "volcengine-agent-plan",
+		"name": "火山方舟 Agent Plan",
+		"vendor_key": "volcengine",
+		"base_url_openai": "https://ark.cn-beijing.volces.com/api/plan/v3",
+		"base_url_anthropic": "https://ark.cn-beijing.volces.com/api/plan",
+		"base_url_gemini": null,
+		"description": "Agent Plan 专用端点（/api/coding…），勿与普通 /api/v3 混用，否则无法走套餐额度，详见火山引擎官方文档。"
+	},
+	{
+		"id": "aliyun",
 		"name": "阿里云百炼",
 		"vendor_key": "aliyun",
 		"base_url_openai": "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -33,7 +42,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "aliyun-dashscope-coding-plan",
+		"id": "aliyun-coding-plan",
 		"name": "阿里云百炼 Coding Plan",
 		"vendor_key": "aliyun",
 		"base_url_openai": "https://coding.dashscope.aliyuncs.com/v1",
@@ -58,7 +67,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "zhipu-bigmodel",
+		"id": "zhipu",
 		"name": "智谱 GLM",
 		"vendor_key": "zhipu",
 		"base_url_openai": "https://open.bigmodel.cn/api/paas/v4",
@@ -66,13 +75,13 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "zhipu-bigmodel-coding-plan",
+		"id": "zhipu-coding-plan",
 		"name": "智谱 Coding Plan",
 		"vendor_key": "zhipu",
 		"base_url_openai": "https://open.bigmodel.cn/api/coding/paas/v4",
 		"base_url_anthropic": "https://open.bigmodel.cn/api/anthropic",
 		"base_url_gemini": null,
-		"description": "GLM Coding Plan 专用 OpenAI 根路径；Anthropic 根路径供 Claude Code 等工具。勿与通用 /api/paas/v4 混用。文档：docs.bigmodel.cn/coding-plan/quick-start"
+		"description": "GLM Coding Plan 专用 OpenAI 根路径；Anthropic 根路径供 Claude Code 等工具。勿与通用 /api/paas/v4 混用。"
 	},
 	{
 		"id": "moonshot-official",
