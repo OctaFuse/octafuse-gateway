@@ -3,7 +3,7 @@
 		"id": "deepseek-official",
 		"name": "DeepSeek（官方）",
 		"vendor_key": "deepseek",
-		"base_url_openai": "https://api.deepseek.com/v1",
+		"base_url_openai": "https://api.deepseek.com",
 		"base_url_anthropic": null,
 		"base_url_gemini": null
 	},
@@ -104,8 +104,8 @@
 		"id": "minimax-official",
 		"name": "MiniMax",
 		"vendor_key": "minimax",
-		"base_url_openai": "https://api.minimax.chat/v1",
-		"base_url_anthropic": null,
+		"base_url_openai": "https://api.minimaxi.com/v1",
+		"base_url_anthropic": "https://api.minimaxi.com/anthropic",
 		"base_url_gemini": null
 	},
 	{
@@ -228,13 +228,22 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "xiaomi-mimo-official",
+		"id": "xiaomi-mimo",
 		"name": "小米 MiMo",
 		"vendor_key": "xiaomi",
 		"base_url_openai": "https://api.xiaomimimo.com/v1",
 		"base_url_anthropic": null,
 		"base_url_gemini": null,
 		"description": "OpenAI 兼容入口；域名与路径以小米 MiMo 开放平台最新文档为准。"
+	},
+	{
+		"id": "xiaomi-mimo-token-plan",
+		"name": "小米 MiMo Token Plan",
+		"vendor_key": "xiaomi",
+		"base_url_openai": "https://token-plan-cn.xiaomimimo.com/v1",
+		"base_url_anthropic": "https://token-plan-cn.xiaomimimo.com/anthropic",
+		"base_url_gemini": null,
+		"description": "小米 MiMo Token Plan 专用 OpenAI 兼容根路径；Anthropic 根路径供 Claude Code 等工具。勿与通用 api 混用。"
 	},
 	{
 		"id": "openrouter-official",
