@@ -34,6 +34,7 @@
 		"./db/user-audit-log-derived": "./src/db/user-audit-log-derived.ts",
 		"./db/user-audit-metadata": "./src/db/user-audit-metadata.ts",
 		"./db/user-audit-snapshot": "./src/db/user-audit-snapshot.ts",
+		"./db/users-list-sort": "./src/db/users-list-sort.ts",
 		"./lib/business-timezone": "./src/lib/business-timezone.ts",
 		"./lib/billing-currency": "./src/lib/billing-currency.ts",
 		"./lib/alert-webhook-system-config": "./src/lib/alert-webhook-system-config.ts",

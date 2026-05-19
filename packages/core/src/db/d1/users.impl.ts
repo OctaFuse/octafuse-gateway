@@ -6,6 +6,13 @@ import { roundGatewayMoney } from '../../lib/money-precision';
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { UsersRepository } from '../../storage/gateway-repository-interfaces';
 import type { InsertUserParams, UserMaxBudgetFilter } from '../users-types';
+import {
+	buildD1UserListOrderByClause,
+	DEFAULT_USER_LIST_ORDER,
+	DEFAULT_USER_LIST_SORT,
+	type UserListSortField,
+	type UserListSortOrder,
+} from '../users-list-sort';
 
 type UserSqlRow = {
 	id: string;
@@ -70,6 +77,8 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 			status?: string;
 			page?: number;
 			pageSize?: number;
+			sort?: UserListSortField;
+			order?: UserListSortOrder;
 		}): Promise<{ users: UserRow[]; total: number }> {
 			const page = options?.page || 1;
 			const pageSize = Math.min(options?.pageSize || 20, 100);
@@ -101,8 +110,11 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 				.bind(...bindValues)
 				.first<{ total: number }>();
 			const total = Number(countRow?.total ?? 0);
+			const sort = options?.sort ?? DEFAULT_USER_LIST_SORT;
+			const order = options?.order ?? DEFAULT_USER_LIST_ORDER;
+			const orderBy = buildD1UserListOrderByClause(sort, order);
 			const rows = await raw
-				.prepare(`SELECT * FROM users ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+				.prepare(`SELECT * FROM users ${whereClause} ${orderBy} LIMIT ? OFFSET ?`)
 				.bind(...bindValues, pageSize, offset)
 				.all<UserSqlRow>();
 			return { users: (rows.results ?? []).map(mapUserRow), total };

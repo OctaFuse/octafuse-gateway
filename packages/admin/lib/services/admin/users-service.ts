@@ -3,6 +3,7 @@
  * 物理删除、子资源 keys / request-logs / audit-logs。
  */
 import type { BudgetPeriod, GatewayRepositories } from '@octafuse/core';
+import type { UserListSortField, UserListSortOrder } from '@octafuse/core/db/users-list-sort';
 import { createKey, revokeKey, updateKeyName } from '@octafuse/core/services/key-service';
 import {
 	computeFirstReset,
@@ -88,6 +89,8 @@ export async function listAdminUsers(
 		external_user_id?: string;
 		max_budget?: string;
 		status?: string;
+		sort?: UserListSortField;
+		order?: UserListSortOrder;
 	}
 ) {
 	const page = Number.isFinite(input.page) ? Number(input.page) : 1;
@@ -102,6 +105,8 @@ export async function listAdminUsers(
 			maxBudget === 'positive' || maxBudget === 'zero_or_negative' || maxBudget === 'null' ? maxBudget : undefined,
 		page,
 		pageSize,
+		sort: input.sort,
+		order: input.order,
 	});
 	const data = await Promise.all(
 		users.map(async (u) => {

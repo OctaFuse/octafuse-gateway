@@ -92,6 +92,12 @@ Authorization: Bearer sk-admin-xxx
 | `external_system` / `external_user_id` | 可选，精确匹配外部对 |
 | `max_budget` | 可选：`positive` \| `zero_or_negative` \| `null` |
 | `status` | 可选，精确匹配 `users.status` |
+| `sort` | 可选，白名单：`budget_spent` \| `budget_reset_at` \| `created_at`；默认 `created_at` |
+| `order` | 可选：`asc` \| `desc`；默认 `desc`。与 `sort` 均在服务端 `ORDER BY`（分页全局有效） |
+
+非法 `sort` 或 `order` 返回 **`400`**，body 含 `message`（例如 `Invalid sort; allowed: budget_spent, budget_reset_at, created_at`）。
+
+`budget_reset_at` 排序时 NULL 规则：`asc` → `NULLS LAST`，`desc` → `NULLS FIRST`（与 Keys 列表一致）。
 
 响应：`{ success, data: [...], total, page, page_size }`；列表行含 **`active_keys_count`** 等（与实现 `AdminUserListItem` 对齐）。
 

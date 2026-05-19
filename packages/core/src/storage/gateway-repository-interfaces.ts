@@ -12,6 +12,7 @@ import type {
 import type { InsertUserAuditLogParams } from '../db/user-audit-logs-types';
 import type { BudgetFilter, InsertKeyParams } from '../db/api-keys-types';
 import type { InsertUserParams, UserMaxBudgetFilter } from '../db/users-types';
+import type { UserListSortField, UserListSortOrder } from '../db/users-list-sort';
 import type { ProviderProtocolBases } from '../db/providers-types';
 import type { SystemConfigRow } from '../db/system-config-types';
 import type {
@@ -95,6 +96,8 @@ export interface UsersRepository {
 		status?: string;
 		page?: number;
 		pageSize?: number;
+		sort?: UserListSortField;
+		order?: UserListSortOrder;
 	}): Promise<{ users: UserRow[]; total: number }>;
 	createUser(params: InsertUserParams): Promise<void>;
 	updateUserPlan(

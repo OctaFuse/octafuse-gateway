@@ -1,14 +1,32 @@
 /**
  * Postgres：`users`。
  */
-import { and, count, desc, eq, gt, isNotNull, isNull, like, lte } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
 import type { UserRow } from '../../types';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { UsersRepository } from '../../storage/gateway-repository-interfaces';
 import { usersTable as pgUsersTable } from '../../storage/drizzle/schema.pg';
 import type { InsertUserParams, UserMaxBudgetFilter } from '../users-types';
+import {
+	DEFAULT_USER_LIST_ORDER,
+	DEFAULT_USER_LIST_SORT,
+	type UserListSortField,
+	type UserListSortOrder,
+} from '../users-list-sort';
 import { parseMoney } from '../../storage/critical-write-paths-utils';
+
+function userListOrderBy(sort: UserListSortField, order: UserListSortOrder) {
+	const isAsc = order === 'asc';
+	if (sort === 'budget_reset_at') {
+		const col = pgUsersTable.budgetResetAt;
+		return isAsc ? sql`${col} ASC NULLS LAST` : sql`${col} DESC NULLS FIRST`;
+	}
+	if (sort === 'budget_spent') {
+		return isAsc ? asc(pgUsersTable.budgetSpent) : desc(pgUsersTable.budgetSpent);
+	}
+	return isAsc ? asc(pgUsersTable.createdAt) : desc(pgUsersTable.createdAt);
+}
 
 function mapPgUserRow(r: {
 	id: string;
@@ -76,6 +94,8 @@ export function createPostgresUsersRepository(db: PostgresDatabaseClient): Users
 			status?: string;
 			page?: number;
 			pageSize?: number;
+			sort?: UserListSortField;
+			order?: UserListSortOrder;
 		}): Promise<{ users: UserRow[]; total: number }> {
 			const page = options?.page || 1;
 			const pageSize = Math.min(options?.pageSize || 20, 100);
@@ -96,9 +116,11 @@ export function createPostgresUsersRepository(db: PostgresDatabaseClient): Users
 			let countQ = drizzle.select({ total: count() }).from(pgUsersTable);
 			if (whereExpr) countQ = countQ.where(whereExpr) as typeof countQ;
 			const total = Number((await countQ)[0]?.total ?? 0);
+			const sort = options?.sort ?? DEFAULT_USER_LIST_SORT;
+			const order = options?.order ?? DEFAULT_USER_LIST_ORDER;
 			let listQ = drizzle.select().from(pgUsersTable);
 			if (whereExpr) listQ = listQ.where(whereExpr) as typeof listQ;
-			const rows = await listQ.orderBy(desc(pgUsersTable.createdAt)).limit(pageSize).offset(offset);
+			const rows = await listQ.orderBy(userListOrderBy(sort, order)).limit(pageSize).offset(offset);
 			return { users: rows.map(mapPgUserRow), total };
 		},
 

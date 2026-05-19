@@ -12,6 +12,9 @@ import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { GatewayUserListItem } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 
+type UserListSortKey = 'budget_spent' | 'budget_reset_at' | 'created_at';
+type SortDir = 'asc' | 'desc';
+
 export default function GatewayUsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<GatewayUserListItem[]>([]);
@@ -22,6 +25,8 @@ export default function GatewayUsersPage() {
   const [filterExternalSystem, setFilterExternalSystem] = useState('');
   const [filterExternalUserId, setFilterExternalUserId] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [sortKey, setSortKey] = useState<UserListSortKey>('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [isLoading, setIsLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -48,6 +53,8 @@ export default function GatewayUsersPage() {
       if (filterExternalSystem.trim()) params.append('external_system', filterExternalSystem.trim());
       if (filterExternalUserId.trim()) params.append('external_user_id', filterExternalUserId.trim());
       if (filterStatus) params.append('status', filterStatus);
+      params.append('sort', sortKey);
+      params.append('order', sortDir);
 
       const response = await fetch(`/api/admin/users?${params.toString()}`);
       const data = await readApiJson<GatewayUserListItem[]>(response);
@@ -60,13 +67,37 @@ export default function GatewayUsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, filterEmail, filterExternalSystem, filterExternalUserId, filterStatus]);
+  }, [page, filterEmail, filterExternalSystem, filterExternalUserId, filterStatus, sortKey, sortDir]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   const totalPages = Math.ceil(total / pageSize);
+
+  const toggleSort = (key: UserListSortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+    setPage(1);
+  };
+
+  const SortableTh = ({ label, columnKey }: { label: string; columnKey: UserListSortKey }) => (
+    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+      <button
+        type="button"
+        onClick={() => toggleSort(columnKey)}
+        className="hover:text-gray-700"
+        aria-label={`Sort by ${label}`}
+      >
+        {label}
+        {sortKey === columnKey && (sortDir === 'asc' ? ' ↑' : ' ↓')}
+      </button>
+    </th>
+  );
 
   const openCreate = () => {
     setCreateForm({
@@ -220,10 +251,10 @@ export default function GatewayUsersPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+              <SortableTh label="Email (created)" columnKey="created_at" />
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">External</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Budget</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+              <SortableTh label="Budget (spent)" columnKey="budget_spent" />
+              <SortableTh label="Period (reset)" columnKey="budget_reset_at" />
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Active keys</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
             </tr>

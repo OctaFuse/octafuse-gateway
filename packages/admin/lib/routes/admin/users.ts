@@ -2,6 +2,7 @@
  * 管理路由：`/admin/users` — 用户 CRUD、子资源 keys / logs / audit-logs。
  */
 import { Hono } from 'hono';
+import { parseUserListSortQuery } from '@octafuse/core/db/users-list-sort';
 import type { AdminEnv } from '@/lib/admin-env';
 import { requireMasterKey } from '@/lib/middleware/admin-auth';
 import {
@@ -28,6 +29,10 @@ adminUsersRoutes.use('*', requireMasterKey);
 
 adminUsersRoutes.get('/', async (c) => {
 	try {
+		const sortParsed = parseUserListSortQuery(c.req.query('sort'), c.req.query('order'));
+		if (!sortParsed.ok) {
+			return jsonErr(c, 400, sortParsed.message);
+		}
 		const repos = c.get('repositories');
 		const result = await listAdminUsers(repos, {
 			page: parseInt(c.req.query('page') ?? '1', 10),
@@ -37,6 +42,8 @@ adminUsersRoutes.get('/', async (c) => {
 			external_user_id: c.req.query('external_user_id') ?? undefined,
 			max_budget: c.req.query('max_budget') ?? undefined,
 			status: c.req.query('status') ?? undefined,
+			sort: sortParsed.value.sort,
+			order: sortParsed.value.order,
 		});
 		return c.json(normalizeApiTimeFields({ success: true as const, ...result }));
 	} catch (error) {
