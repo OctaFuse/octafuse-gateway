@@ -51,18 +51,51 @@ export function rangeToDates(range: string): { startDate: string; endDate: strin
 	};
 }
 
+const MAX_ANALYTICS_DAYS = 180;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * API/SQL UTC 字符串 → 毫秒。`YYYY-MM-DD HH:mm:ss` 按 UTC 解析（与 Request Logs / 分析页前端一致）。
+ * 勿用 `new Date(无 Z 的串)`，否则在 UTC+8 等环境会按本地时区解析并导致查询窗偏移。
+ */
+export function apiUtcSqlStringToMs(sqlUtc: string): number {
+	const trimmed = sqlUtc.trim();
+	if (!trimmed) return NaN;
+	return Date.parse(trimmed.includes('T') ? trimmed : `${trimmed.replace(' ', 'T')}Z`);
+}
+
+/** 毫秒 → API/SQL UTC 字符串（`YYYY-MM-DD HH:mm:ss`）。 */
+export function msToApiUtcSqlString(ms: number): string {
+	return new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
+}
+
 /**
  * 分析 API 绝对时间窗：默认最近 7 天；起始不早于结束日前 180 天。
- * @returns 与 SQL `created_at` 比较的字符串边界
+ * @returns 与 SQL `created_at` 比较的字符串边界（UTC，与 `api_key_request_logs` 写入格式一致）
  */
 export function clampAnalyticsRange(startDate?: string, endDate?: string): { start: string; end: string } {
-	const end = endDate ? new Date(endDate) : new Date();
-	let start = startDate ? new Date(startDate) : new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
-	const maxStart = new Date(end.getTime() - 180 * 24 * 60 * 60 * 1000);
-	if (start < maxStart) start = maxStart;
+	const nowMs = Date.now();
+	const endMs = endDate?.trim() ? apiUtcSqlStringToMs(endDate) : nowMs;
+	const resolvedEndMs = Number.isNaN(endMs) ? nowMs : endMs;
+
+	let startMs: number;
+	if (startDate?.trim()) {
+		startMs = apiUtcSqlStringToMs(startDate);
+		if (Number.isNaN(startMs)) {
+			startMs = resolvedEndMs - 7 * MS_PER_DAY;
+		}
+	} else {
+		startMs = resolvedEndMs - 7 * MS_PER_DAY;
+	}
+
+	const maxStartMs = resolvedEndMs - MAX_ANALYTICS_DAYS * MS_PER_DAY;
+	if (startMs < maxStartMs) {
+		startMs = maxStartMs;
+	}
+
 	return {
-		start: start.toISOString().slice(0, 19).replace('T', ' '),
-		end: end.toISOString().slice(0, 19).replace('T', ' '),
+		start: msToApiUtcSqlString(startMs),
+		end: msToApiUtcSqlString(resolvedEndMs),
 	};
 }
 
