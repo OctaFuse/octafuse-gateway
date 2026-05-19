@@ -11,6 +11,7 @@ import {
 	updateKeyMetadata,
 	updateKeyStatus,
 } from '@octafuse/core/services/user-service';
+import type { ApiKeyListSortField, ApiKeyListSortOrder } from '@octafuse/core/db/api-keys-list-sort';
 import { filterAllowedRequestLogStatuses } from '@octafuse/core/db/request-log-status-filter';
 import { userBudgetAuditToInsertRowFull } from '@octafuse/core/db/user-budget-audit-mapper';
 import { snapshotToJson, userRowToSnapshot } from '@octafuse/core/db/user-audit-snapshot';
@@ -52,7 +53,14 @@ async function resolveKeyRowAnyStatus(repos: GatewayRepositories, idOrKey: strin
  */
 export async function listAdminKeys(
 	repos: GatewayRepositories,
-	input: { page?: number; page_size?: number; email?: string; user_id?: string }
+	input: {
+		page?: number;
+		page_size?: number;
+		email?: string;
+		user_id?: string;
+		sort?: ApiKeyListSortField;
+		order?: ApiKeyListSortOrder;
+	}
 ): Promise<AdminKeyListOutput> {
 	const page = Number.isFinite(input.page) ? Number(input.page) : 1;
 	const pageSize = Number.isFinite(input.page_size) ? Number(input.page_size) : 20;
@@ -62,6 +70,8 @@ export async function listAdminKeys(
 		userId: input.user_id,
 		page,
 		pageSize,
+		sort: input.sort,
+		order: input.order,
 	});
 
 	return {

@@ -1,15 +1,33 @@
 /**
  * Postgres：`api_keys`（预算在 `users`）。
  */
-import { and, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
 import type { ApiKeyRow, ResolvedGatewayKeyRow } from '../../types';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { ApiKeysRepository } from '../../storage/gateway-repository-interfaces';
 import { apiKeysTable as pgApiKeysTable, usersTable as pgUsersTable } from '../../storage/drizzle/schema.pg';
 import type { BudgetFilter, InsertKeyParams } from '../api-keys-types';
+import {
+	DEFAULT_API_KEY_LIST_ORDER,
+	DEFAULT_API_KEY_LIST_SORT,
+	type ApiKeyListSortField,
+	type ApiKeyListSortOrder,
+} from '../api-keys-list-sort';
 import type { AdminApiKeyListItem } from '../../storage/repository-dtos';
 import { parseMoney } from '../../storage/critical-write-paths-utils';
+
+function apiKeyListOrderBy(sort: ApiKeyListSortField, order: ApiKeyListSortOrder) {
+	const isAsc = order === 'asc';
+	if (sort === 'budget_reset_at') {
+		const col = pgUsersTable.budgetResetAt;
+		return isAsc ? sql`${col} ASC NULLS LAST` : sql`${col} DESC NULLS FIRST`;
+	}
+	if (sort === 'budget_spent') {
+		return isAsc ? asc(pgUsersTable.budgetSpent) : desc(pgUsersTable.budgetSpent);
+	}
+	return isAsc ? asc(pgApiKeysTable.createdAt) : desc(pgApiKeysTable.createdAt);
+}
 
 function mapPgKeyRow(r: {
 	id: string;
@@ -238,6 +256,8 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 			maxBudget?: BudgetFilter;
 			page?: number;
 			pageSize?: number;
+			sort?: ApiKeyListSortField;
+			order?: ApiKeyListSortOrder;
 		}): Promise<{ keys: AdminApiKeyListItem[]; total: number }> {
 			const page = options?.page || 1;
 			const pageSize = Math.min(options?.pageSize || 20, 100);
@@ -286,14 +306,9 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 				.innerJoin(pgUsersTable, eq(pgApiKeysTable.userId, pgUsersTable.id));
 			if (whereExpr) listQ = listQ.where(whereExpr) as typeof listQ;
 
-			if (options?.maxBudget === 'positive') {
-				const rows = await listQ
-					.orderBy(sql`${pgUsersTable.budgetResetAt} ASC NULLS LAST`, desc(pgApiKeysTable.createdAt))
-					.limit(pageSize)
-					.offset(offset);
-				return { keys: rows.map(mapPgAdminListRow), total };
-			}
-			const rows = await listQ.orderBy(desc(pgApiKeysTable.createdAt)).limit(pageSize).offset(offset);
+			const sort = options?.sort ?? DEFAULT_API_KEY_LIST_SORT;
+			const order = options?.order ?? DEFAULT_API_KEY_LIST_ORDER;
+			const rows = await listQ.orderBy(apiKeyListOrderBy(sort, order)).limit(pageSize).offset(offset);
 			return { keys: rows.map(mapPgAdminListRow), total };
 		},
 

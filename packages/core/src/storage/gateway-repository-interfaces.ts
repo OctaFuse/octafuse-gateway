@@ -12,6 +12,7 @@ import type {
 import type { InsertUserAuditLogParams } from '../db/user-audit-logs-types';
 import type { BudgetFilter, InsertKeyParams } from '../db/api-keys-types';
 import type { InsertUserParams, UserMaxBudgetFilter } from '../db/users-types';
+import type { ApiKeyListSortField, ApiKeyListSortOrder } from '../db/api-keys-list-sort';
 import type { UserListSortField, UserListSortOrder } from '../db/users-list-sort';
 import type { ProviderProtocolBases } from '../db/providers-types';
 import type { SystemConfigRow } from '../db/system-config-types';
@@ -80,6 +81,8 @@ export interface ApiKeysRepository {
 		maxBudget?: BudgetFilter;
 		page?: number;
 		pageSize?: number;
+		sort?: ApiKeyListSortField;
+		order?: ApiKeyListSortOrder;
 	}): Promise<{ keys: AdminApiKeyListItem[]; total: number }>;
 	getActiveApiKeysCount(): Promise<number>;
 }

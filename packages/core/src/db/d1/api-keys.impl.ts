@@ -8,6 +8,13 @@ import type { D1DatabaseClient } from '../../storage/database-client';
 import type { ApiKeysRepository } from '../../storage/gateway-repository-interfaces';
 import type { ApiKeysD1Statements } from './d1-repository-extras';
 import type { BudgetFilter, InsertKeyParams } from '../api-keys-types';
+import {
+	buildD1ApiKeyListOrderByClause,
+	DEFAULT_API_KEY_LIST_ORDER,
+	DEFAULT_API_KEY_LIST_SORT,
+	type ApiKeyListSortField,
+	type ApiKeyListSortOrder,
+} from '../api-keys-list-sort';
 import type { AdminApiKeyListItem } from '../../storage/repository-dtos';
 
 type KeySqlRow = {
@@ -172,6 +179,8 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 			maxBudget?: BudgetFilter;
 			page?: number;
 			pageSize?: number;
+			sort?: ApiKeyListSortField;
+			order?: ApiKeyListSortOrder;
 		}): Promise<{ keys: AdminApiKeyListItem[]; total: number }> {
 			const page = options?.page || 1;
 			const pageSize = Math.min(options?.pageSize || 20, 100);
@@ -190,10 +199,9 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 			else if (options?.maxBudget === 'zero_or_negative') conditions.push('u.budget_max <= 0');
 			else if (options?.maxBudget === 'null') conditions.push('u.budget_max IS NULL');
 			const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-			const orderBy =
-				options?.maxBudget === 'positive'
-					? 'ORDER BY u.budget_reset_at ASC NULLS LAST, k.created_at DESC'
-					: 'ORDER BY k.created_at DESC';
+			const sort = options?.sort ?? DEFAULT_API_KEY_LIST_SORT;
+			const order = options?.order ?? DEFAULT_API_KEY_LIST_ORDER;
+			const orderBy = buildD1ApiKeyListOrderByClause(sort, order);
 			const countRow = await raw
 				.prepare(`SELECT COUNT(*) as total FROM api_keys k INNER JOIN users u ON u.id = k.user_id ${whereClause}`)
 				.bind(...bindValues)

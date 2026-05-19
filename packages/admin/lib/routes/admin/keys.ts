@@ -3,6 +3,7 @@
  * 创建、查询、更新（仅 name/metadata/status）、物理删除及单 key 请求日志。全程 `requireMasterKey`。
  */
 import { Hono } from 'hono';
+import { parseApiKeyListSortQuery } from '@octafuse/core/db/api-keys-list-sort';
 import type { AdminEnv } from '@/lib/admin-env';
 import { requireMasterKey } from '@/lib/middleware/admin-auth';
 import {
@@ -20,15 +21,21 @@ export const adminKeysRoutes = new Hono<AdminEnv>();
 
 adminKeysRoutes.use('*', requireMasterKey);
 
-/** 查询：page、page_size、email、user_id。 */
+/** 查询：page、page_size、email、user_id、sort、order。 */
 adminKeysRoutes.get('/', async (c) => {
 	try {
+		const sortParsed = parseApiKeyListSortQuery(c.req.query('sort'), c.req.query('order'));
+		if (!sortParsed.ok) {
+			return jsonErr(c, 400, sortParsed.message);
+		}
 		const repos = c.get('repositories');
 		const result = await listAdminKeys(repos, {
 			page: parseInt(c.req.query('page') ?? '1', 10),
 			page_size: parseInt(c.req.query('page_size') ?? '20', 10),
 			email: c.req.query('email') ?? undefined,
 			user_id: c.req.query('user_id') ?? undefined,
+			sort: sortParsed.value.sort,
+			order: sortParsed.value.order,
 		});
 		return c.json(normalizeApiTimeFields({ success: true as const, ...result }));
 	} catch (error) {

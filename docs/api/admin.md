@@ -153,6 +153,12 @@ GET /admin/keys?page=1&page_size=20&email=&user_id=
 | `page_size` | 每页条数，默认 `20`，最大 `100` |
 | `email` | 可选，对 **`users.email`** 模糊匹配（响应字段仍为 `user_email`） |
 | `user_id` | 可选，精确匹配 `api_keys.user_id` |
+| `sort` | 可选，白名单：`budget_spent` \| `budget_reset_at` \| `created_at`；默认 `created_at` |
+| `order` | 可选：`asc` \| `desc`；默认 `desc`。与 `sort` 均在服务端 `ORDER BY`（分页全局有效） |
+
+非法 `sort` 或 `order` 返回 **`400`**，body 含 `message`（例如 `Invalid sort; allowed: budget_spent, budget_reset_at, created_at`）。
+
+`budget_spent` / `budget_reset_at` 排序列来自 JOIN 的 **`users`**；`created_at` 来自 **`api_keys`**。`budget_reset_at` 的 NULL 规则：`asc` → `NULLS LAST`，`desc` → `NULLS FIRST`。
 
 ### 响应
 

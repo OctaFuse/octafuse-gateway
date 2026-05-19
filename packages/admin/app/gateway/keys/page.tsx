@@ -16,6 +16,8 @@ import { useBillingCurrency } from '@/lib/use-billing-currency';
 import type { GatewayApiKey } from '@/lib/types';
 
 type KeyCreationMode = 'existingUser' | 'externalIdentity';
+type ApiKeyListSortKey = 'budget_spent' | 'budget_reset_at' | 'created_at';
+type SortDir = 'asc' | 'desc';
 
 function formatApiKeyMetadataForEditor(raw: string | null | undefined): string {
   if (raw == null || raw === '') {
@@ -94,6 +96,8 @@ export default function GatewayKeysPage() {
   const pageSize = 20;
   const [filterEmail, setFilterEmail] = useState('');
   const [filterUserId, setFilterUserId] = useState('');
+  const [sortKey, setSortKey] = useState<ApiKeyListSortKey>('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -129,6 +133,8 @@ export default function GatewayKeysPage() {
       params.append('page_size', pageSize.toString());
       if (filterEmail) params.append('email', filterEmail);
       if (filterUserId.trim()) params.append('user_id', filterUserId.trim());
+      params.append('sort', sortKey);
+      params.append('order', sortDir);
 
       const response = await fetch(`/api/admin/keys?${params.toString()}`);
       const data = await readApiJson<GatewayApiKey[]>(response);
@@ -141,11 +147,38 @@ export default function GatewayKeysPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, filterEmail, filterUserId]);
+  }, [page, filterEmail, filterUserId, sortKey, sortDir]);
 
   useEffect(() => {
     fetchKeys();
   }, [fetchKeys]);
+
+  const toggleSort = (key: ApiKeyListSortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+    setPage(1);
+  };
+
+  const SortableTh = ({ label, columnKey }: { label: string; columnKey: ApiKeyListSortKey }) => (
+    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleSort(columnKey);
+        }}
+        className="hover:text-gray-700"
+        aria-label={`Sort by ${label}`}
+      >
+        {label}
+        {sortKey === columnKey && (sortDir === 'asc' ? ' ↑' : ' ↓')}
+      </button>
+    </th>
+  );
 
   const handleCreationModeChange = (mode: KeyCreationMode) => {
     setCreationMode(mode);
@@ -444,11 +477,11 @@ export default function GatewayKeysPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Key</th>
+              <SortableTh label="Key (created)" columnKey="created_at" />
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+              <SortableTh label="Budget (spent)" columnKey="budget_spent" />
+              <SortableTh label="Period (reset)" columnKey="budget_reset_at" />
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metadata</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             </tr>

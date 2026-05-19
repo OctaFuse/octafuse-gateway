@@ -1,15 +1,33 @@
 /**
  * MySQL：`api_keys`（预算在 `users`）。
  */
-import { and, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
 import type { ApiKeyRow, ResolvedGatewayKeyRow } from '../../types';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { ApiKeysRepository } from '../../storage/gateway-repository-interfaces';
 import { apiKeysTable as myApiKeysTable, usersTable as myUsersTable } from '../../storage/drizzle/schema.mysql';
 import type { BudgetFilter, InsertKeyParams } from '../api-keys-types';
+import {
+	DEFAULT_API_KEY_LIST_ORDER,
+	DEFAULT_API_KEY_LIST_SORT,
+	type ApiKeyListSortField,
+	type ApiKeyListSortOrder,
+} from '../api-keys-list-sort';
 import type { AdminApiKeyListItem } from '../../storage/repository-dtos';
 import { parseMoney } from '../../storage/critical-write-paths-utils';
+
+function apiKeyListOrderBy(sort: ApiKeyListSortField, order: ApiKeyListSortOrder) {
+	const isAsc = order === 'asc';
+	if (sort === 'budget_reset_at') {
+		const col = myUsersTable.budgetResetAt;
+		return isAsc ? sql`${col} ASC NULLS LAST` : sql`${col} DESC NULLS FIRST`;
+	}
+	if (sort === 'budget_spent') {
+		return isAsc ? asc(myUsersTable.budgetSpent) : desc(myUsersTable.budgetSpent);
+	}
+	return isAsc ? asc(myApiKeysTable.createdAt) : desc(myApiKeysTable.createdAt);
+}
 
 function mapMyKeyRow(r: {
 	id: string;
@@ -252,6 +270,8 @@ export function createMySqlApiKeysRepository(db: MySqlDatabaseClient): ApiKeysRe
 			maxBudget?: BudgetFilter;
 			page?: number;
 			pageSize?: number;
+			sort?: ApiKeyListSortField;
+			order?: ApiKeyListSortOrder;
 		}): Promise<{ keys: AdminApiKeyListItem[]; total: number }> {
 			const page = options?.page || 1;
 			const pageSize = Math.min(options?.pageSize || 20, 100);
@@ -300,14 +320,9 @@ export function createMySqlApiKeysRepository(db: MySqlDatabaseClient): ApiKeysRe
 				.innerJoin(myUsersTable, eq(myApiKeysTable.userId, myUsersTable.id));
 			if (whereExpr) listQ = listQ.where(whereExpr) as typeof listQ;
 
-			if (options?.maxBudget === 'positive') {
-				const rows = await listQ
-					.orderBy(sql`${myUsersTable.budgetResetAt} ASC NULLS LAST`, desc(myApiKeysTable.createdAt))
-					.limit(pageSize)
-					.offset(offset);
-				return { keys: rows.map(mapMyAdminListRow), total };
-			}
-			const rows = await listQ.orderBy(desc(myApiKeysTable.createdAt)).limit(pageSize).offset(offset);
+			const sort = options?.sort ?? DEFAULT_API_KEY_LIST_SORT;
+			const order = options?.order ?? DEFAULT_API_KEY_LIST_ORDER;
+			const rows = await listQ.orderBy(apiKeyListOrderBy(sort, order)).limit(pageSize).offset(offset);
 			return { keys: rows.map(mapMyAdminListRow), total };
 		},
 
