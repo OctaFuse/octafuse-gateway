@@ -50,28 +50,34 @@ function joinSymbolAmount(sym: string, fixed: string): string {
 	return `${sym}${fixed}`;
 }
 
+function coerceMoneyAmount(value: number | string | null | undefined): number {
+	const n = typeof value === 'number' ? value : Number(value);
+	return Number.isFinite(n) ? n : 0;
+}
+
 export function formatGatewayMoneyCode(
-	amount: number,
+	amount: number | string | null | undefined,
 	currencyCode: string,
 	decimals: number = GATEWAY_MONEY_DECIMAL_PLACES
 ): string {
 	const sym = getGatewayCurrencySymbol(currencyCode);
-	return joinSymbolAmount(sym, amount.toFixed(decimals));
+	return joinSymbolAmount(sym, coerceMoneyAmount(amount).toFixed(decimals));
 }
 
 export function formatGatewayMoneyCodeSigned(
-	amount: number,
+	amount: number | string | null | undefined,
 	currencyCode: string,
 	decimals: number = GATEWAY_MONEY_DECIMAL_PLACES
 ): string {
 	const sym = getGatewayCurrencySymbol(currencyCode);
-	const fixed = Math.abs(amount).toFixed(decimals);
+	const normalized = coerceMoneyAmount(amount);
+	const fixed = Math.abs(normalized).toFixed(decimals);
 	const zeroFixed = (0).toFixed(decimals);
 	const zero = joinSymbolAmount(sym, zeroFixed);
-	if (amount > 0) {
+	if (normalized > 0) {
 		return `+${joinSymbolAmount(sym, fixed)}`;
 	}
-	if (amount < 0) {
+	if (normalized < 0) {
 		return `-${joinSymbolAmount(sym, fixed)}`;
 	}
 	return zero;
@@ -89,12 +95,12 @@ function trimGatewayDecimalZeros(fixed: string): string {
  * 紧凑金额：符号 + 去尾随零的小数（默认最多 6 位小数，与网关存储精度一致）。
  */
 export function formatGatewayMoneyCompact(
-	amount: number,
+	amount: number | string | null | undefined,
 	currencyCode: string,
 	maxDecimals: number = GATEWAY_MONEY_DECIMAL_PLACES
 ): string {
 	const sym = getGatewayCurrencySymbol(currencyCode);
-	const fixed = trimGatewayDecimalZeros(amount.toFixed(maxDecimals));
+	const fixed = trimGatewayDecimalZeros(coerceMoneyAmount(amount).toFixed(maxDecimals));
 	return joinSymbolAmount(sym, fixed);
 }
 
