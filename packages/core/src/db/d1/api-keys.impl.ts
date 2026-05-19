@@ -38,6 +38,7 @@ function mapKeyRow(r: KeySqlRow): ApiKeyRow {
 
 type ResolvedSqlRow = KeySqlRow & {
 	user_email: string | null;
+	user_metadata: string | null;
 	budget_max: number | null;
 	budget_base: number;
 	budget_spent: number;
@@ -50,6 +51,7 @@ function mapResolvedRow(r: ResolvedSqlRow): ResolvedGatewayKeyRow {
 	return {
 		...base,
 		user_email: r.user_email,
+		user_metadata: r.user_metadata,
 		budget_max: r.budget_max == null ? null : roundGatewayMoney(Number(r.budget_max)),
 		budget_base: roundGatewayMoney(Number(r.budget_base ?? 0)),
 		budget_spent: roundGatewayMoney(Number(r.budget_spent)),
@@ -71,7 +73,7 @@ export function buildInsertApiKeyStatement(db: D1Database, params: InsertKeyPara
 export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysRepository & ApiKeysD1Statements {
 	const raw = db.raw;
 	const resolvedSelect = `SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.last_used_at, k.created_at, k.updated_at,
-    u.email AS user_email, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at
+    u.email AS user_email, u.metadata AS user_metadata, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at
     FROM api_keys k INNER JOIN users u ON u.id = k.user_id`;
 
 	return {

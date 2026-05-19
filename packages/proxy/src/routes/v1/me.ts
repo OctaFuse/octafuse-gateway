@@ -1,5 +1,5 @@
 /**
- * 用户路由：`GET /v1/me` — 返回当前密钥的预算周期、已用额度与 metadata（鉴权后直出中间件上下文）。
+ * 用户路由：`GET /v1/me` — 返回当前用户预算周期、已用额度与 metadata（优先 `users.metadata`，回退 key metadata）。
  */
 import { Hono } from 'hono';
 import {

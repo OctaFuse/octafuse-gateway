@@ -34,6 +34,7 @@ export * from './lib/alert-webhook-system-config';
 export * from './lib/money-precision';
 export * from './lib/string-utils';
 export * from './lib/time-format';
+export * from './lib/resolve-me-metadata';
 
 export * from './services/user-service';
 export * from './services/key-service';

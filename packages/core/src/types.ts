@@ -53,6 +53,8 @@ export interface UserRow {
  */
 export interface ResolvedGatewayKeyRow extends ApiKeyRow {
 	user_email: string | null;
+	/** `users.metadata` JSON 文本（鉴权 JOIN 时一并读取，供 `/v1/me` 优先合并） */
+	user_metadata: string | null;
 	budget_max: number | null;
 	budget_base: number;
 	budget_spent: number;
