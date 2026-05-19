@@ -463,7 +463,7 @@ export default function GatewayKeysPage() {
               value={filterUserId}
               onChange={(e) => { setFilterUserId(e.target.value); setPage(1); }}
               placeholder="Filter by gateway user uuid..."
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm w-72 font-mono text-xs"
+              className="px-3 py-2 border border-gray-300 rounded-md text-xs w-72 font-mono"
             />
           </div>
         </div>
