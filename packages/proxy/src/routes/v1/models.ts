@@ -1,5 +1,6 @@
 /**
  * 用户路由：`GET /v1/models` — OpenAI 兼容列表形态，附带 `model_info`（定价、tags、route_groups 等）。
+ * 未传 `route_groups` 时默认仅返回 `default`/`free`，主要为兼容 agent 默认拉列表（FREE/VIP 分组）。
  */
 import { parsePricingProfile } from '@octafuse/core';
 import { Hono } from 'hono';
@@ -106,14 +107,60 @@ function displayCompatPricesFromProfile(pricingProfile: string | null): {
   return { input_price: best.input_price, output_price: best.output_price };
 }
 
-/** 无查询参数；返回全部对外可见模型及 `model_info`（含 tags、route_groups）。 */
+/**
+ * 未传 `route_groups` 时的默认白名单。
+ * 主要兼容 agent：其默认请求 `GET /v1/models`（无查询参数），设置页只展示 FREE（`free`）与 VIP（`default`）。
+ */
+export const DEFAULT_MODELS_ROUTE_GROUPS = ['default', 'free'] as const;
+
+/**
+ * 解析 `route_groups` 查询参数（CSV，大小写不敏感）。
+ * 未传或解析后为空时回退 {@link DEFAULT_MODELS_ROUTE_GROUPS}（见上，主要为 agent 默认行为）。
+ */
+export function parseModelsRouteGroupsQuery(raw: string | undefined): string[] {
+  if (raw == null || raw.trim() === '') {
+    return [...DEFAULT_MODELS_ROUTE_GROUPS];
+  }
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of raw.split(',')) {
+    const g = part.trim().toLowerCase();
+    if (g === '' || seen.has(g)) {
+      continue;
+    }
+    seen.add(g);
+    out.push(g);
+  }
+  return out.length > 0 ? out : [...DEFAULT_MODELS_ROUTE_GROUPS];
+}
+
+/** 按白名单保留 `route_group`（比对时忽略大小写，输出保留库中原字符串）。 */
+export function filterRouteGroupsByAllowlist(groups: string[], allowed: readonly string[]): string[] {
+  const allowedSet = new Set(allowed.map((g) => g.toLowerCase()));
+  return groups.filter((g) => allowedSet.has(g.toLowerCase()));
+}
+
+/**
+ * `GET /v1/models` — 可选 `route_groups`（CSV）过滤 `model_info.route_groups`。
+ * 未传时默认 `default,free`，主要为兼容 agent 默认拉列表方式；
+ * 业务需额外分组时可显式传 `route_groups=web` 或 `route_groups=default,free,web`。
+ */
 modelsRoutes.get('/', async (c) => {
   const repos = c.get('repositories');
   const models = await listPublicModelsWithRoutes(repos);
+  const allowedRouteGroups = parseModelsRouteGroupsQuery(c.req.query('route_groups'));
 
-  const list: ModelResponse[] = models.map((m) => {
+  const list: ModelResponse[] = [];
+  for (const m of models) {
     const { input_price, output_price } = displayCompatPricesFromProfile(m.pricing_profile);
-    return {
+    const routeGroups = filterRouteGroupsByAllowlist(
+      parseRouteGroupsJson(m.route_groups ?? null),
+      allowedRouteGroups
+    );
+    if (routeGroups.length === 0) {
+      continue;
+    }
+    list.push({
       id: m.id,
       object: 'model',
       owned_by: 'octafuse',
@@ -121,7 +168,7 @@ modelsRoutes.get('/', async (c) => {
         display_name: m.display_name,
         vendor: m.vendor,
         tags: parseTags(m.tags),
-        route_groups: parseRouteGroupsJson(m.route_groups ?? null),
+        route_groups: routeGroups,
         context_window: m.context_window,
         max_tokens: m.max_tokens,
         pricing_profile: m.pricing_profile,
@@ -131,8 +178,8 @@ modelsRoutes.get('/', async (c) => {
         description: m.description,
         metadata: parseMetadata(m.metadata),
       },
-    };
-  });
+    });
+  }
 
   return c.json({
     data: list,
