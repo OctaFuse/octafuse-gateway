@@ -9,7 +9,7 @@ import { useParams } from 'next/navigation';
 import { ClipboardDocumentIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayDateTime, parseGatewayDateTime } from '@/lib/datetime';
-import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
+import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import type { GatewayApiKeyBudgetAuditLog, GatewayRequestLog } from '@/lib/types';
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
@@ -17,6 +17,7 @@ import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
+import { normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
 
 /** 与「Δ spend」「budget_max」列重复，不在「User snapshot Δ」再展示 */
 const OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS = ['budget_spent', 'budget_max'] as const;
@@ -79,6 +80,14 @@ function shortAuditId(id: string | null | undefined): string {
   return `${id.slice(0, 8)}…${id.slice(-4)}`;
 }
 
+const USER_DETAIL_RECENT_LIMIT = 5;
+
+function formatLogProvider(log: GatewayRequestLog): string {
+  const pname = log.provider_name?.trim();
+  const pid = log.provider_id?.trim();
+  return pname || pid || '—';
+}
+
 export default function GatewayUserDetailPage() {
   const params = useParams();
   const userIdRaw = typeof params.id === 'string' ? params.id : '';
@@ -88,11 +97,7 @@ export default function GatewayUserDetailPage() {
   const [loadError, setLoadError] = useState('');
   const [keys, setKeys] = useState<KeyRow[]>([]);
   const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
-  const [logsTotal, setLogsTotal] = useState(0);
-  const [logsPage, setLogsPage] = useState(1);
   const [audits, setAudits] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
-  const [auditsTotal, setAuditsTotal] = useState(0);
-  const [auditsPage, setAuditsPage] = useState(1);
   const [planError, setPlanError] = useState('');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [planForm, setPlanForm] = useState({
@@ -117,6 +122,7 @@ export default function GatewayUserDetailPage() {
   const [metaViewKey, setMetaViewKey] = useState<KeyRow | null>(null);
   const [isKeySaving, setIsKeySaving] = useState(false);
   const { currency: billingCurrency } = useBillingCurrency();
+  const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
 
   const loadUser = useCallback(async () => {
     if (!userId) return;
@@ -163,32 +169,30 @@ export default function GatewayUserDetailPage() {
   const loadLogs = useCallback(async () => {
     if (!userId) return;
     try {
-      const q = new URLSearchParams({ page: String(logsPage), page_size: '20' });
+      const q = new URLSearchParams({ page: '1', page_size: String(USER_DETAIL_RECENT_LIMIT) });
       const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/logs?${q}`);
       const data = await readApiJson<GatewayRequestLog[]>(res);
       if (data.success) {
         setLogs(data.data ?? []);
-        setLogsTotal(data.total ?? 0);
       }
     } catch (e) {
       console.error(e);
     }
-  }, [userId, logsPage]);
+  }, [userId]);
 
   const loadAudits = useCallback(async () => {
     if (!userId) return;
     try {
-      const q = new URLSearchParams({ page: String(auditsPage), page_size: '20' });
+      const q = new URLSearchParams({ page: '1', page_size: String(USER_DETAIL_RECENT_LIMIT) });
       const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/audit-logs?${q}`);
       const data = await readApiJson<GatewayApiKeyBudgetAuditLog[]>(res);
       if (data.success) {
         setAudits(data.data ?? []);
-        setAuditsTotal(data.total ?? 0);
       }
     } catch (e) {
       console.error(e);
     }
-  }, [userId, auditsPage]);
+  }, [userId]);
 
   useEffect(() => {
     loadUser();
@@ -400,9 +404,6 @@ export default function GatewayUserDetailPage() {
     );
   }
 
-  const logsTotalPages = Math.ceil(logsTotal / 20) || 1;
-  const auditsTotalPages = Math.ceil(auditsTotal / 20) || 1;
-
   return (
     <div className="p-8">
       <div className="mb-6">
@@ -414,13 +415,9 @@ export default function GatewayUserDetailPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">User Detail</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ReadonlyRow label="Created">{formatGatewayDateTime(user.created_at)}</ReadonlyRow>
-            <ReadonlyRow label="Updated">{formatGatewayDateTime(user.updated_at)}</ReadonlyRow>
-          </div>
           {planError && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{planError}</div>}
           <div className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
@@ -498,7 +495,7 @@ export default function GatewayUserDetailPage() {
                 </p>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Budget period <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
@@ -581,6 +578,10 @@ export default function GatewayUserDetailPage() {
                   />
                 </div>
               </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ReadonlyRow label="Created">{formatGatewayDateTime(user.created_at)}</ReadonlyRow>
+              <ReadonlyRow label="Updated">{formatGatewayDateTime(user.updated_at)}</ReadonlyRow>
             </div>
             <div className="flex items-center justify-between gap-3 pt-2">
               <button
@@ -723,29 +724,51 @@ export default function GatewayUserDetailPage() {
               <tr className="text-left text-xs text-gray-500 border-b">
                 <th className="py-2 pr-2">Time</th>
                 <th className="py-2 pr-2">Model</th>
+                <th className="py-2 pr-2">Group</th>
+                <th className="py-2 pr-2">Provider</th>
                 <th className="py-2 pr-2">Status</th>
-                <th className="py-2 pr-2">Charged</th>
+                <th className="py-2 pr-2 whitespace-nowrap">Standard ({billingCurrencySym})</th>
+                <th className="py-2 pr-2 whitespace-nowrap">Charged ({billingCurrencySym})</th>
+                <th className="py-2 pr-2 whitespace-nowrap">Metered ({billingCurrencySym})</th>
               </tr>
             </thead>
             <tbody>
-              {logs.map((log) => (
+              {logs.map((log) => {
+                const routeGroup = normalizeRouteGroup(log.route_group);
+                return (
                 <tr key={log.id} className="border-b border-gray-50">
                   <td className="py-2 pr-2 whitespace-nowrap">{formatGatewayDateTime(log.created_at)}</td>
-                  <td className="py-2 pr-2 font-mono text-xs">{log.model_id || '—'}</td>
+                  <td className="py-2 pr-2 font-mono text-xs max-w-[10rem] truncate" title={log.model_name || log.model_id || undefined}>
+                    {log.model_name || log.model_id || '—'}
+                  </td>
+                  <td className="py-2 pr-2">
+                    <span
+                      className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(routeGroup)}`}
+                      title={`route_group: ${routeGroup}`}
+                    >
+                      @{routeGroup}
+                    </span>
+                  </td>
+                  <td className="py-2 pr-2 text-xs max-w-[10rem] truncate" title={formatLogProvider(log)}>
+                    {formatLogProvider(log)}
+                  </td>
                   <td className="py-2 pr-2">{log.status}</td>
-                  <td className="py-2 pr-2 tabular-nums">{formatGatewayMoneyCode(log.charged_cost, billingCurrency, 4)}</td>
+                  <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
+                    {formatGatewayMoneyCode(Number(log.standard_cost ?? 0), billingCurrency, 4)}
+                  </td>
+                  <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
+                    {formatGatewayMoneyCode(Number(log.charged_cost ?? 0), billingCurrency, 4)}
+                  </td>
+                  <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
+                    {formatGatewayMoneyCode(Number(log.metered_cost ?? 0), billingCurrency, 4)}
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
+          {logs.length === 0 && <p className="text-sm text-gray-500 py-4">No request logs</p>}
         </div>
-        {logsTotalPages > 1 && (
-          <div className="mt-3 flex gap-2 items-center text-sm">
-            <button type="button" disabled={logsPage <= 1} onClick={() => setLogsPage((p) => p - 1)} className="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
-            <span className="text-gray-600">Page {logsPage} / {logsTotalPages}</span>
-            <button type="button" disabled={logsPage >= logsTotalPages} onClick={() => setLogsPage((p) => p + 1)} className="px-2 py-1 border rounded disabled:opacity-50">Next</button>
-          </div>
-        )}
       </div>
 
       <div className="mt-6 bg-white rounded-lg shadow-md p-6">
@@ -827,14 +850,8 @@ export default function GatewayUserDetailPage() {
               })}
             </tbody>
           </table>
+          {audits.length === 0 && <p className="text-sm text-gray-500 py-4">No audit logs</p>}
         </div>
-        {auditsTotalPages > 1 && (
-          <div className="mt-3 flex gap-2 items-center text-sm">
-            <button type="button" disabled={auditsPage <= 1} onClick={() => setAuditsPage((p) => p - 1)} className="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
-            <span className="text-gray-600">Page {auditsPage} / {auditsTotalPages}</span>
-            <button type="button" disabled={auditsPage >= auditsTotalPages} onClick={() => setAuditsPage((p) => p + 1)} className="px-2 py-1 border rounded disabled:opacity-50">Next</button>
-          </div>
-        )}
       </div>
 
       {metaViewKey && (() => {

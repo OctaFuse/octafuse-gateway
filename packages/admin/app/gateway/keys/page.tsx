@@ -38,6 +38,16 @@ function formatKeyTimestamp(iso: string | null | undefined): string {
   return formatGatewayDateTime(iso);
 }
 
+function formatBudgetPeriodResetLabel(
+  period: string | null | undefined,
+  resetAt: string | null | undefined
+): string {
+  const periodLabel = period && period !== 'none' ? period : 'none';
+  const resetLabel =
+    resetAt == null || resetAt === '' ? '—' : formatGatewayDateTime(resetAt);
+  return `${periodLabel} / ${resetLabel}`;
+}
+
 /** 首列状态色块（实心）；悬停色块见完整 status 文案 */
 function keyStatusSwatchClass(status: string) {
   if (status === 'active') return 'bg-emerald-500';
@@ -834,17 +844,17 @@ export default function GatewayKeysPage() {
                       <span className="text-sm text-gray-600 capitalize">{selectedKey.status}</span>
                     </div>
                   </ReadonlyRow>
-                  <ReadonlyRow label="User email">
-                    {selectedKey.user_email || '—'}
-                  </ReadonlyRow>
                   <ReadonlyRow label="User ID (auth)">
                     <Link href={`/gateway/users/${encodeURIComponent(selectedKey.user_id)}`} className="font-mono text-xs text-blue-600 hover:underline break-all">
                       {selectedKey.user_id}
                     </Link>
                   </ReadonlyRow>
-                  <ReadonlyRow label="Budget (read-only)">
-                    <div className="text-sm">
-                      <div>
+                  <ReadonlyRow label="User email">
+                    {selectedKey.user_email || '—'}
+                  </ReadonlyRow>
+                  <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
+                    <ReadonlyRow label="Budget (read-only)">
+                      <div className="text-sm">
                         {formatGatewayMoneyCode(selectedKey.budget_spent, billingCurrency, 2)} /{' '}
                         {selectedKey.budget_max != null ? formatGatewayMoneyCode(selectedKey.budget_max, billingCurrency, 2) : 'no limit'}
                         {selectedKey.budget_base != null && (
@@ -853,15 +863,14 @@ export default function GatewayKeysPage() {
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        Period: {selectedKey.budget_period && selectedKey.budget_period !== 'none' ? selectedKey.budget_period : 'none'}
-                        {selectedKey.budget_reset_at ? ` · next reset ${formatGatewayDateTime(selectedKey.budget_reset_at)}` : ''}
-                      </div>
-                      <Link href={`/gateway/users/${encodeURIComponent(selectedKey.user_id)}`} className="mt-1 inline-block text-xs font-medium text-blue-600 hover:text-blue-800">
-                        Edit plan on user →
-                      </Link>
-                    </div>
-                  </ReadonlyRow>
+                    </ReadonlyRow>
+                    <ReadonlyRow label="Budget Period / Reset">
+                      {formatBudgetPeriodResetLabel(
+                        selectedKey.budget_period,
+                        selectedKey.budget_reset_at
+                      )}
+                    </ReadonlyRow>
+                  </div>
                   <ReadonlyRow label="Created">
                     {formatKeyTimestamp(selectedKey.created_at)}
                   </ReadonlyRow>
@@ -876,12 +885,6 @@ export default function GatewayKeysPage() {
                   >
                     Request logs for this key →
                   </a>
-                  <Link
-                    href={`/gateway/audit-logs?user_id=${encodeURIComponent(selectedKey.user_id)}`}
-                    className="font-medium text-blue-600 hover:text-blue-800"
-                  >
-                    Audit logs for this user →
-                  </Link>
                 </div>
               </div>
 
