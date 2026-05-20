@@ -1,7 +1,13 @@
 /**
  * Admin `GET /admin/users` list sort whitelist and query parsing.
  */
-export const USER_LIST_SORT_FIELDS = ['budget_spent', 'budget_reset_at', 'created_at'] as const;
+export const USER_LIST_SORT_FIELDS = [
+	'budget_spent',
+	'budget_max',
+	'budget_base',
+	'budget_reset_at',
+	'created_at',
+] as const;
 export type UserListSortField = (typeof USER_LIST_SORT_FIELDS)[number];
 
 export const USER_LIST_SORT_ORDERS = ['asc', 'desc'] as const;
@@ -57,12 +63,13 @@ export function parseUserListSortQuery(sort?: string, order?: string): UserListS
 /** D1 raw SQL `ORDER BY` clause (whitelist columns only). */
 export function buildD1UserListOrderByClause(sort: UserListSortField, order: UserListSortOrder): string {
 	const dir = order === 'asc' ? 'ASC' : 'DESC';
-	if (sort === 'budget_reset_at') {
+	const tieDir = dir;
+	if (sort === 'budget_reset_at' || sort === 'budget_max') {
 		const nulls = order === 'asc' ? 'NULLS LAST' : 'NULLS FIRST';
-		return `ORDER BY budget_reset_at ${dir} ${nulls}`;
+		return `ORDER BY ${sort} ${dir} ${nulls}, created_at ${tieDir}`;
 	}
-	if (sort === 'budget_spent') {
-		return `ORDER BY budget_spent ${dir}`;
+	if (sort === 'budget_spent' || sort === 'budget_base') {
+		return `ORDER BY ${sort} ${dir}, created_at ${tieDir}`;
 	}
 	return `ORDER BY created_at ${dir}`;
 }

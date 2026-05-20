@@ -16,16 +16,26 @@ import {
 } from '../users-list-sort';
 import { parseMoney } from '../../storage/critical-write-paths-utils';
 
-function userListOrderBy(sort: UserListSortField, order: UserListSortOrder) {
+function userListOrderByClauses(sort: UserListSortField, order: UserListSortOrder) {
 	const isAsc = order === 'asc';
+	const tie = isAsc ? asc(myUsersTable.createdAt) : desc(myUsersTable.createdAt);
 	if (sort === 'budget_reset_at') {
 		const col = myUsersTable.budgetResetAt;
-		return isAsc ? sql`${col} ASC NULLS LAST` : sql`${col} DESC NULLS FIRST`;
+		const primary = isAsc ? sql`${col} ASC NULLS LAST` : sql`${col} DESC NULLS FIRST`;
+		return [primary, tie];
+	}
+	if (sort === 'budget_max') {
+		const col = myUsersTable.budgetMax;
+		const primary = isAsc ? sql`${col} ASC NULLS LAST` : sql`${col} DESC NULLS FIRST`;
+		return [primary, tie];
 	}
 	if (sort === 'budget_spent') {
-		return isAsc ? asc(myUsersTable.budgetSpent) : desc(myUsersTable.budgetSpent);
+		return [isAsc ? asc(myUsersTable.budgetSpent) : desc(myUsersTable.budgetSpent), tie];
 	}
-	return isAsc ? asc(myUsersTable.createdAt) : desc(myUsersTable.createdAt);
+	if (sort === 'budget_base') {
+		return [isAsc ? asc(myUsersTable.budgetBase) : desc(myUsersTable.budgetBase), tie];
+	}
+	return [isAsc ? asc(myUsersTable.createdAt) : desc(myUsersTable.createdAt)];
 }
 
 function mapMyUserRow(r: {
@@ -120,7 +130,7 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			const order = options?.order ?? DEFAULT_USER_LIST_ORDER;
 			let listQ = drizzle.select().from(myUsersTable);
 			if (whereExpr) listQ = listQ.where(whereExpr) as typeof listQ;
-			const rows = await listQ.orderBy(userListOrderBy(sort, order)).limit(pageSize).offset(offset);
+			const rows = await listQ.orderBy(...userListOrderByClauses(sort, order)).limit(pageSize).offset(offset);
 			return { users: rows.map(mapMyUserRow), total };
 		},
 

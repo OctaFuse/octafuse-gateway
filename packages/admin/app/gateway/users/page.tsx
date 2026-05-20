@@ -9,11 +9,24 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { summarizeMetadata } from '@/lib/summarize-metadata';
+import { nextListSortStateWithAscToggle } from '@/lib/toggle-list-sort';
 import type { GatewayUserListItem } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 
-type UserListSortKey = 'budget_spent' | 'budget_reset_at' | 'created_at';
+type UserListSortKey = 'budget_spent' | 'budget_max' | 'budget_base' | 'budget_reset_at' | 'created_at';
 type SortDir = 'asc' | 'desc';
+
+/** 首列状态色块（实心）；悬停色块见完整 status 文案 */
+function statusSwatchClass(status: string): string {
+  if (status === 'active') return 'bg-emerald-500';
+  return 'bg-gray-400';
+}
+
+function formatBudgetBase(value: number | null | undefined, currency: string): string {
+  if (value == null || value === 0) return '—';
+  return formatGatewayMoneyCode(value, currency, 2);
+}
 
 export default function GatewayUsersPage() {
   const router = useRouter();
@@ -40,10 +53,13 @@ export default function GatewayUsersPage() {
   });
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [metadataViewUser, setMetadataViewUser] = useState<GatewayUserListItem | null>(null);
+  const [listError, setListError] = useState('');
   const { currency: billingCurrency } = useBillingCurrency();
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
+    setListError('');
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -61,9 +77,12 @@ export default function GatewayUsersPage() {
       if (data.success && data.data) {
         setUsers(data.data);
         setTotal(data.total ?? 0);
+      } else {
+        setListError(data.message || `Failed to load users (${response.status})`);
       }
     } catch (e) {
       console.error('Fetch users error:', e);
+      setListError('Failed to load users');
     } finally {
       setIsLoading(false);
     }
@@ -76,21 +95,33 @@ export default function GatewayUsersPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   const toggleSort = (key: UserListSortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('desc');
-    }
+    const next = nextListSortStateWithAscToggle(sortKey, sortDir, key);
+    setSortKey(next.sortKey as UserListSortKey);
+    setSortDir(next.sortDir);
     setPage(1);
   };
 
-  const SortableTh = ({ label, columnKey }: { label: string; columnKey: UserListSortKey }) => (
-    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+  const SortableTh = ({
+    label,
+    columnKey,
+    align = 'left',
+  }: {
+    label: string;
+    columnKey: UserListSortKey;
+    align?: 'left' | 'right';
+  }) => (
+    <th
+      className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase whitespace-nowrap ${
+        align === 'right' ? 'text-right' : 'text-left'
+      }`}
+    >
       <button
         type="button"
-        onClick={() => toggleSort(columnKey)}
-        className="hover:text-gray-700"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleSort(columnKey);
+        }}
+        className={`hover:text-gray-700 ${align === 'right' ? 'inline-block' : ''}`}
         aria-label={`Sort by ${label}`}
       >
         {label}
@@ -247,21 +278,37 @@ export default function GatewayUsersPage() {
         <div className="text-sm text-gray-500 self-end">Total: {total} users</div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      {listError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{listError}</div>
+      )}
+
+      <div className="bg-white rounded-lg shadow-md overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <SortableTh label="Email (created)" columnKey="created_at" />
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">External</th>
-              <SortableTh label="Budget (spent)" columnKey="budget_spent" />
-              <SortableTh label="Period (reset)" columnKey="budget_reset_at" />
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Active keys</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                Status · Email
+              </th>
+              <SortableTh label="Spent" columnKey="budget_spent" align="right" />
+              <SortableTh label="Max" columnKey="budget_max" align="right" />
+              <SortableTh label="Base" columnKey="budget_base" align="right" />
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                Period
+              </th>
+              <SortableTh label="Reset at" columnKey="budget_reset_at" />
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                Keys
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap max-w-xs">
+                Metadata
+              </th>
+              <SortableTh label="Created" columnKey="created_at" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {users.map((u) => {
               const detailHref = `/gateway/users/${encodeURIComponent(u.id)}`;
+              const meta = summarizeMetadata(u.metadata);
               return (
               <tr
                 key={u.id}
@@ -277,40 +324,66 @@ export default function GatewayUsersPage() {
                   }
                 }}
               >
-                <td className="px-4 py-3">
-                  <div className="text-sm font-medium text-gray-900">{u.email || '—'}</div>
-                  <div className="text-xs text-gray-500 font-mono mt-0.5">{u.id}</div>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
-                  <div>{u.external_system || '—'}</div>
-                  <div className="text-xs text-gray-500 font-mono truncate max-w-[14rem]" title={u.external_user_id ?? ''}>
-                    {u.external_user_id || '—'}
+                <td className="px-4 py-3 text-sm min-w-[12rem]">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <span
+                      className={`inline-block w-2.5 h-2.5 rounded-sm shrink-0 mt-1 ${statusSwatchClass(u.status)}`}
+                      title={u.status}
+                      role="img"
+                      aria-label={`Status: ${u.status}`}
+                    />
+                    <div className="min-w-0 truncate font-medium text-gray-900" title={u.email || undefined}>
+                      {u.email || '—'}
+                    </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm">
-                  <div className="text-gray-900">
-                    {formatGatewayMoneyCode(u.budget_spent, billingCurrency, 2)} /{' '}
-                    {u.budget_max != null ? formatGatewayMoneyCode(u.budget_max, billingCurrency, 2) : 'no limit'}
-                  </div>
-                  {u.budget_base != null && u.budget_base > 0 && (
-                    <div className="text-xs text-gray-500">base {formatGatewayMoneyCode(u.budget_base, billingCurrency, 2)}</div>
+                <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
+                  {formatGatewayMoneyCode(u.budget_spent, billingCurrency, 2)}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
+                  {u.budget_max != null
+                    ? formatGatewayMoneyCode(u.budget_max, billingCurrency, 2)
+                    : 'no limit'}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
+                  {formatBudgetBase(u.budget_base, billingCurrency)}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                  {u.budget_period && u.budget_period !== 'none' ? u.budget_period : '—'}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                  {u.budget_reset_at ? formatGatewayDateTime(u.budget_reset_at) : '—'}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
+                  {u.active_keys_count}
+                </td>
+                <td
+                  className="px-4 py-3 max-w-xs"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  {meta.empty ? (
+                    <div className="text-sm text-gray-400">—</div>
+                  ) : (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={`block truncate text-xs font-mono ${meta.ok ? 'text-gray-700' : 'text-red-600'}`}
+                        title={meta.summary}
+                      >
+                        {meta.summary}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMetadataViewUser(u)}
+                        className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
+                      >
+                        Details
+                      </button>
+                    </div>
                   )}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
-                  {u.budget_period && u.budget_period !== 'none' ? u.budget_period : '—'}
-                  <div className="text-xs text-gray-500">
-                    {u.budget_reset_at ? formatGatewayDateTime(u.budget_reset_at) : '—'}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900">{u.active_keys_count}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                      u.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'
-                    }`}
-                  >
-                    {u.status}
-                  </span>
+                <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                  {formatGatewayDateTime(u.created_at)}
                 </td>
               </tr>
               );
@@ -482,6 +555,56 @@ export default function GatewayUsersPage() {
           </div>
         </div>
       )}
+
+      {metadataViewUser && (() => {
+        const m = summarizeMetadata(metadataViewUser.metadata);
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+              <div className="px-6 py-4 border-b flex justify-between items-center">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900">Metadata</h2>
+                  <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={metadataViewUser.id}>
+                    {[metadataViewUser.email, metadataViewUser.id].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMetadataViewUser(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                {m.empty ? (
+                  <div className="text-sm text-gray-500">No metadata.</div>
+                ) : (
+                  <>
+                    {!m.ok && (
+                      <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        Stored value is not valid JSON; showing raw string.
+                      </div>
+                    )}
+                    <pre className="whitespace-pre-wrap break-all rounded-md bg-gray-50 border border-gray-200 p-4 text-xs font-mono text-gray-800">
+                      {m.full}
+                    </pre>
+                  </>
+                )}
+              </div>
+              <div className="px-6 py-3 border-t flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setMetadataViewUser(null)}
+                  className="px-3 py-1.5 bg-gray-800 text-white rounded-md text-sm hover:bg-gray-900"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
+import { summarizeMetadata } from '@/lib/summarize-metadata';
 
 /** 与「Δ spend」「budget_max」列重复，不在「User snapshot Δ」再展示 */
 const OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS = ['budget_spent', 'budget_max'] as const;
@@ -56,41 +57,6 @@ function formatLocalDateTimeInput(raw: string | null | undefined): string {
     `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
     `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`,
   ].join('T');
-}
-
-function summarizeMetadata(raw: string | null | undefined): {
-  ok: boolean;
-  empty: boolean;
-  summary: string;
-  full: string;
-} {
-  if (raw == null || raw === '') {
-    return { ok: true, empty: true, summary: '', full: '' };
-  }
-  try {
-    const parsed = JSON.parse(raw);
-    const full = JSON.stringify(parsed, null, 2);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      const entries = Object.entries(parsed as Record<string, unknown>);
-      if (entries.length === 0) {
-        return { ok: true, empty: false, summary: '{}', full };
-      }
-      const [firstKey, firstVal] = entries[0];
-      const valueText = typeof firstVal === 'string' ? firstVal : JSON.stringify(firstVal);
-      const head = `${firstKey}: ${valueText}`;
-      const rest = entries.length - 1;
-      return {
-        ok: true,
-        empty: false,
-        summary: rest > 0 ? `${head} · +${rest}` : head,
-        full,
-      };
-    }
-    const compact = JSON.stringify(parsed);
-    return { ok: true, empty: false, summary: compact, full };
-  } catch {
-    return { ok: false, empty: false, summary: raw, full: raw };
-  }
 }
 
 function ReadonlyRow({ label, children }: { label: string; children: ReactNode }) {
