@@ -45,6 +45,37 @@
 		}
 	},
 	{
+		"id": "gemini-3.5-flash",
+		"display_name": "Gemini 3.5 Flash",
+		"vendor": "google",
+		"context_window": 1050000,
+		"max_tokens": 65000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.5,
+						"output_price": 9,
+						"cache_read_price": 0.15,
+						"cache_write_price": 0.08333
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10.8,
+						"output_price": 64.8,
+						"cache_read_price": 1.08,
+						"cache_write_price": 0.59998
+					}
+				]
+			}
+		}
+	},
+	{
 		"id": "gemini-3.1-flash-lite-preview",
 		"display_name": "Gemini 3.1 Flash Lite Preview",
 		"vendor": "google",
