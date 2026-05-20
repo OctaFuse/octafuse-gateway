@@ -1,6 +1,6 @@
 [
 	{
-		"id": "deepseek-official",
+		"id": "deepseek",
 		"name": "DeepSeek（官方）",
 		"vendor_key": "deepseek",
 		"base_url_openai": "https://api.deepseek.com",
@@ -84,7 +84,7 @@
 		"description": "GLM Coding Plan 专用 OpenAI 根路径；Anthropic 根路径供 Claude Code 等工具。勿与通用 /api/paas/v4 混用。"
 	},
 	{
-		"id": "moonshot-official",
+		"id": "moonshot",
 		"name": "月之暗面 Moonshot（官方）",
 		"vendor_key": "moonshot",
 		"base_url_openai": "https://api.moonshot.cn/v1",
@@ -101,7 +101,7 @@
 		"description": "Kimi Code CLI / Coding 套餐使用的 OpenAI 兼容根路径（api.kimi.com），与 moonshot.cn 常规开放平台不同。见 Kimi Code CLI 文档「平台与模型」。"
 	},
 	{
-		"id": "minimax-official",
+		"id": "minimax",
 		"name": "MiniMax",
 		"vendor_key": "minimax",
 		"base_url_openai": "https://api.minimaxi.com/v1",
@@ -109,7 +109,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "openai-official",
+		"id": "openai",
 		"name": "OpenAI（官方 API）",
 		"vendor_key": "openai",
 		"base_url_openai": "https://api.openai.com/v1",
@@ -117,7 +117,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "anthropic-official",
+		"id": "anthropic",
 		"name": "Anthropic（官方 API）",
 		"vendor_key": "anthropic",
 		"base_url_openai": null,
@@ -135,7 +135,7 @@
 		"description": "Gemini 根地址；网关会拼接 `/v1beta/models/...`。API Key 通常经查询参数 `key=` 传递，以 Google AI Studio / Cloud 文档为准。"
 	},
 	{
-		"id": "mistral-official",
+		"id": "mistral",
 		"name": "Mistral AI（官方 API）",
 		"vendor_key": "mistral",
 		"base_url_openai": "https://api.mistral.ai/v1",
@@ -143,7 +143,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "groq-official",
+		"id": "groq",
 		"name": "Groq（OpenAI 兼容）",
 		"vendor_key": "groq",
 		"base_url_openai": "https://api.groq.com/openai/v1",
@@ -151,7 +151,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "xai-official",
+		"id": "xai",
 		"name": "xAI（Grok，官方 API）",
 		"vendor_key": "xai",
 		"base_url_openai": "https://api.x.ai/v1",
@@ -175,7 +175,7 @@
 		"base_url_gemini": null
 	},
 	{
-		"id": "perplexity-official",
+		"id": "perplexity",
 		"name": "Perplexity",
 		"vendor_key": "perplexity",
 		"base_url_openai": "https://api.perplexity.ai",
@@ -211,7 +211,7 @@
 		"description": "将 YOUR_RESOURCE_NAME 替换为 Azure 门户中的 OpenAI 资源名；部署路径与 `api-version` 以微软官方文档为准。"
 	},
 	{
-		"id": "stepfun-official",
+		"id": "stepfun",
 		"name": "阶跃星辰 StepFun",
 		"vendor_key": "stepfun",
 		"base_url_openai": "https://api.stepfun.com/v1",
@@ -220,7 +220,7 @@
 		"description": "OpenAI 兼容入口；Step Plan 等其它产品线可能使用不同 base URL，以 StepFun 开放平台为准。"
 	},
 	{
-		"id": "baichuan-official",
+		"id": "baichuan",
 		"name": "百川智能 Baichuan",
 		"vendor_key": "baichuan",
 		"base_url_openai": "https://api.baichuan-ai.com/v1",
@@ -246,7 +246,7 @@
 		"description": "小米 MiMo Token Plan 专用 OpenAI 兼容根路径；Anthropic 根路径供 Claude Code 等工具。勿与通用 api 混用。"
 	},
 	{
-		"id": "openrouter-official",
+		"id": "openrouter",
 		"name": "OpenRouter",
 		"vendor_key": "openrouter",
 		"base_url_openai": "https://openrouter.ai/api/v1",
