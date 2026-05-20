@@ -17,7 +17,7 @@ import { useBillingCurrency } from '@/lib/use-billing-currency';
 import type { GatewayApiKey } from '@/lib/types';
 
 type KeyCreationMode = 'existingUser' | 'externalIdentity';
-type ApiKeyListSortKey = 'budget_spent' | 'budget_reset_at' | 'created_at';
+type ApiKeyListSortKey = 'created_at';
 type SortDir = 'asc' | 'desc';
 
 function formatApiKeyMetadataForEditor(raw: string | null | undefined): string {
@@ -36,6 +36,30 @@ function formatKeyTimestamp(iso: string | null | undefined): string {
     return '—';
   }
   return formatGatewayDateTime(iso);
+}
+
+/** 首列状态色块（实心）；悬停色块见完整 status 文案 */
+function keyStatusSwatchClass(status: string) {
+  if (status === 'active') return 'bg-emerald-500';
+  if (status === 'revoked') return 'bg-gray-400';
+  return 'bg-gray-300';
+}
+
+function formatUserBudgetOneLine(key: GatewayApiKey, currency: string): string {
+  const spent = formatGatewayMoneyCode(key.budget_spent, currency, 2);
+  const maxPart =
+    key.budget_max != null
+      ? formatGatewayMoneyCode(key.budget_max, currency, 2)
+      : 'no limit';
+  let line = `${spent} / ${maxPart}`;
+  const period = key.budget_period && key.budget_period !== 'none' ? key.budget_period : null;
+  if (period) {
+    line += ` · ${period}`;
+    if (key.budget_reset_at) {
+      line += ` · resets ${formatGatewayDateTime(key.budget_reset_at)}`;
+    }
+  }
+  return line;
 }
 
 function ReadonlyRow({
@@ -86,7 +110,6 @@ export default function GatewayKeysPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
-  const [metadataViewKey, setMetadataViewKey] = useState<GatewayApiKey | null>(null);
   const { currency: billingCurrency } = useBillingCurrency();
 
   const fetchKeys = useCallback(async () => {
@@ -128,7 +151,7 @@ export default function GatewayKeysPage() {
   };
 
   const SortableTh = ({ label, columnKey }: { label: string; columnKey: ApiKeyListSortKey }) => (
-    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
       <button
         type="button"
         onClick={(e) => {
@@ -182,6 +205,9 @@ export default function GatewayKeysPage() {
       });
       const data = await readApiJson(response);
       if (data.success) {
+        setSelectedKey((prev) =>
+          prev?.id === key.id ? { ...prev, status: nextStatus } : prev
+        );
         fetchKeys();
       } else {
         alert(data.message || 'Update failed');
@@ -367,11 +393,6 @@ export default function GatewayKeysPage() {
     return key.substring(0, 7) + '...' + key.substring(key.length - 4);
   };
 
-  const getBudgetPercentage = (key: GatewayApiKey) => {
-    if (!key.budget_max) return 0;
-    return Math.min(100, (key.budget_spent / key.budget_max) * 100);
-  };
-
   const totalPages = Math.ceil(total / pageSize);
 
   if (isLoading) {
@@ -431,27 +452,46 @@ export default function GatewayKeysPage() {
             />
           </div>
         </div>
-        <div className="text-sm text-gray-500">
-          Total: {total} keys
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
+          <span className="text-sm">Total: {total} keys</span>
+          <span className="hidden sm:inline h-3 w-px bg-gray-200" aria-hidden />
+          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500 shrink-0" aria-hidden />
+              active
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-400 shrink-0" aria-hidden />
+              revoked
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-300 shrink-0" aria-hidden />
+              other
+            </span>
+          </span>
         </div>
       </div>
 
       {/* Keys Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <SortableTh label="Key (created)" columnKey="created_at" />
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-              <SortableTh label="Budget (spent)" columnKey="budget_spent" />
-              <SortableTh label="Period (reset)" columnKey="budget_reset_at" />
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metadata</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">User</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Key</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Name</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">User Budget</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[10rem] max-w-xs">Api Key Metadata</th>
+              <SortableTh label="Created" columnKey="created_at" />
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {keys.map((key) => (
+            {keys.map((key) => {
+              const budgetLine = formatUserBudgetOneLine(key, billingCurrency);
+              const meta = summarizeMetadata(key.metadata);
+              return (
               <tr
                 key={key.id}
                 onClick={() => handleEdit(key)}
@@ -464,10 +504,22 @@ export default function GatewayKeysPage() {
                 tabIndex={0}
                 className="cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
               >
-                <td className="px-4 py-4">
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <span
+                    className={`inline-block w-2.5 h-2.5 rounded-sm shrink-0 ${keyStatusSwatchClass(key.status)}`}
+                    title={key.status}
+                    role="img"
+                    aria-label={`Status: ${key.status}`}
+                  />
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{key.user_email || '—'}</div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-mono text-gray-900">{maskKey(key.key)}</span>
                     <button
+                      type="button"
                       onClick={(event) => {
                         event.stopPropagation();
                         copyToClipboard(key.key);
@@ -478,109 +530,36 @@ export default function GatewayKeysPage() {
                       <ClipboardDocumentIcon className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="text-xs text-gray-500 font-mono mt-1">ID: {key.id}</div>
                 </td>
-                <td className="px-4 py-4">
+                <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{key.name?.trim() ? key.name : '—'}</div>
                 </td>
-                <td className="px-4 py-4">
-                  <div className="text-sm text-gray-900">{key.user_email || '—'}</div>
-                  <Link
-                    href={`/gateway/users/${encodeURIComponent(key.user_id)}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-xs text-blue-600 hover:underline font-mono"
-                  >
-                    {key.user_id}
-                  </Link>
-                </td>
-                <td className="px-4 py-4">
-                  <div>
-                    {/* Budget: always spend / max */}
-                    {key.budget_max != null && key.budget_max > 0 && (
-                      <div className="w-28 bg-gray-200 rounded-full h-2 mb-1.5">
-                        <div
-                          className={`h-2 rounded-full ${getBudgetPercentage(key) > 90 ? 'bg-red-500' : getBudgetPercentage(key) > 70 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                          style={{ width: `${getBudgetPercentage(key)}%` }}
-                        />
-                      </div>
-                    )}
-                    <div className="text-sm font-medium text-gray-900">
-                      {formatGatewayMoneyCode(key.budget_spent, billingCurrency, 2)} /{' '}
-                      {key.budget_max != null ? formatGatewayMoneyCode(key.budget_max, billingCurrency, 2) : 'no limit'}
-                      {key.budget_base != null && (
-                        <span className="ml-1 text-xs font-normal text-gray-500">
-                          ({formatGatewayMoneyCode(key.budget_base, billingCurrency, 2)})
-                        </span>
-                      )}
-                    </div>
+                <td className="px-3 py-3 max-w-[20rem]">
+                  <div className="text-sm text-gray-900 truncate whitespace-nowrap" title={budgetLine}>
+                    {budgetLine}
                   </div>
                 </td>
-                <td className="px-4 py-4">
-                  <div className="text-sm text-gray-900">
-                    {key.budget_period && key.budget_period !== 'none' ? key.budget_period : '-'}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {key.budget_reset_at ? `resets ${formatGatewayDateTime(key.budget_reset_at)}` : '-'}
-                  </div>
-                </td>
-                <td className="px-4 py-4 max-w-xs">
-                  {(() => {
-                    const m = summarizeMetadata(key.metadata);
-                    if (m.empty) {
-                      return <div className="text-sm text-gray-400">-</div>;
-                    }
-                    return (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className={`block truncate text-xs font-mono ${m.ok ? 'text-gray-700' : 'text-red-600'}`}
-                          title={m.summary}
-                        >
-                          {m.summary}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setMetadataViewKey(key);
-                          }}
-                          className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
-                        >
-                          Details
-                        </button>
-                      </div>
-                    );
-                  })()}
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={key.status === 'active'}
-                      disabled={statusTogglingId === key.id}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleStatusToggle(key);
-                      }}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                        key.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
-                      }`}
+                <td className="px-3 py-3 max-w-xs">
+                  {meta.empty ? (
+                    <div className="text-sm text-gray-400">—</div>
+                  ) : (
+                    <span
+                      className={`block truncate text-xs font-mono ${meta.ok ? 'text-gray-700' : 'text-red-600'}`}
+                      title={meta.summary}
                     >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
-                          key.status === 'active' ? 'translate-x-5' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                    {key.status !== 'active' && (
-                      <span className="text-sm text-gray-600">Revoked</span>
-                    )}
-                  </div>
+                      {meta.summary}
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
+                  {formatKeyTimestamp(key.created_at)}
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
+        </div>
 
         {keys.length === 0 && (
           <div className="text-center py-12 text-gray-500">
@@ -835,14 +814,25 @@ export default function GatewayKeysPage() {
                     </div>
                   </ReadonlyRow>
                   <ReadonlyRow label="Status">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        selectedKey.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'
-                      }`}
-                    >
-                      {selectedKey.status}
-                    </span>
-                    <span className="mt-1 block text-xs text-gray-500">Use the table row toggle to activate or revoke.</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={selectedKey.status === 'active'}
+                        disabled={statusTogglingId === selectedKey.id}
+                        onClick={() => handleStatusToggle(selectedKey)}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          selectedKey.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                            selectedKey.status === 'active' ? 'translate-x-5' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                      <span className="text-sm text-gray-600 capitalize">{selectedKey.status}</span>
+                    </div>
                   </ReadonlyRow>
                   <ReadonlyRow label="User email">
                     {selectedKey.user_email || '—'}
@@ -951,63 +941,6 @@ export default function GatewayKeysPage() {
         </div>
       )}
 
-      {/* Metadata Detail Modal */}
-      {metadataViewKey && (() => {
-        const m = summarizeMetadata(metadataViewKey.metadata);
-        return (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-              <div className="px-6 py-4 border-b flex justify-between items-center">
-                <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900">Metadata</h2>
-                  <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={metadataViewKey.id}>
-                    {[metadataViewKey.name, metadataViewKey.user_email, metadataViewKey.user_id].filter(Boolean).join(' · ')} · {metadataViewKey.id}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setMetadataViewKey(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  x
-                </button>
-              </div>
-              <div className="p-6 overflow-y-auto">
-                {m.empty ? (
-                  <div className="text-sm text-gray-500">No metadata.</div>
-                ) : (
-                  <>
-                    {!m.ok && (
-                      <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                        Stored value is not valid JSON; showing raw string.
-                      </div>
-                    )}
-                    <pre className="whitespace-pre-wrap break-all rounded-md bg-gray-50 border border-gray-200 p-4 text-xs font-mono text-gray-800">
-                      {m.full}
-                    </pre>
-                  </>
-                )}
-              </div>
-              <div className="px-6 py-3 border-t flex justify-end gap-3">
-                {!m.empty && (
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(m.full)}
-                    className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    {copiedKey === m.full ? 'Copied' : 'Copy'}
-                  </button>
-                )}
-                <button
-                  onClick={() => setMetadataViewKey(null)}
-                  className="px-3 py-1.5 bg-gray-800 text-white rounded-md text-sm hover:bg-gray-900"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }
