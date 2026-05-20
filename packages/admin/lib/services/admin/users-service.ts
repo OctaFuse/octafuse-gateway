@@ -24,7 +24,7 @@ import {
 	userRowToSnapshot,
 } from '@octafuse/core/db/user-audit-snapshot';
 import { buildMetadataAuditChange } from './admin-profile-audit-metadata';
-import { badRequest, notFound } from './errors';
+import { badRequest, conflict, notFound } from './errors';
 import { normalizeMetadataInput } from './shared';
 import type { AdminUserCreateInput, AdminUserUpdateInput, JsonObject } from './types';
 
@@ -120,6 +120,16 @@ export async function listAdminUsers(
 	return { data, total: Number(total), page, page_size: pageSize };
 }
 
+/** D1/SQLite 或 Postgres 在 `(external_system, email)` 唯一索引冲突时的错误识别。 */
+function isExternalSystemEmailUniqueViolation(error: unknown): boolean {
+	const msg = error instanceof Error ? error.message : String(error);
+	return (
+		msg.includes('uk_users_external_system_email') ||
+		(msg.includes('UNIQUE constraint') && msg.includes('external_system') && msg.includes('email')) ||
+		(msg.includes('duplicate key') && msg.includes('external_system') && msg.includes('email'))
+	);
+}
+
 export async function createAdminUser(repos: GatewayRepositories, input: AdminUserCreateInput) {
 	const emailTrim = String(input.email ?? '').trim();
 	if (!emailTrim) {
@@ -147,15 +157,26 @@ export async function createAdminUser(repos: GatewayRepositories, input: AdminUs
 		}
 	}
 
-	const user = await getOrCreateUser(repos, {
-		external_system: input.external_system ?? null,
-		external_user_id: input.external_user_id ?? null,
-		email: emailTrim,
-		budget_max,
-		budget_period,
-		budget_base,
-		metadata: metaString,
-	});
+	let user;
+	try {
+		user = await getOrCreateUser(repos, {
+			external_system: input.external_system ?? null,
+			external_user_id: input.external_user_id ?? null,
+			email: emailTrim,
+			budget_max,
+			budget_period,
+			budget_base,
+			metadata: metaString,
+		});
+	} catch (error) {
+		if (isExternalSystemEmailUniqueViolation(error)) {
+			const system = String(input.external_system ?? '').trim() || '(unknown)';
+			throw conflict(
+				`email "${emailTrim}" is already linked to another user under external_system "${system}"`
+			);
+		}
+		throw error;
+	}
 
 	const info = await getUserInfo(repos, user.id);
 	if (!info) throw notFound('User not found');
