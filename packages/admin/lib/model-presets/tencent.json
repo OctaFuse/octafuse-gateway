@@ -1,1 +1,47 @@
-[]
+[
+	{
+		"id": "hy3-preview",
+		"display_name": "Hy3 preview",
+		"vendor": "tencent",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 32000,
+						"input_price": 0.23,
+						"output_price": 0.91,
+						"cache_read_price": 0.09,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 0.29,
+						"output_price": 1.14,
+						"cache_read_price": 0.11,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 32000,
+						"input_price": 1.6,
+						"output_price": 6.4,
+						"cache_read_price": 0.6,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 8,
+						"cache_read_price": 0.8,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
+	}
+]
