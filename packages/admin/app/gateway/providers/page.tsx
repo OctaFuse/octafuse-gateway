@@ -773,21 +773,21 @@ export default function GatewayProvidersPage() {
                   </div>
                 </section>
 
-                {/* Notes */}
+                {/* Description (providers.description) */}
                 <section className="rounded-lg border border-gray-200 bg-slate-50/70 p-4 space-y-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Notes</h3>
+                    <h3 id="provider-description-heading" className="text-sm font-semibold text-gray-900">Description</h3>
                     <p className="text-xs text-gray-500 mt-0.5">Internal reference only; not sent to upstream.</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <textarea
                       rows={3}
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      placeholder="Optional, for internal notes"
+                      placeholder="Optional internal description"
                       autoComplete="off"
+                      aria-labelledby="provider-description-heading"
                     />
                   </div>
                 </section>

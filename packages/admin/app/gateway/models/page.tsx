@@ -686,7 +686,7 @@ export default function GatewayModelsPage() {
                         Capabilities
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-xs">
-                        Notes
+                        Description
                       </th>
                     </tr>
                   </thead>
@@ -694,7 +694,7 @@ export default function GatewayModelsPage() {
                     {items.map((model) => {
                       const tagShown = model.tags?.length ? model.tags.slice(0, 4) : [];
                       const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
-                      const notesTitle = model.description?.trim() || undefined;
+                      const descriptionTitle = model.description?.trim() || undefined;
                       const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
                       return (
                         <tr
@@ -760,7 +760,7 @@ export default function GatewayModelsPage() {
                           </td>
                           <td className="px-4 py-3 align-top text-xs text-gray-600 max-w-xs">
                             {model.description?.trim() ? (
-                              <p className="line-clamp-2 break-words" title={notesTitle}>
+                              <p className="line-clamp-2 break-words" title={descriptionTitle}>
                                 {model.description}
                               </p>
                             ) : (
