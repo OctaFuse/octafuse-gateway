@@ -69,7 +69,6 @@ export const modelsTable = sqliteTable('models', {
 	maxTokens: integer('max_tokens').notNull().default(8192),
 	/** JSON：统一阶梯/固定价（`models` 列价真源）。 */
 	pricingProfile: text('pricing_profile'),
-	supportsImages: integer('supports_images').notNull().default(0),
 	description: text('description'),
 	metadata: text('metadata'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),

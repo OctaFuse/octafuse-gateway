@@ -35,7 +35,6 @@ interface ModelInfoResponse {
    */
   input_price: number | null;
   output_price: number | null;
-  supports_images: boolean;
   description: string | null;
   metadata?: Record<string, unknown>;
 }
@@ -174,7 +173,6 @@ modelsRoutes.get('/', async (c) => {
         pricing_profile: m.pricing_profile,
         input_price,
         output_price,
-        supports_images: !!m.supports_images,
         description: m.description,
         metadata: parseMetadata(m.metadata),
       },

@@ -85,7 +85,6 @@ export interface ModelRow {
   max_tokens: number;
   /** `{ "tiers": [...] }` JSON 文本，与 `parsePricingProfile` 契约一致 */
   pricing_profile: string | null;
-  supports_images: number;
   /** `json_group_array(model_tags.tag)` */
   tags: string;
   /** active `model_routes` 的 `route_group` 去重 JSON 数组（部分查询可能无此列） */

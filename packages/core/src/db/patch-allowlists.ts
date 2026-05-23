@@ -19,7 +19,6 @@ export const MODEL_PATCH_COLS = new Set([
 	'context_window',
 	'max_tokens',
 	'pricing_profile',
-	'supports_images',
 	'description',
 	'metadata',
 ]);

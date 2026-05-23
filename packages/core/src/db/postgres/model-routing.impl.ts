@@ -41,7 +41,6 @@ export function createPostgresModelRoutingRepository(db: PostgresDatabaseClient)
 		async getModelById(id: string): Promise<ModelRow | null> {
 			const rows = await pg<ModelRow[]>`
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens, m.pricing_profile,
-			m.supports_images,
 			(SELECT COALESCE(json_agg(tag ORDER BY tag)::text, '[]') FROM model_tags WHERE model_id = m.id) AS tags,
 			m.description, m.metadata, m.created_at::text
 		FROM models m WHERE m.id = ${id}
@@ -52,7 +51,6 @@ export function createPostgresModelRoutingRepository(db: PostgresDatabaseClient)
 		async listModelsWithActiveRoutes(): Promise<ModelRow[]> {
 			const rows = await pg<ModelRow[]>`
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens, m.pricing_profile,
-			m.supports_images,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
 			(SELECT COALESCE(json_agg(r.route_group ORDER BY r.route_group)::text, '[]') FROM model_routes r WHERE r.model_id = m.id AND r.status = 'active') AS route_groups,
 			m.description, m.metadata, m.created_at::text

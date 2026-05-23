@@ -32,7 +32,6 @@ export interface ModelWithRouteCountsRow {
 	context_window: number | null;
 	max_tokens: number;
 	pricing_profile: string | null;
-	supports_images: number;
 	/** `json_group_array` 结果 */
 	tags: string;
 	description: string | null;

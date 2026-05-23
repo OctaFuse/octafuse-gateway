@@ -51,7 +51,6 @@ const emptyForm = {
   vendor: 'other',
   context_window: '',
   max_tokens: '8192',
-  supports_images: false,
   tags: [] as string[],
   description: '',
   metadata: '',
@@ -178,61 +177,65 @@ function buildPricingMetricColumns(pricingProfile: string | null | undefined): P
   return columns;
 }
 
-function ModelContextPricingBlock(props: {
-  model: ModelListItem;
-  pricingColumns: PricingMetricColumn[];
-  billingCurrency: string;
-}) {
-  const { model, pricingColumns, billingCurrency } = props;
-
+function ModelLimitsBlock({ model }: { model: ModelListItem }) {
   return (
-    <div className="flex flex-nowrap items-start gap-x-3 overflow-x-auto">
-      <div className="shrink-0 w-[4.25rem]">
-        <p className="text-[11px] text-gray-400 leading-tight">Total Context</p>
-        <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
+    <div className="flex flex-nowrap items-start gap-x-4">
+      <div className="shrink-0">
+        <p className="text-[11px] text-gray-400 whitespace-nowrap">Total Context</p>
+        <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight whitespace-nowrap">
           {formatCompactTokens(model.context_window)}
         </p>
       </div>
-      <div className="shrink-0 w-[3.75rem]">
-        <p className="text-[11px] text-gray-400 leading-tight">Max Output</p>
-        <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
+      <div className="shrink-0">
+        <p className="text-[11px] text-gray-400 whitespace-nowrap">Max Output</p>
+        <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight whitespace-nowrap">
           {formatCompactTokens(model.max_tokens)}
         </p>
       </div>
-      {pricingColumns.length === 0 ? (
-        <div className="flex min-h-[2.25rem] shrink-0 items-end pb-0.5">
-          <span className="text-sm text-gray-400">—</span>
-        </div>
-      ) : (
-        pricingColumns.map((col) => (
-          <div key={col.title} className="min-w-[6.25rem] shrink-0 w-[6.25rem]">
-            <p
-              className="truncate text-[11px] text-gray-400 leading-tight"
-              title={col.headerTitle ?? col.title}
-            >
-              {col.title}
-            </p>
-            <div className="mt-1 space-y-0.5 tabular-nums leading-snug">
-              {col.lines.map((line, lineIdx) => (
-                <div
-                  key={`${col.title}-${lineIdx}`}
-                  className="flex flex-nowrap items-baseline gap-x-1"
-                  title={
-                    line.price == null
-                      ? line.condition
-                      : `${line.condition} ${formatGatewayMoneyCompact(line.price, billingCurrency)}`
-                  }
-                >
-                  <span className="shrink-0 text-[11px] text-gray-400">{line.condition}</span>
-                  <span className="shrink-0 text-xs font-semibold text-gray-900">
-                    {line.price == null ? '—' : formatGatewayMoneyCompact(line.price, billingCurrency)}
-                  </span>
-                </div>
-              ))}
-            </div>
+    </div>
+  );
+}
+
+function ModelPricingBlock(props: {
+  pricingColumns: PricingMetricColumn[];
+  billingCurrency: string;
+}) {
+  const { pricingColumns, billingCurrency } = props;
+
+  if (pricingColumns.length === 0) {
+    return <span className="text-sm text-gray-400">—</span>;
+  }
+
+  return (
+    <div className="flex flex-nowrap items-start gap-x-3">
+      {pricingColumns.map((col) => (
+        <div key={col.title} className="shrink-0 w-[6.25rem]">
+          <p
+            className="truncate text-[11px] text-gray-400 leading-tight whitespace-nowrap"
+            title={col.headerTitle ?? col.title}
+          >
+            {col.title}
+          </p>
+          <div className="mt-1 space-y-0.5 tabular-nums leading-snug">
+            {col.lines.map((line, lineIdx) => (
+              <div
+                key={`${col.title}-${lineIdx}`}
+                className="flex flex-nowrap items-baseline gap-x-1"
+                title={
+                  line.price == null
+                    ? line.condition
+                    : `${line.condition} ${formatGatewayMoneyCompact(line.price, billingCurrency)}`
+                }
+              >
+                <span className="shrink-0 text-[11px] text-gray-400 whitespace-nowrap">{line.condition}</span>
+                <span className="shrink-0 text-xs font-semibold text-gray-900">
+                  {line.price == null ? '—' : formatGatewayMoneyCompact(line.price, billingCurrency)}
+                </span>
+              </div>
+            ))}
           </div>
-        ))
-      )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -461,7 +464,6 @@ export default function GatewayModelsPage() {
       vendor: normalizeModelVendorInput(model.vendor),
       context_window: model.context_window?.toString() || '',
       max_tokens: model.max_tokens?.toString() || '4096',
-      supports_images: !!model.supports_images,
       tags: listTags,
       description: model.description ?? '',
       metadata: formatMetadataForEditor(model.metadata),
@@ -479,7 +481,6 @@ export default function GatewayModelsPage() {
           vendor: normalizeModelVendorInput(fullModel.vendor),
           context_window: fullModel.context_window?.toString() || '',
           max_tokens: fullModel.max_tokens?.toString() || '4096',
-          supports_images: !!fullModel.supports_images,
           tags,
           description: fullModel.description ?? '',
           metadata: formatMetadataForEditor(fullModel.metadata),
@@ -550,7 +551,6 @@ export default function GatewayModelsPage() {
         context_window: formData.context_window ? parseInt(formData.context_window, 10) : null,
         max_tokens: parseInt(formData.max_tokens, 10) || 4096,
         pricing_profile: tierJson.json,
-        supports_images: formData.supports_images ? 1 : 0,
         metadata: metaParsed.value,
       };
 
@@ -654,23 +654,29 @@ export default function GatewayModelsPage() {
               </div>
 
               <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-                <table className="w-full min-w-[105rem] table-fixed divide-y divide-gray-200">
+                <table className="w-full table-fixed divide-y divide-gray-200">
                   <colgroup>
-                    <col className="w-[13%]" />
-                    <col className="w-[46%]" />
-                    <col className="w-[14%]" />
-                    <col className="w-[11%]" />
-                    <col className="w-[8%]" />
-                    <col className="w-[8%]" />
+                    <col className="w-56" />
+                    <col className="w-48" />
+                    <col className="w-[28rem]" />
+                    <col />
+                    <col className="w-20" />
+                    <col />
                   </colgroup>
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="w-56 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Model
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                        <span className="inline-flex max-w-full flex-nowrap items-baseline gap-x-2">
-                          <span>Context & pricing</span>
+                      <th
+                        className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                        title="Total context window and max output tokens"
+                      >
+                        Limits
+                      </th>
+                      <th className="w-[28rem] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <span className="inline-flex flex-nowrap items-baseline gap-x-2">
+                          <span>Pricing</span>
                           <span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
                             {formatPerMillionTokenUnit(billingCurrency)}
                           </span>
@@ -682,10 +688,7 @@ export default function GatewayModelsPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Tags
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                        Capabilities
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-xs">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Description
                       </th>
                     </tr>
@@ -702,17 +705,19 @@ export default function GatewayModelsPage() {
                           className="hover:bg-gray-50 cursor-pointer"
                           onClick={() => void handleEdit(model)}
                         >
-                          <td className="px-4 py-3 align-top">
+                          <td className="w-56 px-4 py-3 align-top">
                             <div className="text-sm font-medium text-gray-900 truncate" title={model.display_name || model.id}>
                               {model.display_name || model.id}
                             </div>
-                            <div className="text-xs font-mono text-gray-500 break-all leading-snug mt-0.5" title={model.id}>
+                            <div className="text-xs font-mono text-gray-500 truncate leading-snug mt-0.5" title={model.id}>
                               {model.id}
                             </div>
                           </td>
-                          <td className="px-4 py-3 align-top text-gray-800">
-                            <ModelContextPricingBlock
-                              model={model}
+                          <td className="w-48 px-4 py-3 align-top text-gray-800">
+                            <ModelLimitsBlock model={model} />
+                          </td>
+                          <td className="w-[28rem] px-4 py-3 align-top text-gray-800">
+                            <ModelPricingBlock
                               pricingColumns={pricingColumns}
                               billingCurrency={billingCurrency}
                             />
@@ -727,7 +732,7 @@ export default function GatewayModelsPage() {
                             )}
                           </td>
                           <td className="px-4 py-3 align-top">
-                            <div className="flex flex-wrap gap-1 max-w-[200px]">
+                            <div className="flex flex-wrap gap-1">
                               {tagShown.length ? (
                                 <>
                                   {tagShown.map((tag) => (
@@ -747,18 +752,7 @@ export default function GatewayModelsPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 align-top text-xs whitespace-nowrap">
-                            {model.supports_images ? (
-                              <span className="inline-flex rounded px-2 py-0.5 font-medium bg-green-50 text-green-800" title="Supports images">
-                                Images
-                              </span>
-                            ) : (
-                              <span className="inline-flex rounded px-2 py-0.5 font-medium bg-gray-100 text-gray-600" title="No images">
-                                Text only
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 align-top text-xs text-gray-600 max-w-xs">
+                          <td className="px-4 py-3 align-top text-xs text-gray-600">
                             {model.description?.trim() ? (
                               <p className="line-clamp-2 break-words" title={descriptionTitle}>
                                 {model.description}
@@ -894,12 +888,6 @@ export default function GatewayModelsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                     placeholder='{"key": "value"}'
                   />
-                </div>
-                <div className="col-span-2 flex gap-6">
-                  <label className="flex items-center">
-                    <input type="checkbox" checked={formData.supports_images} onChange={(e) => setFormData({ ...formData, supports_images: e.target.checked })} className="mr-2" />
-                    Supports Images
-                  </label>
                 </div>
               </div>
             </div>

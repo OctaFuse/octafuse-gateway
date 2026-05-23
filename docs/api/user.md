@@ -310,7 +310,6 @@ GET /v1/models
         "pricing_profile": "{\"tiers\":[{\"upto\":null,\"label\":null,\"input_price\":0.01,\"output_price\":0.01,\"cache_read_price\":null,\"cache_write_price\":null}]}",
         "input_price": 0.01,
         "output_price": 0.01,
-        "supports_images": false,
         "description": "智谱 GLM-4 通用模型",
         "metadata": {}
       }
@@ -333,7 +332,6 @@ GET /v1/models
 | `pricing_profile` | string \| null | 模型主定价 JSON（canonical：`{ "tiers": [ { "upto", "label", "input_price", "output_price", … } ] }`）；**末档 `upto` 为 `null` 表示开放上界**；完整阶梯与 cache 价以此为准 |
 | `input_price` | number \| null | **兼容展示**：由 `pricing_profile` 派生（取各档中 **最低** `input_price` 所在档的输入价）；无合法 profile 时为 `null` |
 | `output_price` | number \| null | **兼容展示**：与上档同行的输出价（$/1M） |
-| `supports_images` | boolean | 是否支持图像输入 |
 | `description` | string \| null | 模型描述 |
 | `metadata` | object \| undefined | 扩展元数据 |
 

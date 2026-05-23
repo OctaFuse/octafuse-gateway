@@ -85,7 +85,6 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 		contextWindow: body.context_window,
 		maxTokens,
 		pricingProfile,
-		supportsImages: body.supports_images,
 		description: body.description,
 		metadata: body.metadata,
 	});

@@ -73,7 +73,6 @@ CREATE TABLE models (
   vendor TEXT NOT NULL DEFAULT 'other',
   context_window INTEGER,
   max_tokens INTEGER NOT NULL DEFAULT 8192,
-  supports_images INTEGER NOT NULL DEFAULT 0,
   -- pricing_profile: TEXT JSON — 模型标准价/阶梯（canonical { tiers }）；与 Drizzle 一致
   pricing_profile TEXT,
   description TEXT,

@@ -261,7 +261,6 @@ export async function deleteGatewayProvider(db: D1Database, id: string): Promise
 
 export async function getAllModels(db: D1Database): Promise<GatewayModel[]> {
   const sql = `SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens, m.pricing_profile,
-    m.supports_images,
     (SELECT json_group_array(mt.tag) FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
     m.description, m.metadata, m.created_at,
     (SELECT COUNT(*) FROM model_routes WHERE model_id = m.id) AS routes_count,
@@ -274,7 +273,6 @@ export async function getAllModels(db: D1Database): Promise<GatewayModel[]> {
 export async function getModelById(db: D1Database, id: string): Promise<GatewayModel | null> {
   return db.prepare(
     `SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens, m.pricing_profile,
-      m.supports_images,
       (SELECT json_group_array(mt.tag) FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
       m.description, m.metadata, m.created_at,
       (SELECT COUNT(*) FROM model_routes WHERE model_id = m.id) AS routes_count,
@@ -290,14 +288,13 @@ export async function createModel(db: D1Database, data: {
   context_window?: number;
   max_tokens?: number;
   pricing_profile?: string | null;
-  supports_images?: number;
   description?: string | null;
   metadata?: string;
   tags?: string[];
 }): Promise<void> {
   await db.prepare(
-    `INSERT INTO models (id, display_name, vendor, context_window, max_tokens, pricing_profile, supports_images, description, metadata)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO models (id, display_name, vendor, context_window, max_tokens, pricing_profile, description, metadata)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     data.id,
     data.display_name || null,
@@ -305,7 +302,6 @@ export async function createModel(db: D1Database, data: {
     data.context_window || null,
     data.max_tokens ?? 8192,
     data.pricing_profile ?? null,
-    data.supports_images ?? 0,
     data.description ?? null,
     data.metadata ?? null
   ).run();
@@ -320,7 +316,6 @@ export async function updateModel(db: D1Database, id: string, data: Partial<{
   context_window: number;
   max_tokens: number;
   pricing_profile: string | null;
-  supports_images: number;
   description: string | null;
   metadata: string;
   tags: string[];

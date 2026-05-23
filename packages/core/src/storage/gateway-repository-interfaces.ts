@@ -139,7 +139,6 @@ export interface ModelsRepository {
 		contextWindow: unknown;
 		maxTokens: unknown;
 		pricingProfile?: unknown;
-		supportsImages: unknown;
 		description: unknown;
 		metadata: unknown;
 	}): Promise<void>;

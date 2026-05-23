@@ -119,7 +119,6 @@ export type AdminModelMutationInput = {
 	 * 空字符串 / null 表示清除（PATCH 时）。
 	 */
 	pricing_profile?: unknown;
-	supports_images?: unknown;
 	description?: unknown;
 	metadata?: unknown;
 	tags?: unknown;
@@ -203,7 +202,6 @@ export type AdminModelRow = {
 	context_window: number | null;
 	max_tokens: number | null;
 	pricing_profile: string | null;
-	supports_images: number | null;
 	description: string | null;
 	metadata: string | null;
 	created_at: string;

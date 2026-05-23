@@ -71,7 +71,6 @@ CREATE TABLE models (
   vendor TEXT NOT NULL DEFAULT 'other',
   context_window INTEGER,
   max_tokens INTEGER DEFAULT 8192,
-  supports_images INTEGER DEFAULT 0,
   /* pricing_profile: TEXT JSON — 模型标准价/阶梯（canonical { tiers }；列价真源） */
   pricing_profile TEXT DEFAULT NULL,
   description TEXT DEFAULT NULL,

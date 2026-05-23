@@ -18,7 +18,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 		async listModelsWithRouteCounts(): Promise<ModelWithRouteCountsRow[]> {
 			const rows = await pg<ModelWithRouteCountsRow[]>`
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
-			m.pricing_profile, m.supports_images,
+			m.pricing_profile,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
 			m.description, m.metadata, m.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id) AS routes_count,
@@ -31,7 +31,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 		async getModelDetailWithRouteCounts(id: string): Promise<ModelWithRouteCountsRow | null> {
 			const rows = await pg<ModelWithRouteCountsRow[]>`
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
-			m.pricing_profile, m.supports_images,
+			m.pricing_profile,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
 			m.description, m.metadata, m.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id) AS routes_count,
@@ -48,7 +48,6 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 			contextWindow: unknown;
 			maxTokens: unknown;
 			pricingProfile?: unknown;
-			supportsImages: unknown;
 			description: unknown;
 			metadata: unknown;
 		}): Promise<void> {
@@ -60,7 +59,6 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 				contextWindow: params.contextWindow == null ? null : Number(params.contextWindow),
 				maxTokens: params.maxTokens == null ? 8192 : Number(params.maxTokens),
 				pricingProfile: params.pricingProfile == null ? null : String(params.pricingProfile),
-				supportsImages: Number(params.supportsImages ?? 0),
 				description: params.description == null ? null : String(params.description),
 				metadata: params.metadata == null ? null : String(params.metadata),
 				createdAt: now,

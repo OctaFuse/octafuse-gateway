@@ -101,7 +101,6 @@ export const modelsTable = mysqlTable('models', {
 	contextWindow: int('context_window'),
 	maxTokens: int('max_tokens').notNull().default(8192),
 	pricingProfile: text('pricing_profile'),
-	supportsImages: int('supports_images').notNull().default(0),
 	description: text('description'),
 	metadata: text('metadata'),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),

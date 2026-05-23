@@ -72,7 +72,6 @@ export const modelsTable = pgTable('models', {
 	contextWindow: integer('context_window'),
 	maxTokens: integer('max_tokens').notNull().default(8192),
 	pricingProfile: text('pricing_profile'),
-	supportsImages: integer('supports_images').notNull().default(0),
 	description: text('description'),
 	metadata: text('metadata'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),

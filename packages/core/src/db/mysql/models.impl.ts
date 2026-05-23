@@ -10,7 +10,7 @@ import { MODEL_PATCH_COLS } from '../patch-allowlists';
 import { asMySqlPool } from './mysql2-compat';
 
 const MODEL_LIST_WITH_ROUTE_COUNTS_SQL = `SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
-		m.pricing_profile, m.supports_images,
+		m.pricing_profile,
 		CAST(COALESCE((SELECT JSON_ARRAYAGG(mt.tag ORDER BY mt.tag) FROM model_tags mt WHERE mt.model_id = m.id), JSON_ARRAY()) AS CHAR) AS tags,
 		m.description, m.metadata, m.created_at,
 		(SELECT COUNT(*) FROM model_routes WHERE model_id = m.id) AS routes_count,
@@ -18,7 +18,7 @@ const MODEL_LIST_WITH_ROUTE_COUNTS_SQL = `SELECT m.id, m.display_name, m.vendor,
 	FROM models m ORDER BY m.id ASC`;
 
 const MODEL_DETAIL_WITH_ROUTE_COUNTS_SQL = `SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
-		m.pricing_profile, m.supports_images,
+		m.pricing_profile,
 		CAST(COALESCE((SELECT JSON_ARRAYAGG(mt.tag ORDER BY mt.tag) FROM model_tags mt WHERE mt.model_id = m.id), JSON_ARRAY()) AS CHAR) AS tags,
 		m.description, m.metadata, m.created_at,
 		(SELECT COUNT(*) FROM model_routes WHERE model_id = m.id) AS routes_count,
@@ -47,7 +47,6 @@ export function createMySqlModelsRepository(db: MySqlDatabaseClient): ModelsRepo
 			contextWindow: unknown;
 			maxTokens: unknown;
 			pricingProfile?: unknown;
-			supportsImages: unknown;
 			description: unknown;
 			metadata: unknown;
 		}): Promise<void> {
@@ -59,7 +58,6 @@ export function createMySqlModelsRepository(db: MySqlDatabaseClient): ModelsRepo
 				contextWindow: params.contextWindow == null ? null : Number(params.contextWindow),
 				maxTokens: params.maxTokens == null ? 8192 : Number(params.maxTokens),
 				pricingProfile: params.pricingProfile == null ? null : String(params.pricingProfile),
-				supportsImages: Number(params.supportsImages ?? 0),
 				description: params.description == null ? null : String(params.description),
 				metadata: params.metadata == null ? null : String(params.metadata),
 				createdAt: now,

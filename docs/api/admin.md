@@ -515,7 +515,7 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### `GET /admin/models/import/catalog`
 
-- **行为**：返回 `packages/admin/lib/model-presets/*.json`（合并后）每条预设的摘要（`id`、`display_name`、`vendor`、`context_window`、`max_tokens`、`supports_images`、`tier_count_usd`），供管理端勾选后再调用 **`POST /admin/models/import`**。
+- **行为**：返回 `packages/admin/lib/model-presets/*.json`（合并后）每条预设的摘要（`id`、`display_name`、`vendor`、`context_window`、`max_tokens`、`tier_count_usd`），供管理端勾选后再调用 **`POST /admin/models/import`**。
 
 ### `POST /admin/models/import`
 

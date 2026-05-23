@@ -42,7 +42,6 @@ export function createMySqlModelRoutingRepository(db: MySqlDatabaseClient): Mode
 		async getModelById(id: string): Promise<ModelRow | null> {
 			const [rows] = await pool.query<ModelRow[]>(
 				`SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens, m.pricing_profile,
-					m.supports_images,
 					CAST(COALESCE((SELECT JSON_ARRAYAGG(tag ORDER BY tag) FROM model_tags WHERE model_id = m.id), JSON_ARRAY()) AS CHAR) AS tags,
 					m.description, m.metadata, m.created_at
 				 FROM models m WHERE m.id = ?`,
@@ -54,7 +53,6 @@ export function createMySqlModelRoutingRepository(db: MySqlDatabaseClient): Mode
 		async listModelsWithActiveRoutes(): Promise<ModelRow[]> {
 			const [rows] = await pool.query<ModelRow[]>(
 				`SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens, m.pricing_profile,
-					m.supports_images,
 					CAST(COALESCE((SELECT JSON_ARRAYAGG(mt.tag ORDER BY mt.tag) FROM model_tags mt WHERE mt.model_id = m.id), JSON_ARRAY()) AS CHAR) AS tags,
 					CAST(COALESCE((SELECT JSON_ARRAYAGG(r.route_group ORDER BY r.route_group) FROM model_routes r WHERE r.model_id = m.id AND r.status = 'active'), JSON_ARRAY()) AS CHAR) AS route_groups,
 					m.description, m.metadata, m.created_at
