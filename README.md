@@ -46,7 +46,11 @@ What the codebase and docs ship today:
 
 ## Quick Start
 
+The steps below are for **local development only**. For production or staging deployment, see **[Deployment](#deployment)**.
+
 ### Option A: Docker (fastest path)
+
+Prerequisites: Docker Compose **v2.20+** (for `service_completed_successfully`).
 
 ```bash
 docker compose -f docker/compose/quickstart.yml up --build
@@ -56,17 +60,52 @@ curl -sS http://localhost:8787/health
 When healthy:
 
 - Proxy: `http://localhost:8787`
-- Admin: `http://localhost:8789` (default `admin` / `changeme`)
+- Admin: `http://localhost:8789` (default login `admin` / `changeme`)
 
-In Admin: configure a **provider** → a **model route** → create an **API key**, then call the inference APIs.
+In Admin: configure a **provider** → a **model route** → create an **API key**, then call the inference APIs. The Postgres seed sets default `MASTER_KEY` to `sk-dev-admin-key` (Bearer for `POST /api/admin/*`); rotate before any shared environment — see [docs/api/admin.md](./docs/api/admin.md).
 
-### Option B: Cloudflare
+Example chat (after routing and a real user key exist):
 
-Follow [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md): connect this repo as two **Workers** (Proxy + Admin), bind the same **D1** as **`DB`**, then run remote migrations and deploy (see **One-click Cloudflare (Connect to Git)** below).
+```bash
+curl -sS http://localhost:8787/v1/chat/completions \
+  -H "Authorization: Bearer sk-..." \
+  -H "Content-Type: application/json" \
+  -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
+```
 
-### Option C: Self-hosted Node + Postgres / MySQL
+MySQL, split compose profiles, and prebuilt images: [docker/compose/node-pg.yml](./docker/compose/node-pg.yml), [docker/compose/node-mysql.yml](./docker/compose/node-mysql.yml), [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md).
 
-For Docker, Kubernetes, or VPS-style hosting, see [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) and [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md).
+### Option B: Cloudflare (local D1)
+
+Prerequisites: **Node.js 20+**, npm. Local state persists under `./.wrangler/state`.
+
+```bash
+npm install
+npm run db:migrate          # apply D1 migrations locally
+npm run dev:proxy           # Proxy Worker → http://127.0.0.1:8787
+```
+
+In a second terminal:
+
+```bash
+npm run dev:admin           # Admin OpenNext preview → http://127.0.0.1:8789
+```
+
+Then configure **provider** → **model route** → **API key** in Admin. Admin API Bearer must match D1 `system_config.MASTER_KEY` (dev seed in `packages/core/migrations-d1/0002_seed.sql`).
+
+Optional paths (Node + Postgres/MySQL, multiple local D1 dirs, smoke tests): [docs/ops/local-testing-environments.md](./docs/ops/local-testing-environments.md).
+
+## Deployment
+
+Production and staging are documented separately — not covered in Quick Start above.
+
+| Topic | Link |
+|--------|------|
+| Deployment index (modes, migrations, env files) | [docs/ops/deployment.md](./docs/ops/deployment.md) |
+| Cloudflare (Proxy Worker + Admin + D1, Connect to Git) | [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) |
+| Docker / self-hosted (Postgres, MySQL, GHCR, compose) | [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) |
+| Runtime × database matrix | [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md) |
+| Releases & versioning | [docs/ops/release-versioning.md](./docs/ops/release-versioning.md) |
 
 ## Contributing
 
@@ -88,37 +127,6 @@ Issues and PRs are welcome. Before you submit:
 | HTTP examples | [examples/README.md](./examples/README.md) |
 
 > Before changing any doc / example / compose template, read **[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)**: it defines which docs must stay in this repo (API contracts, migrations, runtime behavior), which are candidates for the external `octafuse-website` site, and the placeholder rules that keep real secrets, webhooks, and connection strings out of Git.
-
-## ~60 second quickstart (Docker + Postgres)
-
-Prerequisites: Docker Compose **v2.20+** (for `service_completed_successfully`).
-
-```bash
-docker compose -f docker/compose/quickstart.yml up --build
-```
-
-When services are healthy:
-
-```bash
-curl -sS http://localhost:8787/health
-```
-
-Open **Admin** at `http://localhost:8789` (default login: `admin` / `changeme`). Configure at least one upstream **provider** and **model route**, then create an API key (UI or Admin API). The Postgres seed sets default `MASTER_KEY` to `sk-dev-admin-key` (Bearer for `POST /api/admin/*`); rotate in production — see [docs/api/admin.md](./docs/api/admin.md).
-
-Example chat (after routing and a real user key exist):
-
-```bash
-curl -sS http://localhost:8787/v1/chat/completions \
-  -H "Authorization: Bearer sk-..." \
-  -H "Content-Type: application/json" \
-  -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
-```
-
-MySQL, D1-only dev, and split compose profiles: [docker/compose/node-pg.yml](./docker/compose/node-pg.yml), [docker/compose/node-mysql.yml](./docker/compose/node-mysql.yml), [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md).
-
-## One-click Cloudflare (Connect to Git)
-
-Connect this repo from the Cloudflare dashboard to two **Workers** (Proxy + Admin): set **Root directory** to `packages/proxy` and `packages/admin`, bind the shared **D1** as **`DB`**, and set **`ADMIN_PASSWORD`** as a Worker **Secret** (not in Git). Details: [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) (section **0**).
 
 ## Packages
 
@@ -167,8 +175,8 @@ npm run dev:proxy:node      # Proxy Node + SQL :8787
 npm run dev:admin           # Admin OpenNext preview + D1 :8789
 npm run dev:admin:node      # Admin Node + SQL :8789
 
-npm run deploy:proxy        # deploy Proxy Worker
-npm run deploy:admin        # deploy Admin Pages
+npm run deploy:proxy        # production: see docs/ops/deployment-cloudflare.md
+npm run deploy:admin
 
 npm run test:gateway:postgres-smoke   # optional integration smoke
 ```

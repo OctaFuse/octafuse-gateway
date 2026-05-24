@@ -46,7 +46,11 @@ OctaFuse 希望通过更高自由度解决上述问题：
 
 ## Quick Start
 
-### 方式 A：本地 Docker（推荐先跑通）
+以下步骤仅用于**本地开发**。生产或预发部署见 **[部署](#部署)**。
+
+### 方式 A：Docker（最快跑通）
+
+前置：Docker Compose **v2.20+**（需支持 `service_completed_successfully`）。
 
 ```bash
 docker compose -f docker/compose/quickstart.yml up --build
@@ -54,18 +58,54 @@ curl -sS http://localhost:8787/health
 ```
 
 健康后：
+
 - Proxy：`http://localhost:8787`
-- Admin：`http://localhost:8789`（默认 `admin / changeme`）
+- Admin：`http://localhost:8789`（默认 `admin` / `changeme`）
 
-然后在 Admin 中完成三步：配置 Provider → 配置 Model Route → 创建 API Key，即可开始调用推理接口。
+在 Admin 中完成：**Provider** → **Model Route** → **API Key**，即可调用推理接口。Postgres 种子中的默认 **`MASTER_KEY`** 为 `sk-dev-admin-key`（`Authorization: Bearer …` 调 `POST /api/admin/*`）；任何共享环境前务必轮换，见 [docs/api/admin.md](./docs/api/admin.md)。
 
-### 方式 B：Cloudflare 部署
+端到端聊天示例（配置好路由与用户 Key 后）：
 
-按 [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) 将仓库关联为两个 Worker（Proxy + Admin），并绑定同一 D1（`DB`）。随后执行远程迁移与部署命令（见下方“Cloudflare：从 Git 一键部署”章节）。
+```bash
+curl -sS http://localhost:8787/v1/chat/completions \
+  -H "Authorization: Bearer sk-..." \
+  -H "Content-Type: application/json" \
+  -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
+```
 
-### 方式 C：自托管 Node + Postgres/MySQL
+MySQL、分拆编排与预构建镜像：[docker/compose/node-pg.yml](./docker/compose/node-pg.yml)、[docker/compose/node-mysql.yml](./docker/compose/node-mysql.yml)、[docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md)。
 
-如需落地到自有基础设施（Docker/K8s/VPS），见 [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) 与 [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md)。
+### 方式 B：Cloudflare（本地 D1）
+
+前置：**Node.js 20+**、npm。本地数据持久化在 `./.wrangler/state`。
+
+```bash
+npm install
+npm run db:migrate          # 本地 D1 迁移
+npm run dev:proxy           # Proxy Worker → http://127.0.0.1:8787
+```
+
+另开终端：
+
+```bash
+npm run dev:admin           # Admin OpenNext 预览 → http://127.0.0.1:8789
+```
+
+然后在 Admin 中配置 **Provider** → **Model Route** → **API Key**。管理 API 的 Bearer 须与 D1 `system_config.MASTER_KEY` 一致（开发种子见 `packages/core/migrations-d1/0002_seed.sql`）。
+
+可选路径（Node + Postgres/MySQL、多套本地 D1、冒烟脚本）：[docs/ops/local-testing-environments.md](./docs/ops/local-testing-environments.md)。
+
+## 部署
+
+生产与预发环境请查阅下列文档，Quick Start 不展开线上步骤。
+
+| 主题 | 链接 |
+|------|------|
+| 部署索引（模式、迁移、环境文件） | [docs/ops/deployment.md](./docs/ops/deployment.md) |
+| Cloudflare（Proxy Worker + Admin + D1、Connect to Git） | [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) |
+| Docker / 自托管（Postgres、MySQL、GHCR、Compose） | [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) |
+| 运行时 × 数据库矩阵 | [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md) |
+| 版本与发版 | [docs/ops/release-versioning.md](./docs/ops/release-versioning.md) |
 
 ## Contributing
 
@@ -86,30 +126,6 @@ curl -sS http://localhost:8787/health
 | HTTP 示例 | [examples/README.md](./examples/README.md) |
 
 > 改动 `README*.md`、`docs/**`、`examples/**`、`docker/**` 之前请先读 **[docs/CONVENTIONS.md](./docs/CONVENTIONS.md)**：它说明哪些文档必须留在本仓（API 契约、迁移、运行时行为），哪些是未来可外移到独立 `octafuse-website` 的候选，以及如何用占位符避免把真实密钥 / Webhook / 连接串提交进 Git。
-
-## 约 60 秒上手（Docker + Postgres）
-
-需 Docker Compose **v2.20+**（支持 `service_completed_successfully`）。
-
-```bash
-docker compose -f docker/compose/quickstart.yml up --build
-```
-
-健康后：
-
-```bash
-curl -sS http://localhost:8787/health
-```
-
-浏览器打开 **Admin**：`http://localhost:8789`（默认 `admin` / `changeme`）。配置上游 **provider** 与 **model route**，再创建 API Key。Postgres 种子中的默认 **`MASTER_KEY`** 为 `sk-dev-admin-key`（`Authorization: Bearer …` 调 `POST /api/admin/*`）；生产务必轮换，见 [docs/api/admin.md](./docs/api/admin.md)。
-
-端到端聊天示例见英文 README 中的 `curl`。
-
-MySQL、仅 D1 开发、分拆编排：**`docker/compose/node-pg.yml`**、**`docker/compose/node-mysql.yml`**、[docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md)。
-
-## Cloudflare：从 Git 一键部署
-
-在 Cloudflare 控制台将仓库关联到 **两个 Worker**（Proxy + Admin）：**Root directory** 分别为 `packages/proxy` 与 `packages/admin`，绑定同一 **D1**（绑定名 **`DB`**），**`ADMIN_PASSWORD`** 设为 Worker **Secret**。详见 [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) 的 **§0**。
 
 ## 包一览
 
@@ -158,7 +174,7 @@ npm run dev:proxy:node
 npm run dev:admin
 npm run dev:admin:node
 
-npm run deploy:proxy
+npm run deploy:proxy        # 生产部署见 docs/ops/deployment-cloudflare.md
 npm run deploy:admin
 
 npm run test:gateway:postgres-smoke
