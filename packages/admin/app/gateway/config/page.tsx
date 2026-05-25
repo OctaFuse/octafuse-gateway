@@ -2,11 +2,10 @@
 
 /**
  * `system_config`：`MASTER_KEY`（置顶）、`BUSINESS_TIMEZONE`、`BILLING_CURRENCY` 与 Add 均为卡片，
- * 左栏标题+描述、右栏表单与按钮。敏感值掩码展示。
+ * 左栏标题+描述、右栏表单与按钮。Master key / webhook 等敏感字段支持 Show/Hide。
  */
-import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import {
-	ClipboardDocumentIcon,
 	EyeIcon,
 	EyeSlashIcon,
 	PlusIcon,
@@ -23,11 +22,6 @@ import {
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
 import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
-
-function maskSecret(value: string): string {
-  if (!value || value.length < 12) return '***';
-  return value.slice(0, 6) + '…' + value.slice(-4);
-}
 
 const OTHER_TZ = '__other__';
 
@@ -167,6 +161,7 @@ export default function GatewayConfigPage() {
   const [newValue, setNewValue] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [bizSelectValue, setBizSelectValue] = useState('UTC');
   const [bizOtherValue, setBizOtherValue] = useState('');
@@ -174,21 +169,14 @@ export default function GatewayConfigPage() {
   const [billSelectValue, setBillSelectValue] = useState('USD');
   const [billSaving, setBillSaving] = useState(false);
   const [masterKeyDraft, setMasterKeyDraft] = useState('');
-  const [masterKeyEditing, setMasterKeyEditing] = useState(false);
+  const [masterKeyVisible, setMasterKeyVisible] = useState(false);
   const [masterSaving, setMasterSaving] = useState(false);
-  const [copyMasterKeyHint, setCopyMasterKeyHint] = useState(false);
-  const copyMasterKeyHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wecomWebhookDraft, setWecomWebhookDraft] = useState('');
   const [feishuWebhookDraft, setFeishuWebhookDraft] = useState('');
   const [alertWebhooksSaving, setAlertWebhooksSaving] = useState(false);
   const [webhookWecomVisible, setWebhookWecomVisible] = useState(true);
   const [webhookFeishuVisible, setWebhookFeishuVisible] = useState(true);
-
-  const masterRow = useMemo(
-    () => config.find((r) => r.key === MASTER_KEY_KEY),
-    [config]
-  );
-  const hasMasterKey = Boolean(masterRow?.value?.trim());
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -199,6 +187,8 @@ export default function GatewayConfigPage() {
         setConfig(data.data);
         syncBusinessTimezoneUi(data.data, setBizSelectValue, setBizOtherValue);
         syncBillingCurrencyUi(data.data, setBillSelectValue);
+        const masterRow = data.data.find((r) => r.key === MASTER_KEY_KEY);
+        setMasterKeyDraft(masterRow?.value ?? '');
         const wecomRow = data.data.find((r) => r.key === ALERT_WEBHOOK_WECOM_URL_KEY);
         const feishuRow = data.data.find((r) => r.key === ALERT_WEBHOOK_FEISHU_URL_KEY);
         setWecomWebhookDraft(wecomRow?.value ?? '');
@@ -217,34 +207,60 @@ export default function GatewayConfigPage() {
 
   useEffect(() => {
     return () => {
-      if (copyMasterKeyHintTimerRef.current != null) {
-        clearTimeout(copyMasterKeyHintTimerRef.current);
+      if (saveSuccessTimerRef.current != null) {
+        clearTimeout(saveSuccessTimerRef.current);
       }
     };
+  }, []);
+
+  const clearSaveSuccess = useCallback(() => {
+    if (saveSuccessTimerRef.current != null) {
+      clearTimeout(saveSuccessTimerRef.current);
+      saveSuccessTimerRef.current = null;
+    }
+    setSaveSuccess('');
+  }, []);
+
+  const flashSaveSuccess = useCallback((message?: string) => {
+    if (saveSuccessTimerRef.current != null) {
+      clearTimeout(saveSuccessTimerRef.current);
+      saveSuccessTimerRef.current = null;
+    }
+    setSaveError('');
+    setSaveSuccess(message ?? 'Config updated');
+    saveSuccessTimerRef.current = setTimeout(() => {
+      setSaveSuccess('');
+      saveSuccessTimerRef.current = null;
+    }, 2500);
   }, []);
 
   const handleAdd = async () => {
     const k = newKey.trim();
     if (!k) return;
     if (k === BUSINESS_TIMEZONE_KEY) {
+      clearSaveSuccess();
       setSaveError(`Use the "Business timezone" section for ${BUSINESS_TIMEZONE_KEY}.`);
       return;
     }
     if (k === BILLING_CURRENCY_KEY) {
+      clearSaveSuccess();
       setSaveError(`Use the "Billing currency" section for ${BILLING_CURRENCY_KEY}.`);
       return;
     }
     if (k === MASTER_KEY_KEY) {
+      clearSaveSuccess();
       setSaveError(`Use the "Admin API master key" section for ${MASTER_KEY_KEY}.`);
       return;
     }
     if (k === ALERT_WEBHOOK_WECOM_URL_KEY || k === ALERT_WEBHOOK_FEISHU_URL_KEY) {
+      clearSaveSuccess();
       setSaveError(
         `Use the "Proxy error webhooks" section for ${ALERT_WEBHOOK_WECOM_URL_KEY} / ${ALERT_WEBHOOK_FEISHU_URL_KEY}.`
       );
       return;
     }
     setSaveError('');
+    clearSaveSuccess();
     setIsSaving(true);
     try {
       const response = await fetch('/api/admin/config', {
@@ -254,6 +270,7 @@ export default function GatewayConfigPage() {
       });
       const data = await readApiJson(response);
       if (data.success) {
+        flashSaveSuccess(data.message);
         setConfig((prev) => {
           const idx = prev.findIndex((r) => r.key === k);
           if (idx >= 0) {
@@ -267,9 +284,11 @@ export default function GatewayConfigPage() {
         setNewValue('');
         setShowAdd(false);
       } else {
+        clearSaveSuccess();
         setSaveError(data.message || 'Save failed');
       }
     } catch (error) {
+      clearSaveSuccess();
       setSaveError('Request failed');
     } finally {
       setIsSaving(false);
@@ -279,10 +298,12 @@ export default function GatewayConfigPage() {
   const handleSaveBillingCurrency = async () => {
     const raw = billSelectValue;
     if (raw !== 'USD' && raw !== 'CNY') {
+      clearSaveSuccess();
       setSaveError('Billing currency must be USD or CNY');
       return;
     }
     setSaveError('');
+    clearSaveSuccess();
     setBillSaving(true);
     try {
       const response = await fetch('/api/admin/config', {
@@ -292,6 +313,7 @@ export default function GatewayConfigPage() {
       });
       const data = await readApiJson(response);
       if (data.success) {
+        flashSaveSuccess(data.message);
         setConfig((prev) => {
           const idx = prev.findIndex((r) => r.key === BILLING_CURRENCY_KEY);
           const desc =
@@ -307,9 +329,11 @@ export default function GatewayConfigPage() {
         });
         setBillSelectValue(raw === 'CNY' ? 'CNY' : 'USD');
       } else {
+        clearSaveSuccess();
         setSaveError(data.message || 'Save failed');
       }
     } catch {
+      clearSaveSuccess();
       setSaveError('Request failed');
     } finally {
       setBillSaving(false);
@@ -319,14 +343,17 @@ export default function GatewayConfigPage() {
   const handleSaveBusinessTimezone = async () => {
     const raw = bizSelectValue === OTHER_TZ ? bizOtherValue.trim() : bizSelectValue;
     if (!raw) {
+      clearSaveSuccess();
       setSaveError('Business timezone cannot be empty');
       return;
     }
     if (!isValidIanaTimeZone(raw)) {
+      clearSaveSuccess();
       setSaveError('Invalid IANA timezone (e.g. Asia/Shanghai, America/New_York)');
       return;
     }
     setSaveError('');
+    clearSaveSuccess();
     setBizSaving(true);
     try {
       const response = await fetch('/api/admin/config', {
@@ -336,6 +363,7 @@ export default function GatewayConfigPage() {
       });
       const data = await readApiJson(response);
       if (data.success) {
+        flashSaveSuccess(data.message);
         setConfig((prev) => {
           const idx = prev.findIndex((r) => r.key === BUSINESS_TIMEZONE_KEY);
           const desc =
@@ -357,9 +385,11 @@ export default function GatewayConfigPage() {
           setBizOtherValue(raw);
         }
       } else {
+        clearSaveSuccess();
         setSaveError(data.message || 'Save failed');
       }
     } catch {
+      clearSaveSuccess();
       setSaveError('Request failed');
     } finally {
       setBizSaving(false);
@@ -368,6 +398,7 @@ export default function GatewayConfigPage() {
 
   const handleSaveAlertWebhooks = async () => {
     setSaveError('');
+    clearSaveSuccess();
     setAlertWebhooksSaving(true);
     try {
       const wecom = wecomWebhookDraft.trim();
@@ -384,11 +415,16 @@ export default function GatewayConfigPage() {
           body: JSON.stringify({ key: ALERT_WEBHOOK_FEISHU_URL_KEY, value: feishu }),
         }),
       ]);
+      let successMessage = 'Config updated';
       for (const response of results) {
         const data = await readApiJson(response);
         if (!data.success) {
+          clearSaveSuccess();
           setSaveError(data.message || 'Save failed');
           return;
+        }
+        if (data.message) {
+          successMessage = data.message;
         }
       }
       setConfig((prev) => {
@@ -413,7 +449,9 @@ export default function GatewayConfigPage() {
         );
         return next;
       });
+      flashSaveSuccess(successMessage);
     } catch {
+      clearSaveSuccess();
       setSaveError('Request failed');
     } finally {
       setAlertWebhooksSaving(false);
@@ -423,10 +461,12 @@ export default function GatewayConfigPage() {
   const handleSaveMasterKey = async () => {
     const raw = masterKeyDraft.trim();
     if (!raw) {
+      clearSaveSuccess();
       setSaveError('Master key cannot be empty');
       return;
     }
     setSaveError('');
+    clearSaveSuccess();
     setMasterSaving(true);
     try {
       const response = await fetch('/api/admin/config', {
@@ -436,6 +476,7 @@ export default function GatewayConfigPage() {
       });
       const data = await readApiJson(response);
       if (data.success) {
+        flashSaveSuccess(data.message);
         setConfig((prev) => {
           const idx = prev.findIndex((r) => r.key === MASTER_KEY_KEY);
           const desc = prev[idx]?.description ?? MASTER_KEY_DEFAULT_DESCRIPTION;
@@ -447,38 +488,15 @@ export default function GatewayConfigPage() {
           }
           return [...prev, nextRow];
         });
-        setMasterKeyEditing(false);
-        setMasterKeyDraft('');
       } else {
+        clearSaveSuccess();
         setSaveError(data.message || 'Save failed');
       }
     } catch {
+      clearSaveSuccess();
       setSaveError('Request failed');
     } finally {
       setMasterSaving(false);
-    }
-  };
-
-  const handleCopyMasterKey = async () => {
-    const text = masterRow?.value ?? '';
-    if (!text.trim()) {
-      return;
-    }
-    if (copyMasterKeyHintTimerRef.current != null) {
-      clearTimeout(copyMasterKeyHintTimerRef.current);
-      copyMasterKeyHintTimerRef.current = null;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setSaveError('');
-      setCopyMasterKeyHint(true);
-      copyMasterKeyHintTimerRef.current = setTimeout(() => {
-        setCopyMasterKeyHint(false);
-        copyMasterKeyHintTimerRef.current = null;
-      }, 2500);
-    } catch {
-      setCopyMasterKeyHint(false);
-      setSaveError('Could not copy to clipboard (check permissions or HTTPS).');
     }
   };
 
@@ -500,7 +518,7 @@ export default function GatewayConfigPage() {
           </p>
         </div>
         <button
-          onClick={() => { setShowAdd(true); setSaveError(''); }}
+          onClick={() => { setShowAdd(true); setSaveError(''); clearSaveSuccess(); }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
           <PlusIcon className="h-5 w-5" />
@@ -510,6 +528,12 @@ export default function GatewayConfigPage() {
 
       {saveError && (
         <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">{saveError}</div>
+      )}
+
+      {saveSuccess && (
+        <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm" role="status">
+          {saveSuccess}
+        </div>
       )}
 
       <ConfigCardShell
@@ -524,81 +548,48 @@ export default function GatewayConfigPage() {
         }
       >
         <div className="flex flex-wrap items-end gap-3">
-          {hasMasterKey && !masterKeyEditing ? (
-            <>
-              <div className="min-w-0 flex-1">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Current key</label>
-                <span className="block text-sm font-mono text-gray-700">{maskSecret(masterRow?.value ?? '')}</span>
-              </div>
+          <div className="min-w-[12rem] flex-1 max-w-md">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <label htmlFor="master-key" className="block text-xs font-medium text-gray-600">
+                Master key
+              </label>
               <button
                 type="button"
-                onClick={() => void handleCopyMasterKey()}
-                className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-50"
-                title="Copy full key to clipboard"
+                onClick={() => setMasterKeyVisible((v) => !v)}
+                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                aria-pressed={masterKeyVisible}
               >
-                <ClipboardDocumentIcon className="h-4 w-4 shrink-0" />
-                Copy key
+                {masterKeyVisible ? (
+                  <>
+                    <EyeSlashIcon className="h-4 w-4" aria-hidden />
+                    Hide
+                  </>
+                ) : (
+                  <>
+                    <EyeIcon className="h-4 w-4" aria-hidden />
+                    Show
+                  </>
+                )}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (copyMasterKeyHintTimerRef.current != null) {
-                    clearTimeout(copyMasterKeyHintTimerRef.current);
-                    copyMasterKeyHintTimerRef.current = null;
-                  }
-                  setCopyMasterKeyHint(false);
-                  setSaveError('');
-                  setMasterKeyEditing(true);
-                  setMasterKeyDraft(masterRow?.value ?? '');
-                }}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-50"
-              >
-                Change key
-              </button>
-              {copyMasterKeyHint && (
-                <span className="self-center text-sm font-medium text-green-700" role="status">
-                  Copied to clipboard
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="min-w-[12rem] flex-1 max-w-md">
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  {hasMasterKey ? 'New master key' : 'Master key'}
-                </label>
-                <input
-                  type="password"
-                  value={masterKeyDraft}
-                  onChange={(e) => setMasterKeyDraft(e.target.value)}
-                  placeholder={hasMasterKey ? 'Enter new key' : 'Enter admin Bearer secret'}
-                  autoComplete="new-password"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono"
-                />
-              </div>
-              {hasMasterKey && masterKeyEditing && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMasterKeyEditing(false);
-                    setMasterKeyDraft('');
-                    setSaveError('');
-                  }}
-                  className="text-sm text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleSaveMasterKey}
-                disabled={masterSaving}
-                className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-              >
-                {masterSaving ? 'Saving…' : 'Save master key'}
-              </button>
-            </>
-          )}
+            </div>
+            <input
+              id="master-key"
+              type={masterKeyVisible ? 'text' : 'password'}
+              value={masterKeyDraft}
+              onChange={(e) => setMasterKeyDraft(e.target.value)}
+              placeholder="Enter admin Bearer secret"
+              autoComplete="new-password"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono text-gray-900 shadow-sm"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleSaveMasterKey()}
+            disabled={masterSaving}
+            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            {masterSaving ? 'Saving…' : 'Save master key'}
+          </button>
         </div>
       </ConfigCardShell>
 
@@ -788,7 +779,7 @@ export default function GatewayConfigPage() {
             </button>
             <button
               type="button"
-              onClick={() => { setShowAdd(false); setNewKey(''); setNewValue(''); setSaveError(''); }}
+              onClick={() => { setShowAdd(false); setNewKey(''); setNewValue(''); setSaveError(''); clearSaveSuccess(); }}
               className="text-sm text-gray-600 hover:text-gray-800"
             >
               Cancel
