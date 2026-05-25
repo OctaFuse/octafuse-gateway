@@ -25,3 +25,4 @@ npm run deploy:admin
 单包开发：`cd packages/admin` 后 `npm run dev`（无 D1 时管理 API 会失败，仅适合改 UI）。
 
 文档：[docs/README.md](../../docs/README.md) · [docs/api/admin.md](../../docs/api/admin.md) · [AGENTS.md](./AGENTS.md)
+
