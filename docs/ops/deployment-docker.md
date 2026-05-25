@@ -215,6 +215,16 @@ npm run db:migrate:mysql:docker
 
 Compose 中 `migrate` 服务使用 **migrate 专用镜像**执行 `npm run db:migrate:mysql:docker`。本地构建一体化见 §4.1b（`docker/compose/node-mysql.yml`）；`docker/examples/` 不再保留预构建镜像的 MySQL 示例。
 
+### Zeabur（容器平台）
+
+Zeabur 将每个 **Service** 视为常驻进程；**migrate 镜像跑完即退出**，若作为 Service 长期运行会触发 `BackOff restarting failed container`（迁移成功也会如此）。正确做法：
+
+1. **推荐**：发版前在本地/CI 执行 [`scripts/deploy/zeabur-migrate-once.sh`](../../scripts/deploy/zeabur-migrate-once.sh)，再部署 proxy/admin。
+2. **或**：Zeabur PREBUILT migrate Service 跑完后 **Settings → Suspend Service**。
+3. **不要**把 migrate 与 proxy/admin 一样当作 7×24 常驻 Service。
+
+详见 **[deployment-zeabur.md](./deployment-zeabur.md)** 与 [`docker/examples/env.zeabur.example`](../../docker/examples/env.zeabur.example)。
+
 ## 6. 非 Docker：本机 Node + Postgres（开发）
 
 仍可直接用 npm 启动（不经过镜像），与 [local-testing-environments.md](./local-testing-environments.md) 一致。

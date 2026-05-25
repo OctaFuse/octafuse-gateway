@@ -16,5 +16,6 @@
 3. **Full self-hosted PG**：Proxy Node + Admin Node，共用 Postgres。见 [deployment-docker.md](./deployment-docker.md) 与 [postgres-cutover.md](./postgres-cutover.md)。
 4. **Full self-hosted MySQL**：同上形态，共用 MySQL 8（`DATABASE_DRIVER=mysql`，迁移 `migrations-mysql/`）。见 [deployment-docker.md](./deployment-docker.md)（含 **`docker/compose/node-mysql.yml`** 与 UTC 时区说明）。
 5. **自托管 Docker + Postgres / MySQL（无 Cloudflare 依赖）**：镜像由 CI 推到 **GHCR**（或你在镜像仓库侧 mirror 到自建 Harbor 等），宿主机拉镜像、迁移、启停；编排与变量见 [deployment-docker.md](./deployment-docker.md)。
+6. **Zeabur（容器平台）**：Proxy + Admin 为常驻 Service；**migrate 为一次性 Job**（勿常驻，否则 CrashLoop）。见 [deployment-zeabur.md](./deployment-zeabur.md)。
 
 本地与多套 D1 数据目录见 [local-testing-environments.md](./local-testing-environments.md)。D1 与 Postgres 之间迁移或对账见 [postgres-cutover.md](./postgres-cutover.md)（脚本在 `scripts/db/cutover/`）。

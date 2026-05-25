@@ -30,6 +30,7 @@ docker login registry.example.com -u YOUR_REGISTRY_USERNAME
 | **仅 Proxy**（推理网关单独部署） | [`gateway.proxy.yml`](./gateway.proxy.yml) | [`env.proxy.example`](./env.proxy.example) |
 | **仅 Admin**（管理面单独部署） | [`gateway.admin.yml`](./gateway.admin.yml) | [`env.admin.example`](./env.admin.example) |
 | **同机同时启动 Proxy + Admin**（仍连接外置 Postgres） | [`gateway.compose.yml`](./gateway.compose.yml) | [`env.compose.external.example`](./env.compose.external.example) |
+| **Zeabur（容器平台）** | 见 [deployment-zeabur.md](../../docs/ops/deployment-zeabur.md) | [`env.zeabur.example`](./env.zeabur.example) |
 
 首次建库或发版后需要迁移时，使用 `--profile migrate`（**octafuse-migrate** 镜像，环境变量 **`GATEWAY_MIGRATE_IMAGE`**）。生产推荐固定为「**先 migrate，再启动服务**」。
 
@@ -111,6 +112,8 @@ docker compose --env-file .env.gateway -f gateway.compose.yml up -d
 ```
 
 任意通用轻量服务器（无 Cloudflare 依赖）上的 Docker 编排同上（[deployment-docker.md](../../docs/ops/deployment-docker.md) + [docker/deploy/README.md](../deploy/README.md)）。
+
+**Zeabur**：migrate 镜像为一次性 Job，**不要**作为常驻 Service（成功后进程退出会触发平台重启循环）。推荐发版前用 [`scripts/deploy/zeabur-migrate-once.sh`](../../scripts/deploy/zeabur-migrate-once.sh) 或 PREBUILT migrate 跑完后 **Suspend**；详见 **[docs/ops/deployment-zeabur.md](../../docs/ops/deployment-zeabur.md)** 与 [`env.zeabur.example`](./env.zeabur.example)。
 
 ## Nginx：Proxy 流式（SSE）反代样板
 

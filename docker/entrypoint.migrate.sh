@@ -20,15 +20,27 @@ if [ ! -f "$MIGRATE_CLI" ]; then
 fi
 
 _eff="$(printf '%s' "${DATABASE_DRIVER:-}" | tr '[:upper:]' '[:lower:]')"
+_run_migrate() {
+	_driver="$1"
+	shift
+	if ! node "$MIGRATE_CLI" --driver "$_driver" "$@"; then
+		echo "[docker-entrypoint:migrate] ERROR: migrate CLI exited non-zero" >&2
+		exit 1
+	fi
+	echo "[docker-entrypoint:migrate] MIGRATE_DONE"
+	echo "[docker-entrypoint:migrate] 一次性任务已完成，容器将正常退出。"
+	echo "[docker-entrypoint:migrate] Zeabur/K8s 上请勿将此镜像作为常驻 Service；见 docs/ops/deployment-zeabur.md"
+}
+
 case "$_eff" in
 	""|postgres|postgresql|pg)
 		echo "[docker-entrypoint:migrate] DATABASE_DRIVER=postgres (default)"
-		node "$MIGRATE_CLI" --driver postgres
+		_run_migrate postgres
 		;;
 	mysql|mysql2)
 		export DATABASE_DRIVER="${DATABASE_DRIVER:-mysql}"
 		echo "[docker-entrypoint:migrate] DATABASE_DRIVER=${DATABASE_DRIVER}"
-		node "$MIGRATE_CLI" --driver mysql
+		_run_migrate mysql
 		;;
 	*)
 		echo "[docker-entrypoint:migrate] ERROR: unsupported DATABASE_DRIVER='${DATABASE_DRIVER:-}'" >&2
