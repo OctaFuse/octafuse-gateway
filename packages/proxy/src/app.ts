@@ -10,6 +10,7 @@ import { chatRoutes } from './routes/v1/chat';
 import { geminiRoutes } from './routes/v1/gemini';
 import { meRoutes } from './routes/v1/me';
 import { messagesRoutes } from './routes/v1/messages';
+import { catalogRoutes } from './routes/catalog';
 import { modelsRoutes } from './routes/v1/models';
 import { proxyAppVersion } from './app-version';
 
@@ -67,6 +68,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/v1beta', geminiRoutes);
 	app.route('/v1/me', meRoutes);
 	app.route('/v1/models', modelsRoutes);
+	app.route('/catalog', catalogRoutes);
 
 	app.get('/', (c) => c.json({ name: 'octafuse-proxy', version: proxyAppVersion }));
 

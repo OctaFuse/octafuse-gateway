@@ -344,6 +344,83 @@ curl http://localhost:8787/v1/models \
 
 ---
 
+## 公开模型目录（Catalog Discovery）
+
+面向门户、文档站等 **无需用户 API Key** 的运行时能力发现接口。基于 **active `model_routes`** 聚合各 `route_group` 支持的 **`upstream_protocol`**，不返回 provider id、API key、`provider_model_name` 等运维字段。
+
+### 请求
+
+```
+GET /catalog/models
+```
+
+可选查询参数：
+
+| 参数 | 说明 |
+|------|------|
+| `route_groups` | CSV，大小写不敏感。未传 → 包含模型下 **全部** active route group；传入后仅保留匹配的 group（无匹配则该模型不出现在列表中） |
+
+### 响应
+
+```json
+{
+  "object": "list",
+  "generated_at": "2026-05-26T13:00:00.000Z",
+  "data": [
+    {
+      "id": "glm-4",
+      "display_name": "GLM-4",
+      "vendor": "zhipu",
+      "context_window": 128000,
+      "max_tokens": 4096,
+      "pricing_profile": {
+        "tiers": [
+          {
+            "upto": null,
+            "label": null,
+            "input_price": 0.01,
+            "output_price": 0.01,
+            "cache_read_price": null,
+            "cache_write_price": null
+          }
+        ]
+      },
+      "tags": ["general"],
+      "route_groups": ["default", "free"],
+      "protocols": ["openai"],
+      "protocols_by_group": {
+        "default": ["openai"],
+        "free": ["openai"]
+      },
+      "recommended_protocol": "openai",
+      "description": "智谱 GLM-4 通用模型",
+      "metadata": {}
+    }
+  ]
+}
+```
+
+### 与 `GET /v1/models` / Admin 的差异
+
+| 维度 | `GET /v1/models` | `GET /catalog/models` | `GET /admin/models` |
+|------|------------------|------------------------|---------------------|
+| 部署 | Proxy | Proxy | Admin |
+| 认证 | 用户 API Key | **无** | MASTER_KEY |
+| 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — |
+| 协议能力 | 不返回 | `protocols` / `protocols_by_group` | 不返回 |
+| 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD |
+
+Admin 静态导入目录见 **`GET /admin/models/import/catalog`**（与上表无关，见 [管理接口](./admin.md#admin-vs-proxy-catalog)）。
+
+### 示例
+
+```bash
+curl http://localhost:8787/catalog/models
+curl "http://localhost:8787/catalog/models?route_groups=default,web"
+```
+
+---
+
 ## 获取当前用户预算状态
 
 获取当前认证用户的预算使用情况。

@@ -8,10 +8,10 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 
 | 用途 | 运行时（典型） | Base URL（示例） | 路径前缀 |
 |------|----------------|------------------|----------|
-| 健康检查与用户 API | Proxy（CF Worker 或 Node） | `https://<proxy>/` | `/`、`/health`、`/v1/*`、`/v1beta/*` |
+| 健康检查与用户 API | Proxy（CF Worker 或 Node） | `https://<proxy>/` | `/`、`/health`、`/catalog/*`、`/v1/*`、`/v1beta/*` |
 | 管理 API | Admin（OpenNext 或 Node） | `https://<admin>/` | **`/api/admin/*`**（服务端重写为内部 `/admin/*`） |
 
-**与实现对齐**：Proxy 路由以 **`packages/proxy/src/app.ts`** 及各 **`packages/proxy/src/routes/v1/**`** 为准；根路径 JSON 见该文件（`name: octafuse-proxy`）。管理路由以 **`packages/admin/lib/admin-app.ts`** 及 **`packages/admin/lib/routes/admin/**`** 为准。
+**与实现对齐**：Proxy 路由以 **`packages/proxy/src/app.ts`** 及各 **`packages/proxy/src/routes/**`**（含 **`routes/catalog.ts`**）为准；根路径 JSON 见该文件（`name: octafuse-proxy`）。管理路由以 **`packages/admin/lib/admin-app.ts`** 及 **`packages/admin/lib/routes/admin/**`** 为准。
 
 ## 扩展文档
 
@@ -30,7 +30,7 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 
 | 认证类型 | 使用场景 | 说明 |
 |---------|---------|------|
-| 无认证 | 健康检查 | 公开接口（仅 Proxy） |
+| 无认证 | 健康检查、公开目录 | Proxy：`/`、`/health`、**`GET /catalog/models`**（运行时模型能力发现，见 [用户接口](./user.md#公开模型目录catalog-discovery)） |
 | Bearer Token (MASTER_KEY) | 管理接口 | 与 D1 `system_config.MASTER_KEY` 一致；请求打在 **`{GATEWAY_MASTER_URL}/api/admin/...`**（Admin Pages 根 URL） |
 | Bearer Token (User Key) | 用户接口 | `sk-…`，请求打在 **Proxy** 的 `/v1/*` 等 |
 | `x-api-key` | Anthropic 兼容 | `POST /v1/messages` |
@@ -44,6 +44,7 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 |------|------|------|
 | `/` | GET | 服务名与版本 |
 | `/health` | GET | 健康检查 |
+| `/catalog/models` | GET | 运行时模型目录（协议 / route group；**无需** API Key） |
 
 ### [管理接口](./admin.md)（Admin：`/api/admin/*`）
 
@@ -56,7 +57,8 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 | `/v1/chat/completions` | POST | OpenAI 兼容聊天 |
 | `/v1/messages` | POST | Anthropic Messages |
 | `/v1beta/models/:modelAction` | POST | Gemini `generateContent` / `streamGenerateContent` |
-| `/v1/models` | GET | 模型列表 |
+| `/v1/models` | GET | 模型列表（需用户 Key；OpenAI 兼容形态） |
+| `/catalog/models` | GET | 公开模型目录 discovery（无需 Key；含 `protocols_by_group`，见 [详细说明](./user.md#公开模型目录catalog-discovery)） |
 | `/v1/me` | GET | 预算与元数据 |
 
 ## 错误响应
