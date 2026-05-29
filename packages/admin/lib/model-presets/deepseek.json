@@ -72,9 +72,9 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 1.74,
-						"output_price": 3.48,
-						"cache_read_price": 0.0145,
+						"input_price": 0.435,
+						"output_price": 0.87,
+						"cache_read_price": 0.003625,
 						"cache_write_price": null
 					}
 				]
@@ -83,9 +83,9 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 12,
-						"output_price": 24,
-						"cache_read_price": 0.1,
+						"input_price": 3,
+						"output_price": 6,
+						"cache_read_price": 0.025,
 						"cache_write_price": null
 					}
 				]
