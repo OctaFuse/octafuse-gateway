@@ -71,29 +71,65 @@ export function computeRequestLogStatus(params: {
 }
 
 /**
- * 非 2xx 时从响应体解析一行摘要，供 `error_message` 持久化（长度受限）。
+ * 非 2xx 时从已物化的响应体文本解析一行摘要，供 `error_message` 持久化（长度受限）。
  */
-export async function formatHttpErrorForRequestLog(response: Response): Promise<string> {
-  const code = response.status;
+export function formatHttpErrorTextForRequestLog(
+  status: number,
+  contentType: string | null,
+  text: string
+): string {
+  const code = status;
+  const ct = (contentType || '').toLowerCase();
+  if (ct && !ct.includes('json') && !ct.includes('text') && !ct.includes('xml')) {
+    return `HTTP ${code}`;
+  }
+  const slice = text.length > MAX_BODY_READ_CHARS ? text.slice(0, MAX_BODY_READ_CHARS) : text;
+  if (!slice.trim()) {
+    return `HTTP ${code}`;
+  }
   let summary: string | null = null;
   try {
-    const ct = (response.headers.get('content-type') || '').toLowerCase();
-    if (ct && !ct.includes('json') && !ct.includes('text') && !ct.includes('xml')) {
-      return `HTTP ${code}`;
-    }
-    const text = await response.clone().text();
-    const slice = text.length > MAX_BODY_READ_CHARS ? text.slice(0, MAX_BODY_READ_CHARS) : text;
-    if (!slice.trim()) {
-      return `HTTP ${code}`;
-    }
-    try {
-      summary = pickSummaryFromJsonBody(JSON.parse(slice) as unknown);
-    } catch {
-      summary = truncate(slice, MAX_SUMMARY_CHARS) || null;
-    }
+    summary = pickSummaryFromJsonBody(JSON.parse(slice) as unknown);
   } catch {
-    // clone/read 失败时仅返回状态码
+    summary = truncate(slice, MAX_SUMMARY_CHARS) || null;
   }
   if (summary) return `HTTP ${code}: ${summary}`;
   return `HTTP ${code}`;
+}
+
+/**
+ * 非 2xx 上游响应：一次性读取 body 并重建 Response，避免客户端返回与后台日志争用同一 stream。
+ */
+export async function materializeNonOkResponse(response: Response): Promise<{
+  response: Response;
+  errorBodyText: string | null;
+}> {
+  if (response.ok) {
+    return { response, errorBodyText: null };
+  }
+  const errorBodyText = await response.text();
+  return {
+    response: new Response(errorBodyText, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    }),
+    errorBodyText,
+  };
+}
+
+/**
+ * 非 2xx 时从响应体解析一行摘要，供 `error_message` 持久化（长度受限）。
+ */
+export async function formatHttpErrorForRequestLog(response: Response): Promise<string> {
+  try {
+    const text = await response.clone().text();
+    return formatHttpErrorTextForRequestLog(
+      response.status,
+      response.headers.get('content-type'),
+      text
+    );
+  } catch {
+    return `HTTP ${response.status}`;
+  }
 }

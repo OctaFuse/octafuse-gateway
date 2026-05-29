@@ -20,7 +20,8 @@ import { recordUsage } from '../../services/usage-tracker';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
 import {
   computeRequestLogStatus,
-  formatHttpErrorForRequestLog,
+  formatHttpErrorTextForRequestLog,
+  materializeNonOkResponse,
 } from '../../services/request-log-record-status';
 
 /** 流若长期不结束（上游挂死），超过此时长仍无 usage 则按 incomplete 记账；正常/取消场景通常很快结束。 */
@@ -130,11 +131,9 @@ chatRoutes.post('/', async (c) => {
   );
 
   const requestSignal = c.req.raw.signal;
-  const { response, usagePromise, chosenRoute } = await proxyChatCompletions(
-    routes,
-    body,
-    requestSignal
-  );
+  const proxyResult = await proxyChatCompletions(routes, body, requestSignal);
+  const { usagePromise, chosenRoute } = proxyResult;
+  const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
   const modelNameForLog =
     model.display_name != null && String(model.display_name).trim() !== ''
@@ -176,8 +175,14 @@ chatRoutes.post('/', async (c) => {
           errorMessage = timedOut
             ? 'Stream usage timeout (no usage within limit)'
             : 'Stream ended before usage available';
+        } else if (errorBodyText != null) {
+          errorMessage = formatHttpErrorTextForRequestLog(
+            response.status,
+            response.headers.get('content-type'),
+            errorBodyText
+          );
         } else {
-          errorMessage = await formatHttpErrorForRequestLog(response);
+          errorMessage = `HTTP ${response.status}`;
         }
         const upstreamRequestBodyForLog = openAiUpstreamWireBodyForLog(chosenRoute, body as Record<string, unknown>);
         return recordUsage(repos, {

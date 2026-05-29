@@ -19,7 +19,8 @@ import { recordUsage } from '../../services/usage-tracker';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
 import {
   computeRequestLogStatus,
-  formatHttpErrorForRequestLog,
+  formatHttpErrorTextForRequestLog,
+  materializeNonOkResponse,
 } from '../../services/request-log-record-status';
 
 /** 同 chat：usage Promise 兜底超时，避免永久挂起。 */
@@ -122,11 +123,9 @@ messagesRoutes.post('/', async (c) => {
   }
 
   const requestSignal = c.req.raw.signal;
-  const { response, usagePromise, chosenRoute } = await proxyAnthropicMessages(
-    routes,
-    body,
-    requestSignal
-  );
+  const proxyResult = await proxyAnthropicMessages(routes, body, requestSignal);
+  const { usagePromise, chosenRoute } = proxyResult;
+  const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
   const modelNameForLog =
     model.display_name != null && String(model.display_name).trim() !== ''
@@ -167,8 +166,14 @@ messagesRoutes.post('/', async (c) => {
           errorMessage = timedOut
             ? 'Stream usage timeout (no usage within limit)'
             : 'Stream ended before usage available';
+        } else if (errorBodyText != null) {
+          errorMessage = formatHttpErrorTextForRequestLog(
+            response.status,
+            response.headers.get('content-type'),
+            errorBodyText
+          );
         } else {
-          errorMessage = await formatHttpErrorForRequestLog(response);
+          errorMessage = `HTTP ${response.status}`;
         }
         const upstreamRequestBodyForLog = anthropicUpstreamWireBodyForLog(
           chosenRoute,

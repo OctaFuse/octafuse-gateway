@@ -19,7 +19,8 @@ import { recordUsage } from '../../services/usage-tracker';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
 import {
   computeRequestLogStatus,
-  formatHttpErrorForRequestLog,
+  formatHttpErrorTextForRequestLog,
+  materializeNonOkResponse,
 } from '../../services/request-log-record-status';
 
 /** usage Promise 兜底超时（与 OpenAI/Anthropic 路由一致）。 */
@@ -159,13 +160,15 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
   }
 
   const requestSignal = c.req.raw.signal;
-  const { response, usagePromise, chosenRoute } = await proxyGeminiContent(
+  const proxyResult = await proxyGeminiContent(
     routes,
     action,
     body,
     c.req.url.includes('?') ? c.req.url.slice(c.req.url.indexOf('?')) : '',
     requestSignal
   );
+  const { usagePromise, chosenRoute } = proxyResult;
+  const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
   const modelNameForLog =
     model.display_name != null && String(model.display_name).trim() !== ''
@@ -206,8 +209,14 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
           errorMessage = timedOut
             ? 'Stream usage timeout (no usage within limit)'
             : 'Stream ended before usage available';
+        } else if (errorBodyText != null) {
+          errorMessage = formatHttpErrorTextForRequestLog(
+            response.status,
+            response.headers.get('content-type'),
+            errorBodyText
+          );
         } else {
-          errorMessage = await formatHttpErrorForRequestLog(response);
+          errorMessage = `HTTP ${response.status}`;
         }
         const upstreamRequestBodyForLog = geminiUpstreamWireBodyForLog(chosenRoute, body, action);
         return recordUsage(repos, {
