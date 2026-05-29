@@ -1,10 +1,72 @@
 [
 	{
+		"id": "claude-opus-4-8",
+		"display_name": "Claude Opus 4.8",
+		"vendor": "anthropic",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 25,
+						"cache_read_price": 0.5,
+						"cache_write_price": 6.25
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 36,
+						"output_price": 180,
+						"cache_read_price": 3.6,
+						"cache_write_price": 45
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "claude-opus-4.7",
+		"display_name": "Claude Opus 4.7",
+		"vendor": "anthropic",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 25,
+						"cache_read_price": 0.5,
+						"cache_write_price": 6.25
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 36,
+						"output_price": 180,
+						"cache_read_price": 3.6,
+						"cache_write_price": 45
+					}
+				]
+			}
+		}
+	},
+	{
 		"id": "claude-opus-4.6",
 		"display_name": "Claude Opus 4.6",
 		"vendor": "anthropic",
 		"context_window": 1000000,
-		"max_tokens": 8192,
+		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -35,7 +97,7 @@
 		"display_name": "Claude Sonnet 4.6",
 		"vendor": "anthropic",
 		"context_window": 1000000,
-		"max_tokens": 8192,
+		"max_tokens": 64000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -66,7 +128,7 @@
 		"display_name": "Claude Haiku 4.5",
 		"vendor": "anthropic",
 		"context_window": 200000,
-		"max_tokens": 8192,
+		"max_tokens": 64000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -87,37 +149,6 @@
 						"output_price": 36,
 						"cache_read_price": 0.72,
 						"cache_write_price": 9
-					}
-				]
-			}
-		}
-	},
-	{
-		"id": "claude-opus-4.7",
-		"display_name": "Claude Opus 4.7",
-		"vendor": "anthropic",
-		"context_window": 1000000,
-		"max_tokens": 8192,
-		"pricing": {
-			"usd": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 5,
-						"output_price": 25,
-						"cache_read_price": 0.5,
-						"cache_write_price": 6.25
-					}
-				]
-			},
-			"cny": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 36,
-						"output_price": 180,
-						"cache_read_price": 3.6,
-						"cache_write_price": 45
 					}
 				]
 			}

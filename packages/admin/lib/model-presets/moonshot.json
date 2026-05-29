@@ -3,8 +3,8 @@
 		"id": "kimi-k2.5",
 		"display_name": "Kimi K2.5",
 		"vendor": "moonshot",
-		"context_window": 256000,
-		"max_tokens": 16000,
+		"context_window": 262144,
+		"max_tokens": 262144,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -34,8 +34,8 @@
 		"id": "kimi-k2.6",
 		"display_name": "Kimi K2.6",
 		"vendor": "moonshot",
-		"context_window": 256000,
-		"max_tokens": 16000,
+		"context_window": 262144,
+		"max_tokens": 262144,
 		"pricing": {
 			"usd": {
 				"tiers": [

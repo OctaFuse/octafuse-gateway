@@ -3,8 +3,8 @@
 		"id": "gemini-3.1-pro-preview",
 		"display_name": "Gemini 3.1 Pro Preview",
 		"vendor": "google",
-		"context_window": 1050000,
-		"max_tokens": 8192,
+		"context_window": 1000000,
+		"max_tokens": 64000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -48,8 +48,8 @@
 		"id": "gemini-3.5-flash",
 		"display_name": "Gemini 3.5 Flash",
 		"vendor": "google",
-		"context_window": 1050000,
-		"max_tokens": 65000,
+		"context_window": 1000000,
+		"max_tokens": 64000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -79,8 +79,8 @@
 		"id": "gemini-3.1-flash-lite-preview",
 		"display_name": "Gemini 3.1 Flash Lite Preview",
 		"vendor": "google",
-		"context_window": 1050000,
-		"max_tokens": 8192,
+		"context_window": 1000000,
+		"max_tokens": 64000,
 		"pricing": {
 			"usd": {
 				"tiers": [
