@@ -60,5 +60,50 @@
 				]
 			}
 		}
+	},
+	{
+		"id": "minimax-m3",
+		"display_name": "MiniMax M3",
+		"vendor": "minimax",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 512000,
+						"input_price": 0.6,
+						"output_price": 2.4,
+						"cache_read_price": 0.12,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 1.2,
+						"output_price": 4.8,
+						"cache_read_price": 0.24,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 512000,
+						"input_price": 4.2,
+						"output_price": 16.8,
+						"cache_read_price": 0.84,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 8.4,
+						"output_price": 33.6,
+						"cache_read_price": 1.68,
+						"cache_write_price": null
+					}
+				]
+			}
+		}
 	}
 ]
