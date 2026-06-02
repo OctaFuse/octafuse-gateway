@@ -209,6 +209,7 @@ export async function importModelsFromStaticPresetsService(
 				context_window: preset.context_window ?? null,
 				max_tokens: preset.max_tokens ?? 8192,
 				pricing_profile: pricingProfile,
+				tags: Array.isArray(preset.tags) ? preset.tags.map((t) => String(t)) : [],
 			};
 
 			await createModelService(repos, body);

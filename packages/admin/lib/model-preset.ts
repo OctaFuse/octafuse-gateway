@@ -39,6 +39,8 @@ export type StaticModelPresetRow = {
 	vendor?: string | null;
 	context_window?: number | null;
 	max_tokens?: number | null;
+	/** Gateway `model_tags` (e.g. `New`, `Hot`, `Discount:0.3`). */
+	tags?: string[];
 	pricing: {
 		usd: unknown;
 		cny: unknown;
