@@ -10,6 +10,7 @@ import {
   ClipboardDocumentIcon,
   CheckIcon,
   ArrowDownTrayIcon,
+  DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline';
 import {
   OpenAiEndpointIcon,
@@ -44,11 +45,23 @@ const emptyForm = {
   description: '',
 };
 
+function suggestDuplicateProviderId(sourceId: string, existingIds: Set<string>): string {
+  const base = `${sourceId}-copy`;
+  if (!existingIds.has(base)) return base;
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${base}-${n}`;
+    if (!existingIds.has(candidate)) return candidate;
+  }
+  return '';
+}
+
 export default function GatewayProvidersPage() {
   const [providers, setProviders] = useState<GatewayProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProvider, setEditingProvider] = useState<GatewayProvider | null>(null);
+  /** 新建弹窗由「复制」预填时，记录源 Provider id（仅 UI 提示） */
+  const [duplicateSourceId, setDuplicateSourceId] = useState<string | null>(null);
   const [formData, setFormData] = useState(emptyForm);
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -92,6 +105,7 @@ export default function GatewayProvidersPage() {
 
   const handleCreate = () => {
     setEditingProvider(null);
+    setDuplicateSourceId(null);
     setFormData({ ...emptyForm, id: '' });
     setShowModal(true);
     setSaveError('');
@@ -99,10 +113,28 @@ export default function GatewayProvidersPage() {
 
   const handleEdit = (provider: GatewayProvider) => {
     setEditingProvider(provider);
+    setDuplicateSourceId(null);
     const pending = isPendingProviderImportApiKey(provider.api_key);
     setFormData({
       id: provider.id,
       name: provider.name,
+      base_url_openai: provider.base_url_openai ?? '',
+      base_url_anthropic: provider.base_url_anthropic ?? '',
+      base_url_gemini: provider.base_url_gemini ?? '',
+      api_key: pending ? '' : provider.api_key,
+      description: provider.description ?? '',
+    });
+    setShowModal(true);
+    setSaveError('');
+  };
+
+  const handleDuplicate = (provider: GatewayProvider) => {
+    setEditingProvider(null);
+    setDuplicateSourceId(provider.id);
+    const pending = isPendingProviderImportApiKey(provider.api_key);
+    setFormData({
+      id: suggestDuplicateProviderId(provider.id, existingProviderIds),
+      name: `${provider.name} (copy)`,
       base_url_openai: provider.base_url_openai ?? '',
       base_url_anthropic: provider.base_url_anthropic ?? '',
       base_url_gemini: provider.base_url_gemini ?? '',
@@ -364,6 +396,9 @@ export default function GatewayProvidersPage() {
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -493,6 +528,20 @@ export default function GatewayProvidersPage() {
                 </td>
                 <td className="px-4 py-4 max-w-[200px]" title={provider.description ?? undefined}>
                   <span className="block truncate text-sm text-gray-600">{provider.description || '—'}</span>
+                </td>
+                <td className="px-4 py-4 align-middle text-right">
+                  <button
+                    type="button"
+                    aria-label={`Duplicate provider ${provider.id}`}
+                    title="Duplicate as new provider"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDuplicate(provider);
+                    }}
+                    className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
+                  </button>
                 </td>
               </tr>
               );
@@ -634,9 +683,20 @@ export default function GatewayProvidersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
             <div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
-              <h2 className="text-xl font-bold text-gray-900">
-                {editingProvider ? 'Edit Provider' : 'New Provider'}
-              </h2>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingProvider ? 'Edit Provider' : 'New Provider'}
+                </h2>
+                {!editingProvider && duplicateSourceId && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Pre-filled from{' '}
+                    <code className="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[11px]">
+                      {duplicateSourceId}
+                    </code>
+                    . Set a new ID and review fields before saving.
+                  </p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
@@ -795,17 +855,28 @@ export default function GatewayProvidersPage() {
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-gray-50 px-6 py-4">
-              <div>
+              <div className="flex flex-wrap items-center gap-2">
                 {editingProvider && (
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete(editingProvider.id)}
-                    disabled={isSaving || isDeleting}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <TrashIcon className="h-4 w-4" aria-hidden />
-                    {isDeleting ? 'Deleting…' : 'Delete provider'}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(editingProvider)}
+                      disabled={isSaving || isDeleting}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
+                      Duplicate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(editingProvider.id)}
+                      disabled={isSaving || isDeleting}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <TrashIcon className="h-4 w-4" aria-hidden />
+                      {isDeleting ? 'Deleting…' : 'Delete provider'}
+                    </button>
+                  </>
                 )}
               </div>
               <div className="ml-auto flex gap-3">

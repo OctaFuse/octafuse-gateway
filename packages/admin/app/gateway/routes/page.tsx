@@ -294,7 +294,9 @@ function RoutesContent() {
 
       if (routesData.success) setRoutes(routesData.data || []);
       if (modelsData.success) setModels(modelsData.data || []);
-      if (providersData.success) setProviders(providersData.data || []);
+      if (providersData.success) {
+        setProviders([...(providersData.data || [])].sort((a, b) => a.id.localeCompare(b.id)));
+      }
     } catch (error) {
       console.error('Fetch data error:', error);
     } finally {
