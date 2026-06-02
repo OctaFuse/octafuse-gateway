@@ -1,5 +1,75 @@
 [
 	{
+		"id": "qwen3.7-plus",
+		"display_name": "Qwen3.7 Plus",
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 0.4,
+						"output_price": 3,
+						"cache_read_price": 0.05
+					},
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 4,
+						"cache_read_price": 0.15
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 256000,
+						"input_price": 2,
+						"output_price": 8,
+						"cache_read_price": 0.4
+					},
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 24,
+						"cache_read_price": 1.2
+					}
+				]
+			}
+		}
+	},
+	{
+		"id": "qwen3.7-max",
+		"display_name": "Qwen3.7 Max",
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2.5,
+						"output_price": 7.5,
+						"cache_read_price": 0.5
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 12,
+						"output_price": 36,
+						"cache_read_price": 2.4
+					}
+				]
+			}
+		}
+	},
+	{
 		"id": "qwen3.6-plus",
 		"display_name": "Qwen3.6 Plus",
 		"vendor": "aliyun",
