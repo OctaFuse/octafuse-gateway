@@ -11,14 +11,16 @@
 					{
 						"upto": 256000,
 						"input_price": 0.4,
-						"output_price": 3,
-						"cache_read_price": 0.05
+						"output_price": 1.6,
+						"cache_read_price": 0.08,
+						"cache_write_price": 0.5
 					},
 					{
 						"upto": null,
-						"input_price": 1,
-						"output_price": 4,
-						"cache_read_price": 0.15
+						"input_price": 1.2,
+						"output_price": 4.8,
+						"cache_read_price": 0.24,
+						"cache_write_price": 1.5
 					}
 				]
 			},
@@ -28,13 +30,15 @@
 						"upto": 256000,
 						"input_price": 2,
 						"output_price": 8,
-						"cache_read_price": 0.4
+						"cache_read_price": 0.4,
+						"cache_write_price": 2.5
 					},
 					{
 						"upto": null,
 						"input_price": 6,
 						"output_price": 24,
-						"cache_read_price": 1.2
+						"cache_read_price": 1.2,
+						"cache_write_price": 7.5
 					}
 				]
 			}
@@ -53,7 +57,8 @@
 						"upto": null,
 						"input_price": 2.5,
 						"output_price": 7.5,
-						"cache_read_price": 0.5
+						"cache_read_price": 0.5,
+						"cache_write_price": 3.125
 					}
 				]
 			},
@@ -63,7 +68,8 @@
 						"upto": null,
 						"input_price": 12,
 						"output_price": 36,
-						"cache_read_price": 2.4
+						"cache_read_price": 2.4,
+						"cache_write_price": 15
 					}
 				]
 			}
