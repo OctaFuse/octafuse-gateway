@@ -45,6 +45,7 @@ import {
 } from '@/lib/route-group-ui';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 
 /**
  * Preserve list order within each `route_group` bucket.
@@ -203,6 +204,70 @@ const routePricePanelHeaderBorder: Record<'neutral' | 'charged' | 'metered', str
 };
 
 /** Route modal: visually separate Standard / Charged / Metered cost pricing blocks. */
+function FilterNavSection({
+  title,
+  ariaLabel,
+  children,
+}: {
+  title: string;
+  ariaLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <nav
+      className="bg-white rounded-lg shadow-md overflow-hidden ring-1 ring-black/[0.04]"
+      aria-label={ariaLabel}
+    >
+      <div className="px-3 py-2 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+        {title}
+      </div>
+      <ul className="divide-y divide-gray-100">{children}</ul>
+    </nav>
+  );
+}
+
+function FilterNavButton({
+  label,
+  count,
+  isActive,
+  onClick,
+}: {
+  label: string;
+  count?: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-current={isActive ? 'true' : undefined}
+        className={
+          (isActive
+            ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-600 '
+            : 'text-gray-700 hover:bg-gray-50 border-l-2 border-transparent ') +
+          'w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors'
+        }
+      >
+        <span className="truncate font-medium" title={label}>
+          {label}
+        </span>
+        {count !== undefined ? (
+          <span
+            className={
+              (isActive ? 'bg-blue-100 text-blue-700 ' : 'bg-gray-100 text-gray-600 ') +
+              'shrink-0 rounded-full px-2 py-0.5 text-xs tabular-nums'
+            }
+          >
+            {count}
+          </span>
+        ) : null}
+      </button>
+    </li>
+  );
+}
+
 function RoutePricePanel({
   title,
   subtitle,
@@ -255,7 +320,7 @@ function RoutesContent() {
     charged_factor: '1',
     provider_factor: '1',
   });
-  const [filterModelId, setFilterModelId] = useState('');
+  const [filterVendor, setFilterVendor] = useState('');
   const [filterProviderId, setFilterProviderId] = useState('');
   const [filterRouteGroup, setFilterRouteGroup] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -267,14 +332,24 @@ function RoutesContent() {
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
-    // Read initial filters from URL params
-    const modelId = searchParams.get('model_id');
+    const vendor = searchParams.get('vendor');
+    const providerId = searchParams.get('provider_id');
     const status = searchParams.get('status');
     const routeGroup = searchParams.get('route_group');
-    if (modelId) setFilterModelId(modelId);
-    if (status) setFilterStatus(status);
-    if (routeGroup) setFilterRouteGroup(routeGroup);
+    setFilterVendor(vendor ? normalizeModelVendorInput(vendor) : '');
+    setFilterProviderId(providerId ?? '');
+    setFilterStatus(status ?? '');
+    setFilterRouteGroup(routeGroup ?? '');
   }, [searchParams]);
+
+  useReplaceListPageQuery(() => {
+    const params = new URLSearchParams();
+    if (filterVendor) params.set('vendor', filterVendor);
+    if (filterProviderId) params.set('provider_id', filterProviderId);
+    if (filterRouteGroup) params.set('route_group', filterRouteGroup);
+    if (filterStatus) params.set('status', filterStatus);
+    return params;
+  }, [filterVendor, filterProviderId, filterRouteGroup, filterStatus]);
 
   useEffect(() => {
     fetchData();
@@ -606,10 +681,69 @@ function RoutesContent() {
     return list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   }, [distinctRouteGroups, filterRouteGroup]);
 
+  const vendorFilterOptions = useMemo(() => {
+    const routeCountByVendor = new Map<string, number>();
+    for (const r of routes) {
+      const key = normalizeModelVendorInput(modelMeta.get(r.model_id)?.vendor);
+      routeCountByVendor.set(key, (routeCountByVendor.get(key) ?? 0) + 1);
+    }
+    const keys = new Set<string>();
+    for (const m of models) {
+      keys.add(normalizeModelVendorInput(m.vendor));
+    }
+    for (const key of routeCountByVendor.keys()) {
+      keys.add(key);
+    }
+    return [...keys]
+      .sort((a, b) => {
+        if (a === 'other') return 1;
+        if (b === 'other') return -1;
+        return a.localeCompare(b, undefined, { sensitivity: 'base' });
+      })
+      .map((key) => ({
+        key,
+        label: getModelVendorLabel(key),
+        count: routeCountByVendor.get(key) ?? 0,
+      }));
+  }, [models, routes, modelMeta]);
+
+  const providerRouteCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of routes) {
+      counts.set(r.provider_id, (counts.get(r.provider_id) ?? 0) + 1);
+    }
+    return counts;
+  }, [routes]);
+
+  const routeGroupCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of routes) {
+      const g = normalizeRouteGroup(r.route_group);
+      counts.set(g, (counts.get(g) ?? 0) + 1);
+    }
+    return counts;
+  }, [routes]);
+
+  const statusCounts = useMemo(() => {
+    let active = 0;
+    let inactive = 0;
+    for (const r of routes) {
+      if (r.status === 'active') active += 1;
+      else inactive += 1;
+    }
+    return { all: routes.length, active, inactive };
+  }, [routes]);
+
   /** Groups routes by logical model; each model list is ordered by protocol group then priority. */
   const routesByModel = useMemo(() => {
+    const modelMatchesVendor = (modelId: string) => {
+      if (!filterVendor) return true;
+      return normalizeModelVendorInput(modelMeta.get(modelId)?.vendor) === filterVendor;
+    };
+
     const routeByModelId = new Map<string, (typeof routes)[number][]>();
     for (const r of routes) {
+      if (!modelMatchesVendor(r.model_id)) continue;
       if (filterProviderId && r.provider_id !== filterProviderId) continue;
       if (filterStatus && r.status !== filterStatus) continue;
       if (filterRouteGroup && normalizeRouteGroup(r.route_group) !== filterRouteGroup) continue;
@@ -625,11 +759,11 @@ function RoutesContent() {
     // Ensure models without routes are still visible for quick onboarding.
     const candidateModelIds = new Set<string>();
     for (const model of models) {
-      if (filterModelId && model.id !== filterModelId) continue;
+      if (!modelMatchesVendor(model.id)) continue;
       candidateModelIds.add(model.id);
     }
     for (const route of routes) {
-      if (filterModelId && route.model_id !== filterModelId) continue;
+      if (!modelMatchesVendor(route.model_id)) continue;
       candidateModelIds.add(route.model_id);
     }
 
@@ -652,7 +786,7 @@ function RoutesContent() {
       return { model_id, title, groupRoutes, activeCount: active, vendor };
     })
       .filter((group): group is { model_id: string; title: string; groupRoutes: (typeof routes)[number][]; activeCount: number; vendor: string } => group !== null);
-  }, [routes, models, modelMeta, filterModelId, filterProviderId, filterRouteGroup, filterStatus]);
+  }, [routes, models, modelMeta, filterVendor, filterProviderId, filterRouteGroup, filterStatus]);
 
   const routesByVendor = useMemo(() => {
     const byVendor = new Map<string, (typeof routesByModel)>();
@@ -740,71 +874,96 @@ function RoutesContent() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="mb-8 flex flex-wrap gap-4">
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">Filter by Model</label>
-          <select
-            value={filterModelId}
-            onChange={(e) => setFilterModelId(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          >
-            <option value="">All Models</option>
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>{m.display_name ? `${m.display_name} (${m.id})` : m.id}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">Filter by Provider</label>
-          <select
-            value={filterProviderId}
-            onChange={(e) => setFilterProviderId(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          >
-            <option value="">All Providers</option>
-            {providers.map((p) => (
-              <option key={p.id} value={p.id}>{p.name ? `${p.name} (${p.id})` : p.id}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">Filter by Route group</label>
-          <select
-            value={filterRouteGroup}
-            onChange={(e) => setFilterRouteGroup(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[10rem]"
-          >
-            <option value="">All groups</option>
-            {routeGroupFilterOptions.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">Filter by Status</label>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-      </div>
+      <div className="flex gap-6 items-start">
+        <aside className="w-56 shrink-0 space-y-4">
+          <FilterNavSection title="Status" ariaLabel="Status filter">
+            <FilterNavButton
+              label="All"
+              count={statusCounts.all}
+              isActive={!filterStatus}
+              onClick={() => setFilterStatus('')}
+            />
+            <FilterNavButton
+              label="Active"
+              count={statusCounts.active}
+              isActive={filterStatus === 'active'}
+              onClick={() => setFilterStatus('active')}
+            />
+            <FilterNavButton
+              label="Inactive"
+              count={statusCounts.inactive}
+              isActive={filterStatus === 'inactive'}
+              onClick={() => setFilterStatus('inactive')}
+            />
+          </FilterNavSection>
 
-      {/* One card per model; grouped by model vendor. Each route_group is a labeled section (including a sole default group); multiple groups are separated by a thick top border; order inside a section is upstream_protocol (openai→anthropic→gemini, then unknowns A–Z), then priority-desc. */}
-      {routesByModel.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-300/90 shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] text-center py-12 text-gray-500">
-          No models or routes found
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {routesByVendor.map(({ vendor, modelGroups, modelCount, routeCount }) => (
+          <FilterNavSection title="Route Group" ariaLabel="Route group filter">
+            <FilterNavButton
+              label="All"
+              count={routes.length}
+              isActive={!filterRouteGroup}
+              onClick={() => setFilterRouteGroup('')}
+            />
+            {routeGroupFilterOptions.map((g) => (
+              <FilterNavButton
+                key={g}
+                label={g}
+                count={routeGroupCounts.get(g) ?? 0}
+                isActive={filterRouteGroup === g}
+                onClick={() => setFilterRouteGroup(g)}
+              />
+            ))}
+          </FilterNavSection>
+
+          <FilterNavSection title="Vendor" ariaLabel="Vendor filter">
+            <FilterNavButton
+              label="All"
+              count={routes.length}
+              isActive={!filterVendor}
+              onClick={() => setFilterVendor('')}
+            />
+            {vendorFilterOptions.map(({ key, label, count }) => (
+              <FilterNavButton
+                key={key}
+                label={label}
+                count={count}
+                isActive={filterVendor === key}
+                onClick={() => setFilterVendor(key)}
+              />
+            ))}
+          </FilterNavSection>
+
+          <FilterNavSection title="Provider" ariaLabel="Provider filter">
+            <FilterNavButton
+              label="All"
+              count={routes.length}
+              isActive={!filterProviderId}
+              onClick={() => setFilterProviderId('')}
+            />
+            {providers.map((p) => {
+              const label = p.name ? `${p.name} (${p.id})` : p.id;
+              return (
+                <FilterNavButton
+                  key={p.id}
+                  label={label}
+                  count={providerRouteCounts.get(p.id) ?? 0}
+                  isActive={filterProviderId === p.id}
+                  onClick={() => setFilterProviderId(p.id)}
+                />
+              );
+            })}
+          </FilterNavSection>
+        </aside>
+
+        <section className="min-w-0 flex-1">
+          {/* One card per model; grouped by model vendor. Each route_group is a labeled section (including a sole default group); multiple groups are separated by a thick top border; order inside a section is upstream_protocol (openai→anthropic→gemini, then unknowns A–Z), then priority-desc. */}
+          {routesByModel.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-300/90 shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] text-center py-12 text-gray-500">
+              No models or routes found
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {routesByVendor.map(({ vendor, modelGroups, modelCount, routeCount }) => (
             <section key={vendor} className="space-y-4">
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="text-lg font-semibold text-gray-900">{getModelVendorLabel(vendor)}</h2>
@@ -999,8 +1158,10 @@ function RoutesContent() {
               </div>
             </section>
           ))}
-        </div>
-      )}
+            </div>
+          )}
+        </section>
+      </div>
 
       {/* Modal */}
       {showModal && (
