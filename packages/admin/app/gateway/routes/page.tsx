@@ -203,7 +203,7 @@ const routePricePanelHeaderBorder: Record<'neutral' | 'charged' | 'metered', str
   metered: 'border-b border-emerald-200/80',
 };
 
-/** Route modal: visually separate Standard / Charged / Metered cost pricing blocks. */
+/** Left filter panel: compact grouped nav, low visual weight vs route cards. */
 function FilterNavSection({
   title,
   ariaLabel,
@@ -215,13 +215,13 @@ function FilterNavSection({
 }) {
   return (
     <nav
-      className="bg-white rounded-lg shadow-md overflow-hidden ring-1 ring-black/[0.04]"
+      className="overflow-hidden rounded-lg border border-gray-200/70 bg-white/50"
       aria-label={ariaLabel}
     >
-      <div className="px-3 py-2 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
         {title}
       </div>
-      <ul className="divide-y divide-gray-100">{children}</ul>
+      <ul className="space-y-0.5 px-1 pb-1">{children}</ul>
     </nav>
   );
 }
@@ -245,9 +245,9 @@ function FilterNavButton({
         aria-current={isActive ? 'true' : undefined}
         className={
           (isActive
-            ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-600 '
-            : 'text-gray-700 hover:bg-gray-50 border-l-2 border-transparent ') +
-          'w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors'
+            ? 'bg-blue-100/80 text-blue-800 ring-1 ring-blue-200/80 '
+            : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 ') +
+          'flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors'
         }
       >
         <span className="truncate font-medium" title={label}>
@@ -256,8 +256,8 @@ function FilterNavButton({
         {count !== undefined ? (
           <span
             className={
-              (isActive ? 'bg-blue-100 text-blue-700 ' : 'bg-gray-100 text-gray-600 ') +
-              'shrink-0 rounded-full px-2 py-0.5 text-xs tabular-nums'
+              (isActive ? 'bg-blue-200/60 text-blue-800 ' : 'bg-gray-100/90 text-gray-500 ') +
+              'shrink-0 rounded px-1.5 py-0.5 text-[10px] tabular-nums'
             }
           >
             {count}
@@ -820,6 +820,35 @@ function RoutesContent() {
     });
   }, [routesByModel, modelMeta]);
 
+  const visibleModelCount = routesByModel.length;
+  const visibleRouteCount = useMemo(
+    () => routesByModel.reduce((sum, g) => sum + g.groupRoutes.length, 0),
+    [routesByModel]
+  );
+
+  const hasActiveFilters = Boolean(
+    filterVendor || filterProviderId || filterRouteGroup || filterStatus
+  );
+
+  const clearAllFilters = () => {
+    setFilterVendor('');
+    setFilterProviderId('');
+    setFilterRouteGroup('');
+    setFilterStatus('');
+  };
+
+  const activeFilterSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (filterStatus) parts.push(filterStatus === 'active' ? 'Active' : 'Inactive');
+    if (filterRouteGroup) parts.push(`Group: ${filterRouteGroup}`);
+    if (filterVendor) parts.push(getModelVendorLabel(filterVendor));
+    if (filterProviderId) {
+      const p = providers.find((x) => x.id === filterProviderId);
+      parts.push(p?.name || filterProviderId);
+    }
+    return parts;
+  }, [filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers]);
+
   const selectedProvider = useMemo(
     () => providers.find((p) => p.id === formData.provider_id),
     [providers, formData.provider_id]
@@ -858,309 +887,373 @@ function RoutesContent() {
   }
 
   return (
-    <div className="min-h-full bg-gray-100/90 p-8 pb-12">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Model Routes</h1>
-          <p className="text-sm text-gray-500 mt-1">Configure model-to-provider routing</p>
-        </div>
-        <button
-          onClick={() => handleCreate()}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <PlusIcon className="h-5 w-5" />
-          New Route
-        </button>
+    <div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
+      {/* Page title */}
+      <div className="mb-5 sm:mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Model Routes</h1>
+        <p className="mt-1 text-sm text-gray-500">Configure model-to-provider routing</p>
       </div>
 
-      <div className="flex gap-6 items-start">
-        <aside className="w-56 shrink-0 space-y-4">
-          <FilterNavSection title="Status" ariaLabel="Status filter">
-            <FilterNavButton
-              label="All"
-              count={statusCounts.all}
-              isActive={!filterStatus}
-              onClick={() => setFilterStatus('')}
-            />
-            <FilterNavButton
-              label="Active"
-              count={statusCounts.active}
-              isActive={filterStatus === 'active'}
-              onClick={() => setFilterStatus('active')}
-            />
-            <FilterNavButton
-              label="Inactive"
-              count={statusCounts.inactive}
-              isActive={filterStatus === 'inactive'}
-              onClick={() => setFilterStatus('inactive')}
-            />
-          </FilterNavSection>
-
-          <FilterNavSection title="Route Group" ariaLabel="Route group filter">
-            <FilterNavButton
-              label="All"
-              count={routes.length}
-              isActive={!filterRouteGroup}
-              onClick={() => setFilterRouteGroup('')}
-            />
-            {routeGroupFilterOptions.map((g) => (
-              <FilterNavButton
-                key={g}
-                label={g}
-                count={routeGroupCounts.get(g) ?? 0}
-                isActive={filterRouteGroup === g}
-                onClick={() => setFilterRouteGroup(g)}
-              />
-            ))}
-          </FilterNavSection>
-
-          <FilterNavSection title="Vendor" ariaLabel="Vendor filter">
-            <FilterNavButton
-              label="All"
-              count={routes.length}
-              isActive={!filterVendor}
-              onClick={() => setFilterVendor('')}
-            />
-            {vendorFilterOptions.map(({ key, label, count }) => (
-              <FilterNavButton
-                key={key}
-                label={label}
-                count={count}
-                isActive={filterVendor === key}
-                onClick={() => setFilterVendor(key)}
-              />
-            ))}
-          </FilterNavSection>
-
-          <FilterNavSection title="Provider" ariaLabel="Provider filter">
-            <FilterNavButton
-              label="All"
-              count={routes.length}
-              isActive={!filterProviderId}
-              onClick={() => setFilterProviderId('')}
-            />
-            {providers.map((p) => {
-              const label = p.name ? `${p.name} (${p.id})` : p.id;
-              return (
-                <FilterNavButton
-                  key={p.id}
-                  label={label}
-                  count={providerRouteCounts.get(p.id) ?? 0}
-                  isActive={filterProviderId === p.id}
-                  onClick={() => setFilterProviderId(p.id)}
-                />
-              );
-            })}
-          </FilterNavSection>
-        </aside>
-
-        <section className="min-w-0 flex-1">
-          {/* One card per model; grouped by model vendor. Each route_group is a labeled section (including a sole default group); multiple groups are separated by a thick top border; order inside a section is upstream_protocol (openai→anthropic→gemini, then unknowns A–Z), then priority-desc. */}
-          {routesByModel.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-300/90 shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] text-center py-12 text-gray-500">
-              No models or routes found
-            </div>
-          ) : (
-            <div className="space-y-8">
-              {routesByVendor.map(({ vendor, modelGroups, modelCount, routeCount }) => (
-            <section key={vendor} className="space-y-4">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-lg font-semibold text-gray-900">{getModelVendorLabel(vendor)}</h2>
-                <span className="text-xs text-gray-500">{modelCount} models · {routeCount} routes</span>
+      {/* Workbench: filter panel (left) + route configurations (right) */}
+      <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
+        <div className="flex min-w-0 flex-col lg:flex-row lg:items-start">
+          {/* Filter panel — scroll with main; sticky when shorter than viewport (no nested scrollbar) */}
+          <aside className="w-full shrink-0 border-b border-gray-200/80 bg-slate-50/80 lg:sticky lg:top-0 lg:w-60 lg:self-start lg:border-b-0 lg:border-r">
+            <div className="space-y-3 p-4">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">Filters</h2>
+                <p className="mt-0.5 text-xs text-gray-500">Narrow models and routes</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 xl:gap-8">
-                {modelGroups.map(({ model_id, title, groupRoutes, activeCount }) => {
-                  const meta = modelMeta.get(model_id);
-                  const modelStatsTitle = `Context: ${meta?.context_window ?? '—'} · Max output: ${meta?.max_tokens ?? '—'}`;
+
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200/60 bg-white/60 px-3 py-2">
+                <span className="text-xs text-gray-600">
+                  <span className="font-semibold tabular-nums text-gray-900">{visibleModelCount}</span>{' '}
+                  models ·{' '}
+                  <span className="font-semibold tabular-nums text-gray-900">{visibleRouteCount}</span>{' '}
+                  routes
+                </span>
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+
+              <FilterNavSection title="Status" ariaLabel="Status filter">
+                <FilterNavButton
+                  label="All"
+                  count={statusCounts.all}
+                  isActive={!filterStatus}
+                  onClick={() => setFilterStatus('')}
+                />
+                <FilterNavButton
+                  label="Active"
+                  count={statusCounts.active}
+                  isActive={filterStatus === 'active'}
+                  onClick={() => setFilterStatus('active')}
+                />
+                <FilterNavButton
+                  label="Inactive"
+                  count={statusCounts.inactive}
+                  isActive={filterStatus === 'inactive'}
+                  onClick={() => setFilterStatus('inactive')}
+                />
+              </FilterNavSection>
+
+              <FilterNavSection title="Route Group" ariaLabel="Route group filter">
+                <FilterNavButton
+                  label="All"
+                  count={routes.length}
+                  isActive={!filterRouteGroup}
+                  onClick={() => setFilterRouteGroup('')}
+                />
+                {routeGroupFilterOptions.map((g) => (
+                  <FilterNavButton
+                    key={g}
+                    label={g}
+                    count={routeGroupCounts.get(g) ?? 0}
+                    isActive={filterRouteGroup === g}
+                    onClick={() => setFilterRouteGroup(g)}
+                  />
+                ))}
+              </FilterNavSection>
+
+              <FilterNavSection title="Vendor" ariaLabel="Vendor filter">
+                <FilterNavButton
+                  label="All"
+                  count={routes.length}
+                  isActive={!filterVendor}
+                  onClick={() => setFilterVendor('')}
+                />
+                {vendorFilterOptions.map(({ key, label, count }) => (
+                  <FilterNavButton
+                    key={key}
+                    label={label}
+                    count={count}
+                    isActive={filterVendor === key}
+                    onClick={() => setFilterVendor(key)}
+                  />
+                ))}
+              </FilterNavSection>
+
+              <FilterNavSection title="Provider" ariaLabel="Provider filter">
+                <FilterNavButton
+                  label="All"
+                  count={routes.length}
+                  isActive={!filterProviderId}
+                  onClick={() => setFilterProviderId('')}
+                />
+                {providers.map((p) => {
+                  const label = p.name ? `${p.name} (${p.id})` : p.id;
                   return (
-                    <div
-                      key={model_id}
-                      className="flex flex-col rounded-xl border border-gray-300/90 bg-white shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] overflow-hidden min-w-0"
-                    >
-                      <div className="px-4 py-3 bg-gradient-to-b from-gray-50 to-white border-b border-gray-200 flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                            <h3 className="min-w-0 text-sm font-semibold text-gray-900 leading-snug truncate" title={title}>
-                              {title}
-                            </h3>
-                            <button
-                              type="button"
-                              onClick={() => void copyModelId(model_id)}
-                              className="shrink-0 rounded-md p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-                              title={copiedModelId === model_id ? '已复制 model id' : `Copy model id: ${model_id}`}
-                              aria-label={`Copy model id ${model_id}`}
-                            >
-                              <ClipboardDocumentIcon className="h-4 w-4" />
-                            </button>
-                            {copiedModelId === model_id ? (
-                              <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
-                                已复制 model id
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="text-[11px] text-gray-500 mt-0.5 truncate" title={modelStatsTitle}>
-                            Context {formatCompactTokens(meta?.context_window)} · Max output {formatCompactTokens(meta?.max_tokens)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleCreate(model_id)}
-                            className="rounded-md p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-                            title={`New route for ${title}`}
-                            aria-label={`New route for ${title}`}
-                          >
-                            <PlusIcon className="h-5 w-5" />
-                          </button>
-                          <span
-                            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs tabular-nums font-semibold ring-1 ring-inset ${
-                              activeCount === 0
-                                ? 'bg-red-50 text-red-700 ring-red-200'
-                                : 'bg-green-50 text-green-700 ring-green-200'
-                            }`}
-                            title={`${activeCount} active / ${groupRoutes.length} total routes`}
-                          >
-                            {activeCount}/{groupRoutes.length}
-                          </span>
-                        </div>
-                      </div>
-                    {groupRoutes.length === 0 ? (
-                      <div className="flex-1 flex items-center justify-center px-4 py-6 text-center">
-                        <div>
-                          <p className="text-sm text-gray-600">No routes yet</p>
-                          <p className="text-xs text-gray-500 mt-1">Click + to add the first route</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col flex-1 min-h-0">
-                        {(() => {
-                          const routeSections = splitRoutesByRouteGroup(groupRoutes);
-                          return routeSections.map((section, sectionIdx) => (
-                            <div
-                              key={section.group}
-                              className={sectionIdx > 0 ? 'border-t-2 border-gray-300/90' : ''}
-                            >
-                              <div
-                                className="flex items-center justify-between gap-2 border-b border-gray-200 bg-gradient-to-r from-gray-100/95 to-gray-50/80 px-4 py-2"
-                                role="presentation"
-                              >
-                                <span
-                                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(section.group)}`}
-                                >
-                                  {section.group}
-                                </span>
-                                <span className="text-[11px] tabular-nums text-gray-500">
-                                  {section.routes.length} route{section.routes.length === 1 ? '' : 's'}
-                                </span>
-                              </div>
-                              <ul className="flex flex-col divide-y divide-gray-200/80">
-                                {section.routes.map((route) => {
-                                  const chargedF = parseChargedFactorFromPriceOverride(route.price_override);
-                                  const meteredF = parseMeteredFactorFromPriceOverride(route.price_override);
-                                  const chargedDisp =
-                                    chargedF != null && Number.isFinite(chargedF) ? chargedF : null;
-                                  const meteredDisp =
-                                    meteredF != null && Number.isFinite(meteredF) ? meteredF : null;
-                                  return (
-                                    <li
-                                      key={route.id}
-                                      className="px-4 py-3 hover:bg-gray-50 transition-colors flex items-start gap-3"
-                                    >
-                                      <div className="shrink-0 pt-0.5">
-                                        <input
-                                          type="checkbox"
-                                          checked={route.status === 'active'}
-                                          disabled={togglingId === route.id}
-                                          onChange={() => handleToggleStatus(route)}
-                                          className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
-                                          aria-label={
-                                            route.status === 'active'
-                                              ? 'Route enabled (uncheck to disable)'
-                                              : 'Route disabled (check to enable)'
-                                          }
-                                        />
-                                      </div>
-                                      <div className="min-w-0 flex-1 flex items-start gap-3">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleEdit(route)}
-                                          className="min-w-0 flex-1 text-left rounded-md -mx-1 px-1 py-0.5 hover:bg-gray-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-                                        >
-                                          <div className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug">
-                                            <div className="flex min-w-0 items-center gap-2">
-                                              <div
-                                                className="flex shrink-0 items-center gap-1.5"
-                                                title={route.upstream_protocol}
-                                              >
-                                                <UpstreamProtocolBrandIcon protocol={route.upstream_protocol} />
-                                                <span
-                                                  className="text-[11px] font-semibold tabular-nums text-gray-600"
-                                                  title="Priority (failover order)"
-                                                >
-                                                  {route.priority}
-                                                </span>
-                                              </div>
-                                              <span
-                                                className="min-w-0 flex-1 truncate font-medium text-gray-900"
-                                                title={route.provider_name || route.provider_id}
-                                              >
-                                                {route.provider_name || route.provider_id}
-                                              </span>
-                                            </div>
-                                            <div
-                                              className="min-w-0 truncate text-left font-mono text-[11px] text-gray-600"
-                                              title={route.provider_model_name}
-                                            >
-                                              {route.provider_model_name}
-                                            </div>
-                                          </div>
-                                        </button>
-                                        <div
-                                          className="flex shrink-0 flex-col items-end justify-start gap-1.5 self-stretch pt-0.5 text-right"
-                                          role="group"
-                                          aria-label="Charged and metered catalog factors"
-                                        >
-                                          <span
-                                            className={
-                                              chargedDisp != null
-                                                ? factorChipClassForValue(chargedDisp)
-                                                : `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
-                                            }
-                                            title="charged_factor vs catalog (price_override)"
-                                          >
-                                            {chargedDisp != null ? `Ch ×${formatFactorValue(chargedDisp)}` : 'Ch —'}
-                                          </span>
-                                          <span
-                                            className={
-                                              meteredDisp != null
-                                                ? factorChipClassForValue(meteredDisp)
-                                                : `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
-                                            }
-                                            title="metered_factor vs catalog (price_override; may use provider_factor)"
-                                          >
-                                            {meteredDisp != null ? `M ×${formatFactorValue(meteredDisp)}` : 'M —'}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </li>
-                                  );
-                                })}
-                              </ul>
-                            </div>
-                          ));
-                        })()}
-                      </div>
-                    )}
-                  </div>
+                    <FilterNavButton
+                      key={p.id}
+                      label={label}
+                      count={providerRouteCounts.get(p.id) ?? 0}
+                      isActive={filterProviderId === p.id}
+                      onClick={() => setFilterProviderId(p.id)}
+                    />
                   );
                 })}
-              </div>
-            </section>
-          ))}
+              </FilterNavSection>
             </div>
-          )}
-        </section>
+          </aside>
+
+          {/* Route configuration workspace */}
+          <section className="min-w-0 flex-1 bg-white">
+            <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-gray-900">Route Configurations</h2>
+                {activeFilterSummary.length > 0 ? (
+                  <p className="mt-0.5 truncate text-xs text-gray-500" title={activeFilterSummary.join(' · ')}>
+                    Filtered by: {activeFilterSummary.join(' · ')}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-xs text-gray-500">All models and routes</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCreate()}
+                className="flex shrink-0 items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <PlusIcon className="h-5 w-5" />
+                New Route
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              {routesByModel.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/50 py-16 text-center text-gray-500">
+                  <p className="text-sm font-medium text-gray-600">No models or routes found</p>
+                  {hasActiveFilters ? (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Try adjusting filters or{' '}
+                      <button
+                        type="button"
+                        onClick={clearAllFilters}
+                        className="font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:underline"
+                      >
+                        clear all filters
+                      </button>
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="space-y-6 sm:space-y-8">
+                  {routesByVendor.map(({ vendor, modelGroups, modelCount, routeCount }) => (
+                    <section
+                      key={vendor}
+                      className="space-y-4 rounded-xl border border-gray-200/80 bg-gray-50/40 p-4 sm:p-5"
+                    >
+                      <div className="flex items-baseline justify-between gap-3 border-b border-gray-200/60 pb-2">
+                        <h3 className="text-base font-semibold text-gray-900">{getModelVendorLabel(vendor)}</h3>
+                        <span className="shrink-0 text-xs text-gray-500">
+                          {modelCount} models · {routeCount} routes
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3 xl:gap-6 2xl:grid-cols-4">
+                        {modelGroups.map(({ model_id, title, groupRoutes, activeCount }) => {
+                          const meta = modelMeta.get(model_id);
+                          const modelStatsTitle = `Context: ${meta?.context_window ?? '—'} · Max output: ${meta?.max_tokens ?? '—'}`;
+                          return (
+                            <div
+                              key={model_id}
+                              className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm"
+                            >
+                              <div className="flex items-start justify-between gap-2 border-b border-gray-100 bg-white px-4 py-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                                    <h4
+                                      className="min-w-0 truncate text-sm font-semibold leading-snug text-gray-900"
+                                      title={title}
+                                    >
+                                      {title}
+                                    </h4>
+                                    <button
+                                      type="button"
+                                      onClick={() => void copyModelId(model_id)}
+                                      className="shrink-0 rounded-md p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                                      title={copiedModelId === model_id ? '已复制 model id' : `Copy model id: ${model_id}`}
+                                      aria-label={`Copy model id ${model_id}`}
+                                    >
+                                      <ClipboardDocumentIcon className="h-4 w-4" />
+                                    </button>
+                                    {copiedModelId === model_id ? (
+                                      <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
+                                        已复制 model id
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <p className="mt-0.5 truncate text-[11px] text-gray-500" title={modelStatsTitle}>
+                                    Context {formatCompactTokens(meta?.context_window)} · Max output{' '}
+                                    {formatCompactTokens(meta?.max_tokens)}
+                                  </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCreate(model_id)}
+                                    className="rounded-md p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                                    title={`New route for ${title}`}
+                                    aria-label={`New route for ${title}`}
+                                  >
+                                    <PlusIcon className="h-5 w-5" />
+                                  </button>
+                                  <span
+                                    className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset ${
+                                      activeCount === 0
+                                        ? 'bg-red-50 text-red-700 ring-red-200'
+                                        : 'bg-green-50 text-green-700 ring-green-200'
+                                    }`}
+                                    title={`${activeCount} active / ${groupRoutes.length} total routes`}
+                                  >
+                                    {activeCount}/{groupRoutes.length}
+                                  </span>
+                                </div>
+                              </div>
+                              {groupRoutes.length === 0 ? (
+                                <div className="flex flex-1 items-center justify-center px-4 py-6 text-center">
+                                  <div>
+                                    <p className="text-sm text-gray-600">No routes yet</p>
+                                    <p className="mt-1 text-xs text-gray-500">Click + to add the first route</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex min-h-0 flex-1 flex-col">
+                                  {(() => {
+                                    const routeSections = splitRoutesByRouteGroup(groupRoutes);
+                                    return routeSections.map((section, sectionIdx) => (
+                                      <div
+                                        key={section.group}
+                                        className={sectionIdx > 0 ? 'border-t border-gray-200/80' : ''}
+                                      >
+                                        <div
+                                          className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-1.5"
+                                          role="presentation"
+                                        >
+                                          <span
+                                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(section.group)}`}
+                                          >
+                                            {section.group}
+                                          </span>
+                                          <span className="text-[11px] tabular-nums text-gray-500">
+                                            {section.routes.length} route{section.routes.length === 1 ? '' : 's'}
+                                          </span>
+                                        </div>
+                                        <ul className="flex flex-col divide-y divide-gray-100">
+                                          {section.routes.map((route) => {
+                                            const chargedF = parseChargedFactorFromPriceOverride(route.price_override);
+                                            const meteredF = parseMeteredFactorFromPriceOverride(route.price_override);
+                                            const chargedDisp =
+                                              chargedF != null && Number.isFinite(chargedF) ? chargedF : null;
+                                            const meteredDisp =
+                                              meteredF != null && Number.isFinite(meteredF) ? meteredF : null;
+                                            return (
+                                              <li
+                                                key={route.id}
+                                                className="flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/80"
+                                              >
+                                                <div className="shrink-0 pt-0.5">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={route.status === 'active'}
+                                                    disabled={togglingId === route.id}
+                                                    onChange={() => handleToggleStatus(route)}
+                                                    className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    aria-label={
+                                                      route.status === 'active'
+                                                        ? 'Route enabled (uncheck to disable)'
+                                                        : 'Route disabled (check to enable)'
+                                                    }
+                                                  />
+                                                </div>
+                                                <div className="flex min-w-0 flex-1 items-start gap-3">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleEdit(route)}
+                                                    className="-mx-1 min-w-0 flex-1 rounded-md px-1 py-0.5 text-left hover:bg-gray-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                                                  >
+                                                    <div className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug">
+                                                      <div className="flex min-w-0 items-center gap-2">
+                                                        <div
+                                                          className="flex shrink-0 items-center gap-1.5"
+                                                          title={route.upstream_protocol}
+                                                        >
+                                                          <UpstreamProtocolBrandIcon protocol={route.upstream_protocol} />
+                                                          <span
+                                                            className="text-[11px] font-semibold tabular-nums text-gray-600"
+                                                            title="Priority (failover order)"
+                                                          >
+                                                            {route.priority}
+                                                          </span>
+                                                        </div>
+                                                        <span
+                                                          className="min-w-0 flex-1 truncate font-medium text-gray-900"
+                                                          title={route.provider_name || route.provider_id}
+                                                        >
+                                                          {route.provider_name || route.provider_id}
+                                                        </span>
+                                                      </div>
+                                                      <div
+                                                        className="min-w-0 truncate text-left font-mono text-[11px] text-gray-600"
+                                                        title={route.provider_model_name}
+                                                      >
+                                                        {route.provider_model_name}
+                                                      </div>
+                                                    </div>
+                                                  </button>
+                                                  <div
+                                                    className="flex shrink-0 flex-col items-end justify-start gap-1.5 self-stretch pt-0.5 text-right"
+                                                    role="group"
+                                                    aria-label="Charged and metered catalog factors"
+                                                  >
+                                                    <span
+                                                      className={
+                                                        chargedDisp != null
+                                                          ? factorChipClassForValue(chargedDisp)
+                                                          : `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
+                                                      }
+                                                      title="charged_factor vs catalog (price_override)"
+                                                    >
+                                                      {chargedDisp != null ? `Ch ×${formatFactorValue(chargedDisp)}` : 'Ch —'}
+                                                    </span>
+                                                    <span
+                                                      className={
+                                                        meteredDisp != null
+                                                          ? factorChipClassForValue(meteredDisp)
+                                                          : `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
+                                                      }
+                                                      title="metered_factor vs catalog (price_override; may use provider_factor)"
+                                                    >
+                                                      {meteredDisp != null ? `M ×${formatFactorValue(meteredDisp)}` : 'M —'}
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              </li>
+                                            );
+                                          })}
+                                        </ul>
+                                      </div>
+                                    ));
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
 
       {/* Modal */}

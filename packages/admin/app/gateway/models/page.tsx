@@ -4,7 +4,7 @@
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
  * 左侧 Vendor 列表 + 右侧当前 Vendor 模型表；含 All 总览；`?vendor=` 持久化选中项（`useSearchParams` + Suspense）。
  */
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   TrashIcon,
@@ -371,6 +371,71 @@ function MetadataPreviewModal(props: {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Left filter panel: compact vendor nav, aligned with Model Routes page. */
+function FilterNavSection({
+  title,
+  ariaLabel,
+  children,
+}: {
+  title: string;
+  ariaLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <nav
+      className="overflow-hidden rounded-lg border border-gray-200/70 bg-white/50"
+      aria-label={ariaLabel}
+    >
+      <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        {title}
+      </div>
+      <ul className="space-y-0.5 px-1 pb-1">{children}</ul>
+    </nav>
+  );
+}
+
+function FilterNavButton({
+  label,
+  count,
+  isActive,
+  onClick,
+}: {
+  label: string;
+  count?: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-current={isActive ? 'true' : undefined}
+        className={
+          (isActive
+            ? 'bg-blue-100/80 text-blue-800 ring-1 ring-blue-200/80 '
+            : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 ') +
+          'flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors'
+        }
+      >
+        <span className="truncate font-medium" title={label}>
+          {label}
+        </span>
+        {count !== undefined ? (
+          <span
+            className={
+              (isActive ? 'bg-blue-200/60 text-blue-800 ' : 'bg-gray-100/90 text-gray-500 ') +
+              'shrink-0 rounded px-1.5 py-0.5 text-[10px] tabular-nums'
+            }
+          >
+            {count}
+          </span>
+        ) : null}
+      </button>
+    </li>
   );
 }
 
@@ -779,271 +844,260 @@ function ModelsContent() {
   const isAllVendors = selectedVendor === ALL_VENDORS_KEY;
   const activeVendorKey = isAllVendors ? vendorKeys[0] ?? 'other' : selectedVendor || vendorKeys[0] || 'other';
   const activeVendorTitle = isAllVendors ? 'All vendors' : getModelVendorLabel(activeVendorKey);
+  const hasVendorFilter = !isAllVendors;
 
   return (
-    <div className="min-h-full bg-gray-100/90 p-8 pb-12">
-      {/* Header */}
-      <div className="flex justify-between items-start gap-6 mb-6">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">Models</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Maintain the models {OCTAFUSE_GATEWAY_PRODUCT} exposes to clients. Seed rows from the built-in catalog with
-            Import, or add definitions manually with New.
-          </p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {models.length} model{models.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-3 pt-1">
-          <button
-            type="button"
-            onClick={openImportCatalogModal}
-            disabled={importSubmitting}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white text-gray-800 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
-          >
-            <ArrowDownTrayIcon className="h-5 w-5" />
-            Import
-          </button>
-          <button
-            type="button"
-            onClick={() => handleCreate()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <PlusIcon className="h-5 w-5" />
-            New
-          </button>
-        </div>
+    <div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
+      {/* Page title */}
+      <div className="mb-5 sm:mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Models</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Maintain the models {OCTAFUSE_GATEWAY_PRODUCT} exposes to clients. Seed rows from the built-in catalog with
+          Import, or add definitions manually with New.
+        </p>
       </div>
 
-      {/* Vendor sidebar + current vendor models */}
-      {models.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-300/90 shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] text-center py-12 text-gray-500">
-          No models found
-        </div>
-      ) : (
-        <div className="flex gap-6 items-start">
-          <aside className="w-56 shrink-0">
-            <nav
-              className="bg-white rounded-lg shadow-md overflow-hidden ring-1 ring-black/[0.04]"
-              aria-label="Vendor filter"
-            >
-              <div className="px-3 py-2 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vendors
-              </div>
-              <ul className="max-h-[calc(100vh-14rem)] overflow-y-auto divide-y divide-gray-100">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedVendor(ALL_VENDORS_KEY)}
-                    aria-current={isAllVendors ? 'true' : undefined}
-                    className={
-                      (isAllVendors
-                        ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-600 '
-                        : 'text-gray-700 hover:bg-gray-50 border-l-2 border-transparent ') +
-                      'w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors'
-                    }
-                  >
-                    <span className="truncate font-medium">All</span>
-                    <span
-                      className={
-                        (isAllVendors ? 'bg-blue-100 text-blue-700 ' : 'bg-gray-100 text-gray-600 ') +
-                        'shrink-0 rounded-full px-2 py-0.5 text-xs tabular-nums'
-                      }
-                    >
-                      {models.length}
-                    </span>
-                  </button>
-                </li>
-                {modelsByVendor.map(([vendorKey, items]) => {
-                  const label = getModelVendorLabel(vendorKey);
-                  const isActive = selectedVendor === vendorKey;
-                  return (
-                    <li key={vendorKey}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedVendor(vendorKey)}
-                        aria-current={isActive ? 'true' : undefined}
-                        className={
-                          (isActive
-                            ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-600 '
-                            : 'text-gray-700 hover:bg-gray-50 border-l-2 border-transparent ') +
-                          'w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors'
-                        }
-                      >
-                        <span className="truncate font-medium" title={label}>
-                          {label}
-                        </span>
-                        <span
-                          className={
-                            (isActive ? 'bg-blue-100 text-blue-700 ' : 'bg-gray-100 text-gray-600 ') +
-                            'shrink-0 rounded-full px-2 py-0.5 text-xs tabular-nums'
-                          }
-                        >
-                          {items.length}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
-          </aside>
+      {/* Workbench: vendor filter (left) + model catalog (right) */}
+      <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
+        <div className="flex min-w-0 flex-col lg:flex-row lg:items-start">
+          {/* Vendor filter panel — scroll with main; sticky when shorter than viewport */}
+          {models.length > 0 ? (
+            <aside className="w-full shrink-0 border-b border-gray-200/80 bg-slate-50/80 lg:sticky lg:top-0 lg:w-60 lg:self-start lg:border-b-0 lg:border-r">
+              <div className="space-y-3 p-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">Filters</h2>
+                  <p className="mt-0.5 text-xs text-gray-500">Browse by vendor</p>
+                </div>
 
-          <section className="min-w-0 flex-1 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900 truncate" title={activeVendorTitle}>
-                  {activeVendorTitle}
-                </h2>
-                <p className="text-xs text-gray-500">
-                  {selectedVendorItems.length} model{selectedVendorItems.length !== 1 ? 's' : ''}
-                </p>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200/60 bg-white/60 px-3 py-2">
+                  <span className="text-xs text-gray-600">
+                    <span className="font-semibold tabular-nums text-gray-900">{models.length}</span> models
+                    {hasVendorFilter ? (
+                      <>
+                        {' '}
+                        · showing{' '}
+                        <span className="font-semibold tabular-nums text-gray-900">
+                          {selectedVendorItems.length}
+                        </span>
+                      </>
+                    ) : null}
+                  </span>
+                  {hasVendorFilter ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVendor(ALL_VENDORS_KEY)}
+                      className="shrink-0 rounded text-xs font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
+
+                <FilterNavSection title="Vendor" ariaLabel="Vendor filter">
+                  <FilterNavButton
+                    label="All"
+                    count={models.length}
+                    isActive={isAllVendors}
+                    onClick={() => setSelectedVendor(ALL_VENDORS_KEY)}
+                  />
+                  {modelsByVendor.map(([vendorKey, items]) => (
+                    <FilterNavButton
+                      key={vendorKey}
+                      label={getModelVendorLabel(vendorKey)}
+                      count={items.length}
+                      isActive={selectedVendor === vendorKey}
+                      onClick={() => setSelectedVendor(vendorKey)}
+                    />
+                  ))}
+                </FilterNavSection>
               </div>
-              {!isAllVendors && (
+            </aside>
+          ) : null}
+
+          {/* Model catalog workspace */}
+          <section className="min-w-0 flex-1 bg-white">
+            <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-gray-900">Model Catalog</h2>
+                {models.length > 0 ? (
+                  <p className="mt-0.5 truncate text-xs text-gray-500" title={activeVendorTitle}>
+                    {activeVendorTitle} · {selectedVendorItems.length} model
+                    {selectedVendorItems.length !== 1 ? 's' : ''}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-xs text-gray-500">No models yet</p>
+                )}
+              </div>
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleCreate(activeVendorKey)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm border border-blue-200 text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100"
-                  title={`New model under ${activeVendorTitle}`}
-                  aria-label={`New model under ${activeVendorTitle}`}
+                  onClick={openImportCatalogModal}
+                  disabled={importSubmitting}
+                  className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
                 >
-                  <PlusIcon className="h-4 w-4" />
+                  <ArrowDownTrayIcon className="h-5 w-5" />
+                  Import
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCreate(isAllVendors ? undefined : activeVendorKey)}
+                  className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  title={
+                    isAllVendors
+                      ? 'Create a new model'
+                      : `New model under ${activeVendorTitle}`
+                  }
+                >
+                  <PlusIcon className="h-5 w-5" />
                   New
                 </button>
-              )}
+              </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-              <table className="w-full table-fixed divide-y divide-gray-200">
-                <colgroup>
-                  {isAllVendors ? <col className="w-32" /> : null}
-                  <col className="w-56" />
-                  <col className="w-48" />
-                  <col className="w-[28rem]" />
-                  <col className="w-28" />
-                  <col />
-                  <col />
-                </colgroup>
-                <thead className="bg-gray-50">
-                  <tr>
-                    {isAllVendors ? (
-                      <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Vendor
-                      </th>
-                    ) : null}
-                    <th className="w-56 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Model
-                    </th>
-                    <th
-                      className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                      title="Total context window and max output tokens"
-                    >
-                      Limits
-                    </th>
-                    <th className="w-[28rem] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      <span className="inline-flex flex-nowrap items-baseline gap-x-2">
-                        <span>Pricing</span>
-                        <span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
-                          {formatPerMillionTokenUnit(billingCurrency)}
-                        </span>
-                      </span>
-                    </th>
-                    <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tags
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Metadata
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {selectedVendorItems.map((model) => {
-                    const tagShown = model.tags?.length ? model.tags.slice(0, 4) : [];
-                    const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
-                    const descriptionTitle = model.description?.trim() || undefined;
-                    const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
-                    const modelVendorLabel = getModelVendorLabel(normalizeModelVendorInput(model.vendor));
-                    return (
-                      <tr
-                        key={model.id}
-                        className="hover:bg-gray-50 cursor-pointer"
-                        onClick={() => void handleEdit(model)}
-                      >
-                        {isAllVendors ? (
-                          <td className="w-32 px-4 py-3 align-top text-sm text-gray-700">
-                            <span className="line-clamp-2" title={modelVendorLabel}>
-                              {modelVendorLabel}
+            <div className="p-4 sm:p-6">
+              {models.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/50 py-16 text-center text-gray-500">
+                  <p className="text-sm font-medium text-gray-600">No models found</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Import from the built-in catalog or create a model manually
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full table-fixed divide-y divide-gray-200">
+                      <colgroup>
+                        {isAllVendors ? <col className="w-32" /> : null}
+                        <col className="w-56" />
+                        <col className="w-48" />
+                        <col className="w-[28rem]" />
+                        <col className="w-28" />
+                        <col />
+                        <col />
+                      </colgroup>
+                      <thead className="bg-gray-50/80">
+                        <tr>
+                          {isAllVendors ? (
+                            <th className="w-32 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                              Vendor
+                            </th>
+                          ) : null}
+                          <th className="w-56 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                            Model
+                          </th>
+                          <th
+                            className="w-48 whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            title="Total context window and max output tokens"
+                          >
+                            Limits
+                          </th>
+                          <th className="w-[28rem] whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                            <span className="inline-flex flex-nowrap items-baseline gap-x-2">
+                              <span>Pricing</span>
+                              <span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
+                                {formatPerMillionTokenUnit(billingCurrency)}
+                              </span>
                             </span>
-                          </td>
-                        ) : null}
-                        <td className="w-56 px-4 py-3 align-top">
-                          <div
-                            className="text-sm font-medium text-gray-900 truncate"
-                            title={model.display_name || model.id}
-                          >
-                            {model.display_name || model.id}
-                          </div>
-                          <div
-                            className="text-xs font-mono text-gray-500 truncate leading-snug mt-0.5"
-                            title={model.id}
-                          >
-                            {model.id}
-                          </div>
-                        </td>
-                        <td className="w-48 px-4 py-3 align-top text-gray-800">
-                          <ModelLimitsBlock model={model} />
-                        </td>
-                        <td className="w-[28rem] px-4 py-3 align-top text-gray-800">
-                          <ModelPricingBlock
-                            pricingColumns={pricingColumns}
-                            billingCurrency={billingCurrency}
-                          />
-                        </td>
-                        <td className="w-28 px-4 py-3 align-top">
-                          <div className="flex flex-wrap gap-1">
-                            {tagShown.length ? (
-                              <>
-                                {tagShown.map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${tagBadgeClass(tag)}`}
-                                  >
-                                    {tag}
+                          </th>
+                          <th className="w-28 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                            Tags
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                            Metadata
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                            Description
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {selectedVendorItems.map((model) => {
+                          const tagShown = model.tags?.length ? model.tags.slice(0, 4) : [];
+                          const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
+                          const descriptionTitle = model.description?.trim() || undefined;
+                          const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
+                          const modelVendorLabel = getModelVendorLabel(normalizeModelVendorInput(model.vendor));
+                          return (
+                            <tr
+                              key={model.id}
+                              className="cursor-pointer transition-colors hover:bg-gray-50/80"
+                              onClick={() => void handleEdit(model)}
+                            >
+                              {isAllVendors ? (
+                                <td className="w-32 px-4 py-3 align-top text-sm text-gray-700">
+                                  <span className="line-clamp-2" title={modelVendorLabel}>
+                                    {modelVendorLabel}
                                   </span>
-                                ))}
-                                {tagExtra > 0 ? (
-                                  <span className="text-[10px] text-gray-400 self-center">+{tagExtra}</span>
-                                ) : null}
-                              </>
-                            ) : (
-                              <span className="text-xs text-gray-400">—</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <ModelMetadataCell model={model} onView={openMetadataPreview} />
-                        </td>
-                        <td className="px-4 py-3 align-top text-xs text-gray-600">
-                          {model.description?.trim() ? (
-                            <p className="line-clamp-2 break-words" title={descriptionTitle}>
-                              {model.description}
-                            </p>
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                                </td>
+                              ) : null}
+                              <td className="w-56 px-4 py-3 align-top">
+                                <div
+                                  className="truncate text-sm font-medium text-gray-900"
+                                  title={model.display_name || model.id}
+                                >
+                                  {model.display_name || model.id}
+                                </div>
+                                <div
+                                  className="mt-0.5 truncate font-mono text-xs leading-snug text-gray-500"
+                                  title={model.id}
+                                >
+                                  {model.id}
+                                </div>
+                              </td>
+                              <td className="w-48 px-4 py-3 align-top text-gray-800">
+                                <ModelLimitsBlock model={model} />
+                              </td>
+                              <td className="w-[28rem] px-4 py-3 align-top text-gray-800">
+                                <ModelPricingBlock
+                                  pricingColumns={pricingColumns}
+                                  billingCurrency={billingCurrency}
+                                />
+                              </td>
+                              <td className="w-28 px-4 py-3 align-top">
+                                <div className="flex flex-wrap gap-1">
+                                  {tagShown.length ? (
+                                    <>
+                                      {tagShown.map((tag) => (
+                                        <span
+                                          key={tag}
+                                          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                      {tagExtra > 0 ? (
+                                        <span className="self-center text-[10px] text-gray-400">+{tagExtra}</span>
+                                      ) : null}
+                                    </>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">—</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 align-top">
+                                <ModelMetadataCell model={model} onView={openMetadataPreview} />
+                              </td>
+                              <td className="px-4 py-3 align-top text-xs text-gray-600">
+                                {model.description?.trim() ? (
+                                  <p className="line-clamp-2 break-words" title={descriptionTitle}>
+                                    {model.description}
+                                  </p>
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         </div>
-      )}
+      </div>
 
       {/* Modal */}
       {showModal && (
