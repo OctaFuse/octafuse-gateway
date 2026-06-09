@@ -396,9 +396,6 @@ export default function GatewayProvidersPage() {
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
-                Actions
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -528,20 +525,6 @@ export default function GatewayProvidersPage() {
                 </td>
                 <td className="px-4 py-4 max-w-[200px]" title={provider.description ?? undefined}>
                   <span className="block truncate text-sm text-gray-600">{provider.description || '—'}</span>
-                </td>
-                <td className="px-4 py-4 align-middle text-right">
-                  <button
-                    type="button"
-                    aria-label={`Duplicate provider ${provider.id}`}
-                    title="Duplicate as new provider"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDuplicate(provider);
-                    }}
-                    className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
-                  </button>
                 </td>
               </tr>
               );

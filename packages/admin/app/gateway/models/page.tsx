@@ -2,8 +2,10 @@
 
 /**
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
+ * 左侧 Vendor 列表 + 右侧当前 Vendor 模型表；含 All 总览；`?vendor=` 持久化选中项（`useSearchParams` + Suspense）。
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   TrashIcon,
   PlusIcon,
@@ -30,6 +32,7 @@ import {
   MODEL_VENDOR_OPTIONS,
   normalizeModelVendorInput,
 } from '@/lib/model-vendor';
+import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 
 /** API returns models with tags parsed as string[] */
 type ModelListItem = Omit<GatewayModel, 'tags'> & { tags: string[]; routes_count: number; active_routes_count: number };
@@ -55,6 +58,15 @@ const emptyForm = {
   description: '',
   metadata: '',
 };
+
+/** Sidebar filter: show models from every vendor (`?vendor=all`). */
+const ALL_VENDORS_KEY = 'all';
+
+function parseVendorFilterParam(value: string | null): string {
+  if (value == null || value.trim() === '') return ALL_VENDORS_KEY;
+  if (value.trim().toLowerCase() === ALL_VENDORS_KEY) return ALL_VENDORS_KEY;
+  return normalizeModelVendorInput(value);
+}
 
 /** Pretty-print in the editor when stored value is a JSON object. */
 function formatMetadataForEditor(metadata: string | null | undefined): string {
@@ -86,6 +98,44 @@ function parseMetadataForSave(raw: string): { ok: true; value: string | null } |
   } catch {
     return { ok: false, error: 'Metadata must be valid JSON' };
   }
+}
+
+type MetadataSummary =
+  | { kind: 'empty' }
+  | { kind: 'object'; keyCount: number; keyPreview: string[]; formatted: string }
+  | { kind: 'raw'; formatted: string; label: string };
+
+function buildMetadataSummary(metadata: string | null | undefined): MetadataSummary {
+  if (metadata == null || metadata.trim() === '') {
+    return { kind: 'empty' };
+  }
+  const trimmed = metadata.trim();
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const keys = Object.keys(parsed as Record<string, unknown>);
+      return {
+        kind: 'object',
+        keyCount: keys.length,
+        keyPreview: keys.slice(0, 3),
+        formatted: JSON.stringify(parsed, null, 2),
+      };
+    }
+    return { kind: 'raw', formatted: trimmed, label: 'Raw metadata' };
+  } catch {
+    return { kind: 'raw', formatted: trimmed, label: 'Raw metadata' };
+  }
+}
+
+function getMetadataButtonLabel(summary: Exclude<MetadataSummary, { kind: 'empty' }>): string {
+  if (summary.kind === 'raw') return summary.label;
+  if (summary.keyCount === 0) return '0 keys';
+  const preview = summary.keyPreview.join(', ');
+  const extra = summary.keyCount - summary.keyPreview.length;
+  if (extra > 0) {
+    return `${summary.keyCount} keys: ${preview}, +${extra}`;
+  }
+  return `${summary.keyCount} key${summary.keyCount !== 1 ? 's' : ''}: ${preview}`;
 }
 
 function tagBadgeClass(tag: string): string {
@@ -240,8 +290,94 @@ function ModelPricingBlock(props: {
   );
 }
 
-export default function GatewayModelsPage() {
+function ModelMetadataCell(props: { model: ModelListItem; onView: (model: ModelListItem) => void }) {
+  const summary = useMemo(() => buildMetadataSummary(props.model.metadata), [props.model.metadata]);
+  if (summary.kind === 'empty') {
+    return <span className="text-xs text-gray-400">—</span>;
+  }
+  const label = getMetadataButtonLabel(summary);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        props.onView(props.model);
+      }}
+      className="inline-flex max-w-full items-center truncate rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      title="View metadata JSON"
+    >
+      {label}
+    </button>
+  );
+}
+
+type MetadataPreviewState = {
+  model: ModelListItem;
+  summary: Exclude<MetadataSummary, { kind: 'empty' }>;
+};
+
+function MetadataPreviewModal(props: {
+  preview: MetadataPreviewState;
+  onClose: () => void;
+}) {
+  const { preview, onClose } = props;
+  const displayName = preview.model.display_name || preview.model.id;
+  return (
+    <div
+      className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="metadata-preview-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b px-6 py-4">
+          <div className="min-w-0">
+            <h2 id="metadata-preview-title" className="text-lg font-bold text-gray-900">
+              Metadata
+            </h2>
+            <p className="mt-1 truncate text-sm text-gray-700" title={displayName}>
+              {displayName}
+            </p>
+            <p className="truncate font-mono text-xs text-gray-500" title={preview.model.id}>
+              {preview.model.id}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 text-gray-400 hover:text-gray-600"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+          <pre className="whitespace-pre-wrap break-words rounded-md border border-gray-200 bg-gray-50 p-4 font-mono text-xs leading-relaxed text-gray-800">
+            {preview.summary.formatted}
+          </pre>
+        </div>
+        <div className="flex shrink-0 justify-end border-t bg-gray-50 px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-white"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModelsContent() {
+  const searchParams = useSearchParams();
   const [models, setModels] = useState<ModelListItem[]>([]);
+  const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
@@ -257,7 +393,14 @@ export default function GatewayModelsPage() {
   const [importCatalogError, setImportCatalogError] = useState('');
   const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
   const [importSubmitting, setImportSubmitting] = useState(false);
+  const [metadataPreview, setMetadataPreview] = useState<MetadataPreviewState | null>(null);
   const { currency: billingCurrency } = useBillingCurrency();
+
+  const openMetadataPreview = useCallback((model: ModelListItem) => {
+    const summary = buildMetadataSummary(model.metadata);
+    if (summary.kind === 'empty') return;
+    setMetadataPreview({ model, summary });
+  }, []);
 
   const importSelectedCount = useMemo(
     () => Object.values(importSelected).filter(Boolean).length,
@@ -304,6 +447,44 @@ export default function GatewayModelsPage() {
       return a.localeCompare(b, undefined, { sensitivity: 'base' });
     });
   }, [models]);
+
+  const vendorKeys = useMemo(() => modelsByVendor.map(([key]) => key), [modelsByVendor]);
+
+  const selectedVendorItems = useMemo(() => {
+    if (selectedVendor === ALL_VENDORS_KEY) {
+      return modelsByVendor.flatMap(([, items]) => items);
+    }
+    const entry = modelsByVendor.find(([key]) => key === selectedVendor);
+    return entry?.[1] ?? [];
+  }, [modelsByVendor, selectedVendor]);
+
+  useEffect(() => {
+    const vendorParam = searchParams.get('vendor');
+    if (vendorParam !== null) {
+      setSelectedVendor(parseVendorFilterParam(vendorParam));
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (modelsByVendor.length === 0) return;
+    setSelectedVendor((prev) => {
+      if (prev === ALL_VENDORS_KEY) return ALL_VENDORS_KEY;
+      if (prev && vendorKeys.includes(prev)) return prev;
+      const fromUrl = searchParams.get('vendor');
+      if (fromUrl !== null) {
+        const parsed = parseVendorFilterParam(fromUrl);
+        if (parsed === ALL_VENDORS_KEY) return ALL_VENDORS_KEY;
+        if (vendorKeys.includes(parsed)) return parsed;
+      }
+      return ALL_VENDORS_KEY;
+    });
+  }, [modelsByVendor, vendorKeys, searchParams]);
+
+  useReplaceListPageQuery(() => {
+    const params = new URLSearchParams();
+    if (selectedVendor) params.set('vendor', selectedVendor);
+    return params;
+  }, [selectedVendor]);
 
   const fetchModels = useCallback(async () => {
     try {
@@ -595,6 +776,10 @@ export default function GatewayModelsPage() {
     );
   }
 
+  const isAllVendors = selectedVendor === ALL_VENDORS_KEY;
+  const activeVendorKey = isAllVendors ? vendorKeys[0] ?? 'other' : selectedVendor || vendorKeys[0] || 'other';
+  const activeVendorTitle = isAllVendors ? 'All vendors' : getModelVendorLabel(activeVendorKey);
+
   return (
     <div className="min-h-full bg-gray-100/90 p-8 pb-12">
       {/* Header */}
@@ -630,153 +815,235 @@ export default function GatewayModelsPage() {
         </div>
       </div>
 
-      {/* Vendor groups: one table per vendor */}
-      <div className="space-y-8">
-        {modelsByVendor.map(([vendorKey, items]) => {
-          const title = getModelVendorLabel(vendorKey);
-          return (
-            <section key={vendorKey} className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="text-lg font-semibold text-gray-900 truncate" title={title}>{title}</h2>
-                  <p className="text-xs text-gray-500">{items.length} model{items.length !== 1 ? 's' : ''}</p>
-                </div>
+      {/* Vendor sidebar + current vendor models */}
+      {models.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-300/90 shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] text-center py-12 text-gray-500">
+          No models found
+        </div>
+      ) : (
+        <div className="flex gap-6 items-start">
+          <aside className="w-56 shrink-0">
+            <nav
+              className="bg-white rounded-lg shadow-md overflow-hidden ring-1 ring-black/[0.04]"
+              aria-label="Vendor filter"
+            >
+              <div className="px-3 py-2 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Vendors
+              </div>
+              <ul className="max-h-[calc(100vh-14rem)] overflow-y-auto divide-y divide-gray-100">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVendor(ALL_VENDORS_KEY)}
+                    aria-current={isAllVendors ? 'true' : undefined}
+                    className={
+                      (isAllVendors
+                        ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-600 '
+                        : 'text-gray-700 hover:bg-gray-50 border-l-2 border-transparent ') +
+                      'w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors'
+                    }
+                  >
+                    <span className="truncate font-medium">All</span>
+                    <span
+                      className={
+                        (isAllVendors ? 'bg-blue-100 text-blue-700 ' : 'bg-gray-100 text-gray-600 ') +
+                        'shrink-0 rounded-full px-2 py-0.5 text-xs tabular-nums'
+                      }
+                    >
+                      {models.length}
+                    </span>
+                  </button>
+                </li>
+                {modelsByVendor.map(([vendorKey, items]) => {
+                  const label = getModelVendorLabel(vendorKey);
+                  const isActive = selectedVendor === vendorKey;
+                  return (
+                    <li key={vendorKey}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedVendor(vendorKey)}
+                        aria-current={isActive ? 'true' : undefined}
+                        className={
+                          (isActive
+                            ? 'bg-blue-50 text-blue-800 border-l-2 border-blue-600 '
+                            : 'text-gray-700 hover:bg-gray-50 border-l-2 border-transparent ') +
+                          'w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors'
+                        }
+                      >
+                        <span className="truncate font-medium" title={label}>
+                          {label}
+                        </span>
+                        <span
+                          className={
+                            (isActive ? 'bg-blue-100 text-blue-700 ' : 'bg-gray-100 text-gray-600 ') +
+                            'shrink-0 rounded-full px-2 py-0.5 text-xs tabular-nums'
+                          }
+                        >
+                          {items.length}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          </aside>
+
+          <section className="min-w-0 flex-1 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900 truncate" title={activeVendorTitle}>
+                  {activeVendorTitle}
+                </h2>
+                <p className="text-xs text-gray-500">
+                  {selectedVendorItems.length} model{selectedVendorItems.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              {!isAllVendors && (
                 <button
                   type="button"
-                  onClick={() => handleCreate(vendorKey)}
+                  onClick={() => handleCreate(activeVendorKey)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm border border-blue-200 text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100"
-                  title={`New model under ${title}`}
-                  aria-label={`New model under ${title}`}
+                  title={`New model under ${activeVendorTitle}`}
+                  aria-label={`New model under ${activeVendorTitle}`}
                 >
                   <PlusIcon className="h-4 w-4" />
                   New
                 </button>
-              </div>
+              )}
+            </div>
 
-              <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-                <table className="w-full table-fixed divide-y divide-gray-200">
-                  <colgroup>
-                    <col className="w-56" />
-                    <col className="w-48" />
-                    <col className="w-[28rem]" />
-                    <col />
-                    <col className="w-20" />
-                    <col />
-                  </colgroup>
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="w-56 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Model
+            <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+              <table className="w-full table-fixed divide-y divide-gray-200">
+                <colgroup>
+                  {isAllVendors ? <col className="w-32" /> : null}
+                  <col className="w-56" />
+                  <col className="w-48" />
+                  <col className="w-[28rem]" />
+                  <col className="w-28" />
+                  <col />
+                  <col />
+                </colgroup>
+                <thead className="bg-gray-50">
+                  <tr>
+                    {isAllVendors ? (
+                      <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Vendor
                       </th>
-                      <th
-                        className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                        title="Total context window and max output tokens"
-                      >
-                        Limits
-                      </th>
-                      <th className="w-[28rem] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                        <span className="inline-flex flex-nowrap items-baseline gap-x-2">
-                          <span>Pricing</span>
-                          <span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
-                            {formatPerMillionTokenUnit(billingCurrency)}
-                          </span>
+                    ) : null}
+                    <th className="w-56 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Model
+                    </th>
+                    <th
+                      className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                      title="Total context window and max output tokens"
+                    >
+                      Limits
+                    </th>
+                    <th className="w-[28rem] px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      <span className="inline-flex flex-nowrap items-baseline gap-x-2">
+                        <span>Pricing</span>
+                        <span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
+                          {formatPerMillionTokenUnit(billingCurrency)}
                         </span>
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Metadata
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tags
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {items.map((model) => {
-                      const tagShown = model.tags?.length ? model.tags.slice(0, 4) : [];
-                      const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
-                      const descriptionTitle = model.description?.trim() || undefined;
-                      const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
-                      return (
-                        <tr
-                          key={model.id}
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => void handleEdit(model)}
-                        >
-                          <td className="w-56 px-4 py-3 align-top">
-                            <div className="text-sm font-medium text-gray-900 truncate" title={model.display_name || model.id}>
-                              {model.display_name || model.id}
-                            </div>
-                            <div className="text-xs font-mono text-gray-500 truncate leading-snug mt-0.5" title={model.id}>
-                              {model.id}
-                            </div>
+                      </span>
+                    </th>
+                    <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tags
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Metadata
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {selectedVendorItems.map((model) => {
+                    const tagShown = model.tags?.length ? model.tags.slice(0, 4) : [];
+                    const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
+                    const descriptionTitle = model.description?.trim() || undefined;
+                    const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
+                    const modelVendorLabel = getModelVendorLabel(normalizeModelVendorInput(model.vendor));
+                    return (
+                      <tr
+                        key={model.id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => void handleEdit(model)}
+                      >
+                        {isAllVendors ? (
+                          <td className="w-32 px-4 py-3 align-top text-sm text-gray-700">
+                            <span className="line-clamp-2" title={modelVendorLabel}>
+                              {modelVendorLabel}
+                            </span>
                           </td>
-                          <td className="w-48 px-4 py-3 align-top text-gray-800">
-                            <ModelLimitsBlock model={model} />
-                          </td>
-                          <td className="w-[28rem] px-4 py-3 align-top text-gray-800">
-                            <ModelPricingBlock
-                              pricingColumns={pricingColumns}
-                              billingCurrency={billingCurrency}
-                            />
-                          </td>
-                          <td className="px-4 py-3 align-top text-xs text-gray-600">
-                            {model.metadata?.trim() ? (
-                              <p className="line-clamp-3 break-all font-mono" title={model.metadata}>
-                                {model.metadata}
-                              </p>
+                        ) : null}
+                        <td className="w-56 px-4 py-3 align-top">
+                          <div
+                            className="text-sm font-medium text-gray-900 truncate"
+                            title={model.display_name || model.id}
+                          >
+                            {model.display_name || model.id}
+                          </div>
+                          <div
+                            className="text-xs font-mono text-gray-500 truncate leading-snug mt-0.5"
+                            title={model.id}
+                          >
+                            {model.id}
+                          </div>
+                        </td>
+                        <td className="w-48 px-4 py-3 align-top text-gray-800">
+                          <ModelLimitsBlock model={model} />
+                        </td>
+                        <td className="w-[28rem] px-4 py-3 align-top text-gray-800">
+                          <ModelPricingBlock
+                            pricingColumns={pricingColumns}
+                            billingCurrency={billingCurrency}
+                          />
+                        </td>
+                        <td className="w-28 px-4 py-3 align-top">
+                          <div className="flex flex-wrap gap-1">
+                            {tagShown.length ? (
+                              <>
+                                {tagShown.map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${tagBadgeClass(tag)}`}
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                                {tagExtra > 0 ? (
+                                  <span className="text-[10px] text-gray-400 self-center">+{tagExtra}</span>
+                                ) : null}
+                              </>
                             ) : (
-                              <span className="text-gray-400">—</span>
+                              <span className="text-xs text-gray-400">—</span>
                             )}
-                          </td>
-                          <td className="px-4 py-3 align-top">
-                            <div className="flex flex-wrap gap-1">
-                              {tagShown.length ? (
-                                <>
-                                  {tagShown.map((tag) => (
-                                    <span
-                                      key={tag}
-                                      className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${tagBadgeClass(tag)}`}
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
-                                  {tagExtra > 0 ? (
-                                    <span className="text-[10px] text-gray-400 self-center">+{tagExtra}</span>
-                                  ) : null}
-                                </>
-                              ) : (
-                                <span className="text-xs text-gray-400">—</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 align-top text-xs text-gray-600">
-                            {model.description?.trim() ? (
-                              <p className="line-clamp-2 break-words" title={descriptionTitle}>
-                                {model.description}
-                              </p>
-                            ) : (
-                              <span className="text-gray-400">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          );
-        })}
-
-        {models.length === 0 && (
-          <div className="bg-white rounded-xl border border-gray-300/90 shadow-md shadow-gray-300/40 ring-1 ring-black/[0.04] text-center py-12 text-gray-500">
-            No models found
-          </div>
-        )}
-      </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <ModelMetadataCell model={model} onView={openMetadataPreview} />
+                        </td>
+                        <td className="px-4 py-3 align-top text-xs text-gray-600">
+                          {model.description?.trim() ? (
+                            <p className="line-clamp-2 break-words" title={descriptionTitle}>
+                              {model.description}
+                            </p>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
@@ -913,6 +1180,10 @@ export default function GatewayModelsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {metadataPreview && (
+        <MetadataPreviewModal preview={metadataPreview} onClose={() => setMetadataPreview(null)} />
       )}
 
       {showImportCatalogModal && (
@@ -1094,5 +1365,19 @@ export default function GatewayModelsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function GatewayModelsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full">
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      }
+    >
+      <ModelsContent />
+    </Suspense>
   );
 }
