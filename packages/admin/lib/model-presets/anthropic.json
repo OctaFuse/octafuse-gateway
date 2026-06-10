@@ -1,5 +1,36 @@
 [
 	{
+		"id": "claude-fable-5",
+		"display_name": "Claude Fable 5",
+		"vendor": "anthropic",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10,
+						"output_price": 50,
+						"cache_read_price": 1,
+						"cache_write_price": 12.5
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 72,
+						"output_price": 360,
+						"cache_read_price": 7.2,
+						"cache_write_price": 90
+					}
+				]
+			}
+		}
+	},
+	{
 		"id": "claude-opus-4-8",
 		"display_name": "Claude Opus 4.8",
 		"vendor": "anthropic",
