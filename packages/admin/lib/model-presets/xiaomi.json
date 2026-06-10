@@ -1,7 +1,7 @@
 [
 	{
 		"id": "mimo-v2-omni",
-		"display_name": "MiMo-V2-Omni",
+		"display_name": "MiMo V2 Omni",
 		"vendor": "xiaomi",
 		"context_window": 256000,
 		"max_tokens": 128000,
@@ -32,7 +32,7 @@
 	},
 	{
 		"id": "mimo-v2-pro",
-		"display_name": "MiMo-V2-Pro",
+		"display_name": "MiMo V2 Pro",
 		"vendor": "xiaomi",
 		"context_window": 1050000,
 		"max_tokens": 128000,
@@ -77,7 +77,7 @@
 	},
 	{
 		"id": "mimo-v2.5-pro",
-		"display_name": "Mimo-V2.5-Pro",
+		"display_name": "Mimo V2.5 Pro",
 		"vendor": "xiaomi",
 		"context_window": 1050000,
 		"max_tokens": 128000,
@@ -108,7 +108,7 @@
 	},
 	{
 		"id": "mimo-v2.5",
-		"display_name": "MiMo-V2.5",
+		"display_name": "MiMo V2.5",
 		"vendor": "xiaomi",
 		"context_window": 1050000,
 		"max_tokens": 128000,

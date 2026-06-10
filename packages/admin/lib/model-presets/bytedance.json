@@ -1,7 +1,7 @@
 [
 	{
 		"id": "seed-2.0-mini",
-		"display_name": "ByteDance Seed-2.0-Mini",
+		"display_name": "ByteDance Seed 2.0 Mini",
 		"vendor": "bytedance",
 		"context_window": 256000,
 		"max_tokens": 128000,
@@ -46,7 +46,7 @@
 	},
 	{
 		"id": "seed-2.0-lite",
-		"display_name": "ByteDance Seed-2.0-Lite",
+		"display_name": "ByteDance Seed 2.0 Lite",
 		"vendor": "bytedance",
 		"context_window": 256000,
 		"max_tokens": 128000,
