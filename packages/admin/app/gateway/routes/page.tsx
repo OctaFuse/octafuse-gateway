@@ -9,6 +9,7 @@ import {
   TrashIcon,
   PlusIcon,
   ClipboardDocumentIcon,
+  DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import {
@@ -299,6 +300,101 @@ function RoutePricePanel({
   );
 }
 
+type RouteFormData = {
+  model_id: string;
+  provider_id: string;
+  provider_model_name: string;
+  upstream_protocol: UpstreamProtocol;
+  priority: number;
+  metered_override_tiers: PricingTierDraftRow[];
+  charged_override_tiers: PricingTierDraftRow[];
+  custom_params_json: string;
+  route_group: string;
+  charged_factor: string;
+  provider_factor: string;
+};
+
+function parsePriceOverride(
+  json: string | null
+): {
+  metered_override_tiers: PricingTierDraftRow[];
+  charged_override_tiers: PricingTierDraftRow[];
+  provider_factor?: string;
+  charged_factor?: string;
+} {
+  if (!json) {
+    return { metered_override_tiers: [], charged_override_tiers: [] };
+  }
+  try {
+    const o = JSON.parse(json) as Record<string, unknown>;
+    const nested = extractMeteredProfileFromPriceOverrideJson(json);
+    const ucNested = extractChargedProfileFromPriceOverrideJson(json);
+    return {
+      metered_override_tiers: profileJsonToDraftRows(nested),
+      charged_override_tiers: profileJsonToDraftRows(ucNested),
+      charged_factor: (() => {
+        const v = o.charged_factor;
+        if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+        if (typeof v === 'string') {
+          const n = parseFloat(v.trim());
+          if (Number.isFinite(n)) return String(n);
+        }
+        return '';
+      })(),
+      provider_factor: (() => {
+        const v = o.provider_factor;
+        if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+        if (typeof v === 'string') {
+          const n = parseFloat(v.trim());
+          if (Number.isFinite(n)) return String(n);
+        }
+        return '';
+      })(),
+    };
+  } catch {
+    return { metered_override_tiers: [], charged_override_tiers: [] };
+  }
+}
+
+function buildFormDataFromRoute(route: GatewayModelRoute, models: GatewayModel[]): RouteFormData {
+  const po = parsePriceOverride(route.price_override ?? null);
+  const routeModel = models.find((m) => m.id === route.model_id);
+  let metered_override_tiers = po.metered_override_tiers;
+  let charged_override_tiers = po.charged_override_tiers;
+  let provider_factor = po.provider_factor ?? '';
+  const charged_factor =
+    po.charged_factor && po.charged_factor.trim() !== '' ? po.charged_factor : '1';
+  if (routeModel) {
+    if (charged_override_tiers.length === 0) {
+      const c = recomputeChargedTiersFromChargedFactor(charged_factor, routeModel);
+      if (c.ok) charged_override_tiers = c.tiers;
+    }
+    if (metered_override_tiers.length === 0) {
+      const pfText = provider_factor.trim() === '' ? '1' : provider_factor;
+      const m = recomputeOverrideTiersFromProviderFactor(pfText, routeModel);
+      if (m.ok) {
+        metered_override_tiers = m.tiers;
+        if (provider_factor.trim() === '') provider_factor = '1';
+      }
+    }
+  }
+  return {
+    model_id: route.model_id,
+    provider_id: route.provider_id,
+    provider_model_name: route.provider_model_name,
+    upstream_protocol: (isUpstreamProtocol(route.upstream_protocol)
+      ? route.upstream_protocol
+      : 'openai') as UpstreamProtocol,
+    priority: route.priority,
+    metered_override_tiers,
+    charged_override_tiers,
+    custom_params_json: route.custom_params ?? '',
+    route_group: route.route_group ?? 'default',
+    charged_factor,
+    provider_factor,
+  };
+}
+
 function RoutesContent() {
   const searchParams = useSearchParams();
   const [routes, setRoutes] = useState<(GatewayModelRoute & { model_name?: string; provider_name?: string })[]>([]);
@@ -307,6 +403,8 @@ function RoutesContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingRoute, setEditingRoute] = useState<GatewayModelRoute | null>(null);
+  /** 新建弹窗由「复制」预填时，记录源 route id（仅 UI 提示） */
+  const [duplicateSourceRouteId, setDuplicateSourceRouteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     model_id: '',
     provider_id: '',
@@ -381,6 +479,7 @@ function RoutesContent() {
 
   const handleCreate = (presetModelId?: string) => {
     setEditingRoute(null);
+    setDuplicateSourceRouteId(null);
     const mid = presetModelId ?? '';
     const presetModel = models.find((m) => m.id === mid);
     let metered_override_tiers: PricingTierDraftRow[] = [];
@@ -408,86 +507,18 @@ function RoutesContent() {
     setSaveError('');
   };
 
-  const parsePriceOverride = (
-    json: string | null
-  ): {
-    metered_override_tiers: PricingTierDraftRow[];
-    charged_override_tiers: PricingTierDraftRow[];
-    provider_factor?: string;
-    charged_factor?: string;
-  } => {
-    if (!json) {
-      return { metered_override_tiers: [], charged_override_tiers: [] };
-    }
-    try {
-      const o = JSON.parse(json) as Record<string, unknown>;
-      const nested = extractMeteredProfileFromPriceOverrideJson(json);
-      const ucNested = extractChargedProfileFromPriceOverrideJson(json);
-      return {
-        metered_override_tiers: profileJsonToDraftRows(nested),
-        charged_override_tiers: profileJsonToDraftRows(ucNested),
-        charged_factor: (() => {
-          const v = o.charged_factor;
-          if (typeof v === 'number' && Number.isFinite(v)) return String(v);
-          if (typeof v === 'string') {
-            const n = parseFloat(v.trim());
-            if (Number.isFinite(n)) return String(n);
-          }
-          return '';
-        })(),
-        provider_factor: (() => {
-          const v = o.provider_factor;
-          if (typeof v === 'number' && Number.isFinite(v)) return String(v);
-          if (typeof v === 'string') {
-            const n = parseFloat(v.trim());
-            if (Number.isFinite(n)) return String(n);
-          }
-          return '';
-        })(),
-      };
-    } catch {
-      return { metered_override_tiers: [], charged_override_tiers: [] };
-    }
-  };
-
   const handleEdit = (route: GatewayModelRoute) => {
     setEditingRoute(route);
-    const po = parsePriceOverride(route.price_override ?? null);
-    const routeModel = models.find((m) => m.id === route.model_id);
-    let metered_override_tiers = po.metered_override_tiers;
-    let charged_override_tiers = po.charged_override_tiers;
-    let provider_factor = po.provider_factor ?? '';
-    const charged_factor =
-      po.charged_factor && po.charged_factor.trim() !== '' ? po.charged_factor : '1';
-    if (routeModel) {
-      if (charged_override_tiers.length === 0) {
-        const c = recomputeChargedTiersFromChargedFactor(charged_factor, routeModel);
-        if (c.ok) charged_override_tiers = c.tiers;
-      }
-      if (metered_override_tiers.length === 0) {
-        const pfText = provider_factor.trim() === '' ? '1' : provider_factor;
-        const m = recomputeOverrideTiersFromProviderFactor(pfText, routeModel);
-        if (m.ok) {
-          metered_override_tiers = m.tiers;
-          if (provider_factor.trim() === '') provider_factor = '1';
-        }
-      }
-    }
-    setFormData({
-      model_id: route.model_id,
-      provider_id: route.provider_id,
-      provider_model_name: route.provider_model_name,
-      upstream_protocol: (isUpstreamProtocol(route.upstream_protocol)
-        ? route.upstream_protocol
-        : 'openai') as UpstreamProtocol,
-      priority: route.priority,
-      metered_override_tiers,
-      charged_override_tiers,
-      custom_params_json: route.custom_params ?? '',
-      route_group: route.route_group ?? 'default',
-      charged_factor,
-      provider_factor,
-    });
+    setDuplicateSourceRouteId(null);
+    setFormData(buildFormDataFromRoute(route, models));
+    setShowModal(true);
+    setSaveError('');
+  };
+
+  const handleDuplicate = (route: GatewayModelRoute) => {
+    setEditingRoute(null);
+    setDuplicateSourceRouteId(route.id);
+    setFormData(buildFormDataFromRoute(route, models));
     setShowModal(true);
     setSaveError('');
   };
@@ -502,6 +533,7 @@ function RoutesContent() {
       if (data.success) {
         setShowModal(false);
         setEditingRoute(null);
+        setDuplicateSourceRouteId(null);
         fetchData();
       } else {
         alert(data.message || 'Delete failed');
@@ -644,6 +676,8 @@ function RoutesContent() {
 
       if (data.success) {
         setShowModal(false);
+        setEditingRoute(null);
+        setDuplicateSourceRouteId(null);
         fetchData();
       } else {
         setSaveError(data.message || 'Save failed');
@@ -1266,9 +1300,20 @@ function RoutesContent() {
             aria-labelledby="route-modal-title"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4">
-              <h2 id="route-modal-title" className="text-lg font-semibold text-gray-900">
-                {editingRoute ? 'Edit Route' : 'New Route'}
-              </h2>
+              <div>
+                <h2 id="route-modal-title" className="text-lg font-semibold text-gray-900">
+                  {editingRoute ? 'Edit Route' : 'New Route'}
+                </h2>
+                {!editingRoute && duplicateSourceRouteId && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Pre-filled from route{' '}
+                    <code className="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[11px]">
+                      {duplicateSourceRouteId}
+                    </code>
+                    . Review fields before saving.
+                  </p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
@@ -1635,17 +1680,28 @@ function RoutesContent() {
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
-              <div>
+              <div className="flex flex-wrap items-center gap-2">
                 {editingRoute && (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(editingRoute.id)}
-                    disabled={isSaving || isDeleting}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                    {isDeleting ? 'Deleting...' : 'Delete route'}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(editingRoute)}
+                      disabled={isSaving || isDeleting}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
+                      Duplicate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(editingRoute.id)}
+                      disabled={isSaving || isDeleting}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <TrashIcon className="h-4 w-4" aria-hidden />
+                      {isDeleting ? 'Deleting...' : 'Delete route'}
+                    </button>
+                  </>
                 )}
               </div>
               <div className="ml-auto flex gap-2 sm:gap-3">
