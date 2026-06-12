@@ -71,6 +71,9 @@ export const modelsTable = sqliteTable('models', {
 	pricingProfile: text('pricing_profile'),
 	description: text('description'),
 	metadata: text('metadata'),
+	inputModalities: text('input_modalities'),
+	outputModalities: text('output_modalities'),
+	releasedAt: text('released_at'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 

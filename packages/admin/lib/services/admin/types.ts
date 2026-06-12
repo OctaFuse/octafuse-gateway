@@ -202,6 +202,9 @@ export type AdminModelRow = {
 	context_window: number | null;
 	max_tokens: number | null;
 	pricing_profile: string | null;
+	input_modalities: string | null;
+	output_modalities: string | null;
+	released_at: string | null;
 	description: string | null;
 	metadata: string | null;
 	created_at: string;

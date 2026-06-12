@@ -119,6 +119,12 @@ export interface GatewayModel {
   max_tokens: number;
   /** `{ "tiers": [...] }` JSON；与 `models.pricing_profile` 一致 */
   pricing_profile?: string | null;
+  /** JSON array string, e.g. `["text","image"]` */
+  input_modalities?: string | null;
+  /** JSON array string, e.g. `["text"]` */
+  output_modalities?: string | null;
+  /** Model release date `YYYY-MM-DD` */
+  released_at?: string | null;
   /** JSON array string from json_group_array(model_tags.tag) */
   tags: string;
   description: string | null;

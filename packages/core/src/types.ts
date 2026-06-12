@@ -91,6 +91,12 @@ export interface ModelRow {
   route_groups?: string | null;
   description: string | null;
   metadata: string | null;
+  /** JSON array string, e.g. `["text","image"]` */
+  input_modalities: string | null;
+  /** JSON array string, e.g. `["text"]` */
+  output_modalities: string | null;
+  /** Model release date `YYYY-MM-DD` */
+  released_at: string | null;
   created_at: string;
 }
 

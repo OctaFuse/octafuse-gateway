@@ -311,6 +311,9 @@ GET /v1/models
         "input_price": 0.01,
         "output_price": 0.01,
         "description": "智谱 GLM-4 通用模型",
+        "input_modalities": ["text", "image", "file"],
+        "output_modalities": ["text"],
+        "released_at": "2024-06-05",
         "metadata": {}
       }
     }
@@ -333,6 +336,9 @@ GET /v1/models
 | `input_price` | number \| null | **兼容展示**：由 `pricing_profile` 派生（取各档中 **最低** `input_price` 所在档的输入价）；无合法 profile 时为 `null` |
 | `output_price` | number \| null | **兼容展示**：与上档同行的输出价（$/1M） |
 | `description` | string \| null | 模型描述 |
+| `input_modalities` | string[] \| null | 支持的输入模态（OpenRouter 风格）：`text`、`image`、`audio`、`video`、`file`；客户端可据此限制附件类型 |
+| `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
+| `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
 | `metadata` | object \| undefined | 扩展元数据 |
 
 ### 示例
@@ -394,11 +400,16 @@ GET /catalog/models
       },
       "recommended_protocol": "openai",
       "description": "智谱 GLM-4 通用模型",
+      "input_modalities": ["text", "image", "file"],
+      "output_modalities": ["text"],
+      "released_at": "2024-06-05",
       "metadata": {}
     }
   ]
 }
 ```
+
+Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`（语义与 `model_info` 一致；`pricing_profile` 为解析后的对象）。
 
 ### 与 `GET /v1/models` / Admin 的差异
 

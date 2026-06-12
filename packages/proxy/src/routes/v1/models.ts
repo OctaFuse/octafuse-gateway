@@ -2,7 +2,7 @@
  * 用户路由：`GET /v1/models` — OpenAI 兼容列表形态，附带 `model_info`（定价、tags、route_groups 等）。
  * 未传 `route_groups` 时默认仅返回 `default`/`free`，主要为兼容 agent 默认拉列表（FREE/VIP 分组）。
  */
-import { parsePricingProfile } from '@octafuse/core';
+import { parseModelModalitiesJson, parsePricingProfile } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../app';
 import { requireApiKey } from '../../middleware/auth';
@@ -45,6 +45,12 @@ interface ModelInfoResponse {
 	input_price: number | null;
 	output_price: number | null;
 	description: string | null;
+	/** Parsed input modality list (e.g. text, image, file). */
+	input_modalities: string[] | null;
+	/** Parsed output modality list (e.g. text). */
+	output_modalities: string[] | null;
+	/** Model release date `YYYY-MM-DD`. */
+	released_at: string | null;
 	metadata?: Record<string, unknown>;
 }
 
@@ -108,6 +114,9 @@ modelsRoutes.get('/', async (c) => {
 				input_price,
 				output_price,
 				description: m.description,
+				input_modalities: parseModelModalitiesJson(m.input_modalities),
+				output_modalities: parseModelModalitiesJson(m.output_modalities),
+				released_at: m.released_at ?? null,
 				metadata: parseMetadata(m.metadata),
 			},
 		});

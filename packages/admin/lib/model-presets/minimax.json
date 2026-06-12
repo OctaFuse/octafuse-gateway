@@ -28,7 +28,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-10-15"
 	},
 	{
 		"id": "minimax-m2.7",
@@ -59,7 +69,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-01-08"
 	},
 	{
 		"id": "minimax-m3",
@@ -104,6 +124,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-01"
 	}
 ]

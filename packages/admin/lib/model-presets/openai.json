@@ -28,7 +28,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-12-11"
 	},
 	{
 		"id": "gpt-5.4",
@@ -73,7 +84,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-05"
 	},
 	{
 		"id": "gpt-5.5",
@@ -118,6 +140,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-04-01"
 	}
 ]

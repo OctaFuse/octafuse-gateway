@@ -21,6 +21,9 @@ export const MODEL_PATCH_COLS = new Set([
 	'pricing_profile',
 	'description',
 	'metadata',
+	'input_modalities',
+	'output_modalities',
+	'released_at',
 ]);
 
 export const MODEL_ROUTE_PATCH_COLS = new Set([

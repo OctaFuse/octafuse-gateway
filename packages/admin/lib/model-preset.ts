@@ -33,6 +33,11 @@ import xiaomiPresets from './model-presets/xiaomi.json';
 import zhipuPresets from './model-presets/zhipu.json';
 import type { GatewaySupportedBillingCurrency } from '@octafuse/core/lib/billing-currency';
 
+export type StaticModelPresetModalities = {
+	input: string[];
+	output: string[];
+};
+
 export type StaticModelPresetRow = {
 	id: string;
 	display_name?: string | null;
@@ -41,6 +46,10 @@ export type StaticModelPresetRow = {
 	max_tokens?: number | null;
 	/** Gateway `model_tags` (e.g. `New`, `Hot`, `Discount:0.3`). */
 	tags?: string[];
+	/** OpenRouter-style input/output modalities. */
+	modalities?: StaticModelPresetModalities;
+	/** Model release date `YYYY-MM-DD`. */
+	released?: string | null;
 	pricing: {
 		usd: unknown;
 		cny: unknown;

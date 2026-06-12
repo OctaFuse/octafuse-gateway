@@ -4,6 +4,7 @@
  */
 import {
 	normalizeUpstreamProtocol,
+	parseModelModalitiesJson,
 	parsePricingProfile,
 	UPSTREAM_PROTOCOLS,
 	type GatewayRepositories,
@@ -30,6 +31,9 @@ export type CatalogDiscoveryModel = {
 	protocols_by_group: Record<string, UpstreamProtocol[]>;
 	recommended_protocol: UpstreamProtocol;
 	description: string | null;
+	input_modalities: string[] | null;
+	output_modalities: string[] | null;
+	released_at: string | null;
 	metadata?: Record<string, unknown>;
 };
 
@@ -138,6 +142,9 @@ export async function listCatalogDiscoveryModels(
 			protocols_by_group: protocolsByGroup,
 			recommended_protocol: resolveRecommendedProtocol(protocols),
 			description: m.description,
+			input_modalities: parseModelModalitiesJson(m.input_modalities),
+			output_modalities: parseModelModalitiesJson(m.output_modalities),
+			released_at: m.released_at ?? null,
 			metadata: parseMetadata(m.metadata),
 		});
 	}

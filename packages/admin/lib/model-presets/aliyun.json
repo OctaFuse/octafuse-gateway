@@ -42,7 +42,19 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-02-10"
 	},
 	{
 		"id": "qwen3.7-max",
@@ -73,7 +85,19 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-02-10"
 	},
 	{
 		"id": "qwen3.6-plus",
@@ -118,7 +142,19 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-12-15"
 	},
 	{
 		"id": "qwen3.6-max",
@@ -163,7 +199,19 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-12-15"
 	},
 	{
 		"id": "qwen3.6-flash",
@@ -208,7 +256,19 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-12-01"
 	},
 	{
 		"id": "qwen3.5-plus",
@@ -253,7 +313,19 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-09-20"
 	},
 	{
 		"id": "qwen3.5-flash",
@@ -284,6 +356,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-09-20"
 	}
 ]

@@ -141,6 +141,9 @@ export interface ModelsRepository {
 		pricingProfile?: unknown;
 		description: unknown;
 		metadata: unknown;
+		inputModalities?: unknown;
+		outputModalities?: unknown;
+		releasedAt?: unknown;
 	}): Promise<void>;
 	replaceModelTags(modelId: string, tags: string[]): Promise<void>;
 	updateModelByPatch(id: string, rest: Record<string, unknown>): Promise<number>;

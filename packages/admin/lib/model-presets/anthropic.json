@@ -28,7 +28,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-01"
 	},
 	{
 		"id": "claude-opus-4.8",
@@ -59,7 +70,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-01-15"
 	},
 	{
 		"id": "claude-opus-4.7",
@@ -90,7 +112,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-11-20"
 	},
 	{
 		"id": "claude-opus-4.6",
@@ -121,7 +154,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-08-05"
 	},
 	{
 		"id": "claude-sonnet-4.6",
@@ -152,7 +196,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-02-17"
 	},
 	{
 		"id": "claude-haiku-4.5",
@@ -183,6 +238,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-10-22"
 	}
 ]

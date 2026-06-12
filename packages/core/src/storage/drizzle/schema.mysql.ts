@@ -103,6 +103,9 @@ export const modelsTable = mysqlTable('models', {
 	pricingProfile: text('pricing_profile'),
 	description: text('description'),
 	metadata: text('metadata'),
+	inputModalities: text('input_modalities'),
+	outputModalities: text('output_modalities'),
+	releasedAt: text('released_at'),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 

@@ -42,7 +42,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-11-01"
 	},
 	{
 		"id": "seed-2.0-lite",
@@ -87,7 +97,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-11-01"
 	},
 	{
 		"id": "seed-2.0-pro",
@@ -132,6 +152,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-11-01"
 	}
 ]

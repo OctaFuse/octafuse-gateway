@@ -28,7 +28,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-12-01"
 	},
 	{
 		"id": "deepseek-v4-flash",
@@ -59,7 +69,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-10"
 	},
 	{
 		"id": "deepseek-v4-pro",
@@ -90,6 +110,16 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-10"
 	}
 ]

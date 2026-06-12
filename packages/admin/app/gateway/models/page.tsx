@@ -16,6 +16,11 @@ import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import {
   catalogInputPriceSortKey,
 } from '@/lib/pricing-ui';
+import {
+	MODEL_INPUT_MODALITIES,
+	MODEL_OUTPUT_MODALITIES,
+	parseModelModalitiesJson,
+} from '@octafuse/core/db/model-modalities';
 import { parsePricingProfile, type PricingTierPrices } from '@octafuse/core/db/pricing-profile';
 import {
 	createDefaultNewModelTierRow,
@@ -23,6 +28,7 @@ import {
 	serializeDraftRowsToProfileJson,
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
+import { ModelModalitiesBadgeFromRaw } from '@/components/model-modalities-badge';
 import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
 import { formatGatewayMoneyCompact, formatPerMillionTokenUnit } from '@/lib/format-gateway-currency';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -54,6 +60,9 @@ const emptyForm = {
   vendor: 'other',
   context_window: '',
   max_tokens: '8192',
+  input_modalities: ['text'] as string[],
+  output_modalities: ['text'] as string[],
+  released_at: '',
   tags: [] as string[],
   description: '',
   metadata: '',
@@ -229,19 +238,37 @@ function buildPricingMetricColumns(pricingProfile: string | null | undefined): P
 
 function ModelLimitsBlock({ model }: { model: ModelListItem }) {
   return (
-    <div className="flex flex-nowrap items-start gap-x-4">
-      <div className="shrink-0">
-        <p className="text-[11px] text-gray-400 whitespace-nowrap">Total Context</p>
-        <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight whitespace-nowrap">
-          {formatCompactTokens(model.context_window)}
-        </p>
+    <div className="space-y-2">
+      <div className="flex flex-nowrap items-start gap-x-4">
+        <div className="shrink-0">
+          <p className="text-[11px] text-gray-400 whitespace-nowrap">Total Context</p>
+          <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight whitespace-nowrap">
+            {formatCompactTokens(model.context_window)}
+          </p>
+        </div>
+        <div className="shrink-0">
+          <p className="text-[11px] text-gray-400 whitespace-nowrap">Max Output</p>
+          <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight whitespace-nowrap">
+            {formatCompactTokens(model.max_tokens)}
+          </p>
+        </div>
       </div>
-      <div className="shrink-0">
-        <p className="text-[11px] text-gray-400 whitespace-nowrap">Max Output</p>
-        <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight whitespace-nowrap">
-          {formatCompactTokens(model.max_tokens)}
-        </p>
+      <div>
+        <p className="text-[11px] text-gray-400 whitespace-nowrap">Modalities</p>
+        <div className="mt-1">
+          <ModelModalitiesBadgeFromRaw
+            inputRaw={model.input_modalities}
+            outputRaw={model.output_modalities}
+            size="sm"
+          />
+        </div>
       </div>
+      {model.released_at ? (
+        <div>
+          <p className="text-[11px] text-gray-400 whitespace-nowrap">Released</p>
+          <p className="mt-0.5 text-xs text-gray-700 tabular-nums">{model.released_at}</p>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -710,6 +737,9 @@ function ModelsContent() {
       vendor: normalizeModelVendorInput(model.vendor),
       context_window: model.context_window?.toString() || '',
       max_tokens: model.max_tokens?.toString() || '4096',
+      input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
+      output_modalities: parseModelModalitiesJson(model.output_modalities) ?? ['text'],
+      released_at: model.released_at ?? '',
       tags: listTags,
       description: model.description ?? '',
       metadata: formatMetadataForEditor(model.metadata),
@@ -727,6 +757,9 @@ function ModelsContent() {
           vendor: normalizeModelVendorInput(fullModel.vendor),
           context_window: fullModel.context_window?.toString() || '',
           max_tokens: fullModel.max_tokens?.toString() || '4096',
+          input_modalities: parseModelModalitiesJson(fullModel.input_modalities) ?? ['text'],
+          output_modalities: parseModelModalitiesJson(fullModel.output_modalities) ?? ['text'],
+          released_at: fullModel.released_at ?? '',
           tags,
           description: fullModel.description ?? '',
           metadata: formatMetadataForEditor(fullModel.metadata),
@@ -774,6 +807,19 @@ function ModelsContent() {
     setFormData({ ...formData, tags: formData.tags.filter((x) => x !== tag) });
   };
 
+  const toggleFormModality = (
+    kind: 'input_modalities' | 'output_modalities',
+    modality: string
+  ) => {
+    setFormData((prev) => {
+      const current = prev[kind];
+      const next = current.includes(modality)
+        ? current.filter((m) => m !== modality)
+        : [...current, modality];
+      return { ...prev, [kind]: next.length > 0 ? next : [modality] };
+    });
+  };
+
   const handleSave = async () => {
     setSaveError('');
     setIsSaving(true);
@@ -796,6 +842,9 @@ function ModelsContent() {
         vendor: normalizeModelVendorInput(formData.vendor),
         context_window: formData.context_window ? parseInt(formData.context_window, 10) : null,
         max_tokens: parseInt(formData.max_tokens, 10) || 4096,
+        input_modalities: formData.input_modalities,
+        output_modalities: formData.output_modalities,
+        released_at: formData.released_at.trim() || null,
         pricing_profile: tierJson.json,
         metadata: metaParsed.value,
       };
@@ -967,7 +1016,6 @@ function ModelsContent() {
                   <div className="overflow-x-auto">
                     <table className="w-full table-fixed divide-y divide-gray-200">
                       <colgroup>
-                        {isAllVendors ? <col className="w-32" /> : null}
                         <col className="w-56" />
                         <col className="w-48" />
                         <col className="w-[28rem]" />
@@ -977,11 +1025,6 @@ function ModelsContent() {
                       </colgroup>
                       <thead className="bg-gray-50/80">
                         <tr>
-                          {isAllVendors ? (
-                            <th className="w-32 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                              Vendor
-                            </th>
-                          ) : null}
                           <th className="w-56 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                             Model
                           </th>
@@ -1016,20 +1059,12 @@ function ModelsContent() {
                           const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
                           const descriptionTitle = model.description?.trim() || undefined;
                           const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
-                          const modelVendorLabel = getModelVendorLabel(normalizeModelVendorInput(model.vendor));
                           return (
                             <tr
                               key={model.id}
                               className="cursor-pointer transition-colors hover:bg-gray-50/80"
                               onClick={() => void handleEdit(model)}
                             >
-                              {isAllVendors ? (
-                                <td className="w-32 px-4 py-3 align-top text-sm text-gray-700">
-                                  <span className="line-clamp-2" title={modelVendorLabel}>
-                                    {modelVendorLabel}
-                                  </span>
-                                </td>
-                              ) : null}
                               <td className="w-56 px-4 py-3 align-top">
                                 <div
                                   className="truncate text-sm font-medium text-gray-900"
@@ -1145,6 +1180,57 @@ function ModelsContent() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
                   <input type="number" value={formData.max_tokens} onChange={(e) => setFormData({ ...formData, max_tokens: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="4096" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Released</label>
+                  <input
+                    type="date"
+                    value={formData.released_at}
+                    onChange={(e) => setFormData({ ...formData, released_at: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Input Modalities</label>
+                  <div className="flex flex-wrap gap-3">
+                    {MODEL_INPUT_MODALITIES.map((m) => (
+                      <label key={m} className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={formData.input_modalities.includes(m)}
+                          onChange={() => toggleFormModality('input_modalities', m)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        {m}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Output Modalities</label>
+                  <div className="flex flex-wrap gap-3">
+                    {MODEL_OUTPUT_MODALITIES.map((m) => (
+                      <label key={m} className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={formData.output_modalities.includes(m)}
+                          onChange={() => toggleFormModality('output_modalities', m)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        {m}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Preview</p>
+                  <div className="mt-1.5">
+                    <ModelModalitiesBadgeFromRaw
+                      inputRaw={JSON.stringify(formData.input_modalities)}
+                      outputRaw={JSON.stringify(formData.output_modalities)}
+                      size="md"
+                    />
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <PricingTiersEditor

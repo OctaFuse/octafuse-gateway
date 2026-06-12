@@ -28,7 +28,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-01-15"
 	},
 	{
 		"id": "glm-5-turbo",
@@ -59,7 +70,18 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-02-01"
 	},
 	{
 		"id": "glm-5.1",
@@ -90,6 +112,17 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-15"
 	}
 ]

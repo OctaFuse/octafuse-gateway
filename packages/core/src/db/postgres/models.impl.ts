@@ -20,7 +20,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
 			m.pricing_profile,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
-			m.description, m.metadata, m.created_at::text,
+			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id AND status = 'active') AS active_routes_count
 		FROM models m ORDER BY m.id ASC
@@ -33,7 +33,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
 			m.pricing_profile,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
-			m.description, m.metadata, m.created_at::text,
+			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id AND status = 'active') AS active_routes_count
 		FROM models m WHERE m.id = ${id}
@@ -50,6 +50,9 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 			pricingProfile?: unknown;
 			description: unknown;
 			metadata: unknown;
+			inputModalities?: unknown;
+			outputModalities?: unknown;
+			releasedAt?: unknown;
 		}): Promise<void> {
 			const now = new Date().toISOString();
 			await drizzle.insert(pgModelsTable).values({
@@ -61,6 +64,9 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 				pricingProfile: params.pricingProfile == null ? null : String(params.pricingProfile),
 				description: params.description == null ? null : String(params.description),
 				metadata: params.metadata == null ? null : String(params.metadata),
+				inputModalities: params.inputModalities == null ? null : String(params.inputModalities),
+				outputModalities: params.outputModalities == null ? null : String(params.outputModalities),
+				releasedAt: params.releasedAt == null ? null : String(params.releasedAt),
 				createdAt: now,
 			});
 		},

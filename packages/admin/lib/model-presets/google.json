@@ -42,7 +42,20 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-02-05"
 	},
 	{
 		"id": "gemini-3.5-flash",
@@ -73,7 +86,20 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-01-20"
 	},
 	{
 		"id": "gemini-3.1-flash-lite-preview",
@@ -104,6 +130,19 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-02-05"
 	}
 ]

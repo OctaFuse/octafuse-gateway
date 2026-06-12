@@ -3,14 +3,16 @@
  */
 import type { GatewayRepositories } from '@octafuse/core';
 import {
+	coerceModelInputModalitiesInput,
+	coerceModelOutputModalitiesInput,
+	coerceModelReleasedAtInput,
+} from '@octafuse/core/db/model-modalities';
+import {
 	BILLING_CURRENCY_KEY,
 	tryParseGatewaySupportedBillingCurrencyInput,
 	type GatewaySupportedBillingCurrency,
 } from '@octafuse/core/lib/billing-currency';
-import {
-	listStaticModelPresets,
-	pickPresetPricingRawForBillingCurrency,
-} from '@/lib/model-preset';
+import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
 import { badRequest, notFound } from './errors';
 import { coerceModelPricingProfileInput } from './pricing-input';
 import { normalizeModelVendorInput, parseTagsJson } from './shared';
@@ -21,6 +23,20 @@ import type {
 	AdminModelsImportOutput,
 	AdminStaticModelPresetCatalogItem,
 } from './types';
+
+function applyModelMutationCoercion(rest: Record<string, unknown>): Record<string, unknown> {
+	const out = { ...rest };
+	if ('input_modalities' in out && out.input_modalities !== undefined) {
+		out.input_modalities = coerceModelInputModalitiesInput(out.input_modalities);
+	}
+	if ('output_modalities' in out && out.output_modalities !== undefined) {
+		out.output_modalities = coerceModelOutputModalitiesInput(out.output_modalities);
+	}
+	if ('released_at' in out && out.released_at !== undefined) {
+		out.released_at = coerceModelReleasedAtInput(out.released_at);
+	}
+	return out;
+}
 
 function formatPriceForPreview(value: unknown): string | null {
 	if (typeof value !== 'number' || !Number.isFinite(value)) return null;
@@ -78,6 +94,12 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 	if (!pricingProfile) {
 		throw badRequest('pricing_profile is required when creating a model');
 	}
+	const inputModalities =
+		body.input_modalities !== undefined ? coerceModelInputModalitiesInput(body.input_modalities) : null;
+	const outputModalities =
+		body.output_modalities !== undefined ? coerceModelOutputModalitiesInput(body.output_modalities) : null;
+	const releasedAt = body.released_at !== undefined ? coerceModelReleasedAtInput(body.released_at) : null;
+
 	await repos.models.insertModel({
 		id,
 		displayName: body.display_name,
@@ -87,6 +109,9 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 		pricingProfile,
 		description: body.description,
 		metadata: body.metadata,
+		inputModalities,
+		outputModalities,
+		releasedAt,
 	});
 
 	const tags = Array.isArray(body.tags) ? body.tags : [];
@@ -118,7 +143,8 @@ export async function updateModelService(repos: GatewayRepositories, id: string,
 	if ('pricing_profile' in rest && rest.pricing_profile !== undefined) {
 		rest.pricing_profile = coerceModelPricingProfileInput(rest.pricing_profile);
 	}
-	const changes = await repos.models.updateModelByPatch(id, rest);
+	const coerced = applyModelMutationCoercion(rest);
+	const changes = await repos.models.updateModelByPatch(id, coerced);
 	if (Object.keys(rest).some((k) => k !== 'id' && rest[k] !== undefined) && changes === 0) {
 		throw notFound('Model not found');
 	}
@@ -210,6 +236,9 @@ export async function importModelsFromStaticPresetsService(
 				max_tokens: preset.max_tokens ?? 8192,
 				pricing_profile: pricingProfile,
 				tags: Array.isArray(preset.tags) ? preset.tags.map((t) => String(t)) : [],
+				input_modalities: preset.modalities?.input ?? null,
+				output_modalities: preset.modalities?.output ?? null,
+				released_at: preset.released ?? null,
 			};
 
 			await createModelService(repos, body);

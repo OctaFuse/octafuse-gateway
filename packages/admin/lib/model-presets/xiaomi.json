@@ -28,7 +28,20 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-10-01"
 	},
 	{
 		"id": "mimo-v2-pro",
@@ -73,7 +86,20 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-11-10"
 	},
 	{
 		"id": "mimo-v2.5-pro",
@@ -104,7 +130,20 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-04-10"
 	},
 	{
 		"id": "mimo-v2.5",
@@ -135,6 +174,19 @@
 					}
 				]
 			}
-		}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-04-23"
 	}
 ]

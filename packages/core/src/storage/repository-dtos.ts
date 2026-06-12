@@ -36,6 +36,9 @@ export interface ModelWithRouteCountsRow {
 	tags: string;
 	description: string | null;
 	metadata: string | null;
+	input_modalities: string | null;
+	output_modalities: string | null;
+	released_at: string | null;
 	created_at: string;
 	routes_count: number;
 	active_routes_count: number;
