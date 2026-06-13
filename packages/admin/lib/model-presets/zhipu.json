@@ -119,5 +119,45 @@
 			]
 		},
 		"released": "2026-03-27"
+	},
+	{
+		"id": "glm-5.2",
+		"display_name": "GLM-5.2",
+		"vendor": "zhipu",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 5,
+						"cache_read_price": 0.3,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10,
+						"output_price": 30,
+						"cache_read_price": 2,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-06-13"
 	}
 ]
