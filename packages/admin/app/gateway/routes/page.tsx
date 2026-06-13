@@ -44,6 +44,7 @@ import {
   normalizeRouteGroup,
   routeGroupBadgeClass,
 } from '@/lib/route-group-ui';
+import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
@@ -822,35 +823,16 @@ function RoutesContent() {
       .filter((group): group is { model_id: string; title: string; groupRoutes: (typeof routes)[number][]; activeCount: number; vendor: string } => group !== null);
   }, [routes, models, modelMeta, filterVendor, filterProviderId, filterRouteGroup, filterStatus]);
 
-  const routesByVendor = useMemo(() => {
-    const byVendor = new Map<string, (typeof routesByModel)>();
-    for (const group of routesByModel) {
-      const list = byVendor.get(group.vendor) ?? [];
-      list.push(group);
-      byVendor.set(group.vendor, list);
-    }
-
-    const entries = [...byVendor.entries()].sort(([a], [b]) =>
-      a.localeCompare(b, undefined, { sensitivity: 'base' })
-    );
-
-    return entries.map(([vendor, modelGroups]) => {
-      const sortedGroups = [...modelGroups].sort((a, b) => {
-        const ma = modelMeta.get(a.model_id);
-        const mb = modelMeta.get(b.model_id);
-        const ka = ma ? catalogInputPriceSortKey(ma) : Number.NEGATIVE_INFINITY;
-        const kb = mb ? catalogInputPriceSortKey(mb) : Number.NEGATIVE_INFINITY;
-        if (kb !== ka) {
-          return kb - ka;
-        }
-        return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
-      });
-      return {
-        vendor,
-        modelGroups: sortedGroups,
-        modelCount: sortedGroups.length,
-        routeCount: sortedGroups.reduce((sum, g) => sum + g.groupRoutes.length, 0),
-      };
+  const routeCards = useMemo(() => {
+    return [...routesByModel].sort((a, b) => {
+      const ma = modelMeta.get(a.model_id);
+      const mb = modelMeta.get(b.model_id);
+      const ka = ma ? catalogInputPriceSortKey(ma) : Number.NEGATIVE_INFINITY;
+      const kb = mb ? catalogInputPriceSortKey(mb) : Number.NEGATIVE_INFINITY;
+      if (kb !== ka) {
+        return kb - ka;
+      }
+      return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
     });
   }, [routesByModel, modelMeta]);
 
@@ -1078,55 +1060,48 @@ function RoutesContent() {
                   ) : null}
                 </div>
               ) : (
-                <div className="space-y-6 sm:space-y-8">
-                  {routesByVendor.map(({ vendor, modelGroups, modelCount, routeCount }) => (
-                    <section
-                      key={vendor}
-                      className="space-y-4 rounded-xl border border-gray-200/80 bg-gray-50/40 p-4 sm:p-5"
-                    >
-                      <div className="flex items-baseline justify-between gap-3 border-b border-gray-200/60 pb-2">
-                        <h3 className="text-base font-semibold text-gray-900">{getModelVendorLabel(vendor)}</h3>
-                        <span className="shrink-0 text-xs text-gray-500">
-                          {modelCount} models · {routeCount} routes
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3 xl:gap-6 2xl:grid-cols-4">
-                        {modelGroups.map(({ model_id, title, groupRoutes, activeCount }) => {
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3 xl:gap-6 2xl:grid-cols-4">
+                  {routeCards.map(({ model_id, title, groupRoutes, activeCount }) => {
                           const meta = modelMeta.get(model_id);
                           const modelStatsTitle = `Context: ${meta?.context_window ?? '—'} · Max output: ${meta?.max_tokens ?? '—'}`;
                           return (
                             <div
                               key={model_id}
-                              className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm"
+                              className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 focus-within:border-blue-400 focus-within:bg-blue-50/30 focus-within:shadow-lg focus-within:ring-2 focus-within:ring-blue-500 active:translate-y-0"
                             >
-                              <div className="flex items-start justify-between gap-2 border-b border-gray-100 bg-white px-4 py-3">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                                    <h4
-                                      className="min-w-0 truncate text-sm font-semibold leading-snug text-gray-900"
-                                      title={title}
-                                    >
-                                      {title}
-                                    </h4>
-                                    <button
-                                      type="button"
-                                      onClick={() => void copyModelId(model_id)}
-                                      className="shrink-0 rounded-md p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-                                      title={copiedModelId === model_id ? '已复制 model id' : `Copy model id: ${model_id}`}
-                                      aria-label={`Copy model id ${model_id}`}
-                                    >
-                                      <ClipboardDocumentIcon className="h-4 w-4" />
-                                    </button>
-                                    {copiedModelId === model_id ? (
-                                      <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
-                                        已复制 model id
-                                      </span>
-                                    ) : null}
+                              <div className="flex items-start justify-between gap-2 border-b border-gray-100 bg-white px-4 py-3 transition-colors group-hover:bg-blue-50/30 group-focus-within:bg-blue-50/30">
+                                <div className="flex min-w-0 flex-1 items-start gap-3">
+                                  <ModelVendorIcon vendor={meta?.vendor} size="default" className="mt-0.5" />
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex min-w-0 items-center gap-1.5">
+                                      <h4
+                                        className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug text-gray-900"
+                                        title={title}
+                                      >
+                                        {title}
+                                      </h4>
+                                      <button
+                                        type="button"
+                                        onClick={() => void copyModelId(model_id)}
+                                        className="shrink-0 rounded-md p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+                                        title={copiedModelId === model_id ? '已复制 model id' : `Copy model id: ${model_id}`}
+                                        aria-label={`Copy model id ${model_id}`}
+                                      >
+                                        <ClipboardDocumentIcon className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                    <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+                                      <p className="min-w-0 truncate text-[11px] text-gray-500" title={modelStatsTitle}>
+                                        Context {formatCompactTokens(meta?.context_window)} · Max output{' '}
+                                        {formatCompactTokens(meta?.max_tokens)}
+                                      </p>
+                                      {copiedModelId === model_id ? (
+                                        <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
+                                          已复制
+                                        </span>
+                                      ) : null}
+                                    </div>
                                   </div>
-                                  <p className="mt-0.5 truncate text-[11px] text-gray-500" title={modelStatsTitle}>
-                                    Context {formatCompactTokens(meta?.context_window)} · Max output{' '}
-                                    {formatCompactTokens(meta?.max_tokens)}
-                                  </p>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-1.5">
                                   <button
@@ -1167,7 +1142,7 @@ function RoutesContent() {
                                         className={sectionIdx > 0 ? 'border-t border-gray-200/80' : ''}
                                       >
                                         <div
-                                          className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-1.5"
+                                          className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-1.5 transition-colors group-hover:bg-blue-50/40 group-focus-within:bg-blue-50/40"
                                           role="presentation"
                                         >
                                           <span
@@ -1280,9 +1255,6 @@ function RoutesContent() {
                             </div>
                           );
                         })}
-                      </div>
-                    </section>
-                  ))}
                 </div>
               )}
             </div>
