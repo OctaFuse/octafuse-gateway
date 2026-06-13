@@ -33,7 +33,7 @@
 			"input": [
 				"text",
 				"image",
-				"file"
+				"video"
 			],
 			"output": [
 				"text"
@@ -75,7 +75,7 @@
 			"input": [
 				"text",
 				"image",
-				"file"
+				"video"
 			],
 			"output": [
 				"text"

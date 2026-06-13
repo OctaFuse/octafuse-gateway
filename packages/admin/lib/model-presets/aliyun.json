@@ -88,10 +88,7 @@
 		},
 		"modalities": {
 			"input": [
-				"text",
-				"image",
-				"video",
-				"file"
+				"text"
 			],
 			"output": [
 				"text"
@@ -202,10 +199,7 @@
 		},
 		"modalities": {
 			"input": [
-				"text",
-				"image",
-				"video",
-				"file"
+				"text"
 			],
 			"output": [
 				"text"

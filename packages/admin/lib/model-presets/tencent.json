@@ -45,8 +45,7 @@
 		},
 		"modalities": {
 			"input": [
-				"text",
-				"image"
+				"text"
 			],
 			"output": [
 				"text"

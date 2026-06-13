@@ -31,8 +31,7 @@
 		},
 		"modalities": {
 			"input": [
-				"text",
-				"file"
+				"text"
 			],
 			"output": [
 				"text"
@@ -72,8 +71,7 @@
 		},
 		"modalities": {
 			"input": [
-				"text",
-				"file"
+				"text"
 			],
 			"output": [
 				"text"
@@ -113,8 +111,7 @@
 		},
 		"modalities": {
 			"input": [
-				"text",
-				"file"
+				"text"
 			],
 			"output": [
 				"text"
