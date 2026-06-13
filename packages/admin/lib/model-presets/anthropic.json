@@ -39,7 +39,7 @@
 				"text"
 			]
 		},
-		"released": "2026-03-01"
+		"released": "2026-06-09"
 	},
 	{
 		"id": "claude-opus-4.8",
@@ -81,7 +81,7 @@
 				"text"
 			]
 		},
-		"released": "2026-01-15"
+		"released": "2026-05-28"
 	},
 	{
 		"id": "claude-opus-4.7",
@@ -123,7 +123,7 @@
 				"text"
 			]
 		},
-		"released": "2025-11-20"
+		"released": "2026-04-16"
 	},
 	{
 		"id": "claude-opus-4.6",
@@ -165,7 +165,7 @@
 				"text"
 			]
 		},
-		"released": "2025-08-05"
+		"released": "2026-02-05"
 	},
 	{
 		"id": "claude-sonnet-4.6",
@@ -249,6 +249,6 @@
 				"text"
 			]
 		},
-		"released": "2025-10-22"
+		"released": "2025-10-15"
 	}
 ]

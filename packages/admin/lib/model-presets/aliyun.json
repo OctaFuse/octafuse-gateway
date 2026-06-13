@@ -54,7 +54,7 @@
 				"text"
 			]
 		},
-		"released": "2026-02-10"
+		"released": "2026-06-02"
 	},
 	{
 		"id": "qwen3.7-max",
@@ -97,7 +97,7 @@
 				"text"
 			]
 		},
-		"released": "2026-02-10"
+		"released": "2026-05-20"
 	},
 	{
 		"id": "qwen3.6-plus",
@@ -154,7 +154,7 @@
 				"text"
 			]
 		},
-		"released": "2025-12-15"
+		"released": "2026-04-02"
 	},
 	{
 		"id": "qwen3.6-max",
@@ -211,7 +211,7 @@
 				"text"
 			]
 		},
-		"released": "2025-12-15"
+		"released": "2026-04-20"
 	},
 	{
 		"id": "qwen3.6-flash",
@@ -268,7 +268,7 @@
 				"text"
 			]
 		},
-		"released": "2025-12-01"
+		"released": "2026-04-16"
 	},
 	{
 		"id": "qwen3.5-plus",
@@ -325,7 +325,7 @@
 				"text"
 			]
 		},
-		"released": "2025-09-20"
+		"released": "2026-02-16"
 	},
 	{
 		"id": "qwen3.5-flash",
@@ -368,6 +368,6 @@
 				"text"
 			]
 		},
-		"released": "2025-09-20"
+		"released": "2026-02-16"
 	}
 ]
