@@ -121,7 +121,7 @@ function ModalityGroup({
 		return <span className="text-xs text-gray-400">—</span>;
 	}
 	return (
-		<span className="inline-flex items-center gap-0.5">
+		<span className="inline-flex items-center gap-1">
 			{sorted.map((m) => (
 				<ModalityChip key={m} modality={m} size={size} />
 			))}
@@ -158,11 +158,11 @@ export function ModelModalitiesBadge({
 		return <span className="text-xs text-gray-400">—</span>;
 	}
 
-	const arrowClass = size === 'sm' ? 'mx-1 text-[10px]' : 'mx-1.5 text-xs';
+	const arrowClass = size === 'sm' ? 'text-[10px]' : 'text-xs';
 
 	return (
 		<span
-			className={`inline-flex flex-wrap items-center gap-y-1 ${className}`}
+			className={`inline-flex flex-wrap items-center gap-x-1 gap-y-1 ${className}`}
 			aria-label={`Input modalities: ${input.join(', ') || 'none'}; output: ${output.join(', ') || 'none'}`}
 		>
 			<ModalityGroup modalities={input} size={size} />

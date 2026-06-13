@@ -236,84 +236,221 @@ function buildPricingMetricColumns(pricingProfile: string | null | undefined): P
   return columns;
 }
 
-function ModelLimitsBlock({ model }: { model: ModelListItem }) {
+function ModelIdentityHeader(props: { model: ModelListItem; showVendor: boolean }) {
+  const { model, showVendor } = props;
+  const tagShown = model.tags?.length ? model.tags.slice(0, 6) : [];
+  const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
+  const displayName = model.display_name || model.id;
+  const routesLabel = `${model.routes_count} route${model.routes_count === 1 ? '' : 's'}`;
+
   return (
-    <div className="space-y-2">
-      <div className="flex flex-nowrap items-start gap-x-4">
-        <div className="shrink-0">
-          <p className="text-[11px] text-gray-400 whitespace-nowrap">Total Context</p>
-          <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight whitespace-nowrap">
-            {formatCompactTokens(model.context_window)}
-          </p>
+    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <h3 className="truncate text-base font-semibold text-gray-900" title={displayName}>
+            {displayName}
+          </h3>
+          {showVendor ? (
+            <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+              {getModelVendorLabel(normalizeModelVendorInput(model.vendor))}
+            </span>
+          ) : null}
+          <span
+            className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600"
+            title={`${routesLabel}; ${model.active_routes_count} active`}
+          >
+            {routesLabel}
+            <span className="mx-1 text-gray-300" aria-hidden>
+              ·
+            </span>
+            {model.active_routes_count} active
+          </span>
         </div>
-        <div className="shrink-0">
-          <p className="text-[11px] text-gray-400 whitespace-nowrap">Max Output</p>
-          <p className="mt-1 text-sm font-semibold text-gray-900 tabular-nums tracking-tight whitespace-nowrap">
-            {formatCompactTokens(model.max_tokens)}
-          </p>
-        </div>
+        <p className="mt-0.5 truncate font-mono text-xs text-gray-500" title={model.id}>
+          {model.id}
+        </p>
       </div>
-      <div>
-        <p className="text-[11px] text-gray-400 whitespace-nowrap">Modalities</p>
-        <div className="mt-1">
-          <ModelModalitiesBadgeFromRaw
-            inputRaw={model.input_modalities}
-            outputRaw={model.output_modalities}
-            size="sm"
-          />
-        </div>
+      <div className="flex shrink-0 flex-wrap items-center justify-start gap-1 sm:justify-end">
+        {tagShown.length ? (
+          <>
+            {tagShown.map((tag) => (
+              <span
+                key={tag}
+                className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
+              >
+                {tag}
+              </span>
+            ))}
+            {tagExtra > 0 ? (
+              <span className="self-center text-[10px] text-gray-400">+{tagExtra}</span>
+            ) : null}
+          </>
+        ) : (
+          <span className="text-xs text-gray-400">No tags</span>
+        )}
       </div>
-      {model.released_at ? (
-        <div>
-          <p className="text-[11px] text-gray-400 whitespace-nowrap">Released</p>
-          <p className="mt-0.5 text-xs text-gray-700 tabular-nums">{model.released_at}</p>
-        </div>
-      ) : null}
     </div>
   );
 }
 
-function ModelPricingBlock(props: {
+function ModelCapabilityPanel({ model }: { model: ModelListItem }) {
+  return (
+    <div>
+      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capabilities</h4>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+          <p className="text-[11px] text-gray-400">Total Context</p>
+          <p className="mt-0.5 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
+            {formatCompactTokens(model.context_window)}
+          </p>
+        </div>
+        <div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+          <p className="text-[11px] text-gray-400">Max Output</p>
+          <p className="mt-0.5 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
+            {formatCompactTokens(model.max_tokens)}
+          </p>
+        </div>
+        <div className="min-w-0 rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+          <p className="text-[11px] text-gray-400">Modalities</p>
+          <div className="mt-1">
+            <ModelModalitiesBadgeFromRaw
+              inputRaw={model.input_modalities}
+              outputRaw={model.output_modalities}
+              size="sm"
+            />
+          </div>
+        </div>
+        <div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+          <p className="text-[11px] text-gray-400">Released</p>
+          <p className="mt-0.5 text-sm text-gray-700 tabular-nums">
+            {model.released_at || '—'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModelPricingPanel(props: {
   pricingColumns: PricingMetricColumn[];
   billingCurrency: string;
 }) {
   const { pricingColumns, billingCurrency } = props;
 
-  if (pricingColumns.length === 0) {
-    return <span className="text-sm text-gray-400">—</span>;
+  return (
+    <div>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Pricing</h4>
+        <span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
+          {formatPerMillionTokenUnit(billingCurrency)}
+        </span>
+      </div>
+      {pricingColumns.length === 0 ? (
+        <p className="mt-2 text-sm text-gray-400">—</p>
+      ) : (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2 2xl:grid-cols-4">
+          {pricingColumns.map((col) => (
+            <div
+              key={col.title}
+              className="rounded-md border border-gray-100 bg-gray-50/70 px-3 py-2"
+            >
+              <p
+                className="truncate text-[11px] font-medium text-gray-500"
+                title={col.headerTitle ?? col.title}
+              >
+                {col.title}
+              </p>
+              <div className="mt-1.5 space-y-1 tabular-nums leading-snug">
+                {col.lines.map((line, lineIdx) => (
+                  <div
+                    key={`${col.title}-${lineIdx}`}
+                    className="flex flex-wrap items-baseline gap-x-1.5"
+                    title={
+                      line.price == null
+                        ? line.condition
+                        : `${line.condition} ${formatGatewayMoneyCompact(line.price, billingCurrency)}`
+                    }
+                  >
+                    <span className="shrink-0 text-[11px] text-gray-400">{line.condition}</span>
+                    <span className="text-xs font-semibold text-gray-900">
+                      {line.price == null ? '—' : formatGatewayMoneyCompact(line.price, billingCurrency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ModelDetailsPanel(props: {
+  model: ModelListItem;
+  onViewMetadata: (model: ModelListItem) => void;
+}) {
+  const { model, onViewMetadata } = props;
+  const description = model.description?.trim();
+  const metadataSummary = buildMetadataSummary(model.metadata);
+  const hasMetadata = metadataSummary.kind !== 'empty';
+
+  if (!description && !hasMetadata) {
+    return null;
   }
 
   return (
-    <div className="flex flex-nowrap items-start gap-x-3">
-      {pricingColumns.map((col) => (
-        <div key={col.title} className="shrink-0 w-[6.25rem]">
-          <p
-            className="truncate text-[11px] text-gray-400 leading-tight whitespace-nowrap"
-            title={col.headerTitle ?? col.title}
-          >
-            {col.title}
+    <div className="grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2">
+      <div className="min-w-0">
+        <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Description</h4>
+        {description ? (
+          <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-gray-600" title={description}>
+            {description}
           </p>
-          <div className="mt-1 space-y-0.5 tabular-nums leading-snug">
-            {col.lines.map((line, lineIdx) => (
-              <div
-                key={`${col.title}-${lineIdx}`}
-                className="flex flex-nowrap items-baseline gap-x-1"
-                title={
-                  line.price == null
-                    ? line.condition
-                    : `${line.condition} ${formatGatewayMoneyCompact(line.price, billingCurrency)}`
-                }
-              >
-                <span className="shrink-0 text-[11px] text-gray-400 whitespace-nowrap">{line.condition}</span>
-                <span className="shrink-0 text-xs font-semibold text-gray-900">
-                  {line.price == null ? '—' : formatGatewayMoneyCompact(line.price, billingCurrency)}
-                </span>
-              </div>
-            ))}
-          </div>
+        ) : (
+          <p className="mt-1.5 text-sm text-gray-400">—</p>
+        )}
+      </div>
+      <div className="min-w-0">
+        <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Metadata</h4>
+        <div className="mt-1.5">
+          <ModelMetadataCell model={model} onView={onViewMetadata} />
         </div>
-      ))}
+      </div>
     </div>
+  );
+}
+
+function ModelCard(props: {
+  model: ModelListItem;
+  billingCurrency: string;
+  showVendor: boolean;
+  onEdit: (model: ModelListItem) => void;
+  onViewMetadata: (model: ModelListItem) => void;
+}) {
+  const { model, billingCurrency, showVendor, onEdit, onViewMetadata } = props;
+  const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
+
+  return (
+    <article
+      role="button"
+      tabIndex={0}
+      className="cursor-pointer rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:p-5"
+      onClick={() => void onEdit(model)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          void onEdit(model);
+        }
+      }}
+    >
+      <ModelIdentityHeader model={model} showVendor={showVendor} />
+      <div className="mt-4 space-y-4">
+        <ModelCapabilityPanel model={model} />
+        <ModelPricingPanel pricingColumns={pricingColumns} billingCurrency={billingCurrency} />
+        <ModelDetailsPanel model={model} onViewMetadata={onViewMetadata} />
+      </div>
+    </article>
   );
 }
 
@@ -1012,121 +1149,17 @@ function ModelsContent() {
                   </p>
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-lg border border-gray-200/80 bg-white shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full table-fixed divide-y divide-gray-200">
-                      <colgroup>
-                        <col className="w-56" />
-                        <col className="w-48" />
-                        <col className="w-[28rem]" />
-                        <col className="w-28" />
-                        <col />
-                        <col />
-                      </colgroup>
-                      <thead className="bg-gray-50/80">
-                        <tr>
-                          <th className="w-56 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Model
-                          </th>
-                          <th
-                            className="w-48 whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
-                            title="Total context window and max output tokens"
-                          >
-                            Limits
-                          </th>
-                          <th className="w-[28rem] whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            <span className="inline-flex flex-nowrap items-baseline gap-x-2">
-                              <span>Pricing</span>
-                              <span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
-                                {formatPerMillionTokenUnit(billingCurrency)}
-                              </span>
-                            </span>
-                          </th>
-                          <th className="w-28 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Tags
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Metadata
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Description
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 bg-white">
-                        {selectedVendorItems.map((model) => {
-                          const tagShown = model.tags?.length ? model.tags.slice(0, 4) : [];
-                          const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
-                          const descriptionTitle = model.description?.trim() || undefined;
-                          const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
-                          return (
-                            <tr
-                              key={model.id}
-                              className="cursor-pointer transition-colors hover:bg-gray-50/80"
-                              onClick={() => void handleEdit(model)}
-                            >
-                              <td className="w-56 px-4 py-3 align-top">
-                                <div
-                                  className="truncate text-sm font-medium text-gray-900"
-                                  title={model.display_name || model.id}
-                                >
-                                  {model.display_name || model.id}
-                                </div>
-                                <div
-                                  className="mt-0.5 truncate font-mono text-xs leading-snug text-gray-500"
-                                  title={model.id}
-                                >
-                                  {model.id}
-                                </div>
-                              </td>
-                              <td className="w-48 px-4 py-3 align-top text-gray-800">
-                                <ModelLimitsBlock model={model} />
-                              </td>
-                              <td className="w-[28rem] px-4 py-3 align-top text-gray-800">
-                                <ModelPricingBlock
-                                  pricingColumns={pricingColumns}
-                                  billingCurrency={billingCurrency}
-                                />
-                              </td>
-                              <td className="w-28 px-4 py-3 align-top">
-                                <div className="flex flex-wrap gap-1">
-                                  {tagShown.length ? (
-                                    <>
-                                      {tagShown.map((tag) => (
-                                        <span
-                                          key={tag}
-                                          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
-                                        >
-                                          {tag}
-                                        </span>
-                                      ))}
-                                      {tagExtra > 0 ? (
-                                        <span className="self-center text-[10px] text-gray-400">+{tagExtra}</span>
-                                      ) : null}
-                                    </>
-                                  ) : (
-                                    <span className="text-xs text-gray-400">—</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 align-top">
-                                <ModelMetadataCell model={model} onView={openMetadataPreview} />
-                              </td>
-                              <td className="px-4 py-3 align-top text-xs text-gray-600">
-                                {model.description?.trim() ? (
-                                  <p className="line-clamp-2 break-words" title={descriptionTitle}>
-                                    {model.description}
-                                  </p>
-                                ) : (
-                                  <span className="text-gray-400">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="grid gap-3 2xl:grid-cols-2">
+                  {selectedVendorItems.map((model) => (
+                    <ModelCard
+                      key={model.id}
+                      model={model}
+                      billingCurrency={billingCurrency}
+                      showVendor={isAllVendors}
+                      onEdit={handleEdit}
+                      onViewMetadata={openMetadataPreview}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -1137,7 +1170,7 @@ function ModelsContent() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">{editingModel ? 'Edit Model' : 'New Model'}</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">x</button>
@@ -1147,15 +1180,15 @@ function ModelsContent() {
               {saveError && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{saveError}</div>}
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Model ID *</label>
                   <input type="text" value={formData.id} onChange={(e) => setFormData({ ...formData, id: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="gpt-4o" required disabled={!!editingModel} />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
                   <input type="text" value={formData.display_name} onChange={(e) => setFormData({ ...formData, display_name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="GPT-4o" />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
                   <select
                     value={
@@ -1174,14 +1207,6 @@ function ModelsContent() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Context Window</label>
-                  <input type="number" value={formData.context_window} onChange={(e) => setFormData({ ...formData, context_window: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="128000" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
-                  <input type="number" value={formData.max_tokens} onChange={(e) => setFormData({ ...formData, max_tokens: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="4096" />
-                </div>
-                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Released</label>
                   <input
                     type="date"
@@ -1190,46 +1215,70 @@ function ModelsContent() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Input Modalities</label>
-                  <div className="flex flex-wrap gap-3">
-                    {MODEL_INPUT_MODALITIES.map((m) => (
-                      <label key={m} className="inline-flex items-center gap-1.5 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={formData.input_modalities.includes(m)}
-                          onChange={() => toggleFormModality('input_modalities', m)}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        {m}
-                      </label>
-                    ))}
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Context Window</label>
+                  <input type="number" value={formData.context_window} onChange={(e) => setFormData({ ...formData, context_window: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="128000" />
                 </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Output Modalities</label>
-                  <div className="flex flex-wrap gap-3">
-                    {MODEL_OUTPUT_MODALITIES.map((m) => (
-                      <label key={m} className="inline-flex items-center gap-1.5 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={formData.output_modalities.includes(m)}
-                          onChange={() => toggleFormModality('output_modalities', m)}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        {m}
-                      </label>
-                    ))}
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
+                  <input type="number" value={formData.max_tokens} onChange={(e) => setFormData({ ...formData, max_tokens: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="4096" />
                 </div>
-                <div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Preview</p>
-                  <div className="mt-1.5">
-                    <ModelModalitiesBadgeFromRaw
-                      inputRaw={JSON.stringify(formData.input_modalities)}
-                      outputRaw={JSON.stringify(formData.output_modalities)}
-                      size="md"
-                    />
+                <div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2.5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1 space-y-2.5">
+                      <div className="grid gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                          Input
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {MODEL_INPUT_MODALITIES.map((m) => (
+                            <label
+                              key={m}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.input_modalities.includes(m)}
+                                onChange={() => toggleFormModality('input_modalities', m)}
+                                className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              {m}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                          Output
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {MODEL_OUTPUT_MODALITIES.map((m) => (
+                            <label
+                              key={m}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.output_modalities.includes(m)}
+                                onChange={() => toggleFormModality('output_modalities', m)}
+                                className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              {m}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="shrink-0 rounded-md border border-gray-200 bg-white px-3 py-2 sm:min-w-32">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Preview</p>
+                      <div className="mt-1.5">
+                        <ModelModalitiesBadgeFromRaw
+                          inputRaw={JSON.stringify(formData.input_modalities)}
+                          outputRaw={JSON.stringify(formData.output_modalities)}
+                          size="sm"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="col-span-2">
