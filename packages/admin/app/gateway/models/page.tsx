@@ -29,6 +29,7 @@ import {
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
 import { ModelModalitiesBadgeFromRaw } from '@/components/model-modalities-badge';
+import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
 import { formatGatewayMoneyCompact, formatPerMillionTokenUnit } from '@/lib/format-gateway-currency';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -236,8 +237,8 @@ function buildPricingMetricColumns(pricingProfile: string | null | undefined): P
   return columns;
 }
 
-function ModelIdentityHeader(props: { model: ModelListItem; showVendor: boolean }) {
-  const { model, showVendor } = props;
+function ModelIdentityHeader(props: { model: ModelListItem }) {
+  const { model } = props;
   const tagShown = model.tags?.length ? model.tags.slice(0, 6) : [];
   const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
   const displayName = model.display_name || model.id;
@@ -245,30 +246,28 @@ function ModelIdentityHeader(props: { model: ModelListItem; showVendor: boolean 
 
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <h3 className="truncate text-base font-semibold text-gray-900" title={displayName}>
-            {displayName}
-          </h3>
-          {showVendor ? (
-            <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-              {getModelVendorLabel(normalizeModelVendorInput(model.vendor))}
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        <ModelVendorIcon vendor={model.vendor} size="identity" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h3 className="truncate text-base font-semibold text-gray-900" title={displayName}>
+              {displayName}
+            </h3>
+            <span
+              className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600"
+              title={`${routesLabel}; ${model.active_routes_count} active`}
+            >
+              {routesLabel}
+              <span className="mx-1 text-gray-300" aria-hidden>
+                ·
+              </span>
+              {model.active_routes_count} active
             </span>
-          ) : null}
-          <span
-            className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600"
-            title={`${routesLabel}; ${model.active_routes_count} active`}
-          >
-            {routesLabel}
-            <span className="mx-1 text-gray-300" aria-hidden>
-              ·
-            </span>
-            {model.active_routes_count} active
-          </span>
+          </div>
+          <p className="mt-0.5 truncate font-mono text-xs text-gray-500" title={model.id}>
+            {model.id}
+          </p>
         </div>
-        <p className="mt-0.5 truncate font-mono text-xs text-gray-500" title={model.id}>
-          {model.id}
-        </p>
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-start gap-1 sm:justify-end">
         {tagShown.length ? (
@@ -424,18 +423,17 @@ function ModelDetailsPanel(props: {
 function ModelCard(props: {
   model: ModelListItem;
   billingCurrency: string;
-  showVendor: boolean;
   onEdit: (model: ModelListItem) => void;
   onViewMetadata: (model: ModelListItem) => void;
 }) {
-  const { model, billingCurrency, showVendor, onEdit, onViewMetadata } = props;
+  const { model, billingCurrency, onEdit, onViewMetadata } = props;
   const pricingColumns = buildPricingMetricColumns(model.pricing_profile);
 
   return (
     <article
       role="button"
       tabIndex={0}
-      className="cursor-pointer rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:p-5"
+      className="cursor-pointer rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 focus:outline-none focus-visible:border-blue-400 focus-visible:bg-blue-50/30 focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 active:translate-y-0 sm:p-5"
       onClick={() => void onEdit(model)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -444,7 +442,7 @@ function ModelCard(props: {
         }
       }}
     >
-      <ModelIdentityHeader model={model} showVendor={showVendor} />
+      <ModelIdentityHeader model={model} />
       <div className="mt-4 space-y-4">
         <ModelCapabilityPanel model={model} />
         <ModelPricingPanel pricingColumns={pricingColumns} billingCurrency={billingCurrency} />
@@ -1155,7 +1153,6 @@ function ModelsContent() {
                       key={model.id}
                       model={model}
                       billingCurrency={billingCurrency}
-                      showVendor={isAllVendors}
                       onEdit={handleEdit}
                       onViewMetadata={openMetadataPreview}
                     />
