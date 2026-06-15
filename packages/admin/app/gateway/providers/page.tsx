@@ -840,26 +840,15 @@ export default function GatewayProvidersPage() {
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-gray-50 px-6 py-4">
               <div className="flex flex-wrap items-center gap-2">
                 {editingProvider && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleDuplicate(editingProvider)}
-                      disabled={isSaving || isDeleting}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
-                      Duplicate
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(editingProvider.id)}
-                      disabled={isSaving || isDeleting}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <TrashIcon className="h-4 w-4" aria-hidden />
-                      {isDeleting ? 'Deleting…' : 'Delete provider'}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(editingProvider.id)}
+                    disabled={isSaving || isDeleting}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <TrashIcon className="h-4 w-4" aria-hidden />
+                    {isDeleting ? 'Deleting…' : 'Delete provider'}
+                  </button>
                 )}
               </div>
               <div className="ml-auto flex gap-3">
@@ -871,6 +860,17 @@ export default function GatewayProvidersPage() {
                 >
                   Cancel
                 </button>
+                {editingProvider && (
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicate(editingProvider)}
+                    disabled={isSaving || isDeleting}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
+                    Duplicate
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => void handleSave()}

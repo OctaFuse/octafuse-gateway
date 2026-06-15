@@ -1705,26 +1705,15 @@ function RoutesContent() {
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
               <div className="flex flex-wrap items-center gap-2">
                 {editingRoute && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleDuplicate(editingRoute)}
-                      disabled={isSaving || isDeleting}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
-                      Duplicate
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(editingRoute.id)}
-                      disabled={isSaving || isDeleting}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <TrashIcon className="h-4 w-4" aria-hidden />
-                      {isDeleting ? 'Deleting...' : 'Delete route'}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(editingRoute.id)}
+                    disabled={isSaving || isDeleting}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <TrashIcon className="h-4 w-4" aria-hidden />
+                    {isDeleting ? 'Deleting...' : 'Delete route'}
+                  </button>
                 )}
               </div>
               <div className="ml-auto flex gap-2 sm:gap-3">
@@ -1736,6 +1725,17 @@ function RoutesContent() {
                 >
                   Cancel
                 </button>
+                {editingRoute && (
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicate(editingRoute)}
+                    disabled={isSaving || isDeleting}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
+                    Duplicate
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleSave}
