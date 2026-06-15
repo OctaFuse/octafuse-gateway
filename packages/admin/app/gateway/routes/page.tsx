@@ -38,7 +38,6 @@ import {
   providerSupportsUpstreamProtocol,
   type UpstreamProtocol,
 } from '@/lib/upstream-protocol';
-import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import {
   compareRouteGroupsForDisplay,
   normalizeRouteGroup,
@@ -98,6 +97,14 @@ function compareModelRoutesForCardDisplay(
   });
   if (nameCmp !== 0) return nameCmp;
   return a.id.localeCompare(b.id, undefined, { sensitivity: 'base' });
+}
+
+function compareModelVendorsForDisplay(a: string, b: string): number {
+  if (a === 'other') return 1;
+  if (b === 'other') return -1;
+  return getModelVendorLabel(a).localeCompare(getModelVendorLabel(b), undefined, {
+    sensitivity: 'base',
+  });
 }
 
 function formatFactorValue(n: number): string {
@@ -836,6 +843,25 @@ function RoutesContent() {
     });
   }, [routesByModel, modelMeta]);
 
+  const routeCardVendorGroups = useMemo(() => {
+    if (filterVendor) {
+      return [{ vendor: filterVendor, cards: routeCards, showHeader: false }];
+    }
+
+    const byVendor = new Map<string, typeof routeCards>();
+    for (const card of routeCards) {
+      const list = byVendor.get(card.vendor) ?? [];
+      list.push(card);
+      byVendor.set(card.vendor, list);
+    }
+
+    return [...byVendor.keys()].sort(compareModelVendorsForDisplay).map((vendor) => ({
+      vendor,
+      cards: byVendor.get(vendor)!,
+      showHeader: true,
+    }));
+  }, [routeCards, filterVendor]);
+
   const visibleModelCount = routesByModel.length;
   const visibleRouteCount = useMemo(
     () => routesByModel.reduce((sum, g) => sum + g.groupRoutes.length, 0),
@@ -1020,7 +1046,7 @@ function RoutesContent() {
           </aside>
 
           {/* Route configuration workspace */}
-          <section className="min-w-0 flex-1 bg-white">
+          <section className="min-w-0 flex-1 bg-slate-100/70">
             <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
               <div className="min-w-0">
                 <h2 className="text-base font-semibold text-gray-900">Route Configurations</h2>
@@ -1042,9 +1068,9 @@ function RoutesContent() {
               </button>
             </div>
 
-            <div className="p-4 sm:p-6">
+            <div className="bg-slate-100/70 p-4 sm:p-6">
               {routesByModel.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/50 py-16 text-center text-gray-500">
+                <div className="rounded-xl border border-dashed border-gray-300 bg-white/80 py-16 text-center text-gray-500 shadow-sm">
                   <p className="text-sm font-medium text-gray-600">No models or routes found</p>
                   {hasActiveFilters ? (
                     <p className="mt-1 text-xs text-gray-500">
@@ -1060,8 +1086,32 @@ function RoutesContent() {
                   ) : null}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3 xl:gap-6 2xl:grid-cols-4">
-                  {routeCards.map(({ model_id, title, groupRoutes, activeCount }) => {
+                <div className={filterVendor ? '' : 'space-y-8'}>
+                  {routeCardVendorGroups.map(({ vendor, cards, showHeader }, vendorGroupIdx) => (
+                    <section key={vendor} className="min-w-0">
+                      {showHeader ? (
+                        <div
+                          className={
+                            (vendorGroupIdx > 0 ? 'border-t border-gray-200/80 pt-5 ' : '') +
+                            'mb-3 flex items-center justify-between gap-3'
+                          }
+                        >
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <ModelVendorIcon vendor={vendor} size="default" />
+                            <div className="min-w-0">
+                              <h3 className="truncate text-sm font-semibold text-gray-900">
+                                {getModelVendorLabel(vendor)}
+                              </h3>
+                              <p className="text-xs text-gray-500">Vendor</p>
+                            </div>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tabular-nums text-gray-600 ring-1 ring-inset ring-gray-200">
+                            {cards.length} model{cards.length === 1 ? '' : 's'}
+                          </span>
+                        </div>
+                      ) : null}
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3 xl:gap-6 2xl:grid-cols-4">
+                        {cards.map(({ model_id, title, groupRoutes, activeCount }) => {
                           const meta = modelMeta.get(model_id);
                           const modelStatsTitle = `Context: ${meta?.context_window ?? '—'} · Max output: ${meta?.max_tokens ?? '—'}`;
                           return (
@@ -1071,7 +1121,6 @@ function RoutesContent() {
                             >
                               <div className="flex items-start justify-between gap-2 border-b border-gray-100 bg-white px-4 py-3 transition-colors group-hover:bg-blue-50/30 group-focus-within:bg-blue-50/30">
                                 <div className="flex min-w-0 flex-1 items-start gap-3">
-                                  <ModelVendorIcon vendor={meta?.vendor} size="default" className="mt-0.5" />
                                   <div className="min-w-0 flex-1">
                                     <div className="flex min-w-0 items-center gap-1.5">
                                       <h4
@@ -1190,10 +1239,9 @@ function RoutesContent() {
                                                     <div className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug">
                                                       <div className="flex min-w-0 items-center gap-2">
                                                         <div
-                                                          className="flex shrink-0 items-center gap-1.5"
+                                                          className="flex shrink-0 items-center"
                                                           title={route.upstream_protocol}
                                                         >
-                                                          <UpstreamProtocolBrandIcon protocol={route.upstream_protocol} />
                                                           <span
                                                             className="text-[11px] font-semibold tabular-nums text-gray-600"
                                                             title="Priority (failover order)"
@@ -1255,6 +1303,9 @@ function RoutesContent() {
                             </div>
                           );
                         })}
+                      </div>
+                    </section>
+                  ))}
                 </div>
               )}
             </div>

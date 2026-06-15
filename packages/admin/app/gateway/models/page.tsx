@@ -1099,7 +1099,7 @@ function ModelsContent() {
           ) : null}
 
           {/* Model catalog workspace */}
-          <section className="min-w-0 flex-1 bg-white">
+          <section className="min-w-0 flex-1 bg-slate-100/70">
             <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
               <div className="min-w-0">
                 <h2 className="text-base font-semibold text-gray-900">Model Catalog</h2>
@@ -1138,9 +1138,9 @@ function ModelsContent() {
               </div>
             </div>
 
-            <div className="p-4 sm:p-6">
+            <div className="bg-slate-100/70 p-4 sm:p-6">
               {models.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/50 py-16 text-center text-gray-500">
+                <div className="rounded-xl border border-dashed border-gray-300 bg-white/80 py-16 text-center text-gray-500 shadow-sm">
                   <p className="text-sm font-medium text-gray-600">No models found</p>
                   <p className="mt-1 text-xs text-gray-500">
                     Import from the built-in catalog or create a model manually
