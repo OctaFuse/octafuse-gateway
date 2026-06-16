@@ -4,7 +4,7 @@
  * 权威列表见 [provider-import-presets.json](./provider-import-presets.json)。`vendor_key` 应对齐
  * [model-vendors.json](./model-vendors.json) 中的 `key`（展示名用 `getModelVendorLabel`）。
  *
- * 导入时使用占位 API Key（{@link PROVIDER_IMPORT_PENDING_API_KEY}），用户保存前须在控制台替换为真实密钥。
+ * 导入后不含 API Key，须在 Edit Provider 中手动添加。
  */
 import rawPresets from './provider-import-presets.json';
 import { getModelVendorLabel, normalizeModelVendorInput } from './model-vendor';
@@ -20,13 +20,6 @@ export type StaticProviderImportPresetRow = {
 	/** 可选；JSON 中可省略，导入后写入 providers.description 时为 null */
 	description?: string | null;
 };
-
-import {
-	PROVIDER_IMPORT_PENDING_API_KEY,
-	isPendingProviderImportApiKey,
-} from '@octafuse/core';
-
-export { PROVIDER_IMPORT_PENDING_API_KEY, isPendingProviderImportApiKey };
 
 const STATIC_ROWS = rawPresets as StaticProviderImportPresetRow[];
 
