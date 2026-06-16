@@ -191,7 +191,6 @@ export interface ProvidersRepository {
 		baseUrlOpenai: string | null;
 		baseUrlAnthropic: string | null;
 		baseUrlGemini: string | null;
-		apiKey: string;
 		description: unknown;
 	}): Promise<void>;
 	updateProviderByPatch(id: string, body: Record<string, unknown>): Promise<number>;
@@ -208,8 +207,6 @@ export interface ProviderApiKeysRepository {
 	updateProviderKeyByPatch(keyId: string, patch: UpdateProviderApiKeyPatch): Promise<number>;
 	deleteProviderKeyById(keyId: string): Promise<number>;
 	getProviderKeyById(keyId: string): Promise<ProviderApiKeyAdminRow | null>;
-	/** PATCH `providers.api_key` 时同步 label=`default` 的 pool 行。 */
-	syncLegacyDefaultKey(providerId: string, apiKey: string): Promise<void>;
 	countActiveProviderKeys(providerId: string): Promise<number>;
 }
 

@@ -18,7 +18,6 @@ function providerRecordFromMy(r: {
 	baseUrlOpenai: string | null;
 	baseUrlAnthropic: string | null;
 	baseUrlGemini: string | null;
-	apiKey: string;
 	description: string | null;
 	createdAt: string;
 }): ProviderAdminRow {
@@ -28,7 +27,6 @@ function providerRecordFromMy(r: {
 		base_url_openai: r.baseUrlOpenai,
 		base_url_anthropic: r.baseUrlAnthropic,
 		base_url_gemini: r.baseUrlGemini,
-		api_key: r.apiKey,
 		description: r.description,
 		created_at: r.createdAt,
 	};
@@ -40,7 +38,6 @@ function mapMyProviderRow(r: {
 	baseUrlOpenai: string | null;
 	baseUrlAnthropic: string | null;
 	baseUrlGemini: string | null;
-	apiKey: string;
 	description: string | null;
 	createdAt: string;
 }): ProviderRow {
@@ -50,7 +47,6 @@ function mapMyProviderRow(r: {
 		base_url_openai: r.baseUrlOpenai,
 		base_url_anthropic: r.baseUrlAnthropic,
 		base_url_gemini: r.baseUrlGemini,
-		api_key: r.apiKey,
 		description: r.description,
 		created_at: r.createdAt,
 	};
@@ -77,7 +73,6 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 			baseUrlOpenai: string | null;
 			baseUrlAnthropic: string | null;
 			baseUrlGemini: string | null;
-			apiKey: string;
 			description: unknown;
 		}): Promise<void> {
 			const now = new Date().toISOString();
@@ -87,7 +82,6 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 				baseUrlOpenai: params.baseUrlOpenai,
 				baseUrlAnthropic: params.baseUrlAnthropic,
 				baseUrlGemini: params.baseUrlGemini,
-				apiKey: params.apiKey,
 				description: params.description == null ? null : String(params.description),
 				createdAt: now,
 			});

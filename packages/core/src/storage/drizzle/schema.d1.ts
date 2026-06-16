@@ -56,7 +56,6 @@ export const providersTable = sqliteTable('providers', {
 	baseUrlOpenai: text('base_url_openai'),
 	baseUrlAnthropic: text('base_url_anthropic'),
 	baseUrlGemini: text('base_url_gemini'),
-	apiKey: text('api_key').notNull(),
 	description: text('description'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });

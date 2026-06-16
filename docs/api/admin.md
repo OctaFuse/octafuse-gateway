@@ -57,7 +57,7 @@ Authorization: Bearer sk-admin-xxx
 | `/admin/providers/:id/keys` | GET, POST | `provider_api_keys`（列表脱敏 `fingerprint`） | Admin UI |
 | `/admin/providers/:id/keys/:keyId` | PATCH, DELETE | `provider_api_keys` | Admin UI |
 | `/admin/providers/import/catalog` | GET | 内置 Provider 模板摘要（无密钥） | Admin UI |
-| `/admin/providers/import` | POST | 请求体 `{"ids":["…"]}`：按模板创建 `providers`（**同 id 不覆盖**；写入占位 API Key，需后续 PATCH） | Admin UI、运维脚本 |
+| `/admin/providers/import` | POST | 请求体 `{"ids":["…"]}`：按模板创建 `providers` + `provider_api_keys` default 行（**同 id 不覆盖**；占位 API Key 写入 key pool，需在 Admin 中替换） | Admin UI、运维脚本 |
 | `/admin/models` | GET, POST, GET/PATCH/DELETE `/:id` | `models`，`model_tags` | Admin UI |
 | `/admin/models/import/catalog` | GET | 内置静态目录可选项摘要（不含完整 `pricing_profile`） | Admin UI |
 | `/admin/models/import` | POST | 请求体 `{"ids":["…"]}`：仅导入指定预设 → `models`，`model_tags`（按 `BILLING_CURRENCY` 选用 USD/CNY 价；**同 id 不覆盖**，记入 `skipped_existing`） | Admin UI、运维脚本 |
@@ -525,7 +525,7 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 面向用户的「有活跃路由的模型」列表：**Agent / SDK** 用 **`GET /v1/models`**（用户 Key）；**门户 / 公开 discovery** 用 Proxy **`GET /catalog/models`**（无需 Key，含协议能力，见 [用户接口](./user.md#公开模型目录catalog-discovery)）。
 
-**管理端基础数据**（`Authorization: Bearer <MASTER_KEY>`，响应多为 `{ success, data, count? }`）：**`/admin/keys`**（上文）与 **`/admin/providers`**（含 **`GET/POST /admin/providers/:id/keys`**、**`PATCH/DELETE /admin/providers/:id/keys/:keyId`** 多 key 管理；列表响应脱敏 `fingerprint`，不回显明文）、**`/admin/models`**（含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**）、**`/admin/routes`**（REST：`GET/POST` 集合，`GET/PATCH/DELETE /:id`；路由列表支持 `GET /admin/routes?model_id=&provider_id=`）。**`POST /admin/routes`** 省略或空白 **`route_group`** 时写入 **`default`**；**`PATCH`** 若包含 **`route_group`** 则不得为仅空白字符串（否则 **400** `route_group cannot be empty`）。
+**管理端基础数据**（`Authorization: Bearer <MASTER_KEY>`，响应多为 `{ success, data, count? }`）：**`/admin/keys`**（上文）与 **`/admin/providers`**（`POST` 创建时 body 仍含 **`api_key`**，服务端写入 **`provider_api_keys`** 的 `label=default` 行；`providers` 表不再存密钥。列表响应含 **`active_key_count`** / **`has_pending_key`**。含 **`GET/POST /admin/providers/:id/keys`**、**`PATCH/DELETE /admin/providers/:id/keys/:keyId`** 多 key 管理；key 列表脱敏 `fingerprint` + **`is_pending_import`**，不回显明文）、**`/admin/models`**（含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**）、**`/admin/routes`**（REST：`GET/POST` 集合，`GET/PATCH/DELETE /:id`；路由列表支持 `GET /admin/routes?model_id=&provider_id=`）。**`POST /admin/routes`** 省略或空白 **`route_group`** 时写入 **`default`**；**`PATCH`** 若包含 **`route_group`** 则不得为仅空白字符串（否则 **400** `route_group cannot be empty`）。
 
 ### `GET /admin/models/import/catalog`
 
@@ -606,7 +606,7 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 | `status` | 精确匹配 |
 | `start_date` / `end_date` | 过滤 `created_at`（UTC，格式：`YYYY-MM-DD HH:mm:ss`） |
 
-`data` 每条日志即 **`api_key_request_logs` 行**（读接口不 JOIN `models` / `providers`；展示名依赖写入时快照列）。**`model_name`** / **`provider_name`** 为请求当时展示名快照；**`provider_model_name`** 为上游模型 id；**`request_body`** 为客户端入口侧脱敏 JSON（无提示词正文；长度有上限）。**`upstream_request_body`** 为合并路由 `custom_params` 后、与发往供应商的 wire 体结构对齐的脱敏快照（规则同 `request_body`；迁移前或旧行可能为 `null`）。**`request_protocol`**（入口）与 **`upstream_protocol`**（所选路由实际转发协议）见上文注。升级前列可能为 `null`。
+`data` 每条日志即 **`api_key_request_logs` 行**（读接口不 JOIN `models` / `providers`；展示名依赖写入时快照列）。**`model_name`** / **`provider_name`** 为请求当时展示名快照；**`provider_model_name`** 为上游模型 id；**`provider_key_id`** / **`provider_key_label`** / **`provider_key_fingerprint`** 为最终选用的 provider key 快照（迁移前旧行可能为 `null`）。**`request_body`** 为客户端入口侧脱敏 JSON（无提示词正文；长度有上限）。**`upstream_request_body`** 为合并路由 `custom_params` 后、与发往供应商的 wire 体结构对齐的脱敏快照（规则同 `request_body`；迁移前或旧行可能为 `null`）。**`request_protocol`**（入口）与 **`upstream_protocol`**（所选路由实际转发协议）见上文注。升级前列可能为 `null`。
 
 ### `GET /admin/budget-audit-logs`
 

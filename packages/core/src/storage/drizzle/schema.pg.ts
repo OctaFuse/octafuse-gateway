@@ -60,7 +60,6 @@ export const providersTable = pgTable('providers', {
 	baseUrlOpenai: text('base_url_openai'),
 	baseUrlAnthropic: text('base_url_anthropic'),
 	baseUrlGemini: text('base_url_gemini'),
-	apiKey: text('api_key').notNull(),
 	description: text('description'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });

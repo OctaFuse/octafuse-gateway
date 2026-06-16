@@ -9,7 +9,6 @@ export const PROVIDER_PATCH_COLS = new Set([
 	'base_url_openai',
 	'base_url_anthropic',
 	'base_url_gemini',
-	'api_key',
 	'description',
 ]);
 

@@ -9,7 +9,7 @@ import type {
 	ProviderApiKeyAdminRow,
 	UpdateProviderApiKeyPatch,
 } from '../provider-api-keys-types';
-import { fingerprintProviderApiKey } from '../provider-key-utils';
+import { fingerprintProviderApiKey, isPendingProviderImportApiKey } from '../provider-key-utils';
 import { PROVIDER_API_KEY_PATCH_COLS } from '../patch-allowlists';
 
 function mapAdminRow(row: {
@@ -31,6 +31,7 @@ function mapAdminRow(row: {
 		weight: row.weight,
 		priority: row.priority,
 		fingerprint: fingerprintProviderApiKey(row.api_key),
+		is_pending_import: isPendingProviderImportApiKey(row.api_key),
 		created_at: row.created_at,
 		updated_at: row.updated_at,
 	};
@@ -69,23 +70,7 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 				)
 				.bind(providerId)
 				.all<ActiveProviderApiKeyRow>();
-			const keys = rows.results ?? [];
-			if (keys.length > 0) return keys;
-
-			const provider = await raw
-				.prepare('SELECT api_key FROM providers WHERE id = ?')
-				.bind(providerId)
-				.first<{ api_key: string }>();
-			if (!provider?.api_key) return [];
-			return [
-				{
-					id: `legacy-${providerId}`,
-					label: 'default',
-					api_key: provider.api_key,
-					weight: 1,
-					priority: 0,
-				},
-			];
+			return rows.results ?? [];
 		},
 
 		async createProviderKey(params: InsertProviderApiKeyParams): Promise<void> {
@@ -159,28 +144,6 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 					updated_at: string;
 				}>();
 			return row ? mapAdminRow(row) : null;
-		},
-
-		async syncLegacyDefaultKey(providerId: string, apiKey: string): Promise<void> {
-			const defaultKey = await raw
-				.prepare(`SELECT id FROM provider_api_keys WHERE provider_id = ? AND label = 'default' LIMIT 1`)
-				.bind(providerId)
-				.first<{ id: string }>();
-			const now = new Date().toISOString();
-			if (defaultKey) {
-				await raw
-					.prepare(`UPDATE provider_api_keys SET api_key = ?, updated_at = ? WHERE id = ?`)
-					.bind(apiKey, now, defaultKey.id)
-					.run();
-				return;
-			}
-			await raw
-				.prepare(
-					`INSERT INTO provider_api_keys (id, provider_id, label, api_key, status, weight, priority, created_at, updated_at)
-					 VALUES (?, ?, 'default', ?, 'active', 1, 0, ?, ?)`
-				)
-				.bind(`pkey_${providerId}`, providerId, apiKey, now, now)
-				.run();
 		},
 
 		async countActiveProviderKeys(providerId: string): Promise<number> {

@@ -71,7 +71,7 @@ async function routeRowToResult(repos: GatewayRepositories, route: ModelRouteRow
     providerModelName: route.provider_model_name,
     upstreamProtocol: protocol,
     baseUrl,
-    providerApiKey: provider.api_key,
+    providerApiKey: '',
     priceOverrideRaw: route.price_override,
     routeMeteredProfileJson: extractMeteredProfileFromPriceOverrideJson(route.price_override),
     routeChargedProfileJson: extractChargedProfileFromPriceOverrideJson(route.price_override),

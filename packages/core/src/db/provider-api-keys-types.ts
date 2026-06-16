@@ -32,6 +32,8 @@ export interface ProviderApiKeyAdminRow {
 	weight: number;
 	priority: number;
 	fingerprint: string;
+	/** 是否为静态导入占位密钥（{@link PROVIDER_IMPORT_PENDING_API_KEY}）。 */
+	is_pending_import: boolean;
 	created_at: string;
 	updated_at: string;
 }

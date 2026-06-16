@@ -13,9 +13,19 @@ import type {
 	AdminProvidersImportOutput,
 } from './types';
 
-/** 供应商列表（含敏感字段，仅 BFF/管理端使用）。 */
+/** 供应商列表（含 key 池摘要，仅 BFF/管理端使用）。 */
 export async function listProvidersService(repos: GatewayRepositories): Promise<AdminProviderRow[]> {
-	return (await repos.providers.listProviders()) as AdminProviderRow[];
+	const providers = (await repos.providers.listProviders()) as AdminProviderRow[];
+	const enriched: AdminProviderRow[] = [];
+	for (const provider of providers) {
+		const keys = await repos.providerKeys.listProviderKeys(provider.id);
+		enriched.push({
+			...provider,
+			active_key_count: keys.filter((k) => k.status === 'active').length,
+			has_pending_key: keys.some((k) => k.is_pending_import),
+		});
+	}
+	return enriched;
 }
 
 /**
@@ -41,7 +51,6 @@ export async function createProviderService(repos: GatewayRepositories, body: Ad
 		baseUrlOpenai,
 		baseUrlAnthropic: nullIfEmpty(body.base_url_anthropic as string | null | undefined),
 		baseUrlGemini: nullIfEmpty(body.base_url_gemini as string | null | undefined),
-		apiKey,
 		description: body.description,
 	});
 
@@ -83,10 +92,6 @@ export async function updateProviderService(repos: GatewayRepositories, id: stri
 	const changes = await repos.providers.updateProviderByPatch(id, patch);
 	if (Object.keys(patch).some((k) => k !== 'id' && patch[k] !== undefined) && changes === 0) {
 		throw notFound('Provider not found');
-	}
-
-	if (typeof patch.api_key === 'string' && patch.api_key.trim()) {
-		await repos.providerKeys.syncLegacyDefaultKey(id, patch.api_key.trim());
 	}
 }
 

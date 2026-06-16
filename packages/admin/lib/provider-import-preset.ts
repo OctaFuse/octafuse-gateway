@@ -21,12 +21,12 @@ export type StaticProviderImportPresetRow = {
 	description?: string | null;
 };
 
-/** 占位密钥：导入后列表中会高亮提示需替换。勿用于真实上游调用。 */
-export const PROVIDER_IMPORT_PENDING_API_KEY = '__OCTAFUSE_PENDING_PROVIDER_API_KEY__';
+import {
+	PROVIDER_IMPORT_PENDING_API_KEY,
+	isPendingProviderImportApiKey,
+} from '@octafuse/core';
 
-export function isPendingProviderImportApiKey(apiKey: string | null | undefined): boolean {
-	return typeof apiKey === 'string' && apiKey === PROVIDER_IMPORT_PENDING_API_KEY;
-}
+export { PROVIDER_IMPORT_PENDING_API_KEY, isPendingProviderImportApiKey };
 
 const STATIC_ROWS = rawPresets as StaticProviderImportPresetRow[];
 

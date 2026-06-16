@@ -8,6 +8,7 @@ import type { ProvidersRepository } from '../../storage/gateway-repository-inter
 import { providersTable as pgProvidersTable } from '../../storage/drizzle/schema.pg';
 import type { ProviderProtocolBases } from '../providers-types';
 import type { ProviderAdminRow } from '../../storage/repository-dtos';
+import { PROVIDER_PATCH_COLS } from '../patch-allowlists';
 
 function snakeToCamel(key: string): string {
 	return key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -19,7 +20,6 @@ function mapPgProviderRow(r: {
 	baseUrlOpenai: string | null;
 	baseUrlAnthropic: string | null;
 	baseUrlGemini: string | null;
-	apiKey: string;
 	description: string | null;
 	createdAt: string;
 }): ProviderRow {
@@ -29,7 +29,6 @@ function mapPgProviderRow(r: {
 		base_url_openai: r.baseUrlOpenai,
 		base_url_anthropic: r.baseUrlAnthropic,
 		base_url_gemini: r.baseUrlGemini,
-		api_key: r.apiKey,
 		description: r.description,
 		created_at: r.createdAt,
 	};
@@ -41,7 +40,6 @@ function providerRecordFromPg(r: {
 	baseUrlOpenai: string | null;
 	baseUrlAnthropic: string | null;
 	baseUrlGemini: string | null;
-	apiKey: string;
 	description: string | null;
 	createdAt: string;
 }): ProviderAdminRow {
@@ -51,7 +49,6 @@ function providerRecordFromPg(r: {
 		base_url_openai: r.baseUrlOpenai,
 		base_url_anthropic: r.baseUrlAnthropic,
 		base_url_gemini: r.baseUrlGemini,
-		api_key: r.apiKey,
 		description: r.description,
 		created_at: r.createdAt,
 	};
@@ -76,7 +73,6 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 			baseUrlOpenai: string | null;
 			baseUrlAnthropic: string | null;
 			baseUrlGemini: string | null;
-			apiKey: string;
 			description: unknown;
 		}): Promise<void> {
 			const now = new Date().toISOString();
@@ -86,7 +82,6 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 				baseUrlOpenai: params.baseUrlOpenai,
 				baseUrlAnthropic: params.baseUrlAnthropic,
 				baseUrlGemini: params.baseUrlGemini,
-				apiKey: params.apiKey,
 				description: params.description == null ? null : String(params.description),
 				createdAt: now,
 			});
@@ -96,6 +91,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 			const set: Record<string, unknown> = {};
 			for (const [key, value] of Object.entries(body)) {
 				if (key === 'id' || value === undefined) continue;
+				if (!PROVIDER_PATCH_COLS.has(key)) continue;
 				const camel = snakeToCamel(key);
 				set[camel] = value;
 			}

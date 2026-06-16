@@ -360,6 +360,21 @@ export default function GatewayRequestLogsPage() {
     );
   };
 
+  const renderProviderKeyInline = (log: GatewayRequestLog) => {
+    const label = log.provider_key_label?.trim();
+    const fingerprint = log.provider_key_fingerprint?.trim();
+    if (!label && !fingerprint) return null;
+    const text = [label, fingerprint].filter(Boolean).join(' · ');
+    return (
+      <div
+        className="text-[11px] text-gray-500 truncate mt-0.5 font-mono"
+        title={log.provider_key_id ? `provider key id: ${log.provider_key_id}` : undefined}
+      >
+        Key: {text}
+      </div>
+    );
+  };
+
   /** 首列状态色块（实心）；悬停色块见完整 status 文案 */
   const statusSwatchClass = (status: string) => {
     if (status === 'success') return 'bg-emerald-500';
@@ -617,6 +632,7 @@ export default function GatewayRequestLogsPage() {
                     <td className="px-3 py-2 text-xs align-top max-w-md">
                       <div>{renderModelRouteLine(log)}</div>
                       {renderProviderInline(log)}
+                      {renderProviderKeyInline(log)}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600 leading-tight">
                       <div className="text-gray-900 tabular-nums">

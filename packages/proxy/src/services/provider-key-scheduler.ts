@@ -1,5 +1,5 @@
 /**
- * Provider key pool 调度：weighted-random 顺序 + 单实例内存 cooldown。
+ * Provider key pool 调度：按 priority 分批 failover，同批内 weighted-random + 单实例内存 cooldown。
  */
 import type { ActiveProviderApiKeyRow } from '@octafuse/core';
 
@@ -35,16 +35,32 @@ function weightedRandomOrder(keys: ActiveProviderApiKeyRow[]): ActiveProviderApi
 	return ordered;
 }
 
+function groupKeysByPriorityDesc(keys: ActiveProviderApiKeyRow[]): ActiveProviderApiKeyRow[][] {
+	const groups = new Map<number, ActiveProviderApiKeyRow[]>();
+	for (const key of keys) {
+		const bucket = groups.get(key.priority) ?? [];
+		bucket.push(key);
+		groups.set(key.priority, bucket);
+	}
+	return [...groups.entries()]
+		.sort((a, b) => b[0] - a[0])
+		.map(([, groupKeys]) => groupKeys);
+}
+
+function orderKeysByPriorityThenWeight(keys: ActiveProviderApiKeyRow[]): ActiveProviderApiKeyRow[] {
+	return groupKeysByPriorityDesc(keys).flatMap((group) => weightedRandomOrder(group));
+}
+
 /**
- * 返回本次请求应依次尝试的 active keys（weighted-random；跳过 cooldown 中的 key）。
- * 若全部被 cooldown，则回退为全部 active keys 的 priority 顺序。
+ * 返回本次请求应依次尝试的 active keys：先按 priority 降序分批，同批内 weighted-random。
+ * 跳过 cooldown 中的 key；若全部被 cooldown，则回退为全部 active keys 的同序尝试。
  */
 export function selectProviderKeysForAttempt(keys: ActiveProviderApiKeyRow[]): ActiveProviderApiKeyRow[] {
 	if (keys.length === 0) return [];
 	const now = Date.now();
 	const eligible = keys.filter((k) => isKeyEligible(k.id, now));
 	const base = eligible.length > 0 ? eligible : keys;
-	return weightedRandomOrder(base);
+	return orderKeysByPriorityThenWeight(base);
 }
 
 /** 测试用：清空 cooldown 状态。 */

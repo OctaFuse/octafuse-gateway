@@ -38,10 +38,6 @@ export async function createProviderKeyService(
 		priority: typeof body.priority === 'number' ? body.priority : Number(body.priority ?? 0) || 0,
 	});
 
-	if (label === 'default') {
-		await repos.providers.updateProviderByPatch(providerId, { api_key: apiKey });
-	}
-
 	return { id };
 }
 
@@ -89,11 +85,6 @@ export async function updateProviderKeyService(
 	const changes = await repos.providerKeys.updateProviderKeyByPatch(keyId, patch);
 	if (Object.keys(patch).length > 0 && changes === 0) {
 		throw notFound('Provider key not found');
-	}
-
-	const nextLabel = (patch.label as string | undefined) ?? existing.label;
-	if (nextLabel === 'default' && patch.apiKey) {
-		await repos.providers.updateProviderByPatch(providerId, { api_key: patch.apiKey as string });
 	}
 }
 

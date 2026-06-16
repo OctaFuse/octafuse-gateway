@@ -62,7 +62,7 @@ export interface ResolvedGatewayKeyRow extends ApiKeyRow {
 	budget_reset_at: string | null;
 }
 
-/** `providers` 表行（含上游密钥）。 */
+/** `providers` 表行。 */
 export interface ProviderRow {
   id: string;
   name: string;
@@ -70,7 +70,6 @@ export interface ProviderRow {
   base_url_openai: string | null;
   base_url_anthropic?: string | null;
   base_url_gemini?: string | null;
-  api_key: string;
   description: string | null;
   created_at: string;
 }

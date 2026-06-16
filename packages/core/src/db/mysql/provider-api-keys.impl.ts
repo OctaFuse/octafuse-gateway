@@ -6,7 +6,6 @@ import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { ProviderApiKeysRepository } from '../../storage/gateway-repository-interfaces';
 import {
 	providerApiKeysTable as myProviderApiKeysTable,
-	providersTable as myProvidersTable,
 } from '../../storage/drizzle/schema.mysql';
 import type {
 	ActiveProviderApiKeyRow,
@@ -14,7 +13,7 @@ import type {
 	ProviderApiKeyAdminRow,
 	UpdateProviderApiKeyPatch,
 } from '../provider-api-keys-types';
-import { fingerprintProviderApiKey } from '../provider-key-utils';
+import { fingerprintProviderApiKey, isPendingProviderImportApiKey } from '../provider-key-utils';
 
 function mapAdminRow(r: {
 	id: string;
@@ -35,6 +34,7 @@ function mapAdminRow(r: {
 		weight: r.weight,
 		priority: r.priority,
 		fingerprint: fingerprintProviderApiKey(r.apiKey),
+		is_pending_import: isPendingProviderImportApiKey(r.apiKey),
 		created_at: r.createdAt,
 		updated_at: r.updatedAt,
 	};
@@ -71,24 +71,7 @@ export function createMySqlProviderApiKeysRepository(db: MySqlDatabaseClient): P
 				weight: r.weight,
 				priority: r.priority,
 			}));
-			if (keys.length > 0) return keys;
-
-			const providerRows = await drizzle
-				.select({ apiKey: myProvidersTable.apiKey })
-				.from(myProvidersTable)
-				.where(eq(myProvidersTable.id, providerId))
-				.limit(1);
-			const legacyKey = providerRows[0]?.apiKey;
-			if (!legacyKey) return [];
-			return [
-				{
-					id: `legacy-${providerId}`,
-					label: 'default',
-					api_key: legacyKey,
-					weight: 1,
-					priority: 0,
-				},
-			];
+			return keys;
 		},
 
 		async createProviderKey(params: InsertProviderApiKeyParams): Promise<void> {
@@ -129,33 +112,6 @@ export function createMySqlProviderApiKeysRepository(db: MySqlDatabaseClient): P
 		async getProviderKeyById(keyId: string): Promise<ProviderApiKeyAdminRow | null> {
 			const rows = await drizzle.select().from(myProviderApiKeysTable).where(eq(myProviderApiKeysTable.id, keyId)).limit(1);
 			return rows[0] ? mapAdminRow(rows[0]) : null;
-		},
-
-		async syncLegacyDefaultKey(providerId: string, apiKey: string): Promise<void> {
-			const now = new Date().toISOString();
-			const existing = await drizzle
-				.select({ id: myProviderApiKeysTable.id })
-				.from(myProviderApiKeysTable)
-				.where(and(eq(myProviderApiKeysTable.providerId, providerId), eq(myProviderApiKeysTable.label, 'default')))
-				.limit(1);
-			if (existing[0]) {
-				await drizzle
-					.update(myProviderApiKeysTable)
-					.set({ apiKey, updatedAt: now })
-					.where(eq(myProviderApiKeysTable.id, existing[0].id));
-				return;
-			}
-			await drizzle.insert(myProviderApiKeysTable).values({
-				id: `pkey_${providerId}`,
-				providerId,
-				label: 'default',
-				apiKey,
-				status: 'active',
-				weight: 1,
-				priority: 0,
-				createdAt: now,
-				updatedAt: now,
-			});
 		},
 
 		async countActiveProviderKeys(providerId: string): Promise<number> {

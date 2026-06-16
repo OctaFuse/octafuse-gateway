@@ -198,9 +198,10 @@ export type AdminProviderRow = {
 	base_url_openai: string | null;
 	base_url_anthropic: string | null;
 	base_url_gemini: string | null;
-	api_key: string;
 	description: string | null;
 	created_at: string;
+	active_key_count?: number;
+	has_pending_key?: boolean;
 	[key: string]: unknown;
 };
 

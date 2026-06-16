@@ -105,9 +105,10 @@ export interface GatewayProvider {
   base_url_openai: string | null;
   base_url_anthropic?: string | null;
   base_url_gemini?: string | null;
-  api_key: string;
   description: string | null;
   created_at: string;
+  active_key_count?: number;
+  has_pending_key?: boolean;
 }
 
 export interface GatewayModel {
@@ -166,6 +167,10 @@ export interface GatewayRequestLog {
   upstream_protocol?: string | null;
   /** 供应商展示名快照（`api_key_request_logs.provider_name`） */
   provider_name?: string | null;
+  /** 最终选用的 provider key id（`provider_api_keys.id`） */
+  provider_key_id?: string | null;
+  provider_key_label?: string | null;
+  provider_key_fingerprint?: string | null;
   /** Upstream model name snapshot on the log row (Gateway writes at request time); null on legacy rows */
   provider_model_name?: string | null;
   /** 脱敏请求体 JSON（无提示词）；仅新写入 */

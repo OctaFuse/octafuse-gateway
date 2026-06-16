@@ -7,7 +7,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   TrashIcon,
   PlusIcon,
-  ClipboardDocumentIcon,
   CheckIcon,
   ArrowDownTrayIcon,
   DocumentDuplicateIcon,
@@ -19,7 +18,6 @@ import {
 } from '@/components/upstream-brand-logo';
 import { readApiJson } from '@/lib/api-json';
 import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
-import { isPendingProviderImportApiKey } from '@/lib/provider-import-preset';
 import type { GatewayProvider } from '@/lib/types';
 
 /** `GET /admin/providers/import/catalog` */
@@ -43,6 +41,7 @@ type ProviderKeyRow = {
   weight: number;
   priority: number;
   fingerprint: string;
+  is_pending_import: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -101,7 +100,7 @@ export default function GatewayProvidersPage() {
 
   const existingProviderIds = useMemo(() => new Set(providers.map((p) => p.id)), [providers]);
   const pendingKeyCount = useMemo(
-    () => providers.filter((p) => isPendingProviderImportApiKey(p.api_key)).length,
+    () => providers.filter((p) => p.has_pending_key).length,
     [providers]
   );
   const importSelectedCount = useMemo(
@@ -251,14 +250,13 @@ export default function GatewayProvidersPage() {
   const handleEdit = (provider: GatewayProvider) => {
     setEditingProvider(provider);
     setDuplicateSourceId(null);
-    const pending = isPendingProviderImportApiKey(provider.api_key);
     setFormData({
       id: provider.id,
       name: provider.name,
       base_url_openai: provider.base_url_openai ?? '',
       base_url_anthropic: provider.base_url_anthropic ?? '',
       base_url_gemini: provider.base_url_gemini ?? '',
-      api_key: pending ? '' : provider.api_key,
+      api_key: '',
       description: provider.description ?? '',
     });
     setShowModal(true);
@@ -268,14 +266,13 @@ export default function GatewayProvidersPage() {
   const handleDuplicate = (provider: GatewayProvider) => {
     setEditingProvider(null);
     setDuplicateSourceId(provider.id);
-    const pending = isPendingProviderImportApiKey(provider.api_key);
     setFormData({
       id: suggestDuplicateProviderId(provider.id, existingProviderIds),
       name: `${provider.name} (copy)`,
       base_url_openai: provider.base_url_openai ?? '',
       base_url_anthropic: provider.base_url_anthropic ?? '',
       base_url_gemini: provider.base_url_gemini ?? '',
-      api_key: pending ? '' : provider.api_key,
+      api_key: '',
       description: provider.description ?? '',
     });
     setShowModal(true);
@@ -406,8 +403,8 @@ export default function GatewayProvidersPage() {
     }
     if (
       editingProvider &&
-      isPendingProviderImportApiKey(editingProvider.api_key) &&
-      providerKeys.every((k) => k.status !== 'active' || isPendingProviderImportApiKey(k.fingerprint))
+      editingProvider.has_pending_key &&
+      providerKeys.every((k) => k.status !== 'active' || k.is_pending_import)
     ) {
       setSaveError('Add at least one active real upstream API key before saving.');
       return;
@@ -468,12 +465,6 @@ export default function GatewayProvidersPage() {
     } catch (error) {
       console.error('Copy failed:', error);
     }
-  };
-
-  const maskKey = (key: string) => {
-    if (isPendingProviderImportApiKey(key)) return 'placeholder (edit to set key)';
-    if (!key || key.length < 8) return '***';
-    return key.substring(0, 4) + '...' + key.substring(key.length - 4);
   };
 
   if (isLoading) {
@@ -541,7 +532,7 @@ export default function GatewayProvidersPage() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Endpoints
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keys</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
             </tr>
           </thead>
@@ -551,7 +542,8 @@ export default function GatewayProvidersPage() {
               const anthropicUrl = provider.base_url_anthropic?.trim() ?? '';
               const geminiUrl = provider.base_url_gemini?.trim() ?? '';
               const hasAnyEndpoint = Boolean(openaiUrl || anthropicUrl || geminiUrl);
-              const pendingKey = isPendingProviderImportApiKey(provider.api_key);
+              const pendingKey = Boolean(provider.has_pending_key);
+              const activeKeyCount = provider.active_key_count ?? 0;
               return (
               <tr
                 key={provider.id}
@@ -641,30 +633,14 @@ export default function GatewayProvidersPage() {
                 </td>
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-gray-600">{maskKey(provider.api_key)}</span>
-                      {!pendingKey ? (
-                        copiedId === `apikey:${provider.id}` ? (
-                          <span className="text-xs text-green-600">Copied!</span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void copyToClipboard(provider.api_key, `apikey:${provider.id}`);
-                            }}
-                            className="text-gray-400 hover:text-gray-600"
-                            title="Copy API key"
-                          >
-                            <ClipboardDocumentIcon className="h-4 w-4" />
-                          </button>
-                        )
-                      ) : (
-                        <span className="text-[11px] font-medium uppercase tracking-wide text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                          Pending key
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-sm text-gray-700">
+                      {activeKeyCount} active key{activeKeyCount === 1 ? '' : 's'}
+                    </span>
+                    {pendingKey ? (
+                      <span className="self-start text-[11px] font-medium uppercase tracking-wide text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                        Pending key
+                      </span>
+                    ) : null}
                     {pendingKey && (
                       <span className="self-start text-xs text-blue-700">Open row to set API key</span>
                     )}
@@ -1049,7 +1025,7 @@ export default function GatewayProvidersPage() {
                           {keySaving ? 'Adding…' : 'Add key'}
                         </button>
                       </div>
-                      {editingProvider && isPendingProviderImportApiKey(editingProvider.api_key) && (
+                      {editingProvider && editingProvider.has_pending_key && (
                         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                           Template placeholder detected. Add a real key above with label <code>default</code> or any label,
                           then disable/delete placeholders if needed.

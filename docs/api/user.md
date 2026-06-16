@@ -523,14 +523,14 @@ curl http://localhost:8787/v1/me \
 同一 `route_group` 内支持多路由按 **provider 优先级** failover；每个 provider 内部还支持 **key pool**（`provider_api_keys` 表）：
 
 - **外层**：按 `model_routes.priority` 从高到低依次尝试 provider（行为与改造前一致）。
-- **内层**：对当前 provider，在 `status = active` 的 key 中按 **weighted-random** 选取尝试顺序；单实例内存 **cooldown**（约 60s）避免连续打同一把失败 key。
+- **内层**：对当前 provider，在 `status = active` 的 key 中 **先按 `priority` 降序分批**，**同批内**按 **weight** 做 weighted-random 选取尝试顺序；单实例内存 **cooldown**（约 60s）避免连续打同一把失败 key。
 - **可重试并换 key**（同 provider 内）：`429`、`5xx`、`401`、`403`、网络/`fetch` 失败。
 - **不重试**（立即返回，不换 key / 不换 provider）：`400`、`404` 等请求本身错误。
 - 当前 provider 全部 key 失败后，才进入下一 priority 的 provider；全部失败时返回最后一次上游响应。
 
 用量日志 `api_key_request_logs` 会写入最终选用（或最后失败）key 的 **`provider_key_id`**、**`provider_key_label`**、**`provider_key_fingerprint`**（脱敏尾号，不含明文）。
 
-Legacy：`providers.api_key` 仍保留；迁移会为每个 provider 插入 `label = default` 的 pool 行。未迁移库在运行时回退读取 legacy 字段。
+上游密钥统一存放在 **`provider_api_keys`** 表；迁移 **`0004`** 会从历史 `providers.api_key` 回填 `label = default` 的 pool 行，**`0005`** 在新代码部署后删除 legacy 列。
 
 ### Route 默认参数合并
 

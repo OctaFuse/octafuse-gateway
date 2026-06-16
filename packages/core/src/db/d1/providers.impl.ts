@@ -14,7 +14,7 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		async listProviders(): Promise<ProviderAdminRow[]> {
 			const rows = await raw
 				.prepare(
-					`SELECT id, name, base_url_openai, base_url_anthropic, base_url_gemini, api_key, description, created_at
+					`SELECT id, name, base_url_openai, base_url_anthropic, base_url_gemini, description, created_at
 			 FROM providers ORDER BY created_at DESC`
 				)
 				.all<ProviderAdminRow>();
@@ -32,13 +32,12 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 			baseUrlOpenai: string | null;
 			baseUrlAnthropic: string | null;
 			baseUrlGemini: string | null;
-			apiKey: string;
 			description: unknown;
 		}): Promise<void> {
 			await raw
 				.prepare(
-					`INSERT INTO providers (id, name, base_url_openai, base_url_anthropic, base_url_gemini, api_key, description)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`
+					`INSERT INTO providers (id, name, base_url_openai, base_url_anthropic, base_url_gemini, description)
+			 VALUES (?, ?, ?, ?, ?, ?)`
 				)
 				.bind(
 					params.id,
@@ -46,7 +45,6 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 					params.baseUrlOpenai,
 					params.baseUrlAnthropic,
 					params.baseUrlGemini,
-					params.apiKey,
 					params.description ?? null
 				)
 				.run();
