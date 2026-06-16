@@ -1,5 +1,39 @@
 # @octafuse/core
 
+## 1.4.0
+
+### Minor Changes
+
+- ### Schema / 数据迁移
+
+  - **Provider API Key 池**：新增 `provider_api_keys` 表，支持同一 Provider 配置多条上游密钥（`label`、`status`、`weight`、`priority`）；迁移 `0004` 将历史 `providers.api_key` 迁入默认条目；`0005` 移除 `providers.api_key` 列。
+  - **请求日志**：`api_key_request_logs` 增加 `provider_key_id`、`provider_key_label`、`provider_key_fingerprint` 字段，便于追踪实际使用的上游密钥。
+
+  ### Proxy
+
+  - **密钥调度**（`provider-key-scheduler`）：按 `priority` 降序分批 failover；同批内 **weighted-random** 选取；单实例内存 **cooldown**（默认 60s）跳过近期失败的 key。
+
+  ### Admin API
+
+  - **Provider 密钥 CRUD**：`provider_api_keys` 的列表、创建、更新、删除；**`reveal`** 接口返回明文密钥（管理端鉴权）。
+  - **导入预设**：文档与模板移除 API Key 占位符，改为部署后手动添加密钥的说明。
+
+  ### Admin UI
+
+  - **Provider 密钥管理**：掩码展示、一键复制、明文查看；Provider 页 **Import** 流程优化（[#31](https://github.com/OctaFuse/octafuse-gateway/pull/31)）。
+  - **Models**：维护并展示 **input/output modalities**、**released** 日期；卡片增加 **vendor 图标**与悬停样式（[#22](https://github.com/OctaFuse/octafuse-gateway/issues/22)）。
+  - **Routes**：支持 **复制配置新建** route（[#21](https://github.com/OctaFuse/octafuse-gateway/issues/21)）；Route Config 去掉按 vendor 分组的卡片布局，增加 vendor logo 与悬浮效果（[#25](https://github.com/OctaFuse/octafuse-gateway/issues/25)）；筛选导航与卡片样式优化。
+  - **Gateway / Routes**：编辑区按钮布局调整（Duplicate 等操作更易达）。
+
+  ### 模型与 Provider 预设
+
+  - **新增**：Claude Fable 5、glm-5.2、gpt-5.4-mini 等静态数据。
+  - **更新**：阿里云阶梯价调整；Anthropic / ByteDance / Xiaomi 展示名规范化；各 vendor **modalities** 与 **release date** 修正。
+
+  ### 部署注意
+
+  - 须按顺序执行迁移 **`0004_provider_api_keys`** → **`0005_drop_providers_api_key`**（D1 / Postgres / MySQL 均已提供）；先部署能读写 `provider_api_keys` 的代码再应用 `0005`。
+
 ## 1.3.0
 
 ### Minor Changes
