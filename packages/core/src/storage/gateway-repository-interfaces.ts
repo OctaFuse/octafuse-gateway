@@ -15,6 +15,12 @@ import type { InsertUserParams, UserMaxBudgetFilter } from '../db/users-types';
 import type { ApiKeyListSortField, ApiKeyListSortOrder } from '../db/api-keys-list-sort';
 import type { UserListSortField, UserListSortOrder } from '../db/users-list-sort';
 import type { ProviderProtocolBases } from '../db/providers-types';
+import type {
+	ActiveProviderApiKeyRow,
+	InsertProviderApiKeyParams,
+	ProviderApiKeyAdminRow,
+	UpdateProviderApiKeyPatch,
+} from '../db/provider-api-keys-types';
 import type { SystemConfigRow } from '../db/system-config-types';
 import type {
 	AdminApiKeyListItem,
@@ -193,6 +199,18 @@ export interface ProvidersRepository {
 	getProviderById(id: string): Promise<ProviderRow | null>;
 	getProviderRowById(id: string): Promise<ProviderAdminRow | null>;
 	getProviderProtocolBases(providerId: string): Promise<ProviderProtocolBases | null>;
+}
+
+export interface ProviderApiKeysRepository {
+	listProviderKeys(providerId: string): Promise<ProviderApiKeyAdminRow[]>;
+	getActiveProviderKeys(providerId: string): Promise<ActiveProviderApiKeyRow[]>;
+	createProviderKey(params: InsertProviderApiKeyParams): Promise<void>;
+	updateProviderKeyByPatch(keyId: string, patch: UpdateProviderApiKeyPatch): Promise<number>;
+	deleteProviderKeyById(keyId: string): Promise<number>;
+	getProviderKeyById(keyId: string): Promise<ProviderApiKeyAdminRow | null>;
+	/** PATCH `providers.api_key` 时同步 label=`default` 的 pool 行。 */
+	syncLegacyDefaultKey(providerId: string, apiKey: string): Promise<void>;
+	countActiveProviderKeys(providerId: string): Promise<number>;
 }
 
 /** Filters for {@link RequestLogsRepository.getRequestLogsByKeyId}. If `includeStatuses` is non-empty after whitelist, use `status IN (...)`; else if `excludeStatus` is set, use `(status IS NULL OR status != ?)`; else no status predicate. */

@@ -45,6 +45,16 @@ export async function createProviderService(repos: GatewayRepositories, body: Ad
 		description: body.description,
 	});
 
+	await repos.providerKeys.createProviderKey({
+		id: `pkey_${id}`,
+		providerId: id,
+		label: 'default',
+		apiKey,
+		status: 'active',
+		weight: 1,
+		priority: 0,
+	});
+
 	return { id };
 }
 
@@ -73,6 +83,10 @@ export async function updateProviderService(repos: GatewayRepositories, id: stri
 	const changes = await repos.providers.updateProviderByPatch(id, patch);
 	if (Object.keys(patch).some((k) => k !== 'id' && patch[k] !== undefined) && changes === 0) {
 		throw notFound('Provider not found');
+	}
+
+	if (typeof patch.api_key === 'string' && patch.api_key.trim()) {
+		await repos.providerKeys.syncLegacyDefaultKey(id, patch.api_key.trim());
 	}
 }
 

@@ -172,6 +172,9 @@ export async function insertRequestUsageAndChargeTxMy(
 			errorMessage: params.requestLog.errorMessage ?? null,
 			rawUsage: params.requestLog.rawUsage ?? null,
 			pricingAudit: params.requestLog.pricingAudit ?? null,
+			providerKeyId: params.requestLog.providerKeyId ?? null,
+			providerKeyLabel: params.requestLog.providerKeyLabel ?? null,
+			providerKeyFingerprint: params.requestLog.providerKeyFingerprint ?? null,
 			createdAt: now,
 		});
 		if (!params.shouldChargeBudget) {

@@ -61,6 +61,18 @@ export const providersTable = sqliteTable('providers', {
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const providerApiKeysTable = sqliteTable('provider_api_keys', {
+	id: text('id').primaryKey(),
+	providerId: text('provider_id').notNull(),
+	label: text('label').notNull(),
+	apiKey: text('api_key').notNull(),
+	status: text('status').notNull().default('active'),
+	weight: integer('weight').notNull().default(1),
+	priority: integer('priority').notNull().default(0),
+	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const modelsTable = sqliteTable('models', {
 	id: text('id').primaryKey(),
 	displayName: text('display_name'),
@@ -121,6 +133,9 @@ export const apiKeyRequestLogsTable = sqliteTable('api_key_request_logs', {
 	rawUsage: text('raw_usage'),
 	/** 计费审计 JSON 字符串；结构见 `db/pricing-audit.ts` */
 	pricingAudit: text('pricing_audit'),
+	providerKeyId: text('provider_key_id'),
+	providerKeyLabel: text('provider_key_label'),
+	providerKeyFingerprint: text('provider_key_fingerprint'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -155,6 +170,7 @@ export const d1CoreSchema = {
 	usersTable,
 	apiKeysTable,
 	providersTable,
+	providerApiKeysTable,
 	modelsTable,
 	modelRoutesTable,
 	apiKeyRequestLogsTable,

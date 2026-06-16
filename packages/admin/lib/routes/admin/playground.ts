@@ -19,6 +19,7 @@ type PlaygroundPostBody = {
 	routeId?: unknown;
 	body?: unknown;
 	geminiAction?: unknown;
+	providerKeyId?: unknown;
 };
 
 adminPlaygroundRoutes.post('/', async (c) => {
@@ -53,6 +54,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 					routeId,
 					body: rawBody as Record<string, unknown>,
 					geminiAction,
+					providerKeyId: typeof parsed.providerKeyId === 'string' ? parsed.providerKeyId : undefined,
 				},
 				c.req.raw.signal
 			);

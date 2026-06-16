@@ -6,6 +6,7 @@ import { createD1ModelRoutesRepository } from '../db/d1/model-routes.impl';
 import { createD1ModelRoutingRepository } from '../db/d1/model-routing.impl';
 import { createD1ModelsRepository } from '../db/d1/models.impl';
 import { createD1ProvidersRepository } from '../db/d1/providers.impl';
+import { createD1ProviderApiKeysRepository } from '../db/d1/provider-api-keys.impl';
 import { createD1RequestLogsRepository } from '../db/d1/request-logs.impl';
 import { createD1SystemConfigRepository } from '../db/d1/system-config.impl';
 import { createD1UserAuditLogsRepository } from '../db/d1/user-audit-logs.impl';
@@ -21,6 +22,7 @@ export function createD1Repositories(client: GatewayDatabaseClient): GatewayRepo
 		apiKeys: createD1ApiKeysRepository(client),
 		requestLogs: createD1RequestLogsRepository(client),
 		providers: createD1ProvidersRepository(client),
+		providerKeys: createD1ProviderApiKeysRepository(client),
 		models: createD1ModelsRepository(client),
 		routes: createD1ModelRoutesRepository(client),
 		systemConfig: createD1SystemConfigRepository(client),

@@ -59,7 +59,7 @@ Authorization: Bearer sk-xxx...
 
 ### 4. 用量日志 `api_key_request_logs`
 
-写入的 **`model_id` 为库内基础模型 ID**（不带 `:group` 后缀）；实际选用的 **`route_group`**、**`upstream_protocol`**（所选路由的上游协议快照）等会随请求落库（见 D1 表 **`api_key_request_logs`**，基线定义在 `packages/core/migrations-d1/0001_baseline.sql`），便于对账与展示（如 Account 用量详情中 free 通道可加 `:free` 说明）。相对目录标准价的倍率请见路由 **`price_override`** 中的 **`charged_factor`** / **`metered_factor`**（及兼容字段 **`provider_factor`**）。**`request_protocol`** 表示客户端调用的 Gateway 入口（`openai` / `anthropic` / `gemini`），与 **`upstream_protocol`** 语义不同。
+写入的 **`model_id` 为库内基础模型 ID**（不带 `:group` 后缀）；实际选用的 **`route_group`**、**`upstream_protocol`**（所选路由的上游协议快照）、**`provider_key_id` / `provider_key_label` / `provider_key_fingerprint`**（最终上游 key 快照，指纹为脱敏尾号）等会随请求落库（见 D1 表 **`api_key_request_logs`**，基线定义在 `packages/core/migrations-d1/0001_baseline.sql`，key 快照列见 `0004_provider_api_keys.sql`），便于对账与展示（如 Account 用量详情中 free 通道可加 `:free` 说明）。相对目录标准价的倍率请见路由 **`price_override`** 中的 **`charged_factor`** / **`metered_factor`**（及兼容字段 **`provider_factor`**）。**`request_protocol`** 表示客户端调用的 Gateway 入口（`openai` / `anthropic` / `gemini`），与 **`upstream_protocol`** 语义不同。
 
 ### 5. 输出长度（`max_tokens` / `maxOutputTokens`）
 
@@ -520,11 +520,17 @@ curl http://localhost:8787/v1/me \
 
 ### 提供商故障转移
 
-同一 `route_group` 内支持多路由按优先级 failover：
+同一 `route_group` 内支持多路由按 **provider 优先级** failover；每个 provider 内部还支持 **key pool**（`provider_api_keys` 表）：
 
-- 按优先级顺序尝试路由（priority 越高越优先）
-- 遇到 **429** 或其它非 **2xx** 响应时，自动尝试同组内下一优先级路由；全部失败时返回最后一次上游响应（可能仍为 429）
-- 网络错误（`fetch` 失败等）时自动尝试下一个提供商
+- **外层**：按 `model_routes.priority` 从高到低依次尝试 provider（行为与改造前一致）。
+- **内层**：对当前 provider，在 `status = active` 的 key 中按 **weighted-random** 选取尝试顺序；单实例内存 **cooldown**（约 60s）避免连续打同一把失败 key。
+- **可重试并换 key**（同 provider 内）：`429`、`5xx`、`401`、`403`、网络/`fetch` 失败。
+- **不重试**（立即返回，不换 key / 不换 provider）：`400`、`404` 等请求本身错误。
+- 当前 provider 全部 key 失败后，才进入下一 priority 的 provider；全部失败时返回最后一次上游响应。
+
+用量日志 `api_key_request_logs` 会写入最终选用（或最后失败）key 的 **`provider_key_id`**、**`provider_key_label`**、**`provider_key_fingerprint`**（脱敏尾号，不含明文）。
+
+Legacy：`providers.api_key` 仍保留；迁移会为每个 provider 插入 `label = default` 的 pool 行。未迁移库在运行时回退读取 legacy 字段。
 
 ### Route 默认参数合并
 

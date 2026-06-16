@@ -96,6 +96,9 @@ export async function recordUsage(
 		status: 'success' | 'error' | 'incomplete' | 'cancelled';
 		latency_ms?: number;
 		error_message?: string;
+		provider_key_id?: string | null;
+		provider_key_label?: string | null;
+		provider_key_fingerprint?: string | null;
 	}
 ): Promise<void> {
 	const basis = params.usage.input_tokens;
@@ -195,6 +198,9 @@ export async function recordUsage(
 			errorMessage: params.error_message ?? null,
 			rawUsage: params.usage.raw_usage ?? null,
 			pricingAudit: pricingAuditJson,
+			providerKeyId: params.provider_key_id ?? null,
+			providerKeyLabel: params.provider_key_label ?? null,
+			providerKeyFingerprint: params.provider_key_fingerprint ?? null,
 		},
 		shouldChargeBudget,
 		beforeSpent,
@@ -233,6 +239,9 @@ export async function recordUsage(
 			upstreamProtocol: params.upstream_protocol,
 			errorMessage: params.error_message ?? null,
 			latencyMs: params.latency_ms ?? null,
+			providerKeyId: params.provider_key_id ?? null,
+			providerKeyLabel: params.provider_key_label ?? null,
+			providerKeyFingerprint: params.provider_key_fingerprint ?? null,
 		}).catch((err: unknown) => {
 			console.warn(
 				'[Gateway Alert] webhook dispatch failed',

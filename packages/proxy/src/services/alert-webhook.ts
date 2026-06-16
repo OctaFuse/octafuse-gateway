@@ -25,6 +25,9 @@ export type GatewayErrorAlertContext = {
 	upstreamProtocol: string;
 	errorMessage: string | null | undefined;
 	latencyMs: number | null | undefined;
+	providerKeyId?: string | null;
+	providerKeyLabel?: string | null;
+	providerKeyFingerprint?: string | null;
 };
 
 function truncateForAlert(s: string, maxLen: number): string {
@@ -51,6 +54,9 @@ function buildPlainSummary(ctx: GatewayErrorAlertContext): string {
 		`request_protocol: ${ctx.requestProtocol}`,
 		`upstream_protocol: ${ctx.upstreamProtocol}`,
 		`latency_ms: ${ctx.latencyMs ?? '(null)'}`,
+		`provider_key_id: ${ctx.providerKeyId ?? '(null)'}`,
+		`provider_key_label: ${ctx.providerKeyLabel ?? '(null)'}`,
+		`provider_key_fingerprint: ${ctx.providerKeyFingerprint ?? '(null)'}`,
 		`error_message: ${err}`,
 	];
 	return lines.join('\n');

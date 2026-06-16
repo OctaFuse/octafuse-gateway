@@ -123,7 +123,7 @@ messagesRoutes.post('/', async (c) => {
   }
 
   const requestSignal = c.req.raw.signal;
-  const proxyResult = await proxyAnthropicMessages(routes, body, requestSignal);
+  const proxyResult = await proxyAnthropicMessages(repos, routes, body, requestSignal);
   const { usagePromise, chosenRoute } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
@@ -201,6 +201,9 @@ messagesRoutes.post('/', async (c) => {
           status,
           latency_ms: latency,
           error_message: errorMessage,
+          provider_key_id: chosenRoute.providerKeyId ?? null,
+          provider_key_label: chosenRoute.providerKeyLabel ?? null,
+          provider_key_fingerprint: chosenRoute.providerKeyFingerprint ?? null,
         });
       })
       .catch(() => {

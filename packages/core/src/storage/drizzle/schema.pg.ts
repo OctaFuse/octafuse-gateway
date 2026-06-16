@@ -65,6 +65,18 @@ export const providersTable = pgTable('providers', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 
+export const providerApiKeysTable = pgTable('provider_api_keys', {
+	id: text('id').primaryKey(),
+	providerId: text('provider_id').notNull(),
+	label: text('label').notNull(),
+	apiKey: text('api_key').notNull(),
+	status: text('status').notNull().default('active'),
+	weight: integer('weight').notNull().default(1),
+	priority: integer('priority').notNull().default(0),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
+});
+
 export const modelsTable = pgTable('models', {
 	id: text('id').primaryKey(),
 	displayName: text('display_name'),
@@ -124,6 +136,9 @@ export const apiKeyRequestLogsTable = pgTable('api_key_request_logs', {
 	rawUsage: text('raw_usage'),
 	/** 计费审计 JSON 字符串；结构见 `db/pricing-audit.ts` */
 	pricingAudit: text('pricing_audit'),
+	providerKeyId: text('provider_key_id'),
+	providerKeyLabel: text('provider_key_label'),
+	providerKeyFingerprint: text('provider_key_fingerprint'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 
@@ -158,6 +173,7 @@ export const pgCoreSchema = {
 	usersTable,
 	apiKeysTable,
 	providersTable,
+	providerApiKeysTable,
 	modelsTable,
 	modelRoutesTable,
 	apiKeyRequestLogsTable,

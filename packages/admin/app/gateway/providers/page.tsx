@@ -35,6 +35,25 @@ type ProviderImportCatalogRow = {
   description: string | null;
 };
 
+type ProviderKeyRow = {
+  id: string;
+  provider_id: string;
+  label: string;
+  status: string;
+  weight: number;
+  priority: number;
+  fingerprint: string;
+  created_at: string;
+  updated_at: string;
+};
+
+const emptyKeyForm = {
+  label: '',
+  api_key: '',
+  weight: '1',
+  priority: '0',
+};
+
 const emptyForm = {
   id: '',
   name: '',
@@ -74,6 +93,11 @@ export default function GatewayProvidersPage() {
   const [importCatalogError, setImportCatalogError] = useState('');
   const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
   const [importSubmitting, setImportSubmitting] = useState(false);
+  const [providerKeys, setProviderKeys] = useState<ProviderKeyRow[]>([]);
+  const [keysLoading, setKeysLoading] = useState(false);
+  const [keyForm, setKeyForm] = useState(emptyKeyForm);
+  const [keySaving, setKeySaving] = useState(false);
+  const [keyError, setKeyError] = useState('');
 
   const existingProviderIds = useMemo(() => new Set(providers.map((p) => p.id)), [providers]);
   const pendingKeyCount = useMemo(
@@ -84,6 +108,119 @@ export default function GatewayProvidersPage() {
     () => Object.values(importSelected).filter(Boolean).length,
     [importSelected]
   );
+
+  const fetchProviderKeys = useCallback(async (providerId: string) => {
+    setKeysLoading(true);
+    setKeyError('');
+    try {
+      const response = await fetch(`/api/admin/providers/${encodeURIComponent(providerId)}/keys`);
+      const data = await readApiJson<ProviderKeyRow[]>(response);
+      if (data.success && data.data) {
+        setProviderKeys(data.data);
+      } else {
+        setProviderKeys([]);
+        setKeyError(data.message || 'Failed to load keys');
+      }
+    } catch (error) {
+      console.error('Fetch provider keys error:', error);
+      setProviderKeys([]);
+      setKeyError('Failed to load keys');
+    } finally {
+      setKeysLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (editingProvider) {
+      void fetchProviderKeys(editingProvider.id);
+    } else {
+      setProviderKeys([]);
+      setKeyForm(emptyKeyForm);
+      setKeyError('');
+    }
+  }, [editingProvider, fetchProviderKeys]);
+
+  const handleAddProviderKey = async () => {
+    if (!editingProvider) return;
+    const label = keyForm.label.trim();
+    const apiKey = keyForm.api_key.trim();
+    if (!label || !apiKey) {
+      setKeyError('Label and API key are required');
+      return;
+    }
+    setKeySaving(true);
+    setKeyError('');
+    try {
+      const response = await fetch(`/api/admin/providers/${encodeURIComponent(editingProvider.id)}/keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label,
+          api_key: apiKey,
+          weight: Number(keyForm.weight) || 1,
+          priority: Number(keyForm.priority) || 0,
+        }),
+      });
+      const data = await readApiJson(response);
+      if (data.success) {
+        setKeyForm(emptyKeyForm);
+        void fetchProviderKeys(editingProvider.id);
+        void fetchProviders();
+      } else {
+        setKeyError(data.message || 'Failed to add key');
+      }
+    } catch (error) {
+      console.error('Add provider key error:', error);
+      setKeyError('Failed to add key');
+    } finally {
+      setKeySaving(false);
+    }
+  };
+
+  const handleToggleProviderKeyStatus = async (key: ProviderKeyRow) => {
+    if (!editingProvider) return;
+    const nextStatus = key.status === 'active' ? 'disabled' : 'active';
+    if (nextStatus === 'disabled' && !confirm(`Disable key "${key.label}"?`)) return;
+    try {
+      const response = await fetch(
+        `/api/admin/providers/${encodeURIComponent(editingProvider.id)}/keys/${encodeURIComponent(key.id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus }),
+        }
+      );
+      const data = await readApiJson(response);
+      if (data.success) {
+        void fetchProviderKeys(editingProvider.id);
+      } else {
+        alert(data.message || 'Update failed');
+      }
+    } catch (error) {
+      console.error('Toggle provider key error:', error);
+      alert('Update failed');
+    }
+  };
+
+  const handleDeleteProviderKey = async (key: ProviderKeyRow) => {
+    if (!editingProvider) return;
+    if (!confirm(`Delete key "${key.label}" (${key.fingerprint})? This cannot be undone.`)) return;
+    try {
+      const response = await fetch(
+        `/api/admin/providers/${encodeURIComponent(editingProvider.id)}/keys/${encodeURIComponent(key.id)}`,
+        { method: 'DELETE' }
+      );
+      const data = await readApiJson(response);
+      if (data.success) {
+        void fetchProviderKeys(editingProvider.id);
+      } else {
+        alert(data.message || 'Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete provider key error:', error);
+      alert('Delete failed');
+    }
+  };
 
   useEffect(() => {
     fetchProviders();
@@ -261,11 +398,18 @@ export default function GatewayProvidersPage() {
   const handleSave = async () => {
     setSaveError('');
     if (
-      editingProvider &&
-      isPendingProviderImportApiKey(editingProvider.api_key) &&
+      !editingProvider &&
       !formData.api_key.trim()
     ) {
-      setSaveError('Replace the import placeholder: enter a real upstream API key before saving.');
+      setSaveError('API key is required for new providers.');
+      return;
+    }
+    if (
+      editingProvider &&
+      isPendingProviderImportApiKey(editingProvider.api_key) &&
+      providerKeys.every((k) => k.status !== 'active' || isPendingProviderImportApiKey(k.fingerprint))
+    ) {
+      setSaveError('Add at least one active real upstream API key before saving.');
       return;
     }
     setIsSaving(true);
@@ -277,6 +421,9 @@ export default function GatewayProvidersPage() {
         base_url_anthropic: formData.base_url_anthropic.trim() || null,
         base_url_gemini: formData.base_url_gemini.trim() || null,
       };
+      if (editingProvider) {
+        delete payload.api_key;
+      }
       let response: Response;
       if (editingProvider) {
         const patchBody = { ...payload };
@@ -790,30 +937,140 @@ export default function GatewayProvidersPage() {
                 <section className="rounded-lg border border-gray-200 bg-slate-50/70 p-4 space-y-3">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">Authentication</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Bearer token sent to the upstream for this provider.</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {editingProvider
+                        ? 'Manage multiple upstream API keys; Proxy schedules active keys with weighted random failover.'
+                        : 'Initial default key; you can add more keys after creation.'}
+                    </p>
                   </div>
-                  {editingProvider && isPendingProviderImportApiKey(editingProvider.api_key) && (
-                    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                      This row was created from a template with a <strong>placeholder</strong> API key. Enter your real
-                      upstream key below and save.
-                    </div>
+                  {editingProvider ? (
+                    <>
+                      {keyError && (
+                        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{keyError}</div>
+                      )}
+                      {keysLoading ? (
+                        <p className="text-sm text-gray-500">Loading keys…</p>
+                      ) : providerKeys.length === 0 ? (
+                        <p className="text-sm text-gray-500">No keys configured.</p>
+                      ) : (
+                        <div className="overflow-x-auto rounded-md border border-gray-200 bg-white">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                              <tr>
+                                <th className="px-3 py-2">Label</th>
+                                <th className="px-3 py-2">Fingerprint</th>
+                                <th className="px-3 py-2">Status</th>
+                                <th className="px-3 py-2">Weight</th>
+                                <th className="px-3 py-2">Priority</th>
+                                <th className="px-3 py-2 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {providerKeys.map((key) => (
+                                <tr key={key.id} className="border-t border-gray-100">
+                                  <td className="px-3 py-2 font-mono text-xs">{key.label}</td>
+                                  <td className="px-3 py-2 font-mono text-xs text-gray-600">{key.fingerprint}</td>
+                                  <td className="px-3 py-2">
+                                    <span
+                                      className={`inline-flex rounded-full px-2 py-0.5 text-xs ${
+                                        key.status === 'active'
+                                          ? 'bg-green-100 text-green-800'
+                                          : 'bg-gray-100 text-gray-600'
+                                      }`}
+                                    >
+                                      {key.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2">{key.weight}</td>
+                                  <td className="px-3 py-2">{key.priority}</td>
+                                  <td className="px-3 py-2 text-right space-x-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleToggleProviderKeyStatus(key)}
+                                      className="text-xs text-blue-600 hover:underline"
+                                    >
+                                      {key.status === 'active' ? 'Disable' : 'Enable'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleDeleteProviderKey(key)}
+                                      className="text-xs text-red-600 hover:underline"
+                                    >
+                                      Delete
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      <div className="rounded-md border border-dashed border-gray-300 bg-white p-3 space-y-2">
+                        <p className="text-xs font-medium text-gray-700">Add key</p>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <input
+                            type="text"
+                            value={keyForm.label}
+                            onChange={(e) => setKeyForm({ ...keyForm, label: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            placeholder="Label (e.g. backup-cn-1)"
+                            autoComplete="off"
+                          />
+                          <input
+                            type="password"
+                            value={keyForm.api_key}
+                            onChange={(e) => setKeyForm({ ...keyForm, api_key: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            placeholder="Upstream API key"
+                            autoComplete="new-password"
+                          />
+                          <input
+                            type="number"
+                            min={1}
+                            value={keyForm.weight}
+                            onChange={(e) => setKeyForm({ ...keyForm, weight: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            placeholder="Weight"
+                          />
+                          <input
+                            type="number"
+                            value={keyForm.priority}
+                            onChange={(e) => setKeyForm({ ...keyForm, priority: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            placeholder="Priority"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void handleAddProviderKey()}
+                          disabled={keySaving}
+                          className="rounded-md bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {keySaving ? 'Adding…' : 'Add key'}
+                        </button>
+                      </div>
+                      {editingProvider && isPendingProviderImportApiKey(editingProvider.api_key) && (
+                        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                          Template placeholder detected. Add a real key above with label <code>default</code> or any label,
+                          then disable/delete placeholders if needed.
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">API Key *</label>
+                        <input
+                          type="password"
+                          value={formData.api_key}
+                          onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                          autoComplete="new-password"
+                          required
+                        />
+                      </div>
+                    </>
                   )}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">API Key *</label>
-                    <input
-                      type="password"
-                      value={formData.api_key}
-                      onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      autoComplete="new-password"
-                      required
-                      placeholder={
-                        editingProvider && isPendingProviderImportApiKey(editingProvider.api_key)
-                          ? 'Paste your upstream API key'
-                          : undefined
-                      }
-                    />
-                  </div>
                 </section>
 
                 {/* Description (providers.description) */}

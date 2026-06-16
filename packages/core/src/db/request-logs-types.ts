@@ -34,4 +34,7 @@ export type InsertRequestLogParams = {
 	rawUsage: string | null;
 	/** 计费审计 JSON 字符串；与 `RequestLogRow.pricing_audit` / `pricing-audit.ts` 对齐 */
 	pricingAudit?: string | null;
+	providerKeyId?: string | null;
+	providerKeyLabel?: string | null;
+	providerKeyFingerprint?: string | null;
 };

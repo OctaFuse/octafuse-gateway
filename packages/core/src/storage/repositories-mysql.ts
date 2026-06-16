@@ -6,6 +6,7 @@ import { createMySqlModelRoutesRepository } from '../db/mysql/model-routes.impl'
 import { createMySqlModelRoutingRepository } from '../db/mysql/model-routing.impl';
 import { createMySqlModelsRepository } from '../db/mysql/models.impl';
 import { createMySqlProvidersRepository } from '../db/mysql/providers.impl';
+import { createMySqlProviderApiKeysRepository } from '../db/mysql/provider-api-keys.impl';
 import { createMySqlRequestLogsRepository } from '../db/mysql/request-logs.impl';
 import { createMySqlSystemConfigRepository } from '../db/mysql/system-config.impl';
 import { createMySqlUserAuditLogsRepository } from '../db/mysql/user-audit-logs.impl';
@@ -21,6 +22,7 @@ export function createMySqlRepositories(client: GatewayDatabaseClient): GatewayR
 		apiKeys: createMySqlApiKeysRepository(client),
 		requestLogs: createMySqlRequestLogsRepository(client),
 		providers: createMySqlProvidersRepository(client),
+		providerKeys: createMySqlProviderApiKeysRepository(client),
 		models: createMySqlModelsRepository(client),
 		routes: createMySqlModelRoutesRepository(client),
 		systemConfig: createMySqlSystemConfigRepository(client),

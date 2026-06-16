@@ -80,6 +80,15 @@ export type AdminProviderMutationInput = {
 	[key: string]: unknown;
 };
 
+/** ---------- `/admin/providers/:id/keys` 请求体 ---------- */
+export type AdminProviderKeyMutationInput = {
+	label?: unknown;
+	api_key?: unknown;
+	status?: 'active' | 'disabled';
+	weight?: unknown;
+	priority?: unknown;
+};
+
 /** `GET /admin/providers/import/catalog`：内置 Provider 模板摘要（无密钥）。 */
 export type AdminProviderImportCatalogItem = {
 	id: string;

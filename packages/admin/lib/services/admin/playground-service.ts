@@ -8,6 +8,7 @@ import {
 	resolveEffectiveBaseUrl,
 } from '@octafuse/core/upstream-protocol';
 import { AdminServiceError, badRequest, notFound } from './errors';
+import { resolvePlaygroundProviderKey } from './provider-api-keys-service';
 
 export type PlaygroundGeminiAction = 'generateContent' | 'streamGenerateContent';
 
@@ -18,6 +19,8 @@ export type PlaygroundResolvedRoute = {
 	providerApiKey: string;
 	providerModelName: string;
 	customParams: Record<string, unknown> | null;
+	providerKeyId: string;
+	providerKeyLabel: string;
 };
 
 type JsonObject = Record<string, unknown>;
@@ -73,7 +76,8 @@ function parseJsonObject(raw: string | null | undefined): Record<string, unknown
  */
 export async function resolvePlaygroundRoute(
 	repos: GatewayRepositories,
-	routeId: string
+	routeId: string,
+	providerKeyId?: string | null
 ): Promise<PlaygroundResolvedRoute> {
 	const id = String(routeId ?? '').trim();
 	if (!id) {
@@ -109,12 +113,16 @@ export async function resolvePlaygroundRoute(
 		throw badRequest('Invalid custom_params JSON on route');
 	}
 
+	const resolvedKey = await resolvePlaygroundProviderKey(repos, provider.id, providerKeyId);
+
 	return {
 		upstreamProtocol: protocol,
 		baseUrl,
-		providerApiKey: provider.api_key,
+		providerApiKey: resolvedKey.api_key,
 		providerModelName: row.provider_model_name,
 		customParams,
+		providerKeyId: resolvedKey.id,
+		providerKeyLabel: resolvedKey.label,
 	};
 }
 
@@ -155,6 +163,8 @@ export type PlaygroundInvokeInput = {
 	body: Record<string, unknown>;
 	/** 仅 `upstream_protocol === gemini` 时使用；缺省为 `generateContent`。 */
 	geminiAction?: PlaygroundGeminiAction;
+	/** 可选：指定 `provider_api_keys.id` 做连通性测试。 */
+	providerKeyId?: string | null;
 };
 
 export type PlaygroundInvokeResult = {
@@ -174,7 +184,7 @@ export async function invokePlaygroundUpstream(
 	input: PlaygroundInvokeInput,
 	requestSignal?: AbortSignal
 ): Promise<PlaygroundInvokeResult> {
-	const route = await resolvePlaygroundRoute(repos, input.routeId);
+	const route = await resolvePlaygroundRoute(repos, input.routeId, input.providerKeyId);
 	const userBody = input.body;
 	if (!isPlainObject(userBody)) {
 		throw badRequest('body must be a JSON object');

@@ -94,6 +94,18 @@ export const providersTable = mysqlTable('providers', {
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 
+export const providerApiKeysTable = mysqlTable('provider_api_keys', {
+	id: varchar('id', { length: COL.ID }).primaryKey(),
+	providerId: varchar('provider_id', { length: COL.PROVIDER_ID }).notNull(),
+	label: varchar('label', { length: COL.NAME }).notNull(),
+	apiKey: text('api_key').notNull(),
+	status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
+	weight: int('weight').notNull().default(1),
+	priority: int('priority').notNull().default(0),
+	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
+	updatedAt: timestamp('updated_at', { fsp: 6, mode: 'string' }).notNull(),
+});
+
 export const modelsTable = mysqlTable('models', {
 	id: varchar('id', { length: COL.ID }).primaryKey(),
 	displayName: text('display_name'),
@@ -153,6 +165,9 @@ export const apiKeyRequestLogsTable = mysqlTable('api_key_request_logs', {
 	rawUsage: text('raw_usage'),
 	/** 计费审计 JSON 字符串；结构见 `db/pricing-audit.ts` */
 	pricingAudit: text('pricing_audit'),
+	providerKeyId: varchar('provider_key_id', { length: COL.ID }),
+	providerKeyLabel: varchar('provider_key_label', { length: COL.NAME }),
+	providerKeyFingerprint: varchar('provider_key_fingerprint', { length: 64 }),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 
@@ -187,6 +202,7 @@ export const mysqlCoreSchema = {
 	usersTable,
 	apiKeysTable,
 	providersTable,
+	providerApiKeysTable,
 	modelsTable,
 	modelRoutesTable,
 	apiKeyRequestLogsTable,

@@ -159,6 +159,11 @@ export interface RequestLogRow {
   raw_usage: string | null;
   /** 计费审计 JSON 字符串（单列）；结构约定见 `db/pricing-audit.ts` */
   pricing_audit: string | null;
+  /** 最终选用的 provider key id（`provider_api_keys.id`） */
+  provider_key_id: string | null;
+  provider_key_label: string | null;
+  /** 脱敏尾号指纹，不存明文 */
+  provider_key_fingerprint: string | null;
   created_at: string;
 }
 
