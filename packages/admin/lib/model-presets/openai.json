@@ -96,6 +96,47 @@
 		"released": "2026-03-05"
 	},
 	{
+		"id": "gpt-5.4-mini",
+		"display_name": "GPT-5.4 mini",
+		"vendor": "openai",
+		"context_window": 400000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.75,
+						"output_price": 4.5,
+						"cache_read_price": 0.075,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5.4,
+						"output_price": 32.4,
+						"cache_read_price": 0.54,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-17"
+	},
+	{
 		"id": "gpt-5.5",
 		"display_name": "GPT-5.5",
 		"vendor": "openai",
