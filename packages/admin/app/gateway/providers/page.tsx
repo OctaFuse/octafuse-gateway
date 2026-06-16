@@ -10,6 +10,7 @@ import {
   CheckIcon,
   ArrowDownTrayIcon,
   DocumentDuplicateIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline';
 import {
   OpenAiEndpointIcon,
@@ -40,7 +41,7 @@ type ProviderKeyRow = {
   status: string;
   weight: number;
   priority: number;
-  fingerprint: string;
+  masked_api_key: string;
   is_pending_import: boolean;
   created_at: string;
   updated_at: string;
@@ -176,6 +177,26 @@ export default function GatewayProvidersPage() {
     }
   };
 
+  const handleCopyProviderKey = async (key: ProviderKeyRow) => {
+    if (!editingProvider) return;
+    try {
+      const response = await fetch(
+        `/api/admin/providers/${encodeURIComponent(editingProvider.id)}/keys/${encodeURIComponent(key.id)}`
+      );
+      const data = await readApiJson<{ api_key: string }>(response);
+      if (data.success && data.data?.api_key) {
+        await navigator.clipboard.writeText(data.data.api_key);
+        setCopiedId(`provider-key:${key.id}`);
+        setTimeout(() => setCopiedId(null), 2000);
+      } else {
+        setKeyError(data.message || 'Failed to copy API key');
+      }
+    } catch (error) {
+      console.error('Copy provider key error:', error);
+      setKeyError('Failed to copy API key');
+    }
+  };
+
   const handleToggleProviderKeyStatus = async (key: ProviderKeyRow) => {
     if (!editingProvider) return;
     const nextStatus = key.status === 'active' ? 'disabled' : 'active';
@@ -203,7 +224,7 @@ export default function GatewayProvidersPage() {
 
   const handleDeleteProviderKey = async (key: ProviderKeyRow) => {
     if (!editingProvider) return;
-    if (!confirm(`Delete key "${key.label}" (${key.fingerprint})? This cannot be undone.`)) return;
+    if (!confirm(`Delete key "${key.label}" (${key.masked_api_key})? This cannot be undone.`)) return;
     try {
       const response = await fetch(
         `/api/admin/providers/${encodeURIComponent(editingProvider.id)}/keys/${encodeURIComponent(key.id)}`,
@@ -395,13 +416,6 @@ export default function GatewayProvidersPage() {
   const handleSave = async () => {
     setSaveError('');
     if (
-      !editingProvider &&
-      !formData.api_key.trim()
-    ) {
-      setSaveError('API key is required for new providers.');
-      return;
-    }
-    if (
       editingProvider &&
       editingProvider.has_pending_key &&
       providerKeys.every((k) => k.status !== 'active' || k.is_pending_import)
@@ -418,9 +432,7 @@ export default function GatewayProvidersPage() {
         base_url_anthropic: formData.base_url_anthropic.trim() || null,
         base_url_gemini: formData.base_url_gemini.trim() || null,
       };
-      if (editingProvider) {
-        delete payload.api_key;
-      }
+      delete payload.api_key;
       let response: Response;
       if (editingProvider) {
         const patchBody = { ...payload };
@@ -787,7 +799,7 @@ export default function GatewayProvidersPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
+          <div className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${editingProvider ? 'max-w-3xl' : 'max-w-2xl'}`}>
             <div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
@@ -909,17 +921,15 @@ export default function GatewayProvidersPage() {
                   </div>
                 </section>
 
-                {/* Authentication */}
+                {/* Authentication (Edit only) */}
+                {editingProvider && (
                 <section className="rounded-lg border border-gray-200 bg-slate-50/70 p-4 space-y-3">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">Authentication</h3>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {editingProvider
-                        ? 'Manage multiple upstream API keys; Proxy schedules active keys with weighted random failover.'
-                        : 'Initial default key; you can add more keys after creation.'}
+                      Manage multiple upstream API keys; Proxy schedules active keys with weighted random failover.
                     </p>
                   </div>
-                  {editingProvider ? (
                     <>
                       {keyError && (
                         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{keyError}</div>
@@ -934,7 +944,7 @@ export default function GatewayProvidersPage() {
                             <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
                               <tr>
                                 <th className="px-3 py-2">Label</th>
-                                <th className="px-3 py-2">Fingerprint</th>
+                                <th className="min-w-[12rem] px-3 py-2">API Key</th>
                                 <th className="px-3 py-2">Status</th>
                                 <th className="px-3 py-2">Weight</th>
                                 <th className="px-3 py-2">Priority</th>
@@ -945,34 +955,57 @@ export default function GatewayProvidersPage() {
                               {providerKeys.map((key) => (
                                 <tr key={key.id} className="border-t border-gray-100">
                                   <td className="px-3 py-2 font-mono text-xs">{key.label}</td>
-                                  <td className="px-3 py-2 font-mono text-xs text-gray-600">{key.fingerprint}</td>
+                                  <td className="min-w-[12rem] px-3 py-2">
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className="truncate font-mono text-xs text-gray-600"
+                                        title={key.masked_api_key}
+                                      >
+                                        {key.masked_api_key}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleCopyProviderKey(key)}
+                                        className="shrink-0 text-gray-400 hover:text-gray-600"
+                                        title={copiedId === `provider-key:${key.id}` ? 'Copied' : 'Copy API key'}
+                                      >
+                                        {copiedId === `provider-key:${key.id}` ? (
+                                          <CheckIcon className="h-4 w-4 text-green-600" aria-hidden />
+                                        ) : (
+                                          <ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
+                                        )}
+                                      </button>
+                                    </div>
+                                  </td>
                                   <td className="px-3 py-2">
-                                    <span
-                                      className={`inline-flex rounded-full px-2 py-0.5 text-xs ${
-                                        key.status === 'active'
-                                          ? 'bg-green-100 text-green-800'
-                                          : 'bg-gray-100 text-gray-600'
+                                    <button
+                                      type="button"
+                                      role="switch"
+                                      aria-checked={key.status === 'active'}
+                                      aria-label={key.status === 'active' ? 'Disable key' : 'Enable key'}
+                                      onClick={() => void handleToggleProviderKeyStatus(key)}
+                                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                        key.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
                                       }`}
                                     >
-                                      {key.status}
-                                    </span>
+                                      <span
+                                        aria-hidden
+                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition ${
+                                          key.status === 'active' ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                      />
+                                    </button>
                                   </td>
                                   <td className="px-3 py-2">{key.weight}</td>
                                   <td className="px-3 py-2">{key.priority}</td>
-                                  <td className="px-3 py-2 text-right space-x-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleToggleProviderKeyStatus(key)}
-                                      className="text-xs text-blue-600 hover:underline"
-                                    >
-                                      {key.status === 'active' ? 'Disable' : 'Enable'}
-                                    </button>
+                                  <td className="px-3 py-2 text-right">
                                     <button
                                       type="button"
                                       onClick={() => void handleDeleteProviderKey(key)}
-                                      className="text-xs text-red-600 hover:underline"
+                                      aria-label={`Delete key ${key.label}`}
+                                      className="inline-flex rounded-md p-1.5 text-red-600 hover:bg-red-50"
                                     >
-                                      Delete
+                                      <TrashIcon className="h-4 w-4" aria-hidden />
                                     </button>
                                   </td>
                                 </tr>
@@ -981,39 +1014,50 @@ export default function GatewayProvidersPage() {
                           </table>
                         </div>
                       )}
-                      <div className="rounded-md border border-dashed border-gray-300 bg-white p-3 space-y-2">
-                        <p className="text-xs font-medium text-gray-700">Add key</p>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                          <input
-                            type="text"
-                            value={keyForm.label}
-                            onChange={(e) => setKeyForm({ ...keyForm, label: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            placeholder="Label (e.g. backup-cn-1)"
-                            autoComplete="off"
-                          />
+                      <div className="rounded-md border border-dashed border-gray-300 bg-white p-3 space-y-3">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Label</label>
+                            <input
+                              type="text"
+                              value={keyForm.label}
+                              onChange={(e) => setKeyForm({ ...keyForm, label: e.target.value })}
+                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              placeholder="e.g. backup-cn-1"
+                              autoComplete="off"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Priority</label>
+                            <input
+                              type="number"
+                              value={keyForm.priority}
+                              onChange={(e) => setKeyForm({ ...keyForm, priority: e.target.value })}
+                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Weight</label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={keyForm.weight}
+                              onChange={(e) => setKeyForm({ ...keyForm, weight: e.target.value })}
+                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              placeholder="1"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-sm font-medium text-gray-700">Upstream API Key</label>
                           <input
                             type="password"
                             value={keyForm.api_key}
                             onChange={(e) => setKeyForm({ ...keyForm, api_key: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            placeholder="Upstream API key"
+                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                            placeholder="sk-…"
                             autoComplete="new-password"
-                          />
-                          <input
-                            type="number"
-                            min={1}
-                            value={keyForm.weight}
-                            onChange={(e) => setKeyForm({ ...keyForm, weight: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            placeholder="Weight"
-                          />
-                          <input
-                            type="number"
-                            value={keyForm.priority}
-                            onChange={(e) => setKeyForm({ ...keyForm, priority: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                            placeholder="Priority"
                           />
                         </div>
                         <button
@@ -1025,29 +1069,15 @@ export default function GatewayProvidersPage() {
                           {keySaving ? 'Adding…' : 'Add key'}
                         </button>
                       </div>
-                      {editingProvider && editingProvider.has_pending_key && (
+                      {editingProvider.has_pending_key && (
                         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                           Template placeholder detected. Add a real key above with label <code>default</code> or any label,
                           then disable/delete placeholders if needed.
                         </div>
                       )}
                     </>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">API Key *</label>
-                        <input
-                          type="password"
-                          value={formData.api_key}
-                          onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                          autoComplete="new-password"
-                          required
-                        />
-                      </div>
-                    </>
-                  )}
                 </section>
+                )}
 
                 {/* Description (providers.description) */}
                 <section className="rounded-lg border border-gray-200 bg-slate-50/70 p-4 space-y-3">

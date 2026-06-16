@@ -31,7 +31,8 @@ export interface ProviderApiKeyAdminRow {
 	status: string;
 	weight: number;
 	priority: number;
-	fingerprint: string;
+	/** Admin 列表脱敏预览，如 `sk-…x7Kp`。 */
+	masked_api_key: string;
 	/** 是否为静态导入占位密钥（{@link PROVIDER_IMPORT_PENDING_API_KEY}）。 */
 	is_pending_import: boolean;
 	created_at: string;

@@ -9,7 +9,7 @@ import type {
 	ProviderApiKeyAdminRow,
 	UpdateProviderApiKeyPatch,
 } from '../provider-api-keys-types';
-import { fingerprintProviderApiKey, isPendingProviderImportApiKey } from '../provider-key-utils';
+import { isPendingProviderImportApiKey, maskProviderApiKeyForAdmin } from '../provider-key-utils';
 import { PROVIDER_API_KEY_PATCH_COLS } from '../patch-allowlists';
 
 function mapAdminRow(row: {
@@ -30,7 +30,7 @@ function mapAdminRow(row: {
 		status: row.status,
 		weight: row.weight,
 		priority: row.priority,
-		fingerprint: fingerprintProviderApiKey(row.api_key),
+		masked_api_key: maskProviderApiKeyForAdmin(row.api_key),
 		is_pending_import: isPendingProviderImportApiKey(row.api_key),
 		created_at: row.created_at,
 		updated_at: row.updated_at,
@@ -144,6 +144,14 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 					updated_at: string;
 				}>();
 			return row ? mapAdminRow(row) : null;
+		},
+
+		async getProviderKeyPlaintext(keyId: string): Promise<{ provider_id: string; api_key: string } | null> {
+			const row = await raw
+				.prepare(`SELECT provider_id, api_key FROM provider_api_keys WHERE id = ?`)
+				.bind(keyId)
+				.first<{ provider_id: string; api_key: string }>();
+			return row ?? null;
 		},
 
 		async countActiveProviderKeys(providerId: string): Promise<number> {

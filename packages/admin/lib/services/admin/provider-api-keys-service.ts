@@ -13,6 +13,21 @@ export async function listProviderKeysService(
 	return repos.providerKeys.listProviderKeys(providerId);
 }
 
+export async function revealProviderKeyService(
+	repos: GatewayRepositories,
+	providerId: string,
+	keyId: string
+): Promise<{ api_key: string }> {
+	const provider = await repos.providers.getProviderRowById(providerId);
+	if (!provider) throw notFound('Provider not found');
+
+	const row = await repos.providerKeys.getProviderKeyPlaintext(keyId);
+	if (!row || row.provider_id !== providerId) {
+		throw notFound('Provider key not found');
+	}
+	return { api_key: row.api_key };
+}
+
 export async function createProviderKeyService(
 	repos: GatewayRepositories,
 	providerId: string,

@@ -17,6 +17,7 @@ import {
 	createProviderKeyService,
 	deleteProviderKeyService,
 	listProviderKeysService,
+	revealProviderKeyService,
 	updateProviderKeyService,
 } from '@/lib/services/admin/provider-api-keys-service';
 import type { AdminProviderMutationInput, AdminProviderKeyMutationInput, AdminProvidersImportBody, AdminProvidersImportOutput } from '@/lib/services/admin/types';
@@ -123,6 +124,18 @@ adminProvidersRoutes.post('/:id/keys', async (c) => {
 		return c.json(normalizeApiTimeFields({ success: true, message: 'Provider key created successfully', data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to create provider key');
+	}
+});
+
+adminProvidersRoutes.get('/:id/keys/:keyId', async (c) => {
+	const providerId = c.req.param('id');
+	const keyId = c.req.param('keyId');
+	try {
+		const repos = c.get('repositories');
+		const data = await revealProviderKeyService(repos, providerId, keyId);
+		return c.json({ success: true, data });
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to reveal provider key');
 	}
 });
 

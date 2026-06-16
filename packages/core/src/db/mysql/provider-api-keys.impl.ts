@@ -13,7 +13,7 @@ import type {
 	ProviderApiKeyAdminRow,
 	UpdateProviderApiKeyPatch,
 } from '../provider-api-keys-types';
-import { fingerprintProviderApiKey, isPendingProviderImportApiKey } from '../provider-key-utils';
+import { isPendingProviderImportApiKey, maskProviderApiKeyForAdmin } from '../provider-key-utils';
 
 function mapAdminRow(r: {
 	id: string;
@@ -33,7 +33,7 @@ function mapAdminRow(r: {
 		status: r.status,
 		weight: r.weight,
 		priority: r.priority,
-		fingerprint: fingerprintProviderApiKey(r.apiKey),
+		masked_api_key: maskProviderApiKeyForAdmin(r.apiKey),
 		is_pending_import: isPendingProviderImportApiKey(r.apiKey),
 		created_at: r.createdAt,
 		updated_at: r.updatedAt,
@@ -112,6 +112,20 @@ export function createMySqlProviderApiKeysRepository(db: MySqlDatabaseClient): P
 		async getProviderKeyById(keyId: string): Promise<ProviderApiKeyAdminRow | null> {
 			const rows = await drizzle.select().from(myProviderApiKeysTable).where(eq(myProviderApiKeysTable.id, keyId)).limit(1);
 			return rows[0] ? mapAdminRow(rows[0]) : null;
+		},
+
+		async getProviderKeyPlaintext(keyId: string): Promise<{ provider_id: string; api_key: string } | null> {
+			const rows = await drizzle
+				.select({
+					provider_id: myProviderApiKeysTable.providerId,
+					api_key: myProviderApiKeysTable.apiKey,
+				})
+				.from(myProviderApiKeysTable)
+				.where(eq(myProviderApiKeysTable.id, keyId))
+				.limit(1);
+			const row = rows[0];
+			if (!row) return null;
+			return { provider_id: row.provider_id, api_key: row.api_key };
 		},
 
 		async countActiveProviderKeys(providerId: string): Promise<number> {

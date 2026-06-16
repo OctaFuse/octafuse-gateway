@@ -2,7 +2,6 @@
 import type { GatewayRepositories } from '@octafuse/core';
 import {
 	listStaticProviderImportPresets,
-	PROVIDER_IMPORT_PENDING_API_KEY,
 } from '@/lib/provider-import-preset';
 import { badRequest, conflict, notFound } from './errors';
 import { nullIfEmpty } from './shared';
@@ -35,9 +34,9 @@ export async function createProviderService(repos: GatewayRepositories, body: Ad
 	const customId = String(body.id ?? '').trim();
 	const name = String(body.name ?? '');
 	const baseUrlOpenai = nullIfEmpty(body.base_url_openai as string | null | undefined);
-	const apiKey = String(body.api_key ?? '');
-	if (!name || !apiKey) {
-		throw badRequest('name and api_key are required');
+	const apiKey = String(body.api_key ?? '').trim();
+	if (!name) {
+		throw badRequest('name is required');
 	}
 
 	const id = customId || crypto.randomUUID();
@@ -54,15 +53,17 @@ export async function createProviderService(repos: GatewayRepositories, body: Ad
 		description: body.description,
 	});
 
-	await repos.providerKeys.createProviderKey({
-		id: `pkey_${id}`,
-		providerId: id,
-		label: 'default',
-		apiKey,
-		status: 'active',
-		weight: 1,
-		priority: 0,
-	});
+	if (apiKey) {
+		await repos.providerKeys.createProviderKey({
+			id: `pkey_${id}`,
+			providerId: id,
+			label: 'default',
+			apiKey,
+			status: 'active',
+			weight: 1,
+			priority: 0,
+		});
+	}
 
 	return { id };
 }
@@ -104,7 +105,7 @@ export async function deleteProviderService(repos: GatewayRepositories, id: stri
 /**
  * 从 `lib/provider-import-presets.json` 按 **指定模板 id** 导入 Provider：
  * **已存在同 id 的不导入、不覆盖**（记入 `skipped_existing`）；**同名**（忽略大小写）冲突记入 `failed`。
- * 新行写入占位 {@link PROVIDER_IMPORT_PENDING_API_KEY}，须在 Admin 中 PATCH 为真实上游密钥后方可调用。
+ * 导入后不含 API Key，须在 Admin Edit Provider 中手动添加。
  */
 export async function importProvidersFromStaticPresetsService(
 	repos: GatewayRepositories,
@@ -153,7 +154,6 @@ export async function importProvidersFromStaticPresetsService(
 				base_url_openai: preset.base_url_openai,
 				base_url_anthropic: preset.base_url_anthropic,
 				base_url_gemini: preset.base_url_gemini,
-				api_key: PROVIDER_IMPORT_PENDING_API_KEY,
 				description: preset.description ?? null,
 			});
 

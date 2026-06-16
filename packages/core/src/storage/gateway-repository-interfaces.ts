@@ -207,6 +207,7 @@ export interface ProviderApiKeysRepository {
 	updateProviderKeyByPatch(keyId: string, patch: UpdateProviderApiKeyPatch): Promise<number>;
 	deleteProviderKeyById(keyId: string): Promise<number>;
 	getProviderKeyById(keyId: string): Promise<ProviderApiKeyAdminRow | null>;
+	getProviderKeyPlaintext(keyId: string): Promise<{ provider_id: string; api_key: string } | null>;
 	countActiveProviderKeys(providerId: string): Promise<number>;
 }
 
