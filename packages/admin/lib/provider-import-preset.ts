@@ -11,7 +11,6 @@ import { getModelVendorLabel, normalizeModelVendorInput } from './model-vendor';
 import type { AdminProviderImportCatalogItem } from '@/lib/services/admin/types';
 
 export type StaticProviderImportPresetRow = {
-	id: string;
 	name: string;
 	vendor_key: string;
 	base_url_openai: string | null;
@@ -19,6 +18,11 @@ export type StaticProviderImportPresetRow = {
 	base_url_gemini: string | null;
 	/** 可选；JSON 中可省略，导入后写入 providers.description 时为 null */
 	description?: string | null;
+};
+
+/** 运行时 catalog 行键（JSON 数组下标字符串）；与入库 provider id 无关。 */
+export type StaticProviderImportPresetWithKey = StaticProviderImportPresetRow & {
+	catalog_key: string;
 };
 
 const STATIC_ROWS = rawPresets as StaticProviderImportPresetRow[];
@@ -31,9 +35,12 @@ function protocolsForPreset(p: StaticProviderImportPresetRow): AdminProviderImpo
 	return out;
 }
 
-/** 全部静态模板行（含各协议 base URL）。 */
-export function listStaticProviderImportPresets(): StaticProviderImportPresetRow[] {
-	return STATIC_ROWS.filter((r) => String(r.id ?? '').trim().length > 0);
+/** 全部静态模板行（含 catalog 键与各协议 base URL）。 */
+export function listStaticProviderImportPresets(): StaticProviderImportPresetWithKey[] {
+	return STATIC_ROWS.filter((r) => String(r.name ?? '').trim().length > 0).map((row, index) => ({
+		...row,
+		catalog_key: String(index),
+	}));
 }
 
 /** 供 `GET /admin/providers/import/catalog`：摘要不含密钥。 */
@@ -41,8 +48,8 @@ export function listStaticProviderImportCatalogForAdmin(): AdminProviderImportCa
 	return listStaticProviderImportPresets().map((p) => {
 		const vendorCanon = normalizeModelVendorInput(p.vendor_key);
 		return {
-			id: String(p.id).trim(),
-			name: String(p.name ?? '').trim() || String(p.id).trim(),
+			id: p.catalog_key,
+			name: String(p.name ?? '').trim(),
 			vendor_key: vendorCanon,
 			vendor_label: getModelVendorLabel(vendorCanon),
 			protocols: protocolsForPreset(p),

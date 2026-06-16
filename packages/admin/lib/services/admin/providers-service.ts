@@ -102,9 +102,24 @@ export async function deleteProviderService(repos: GatewayRepositories, id: stri
 	if (!changes) throw notFound('Provider not found');
 }
 
+/** 在 `providers.name` UNIQUE 约束下为模板导入生成唯一显示名。 */
+function suggestUniqueProviderImportName(baseName: string, existingNameLower: Set<string>): string {
+	const trimmed = baseName.trim();
+	if (!existingNameLower.has(trimmed.toLowerCase())) {
+		return trimmed;
+	}
+	for (let n = 2; n < 1000; n++) {
+		const candidate = `${trimmed} (${n})`;
+		if (!existingNameLower.has(candidate.toLowerCase())) {
+			return candidate;
+		}
+	}
+	throw badRequest(`Unable to allocate unique provider name for: ${trimmed}`);
+}
+
 /**
- * 从 `lib/provider-import-presets.json` 按 **指定模板 id** 导入 Provider：
- * **已存在同 id 的不导入、不覆盖**（记入 `skipped_existing`）；**同名**（忽略大小写）冲突记入 `failed`。
+ * 从 `lib/provider-import-presets.json` 按 **catalog 键**（数组下标字符串）导入 Provider：
+ * 每次导入均新增一行（自动生成 provider id）；同名模板可重复导入，显示名自动追加 `(2)` 等后缀。
  * 导入后不含 API Key，须在 Admin Edit Provider 中手动添加。
  */
 export async function importProvidersFromStaticPresetsService(
@@ -113,43 +128,32 @@ export async function importProvidersFromStaticPresetsService(
 ): Promise<AdminProvidersImportOutput> {
 	const uniqueIds = [...new Set((input.ids ?? []).map((x) => String(x).trim()).filter((x) => x.length > 0))];
 	if (uniqueIds.length === 0) {
-		throw badRequest('ids must be a non-empty array of preset provider ids');
+		throw badRequest('ids must be a non-empty array of preset catalog keys');
 	}
 
-	const presetById = new Map(listStaticProviderImportPresets().map((p) => [String(p.id).trim(), p]));
+	const presetByKey = new Map(listStaticProviderImportPresets().map((p) => [p.catalog_key, p]));
 
 	let created = 0;
-	const skipped_existing: string[] = [];
 	const failed: Array<{ id: string; message: string }> = [];
 
 	const existingProviders = await listProvidersService(repos);
-	const existingIds = new Set(existingProviders.map((p) => p.id));
 	const existingNameLower = new Set(existingProviders.map((p) => p.name.trim().toLowerCase()));
 
-	for (const id of uniqueIds) {
-		const preset = presetById.get(id);
+	for (const catalogKey of uniqueIds) {
+		const preset = presetByKey.get(catalogKey);
 		try {
 			if (!preset) {
-				throw badRequest(`Unknown static preset id: ${id}`);
+				throw badRequest(`Unknown static preset catalog key: ${catalogKey}`);
 			}
 
-			if (existingIds.has(id)) {
-				skipped_existing.push(id);
-				continue;
+			const baseName = String(preset.name ?? '').trim();
+			if (!baseName) {
+				throw badRequest(`Static preset catalog key "${catalogKey}": missing name`);
 			}
 
-			const name = String(preset.name ?? '').trim();
-			if (!name) {
-				throw badRequest(`Static preset "${id}": missing name`);
-			}
-
-			const nameKey = name.toLowerCase();
-			if (existingNameLower.has(nameKey)) {
-				throw badRequest(`Provider name already exists: ${name}`);
-			}
+			const name = suggestUniqueProviderImportName(baseName, existingNameLower);
 
 			await createProviderService(repos, {
-				id,
 				name,
 				base_url_openai: preset.base_url_openai,
 				base_url_anthropic: preset.base_url_anthropic,
@@ -157,19 +161,18 @@ export async function importProvidersFromStaticPresetsService(
 				description: preset.description ?? null,
 			});
 
-			existingIds.add(id);
-			existingNameLower.add(nameKey);
+			existingNameLower.add(name.toLowerCase());
 			created++;
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e);
-			failed.push({ id, message });
+			failed.push({ id: catalogKey, message });
 		}
 	}
 
 	return {
 		created,
 		updated: 0,
-		skipped_existing,
+		skipped_existing: [],
 		failed,
 	};
 }

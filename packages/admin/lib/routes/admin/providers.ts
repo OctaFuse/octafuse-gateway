@@ -65,7 +65,7 @@ adminProvidersRoutes.get('/import/catalog', async (c) => {
 	}
 });
 
-/** 从静态模板批量创建 Provider（同 id 不覆盖；写入占位 API Key）。 */
+/** 从静态模板批量创建 Provider（每次新增；自动生成 id 与唯一显示名）。 */
 adminProvidersRoutes.post('/import', async (c) => {
 	let body: AdminProvidersImportBody;
 	try {
@@ -80,9 +80,6 @@ adminProvidersRoutes.post('/import', async (c) => {
 			ids: Array.isArray(body.ids) ? body.ids : [],
 		});
 		const parts = [`created ${data.created}`];
-		if (data.skipped_existing.length) {
-			parts.push(`skipped ${data.skipped_existing.length} existing`);
-		}
 		if (data.failed.length) {
 			parts.push(`${data.failed.length} failed`);
 		}

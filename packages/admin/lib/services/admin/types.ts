@@ -89,7 +89,7 @@ export type AdminProviderKeyMutationInput = {
 	priority?: unknown;
 };
 
-/** `GET /admin/providers/import/catalog`：内置 Provider 模板摘要（无密钥）。 */
+/** `GET /admin/providers/import/catalog`：内置 Provider 模板摘要（无密钥）。`id` 为 catalog 行键（数组下标），非入库 provider id。 */
 export type AdminProviderImportCatalogItem = {
 	id: string;
 	name: string;
@@ -102,16 +102,17 @@ export type AdminProviderImportCatalogItem = {
 	description: string | null;
 };
 
-/** `POST /admin/providers/import` 请求体：导入选中的模板 id。 */
+/** `POST /admin/providers/import` 请求体：导入选中的 catalog 键（`GET .../catalog` 返回的 `id`）。 */
 export type AdminProvidersImportBody = {
 	ids: string[];
 };
 
-/** `POST /admin/providers/import`：从静态模板创建 `providers` 行；同 id 不覆盖；占位密钥需后续 PATCH。 */
+/** `POST /admin/providers/import`：从静态模板创建 `providers` 行；每次导入新增；`skipped_existing` 恒为空（兼容字段）。 */
 export type AdminProvidersImportOutput = {
 	created: number;
 	/** 与 `/admin/models/import` 对齐，恒为 `0`。 */
 	updated: number;
+	/** 兼容字段；重复导入同一模板不再跳过，恒为空数组。 */
 	skipped_existing: string[];
 	failed: Array<{ id: string; message: string }>;
 };

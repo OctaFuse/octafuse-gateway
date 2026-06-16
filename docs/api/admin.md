@@ -57,7 +57,7 @@ Authorization: Bearer sk-admin-xxx
 | `/admin/providers/:id/keys` | GET, POST | `provider_api_keys`（列表脱敏 `fingerprint`） | Admin UI |
 | `/admin/providers/:id/keys/:keyId` | PATCH, DELETE | `provider_api_keys` | Admin UI |
 | `/admin/providers/import/catalog` | GET | 内置 Provider 模板摘要（无密钥） | Admin UI |
-| `/admin/providers/import` | POST | 请求体 `{"ids":["…"]}`：按模板创建 `providers` + `provider_api_keys` default 行（**同 id 不覆盖**；占位 API Key 写入 key pool，需在 Admin 中替换） | Admin UI、运维脚本 |
+| `/admin/providers/import` | POST | 请求体 `{"ids":["0","1",…]}`：catalog 键（非 provider id）；每次导入新增 `providers` 行（UUID id；同名自动后缀）；不含 API Key，须在 Admin 中手动添加 | Admin UI、运维脚本 |
 | `/admin/models` | GET, POST, GET/PATCH/DELETE `/:id` | `models`，`model_tags` | Admin UI |
 | `/admin/models/import/catalog` | GET | 内置静态目录可选项摘要（不含完整 `pricing_profile`） | Admin UI |
 | `/admin/models/import` | POST | 请求体 `{"ids":["…"]}`：仅导入指定预设 → `models`，`model_tags`（按 `BILLING_CURRENCY` 选用 USD/CNY 价；**同 id 不覆盖**，记入 `skipped_existing`） | Admin UI、运维脚本 |

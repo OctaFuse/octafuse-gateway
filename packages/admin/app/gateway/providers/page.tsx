@@ -352,14 +352,13 @@ export default function GatewayProvidersPage() {
   };
 
   const toggleImportPreset = (id: string) => {
-    if (existingProviderIds.has(id)) return;
     setImportSelected((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const selectAllImportPresets = () => {
     const next: Record<string, boolean> = {};
     for (const row of importCatalogRows) {
-      if (!existingProviderIds.has(row.id)) next[row.id] = true;
+      next[row.id] = true;
     }
     setImportSelected(next);
   };
@@ -388,18 +387,15 @@ export default function GatewayProvidersPage() {
       });
       const data = await readApiJson<{
         created: number;
-        skipped_existing: string[];
         failed: Array<{ id: string; message: string }>;
       }>(response);
       if (data.success && data.data) {
-        const { created, skipped_existing, failed } = data.data;
-        const skipLines =
-          skipped_existing.length > 0 ? `\nSkipped (already exists): ${skipped_existing.join(', ')}` : '';
+        const { created, failed } = data.data;
         const failLines =
           failed.length > 0
             ? `\nFailed:\n${failed.map((f) => `  ${f.id}: ${f.message}`).join('\n')}`
             : '';
-        alert(`Import finished.\nCreated: ${created}${skipLines}${failLines}`);
+        alert(`Import finished.\nCreated: ${created}${failLines}`);
         setShowImportModal(false);
         void fetchProviders();
       } else {
@@ -675,20 +671,20 @@ export default function GatewayProvidersPage() {
       </div>
 
       {showImportModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="provider-import-title"
-        >
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-6 py-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="provider-import-title"
+          >
+            <div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
               <div>
                 <h2 id="provider-import-title" className="text-xl font-bold text-gray-900">
                   Import from templates
                 </h2>
                 <p className="mt-1 text-xs text-gray-500">
-                  Prefills OpenAI-compatible base URLs (CN-first catalog). Rows already in your database are skipped.
+                  Prefills OpenAI-compatible base URLs (CN-first catalog). Each import creates a new provider row.
                 </p>
               </div>
               <button
@@ -700,61 +696,56 @@ export default function GatewayProvidersPage() {
                 ×
               </button>
             </div>
-            <div className="border-b px-6 py-3 flex flex-wrap gap-2">
+
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-gray-50 px-6 py-3">
               <button
                 type="button"
                 onClick={selectAllImportPresets}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50"
+                disabled={importCatalogLoading || importCatalogRows.length === 0}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
               >
-                Select all new
+                Select all
               </button>
               <button
                 type="button"
                 onClick={clearImportPresetSelection}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50"
+                disabled={importCatalogLoading || importCatalogRows.length === 0}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
               >
                 Clear
               </button>
-              <button
-                type="button"
-                onClick={() => void loadImportCatalog()}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm hover:bg-gray-50"
-              >
-                Refresh catalog
-              </button>
+              <span className="ml-auto text-sm text-gray-600">
+                Selected <span className="font-semibold tabular-nums">{importSelectedCount}</span> /{' '}
+                <span className="tabular-nums">{importCatalogRows.length}</span> available
+              </span>
             </div>
-            <div className="px-6 py-4">
-              {importCatalogError && (
-                <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+              {importCatalogLoading && (
+                <div className="py-12 text-center text-gray-600">Loading catalog…</div>
+              )}
+              {!importCatalogLoading && importCatalogError && (
+                <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                   {importCatalogError}
                 </div>
               )}
-              {importCatalogLoading ? (
-                <div className="py-12 text-center text-gray-600">Loading catalog…</div>
-              ) : (
+              {!importCatalogLoading && !importCatalogError && importCatalogRows.length === 0 && (
+                <div className="py-12 text-center text-gray-500">Catalog is empty</div>
+              )}
+              {!importCatalogLoading && !importCatalogError && importCatalogRows.length > 0 && (
                 <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200">
                   {importCatalogRows.map((row) => {
-                    const exists = existingProviderIds.has(row.id);
                     const checked = Boolean(importSelected[row.id]);
                     return (
-                      <li key={row.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
+                      <li key={row.id} className="flex flex-wrap items-start gap-3 px-4 py-3 hover:bg-gray-50">
                         <input
                           type="checkbox"
-                          className="mt-1 h-4 w-4 rounded border-gray-300"
+                          className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           checked={checked}
-                          disabled={exists}
                           onChange={() => toggleImportPreset(row.id)}
-                          aria-label={exists ? `${row.name} already imported` : `Select ${row.name}`}
+                          aria-label={`Select ${row.name}`}
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                            <span className="font-mono text-xs text-gray-500">{row.id}</span>
-                            {exists && (
-                              <span className="rounded bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
-                                Exists
-                              </span>
-                            )}
-                          </div>
                           <p className="text-sm font-semibold text-gray-900">{row.name}</p>
                           <p className="text-xs text-gray-500">
                             {row.vendor_label} · protocols: {row.protocols.join(', ') || '—'}
@@ -774,19 +765,12 @@ export default function GatewayProvidersPage() {
                 </ul>
               )}
             </div>
-            <div className="flex justify-end gap-3 border-t px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setShowImportModal(false)}
-                className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
-                disabled={importSubmitting}
-              >
-                Cancel
-              </button>
+
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
               <button
                 type="button"
                 onClick={() => void runImportSelectedPresets()}
-                disabled={importSubmitting || importSelectedCount === 0}
+                disabled={importSubmitting || importCatalogLoading || importSelectedCount === 0}
                 className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {importSubmitting ? 'Importing…' : `Import selected (${importSelectedCount})`}
