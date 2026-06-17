@@ -13,11 +13,11 @@ import {
 } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import {
-  catalogInputPriceSortKey,
   getCatalogPricingTierRows,
   parseChargedFactorFromPriceOverride,
   parseMeteredFactorFromPriceOverride,
 } from '@/lib/pricing-ui';
+import { compareModelsByReleasedAtDesc } from '@/lib/model-catalog-sort';
 import type { GatewayModelRoute, GatewayModel, GatewayProvider } from '@/lib/types';
 import {
   extractMeteredProfileFromPriceOverrideJson,
@@ -43,6 +43,7 @@ import {
   normalizeRouteGroup,
   routeGroupBadgeClass,
 } from '@/lib/route-group-ui';
+import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -834,12 +835,10 @@ function RoutesContent() {
     return [...routesByModel].sort((a, b) => {
       const ma = modelMeta.get(a.model_id);
       const mb = modelMeta.get(b.model_id);
-      const ka = ma ? catalogInputPriceSortKey(ma) : Number.NEGATIVE_INFINITY;
-      const kb = mb ? catalogInputPriceSortKey(mb) : Number.NEGATIVE_INFINITY;
-      if (kb !== ka) {
-        return kb - ka;
-      }
-      return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+      return compareModelsByReleasedAtDesc(
+        ma ?? { id: a.model_id, display_name: a.title },
+        mb ?? { id: b.model_id, display_name: b.title }
+      );
     });
   }, [routesByModel, modelMeta]);
 
@@ -1239,9 +1238,10 @@ function RoutesContent() {
                                                     <div className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug">
                                                       <div className="flex min-w-0 items-center gap-2">
                                                         <div
-                                                          className="flex shrink-0 items-center"
+                                                          className="flex shrink-0 items-center gap-1.5"
                                                           title={route.upstream_protocol}
                                                         >
+                                                          <UpstreamProtocolBrandIcon protocol={route.upstream_protocol} />
                                                           <span
                                                             className="text-[11px] font-semibold tabular-nums text-gray-600"
                                                             title="Priority (failover order)"
