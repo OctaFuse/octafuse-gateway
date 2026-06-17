@@ -41,7 +41,6 @@ import {
 import {
   compareRouteGroupsForDisplay,
   normalizeRouteGroup,
-  routeGroupBadgeClass,
 } from '@/lib/route-group-ui';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
@@ -63,6 +62,8 @@ const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
   gemini: 'Gemini',
 };
 
+const ROUTE_GROUP_CARD_BADGE_CLASS = 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200';
+
 function compareRouteProtocolsForDisplay(a: string, b: string): number {
   const knownA = isUpstreamProtocol(a);
   const knownB = isUpstreamProtocol(b);
@@ -75,6 +76,19 @@ function compareRouteProtocolsForDisplay(a: string, b: string): number {
 
 function getProtocolDisplayLabel(protocol: string): string {
   return PROTOCOL_DISPLAY_LABEL[protocol] ?? protocol;
+}
+
+function protocolBadgeClass(protocol: string): string {
+  if (protocol === 'openai') {
+    return 'bg-emerald-50 text-emerald-800 ring-emerald-200';
+  }
+  if (protocol === 'anthropic') {
+    return 'bg-orange-50 text-orange-800 ring-orange-200';
+  }
+  if (protocol === 'gemini') {
+    return 'bg-indigo-50 text-indigo-800 ring-indigo-200';
+  }
+  return 'bg-amber-50 text-amber-900 ring-amber-200';
 }
 
 /**
@@ -1237,12 +1251,14 @@ function RoutesContent() {
                                             className="flex min-w-0 items-center gap-2"
                                             title={`upstream_protocol: ${section.protocol} · route_group: ${section.group}`}
                                           >
-                                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold leading-4 text-gray-700 ring-1 ring-inset ring-gray-200">
+                                            <span
+                                              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-4 ring-1 ring-inset ${protocolBadgeClass(section.protocol)}`}
+                                            >
                                               <UpstreamProtocolBrandIcon protocol={section.protocol} />
                                               {section.protocolLabel}
                                             </span>
                                             <span
-                                              className={`inline-flex min-w-0 items-center rounded-md px-2 py-0.5 text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(section.group)}`}
+                                              className={`inline-flex min-w-0 items-center rounded-md px-2 py-0.5 text-[11px] font-semibold leading-4 ${ROUTE_GROUP_CARD_BADGE_CLASS}`}
                                             >
                                               <span className="truncate">{section.group}</span>
                                             </span>
