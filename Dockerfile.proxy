@@ -57,8 +57,13 @@ COPY --from=deps /app/package.json /app/package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/packages/core/package.json ./packages/core/package.json
 COPY --from=build /app/packages/core/dist ./packages/core/dist
+COPY --from=build /app/packages/core/migrations-postgres ./packages/core/migrations-postgres
+COPY --from=build /app/packages/core/migrations-mysql ./packages/core/migrations-mysql
 COPY --from=build /app/packages/proxy/package.json ./packages/proxy/package.json
 COPY --from=build /app/packages/proxy/dist ./packages/proxy/dist
+
+COPY docker/entrypoint.app.sh /app/docker/entrypoint.app.sh
+RUN chmod +x /app/docker/entrypoint.app.sh
 
 ENV NODE_ENV=production
 ENV PORT=8787
@@ -68,4 +73,5 @@ EXPOSE 8787
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 	CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8787)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
+ENTRYPOINT ["/app/docker/entrypoint.app.sh"]
 CMD ["node", "packages/proxy/dist/runtime/node.js"]

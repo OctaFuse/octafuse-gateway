@@ -52,6 +52,11 @@ COPY --from=builder /app/packages/admin/public ./packages/admin/public
 
 COPY --from=builder /app/packages/core/package.json ./packages/core/package.json
 COPY --from=builder /app/packages/core/dist ./packages/core/dist
+COPY --from=builder /app/packages/core/migrations-postgres ./packages/core/migrations-postgres
+COPY --from=builder /app/packages/core/migrations-mysql ./packages/core/migrations-mysql
+
+COPY docker/entrypoint.app.sh /app/docker/entrypoint.app.sh
+RUN chmod +x /app/docker/entrypoint.app.sh
 
 # postgres + mysql2（admin 运行时数据库依赖）
 COPY --from=builder /app/node_modules/postgres ./node_modules/postgres
@@ -72,4 +77,5 @@ EXPOSE 8789
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
 	CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8789)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
+ENTRYPOINT ["/app/docker/entrypoint.app.sh"]
 CMD ["node", "packages/admin/server.js"]

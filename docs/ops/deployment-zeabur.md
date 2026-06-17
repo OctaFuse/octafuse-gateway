@@ -1,33 +1,36 @@
 # Zeabur 部署（Docker + Postgres）
 
-本文说明在 [Zeabur](https://zeabur.com) 上部署 **octafuse-gateway** 的 **Proxy**、**Admin** 与 **一次性 migrate** 的正确方式。
+本文说明在 [Zeabur](https://zeabur.com) 上部署 **octafuse-gateway** 的 **Proxy**、**Admin** 与数据库迁移的正确方式。
 
-> **核心结论**：`Dockerfile.migrate` 镜像设计为 **Job（跑完即退出）**，**不能**作为 Zeabur 常驻 Service 长期运行。迁移成功后进程以 exit 0 结束，平台会将其视为容器失败并进入 `BackOff restarting failed container` 循环——这与迁移是否成功无关。
+> **推荐（方式 0）**：在 **proxy 或 admin** 常驻 Service 上设置 **`AUTO_MIGRATE=1`**，容器启动时自动执行幂等迁移，**无需**单独的 migrate Service 或 Suspend 操作。见 §3 方式 0。
+>
+> **备选**：`Dockerfile.migrate` 镜像设计为 **Job（跑完即退出）**，**不能**作为 Zeabur 常驻 Service 长期运行。迁移成功后进程以 exit 0 结束，平台会将其视为容器失败并进入 `BackOff restarting failed container` 循环——这与迁移是否成功无关。
 
 ## 1. 推荐架构
 
-在同一 Zeabur Project 中部署 **2 个常驻 Service** + **按需执行 migrate**：
+在同一 Zeabur Project 中部署 **2 个常驻 Service**（**推荐**在其中一个上开启 `AUTO_MIGRATE=1`）：
 
 | 组件 | 镜像 / Dockerfile | 类型 | 端口 |
 |------|-------------------|------|------|
 | **gateway-proxy** | `Dockerfile.proxy` 或 GHCR `*-proxy` | 常驻 Service | 8787（HTTP） |
 | **gateway-admin** | `Dockerfile.admin` 或 GHCR `*-admin` | 常驻 Service | 8789（HTTP） |
-| **migrate** | `Dockerfile.migrate` 或 GHCR `*-migrate` | **一次性 Job**（非常驻） | 无需暴露 |
+| **migrate**（可选） | `Dockerfile.migrate` 或 GHCR `*-migrate` | **一次性 Job**（非常驻；`AUTO_MIGRATE` 时可省略） | 无需暴露 |
 
 Proxy 与 Admin **共用同一 `DATABASE_URL`**（外置 Postgres，如 Zeabur Postgres 插件或其它托管库）。
 
 ```mermaid
 flowchart LR
   subgraph zeabur [Zeabur Project]
-    migrateJob["migrate Job\n一次性"]
-    proxySvc["gateway-proxy\n常驻"]
+    proxySvc["gateway-proxy\nAUTO_MIGRATE=1"]
     adminSvc["gateway-admin\n常驻"]
   end
   pg[(Postgres)]
-  migrateJob -->|"schema 迁移"| pg
+  proxySvc -->|"启动时迁移"| pg
   proxySvc --> pg
   adminSvc --> pg
 ```
+
+（若未设 `AUTO_MIGRATE`，可改用 §3 方式 A/B 的独立 migrate Job。）
 
 ## 2. 为何 migrate 会「崩溃重启」
 
@@ -40,9 +43,24 @@ flowchart LR
 
 说明迁移成功；随后的 `BackOff restarting failed container` 是因为 **Zeabur/K8s 期望 Service 内进程持续监听端口**，而非 migrate 本身失败。
 
-## 3. 推荐发布流程（先 migrate，再 proxy/admin）
+## 3. 推荐发布流程
 
-### 方式 A：本地 / CI 一次性 `docker run`（**最推荐**）
+### 方式 0：启动时自迁移（**Zeabur 最推荐**）
+
+proxy / admin 镜像内置 [`docker/entrypoint.app.sh`](../../docker/entrypoint.app.sh)。在 **一个** 常驻 Service 的环境变量中设置：
+
+```env
+AUTO_MIGRATE=1
+DATABASE_DRIVER=postgres
+DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
+```
+
+常见做法：仅在 **gateway-proxy** 或 **gateway-admin** 之一上开启 `AUTO_MIGRATE=1`（两者同时开启也安全——迁移有 advisory lock 且幂等）。部署 / 重新部署该 Service 时，日志应先出现 `[migrate-postgres] 全部完成。` 与 `[docker-entrypoint:app] MIGRATE_DONE`，再进入应用监听。
+
+- **默认关闭**：未设置 `AUTO_MIGRATE` 时行为与旧版完全一致。
+- **无需** 创建 migrate Service、Suspend、或本地 `docker run` migrate 镜像（除非你想显式分离迁移步骤）。
+
+### 方式 A：本地 / CI 一次性 `docker run`（备选）
 
 不在 Zeabur 上创建 migrate 常驻 Service。每次发版或有新 SQL 迁移时，在部署 proxy/admin **之前**执行：
 
@@ -95,6 +113,7 @@ ZBPACK_DOCKERFILE_PATH=Dockerfile.proxy
 DATABASE_DRIVER=postgres
 DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
 PORT=8787
+AUTO_MIGRATE=1
 ```
 
 在 Zeabur 为该 Service 暴露 **HTTP 8787**（或绑定域名）。
@@ -155,8 +174,8 @@ Postgres 时区建议 URL 带 `options=-c%20timezone%3DUTC`，见 [deployment-do
 
 | 现象 | 原因 | 处理 |
 |------|------|------|
-| migrate 日志成功但 Pod BackOff | migrate 当常驻 Service | Suspend migrate Service，或改用 §3 方式 A |
-| proxy/admin 启动后 500 | 未 migrate 或 `DATABASE_URL` 不一致 | 先跑 migrate，核对两 Service 连接串相同 |
+| migrate 日志成功但 Pod BackOff | migrate 当常驻 Service | 改用 §3 方式 0（`AUTO_MIGRATE=1`），或 Suspend migrate Service，或改用 §3 方式 A |
+| proxy/admin 启动后 500 | 未 migrate 或 `DATABASE_URL` 不一致 | 设 `AUTO_MIGRATE=1` 或先跑 migrate，核对两 Service 连接串相同 |
 | Admin 无法登录 | 未设 `ADMIN_PASSWORD` | 在 Zeabur 环境变量中配置 |
 | 构建用了错误 Dockerfile | `ZBPACK_DOCKERFILE_NAME` 写全名 | 用 `ZBPACK_DOCKERFILE_PATH=Dockerfile.admin` |
 

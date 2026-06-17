@@ -22,7 +22,8 @@
 |`DATABASE_DRIVER`|否|与 `DATABASE_URL` 命名对齐。省略默认 `postgres`；MySQL 须 `mysql`（或 `mysql2`）。|
 |`DATABASE_URL`|是|Postgres 或 **`mysql://`** 连接串（与所选驱动一致）|
 |`PORT`|否|默认 `8787`|
-|迁移方式|—|统一使用 **`Dockerfile.migrate`** 对应镜像，通过 `docker compose --profile migrate run --rm migrate` 执行。|
+|`AUTO_MIGRATE`|否|设为 `1`/`true`/`yes`/`on` 时，容器启动前自动执行幂等迁移（见 §5）。默认关闭。|
+|迁移方式（备选）|—|未设 `AUTO_MIGRATE` 时，使用 **`Dockerfile.migrate`** 镜像，通过 `docker compose --profile migrate run --rm migrate` 执行。|
 
 ### gateway-admin 容器
 
@@ -33,7 +34,8 @@
 |`PORT`|否|默认 Dockerfile 内为 `8789`|
 |`ADMIN_USERNAME`|是|控制台登录用户名|
 |`ADMIN_PASSWORD`|是|控制台登录密码|
-|迁移方式|—|与 Proxy 一致：迁移由 `migrate` 服务独立执行，admin 仅负责应用进程。|
+|`AUTO_MIGRATE`|否|与 proxy 相同：真值时启动前自动迁移（见 §5）。默认关闭。|
+|迁移方式（备选）|—|未设 `AUTO_MIGRATE` 时：迁移由 `migrate` 服务独立执行，admin 仅负责应用进程。|
 
 `MASTER_KEY` 仍以数据库 `system_config.MASTER_KEY` 为准（迁移 `0002_seed.sql` 写入的默认值、管理配置页或 SQL）。
 
@@ -159,6 +161,22 @@ docker compose --env-file .env.gateway -f gateway.compose.yml up -d
 
 ## 5. 数据库迁移（Postgres 与 MySQL）
 
+### 启动时自迁移（`AUTO_MIGRATE`）
+
+proxy / admin 镜像通过 [`docker/entrypoint.app.sh`](../../docker/entrypoint.app.sh) 支持启动前迁移：
+
+```bash
+docker run --rm -p 8787:8787 \
+  -e AUTO_MIGRATE=1 \
+  -e DATABASE_DRIVER=postgres \
+  -e DATABASE_URL='postgres://user:pass@host:5432/octafuse' \
+  octafuse-proxy:local
+```
+
+- **默认关闭**：未设置 `AUTO_MIGRATE` 时，入口脚本跳过迁移，行为与旧版一致。
+- **幂等且并发安全**：`schema_migrations` 记录版本 + `pg_advisory_lock`；无新 SQL 时近乎空操作。proxy 与 admin 同时开启也安全，但通常只需在一个 Service 上设 `AUTO_MIGRATE=1`。
+- **Zeabur**：推荐在 proxy 或 admin 环境变量中设 `AUTO_MIGRATE=1`，无需单独 migrate Service。见 [deployment-zeabur.md](./deployment-zeabur.md) §3 方式 0。
+
 ### Postgres
 
 `system_config` 默认值由迁移 **`packages/core/migrations-postgres/0002_seed.sql`** 写入；无需单独 seed 命令。
@@ -176,7 +194,7 @@ npm run db:migrate:pg
 npm run db:migrate:pg:docker
 ```
 
-在 Compose 中 `migrate` 服务使用 **`Dockerfile.migrate` 对应镜像**（**`GATEWAY_MIGRATE_IMAGE`**）：镜像内为 **`packages/core/dist/migrate/cli.js`** + **`migrations-postgres`** / **`migrations-mysql`** + core 生产依赖（与本地 **`npm run db:migrate:*:docker`** 同源，均为编译后的 CLI）。生产建议固定流程为：**先 migrate，再启动 proxy/admin**。
+在 Compose 中 `migrate` 服务使用 **`Dockerfile.migrate` 对应镜像**（**`GATEWAY_MIGRATE_IMAGE`**）：镜像内为 **`packages/core/dist/migrate/cli.js`** + **`migrations-postgres`** / **`migrations-mysql`** + core 生产依赖（与本地 **`npm run db:migrate:*:docker`** 同源，均为编译后的 CLI）。未使用 `AUTO_MIGRATE` 时，生产建议固定流程为：**先 migrate，再启动 proxy/admin**。
 
 仅部署 Admin（`docker/examples/gateway.admin.yml`）时，迁移方式保持一致：使用 compose 的 **`migrate` 服务**（镜像为 **`GATEWAY_MIGRATE_IMAGE`**），再启动 admin。`.env` 中需配置 **`GATEWAY_MIGRATE_IMAGE`** 与 `DATABASE_URL`。
 
@@ -217,9 +235,11 @@ Compose 中 `migrate` 服务使用 **migrate 专用镜像**执行 `npm run db:mi
 
 ### Zeabur（容器平台）
 
-Zeabur 将每个 **Service** 视为常驻进程；**migrate 镜像跑完即退出**，若作为 Service 长期运行会触发 `BackOff restarting failed container`（迁移成功也会如此）。正确做法：
+**推荐**：在 proxy 或 admin 上设 **`AUTO_MIGRATE=1`**（见 [deployment-zeabur.md](./deployment-zeabur.md) §3 方式 0）。
 
-1. **推荐**：发版前在本地/CI 执行 [`scripts/deploy/zeabur-migrate-once.sh`](../../scripts/deploy/zeabur-migrate-once.sh)，再部署 proxy/admin。
+若不用 `AUTO_MIGRATE`，Zeabur 将每个 **Service** 视为常驻进程；**migrate 镜像跑完即退出**，若作为 Service 长期运行会触发 `BackOff restarting failed container`（迁移成功也会如此）。备选做法：
+
+1. 发版前在本地/CI 执行 [`scripts/deploy/zeabur-migrate-once.sh`](../../scripts/deploy/zeabur-migrate-once.sh)，再部署 proxy/admin。
 2. **或**：Zeabur PREBUILT migrate Service 跑完后 **Settings → Suspend Service**。
 3. **不要**把 migrate 与 proxy/admin 一样当作 7×24 常驻 Service。
 
