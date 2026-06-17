@@ -49,23 +49,63 @@ import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vend
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 
-/**
- * Preserve list order within each `route_group` bucket.
- * Caller should pre-sort rows (e.g. upstream protocol order, then priority desc).
- */
-function splitRoutesByRouteGroup<T extends { route_group?: string | null }>(
-  routes: T[]
-): { group: string; routes: T[] }[] {
-  const byGroup = new Map<string, T[]>();
-  for (const r of routes) {
-    const g = normalizeRouteGroup(r.route_group);
-    const list = byGroup.get(g) ?? [];
-    list.push(r);
-    byGroup.set(g, list);
+type RouteProtocolGroupSection<T> = {
+  key: string;
+  protocol: string;
+  protocolLabel: string;
+  group: string;
+  routes: T[];
+};
+
+const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  gemini: 'Gemini',
+};
+
+function compareRouteProtocolsForDisplay(a: string, b: string): number {
+  const knownA = isUpstreamProtocol(a);
+  const knownB = isUpstreamProtocol(b);
+  if (knownA && knownB) {
+    return (UPSTREAM_PROTOCOLS as readonly string[]).indexOf(a) - (UPSTREAM_PROTOCOLS as readonly string[]).indexOf(b);
   }
-  return [...byGroup.keys()]
-    .sort(compareRouteGroupsForDisplay)
-    .map((group) => ({ group, routes: byGroup.get(group)! }));
+  if (knownA !== knownB) return knownA ? -1 : 1;
+  return a.localeCompare(b, undefined, { sensitivity: 'base' });
+}
+
+function getProtocolDisplayLabel(protocol: string): string {
+  return PROTOCOL_DISPLAY_LABEL[protocol] ?? protocol;
+}
+
+/**
+ * Runtime route pools are selected by request protocol first, then `route_group`.
+ * Preserve list order within each protocol + group bucket.
+ */
+function splitRoutesByProtocolAndRouteGroup<T extends { upstream_protocol: string; route_group?: string | null }>(
+  routes: T[]
+): RouteProtocolGroupSection<T>[] {
+  const bySection = new Map<string, RouteProtocolGroupSection<T>>();
+  for (const r of routes) {
+    const protocol = r.upstream_protocol.trim().toLowerCase();
+    const g = normalizeRouteGroup(r.route_group);
+    const key = `${protocol}\u0000${g}`;
+    const section =
+      bySection.get(key) ??
+      {
+        key,
+        protocol,
+        protocolLabel: getProtocolDisplayLabel(protocol),
+        group: g,
+        routes: [],
+      };
+    section.routes.push(r);
+    bySection.set(key, section);
+  }
+  return [...bySection.values()].sort((a, b) => {
+    const protocolCmp = compareRouteProtocolsForDisplay(a.protocol, b.protocol);
+    if (protocolCmp !== 0) return protocolCmp;
+    return compareRouteGroupsForDisplay(a.group, b.group);
+  });
 }
 
 /**
@@ -1183,21 +1223,30 @@ function RoutesContent() {
                               ) : (
                                 <div className="flex min-h-0 flex-1 flex-col">
                                   {(() => {
-                                    const routeSections = splitRoutesByRouteGroup(groupRoutes);
+                                    const routeSections = splitRoutesByProtocolAndRouteGroup(groupRoutes);
                                     return routeSections.map((section, sectionIdx) => (
                                       <div
-                                        key={section.group}
+                                        key={section.key}
                                         className={sectionIdx > 0 ? 'border-t border-gray-200/80' : ''}
                                       >
                                         <div
                                           className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-1.5 transition-colors group-hover:bg-blue-50/40 group-focus-within:bg-blue-50/40"
                                           role="presentation"
                                         >
-                                          <span
-                                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(section.group)}`}
+                                          <div
+                                            className="flex min-w-0 items-center gap-2"
+                                            title={`upstream_protocol: ${section.protocol} · route_group: ${section.group}`}
                                           >
-                                            {section.group}
-                                          </span>
+                                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold leading-4 text-gray-700 ring-1 ring-inset ring-gray-200">
+                                              <UpstreamProtocolBrandIcon protocol={section.protocol} />
+                                              {section.protocolLabel}
+                                            </span>
+                                            <span
+                                              className={`inline-flex min-w-0 items-center rounded-md px-2 py-0.5 text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(section.group)}`}
+                                            >
+                                              <span className="truncate">{section.group}</span>
+                                            </span>
+                                          </div>
                                           <span className="text-[11px] tabular-nums text-gray-500">
                                             {section.routes.length} route{section.routes.length === 1 ? '' : 's'}
                                           </span>
@@ -1238,13 +1287,11 @@ function RoutesContent() {
                                                     <div className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug">
                                                       <div className="flex min-w-0 items-center gap-2">
                                                         <div
-                                                          className="flex shrink-0 items-center gap-1.5"
-                                                          title={route.upstream_protocol}
+                                                          className="flex shrink-0 items-center"
+                                                          title="Priority (failover order)"
                                                         >
-                                                          <UpstreamProtocolBrandIcon protocol={route.upstream_protocol} />
                                                           <span
                                                             className="text-[11px] font-semibold tabular-nums text-gray-600"
-                                                            title="Priority (failover order)"
                                                           >
                                                             {route.priority}
                                                           </span>
