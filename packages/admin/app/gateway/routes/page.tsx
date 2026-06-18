@@ -182,7 +182,35 @@ function formatCompactTokens(value: number | null | undefined): string {
 }
 
 const FACTOR_CHIP_BASE =
-  'inline-flex min-w-[2.25rem] justify-center rounded-md px-1.5 py-0 text-[10px] font-semibold tabular-nums leading-4 ring-1 ring-inset';
+  'inline-flex w-[3rem] shrink-0 justify-end rounded-md px-1.5 py-0 text-[10px] font-semibold font-mono tabular-nums leading-4 ring-1 ring-inset';
+
+/** Compact chip display: fixed 2 decimal places so stacked multipliers align. */
+function formatFactorValueForChip(n: number): string {
+  if (!Number.isFinite(n)) return '—';
+  return n.toFixed(2);
+}
+
+function formatFactorMultiplier(value: number): string {
+  return `×${formatFactorValue(value)}`;
+}
+
+function formatFactorMultiplierForChip(value: number): string {
+  return `×${formatFactorValueForChip(value)}`;
+}
+
+function chargedFactorTooltip(value: number | null): string {
+  if (value == null) {
+    return 'Charged factor: not set · customer billing multiplier vs catalog price';
+  }
+  return `Charged factor: ${formatFactorMultiplier(value)} · customer billing multiplier vs catalog price`;
+}
+
+function meteredFactorTooltip(value: number | null): string {
+  if (value == null) {
+    return 'Metered factor: not set · provider cost multiplier vs catalog price';
+  }
+  return `Metered factor: ${formatFactorMultiplier(value)} · provider cost multiplier vs catalog price`;
+}
 
 /** Route list chips: neutral (=1), amber (>1), emerald (<1); floats near 1 count as =1. */
 function factorChipClassForValue(n: number): string {
@@ -1340,9 +1368,14 @@ function RoutesContent() {
                                                           ? factorChipClassForValue(chargedDisp)
                                                           : `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
                                                       }
-                                                      title="charged_factor vs catalog (price_override)"
+                                                      title={chargedFactorTooltip(chargedDisp)}
+                                                      aria-label={
+                                                        chargedDisp != null
+                                                          ? `Charged factor ${formatFactorMultiplier(chargedDisp)}`
+                                                          : 'Charged factor not set'
+                                                      }
                                                     >
-                                                      {chargedDisp != null ? `Ch ×${formatFactorValue(chargedDisp)}` : 'Ch —'}
+                                                      {chargedDisp != null ? formatFactorMultiplierForChip(chargedDisp) : '—'}
                                                     </span>
                                                     <span
                                                       className={
@@ -1350,9 +1383,14 @@ function RoutesContent() {
                                                           ? factorChipClassForValue(meteredDisp)
                                                           : `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
                                                       }
-                                                      title="metered_factor vs catalog (price_override; may use provider_factor)"
+                                                      title={meteredFactorTooltip(meteredDisp)}
+                                                      aria-label={
+                                                        meteredDisp != null
+                                                          ? `Metered factor ${formatFactorMultiplier(meteredDisp)}`
+                                                          : 'Metered factor not set'
+                                                      }
                                                     >
-                                                      {meteredDisp != null ? `M ×${formatFactorValue(meteredDisp)}` : 'M —'}
+                                                      {meteredDisp != null ? formatFactorMultiplierForChip(meteredDisp) : '—'}
                                                     </span>
                                                   </div>
                                                 </div>
