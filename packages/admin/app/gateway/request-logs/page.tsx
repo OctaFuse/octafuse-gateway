@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 全站请求日志表：多维筛选、分页；Model Route 列展示请求协议、路由分组、模型与供应商路由；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
+ * 全站请求日志表：多维筛选、分页；Model / Route 分列展示模型与上游路由；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
  */
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
 import { readApiJson } from '@/lib/api-json';
@@ -304,73 +304,72 @@ export default function GatewayRequestLogsPage() {
       </span>
     );
 
-  /** 第一行：协议图标 · route_group 彩色 chip · 模型名称（无展示名时回退 model_id） */
-  const renderModelRouteLine = (log: GatewayRequestLog) => {
+  /** Model 列：第一行模型名，第二行协议图标 + route_group，第三行 model id */
+  const renderModelCell = (log: GatewayRequestLog) => {
     const protocol = logProtocolKey(log);
     const name = log.model_name?.trim();
     const id = log.model_id?.trim();
     const route = normalizeRouteGroup(log.route_group);
-    const display = name || id;
-    const title =
-      name && id && name !== id ? `Model: ${name} (id: ${id})` : display || undefined;
     return (
-      <span className="leading-tight inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5" title={title}>
-        <span title={protocol ? `Protocol: ${protocol}` : 'Protocol unknown'}>
-          {protocolIconOrDash(protocol)}
-        </span>
-        <span
-          className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(route)}`}
-          title={`route_group: ${route}`}
-        >
-          @{route}
-        </span>
-        {display ? (
-          <span className="font-medium text-gray-900">{name || id}</span>
-        ) : (
-          <span className="text-gray-400">-</span>
-        )}
-      </span>
-    );
-  };
-
-  /** 紧凑一行：仅展示供应商名称（无名称时回退 provider_id）· 上游模型名 */
-  const renderProviderInline = (log: GatewayRequestLog) => {
-    const pname = log.provider_name?.trim();
-    const pid = log.provider_id?.trim();
-    const upstream = log.provider_model_name?.trim();
-    const display = pname || pid;
-    const idOnly = !pname && Boolean(pid);
-    const titleParts = [pname, pid, upstream].filter(Boolean);
-    const titleHint =
-      pname && pid && pname !== pid ? `Provider: ${pname} (id: ${pid})` : titleParts.join(' · ');
-    return (
-      <div className="flex items-center gap-1 min-w-0 leading-tight mt-0.5">
-        <span className="truncate min-w-0" title={titleHint || undefined}>
-          <span className={idOnly ? 'font-mono text-gray-800' : 'text-gray-900'}>
-            {display || '-'}
+      <div className="min-w-0 leading-tight">
+        <div className="truncate font-medium text-gray-900" title={name || undefined}>
+          {name || <span className="font-normal text-gray-400">-</span>}
+        </div>
+        <div className="mt-0.5 inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <span title={protocol ? `Protocol: ${protocol}` : 'Protocol unknown'}>
+            {protocolIconOrDash(protocol)}
           </span>
-          {upstream ? (
-            <>
-              <span className="text-gray-300 mx-0.5">·</span>
-              <span className="font-mono text-gray-600">{upstream}</span>
-            </>
-          ) : null}
-        </span>
+          <span
+            className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(route)}`}
+            title={`route_group: ${route}`}
+          >
+            @{route}
+          </span>
+        </div>
+        {id ? (
+          <div className="mt-0.5 truncate font-mono text-[11px] text-gray-500" title={`model_id: ${id}`}>
+            {id}
+          </div>
+        ) : null}
       </div>
     );
   };
 
-  const renderProviderKeyInline = (log: GatewayRequestLog) => {
+  /** Route 列：第一行 Provider，第二行上游模型名，第三行 key */
+  const renderRouteCell = (log: GatewayRequestLog) => {
+    const pname = log.provider_name?.trim();
+    const pid = log.provider_id?.trim();
+    const upstream = log.provider_model_name?.trim();
+    const providerDisplay = pname || pid;
+    const idOnly = !pname && Boolean(pid);
+    const providerTitle =
+      pname && pid && pname !== pid ? `Provider: ${pname} (id: ${pid})` : providerDisplay || undefined;
+
     const label = log.provider_key_label?.trim();
     const fingerprint = log.provider_key_fingerprint?.trim();
-    if (!label && !fingerprint) return null;
-    const text = [label, fingerprint].filter(Boolean).join(' · ');
+    const keyText = [label, fingerprint].filter(Boolean).join(' · ');
+
     return (
-      <div
-        className="text-[11px] text-gray-500 truncate mt-0.5 font-mono"
-        title={log.provider_key_id ? `provider key id: ${log.provider_key_id}` : undefined}
-      >
-        Key: {text}
+      <div className="min-w-0 leading-tight">
+        <div
+          className={`truncate ${idOnly ? 'font-mono text-gray-800' : 'text-gray-900'}`}
+          title={providerTitle}
+        >
+          {providerDisplay || '-'}
+        </div>
+        {upstream ? (
+          <div className="mt-0.5 truncate font-mono text-gray-600" title={`Upstream model: ${upstream}`}>
+            {upstream}
+          </div>
+        ) : null}
+        {keyText ? (
+          <div
+            className="mt-0.5 truncate text-[11px] text-gray-500 font-mono"
+            title={log.provider_key_id ? `provider key id: ${log.provider_key_id}` : undefined}
+          >
+            {keyText}
+          </div>
+        ) : null}
       </div>
     );
   };
@@ -548,10 +547,17 @@ export default function GatewayRequestLogsPage() {
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">User</th>
                 <th
                   scope="col"
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[15rem] max-w-md"
-                  title="Protocol, route group, model, provider, and provider model"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[9rem] max-w-xs"
+                  title="Gateway model name, protocol, and route group"
                 >
-                  Model Route
+                  Model
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[10rem] max-w-xs"
+                  title="Provider, upstream model, and provider key"
+                >
+                  Route
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tokens</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
@@ -629,10 +635,11 @@ export default function GatewayRequestLogsPage() {
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs align-top max-w-md">
-                      <div>{renderModelRouteLine(log)}</div>
-                      {renderProviderInline(log)}
-                      {renderProviderKeyInline(log)}
+                    <td className="px-3 py-2 text-xs align-top max-w-xs">
+                      {renderModelCell(log)}
+                    </td>
+                    <td className="px-3 py-2 text-xs align-top max-w-xs">
+                      {renderRouteCell(log)}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600 leading-tight">
                       <div className="text-gray-900 tabular-nums">
@@ -668,7 +675,7 @@ export default function GatewayRequestLogsPage() {
                   </tr>
                   {detailLogId === log.id && (
                     <tr className="bg-gray-50">
-                      <td colSpan={8} className="px-3 py-2">
+                      <td colSpan={9} className="px-3 py-2">
                         <div className="rounded-md border border-gray-200 bg-white overflow-x-auto">
                           {(() => {
                             const auditLine = summarizePricingAuditJson(log.pricing_audit ?? null);
