@@ -6,11 +6,13 @@
 
 Typical deployments: **Cloudflare** (Proxy Worker + Admin Pages + **D1**) or **self-hosted** (Proxy + Admin + **Postgres** or **MySQL**).
 
-**中文说明：** [README.zh-CN.md](./README.zh-CN.md)
+**中文说明：** [README.zh-CN.md](./README.zh-CN.md) · **Website:** [octafuse.dev](https://octafuse.dev/en/)
 
 ## What is OctaFuse
 
-**OctaFuse** is an AI gateway aimed at teams and organizations that need a single place to serve model traffic across multiple products. It uses a **Proxy + Admin + Core** split so model access, routing, budgets, metering, and audit/observability live in one infrastructure layer instead of being reimplemented in every service.
+**OctaFuse** is an open-source **AI Gateway** that consolidates model access scattered across vendors and plans into **one Base URL and one API Key**.
+
+It uses a **Proxy + Admin + Core** split so model access, routing, budgets, metering, and audit/observability live in one infrastructure layer—individuals consolidate coding / token plans and keys; teams issue separate keys for departments or customers with budgets and audit. More scenarios on [octafuse.dev](https://octafuse.dev/en/).
 
 - **Proxy (`packages/proxy`)** — OpenAI / Anthropic / Gemini–compatible inference endpoints
 - **Admin (`packages/admin`)** — operator UI and **`/api/admin/*`** automation APIs
@@ -18,31 +20,28 @@ Typical deployments: **Cloudflare** (Proxy Worker + Admin Pages + **D1**) or **s
 
 ## Why OctaFuse
 
-OctaFuse was built to own and evolve an in-house AI gateway for several internal SaaS systems.
+Model supply keeps fragmenting—endpoints, API keys, quotas, invoices, and logs sit in different vendor consoles. Switching models or debugging means touching many places.
 
-Many open-source and commercial gateways share a few pain points: **provider** choice is narrow, so mixing public cloud, private hosting, and internal models is awkward; several products **only expose an OpenAI-shaped surface**, which forces extra adapters if your stack already speaks Anthropic or Gemini; and **billing plus audit trails** are often rigid or shallow—hard to model per-route, per-user, or supply-side vs user-side costs the way internal products need.
+Many open-source and commercial gateways share the same pain points: **narrow provider coverage**; **OpenAI-only surfaces**; and **shallow billing and audit** that make per-route or per-user cost modeling awkward.
 
-OctaFuse aims to address that with more freedom:
+OctaFuse addresses that as a gateway you can **own and evolve**:
 
-- Wire in more providers, including models you run yourself, and expose multiple client-facing protocols from one gateway
-- Define routing, billing, and how you trace and reconcile usage across teams and routes
-- Integrate upstream systems through a stable Admin API with less coupling
+- Wire in more upstream vendors—including plans and local / internal models—and expose multiple client protocols from one place
+- Define routing, billing lenses, and audit the way your workflow needs
+- Integrate portals and apps through a stable **Admin API** with less coupling to vendor details
 
 ## Features
 
-What the codebase and docs ship today:
-
-- **Multi-protocol surface** — `/v1/chat/completions` (OpenAI), `/v1/messages` (Anthropic), `/v1beta/*` (Gemini)
+- **One access surface** — one Base URL and one API Key for clients; OpenAI / Anthropic / Gemini shapes route to any configured upstream
 - **Keys and budgets** — users / API keys, caps and period resets, **`GET /v1/me`**
-- **Routing** — providers, models, routes; **route groups** and priority-based **failover**
-- **Cost layers** — **`metered_cost`**, **`standard_cost`**, **`charged_cost`** for supply vs catalog vs user charge
-- **Audit and observability** — global and per-key request logs, plus user-level audit trails for traceability and investigations
-- **Proxy error alerts** — optional **Feishu (Lark)** and **WeChat Work** bot webhooks (configured in Admin) so operators get notified when the Proxy surfaces forwarding failures—useful for catching upstream provider incidents, quota or rate-limit pressure, and signs that an upstream API key may need attention or top-up
-- **Analytics** — in Admin, time-range views for model usage, provider usage, user usage, and reliability summaries—helpful for capacity checks, cost awareness, and comparing upstream health
-- **Playground** — in Admin, send a test call for one model route to check upstream connectivity and configuration quickly; it does not spend user budgets or leave the same metering / logs as real traffic—useful for troubleshooting and pre-flight checks
-- **Simulator** — in Admin, call your deployed gateway from the browser with a real user API key in OpenAI / Anthropic / Gemini shapes, so you can rehearse and validate auth, routing, billing, and logging the way production clients do
-- **Runtimes** — Cloudflare (Worker + Pages + **D1**) or self-hosted (**Docker / Node + Postgres or MySQL**)
-- **Decoupled from apps** — SaaS and portals integrate via **`/api/admin/*`** so product code stays focused on AI use cases
+- **Routing and failover** — providers, models, routes; **route groups** and priority-based **failover**
+- **Billing and reconciliation** — **`metered_cost`**, **`standard_cost`**, **`charged_cost`**
+- **Audit and observability** — global and per-key request logs, user-level audit trails
+- **Error alerts** — optional Feishu (Lark) and WeChat Work webhooks when Proxy forwarding fails
+- **Usage analytics** — time-range views for model, provider, user usage, and reliability in Admin
+- **Debug and rehearsal** — Playground (single-route tests without spending user budgets); Simulator (browser client rehearsal)
+- **Flexible deployment** — Cloudflare (Worker + Pages + **D1**) or self-hosted (**Docker / Node + Postgres or MySQL**)
+- **Admin API integration** — portals and apps hook in via **`/api/admin/*`** to provision users, keys, and budgets
 
 ## Quick Start
 
