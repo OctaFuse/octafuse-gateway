@@ -49,7 +49,8 @@
 		"./storage/repositories-d1": "./src/storage/repositories-d1.ts",
 		"./storage/runtime-database-config": "./src/storage/runtime-database-config.ts",
 		"./storage/context": "./src/storage/context.ts",
-		"./upstream-protocol": "./src/upstream-protocol.ts"
+		"./upstream-protocol": "./src/upstream-protocol.ts",
+		"./gemini-upstream-url": "./src/gemini-upstream-url.ts"
 	},
 	"dependencies": {
 		"drizzle-orm": "^0.45.2",

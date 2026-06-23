@@ -1,8 +1,11 @@
 /**
  * Playground：按单条 `model_routes` 直连上游，不经过 Proxy、不鉴 API Key、不写 `api_key_request_logs`、不计费、无 failover。
  */
-import type { GatewayRepositories, GeminiContentAction } from '@octafuse/core';
-import { buildGeminiUpstreamActionUrl } from '@octafuse/core';
+import type { GatewayRepositories } from '@octafuse/core';
+import {
+	buildGeminiUpstreamActionUrl,
+	type GeminiContentAction,
+} from '@octafuse/core/gemini-upstream-url';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
 	normalizeUpstreamProtocol,

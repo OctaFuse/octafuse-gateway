@@ -5,7 +5,7 @@
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
 import { requireMasterKey } from '@/lib/middleware/admin-auth';
-import type { GeminiContentAction } from '@octafuse/core';
+import type { GeminiContentAction } from '@octafuse/core/gemini-upstream-url';
 import { invokePlaygroundUpstream } from '@/lib/services/admin/playground-service';
 import { handleAdminRouteError } from './error-response';
 
