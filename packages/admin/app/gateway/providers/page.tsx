@@ -96,6 +96,7 @@ export default function GatewayProvidersPage() {
   const [providerKeys, setProviderKeys] = useState<ProviderKeyRow[]>([]);
   const [keysLoading, setKeysLoading] = useState(false);
   const [keyForm, setKeyForm] = useState(emptyKeyForm);
+  const [showKeyForm, setShowKeyForm] = useState(false);
   const [keySaving, setKeySaving] = useState(false);
   const [keyError, setKeyError] = useState('');
 
@@ -136,6 +137,7 @@ export default function GatewayProvidersPage() {
     } else {
       setProviderKeys([]);
       setKeyForm(emptyKeyForm);
+      setShowKeyForm(false);
       setKeyError('');
     }
   }, [editingProvider, fetchProviderKeys]);
@@ -164,6 +166,7 @@ export default function GatewayProvidersPage() {
       const data = await readApiJson(response);
       if (data.success) {
         setKeyForm(emptyKeyForm);
+        setShowKeyForm(false);
         void fetchProviderKeys(editingProvider.id);
         void fetchProviders();
       } else {
@@ -264,6 +267,7 @@ export default function GatewayProvidersPage() {
     setEditingProvider(null);
     setDuplicateSourceId(null);
     setFormData({ ...emptyForm, id: '' });
+    setShowKeyForm(false);
     setShowModal(true);
     setSaveError('');
   };
@@ -280,6 +284,8 @@ export default function GatewayProvidersPage() {
       api_key: '',
       description: provider.description ?? '',
     });
+    setKeyForm(emptyKeyForm);
+    setShowKeyForm(false);
     setShowModal(true);
     setSaveError('');
   };
@@ -296,6 +302,7 @@ export default function GatewayProvidersPage() {
       api_key: '',
       description: provider.description ?? '',
     });
+    setShowKeyForm(false);
     setShowModal(true);
     setSaveError('');
   };
@@ -310,6 +317,7 @@ export default function GatewayProvidersPage() {
       if (data.success) {
         setShowModal(false);
         setEditingProvider(null);
+        setShowKeyForm(false);
         void fetchProviders();
       } else {
         alert(data.message || 'Delete failed');
@@ -453,6 +461,7 @@ export default function GatewayProvidersPage() {
 
       if (data.success) {
         setShowModal(false);
+        setShowKeyForm(false);
         fetchProviders();
       } else {
         setSaveError(data.message || 'Save failed');
@@ -916,11 +925,25 @@ export default function GatewayProvidersPage() {
                 {/* Authentication (Edit only) */}
                 {editingProvider && (
                 <section className="rounded-lg border border-gray-200 bg-slate-50/70 p-4 space-y-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Authentication</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Manage multiple upstream API keys; Proxy schedules active keys with weighted random failover.
-                    </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">Authentication</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Manage multiple upstream API keys; Proxy schedules active keys with weighted random failover.
+                      </p>
+                    </div>
+                    {!showKeyForm && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setKeyError('');
+                          setShowKeyForm(true);
+                        }}
+                        className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        Add
+                      </button>
+                    )}
                   </div>
                     <>
                       {keyError && (
@@ -1006,64 +1029,80 @@ export default function GatewayProvidersPage() {
                           </table>
                         </div>
                       )}
-                      <div className="rounded-md border border-dashed border-gray-300 bg-white p-3 space-y-3">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Label</label>
-                            <input
-                              type="text"
-                              value={keyForm.label}
-                              onChange={(e) => setKeyForm({ ...keyForm, label: e.target.value })}
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                              placeholder="e.g. backup-cn-1"
-                              autoComplete="off"
-                            />
+                      {showKeyForm && (
+                        <div className="rounded-md border border-dashed border-gray-300 bg-white p-3 space-y-3">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">Label</label>
+                              <input
+                                type="text"
+                                value={keyForm.label}
+                                onChange={(e) => setKeyForm({ ...keyForm, label: e.target.value })}
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="e.g. backup-cn-1"
+                                autoComplete="off"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">Priority</label>
+                              <input
+                                type="number"
+                                value={keyForm.priority}
+                                onChange={(e) => setKeyForm({ ...keyForm, priority: e.target.value })}
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">Weight</label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={keyForm.weight}
+                                onChange={(e) => setKeyForm({ ...keyForm, weight: e.target.value })}
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="1"
+                              />
+                            </div>
                           </div>
                           <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Priority</label>
+                            <label className="mb-1 block text-sm font-medium text-gray-700">Upstream API Key</label>
                             <input
-                              type="number"
-                              value={keyForm.priority}
-                              onChange={(e) => setKeyForm({ ...keyForm, priority: e.target.value })}
+                              type="password"
+                              value={keyForm.api_key}
+                              onChange={(e) => setKeyForm({ ...keyForm, api_key: e.target.value })}
                               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                              placeholder="0"
+                              placeholder="sk-…"
+                              autoComplete="new-password"
                             />
                           </div>
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">Weight</label>
-                            <input
-                              type="number"
-                              min={1}
-                              value={keyForm.weight}
-                              onChange={(e) => setKeyForm({ ...keyForm, weight: e.target.value })}
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                              placeholder="1"
-                            />
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleAddProviderKey()}
+                              disabled={keySaving}
+                              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {keySaving ? 'Adding…' : 'Add key'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setKeyForm(emptyKeyForm);
+                                setKeyError('');
+                                setShowKeyForm(false);
+                              }}
+                              disabled={keySaving}
+                              className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
                           </div>
                         </div>
-                        <div>
-                          <label className="mb-1 block text-sm font-medium text-gray-700">Upstream API Key</label>
-                          <input
-                            type="password"
-                            value={keyForm.api_key}
-                            onChange={(e) => setKeyForm({ ...keyForm, api_key: e.target.value })}
-                            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                            placeholder="sk-…"
-                            autoComplete="new-password"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => void handleAddProviderKey()}
-                          disabled={keySaving}
-                          className="rounded-md bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          {keySaving ? 'Adding…' : 'Add key'}
-                        </button>
-                      </div>
+                      )}
                       {editingProvider.has_pending_key && (
                         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                          Template placeholder detected. Add a real key above with label <code>default</code> or any label,
+                          Template placeholder detected. Click <strong>Add</strong> and add a real key with label <code>default</code> or any label,
                           then disable/delete placeholders if needed.
                         </div>
                       )}
