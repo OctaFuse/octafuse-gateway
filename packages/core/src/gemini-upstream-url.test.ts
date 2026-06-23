@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
 	applyGeminiStreamQueryParams,
 	buildGeminiUpstreamActionUrl,
+	normalizeGeminiUpstreamBaseForAuthMatch,
+	prepareGeminiUpstreamFetch,
+	resolveGeminiUpstreamAuth,
 } from './gemini-upstream-url';
 
 describe('buildGeminiUpstreamActionUrl', () => {
@@ -76,6 +79,18 @@ describe('buildGeminiUpstreamActionUrl', () => {
 			)
 		).toContain('model%2Fwith%2Fslash');
 	});
+
+	it('collapses duplicate slashes in base path (qnaigc bypass/vertex)', () => {
+		expect(
+			buildGeminiUpstreamActionUrl(
+				'https://api.qnaigc.com//bypass/vertex/v1/models',
+				'gemini-3.1-flash-lite-preview',
+				'streamGenerateContent'
+			)
+		).toBe(
+			'https://api.qnaigc.com/bypass/vertex/v1/models/gemini-3.1-flash-lite-preview:streamGenerateContent'
+		);
+	});
 });
 
 describe('applyGeminiStreamQueryParams', () => {
@@ -101,5 +116,71 @@ describe('applyGeminiStreamQueryParams', () => {
 		);
 		applyGeminiStreamQueryParams(u, 'generateContent');
 		expect(u.searchParams.has('alt')).toBe(false);
+	});
+});
+
+describe('resolveGeminiUpstreamAuth', () => {
+	it('returns query-key for official Google Gemini base URLs', () => {
+		expect(
+			resolveGeminiUpstreamAuth('https://generativelanguage.googleapis.com/v1beta/models')
+		).toBe('query-key');
+		expect(
+			resolveGeminiUpstreamAuth('https://aiplatform.googleapis.com/v1/publishers/google/models')
+		).toBe('query-key');
+	});
+
+	it('returns bearer for bypass/vertex compatible providers', () => {
+		expect(resolveGeminiUpstreamAuth('https://api.qnaigc.com/bypass/vertex/v1/models')).toBe(
+			'bearer'
+		);
+		expect(resolveGeminiUpstreamAuth('https://api.modelink.ai/bypass/vertex/v1/models')).toBe(
+			'bearer'
+		);
+	});
+
+	it('normalizes trailing slash, host case, and duplicate slashes', () => {
+		expect(
+			resolveGeminiUpstreamAuth('https://API.QNAIGC.COM//bypass/vertex/v1/models/')
+		).toBe('bearer');
+		expect(
+			normalizeGeminiUpstreamBaseForAuthMatch(
+				'https://api.qnaigc.com//bypass/vertex/v1/models/'
+			)
+		).toBe('https://api.qnaigc.com/bypass/vertex/v1/models');
+	});
+});
+
+describe('prepareGeminiUpstreamFetch', () => {
+	it('uses query key for official Gemini upstream', () => {
+		const { url, headers } = prepareGeminiUpstreamFetch({
+			baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
+			modelName: 'gemini-2.5-flash',
+			action: 'generateContent',
+			apiKey: 'provider-key',
+		});
+		expect(url.searchParams.get('key')).toBe('provider-key');
+		expect(headers.Authorization).toBeUndefined();
+	});
+
+	it('uses Authorization Bearer for bypass/vertex upstream', () => {
+		const { url, headers } = prepareGeminiUpstreamFetch({
+			baseUrl: 'https://api.modelink.ai/bypass/vertex/v1/models',
+			modelName: 'gemini-2.5-flash',
+			action: 'generateContent',
+			apiKey: 'provider-token',
+		});
+		expect(url.searchParams.has('key')).toBe(false);
+		expect(headers.Authorization).toBe('Bearer provider-token');
+	});
+
+	it('sets alt=sse for streamGenerateContent on bearer upstream', () => {
+		const { url } = prepareGeminiUpstreamFetch({
+			baseUrl: 'https://api.qnaigc.com/bypass/vertex/v1/models',
+			modelName: 'gemini-2.5-flash',
+			action: 'streamGenerateContent',
+			apiKey: 'provider-token',
+		});
+		expect(url.searchParams.get('alt')).toBe('sse');
+		expect(url.searchParams.has('key')).toBe(false);
 	});
 });

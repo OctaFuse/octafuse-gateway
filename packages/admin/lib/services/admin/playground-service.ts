@@ -3,9 +3,8 @@
  */
 import type { GatewayRepositories } from '@octafuse/core';
 import {
-	applyGeminiStreamQueryParams,
-	buildGeminiUpstreamActionUrl,
 	type GeminiContentAction,
+	prepareGeminiUpstreamFetch,
 } from '@octafuse/core/gemini-upstream-url';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
@@ -149,17 +148,15 @@ function anthropicMessagesUrl(baseUrl: string): string {
 	return `${baseUrl.replace(/\/$/, '')}/v1/messages`;
 }
 
-function geminiActionUrl(
+/** Playground Gemini 分支：按 baseUrl 策略构造 URL 与 headers（与 Proxy 一致）。 */
+export function buildPlaygroundGeminiUpstreamRequest(
 	baseUrl: string,
 	modelName: string,
 	action: GeminiContentAction,
 	apiKey: string
-): string {
-	const path = buildGeminiUpstreamActionUrl(baseUrl, modelName, action);
-	const u = new URL(path);
-	u.searchParams.set('key', apiKey);
-	applyGeminiStreamQueryParams(u, action);
-	return u.toString();
+): { url: string; headers: Record<string, string> } {
+	const { url, headers } = prepareGeminiUpstreamFetch({ baseUrl, modelName, action, apiKey });
+	return { url: url.toString(), headers };
 }
 
 export type PlaygroundInvokeInput = {
@@ -224,8 +221,14 @@ export async function invokePlaygroundUpstream(
 		case 'gemini': {
 			const action: GeminiContentAction =
 				input.geminiAction === 'streamGenerateContent' ? 'streamGenerateContent' : 'generateContent';
-			url = geminiActionUrl(route.baseUrl, route.providerModelName, action, route.providerApiKey);
-			headers = { 'Content-Type': 'application/json' };
+			const geminiRequest = buildPlaygroundGeminiUpstreamRequest(
+				route.baseUrl,
+				route.providerModelName,
+				action,
+				route.providerApiKey
+			);
+			url = geminiRequest.url;
+			headers = geminiRequest.headers;
 			requestBody = merged;
 			break;
 		}
