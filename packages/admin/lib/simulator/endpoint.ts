@@ -2,6 +2,7 @@
  * Build Proxy-facing requests from the browser: URL, headers, and JSON body per protocol
  * (including OpenAI/Anthropic `model` field).
  */
+import { applyGeminiStreamQueryParams } from '@octafuse/core/gemini-upstream-url';
 
 export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini';
 
@@ -74,8 +75,10 @@ export function buildSimulatorRequest(input: BuildSimulatorRequestInput): BuildS
 			const action: SimulatorGeminiAction =
 				input.geminiAction === 'generateContent' ? 'generateContent' : 'streamGenerateContent';
 			const pathModel = encodeURIComponent(input.modelForRouting);
+			const url = new URL(`${base}/v1beta/models/${pathModel}:${action}`);
+			applyGeminiStreamQueryParams(url, action);
 			return {
-				url: `${base}/v1beta/models/${pathModel}:${action}`,
+				url: url.toString(),
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: auth,

@@ -1,7 +1,7 @@
 /**
  * Gemini generateContent / streamGenerateContent 出站：按 `base_url_gemini` 前缀构建 URL、解析 JSON 或 SSE 中的 usageMetadata。
  */
-import { buildGeminiUpstreamActionUrl } from '@octafuse/core';
+import { applyGeminiStreamQueryParams, buildGeminiUpstreamActionUrl } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -231,7 +231,7 @@ async function nonStreamResponseWithUsage(
 
 /**
  * 调用 Gemini `{base}/{model}:{action}`（`base_url_gemini` 须含完整路径前缀）：URL 查询串可与客户端 `search` 合并，缺省则追加 `key=` 使用路由密钥。
- * `streamGenerateContent` 走 SSE 解析；`generateContent` 单次 JSON 用 `usageMetadata`。
+ * `streamGenerateContent` 走 SSE 解析（上游强制 `alt=sse`）；`generateContent` 单次 JSON 用 `usageMetadata`。
  * @param search 原始 query 字符串（可含或不含 `?`），会与上游所需参数合并
  */
 export async function dispatchGeminiRoute(
@@ -251,6 +251,7 @@ export async function dispatchGeminiRoute(
   if (!url.searchParams.get('key')) {
     url.searchParams.set('key', route.providerApiKey);
   }
+  applyGeminiStreamQueryParams(url, action);
 
   const requestBody = buildRouteRequestBody(route, body);
   const response = await fetch(url.toString(), {

@@ -47,3 +47,13 @@ export function buildGeminiUpstreamActionUrl(
 	const modelSegment = `${encodeURIComponent(modelName)}:${action}`;
 	return `${base}/${modelSegment}`;
 }
+
+/**
+ * 为 Gemini `streamGenerateContent` 强制 SSE framing（Vertex / Developer API 需 `alt=sse`）。
+ * 在合并客户端 query 之后调用，会覆盖已有 `alt`。
+ */
+export function applyGeminiStreamQueryParams(url: URL, action: GeminiContentAction): void {
+	if (action === 'streamGenerateContent') {
+		url.searchParams.set('alt', 'sse');
+	}
+}

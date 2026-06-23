@@ -3,6 +3,7 @@
  */
 import type { GatewayRepositories } from '@octafuse/core';
 import {
+	applyGeminiStreamQueryParams,
 	buildGeminiUpstreamActionUrl,
 	type GeminiContentAction,
 } from '@octafuse/core/gemini-upstream-url';
@@ -157,6 +158,7 @@ function geminiActionUrl(
 	const path = buildGeminiUpstreamActionUrl(baseUrl, modelName, action);
 	const u = new URL(path);
 	u.searchParams.set('key', apiKey);
+	applyGeminiStreamQueryParams(u, action);
 	return u.toString();
 }
 
