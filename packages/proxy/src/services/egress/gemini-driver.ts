@@ -1,7 +1,7 @@
 /**
  * Gemini generateContent / streamGenerateContent 出站：按 `base_url_gemini` 前缀构建 URL、解析 JSON 或 SSE 中的 usageMetadata。
  */
-import { prepareGeminiUpstreamFetch } from '@octafuse/core/gemini-upstream-url';
+import { prepareGeminiUpstreamFetch } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
