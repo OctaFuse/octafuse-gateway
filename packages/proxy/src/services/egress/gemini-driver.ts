@@ -1,6 +1,7 @@
 /**
- * Gemini generateContent / streamGenerateContent 出站：构建 v1beta URL、解析 JSON 或 SSE 中的 usageMetadata。
+ * Gemini generateContent / streamGenerateContent 出站：按 `base_url_gemini` 前缀构建 URL、解析 JSON 或 SSE 中的 usageMetadata。
  */
+import { buildGeminiUpstreamActionUrl } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -66,10 +67,6 @@ function applyUsage(target: UsageFromStream, next: UsageFromStream): void {
   target.reasoning_tokens = next.reasoning_tokens;
   target.total_tokens = next.total_tokens;
   target.raw_usage = next.raw_usage;
-}
-
-function buildUrl(baseUrl: string, action: 'generateContent' | 'streamGenerateContent', modelName: string): string {
-  return `${baseUrl.replace(/\/$/, '')}/v1beta/models/${encodeURIComponent(modelName)}:${action}`;
 }
 
 function parseJsonUsage(text: string, usage: UsageFromStream): void {
@@ -233,7 +230,7 @@ async function nonStreamResponseWithUsage(
 }
 
 /**
- * 调用 Gemini `v1beta/models/{model}:{action}`：URL 查询串可与客户端 `search` 合并，缺省则追加 `key=` 使用路由密钥。
+ * 调用 Gemini `{base}/{model}:{action}`（`base_url_gemini` 须含完整路径前缀）：URL 查询串可与客户端 `search` 合并，缺省则追加 `key=` 使用路由密钥。
  * `streamGenerateContent` 走 SSE 解析；`generateContent` 单次 JSON 用 `usageMetadata`。
  * @param search 原始 query 字符串（可含或不含 `?`），会与上游所需参数合并
  */
@@ -244,7 +241,7 @@ export async function dispatchGeminiRoute(
   search: string,
   requestSignal?: AbortSignal
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream> }> {
-  const url = new URL(buildUrl(route.baseUrl, action, route.providerModelName));
+  const url = new URL(buildGeminiUpstreamActionUrl(route.baseUrl, route.providerModelName, action));
   if (search) {
     const source = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
     for (const [k, v] of source.entries()) {

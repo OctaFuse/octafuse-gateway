@@ -1,7 +1,8 @@
 /**
  * Playground：按单条 `model_routes` 直连上游，不经过 Proxy、不鉴 API Key、不写 `api_key_request_logs`、不计费、无 failover。
  */
-import type { GatewayRepositories } from '@octafuse/core';
+import type { GatewayRepositories, GeminiContentAction } from '@octafuse/core';
+import { buildGeminiUpstreamActionUrl } from '@octafuse/core';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
 	normalizeUpstreamProtocol,
@@ -9,8 +10,6 @@ import {
 } from '@octafuse/core/upstream-protocol';
 import { AdminServiceError, badRequest, notFound } from './errors';
 import { resolvePlaygroundProviderKey } from './provider-api-keys-service';
-
-export type PlaygroundGeminiAction = 'generateContent' | 'streamGenerateContent';
 
 /** 与 Proxy `RouteResult` 对齐的最小子集，供合并默认参数与拼 URL。 */
 export type PlaygroundResolvedRoute = {
@@ -149,10 +148,10 @@ function anthropicMessagesUrl(baseUrl: string): string {
 function geminiActionUrl(
 	baseUrl: string,
 	modelName: string,
-	action: PlaygroundGeminiAction,
+	action: GeminiContentAction,
 	apiKey: string
 ): string {
-	const path = `${baseUrl.replace(/\/$/, '')}/v1beta/models/${encodeURIComponent(modelName)}:${action}`;
+	const path = buildGeminiUpstreamActionUrl(baseUrl, modelName, action);
 	const u = new URL(path);
 	u.searchParams.set('key', apiKey);
 	return u.toString();
@@ -162,7 +161,7 @@ export type PlaygroundInvokeInput = {
 	routeId: string;
 	body: Record<string, unknown>;
 	/** 仅 `upstream_protocol === gemini` 时使用；缺省为 `generateContent`。 */
-	geminiAction?: PlaygroundGeminiAction;
+	geminiAction?: GeminiContentAction;
 	/** 可选：指定 `provider_api_keys.id` 做连通性测试。 */
 	providerKeyId?: string | null;
 };
@@ -218,7 +217,7 @@ export async function invokePlaygroundUpstream(
 			break;
 		}
 		case 'gemini': {
-			const action: PlaygroundGeminiAction =
+			const action: GeminiContentAction =
 				input.geminiAction === 'streamGenerateContent' ? 'streamGenerateContent' : 'generateContent';
 			url = geminiActionUrl(route.baseUrl, route.providerModelName, action, route.providerApiKey);
 			headers = { 'Content-Type': 'application/json' };

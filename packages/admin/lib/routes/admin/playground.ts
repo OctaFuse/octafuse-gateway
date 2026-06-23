@@ -5,10 +5,8 @@
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
 import { requireMasterKey } from '@/lib/middleware/admin-auth';
-import {
-	invokePlaygroundUpstream,
-	type PlaygroundGeminiAction,
-} from '@/lib/services/admin/playground-service';
+import type { GeminiContentAction } from '@octafuse/core';
+import { invokePlaygroundUpstream } from '@/lib/services/admin/playground-service';
 import { handleAdminRouteError } from './error-response';
 
 export const adminPlaygroundRoutes = new Hono<AdminEnv>();
@@ -36,7 +34,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 		return c.json({ success: false as const, message: 'body must be a JSON object' }, 400);
 	}
 
-	let geminiAction: PlaygroundGeminiAction | undefined;
+	let geminiAction: GeminiContentAction | undefined;
 	if (parsed.geminiAction === 'generateContent' || parsed.geminiAction === 'streamGenerateContent') {
 		geminiAction = parsed.geminiAction;
 	} else if (parsed.geminiAction != null && parsed.geminiAction !== '') {

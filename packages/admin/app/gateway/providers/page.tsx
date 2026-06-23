@@ -898,9 +898,17 @@ export default function GatewayProvidersPage() {
                         value={formData.base_url_gemini}
                         onChange={(e) => setFormData({ ...formData, base_url_gemini: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                        placeholder="https://generativelanguage.googleapis.com"
+                        placeholder="https://generativelanguage.googleapis.com/v1beta/models"
                         autoComplete="off"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Include the full prefix before <code className="text-gray-600">{'{model}'}</code>
+												<br />
+												Developer:{' '}
+                        <code className="text-gray-600">/v1beta/models</code>;
+												Vertex{'\u00A0'}Express:{' '}
+                        <code className="text-gray-600">/v1/publishers/google/models</code>.
+                      </p>
                     </div>
                   </div>
                 </section>

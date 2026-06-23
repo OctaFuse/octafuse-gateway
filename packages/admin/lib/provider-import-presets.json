@@ -129,10 +129,18 @@
 	{
 		"name": "Google Gemini（Generative Language API）",
 		"vendor_key": "google",
+		"base_url_openai": "https://generativelanguage.googleapis.com/v1beta/openai",
+		"base_url_anthropic": null,
+		"base_url_gemini": "https://generativelanguage.googleapis.com/v1beta/models",
+		"description": "Developer API：Gemini 原生 base 含 `/v1beta/models`（`key=`）；OpenAI 兼容 base 含 `/v1beta/openai`（Bearer）。见 ai.google.dev/gemini-api/docs/openai。"
+	},
+	{
+		"name": "Google Vertex AI（Express Mode · API Key）",
+		"vendor_key": "google",
 		"base_url_openai": null,
 		"base_url_anthropic": null,
-		"base_url_gemini": "https://generativelanguage.googleapis.com",
-		"description": "Gemini 根地址；网关会拼接 `/v1beta/models/...`。API Key 通常经查询参数 `key=` 传递，以 Google AI Studio / Cloud 文档为准。"
+		"base_url_gemini": "https://aiplatform.googleapis.com/v1/publishers/google/models",
+		"description": "Vertex Express：base 含完整前缀 `/v1/publishers/google/models`（v1beta1 可改为 `.../v1beta1/publishers/google/models`）。API Key 经 `key=`；无需 project/location/OAuth。Express 无官方 OpenAI 兼容 endpoint。"
 	},
 	{
 		"name": "Mistral AI（官方 API）",

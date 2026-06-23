@@ -279,6 +279,31 @@ curl "http://localhost:8787/v1beta/models/gemini-2.5-pro:streamGenerateContent?k
 
 > 网关会按 `request_protocol = gemini` 记录用量与计费；仅 **Gemini** 协议路由参与转发。
 
+### 上游 `base_url_gemini` 与多入口（Developer / Vertex Express）
+
+Admin 中 Provider 的 **`base_url_gemini`** 须配置到 **`{model}` 之前**的完整路径前缀（网关不再自动补 `/v1beta/models`）；**客户端入口**始终为 `POST /v1beta/models/...`（与 `@google/genai` SDK 兼容）。
+
+| 接入风格 | 示例 `base_url_gemini` | 网关出站 URL 形态 |
+|----------|------------------------|-------------------|
+| Developer API | `https://generativelanguage.googleapis.com/v1beta/models` | `{base}/{upstreamModel}:{action}?key=` |
+| Vertex AI Express（API Key） | `https://aiplatform.googleapis.com/v1/publishers/google/models` | `{base}/{upstreamModel}:{action}?key=` |
+| 自定义反代 / 其他前缀 | 按上游文档写到 `{model}` 前 | `{base}/{upstreamModel}:{action}?key=` |
+
+- **`upstreamModel`** 来自路由的 `provider_model_name`（裸模型名，如 `gemini-2.5-flash`），与客户端路径中的 `modelSegment`（可含 `:route_group`）独立。
+- 仅配置裸 host（如 `https://generativelanguage.googleapis.com`）会在出站时报错；存量数据请执行迁移 SQL（见下）。
+- Vertex Express 与 Developer API 的请求体、响应体、SSE、`usageMetadata` 一致；出站均使用 provider key 池的 `?key=`（或客户端透传的 query）。
+
+**存量 Provider 迁移（Developer API 裸 host → 全前缀）：**
+
+```sql
+UPDATE providers
+SET base_url_gemini = RTRIM(base_url_gemini, '/') || '/v1beta/models'
+WHERE base_url_gemini IS NOT NULL
+  AND TRIM(base_url_gemini) <> ''
+  AND base_url_gemini NOT LIKE '%/v1beta/models'
+  AND base_url_gemini NOT LIKE '%/publishers/google/models%';
+```
+
 ---
 
 ## 获取模型列表

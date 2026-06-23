@@ -4,6 +4,7 @@
 
 export * from './types';
 export * from './upstream-protocol';
+export * from './gemini-upstream-url';
 
 export * from './storage/context';
 export * from './storage/database-client';
