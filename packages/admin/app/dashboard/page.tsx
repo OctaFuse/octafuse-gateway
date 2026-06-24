@@ -6,9 +6,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  GatewayDashboardRangePicker,
+  GatewayTimeRangePicker,
   type GatewayDashboardStatsRange,
 } from '@/components/GatewayTimeRangePicker';
+import { createRangeValue } from '@/lib/analytics-range';
 import { readApiJson } from '@/lib/api-json';
 import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import { formatGatewayTime } from '@/lib/datetime';
@@ -69,7 +70,11 @@ export default function DashboardPage() {
         <p className="text-sm text-gray-500 mt-1">{OCTAFUSE_GATEWAY_PRODUCT} — operations overview</p>
       </div>
       <div className="mb-8 w-full min-w-0">
-        <GatewayDashboardRangePicker value={range} onChange={setRange} />
+        <GatewayTimeRangePicker
+          showCustom={false}
+          value={createRangeValue(range)}
+          onChange={(v) => setRange(v.preset as GatewayDashboardStatsRange)}
+        />
       </div>
 
       {/* KPI (range-based) + Gateway Stats */}

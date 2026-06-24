@@ -3,7 +3,7 @@
 /**
  * 全站用户审计日志（`user_audit_logs`）：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { readApiJson } from '@/lib/api-json';
 import {
@@ -11,8 +11,8 @@ import {
   API_KEY_BUDGET_AUDIT_EVENT_TYPES,
   type GatewayApiKeyBudgetAuditLog,
 } from '@/lib/types';
-import { GatewayTimeRangeFilter } from '@/components/GatewayTimeRangePicker';
-import { rangeToParams } from '@/lib/analytics-range';
+import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
+import { detectRollingPreset, rangeToParams, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
@@ -228,6 +228,12 @@ export default function GatewayAuditLogsPage() {
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
 
+  const rangeValue = useMemo((): GatewayTimeRangeValue => ({
+    preset: detectRollingPreset(filterStartDate, filterEndDate) ?? 'custom',
+    start_date: filterStartDate,
+    end_date: filterEndDate,
+  }), [filterStartDate, filterEndDate]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const apiKeyId = params.get('api_key_id');
@@ -362,13 +368,11 @@ export default function GatewayAuditLogsPage() {
       </div>
 
       <div className="mb-4 w-full min-w-0">
-        <label className="block text-sm text-gray-500 mb-1">Time range (UTC)</label>
-        <GatewayTimeRangeFilter
-          startDate={filterStartDate}
-          endDate={filterEndDate}
-          onCommit={(start_date, end_date) => {
-            setFilterStartDate(start_date);
-            setFilterEndDate(end_date);
+        <GatewayTimeRangePicker
+          value={rangeValue}
+          onChange={(v) => {
+            setFilterStartDate(v.start_date);
+            setFilterEndDate(v.end_date);
             setPage(1);
           }}
         />

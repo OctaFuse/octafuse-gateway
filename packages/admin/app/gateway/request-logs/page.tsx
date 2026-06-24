@@ -13,8 +13,8 @@ import {
 } from '@/lib/route-group-ui';
 import { UPSTREAM_PROTOCOLS } from '@/lib/upstream-protocol';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
-import { GatewayTimeRangeFilter } from '@/components/GatewayTimeRangePicker';
-import { rangeToParams } from '@/lib/analytics-range';
+import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
+import { detectRollingPreset, rangeToParams, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { summarizePricingAuditJson } from '@/lib/pricing-ui';
@@ -50,6 +50,12 @@ export default function GatewayRequestLogsPage() {
   const [modelCatalog, setModelCatalog] = useState<ModelListItem[]>([]);
   const [providerCatalog, setProviderCatalog] = useState<GatewayProvider[]>([]);
   const [routesCatalog, setRoutesCatalog] = useState<GatewayModelRoute[]>([]);
+
+  const rangeValue = useMemo((): GatewayTimeRangeValue => ({
+    preset: detectRollingPreset(filterStartDate, filterEndDate) ?? 'custom',
+    start_date: filterStartDate,
+    end_date: filterEndDate,
+  }), [filterStartDate, filterEndDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -392,13 +398,11 @@ export default function GatewayRequestLogsPage() {
 
       {/* Filters — time range first row */}
       <div className="mb-4 w-full min-w-0">
-        <label className="block text-sm text-gray-500 mb-1">Time range (UTC)</label>
-        <GatewayTimeRangeFilter
-          startDate={filterStartDate}
-          endDate={filterEndDate}
-          onCommit={(start_date, end_date) => {
-            setFilterStartDate(start_date);
-            setFilterEndDate(end_date);
+        <GatewayTimeRangePicker
+          value={rangeValue}
+          onChange={(v) => {
+            setFilterStartDate(v.start_date);
+            setFilterEndDate(v.end_date);
             setPage(1);
           }}
         />

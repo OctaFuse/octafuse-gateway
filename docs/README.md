@@ -87,6 +87,7 @@ flowchart LR
 | [reference/budget-audit-logs.md](./reference/budget-audit-logs.md) | 兼容跳转（→ user-audit-logs） |
 | [reference/provider-thinking-configs.md](./reference/provider-thinking-configs.md) | 渠道思考类参数 |
 | [reference/provider-import-presets.md](./reference/provider-import-presets.md) | Admin Provider 导入模板 |
+| [reference/time-and-timezone.md](./reference/time-and-timezone.md) | 时间存储（UTC）、API 输出、Admin 显示时区与日界统计口径 |
 
 ## 仓库根常用命令
 
