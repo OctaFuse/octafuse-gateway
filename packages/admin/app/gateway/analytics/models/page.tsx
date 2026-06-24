@@ -85,11 +85,11 @@ export default function ModelUsagePage() {
       'model_id',
       'route_group',
       'request_count',
+      'input_tokens',
+      'output_tokens',
       'standard_cost',
       'charged_cost',
       'metered_cost',
-      'input_tokens',
-      'output_tokens',
       'success_count',
       'error_count',
       'success_rate',
@@ -102,11 +102,11 @@ export default function ModelUsagePage() {
       r.model_id,
       r.route_group,
       String(r.request_count),
+      String(r.input_tokens),
+      String(r.output_tokens),
       String(r.standard_cost ?? 0),
       String(r.charged_cost),
       String(r.metered_cost),
-      String(r.input_tokens),
-      String(r.output_tokens),
       String(r.success_count),
       String(r.error_count),
       String(r.success_rate),
@@ -148,11 +148,11 @@ export default function ModelUsagePage() {
                 <Th label="Model" columnKey="model_id" />
                 <Th label="Route group" columnKey="route_group" />
                 <Th label="Requests" columnKey="request_count" />
+                <Th label="Input tokens" columnKey="input_tokens" />
+                <Th label="Output tokens" columnKey="output_tokens" />
                 <Th label="Std" columnKey="standard_cost" />
                 <Th label="Charged" columnKey="charged_cost" />
                 <Th label="Metered" columnKey="metered_cost" />
-                <Th label="Input tokens" columnKey="input_tokens" />
-                <Th label="Output tokens" columnKey="output_tokens" />
                 <Th label="Avg charged/req" columnKey="avg_charged_per_request" />
                 <Th label="Success rate" columnKey="success_rate" />
                 <Th label="Avg latency (ms)" columnKey="avg_latency_ms" />
@@ -181,6 +181,8 @@ export default function ModelUsagePage() {
                   </td>
                   <td className="px-4 py-3 text-sm font-mono text-gray-700">{r.route_group}</td>
                   <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{r.input_tokens.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{r.output_tokens.toLocaleString()}</td>
                   <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                     {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                   </td>
@@ -190,8 +192,6 @@ export default function ModelUsagePage() {
                   <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                     {formatGatewayMoneyCode(r.metered_cost, billingCurrency, 4)}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.input_tokens.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.output_tokens.toLocaleString()}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {formatGatewayMoneyCode(r.avg_charged_per_request, billingCurrency, 6)}
                   </td>

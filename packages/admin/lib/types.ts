@@ -288,6 +288,8 @@ export interface ProviderUsageRow extends AnalyticsRowCosts {
 export interface UserUsageRow extends AnalyticsRowCosts {
   user_email: string;
   request_count: number;
+  input_tokens: number;
+  output_tokens: number;
   distinct_models: number;
   last_active_at: string | null;
   budget_max: number | null;

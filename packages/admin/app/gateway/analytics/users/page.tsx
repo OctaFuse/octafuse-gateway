@@ -83,6 +83,8 @@ export default function UserUsagePage() {
     const headers = [
       'user_email',
       'request_count',
+      'input_tokens',
+      'output_tokens',
       'standard_cost',
       'charged_cost',
       'metered_cost',
@@ -99,6 +101,8 @@ export default function UserUsagePage() {
     const dataRows: string[][] = sorted.map((r) => [
       r.user_email,
       String(r.request_count),
+      String(r.input_tokens),
+      String(r.output_tokens),
       String(r.standard_cost ?? 0),
       String(r.charged_cost),
       String(r.metered_cost),
@@ -146,6 +150,8 @@ export default function UserUsagePage() {
               <tr>
                 <Th label="User (email)" columnKey="user_email" />
                 <Th label="Requests" columnKey="request_count" />
+                <Th label="Input tokens" columnKey="input_tokens" />
+                <Th label="Output tokens" columnKey="output_tokens" />
                 <Th label="Std" columnKey="standard_cost" />
                 <Th label="Charged" columnKey="charged_cost" />
                 <Th label="Metered" columnKey="metered_cost" />
@@ -178,6 +184,8 @@ export default function UserUsagePage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{r.input_tokens.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{r.output_tokens.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                       {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                     </td>

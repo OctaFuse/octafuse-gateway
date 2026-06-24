@@ -93,6 +93,8 @@ export interface ModelAnalyticsRow {
 export interface UserAnalyticsRow {
 	user_email: string;
 	request_count: number;
+	input_tokens: number;
+	output_tokens: number;
 	charged_cost: number;
 	metered_cost: number;
 	standard_cost: number;

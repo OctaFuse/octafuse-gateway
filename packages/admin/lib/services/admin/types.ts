@@ -410,6 +410,8 @@ export type AdminProviderAnalyticsOutput = {
 export type AdminUserAnalyticsRow = {
 	user_email: unknown;
 	request_count: number;
+	input_tokens: number;
+	output_tokens: number;
 	charged_cost: number;
 	metered_cost: number;
 	standard_cost: number;

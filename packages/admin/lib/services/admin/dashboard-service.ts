@@ -279,6 +279,8 @@ export async function getUserAnalyticsService(
 		return {
 			user_email: r.user_email,
 			request_count: reqCount,
+			input_tokens: Number(r.input_tokens),
+			output_tokens: Number(r.output_tokens),
 			charged_cost: Number(r.charged_cost),
 			metered_cost: Number(r.metered_cost),
 			standard_cost: Number(r.standard_cost),

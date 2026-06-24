@@ -85,11 +85,11 @@ export default function ProviderUsagePage() {
       'provider_id',
       'provider_name',
       'request_count',
+      'input_tokens',
+      'output_tokens',
       'standard_cost',
       'charged_cost',
       'metered_cost',
-      'input_tokens',
-      'output_tokens',
       'distinct_models',
       'success_count',
       'error_count',
@@ -103,11 +103,11 @@ export default function ProviderUsagePage() {
       r.provider_id,
       r.provider_name ?? '',
       String(r.request_count),
+      String(r.input_tokens),
+      String(r.output_tokens),
       String(r.standard_cost ?? 0),
       String(r.charged_cost),
       String(r.metered_cost),
-      String(r.input_tokens),
-      String(r.output_tokens),
       String(r.distinct_models),
       String(r.success_count),
       String(r.error_count),
@@ -150,11 +150,11 @@ export default function ProviderUsagePage() {
                 <Th label="Provider ID" columnKey="provider_id" />
                 <Th label="Name" columnKey="provider_name" />
                 <Th label="Requests" columnKey="request_count" />
+                <Th label="Input tokens" columnKey="input_tokens" />
+                <Th label="Output tokens" columnKey="output_tokens" />
                 <Th label="Std" columnKey="standard_cost" />
                 <Th label="Charged" columnKey="charged_cost" />
                 <Th label="Metered" columnKey="metered_cost" />
-                <Th label="Input tokens" columnKey="input_tokens" />
-                <Th label="Output tokens" columnKey="output_tokens" />
                 <Th label="Distinct models" columnKey="distinct_models" />
                 <Th label="Avg charged/req" columnKey="avg_charged_per_request" />
                 <Th label="Success rate" columnKey="success_rate" />
@@ -183,6 +183,8 @@ export default function ProviderUsagePage() {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">{r.provider_name ?? '—'}</td>
                   <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{r.input_tokens.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{r.output_tokens.toLocaleString()}</td>
                   <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                     {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                   </td>
@@ -192,8 +194,6 @@ export default function ProviderUsagePage() {
                   <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                     {formatGatewayMoneyCode(r.metered_cost, billingCurrency, 4)}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.input_tokens.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.output_tokens.toLocaleString()}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{r.distinct_models.toLocaleString()}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {formatGatewayMoneyCode(r.avg_charged_per_request, billingCurrency, 6)}

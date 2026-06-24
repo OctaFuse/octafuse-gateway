@@ -63,6 +63,8 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 					`SELECT
 				rl.user_email as user_email,
 				COUNT(*) as request_count,
+				COALESCE(SUM(rl.input_tokens), 0) as input_tokens,
+				COALESCE(SUM(rl.output_tokens), 0) as output_tokens,
 				COALESCE(${sqlMoneyRound('SUM(rl.charged_cost)')}, 0) as charged_cost,
 				COALESCE(${sqlMoneyRound('SUM(rl.metered_cost)')}, 0) as metered_cost,
 				COALESCE(${sqlMoneyRound('SUM(rl.standard_cost)')}, 0) as standard_cost,
