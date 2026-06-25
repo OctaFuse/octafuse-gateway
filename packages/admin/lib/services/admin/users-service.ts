@@ -15,6 +15,11 @@ import {
 	updateKeyStatus,
 	updateUserPlan,
 } from '@octafuse/core/services/user-service';
+import {
+	applyBudgetTransition,
+	previewBudgetTransition,
+	type BudgetTransitionParams,
+} from '@octafuse/core/services/budget-transition-service';
 import { userBudgetAuditToInsertRowFull } from '@octafuse/core/db/user-budget-audit-mapper';
 import { roundGatewayMoney } from '@octafuse/core/lib/money-precision';
 import {
@@ -26,7 +31,7 @@ import {
 import { buildMetadataAuditChange } from './admin-profile-audit-metadata';
 import { badRequest, conflict, notFound } from './errors';
 import { normalizeMetadataInput } from './shared';
-import type { AdminUserCreateInput, AdminUserUpdateInput, JsonObject } from './types';
+import type { AdminUserCreateInput, AdminUserUpdateInput, AdminBudgetTransitionInput, JsonObject } from './types';
 
 const UUID_RE =
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -476,6 +481,72 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 	}
 
 	return getUserInfo(repos, userId);
+}
+
+const VALID_BUDGET_PERIODS = new Set<BudgetPeriod>(['none', 'daily', 'weekly', 'monthly']);
+const VALID_CARRYOVER = new Set(['remaining_or_overage', 'none']);
+
+function parseAdminBudgetTransitionInput(input: AdminBudgetTransitionInput): BudgetTransitionParams {
+	const base = input.target_budget_base;
+	if (typeof base !== 'number' || !Number.isFinite(base) || base < 0) {
+		throw badRequest('target_budget_base must be a non-negative finite number');
+	}
+	const period = input.budget_period;
+	if (!VALID_BUDGET_PERIODS.has(period)) {
+		throw badRequest('budget_period must be none, daily, weekly, or monthly');
+	}
+	const strategy = input.carryover_strategy ?? 'remaining_or_overage';
+	if (!VALID_CARRYOVER.has(strategy)) {
+		throw badRequest('carryover_strategy must be remaining_or_overage or none');
+	}
+	if (input.budget_reset_at !== undefined && input.budget_reset_at !== null) {
+		const t = new Date(input.budget_reset_at).getTime();
+		if (Number.isNaN(t)) {
+			throw badRequest('budget_reset_at must be a valid ISO datetime or null');
+		}
+	}
+	let metadata: Record<string, unknown> | undefined;
+	if (input.metadata !== undefined) {
+		if (typeof input.metadata !== 'object' || input.metadata === null || Array.isArray(input.metadata)) {
+			throw badRequest('metadata must be a JSON object');
+		}
+		metadata = input.metadata as Record<string, unknown>;
+	}
+	return {
+		target_budget_base: base,
+		budget_period: period,
+		budget_reset_at: input.budget_reset_at,
+		carryover_strategy: strategy,
+		reset_spent: input.reset_spent,
+		metadata,
+		reason: input.reason,
+	};
+}
+
+export async function previewAdminBudgetTransition(
+	repos: GatewayRepositories,
+	raw: string,
+	input: AdminBudgetTransitionInput
+) {
+	const userId = await resolveAdminUserId(repos, raw);
+	const params = parseAdminBudgetTransitionInput(input);
+	const preview = await previewBudgetTransition(repos, userId, params);
+	if (!preview) throw notFound('User not found');
+	return preview;
+}
+
+export async function applyAdminBudgetTransition(
+	repos: GatewayRepositories,
+	raw: string,
+	input: AdminBudgetTransitionInput
+) {
+	const userId = await resolveAdminUserId(repos, raw);
+	const params = parseAdminBudgetTransitionInput(input);
+	const result = await applyBudgetTransition(repos, userId, params);
+	if (!result) throw notFound('User not found');
+	const info = await getUserInfo(repos, userId);
+	if (!info) throw notFound('User not found');
+	return { transition: result.preview, user: info };
 }
 
 export async function deleteAdminUser(repos: GatewayRepositories, raw: string): Promise<void> {

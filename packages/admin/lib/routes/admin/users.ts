@@ -17,8 +17,10 @@ import {
 	listAdminUsers,
 	patchAdminUserKey,
 	updateAdminUser,
+	previewAdminBudgetTransition,
+	applyAdminBudgetTransition,
 } from '@/lib/services/admin/users-service';
-import type { AdminUserCreateInput, AdminUserUpdateInput } from '@/lib/services/admin/types';
+import type { AdminUserCreateInput, AdminUserUpdateInput, AdminBudgetTransitionInput } from '@/lib/services/admin/types';
 import type { AdminUserKeyPatchInput } from '@/lib/services/admin/users-service';
 import { handleAdminRouteError, jsonErr } from './error-response';
 import { normalizeApiTimeFields } from '@octafuse/core/lib/time-format';
@@ -170,6 +172,44 @@ adminUsersRoutes.delete('/:id/keys/:keyId', async (c) => {
 		return c.json({ success: true as const, message: 'Key deleted successfully' });
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to delete user key');
+	}
+});
+
+adminUsersRoutes.post('/:id/budget/transition/preview', async (c) => {
+	let body: AdminBudgetTransitionInput;
+	try {
+		body = await c.req.json();
+	} catch {
+		return jsonErr(c, 400, 'Invalid JSON body');
+	}
+	try {
+		const repos = c.get('repositories');
+		const data = await previewAdminBudgetTransition(repos, c.req.param('id'), body);
+		return c.json(normalizeApiTimeFields({ success: true as const, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to preview budget transition');
+	}
+});
+
+adminUsersRoutes.post('/:id/budget/transition', async (c) => {
+	let body: AdminBudgetTransitionInput;
+	try {
+		body = await c.req.json();
+	} catch {
+		return jsonErr(c, 400, 'Invalid JSON body');
+	}
+	try {
+		const repos = c.get('repositories');
+		const data = await applyAdminBudgetTransition(repos, c.req.param('id'), body);
+		return c.json(
+			normalizeApiTimeFields({
+				success: true as const,
+				message: 'Budget transition applied',
+				data,
+			})
+		);
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to apply budget transition');
 	}
 });
 

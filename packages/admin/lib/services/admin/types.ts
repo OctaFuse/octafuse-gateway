@@ -46,6 +46,31 @@ export type AdminUserUpdateInput = {
 	external_user_id?: string | null;
 };
 
+/** ---------- `/admin/users/:id/budget/transition` 请求体 ---------- */
+export type AdminBudgetTransitionInput = {
+	target_budget_base: number;
+	budget_period: BudgetPeriod;
+	budget_reset_at?: string | null;
+	carryover_strategy?: 'remaining_or_overage' | 'none';
+	reset_spent?: boolean;
+	metadata?: Record<string, unknown>;
+	reason?: string;
+};
+
+export type AdminBudgetTransitionSnapshot = {
+	budget_max: number | null;
+	budget_base: number;
+	budget_spent: number;
+	budget_period: string;
+	budget_reset_at: string | null;
+};
+
+export type AdminBudgetTransitionPreviewOutput = {
+	before: AdminBudgetTransitionSnapshot;
+	after: AdminBudgetTransitionSnapshot;
+	carryover: number;
+};
+
 /** ---------- `/admin/keys` 请求体 ---------- */
 export type AdminKeyCreateInput = {
 	/** 已有用户时直接关联；与 `external_system` + `external_user_id` 二选一 */

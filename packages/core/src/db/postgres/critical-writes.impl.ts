@@ -2,6 +2,7 @@
  * Postgres：关键写路径（Drizzle 事务），供 `storage/critical-write-paths` 调度。
  */
 import { and, eq, sql } from 'drizzle-orm';
+import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
 import type { InsertUserBudgetAuditLogParams } from '../user-budget-audit-params';
 import type { InsertKeyParams } from '../api-keys-types';
 import type { InsertRequestLogParams } from '../request-logs-types';
@@ -126,6 +127,47 @@ export async function updateUserBudgetWithAuditTxPg(
 
 		await tx.insert(pgUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(auditRow, now));
 	});
+}
+
+export async function applyUserBudgetTransitionWithAuditPg(
+	client: PostgresDatabaseClient,
+	params: {
+		userId: string;
+		budgetMax: number | null;
+		budgetBase: number;
+		budgetSpent: number;
+		budgetPeriod: string;
+		budgetResetAt: string | null;
+		metadata?: string | null;
+		audit: InsertUserAuditLogParams;
+	}
+): Promise<boolean> {
+	const now = nowIso();
+	let updated = false;
+	await client.drizzle.transaction(async (tx) => {
+		const updateSet: Record<string, unknown> = {
+			budgetMax: params.budgetMax == null ? null : String(roundGatewayMoney(params.budgetMax)),
+			budgetBase: String(roundGatewayMoney(params.budgetBase)),
+			budgetSpent: String(roundGatewayMoney(params.budgetSpent)),
+			budgetPeriod: params.budgetPeriod,
+			budgetResetAt: params.budgetResetAt,
+			updatedAt: now,
+		};
+		if (params.metadata !== undefined) {
+			updateSet.metadata = params.metadata;
+		}
+		const rows = await tx
+			.update(pgUsersTable)
+			.set(updateSet)
+			.where(eq(pgUsersTable.id, params.userId))
+			.returning({ id: pgUsersTable.id });
+		if (rows.length === 0) {
+			return;
+		}
+		updated = true;
+		await tx.insert(pgUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(params.audit, now));
+	});
+	return updated;
 }
 
 export async function insertRequestUsageAndChargeTxPg(

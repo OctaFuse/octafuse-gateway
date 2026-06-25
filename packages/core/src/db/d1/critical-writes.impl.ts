@@ -3,6 +3,7 @@
  */
 import type { D1PreparedStatement } from '@cloudflare/workers-types';
 import { eq } from 'drizzle-orm';
+import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
 import type { InsertUserBudgetAuditLogParams } from '../user-budget-audit-params';
 import { buildInsertUserAuditLogStatement } from './user-audit-logs.impl';
 import {
@@ -117,6 +118,42 @@ export async function updateUserBudgetWithAuditTxD1(
 		return;
 	}
 	await ensureD1Batch(client, [buildInsertUserAuditLogStatement(client.raw, auditRow)]);
+}
+
+export async function applyUserBudgetTransitionWithAuditD1(
+	client: D1DatabaseClient,
+	params: {
+		userId: string;
+		budgetMax: number | null;
+		budgetBase: number;
+		budgetSpent: number;
+		budgetPeriod: string;
+		budgetResetAt: string | null;
+		metadata?: string | null;
+		audit: InsertUserAuditLogParams;
+	}
+): Promise<boolean> {
+	const nextSpent = roundGatewayMoney(params.budgetSpent);
+	const nextBase = roundGatewayMoney(params.budgetBase);
+	const nextMax = params.budgetMax == null ? null : roundGatewayMoney(params.budgetMax);
+	const metadataClause = params.metadata !== undefined ? ', metadata = ?' : '';
+	const updateSql =
+		"UPDATE users SET budget_max = ?, budget_base = ?, budget_spent = ?, budget_period = ?, budget_reset_at = ?, updated_at = datetime('now')" +
+		metadataClause +
+		' WHERE id = ?';
+	const binds: unknown[] = [nextMax, nextBase, nextSpent, params.budgetPeriod, params.budgetResetAt];
+	if (params.metadata !== undefined) {
+		binds.push(params.metadata);
+	}
+	binds.push(params.userId);
+	const updateStmt = client.raw.prepare(updateSql).bind(...binds);
+	const runResult = await updateStmt.run();
+	const changes = runResult.meta?.changes ?? 0;
+	if (changes === 0) {
+		return false;
+	}
+	await ensureD1Batch(client, [buildInsertUserAuditLogStatement(client.raw, params.audit)]);
+	return true;
 }
 
 export async function insertRequestUsageAndChargeTxD1(

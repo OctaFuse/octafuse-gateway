@@ -48,6 +48,8 @@ Authorization: Bearer sk-admin-xxx
 | `/admin/users/:id/keys/:keyId` | PATCH, DELETE | `api_keys` | Admin UI |
 | `/admin/users/:id/logs` | GET | `api_key_request_logs`（按 `user_id`） | Admin UI |
 | `/admin/users/:id/audit-logs` | GET | `user_audit_logs`（按 `user_id`） | Admin UI |
+| `/admin/users/:id/budget/transition/preview` | POST | `users`（只读计算） | 外部集成方 |
+| `/admin/users/:id/budget/transition` | POST | `users` + `user_audit_logs`（原子转换） | 外部集成方 |
 | `/admin/keys` | GET | `api_keys` **JOIN** `users`（分页列表；预算只读） | Admin UI、外部集成方 |
 | `/admin/keys` | POST | `api_keys`（+ 可能 `users`） | 外部集成方、运维脚本 |
 | `/admin/keys/:id` | GET | `api_keys` **JOIN** `users` | 外部集成方、Admin UI |
@@ -126,6 +128,32 @@ Authorization: Bearer sk-admin-xxx
 ### `PATCH /admin/users/:id`
 
 更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对等。**密钥级字段不可在此修改**。
+
+用于**绝对值**设置、运维修正、取消/到期回收等不依赖当前预算快照的变更。若需基于当前 `budget_max/budget_spent` 计算结转并原子写入，请使用下方 **`budget/transition`**。
+
+### `POST /admin/users/:id/budget/transition/preview`
+
+只读预览预算转换，不写库。请求体（`AdminBudgetTransitionInput`）：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `target_budget_base` | 是 | 新周期基础额度（数值，≥ 0） |
+| `budget_period` | 是 | `none` \| `daily` \| `weekly` \| `monthly` |
+| `budget_reset_at` | 否 | 下次重置时间（ISO UTC）；缺省按 `budget_period` 推算 |
+| `carryover_strategy` | 否 | `remaining_or_overage`（默认）或 `none` |
+| `reset_spent` | 否 | 是否将 `budget_spent` 归零，默认 `true` |
+| `metadata` | 否 | JSON 对象，merge 进 `users.metadata`（仅 apply 时写入） |
+| `reason` | 否 | 审计 `reason_text`（仅 apply 时写入） |
+
+`remaining_or_overage` 计算：`carryover = budget_max - budget_spent`，`next_budget_max = target_budget_base + carryover`（`carryover` 可为负，表示超额抵扣）。
+
+响应：`{ success, data: { before, after, carryover } }`，其中 `before/after` 含 `budget_max`、`budget_base`、`budget_spent`、`budget_period`、`budget_reset_at`。
+
+### `POST /admin/users/:id/budget/transition`
+
+原子应用上述转换并写入 `user_audit_logs`（`eventType=admin_adjust`，`reasonCode=budget_transition`）。请求体与 preview 相同（`metadata`/`reason` 在 apply 时生效）。
+
+响应：`{ success, message, data: { transition: { before, after, carryover }, user: <getUserInfo> } }`。
 
 ### `DELETE /admin/users/:id`
 

@@ -3,6 +3,7 @@
  */
 import type { ResultSetHeader } from 'mysql2/promise';
 import { and, eq, sql } from 'drizzle-orm';
+import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
 import type { InsertUserBudgetAuditLogParams } from '../user-budget-audit-params';
 import type { InsertKeyParams } from '../api-keys-types';
 import type { InsertRequestLogParams } from '../request-logs-types';
@@ -126,6 +127,46 @@ export async function updateUserBudgetWithAuditTxMy(
 
 		await tx.insert(myUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(auditRow, now));
 	});
+}
+
+export async function applyUserBudgetTransitionWithAuditMy(
+	client: MySqlDatabaseClient,
+	params: {
+		userId: string;
+		budgetMax: number | null;
+		budgetBase: number;
+		budgetSpent: number;
+		budgetPeriod: string;
+		budgetResetAt: string | null;
+		metadata?: string | null;
+		audit: InsertUserAuditLogParams;
+	}
+): Promise<boolean> {
+	const now = nowIso();
+	let updated = false;
+	await client.drizzle.transaction(async (tx) => {
+		const updateSet: Record<string, unknown> = {
+			budgetMax: params.budgetMax == null ? null : String(roundGatewayMoney(params.budgetMax)),
+			budgetBase: String(roundGatewayMoney(params.budgetBase)),
+			budgetSpent: String(roundGatewayMoney(params.budgetSpent)),
+			budgetPeriod: params.budgetPeriod,
+			budgetResetAt: params.budgetResetAt,
+			updatedAt: now,
+		};
+		if (params.metadata !== undefined) {
+			updateSet.metadata = params.metadata;
+		}
+		const [header] = (await tx
+			.update(myUsersTable)
+			.set(updateSet)
+			.where(eq(myUsersTable.id, params.userId))) as unknown as [ResultSetHeader, unknown];
+		if (!header?.affectedRows) {
+			return;
+		}
+		updated = true;
+		await tx.insert(myUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(params.audit, now));
+	});
+	return updated;
 }
 
 export async function insertRequestUsageAndChargeTxMy(

@@ -8,6 +8,7 @@ import {
 	getUserBudgetSnapshotD1,
 	insertRequestUsageAndChargeTxD1,
 	updateUserBudgetWithAuditTxD1,
+	applyUserBudgetTransitionWithAuditD1,
 } from '../db/d1/critical-writes.impl';
 import {
 	createApiKeyWithAuditMy,
@@ -15,6 +16,7 @@ import {
 	getUserBudgetSnapshotMy,
 	insertRequestUsageAndChargeTxMy,
 	updateUserBudgetWithAuditTxMy,
+	applyUserBudgetTransitionWithAuditMy,
 } from '../db/mysql/critical-writes.impl';
 import {
 	createApiKeyWithAuditPg,
@@ -22,9 +24,11 @@ import {
 	getUserBudgetSnapshotPg,
 	insertRequestUsageAndChargeTxPg,
 	updateUserBudgetWithAuditTxPg,
+	applyUserBudgetTransitionWithAuditPg,
 } from '../db/postgres/critical-writes.impl';
 import type { GatewayDatabaseClient } from './database-client';
 import { createD1DatabaseClient } from './database-client';
+import type { InsertUserAuditLogParams } from '../db/user-audit-logs-types';
 import type { GatewayRepositories } from './repositories';
 
 export type StorageRef = D1Database | GatewayDatabaseClient | GatewayRepositories;
@@ -134,4 +138,28 @@ export async function insertRequestUsageAndChargeTx(
 		return;
 	}
 	await insertRequestUsageAndChargeTxPg(client, params);
+}
+
+/** 原子写入预算转换结果并插入审计（Admin budget transition）。 */
+export async function applyUserBudgetTransitionWithAuditTx(
+	storage: StorageRef,
+	params: {
+		userId: string;
+		budgetMax: number | null;
+		budgetBase: number;
+		budgetSpent: number;
+		budgetPeriod: string;
+		budgetResetAt: string | null;
+		metadata?: string | null;
+		audit: InsertUserAuditLogParams;
+	}
+): Promise<boolean> {
+	const client = resolveDatabaseClient(storage);
+	if (client.driver === 'd1') {
+		return applyUserBudgetTransitionWithAuditD1(client, params);
+	}
+	if (client.driver === 'mysql') {
+		return applyUserBudgetTransitionWithAuditMy(client, params);
+	}
+	return applyUserBudgetTransitionWithAuditPg(client, params);
 }
