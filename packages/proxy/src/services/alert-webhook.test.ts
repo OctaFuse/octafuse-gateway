@@ -93,7 +93,8 @@ describe('classifyGatewayErrorAlert', () => {
 describe('buildGatewayErrorAlertSummary', () => {
 	it('includes structured sections and key identifiers', () => {
 		const text = buildGatewayErrorAlertSummary(baseCtx());
-		expect(text).toContain('[Gateway][上游超时][P1] Gemini 3.1 Pro Preview');
+		expect(text).toContain('[Gateway][上游超时][P1]');
+		expect(text).toContain('模型: Gemini 3.1 Pro Preview');
 		expect(text).toContain('摘要: HTTP 524');
 		expect(text).toContain('125.7s');
 		expect(text).toContain('selina.melville@gmail.com');
@@ -110,7 +111,8 @@ describe('buildGatewayErrorAlertSummary', () => {
 		const text = buildGatewayErrorAlertSummary(
 			baseCtx({ modelName: null, providerName: null })
 		);
-		expect(text).toContain('[Gateway][上游超时][P1] gemini-3.1-pro-preview');
+		expect(text).toContain('[Gateway][上游超时][P1]');
+		expect(text).toContain('模型: gemini-3.1-pro-preview');
 		expect(text).toContain('provider=e563b43c-62a8-43fb-be5b-a52888bca550');
 	});
 });

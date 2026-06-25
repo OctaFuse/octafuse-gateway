@@ -262,7 +262,8 @@ export function buildGatewayErrorAlertSummary(ctx: GatewayErrorAlertContext): st
 	const errFull = truncateForAlert(ctx.errorMessage ?? '(no message)', 600);
 
 	const lines = [
-		`[Gateway][${meta.label}][${meta.priority}] ${model}`,
+		`[Gateway][${meta.label}][${meta.priority}]`,
+		`模型: ${model}`,
 		`摘要: ${buildSummaryLine(meta, ctx)}`,
 		`影响: ${email} · route=${ctx.routeGroup} · ${protocolPath}`,
 		`供应商: ${formatProviderKey(ctx)} · provider=${provider} · upstream_model=${ctx.providerModelName ?? '(null)'}`,
