@@ -26,6 +26,8 @@ export const USER_AUDIT_SOURCE_CHANNELS = [
 	'key_provision',
 	'gateway_user_provision',
 	'admin_users',
+	/** Admin `POST /users/:id/budget/transition`（结转/换档预算迁移） */
+	'admin_budget_transition',
 	'admin_keys',
 	'admin_user_key',
 	/** 历史兼容：仅归一化读入，新写入不应再产生 */

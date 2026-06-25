@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { assertAndFinalizeUserAuditInsert } from '../db/user-audit-catalog';
 import { computeBudgetTransition } from './budget-transition-service';
 
 test('computeBudgetTransition carries remaining budget forward', () => {
@@ -64,4 +65,33 @@ test('computeBudgetTransition none strategy skips carryover', () => {
 	);
 	assert.equal(result.carryover, 0);
 	assert.equal(result.after.budget_max, 100);
+});
+
+test('assertAndFinalizeUserAuditInsert accepts admin_budget_transition source', () => {
+	const finalized = assertAndFinalizeUserAuditInsert({
+		id: '00000000-0000-4000-8000-000000000001',
+		userId: 'user-1',
+		eventType: 'admin_adjust',
+		actorType: 'admin',
+		actorId: 'master_key',
+		source: 'admin_budget_transition',
+		reasonCode: 'budget_transition',
+		reasonText: 'wechat_pay:active',
+	});
+	assert.equal(finalized.source, 'admin_budget_transition');
+	assert.equal(finalized.actorId, 'admin:gateway_master_key');
+});
+
+test('assertAndFinalizeUserAuditInsert rejects unknown admin budget source', () => {
+	assert.throws(
+		() =>
+			assertAndFinalizeUserAuditInsert({
+				id: '00000000-0000-4000-8000-000000000002',
+				userId: 'user-1',
+				eventType: 'admin_adjust',
+				actorType: 'admin',
+				source: 'admin_budget_transition_typo',
+			}),
+		/invalid source/
+	);
 });

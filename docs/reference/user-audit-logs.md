@@ -43,8 +43,16 @@
 ### 6. 管理端 PATCH 用户 / 密钥（`admin_adjust`）
 
 - `packages/admin/lib/services/admin/users-service.ts`、`keys-service.ts`。
+- **Cause**：`source=admin_users`；`reason_code` / `reason_text` 随 patch 场景（如门户订阅激活、过期回收）。
 
-### 7. 用户物理删除（`user_deleted`）
+### 7. 管理端预算转换（`admin_adjust` + `budget/transition`）
+
+- **代码**：`packages/core/src/services/budget-transition-service.ts` → `applyBudgetTransition`；Admin 路由 `POST /api/admin/users/:id/budget/transition`。
+- **事务**：`applyUserBudgetTransitionWithAuditTx`（更新 `users.budget_*` 与审计同事务）。
+- **Cause**：`source=admin_budget_transition`，`reason_code=budget_transition`；`reason_text` 由调用方传入（如门户 `wechat_pay:active`、Stripe/Creem 换档）。
+- **与 PATCH 区分**：PATCH 绝对值/重置走 `source=admin_users`；带结转语义的换档走本通道。
+
+### 8. 用户物理删除（`user_deleted`）
 
 - 删除前写入；随后删除 `users` 行，`user_audit_logs.user_id` 由外键 **`ON DELETE SET NULL`**，历史行保留（身份见快照 / `change_payload`）。
 
