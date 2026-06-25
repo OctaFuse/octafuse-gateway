@@ -68,6 +68,35 @@ describe('classifyGatewayErrorAlert', () => {
 		expect(meta.category).toBe('provider_server_error');
 	});
 
+	it('classifies HTTP 400 safety blocks as client_or_model_error', () => {
+		expect(
+			classifyGatewayErrorAlert(
+				baseCtx({
+					errorMessage:
+						'HTTP 400: System detected potentially unsafe or sensitive content in input or generation. Please avoid using prompts that may generate sensitive content. Thank you for your cooperation.',
+					latencyMs: 200,
+				})
+			).category
+		).toBe('client_or_model_error');
+		expect(
+			classifyGatewayErrorAlert(
+				baseCtx({
+					errorMessage:
+						'HTTP 400: <400> InternalError.Algo.DataInspectionFailed: Input text data may contain inappropriate content.',
+					latencyMs: 200,
+				})
+			).category
+		).toBe('client_or_model_error');
+	});
+
+	it('classifies non-HTTP sensitive signals as sensitive_content', () => {
+		expect(
+			classifyGatewayErrorAlert(
+				baseCtx({ errorMessage: 'Blocked by safety filter', latencyMs: 200 })
+			).category
+		).toBe('sensitive_content');
+	});
+
 	it('classifies HTTP 400/404/422 as client_or_model_error', () => {
 		expect(
 			classifyGatewayErrorAlert(baseCtx({ errorMessage: 'HTTP 400: bad request', latencyMs: 100 })).category
@@ -93,15 +122,14 @@ describe('classifyGatewayErrorAlert', () => {
 describe('buildGatewayErrorAlertSummary', () => {
 	it('includes structured sections and key identifiers', () => {
 		const text = buildGatewayErrorAlertSummary(baseCtx());
-		expect(text).toContain('[Gateway][上游超时][P1]');
+		expect(text).toContain('[Gateway] - [上游超时] - [P1]');
 		expect(text).toContain('模型: Gemini 3.1 Pro Preview');
 		expect(text).toContain('摘要: HTTP 524');
 		expect(text).toContain('125.7s');
 		expect(text).toContain('selina.melville@gmail.com');
 		expect(text).toContain('route=default');
 		expect(text).toContain('gemini → gemini');
-		expect(text).toContain('solo0625 (...alVg)');
-		expect(text).toContain('provider=Google Vertex');
+		expect(text).toContain('供应商: Google Vertex · gemini-3.1-pro-preview · default (...alVg) · ');
 		expect(text).toContain('建议:');
 		expect(text).toContain('request_log_id=04327b16-810f-4a8b-ae95-66fe8079ce98');
 		expect(text).toContain('原始错误: HTTP 524: error code: 524');
@@ -111,8 +139,34 @@ describe('buildGatewayErrorAlertSummary', () => {
 		const text = buildGatewayErrorAlertSummary(
 			baseCtx({ modelName: null, providerName: null })
 		);
-		expect(text).toContain('[Gateway][上游超时][P1]');
+		expect(text).toContain('[Gateway] - [上游超时] - [P1]');
 		expect(text).toContain('模型: gemini-3.1-pro-preview');
-		expect(text).toContain('provider=e563b43c-62a8-43fb-be5b-a52888bca550');
+		expect(text).toContain(
+			'供应商: e563b43c-62a8-43fb-be5b-a52888bca550 · gemini-3.1-pro-preview · default (...alVg) · '
+		);
+	});
+
+	it('formats client_or_model_error alert like production example', () => {
+		const text = buildGatewayErrorAlertSummary(
+			baseCtx({
+				modelId: 'glm-5.2',
+				modelName: 'GLM-5.2',
+				userEmail: '453991510@qq.com',
+				providerName: 'ZAI Coding Plan - Lite',
+				providerModelName: 'glm-5.2',
+				requestProtocol: 'openai',
+				upstreamProtocol: 'openai',
+				errorMessage:
+					'HTTP 400: System detected potentially unsafe or sensitive content in input or generation. Please avoid using prompts that may generate sensitive content. Thank you for your cooperation.',
+				latencyMs: 5600,
+				providerKeyLabel: 'default',
+				providerKeyFingerprint: '…kGxz',
+			})
+		);
+		expect(text).toContain('[Gateway] - [请求/模型错误] - [P3]');
+		expect(text).toContain('模型: GLM-5.2');
+		expect(text).toContain('摘要: HTTP 400，耗时 5.6s，客户端请求或模型配置问题');
+		expect(text).toContain('影响: 453991510@qq.com · route=default · openai → openai');
+		expect(text).toContain('供应商: ZAI Coding Plan - Lite · glm-5.2 · default (…kGxz) · ');
 	});
 });

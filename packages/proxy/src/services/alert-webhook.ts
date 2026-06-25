@@ -21,6 +21,7 @@ export type GatewayErrorAlertCategory =
 	| 'provider_auth'
 	| 'provider_rate_limit'
 	| 'provider_server_error'
+	| 'sensitive_content'
 	| 'client_or_model_error'
 	| 'route_config_error'
 	| 'unknown_error';
@@ -79,6 +80,12 @@ const CATEGORY_META: Record<GatewayErrorAlertCategory, Omit<AlertCategoryMeta, '
 		priority: 'P2',
 		summaryHint: '上游 5xx 服务异常',
 		suggestion: '观察供应商稳定性；必要时切换 provider 或路由',
+	},
+	sensitive_content: {
+		label: '敏感内容拦截',
+		priority: 'P3',
+		summaryHint: '上游内容安全策略拦截',
+		suggestion: '检查用户输入、系统提示词与生成目标；必要时优化提示词或引导用户调整内容',
 	},
 	client_or_model_error: {
 		label: '请求/模型错误',
@@ -179,6 +186,22 @@ function hasRateLimitSignal(errorMessage: string | null | undefined, httpStatus:
 	return lower.includes('rate limit') || lower.includes('quota') || lower.includes('too many requests');
 }
 
+function hasSensitiveContentSignal(errorMessage: string | null | undefined): boolean {
+	const lower = errorMessageLower(errorMessage);
+	return (
+		lower.includes('sensitive content') ||
+		lower.includes('unsafe or sensitive') ||
+		lower.includes('inappropriate content') ||
+		lower.includes('datainspectionfailed') ||
+		lower.includes('data inspection failed') ||
+		lower.includes('content policy') ||
+		lower.includes('policy violation') ||
+		lower.includes('safety filter') ||
+		lower.includes('blocked by safety') ||
+		lower.includes('moderation')
+	);
+}
+
 /**
  * 基于 `error_message` 与耗时对 Gateway 错误告警做轻量分类。
  */
@@ -204,6 +227,9 @@ export function classifyGatewayErrorAlert(ctx: GatewayErrorAlertContext): AlertC
 	if (httpStatus != null && (httpStatus === 400 || httpStatus === 404 || httpStatus === 422)) {
 		return { category: 'client_or_model_error', ...CATEGORY_META.client_or_model_error };
 	}
+	if (hasSensitiveContentSignal(err)) {
+		return { category: 'sensitive_content', ...CATEGORY_META.sensitive_content };
+	}
 	return { category: 'unknown_error', ...CATEGORY_META.unknown_error };
 }
 
@@ -227,19 +253,13 @@ function displayProvider(ctx: GatewayErrorAlertContext): string {
 	return name || ctx.providerId;
 }
 
-function formatProviderKey(ctx: GatewayErrorAlertContext): string {
-	const label = (ctx.providerKeyLabel ?? '').trim();
+function formatSupplierLine(ctx: GatewayErrorAlertContext): string {
+	const provider = displayProvider(ctx);
+	const upstreamModel = ctx.providerModelName ?? '(null)';
+	const route = ctx.routeGroup;
 	const fp = (ctx.providerKeyFingerprint ?? '').trim();
-	if (label && fp) {
-		return `${label} (${fp})`;
-	}
-	if (label) {
-		return label;
-	}
-	if (fp) {
-		return fp;
-	}
-	return '(未记录)';
+	const routeKey = fp ? `${route} (${fp})` : `${route} (未记录)`;
+	return `${provider} · ${upstreamModel} · ${routeKey} · `;
 }
 
 function buildSummaryLine(meta: AlertCategoryMeta, ctx: GatewayErrorAlertContext): string {
@@ -256,19 +276,21 @@ function buildSummaryLine(meta: AlertCategoryMeta, ctx: GatewayErrorAlertContext
 export function buildGatewayErrorAlertSummary(ctx: GatewayErrorAlertContext): string {
 	const meta = classifyGatewayErrorAlert(ctx);
 	const model = displayModel(ctx);
-	const provider = displayProvider(ctx);
 	const email = ctx.userEmail ?? '(匿名/未知)';
 	const protocolPath = `${ctx.requestProtocol} → ${ctx.upstreamProtocol}`;
 	const errFull = truncateForAlert(ctx.errorMessage ?? '(no message)', 600);
 
 	const lines = [
-		`[Gateway][${meta.label}][${meta.priority}]`,
+		`[Gateway] - [${meta.label}] - [${meta.priority}]`,
+		'',
 		`模型: ${model}`,
 		`摘要: ${buildSummaryLine(meta, ctx)}`,
 		`影响: ${email} · route=${ctx.routeGroup} · ${protocolPath}`,
-		`供应商: ${formatProviderKey(ctx)} · provider=${provider} · upstream_model=${ctx.providerModelName ?? '(null)'}`,
+		`供应商: ${formatSupplierLine(ctx)}`,
+		'',
 		`建议: ${meta.suggestion}`,
 		`定位: request_log_id=${ctx.requestLogId} api_key_id=${ctx.apiKeyId}`,
+		'',
 		`原始错误: ${errFull}`,
 	];
 	return lines.join('\n');
