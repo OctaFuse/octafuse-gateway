@@ -29,7 +29,7 @@ export function AnalyticsTokenDisplayPicker({
 					onClick={() => onChange('compact')}
 					className={`${btnBase} ${value === 'compact' ? btnOn : btnIdle}`}
 				>
-					Compact (B/M)
+					Compact (K/M/B)
 				</button>
 				<button
 					type="button"
