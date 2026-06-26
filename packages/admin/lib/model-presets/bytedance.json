@@ -166,5 +166,132 @@
 			]
 		},
 		"released": "2026-02-14"
+	},
+	{
+		"id": "seed-2.1-pro",
+		"display_name": "Doubao Seed 2.1 Pro",
+		"vendor": "bytedance",
+		"context_window": 256000,
+		"max_tokens": 256000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.625,
+						"output_price": 3.125,
+						"cache_read_price": 0.125,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 30,
+						"cache_read_price": 1.2,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-06-23"
+	},
+	{
+		"id": "seed-2.1-turbo",
+		"display_name": "Doubao Seed 2.1 Turbo",
+		"vendor": "bytedance",
+		"context_window": 256000,
+		"max_tokens": 256000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.3125,
+						"output_price": 1.5625,
+						"cache_read_price": 0.0625,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3,
+						"output_price": 15,
+						"cache_read_price": 0.6,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-06-23"
+	},
+	{
+		"id": "seed-evolving",
+		"display_name": "Doubao Seed Evolving",
+		"vendor": "bytedance",
+		"context_window": 256000,
+		"max_tokens": 256000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.625,
+						"output_price": 3.125,
+						"cache_read_price": 0.125,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 30,
+						"cache_read_price": 1.2,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-06-23"
 	}
 ]

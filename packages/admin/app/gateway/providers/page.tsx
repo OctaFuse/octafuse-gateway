@@ -254,7 +254,9 @@ export default function GatewayProvidersPage() {
       const response = await fetch('/api/admin/providers');
       const data = await readApiJson<GatewayProvider[]>(response);
       if (data.success && data.data) {
-        setProviders([...data.data].sort((a, b) => a.id.localeCompare(b.id)));
+        setProviders(
+          [...data.data].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+        );
       }
     } catch (error) {
       console.error('Fetch providers error:', error);
