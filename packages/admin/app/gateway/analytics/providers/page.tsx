@@ -6,6 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
+import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readJson } from '@/lib/api-json';
 import {
@@ -15,6 +16,7 @@ import {
   type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { formatTokenCount, type TokenDisplayMode } from '@/lib/format-token-count';
 import type { ApiResponse, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -27,8 +29,9 @@ export default function ProviderUsagePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
   const [committedQuery, setCommittedQuery] = useState(() => createRangeValue('1d'));
-  const [sortKey, setSortKey] = useState<SortKey>('request_count');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [sortKey, setSortKey] = useState<SortKey>('provider_name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('numeric');
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
@@ -127,8 +130,9 @@ export default function ProviderUsagePage() {
         <h1 className="text-3xl font-bold text-gray-900">Provider Usage</h1>
         <p className="text-sm text-gray-500 mt-1">Usage and cost by upstream provider</p>
       </div>
-      <div className="mb-4 w-full min-w-0">
-        <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} />
+      <div className="mb-4 flex w-full min-w-0 flex-wrap items-end gap-x-4 gap-y-2">
+        <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} className="flex-1 min-w-0" />
+        <AnalyticsTokenDisplayPicker value={tokenDisplayMode} onChange={setTokenDisplayMode} />
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -183,8 +187,8 @@ export default function ProviderUsagePage() {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">{r.provider_name ?? '—'}</td>
                   <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.input_tokens.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.output_tokens.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{formatTokenCount(r.input_tokens, tokenDisplayMode)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{formatTokenCount(r.output_tokens, tokenDisplayMode)}</td>
                   <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                     {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                   </td>

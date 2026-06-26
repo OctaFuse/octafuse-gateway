@@ -6,6 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
+import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
 import {
@@ -16,6 +17,7 @@ import {
 } from '@/lib/analytics-range';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { formatTokenCount, type TokenDisplayMode } from '@/lib/format-token-count';
 import type { UserUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -30,6 +32,7 @@ export default function UserUsagePage() {
   const [committedQuery, setCommittedQuery] = useState(() => createRangeValue('1d'));
   const [sortKey, setSortKey] = useState<SortKey>('request_count');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('numeric');
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
@@ -128,8 +131,9 @@ export default function UserUsagePage() {
           Usage and cost by request log email; budget columns come from <code className="text-xs bg-gray-100 px-1 rounded">users</code> (JOIN on <code className="text-xs bg-gray-100 px-1 rounded">user_id</code>).
         </p>
       </div>
-      <div className="mb-4 w-full min-w-0">
-        <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} />
+      <div className="mb-4 flex w-full min-w-0 flex-wrap items-end gap-x-4 gap-y-2">
+        <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} className="flex-1 min-w-0" />
+        <AnalyticsTokenDisplayPicker value={tokenDisplayMode} onChange={setTokenDisplayMode} />
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -184,8 +188,8 @@ export default function UserUsagePage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{r.input_tokens.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{r.output_tokens.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{formatTokenCount(r.input_tokens, tokenDisplayMode)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{formatTokenCount(r.output_tokens, tokenDisplayMode)}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                       {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                     </td>
