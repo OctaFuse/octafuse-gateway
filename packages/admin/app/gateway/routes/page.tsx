@@ -559,7 +559,11 @@ function RoutesContent() {
       if (routesData.success) setRoutes(routesData.data || []);
       if (modelsData.success) setModels(modelsData.data || []);
       if (providersData.success) {
-        setProviders([...(providersData.data || [])].sort((a, b) => a.id.localeCompare(b.id)));
+        setProviders(
+          [...(providersData.data || [])].sort((a, b) =>
+            a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+          )
+        );
       }
     } catch (error) {
       console.error('Fetch data error:', error);
