@@ -22,6 +22,10 @@ import {
   formatHttpErrorTextForRequestLog,
   materializeNonOkResponse,
 } from '../../services/request-log-record-status';
+import {
+  maybeBlockSensitiveContentCircuit,
+  maybeTriggerSensitiveContentCircuitFromUpstream,
+} from '../../services/sensitive-content-circuit-route';
 
 /** usage Promise 兜底超时（与 OpenAI/Anthropic 路由一致）。 */
 const USAGE_SAFETY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -159,6 +163,23 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
     );
   }
 
+  const modelNameForLog =
+    model.display_name != null && String(model.display_name).trim() !== ''
+      ? String(model.display_name).trim()
+      : baseModelId;
+  const requestBodyForLog = geminiRequestBodyForLog(body, action);
+
+  const circuitBlocked = maybeBlockSensitiveContentCircuit(c, repos, apiKey, {
+    baseModelId,
+    modelNameForLog,
+    requestBodyForLog,
+    requestProtocol: 'gemini',
+    startMs: start,
+  });
+  if (circuitBlocked) {
+    return circuitBlocked;
+  }
+
   const requestSignal = c.req.raw.signal;
   const proxyResult = await proxyGeminiContent(
     repos,
@@ -171,11 +192,20 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
   const { usagePromise, chosenRoute } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
-  const modelNameForLog =
-    model.display_name != null && String(model.display_name).trim() !== ''
-      ? String(model.display_name).trim()
-      : baseModelId;
-  const requestBodyForLog = geminiRequestBodyForLog(body, action);
+  if (errorBodyText != null) {
+    maybeTriggerSensitiveContentCircuitFromUpstream(
+      apiKey.userId,
+      baseModelId,
+      response.status,
+      response.headers.get('content-type'),
+      errorBodyText,
+      formatHttpErrorTextForRequestLog(
+        response.status,
+        response.headers.get('content-type'),
+        errorBodyText
+      )
+    );
+  }
 
   const usageOrSafety = Promise.race([
     usagePromise.then((u) => ({

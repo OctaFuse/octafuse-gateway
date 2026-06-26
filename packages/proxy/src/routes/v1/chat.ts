@@ -23,6 +23,10 @@ import {
   formatHttpErrorTextForRequestLog,
   materializeNonOkResponse,
 } from '../../services/request-log-record-status';
+import {
+  maybeBlockSensitiveContentCircuit,
+  maybeTriggerSensitiveContentCircuitFromUpstream,
+} from '../../services/sensitive-content-circuit-route';
 
 /** 流若长期不结束（上游挂死），超过此时长仍无 usage 则按 incomplete 记账；正常/取消场景通常很快结束。 */
 const USAGE_SAFETY_TIMEOUT_MS = 5 * 60 * 1000; // 5 min
@@ -130,18 +134,43 @@ chatRoutes.post('/', async (c) => {
     `[Gateway Chat] forwarding baseModelId=${baseModelId} clientModel=${rawModelId} providerIds=${routes.map((r) => r.providerId).join(',')} keyId=${apiKey.keyId}`
   );
 
-  const requestSignal = c.req.raw.signal;
-  const proxyResult = await proxyChatCompletions(repos, routes, body, requestSignal);
-  const { usagePromise, chosenRoute } = proxyResult;
-  const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
-
   const modelNameForLog =
     model.display_name != null && String(model.display_name).trim() !== ''
       ? String(model.display_name).trim()
       : baseModelId;
   const requestBodyForLog = openAiRequestBodyForLog(body as Record<string, unknown>);
 
-  // Record when stream ends (usagePromise). Safety timeout only for streams that never end.
+  const circuitBlocked = maybeBlockSensitiveContentCircuit(c, repos, apiKey, {
+    baseModelId,
+    modelNameForLog,
+    requestBodyForLog,
+    requestProtocol: 'openai',
+    startMs: start,
+  });
+  if (circuitBlocked) {
+    return circuitBlocked;
+  }
+
+  const requestSignal = c.req.raw.signal;
+  const proxyResult = await proxyChatCompletions(repos, routes, body, requestSignal);
+  const { usagePromise, chosenRoute } = proxyResult;
+  const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
+
+  if (errorBodyText != null) {
+    maybeTriggerSensitiveContentCircuitFromUpstream(
+      apiKey.userId,
+      baseModelId,
+      response.status,
+      response.headers.get('content-type'),
+      errorBodyText,
+      formatHttpErrorTextForRequestLog(
+        response.status,
+        response.headers.get('content-type'),
+        errorBodyText
+      )
+    );
+  }
+
   const usageOrSafety = Promise.race([
     usagePromise.then((u) => ({
       usage: u,

@@ -7,6 +7,7 @@ import {
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 	getSystemConfigValue,
 } from '@octafuse/core';
+import { isSensitiveContentErrorMessage } from './sensitive-content-detector';
 
 const DEFAULT_TIMEOUT_MS = 8000;
 
@@ -186,22 +187,6 @@ function hasRateLimitSignal(errorMessage: string | null | undefined, httpStatus:
 	return lower.includes('rate limit') || lower.includes('quota') || lower.includes('too many requests');
 }
 
-function hasSensitiveContentSignal(errorMessage: string | null | undefined): boolean {
-	const lower = errorMessageLower(errorMessage);
-	return (
-		lower.includes('sensitive content') ||
-		lower.includes('unsafe or sensitive') ||
-		lower.includes('inappropriate content') ||
-		lower.includes('datainspectionfailed') ||
-		lower.includes('data inspection failed') ||
-		lower.includes('content policy') ||
-		lower.includes('policy violation') ||
-		lower.includes('safety filter') ||
-		lower.includes('blocked by safety') ||
-		lower.includes('moderation')
-	);
-}
-
 /**
  * 基于 `error_message` 与耗时对 Gateway 错误告警做轻量分类。
  */
@@ -224,11 +209,11 @@ export function classifyGatewayErrorAlert(ctx: GatewayErrorAlertContext): AlertC
 	if (httpStatus != null && httpStatus >= 500 && httpStatus !== 524) {
 		return { category: 'provider_server_error', ...CATEGORY_META.provider_server_error };
 	}
+	if (isSensitiveContentErrorMessage(err)) {
+		return { category: 'sensitive_content', ...CATEGORY_META.sensitive_content };
+	}
 	if (httpStatus != null && (httpStatus === 400 || httpStatus === 404 || httpStatus === 422)) {
 		return { category: 'client_or_model_error', ...CATEGORY_META.client_or_model_error };
-	}
-	if (hasSensitiveContentSignal(err)) {
-		return { category: 'sensitive_content', ...CATEGORY_META.sensitive_content };
 	}
 	return { category: 'unknown_error', ...CATEGORY_META.unknown_error };
 }

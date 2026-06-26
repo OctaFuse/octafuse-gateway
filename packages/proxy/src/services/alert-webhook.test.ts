@@ -68,7 +68,7 @@ describe('classifyGatewayErrorAlert', () => {
 		expect(meta.category).toBe('provider_server_error');
 	});
 
-	it('classifies HTTP 400 safety blocks as client_or_model_error', () => {
+	it('classifies HTTP 400 safety blocks as sensitive_content', () => {
 		expect(
 			classifyGatewayErrorAlert(
 				baseCtx({
@@ -77,7 +77,7 @@ describe('classifyGatewayErrorAlert', () => {
 					latencyMs: 200,
 				})
 			).category
-		).toBe('client_or_model_error');
+		).toBe('sensitive_content');
 		expect(
 			classifyGatewayErrorAlert(
 				baseCtx({
@@ -86,7 +86,16 @@ describe('classifyGatewayErrorAlert', () => {
 					latencyMs: 200,
 				})
 			).category
-		).toBe('client_or_model_error');
+		).toBe('sensitive_content');
+		expect(
+			classifyGatewayErrorAlert(
+				baseCtx({
+					errorMessage:
+						'HTTP 400: 系统检测到输入或生成内容可能包含不安全或敏感内容，请您避免输入易产生敏感内容的提示词。',
+					latencyMs: 200,
+				})
+			).category
+		).toBe('sensitive_content');
 	});
 
 	it('classifies non-HTTP sensitive signals as sensitive_content', () => {
@@ -163,9 +172,9 @@ describe('buildGatewayErrorAlertSummary', () => {
 				providerKeyFingerprint: '…kGxz',
 			})
 		);
-		expect(text).toContain('[Gateway] - [请求/模型错误] - [P3]');
+		expect(text).toContain('[Gateway] - [敏感内容拦截] - [P3]');
 		expect(text).toContain('模型: GLM-5.2');
-		expect(text).toContain('摘要: HTTP 400，耗时 5.6s，客户端请求或模型配置问题');
+		expect(text).toContain('摘要: HTTP 400，耗时 5.6s，上游内容安全策略拦截');
 		expect(text).toContain('影响: 453991510@qq.com · route=default · openai → openai');
 		expect(text).toContain('供应商: ZAI Coding Plan - Lite · glm-5.2 · default (…kGxz) · ');
 	});
