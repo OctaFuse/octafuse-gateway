@@ -14,7 +14,7 @@ import {
 import { UPSTREAM_PROTOCOLS } from '@/lib/upstream-protocol';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
-import { detectRollingPreset, rangeToParams, type GatewayTimeRangeValue } from '@/lib/analytics-range';
+import { createRangeValue, detectRollingPreset, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { summarizePricingAuditJson } from '@/lib/pricing-ui';
@@ -41,8 +41,7 @@ export default function GatewayRequestLogsPage() {
   const [filterModel, setFilterModel] = useState('');
   const [filterUserEmail, setFilterUserEmail] = useState('');
   const [filterApiKeyId, setFilterApiKeyId] = useState('');
-  const [filterStartDate, setFilterStartDate] = useState('');
-  const [filterEndDate, setFilterEndDate] = useState('');
+  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
   const [filterProviderId, setFilterProviderId] = useState('');
   const [filterRouteGroup, setFilterRouteGroup] = useState('');
   const [filterProtocol, setFilterProtocol] = useState('');
@@ -50,12 +49,6 @@ export default function GatewayRequestLogsPage() {
   const [modelCatalog, setModelCatalog] = useState<ModelListItem[]>([]);
   const [providerCatalog, setProviderCatalog] = useState<GatewayProvider[]>([]);
   const [routesCatalog, setRoutesCatalog] = useState<GatewayModelRoute[]>([]);
-
-  const rangeValue = useMemo((): GatewayTimeRangeValue => ({
-    preset: detectRollingPreset(filterStartDate, filterEndDate) ?? 'custom',
-    start_date: filterStartDate,
-    end_date: filterEndDate,
-  }), [filterStartDate, filterEndDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,14 +95,18 @@ export default function GatewayRequestLogsPage() {
     if (providerId != null) setFilterProviderId(providerId);
     if (userEmail != null) setFilterUserEmail(userEmail);
     if (status != null) setFilterStatus(status);
-    if (startDate != null) setFilterStartDate(startDate);
-    if (endDate != null) setFilterEndDate(endDate);
     const hasStart = startDate != null && startDate !== '';
     const hasEnd = endDate != null && endDate !== '';
-    if (!hasStart && !hasEnd) {
-      const { start_date, end_date } = rangeToParams('1d');
-      setFilterStartDate(start_date);
-      setFilterEndDate(end_date);
+    if (hasStart || hasEnd) {
+      const s = hasStart ? startDate! : '';
+      const e = hasEnd ? endDate! : '';
+      setRangeValue({
+        preset: hasStart && hasEnd ? detectRollingPreset(s, e) ?? 'custom' : 'custom',
+        start_date: s,
+        end_date: e,
+      });
+    } else if (startDate == null && endDate == null) {
+      setRangeValue(createRangeValue('1d'));
     }
     if (routeGroup != null) setFilterRouteGroup(routeGroup);
     if (protocol != null) setFilterProtocol(protocol);
@@ -130,8 +127,8 @@ export default function GatewayRequestLogsPage() {
       if (filterProviderId) params.append('provider_id', filterProviderId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
-      if (filterStartDate) params.append('start_date', filterStartDate);
-      if (filterEndDate) params.append('end_date', filterEndDate);
+      if (rangeValue.start_date) params.append('start_date', rangeValue.start_date);
+      if (rangeValue.end_date) params.append('end_date', rangeValue.end_date);
       if (filterRouteGroup) params.append('route_group', filterRouteGroup);
       if (filterProtocol) params.append('protocol', filterProtocol);
       return params;
@@ -144,8 +141,8 @@ export default function GatewayRequestLogsPage() {
       filterProviderId,
       filterUserEmail,
       filterApiKeyId,
-      filterStartDate,
-      filterEndDate,
+      rangeValue.start_date,
+      rangeValue.end_date,
       filterRouteGroup,
       filterProtocol,
     ]
@@ -210,8 +207,8 @@ export default function GatewayRequestLogsPage() {
       if (filterProviderId) params.append('provider_id', filterProviderId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
-      if (filterStartDate) params.append('start_date', filterStartDate);
-      if (filterEndDate) params.append('end_date', filterEndDate);
+      if (rangeValue.start_date) params.append('start_date', rangeValue.start_date);
+      if (rangeValue.end_date) params.append('end_date', rangeValue.end_date);
       if (filterRouteGroup) params.append('route_group', filterRouteGroup);
       if (filterProtocol) params.append('protocol', filterProtocol);
 
@@ -234,8 +231,8 @@ export default function GatewayRequestLogsPage() {
     filterProviderId,
     filterUserEmail,
     filterApiKeyId,
-    filterStartDate,
-    filterEndDate,
+    rangeValue.start_date,
+    rangeValue.end_date,
     filterRouteGroup,
     filterProtocol,
   ]);
@@ -401,8 +398,7 @@ export default function GatewayRequestLogsPage() {
         <GatewayTimeRangePicker
           value={rangeValue}
           onChange={(v) => {
-            setFilterStartDate(v.start_date);
-            setFilterEndDate(v.end_date);
+            setRangeValue(v);
             setPage(1);
           }}
         />
@@ -505,7 +501,7 @@ export default function GatewayRequestLogsPage() {
         </div>
         <div className="flex items-end">
           <button
-            onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setFilterStartDate(''); setFilterEndDate(''); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
+            onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
           >
             Clear Filters

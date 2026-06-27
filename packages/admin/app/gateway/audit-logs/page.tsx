@@ -3,7 +3,7 @@
 /**
  * 全站用户审计日志（`user_audit_logs`）：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { readApiJson } from '@/lib/api-json';
 import {
@@ -12,7 +12,7 @@ import {
   type GatewayApiKeyBudgetAuditLog,
 } from '@/lib/types';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
-import { detectRollingPreset, rangeToParams, type GatewayTimeRangeValue } from '@/lib/analytics-range';
+import { createRangeValue, detectRollingPreset, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
@@ -225,14 +225,7 @@ export default function GatewayAuditLogsPage() {
   const [filterReasonCode, setFilterReasonCode] = useState('');
   const [filterSource, setFilterSource] = useState('');
   const [filterCorrelationId, setFilterCorrelationId] = useState('');
-  const [filterStartDate, setFilterStartDate] = useState('');
-  const [filterEndDate, setFilterEndDate] = useState('');
-
-  const rangeValue = useMemo((): GatewayTimeRangeValue => ({
-    preset: detectRollingPreset(filterStartDate, filterEndDate) ?? 'custom',
-    start_date: filterStartDate,
-    end_date: filterEndDate,
-  }), [filterStartDate, filterEndDate]);
+  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -255,14 +248,18 @@ export default function GatewayAuditLogsPage() {
     if (reasonCode != null) setFilterReasonCode(reasonCode);
     if (source != null) setFilterSource(source);
     if (correlationId != null) setFilterCorrelationId(correlationId);
-    if (startDate != null) setFilterStartDate(startDate);
-    if (endDate != null) setFilterEndDate(endDate);
     const hasStart = startDate != null && startDate !== '';
     const hasEnd = endDate != null && endDate !== '';
-    if (!hasStart && !hasEnd) {
-      const { start_date, end_date } = rangeToParams('1d');
-      setFilterStartDate(start_date);
-      setFilterEndDate(end_date);
+    if (hasStart || hasEnd) {
+      const s = hasStart ? startDate! : '';
+      const e = hasEnd ? endDate! : '';
+      setRangeValue({
+        preset: hasStart && hasEnd ? detectRollingPreset(s, e) ?? 'custom' : 'custom',
+        start_date: s,
+        end_date: e,
+      });
+    } else if (startDate == null && endDate == null) {
+      setRangeValue(createRangeValue('1d'));
     }
     if (p != null) {
       const n = parseInt(p, 10);
@@ -284,8 +281,8 @@ export default function GatewayAuditLogsPage() {
       if (filterReasonCode) params.append('reason_code', filterReasonCode);
       if (filterSource) params.append('source', filterSource);
       if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
-      if (filterStartDate) params.append('start_date', filterStartDate);
-      if (filterEndDate) params.append('end_date', filterEndDate);
+      if (rangeValue.start_date) params.append('start_date', rangeValue.start_date);
+      if (rangeValue.end_date) params.append('end_date', rangeValue.end_date);
       return params;
     },
     [
@@ -299,8 +296,8 @@ export default function GatewayAuditLogsPage() {
       filterReasonCode,
       filterSource,
       filterCorrelationId,
-      filterStartDate,
-      filterEndDate,
+      rangeValue.start_date,
+      rangeValue.end_date,
     ]
   );
 
@@ -319,8 +316,8 @@ export default function GatewayAuditLogsPage() {
       if (filterReasonCode) params.append('reason_code', filterReasonCode);
       if (filterSource) params.append('source', filterSource);
       if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
-      if (filterStartDate) params.append('start_date', filterStartDate);
-      if (filterEndDate) params.append('end_date', filterEndDate);
+      if (rangeValue.start_date) params.append('start_date', rangeValue.start_date);
+      if (rangeValue.end_date) params.append('end_date', rangeValue.end_date);
 
       const response = await fetch(`/api/admin/budget-audit-logs?${params.toString()}`);
       const data = await readApiJson<GatewayApiKeyBudgetAuditLog[]>(response);
@@ -343,8 +340,8 @@ export default function GatewayAuditLogsPage() {
     filterReasonCode,
     filterSource,
     filterCorrelationId,
-    filterStartDate,
-    filterEndDate,
+    rangeValue.start_date,
+    rangeValue.end_date,
     pageSize,
   ]);
 
@@ -371,8 +368,7 @@ export default function GatewayAuditLogsPage() {
         <GatewayTimeRangePicker
           value={rangeValue}
           onChange={(v) => {
-            setFilterStartDate(v.start_date);
-            setFilterEndDate(v.end_date);
+            setRangeValue(v);
             setPage(1);
           }}
         />
@@ -477,8 +473,7 @@ export default function GatewayAuditLogsPage() {
               setFilterUserEmail('');
               setFilterUserId('');
               setFilterApiKeyId('');
-              setFilterStartDate('');
-              setFilterEndDate('');
+              setRangeValue({ preset: 'custom', start_date: '', end_date: '' });
               setPage(1);
             }}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
