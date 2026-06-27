@@ -137,6 +137,47 @@
 		"released": "2026-03-17"
 	},
 	{
+		"id": "gpt-5.4-nano",
+		"display_name": "GPT-5.4 nano",
+		"vendor": "openai",
+		"context_window": 400000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.2,
+						"output_price": 1.25,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.44,
+						"output_price": 9,
+						"cache_read_price": 0.144,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-17"
+	},
+	{
 		"id": "gpt-5.5",
 		"display_name": "GPT-5.5",
 		"vendor": "openai",
