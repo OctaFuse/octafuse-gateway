@@ -2,6 +2,7 @@
  * Analytics Usage 页 token 展示：纯数字千分位 vs K/M/B 紧凑格式（仅 UI，不影响 CSV）。
  */
 export type TokenDisplayMode = 'numeric' | 'compact';
+export type TokenCountMagnitude = 'plain' | 'K' | 'M' | 'B';
 
 function trimTrailingZeros(raw: string): string {
 	if (!raw.includes('.')) return raw;
@@ -33,4 +34,14 @@ export function formatTokenCount(
 		return formatCompactUnit(value, 1_000, 'K');
 	}
 	return String(value);
+}
+
+export function getTokenCountMagnitude(value: number | null | undefined): TokenCountMagnitude {
+	if (value == null || !Number.isFinite(value)) return 'plain';
+
+	const abs = Math.abs(value);
+	if (abs >= 1_000_000_000) return 'B';
+	if (abs >= 1_000_000) return 'M';
+	if (abs >= 1_000) return 'K';
+	return 'plain';
 }

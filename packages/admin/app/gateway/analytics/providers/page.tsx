@@ -6,6 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
+import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readJson } from '@/lib/api-json';
@@ -16,7 +17,7 @@ import {
   type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
-import { formatTokenCount, type TokenDisplayMode } from '@/lib/format-token-count';
+import type { TokenDisplayMode } from '@/lib/format-token-count';
 import type { ApiResponse, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -31,7 +32,7 @@ export default function ProviderUsagePage() {
   const [committedQuery, setCommittedQuery] = useState(() => createRangeValue('1d'));
   const [sortKey, setSortKey] = useState<SortKey>('provider_name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('numeric');
+  const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
@@ -151,8 +152,7 @@ export default function ProviderUsagePage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <Th label="Provider ID" columnKey="provider_id" />
-                <Th label="Name" columnKey="provider_name" />
+                <Th label="Provider Name" columnKey="provider_name" />
                 <Th label="Requests" columnKey="request_count" />
                 <Th label="Input tokens" columnKey="input_tokens" />
                 <Th label="Output tokens" columnKey="output_tokens" />
@@ -180,15 +180,14 @@ export default function ProviderUsagePage() {
                   <td className="px-4 py-3 text-sm">
                     <Link
                       href={`/gateway/request-logs?${logQuery.toString()}`}
-                      className="text-blue-600 hover:underline font-mono"
+                      className="text-blue-600 hover:underline"
                     >
-                      {r.provider_id}
+                      {r.provider_name ?? r.provider_id}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{r.provider_name ?? '—'}</td>
                   <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{formatTokenCount(r.input_tokens, tokenDisplayMode)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{formatTokenCount(r.output_tokens, tokenDisplayMode)}</td>
+                  <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
+                  <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
                   <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                     {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                   </td>

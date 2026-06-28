@@ -6,6 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
+import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
@@ -17,7 +18,7 @@ import {
 } from '@/lib/analytics-range';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
-import { formatTokenCount, type TokenDisplayMode } from '@/lib/format-token-count';
+import type { TokenDisplayMode } from '@/lib/format-token-count';
 import type { UserUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -32,7 +33,7 @@ export default function UserUsagePage() {
   const [committedQuery, setCommittedQuery] = useState(() => createRangeValue('1d'));
   const [sortKey, setSortKey] = useState<SortKey>('request_count');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('numeric');
+  const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
@@ -188,8 +189,8 @@ export default function UserUsagePage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{formatTokenCount(r.input_tokens, tokenDisplayMode)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{formatTokenCount(r.output_tokens, tokenDisplayMode)}</td>
+                    <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
+                    <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
                     <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                       {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                     </td>
