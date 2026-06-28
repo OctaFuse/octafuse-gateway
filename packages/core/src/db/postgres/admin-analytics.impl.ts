@@ -90,7 +90,7 @@ export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClien
 			return (await pg.unsafe(q, [options.start, options.end])) as UserAnalyticsRow[];
 		},
 
-		async queryProviderAnalytics(options: { start: string; end: string; tag?: string }): Promise<ProviderAnalyticsRow[]> {
+		async queryProviderAnalytics(options: { start: string; end: string; tag?: string; modelId?: string; routeGroup?: string }): Promise<ProviderAnalyticsRow[]> {
 			const provSel = `SELECT
 				rl.provider_id as provider_id,
 				MAX(p.name) as provider_name,
@@ -106,17 +106,31 @@ export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClien
 				AVG(rl.latency_ms) as avg_latency_ms
 			FROM api_key_request_logs rl
 			LEFT JOIN providers p ON p.id = rl.provider_id`;
+			const joins: string[] = [];
+			const conditions: string[] = [];
+			const values: string[] = [];
 			if (options.tag) {
-				const q = `${provSel}
-			INNER JOIN model_tags mt ON mt.model_id = rl.model_id AND mt.tag = $1
-			WHERE rl.created_at >= $2 AND rl.created_at <= $3 AND rl.provider_id IS NOT NULL
-			GROUP BY rl.provider_id`;
-				return (await pg.unsafe(q, [options.tag, options.start, options.end])) as ProviderAnalyticsRow[];
+				values.push(options.tag);
+				joins.push(`INNER JOIN model_tags mt ON mt.model_id = rl.model_id AND mt.tag = $${values.length}`);
+			}
+			values.push(options.start);
+			conditions.push(`rl.created_at >= $${values.length}`);
+			values.push(options.end);
+			conditions.push(`rl.created_at <= $${values.length}`);
+			conditions.push('rl.provider_id IS NOT NULL');
+			if (options.modelId) {
+				values.push(options.modelId);
+				conditions.push(`rl.model_id = $${values.length}`);
+			}
+			if (options.routeGroup) {
+				values.push(options.routeGroup);
+				conditions.push(`rl.route_group = $${values.length}`);
 			}
 			const q = `${provSel}
-		WHERE rl.created_at >= $1 AND rl.created_at <= $2 AND rl.provider_id IS NOT NULL
+		${joins.join(' ')}
+		WHERE ${conditions.join(' AND ')}
 		GROUP BY rl.provider_id`;
-			return (await pg.unsafe(q, [options.start, options.end])) as ProviderAnalyticsRow[];
+			return (await pg.unsafe(q, values)) as ProviderAnalyticsRow[];
 		},
 
 		async queryProviderReliability(options: { start: string; end: string }): Promise<ProviderReliabilityRow[]> {

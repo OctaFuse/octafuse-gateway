@@ -40,7 +40,7 @@ export interface AdminAnalyticsRepository {
 	queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string }): Promise<ModelAnalyticsRow[]>;
 	queryDistinctModelTags(): Promise<string[]>;
 	queryUserAnalytics(options: { start: string; end: string; email?: string }): Promise<UserAnalyticsRow[]>;
-	queryProviderAnalytics(options: { start: string; end: string; tag?: string }): Promise<ProviderAnalyticsRow[]>;
+	queryProviderAnalytics(options: { start: string; end: string; tag?: string; modelId?: string; routeGroup?: string }): Promise<ProviderAnalyticsRow[]>;
 	queryProviderReliability(options: { start: string; end: string }): Promise<ProviderReliabilityRow[]>;
 	queryModelProviderReliability(options: { start: string; end: string }): Promise<ModelProviderReliabilityRow[]>;
 }

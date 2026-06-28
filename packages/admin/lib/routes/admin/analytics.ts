@@ -32,7 +32,7 @@ adminAnalyticsRoutes.get('/models', async (c) => {
 	}
 });
 
-/** 查询参数：start_date、end_date、tag（模型标签筛选）。 */
+/** 查询参数：start_date、end_date、tag（模型标签筛选）、model_id、route_group。 */
 adminAnalyticsRoutes.get('/providers', async (c) => {
 	try {
 		const repos = c.get('repositories');
@@ -40,6 +40,8 @@ adminAnalyticsRoutes.get('/providers', async (c) => {
 			start_date: c.req.query('start_date') ?? undefined,
 			end_date: c.req.query('end_date') ?? undefined,
 			tag: c.req.query('tag') ?? undefined,
+			model_id: c.req.query('model_id') ?? undefined,
+			route_group: c.req.query('route_group') ?? undefined,
 		});
 		return c.json(normalizeApiTimeFields({ success: true, data: result.data, tags: result.tags }));
 	} catch (error) {

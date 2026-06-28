@@ -89,14 +89,23 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 			return rows.results ?? [];
 		},
 
-		async queryProviderAnalytics(options: { start: string; end: string; tag?: string }): Promise<ProviderAnalyticsRow[]> {
+		async queryProviderAnalytics(options: { start: string; end: string; tag?: string; modelId?: string; routeGroup?: string }): Promise<ProviderAnalyticsRow[]> {
 			const joins: string[] = ['LEFT JOIN providers p ON p.id = rl.provider_id'];
+			const conditions: string[] = ['rl.created_at >= ?', 'rl.created_at <= ?', 'rl.provider_id IS NOT NULL'];
 			const bindValues: unknown[] = [];
 			if (options.tag) {
 				joins.push('INNER JOIN model_tags mt ON mt.model_id = rl.model_id AND mt.tag = ?');
 				bindValues.push(options.tag);
 			}
 			bindValues.push(options.start, options.end);
+			if (options.modelId) {
+				conditions.push('rl.model_id = ?');
+				bindValues.push(options.modelId);
+			}
+			if (options.routeGroup) {
+				conditions.push('rl.route_group = ?');
+				bindValues.push(options.routeGroup);
+			}
 			const rows = await raw
 				.prepare(
 					`SELECT
@@ -113,7 +122,7 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count,
 				AVG(rl.latency_ms) as avg_latency_ms
 			 FROM api_key_request_logs rl ${joins.join(' ')}
-			 WHERE rl.created_at >= ? AND rl.created_at <= ? AND rl.provider_id IS NOT NULL
+			 WHERE ${conditions.join(' AND ')}
 			 GROUP BY rl.provider_id`
 				)
 				.bind(...bindValues)

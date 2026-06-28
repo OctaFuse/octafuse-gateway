@@ -236,13 +236,23 @@ export async function getModelAnalyticsService(
  */
 export async function getProviderAnalyticsService(
 	repos: GatewayRepositories,
-	input: { start_date?: string; end_date?: string; tag?: string }
+	input: { start_date?: string; end_date?: string; tag?: string; model_id?: string; route_group?: string }
 ): Promise<AdminProviderAnalyticsOutput> {
 	const { start, end } = clampAnalyticsRange(input.start_date ?? undefined, input.end_date ?? undefined);
 	const tagRaw = input.tag;
 	const hasTag = tagRaw != null && tagRaw.trim() !== '';
 	const tagValue = hasTag ? tagRaw.trim() : '';
-	const rows = await repos.analytics.queryProviderAnalytics({ start, end, tag: hasTag ? tagValue : undefined });
+	const modelIdRaw = input.model_id;
+	const hasModelId = modelIdRaw != null && modelIdRaw.trim() !== '';
+	const routeGroupRaw = input.route_group;
+	const hasRouteGroup = routeGroupRaw != null && routeGroupRaw.trim() !== '';
+	const rows = await repos.analytics.queryProviderAnalytics({
+		start,
+		end,
+		tag: hasTag ? tagValue : undefined,
+		modelId: hasModelId ? modelIdRaw.trim() : undefined,
+		routeGroup: hasRouteGroup ? routeGroupRaw.trim() : undefined,
+	});
 	const data = rows.map((r) => {
 		const reqCount = Number(r.request_count);
 		const successCount = Number(r.success_count);
