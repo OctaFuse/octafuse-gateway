@@ -3,7 +3,7 @@
 /**
  * 供应商用量分析：时间范围、表格展示、支持 CSV 导出。
  */
-import { useState, useEffect, useMemo } from 'react';
+import { Fragment, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
@@ -18,7 +18,7 @@ import {
 } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
-import type { ApiResponse, ProviderUsageRow } from '@/lib/types';
+import type { ApiResponse, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 
@@ -33,6 +33,9 @@ export default function ProviderUsagePage() {
   const [sortKey, setSortKey] = useState<SortKey>('provider_name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
+  const [expandedProviderId, setExpandedProviderId] = useState<string | null>(null);
+  const [modelRowsByProvider, setModelRowsByProvider] = useState<Record<string, ModelUsageRow[]>>({});
+  const [modelRowsLoading, setModelRowsLoading] = useState<Record<string, boolean>>({});
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
@@ -46,6 +49,9 @@ export default function ProviderUsagePage() {
         if (data.success) {
           setRows(data.data ?? []);
           setCommittedQuery(rangeValue);
+          setExpandedProviderId(null);
+          setModelRowsByProvider({});
+          setModelRowsLoading({});
         }
       } catch (e) {
         console.error('Fetch provider usage error:', e);
@@ -68,6 +74,32 @@ export default function ProviderUsagePage() {
     else {
       setSortKey(key);
       setSortDir('desc');
+    }
+  };
+
+  const toggleProviderModels = async (providerId: string) => {
+    if (expandedProviderId === providerId) {
+      setExpandedProviderId(null);
+      return;
+    }
+
+    setExpandedProviderId(providerId);
+    if (modelRowsByProvider[providerId] || modelRowsLoading[providerId]) return;
+
+    setModelRowsLoading((prev) => ({ ...prev, [providerId]: true }));
+    try {
+      const { start_date, end_date } = committedQuery;
+      const params = new URLSearchParams({ start_date, end_date, provider_id: providerId });
+      const response = await fetch(`/api/admin/analytics/models?${params.toString()}`);
+      const data = await readJson<ApiResponse<ModelUsageRow[]>>(response);
+      if (data.success) {
+        setModelRowsByProvider((prev) => ({ ...prev, [providerId]: data.data ?? [] }));
+      }
+    } catch (e) {
+      console.error('Fetch provider model usage error:', e);
+      setModelRowsByProvider((prev) => ({ ...prev, [providerId]: [] }));
+    } finally {
+      setModelRowsLoading((prev) => ({ ...prev, [providerId]: false }));
     }
   };
 
@@ -94,7 +126,6 @@ export default function ProviderUsagePage() {
       'standard_cost',
       'charged_cost',
       'metered_cost',
-      'distinct_models',
       'success_count',
       'error_count',
       'success_rate',
@@ -112,7 +143,6 @@ export default function ProviderUsagePage() {
       String(r.standard_cost ?? 0),
       String(r.charged_cost),
       String(r.metered_cost),
-      String(r.distinct_models),
       String(r.success_count),
       String(r.error_count),
       String(r.success_rate),
@@ -159,7 +189,6 @@ export default function ProviderUsagePage() {
                 <Th label="Std" columnKey="standard_cost" />
                 <Th label="Charged" columnKey="charged_cost" />
                 <Th label="Metered" columnKey="metered_cost" />
-                <Th label="Distinct models" columnKey="distinct_models" />
                 <Th label="Avg charged/req" columnKey="avg_charged_per_request" />
                 <Th label="Success rate" columnKey="success_rate" />
                 <Th label="Avg latency (ms)" columnKey="avg_latency_ms" />
@@ -172,42 +201,123 @@ export default function ProviderUsagePage() {
                 logQuery.set('provider_id', r.provider_id);
                 logQuery.set('start_date', start_date);
                 logQuery.set('end_date', end_date);
+                const isExpanded = expandedProviderId === r.provider_id;
+                const modelRows = modelRowsByProvider[r.provider_id] ?? [];
+                const isModelRowsLoading = modelRowsLoading[r.provider_id] === true;
                 return (
-                <tr
-                  key={r.provider_id}
-                  className="hover:bg-gray-50"
-                >
-                  <td className="px-4 py-3 text-sm">
-                    <Link
-                      href={`/gateway/request-logs?${logQuery.toString()}`}
-                      className="text-blue-600 hover:underline"
+                  <Fragment key={r.provider_id}>
+                    <tr
+                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'bg-blue-50/40' : ''}`}
+                      onClick={() => void toggleProviderModels(r.provider_id)}
                     >
-                      {r.provider_name ?? r.provider_id}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
-                  <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
-                  <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                    {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                    {formatGatewayMoneyCode(r.charged_cost, billingCurrency, 4)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                    {formatGatewayMoneyCode(r.metered_cost, billingCurrency, 4)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.distinct_models.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {formatGatewayMoneyCode(r.avg_charged_per_request, billingCurrency, 6)}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className={r.success_rate >= 95 ? 'text-green-600' : r.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
-                      {r.success_rate.toFixed(1)}%
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : '—'}</td>
-                </tr>
+                      <td className="px-4 py-3 text-sm">
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-2 text-left font-medium text-blue-600 hover:text-blue-800"
+                          aria-expanded={isExpanded}
+                        >
+                          <span className="w-4 text-gray-400">{isExpanded ? '▾' : '▸'}</span>
+                          <span>{r.provider_name ?? r.provider_id}</span>
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
+                      <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                        {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                        {formatGatewayMoneyCode(r.charged_cost, billingCurrency, 4)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                        {formatGatewayMoneyCode(r.metered_cost, billingCurrency, 4)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {formatGatewayMoneyCode(r.avg_charged_per_request, billingCurrency, 6)}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={r.success_rate >= 95 ? 'text-green-600' : r.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
+                          {r.success_rate.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : '—'}</td>
+                    </tr>
+                    {isExpanded ? (
+                      <tr key={`${r.provider_id}:models`} className="bg-blue-50/60">
+                        <td colSpan={10} className="border-l-4 border-blue-300 px-5 py-4">
+                          {isModelRowsLoading ? (
+                            <div className="py-4 text-sm text-gray-500">Loading model usage...</div>
+                          ) : modelRows.length === 0 ? (
+                            <div className="py-4 text-sm text-gray-500">No model usage for this provider in the selected range.</div>
+                          ) : (
+                            <div className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm ring-1 ring-blue-100">
+                              <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Model</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Route group</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Requests</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Input tokens</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Output tokens</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Std</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Charged</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Metered</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Avg charged/req</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Success rate</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Avg latency (ms)</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                  {modelRows.map((modelRow) => {
+                                    const modelLogQuery = new URLSearchParams(logQuery);
+                                    modelLogQuery.set('model_id', modelRow.model_id);
+                                    modelLogQuery.set('route_group', modelRow.route_group);
+                                    return (
+                                      <tr key={`${r.provider_id}\t${modelRow.model_id}\t${modelRow.route_group}`} className="hover:bg-gray-50">
+                                        <td className="px-3 py-2 text-sm">
+                                          <Link
+                                            href={`/gateway/request-logs?${modelLogQuery.toString()}`}
+                                            className="text-blue-600 hover:underline"
+                                            onClick={(event) => event.stopPropagation()}
+                                          >
+                                            {modelRow.model_id}
+                                          </Link>
+                                        </td>
+                                        <td className="px-3 py-2 text-sm font-mono text-gray-700">{modelRow.route_group}</td>
+                                        <td className="px-3 py-2 text-sm text-gray-900">{modelRow.request_count.toLocaleString()}</td>
+                                        <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={modelRow.input_tokens} mode={tokenDisplayMode} /></td>
+                                        <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={modelRow.output_tokens} mode={tokenDisplayMode} /></td>
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+                                          {formatGatewayMoneyCode(modelRow.standard_cost ?? 0, billingCurrency, 4)}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+                                          {formatGatewayMoneyCode(modelRow.charged_cost, billingCurrency, 4)}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+                                          {formatGatewayMoneyCode(modelRow.metered_cost, billingCurrency, 4)}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600">
+                                          {formatGatewayMoneyCode(modelRow.avg_charged_per_request, billingCurrency, 6)}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm">
+                                          <span className={modelRow.success_rate >= 95 ? 'text-green-600' : modelRow.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
+                                            {modelRow.success_rate.toFixed(1)}%
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600">
+                                          {modelRow.avg_latency_ms != null ? Math.round(modelRow.avg_latency_ms) : '—'}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
               );
               })}
             </tbody>

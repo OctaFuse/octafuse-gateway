@@ -15,7 +15,7 @@ import type {
 export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClient): AdminAnalyticsRepository {
 	const pg = db.raw;
 	return {
-		async queryModelAnalytics(options: { start: string; end: string; tag?: string }): Promise<ModelAnalyticsRow[]> {
+		async queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string }): Promise<ModelAnalyticsRow[]> {
 			const baseSelect = `SELECT
 				rl.model_id as model_id,
 				rl.route_group as route_group,
@@ -28,19 +28,28 @@ export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClien
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END)::bigint as success_count,
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END)::bigint as error_count,
 				AVG(rl.latency_ms) as avg_latency_ms`;
+			const joins: string[] = [];
+			const conditions: string[] = [];
+			const values: string[] = [];
 			if (options.tag) {
-				const q = `${baseSelect}
-			FROM api_key_request_logs rl
-			INNER JOIN model_tags mt ON mt.model_id = rl.model_id AND mt.tag = $1
-			WHERE rl.created_at >= $2 AND rl.created_at <= $3 AND rl.model_id IS NOT NULL
-			GROUP BY rl.model_id, rl.route_group`;
-				return (await pg.unsafe(q, [options.tag, options.start, options.end])) as ModelAnalyticsRow[];
+				values.push(options.tag);
+				joins.push(`INNER JOIN model_tags mt ON mt.model_id = rl.model_id AND mt.tag = $${values.length}`);
+			}
+			values.push(options.start);
+			conditions.push(`rl.created_at >= $${values.length}`);
+			values.push(options.end);
+			conditions.push(`rl.created_at <= $${values.length}`);
+			conditions.push('rl.model_id IS NOT NULL');
+			if (options.providerId) {
+				values.push(options.providerId);
+				conditions.push(`rl.provider_id = $${values.length}`);
 			}
 			const q = `${baseSelect}
 		FROM api_key_request_logs rl
-		WHERE rl.created_at >= $1 AND rl.created_at <= $2 AND rl.model_id IS NOT NULL
+		${joins.join(' ')}
+		WHERE ${conditions.join(' AND ')}
 		GROUP BY rl.model_id, rl.route_group`;
-			return (await pg.unsafe(q, [options.start, options.end])) as ModelAnalyticsRow[];
+			return (await pg.unsafe(q, values)) as ModelAnalyticsRow[];
 		},
 
 		async queryDistinctModelTags(): Promise<string[]> {

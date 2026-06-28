@@ -15,14 +15,19 @@ import type {
 export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAnalyticsRepository {
 	const raw = db.raw;
 	return {
-		async queryModelAnalytics(options: { start: string; end: string; tag?: string }): Promise<ModelAnalyticsRow[]> {
+		async queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string }): Promise<ModelAnalyticsRow[]> {
 			const joins: string[] = [];
+			const conditions: string[] = ['rl.created_at >= ?', 'rl.created_at <= ?', 'rl.model_id IS NOT NULL'];
 			const bindValues: unknown[] = [];
 			if (options.tag) {
 				joins.push('INNER JOIN model_tags mt ON mt.model_id = rl.model_id AND mt.tag = ?');
 				bindValues.push(options.tag);
 			}
 			bindValues.push(options.start, options.end);
+			if (options.providerId) {
+				conditions.push('rl.provider_id = ?');
+				bindValues.push(options.providerId);
+			}
 			const rows = await raw
 				.prepare(
 					`SELECT
@@ -38,7 +43,7 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count,
 				AVG(rl.latency_ms) as avg_latency_ms
 			 FROM api_key_request_logs rl ${joins.join(' ')}
-			 WHERE rl.created_at >= ? AND rl.created_at <= ? AND rl.model_id IS NOT NULL
+			 WHERE ${conditions.join(' AND ')}
 			 GROUP BY rl.model_id, rl.route_group`
 				)
 				.bind(...bindValues)

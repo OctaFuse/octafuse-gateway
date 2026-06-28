@@ -192,13 +192,20 @@ export async function getAdminStatsService(repos: GatewayRepositories, range?: s
  */
 export async function getModelAnalyticsService(
 	repos: GatewayRepositories,
-	input: { start_date?: string; end_date?: string; tag?: string }
+	input: { start_date?: string; end_date?: string; tag?: string; provider_id?: string }
 ): Promise<AdminModelAnalyticsOutput> {
 	const { start, end } = clampAnalyticsRange(input.start_date ?? undefined, input.end_date ?? undefined);
 	const tagRaw = input.tag;
 	const hasTag = tagRaw != null && tagRaw.trim() !== '';
 	const tagValue = hasTag ? tagRaw.trim() : '';
-	const rows = await repos.analytics.queryModelAnalytics({ start, end, tag: hasTag ? tagValue : undefined });
+	const providerIdRaw = input.provider_id;
+	const hasProviderId = providerIdRaw != null && providerIdRaw.trim() !== '';
+	const rows = await repos.analytics.queryModelAnalytics({
+		start,
+		end,
+		tag: hasTag ? tagValue : undefined,
+		providerId: hasProviderId ? providerIdRaw.trim() : undefined,
+	});
 	const data = rows.map((r) => {
 		const reqCount = Number(r.request_count);
 		const successCount = Number(r.success_count);

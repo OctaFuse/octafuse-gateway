@@ -16,7 +16,7 @@ export const adminAnalyticsRoutes = new Hono<AdminEnv>();
 
 adminAnalyticsRoutes.use('*', requireMasterKey);
 
-/** 查询参数：start_date、end_date、tag（模型标签筛选）。 */
+/** 查询参数：start_date、end_date、tag（模型标签筛选）、provider_id（供应商筛选）。 */
 adminAnalyticsRoutes.get('/models', async (c) => {
 	try {
 		const repos = c.get('repositories');
@@ -24,6 +24,7 @@ adminAnalyticsRoutes.get('/models', async (c) => {
 			start_date: c.req.query('start_date') ?? undefined,
 			end_date: c.req.query('end_date') ?? undefined,
 			tag: c.req.query('tag') ?? undefined,
+			provider_id: c.req.query('provider_id') ?? undefined,
 		});
 		return c.json(normalizeApiTimeFields({ success: true, data: result.data, tags: result.tags }));
 	} catch (error) {
