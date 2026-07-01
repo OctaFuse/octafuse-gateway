@@ -42,6 +42,48 @@
 		"released": "2026-06-09"
 	},
 	{
+		"id": "claude-sonnet-5",
+		"display_name": "Claude Sonnet 5",
+		"vendor": "anthropic",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3,
+						"output_price": 15,
+						"cache_read_price": 0.3,
+						"cache_write_price": 3.75
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 21.6,
+						"output_price": 108,
+						"cache_read_price": 2.16,
+						"cache_write_price": 27
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-06-30"
+	},
+	{
 		"id": "claude-opus-4.8",
 		"display_name": "Claude Opus 4.8",
 		"vendor": "anthropic",
