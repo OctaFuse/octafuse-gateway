@@ -19,6 +19,7 @@ import bytedancePresets from './model-presets/bytedance.json';
 import coherePresets from './model-presets/cohere.json';
 import deepseekPresets from './model-presets/deepseek.json';
 import googlePresets from './model-presets/google.json';
+import meituanPresets from './model-presets/meituan.json';
 import metaPresets from './model-presets/meta.json';
 import minimaxPresets from './model-presets/minimax.json';
 import mistralPresets from './model-presets/mistral.json';
@@ -65,6 +66,7 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	coherePresets,
 	deepseekPresets,
 	googlePresets,
+	meituanPresets,
 	metaPresets,
 	minimaxPresets,
 	mistralPresets,

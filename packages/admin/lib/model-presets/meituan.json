@@ -1,0 +1,45 @@
+[
+	{
+		"id": "longcat-2.0",
+		"display_name": "LongCat 2.0",
+		"vendor": "meituan",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.75,
+						"output_price": 2.95,
+						"cache_read_price": 0.015,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 20,
+						"cache_read_price": 0.1,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-06-30"
+	}
+]

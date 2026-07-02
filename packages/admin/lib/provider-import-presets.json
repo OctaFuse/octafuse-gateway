@@ -90,6 +90,14 @@
 		"description": "GLM Coding Plan 国际区专用端点（api.z.ai）；Anthropic 根路径供 Claude Code 等工具。勿与通用 /api/paas/v4 混用，否则无法走套餐额度。详见 Z.AI 开发者文档。"
 	},
 	{
+		"name": "LongCat API（美团）",
+		"vendor_key": "meituan",
+		"base_url_openai": "https://api.longcat.chat/openai",
+		"base_url_anthropic": "https://api.longcat.chat/anthropic",
+		"base_url_gemini": null,
+		"description": "OpenAI 与 Anthropic 兼容双端点；上游模型 ID 如 LongCat-2.0。见 longcat.chat 开放平台文档。"
+	},
+	{
 		"name": "月之暗面 Moonshot（官方）",
 		"vendor_key": "moonshot",
 		"base_url_openai": "https://api.moonshot.cn/v1",

@@ -14,6 +14,7 @@
   { "key": "huawei", "label": "Huawei Cloud" },
   { "key": "ibm", "label": "IBM" },
   { "key": "meta", "label": "Meta (Llama)" },
+  { "key": "meituan", "label": "Meituan LongCat" },
   { "key": "minimax", "label": "MiniMax" },
   { "key": "mistral", "label": "Mistral AI" },
   { "key": "moonshot", "label": "Moonshot AI" },
