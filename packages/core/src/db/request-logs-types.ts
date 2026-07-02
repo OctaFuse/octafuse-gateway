@@ -37,4 +37,8 @@ export type InsertRequestLogParams = {
 	providerKeyId?: string | null;
 	providerKeyLabel?: string | null;
 	providerKeyFingerprint?: string | null;
+	/** 上游响应头 request id（传输层追踪句柄） */
+	upstreamRequestId?: string | null;
+	/** 上游响应 body message id（应用层生成结果 id：chatcmpl-* / msg_* / responseId） */
+	upstreamMessageId?: string | null;
 };

@@ -5,6 +5,7 @@ import { prepareGeminiUpstreamFetch } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
+import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 
 const EMPTY_USAGE_LOCAL: UsageFromStream = {
   input_tokens: 0,
@@ -74,7 +75,20 @@ function parseJsonUsage(text: string, usage: UsageFromStream): void {
     const parsed = JSON.parse(text) as {
       usageMetadata?: GeminiUsageMetadata;
       candidates?: Array<{ usageMetadata?: GeminiUsageMetadata }>;
+      responseId?: string;
+      requestId?: string;
+      request_id?: string;
     };
+    // message id 为 Gemini 顶层 `responseId`（流式每个 chunk 亦带），取首个。
+    if (!usage.upstreamMessageId) {
+      const msgId = normalizeUpstreamId(parsed.responseId);
+      if (msgId) usage.upstreamMessageId = msgId;
+    }
+    // 部分 Gemini 代理在 body 追加 requestId；与 responseId 区分，供日志 request id 解析。
+    if (!usage.upstreamBodyRequestId) {
+      const reqId = normalizeUpstreamId(parsed.requestId ?? parsed.request_id);
+      if (reqId) usage.upstreamBodyRequestId = reqId;
+    }
     if (parsed.usageMetadata) {
       applyUsage(usage, usageFromGemini(parsed.usageMetadata));
       return;
@@ -241,7 +255,7 @@ export async function dispatchGeminiRoute(
   action: 'generateContent' | 'streamGenerateContent',
   search: string,
   requestSignal?: AbortSignal
-): Promise<{ response: Response; usagePromise: Promise<UsageFromStream> }> {
+): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
   const { url, headers } = prepareGeminiUpstreamFetch({
     baseUrl: route.baseUrl,
     modelName: route.providerModelName,
@@ -256,17 +270,21 @@ export async function dispatchGeminiRoute(
     headers,
     body: JSON.stringify(requestBody),
   });
+  const upstreamRequestId = extractUpstreamRequestId(response.headers);
 
   if (response.ok && response.body) {
     const contentType = response.headers.get('Content-Type') ?? '';
     if (contentType.includes('application/json') && action === 'generateContent') {
-      return nonStreamResponseWithUsage(response);
+      const result = await nonStreamResponseWithUsage(response);
+      return { ...result, upstreamRequestId };
     }
-    return streamResponseWithUsage(response, requestSignal);
+    const result = streamResponseWithUsage(response, requestSignal);
+    return { ...result, upstreamRequestId };
   }
 
   return {
     response,
     usagePromise: Promise.resolve(EMPTY_USAGE_LOCAL),
+    upstreamRequestId,
   };
 }

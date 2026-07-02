@@ -167,6 +167,8 @@ export const apiKeyRequestLogsTable = mysqlTable('api_key_request_logs', {
 	providerKeyId: varchar('provider_key_id', { length: COL.ID }),
 	providerKeyLabel: varchar('provider_key_label', { length: COL.NAME }),
 	providerKeyFingerprint: varchar('provider_key_fingerprint', { length: 64 }),
+	upstreamRequestId: varchar('upstream_request_id', { length: 200 }),
+	upstreamMessageId: varchar('upstream_message_id', { length: 200 }),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 

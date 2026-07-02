@@ -46,6 +46,7 @@ export type GatewayErrorAlertContext = {
 	providerKeyId?: string | null;
 	providerKeyLabel?: string | null;
 	providerKeyFingerprint?: string | null;
+	upstreamRequestId?: string | null;
 };
 
 type AlertCategoryMeta = {
@@ -275,6 +276,9 @@ export function buildGatewayErrorAlertSummary(ctx: GatewayErrorAlertContext): st
 		'',
 		`建议: ${meta.suggestion}`,
 		`定位: request_log_id=${ctx.requestLogId} api_key_id=${ctx.apiKeyId}`,
+		...(ctx.upstreamRequestId?.trim()
+			? [`upstream_request_id=${ctx.upstreamRequestId.trim()}`]
+			: []),
 		'',
 		`原始错误: ${errFull}`,
 	];

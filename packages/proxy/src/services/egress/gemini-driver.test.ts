@@ -81,3 +81,54 @@ describe('dispatchGeminiRoute upstream auth', () => {
 		expect((init.headers as Record<string, string>).Authorization).toBe('Bearer modelink-token');
 	});
 });
+
+describe('dispatchGeminiRoute upstream trace ids', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('returns header request id from non-stream JSON response', async () => {
+		const body = JSON.stringify({
+			responseId: 'gemini-msg-1',
+			usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 2, totalTokenCount: 3 },
+		});
+		const fetchMock = vi.fn(
+			async () =>
+				new Response(body, {
+					status: 200,
+					headers: {
+						'Content-Type': 'application/json',
+						'http_x_reqid': 'qiniu-req-abc',
+					},
+				})
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await dispatchGeminiRoute(minimalRoute({}), {}, 'generateContent', '');
+		expect(result.upstreamRequestId).toBe('qiniu-req-abc');
+		const usage = await result.usagePromise;
+		expect(usage.upstreamMessageId).toBe('gemini-msg-1');
+	});
+
+	it('parses body requestId when proxy adds it', async () => {
+		const body = JSON.stringify({
+			responseId: 'gemini-msg-2',
+			requestId: 'proxy-req-2',
+			usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+		});
+		const fetchMock = vi.fn(
+			async () =>
+				new Response(body, {
+					status: 200,
+					headers: { 'Content-Type': 'application/json' },
+				})
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const result = await dispatchGeminiRoute(minimalRoute({}), {}, 'generateContent', '');
+		expect(result.upstreamRequestId).toBeNull();
+		const usage = await result.usagePromise;
+		expect(usage.upstreamMessageId).toBe('gemini-msg-2');
+		expect(usage.upstreamBodyRequestId).toBe('proxy-req-2');
+	});
+});

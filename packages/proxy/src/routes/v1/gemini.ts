@@ -15,6 +15,7 @@ import { proxyGeminiContent, EMPTY_USAGE, type UsageFromStream } from '../../ser
 import { buildRouteRequestBody } from '../../services/route-default-params';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
 import { summarizeGeminiToolsForLog } from '../../services/request-log-tools-summary';
+import { resolveGeminiLoggedRequestId } from '../../services/egress/upstream-request-id';
 import { recordUsage } from '../../services/usage-tracker';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
 import {
@@ -189,7 +190,7 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
     c.req.url.includes('?') ? c.req.url.slice(c.req.url.indexOf('?')) : '',
     requestSignal
   );
-  const { usagePromise, chosenRoute } = proxyResult;
+  const { usagePromise, chosenRoute, upstreamRequestId } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
   if (errorBodyText != null) {
@@ -250,6 +251,10 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
           errorMessage = `HTTP ${response.status}`;
         }
         const upstreamRequestBodyForLog = geminiUpstreamWireBodyForLog(chosenRoute, body, action);
+        const loggedRequestId = resolveGeminiLoggedRequestId({
+          headerRequestId: upstreamRequestId,
+          bodyRequestId: usageCollected.upstreamBodyRequestId ?? null,
+        });
         return recordUsage(repos, {
           api_key_id: apiKey.keyId,
           user_id: apiKey.userId,
@@ -275,6 +280,8 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
           provider_key_id: chosenRoute.providerKeyId ?? null,
           provider_key_label: chosenRoute.providerKeyLabel ?? null,
           provider_key_fingerprint: chosenRoute.providerKeyFingerprint ?? null,
+          upstream_request_id: loggedRequestId,
+          upstream_message_id: usageCollected.upstreamMessageId ?? null,
         });
       })
       .catch(() => {

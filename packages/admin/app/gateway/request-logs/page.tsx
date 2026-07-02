@@ -31,7 +31,9 @@ export default function GatewayRequestLogsPage() {
   const [page, setPage] = useState(1);
   /** 展开四栏详情：pricing audit / 入口请求体 / 上游请求体 / raw usage */
   const [detailLogId, setDetailLogId] = useState<string | null>(null);
-  const [copiedColumn, setCopiedColumn] = useState<'audit' | 'entry' | 'upstream' | 'usage' | null>(null);
+  const [copiedColumn, setCopiedColumn] = useState<
+    'audit' | 'entry' | 'upstream' | 'usage' | 'upstream_request_id' | 'upstream_message_id' | null
+  >(null);
   const pageSize = 50;
   const { currency: billingCurrency } = useBillingCurrency();
   const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
@@ -271,9 +273,71 @@ export default function GatewayRequestLogsPage() {
     return `×${ratio.toLocaleString('en-US', { maximumFractionDigits: 3 })}`;
   };
 
+  /** Tokens：input/output；第二行 cache（无命中时留空以对齐 Cost 三行） */
+  const renderTokensCell = (log: GatewayRequestLog) => {
+    const hasCache = log.cache_read_tokens > 0 || log.cache_write_tokens > 0;
+    return (
+      <div className="leading-tight space-y-0.5">
+        <div className="text-gray-900 tabular-nums" title="Input / output tokens">
+          {log.input_tokens} / {log.output_tokens}
+        </div>
+        <div
+          className="text-gray-400 tabular-nums min-h-[1em]"
+          title={hasCache ? 'Cache read / cache write tokens' : undefined}
+        >
+          {hasCache ? `CR ${log.cache_read_tokens} / CW ${log.cache_write_tokens}` : '\u00A0'}
+        </div>
+      </div>
+    );
+  };
+
+  /** Standard / Charged / Metered 合并为一列；Charged 与 Metered 相对 Standard 显示倍率 */
+  const renderCostCell = (
+    standardCost: number,
+    chargedCost: number,
+    meteredCost: number
+  ) => {
+    const chargedMultiplier = formatCostMultiplier(chargedCost, standardCost);
+    const meteredMultiplier = formatCostMultiplier(meteredCost, standardCost);
+    const costLine = (amount: number, multiplier: string | null) => (
+      <div className="inline-flex items-baseline gap-1.5 tabular-nums">
+        <span>{formatGatewayMoneyCode(amount, billingCurrency, 6)}</span>
+        {multiplier ? <span className="text-gray-500">{multiplier}</span> : null}
+      </div>
+    );
+    return (
+      <div className="leading-tight space-y-0.5">
+        <div className="text-gray-900 tabular-nums" title="Standard (catalog price)">
+          {formatGatewayMoneyCode(standardCost, billingCurrency, 6)}
+        </div>
+        <div className="text-gray-900" title="Charged (user budget)">
+          {costLine(chargedCost, chargedMultiplier)}
+        </div>
+        <div className="text-gray-700" title="Metered (supplier cost)">
+          {costLine(meteredCost, meteredMultiplier)}
+        </div>
+      </div>
+    );
+  };
+
   const toggleDetail = (logId: string) => {
     setDetailLogId((prev) => (prev === logId ? null : logId));
     setCopiedColumn(null);
+  };
+
+  const copyPlainText = async (
+    raw: string | null | undefined,
+    col: 'upstream_request_id' | 'upstream_message_id'
+  ) => {
+    const text = raw?.trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedColumn(col);
+      setTimeout(() => setCopiedColumn(null), 1500);
+    } catch (error) {
+      console.error('Copy plain text failed:', error);
+    }
   };
 
   const copyColumn = async (
@@ -559,15 +623,14 @@ export default function GatewayRequestLogsPage() {
                 >
                   Route
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Tokens</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                  Standard ({billingCurrencySym})
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Tokens
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                  Charged ({billingCurrencySym})
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                  Metered ({billingCurrencySym})
+                <th
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
+                  title="Standard (row 1), Charged × vs standard (row 2), Metered × vs standard (row 3)"
+                >
+                  Cost ({billingCurrencySym})
                 </th>
                 <th
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
@@ -585,8 +648,6 @@ export default function GatewayRequestLogsPage() {
                 const profit = chargedCost - meteredCost;
                 const profitToneClass =
                   profit > 0 ? 'text-emerald-700' : profit < 0 ? 'text-red-600' : 'text-gray-600';
-                const chargedMultiplier = formatCostMultiplier(chargedCost, standardCost);
-                const meteredMultiplier = formatCostMultiplier(meteredCost, standardCost);
                 return (
                   <Fragment key={log.id}>
                   <tr
@@ -641,33 +702,14 @@ export default function GatewayRequestLogsPage() {
                     <td className="px-3 py-2 text-xs align-top max-w-xs">
                       {renderRouteCell(log)}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600 leading-tight">
-                      <div className="text-gray-900 tabular-nums">
-                        {log.input_tokens} / {log.output_tokens}
-                      </div>
-                      {(log.cache_read_tokens > 0 || log.cache_write_tokens > 0) && (
-                        <div className="text-gray-400 tabular-nums mt-0.5">
-                          CR {log.cache_read_tokens} / CW {log.cache_write_tokens}
-                        </div>
-                      )}
+                    <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600 leading-tight align-top">
+                      {renderTokensCell(log)}
                     </td>
-                    <td className="px-3 py-2 text-xs whitespace-nowrap tabular-nums text-gray-900">
-                      {formatGatewayMoneyCode(standardCost, billingCurrency, 6)}
-                    </td>
-                    <td className="px-3 py-2 text-xs whitespace-nowrap tabular-nums leading-tight">
-                      <div className="text-gray-900 inline-flex items-center gap-1">
-                        <span>{formatGatewayMoneyCode(chargedCost, billingCurrency, 6)}</span>
-                        <span className="text-gray-500">{chargedMultiplier ?? '—'}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-xs whitespace-nowrap tabular-nums leading-tight">
-                      <div className="text-gray-900 inline-flex items-center gap-1">
-                        <span>{formatGatewayMoneyCode(meteredCost, billingCurrency, 6)}</span>
-                        <span className="text-gray-500">{meteredMultiplier ?? '—'}</span>
-                      </div>
+                    <td className="px-3 py-2 text-xs whitespace-nowrap align-top">
+                      {renderCostCell(standardCost, chargedCost, meteredCost)}
                     </td>
                     <td
-                      className={`px-3 py-2 text-xs whitespace-nowrap tabular-nums font-medium ${profitToneClass}`}
+                      className={`px-3 py-2 text-xs whitespace-nowrap tabular-nums font-medium align-top ${profitToneClass}`}
                       title="Charged − metered"
                     >
                       {formatGatewayMoneyCodeSigned(profit, billingCurrency, 6)}
@@ -675,14 +717,61 @@ export default function GatewayRequestLogsPage() {
                   </tr>
                   {detailLogId === log.id && (
                     <tr className="bg-gray-50">
-                      <td colSpan={9} className="px-3 py-2">
+                      <td colSpan={7} className="px-3 py-2">
                         <div className="rounded-md border border-gray-200 bg-white overflow-x-auto">
                           {(() => {
                             const auditLine = summarizePricingAuditJson(log.pricing_audit ?? null);
                             const auditRaw = log.pricing_audit?.trim();
                             const auditDisplay = auditRaw ? prettifyLogJson(auditRaw) : '';
                             const auditEmpty = !auditDisplay;
+                            const upstreamRequestId = log.upstream_request_id?.trim() ?? '';
+                            const upstreamMessageId = log.upstream_message_id?.trim() ?? '';
                             return (
+                              <div className="min-w-[72rem]">
+                                {upstreamMessageId ? (
+                                  <div className="flex items-center justify-between gap-3 border-b border-emerald-200 bg-emerald-50/60 px-3 py-2">
+                                    <div className="min-w-0">
+                                      <div className="text-[11px] font-medium text-emerald-950">
+                                        Upstream message id
+                                      </div>
+                                      <div
+                                        className="mt-0.5 truncate font-mono text-xs text-emerald-900"
+                                        title={upstreamMessageId}
+                                      >
+                                        {upstreamMessageId}
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => copyPlainText(upstreamMessageId, 'upstream_message_id')}
+                                      className="px-2 py-0.5 text-[10px] border border-emerald-300 rounded text-emerald-950 hover:bg-white/80 shrink-0"
+                                    >
+                                      {copiedColumn === 'upstream_message_id' ? 'Copied' : 'Copy'}
+                                    </button>
+                                  </div>
+                                ) : null}
+                                {upstreamRequestId ? (
+                                  <div className="flex items-center justify-between gap-3 border-b border-sky-200 bg-sky-50/60 px-3 py-2">
+                                    <div className="min-w-0">
+                                      <div className="text-[11px] font-medium text-sky-950">
+                                        Upstream request id
+                                      </div>
+                                      <div
+                                        className="mt-0.5 truncate font-mono text-xs text-sky-900"
+                                        title={upstreamRequestId}
+                                      >
+                                        {upstreamRequestId}
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => copyPlainText(upstreamRequestId, 'upstream_request_id')}
+                                      className="px-2 py-0.5 text-[10px] border border-sky-300 rounded text-sky-950 hover:bg-white/80 shrink-0"
+                                    >
+                                      {copiedColumn === 'upstream_request_id' ? 'Copied' : 'Copy'}
+                                    </button>
+                                  </div>
+                                ) : null}
                               <div className="grid min-w-[72rem] grid-cols-4 gap-3 p-3">
                                 <div className="min-w-0 flex flex-col min-h-0 border border-violet-200 rounded-md overflow-hidden bg-violet-50/50">
                                   <div className="px-2 py-1.5 border-b border-violet-200 bg-violet-100/40 flex items-center justify-between gap-2 shrink-0">
@@ -748,6 +837,7 @@ export default function GatewayRequestLogsPage() {
                                     </div>
                                   );
                                 })}
+                              </div>
                               </div>
                             );
                           })()}

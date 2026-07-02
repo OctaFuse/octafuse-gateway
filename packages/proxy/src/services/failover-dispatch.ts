@@ -16,11 +16,13 @@ import {
 export type ProxyDispatchResult = {
 	response: Response;
 	usagePromise: Promise<UsageFromStream>;
+	upstreamRequestId: string | null;
 };
 
 export type ProxyFailoverResult = {
 	response: Response;
 	usagePromise: Promise<UsageFromStream>;
+	upstreamRequestId: string | null;
 	chosenRoute: RouteResult;
 };
 
@@ -86,6 +88,7 @@ export async function failoverDispatchWithKeyPool(
 				headers: { 'Content-Type': 'application/json' },
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
 			chosenRoute: emptyRoute(expectedProtocol),
 		};
 	}
@@ -115,10 +118,12 @@ export async function failoverDispatchWithKeyPool(
 
 			let response: Response;
 			let usagePromise: Promise<UsageFromStream>;
+			let upstreamRequestId: string | null = null;
 			try {
 				const dispatched = await dispatch(attemptRoute, requestSignal);
 				response = dispatched.response;
 				usagePromise = dispatched.usagePromise;
+				upstreamRequestId = dispatched.upstreamRequestId;
 			} catch (err) {
 				console.warn(
 					`[Gateway Proxy] fetch failed providerId=${route.providerId} keyId=${key.id} error=${err instanceof Error ? err.message : String(err)}`
@@ -136,7 +141,7 @@ export async function failoverDispatchWithKeyPool(
 			lastRoute = attemptRoute;
 
 			if (response.ok) {
-				return { response, usagePromise, chosenRoute: attemptRoute };
+				return { response, usagePromise, upstreamRequestId, chosenRoute: attemptRoute };
 			}
 
 			const classification = classifyUpstreamHttpFailure(response.status);
@@ -146,6 +151,7 @@ export async function failoverDispatchWithKeyPool(
 				return {
 					response,
 					usagePromise: Promise.resolve(EMPTY_USAGE),
+					upstreamRequestId,
 					chosenRoute: attemptRoute,
 				};
 			}
@@ -168,6 +174,7 @@ export async function failoverDispatchWithKeyPool(
 				headers: { 'Content-Type': 'application/json' },
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
 			chosenRoute: lastRoute,
 		};
 	}
@@ -175,6 +182,7 @@ export async function failoverDispatchWithKeyPool(
 	return {
 		response: lastResponse,
 		usagePromise: Promise.resolve(EMPTY_USAGE),
+		upstreamRequestId: null,
 		chosenRoute: lastRoute,
 	};
 }

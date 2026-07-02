@@ -4,6 +4,7 @@
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
+import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 
 const EMPTY_USAGE_LOCAL: UsageFromStream = {
   input_tokens: 0,
@@ -66,7 +67,15 @@ function applyUsage(target: UsageFromStream, next: UsageFromStream): void {
 function parseEventData(data: string, usage: UsageFromStream): void {
   if (!data || data === '[DONE]') return;
   try {
-    const parsed = JSON.parse(data) as { usage?: AnthropicUsage };
+    const parsed = JSON.parse(data) as {
+      usage?: AnthropicUsage;
+      message?: { id?: string };
+    };
+    // message id 来自 `message_start` 事件的 `message.id`（如 msg_* / msg_bdrk_*）；只取首个。
+    if (!usage.upstreamMessageId) {
+      const msgId = normalizeUpstreamId(parsed.message?.id);
+      if (msgId) usage.upstreamMessageId = msgId;
+    }
     if (parsed.usage) {
       applyUsage(usage, usageFromAnthropic(parsed.usage));
     }
@@ -195,8 +204,10 @@ async function nonStreamResponseWithUsage(
   }
   try {
     const text = await response.text();
-    const parsed = JSON.parse(text) as { usage?: AnthropicUsage };
-    const usage = parsed.usage ? usageFromAnthropic(parsed.usage) : EMPTY_USAGE_LOCAL;
+    const parsed = JSON.parse(text) as { id?: string; usage?: AnthropicUsage };
+    const usage = parsed.usage ? usageFromAnthropic(parsed.usage) : { ...EMPTY_USAGE_LOCAL };
+    const msgId = normalizeUpstreamId(parsed.id);
+    if (msgId) usage.upstreamMessageId = msgId;
     return {
       response: new Response(text, {
         status: response.status,
@@ -222,7 +233,7 @@ export async function dispatchAnthropicRoute(
   route: RouteResult,
   body: Record<string, unknown>,
   requestSignal?: AbortSignal
-): Promise<{ response: Response; usagePromise: Promise<UsageFromStream> }> {
+): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
   const url = buildUrl(route.baseUrl);
   const requestBody = {
     ...buildRouteRequestBody(route, body),
@@ -237,17 +248,21 @@ export async function dispatchAnthropicRoute(
     },
     body: JSON.stringify(requestBody),
   });
+  const upstreamRequestId = extractUpstreamRequestId(response.headers);
 
   if (response.ok && response.body) {
     const contentType = response.headers.get('Content-Type') ?? '';
     if (contentType.includes('application/json')) {
-      return nonStreamResponseWithUsage(response);
+      const result = await nonStreamResponseWithUsage(response);
+      return { ...result, upstreamRequestId };
     }
-    return streamResponseWithUsage(response, requestSignal);
+    const result = streamResponseWithUsage(response, requestSignal);
+    return { ...result, upstreamRequestId };
   }
 
   return {
     response,
     usagePromise: Promise.resolve(EMPTY_USAGE_LOCAL),
+    upstreamRequestId,
   };
 }

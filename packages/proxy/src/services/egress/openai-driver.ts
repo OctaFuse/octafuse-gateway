@@ -1,6 +1,7 @@
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
+import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 
 /**
  * OpenAI 协议流式响应（SSE）在此文件中有两条并行关注点，请勿混为一谈：
@@ -133,7 +134,12 @@ function processUsageFromDataLine(line: string, usage: UsageFromStream): void {
   const data = line.slice(6).trim();
   if (data === '[DONE]') return;
   try {
-    const parsed = JSON.parse(data) as { usage?: ProviderUsage };
+    const parsed = JSON.parse(data) as { id?: string; usage?: ProviderUsage };
+    // message id 为响应对象 id（如 chatcmpl-*）；每个 chunk 都带，取首个。
+    if (!usage.upstreamMessageId) {
+      const msgId = normalizeUpstreamId(parsed.id);
+      if (msgId) usage.upstreamMessageId = msgId;
+    }
     const u = parsed.usage;
     if (u) {
       const next = usageFromProvider(u);
@@ -337,10 +343,13 @@ async function nonStreamResponseWithUsage(
   let usage: UsageFromStream = EMPTY_USAGE_LOCAL;
   try {
     const text = await response.text();
-    const parsed = JSON.parse(text) as { usage?: ProviderUsage };
+    const parsed = JSON.parse(text) as { id?: string; usage?: ProviderUsage };
     if (parsed.usage) {
       usage = usageFromProvider(parsed.usage);
     }
+    const msgId = normalizeUpstreamId(parsed.id);
+    // 新对象，避免污染共享的 EMPTY_USAGE_LOCAL 常量。
+    if (msgId) usage = { ...usage, upstreamMessageId: msgId };
     return {
       response: new Response(text, {
         status: response.status,
@@ -369,7 +378,7 @@ export async function dispatchOpenAiRoute(
   route: RouteResult,
   body: Record<string, unknown>,
   requestSignal?: AbortSignal
-): Promise<{ response: Response; usagePromise: Promise<UsageFromStream> }> {
+): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
   const url = buildUrl(route.baseUrl);
   const requestBody = {
     ...buildRouteRequestBody(route, body),
@@ -384,17 +393,21 @@ export async function dispatchOpenAiRoute(
     },
     body: JSON.stringify(requestBody),
   });
+  const upstreamRequestId = extractUpstreamRequestId(response.headers);
 
   if (response.ok && response.body) {
     const contentType = response.headers.get('Content-Type') ?? '';
     if (contentType.includes('application/json')) {
-      return nonStreamResponseWithUsage(response);
+      const result = await nonStreamResponseWithUsage(response);
+      return { ...result, upstreamRequestId };
     }
-    return streamResponseWithUsage(response, requestSignal);
+    const result = streamResponseWithUsage(response, requestSignal);
+    return { ...result, upstreamRequestId };
   }
 
   return {
     response,
     usagePromise: Promise.resolve(EMPTY_USAGE_LOCAL),
+    upstreamRequestId,
   };
 }

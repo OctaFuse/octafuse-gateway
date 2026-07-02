@@ -171,6 +171,10 @@ export interface GatewayRequestLog {
   provider_key_id?: string | null;
   provider_key_label?: string | null;
   provider_key_fingerprint?: string | null;
+  /** 上游响应头中的 provider 追踪 id（如 x-request-id，传输层）；迁移前旧行为 null */
+  upstream_request_id?: string | null;
+  /** 上游响应 body 里的生成结果 id（chatcmpl-* / msg_* / responseId，应用层）；穿透聚合商，迁移前旧行为 null */
+  upstream_message_id?: string | null;
   /** Upstream model name snapshot on the log row (Gateway writes at request time); null on legacy rows */
   provider_model_name?: string | null;
   /** 脱敏请求体 JSON（无提示词）；仅新写入 */

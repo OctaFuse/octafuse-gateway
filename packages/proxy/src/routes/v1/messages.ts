@@ -145,7 +145,7 @@ messagesRoutes.post('/', async (c) => {
 
   const requestSignal = c.req.raw.signal;
   const proxyResult = await proxyAnthropicMessages(repos, routes, body, requestSignal);
-  const { usagePromise, chosenRoute } = proxyResult;
+  const { usagePromise, chosenRoute, upstreamRequestId } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
   if (errorBodyText != null) {
@@ -234,6 +234,8 @@ messagesRoutes.post('/', async (c) => {
           provider_key_id: chosenRoute.providerKeyId ?? null,
           provider_key_label: chosenRoute.providerKeyLabel ?? null,
           provider_key_fingerprint: chosenRoute.providerKeyFingerprint ?? null,
+          upstream_request_id: upstreamRequestId,
+          upstream_message_id: usageCollected.upstreamMessageId ?? null,
         });
       })
       .catch(() => {

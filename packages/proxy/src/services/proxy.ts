@@ -25,11 +25,20 @@ export interface UsageFromStream {
 	raw_usage: string | null;
 	/** 客户端在流结束前断开（如用户取消）时置位 */
 	cancelled?: boolean;
+	/**
+	 * 上游响应 body 里的「生成结果」id（OpenAI `chatcmpl-*` / Anthropic `msg_*` / Gemini `responseId`）。
+	 * 与 header 侧 `upstreamRequestId` 语义不同：这是应用层 message id，穿透聚合商/CDN，随 usage 一起解析。
+	 */
+	upstreamMessageId?: string | null;
+	/** Gemini 等上游 body 内非标准的 request id 字段（`requestId` / `request_id`），与 message id 区分 */
+	upstreamBodyRequestId?: string | null;
 }
 
 export interface ProxyResult {
 	response: Response;
 	usagePromise: Promise<UsageFromStream>;
+	/** 上游响应头中的 provider 追踪 id（如 x-request-id） */
+	upstreamRequestId: string | null;
 	/** 实际选用或最后尝试的路由（用于日志）；若全部失败则为最后一次尝试 */
 	chosenRoute: RouteResult;
 }

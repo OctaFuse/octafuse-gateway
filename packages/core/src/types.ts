@@ -163,6 +163,10 @@ export interface RequestLogRow {
   provider_key_label: string | null;
   /** 脱敏尾号指纹，不存明文 */
   provider_key_fingerprint: string | null;
+  /** 上游响应头中的 provider 追踪 id（如 x-request-id）；传输层，经聚合商/CDN 可能为 null */
+  upstream_request_id: string | null;
+  /** 上游响应 body 里的生成结果 id（OpenAI `chatcmpl-*` / Anthropic `msg_*` / Gemini `responseId`）；应用层，穿透聚合商 */
+  upstream_message_id: string | null;
   created_at: string;
 }
 

@@ -138,6 +138,8 @@ export const apiKeyRequestLogsTable = pgTable('api_key_request_logs', {
 	providerKeyId: text('provider_key_id'),
 	providerKeyLabel: text('provider_key_label'),
 	providerKeyFingerprint: text('provider_key_fingerprint'),
+	upstreamRequestId: text('upstream_request_id'),
+	upstreamMessageId: text('upstream_message_id'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 

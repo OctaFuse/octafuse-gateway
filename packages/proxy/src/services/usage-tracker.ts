@@ -99,6 +99,10 @@ export async function recordUsage(
 		provider_key_id?: string | null;
 		provider_key_label?: string | null;
 		provider_key_fingerprint?: string | null;
+		/** 上游响应头 request id（传输层追踪，见 `upstream-request-id.ts`） */
+		upstream_request_id?: string | null;
+		/** 上游响应 body message id（应用层生成结果 id：chatcmpl-* / msg_* / responseId） */
+		upstream_message_id?: string | null;
 	}
 ): Promise<void> {
 	const basis = params.usage.input_tokens;
@@ -201,6 +205,8 @@ export async function recordUsage(
 			providerKeyId: params.provider_key_id ?? null,
 			providerKeyLabel: params.provider_key_label ?? null,
 			providerKeyFingerprint: params.provider_key_fingerprint ?? null,
+			upstreamRequestId: params.upstream_request_id ?? null,
+			upstreamMessageId: params.upstream_message_id ?? null,
 		},
 		shouldChargeBudget,
 		beforeSpent,
@@ -244,6 +250,7 @@ export async function recordUsage(
 			providerKeyId: params.provider_key_id ?? null,
 			providerKeyLabel: params.provider_key_label ?? null,
 			providerKeyFingerprint: params.provider_key_fingerprint ?? null,
+			upstreamRequestId: params.upstream_request_id ?? null,
 		}).catch((err: unknown) => {
 			console.warn(
 				'[Gateway Alert] webhook dispatch failed',
