@@ -235,6 +235,7 @@ export async function recordUsage(
 	if (params.status === 'error') {
 		await fireGatewayErrorWebhooks(repos, {
 			requestLogId: id,
+			occurredAt: new Date().toISOString(),
 			apiKeyId: params.api_key_id,
 			userEmail: params.user_email,
 			modelId: params.model_id,

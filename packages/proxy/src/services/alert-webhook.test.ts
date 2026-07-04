@@ -23,6 +23,7 @@ function baseCtx(overrides: Partial<GatewayErrorAlertContext> = {}): GatewayErro
 		providerKeyId: '7ff25dbb-b439-40b2-84b1-ae9a2790742c',
 		providerKeyLabel: 'solo0625',
 		providerKeyFingerprint: '...alVg',
+		occurredAt: '2026-03-16T12:13:21.580Z',
 		...overrides,
 	};
 }
@@ -140,8 +141,16 @@ describe('buildGatewayErrorAlertSummary', () => {
 		expect(text).toContain('gemini → gemini');
 		expect(text).toContain('供应商: Google Vertex · gemini-3.1-pro-preview · default (...alVg) · ');
 		expect(text).toContain('建议:');
-		expect(text).toContain('request_log_id=04327b16-810f-4a8b-ae95-66fe8079ce98');
+		expect(text).not.toContain('定位:');
+		expect(text).not.toContain('request_log_id=');
 		expect(text).toContain('原始错误: HTTP 524: error code: 524');
+		expect(text).toContain('发生时间: 2026/03/16 20:13:21 (UTC+8)');
+
+		const originalIdx = text.indexOf('原始错误:');
+		const suggestionIdx = text.indexOf('建议:');
+		const occurredIdx = text.indexOf('发生时间:');
+		expect(originalIdx).toBeLessThan(suggestionIdx);
+		expect(suggestionIdx).toBeLessThan(occurredIdx);
 	});
 
 	it('falls back to modelId and providerId when display names missing', () => {

@@ -47,6 +47,8 @@ export type GatewayErrorAlertContext = {
 	providerKeyLabel?: string | null;
 	providerKeyFingerprint?: string | null;
 	upstreamRequestId?: string | null;
+	/** 请求发生时间（ISO 8601 UTC）；缺省则在构建告警时取当前时刻 */
+	occurredAt?: string | null;
 };
 
 type AlertCategoryMeta = {
@@ -248,6 +250,26 @@ function formatSupplierLine(ctx: GatewayErrorAlertContext): string {
 	return `${provider} · ${upstreamModel} · ${routeKey} · `;
 }
 
+const ALERT_OCCURRED_TIME_ZONE = 'Asia/Shanghai';
+
+function formatOccurredAt(iso: string): string {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) {
+		return iso;
+	}
+	const formatted = new Intl.DateTimeFormat('zh-CN', {
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		hour12: false,
+		timeZone: ALERT_OCCURRED_TIME_ZONE,
+	}).format(date);
+	return `${formatted} (UTC+8)`;
+}
+
 function buildSummaryLine(meta: AlertCategoryMeta, ctx: GatewayErrorAlertContext): string {
 	const errShort = truncateForAlert(ctx.errorMessage ?? '(no message)', 120);
 	const latency = formatLatency(ctx.latencyMs ?? null);
@@ -266,6 +288,8 @@ export function buildGatewayErrorAlertSummary(ctx: GatewayErrorAlertContext): st
 	const protocolPath = `${ctx.requestProtocol} → ${ctx.upstreamProtocol}`;
 	const errFull = truncateForAlert(ctx.errorMessage ?? '(no message)', 600);
 
+	const occurredAt = formatOccurredAt(ctx.occurredAt?.trim() || new Date().toISOString());
+
 	const lines = [
 		`[Gateway] - [${meta.label}] - [${meta.priority}]`,
 		'',
@@ -274,13 +298,9 @@ export function buildGatewayErrorAlertSummary(ctx: GatewayErrorAlertContext): st
 		`影响: ${email} · route=${ctx.routeGroup} · ${protocolPath}`,
 		`供应商: ${formatSupplierLine(ctx)}`,
 		'',
-		`建议: ${meta.suggestion}`,
-		`定位: request_log_id=${ctx.requestLogId} api_key_id=${ctx.apiKeyId}`,
-		...(ctx.upstreamRequestId?.trim()
-			? [`upstream_request_id=${ctx.upstreamRequestId.trim()}`]
-			: []),
-		'',
 		`原始错误: ${errFull}`,
+		`建议: ${meta.suggestion}`,
+		`发生时间: ${occurredAt}`,
 	];
 	return lines.join('\n');
 }
