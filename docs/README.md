@@ -14,6 +14,7 @@
 
 | 文档 | 说明 |
 |------|------|
+| [architecture/proxy-request-lifecycle.md](./architecture/proxy-request-lifecycle.md) | **Proxy 请求处理逻辑**：鉴权、路由、限流/熔断/粘性、failover、场景分支 |
 | [architecture/admin-layered.md](./architecture/admin-layered.md) | Admin 路由 / 服务 / 仓储分层 |
 
 默认拓扑（Cloudflare + D1）：

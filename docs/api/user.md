@@ -545,13 +545,23 @@ curl http://localhost:8787/v1/me \
 
 ### 提供商故障转移
 
-同一 `route_group` 内支持多路由按 **provider 优先级** failover；每个 provider 内部还支持 **key pool**（`provider_api_keys` 表）：
+同一 `route_group` 内支持多路由与 **key pool**（`provider_api_keys` 表）故障转移。调度由 `failoverDispatchWithKeyPool` + `buildKeyAttemptPlan` 完成；**完整分支与场景表**见 [proxy-request-lifecycle.md](../architecture/proxy-request-lifecycle.md)。
 
-- **外层**：按 `model_routes.priority` 从高到低依次尝试 provider（行为与改造前一致）。
-- **内层**：对当前 provider，在 `status = active` 的 key 中 **先按 `priority` 降序分批**，**同批内**按 **weight** 做 weighted-random 选取尝试顺序；单实例内存 **cooldown**（约 60s）避免连续打同一把失败 key。
-- **可重试并换 key**（同 provider 内）：`429`、`5xx`、`401`、`403`、网络/`fetch` 失败。
-- **不重试**（立即返回，不换 key / 不换 provider）：`400`、`404` 等请求本身错误。
-- 当前 provider 全部 key 失败后，才进入下一 priority 的 provider；全部失败时返回最后一次上游响应。
+**排序与 failover**：
+
+- **Route 层**：按 `model_routes.priority` 从高到低分层；**同 priority 层的多个 provider 的 key 合并为一个池**（同层内交叉尝试，而非严格逐 provider 串行）。
+- **Key 层**：池内按 `provider_api_keys.priority` 降序分批；批内按 **限流余量（headroom）** 降序，余量接近（<10%）时按 **weight** 加权随机打散。
+- **跳过**：处于 **key 熔断** 或 **网关侧限流**（`limit_config` 的 RPM/TPM/并发）的 key 不参与本次 attempt 序列。
+- **全部 key 不可用**（均熔断或限流）：网关直接返回 **429**，`code: upstream_capacity_exhausted`，带 `Retry-After`；**不调用上游**。
+- **有可试 key 时**：按序打上游；某 key 失败且可重试则换下一 key（可跨 provider）；全部 attempt 失败则返回**最后一次**上游响应。
+
+**可重试并换 key**：上游 `429`、`5xx`、`401`、`403`、网络/`fetch` 失败。失败 key 进入分类熔断（429 优先读 `Retry-After` 或递增退避；401/403 约 10min；5xx/网络约 60s）。
+
+**不重试**（立即返回，不换 key）：`400`、`404` 等请求本身错误。
+
+**粘性 key（opt-in）**：在 `models.sticky_config` 为对应「协议 × route_group」开启后，同一用户尽量连续命中同一把 provider key（保上游 prompt cache）。绑定 key 可用时置顶；仅因网关限流且预计恢复 ≤ `short_wait_ms`（默认 3s）时网关内短等待；上游真实 429/5xx/auth 则立即 failover 到其他 key，成功后改绑。
+
+**网关侧限流**：`provider_api_keys.limit_config` 可选配置 RPM/TPM/并发（进程内存软限制）；建议设为供应商真实限额约 90%。
 
 用量日志 `api_key_request_logs` 会写入最终选用（或最后失败）key 的 **`provider_key_id`**、**`provider_key_label`**、**`provider_key_fingerprint`**（脱敏尾号，不含明文）。
 

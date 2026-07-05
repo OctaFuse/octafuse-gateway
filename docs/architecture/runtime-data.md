@@ -115,6 +115,8 @@ sequenceDiagram
 
 ## Key 调度运行时状态（限流 / 粘性 / 熔断）
 
+> **完整请求处理路径**（鉴权 → 路由 → 调度 → failover → 记账，含各场景分支表）：见 **[proxy-request-lifecycle.md](./proxy-request-lifecycle.md)**。
+
 迁移 **0007** 引入两个 JSON 配置列（三库同语义；`NULL` = 功能关闭）：
 
 | 列 | 含义 | 解析器（`@octafuse/core`） |
