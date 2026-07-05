@@ -2,6 +2,7 @@
  * 管理后台 `models` + `model_tags`：列表/详情（含路由计数）、创建、部分更新、级联删除、静态目录导入。
  */
 import type { GatewayRepositories } from '@octafuse/core';
+import { normalizeModelStickyConfigInput } from '@octafuse/core';
 import {
 	coerceModelInputModalitiesInput,
 	coerceModelOutputModalitiesInput,
@@ -142,6 +143,15 @@ export async function updateModelService(repos: GatewayRepositories, id: string,
 	}
 	if ('pricing_profile' in rest && rest.pricing_profile !== undefined) {
 		rest.pricing_profile = coerceModelPricingProfileInput(rest.pricing_profile);
+	}
+	if ('sticky_config' in rest && rest.sticky_config !== undefined) {
+		try {
+			rest.sticky_config = normalizeModelStickyConfigInput(
+				rest.sticky_config == null ? null : String(rest.sticky_config)
+			);
+		} catch (err) {
+			throw badRequest(err instanceof Error ? err.message : 'Invalid sticky_config');
+		}
 	}
 	const coerced = applyModelMutationCoercion(rest);
 	const changes = await repos.models.updateModelByPatch(id, coerced);

@@ -10,6 +10,8 @@ export interface ProviderApiKeyRow {
 	status: string;
 	weight: number;
 	priority: number;
+	/** 限流配置 JSON（{@link parseProviderKeyLimitConfig}）；NULL=不限流 */
+	limit_config: string | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -21,6 +23,8 @@ export interface ActiveProviderApiKeyRow {
 	api_key: string;
 	weight: number;
 	priority: number;
+	/** 限流配置 JSON；NULL=不限流 */
+	limit_config: string | null;
 }
 
 /** Admin 列表：脱敏，不含明文 api_key。 */
@@ -31,6 +35,8 @@ export interface ProviderApiKeyAdminRow {
 	status: string;
 	weight: number;
 	priority: number;
+	/** 限流配置 JSON；NULL=不限流 */
+	limit_config: string | null;
 	/** Admin 列表脱敏预览，如 `sk-…x7Kp`。 */
 	masked_api_key: string;
 	/** 是否为静态导入占位密钥（{@link PROVIDER_IMPORT_PENDING_API_KEY}）。 */
@@ -47,6 +53,8 @@ export type InsertProviderApiKeyParams = {
 	status?: ProviderApiKeyStatus;
 	weight?: number;
 	priority?: number;
+	/** 限流配置 JSON 字符串；null 清空 */
+	limitConfig?: string | null;
 };
 
 export type UpdateProviderApiKeyPatch = {
@@ -55,4 +63,6 @@ export type UpdateProviderApiKeyPatch = {
 	status?: ProviderApiKeyStatus;
 	weight?: number;
 	priority?: number;
+	/** 限流配置 JSON 字符串；null 清空 */
+	limitConfig?: string | null;
 };

@@ -10,6 +10,7 @@ import {
   PlusIcon,
   ClipboardDocumentIcon,
   DocumentDuplicateIcon,
+  LinkIcon,
 } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import {
@@ -24,6 +25,13 @@ import {
   extractChargedProfileFromPriceOverrideJson,
   parsePricingProfile,
 } from '@octafuse/core/db/pricing-profile';
+import {
+  parseModelStickyConfig,
+  resolveStickyRouteRule,
+  stickyRuleKey,
+  STICKY_DEFAULT_TTL_SECONDS,
+  STICKY_DEFAULT_SHORT_WAIT_MS,
+} from '@octafuse/core/db/model-sticky-config';
 import {
   profileJsonToDraftRows,
   serializeDraftRowsToProfileJson,
@@ -518,6 +526,17 @@ function RoutesContent() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [copiedModelId, setCopiedModelId] = useState<string | null>(null);
+  /** 粘性 key 路由配置弹窗：目标 model × 协议 × route_group */
+  const [stickyDialog, setStickyDialog] = useState<{
+    modelId: string;
+    modelTitle: string;
+    protocol: string;
+    protocolLabel: string;
+    group: string;
+  } | null>(null);
+  const [stickyForm, setStickyForm] = useState({ enabled: false, ttl_seconds: '', short_wait_ms: '' });
+  const [stickySaving, setStickySaving] = useState(false);
+  const [stickyError, setStickyError] = useState('');
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
@@ -792,6 +811,93 @@ function RoutesContent() {
     }
     return map;
   }, [models]);
+
+  const handleOpenStickyDialog = (
+    modelId: string,
+    modelTitle: string,
+    protocol: string,
+    protocolLabel: string,
+    group: string
+  ) => {
+    const raw = modelMeta.get(modelId)?.sticky_config ?? null;
+    const parsed = parseModelStickyConfig(raw);
+    const rule = parsed?.rules.get(stickyRuleKey(protocol, group)) ?? null;
+    setStickyForm({
+      enabled: Boolean(rule?.enabled),
+      ttl_seconds: rule?.ttlSeconds != null ? String(rule.ttlSeconds) : '',
+      short_wait_ms: rule?.shortWaitMs != null ? String(rule.shortWaitMs) : '',
+    });
+    setStickyError('');
+    setStickyDialog({ modelId, modelTitle, protocol, protocolLabel, group });
+  };
+
+  const handleSaveSticky = async () => {
+    if (!stickyDialog) return;
+    const ttl = stickyForm.ttl_seconds.trim() === '' ? null : parseInt(stickyForm.ttl_seconds, 10);
+    const wait = stickyForm.short_wait_ms.trim() === '' ? null : parseInt(stickyForm.short_wait_ms, 10);
+    if (stickyForm.enabled) {
+      if (ttl != null && (!Number.isFinite(ttl) || ttl <= 0)) {
+        setStickyError('Idle TTL must be a positive integer (seconds)');
+        return;
+      }
+      if (wait != null && (!Number.isFinite(wait) || wait <= 0)) {
+        setStickyError('Short wait must be a positive integer (ms)');
+        return;
+      }
+    }
+    setStickySaving(true);
+    setStickyError('');
+    try {
+      // Preserve other protocol×group rules and top-level defaults; only touch this rule key.
+      const raw = modelMeta.get(stickyDialog.modelId)?.sticky_config ?? null;
+      let existing: Record<string, unknown> = {};
+      try {
+        existing = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      } catch {
+        existing = {};
+      }
+      const existingRules =
+        existing.rules && typeof existing.rules === 'object' && !Array.isArray(existing.rules)
+          ? { ...(existing.rules as Record<string, unknown>) }
+          : {};
+      const key = stickyRuleKey(stickyDialog.protocol, stickyDialog.group);
+      for (const k of Object.keys(existingRules)) {
+        const idx = k.indexOf(':');
+        if (idx > 0 && stickyRuleKey(k.slice(0, idx), k.slice(idx + 1)) === key) {
+          delete existingRules[k];
+        }
+      }
+      if (stickyForm.enabled) {
+        const rule: Record<string, unknown> = { enabled: true };
+        if (ttl != null) rule.ttl_seconds = ttl;
+        if (wait != null) rule.short_wait_ms = wait;
+        existingRules[key] = rule;
+      }
+      let nextStickyConfig: string | null = null;
+      if (Object.keys(existingRules).length > 0) {
+        const next: Record<string, unknown> = { rules: existingRules };
+        if (typeof existing.ttl_seconds === 'number') next.ttl_seconds = existing.ttl_seconds;
+        if (typeof existing.short_wait_ms === 'number') next.short_wait_ms = existing.short_wait_ms;
+        nextStickyConfig = JSON.stringify(next);
+      }
+      const response = await fetch(`/api/admin/models/${encodeURIComponent(stickyDialog.modelId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sticky_config: nextStickyConfig }),
+      });
+      const data = await readApiJson(response);
+      if (!data.success) {
+        setStickyError(data.message || 'Save failed, please try again');
+        return;
+      }
+      setStickyDialog(null);
+      await fetchData();
+    } catch (error) {
+      setStickyError(error instanceof Error ? error.message : 'Save failed, please try again');
+    } finally {
+      setStickySaving(false);
+    }
+  };
 
   /** Distinct route_group values present in loaded routes (normalized), sorted for the filter dropdown. */
   const distinctRouteGroups = useMemo(() => {
@@ -1278,11 +1384,11 @@ function RoutesContent() {
                                         className={sectionIdx > 0 ? 'border-t border-gray-200/80' : ''}
                                       >
                                         <div
-                                          className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-1.5 transition-colors group-hover:bg-blue-50/40 group-focus-within:bg-blue-50/40"
+                                          className="flex items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-1.5 transition-colors group-hover:bg-blue-50/40 group-focus-within:bg-blue-50/40"
                                           role="presentation"
                                         >
                                           <div
-                                            className="flex min-w-0 items-center gap-2"
+                                            className="flex min-w-0 flex-1 items-center gap-2"
                                             title={`upstream_protocol: ${section.protocol} · route_group: ${section.group}`}
                                           >
                                             <span
@@ -1297,9 +1403,40 @@ function RoutesContent() {
                                               <span className="truncate">{section.group}</span>
                                             </span>
                                           </div>
-                                          <span className="text-[11px] tabular-nums text-gray-500">
-                                            {section.routes.length} route{section.routes.length === 1 ? '' : 's'}
-                                          </span>
+                                          {(() => {
+                                            const stickyRule = resolveStickyRouteRule(
+                                              modelMeta.get(model_id)?.sticky_config ?? null,
+                                              section.protocol,
+                                              section.group
+                                            );
+                                            return (
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  handleOpenStickyDialog(
+                                                    model_id,
+                                                    title,
+                                                    section.protocol,
+                                                    section.protocolLabel,
+                                                    section.group
+                                                  )
+                                                }
+                                                className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-4 ring-1 ring-inset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+                                                  stickyRule
+                                                    ? 'bg-violet-50 text-violet-700 ring-violet-200 hover:bg-violet-100'
+                                                    : 'bg-white text-gray-400 ring-gray-200 hover:bg-gray-100 hover:text-gray-600'
+                                                }`}
+                                                title={
+                                                  stickyRule
+                                                    ? `Sticky key routing on · idle TTL ${stickyRule.ttlSeconds}s · short wait ${stickyRule.shortWaitMs}ms (click to configure)`
+                                                    : 'Sticky key routing off (click to configure)'
+                                                }
+                                              >
+                                                <LinkIcon className="h-3 w-3" />
+                                                {stickyRule ? `Sticky ${stickyRule.ttlSeconds}s` : 'Sticky off'}
+                                              </button>
+                                            );
+                                          })()}
                                         </div>
                                         <ul className="flex flex-col divide-y divide-gray-100">
                                           {section.routes.map((route) => {
@@ -1595,16 +1732,10 @@ function RoutesContent() {
                         placeholder="default"
                       />
                       <p className="mt-1 text-xs text-gray-500">
-                        Label for <code className="rounded bg-gray-100 px-1 text-[11px]">modelId:group</code> client selection.
-                        If the client omits <code className="rounded bg-gray-100 px-1 text-[11px]">:group</code>, the gateway uses the{' '}
-                        <span className="font-medium">default</span> group only. Requests for a group with no active routes return{' '}
-                        <span className="font-medium">400</span>. Zero user charge: set{' '}
-                        <span className="font-medium">Charged factor</span> to{' '}
-                        <code className="rounded bg-gray-100 px-1 text-[11px]">0</code> on charged tiers (set{' '}
-                        <code className="rounded bg-gray-100 px-1 text-[11px]">charged_factor</code> to{' '}
-                        <code className="rounded bg-gray-100 px-1 text-[11px]">0</code> in{' '}
-                        <code className="rounded bg-gray-100 px-1 text-[11px]">price_override</code> or edit tiers).{' '}
-                        <code className="rounded bg-gray-100 px-1 text-[11px]">charged_cost</code> uses tier prices only.
+                        Routing pool for client{' '}
+                        <code className="rounded bg-gray-100 px-1 text-[11px]">modelId:group</code>. Omit{' '}
+                        <code className="rounded bg-gray-100 px-1 text-[11px]">:group</code> →{' '}
+                        <span className="font-medium">default</span> only. No active routes → 400.
                       </p>
                     </div>
                     <div>
@@ -1852,6 +1983,110 @@ function RoutesContent() {
                   {isSaving ? 'Saving...' : 'Save'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sticky key routing config dialog (per model × protocol × route_group) */}
+      {stickyDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sticky-dialog-title"
+          >
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h2 id="sticky-dialog-title" className="text-base font-semibold text-gray-900">
+                  Sticky key routing
+                </h2>
+                <p className="mt-1 text-xs text-gray-500">
+                  {stickyDialog.modelTitle} · {stickyDialog.protocolLabel} ·{' '}
+                  <span className="font-mono">{stickyDialog.group}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStickyDialog(null)}
+                className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                aria-label="Close"
+              >
+                <span className="block text-xl leading-none" aria-hidden>
+                  ×
+                </span>
+              </button>
+            </div>
+            <div className="space-y-4 px-5 py-5">
+              {stickyError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                  {stickyError}
+                </div>
+              )}
+              <label className="flex items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={stickyForm.enabled}
+                  onChange={(e) => setStickyForm({ ...stickyForm, enabled: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-1"
+                />
+                <span className="text-sm text-gray-800">
+                  <span className="font-medium">Enable sticky key routing</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                    Bind each user to one provider key for this protocol × group to maximize upstream
+                    prompt-cache hits. The binding is released after the idle TTL.
+                  </span>
+                </span>
+              </label>
+              <div className={`grid grid-cols-2 gap-3 ${stickyForm.enabled ? '' : 'opacity-50'}`}>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Idle TTL (seconds)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={stickyForm.ttl_seconds}
+                    onChange={(e) => setStickyForm({ ...stickyForm, ttl_seconds: e.target.value })}
+                    disabled={!stickyForm.enabled}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-50"
+                    placeholder={`default ${STICKY_DEFAULT_TTL_SECONDS}`}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Short wait (ms)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={stickyForm.short_wait_ms}
+                    onChange={(e) => setStickyForm({ ...stickyForm, short_wait_ms: e.target.value })}
+                    disabled={!stickyForm.enabled}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-50"
+                    placeholder={`default ${STICKY_DEFAULT_SHORT_WAIT_MS}`}
+                  />
+                </div>
+              </div>
+              <p className="text-xs leading-relaxed text-gray-500">
+                Short wait: if the bound key is briefly rate-limited and expected to recover within this
+                window, the gateway waits instead of switching keys (preserves the cache).
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-200 bg-gray-50/60 px-5 py-3.5">
+              <button
+                type="button"
+                onClick={() => setStickyDialog(null)}
+                disabled={stickySaving}
+                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSticky}
+                disabled={stickySaving}
+                className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {stickySaving ? 'Saving...' : 'Save'}
+              </button>
             </div>
           </div>
         </div>

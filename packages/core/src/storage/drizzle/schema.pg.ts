@@ -72,6 +72,8 @@ export const providerApiKeysTable = pgTable('provider_api_keys', {
 	status: text('status').notNull().default('active'),
 	weight: integer('weight').notNull().default(1),
 	priority: integer('priority').notNull().default(0),
+	/** 限流配置 JSON；NULL=不限流 */
+	limitConfig: text('limit_config'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
@@ -88,6 +90,8 @@ export const modelsTable = pgTable('models', {
 	inputModalities: text('input_modalities'),
 	outputModalities: text('output_modalities'),
 	releasedAt: text('released_at'),
+	/** 粘性路由配置 JSON；NULL=无粘性 */
+	stickyConfig: text('sticky_config'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 

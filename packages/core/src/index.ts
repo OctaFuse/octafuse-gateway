@@ -25,6 +25,8 @@ export * from './db/api-keys-types';
 export * from './db/providers-types';
 export * from './db/provider-api-keys-types';
 export * from './db/provider-key-utils';
+export * from './db/provider-key-limit-config';
+export * from './db/model-sticky-config';
 export * from './db/request-logs-types';
 export * from './db/pricing-audit';
 export * from './db/pricing-profile';

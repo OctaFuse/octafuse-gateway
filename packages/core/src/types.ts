@@ -96,6 +96,8 @@ export interface ModelRow {
   output_modalities: string | null;
   /** Model release date `YYYY-MM-DD` */
   released_at: string | null;
+  /** 粘性路由配置 JSON（`parseModelStickyConfig`）；NULL=该模型无粘性（部分查询可能无此列） */
+  sticky_config?: string | null;
   created_at: string;
 }
 

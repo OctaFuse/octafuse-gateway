@@ -11,6 +11,7 @@ import {
 } from '../../services/model-router';
 import { resolveModelRouting } from '../../services/resolve-model-route-group';
 import { selectActiveRouteRows } from '../../services/route-selection';
+import { buildStickyDispatchContext } from '../../services/failover-dispatch';
 import { proxyGeminiContent, EMPTY_USAGE, type UsageFromStream } from '../../services/proxy';
 import { buildRouteRequestBody } from '../../services/route-default-params';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
@@ -182,13 +183,21 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
   }
 
   const requestSignal = c.req.raw.signal;
+  const stickyContext = buildStickyDispatchContext({
+    stickyConfigRaw: model.sticky_config ?? null,
+    userId: apiKey.userId,
+    baseModelId,
+    routeGroup: effectiveRouteGroup,
+    protocol: 'gemini',
+  });
   const proxyResult = await proxyGeminiContent(
     repos,
     routes,
     action,
     body,
     c.req.url.includes('?') ? c.req.url.slice(c.req.url.indexOf('?')) : '',
-    requestSignal
+    requestSignal,
+    { sticky: stickyContext }
   );
   const { usagePromise, chosenRoute, upstreamRequestId } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);

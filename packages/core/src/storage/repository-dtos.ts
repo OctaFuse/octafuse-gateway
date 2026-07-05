@@ -39,6 +39,8 @@ export interface ModelWithRouteCountsRow {
 	input_modalities: string | null;
 	output_modalities: string | null;
 	released_at: string | null;
+	/** 粘性路由配置 JSON；NULL=无粘性 */
+	sticky_config: string | null;
 	created_at: string;
 	routes_count: number;
 	active_routes_count: number;

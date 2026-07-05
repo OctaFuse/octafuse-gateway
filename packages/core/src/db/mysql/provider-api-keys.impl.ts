@@ -23,6 +23,7 @@ function mapAdminRow(r: {
 	status: string;
 	weight: number;
 	priority: number;
+	limitConfig: string | null;
 	createdAt: string;
 	updatedAt: string;
 }): ProviderApiKeyAdminRow {
@@ -33,6 +34,7 @@ function mapAdminRow(r: {
 		status: r.status,
 		weight: r.weight,
 		priority: r.priority,
+		limit_config: r.limitConfig,
 		masked_api_key: maskProviderApiKeyForAdmin(r.apiKey),
 		is_pending_import: isPendingProviderImportApiKey(r.apiKey),
 		created_at: r.createdAt,
@@ -60,6 +62,7 @@ export function createMySqlProviderApiKeysRepository(db: MySqlDatabaseClient): P
 					api_key: myProviderApiKeysTable.apiKey,
 					weight: myProviderApiKeysTable.weight,
 					priority: myProviderApiKeysTable.priority,
+					limit_config: myProviderApiKeysTable.limitConfig,
 				})
 				.from(myProviderApiKeysTable)
 				.where(and(eq(myProviderApiKeysTable.providerId, providerId), eq(myProviderApiKeysTable.status, 'active')))
@@ -70,6 +73,7 @@ export function createMySqlProviderApiKeysRepository(db: MySqlDatabaseClient): P
 				api_key: r.api_key,
 				weight: r.weight,
 				priority: r.priority,
+				limit_config: r.limit_config,
 			}));
 			return keys;
 		},
@@ -84,6 +88,7 @@ export function createMySqlProviderApiKeysRepository(db: MySqlDatabaseClient): P
 				status: params.status ?? 'active',
 				weight: params.weight ?? 1,
 				priority: params.priority ?? 0,
+				limitConfig: params.limitConfig ?? null,
 				createdAt: now,
 				updatedAt: now,
 			});
@@ -96,6 +101,7 @@ export function createMySqlProviderApiKeysRepository(db: MySqlDatabaseClient): P
 			if (patch.status !== undefined) set.status = patch.status;
 			if (patch.weight !== undefined) set.weight = patch.weight;
 			if (patch.priority !== undefined) set.priority = patch.priority;
+			if (patch.limitConfig !== undefined) set.limitConfig = patch.limitConfig;
 			if (Object.keys(set).length <= 1) return 0;
 			const updated = await drizzle
 				.update(myProviderApiKeysTable)

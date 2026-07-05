@@ -20,6 +20,7 @@ function mapAdminRow(row: {
 	status: string;
 	weight: number;
 	priority: number;
+	limit_config: string | null;
 	created_at: string;
 	updated_at: string;
 }): ProviderApiKeyAdminRow {
@@ -30,6 +31,7 @@ function mapAdminRow(row: {
 		status: row.status,
 		weight: row.weight,
 		priority: row.priority,
+		limit_config: row.limit_config,
 		masked_api_key: maskProviderApiKeyForAdmin(row.api_key),
 		is_pending_import: isPendingProviderImportApiKey(row.api_key),
 		created_at: row.created_at,
@@ -43,7 +45,7 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 		async listProviderKeys(providerId: string): Promise<ProviderApiKeyAdminRow[]> {
 			const rows = await raw
 				.prepare(
-					`SELECT id, provider_id, label, api_key, status, weight, priority, created_at, updated_at
+					`SELECT id, provider_id, label, api_key, status, weight, priority, limit_config, created_at, updated_at
 					 FROM provider_api_keys WHERE provider_id = ? ORDER BY priority DESC, created_at ASC`
 				)
 				.bind(providerId)
@@ -55,6 +57,7 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 					status: string;
 					weight: number;
 					priority: number;
+					limit_config: string | null;
 					created_at: string;
 					updated_at: string;
 				}>();
@@ -64,7 +67,7 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 		async getActiveProviderKeys(providerId: string): Promise<ActiveProviderApiKeyRow[]> {
 			const rows = await raw
 				.prepare(
-					`SELECT id, label, api_key, weight, priority FROM provider_api_keys
+					`SELECT id, label, api_key, weight, priority, limit_config FROM provider_api_keys
 					 WHERE provider_id = ? AND status = 'active'
 					 ORDER BY priority DESC, created_at ASC`
 				)
@@ -77,8 +80,8 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 			const now = new Date().toISOString();
 			await raw
 				.prepare(
-					`INSERT INTO provider_api_keys (id, provider_id, label, api_key, status, weight, priority, created_at, updated_at)
-					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+					`INSERT INTO provider_api_keys (id, provider_id, label, api_key, status, weight, priority, limit_config, created_at, updated_at)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 				)
 				.bind(
 					params.id,
@@ -88,6 +91,7 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 					params.status ?? 'active',
 					params.weight ?? 1,
 					params.priority ?? 0,
+					params.limitConfig ?? null,
 					now,
 					now
 				)
@@ -103,6 +107,7 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 				status: patch.status,
 				weight: patch.weight,
 				priority: patch.priority,
+				limit_config: patch.limitConfig,
 			};
 			for (const [key, value] of Object.entries(fieldMap)) {
 				if (value === undefined) continue;
@@ -128,7 +133,7 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 		async getProviderKeyById(keyId: string): Promise<ProviderApiKeyAdminRow | null> {
 			const row = await raw
 				.prepare(
-					`SELECT id, provider_id, label, api_key, status, weight, priority, created_at, updated_at
+					`SELECT id, provider_id, label, api_key, status, weight, priority, limit_config, created_at, updated_at
 					 FROM provider_api_keys WHERE id = ?`
 				)
 				.bind(keyId)
@@ -140,6 +145,7 @@ export function createD1ProviderApiKeysRepository(db: D1DatabaseClient): Provide
 					status: string;
 					weight: number;
 					priority: number;
+					limit_config: string | null;
 					created_at: string;
 					updated_at: string;
 				}>();

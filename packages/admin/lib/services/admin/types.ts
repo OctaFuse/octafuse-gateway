@@ -112,6 +112,8 @@ export type AdminProviderKeyMutationInput = {
 	status?: 'active' | 'disabled';
 	weight?: unknown;
 	priority?: unknown;
+	/** 限流配置 JSON 字符串（`{"rpm":…,"tpm":…,"max_concurrency":…}`）；null/空串清空 */
+	limit_config?: unknown;
 };
 
 /** `GET /admin/providers/import/catalog`：内置 Provider 模板摘要（无密钥）。`id` 为 catalog 行键（数组下标），非入库 provider id。 */
@@ -243,6 +245,8 @@ export type AdminModelRow = {
 	released_at: string | null;
 	description: string | null;
 	metadata: string | null;
+	/** 粘性 key 路由配置 JSON；null=无粘性 */
+	sticky_config?: string | null;
 	created_at: string;
 	routes_count?: number;
 	active_routes_count?: number;

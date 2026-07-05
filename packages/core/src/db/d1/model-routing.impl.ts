@@ -21,7 +21,7 @@ export function createD1ModelRoutingRepository(db: D1DatabaseClient): ModelRouti
 				.prepare(
 					`SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens, m.pricing_profile,
        (SELECT json_group_array(tag) FROM model_tags WHERE model_id = m.id) AS tags,
-       m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.created_at
+       m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.sticky_config, m.created_at
        FROM models m WHERE m.id = ?`
 				)
 				.bind(id)

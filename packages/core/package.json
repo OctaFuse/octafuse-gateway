@@ -28,6 +28,8 @@
 		},
 		"./db/pricing-profile": "./src/db/pricing-profile.ts",
 		"./db/model-modalities": "./src/db/model-modalities.ts",
+		"./db/model-sticky-config": "./src/db/model-sticky-config.ts",
+		"./db/provider-key-limit-config": "./src/db/provider-key-limit-config.ts",
 		"./db/request-log-status-filter": "./src/db/request-log-status-filter.ts",
 		"./db/user-audit-catalog": "./src/db/user-audit-catalog.ts",
 		"./db/user-budget-audit-params": "./src/db/user-budget-audit-params.ts",

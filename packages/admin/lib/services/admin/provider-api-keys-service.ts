@@ -1,6 +1,7 @@
 /** 管理后台 `provider_api_keys` CRUD。 */
 import type { GatewayRepositories } from '@octafuse/core';
 import type { ProviderApiKeyAdminRow, ActiveProviderApiKeyRow } from '@octafuse/core';
+import { normalizeProviderKeyLimitConfigInput } from '@octafuse/core';
 import { badRequest, conflict, notFound } from './errors';
 import type { AdminCreatedIdOutput, AdminProviderKeyMutationInput } from './types';
 
@@ -42,6 +43,17 @@ export async function createProviderKeyService(
 		throw badRequest('label and api_key are required');
 	}
 
+	let limitConfig: string | null = null;
+	if (body.limit_config !== undefined) {
+		try {
+			limitConfig = normalizeProviderKeyLimitConfigInput(
+				body.limit_config == null ? null : String(body.limit_config)
+			);
+		} catch (err) {
+			throw badRequest(err instanceof Error ? err.message : 'Invalid limit_config');
+		}
+	}
+
 	const id = crypto.randomUUID();
 	await repos.providerKeys.createProviderKey({
 		id,
@@ -51,6 +63,7 @@ export async function createProviderKeyService(
 		status: body.status === 'disabled' ? 'disabled' : 'active',
 		weight: typeof body.weight === 'number' ? body.weight : Number(body.weight ?? 1) || 1,
 		priority: typeof body.priority === 'number' ? body.priority : Number(body.priority ?? 0) || 0,
+		limitConfig,
 	});
 
 	return { id };
@@ -95,6 +108,15 @@ export async function updateProviderKeyService(
 	}
 	if (body.priority !== undefined) {
 		patch.priority = typeof body.priority === 'number' ? body.priority : Number(body.priority);
+	}
+	if (body.limit_config !== undefined) {
+		try {
+			patch.limitConfig = normalizeProviderKeyLimitConfigInput(
+				body.limit_config == null ? null : String(body.limit_config)
+			);
+		} catch (err) {
+			throw badRequest(err instanceof Error ? err.message : 'Invalid limit_config');
+		}
 	}
 
 	const changes = await repos.providerKeys.updateProviderKeyByPatch(keyId, patch);

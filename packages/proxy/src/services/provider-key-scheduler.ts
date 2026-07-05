@@ -1,29 +1,50 @@
 /**
- * Provider key pool 调度：按 priority 分批 failover，同批内 weighted-random + 单实例内存 cooldown。
+ * Provider key 调度计划：把 protocol 已过滤的 routes + 各 provider 的 key 池编排为本次请求的尝试序列。
+ *
+ * 排序规则（priority 硬序 + 层内余量）：
+ * 1. 按 `model_routes.priority` 层从高到低；**同层多个 provider 的 key 合并为一个池**。
+ * 2. 层内按 `provider_api_keys.priority` 批次从高到低。
+ * 3. 批次内按限流余量（`getProviderKeyHeadroom`）降序；余量差 <10% 视为并列，并列按 weight 加权随机打散。
+ * 4. 熔断中 / 限流中的 key 跳过，但记录最早恢复时间（供全不可用时返回 429 + Retry-After）。
+ * 5. 粘性绑定的 key 若可用则提到首位；若仅因网关限流暂不可用且预计恢复 ≤ 短等待阈值，给出等待建议。
  */
 import type { ActiveProviderApiKeyRow } from '@octafuse/core';
+import type { RouteResult } from './model-router';
+import { getProviderKeyCircuitRemainingMs } from './provider-key-circuit-breaker';
+import { checkProviderKeyAvailability, getProviderKeyHeadroom } from './provider-key-rate-limiter';
+import type { StickyBinding } from './sticky-key-binding';
 
-const KEY_COOLDOWN_MS = 60_000;
-const keyCooldownUntil = new Map<string, number>();
+/** 一次上游尝试：某条路由 + 该 provider 的某把 key。 */
+export type KeyAttempt = {
+	route: RouteResult;
+	key: ActiveProviderApiKeyRow;
+};
 
-export function markProviderKeyCooldown(keyId: string, cooldownMs = KEY_COOLDOWN_MS): void {
-	keyCooldownUntil.set(keyId, Date.now() + cooldownMs);
-}
+export type KeyAttemptPlan = {
+	/** 依次尝试的候选（已排除熔断/限流中的 key） */
+	attempts: KeyAttempt[];
+	/** 被跳过的 key 中最早恢复等待 ms；无被跳过者为 null */
+	earliestRetryAfterMs: number | null;
+	/**
+	 * 粘性绑定 key 因网关限流被跳过、且预计恢复 ≤ shortWaitMs 时的等待建议；
+	 * dispatch 层等待后应重新构建计划。
+	 */
+	stickyWait: { waitMs: number } | null;
+};
 
-function isKeyEligible(keyId: string, now: number): boolean {
-	return (keyCooldownUntil.get(keyId) ?? 0) <= now;
-}
+/** 同批次内余量差小于该值视为并列（并列时按 weight 加权随机）。 */
+const HEADROOM_TIE_EPSILON = 0.1;
 
-function weightedRandomOrder(keys: ActiveProviderApiKeyRow[]): ActiveProviderApiKeyRow[] {
-	if (keys.length <= 1) return [...keys];
-	const pool = [...keys];
-	const ordered: ActiveProviderApiKeyRow[] = [];
+function weightedRandomOrder(attempts: KeyAttempt[]): KeyAttempt[] {
+	if (attempts.length <= 1) return [...attempts];
+	const pool = [...attempts];
+	const ordered: KeyAttempt[] = [];
 	while (pool.length > 0) {
-		const totalWeight = pool.reduce((sum, k) => sum + Math.max(1, k.weight), 0);
+		const totalWeight = pool.reduce((sum, a) => sum + Math.max(1, a.key.weight), 0);
 		let pick = Math.random() * totalWeight;
 		let idx = 0;
 		for (let i = 0; i < pool.length; i++) {
-			pick -= Math.max(1, pool[i]!.weight);
+			pick -= Math.max(1, pool[i]!.key.weight);
 			if (pick <= 0) {
 				idx = i;
 				break;
@@ -35,35 +56,120 @@ function weightedRandomOrder(keys: ActiveProviderApiKeyRow[]): ActiveProviderApi
 	return ordered;
 }
 
-function groupKeysByPriorityDesc(keys: ActiveProviderApiKeyRow[]): ActiveProviderApiKeyRow[][] {
-	const groups = new Map<number, ActiveProviderApiKeyRow[]>();
-	for (const key of keys) {
-		const bucket = groups.get(key.priority) ?? [];
-		bucket.push(key);
-		groups.set(key.priority, bucket);
+/** 批次内排序：余量降序；余量接近（<10%）的相邻段内按 weight 加权随机。 */
+function orderBatchByHeadroom(batch: KeyAttempt[], now: number): KeyAttempt[] {
+	if (batch.length <= 1) return [...batch];
+	const withHeadroom = batch.map((attempt) => ({
+		attempt,
+		headroom: getProviderKeyHeadroom(attempt.key, now),
+	}));
+	withHeadroom.sort((a, b) => b.headroom - a.headroom);
+
+	const ordered: KeyAttempt[] = [];
+	let groupStart = 0;
+	while (groupStart < withHeadroom.length) {
+		const leader = withHeadroom[groupStart]!.headroom;
+		let groupEnd = groupStart + 1;
+		while (groupEnd < withHeadroom.length && leader - withHeadroom[groupEnd]!.headroom < HEADROOM_TIE_EPSILON) {
+			groupEnd += 1;
+		}
+		ordered.push(...weightedRandomOrder(withHeadroom.slice(groupStart, groupEnd).map((x) => x.attempt)));
+		groupStart = groupEnd;
 	}
-	return [...groups.entries()]
-		.sort((a, b) => b[0] - a[0])
-		.map(([, groupKeys]) => groupKeys);
+	return ordered;
 }
 
-function orderKeysByPriorityThenWeight(keys: ActiveProviderApiKeyRow[]): ActiveProviderApiKeyRow[] {
-	return groupKeysByPriorityDesc(keys).flatMap((group) => weightedRandomOrder(group));
+function groupAttemptsByKeyPriorityDesc(attempts: KeyAttempt[]): KeyAttempt[][] {
+	const groups = new Map<number, KeyAttempt[]>();
+	for (const attempt of attempts) {
+		const bucket = groups.get(attempt.key.priority) ?? [];
+		bucket.push(attempt);
+		groups.set(attempt.key.priority, bucket);
+	}
+	return [...groups.entries()].sort((a, b) => b[0] - a[0]).map(([, group]) => group);
+}
+
+function groupRoutesByPriorityDesc(routes: RouteResult[]): RouteResult[][] {
+	const groups = new Map<number, RouteResult[]>();
+	for (const route of routes) {
+		const bucket = groups.get(route.routePriority) ?? [];
+		bucket.push(route);
+		groups.set(route.routePriority, bucket);
+	}
+	return [...groups.entries()].sort((a, b) => b[0] - a[0]).map(([, group]) => group);
 }
 
 /**
- * 返回本次请求应依次尝试的 active keys：先按 priority 降序分批，同批内 weighted-random。
- * 跳过 cooldown 中的 key；若全部被 cooldown，则回退为全部 active keys 的同序尝试。
+ * 构建本次请求的 key 尝试计划。
+ * @param routes 已按协议过滤的路由（含 `routePriority`）
+ * @param keysByProvider 各 providerId 的 active key 池（批量预取）
+ * @param sticky 粘性绑定与短等待阈值（无粘性时 null）
  */
-export function selectProviderKeysForAttempt(keys: ActiveProviderApiKeyRow[]): ActiveProviderApiKeyRow[] {
-	if (keys.length === 0) return [];
-	const now = Date.now();
-	const eligible = keys.filter((k) => isKeyEligible(k.id, now));
-	const base = eligible.length > 0 ? eligible : keys;
-	return orderKeysByPriorityThenWeight(base);
+export function buildKeyAttemptPlan(
+	routes: RouteResult[],
+	keysByProvider: Map<string, ActiveProviderApiKeyRow[]>,
+	sticky: { binding: StickyBinding; shortWaitMs: number } | null = null,
+	now = Date.now()
+): KeyAttemptPlan {
+	const attempts: KeyAttempt[] = [];
+	let earliestRetryAfterMs: number | null = null;
+	let stickyWait: { waitMs: number } | null = null;
+	let stickyAttempt: KeyAttempt | null = null;
+
+	const trackRetryAfter = (ms: number): void => {
+		if (earliestRetryAfterMs == null || ms < earliestRetryAfterMs) {
+			earliestRetryAfterMs = ms;
+		}
+	};
+
+	for (const tier of groupRoutesByPriorityDesc(routes)) {
+		const tierAttempts: KeyAttempt[] = [];
+		for (const route of tier) {
+			const keys = keysByProvider.get(route.providerId) ?? [];
+			for (const key of keys) {
+				tierAttempts.push({ route, key });
+			}
+		}
+
+		for (const batch of groupAttemptsByKeyPriorityDesc(tierAttempts)) {
+			const eligible: KeyAttempt[] = [];
+			for (const attempt of batch) {
+				const isStickyKey =
+					sticky != null &&
+					attempt.route.providerId === sticky.binding.providerId &&
+					attempt.key.id === sticky.binding.keyId;
+
+				const circuitRemainingMs = getProviderKeyCircuitRemainingMs(attempt.key.id, now);
+				if (circuitRemainingMs > 0) {
+					trackRetryAfter(circuitRemainingMs);
+					continue;
+				}
+				const availability = checkProviderKeyAvailability(attempt.key, now);
+				if (!availability.available) {
+					trackRetryAfter(availability.retryAfterMs);
+					if (isStickyKey && stickyWait == null && availability.retryAfterMs <= sticky.shortWaitMs) {
+						stickyWait = { waitMs: availability.retryAfterMs };
+					}
+					continue;
+				}
+				if (isStickyKey) {
+					stickyAttempt = attempt;
+					continue; // 单独置顶，不参与批内排序
+				}
+				eligible.push(attempt);
+			}
+			attempts.push(...orderBatchByHeadroom(eligible, now));
+		}
+	}
+
+	if (stickyAttempt) {
+		attempts.unshift(stickyAttempt);
+		stickyWait = null; // 绑定 key 可用时无需等待
+	}
+
+	return { attempts, earliestRetryAfterMs, stickyWait };
 }
 
-/** 测试用：清空 cooldown 状态。 */
-export function resetProviderKeyCooldownStateForTests(): void {
-	keyCooldownUntil.clear();
-}
+/** 测试用：重导出运行时状态清理（旧测试兼容入口已移除，请分别使用各服务的 reset）。 */
+export { resetProviderKeyCircuitStateForTests } from './provider-key-circuit-breaker';
+export { resetProviderKeyRateLimiterStateForTests } from './provider-key-rate-limiter';

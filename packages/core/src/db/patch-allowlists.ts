@@ -12,7 +12,14 @@ export const PROVIDER_PATCH_COLS = new Set([
 	'description',
 ]);
 
-export const PROVIDER_API_KEY_PATCH_COLS = new Set(['label', 'api_key', 'status', 'weight', 'priority']);
+export const PROVIDER_API_KEY_PATCH_COLS = new Set([
+	'label',
+	'api_key',
+	'status',
+	'weight',
+	'priority',
+	'limit_config',
+]);
 
 export const MODEL_PATCH_COLS = new Set([
 	'display_name',
@@ -25,6 +32,7 @@ export const MODEL_PATCH_COLS = new Set([
 	'input_modalities',
 	'output_modalities',
 	'released_at',
+	'sticky_config',
 ]);
 
 export const MODEL_ROUTE_PATCH_COLS = new Set([

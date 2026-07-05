@@ -11,6 +11,7 @@ import {
 } from '../../services/model-router';
 import { resolveModelRouting } from '../../services/resolve-model-route-group';
 import { selectActiveRouteRows } from '../../services/route-selection';
+import { buildStickyDispatchContext } from '../../services/failover-dispatch';
 import { proxyAnthropicMessages, EMPTY_USAGE, type UsageFromStream } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
 import { summarizeAnthropicToolsForLog } from '../../services/request-log-tools-summary';
@@ -144,7 +145,16 @@ messagesRoutes.post('/', async (c) => {
   }
 
   const requestSignal = c.req.raw.signal;
-  const proxyResult = await proxyAnthropicMessages(repos, routes, body, requestSignal);
+  const stickyContext = buildStickyDispatchContext({
+    stickyConfigRaw: model.sticky_config ?? null,
+    userId: apiKey.userId,
+    baseModelId,
+    routeGroup: effectiveRouteGroup,
+    protocol: 'anthropic',
+  });
+  const proxyResult = await proxyAnthropicMessages(repos, routes, body, requestSignal, {
+    sticky: stickyContext,
+  });
   const { usagePromise, chosenRoute, upstreamRequestId } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 

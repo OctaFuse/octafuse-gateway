@@ -68,6 +68,8 @@ export const providerApiKeysTable = sqliteTable('provider_api_keys', {
 	status: text('status').notNull().default('active'),
 	weight: integer('weight').notNull().default(1),
 	priority: integer('priority').notNull().default(0),
+	/** 限流配置 JSON；NULL=不限流 */
+	limitConfig: text('limit_config'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -85,6 +87,8 @@ export const modelsTable = sqliteTable('models', {
 	inputModalities: text('input_modalities'),
 	outputModalities: text('output_modalities'),
 	releasedAt: text('released_at'),
+	/** 粘性路由配置 JSON；NULL=无粘性 */
+	stickyConfig: text('sticky_config'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 

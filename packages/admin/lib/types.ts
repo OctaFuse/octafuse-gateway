@@ -130,6 +130,8 @@ export interface GatewayModel {
   tags: string;
   description: string | null;
   metadata: string | null;
+  /** 粘性 key 路由配置 JSON（`{"rules":{"openai:default":{"ttl_seconds":600,...}}}`）；null=无粘性 */
+  sticky_config?: string | null;
   created_at: string;
   /** Count of active routes associated with this model */
   active_routes_count?: number;

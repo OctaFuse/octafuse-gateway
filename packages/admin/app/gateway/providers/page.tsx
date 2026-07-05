@@ -3,7 +3,7 @@
 /**
  * 上游供应商：CRUD、各协议 base URL 与 API Key；对应 Worker `/admin/providers`。
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Fragment, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   TrashIcon,
   PlusIcon,
@@ -11,6 +11,7 @@ import {
   ArrowDownTrayIcon,
   DocumentDuplicateIcon,
   ClipboardDocumentIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import {
   OpenAiEndpointIcon,
@@ -41,6 +42,8 @@ type ProviderKeyRow = {
   status: string;
   weight: number;
   priority: number;
+  /** 限流配置 JSON（`{"rpm":…,"tpm":…,"max_concurrency":…}`）；null=不限流 */
+  limit_config: string | null;
   masked_api_key: string;
   is_pending_import: boolean;
   created_at: string;
@@ -52,7 +55,50 @@ const emptyKeyForm = {
   api_key: '',
   weight: '1',
   priority: '0',
+  rpm: '',
+  tpm: '',
+  max_concurrency: '',
 };
+
+/** 表单三个限流输入 → limit_config JSON 字符串；全空返回 null（不限流）。 */
+function buildLimitConfigJson(form: { rpm: string; tpm: string; max_concurrency: string }): string | null {
+  const out: Record<string, number> = {};
+  const rpm = Number(form.rpm);
+  const tpm = Number(form.tpm);
+  const maxConcurrency = Number(form.max_concurrency);
+  if (form.rpm.trim() !== '' && Number.isFinite(rpm) && rpm > 0) out.rpm = Math.floor(rpm);
+  if (form.tpm.trim() !== '' && Number.isFinite(tpm) && tpm > 0) out.tpm = Math.floor(tpm);
+  if (form.max_concurrency.trim() !== '' && Number.isFinite(maxConcurrency) && maxConcurrency > 0) {
+    out.max_concurrency = Math.floor(maxConcurrency);
+  }
+  return Object.keys(out).length > 0 ? JSON.stringify(out) : null;
+}
+
+/** limit_config JSON → 表单字段（编辑既有 key 时预填）。 */
+function limitConfigToFormFields(raw: string | null): { rpm: string; tpm: string; max_concurrency: string } {
+  const empty = { rpm: '', tpm: '', max_concurrency: '' };
+  if (!raw) return empty;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return {
+      rpm: typeof parsed.rpm === 'number' ? String(parsed.rpm) : '',
+      tpm: typeof parsed.tpm === 'number' ? String(parsed.tpm) : '',
+      max_concurrency: typeof parsed.max_concurrency === 'number' ? String(parsed.max_concurrency) : '',
+    };
+  } catch {
+    return empty;
+  }
+}
+
+/** 表格「Limits」列展示文本。 */
+function formatLimitConfig(raw: string | null): string {
+  const fields = limitConfigToFormFields(raw);
+  const parts: string[] = [];
+  if (fields.rpm) parts.push(`RPM ${fields.rpm}`);
+  if (fields.tpm) parts.push(`TPM ${fields.tpm}`);
+  if (fields.max_concurrency) parts.push(`Conc ${fields.max_concurrency}`);
+  return parts.length > 0 ? parts.join(' · ') : '—';
+}
 
 const emptyForm = {
   id: '',
@@ -99,6 +145,10 @@ export default function GatewayProvidersPage() {
   const [showKeyForm, setShowKeyForm] = useState(false);
   const [keySaving, setKeySaving] = useState(false);
   const [keyError, setKeyError] = useState('');
+  /** 正在编辑限流配置的 key id（行内编辑区） */
+  const [editingLimitsKeyId, setEditingLimitsKeyId] = useState<string | null>(null);
+  const [limitsForm, setLimitsForm] = useState({ rpm: '', tpm: '', max_concurrency: '' });
+  const [limitsSaving, setLimitsSaving] = useState(false);
 
   const existingProviderIds = useMemo(() => new Set(providers.map((p) => p.id)), [providers]);
   const pendingKeyCount = useMemo(
@@ -132,6 +182,7 @@ export default function GatewayProvidersPage() {
   }, []);
 
   useEffect(() => {
+    setEditingLimitsKeyId(null);
     if (editingProvider) {
       void fetchProviderKeys(editingProvider.id);
     } else {
@@ -161,6 +212,7 @@ export default function GatewayProvidersPage() {
           api_key: apiKey,
           weight: Number(keyForm.weight) || 1,
           priority: Number(keyForm.priority) || 0,
+          limit_config: buildLimitConfigJson(keyForm),
         }),
       });
       const data = await readApiJson(response);
@@ -222,6 +274,40 @@ export default function GatewayProvidersPage() {
     } catch (error) {
       console.error('Toggle provider key error:', error);
       alert('Update failed');
+    }
+  };
+
+  const handleStartEditLimits = (key: ProviderKeyRow) => {
+    setEditingLimitsKeyId(key.id);
+    setLimitsForm(limitConfigToFormFields(key.limit_config));
+    setKeyError('');
+  };
+
+  const handleSaveKeyLimits = async (key: ProviderKeyRow) => {
+    if (!editingProvider) return;
+    setLimitsSaving(true);
+    setKeyError('');
+    try {
+      const response = await fetch(
+        `/api/admin/providers/${encodeURIComponent(editingProvider.id)}/keys/${encodeURIComponent(key.id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit_config: buildLimitConfigJson(limitsForm) }),
+        }
+      );
+      const data = await readApiJson(response);
+      if (data.success) {
+        setEditingLimitsKeyId(null);
+        void fetchProviderKeys(editingProvider.id);
+      } else {
+        setKeyError(data.message || 'Failed to update limits');
+      }
+    } catch (error) {
+      console.error('Update key limits error:', error);
+      setKeyError('Failed to update limits');
+    } finally {
+      setLimitsSaving(false);
     }
   };
 
@@ -965,12 +1051,14 @@ export default function GatewayProvidersPage() {
                                 <th className="px-3 py-2">Status</th>
                                 <th className="px-3 py-2">Weight</th>
                                 <th className="px-3 py-2">Priority</th>
+                                <th className="px-3 py-2">Limits</th>
                                 <th className="px-3 py-2 text-right">Actions</th>
                               </tr>
                             </thead>
                             <tbody>
                               {providerKeys.map((key) => (
-                                <tr key={key.id} className="border-t border-gray-100">
+                                <Fragment key={key.id}>
+                                <tr className="border-t border-gray-100">
                                   <td className="px-3 py-2 font-mono text-xs">{key.label}</td>
                                   <td className="min-w-[12rem] px-3 py-2">
                                     <div className="flex items-center gap-2">
@@ -1015,6 +1103,22 @@ export default function GatewayProvidersPage() {
                                   </td>
                                   <td className="px-3 py-2">{key.weight}</td>
                                   <td className="px-3 py-2">{key.priority}</td>
+                                  <td className="px-3 py-2">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="whitespace-nowrap text-xs text-gray-600">
+                                        {formatLimitConfig(key.limit_config)}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleStartEditLimits(key)}
+                                        aria-label={`Edit limits for key ${key.label}`}
+                                        className="shrink-0 text-gray-400 hover:text-gray-600"
+                                        title="Edit rate limits (RPM / TPM / concurrency)"
+                                      >
+                                        <PencilSquareIcon className="h-4 w-4" aria-hidden />
+                                      </button>
+                                    </div>
+                                  </td>
                                   <td className="px-3 py-2 text-right">
                                     <button
                                       type="button"
@@ -1026,6 +1130,71 @@ export default function GatewayProvidersPage() {
                                     </button>
                                   </td>
                                 </tr>
+                                {editingLimitsKeyId === key.id && (
+                                  <tr className="border-t border-gray-100 bg-slate-50">
+                                    <td colSpan={7} className="px-3 py-3">
+                                      <div className="flex flex-wrap items-end gap-3">
+                                        <div>
+                                          <label className="mb-1 block text-xs font-medium text-gray-700">RPM</label>
+                                          <input
+                                            type="number"
+                                            min={1}
+                                            value={limitsForm.rpm}
+                                            onChange={(e) => setLimitsForm({ ...limitsForm, rpm: e.target.value })}
+                                            className="w-28 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                                            placeholder="unlimited"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="mb-1 block text-xs font-medium text-gray-700">TPM</label>
+                                          <input
+                                            type="number"
+                                            min={1}
+                                            value={limitsForm.tpm}
+                                            onChange={(e) => setLimitsForm({ ...limitsForm, tpm: e.target.value })}
+                                            className="w-32 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                                            placeholder="unlimited"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="mb-1 block text-xs font-medium text-gray-700">Concurrency</label>
+                                          <input
+                                            type="number"
+                                            min={1}
+                                            value={limitsForm.max_concurrency}
+                                            onChange={(e) =>
+                                              setLimitsForm({ ...limitsForm, max_concurrency: e.target.value })
+                                            }
+                                            className="w-28 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                                            placeholder="unlimited"
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => void handleSaveKeyLimits(key)}
+                                            disabled={limitsSaving}
+                                            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+                                          >
+                                            {limitsSaving ? 'Saving…' : 'Save limits'}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditingLimitsKeyId(null)}
+                                            disabled={limitsSaving}
+                                            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                        <p className="basis-full text-xs text-gray-500">
+                                          Leave blank for unlimited. Counted in-memory per gateway instance (sliding 60s window); set ~90% of the upstream quota.
+                                        </p>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                </Fragment>
                               ))}
                             </tbody>
                           </table>
@@ -1064,6 +1233,41 @@ export default function GatewayProvidersPage() {
                                 onChange={(e) => setKeyForm({ ...keyForm, weight: e.target.value })}
                                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                                 placeholder="1"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">RPM limit</label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={keyForm.rpm}
+                                onChange={(e) => setKeyForm({ ...keyForm, rpm: e.target.value })}
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="unlimited"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">TPM limit</label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={keyForm.tpm}
+                                onChange={(e) => setKeyForm({ ...keyForm, tpm: e.target.value })}
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="unlimited"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-sm font-medium text-gray-700">Max concurrency</label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={keyForm.max_concurrency}
+                                onChange={(e) => setKeyForm({ ...keyForm, max_concurrency: e.target.value })}
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="unlimited"
                               />
                             </div>
                           </div>

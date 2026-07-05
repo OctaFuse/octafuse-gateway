@@ -27,6 +27,8 @@ export interface RouteResult {
   routeChargedProfileJson: string | null;
   customParams: Record<string, unknown> | null;
   routeGroup: string;
+  /** `model_routes.priority`；同层 provider 的 key 池在调度时合并 */
+  routePriority: number;
   /** 本次 attempt 选用的 provider key（由 failover 层写入） */
   providerKeyId?: string | null;
   providerKeyLabel?: string | null;
@@ -77,6 +79,7 @@ async function routeRowToResult(repos: GatewayRepositories, route: ModelRouteRow
     routeChargedProfileJson: extractChargedProfileFromPriceOverrideJson(route.price_override),
     customParams,
     routeGroup,
+    routePriority: route.priority,
     providerKeyId: null,
     providerKeyLabel: null,
     providerKeyFingerprint: null,

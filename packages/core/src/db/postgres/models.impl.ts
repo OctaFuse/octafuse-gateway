@@ -20,7 +20,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
 			m.pricing_profile,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
-			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.created_at::text,
+			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.sticky_config, m.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id AND status = 'active') AS active_routes_count
 		FROM models m ORDER BY m.id ASC
@@ -33,7 +33,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
 			m.pricing_profile,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
-			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.created_at::text,
+			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.sticky_config, m.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id AND status = 'active') AS active_routes_count
 		FROM models m WHERE m.id = ${id}

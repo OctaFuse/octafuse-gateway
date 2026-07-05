@@ -42,7 +42,7 @@ export function createPostgresModelRoutingRepository(db: PostgresDatabaseClient)
 			const rows = await pg<ModelRow[]>`
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens, m.pricing_profile,
 			(SELECT COALESCE(json_agg(tag ORDER BY tag)::text, '[]') FROM model_tags WHERE model_id = m.id) AS tags,
-			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.created_at::text
+			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.sticky_config, m.created_at::text
 		FROM models m WHERE m.id = ${id}
 	`;
 			return rows[0] ?? null;

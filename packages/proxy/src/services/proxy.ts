@@ -7,7 +7,9 @@ import type { RouteResult } from './model-router';
 import { dispatchOpenAiRoute } from './egress/openai-driver';
 import { dispatchAnthropicRoute } from './egress/anthropic-driver';
 import { dispatchGeminiRoute } from './egress/gemini-driver';
-import { failoverDispatchWithKeyPool } from './failover-dispatch';
+import { failoverDispatchWithKeyPool, type FailoverDispatchOptions } from './failover-dispatch';
+
+export type { FailoverDispatchOptions, StickyDispatchContext } from './failover-dispatch';
 
 /** 各协议 driver 从上游响应/stream 汇总出的用量（供 `usage-tracker` 计价）。 */
 export interface UsageFromStream {
@@ -61,14 +63,16 @@ export async function proxyChatCompletions(
 	repos: GatewayRepositories,
 	routes: RouteResult[],
 	body: Record<string, unknown>,
-	requestSignal?: AbortSignal
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
 ): Promise<ProxyResult> {
 	const result = await failoverDispatchWithKeyPool(
 		repos,
 		routes,
 		'openai',
 		(route, signal) => dispatchOpenAiRoute(route, body, signal),
-		requestSignal
+		requestSignal,
+		options
 	);
 	return result;
 }
@@ -80,14 +84,16 @@ export async function proxyAnthropicMessages(
 	repos: GatewayRepositories,
 	routes: RouteResult[],
 	body: Record<string, unknown>,
-	requestSignal?: AbortSignal
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
 ): Promise<ProxyResult> {
 	return failoverDispatchWithKeyPool(
 		repos,
 		routes,
 		'anthropic',
 		(route, signal) => dispatchAnthropicRoute(route, body, signal),
-		requestSignal
+		requestSignal,
+		options
 	);
 }
 
@@ -100,13 +106,15 @@ export async function proxyGeminiContent(
 	action: 'generateContent' | 'streamGenerateContent',
 	body: Record<string, unknown>,
 	search: string,
-	requestSignal?: AbortSignal
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
 ): Promise<ProxyResult> {
 	return failoverDispatchWithKeyPool(
 		repos,
 		routes,
 		'gemini',
 		(route, signal) => dispatchGeminiRoute(route, body, action, search, signal),
-		requestSignal
+		requestSignal,
+		options
 	);
 }

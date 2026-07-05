@@ -101,6 +101,8 @@ export const providerApiKeysTable = mysqlTable('provider_api_keys', {
 	status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
 	weight: int('weight').notNull().default(1),
 	priority: int('priority').notNull().default(0),
+	/** 限流配置 JSON；NULL=不限流 */
+	limitConfig: text('limit_config'),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 	updatedAt: timestamp('updated_at', { fsp: 6, mode: 'string' }).notNull(),
 });
@@ -117,6 +119,8 @@ export const modelsTable = mysqlTable('models', {
 	inputModalities: text('input_modalities'),
 	outputModalities: text('output_modalities'),
 	releasedAt: text('released_at'),
+	/** 粘性路由配置 JSON；NULL=无粘性 */
+	stickyConfig: text('sticky_config'),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 
