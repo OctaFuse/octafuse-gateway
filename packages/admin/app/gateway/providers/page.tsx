@@ -12,6 +12,12 @@ import {
   DocumentDuplicateIcon,
   ClipboardDocumentIcon,
   PencilSquareIcon,
+  ChevronDownIcon,
+  KeyIcon,
+  ServerStackIcon,
+  ExclamationTriangleIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import {
   OpenAiEndpointIcon,
@@ -100,6 +106,35 @@ function formatLimitConfig(raw: string | null): string {
   return parts.length > 0 ? parts.join(' · ') : '—';
 }
 
+type ProviderProtocolSummary = {
+  key: 'openai' | 'anthropic' | 'gemini';
+  label: string;
+  url: string;
+};
+
+function getProviderProtocolSummaries(provider: GatewayProvider): ProviderProtocolSummary[] {
+  const rows: ProviderProtocolSummary[] = [];
+  const openaiUrl = provider.base_url_openai?.trim() ?? '';
+  const anthropicUrl = provider.base_url_anthropic?.trim() ?? '';
+  const geminiUrl = provider.base_url_gemini?.trim() ?? '';
+  if (openaiUrl) rows.push({ key: 'openai', label: 'OpenAI', url: openaiUrl });
+  if (anthropicUrl) rows.push({ key: 'anthropic', label: 'Anthropic', url: anthropicUrl });
+  if (geminiUrl) rows.push({ key: 'gemini', label: 'Gemini', url: geminiUrl });
+  return rows;
+}
+
+function ProviderProtocolIcon(props: { protocol: ProviderProtocolSummary['key'] }) {
+  if (props.protocol === 'openai') return <OpenAiEndpointIcon label="OpenAI" className="inline-flex" />;
+  if (props.protocol === 'anthropic') return <AnthropicEndpointIcon label="Anthropic" className="h-4 w-4" />;
+  return <GeminiEndpointIcon label="Gemini" className="h-4 w-4" />;
+}
+
+function keyStatusClass(status: string): string {
+  if (status === 'active') return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
+  if (status === 'disabled') return 'bg-gray-100 text-gray-600 ring-gray-200';
+  return 'bg-amber-50 text-amber-800 ring-amber-200';
+}
+
 const emptyForm = {
   id: '',
   name: '',
@@ -123,6 +158,7 @@ function suggestDuplicateProviderId(sourceId: string, existingIds: Set<string>):
 export default function GatewayProvidersPage() {
   const [providers, setProviders] = useState<GatewayProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [providerSearch, setProviderSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProvider, setEditingProvider] = useState<GatewayProvider | null>(null);
   /** 新建弹窗由「复制」预填时，记录源 Provider id（仅 UI 提示） */
@@ -141,6 +177,10 @@ export default function GatewayProvidersPage() {
   const [importSubmitting, setImportSubmitting] = useState(false);
   const [providerKeys, setProviderKeys] = useState<ProviderKeyRow[]>([]);
   const [keysLoading, setKeysLoading] = useState(false);
+  const [expandedProviderId, setExpandedProviderId] = useState<string | null>(null);
+  const [providerKeyPreviewById, setProviderKeyPreviewById] = useState<Record<string, ProviderKeyRow[]>>({});
+  const [keyPreviewLoadingId, setKeyPreviewLoadingId] = useState<string | null>(null);
+  const [keyPreviewErrorById, setKeyPreviewErrorById] = useState<Record<string, string>>({});
   const [keyForm, setKeyForm] = useState(emptyKeyForm);
   const [showKeyForm, setShowKeyForm] = useState(false);
   const [keySaving, setKeySaving] = useState(false);
@@ -155,31 +195,90 @@ export default function GatewayProvidersPage() {
     () => providers.filter((p) => p.has_pending_key).length,
     [providers]
   );
+  const filteredProviders = useMemo(() => {
+    const query = providerSearch.trim().toLowerCase();
+    if (!query) return providers;
+    return providers.filter((provider) => provider.name.toLowerCase().includes(query));
+  }, [providerSearch, providers]);
+  const providerOverview = useMemo(() => {
+    const protocols = filteredProviders.reduce(
+      (acc, provider) => {
+        if (provider.base_url_openai?.trim()) acc.openai++;
+        if (provider.base_url_anthropic?.trim()) acc.anthropic++;
+        if (provider.base_url_gemini?.trim()) acc.gemini++;
+        return acc;
+      },
+      { openai: 0, anthropic: 0, gemini: 0 }
+    );
+    return {
+      total: filteredProviders.length,
+      activeKeys: filteredProviders.reduce((sum, provider) => sum + (provider.active_key_count ?? 0), 0),
+      withoutKeys: filteredProviders.filter((provider) => (provider.active_key_count ?? 0) === 0).length,
+      protocols,
+    };
+  }, [filteredProviders]);
   const importSelectedCount = useMemo(
     () => Object.values(importSelected).filter(Boolean).length,
     [importSelected]
   );
 
+  const loadProviderKeyRows = useCallback(async (providerId: string): Promise<ProviderKeyRow[]> => {
+    const response = await fetch(`/api/admin/providers/${encodeURIComponent(providerId)}/keys`);
+    const data = await readApiJson<ProviderKeyRow[]>(response);
+    if (data.success && data.data) {
+      return data.data;
+    }
+    throw new Error(data.message || 'Failed to load keys');
+  }, []);
+
   const fetchProviderKeys = useCallback(async (providerId: string) => {
     setKeysLoading(true);
     setKeyError('');
     try {
-      const response = await fetch(`/api/admin/providers/${encodeURIComponent(providerId)}/keys`);
-      const data = await readApiJson<ProviderKeyRow[]>(response);
-      if (data.success && data.data) {
-        setProviderKeys(data.data);
-      } else {
-        setProviderKeys([]);
-        setKeyError(data.message || 'Failed to load keys');
-      }
+      const rows = await loadProviderKeyRows(providerId);
+      setProviderKeys(rows);
+      setProviderKeyPreviewById((prev) => ({ ...prev, [providerId]: rows }));
+      setKeyPreviewErrorById((prev) => {
+        const next = { ...prev };
+        delete next[providerId];
+        return next;
+      });
     } catch (error) {
       console.error('Fetch provider keys error:', error);
       setProviderKeys([]);
-      setKeyError('Failed to load keys');
+      setKeyError(error instanceof Error ? error.message : 'Failed to load keys');
     } finally {
       setKeysLoading(false);
     }
-  }, []);
+  }, [loadProviderKeyRows]);
+
+  const handleToggleProviderKeyPreview = useCallback(async (providerId: string) => {
+    if (expandedProviderId === providerId) {
+      setExpandedProviderId(null);
+      return;
+    }
+    setExpandedProviderId(providerId);
+    if (providerKeyPreviewById[providerId]) return;
+
+    setKeyPreviewLoadingId(providerId);
+    setKeyPreviewErrorById((prev) => {
+      const next = { ...prev };
+      delete next[providerId];
+      return next;
+    });
+    try {
+      const rows = await loadProviderKeyRows(providerId);
+      setProviderKeyPreviewById((prev) => ({ ...prev, [providerId]: rows }));
+    } catch (error) {
+      console.error('Fetch provider key preview error:', error);
+      setKeyPreviewErrorById((prev) => ({
+        ...prev,
+        [providerId]: error instanceof Error ? error.message : 'Failed to load keys',
+      }));
+    } finally {
+      setKeyPreviewLoadingId((current) => (current === providerId ? null : current));
+    }
+  }, [expandedProviderId, loadProviderKeyRows, providerKeyPreviewById]);
 
   useEffect(() => {
     setEditingLimitsKeyId(null);
@@ -268,6 +367,7 @@ export default function GatewayProvidersPage() {
       const data = await readApiJson(response);
       if (data.success) {
         void fetchProviderKeys(editingProvider.id);
+        void fetchProviders();
       } else {
         alert(data.message || 'Update failed');
       }
@@ -322,6 +422,7 @@ export default function GatewayProvidersPage() {
       const data = await readApiJson(response);
       if (data.success) {
         void fetchProviderKeys(editingProvider.id);
+        void fetchProviders();
       } else {
         alert(data.message || 'Delete failed');
       }
@@ -623,149 +724,274 @@ export default function GatewayProvidersPage() {
         </div>
       )}
 
-      {/* Providers Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Endpoints
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keys</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {providers.map((provider) => {
-              const openaiUrl = provider.base_url_openai?.trim() ?? '';
-              const anthropicUrl = provider.base_url_anthropic?.trim() ?? '';
-              const geminiUrl = provider.base_url_gemini?.trim() ?? '';
-              const hasAnyEndpoint = Boolean(openaiUrl || anthropicUrl || geminiUrl);
-              const pendingKey = Boolean(provider.has_pending_key);
-              const activeKeyCount = provider.active_key_count ?? 0;
-              return (
-              <tr
+      <div className="mb-5 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="relative min-w-0 flex-1">
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" aria-hidden />
+            <input
+              type="search"
+              value={providerSearch}
+              onChange={(e) => setProviderSearch(e.target.value)}
+              className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search provider name"
+              aria-label="Search provider name"
+              autoComplete="off"
+            />
+            {providerSearch.trim() && (
+              <button
+                type="button"
+                onClick={() => setProviderSearch('')}
+                className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Clear provider search"
+              >
+                <XMarkIcon className="h-4 w-4" aria-hidden />
+              </button>
+            )}
+          </div>
+          <div className="shrink-0 text-sm text-gray-500">
+            Showing <span className="font-semibold tabular-nums text-gray-900">{filteredProviders.length}</span> /{' '}
+            <span className="tabular-nums">{providers.length}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs font-medium uppercase tracking-wide text-gray-500">Providers</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">{providerOverview.total}</div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs font-medium uppercase tracking-wide text-gray-500">Active Keys</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums text-gray-900">{providerOverview.activeKeys}</div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs font-medium uppercase tracking-wide text-gray-500">OpenAI</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums text-emerald-700">{providerOverview.protocols.openai}</div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs font-medium uppercase tracking-wide text-gray-500">Anthropic</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums text-orange-700">{providerOverview.protocols.anthropic}</div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+          <div className="text-xs font-medium uppercase tracking-wide text-gray-500">Gemini</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums text-indigo-700">{providerOverview.protocols.gemini}</div>
+        </div>
+      </div>
+
+      {providerOverview.withoutKeys > 0 && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="status">
+          <strong>{providerOverview.withoutKeys}</strong> provider(s) have no active upstream key.
+        </div>
+      )}
+
+      {filteredProviders.length === 0 ? (
+        <div className="rounded-lg border border-gray-200 bg-white py-12 text-center text-gray-500 shadow-sm">
+          {providerSearch.trim() ? 'No providers match this name' : 'No providers found'}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+          {filteredProviders.map((provider) => {
+            const protocols = getProviderProtocolSummaries(provider);
+            const pendingKey = Boolean(provider.has_pending_key);
+            const activeKeyCount = provider.active_key_count ?? 0;
+            const isExpanded = expandedProviderId === provider.id;
+            const previewRows = providerKeyPreviewById[provider.id] ?? [];
+            const previewError = keyPreviewErrorById[provider.id];
+            const isPreviewLoading = keyPreviewLoadingId === provider.id;
+            const inactiveKeyCount = previewRows.filter((key) => key.status !== 'active').length;
+
+            return (
+              <article
                 key={provider.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => handleEdit(provider)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleEdit(provider);
-                  }
-                }}
                 className={
-                  (pendingKey ? 'bg-amber-50/80 hover:bg-amber-50 ' : 'hover:bg-gray-50 ') +
-                  'cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500'
+                  'overflow-hidden rounded-lg border bg-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 active:translate-y-0 ' +
+                  (pendingKey
+                    ? 'border-amber-200 ring-1 ring-amber-100'
+                    : activeKeyCount === 0
+                      ? 'border-red-200 ring-1 ring-red-100'
+                      : 'border-gray-200/80')
                 }
               >
-                <td className="px-4 py-4 align-middle">
-                  <div className="text-xs font-mono text-gray-600 break-all leading-snug" title={provider.id}>
-                    {provider.id}
-                  </div>
-                </td>
-                <td className="px-4 py-4 align-middle">
-                  <div className="text-sm font-medium text-gray-900 leading-snug">{provider.name}</div>
-                </td>
-                <td className="px-4 py-4 align-middle">
-                  {hasAnyEndpoint ? (
-                    <div className="flex flex-row flex-wrap items-center gap-1">
-                      {openaiUrl && (
-                        <button
-                          type="button"
-                          aria-label="Copy OpenAI base URL"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void copyToClipboard(openaiUrl, `endpoint:${provider.id}:openai`);
-                          }}
-                          className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          title={`OpenAI — ${openaiUrl} (click to copy)`}
-                        >
-                          {copiedId === `endpoint:${provider.id}:openai` ? (
-                            <CheckIcon className="h-4 w-4 text-green-600" aria-hidden />
-                          ) : (
-                            <OpenAiEndpointIcon label="OpenAI" className="inline-flex" />
-                          )}
-                        </button>
-                      )}
-                      {anthropicUrl && (
-                        <button
-                          type="button"
-                          aria-label="Copy Anthropic base URL"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void copyToClipboard(anthropicUrl, `endpoint:${provider.id}:anthropic`);
-                          }}
-                          className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          title={`Anthropic — ${anthropicUrl} (click to copy)`}
-                        >
-                          {copiedId === `endpoint:${provider.id}:anthropic` ? (
-                            <CheckIcon className="h-4 w-4 text-green-600" aria-hidden />
-                          ) : (
-                            <AnthropicEndpointIcon label="Anthropic" className="h-4 w-4" />
-                          )}
-                        </button>
-                      )}
-                      {geminiUrl && (
-                        <button
-                          type="button"
-                          aria-label="Copy Gemini base URL"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void copyToClipboard(geminiUrl, `endpoint:${provider.id}:gemini`);
-                          }}
-                          className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          title={`Gemini — ${geminiUrl} (click to copy)`}
-                        >
-                          {copiedId === `endpoint:${provider.id}:gemini` ? (
-                            <CheckIcon className="h-4 w-4 text-green-600" aria-hidden />
-                          ) : (
-                            <GeminiEndpointIcon label="Gemini" className="h-4 w-4" />
-                          )}
-                        </button>
-                      )}
+                <div className="p-4">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="truncate text-base font-semibold text-gray-900" title={provider.name}>
+                          {provider.name}
+                        </h2>
+                        {pendingKey && (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+                            <ExclamationTriangleIcon className="h-3.5 w-3.5" aria-hidden />
+                            Pending key
+                          </span>
+                        )}
+                        {activeKeyCount === 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-800">
+                            <ExclamationTriangleIcon className="h-3.5 w-3.5" aria-hidden />
+                            No active key
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 break-all font-mono text-xs text-gray-500" title={provider.id}>
+                        {provider.id}
+                      </div>
                     </div>
-                  ) : (
-                    <span className="text-sm text-gray-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-sm text-gray-700">
-                      {activeKeyCount} active key{activeKeyCount === 1 ? '' : 's'}
-                    </span>
-                    {pendingKey ? (
-                      <span className="self-start text-[11px] font-medium uppercase tracking-wide text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                        Pending key
-                      </span>
-                    ) : null}
-                    {pendingKey && (
-                      <span className="self-start text-xs text-blue-700">Open row to set API key</span>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(provider)}
+                      className="shrink-0 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      Edit
+                    </button>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-md bg-gray-50 px-3 py-2">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                        <KeyIcon className="h-4 w-4" aria-hidden />
+                        Keys
+                      </div>
+                      <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900">{activeKeyCount}</div>
+                    </div>
+                    <div className="rounded-md bg-gray-50 px-3 py-2">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                        <ServerStackIcon className="h-4 w-4" aria-hidden />
+                        Protocols
+                      </div>
+                      <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900">{protocols.length}</div>
+                    </div>
+                    <div className="col-span-2 rounded-md bg-gray-50 px-3 py-2">
+                      <div className="text-xs font-medium text-gray-500">Description</div>
+                      <div className="mt-1 truncate text-sm text-gray-700" title={provider.description ?? undefined}>
+                        {provider.description || '—'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Endpoints</div>
+                    {protocols.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2">
+                        {protocols.map((protocol) => {
+                          const feedbackId = `endpoint:${provider.id}:${protocol.key}`;
+                          return (
+                            <button
+                              key={protocol.key}
+                              type="button"
+                              onClick={() => void copyToClipboard(protocol.url, feedbackId)}
+                              className="flex min-w-0 items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              title={`${protocol.label} — ${protocol.url} (click to copy)`}
+                            >
+                              {copiedId === feedbackId ? (
+                                <CheckIcon className="h-4 w-4 shrink-0 text-green-600" aria-hidden />
+                              ) : (
+                                <ProviderProtocolIcon protocol={protocol.key} />
+                              )}
+                              <span className="min-w-0 flex-1 truncate text-xs text-gray-700">{protocol.url}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-md border border-dashed border-gray-200 px-3 py-2 text-sm text-gray-400">
+                        No endpoint configured
+                      </div>
                     )}
                   </div>
-                </td>
-                <td className="px-4 py-4 max-w-[200px]" title={provider.description ?? undefined}>
-                  <span className="block truncate text-sm text-gray-600">{provider.description || '—'}</span>
-                </td>
-              </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                </div>
 
-        {providers.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            No providers found
-          </div>
-        )}
-      </div>
+                <div className="border-t border-gray-100 bg-gray-50/70 px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => void handleToggleProviderKeyPreview(provider.id)}
+                    className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-1 text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-expanded={isExpanded}
+                  >
+                    <span className="text-sm font-medium text-gray-800">
+                      Key pool
+                      {previewRows.length > 0 && (
+                        <span className="ml-2 text-xs font-normal text-gray-500">
+                          {previewRows.length} total
+                          {inactiveKeyCount > 0 ? ` · ${inactiveKeyCount} inactive` : ''}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDownIcon
+                      className={`h-5 w-5 shrink-0 text-gray-500 transition ${isExpanded ? 'rotate-180' : ''}`}
+                      aria-hidden
+                    />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="mt-3">
+                      {isPreviewLoading ? (
+                        <div className="py-3 text-sm text-gray-500">Loading keys…</div>
+                      ) : previewError ? (
+                        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                          {previewError}
+                        </div>
+                      ) : previewRows.length === 0 ? (
+                        <div className="rounded-md border border-dashed border-gray-200 bg-white px-3 py-3 text-sm text-gray-500">
+                          No keys configured.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {previewRows
+                            .slice()
+                            .sort((a, b) => b.priority - a.priority || b.weight - a.weight || a.label.localeCompare(b.label))
+                            .map((key) => (
+                              <div
+                                key={key.id}
+                                className="grid grid-cols-1 gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto]"
+                              >
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="truncate font-mono text-xs font-semibold text-gray-900" title={key.label}>
+                                      {key.label}
+                                    </span>
+                                    <span className={`rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${keyStatusClass(key.status)}`}>
+                                      {key.status}
+                                    </span>
+                                    {key.is_pending_import && (
+                                      <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+                                        placeholder
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-1 truncate font-mono text-xs text-gray-500" title={key.masked_api_key}>
+                                    {key.masked_api_key}
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-600">
+                                  <span className="rounded-md bg-gray-100 px-2 py-1">P {key.priority}</span>
+                                  <span className="rounded-md bg-gray-100 px-2 py-1">W {key.weight}</span>
+                                  <span className="rounded-md bg-gray-100 px-2 py-1">{formatLimitConfig(key.limit_config)}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleCopyProviderKey(key)}
+                                  className="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  title={copiedId === `provider-key:${key.id}` ? 'Copied' : 'Reveal and copy API key'}
+                                >
+                                  {copiedId === `provider-key:${key.id}` ? (
+                                    <CheckIcon className="h-4 w-4 text-green-600" aria-hidden />
+                                  ) : (
+                                    <ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
+                                  )}
+                                  <span className="ml-1">Copy</span>
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       {showImportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
