@@ -789,7 +789,7 @@ export default function GatewayProvidersPage() {
           {providerSearch.trim() ? 'No providers match this name' : 'No providers found'}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {filteredProviders.map((provider) => {
             const protocols = getProviderProtocolSummaries(provider);
             const pendingKey = Boolean(provider.has_pending_key);
@@ -803,83 +803,88 @@ export default function GatewayProvidersPage() {
             return (
               <article
                 key={provider.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleEdit(provider)}
+                onKeyDown={(e) => {
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleEdit(provider);
+                  }
+                }}
                 className={
-                  'overflow-hidden rounded-lg border bg-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 active:translate-y-0 ' +
+                  'relative cursor-pointer overflow-hidden rounded-xl border bg-white shadow-md shadow-slate-200/70 ring-1 ring-black/[0.03] transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-xl hover:shadow-blue-100/80 hover:ring-1 hover:ring-blue-200 focus:outline-none focus-visible:border-blue-400 focus-visible:bg-blue-50/30 focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 active:translate-y-0 ' +
                   (pendingKey
-                    ? 'border-amber-200 ring-1 ring-amber-100'
+                    ? 'border-amber-300 ring-amber-100'
                     : activeKeyCount === 0
-                      ? 'border-red-200 ring-1 ring-red-100'
-                      : 'border-gray-200/80')
+                      ? 'border-red-300 ring-red-100'
+                      : 'border-slate-200')
                 }
               >
-                <div className="p-4">
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="truncate text-base font-semibold text-gray-900" title={provider.name}>
-                          {provider.name}
-                        </h2>
-                        {pendingKey && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
-                            <ExclamationTriangleIcon className="h-3.5 w-3.5" aria-hidden />
-                            Pending key
-                          </span>
-                        )}
-                        {activeKeyCount === 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-800">
-                            <ExclamationTriangleIcon className="h-3.5 w-3.5" aria-hidden />
-                            No active key
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1 break-all font-mono text-xs text-gray-500" title={provider.id}>
-                        {provider.id}
-                      </div>
+                <div
+                  aria-hidden
+                  className={
+                    'h-1 w-full ' +
+                    (pendingKey
+                      ? 'bg-amber-300'
+                      : activeKeyCount === 0
+                        ? 'bg-red-300'
+                        : 'bg-slate-200')
+                  }
+                />
+                <div className="p-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <h2 className="truncate text-base font-semibold leading-6 text-gray-900" title={provider.name}>
+                        {provider.name}
+                      </h2>
+                      {pendingKey && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5" aria-hidden />
+                          Pending
+                        </span>
+                      )}
+                      {activeKeyCount === 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-red-100 px-1.5 py-0.5 text-[11px] font-medium text-red-800">
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5" aria-hidden />
+                          No key
+                        </span>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(provider)}
-                      className="shrink-0 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      Edit
-                    </button>
+                    <div className="mt-0.5 break-all font-mono text-[11px] leading-4 text-gray-500" title={provider.id}>
+                      {provider.id}
+                    </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div className="rounded-md bg-gray-50 px-3 py-2">
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-gray-600">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700">
                         <KeyIcon className="h-4 w-4" aria-hidden />
-                        Keys
-                      </div>
-                      <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900">{activeKeyCount}</div>
-                    </div>
-                    <div className="rounded-md bg-gray-50 px-3 py-2">
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                        <ServerStackIcon className="h-4 w-4" aria-hidden />
-                        Protocols
-                      </div>
-                      <div className="mt-1 text-lg font-semibold tabular-nums text-gray-900">{protocols.length}</div>
-                    </div>
-                    <div className="col-span-2 rounded-md bg-gray-50 px-3 py-2">
-                      <div className="text-xs font-medium text-gray-500">Description</div>
-                      <div className="mt-1 truncate text-sm text-gray-700" title={provider.description ?? undefined}>
-                        {provider.description || '—'}
-                      </div>
-                    </div>
+                        <span className="tabular-nums">{activeKeyCount}</span> active
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 font-medium text-gray-700">
+                      <ServerStackIcon className="h-4 w-4" aria-hidden />
+                      <span className="tabular-nums">{protocols.length}</span> protocol{protocols.length === 1 ? '' : 's'}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-gray-500" title={provider.description ?? undefined}>
+                      {provider.description || 'No description'}
+                    </span>
                   </div>
 
-                  <div className="mt-4">
-                    <div className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Endpoints</div>
+                  <div className="mt-2">
                     {protocols.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-2">
+                      <div className="flex flex-wrap gap-1.5">
                         {protocols.map((protocol) => {
                           const feedbackId = `endpoint:${provider.id}:${protocol.key}`;
                           return (
                             <button
                               key={protocol.key}
                               type="button"
-                              onClick={() => void copyToClipboard(protocol.url, feedbackId)}
-                              className="flex min-w-0 items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void copyToClipboard(protocol.url, feedbackId);
+                              }}
+                              className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               title={`${protocol.label} — ${protocol.url} (click to copy)`}
                             >
                               {copiedId === feedbackId ? (
@@ -887,30 +892,34 @@ export default function GatewayProvidersPage() {
                               ) : (
                                 <ProviderProtocolIcon protocol={protocol.key} />
                               )}
-                              <span className="min-w-0 flex-1 truncate text-xs text-gray-700">{protocol.url}</span>
+                              <span className="shrink-0 text-xs font-medium text-gray-700">{protocol.label}</span>
+                              <span className="min-w-0 truncate text-[11px] text-gray-500">{protocol.url}</span>
                             </button>
                           );
                         })}
                       </div>
                     ) : (
-                      <div className="rounded-md border border-dashed border-gray-200 px-3 py-2 text-sm text-gray-400">
+                      <div className="rounded-md border border-dashed border-gray-200 px-2 py-1.5 text-xs text-gray-400">
                         No endpoint configured
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 bg-gray-50/70 px-4 py-3">
+                <div className="border-t border-gray-100 bg-gray-50/70 px-3 py-2">
                   <button
                     type="button"
-                    onClick={() => void handleToggleProviderKeyPreview(provider.id)}
-                    className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-1 text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleToggleProviderKeyPreview(provider.id);
+                    }}
+                    className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-0.5 text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-expanded={isExpanded}
                   >
-                    <span className="text-sm font-medium text-gray-800">
-                      Key pool
+                    <span className="text-xs font-medium text-gray-800">
+                      Keys
                       {previewRows.length > 0 && (
-                        <span className="ml-2 text-xs font-normal text-gray-500">
+                        <span className="ml-2 font-normal text-gray-500">
                           {previewRows.length} total
                           {inactiveKeyCount > 0 ? ` · ${inactiveKeyCount} inactive` : ''}
                         </span>
@@ -923,7 +932,10 @@ export default function GatewayProvidersPage() {
                   </button>
 
                   {isExpanded && (
-                    <div className="mt-3">
+                    <div
+                      className="mt-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {isPreviewLoading ? (
                         <div className="py-3 text-sm text-gray-500">Loading keys…</div>
                       ) : previewError ? (
@@ -942,35 +954,38 @@ export default function GatewayProvidersPage() {
                             .map((key) => (
                               <div
                                 key={key.id}
-                                className="grid grid-cols-1 gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto]"
+                                className="grid grid-cols-1 gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1.5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto]"
                               >
                                 <div className="min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2">
+                                  <div className="flex flex-wrap items-center gap-1.5">
                                     <span className="truncate font-mono text-xs font-semibold text-gray-900" title={key.label}>
                                       {key.label}
                                     </span>
-                                    <span className={`rounded-md px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${keyStatusClass(key.status)}`}>
+                                    <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${keyStatusClass(key.status)}`}>
                                       {key.status}
                                     </span>
                                     {key.is_pending_import && (
-                                      <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+                                      <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
                                         placeholder
                                       </span>
                                     )}
                                   </div>
-                                  <div className="mt-1 truncate font-mono text-xs text-gray-500" title={key.masked_api_key}>
+                                  <div className="mt-0.5 truncate font-mono text-[11px] text-gray-500" title={key.masked_api_key}>
                                     {key.masked_api_key}
                                   </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-600">
-                                  <span className="rounded-md bg-gray-100 px-2 py-1">P {key.priority}</span>
-                                  <span className="rounded-md bg-gray-100 px-2 py-1">W {key.weight}</span>
-                                  <span className="rounded-md bg-gray-100 px-2 py-1">{formatLimitConfig(key.limit_config)}</span>
+                                <div className="flex flex-wrap items-center gap-1 text-[11px] text-gray-600">
+                                  <span className="rounded-md bg-gray-100 px-1.5 py-0.5">P {key.priority}</span>
+                                  <span className="rounded-md bg-gray-100 px-1.5 py-0.5">W {key.weight}</span>
+                                  <span className="rounded-md bg-gray-100 px-1.5 py-0.5">{formatLimitConfig(key.limit_config)}</span>
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => void handleCopyProviderKey(key)}
-                                  className="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    void handleCopyProviderKey(key);
+                                  }}
+                                  className="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   title={copiedId === `provider-key:${key.id}` ? 'Copied' : 'Reveal and copy API key'}
                                 >
                                   {copiedId === `provider-key:${key.id}` ? (
@@ -1105,7 +1120,14 @@ export default function GatewayProvidersPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !isSaving && !isDeleting) {
+              setShowModal(false);
+            }
+          }}
+        >
           <div className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${editingProvider ? 'max-w-3xl' : 'max-w-2xl'}`}>
             <div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
               <div>
