@@ -66,6 +66,11 @@ const emptyKeyForm = {
   max_concurrency: '',
 };
 
+const emptyKeyEditForm = {
+  ...emptyKeyForm,
+  status: 'active',
+};
+
 /** 表单三个限流输入 → limit_config JSON 字符串；全空返回 null（不限流）。 */
 function buildLimitConfigJson(form: { rpm: string; tpm: string; max_concurrency: string }): string | null {
   const out: Record<string, number> = {};
@@ -129,12 +134,6 @@ function ProviderProtocolIcon(props: { protocol: ProviderProtocolSummary['key'] 
   return <GeminiEndpointIcon label="Gemini" className="h-4 w-4" />;
 }
 
-function keyStatusClass(status: string): string {
-  if (status === 'active') return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
-  if (status === 'disabled') return 'bg-gray-100 text-gray-600 ring-gray-200';
-  return 'bg-amber-50 text-amber-800 ring-amber-200';
-}
-
 const emptyForm = {
   id: '',
   name: '',
@@ -181,6 +180,11 @@ export default function GatewayProvidersPage() {
   const [providerKeyPreviewById, setProviderKeyPreviewById] = useState<Record<string, ProviderKeyRow[]>>({});
   const [keyPreviewLoadingId, setKeyPreviewLoadingId] = useState<string | null>(null);
   const [keyPreviewErrorById, setKeyPreviewErrorById] = useState<Record<string, string>>({});
+  const [providerKeyTogglingId, setProviderKeyTogglingId] = useState<string | null>(null);
+  const [editingProviderKey, setEditingProviderKey] = useState<{ providerId: string; key: ProviderKeyRow } | null>(null);
+  const [keyEditForm, setKeyEditForm] = useState(emptyKeyEditForm);
+  const [keyEditSaving, setKeyEditSaving] = useState(false);
+  const [keyEditError, setKeyEditError] = useState('');
   const [keyForm, setKeyForm] = useState(emptyKeyForm);
   const [showKeyForm, setShowKeyForm] = useState(false);
   const [keySaving, setKeySaving] = useState(false);
@@ -332,10 +336,11 @@ export default function GatewayProvidersPage() {
   };
 
   const handleCopyProviderKey = async (key: ProviderKeyRow) => {
-    if (!editingProvider) return;
+    const providerId = key.provider_id || editingProvider?.id;
+    if (!providerId) return;
     try {
       const response = await fetch(
-        `/api/admin/providers/${encodeURIComponent(editingProvider.id)}/keys/${encodeURIComponent(key.id)}`
+        `/api/admin/providers/${encodeURIComponent(providerId)}/keys/${encodeURIComponent(key.id)}`
       );
       const data = await readApiJson<{ api_key: string }>(response);
       if (data.success && data.data?.api_key) {
@@ -351,13 +356,14 @@ export default function GatewayProvidersPage() {
     }
   };
 
-  const handleToggleProviderKeyStatus = async (key: ProviderKeyRow) => {
-    if (!editingProvider) return;
+  const handleToggleProviderKeyStatus = async (key: ProviderKeyRow, providerIdOverride?: string) => {
+    const providerId = providerIdOverride || editingProvider?.id || key.provider_id;
+    if (!providerId) return;
     const nextStatus = key.status === 'active' ? 'disabled' : 'active';
-    if (nextStatus === 'disabled' && !confirm(`Disable key "${key.label}"?`)) return;
+    setProviderKeyTogglingId(key.id);
     try {
       const response = await fetch(
-        `/api/admin/providers/${encodeURIComponent(editingProvider.id)}/keys/${encodeURIComponent(key.id)}`,
+        `/api/admin/providers/${encodeURIComponent(providerId)}/keys/${encodeURIComponent(key.id)}`,
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -366,7 +372,11 @@ export default function GatewayProvidersPage() {
       );
       const data = await readApiJson(response);
       if (data.success) {
-        void fetchProviderKeys(editingProvider.id);
+        const rows = await loadProviderKeyRows(providerId);
+        setProviderKeyPreviewById((prev) => ({ ...prev, [providerId]: rows }));
+        if (editingProvider?.id === providerId) {
+          setProviderKeys(rows);
+        }
         void fetchProviders();
       } else {
         alert(data.message || 'Update failed');
@@ -374,6 +384,80 @@ export default function GatewayProvidersPage() {
     } catch (error) {
       console.error('Toggle provider key error:', error);
       alert('Update failed');
+    } finally {
+      setProviderKeyTogglingId(null);
+    }
+  };
+
+  const openProviderKeyEditor = (providerId: string, key: ProviderKeyRow) => {
+    const limits = limitConfigToFormFields(key.limit_config);
+    setEditingProviderKey({ providerId, key });
+    setKeyEditForm({
+      label: key.label,
+      api_key: '',
+      status: key.status,
+      weight: String(key.weight),
+      priority: String(key.priority),
+      rpm: limits.rpm,
+      tpm: limits.tpm,
+      max_concurrency: limits.max_concurrency,
+    });
+    setKeyEditError('');
+  };
+
+  const closeProviderKeyEditor = () => {
+    if (keyEditSaving) return;
+    setEditingProviderKey(null);
+    setKeyEditForm(emptyKeyEditForm);
+    setKeyEditError('');
+  };
+
+  const handleSaveProviderKeyEdit = async () => {
+    if (!editingProviderKey) return;
+    const label = keyEditForm.label.trim();
+    if (!label) {
+      setKeyEditError('Label is required');
+      return;
+    }
+    setKeyEditSaving(true);
+    setKeyEditError('');
+    try {
+      const body: Record<string, unknown> = {
+        label,
+        status: keyEditForm.status === 'disabled' ? 'disabled' : 'active',
+        weight: Number(keyEditForm.weight) || 1,
+        priority: Number(keyEditForm.priority) || 0,
+        limit_config: buildLimitConfigJson(keyEditForm),
+      };
+      const apiKey = keyEditForm.api_key.trim();
+      if (apiKey) body.api_key = apiKey;
+
+      const response = await fetch(
+        `/api/admin/providers/${encodeURIComponent(editingProviderKey.providerId)}/keys/${encodeURIComponent(editingProviderKey.key.id)}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }
+      );
+      const data = await readApiJson(response);
+      if (data.success) {
+        const rows = await loadProviderKeyRows(editingProviderKey.providerId);
+        setProviderKeyPreviewById((prev) => ({ ...prev, [editingProviderKey.providerId]: rows }));
+        if (editingProvider?.id === editingProviderKey.providerId) {
+          setProviderKeys(rows);
+        }
+        void fetchProviders();
+        setEditingProviderKey(null);
+        setKeyEditForm(emptyKeyEditForm);
+      } else {
+        setKeyEditError(data.message || 'Failed to update key');
+      }
+    } catch (error) {
+      console.error('Update provider key error:', error);
+      setKeyEditError('Failed to update key');
+    } finally {
+      setKeyEditSaving(false);
     }
   };
 
@@ -954,47 +1038,73 @@ export default function GatewayProvidersPage() {
                             .map((key) => (
                               <div
                                 key={key.id}
-                                className="grid grid-cols-1 gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1.5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto]"
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => openProviderKeyEditor(provider.id, key)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    openProviderKeyEditor(provider.id, key);
+                                  }
+                                }}
+                                className="grid grid-cols-[auto_minmax(5rem,0.8fr)_minmax(5rem,1fr)_auto] items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5 transition hover:border-blue-200 hover:bg-blue-50/40"
                               >
+                                <input
+                                  type="checkbox"
+                                  checked={key.status === 'active'}
+                                  disabled={providerKeyTogglingId === key.id}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={() => void handleToggleProviderKeyStatus(key, provider.id)}
+                                  className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                                  aria-label={
+                                    key.status === 'active'
+                                      ? `Key ${key.label} enabled (uncheck to disable)`
+                                      : `Key ${key.label} disabled (check to enable)`
+                                  }
+                                />
                                 <div className="min-w-0">
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="truncate font-mono text-xs font-semibold text-gray-900" title={key.label}>
+                                  <span className="flex min-w-0 items-center gap-1.5">
+                                    <span className="truncate font-mono text-xs font-semibold leading-4 text-gray-900" title={key.label}>
                                       {key.label}
                                     </span>
-                                    <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${keyStatusClass(key.status)}`}>
-                                      {key.status}
-                                    </span>
                                     {key.is_pending_import && (
-                                      <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
+                                      <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
                                         placeholder
                                       </span>
                                     )}
-                                  </div>
-                                  <div className="mt-0.5 truncate font-mono text-[11px] text-gray-500" title={key.masked_api_key}>
-                                    {key.masked_api_key}
-                                  </div>
+                                    {copiedId === `provider-key:${key.id}` && (
+                                      <span className="shrink-0 rounded-md bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800">
+                                        copied
+                                      </span>
+                                    )}
+                                  </span>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-1 text-[11px] text-gray-600">
+                                <div className="flex min-w-0 items-center justify-start gap-1.5">
+                                  <span className="min-w-0 max-w-full truncate font-mono text-[11px] leading-4 text-gray-500" title={key.masked_api_key}>
+                                    {key.masked_api_key}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleCopyProviderKey(key);
+                                    }}
+                                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    title={copiedId === `provider-key:${key.id}` ? 'Copied' : `Copy ${key.label}`}
+                                    aria-label={copiedId === `provider-key:${key.id}` ? `Copied ${key.label}` : `Copy ${key.label}`}
+                                  >
+                                    {copiedId === `provider-key:${key.id}` ? (
+                                      <CheckIcon className="h-4 w-4 text-green-600" aria-hidden />
+                                    ) : (
+                                      <ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
+                                    )}
+                                  </button>
+                                </div>
+                                <div className="flex shrink-0 flex-wrap items-center justify-end gap-1 text-[11px] text-gray-600">
                                   <span className="rounded-md bg-gray-100 px-1.5 py-0.5">P {key.priority}</span>
                                   <span className="rounded-md bg-gray-100 px-1.5 py-0.5">W {key.weight}</span>
                                   <span className="rounded-md bg-gray-100 px-1.5 py-0.5">{formatLimitConfig(key.limit_config)}</span>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    void handleCopyProviderKey(key);
-                                  }}
-                                  className="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  title={copiedId === `provider-key:${key.id}` ? 'Copied' : 'Reveal and copy API key'}
-                                >
-                                  {copiedId === `provider-key:${key.id}` ? (
-                                    <CheckIcon className="h-4 w-4 text-green-600" aria-hidden />
-                                  ) : (
-                                    <ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
-                                  )}
-                                  <span className="ml-1">Copy</span>
-                                </button>
                               </div>
                             ))}
                         </div>
@@ -1005,6 +1115,159 @@ export default function GatewayProvidersPage() {
               </article>
             );
           })}
+        </div>
+      )}
+
+      {editingProviderKey && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !keyEditSaving) {
+              closeProviderKeyEditor();
+            }
+          }}
+        >
+          <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
+            <div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
+              <div className="min-w-0">
+                <h2 className="text-xl font-bold text-gray-900">Edit Provider Key</h2>
+                <p className="mt-1 truncate font-mono text-xs text-gray-500" title={editingProviderKey.key.masked_api_key}>
+                  {editingProviderKey.key.masked_api_key}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeProviderKeyEditor}
+                className="text-gray-400 hover:text-gray-600"
+                disabled={keyEditSaving}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              {keyEditError && (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                  {keyEditError}
+                </div>
+              )}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Label</label>
+                    <input
+                      type="text"
+                      value={keyEditForm.label}
+                      onChange={(e) => setKeyEditForm({ ...keyEditForm, label: e.target.value })}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={keyEditForm.status === 'active'}
+                        onChange={(e) =>
+                          setKeyEditForm({ ...keyEditForm, status: e.target.checked ? 'active' : 'disabled' })
+                        }
+                        className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                      />
+                      Active
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Replace API key</label>
+                  <input
+                    type="password"
+                    value={keyEditForm.api_key}
+                    onChange={(e) => setKeyEditForm({ ...keyEditForm, api_key: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Leave blank to keep current key"
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Priority</label>
+                    <input
+                      type="number"
+                      value={keyEditForm.priority}
+                      onChange={(e) => setKeyEditForm({ ...keyEditForm, priority: e.target.value })}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Weight</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={keyEditForm.weight}
+                      onChange={(e) => setKeyEditForm({ ...keyEditForm, weight: e.target.value })}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">RPM limit</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={keyEditForm.rpm}
+                      onChange={(e) => setKeyEditForm({ ...keyEditForm, rpm: e.target.value })}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="unlimited"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">TPM limit</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={keyEditForm.tpm}
+                      onChange={(e) => setKeyEditForm({ ...keyEditForm, tpm: e.target.value })}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="unlimited"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">Concurrency</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={keyEditForm.max_concurrency}
+                      onChange={(e) => setKeyEditForm({ ...keyEditForm, max_concurrency: e.target.value })}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="unlimited"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex shrink-0 justify-end gap-3 border-t bg-gray-50 px-6 py-4">
+              <button
+                type="button"
+                onClick={closeProviderKeyEditor}
+                className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-white"
+                disabled={keyEditSaving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSaveProviderKeyEdit()}
+                disabled={keyEditSaving}
+                className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {keyEditSaving ? 'Saving…' : 'Save key'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1331,23 +1594,18 @@ export default function GatewayProvidersPage() {
                                     </div>
                                   </td>
                                   <td className="px-3 py-2">
-                                    <button
-                                      type="button"
-                                      role="switch"
-                                      aria-checked={key.status === 'active'}
-                                      aria-label={key.status === 'active' ? 'Disable key' : 'Enable key'}
-                                      onClick={() => void handleToggleProviderKeyStatus(key)}
-                                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                                        key.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
-                                      }`}
-                                    >
-                                      <span
-                                        aria-hidden
-                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition ${
-                                          key.status === 'active' ? 'translate-x-5' : 'translate-x-0'
-                                        }`}
-                                      />
-                                    </button>
+                                    <input
+                                      type="checkbox"
+                                      checked={key.status === 'active'}
+                                      disabled={providerKeyTogglingId === key.id}
+                                      onChange={() => void handleToggleProviderKeyStatus(key)}
+                                      className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                                      aria-label={
+                                        key.status === 'active'
+                                          ? `Key ${key.label} enabled (uncheck to disable)`
+                                          : `Key ${key.label} disabled (check to enable)`
+                                      }
+                                    />
                                   </td>
                                   <td className="px-3 py-2">{key.weight}</td>
                                   <td className="px-3 py-2">{key.priority}</td>
