@@ -1559,7 +1559,14 @@ function RoutesContent() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !isSaving && !isDeleting) {
+              setShowModal(false);
+            }
+          }}
+        >
           <div
             className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5"
             role="dialog"
@@ -1585,6 +1592,7 @@ function RoutesContent() {
                 type="button"
                 onClick={() => setShowModal(false)}
                 className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                disabled={isSaving || isDeleting}
                 aria-label="Close"
               >
                 <span className="block text-xl leading-none" aria-hidden>

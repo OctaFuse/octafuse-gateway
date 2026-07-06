@@ -1166,11 +1166,26 @@ function ModelsContent() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !isSaving && !isDeleting) {
+              setShowModal(false);
+            }
+          }}
+        >
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">{editingModel ? 'Edit Model' : 'New Model'}</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">x</button>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                disabled={isSaving || isDeleting}
+                aria-label="Close"
+              >
+                x
+              </button>
             </div>
 
             <div className="p-6">
@@ -1373,7 +1388,14 @@ function ModelsContent() {
       )}
 
       {showImportCatalogModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !importSubmitting) {
+              setShowImportCatalogModal(false);
+            }
+          }}
+        >
           <div
             className="flex max-h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
             role="dialog"
@@ -1395,7 +1417,8 @@ function ModelsContent() {
               <button
                 type="button"
                 onClick={() => setShowImportCatalogModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                disabled={importSubmitting}
                 aria-label="Close"
               >
                 ×
