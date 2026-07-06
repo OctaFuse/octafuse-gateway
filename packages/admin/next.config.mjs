@@ -8,6 +8,7 @@ const workspaceRoot = path.join(__dirname, '../..');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	output: 'standalone',
+	transpilePackages: ['@octafuse/core'],
 	images: {
 		unoptimized: true,
 	},
