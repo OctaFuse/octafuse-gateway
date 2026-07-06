@@ -52,6 +52,14 @@
 		"base_url_gemini": null
 	},
 	{
+		"name": "腾讯云 TokenHub Hy Token Plan",
+		"vendor_key": "tencent",
+		"base_url_openai": "https://api.lkeap.cloud.tencent.com/plan/v3",
+		"base_url_anthropic": "https://api.lkeap.cloud.tencent.com/plan/anthropic",
+		"base_url_gemini": null,
+		"description": "Hy Token Plan 个人版订阅套餐专用端点（/plan/v3、/plan/anthropic）；与通用 Token Plan 共用同一 API Key（sk-tp-*），按 model ID 从 Hy 套餐包抵扣，支持 hy3、hy3-preview。勿与按量 tokenhub.tencentmaas.com/v1 或旧版 api.hunyuan.cloud.tencent.com 混用。详见 TokenHub「Token Plan 个人版套餐概览」。"
+	},
+	{
 		"name": "百度千帆",
 		"vendor_key": "baidu",
 		"base_url_openai": "https://qianfan.baidubce.com/v2",
