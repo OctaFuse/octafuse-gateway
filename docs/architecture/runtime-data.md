@@ -128,7 +128,7 @@ sequenceDiagram
 
 - **`provider-key-rate-limiter.ts`** — RPM（60s 滑动窗口，请求时计数）、TPM（流结束后按真实 usage 滞后入账）、并发（acquire/release 成对）；并输出 headroom 分数供分配排序。
 - **`sticky-key-binding.ts`** — `userId + baseModelId + routeGroup + protocol → (providerId, keyId)`，空闲 TTL 过期；命中绑定的 key 优先出场，短暂限流时在 `short_wait_ms` 内等待而非换 key（保上游 prompt cache）。
-- **`provider-key-circuit-breaker.ts`** — 替代原固定 60s cooldown：429 优先用上游 `Retry-After`，无头时按连续次数递增退避（30s→60s→5min→15min）；401/403 固定 10min；5xx/网络错误 60s。
+- **`provider-key-circuit-breaker.ts`** — 替代原固定 60s cooldown：429 优先用上游 `Retry-After`，无头时按连续次数递增退避（**5s→15s→30s→60s 封顶**；同回合不重复升级）；401/403 固定 10min；5xx/网络错误 60s。
 - **`provider-key-scheduler.ts`（`buildKeyAttemptPlan`）** — 按 route priority 分层、同层多 provider 的 key 合并成池，池内按 key priority + headroom 加权随机排序，跳过熔断/限流中的 key。
 - **`failover-dispatch.ts`** — 调度阶段若 `attempts` 为空（全部 key 熔断或网关限流），**直接返回 429** + `Retry-After`（`upstream_capacity_exhausted`），**不再**像旧版那样在 cooldown 中仍回退全试或落到 502；有可试 key 时仍按序打上游，全部失败则返回最后一次上游响应。
 

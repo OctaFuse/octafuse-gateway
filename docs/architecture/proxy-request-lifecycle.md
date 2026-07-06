@@ -120,7 +120,7 @@ flowchart TB
    - `acquireProviderKey`（RPM +1、并发 +1）
    - 调用协议 driver（`fetch` 上游）
    - **成功 (2xx)**：`markProviderKeySuccess` → `scheduleUsageRelease`（流结束后释放并发、入账 TPM）→ **`setStickyBinding` 刷新绑定** → 返回响应
-   - **fetch 异常**：释放并发 → `markProviderKeyFailure(server, 60s)` → 记内部 502 → **换下一 key**
+   - **fetch 异常**：释放并发 → `markProviderKeyFailure(keyId, 'server')`（内部固定 60s 冷却）→ 记内部 502 → **换下一 key**
    - **非 2xx**：立即释放并发 → `classifyUpstreamHttpFailure`：
      - `fail_immediately`（400/404 等）→ **直接返回该响应**，不重试
      - `retry_key` → `markProviderKeyFailure` → **换下一 key**
@@ -204,12 +204,13 @@ sequenceDiagram
 
 | 失败类别 | 触发 | 冷却 |
 |----------|------|------|
-| `rate_limit` | 上游 **429** | 优先 `Retry-After`（封顶 15min）；否则连续 429 递增：30s → 60s → 5min → 15min |
+| `rate_limit` | 上游 **429** | 优先 `Retry-After`（封顶 15min）；否则连续 429 递增：**5s → 15s → 30s → 60s（封顶）** |
 | `auth` | **401 / 403** | 固定 **10min** + 告警日志 |
 | `server` | **5xx** 或 **fetch 抛错** | 固定 **60s** |
 
 - `openUntil = max(现有, now + cooldown)`，短冷却不会覆盖更长冷却。
 - **成功 (2xx)** → `markProviderKeySuccess`，清零连续 429 计数。
+- 熔断窗口已打开时，同回合并发 429 **不再累加**连续计数（避免过度熔断）。
 - 熔断中的 key **一律跳过**，不参与「回退全试」。
 
 ### 3.5 粘性绑定
@@ -226,6 +227,8 @@ sequenceDiagram
 | 空闲超过 TTL | 绑定过期，下次按 headroom 重选 |
 
 > **实现说明**：绑定仅在**请求成功后**写入/刷新；首包无绑定时仍走常规 headroom 排序，成功后建立绑定。
+>
+> **Playground 除外**：Admin **`playground-service`** 直连单条 route 打上游，**不经过** `failoverDispatchWithKeyPool`，因此无 key pool failover 与粘性绑定；生产 Proxy 路径（`/v1/chat/completions` 等）才生效。
 
 ---
 
@@ -277,7 +280,7 @@ sequenceDiagram
 |------|--------|-------------------|
 | Provider key 限流 | per `keyId` | 各 isolate 独立计数 → **软限制** |
 | Provider key 熔断 | per `keyId` | 同上 |
-| Sticky 绑定 | per `userId + model + group + protocol` | 可能跨 isolate 落到不同 key |
+| Sticky 绑定 | per `userId + model + group + protocol` | 可能跨 isolate 落到不同 key；进程内最多 **50_000** 条，满容量 purge 过期后仍满则**静默放弃写入** |
 | 敏感内容熔断 | per `userId + baseModelId` | 同上 |
 
 **运维建议**：
@@ -292,7 +295,7 @@ sequenceDiagram
 | 列 | 含义 |
 |----|------|
 | `provider_api_keys.limit_config` | `{"rpm":500,"tpm":200000,"max_concurrency":32}`，NULL = 不限流 |
-| `models.sticky_config` | opt-in 粘性规则，键 `"{protocol}:{route_group}"` |
+| `models.sticky_config` | opt-in 粘性规则，键 `"{protocol}:{route_group}"`；顶层缺省 `ttl_seconds=600`、`short_wait_ms=3000` |
 
 ---
 

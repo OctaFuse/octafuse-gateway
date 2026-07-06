@@ -559,7 +559,7 @@ curl http://localhost:8787/v1/me \
 
 **不重试**（立即返回，不换 key）：`400`、`404` 等请求本身错误。
 
-**粘性 key（opt-in）**：在 `models.sticky_config` 为对应「协议 × route_group」开启后，同一用户尽量连续命中同一把 provider key（保上游 prompt cache）。绑定 key 可用时置顶；仅因网关限流且预计恢复 ≤ `short_wait_ms`（默认 3s）时网关内短等待；上游真实 429/5xx/auth 则立即 failover 到其他 key，成功后改绑。
+**粘性 key（opt-in）**：在 `models.sticky_config` 为对应「协议 × route_group」开启后，同一用户尽量连续命中同一把 provider key（保上游 prompt cache）。绑定 key 可用时置顶；仅因网关限流且预计恢复 ≤ `short_wait_ms`（默认 3s）时网关内短等待；空闲绑定 TTL 默认 **600s**（`ttl_seconds`，成功后刷新）；上游真实 429/5xx/auth 则立即 failover 到其他 key，成功后改绑。
 
 **网关侧限流**：`provider_api_keys.limit_config` 可选配置 RPM/TPM/并发（进程内存软限制）；建议设为供应商真实限额约 90%。
 

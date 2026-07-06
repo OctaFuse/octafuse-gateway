@@ -12,7 +12,7 @@
  *   }
  * }
  * ```
- * - `rules` 键为 `"{upstream_protocol}:{route_group}"`（小写协议 + 原样分组名，匹配时忽略大小写）。
+ * - `rules` 键为 `"{upstream_protocol}:{route_group}"`（协议与 route_group 均规范化为小写后匹配，输入大小写不敏感）。
  * - 列为 NULL、`rules` 无对应条目、或条目 `enabled=false` ⇒ 该「协议 × 分组」无粘性。
  * - 顶层 `ttl_seconds` / `short_wait_ms` 为各 rule 的缺省；再缺省用代码常量。
  */

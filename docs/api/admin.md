@@ -565,6 +565,39 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 - **行为**：仅处理 `ids` 中在静态目录存在的 id；根据当前 **`BILLING_CURRENCY`**（`USD` → `usd` 分支，`CNY` → `cny` 分支；库内为其他历史值时按 **`USD`** 分支取价）写入 `models.pricing_profile`；**已存在同 `id` 的不导入、不覆盖**，该 id 记入 **`skipped_existing`**；否则 **INSERT** 新建并写入 `model_tags`。未知 id 或校验失败记入 **`failed`**，其余仍处理。
 - **响应** `data`：`{ "billing_currency_used", "created", "updated"（恒为 0）, "skipped_existing": string[], "failed": [{ "id", "message" }] }`。
 
+### `provider_api_keys.limit_config`（`PATCH /admin/providers/:id/keys/:keyId`）
+
+Per-key **网关侧**软限流（进程内存；与上游供应商限额独立）。写入 `provider_api_keys.limit_config` 列（TEXT JSON）。
+
+- **形状**：`{ "rpm": 500, "tpm": 200000, "max_concurrency": 32 }`；字段均可选，至少一个正整数才生效。
+- **清空**：`null` 或空字符串 ⇒ 该 key **不限流**（列置 `NULL`）。
+- **校验**：`normalizeProviderKeyLimitConfigInput`（`packages/core/src/db/provider-key-limit-config.ts`）；非法 JSON 或全无有效字段 ⇒ **400**。
+- **运行时**：60s 滑动窗口 RPM/TPM + 并发 acquire/release；Workers 多 isolate 为软限制，建议设为供应商真实限额约 **90%**。详见 [proxy-request-lifecycle.md §3.3](../architecture/proxy-request-lifecycle.md#33-限流三阶段)。
+
+### `models.sticky_config`（`PATCH /admin/models/:id`）
+
+Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider key（保上游 prompt cache）。写入 `models.sticky_config` 列（TEXT JSON）。
+
+- **形状**：
+
+```json
+{
+  "ttl_seconds": 600,
+  "short_wait_ms": 3000,
+  "rules": {
+    "openai:default": { "enabled": true },
+    "openai:free": { "enabled": true, "ttl_seconds": 300, "short_wait_ms": 1000 }
+  }
+}
+```
+
+- **Rule 键**：`"{upstream_protocol}:{route_group}"`（协议与 group 均规范化为小写匹配；输入大小写不敏感）。
+- **顶层缺省**：`ttl_seconds=600`（空闲绑定 TTL，秒）、`short_wait_ms=3000`（网关限流短等待，毫秒）；各 rule 可覆盖。
+- **启用**：`rules` 中对应条目存在且 `enabled !== false`；列为 `NULL`、`rules` 无条目、或 `enabled=false` ⇒ 该「协议 × 分组」无粘性。
+- **清空**：`null` 或空字符串 ⇒ 整列 `NULL`（全关）。Admin UI 删除最后一条 rule 时亦会整列清空。
+- **校验**：`normalizeModelStickyConfigInput`（`packages/core/src/db/model-sticky-config.ts`）；`rules` 须至少一条合法 rule。
+- **运行时**：仅 Proxy failover 路径生效（`/v1/*`）；Admin Playground **不走** sticky。详见 [proxy-request-lifecycle.md §3.5](../architecture/proxy-request-lifecycle.md#35-粘性绑定)。
+
 ### `pricing_profile` 契约（`/admin/models`、`/admin/routes`）
 
 - **存储位置**：`models.pricing_profile`（模型标准价，TEXT JSON）；`model_routes.price_override` 内短键 **`metered`**（供应侧覆盖，参与 `metered_cost`）、**`charged`**（用户预算侧覆盖，参与 `charged_cost`）；二者均为与目录相同的 canonical **`{ tiers }`** 契约。另可含 **`charged_factor`** / **`metered_factor`**（非负数字，相对目录标准价的备忘/展示；**不参与**运行时金额乘法）。**新建或更新路由时 API 要求** `price_override` 同时包含合法且非空的 **`metered`** 与 **`charged`**（各至少一档）；不得仅依赖“空则继承目录”省略写入。
