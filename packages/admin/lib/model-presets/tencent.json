@@ -1,5 +1,45 @@
 [
 	{
+		"id": "hy3",
+		"display_name": "Hy3",
+		"vendor": "tencent",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.14,
+						"output_price": 0.57,
+						"cache_read_price": 0.04,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 4,
+						"cache_read_price": 0.25,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-07-06"
+	},
+	{
 		"id": "hy3-preview",
 		"display_name": "Hy3 preview",
 		"vendor": "tencent",
