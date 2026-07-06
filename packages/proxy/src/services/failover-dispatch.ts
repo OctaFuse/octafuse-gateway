@@ -1,7 +1,7 @@
 /**
  * 上游调度与故障转移：
  * - 批量预取候选 provider 的 key 池，经 `buildKeyAttemptPlan` 编排（priority 硬序 + 层内余量 + 粘性置顶）。
- * - 失败按类别进入 key 熔断（`provider-key-circuit-breaker`）；限流计数见 `provider-key-rate-limiter`。
+ * - 失败按类别进入 key 熔断（`provider-key-circuit-breaker`：429 无头 5s→60s 梯度，同回合不重复升级）；限流计数见 `provider-key-rate-limiter`。
  * - 粘性绑定 key 短暂限流时在网关内短等待（保上游 prompt cache）；请求成功后写回/刷新绑定。
  * - 全部候选因限流/熔断不可用时返回 429 + Retry-After（而非 502）。
  */

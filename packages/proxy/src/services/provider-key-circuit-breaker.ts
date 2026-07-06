@@ -2,8 +2,8 @@
  * Provider key 熔断：替代原固定 60s cooldown（`provider-key-scheduler` 已迁移至此）。
  *
  * 按失败类别区分冷却策略：
- * - `rate_limit`（上游 429）：优先用上游 `Retry-After`；无头时按连续 429 次数递增退避
- *   （30s → 60s → 5min → 15min 封顶）；一次成功即清零。
+ * - `rate_limit`（上游 429）：优先用上游 `Retry-After`（封顶 15min）；无头时按冷却周期递增退避
+ *   （5s → 15s → 30s → 60s 封顶）；同一限流回合内熔断已打开时不再累加计数；一次成功即清零。
  * - `auth`（401/403）：10min（key 大概率失效，等待人工处理；配合告警日志）。
  * - `server`（5xx / 网络错误）：60s。
  *
@@ -13,7 +13,7 @@
 
 export type ProviderKeyFailureKind = 'rate_limit' | 'auth' | 'server';
 
-const RATE_LIMIT_BACKOFF_MS = [30_000, 60_000, 300_000, 900_000] as const;
+const RATE_LIMIT_BACKOFF_MS = [5_000, 15_000, 30_000, 60_000] as const;
 const RATE_LIMIT_RETRY_AFTER_CAP_MS = 900_000;
 const AUTH_COOLDOWN_MS = 600_000;
 const SERVER_COOLDOWN_MS = 60_000;
@@ -65,10 +65,13 @@ export function markProviderKeyFailure(
 	const entry = circuitByKey.get(keyId) ?? { openUntil: 0, consecutiveRateLimit: 0 };
 	let cooldownMs: number;
 	if (kind === 'rate_limit') {
-		entry.consecutiveRateLimit += 1;
 		if (retryAfterMs != null && retryAfterMs > 0) {
 			cooldownMs = Math.min(retryAfterMs, RATE_LIMIT_RETRY_AFTER_CAP_MS);
 		} else {
+			// 熔断已打开 = 同一限流回合的并发/连续 429，不重复升级
+			if (entry.openUntil <= now) {
+				entry.consecutiveRateLimit += 1;
+			}
 			const idx = Math.min(entry.consecutiveRateLimit - 1, RATE_LIMIT_BACKOFF_MS.length - 1);
 			cooldownMs = RATE_LIMIT_BACKOFF_MS[idx]!;
 		}

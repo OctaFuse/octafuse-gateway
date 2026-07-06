@@ -46,28 +46,37 @@ describe('rate_limit failures', () => {
 		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(900_000);
 	});
 
-	it('escalates backoff on consecutive 429s without Retry-After', () => {
+	it('escalates backoff on consecutive 429s without Retry-After after each cooldown', () => {
 		const t0 = 1_000_000;
 		markProviderKeyFailure('k', 'rate_limit', null, t0);
-		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(30_000);
-		markProviderKeyFailure('k', 'rate_limit', null, t0);
-		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(60_000);
-		markProviderKeyFailure('k', 'rate_limit', null, t0);
-		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(300_000);
-		markProviderKeyFailure('k', 'rate_limit', null, t0);
-		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(900_000);
+		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(5_000);
+		markProviderKeyFailure('k', 'rate_limit', null, t0 + 5_001);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 5_001)).toBe(15_000);
+		markProviderKeyFailure('k', 'rate_limit', null, t0 + 20_002);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 20_002)).toBe(30_000);
+		markProviderKeyFailure('k', 'rate_limit', null, t0 + 50_003);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 50_003)).toBe(60_000);
 		// 封顶。
+		markProviderKeyFailure('k', 'rate_limit', null, t0 + 110_004);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 110_004)).toBe(60_000);
+	});
+
+	it('does not escalate when multiple 429s arrive in the same open circuit window', () => {
+		const t0 = 1_000_000;
 		markProviderKeyFailure('k', 'rate_limit', null, t0);
-		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(900_000);
+		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(5_000);
+		markProviderKeyFailure('k', 'rate_limit', null, t0);
+		markProviderKeyFailure('k', 'rate_limit', null, t0);
+		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(5_000);
 	});
 
 	it('resets the escalation counter after a success', () => {
 		const t0 = 1_000_000;
 		markProviderKeyFailure('k', 'rate_limit', null, t0);
-		markProviderKeyFailure('k', 'rate_limit', null, t0);
-		markProviderKeySuccess('k', t0 + 61_000);
-		markProviderKeyFailure('k', 'rate_limit', null, t0 + 62_000);
-		expect(getProviderKeyCircuitRemainingMs('k', t0 + 62_000)).toBe(30_000);
+		markProviderKeyFailure('k', 'rate_limit', null, t0 + 5_001);
+		markProviderKeySuccess('k', t0 + 20_002);
+		markProviderKeyFailure('k', 'rate_limit', null, t0 + 20_003);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 20_003)).toBe(5_000);
 	});
 });
 

@@ -5,7 +5,7 @@
  * 1. 按 `model_routes.priority` 层从高到低；**同层多个 provider 的 key 合并为一个池**。
  * 2. 层内按 `provider_api_keys.priority` 批次从高到低。
  * 3. 批次内按限流余量（`getProviderKeyHeadroom`）降序；余量差 <10% 视为并列，并列按 weight 加权随机打散。
- * 4. 熔断中 / 限流中的 key 跳过，但记录最早恢复时间（供全不可用时返回 429 + Retry-After）。
+ * 4. 熔断中（429 无头 5s→60s 梯度 / 显式 Retry-After）/ 限流中的 key 跳过，但记录最早恢复时间（供全不可用时返回 429 + Retry-After）。
  * 5. 粘性绑定的 key 若可用则提到首位；若仅因网关限流暂不可用且预计恢复 ≤ 短等待阈值，给出等待建议。
  */
 import type { ActiveProviderApiKeyRow } from '@octafuse/core';

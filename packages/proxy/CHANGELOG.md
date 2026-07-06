@@ -1,5 +1,11 @@
 # @octafuse/proxy
 
+## Unreleased
+
+### Patch Changes
+
+- **Provider key 429 熔断**：无 `Retry-After` 头的 upstream 429 冷却梯度由 `30s→15min` 缩短为 `5s→15s→30s→60s`；同一限流回合内熔断已打开时不再累加升级计数，避免用户并发/连打导致过度熔断。显式 `Retry-After` 仍封顶 15min。
+
 ## 1.5.0
 
 ### Minor Changes
