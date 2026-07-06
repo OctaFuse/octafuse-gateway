@@ -2,7 +2,7 @@
  * 管理后台 `models` + `model_tags`：列表/详情（含路由计数）、创建、部分更新、级联删除、静态目录导入。
  */
 import type { GatewayRepositories } from '@octafuse/core';
-import { normalizeModelStickyConfigInput } from '@octafuse/core';
+import { normalizeModelStickyConfigInput } from '@octafuse/core/db/model-sticky-config';
 import {
 	coerceModelInputModalitiesInput,
 	coerceModelOutputModalitiesInput,

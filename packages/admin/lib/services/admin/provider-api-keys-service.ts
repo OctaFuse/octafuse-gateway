@@ -1,7 +1,7 @@
 /** 管理后台 `provider_api_keys` CRUD。 */
 import type { GatewayRepositories } from '@octafuse/core';
 import type { ProviderApiKeyAdminRow, ActiveProviderApiKeyRow } from '@octafuse/core';
-import { normalizeProviderKeyLimitConfigInput } from '@octafuse/core';
+import { normalizeProviderKeyLimitConfigInput } from '@octafuse/core/db/provider-key-limit-config';
 import { badRequest, conflict, notFound } from './errors';
 import type { AdminCreatedIdOutput, AdminProviderKeyMutationInput } from './types';
 
