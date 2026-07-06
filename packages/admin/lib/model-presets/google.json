@@ -58,6 +58,50 @@
 		"released": "2026-02-19"
 	},
 	{
+		"id": "gemini-3-flash-preview",
+		"display_name": "Gemini 3 Flash Preview",
+		"vendor": "google",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 3,
+						"cache_read_price": 0.05,
+						"cache_write_price": 0.08333
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3.6,
+						"output_price": 21.6,
+						"cache_read_price": 0.36,
+						"cache_write_price": 0.59998
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-12-17"
+	},
+	{
 		"id": "gemini-3.5-flash",
 		"display_name": "Gemini 3.5 Flash",
 		"vendor": "google",
