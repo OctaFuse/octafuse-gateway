@@ -113,12 +113,15 @@ export default function GatewayProvidersPage() {
 			<ProviderImportModal
 				open={state.showImportModal}
 				catalogRows={state.importCatalogRows}
+				filteredCatalogRows={state.filteredImportCatalogRows}
+				catalogSearch={state.importCatalogSearch}
 				catalogLoading={state.importCatalogLoading}
 				catalogError={state.importCatalogError}
 				selected={state.importSelected}
 				selectedCount={state.importSelectedCount}
 				submitting={state.importSubmitting}
 				onClose={() => state.setShowImportModal(false)}
+				onCatalogSearchChange={state.setImportCatalogSearch}
 				onSelectAll={state.selectAllImportPresets}
 				onClearSelection={state.clearImportPresetSelection}
 				onTogglePreset={state.toggleImportPreset}

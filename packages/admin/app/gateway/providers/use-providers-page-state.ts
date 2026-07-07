@@ -38,6 +38,7 @@ export function useProvidersPageState() {
 	const [copiedId, setCopiedId] = useState<string | null>(null);
 	const [showImportModal, setShowImportModal] = useState(false);
 	const [importCatalogRows, setImportCatalogRows] = useState<ProviderImportCatalogRow[]>([]);
+	const [importCatalogSearch, setImportCatalogSearch] = useState('');
 	const [importCatalogLoading, setImportCatalogLoading] = useState(false);
 	const [importCatalogError, setImportCatalogError] = useState('');
 	const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
@@ -83,6 +84,11 @@ export function useProvidersPageState() {
 		() => Object.values(importSelected).filter(Boolean).length,
 		[importSelected]
 	);
+	const filteredImportCatalogRows = useMemo(() => {
+		const query = importCatalogSearch.trim().toLowerCase();
+		if (!query) return importCatalogRows;
+		return importCatalogRows.filter((row) => row.name.toLowerCase().includes(query));
+	}, [importCatalogSearch, importCatalogRows]);
 
 	const refreshProviders = useCallback(async () => {
 		try {
@@ -445,6 +451,7 @@ export function useProvidersPageState() {
 	const openImportModal = useCallback(() => {
 		setShowImportModal(true);
 		setImportCatalogError('');
+		setImportCatalogSearch('');
 		setImportSelected({});
 		void loadImportCatalog();
 	}, [loadImportCatalog]);
@@ -454,12 +461,14 @@ export function useProvidersPageState() {
 	}, []);
 
 	const selectAllImportPresets = useCallback(() => {
-		const next: Record<string, boolean> = {};
-		for (const row of importCatalogRows) {
-			next[row.id] = true;
-		}
-		setImportSelected(next);
-	}, [importCatalogRows]);
+		setImportSelected((prev) => {
+			const next = { ...prev };
+			for (const row of filteredImportCatalogRows) {
+				next[row.id] = true;
+			}
+			return next;
+		});
+	}, [filteredImportCatalogRows]);
 
 	const clearImportPresetSelection = useCallback(() => {
 		setImportSelected({});
@@ -471,13 +480,6 @@ export function useProvidersPageState() {
 			.map(([k]) => k);
 		if (ids.length === 0) {
 			alert('Select at least one template.');
-			return;
-		}
-		if (
-			!confirm(
-				`Import ${ids.length} provider template(s)? Endpoints will be prefilled; replace the placeholder API key after import.`
-			)
-		) {
 			return;
 		}
 		setImportSubmitting(true);
@@ -553,6 +555,9 @@ export function useProvidersPageState() {
 		showImportModal,
 		setShowImportModal,
 		importCatalogRows,
+		importCatalogSearch,
+		setImportCatalogSearch,
+		filteredImportCatalogRows,
 		importCatalogLoading,
 		importCatalogError,
 		importSelected,
