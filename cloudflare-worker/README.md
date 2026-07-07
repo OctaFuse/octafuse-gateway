@@ -111,7 +111,7 @@ GATEWAY_MASTER_KEY=<D1 system_config.MASTER_KEY>
 
 1. Dashboard → 对应 Worker → **Settings → Builds**。
 2. **Build variables** 与本地 env **同名同值**（生产 UUID **只放 Dashboard**）。
-3. Build / Deploy command 见 [deployment-cloudflare.md §4](../docs/ops/deployment-cloudflare.md#4-workers-builds-connect-to-git)。
+3. Build / Deploy command 见 [deployment-cloudflare.md §4](../docs/ops/deployment-cloudflare.md#4-workers-builds-connect-to-git)（含 **Build watch paths**，避免无关 push 触发部署）。
 4. 有新 SQL：`npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run db:migrate:remote` → 再 `git push`。
 
 ### 本地 CLI 发版（补充）

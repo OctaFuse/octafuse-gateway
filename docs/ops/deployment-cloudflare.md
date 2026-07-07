@@ -103,12 +103,12 @@ Dashboard → Worker → **Settings → Builds**。Worker 名须与 `PROXY_WORKE
 
 ### 构建 / 部署命令
 
-Root directory 与 monorepo 根 `cd ../..` 示例：
+**Root directory 留空**（monorepo 根）。`npm ci` / `gen:wrangler` 必须在仓库根执行；不必把 Root 设为 `packages/proxy` 再在 Build 里 `cd ../..`。
 
-| Worker | Root directory | Build command | Deploy command |
-|--------|----------------|---------------|----------------|
-| **Proxy** | `packages/proxy` | `cd ../.. && npm ci && npm run gen:wrangler` | `npx wrangler deploy` |
-| **Admin** | `packages/admin` | `cd ../.. && npm ci && npm run gen:wrangler && cd packages/admin && npm run build:cf` | `npx opennextjs-cloudflare deploy` |
+| Worker | Build command | Deploy command |
+|--------|---------------|----------------|
+| **Proxy** | `npm ci && npm run gen:wrangler` | `npm run deploy -w @octafuse/proxy` |
+| **Admin** | `npm ci && npm run gen:wrangler && npm run build:cf -w @octafuse/admin` | `cd packages/admin && npx opennextjs-cloudflare deploy` |
 
 说明：
 
@@ -116,6 +116,36 @@ Root directory 与 monorepo 根 `cd ../..` 示例：
 - **D1 迁移不在 Git 流水线**：有新 SQL 时手动 `npm run db:migrate:remote`（带实例 env 或 export 变量）后再 push。
 - **Admin**：`ADMIN_PASSWORD` 用 Worker **Secrets**。
 - 可选：`WRANGLER_SEND_METRICS=false`。
+
+### Build watch paths（减少无关 push 触发部署）
+
+Dashboard → **Settings → Builds → Build watch paths**。默认 `includes: *` 表示**任意文件变更都会构建**；本仓为 monorepo，建议为 **Proxy / Admin 分别配置**，避免只改文档或另一 Worker 时也部署。
+
+判定规则（[Build watch paths](https://developers.cloudflare.com/workers/ci-cd/builds/build-watch-paths/)）：先匹配 **Exclude**，再匹配 **Include**；push 中任一变更路径命中 Include 则构建，否则跳过。
+
+**Proxy Worker**
+
+| | 路径（逗号分隔，一行粘贴到 Dashboard） |
+|--|----------------------------------------|
+| **Include** | `packages/proxy/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*` |
+| **Exclude** | （留空） |
+
+**Admin Worker**
+
+| | 路径 |
+|--|------|
+| **Include** | `packages/admin/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*` |
+| **Exclude** | （留空） |
+
+说明：
+
+- 改 **`packages/core`** 或根 **`package.json` / `package-lock.json`** 时两个 Worker 都会构建（共享依赖与 `gen-wrangler`）。
+- 仅改 **`packages/proxy`** → 只构建 Proxy；仅改 **`packages/admin`** → 只构建 Admin。
+- **`docs/`、`docker/`、`examples/`、`cloudflare-worker/example.env`** 等不在 Include 内 → **不会**触发 Worker 构建。
+- 改 **`packages/core/migrations-d1/`** 会触发构建，但 **不会**自动跑迁移；仍需本地 `db:migrate:remote` 后再依赖新 schema 的代码 push。
+- 需要强制全量构建时：Dashboard 手动 **Retry deployment**，或 push 空 commit（Cloudflare 对 0 file 的 push 会默认构建）。
+
+dev 演示 Worker（`*-dev`）可与生产使用相同 Include 列表。
 
 ### 本地 CLI（与 CI 相同生成逻辑）
 
