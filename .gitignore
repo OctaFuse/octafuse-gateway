@@ -18,3 +18,12 @@ docker/local
 docker/test
 
 data/
+
+# Generated Wrangler configs (source: *.base.jsonc + npm run gen:wrangler)
+packages/proxy/wrangler.jsonc
+packages/admin/wrangler.jsonc
+packages/core/wrangler.d1.jsonc
+
+# Per-instance Cloudflare Worker deploy env (committed example: cloudflare-worker/example.env)
+cloudflare-worker/*.env
+!cloudflare-worker/example.env

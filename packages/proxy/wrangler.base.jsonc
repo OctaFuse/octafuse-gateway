@@ -1,0 +1,19 @@
+{
+	// 模板：由 `npm run gen:wrangler` 生成 `wrangler.jsonc`（勿手改生成文件）。
+	// D1 与 Worker 入口。执行 `npm run db:migrate*` 时使用 `packages/core/wrangler.d1.jsonc`（仅 D1，勿 deploy）。
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "octafuse-gateway-proxy",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-01",
+	"compatibility_flags": ["nodejs_compat", "enable_request_signal"],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "octafuse-gateway"
+		}
+	],
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	}
+}
