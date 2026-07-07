@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.6.0
+
+### Minor Changes
+
+- ### Proxy
+
+  - **限流、粘性路由与熔断**：Gateway 限流与路由策略优化；Provider 密钥在上游 **429** 时缩短 cooldown，降低并发故障时的级联影响。
+  - **错误告警**：告警可选 **UTC+8 发生时间**；摘要格式更清晰。
+  - **请求日志**：`api_key_request_logs` 增加 **request id** 与 **message id** 记录。
+
+  ### Admin API
+
+  - **Provider 预设**：新增 **hy token plan** Provider 导入模板。
+
+  ### Admin UI
+
+  - **Providers**：卡片式布局重构；Key 信息维护与 **Import** 流程优化；弹窗支持点击空白处关闭。
+  - **Analytics**：Model / Provider Usage 支持行展开查看子维度统计；Provider Usage 点击名称跳转 Request Logs；Token 紧凑显示默认 **Compact**，K/M/B 分级样式区分。
+  - **Request Logs**：展示与 request id / message id 对齐；修复 **Time range (UTC)** custom 点击无效（Audit Logs 同步修复）。
+  - **Models / Routes**：页面结构与弹出框交互优化。
+
+  ### 模型与 Provider 预设
+
+  - **新增/更新**：Qwen 批量静态数据；hy3；Gemini 3 Flash、Gemini 2.5 系列；Longcat 2.0；Claude Sonnet 5；gpt-5.4-nano 等。
+
+  ### 部署
+
+  - **Cloudflare Workers**：`gen-wrangler` + Build variables 部署模型；`cloudflare-worker/` 多实例 env 与文档完善；修复 Admin OpenNext 与 Proxy 在 Cloudflare Builds 上的构建问题。
+
 ## 1.5.0
 
 ### Minor Changes
