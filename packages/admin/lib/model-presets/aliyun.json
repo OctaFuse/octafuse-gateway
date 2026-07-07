@@ -363,5 +363,163 @@
 			]
 		},
 		"released": "2026-02-16"
+	},
+	{
+		"id": "qwen3-vl-plus",
+		"display_name": "Qwen3-VL Plus",
+		"vendor": "aliyun",
+		"context_window": 256000,
+		"max_tokens": 32000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 32000,
+						"input_price": 0.2,
+						"output_price": 2,
+						"cache_read_price": null,
+						"cache_write_price": null
+					},
+					{
+						"upto": 128000,
+						"input_price": 0.3,
+						"output_price": 3,
+						"cache_read_price": null,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 0.6,
+						"output_price": 6,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 32000,
+						"input_price": 1,
+						"output_price": 10,
+						"cache_read_price": null,
+						"cache_write_price": null
+					},
+					{
+						"upto": 128000,
+						"input_price": 1.5,
+						"output_price": 15,
+						"cache_read_price": null,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 3,
+						"output_price": 30,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-12-19"
+	},
+	{
+		"id": "qwen3.5-omni-plus",
+		"display_name": "Qwen3.5 Omni Plus",
+		"vendor": "aliyun",
+		"context_window": 256000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.4,
+						"output_price": 8,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 7,
+						"output_price": 40,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video"
+			],
+			"output": [
+				"text",
+				"audio"
+			]
+		},
+		"released": "2026-03-15"
+	},
+	{
+		"id": "qwen3.5-omni-flash",
+		"display_name": "Qwen3.5 Omni Flash",
+		"vendor": "aliyun",
+		"context_window": 256000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.44,
+						"output_price": 2.66,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2.2,
+						"output_price": 13.3,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video"
+			],
+			"output": [
+				"text",
+				"audio"
+			]
+		},
+		"released": "2026-03-15"
 	}
 ]
