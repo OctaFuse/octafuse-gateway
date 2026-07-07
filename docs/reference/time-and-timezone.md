@@ -69,7 +69,7 @@ Drizzle schema 中时间列使用 `timestamp(..., { withTimezone: true, mode: 's
 - `after_budget_reset_at`
 - `last_active_at`
 
-下游门户（如 `soloent-web`）调用 `{GATEWAY_MASTER_URL}/api/admin/*` 时，应把上述字段当作 **UTC instant**，自行按产品需求转换展示时区。
+下游门户调用 `{GATEWAY_MASTER_URL}/api/admin/*` 时，应把上述字段当作 **UTC instant**，自行按产品需求转换展示时区。
 
 ## 3. Admin UI：逐条时间戳 = 浏览器本地时区
 

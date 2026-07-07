@@ -88,7 +88,7 @@
 | 数据库主机 | `db.example.com`、`127.0.0.1`、`postgres`（容器服务名） |
 | Proxy / Admin 公网域名 | `gateway.example.com`、`gateway-admin.example.com`（多环境/多部署可加后缀，如 `gateway-staging.example.com`） |
 | 镜像仓库命名空间 | `your-org`、`your-repo`、`example-org`、`<owner>`、`<repo>` |
-| Cloudflare D1 ID | `<your-d1-id>` 或留空（控制台覆盖） |
+| Cloudflare D1 ID | Build variables 或 `cloudflare-worker/*.env`（勿提交生产 UUID）；示例见 `cloudflare-worker/example.env` |
 | 邮箱 | `user@example.com`、`admin@example.com` |
 | Webhook URL（企微/飞书/Slack/钉钉） | 仅以**文字描述**给出形态；**禁止**贴出含 `key=` / `hook id` 的真实 URL，必要时使用 `https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…`、`https://open.feishu.cn/open-apis/bot/v2/hook/…` 这种**已截断带省略号**的占位 |
 | 第三方上游 API Key（OpenAI/Anthropic/Gemini/智谱…） | 不出现在文档中；如需说明，写 `<PROVIDER_API_KEY>` |

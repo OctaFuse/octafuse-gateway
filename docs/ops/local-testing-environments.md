@@ -2,6 +2,8 @@
 
 本文说明如何在本地组合 **Proxy Worker**、**Admin（OpenNext）** 与 **D1**，以及可选 **Node + Postgres** 或 **Node + MySQL**。整体「运行时 × 数据库」矩阵见 **[architecture/runtime-data.md](../architecture/runtime-data.md)**。
 
+**Cloudflare 本地开发 vs 远程部署**：本文件 §1–2 为**本机 D1**（不上线）。远程 dev 演示、生产 Git 部署见 **[cloudflare-worker/README.md](../../cloudflare-worker/README.md)**。
+
 ## 拓扑模式（本地/部署一致口径）
 
 | 模式 | Proxy | Admin | 数据库 |
@@ -22,7 +24,7 @@
 仓库根目录：
 
 - **持久化**：`./.wrangler/state`（与根脚本中 `--persist-to` 保持一致）。
-- **D1 逻辑库名**：`octafuse-gateway`（见 `packages/proxy/wrangler.jsonc`）。
+- **D1 逻辑库名**：默认 `octafuse-gateway`（`npm install` / `postinstall` 会通过 `gen:wrangler` 生成 `packages/proxy/wrangler.jsonc`；模板见 `wrangler.base.jsonc`）。
 
 ```bash
 npm install
@@ -62,14 +64,17 @@ npm run dev    # :3000，/api/admin/* 会因无 DB 返回 500
 示例（在根目录手动调用 wrangler，路径自定）：
 
 ```bash
-npx wrangler d1 migrations apply octafuse-gateway --config packages/core/wrangler.d1.jsonc --local --persist-to ./.wrangler/state-alt
+npm run db:migrate   # 内部：gen:wrangler + wrangler d1 migrations apply --local
+# 或手动（须与 npm run db:migrate 使用相同 persist 路径）：
+# npm run gen:wrangler && node scripts/deploy/wrangler-d1-cli.mjs migrations apply --local --persist-to ./.wrangler/state-alt
 npx wrangler dev --config packages/proxy/wrangler.jsonc --port 8787 --persist-to ./.wrangler/state-alt
 ```
 
 ## 4. 远程 D1
 
 ```bash
-npm run db:migrate:remote
+# 远程须 D1_DATABASE_ID（cloudflare-worker/*.env 或环境变量）
+npx dotenv -e ./cloudflare-worker/<name>.env -- npm run db:migrate:remote
 ```
 
 仅在有明确变更窗口时执行；查询优先只读 SQL，避免误写生产数据。
