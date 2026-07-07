@@ -101,7 +101,7 @@ npm run dev:admin           # Admin OpenNext 预览 → http://127.0.0.1:8789
 | 主题 | 链接 |
 |------|------|
 | 部署索引（模式、迁移、环境文件） | [docs/ops/deployment.md](./docs/ops/deployment.md) |
-| Cloudflare（Proxy Worker + Admin + D1、Connect to Git） | [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) |
+| Cloudflare（Proxy Worker + Admin + D1） | [cloudflare-worker/README.md](./cloudflare-worker/README.md) · [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) |
 | Docker / 自托管（Postgres、MySQL、GHCR、Compose） | [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) |
 | 运行时 × 数据库矩阵 | [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md) |
 | 版本与发版 | [docs/ops/release-versioning.md](./docs/ops/release-versioning.md) |
@@ -153,10 +153,9 @@ npm run dev:admin           # Admin OpenNext 预览 → http://127.0.0.1:8789
 
 ## 环境变量
 
-- 复制 **[`.env.example`](./.env.example)** → **`.env`**。
-- 可选 **`.env.local`**（不提交；说明见 **`.env.example`** 顶部）。
-- **Node（Postgres 或 MySQL）**：**`DATABASE_URL`**；**`DATABASE_DRIVER`**（MySQL 须显式 **`mysql`**）；Admin 需 **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**。
-- **Cloudflare + D1**：使用 Wrangler 绑定；Worker 勿配置 `DATABASE_URL`。**`ADMIN_PASSWORD`** 用 Secret；见 [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) §0。
+- 复制 **[`.env.example`](./.env.example)** → **`.env`**（Node/Postgres/Docker/冒烟）。
+- **Cloudflare 部署**（Worker 名、D1 id、routes）：**`cloudflare-worker/`**，见 [cloudflare-worker/README.md](./cloudflare-worker/README.md)。生产用 Dashboard **Build variables**（不提交 env 文件）。
+- **Cloudflare + D1**：由 `*.base.jsonc` + `npm run gen:wrangler` 生成 Wrangler 配置；Worker 勿配 `DATABASE_URL`。**`ADMIN_PASSWORD`** 用 Secret；见 [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md)。
 
 ## 常用命令（仓库根）
 
@@ -173,7 +172,7 @@ npm run dev:proxy:node
 npm run dev:admin
 npm run dev:admin:node
 
-npm run deploy:proxy        # 生产部署见 docs/ops/deployment-cloudflare.md
+npm run deploy:proxy        # 须 cloudflare-worker/*.env 或 Build variables — 见 cloudflare-worker/README.md
 npm run deploy:admin
 
 npm run test:gateway:postgres-smoke

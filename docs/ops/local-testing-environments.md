@@ -2,6 +2,8 @@
 
 本文说明如何在本地组合 **Proxy Worker**、**Admin（OpenNext）** 与 **D1**，以及可选 **Node + Postgres** 或 **Node + MySQL**。整体「运行时 × 数据库」矩阵见 **[architecture/runtime-data.md](../architecture/runtime-data.md)**。
 
+**Cloudflare 本地开发 vs 远程部署**：本文件 §1–2 为**本机 D1**（不上线）。远程 dev 演示、生产 Git 部署见 **[cloudflare-worker/README.md](../../cloudflare-worker/README.md)**。
+
 ## 拓扑模式（本地/部署一致口径）
 
 | 模式 | Proxy | Admin | 数据库 |

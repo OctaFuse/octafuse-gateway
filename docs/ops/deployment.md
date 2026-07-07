@@ -11,7 +11,7 @@
 
 ## 常见部署模式
 
-1. **Cloudflare 全托管（默认）**：Proxy Worker + Admin Pages，共用 D1。见 [deployment-cloudflare.md](./deployment-cloudflare.md)。
+1. **Cloudflare 全托管（默认）**：Proxy Worker + Admin，共用 D1。见 [cloudflare-worker/README.md](../../cloudflare-worker/README.md) 与 [deployment-cloudflare.md](./deployment-cloudflare.md)。
 2. **Hybrid**：Proxy Node + Postgres，Admin 继续 Cloudflare + D1。见 [deployment-docker.md](./deployment-docker.md)。
 3. **Full self-hosted PG**：Proxy Node + Admin Node，共用 Postgres。见 [deployment-docker.md](./deployment-docker.md) 与 [postgres-cutover.md](./postgres-cutover.md)。
 4. **Full self-hosted MySQL**：同上形态，共用 MySQL 8（`DATABASE_DRIVER=mysql`，迁移 `migrations-mysql/`）。见 [deployment-docker.md](./deployment-docker.md)（含 **`docker/compose/node-mysql.yml`** 与 UTC 时区说明）。

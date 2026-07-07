@@ -101,7 +101,7 @@ Production and staging are documented separately — not covered in Quick Start 
 | Topic | Link |
 |--------|------|
 | Deployment index (modes, migrations, env files) | [docs/ops/deployment.md](./docs/ops/deployment.md) |
-| Cloudflare (Proxy Worker + Admin + D1, Connect to Git) | [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) |
+| Cloudflare（Proxy Worker + Admin + D1） | [cloudflare-worker/README.md](./cloudflare-worker/README.md) · [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) |
 | Docker / self-hosted (Postgres, MySQL, GHCR, compose) | [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) |
 | Runtime × database matrix | [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md) |
 | Releases & versioning | [docs/ops/release-versioning.md](./docs/ops/release-versioning.md) |
@@ -154,10 +154,9 @@ Single semver line for root `octafuse` and `@octafuse/*`. **Git tags `vX.Y.Z`** 
 
 ## Environment
 
-- Copy **[`.env.example`](./.env.example)** → **`.env`** and uncomment what you need.
-- Optional **`.env.local`** for machine-specific overrides (patterns at the top of **`.env.example`**).
-- **Node + Postgres or MySQL**: **`DATABASE_URL`**, optional **`DATABASE_DRIVER`** (`postgres` default; use `mysql` with `mysql://`). Admin needs **`ADMIN_USERNAME`** / **`ADMIN_PASSWORD`**.
-- **Cloudflare + D1**: Wrangler bindings in `packages/proxy` / `packages/admin` — do not point Workers at `DATABASE_URL` for D1 mode. Set **`ADMIN_PASSWORD`** via Worker **Secret** or `wrangler secret put`; see [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) §0.
+- Copy **[`.env.example`](./.env.example)** → **`.env`** for Node/Postgres/Docker/smoke tests.
+- **Cloudflare deploy** (Worker names, D1 id, routes): **`cloudflare-worker/`** — see [cloudflare-worker/README.md](./cloudflare-worker/README.md). Production uses Dashboard **Build variables** (not committed env files).
+- **Cloudflare + D1**: Generated Wrangler config from `*.base.jsonc` + `npm run gen:wrangler`. Do not point Workers at `DATABASE_URL` for D1 mode. Set **`ADMIN_PASSWORD`** via Worker **Secret**; see [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md).
 
 ## Common commands (repo root)
 
@@ -174,7 +173,7 @@ npm run dev:proxy:node      # Proxy Node + SQL :8787
 npm run dev:admin           # Admin OpenNext preview + D1 :8789
 npm run dev:admin:node      # Admin Node + SQL :8789
 
-npm run deploy:proxy        # production: see docs/ops/deployment-cloudflare.md
+npm run deploy:proxy        # needs cloudflare-worker/*.env or Build variables — see cloudflare-worker/README.md
 npm run deploy:admin
 
 npm run test:gateway:postgres-smoke   # optional integration smoke

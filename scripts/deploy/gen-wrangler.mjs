@@ -18,26 +18,18 @@ function trimEnv(key) {
 	return typeof v === "string" ? v.trim() : "";
 }
 
-function suffix(instance) {
-	return instance ? `-${instance}` : "";
-}
-
 function resolveNames() {
-	const instance = trimEnv("CF_INSTANCE");
-	const sfx = suffix(instance);
-
 	const d1DatabaseName =
-		trimEnv("D1_DATABASE_NAME") || `octafuse-gateway${sfx}`;
+		trimEnv("D1_DATABASE_NAME") || "octafuse-gateway";
 
 	return {
-		instance,
 		proxyWorkerName:
-			trimEnv("PROXY_WORKER_NAME") || `octafuse-gateway-proxy${sfx}`,
+			trimEnv("PROXY_WORKER_NAME") || "octafuse-gateway-proxy",
 		adminWorkerName:
-			trimEnv("ADMIN_WORKER_NAME") || `octafuse-gateway-admin${sfx}`,
+			trimEnv("ADMIN_WORKER_NAME") || "octafuse-gateway-admin",
 		d1MigrationsWorkerName:
 			trimEnv("D1_MIGRATIONS_WORKER_NAME") ||
-			`octafuse-d1-migrations${sfx}`,
+			"octafuse-d1-migrations",
 		d1DatabaseName,
 		d1DatabaseId: trimEnv("D1_DATABASE_ID"),
 		proxyCustomDomain: trimEnv("PROXY_CUSTOM_DOMAIN"),

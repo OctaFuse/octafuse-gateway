@@ -71,7 +71,8 @@ flowchart LR
 | 文档 | 说明 |
 |------|------|
 | [ops/deployment.md](./ops/deployment.md) | **部署索引**（入口） |
-| [ops/deployment-cloudflare.md](./ops/deployment-cloudflare.md) | Cloudflare：Connect to Git、Wrangler、密钥 |
+| [ops/deployment-cloudflare.md](./ops/deployment-cloudflare.md) | Cloudflare：本地 / dev 演示 / 生产 Git CI |
+| [cloudflare-worker/README.md](../cloudflare-worker/README.md) | **Cloudflare 部署速查**（Build variables、`example.env`） |
 | [ops/deployment-docker.md](./ops/deployment-docker.md) | Docker 镜像、Compose、GHCR |
 | [ops/local-testing-environments.md](./ops/local-testing-environments.md) | 本地 D1 / Node + SQL |
 | [ops/release-versioning.md](./ops/release-versioning.md) | Changesets、`vX.Y.Z`、镜像与 Release |
@@ -99,9 +100,11 @@ npm run dev:proxy           # Proxy Worker :8787
 npm run dev:proxy:node      # Proxy Node + SQL :8787
 npm run dev:admin           # Admin OpenNext preview + D1 :8789
 npm run dev:admin:node      # Admin Node + SQL :8789
-npm run deploy:proxy
+npm run deploy:proxy        # 须 dotenv -e cloudflare-worker/<instance>.env 或已 export 变量
 npm run deploy:admin
 ```
+
+Cloudflare 三条路径（本地 / example.dev / 生产）：**[cloudflare-worker/README.md](../cloudflare-worker/README.md)**。
 
 D1 迁移目录：**`packages/core/migrations-d1/`**（`wrangler.d1.jsonc` 同目录）。Postgres：**`packages/core/migrations-postgres/`**（`npm run db:migrate:pg`）。MySQL：**`packages/core/migrations-mysql/`**（`npm run db:migrate:mysql`）。
 
