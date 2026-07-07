@@ -27,3 +27,8 @@ packages/core/wrangler.d1.jsonc
 # Per-instance Cloudflare Worker deploy env (committed example: cloudflare-worker/example.env)
 cloudflare-worker/*.env
 !cloudflare-worker/example.env
+
+# Local-only deploy helpers (usage in script headers; not committed)
+cloudflare-worker/_deploy-common.sh
+cloudflare-worker/deploy-soloent.sh
+cloudflare-worker/deploy-octarouter.sh
