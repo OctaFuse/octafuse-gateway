@@ -2,7 +2,7 @@
 
 本目录存放 **Wrangler / Workers Builds** 用的实例变量（Worker 名、D1、`routes`）。**不**用于 Node + Postgres 本地开发——那部分见仓库根 [`.env.example`](../.env.example)。
 
-详细运维说明：[docs/ops/deployment-cloudflare.md](../docs/ops/deployment-cloudflare.md)。
+详细运维说明：[docs/ops/deployment-cloudflare.md](../docs/ops/deployment-cloudflare.md)。生产 **Connect to Git** 的 Dashboard 配置见 **[§C](#git-自动部署connect-to-git)**。
 
 ---
 
@@ -22,7 +22,7 @@
 |------|--------------|------|
 | [`example.env`](./example.env) | ✅ 提交 | **dev 演示** canonical 配置（`octafuse.dev`） |
 | 自建 `cloudflare-worker/<name>.env` | ❌ gitignore | **生产**本地 CLI 或 Dashboard 配置备份 |
-| Cloudflare **Build variables** | ❌ 仅在 Dashboard | **生产 / dev Worker 的 Git 自动部署**（与 `.env` 同名变量） |
+| Cloudflare **Build variables** | ❌ 仅在 Dashboard | **生产** Worker 的 Git 自动部署（与实例 `.env` 同名变量） |
 
 `gen-wrangler` 只读 **环境变量**（`process.env`），不关心来自文件还是 Dashboard。
 
@@ -76,11 +76,15 @@ npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:admin
 
 验证：`GET https://test-api.octafuse.dev/health`、Admin 登录。
 
-### 后续：Git 自动部署（可选）
+### 后续发版（CLI）
 
-1. 两个 `-dev` Worker → **Connect to Git**（`octafuse-gateway` 仓）。
-2. **Build variables**：与 `example.env` 中变量**同名同值**（见 [deployment-cloudflare.md § Workers Builds](../docs/ops/deployment-cloudflare.md#4-workers-builds-connect-to-git)）。
-3. `git push` → 自动构建部署；**D1 迁移仍手动** `db:migrate:remote`。
+dev 演示**不使用** Git 自动部署；发版继续用 CLI：
+
+```bash
+npx dotenv -e ./cloudflare-worker/example.env -- npm run db:migrate:remote  # 有新 SQL 时
+npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:proxy
+npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:admin
+```
 
 给测试用户的下游变量：
 
@@ -107,12 +111,67 @@ GATEWAY_MASTER_KEY=<D1 system_config.MASTER_KEY>
 | `D1_MIGRATIONS_WORKER_NAME` | 可选；仅 D1 迁移脚本用 |
 | `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选；不设则由 Dashboard 绑定域名 |
 
-### Git 自动部署（推荐）
+### Git 自动部署（Connect to Git）
 
-1. Dashboard → 对应 Worker → **Settings → Builds**。
-2. **Build variables** 与本地 env **同名同值**（生产 UUID **只放 Dashboard**）。
-3. Build / Deploy command 见 [deployment-cloudflare.md §4](../docs/ops/deployment-cloudflare.md#4-workers-builds-connect-to-git)（含 **Build watch paths**，避免无关 push 触发部署）。
-4. 有新 SQL：`npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run db:migrate:remote` → 再 `git push`。
+1. 完成上方实例 env；首次可用下方 [本地 CLI 发版](#本地-cli-发版补充) bootstrap。
+2. Proxy / Admin 两个 Worker 分别 **Connect to Git**（仓库 `octafuse-gateway`，生产分支通常 `main`）。
+3. 按下方 **Dashboard 配置** 填写；**Build variables** 与 `cloudflare-worker/<your-instance>.env` **同名同值**（`D1_DATABASE_ID` **只放 Dashboard，不进 Git**）。
+4. `git push` → 自动构建部署；**D1 迁移仍手动**（Git 流水线不会跑迁移）：
+
+```bash
+npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run db:migrate:remote
+```
+
+#### Dashboard 配置
+
+**入口**：Dashboard → 对应 Worker → **Settings → Builds** → **Connect to Git**。Proxy 与 Admin **各绑一次**；Worker 名须与 `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` 一致。
+
+**通用设置**
+
+| 项 | 值 |
+|----|-----|
+| **Root directory（根目录）** | **留空**（monorepo 根；`npm ci` / `gen:wrangler` 必须在仓库根执行） |
+| **非生产分支构建** | 按需勾选 |
+
+**构建 / 部署命令**
+
+**勿**在 Deploy 填 `npm run deploy:proxy` / `npm run deploy:admin`——CI 已拆分 build 与 deploy；Deploy 再跑 `deploy:*` 会重复生成配置。
+
+| Worker | Build command | Deploy command |
+|--------|---------------|----------------|
+| **Proxy** | `npm ci && npm run gen:wrangler` | `npm run deploy -w @octafuse/proxy` |
+| **Admin** | `npm ci && npm run gen:wrangler && npm run build:cf -w @octafuse/admin` | `cd packages/admin && npx opennextjs-cloudflare deploy` |
+
+- Build 阶段 `npm ci` → `postinstall` → `gen:wrangler` 读 **Build variables** 生成 `wrangler.jsonc`。
+- **Admin**：`ADMIN_PASSWORD` 用 Worker **Secrets**（`npx wrangler secret put ADMIN_PASSWORD -w <ADMIN_WORKER_NAME>`），不是 Build variable。
+- 可选 Build variable：`WRANGLER_SEND_METRICS=false`。
+
+**Build variables**
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `PROXY_WORKER_NAME` | Proxy Worker | 须与 Dashboard Worker 名一致 |
+| `ADMIN_WORKER_NAME` | Admin Worker | 同上 |
+| `D1_DATABASE_NAME` | ✅ | D1 逻辑名 |
+| `D1_DATABASE_ID` | ✅ | `npx wrangler d1 list`；**只放 Dashboard，不进 Git** |
+| `D1_MIGRATIONS_WORKER_NAME` | 可选 | 仅 D1 迁移脚本配置名 |
+| `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 | 写入 wrangler `routes`；不设则由 Dashboard 绑定域名 |
+
+**Build watch paths**（**Settings → Builds → Build watch paths**；Exclude 留空）
+
+Proxy — Include（一行粘贴）：
+
+```
+packages/proxy/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*
+```
+
+Admin — Include：
+
+```
+packages/admin/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*
+```
+
+改 `packages/core` 或根 `package.json` / `package-lock.json` 时两个 Worker 都会构建；改 `docs/` 等不在 Include 内的路径 **不会**触发构建。更多细节：[deployment-cloudflare.md §4](../docs/ops/deployment-cloudflare.md#4-workers-builds-connect-to-git)。
 
 ### 本地 CLI 发版（补充）
 

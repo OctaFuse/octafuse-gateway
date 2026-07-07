@@ -65,7 +65,7 @@ npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:proxy
 npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:admin
 ```
 
-**后续 Git 自动部署**：两个 `-dev` Worker 的 **Build variables** 与 `example.env` 对齐 → `git push`。步骤见 [cloudflare-worker/README.md §B](../../cloudflare-worker/README.md#b-dev-演示远程-octafusedev)。
+dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../../cloudflare-worker/README.md#c-生产-git-自动部署)。
 
 ---
 
@@ -145,7 +145,7 @@ Dashboard → **Settings → Builds → Build watch paths**。默认 `includes: 
 - 改 **`packages/core/migrations-d1/`** 会触发构建，但 **不会**自动跑迁移；仍需本地 `db:migrate:remote` 后再依赖新 schema 的代码 push。
 - 需要强制全量构建时：Dashboard 手动 **Retry deployment**，或 push 空 commit（Cloudflare 对 0 file 的 push 会默认构建）。
 
-dev 演示 Worker（`*-dev`）可与生产使用相同 Include 列表。
+Dashboard 逐步配置见 [cloudflare-worker/README.md §C](../../cloudflare-worker/README.md#git-自动部署connect-to-git)。
 
 ### 本地 CLI（与 CI 相同生成逻辑）
 
@@ -197,7 +197,7 @@ npx wrangler d1 list
 
 同一 Cloudflare 账号可跑多套 Worker（不同 `PROXY_WORKER_NAME` / `D1_DATABASE_ID`）。升级 **gen-wrangler** 或迁移流程时，建议：
 
-1. 先在 **dev 演示**（`example.env`）或 **staging Worker** 验证 Build variables + `git push`。
+1. 先在 **dev 演示**（`example.env` + CLI 发版）或 **staging / 生产 Worker**（Connect to Git）验证变更。
 2. 再更新生产 Worker 的 Build variables；必要时对生产 Worker **Pause Builds**，配好变量后再恢复。
 3. 有新 D1 SQL：**先** `db:migrate:remote`（对应实例 env），**再**部署依赖新 schema 的 Worker。
 
