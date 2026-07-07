@@ -1,6 +1,6 @@
 # 线上部署：Cloudflare（Proxy Worker + Admin + D1）
 
-本文说明 **octafuse-gateway** 在 Cloudflare 上的三种用法：**本地 D1 开发**、**dev 演示（octafuse.dev）**、**生产 Git 自动部署（soloent / octarouter）**。
+本文说明 **octafuse-gateway** 在 Cloudflare 上的三种用法：**本地 D1 开发**、**dev 演示（octafuse.dev）**、**生产 Git 自动部署**。
 
 **快速入口**：[cloudflare-worker/README.md](../../cloudflare-worker/README.md)（路径速查 + 命令清单）。
 
@@ -69,17 +69,17 @@ npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:admin
 
 ---
 
-## 3. 生产部署（soloent / octarouter）
+## 3. 生产部署
 
 **同一仓库代码、多实例**：每个 Worker 一套 **Build variables**；**勿**把生产 `D1_DATABASE_ID` 提交进 Git。
 
-| 实例 | Git 仓库 | Worker 名 | D1 名 | 自定义域 |
-|------|----------|-----------|-------|----------|
-| soloent | `octafuse-gateway` | `octafuse-gateway-proxy` / `-admin` | `octafuse-gateway` | Dashboard 管理（wrangler 不写 routes） |
-| octarouter | `octarouter-gateway` | `octarouter-gateway-proxy` / `-admin` | `octarouter-gateway` | `api.octarouter.com` / `gateway-admin.octarouter.com` |
-| dev 演示 | `octafuse-gateway` | `*-dev` | `octafuse-gateway-dev` | `test-api.octafuse.dev` 等 |
+| 场景 | Worker / D1 命名 | 自定义域 |
+|------|------------------|----------|
+| 默认生产（示例） | `octafuse-gateway-proxy` / `-admin`，D1 `octafuse-gateway` | 常见为 Dashboard 绑定，wrangler 不写 `routes` |
+| dev 演示 | `*-dev`，D1 `octafuse-gateway-dev` | `test-api.octafuse.dev` 等（见 `example.env`） |
+| 自有 fork / 第二实例 | 自定 Worker 名与 D1 名，避免与同账号其它实例冲突 | 可选 `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` |
 
-本地 CLI 可选：`cp cloudflare-worker/example.env cloudflare-worker/soloent.env`（**gitignore**），填生产 ID 后 `dotenv -e ... deploy:*`。
+本地 CLI：复制 [`example.env`](../../cloudflare-worker/example.env) 为 gitignore 的 `cloudflare-worker/<name>.env`，填生产值后 `dotenv -e ... deploy:*`（与 Build variables 同名同值）。
 
 ### 环境变量（Build variables / 本地 `.env`）
 
@@ -132,7 +132,7 @@ npx dotenv -e ./cloudflare-worker/<instance>.env -- npm run deploy:admin
 
 ```bash
 npx wrangler login
-npx wrangler d1 create octafuse-gateway-dev   # 或 octafuse-gateway / octarouter-gateway
+npx wrangler d1 create octafuse-gateway-dev   # 或你的生产 D1 名
 npx wrangler d1 list
 ```
 
@@ -163,23 +163,13 @@ npx wrangler d1 list
 
 ---
 
-## 9. 灰度切换（soloent + octarouter）
+## 9. 多实例与灰度
 
-推荐：**先 octarouter fork 验证，再 soloent**，避免影响 soloent 生产。
+同一 Cloudflare 账号可跑多套 Worker（不同 `PROXY_WORKER_NAME` / `D1_DATABASE_ID`）。升级 **gen-wrangler** 或迁移流程时，建议：
 
-### 阶段 A：octarouter
-
-1. merge upstream 到 `octarouter-gateway`。
-2. **octarouter-gateway-proxy/admin** 配 Build variables + Build command（§4）。
-3. Push fork → 验证 `api.octarouter.com` 等。
-
-### 阶段 B：soloent
-
-1. `wrangler d1 list` 确认生产 `D1_DATABASE_ID`。
-2. **octafuse-gateway-proxy/admin** 配 Build variables（无 custom domain 变量）。
-3. Push → 验证。
-
-切换前可对 soloent Worker **Pause Builds**，配好 Build variables 后再恢复。
+1. 先在 **dev 演示**（`example.env`）或 **staging Worker** 验证 Build variables + `git push`。
+2. 再更新生产 Worker 的 Build variables；必要时对生产 Worker **Pause Builds**，配好变量后再恢复。
+3. 有新 D1 SQL：**先** `db:migrate:remote`（对应实例 env），**再**部署依赖新 schema 的 Worker。
 
 ### 回滚
 
@@ -187,9 +177,9 @@ Workers Builds 部署历史 **Rollback**；或 Pause Builds 后回滚版本。
 
 ---
 
-## 10. Fork 同步（octarouter-gateway）
+## 10. 下游 fork
 
-改造后 **无需** merge 时保留三份 `wrangler.jsonc`；生产绑定在 Build variables。见 [octarouter-gateway/SYNC_UPSTREAM.md](https://github.com/OctaFuse/octarouter-gateway/blob/main/SYNC_UPSTREAM.md)。
+若维护独立部署 fork，生产绑定（`D1_DATABASE_ID`、Worker 名、域名）应放在各 fork 的 **Build variables** 或 gitignore env 中，**勿**在 Git 里提交真实 `wrangler.jsonc`。merge upstream 时无需保留旧的 committed `database_id`。
 
 ---
 

@@ -12,7 +12,7 @@
 |------|--------|----------------------------------|---------------|
 | **[A. 本地开发](#a-本地-cloudflare-开发不上线)** | 本机改代码、本地 D1 | ❌ 不需要 | ❌ 仅 `.wrangler/state` |
 | **[B. dev 演示部署](#b-dev-演示远程-octafusedev)** | 长期公共测试 `test-api.octafuse.dev` | ✅ [`example.env`](./example.env) | ✅ 独立 dev 库 |
-| **[C. 生产 Git 自动部署](#c-生产-soloent--octarouter)** | soloent / octarouter 线上 | ❌ 不进 Git；用 **Build variables** | ✅ 各实例生产库 |
+| **[C. 生产 Git 自动部署](#c-生产-git-自动部署)** | 自有生产环境 | ❌ 不进 Git；用 **Build variables** 或本地 gitignore env | ✅ 各实例生产库 |
 
 ---
 
@@ -21,7 +21,7 @@
 | 文件 | 是否提交 Git | 用途 |
 |------|--------------|------|
 | [`example.env`](./example.env) | ✅ 提交 | **dev 演示** canonical 配置（`octafuse.dev`） |
-| `soloent.env` / `octarouter.env` / 自建 `*.env` | ❌ gitignore | 本地 CLI 部署或当 Dashboard 配置的备份 |
+| 自建 `cloudflare-worker/<name>.env` | ❌ gitignore | **生产**本地 CLI 或 Dashboard 配置备份 |
 | Cloudflare **Build variables** | ❌ 仅在 Dashboard | **生产 / dev Worker 的 Git 自动部署**（与 `.env` 同名变量） |
 
 `gen-wrangler` 只读 **环境变量**（`process.env`），不关心来自文件还是 Dashboard。
@@ -92,39 +92,34 @@ GATEWAY_MASTER_KEY=<D1 system_config.MASTER_KEY>
 
 ---
 
-## C. 生产（soloent / octarouter）
+## C. 生产 Git 自动部署
 
-**同一套代码、多实例**：差异在 **每个 Worker 的 Build variables**，不在 Git 里多份 env 文件。
+**同一套代码、多实例**：差异在 **每个 Worker 的 Build variables**（或本地 gitignore 的 env 文件），不在 Git 里提交生产 `D1_DATABASE_ID`。
 
-| 实例 | Git 仓库 | Worker 名（示例） | 本地 `.env`（可选，不提交） |
-|------|----------|-------------------|----------------------------|
-| soloent | `octafuse-gateway` | `octafuse-gateway-proxy` / `-admin` | `cloudflare-worker/soloent.env` |
-| octarouter | `octarouter-gateway` fork | `octarouter-gateway-proxy` / `-admin` | `cloudflare-worker/octarouter.env` |
+### 准备实例 env（本地 CLI 可选）
 
-### 生产 Git 自动部署（推荐）
+复制 [`example.env`](./example.env) 为 `cloudflare-worker/<your-instance>.env`（**勿 commit**），按你的 Cloudflare 账号修改：
+
+| 变量 | 说明 |
+|------|------|
+| `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` | 与 Dashboard Worker 名一致 |
+| `D1_DATABASE_NAME` / `D1_DATABASE_ID` | `npx wrangler d1 list` 确认 |
+| `D1_MIGRATIONS_WORKER_NAME` | 可选；仅 D1 迁移脚本用 |
+| `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选；不设则由 Dashboard 绑定域名 |
+
+### Git 自动部署（推荐）
 
 1. Dashboard → 对应 Worker → **Settings → Builds**。
-2. 填 **Build variables**（`PROXY_WORKER_NAME`、`D1_DATABASE_ID` 等；**勿**提交到 Git）。
+2. **Build variables** 与本地 env **同名同值**（生产 UUID **只放 Dashboard**）。
 3. Build / Deploy command 见 [deployment-cloudflare.md §4](../docs/ops/deployment-cloudflare.md#4-workers-builds-connect-to-git)。
-4. 有新 SQL：`npx dotenv -e ./cloudflare-worker/soloent.env -- npm run db:migrate:remote`（或 export 同名变量）→ 再 `git push`。
-
-`soloent.env` 示例（复制 [`example.env`](./example.env) 后改值，**勿 commit**）：
-
-```env
-PROXY_WORKER_NAME=octafuse-gateway-proxy
-ADMIN_WORKER_NAME=octafuse-gateway-admin
-D1_DATABASE_NAME=octafuse-gateway
-D1_DATABASE_ID=<wrangler d1 list 确认的生产 UUID>
-# 不设 PROXY_CUSTOM_DOMAIN / ADMIN_CUSTOM_DOMAIN
-```
+4. 有新 SQL：`npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run db:migrate:remote` → 再 `git push`。
 
 ### 本地 CLI 发版（补充）
 
 ```bash
-cp cloudflare-worker/example.env cloudflare-worker/soloent.env
-# 编辑 soloent.env …
-npx dotenv -e ./cloudflare-worker/soloent.env -- npm run deploy:proxy
-npx dotenv -e ./cloudflare-worker/soloent.env -- npm run deploy:admin
+npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run db:migrate:remote
+npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run deploy:proxy
+npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run deploy:admin
 ```
 
 ---
