@@ -9,7 +9,7 @@
 
 ## 环境
 
-- **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**：控制台登录。本地 `preview`：`.dev.vars`。生产：**`ADMIN_PASSWORD`** 用 Worker **Secret**。
+- **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**：控制台登录。本地 `preview`：`.dev.vars`。生产：**`ADMIN_PASSWORD`** 用 Worker **Secret**（`npx wrangler secret put ADMIN_PASSWORD --name <ADMIN_WORKER_NAME>`）。
 - **数据库**：Wrangler 绑定 **`DB`**（D1）或根 `.env` 的 **`DATABASE_URL`**（Node）；须与 Proxy 指向同一逻辑库。
 
 外部自动化：`GATEWAY_MASTER_URL` + `Authorization: Bearer <MASTER_KEY>`。

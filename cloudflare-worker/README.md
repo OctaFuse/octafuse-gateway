@@ -67,7 +67,7 @@ npx wrangler d1 list                          # 将 database_id 写入 example.e
 # 在 Dashboard 创建 Worker（名须与 example.env 一致）：
 #   octafuse-gateway-proxy-dev
 #   octafuse-gateway-admin-dev
-# Admin 密码：npx wrangler secret put ADMIN_PASSWORD -w octafuse-gateway-admin-dev
+# Admin 密码：npx wrangler secret put ADMIN_PASSWORD --name octafuse-gateway-admin-dev
 
 npx dotenv -e ./cloudflare-worker/example.env -- npm run db:migrate:remote
 npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:proxy
@@ -143,7 +143,7 @@ npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run db:migrate:remo
 | **Admin** | `npm ci && npm run gen:wrangler && npm run build:cf -w @octafuse/admin` | `cd packages/admin && npx opennextjs-cloudflare deploy` |
 
 - Build 阶段 `npm ci` → `postinstall` → `gen:wrangler` 读 **Build variables** 生成 `wrangler.jsonc`。
-- **Admin**：`ADMIN_PASSWORD` 用 Worker **Secrets**（`npx wrangler secret put ADMIN_PASSWORD -w <ADMIN_WORKER_NAME>`），不是 Build variable。
+- **Admin**：`ADMIN_PASSWORD` 用 Worker **Secrets**（`npx wrangler secret put ADMIN_PASSWORD --name <ADMIN_WORKER_NAME>`），不是 Build variable。
 - 可选 Build variable：`WRANGLER_SEND_METRICS=false`。
 
 **Build variables**

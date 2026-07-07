@@ -114,7 +114,7 @@ Dashboard → Worker → **Settings → Builds**。Worker 名须与 `PROXY_WORKE
 
 - `npm ci` → `postinstall` → `gen:wrangler` 会读 **Build variables** 生成 `wrangler.jsonc`。
 - **D1 迁移不在 Git 流水线**：有新 SQL 时手动 `npm run db:migrate:remote`（带实例 env 或 export 变量）后再 push。
-- **Admin**：`ADMIN_PASSWORD` 用 Worker **Secrets**。
+- **Admin**：`ADMIN_PASSWORD` 用 Worker **Secrets**（`npx wrangler secret put ADMIN_PASSWORD --name <ADMIN_WORKER_NAME>`）。
 - 可选：`WRANGLER_SEND_METRICS=false`。
 
 ### Build watch paths（减少无关 push 触发部署）
