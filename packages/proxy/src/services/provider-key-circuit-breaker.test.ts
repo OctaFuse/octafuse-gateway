@@ -35,7 +35,10 @@ describe('parseRetryAfterMs', () => {
 describe('rate_limit failures', () => {
 	it('honors upstream Retry-After when present', () => {
 		const t0 = 1_000_000;
-		markProviderKeyFailure('k', 'rate_limit', 5_000, t0);
+		const result = markProviderKeyFailure('k', 'rate_limit', 5_000, t0);
+		expect(result.openedOrExtended).toBe(true);
+		expect(result.failureKind).toBe('rate_limit');
+		expect(result.cooldownMs).toBe(5_000);
 		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(5_000);
 		expect(isProviderKeyCircuitOpen('k', t0 + 5_001)).toBe(false);
 	});
@@ -89,9 +92,9 @@ describe('auth / server failures', () => {
 
 	it('does not open circuit on first two server failures', () => {
 		const t0 = 1_000_000;
-		markProviderKeyFailure('k', 'server', null, t0);
+		expect(markProviderKeyFailure('k', 'server', null, t0).openedOrExtended).toBe(false);
 		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(0);
-		markProviderKeyFailure('k', 'server', null, t0 + 1);
+		expect(markProviderKeyFailure('k', 'server', null, t0 + 1).openedOrExtended).toBe(false);
 		expect(getProviderKeyCircuitRemainingMs('k', t0 + 1)).toBe(0);
 	});
 
@@ -99,7 +102,9 @@ describe('auth / server failures', () => {
 		const t0 = 1_000_000;
 		markProviderKeyFailure('k', 'server', null, t0);
 		markProviderKeyFailure('k', 'server', null, t0 + 1);
-		markProviderKeyFailure('k', 'server', null, t0 + 2);
+		const result = markProviderKeyFailure('k', 'server', null, t0 + 2);
+		expect(result.openedOrExtended).toBe(true);
+		expect(result.cooldownMs).toBe(10_000);
 		expect(getProviderKeyCircuitRemainingMs('k', t0 + 2)).toBe(10_000);
 		expect(isProviderKeyCircuitOpen('k', t0 + 12_001)).toBe(false);
 	});

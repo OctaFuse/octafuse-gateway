@@ -163,11 +163,12 @@ chatRoutes.post('/', async (c) => {
   const proxyResult = await proxyChatCompletions(repos, routes, body, requestSignal, {
     sticky: stickyContext,
   });
-  const { usagePromise, chosenRoute, upstreamRequestId } = proxyResult;
+  const { usagePromise, chosenRoute, upstreamRequestId, circuitEvents, suppressErrorAlert } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
+  let sensitiveCircuitEvent = null;
   if (errorBodyText != null) {
-    maybeTriggerSensitiveContentCircuitFromUpstream(
+    sensitiveCircuitEvent = maybeTriggerSensitiveContentCircuitFromUpstream(
       apiKey.userId,
       baseModelId,
       response.status,
@@ -180,6 +181,10 @@ chatRoutes.post('/', async (c) => {
       )
     );
   }
+
+  const alertCircuitEvents = sensitiveCircuitEvent
+    ? [...circuitEvents, sensitiveCircuitEvent]
+    : circuitEvents;
 
   const usageOrSafety = Promise.race([
     usagePromise.then((u) => ({
@@ -251,6 +256,8 @@ chatRoutes.post('/', async (c) => {
           provider_key_fingerprint: chosenRoute.providerKeyFingerprint ?? null,
           upstream_request_id: upstreamRequestId,
           upstream_message_id: usageCollected.upstreamMessageId ?? null,
+          circuit_events: alertCircuitEvents.length > 0 ? alertCircuitEvents : undefined,
+          suppress_error_alert: suppressErrorAlert || undefined,
         });
       })
       .catch((err) => {

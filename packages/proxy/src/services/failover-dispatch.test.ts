@@ -78,6 +78,8 @@ describe('failoverDispatchWithKeyPool — all keys unavailable', () => {
 		expect(body.error.code).toBe('upstream_capacity_exhausted');
 		expect(body.error.retry_after_seconds).toBe(retryAfter);
 		expect(result.usagePromise).toEqual(Promise.resolve(EMPTY_USAGE));
+		expect(result.suppressErrorAlert).toBe(true);
+		expect(result.circuitEvents).toEqual([]);
 	});
 
 	it('returns 429 when gateway rate limit leaves no eligible key (no fallback retry)', async () => {
@@ -94,6 +96,7 @@ describe('failoverDispatchWithKeyPool — all keys unavailable', () => {
 		expect(result.response.headers.get('Retry-After')).toBeTruthy();
 		const body = (await result.response.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('upstream_capacity_exhausted');
+		expect(result.suppressErrorAlert).toBe(false);
 	});
 
 	it('dispatches when at least one key is eligible', async () => {
@@ -206,5 +209,29 @@ describe('failoverDispatchWithKeyPool — soft server failures', () => {
 		expect(dispatch).toHaveBeenCalledTimes(3);
 		expect(blocked.response.status).toBe(429);
 		expect(isProviderKeyCircuitOpen('k1')).toBe(true);
+		expect(blocked.suppressErrorAlert).toBe(true);
+	});
+
+	it('records provider key circuit event when upstream 429 opens circuit', async () => {
+		const key = makeKey('k1');
+		const dispatch = vi.fn(async () => ({
+			response: new Response('rate limited', { status: 429 }),
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
+		}));
+		const routes = [makeRoute('p1')];
+		const repos = mockRepos(new Map([['p1', [key]]]));
+
+		const result = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+
+		expect(result.response.status).toBe(429);
+		expect(result.circuitEvents).toHaveLength(1);
+		expect(result.circuitEvents[0]).toMatchObject({
+			kind: 'provider_key',
+			keyId: 'k1',
+			failureKind: 'rate_limit',
+			openedOrExtended: true,
+		});
+		expect(result.suppressErrorAlert).toBe(false);
 	});
 });

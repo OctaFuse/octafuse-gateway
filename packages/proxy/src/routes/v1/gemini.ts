@@ -199,11 +199,12 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
     requestSignal,
     { sticky: stickyContext }
   );
-  const { usagePromise, chosenRoute, upstreamRequestId } = proxyResult;
+  const { usagePromise, chosenRoute, upstreamRequestId, circuitEvents, suppressErrorAlert } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
 
+  let sensitiveCircuitEvent = null;
   if (errorBodyText != null) {
-    maybeTriggerSensitiveContentCircuitFromUpstream(
+    sensitiveCircuitEvent = maybeTriggerSensitiveContentCircuitFromUpstream(
       apiKey.userId,
       baseModelId,
       response.status,
@@ -216,6 +217,10 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
       )
     );
   }
+
+  const alertCircuitEvents = sensitiveCircuitEvent
+    ? [...circuitEvents, sensitiveCircuitEvent]
+    : circuitEvents;
 
   const usageOrSafety = Promise.race([
     usagePromise.then((u) => ({
@@ -291,6 +296,8 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
           provider_key_fingerprint: chosenRoute.providerKeyFingerprint ?? null,
           upstream_request_id: loggedRequestId,
           upstream_message_id: usageCollected.upstreamMessageId ?? null,
+          circuit_events: alertCircuitEvents.length > 0 ? alertCircuitEvents : undefined,
+          suppress_error_alert: suppressErrorAlert || undefined,
         });
       })
       .catch(() => {

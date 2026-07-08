@@ -187,4 +187,50 @@ describe('buildGatewayErrorAlertSummary', () => {
 		expect(text).toContain('影响: 453991510@qq.com · route=default · openai → openai');
 		expect(text).toContain('供应商: ZAI Coding Plan - Lite · glm-5.2 · default (…kGxz) · ');
 	});
+
+	it('includes circuit measures when circuit events are present', () => {
+		const text = buildGatewayErrorAlertSummary(
+			baseCtx({
+				errorMessage: 'HTTP 429: rate limit exceeded',
+				latencyMs: 200,
+				circuitEvents: [
+					{
+						kind: 'provider_key',
+						keyId: 'key-1',
+						keyLabel: 'solo0625',
+						keyFingerprint: '...alVg',
+						failureKind: 'rate_limit',
+						openUntil: Date.parse('2026-03-16T12:35:00.000Z'),
+						cooldownMs: 60_000,
+						openedOrExtended: true,
+					},
+				],
+			})
+		);
+		expect(text).toContain('熔断措施:');
+		expect(text).toContain('provider_key keyId=key-1 label=solo0625 fingerprint=...alVg reason=rate_limit');
+		expect(text).toContain('持续 60s');
+		expect(text).toContain('恢复时间');
+	});
+
+	it('includes user_model circuit measures for sensitive content breaker', () => {
+		const text = buildGatewayErrorAlertSummary(
+			baseCtx({
+				errorMessage: 'HTTP 400: sensitive content blocked',
+				latencyMs: 200,
+				circuitEvents: [
+					{
+						kind: 'user_model',
+						userId: 'user-1',
+						modelId: 'glm-5.2',
+						reason: 'sensitive_content',
+						openUntil: Date.parse('2026-03-16T12:35:00.000Z'),
+						cooldownMs: 180_000,
+					},
+				],
+			})
+		);
+		expect(text).toContain('user_model user=user-1 model=glm-5.2 reason=sensitive_content');
+		expect(text).toContain('持续 180s');
+	});
 });

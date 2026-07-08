@@ -13,6 +13,7 @@ import {
 	isSensitiveUpstreamResponse,
 	recordSensitiveContentCircuitTrigger,
 } from './sensitive-content-circuit-breaker';
+import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 import { recordUsage } from './usage-tracker';
 
 const GATEWAY_PROVIDER_ID = 'gateway';
@@ -56,6 +57,7 @@ export function maybeBlockSensitiveContentCircuit(
 			status: 'error',
 			latency_ms: latencyMs,
 			error_message: formatSensitiveContentCircuitOpenErrorMessage(open),
+			suppress_error_alert: true,
 		}).catch((err) => {
 			console.error(
 				'[Gateway] sensitive content circuit open recordUsage failed',
@@ -73,12 +75,20 @@ export function maybeTriggerSensitiveContentCircuitFromUpstream(
 	contentType: string | null,
 	errorBodyText: string | null | undefined,
 	errorMessageForLog?: string
-): void {
+): GatewayCircuitAlertEvent | null {
 	if (errorBodyText == null) {
-		return;
+		return null;
 	}
 	if (!isSensitiveUpstreamResponse(status, contentType, errorBodyText)) {
-		return;
+		return null;
 	}
-	recordSensitiveContentCircuitTrigger(userId, modelId, errorMessageForLog);
+	const info = recordSensitiveContentCircuitTrigger(userId, modelId, errorMessageForLog);
+	return {
+		kind: 'user_model',
+		userId,
+		modelId,
+		reason: 'sensitive_content',
+		openUntil: info.blockedUntil,
+		cooldownMs: info.retryAfterSeconds * 1000,
+	};
 }

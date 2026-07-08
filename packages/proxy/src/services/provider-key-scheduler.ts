@@ -25,6 +25,10 @@ export type KeyAttemptPlan = {
 	attempts: KeyAttempt[];
 	/** 被跳过的 key 中最早恢复等待 ms；无被跳过者为 null */
 	earliestRetryAfterMs: number | null;
+	/** 因 provider key 熔断被跳过的 key 数量 */
+	skippedByCircuit: number;
+	/** 因网关 key 限流被跳过的 key 数量 */
+	skippedByRateLimiter: number;
 	/**
 	 * 粘性绑定 key 因网关限流被跳过、且预计恢复 ≤ shortWaitMs 时的等待建议；
 	 * dispatch 层等待后应重新构建计划。
@@ -113,6 +117,8 @@ export function buildKeyAttemptPlan(
 ): KeyAttemptPlan {
 	const attempts: KeyAttempt[] = [];
 	let earliestRetryAfterMs: number | null = null;
+	let skippedByCircuit = 0;
+	let skippedByRateLimiter = 0;
 	let stickyWait: { waitMs: number } | null = null;
 	let stickyAttempt: KeyAttempt | null = null;
 
@@ -141,11 +147,13 @@ export function buildKeyAttemptPlan(
 
 				const circuitRemainingMs = getProviderKeyCircuitRemainingMs(attempt.key.id, now);
 				if (circuitRemainingMs > 0) {
+					skippedByCircuit += 1;
 					trackRetryAfter(circuitRemainingMs);
 					continue;
 				}
 				const availability = checkProviderKeyAvailability(attempt.key, now);
 				if (!availability.available) {
+					skippedByRateLimiter += 1;
 					trackRetryAfter(availability.retryAfterMs);
 					if (isStickyKey && stickyWait == null && availability.retryAfterMs <= sticky.shortWaitMs) {
 						stickyWait = { waitMs: availability.retryAfterMs };
@@ -167,7 +175,7 @@ export function buildKeyAttemptPlan(
 		stickyWait = null; // 绑定 key 可用时无需等待
 	}
 
-	return { attempts, earliestRetryAfterMs, stickyWait };
+	return { attempts, earliestRetryAfterMs, skippedByCircuit, skippedByRateLimiter, stickyWait };
 }
 
 /** 测试用：重导出运行时状态清理（旧测试兼容入口已移除，请分别使用各服务的 reset）。 */

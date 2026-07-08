@@ -23,6 +23,7 @@ import {
 } from '@octafuse/core';
 import type { UsageFromStream } from './proxy';
 import { fireGatewayErrorWebhooks } from './alert-webhook';
+import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 
 const TOKENS_PER_MILLION = 1_000_000;
 
@@ -103,6 +104,10 @@ export async function recordUsage(
 		upstream_request_id?: string | null;
 		/** 上游响应 body message id（应用层生成结果 id：chatcmpl-* / msg_* / responseId） */
 		upstream_message_id?: string | null;
+		/** 本次错误关联的熔断事件（展示在 webhook 告警中） */
+		circuit_events?: GatewayCircuitAlertEvent[];
+		/** 已有熔断短路等场景：写日志但不发 webhook */
+		suppress_error_alert?: boolean;
 	}
 ): Promise<void> {
 	const basis = params.usage.input_tokens;
@@ -232,7 +237,7 @@ export async function recordUsage(
 			source: 'gateway_usage',
 		},
 	});
-	if (params.status === 'error') {
+	if (params.status === 'error' && !params.suppress_error_alert) {
 		await fireGatewayErrorWebhooks(repos, {
 			requestLogId: id,
 			occurredAt: new Date().toISOString(),
@@ -252,6 +257,7 @@ export async function recordUsage(
 			providerKeyLabel: params.provider_key_label ?? null,
 			providerKeyFingerprint: params.provider_key_fingerprint ?? null,
 			upstreamRequestId: params.upstream_request_id ?? null,
+			circuitEvents: params.circuit_events,
 		}).catch((err: unknown) => {
 			console.warn(
 				'[Gateway Alert] webhook dispatch failed',

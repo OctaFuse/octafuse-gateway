@@ -8,6 +8,7 @@ import { dispatchOpenAiRoute } from './egress/openai-driver';
 import { dispatchAnthropicRoute } from './egress/anthropic-driver';
 import { dispatchGeminiRoute } from './egress/gemini-driver';
 import { failoverDispatchWithKeyPool, type FailoverDispatchOptions } from './failover-dispatch';
+import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 
 export type { FailoverDispatchOptions, StickyDispatchContext } from './failover-dispatch';
 
@@ -43,6 +44,10 @@ export interface ProxyResult {
 	upstreamRequestId: string | null;
 	/** 实际选用或最后尝试的路由（用于日志）；若全部失败则为最后一次尝试 */
 	chosenRoute: RouteResult;
+	/** 本次请求触发的熔断事件（provider key / user+model） */
+	circuitEvents: GatewayCircuitAlertEvent[];
+	/** 因已有熔断短路、无需重复 webhook 告警 */
+	suppressErrorAlert: boolean;
 }
 
 /** 无用量或解析失败时的零值占位（避免 undefined 传播）。 */

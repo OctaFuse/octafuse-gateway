@@ -57,6 +57,8 @@ describe('buildKeyAttemptPlan', () => {
 		const plan = buildKeyAttemptPlan(routes, keys);
 		expect(plan.attempts.map((a) => a.key.id)).toEqual(['high', 'low']);
 		expect(plan.earliestRetryAfterMs).toBeNull();
+		expect(plan.skippedByCircuit).toBe(0);
+		expect(plan.skippedByRateLimiter).toBe(0);
 	});
 
 	it('orders provider tiers by route priority and merges keys within the same tier', () => {
@@ -80,6 +82,8 @@ describe('buildKeyAttemptPlan', () => {
 		markProviderKeyFailure('a', 'rate_limit', 5_000);
 		const plan = buildKeyAttemptPlan(routes, new Map([['p1', [keyA, keyB]]]));
 		expect(plan.attempts.map((a) => a.key.id)).toEqual(['b']);
+		expect(plan.skippedByCircuit).toBe(1);
+		expect(plan.skippedByRateLimiter).toBe(0);
 		expect(plan.earliestRetryAfterMs).toBeGreaterThan(0);
 		expect(plan.earliestRetryAfterMs).toBeLessThanOrEqual(5_000);
 	});
@@ -91,6 +95,8 @@ describe('buildKeyAttemptPlan', () => {
 		acquireProviderKey(limited);
 		const plan = buildKeyAttemptPlan(routes, new Map([['p1', [limited, free]]]));
 		expect(plan.attempts.map((a) => a.key.id)).toEqual(['free']);
+		expect(plan.skippedByCircuit).toBe(0);
+		expect(plan.skippedByRateLimiter).toBe(1);
 		expect(plan.earliestRetryAfterMs).toBeGreaterThan(0);
 	});
 
@@ -100,6 +106,8 @@ describe('buildKeyAttemptPlan', () => {
 		acquireProviderKey(limited);
 		const plan = buildKeyAttemptPlan(routes, new Map([['p1', [limited]]]));
 		expect(plan.attempts).toHaveLength(0);
+		expect(plan.skippedByCircuit).toBe(0);
+		expect(plan.skippedByRateLimiter).toBe(1);
 		expect(plan.earliestRetryAfterMs).toBeGreaterThan(0);
 	});
 

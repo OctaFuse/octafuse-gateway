@@ -7,6 +7,7 @@ import {
 	resetSensitiveContentCircuitStateForTests,
 	SENSITIVE_CONTENT_CIRCUIT_BREAKER_MS,
 } from './sensitive-content-circuit-breaker';
+import { maybeTriggerSensitiveContentCircuitFromUpstream } from './sensitive-content-circuit-route';
 
 describe('sensitive-content-circuit-breaker', () => {
 	afterEach(() => {
@@ -64,5 +65,22 @@ describe('sensitive-content-circuit-breaker', () => {
 		expect(
 			isSensitiveUpstreamResponse(400, 'application/json', JSON.stringify({ error: { message: 'bad request' } }))
 		).toBe(false);
+	});
+
+	it('returns user_model circuit event when upstream triggers breaker', () => {
+		const event = maybeTriggerSensitiveContentCircuitFromUpstream(
+			'user-1',
+			'glm-5.2',
+			400,
+			'application/json',
+			JSON.stringify({ error: { message: 'sensitive content blocked' } })
+		);
+		expect(event).toMatchObject({
+			kind: 'user_model',
+			userId: 'user-1',
+			modelId: 'glm-5.2',
+			reason: 'sensitive_content',
+		});
+		expect(getSensitiveContentCircuitOpen('user-1', 'glm-5.2')).not.toBeNull();
 	});
 });

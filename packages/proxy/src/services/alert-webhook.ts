@@ -8,6 +8,7 @@ import {
 	getSystemConfigValue,
 } from '@octafuse/core';
 import { isSensitiveContentErrorMessage } from './sensitive-content-detector';
+import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 
 const DEFAULT_TIMEOUT_MS = 8000;
 
@@ -49,6 +50,8 @@ export type GatewayErrorAlertContext = {
 	upstreamRequestId?: string | null;
 	/** 请求发生时间（ISO 8601 UTC）；缺省则在构建告警时取当前时刻 */
 	occurredAt?: string | null;
+	/** 本次错误触发的熔断措施 */
+	circuitEvents?: GatewayCircuitAlertEvent[];
 };
 
 type AlertCategoryMeta = {
@@ -270,6 +273,43 @@ function formatOccurredAt(iso: string): string {
 	return `${formatted} (UTC+8)`;
 }
 
+function formatCircuitFailureKind(kind: string): string {
+	switch (kind) {
+		case 'rate_limit':
+			return 'rate_limit';
+		case 'auth':
+			return 'auth';
+		case 'server':
+			return 'server';
+		default:
+			return kind;
+	}
+}
+
+function formatCircuitDurationSeconds(cooldownMs: number): string {
+	const seconds = Math.max(1, Math.ceil(cooldownMs / 1000));
+	return `${seconds}s`;
+}
+
+function formatCircuitEventLine(event: GatewayCircuitAlertEvent): string {
+	const recoverAt = formatOccurredAt(new Date(event.openUntil).toISOString());
+	const duration = formatCircuitDurationSeconds(event.cooldownMs);
+	if (event.kind === 'provider_key') {
+		const label = (event.keyLabel ?? '').trim() || '(未记录)';
+		const fingerprint = (event.keyFingerprint ?? '').trim() || '(未记录)';
+		return `provider_key keyId=${event.keyId} label=${label} fingerprint=${fingerprint} reason=${formatCircuitFailureKind(event.failureKind)}，持续 ${duration}，恢复时间 ${recoverAt}`;
+	}
+	return `user_model user=${event.userId} model=${event.modelId} reason=${event.reason}，持续 ${duration}，恢复时间 ${recoverAt}`;
+}
+
+function buildCircuitMeasuresSection(ctx: GatewayErrorAlertContext): string[] {
+	const events = ctx.circuitEvents ?? [];
+	if (events.length === 0) {
+		return [];
+	}
+	return ['熔断措施:', ...events.map((event) => `- ${formatCircuitEventLine(event)}`), ''];
+}
+
 function buildSummaryLine(meta: AlertCategoryMeta, ctx: GatewayErrorAlertContext): string {
 	const errShort = truncateForAlert(ctx.errorMessage ?? '(no message)', 120);
 	const latency = formatLatency(ctx.latencyMs ?? null);
@@ -298,6 +338,7 @@ export function buildGatewayErrorAlertSummary(ctx: GatewayErrorAlertContext): st
 		`影响: ${email} · route=${ctx.routeGroup} · ${protocolPath}`,
 		`供应商: ${formatSupplierLine(ctx)}`,
 		'',
+		...buildCircuitMeasuresSection(ctx),
 		`原始错误: ${errFull}`,
 		`建议: ${meta.suggestion}`,
 		`发生时间: ${occurredAt}`,

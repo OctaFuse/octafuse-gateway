@@ -13,6 +13,14 @@
 
 export type ProviderKeyFailureKind = 'rate_limit' | 'auth' | 'server';
 
+export type ProviderKeyCircuitFailureResult = {
+	failureKind: ProviderKeyFailureKind;
+	openUntil: number;
+	cooldownMs: number;
+	/** 本次失败是否打开或延长了熔断窗口 */
+	openedOrExtended: boolean;
+};
+
 const RATE_LIMIT_BACKOFF_MS = [5_000, 15_000, 30_000, 60_000] as const;
 const RATE_LIMIT_RETRY_AFTER_CAP_MS = 900_000;
 const AUTH_COOLDOWN_MS = 600_000;
@@ -63,8 +71,11 @@ export function markProviderKeyFailure(
 	kind: ProviderKeyFailureKind,
 	retryAfterMs?: number | null,
 	now = Date.now()
-): void {
+): ProviderKeyCircuitFailureResult {
 	const entry = circuitByKey.get(keyId) ?? { openUntil: 0, consecutiveRateLimit: 0, consecutiveServerFailures: 0 };
+	const previousOpenUntil = entry.openUntil;
+	let appliedCooldownMs = 0;
+
 	if (kind === 'rate_limit') {
 		let cooldownMs: number;
 		if (retryAfterMs != null && retryAfterMs > 0) {
@@ -77,8 +88,10 @@ export function markProviderKeyFailure(
 			const idx = Math.min(entry.consecutiveRateLimit - 1, RATE_LIMIT_BACKOFF_MS.length - 1);
 			cooldownMs = RATE_LIMIT_BACKOFF_MS[idx]!;
 		}
+		appliedCooldownMs = cooldownMs;
 		entry.openUntil = Math.max(entry.openUntil, now + cooldownMs);
 	} else if (kind === 'auth') {
+		appliedCooldownMs = AUTH_COOLDOWN_MS;
 		entry.openUntil = Math.max(entry.openUntil, now + AUTH_COOLDOWN_MS);
 	} else {
 		const wasOpen = entry.openUntil > now;
@@ -89,11 +102,23 @@ export function markProviderKeyFailure(
 			entry.consecutiveServerFailures += 1;
 		}
 		if (entry.consecutiveServerFailures >= SERVER_FAILURE_THRESHOLD) {
+			appliedCooldownMs = SERVER_COOLDOWN_MS;
 			entry.openUntil = Math.max(entry.openUntil, now + SERVER_COOLDOWN_MS);
 		}
 	}
 	circuitByKey.set(keyId, entry);
 	purgeIfOverCapacity(now);
+
+	const openedOrExtended = entry.openUntil > Math.max(previousOpenUntil, now);
+	const cooldownMs =
+		entry.openUntil > now ? Math.max(0, entry.openUntil - now) : appliedCooldownMs;
+
+	return {
+		failureKind: kind,
+		openUntil: entry.openUntil,
+		cooldownMs,
+		openedOrExtended,
+	};
 }
 
 /** 请求成功：清零连续失败计数（已过期的 openUntil 一并清理）。 */

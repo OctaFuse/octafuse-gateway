@@ -17,6 +17,7 @@ import {
 	markProviderKeySuccess,
 	parseRetryAfterMs,
 } from './provider-key-circuit-breaker';
+import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 import { acquireProviderKey, releaseProviderKeyUsage } from './provider-key-rate-limiter';
 import { getStickyBinding, setStickyBinding } from './sticky-key-binding';
 import {
@@ -35,6 +36,10 @@ export type ProxyFailoverResult = {
 	usagePromise: Promise<UsageFromStream>;
 	upstreamRequestId: string | null;
 	chosenRoute: RouteResult;
+	/** 本次请求触发的 provider key 熔断事件（仅 openedOrExtended） */
+	circuitEvents: GatewayCircuitAlertEvent[];
+	/** 因已有 provider key 熔断短路、无需重复 webhook 告警 */
+	suppressErrorAlert: boolean;
 };
 
 /** 粘性路由上下文：由各协议路由在解析 `models.sticky_config` 后传入；null=该请求无粘性。 */
@@ -125,6 +130,18 @@ function jsonResponse(body: unknown, status: number, extraHeaders?: Record<strin
 	});
 }
 
+function allKeysBusyDueToCircuitOnly(plan: {
+	attempts: { length: number };
+	skippedByCircuit: number;
+	skippedByRateLimiter: number;
+}): boolean {
+	return (
+		plan.attempts.length === 0 &&
+		plan.skippedByCircuit > 0 &&
+		plan.skippedByRateLimiter === 0
+	);
+}
+
 function allKeysBusyResponse(retryAfterMs: number | null): Response {
 	const retryAfterSeconds = Math.max(1, Math.ceil((retryAfterMs ?? 30_000) / 1000));
 	return jsonResponse(
@@ -200,6 +217,8 @@ export async function failoverDispatchWithKeyPool(
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
 			chosenRoute: emptyRoute(expectedProtocol),
+			circuitEvents: [],
+			suppressErrorAlert: false,
 		};
 	}
 
@@ -214,8 +233,12 @@ export async function failoverDispatchWithKeyPool(
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
 			chosenRoute: protocolRoutes[0]!,
+			circuitEvents: [],
+			suppressErrorAlert: false,
 		};
 	}
+
+	const circuitEvents: GatewayCircuitAlertEvent[] = [];
 
 	const sticky = options?.sticky ?? null;
 	const stickyBinding = sticky
@@ -247,6 +270,8 @@ export async function failoverDispatchWithKeyPool(
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
 			chosenRoute: protocolRoutes[0]!,
+			circuitEvents: [],
+			suppressErrorAlert: allKeysBusyDueToCircuitOnly(plan),
 		};
 	}
 
@@ -299,7 +324,7 @@ export async function failoverDispatchWithKeyPool(
 			markProviderKeySuccess(key.id);
 			scheduleUsageRelease(key, usagePromise);
 			rebindOnSuccess(attempt);
-			return { response, usagePromise, upstreamRequestId, chosenRoute: attemptRoute };
+			return { response, usagePromise, upstreamRequestId, chosenRoute: attemptRoute, circuitEvents, suppressErrorAlert: false };
 		}
 
 		// 非 2xx：无流式在途，立即释放并发。
@@ -314,17 +339,31 @@ export async function failoverDispatchWithKeyPool(
 				usagePromise: Promise.resolve(EMPTY_USAGE),
 				upstreamRequestId,
 				chosenRoute: attemptRoute,
+				circuitEvents,
+				suppressErrorAlert: false,
 			};
 		}
 
 		if (classification.failureKind) {
-			markProviderKeyFailure(
+			const circuitResult = markProviderKeyFailure(
 				key.id,
 				classification.failureKind,
 				classification.failureKind === 'rate_limit'
 					? parseRetryAfterMs(response.headers.get('retry-after'))
 					: null
 			);
+			if (circuitResult.openedOrExtended) {
+				circuitEvents.push({
+					kind: 'provider_key',
+					keyId: key.id,
+					keyLabel: key.label,
+					keyFingerprint: fingerprintProviderApiKey(key.api_key),
+					failureKind: circuitResult.failureKind,
+					openUntil: circuitResult.openUntil,
+					cooldownMs: circuitResult.cooldownMs,
+					openedOrExtended: true,
+				});
+			}
 		}
 		console.warn(
 			`[Gateway Proxy] provider key non-OK, trying next candidate providerId=${route.providerId} keyId=${key.id} status=${response.status}`
@@ -337,6 +376,8 @@ export async function failoverDispatchWithKeyPool(
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
 			chosenRoute: lastRoute,
+			circuitEvents,
+			suppressErrorAlert: false,
 		};
 	}
 
@@ -345,5 +386,7 @@ export async function failoverDispatchWithKeyPool(
 		usagePromise: Promise.resolve(EMPTY_USAGE),
 		upstreamRequestId: null,
 		chosenRoute: lastRoute,
+		circuitEvents,
+		suppressErrorAlert: false,
 	};
 }
