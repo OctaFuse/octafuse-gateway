@@ -92,6 +92,8 @@ npm run dev:admin           # Admin OpenNext 预览 → http://127.0.0.1:8789
 
 然后在 Admin 中配置 **Provider** → **Model Route** → **API Key**。管理 API 的 Bearer 须与 D1 `system_config.MASTER_KEY` 一致（开发种子见 `packages/core/migrations-d1/0002_seed.sql`）。
 
+**注意**：在本机跑过 `deploy-soloent.sh` / `db:migrate:remote` 之后，继续本地 dev 前须先 `npm run gen:wrangler`（否则 `db:migrate` 与 `dev:*` 会连两套不同的本地 D1）。说明见 [local-testing-environments.md §1](./docs/ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)。
+
 可选路径（Node + Postgres/MySQL、多套本地 D1、冒烟脚本）：[docs/ops/local-testing-environments.md](./docs/ops/local-testing-environments.md)。
 
 ## 部署

@@ -1,6 +1,7 @@
 {
 	// 模板：由 `npm run gen:wrangler` 生成 `wrangler.jsonc`（勿手改生成文件）。
 	// D1 与 Worker 入口。执行 `npm run db:migrate*` 时使用 `packages/core/wrangler.d1.jsonc`（仅 D1，勿 deploy）。
+	// 本地 dev：生成文件应无 database_id（`(DB)` 本地库）。远程 deploy 后会写入 database_id — 继续本地 dev 前须再跑 npm run gen:wrangler。
 	"$schema": "../../node_modules/wrangler/config-schema.json",
 	"name": "octafuse-gateway-proxy",
 	"main": "src/index.ts",

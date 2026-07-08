@@ -36,6 +36,43 @@ npm run dev:proxy    # http://127.0.0.1:8787
 
 用户推理接口的 `Authorization: Bearer` 使用库内 `sk-…`；管理密钥与 D1 **`system_config.MASTER_KEY`** 一致（开发种子见 `packages/core/migrations-d1/0002_seed.sql`）。
 
+### ⚠️ 本地 D1 与 `database_id`（远程 deploy 后必读）
+
+`db:migrate`、`dev:proxy`、`dev:admin` **共用同一 persist 目录**（`./.wrangler/state`），但 Wrangler 还会按生成后的 `wrangler.jsonc` 是否包含 **`database_id`**，在 persist 目录下选择**不同的本地 SQLite 文件**：
+
+| `wrangler.jsonc` | 本地 D1 标识（wrangler 日志） | 典型场景 |
+|------------------|-------------------------------|----------|
+| **无** `database_id` | `octafuse-gateway (DB)` | 纯本地开发；`npm run db:migrate` 迁移的是这套 |
+| **有** `database_id` | `octafuse-gateway (<UUID>)` | 执行过 `deploy:*` / `db:migrate:remote`（带 `cloudflare-worker/*.env`）之后 |
+
+因此会出现：**迁移已成功，但 dev 里看不到数据**（或 provider 数量对不上）——不是路径错了，而是 **migrate 与 dev 读到了两套本地 D1**。
+
+**常见触发**：在本机跑完
+
+```bash
+./cloudflare-worker/deploy-soloent.sh --migrate   # 或任意 dotenv + deploy:proxy / db:migrate:remote
+```
+
+之后未切回本地配置，直接 `npm run dev:proxy` / `dev:admin`。远程 deploy 会通过 `gen:wrangler --remote` 把 **`D1_DATABASE_ID` 写入** gitignore 的 `packages/proxy/wrangler.jsonc`、`packages/admin/wrangler.jsonc`、`packages/core/wrangler.d1.jsonc`。
+
+**切回本地开发（方案 A）**——在仓库根、且 shell **未** export `D1_DATABASE_ID` 时：
+
+```bash
+npm run gen:wrangler    # 重新生成本地 wrangler（无 database_id）
+npm run db:migrate      # 可选：确保 (DB) 这套迁移最新；内部也会先 gen:wrangler
+# 停掉旧 dev 进程后重启
+npm run dev:proxy
+npm run dev:admin
+```
+
+**自检**（有输出则说明 dev 会连 `(UUID)` 那套，而不是 `db:migrate` 默认那套）：
+
+```bash
+grep database_id packages/proxy/wrangler.jsonc || echo "OK: 本地 D1 (DB)"
+```
+
+**注意**：若根 `.env.local` 配置了 `DATABASE_URL`，`dev:proxy:node` / `dev:admin:node` 走 **Postgres**，与 `db:migrate`（D1）不是同一库；见下文 §5。
+
 ### Wrangler 与环境变量文件
 
 - 若存在根目录 **`.dev.vars`**，Wrangler 会优先于 `.env` / `.env.local`。
@@ -57,9 +94,9 @@ cd packages/admin
 npm run dev    # :3000，/api/admin/* 会因无 DB 返回 500
 ```
 
-## 3. 多套本地 D1：换 `--persist-to`
+## 3. 多套本地 D1：换 `--persist-to` 目录
 
-换目录即换一套本地 SQLite 数据。迁移时必须使用**相同**的 `--persist-to`。
+与 §1 中 **`database_id` 分裂**不同：这里是**故意**用另一个 persist 目录隔离数据。换目录即换一套本地 SQLite；迁移与 dev 必须使用**相同**的 `--persist-to`。
 
 示例（在根目录手动调用 wrangler，路径自定）：
 

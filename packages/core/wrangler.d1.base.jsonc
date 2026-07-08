@@ -1,6 +1,7 @@
 {
 	// 模板：由 `npm run gen:wrangler` 生成 `wrangler.d1.jsonc`（勿手改生成文件）。
 	// 仅用于 `wrangler d1 migrations *`（在仓库根执行 `npm run db:migrate*`）；勿用于 `wrangler deploy`。
+	// 与 dev:proxy/dev:admin 共用 .wrangler/state，但有无 database_id 会指向不同本地 SQLite；见 docs/ops/local-testing-environments.md §1。
 	"$schema": "../../node_modules/wrangler/config-schema.json",
 	"name": "octafuse-d1-migrations",
 	"compatibility_date": "2025-04-01",

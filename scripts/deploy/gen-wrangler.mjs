@@ -3,6 +3,13 @@
  * Generate wrangler.jsonc / wrangler.d1.jsonc from *.base.jsonc + environment variables.
  *
  * Build variables (Workers Builds) or cloudflare-worker/*.env — see docs/ops/deployment-cloudflare.md
+ *
+ * Local D1 identity (important):
+ * - Without D1_DATABASE_ID in env → generated configs have no database_id → local dev uses D1 "(DB)".
+ * - With D1_DATABASE_ID (remote deploy / db:migrate:remote) → local wrangler dev uses a *different*
+ *   SQLite under .wrangler/state than npm run db:migrate (default local path).
+ * After any remote deploy on this machine, run `npm run gen:wrangler` (no D1_DATABASE_ID in shell)
+ * before dev:proxy / dev:admin. See docs/ops/local-testing-environments.md §1.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -167,6 +174,13 @@ function main() {
 		`gen-wrangler: proxy=${names.proxyWorkerName} admin=${names.adminWorkerName} d1=${names.d1DatabaseName}` +
 			(names.d1DatabaseId ? ` id=${names.d1DatabaseId}` : " (local, no database_id)"),
 	);
+
+	if (REMOTE && names.d1DatabaseId) {
+		console.warn(
+			"gen-wrangler: remote config written (includes database_id). " +
+				"Before local dev:proxy/dev:admin, run `npm run gen:wrangler` without D1_DATABASE_ID in the shell.",
+		);
+	}
 }
 
 main();

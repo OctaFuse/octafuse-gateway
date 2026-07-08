@@ -92,6 +92,8 @@ npm run dev:admin           # Admin OpenNext preview → http://127.0.0.1:8789
 
 Then configure **provider** → **model route** → **API key** in Admin. Admin API Bearer must match D1 `system_config.MASTER_KEY` (dev seed in `packages/core/migrations-d1/0002_seed.sql`).
 
+**Note:** After a local remote deploy (`deploy-soloent.sh`, `db:migrate:remote`, etc.), run **`npm run gen:wrangler`** before `dev:proxy` / `dev:admin` so migrate and dev use the same local D1 — see [local-testing-environments.md §1](./docs/ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读).
+
 Optional paths (Node + Postgres/MySQL, multiple local D1 dirs, smoke tests): [docs/ops/local-testing-environments.md](./docs/ops/local-testing-environments.md).
 
 ## Deployment

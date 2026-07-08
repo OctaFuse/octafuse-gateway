@@ -106,6 +106,8 @@ npm run deploy:admin
 
 Cloudflare 三条路径（本地 / example.dev / 生产）：**[cloudflare-worker/README.md](../cloudflare-worker/README.md)**。
 
+本地 D1：`db:migrate` 与 `dev:proxy` / `dev:admin` 共用 `./.wrangler/state`，但**远程 deploy 后**生成的 `wrangler.jsonc` 会带 `database_id`，dev 可能连到另一套本地 SQLite；继续本地开发前执行 **`npm run gen:wrangler`**。详见 **[local-testing-environments.md §1](./ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)**。
+
 D1 迁移目录：**`packages/core/migrations-d1/`**（`wrangler.d1.jsonc` 同目录）。Postgres：**`packages/core/migrations-postgres/`**（`npm run db:migrate:pg`）。MySQL：**`packages/core/migrations-mysql/`**（`npm run db:migrate:mysql`）。
 
 应用层已移除的 user audit 兼容导出与迁移对照：见 **[`docs/migrations/user-audit-legacy-exports.md`](migrations/user-audit-legacy-exports.md)**。

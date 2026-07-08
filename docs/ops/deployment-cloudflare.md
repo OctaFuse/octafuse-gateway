@@ -41,6 +41,7 @@ npm run dev:admin    # :8789
 
 - `postinstall` 已跑 `gen:wrangler`（无 `D1_DATABASE_ID` 即可）。
 - **不需要** `cloudflare-worker/*.env`。
+- 在本机执行过 `deploy:*` / `db:migrate:remote` 后，继续本地 dev 前须 **`npm run gen:wrangler`**（见 [local-testing-environments.md §1](./local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)）。
 - 详见 [local-testing-environments.md](./local-testing-environments.md) §1–2。
 
 ---
@@ -87,7 +88,7 @@ dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../
 |------|------|
 | `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` | **须与 Dashboard Worker 名一致** |
 | `D1_DATABASE_NAME` | D1 逻辑名 |
-| `D1_DATABASE_ID` | 远程 deploy / migrate **必填** |
+| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**。写入生成的 `wrangler.jsonc` 后，本机 `dev:proxy`/`dev:admin` 会连**另一套**本地 D1；继续本地开发前执行 `npm run gen:wrangler`（见 [local-testing-environments.md §1](./local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
 | `D1_MIGRATIONS_WORKER_NAME` | 可选；仅 `wrangler d1 migrations` 配置名，**无需建 Worker** |
 | `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 |
 

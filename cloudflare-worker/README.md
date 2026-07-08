@@ -44,6 +44,20 @@ npm run dev:admin    # http://127.0.0.1:8789（OpenNext preview + 本地 D1）
 - Admin 本地密码：[`packages/admin/.dev.vars.example`](../packages/admin/.dev.vars.example) → `.dev.vars`。
 - 更多组合（Hybrid、Postgres）：[local-testing-environments.md](../docs/ops/local-testing-environments.md)。
 
+### 远程 deploy 之后继续本地 dev
+
+`deploy-soloent.sh`、`deploy:proxy`、`db:migrate:remote` 等会执行 **`gen:wrangler --remote`**，在生成的 `wrangler.jsonc` 里写入 **`D1_DATABASE_ID`**。此后若直接 `dev:proxy` / `dev:admin`，Wrangler 会连 **另一套** 本地 D1（与 `npm run db:migrate` 默认迁移的 `(DB)` 套不一致）。
+
+**回到本地开发前**（仓库根；shell 勿 export `D1_DATABASE_ID`）：
+
+```bash
+npm run gen:wrangler
+npm run db:migrate   # 可选
+# 重启 dev:proxy / dev:admin
+```
+
+详见 [local-testing-environments.md §1 · database_id](../docs/ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)。
+
 ---
 
 ## B. dev 演示（远程 · octafuse.dev）
@@ -189,7 +203,7 @@ npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run deploy:admin
 |------|------|
 | `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` | **须与 Dashboard Worker 名一致** |
 | `D1_DATABASE_NAME` | D1 逻辑名 |
-| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**；proxy 与 admin **共用** |
+| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**；proxy 与 admin **共用**。本地 CLI deploy 写入 wrangler 后，继续 `dev:proxy`/`dev:admin` 前须 `npm run gen:wrangler`（见 [local-testing-environments.md §1](../docs/ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
 | `D1_MIGRATIONS_WORKER_NAME` | 仅写入 `wrangler.d1.jsonc` 的项目名；**无需**单独建 Worker |
 | `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选；写入 wrangler `routes` |
 

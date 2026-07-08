@@ -7,7 +7,7 @@ Non-runtime helpers: smoke tests, DB migration / reconciliation tooling, and dev
 | Path | Purpose |
 |------|---------|
 | `smoke/` | HTTP smoke against a running Node **Proxy** / **Admin** (`test:gateway:*-smoke`) plus in-process **`@octafuse/core`** write-path tests. See [smoke/README.md](./smoke/README.md). |
-| `deploy/` | Cloudflare：`gen-wrangler.mjs`（从 `*.base.jsonc` + env 生成 wrangler 配置）、`wrangler-d1-cli.mjs`（按生成配置跑 D1 命令）。见 [docs/ops/deployment-cloudflare.md](../docs/ops/deployment-cloudflare.md)。 |
+| `deploy/` | Cloudflare：`gen-wrangler.mjs`（从 `*.base.jsonc` + env 生成 wrangler 配置）、`wrangler-d1-cli.mjs`（按生成配置跑 D1 命令）。**远程 deploy 会在 wrangler 里写入 `database_id`，继续本地 dev 前须再 `npm run gen:wrangler`** — 见 [local-testing-environments.md §1](../docs/ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)。 |
 | `print-dev-start.mjs` | Optional banner before `wrangler dev` (local URL hints). |
 | `db/` | Remote D1 export, D1↔Postgres ETL / reconciliation, Postgres diagnostics (**schema apply** lives in **`packages/core/src/migrate/`** via **`npm run db:migrate:pg`** / **`db:migrate:mysql`**) |
 

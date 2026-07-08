@@ -20,6 +20,7 @@ const lines = [
 	'',
 	'  D1 local data  ../.wrangler/state (database_name: octafuse-gateway)',
 	'  First run / migrate  npm run db:migrate',
+	'  After remote deploy  npm run gen:wrangler  (then restart dev; see docs §1 database_id)',
 	'  Optional       copy .env.example → .env (optional .env.local; see docs)',
 	'  Admin UI       point octafuse-admin GATEWAY_URL at the URL above',
 	'────────────────────────────────────────────────────────────',
