@@ -87,17 +87,39 @@ describe('auth / server failures', () => {
 		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(600_000);
 	});
 
-	it('opens 60s for server failures', () => {
+	it('does not open circuit on first two server failures', () => {
 		const t0 = 1_000_000;
 		markProviderKeyFailure('k', 'server', null, t0);
-		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(60_000);
+		expect(getProviderKeyCircuitRemainingMs('k', t0)).toBe(0);
+		markProviderKeyFailure('k', 'server', null, t0 + 1);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 1)).toBe(0);
 	});
 
-	it('never shortens an already-open circuit', () => {
+	it('opens 10s after three consecutive server failures', () => {
+		const t0 = 1_000_000;
+		markProviderKeyFailure('k', 'server', null, t0);
+		markProviderKeyFailure('k', 'server', null, t0 + 1);
+		markProviderKeyFailure('k', 'server', null, t0 + 2);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 2)).toBe(10_000);
+		expect(isProviderKeyCircuitOpen('k', t0 + 12_001)).toBe(false);
+	});
+
+	it('resets server failure count after a success', () => {
+		const t0 = 1_000_000;
+		markProviderKeyFailure('k', 'server', null, t0);
+		markProviderKeyFailure('k', 'server', null, t0 + 1);
+		markProviderKeySuccess('k', t0 + 2);
+		markProviderKeyFailure('k', 'server', null, t0 + 3);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 3)).toBe(0);
+	});
+
+	it('never shortens an already-open auth circuit when server failures arrive', () => {
 		const t0 = 1_000_000;
 		markProviderKeyFailure('k', 'auth', null, t0);
 		markProviderKeyFailure('k', 'server', null, t0 + 1_000);
-		expect(getProviderKeyCircuitRemainingMs('k', t0 + 1_000)).toBe(599_000);
+		markProviderKeyFailure('k', 'server', null, t0 + 2_000);
+		markProviderKeyFailure('k', 'server', null, t0 + 3_000);
+		expect(getProviderKeyCircuitRemainingMs('k', t0 + 3_000)).toBe(597_000);
 	});
 });
 
@@ -106,7 +128,9 @@ describe('markProviderKeySuccess', () => {
 		markProviderKeySuccess('unknown');
 		const t0 = 1_000_000;
 		markProviderKeyFailure('k', 'server', null, t0);
-		markProviderKeySuccess('k', t0 + 61_000);
-		expect(isProviderKeyCircuitOpen('k', t0 + 61_000)).toBe(false);
+		markProviderKeyFailure('k', 'server', null, t0 + 1);
+		markProviderKeyFailure('k', 'server', null, t0 + 2);
+		markProviderKeySuccess('k', t0 + 12_001);
+		expect(isProviderKeyCircuitOpen('k', t0 + 12_001)).toBe(false);
 	});
 });

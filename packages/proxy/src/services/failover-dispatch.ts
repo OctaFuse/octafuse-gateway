@@ -1,7 +1,7 @@
 /**
  * 上游调度与故障转移：
  * - 批量预取候选 provider 的 key 池，经 `buildKeyAttemptPlan` 编排（priority 硬序 + 层内余量 + 粘性置顶）。
- * - 失败按类别进入 key 熔断（`provider-key-circuit-breaker`：429 无头 5s→60s 梯度，同回合不重复升级）；限流计数见 `provider-key-rate-limiter`。
+ * - 失败按类别进入 key 熔断（`provider-key-circuit-breaker`：429 无头 5s→60s 梯度；普通 5xx 连续 3 次后 10s；524/fetch 不跨请求熔断）；限流计数见 `provider-key-rate-limiter`。
  * - 粘性绑定 key 短暂限流时在网关内短等待（保上游 prompt cache）；请求成功后写回/刷新绑定。
  * - 全部候选因限流/熔断不可用时返回 429 + Retry-After（而非 502）。
  */
@@ -284,7 +284,6 @@ export async function failoverDispatchWithKeyPool(
 			upstreamRequestId = dispatched.upstreamRequestId;
 		} catch (err) {
 			releaseProviderKeyUsage(key, 0);
-			markProviderKeyFailure(key.id, 'server');
 			console.warn(
 				`[Gateway Proxy] fetch failed providerId=${route.providerId} keyId=${key.id} error=${err instanceof Error ? err.message : String(err)}`
 			);
@@ -318,11 +317,15 @@ export async function failoverDispatchWithKeyPool(
 			};
 		}
 
-		markProviderKeyFailure(
-			key.id,
-			classification.failureKind ?? 'server',
-			classification.failureKind === 'rate_limit' ? parseRetryAfterMs(response.headers.get('retry-after')) : null
-		);
+		if (classification.failureKind) {
+			markProviderKeyFailure(
+				key.id,
+				classification.failureKind,
+				classification.failureKind === 'rate_limit'
+					? parseRetryAfterMs(response.headers.get('retry-after'))
+					: null
+			);
+		}
 		console.warn(
 			`[Gateway Proxy] provider key non-OK, trying next candidate providerId=${route.providerId} keyId=${key.id} status=${response.status}`
 		);

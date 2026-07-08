@@ -3,7 +3,7 @@ import type { ActiveProviderApiKeyRow, GatewayRepositories } from '@octafuse/cor
 import type { RouteResult } from './model-router';
 import { EMPTY_USAGE } from './proxy';
 import { failoverDispatchWithKeyPool } from './failover-dispatch';
-import { markProviderKeyFailure, resetProviderKeyCircuitStateForTests } from './provider-key-circuit-breaker';
+import { markProviderKeyFailure, resetProviderKeyCircuitStateForTests, isProviderKeyCircuitOpen } from './provider-key-circuit-breaker';
 import {
 	acquireProviderKey,
 	resetProviderKeyRateLimiterStateForTests,
@@ -110,5 +110,101 @@ describe('failoverDispatchWithKeyPool — all keys unavailable', () => {
 
 		expect(dispatch).toHaveBeenCalledTimes(1);
 		expect(result.response.status).toBe(200);
+	});
+});
+
+describe('failoverDispatchWithKeyPool — soft server failures', () => {
+	it('does not open circuit after upstream 524 so the next request still dispatches', async () => {
+		const key = makeKey('k1');
+		const dispatch = vi
+			.fn()
+			.mockResolvedValueOnce({
+				response: new Response('timeout', { status: 524 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			})
+			.mockResolvedValueOnce({
+				response: new Response('ok', { status: 200 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			});
+		const routes = [makeRoute('p1')];
+		const repos = mockRepos(new Map([['p1', [key]]]));
+
+		const first = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		expect(first.response.status).toBe(524);
+		expect(isProviderKeyCircuitOpen('k1')).toBe(false);
+
+		const second = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		expect(dispatch).toHaveBeenCalledTimes(2);
+		expect(second.response.status).toBe(200);
+	});
+
+	it('does not open circuit after fetch failure so the next request still dispatches', async () => {
+		const key = makeKey('k1');
+		const dispatch = vi
+			.fn()
+			.mockRejectedValueOnce(new Error('network reset'))
+			.mockResolvedValueOnce({
+				response: new Response('ok', { status: 200 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			});
+		const routes = [makeRoute('p1')];
+		const repos = mockRepos(new Map([['p1', [key]]]));
+
+		const first = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		expect(first.response.status).toBe(502);
+		expect(isProviderKeyCircuitOpen('k1')).toBe(false);
+
+		const second = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		expect(dispatch).toHaveBeenCalledTimes(2);
+		expect(second.response.status).toBe(200);
+	});
+
+	it('does not block the next request after a single ordinary 5xx', async () => {
+		const key = makeKey('k1');
+		const dispatch = vi
+			.fn()
+			.mockResolvedValueOnce({
+				response: new Response('error', { status: 503 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			})
+			.mockResolvedValueOnce({
+				response: new Response('ok', { status: 200 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			});
+		const routes = [makeRoute('p1')];
+		const repos = mockRepos(new Map([['p1', [key]]]));
+
+		const first = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		expect(first.response.status).toBe(503);
+		expect(isProviderKeyCircuitOpen('k1')).toBe(false);
+
+		const second = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		expect(dispatch).toHaveBeenCalledTimes(2);
+		expect(second.response.status).toBe(200);
+	});
+
+	it('returns 429 after three consecutive ordinary 5xx failures exhaust the only key', async () => {
+		const key = makeKey('k1');
+		const dispatch = vi.fn(async () => ({
+			response: new Response('error', { status: 500 }),
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
+		}));
+		const routes = [makeRoute('p1')];
+		const repos = mockRepos(new Map([['p1', [key]]]));
+
+		await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+
+		const blocked = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+		expect(dispatch).toHaveBeenCalledTimes(3);
+		expect(blocked.response.status).toBe(429);
+		expect(isProviderKeyCircuitOpen('k1')).toBe(true);
 	});
 });

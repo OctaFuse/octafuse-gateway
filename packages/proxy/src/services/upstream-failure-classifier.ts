@@ -10,7 +10,7 @@ export type UpstreamFailureClassification = {
 	action: UpstreamFailureAction;
 	/** 401/403 等 key 异常，切换 key 但应记录告警 */
 	alertOnKeySwitch?: boolean;
-	/** `retry_key` 时的失败类别（决定 key 熔断策略） */
+	/** 有值时 dispatch 会写入 provider key 熔断；524 / fetch 等瞬时错误不设此项 */
 	failureKind?: ProviderKeyFailureKind;
 };
 
@@ -23,6 +23,10 @@ export function classifyUpstreamHttpFailure(status: number): UpstreamFailureClas
 	if (status === 429) {
 		return { action: 'retry_key', failureKind: 'rate_limit' };
 	}
+	// Cloudflare 524 等边缘超时：仅同次 failover，不跨请求熔断。
+	if (status === 524) {
+		return { action: 'retry_key' };
+	}
 	if (status >= 500) {
 		return { action: 'retry_key', failureKind: 'server' };
 	}
@@ -32,7 +36,7 @@ export function classifyUpstreamHttpFailure(status: number): UpstreamFailureClas
 	return { action: 'fail_immediately' };
 }
 
-/** fetch 异常、超时、网络错误 → 换 key。 */
+/** fetch 异常、超时、网络错误 → 同次 failover，不跨请求熔断。 */
 export function classifyUpstreamFetchFailure(): UpstreamFailureClassification {
-	return { action: 'retry_key', failureKind: 'server' };
+	return { action: 'retry_key' };
 }
