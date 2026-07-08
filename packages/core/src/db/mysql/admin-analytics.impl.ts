@@ -16,7 +16,7 @@ import { asMySqlPool } from './mysql2-compat';
 export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): AdminAnalyticsRepository {
 	const pool = asMySqlPool(db.raw);
 	return {
-		async queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string }): Promise<ModelAnalyticsRow[]> {
+		async queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string; userEmail?: string }): Promise<ModelAnalyticsRow[]> {
 			const joins: string[] = [];
 			const conditions: string[] = ['rl.created_at >= ?', 'rl.created_at <= ?', 'rl.model_id IS NOT NULL'];
 			const bindValues: unknown[] = [];
@@ -28,6 +28,10 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 			if (options.providerId) {
 				conditions.push('rl.provider_id = ?');
 				bindValues.push(options.providerId);
+			}
+			if (options.userEmail) {
+				conditions.push('rl.user_email = ?');
+				bindValues.push(options.userEmail);
 			}
 			const [rows] = await pool.query<ModelAnalyticsRow[]>(
 				`SELECT

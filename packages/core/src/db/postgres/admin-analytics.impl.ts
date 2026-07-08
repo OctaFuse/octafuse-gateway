@@ -15,7 +15,7 @@ import type {
 export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClient): AdminAnalyticsRepository {
 	const pg = db.raw;
 	return {
-		async queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string }): Promise<ModelAnalyticsRow[]> {
+		async queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string; userEmail?: string }): Promise<ModelAnalyticsRow[]> {
 			const baseSelect = `SELECT
 				rl.model_id as model_id,
 				rl.route_group as route_group,
@@ -43,6 +43,10 @@ export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClien
 			if (options.providerId) {
 				values.push(options.providerId);
 				conditions.push(`rl.provider_id = $${values.length}`);
+			}
+			if (options.userEmail) {
+				values.push(options.userEmail);
+				conditions.push(`rl.user_email = $${values.length}`);
 			}
 			const q = `${baseSelect}
 		FROM api_key_request_logs rl

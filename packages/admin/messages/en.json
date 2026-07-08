@@ -663,6 +663,7 @@
 		"noProviderUsageForModel": "No provider usage for this model in the selected range.",
 		"loadingModelUsage": "Loading model usage...",
 		"noModelUsageForProvider": "No model usage for this provider in the selected range.",
+		"noModelUsageForUser": "No model usage for this user in the selected range.",
 		"noData": "No data",
 		"rangeTotals": {
 			"rangeTotal": "Range total",

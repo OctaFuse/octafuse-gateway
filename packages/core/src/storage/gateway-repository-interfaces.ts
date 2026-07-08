@@ -37,7 +37,7 @@ import type {
 
 /** 管理端分析聚合 */
 export interface AdminAnalyticsRepository {
-	queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string }): Promise<ModelAnalyticsRow[]>;
+	queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string; userEmail?: string }): Promise<ModelAnalyticsRow[]>;
 	queryDistinctModelTags(): Promise<string[]>;
 	queryUserAnalytics(options: { start: string; end: string; email?: string }): Promise<UserAnalyticsRow[]>;
 	queryProviderAnalytics(options: { start: string; end: string; tag?: string; modelId?: string; routeGroup?: string }): Promise<ProviderAnalyticsRow[]>;

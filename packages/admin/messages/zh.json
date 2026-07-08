@@ -663,6 +663,7 @@
 		"noProviderUsageForModel": "所选时间范围内该模型无 Provider 用量。",
 		"loadingModelUsage": "加载模型用量中...",
 		"noModelUsageForProvider": "所选时间范围内该 Provider 无模型用量。",
+		"noModelUsageForUser": "所选时间范围内该用户无模型用量。",
 		"noData": "无数据",
 		"rangeTotals": {
 			"rangeTotal": "范围合计",

@@ -3,14 +3,14 @@
 /**
  * 用户（邮箱）用量分析：预算占用、成功率等；支持 CSV 导出。
  */
-import { useState, useEffect, useMemo } from 'react';
+import { Fragment, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
-import { readApiJson } from '@/lib/api-json';
+import { readApiJson, readJson } from '@/lib/api-json';
 import {
   compareAnalyticsTableRows,
   createRangeValue,
@@ -20,7 +20,7 @@ import {
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
-import type { UserUsageRow } from '@/lib/types';
+import type { ApiResponse, ModelUsageRow, UserUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 
@@ -38,6 +38,9 @@ export default function UserUsagePage() {
   const [sortKey, setSortKey] = useState<SortKey>('request_count');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
+  const [expandedUserEmail, setExpandedUserEmail] = useState<string | null>(null);
+  const [modelRowsByUser, setModelRowsByUser] = useState<Record<string, ModelUsageRow[]>>({});
+  const [modelRowsLoading, setModelRowsLoading] = useState<Record<string, boolean>>({});
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
@@ -51,6 +54,9 @@ export default function UserUsagePage() {
         if (data.success) {
           setRows(data.data ?? []);
           setCommittedQuery(rangeValue);
+          setExpandedUserEmail(null);
+          setModelRowsByUser({});
+          setModelRowsLoading({});
         }
       } catch (e) {
         console.error('Fetch user usage error:', e);
@@ -73,6 +79,32 @@ export default function UserUsagePage() {
     else {
       setSortKey(key);
       setSortDir('desc');
+    }
+  };
+
+  const toggleUserModels = async (userEmail: string) => {
+    if (expandedUserEmail === userEmail) {
+      setExpandedUserEmail(null);
+      return;
+    }
+
+    setExpandedUserEmail(userEmail);
+    if (modelRowsByUser[userEmail] || modelRowsLoading[userEmail]) return;
+
+    setModelRowsLoading((prev) => ({ ...prev, [userEmail]: true }));
+    try {
+      const { start_date, end_date } = committedQuery;
+      const params = new URLSearchParams({ start_date, end_date, user_email: userEmail });
+      const response = await fetch(`/api/admin/analytics/models?${params.toString()}`);
+      const data = await readJson<ApiResponse<ModelUsageRow[]>>(response);
+      if (data.success) {
+        setModelRowsByUser((prev) => ({ ...prev, [userEmail]: data.data ?? [] }));
+      }
+    } catch (e) {
+      console.error('Fetch user model usage error:', e);
+      setModelRowsByUser((prev) => ({ ...prev, [userEmail]: [] }));
+    } finally {
+      setModelRowsLoading((prev) => ({ ...prev, [userEmail]: false }));
     }
   };
 
@@ -177,48 +209,136 @@ export default function UserUsagePage() {
                 logQuery.set('user_email', r.user_email);
                 logQuery.set('start_date', start_date);
                 logQuery.set('end_date', end_date);
+                const isExpanded = expandedUserEmail === r.user_email;
+                const modelRows = modelRowsByUser[r.user_email] ?? [];
+                const isModelRowsLoading = modelRowsLoading[r.user_email] === true;
                 return (
-                  <tr
-                    key={r.user_email}
-                    className={`hover:bg-gray-50 ${budgetCritical ? 'bg-red-50' : budgetHigh ? 'bg-yellow-50' : ''}`}
-                  >
-                    <td className="px-4 py-3 text-sm">
-                      <Link
-                        href={`/gateway/request-logs?${logQuery.toString()}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {r.user_email}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
-                    <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
-                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                      {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                      {formatGatewayMoneyCode(r.charged_cost, billingCurrency, 4)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                      {formatGatewayMoneyCode(r.metered_cost, billingCurrency, 4)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{r.distinct_models}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(r.last_active_at)}</td>
-                    <td className="px-4 py-3 text-sm">
-                      {r.budget_usage_rate != null ? (
-                        <span className={budgetCritical ? 'text-red-600 font-medium' : budgetHigh ? 'text-yellow-600' : 'text-gray-600'}>
-                          {r.budget_usage_rate.toFixed(1)}%
+                  <Fragment key={r.user_email}>
+                    <tr
+                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'bg-blue-50/40' : budgetCritical ? 'bg-red-50' : budgetHigh ? 'bg-yellow-50' : ''}`}
+                      onClick={() => void toggleUserModels(r.user_email)}
+                    >
+                      <td className="px-4 py-3 text-sm">
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-2 text-left font-medium text-blue-600 hover:text-blue-800"
+                          aria-expanded={isExpanded}
+                        >
+                          <span className="w-4 text-gray-400">{isExpanded ? '▾' : '▸'}</span>
+                          <Link
+                            href={`/gateway/request-logs?${logQuery.toString()}`}
+                            className="hover:underline"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {r.user_email}
+                          </Link>
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
+                      <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                        {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                        {formatGatewayMoneyCode(r.charged_cost, billingCurrency, 4)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                        {formatGatewayMoneyCode(r.metered_cost, billingCurrency, 4)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.distinct_models}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{formatDate(r.last_active_at)}</td>
+                      <td className="px-4 py-3 text-sm">
+                        {r.budget_usage_rate != null ? (
+                          <span className={budgetCritical ? 'text-red-600 font-medium' : budgetHigh ? 'text-yellow-600' : 'text-gray-600'}>
+                            {r.budget_usage_rate.toFixed(1)}%
+                          </span>
+                        ) : (
+                          tCommon('noData')
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={r.success_rate >= 95 ? 'text-green-600' : r.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
+                          {r.success_rate.toFixed(1)}%
                         </span>
-                      ) : (
-                        tCommon('noData')
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={r.success_rate >= 95 ? 'text-green-600' : r.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
-                        {r.success_rate.toFixed(1)}%
-                      </span>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
+                    {isExpanded ? (
+                      <tr key={`${r.user_email}:models`} className="bg-blue-50/60">
+                        <td colSpan={11} className="border-l-4 border-blue-300 px-5 py-4">
+                          {isModelRowsLoading ? (
+                            <div className="py-4 text-sm text-gray-500">{tA('loadingModelUsage')}</div>
+                          ) : modelRows.length === 0 ? (
+                            <div className="py-4 text-sm text-gray-500">{tA('noModelUsageForUser')}</div>
+                          ) : (
+                            <div className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm ring-1 ring-blue-100">
+                              <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.model')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.routeGroup')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.requests')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.inputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.outputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.std')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.charged')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.metered')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgChargedPerReq')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.successRate')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgLatencyMs')}</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                  {modelRows.map((modelRow) => {
+                                    const modelLogQuery = new URLSearchParams(logQuery);
+                                    modelLogQuery.set('model_id', modelRow.model_id);
+                                    modelLogQuery.set('route_group', modelRow.route_group);
+                                    return (
+                                      <tr key={`${r.user_email}\t${modelRow.model_id}\t${modelRow.route_group}`} className="hover:bg-gray-50">
+                                        <td className="px-3 py-2 text-sm">
+                                          <Link
+                                            href={`/gateway/request-logs?${modelLogQuery.toString()}`}
+                                            className="text-blue-600 hover:underline"
+                                            onClick={(event) => event.stopPropagation()}
+                                          >
+                                            {modelRow.model_id}
+                                          </Link>
+                                        </td>
+                                        <td className="px-3 py-2 text-sm font-mono text-gray-700">{modelRow.route_group}</td>
+                                        <td className="px-3 py-2 text-sm text-gray-900">{modelRow.request_count.toLocaleString()}</td>
+                                        <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={modelRow.input_tokens} mode={tokenDisplayMode} /></td>
+                                        <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={modelRow.output_tokens} mode={tokenDisplayMode} /></td>
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+                                          {formatGatewayMoneyCode(modelRow.standard_cost ?? 0, billingCurrency, 4)}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+                                          {formatGatewayMoneyCode(modelRow.charged_cost, billingCurrency, 4)}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+                                          {formatGatewayMoneyCode(modelRow.metered_cost, billingCurrency, 4)}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600">
+                                          {formatGatewayMoneyCode(modelRow.avg_charged_per_request, billingCurrency, 6)}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm">
+                                          <span className={modelRow.success_rate >= 95 ? 'text-green-600' : modelRow.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
+                                            {modelRow.success_rate.toFixed(1)}%
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600">
+                                          {modelRow.avg_latency_ms != null ? Math.round(modelRow.avg_latency_ms) : tCommon('noData')}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
                 );
               })}
             </tbody>
