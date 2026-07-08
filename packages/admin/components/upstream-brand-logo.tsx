@@ -1,8 +1,11 @@
+'use client';
+
 /**
  * 上游协议品牌图标：OpenAI 用静态 SVG，Anthropic/Gemini 用 simple-icons；列表密集场景用 `UpstreamProtocolBrandIcon`。
  */
 import type { SimpleIcon } from 'simple-icons';
 import { siAnthropic, siGooglegemini } from 'simple-icons';
+import { useTranslations } from 'next-intl';
 
 type Props = {
   className?: string;
@@ -65,12 +68,6 @@ export function GeminiEndpointIcon(props: Props) {
   return <SimpleBrandIcon icon={siGooglegemini} {...props} />;
 }
 
-const PROTOCOL_LABEL: Record<string, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
-  gemini: 'Gemini',
-};
-
 /** 根据 `upstream_protocol` 渲染对应品牌；未知协议显示缩写占位块。 */
 export function UpstreamProtocolBrandIcon({
   protocol,
@@ -80,8 +77,16 @@ export function UpstreamProtocolBrandIcon({
   /** `compact`≈14px；`default`≈16px（与供应商表对齐） */
   size?: 'compact' | 'default';
 }) {
+  const t = useTranslations('upstream');
   const p = protocol.trim().toLowerCase();
-  const label = PROTOCOL_LABEL[p] ?? `Protocol: ${protocol}`;
+  const label =
+    p === 'openai'
+      ? t('openai')
+      : p === 'anthropic'
+        ? t('anthropic')
+        : p === 'gemini'
+          ? t('gemini')
+          : t('protocolUnknown', { protocol });
   const iconCls = size === 'compact' ? 'h-3.5 w-3.5' : 'h-4 w-4';
 
   if (p === 'openai') {

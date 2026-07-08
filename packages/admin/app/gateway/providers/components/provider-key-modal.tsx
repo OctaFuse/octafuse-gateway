@@ -1,4 +1,7 @@
+'use client';
+
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
 import type { EditingProviderKeyState, GatewayProvider, ProviderKeyFormData } from '../types';
 
 type ProviderKeyModalProps = {
@@ -28,6 +31,9 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 		onDelete,
 	} = props;
 
+	const t = useTranslations('providers.keys');
+	const tCommon = useTranslations('common');
+
 	if (!editingProviderKey && !addingProviderKeyFor) return null;
 
 	return (
@@ -43,7 +49,7 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
 					<div className="min-w-0">
 						<h2 className="text-xl font-bold text-gray-900">
-							{editingProviderKey ? 'Edit Provider Key' : 'New Provider Key'}
+							{editingProviderKey ? t('editTitle') : t('newTitle')}
 						</h2>
 						{editingProviderKey ? (
 							<p
@@ -63,7 +69,7 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 						onClick={onClose}
 						className="text-gray-400 hover:text-gray-600"
 						disabled={isSaving || isDeleting}
-						aria-label="Close"
+						aria-label={tCommon('close')}
 					>
 						×
 					</button>
@@ -75,7 +81,7 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 					<div className="space-y-4">
 						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">Label</label>
+								<label className="mb-1 block text-sm font-medium text-gray-700">{t('label')}</label>
 								<input
 									type="text"
 									value={form.label}
@@ -94,28 +100,28 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 										}
 										className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
 									/>
-									Active
+									{tCommon('active')}
 								</label>
 							</div>
 						</div>
 
 						<div>
 							<label className="mb-1 block text-sm font-medium text-gray-700">
-								{editingProviderKey ? 'Replace API key' : 'API key'}
+								{editingProviderKey ? t('replaceApiKey') : t('apiKey')}
 							</label>
 							<input
 								type="password"
 								value={form.api_key}
 								onChange={(e) => onFormChange({ ...form, api_key: e.target.value })}
 								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={editingProviderKey ? 'Leave blank to keep current key' : 'sk-…'}
+								placeholder={editingProviderKey ? t('leaveBlank') : t('apiKeyPlaceholder')}
 								autoComplete="new-password"
 							/>
 						</div>
 
 						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">Priority</label>
+								<label className="mb-1 block text-sm font-medium text-gray-700">{t('priority')}</label>
 								<input
 									type="number"
 									value={form.priority}
@@ -124,7 +130,7 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 								/>
 							</div>
 							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">Weight</label>
+								<label className="mb-1 block text-sm font-medium text-gray-700">{t('weight')}</label>
 								<input
 									type="number"
 									min={1}
@@ -137,36 +143,36 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 
 						<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
 							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">RPM limit</label>
+								<label className="mb-1 block text-sm font-medium text-gray-700">{t('rpmLimit')}</label>
 								<input
 									type="number"
 									min={1}
 									value={form.rpm}
 									onChange={(e) => onFormChange({ ...form, rpm: e.target.value })}
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="unlimited"
+									placeholder={t('unlimited')}
 								/>
 							</div>
 							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">TPM limit</label>
+								<label className="mb-1 block text-sm font-medium text-gray-700">{t('tpmLimit')}</label>
 								<input
 									type="number"
 									min={1}
 									value={form.tpm}
 									onChange={(e) => onFormChange({ ...form, tpm: e.target.value })}
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="unlimited"
+									placeholder={t('unlimited')}
 								/>
 							</div>
 							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">Concurrency</label>
+								<label className="mb-1 block text-sm font-medium text-gray-700">{t('concurrency')}</label>
 								<input
 									type="number"
 									min={1}
 									value={form.max_concurrency}
 									onChange={(e) => onFormChange({ ...form, max_concurrency: e.target.value })}
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="unlimited"
+									placeholder={t('unlimited')}
 								/>
 							</div>
 						</div>
@@ -181,7 +187,7 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 							disabled={isSaving || isDeleting}
 						>
 							<TrashIcon className="h-4 w-4" aria-hidden />
-							{isDeleting ? 'Deleting…' : 'Delete key'}
+							{isDeleting ? tCommon('deleting') : t('deleteKey')}
 						</button>
 					) : (
 						<span />
@@ -193,7 +199,7 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 							className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-white disabled:opacity-50"
 							disabled={isSaving || isDeleting}
 						>
-							Cancel
+							{tCommon('cancel')}
 						</button>
 						<button
 							type="button"
@@ -201,7 +207,7 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 							disabled={isSaving || isDeleting}
 							className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
 						>
-							{isSaving ? 'Saving…' : editingProviderKey ? 'Save key' : 'Create key'}
+							{isSaving ? tCommon('saving') : editingProviderKey ? t('saveKey') : t('createKey')}
 						</button>
 					</div>
 				</div>

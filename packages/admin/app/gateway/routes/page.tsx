@@ -4,6 +4,7 @@
  * 模型路由：`model_routes` CRUD、协议与 route_group、URL 查询参数驱动列表筛选（`useSearchParams` + Suspense）。
  */
 import { Suspense } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRoutesPageState } from './use-routes-page-state';
 import { RouteFilterSidebar } from './components/route-filter-sidebar';
 import { RouteModal } from './components/route-modal';
@@ -12,12 +13,14 @@ import { RouteVendorGroup } from './components/route-vendor-group';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
 
 function RoutesContent() {
+	const t = useTranslations('routes');
+	const tCommon = useTranslations('common');
 	const state = useRoutesPageState();
 
 	if (state.isLoading) {
 		return (
 			<div className="flex items-center justify-center h-full">
-				<div className="text-gray-600">Loading...</div>
+				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
@@ -25,8 +28,8 @@ function RoutesContent() {
 	return (
 		<div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-5 sm:mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Model Routes</h1>
-				<p className="mt-1 text-sm text-gray-500">Configure model-to-provider routing</p>
+				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+				<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 			</div>
 
 			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
@@ -62,16 +65,16 @@ function RoutesContent() {
 						<div className="bg-slate-100/70 p-4 sm:p-6">
 							{state.routesByModel.length === 0 ? (
 								<div className="rounded-xl border border-dashed border-gray-300 bg-white/80 py-16 text-center text-gray-500 shadow-sm">
-									<p className="text-sm font-medium text-gray-600">No models or routes found</p>
+									<p className="text-sm font-medium text-gray-600">{t('empty')}</p>
 									{state.hasActiveFilters ? (
 										<p className="mt-1 text-xs text-gray-500">
-											Try adjusting filters or{' '}
+											{t('emptyFilteredPrefix')}{' '}
 											<button
 												type="button"
 												onClick={state.clearAllFilters}
 												className="font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:underline"
 											>
-												clear all filters
+												{tCommon('clearAllFilters')}
 											</button>
 										</p>
 									) : null}
@@ -140,11 +143,13 @@ function RoutesContent() {
 }
 
 export default function GatewayRoutesPage() {
+	const tCommon = useTranslations('common');
+
 	return (
 		<Suspense
 			fallback={
 				<div className="flex items-center justify-center h-full">
-					<div className="text-gray-600">Loading...</div>
+					<div className="text-gray-600">{tCommon('loading')}</div>
 				</div>
 			}
 		>

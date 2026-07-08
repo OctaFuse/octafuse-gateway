@@ -3,6 +3,7 @@
 /**
  * 全站用户审计日志（`user_audit_logs`）：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
  */
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { readApiJson } from '@/lib/api-json';
@@ -47,8 +48,8 @@ function formatPlainMoney(value: number, currency: string): string {
   return formatGatewayMoneyCode(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
 }
 
-function formatBudgetMax(value: number | null, currency: string): string {
-  if (value == null) return 'no limit';
+function formatBudgetMax(value: number | null, currency: string, noLimitLabel = 'no limit'): string {
+  if (value == null) return noLimitLabel;
   return formatGatewayMoneyCode(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
 }
 
@@ -210,6 +211,8 @@ const budgetPlanHighlight = {
 } as const;
 
 export default function GatewayAuditLogsPage() {
+  const t = useTranslations('auditLogs');
+  const tCommon = useTranslations('common');
   const [logs, setLogs] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -354,14 +357,8 @@ export default function GatewayAuditLogsPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          User audit trail (<code className="text-xs bg-gray-100 px-1 rounded">user_audit_logs</code>) — spent / budget_max
-          are <span className="text-gray-600">derived from before/after user snapshots</span>
-          {'; '}
-          <span className="text-gray-600">legacy / extra JSON</span> from <code className="text-xs bg-gray-100 px-1 rounded">change_payload</code> is
-          appended below when present (no separate Metadata column).
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 
       <div className="mb-4 w-full min-w-0">
@@ -382,7 +379,7 @@ export default function GatewayAuditLogsPage() {
             onChange={(e) => { setFilterEventType(e.target.value); setPage(1); }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[11rem]"
           >
-            <option value="">All</option>
+            <option value="">{tCommon('all')}</option>
             {API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
@@ -395,7 +392,7 @@ export default function GatewayAuditLogsPage() {
             onChange={(e) => { setFilterActorType(e.target.value); setPage(1); }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[8rem]"
           >
-            <option value="">All</option>
+            <option value="">{tCommon('all')}</option>
             {API_KEY_BUDGET_AUDIT_ACTOR_TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
@@ -488,7 +485,7 @@ export default function GatewayAuditLogsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-600">Loading...</div>
+        <div className="flex items-center justify-center py-16 text-gray-600">{tCommon('loading')}</div>
       ) : (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="overflow-x-auto max-h-[calc(100vh-16rem)] overflow-y-auto">
@@ -510,7 +507,7 @@ export default function GatewayAuditLogsPage() {
                 {logs.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      No audit logs match the filters.
+                      {t('empty')}
                     </td>
                   </tr>
                 ) : (

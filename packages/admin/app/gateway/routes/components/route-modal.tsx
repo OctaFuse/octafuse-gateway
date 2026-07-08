@@ -1,6 +1,7 @@
 'use client';
 
 import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
 import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
 import type { CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
@@ -62,6 +63,9 @@ export function RouteModal(props: Props) {
 		onDuplicate,
 	} = props;
 
+	const t = useTranslations('routes.modal');
+	const tCommon = useTranslations('common');
+
 	if (!open) return null;
 
 	return (
@@ -82,15 +86,11 @@ export function RouteModal(props: Props) {
 				<div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4">
 					<div>
 						<h2 id="route-modal-title" className="text-lg font-semibold text-gray-900">
-							{editingRoute ? 'Edit Route' : 'New Route'}
+							{editingRoute ? t('editTitle') : t('newTitle')}
 						</h2>
 						{!editingRoute && duplicateSourceRouteId && (
 							<p className="mt-1 text-xs text-gray-500">
-								Pre-filled from route{' '}
-								<code className="rounded border border-gray-200 bg-gray-50 px-1 py-0.5 font-mono text-[11px]">
-									{duplicateSourceRouteId}
-								</code>
-								. Review fields before saving.
+								{t('prefilledFrom', { id: duplicateSourceRouteId })}
 							</p>
 						)}
 					</div>
@@ -99,7 +99,7 @@ export function RouteModal(props: Props) {
 						onClick={onClose}
 						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 						disabled={isSaving || isDeleting}
-						aria-label="Close"
+						aria-label={tCommon('close')}
 					>
 						<span className="block text-xl leading-none" aria-hidden>
 							×
@@ -117,11 +117,11 @@ export function RouteModal(props: Props) {
 					<div className="space-y-5">
 						<section className="rounded-lg border border-gray-200 bg-gray-50/80 p-4">
 							<h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-								Basic mapping & routing
+								{t('basicMapping')}
 							</h3>
 							<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">Model *</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('modelRequired')}</label>
 									<select
 										value={formData.model_id}
 										onChange={(e) => {
@@ -158,7 +158,7 @@ export function RouteModal(props: Props) {
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 										required
 									>
-										<option value="">Select a model</option>
+										<option value="">{t('selectModel')}</option>
 										{models.map((m) => (
 											<option key={m.id} value={m.id}>
 												{m.display_name ? `${m.display_name} (${m.id})` : m.id}
@@ -167,7 +167,7 @@ export function RouteModal(props: Props) {
 									</select>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">Provider *</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerRequired')}</label>
 									<select
 										value={formData.provider_id}
 										onChange={(e) => {
@@ -192,7 +192,7 @@ export function RouteModal(props: Props) {
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 										required
 									>
-										<option value="">Select a provider</option>
+										<option value="">{t('selectProvider')}</option>
 										{providers.map((p) => (
 											<option key={p.id} value={p.id}>
 												{p.name ? `${p.name} (${p.id})` : p.id}
@@ -202,7 +202,7 @@ export function RouteModal(props: Props) {
 								</div>
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
-										Upstream protocol
+										{t('upstreamProtocol')}
 									</label>
 									<select
 										value={
@@ -230,14 +230,12 @@ export function RouteModal(props: Props) {
 										)}
 									</select>
 									<p className="mt-1.5 text-xs text-gray-500">
-										{selectedProvider
-											? 'Only protocols with a configured base URL on this provider.'
-											: 'Select a provider first.'}
+										{selectedProvider ? t('protocolHintConfigured') : t('protocolHintSelectProvider')}
 									</p>
 								</div>
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
-										Provider model name *
+										{t('providerModelName')}
 									</label>
 									<input
 										type="text"
@@ -246,28 +244,23 @@ export function RouteModal(props: Props) {
 											onFormChange({ ...formData, provider_model_name: e.target.value })
 										}
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-										placeholder="e.g. gpt-4o-2024-11-20"
+										placeholder={t('providerModelPlaceholder')}
 										required
 									/>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">Route group</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('routeGroup')}</label>
 									<input
 										type="text"
 										value={formData.route_group}
 										onChange={(e) => onFormChange({ ...formData, route_group: e.target.value })}
 										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-										placeholder="default"
+										placeholder={t('routeGroupPlaceholder')}
 									/>
-									<p className="mt-1 text-xs text-gray-500">
-										Routing pool for client{' '}
-										<code className="rounded bg-gray-100 px-1 text-[11px]">modelId:group</code>. Omit{' '}
-										<code className="rounded bg-gray-100 px-1 text-[11px]">:group</code> →{' '}
-										<span className="font-medium">default</span> only. No active routes → 400.
-									</p>
+									<p className="mt-1 text-xs text-gray-500">{t('routeGroupHint')}</p>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">Priority</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('priority')}</label>
 									<input
 										type="number"
 										value={formData.priority}
@@ -279,9 +272,7 @@ export function RouteModal(props: Props) {
 										}
 										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 									/>
-									<p className="mt-1 text-xs text-gray-500">
-										Higher = tried first within the same protocol group.
-									</p>
+									<p className="mt-1 text-xs text-gray-500">{t('priorityHint')}</p>
 								</div>
 							</div>
 						</section>
@@ -289,18 +280,16 @@ export function RouteModal(props: Props) {
 						<div className="space-y-5">
 							<RoutePricePanel
 								variant="neutral"
-								title="Standard (catalog)"
-								subtitle="Catalog baseline from the model’s pricing_profile. Read-only; use it as reference when editing charged or metered overrides."
+								title={t('standardCatalog')}
+								subtitle={t('standardCatalogHint')}
 							>
 								<div className="min-h-0 flex-1">
 									<ReadOnlyPricingTiersTable
 										rows={catalogStandardTierRows}
 										emptyLabel={
-											selectedModel
-												? 'This model has no catalog pricing_profile.'
-												: 'Select a model to load catalog tiers.'
+											selectedModel ? t('noCatalogPricing') : t('selectModelForTiers')
 										}
-										tableTitle="Read-only: catalog standard rates"
+										tableTitle={t('readOnlyCatalogRates')}
 										billingCurrencyCode={billingCurrency}
 									/>
 								</div>
@@ -311,8 +300,8 @@ export function RouteModal(props: Props) {
 									<RoutePricePanel
 										fillHeight
 										variant="charged"
-										title="Charged cost"
-										subtitle="Required: saved as price_override.charged and drives charged_cost. Charged factor multiplies Standard (catalog) into rows—default 1 copies catalog tiers; edit tiers after scaling. charged_factor is stored in price_override JSON."
+										title={t('chargedCost')}
+										subtitle={t('chargedCostHint')}
 									>
 										<PricingTiersEditor
 											rows={formData.charged_override_tiers}
@@ -327,14 +316,14 @@ export function RouteModal(props: Props) {
 														htmlFor="user-cost-charged-factor"
 														className="whitespace-nowrap text-[11px] font-medium text-gray-600"
 													>
-														Charged factor
+														{t('chargedFactor')}
 													</label>
 													<input
 														id="user-cost-charged-factor"
 														type="text"
 														inputMode="decimal"
 														value={formData.charged_factor}
-														title="Multiplies Standard (catalog) into charged tiers when the selected model has pricing_profile. Default 1 copies catalog at 1×."
+														title={t('chargedFactorTitle')}
 														onChange={(e) => {
 															const next = e.target.value;
 															const model = models.find((m) => m.id === formData.model_id);
@@ -362,8 +351,8 @@ export function RouteModal(props: Props) {
 									<RoutePricePanel
 										fillHeight
 										variant="metered"
-										title="Metered cost"
-										subtitle="Required: saved as price_override.metered and drives metered_cost. Provider factor multiplies Standard (catalog) into rows—default 1 copies catalog tiers; edit tiers after scaling. metered_factor is written to price_override on save (same numeric value)."
+										title={t('meteredCost')}
+										subtitle={t('meteredCostHint')}
 									>
 										<PricingTiersEditor
 											rows={formData.metered_override_tiers}
@@ -378,14 +367,14 @@ export function RouteModal(props: Props) {
 														htmlFor="gateway-route-provider-factor"
 														className="whitespace-nowrap text-[11px] font-medium text-gray-600"
 													>
-														Provider factor
+														{t('providerFactor')}
 													</label>
 													<input
 														id="gateway-route-provider-factor"
 														type="text"
 														inputMode="decimal"
 														value={formData.provider_factor}
-														title="Multiplies Standard (catalog) into metered tiers when the selected model has pricing_profile. Default 1 copies catalog at 1×."
+														title={t('providerFactorTitle')}
 														onChange={(e) => {
 															const nextFactor = e.target.value;
 															const model = models.find((m) => m.id === formData.model_id);
@@ -416,20 +405,11 @@ export function RouteModal(props: Props) {
 
 						<section className="rounded-lg border border-gray-200 bg-white p-4">
 							<h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-								Request defaults (JSON)
+								{t('requestDefaults')}
 							</h3>
-							<p className="mb-3 text-xs text-gray-600">
-								Route-level{' '}
-								<code className="rounded bg-gray-100 px-1 py-0.5 font-mono">custom_params</code> is
-								deep-merged into the upstream request body; explicit client fields win. Put both
-								standard fields (e.g.{' '}
-								<code className="rounded bg-gray-100 px-1 py-0.5 font-mono">temperature</code>) and
-								vendor-specific keys (e.g.{' '}
-								<code className="rounded bg-gray-100 px-1 py-0.5 font-mono">eca_thinking_config</code>)
-								here.
-							</p>
+							<p className="mb-3 text-xs text-gray-600">{t('requestDefaultsHint')}</p>
 							<div className="flex min-h-0 flex-col">
-								<label className="mb-1.5 text-sm font-medium text-gray-700">Custom params</label>
+								<label className="mb-1.5 text-sm font-medium text-gray-700">{t('customParams')}</label>
 								<textarea
 									rows={8}
 									value={formData.custom_params_json}
@@ -437,7 +417,7 @@ export function RouteModal(props: Props) {
 										onFormChange({ ...formData, custom_params_json: e.target.value })
 									}
 									className="min-h-[160px] w-full flex-1 resize-y rounded-md border border-gray-300 px-3 py-2 font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-									placeholder='{"temperature":0.7,"provider_options":{"foo":"bar"}}'
+									placeholder={t('customParamsPlaceholder')}
 									spellCheck={false}
 								/>
 							</div>
@@ -445,38 +425,31 @@ export function RouteModal(props: Props) {
 
 						<section className="rounded-lg border border-gray-200 bg-white p-4">
 							<h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-								Summary
+								{t('summary')}
 							</h3>
 							<div className="grid grid-cols-1 gap-2 text-xs text-gray-600 md:grid-cols-2">
 								<p>
-									<span className="font-medium text-gray-700">Route:</span>{' '}
+									<span className="font-medium text-gray-700">{t('summaryRoute')}</span>{' '}
 									<span className="font-mono">{formData.model_id || '—'}</span> →{' '}
 									<span className="font-mono">{formData.provider_id || '—'}</span> /{' '}
 									<span className="font-mono">{formData.provider_model_name || '—'}</span>
 								</p>
 								<p>
-									<span className="font-medium text-gray-700">Routing:</span>{' '}
-									<span className="font-mono">{formData.upstream_protocol}</span> · group{' '}
-									<span className="font-mono">{formData.route_group.trim() || 'default'}</span> ·
-									priority <span className="font-mono">{formData.priority}</span> · status{' '}
+									<span className="font-medium text-gray-700">{t('summaryRouting')}</span>{' '}
+									<span className="font-mono">{formData.upstream_protocol}</span> · {t('summaryGroup')}{' '}
+									<span className="font-mono">{formData.route_group.trim() || 'default'}</span> ·{' '}
+									{t('summaryPriority')}{' '}
+									<span className="font-mono">{formData.priority}</span> · {t('summaryStatus')}{' '}
 									<span className="font-mono">{editingRoute ? editingRoute.status : 'inactive'}</span>
-									{!editingRoute && <span className="text-gray-500"> (enable from list)</span>}
+									{!editingRoute && <span className="text-gray-500"> {t('summaryEnableFromList')}</span>}
 								</p>
 								<p>
-									<span className="font-medium text-gray-700">User billing:</span>{' '}
-									<span className="font-mono">
-										Routes must persist <span className="whitespace-nowrap">price_override.charged</span>{' '}
-										tiers; charged_cost uses that profile. Charged factor scales Standard into the
-										editor; <span className="whitespace-nowrap">charged_factor</span> is stored in{' '}
-										<span className="whitespace-nowrap">price_override</span> JSON.
-									</span>
+									<span className="font-medium text-gray-700">{t('summaryUserBilling')}</span>{' '}
+									<span className="font-mono">{t('summaryUserBillingDetail')}</span>
 								</p>
 								<p>
-									<span className="font-medium text-gray-700">Metered cost:</span>{' '}
-									<span className="font-mono">
-										Routes must persist <span className="whitespace-nowrap">price_override.metered</span>{' '}
-										tiers; metered_cost uses that profile.
-									</span>
+									<span className="font-medium text-gray-700">{t('summaryMeteredCost')}</span>{' '}
+									<span className="font-mono">{t('summaryMeteredCostDetail')}</span>
 								</p>
 							</div>
 						</section>
@@ -493,7 +466,7 @@ export function RouteModal(props: Props) {
 								className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<TrashIcon className="h-4 w-4" aria-hidden />
-								{isDeleting ? 'Deleting...' : 'Delete route'}
+								{isDeleting ? tCommon('deleting') : t('deleteRoute')}
 							</button>
 						)}
 					</div>
@@ -504,7 +477,7 @@ export function RouteModal(props: Props) {
 							className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={isSaving || isDeleting}
 						>
-							Cancel
+							{tCommon('cancel')}
 						</button>
 						{editingRoute && (
 							<button
@@ -514,7 +487,7 @@ export function RouteModal(props: Props) {
 								className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
-								Duplicate
+								{tCommon('duplicate')}
 							</button>
 						)}
 						<button
@@ -523,7 +496,7 @@ export function RouteModal(props: Props) {
 							disabled={isSaving || isDeleting}
 							className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
 						>
-							{isSaving ? 'Saving...' : 'Save'}
+							{isSaving ? tCommon('savingDots') : tCommon('save')}
 						</button>
 					</div>
 				</div>

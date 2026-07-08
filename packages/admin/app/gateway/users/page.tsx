@@ -3,6 +3,7 @@
 /**
  * 网关用户列表：预算在 `users`；筛选与分页；跳转详情。
  */
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
@@ -29,6 +30,9 @@ function formatBudgetBase(value: number | null | undefined, currency: string): s
 }
 
 export default function GatewayUsersPage() {
+  const t = useTranslations('users');
+  const tCommon = useTranslations('common');
+  const tOptions = useTranslations('options');
   const router = useRouter();
   const [users, setUsers] = useState<GatewayUserListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -82,7 +86,7 @@ export default function GatewayUsersPage() {
       }
     } catch (e) {
       console.error('Fetch users error:', e);
-      setListError('Failed to load users');
+      setListError(tCommon('failedToLoadUsers'));
     } finally {
       setIsLoading(false);
     }
@@ -199,7 +203,7 @@ export default function GatewayUsersPage() {
       }
     } catch (e) {
       console.error(e);
-      setSaveError('Create failed');
+      setSaveError(tCommon('createFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -208,7 +212,7 @@ export default function GatewayUsersPage() {
   if (isLoading && users.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -217,10 +221,8 @@ export default function GatewayUsersPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Gateway users (<code className="text-xs bg-gray-100 px-1 rounded">users</code>) — budgets and external identity
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
         </div>
         <button
           type="button"
@@ -228,7 +230,7 @@ export default function GatewayUsersPage() {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <PlusIcon className="h-5 w-5" />
-          New user
+          {t('newUser')}
         </button>
       </div>
 
@@ -275,7 +277,7 @@ export default function GatewayUsersPage() {
             </select>
           </div>
         </div>
-        <div className="text-sm text-gray-500 self-end">Total: {total} users</div>
+        <div className="text-sm text-gray-500 self-end">{t('totalUsers', { count: total })}</div>
       </div>
 
       {listError && (
@@ -343,7 +345,7 @@ export default function GatewayUsersPage() {
                 <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
                   {u.budget_max != null
                     ? formatGatewayMoneyCode(u.budget_max, billingCurrency, 2)
-                    : 'no limit'}
+                    : tCommon('noLimit')}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
                   {formatBudgetBase(u.budget_base, billingCurrency)}
@@ -377,7 +379,7 @@ export default function GatewayUsersPage() {
                         onClick={() => setMetadataViewUser(u)}
                         className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
                       >
-                        Details
+                        {tCommon('details')}
                       </button>
                     </div>
                   )}
@@ -391,7 +393,7 @@ export default function GatewayUsersPage() {
           </tbody>
         </table>
         {users.length === 0 && (
-          <div className="text-center py-12 text-gray-500">No users match filters</div>
+          <div className="text-center py-12 text-gray-500">{t('emptyFiltered')}</div>
         )}
       </div>
 
@@ -403,7 +405,7 @@ export default function GatewayUsersPage() {
             disabled={page === 1}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 hover:bg-gray-50"
           >
-            Previous
+            {tCommon('previous')}
           </button>
           <span className="px-4 py-2 text-sm text-gray-600">
             Page {page} of {totalPages}
@@ -414,7 +416,7 @@ export default function GatewayUsersPage() {
             disabled={page === totalPages}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 hover:bg-gray-50"
           >
-            Next
+            {tCommon('next')}
           </button>
         </div>
       )}
@@ -423,7 +425,7 @@ export default function GatewayUsersPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Create user</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('createTitle')}</h2>
               <button type="button" onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600">×</button>
             </div>
             <div className="p-6 space-y-5">
@@ -547,9 +549,9 @@ export default function GatewayUsersPage() {
               </div>
             </div>
             <div className="px-6 py-4 border-t flex justify-end gap-2">
-              <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-md text-sm" disabled={isSaving}>Cancel</button>
+              <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-md text-sm" disabled={isSaving}>{tCommon('cancel')}</button>
               <button type="button" onClick={submitCreate} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm disabled:opacity-50">
-                {isSaving ? 'Saving…' : 'Create'}
+                {isSaving ? tCommon('saving') : tCommon('create')}
               </button>
             </div>
           </div>
@@ -563,7 +565,7 @@ export default function GatewayUsersPage() {
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
               <div className="px-6 py-4 border-b flex justify-between items-center">
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900">Metadata</h2>
+                  <h2 className="text-lg font-bold text-gray-900">{tCommon('metadata')}</h2>
                   <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={metadataViewUser.id}>
                     {[metadataViewUser.email, metadataViewUser.id].filter(Boolean).join(' · ')}
                   </p>
@@ -598,7 +600,7 @@ export default function GatewayUsersPage() {
                   onClick={() => setMetadataViewUser(null)}
                   className="px-3 py-1.5 bg-gray-800 text-white rounded-md text-sm hover:bg-gray-900"
                 >
-                  Close
+                  {tCommon('close')}
                 </button>
               </div>
             </div>

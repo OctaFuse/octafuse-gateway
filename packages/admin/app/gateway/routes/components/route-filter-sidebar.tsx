@@ -2,6 +2,7 @@
 
 import { FilterNavButton, FilterNavSection } from '../../components/filter-nav';
 import type { GatewayProvider } from '@/lib/types';
+import { useTranslations } from 'next-intl';
 
 type Props = {
 	visibleModelCount: number;
@@ -48,18 +49,20 @@ export function RouteFilterSidebar(props: Props) {
 		onClearAllFilters,
 	} = props;
 
+	const t = useTranslations('filter');
+	const tCommon = useTranslations('common');
+
 	return (
 		<aside className="w-full shrink-0 border-b border-gray-200/80 bg-slate-50/80 lg:sticky lg:top-0 lg:w-60 lg:self-start lg:border-b-0 lg:border-r">
 			<div className="space-y-3 p-4">
 				<div>
-					<h2 className="text-sm font-semibold text-gray-900">Filters</h2>
-					<p className="mt-0.5 text-xs text-gray-500">Narrow models and routes</p>
+					<h2 className="text-sm font-semibold text-gray-900">{t('title')}</h2>
+					<p className="mt-0.5 text-xs text-gray-500">{t('narrowModelsRoutes')}</p>
 				</div>
 
 				<div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200/60 bg-white/60 px-3 py-2">
 					<span className="text-xs text-gray-600">
-						<span className="font-semibold tabular-nums text-gray-900">{visibleModelCount}</span> models ·{' '}
-						<span className="font-semibold tabular-nums text-gray-900">{visibleRouteCount}</span> routes
+						{t('modelsAndRoutes', { models: visibleModelCount, routes: visibleRouteCount })}
 					</span>
 					{hasActiveFilters ? (
 						<button
@@ -67,35 +70,35 @@ export function RouteFilterSidebar(props: Props) {
 							onClick={onClearAllFilters}
 							className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 rounded"
 						>
-							Clear
+							{t('clear')}
 						</button>
 					) : null}
 				</div>
 
-				<FilterNavSection title="Status" ariaLabel="Status filter">
+				<FilterNavSection title={t('status')} ariaLabel={t('statusAria')}>
 					<FilterNavButton
-						label="All"
+						label={t('all')}
 						count={statusCounts.all}
 						isActive={!filterStatus}
 						onClick={() => onFilterStatusChange('')}
 					/>
 					<FilterNavButton
-						label="Active"
+						label={tCommon('active')}
 						count={statusCounts.active}
 						isActive={filterStatus === 'active'}
 						onClick={() => onFilterStatusChange('active')}
 					/>
 					<FilterNavButton
-						label="Inactive"
+						label={tCommon('inactive')}
 						count={statusCounts.inactive}
 						isActive={filterStatus === 'inactive'}
 						onClick={() => onFilterStatusChange('inactive')}
 					/>
 				</FilterNavSection>
 
-				<FilterNavSection title="Route Group" ariaLabel="Route group filter">
+				<FilterNavSection title={t('routeGroup')} ariaLabel={t('routeGroupAria')}>
 					<FilterNavButton
-						label="All"
+						label={t('all')}
 						count={routesCount}
 						isActive={!filterRouteGroup}
 						onClick={() => onFilterRouteGroupChange('')}
@@ -111,9 +114,9 @@ export function RouteFilterSidebar(props: Props) {
 					))}
 				</FilterNavSection>
 
-				<FilterNavSection title="Vendor" ariaLabel="Vendor filter">
+				<FilterNavSection title={t('vendor')} ariaLabel={t('vendorAria')}>
 					<FilterNavButton
-						label="All"
+						label={t('all')}
 						count={routesCount}
 						isActive={!filterVendor}
 						onClick={() => onFilterVendorChange('')}
@@ -129,9 +132,9 @@ export function RouteFilterSidebar(props: Props) {
 					))}
 				</FilterNavSection>
 
-				<FilterNavSection title="Provider" ariaLabel="Provider filter">
+				<FilterNavSection title={t('provider')} ariaLabel={t('providerAria')}>
 					<FilterNavButton
-						label="All"
+						label={t('all')}
 						count={routesCount}
 						isActive={!filterProviderId}
 						onClick={() => onFilterProviderIdChange('')}

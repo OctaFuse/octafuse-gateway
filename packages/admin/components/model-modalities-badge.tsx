@@ -10,6 +10,7 @@ import {
 	VideoCameraIcon,
 } from '@heroicons/react/24/solid';
 import { parseModelModalitiesJson } from '@octafuse/core/db/model-modalities';
+import { useTranslations } from 'next-intl';
 
 const MODALITY_ORDER = ['text', 'image', 'audio', 'video', 'file'] as const;
 
@@ -17,30 +18,30 @@ type ModalityKey = (typeof MODALITY_ORDER)[number];
 
 const MODALITY_STYLES: Record<
 	ModalityKey,
-	{ label: string; chip: string; icon?: 'text' | 'photo' | 'audio' | 'video' | 'file' }
+	{ labelKey: ModalityKey; chip: string; icon?: 'text' | 'photo' | 'audio' | 'video' | 'file' }
 > = {
 	text: {
-		label: 'Text',
+		labelKey: 'text',
 		chip: 'bg-blue-100 text-blue-700 ring-blue-200/80',
 		icon: 'text',
 	},
 	image: {
-		label: 'Image',
+		labelKey: 'image',
 		chip: 'bg-emerald-100 text-emerald-700 ring-emerald-200/80',
 		icon: 'photo',
 	},
 	audio: {
-		label: 'Audio',
+		labelKey: 'audio',
 		chip: 'bg-violet-100 text-violet-700 ring-violet-200/80',
 		icon: 'audio',
 	},
 	video: {
-		label: 'Video',
+		labelKey: 'video',
 		chip: 'bg-amber-100 text-amber-700 ring-amber-200/80',
 		icon: 'video',
 	},
 	file: {
-		label: 'File',
+		labelKey: 'file',
 		chip: 'bg-slate-100 text-slate-600 ring-slate-200/80',
 		icon: 'file',
 	},
@@ -70,7 +71,9 @@ function ModalityChip({
 	modality: ModalityKey;
 	size: 'sm' | 'md';
 }) {
+	const t = useTranslations('modalities');
 	const style = MODALITY_STYLES[modality];
+	const label = t(style.labelKey);
 	const box =
 		size === 'sm'
 			? 'h-5 w-5 rounded-[4px] ring-1'
@@ -81,8 +84,8 @@ function ModalityChip({
 	return (
 		<span
 			className={`inline-flex shrink-0 items-center justify-center ${box} ${style.chip}`}
-			title={style.label}
-			aria-label={style.label}
+			title={label}
+			aria-label={label}
 		>
 			{style.icon === 'text' ? (
 				<span className={`leading-none ${textClass}`}>T</span>
@@ -116,9 +119,10 @@ function ModalityGroup({
 	modalities: string[] | null | undefined;
 	size: 'sm' | 'md';
 }) {
+	const tCommon = useTranslations('common');
 	const sorted = sortModalities(modalities ?? []);
 	if (sorted.length === 0) {
-		return <span className="text-xs text-gray-400">—</span>;
+		return <span className="text-xs text-gray-400">{tCommon('noData')}</span>;
 	}
 	return (
 		<span className="inline-flex items-center gap-1">
@@ -152,10 +156,12 @@ export function ModelModalitiesBadge({
 	size?: 'sm' | 'md';
 	className?: string;
 }) {
+	const t = useTranslations('modalities');
+	const tCommon = useTranslations('common');
 	const input = sortModalities(inputModalities ?? []);
 	const output = sortModalities(outputModalities ?? []);
 	if (input.length === 0 && output.length === 0) {
-		return <span className="text-xs text-gray-400">—</span>;
+		return <span className="text-xs text-gray-400">{tCommon('noData')}</span>;
 	}
 
 	const arrowClass = size === 'sm' ? 'text-[10px]' : 'text-xs';
@@ -163,7 +169,10 @@ export function ModelModalitiesBadge({
 	return (
 		<span
 			className={`inline-flex flex-wrap items-center gap-x-1 gap-y-1 ${className}`}
-			aria-label={`Input modalities: ${input.join(', ') || 'none'}; output: ${output.join(', ') || 'none'}`}
+			aria-label={t('ariaSummary', {
+				input: input.join(', ') || t('none'),
+				output: output.join(', ') || t('none'),
+			})}
 		>
 			<ModalityGroup modalities={input} size={size} />
 			<span className={`text-gray-400 ${arrowClass}`} aria-hidden>

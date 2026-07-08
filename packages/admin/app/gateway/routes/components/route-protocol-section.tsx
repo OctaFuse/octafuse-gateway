@@ -1,6 +1,7 @@
 'use client';
 
 import { LinkIcon } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { resolveStickyRouteRule } from '@octafuse/core/db/model-sticky-config';
 import { protocolBadgeClass, splitRoutesByProtocolAndRouteGroup } from '../route-utils';
@@ -37,6 +38,7 @@ export function RouteProtocolSections(props: Props) {
 		onOpenStickyDialog,
 	} = props;
 
+	const t = useTranslations('routes.protocol');
 	const routeSections = splitRoutesByProtocolAndRouteGroup(groupRoutes);
 
 	return (
@@ -49,7 +51,7 @@ export function RouteProtocolSections(props: Props) {
 					>
 						<div
 							className="flex min-w-0 flex-1 items-center gap-2"
-							title={`upstream_protocol: ${section.protocol} · route_group: ${section.group}`}
+							title={t('sectionTitle', { protocol: section.protocol, group: section.group })}
 						>
 							<span
 								className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-4 ring-1 ring-inset ${protocolBadgeClass(section.protocol)}`}
@@ -84,12 +86,15 @@ export function RouteProtocolSections(props: Props) {
 									}`}
 									title={
 										stickyRule
-											? `Sticky key routing on · idle TTL ${stickyRule.ttlSeconds}s · short wait ${stickyRule.shortWaitMs}ms (click to configure)`
-											: 'Sticky key routing off (click to configure)'
+											? t('stickyOn', {
+													ttl: stickyRule.ttlSeconds,
+													wait: stickyRule.shortWaitMs,
+												})
+											: t('stickyOff')
 									}
 								>
 									<LinkIcon className="h-3 w-3" />
-									{stickyRule ? `Sticky ${stickyRule.ttlSeconds}s` : 'Sticky off'}
+									{stickyRule ? t('stickyLabel', { ttl: stickyRule.ttlSeconds }) : t('stickyOffLabel')}
 								</button>
 							);
 						})()}

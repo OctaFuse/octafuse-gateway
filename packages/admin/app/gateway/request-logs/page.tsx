@@ -3,6 +3,7 @@
 /**
  * 全站请求日志表：多维筛选、分页；Model / Route 分列展示模型与上游路由；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
  */
+import { useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
 import { readApiJson } from '@/lib/api-json';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider, GatewayRequestLog } from '@/lib/types';
@@ -25,6 +26,9 @@ import { useBillingCurrency } from '@/lib/use-billing-currency';
 type ModelListItem = Omit<GatewayModel, 'tags'> & { tags: string[] };
 
 export default function GatewayRequestLogsPage() {
+  const t = useTranslations('requestLogs');
+  const tCommon = useTranslations('common');
+  const tOptions = useTranslations('options');
   const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -453,8 +457,8 @@ export default function GatewayRequestLogsPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Request Logs</h1>
-        <p className="text-sm text-gray-500 mt-1">View gateway request history</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 
       {/* Filters — time range first row */}
@@ -470,27 +474,27 @@ export default function GatewayRequestLogsPage() {
 
       <div className="mb-4 flex gap-4 flex-wrap">
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Status</label>
+          <label className="block text-sm text-gray-500 mb-1">{tCommon('status')}</label>
           <select
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           >
-            <option value="">All</option>
-            <option value="success">Success</option>
-            <option value="error">Error</option>
-            <option value="incomplete">Incomplete</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="">{tCommon('all')}</option>
+            <option value="success">{tOptions('requestStatus.success')}</option>
+            <option value="error">{tOptions('requestStatus.error')}</option>
+            <option value="incomplete">{tOptions('requestStatus.incomplete')}</option>
+            <option value="cancelled">{tOptions('requestStatus.cancelled')}</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Model</label>
+          <label className="block text-sm text-gray-500 mb-1">{tCommon('model')}</label>
           <select
             value={filterModel}
             onChange={(e) => { setFilterModel(e.target.value); setPage(1); }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[12rem] max-w-xs"
           >
-            <option value="">All</option>
+            <option value="">{tCommon('all')}</option>
             {modelSelectOptions.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.label}
@@ -499,13 +503,13 @@ export default function GatewayRequestLogsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Provider</label>
+          <label className="block text-sm text-gray-500 mb-1">{tCommon('provider')}</label>
           <select
             value={filterProviderId}
             onChange={(e) => { setFilterProviderId(e.target.value); setPage(1); }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[12rem] max-w-xs"
           >
-            <option value="">All</option>
+            <option value="">{tCommon('all')}</option>
             {providerSelectOptions.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.label}
@@ -520,7 +524,7 @@ export default function GatewayRequestLogsPage() {
             onChange={(e) => { setFilterProtocol(e.target.value); setPage(1); }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[9rem]"
           >
-            <option value="">All</option>
+            <option value="">{tCommon('all')}</option>
             {UPSTREAM_PROTOCOLS.map((p) => (
               <option key={p} value={p}>
                 {p}
@@ -535,7 +539,7 @@ export default function GatewayRequestLogsPage() {
             onChange={(e) => { setFilterRouteGroup(e.target.value); setPage(1); }}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[10rem] max-w-xs"
           >
-            <option value="">All</option>
+            <option value="">{tCommon('all')}</option>
             {routeGroupSelectOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -746,7 +750,7 @@ export default function GatewayRequestLogsPage() {
                                       onClick={() => copyPlainText(upstreamMessageId, 'upstream_message_id')}
                                       className="px-2 py-0.5 text-[10px] border border-emerald-300 rounded text-emerald-950 hover:bg-white/80 shrink-0"
                                     >
-                                      {copiedColumn === 'upstream_message_id' ? 'Copied' : 'Copy'}
+                                      {copiedColumn === 'upstream_message_id' ? tCommon('copied') : tCommon('copy')}
                                     </button>
                                   </div>
                                 ) : null}
@@ -768,7 +772,7 @@ export default function GatewayRequestLogsPage() {
                                       onClick={() => copyPlainText(upstreamRequestId, 'upstream_request_id')}
                                       className="px-2 py-0.5 text-[10px] border border-sky-300 rounded text-sky-950 hover:bg-white/80 shrink-0"
                                     >
-                                      {copiedColumn === 'upstream_request_id' ? 'Copied' : 'Copy'}
+                                      {copiedColumn === 'upstream_request_id' ? tCommon('copied') : tCommon('copy')}
                                     </button>
                                   </div>
                                 ) : null}
@@ -782,7 +786,7 @@ export default function GatewayRequestLogsPage() {
                                       onClick={() => copyColumn(log.pricing_audit, 'audit')}
                                       className="px-2 py-0.5 text-[10px] border border-violet-300 rounded text-violet-950 hover:bg-white/80 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                                     >
-                                      {copiedColumn === 'audit' ? 'Copied' : 'Copy'}
+                                      {copiedColumn === 'audit' ? tCommon('copied') : tCommon('copy')}
                                     </button>
                                   </div>
                                   <div className="flex flex-col flex-1 min-h-0 p-2 gap-2">
@@ -790,7 +794,7 @@ export default function GatewayRequestLogsPage() {
                                       <div className="text-[11px] text-violet-950/95 shrink-0">{auditLine}</div>
                                     ) : null}
                                     <pre className="flex-1 min-h-[6rem] max-h-48 overflow-auto rounded border border-violet-100 bg-white/90 p-2 font-mono text-[11px] leading-snug text-gray-800 whitespace-pre-wrap break-words">
-                                      {auditEmpty ? 'No data' : auditDisplay}
+                                      {auditEmpty ? tCommon('noDataFound') : auditDisplay}
                                     </pre>
                                   </div>
                                 </div>
@@ -828,11 +832,11 @@ export default function GatewayRequestLogsPage() {
                                           onClick={() => copyColumn(raw, col)}
                                           className="px-2 py-0.5 text-[10px] border border-gray-300 rounded text-gray-700 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                                         >
-                                          {copiedColumn === col ? 'Copied' : 'Copy'}
+                                          {copiedColumn === col ? tCommon('copied') : tCommon('copy')}
                                         </button>
                                       </div>
                                       <pre className="p-2 text-xs text-gray-800 whitespace-pre-wrap break-words min-h-[6rem] max-h-48 overflow-auto font-mono flex-1">
-                                        {empty ? 'No data' : display}
+                                        {empty ? tCommon('noDataFound') : display}
                                       </pre>
                                     </div>
                                   );
@@ -853,11 +857,11 @@ export default function GatewayRequestLogsPage() {
         </div>
 
         {logs.length === 0 && !isLoading && (
-          <div className="text-center py-12 text-gray-500">No logs found</div>
+          <div className="text-center py-12 text-gray-500">{tCommon('noLogsFound')}</div>
         )}
 
         {isLoading && (
-          <div className="text-center py-12 text-gray-500">Loading...</div>
+          <div className="text-center py-12 text-gray-500">{tCommon('loading')}</div>
         )}
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { STICKY_DEFAULT_SHORT_WAIT_MS, STICKY_DEFAULT_TTL_SECONDS } from '@octafuse/core/db/model-sticky-config';
+import { useTranslations } from 'next-intl';
 import type { StickyDialogState, StickyFormState } from '../types';
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
 
 export function RouteStickyDialog(props: Props) {
 	const { dialog, form, error, saving, onClose, onFormChange, onSave } = props;
+	const t = useTranslations('routes.sticky');
+	const tCommon = useTranslations('common');
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -27,7 +30,7 @@ export function RouteStickyDialog(props: Props) {
 				<div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
 					<div>
 						<h2 id="sticky-dialog-title" className="text-base font-semibold text-gray-900">
-							Sticky key routing
+							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">
 							{dialog.modelTitle} · {dialog.protocolLabel} ·{' '}
@@ -38,7 +41,7 @@ export function RouteStickyDialog(props: Props) {
 						type="button"
 						onClick={onClose}
 						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-						aria-label="Close"
+						aria-label={tCommon('close')}
 					>
 						<span className="block text-xl leading-none" aria-hidden>
 							×
@@ -59,16 +62,13 @@ export function RouteStickyDialog(props: Props) {
 							className="mt-0.5 h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-1"
 						/>
 						<span className="text-sm text-gray-800">
-							<span className="font-medium">Enable sticky key routing</span>
-							<span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
-								Bind each user to one provider key for this protocol × group to maximize upstream
-								prompt-cache hits. The binding is released after the idle TTL.
-							</span>
+							<span className="font-medium">{t('enable')}</span>
+							<span className="mt-0.5 block text-xs leading-relaxed text-gray-500">{t('enableHint')}</span>
 						</span>
 					</label>
 					<div className={`grid grid-cols-2 gap-3 ${form.enabled ? '' : 'opacity-50'}`}>
 						<div>
-							<label className="mb-1 block text-sm font-medium text-gray-700">Idle TTL (seconds)</label>
+							<label className="mb-1 block text-sm font-medium text-gray-700">{t('idleTtl')}</label>
 							<input
 								type="number"
 								min={1}
@@ -76,11 +76,11 @@ export function RouteStickyDialog(props: Props) {
 								onChange={(e) => onFormChange({ ...form, ttl_seconds: e.target.value })}
 								disabled={!form.enabled}
 								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-50"
-								placeholder={`default ${STICKY_DEFAULT_TTL_SECONDS}`}
+								placeholder={t('defaultPlaceholder', { value: STICKY_DEFAULT_TTL_SECONDS })}
 							/>
 						</div>
 						<div>
-							<label className="mb-1 block text-sm font-medium text-gray-700">Short wait (ms)</label>
+							<label className="mb-1 block text-sm font-medium text-gray-700">{t('shortWait')}</label>
 							<input
 								type="number"
 								min={1}
@@ -88,14 +88,11 @@ export function RouteStickyDialog(props: Props) {
 								onChange={(e) => onFormChange({ ...form, short_wait_ms: e.target.value })}
 								disabled={!form.enabled}
 								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-50"
-								placeholder={`default ${STICKY_DEFAULT_SHORT_WAIT_MS}`}
+								placeholder={t('defaultPlaceholder', { value: STICKY_DEFAULT_SHORT_WAIT_MS })}
 							/>
 						</div>
 					</div>
-					<p className="text-xs leading-relaxed text-gray-500">
-						Short wait: if the bound key is briefly rate-limited and expected to recover within this
-						window, the gateway waits instead of switching keys (preserves the cache).
-					</p>
+					<p className="text-xs leading-relaxed text-gray-500">{t('shortWaitHint')}</p>
 				</div>
 				<div className="flex justify-end gap-2 border-t border-gray-200 bg-gray-50/60 px-5 py-3.5">
 					<button
@@ -104,7 +101,7 @@ export function RouteStickyDialog(props: Props) {
 						disabled={saving}
 						className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						Cancel
+						{tCommon('cancel')}
 					</button>
 					<button
 						type="button"
@@ -112,7 +109,7 @@ export function RouteStickyDialog(props: Props) {
 						disabled={saving}
 						className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						{saving ? 'Saving...' : 'Save'}
+						{saving ? tCommon('savingDots') : tCommon('save')}
 					</button>
 				</div>
 			</div>

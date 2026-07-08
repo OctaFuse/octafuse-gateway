@@ -15,6 +15,52 @@ export type CatalogPricingFields = {
 	pricing_profile?: string | null;
 };
 
+/** Optional UI labels from `useTranslations('pricing')`. */
+export type PricingLabels = {
+	noData: string;
+	tieredSingle: string;
+	tieredMulti: string;
+	inheritsCatalog: string;
+	invalidPriceOverrideJson: string;
+	invalidPriceOverrideRoot: string;
+	noMeteredOverride: string;
+	providerFactorOnly: string;
+	meteredOverrideSingle: string;
+	meteredOverrideMulti: string;
+	chargedOverrideSingle: string;
+	chargedOverrideMulti: string;
+	chargedOnlySingle: string;
+	chargedOnlyMulti: string;
+};
+
+const DEFAULT_PRICING_LABELS: PricingLabels = {
+	noData: '—',
+	tieredSingle: 'tiered · in/out {input} / {output} {unit}',
+	tieredMulti: 'tiered · {count} tier(s) · from {minIn} {unit} in',
+	inheritsCatalog: 'Inherits catalog · metered uses model pricing_profile',
+	invalidPriceOverrideJson: 'Invalid price_override JSON',
+	invalidPriceOverrideRoot: 'Invalid price_override root',
+	noMeteredOverride:
+		'Inherits catalog · price_override has no metered override (uses model profile)',
+	providerFactorOnly:
+		'Inherits catalog · stored provider_factor ×{factor} (not used for metered until tiers exist)',
+	meteredOverrideSingle: 'Metered override · 1 tier · in {price} {unit}',
+	meteredOverrideMulti: 'Metered override · {count} tiers · from {minIn} {unit} in',
+	chargedOverrideSingle: 'Charged override · 1 tier · in {price} {unit}',
+	chargedOverrideMulti: 'Charged override · {count} tiers · from {minIn} {unit} in',
+	chargedOnlySingle:
+		'Charged override · 1 tier · in {price} {unit} · metered inherits catalog',
+	chargedOnlyMulti:
+		'Charged override · {count} tiers · from {minIn} {unit} in · metered inherits catalog',
+};
+
+function formatLabel(
+	template: string,
+	vars: Record<string, string | number>
+): string {
+	return template.replace(/\{(\w+)\}/g, (_, key: string) => String(vars[key] ?? ''));
+}
+
 function billingPerMUnit(currencyCode: string): string {
 	const c = (currencyCode || 'USD').trim().toUpperCase();
 	const code = /^[A-Z]{3}$/.test(c) ? c : 'USD';
@@ -31,18 +77,30 @@ export function catalogInputPriceSortKey(m: CatalogPricingFields): number {
 }
 
 /** 模型目录表「定价」列一行摘要 */
-export function formatCatalogPricingSummary(m: CatalogPricingFields, currencyCode = 'USD'): string {
+export function formatCatalogPricingSummary(
+	m: CatalogPricingFields,
+	currencyCode = 'USD',
+	labels: PricingLabels = DEFAULT_PRICING_LABELS
+): string {
 	const p = parsePricingProfile(m.pricing_profile ?? undefined);
 	if (!p || p.tiers.length === 0) {
-		return '—';
+		return labels.noData;
 	}
 	const u = billingPerMUnit(currencyCode);
 	const minIn = Math.min(...p.tiers.map((t) => t.input_price));
 	if (p.tiers.length === 1) {
 		const t = p.tiers[0]!;
-		return `tiered · in/out ${t.input_price} / ${t.output_price} ${u}`;
+		return formatLabel(labels.tieredSingle, {
+			input: t.input_price,
+			output: t.output_price,
+			unit: u,
+		});
 	}
-	return `tiered · ${p.tiers.length} tier(s) · from ${minIn} ${u} in`;
+	return formatLabel(labels.tieredMulti, {
+		count: p.tiers.length,
+		minIn,
+		unit: u,
+	});
 }
 
 /** Gateway Models 表格：每档一行展示用（无合法 profile 时 `getCatalogPricingTierRows` 返回空数组） */
@@ -161,24 +219,25 @@ export type RoutePriceOverrideCardHint = {
  */
 export function getRoutePriceOverrideCardHint(
 	priceOverrideJson: string | null | undefined,
-	currencyCode = 'USD'
+	currencyCode = 'USD',
+	labels: PricingLabels = DEFAULT_PRICING_LABELS
 ): RoutePriceOverrideCardHint {
 	const u = billingPerMUnit(currencyCode);
 	const raw = priceOverrideJson?.trim();
 	if (!raw) {
 		return {
 			variant: 'inherit',
-			text: 'Inherits catalog · metered uses model pricing_profile',
+			text: labels.inheritsCatalog,
 		};
 	}
 	let obj: Record<string, unknown>;
 	try {
 		obj = JSON.parse(raw) as Record<string, unknown>;
 	} catch {
-		return { variant: 'warning', text: 'Invalid price_override JSON' };
+		return { variant: 'warning', text: labels.invalidPriceOverrideJson };
 	}
 	if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-		return { variant: 'warning', text: 'Invalid price_override root' };
+		return { variant: 'warning', text: labels.invalidPriceOverrideRoot };
 	}
 	const nested = extractMeteredProfileFromPriceOverrideJson(raw);
 	const p = parsePricingProfile(nested ?? undefined);
@@ -186,9 +245,16 @@ export function getRoutePriceOverrideCardHint(
 		const minIn = Math.min(...p.tiers.map((t) => t.input_price));
 		let text: string;
 		if (p.tiers.length === 1) {
-			text = `Metered override · 1 tier · in ${p.tiers[0]!.input_price} ${u}`;
+			text = formatLabel(labels.meteredOverrideSingle, {
+				price: p.tiers[0]!.input_price,
+				unit: u,
+			});
 		} else {
-			text = `Metered override · ${p.tiers.length} tiers · from ${minIn} ${u} in`;
+			text = formatLabel(labels.meteredOverrideMulti, {
+				count: p.tiers.length,
+				minIn,
+				unit: u,
+			});
 		}
 		const ucNested = extractChargedProfileFromPriceOverrideJson(raw);
 		const ucParsed = parsePricingProfile(ucNested ?? undefined);
@@ -196,8 +262,15 @@ export function getRoutePriceOverrideCardHint(
 			const ucMin = Math.min(...ucParsed.tiers.map((t) => t.input_price));
 			text +=
 				ucParsed.tiers.length === 1
-					? ` · Charged override · 1 tier · in ${ucParsed.tiers[0]!.input_price} ${u}`
-					: ` · Charged override · ${ucParsed.tiers.length} tiers · from ${ucMin} ${u} in`;
+					? ` · ${formatLabel(labels.chargedOverrideSingle, {
+							price: ucParsed.tiers[0]!.input_price,
+							unit: u,
+						})}`
+					: ` · ${formatLabel(labels.chargedOverrideMulti, {
+							count: ucParsed.tiers.length,
+							minIn: ucMin,
+							unit: u,
+						})}`;
 		}
 		return { variant: 'override', text };
 	}
@@ -207,8 +280,15 @@ export function getRoutePriceOverrideCardHint(
 		const ucMin = Math.min(...ucOnly.tiers.map((t) => t.input_price));
 		const text =
 			ucOnly.tiers.length === 1
-				? `Charged override · 1 tier · in ${ucOnly.tiers[0]!.input_price} ${u} · metered inherits catalog`
-				: `Charged override · ${ucOnly.tiers.length} tiers · from ${ucMin} ${u} in · metered inherits catalog`;
+				? formatLabel(labels.chargedOnlySingle, {
+						price: ucOnly.tiers[0]!.input_price,
+						unit: u,
+					})
+				: formatLabel(labels.chargedOnlyMulti, {
+						count: ucOnly.tiers.length,
+						minIn: ucMin,
+						unit: u,
+					});
 		return { variant: 'override', text };
 	}
 	const pf = obj.provider_factor;
@@ -224,21 +304,21 @@ export function getRoutePriceOverrideCardHint(
 	const keys = Object.keys(obj).filter((k) => obj[k] !== undefined && obj[k] !== null);
 	const onlyFactor =
 		keys.length === 1 && keys[0] === 'provider_factor' && pfNum != null;
-	if (onlyFactor) {
+	if (onlyFactor && pfNum != null) {
 		return {
 			variant: 'inherit',
-			text: `Inherits catalog · stored provider_factor ×${pfNum} (not used for metered until tiers exist)`,
+			text: formatLabel(labels.providerFactorOnly, { factor: pfNum }),
 		};
 	}
 	if (keys.length > 0) {
 		return {
 			variant: 'inherit',
-			text: 'Inherits catalog · price_override has no metered override (uses model profile)',
+			text: labels.noMeteredOverride,
 		};
 	}
 	return {
 		variant: 'inherit',
-		text: 'Inherits catalog · metered uses model pricing_profile',
+		text: labels.inheritsCatalog,
 	};
 }
 
@@ -290,9 +370,10 @@ export function parseMeteredFactorFromPriceOverride(
 /** 路由卡片上 `price_override` 一行摘要（仅含合法嵌套 `metered` tiers 时非空；兼容旧调用方） */
 export function formatRoutePriceOverrideSummary(
 	priceOverrideJson: string | null | undefined,
-	currencyCode = 'USD'
+	currencyCode = 'USD',
+	labels?: PricingLabels
 ): string {
-	const h = getRoutePriceOverrideCardHint(priceOverrideJson, currencyCode);
+	const h = getRoutePriceOverrideCardHint(priceOverrideJson, currencyCode, labels);
 	return h.variant === 'override' ? h.text : '';
 }
 

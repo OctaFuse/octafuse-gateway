@@ -12,16 +12,17 @@ import {
 } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
-import { BILLING_CURRENCY_KEY, BILLING_CURRENCY_OPTIONS } from '@/lib/billing-currency-options';
+import { BILLING_CURRENCY_KEY, getBillingCurrencyOptions } from '@/lib/billing-currency-options';
 import {
 	BUSINESS_TIMEZONE_KEY,
-	BUSINESS_TIMEZONE_OPTIONS,
+	BUSINESS_TIMEZONE_VALUES,
+	getBusinessTimezoneOptions,
 } from '@/lib/business-timezone-options';
 import {
 	ALERT_WEBHOOK_FEISHU_URL_KEY,
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
-import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
+import { useTranslations } from 'next-intl';
 
 const OTHER_TZ = '__other__';
 
@@ -37,10 +38,14 @@ function syncBillingCurrencyUi(rows: SystemConfigRow[], setSelect: (v: string) =
 	setSelect(v === 'CNY' ? 'CNY' : 'USD');
 }
 
-function syncBusinessTimezoneUi(rows: SystemConfigRow[], setSelect: (v: string) => void, setOther: (v: string) => void) {
+function syncBusinessTimezoneUi(
+	rows: SystemConfigRow[],
+	setSelect: (v: string) => void,
+	setOther: (v: string) => void,
+) {
   const row = rows.find((r) => r.key === BUSINESS_TIMEZONE_KEY);
   const v = row?.value?.trim() || 'UTC';
-  if (BUSINESS_TIMEZONE_OPTIONS.some((o) => o.value === v)) {
+  if ((BUSINESS_TIMEZONE_VALUES as readonly string[]).includes(v)) {
     setSelect(v);
     setOther('');
   } else {
@@ -60,6 +65,8 @@ function isValidIanaTimeZone(tz: string): boolean {
 
 /** Webhook URL：默认明文展示（textarea 换行），可一键隐藏为密码样式以防投屏泄露。 */
 function WebhookUrlField({
+	showLabel,
+	hideLabel,
 	id,
 	label,
 	optionalHint,
@@ -69,6 +76,8 @@ function WebhookUrlField({
 	visible,
 	onToggleVisible,
 }: {
+	showLabel: string;
+	hideLabel: string;
 	id: string;
 	label: string;
 	optionalHint: string;
@@ -93,12 +102,12 @@ function WebhookUrlField({
 					{visible ? (
 						<>
 							<EyeSlashIcon className="h-4 w-4" aria-hidden />
-							Hide
+							{hideLabel}
 						</>
 					) : (
 						<>
 							<EyeIcon className="h-4 w-4" aria-hidden />
-							Show
+							{showLabel}
 						</>
 					)}
 				</button>
@@ -155,6 +164,12 @@ function ConfigCardShell({
 }
 
 export default function GatewayConfigPage() {
+  const t = useTranslations('config');
+  const tBrand = useTranslations('brand');
+  const tCommon = useTranslations('common');
+  const tOptions = useTranslations('options');
+  const businessTimezoneOptions = getBusinessTimezoneOptions((k) => tOptions(k));
+  const billingCurrencyOptions = getBillingCurrencyOptions((k) => tOptions(k));
   const [config, setConfig] = useState<SystemConfigRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newKey, setNewKey] = useState('');
@@ -227,36 +242,34 @@ export default function GatewayConfigPage() {
       saveSuccessTimerRef.current = null;
     }
     setSaveError('');
-    setSaveSuccess(message ?? 'Config updated');
+    setSaveSuccess(message ?? tCommon('configUpdated'));
     saveSuccessTimerRef.current = setTimeout(() => {
       setSaveSuccess('');
       saveSuccessTimerRef.current = null;
     }, 2500);
-  }, []);
+  }, [tCommon]);
 
   const handleAdd = async () => {
     const k = newKey.trim();
     if (!k) return;
     if (k === BUSINESS_TIMEZONE_KEY) {
       clearSaveSuccess();
-      setSaveError(`Use the "Business timezone" section for ${BUSINESS_TIMEZONE_KEY}.`);
+      setSaveError(t('errors.useBusinessTimezoneSection'));
       return;
     }
     if (k === BILLING_CURRENCY_KEY) {
       clearSaveSuccess();
-      setSaveError(`Use the "Billing currency" section for ${BILLING_CURRENCY_KEY}.`);
+      setSaveError(t('errors.useBillingCurrencySection'));
       return;
     }
     if (k === MASTER_KEY_KEY) {
       clearSaveSuccess();
-      setSaveError(`Use the "Admin API master key" section for ${MASTER_KEY_KEY}.`);
+      setSaveError(t('errors.useMasterKeySection'));
       return;
     }
     if (k === ALERT_WEBHOOK_WECOM_URL_KEY || k === ALERT_WEBHOOK_FEISHU_URL_KEY) {
       clearSaveSuccess();
-      setSaveError(
-        `Use the "Proxy error webhooks" section for ${ALERT_WEBHOOK_WECOM_URL_KEY} / ${ALERT_WEBHOOK_FEISHU_URL_KEY}.`
-      );
+      setSaveError(t('errors.useWebhooksSection'));
       return;
     }
     setSaveError('');
@@ -285,11 +298,11 @@ export default function GatewayConfigPage() {
         setShowAdd(false);
       } else {
         clearSaveSuccess();
-        setSaveError(data.message || 'Save failed');
+        setSaveError(data.message || tCommon('saveFailed'));
       }
     } catch (error) {
       clearSaveSuccess();
-      setSaveError('Request failed');
+      setSaveError(tCommon('requestFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -299,7 +312,7 @@ export default function GatewayConfigPage() {
     const raw = billSelectValue;
     if (raw !== 'USD' && raw !== 'CNY') {
       clearSaveSuccess();
-      setSaveError('Billing currency must be USD or CNY');
+      setSaveError(tCommon('billingCurrencyMustBeUsdOrCny'));
       return;
     }
     setSaveError('');
@@ -330,11 +343,11 @@ export default function GatewayConfigPage() {
         setBillSelectValue(raw === 'CNY' ? 'CNY' : 'USD');
       } else {
         clearSaveSuccess();
-        setSaveError(data.message || 'Save failed');
+        setSaveError(data.message || tCommon('saveFailed'));
       }
     } catch {
       clearSaveSuccess();
-      setSaveError('Request failed');
+      setSaveError(tCommon('requestFailed'));
     } finally {
       setBillSaving(false);
     }
@@ -344,12 +357,12 @@ export default function GatewayConfigPage() {
     const raw = bizSelectValue === OTHER_TZ ? bizOtherValue.trim() : bizSelectValue;
     if (!raw) {
       clearSaveSuccess();
-      setSaveError('Business timezone cannot be empty');
+      setSaveError(tCommon('businessTimezoneCannotBeEmpty'));
       return;
     }
     if (!isValidIanaTimeZone(raw)) {
       clearSaveSuccess();
-      setSaveError('Invalid IANA timezone (e.g. Asia/Shanghai, America/New_York)');
+      setSaveError(t('errors.invalidIanaTimezone'));
       return;
     }
     setSaveError('');
@@ -377,7 +390,7 @@ export default function GatewayConfigPage() {
           }
           return [...prev, nextRow];
         });
-        if (BUSINESS_TIMEZONE_OPTIONS.some((o) => o.value === raw)) {
+        if ((BUSINESS_TIMEZONE_VALUES as readonly string[]).includes(raw)) {
           setBizSelectValue(raw);
           setBizOtherValue('');
         } else {
@@ -386,11 +399,11 @@ export default function GatewayConfigPage() {
         }
       } else {
         clearSaveSuccess();
-        setSaveError(data.message || 'Save failed');
+        setSaveError(data.message || tCommon('saveFailed'));
       }
     } catch {
       clearSaveSuccess();
-      setSaveError('Request failed');
+      setSaveError(tCommon('requestFailed'));
     } finally {
       setBizSaving(false);
     }
@@ -415,12 +428,12 @@ export default function GatewayConfigPage() {
           body: JSON.stringify({ key: ALERT_WEBHOOK_FEISHU_URL_KEY, value: feishu }),
         }),
       ]);
-      let successMessage = 'Config updated';
+      let successMessage = tCommon('configUpdated');
       for (const response of results) {
         const data = await readApiJson(response);
         if (!data.success) {
           clearSaveSuccess();
-          setSaveError(data.message || 'Save failed');
+          setSaveError(data.message || tCommon('saveFailed'));
           return;
         }
         if (data.message) {
@@ -452,7 +465,7 @@ export default function GatewayConfigPage() {
       flashSaveSuccess(successMessage);
     } catch {
       clearSaveSuccess();
-      setSaveError('Request failed');
+      setSaveError(tCommon('requestFailed'));
     } finally {
       setAlertWebhooksSaving(false);
     }
@@ -462,7 +475,7 @@ export default function GatewayConfigPage() {
     const raw = masterKeyDraft.trim();
     if (!raw) {
       clearSaveSuccess();
-      setSaveError('Master key cannot be empty');
+      setSaveError(tCommon('masterKeyCannotBeEmpty'));
       return;
     }
     setSaveError('');
@@ -490,11 +503,11 @@ export default function GatewayConfigPage() {
         });
       } else {
         clearSaveSuccess();
-        setSaveError(data.message || 'Save failed');
+        setSaveError(data.message || tCommon('saveFailed'));
       }
     } catch {
       clearSaveSuccess();
-      setSaveError('Request failed');
+      setSaveError(tCommon('requestFailed'));
     } finally {
       setMasterSaving(false);
     }
@@ -503,7 +516,7 @@ export default function GatewayConfigPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -512,9 +525,9 @@ export default function GatewayConfigPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">System config</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Key-value settings shared by the {OCTAFUSE_GATEWAY_PRODUCT} proxy and this admin app (no duplicate env vars)
+            {t('subtitle', { product: tBrand('product') })}
           </p>
         </div>
         <button
@@ -522,7 +535,7 @@ export default function GatewayConfigPage() {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
           <PlusIcon className="h-5 w-5" />
-          Add
+          {t('add')}
         </button>
       </div>
 
@@ -537,21 +550,14 @@ export default function GatewayConfigPage() {
       )}
 
       <ConfigCardShell
-        title="Admin API master key"
-        description={
-          <>
-            Bearer secret for <code className="rounded bg-gray-100 px-1 text-xs">Authorization</code> on{' '}
-            <code className="rounded bg-gray-100 px-1 text-xs">/api/admin/*</code> (this console and server-side
-            callers). Set the same value as <code className="rounded bg-gray-100 px-1 text-xs">GATEWAY_MASTER_KEY</code>{' '}
-            on any external integrator that calls the Gateway Admin API.
-          </>
-        }
+        title={t('masterKey.title')}
+        description={t('masterKey.description')}
       >
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[12rem] flex-1 max-w-md">
             <div className="mb-1 flex items-center justify-between gap-2">
               <label htmlFor="master-key" className="block text-xs font-medium text-gray-600">
-                Master key
+                {t('masterKey.label')}
               </label>
               <button
                 type="button"
@@ -562,12 +568,12 @@ export default function GatewayConfigPage() {
                 {masterKeyVisible ? (
                   <>
                     <EyeSlashIcon className="h-4 w-4" aria-hidden />
-                    Hide
+                    {tCommon('hide')}
                   </>
                 ) : (
                   <>
                     <EyeIcon className="h-4 w-4" aria-hidden />
-                    Show
+                    {tCommon('show')}
                   </>
                 )}
               </button>
@@ -577,7 +583,7 @@ export default function GatewayConfigPage() {
               type={masterKeyVisible ? 'text' : 'password'}
               value={masterKeyDraft}
               onChange={(e) => setMasterKeyDraft(e.target.value)}
-              placeholder="Enter admin Bearer secret"
+              placeholder={t('masterKey.placeholder')}
               autoComplete="new-password"
               className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono text-gray-900 shadow-sm"
             />
@@ -588,24 +594,18 @@ export default function GatewayConfigPage() {
             disabled={masterSaving}
             className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            {masterSaving ? 'Saving…' : 'Save master key'}
+            {masterSaving ? tCommon('saving') : t('saveMasterKey')}
           </button>
         </div>
       </ConfigCardShell>
 
       <ConfigCardShell
-        title="Business timezone"
-        description={
-          <>
-            IANA name (e.g. <code className="rounded bg-gray-100 px-1 text-xs">Asia/Shanghai</code>). Controls the
-            calendar day for free-tier daily quota and &quot;today&quot; stats on the dashboard. Invalid values fall back
-            to UTC on the Gateway.
-          </>
-        }
+        title={t('businessTimezone.title')}
+        description={t('businessTimezone.description')}
       >
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Timezone</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('businessTimezone.timezone')}</label>
             <select
               value={bizSelectValue}
               onChange={(e) => {
@@ -616,22 +616,22 @@ export default function GatewayConfigPage() {
               }}
               className="min-w-[16rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm"
             >
-              {BUSINESS_TIMEZONE_OPTIONS.map((o) => (
+              {businessTimezoneOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
-              <option value={OTHER_TZ}>Other (manual IANA)…</option>
+              <option value={OTHER_TZ}>{t('businessTimezone.otherManual')}</option>
             </select>
           </div>
           {bizSelectValue === OTHER_TZ && (
             <div className="min-w-[12rem] flex-1 max-w-md">
-              <label className="block text-xs font-medium text-gray-600 mb-1">IANA identifier</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('businessTimezone.ianaIdentifier')}</label>
               <input
                 type="text"
                 value={bizOtherValue}
                 onChange={(e) => setBizOtherValue(e.target.value)}
-                placeholder="e.g. Europe/Zurich"
+                placeholder={t('businessTimezone.ianaPlaceholder')}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono"
               />
             </div>
@@ -642,27 +642,18 @@ export default function GatewayConfigPage() {
             disabled={bizSaving}
             className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            {bizSaving ? 'Saving…' : 'Save timezone'}
+            {bizSaving ? tCommon('saving') : t('saveTimezone')}
           </button>
         </div>
       </ConfigCardShell>
 
       <ConfigCardShell
-        title="Billing currency"
-        description={
-          <>
-            Only <code className="rounded bg-gray-100 px-1 text-xs">USD</code> or{' '}
-            <code className="rounded bg-gray-100 px-1 text-xs">CNY</code>. Applies to{' '}
-            <code className="rounded bg-gray-100 px-1 text-xs">pricing_profile</code> unit prices and{' '}
-            <code className="rounded bg-gray-100 px-1 text-xs">api_keys</code> budget fields (per-million-token
-            pricing). Exposed on <code className="rounded bg-gray-100 px-1 text-xs">GET /v1/me</code> as{' '}
-            <code className="rounded bg-gray-100 px-1 text-xs">billing_currency</code>.
-          </>
-        }
+        title={t('billingCurrency.title')}
+        description={t('billingCurrency.description')}
       >
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('billingCurrency.currency')}</label>
             <select
               value={billSelectValue}
               onChange={(e) => {
@@ -670,7 +661,7 @@ export default function GatewayConfigPage() {
               }}
               className="min-w-[16rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm"
             >
-              {BILLING_CURRENCY_OPTIONS.map((o) => (
+              {billingCurrencyOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -683,44 +674,40 @@ export default function GatewayConfigPage() {
             disabled={billSaving}
             className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            {billSaving ? 'Saving…' : 'Save currency'}
+            {billSaving ? tCommon('saving') : t('saveCurrency')}
           </button>
         </div>
       </ConfigCardShell>
 
       <ConfigCardShell
-        title="Proxy error webhooks"
-        description={
-          <>
-            When the Proxy persists a row with <code className="rounded bg-gray-100 px-1 text-xs">api_key_request_logs.status = error</code>{' '}
-            (after billing write succeeds), it optionally POSTs to the configured robot URLs. Leave a field empty to
-            disable that channel. Keys:{' '}
-            <code className="rounded bg-gray-100 px-1 text-xs">{ALERT_WEBHOOK_WECOM_URL_KEY}</code>,{' '}
-            <code className="rounded bg-gray-100 px-1 text-xs">{ALERT_WEBHOOK_FEISHU_URL_KEY}</code>.
-          </>
-        }
+        title={t('errorWebhooks.title')}
+        description={t('errorWebhooks.description')}
       >
         <div className="flex flex-col gap-4">
           <p className="max-w-3xl text-xs text-gray-500">
-            URLs contain webhook secrets; use Hide before screen sharing if needed.
+            {t('errorWebhooks.urlsNote')}
           </p>
           <WebhookUrlField
+            showLabel={tCommon('show')}
+            hideLabel={tCommon('hide')}
             id="alert-webhook-wecom"
-            label="WeCom robot webhook URL"
-            optionalHint="(optional)"
+            label={t('errorWebhooks.wecomLabel')}
+            optionalHint={tCommon('optional')}
             value={wecomWebhookDraft}
             onChange={setWecomWebhookDraft}
-            placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…"
+            placeholder={t('errorWebhooks.wecomPlaceholder')}
             visible={webhookWecomVisible}
             onToggleVisible={() => setWebhookWecomVisible((v) => !v)}
           />
           <WebhookUrlField
+            showLabel={tCommon('show')}
+            hideLabel={tCommon('hide')}
             id="alert-webhook-feishu"
-            label="Feishu bot webhook URL"
-            optionalHint="(optional)"
+            label={t('errorWebhooks.feishuLabel')}
+            optionalHint={tCommon('optional')}
             value={feishuWebhookDraft}
             onChange={setFeishuWebhookDraft}
-            placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/…"
+            placeholder={t('errorWebhooks.feishuPlaceholder')}
             visible={webhookFeishuVisible}
             onToggleVisible={() => setWebhookFeishuVisible((v) => !v)}
           />
@@ -730,42 +717,34 @@ export default function GatewayConfigPage() {
             disabled={alertWebhooksSaving}
             className="self-start rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            {alertWebhooksSaving ? 'Saving…' : 'Save error webhooks'}
+            {alertWebhooksSaving ? tCommon('saving') : t('saveErrorWebhooks')}
           </button>
         </div>
       </ConfigCardShell>
 
       {showAdd && (
         <ConfigCardShell
-          title="Add config key"
-          description={
-            <>
-              Upsert any other <code className="rounded bg-gray-100 px-1 text-xs">system_config</code> key. Keys reserved
-              for the dedicated sections on this page (including{' '}
-              <code className="rounded bg-gray-100 px-1 text-xs">{ALERT_WEBHOOK_WECOM_URL_KEY}</code> /{' '}
-              <code className="rounded bg-gray-100 px-1 text-xs">{ALERT_WEBHOOK_FEISHU_URL_KEY}</code>) cannot be added
-              here.
-            </>
-          }
+          title={t('addKey.title')}
+          description={t('addKey.description')}
         >
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Key</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('addKey.key')}</label>
               <input
                 type="text"
                 value={newKey}
                 onChange={(e) => setNewKey(e.target.value)}
-                placeholder="e.g. MY_FEATURE_FLAG"
+                placeholder={t('addKey.keyPlaceholder')}
                 className="min-w-[12rem] rounded-md border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Value</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t('addKey.value')}</label>
               <input
                 type="text"
                 value={newValue}
                 onChange={(e) => setNewValue(e.target.value)}
-                placeholder="e.g. 20"
+                placeholder={t('addKey.valuePlaceholder')}
                 className="min-w-[12rem] rounded-md border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm"
               />
             </div>
@@ -775,14 +754,14 @@ export default function GatewayConfigPage() {
               disabled={isSaving || !newKey.trim()}
               className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
             >
-              {isSaving ? 'Saving…' : 'Save'}
+              {isSaving ? tCommon('saving') : tCommon('save')}
             </button>
             <button
               type="button"
               onClick={() => { setShowAdd(false); setNewKey(''); setNewValue(''); setSaveError(''); clearSaveSuccess(); }}
               className="text-sm text-gray-600 hover:text-gray-800"
             >
-              Cancel
+              {tCommon('cancel')}
             </button>
           </div>
         </ConfigCardShell>

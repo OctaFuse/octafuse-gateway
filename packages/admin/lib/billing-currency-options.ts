@@ -3,12 +3,27 @@ import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 
 export const BILLING_CURRENCY_KEY = 'BILLING_CURRENCY';
 
-function opt(value: string, nameEn: string): { value: string; label: string } {
+export type CurrencyOptionTranslator = (
+	key: 'currencies.USD' | 'currencies.CNY',
+) => string;
+
+function opt(
+	value: string,
+	nameEn: string,
+): { value: string; label: string } {
 	const sym = getGatewayCurrencySymbol(value);
 	return { value, label: `${sym} · ${value} — ${nameEn}` };
 }
 
-export const BILLING_CURRENCY_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
-	opt('USD', 'US Dollar'),
-	opt('CNY', 'Chinese Yuan'),
-];
+export function getBillingCurrencyOptions(
+	t: CurrencyOptionTranslator,
+): ReadonlyArray<{ value: string; label: string }> {
+	return [
+		opt('USD', t('currencies.USD')),
+		opt('CNY', t('currencies.CNY')),
+	];
+}
+
+/** @deprecated Use getBillingCurrencyOptions(t) in client components */
+export const BILLING_CURRENCY_OPTIONS: ReadonlyArray<{ value: string; label: string }> =
+	getBillingCurrencyOptions((key) => (key === 'currencies.USD' ? 'US Dollar' : 'Chinese Yuan'));

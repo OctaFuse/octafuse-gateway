@@ -4,6 +4,7 @@
  * API 密钥管理：列表分页（预算只读，来自 users JOIN）、创建（关联 user 或外部身份对）、
  * 编辑 name/metadata、吊销/激活、物理删除。
  */
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
 import { PlusIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
@@ -55,12 +56,12 @@ function keyStatusSwatchClass(status: string) {
   return 'bg-gray-300';
 }
 
-function formatUserBudgetOneLine(key: GatewayApiKey, currency: string): string {
+function formatUserBudgetOneLine(key: GatewayApiKey, currency: string, noLimitLabel = 'no limit'): string {
   const spent = formatGatewayMoneyCode(key.budget_spent, currency, 2);
   const maxPart =
     key.budget_max != null
       ? formatGatewayMoneyCode(key.budget_max, currency, 2)
-      : 'no limit';
+      : noLimitLabel;
   let line = `${spent} / ${maxPart}`;
   const period = key.budget_period && key.budget_period !== 'none' ? key.budget_period : null;
   if (period) {
@@ -88,6 +89,9 @@ function ReadonlyRow({
 }
 
 export default function GatewayKeysPage() {
+  const t = useTranslations('keysPage');
+  const tCommon = useTranslations('common');
+  const tOptions = useTranslations('options');
   const [keys, setKeys] = useState<GatewayApiKey[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -408,7 +412,7 @@ export default function GatewayKeysPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -418,8 +422,8 @@ export default function GatewayKeysPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">API Keys</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage user API keys for gateway access</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-4">
           <button
@@ -427,7 +431,7 @@ export default function GatewayKeysPage() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <PlusIcon className="h-5 w-5" />
-            New Key
+            {t('newKey')}
           </button>
         </div>
       </div>
@@ -468,15 +472,15 @@ export default function GatewayKeysPage() {
           <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500 shrink-0" aria-hidden />
-              active
+              {tOptions('keyStatus.active')}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-400 shrink-0" aria-hidden />
-              revoked
+              {tOptions('keyStatus.revoked')}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-300 shrink-0" aria-hidden />
-              other
+              {t('statusOther')}
             </span>
           </span>
         </div>
@@ -499,7 +503,7 @@ export default function GatewayKeysPage() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {keys.map((key) => {
-              const budgetLine = formatUserBudgetOneLine(key, billingCurrency);
+              const budgetLine = formatUserBudgetOneLine(key, billingCurrency, tCommon('noLimit'));
               const meta = summarizeMetadata(key.metadata);
               return (
               <tr
@@ -573,7 +577,7 @@ export default function GatewayKeysPage() {
 
         {keys.length === 0 && (
           <div className="text-center py-12 text-gray-500">
-            No API keys found
+            {t('empty')}
           </div>
         )}
       </div>
@@ -586,7 +590,7 @@ export default function GatewayKeysPage() {
             disabled={page === 1}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
-            Previous
+            {tCommon('previous')}
           </button>
           <span className="px-4 py-2 text-sm text-gray-600">
             Page {page} of {totalPages}
@@ -596,7 +600,7 @@ export default function GatewayKeysPage() {
             disabled={page === totalPages}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
-            Next
+            {tCommon('next')}
           </button>
         </div>
       )}
@@ -606,7 +610,7 @@ export default function GatewayKeysPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Create API Key</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('createTitle')}</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">x</button>
             </div>
 
@@ -774,8 +778,8 @@ export default function GatewayKeysPage() {
             </div>
 
             <div className="px-6 py-4 border-t flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" disabled={isSaving}>Cancel</button>
-              <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{isSaving ? 'Creating...' : 'Create'}</button>
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" disabled={isSaving}>{tCommon('cancel')}</button>
+              <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{isSaving ? tCommon('creating') : tCommon('create')}</button>
             </div>
           </div>
         </div>
@@ -787,7 +791,7 @@ export default function GatewayKeysPage() {
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-start gap-4">
               <div className="min-w-0">
-                <h2 className="text-xl font-bold text-gray-900">Edit API Key</h2>
+                <h2 className="text-xl font-bold text-gray-900">{t('editTitle')}</h2>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="font-mono text-xs text-gray-500 break-all">{selectedKey.id}</span>
                   <button
@@ -856,7 +860,7 @@ export default function GatewayKeysPage() {
                     <ReadonlyRow label="Budget (read-only)">
                       <div className="text-sm">
                         {formatGatewayMoneyCode(selectedKey.budget_spent, billingCurrency, 2)} /{' '}
-                        {selectedKey.budget_max != null ? formatGatewayMoneyCode(selectedKey.budget_max, billingCurrency, 2) : 'no limit'}
+                        {selectedKey.budget_max != null ? formatGatewayMoneyCode(selectedKey.budget_max, billingCurrency, 2) : tCommon('noLimit')}
                         {selectedKey.budget_base != null && (
                           <span className="ml-1 text-xs text-gray-500">
                             (base {formatGatewayMoneyCode(selectedKey.budget_base, billingCurrency, 2)})
@@ -921,7 +925,7 @@ export default function GatewayKeysPage() {
                 disabled={isSaving || isDeleting}
                 className="px-4 py-2 rounded-md border border-red-300 text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:hover:bg-transparent"
               >
-                {isDeleting ? 'Deleting...' : 'Delete key'}
+                {isDeleting ? tCommon('deleting') : t('deleteKey')}
               </button>
               <div className="flex gap-3">
                 <button
@@ -929,14 +933,14 @@ export default function GatewayKeysPage() {
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   disabled={isSaving || isDeleting}
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </button>
                 <button
                   onClick={handleEditSave}
                   disabled={isSaving || isDeleting}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {isSaving ? 'Saving...' : 'Save'}
+                  {isSaving ? tCommon('savingDots') : tCommon('save')}
                 </button>
               </div>
             </div>

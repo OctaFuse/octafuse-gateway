@@ -2,6 +2,7 @@
 
 import { ClipboardDocumentIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
+import { useTranslations } from 'next-intl';
 import type { GatewayModel } from '@/lib/types';
 import type { RouteListRow } from '../types';
 import type { RouteModelGroup } from '../route-utils';
@@ -37,8 +38,11 @@ export function RouteModelCard(props: Props) {
 		onToggleStatus,
 		onOpenStickyDialog,
 	} = props;
+	const t = useTranslations('routes.card');
 	const { model_id, title, groupRoutes, activeCount } = card;
-	const modelStatsTitle = `Context: ${meta?.context_window ?? '—'} · Max output: ${meta?.max_tokens ?? '—'}`;
+	const contextStr = formatCompactTokens(meta?.context_window);
+	const maxStr = formatCompactTokens(meta?.max_tokens);
+	const modelStatsTitle = t('contextMaxOutput', { context: contextStr, max: maxStr });
 
 	return (
 		<div className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 focus-within:border-blue-400 focus-within:bg-blue-50/30 focus-within:shadow-lg focus-within:ring-2 focus-within:ring-blue-500 active:translate-y-0">
@@ -56,20 +60,23 @@ export function RouteModelCard(props: Props) {
 									? 'text-green-600 hover:bg-green-50 hover:text-green-700'
 									: 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
 							}`}
-							title={copiedModelId === model_id ? '已复制 model id' : `Copy model id: ${model_id}`}
-							aria-label={`Copy model id ${model_id}`}
+							title={
+								copiedModelId === model_id
+									? t('copiedModelId')
+									: t('copyModelId', { id: model_id })
+							}
+							aria-label={t('copyModelIdAria', { id: model_id })}
 						>
 							<ClipboardDocumentIcon className="h-4 w-4" />
 						</button>
 					</div>
 					<div className="mt-0.5 flex min-w-0 items-center gap-1.5">
 						<p className="min-w-0 truncate text-[11px] text-gray-500" title={modelStatsTitle}>
-							Context {formatCompactTokens(meta?.context_window)} · Max output{' '}
-							{formatCompactTokens(meta?.max_tokens)}
+							{t('contextLine', { context: contextStr, max: maxStr })}
 						</p>
 						{copiedModelId === model_id ? (
 							<span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
-								已复制
+								{t('copied')}
 							</span>
 						) : null}
 					</div>
@@ -79,8 +86,8 @@ export function RouteModelCard(props: Props) {
 						type="button"
 						onClick={() => onCreate(model_id)}
 						className="rounded-md p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-						title={`New route for ${title}`}
-						aria-label={`New route for ${title}`}
+						title={t('newRouteFor', { title })}
+						aria-label={t('newRouteFor', { title })}
 					>
 						<PlusIcon className="h-5 w-5" />
 					</button>
@@ -90,7 +97,7 @@ export function RouteModelCard(props: Props) {
 								? 'bg-red-50 text-red-700 ring-red-200'
 								: 'bg-green-50 text-green-700 ring-green-200'
 						}`}
-						title={`${activeCount} active / ${groupRoutes.length} total routes`}
+						title={t('activeTotalRoutes', { active: activeCount, total: groupRoutes.length })}
 					>
 						{activeCount}/{groupRoutes.length}
 					</span>
@@ -99,8 +106,8 @@ export function RouteModelCard(props: Props) {
 			{groupRoutes.length === 0 ? (
 				<div className="flex flex-1 items-center justify-center px-4 py-6 text-center">
 					<div>
-						<p className="text-sm text-gray-600">No routes yet</p>
-						<p className="mt-1 text-xs text-gray-500">Click + to add the first route</p>
+						<p className="text-sm text-gray-600">{t('noRoutesYet')}</p>
+						<p className="mt-1 text-xs text-gray-500">{t('clickToAdd')}</p>
 					</div>
 				</div>
 			) : (

@@ -4,10 +4,10 @@
  * Playground：选定单条 model_route，编辑 JSON 请求体，直连上游验证连通性（不计费、不入库）。
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { flushSync } from 'react-dom';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
-import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import {
 	inferPlaygroundParseMode,
 	mergeAssistantTextParts,
@@ -111,6 +111,9 @@ function decodeWireRequestBodyHeader(res: Response): string | null {
 }
 
 export default function PlaygroundPage() {
+	const t = useTranslations('playground');
+	const tBrand = useTranslations('brand');
+	const tCommon = useTranslations('common');
 	const [routes, setRoutes] = useState<RouteListRow[]>([]);
 	const [loadingRoutes, setLoadingRoutes] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
@@ -201,10 +204,10 @@ export default function PlaygroundPage() {
 				if (data.success && Array.isArray(data.data)) {
 					setRoutes(data.data);
 				} else {
-					setLoadError(data.message ?? 'Failed to load routes');
+					setLoadError(data.message ?? tCommon('failedToLoadRoutes'));
 				}
 			} catch (e) {
-				if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Failed to load routes');
+				if (!cancelled) setLoadError(e instanceof Error ? e.message : tCommon('failedToLoadRoutes'));
 			} finally {
 				if (!cancelled) setLoadingRoutes(false);
 			}
@@ -229,18 +232,18 @@ export default function PlaygroundPage() {
 
 	const send = async () => {
 		if (!selected) {
-			setBodyError('Select a route first');
+			setBodyError(tCommon('selectRouteFirst'));
 			return;
 		}
 		let bodyObj: Record<string, unknown>;
 		try {
 			bodyObj = JSON.parse(bodyText) as Record<string, unknown>;
 			if (bodyObj === null || typeof bodyObj !== 'object' || Array.isArray(bodyObj)) {
-				setBodyError('Body must be a JSON object');
+				setBodyError(tCommon('bodyMustBeJsonObject'));
 				return;
 			}
 		} catch {
-			setBodyError('Invalid JSON');
+			setBodyError(tCommon('invalidJson'));
 			return;
 		}
 		setBodyError(null);
@@ -298,7 +301,7 @@ export default function PlaygroundPage() {
 					let msg = (j.message ?? '').trim();
 					if (!msg && typeof errObj === 'string') msg = errObj;
 					if (!msg) msg = nested.trim();
-					if (!msg) msg = 'Request failed';
+					if (!msg) msg = tCommon('requestFailed');
 					setBodyError(msg);
 				} else {
 					const summary = tryParseUsageSummary(JSON.stringify(j), proto);
@@ -342,7 +345,7 @@ export default function PlaygroundPage() {
 			setUsageHint(summary);
 		} catch (e) {
 			setResponseText('');
-			setBodyError(e instanceof Error ? e.message : 'Request failed');
+			setBodyError(e instanceof Error ? e.message : tCommon('requestFailed'));
 		} finally {
 			setSending(false);
 		}
@@ -351,7 +354,7 @@ export default function PlaygroundPage() {
 	if (loadingRoutes) {
 		return (
 			<div className="flex items-center justify-center h-full min-h-[240px]">
-				<div className="text-gray-600">Loading...</div>
+				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
@@ -359,12 +362,11 @@ export default function PlaygroundPage() {
 	return (
 		<div className="p-8">
 			<div className="mb-6">
-				<h1 className="text-3xl font-bold text-gray-900">Playground</h1>
+				<h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
 				<p className="text-sm text-gray-500 mt-1">
-					{OCTAFUSE_GATEWAY_PRODUCT} — send one upstream request for a single model route. No API key billing, no
-					api_key_request_logs, no failover.
+					{t('subtitle', { product: tBrand('product') })}
 					<span className="text-gray-400"> · </span>
-					Usage shown below is display-only.
+					{t('usageNote')}
 				</p>
 			</div>
 
@@ -375,7 +377,7 @@ export default function PlaygroundPage() {
 					<div className="grid grid-cols-1 xl:grid-cols-2 xl:items-stretch gap-6">
 						<div className="min-w-0 flex flex-col h-full">
 							<div className="bg-white rounded-lg shadow-md p-6 space-y-4 flex flex-col h-full min-h-0">
-							<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Route</h2>
+							<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">{t('routeSection')}</h2>
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
 									<label className={labelClass}>model id</label>
@@ -496,7 +498,7 @@ export default function PlaygroundPage() {
 						<div className="min-w-0">
 						<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
 							<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-gray-100 pb-3">
-								<h2 className="text-lg font-semibold text-gray-900">Request body</h2>
+								<h2 className="text-lg font-semibold text-gray-900">{t('requestBody')}</h2>
 								<button
 									type="button"
 									onClick={() => void send()}
@@ -504,7 +506,7 @@ export default function PlaygroundPage() {
 									className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
 								>
 									<PaperAirplaneIcon className="h-4 w-4" />
-									{sending ? 'Sending…' : 'Send'}
+									{sending ? tCommon('sending') : tCommon('send')}
 								</button>
 							</div>
 							{normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' && (
@@ -566,7 +568,7 @@ export default function PlaygroundPage() {
 						<div className="min-w-0">
 						<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
 							<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 pb-3">
-								<h2 className="text-lg font-semibold text-gray-900 shrink-0">Response</h2>
+								<h2 className="text-lg font-semibold text-gray-900 shrink-0">{t('response')}</h2>
 								{responseMeta && (
 									<div className="flex flex-wrap items-center justify-end gap-2 text-xs min-w-0">
 										<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">

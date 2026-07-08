@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
@@ -27,6 +28,9 @@ type SortKey = keyof UserUsageRow | '';
 type SortDir = 'asc' | 'desc';
 
 export default function UserUsagePage() {
+  const t = useTranslations('analytics.userUsage');
+  const tA = useTranslations('analytics');
+  const tCommon = useTranslations('common');
   const [rows, setRows] = useState<UserUsageRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
@@ -127,10 +131,8 @@ export default function UserUsagePage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">User Usage</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Usage and cost by request log email; budget columns come from <code className="text-xs bg-gray-100 px-1 rounded">users</code> (JOIN on <code className="text-xs bg-gray-100 px-1 rounded">user_id</code>).
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
       <div className="mb-4 flex w-full min-w-0 flex-wrap items-end gap-x-4 gap-y-2">
         <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} className="flex-1 min-w-0" />
@@ -145,7 +147,7 @@ export default function UserUsagePage() {
             disabled={isLoading}
             className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Export CSV
+            {tCommon('exportCsv')}
           </button>
           <AnalyticsRangeCostTotals isLoading={isLoading} totals={rangeTotals} billingCurrency={billingCurrency} />
         </div>
@@ -153,17 +155,17 @@ export default function UserUsagePage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <Th label="User (email)" columnKey="user_email" />
-                <Th label="Requests" columnKey="request_count" />
-                <Th label="Input tokens" columnKey="input_tokens" />
-                <Th label="Output tokens" columnKey="output_tokens" />
-                <Th label="Std" columnKey="standard_cost" />
-                <Th label="Charged" columnKey="charged_cost" />
-                <Th label="Metered" columnKey="metered_cost" />
-                <Th label="Models" columnKey="distinct_models" />
-                <Th label="Last active" columnKey="last_active_at" />
-                <Th label="Budget usage" columnKey="budget_usage_rate" />
-                <Th label="Success rate" columnKey="success_rate" />
+                <Th label={tA('columns.userEmail')} columnKey="user_email" />
+                <Th label={tA('columns.requests')} columnKey="request_count" />
+                <Th label={tA('columns.inputTokens')} columnKey="input_tokens" />
+                <Th label={tA('columns.outputTokens')} columnKey="output_tokens" />
+                <Th label={tA('columns.std')} columnKey="standard_cost" />
+                <Th label={tA('columns.charged')} columnKey="charged_cost" />
+                <Th label={tA('columns.metered')} columnKey="metered_cost" />
+                <Th label={tA('columns.models')} columnKey="distinct_models" />
+                <Th label={tA('columns.lastActive')} columnKey="last_active_at" />
+                <Th label={tA('columns.budgetUsage')} columnKey="budget_usage_rate" />
+                <Th label={tA('columns.successRate')} columnKey="success_rate" />
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -208,7 +210,7 @@ export default function UserUsagePage() {
                           {r.budget_usage_rate.toFixed(1)}%
                         </span>
                       ) : (
-                        '—'
+                        tCommon('noData')
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm">
@@ -222,8 +224,8 @@ export default function UserUsagePage() {
             </tbody>
           </table>
         </div>
-        {sorted.length === 0 && !isLoading && <div className="text-center py-12 text-gray-500">No data</div>}
-        {isLoading && <div className="text-center py-12 text-gray-500">Loading...</div>}
+        {sorted.length === 0 && !isLoading && <div className="text-center py-12 text-gray-500">{tA('noData')}</div>}
+        {isLoading && <div className="text-center py-12 text-gray-500">{tCommon('loading')}</div>}
       </div>
     </div>
   );

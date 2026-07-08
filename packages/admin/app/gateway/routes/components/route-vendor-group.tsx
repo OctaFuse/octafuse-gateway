@@ -2,6 +2,7 @@
 
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { getModelVendorLabel } from '@/lib/model-vendor';
+import { useTranslations } from 'next-intl';
 import type { GatewayModel } from '@/lib/types';
 import type { RouteListRow } from '../types';
 import type { RouteModelGroup } from '../route-utils';
@@ -44,6 +45,8 @@ export function RouteVendorGroup(props: Props) {
 		onOpenStickyDialog,
 	} = props;
 
+	const t = useTranslations('routes.vendor');
+
 	return (
 		<section className="min-w-0">
 			{showHeader ? (
@@ -59,11 +62,13 @@ export function RouteVendorGroup(props: Props) {
 							<h3 className="truncate text-sm font-semibold text-gray-900">
 								{getModelVendorLabel(vendor)}
 							</h3>
-							<p className="text-xs text-gray-500">Vendor</p>
+							<p className="text-xs text-gray-500">{t('label')}</p>
 						</div>
 					</div>
 					<span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tabular-nums text-gray-600 ring-1 ring-inset ring-gray-200">
-						{cards.length} model{cards.length === 1 ? '' : 's'}
+						{cards.length === 1
+							? t('modelCount', { count: cards.length })
+							: t('modelCountPlural', { count: cards.length })}
 					</span>
 				</div>
 			) : null}

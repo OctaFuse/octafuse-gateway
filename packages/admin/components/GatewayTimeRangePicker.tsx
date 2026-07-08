@@ -4,6 +4,7 @@
  * 紧凑时间范围：快捷预设 + 自定义起止（datetime-local），产出与 Gateway 分析 API 一致的 UTC `YYYY-MM-DD HH:mm:ss`。
  */
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
 	apiUtcToDatetimeLocal,
 	datetimeLocalToApiUtc,
@@ -13,15 +14,6 @@ import {
 	type GatewayTimeRangePreset,
 	type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
-
-const SHORT_LABEL: Record<Exclude<GatewayTimeRangePreset, 'custom'>, string> = {
-	'1h': '1h',
-	'1d': '1d',
-	'7d': '7d',
-	'14d': '14d',
-	'30d': '30d',
-	'90d': '90d',
-};
 
 const btnBase =
 	'px-2 py-1 text-xs font-medium rounded border transition-colors shrink-0';
@@ -56,10 +48,13 @@ export function GatewayTimeRangePicker({
 	onChange,
 	presets = [...GATEWAY_TIME_RANGE_PRESETS],
 	showCustom = true,
-	label = 'Time range (UTC)',
+	label,
 	align = 'start',
 	className = '',
 }: GatewayTimeRangePickerProps) {
+	const t = useTranslations('timeRange');
+	const tCommon = useTranslations('common');
+	const resolvedLabel = label ?? t('label');
 	const [draftStart, setDraftStart] = useState(() => apiUtcToDatetimeLocal(value.start_date));
 	const [draftEnd, setDraftEnd] = useState(() => apiUtcToDatetimeLocal(value.end_date));
 
@@ -93,8 +88,8 @@ export function GatewayTimeRangePicker({
 
 	return (
 		<div className={`w-full min-w-0 ${className}`}>
-			{label ? (
-				<label className={`block text-sm text-gray-500 mb-1 ${end ? 'text-right' : ''}`}>{label}</label>
+			{resolvedLabel ? (
+				<label className={`block text-sm text-gray-500 mb-1 ${end ? 'text-right' : ''}`}>{resolvedLabel}</label>
 			) : null}
 			<div
 				className={`flex w-full min-w-0 flex-wrap items-end gap-x-3 gap-y-2 ${end ? 'justify-end' : ''}`}
@@ -107,7 +102,7 @@ export function GatewayTimeRangePicker({
 							onClick={() => selectPreset(p)}
 							className={`${btnBase} ${value.preset === p ? btnOn : btnIdle}`}
 						>
-							{SHORT_LABEL[p]}
+							{t(`presets.${p}`)}
 						</button>
 					))}
 					{showCustom ? (
@@ -116,14 +111,14 @@ export function GatewayTimeRangePicker({
 							onClick={enterCustom}
 							className={`${btnBase} ${value.preset === 'custom' ? btnOn : btnIdle}`}
 						>
-							Custom
+							{t('custom')}
 						</button>
 					) : null}
 				</div>
 				{customOpen && (
 					<div className="flex shrink-0 flex-wrap items-end gap-2">
 						<div className="flex flex-col gap-0.5">
-							<label className="text-[11px] text-gray-500">Start</label>
+							<label className="text-[11px] text-gray-500">{t('start')}</label>
 							<input
 								type="datetime-local"
 								value={draftStart}
@@ -132,7 +127,7 @@ export function GatewayTimeRangePicker({
 							/>
 						</div>
 						<div className="flex flex-col gap-0.5">
-							<label className="text-[11px] text-gray-500">End</label>
+							<label className="text-[11px] text-gray-500">{t('end')}</label>
 							<input
 								type="datetime-local"
 								value={draftEnd}
@@ -145,7 +140,7 @@ export function GatewayTimeRangePicker({
 							onClick={applyCustom}
 							className="px-3 py-1 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800"
 						>
-							Apply
+							{tCommon('apply')}
 						</button>
 					</div>
 				)}

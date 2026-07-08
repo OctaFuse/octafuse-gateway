@@ -1,6 +1,7 @@
 'use client';
 
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
 import {
 	MODEL_INPUT_MODALITIES,
 	MODEL_OUTPUT_MODALITIES,
@@ -55,6 +56,9 @@ export function ModelModal(props: Props) {
 		onDelete,
 	} = props;
 
+	const t = useTranslations('models.modal');
+	const tCommon = useTranslations('common');
+
 	if (!open) return null;
 
 	return (
@@ -69,14 +73,14 @@ export function ModelModal(props: Props) {
 			<div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
 				<div className="px-6 py-4 border-b flex justify-between items-center sticky top-0 bg-white">
 					<h2 className="text-xl font-bold text-gray-900">
-						{editingModel ? 'Edit Model' : 'New Model'}
+						{editingModel ? t('editTitle') : t('newTitle')}
 					</h2>
 					<button
 						type="button"
 						onClick={onClose}
 						className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
 						disabled={isSaving || isDeleting}
-						aria-label="Close"
+						aria-label={tCommon('close')}
 					>
 						x
 					</button>
@@ -91,29 +95,29 @@ export function ModelModal(props: Props) {
 
 					<div className="grid grid-cols-2 gap-4">
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">Model ID *</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('modelIdRequired')}</label>
 							<input
 								type="text"
 								value={formData.id}
 								onChange={(e) => onFormChange({ ...formData, id: e.target.value })}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder="gpt-4o"
+								placeholder={t('modelIdPlaceholder')}
 								required
 								disabled={!!editingModel}
 							/>
 						</div>
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('displayName')}</label>
 							<input
 								type="text"
 								value={formData.display_name}
 								onChange={(e) => onFormChange({ ...formData, display_name: e.target.value })}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder="GPT-4o"
+								placeholder={t('displayNamePlaceholder')}
 							/>
 						</div>
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('vendor')}</label>
 							<select
 								value={
 									MODEL_VENDOR_OPTIONS.some((o) => o.key === formData.vendor)
@@ -131,7 +135,7 @@ export function ModelModal(props: Props) {
 							</select>
 						</div>
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">Released</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('released')}</label>
 							<input
 								type="date"
 								value={formData.released_at}
@@ -140,23 +144,23 @@ export function ModelModal(props: Props) {
 							/>
 						</div>
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">Context Window</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('contextWindow')}</label>
 							<input
 								type="number"
 								value={formData.context_window}
 								onChange={(e) => onFormChange({ ...formData, context_window: e.target.value })}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder="128000"
+								placeholder={t('contextWindowPlaceholder')}
 							/>
 						</div>
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('maxTokens')}</label>
 							<input
 								type="number"
 								value={formData.max_tokens}
 								onChange={(e) => onFormChange({ ...formData, max_tokens: e.target.value })}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder="4096"
+								placeholder={t('maxTokensPlaceholder')}
 							/>
 						</div>
 						<div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2.5">
@@ -164,7 +168,7 @@ export function ModelModal(props: Props) {
 								<div className="min-w-0 flex-1 space-y-2.5">
 									<div className="grid gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
 										<p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-											Input
+											{t('input')}
 										</p>
 										<div className="flex flex-wrap gap-2">
 											{MODEL_INPUT_MODALITIES.map((m) => (
@@ -185,7 +189,7 @@ export function ModelModal(props: Props) {
 									</div>
 									<div className="grid gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
 										<p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-											Output
+											{t('output')}
 										</p>
 										<div className="flex flex-wrap gap-2">
 											{MODEL_OUTPUT_MODALITIES.map((m) => (
@@ -207,7 +211,7 @@ export function ModelModal(props: Props) {
 								</div>
 								<div className="shrink-0 rounded-md border border-gray-200 bg-white px-3 py-2 sm:min-w-32">
 									<p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-										Preview
+										{t('preview')}
 									</p>
 									<div className="mt-1.5">
 										<ModelModalitiesBadgeFromRaw
@@ -221,7 +225,7 @@ export function ModelModal(props: Props) {
 						</div>
 						<div className="col-span-2">
 							<PricingTiersEditor
-								title="Pricing Profile"
+								title={t('pricingProfile')}
 								rows={pricingTierRows}
 								onChange={onPricingTierRowsChange}
 								billingCurrencyCode={billingCurrency}
@@ -229,7 +233,7 @@ export function ModelModal(props: Props) {
 							/>
 						</div>
 						<div className="col-span-2">
-							<label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('tags')}</label>
 							<div className="flex flex-wrap gap-2 mb-2">
 								{formData.tags.map((tag) => (
 									<span
@@ -241,7 +245,7 @@ export function ModelModal(props: Props) {
 											type="button"
 											onClick={() => onRemoveTag(tag)}
 											className="text-gray-500 hover:text-red-600"
-											aria-label={`Remove ${tag}`}
+											aria-label={t('removeTag', { tag })}
 										>
 											×
 										</button>
@@ -260,35 +264,35 @@ export function ModelModal(props: Props) {
 										}
 									}}
 									className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="e.g. free, lite, pro, max — press Enter to add"
+									placeholder={t('tagsPlaceholder')}
 								/>
 								<button
 									type="button"
 									onClick={onAddTag}
 									className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
 								>
-									Add
+									{tCommon('add')}
 								</button>
 							</div>
 						</div>
 						<div className="col-span-2">
-							<label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('description')}</label>
 							<textarea
 								rows={3}
 								value={formData.description}
 								onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder="Optional, for internal notes"
+								placeholder={t('descriptionPlaceholder')}
 							/>
 						</div>
 						<div className="col-span-2">
-							<label className="block text-sm font-medium text-gray-700 mb-1">Metadata (JSON)</label>
+							<label className="block text-sm font-medium text-gray-700 mb-1">{t('metadataJson')}</label>
 							<textarea
 								rows={6}
 								value={formData.metadata}
 								onChange={(e) => onFormChange({ ...formData, metadata: e.target.value })}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-								placeholder='{"key": "value"}'
+								placeholder={t('metadataPlaceholder')}
 							/>
 						</div>
 					</div>
@@ -304,7 +308,7 @@ export function ModelModal(props: Props) {
 								className="inline-flex items-center gap-1.5 px-3 py-2 border border-red-200 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								<TrashIcon className="h-4 w-4" />
-								{isDeleting ? 'Deleting...' : 'Delete model'}
+								{isDeleting ? tCommon('deleting') : t('deleteModel')}
 							</button>
 						)}
 					</div>
@@ -315,7 +319,7 @@ export function ModelModal(props: Props) {
 							className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
 							disabled={isSaving || isDeleting}
 						>
-							Cancel
+							{tCommon('cancel')}
 						</button>
 						<button
 							type="button"
@@ -323,7 +327,7 @@ export function ModelModal(props: Props) {
 							disabled={isSaving || isDeleting}
 							className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
 						>
-							{isSaving ? 'Saving...' : 'Save'}
+							{isSaving ? tCommon('savingDots') : tCommon('save')}
 						</button>
 					</div>
 				</div>

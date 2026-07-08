@@ -4,6 +4,7 @@
  * 单个网关用户：预算计划、关联密钥、请求日志与用户审计。
  */
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ClipboardDocumentIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
@@ -89,6 +90,9 @@ function formatLogProvider(log: GatewayRequestLog): string {
 }
 
 export default function GatewayUserDetailPage() {
+  const t = useTranslations('users');
+  const tCommon = useTranslations('common');
+  const tOptions = useTranslations('options');
   const params = useParams();
   const userIdRaw = typeof params.id === 'string' ? params.id : '';
   const userId = decodeURIComponent(userIdRaw);
@@ -398,8 +402,8 @@ export default function GatewayUserDetailPage() {
   if (!user) {
     return (
       <div className="p-8">
-        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">← Users</Link>
-        <div className="mt-8 text-gray-600">Loading…</div>
+        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
+        <div className="mt-8 text-gray-600">{tCommon('loadingEllipsis')}</div>
       </div>
     );
   }
@@ -407,14 +411,14 @@ export default function GatewayUserDetailPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">← Users</Link>
-        <h1 className="text-2xl font-bold text-gray-900 mt-2">User</h1>
+        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
+        <h1 className="text-2xl font-bold text-gray-900 mt-2">{t('detailTitle')}</h1>
         <p className="text-sm text-gray-500 font-mono mt-1 break-all">{user.id}</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">User Detail</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('userDetail')}</h2>
           {planError && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{planError}</div>}
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-3">
@@ -589,7 +593,7 @@ export default function GatewayUserDetailPage() {
                 onClick={deleteUser}
                 className="px-4 py-2 border border-red-300 text-red-700 rounded-md text-sm hover:bg-red-50"
               >
-                Delete user
+                {t('deleteUser')}
               </button>
               <button
                 type="button"
@@ -597,7 +601,7 @@ export default function GatewayUserDetailPage() {
                 disabled={isSavingPlan}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {isSavingPlan ? 'Saving…' : 'Save user'}
+                {isSavingPlan ? tCommon('saving') : t('saveUser')}
               </button>
             </div>
           </div>
@@ -605,7 +609,7 @@ export default function GatewayUserDetailPage() {
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">API keys</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('apiKeys')}</h2>
             <button
               type="button"
               onClick={() => {
@@ -617,7 +621,7 @@ export default function GatewayUserDetailPage() {
               className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
             >
               <PlusIcon className="h-4 w-4" />
-              New key
+              {t('newKey')}
             </button>
           </div>
           {keysInlineError && (

@@ -5,7 +5,7 @@
  * 左侧 Vendor 列表 + 右侧当前 Vendor 模型表；含 All 总览；`?vendor=` 持久化选中项（`useSearchParams` + Suspense）。
  */
 import { Suspense } from 'react';
-import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
+import { useTranslations } from 'next-intl';
 import { ALL_VENDORS_KEY } from './types';
 import { useModelsPageState } from './use-models-page-state';
 import { ModelCard } from './components/model-card';
@@ -16,27 +16,29 @@ import { ModelMetadataPreviewModal } from './components/model-metadata-preview-m
 import { ModelModal } from './components/model-modal';
 
 function ModelsContent() {
+	const t = useTranslations('models');
+	const tBrand = useTranslations('brand');
+	const tCommon = useTranslations('common');
 	const state = useModelsPageState();
 
 	if (state.isLoading) {
 		return (
 			<div className="flex items-center justify-center h-full">
-				<div className="text-gray-600">Loading...</div>
+				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
 
 	const createTitle = state.isAllVendors
-		? 'Create a new model'
-		: `New model under ${state.activeVendorTitle}`;
+		? t('createTitleAll')
+		: t('createTitleVendor', { vendor: state.activeVendorTitle });
 
 	return (
 		<div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-5 sm:mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Models</h1>
+				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
 				<p className="mt-1 text-sm text-gray-500">
-					Maintain the models {OCTAFUSE_GATEWAY_PRODUCT} exposes to clients. Seed rows from the built-in
-					catalog with Import, or add definitions manually with New.
+					{t('subtitle', { product: tBrand('product') })}
 				</p>
 			</div>
 
@@ -67,10 +69,8 @@ function ModelsContent() {
 						<div className="bg-slate-100/70 p-4 sm:p-6">
 							{state.models.length === 0 ? (
 								<div className="rounded-xl border border-dashed border-gray-300 bg-white/80 py-16 text-center text-gray-500 shadow-sm">
-									<p className="text-sm font-medium text-gray-600">No models found</p>
-									<p className="mt-1 text-xs text-gray-500">
-										Import from the built-in catalog or create a model manually
-									</p>
+									<p className="text-sm font-medium text-gray-600">{t('empty')}</p>
+									<p className="mt-1 text-xs text-gray-500">{t('emptyHint')}</p>
 								</div>
 							) : (
 								<div className="grid gap-3 2xl:grid-cols-2">
@@ -141,11 +141,13 @@ function ModelsContent() {
 }
 
 export default function GatewayModelsPage() {
+	const tCommon = useTranslations('common');
+
 	return (
 		<Suspense
 			fallback={
 				<div className="flex items-center justify-center h-full">
-					<div className="text-gray-600">Loading...</div>
+					<div className="text-gray-600">{tCommon('loading')}</div>
 				</div>
 			}
 		>

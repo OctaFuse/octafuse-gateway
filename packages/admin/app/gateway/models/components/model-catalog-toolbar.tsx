@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowDownTrayIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
 
 type Props = {
 	activeVendorTitle: string;
@@ -23,17 +24,21 @@ export function ModelCatalogToolbar(props: Props) {
 		createTitle,
 	} = props;
 
+	const t = useTranslations('models.catalog');
+	const tCommon = useTranslations('common');
+
 	return (
 		<div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
 			<div className="min-w-0">
-				<h2 className="text-base font-semibold text-gray-900">Model Catalog</h2>
+				<h2 className="text-base font-semibold text-gray-900">{t('title')}</h2>
 				{hasModels ? (
 					<p className="mt-0.5 truncate text-xs text-gray-500" title={activeVendorTitle}>
-						{activeVendorTitle} · {selectedCount} model
-						{selectedCount !== 1 ? 's' : ''}
+						{selectedCount === 1
+							? t('vendorModels', { vendor: activeVendorTitle, count: selectedCount })
+							: t('vendorModelsPlural', { vendor: activeVendorTitle, count: selectedCount })}
 					</p>
 				) : (
-					<p className="mt-0.5 text-xs text-gray-500">No models yet</p>
+					<p className="mt-0.5 text-xs text-gray-500">{t('noModelsYet')}</p>
 				)}
 			</div>
 			<div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -44,7 +49,7 @@ export function ModelCatalogToolbar(props: Props) {
 					className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
 				>
 					<ArrowDownTrayIcon className="h-5 w-5" />
-					Import
+					{tCommon('import')}
 				</button>
 				<button
 					type="button"
@@ -53,7 +58,7 @@ export function ModelCatalogToolbar(props: Props) {
 					title={createTitle}
 				>
 					<PlusIcon className="h-5 w-5" />
-					New
+					{tCommon('new')}
 				</button>
 			</div>
 		</div>

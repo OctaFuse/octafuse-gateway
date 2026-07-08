@@ -3,25 +3,34 @@
  */
 import './globals.css';
 import type { Metadata } from 'next';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import AuthWrapper from '@/components/layout/AuthWrapper';
-import { OCTAFUSE_ADMIN_BROWSER_TITLE, OCTAFUSE_ADMIN_DESCRIPTION } from '@/lib/brand';
 
-export const metadata: Metadata = {
-  title: OCTAFUSE_ADMIN_BROWSER_TITLE,
-  description: OCTAFUSE_ADMIN_DESCRIPTION,
-  robots: 'noindex, nofollow',
-};
+export async function generateMetadata(): Promise<Metadata> {
+	const t = await getTranslations('metadata');
+	return {
+		title: t('title'),
+		description: t('description'),
+		robots: 'noindex, nofollow',
+	};
+}
 
-export default function RootLayout({
-  children,
+export default async function RootLayout({
+	children,
 }: {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-  return (
-    <html lang="zh" data-scroll-behavior="smooth">
-      <body className="font-sans h-dvh overflow-hidden">
-        <AuthWrapper>{children}</AuthWrapper>
-      </body>
-    </html>
-  );
+	const locale = await getLocale();
+	const messages = await getMessages();
+
+	return (
+		<html lang={locale} data-scroll-behavior="smooth">
+			<body className="font-sans h-dvh overflow-hidden">
+				<NextIntlClientProvider locale={locale} messages={messages}>
+					<AuthWrapper>{children}</AuthWrapper>
+				</NextIntlClientProvider>
+			</body>
+		</html>
+	);
 }

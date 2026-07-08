@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { MetadataPreviewState } from '../types';
 
 type Props = {
@@ -9,7 +10,10 @@ type Props = {
 
 export function ModelMetadataPreviewModal(props: Props) {
 	const { preview, onClose } = props;
+	const t = useTranslations('models.metadata');
+	const tCommon = useTranslations('common');
 	const displayName = preview.model.display_name || preview.model.id;
+
 	return (
 		<div
 			className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 p-4"
@@ -25,7 +29,7 @@ export function ModelMetadataPreviewModal(props: Props) {
 				<div className="flex shrink-0 items-start justify-between gap-4 border-b px-6 py-4">
 					<div className="min-w-0">
 						<h2 id="metadata-preview-title" className="text-lg font-bold text-gray-900">
-							Metadata
+							{t('title')}
 						</h2>
 						<p className="mt-1 truncate text-sm text-gray-700" title={displayName}>
 							{displayName}
@@ -38,7 +42,7 @@ export function ModelMetadataPreviewModal(props: Props) {
 						type="button"
 						onClick={onClose}
 						className="shrink-0 text-gray-400 hover:text-gray-600"
-						aria-label="Close"
+						aria-label={tCommon('close')}
 					>
 						×
 					</button>
@@ -54,7 +58,7 @@ export function ModelMetadataPreviewModal(props: Props) {
 						onClick={onClose}
 						className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-white"
 					>
-						Close
+						{tCommon('close')}
 					</button>
 				</div>
 			</div>

@@ -1,4 +1,7 @@
+'use client';
+
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
 import type { ProviderImportCatalogRow } from '../types';
 
 type ProviderImportModalProps = {
@@ -38,6 +41,9 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 		onImport,
 	} = props;
 
+	const t = useTranslations('providers.import');
+	const tCommon = useTranslations('common');
+
 	if (!open) return null;
 
 	const hasSearch = catalogSearch.trim().length > 0;
@@ -60,18 +66,16 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
 					<div>
 						<h2 id="provider-import-title" className="text-xl font-bold text-gray-900">
-							Import from templates
+							{t('title')}
 						</h2>
-						<p className="mt-1 text-xs text-gray-500">
-							Prefills OpenAI-compatible base URLs (CN-first catalog). Each import creates a new provider row.
-						</p>
+						<p className="mt-1 text-xs text-gray-500">{t('subtitle')}</p>
 					</div>
 					<button
 						type="button"
 						onClick={onClose}
 						disabled={submitting}
 						className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-						aria-label="Close"
+						aria-label={tCommon('close')}
 					>
 						×
 					</button>
@@ -88,8 +92,8 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 							value={catalogSearch}
 							onChange={(e) => onCatalogSearchChange(e.target.value)}
 							className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-							placeholder="Search template name"
-							aria-label="Search template name"
+							placeholder={t('searchPlaceholder')}
+							aria-label={t('searchPlaceholder')}
 							autoComplete="off"
 						/>
 						{hasSearch && (
@@ -97,7 +101,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 								type="button"
 								onClick={() => onCatalogSearchChange('')}
 								className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-								aria-label="Clear template search"
+								aria-label={t('clearSearch')}
 							>
 								<XMarkIcon className="h-4 w-4" aria-hidden />
 							</button>
@@ -110,7 +114,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 							disabled={catalogLoading || filteredCatalogRows.length === 0}
 							className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 						>
-							Select all
+							{tCommon('selectAll')}
 						</button>
 						<button
 							type="button"
@@ -118,20 +122,22 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 							disabled={catalogLoading || catalogRows.length === 0}
 							className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 						>
-							Clear
+							{t('clear')}
 						</button>
 						<span className="ml-auto text-sm text-gray-600">
-							Selected <span className="font-semibold tabular-nums">{selectedCount}</span>
+							{tCommon('selected', { count: selectedCount })}
 							{hasSearch ? (
 								<>
 									{' '}
-									· Showing <span className="font-semibold tabular-nums">{filteredCatalogRows.length}</span> /{' '}
-									<span className="tabular-nums">{catalogRows.length}</span>
+									{t('selectedShowing', {
+										filtered: filteredCatalogRows.length,
+										total: catalogRows.length,
+									})}
 								</>
 							) : (
 								<>
 									{' '}
-									/ <span className="tabular-nums">{catalogRows.length}</span> available
+									{t('selectedAvailable', { total: catalogRows.length })}
 								</>
 							)}
 						</span>
@@ -139,15 +145,17 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 				</div>
 
 				<div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-					{catalogLoading && <div className="py-12 text-center text-gray-600">Loading catalog…</div>}
+					{catalogLoading && (
+						<div className="py-12 text-center text-gray-600">{t('loadingCatalog')}</div>
+					)}
 					{!catalogLoading && catalogError && (
 						<div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{catalogError}</div>
 					)}
 					{!catalogLoading && !catalogError && catalogRows.length === 0 && (
-						<div className="py-12 text-center text-gray-500">Catalog is empty</div>
+						<div className="py-12 text-center text-gray-500">{t('catalogEmpty')}</div>
 					)}
 					{!catalogLoading && !catalogError && catalogRows.length > 0 && filteredCatalogRows.length === 0 && (
-						<div className="py-12 text-center text-gray-500">No templates match this name</div>
+						<div className="py-12 text-center text-gray-500">{t('noMatch')}</div>
 					)}
 					{!catalogLoading && !catalogError && filteredCatalogRows.length > 0 && (
 						<ul className="divide-y divide-gray-200 rounded-lg border border-gray-200">
@@ -158,7 +166,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 										<div
 											role="checkbox"
 											aria-checked={checked}
-											aria-label={`Select ${row.name}`}
+											aria-label={t('selectRow', { name: row.name })}
 											tabIndex={0}
 											onClick={() => onTogglePreset(row.id)}
 											onKeyDown={(e) => {
@@ -182,11 +190,11 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 											<div className="min-w-0 flex-1 select-none">
 												<p className="text-sm font-semibold text-gray-900">{row.name}</p>
 												<p className="text-xs text-gray-500">
-													{row.vendor_label} · protocols: {row.protocols.join(', ') || '—'}
+													{row.vendor_label} · {t('protocols')}: {row.protocols.join(', ') || '—'}
 												</p>
 												{row.base_url_openai && (
 													<p className="mt-1 break-all text-[11px] text-gray-400" title={row.base_url_openai}>
-														OpenAI base: {row.base_url_openai}
+														{t('openaiBase', { url: row.base_url_openai })}
 													</p>
 												)}
 												{row.description && <p className="mt-1 text-xs text-gray-600">{row.description}</p>}
@@ -206,7 +214,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 						disabled={submitting}
 						className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-white disabled:opacity-50"
 					>
-						Cancel
+						{tCommon('cancel')}
 					</button>
 					<button
 						type="button"
@@ -214,7 +222,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 						disabled={submitting || catalogLoading || selectedCount === 0}
 						className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
 					>
-						{submitting ? 'Importing…' : `Import selected (${selectedCount})`}
+						{submitting ? tCommon('importing') : t('importSelected', { count: selectedCount })}
 					</button>
 				</div>
 			</div>

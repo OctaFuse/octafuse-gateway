@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 
 import type { PricingTierDraftRow } from '@/lib/pricing-tiers-draft';
 import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
@@ -46,10 +47,13 @@ export function PricingTiersEditor({
 	toolbarStart,
 	billingCurrencyCode = 'USD',
 }: PricingTiersEditorProps) {
+	const t = useTranslations('pricing.tiersEditor');
+	const tPricing = useTranslations('pricing');
+	const tCommon = useTranslations('common');
 	const billCode = billingCurrencyCode.trim().toUpperCase();
 	const billSym = getGatewayCurrencySymbol(billCode);
 	const perMPlaceholder = `${billSym}/M`;
-	const unitFooter = `${billSym}/1M`;
+	const unitFooter = t('footer', { currency: billSym });
 	const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
 	const canRemove = rows.length > minRows;
 	const jsonPreview = formatPricingProfilePreview(rows);
@@ -97,7 +101,7 @@ export function PricingTiersEditor({
 				) : null}
 				<div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5">
 					<button type="button" onClick={addTier} className={linkActionClass}>
-						Add
+						{t('add')}
 					</button>
 					<button
 						type="button"
@@ -105,7 +109,7 @@ export function PricingTiersEditor({
 						aria-expanded={jsonPreviewOpen}
 						className={linkActionClass}
 					>
-						{jsonPreviewOpen ? 'Hide' : 'Preview'}
+						{jsonPreviewOpen ? tCommon('hide') : t('preview')}
 					</button>
 				</div>
 			</div>
@@ -114,11 +118,11 @@ export function PricingTiersEditor({
 					<table className="min-w-full divide-y divide-gray-200 text-left text-xs">
 						<thead className="bg-gray-50 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
 						<tr>
-							<th className="whitespace-nowrap px-2 py-2">upto</th>
-							<th className="whitespace-nowrap px-2 py-2">input</th>
-							<th className="whitespace-nowrap px-2 py-2">output</th>
-							<th className="whitespace-nowrap px-2 py-2">cache read</th>
-							<th className="whitespace-nowrap px-2 py-2">cache write</th>
+							<th className="whitespace-nowrap px-2 py-2">{t('upto')}</th>
+							<th className="whitespace-nowrap px-2 py-2">{t('input')}</th>
+							<th className="whitespace-nowrap px-2 py-2">{t('output')}</th>
+							<th className="whitespace-nowrap px-2 py-2">{t('cacheRead')}</th>
+							<th className="whitespace-nowrap px-2 py-2">{t('cacheWrite')}</th>
 							<th className="w-10 px-1 py-2 text-center"> </th>
 						</tr>
 						</thead>
@@ -126,7 +130,7 @@ export function PricingTiersEditor({
 						{rows.length === 0 ? (
 							<tr>
 								<td colSpan={6} className="px-3 py-4 text-center text-gray-500">
-									No tiers yet.
+									{t('noTiers')}
 								</td>
 							</tr>
 						) : (
@@ -138,10 +142,10 @@ export function PricingTiersEditor({
 											{isLast ? (
 												<div
 													className="flex min-h-[1.75rem] min-w-[4.5rem] items-center rounded border border-dashed border-gray-200 bg-gray-50 px-1.5 font-mono text-[11px] text-gray-600 tabular-nums"
-													title="Last tier is open-ended (JSON upto: null); not editable"
+													title={t('lastTierOpenEnded')}
 													aria-label={`upto open bound for tier ${r.id}`}
 												>
-													∞
+													{tCommon('infinity')}
 												</div>
 											) : (
 												<input
@@ -190,7 +194,7 @@ export function PricingTiersEditor({
 													onChange(updateRow(rows, r.id, { cache_read_price: e.target.value }))
 												}
 												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-												placeholder="empty = null"
+												placeholder={tPricing('emptyCachePlaceholder')}
 											/>
 										</td>
 										<td className="px-1 py-1.5">
@@ -202,7 +206,7 @@ export function PricingTiersEditor({
 													onChange(updateRow(rows, r.id, { cache_write_price: e.target.value }))
 												}
 												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-												placeholder="empty = null"
+												placeholder={tPricing('emptyCachePlaceholder')}
 											/>
 										</td>
 										<td className="px-0 py-1.5 text-center">
@@ -211,7 +215,7 @@ export function PricingTiersEditor({
 												disabled={!canRemove}
 												onClick={() => removeTier(r.id)}
 												className="rounded px-1 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30"
-												title="Remove this tier"
+												title={t('removeTier')}
 											>
 												×
 											</button>
@@ -224,14 +228,14 @@ export function PricingTiersEditor({
 					</table>
 				</div>
 				<p className="border-t border-gray-100 bg-gray-50/90 px-2 py-1.5 text-[11px] leading-snug text-gray-500">
-					{unitFooter}; by <span className="font-mono">input_tokens</span> (last row open-ended). No tiers on save → null (bill 0).
+					{unitFooter}
 				</p>
 			</div>
 			{jsonPreviewOpen ? (
 				<div className="space-y-1.5">
 					<div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
 						<label className="text-xs font-medium text-gray-600">
-							<code className="rounded bg-gray-100 px-1">{`{ "tiers": [...] }`}</code> preview (read-only)
+							<code className="rounded bg-gray-100 px-1">{tPricing('jsonPreviewLabel')}</code>
 						</label>
 						<button
 							type="button"
@@ -242,7 +246,7 @@ export function PricingTiersEditor({
 							}}
 							className={linkActionClass}
 						>
-							Copy
+							{tCommon('copy')}
 						</button>
 					</div>
 					<textarea

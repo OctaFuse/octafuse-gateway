@@ -1,15 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
 	parseChargedFactorFromPriceOverride,
 	parseMeteredFactorFromPriceOverride,
 } from '@/lib/pricing-ui';
 import {
-	chargedFactorTooltip,
 	factorChipClassForValue,
 	formatFactorMultiplier,
 	formatFactorMultiplierForChip,
-	meteredFactorTooltip,
 } from '../route-utils';
 import { FACTOR_CHIP_BASE } from '../types';
 import type { RouteListRow } from '../types';
@@ -23,6 +22,8 @@ type Props = {
 
 export function RouteListItem(props: Props) {
 	const { route, togglingId, onEdit, onToggleStatus } = props;
+	const t = useTranslations('routes.listItem');
+	const tCommon = useTranslations('common');
 	const chargedF = parseChargedFactorFromPriceOverride(route.price_override);
 	const meteredF = parseMeteredFactorFromPriceOverride(route.price_override);
 	const chargedDisp = chargedF != null && Number.isFinite(chargedF) ? chargedF : null;
@@ -37,11 +38,7 @@ export function RouteListItem(props: Props) {
 					disabled={togglingId === route.id}
 					onChange={() => onToggleStatus(route)}
 					className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
-					aria-label={
-						route.status === 'active'
-							? 'Route enabled (uncheck to disable)'
-							: 'Route disabled (check to enable)'
-					}
+					aria-label={route.status === 'active' ? t('routeEnabled') : t('routeDisabled')}
 				/>
 			</div>
 			<div className="flex min-w-0 flex-1 items-start gap-3">
@@ -52,7 +49,7 @@ export function RouteListItem(props: Props) {
 				>
 					<div className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug">
 						<div className="flex min-w-0 items-center gap-2">
-							<div className="flex shrink-0 items-center" title="Priority (failover order)">
+							<div className="flex shrink-0 items-center" title={t('priorityTitle')}>
 								<span className="text-[11px] font-semibold tabular-nums text-gray-600">
 									{route.priority}
 								</span>
@@ -75,7 +72,7 @@ export function RouteListItem(props: Props) {
 				<div
 					className="flex shrink-0 flex-col items-end justify-start gap-1.5 self-stretch pt-0.5 text-right"
 					role="group"
-					aria-label="Charged and metered catalog factors"
+					aria-label={t('factorsAria')}
 				>
 					<span
 						className={
@@ -83,14 +80,18 @@ export function RouteListItem(props: Props) {
 								? factorChipClassForValue(chargedDisp)
 								: `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
 						}
-						title={chargedFactorTooltip(chargedDisp)}
+						title={
+							chargedDisp != null
+								? t('chargedTooltip', { value: formatFactorMultiplier(chargedDisp) })
+								: t('chargedTooltipNotSet')
+						}
 						aria-label={
 							chargedDisp != null
-								? `Charged factor ${formatFactorMultiplier(chargedDisp)}`
-								: 'Charged factor not set'
+								? t('chargedFactorAria', { value: formatFactorMultiplier(chargedDisp) })
+								: t('chargedFactorNotSet')
 						}
 					>
-						{chargedDisp != null ? formatFactorMultiplierForChip(chargedDisp) : '—'}
+						{chargedDisp != null ? formatFactorMultiplierForChip(chargedDisp) : tCommon('noData')}
 					</span>
 					<span
 						className={
@@ -98,14 +99,18 @@ export function RouteListItem(props: Props) {
 								? factorChipClassForValue(meteredDisp)
 								: `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
 						}
-						title={meteredFactorTooltip(meteredDisp)}
+						title={
+							meteredDisp != null
+								? t('meteredTooltip', { value: formatFactorMultiplier(meteredDisp) })
+								: t('meteredTooltipNotSet')
+						}
 						aria-label={
 							meteredDisp != null
-								? `Metered factor ${formatFactorMultiplier(meteredDisp)}`
-								: 'Metered factor not set'
+								? t('meteredFactorAria', { value: formatFactorMultiplier(meteredDisp) })
+								: t('meteredFactorNotSet')
 						}
 					>
-						{meteredDisp != null ? formatFactorMultiplierForChip(meteredDisp) : '—'}
+						{meteredDisp != null ? formatFactorMultiplierForChip(meteredDisp) : tCommon('noData')}
 					</span>
 				</div>
 			</div>

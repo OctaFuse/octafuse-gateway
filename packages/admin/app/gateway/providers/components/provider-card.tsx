@@ -1,3 +1,5 @@
+'use client';
+
 import {
 	CheckIcon,
 	ChevronDownIcon,
@@ -5,6 +7,7 @@ import {
 	ExclamationTriangleIcon,
 	PlusIcon,
 } from '@heroicons/react/24/outline';
+import { useTranslations } from 'next-intl';
 import type { GatewayProvider, ProviderKeyRow } from '../types';
 import { formatLimitConfig, getProviderProtocolSummaries, sortProviderKeyRows } from '../provider-utils';
 import { ProviderProtocolIcon } from './provider-protocol-icon';
@@ -43,6 +46,10 @@ export function ProviderCard(props: ProviderCardProps) {
 		onToggleKeyStatus,
 		onCopyKey,
 	} = props;
+
+	const t = useTranslations('providers.card');
+	const tUpstream = useTranslations('upstream');
+	const tCommon = useTranslations('common');
 
 	const protocols = getProviderProtocolSummaries(provider);
 	const pendingKey = Boolean(provider.has_pending_key);
@@ -94,13 +101,13 @@ export function ProviderCard(props: ProviderCardProps) {
 							{pendingKey && (
 								<span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-900">
 									<ExclamationTriangleIcon className="h-3.5 w-3.5" aria-hidden />
-									Pending
+									{t('pending')}
 								</span>
 							)}
 							{activeKeyCount === 0 && (
 								<span className="inline-flex items-center gap-1 rounded-md bg-red-100 px-1.5 py-0.5 text-[11px] font-medium text-red-800">
 									<ExclamationTriangleIcon className="h-3.5 w-3.5" aria-hidden />
-									No key
+									{t('noKey')}
 								</span>
 							)}
 						</div>
@@ -121,7 +128,7 @@ export function ProviderCard(props: ProviderCardProps) {
 											void onCopyEndpoint(protocol.url, feedbackId);
 										}}
 										className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-										title={`${protocol.label} — ${protocol.url} (click to copy)`}
+										title={tUpstream('endpointCopyTitle', { label: protocol.label, url: protocol.url })}
 									>
 										{copiedId === feedbackId ? (
 											<CheckIcon className="h-4 w-4 shrink-0 text-green-600" aria-hidden />
@@ -135,7 +142,7 @@ export function ProviderCard(props: ProviderCardProps) {
 						</div>
 					) : (
 						<div className="rounded-md border border-dashed border-gray-200 px-2 py-1.5 text-xs text-gray-400">
-							No endpoint configured
+							{t('noEndpoint')}
 						</div>
 					)}
 				</div>
@@ -153,11 +160,11 @@ export function ProviderCard(props: ProviderCardProps) {
 						aria-expanded={isExpanded}
 					>
 						<span className="min-w-0 truncate text-xs font-medium text-gray-800">
-							Keys · <span className="tabular-nums">{activeKeyCount}</span> active
+							{t('keysActive', { count: activeKeyCount })}
 							{(previewRows.length > 0 || isExpanded) && (
 								<span className="ml-2 font-normal text-gray-500">
-									{previewRows.length} total
-									{inactiveKeyCount > 0 ? ` · ${inactiveKeyCount} inactive` : ''}
+									{t('keysTotal', { count: previewRows.length })}
+									{inactiveKeyCount > 0 ? t('keysInactive', { count: inactiveKeyCount }) : ''}
 								</span>
 							)}
 						</span>
@@ -173,8 +180,8 @@ export function ProviderCard(props: ProviderCardProps) {
 							onAddKey(provider);
 						}}
 						className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-white hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-						title={`Add key for ${provider.name}`}
-						aria-label={`Add key for ${provider.name}`}
+						title={t('addKeyFor', { name: provider.name })}
+						aria-label={t('addKeyFor', { name: provider.name })}
 					>
 						<PlusIcon className="h-4 w-4" aria-hidden />
 					</button>
@@ -183,14 +190,14 @@ export function ProviderCard(props: ProviderCardProps) {
 				{isExpanded && (
 					<div className="mt-2" onClick={(e) => e.stopPropagation()}>
 						{isPreviewLoading ? (
-							<div className="py-3 text-sm text-gray-500">Loading keys…</div>
+							<div className="py-3 text-sm text-gray-500">{tCommon('loadingEllipsis')}</div>
 						) : previewError ? (
 							<div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
 								{previewError}
 							</div>
 						) : previewRows.length === 0 ? (
 							<div className="rounded-md border border-dashed border-gray-200 bg-white px-3 py-3 text-sm text-gray-500">
-								No keys configured.
+								{t('noKeysConfigured')}
 							</div>
 						) : (
 							<div className="space-y-2">
@@ -217,8 +224,8 @@ export function ProviderCard(props: ProviderCardProps) {
 											className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
 											aria-label={
 												key.status === 'active'
-													? `Key ${key.label} enabled (uncheck to disable)`
-													: `Key ${key.label} disabled (check to enable)`
+													? t('keyEnabled', { label: key.label })
+													: t('keyDisabled', { label: key.label })
 											}
 										/>
 										<div className="min-w-0">
@@ -231,12 +238,12 @@ export function ProviderCard(props: ProviderCardProps) {
 												</span>
 												{key.is_pending_import && (
 													<span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
-														placeholder
+														{t('placeholder')}
 													</span>
 												)}
 												{copiedId === `provider-key:${key.id}` && (
 													<span className="shrink-0 rounded-md bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800">
-														copied
+														{tCommon('copied')}
 													</span>
 												)}
 											</span>
@@ -255,9 +262,15 @@ export function ProviderCard(props: ProviderCardProps) {
 													void onCopyKey(key);
 												}}
 												className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-												title={copiedId === `provider-key:${key.id}` ? 'Copied' : `Copy ${key.label}`}
+												title={
+													copiedId === `provider-key:${key.id}`
+														? tCommon('copied')
+														: t('copyKey', { label: key.label })
+												}
 												aria-label={
-													copiedId === `provider-key:${key.id}` ? `Copied ${key.label}` : `Copy ${key.label}`
+													copiedId === `provider-key:${key.id}`
+														? t('copiedKey', { label: key.label })
+														: t('copyKey', { label: key.label })
 												}
 											>
 												{copiedId === `provider-key:${key.id}` ? (

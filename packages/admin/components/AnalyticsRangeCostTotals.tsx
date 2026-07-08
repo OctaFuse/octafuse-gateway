@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 
 type Totals = { standard: number; charged: number; metered: number };
@@ -11,6 +12,7 @@ export function AnalyticsRangeCostTotals(props: {
 	/** ISO 4217，与网关 `BILLING_CURRENCY` 一致 */
 	billingCurrency: string;
 }) {
+	const t = useTranslations('analytics.rangeTotals');
 	const { isLoading, totals, billingCurrency } = props;
 	const val = (n: number) =>
 		isLoading ? (
@@ -21,13 +23,13 @@ export function AnalyticsRangeCostTotals(props: {
 	return (
 		<div className="flex flex-wrap justify-end items-baseline gap-x-6 gap-y-1 ml-auto">
 			<span className="text-gray-500">
-				Range total <span className="text-gray-700 font-medium">Std</span>: {val(totals.standard)}
+				{t('rangeTotal')} <span className="text-gray-700 font-medium">{t('std')}</span>: {val(totals.standard)}
 			</span>
 			<span className="text-gray-500">
-				<span className="text-gray-700 font-medium">Charged</span>: {val(totals.charged)}
+				<span className="text-gray-700 font-medium">{t('charged')}</span>: {val(totals.charged)}
 			</span>
 			<span className="text-gray-500">
-				<span className="text-gray-700 font-medium">Metered</span>: {val(totals.metered)}
+				<span className="text-gray-700 font-medium">{t('metered')}</span>: {val(totals.metered)}
 			</span>
 		</div>
 	);

@@ -5,10 +5,11 @@
  * 会话依赖 `/api/auth/check` 与 `admin_session` cookie。
  */
 import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import BrandExternalLinks from '@/components/layout/BrandExternalLinks';
+import LocaleSwitcher from '@/components/layout/LocaleSwitcher';
 import { ADMIN_SESSION_EXPIRED_EVENT_NAME } from '@/lib/admin-session-events';
 import { readApiJson, readJson } from '@/lib/api-json';
-import { OCTAFUSE_ADMIN_LOGIN_HEADING } from '@/lib/brand';
 import Sidebar from './Sidebar';
 
 interface Props {
@@ -16,6 +17,9 @@ interface Props {
 }
 
 export default function AuthWrapper({ children }: Props) {
+  const t = useTranslations('auth');
+  const tBrand = useTranslations('brand');
+  const tCommon = useTranslations('common');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState('');
@@ -78,10 +82,10 @@ export default function AuthWrapper({ children }: Props) {
       if (data.success) {
         setIsAuthenticated(true);
       } else {
-        setLoginError(data.message || 'Login failed');
+        setLoginError(data.message || tCommon('loginFailed'));
       }
     } catch (error) {
-      setLoginError('Network error');
+      setLoginError(tCommon('networkError'));
       console.error('Login error:', error);
     } finally {
       setIsLoading(false);
@@ -92,7 +96,7 @@ export default function AuthWrapper({ children }: Props) {
   if (isLoading && !isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-gray-600">Loading...</div>
+        <div className="text-gray-600">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -102,12 +106,12 @@ export default function AuthWrapper({ children }: Props) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold text-center mb-1 text-gray-800">{OCTAFUSE_ADMIN_LOGIN_HEADING}</h1>
-          <p className="text-center text-xs text-gray-500 mb-6">Operator console</p>
+          <h1 className="text-2xl font-bold text-center mb-1 text-gray-800">{tBrand('loginHeading')}</h1>
+          <p className="text-center text-xs text-gray-500 mb-6">{tBrand('operatorConsole')}</p>
           <form onSubmit={handleLogin}>
             <div className="mb-4">
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+                {t('username')}
               </label>
               <input
                 id="username"
@@ -121,7 +125,7 @@ export default function AuthWrapper({ children }: Props) {
             </div>
             <div className="mb-6">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                {t('password')}
               </label>
               <input
                 id="password"
@@ -143,10 +147,11 @@ export default function AuthWrapper({ children }: Props) {
               disabled={isLoading}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? t('loggingIn') : t('login')}
             </button>
           </form>
-          <div className="mt-6 pt-4 border-t border-gray-100">
+          <div className="mt-6 pt-4 border-t border-gray-100 space-y-4">
+            <LocaleSwitcher variant="login" />
             <BrandExternalLinks variant="login" />
           </div>
         </div>

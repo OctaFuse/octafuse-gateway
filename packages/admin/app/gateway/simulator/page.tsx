@@ -5,10 +5,10 @@
  * exercising auth, routing, billing, and request logs (unlike Playground upstream tests).
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { flushSync } from 'react-dom';
 import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
-import { OCTAFUSE_GATEWAY_PRODUCT } from '@/lib/brand';
 import {
 	inferPlaygroundParseMode,
 	mergeAssistantTextParts,
@@ -88,6 +88,9 @@ const codeBlockClass =
 	'p-3 text-xs overflow-x-auto whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md font-mono text-gray-900';
 
 export default function SimulatorPage() {
+	const t = useTranslations('simulator');
+	const tBrand = useTranslations('brand');
+	const tCommon = useTranslations('common');
 	const [proxyBaseUrl, setProxyBaseUrl] = useState('');
 	const [protocol, setProtocol] = useState<SimulatorProtocol>('openai');
 	const [geminiAction, setGeminiAction] = useState<SimulatorGeminiAction>('streamGenerateContent');
@@ -271,15 +274,15 @@ export default function SimulatorPage() {
 				if (mData.success && Array.isArray(mData.data)) {
 					setModels(mData.data);
 				} else {
-					setCatalogError(mData.message ?? 'Failed to load models');
+					setCatalogError(mData.message ?? tCommon('failedToLoadModels'));
 				}
 				if (rData.success && Array.isArray(rData.data)) {
 					setRoutes(rData.data);
 				} else if (!cancelled) {
-					setCatalogError((prev) => prev ?? rData.message ?? 'Failed to load routes');
+					setCatalogError((prev) => prev ?? rData.message ?? tCommon('failedToLoadRoutes'));
 				}
 			} catch (e) {
-				if (!cancelled) setCatalogError(e instanceof Error ? e.message : 'Failed to load catalog');
+				if (!cancelled) setCatalogError(e instanceof Error ? e.message : tCommon('failedToLoadModels'));
 			} finally {
 				if (!cancelled) setLoadingCatalog(false);
 			}
@@ -312,10 +315,10 @@ export default function SimulatorPage() {
 				setKeys(data.data);
 				setKeysTotal(data.total);
 			} else {
-				setKeysError(data.message ?? 'Failed to load API keys');
+				setKeysError(data.message ?? tCommon('failedToLoadApiKeys'));
 			}
 		} catch (e) {
-			setKeysError(e instanceof Error ? e.message : 'Failed to load API keys');
+			setKeysError(e instanceof Error ? e.message : tCommon('failedToLoadApiKeys'));
 		} finally {
 			setLoadingKeys(false);
 		}
@@ -344,10 +347,10 @@ export default function SimulatorPage() {
 				if (data.success && data.data && typeof data.data.key === 'string') {
 					setRevealedSk(data.data.key);
 				} else {
-					setRevealError(data.message ?? 'Failed to load API key');
+					setRevealError(data.message ?? tCommon('failedToLoadApiKeys'));
 				}
 			} catch (e) {
-				if (!cancelled) setRevealError(e instanceof Error ? e.message : 'Failed to load API key');
+				if (!cancelled) setRevealError(e instanceof Error ? e.message : tCommon('failedToLoadApiKeys'));
 			} finally {
 				if (!cancelled) setRevealLoading(false);
 			}
@@ -399,7 +402,7 @@ export default function SimulatorPage() {
 				return;
 			}
 		} catch {
-			setBodyError('Invalid JSON');
+			setBodyError(tCommon('invalidJson'));
 			return;
 		}
 
@@ -470,7 +473,7 @@ export default function SimulatorPage() {
 					let msg = (j.message ?? '').trim();
 					if (!msg && typeof errObj === 'string') msg = errObj;
 					if (!msg) msg = nested.trim();
-					if (!msg) msg = 'Request failed';
+					if (!msg) msg = tCommon('requestFailed');
 					setBodyError(msg);
 				} else {
 					setUsageHint(tryParseUsageSummary(JSON.stringify(j), protoNorm));
@@ -515,11 +518,11 @@ export default function SimulatorPage() {
 			}
 		} catch (e) {
 			if (e instanceof DOMException && e.name === 'AbortError') {
-				setBodyError('Request cancelled');
+				setBodyError(tCommon('requestCancelled'));
 				setResponseText('');
 			} else {
 				setResponseText('');
-				setBodyError(e instanceof Error ? e.message : 'Request failed');
+				setBodyError(e instanceof Error ? e.message : tCommon('requestFailed'));
 			}
 		} finally {
 			setSending(false);
@@ -530,7 +533,7 @@ export default function SimulatorPage() {
 	if (loadingCatalog) {
 		return (
 			<div className="flex items-center justify-center h-full min-h-[240px]">
-				<div className="text-gray-600">Loading...</div>
+				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
@@ -538,12 +541,11 @@ export default function SimulatorPage() {
 	return (
 		<div className="p-8">
 			<div className="mb-6">
-				<h1 className="text-3xl font-bold text-gray-900">Simulator</h1>
+				<h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
 				<p className="text-sm text-gray-500 mt-1">
-					{OCTAFUSE_GATEWAY_PRODUCT} — Browser calls the Proxy directly, like a real client: auth, route groups,
-					failover, billing, and <code className="text-xs bg-gray-100 px-1 rounded">api_key_request_logs</code>.
+					{t('subtitle', { product: tBrand('product') })}
 					<span className="text-gray-400"> · </span>
-					Usage below is informational only. The API key stays in memory and is not written to localStorage.
+					{t('usageNote')}
 				</p>
 				<p className="text-xs text-amber-800 mt-2 max-w-3xl">
 					Local dev example: <span className="font-mono">http://127.0.0.1:8787</span> — enter your own Base URL
@@ -557,10 +559,10 @@ export default function SimulatorPage() {
 
 			<div className="flex flex-col gap-6">
 				<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
-					<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Connection</h2>
+					<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">{t('connection')}</h2>
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 						<div>
-							<label className={labelClass}>Proxy Base URL</label>
+							<label className={labelClass}>{t('proxyBaseUrl')}</label>
 							<input
 								type="url"
 								placeholder="https://your-proxy.example.com"
@@ -755,7 +757,7 @@ export default function SimulatorPage() {
 				<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 					<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
 						<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-gray-100 pb-3">
-							<h2 className="text-lg font-semibold text-gray-900">Request body</h2>
+							<h2 className="text-lg font-semibold text-gray-900">{t('requestBody')}</h2>
 							<div className="flex gap-2 shrink-0">
 								{sending ? (
 									<button
@@ -764,7 +766,7 @@ export default function SimulatorPage() {
 										className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700"
 									>
 										<StopIcon className="h-4 w-4" />
-										Stop
+										{tCommon('stop')}
 									</button>
 								) : (
 									<button
@@ -773,7 +775,7 @@ export default function SimulatorPage() {
 										className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 									>
 										<PaperAirplaneIcon className="h-4 w-4" />
-										Send
+										{tCommon('send')}
 									</button>
 								)}
 							</div>
@@ -802,7 +804,7 @@ export default function SimulatorPage() {
 
 					<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
 						<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 pb-3">
-							<h2 className="text-lg font-semibold text-gray-900 shrink-0">Response</h2>
+							<h2 className="text-lg font-semibold text-gray-900 shrink-0">{t('response')}</h2>
 							{responseMeta ? (
 								<div className="flex flex-wrap items-center justify-end gap-2 text-xs min-w-0">
 									<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">

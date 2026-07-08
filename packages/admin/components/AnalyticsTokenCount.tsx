@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
 	formatTokenCount,
 	getTokenCountMagnitude,
@@ -20,6 +21,7 @@ export type AnalyticsTokenCountProps = {
 };
 
 export function AnalyticsTokenCount({ value, mode }: AnalyticsTokenCountProps) {
+	const t = useTranslations('pricing');
 	const label = formatTokenCount(value, mode);
 	const magnitude = getTokenCountMagnitude(value);
 
@@ -30,7 +32,7 @@ export function AnalyticsTokenCount({ value, mode }: AnalyticsTokenCountProps) {
 	return (
 		<span
 			className={`inline-flex min-w-[3.25rem] justify-center rounded-full px-2 py-0.5 text-xs tabular-nums ring-1 ${compactMagnitudeClasses[magnitude]}`}
-			title={`${value?.toLocaleString('en-US') ?? label} tokens`}
+			title={t('tokensTitle', { count: value?.toLocaleString('en-US') ?? label })}
 		>
 			{label}
 		</span>

@@ -5,6 +5,7 @@
  */
 import { Fragment, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
@@ -26,6 +27,9 @@ type SortKey = keyof ProviderUsageRow | '';
 type SortDir = 'asc' | 'desc';
 
 export default function ProviderUsagePage() {
+  const t = useTranslations('analytics.providerUsage');
+  const tA = useTranslations('analytics');
+  const tCommon = useTranslations('common');
   const [rows, setRows] = useState<ProviderUsageRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
@@ -158,8 +162,8 @@ export default function ProviderUsagePage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Provider Usage</h1>
-        <p className="text-sm text-gray-500 mt-1">Usage and cost by upstream provider</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
       <div className="mb-4 flex w-full min-w-0 flex-wrap items-end gap-x-4 gap-y-2">
         <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} className="flex-1 min-w-0" />
@@ -174,7 +178,7 @@ export default function ProviderUsagePage() {
             disabled={isLoading}
             className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Export CSV
+            {tCommon('exportCsv')}
           </button>
           <AnalyticsRangeCostTotals isLoading={isLoading} totals={rangeTotals} billingCurrency={billingCurrency} />
         </div>
@@ -182,16 +186,16 @@ export default function ProviderUsagePage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <Th label="Provider Name" columnKey="provider_name" />
-                <Th label="Requests" columnKey="request_count" />
-                <Th label="Input tokens" columnKey="input_tokens" />
-                <Th label="Output tokens" columnKey="output_tokens" />
-                <Th label="Std" columnKey="standard_cost" />
-                <Th label="Charged" columnKey="charged_cost" />
-                <Th label="Metered" columnKey="metered_cost" />
-                <Th label="Avg charged/req" columnKey="avg_charged_per_request" />
-                <Th label="Success rate" columnKey="success_rate" />
-                <Th label="Avg latency (ms)" columnKey="avg_latency_ms" />
+                <Th label={tA('columns.providerName')} columnKey="provider_name" />
+                <Th label={tA('columns.requests')} columnKey="request_count" />
+                <Th label={tA('columns.inputTokens')} columnKey="input_tokens" />
+                <Th label={tA('columns.outputTokens')} columnKey="output_tokens" />
+                <Th label={tA('columns.std')} columnKey="standard_cost" />
+                <Th label={tA('columns.charged')} columnKey="charged_cost" />
+                <Th label={tA('columns.metered')} columnKey="metered_cost" />
+                <Th label={tA('columns.avgChargedPerReq')} columnKey="avg_charged_per_request" />
+                <Th label={tA('columns.successRate')} columnKey="success_rate" />
+                <Th label={tA('columns.avgLatencyMs')} columnKey="avg_latency_ms" />
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -240,31 +244,31 @@ export default function ProviderUsagePage() {
                           {r.success_rate.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : tCommon('noData')}</td>
                     </tr>
                     {isExpanded ? (
                       <tr key={`${r.provider_id}:models`} className="bg-blue-50/60">
                         <td colSpan={10} className="border-l-4 border-blue-300 px-5 py-4">
                           {isModelRowsLoading ? (
-                            <div className="py-4 text-sm text-gray-500">Loading model usage...</div>
+                            <div className="py-4 text-sm text-gray-500">{tA('loadingModelUsage')}</div>
                           ) : modelRows.length === 0 ? (
-                            <div className="py-4 text-sm text-gray-500">No model usage for this provider in the selected range.</div>
+                            <div className="py-4 text-sm text-gray-500">{tA('noModelUsageForProvider')}</div>
                           ) : (
                             <div className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm ring-1 ring-blue-100">
                               <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                   <tr>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Model</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Route group</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Requests</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Input tokens</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Output tokens</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Std</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Charged</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Metered</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Avg charged/req</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Success rate</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Avg latency (ms)</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.model')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.routeGroup')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.requests')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.inputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.outputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.std')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.charged')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.metered')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgChargedPerReq')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.successRate')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgLatencyMs')}</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -305,7 +309,7 @@ export default function ProviderUsagePage() {
                                           </span>
                                         </td>
                                         <td className="px-3 py-2 text-sm text-gray-600">
-                                          {modelRow.avg_latency_ms != null ? Math.round(modelRow.avg_latency_ms) : '—'}
+                                          {modelRow.avg_latency_ms != null ? Math.round(modelRow.avg_latency_ms) : tCommon('noData')}
                                         </td>
                                       </tr>
                                     );
@@ -323,8 +327,8 @@ export default function ProviderUsagePage() {
             </tbody>
           </table>
         </div>
-        {sorted.length === 0 && !isLoading && <div className="text-center py-12 text-gray-500">No data</div>}
-        {isLoading && <div className="text-center py-12 text-gray-500">Loading...</div>}
+        {sorted.length === 0 && !isLoading && <div className="text-center py-12 text-gray-500">{tA('noData')}</div>}
+        {isLoading && <div className="text-center py-12 text-gray-500">{tCommon('loading')}</div>}
       </div>
     </div>
   );

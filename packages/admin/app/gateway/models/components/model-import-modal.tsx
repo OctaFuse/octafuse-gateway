@@ -3,6 +3,7 @@
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatPerMillionTokenUnit } from '@/lib/format-gateway-currency';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
+import { useTranslations } from 'next-intl';
 import { sortImportCatalogRows } from '../model-utils';
 import type { PresetCatalogRow } from '../types';
 
@@ -45,10 +46,14 @@ export function ModelImportModal(props: Props) {
 		onImport,
 	} = props;
 
+	const t = useTranslations('models.import');
+	const tCommon = useTranslations('common');
+
 	if (!open) return null;
 
 	const sortedRows = sortImportCatalogRows(catalogRows);
 	const canImport = catalogRows.some((r) => selected[r.id] && !existingModelIds.has(r.id));
+	const unit = formatPerMillionTokenUnit(billingCurrency);
 
 	return (
 		<div
@@ -68,13 +73,10 @@ export function ModelImportModal(props: Props) {
 				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
 					<div>
 						<h2 id="import-catalog-title" className="text-xl font-bold text-gray-900">
-							Import from Static Catalog
+							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">
-							Presets already in the gateway (same model id) are disabled and are never overwritten on
-							import. Prices use the catalog&apos;s{' '}
-							<span className="font-mono tabular-nums">{billingCurrency}</span> branch (USD/CNY tiers;
-							see {formatPerMillionTokenUnit(billingCurrency)}).
+							{t('subtitle', { currency: billingCurrency, unit })}
 						</p>
 					</div>
 					<button
@@ -82,7 +84,7 @@ export function ModelImportModal(props: Props) {
 						onClick={onClose}
 						className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
 						disabled={submitting}
-						aria-label="Close"
+						aria-label={tCommon('close')}
 					>
 						×
 					</button>
@@ -95,7 +97,7 @@ export function ModelImportModal(props: Props) {
 						disabled={catalogLoading || catalogRows.length === 0}
 						className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 					>
-						Select all
+						{tCommon('selectAll')}
 					</button>
 					<button
 						type="button"
@@ -103,7 +105,7 @@ export function ModelImportModal(props: Props) {
 						disabled={catalogLoading || catalogRows.length === 0}
 						className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 					>
-						Clear
+						{t('clear')}
 					</button>
 					<button
 						type="button"
@@ -111,29 +113,28 @@ export function ModelImportModal(props: Props) {
 						disabled={catalogLoading}
 						className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 					>
-						Reload
+						{tCommon('reload')}
 					</button>
 					<span className="ml-auto text-sm text-gray-600">
-						Selected <span className="font-semibold tabular-nums">{selectedCount}</span> /{' '}
-						<span className="tabular-nums">{importableCount}</span> available
+						{t('selectedAvailable', { selected: selectedCount, importable: importableCount })}
 						{catalogRows.length > importableCount ? (
 							<span className="text-gray-400">
 								{' '}
-								({catalogRows.length - importableCount} already in gateway)
+								{t('alreadyInGateway', { count: catalogRows.length - importableCount })}
 							</span>
 						) : null}
 					</span>
 				</div>
 
 				<div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-					{catalogLoading && <div className="py-12 text-center text-gray-600">Loading catalog…</div>}
+					{catalogLoading && <div className="py-12 text-center text-gray-600">{t('loadingCatalog')}</div>}
 					{!catalogLoading && catalogError && (
 						<div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
 							{catalogError}
 						</div>
 					)}
 					{!catalogLoading && !catalogError && catalogRows.length === 0 && (
-						<div className="py-12 text-center text-gray-500">Catalog is empty</div>
+						<div className="py-12 text-center text-gray-500">{t('catalogEmpty')}</div>
 					)}
 					{!catalogLoading && !catalogError && catalogRows.length > 0 && (
 						<div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -141,14 +142,14 @@ export function ModelImportModal(props: Props) {
 								<thead className="bg-gray-50">
 									<tr>
 										<th className="w-10 px-3 py-2 text-left" scope="col">
-											<span className="sr-only">Select</span>
+											<span className="sr-only">{t('selectColumn')}</span>
 										</th>
-										<th className="px-3 py-2 text-left font-medium text-gray-600">Model ID</th>
-										<th className="px-3 py-2 text-left font-medium text-gray-600">Display Name</th>
-										<th className="px-3 py-2 text-left font-medium text-gray-600">Vendor</th>
-										<th className="px-3 py-2 text-right font-medium text-gray-600">Context</th>
-										<th className="px-3 py-2 text-right font-medium text-gray-600">Max Tokens</th>
-										<th className="px-3 py-2 text-right font-medium text-gray-600">Pricing</th>
+										<th className="px-3 py-2 text-left font-medium text-gray-600">{t('modelId')}</th>
+										<th className="px-3 py-2 text-left font-medium text-gray-600">{t('displayName')}</th>
+										<th className="px-3 py-2 text-left font-medium text-gray-600">{t('vendor')}</th>
+										<th className="px-3 py-2 text-right font-medium text-gray-600">{t('context')}</th>
+										<th className="px-3 py-2 text-right font-medium text-gray-600">{t('maxTokens')}</th>
+										<th className="px-3 py-2 text-right font-medium text-gray-600">{t('pricing')}</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-gray-100 bg-white">
@@ -170,8 +171,8 @@ export function ModelImportModal(props: Props) {
 														className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
 														aria-label={
 															alreadyInGateway
-																? `${row.id} already in gateway`
-																: `Import preset ${row.id}`
+																? t('alreadyInGatewayRow', { id: row.id })
+																: t('importPresetRow', { id: row.id })
 														}
 													/>
 												</td>
@@ -194,13 +195,13 @@ export function ModelImportModal(props: Props) {
 															className="inline-flex cursor-help items-center justify-end"
 															aria-label={
 																row.pricing_preview_usd ??
-																`USD tiers: ${row.tier_count_usd}`
+																t('usdTiers', { count: row.tier_count_usd })
 															}
 														>
 															💰
 														</span>
 														<span className="pointer-events-none absolute right-0 top-full z-20 mt-1 hidden w-max max-w-[32rem] whitespace-pre-line rounded-md bg-gray-900 px-2 py-1 text-left text-xs leading-snug text-white shadow-lg group-hover:block">
-															{row.pricing_preview_usd ?? `USD tiers: ${row.tier_count_usd}`}
+															{row.pricing_preview_usd ?? t('usdTiers', { count: row.tier_count_usd })}
 														</span>
 													</span>
 												</td>
@@ -220,7 +221,7 @@ export function ModelImportModal(props: Props) {
 						disabled={submitting}
 						className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-white disabled:opacity-50"
 					>
-						Cancel
+						{tCommon('cancel')}
 					</button>
 					<button
 						type="button"
@@ -228,7 +229,7 @@ export function ModelImportModal(props: Props) {
 						disabled={submitting || catalogLoading || !canImport}
 						className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
 					>
-						{submitting ? 'Importing…' : `Import selected (${selectedCount})`}
+						{submitting ? tCommon('importing') : t('importSelected', { count: selectedCount })}
 					</button>
 				</div>
 			</div>
