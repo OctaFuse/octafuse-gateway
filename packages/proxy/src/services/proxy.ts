@@ -9,6 +9,7 @@ import { dispatchAnthropicRoute } from './egress/anthropic-driver';
 import { dispatchGeminiRoute } from './egress/gemini-driver';
 import { failoverDispatchWithKeyPool, type FailoverDispatchOptions } from './failover-dispatch';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
+import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
 
 export type { FailoverDispatchOptions, StickyDispatchContext } from './failover-dispatch';
 
@@ -75,7 +76,8 @@ export async function proxyChatCompletions(
 		repos,
 		routes,
 		'openai',
-		(route, signal) => dispatchOpenAiRoute(route, body, signal),
+		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
+			dispatchOpenAiRoute(route, body, signal, timing, attempt),
 		requestSignal,
 		options
 	);
@@ -96,7 +98,8 @@ export async function proxyAnthropicMessages(
 		repos,
 		routes,
 		'anthropic',
-		(route, signal) => dispatchAnthropicRoute(route, body, signal),
+		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
+			dispatchAnthropicRoute(route, body, signal, timing, attempt),
 		requestSignal,
 		options
 	);
@@ -118,7 +121,8 @@ export async function proxyGeminiContent(
 		repos,
 		routes,
 		'gemini',
-		(route, signal) => dispatchGeminiRoute(route, body, action, search, signal),
+		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
+			dispatchGeminiRoute(route, body, action, search, signal, timing, attempt),
 		requestSignal,
 		options
 	);

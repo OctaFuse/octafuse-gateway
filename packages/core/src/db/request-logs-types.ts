@@ -30,6 +30,14 @@ export type InsertRequestLogParams = {
 	routeGroup: string;
 	status: 'success' | 'error' | 'incomplete' | 'cancelled';
 	latencyMs: number | null;
+	gatewayOverheadMs?: number | null;
+	upstreamResponseMs?: number | null;
+	finalUpstreamHeadersMs?: number | null;
+	firstTokenMs?: number | null;
+	streamDurationMs?: number | null;
+	upstreamAttemptCount?: number | null;
+	upstreamFailoverCount?: number | null;
+	timingMetadata?: string | null;
 	errorMessage: string | null;
 	rawUsage: string | null;
 	/** 计费审计 JSON 字符串；与 `RequestLogRow.pricing_audit` / `pricing-audit.ts` 对齐 */

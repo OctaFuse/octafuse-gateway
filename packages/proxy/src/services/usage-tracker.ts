@@ -24,6 +24,7 @@ import {
 import type { UsageFromStream } from './proxy';
 import { fireGatewayErrorWebhooks } from './alert-webhook';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
+import type { RequestTimingSnapshot } from './request-timing';
 
 const TOKENS_PER_MILLION = 1_000_000;
 
@@ -96,6 +97,7 @@ export async function recordUsage(
 		route_group: string;
 		status: 'success' | 'error' | 'incomplete' | 'cancelled';
 		latency_ms?: number;
+		timing?: RequestTimingSnapshot | null;
 		error_message?: string;
 		provider_key_id?: string | null;
 		provider_key_label?: string | null;
@@ -204,6 +206,14 @@ export async function recordUsage(
 			routeGroup: params.route_group,
 			status: params.status,
 			latencyMs: params.latency_ms ?? null,
+			gatewayOverheadMs: params.timing?.gatewayOverheadMs ?? null,
+			upstreamResponseMs: params.timing?.upstreamResponseMs ?? null,
+			finalUpstreamHeadersMs: params.timing?.finalUpstreamHeadersMs ?? null,
+			firstTokenMs: params.timing?.firstTokenMs ?? null,
+			streamDurationMs: params.timing?.streamDurationMs ?? null,
+			upstreamAttemptCount: params.timing?.upstreamAttemptCount ?? null,
+			upstreamFailoverCount: params.timing?.upstreamFailoverCount ?? null,
+			timingMetadata: params.timing?.timingMetadata ?? null,
 			errorMessage: params.error_message ?? null,
 			rawUsage: params.usage.raw_usage ?? null,
 			pricingAudit: pricingAuditJson,

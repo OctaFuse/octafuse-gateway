@@ -15,6 +15,7 @@ import {
 } from './sensitive-content-circuit-breaker';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 import { recordUsage } from './usage-tracker';
+import type { RequestTimingCollector } from './request-timing';
 
 const GATEWAY_PROVIDER_ID = 'gateway';
 
@@ -24,6 +25,7 @@ export type SensitiveContentCircuitRouteContext = {
 	requestBodyForLog: string | null;
 	requestProtocol: 'openai' | 'anthropic' | 'gemini';
 	startMs: number;
+	timing?: RequestTimingCollector | null;
 };
 
 /**
@@ -40,6 +42,7 @@ export function maybeBlockSensitiveContentCircuit(
 		return null;
 	}
 	const latencyMs = Date.now() - ctx.startMs;
+	ctx.timing?.markGatewayComplete();
 	scheduleBackgroundWork(
 		c,
 		recordUsage(repos, {
@@ -56,6 +59,7 @@ export function maybeBlockSensitiveContentCircuit(
 			route_group: 'default',
 			status: 'error',
 			latency_ms: latencyMs,
+			timing: ctx.timing?.snapshot() ?? null,
 			error_message: formatSensitiveContentCircuitOpenErrorMessage(open),
 			suppress_error_alert: true,
 		}).catch((err) => {

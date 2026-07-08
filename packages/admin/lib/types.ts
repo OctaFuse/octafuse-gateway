@@ -199,6 +199,14 @@ export interface GatewayRequestLog {
   route_group?: string;
   status: string;
   latency_ms: number | null;
+  gateway_overhead_ms?: number | null;
+  upstream_response_ms?: number | null;
+  final_upstream_headers_ms?: number | null;
+  first_token_ms?: number | null;
+  stream_duration_ms?: number | null;
+  upstream_attempt_count?: number | null;
+  upstream_failover_count?: number | null;
+  timing_metadata?: string | null;
   error_message: string | null;
   /** Raw usage payload from upstream/provider (JSON string) */
   raw_usage?: string | null;
@@ -272,6 +280,11 @@ export interface ModelUsageRow extends AnalyticsRowCosts {
   error_count: number;
   success_rate: number;
   avg_latency_ms: number | null;
+  avg_first_token_ms: number | null;
+  avg_upstream_response_ms: number | null;
+  tokens_per_second: number | null;
+  failover_rate: number;
+  avg_attempts: number | null;
   avg_charged_per_request: number;
 }
 
@@ -287,6 +300,11 @@ export interface ProviderUsageRow extends AnalyticsRowCosts {
   error_count: number;
   success_rate: number;
   avg_latency_ms: number | null;
+  avg_first_token_ms: number | null;
+  avg_upstream_response_ms: number | null;
+  tokens_per_second: number | null;
+  failover_rate: number;
+  avg_attempts: number | null;
   avg_charged_per_request: number;
 }
 
@@ -314,6 +332,9 @@ export interface ProviderReliabilityRow extends AnalyticsRowCosts {
   error_count: number;
   success_rate: number;
   avg_latency_ms: number | null;
+  avg_upstream_response_ms: number | null;
+  failover_rate: number;
+  avg_attempts: number | null;
 }
 
 /** Model + provider breakdown for reliability (same model, multiple providers). */
@@ -324,6 +345,9 @@ export interface ModelProviderRow extends AnalyticsRowCosts {
   request_count: number;
   success_rate: number;
   avg_latency_ms: number | null;
+  avg_upstream_response_ms: number | null;
+  failover_rate: number;
+  avg_attempts: number | null;
 }
 
 // ============== 通用 API 响应包装 ==============

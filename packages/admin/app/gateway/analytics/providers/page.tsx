@@ -26,6 +26,10 @@ import { useBillingCurrency } from '@/lib/use-billing-currency';
 type SortKey = keyof ProviderUsageRow | '';
 type SortDir = 'asc' | 'desc';
 
+function formatMaybeNumber(value: number | null | undefined, digits = 0): string {
+  return value == null ? '' : value.toFixed(digits);
+}
+
 export default function ProviderUsagePage() {
   const t = useTranslations('analytics.providerUsage');
   const tA = useTranslations('analytics');
@@ -134,6 +138,11 @@ export default function ProviderUsagePage() {
       'error_count',
       'success_rate',
       'avg_latency_ms',
+      'avg_first_token_ms',
+      'avg_upstream_response_ms',
+      'tokens_per_second',
+      'failover_rate',
+      'avg_attempts',
       'avg_charged_per_request',
       'range_start_utc',
       'range_end_utc',
@@ -151,6 +160,11 @@ export default function ProviderUsagePage() {
       String(r.error_count),
       String(r.success_rate),
       r.avg_latency_ms != null ? String(r.avg_latency_ms) : '',
+      formatMaybeNumber(r.avg_first_token_ms),
+      formatMaybeNumber(r.avg_upstream_response_ms),
+      formatMaybeNumber(r.tokens_per_second, 2),
+      String(r.failover_rate),
+      formatMaybeNumber(r.avg_attempts, 2),
       String(r.avg_charged_per_request),
       start_date,
       end_date,
@@ -196,6 +210,11 @@ export default function ProviderUsagePage() {
                 <Th label={tA('columns.avgChargedPerReq')} columnKey="avg_charged_per_request" />
                 <Th label={tA('columns.successRate')} columnKey="success_rate" />
                 <Th label={tA('columns.avgLatencyMs')} columnKey="avg_latency_ms" />
+                <Th label={tA('columns.avgTtftMs')} columnKey="avg_first_token_ms" />
+                <Th label={tA('columns.avgUpstreamMs')} columnKey="avg_upstream_response_ms" />
+                <Th label={tA('columns.tokensPerSecond')} columnKey="tokens_per_second" />
+                <Th label={tA('columns.failoverRate')} columnKey="failover_rate" />
+                <Th label={tA('columns.avgAttempts')} columnKey="avg_attempts" />
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -245,10 +264,15 @@ export default function ProviderUsagePage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_first_token_ms != null ? Math.round(r.avg_first_token_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_upstream_response_ms != null ? Math.round(r.avg_upstream_response_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.tokens_per_second != null ? r.tokens_per_second.toFixed(1) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.failover_rate.toFixed(1)}%</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_attempts != null ? r.avg_attempts.toFixed(2) : tCommon('noData')}</td>
                     </tr>
                     {isExpanded ? (
                       <tr key={`${r.provider_id}:models`} className="bg-blue-50/60">
-                        <td colSpan={10} className="border-l-4 border-blue-300 px-5 py-4">
+                        <td colSpan={15} className="border-l-4 border-blue-300 px-5 py-4">
                           {isModelRowsLoading ? (
                             <div className="py-4 text-sm text-gray-500">{tA('loadingModelUsage')}</div>
                           ) : modelRows.length === 0 ? (
@@ -269,6 +293,9 @@ export default function ProviderUsagePage() {
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgChargedPerReq')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.successRate')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgLatencyMs')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgTtftMs')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.tokensPerSecond')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.failoverRate')}</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -310,6 +337,15 @@ export default function ProviderUsagePage() {
                                         </td>
                                         <td className="px-3 py-2 text-sm text-gray-600">
                                           {modelRow.avg_latency_ms != null ? Math.round(modelRow.avg_latency_ms) : tCommon('noData')}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600">
+                                          {modelRow.avg_first_token_ms != null ? Math.round(modelRow.avg_first_token_ms) : tCommon('noData')}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600">
+                                          {modelRow.tokens_per_second != null ? modelRow.tokens_per_second.toFixed(1) : tCommon('noData')}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600">
+                                          {modelRow.failover_rate.toFixed(1)}%
                                         </td>
                                       </tr>
                                     );

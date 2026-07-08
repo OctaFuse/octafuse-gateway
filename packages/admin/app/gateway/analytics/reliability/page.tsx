@@ -88,6 +88,9 @@ export default function ReliabilityPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.successRate')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.errors')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgLatencyMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgUpstreamMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.failoverRate')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgAttempts')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.std')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.charged')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.metered')}</th>
@@ -105,6 +108,9 @@ export default function ReliabilityPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.error_count}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.avg_latency_ms != null ? Math.round(p.avg_latency_ms) : tCommon('noData')}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{p.avg_upstream_response_ms != null ? Math.round(p.avg_upstream_response_ms) : tCommon('noData')}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{p.failover_rate.toFixed(1)}%</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{p.avg_attempts != null ? p.avg_attempts.toFixed(2) : tCommon('noData')}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                       {formatGatewayMoneyCode(p.standard_cost ?? 0, billingCurrency, 4)}
                     </td>
@@ -136,6 +142,9 @@ export default function ReliabilityPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.requests')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.successRate')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgLatencyMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgUpstreamMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.failoverRate')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgAttempts')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.std')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.charged')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.metered')}</th>
@@ -154,6 +163,9 @@ export default function ReliabilityPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_upstream_response_ms != null ? Math.round(r.avg_upstream_response_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.failover_rate.toFixed(1)}%</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_attempts != null ? r.avg_attempts.toFixed(2) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                         {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                       </td>

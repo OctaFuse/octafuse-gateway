@@ -155,6 +155,14 @@ export interface RequestLogRow {
   route_group: string;
   status: string;
   latency_ms: number | null;
+  gateway_overhead_ms: number | null;
+  upstream_response_ms: number | null;
+  final_upstream_headers_ms: number | null;
+  first_token_ms: number | null;
+  stream_duration_ms: number | null;
+  upstream_attempt_count: number | null;
+  upstream_failover_count: number | null;
+  timing_metadata: string | null;
   error_message: string | null;
   /** 上游返回的 usage JSON 快照 */
   raw_usage: string | null;

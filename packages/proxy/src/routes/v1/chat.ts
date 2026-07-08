@@ -28,6 +28,7 @@ import {
   maybeBlockSensitiveContentCircuit,
   maybeTriggerSensitiveContentCircuitFromUpstream,
 } from '../../services/sensitive-content-circuit-route';
+import { RequestTimingCollector } from '../../services/request-timing';
 
 /** 流若长期不结束（上游挂死），超过此时长仍无 usage 则按 incomplete 记账；正常/取消场景通常很快结束。 */
 const USAGE_SAFETY_TIMEOUT_MS = 5 * 60 * 1000; // 5 min
@@ -79,6 +80,7 @@ chatRoutes.post('/', async (c) => {
   const repos = c.get('repositories');
   const apiKey = c.get('apiKey');
   const start = Date.now();
+  const timing = new RequestTimingCollector();
 
   let body: { model?: string; [k: string]: unknown };
   try {
@@ -147,6 +149,7 @@ chatRoutes.post('/', async (c) => {
     requestBodyForLog,
     requestProtocol: 'openai',
     startMs: start,
+    timing,
   });
   if (circuitBlocked) {
     return circuitBlocked;
@@ -160,8 +163,10 @@ chatRoutes.post('/', async (c) => {
     routeGroup: effectiveRouteGroup,
     protocol: 'openai',
   });
+  timing.markGatewayComplete();
   const proxyResult = await proxyChatCompletions(repos, routes, body, requestSignal, {
     sticky: stickyContext,
+    timing,
   });
   const { usagePromise, chosenRoute, upstreamRequestId, circuitEvents, suppressErrorAlert } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
@@ -205,6 +210,7 @@ chatRoutes.post('/', async (c) => {
     usageOrSafety
       .then(async ({ usage: usageCollected, incomplete, timedOut }) => {
         const latency = Date.now() - start;
+        if (timedOut) timing.markStreamComplete();
         const status = computeRequestLogStatus({
           cancelled: Boolean(usageCollected.cancelled),
           responseOk: response.ok,
@@ -250,6 +256,7 @@ chatRoutes.post('/', async (c) => {
           route_group: chosenRoute.routeGroup,
           status,
           latency_ms: latency,
+          timing: timing.snapshot(),
           error_message: errorMessage,
           provider_key_id: chosenRoute.providerKeyId ?? null,
           provider_key_label: chosenRoute.providerKeyLabel ?? null,

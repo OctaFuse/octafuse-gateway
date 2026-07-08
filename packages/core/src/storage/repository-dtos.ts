@@ -89,6 +89,11 @@ export interface ModelAnalyticsRow {
 	success_count: number;
 	error_count: number;
 	avg_latency_ms: number | null;
+	avg_first_token_ms: number | null;
+	avg_upstream_response_ms: number | null;
+	tokens_per_second: number | null;
+	failover_rate: number;
+	avg_attempts: number | null;
 }
 
 /** 分析：按用户邮箱聚合。 */
@@ -122,6 +127,11 @@ export interface ProviderAnalyticsRow {
 	success_count: number;
 	error_count: number;
 	avg_latency_ms: number | null;
+	avg_first_token_ms: number | null;
+	avg_upstream_response_ms: number | null;
+	tokens_per_second: number | null;
+	failover_rate: number;
+	avg_attempts: number | null;
 }
 
 /** 分析：provider 可靠性。 */
@@ -132,6 +142,9 @@ export interface ProviderReliabilityRow {
 	success_count: number;
 	error_count: number;
 	avg_latency_ms: number | null;
+	avg_upstream_response_ms: number | null;
+	failover_rate: number;
+	avg_attempts: number | null;
 	charged_cost: number;
 	metered_cost: number;
 	standard_cost: number;
@@ -145,6 +158,9 @@ export interface ModelProviderReliabilityRow {
 	request_count: number;
 	success_count: number;
 	avg_latency_ms: number | null;
+	avg_upstream_response_ms: number | null;
+	failover_rate: number;
+	avg_attempts: number | null;
 	charged_cost: number;
 	metered_cost: number;
 	standard_cost: number;

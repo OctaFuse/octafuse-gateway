@@ -226,6 +226,11 @@ export async function getModelAnalyticsService(
 			error_count: Number(r.error_count),
 			success_rate: reqCount > 0 ? (successCount / reqCount) * 100 : 0,
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,
+			avg_first_token_ms: r.avg_first_token_ms != null ? Number(r.avg_first_token_ms) : null,
+			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
+			tokens_per_second: r.tokens_per_second != null ? Number(r.tokens_per_second) : null,
+			failover_rate: Number(r.failover_rate ?? 0),
+			avg_attempts: r.avg_attempts != null ? Number(r.avg_attempts) : null,
 			avg_charged_per_request: reqCount > 0 ? chargedCost / reqCount : 0,
 		};
 	}) as AdminModelAnalyticsRow[];
@@ -275,6 +280,11 @@ export async function getProviderAnalyticsService(
 			error_count: Number(r.error_count),
 			success_rate: reqCount > 0 ? (successCount / reqCount) * 100 : 0,
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,
+			avg_first_token_ms: r.avg_first_token_ms != null ? Number(r.avg_first_token_ms) : null,
+			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
+			tokens_per_second: r.tokens_per_second != null ? Number(r.tokens_per_second) : null,
+			failover_rate: Number(r.failover_rate ?? 0),
+			avg_attempts: r.avg_attempts != null ? Number(r.avg_attempts) : null,
 			avg_charged_per_request: reqCount > 0 ? chargedCost / reqCount : 0,
 		};
 	}) as AdminProviderAnalyticsRow[];
@@ -339,6 +349,9 @@ export async function getReliabilityAnalyticsService(
 			error_count: Number(r.error_count),
 			success_rate: requestCount > 0 ? (Number(r.success_count) / requestCount) * 100 : 0,
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,
+			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
+			failover_rate: Number(r.failover_rate ?? 0),
+			avg_attempts: r.avg_attempts != null ? Number(r.avg_attempts) : null,
 			charged_cost: Number(r.charged_cost),
 			metered_cost: Number(r.metered_cost),
 			standard_cost: Number(r.standard_cost),
@@ -353,6 +366,9 @@ export async function getReliabilityAnalyticsService(
 			request_count: requestCount,
 			success_rate: requestCount > 0 ? (Number(r.success_count) / requestCount) * 100 : 0,
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,
+			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
+			failover_rate: Number(r.failover_rate ?? 0),
+			avg_attempts: r.avg_attempts != null ? Number(r.avg_attempts) : null,
 			charged_cost: Number(r.charged_cost),
 			metered_cost: Number(r.metered_cost),
 			standard_cost: Number(r.standard_cost),

@@ -406,6 +406,11 @@ export type AdminModelAnalyticsRow = {
 	error_count: number;
 	success_rate: number;
 	avg_latency_ms: number | null;
+	avg_first_token_ms: number | null;
+	avg_upstream_response_ms: number | null;
+	tokens_per_second: number | null;
+	failover_rate: number;
+	avg_attempts: number | null;
 	avg_charged_per_request: number;
 };
 
@@ -428,6 +433,11 @@ export type AdminProviderAnalyticsRow = {
 	error_count: number;
 	success_rate: number;
 	avg_latency_ms: number | null;
+	avg_first_token_ms: number | null;
+	avg_upstream_response_ms: number | null;
+	tokens_per_second: number | null;
+	failover_rate: number;
+	avg_attempts: number | null;
 	avg_charged_per_request: number;
 };
 
@@ -461,6 +471,9 @@ export type AdminReliabilityProviderRow = {
 	error_count: number;
 	success_rate: number;
 	avg_latency_ms: number | null;
+	avg_upstream_response_ms: number | null;
+	failover_rate: number;
+	avg_attempts: number | null;
 	charged_cost: number;
 	metered_cost: number;
 	standard_cost: number;
@@ -473,6 +486,9 @@ export type AdminReliabilityModelProviderRow = {
 	request_count: number;
 	success_rate: number;
 	avg_latency_ms: number | null;
+	avg_upstream_response_ms: number | null;
+	failover_rate: number;
+	avg_attempts: number | null;
 	charged_cost: number;
 	metered_cost: number;
 	standard_cost: number;

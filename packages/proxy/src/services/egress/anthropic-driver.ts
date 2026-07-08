@@ -5,6 +5,7 @@ import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
 import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
+import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 
 const EMPTY_USAGE_LOCAL: UsageFromStream = {
   input_tokens: 0,
@@ -64,13 +65,29 @@ function applyUsage(target: UsageFromStream, next: UsageFromStream): void {
   target.raw_usage = next.raw_usage;
 }
 
-function parseEventData(data: string, usage: UsageFromStream): void {
+function hasAnthropicContentDelta(parsed: {
+  type?: string;
+  delta?: { text?: unknown; partial_json?: unknown };
+}): boolean {
+  if (parsed.type !== 'content_block_delta' && parsed.type !== 'message_delta') return false;
+  const delta = parsed.delta;
+  if (!delta) return false;
+  if (typeof delta.text === 'string' && delta.text.length > 0) return true;
+  if (typeof delta.partial_json === 'string' && delta.partial_json.length > 0) return true;
+  return false;
+}
+
+function parseEventData(data: string, usage: UsageFromStream, timing?: RequestTimingCollector | null): void {
   if (!data || data === '[DONE]') return;
   try {
     const parsed = JSON.parse(data) as {
+      type?: string;
+      delta?: { text?: unknown; partial_json?: unknown };
       usage?: AnthropicUsage;
       message?: { id?: string };
     };
+    timing?.markFirstEvent();
+    if (hasAnthropicContentDelta(parsed)) timing?.markFirstToken();
     // message id 来自 `message_start` 事件的 `message.id`（如 msg_* / msg_bdrk_*）；只取首个。
     if (!usage.upstreamMessageId) {
       const msgId = normalizeUpstreamId(parsed.message?.id);
@@ -84,20 +101,29 @@ function parseEventData(data: string, usage: UsageFromStream): void {
   }
 }
 
-function parseSSEChunk(chunk: Uint8Array, state: SSEState, usage: UsageFromStream): void {
+function parseSSEChunk(
+  chunk: Uint8Array,
+  state: SSEState,
+  usage: UsageFromStream,
+  timing?: RequestTimingCollector | null
+): void {
   state.lineBuffer += decoder.decode(chunk, { stream: true });
   const lines = state.lineBuffer.split('\n');
   state.lineBuffer = lines.pop() ?? '';
   for (const line of lines) {
     if (!line.startsWith('data: ')) continue;
-    parseEventData(line.slice(6).trim(), usage);
+    parseEventData(line.slice(6).trim(), usage, timing);
   }
 }
 
-function processRemainingLineBuffer(state: SSEState, usage: UsageFromStream): void {
+function processRemainingLineBuffer(
+  state: SSEState,
+  usage: UsageFromStream,
+  timing?: RequestTimingCollector | null
+): void {
   const line = state.lineBuffer.trim();
   if (!line.startsWith('data: ')) return;
-  parseEventData(line.slice(6).trim(), usage);
+  parseEventData(line.slice(6).trim(), usage, timing);
 }
 
 async function pumpWithUsageTracking(
@@ -105,7 +131,8 @@ async function pumpWithUsageTracking(
   downstream: WritableStream<Uint8Array>,
   usage: UsageFromStream,
   resolveUsage: (u: UsageFromStream) => void,
-  requestSignal?: AbortSignal
+  requestSignal?: AbortSignal,
+  timing?: RequestTimingCollector | null
 ): Promise<void> {
   const reader = upstream.getReader();
   const writer = downstream.getWriter();
@@ -123,11 +150,12 @@ async function pumpWithUsageTracking(
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
-        processRemainingLineBuffer(state, usage);
+        processRemainingLineBuffer(state, usage, timing);
         break;
       }
 
-      parseSSEChunk(value, state, usage);
+      if (value.byteLength > 0) timing?.markFirstByte();
+      parseSSEChunk(value, state, usage, timing);
 
       if (!clientDisconnected) {
         try {
@@ -150,6 +178,7 @@ async function pumpWithUsageTracking(
     }
   } finally {
     requestSignal?.removeEventListener('abort', onAbort);
+    timing?.markStreamComplete();
     resolveUsage(usage);
     try {
       await writer.close();
@@ -165,7 +194,8 @@ async function pumpWithUsageTracking(
 
 function streamResponseWithUsage(
   response: Response,
-  requestSignal?: AbortSignal
+  requestSignal?: AbortSignal,
+  timing?: RequestTimingCollector | null
 ): { response: Response; usagePromise: Promise<UsageFromStream> } {
   let resolveUsage!: (u: UsageFromStream) => void;
   const usagePromise = new Promise<UsageFromStream>((resolve) => {
@@ -175,7 +205,7 @@ function streamResponseWithUsage(
   const usage: UsageFromStream = { ...EMPTY_USAGE_LOCAL };
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
 
-  pumpWithUsageTracking(response.body!, writable, usage, resolveUsage, requestSignal).catch(() => {
+  pumpWithUsageTracking(response.body!, writable, usage, resolveUsage, requestSignal, timing).catch(() => {
     // resolveUsage in finally
   });
 
@@ -193,7 +223,8 @@ function streamResponseWithUsage(
 }
 
 async function nonStreamResponseWithUsage(
-  response: Response
+  response: Response,
+  timing?: RequestTimingCollector | null
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream> }> {
   const contentType = response.headers.get('Content-Type') ?? '';
   if (!contentType.includes('application/json')) {
@@ -204,6 +235,7 @@ async function nonStreamResponseWithUsage(
   }
   try {
     const text = await response.text();
+    timing?.markStreamComplete();
     const parsed = JSON.parse(text) as { id?: string; usage?: AnthropicUsage };
     const usage = parsed.usage ? usageFromAnthropic(parsed.usage) : { ...EMPTY_USAGE_LOCAL };
     const msgId = normalizeUpstreamId(parsed.id);
@@ -217,6 +249,7 @@ async function nonStreamResponseWithUsage(
       usagePromise: Promise.resolve(usage),
     };
   } catch {
+    timing?.markStreamComplete();
     return {
       response,
       usagePromise: Promise.resolve(EMPTY_USAGE_LOCAL),
@@ -232,7 +265,9 @@ async function nonStreamResponseWithUsage(
 export async function dispatchAnthropicRoute(
   route: RouteResult,
   body: Record<string, unknown>,
-  requestSignal?: AbortSignal
+  requestSignal?: AbortSignal,
+  timing?: RequestTimingCollector | null,
+  attempt?: RequestTimingAttempt
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
   const url = buildUrl(route.baseUrl);
   const requestBody = {
@@ -248,15 +283,16 @@ export async function dispatchAnthropicRoute(
     },
     body: JSON.stringify(requestBody),
   });
+  timing?.markAttemptHeaders(attempt, response.status);
   const upstreamRequestId = extractUpstreamRequestId(response.headers);
 
   if (response.ok && response.body) {
     const contentType = response.headers.get('Content-Type') ?? '';
     if (contentType.includes('application/json')) {
-      const result = await nonStreamResponseWithUsage(response);
+      const result = await nonStreamResponseWithUsage(response, timing);
       return { ...result, upstreamRequestId };
     }
-    const result = streamResponseWithUsage(response, requestSignal);
+    const result = streamResponseWithUsage(response, requestSignal, timing);
     return { ...result, upstreamRequestId };
   }
 

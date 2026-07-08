@@ -27,6 +27,7 @@ import {
   maybeBlockSensitiveContentCircuit,
   maybeTriggerSensitiveContentCircuitFromUpstream,
 } from '../../services/sensitive-content-circuit-route';
+import { RequestTimingCollector } from '../../services/request-timing';
 
 /** 同 chat：usage Promise 兜底超时，避免永久挂起。 */
 const USAGE_SAFETY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -78,6 +79,7 @@ messagesRoutes.post('/', async (c) => {
   const repos = c.get('repositories');
   const apiKey = c.get('apiKey');
   const start = Date.now();
+  const timing = new RequestTimingCollector();
 
   let body: { model?: string; [k: string]: unknown };
   try {
@@ -139,6 +141,7 @@ messagesRoutes.post('/', async (c) => {
     requestBodyForLog,
     requestProtocol: 'anthropic',
     startMs: start,
+    timing,
   });
   if (circuitBlocked) {
     return circuitBlocked;
@@ -152,8 +155,10 @@ messagesRoutes.post('/', async (c) => {
     routeGroup: effectiveRouteGroup,
     protocol: 'anthropic',
   });
+  timing.markGatewayComplete();
   const proxyResult = await proxyAnthropicMessages(repos, routes, body, requestSignal, {
     sticky: stickyContext,
+    timing,
   });
   const { usagePromise, chosenRoute, upstreamRequestId, circuitEvents, suppressErrorAlert } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
@@ -197,6 +202,7 @@ messagesRoutes.post('/', async (c) => {
     usageOrSafety
       .then(async ({ usage: usageCollected, incomplete, timedOut }) => {
         const latency = Date.now() - start;
+        if (timedOut) timing.markStreamComplete();
         const status = computeRequestLogStatus({
           cancelled: Boolean(usageCollected.cancelled),
           responseOk: response.ok,
@@ -245,6 +251,7 @@ messagesRoutes.post('/', async (c) => {
           route_group: chosenRoute.routeGroup,
           status,
           latency_ms: latency,
+          timing: timing.snapshot(),
           error_message: errorMessage,
           provider_key_id: chosenRoute.providerKeyId ?? null,
           provider_key_label: chosenRoute.providerKeyLabel ?? null,

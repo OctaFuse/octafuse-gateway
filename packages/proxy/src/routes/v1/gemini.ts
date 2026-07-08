@@ -28,6 +28,7 @@ import {
   maybeBlockSensitiveContentCircuit,
   maybeTriggerSensitiveContentCircuitFromUpstream,
 } from '../../services/sensitive-content-circuit-route';
+import { RequestTimingCollector } from '../../services/request-timing';
 
 /** usage Promise 兜底超时（与 OpenAI/Anthropic 路由一致）。 */
 const USAGE_SAFETY_TIMEOUT_MS = 5 * 60 * 1000;
@@ -116,6 +117,7 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
   const repos = c.get('repositories');
   const apiKey = c.get('apiKey');
   const start = Date.now();
+  const timing = new RequestTimingCollector();
   const parsedAction = parseGeminiAction(c.req.param('modelAction'));
   if (!parsedAction) {
     return c.json({ error: 'Invalid Gemini path, expected /v1beta/models/{model}:{generateContent|streamGenerateContent}' }, 400);
@@ -177,6 +179,7 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
     requestBodyForLog,
     requestProtocol: 'gemini',
     startMs: start,
+    timing,
   });
   if (circuitBlocked) {
     return circuitBlocked;
@@ -190,6 +193,7 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
     routeGroup: effectiveRouteGroup,
     protocol: 'gemini',
   });
+  timing.markGatewayComplete();
   const proxyResult = await proxyGeminiContent(
     repos,
     routes,
@@ -197,7 +201,7 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
     body,
     c.req.url.includes('?') ? c.req.url.slice(c.req.url.indexOf('?')) : '',
     requestSignal,
-    { sticky: stickyContext }
+    { sticky: stickyContext, timing }
   );
   const { usagePromise, chosenRoute, upstreamRequestId, circuitEvents, suppressErrorAlert } = proxyResult;
   const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
@@ -241,6 +245,7 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
     usageOrSafety
       .then(async ({ usage: usageCollected, incomplete, timedOut }) => {
         const latency = Date.now() - start;
+        if (timedOut) timing.markStreamComplete();
         const status = computeRequestLogStatus({
           cancelled: Boolean(usageCollected.cancelled),
           responseOk: response.ok,
@@ -290,6 +295,7 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
           route_group: chosenRoute.routeGroup,
           status,
           latency_ms: latency,
+          timing: timing.snapshot(),
           error_message: errorMessage,
           provider_key_id: chosenRoute.providerKeyId ?? null,
           provider_key_label: chosenRoute.providerKeyLabel ?? null,

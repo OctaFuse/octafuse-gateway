@@ -45,7 +45,15 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 				COALESCE(SUM(rl.output_tokens), 0) as output_tokens,
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count,
-				AVG(rl.latency_ms) as avg_latency_ms
+				AVG(rl.latency_ms) as avg_latency_ms,
+				AVG(rl.first_token_ms) as avg_first_token_ms,
+				AVG(rl.upstream_response_ms) as avg_upstream_response_ms,
+				CASE WHEN COALESCE(SUM(rl.stream_duration_ms), 0) > 0
+					THEN COALESCE(SUM(rl.output_tokens), 0) * 1000.0 / SUM(rl.stream_duration_ms)
+					ELSE NULL
+				END as tokens_per_second,
+				CASE WHEN COUNT(*) > 0 THEN COALESCE(SUM(rl.upstream_failover_count), 0) * 100.0 / COUNT(*) ELSE 0 END as failover_rate,
+				AVG(rl.upstream_attempt_count) as avg_attempts
 			 FROM api_key_request_logs rl ${joins.join(' ')}
 			 WHERE ${conditions.join(' AND ')}
 			 GROUP BY rl.model_id, rl.route_group`
@@ -124,7 +132,15 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 				COUNT(DISTINCT rl.model_id) as distinct_models,
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count,
-				AVG(rl.latency_ms) as avg_latency_ms
+				AVG(rl.latency_ms) as avg_latency_ms,
+				AVG(rl.first_token_ms) as avg_first_token_ms,
+				AVG(rl.upstream_response_ms) as avg_upstream_response_ms,
+				CASE WHEN COALESCE(SUM(rl.stream_duration_ms), 0) > 0
+					THEN COALESCE(SUM(rl.output_tokens), 0) * 1000.0 / SUM(rl.stream_duration_ms)
+					ELSE NULL
+				END as tokens_per_second,
+				CASE WHEN COUNT(*) > 0 THEN COALESCE(SUM(rl.upstream_failover_count), 0) * 100.0 / COUNT(*) ELSE 0 END as failover_rate,
+				AVG(rl.upstream_attempt_count) as avg_attempts
 			 FROM api_key_request_logs rl ${joins.join(' ')}
 			 WHERE ${conditions.join(' AND ')}
 			 GROUP BY rl.provider_id`
@@ -144,6 +160,9 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count,
 				AVG(rl.latency_ms) as avg_latency_ms,
+				AVG(rl.upstream_response_ms) as avg_upstream_response_ms,
+				CASE WHEN COUNT(*) > 0 THEN COALESCE(SUM(rl.upstream_failover_count), 0) * 100.0 / COUNT(*) ELSE 0 END as failover_rate,
+				AVG(rl.upstream_attempt_count) as avg_attempts,
 				COALESCE(${sqlMoneyRound('SUM(rl.charged_cost)')}, 0) as charged_cost,
 				COALESCE(${sqlMoneyRound('SUM(rl.metered_cost)')}, 0) as metered_cost,
 				COALESCE(${sqlMoneyRound('SUM(rl.standard_cost)')}, 0) as standard_cost
@@ -167,6 +186,9 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 				COUNT(*) as request_count,
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
 				AVG(rl.latency_ms) as avg_latency_ms,
+				AVG(rl.upstream_response_ms) as avg_upstream_response_ms,
+				CASE WHEN COUNT(*) > 0 THEN COALESCE(SUM(rl.upstream_failover_count), 0) * 100.0 / COUNT(*) ELSE 0 END as failover_rate,
+				AVG(rl.upstream_attempt_count) as avg_attempts,
 				COALESCE(${sqlMoneyRound('SUM(rl.charged_cost)')}, 0) as charged_cost,
 				COALESCE(${sqlMoneyRound('SUM(rl.metered_cost)')}, 0) as metered_cost,
 				COALESCE(${sqlMoneyRound('SUM(rl.standard_cost)')}, 0) as standard_cost

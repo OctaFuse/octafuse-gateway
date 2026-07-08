@@ -24,6 +24,7 @@ import {
 	classifyUpstreamHttpFailure,
 	type UpstreamFailureClassification,
 } from './upstream-failure-classifier';
+import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
 
 export type ProxyDispatchResult = {
 	response: Response;
@@ -53,6 +54,7 @@ export type StickyDispatchContext = {
 
 export type FailoverDispatchOptions = {
 	sticky?: StickyDispatchContext | null;
+	timing?: RequestTimingCollector | null;
 };
 
 /**
@@ -77,7 +79,12 @@ export function buildStickyDispatchContext(params: {
 	};
 }
 
-type DispatchFn = (route: RouteResult, requestSignal?: AbortSignal) => Promise<ProxyDispatchResult>;
+type DispatchFn = (
+	route: RouteResult,
+	requestSignal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt
+) => Promise<ProxyDispatchResult>;
 
 /** usagePromise 长期不结束时的并发释放兜底（大于路由层 5min usage 超时）。 */
 const CONCURRENCY_RELEASE_SAFETY_MS = 10 * 60 * 1000;
@@ -203,6 +210,8 @@ export async function failoverDispatchWithKeyPool(
 	requestSignal?: AbortSignal,
 	options?: FailoverDispatchOptions
 ): Promise<ProxyFailoverResult> {
+	const timing = options?.timing ?? null;
+	timing?.markUpstreamDispatchStart();
 	const protocolRoutes = routes.filter((route) => {
 		if (route.upstreamProtocol === expectedProtocol) return true;
 		console.warn(
@@ -277,6 +286,7 @@ export async function failoverDispatchWithKeyPool(
 
 	let lastResponse: Response | null = null;
 	let lastRoute: RouteResult = protocolRoutes[0]!;
+	let lastTimingAttempt: RequestTimingAttempt | undefined;
 
 	const rebindOnSuccess = (attempt: KeyAttempt): void => {
 		if (!sticky) return;
@@ -290,9 +300,13 @@ export async function failoverDispatchWithKeyPool(
 		);
 	};
 
-	for (const attempt of plan.attempts) {
+	for (let attemptIndex = 0; attemptIndex < plan.attempts.length; attemptIndex += 1) {
+		const attempt = plan.attempts[attemptIndex]!;
 		const { route, key } = attempt;
 		const attemptRoute = routeWithKey(route, key);
+		const timingAttempt = timing?.startAttempt(attemptRoute);
+		lastTimingAttempt = timingAttempt;
+		const hasNextAttempt = attemptIndex < plan.attempts.length - 1;
 		console.log(
 			`[Gateway Proxy] calling provider providerId=${route.providerId} keyId=${key.id} model=${route.providerModelName}`
 		);
@@ -303,11 +317,13 @@ export async function failoverDispatchWithKeyPool(
 		let usagePromise: Promise<UsageFromStream>;
 		let upstreamRequestId: string | null = null;
 		try {
-			const dispatched = await dispatch(attemptRoute, requestSignal);
+			const dispatched = await dispatch(attemptRoute, requestSignal, timing, timingAttempt);
 			response = dispatched.response;
 			usagePromise = dispatched.usagePromise;
 			upstreamRequestId = dispatched.upstreamRequestId;
 		} catch (err) {
+			timing?.markAttemptError(timingAttempt, err);
+			if (hasNextAttempt) timing?.markAttemptFailover(timingAttempt);
 			releaseProviderKeyUsage(key, 0);
 			console.warn(
 				`[Gateway Proxy] fetch failed providerId=${route.providerId} keyId=${key.id} error=${err instanceof Error ? err.message : String(err)}`
@@ -321,6 +337,7 @@ export async function failoverDispatchWithKeyPool(
 		lastRoute = attemptRoute;
 
 		if (response.ok) {
+			timing?.markFinalAttempt(timingAttempt);
 			markProviderKeySuccess(key.id);
 			scheduleUsageRelease(key, usagePromise);
 			rebindOnSuccess(attempt);
@@ -334,6 +351,7 @@ export async function failoverDispatchWithKeyPool(
 		logKeySwitchAlert(attemptRoute, classification, response.status);
 
 		if (classification.action === 'fail_immediately') {
+			timing?.markFinalAttempt(timingAttempt);
 			return {
 				response,
 				usagePromise: Promise.resolve(EMPTY_USAGE),
@@ -365,6 +383,7 @@ export async function failoverDispatchWithKeyPool(
 				});
 			}
 		}
+		if (hasNextAttempt) timing?.markAttemptFailover(timingAttempt);
 		console.warn(
 			`[Gateway Proxy] provider key non-OK, trying next candidate providerId=${route.providerId} keyId=${key.id} status=${response.status}`
 		);
@@ -381,6 +400,7 @@ export async function failoverDispatchWithKeyPool(
 		};
 	}
 
+	timing?.markFinalAttempt(lastTimingAttempt);
 	return {
 		response: lastResponse,
 		usagePromise: Promise.resolve(EMPTY_USAGE),

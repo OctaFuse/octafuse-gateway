@@ -5,6 +5,7 @@
  */
 import { useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider, GatewayRequestLog } from '@/lib/types';
 import {
@@ -35,8 +36,9 @@ export default function GatewayRequestLogsPage() {
   const [page, setPage] = useState(1);
   /** 展开四栏详情：pricing audit / 入口请求体 / 上游请求体 / raw usage */
   const [detailLogId, setDetailLogId] = useState<string | null>(null);
+  const [timingHelpLog, setTimingHelpLog] = useState<GatewayRequestLog | null>(null);
   const [copiedColumn, setCopiedColumn] = useState<
-    'audit' | 'entry' | 'upstream' | 'usage' | 'upstream_request_id' | 'upstream_message_id' | null
+    'audit' | 'entry' | 'upstream' | 'usage' | 'timing' | 'upstream_request_id' | 'upstream_message_id' | null
   >(null);
   const pageSize = 50;
   const { currency: billingCurrency } = useBillingCurrency();
@@ -253,8 +255,33 @@ export default function GatewayRequestLogsPage() {
 
   /** 毫秒数用千分位（如 23,332ms），便于扫读秒级量级 */
   const formatLatencyMs = (ms: number | null | undefined) => {
-    if (ms == null || !ms) return '-';
+    if (ms == null) return '-';
     return `${Number(ms).toLocaleString('en-US')}ms`;
+  };
+
+  const timingDiagram = (log: GatewayRequestLog): string => {
+    const gateway = formatLatencyMs(log.gateway_overhead_ms);
+    const upstream = formatLatencyMs(log.upstream_response_ms);
+    const headers = formatLatencyMs(log.final_upstream_headers_ms);
+    const ttft = formatLatencyMs(log.first_token_ms);
+    const stream = formatLatencyMs(log.stream_duration_ms);
+    return [
+      'Start',
+      '  |',
+      `  | Gateway ${gateway}`,
+      '  |<-- preflight -->|',
+      '                    |',
+      `                    | Upstream ${upstream}`,
+      '                    |<------ dispatch + provider headers ------>|',
+      `                    | Headers(final attempt) ${headers}`,
+      '                    |<---------- final fetch headers ---------->|',
+      '                                                                  |',
+      `                                                                  | Stream ${stream}`,
+      '                                                                  |<------ output / usage ------>|',
+      `  |<------------------------- TTFT ${ttft} ---------------------->|`,
+      '',
+      `Attempts: ${log.upstream_attempt_count ?? '-'} / failover ${log.upstream_failover_count ?? '-'}`,
+    ].join('\n');
   };
 
   const prettifyLogJson = (raw: string | null | undefined): string => {
@@ -326,6 +353,7 @@ export default function GatewayRequestLogsPage() {
 
   const toggleDetail = (logId: string) => {
     setDetailLogId((prev) => (prev === logId ? null : logId));
+    setTimingHelpLog(null);
     setCopiedColumn(null);
   };
 
@@ -346,7 +374,7 @@ export default function GatewayRequestLogsPage() {
 
   const copyColumn = async (
     raw: string | null | undefined,
-    col: 'audit' | 'entry' | 'upstream' | 'usage'
+    col: 'audit' | 'entry' | 'upstream' | 'usage' | 'timing'
   ) => {
     const text = prettifyLogJson(raw);
     if (!text) return;
@@ -682,6 +710,13 @@ export default function GatewayRequestLogsPage() {
                           <div className="mt-0.5 text-gray-500 tabular-nums">
                             {formatLatencyMs(log.latency_ms)}
                           </div>
+                          <div className="mt-0.5 text-gray-400 tabular-nums" title="TTFT, or upstream response when TTFT is unavailable">
+                            {log.first_token_ms != null
+                              ? `TTFT ${formatLatencyMs(log.first_token_ms)}`
+                              : log.upstream_response_ms != null
+                                ? `Up ${formatLatencyMs(log.upstream_response_ms)}`
+                                : '\u00A0'}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -728,56 +763,112 @@ export default function GatewayRequestLogsPage() {
                             const auditRaw = log.pricing_audit?.trim();
                             const auditDisplay = auditRaw ? prettifyLogJson(auditRaw) : '';
                             const auditEmpty = !auditDisplay;
+                            const timingDisplay = prettifyLogJson(log.timing_metadata ?? null);
+                            const timingRows = [
+                              ['Gateway', log.gateway_overhead_ms],
+                              ['Upstream', log.upstream_response_ms],
+                              ['Headers', log.final_upstream_headers_ms],
+                              ['TTFT', log.first_token_ms],
+                              ['Stream', log.stream_duration_ms],
+                            ] as const;
                             const upstreamRequestId = log.upstream_request_id?.trim() ?? '';
                             const upstreamMessageId = log.upstream_message_id?.trim() ?? '';
                             return (
-                              <div className="min-w-[72rem]">
-                                {upstreamMessageId ? (
-                                  <div className="flex items-center justify-between gap-3 border-b border-emerald-200 bg-emerald-50/60 px-3 py-2">
-                                    <div className="min-w-0">
-                                      <div className="text-[11px] font-medium text-emerald-950">
-                                        Upstream message id
-                                      </div>
+                              <div className="min-w-[110rem]">
+                                {upstreamMessageId || upstreamRequestId ? (
+                                  <div className="grid grid-cols-2 gap-3 border-b border-gray-200 bg-gray-50/70 p-3">
+                                    {[
+                                      {
+                                        id: 'upstream_message_id' as const,
+                                        label: 'Upstream message id',
+                                        value: upstreamMessageId,
+                                        tone: 'emerald',
+                                      },
+                                      {
+                                        id: 'upstream_request_id' as const,
+                                        label: 'Upstream request id',
+                                        value: upstreamRequestId,
+                                        tone: 'sky',
+                                      },
+                                    ].map(({ id, label, value, tone }) => (
                                       <div
-                                        className="mt-0.5 truncate font-mono text-xs text-emerald-900"
-                                        title={upstreamMessageId}
+                                        key={id}
+                                        className={`min-w-0 rounded border px-3 py-2 ${
+                                          tone === 'emerald'
+                                            ? 'border-emerald-200 bg-emerald-50/70 text-emerald-950'
+                                            : 'border-sky-200 bg-sky-50/70 text-sky-950'
+                                        }`}
                                       >
-                                        {upstreamMessageId}
+                                        <div className="flex items-center justify-between gap-3">
+                                          <div className="min-w-0">
+                                            <div className="text-[11px] font-medium">{label}</div>
+                                            <div
+                                              className="mt-0.5 truncate font-mono text-xs"
+                                              title={value || undefined}
+                                            >
+                                              {value || '-'}
+                                            </div>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            disabled={!value}
+                                            onClick={() => copyPlainText(value, id)}
+                                            className={`px-2 py-0.5 text-[10px] border rounded hover:bg-white/80 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                                              tone === 'emerald'
+                                                ? 'border-emerald-300 text-emerald-950'
+                                                : 'border-sky-300 text-sky-950'
+                                            }`}
+                                          >
+                                            {copiedColumn === id ? tCommon('copied') : tCommon('copy')}
+                                          </button>
+                                        </div>
                                       </div>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => copyPlainText(upstreamMessageId, 'upstream_message_id')}
-                                      className="px-2 py-0.5 text-[10px] border border-emerald-300 rounded text-emerald-950 hover:bg-white/80 shrink-0"
-                                    >
-                                      {copiedColumn === 'upstream_message_id' ? tCommon('copied') : tCommon('copy')}
-                                    </button>
+                                    ))}
                                   </div>
                                 ) : null}
-                                {upstreamRequestId ? (
-                                  <div className="flex items-center justify-between gap-3 border-b border-sky-200 bg-sky-50/60 px-3 py-2">
-                                    <div className="min-w-0">
-                                      <div className="text-[11px] font-medium text-sky-950">
-                                        Upstream request id
-                                      </div>
-                                      <div
-                                        className="mt-0.5 truncate font-mono text-xs text-sky-900"
-                                        title={upstreamRequestId}
+                              <div className="grid min-w-[110rem] grid-cols-5 items-stretch gap-3 p-3">
+                                <div className="min-w-0 flex h-full min-h-[22rem] flex-col border border-sky-200 rounded-md overflow-hidden bg-sky-50/50">
+                                  <div className="px-2 py-1.5 border-b border-sky-200 bg-sky-100/50 flex items-center justify-between gap-2 shrink-0">
+                                    <span className="text-xs font-medium text-sky-950">Timing</span>
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => setTimingHelpLog(log)}
+                                        title="Explain timing metrics"
+                                        className="inline-flex h-5 w-5 items-center justify-center rounded border border-sky-300 text-sky-900 hover:bg-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-500"
                                       >
-                                        {upstreamRequestId}
-                                      </div>
+                                        <QuestionMarkCircleIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                                        <span className="sr-only">Explain timing metrics</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={!timingDisplay}
+                                        onClick={() => copyColumn(log.timing_metadata, 'timing')}
+                                        className="px-2 py-0.5 text-[10px] border border-sky-300 rounded text-sky-950 hover:bg-white/80 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                                      >
+                                        {copiedColumn === 'timing' ? tCommon('copied') : tCommon('copy')}
+                                      </button>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => copyPlainText(upstreamRequestId, 'upstream_request_id')}
-                                      className="px-2 py-0.5 text-[10px] border border-sky-300 rounded text-sky-950 hover:bg-white/80 shrink-0"
-                                    >
-                                      {copiedColumn === 'upstream_request_id' ? tCommon('copied') : tCommon('copy')}
-                                    </button>
                                   </div>
-                                ) : null}
-                              <div className="grid min-w-[72rem] grid-cols-4 gap-3 p-3">
-                                <div className="min-w-0 flex flex-col min-h-0 border border-violet-200 rounded-md overflow-hidden bg-violet-50/50">
+                                  <div className="p-2 text-[11px] text-sky-950 space-y-1 shrink-0">
+                                    {timingRows.map(([label, value]) => (
+                                      <div key={label} className="flex items-center justify-between gap-3">
+                                        <span>{label}</span>
+                                        <span className="font-mono tabular-nums">{formatLatencyMs(value)}</span>
+                                      </div>
+                                    ))}
+                                    <div className="flex items-center justify-between gap-3 border-t border-sky-100 pt-1">
+                                      <span>Attempts</span>
+                                      <span className="font-mono tabular-nums">
+                                        {log.upstream_attempt_count ?? '-'} / failover {log.upstream_failover_count ?? '-'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <pre className="mx-2 mb-2 flex-1 min-h-0 overflow-auto rounded border border-sky-100 bg-white/90 p-2 font-mono text-[11px] leading-snug text-gray-800 whitespace-pre-wrap break-words">
+                                    {timingDisplay || tCommon('noDataFound')}
+                                  </pre>
+                                </div>
+                                <div className="min-w-0 flex h-full min-h-[22rem] flex-col border border-violet-200 rounded-md overflow-hidden bg-violet-50/50">
                                   <div className="px-2 py-1.5 border-b border-violet-200 bg-violet-100/40 flex items-center justify-between gap-2 shrink-0">
                                     <span className="text-xs font-medium text-violet-950">Pricing audit</span>
                                     <button
@@ -793,7 +884,7 @@ export default function GatewayRequestLogsPage() {
                                     {auditLine ? (
                                       <div className="text-[11px] text-violet-950/95 shrink-0">{auditLine}</div>
                                     ) : null}
-                                    <pre className="flex-1 min-h-[6rem] max-h-48 overflow-auto rounded border border-violet-100 bg-white/90 p-2 font-mono text-[11px] leading-snug text-gray-800 whitespace-pre-wrap break-words">
+                                    <pre className="flex-1 min-h-0 overflow-auto rounded border border-violet-100 bg-white/90 p-2 font-mono text-[11px] leading-snug text-gray-800 whitespace-pre-wrap break-words">
                                       {auditEmpty ? tCommon('noDataFound') : auditDisplay}
                                     </pre>
                                   </div>
@@ -822,7 +913,7 @@ export default function GatewayRequestLogsPage() {
                                   return (
                                     <div
                                       key={col}
-                                      className="min-w-0 flex flex-col min-h-0 border border-gray-200 rounded-md overflow-hidden"
+                                      className="min-w-0 flex h-full min-h-[22rem] flex-col border border-gray-200 rounded-md overflow-hidden"
                                     >
                                       <div className="px-2 py-1.5 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-2 shrink-0">
                                         <span className="text-xs font-medium text-gray-700">{title}</span>
@@ -835,7 +926,7 @@ export default function GatewayRequestLogsPage() {
                                           {copiedColumn === col ? tCommon('copied') : tCommon('copy')}
                                         </button>
                                       </div>
-                                      <pre className="p-2 text-xs text-gray-800 whitespace-pre-wrap break-words min-h-[6rem] max-h-48 overflow-auto font-mono flex-1">
+                                      <pre className="p-2 text-xs text-gray-800 whitespace-pre-wrap break-words min-h-0 overflow-auto font-mono flex-1">
                                         {empty ? tCommon('noDataFound') : display}
                                       </pre>
                                     </div>
@@ -864,6 +955,47 @@ export default function GatewayRequestLogsPage() {
           <div className="text-center py-12 text-gray-500">{tCommon('loading')}</div>
         )}
       </div>
+
+      {timingHelpLog ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="timing-help-title"
+          onClick={() => setTimingHelpLog(null)}
+        >
+          <div
+            className="w-full max-w-3xl overflow-hidden rounded-lg border border-sky-200 bg-white shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-sky-100 bg-sky-50 px-4 py-3">
+              <h2 id="timing-help-title" className="text-sm font-semibold text-sky-950">
+                Timing metrics
+              </h2>
+              <button
+                type="button"
+                onClick={() => setTimingHelpLog(null)}
+                className="rounded border border-sky-300 px-2 py-1 text-xs text-sky-950 hover:bg-white"
+              >
+                Close
+              </button>
+            </div>
+            <div className="max-h-[80vh] overflow-auto p-4">
+              <div className="grid gap-2 text-sm text-gray-700 sm:grid-cols-2">
+                <div><span className="font-medium text-gray-950">Gateway</span>: auth, model routing, budget and circuit checks before upstream dispatch.</div>
+                <div><span className="font-medium text-gray-950">Upstream</span>: dispatch plus provider/key attempts until the selected upstream response headers arrive.</div>
+                <div><span className="font-medium text-gray-950">Headers</span>: the final selected provider fetch until headers return.</div>
+                <div><span className="font-medium text-gray-950">TTFT</span>: request start to first parsed content token/chunk.</div>
+                <div><span className="font-medium text-gray-950">Stream</span>: selected upstream headers to stream end, usage collection, cancel, or timeout.</div>
+                <div><span className="font-medium text-gray-950">Attempts</span>: upstream candidates tried / failover switches.</div>
+              </div>
+              <pre className="mt-4 overflow-auto rounded-md border border-slate-800 bg-slate-950 p-4 font-mono text-xs leading-relaxed text-sky-50 whitespace-pre">
+                {timingDiagram(timingHelpLog)}
+              </pre>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Pagination */}
       {totalPages > 1 && (

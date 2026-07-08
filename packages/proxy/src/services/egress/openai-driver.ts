@@ -2,6 +2,7 @@ import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
 import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
+import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 
 /**
  * OpenAI 协议流式响应（SSE）在此文件中有两条并行关注点，请勿混为一谈：
@@ -129,12 +130,29 @@ function buildUrl(baseUrl: string): string {
  * 从单行 SSE `data: {...}` 里解析 `usage`，合并进网关的 `usage`（后出现的覆盖先前的）。
  * 注意：这是**计费侧**用的统计，与 `transformStreamUsageForClient` 是否删字段独立。
  */
-function processUsageFromDataLine(line: string, usage: UsageFromStream): void {
+function hasOpenAiContentDelta(parsed: {
+  choices?: Array<{
+    delta?: { content?: unknown; tool_calls?: unknown; function_call?: unknown };
+  }>;
+}): boolean {
+  for (const choice of parsed.choices ?? []) {
+    const delta = choice?.delta;
+    if (!delta) continue;
+    if (typeof delta.content === 'string' && delta.content.length > 0) return true;
+    if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) return true;
+    if (delta.function_call != null) return true;
+  }
+  return false;
+}
+
+function processUsageFromDataLine(line: string, usage: UsageFromStream, timing?: RequestTimingCollector | null): void {
   if (!line.startsWith('data: ')) return;
   const data = line.slice(6).trim();
   if (data === '[DONE]') return;
   try {
-    const parsed = JSON.parse(data) as { id?: string; usage?: ProviderUsage };
+    const parsed = JSON.parse(data) as { id?: string; usage?: ProviderUsage; choices?: Array<{ delta?: { content?: unknown; tool_calls?: unknown; function_call?: unknown } }> };
+    timing?.markFirstEvent();
+    if (hasOpenAiContentDelta(parsed)) timing?.markFirstToken();
     // message id 为响应对象 id（如 chatcmpl-*）；每个 chunk 都带，取首个。
     if (!usage.upstreamMessageId) {
       const msgId = normalizeUpstreamId(parsed.id);
@@ -212,7 +230,8 @@ async function pumpWithUsageTracking(
   downstream: WritableStream<Uint8Array>,
   usage: UsageFromStream,
   resolveUsage: (u: UsageFromStream) => void,
-  requestSignal?: AbortSignal
+  requestSignal?: AbortSignal,
+  timing?: RequestTimingCollector | null
 ): Promise<void> {
   const reader = upstream.getReader();
   const writer = downstream.getWriter();
@@ -234,7 +253,7 @@ async function pumpWithUsageTracking(
         if (state.lineBuffer.trim()) {
           const line = state.lineBuffer.trim();
           state.lineBuffer = '';
-          processUsageFromDataLine(line, usage);
+          processUsageFromDataLine(line, usage, timing);
           if (!clientDisconnected) {
             try {
               await writer.write(encoder.encode(transformStreamUsageForClient(line) + '\n'));
@@ -248,6 +267,7 @@ async function pumpWithUsageTracking(
         break;
       }
 
+      if (value.byteLength > 0) timing?.markFirstByte();
       state.lineBuffer += decoder.decode(value, { stream: true });
       const lines = state.lineBuffer.split('\n');
       // 最后一项可能是不完整行，留到下次 read 或流结束时的 EOF 分支
@@ -255,7 +275,7 @@ async function pumpWithUsageTracking(
 
       let forward = '';
       for (const line of lines) {
-        processUsageFromDataLine(line, usage);
+        processUsageFromDataLine(line, usage, timing);
         forward += transformStreamUsageForClient(line) + '\n';
       }
 
@@ -288,6 +308,7 @@ async function pumpWithUsageTracking(
     console.warn('[Gateway Proxy] pump error', err instanceof Error ? err.message : String(err));
   } finally {
     requestSignal?.removeEventListener('abort', onAbort);
+    timing?.markStreamComplete();
     resolveUsage(usage);
     try {
       await writer.close();
@@ -303,7 +324,8 @@ async function pumpWithUsageTracking(
 
 function streamResponseWithUsage(
   response: Response,
-  requestSignal?: AbortSignal
+  requestSignal?: AbortSignal,
+  timing?: RequestTimingCollector | null
 ): { response: Response; usagePromise: Promise<UsageFromStream> } {
   let resolveUsage!: (u: UsageFromStream) => void;
   const usagePromise = new Promise<UsageFromStream>((resolve) => {
@@ -313,7 +335,7 @@ function streamResponseWithUsage(
   const usage: UsageFromStream = { ...EMPTY_USAGE_LOCAL };
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
 
-  pumpWithUsageTracking(response.body!, writable, usage, resolveUsage, requestSignal).catch(() => {
+  pumpWithUsageTracking(response.body!, writable, usage, resolveUsage, requestSignal, timing).catch(() => {
     // resolveUsage already called in finally
   });
 
@@ -331,7 +353,8 @@ function streamResponseWithUsage(
 }
 
 async function nonStreamResponseWithUsage(
-  response: Response
+  response: Response,
+  timing?: RequestTimingCollector | null
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream> }> {
   const contentType = response.headers.get('Content-Type') ?? '';
   if (!contentType.includes('application/json')) {
@@ -343,6 +366,7 @@ async function nonStreamResponseWithUsage(
   let usage: UsageFromStream = EMPTY_USAGE_LOCAL;
   try {
     const text = await response.text();
+    timing?.markStreamComplete();
     const parsed = JSON.parse(text) as { id?: string; usage?: ProviderUsage };
     if (parsed.usage) {
       usage = usageFromProvider(parsed.usage);
@@ -359,6 +383,7 @@ async function nonStreamResponseWithUsage(
       usagePromise: Promise.resolve(usage),
     };
   } catch {
+    timing?.markStreamComplete();
     return {
       response,
       usagePromise: Promise.resolve(EMPTY_USAGE_LOCAL),
@@ -377,7 +402,9 @@ async function nonStreamResponseWithUsage(
 export async function dispatchOpenAiRoute(
   route: RouteResult,
   body: Record<string, unknown>,
-  requestSignal?: AbortSignal
+  requestSignal?: AbortSignal,
+  timing?: RequestTimingCollector | null,
+  attempt?: RequestTimingAttempt
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
   const url = buildUrl(route.baseUrl);
   const requestBody = {
@@ -393,15 +420,16 @@ export async function dispatchOpenAiRoute(
     },
     body: JSON.stringify(requestBody),
   });
+  timing?.markAttemptHeaders(attempt, response.status);
   const upstreamRequestId = extractUpstreamRequestId(response.headers);
 
   if (response.ok && response.body) {
     const contentType = response.headers.get('Content-Type') ?? '';
     if (contentType.includes('application/json')) {
-      const result = await nonStreamResponseWithUsage(response);
+      const result = await nonStreamResponseWithUsage(response, timing);
       return { ...result, upstreamRequestId };
     }
-    const result = streamResponseWithUsage(response, requestSignal);
+    const result = streamResponseWithUsage(response, requestSignal, timing);
     return { ...result, upstreamRequestId };
   }
 
