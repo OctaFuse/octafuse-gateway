@@ -1,6 +1,7 @@
 /**
  * D1：管理后台分析聚合查询。
  */
+import { ANALYTICS_TTFT_SELECT_SQL } from '../../lib/analytics-ttft-sql';
 import { sqlMoneyRound } from '../../lib/money-precision';
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { AdminAnalyticsRepository } from '../../storage/gateway-repository-interfaces';
@@ -46,7 +47,7 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count,
 				AVG(rl.latency_ms) as avg_latency_ms,
-				AVG(rl.first_token_ms) as avg_first_token_ms,
+				${ANALYTICS_TTFT_SELECT_SQL},
 				AVG(rl.upstream_response_ms) as avg_upstream_response_ms,
 				CASE WHEN COALESCE(SUM(rl.stream_duration_ms), 0) > 0
 					THEN COALESCE(SUM(rl.output_tokens), 0) * 1000.0 / SUM(rl.stream_duration_ms)
@@ -133,7 +134,7 @@ export function createD1AdminAnalyticsRepository(db: D1DatabaseClient): AdminAna
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count,
 				AVG(rl.latency_ms) as avg_latency_ms,
-				AVG(rl.first_token_ms) as avg_first_token_ms,
+				${ANALYTICS_TTFT_SELECT_SQL},
 				AVG(rl.upstream_response_ms) as avg_upstream_response_ms,
 				CASE WHEN COALESCE(SUM(rl.stream_duration_ms), 0) > 0
 					THEN COALESCE(SUM(rl.output_tokens), 0) * 1000.0 / SUM(rl.stream_duration_ms)

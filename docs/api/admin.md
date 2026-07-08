@@ -696,6 +696,27 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
 
 响应：`{ success, data: [...], tags: string[] }`（`tags` 为库内全部 distinct 标签，供筛选 UI）。
 
+`data` 每行除用量/成本/可靠性字段外，含 TTFT 聚合（来自 `api_key_request_logs.first_reasoning_token_ms` / `first_token_ms`）：
+
+| 字段 | 说明 |
+|------|------|
+| `avg_first_reasoning_token_ms` | 平均 TTFT (reasoning)：请求起点 → 首个 reasoning/thinking chunk |
+| `avg_first_token_ms` | 平均 TTFT (content)：请求起点 → 首个 content/tool chunk |
+| `avg_effective_ttft_ms` | 有效 TTFT：`AVG(COALESCE(first_reasoning_token_ms, first_token_ms))`，用户感知首响应 |
+| `avg_reasoning_phase_ms` | reasoning → content 过渡阶段平均时长（两者均非空时） |
+| `reasoning_ttft_rate` | 含 reasoning TTFT 的请求占比（%） |
+| `content_ttft_rate` | 含 content TTFT 的请求占比（%） |
+
+### `GET /admin/analytics/providers`
+
+| 查询参数 | 说明 |
+|----------|------|
+| `start_date` / `end_date` | 同上 |
+| `tag` | 可选；非空时只统计带该 `model_tags.tag` 的模型 |
+| `model_id` / `route_group` | 可选；钻取过滤 |
+
+响应：`{ success, data: [...], tags: string[] }`；`data` 行字段与 **models** 分析相同（含上表 TTFT 聚合列），按 `provider_id` 分组。
+
 ### `GET /admin/analytics/users`
 
 | 查询参数 | 说明 |

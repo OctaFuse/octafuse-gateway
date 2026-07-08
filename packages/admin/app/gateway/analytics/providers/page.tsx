@@ -7,6 +7,7 @@ import { Fragment, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
+import { AnalyticsTtftCell } from '@/components/AnalyticsTtftCell';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
@@ -138,7 +139,12 @@ export default function ProviderUsagePage() {
       'error_count',
       'success_rate',
       'avg_latency_ms',
+      'avg_first_reasoning_token_ms',
       'avg_first_token_ms',
+      'avg_effective_ttft_ms',
+      'avg_reasoning_phase_ms',
+      'reasoning_ttft_rate',
+      'content_ttft_rate',
       'avg_upstream_response_ms',
       'tokens_per_second',
       'failover_rate',
@@ -160,7 +166,12 @@ export default function ProviderUsagePage() {
       String(r.error_count),
       String(r.success_rate),
       r.avg_latency_ms != null ? String(r.avg_latency_ms) : '',
+      formatMaybeNumber(r.avg_first_reasoning_token_ms),
       formatMaybeNumber(r.avg_first_token_ms),
+      formatMaybeNumber(r.avg_effective_ttft_ms),
+      formatMaybeNumber(r.avg_reasoning_phase_ms),
+      formatMaybeNumber(r.reasoning_ttft_rate, 1),
+      formatMaybeNumber(r.content_ttft_rate, 1),
       formatMaybeNumber(r.avg_upstream_response_ms),
       formatMaybeNumber(r.tokens_per_second, 2),
       String(r.failover_rate),
@@ -210,7 +221,7 @@ export default function ProviderUsagePage() {
                 <Th label={tA('columns.avgChargedPerReq')} columnKey="avg_charged_per_request" />
                 <Th label={tA('columns.successRate')} columnKey="success_rate" />
                 <Th label={tA('columns.avgLatencyMs')} columnKey="avg_latency_ms" />
-                <Th label={tA('columns.avgTtftMs')} columnKey="avg_first_token_ms" />
+                <Th label={tA('columns.ttft')} columnKey="avg_effective_ttft_ms" />
                 <Th label={tA('columns.avgUpstreamMs')} columnKey="avg_upstream_response_ms" />
                 <Th label={tA('columns.tokensPerSecond')} columnKey="tokens_per_second" />
                 <Th label={tA('columns.failoverRate')} columnKey="failover_rate" />
@@ -264,7 +275,9 @@ export default function ProviderUsagePage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : tCommon('noData')}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_first_token_ms != null ? Math.round(r.avg_first_token_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        <AnalyticsTtftCell metrics={r} noDataLabel={tCommon('noData')} />
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.avg_upstream_response_ms != null ? Math.round(r.avg_upstream_response_ms) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.tokens_per_second != null ? r.tokens_per_second.toFixed(1) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.failover_rate.toFixed(1)}%</td>
@@ -293,7 +306,7 @@ export default function ProviderUsagePage() {
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgChargedPerReq')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.successRate')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgLatencyMs')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgTtftMs')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.ttft')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.tokensPerSecond')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.failoverRate')}</th>
                                   </tr>
@@ -339,7 +352,7 @@ export default function ProviderUsagePage() {
                                           {modelRow.avg_latency_ms != null ? Math.round(modelRow.avg_latency_ms) : tCommon('noData')}
                                         </td>
                                         <td className="px-3 py-2 text-sm text-gray-600">
-                                          {modelRow.avg_first_token_ms != null ? Math.round(modelRow.avg_first_token_ms) : tCommon('noData')}
+                                          <AnalyticsTtftCell metrics={modelRow} noDataLabel={tCommon('noData')} />
                                         </td>
                                         <td className="px-3 py-2 text-sm text-gray-600">
                                           {modelRow.tokens_per_second != null ? modelRow.tokens_per_second.toFixed(1) : tCommon('noData')}

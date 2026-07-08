@@ -406,7 +406,12 @@ export type AdminModelAnalyticsRow = {
 	error_count: number;
 	success_rate: number;
 	avg_latency_ms: number | null;
+	avg_first_reasoning_token_ms: number | null;
 	avg_first_token_ms: number | null;
+	avg_effective_ttft_ms: number | null;
+	avg_reasoning_phase_ms: number | null;
+	reasoning_ttft_rate: number;
+	content_ttft_rate: number;
 	avg_upstream_response_ms: number | null;
 	tokens_per_second: number | null;
 	failover_rate: number;
@@ -433,7 +438,12 @@ export type AdminProviderAnalyticsRow = {
 	error_count: number;
 	success_rate: number;
 	avg_latency_ms: number | null;
+	avg_first_reasoning_token_ms: number | null;
 	avg_first_token_ms: number | null;
+	avg_effective_ttft_ms: number | null;
+	avg_reasoning_phase_ms: number | null;
+	reasoning_ttft_rate: number;
+	content_ttft_rate: number;
 	avg_upstream_response_ms: number | null;
 	tokens_per_second: number | null;
 	failover_rate: number;

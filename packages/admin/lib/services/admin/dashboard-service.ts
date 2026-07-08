@@ -23,6 +23,24 @@ import type {
 	AdminGlobalBudgetAuditLogsOutput,
 } from './types';
 
+function mapAnalyticsTtftFields(r: {
+	avg_first_reasoning_token_ms?: unknown;
+	avg_first_token_ms?: unknown;
+	avg_effective_ttft_ms?: unknown;
+	avg_reasoning_phase_ms?: unknown;
+	reasoning_ttft_rate?: unknown;
+	content_ttft_rate?: unknown;
+}) {
+	return {
+		avg_first_reasoning_token_ms: r.avg_first_reasoning_token_ms != null ? Number(r.avg_first_reasoning_token_ms) : null,
+		avg_first_token_ms: r.avg_first_token_ms != null ? Number(r.avg_first_token_ms) : null,
+		avg_effective_ttft_ms: r.avg_effective_ttft_ms != null ? Number(r.avg_effective_ttft_ms) : null,
+		avg_reasoning_phase_ms: r.avg_reasoning_phase_ms != null ? Number(r.avg_reasoning_phase_ms) : null,
+		reasoning_ttft_rate: Number(r.reasoning_ttft_rate ?? 0),
+		content_ttft_rate: Number(r.content_ttft_rate ?? 0),
+	};
+}
+
 /**
  * 全局请求日志分页（将查询字符串参数映射为 `getRequestLogs` 的 options）。
  * @param input.page / page_size 字符串或数字均可，非法时由 parseInt 处理
@@ -226,7 +244,7 @@ export async function getModelAnalyticsService(
 			error_count: Number(r.error_count),
 			success_rate: reqCount > 0 ? (successCount / reqCount) * 100 : 0,
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,
-			avg_first_token_ms: r.avg_first_token_ms != null ? Number(r.avg_first_token_ms) : null,
+			...mapAnalyticsTtftFields(r),
 			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
 			tokens_per_second: r.tokens_per_second != null ? Number(r.tokens_per_second) : null,
 			failover_rate: Number(r.failover_rate ?? 0),
@@ -280,7 +298,7 @@ export async function getProviderAnalyticsService(
 			error_count: Number(r.error_count),
 			success_rate: reqCount > 0 ? (successCount / reqCount) * 100 : 0,
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,
-			avg_first_token_ms: r.avg_first_token_ms != null ? Number(r.avg_first_token_ms) : null,
+			...mapAnalyticsTtftFields(r),
 			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
 			tokens_per_second: r.tokens_per_second != null ? Number(r.tokens_per_second) : null,
 			failover_rate: Number(r.failover_rate ?? 0),
