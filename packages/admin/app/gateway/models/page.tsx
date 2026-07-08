@@ -121,6 +121,8 @@ function ModelsContent() {
 			<ModelImportModal
 				open={state.showImportCatalogModal}
 				catalogRows={state.importCatalogRows}
+				filteredCatalogRows={state.filteredImportCatalogRows}
+				catalogSearch={state.importCatalogSearch}
 				catalogLoading={state.importCatalogLoading}
 				catalogError={state.importCatalogError}
 				selected={state.importSelected}
@@ -130,6 +132,7 @@ function ModelsContent() {
 				billingCurrency={state.billingCurrency}
 				existingModelIds={state.existingModelIds}
 				onClose={() => state.setShowImportCatalogModal(false)}
+				onCatalogSearchChange={state.setImportCatalogSearch}
 				onSelectAll={state.selectAllImportPresets}
 				onClearSelection={state.clearImportPresetSelection}
 				onReload={() => void state.loadImportCatalog()}

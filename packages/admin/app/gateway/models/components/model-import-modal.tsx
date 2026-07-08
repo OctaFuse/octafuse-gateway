@@ -1,5 +1,6 @@
 'use client';
 
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatPerMillionTokenUnit } from '@/lib/format-gateway-currency';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
@@ -10,6 +11,8 @@ import type { PresetCatalogRow } from '../types';
 type Props = {
 	open: boolean;
 	catalogRows: PresetCatalogRow[];
+	filteredCatalogRows: PresetCatalogRow[];
+	catalogSearch: string;
 	catalogLoading: boolean;
 	catalogError: string;
 	selected: Record<string, boolean>;
@@ -19,6 +22,7 @@ type Props = {
 	billingCurrency: string;
 	existingModelIds: Set<string>;
 	onClose: () => void;
+	onCatalogSearchChange: (value: string) => void;
 	onSelectAll: () => void;
 	onClearSelection: () => void;
 	onReload: () => void;
@@ -30,6 +34,8 @@ export function ModelImportModal(props: Props) {
 	const {
 		open,
 		catalogRows,
+		filteredCatalogRows,
+		catalogSearch,
 		catalogLoading,
 		catalogError,
 		selected,
@@ -39,6 +45,7 @@ export function ModelImportModal(props: Props) {
 		billingCurrency,
 		existingModelIds,
 		onClose,
+		onCatalogSearchChange,
 		onSelectAll,
 		onClearSelection,
 		onReload,
@@ -51,7 +58,8 @@ export function ModelImportModal(props: Props) {
 
 	if (!open) return null;
 
-	const sortedRows = sortImportCatalogRows(catalogRows);
+	const hasSearch = catalogSearch.trim().length > 0;
+	const sortedRows = sortImportCatalogRows(filteredCatalogRows);
 	const canImport = catalogRows.some((r) => selected[r.id] && !existingModelIds.has(r.id));
 	const unit = formatPerMillionTokenUnit(billingCurrency);
 
@@ -90,40 +98,76 @@ export function ModelImportModal(props: Props) {
 					</button>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-gray-50 px-6 py-3">
-					<button
-						type="button"
-						onClick={onSelectAll}
-						disabled={catalogLoading || catalogRows.length === 0}
-						className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
-					>
-						{tCommon('selectAll')}
-					</button>
-					<button
-						type="button"
-						onClick={onClearSelection}
-						disabled={catalogLoading || catalogRows.length === 0}
-						className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
-					>
-						{t('clear')}
-					</button>
-					<button
-						type="button"
-						onClick={onReload}
-						disabled={catalogLoading}
-						className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
-					>
-						{tCommon('reload')}
-					</button>
-					<span className="ml-auto text-sm text-gray-600">
-						{t('selectedAvailable', { selected: selectedCount, importable: importableCount })}
-						{catalogRows.length > importableCount ? (
-							<span className="text-gray-400">
-								{' '}
-								{t('alreadyInGateway', { count: catalogRows.length - importableCount })}
-							</span>
-						) : null}
-					</span>
+				<div className="flex shrink-0 flex-col gap-3 border-b bg-gray-50 px-6 py-3">
+					<div className="relative min-w-0">
+						<MagnifyingGlassIcon
+							className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+							aria-hidden
+						/>
+						<input
+							type="search"
+							value={catalogSearch}
+							onChange={(e) => onCatalogSearchChange(e.target.value)}
+							className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder={t('searchPlaceholder')}
+							aria-label={t('searchPlaceholder')}
+							autoComplete="off"
+						/>
+						{hasSearch && (
+							<button
+								type="button"
+								onClick={() => onCatalogSearchChange('')}
+								className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								aria-label={t('clearSearch')}
+							>
+								<XMarkIcon className="h-4 w-4" aria-hidden />
+							</button>
+						)}
+					</div>
+					<div className="flex flex-wrap items-center gap-2">
+						<button
+							type="button"
+							onClick={onSelectAll}
+							disabled={catalogLoading || filteredCatalogRows.length === 0}
+							className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+						>
+							{tCommon('selectAll')}
+						</button>
+						<button
+							type="button"
+							onClick={onClearSelection}
+							disabled={catalogLoading || catalogRows.length === 0}
+							className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+						>
+							{t('clear')}
+						</button>
+						<button
+							type="button"
+							onClick={onReload}
+							disabled={catalogLoading}
+							className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+						>
+							{tCommon('reload')}
+						</button>
+						<span className="ml-auto text-sm text-gray-600">
+							{t('selectedAvailable', { selected: selectedCount, importable: importableCount })}
+							{hasSearch ? (
+								<>
+									{' '}
+									{t('selectedShowing', {
+										filtered: filteredCatalogRows.length,
+										total: catalogRows.length,
+									})}
+								</>
+							) : null}
+							{catalogRows.length > importableCount ? (
+								<span className="text-gray-400">
+									{' '}
+									{t('alreadyInGateway', { count: catalogRows.length - importableCount })}
+								</span>
+							) : null}
+						</span>
+					</div>
 				</div>
 
 				<div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
@@ -136,7 +180,10 @@ export function ModelImportModal(props: Props) {
 					{!catalogLoading && !catalogError && catalogRows.length === 0 && (
 						<div className="py-12 text-center text-gray-500">{t('catalogEmpty')}</div>
 					)}
-					{!catalogLoading && !catalogError && catalogRows.length > 0 && (
+					{!catalogLoading && !catalogError && catalogRows.length > 0 && filteredCatalogRows.length === 0 && (
+						<div className="py-12 text-center text-gray-500">{t('noMatch')}</div>
+					)}
+					{!catalogLoading && !catalogError && filteredCatalogRows.length > 0 && (
 						<div className="overflow-x-auto rounded-lg border border-gray-200">
 							<table className="min-w-full divide-y divide-gray-200 text-sm">
 								<thead className="bg-gray-50">

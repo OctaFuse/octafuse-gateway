@@ -52,6 +52,7 @@ export function useModelsPageState() {
 	const [importCatalogLoading, setImportCatalogLoading] = useState(false);
 	const [importCatalogError, setImportCatalogError] = useState('');
 	const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
+	const [importCatalogSearch, setImportCatalogSearch] = useState('');
 	const [importSubmitting, setImportSubmitting] = useState(false);
 	const [metadataPreview, setMetadataPreview] = useState<MetadataPreviewState | null>(null);
 	const { currency: billingCurrency } = useBillingCurrency();
@@ -73,6 +74,16 @@ export function useModelsPageState() {
 		() => importCatalogRows.filter((r) => !existingModelIds.has(r.id)).length,
 		[importCatalogRows, existingModelIds]
 	);
+
+	const filteredImportCatalogRows = useMemo(() => {
+		const query = importCatalogSearch.trim().toLowerCase();
+		if (!query) return importCatalogRows;
+		return importCatalogRows.filter((row) => {
+			const id = row.id.toLowerCase();
+			const name = (row.display_name ?? '').toLowerCase();
+			return id.includes(query) || name.includes(query);
+		});
+	}, [importCatalogSearch, importCatalogRows]);
 
 	const modelsByVendor = useMemo(() => groupModelsByVendor(models), [models]);
 
@@ -165,6 +176,7 @@ export function useModelsPageState() {
 	const openImportCatalogModal = useCallback(() => {
 		setShowImportCatalogModal(true);
 		setImportCatalogError('');
+		setImportCatalogSearch('');
 		setImportSelected({});
 		void loadImportCatalog();
 	}, [loadImportCatalog]);
@@ -178,14 +190,16 @@ export function useModelsPageState() {
 	);
 
 	const selectAllImportPresets = useCallback(() => {
-		const next: Record<string, boolean> = {};
-		for (const row of importCatalogRows) {
-			if (!existingModelIds.has(row.id)) {
-				next[row.id] = true;
+		setImportSelected((prev) => {
+			const next = { ...prev };
+			for (const row of filteredImportCatalogRows) {
+				if (!existingModelIds.has(row.id)) {
+					next[row.id] = true;
+				}
 			}
-		}
-		setImportSelected(next);
-	}, [importCatalogRows, existingModelIds]);
+			return next;
+		});
+	}, [filteredImportCatalogRows, existingModelIds]);
 
 	const clearImportPresetSelection = useCallback(() => {
 		setImportSelected({});
@@ -391,6 +405,9 @@ export function useModelsPageState() {
 		showImportCatalogModal,
 		setShowImportCatalogModal,
 		importCatalogRows,
+		importCatalogSearch,
+		setImportCatalogSearch,
+		filteredImportCatalogRows,
 		importCatalogLoading,
 		importCatalogError,
 		importSelected,
