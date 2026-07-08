@@ -330,6 +330,7 @@ export async function getReliabilityAnalyticsService(
 		const requestCount = Number(r.request_count);
 		return {
 			provider_id: r.provider_id,
+			provider_name: r.provider_name ?? null,
 			request_count: requestCount,
 			success_count: Number(r.success_count),
 			error_count: Number(r.error_count),
@@ -345,6 +346,7 @@ export async function getReliabilityAnalyticsService(
 		return {
 			model_id: r.model_id,
 			provider_id: r.provider_id,
+			provider_name: r.provider_name ?? null,
 			request_count: requestCount,
 			success_rate: requestCount > 0 ? (Number(r.success_count) / requestCount) * 100 : 0,
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,

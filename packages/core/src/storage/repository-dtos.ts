@@ -127,6 +127,7 @@ export interface ProviderAnalyticsRow {
 /** 分析：provider 可靠性。 */
 export interface ProviderReliabilityRow {
 	provider_id: string;
+	provider_name: string | null;
 	request_count: number;
 	success_count: number;
 	error_count: number;
@@ -140,6 +141,7 @@ export interface ProviderReliabilityRow {
 export interface ModelProviderReliabilityRow {
 	model_id: string;
 	provider_id: string;
+	provider_name: string | null;
 	request_count: number;
 	success_count: number;
 	avg_latency_ms: number | null;

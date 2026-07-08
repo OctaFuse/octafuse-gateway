@@ -455,6 +455,7 @@ export type AdminUserAnalyticsRow = {
 
 export type AdminReliabilityProviderRow = {
 	provider_id: unknown;
+	provider_name: string | null;
 	request_count: number;
 	success_count: number;
 	error_count: number;
@@ -468,6 +469,7 @@ export type AdminReliabilityProviderRow = {
 export type AdminReliabilityModelProviderRow = {
 	model_id: unknown;
 	provider_id: unknown;
+	provider_name: string | null;
 	request_count: number;
 	success_rate: number;
 	avg_latency_ms: number | null;

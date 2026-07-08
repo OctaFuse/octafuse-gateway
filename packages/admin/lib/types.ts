@@ -308,6 +308,7 @@ export interface UserUsageRow extends AnalyticsRowCosts {
 /** One row for provider reliability. */
 export interface ProviderReliabilityRow extends AnalyticsRowCosts {
   provider_id: string;
+  provider_name: string | null;
   request_count: number;
   success_count: number;
   error_count: number;
@@ -319,6 +320,7 @@ export interface ProviderReliabilityRow extends AnalyticsRowCosts {
 export interface ModelProviderRow extends AnalyticsRowCosts {
   model_id: string;
   provider_id: string;
+  provider_name: string | null;
   request_count: number;
   success_rate: number;
   avg_latency_ms: number | null;

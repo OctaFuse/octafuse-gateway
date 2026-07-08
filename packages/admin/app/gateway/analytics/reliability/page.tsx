@@ -96,7 +96,7 @@ export default function ReliabilityPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {providers.map((p) => (
                   <tr key={p.provider_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.provider_id}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.provider_name ?? p.provider_id}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.request_count.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={p.success_rate >= 95 ? 'text-green-600' : p.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
@@ -146,7 +146,7 @@ export default function ReliabilityPage() {
                   list.map((r) => (
                     <tr key={`${r.model_id}-${r.provider_id}`} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{modelId}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.provider_id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.provider_name ?? r.provider_id}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.request_count.toLocaleString()}</td>
                       <td className="px-4 py-3 text-sm">
                         <span className={r.success_rate >= 95 ? 'text-green-600' : r.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
@@ -195,7 +195,7 @@ export default function ReliabilityPage() {
                     <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{formatDate(log.created_at)}</td>
                     <td className="px-4 py-3 text-sm">
                       <div className="text-gray-900">{log.model_id ?? '—'}</div>
-                      <div className="text-xs text-gray-500">{log.provider_id ?? '—'}</div>
+                      <div className="text-xs text-gray-500">{log.provider_name ?? log.provider_id ?? '—'}</div>
                     </td>
                     <td className="px-4 py-3 text-sm text-red-600 truncate max-w-xs" title={log.error_message ?? ''}>
                       {log.error_message || tCommon('unknownError')}
