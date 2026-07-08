@@ -130,7 +130,25 @@ function buildUrl(baseUrl: string): string {
  * 从单行 SSE `data: {...}` 里解析 `usage`，合并进网关的 `usage`（后出现的覆盖先前的）。
  * 注意：这是**计费侧**用的统计，与 `transformStreamUsageForClient` 是否删字段独立。
  */
-function hasOpenAiContentDelta(parsed: {
+export function hasOpenAiReasoningDelta(parsed: {
+  choices?: Array<{
+    delta?: { reasoning_content?: unknown; thinking?: unknown; reasoning?: unknown };
+  }>;
+}): boolean {
+  for (const choice of parsed.choices ?? []) {
+    const delta = choice?.delta;
+    if (!delta) continue;
+    const rc = delta.reasoning_content;
+    if (typeof rc === 'string' && rc.length > 0) return true;
+    const th = delta.thinking;
+    if (typeof th === 'string' && th.length > 0) return true;
+    const r = delta.reasoning;
+    if (typeof r === 'string' && r.length > 0) return true;
+  }
+  return false;
+}
+
+export function hasOpenAiContentDelta(parsed: {
   choices?: Array<{
     delta?: { content?: unknown; tool_calls?: unknown; function_call?: unknown };
   }>;
@@ -150,8 +168,9 @@ function processUsageFromDataLine(line: string, usage: UsageFromStream, timing?:
   const data = line.slice(6).trim();
   if (data === '[DONE]') return;
   try {
-    const parsed = JSON.parse(data) as { id?: string; usage?: ProviderUsage; choices?: Array<{ delta?: { content?: unknown; tool_calls?: unknown; function_call?: unknown } }> };
+    const parsed = JSON.parse(data) as { id?: string; usage?: ProviderUsage; choices?: Array<{ delta?: { content?: unknown; tool_calls?: unknown; function_call?: unknown; reasoning_content?: unknown; thinking?: unknown; reasoning?: unknown } }> };
     timing?.markFirstEvent();
+    if (hasOpenAiReasoningDelta(parsed)) timing?.markFirstReasoningToken();
     if (hasOpenAiContentDelta(parsed)) timing?.markFirstToken();
     // message id 为响应对象 id（如 chatcmpl-*）；每个 chunk 都带，取首个。
     if (!usage.upstreamMessageId) {

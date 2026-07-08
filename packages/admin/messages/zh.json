@@ -614,7 +614,29 @@
 	},
 	"requestLogs": {
 		"title": "请求日志",
-		"subtitle": "查看 Gateway 请求历史"
+		"subtitle": "查看 Gateway 请求历史",
+		"timing": {
+			"helpTitle": "Timing 指标",
+			"gateway": "Gateway",
+			"gatewayDesc": "鉴权、模型路由、额度与熔断检查，至向上游派发之前。",
+			"upstream": "Upstream",
+			"upstreamDesc": "派发至选中上游返回响应头为止（含 provider/key 尝试）。",
+			"headers": "Headers",
+			"headersDesc": "最终选中的上游 fetch 至响应头返回。",
+			"reasoning": "Reasoning",
+			"reasoningDesc": "请求起点至首个解析出的 reasoning/thinking chunk。",
+			"ttftContent": "TTFT (content)",
+			"ttftContentDesc": "请求起点至首个解析出的正文 content token/chunk。",
+			"stream": "Stream",
+			"streamDesc": "选中上游响应头至流结束（含 usage 收集、取消或超时）。",
+			"attempts": "Attempts",
+			"attemptsDesc": "尝试的上游候选数 / failover 切换次数。",
+			"reasoningPhase": "reasoning 输出",
+			"contentPhase": "正文 / usage",
+			"ttftReasoningBracket": "TTFT (reasoning)",
+			"listReasoning": "R {ms}",
+			"listContentTtftTitle": "正文 TTFT {ms}"
+		}
 	},
 	"auditLogs": {
 		"title": "审计日志",

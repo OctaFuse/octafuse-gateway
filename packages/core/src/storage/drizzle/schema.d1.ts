@@ -135,6 +135,7 @@ export const apiKeyRequestLogsTable = sqliteTable('api_key_request_logs', {
 	gatewayOverheadMs: integer('gateway_overhead_ms'),
 	upstreamResponseMs: integer('upstream_response_ms'),
 	finalUpstreamHeadersMs: integer('final_upstream_headers_ms'),
+	firstReasoningTokenMs: integer('first_reasoning_token_ms'),
 	firstTokenMs: integer('first_token_ms'),
 	streamDurationMs: integer('stream_duration_ms'),
 	upstreamAttemptCount: integer('upstream_attempt_count'),

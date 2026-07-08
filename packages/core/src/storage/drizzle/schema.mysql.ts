@@ -167,6 +167,7 @@ export const apiKeyRequestLogsTable = mysqlTable('api_key_request_logs', {
 	gatewayOverheadMs: int('gateway_overhead_ms'),
 	upstreamResponseMs: int('upstream_response_ms'),
 	finalUpstreamHeadersMs: int('final_upstream_headers_ms'),
+	firstReasoningTokenMs: int('first_reasoning_token_ms'),
 	firstTokenMs: int('first_token_ms'),
 	streamDurationMs: int('stream_duration_ms'),
 	upstreamAttemptCount: int('upstream_attempt_count'),

@@ -209,6 +209,7 @@ export async function recordUsage(
 			gatewayOverheadMs: params.timing?.gatewayOverheadMs ?? null,
 			upstreamResponseMs: params.timing?.upstreamResponseMs ?? null,
 			finalUpstreamHeadersMs: params.timing?.finalUpstreamHeadersMs ?? null,
+			firstReasoningTokenMs: params.timing?.firstReasoningTokenMs ?? null,
 			firstTokenMs: params.timing?.firstTokenMs ?? null,
 			streamDurationMs: params.timing?.streamDurationMs ?? null,
 			upstreamAttemptCount: params.timing?.upstreamAttemptCount ?? null,

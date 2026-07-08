@@ -65,13 +65,27 @@ function applyUsage(target: UsageFromStream, next: UsageFromStream): void {
   target.raw_usage = next.raw_usage;
 }
 
-function hasAnthropicContentDelta(parsed: {
+export function hasAnthropicReasoningDelta(parsed: {
   type?: string;
-  delta?: { text?: unknown; partial_json?: unknown };
+  delta?: { type?: unknown; thinking?: unknown };
+}): boolean {
+  if (parsed.type !== 'content_block_delta') return false;
+  const delta = parsed.delta;
+  if (!delta) return false;
+  if (delta.type === 'thinking_delta' && typeof delta.thinking === 'string' && delta.thinking.length > 0) {
+    return true;
+  }
+  return false;
+}
+
+export function hasAnthropicContentDelta(parsed: {
+  type?: string;
+  delta?: { type?: unknown; text?: unknown; partial_json?: unknown };
 }): boolean {
   if (parsed.type !== 'content_block_delta' && parsed.type !== 'message_delta') return false;
   const delta = parsed.delta;
   if (!delta) return false;
+  if (delta.type === 'text_delta' && typeof delta.text === 'string' && delta.text.length > 0) return true;
   if (typeof delta.text === 'string' && delta.text.length > 0) return true;
   if (typeof delta.partial_json === 'string' && delta.partial_json.length > 0) return true;
   return false;
@@ -82,11 +96,12 @@ function parseEventData(data: string, usage: UsageFromStream, timing?: RequestTi
   try {
     const parsed = JSON.parse(data) as {
       type?: string;
-      delta?: { text?: unknown; partial_json?: unknown };
+      delta?: { type?: unknown; text?: unknown; partial_json?: unknown; thinking?: unknown };
       usage?: AnthropicUsage;
       message?: { id?: string };
     };
     timing?.markFirstEvent();
+    if (hasAnthropicReasoningDelta(parsed)) timing?.markFirstReasoningToken();
     if (hasAnthropicContentDelta(parsed)) timing?.markFirstToken();
     // message id 来自 `message_start` 事件的 `message.id`（如 msg_* / msg_bdrk_*）；只取首个。
     if (!usage.upstreamMessageId) {

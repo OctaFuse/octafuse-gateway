@@ -20,6 +20,7 @@ export type RequestTimingSnapshot = {
 	gatewayOverheadMs: number | null;
 	upstreamResponseMs: number | null;
 	finalUpstreamHeadersMs: number | null;
+	firstReasoningTokenMs: number | null;
 	firstTokenMs: number | null;
 	streamDurationMs: number | null;
 	upstreamAttemptCount: number;
@@ -52,6 +53,7 @@ export class RequestTimingCollector {
 	private finalUpstreamHeadersMs: number | null = null;
 	private firstByteMs: number | null = null;
 	private firstEventMs: number | null = null;
+	private firstReasoningTokenMs: number | null = null;
 	private firstTokenMs: number | null = null;
 	private streamDurationMs: number | null = null;
 	private streamCompletedAt: number | null = null;
@@ -139,6 +141,11 @@ export class RequestTimingCollector {
 		this.firstEventMs = this.elapsed();
 	}
 
+	markFirstReasoningToken(): void {
+		if (this.firstReasoningTokenMs != null) return;
+		this.firstReasoningTokenMs = this.elapsed();
+	}
+
 	markFirstToken(): void {
 		if (this.firstTokenMs != null) return;
 		this.firstTokenMs = this.elapsed();
@@ -165,6 +172,7 @@ export class RequestTimingCollector {
 			gatewayOverheadMs: this.gatewayOverheadMs,
 			upstreamResponseMs: this.upstreamResponseMs,
 			finalUpstreamHeadersMs: this.finalUpstreamHeadersMs,
+			firstReasoningTokenMs: this.firstReasoningTokenMs,
 			firstTokenMs: this.firstTokenMs,
 			streamDurationMs: this.streamDurationMs,
 			upstreamAttemptCount: this.attempts.length,

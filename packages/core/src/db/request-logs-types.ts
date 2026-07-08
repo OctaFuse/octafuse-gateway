@@ -33,6 +33,7 @@ export type InsertRequestLogParams = {
 	gatewayOverheadMs?: number | null;
 	upstreamResponseMs?: number | null;
 	finalUpstreamHeadersMs?: number | null;
+	firstReasoningTokenMs?: number | null;
 	firstTokenMs?: number | null;
 	streamDurationMs?: number | null;
 	upstreamAttemptCount?: number | null;

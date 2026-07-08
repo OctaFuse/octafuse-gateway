@@ -214,6 +214,7 @@ export async function insertRequestUsageAndChargeTxPg(
 			gatewayOverheadMs: params.requestLog.gatewayOverheadMs ?? null,
 			upstreamResponseMs: params.requestLog.upstreamResponseMs ?? null,
 			finalUpstreamHeadersMs: params.requestLog.finalUpstreamHeadersMs ?? null,
+			firstReasoningTokenMs: params.requestLog.firstReasoningTokenMs ?? null,
 			firstTokenMs: params.requestLog.firstTokenMs ?? null,
 			streamDurationMs: params.requestLog.streamDurationMs ?? null,
 			upstreamAttemptCount: params.requestLog.upstreamAttemptCount ?? null,

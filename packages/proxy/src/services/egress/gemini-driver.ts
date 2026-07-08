@@ -71,15 +71,31 @@ function applyUsage(target: UsageFromStream, next: UsageFromStream): void {
   target.raw_usage = next.raw_usage;
 }
 
-function hasGeminiContentPart(parsed: {
+export function hasGeminiReasoningPart(parsed: {
   candidates?: Array<{
     content?: {
-      parts?: Array<{ text?: unknown; functionCall?: unknown; function_call?: unknown }>;
+      parts?: Array<{ text?: unknown; thought?: unknown }>;
     };
   }>;
 }): boolean {
   for (const candidate of parsed.candidates ?? []) {
     for (const part of candidate.content?.parts ?? []) {
+      if (part.thought === true && typeof part.text === 'string' && part.text.length > 0) return true;
+    }
+  }
+  return false;
+}
+
+export function hasGeminiContentPart(parsed: {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{ text?: unknown; thought?: unknown; functionCall?: unknown; function_call?: unknown }>;
+    };
+  }>;
+}): boolean {
+  for (const candidate of parsed.candidates ?? []) {
+    for (const part of candidate.content?.parts ?? []) {
+      if (part.thought === true) continue;
       if (typeof part.text === 'string' && part.text.length > 0) return true;
       if (part.functionCall != null || part.function_call != null) return true;
     }
@@ -94,7 +110,7 @@ function parseJsonUsage(text: string, usage: UsageFromStream, timing?: RequestTi
       candidates?: Array<{
         usageMetadata?: GeminiUsageMetadata;
         content?: {
-          parts?: Array<{ text?: unknown; functionCall?: unknown; function_call?: unknown }>;
+          parts?: Array<{ text?: unknown; thought?: unknown; functionCall?: unknown; function_call?: unknown }>;
         };
       }>;
       responseId?: string;
@@ -102,6 +118,7 @@ function parseJsonUsage(text: string, usage: UsageFromStream, timing?: RequestTi
       request_id?: string;
     };
     timing?.markFirstEvent();
+    if (hasGeminiReasoningPart(parsed)) timing?.markFirstReasoningToken();
     if (hasGeminiContentPart(parsed)) timing?.markFirstToken();
     // message id 为 Gemini 顶层 `responseId`（流式每个 chunk 亦带），取首个。
     if (!usage.upstreamMessageId) {

@@ -158,6 +158,7 @@ export interface RequestLogRow {
   gateway_overhead_ms: number | null;
   upstream_response_ms: number | null;
   final_upstream_headers_ms: number | null;
+  first_reasoning_token_ms: number | null;
   first_token_ms: number | null;
   stream_duration_ms: number | null;
   upstream_attempt_count: number | null;

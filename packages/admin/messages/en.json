@@ -614,7 +614,29 @@
 	},
 	"requestLogs": {
 		"title": "Request Logs",
-		"subtitle": "View gateway request history"
+		"subtitle": "View gateway request history",
+		"timing": {
+			"helpTitle": "Timing metrics",
+			"gateway": "Gateway",
+			"gatewayDesc": "Auth, model routing, budget and circuit checks before upstream dispatch.",
+			"upstream": "Upstream",
+			"upstreamDesc": "Dispatch plus provider/key attempts until the selected upstream response headers arrive.",
+			"headers": "Headers",
+			"headersDesc": "The final selected provider fetch until headers return.",
+			"reasoning": "Reasoning",
+			"reasoningDesc": "Request start to first parsed reasoning/thinking chunk.",
+			"ttftContent": "TTFT (content)",
+			"ttftContentDesc": "Request start to first parsed content token/chunk.",
+			"stream": "Stream",
+			"streamDesc": "Selected upstream headers to stream end, usage collection, cancel, or timeout.",
+			"attempts": "Attempts",
+			"attemptsDesc": "Upstream candidates tried / failover switches.",
+			"reasoningPhase": "reasoning output",
+			"contentPhase": "content / usage",
+			"ttftReasoningBracket": "TTFT (reasoning)",
+			"listReasoning": "R {ms}",
+			"listContentTtftTitle": "Content TTFT {ms}"
+		}
 	},
 	"auditLogs": {
 		"title": "Audit Logs",

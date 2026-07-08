@@ -263,9 +263,17 @@ export default function GatewayRequestLogsPage() {
     const gateway = formatLatencyMs(log.gateway_overhead_ms);
     const upstream = formatLatencyMs(log.upstream_response_ms);
     const headers = formatLatencyMs(log.final_upstream_headers_ms);
-    const ttft = formatLatencyMs(log.first_token_ms);
+    const reasoningTtft = formatLatencyMs(log.first_reasoning_token_ms);
+    const contentTtft = formatLatencyMs(log.first_token_ms);
     const stream = formatLatencyMs(log.stream_duration_ms);
-    return [
+    const reasoningPhaseMs =
+      log.first_reasoning_token_ms != null &&
+      log.first_token_ms != null &&
+      log.first_token_ms >= log.first_reasoning_token_ms
+        ? formatLatencyMs(log.first_token_ms - log.first_reasoning_token_ms)
+        : null;
+    const hasReasoning = log.first_reasoning_token_ms != null;
+    const lines = [
       'Start',
       '  |',
       `  | Gateway ${gateway}`,
@@ -275,13 +283,48 @@ export default function GatewayRequestLogsPage() {
       '                    |<------ dispatch + provider headers ------>|',
       `                    | Headers(final attempt) ${headers}`,
       '                    |<---------- final fetch headers ---------->|',
-      '                                                                  |',
+    ];
+    if (hasReasoning) {
+      lines.push(
+        '                                                                  |',
+        `                                                                  | Reasoning ${reasoningPhaseMs ?? reasoningTtft}`,
+        `                                                                  |<---- ${t('timing.reasoningPhase')} ---->|`,
+      );
+    } else {
+      lines.push('                                                                  |');
+    }
+    lines.push(
       `                                                                  | Stream ${stream}`,
-      '                                                                  |<------ output / usage ------>|',
-      `  |<------------------------- TTFT ${ttft} ---------------------->|`,
-      '',
-      `Attempts: ${log.upstream_attempt_count ?? '-'} / failover ${log.upstream_failover_count ?? '-'}`,
-    ].join('\n');
+      `                                                                  |<------ ${t('timing.contentPhase')} ------>|`,
+    );
+    if (hasReasoning) {
+      lines.push(`  |<-------- ${t('timing.ttftReasoningBracket')} ${reasoningTtft} -------->|`);
+    }
+    if (log.first_token_ms != null) {
+      lines.push(`  |<--------------------- ${t('timing.ttftContent')} ${contentTtft} --------------------->|`);
+    } else if (!hasReasoning) {
+      lines.push(`  |<------------------------- TTFT ${contentTtft} ---------------------->|`);
+    }
+    lines.push('', `Attempts: ${log.upstream_attempt_count ?? '-'} / failover ${log.upstream_failover_count ?? '-'}`);
+    return lines.join('\n');
+  };
+
+  const formatTtftListLine = (log: GatewayRequestLog): { text: string; title?: string } => {
+    if (log.first_reasoning_token_ms != null) {
+      const text = t('timing.listReasoning', { ms: formatLatencyMs(log.first_reasoning_token_ms) });
+      const title =
+        log.first_token_ms != null
+          ? t('timing.listContentTtftTitle', { ms: formatLatencyMs(log.first_token_ms) })
+          : undefined;
+      return { text, title };
+    }
+    if (log.first_token_ms != null) {
+      return { text: `TTFT ${formatLatencyMs(log.first_token_ms)}` };
+    }
+    if (log.upstream_response_ms != null) {
+      return { text: `Up ${formatLatencyMs(log.upstream_response_ms)}` };
+    }
+    return { text: '\u00A0' };
   };
 
   const prettifyLogJson = (raw: string | null | undefined): string => {
@@ -710,12 +753,11 @@ export default function GatewayRequestLogsPage() {
                           <div className="mt-0.5 text-gray-500 tabular-nums">
                             {formatLatencyMs(log.latency_ms)}
                           </div>
-                          <div className="mt-0.5 text-gray-400 tabular-nums" title="TTFT, or upstream response when TTFT is unavailable">
-                            {log.first_token_ms != null
-                              ? `TTFT ${formatLatencyMs(log.first_token_ms)}`
-                              : log.upstream_response_ms != null
-                                ? `Up ${formatLatencyMs(log.upstream_response_ms)}`
-                                : '\u00A0'}
+                          <div
+                            className="mt-0.5 text-gray-400 tabular-nums"
+                            title={formatTtftListLine(log).title ?? (log.first_token_ms != null ? `TTFT ${formatLatencyMs(log.first_token_ms)}` : undefined)}
+                          >
+                            {formatTtftListLine(log).text}
                           </div>
                         </div>
                       </div>
@@ -768,7 +810,8 @@ export default function GatewayRequestLogsPage() {
                               ['Gateway', log.gateway_overhead_ms],
                               ['Upstream', log.upstream_response_ms],
                               ['Headers', log.final_upstream_headers_ms],
-                              ['TTFT', log.first_token_ms],
+                              [t('timing.reasoning'), log.first_reasoning_token_ms],
+                              [t('timing.ttftContent'), log.first_token_ms],
                               ['Stream', log.stream_duration_ms],
                             ] as const;
                             const upstreamRequestId = log.upstream_request_id?.trim() ?? '';
@@ -970,7 +1013,7 @@ export default function GatewayRequestLogsPage() {
           >
             <div className="flex items-center justify-between gap-3 border-b border-sky-100 bg-sky-50 px-4 py-3">
               <h2 id="timing-help-title" className="text-sm font-semibold text-sky-950">
-                Timing metrics
+                {t('timing.helpTitle')}
               </h2>
               <button
                 type="button"
@@ -982,12 +1025,13 @@ export default function GatewayRequestLogsPage() {
             </div>
             <div className="max-h-[80vh] overflow-auto p-4">
               <div className="grid gap-2 text-sm text-gray-700 sm:grid-cols-2">
-                <div><span className="font-medium text-gray-950">Gateway</span>: auth, model routing, budget and circuit checks before upstream dispatch.</div>
-                <div><span className="font-medium text-gray-950">Upstream</span>: dispatch plus provider/key attempts until the selected upstream response headers arrive.</div>
-                <div><span className="font-medium text-gray-950">Headers</span>: the final selected provider fetch until headers return.</div>
-                <div><span className="font-medium text-gray-950">TTFT</span>: request start to first parsed content token/chunk.</div>
-                <div><span className="font-medium text-gray-950">Stream</span>: selected upstream headers to stream end, usage collection, cancel, or timeout.</div>
-                <div><span className="font-medium text-gray-950">Attempts</span>: upstream candidates tried / failover switches.</div>
+                <div><span className="font-medium text-gray-950">{t('timing.gateway')}</span>: {t('timing.gatewayDesc')}</div>
+                <div><span className="font-medium text-gray-950">{t('timing.upstream')}</span>: {t('timing.upstreamDesc')}</div>
+                <div><span className="font-medium text-gray-950">{t('timing.headers')}</span>: {t('timing.headersDesc')}</div>
+                <div><span className="font-medium text-gray-950">{t('timing.reasoning')}</span>: {t('timing.reasoningDesc')}</div>
+                <div><span className="font-medium text-gray-950">{t('timing.ttftContent')}</span>: {t('timing.ttftContentDesc')}</div>
+                <div><span className="font-medium text-gray-950">{t('timing.stream')}</span>: {t('timing.streamDesc')}</div>
+                <div><span className="font-medium text-gray-950">{t('timing.attempts')}</span>: {t('timing.attemptsDesc')}</div>
               </div>
               <pre className="mt-4 overflow-auto rounded-md border border-slate-800 bg-slate-950 p-4 font-mono text-xs leading-relaxed text-sky-50 whitespace-pre">
                 {timingDiagram(timingHelpLog)}

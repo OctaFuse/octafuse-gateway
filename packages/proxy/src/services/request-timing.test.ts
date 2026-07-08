@@ -38,6 +38,8 @@ test('RequestTimingCollector snapshots stable timing metrics and attempt metadat
 	timing.markFinalAttempt(second);
 	timing.markFirstByte();
 	timing.markFirstEvent();
+	timing.markFirstReasoningToken();
+	timing.markFirstReasoningToken();
 	timing.markFirstToken();
 	timing.markFirstToken();
 	timing.markStreamComplete();
@@ -48,6 +50,7 @@ test('RequestTimingCollector snapshots stable timing metrics and attempt metadat
 	assert.equal(typeof snapshot.gatewayOverheadMs, 'number');
 	assert.equal(typeof snapshot.upstreamResponseMs, 'number');
 	assert.equal(typeof snapshot.finalUpstreamHeadersMs, 'number');
+	assert.equal(typeof snapshot.firstReasoningTokenMs, 'number');
 	assert.equal(typeof snapshot.firstTokenMs, 'number');
 	assert.equal(typeof snapshot.streamDurationMs, 'number');
 
