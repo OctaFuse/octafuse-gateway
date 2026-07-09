@@ -641,7 +641,6 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
 - **`modelDistribution`**：按 `model_id` 聚合 Top 10（请求、Token、三档成本）
 - **`topUsers`**：按 `charged_cost` 排序 Top 12
 - **`timeseries`**：按 `granularity`（`1h`/`1d`/`24h`→`hour`，更长→`day`）的 Token/请求/成本趋势；含 `cache_hit_rate`
-- **`userTimeseries`**：Top 5 用户在各 bucket 的 `total_tokens`
 - **`granularity`**：`hour` | `day`
 - **`recentLogs`**、**`recentErrors`**
 

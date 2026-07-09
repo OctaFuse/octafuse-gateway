@@ -240,7 +240,6 @@ export interface DashboardStats {
   modelDistribution?: DashboardModelDistributionRow[];
   topUsers?: DashboardTopUserRow[];
   timeseries?: DashboardTimeseriesRow[];
-  userTimeseries?: DashboardUserTimeseriesRow[];
   granularity?: 'hour' | 'day';
   recentLogs: GatewayRequestLog[];
   recentErrors: GatewayRequestLog[];
@@ -321,12 +320,6 @@ export interface DashboardTimeseriesRow {
   charged_cost: number;
   avg_latency_ms: number | null;
   cache_hit_rate: number;
-}
-
-export interface DashboardUserTimeseriesRow {
-  bucket: string;
-  user_email: string;
-  total_tokens: number;
 }
 
 /** One row for model usage aggregation. */

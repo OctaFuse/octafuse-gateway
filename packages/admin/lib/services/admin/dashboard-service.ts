@@ -257,17 +257,6 @@ export async function getAdminStatsService(
 		.sort((a, b) => b.charged_cost - a.charged_cost)
 		.slice(0, 12);
 
-	const topUserEmails = topUsers.slice(0, 5).map((u) => u.user_email);
-	const userTimeseries =
-		topUserEmails.length > 0
-			? await repos.requestLogs.queryUserTokenTimeseries({
-					startDate,
-					endDate,
-					granularity,
-					userEmails: topUserEmails,
-				})
-			: [];
-
 	const todayRequestsCount = todayStats.totalRequests;
 	const gatewayStats = {
 		activeKeysCount: keysCount.active,
@@ -317,11 +306,6 @@ export async function getAdminStatsService(
 				row.inputTokens + row.cacheReadTokens > 0
 					? (row.cacheReadTokens / (row.inputTokens + row.cacheReadTokens)) * 100
 					: 0,
-		})),
-		userTimeseries: userTimeseries.map((row) => ({
-			bucket: row.bucket,
-			user_email: row.userEmail,
-			total_tokens: row.totalTokens,
 		})),
 		granularity,
 		recentLogs,

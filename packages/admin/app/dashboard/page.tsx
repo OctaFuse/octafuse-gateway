@@ -10,7 +10,6 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { DashboardModelDistributionChart } from '@/components/dashboard/DashboardModelDistributionChart';
 import { DashboardTokenTrendChart } from '@/components/dashboard/DashboardTokenTrendChart';
-import { DashboardUserTrendChart } from '@/components/dashboard/DashboardUserTrendChart';
 import { createRangeValue, formatGatewayRangeSummary, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayTime } from '@/lib/datetime';
@@ -168,13 +167,6 @@ export default function DashboardPage() {
 				/>
 				<DashboardTokenTrendChart
 					timeseries={stats?.timeseries ?? []}
-					granularity={stats?.granularity ?? 'hour'}
-				/>
-			</div>
-
-			<div className="mb-8">
-				<DashboardUserTrendChart
-					userTimeseries={stats?.userTimeseries ?? []}
 					granularity={stats?.granularity ?? 'hour'}
 				/>
 			</div>

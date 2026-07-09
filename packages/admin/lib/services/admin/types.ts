@@ -433,11 +433,6 @@ export type AdminStatsOutput = {
 		avg_latency_ms: number | null;
 		cache_hit_rate: number;
 	}>;
-	userTimeseries: Array<{
-		bucket: string;
-		user_email: string;
-		total_tokens: number;
-	}>;
 	granularity: 'hour' | 'day';
 	recentLogs: RequestLogRow[];
 	recentErrors: RequestLogRow[];
