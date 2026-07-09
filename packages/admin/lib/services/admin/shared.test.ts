@@ -3,7 +3,10 @@ import { describe, it } from 'node:test';
 import {
 	apiUtcSqlStringToMs,
 	clampAnalyticsRange,
+	durationToGranularity,
 	msToApiUtcSqlString,
+	rangeToGranularity,
+	resolveStatsDateRange,
 } from './shared';
 
 describe('apiUtcSqlStringToMs', () => {
@@ -54,6 +57,50 @@ describe('clampAnalyticsRange', () => {
 		const startMs = apiUtcSqlStringToMs(result.start);
 		assert.equal(result.end, end);
 		assert.equal(startMs, endMs - 7 * 24 * 60 * 60 * 1000);
+	});
+});
+
+describe('durationToGranularity', () => {
+	it('uses hour buckets for windows up to 48h', () => {
+		assert.equal(durationToGranularity('2026-05-19 05:00:00', '2026-05-19 13:00:00'), 'hour');
+		assert.equal(durationToGranularity('2026-05-17 05:00:00', '2026-05-19 05:00:00'), 'hour');
+	});
+
+	it('uses day buckets for longer windows', () => {
+		assert.equal(durationToGranularity('2026-05-01 00:00:00', '2026-05-19 00:00:00'), 'day');
+	});
+});
+
+describe('resolveStatsDateRange', () => {
+	it('prefers explicit start/end over range preset', () => {
+		const result = resolveStatsDateRange({
+			range: '7d',
+			startDate: '2026-05-19 05:00:00',
+			endDate: '2026-05-19 13:00:00',
+		});
+		assert.equal(result.startDate, '2026-05-19 05:00:00');
+		assert.equal(result.endDate, '2026-05-19 13:00:00');
+		assert.equal(result.granularity, 'hour');
+	});
+
+	it('falls back to range preset when explicit dates are absent', () => {
+		const result = resolveStatsDateRange({ range: '7d' });
+		assert.equal(result.granularity, 'day');
+		assert.ok(result.startDate.length > 0);
+		assert.ok(result.endDate.length > 0);
+	});
+});
+
+describe('rangeToGranularity', () => {
+	it('uses hour buckets for short ranges', () => {
+		assert.equal(rangeToGranularity('1h'), 'hour');
+		assert.equal(rangeToGranularity('1d'), 'hour');
+		assert.equal(rangeToGranularity('24h'), 'hour');
+	});
+
+	it('uses day buckets for longer ranges', () => {
+		assert.equal(rangeToGranularity('7d'), 'day');
+		assert.equal(rangeToGranularity('90d'), 'day');
 	});
 });
 

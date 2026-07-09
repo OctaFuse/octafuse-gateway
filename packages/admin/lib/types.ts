@@ -226,12 +226,22 @@ export interface SystemConfigRow {
 export interface DashboardStats {
   gateway: {
     activeKeysCount: number;
+    keysTotal: number;
+    keysActive: number;
+    accountsTotal: number;
+    accountsActive: number;
     todayRequestsCount: number;
     todayCost: number;
+    todayTokens: number;
     errorRate: number;
   };
   /** When time range is used (e.g. 24h, 7d, 30d), KPI for that range. */
   kpi?: KpiMetrics;
+  modelDistribution?: DashboardModelDistributionRow[];
+  topUsers?: DashboardTopUserRow[];
+  timeseries?: DashboardTimeseriesRow[];
+  userTimeseries?: DashboardUserTimeseriesRow[];
+  granularity?: 'hour' | 'day';
   recentLogs: GatewayRequestLog[];
   recentErrors: GatewayRequestLog[];
 }
@@ -268,6 +278,55 @@ export interface KpiMetrics {
   meteredCost: number;
   activeUsers: number;
   errorRate: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+  totalTokens?: number;
+  avgLatencyMs?: number | null;
+  rpm?: number;
+  tpm?: number;
+}
+
+export interface DashboardModelDistributionRow {
+  model_id: string;
+  request_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  charged_cost: number;
+  metered_cost: number;
+  standard_cost: number;
+}
+
+export interface DashboardTopUserRow {
+  user_email: string;
+  request_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  charged_cost: number;
+  metered_cost: number;
+  standard_cost: number;
+}
+
+export interface DashboardTimeseriesRow {
+  bucket: string;
+  request_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  total_tokens: number;
+  charged_cost: number;
+  avg_latency_ms: number | null;
+  cache_hit_rate: number;
+}
+
+export interface DashboardUserTimeseriesRow {
+  bucket: string;
+  user_email: string;
+  total_tokens: number;
 }
 
 /** One row for model usage aggregation. */

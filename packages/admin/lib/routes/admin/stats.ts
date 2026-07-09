@@ -11,11 +11,15 @@ export const adminStatsRoutes = new Hono<AdminEnv>();
 
 adminStatsRoutes.use('*', requireMasterKey);
 
-/** 查询参数 `range`：1h | 1d | 24h | 7d | 14d | 30d | 90d，默认 7d。 */
+/** 查询参数：`start_date` + `end_date`（UTC，与 Request Logs / Analytics 一致）优先；否则 `range` 预设，默认 `1d`。 */
 adminStatsRoutes.get('/', async (c) => {
 	try {
 		const repos = c.get('repositories');
-		const data = await getAdminStatsService(repos, c.req.query('range') ?? '7d');
+		const data = await getAdminStatsService(repos, {
+			range: c.req.query('range') ?? undefined,
+			startDate: c.req.query('start_date') ?? undefined,
+			endDate: c.req.query('end_date') ?? undefined,
+		});
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to get stats');

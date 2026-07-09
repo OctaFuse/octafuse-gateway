@@ -144,6 +144,54 @@ export interface ProviderAnalyticsRow {
 	avg_attempts: number | null;
 }
 
+/** 仪表盘：按时间窗聚合的请求统计（含 token / 延迟）。 */
+export interface RequestStatsByRangeRow {
+	totalRequests: number;
+	errorCount: number;
+	successCount: number;
+	chargedCost: number;
+	meteredCost: number;
+	standardCost: number;
+	inputTokens: number;
+	outputTokens: number;
+	cacheReadTokens: number;
+	cacheWriteTokens: number;
+	totalTokens: number;
+	avgLatencyMs: number | null;
+}
+
+/** 仪表盘：按 bucket 聚合的时序行。 */
+export interface RequestTimeseriesRow {
+	bucket: string;
+	requestCount: number;
+	inputTokens: number;
+	outputTokens: number;
+	cacheReadTokens: number;
+	cacheWriteTokens: number;
+	totalTokens: number;
+	chargedCost: number;
+	avgLatencyMs: number | null;
+}
+
+/** 仪表盘：Top 用户在各 bucket 的 token 用量。 */
+export interface UserTokenTimeseriesRow {
+	bucket: string;
+	userEmail: string;
+	totalTokens: number;
+}
+
+/** 仪表盘：近 60 秒吞吐快照。 */
+export interface ThroughputSnapshot {
+	rpm: number;
+	tpm: number;
+}
+
+/** 仪表盘：实体总数与启用数。 */
+export interface EntityCountSnapshot {
+	total: number;
+	active: number;
+}
+
 /** 分析：provider 可靠性。 */
 export interface ProviderReliabilityRow {
 	provider_id: string;

@@ -375,8 +375,13 @@ export type AdminConfigRow = {
 export type AdminStatsOutput = {
 	gateway: {
 		activeKeysCount: number;
+		keysTotal: number;
+		keysActive: number;
+		accountsTotal: number;
+		accountsActive: number;
 		todayRequestsCount: number;
 		todayCost: number;
+		todayTokens: number;
 		errorRate: number;
 	};
 	kpi: {
@@ -387,7 +392,53 @@ export type AdminStatsOutput = {
 		standardCost: number;
 		activeUsers: number;
 		errorRate: number;
+		inputTokens: number;
+		outputTokens: number;
+		cacheReadTokens: number;
+		cacheWriteTokens: number;
+		totalTokens: number;
+		avgLatencyMs: number | null;
+		rpm: number;
+		tpm: number;
 	};
+	modelDistribution: Array<{
+		model_id: string;
+		request_count: number;
+		input_tokens: number;
+		output_tokens: number;
+		total_tokens: number;
+		charged_cost: number;
+		metered_cost: number;
+		standard_cost: number;
+	}>;
+	topUsers: Array<{
+		user_email: string;
+		request_count: number;
+		input_tokens: number;
+		output_tokens: number;
+		total_tokens: number;
+		charged_cost: number;
+		metered_cost: number;
+		standard_cost: number;
+	}>;
+	timeseries: Array<{
+		bucket: string;
+		request_count: number;
+		input_tokens: number;
+		output_tokens: number;
+		cache_read_tokens: number;
+		cache_write_tokens: number;
+		total_tokens: number;
+		charged_cost: number;
+		avg_latency_ms: number | null;
+		cache_hit_rate: number;
+	}>;
+	userTimeseries: Array<{
+		bucket: string;
+		user_email: string;
+		total_tokens: number;
+	}>;
+	granularity: 'hour' | 'day';
 	recentLogs: RequestLogRow[];
 	recentErrors: RequestLogRow[];
 };

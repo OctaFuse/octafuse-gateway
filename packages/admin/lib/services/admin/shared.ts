@@ -51,6 +51,55 @@ export function rangeToDates(range: string): { startDate: string; endDate: strin
 	};
 }
 
+/** 仪表盘时序粒度：`1h`/`1d`/`24h` 按小时，更长区间按天。 */
+export function rangeToGranularity(range: string): 'hour' | 'day' {
+	switch (range) {
+		case '1h':
+		case '1d':
+		case '24h':
+			return 'hour';
+		default:
+			return 'day';
+	}
+}
+
+/** 按绝对时间窗时长推导时序粒度（自定义区间与 Request Logs 一致）。 */
+export function durationToGranularity(startDate: string, endDate: string): 'hour' | 'day' {
+	const startMs = apiUtcSqlStringToMs(startDate);
+	const endMs = apiUtcSqlStringToMs(endDate);
+	if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) {
+		return 'hour';
+	}
+	const dur = endMs - startMs;
+	return dur <= 2 * MS_PER_DAY ? 'hour' : 'day';
+}
+
+/**
+ * 解析仪表盘 KPI 时间窗：优先 `startDate`/`endDate`（与 Request Logs / Analytics 一致），否则回退 `range` 预设。
+ */
+export function resolveStatsDateRange(input: {
+	range?: string;
+	startDate?: string;
+	endDate?: string;
+}): { startDate: string; endDate: string; granularity: 'hour' | 'day' } {
+	const hasExplicit = Boolean(input.startDate?.trim() && input.endDate?.trim());
+	if (hasExplicit) {
+		const { start, end } = clampAnalyticsRange(input.startDate, input.endDate);
+		return {
+			startDate: start,
+			endDate: end,
+			granularity: durationToGranularity(start, end),
+		};
+	}
+	const range = input.range ?? '1d';
+	const { startDate, endDate } = rangeToDates(range);
+	return {
+		startDate,
+		endDate,
+		granularity: rangeToGranularity(range),
+	};
+}
+
 const MAX_ANALYTICS_DAYS = 180;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

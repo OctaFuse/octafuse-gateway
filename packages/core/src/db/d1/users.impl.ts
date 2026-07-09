@@ -228,5 +228,20 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 			const result = await raw.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
 			return (result.meta.changes ?? 0) > 0;
 		},
+
+		async getUsersCount() {
+			const row = await raw
+				.prepare(
+					`SELECT
+				COUNT(*) as total,
+				SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active
+			 FROM users`
+				)
+				.first<{ total: number; active: number }>();
+			return {
+				total: Number(row?.total ?? 0),
+				active: Number(row?.active ?? 0),
+			};
+		},
 	};
 }

@@ -24,6 +24,7 @@ import type {
 import type { SystemConfigRow } from '../db/system-config-types';
 import type {
 	AdminApiKeyListItem,
+	EntityCountSnapshot,
 	ModelAnalyticsRow,
 	ModelProviderReliabilityRow,
 	ModelRouteDetailRow,
@@ -32,7 +33,11 @@ import type {
 	ProviderAdminRow,
 	ProviderAnalyticsRow,
 	ProviderReliabilityRow,
+	RequestStatsByRangeRow,
+	RequestTimeseriesRow,
+	ThroughputSnapshot,
 	UserAnalyticsRow,
+	UserTokenTimeseriesRow,
 } from './repository-dtos';
 
 /** 管理端分析聚合 */
@@ -91,6 +96,7 @@ export interface ApiKeysRepository {
 		order?: ApiKeyListSortOrder;
 	}): Promise<{ keys: AdminApiKeyListItem[]; total: number }>;
 	getActiveApiKeysCount(): Promise<number>;
+	getApiKeysCount(): Promise<EntityCountSnapshot>;
 }
 
 export interface UsersRepository {
@@ -132,6 +138,7 @@ export interface UsersRepository {
 		externalUserId: string | null
 	): Promise<boolean>;
 	deleteUserHard(id: string): Promise<boolean>;
+	getUsersCount(): Promise<EntityCountSnapshot>;
 }
 
 /** 模型列表页、标签、级联删除（models + model_tags + model_routes） */
@@ -242,14 +249,19 @@ export interface RequestLogsRepository {
 		startDate: string;
 		endDate: string;
 		endExclusive?: boolean;
-	}): Promise<{
-		totalRequests: number;
-		errorCount: number;
-		successCount: number;
-		chargedCost: number;
-		meteredCost: number;
-		standardCost: number;
-	}>;
+	}): Promise<RequestStatsByRangeRow>;
+	queryRequestTimeseries(options: {
+		startDate: string;
+		endDate: string;
+		granularity: 'hour' | 'day';
+	}): Promise<RequestTimeseriesRow[]>;
+	queryUserTokenTimeseries(options: {
+		startDate: string;
+		endDate: string;
+		granularity: 'hour' | 'day';
+		userEmails: string[];
+	}): Promise<UserTokenTimeseriesRow[]>;
+	getThroughputLastMinute(): Promise<ThroughputSnapshot>;
 	getRecentLogs(limit: number): Promise<RequestLogRow[]>;
 	getRecentErrors(limit: number): Promise<RequestLogRow[]>;
 	getDistinctActiveUsersCount(options: { startDate: string; endDate: string; endExclusive?: boolean }): Promise<number>;

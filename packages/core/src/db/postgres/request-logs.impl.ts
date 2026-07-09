@@ -2,6 +2,12 @@
  * Postgres：`api_key_request_logs`（postgres.js + unsafe）。
  */
 import { sqlMoneyRound } from '../../lib/money-precision';
+import {
+	mapRequestStatsByRangeRow,
+	mapRequestTimeseriesRows,
+	mapThroughputSnapshot,
+	mapUserTokenTimeseriesRows,
+} from '../../lib/dashboard-request-stats';
 import type { RequestLogRow } from '../../types';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
@@ -141,40 +147,90 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 			startDate: string;
 			endDate: string;
 			endExclusive?: boolean;
-		}): Promise<{
-			totalRequests: number;
-			errorCount: number;
-			successCount: number;
-			chargedCost: number;
-			meteredCost: number;
-			standardCost: number;
-		}> {
+		}) {
 			const comparator = options.endExclusive ? '<' : '<=';
 			const q = `SELECT
 				COUNT(*)::bigint as total_requests,
 				SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END)::bigint as success_count,
 				SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END)::bigint as error_count,
+				COALESCE(SUM(input_tokens), 0)::bigint as input_tokens,
+				COALESCE(SUM(output_tokens), 0)::bigint as output_tokens,
+				COALESCE(SUM(cache_read_tokens), 0)::bigint as cache_read_tokens,
+				COALESCE(SUM(cache_write_tokens), 0)::bigint as cache_write_tokens,
+				COALESCE(SUM(total_tokens), 0)::bigint as total_tokens,
+				AVG(latency_ms) as avg_latency_ms,
 				COALESCE(${sqlMoneyRound('SUM(charged_cost)')}, 0) as charged_cost,
 				COALESCE(${sqlMoneyRound('SUM(metered_cost)')}, 0) as metered_cost,
 				COALESCE(${sqlMoneyRound('SUM(standard_cost)')}, 0) as standard_cost
 			 FROM api_key_request_logs WHERE created_at >= $1 AND created_at ${comparator} $2`;
-			const rows = (await pg.unsafe(q, [options.startDate, options.endDate])) as {
-				total_requests?: string | number;
-				success_count?: string | number;
-				error_count?: string | number;
-				charged_cost?: string | number;
-				metered_cost?: string | number;
-				standard_cost?: string | number;
-			}[];
-			const row = rows[0];
-			return {
-				totalRequests: Number(row?.total_requests ?? 0),
-				successCount: Number(row?.success_count ?? 0),
-				errorCount: Number(row?.error_count ?? 0),
-				chargedCost: Number(row?.charged_cost ?? 0),
-				meteredCost: Number(row?.metered_cost ?? 0),
-				standardCost: Number(row?.standard_cost ?? 0),
-			};
+			const rows = (await pg.unsafe(q, [options.startDate, options.endDate])) as Record<string, unknown>[];
+			return mapRequestStatsByRangeRow(rows[0]);
+		},
+
+		async queryRequestTimeseries(options: {
+			startDate: string;
+			endDate: string;
+			granularity: 'hour' | 'day';
+		}) {
+			const bucketExpr =
+				options.granularity === 'hour'
+					? "to_char(date_trunc('hour', created_at::timestamp), 'YYYY-MM-DD HH24:MI:SS')"
+					: "to_char(date_trunc('day', created_at::timestamp), 'YYYY-MM-DD')";
+			const q = `SELECT
+				${bucketExpr} as bucket,
+				COUNT(*)::bigint as request_count,
+				COALESCE(SUM(input_tokens), 0)::bigint as input_tokens,
+				COALESCE(SUM(output_tokens), 0)::bigint as output_tokens,
+				COALESCE(SUM(cache_read_tokens), 0)::bigint as cache_read_tokens,
+				COALESCE(SUM(cache_write_tokens), 0)::bigint as cache_write_tokens,
+				COALESCE(SUM(total_tokens), 0)::bigint as total_tokens,
+				AVG(latency_ms) as avg_latency_ms,
+				COALESCE(${sqlMoneyRound('SUM(charged_cost)')}, 0) as charged_cost
+			 FROM api_key_request_logs
+			 WHERE created_at >= $1 AND created_at <= $2
+			 GROUP BY 1
+			 ORDER BY 1 ASC`;
+			const rows = (await pg.unsafe(q, [options.startDate, options.endDate])) as Record<string, unknown>[];
+			return mapRequestTimeseriesRows(rows);
+		},
+
+		async queryUserTokenTimeseries(options: {
+			startDate: string;
+			endDate: string;
+			granularity: 'hour' | 'day';
+			userEmails: string[];
+		}) {
+			if (options.userEmails.length === 0) return [];
+			const bucketExpr =
+				options.granularity === 'hour'
+					? "to_char(date_trunc('hour', created_at::timestamp), 'YYYY-MM-DD HH24:MI:SS')"
+					: "to_char(date_trunc('day', created_at::timestamp), 'YYYY-MM-DD')";
+			const emailParams = options.userEmails.map((_, i) => `$${i + 3}`).join(', ');
+			const q = `SELECT
+				${bucketExpr} as bucket,
+				user_email,
+				COALESCE(SUM(total_tokens), 0)::bigint as total_tokens
+			 FROM api_key_request_logs
+			 WHERE created_at >= $1 AND created_at <= $2
+			   AND user_email IN (${emailParams})
+			 GROUP BY 1, user_email
+			 ORDER BY 1 ASC`;
+			const rows = (await pg.unsafe(q, [options.startDate, options.endDate, ...options.userEmails])) as Record<string, unknown>[];
+			return mapUserTokenTimeseriesRows(rows);
+		},
+
+		async getThroughputLastMinute() {
+			const end = new Date();
+			const start = new Date(end.getTime() - 60 * 1000);
+			const startDate = start.toISOString().slice(0, 19).replace('T', ' ');
+			const endDate = end.toISOString().slice(0, 19).replace('T', ' ');
+			const q = `SELECT
+				COUNT(*)::bigint as request_count,
+				COALESCE(SUM(total_tokens), 0)::bigint as total_tokens
+			 FROM api_key_request_logs
+			 WHERE created_at >= $1 AND created_at <= $2`;
+			const rows = (await pg.unsafe(q, [startDate, endDate])) as Record<string, unknown>[];
+			return mapThroughputSnapshot(rows[0]);
 		},
 
 		async getRecentLogs(limit: number): Promise<RequestLogRow[]> {

@@ -85,6 +85,21 @@ export function createRangeValue(preset: Exclude<GatewayTimeRangePreset, 'custom
 	return { preset, start_date, end_date };
 }
 
+/** KPI 副标题等：预设用翻译标签，自定义区间展示 UTC 起止。 */
+export function formatGatewayRangeSummary(
+	value: GatewayTimeRangeValue,
+	presetLabel: (preset: Exclude<GatewayTimeRangePreset, 'custom'>) => string,
+	customLabel: string
+): string {
+	if (value.preset !== 'custom') {
+		return presetLabel(value.preset);
+	}
+	const start = value.start_date?.trim();
+	const end = value.end_date?.trim();
+	if (!start || !end) return customLabel;
+	return `${start.slice(0, 16)} → ${end.slice(0, 16)}`;
+}
+
 /** UTC API string（`YYYY-MM-DD HH:MM:SS` 或 ISO 8601 `...Z`）→ value for `datetime-local` (browser local). */
 export function apiUtcToDatetimeLocal(api: string): string {
 	const d = new Date(api.includes('T') ? api : `${api.replace(' ', 'T')}Z`);

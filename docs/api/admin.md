@@ -631,9 +631,19 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
 
 | 参数 | 说明 |
 |------|------|
-| `range` | `24h` / `7d` / `30d`，默认 `7d`；用于 `data.kpi` 的时间窗（`shared.rangeToDates`） |
+| `range` | `1h` / `1d` / `24h` / `7d` / `14d` / `30d` / `90d`；无 `start_date`+`end_date` 时默认 `1d` |
+| `start_date` / `end_date` | UTC `YYYY-MM-DD HH:mm:ss`；**与 Request Logs / Analytics 相同**；两者同时提供时优先于 `range` |
 
-响应 `data` 含：`gateway`（活跃 Key 数、当日请求数/费用/错误率）、`kpi`（时间窗内总请求、成功率、`totalCost`、`meteredCost`、`standardCost`、`activeUsers`、错误率）、`recentLogs`、`recentErrors`。
+响应 `data` 含：
+
+- **`gateway`**：活跃 Key 数、`keysTotal` / `keysActive`、`accountsTotal` / `accountsActive`、当日请求数/费用/Token/错误率
+- **`kpi`**：时间窗内总请求、成功率、三档成本、`activeUsers`、错误率、Token 汇总（input/output/cache）、`avgLatencyMs`、近 60 秒近似 **`rpm`** / **`tpm`**
+- **`modelDistribution`**：按 `model_id` 聚合 Top 10（请求、Token、三档成本）
+- **`topUsers`**：按 `charged_cost` 排序 Top 12
+- **`timeseries`**：按 `granularity`（`1h`/`1d`/`24h`→`hour`，更长→`day`）的 Token/请求/成本趋势；含 `cache_hit_rate`
+- **`userTimeseries`**：Top 5 用户在各 bucket 的 `total_tokens`
+- **`granularity`**：`hour` | `day`
+- **`recentLogs`**、**`recentErrors`**
 
 ### `GET /admin/config`
 

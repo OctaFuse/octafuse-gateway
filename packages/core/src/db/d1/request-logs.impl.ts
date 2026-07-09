@@ -3,6 +3,14 @@
  */
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
 import { roundGatewayMoney, sqlMoneyRound } from '../../lib/money-precision';
+import {
+	mapRequestStatsByRangeRow,
+	mapRequestTimeseriesRows,
+	mapThroughputSnapshot,
+	mapUserTokenTimeseriesRows,
+	REQUEST_STATS_SELECT_SQL,
+	REQUEST_TIMESERIES_SELECT_SQL,
+} from '../../lib/dashboard-request-stats';
 import type { RequestLogRow } from '../../types';
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
@@ -209,44 +217,93 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 			startDate: string;
 			endDate: string;
 			endExclusive?: boolean;
-		}): Promise<{
-			totalRequests: number;
-			errorCount: number;
-			successCount: number;
-			chargedCost: number;
-			meteredCost: number;
-			standardCost: number;
-		}> {
+		}) {
 			const comparator = options.endExclusive ? '<' : '<=';
 			const row = await raw
 				.prepare(
 					`SELECT
-				COUNT(*) as total_requests,
-				SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success_count,
-				SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as error_count,
+				${REQUEST_STATS_SELECT_SQL},
 				COALESCE(${sqlMoneyRound('SUM(charged_cost)')}, 0) as charged_cost,
 				COALESCE(${sqlMoneyRound('SUM(metered_cost)')}, 0) as metered_cost,
 				COALESCE(${sqlMoneyRound('SUM(standard_cost)')}, 0) as standard_cost
 			 FROM api_key_request_logs WHERE created_at >= ? AND created_at ${comparator} ?`
 				)
 				.bind(options.startDate, options.endDate)
-				.first<{
-					total_requests: number;
-					success_count: number;
-					error_count: number;
-					charged_cost: number;
-					metered_cost: number;
-					standard_cost: number;
-				}>();
+				.first();
 
-			return {
-				totalRequests: Number(row?.total_requests ?? 0),
-				successCount: Number(row?.success_count ?? 0),
-				errorCount: Number(row?.error_count ?? 0),
-				chargedCost: Number(row?.charged_cost ?? 0),
-				meteredCost: Number(row?.metered_cost ?? 0),
-				standardCost: Number(row?.standard_cost ?? 0),
-			};
+			return mapRequestStatsByRangeRow(row);
+		},
+
+		async queryRequestTimeseries(options: {
+			startDate: string;
+			endDate: string;
+			granularity: 'hour' | 'day';
+		}) {
+			const bucketExpr =
+				options.granularity === 'hour'
+					? "strftime('%Y-%m-%d %H:00:00', created_at)"
+					: "strftime('%Y-%m-%d', created_at)";
+			const rows = await raw
+				.prepare(
+					`SELECT
+				${bucketExpr} as bucket,
+				${REQUEST_TIMESERIES_SELECT_SQL},
+				COALESCE(${sqlMoneyRound('SUM(charged_cost)')}, 0) as charged_cost
+			 FROM api_key_request_logs
+			 WHERE created_at >= ? AND created_at <= ?
+			 GROUP BY bucket
+			 ORDER BY bucket ASC`
+				)
+				.bind(options.startDate, options.endDate)
+				.all();
+			return mapRequestTimeseriesRows(rows.results ?? []);
+		},
+
+		async queryUserTokenTimeseries(options: {
+			startDate: string;
+			endDate: string;
+			granularity: 'hour' | 'day';
+			userEmails: string[];
+		}) {
+			if (options.userEmails.length === 0) return [];
+			const bucketExpr =
+				options.granularity === 'hour'
+					? "strftime('%Y-%m-%d %H:00:00', created_at)"
+					: "strftime('%Y-%m-%d', created_at)";
+			const placeholders = options.userEmails.map(() => '?').join(', ');
+			const rows = await raw
+				.prepare(
+					`SELECT
+				${bucketExpr} as bucket,
+				user_email,
+				COALESCE(SUM(total_tokens), 0) as total_tokens
+			 FROM api_key_request_logs
+			 WHERE created_at >= ? AND created_at <= ?
+			   AND user_email IN (${placeholders})
+			 GROUP BY bucket, user_email
+			 ORDER BY bucket ASC`
+				)
+				.bind(options.startDate, options.endDate, ...options.userEmails)
+				.all();
+			return mapUserTokenTimeseriesRows(rows.results ?? []);
+		},
+
+		async getThroughputLastMinute() {
+			const end = new Date();
+			const start = new Date(end.getTime() - 60 * 1000);
+			const startDate = start.toISOString().slice(0, 19).replace('T', ' ');
+			const endDate = end.toISOString().slice(0, 19).replace('T', ' ');
+			const row = await raw
+				.prepare(
+					`SELECT
+				COUNT(*) as request_count,
+				COALESCE(SUM(total_tokens), 0) as total_tokens
+			 FROM api_key_request_logs
+			 WHERE created_at >= ? AND created_at <= ?`
+				)
+				.bind(startDate, endDate)
+				.first();
+			return mapThroughputSnapshot(row);
 		},
 
 		async getRecentLogs(limit: number): Promise<RequestLogRow[]> {

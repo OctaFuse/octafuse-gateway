@@ -255,5 +255,18 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			await drizzle.delete(myUsersTable).where(eq(myUsersTable.id, id));
 			return true;
 		},
+
+		async getUsersCount() {
+			const row = await drizzle
+				.select({
+					total: count(),
+					active: sql<number>`SUM(CASE WHEN ${myUsersTable.status} = 'active' THEN 1 ELSE 0 END)`,
+				})
+				.from(myUsersTable);
+			return {
+				total: Number(row[0]?.total ?? 0),
+				active: Number(row[0]?.active ?? 0),
+			};
+		},
 	};
 }

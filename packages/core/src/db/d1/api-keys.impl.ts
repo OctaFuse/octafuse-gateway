@@ -256,5 +256,20 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 				.first<{ count: number }>();
 			return Number(row?.count ?? 0);
 		},
+
+		async getApiKeysCount() {
+			const row = await raw
+				.prepare(
+					`SELECT
+				COUNT(*) as total,
+				SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active
+			 FROM api_keys`
+				)
+				.first<{ total: number; active: number }>();
+			return {
+				total: Number(row?.total ?? 0),
+				active: Number(row?.active ?? 0),
+			};
+		},
 	};
 }

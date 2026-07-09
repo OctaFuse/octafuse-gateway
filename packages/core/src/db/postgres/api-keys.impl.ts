@@ -319,5 +319,18 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 				.where(eq(pgApiKeysTable.status, 'active'));
 			return Number(row[0]?.c ?? 0);
 		},
+
+		async getApiKeysCount() {
+			const row = await drizzle
+				.select({
+					total: count(),
+					active: sql<number>`SUM(CASE WHEN ${pgApiKeysTable.status} = 'active' THEN 1 ELSE 0 END)`,
+				})
+				.from(pgApiKeysTable);
+			return {
+				total: Number(row[0]?.total ?? 0),
+				active: Number(row[0]?.active ?? 0),
+			};
+		},
 	};
 }

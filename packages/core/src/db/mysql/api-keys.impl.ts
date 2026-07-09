@@ -333,5 +333,18 @@ export function createMySqlApiKeysRepository(db: MySqlDatabaseClient): ApiKeysRe
 				.where(eq(myApiKeysTable.status, 'active'));
 			return Number(row[0]?.c ?? 0);
 		},
+
+		async getApiKeysCount() {
+			const row = await drizzle
+				.select({
+					total: count(),
+					active: sql<number>`SUM(CASE WHEN ${myApiKeysTable.status} = 'active' THEN 1 ELSE 0 END)`,
+				})
+				.from(myApiKeysTable);
+			return {
+				total: Number(row[0]?.total ?? 0),
+				active: Number(row[0]?.active ?? 0),
+			};
+		},
 	};
 }

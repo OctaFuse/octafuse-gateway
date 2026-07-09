@@ -259,5 +259,18 @@ export function createPostgresUsersRepository(db: PostgresDatabaseClient): Users
 			const r = await drizzle.delete(pgUsersTable).where(eq(pgUsersTable.id, id)).returning({ id: pgUsersTable.id });
 			return r.length > 0;
 		},
+
+		async getUsersCount() {
+			const row = await drizzle
+				.select({
+					total: count(),
+					active: sql<number>`SUM(CASE WHEN ${pgUsersTable.status} = 'active' THEN 1 ELSE 0 END)`,
+				})
+				.from(pgUsersTable);
+			return {
+				total: Number(row[0]?.total ?? 0),
+				active: Number(row[0]?.active ?? 0),
+			};
+		},
 	};
 }

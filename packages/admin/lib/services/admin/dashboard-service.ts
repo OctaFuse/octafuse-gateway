@@ -4,7 +4,7 @@
 import type { GatewayRepositories } from '@octafuse/core';
 import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } from '@octafuse/core/lib/billing-currency';
 import { badRequest } from './errors';
-import { clampAnalyticsRange, rangeToDates } from './shared';
+import { clampAnalyticsRange, rangeToDates, resolveStatsDateRange } from './shared';
 import { getBusinessDayWindow, getBusinessTimezone } from '@octafuse/core/lib/business-timezone';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import type {
@@ -161,29 +161,123 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 
 /**
  * 仪表盘汇总：今日业务时区日界请求、活跃密钥数、近期日志/错误、区间 KPI 与去重活跃用户。
- * @param range 如 `1h` | `1d` | `24h` | `7d` | `14d` | `30d` | `90d`，默认 `7d`；用于 KPI 时间窗（非「今日」卡片）
+ * @param input.range 预设 `1h` | `1d` | `24h` | `7d` | …（无显式起止时默认 `1d`）
+ * @param input.startDate / input.endDate UTC `YYYY-MM-DD HH:mm:ss`；与 Request Logs / Analytics 一致，优先于 `range`
  */
-export async function getAdminStatsService(repos: GatewayRepositories, range?: string): Promise<AdminStatsOutput> {
-	const { startDate, endDate } = rangeToDates(range ?? '7d');
+export async function getAdminStatsService(
+	repos: GatewayRepositories,
+	input?: { range?: string; startDate?: string; endDate?: string }
+): Promise<AdminStatsOutput> {
+	const { startDate, endDate, granularity } = resolveStatsDateRange({
+		range: input?.range,
+		startDate: input?.startDate,
+		endDate: input?.endDate,
+	});
 	const businessTimeZone = await getBusinessTimezone(repos);
 	const { startUtcSql: dayStart, endExclusiveUtcSql: dayEndExclusive } = getBusinessDayWindow(
 		new Date(),
 		businessTimeZone
 	);
 
-	const [activeKeysCount, todayStats, recentLogs, recentErrors, kpiStats, activeUsers] = await Promise.all([
-		repos.apiKeys.getActiveApiKeysCount(),
+	const [
+		keysCount,
+		accountsCount,
+		todayStats,
+		recentLogs,
+		recentErrors,
+		kpiStats,
+		activeUsers,
+		throughput,
+		modelRows,
+		userRows,
+		timeseries,
+	] = await Promise.all([
+		repos.apiKeys.getApiKeysCount(),
+		repos.users.getUsersCount(),
 		repos.requestLogs.getRequestStatsByRange({ startDate: dayStart, endDate: dayEndExclusive, endExclusive: true }),
 		repos.requestLogs.getRecentLogs(5),
 		repos.requestLogs.getRecentErrors(5),
 		repos.requestLogs.getRequestStatsByRange({ startDate, endDate }),
 		repos.requestLogs.getDistinctActiveUsersCount({ startDate, endDate }),
+		repos.requestLogs.getThroughputLastMinute(),
+		repos.analytics.queryModelAnalytics({ start: startDate, end: endDate }),
+		repos.analytics.queryUserAnalytics({ start: startDate, end: endDate }),
+		repos.requestLogs.queryRequestTimeseries({ startDate, endDate, granularity }),
 	]);
+
+	const modelDistributionMap = new Map<
+		string,
+		{
+			model_id: string;
+			request_count: number;
+			input_tokens: number;
+			output_tokens: number;
+			total_tokens: number;
+			charged_cost: number;
+			metered_cost: number;
+			standard_cost: number;
+		}
+	>();
+	for (const row of modelRows) {
+		const modelId = String(row.model_id ?? 'unknown');
+		const existing = modelDistributionMap.get(modelId) ?? {
+			model_id: modelId,
+			request_count: 0,
+			input_tokens: 0,
+			output_tokens: 0,
+			total_tokens: 0,
+			charged_cost: 0,
+			metered_cost: 0,
+			standard_cost: 0,
+		};
+		existing.request_count += Number(row.request_count);
+		existing.input_tokens += Number(row.input_tokens);
+		existing.output_tokens += Number(row.output_tokens);
+		existing.total_tokens += Number(row.input_tokens) + Number(row.output_tokens);
+		existing.charged_cost += Number(row.charged_cost);
+		existing.metered_cost += Number(row.metered_cost);
+		existing.standard_cost += Number(row.standard_cost);
+		modelDistributionMap.set(modelId, existing);
+	}
+	const modelDistribution = [...modelDistributionMap.values()]
+		.sort((a, b) => b.request_count - a.request_count)
+		.slice(0, 10);
+
+	const topUsers = [...userRows]
+		.map((row) => ({
+			user_email: String(row.user_email),
+			request_count: Number(row.request_count),
+			input_tokens: Number(row.input_tokens),
+			output_tokens: Number(row.output_tokens),
+			total_tokens: Number(row.input_tokens) + Number(row.output_tokens),
+			charged_cost: Number(row.charged_cost),
+			metered_cost: Number(row.metered_cost),
+			standard_cost: Number(row.standard_cost),
+		}))
+		.sort((a, b) => b.charged_cost - a.charged_cost)
+		.slice(0, 12);
+
+	const topUserEmails = topUsers.slice(0, 5).map((u) => u.user_email);
+	const userTimeseries =
+		topUserEmails.length > 0
+			? await repos.requestLogs.queryUserTokenTimeseries({
+					startDate,
+					endDate,
+					granularity,
+					userEmails: topUserEmails,
+				})
+			: [];
+
 	const todayRequestsCount = todayStats.totalRequests;
 	const gatewayStats = {
-		activeKeysCount,
+		activeKeysCount: keysCount.active,
+		keysTotal: keysCount.total,
+		keysActive: keysCount.active,
+		accountsTotal: accountsCount.total,
+		accountsActive: accountsCount.active,
 		todayRequestsCount,
 		todayCost: todayStats.chargedCost,
+		todayTokens: todayStats.totalTokens,
 		errorRate: todayRequestsCount > 0 ? (todayStats.errorCount / todayRequestsCount) * 100 : 0,
 	};
 	const kpi = {
@@ -194,11 +288,42 @@ export async function getAdminStatsService(repos: GatewayRepositories, range?: s
 		standardCost: kpiStats.standardCost,
 		activeUsers,
 		errorRate: kpiStats.totalRequests > 0 ? (kpiStats.errorCount / kpiStats.totalRequests) * 100 : 0,
+		inputTokens: kpiStats.inputTokens,
+		outputTokens: kpiStats.outputTokens,
+		cacheReadTokens: kpiStats.cacheReadTokens,
+		cacheWriteTokens: kpiStats.cacheWriteTokens,
+		totalTokens: kpiStats.totalTokens,
+		avgLatencyMs: kpiStats.avgLatencyMs,
+		rpm: throughput.rpm,
+		tpm: throughput.tpm,
 	};
 
 	return {
 		gateway: gatewayStats,
 		kpi,
+		modelDistribution,
+		topUsers,
+		timeseries: timeseries.map((row) => ({
+			bucket: row.bucket,
+			request_count: row.requestCount,
+			input_tokens: row.inputTokens,
+			output_tokens: row.outputTokens,
+			cache_read_tokens: row.cacheReadTokens,
+			cache_write_tokens: row.cacheWriteTokens,
+			total_tokens: row.totalTokens,
+			charged_cost: row.chargedCost,
+			avg_latency_ms: row.avgLatencyMs,
+			cache_hit_rate:
+				row.inputTokens + row.cacheReadTokens > 0
+					? (row.cacheReadTokens / (row.inputTokens + row.cacheReadTokens)) * 100
+					: 0,
+		})),
+		userTimeseries: userTimeseries.map((row) => ({
+			bucket: row.bucket,
+			user_email: row.userEmail,
+			total_tokens: row.totalTokens,
+		})),
+		granularity,
 		recentLogs,
 		recentErrors,
 	};
