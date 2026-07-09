@@ -6,4 +6,4 @@
 - **Postgres**：`migrations-postgres/` + **`npm run db:migrate:pg`**
 - **MySQL**：`migrations-mysql/` + **`npm run db:migrate:mysql`**
 
-架构与运行时矩阵：[docs/README.md](../../docs/README.md) · [docs/architecture/runtime-data.md](../../docs/architecture/runtime-data.md)
+架构与运行时矩阵：[docs/README.md](../../docs/README.md) · [docs/developers/architecture/runtime-data.md](../../docs/developers/architecture/runtime-data.md)

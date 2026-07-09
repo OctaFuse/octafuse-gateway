@@ -121,7 +121,7 @@ Admin 前端格式化函数位于 `packages/admin/lib/datetime.ts`：
 - Admin 仪表盘「今日」卡片：`dashboard-service.ts` → `getAdminStatsService`
 - Admin 全站时间列与自定义时间窗（见上一节）
 
-API 文档中的相关说明见 [`docs/api/admin.md`](../api/admin.md)（时间与时区约定一节）。
+API 文档中的相关说明见 [`docs/developers/api/admin.md`](../api/admin.md)（时间与时区约定一节）。
 
 ## 5. 小结与常见误解
 

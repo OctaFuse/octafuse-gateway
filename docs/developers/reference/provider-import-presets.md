@@ -6,10 +6,10 @@ Admin 在 **Gateway Providers** 页面提供「从模板导入」：预填各协
 
 | 文件 | 说明 |
 |------|------|
-| [`packages/admin/lib/provider-import-presets.json`](../../packages/admin/lib/provider-import-presets.json) | 模板列表（JSON 数组）；每条含 `name`、`vendor_key`、各协议 base URL、可选 `description`。 |
-| [`packages/admin/lib/provider-import-preset.ts`](../../packages/admin/lib/provider-import-preset.ts) | 合并 catalog、运行时 catalog 键（数组下标）、占位密钥常量 `PROVIDER_IMPORT_PENDING_API_KEY`、`isPendingProviderImportApiKey()`。 |
+| [`packages/admin/lib/provider-import-presets.json`](../../../packages/admin/lib/provider-import-presets.json) | 模板列表（JSON 数组）；每条含 `name`、`vendor_key`、各协议 base URL、可选 `description`。 |
+| [`packages/admin/lib/provider-import-preset.ts`](../../../packages/admin/lib/provider-import-preset.ts) | 合并 catalog、运行时 catalog 键（数组下标）、占位密钥常量 `PROVIDER_IMPORT_PENDING_API_KEY`、`isPendingProviderImportApiKey()`。 |
 
-`vendor_key` 必须与 [`packages/admin/lib/model-vendors.json`](../../packages/admin/lib/model-vendors.json) 中的 `key` 一致（展示名由 `model-vendor.ts` 归一化与 label）。
+`vendor_key` 必须与 [`packages/admin/lib/model-vendors.json`](../../../packages/admin/lib/model-vendors.json) 中的 `key` 一致（展示名由 `model-vendor.ts` 归一化与 label）。
 
 ## API
 

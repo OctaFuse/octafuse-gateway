@@ -2,9 +2,9 @@
 
 本文说明 **octafuse-gateway** 在 Cloudflare 上的三种用法：**本地 D1 开发**、**dev 演示（octafuse.dev）**、**生产 Git 自动部署**。
 
-**快速入口**：[cloudflare-worker/README.md](../../cloudflare-worker/README.md)（路径速查 + 命令清单）。
+**快速入口**：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md)（路径速查 + 命令清单）。
 
-表结构以 **`packages/core/migrations-d1/`** 为准。Docker 自托管见 [deployment-docker.md](./deployment-docker.md)。
+表结构以 **`packages/core/migrations-d1/`** 为准。Docker 自托管见 [deployment-docker.md](./docker.md)。
 
 ---
 
@@ -41,14 +41,14 @@ npm run dev:admin    # :8789
 
 - `postinstall` 已跑 `gen:wrangler`（无 `D1_DATABASE_ID` 即可）。
 - **不需要** `cloudflare-worker/*.env`。
-- 在本机执行过 `deploy:*` / `db:migrate:remote` 后，继续本地 dev 前须 **`npm run gen:wrangler`**（见 [local-testing-environments.md §1](./local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)）。
-- 详见 [local-testing-environments.md](./local-testing-environments.md) §1–2。
+- 在本机执行过 `deploy:*` / `db:migrate:remote` 后，继续本地 dev 前须 **`npm run gen:wrangler`**（见 [local-testing-environments.md §1](../../developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)）。
+- 详见 [local-testing-environments.md](../../developers/local-development.md) §1–2。
 
 ---
 
 ## 2. dev 演示部署（example.env · octafuse.dev）
 
-长期公共测试环境，配置见 [`cloudflare-worker/example.env`](../../cloudflare-worker/example.env)：
+长期公共测试环境，配置见 [`cloudflare-worker/example.env`](../../../cloudflare-worker/example.env)：
 
 | 角色 | 域名 | Worker |
 |------|------|--------|
@@ -66,7 +66,7 @@ npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:proxy
 npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:admin
 ```
 
-dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../../cloudflare-worker/README.md#c-生产-git-自动部署)。
+dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../../../cloudflare-worker/README.md#c-生产-git-自动部署)。
 
 ---
 
@@ -80,7 +80,7 @@ dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../
 | dev 演示 | `*-dev`，D1 `octafuse-gateway-dev` | `test-api.octafuse.dev` 等（见 `example.env`） |
 | 自有 fork / 第二实例 | 自定 Worker 名与 D1 名，避免与同账号其它实例冲突 | 可选 `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` |
 
-本地 CLI：复制 [`example.env`](../../cloudflare-worker/example.env) 为 gitignore 的 `cloudflare-worker/<name>.env`，填生产值后 `dotenv -e ... deploy:*`（与 Build variables 同名同值）。
+本地 CLI：复制 [`example.env`](../../../cloudflare-worker/example.env) 为 gitignore 的 `cloudflare-worker/<name>.env`，填生产值后 `dotenv -e ... deploy:*`（与 Build variables 同名同值）。
 
 ### 环境变量（Build variables / 本地 `.env`）
 
@@ -88,7 +88,7 @@ dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../
 |------|------|
 | `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` | **须与 Dashboard Worker 名一致** |
 | `D1_DATABASE_NAME` | D1 逻辑名 |
-| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**。写入生成的 `wrangler.jsonc` 后，本机 `dev:proxy`/`dev:admin` 会连**另一套**本地 D1；继续本地开发前执行 `npm run gen:wrangler`（见 [local-testing-environments.md §1](./local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
+| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**。写入生成的 `wrangler.jsonc` 后，本机 `dev:proxy`/`dev:admin` 会连**另一套**本地 D1；继续本地开发前执行 `npm run gen:wrangler`（见 [local-testing-environments.md §1](../../developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
 | `D1_MIGRATIONS_WORKER_NAME` | 可选；仅 `wrangler d1 migrations` 配置名，**无需建 Worker** |
 | `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 |
 
@@ -146,7 +146,7 @@ Dashboard → **Settings → Builds → Build watch paths**。默认 `includes: 
 - 改 **`packages/core/migrations-d1/`** 会触发构建，但 **不会**自动跑迁移；仍需本地 `db:migrate:remote` 后再依赖新 schema 的代码 push。
 - 需要强制全量构建时：Dashboard 手动 **Retry deployment**，或 push 空 commit（Cloudflare 对 0 file 的 push 会默认构建）。
 
-Dashboard 逐步配置见 [cloudflare-worker/README.md §C](../../cloudflare-worker/README.md#git-自动部署connect-to-git)。
+Dashboard 逐步配置见 [cloudflare-worker/README.md §C](../../../cloudflare-worker/README.md#git-自动部署connect-to-git)。
 
 ### 本地 CLI（与 CI 相同生成逻辑）
 
@@ -182,7 +182,7 @@ npx wrangler d1 list
 
 ## 7. 认证与下游
 
-- 管理 API Bearer 须与 D1 **`system_config.MASTER_KEY`** 一致（见 [api/admin.md](../api/admin.md)）。
+- 管理 API Bearer 须与 D1 **`system_config.MASTER_KEY`** 一致（见 [api/admin.md](../../developers/api/admin.md)）。
 - 下游门户：`GATEWAY_URL`（Proxy）、`GATEWAY_MASTER_URL`（Admin）、`GATEWAY_MASTER_KEY`。
 
 ---
@@ -214,4 +214,4 @@ Workers Builds 部署历史 **Rollback**；或 Pause Builds 后回滚版本。
 
 ---
 
-**相关**：[cloudflare-worker/README.md](../../cloudflare-worker/README.md) · [部署索引](./deployment.md) · [本地测试](./local-testing-environments.md)
+**相关**：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md) · [部署索引](./README.md) · [本地测试](../../developers/local-development.md)

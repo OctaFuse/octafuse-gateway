@@ -1,124 +1,37 @@
 # Octafuse Gateway 文档
 
-本仓库 **`octafuse`** 是 Gateway 的 **npm workspaces** 单体：**`packages/proxy`**（推理）与 **`packages/admin`**（管理 UI + `/api/admin/*`）共享 **`@octafuse/core`**。
+这套文档按读者任务组织，而不是按文件类型堆放。先选择自己的角色，再进入对应目录。
 
-## 目录分工
+## 读者入口
 
-| 目录 | 定位 | 适合放什么 |
-|------|------|------------|
-| [`api/`](./api/) | API 契约 | Proxy 用户接口、Admin 管理接口、认证与错误形态 |
-| [`architecture/`](./architecture/) | 架构与数据模型 | 运行时矩阵、请求生命周期、User / API Key 数据模型、Admin 分层 |
-| [`ops/`](./ops/) | 部署与运维 | Cloudflare、Docker、自托管、本地测试环境、发版流程 |
-| [`reference/`](./reference/) | 行为语义参考 | 计费、审计、时间口径、Provider 参数与导入模板 |
-| [`migrations/`](./migrations/) | 迁移说明 | 历史兼容迁移、数据导出或切换说明 |
-| [`assets/`](./assets/) | 文档素材 | README / docs 使用的截图、图片等静态素材 |
+| 你是谁 | 入口 | 主要内容 |
+|--------|------|----------|
+| 使用者 / 管理员 | [users/](./users/) | 快速部署、功能地图、Admin 配置、客户端接入 |
+| 开发者 / 集成方 | [developers/](./developers/) | API 契约、系统集成、本地开发、架构与行为语义 |
+| 部署 / 运维者 | [operators/](./operators/) | Cloudflare、Docker、Zeabur、数据库迁移与切换 |
+| 项目维护者 | [maintainers/](./maintainers/) | 发版、Changesets、镜像发布、文档规范 |
 
-## 必读
+## 推荐路径
 
-| 文档 | 说明 |
-|------|------|
-| [CONVENTIONS.md](./CONVENTIONS.md) | **文档分层规则 + 敏感信息规范**：什么留仓内、什么可外移、占位符与禁止值清单（PR review 必参考） |
-| [architecture/runtime-data.md](./architecture/runtime-data.md) | **运行时（Cloudflare / Node）× 数据库（D1 / Postgres / MySQL）**、部署拓扑与迁移目录 |
-| [architecture/user-keys-data-model.md](./architecture/user-keys-data-model.md) | **用户 / API Key / 预算**表关系、约束与鉴权扣费不变量 |
+| 目标 | 从这里开始 |
+|------|------------|
+| 先跑起来并完成一次调用 | [users/quickstart.md](./users/quickstart.md) |
+| 理解 Gateway 能力和核心概念 | [users/features.md](./users/features.md) |
+| 部署后在 Admin 里配置 Provider、Route、用户 Key | [users/configuration.md](./users/configuration.md) |
+| 把已有 AI 客户端接到 Gateway | [users/connect-clients.md](./users/connect-clients.md) |
+| 用 Gateway 接入自己的门户、后台或 SaaS | [developers/integration.md](./developers/integration.md) |
+| 查 Proxy / Admin API | [developers/api/README.md](./developers/api/README.md) |
+| 本地二开或贡献代码 | [developers/local-development.md](./developers/local-development.md) |
+| 部署到生产环境 | [operators/deployment/README.md](./operators/deployment/) |
 
-## 架构
+## 内容取舍
 
-| 文档 | 说明 |
-|------|------|
-| [architecture/proxy-request-lifecycle.md](./architecture/proxy-request-lifecycle.md) | **Proxy 请求处理逻辑**：鉴权、路由、限流/熔断/粘性、failover、场景分支 |
-| [architecture/admin-layered.md](./architecture/admin-layered.md) | Admin 路由 / 服务 / 仓储分层 |
+这次重构保留了现有文档里与代码强绑定的部分：API、架构、运行时矩阵、审计、计费、时间语义和部署细节。这些内容仍然有价值，只是移动到了更适合的读者路径下。
 
-默认拓扑（Cloudflare + D1）：
+面向纯使用者的内容此前不足，所以新增了 `users/` 下的快速开始、功能地图、配置流程和客户端接入指南。它们故意不展开代码实现，目标是让使用者能完成部署、配置和日常排障。
 
-```mermaid
-flowchart LR
-  subgraph clients [调用方]
-    Portal[portal]
-    Client[AI_client]
-    Browser[browser]
-  end
-  subgraph cf [Cloudflare]
-    Proxy["@octafuse/proxy"]
-    Admin["@octafuse/admin"]
-    D1[(D1)]
-  end
-  Core["@octafuse/core"]
-  Proxy --> D1
-  Admin --> D1
-  Proxy -.-> Core
-  Admin -.-> Core
-  Client --> Proxy
-  Portal --> Proxy
-  Portal --> Admin
-  Browser --> Admin
-```
+## 文档规范
 
-| 包 | 运行时（典型） | 对外路径（摘要） | 数据 |
-|----|----------------|------------------|------|
-| `packages/proxy` | **CF Worker** 或 **Node** | `GET /`、`GET /health`、**`/v1/*`**、**`/v1beta/*`** | **D1**（Worker）或 **Postgres / MySQL**（Node） |
-| `packages/admin` | **OpenNext + wrangler** 或 **Node** | 管理 UI；**`/api/admin/*`** | 与 Proxy **同源** |
-| `packages/core` | 库 | 被 proxy / admin 引用 | **D1 / Postgres / MySQL**（驱动见 runtime-data） |
-
-要点：**Proxy Worker 不挂载 `/admin/*`**。管理 HTTP 由 Admin 在 **`{GATEWAY_MASTER_URL}/api/admin/...`** 提供（Bearer `MASTER_KEY` 或已登录 Cookie）。
-
-## 与下游门户的契约
-
-| 变量 | 指向 |
-|------|------|
-| `GATEWAY_URL` | Proxy 根（用户推理） |
-| `GATEWAY_MASTER_URL` | Admin 根；**`{GATEWAY_MASTER_URL}/api/admin/*`** |
-| `GATEWAY_MASTER_KEY` | 与当前库 **`system_config.MASTER_KEY`** 一致 |
-
-## API
-
-| 文档 | 说明 |
-|------|------|
-| [api/README.md](./api/README.md) | 总览：Base URL、认证、错误形态 |
-| [api/public.md](./api/public.md) / [api/user.md](./api/user.md) | 公开接口与用户接口（经 Proxy） |
-| [api/admin.md](./api/admin.md) | 管理接口（对外 `/api/admin/*`） |
-
-## 运维与部署
-
-| 文档 | 说明 |
-|------|------|
-| [ops/deployment.md](./ops/deployment.md) | **部署索引**（入口） |
-| [ops/deployment-cloudflare.md](./ops/deployment-cloudflare.md) | Cloudflare：本地 / dev 演示 / 生产 Git CI |
-| [cloudflare-worker/README.md](../cloudflare-worker/README.md) | **Cloudflare 部署速查**（Build variables、`example.env`） |
-| [ops/deployment-docker.md](./ops/deployment-docker.md) | Docker 镜像、Compose、GHCR |
-| [ops/local-testing-environments.md](./ops/local-testing-environments.md) | 本地 D1 / Node + SQL |
-| [ops/release-versioning.md](./ops/release-versioning.md) | Changesets、`vX.Y.Z`、镜像与 Release |
-| [ops/postgres-cutover.md](./ops/postgres-cutover.md) | D1 ↔ Postgres 脚本（`scripts/db/cutover/`） |
-
-**Compose 宿主机环境文件**：[docker/deploy/README.md](../docker/deploy/README.md)（从 `docker/examples/env.*.example` 复制）。
-
-## 参考（行为与语义）
-
-| 文档 | 说明 |
-|------|------|
-| [reference/streaming-billing.md](./reference/streaming-billing.md) | 流式计费与取消 |
-| [reference/user-audit-logs.md](./reference/user-audit-logs.md) | 用户审计日志（`user_audit_logs`） |
-| [reference/budget-audit-logs.md](./reference/budget-audit-logs.md) | 兼容跳转（→ user-audit-logs） |
-| [reference/provider-thinking-configs.md](./reference/provider-thinking-configs.md) | 渠道思考类参数 |
-| [reference/provider-import-presets.md](./reference/provider-import-presets.md) | Admin Provider 导入模板 |
-| [reference/time-and-timezone.md](./reference/time-and-timezone.md) | 时间存储（UTC）、API 输出、Admin 显示时区与日界统计口径 |
-
-## 仓库根常用命令
-
-```bash
-npm install
-npm run db:migrate          # 本地 D1 → ./.wrangler/state
-npm run dev:proxy           # Proxy Worker :8787
-npm run dev:proxy:node      # Proxy Node + SQL :8787
-npm run dev:admin           # Admin OpenNext preview + D1 :8789
-npm run dev:admin:node      # Admin Node + SQL :8789
-npm run deploy:proxy        # 须 dotenv -e cloudflare-worker/<instance>.env 或已 export 变量
-npm run deploy:admin
-```
-
-Cloudflare 三条路径（本地 / example.dev / 生产）：**[cloudflare-worker/README.md](../cloudflare-worker/README.md)**。
-
-本地 D1：`db:migrate` 与 `dev:proxy` / `dev:admin` 共用 `./.wrangler/state`，但**远程 deploy 后**生成的 `wrangler.jsonc` 会带 `database_id`，dev 可能连到另一套本地 SQLite；继续本地开发前执行 **`npm run gen:wrangler`**。详见 **[local-testing-environments.md §1](./ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)**。
-
-D1 迁移目录：**`packages/core/migrations-d1/`**（`wrangler.d1.jsonc` 同目录）。Postgres：**`packages/core/migrations-postgres/`**（`npm run db:migrate:pg`）。MySQL：**`packages/core/migrations-mysql/`**（`npm run db:migrate:mysql`）。
-
-应用层已移除的 user audit 兼容导出与迁移对照：见 **[`docs/migrations/user-audit-legacy-exports.md`](migrations/user-audit-legacy-exports.md)**。
+- 文档边界、敏感信息和占位符规则见 [CONVENTIONS.md](./CONVENTIONS.md)。
+- 示例 HTTP 请求集中放在 [examples/](../examples/)；文档中只保留最小必要片段。
+- 截图等静态资源放在 [assets/](./assets/)。

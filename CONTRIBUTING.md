@@ -31,7 +31,7 @@ This repo uses **[Changesets](https://github.com/changesets/changesets)** in **f
 - After merges to **`main`**, GitHub Actions opens a **Version Packages** PR; review and merge it.
 - The next **`main`** run pushes **`vX.Y.Z`** tags (`npx changeset tag`), which triggers **Docker images** and a **GitHub Release** with image digests.
 
-Full runbook: **[docs/ops/release-versioning.md](./docs/ops/release-versioning.md)** · **[`.changeset/README.md`](./.changeset/README.md)**.
+Full runbook: **[docs/maintainers/release-versioning.md](./docs/maintainers/release-versioning.md)** · **[`.changeset/README.md`](./.changeset/README.md)**.
 
 ## Development
 

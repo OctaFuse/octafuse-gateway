@@ -1,6 +1,6 @@
-# 本地测试：Octafuse
+# 本地开发与测试：Octafuse
 
-本文说明如何在本地组合 **Proxy Worker**、**Admin（OpenNext）** 与 **D1**，以及可选 **Node + Postgres** 或 **Node + MySQL**。整体「运行时 × 数据库」矩阵见 **[architecture/runtime-data.md](../architecture/runtime-data.md)**。
+本文说明如何在本地组合 **Proxy Worker**、**Admin（OpenNext）** 与 **D1**，以及可选 **Node + Postgres** 或 **Node + MySQL**。整体「运行时 × 数据库」矩阵见 **[architecture/runtime-data.md](./architecture/runtime-data.md)**。
 
 **Cloudflare 本地开发 vs 远程部署**：本文件 §1–2 为**本机 D1**（不上线）。远程 dev 演示、生产 Git 部署见 **[cloudflare-worker/README.md](../../cloudflare-worker/README.md)**。
 
@@ -194,7 +194,7 @@ docker compose -f docker/compose/node-mysql.yml up -d gateway-proxy gateway-admi
 
 ### 6.3 用预构建镜像（GHCR、自建 Harbor 或任意私有 registry）
 
-从第二私有 registry（自建 Harbor 等）拉取时，在 `docker/examples/env.*.example` 中按对应注释将 `GATEWAY_*_IMAGE` 改为 `registry.example.com/<namespace>/octafuse-gateway-{proxy,admin,migrate}:v1.0.0` 形态（见 [deployment-docker.md](./deployment-docker.md) §4.2），再按需改 tag。
+从第二私有 registry（自建 Harbor 等）拉取时，在 `docker/examples/env.*.example` 中按对应注释将 `GATEWAY_*_IMAGE` 改为 `registry.example.com/<namespace>/octafuse-gateway-{proxy,admin,migrate}:v1.0.0` 形态（见 [deployment-docker.md](../operators/deployment/docker.md) §4.2），再按需改 tag。
 
 ```bash
 cd docker/examples
@@ -208,7 +208,7 @@ docker compose --env-file .env.gateway -f gateway.proxy.yml -f gateway.admin.yml
 
 ### 6.4 Full self-hosted PG（不用 Docker：本机双进程）
 
-不跑 Compose 时，可分别用 Node 起 Proxy 与 Admin（同一 `DATABASE_URL`），见上文第 5 节与 [deployment-docker.md](./deployment-docker.md) §6。
+不跑 Compose 时，可分别用 Node 起 Proxy 与 Admin（同一 `DATABASE_URL`），见上文第 5 节与 [deployment-docker.md](../operators/deployment/docker.md) §6。
 
 ## 7. 与外部集成方联调
 
@@ -221,4 +221,4 @@ docker compose --env-file .env.gateway -f gateway.proxy.yml -f gateway.admin.yml
 
 ---
 
-**相关文档**：[Cloudflare 部署](./deployment-cloudflare.md) · [API 总览](../api/README.md)
+**相关文档**：[Cloudflare 部署](../operators/deployment/cloudflare.md) · [API 总览](./api/README.md)

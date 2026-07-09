@@ -529,7 +529,7 @@ curl http://localhost:8787/v1/me \
 - 路由级 **`route_group`** 会写入 `api_key_request_logs` 快照；相对目录标准价的倍率保存在路由 **`price_override`** 的 **`charged_factor`** / **`metered_factor`**（不再使用独立 `billing_factor` 列）。
   - **`metered_cost`**：优先 `price_override.metered`，否则模型目录 profile
   - **`standard_cost`**：按 `models` 标准价格计算（不受 `price_override` 影响）
-  - **`charged_cost`**：优先 `price_override.charged`，否则模型目录 profile（详见 `docs/reference/streaming-billing.md`）
+  - **`charged_cost`**：优先 `price_override.charged`，否则模型目录 profile（详见 `docs/developers/reference/streaming-billing.md`）
 - `api_keys.budget_spent` 仅按 `charged_cost` 累加
 
 ### 使用量追踪

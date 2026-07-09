@@ -2,7 +2,7 @@
 
 预构建镜像见 `.github/workflows/octafuse-docker-images.yml`（命名：`ghcr.io/<github.repository 小写>-{proxy,admin,migrate}`，例如 **`ghcr.io/octafuse/octafuse-gateway-proxy`**）。
 
-**与镜像实现一致的行为**（详见 [docs/ops/deployment-docker.md](../../docs/ops/deployment-docker.md) §3、§5）：**proxy** 仅含 **已编译** 的 core/proxy（`node packages/proxy/dist/runtime/node.js`），**不**含 DB 迁移 CLI；**migrate** 使用 **`packages/core/dist/migrate/cli.js`**（与 **`octafuse-migrate`**、根目录 **`npm run db:migrate:pg`** 同源）。镜像内**不**再依赖 `tsx`。**`scripts/db/`**（D1 远程导出、`cutover/` 等）仅在宿主机克隆仓库后用于运维，**不**打入 proxy 镜像。
+**与镜像实现一致的行为**（详见 [docs/operators/deployment/docker.md](../../docs/operators/deployment/docker.md) §3、§5）：**proxy** 仅含 **已编译** 的 core/proxy（`node packages/proxy/dist/runtime/node.js`），**不**含 DB 迁移 CLI；**migrate** 使用 **`packages/core/dist/migrate/cli.js`**（与 **`octafuse-migrate`**、根目录 **`npm run db:migrate:pg`** 同源）。镜像内**不**再依赖 `tsx`。**`scripts/db/`**（D1 远程导出、`cutover/` 等）仅在宿主机克隆仓库后用于运维，**不**打入 proxy 镜像。
 
 **宿主机端口**：示例里默认将 **proxy 映射到 `18787`、admin 映射到 `18789`**（可通过 `GATEWAY_PROXY_PORT` / `GATEWAY_ADMIN_PORT` 覆盖）；容器内进程仍为 **8787** / **8789**。
 
@@ -19,7 +19,7 @@ docker login registry.example.com -u YOUR_REGISTRY_USERNAME
 # 按提示输入密码，或使用：printf '%s' "$REGISTRY_PASSWORD" | docker login registry.example.com -u YOUR_REGISTRY_USERNAME --password-stdin
 ```
 
-自托管部署步骤见 [docs/ops/deployment-docker.md](../../docs/ops/deployment-docker.md) 与 [docker/deploy/README.md](../deploy/README.md)。
+自托管部署步骤见 [docs/operators/deployment/docker.md](../../docs/operators/deployment/docker.md) 与 [docker/deploy/README.md](../deploy/README.md)。
 
 ## 当前保留形态
 
@@ -30,7 +30,7 @@ docker login registry.example.com -u YOUR_REGISTRY_USERNAME
 | **仅 Proxy**（推理网关单独部署） | [`gateway.proxy.yml`](./gateway.proxy.yml) | [`env.proxy.example`](./env.proxy.example) |
 | **仅 Admin**（管理面单独部署） | [`gateway.admin.yml`](./gateway.admin.yml) | [`env.admin.example`](./env.admin.example) |
 | **同机同时启动 Proxy + Admin**（仍连接外置 Postgres） | [`gateway.compose.yml`](./gateway.compose.yml) | [`env.compose.external.example`](./env.compose.external.example) |
-| **Zeabur（容器平台）** | 见 [deployment-zeabur.md](../../docs/ops/deployment-zeabur.md) | [`env.zeabur.example`](./env.zeabur.example) |
+| **Zeabur（容器平台）** | 见 [deployment-zeabur.md](../../docs/operators/deployment/zeabur.md) | [`env.zeabur.example`](./env.zeabur.example) |
 
 首次建库或发版后需要迁移时，使用 `--profile migrate`（**octafuse-migrate** 镜像，环境变量 **`GATEWAY_MIGRATE_IMAGE`**）。生产推荐固定为「**先 migrate，再启动服务**」。
 
@@ -111,18 +111,13 @@ docker compose --env-file .env.gateway -f gateway.compose.yml --profile migrate 
 docker compose --env-file .env.gateway -f gateway.compose.yml up -d
 ```
 
-任意通用轻量服务器（无 Cloudflare 依赖）上的 Docker 编排同上（[deployment-docker.md](../../docs/ops/deployment-docker.md) + [docker/deploy/README.md](../deploy/README.md)）。
+任意通用轻量服务器（无 Cloudflare 依赖）上的 Docker 编排同上（[deployment-docker.md](../../docs/operators/deployment/docker.md) + [docker/deploy/README.md](../deploy/README.md)）。
 
-**Zeabur**：migrate 镜像为一次性 Job，**不要**作为常驻 Service（成功后进程退出会触发平台重启循环）。推荐发版前用 [`scripts/deploy/zeabur-migrate-once.sh`](../../scripts/deploy/zeabur-migrate-once.sh) 或 PREBUILT migrate 跑完后 **Suspend**；详见 **[docs/ops/deployment-zeabur.md](../../docs/ops/deployment-zeabur.md)** 与 [`env.zeabur.example`](./env.zeabur.example)。
+**Zeabur**：migrate 镜像为一次性 Job，**不要**作为常驻 Service（成功后进程退出会触发平台重启循环）。推荐发版前用 [`scripts/deploy/zeabur-migrate-once.sh`](../../scripts/deploy/zeabur-migrate-once.sh) 或 PREBUILT migrate 跑完后 **Suspend**；详见 **[docs/operators/deployment/zeabur.md](../../docs/operators/deployment/zeabur.md)** 与 [`env.zeabur.example`](./env.zeabur.example)。
 
-## Nginx：Proxy 流式（SSE）反代样板
+## Nginx：Proxy 流式（SSE）反代提示
 
-Docker 部署的 **gateway-proxy** 经 Nginx 反代时，若未关闭 `proxy_buffering` / 站点 `gzip`，`stream: true` 的接口可能表现为「不流式、一次性返回」。请直接使用下面仓库内样例（可粘贴进 `location` / `server` 块；按需改 `proxy_pass` 上游端口）。
-
-| 文件 | 说明 |
-|------|------|
-| [`nginx/gateway-proxy.location.conf`](./nginx/gateway-proxy.location.conf) | 可放入 `location / { ... }` 内的指令集合（**须**写在 `location` 块里；默认 `proxy_pass` 到 `127.0.0.1:18787`） |
-| [`nginx/gateway-proxy.server.conf.example`](./nginx/gateway-proxy.server.conf.example) | 完整 `server { }` 示例（`gateway.example.com` + SSL 占位） |
+Docker 部署的 **gateway-proxy** 经 Nginx 反代时，若未关闭 `proxy_buffering` / 站点 `gzip`，`stream: true` 的接口可能表现为「不流式、一次性返回」。反代 Gateway 的 `location` 中应显式关闭响应缓冲，并确保 SSE 响应不会被压缩或缓存。
 
 验证示例：
 

@@ -15,9 +15,9 @@ docker compose --env-file docker/deploy/.env.local -f docker/examples/gateway.co
 docker compose --env-file docker/deploy/.env.local -f docker/examples/gateway.compose.yml up -d
 ```
 
-模板字段说明见各 `docker/examples/env.*.example` 内注释。完整部署见 **[docs/ops/deployment-docker.md](../../docs/ops/deployment-docker.md)**。
+模板字段说明见各 `docker/examples/env.*.example` 内注释。完整部署见 **[docs/operators/deployment/docker.md](../../docs/operators/deployment/docker.md)**。
 
-**Zeabur**：环境变量可从 [`docker/examples/env.zeabur.example`](../examples/env.zeabur.example) 复制；migrate 为一次性 Job，见 **[docs/ops/deployment-zeabur.md](../../docs/ops/deployment-zeabur.md)**。
+**Zeabur**：环境变量可从 [`docker/examples/env.zeabur.example`](../examples/env.zeabur.example) 复制；migrate 为一次性 Job，见 **[docs/operators/deployment/zeabur.md](../../docs/operators/deployment/zeabur.md)**。
 
 ## 参考
 

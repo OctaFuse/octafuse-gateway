@@ -89,7 +89,7 @@ erDiagram
 | **Postgres / MySQL 存储层并发扣费**（与 Proxy `recordUsage` 同一 `insertRequestUsageAndChargeTx`） | `npm run test:gateway:sql-storage-smoke`（需 `DATABASE_URL`；未配置则退出 0 跳过） |
 | **关键写路径 mock**（D1 batch / PG 事务形状） | `npx tsx --test scripts/smoke/test-critical-write-paths.ts` |
 
-详见 [`../../scripts/smoke/README.md`](../../scripts/smoke/README.md)。
+详见 [`scripts/smoke/README.md`](../../../scripts/smoke/README.md)。
 
 ## 相关文档
 

@@ -23,6 +23,6 @@ npx changeset
 
 应急或调试仍可使用 workflow 的 **`workflow_dispatch`** 手动构建（不替代上述正式发版）。
 
-若 CI 报 **「GitHub Actions is not permitted to create or approve pull requests」**：在仓库 **Settings → Actions → General** 勾选 **Allow GitHub Actions to create and approve pull requests**，或配置 secret **`CHANGESETS_GITHUB_TOKEN`**（PAT），详见 **[docs/ops/release-versioning.md](../docs/ops/release-versioning.md)** §「Release workflow 无法创建 PR」。
+若 CI 报 **「GitHub Actions is not permitted to create or approve pull requests」**：在仓库 **Settings → Actions → General** 勾选 **Allow GitHub Actions to create and approve pull requests**，或配置 secret **`CHANGESETS_GITHUB_TOKEN`**（PAT），详见 **[docs/maintainers/release-versioning.md](../docs/maintainers/release-versioning.md)** §「Release workflow 无法创建 PR」。
 
-更多说明见 **[docs/ops/release-versioning.md](../docs/ops/release-versioning.md)**。
+更多说明见 **[docs/maintainers/release-versioning.md](../docs/maintainers/release-versioning.md)**。

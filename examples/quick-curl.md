@@ -28,6 +28,6 @@ curl -sS http://127.0.0.1:8789/api/admin/health \
   -H "Authorization: Bearer sk-dev-admin-key"
 ```
 
-> Production: rotate `MASTER_KEY` to a strong random value via the Admin Config page or direct SQL, then update any `GATEWAY_MASTER_KEY` consumers. See [docs/CONVENTIONS.md §2.3](../docs/CONVENTIONS.md#23-关于-sk-dev-admin-key) and [docs/api/admin.md](../docs/api/admin.md).
+> Production: rotate `MASTER_KEY` to a strong random value via the Admin Config page or direct SQL, then update any `GATEWAY_MASTER_KEY` consumers. See [docs/CONVENTIONS.md §2.3](../docs/CONVENTIONS.md#23-关于-sk-dev-admin-key) and [docs/developers/api/admin.md](../docs/developers/api/admin.md).
 
 Adjust host, port, and Bearer tokens for your environment.

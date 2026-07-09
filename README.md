@@ -84,7 +84,7 @@ curl -sS http://localhost:8787/v1/chat/completions \
 docker compose -f docker/compose/quickstart.yml down
 ```
 
-> Docker quickstart 不需要复制 `.env.example`。如需 MySQL、外置数据库、预构建镜像或 Nginx 流式反代，见 [Docker 部署文档](./docs/ops/deployment-docker.md)。
+> Docker quickstart 不需要复制 `.env.example`。如需 MySQL、外置数据库、预构建镜像或 Nginx 流式反代，见 [Docker 部署文档](./docs/operators/deployment/docker.md)。
 
 ### 方式 B：Cloudflare 本地 D1
 
@@ -111,18 +111,16 @@ npm run dev:admin
 | D1 本地状态 | `./.wrangler/state` |
 | Admin API Bearer | `sk-dev-admin-key` |
 
-远程 Cloudflare 部署前，需要先创建 D1、设置 Worker Build variables，并在部署依赖新表结构的代码前运行远程迁移。完整流程见 [Cloudflare 部署文档](./docs/ops/deployment-cloudflare.md)。
+远程 Cloudflare 部署前，需要先创建 D1、设置 Worker Build variables，并在部署依赖新表结构的代码前运行远程迁移。完整流程见 [Cloudflare 部署文档](./docs/operators/deployment/cloudflare.md)。
 
 ## 文档入口
 
-| 主题 | 链接 |
-|------|------|
-| 部署总览 | [docs/ops/deployment.md](./docs/ops/deployment.md) |
-| Cloudflare 部署 | [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) |
-| Docker / 自托管 | [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) |
-| 本地测试环境 | [docs/ops/local-testing-environments.md](./docs/ops/local-testing-environments.md) |
-| API 文档 | [docs/api/README.md](./docs/api/README.md) |
-| 架构与运行时矩阵 | [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md) |
+| 读者 / 任务 | 链接 |
+|-------------|------|
+| 使用者：快速部署、功能介绍、Admin 配置、客户端接入 | [docs/users/](./docs/users/) |
+| 开发者：API、系统集成、本地开发、架构与行为语义 | [docs/developers/](./docs/developers/) |
+| 部署 / 运维：Cloudflare、Docker、Zeabur、数据库迁移 | [docs/operators/](./docs/operators/) |
+| 维护者：发版、Changesets、镜像发布、文档规范 | [docs/maintainers/](./docs/maintainers/) |
 | HTTP 示例 | [examples/README.md](./examples/README.md) |
 
 ## 常用命令

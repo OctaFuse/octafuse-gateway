@@ -15,4 +15,4 @@ npm run dev:proxy:node     # Node + SQL（根 `.env`）
 npm run deploy:proxy
 ```
 
-文档：[docs/README.md](../../docs/README.md) · [docs/ops/local-testing-environments.md](../../docs/ops/local-testing-environments.md)
+文档：[docs/README.md](../../docs/README.md) · [docs/developers/local-development.md](../../docs/developers/local-development.md)

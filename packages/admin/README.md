@@ -4,7 +4,7 @@
 
 ## 职责
 
-- **做**：管理 UI；`app/api/admin/[...path]/route.ts` 鉴权后转发到内部 Hono（路径约定见 [docs/api/admin.md](../../docs/api/admin.md)）。
+- **做**：管理 UI；`app/api/admin/[...path]/route.ts` 鉴权后转发到内部 Hono（路径约定见 [docs/developers/api/admin.md](../../docs/developers/api/admin.md)）。
 - **不做**：各产品自有门户、插件市场等。
 
 ## 环境
@@ -24,7 +24,7 @@ npm run deploy:admin
 
 单包开发：`cd packages/admin` 后 `npm run dev`（无 D1 时管理 API 会失败，仅适合改 UI）。
 
-文档：[docs/README.md](../../docs/README.md) · [docs/api/admin.md](../../docs/api/admin.md) · [AGENTS.md](./AGENTS.md)
+文档：[docs/README.md](../../docs/README.md) · [docs/developers/api/admin.md](../../docs/developers/api/admin.md) · [AGENTS.md](./AGENTS.md)
 
 
 

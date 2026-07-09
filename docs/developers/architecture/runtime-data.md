@@ -17,7 +17,7 @@
 | **Admin**（`packages/admin`） | OpenNext + wrangler：`npm run dev:admin` / `deploy:admin`；**绑定同一 D1** | 本地开发：`npm run dev:admin:node`（或 `packages/admin` 内 `npm run dev:node`，`:8789`）；生产：`next start` / Docker：需 **`DATABASE_URL`** + **`DATABASE_DRIVER`**（与 Proxy Node 同语义；Postgres 可省略驱动，**MySQL 须 `mysql`**）与 **`ADMIN_*`** | **D1 ⊕ Postgres ⊕ MySQL 二选一** |
 | **Core**（`packages/core`） | 被 Worker / Pages 以 `d1` 驱动引用 | 被 Node 以 `postgres` / `mysql` 驱动引用 | 迁移见下 |
 
-> **约束**：Cloudflare Worker **不能**直连外部 Postgres/MySQL；若在边缘保留 Worker，则数据库只能是 **D1**。要用 Postgres 或 MySQL，Proxy/Admin 须在 **Node** 跑（例如 Docker 自托管，见 [deployment-docker.md](../ops/deployment-docker.md)）。
+> **约束**：Cloudflare Worker **不能**直连外部 Postgres/MySQL；若在边缘保留 Worker，则数据库只能是 **D1**。要用 Postgres 或 MySQL，Proxy/Admin 须在 **Node** 跑（例如 Docker 自托管，见 [deployment-docker.md](../../operators/deployment/docker.md)）。
 
 ---
 
@@ -32,10 +32,10 @@
 
 详细步骤与变量：
 
-- 模式 A：[deployment-cloudflare.md](../ops/deployment-cloudflare.md)
-- 模式 B / C、Docker、双镜像：[deployment-docker.md](../ops/deployment-docker.md)
-- D1 ↔ Postgres 迁移/对账脚本：[postgres-cutover.md](../ops/postgres-cutover.md)
-- 索引入口：[deployment.md](../ops/deployment.md)
+- 模式 A：[deployment-cloudflare.md](../../operators/deployment/cloudflare.md)
+- 模式 B / C、Docker、双镜像：[deployment-docker.md](../../operators/deployment/docker.md)
+- D1 ↔ Postgres 迁移/对账脚本：[postgres-cutover.md](../../operators/migrations/d1-postgres-cutover.md)
+- 索引入口：[deployment.md](../../operators/deployment/README.md)
 
 ---
 
@@ -81,7 +81,7 @@ flowchart TB
 | **PostgreSQL** | `packages/core/migrations-postgres/` | `npm run db:migrate:pg`（`packages/core/src/migrate/cli.ts` → `migrate/postgres.ts`） |
 | **MySQL 8** | `packages/core/migrations-mysql/` | `npm run db:migrate:mysql`（同上 CLI → `migrate/mysql.ts`）；容器内 `db:migrate:mysql:docker` |
 
-环境变量约定见仓库根 **[`.env.example`](../../.env.example)**；本地组合 D1 / PG / MySQL、Hybrid 调法见 **[local-testing-environments.md](../ops/local-testing-environments.md)**。
+环境变量约定见仓库根 **[`.env.example`](../../../.env.example)**；本地组合 D1 / PG / MySQL、Hybrid 调法见 **[local-testing-environments.md](../local-development.md)**。
 
 ---
 

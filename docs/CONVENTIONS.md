@@ -14,9 +14,9 @@
 
 | 类别 | 当前位置 |
 |------|----------|
-| API 契约（公开 / 用户 / 管理） | [`docs/api/`](./api/) |
-| 运行时 × 数据库矩阵、分层约束 | [`docs/architecture/`](./architecture/) |
-| 行为与计费/审计语义 | [`docs/reference/`](./reference/) |
+| API 契约（公开 / 用户 / 管理） | [`docs/developers/api/`](./developers/api/) |
+| 运行时 × 数据库矩阵、分层约束 | [`docs/developers/architecture/`](./developers/architecture/) |
+| 行为与计费/审计语义 | [`docs/developers/reference/`](./developers/reference/) |
 | 仓内规范本身 | 本文（`docs/CONVENTIONS.md`）、[`CONTRIBUTING.md`](../CONTRIBUTING.md)、[`SECURITY.md`](../SECURITY.md) |
 | 与当前 API 表面绑定的最小可执行示例 | [`examples/`](../examples/) |
 | 迁移目录与 CLI | `packages/core/migrations-d1/`、`migrations-postgres/`、`migrations-mysql/` |
@@ -29,10 +29,10 @@
 
 | 类别 | 当前位置 |
 |------|----------|
-| 部署索引、Cloudflare、Docker、本地测试 | [`docs/ops/`](./ops/) |
+| 部署索引、Cloudflare、Docker、本地测试 | [`docs/operators/`](./operators/) 与 [`docs/developers/local-development.md`](./developers/local-development.md) |
 | Compose 编排与 Nginx 模板 | [`docker/compose/`](../docker/compose/)、[`docker/examples/`](../docker/examples/) |
 | 宿主机环境文件目录约定 | [`docker/deploy/`](../docker/deploy/) |
-| 发版与 Changesets 流程 | [`docs/ops/release-versioning.md`](./ops/release-versioning.md)、[`.changeset/`](../.changeset/) |
+| 发版与 Changesets 流程 | [`docs/maintainers/release-versioning.md`](./maintainers/release-versioning.md)、[`.changeset/`](../.changeset/) |
 
 > 判定提示：内容**通用**且适用于任何采用本仓的部署者，留在本仓；若是**特定客户/区域/品牌**的 runbook，归入 L3。
 
@@ -57,16 +57,16 @@
 
 | 文档 / 目录 | 层级 | 备注 |
 |-------------|------|------|
-| `docs/api/{public,user,admin,README}.md` | L1 | 跟随路由与表结构演进 |
-| `docs/architecture/{runtime-data,admin-layered}.md` | L1 | 与 `packages/core` / 部署矩阵强相关 |
-| `docs/reference/{streaming-billing,user-audit-logs,provider-thinking-configs,provider-import-presets}.md` | L1 | 行为与计费语义快照 |
-| `docs/migrations/*.md` | L1 / L2 | 与历史兼容、数据迁移或运维切换相关；按内容是否绑定表结构判定 |
-| `docs/ops/deployment.md` 索引 | L2 | 入口文档 |
-| `docs/ops/deployment-cloudflare.md` | L2 | 通用 CF 部署模式 |
-| `docs/ops/deployment-docker.md` | L2 | 通用 Docker 部署模式 |
-| `docs/ops/local-testing-environments.md` | L2 | 本地组合矩阵 |
-| `docs/ops/release-versioning.md` | L2 | Changesets 流程 |
-| `docs/ops/postgres-cutover.md` | L2 | D1↔PG 通用脚本 |
+| `docs/developers/api/{public,user,admin,README}.md` | L1 | 跟随路由与表结构演进 |
+| `docs/developers/architecture/{runtime-data,admin-layered}.md` | L1 | 与 `packages/core` / 部署矩阵强相关 |
+| `docs/developers/reference/{streaming-billing,user-audit-logs,provider-thinking-configs,provider-import-presets}.md` | L1 | 行为与计费语义快照 |
+| `docs/operators/migrations/*.md` | L1 / L2 | 与历史兼容、数据迁移或运维切换相关；按内容是否绑定表结构判定 |
+| `docs/operators/deployment/README.md` 索引 | L2 | 入口文档 |
+| `docs/operators/deployment/cloudflare.md` | L2 | 通用 CF 部署模式 |
+| `docs/operators/deployment/docker.md` | L2 | 通用 Docker 部署模式 |
+| `docs/developers/local-development.md` | L2 | 本地组合矩阵 |
+| `docs/maintainers/release-versioning.md` | L2 | Changesets 流程 |
+| `docs/operators/migrations/d1-postgres-cutover.md` | L2 | D1↔PG 通用脚本 |
 | `docs/assets/` | L2 | README / docs 使用的截图与静态素材 |
 | `examples/` | L1 | 与当前 `/v1/*`、`/api/admin/*` 表面一致 |
 | `docker/examples/*.example` 与 `docker/deploy/.env.example` | L2 | 占位模板，**不**含真实值 |
@@ -117,7 +117,7 @@
 - `scripts/smoke/` 与本地联调；
 - 各 `docker/compose/*.yml` 内本地 Postgres / MySQL 容器默认环境。
 
-**生产环境必须**在 Admin 的 Config 页面或直连 SQL 中将 `MASTER_KEY` 改为强随机值，并同步更新调用方 `GATEWAY_MASTER_KEY`。任何文档示例中出现 `sk-dev-admin-key` 都应附近期内已存在的“生产请轮换”提示（参见 [`docs/api/admin.md`](./api/admin.md) §认证）。
+**生产环境必须**在 Admin 的 Config 页面或直连 SQL 中将 `MASTER_KEY` 改为强随机值，并同步更新调用方 `GATEWAY_MASTER_KEY`。任何文档示例中出现 `sk-dev-admin-key` 都应附近期内已存在的“生产请轮换”提示（参见 [`docs/developers/api/admin.md`](./developers/api/admin.md) §认证）。
 
 ### 2.4 命令片段约定
 

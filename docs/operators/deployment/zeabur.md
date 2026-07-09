@@ -34,7 +34,7 @@ flowchart LR
 
 ## 2. 为何 migrate 会「崩溃重启」
 
-[`docker/entrypoint.migrate.sh`](../../docker/entrypoint.migrate.sh) 在无参数时执行迁移 CLI 后 **正常退出**。日志中若已出现：
+[`../../../docker/entrypoint.migrate.sh`](../../../docker/entrypoint.migrate.sh) 在无参数时执行迁移 CLI 后 **正常退出**。日志中若已出现：
 
 ```text
 [migrate-postgres] 全部完成。
@@ -47,7 +47,7 @@ flowchart LR
 
 ### 方式 0：启动时自迁移（**Zeabur 最推荐**）
 
-proxy / admin 镜像内置 [`docker/entrypoint.app.sh`](../../docker/entrypoint.app.sh)。在 **一个** 常驻 Service 的环境变量中设置：
+proxy / admin 镜像内置 [`../../../docker/entrypoint.app.sh`](../../../docker/entrypoint.app.sh)。在 **一个** 常驻 Service 的环境变量中设置：
 
 ```env
 AUTO_MIGRATE=1
@@ -141,11 +141,11 @@ DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
 
 **不配置端口**；成功后 **Suspend** 或删除该 Service。
 
-完整变量模板见 [`docker/examples/env.zeabur.example`](../../docker/examples/env.zeabur.example)。
+完整变量模板见 [`../../../docker/examples/env.zeabur.example`](../../../docker/examples/env.zeabur.example)。
 
 ## 5. 使用 GHCR 预构建镜像（免 Git 构建）
 
-若 CI 已推送镜像（见 [deployment-docker.md](./deployment-docker.md) § GitHub Actions）：
+若 CI 已推送镜像（见 [deployment-docker.md](./docker.md) § GitHub Actions）：
 
 | Service | 镜像示例 |
 |---------|----------|
@@ -161,7 +161,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
 - **Admin** 对外 URL → 门户 `GATEWAY_MASTER_URL`（`/api/admin/*`）
 - `MASTER_KEY` 以库内 `system_config.MASTER_KEY` 为准（迁移 `0002_seed.sql` 默认值，生产务必修改）
 
-Postgres 时区建议 URL 带 `options=-c%20timezone%3DUTC`，见 [deployment-docker.md](./deployment-docker.md) § 时区。
+Postgres 时区建议 URL 带 `options=-c%20timezone%3DUTC`，见 [deployment-docker.md](./docker.md) § 时区。
 
 ## 7. 发布后验证
 
@@ -181,6 +181,6 @@ Postgres 时区建议 URL 带 `options=-c%20timezone%3DUTC`，见 [deployment-do
 
 ## 9. 相关文档
 
-- [deployment-docker.md](./deployment-docker.md) — 镜像与 Compose 通用说明
-- [docker/examples/env.zeabur.example](../../docker/examples/env.zeabur.example) — Zeabur 环境变量模板
-- [scripts/deploy/zeabur-migrate-once.sh](../../scripts/deploy/zeabur-migrate-once.sh) — 本地/CI 一次性迁移脚本
+- [deployment-docker.md](./docker.md) — 镜像与 Compose 通用说明
+- [docker/examples/env.zeabur.example](../../../docker/examples/env.zeabur.example) — Zeabur 环境变量模板
+- [scripts/deploy/zeabur-migrate-once.sh](../../../scripts/deploy/zeabur-migrate-once.sh) — 本地/CI 一次性迁移脚本

@@ -2,7 +2,7 @@
 
 本目录存放 **Wrangler / Workers Builds** 用的实例变量（Worker 名、D1、`routes`）。**不**用于 Node + Postgres 本地开发——那部分见仓库根 [`.env.example`](../.env.example)。
 
-详细运维说明：[docs/ops/deployment-cloudflare.md](../docs/ops/deployment-cloudflare.md)。生产 **Connect to Git** 的 Dashboard 配置见 **[§C](#git-自动部署connect-to-git)**。
+详细运维说明：[docs/operators/deployment/cloudflare.md](../docs/operators/deployment/cloudflare.md)。生产 **Connect to Git** 的 Dashboard 配置见 **[§C](#git-自动部署connect-to-git)**。
 
 ---
 
@@ -42,7 +42,7 @@ npm run dev:admin    # http://127.0.0.1:8789（OpenNext preview + 本地 D1）
 - **不需要** `cloudflare-worker/*.env`。
 - 生成配置：`packages/proxy/wrangler.jsonc` 等（gitignore，由 `*.base.jsonc` + `gen:wrangler` 生成）。
 - Admin 本地密码：[`packages/admin/.dev.vars.example`](../packages/admin/.dev.vars.example) → `.dev.vars`。
-- 更多组合（Hybrid、Postgres）：[local-testing-environments.md](../docs/ops/local-testing-environments.md)。
+- 更多组合（Hybrid、Postgres）：[local-testing-environments.md](../docs/developers/local-development.md)。
 
 ### 远程 deploy 之后继续本地 dev
 
@@ -56,7 +56,7 @@ npm run db:migrate   # 可选
 # 重启 dev:proxy / dev:admin
 ```
 
-详见 [local-testing-environments.md §1 · database_id](../docs/ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)。
+详见 [local-testing-environments.md §1 · database_id](../docs/developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)。
 
 ---
 
@@ -185,7 +185,7 @@ Admin — Include：
 packages/admin/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*
 ```
 
-改 `packages/core` 或根 `package.json` / `package-lock.json` 时两个 Worker 都会构建；改 `docs/` 等不在 Include 内的路径 **不会**触发构建。更多细节：[deployment-cloudflare.md §4](../docs/ops/deployment-cloudflare.md#4-workers-builds-connect-to-git)。
+改 `packages/core` 或根 `package.json` / `package-lock.json` 时两个 Worker 都会构建；改 `docs/` 等不在 Include 内的路径 **不会**触发构建。更多细节：[deployment-cloudflare.md §4](../docs/operators/deployment/cloudflare.md#4-workers-builds-connect-to-git)。
 
 ### 本地 CLI 发版（补充）
 
@@ -203,7 +203,7 @@ npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run deploy:admin
 |------|------|
 | `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` | **须与 Dashboard Worker 名一致** |
 | `D1_DATABASE_NAME` | D1 逻辑名 |
-| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**；proxy 与 admin **共用**。本地 CLI deploy 写入 wrangler 后，继续 `dev:proxy`/`dev:admin` 前须 `npm run gen:wrangler`（见 [local-testing-environments.md §1](../docs/ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
+| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**；proxy 与 admin **共用**。本地 CLI deploy 写入 wrangler 后，继续 `dev:proxy`/`dev:admin` 前须 `npm run gen:wrangler`（见 [local-testing-environments.md §1](../docs/developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
 | `D1_MIGRATIONS_WORKER_NAME` | 仅写入 `wrangler.d1.jsonc` 的项目名；**无需**单独建 Worker |
 | `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选；写入 wrangler `routes` |
 

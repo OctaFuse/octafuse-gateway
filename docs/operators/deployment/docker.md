@@ -1,6 +1,6 @@
 # 可选部署：Docker + SQL（Postgres 或 MySQL）（gateway-proxy + gateway-admin）
 
-本文描述在容器环境同时运行 **`@octafuse/proxy`**（对外推理）与 **`@octafuse/admin`**（管理 UI + `/api/admin/*`），二者**共用同一关系型库**（Postgres 或 **MySQL 8**）。默认生产仍以 Cloudflare 为主（见 [deployment-cloudflare.md](./deployment-cloudflare.md)）。
+本文描述在容器环境同时运行 **`@octafuse/proxy`**（对外推理）与 **`@octafuse/admin`**（管理 UI + `/api/admin/*`），二者**共用同一关系型库**（Postgres 或 **MySQL 8**）。默认生产仍以 Cloudflare 为主（见 [deployment-cloudflare.md](./cloudflare.md)）。
 
 ## 1. 部署模式对照
 
@@ -57,7 +57,7 @@
 |------|------|--------|----------|
 |`Dockerfile.proxy`|`node packages/proxy/dist/runtime/node.js`（构建阶段已 `npm run build` **core + proxy**）|`8787`|**已编译** `packages/{core,proxy}/dist` + 生产 `node_modules`（**仅** core、proxy 两个 workspace）；由 `CMD` 直接启动运行时入口。|
 |`Dockerfile.admin`|Next **standalone**（`node packages/admin/server.js`）|`8789`|**`.next/standalone` + `.next/static` + `public`**；另含运行所需的 `@octafuse/core` 构建产物与 **`postgres` / `mysql2`** 依赖子集；仅负责应用进程。|
-|`Dockerfile.migrate`|一次性迁移 Job：`node packages/core/dist/migrate/cli.js`（无参数时由入口按 `DATABASE_DRIVER` 选择 `--driver`）|—|仅 **`@octafuse/core`** 构建产物与 SQL 目录；**`ENTRYPOINT`** [`docker/entrypoint.migrate.sh`](../../docker/entrypoint.migrate.sh)；供 **`--profile migrate`** / **`GATEWAY_MIGRATE_IMAGE`**。|
+|`Dockerfile.migrate`|一次性迁移 Job：`node packages/core/dist/migrate/cli.js`（无参数时由入口按 `DATABASE_DRIVER` 选择 `--driver`）|—|仅 **`@octafuse/core`** 构建产物与 SQL 目录；**`ENTRYPOINT`** [`../../../docker/entrypoint.migrate.sh`](../../../docker/entrypoint.migrate.sh)；供 **`--profile migrate`** / **`GATEWAY_MIGRATE_IMAGE`**。|
 
 **Admin 镜像与 Cloudflare 构建分工**：`Dockerfile.admin` 在构建阶段执行 **`npm run build:docker -w @octafuse/admin`**（`next build` + `scripts/link-standalone-next.mjs`），**不**运行 `wrangler types`，因此镜像构建不依赖 **`workerd`**，可与 `npm ci --ignore-scripts` 的 CI 安装方式兼容。部署到 Cloudflare（预览/生产）仍使用 **`npm run build:cf`** / **`npm run preview`** / **`npm run deploy`**（内含 `cf-typegen` 与 OpenNext Cloudflare 打包）。各 Dockerfile 在 `npm ci --ignore-scripts` 之后会 **`find node_modules -path '*/esbuild/install.js' -exec node {} \;`**：为树内**每一份** esbuild 执行其 `install.js`（`@octafuse/core` 与 `@opennextjs/*` 可能各带不同版本）。勿用 **`npm rebuild esbuild`**，否则多版本 esbuild 会触发「Expected 0.25.4 but got 0.27.3」类校验错误。
 
@@ -89,9 +89,9 @@ docker run --rm -p 8789:8789 \
 
 ## GitHub Actions（GHCR 构建与推送）
 
-**CI 镜像发布**由 **[`.github/workflows/octafuse-docker-images.yml`](../../.github/workflows/octafuse-docker-images.yml)** 负责：**`runs-on: ubuntu-latest`**，**QEMU + Buildx** 多架构。镜像的 `org.opencontainers.image.description` 由该 workflow 里 **`docker/metadata-action` 的 `labels:`** 显式写入（避免沿用 GitHub 仓库 **About** 栏里尚未更新的历史描述）。
+**CI 镜像发布**由 **[`.github/workflows/octafuse-docker-images.yml`](../../../.github/workflows/octafuse-docker-images.yml)** 负责：**`runs-on: ubuntu-latest`**，**QEMU + Buildx** 多架构。镜像的 `org.opencontainers.image.description` 由该 workflow 里 **`docker/metadata-action` 的 `labels:`** 显式写入（避免沿用 GitHub 仓库 **About** 栏里尚未更新的历史描述）。
 
-- **正式发布（推荐）**：合并 Version PR 后，**[`.github/workflows/release.yml`](../../.github/workflows/release.yml)** 通过 Changesets 的 **`publish`** 步骤执行 **`npm run ci:changeset-tag-push`**（`changeset tag` + 推送 **`vX.Y.Z`**），从而触发本 workflow：构建 **proxy / admin / migrate**、`linux/amd64` + `linux/arm64`，并在 **GitHub Release** 正文中写入各镜像 **digest**。流程总览见 **[release-versioning.md](./release-versioning.md)**。
+- **正式发布（推荐）**：合并 Version PR 后，**[`.github/workflows/release.yml`](../../../.github/workflows/release.yml)** 通过 Changesets 的 **`publish`** 步骤执行 **`npm run ci:changeset-tag-push`**（`changeset tag` + 推送 **`vX.Y.Z`**），从而触发本 workflow：构建 **proxy / admin / migrate**、`linux/amd64` + `linux/arm64`，并在 **GitHub Release** 正文中写入各镜像 **digest**。流程总览见 **[release-versioning.md](../../maintainers/release-versioning.md)**。
 - **应急 / 验证**：仍可使用 **`workflow_dispatch`** 在 Actions 里手动勾选镜像与架构；**不会**自动创建 GitHub Release。
 
 本地 `docker build` / `docker compose build` 可用于开发验证，但生产发版以 **tag → GHCR** 为准。
@@ -142,12 +142,12 @@ Proxy / Admin / migrate 均注入 **`DATABASE_DRIVER=mysql`** 与 **`DATABASE_UR
 
 ### 4.2 预构建镜像（GHCR / 自建 Harbor / 任意私有 registry）
 
-`docker/examples/` 下仅保留当前线上使用的预构建镜像部署形态：Proxy / Admin 独立容器，共用外置 Postgres。索引见该目录 **[README.md](../../docker/examples/README.md)**：
+`docker/examples/` 下仅保留当前线上使用的预构建镜像部署形态：Proxy / Admin 独立容器，共用外置 Postgres。索引见该目录 **[README.md](../../../docker/examples/README.md)**：
 
 - **仅 proxy**（外置库）：`gateway.proxy.yml` + `env.proxy.example`
 - **仅 admin**（外置库）：`gateway.admin.yml` + `env.admin.example`
 - **外置 Postgres 且同机同时起 proxy + admin**：`gateway.compose.yml` + `env.compose.external.example`
-- **第二私有 registry（自建 Harbor 等）**：任选一个与上相同的 `gateway.*.yml` 及对应 `env.*.example`，按文件内注释将镜像前缀替换为 `registry.example.com/<namespace>/...`；宿主机 env 文件放 **`docker/deploy/`**，约定见 **[docker/deploy/README.md](../../docker/deploy/README.md)**。
+- **第二私有 registry（自建 Harbor 等）**：任选一个与上相同的 `gateway.*.yml` 及对应 `env.*.example`，按文件内注释将镜像前缀替换为 `registry.example.com/<namespace>/...`；宿主机 env 文件放 **`docker/deploy/`**，约定见 **[docker/deploy/README.md](../../../docker/deploy/README.md)**。
 
 外置 Postgres 同机启动示例：
 
@@ -163,7 +163,7 @@ docker compose --env-file .env.gateway -f gateway.compose.yml up -d
 
 ### 启动时自迁移（`AUTO_MIGRATE`）
 
-proxy / admin 镜像通过 [`docker/entrypoint.app.sh`](../../docker/entrypoint.app.sh) 支持启动前迁移：
+proxy / admin 镜像通过 [`../../../docker/entrypoint.app.sh`](../../../docker/entrypoint.app.sh) 支持启动前迁移：
 
 ```bash
 docker run --rm -p 8787:8787 \
@@ -175,7 +175,7 @@ docker run --rm -p 8787:8787 \
 
 - **默认关闭**：未设置 `AUTO_MIGRATE` 时，入口脚本跳过迁移，行为与旧版一致。
 - **幂等且并发安全**：`schema_migrations` 记录版本 + `pg_advisory_lock`；无新 SQL 时近乎空操作。proxy 与 admin 同时开启也安全，但通常只需在一个 Service 上设 `AUTO_MIGRATE=1`。
-- **Zeabur**：推荐在 proxy 或 admin 环境变量中设 `AUTO_MIGRATE=1`，无需单独 migrate Service。见 [deployment-zeabur.md](./deployment-zeabur.md) §3 方式 0。
+- **Zeabur**：推荐在 proxy 或 admin 环境变量中设 `AUTO_MIGRATE=1`，无需单独 migrate Service。见 [deployment-zeabur.md](./zeabur.md) §3 方式 0。
 
 ### Postgres
 
@@ -235,19 +235,19 @@ Compose 中 `migrate` 服务使用 **migrate 专用镜像**执行 `npm run db:mi
 
 ### Zeabur（容器平台）
 
-**推荐**：在 proxy 或 admin 上设 **`AUTO_MIGRATE=1`**（见 [deployment-zeabur.md](./deployment-zeabur.md) §3 方式 0）。
+**推荐**：在 proxy 或 admin 上设 **`AUTO_MIGRATE=1`**（见 [deployment-zeabur.md](./zeabur.md) §3 方式 0）。
 
 若不用 `AUTO_MIGRATE`，Zeabur 将每个 **Service** 视为常驻进程；**migrate 镜像跑完即退出**，若作为 Service 长期运行会触发 `BackOff restarting failed container`（迁移成功也会如此）。备选做法：
 
-1. 发版前在本地/CI 执行 [`scripts/deploy/zeabur-migrate-once.sh`](../../scripts/deploy/zeabur-migrate-once.sh)，再部署 proxy/admin。
+1. 发版前在本地/CI 执行 [`scripts/deploy/zeabur-migrate-once.sh`](../../../scripts/deploy/zeabur-migrate-once.sh)，再部署 proxy/admin。
 2. **或**：Zeabur PREBUILT migrate Service 跑完后 **Settings → Suspend Service**。
 3. **不要**把 migrate 与 proxy/admin 一样当作 7×24 常驻 Service。
 
-详见 **[deployment-zeabur.md](./deployment-zeabur.md)** 与 [`docker/examples/env.zeabur.example`](../../docker/examples/env.zeabur.example)。
+详见 **[deployment-zeabur.md](./zeabur.md)** 与 [`docker/examples/env.zeabur.example`](../../../docker/examples/env.zeabur.example)。
 
 ## 6. 非 Docker：本机 Node + Postgres（开发）
 
-仍可直接用 npm 启动（不经过镜像），与 [local-testing-environments.md](./local-testing-environments.md) 一致。
+仍可直接用 npm 启动（不经过镜像），与 [local-testing-environments.md](../../developers/local-development.md) 一致。
 
 ## 7. 发布后最小验证
 
@@ -272,4 +272,4 @@ curl -fsS http://127.0.0.1:8789/api/admin/config \
 
 ---
 
-**相关文档**：[部署索引](./deployment.md) · [D1 ↔ Postgres 切换](./postgres-cutover.md) · [本地测试](./local-testing-environments.md) · Nginx 流式反代样例：[docker/examples/nginx/](../../docker/examples/nginx/)
+**相关文档**：[部署索引](./README.md) · [D1 ↔ Postgres 切换](../migrations/d1-postgres-cutover.md) · [本地测试](../../developers/local-development.md)

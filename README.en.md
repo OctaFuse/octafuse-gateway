@@ -84,7 +84,7 @@ Stop the demo:
 docker compose -f docker/compose/quickstart.yml down
 ```
 
-> Docker quickstart does not require copying `.env.example`. For MySQL, external databases, prebuilt images, or Nginx SSE proxying, see [Docker deployment](./docs/ops/deployment-docker.md).
+> Docker quickstart does not require copying `.env.example`. For MySQL, external databases, prebuilt images, or Nginx SSE proxying, see [Docker deployment](./docs/operators/deployment/docker.md).
 
 ### Option B: Cloudflare Local D1
 
@@ -111,18 +111,16 @@ Defaults:
 | Local D1 state | `./.wrangler/state` |
 | Admin API Bearer | `sk-dev-admin-key` |
 
-Before remote Cloudflare deployment, create D1, configure Worker Build variables, and run remote migrations before deploying code that depends on new schema. See [Cloudflare deployment](./docs/ops/deployment-cloudflare.md).
+Before remote Cloudflare deployment, create D1, configure Worker Build variables, and run remote migrations before deploying code that depends on new schema. See [Cloudflare deployment](./docs/operators/deployment/cloudflare.md).
 
 ## Documentation
 
-| Topic | Link |
-|-------|------|
-| Deployment index | [docs/ops/deployment.md](./docs/ops/deployment.md) |
-| Cloudflare deployment | [docs/ops/deployment-cloudflare.md](./docs/ops/deployment-cloudflare.md) |
-| Docker / self-hosted | [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md) |
-| Local test environments | [docs/ops/local-testing-environments.md](./docs/ops/local-testing-environments.md) |
-| API docs | [docs/api/README.md](./docs/api/README.md) |
-| Architecture and runtime matrix | [docs/architecture/runtime-data.md](./docs/architecture/runtime-data.md) |
+| Reader / task | Link |
+|---------------|------|
+| Users: quickstart, feature overview, Admin configuration, client setup | [docs/users/](./docs/users/) |
+| Developers: API, system integration, local development, architecture, behavior semantics | [docs/developers/](./docs/developers/) |
+| Operators: Cloudflare, Docker, Zeabur, database migration | [docs/operators/](./docs/operators/) |
+| Maintainers: releases, Changesets, image publishing, documentation rules | [docs/maintainers/](./docs/maintainers/) |
 | HTTP examples | [examples/README.md](./examples/README.md) |
 
 ## Common Commands
