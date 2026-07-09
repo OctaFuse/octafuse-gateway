@@ -1,6 +1,8 @@
 import type { GatewayProvider } from '@/lib/types';
 import type { ProviderProtocolSummary } from './types';
 
+export { PROVIDER_KEY_LABEL_MAX_LENGTH } from '@/lib/provider-key-label';
+
 /** 表单三个限流输入 → limit_config JSON 字符串；全空返回 null（不限流）。 */
 export function buildLimitConfigJson(form: {
 	rpm: string;

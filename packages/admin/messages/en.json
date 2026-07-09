@@ -356,6 +356,7 @@
 			"editTitle": "Edit Provider Key",
 			"newTitle": "New Provider Key",
 			"label": "Label",
+			"labelMaxLength": "Max {max} characters",
 			"replaceApiKey": "Replace API key",
 			"apiKey": "API key",
 			"leaveBlank": "Leave blank to keep current key",

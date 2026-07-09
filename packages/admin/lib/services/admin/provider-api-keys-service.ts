@@ -2,6 +2,7 @@
 import type { GatewayRepositories } from '@octafuse/core';
 import type { ProviderApiKeyAdminRow, ActiveProviderApiKeyRow } from '@octafuse/core';
 import { normalizeProviderKeyLimitConfigInput } from '@octafuse/core/db/provider-key-limit-config';
+import { PROVIDER_KEY_LABEL_MAX_LENGTH } from '@/lib/provider-key-label';
 import { badRequest, conflict, notFound } from './errors';
 import type { AdminCreatedIdOutput, AdminProviderKeyMutationInput } from './types';
 
@@ -41,6 +42,9 @@ export async function createProviderKeyService(
 	const apiKey = String(body.api_key ?? '').trim();
 	if (!label || !apiKey) {
 		throw badRequest('label and api_key are required');
+	}
+	if (label.length > PROVIDER_KEY_LABEL_MAX_LENGTH) {
+		throw badRequest(`label must be at most ${PROVIDER_KEY_LABEL_MAX_LENGTH} characters`);
 	}
 
 	let limitConfig: string | null = null;
@@ -84,6 +88,9 @@ export async function updateProviderKeyService(
 	if (body.label !== undefined) {
 		const label = String(body.label).trim();
 		if (!label) throw badRequest('label cannot be empty');
+		if (label.length > PROVIDER_KEY_LABEL_MAX_LENGTH) {
+			throw badRequest(`label must be at most ${PROVIDER_KEY_LABEL_MAX_LENGTH} characters`);
+		}
 		patch.label = label;
 	}
 	if (body.api_key !== undefined) {

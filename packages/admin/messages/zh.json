@@ -356,6 +356,7 @@
 			"editTitle": "编辑 Provider Key",
 			"newTitle": "新建 Provider Key",
 			"label": "Label",
+			"labelMaxLength": "最多 {max} 个字符",
 			"replaceApiKey": "替换 API Key",
 			"apiKey": "API Key",
 			"leaveBlank": "留空以保留当前 Key",

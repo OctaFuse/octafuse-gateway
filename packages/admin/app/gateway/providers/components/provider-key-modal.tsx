@@ -2,6 +2,7 @@
 
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { PROVIDER_KEY_LABEL_MAX_LENGTH } from '../provider-utils';
 import type { EditingProviderKeyState, GatewayProvider, ProviderKeyFormData } from '../types';
 
 type ProviderKeyModalProps = {
@@ -85,13 +86,28 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 								<input
 									type="text"
 									value={form.label}
-									onChange={(e) => onFormChange({ ...form, label: e.target.value })}
+									maxLength={PROVIDER_KEY_LABEL_MAX_LENGTH}
+									onChange={(e) =>
+										onFormChange({
+											...form,
+											label: e.target.value.slice(0, PROVIDER_KEY_LABEL_MAX_LENGTH),
+										})
+									}
 									className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 									autoComplete="off"
 								/>
+								<p className="mt-1 text-xs text-gray-500">
+									{t('labelMaxLength', { max: PROVIDER_KEY_LABEL_MAX_LENGTH })}
+								</p>
 							</div>
-							<div className="flex items-end">
-								<label className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+							<div>
+								<span
+									className="mb-1 block text-sm font-medium text-transparent select-none"
+									aria-hidden
+								>
+									{t('label')}
+								</span>
+								<label className="inline-flex w-full items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
 									<input
 										type="checkbox"
 										checked={form.status === 'active'}

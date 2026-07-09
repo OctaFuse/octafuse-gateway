@@ -13,7 +13,11 @@ import {
 	saveProviderKey,
 	toggleProviderKeyStatus,
 } from './provider-api';
-import { limitConfigToFormFields, suggestDuplicateProviderId } from './provider-utils';
+import {
+	limitConfigToFormFields,
+	PROVIDER_KEY_LABEL_MAX_LENGTH,
+	suggestDuplicateProviderId,
+} from './provider-utils';
 import type {
 	EditingProviderKeyState,
 	GatewayProvider,
@@ -303,6 +307,10 @@ export function useProvidersPageState() {
 		const label = keyEditForm.label.trim();
 		if (!label) {
 			setKeyEditError('Label is required');
+			return;
+		}
+		if (label.length > PROVIDER_KEY_LABEL_MAX_LENGTH) {
+			setKeyEditError(`Label must be at most ${PROVIDER_KEY_LABEL_MAX_LENGTH} characters`);
 			return;
 		}
 		const apiKey = keyEditForm.api_key.trim();

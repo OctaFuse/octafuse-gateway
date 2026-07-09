@@ -8,6 +8,7 @@ import {
 	PlusIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { PROVIDER_KEY_LABEL_MAX_LENGTH } from '@/lib/provider-key-label';
 import type { GatewayProvider, ProviderKeyRow } from '../types';
 import { formatLimitConfig, getProviderProtocolSummaries, sortProviderKeyRows } from '../provider-utils';
 import { ProviderProtocolIcon } from './provider-protocol-icon';
@@ -213,7 +214,7 @@ export function ProviderCard(props: ProviderCardProps) {
 												onEditKey(provider.id, key);
 											}
 										}}
-										className="grid grid-cols-[auto_minmax(5rem,0.8fr)_minmax(5rem,1fr)_auto] items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5 transition hover:border-blue-200 hover:bg-blue-50/40"
+										className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1.5 transition hover:border-blue-200 hover:bg-blue-50/40"
 									>
 										<input
 											type="checkbox"
@@ -228,26 +229,13 @@ export function ProviderCard(props: ProviderCardProps) {
 													: t('keyDisabled', { label: key.label })
 											}
 										/>
-										<div className="min-w-0">
-											<span className="flex min-w-0 items-center gap-1.5">
-												<span
-													className="truncate font-mono text-xs font-semibold leading-4 text-gray-900"
-													title={key.label}
-												>
-													{key.label}
-												</span>
-												{key.is_pending_import && (
-													<span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
-														{t('placeholder')}
-													</span>
-												)}
-												{copiedId === `provider-key:${key.id}` && (
-													<span className="shrink-0 rounded-md bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800">
-														{tCommon('copied')}
-													</span>
-												)}
-											</span>
-										</div>
+										<span
+											className="truncate font-mono text-xs font-semibold leading-4 text-gray-900"
+											style={{ width: `${PROVIDER_KEY_LABEL_MAX_LENGTH}ch` }}
+											title={key.label}
+										>
+											{key.label}
+										</span>
 										<div className="flex min-w-0 items-center justify-start gap-1.5">
 											<span
 												className="min-w-0 max-w-full truncate font-mono text-[11px] leading-4 text-gray-500"
@@ -281,6 +269,16 @@ export function ProviderCard(props: ProviderCardProps) {
 											</button>
 										</div>
 										<div className="flex shrink-0 flex-wrap items-center justify-end gap-1 text-[11px] text-gray-600">
+											{key.is_pending_import && (
+												<span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
+													{t('placeholder')}
+												</span>
+											)}
+											{copiedId === `provider-key:${key.id}` && (
+												<span className="rounded-md bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800">
+													{tCommon('copied')}
+												</span>
+											)}
 											<span className="rounded-md bg-gray-100 px-1.5 py-0.5">P {key.priority}</span>
 											<span className="rounded-md bg-gray-100 px-1.5 py-0.5">W {key.weight}</span>
 											<span className="rounded-md bg-gray-100 px-1.5 py-0.5">
