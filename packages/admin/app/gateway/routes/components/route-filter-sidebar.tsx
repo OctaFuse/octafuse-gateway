@@ -139,18 +139,15 @@ export function RouteFilterSidebar(props: Props) {
 						isActive={!filterProviderId}
 						onClick={() => onFilterProviderIdChange('')}
 					/>
-					{providers.map((p) => {
-						const label = p.name ? `${p.name} (${p.id})` : p.id;
-						return (
-							<FilterNavButton
-								key={p.id}
-								label={label}
-								count={providerRouteCounts.get(p.id) ?? 0}
-								isActive={filterProviderId === p.id}
-								onClick={() => onFilterProviderIdChange(p.id)}
-							/>
-						);
-					})}
+					{providers.map((p) => (
+						<FilterNavButton
+							key={p.id}
+							label={p.name || p.id}
+							count={providerRouteCounts.get(p.id) ?? 0}
+							isActive={filterProviderId === p.id}
+							onClick={() => onFilterProviderIdChange(p.id)}
+						/>
+					))}
 				</FilterNavSection>
 			</div>
 		</aside>
