@@ -43,25 +43,64 @@ OctaFuse addresses that as a gateway you can **own and evolve**:
 - **Flexible deployment** — Cloudflare (Worker + Pages + **D1**) or self-hosted (**Docker / Node + Postgres or MySQL**)
 - **Admin API integration** — portals and apps hook in via **`/api/admin/*`** to provision users, keys, and budgets
 
+## Product tour
+
+These screenshots come from a local Admin instance and show the main operator workflows: observe gateway usage, connect upstream providers, route model IDs to providers, and safely test a single route before exposing it to users.
+
+| Operations overview | Upstream providers |
+|---|---|
+| ![Octafuse Gateway dashboard with usage, cost, latency, and recent requests](./docs/assets/screenshots/dashboard.png) | ![Octafuse Gateway providers page with upstream endpoint cards and key status](./docs/assets/screenshots/providers.png) |
+
+| Model routing | Playground |
+|---|---|
+| ![Octafuse Gateway model routes page with provider priorities and route groups](./docs/assets/screenshots/routes.png) | ![Octafuse Gateway playground page for testing one route without billing an API key](./docs/assets/screenshots/playground.png) |
+
 ## Quick Start
 
 The steps below are for **local development only**. For production or staging deployment, see **[Deployment](#deployment)**.
 
+| Path | Best for | Runtime | Database |
+|------|----------|---------|----------|
+| **Docker** | Fastest end-to-end demo; no local Node setup | Node containers | Postgres container |
+| **Cloudflare local D1** | Worker / OpenNext development before Cloudflare deploy | Wrangler local Worker + Admin preview | Local D1 under `./.wrangler/state` |
+
 ### Option A: Docker (fastest path)
 
-Prerequisites: Docker Compose **v2.20+** (for `service_completed_successfully`).
+Prerequisite: Docker Compose **v2.20+** (for `service_completed_successfully`). This compose file starts Postgres, runs one-shot migrations, then starts Proxy and Admin.
 
 ```bash
 docker compose -f docker/compose/quickstart.yml up --build
 curl -sS http://localhost:8787/health
 ```
 
-When healthy:
+Local endpoints and defaults:
 
-- Proxy: `http://localhost:8787`
-- Admin: `http://localhost:8789` (default login `admin` / `changeme`)
+| Item | Default |
+|------|---------|
+| Proxy | `http://localhost:8787` |
+| Admin | `http://localhost:8789` |
+| Admin login | `admin` / `changeme` |
+| Postgres | `postgres://postgres:postgres@localhost:5432/octafuse` |
+| Admin API Bearer | `sk-dev-admin-key` from the local seed |
 
-In Admin: configure a **provider** → a **model route** → create an **API key**, then call the inference APIs. The Postgres seed sets default `MASTER_KEY` to `sk-dev-admin-key` (Bearer for `POST /api/admin/*`); rotate before any shared environment — see [docs/api/admin.md](./docs/api/admin.md).
+You can change host ports without editing YAML:
+
+```bash
+GATEWAY_PROXY_HOST_PORT=18787 \
+GATEWAY_ADMIN_HOST_PORT=18789 \
+POSTGRES_HOST_PORT=15432 \
+docker compose -f docker/compose/quickstart.yml up --build
+```
+
+First run checklist:
+
+1. Open Admin and sign in with `admin` / `changeme`.
+2. Add or import at least one **Provider** and replace any placeholder upstream API key.
+3. Create or enable a **Model Route** for the model ID your client will call.
+4. Create a user **API Key**.
+5. Call Proxy with that user API key.
+
+The Postgres seed sets default `MASTER_KEY` to `sk-dev-admin-key` (Bearer for `POST /api/admin/*`). Rotate it before any shared environment — see [docs/api/admin.md](./docs/api/admin.md).
 
 Example chat (after routing and a real user key exist):
 
@@ -72,11 +111,19 @@ curl -sS http://localhost:8787/v1/chat/completions \
   -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
+Stop the demo with:
+
+```bash
+docker compose -f docker/compose/quickstart.yml down
+```
+
+Add `-v` if you want to delete the local Postgres volume and start from a clean database.
+
 MySQL, split compose profiles, and prebuilt images: [docker/compose/node-pg.yml](./docker/compose/node-pg.yml), [docker/compose/node-mysql.yml](./docker/compose/node-mysql.yml), [docs/ops/deployment-docker.md](./docs/ops/deployment-docker.md).
 
 ### Option B: Cloudflare (local D1)
 
-Prerequisites: **Node.js 20+**, npm. Local state persists under `./.wrangler/state`.
+Prerequisites: **Node.js 20+**, npm. This path uses Wrangler locally; it does **not** require `cloudflare-worker/*.env`, a remote D1 database, or a Cloudflare login for local development. Local state persists under `./.wrangler/state`.
 
 ```bash
 npm install
@@ -90,7 +137,31 @@ In a second terminal:
 npm run dev:admin           # Admin OpenNext preview → http://127.0.0.1:8789
 ```
 
-Then configure **provider** → **model route** → **API key** in Admin. Admin API Bearer must match D1 `system_config.MASTER_KEY` (dev seed in `packages/core/migrations-d1/0002_seed.sql`).
+Local Cloudflare defaults:
+
+| Item | Default / location |
+|------|--------------------|
+| Proxy Worker | `http://127.0.0.1:8787` |
+| Admin preview | `http://127.0.0.1:8789` |
+| D1 state | `./.wrangler/state` |
+| Wrangler templates | `packages/*/wrangler.base.jsonc` and `packages/core/wrangler.d1.base.jsonc` |
+| Generated config | `packages/*/wrangler.jsonc` and `packages/core/wrangler.d1.jsonc` (gitignored) |
+| Admin API Bearer | D1 `system_config.MASTER_KEY`; local seed is `sk-dev-admin-key` |
+
+Then open Admin and configure **Provider** → **Model Route** → **API Key**. Admin API Bearer must match D1 `system_config.MASTER_KEY` (dev seed in `packages/core/migrations-d1/0002_seed.sql`).
+
+When you are ready to connect the same code to a remote Cloudflare D1 instance:
+
+1. Authenticate Wrangler with `npx wrangler login`, or set a scoped Cloudflare API token in your shell / CI.
+2. Create a D1 database with `npx wrangler d1 create <name>`.
+3. Put `PROXY_WORKER_NAME`, `ADMIN_WORKER_NAME`, `D1_DATABASE_NAME`, and `D1_DATABASE_ID` in Cloudflare Build variables or a gitignored `cloudflare-worker/<instance>.env`.
+4. Run remote migrations before deploying code that depends on new schema:
+
+```bash
+npx dotenv -e ./cloudflare-worker/<instance>.env -- npm run db:migrate:remote
+npx dotenv -e ./cloudflare-worker/<instance>.env -- npm run deploy:proxy
+npx dotenv -e ./cloudflare-worker/<instance>.env -- npm run deploy:admin
+```
 
 **Note:** After a local remote deploy (`deploy-soloent.sh`, `db:migrate:remote`, etc.), run **`npm run gen:wrangler`** before `dev:proxy` / `dev:admin` so migrate and dev use the same local D1 — see [local-testing-environments.md §1](./docs/ops/local-testing-environments.md#️-本地-d1-与-database_id远程-deploy-后必读).
 
