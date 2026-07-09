@@ -2,6 +2,17 @@
 
 本仓库 **`octafuse`** 是 Gateway 的 **npm workspaces** 单体：**`packages/proxy`**（推理）与 **`packages/admin`**（管理 UI + `/api/admin/*`）共享 **`@octafuse/core`**。
 
+## 目录分工
+
+| 目录 | 定位 | 适合放什么 |
+|------|------|------------|
+| [`api/`](./api/) | API 契约 | Proxy 用户接口、Admin 管理接口、认证与错误形态 |
+| [`architecture/`](./architecture/) | 架构与数据模型 | 运行时矩阵、请求生命周期、User / API Key 数据模型、Admin 分层 |
+| [`ops/`](./ops/) | 部署与运维 | Cloudflare、Docker、自托管、本地测试环境、发版流程 |
+| [`reference/`](./reference/) | 行为语义参考 | 计费、审计、时间口径、Provider 参数与导入模板 |
+| [`migrations/`](./migrations/) | 迁移说明 | 历史兼容迁移、数据导出或切换说明 |
+| [`assets/`](./assets/) | 文档素材 | README / docs 使用的截图、图片等静态素材 |
+
 ## 必读
 
 | 文档 | 说明 |

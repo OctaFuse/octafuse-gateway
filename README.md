@@ -23,19 +23,6 @@
 - **企业或平台接入自有业务系统**：通过 User 和 API Key 管理，把 Gateway 接到内部后台、SaaS 门户或客户系统中，自动开通用户、分配预算、同步额度、审计请求，并用统一的成本口径支持计费、对账、风控和资源分配。
 - **多供应商容灾与灰度**：为同一个模型入口配置多个上游 Provider，在某个供应商不可用、额度不足、价格变化或需要测试新模型时，通过路由策略切换，而不是推动所有客户端改配置。
 
-## 项目结构
-
-| 包 | 作用 |
-|----|------|
-| `packages/proxy` | 对外推理入口：`/v1/*`、`/v1beta/*`、`/health` |
-| `packages/admin` | 管理台 UI 与 `/api/admin/*` |
-| `packages/core` | 数据模型、迁移、D1 / Postgres / MySQL 仓储实现 |
-
-常见部署方式：
-
-- **Cloudflare**：Proxy Worker + Admin/OpenNext + D1
-- **Docker / Node**：Proxy + Admin + Postgres 或 MySQL
-
 ## 界面预览
 
 | 运营概览 | Provider 管理 |

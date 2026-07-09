@@ -23,19 +23,6 @@
 - **Businesses and platforms integrating with their own systems**: Use User and API Key management to connect the gateway to an internal admin system, SaaS portal, or customer platform. Provision users, allocate budgets, sync quota, audit requests, and support billing, reconciliation, risk control, and resource allocation with a unified cost model.
 - **Multi-provider fallback and rollout**: Configure multiple upstream providers behind the same model entry. When a provider is unavailable, quota is exhausted, pricing changes, or a new model needs testing, switch through routing policy instead of updating every client.
 
-## Repository Layout
-
-| Package | Role |
-|---------|------|
-| `packages/proxy` | Public inference entry: `/v1/*`, `/v1beta/*`, `/health` |
-| `packages/admin` | Admin UI and `/api/admin/*` |
-| `packages/core` | Data model, migrations, and D1 / Postgres / MySQL storage |
-
-Common deployment modes:
-
-- **Cloudflare**: Proxy Worker + Admin/OpenNext + D1
-- **Docker / Node**: Proxy + Admin + Postgres or MySQL
-
 ## Screenshots
 
 | Operations overview | Provider management |

@@ -60,12 +60,14 @@
 | `docs/api/{public,user,admin,README}.md` | L1 | 跟随路由与表结构演进 |
 | `docs/architecture/{runtime-data,admin-layered}.md` | L1 | 与 `packages/core` / 部署矩阵强相关 |
 | `docs/reference/{streaming-billing,user-audit-logs,provider-thinking-configs,provider-import-presets}.md` | L1 | 行为与计费语义快照 |
+| `docs/migrations/*.md` | L1 / L2 | 与历史兼容、数据迁移或运维切换相关；按内容是否绑定表结构判定 |
 | `docs/ops/deployment.md` 索引 | L2 | 入口文档 |
 | `docs/ops/deployment-cloudflare.md` | L2 | 通用 CF 部署模式 |
 | `docs/ops/deployment-docker.md` | L2 | 通用 Docker 部署模式 |
 | `docs/ops/local-testing-environments.md` | L2 | 本地组合矩阵 |
 | `docs/ops/release-versioning.md` | L2 | Changesets 流程 |
 | `docs/ops/postgres-cutover.md` | L2 | D1↔PG 通用脚本 |
+| `docs/assets/` | L2 | README / docs 使用的截图与静态素材 |
 | `examples/` | L1 | 与当前 `/v1/*`、`/api/admin/*` 表面一致 |
 | `docker/examples/*.example` 与 `docker/deploy/.env.example` | L2 | 占位模板，**不**含真实值 |
 | README 中的“品牌段落 / 推广链接” | L3（候选） | 后续可拆到独立站 |
