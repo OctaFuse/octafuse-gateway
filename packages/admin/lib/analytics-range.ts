@@ -3,13 +3,13 @@
  */
 import type { AnalyticsRowCosts } from '@/lib/types';
 
-/** 快捷时间窗（与仪表盘 `range` 查询共用短名：1h / 1d / 7d …）。 */
+/** 快捷时间窗（Admin UI 默认按钮：1h / 1d / 7d / 14d / 30d；`90d` 仅 API 兼容）。 */
 export type GatewayTimeRangePreset = '1h' | '1d' | '7d' | '14d' | '30d' | '90d' | 'custom';
 
 /** @deprecated 使用 `GatewayTimeRangePreset`；保留 `24h` 别名以兼容旧代码。 */
 export type AnalyticsRangePreset = GatewayTimeRangePreset | '24h';
 
-const PRESET_ORDER: Array<Exclude<GatewayTimeRangePreset, 'custom'>> = ['1h', '1d', '7d', '14d', '30d', '90d'];
+const PRESET_ORDER: Array<Exclude<GatewayTimeRangePreset, 'custom' | '90d'>> = ['1h', '1d', '7d', '14d', '30d'];
 
 export const GATEWAY_TIME_RANGE_PRESETS = PRESET_ORDER;
 

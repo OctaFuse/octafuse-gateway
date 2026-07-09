@@ -17,7 +17,7 @@ export function parseTagsJson(tagsJson: string | null): string[] {
 }
 
 /**
- * 仪表盘 KPI 相对时间窗：将 `1h`/`1d`/`24h`/`7d`/`14d`/`30d`/`90d` 转为起止 `YYYY-MM-DD HH:mm:ss`（UTC 切片，与 Admin 分析页一致）。
+ * 仪表盘 KPI 相对时间窗：将 `1h`/`1d`/`24h`/`7d`/`14d`/`30d`（及 API 兼容的 `90d`）转为起止 `YYYY-MM-DD HH:mm:ss`（UTC 切片，与 Admin 分析页一致）。
  */
 export function rangeToDates(range: string): { startDate: string; endDate: string } {
 	const end = new Date();

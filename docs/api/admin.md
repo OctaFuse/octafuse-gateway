@@ -631,7 +631,7 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
 
 | 参数 | 说明 |
 |------|------|
-| `range` | `1h` / `1d` / `24h` / `7d` / `14d` / `30d` / `90d`；无 `start_date`+`end_date` 时默认 `1d` |
+| `range` | `1h` / `1d` / `24h` / `7d` / `14d` / `30d`（UI 快捷按钮；`90d` 仍可通过 API 传入）；无 `start_date`+`end_date` 时默认 `1d` |
 | `start_date` / `end_date` | UTC `YYYY-MM-DD HH:mm:ss`；**与 Request Logs / Analytics 相同**；两者同时提供时优先于 `range` |
 
 响应 `data` 含：

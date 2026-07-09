@@ -163,8 +163,7 @@
 			"1d": "1d",
 			"7d": "7d",
 			"14d": "14d",
-			"30d": "30d",
-			"90d": "90d"
+			"30d": "30d"
 		}
 	},
 	"options": {
@@ -270,8 +269,7 @@
 			"1d": "Last 1d",
 			"7d": "Last 7 days",
 			"14d": "Last 14 days",
-			"30d": "Last 30 days",
-			"90d": "Last 90 days"
+			"30d": "Last 30 days"
 		}
 	},
 	"filter": {
