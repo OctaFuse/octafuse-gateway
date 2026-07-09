@@ -41,7 +41,7 @@ function addDateKeyDays(dateKey: string, days: number): string {
 	return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
 }
 
-function getTimezoneOffsetMinutesAtUtcInstant(utcInstant: Date, timeZone: string): number {
+export function getTimezoneOffsetMinutesAtUtcInstant(utcInstant: Date, timeZone: string): number {
 	const part = new Intl.DateTimeFormat('en-US', {
 		timeZone,
 		timeZoneName: 'shortOffset',
@@ -68,8 +68,67 @@ function getUtcDateTimeFromDateKeyMidnight(dateKey: string, timeZone: string): D
 	return new Date(utcMidnightMillis - offsetMinutes * 60 * 1000);
 }
 
-function toSqlUtcDateTime(date: Date): string {
+export function toSqlUtcDateTime(date: Date): string {
 	return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+/** API/SQL UTC 字符串 → `Date` instant；`YYYY-MM-DD HH:mm:ss` 按 UTC 解析。 */
+export function utcApiStringToInstant(sqlUtc: string): Date {
+	const trimmed = sqlUtc.trim();
+	return new Date(trimmed.includes('T') ? trimmed : `${trimmed.replace(' ', 'T')}Z`);
+}
+
+/** UTC instant → 指定 IANA 时区的 `datetime-local` 值（`YYYY-MM-DDTHH:mm`）。 */
+export function instantToZonedDatetimeLocalInput(instant: Date, timeZone: string): string {
+	const parts = new Intl.DateTimeFormat('en-US', {
+		timeZone,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false,
+	}).formatToParts(instant);
+	const year = parts.find((part) => part.type === 'year')?.value ?? '1970';
+	const month = parts.find((part) => part.type === 'month')?.value ?? '01';
+	const day = parts.find((part) => part.type === 'day')?.value ?? '01';
+	let hour = parts.find((part) => part.type === 'hour')?.value ?? '00';
+	const minute = parts.find((part) => part.type === 'minute')?.value ?? '00';
+	if (hour === '24') hour = '00';
+	return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+/** 指定 IANA 时区墙钟 `datetime-local` → UTC instant。 */
+export function zonedDatetimeLocalInputToInstant(localStr: string, timeZone: string): Date | null {
+	const match = localStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+	if (!match) return null;
+	const [, yearRaw, monthRaw, dayRaw, hourRaw, minuteRaw] = match;
+	const wallUtcMillis = Date.UTC(
+		Number(yearRaw),
+		Number(monthRaw) - 1,
+		Number(dayRaw),
+		Number(hourRaw),
+		Number(minuteRaw),
+		0
+	);
+	const probe = new Date(wallUtcMillis);
+	const offsetMinutes = getTimezoneOffsetMinutesAtUtcInstant(probe, timeZone);
+	const instant = new Date(wallUtcMillis - offsetMinutes * 60 * 1000);
+	return Number.isNaN(instant.getTime()) ? null : instant;
+}
+
+/** UTC API 字符串 → 业务时区 `datetime-local`。 */
+export function utcApiToZonedInput(api: string, timeZone: string): string {
+	const instant = utcApiStringToInstant(api);
+	if (Number.isNaN(instant.getTime())) return '';
+	return instantToZonedDatetimeLocalInput(instant, timeZone);
+}
+
+/** 业务时区 `datetime-local` → UTC API 字符串。 */
+export function zonedInputToUtcApi(localStr: string, timeZone: string): string {
+	const instant = zonedDatetimeLocalInputToInstant(localStr, timeZone);
+	if (!instant) return '';
+	return toSqlUtcDateTime(instant);
 }
 
 /**

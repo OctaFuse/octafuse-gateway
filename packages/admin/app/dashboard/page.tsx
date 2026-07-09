@@ -12,11 +12,11 @@ import { DashboardModelDistributionChart } from '@/components/dashboard/Dashboar
 import { DashboardTokenTrendChart } from '@/components/dashboard/DashboardTokenTrendChart';
 import { createRangeValue, formatGatewayRangeSummary, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { readApiJson } from '@/lib/api-json';
-import { formatGatewayTime } from '@/lib/datetime';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { DashboardStats } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 function formatLatency(ms: number | null | undefined): string {
 	if (ms == null || !Number.isFinite(ms)) return '—';
@@ -34,15 +34,17 @@ export default function DashboardPage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
 	const { currency: billingCurrency } = useBillingCurrency();
+	const { businessTimezone, formatTime } = useGatewayDateTime();
 
 	const rangeLabel = useMemo(
 		() =>
 			formatGatewayRangeSummary(
 				rangeValue,
 				(preset) => t(`rangeLabels.${preset}`),
-				tTimeRange('custom')
+				tTimeRange('custom'),
+				businessTimezone
 			),
-		[rangeValue, t, tTimeRange]
+		[rangeValue, t, tTimeRange, businessTimezone]
 	);
 
 	useEffect(() => {
@@ -211,7 +213,7 @@ export default function DashboardPage() {
 										{log.provider_id && <div className="text-xs text-gray-500 mt-0.5">{tPricing('providerLabel', { id: log.provider_id })}</div>}
 									</div>
 									<div className="text-gray-500">
-										{formatGatewayTime(log.created_at)}
+										{formatTime(log.created_at)}
 									</div>
 								</div>
 							))}
@@ -236,7 +238,7 @@ export default function DashboardPage() {
 										{log.provider_id && <div className="text-xs text-gray-500 mt-0.5">{tPricing('providerLabel', { id: log.provider_id })}</div>}
 									</div>
 									<div className="text-gray-500 ml-2">
-										{formatGatewayTime(log.created_at)}
+										{formatTime(log.created_at)}
 									</div>
 								</div>
 							))}

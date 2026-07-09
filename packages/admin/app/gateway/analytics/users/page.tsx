@@ -17,12 +17,12 @@ import {
   sumAnalyticsCosts,
   type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
-import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
 import type { ApiResponse, ModelUsageRow, UserUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 type SortKey = keyof UserUsageRow | '';
 type SortDir = 'asc' | 'desc';
@@ -42,6 +42,7 @@ export default function UserUsagePage() {
   const [modelRowsByUser, setModelRowsByUser] = useState<Record<string, ModelUsageRow[]>>({});
   const [modelRowsLoading, setModelRowsLoading] = useState<Record<string, boolean>>({});
   const { currency: billingCurrency } = useBillingCurrency();
+  const { formatDateTime } = useGatewayDateTime();
 
   useEffect(() => {
     const run = async () => {
@@ -116,7 +117,7 @@ export default function UserUsagePage() {
     </th>
   );
 
-  const formatDate = (s: string | null) => formatGatewayDateTime(s);
+  const formatDate = (s: string | null) => formatDateTime(s);
 
   const exportCsv = () => {
     const { start_date, end_date } = committedQuery;

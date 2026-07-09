@@ -9,13 +9,14 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ClipboardDocumentIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
-import { formatGatewayDateTime, parseGatewayDateTime } from '@/lib/datetime';
+import { parseGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import type { GatewayApiKeyBudgetAuditLog, GatewayRequestLog } from '@/lib/types';
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
@@ -126,6 +127,7 @@ export default function GatewayUserDetailPage() {
   const [metaViewKey, setMetaViewKey] = useState<KeyRow | null>(null);
   const [isKeySaving, setIsKeySaving] = useState(false);
   const { currency: billingCurrency } = useBillingCurrency();
+  const { formatDateTime } = useGatewayDateTime();
   const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
 
   const loadUser = useCallback(async () => {
@@ -584,8 +586,8 @@ export default function GatewayUserDetailPage() {
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <ReadonlyRow label="Created">{formatGatewayDateTime(user.created_at)}</ReadonlyRow>
-              <ReadonlyRow label="Updated">{formatGatewayDateTime(user.updated_at)}</ReadonlyRow>
+              <ReadonlyRow label="Created">{formatDateTime(user.created_at)}</ReadonlyRow>
+              <ReadonlyRow label="Updated">{formatDateTime(user.updated_at)}</ReadonlyRow>
             </div>
             <div className="flex items-center justify-between gap-3 pt-2">
               <button
@@ -741,7 +743,7 @@ export default function GatewayUserDetailPage() {
                 const routeGroup = normalizeRouteGroup(log.route_group);
                 return (
                 <tr key={log.id} className="border-b border-gray-50">
-                  <td className="py-2 pr-2 whitespace-nowrap">{formatGatewayDateTime(log.created_at)}</td>
+                  <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(log.created_at)}</td>
                   <td className="py-2 pr-2 font-mono text-xs max-w-[10rem] truncate" title={log.model_name || log.model_id || undefined}>
                     {log.model_name || log.model_id || '—'}
                   </td>
@@ -807,7 +809,7 @@ export default function GatewayUserDetailPage() {
                 });
                 return (
                 <tr key={a.id} className="border-b border-gray-50 align-top">
-                  <td className="py-2 pr-2 whitespace-nowrap">{formatGatewayDateTime(a.created_at)}</td>
+                  <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(a.created_at)}</td>
                   <td className="py-2 pr-2">
                     <div className="font-medium">{a.event_type}</div>
                     <div className="text-gray-500 mt-0.5">{a.actor_type}</div>

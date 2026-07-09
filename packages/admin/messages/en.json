@@ -154,7 +154,7 @@
 		"version": "v{version}"
 	},
 	"timeRange": {
-		"label": "Time range (UTC)",
+		"label": "Time range ({timezone})",
 		"start": "Start",
 		"end": "End",
 		"custom": "Custom",

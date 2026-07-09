@@ -23,6 +23,7 @@ import {
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
 import { useTranslations } from 'next-intl';
+import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
 
 const OTHER_TZ = '__other__';
 
@@ -168,6 +169,7 @@ export default function GatewayConfigPage() {
   const tBrand = useTranslations('brand');
   const tCommon = useTranslations('common');
   const tOptions = useTranslations('options');
+  const { refresh: refreshBusinessTimezone } = useBusinessTimezoneContext();
   const businessTimezoneOptions = getBusinessTimezoneOptions((k) => tOptions(k));
   const billingCurrencyOptions = getBillingCurrencyOptions((k) => tOptions(k));
   const [config, setConfig] = useState<SystemConfigRow[]>([]);
@@ -397,6 +399,7 @@ export default function GatewayConfigPage() {
           setBizSelectValue(OTHER_TZ);
           setBizOtherValue(raw);
         }
+        void refreshBusinessTimezone();
       } else {
         clearSaveSuccess();
         setSaveError(data.message || tCommon('saveFailed'));

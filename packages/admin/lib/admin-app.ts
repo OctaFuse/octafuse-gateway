@@ -9,6 +9,7 @@ import { resolveAdminStorageContext } from '@/lib/storage-context';
 import { adminAppVersion } from '@/lib/app-version';
 import { adminAnalyticsRoutes } from '@/lib/routes/admin/analytics';
 import { adminBudgetAuditLogsRoutes } from '@/lib/routes/admin/budget-audit-logs';
+import { adminBusinessTimezoneRoutes } from '@/lib/routes/admin/business-timezone';
 import { adminConfigRoutes } from '@/lib/routes/admin/config';
 import { adminKeysRoutes } from '@/lib/routes/admin/keys';
 import { adminUsersRoutes } from '@/lib/routes/admin/users';
@@ -48,6 +49,7 @@ export function createAdminApp(): Hono<AdminEnv> {
 	app.route('/admin/config', adminConfigRoutes);
 	app.route('/admin/request-logs', adminRequestLogsRoutes);
 	app.route('/admin/budget-audit-logs', adminBudgetAuditLogsRoutes);
+	app.route('/admin/business-timezone', adminBusinessTimezoneRoutes);
 	app.route('/admin/analytics', adminAnalyticsRoutes);
 
 	app.get('/admin', (c) => c.json({ name: 'octafuse-admin-api', version: adminAppVersion }));

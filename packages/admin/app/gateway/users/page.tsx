@@ -8,12 +8,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
-import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { nextListSortStateWithAscToggle } from '@/lib/toggle-list-sort';
 import type { GatewayUserListItem } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 type UserListSortKey = 'budget_spent' | 'budget_max' | 'budget_base' | 'budget_reset_at' | 'created_at';
 type SortDir = 'asc' | 'desc';
@@ -60,6 +60,7 @@ export default function GatewayUsersPage() {
   const [metadataViewUser, setMetadataViewUser] = useState<GatewayUserListItem | null>(null);
   const [listError, setListError] = useState('');
   const { currency: billingCurrency } = useBillingCurrency();
+  const { formatDateTime } = useGatewayDateTime();
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -354,7 +355,7 @@ export default function GatewayUsersPage() {
                   {u.budget_period && u.budget_period !== 'none' ? u.budget_period : '—'}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                  {u.budget_reset_at ? formatGatewayDateTime(u.budget_reset_at) : '—'}
+                  {u.budget_reset_at ? formatDateTime(u.budget_reset_at) : '—'}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
                   {u.active_keys_count}
@@ -385,7 +386,7 @@ export default function GatewayUsersPage() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                  {formatGatewayDateTime(u.created_at)}
+                  {formatDateTime(u.created_at)}
                 </td>
               </tr>
               );

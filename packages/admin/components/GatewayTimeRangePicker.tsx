@@ -2,12 +2,13 @@
 
 /**
  * 紧凑时间范围：快捷预设 + 自定义起止（datetime-local），产出与 Gateway 分析 API 一致的 UTC `YYYY-MM-DD HH:mm:ss`。
+ * 自定义输入/回显按 `BUSINESS_TIMEZONE` 墙钟，而非浏览器本地时区。
  */
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useBusinessTimezone } from '@/components/BusinessTimezoneProvider';
+import { formatBusinessTimezoneLabel, utcApiToZonedInput, zonedInputToUtcApi } from '@/lib/business-timezone-client';
 import {
-	apiUtcToDatetimeLocal,
-	datetimeLocalToApiUtc,
 	GATEWAY_TIME_RANGE_PRESETS,
 	normalizeCustomApiRange,
 	rangeToParams,
@@ -23,9 +24,13 @@ const btnOn = 'border-gray-300 bg-white text-gray-900 shadow-sm';
 /** 与 `GET /admin/stats?range=` 一致的快捷键（无 custom）。 */
 export type GatewayDashboardStatsRange = Exclude<GatewayTimeRangePreset, 'custom'>;
 
-function commitCustomLocal(draftStart: string, draftEnd: string): GatewayTimeRangeValue | null {
-	const s = datetimeLocalToApiUtc(draftStart);
-	const e = datetimeLocalToApiUtc(draftEnd);
+function commitCustomLocal(
+	draftStart: string,
+	draftEnd: string,
+	timeZone: string
+): GatewayTimeRangeValue | null {
+	const s = zonedInputToUtcApi(draftStart, timeZone);
+	const e = zonedInputToUtcApi(draftEnd, timeZone);
 	if (!s || !e) return null;
 	const norm = normalizeCustomApiRange(s, e);
 	if (!norm) return null;
@@ -38,6 +43,8 @@ export type GatewayTimeRangePickerProps = {
 	presets?: Array<Exclude<GatewayTimeRangePreset, 'custom'>>;
 	showCustom?: boolean;
 	label?: string;
+	/** 业务 IANA 时区；默认从 `BusinessTimezoneProvider` 读取。 */
+	timeZone?: string;
 	/** 整块右对齐；默认与筛选项第一行左对齐 */
 	align?: 'start' | 'end';
 	className?: string;
@@ -49,19 +56,23 @@ export function GatewayTimeRangePicker({
 	presets = [...GATEWAY_TIME_RANGE_PRESETS],
 	showCustom = true,
 	label,
+	timeZone: timeZoneProp,
 	align = 'start',
 	className = '',
 }: GatewayTimeRangePickerProps) {
 	const t = useTranslations('timeRange');
 	const tCommon = useTranslations('common');
-	const resolvedLabel = label ?? t('label');
-	const [draftStart, setDraftStart] = useState(() => apiUtcToDatetimeLocal(value.start_date));
-	const [draftEnd, setDraftEnd] = useState(() => apiUtcToDatetimeLocal(value.end_date));
+	const contextTimeZone = useBusinessTimezone();
+	const timeZone = timeZoneProp ?? contextTimeZone;
+	const timezoneLabel = formatBusinessTimezoneLabel(timeZone);
+	const resolvedLabel = label ?? t('label', { timezone: timezoneLabel });
+	const [draftStart, setDraftStart] = useState(() => utcApiToZonedInput(value.start_date, timeZone));
+	const [draftEnd, setDraftEnd] = useState(() => utcApiToZonedInput(value.end_date, timeZone));
 
 	useEffect(() => {
-		setDraftStart(apiUtcToDatetimeLocal(value.start_date));
-		setDraftEnd(apiUtcToDatetimeLocal(value.end_date));
-	}, [value.start_date, value.end_date]);
+		setDraftStart(utcApiToZonedInput(value.start_date, timeZone));
+		setDraftEnd(utcApiToZonedInput(value.end_date, timeZone));
+	}, [value.start_date, value.end_date, timeZone]);
 
 	const selectPreset = (p: Exclude<GatewayTimeRangePreset, 'custom'>) => {
 		onChange({ preset: p, ...rangeToParams(p) });
@@ -72,13 +83,13 @@ export function GatewayTimeRangePicker({
 		const { start_date, end_date } = hasRange
 			? { start_date: value.start_date, end_date: value.end_date }
 			: rangeToParams('1d');
-		setDraftStart(apiUtcToDatetimeLocal(start_date));
-		setDraftEnd(apiUtcToDatetimeLocal(end_date));
+		setDraftStart(utcApiToZonedInput(start_date, timeZone));
+		setDraftEnd(utcApiToZonedInput(end_date, timeZone));
 		onChange({ preset: 'custom', start_date, end_date });
 	};
 
 	const applyCustom = () => {
-		const next = commitCustomLocal(draftStart, draftEnd);
+		const next = commitCustomLocal(draftStart, draftEnd, timeZone);
 		if (next) onChange(next);
 	};
 

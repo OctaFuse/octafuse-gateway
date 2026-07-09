@@ -17,11 +17,11 @@ import { UPSTREAM_PROTOCOLS } from '@/lib/upstream-protocol';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { createRangeValue, detectRollingPreset, type GatewayTimeRangeValue } from '@/lib/analytics-range';
-import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { summarizePricingAuditJson } from '@/lib/pricing-ui';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 /** `/api/admin/models` 列表项（tags 解析为数组） */
 type ModelListItem = Omit<GatewayModel, 'tags'> & { tags: string[] };
@@ -42,6 +42,7 @@ export default function GatewayRequestLogsPage() {
   >(null);
   const pageSize = 50;
   const { currency: billingCurrency } = useBillingCurrency();
+  const { formatDateTime } = useGatewayDateTime();
   const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
 
   // Filters
@@ -251,7 +252,7 @@ export default function GatewayRequestLogsPage() {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const formatDate = (dateStr: string) => formatGatewayDateTime(dateStr);
+  const formatDate = (dateStr: string) => formatDateTime(dateStr);
 
   /** 毫秒数用千分位（如 23,332ms），便于扫读秒级量级 */
   const formatLatencyMs = (ms: number | null | undefined) => {

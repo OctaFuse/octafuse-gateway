@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import BrandExternalLinks from '@/components/layout/BrandExternalLinks';
 import LocaleSwitcher from '@/components/layout/LocaleSwitcher';
+import { BusinessTimezoneProvider } from '@/components/BusinessTimezoneProvider';
 import { ADMIN_SESSION_EXPIRED_EVENT_NAME } from '@/lib/admin-session-events';
 import { readApiJson, readJson } from '@/lib/api-json';
 import Sidebar from './Sidebar';
@@ -161,11 +162,13 @@ export default function AuthWrapper({ children }: Props) {
 
   // Authenticated - show dashboard layout with sidebar
   return (
-    <div className="flex h-dvh overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 min-h-0 overflow-y-auto bg-gray-50">
-        {children}
-      </main>
-    </div>
+    <BusinessTimezoneProvider>
+      <div className="flex h-dvh overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 min-h-0 overflow-y-auto bg-gray-50">
+          {children}
+        </main>
+      </div>
+    </BusinessTimezoneProvider>
   );
 }

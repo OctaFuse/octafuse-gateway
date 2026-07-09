@@ -19,6 +19,7 @@ import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 
 /** 已在 Spend / Budget plan 列展示的快照字段，不在「User change detail」重复 */
@@ -53,9 +54,9 @@ function formatBudgetMax(value: number | null, currency: string, noLimitLabel = 
   return formatGatewayMoneyCode(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
 }
 
-function formatTime(iso: string | null | undefined): string {
+function formatAuditTime(iso: string | null | undefined, timeZone: string): string {
   if (iso == null || iso === '') return '—';
-  return formatGatewayDateTime(iso);
+  return formatGatewayDateTime(iso, timeZone);
 }
 
 function shortId(id: string | null | undefined): string {
@@ -219,6 +220,7 @@ export default function GatewayAuditLogsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const pageSize = 50;
   const { currency: billingCurrency } = useBillingCurrency();
+  const { businessTimezone } = useGatewayDateTime();
 
   const [filterApiKeyId, setFilterApiKeyId] = useState('');
   const [filterUserId, setFilterUserId] = useState('');
@@ -538,7 +540,7 @@ export default function GatewayAuditLogsPage() {
                     return (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 align-top">
-                        <div className="text-gray-700 whitespace-nowrap">{formatTime(item.created_at)}</div>
+                        <div className="text-gray-700 whitespace-nowrap">{formatAuditTime(item.created_at, businessTimezone)}</div>
                         <div
                           className="mt-0.5 font-mono text-xs text-gray-600 whitespace-nowrap"
                           title={item.request_log_id || undefined}
@@ -676,11 +678,11 @@ export default function GatewayAuditLogsPage() {
                             <span className="font-medium text-gray-700">reset_at:</span>{' '}
                             <span className="whitespace-nowrap">
                               <span className={resetChanged ? budgetPlanHighlight.before : undefined}>
-                                {formatTime(ex.before_budget_reset_at)}
+                                {formatAuditTime(ex.before_budget_reset_at, businessTimezone)}
                               </span>
                               <span className="text-gray-400"> → </span>
                               <span className={resetChanged ? budgetPlanHighlight.after : undefined}>
-                                {formatTime(ex.after_budget_reset_at)}
+                                {formatAuditTime(ex.after_budget_reset_at, businessTimezone)}
                               </span>
                             </span>
                           </div>

@@ -15,6 +15,7 @@ import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import type { GatewayApiKey } from '@/lib/types';
 
 type KeyCreationMode = 'existingUser' | 'externalIdentity';
@@ -32,20 +33,21 @@ function formatApiKeyMetadataForEditor(raw: string | null | undefined): string {
   }
 }
 
-function formatKeyTimestamp(iso: string | null | undefined): string {
+function formatKeyTimestamp(iso: string | null | undefined, timeZone: string): string {
   if (iso == null || iso === '') {
     return '—';
   }
-  return formatGatewayDateTime(iso);
+  return formatGatewayDateTime(iso, timeZone);
 }
 
 function formatBudgetPeriodResetLabel(
   period: string | null | undefined,
-  resetAt: string | null | undefined
+  resetAt: string | null | undefined,
+  timeZone: string
 ): string {
   const periodLabel = period && period !== 'none' ? period : 'none';
   const resetLabel =
-    resetAt == null || resetAt === '' ? '—' : formatGatewayDateTime(resetAt);
+    resetAt == null || resetAt === '' ? '—' : formatGatewayDateTime(resetAt, timeZone);
   return `${periodLabel} / ${resetLabel}`;
 }
 
@@ -56,7 +58,12 @@ function keyStatusSwatchClass(status: string) {
   return 'bg-gray-300';
 }
 
-function formatUserBudgetOneLine(key: GatewayApiKey, currency: string, noLimitLabel = 'no limit'): string {
+function formatUserBudgetOneLine(
+  key: GatewayApiKey,
+  currency: string,
+  timeZone: string,
+  noLimitLabel = 'no limit'
+): string {
   const spent = formatGatewayMoneyCode(key.budget_spent, currency, 2);
   const maxPart =
     key.budget_max != null
@@ -67,7 +74,7 @@ function formatUserBudgetOneLine(key: GatewayApiKey, currency: string, noLimitLa
   if (period) {
     line += ` · ${period}`;
     if (key.budget_reset_at) {
-      line += ` · resets ${formatGatewayDateTime(key.budget_reset_at)}`;
+      line += ` · resets ${formatGatewayDateTime(key.budget_reset_at, timeZone)}`;
     }
   }
   return line;
@@ -125,6 +132,7 @@ export default function GatewayKeysPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
   const { currency: billingCurrency } = useBillingCurrency();
+  const { businessTimezone } = useGatewayDateTime();
 
   const fetchKeys = useCallback(async () => {
     try {
@@ -503,7 +511,7 @@ export default function GatewayKeysPage() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {keys.map((key) => {
-              const budgetLine = formatUserBudgetOneLine(key, billingCurrency, tCommon('noLimit'));
+              const budgetLine = formatUserBudgetOneLine(key, billingCurrency, businessTimezone, tCommon('noLimit'));
               const meta = summarizeMetadata(key.metadata);
               return (
               <tr
@@ -566,7 +574,7 @@ export default function GatewayKeysPage() {
                   )}
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
-                  {formatKeyTimestamp(key.created_at)}
+                  {formatKeyTimestamp(key.created_at, businessTimezone)}
                 </td>
               </tr>
             );
@@ -871,15 +879,16 @@ export default function GatewayKeysPage() {
                     <ReadonlyRow label="Budget Period / Reset">
                       {formatBudgetPeriodResetLabel(
                         selectedKey.budget_period,
-                        selectedKey.budget_reset_at
+                        selectedKey.budget_reset_at,
+                        businessTimezone
                       )}
                     </ReadonlyRow>
                   </div>
                   <ReadonlyRow label="Created">
-                    {formatKeyTimestamp(selectedKey.created_at)}
+                    {formatKeyTimestamp(selectedKey.created_at, businessTimezone)}
                   </ReadonlyRow>
                   <ReadonlyRow label="Updated">
-                    {formatKeyTimestamp(selectedKey.updated_at)}
+                    {formatKeyTimestamp(selectedKey.updated_at, businessTimezone)}
                   </ReadonlyRow>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">

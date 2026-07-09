@@ -2,6 +2,7 @@
  * Analytics 页共用：时间窗 UTC 字符串、成本汇总、表格排序。
  */
 import type { AnalyticsRowCosts } from '@/lib/types';
+import { utcApiToZonedInput, zonedInputToUtcApi } from '@/lib/business-timezone-client';
 
 /** 快捷时间窗（Admin UI 默认按钮：1h / 1d / 7d / 14d / 30d；`90d` 仅 API 兼容）。 */
 export type GatewayTimeRangePreset = '1h' | '1d' | '7d' | '14d' | '30d' | '90d' | 'custom';
@@ -85,11 +86,12 @@ export function createRangeValue(preset: Exclude<GatewayTimeRangePreset, 'custom
 	return { preset, start_date, end_date };
 }
 
-/** KPI 副标题等：预设用翻译标签，自定义区间展示 UTC 起止。 */
+/** KPI 副标题等：预设用翻译标签，自定义区间展示业务时区起止。 */
 export function formatGatewayRangeSummary(
 	value: GatewayTimeRangeValue,
 	presetLabel: (preset: Exclude<GatewayTimeRangePreset, 'custom'>) => string,
-	customLabel: string
+	customLabel: string,
+	timeZone?: string
 ): string {
 	if (value.preset !== 'custom') {
 		return presetLabel(value.preset);
@@ -97,19 +99,28 @@ export function formatGatewayRangeSummary(
 	const start = value.start_date?.trim();
 	const end = value.end_date?.trim();
 	if (!start || !end) return customLabel;
+	if (timeZone) {
+		const startLocal = utcApiToZonedInput(start, timeZone);
+		const endLocal = utcApiToZonedInput(end, timeZone);
+		if (startLocal && endLocal) {
+			return `${startLocal.slice(0, 16)} → ${endLocal.slice(0, 16)}`;
+		}
+	}
 	return `${start.slice(0, 16)} → ${end.slice(0, 16)}`;
 }
 
-/** UTC API string（`YYYY-MM-DD HH:MM:SS` 或 ISO 8601 `...Z`）→ value for `datetime-local` (browser local). */
-export function apiUtcToDatetimeLocal(api: string): string {
+/** @deprecated 使用 `utcApiToZonedInput(api, businessTimeZone)`。 */
+export function apiUtcToDatetimeLocal(api: string, timeZone?: string): string {
+	if (timeZone) return utcApiToZonedInput(api, timeZone);
 	const d = new Date(api.includes('T') ? api : `${api.replace(' ', 'T')}Z`);
 	if (isNaN(d.getTime())) return '';
 	const pad = (n: number) => String(n).padStart(2, '0');
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** `datetime-local` (local) → UTC API string for `start_date` / `end_date`. */
-export function datetimeLocalToApiUtc(localStr: string): string {
+/** @deprecated 使用 `zonedInputToUtcApi(localStr, businessTimeZone)`。 */
+export function datetimeLocalToApiUtc(localStr: string, timeZone?: string): string {
+	if (timeZone) return zonedInputToUtcApi(localStr, timeZone);
 	const d = new Date(localStr);
 	if (isNaN(d.getTime())) return '';
 	return d.toISOString().slice(0, 19).replace('T', ' ');
@@ -140,11 +151,16 @@ export function normalizeCustomApiRange(
 export function computeAnalyticsDateRange(
 	range: AnalyticsRangePreset,
 	customStartLocal: string,
-	customEndLocal: string
+	customEndLocal: string,
+	timeZone?: string
 ): { start_date: string; end_date: string } | null {
 	if (range === 'custom') {
-		const s = datetimeLocalToApiUtc(customStartLocal);
-		const e = datetimeLocalToApiUtc(customEndLocal);
+		const s = timeZone
+			? zonedInputToUtcApi(customStartLocal, timeZone)
+			: datetimeLocalToApiUtc(customStartLocal);
+		const e = timeZone
+			? zonedInputToUtcApi(customEndLocal, timeZone)
+			: datetimeLocalToApiUtc(customEndLocal);
 		if (!s || !e) return null;
 		return normalizeCustomApiRange(s, e);
 	}

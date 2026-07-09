@@ -154,7 +154,7 @@
 		"version": "v{version}"
 	},
 	"timeRange": {
-		"label": "时间范围（UTC）",
+		"label": "时间范围（{timezone}）",
 		"start": "开始",
 		"end": "结束",
 		"custom": "自定义",

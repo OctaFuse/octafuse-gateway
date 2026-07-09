@@ -9,10 +9,10 @@ import { useTranslations } from 'next-intl';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
 import { createRangeValue, type GatewayTimeRangeValue } from '@/lib/analytics-range';
-import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { ProviderReliabilityRow, ModelProviderRow, GatewayRequestLog } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 type ReliabilityPayload = {
   providers: ProviderReliabilityRow[];
@@ -30,6 +30,7 @@ export default function ReliabilityPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
   const { currency: billingCurrency } = useBillingCurrency();
+  const { formatDateTime } = useGatewayDateTime();
 
   useEffect(() => {
     fetchData();
@@ -63,7 +64,7 @@ export default function ReliabilityPage() {
     return map;
   }, [modelProviders]);
 
-  const formatDate = (s: string) => formatGatewayDateTime(s);
+  const formatDate = (s: string) => formatDateTime(s);
 
   return (
     <div className="p-8">

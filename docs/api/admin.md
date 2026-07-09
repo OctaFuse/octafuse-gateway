@@ -21,7 +21,10 @@ Authorization: Bearer sk-admin-xxx
 
 - **存储**：数据库内部统一使用 UTC（D1 `datetime('now')` / ISO UTC）。
 - **返回**：API 所有时间字段统一返回 **ISO 8601 UTC（带 `Z`）**。
-- **业务日界**：按 `system_config.BUSINESS_TIMEZONE` 计算（默认 `UTC`），用于 Admin 仪表盘等“今日”统计。
+- **查询**：`start_date` / `end_date` 等过滤参数为 **UTC** `YYYY-MM-DD HH:mm:ss`（与 DB `created_at` 直接比较）。
+- **Admin 显示与自定义时间窗输入**：按 `system_config.BUSINESS_TIMEZONE`（默认 `UTC`；如 `Asia/Shanghai`）墙钟展示与输入，Apply 后转为 UTC 查询；与浏览器本地时区无关。
+- **业务日界**：同样按 `BUSINESS_TIMEZONE` 计算「今日」边界，用于 Admin 仪表盘等 KPI。
+- **读取业务时区**：`GET /admin/business-timezone` → `{ "success": true, "data": { "business_timezone": "Asia/Shanghai" } }`（需 `MASTER_KEY` 或 Admin 会话）。
 - **计费币种**：`system_config.BILLING_CURRENCY` 仅允许 **`USD`** 或 **`CNY`**（各库的 **`0002_seed.sql`** 默认 `USD`），与 `pricing_profile` / Key 预算数值单位一致；`GET /v1/me` 返回 `billing_currency`（见用户接口文档）。**`PUT /admin/config`** 写入该键时由服务端白名单校验。
 - **Proxy 错误告警（可选）**：`ALERT_WEBHOOK_WECOM_URL`、`ALERT_WEBHOOK_FEISHU_URL` 存**完整**群机器人 Webhook URL（含 query `key` / hook id）。**未配置或值为空则不告警**。Proxy 在 **`api_key_request_logs.status = error`** 且用量写入成功后，分别向已配置的 URL 发送一条**按错误类型归类**的文本摘要（企业微信 `msgtype=text`、飞书 `msg_type=text`）：首行含类别与优先级（如上游超时、供应商鉴权、限流、5xx、敏感内容拦截、请求/模型错误、路由配置），并分组展示影响用户、路由/协议、供应商 key、原始 `error_message`、处理建议与发生时间（UTC+8）；发送失败只打日志，不影响请求。键名常量见 `@octafuse/core` 导出 `ALERT_WEBHOOK_WECOM_URL_KEY` / `ALERT_WEBHOOK_FEISHU_URL_KEY`。
 
@@ -66,6 +69,7 @@ Authorization: Bearer sk-admin-xxx
 | `/admin/routes` | GET（`?model_id=&provider_id=`）, POST, GET/PATCH/DELETE `/:id` | `model_routes` | Admin UI |
 | `/admin/stats` | GET | 多表聚合（含 `api_key_request_logs`、`api_keys` 等） | Admin UI |
 | `/admin/config` | GET, PUT | `system_config` | Admin UI |
+| `/admin/business-timezone` | GET | `system_config.BUSINESS_TIMEZONE` | Admin UI（Provider 首屏加载） |
 | `/admin/request-logs` | GET | `api_key_request_logs`（**GlobalLogs**，多条件筛选分页） | Admin UI |
 | `/admin/budget-audit-logs` | GET | **`user_audit_logs`**（左联 **`users`** 取 `email` 等，多维筛选分页） | Admin UI |
 | `/admin/analytics/models` | GET | `api_key_request_logs`，可选联 `model_tags` | Admin UI |
@@ -660,6 +664,16 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
 |-------|------|
 | `ALERT_WEBHOOK_WECOM_URL` | 企业微信群机器人 Webhook 完整 URL；非空则在该渠道告警。清空 `value` 可关闭。 |
 | `ALERT_WEBHOOK_FEISHU_URL` | 飞书自定义机器人 Webhook 完整 URL；非空则在该渠道告警。清空 `value` 可关闭。 |
+
+### `GET /admin/business-timezone`
+
+返回当前 Admin 业务时区（IANA 名称，非法或未配置时服务端回落 `UTC`）：
+
+```json
+{ "success": true, "data": { "business_timezone": "Asia/Shanghai" } }
+```
+
+Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示与时间范围自定义输入。
 
 ### `GET /admin/request-logs`
 
