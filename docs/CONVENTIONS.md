@@ -2,7 +2,7 @@
 
 本文是仓库内**文档分层**与**示例脱敏**的单一参考。所有 PR 在改动 `README*.md`、`docs/**`、`examples/**`、`docker/**` 中的文档/示例时，应以本文为准。
 
-> 目标：官网品牌与面向读者的聚合内容由独立仓库 `octafuse-website` 承载；本仓继续聚焦与代码/迁移/API 强绑定的契约文档，并在此识别可外移的 L3 内容边界；同时杜绝把任何运行环境的真实密钥、Webhook、连接串写进 Git。
+> 目标：本仓作为 Gateway 技术文档的单一事实来源；官网仓库 `octafuse-website` 负责品牌、导航、SEO、多语言呈现与面向使用者的轻量摘要，并通过 `sync/contract.json` 生成技术参考入口；同时杜绝把任何运行环境的真实密钥、Webhook、连接串写进 Git。
 
 ## 1. 文档分层规则
 
@@ -71,6 +71,24 @@
 | `examples/` | L1 | 与当前 `/v1/*`、`/api/admin/*` 表面一致 |
 | `docker/examples/*.example` 与 `docker/deploy/.env.example` | L2 | 占位模板，**不**含真实值 |
 | README 中的“品牌段落 / 推广链接” | L3（候选） | 后续可拆到独立站 |
+
+## 1.1 与官网仓库的关系
+
+`octafuse-gateway` 与 `octafuse-website` 的边界如下：
+
+| 内容 | 维护位置 |
+|------|----------|
+| API、部署、迁移、架构、计费、审计、时间语义、本地开发 | 本仓 `docs/**` |
+| 官网首页、品牌表达、SEO、截图包装、多语言路由 | `octafuse-website` |
+| 面向使用者的轻量任务摘要 | 两边可有入口，但以本仓 `docs/users/**` 为技术事实来源 |
+| 官网技术参考页 | `octafuse-website/sync/contract.json` 生成，只列本仓白名单链接 |
+
+规则：
+
+- 修改 Gateway 技术行为时，优先在同一个 PR 中更新本仓文档。
+- 官网不要复制 API 字段表、部署 runbook 或迁移细节；只保留摘要和指向本仓的入口。
+- 新增需要在官网展示的技术文档时，先在本仓落文档，再由官网仓库更新 `sync/contract.json`。
+- 若官网摘要与本仓文档冲突，以本仓文档为准。
 
 ## 2. 敏感信息规范
 
