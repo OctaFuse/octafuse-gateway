@@ -132,7 +132,7 @@
 - [ ] 是否出现 §2.2 列出的任一禁止值？若有，**Block** 并要求轮换 + 重写历史。
 - [ ] 是否扩散了品牌/客户化叙述（L3）到 L1/L2 文档中？若有，建议下沉到独立站或本文 L3 候选清单。
 - [ ] 新增示例是否可独立复现（不依赖未公开的脚本/数据）？
-- [ ] 与 [`README.md`](../README.md)、[`README.zh-CN.md`](../README.zh-CN.md)、[`docs/README.md`](./README.md) 的入口与索引是否仍然一致？
+- [ ] 与 [`README.md`](../README.md)、[`README.en.md`](../README.en.md)、[`docs/README.md`](./README.md) 的入口与索引是否仍然一致？
 
 ## 4. 后续演进
 
