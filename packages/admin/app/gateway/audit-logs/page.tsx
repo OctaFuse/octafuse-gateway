@@ -20,7 +20,6 @@ import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/form
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
-import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 
 /** 已在 Spend / Budget plan 列展示的快照字段，不在「User change detail」重复 */
 const OMIT_AUDIT_LOG_SNAPSHOT_FIELDS = [
@@ -141,83 +140,8 @@ function auditDisplayExtras(item: GatewayApiKeyBudgetAuditLog) {
   };
 }
 
-function formatAuditMetadataValue(value: unknown): string {
-  if (value == null) return '—';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
-
 function isAuditObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function pushAuditChangeLine(lines: string[], label: string, value: unknown): boolean {
-  if (!isAuditObject(value) || !('from' in value) || !('to' in value)) return false;
-  lines.push(`${label}: ${formatAuditMetadataValue(value.from)} → ${formatAuditMetadataValue(value.to)}`);
-  return true;
-}
-
-function summarizeAuditMetadataChanges(raw: string | null | undefined): string[] {
-  const trimmed = raw?.trim();
-  if (!trimmed) return ['—'];
-
-  try {
-    const parsed = JSON.parse(trimmed) as unknown;
-    if (!isAuditObject(parsed)) {
-      return [formatAuditMetadataValue(parsed)];
-    }
-
-    const obj = parsed as Record<string, unknown>;
-    const lines: string[] = [];
-    const status = obj.status;
-    if (status && typeof status === 'object' && !Array.isArray(status)) {
-      const s = status as Record<string, unknown>;
-      lines.push(`status: ${formatAuditMetadataValue(s.from)} → ${formatAuditMetadataValue(s.to)}`);
-    }
-
-    const metadata = obj.metadata;
-    if (isAuditObject(metadata)) {
-      const operation = typeof metadata.operation === 'string' ? ` (${metadata.operation})` : '';
-      const changes = metadata.changes;
-      if (isAuditObject(changes)) {
-        Object.entries(changes).forEach(([key, value]) => {
-          if (!pushAuditChangeLine(lines, `metadata.${key}`, value)) {
-            lines.push(`metadata.${key}: ${formatAuditMetadataValue(value)}`);
-          }
-        });
-      } else if (!pushAuditChangeLine(lines, `metadata${operation}`, metadata)) {
-        lines.push(`metadata${operation}: ${formatAuditMetadataValue(metadata)}`);
-      }
-    }
-
-    const patchKeys = obj.metadata_patch_keys;
-    if (!metadata && Array.isArray(patchKeys) && patchKeys.length > 0) {
-      const keys = patchKeys.map((k) => formatAuditMetadataValue(k)).join(', ');
-      lines.push(`metadata: ${keys}`);
-    }
-
-    Object.entries(obj).forEach(([key, value]) => {
-      if (key === 'status' || key === 'metadata' || key === 'metadata_patch_keys') return;
-      lines.push(`${key}: ${formatAuditMetadataValue(value)}`);
-    });
-
-    return lines.length > 0 ? lines : [trimmed];
-  } catch {
-    return [trimmed.length > 160 ? `${trimmed.slice(0, 160)}…` : trimmed];
-  }
-}
-
-/** `change_payload` 非空时的补充展示（与其它列去重后） */
-function extraMetadataDisplayLines(raw: string | null | undefined): string[] {
-	if (raw == null || raw.trim() === '') return [];
-	return summarizeAuditMetadataChanges(raw)
-		.filter((l) => l !== '—')
-		.filter((l) => !shouldOmitChangePayloadDisplayLine(l));
 }
 
 /** 与网关金额精度一致，用于判断 budget_max / budget_base 是否变化 */
@@ -247,6 +171,165 @@ const budgetPlanHighlight = {
   after: 'rounded px-0.5 bg-sky-50 text-sky-900',
 } as const;
 
+type AuditDiffRow = {
+  group: 'snapshot' | 'payload';
+  field: string;
+  before: string;
+  after: string;
+};
+
+function parseAuditJsonObject(raw: string | null | undefined): Record<string, unknown> | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (isAuditObject(parsed)) return parsed;
+  } catch {
+    /* keep null */
+  }
+  return null;
+}
+
+function parseAuditChangedFields(raw: string | null | undefined): string[] | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter((value): value is string => typeof value === 'string' && value.length > 0);
+  } catch {
+    return null;
+  }
+}
+
+function formatAuditDiffValue(value: unknown): string {
+  if (value == null || value === '') return '—';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function pushAuditDiffRow(rows: AuditDiffRow[], group: AuditDiffRow['group'], field: string, before: unknown, after: unknown) {
+  const beforeText = formatAuditDiffValue(before);
+  const afterText = formatAuditDiffValue(after);
+  if (beforeText === afterText) return;
+  rows.push({ group, field, before: beforeText, after: afterText });
+}
+
+function pushNestedAuditDiffRows(
+  rows: AuditDiffRow[],
+  group: AuditDiffRow['group'],
+  field: string,
+  before: unknown,
+  after: unknown,
+  depth = 0
+) {
+  if ((isAuditObject(before) || isAuditObject(after)) && depth < 4) {
+    const beforeObject = isAuditObject(before) ? before : {};
+    const afterObject = isAuditObject(after) ? after : {};
+    const keys = Array.from(new Set([...Object.keys(beforeObject), ...Object.keys(afterObject)]));
+    keys.forEach((key) => {
+      pushNestedAuditDiffRows(
+        rows,
+        group,
+        `${field}.${key}`,
+        beforeObject[key],
+        afterObject[key],
+        depth + 1
+      );
+    });
+    return;
+  }
+  pushAuditDiffRow(rows, group, field, before, after);
+}
+
+function appendSnapshotDiffRows(rows: AuditDiffRow[], item: GatewayApiKeyBudgetAuditLog) {
+  const before = parseAuditJsonObject(item.before_user_snapshot ?? null);
+  const after = parseAuditJsonObject(item.after_user_snapshot ?? null);
+  if (!before && !after) return;
+
+  const fields = parseAuditChangedFields(item.changed_fields ?? null);
+  const keys =
+    fields && fields.length > 0
+      ? fields
+      : Array.from(new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})])).filter((key) => key !== 'id');
+  const omitted = new Set<string>(OMIT_AUDIT_LOG_SNAPSHOT_FIELDS);
+  keys.forEach((key) => {
+    if (omitted.has(key)) return;
+    pushNestedAuditDiffRows(rows, 'snapshot', key, before?.[key], after?.[key]);
+  });
+}
+
+function appendPayloadDiffRows(rows: AuditDiffRow[], raw: string | null | undefined) {
+  const payload = parseAuditJsonObject(raw);
+  if (!payload) return;
+
+  const handled = new Set<string>();
+  const status = payload.status;
+  if (isAuditObject(status) && ('from' in status || 'to' in status)) {
+    pushAuditDiffRow(rows, 'payload', 'status', status.from, status.to);
+    handled.add('status');
+  }
+
+  const metadata = payload.metadata;
+  if (isAuditObject(metadata)) {
+    handled.add('metadata');
+    const changes = metadata.changes;
+    if (isAuditObject(changes)) {
+      Object.entries(changes).forEach(([key, value]) => {
+        if (isAuditObject(value) && ('from' in value || 'to' in value)) {
+          pushAuditDiffRow(rows, 'payload', `metadata.${key}`, value.from, value.to);
+        } else {
+          pushAuditDiffRow(rows, 'payload', `metadata.${key}`, '—', value);
+        }
+      });
+    } else if ('from' in metadata || 'to' in metadata) {
+      pushAuditDiffRow(rows, 'payload', 'metadata', metadata.from, metadata.to);
+    } else {
+      Object.entries(metadata).forEach(([key, value]) => {
+        if (key === 'operation') return;
+        pushAuditDiffRow(rows, 'payload', `metadata.${key}`, '—', value);
+      });
+    }
+  }
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (handled.has(key)) return;
+    if (key.startsWith('before_') || key.startsWith('after_')) return;
+    if (key === 'metadata_patch_keys' || shouldOmitChangePayloadDisplayLine(`${key}:`)) return;
+    if (isAuditObject(value) && ('from' in value || 'to' in value)) {
+      pushAuditDiffRow(rows, 'payload', key, value.from, value.to);
+    }
+  });
+
+  Object.keys(payload)
+    .filter((key) => key.startsWith('before_'))
+    .forEach((beforeKey) => {
+      const suffix = beforeKey.slice('before_'.length);
+      const afterKey = `after_${suffix}`;
+      if (!(afterKey in payload)) return;
+      if (shouldOmitChangePayloadDisplayLine(beforeKey) || shouldOmitChangePayloadDisplayLine(afterKey)) return;
+      pushAuditDiffRow(rows, 'payload', suffix, payload[beforeKey], payload[afterKey]);
+    });
+}
+
+function auditDiffRows(item: GatewayApiKeyBudgetAuditLog): AuditDiffRow[] {
+  const rows: AuditDiffRow[] = [];
+  appendSnapshotDiffRows(rows, item);
+  appendPayloadDiffRows(rows, item.change_payload);
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const key = `${row.field}:${row.before}:${row.after}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export default function GatewayAuditLogsPage() {
   const t = useTranslations('auditLogs');
   const tCommon = useTranslations('common');
@@ -267,6 +350,7 @@ export default function GatewayAuditLogsPage() {
   const [filterSource, setFilterSource] = useState('');
   const [filterCorrelationId, setFilterCorrelationId] = useState('');
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
+  const [detailLog, setDetailLog] = useState<GatewayApiKeyBudgetAuditLog | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -407,6 +491,7 @@ export default function GatewayAuditLogsPage() {
     });
     setPage(1);
   };
+  const detailRows = detailLog ? auditDiffRows(detailLog) : [];
 
   return (
     <div className="p-8">
@@ -633,13 +718,7 @@ export default function GatewayAuditLogsPage() {
                       ex.after_budget_reset_at
                     );
                     const reasonDisplay = auditReasonOneLine(ex.reason_code, ex.reason_text);
-                    const snapLines = summarizeUserSnapshotDiffLines({
-                      before_user_snapshot: item.before_user_snapshot ?? null,
-                      after_user_snapshot: item.after_user_snapshot ?? null,
-                      changed_fields: item.changed_fields ?? null,
-                      omitSnapshotFields: OMIT_AUDIT_LOG_SNAPSHOT_FIELDS,
-                    });
-                    const metaExtraLines = extraMetadataDisplayLines(item.change_payload);
+                    const diffRows = auditDiffRows(item);
                     return (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 align-top">
@@ -793,39 +872,32 @@ export default function GatewayAuditLogsPage() {
                       </td>
                       <td className="px-3 py-2 text-gray-600 min-w-[14rem] max-w-lg align-top">
                         <div className="space-y-1 text-xs leading-snug">
-                          {snapLines.length > 0 ? (
+                          {diffRows.length > 0 ? (
                             <>
-                              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                                {t('labels.userSnapshot')}
-                              </div>
-                              {snapLines.slice(0, 6).map((line, index) => (
-                                <div key={`${item.id}-snap-${index}`} className="line-clamp-2 font-mono" title={line}>
-                                  {line}
+                              {diffRows.slice(0, 3).map((row, index) => (
+                                <div key={`${item.id}-diff-${index}`} className="grid grid-cols-[minmax(5rem,8rem)_1fr] gap-x-2">
+                                  <span className="truncate font-mono text-gray-700" title={row.field}>
+                                    {row.field}
+                                  </span>
+                                  <span className="min-w-0 truncate" title={`${row.before} → ${row.after}`}>
+                                    <span className="text-amber-700">{row.before}</span>
+                                    <span className="px-1 text-gray-400">→</span>
+                                    <span className="text-sky-700">{row.after}</span>
+                                  </span>
                                 </div>
                               ))}
-                              {snapLines.length > 6 ? (
-                                <div className="text-gray-400">{t('labels.more', { count: snapLines.length - 6 })}</div>
-                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => setDetailLog(item)}
+                                className="mt-1 text-xs text-blue-600 hover:underline"
+                              >
+                                {t('labels.viewChangeDetail')}
+                                {diffRows.length > 3 ? ` · ${t('labels.more', { count: diffRows.length - 3 })}` : ''}
+                              </button>
                             </>
-                          ) : null}
-                          {metaExtraLines.length > 0 ? (
-                            <div className={snapLines.length > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
-                              <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                                {t('labels.extraJson')}
-                              </div>
-                              {metaExtraLines.slice(0, 5).map((line, index) => (
-                                <div key={`${item.id}-meta-${index}`} className="line-clamp-2" title={line}>
-                                  {line}
-                                </div>
-                              ))}
-                              {metaExtraLines.length > 5 ? (
-                                <div className="text-gray-400">{t('labels.more', { count: metaExtraLines.length - 5 })}</div>
-                              ) : null}
-                            </div>
-                          ) : null}
-                          {snapLines.length === 0 && metaExtraLines.length === 0 ? (
+                          ) : (
                             <span className="text-gray-400">—</span>
-                          ) : null}
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -837,6 +909,68 @@ export default function GatewayAuditLogsPage() {
           </div>
         </div>
       )}
+
+      {detailLog ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="audit-change-detail-title"
+        >
+          <div className="flex max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
+            <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-5 py-4">
+              <div className="min-w-0">
+                <h2 id="audit-change-detail-title" className="text-lg font-semibold text-gray-900">
+                  {t('labels.changeDetailTitle')}
+                </h2>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                  <span className="font-mono">{detailLog.event_type}</span>
+                  <span>{formatAuditTime(detailLog.created_at, businessTimezone)}</span>
+                  <span className="truncate">{detailLog.user_email ?? '—'}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailLog(null)}
+                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {tCommon('close')}
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-5">
+              {detailRows.length > 0 ? (
+                <div className="space-y-3">
+                  {detailRows.map((row, index) => (
+                    <div key={`${row.group}-${row.field}-${index}`} className="rounded-lg border border-gray-200 bg-white p-3">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                          {row.group === 'snapshot' ? t('labels.userSnapshot') : t('labels.extraJson')}
+                        </span>
+                        <span className="min-w-0 break-all font-mono text-sm font-medium text-gray-900">
+                          {row.field}
+                        </span>
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="min-w-0">
+                          <div className="mb-1 text-xs font-medium uppercase text-gray-500">{t('labels.originalValue')}</div>
+                          <pre className="max-w-full whitespace-pre-wrap break-all rounded bg-amber-50 px-3 py-2 font-mono text-xs leading-relaxed text-amber-900">{row.before}</pre>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="mb-1 text-xs font-medium uppercase text-gray-500">{t('labels.changedValue')}</div>
+                          <pre className="max-w-full whitespace-pre-wrap break-all rounded bg-sky-50 px-3 py-2 font-mono text-xs leading-relaxed text-sky-900">{row.after}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-sm text-gray-500">{t('labels.noChangeDetail')}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {totalPages > 1 && !isLoading && (
         <div className="mt-4 flex justify-center gap-2">

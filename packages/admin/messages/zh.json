@@ -941,6 +941,13 @@
 			"resetAt": "重置：",
 			"userSnapshot": "用户快照",
 			"extraJson": "额外信息（change_payload JSON）",
+			"viewChangeDetail": "查看详情",
+			"changeDetailTitle": "用户变更详情",
+			"group": "来源",
+			"field": "字段",
+			"originalValue": "原始值",
+			"changedValue": "变更后",
+			"noChangeDetail": "没有可展开的变更详情。",
 			"more": "+{count} 更多"
 		},
 		"userRemovedTitle": "用户已删除；请查看快照 / change_payload"

@@ -941,6 +941,13 @@
 			"resetAt": "reset_at:",
 			"userSnapshot": "User snapshot",
 			"extraJson": "Extra (change_payload JSON)",
+			"viewChangeDetail": "View details",
+			"changeDetailTitle": "User change detail",
+			"group": "Source",
+			"field": "Field",
+			"originalValue": "Original",
+			"changedValue": "Changed",
+			"noChangeDetail": "No expandable change detail.",
 			"more": "+{count} more"
 		},
 		"userRemovedTitle": "User removed; see snapshot / change_payload"
