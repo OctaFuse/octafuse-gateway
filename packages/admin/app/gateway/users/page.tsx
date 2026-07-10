@@ -238,17 +238,17 @@ export default function GatewayUsersPage() {
       <div className="mb-4 flex flex-wrap gap-4 justify-between">
         <div className="flex flex-wrap gap-4">
           <div>
-            <label className="block text-sm text-gray-500 mb-1">Email</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.email')}</label>
             <input
               type="text"
               value={filterEmail}
               onChange={(e) => { setFilterEmail(e.target.value); setPage(1); }}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm w-48"
-              placeholder="Contains…"
+              placeholder={t('filters.contains')}
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-500 mb-1">External system</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.externalSystem')}</label>
             <input
               type="text"
               value={filterExternalSystem}
@@ -257,7 +257,7 @@ export default function GatewayUsersPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-500 mb-1">External user ID</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.externalUserId')}</label>
             <input
               type="text"
               value={filterExternalUserId}
@@ -266,15 +266,15 @@ export default function GatewayUsersPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-500 mb-1">Status</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.status')}</label>
             <select
               value={filterStatus}
               onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
-              <option value="">All</option>
-              <option value="active">active</option>
-              <option value="disabled">disabled</option>
+              <option value="">{tCommon('all')}</option>
+              <option value="active">{tOptions('userStatus.active')}</option>
+              <option value="disabled">{tOptions('userStatus.disabled')}</option>
             </select>
           </div>
         </div>
@@ -290,22 +290,22 @@ export default function GatewayUsersPage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                Status · Email
+                {t('table.statusEmail')}
               </th>
-              <SortableTh label="Spent" columnKey="budget_spent" align="right" />
-              <SortableTh label="Max" columnKey="budget_max" align="right" />
-              <SortableTh label="Base" columnKey="budget_base" align="right" />
+              <SortableTh label={t('table.spent')} columnKey="budget_spent" align="right" />
+              <SortableTh label={t('table.max')} columnKey="budget_max" align="right" />
+              <SortableTh label={t('table.base')} columnKey="budget_base" align="right" />
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                Period
+                {t('table.period')}
               </th>
-              <SortableTh label="Reset at" columnKey="budget_reset_at" />
+              <SortableTh label={t('table.resetAt')} columnKey="budget_reset_at" />
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                Keys
+                {t('table.keys')}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap max-w-xs">
-                Metadata
+                {t('table.metadata')}
               </th>
-              <SortableTh label="Created" columnKey="created_at" />
+              <SortableTh label={t('table.created')} columnKey="created_at" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -409,7 +409,7 @@ export default function GatewayUsersPage() {
             {tCommon('previous')}
           </button>
           <span className="px-4 py-2 text-sm text-gray-600">
-            Page {page} of {totalPages}
+            {tCommon('pageOf', { page, totalPages })}
           </span>
           <button
             type="button"
@@ -432,11 +432,11 @@ export default function GatewayUsersPage() {
             <div className="p-6 space-y-5">
               {saveError && <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{saveError}</div>}
               <p className="text-sm text-gray-600">
-                Creates a new gateway user. <strong>Email</strong> is required; all other fields are optional. To link this user to an account in another system, use the <strong>External identity</strong> section at the bottom.
+                {t('help.createUser')}
               </p>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+                  {t('fields.email')} <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -452,7 +452,7 @@ export default function GatewayUsersPage() {
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Budget max <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                    {t('fields.budgetMax')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                   </label>
                   <input
                     type="number"
@@ -460,15 +460,15 @@ export default function GatewayUsersPage() {
                     value={createForm.budget_max}
                     onChange={(e) => setCreateForm({ ...createForm, budget_max: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder="Empty = unlimited"
+                    placeholder={tCommon('noLimit')}
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Maximum spendable amount in the current cycle. Leave empty for unlimited.
+                    {t('help.budgetMax')}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Budget base <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                    {t('fields.budgetBase')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                   </label>
                   <input
                     type="number"
@@ -476,34 +476,34 @@ export default function GatewayUsersPage() {
                     value={createForm.budget_base}
                     onChange={(e) => setCreateForm({ ...createForm, budget_base: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder="Optional"
+                    placeholder={tCommon('optional')}
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Reference amount used to reset Budget max when the budget cycle resets.
+                    {t('help.budgetBase')}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Budget period <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                    {t('fields.budgetPeriod')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                   </label>
                   <select
                     value={createForm.budget_period}
                     onChange={(e) => setCreateForm({ ...createForm, budget_period: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                   >
-                    <option value="none">none</option>
-                    <option value="daily">daily</option>
-                    <option value="weekly">weekly</option>
-                    <option value="monthly">monthly</option>
+                    <option value="none">{tOptions('budgetPeriod.none')}</option>
+                    <option value="daily">{tOptions('budgetPeriod.daily')}</option>
+                    <option value="weekly">{tOptions('budgetPeriod.weekly')}</option>
+                    <option value="monthly">{tOptions('budgetPeriod.monthly')}</option>
                   </select>
                   <p className="mt-1 text-xs text-gray-500">
-                    Reset cycle for spent / Budget max. <span className="font-mono">none</span> disables auto-reset.
+                    {t('help.budgetPeriod')}
                   </p>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Metadata (JSON object) <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  {t('fields.metadataJsonObject')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                 </label>
                 <textarea
                   value={createForm.metadata}
@@ -516,34 +516,34 @@ export default function GatewayUsersPage() {
 
               <div className="pt-4 border-t border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-900">
-                  External identity <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  {t('externalIdentity.title')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                 </h3>
                 <p className="mt-1 text-xs text-gray-500">
-                  Use these fields to link this user to an account in another system (e.g. your own SaaS, an OAuth provider). Leave both empty for an internal Gateway-only user. When both are set, creation is idempotent on the (external system, external user ID) pair.
+                  {t('externalIdentity.createHint')}
                 </p>
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      External system <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                      {t('fields.externalSystem')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                     </label>
                     <input
                       type="text"
                       value={createForm.external_system}
                       onChange={(e) => setCreateForm({ ...createForm, external_system: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                      placeholder="e.g. my-app"
+                      placeholder="my-app"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      External user ID <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                      {t('fields.externalUserId')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                     </label>
                     <input
                       type="text"
                       value={createForm.external_user_id}
                       onChange={(e) => setCreateForm({ ...createForm, external_user_id: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                      placeholder="ID in the external system"
+                      placeholder={t('fields.externalUserId')}
                     />
                   </div>
                 </div>
@@ -581,12 +581,12 @@ export default function GatewayUsersPage() {
               </div>
               <div className="p-6 overflow-y-auto">
                 {m.empty ? (
-                  <div className="text-sm text-gray-500">No metadata.</div>
+                  <div className="text-sm text-gray-500">{t('metadata.none')}</div>
                 ) : (
                   <>
                     {!m.ok && (
                       <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                        Stored value is not valid JSON; showing raw string.
+                        {t('metadata.invalidRaw')}
                       </div>
                     )}
                     <pre className="whitespace-pre-wrap break-all rounded-md bg-gray-50 border border-gray-200 p-4 text-xs font-mono text-gray-800">

@@ -6,7 +6,7 @@
 	},
 	"metadata": {
 		"title": "Octafuse Gateway · 管理后台",
-		"description": "Octafuse Gateway 运营控制台：API Key、上游 Provider、模型、路由与分析。基于 AGPLv3 许可。"
+		"description": "Octafuse Gateway 运营控制台：API Key、上游供应商、模型、路由与分析。基于 AGPLv3 许可。"
 	},
 	"brand": {
 		"wordmark": "Octafuse",
@@ -91,7 +91,7 @@
 		"time": "时间",
 		"user": "用户",
 		"model": "模型",
-		"provider": "Provider",
+		"provider": "供应商",
 		"email": "Email",
 		"metadata": "Metadata",
 		"key": "Key",
@@ -136,17 +136,17 @@
 		},
 		"nav": {
 			"dashboard": "仪表盘",
-			"providers": "Providers",
+			"providers": "供应商",
 			"models": "模型",
 			"routes": "路由",
-			"playground": "Playground",
-			"simulator": "Simulator",
+			"playground": "调试台",
+			"simulator": "模拟器",
 			"users": "用户",
 			"apiKeys": "API Keys",
 			"requestLogs": "请求日志",
 			"auditLogs": "审计日志",
 			"modelUsage": "模型用量",
-			"providerUsage": "Provider 用量",
+			"providerUsage": "供应商用量",
 			"userUsage": "用户用量",
 			"reliability": "可靠性",
 			"config": "配置"
@@ -168,18 +168,18 @@
 	},
 	"options": {
 		"budgetPeriod": {
-			"none": "none",
-			"daily": "daily",
-			"weekly": "weekly",
-			"monthly": "monthly"
+			"none": "无",
+			"daily": "每日",
+			"weekly": "每周",
+			"monthly": "每月"
 		},
 		"userStatus": {
-			"active": "active",
-			"disabled": "disabled"
+			"active": "活跃",
+			"disabled": "已禁用"
 		},
 		"keyStatus": {
-			"active": "active",
-			"revoked": "revoked"
+			"active": "活跃",
+			"revoked": "已吊销"
 		},
 		"requestStatus": {
 			"success": "成功",
@@ -233,7 +233,7 @@
 		"viewErrorLogs": "查看错误日志",
 		"modelUsageLink": "模型用量 →",
 		"userUsageLink": "用户用量 →",
-		"providerUsageLink": "Provider 用量 →",
+		"providerUsageLink": "供应商用量 →",
 		"reliabilityLink": "可靠性 →",
 		"refresh": "刷新",
 		"apiKeys": "API 密钥",
@@ -278,11 +278,11 @@
 		"all": "全部",
 		"status": "状态",
 		"statusAria": "状态筛选",
-		"vendor": "Vendor",
-		"vendorAria": "Vendor 筛选",
-		"vendorBrowse": "按 Vendor 浏览",
-		"provider": "Provider",
-		"providerAria": "Provider 筛选",
+		"vendor": "模型厂商",
+		"vendorAria": "模型厂商筛选",
+		"vendorBrowse": "按模型厂商浏览",
+		"provider": "供应商",
+		"providerAria": "供应商筛选",
 		"routeGroup": "路由组",
 		"routeGroupAria": "路由组筛选",
 		"modelsCount": "{count} 个模型",
@@ -307,21 +307,21 @@
 		"endpointCopyTitle": "{label} — {url}（点击复制）"
 	},
 	"providers": {
-		"title": "Providers",
-		"subtitle": "{product} 使用的上游 AI 端点",
+		"title": "供应商",
+		"subtitle": "{product} 使用的上游 AI 供应商端点",
 		"importHint": "使用「导入」预填常见中国区端点；然后点击行并替换占位 API Key。",
-		"emptySearch": "没有匹配该名称的 Provider",
-		"empty": "未找到 Provider",
-		"searchPlaceholder": "搜索 Provider 名称",
-		"clearSearch": "清除 Provider 搜索",
+		"emptySearch": "没有匹配该名称的供应商",
+		"empty": "未找到供应商",
+		"searchPlaceholder": "搜索供应商名称",
+		"clearSearch": "清除供应商搜索",
 		"expandKeys": "展开 Keys",
 		"collapseKeys": "收起 Keys",
 		"loadingKeys": "加载 Keys 中…",
 		"summary": {
-			"pendingKeys": "{count} 个 Provider 仍使用导入占位 API Key。点击行编辑并填入真实上游 Key，再路由流量。",
-			"providers": "Providers",
+			"pendingKeys": "{count} 个供应商仍使用导入占位 API Key。点击行编辑并填入真实上游 Key，再路由流量。",
+			"providers": "供应商",
 			"activeKeys": "活跃 Keys",
-			"withoutKeys": "{count} 个 Provider 没有活跃的上游 Key。"
+			"withoutKeys": "{count} 个供应商没有活跃的上游 Key。"
 		},
 		"card": {
 			"pending": "待处理",
@@ -340,7 +340,7 @@
 		},
 		"import": {
 			"title": "从模板导入",
-			"subtitle": "预填 OpenAI 兼容的基础 URL（中国区优先目录）。每次导入会创建新的 Provider 行。",
+			"subtitle": "预填 OpenAI 兼容的基础 URL（中国区优先目录）。每次导入会创建新的供应商行。",
 			"searchPlaceholder": "搜索模板名称",
 			"clearSearch": "清除模板搜索",
 			"clear": "清除",
@@ -355,11 +355,11 @@
 			"importSelected": "导入选中项（{count}）"
 		},
 		"modal": {
-			"editTitle": "编辑 Provider",
-			"newTitle": "新建 Provider",
+			"editTitle": "编辑供应商",
+			"newTitle": "新建供应商",
 			"prefilledFrom": "已从 {id} 预填。设置新 ID 并在保存前检查各字段。",
 			"general": "基本信息",
-			"generalHint": "显示名称及可选自定义 ID（仅新建 Provider）。",
+			"generalHint": "显示名称及可选自定义 ID（仅新建供应商）。",
 			"id": "ID",
 			"idPlaceholder": "可选：自定义 ID（留空则自动生成）",
 			"idHint": "留空将自动生成 UUID",
@@ -377,11 +377,11 @@
 			"description": "描述",
 			"descriptionHint": "仅供内部参考；不会发送到上游。",
 			"descriptionPlaceholder": "可选的内部描述",
-			"deleteProvider": "删除 Provider"
+			"deleteProvider": "删除供应商"
 		},
 		"keys": {
-			"editTitle": "编辑 Provider Key",
-			"newTitle": "新建 Provider Key",
+			"editTitle": "编辑供应商 Key",
+			"newTitle": "新建供应商 Key",
 			"label": "Label",
 			"labelMaxLength": "最多 {max} 个字符",
 			"replaceApiKey": "替换 API Key",
@@ -408,16 +408,17 @@
 		"createTitleVendor": "在 {vendor} 下新建模型",
 		"catalog": {
 			"title": "模型目录",
+			"allVendors": "全部模型厂商",
 			"vendorModels": "{vendor} · {count} 个模型",
 			"vendorModelsPlural": "{vendor} · {count} 个模型",
 			"noModelsYet": "暂无模型"
 		},
 		"filter": {
 			"title": "筛选",
-			"browseByVendor": "按 Vendor 浏览",
+			"browseByVendor": "按模型厂商浏览",
 			"modelsCount": "{count} 个模型",
 			"showing": "· 显示 {count} 个",
-			"vendorAria": "Vendor 筛选"
+			"vendorAria": "模型厂商筛选"
 		},
 		"import": {
 			"title": "从静态目录导入",
@@ -434,7 +435,7 @@
 			"selectColumn": "选择",
 			"modelId": "Model ID",
 			"displayName": "显示名称",
-			"vendor": "Vendor",
+			"vendor": "模型厂商",
 			"context": "Context",
 			"maxTokens": "Max Tokens",
 			"pricing": "定价",
@@ -450,7 +451,7 @@
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "显示名称",
 			"displayNamePlaceholder": "GPT-4o",
-			"vendor": "Vendor",
+			"vendor": "模型厂商",
 			"released": "发布日期",
 			"contextWindow": "上下文窗口",
 			"contextWindowPlaceholder": "128000",
@@ -491,7 +492,7 @@
 	},
 	"routes": {
 		"title": "模型路由",
-		"subtitle": "配置模型到 Provider 的路由",
+		"subtitle": "配置模型到供应商的路由",
 		"empty": "未找到模型或路由",
 		"emptyFilteredPrefix": "请尝试调整筛选或",
 		"workspace": {
@@ -501,7 +502,7 @@
 			"newRoute": "新建路由"
 		},
 		"vendor": {
-			"label": "Vendor",
+			"label": "模型厂商",
 			"modelCount": "{count} 个模型",
 			"modelCountPlural": "{count} 个模型"
 		},
@@ -537,13 +538,13 @@
 			"scheduleAria": "每日时段：{windows}",
 			"chargedTooltipNotSet": "计费系数：未设置 · 相对目录价格的客户计费乘数",
 			"chargedTooltip": "计费系数：{value} · 相对目录价格的客户计费乘数",
-			"meteredTooltipNotSet": "计量系数：未设置 · 相对目录价格的 Provider 成本乘数",
-			"meteredTooltip": "计量系数：{value} · 相对目录价格的 Provider 成本乘数"
+			"meteredTooltipNotSet": "计量系数：未设置 · 相对目录价格的供应商成本乘数",
+			"meteredTooltip": "计量系数：{value} · 相对目录价格的供应商成本乘数"
 		},
 		"sticky": {
 			"title": "粘性 Key 路由",
 			"enable": "启用粘性 Key 路由",
-			"enableHint": "将每个用户绑定到该协议 × 组的一个 Provider Key，以最大化上游 prompt-cache 命中率。绑定在空闲 TTL 后释放。",
+			"enableHint": "将每个用户绑定到该协议 × 组的一个供应商 Key，以最大化上游 prompt-cache 命中率。绑定在空闲 TTL 后释放。",
 			"idleTtl": "空闲 TTL（秒）",
 			"shortWait": "短等待（毫秒）",
 			"defaultPlaceholder": "默认 {value}",
@@ -556,12 +557,12 @@
 			"basicMapping": "基本映射与路由",
 			"modelRequired": "模型 *",
 			"selectModel": "选择模型",
-			"providerRequired": "Provider *",
-			"selectProvider": "选择 Provider",
+			"providerRequired": "供应商 *",
+			"selectProvider": "选择供应商",
 			"upstreamProtocol": "上游协议",
-			"protocolHintConfigured": "仅显示该 Provider 已配置基础 URL 的协议。",
-			"protocolHintSelectProvider": "请先选择 Provider。",
-			"providerModelName": "Provider 模型名称 *",
+			"protocolHintConfigured": "仅显示该供应商已配置基础 URL 的协议。",
+			"protocolHintSelectProvider": "请先选择供应商。",
+			"providerModelName": "供应商模型名称 *",
 			"providerModelPlaceholder": "例如 gpt-4o-2024-11-20",
 			"routeGroup": "路由组",
 			"routeGroupPlaceholder": "default",
@@ -607,22 +608,84 @@
 		}
 	},
 	"playground": {
-		"title": "Playground",
+		"title": "调试台",
 		"subtitle": "{product} — 为单条模型路由发送一次上游请求。无 API Key 计费、无 api_key_request_logs、无故障转移。",
 		"usageNote": "下方用量仅供展示。",
 		"routeSection": "路由",
 		"requestBody": "请求体",
-		"response": "响应"
+		"response": "响应",
+		"modelId": "模型 ID",
+		"provider": "供应商",
+		"protocol": "协议",
+		"routeGroup": "路由组",
+		"selectRoute": "选择路由",
+		"selectRouteOption": "— 请选择路由 —",
+		"routeCount": "共 {total} 条路由 · 筛选后 {filtered} 条",
+		"selected": "已选",
+		"selectedRoute": "已选路由",
+		"modelName": "模型名称",
+		"providerId": "供应商 ID",
+		"providerName": "供应商名称",
+		"upstreamProtocol": "上游协议",
+		"providerModel": "供应商模型",
+		"priorityStatus": "优先级 / 状态",
+		"chooseRouteHint": "选择上方路由后查看目录字段。",
+		"geminiAction": "Gemini 动作",
+		"sentBody": "实际发送的请求体",
+		"sentBodyHint": "（服务端合并 custom_params 并写入 model 等与上游一致的 JSON）",
+		"upstream": "上游：",
+		"usageDisplayOnly": "用量（仅展示）：",
+		"mergedContent": "拼接内容",
+		"thinking": "推理 / Thinking",
+		"body": "正文",
+		"rawPayload": "原始报文",
+		"emptyResponseHint": "点击发送后，这里会显示上游状态、响应头、响应体或流式输出。",
+		"placeholders": {
+			"contains": "包含…",
+			"idOrNameContains": "ID 或名称包含…",
+			"protocol": "openai、anthropic、…",
+			"routeGroup": "default、free、…"
+		}
 	},
 	"simulator": {
-		"title": "Simulator",
+		"title": "模拟器",
 		"subtitle": "{product} — 浏览器直接调用 Proxy，如同真实客户端：鉴权、路由组、故障转移、计费与 api_key_request_logs。",
 		"connection": "连接",
 		"proxyBaseUrl": "Proxy Base URL",
 		"requestBody": "请求体",
 		"response": "响应",
 		"usageNote": "下方用量仅供参考。API Key 保留在内存中，不会写入 localStorage。",
-		"localDevHint": "本地开发示例：http://127.0.0.1:8787 — 在上方输入你的 Base URL；避免误指向生产环境。"
+		"localDevHint": "本地开发示例：http://127.0.0.1:8787 — 在上方输入你的 Base URL；避免误指向生产环境。",
+		"protocol": "协议",
+		"geminiAction": "Gemini 动作",
+		"model": "模型",
+		"filter": "筛选",
+		"modelFilterPlaceholder": "ID / 显示名称 / 模型厂商包含…",
+		"selectModel": "— 请选择模型 —",
+		"modelCount": "共 {total} 个模型 · 筛选后 {filtered} 个 · 🟢 = 至少一条活跃路由 · 🔴 = 无",
+		"activeRoute": "活跃路由",
+		"routeGroupOptional": "路由组（可选）",
+		"defaultRouteGroup": "默认（无显式后缀）",
+		"routeGroupHint": "选项来自该模型的活跃路由（非空 route_group）。OpenAI/Anthropic 会将 body.model 设为 id 或 id:group；Gemini 在路径中使用相同片段。",
+		"routingModelString": "路由模型字符串",
+		"apiKey": "API Key",
+		"emailContains": "Email 包含",
+		"userId": "user_id",
+		"refreshList": "刷新列表",
+		"keysShowing": "显示 {shown} / {total} 个 Key",
+		"keysLimitHint": " — 缩小筛选条件可查看更多结果。",
+		"apiKeyRowId": "API Key（行 ID）",
+		"select": "— 请选择 —",
+		"loadingKey": "加载 Key 中…",
+		"loadedKey": "已加载：{prefix}…{suffix}",
+		"jsonBodySent": "发送到 Proxy 的 JSON 请求体",
+		"requestUrl": "请求 URL：",
+		"usagePreview": "用量（预览）：",
+		"mergedView": "合并视图",
+		"thinkingReasoning": "Thinking / reasoning",
+		"body": "正文",
+		"rawPayload": "原始报文",
+		"emptyResponseHint": "点击发送后，这里会显示状态、响应体或流式输出。"
 	},
 	"users": {
 		"title": "用户",
@@ -637,7 +700,93 @@
 		"newKey": "新建 Key",
 		"backUsers": "← 用户",
 		"emptyFiltered": "没有符合筛选条件的用户",
-		"totalUsers": "总计：{count} 个用户"
+		"totalUsers": "总计：{count} 个用户",
+		"invalidUserId": "无效的用户 ID",
+		"filters": {
+			"email": "Email",
+			"externalSystem": "外部系统",
+			"externalUserId": "外部用户 ID",
+			"status": "状态",
+			"contains": "包含…"
+		},
+		"table": {
+			"statusEmail": "状态 · Email",
+			"spent": "已消费",
+			"max": "上限",
+			"base": "基准",
+			"period": "周期",
+			"resetAt": "重置时间",
+			"keys": "Keys",
+			"metadata": "Metadata",
+			"created": "创建时间",
+			"updated": "更新时间",
+			"actions": "操作",
+			"group": "分组",
+			"event": "事件",
+			"sourceTrace": "来源 / Trace",
+			"deltaSpend": "消费变化",
+			"budgetMaxChange": "budget_max →",
+			"userSnapshotDelta": "用户快照变化"
+		},
+		"fields": {
+			"email": "Email",
+			"status": "状态",
+			"budgetMax": "额度上限",
+			"budgetBase": "额度基准",
+			"budgetSpent": "已消费额度",
+			"budgetPeriod": "额度周期",
+			"budgetResetAt": "额度重置时间（本地）",
+			"metadataJsonObject": "Metadata（JSON 对象）",
+			"externalSystem": "外部系统",
+			"externalUserId": "外部用户 ID",
+			"name": "名称",
+			"metadataJson": "Metadata JSON"
+		},
+		"help": {
+			"createUser": "创建新的 Gateway 用户。Email 为必填项；其他字段均可选。若要将此用户关联到其他系统中的账号，请使用底部的“外部身份”区域。",
+			"budgetMax": "当前周期内可消费的最大金额。留空表示无限制。",
+			"budgetBase": "额度周期重置时用于恢复额度上限的参考金额。",
+			"budgetSpent": "当前周期已消费金额。仅在需要人工调整时修改。",
+			"budgetPeriod": "已消费 / 额度上限的重置周期。none 表示不自动重置。",
+			"budgetResetAt": "下一次自动重置已消费金额（并从额度基准恢复额度上限）的时间。额度周期为 none 时会被忽略。",
+			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
+			"disabledUser": "禁用用户后，该用户无法使用任何 API Key 发起新请求。"
+		},
+		"externalIdentity": {
+			"title": "外部身份",
+			"hint": "使用这些字段将用户关联到其他系统中的账号（例如你的 SaaS 或 OAuth 提供方）。两个字段都留空表示仅 Gateway 内部用户；若填写则必须成对填写。",
+			"createHint": "使用这些字段将用户关联到其他系统中的账号（例如你的 SaaS 或 OAuth 提供方）。两个字段都留空表示仅 Gateway 内部用户。两个字段均填写时，创建操作会按（外部系统、外部用户 ID）保持幂等。"
+		},
+		"metadata": {
+			"none": "无 metadata。",
+			"invalidRaw": "存储值不是有效 JSON；正在显示原始字符串。"
+		},
+		"keysTable": {
+			"noKeys": "暂无 Key",
+			"details": "详情",
+			"activeClickToRevoke": "活跃：点击吊销",
+			"inactiveClickToActivate": "未启用：点击激活"
+		},
+		"detailSections": {
+			"recentRequestLogs": "近期请求日志",
+			"userAuditLogs": "用户审计日志",
+			"keyMetadata": "Key metadata",
+			"newApiKey": "新建 API Key",
+			"moreCount": "+{count} 更多"
+		},
+		"empty": {
+			"requestLogs": "暂无请求日志",
+			"auditLogs": "暂无审计日志"
+		},
+		"confirm": {
+			"deleteUser": "确定要永久删除该用户及其所有 Key 吗？审计历史会保留（用户链接会被清除）。",
+			"deleteKey": "确定要从数据库中永久删除该 Key 吗？"
+		},
+		"errors": {
+			"updateFailed": "更新失败",
+			"deleteFailed": "删除失败",
+			"createFailed": "创建失败"
+		}
 	},
 	"keysPage": {
 		"title": "API Keys",
@@ -647,13 +796,118 @@
 		"editTitle": "编辑 API Key",
 		"empty": "未找到 API Key",
 		"deleteKey": "删除 Key",
-		"statusOther": "其他"
+		"statusOther": "其他",
+		"totalKeys": "总计：{count} 个 Key",
+		"filters": {
+			"emailPlaceholder": "按 Email 筛选…",
+			"userIdPlaceholder": "按 Gateway 用户 UUID 筛选…"
+		},
+		"table": {
+			"status": "状态",
+			"user": "用户",
+			"key": "Key",
+			"name": "名称",
+			"userBudget": "用户额度",
+			"apiKeyMetadata": "API Key Metadata",
+			"created": "创建时间"
+		},
+		"create": {
+			"attachLegend": "如何关联 Key",
+			"existingUser": "已有 Gateway 用户",
+			"externalIdentity": "外部身份（匹配或创建用户）",
+			"afterCreation": "创建后",
+			"existingHelp1": "输入 Gateway User ID（用户列表中的 users.id）。如果已经在用户详情页，优先从用户详情页创建 Key。",
+			"existingHelp2": "每个用户可以拥有多个活跃 Key。额度保存在用户上，请在“用户”中编辑。",
+			"secretOnce": "完整的 sk-… 密钥只会在列表上方横幅中显示一次，请立即复制。",
+			"metadataHelp": "metadata 是 Key 上的可选 JSON（会由 GET /v1/me 返回）。",
+			"externalHelp1": "填写外部系统、外部用户 ID 和 Email。Gateway 会按这组外部身份匹配已有用户，或创建新用户（Email 存储在 users.email；首次创建必填）。若用户已存在，请求中的 Email 不会覆盖已存储 Email。",
+			"externalHelp2": "通过此路径创建的新用户初始额度为 0，直到你在“用户”中设置计划。"
+		},
+		"fields": {
+			"userId": "用户 ID",
+			"externalSystem": "外部系统",
+			"externalUserId": "外部用户 ID",
+			"userEmail": "用户 Email",
+			"keyName": "Key 名称",
+			"metadataJson": "Metadata（JSON）",
+			"name": "名称",
+			"secretKey": "Secret Key",
+			"status": "状态",
+			"userIdAuth": "用户 ID（鉴权）",
+			"budgetReadonly": "额度（只读）",
+			"budgetPeriodReset": "额度周期 / 重置",
+			"created": "创建时间",
+			"updated": "更新时间"
+		},
+		"placeholders": {
+			"userId": "例如 Users 页面中的 UUID",
+			"externalSystem": "上游产品 ID",
+			"externalUserId": "上游用户 ID",
+			"userEmail": "通过外部身份创建时会存储到 users.email",
+			"keyName": "后台 / 客户端中显示的标签",
+			"metadataJson": "可选，例如 {\"plan_id\":\"pro\"}",
+			"optionalLabel": "可选标签"
+		},
+		"help": {
+			"userEmail": "用于匹配或创建。外部身份对已存在时，不会覆盖已存储 Email。",
+			"metadata": "保存在 Key 上，并由 GET /v1/me 返回。留空表示无。",
+			"editMetadata": "保存在此 Key 上的完整 JSON；留空则清除。GET /v1/me 会显示该值。"
+		},
+		"links": {
+			"requestLogsForKey": "查看此 Key 的请求日志 →"
+		},
+		"copyKey": "复制 Key",
+		"copyId": "复制 ID",
+		"copySecret": "复制密钥",
+		"confirmDelete": "确定要永久删除该 API Key 吗？"
 	},
 	"requestLogs": {
 		"title": "请求日志",
 		"subtitle": "查看 Gateway 请求历史",
+		"filters": {
+			"protocol": "协议",
+			"routeGroup": "路由组",
+			"userEmail": "用户 Email",
+			"apiKeyId": "API Key ID",
+			"emailPlaceholder": "按 Email 筛选…",
+			"apiKeyPlaceholder": "按 API Key 筛选…"
+		},
+		"totalRequests": "总计：{count} 个请求",
+		"statusOther": "其他",
+		"headers": {
+			"statusTime": "状态 · 时间",
+			"user": "用户",
+			"model": "模型",
+			"route": "路由",
+			"tokens": "Token",
+			"cost": "成本（{currency}）",
+			"profit": "毛利（{currency}）"
+		},
+		"titles": {
+			"model": "Gateway 模型名称、协议与路由组",
+			"route": "供应商、上游模型与供应商 Key",
+			"cost": "标准价（第 1 行）、计费相对标准价倍率（第 2 行）、计量相对标准价倍率（第 3 行）",
+			"profit": "计费 − 计量（单请求）",
+			"rowDetail": "点击显示或隐藏定价审计、请求体与用量报文",
+			"inputOutputTokens": "输入 / 输出 Token",
+			"cacheTokens": "Cache read / cache write Token",
+			"standardCatalogPrice": "标准价（目录价）",
+			"chargedUserBudget": "计费（用户额度）",
+			"meteredSupplierCost": "计量（供应成本）",
+			"unknown": "未知"
+		},
+		"detail": {
+			"upstreamMessageId": "上游消息 ID",
+			"upstreamRequestId": "上游请求 ID",
+			"timing": "Timing",
+			"pricingAudit": "定价审计",
+			"entryRequestBody": "入口请求体（已脱敏）",
+			"upstreamRequestBody": "上游请求体（已脱敏）",
+			"upstreamUsageRaw": "上游用量（原始）"
+		},
 		"timing": {
 			"helpTitle": "Timing 指标",
+			"explain": "解释 Timing 指标",
 			"gateway": "Gateway",
 			"gatewayDesc": "鉴权、模型路由、额度与熔断检查，至向上游派发之前。",
 			"upstream": "Upstream",
@@ -678,7 +932,55 @@
 	"auditLogs": {
 		"title": "审计日志",
 		"subtitle": "用户审计追踪（user_audit_logs）— spent / budget_max 由前后用户快照推导；存在时会在下方追加 change_payload 中的遗留 / 额外 JSON（无独立 Metadata 列）。",
-		"empty": "没有符合筛选条件的审计日志。"
+		"empty": "没有符合筛选条件的审计日志。",
+		"filters": {
+			"eventType": "事件类型",
+			"actor": "操作者",
+			"userId": "用户 ID",
+			"userEmail": "用户 Email",
+			"apiKeyId": "API Key ID",
+			"reasonCode": "原因代码",
+			"source": "来源",
+			"correlationId": "Correlation ID",
+			"userIdPlaceholder": "Gateway users.id（UUID）",
+			"exactMatch": "精确匹配",
+			"apiKeyPlaceholder": "UUID",
+			"reasonPlaceholder": "例如 request_usage_charged_cost",
+			"sourcePlaceholder": "usage_charge、period_reset…",
+			"correlationPlaceholder": "request_log_id / 业务引用"
+		},
+		"totalRecords": "总计：{count} 条记录",
+		"table": {
+			"time": "时间",
+			"event": "事件",
+			"actor": "操作者",
+			"identity": "Email / 用户 / Key",
+			"spend": "消费",
+			"budgetPlan": "额度计划",
+			"userChangeDetail": "用户变更详情"
+		},
+		"labels": {
+			"req": "req",
+			"corr": "corr",
+			"type": "类型：",
+			"from": "来源：",
+			"reason": "原因：",
+			"kind": "类型：",
+			"principal": "主体：",
+			"user": "用户：",
+			"key": "Key：",
+			"before": "变更前",
+			"after": "变更后",
+			"delta": "差值",
+			"max": "上限：",
+			"base": "基准：",
+			"period": "周期：",
+			"resetAt": "重置：",
+			"userSnapshot": "用户快照",
+			"extraJson": "额外信息（change_payload JSON）",
+			"more": "+{count} 更多"
+		},
+		"userRemovedTitle": "用户已删除；请查看快照 / change_payload"
 	},
 	"analytics": {
 		"modelUsage": {
@@ -686,8 +988,8 @@
 			"subtitle": "按模型与路由组的用量与成本"
 		},
 		"providerUsage": {
-			"title": "Provider 用量",
-			"subtitle": "按上游 Provider 的用量与成本"
+			"title": "供应商用量",
+			"subtitle": "按上游供应商统计用量与成本"
 		},
 		"userUsage": {
 			"title": "用户用量",
@@ -695,9 +997,9 @@
 		},
 		"reliability": {
 			"title": "可靠性",
-			"subtitle": "Provider 与路由质量",
-			"providerQuality": "Provider 质量",
-			"perModelComparison": "按模型的 Provider 对比",
+			"subtitle": "供应商与路由质量",
+			"providerQuality": "供应商质量",
+			"perModelComparison": "按模型对比供应商",
 			"recentErrors": "近期错误",
 			"viewAllErrors": "查看全部错误日志"
 		},
@@ -725,19 +1027,19 @@
 			"tokensPerSecond": "Token/秒",
 			"failoverRate": "Failover 率",
 			"avgAttempts": "平均尝试",
-			"provider": "Provider",
-			"providerName": "Provider 名称",
+			"provider": "供应商",
+			"providerName": "供应商名称",
 			"userEmail": "用户（email）",
 			"models": "模型",
 			"lastActive": "最后活跃",
 			"budgetUsage": "额度使用",
 			"errors": "错误",
-			"modelProvider": "模型 / Provider"
+			"modelProvider": "模型 / 供应商"
 		},
-		"loadingProviderUsage": "加载 Provider 用量中...",
-		"noProviderUsageForModel": "所选时间范围内该模型无 Provider 用量。",
+		"loadingProviderUsage": "加载供应商用量中...",
+		"noProviderUsageForModel": "所选时间范围内该模型无供应商用量。",
 		"loadingModelUsage": "加载模型用量中...",
-		"noModelUsageForProvider": "所选时间范围内该 Provider 无模型用量。",
+		"noModelUsageForProvider": "所选时间范围内该供应商无模型用量。",
 		"noModelUsageForUser": "所选时间范围内该用户无模型用量。",
 		"noData": "无数据",
 		"rangeTotals": {
@@ -843,7 +1145,7 @@
 			"unitFooter": "单位：{unit} / 1M tokens。档位依据：input_tokens / request。"
 		},
 		"cost": "成本：{amount}",
-		"providerLabel": "Provider：{id}",
+		"providerLabel": "供应商：{id}",
 		"stdMetered": "Std {std} · Metered {metered}"
 	}
 }

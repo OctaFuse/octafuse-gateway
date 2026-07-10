@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { parseModelModalitiesJson } from '@octafuse/core/db/model-modalities';
 import {
@@ -35,6 +36,7 @@ import {
 } from './types';
 
 export function useModelsPageState() {
+	const tCatalog = useTranslations('models.catalog');
 	const searchParams = useSearchParams();
 	const [models, setModels] = useState<ModelListItem[]>([]);
 	const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
@@ -376,7 +378,7 @@ export function useModelsPageState() {
 
 	const isAllVendors = selectedVendor === ALL_VENDORS_KEY;
 	const activeVendorKey = isAllVendors ? (vendorKeys[0] ?? 'other') : selectedVendor || vendorKeys[0] || 'other';
-	const activeVendorTitle = isAllVendors ? 'All vendors' : getModelVendorLabel(activeVendorKey);
+	const activeVendorTitle = isAllVendors ? tCatalog('allVendors') : getModelVendorLabel(activeVendorKey);
 	const hasVendorFilter = !isAllVendors;
 
 	return {

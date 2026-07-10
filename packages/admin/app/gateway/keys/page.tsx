@@ -232,11 +232,11 @@ export default function GatewayKeysPage() {
         );
         fetchKeys();
       } else {
-        alert(data.message || 'Update failed');
+        alert(data.message || tCommon('updateFailed'));
       }
     } catch (error) {
       console.error('Status toggle error:', error);
-      alert('Update failed');
+      alert(tCommon('updateFailed'));
     } finally {
       setStatusTogglingId(null);
     }
@@ -283,11 +283,11 @@ export default function GatewayKeysPage() {
         setShowEditModal(false);
         fetchKeys();
       } else {
-        setSaveError(data.message || 'Update failed');
+        setSaveError(data.message || tCommon('updateFailed'));
       }
     } catch (error) {
       console.error('Edit error:', error);
-      setSaveError('Update failed, please try again');
+      setSaveError(tCommon('updateFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -297,7 +297,7 @@ export default function GatewayKeysPage() {
     if (!selectedKey) return;
     if (
       !window.confirm(
-        'Permanently delete this API key from the database? This cannot be undone. Request history rows may still reference the old key id.'
+        t('confirmDelete')
       )
     ) {
       return;
@@ -454,28 +454,28 @@ export default function GatewayKeysPage() {
       <div className="mb-4 flex justify-between items-center">
         <div className="flex gap-4">
           <div>
-            <label className="block text-sm text-gray-500 mb-1">Email</label>
+            <label className="block text-sm text-gray-500 mb-1">{tCommon('email')}</label>
             <input
               type="text"
               value={filterEmail}
               onChange={(e) => { setFilterEmail(e.target.value); setPage(1); }}
-              placeholder="Filter by email..."
+              placeholder={t('filters.emailPlaceholder')}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-500 mb-1">User ID</label>
+            <label className="block text-sm text-gray-500 mb-1">{t('fields.userId')}</label>
             <input
               type="text"
               value={filterUserId}
               onChange={(e) => { setFilterUserId(e.target.value); setPage(1); }}
-              placeholder="Filter by gateway user uuid..."
+              placeholder={t('filters.userIdPlaceholder')}
               className="px-3 py-2 border border-gray-300 rounded-md text-xs w-72 font-mono"
             />
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-          <span className="text-sm">Total: {total} keys</span>
+          <span className="text-sm">{t('totalKeys', { count: total })}</span>
           <span className="hidden sm:inline h-3 w-px bg-gray-200" aria-hidden />
           <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="inline-flex items-center gap-1.5">
@@ -500,13 +500,13 @@ export default function GatewayKeysPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">User</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Key</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Name</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">User Budget</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[10rem] max-w-xs">Api Key Metadata</th>
-              <SortableTh label="Created" columnKey="created_at" />
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.status')}</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.user')}</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.key')}</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.name')}</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.userBudget')}</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[10rem] max-w-xs">{t('table.apiKeyMetadata')}</th>
+              <SortableTh label={t('table.created')} columnKey="created_at" />
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -547,7 +547,7 @@ export default function GatewayKeysPage() {
                         copyToClipboard(key.key);
                       }}
                       className="text-gray-400 hover:text-gray-600"
-                      title="Copy key"
+                      title={t('copyKey')}
                     >
                       <ClipboardDocumentIcon className="h-4 w-4" />
                     </button>
@@ -601,7 +601,7 @@ export default function GatewayKeysPage() {
             {tCommon('previous')}
           </button>
           <span className="px-4 py-2 text-sm text-gray-600">
-            Page {page} of {totalPages}
+            {tCommon('pageOf', { page, totalPages })}
           </span>
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
@@ -628,7 +628,7 @@ export default function GatewayKeysPage() {
               )}
 
               <fieldset className="mb-5 space-y-2">
-                <legend className="text-sm font-medium text-gray-800">How to attach the key</legend>
+                <legend className="text-sm font-medium text-gray-800">{t('create.attachLegend')}</legend>
                 <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-6">
                   <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
                     <input
@@ -638,7 +638,7 @@ export default function GatewayKeysPage() {
                       checked={creationMode === 'existingUser'}
                       onChange={() => handleCreationModeChange('existingUser')}
                     />
-                    Existing gateway user
+                    {t('create.existingUser')}
                   </label>
                   <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
                     <input
@@ -648,53 +648,50 @@ export default function GatewayKeysPage() {
                       checked={creationMode === 'externalIdentity'}
                       onChange={() => handleCreationModeChange('externalIdentity')}
                     />
-                    External identity (match or create user)
+                    {t('create.externalIdentity')}
                   </label>
                 </div>
               </fieldset>
 
               <div className="mb-5 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                <p className="font-medium text-slate-800">After creation</p>
+                <p className="font-medium text-slate-800">{t('create.afterCreation')}</p>
                 {creationMode === 'existingUser' ? (
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
                     <li>
-                      Enter the gateway <strong>User ID</strong> (<code className="rounded bg-slate-200 px-1 text-xs">users.id</code> from the{' '}
+                      {t('create.existingHelp1')}{' '}
                       <Link href="/gateway/users" className="text-blue-700 underline">
                         Users
                       </Link>{' '}
-                      list). Prefer creating keys from a user&apos;s detail page when you are already there.
                     </li>
                     <li>
-                      Multiple <strong>active</strong> keys per user are allowed. Budget lives on the user — edit under{' '}
+                      {t('create.existingHelp2')}{' '}
                       <Link href="/gateway/users" className="text-blue-700 underline">
                         Users
                       </Link>
-                      .
                     </li>
                     <li>
-                      The full <code className="rounded bg-slate-200 px-1 text-xs">sk-…</code> secret is shown <strong>once</strong> in the banner above the list; copy it immediately.
+                      {t('create.secretOnce')}
                     </li>
                     <li>
-                      <code className="rounded bg-slate-200 px-1 text-xs">metadata</code> is optional JSON on the key (returned by <code className="rounded bg-slate-200 px-1 text-xs">GET /v1/me</code>).
+                      {t('create.metadataHelp')}
                     </li>
                   </ul>
                 ) : (
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
                     <li>
-                      Provide <strong>External system</strong>, <strong>External user ID</strong>, and <strong>Email</strong>. The gateway will match an existing user by that pair or create one (email stored on <code className="rounded bg-slate-200 px-1 text-xs">users.email</code>; required on first create). If the user already exists, the request email is not used to overwrite the stored email.
+                      {t('create.externalHelp1')}
                     </li>
                     <li>
-                      New users from this path start with <strong>zero</strong> budget until you set a plan on{' '}
+                      {t('create.externalHelp2')}{' '}
                       <Link href="/gateway/users" className="text-blue-700 underline">
                         Users
                       </Link>
-                      .
                     </li>
                     <li>
-                      The full <code className="rounded bg-slate-200 px-1 text-xs">sk-…</code> secret is shown <strong>once</strong> in the banner above the list.
+                      {t('create.secretOnce')}
                     </li>
                     <li>
-                      <code className="rounded bg-slate-200 px-1 text-xs">metadata</code> is optional JSON on the key (returned by <code className="rounded bg-slate-200 px-1 text-xs">GET /v1/me</code>).
+                      {t('create.metadataHelp')}
                     </li>
                   </ul>
                 )}
@@ -704,14 +701,14 @@ export default function GatewayKeysPage() {
                 {creationMode === 'existingUser' ? (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      User ID <span className="ml-1 text-xs font-normal text-red-500">*</span>
+                      {t('fields.userId')} <span className="ml-1 text-xs font-normal text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.user_id}
                       onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g. uuid from Users page"
+                      placeholder={t('placeholders.userId')}
                     />
                   </div>
                 ) : (
@@ -719,68 +716,68 @@ export default function GatewayKeysPage() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          External system <span className="ml-1 text-xs font-normal text-red-500">*</span>
+                          {t('fields.externalSystem')} <span className="ml-1 text-xs font-normal text-red-500">*</span>
                         </label>
                         <input
                           type="text"
                           value={formData.external_system}
                           onChange={(e) => setFormData({ ...formData, external_system: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Upstream product id"
+                          placeholder={t('placeholders.externalSystem')}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          External user ID <span className="ml-1 text-xs font-normal text-red-500">*</span>
+                          {t('fields.externalUserId')} <span className="ml-1 text-xs font-normal text-red-500">*</span>
                         </label>
                         <input
                           type="text"
                           value={formData.external_user_id}
                           onChange={(e) => setFormData({ ...formData, external_user_id: e.target.value })}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Upstream user id"
+                          placeholder={t('placeholders.externalUserId')}
                         />
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        User email <span className="ml-1 text-xs font-normal text-red-500">*</span>
+                        {t('fields.userEmail')} <span className="ml-1 text-xs font-normal text-red-500">*</span>
                       </label>
                       <input
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Stored on users.email when creating via external identity"
+                        placeholder={t('placeholders.userEmail')}
                       />
                       <p className="mt-1 text-xs text-gray-500">
-                        Required for match-or-create. Not used to overwrite email when the external pair already exists.
+                        {t('help.userEmail')}
                       </p>
                     </div>
                   </>
                 )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Key name <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                    {t('fields.keyName')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Label shown in admin / clients"
+                    placeholder={t('placeholders.keyName')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Metadata (JSON)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.metadataJson')}</label>
                   <textarea
                     value={formData.metadata}
                     onChange={(e) => setFormData({ ...formData, metadata: e.target.value })}
                     rows={6}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder='Optional, e.g. {"plan_id":"pro"}'
+                    placeholder={t('placeholders.metadataJson')}
                   />
-                  <p className="mt-1 text-xs text-gray-500">Stored on the key and returned by GET /v1/me. Leave empty for none.</p>
+                  <p className="mt-1 text-xs text-gray-500">{t('help.metadata')}</p>
                 </div>
               </div>
             </div>
@@ -806,7 +803,7 @@ export default function GatewayKeysPage() {
                     type="button"
                     onClick={() => copyToClipboard(selectedKey.id)}
                     className="shrink-0 text-gray-400 hover:text-gray-600"
-                    title="Copy ID"
+                    title={t('copyId')}
                   >
                     <ClipboardDocumentIcon className="h-4 w-4" />
                   </button>
@@ -822,20 +819,20 @@ export default function GatewayKeysPage() {
 
               <div className="mb-6 space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <ReadonlyRow label="Secret key">
+                  <ReadonlyRow label={t('fields.secretKey')}>
                     <div className="flex items-start gap-2">
                       <span className="font-mono text-xs break-all">{selectedKey.key}</span>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(selectedKey.key)}
                         className="shrink-0 text-gray-400 hover:text-gray-600"
-                        title="Copy secret"
+                        title={t('copySecret')}
                       >
                         <ClipboardDocumentIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </ReadonlyRow>
-                  <ReadonlyRow label="Status">
+                  <ReadonlyRow label={t('fields.status')}>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -856,16 +853,16 @@ export default function GatewayKeysPage() {
                       <span className="text-sm text-gray-600 capitalize">{selectedKey.status}</span>
                     </div>
                   </ReadonlyRow>
-                  <ReadonlyRow label="User ID (auth)">
+                  <ReadonlyRow label={t('fields.userIdAuth')}>
                     <Link href={`/gateway/users/${encodeURIComponent(selectedKey.user_id)}`} className="font-mono text-xs text-blue-600 hover:underline break-all">
                       {selectedKey.user_id}
                     </Link>
                   </ReadonlyRow>
-                  <ReadonlyRow label="User email">
+                  <ReadonlyRow label={t('fields.userEmail')}>
                     {selectedKey.user_email || '—'}
                   </ReadonlyRow>
                   <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
-                    <ReadonlyRow label="Budget (read-only)">
+                    <ReadonlyRow label={t('fields.budgetReadonly')}>
                       <div className="text-sm">
                         {formatGatewayMoneyCode(selectedKey.budget_spent, billingCurrency, 2)} /{' '}
                         {selectedKey.budget_max != null ? formatGatewayMoneyCode(selectedKey.budget_max, billingCurrency, 2) : tCommon('noLimit')}
@@ -876,7 +873,7 @@ export default function GatewayKeysPage() {
                         )}
                       </div>
                     </ReadonlyRow>
-                    <ReadonlyRow label="Budget Period / Reset">
+                    <ReadonlyRow label={t('fields.budgetPeriodReset')}>
                       {formatBudgetPeriodResetLabel(
                         selectedKey.budget_period,
                         selectedKey.budget_reset_at,
@@ -884,10 +881,10 @@ export default function GatewayKeysPage() {
                       )}
                     </ReadonlyRow>
                   </div>
-                  <ReadonlyRow label="Created">
+                  <ReadonlyRow label={t('fields.created')}>
                     {formatKeyTimestamp(selectedKey.created_at, businessTimezone)}
                   </ReadonlyRow>
-                  <ReadonlyRow label="Updated">
+                  <ReadonlyRow label={t('fields.updated')}>
                     {formatKeyTimestamp(selectedKey.updated_at, businessTimezone)}
                   </ReadonlyRow>
                 </div>
@@ -896,24 +893,24 @@ export default function GatewayKeysPage() {
                     href={`/gateway/request-logs?api_key_id=${selectedKey.id}`}
                     className="font-medium text-blue-600 hover:text-blue-800"
                   >
-                    Request logs for this key →
+                    {t('links.requestLogsForKey')}
                   </a>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.name')}</label>
                   <input
                     type="text"
                     value={editFormData.name}
                     onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Optional label"
+                    placeholder={t('placeholders.optionalLabel')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Metadata (JSON)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.metadataJson')}</label>
                   <textarea
                     value={editFormData.metadata}
                     onChange={(e) => setEditFormData({ ...editFormData, metadata: e.target.value })}
@@ -921,7 +918,7 @@ export default function GatewayKeysPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="{}"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Full JSON stored on this key; cleared if empty. Shown on GET /v1/me.</p>
+                  <p className="mt-1 text-xs text-gray-500">{t('help.editMetadata')}</p>
                 </div>
               </div>
 

@@ -408,6 +408,7 @@
 		"createTitleVendor": "New model under {vendor}",
 		"catalog": {
 			"title": "Model Catalog",
+			"allVendors": "All vendors",
 			"vendorModels": "{vendor} · {count} model",
 			"vendorModelsPlural": "{vendor} · {count} models",
 			"noModelsYet": "No models yet"
@@ -612,7 +613,39 @@
 		"usageNote": "Usage shown below is display-only.",
 		"routeSection": "Route",
 		"requestBody": "Request body",
-		"response": "Response"
+		"response": "Response",
+		"modelId": "Model ID",
+		"provider": "Provider",
+		"protocol": "Protocol",
+		"routeGroup": "Route group",
+		"selectRoute": "Select route",
+		"selectRouteOption": "— Select a route —",
+		"routeCount": "{total} route(s) total · {filtered} after filters",
+		"selected": "Selected",
+		"selectedRoute": "Selected route",
+		"modelName": "Model name",
+		"providerId": "Provider ID",
+		"providerName": "Provider name",
+		"upstreamProtocol": "Upstream protocol",
+		"providerModel": "Provider model",
+		"priorityStatus": "Priority / status",
+		"chooseRouteHint": "Choose a route above to see catalog fields.",
+		"geminiAction": "Gemini action",
+		"sentBody": "Actual request body",
+		"sentBodyHint": "(server merges custom_params and writes model plus other upstream-aligned JSON fields)",
+		"upstream": "Upstream: ",
+		"usageDisplayOnly": "Usage (display only): ",
+		"mergedContent": "Merged content",
+		"thinking": "Reasoning / Thinking",
+		"body": "Body",
+		"rawPayload": "Raw payload",
+		"emptyResponseHint": "Run Send to see upstream status, headers, and body or stream output here.",
+		"placeholders": {
+			"contains": "Contains…",
+			"idOrNameContains": "id or name contains…",
+			"protocol": "openai, anthropic, …",
+			"routeGroup": "default, free, …"
+		}
 	},
 	"simulator": {
 		"title": "Simulator",
@@ -622,7 +655,37 @@
 		"requestBody": "Request body",
 		"response": "Response",
 		"usageNote": "Usage below is informational only. The API key stays in memory and is not written to localStorage.",
-		"localDevHint": "Local dev example: http://127.0.0.1:8787 — enter your own Base URL above; avoid pointing at production by mistake."
+		"localDevHint": "Local dev example: http://127.0.0.1:8787 — enter your own Base URL above; avoid pointing at production by mistake.",
+		"protocol": "Protocol",
+		"geminiAction": "Gemini action",
+		"model": "Model",
+		"filter": "Filter",
+		"modelFilterPlaceholder": "id / display name / vendor contains…",
+		"selectModel": "— Select a model —",
+		"modelCount": "{total} model(s) total · {filtered} after filter · 🟢 = at least one active route · 🔴 = none",
+		"activeRoute": "active route",
+		"routeGroupOptional": "Route group (optional)",
+		"defaultRouteGroup": "Default (no explicit suffix)",
+		"routeGroupHint": "Options come from active routes for this model (non-empty route_group). OpenAI/Anthropic set body.model to id or id:group; Gemini uses the same segment in the path.",
+		"routingModelString": "Routing model string",
+		"apiKey": "API Key",
+		"emailContains": "Email contains",
+		"userId": "user_id",
+		"refreshList": "Refresh list",
+		"keysShowing": "Showing {shown} of {total} key(s)",
+		"keysLimitHint": " — narrow filters to see more within the scroll limit.",
+		"apiKeyRowId": "API key (row id)",
+		"select": "— Select —",
+		"loadingKey": "Loading key…",
+		"loadedKey": "Loaded: {prefix}…{suffix}",
+		"jsonBodySent": "JSON body sent to Proxy",
+		"requestUrl": "Request URL: ",
+		"usagePreview": "Usage (preview): ",
+		"mergedView": "Merged view",
+		"thinkingReasoning": "Thinking / reasoning",
+		"body": "Body",
+		"rawPayload": "Raw payload",
+		"emptyResponseHint": "After you click Send, status, body, or streamed output appears here."
 	},
 	"users": {
 		"title": "Users",
@@ -637,7 +700,93 @@
 		"newKey": "New key",
 		"backUsers": "← Users",
 		"emptyFiltered": "No users match filters",
-		"totalUsers": "Total: {count} users"
+		"totalUsers": "Total: {count} users",
+		"invalidUserId": "Invalid user id",
+		"filters": {
+			"email": "Email",
+			"externalSystem": "External system",
+			"externalUserId": "External user ID",
+			"status": "Status",
+			"contains": "Contains…"
+		},
+		"table": {
+			"statusEmail": "Status · Email",
+			"spent": "Spent",
+			"max": "Max",
+			"base": "Base",
+			"period": "Period",
+			"resetAt": "Reset at",
+			"keys": "Keys",
+			"metadata": "Metadata",
+			"created": "Created",
+			"updated": "Updated",
+			"actions": "Actions",
+			"group": "Group",
+			"event": "Event",
+			"sourceTrace": "Source / trace",
+			"deltaSpend": "Δ spend",
+			"budgetMaxChange": "budget_max →",
+			"userSnapshotDelta": "User snapshot Δ"
+		},
+		"fields": {
+			"email": "Email",
+			"status": "Status",
+			"budgetMax": "Budget max",
+			"budgetBase": "Budget base",
+			"budgetSpent": "Budget spent",
+			"budgetPeriod": "Budget period",
+			"budgetResetAt": "Budget reset at (local)",
+			"metadataJsonObject": "Metadata (JSON object)",
+			"externalSystem": "External system",
+			"externalUserId": "External user ID",
+			"name": "Name",
+			"metadataJson": "Metadata JSON"
+		},
+		"help": {
+			"createUser": "Creates a new gateway user. Email is required; all other fields are optional. To link this user to an account in another system, use the External identity section at the bottom.",
+			"budgetMax": "Maximum spendable amount in the current cycle. Leave empty for unlimited.",
+			"budgetBase": "Reference amount used to reset Budget max when the budget cycle resets.",
+			"budgetSpent": "Amount already spent in the current cycle. Edit only to manually adjust.",
+			"budgetPeriod": "Reset cycle for spent / Budget max. none disables auto-reset.",
+			"budgetResetAt": "Next time spent (and Budget max from base) will auto-reset. Ignored when Budget period is none.",
+			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
+			"disabledUser": "Disabled users cannot use any API key for new requests."
+		},
+		"externalIdentity": {
+			"title": "External identity",
+			"hint": "Use these fields to link this user to an account in another system (e.g. your own SaaS, an OAuth provider). Leave both empty for an internal Gateway-only user. Both fields must be set together or both left blank.",
+			"createHint": "Use these fields to link this user to an account in another system (e.g. your own SaaS, an OAuth provider). Leave both empty for an internal Gateway-only user. When both are set, creation is idempotent on the (external system, external user ID) pair."
+		},
+		"metadata": {
+			"none": "No metadata.",
+			"invalidRaw": "Stored value is not valid JSON; showing raw string."
+		},
+		"keysTable": {
+			"noKeys": "No keys",
+			"details": "Details",
+			"activeClickToRevoke": "Active: click to revoke",
+			"inactiveClickToActivate": "Inactive: click to activate"
+		},
+		"detailSections": {
+			"recentRequestLogs": "Recent request logs",
+			"userAuditLogs": "User audit logs",
+			"keyMetadata": "Key metadata",
+			"newApiKey": "New API key",
+			"moreCount": "+{count} more"
+		},
+		"empty": {
+			"requestLogs": "No request logs",
+			"auditLogs": "No audit logs"
+		},
+		"confirm": {
+			"deleteUser": "Permanently delete this user and all keys? Audit history will remain (user link cleared).",
+			"deleteKey": "Permanently delete this key from the database?"
+		},
+		"errors": {
+			"updateFailed": "Update failed",
+			"deleteFailed": "Delete failed",
+			"createFailed": "Create failed"
+		}
 	},
 	"keysPage": {
 		"title": "API Keys",
@@ -647,13 +796,118 @@
 		"editTitle": "Edit API Key",
 		"empty": "No API keys found",
 		"deleteKey": "Delete key",
-		"statusOther": "other"
+		"statusOther": "other",
+		"totalKeys": "Total: {count} keys",
+		"filters": {
+			"emailPlaceholder": "Filter by email...",
+			"userIdPlaceholder": "Filter by gateway user uuid..."
+		},
+		"table": {
+			"status": "Status",
+			"user": "User",
+			"key": "Key",
+			"name": "Name",
+			"userBudget": "User Budget",
+			"apiKeyMetadata": "Api Key Metadata",
+			"created": "Created"
+		},
+		"create": {
+			"attachLegend": "How to attach the key",
+			"existingUser": "Existing gateway user",
+			"externalIdentity": "External identity (match or create user)",
+			"afterCreation": "After creation",
+			"existingHelp1": "Enter the gateway User ID (users.id from the Users list). Prefer creating keys from a user's detail page when you are already there.",
+			"existingHelp2": "Multiple active keys per user are allowed. Budget lives on the user — edit under Users.",
+			"secretOnce": "The full sk-… secret is shown once in the banner above the list; copy it immediately.",
+			"metadataHelp": "metadata is optional JSON on the key (returned by GET /v1/me).",
+			"externalHelp1": "Provide External system, External user ID, and Email. The gateway will match an existing user by that pair or create one (email stored on users.email; required on first create). If the user already exists, the request email is not used to overwrite the stored email.",
+			"externalHelp2": "New users from this path start with zero budget until you set a plan on Users."
+		},
+		"fields": {
+			"userId": "User ID",
+			"externalSystem": "External system",
+			"externalUserId": "External user ID",
+			"userEmail": "User email",
+			"keyName": "Key name",
+			"metadataJson": "Metadata (JSON)",
+			"name": "Name",
+			"secretKey": "Secret key",
+			"status": "Status",
+			"userIdAuth": "User ID (auth)",
+			"budgetReadonly": "Budget (read-only)",
+			"budgetPeriodReset": "Budget Period / Reset",
+			"created": "Created",
+			"updated": "Updated"
+		},
+		"placeholders": {
+			"userId": "e.g. uuid from Users page",
+			"externalSystem": "Upstream product id",
+			"externalUserId": "Upstream user id",
+			"userEmail": "Stored on users.email when creating via external identity",
+			"keyName": "Label shown in admin / clients",
+			"metadataJson": "Optional, e.g. {\"plan_id\":\"pro\"}",
+			"optionalLabel": "Optional label"
+		},
+		"help": {
+			"userEmail": "Required for match-or-create. Not used to overwrite email when the external pair already exists.",
+			"metadata": "Stored on the key and returned by GET /v1/me. Leave empty for none.",
+			"editMetadata": "Full JSON stored on this key; cleared if empty. Shown on GET /v1/me."
+		},
+		"links": {
+			"requestLogsForKey": "Request logs for this key →"
+		},
+		"copyKey": "Copy key",
+		"copyId": "Copy ID",
+		"copySecret": "Copy secret",
+		"confirmDelete": "Permanently delete this API key?"
 	},
 	"requestLogs": {
 		"title": "Request Logs",
 		"subtitle": "View gateway request history",
+		"filters": {
+			"protocol": "Protocol",
+			"routeGroup": "Route group",
+			"userEmail": "User Email",
+			"apiKeyId": "API Key ID",
+			"emailPlaceholder": "Filter by email...",
+			"apiKeyPlaceholder": "Filter by API key..."
+		},
+		"totalRequests": "Total: {count} requests",
+		"statusOther": "other",
+		"headers": {
+			"statusTime": "Status · Time",
+			"user": "User",
+			"model": "Model",
+			"route": "Route",
+			"tokens": "Tokens",
+			"cost": "Cost ({currency})",
+			"profit": "Profit ({currency})"
+		},
+		"titles": {
+			"model": "Gateway model name, protocol, and route group",
+			"route": "Provider, upstream model, and provider key",
+			"cost": "Standard (row 1), Charged × vs standard (row 2), Metered × vs standard (row 3)",
+			"profit": "Charged − metered (per request)",
+			"rowDetail": "Click to show or hide pricing audit and request / usage bodies",
+			"inputOutputTokens": "Input / output tokens",
+			"cacheTokens": "Cache read / cache write tokens",
+			"standardCatalogPrice": "Standard (catalog price)",
+			"chargedUserBudget": "Charged (user budget)",
+			"meteredSupplierCost": "Metered (supplier cost)",
+			"unknown": "Unknown"
+		},
+		"detail": {
+			"upstreamMessageId": "Upstream message id",
+			"upstreamRequestId": "Upstream request id",
+			"timing": "Timing",
+			"pricingAudit": "Pricing audit",
+			"entryRequestBody": "Entry request body (redacted)",
+			"upstreamRequestBody": "Upstream request body (redacted)",
+			"upstreamUsageRaw": "Upstream usage (raw)"
+		},
 		"timing": {
 			"helpTitle": "Timing metrics",
+			"explain": "Explain timing metrics",
 			"gateway": "Gateway",
 			"gatewayDesc": "Auth, model routing, budget and circuit checks before upstream dispatch.",
 			"upstream": "Upstream",
@@ -678,7 +932,55 @@
 	"auditLogs": {
 		"title": "Audit Logs",
 		"subtitle": "User audit trail (user_audit_logs) — spent / budget_max are derived from before/after user snapshots; legacy / extra JSON from change_payload is appended below when present (no separate Metadata column).",
-		"empty": "No audit logs match the filters."
+		"empty": "No audit logs match the filters.",
+		"filters": {
+			"eventType": "Event type",
+			"actor": "Actor",
+			"userId": "User ID",
+			"userEmail": "User email",
+			"apiKeyId": "API key ID",
+			"reasonCode": "Reason code",
+			"source": "Source",
+			"correlationId": "Correlation ID",
+			"userIdPlaceholder": "Gateway users.id (uuid)",
+			"exactMatch": "Exact match",
+			"apiKeyPlaceholder": "UUID",
+			"reasonPlaceholder": "e.g. request_usage_charged_cost",
+			"sourcePlaceholder": "usage_charge, period_reset…",
+			"correlationPlaceholder": "request_log_id / business reference"
+		},
+		"totalRecords": "Total: {count} records",
+		"table": {
+			"time": "Time",
+			"event": "Event",
+			"actor": "Actor",
+			"identity": "Email / User / Key",
+			"spend": "Spend",
+			"budgetPlan": "Budget plan",
+			"userChangeDetail": "User change detail"
+		},
+		"labels": {
+			"req": "req",
+			"corr": "corr",
+			"type": "Type: ",
+			"from": "From: ",
+			"reason": "Reason: ",
+			"kind": "Kind: ",
+			"principal": "Principal: ",
+			"user": "User:",
+			"key": "Key: ",
+			"before": "before",
+			"after": "after",
+			"delta": "delta",
+			"max": "max:",
+			"base": "base:",
+			"period": "period:",
+			"resetAt": "reset_at:",
+			"userSnapshot": "User snapshot",
+			"extraJson": "Extra (change_payload JSON)",
+			"more": "+{count} more"
+		},
+		"userRemovedTitle": "User removed; see snapshot / change_payload"
 	},
 	"analytics": {
 		"modelUsage": {

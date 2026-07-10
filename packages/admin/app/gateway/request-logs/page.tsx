@@ -353,12 +353,12 @@ export default function GatewayRequestLogsPage() {
     const hasCache = log.cache_read_tokens > 0 || log.cache_write_tokens > 0;
     return (
       <div className="leading-tight space-y-0.5">
-        <div className="text-gray-900 tabular-nums" title="Input / output tokens">
+        <div className="text-gray-900 tabular-nums" title={t('titles.inputOutputTokens')}>
           {log.input_tokens} / {log.output_tokens}
         </div>
         <div
           className="text-gray-400 tabular-nums min-h-[1em]"
-          title={hasCache ? 'Cache read / cache write tokens' : undefined}
+          title={hasCache ? t('titles.cacheTokens') : undefined}
         >
           {hasCache ? `CR ${log.cache_read_tokens} / CW ${log.cache_write_tokens}` : '\u00A0'}
         </div>
@@ -382,13 +382,13 @@ export default function GatewayRequestLogsPage() {
     );
     return (
       <div className="leading-tight space-y-0.5">
-        <div className="text-gray-900 tabular-nums" title="Standard (catalog price)">
+        <div className="text-gray-900 tabular-nums" title={t('titles.standardCatalogPrice')}>
           {formatGatewayMoneyCode(standardCost, billingCurrency, 6)}
         </div>
-        <div className="text-gray-900" title="Charged (user budget)">
+        <div className="text-gray-900" title={t('titles.chargedUserBudget')}>
           {costLine(chargedCost, chargedMultiplier)}
         </div>
-        <div className="text-gray-700" title="Metered (supplier cost)">
+        <div className="text-gray-700" title={t('titles.meteredSupplierCost')}>
           {costLine(meteredCost, meteredMultiplier)}
         </div>
       </div>
@@ -442,7 +442,7 @@ export default function GatewayRequestLogsPage() {
     p ? (
       <UpstreamProtocolBrandIcon protocol={p} />
     ) : (
-      <span className="inline-flex h-3.5 w-3.5 items-center justify-center text-[10px] text-gray-400" title="Unknown">
+      <span className="inline-flex h-3.5 w-3.5 items-center justify-center text-[10px] text-gray-400" title={t('titles.unknown')}>
         —
       </span>
     );
@@ -590,7 +590,7 @@ export default function GatewayRequestLogsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Protocol</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.protocol')}</label>
           <select
             value={filterProtocol}
             onChange={(e) => { setFilterProtocol(e.target.value); setPage(1); }}
@@ -605,7 +605,7 @@ export default function GatewayRequestLogsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Route group</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.routeGroup')}</label>
           <select
             value={filterRouteGroup}
             onChange={(e) => { setFilterRouteGroup(e.target.value); setPage(1); }}
@@ -620,22 +620,22 @@ export default function GatewayRequestLogsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">User Email</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
           <input
             type="text"
             value={filterUserEmail}
             onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
-            placeholder="Filter by email..."
+            placeholder={t('filters.emailPlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">API Key ID</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.apiKeyId')}</label>
           <input
             type="text"
             value={filterApiKeyId}
             onChange={(e) => { setFilterApiKeyId(e.target.value); setPage(1); }}
-            placeholder="Filter by API key..."
+            placeholder={t('filters.apiKeyPlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
           />
         </div>
@@ -644,35 +644,35 @@ export default function GatewayRequestLogsPage() {
             onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
           >
-            Clear Filters
+            {tCommon('clearFilters')}
           </button>
         </div>
       </div>
 
       {/* Stats + status swatch legend */}
       <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-        <span className="text-sm">Total: {total} requests</span>
+        <span className="text-sm">{t('totalRequests', { count: total })}</span>
         <span className="hidden sm:inline h-3 w-px bg-gray-200" aria-hidden />
         <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500 shrink-0" aria-hidden />
-            success
+            {tOptions('requestStatus.success')}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-500 shrink-0" aria-hidden />
-            error
+            {tOptions('requestStatus.error')}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-amber-500 shrink-0" aria-hidden />
-            incomplete
+            {tOptions('requestStatus.incomplete')}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-violet-500 shrink-0" aria-hidden />
-            cancelled
+            {tOptions('requestStatus.cancelled')}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-400 shrink-0" aria-hidden />
-            other
+            {t('statusOther')}
           </span>
         </span>
       </div>
@@ -683,36 +683,36 @@ export default function GatewayRequestLogsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status · Time</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">User</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('headers.statusTime')}</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('headers.user')}</th>
                 <th
                   scope="col"
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[9rem] max-w-xs"
-                  title="Gateway model name, protocol, and route group"
+                  title={t('titles.model')}
                 >
-                  Model
+                  {t('headers.model')}
                 </th>
                 <th
                   scope="col"
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[10rem] max-w-xs"
-                  title="Provider, upstream model, and provider key"
+                  title={t('titles.route')}
                 >
-                  Route
+                  {t('headers.route')}
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                  Tokens
+                  {t('headers.tokens')}
                 </th>
                 <th
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
-                  title="Standard (row 1), Charged × vs standard (row 2), Metered × vs standard (row 3)"
+                  title={t('titles.cost')}
                 >
-                  Cost ({billingCurrencySym})
+                  {t('headers.cost', { currency: billingCurrencySym })}
                 </th>
                 <th
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
-                  title="Charged − metered (per request)"
+                  title={t('titles.profit')}
                 >
-                  Profit ({billingCurrencySym})
+                  {t('headers.profit', { currency: billingCurrencySym })}
                 </th>
               </tr>
             </thead>
@@ -739,7 +739,7 @@ export default function GatewayRequestLogsPage() {
                     }}
                     tabIndex={0}
                     aria-expanded={detailLogId === log.id}
-                    title="Click to show or hide pricing audit and request / usage bodies"
+                    title={t('titles.rowDetail')}
                   >
                     <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600 leading-tight">
                       <div className="flex items-start gap-2">
@@ -792,7 +792,7 @@ export default function GatewayRequestLogsPage() {
                     </td>
                     <td
                       className={`px-3 py-2 text-xs whitespace-nowrap tabular-nums font-medium align-top ${profitToneClass}`}
-                      title="Charged − metered"
+                      title={t('titles.profit')}
                     >
                       {formatGatewayMoneyCodeSigned(profit, billingCurrency, 6)}
                     </td>
@@ -824,13 +824,13 @@ export default function GatewayRequestLogsPage() {
                                     {[
                                       {
                                         id: 'upstream_message_id' as const,
-                                        label: 'Upstream message id',
+                                        label: t('detail.upstreamMessageId'),
                                         value: upstreamMessageId,
                                         tone: 'emerald',
                                       },
                                       {
                                         id: 'upstream_request_id' as const,
-                                        label: 'Upstream request id',
+                                        label: t('detail.upstreamRequestId'),
                                         value: upstreamRequestId,
                                         tone: 'sky',
                                       },
@@ -873,16 +873,16 @@ export default function GatewayRequestLogsPage() {
                               <div className="grid min-w-[110rem] grid-cols-5 items-stretch gap-3 p-3">
                                 <div className="min-w-0 flex h-full min-h-[22rem] flex-col border border-sky-200 rounded-md overflow-hidden bg-sky-50/50">
                                   <div className="px-2 py-1.5 border-b border-sky-200 bg-sky-100/50 flex items-center justify-between gap-2 shrink-0">
-                                    <span className="text-xs font-medium text-sky-950">Timing</span>
+                                    <span className="text-xs font-medium text-sky-950">{t('detail.timing')}</span>
                                     <div className="flex items-center gap-1.5">
                                       <button
                                         type="button"
                                         onClick={() => setTimingHelpLog(log)}
-                                        title="Explain timing metrics"
+                                        title={t('timing.explain')}
                                         className="inline-flex h-5 w-5 items-center justify-center rounded border border-sky-300 text-sky-900 hover:bg-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-500"
                                       >
                                         <QuestionMarkCircleIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                                        <span className="sr-only">Explain timing metrics</span>
+                                        <span className="sr-only">{t('timing.explain')}</span>
                                       </button>
                                       <button
                                         type="button"
@@ -902,7 +902,7 @@ export default function GatewayRequestLogsPage() {
                                       </div>
                                     ))}
                                     <div className="flex items-center justify-between gap-3 border-t border-sky-100 pt-1">
-                                      <span>Attempts</span>
+                                      <span>{t('timing.attempts')}</span>
                                       <span className="font-mono tabular-nums">
                                         {log.upstream_attempt_count ?? '-'} / failover {log.upstream_failover_count ?? '-'}
                                       </span>
@@ -914,7 +914,7 @@ export default function GatewayRequestLogsPage() {
                                 </div>
                                 <div className="min-w-0 flex h-full min-h-[22rem] flex-col border border-violet-200 rounded-md overflow-hidden bg-violet-50/50">
                                   <div className="px-2 py-1.5 border-b border-violet-200 bg-violet-100/40 flex items-center justify-between gap-2 shrink-0">
-                                    <span className="text-xs font-medium text-violet-950">Pricing audit</span>
+                                    <span className="text-xs font-medium text-violet-950">{t('detail.pricingAudit')}</span>
                                     <button
                                       type="button"
                                       disabled={auditEmpty}
@@ -937,17 +937,17 @@ export default function GatewayRequestLogsPage() {
                                   [
                                     {
                                       col: 'entry' as const,
-                                      title: 'Entry request body (redacted)',
+                                      title: t('detail.entryRequestBody'),
                                       raw: log.request_body,
                                     },
                                     {
                                       col: 'upstream' as const,
-                                      title: 'Upstream request body (redacted)',
+                                      title: t('detail.upstreamRequestBody'),
                                       raw: log.upstream_request_body,
                                     },
                                     {
                                       col: 'usage' as const,
-                                      title: 'Upstream usage (raw)',
+                                      title: t('detail.upstreamUsageRaw'),
                                       raw: log.raw_usage,
                                     },
                                   ] as const
@@ -1021,7 +1021,7 @@ export default function GatewayRequestLogsPage() {
                 onClick={() => setTimingHelpLog(null)}
                 className="rounded border border-sky-300 px-2 py-1 text-xs text-sky-950 hover:bg-white"
               >
-                Close
+                {tCommon('close')}
               </button>
             </div>
             <div className="max-h-[80vh] overflow-auto p-4">
@@ -1050,17 +1050,17 @@ export default function GatewayRequestLogsPage() {
             disabled={page === 1}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
-            Previous
+            {tCommon('previous')}
           </button>
           <span className="px-4 py-2 text-sm text-gray-600">
-            Page {page} of {totalPages}
+            {tCommon('pageOf', { page, totalPages })}
           </span>
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
-            Next
+            {tCommon('next')}
           </button>
         </div>
       )}

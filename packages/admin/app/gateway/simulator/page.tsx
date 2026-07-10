@@ -548,8 +548,7 @@ export default function SimulatorPage() {
 					{t('usageNote')}
 				</p>
 				<p className="text-xs text-amber-800 mt-2 max-w-3xl">
-					Local dev example: <span className="font-mono">http://127.0.0.1:8787</span> — enter your own Base URL
-					above; avoid pointing at production by mistake.
+					{t('localDevHint')}
 				</p>
 			</div>
 
@@ -573,7 +572,7 @@ export default function SimulatorPage() {
 							/>
 						</div>
 						<div>
-							<label className={labelClass}>Protocol</label>
+							<label className={labelClass}>{t('protocol')}</label>
 							<div className="flex flex-wrap gap-4 pt-1 text-sm">
 								{(['openai', 'anthropic', 'gemini'] as const).map((p) => (
 									<label key={p} className="inline-flex items-center gap-2 cursor-pointer">
@@ -592,8 +591,8 @@ export default function SimulatorPage() {
 					</div>
 					{protocol === 'gemini' && (
 						<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
-							<legend className="sr-only">Gemini action</legend>
-							<span className="text-gray-600 font-medium">Gemini action</span>
+							<legend className="sr-only">{t('geminiAction')}</legend>
+							<span className="text-gray-600 font-medium">{t('geminiAction')}</span>
 							<label className="inline-flex items-center gap-2 cursor-pointer">
 								<input
 									type="radio"
@@ -619,19 +618,19 @@ export default function SimulatorPage() {
 
 				<div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:items-stretch">
 					<div className="bg-white rounded-lg shadow-md p-6 space-y-4 min-h-0 flex flex-col">
-						<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Model</h2>
+						<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">{t('model')}</h2>
 						<div>
-							<label className={labelClass}>Filter</label>
+							<label className={labelClass}>{t('filter')}</label>
 							<input
 								type="text"
-								placeholder="id / display name / vendor contains…"
+								placeholder={t('modelFilterPlaceholder')}
 								value={filterModel}
 								onChange={(e) => setFilterModel(e.target.value)}
 								className={inputClass}
 							/>
 						</div>
 						<div>
-							<label className={labelClass}>Model</label>
+							<label className={labelClass}>{t('model')}</label>
 							<select
 								value={selectedModelId}
 								onChange={(e) => {
@@ -641,7 +640,7 @@ export default function SimulatorPage() {
 								className={`${inputClass} font-mono`}
 								size={Math.min(10, Math.max(6, Math.min(filteredModels.length, 10) || 6))}
 							>
-								<option value="">— Select a model —</option>
+								<option value="">{t('selectModel')}</option>
 								{filteredModels.map((m) => (
 									<option key={m.id} value={m.id}>
 										{formatModelOptionLabel(m, modelIdsWithActiveRouter.has(m.id))}
@@ -649,19 +648,18 @@ export default function SimulatorPage() {
 								))}
 							</select>
 							<p className="mt-2 text-xs text-gray-500">
-								{models.length} model(s) total · {filteredModels.length} after filter · 🟢 = at least one{' '}
-								<span className="font-medium">active</span> route · 🔴 = none
+								{t('modelCount', { total: models.length, filtered: filteredModels.length })}
 							</p>
 						</div>
 						<div>
-							<label className={labelClass}>Route group (optional)</label>
+							<label className={labelClass}>{t('routeGroupOptional')}</label>
 							<select
 								value={routeGroup}
 								onChange={(e) => setRouteGroup(e.target.value)}
 								className={inputClass}
 								disabled={!selectedModelId}
 							>
-								<option value="">Default (no explicit suffix)</option>
+								<option value="">{t('defaultRouteGroup')}</option>
 								{routeGroupsForModel.map((g) => (
 									<option key={g} value={g}>
 										{g}
@@ -669,25 +667,22 @@ export default function SimulatorPage() {
 								))}
 							</select>
 							<p className="mt-1 text-xs text-gray-500">
-								Options come from <span className="font-medium">active</span> routes for this model
-								(non-empty route_group). OpenAI/Anthropic set <code className="text-[11px] bg-gray-100 px-1 rounded">body.model</code>{' '}
-								to <code className="text-[11px] bg-gray-100 px-1 rounded">id</code> or{' '}
-								<code className="text-[11px] bg-gray-100 px-1 rounded">id:group</code>; Gemini uses the same segment in the path.
+								{t('routeGroupHint')}
 							</p>
 						</div>
 						{selectedModel ? (
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-								<ReadonlyField label="Routing model string">{modelRoutingString || '—'}</ReadonlyField>
+								<ReadonlyField label={t('routingModelString')}>{modelRoutingString || '—'}</ReadonlyField>
 								<ReadonlyField label="max_tokens">{String(selectedModel.max_tokens ?? '—')}</ReadonlyField>
 							</div>
 						) : null}
 					</div>
 
 					<div className="bg-white rounded-lg shadow-md p-6 space-y-4 min-h-0 flex flex-col">
-						<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">API Key</h2>
+						<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">{t('apiKey')}</h2>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							<div>
-								<label className={labelClass}>Email contains</label>
+								<label className={labelClass}>{t('emailContains')}</label>
 								<input
 									type="text"
 									value={filterKeyEmail}
@@ -698,7 +693,7 @@ export default function SimulatorPage() {
 								/>
 							</div>
 							<div>
-								<label className={labelClass}>user_id</label>
+								<label className={labelClass}>{t('userId')}</label>
 								<input
 									type="text"
 									value={filterKeyUserId}
@@ -716,16 +711,16 @@ export default function SimulatorPage() {
 								disabled={loadingKeys}
 								className="px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
 							>
-								{loadingKeys ? 'Refreshing…' : 'Refresh list'}
+								{loadingKeys ? tCommon('refreshing') : t('refreshList')}
 							</button>
 							<span className="text-xs text-gray-500">
-								Showing {keys.length} of {keysTotal} key(s)
-								{keysTotal > keys.length ? ' — narrow filters to see more within the scroll limit.' : ''}
+								{t('keysShowing', { shown: keys.length, total: keysTotal })}
+								{keysTotal > keys.length ? t('keysLimitHint') : ''}
 							</span>
 						</div>
 						{keysError ? <div className="p-2 text-sm text-red-600 bg-red-50 rounded border border-red-100">{keysError}</div> : null}
 						<div className="min-h-0 flex flex-col flex-1">
-							<label className={labelClass}>API key (row id)</label>
+							<label className={labelClass}>{t('apiKeyRowId')}</label>
 							<select
 								value={selectedKeyId}
 								onChange={(e) => {
@@ -734,7 +729,7 @@ export default function SimulatorPage() {
 								className={`${inputClass} font-mono max-h-[min(320px,40vh)] overflow-y-auto`}
 								size={12}
 							>
-								<option value="">— Select —</option>
+								<option value="">{t('select')}</option>
 								{keys.map((k) => (
 									<option key={k.id} value={k.id}>
 										{k.user_email ?? k.user_id} · {k.name ?? 'n/a'} · {k.id.slice(0, 8)}…
@@ -742,10 +737,10 @@ export default function SimulatorPage() {
 								))}
 							</select>
 							<div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-								{revealLoading && selectedKeyId ? <span>Loading key…</span> : null}
+								{revealLoading && selectedKeyId ? <span>{t('loadingKey')}</span> : null}
 								{!revealLoading && revealedSk && revealedSk.startsWith('sk-') ? (
 									<span className="font-mono text-gray-700 break-all">
-										Loaded: {revealedSk.slice(0, 12)}…{revealedSk.slice(-4)}
+										{t('loadedKey', { prefix: revealedSk.slice(0, 12), suffix: revealedSk.slice(-4) })}
 									</span>
 								) : null}
 							</div>
@@ -796,7 +791,7 @@ export default function SimulatorPage() {
 						{bodyError ? <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{bodyError}</div> : null}
 						{lastWirePreview ? (
 							<div className="pt-2 border-t border-gray-100">
-								<div className="text-xs font-medium text-gray-600 mb-1">JSON body sent to Proxy</div>
+								<div className="text-xs font-medium text-gray-600 mb-1">{t('jsonBodySent')}</div>
 								<pre className={codeBlockClass}>{lastWirePreview}</pre>
 							</div>
 						) : null}
@@ -828,7 +823,7 @@ export default function SimulatorPage() {
 						</div>
 						{responseMeta?.requestUrl ? (
 							<div className="text-xs text-gray-500 break-all">
-								<span className="font-medium text-gray-600">Request URL: </span>
+								<span className="font-medium text-gray-600">{t('requestUrl')}</span>
 								{responseMeta.requestUrl}
 							</div>
 						) : null}
@@ -836,17 +831,17 @@ export default function SimulatorPage() {
 							<>
 								{usageHint ? (
 									<div className="p-3 rounded-md bg-green-50 border border-green-200 text-sm text-green-900">
-										<span className="font-semibold">Usage (preview): </span>
+										<span className="font-semibold">{t('usagePreview')}</span>
 										{usageHint}
 									</div>
 								) : null}
 								<div className="space-y-3">
 									<div>
-										<div className="text-xs font-medium text-gray-600 mb-1">Merged view</div>
+										<div className="text-xs font-medium text-gray-600 mb-1">{t('mergedView')}</div>
 										<div className="rounded-md border border-slate-200 overflow-hidden divide-y divide-slate-200">
 											<div>
 												<div className="text-[11px] font-semibold text-amber-900/85 uppercase tracking-wide px-3 py-1.5 bg-amber-50 border-b border-amber-100">
-													Thinking / reasoning
+													{t('thinkingReasoning')}
 												</div>
 												<pre className="max-h-[min(220px,32vh)] overflow-auto p-3 bg-amber-50/60 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
 													{mergedReasoningDisplay}
@@ -854,7 +849,7 @@ export default function SimulatorPage() {
 											</div>
 											<div>
 												<div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide px-3 py-1.5 bg-slate-50 border-b border-slate-100">
-													Body
+													{t('body')}
 												</div>
 												<pre className="max-h-[min(280px,38vh)] overflow-auto p-3 bg-slate-50 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
 													{mergedBodyDisplay}
@@ -864,7 +859,7 @@ export default function SimulatorPage() {
 										</div>
 									</div>
 									<div>
-										<div className="text-xs font-medium text-gray-600 mb-1">Raw payload</div>
+										<div className="text-xs font-medium text-gray-600 mb-1">{t('rawPayload')}</div>
 										<pre className="max-h-[min(520px,50vh)] overflow-auto p-4 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-900 font-mono whitespace-pre-wrap break-words">
 											{responseText}
 											<span ref={streamEndRef} className="inline-block w-0 h-0 overflow-hidden" aria-hidden />
@@ -874,7 +869,7 @@ export default function SimulatorPage() {
 							</>
 						) : (
 							<p className="text-sm text-gray-500">
-								After you click Send, status, body, or streamed output appears here.
+								{t('emptyResponseHint')}
 							</p>
 						)}
 					</div>

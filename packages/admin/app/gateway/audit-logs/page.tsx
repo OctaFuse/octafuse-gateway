@@ -375,7 +375,7 @@ export default function GatewayAuditLogsPage() {
 
       <div className="mb-4 flex flex-wrap gap-4">
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Event type</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.eventType')}</label>
           <select
             value={filterEventType}
             onChange={(e) => { setFilterEventType(e.target.value); setPage(1); }}
@@ -388,7 +388,7 @@ export default function GatewayAuditLogsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Actor</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.actor')}</label>
           <select
             value={filterActorType}
             onChange={(e) => { setFilterActorType(e.target.value); setPage(1); }}
@@ -401,62 +401,62 @@ export default function GatewayAuditLogsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">User ID</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.userId')}</label>
           <input
             type="text"
             value={filterUserId}
             onChange={(e) => { setFilterUserId(e.target.value); setPage(1); }}
-            placeholder="Gateway users.id (uuid)"
+            placeholder={t('filters.userIdPlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-md w-72 font-mono text-xs"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">User email</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
           <input
             type="text"
             value={filterUserEmail}
             onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
-            placeholder="Exact match"
+            placeholder={t('filters.exactMatch')}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm w-56"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">API key ID</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.apiKeyId')}</label>
           <input
             type="text"
             value={filterApiKeyId}
             onChange={(e) => { setFilterApiKeyId(e.target.value); setPage(1); }}
-            placeholder="UUID"
+            placeholder={t('filters.apiKeyPlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-md w-64 font-mono text-xs"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Reason code</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.reasonCode')}</label>
           <input
             type="text"
             value={filterReasonCode}
             onChange={(e) => { setFilterReasonCode(e.target.value); setPage(1); }}
-            placeholder="e.g. request_usage_charged_cost"
+            placeholder={t('filters.reasonPlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-md w-56 font-mono text-xs"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Source</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.source')}</label>
           <input
             type="text"
             value={filterSource}
             onChange={(e) => { setFilterSource(e.target.value); setPage(1); }}
-            placeholder="usage_charge, period_reset…"
+            placeholder={t('filters.sourcePlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-md w-44 font-mono text-xs"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-500 mb-1">Correlation ID</label>
+          <label className="block text-sm text-gray-500 mb-1">{t('filters.correlationId')}</label>
           <input
             type="text"
             value={filterCorrelationId}
             onChange={(e) => { setFilterCorrelationId(e.target.value); setPage(1); }}
-            placeholder="request_log_id / business reference"
+            placeholder={t('filters.correlationPlaceholder')}
             className="px-3 py-2 border border-gray-300 rounded-md w-64 font-mono text-xs"
           />
         </div>
@@ -477,13 +477,13 @@ export default function GatewayAuditLogsPage() {
             }}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
           >
-            Clear filters
+            {tCommon('clearFiltersLower')}
           </button>
         </div>
       </div>
 
       <div className="mb-3 text-sm text-gray-500">
-        Total: {total} records
+        {t('totalRecords', { count: total })}
       </div>
 
       {isLoading ? (
@@ -494,14 +494,14 @@ export default function GatewayAuditLogsPage() {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Time</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">Event</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">Actor</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[14rem]">Email / User / Key</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Spend</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">Budget plan</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{t('table.time')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">{t('table.event')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">{t('table.actor')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[14rem]">{t('table.identity')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{t('table.spend')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">{t('table.budgetPlan')}</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[16rem]">
-                    User change detail
+                    {t('table.userChangeDetail')}
                   </th>
                 </tr>
               </thead>
@@ -545,29 +545,29 @@ export default function GatewayAuditLogsPage() {
                           className="mt-0.5 font-mono text-xs text-gray-600 whitespace-nowrap"
                           title={item.request_log_id || undefined}
                         >
-                          req: {item.request_log_id ? shortId(item.request_log_id) : '—'}
+                          {t('labels.req')}: {item.request_log_id ? shortId(item.request_log_id) : '—'}
                         </div>
                         {ex.correlation_id ? (
                           <div
                             className="mt-0.5 font-mono text-xs text-gray-500 whitespace-nowrap"
                             title={ex.correlation_id}
                           >
-                            corr: {shortId(ex.correlation_id)}
+                            {t('labels.corr')}: {shortId(ex.correlation_id)}
                           </div>
                         ) : null}
                       </td>
                       <td className="px-3 py-2 align-top min-w-0 max-w-[15rem]">
                         <div className="text-xs space-y-1.5 leading-snug">
                           <div className="min-w-0">
-                            <span className="text-gray-500">Type: </span>
+                            <span className="text-gray-500">{t('labels.type')}</span>
                             <span className="font-mono text-sm font-medium text-gray-900">{item.event_type}</span>
                           </div>
                           <div className="min-w-0 truncate font-mono text-[11px]" title={ex.source || undefined}>
-                            <span className="text-gray-500 font-sans">From: </span>
+                            <span className="text-gray-500 font-sans">{t('labels.from')}</span>
                             <span className="text-violet-800">{ex.source ?? '—'}</span>
                           </div>
                           <div className="min-w-0 line-clamp-3 text-gray-800" title={reasonDisplay.title || undefined}>
-                            <span className="text-gray-500">Reason: </span>
+                            <span className="text-gray-500">{t('labels.reason')}</span>
                             <span className={reasonDisplay.isMono ? 'font-mono text-[11px] text-gray-900' : 'text-[11px]'}>
                               {reasonDisplay.line}
                             </span>
@@ -577,11 +577,11 @@ export default function GatewayAuditLogsPage() {
                       <td className="px-3 py-2 align-top min-w-0 max-w-[12rem]">
                         <div className="text-xs space-y-1.5 leading-snug">
                           <div>
-                            <span className="text-gray-500">Kind: </span>
+                            <span className="text-gray-500">{t('labels.kind')}</span>
                             <span className="text-sm text-gray-900">{item.actor_type}</span>
                           </div>
                           <div className="min-w-0">
-                            <span className="text-gray-500">Principal: </span>
+                            <span className="text-gray-500">{t('labels.principal')}</span>
                             {ex.actor_id ? (
                               <span className="font-mono text-[11px] text-gray-700 break-all" title={ex.actor_id}>
                                 {shortId(ex.actor_id)}
@@ -598,7 +598,7 @@ export default function GatewayAuditLogsPage() {
                         </div>
                         {item.user_id ? (
                           <div className="mt-0.5 flex items-baseline gap-1 min-w-0 font-mono text-xs">
-                            <span className="shrink-0 text-gray-600">User:</span>
+                            <span className="shrink-0 text-gray-600">{t('labels.user')}</span>
                             <Link
                               href={`/gateway/users/${encodeURIComponent(item.user_id)}`}
                               className="min-w-0 truncate text-blue-600 hover:underline"
@@ -608,26 +608,26 @@ export default function GatewayAuditLogsPage() {
                             </Link>
                           </div>
                         ) : (
-                          <div className="mt-0.5 font-mono text-xs text-gray-400 truncate" title="User removed; see snapshot / change_payload">
-                            User: —
+                          <div className="mt-0.5 font-mono text-xs text-gray-400 truncate" title={t('userRemovedTitle')}>
+                            {t('labels.user')} —
                           </div>
                         )}
                         <div className="mt-0.5 font-mono text-xs text-gray-500 truncate leading-snug" title={item.api_key_id ?? ''}>
-                          Key: {item.api_key_id ? shortId(item.api_key_id) : '—'}
+                          {t('labels.key')}{item.api_key_id ? shortId(item.api_key_id) : '—'}
                         </div>
                       </td>
                       <td className="px-3 py-2 align-top text-xs text-gray-600">
                         <div className="space-y-1 leading-snug">
                           <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
-                            <span className="text-right font-medium text-gray-700">before</span>
+                            <span className="text-right font-medium text-gray-700">{t('labels.before')}</span>
                             <span>{formatPlainMoney(item.before_spent, billingCurrency)}</span>
                           </div>
                           <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
-                            <span className="text-right font-medium text-gray-700">after</span>
+                            <span className="text-right font-medium text-gray-700">{t('labels.after')}</span>
                             <span>{formatPlainMoney(item.after_spent, billingCurrency)}</span>
                           </div>
                           <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
-                            <span className="text-right font-medium text-gray-700">delta</span>
+                            <span className="text-right font-medium text-gray-700">{t('labels.delta')}</span>
                             <span
                               className={
                                 item.delta_spent > 0
@@ -645,7 +645,7 @@ export default function GatewayAuditLogsPage() {
                       <td className="px-3 py-2 align-top text-xs text-gray-600">
                         <div className="space-y-1 leading-snug">
                           <div>
-                            <span className="font-medium text-gray-700">max:</span>{' '}
+                            <span className="font-medium text-gray-700">{t('labels.max')}</span>{' '}
                             <span className={maxChanged ? budgetPlanHighlight.before : undefined}>
                               {formatBudgetMax(item.before_budget_max, billingCurrency)}
                             </span>
@@ -655,7 +655,7 @@ export default function GatewayAuditLogsPage() {
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">base:</span>{' '}
+                            <span className="font-medium text-gray-700">{t('labels.base')}</span>{' '}
                             <span className={baseChanged ? budgetPlanHighlight.before : undefined}>
                               {formatGatewayMoneyCode(item.before_budget_base, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
                             </span>
@@ -665,7 +665,7 @@ export default function GatewayAuditLogsPage() {
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">period:</span>{' '}
+                            <span className="font-medium text-gray-700">{t('labels.period')}</span>{' '}
                             <span className={periodChanged ? budgetPlanHighlight.before : undefined}>
                               {ex.before_budget_period ?? '—'}
                             </span>
@@ -675,7 +675,7 @@ export default function GatewayAuditLogsPage() {
                             </span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">reset_at:</span>{' '}
+                            <span className="font-medium text-gray-700">{t('labels.resetAt')}</span>{' '}
                             <span className="whitespace-nowrap">
                               <span className={resetChanged ? budgetPlanHighlight.before : undefined}>
                                 {formatAuditTime(ex.before_budget_reset_at, businessTimezone)}
@@ -693,7 +693,7 @@ export default function GatewayAuditLogsPage() {
                           {snapLines.length > 0 ? (
                             <>
                               <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                                User snapshot
+                                {t('labels.userSnapshot')}
                               </div>
                               {snapLines.slice(0, 6).map((line, index) => (
                                 <div key={`${item.id}-snap-${index}`} className="line-clamp-2 font-mono" title={line}>
@@ -701,14 +701,14 @@ export default function GatewayAuditLogsPage() {
                                 </div>
                               ))}
                               {snapLines.length > 6 ? (
-                                <div className="text-gray-400">+{snapLines.length - 6} more</div>
+                                <div className="text-gray-400">{t('labels.more', { count: snapLines.length - 6 })}</div>
                               ) : null}
                             </>
                           ) : null}
                           {metaExtraLines.length > 0 ? (
                             <div className={snapLines.length > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
                               <div className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                                Extra (change_payload JSON)
+                                {t('labels.extraJson')}
                               </div>
                               {metaExtraLines.slice(0, 5).map((line, index) => (
                                 <div key={`${item.id}-meta-${index}`} className="line-clamp-2" title={line}>
@@ -716,7 +716,7 @@ export default function GatewayAuditLogsPage() {
                                 </div>
                               ))}
                               {metaExtraLines.length > 5 ? (
-                                <div className="text-gray-400">+{metaExtraLines.length - 5} more</div>
+                                <div className="text-gray-400">{t('labels.more', { count: metaExtraLines.length - 5 })}</div>
                               ) : null}
                             </div>
                           ) : null}
@@ -743,10 +743,10 @@ export default function GatewayAuditLogsPage() {
             disabled={page === 1}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
-            Previous
+            {tCommon('previous')}
           </button>
           <span className="px-4 py-2 text-sm text-gray-600">
-            Page {page} of {totalPages}
+            {tCommon('pageOf', { page, totalPages })}
           </span>
           <button
             type="button"
@@ -754,7 +754,7 @@ export default function GatewayAuditLogsPage() {
             disabled={page === totalPages}
             className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
-            Next
+            {tCommon('next')}
           </button>
         </div>
       )}

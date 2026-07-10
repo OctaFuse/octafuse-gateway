@@ -264,29 +264,29 @@ export default function GatewayUserDetailPage() {
       if (data.success) {
         await loadUser();
       } else {
-        setPlanError(data.message || 'Update failed');
+        setPlanError(data.message || t('errors.updateFailed'));
       }
     } catch (e) {
       console.error(e);
-      setPlanError('Update failed');
+      setPlanError(t('errors.updateFailed'));
     } finally {
       setIsSavingPlan(false);
     }
   };
 
   const deleteUser = async () => {
-    if (!window.confirm('Permanently delete this user and all keys? Audit history will remain (user link cleared).')) return;
+    if (!window.confirm(t('confirm.deleteUser'))) return;
     try {
       const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
       const data = await readApiJson(res);
       if (data.success) {
         window.location.href = '/gateway/users';
       } else {
-        alert(data.message || 'Delete failed');
+        alert(data.message || t('errors.deleteFailed'));
       }
     } catch (e) {
       console.error(e);
-      alert('Delete failed');
+      alert(t('errors.deleteFailed'));
     }
   };
 
@@ -324,11 +324,11 @@ export default function GatewayUserDetailPage() {
           setFreshApiKey(data.data.key);
         }
       } else {
-        setKeyError(data.message || 'Create failed');
+        setKeyError(data.message || t('errors.createFailed'));
       }
     } catch (e) {
       console.error(e);
-      setKeyError('Create failed');
+      setKeyError(t('errors.createFailed'));
     } finally {
       setIsKeySaving(false);
     }
@@ -354,18 +354,18 @@ export default function GatewayUserDetailPage() {
       if (data.success) {
         await loadKeys();
       } else {
-        setKeysInlineError(data.message || 'Update failed');
+        setKeysInlineError(data.message || t('errors.updateFailed'));
       }
     } catch (e) {
       console.error(e);
-      setKeysInlineError('Update failed');
+      setKeysInlineError(t('errors.updateFailed'));
     } finally {
       setKeyStatusTogglingId(null);
     }
   };
 
   const deleteKeyHard = async (keyId: string) => {
-    if (!window.confirm('Permanently delete this key from the database?')) return;
+    if (!window.confirm(t('confirm.deleteKey'))) return;
     try {
       const res = await fetch(
         `/api/admin/users/${encodeURIComponent(userId)}/keys/${encodeURIComponent(keyId)}`,
@@ -373,10 +373,10 @@ export default function GatewayUserDetailPage() {
       );
       const data = await readApiJson(res);
       if (data.success) loadKeys();
-      else alert(data.message || 'Failed');
+      else alert(data.message || tCommon('failed'));
     } catch (e) {
       console.error(e);
-      alert('Failed');
+      alert(tCommon('failed'));
     }
   };
 
@@ -389,13 +389,13 @@ export default function GatewayUserDetailPage() {
   };
 
   if (!userId) {
-    return <div className="p-8 text-gray-600">Invalid user id</div>;
+    return <div className="p-8 text-gray-600">{t('invalidUserId')}</div>;
   }
 
   if (loadError) {
     return (
       <div className="p-8">
-        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">← Users</Link>
+        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
         <p className="mt-4 text-red-600">{loadError}</p>
       </div>
     );
@@ -426,7 +426,7 @@ export default function GatewayUserDetailPage() {
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+                  {t('fields.email')} <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -440,24 +440,24 @@ export default function GatewayUserDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.status')}</label>
                 <select
                   value={planForm.status}
                   onChange={(e) => setPlanForm({ ...planForm, status: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                 >
-                  <option value="active">active</option>
-                  <option value="disabled">disabled</option>
+                  <option value="active">{tOptions('userStatus.active')}</option>
+                  <option value="disabled">{tOptions('userStatus.disabled')}</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Disabled users cannot use any API key for new requests.
+                  {t('help.disabledUser')}
                 </p>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Budget max <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  {t('fields.budgetMax')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                 </label>
                 <input
                   type="number"
@@ -465,15 +465,15 @@ export default function GatewayUserDetailPage() {
                   value={planForm.budget_max}
                   onChange={(e) => setPlanForm({ ...planForm, budget_max: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  placeholder="Empty = unlimited"
+                  placeholder={tCommon('noLimit')}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Maximum spendable amount in the current cycle. Leave empty for unlimited.
+                  {t('help.budgetMax')}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Budget base <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  {t('fields.budgetBase')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                 </label>
                 <input
                   type="number"
@@ -481,14 +481,14 @@ export default function GatewayUserDetailPage() {
                   value={planForm.budget_base}
                   onChange={(e) => setPlanForm({ ...planForm, budget_base: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  placeholder="Optional"
+                  placeholder={tCommon('optional')}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Reference amount used to reset Budget max when the budget cycle resets.
+                  {t('help.budgetBase')}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Budget spent</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.budgetSpent')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -497,32 +497,32 @@ export default function GatewayUserDetailPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Amount already spent in the current cycle. Edit only to manually adjust.
+                  {t('help.budgetSpent')}
                 </p>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Budget period <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  {t('fields.budgetPeriod')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                 </label>
                 <select
                   value={planForm.budget_period}
                   onChange={(e) => setPlanForm({ ...planForm, budget_period: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                 >
-                  <option value="none">none</option>
-                  <option value="daily">daily</option>
-                  <option value="weekly">weekly</option>
-                  <option value="monthly">monthly</option>
+                  <option value="none">{tOptions('budgetPeriod.none')}</option>
+                  <option value="daily">{tOptions('budgetPeriod.daily')}</option>
+                  <option value="weekly">{tOptions('budgetPeriod.weekly')}</option>
+                  <option value="monthly">{tOptions('budgetPeriod.monthly')}</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Reset cycle for spent / Budget max. <span className="font-mono">none</span> disables auto-reset.
+                  {t('help.budgetPeriod')}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Budget reset at (local) <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                  {t('fields.budgetResetAt')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                 </label>
                 <input
                   type="datetime-local"
@@ -532,13 +532,13 @@ export default function GatewayUserDetailPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Next time spent (and Budget max from base) will auto-reset. Ignored when Budget period is <span className="font-mono">none</span>.
+                  {t('help.budgetResetAt')}
                 </p>
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Metadata (JSON object) <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                {t('fields.metadataJsonObject')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
               </label>
               <textarea
                 value={planForm.metadata}
@@ -548,46 +548,46 @@ export default function GatewayUserDetailPage() {
                 placeholder="{}"
               />
               <p className="mt-1 text-xs text-gray-500">
-                Saving replaces the entire metadata object. Leave empty to keep current value unchanged.
+                {t('help.metadataReplace')}
               </p>
             </div>
             <div className="pt-4 border-t border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">
-                External identity <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                {t('externalIdentity.title')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
               </h3>
               <p className="mt-1 text-xs text-gray-500">
-                Use these fields to link this user to an account in another system (e.g. your own SaaS, an OAuth provider). Leave both empty for an internal Gateway-only user. Both fields must be set together or both left blank.
+                {t('externalIdentity.hint')}
               </p>
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    External system <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                    {t('fields.externalSystem')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                   </label>
                   <input
                     type="text"
                     value={planForm.external_system}
                     onChange={(e) => setPlanForm({ ...planForm, external_system: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder="e.g. my-app"
+                    placeholder="my-app"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    External user ID <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                    {t('fields.externalUserId')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                   </label>
                   <input
                     type="text"
                     value={planForm.external_user_id}
                     onChange={(e) => setPlanForm({ ...planForm, external_user_id: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder="ID in the external system"
+                    placeholder={t('fields.externalUserId')}
                   />
                 </div>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <ReadonlyRow label="Created">{formatDateTime(user.created_at)}</ReadonlyRow>
-              <ReadonlyRow label="Updated">{formatDateTime(user.updated_at)}</ReadonlyRow>
+              <ReadonlyRow label={t('table.created')}>{formatDateTime(user.created_at)}</ReadonlyRow>
+              <ReadonlyRow label={t('table.updated')}>{formatDateTime(user.updated_at)}</ReadonlyRow>
             </div>
             <div className="flex items-center justify-between gap-3 pt-2">
               <button
@@ -636,11 +636,11 @@ export default function GatewayUserDetailPage() {
             <table className="min-w-full text-sm table-auto">
               <thead>
                 <tr className="border-b text-xs text-gray-500 uppercase">
-                  <th className="py-2 pr-4 text-left">Key</th>
-                  <th className="py-2 pr-4 text-left">Name</th>
-                  <th className="py-2 pr-4 text-left">Metadata</th>
-                  <th className="py-2 pr-4 text-left">Status</th>
-                  <th className="py-2 pl-4 text-right whitespace-nowrap w-px">Actions</th>
+                  <th className="py-2 pr-4 text-left">{tCommon('key')}</th>
+                  <th className="py-2 pr-4 text-left">{tCommon('name')}</th>
+                  <th className="py-2 pr-4 text-left">{tCommon('metadata')}</th>
+                  <th className="py-2 pr-4 text-left">{tCommon('status')}</th>
+                  <th className="py-2 pl-4 text-right whitespace-nowrap w-px">{tCommon('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -673,7 +673,7 @@ export default function GatewayUserDetailPage() {
                               onClick={() => setMetaViewKey(k)}
                               className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
                             >
-                              Details
+                              {t('keysTable.details')}
                             </button>
                           </div>
                         );
@@ -684,7 +684,7 @@ export default function GatewayUserDetailPage() {
                         type="button"
                         role="switch"
                         aria-checked={k.status === 'active'}
-                        aria-label={k.status === 'active' ? 'Active: click to revoke' : 'Inactive: click to activate'}
+                        aria-label={k.status === 'active' ? t('keysTable.activeClickToRevoke') : t('keysTable.inactiveClickToActivate')}
                         title={k.status}
                         disabled={keyStatusTogglingId === k.id}
                         onClick={() => toggleKeyStatus(k)}
@@ -702,37 +702,37 @@ export default function GatewayUserDetailPage() {
                     <td className="py-2 pl-4 text-right whitespace-nowrap align-top">
                       <button type="button" onClick={() => deleteKeyHard(k.id)} className="text-xs text-red-600 hover:underline inline-flex items-center gap-0.5">
                         <TrashIcon className="h-3.5 w-3.5" />
-                        Delete
+                        {tCommon('delete')}
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {keys.length === 0 && <p className="text-sm text-gray-500 py-4">No keys</p>}
+            {keys.length === 0 && <p className="text-sm text-gray-500 py-4">{t('keysTable.noKeys')}</p>}
           </div>
         </div>
       </div>
 
       <div className="mt-6 bg-white rounded-lg shadow-md p-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Recent request logs</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.recentRequestLogs')}</h2>
           <Link
             href={`/gateway/request-logs?user_email=${encodeURIComponent(user.email)}`}
             className="text-sm text-blue-600 hover:underline"
           >
-            More →
+            {tCommon('more')}
           </Link>
         </div>
         <div className="overflow-x-auto text-sm">
           <table className="min-w-full">
             <thead>
               <tr className="text-left text-xs text-gray-500 border-b">
-                <th className="py-2 pr-2">Time</th>
-                <th className="py-2 pr-2">Model</th>
-                <th className="py-2 pr-2">Group</th>
-                <th className="py-2 pr-2">Provider</th>
-                <th className="py-2 pr-2">Status</th>
+                <th className="py-2 pr-2">{tCommon('time')}</th>
+                <th className="py-2 pr-2">{tCommon('model')}</th>
+                <th className="py-2 pr-2">{t('table.group')}</th>
+                <th className="py-2 pr-2">{tCommon('provider')}</th>
+                <th className="py-2 pr-2">{tCommon('status')}</th>
                 <th className="py-2 pr-2 whitespace-nowrap">Standard ({billingCurrencySym})</th>
                 <th className="py-2 pr-2 whitespace-nowrap">Charged ({billingCurrencySym})</th>
                 <th className="py-2 pr-2 whitespace-nowrap">Metered ({billingCurrencySym})</th>
@@ -773,30 +773,30 @@ export default function GatewayUserDetailPage() {
               })}
             </tbody>
           </table>
-          {logs.length === 0 && <p className="text-sm text-gray-500 py-4">No request logs</p>}
+          {logs.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.requestLogs')}</p>}
         </div>
       </div>
 
       <div className="mt-6 bg-white rounded-lg shadow-md p-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">User audit logs</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.userAuditLogs')}</h2>
           <Link
             href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}`}
             className="text-sm text-blue-600 hover:underline"
           >
-            More →
+            {tCommon('more')}
           </Link>
         </div>
         <div className="overflow-x-auto text-xs">
           <table className="min-w-full">
             <thead>
               <tr className="text-left text-gray-500 border-b">
-                <th className="py-2 pr-2">Time</th>
-                <th className="py-2 pr-2">Event</th>
-                <th className="py-2 pr-2">Source / trace</th>
-                <th className="py-2 pr-2">Δ spend</th>
-                <th className="py-2 pr-2">budget_max →</th>
-                <th className="py-2 pr-2 min-w-[12rem]">User snapshot Δ</th>
+                <th className="py-2 pr-2">{tCommon('time')}</th>
+                <th className="py-2 pr-2">{t('table.event')}</th>
+                <th className="py-2 pr-2">{t('table.sourceTrace')}</th>
+                <th className="py-2 pr-2">{t('table.deltaSpend')}</th>
+                <th className="py-2 pr-2">{t('table.budgetMaxChange')}</th>
+                <th className="py-2 pr-2 min-w-[12rem]">{t('table.userSnapshotDelta')}</th>
               </tr>
             </thead>
             <tbody>
@@ -845,7 +845,7 @@ export default function GatewayUserDetailPage() {
                             </div>
                           ))}
                           {snapLines.length > 5 ? (
-                            <div className="text-gray-400 text-[11px]">+{snapLines.length - 5} more</div>
+                            <div className="text-gray-400 text-[11px]">{t('detailSections.moreCount', { count: snapLines.length - 5 })}</div>
                           ) : null}
                         </>
                       )}
@@ -856,7 +856,7 @@ export default function GatewayUserDetailPage() {
               })}
             </tbody>
           </table>
-          {audits.length === 0 && <p className="text-sm text-gray-500 py-4">No audit logs</p>}
+          {audits.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.auditLogs')}</p>}
         </div>
       </div>
 
@@ -867,7 +867,7 @@ export default function GatewayUserDetailPage() {
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
               <div className="px-6 py-4 border-b flex justify-between items-center">
                 <div className="min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900">Key metadata</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('detailSections.keyMetadata')}</h3>
                   <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={metaViewKey.id}>
                     {[metaViewKey.name, maskKey(metaViewKey.key)].filter(Boolean).join(' · ')} · {metaViewKey.id}
                   </p>
@@ -876,19 +876,19 @@ export default function GatewayUserDetailPage() {
                   type="button"
                   onClick={() => setMetaViewKey(null)}
                   className="text-gray-400 hover:text-gray-600"
-                  aria-label="Close"
+                  aria-label={tCommon('close')}
                 >
                   ×
                 </button>
               </div>
               <div className="p-6 overflow-y-auto">
                 {m.empty ? (
-                  <div className="text-sm text-gray-500">No metadata.</div>
+                  <div className="text-sm text-gray-500">{t('metadata.none')}</div>
                 ) : (
                   <>
                     {!m.ok && (
                       <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                        Stored value is not valid JSON; showing raw string.
+                        {t('metadata.invalidRaw')}
                       </div>
                     )}
                     <pre className="whitespace-pre-wrap break-all rounded-md bg-gray-50 border border-gray-200 p-4 text-xs font-mono text-gray-800">
@@ -904,7 +904,7 @@ export default function GatewayUserDetailPage() {
                     onClick={() => copy(m.full)}
                     className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    Copy
+                    {tCommon('copy')}
                   </button>
                 )}
                 <button
@@ -912,7 +912,7 @@ export default function GatewayUserDetailPage() {
                   onClick={() => setMetaViewKey(null)}
                   className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  Close
+                  {tCommon('close')}
                 </button>
               </div>
             </div>
@@ -923,21 +923,21 @@ export default function GatewayUserDetailPage() {
       {showNewKey && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">New API key</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-3">{t('detailSections.newApiKey')}</h3>
             {keyError && <div className="mb-3 p-2 bg-red-50 text-red-700 text-sm rounded">{keyError}</div>}
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Name</label>
+                <label className="block text-sm text-gray-700 mb-1">{t('fields.name')}</label>
                 <input value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">Metadata JSON</label>
+                <label className="block text-sm text-gray-700 mb-1">{t('fields.metadataJson')}</label>
                 <textarea value={newKeyMeta} onChange={(e) => setNewKeyMeta(e.target.value)} rows={4} className="w-full border rounded px-3 py-2 font-mono text-xs" />
               </div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowNewKey(false)} className="px-3 py-2 border rounded text-sm" disabled={isKeySaving}>Cancel</button>
-              <button type="button" onClick={createKey} disabled={isKeySaving} className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50">{isKeySaving ? '…' : 'Create'}</button>
+              <button type="button" onClick={() => setShowNewKey(false)} className="px-3 py-2 border rounded text-sm" disabled={isKeySaving}>{tCommon('cancel')}</button>
+              <button type="button" onClick={createKey} disabled={isKeySaving} className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50">{isKeySaving ? '…' : tCommon('create')}</button>
             </div>
           </div>
         </div>

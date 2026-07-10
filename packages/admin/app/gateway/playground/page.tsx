@@ -380,40 +380,40 @@ export default function PlaygroundPage() {
 							<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">{t('routeSection')}</h2>
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
-									<label className={labelClass}>model id</label>
+									<label className={labelClass}>{t('modelId')}</label>
 									<input
 										type="text"
-										placeholder="Contains…"
+										placeholder={t('placeholders.contains')}
 										value={filterModel}
 										onChange={(e) => setFilterModel(e.target.value)}
 										className={inputClass}
 									/>
 								</div>
 								<div>
-									<label className={labelClass}>provider</label>
+									<label className={labelClass}>{t('provider')}</label>
 									<input
 										type="text"
-										placeholder="id or name contains…"
+										placeholder={t('placeholders.idOrNameContains')}
 										value={filterProvider}
 										onChange={(e) => setFilterProvider(e.target.value)}
 										className={inputClass}
 									/>
 								</div>
 								<div>
-									<label className={labelClass}>protocol</label>
+									<label className={labelClass}>{t('protocol')}</label>
 									<input
 										type="text"
-										placeholder="openai, anthropic, …"
+										placeholder={t('placeholders.protocol')}
 										value={filterProtocol}
 										onChange={(e) => setFilterProtocol(e.target.value)}
 										className={inputClass}
 									/>
 								</div>
 								<div>
-									<label className={labelClass}>route group</label>
+									<label className={labelClass}>{t('routeGroup')}</label>
 									<input
 										type="text"
-										placeholder="default, free, …"
+										placeholder={t('placeholders.routeGroup')}
 										value={filterGroup}
 										onChange={(e) => setFilterGroup(e.target.value)}
 										className={inputClass}
@@ -421,14 +421,14 @@ export default function PlaygroundPage() {
 								</div>
 							</div>
 							<div>
-								<label className={labelClass}>Select route</label>
+								<label className={labelClass}>{t('selectRoute')}</label>
 								<select
 									value={selectedId}
 									onChange={(e) => setSelectedId(e.target.value)}
 									className={`${inputClass} font-mono`}
 									size={Math.min(10, Math.max(6, Math.min(filteredRoutes.length, 10) || 6))}
 								>
-									<option value="">— Select a route —</option>
+									<option value="">{t('selectRouteOption')}</option>
 									{filteredRoutes.map((r) => (
 										<option key={r.id} value={r.id}>
 											{routeActiveIndicator(r.status)} {formatRouteLabel(r)} · {r.id.slice(0, 8)}…
@@ -436,7 +436,7 @@ export default function PlaygroundPage() {
 									))}
 								</select>
 								<p className="mt-2 text-xs text-gray-500">
-									{routes.length} route(s) total · {filteredRoutes.length} after filters
+									{t('routeCount', { total: routes.length, filtered: filteredRoutes.length })}
 								</p>
 							</div>
 							</div>
@@ -447,23 +447,23 @@ export default function PlaygroundPage() {
 							<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3 break-words">
 								{selected ? (
 									<>
-										Selected：<span className="font-mono text-base font-normal">{selected.id}</span>
+										{t('selected')}：<span className="font-mono text-base font-normal">{selected.id}</span>
 									</>
 								) : (
-									'Selected route'
+									t('selectedRoute')
 								)}
 							</h2>
 							{selected ? (
 								<>
 									<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-										<ReadonlyField label="Model ID">{selected.model_id}</ReadonlyField>
-										<ReadonlyField label="Model name">{selected.model_name ?? '—'}</ReadonlyField>
-										<ReadonlyField label="Provider ID">{selected.provider_id}</ReadonlyField>
-										<ReadonlyField label="Provider name">{selected.provider_name ?? '—'}</ReadonlyField>
-										<ReadonlyField label="Upstream protocol">{selected.upstream_protocol}</ReadonlyField>
-										<ReadonlyField label="Provider model">{selected.provider_model_name}</ReadonlyField>
-										<ReadonlyField label="Route group">{selected.route_group}</ReadonlyField>
-										<ReadonlyField label="Priority / status">
+										<ReadonlyField label={t('modelId')}>{selected.model_id}</ReadonlyField>
+										<ReadonlyField label={t('modelName')}>{selected.model_name ?? '—'}</ReadonlyField>
+										<ReadonlyField label={t('providerId')}>{selected.provider_id}</ReadonlyField>
+										<ReadonlyField label={t('providerName')}>{selected.provider_name ?? '—'}</ReadonlyField>
+										<ReadonlyField label={t('upstreamProtocol')}>{selected.upstream_protocol}</ReadonlyField>
+										<ReadonlyField label={t('providerModel')}>{selected.provider_model_name}</ReadonlyField>
+										<ReadonlyField label={t('routeGroup')}>{selected.route_group}</ReadonlyField>
+										<ReadonlyField label={t('priorityStatus')}>
 											{selected.priority} /{' '}
 											<span
 												className={
@@ -488,7 +488,7 @@ export default function PlaygroundPage() {
 									</div>
 								</>
 							) : (
-								<p className="text-sm text-gray-500">Choose a route above to see catalog fields.</p>
+								<p className="text-sm text-gray-500">{t('chooseRouteHint')}</p>
 							)}
 						</div>
 						</div>
@@ -511,8 +511,8 @@ export default function PlaygroundPage() {
 							</div>
 							{normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' && (
 								<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
-									<legend className="sr-only">Gemini action</legend>
-									<span className="text-gray-600 font-medium">Gemini action</span>
+									<legend className="sr-only">{t('geminiAction')}</legend>
+									<span className="text-gray-600 font-medium">{t('geminiAction')}</span>
 									<label className="inline-flex items-center gap-2 cursor-pointer">
 										<input
 											type="radio"
@@ -551,11 +551,10 @@ export default function PlaygroundPage() {
 								<div className="pt-2 border-t border-gray-100 space-y-2">
 									<div>
 										<div className="text-xs font-medium text-gray-600 mb-1">
-											实际发送的请求体
+											{t('sentBody')}
 											<span className="font-normal text-gray-500 normal-case tracking-normal">
 												{' '}
-												（服务端合并 <code className="text-[11px] bg-gray-100 px-1 rounded">custom_params</code> 并写入{' '}
-												<code className="text-[11px] bg-gray-100 px-1 rounded">model</code> 等与上游一致的 JSON）
+												{t('sentBodyHint')}
 											</span>
 										</div>
 										<pre className={codeBlockClass}>{lastSentWireBody}</pre>
@@ -591,23 +590,23 @@ export default function PlaygroundPage() {
 								<>
 									{responseMeta?.upstreamUrl && (
 										<div className="text-xs text-gray-500 break-all">
-											<span className="font-medium text-gray-600">Upstream: </span>
+											<span className="font-medium text-gray-600">{t('upstream')}</span>
 											{responseMeta.upstreamUrl}
 										</div>
 									)}
 									{usageHint && (
 										<div className="p-3 rounded-md bg-green-50 border border-green-200 text-sm text-green-900">
-											<span className="font-semibold">Usage (display only): </span>
+											<span className="font-semibold">{t('usageDisplayOnly')}</span>
 											{usageHint}
 										</div>
 									)}
 									<div className="space-y-3">
 										<div>
-											<div className="text-xs font-medium text-gray-600 mb-1">拼接内容</div>
+											<div className="text-xs font-medium text-gray-600 mb-1">{t('mergedContent')}</div>
 											<div className="rounded-md border border-slate-200 overflow-hidden divide-y divide-slate-200">
 												<div>
 													<div className="text-[11px] font-semibold text-amber-900/85 uppercase tracking-wide px-3 py-1.5 bg-amber-50 border-b border-amber-100">
-														推理 / Thinking
+														{t('thinking')}
 													</div>
 													<pre className="max-h-[min(220px,32vh)] overflow-auto p-3 bg-amber-50/60 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
 														{mergedReasoningDisplay}
@@ -615,7 +614,7 @@ export default function PlaygroundPage() {
 												</div>
 												<div>
 													<div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide px-3 py-1.5 bg-slate-50 border-b border-slate-100">
-														正文
+														{t('body')}
 													</div>
 													<pre className="max-h-[min(280px,38vh)] overflow-auto p-3 bg-slate-50 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
 														{mergedBodyDisplay}
@@ -625,7 +624,7 @@ export default function PlaygroundPage() {
 											</div>
 										</div>
 										<div>
-											<div className="text-xs font-medium text-gray-600 mb-1">原始报文</div>
+											<div className="text-xs font-medium text-gray-600 mb-1">{t('rawPayload')}</div>
 											<pre className="max-h-[min(520px,50vh)] overflow-auto p-4 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-900 font-mono whitespace-pre-wrap break-words">
 												{responseText}
 												<span ref={streamEndRef} className="inline-block w-0 h-0 overflow-hidden" aria-hidden />
@@ -634,7 +633,7 @@ export default function PlaygroundPage() {
 									</div>
 								</>
 							) : (
-								<p className="text-sm text-gray-500">Run Send to see upstream status, headers, and body or stream output here.</p>
+								<p className="text-sm text-gray-500">{t('emptyResponseHint')}</p>
 							)}
 						</div>
 						</div>
