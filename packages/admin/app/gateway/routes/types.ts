@@ -1,6 +1,5 @@
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import type { UpstreamProtocol } from '@/lib/upstream-protocol';
-import type { PricingTierDraftRow } from '@/lib/pricing-tiers-draft';
 
 export type RouteListRow = GatewayModelRoute & {
 	model_name?: string;
@@ -15,18 +14,26 @@ export type RouteProtocolGroupSection<T> = {
 	routes: T[];
 };
 
+export type RouteScheduleFormWindow = {
+	start: string;
+	end: string;
+	factor: string;
+};
+
+export type RouteScheduleFormSide = RouteScheduleFormWindow[];
+
 export type RouteFormData = {
 	model_id: string;
 	provider_id: string;
 	provider_model_name: string;
 	upstream_protocol: UpstreamProtocol;
 	priority: number;
-	metered_override_tiers: PricingTierDraftRow[];
-	charged_override_tiers: PricingTierDraftRow[];
 	custom_params_json: string;
 	route_group: string;
 	charged_factor: string;
-	provider_factor: string;
+	metered_factor: string;
+	schedule_charged: RouteScheduleFormSide;
+	schedule_metered: RouteScheduleFormSide;
 };
 
 export type StickyDialogState = {
@@ -55,12 +62,12 @@ export const EMPTY_ROUTE_FORM: RouteFormData = {
 	provider_model_name: '',
 	upstream_protocol: 'openai',
 	priority: 0,
-	metered_override_tiers: [],
-	charged_override_tiers: [],
 	custom_params_json: '',
 	route_group: 'default',
 	charged_factor: '1',
-	provider_factor: '1',
+	metered_factor: '1',
+	schedule_charged: [],
+	schedule_metered: [],
 };
 
 export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {

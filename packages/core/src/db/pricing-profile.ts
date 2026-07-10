@@ -1,6 +1,7 @@
 /**
- * `models.pricing_profile`（目录标准价）与 `model_routes.price_override` 内 **`metered`** / **`charged`** 嵌套 profile 的解析与选档。
- * 校验与 `JSON.parse` 行为以 D1 / SQLite 存 TEXT、Worker 侧解析为准。
+ * `models.pricing_profile`（目录标准价）解析与选档。
+ * 路由侧金额 = 目录选档单价 × `price_override` 的 base factor × 每日 `schedule` 倍率（见 `pricing-schedule.ts`）。
+ * `price_override` 内历史 nested `metered` / `charged` tiers **不计价**（运行时忽略）。
  * 单价数值币种见 `system_config.BILLING_CURRENCY`（ISO 4217，默认 USD），与 `api_keys` 预算同币。
  *
  * **形状**：`{ "tiers": [ { "upto", "label", "input_price", "output_price", "cache_read_price"?, "cache_write_price"? } ] }`。
@@ -36,9 +37,19 @@ export interface ParsedPricingProfile {
 /** 单次计费侧解析结果，写入 `api_key_request_logs.pricing_audit.snapshot` 子树。 */
 export type PriceResolutionAuditSide = {
 	path: 'profile' | 'missing_profile';
-	source?: 'route_nested' | 'model';
+	/** 目录选档后乘路由倍率；`model` 仅用于 standard（无路由倍率）。 */
+	source?: 'model_x_factor' | 'model';
 	basis_tokens?: number;
 	prices?: BillingPriceSnapshot;
+	base_factor?: number;
+	schedule?: {
+		timezone: string;
+		local_time: string;
+		evaluated_at_utc: string;
+		factor: number;
+		window: { start: string; end: string; factor: number } | null;
+	};
+	effective_factor?: number;
 };
 
 const ZERO_BILLING_SNAPSHOT: BillingPriceSnapshot = {
@@ -80,7 +91,7 @@ function tierLabelFromRow(row: Record<string, unknown>): string | null {
 }
 
 /**
- * 从 `model_routes.price_override` 取 **`charged`** 嵌套 profile（字符串或对象），用于用户预算 `charged_cost`。
+ * @deprecated Nested `charged` tiers are ignored at billing time; kept for Admin display of legacy JSON.
  */
 export function extractChargedProfileFromPriceOverrideJson(raw: string | null | undefined): string | null {
 	if (raw == null || String(raw).trim() === '') {
@@ -102,7 +113,7 @@ export function extractChargedProfileFromPriceOverrideJson(raw: string | null | 
 }
 
 /**
- * 从 `model_routes.price_override` 取 **`metered`** 嵌套 profile（字符串或对象），用于供应侧 `metered_cost`。
+ * @deprecated Nested `metered` tiers are ignored at billing time; kept for Admin display of legacy JSON.
  */
 export function extractMeteredProfileFromPriceOverrideJson(raw: string | null | undefined): string | null {
 	if (raw == null || String(raw).trim() === '') {
@@ -229,7 +240,7 @@ export function pickPricingTier(basisTokens: number, profile: ParsedPricingProfi
 function materializeFromParsed(
 	basisInputTokens: number,
 	parsed: ParsedPricingProfile,
-	source: 'route_nested' | 'model'
+	source: 'model_x_factor' | 'model'
 ): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
 	const tier = pickPricingTier(basisInputTokens, parsed);
 	const prices: BillingPriceSnapshot = {
@@ -249,46 +260,45 @@ function materializeFromParsed(
 	};
 }
 
-/**
- * 供应侧单价：优先路由 `price_override.metered`，其次 `models.pricing_profile`；均无合法 profile 时单价为 0。
- * @param options.routeNestedMeteredProfileJson 若路由层已解析嵌套 profile（与 `extractMeteredProfileFromPriceOverrideJson` 结果一致），可传入以避免对整段 `price_override` 再 `JSON.parse`；仍可与 `routePriceOverrideJson` 同时存在，本字段优先。
- */
-export function resolveSupplierBillingPrices(options: {
+function resolveCatalogBillingPrices(options: {
 	basisInputTokens: number;
-	routePriceOverrideJson: string | null | undefined;
-	/** 来自 `model_routes.price_override` 内嵌 `metered` 的 JSON 字符串（已由路由层解析时传入） */
-	routeNestedMeteredProfileJson?: string | null | undefined;
 	modelPricingProfileJson: string | null | undefined;
+	source: 'model_x_factor' | 'model';
 }): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
-	const nested =
-		typeof options.routeNestedMeteredProfileJson === 'string' &&
-		options.routeNestedMeteredProfileJson.trim() !== ''
-			? options.routeNestedMeteredProfileJson.trim()
-			: null;
-	const routeSub = nested ?? extractMeteredProfileFromPriceOverrideJson(options.routePriceOverrideJson);
-	const tryOrder: Array<{ json: string; source: 'route_nested' | 'model' }> = [];
-	if (routeSub) {
-		tryOrder.push({ json: routeSub, source: 'route_nested' });
-	}
 	if (options.modelPricingProfileJson?.trim()) {
-		tryOrder.push({ json: options.modelPricingProfileJson.trim(), source: 'model' });
-	}
-	for (const c of tryOrder) {
-		const parsed = parsePricingProfile(c.json);
-		if (!parsed) {
-			continue;
+		const parsed = parsePricingProfile(options.modelPricingProfileJson.trim());
+		if (parsed) {
+			return materializeFromParsed(options.basisInputTokens, parsed, options.source);
 		}
-		return materializeFromParsed(options.basisInputTokens, parsed, c.source);
 	}
 	return {
 		prices: ZERO_BILLING_SNAPSHOT,
 		audit: {
 			path: 'missing_profile',
-			source: 'model',
+			source: options.source === 'model_x_factor' ? 'model_x_factor' : 'model',
 			basis_tokens: options.basisInputTokens,
 			prices: ZERO_BILLING_SNAPSHOT,
 		},
 	};
+}
+
+/**
+ * 供应侧基数单价：始终来自 `models.pricing_profile`（忽略 route nested `metered`）。
+ * 调用方再乘 `metered_factor × schedule.metered`。
+ */
+export function resolveSupplierBillingPrices(options: {
+	basisInputTokens: number;
+	/** @deprecated Ignored; nested metered tiers are not used for billing. */
+	routePriceOverrideJson?: string | null | undefined;
+	/** @deprecated Ignored. */
+	routeNestedMeteredProfileJson?: string | null | undefined;
+	modelPricingProfileJson: string | null | undefined;
+}): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
+	return resolveCatalogBillingPrices({
+		basisInputTokens: options.basisInputTokens,
+		modelPricingProfileJson: options.modelPricingProfileJson,
+		source: 'model_x_factor',
+	});
 }
 
 /**
@@ -298,60 +308,28 @@ export function resolveStandardBillingPrices(options: {
 	basisInputTokens: number;
 	modelPricingProfileJson: string | null | undefined;
 }): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
-	if (options.modelPricingProfileJson?.trim()) {
-		const parsed = parsePricingProfile(options.modelPricingProfileJson.trim());
-		if (parsed) {
-			return materializeFromParsed(options.basisInputTokens, parsed, 'model');
-		}
-	}
-	return {
-		prices: ZERO_BILLING_SNAPSHOT,
-		audit: {
-			path: 'missing_profile',
-			source: 'model',
-			basis_tokens: options.basisInputTokens,
-			prices: ZERO_BILLING_SNAPSHOT,
-		},
-	};
+	return resolveCatalogBillingPrices({
+		basisInputTokens: options.basisInputTokens,
+		modelPricingProfileJson: options.modelPricingProfileJson,
+		source: 'model',
+	});
 }
 
 /**
- * 用户预算侧单价（`charged_cost` 用）：优先路由 `price_override.charged`，否则 `models.pricing_profile`；均无合法 profile 时单价为 0。
- * @param options.routeNestedChargedProfileJson 若路由层已解析嵌套 profile，可传入以避免对整段 `price_override` 再 `JSON.parse`。
+ * 用户预算侧基数单价：始终来自 `models.pricing_profile`（忽略 route nested `charged`）。
+ * 调用方再乘 `charged_factor × schedule.charged`。
  */
 export function resolveChargedBillingPrices(options: {
 	basisInputTokens: number;
-	routePriceOverrideJson: string | null | undefined;
+	/** @deprecated Ignored; nested charged tiers are not used for billing. */
+	routePriceOverrideJson?: string | null | undefined;
+	/** @deprecated Ignored. */
 	routeNestedChargedProfileJson?: string | null | undefined;
 	modelPricingProfileJson: string | null | undefined;
 }): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
-	const nested =
-		typeof options.routeNestedChargedProfileJson === 'string' &&
-		options.routeNestedChargedProfileJson.trim() !== ''
-			? options.routeNestedChargedProfileJson.trim()
-			: null;
-	const routeSub = nested ?? extractChargedProfileFromPriceOverrideJson(options.routePriceOverrideJson);
-	const tryOrder: Array<{ json: string; source: 'route_nested' | 'model' }> = [];
-	if (routeSub) {
-		tryOrder.push({ json: routeSub, source: 'route_nested' });
-	}
-	if (options.modelPricingProfileJson?.trim()) {
-		tryOrder.push({ json: options.modelPricingProfileJson.trim(), source: 'model' });
-	}
-	for (const c of tryOrder) {
-		const parsed = parsePricingProfile(c.json);
-		if (!parsed) {
-			continue;
-		}
-		return materializeFromParsed(options.basisInputTokens, parsed, c.source);
-	}
-	return {
-		prices: ZERO_BILLING_SNAPSHOT,
-		audit: {
-			path: 'missing_profile',
-			source: 'model',
-			basis_tokens: options.basisInputTokens,
-			prices: ZERO_BILLING_SNAPSHOT,
-		},
-	};
+	return resolveCatalogBillingPrices({
+		basisInputTokens: options.basisInputTokens,
+		modelPricingProfileJson: options.modelPricingProfileJson,
+		source: 'model_x_factor',
+	});
 }

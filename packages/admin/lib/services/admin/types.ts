@@ -171,7 +171,7 @@ export type AdminModelRouteMutationInput = {
 	priority?: unknown;
 	status?: unknown;
 	route_group?: unknown;
-	/** JSON string or object; may contain `metered`, `charged`, `provider_factor`, `charged_factor`, `metered_factor`; normalized by `coerceRoutePriceOverrideInput`. **POST `/admin/routes` requires both `metered` and `charged` with ≥1 tier each; PATCH with `price_override` enforces the same.** */
+	/** JSON string or object; canonical `charged_factor` / `metered_factor` / optional `schedule`; nested `metered`/`charged` tiers stripped on write. Normalized by `coerceRoutePriceOverrideInput`. */
 	price_override?: unknown;
 	custom_params?: unknown;
 	upstream_protocol?: unknown;

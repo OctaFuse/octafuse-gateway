@@ -14,7 +14,7 @@
 		"deploy": "npm run build:cf && opennextjs-cloudflare deploy",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"test:unit": "tsx --test lib/services/admin/shared.test.ts"
+		"test:unit": "tsx --test lib/services/admin/*.test.ts"
 	},
 	"dependencies": {
 		"@heroicons/react": "^2.2.0",

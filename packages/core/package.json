@@ -27,6 +27,7 @@
 			"default": "./src/index.ts"
 		},
 		"./db/pricing-profile": "./src/db/pricing-profile.ts",
+		"./db/pricing-schedule": "./src/db/pricing-schedule.ts",
 		"./db/model-modalities": "./src/db/model-modalities.ts",
 		"./db/model-sticky-config": "./src/db/model-sticky-config.ts",
 		"./db/provider-key-limit-config": "./src/db/provider-key-limit-config.ts",

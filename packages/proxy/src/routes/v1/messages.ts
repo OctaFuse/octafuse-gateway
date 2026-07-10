@@ -248,6 +248,7 @@ messagesRoutes.post('/', async (c) => {
           route_price_override_json: chosenRoute.priceOverrideRaw,
           route_metered_profile_json: chosenRoute.routeMeteredProfileJson,
           route_charged_profile_json: chosenRoute.routeChargedProfileJson,
+          request_started_at_ms: start,
           route_group: chosenRoute.routeGroup,
           status,
           latency_ms: latency,

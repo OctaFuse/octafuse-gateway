@@ -56,6 +56,7 @@ export function maybeBlockSensitiveContentCircuit(
 			request_protocol: ctx.requestProtocol,
 			upstream_protocol: ctx.requestProtocol,
 			usage: EMPTY_USAGE,
+			request_started_at_ms: ctx.startMs,
 			route_group: 'default',
 			status: 'error',
 			latency_ms: latencyMs,

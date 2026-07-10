@@ -2,7 +2,6 @@
 
 import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
 import type { CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
@@ -11,11 +10,8 @@ import {
 	providerSupportsUpstreamProtocol,
 	type UpstreamProtocol,
 } from '@/lib/upstream-protocol';
-import {
-	recomputeChargedTiersFromChargedFactor,
-	recomputeOverrideTiersFromProviderFactor,
-} from '../route-utils';
 import type { RouteFormData, RouteListRow } from '../types';
+import { DailyScheduleEditor } from './daily-schedule-editor';
 import { RoutePricePanel } from './route-price-panel';
 
 type Props = {
@@ -33,6 +29,7 @@ type Props = {
 	selectedProvider: GatewayProvider | undefined;
 	catalogStandardTierRows: CatalogPricingTierDisplayRow[];
 	allowedProtocolsForProvider: UpstreamProtocol[];
+	businessTimezone: string;
 	onClose: () => void;
 	onFormChange: (form: RouteFormData) => void;
 	onSave: () => void;
@@ -52,10 +49,10 @@ export function RouteModal(props: Props) {
 		billingCurrency,
 		models,
 		providers,
-		selectedModel,
 		selectedProvider,
 		catalogStandardTierRows,
 		allowedProtocolsForProvider,
+		businessTimezone,
 		onClose,
 		onFormChange,
 		onSave,
@@ -124,37 +121,12 @@ export function RouteModal(props: Props) {
 									<label className="mb-1 block text-sm font-medium text-gray-700">{t('modelRequired')}</label>
 									<select
 										value={formData.model_id}
-										onChange={(e) => {
-											const nextModelId = e.target.value;
-											const model = models.find((m) => m.id === nextModelId);
-											let charged = formData.charged_override_tiers;
-											let metered = formData.metered_override_tiers;
-											let pf = formData.provider_factor;
-											if (model) {
-												if (charged.length === 0) {
-													const rc = recomputeChargedTiersFromChargedFactor(
-														formData.charged_factor,
-														model
-													);
-													if (rc.ok) charged = rc.tiers;
-												}
-												if (metered.length === 0) {
-													const pfText = pf.trim() === '' ? '1' : pf;
-													const rm = recomputeOverrideTiersFromProviderFactor(pfText, model);
-													if (rm.ok) {
-														metered = rm.tiers;
-														if (pf.trim() === '') pf = '1';
-													}
-												}
-											}
+										onChange={(e) =>
 											onFormChange({
 												...formData,
-												model_id: nextModelId,
-												charged_override_tiers: charged,
-												metered_override_tiers: metered,
-												provider_factor: pf,
-											});
-										}}
+												model_id: e.target.value,
+											})
+										}
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 										required
 									>
@@ -202,39 +174,6 @@ export function RouteModal(props: Props) {
 								</div>
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t('upstreamProtocol')}
-									</label>
-									<select
-										value={
-											allowedProtocolsForProvider.includes(formData.upstream_protocol)
-												? formData.upstream_protocol
-												: (allowedProtocolsForProvider[0] ?? formData.upstream_protocol)
-										}
-										onChange={(e) =>
-											onFormChange({
-												...formData,
-												upstream_protocol: e.target.value as UpstreamProtocol,
-											})
-										}
-										disabled={!selectedProvider || allowedProtocolsForProvider.length === 0}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
-									>
-										{allowedProtocolsForProvider.length === 0 ? (
-											<option value="">—</option>
-										) : (
-											allowedProtocolsForProvider.map((p) => (
-												<option key={p} value={p}>
-													{p}
-												</option>
-											))
-										)}
-									</select>
-									<p className="mt-1.5 text-xs text-gray-500">
-										{selectedProvider ? t('protocolHintConfigured') : t('protocolHintSelectProvider')}
-									</p>
-								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
 										{t('providerModelName')}
 									</label>
 									<input
@@ -243,10 +182,38 @@ export function RouteModal(props: Props) {
 										onChange={(e) =>
 											onFormChange({ ...formData, provider_model_name: e.target.value })
 										}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 										placeholder={t('providerModelPlaceholder')}
 										required
 									/>
+								</div>
+							</div>
+							<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+								<div>
+									<label className="mb-1 block text-sm font-medium text-gray-700">
+										{t('upstreamProtocol')}
+									</label>
+									<select
+										value={formData.upstream_protocol}
+										onChange={(e) =>
+											onFormChange({
+												...formData,
+												upstream_protocol: e.target.value as UpstreamProtocol,
+											})
+										}
+										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+									>
+										{allowedProtocolsForProvider.map((p) => (
+											<option key={p} value={p}>
+												{p}
+											</option>
+										))}
+									</select>
+									<p className="mt-1 text-xs text-gray-500">
+										{selectedProvider
+											? t('protocolHintConfigured')
+											: t('protocolHintSelectProvider')}
+									</p>
 								</div>
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">{t('routeGroup')}</label>
@@ -287,13 +254,17 @@ export function RouteModal(props: Props) {
 									<ReadOnlyPricingTiersTable
 										rows={catalogStandardTierRows}
 										emptyLabel={
-											selectedModel ? t('noCatalogPricing') : t('selectModelForTiers')
+											formData.model_id ? t('noCatalogPricing') : t('selectModelForTiers')
 										}
 										tableTitle={t('readOnlyCatalogRates')}
 										billingCurrencyCode={billingCurrency}
 									/>
 								</div>
 							</RoutePricePanel>
+
+							<p className="text-xs text-gray-600">
+								{t('billingTimezoneHint', { timezone: businessTimezone })}
+							</p>
 
 							<div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-stretch">
 								<div className="flex h-full min-h-0 min-w-0 flex-col">
@@ -302,48 +273,46 @@ export function RouteModal(props: Props) {
 										variant="charged"
 										title={t('chargedCost')}
 										subtitle={t('chargedCostHint')}
+										headerEnd={
+											<div className="flex flex-col items-end gap-1">
+												<label
+													htmlFor="user-cost-charged-factor"
+													className="whitespace-nowrap text-[11px] font-medium text-gray-600"
+												>
+													{t('chargedFactor')}
+												</label>
+												<input
+													id="user-cost-charged-factor"
+													type="text"
+													inputMode="decimal"
+													value={formData.charged_factor}
+													title={t('chargedFactorTitle')}
+													onChange={(e) =>
+														onFormChange({ ...formData, charged_factor: e.target.value })
+													}
+													className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+													placeholder="1"
+												/>
+											</div>
+										}
 									>
-										<PricingTiersEditor
-											rows={formData.charged_override_tiers}
-											onChange={(rows) =>
-												onFormChange({ ...formData, charged_override_tiers: rows })
-											}
-											billingCurrencyCode={billingCurrency}
-											minRows={0}
-											toolbarStart={
-												<div className="flex items-center gap-1.5 border-r border-gray-200 pr-3">
-													<label
-														htmlFor="user-cost-charged-factor"
-														className="whitespace-nowrap text-[11px] font-medium text-gray-600"
-													>
-														{t('chargedFactor')}
-													</label>
-													<input
-														id="user-cost-charged-factor"
-														type="text"
-														inputMode="decimal"
-														value={formData.charged_factor}
-														title={t('chargedFactorTitle')}
-														onChange={(e) => {
-															const next = e.target.value;
-															const model = models.find((m) => m.id === formData.model_id);
-															const r = recomputeChargedTiersFromChargedFactor(next, model);
-															if (r.ok) {
-																onFormChange({
-																	...formData,
-																	charged_factor: next,
-																	charged_override_tiers: r.tiers,
-																});
-															} else {
-																onFormChange({ ...formData, charged_factor: next });
-															}
-														}}
-														className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-														placeholder="1"
-													/>
-												</div>
-											}
-										/>
+										<div>
+											<p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+												{t('dailySchedule')}
+											</p>
+											<DailyScheduleEditor
+												windows={formData.schedule_charged}
+												onChange={(schedule_charged) =>
+													onFormChange({ ...formData, schedule_charged })
+												}
+												addLabel={t('addScheduleWindow')}
+												emptyLabel={t('scheduleEmpty')}
+												startLabel={t('scheduleStart')}
+												endLabel={t('scheduleEnd')}
+												factorLabel={t('scheduleFactor')}
+												removeLabel={tCommon('delete')}
+											/>
+										</div>
 									</RoutePricePanel>
 								</div>
 
@@ -353,51 +322,46 @@ export function RouteModal(props: Props) {
 										variant="metered"
 										title={t('meteredCost')}
 										subtitle={t('meteredCostHint')}
+										headerEnd={
+											<div className="flex flex-col items-end gap-1">
+												<label
+													htmlFor="gateway-route-metered-factor"
+													className="whitespace-nowrap text-[11px] font-medium text-gray-600"
+												>
+													{t('meteredFactor')}
+												</label>
+												<input
+													id="gateway-route-metered-factor"
+													type="text"
+													inputMode="decimal"
+													value={formData.metered_factor}
+													title={t('meteredFactorTitle')}
+													onChange={(e) =>
+														onFormChange({ ...formData, metered_factor: e.target.value })
+													}
+													className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+													placeholder="1"
+												/>
+											</div>
+										}
 									>
-										<PricingTiersEditor
-											rows={formData.metered_override_tiers}
-											onChange={(rows) =>
-												onFormChange({ ...formData, metered_override_tiers: rows })
-											}
-											billingCurrencyCode={billingCurrency}
-											minRows={0}
-											toolbarStart={
-												<div className="flex items-center gap-1.5 border-r border-gray-200 pr-3">
-													<label
-														htmlFor="gateway-route-provider-factor"
-														className="whitespace-nowrap text-[11px] font-medium text-gray-600"
-													>
-														{t('providerFactor')}
-													</label>
-													<input
-														id="gateway-route-provider-factor"
-														type="text"
-														inputMode="decimal"
-														value={formData.provider_factor}
-														title={t('providerFactorTitle')}
-														onChange={(e) => {
-															const nextFactor = e.target.value;
-															const model = models.find((m) => m.id === formData.model_id);
-															const r = recomputeOverrideTiersFromProviderFactor(
-																nextFactor,
-																model
-															);
-															if (r.ok) {
-																onFormChange({
-																	...formData,
-																	provider_factor: nextFactor,
-																	metered_override_tiers: r.tiers,
-																});
-															} else {
-																onFormChange({ ...formData, provider_factor: nextFactor });
-															}
-														}}
-														className="w-[3.5rem] rounded-md border border-gray-300 bg-white px-1.5 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-														placeholder="1"
-													/>
-												</div>
-											}
-										/>
+										<div>
+											<p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+												{t('dailySchedule')}
+											</p>
+											<DailyScheduleEditor
+												windows={formData.schedule_metered}
+												onChange={(schedule_metered) =>
+													onFormChange({ ...formData, schedule_metered })
+												}
+												addLabel={t('addScheduleWindow')}
+												emptyLabel={t('scheduleEmpty')}
+												startLabel={t('scheduleStart')}
+												endLabel={t('scheduleEnd')}
+												factorLabel={t('scheduleFactor')}
+												removeLabel={tCommon('delete')}
+											/>
+										</div>
 									</RoutePricePanel>
 								</div>
 							</div>

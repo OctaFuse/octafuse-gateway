@@ -4,7 +4,7 @@
 import type { GatewayRepositories } from '@octafuse/core';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { badRequest, notFound } from './errors';
-import { coerceRoutePriceOverrideInput, assertRoutePriceOverrideHasMeteredAndCharged } from './pricing-input';
+import { coerceRoutePriceOverrideInput, assertRoutePriceOverrideFactors } from './pricing-input';
 import { normalizeJsonObjectField, providerSupportsUpstreamProtocol } from './shared';
 import type {
 	AdminCreatedIdOutput,
@@ -60,7 +60,7 @@ export async function createModelRouteService(
 		typeof body.route_group === 'string' && body.route_group.trim() !== '' ? body.route_group.trim() : 'default';
 	const id = crypto.randomUUID();
 	const priceOverride = coerceRoutePriceOverrideInput(body.price_override);
-	assertRoutePriceOverrideHasMeteredAndCharged(priceOverride);
+	assertRoutePriceOverrideFactors(priceOverride);
 
 	await repos.routes.insertModelRoute({
 		id,
@@ -108,7 +108,7 @@ export async function updateModelRouteService(
 	}
 	if (patch.price_override !== undefined) {
 		const normalized = coerceRoutePriceOverrideInput(patch.price_override);
-		assertRoutePriceOverrideHasMeteredAndCharged(normalized);
+		assertRoutePriceOverrideFactors(normalized);
 		patch.price_override = normalized;
 	}
 	if (patch.upstream_protocol !== undefined) {

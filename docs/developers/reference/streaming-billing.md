@@ -51,7 +51,7 @@ flowchart LR
 - `cancelled`：客户端断开，drain 后 resolve。  
 - `incomplete`：异常或安全超时，usage 不全。  
 - `error`：上游非 2xx；**不**按该次结果扣 `budget_spent`。  
-- 扣费：`status !== 'error'` 且 `charged_cost > 0`（`charged_cost` 来自路由 `price_override.charged` 或模型 `pricing_profile`；`charged_factor` / `metered_factor` **不参与**金额乘法）。详见 `packages/proxy/src/services/usage-tracker.ts`。
+- 扣费：`status !== 'error'` 且 `charged_cost > 0`。金额公式：目录 `models.pricing_profile` 按 `input_tokens` 选档后，`charged_cost` = 目录价 × `charged_factor` × `schedule.charged`（缺省倍率均为 1）；`metered_cost` 同理用 `metered_factor` / `schedule.metered`；`standard_cost` 仅为目录价。每日时段在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率；该时刻写入 `pricing_audit.schedule.evaluated_at_utc`。嵌套 `price_override.metered` / `charged` tiers **忽略**。详见 `packages/proxy/src/services/usage-tracker.ts` 与 `packages/core/src/db/pricing-schedule.ts`。
 
 ## 常量
 

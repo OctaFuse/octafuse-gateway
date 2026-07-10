@@ -5,10 +5,12 @@ import {
 	parseChargedFactorFromPriceOverride,
 	parseMeteredFactorFromPriceOverride,
 } from '@/lib/pricing-ui';
+import { parseRoutePricingSchedule } from '@octafuse/core/db/pricing-schedule';
 import {
 	factorChipClassForValue,
 	formatFactorMultiplier,
 	formatFactorMultiplierForChip,
+	formatScheduleWindowsHint,
 } from '../route-utils';
 import { FACTOR_CHIP_BASE } from '../types';
 import type { RouteListRow } from '../types';
@@ -23,11 +25,13 @@ type Props = {
 export function RouteListItem(props: Props) {
 	const { route, togglingId, onEdit, onToggleStatus } = props;
 	const t = useTranslations('routes.listItem');
-	const tCommon = useTranslations('common');
 	const chargedF = parseChargedFactorFromPriceOverride(route.price_override);
 	const meteredF = parseMeteredFactorFromPriceOverride(route.price_override);
-	const chargedDisp = chargedF != null && Number.isFinite(chargedF) ? chargedF : null;
-	const meteredDisp = meteredF != null && Number.isFinite(meteredF) ? meteredF : null;
+	const chargedDisp = chargedF != null && Number.isFinite(chargedF) ? chargedF : 1;
+	const meteredDisp = meteredF != null && Number.isFinite(meteredF) ? meteredF : 1;
+	const schedule = parseRoutePricingSchedule(route.price_override);
+	const schHint =
+		formatScheduleWindowsHint(schedule.charged) || formatScheduleWindowsHint(schedule.metered);
 
 	return (
 		<li className="flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50/80">
@@ -75,43 +79,28 @@ export function RouteListItem(props: Props) {
 					aria-label={t('factorsAria')}
 				>
 					<span
-						className={
-							chargedDisp != null
-								? factorChipClassForValue(chargedDisp)
-								: `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
-						}
-						title={
-							chargedDisp != null
-								? t('chargedTooltip', { value: formatFactorMultiplier(chargedDisp) })
-								: t('chargedTooltipNotSet')
-						}
-						aria-label={
-							chargedDisp != null
-								? t('chargedFactorAria', { value: formatFactorMultiplier(chargedDisp) })
-								: t('chargedFactorNotSet')
-						}
+						className={factorChipClassForValue(chargedDisp)}
+						title={t('chargedTooltip', { value: formatFactorMultiplier(chargedDisp) })}
+						aria-label={t('chargedFactorAria', { value: formatFactorMultiplier(chargedDisp) })}
 					>
-						{chargedDisp != null ? formatFactorMultiplierForChip(chargedDisp) : tCommon('noData')}
+						{formatFactorMultiplierForChip(chargedDisp)}
 					</span>
 					<span
-						className={
-							meteredDisp != null
-								? factorChipClassForValue(meteredDisp)
-								: `${FACTOR_CHIP_BASE} bg-zinc-50 text-zinc-400 ring-zinc-200/90`
-						}
-						title={
-							meteredDisp != null
-								? t('meteredTooltip', { value: formatFactorMultiplier(meteredDisp) })
-								: t('meteredTooltipNotSet')
-						}
-						aria-label={
-							meteredDisp != null
-								? t('meteredFactorAria', { value: formatFactorMultiplier(meteredDisp) })
-								: t('meteredFactorNotSet')
-						}
+						className={factorChipClassForValue(meteredDisp)}
+						title={t('meteredTooltip', { value: formatFactorMultiplier(meteredDisp) })}
+						aria-label={t('meteredFactorAria', { value: formatFactorMultiplier(meteredDisp) })}
 					>
-						{meteredDisp != null ? formatFactorMultiplierForChip(meteredDisp) : tCommon('noData')}
+						{formatFactorMultiplierForChip(meteredDisp)}
 					</span>
+					{schHint ? (
+						<span
+							className={`${FACTOR_CHIP_BASE} w-auto max-w-[7rem] truncate bg-sky-50 text-sky-900 ring-sky-200/90`}
+							title={schHint}
+							aria-label={t('scheduleAria', { windows: schHint })}
+						>
+							{t('scheduleBadge')}
+						</span>
+					) : null}
 				</div>
 			</div>
 		</li>

@@ -1,20 +1,28 @@
 /**
  * 用量与计费：按百万 token 单价计算 `metered_cost`（供应成本）、`standard_cost`（目录标准成本）、`charged_cost`（用户预算）。
- * - `metered_cost`：路由 `price_override.metered` 优先，否则 `models.pricing_profile`。
- * - `standard_cost`：仅 `models.pricing_profile`（与目录价侧一致）。
- * - `charged_cost`：路由 `price_override.charged` 优先，否则 `models.pricing_profile`；倍率见 `price_override.charged_factor`（仅展示/配置，不参与本公式）。
+ * - 基数始终来自 `models.pricing_profile`（按 input_tokens 选档）。
+ * - `metered_cost` = 目录价 × `metered_factor` × `schedule.metered`（缺省倍率 1）。
+ * - `charged_cost` = 目录价 × `charged_factor` × `schedule.charged`（缺省倍率 1）。
+ * - `standard_cost` = 目录价（不乘路由倍率）。
+ * - nested `price_override.metered` / `charged` tiers 忽略不计价。
  * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `users.budget_spent`。
  */
 import type { GatewayRepositories, UpstreamProtocol } from '@octafuse/core';
 import {
+	getBusinessTimezone,
 	getUserBudgetSnapshot,
 	insertRequestUsageAndChargeTx,
+	parseRouteBaseFactors,
+	parseRoutePricingSchedule,
 	PRICING_AUDIT_JSON_SCHEMA_VERSION,
-	roundGatewayMoney,
-	type PriceResolutionAuditSide,
 	resolveChargedBillingPrices,
+	resolveDailyScheduleFactor,
 	resolveStandardBillingPrices,
 	resolveSupplierBillingPrices,
+	roundGatewayMoney,
+	scaleBillingPrices,
+	type BillingPriceSnapshot,
+	type PriceResolutionAuditSide,
 	changedFieldsToJson,
 	computeChangedFields,
 	snapshotToJson,
@@ -69,6 +77,35 @@ function buildRequestPricingAuditJson(options: {
 	});
 }
 
+function applyRouteFactorsToSide(options: {
+	catalog: { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide };
+	baseFactor: number;
+	scheduleFactor: ReturnType<typeof resolveDailyScheduleFactor>;
+}): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
+	const effective = options.baseFactor * options.scheduleFactor.factor;
+	const prices = scaleBillingPrices(options.catalog.prices, effective);
+	const sch = options.scheduleFactor;
+	return {
+		prices,
+		audit: {
+			...options.catalog.audit,
+			source: 'model_x_factor',
+			base_factor: options.baseFactor,
+			schedule: {
+				timezone: sch.timezone,
+				local_time: sch.localTime,
+				evaluated_at_utc: sch.evaluatedAtUtc,
+				factor: sch.factor,
+				window: sch.window
+					? { start: sch.window.start, end: sch.window.end, factor: sch.window.factor }
+					: null,
+			},
+			effective_factor: effective,
+			prices,
+		},
+	};
+}
+
 /**
  * 写入 `api_key_request_logs` 并在合适条件下增加 `users.budget_spent`（与插入日志同一 batch）。
  */
@@ -90,10 +127,12 @@ export async function recordUsage(
 		usage: UsageFromStream;
 		model_pricing_profile?: string | null;
 		route_price_override_json?: string | null;
-		/** `price_override.metered` 的 JSON 字符串 */
+		/** @deprecated Ignored; nested metered tiers are not used for billing. */
 		route_metered_profile_json?: string | null;
-		/** `price_override.charged` 的 JSON 字符串 */
+		/** @deprecated Ignored; nested charged tiers are not used for billing. */
 		route_charged_profile_json?: string | null;
+		/** 请求进入 Gateway 的时间；每日时段倍率在该时刻锁定。 */
+		request_started_at_ms?: number;
 		route_group: string;
 		status: 'success' | 'error' | 'incomplete' | 'cancelled';
 		latency_ms?: number;
@@ -113,22 +152,44 @@ export async function recordUsage(
 	}
 ): Promise<void> {
 	const basis = params.usage.input_tokens;
-	const supplierResolved = resolveSupplierBillingPrices({
+	const requestStartedAtMs = params.request_started_at_ms;
+	const requestedPricingAtUtc =
+		typeof requestStartedAtMs === 'number' && Number.isFinite(requestStartedAtMs)
+			? new Date(requestStartedAtMs)
+			: new Date();
+	const pricingAtUtc = Number.isNaN(requestedPricingAtUtc.getTime())
+		? new Date()
+		: requestedPricingAtUtc;
+	const businessTimezone = await getBusinessTimezone(repos);
+	const baseFactors = parseRouteBaseFactors(params.route_price_override_json ?? null);
+	const schedule = parseRoutePricingSchedule(params.route_price_override_json ?? null);
+	const chargedSch = resolveDailyScheduleFactor(schedule.charged, pricingAtUtc, businessTimezone);
+	const meteredSch = resolveDailyScheduleFactor(schedule.metered, pricingAtUtc, businessTimezone);
+
+	const catalogSupplier = resolveSupplierBillingPrices({
 		basisInputTokens: basis,
-		routePriceOverrideJson: params.route_price_override_json ?? null,
-		routeNestedMeteredProfileJson: params.route_metered_profile_json ?? null,
 		modelPricingProfileJson: params.model_pricing_profile ?? null,
 	});
 	const standardResolved = resolveStandardBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: params.model_pricing_profile ?? null,
 	});
-	const chargedResolved = resolveChargedBillingPrices({
+	const catalogCharged = resolveChargedBillingPrices({
 		basisInputTokens: basis,
-		routePriceOverrideJson: params.route_price_override_json ?? null,
-		routeNestedChargedProfileJson: params.route_charged_profile_json ?? null,
 		modelPricingProfileJson: params.model_pricing_profile ?? null,
 	});
+
+	const supplierResolved = applyRouteFactorsToSide({
+		catalog: catalogSupplier,
+		baseFactor: baseFactors.meteredFactor,
+		scheduleFactor: meteredSch,
+	});
+	const chargedResolved = applyRouteFactorsToSide({
+		catalog: catalogCharged,
+		baseFactor: baseFactors.chargedFactor,
+		scheduleFactor: chargedSch,
+	});
+
 	const supplierCost = computeMeteredCost(
 		params.usage,
 		supplierResolved.prices.input_price,
@@ -160,7 +221,7 @@ export async function recordUsage(
 		chargedAudit: chargedResolved.audit,
 	});
 	console.log(
-		`[Gateway Usage] recordUsage model_id=${params.model_id} request_protocol=${params.request_protocol} status=${params.status} route_group=${params.route_group} input_tokens=${params.usage.input_tokens} output_tokens=${params.usage.output_tokens} reasoning_tokens=${params.usage.reasoning_tokens} metered=${supplierCostR} standard=${standardCostR} charged=${chargedCost}`
+		`[Gateway Usage] recordUsage model_id=${params.model_id} request_protocol=${params.request_protocol} status=${params.status} route_group=${params.route_group} input_tokens=${params.usage.input_tokens} output_tokens=${params.usage.output_tokens} reasoning_tokens=${params.usage.reasoning_tokens} metered=${supplierCostR} standard=${standardCostR} charged=${chargedCost} charged_eff=${chargedResolved.audit.effective_factor} metered_eff=${supplierResolved.audit.effective_factor}`
 	);
 	const id = crypto.randomUUID();
 	const shouldChargeBudget = params.status !== 'error' && chargedCost > 0;

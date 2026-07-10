@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { getCatalogPricingTierRows } from '@/lib/pricing-ui';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import { normalizeRouteGroup } from '@/lib/route-group-ui';
+import { useBusinessTimezone } from '@/components/BusinessTimezoneProvider';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
@@ -70,6 +71,7 @@ export function useRoutesPageState() {
 	const [stickySaving, setStickySaving] = useState(false);
 	const [stickyError, setStickyError] = useState('');
 	const { currency: billingCurrency } = useBillingCurrency();
+	const businessTimezone = useBusinessTimezone();
 
 	useEffect(() => {
 		const vendor = searchParams.get('vendor');
@@ -470,6 +472,7 @@ export function useRoutesPageState() {
 		selectedModel,
 		catalogStandardTierRows,
 		allowedProtocolsForProvider,
+		businessTimezone,
 		stickyDialog,
 		setStickyDialog,
 		stickyForm,

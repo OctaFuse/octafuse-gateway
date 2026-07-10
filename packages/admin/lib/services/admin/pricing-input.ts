@@ -1,7 +1,8 @@
 /**
- * 管理 API：`pricing_profile` / `price_override` 内嵌 profile 的规范化与校验（与 `@octafuse/core` 解析一致）。
+ * 管理 API：`pricing_profile` / `price_override` 的规范化与校验（与 `@octafuse/core` 解析一致）。
  */
 import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
+import { coerceRoutePricingScheduleInput } from '@octafuse/core/db/pricing-schedule';
 import { badRequest } from './errors';
 
 /**
@@ -34,8 +35,38 @@ export function coerceModelPricingProfileInput(raw: unknown): string | null {
 	throw badRequest('pricing_profile must be a JSON string, object, null, or omitted');
 }
 
+function normalizeOptionalNonNegativeFactor(
+	obj: Record<string, unknown>,
+	key: 'charged_factor' | 'metered_factor' | 'provider_factor'
+): void {
+	const v = obj[key];
+	if (v === undefined || v === null) {
+		delete obj[key];
+		return;
+	}
+	if (typeof v === 'string') {
+		const text = v.trim();
+		if (text === '') {
+			delete obj[key];
+			return;
+		}
+		const n = Number(text);
+		if (Number.isFinite(n) && n >= 0) {
+			obj[key] = n;
+			return;
+		}
+	}
+	if (typeof v === 'number' && Number.isFinite(v) && v >= 0) {
+		obj[key] = v;
+		return;
+	}
+	throw badRequest(`price_override.${key} must be a number ≥ 0`);
+}
+
 /**
- * 规范化 `model_routes.price_override`：整段 JSON 字符串；校验嵌套 **`metered`** / **`charged`** profile（若存在）；并规范化可选 **`charged_factor`** / **`metered_factor`**（非负数字）。
+ * 规范化 `model_routes.price_override`：整段 JSON 字符串。
+ * Canonical：`charged_factor` / `metered_factor` / 可选 `schedule`。
+ * 剥离 nested `metered` / `charged` tiers 与扁平单价键（不计价）。
  * @throws `badRequest`
  */
 export function coerceRoutePriceOverrideInput(raw: unknown): string | null {
@@ -63,92 +94,35 @@ export function coerceRoutePriceOverrideInput(raw: unknown): string | null {
 	}
 
 	if (Object.prototype.hasOwnProperty.call(obj, 'user')) {
-		throw badRequest('price_override: unsupported key "user"; use "charged"');
+		throw badRequest('price_override: unsupported key "user"; use "charged_factor"');
 	}
 
-	const metered = obj.metered;
-	if (metered !== undefined && metered !== null) {
-		if (typeof metered === 'string') {
-			const inner = metered.trim();
-			if (inner === '') {
-				delete obj.metered;
-			} else if (!parsePricingProfile(inner)) {
-				throw badRequest('price_override.metered: invalid profile JSON');
-			} else {
-				obj.metered = JSON.parse(inner) as Record<string, unknown>;
-			}
-		} else if (typeof metered === 'object' && !Array.isArray(metered)) {
-			const inner = JSON.stringify(metered);
-			if (!parsePricingProfile(inner)) {
-				throw badRequest('price_override.metered: invalid profile object');
-			}
-			obj.metered = JSON.parse(inner) as Record<string, unknown>;
-		} else {
-			throw badRequest('price_override.metered must be a string or object');
-		}
-	}
-
-	const charged = obj.charged;
-	if (charged !== undefined && charged !== null) {
-		if (typeof charged === 'string') {
-			const inner = charged.trim();
-			if (inner === '') {
-				delete obj.charged;
-			} else if (!parsePricingProfile(inner)) {
-				throw badRequest('price_override.charged: invalid profile JSON');
-			} else {
-				obj.charged = JSON.parse(inner) as Record<string, unknown>;
-			}
-		} else if (typeof charged === 'object' && !Array.isArray(charged)) {
-			const inner = JSON.stringify(charged);
-			if (!parsePricingProfile(inner)) {
-				throw badRequest('price_override.charged: invalid profile object');
-			}
-			obj.charged = JSON.parse(inner) as Record<string, unknown>;
-		} else {
-			throw badRequest('price_override.charged must be a string or object');
-		}
-	}
-
+	// Nested tiers are deprecated and ignored at billing time — strip on write.
+	delete obj.metered;
+	delete obj.charged;
 	for (const k of ['input_price', 'output_price', 'cache_read_price', 'cache_write_price'] as const) {
 		delete obj[k];
 	}
-	const pf = obj.provider_factor;
-	if (typeof pf === 'string' && pf.trim() !== '') {
-		const n = parseFloat(pf.trim());
-		if (Number.isFinite(n)) {
-			obj.provider_factor = n;
-		} else {
-			delete obj.provider_factor;
-		}
-	} else if (pf !== undefined && pf !== null && typeof pf !== 'number') {
-		delete obj.provider_factor;
-	}
 
-	const normalizeOptionalNonNegativeFactor = (key: 'charged_factor' | 'metered_factor'): void => {
-		const v = obj[key];
-		if (v === undefined || v === null) {
-			return;
+	normalizeOptionalNonNegativeFactor(obj, 'provider_factor');
+	normalizeOptionalNonNegativeFactor(obj, 'charged_factor');
+	normalizeOptionalNonNegativeFactor(obj, 'metered_factor');
+
+	if (obj.schedule !== undefined) {
+		const coerced = coerceRoutePricingScheduleInput(obj.schedule);
+		if (!coerced.ok) {
+			throw badRequest(coerced.message);
 		}
-		if (typeof v === 'string' && v.trim() !== '') {
-			const n = parseFloat(v.trim());
-			if (Number.isFinite(n) && n >= 0) {
-				obj[key] = n;
-			} else {
-				delete obj[key];
-			}
-		} else if (typeof v === 'number') {
-			if (Number.isFinite(v) && v >= 0) {
-				obj[key] = v;
-			} else {
-				delete obj[key];
-			}
+		const { charged, metered } = coerced.schedule;
+		if (charged.length === 0 && metered.length === 0) {
+			delete obj.schedule;
 		} else {
-			delete obj[key];
+			obj.schedule = {
+				...(charged.length > 0 ? { charged } : {}),
+				...(metered.length > 0 ? { metered } : {}),
+			};
 		}
-	};
-	normalizeOptionalNonNegativeFactor('charged_factor');
-	normalizeOptionalNonNegativeFactor('metered_factor');
+	}
 
 	if (Object.keys(obj).length === 0) {
 		return null;
@@ -157,15 +131,14 @@ export function coerceRoutePriceOverrideInput(raw: unknown): string | null {
 }
 
 /**
- * After `coerceRoutePriceOverrideInput`, require nested **`metered`** and **`charged`** profiles,
- * each parsing as a valid pricing profile with at least one tier.
+ * After `coerceRoutePriceOverrideInput`, require non-negative `charged_factor` / `metered_factor`
+ * (defaulting missing values to 1 when persisting is caller's choice; here we accept omit = 1).
  * @throws `badRequest`
  */
-export function assertRoutePriceOverrideHasMeteredAndCharged(normalizedJson: string | null): void {
+export function assertRoutePriceOverrideFactors(normalizedJson: string | null): void {
 	if (!normalizedJson?.trim()) {
-		throw badRequest(
-			'price_override is required and must include valid "metered" and "charged" profiles with at least one tier each'
-		);
+		// Empty override means all factors default to 1 at runtime — allowed.
+		return;
 	}
 	let obj: Record<string, unknown>;
 	try {
@@ -173,18 +146,26 @@ export function assertRoutePriceOverrideHasMeteredAndCharged(normalizedJson: str
 	} catch {
 		throw badRequest('price_override must be valid JSON');
 	}
-	for (const side of ['metered', 'charged'] as const) {
-		const raw = obj[side];
-		if (raw == null) {
-			throw badRequest(`price_override.${side} is required`);
+	for (const key of ['charged_factor', 'metered_factor'] as const) {
+		const v = obj[key];
+		if (v === undefined || v === null) {
+			continue;
 		}
-		const inner = typeof raw === 'string' ? raw.trim() : JSON.stringify(raw);
-		if (!inner) {
-			throw badRequest(`price_override.${side} is required`);
-		}
-		const p = parsePricingProfile(inner);
-		if (!p || p.tiers.length === 0) {
-			throw badRequest(`price_override.${side} must be a valid pricing profile with at least one tier`);
+		if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) {
+			throw badRequest(`price_override.${key} must be a number ≥ 0`);
 		}
 	}
+	if (obj.schedule !== undefined) {
+		const coerced = coerceRoutePricingScheduleInput(obj.schedule);
+		if (!coerced.ok) {
+			throw badRequest(coerced.message);
+		}
+	}
+}
+
+/**
+ * @deprecated Use `assertRoutePriceOverrideFactors`. Nested metered/charged tiers are no longer required.
+ */
+export function assertRoutePriceOverrideHasMeteredAndCharged(normalizedJson: string | null): void {
+	assertRoutePriceOverrideFactors(normalizedJson);
 }

@@ -546,7 +546,7 @@ GET /admin/keys/:id/logs?page=1&page_size=20&exclude_status=incomplete
 }
 ```
 
-> 注：`metered_cost` 为按 route **`price_override.metered`**（若存在）否则 `models.pricing_profile` 计算的供应成本；`standard_cost` 为按模型目录 `pricing_profile` 计算的标准成本；`charged_cost` 为计入用户预算的金额：按路由 **`price_override.charged`**（若存在）否则 **`models.pricing_profile`** 阶梯计价。**`pricing_audit`** 新写入为 **v3**（见 `packages/core/src/db/pricing-audit.ts`：`snapshot.user_charge` 含 `source: route_nested | model`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。相对目录标准价的倍率保存在路由 **`price_override`** 的 **`charged_factor`** / **`metered_factor`**（不参与上述三金额公式）。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
+> 注：三列成本均以 **`models.pricing_profile`** 按 `input_tokens` 选档为基数。`metered_cost` = 目录价 × `price_override.metered_factor` × 可选 `schedule.metered`；`charged_cost` = 目录价 × `charged_factor` × 可选 `schedule.charged`；`standard_cost` = 目录价（不乘路由倍率）。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v4**（见 `packages/core/src/db/pricing-audit.ts`：含 `base_factor` / `schedule` / `effective_factor`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
 
 ### 示例
 
@@ -602,26 +602,39 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
 - **校验**：`normalizeModelStickyConfigInput`（`packages/core/src/db/model-sticky-config.ts`）；`rules` 须至少一条合法 rule。
 - **运行时**：仅 Proxy failover 路径生效（`/v1/*`）；Admin Playground **不走** sticky。详见 [proxy-request-lifecycle.md §3.5](../architecture/proxy-request-lifecycle.md#35-粘性绑定)。
 
-### `pricing_profile` 契约（`/admin/models`、`/admin/routes`）
+### `pricing_profile` / `price_override` 契约（`/admin/models`、`/admin/routes`）
 
-- **存储位置**：`models.pricing_profile`（模型标准价，TEXT JSON）；`model_routes.price_override` 内短键 **`metered`**（供应侧覆盖，参与 `metered_cost`）、**`charged`**（用户预算侧覆盖，参与 `charged_cost`）；二者均为与目录相同的 canonical **`{ tiers }`** 契约。另可含 **`charged_factor`** / **`metered_factor`**（非负数字，相对目录标准价的备忘/展示；**不参与**运行时金额乘法）。**新建或更新路由时 API 要求** `price_override` 同时包含合法且非空的 **`metered`** 与 **`charged`**（各至少一档）；不得仅依赖“空则继承目录”省略写入。
-- **Canonical 形状**（保存与管理 UI 输出）：仅包含 **`tiers`** 数组。非末档：`upto` 为有限数字 **≥ 0**（输入 token 上界，含端点）。**末档 `upto` 为 JSON `null`**，表示开放上界（无限）。每档另含 `label`（可 `null`）、`input_price`、`output_price`（$/1M），以及可选的 `cache_read_price` / `cache_write_price`（数字或 `null`）。**固定价** = 单档（末档 `upto: null`）；**阶梯价** = 多档；选档 basis 运行时固定为 **input_tokens**（与 `packages/core/src/db/pricing-profile.ts` 一致）。
-- **公开列表**：`GET /v1/models` 返回完整 `pricing_profile` 字符串；`model_info.input_price` / `output_price` 为 **兼容展示**：取各档中 **最低 `input_price`** 所在档的 in/out（新客户端应解析 `tiers`）。详见 [user.md「获取模型列表」](user.md)。
+- **模型目录价**：`models.pricing_profile`（TEXT JSON，canonical `{ "tiers": [...] }`）。非末档 `upto` 为有限数字 **≥ 0**；**末档 `upto` 为 JSON `null`**（开放上界）。选档 basis 为上游 **`input_tokens`**（`packages/core/src/db/pricing-profile.ts`）。
+- **路由计价（canonical）**：`model_routes.price_override` 只维护倍率，**不再**要求 nested `metered` / `charged` tiers：
+
+```json
+{
+  "charged_factor": 1.2,
+  "metered_factor": 1.0,
+  "schedule": {
+    "charged": [{ "start": "00:00", "end": "08:00", "factor": 0.5 }],
+    "metered": [{ "start": "00:00", "end": "08:00", "factor": 0.5 }]
+  }
+}
+```
+
+  - `charged_factor` / `metered_factor`：相对目录价的基础倍率（缺省 `1`；`metered_factor` 缺失时可回退读历史 `provider_factor`）；**参与运行时**。
+  - `schedule`（可选）：每日循环窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜；未命中 → 时段倍率 `1`。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。
+  - 运行时：`charged_cost` = 目录选档单价 × `charged_factor` × `schedule.charged`；`metered_cost` 同理；`standard_cost` 仅为目录价。嵌套 `metered`/`charged` tiers **写入时剥离、运行时忽略**。`pricing_audit.schedule.evaluated_at_utc` 记录本次选窗使用的请求开始时刻。
+- **公开列表**：`GET /v1/models` 返回完整 `pricing_profile` 字符串；`model_info.input_price` / `output_price` 为 **兼容展示**：取各档中 **最低 `input_price`** 所在档的 in/out。详见 [user.md「获取模型列表」](user.md)。
 
 #### Gateway Admin UI — Model Routes「Billing & Cost」
 
-与 Proxy 侧 `usage-tracker` 一致（`packages/proxy/src/services/usage-tracker.ts` + `packages/core/src/db/pricing-profile.ts`）：
+与 Proxy `usage-tracker` 一致：
 
 | 区块 | 含义 | 数据来源 |
 |------|------|----------|
-| **Standard price** | 目录标准价（只读） | 所选模型的 `models.pricing_profile`，展示**全部 tiers**（按 `input_tokens` 选档与运行时一致） |
-| **User cost** | 用户扣费 | 保存为 **`charged`**（**必填**，至少一档）；运行时 **`charged_cost`** 使用该 profile |
-| **Gateway cost** | 供应侧 metered | 保存为 **`metered`**（**必填**，至少一档）；运行时 **`metered_cost`** 使用该 profile |
-| **Charged factor** | 相对目录标准价的用户侧倍率（备忘/展示） | 保存为 **`price_override.charged_factor`**（可选）；与 **`charged`** tiers 独立 |
-| **Metered factor** | 相对目录标准价的供应侧倍率（备忘/展示） | 保存为 **`price_override.metered_factor`**（可选；缺省展示可回退 **`provider_factor`**） |
-| **Provider factor** | 管理端辅助 | 仅用于「把目录各档乘系数写入 **metered** tiers」并通常与 **`metered_factor`** 同步写入；**单独保存 `provider_factor` 不会参与 `metered_cost`**，除非同时写入了合法 **`metered`** tiers |
+| **Standard price** | 目录标准价（只读） | `models.pricing_profile` 全部 tiers |
+| **Charged factor** | 用户侧基础倍率 | `price_override.charged_factor`（运行时参与 `charged_cost`） |
+| **Metered factor** | 供应侧基础倍率 | `price_override.metered_factor`（运行时参与 `metered_cost`） |
+| **Daily schedule** | 每日时段倍率（两侧独立） | `price_override.schedule.charged` / `.metered` |
 
-路由列表卡片：在 **Metered override** / **Charged** 摘要旁展示 **`Ch ×`** / **`M ×`**（来自 `charged_factor` / `metered_factor`）。若 `price_override` 缺少 **`metered`** / **`charged`** 任一侧，保存会被 API 拒绝。实现见 `packages/admin/lib/pricing-ui.ts` 的 `getRoutePriceOverrideCardHint` 与 `parseChargedFactorFromPriceOverride` / `parseMeteredFactorFromPriceOverride`。
+路由列表卡片展示 **`Ch ×`** / **`M ×`**；有 schedule 时附加 **Sch** 提示。
 
 ---
 

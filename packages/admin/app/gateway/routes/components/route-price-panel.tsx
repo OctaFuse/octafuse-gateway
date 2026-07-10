@@ -9,20 +9,28 @@ export function RoutePricePanel({
 	variant,
 	children,
 	fillHeight = false,
+	headerEnd,
 }: {
 	title: string;
 	subtitle: string;
 	variant: 'neutral' | 'charged' | 'metered';
 	children: ReactNode;
 	fillHeight?: boolean;
+	/** Optional control aligned to the top-right of the header (e.g. factor input). */
+	headerEnd?: ReactNode;
 }) {
 	return (
 		<section
 			className={`${routePricePanelShell[variant]}${fillHeight ? ' flex h-full min-h-0 min-w-0 flex-col' : ''}`}
 		>
 			<header className={`shrink-0 pb-3 mb-4 ${routePricePanelHeaderBorder[variant]}`}>
-				<h4 className="text-xs font-semibold uppercase tracking-wide text-gray-800">{title}</h4>
-				<p className="mt-1.5 text-xs leading-relaxed text-gray-600">{subtitle}</p>
+				<div className="flex items-start justify-between gap-3">
+					<div className="min-w-0 flex-1">
+						<h4 className="text-xs font-semibold uppercase tracking-wide text-gray-800">{title}</h4>
+						<p className="mt-1.5 text-xs leading-relaxed text-gray-600">{subtitle}</p>
+					</div>
+					{headerEnd ? <div className="shrink-0 pt-0.5">{headerEnd}</div> : null}
+				</div>
 			</header>
 			{fillHeight ? <div className="flex min-h-0 flex-1 flex-col">{children}</div> : children}
 		</section>

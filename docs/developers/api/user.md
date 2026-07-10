@@ -49,7 +49,7 @@ Authorization: Bearer sk-xxx...
 
 模型 **`tags` 不参与**选组或计费。需要限定某一组时，请使用 **`baseId:your_group`**。
 
-**免费 / 零扣费**：`charged_cost` 由所选路由的 **`price_override.charged`**（及 Admin 里从目录生成的阶梯）决定；**`charged_cost` 不使用** `price_override` 里的 **`charged_factor`** 参与公式（`charged_factor` 仅作相对目录价的倍率备忘/展示）。若要用户侧不扣费，请把 **charged 侧单价设为 0**（例如在路由编辑器里将 **Charged factor** 设为 `0` 以生成全 0 阶梯，或直接编辑 tiers 为 0）。
+**免费 / 零扣费**：`charged_cost` = 模型目录价 × `price_override.charged_factor` × 可选 `schedule.charged`（缺省倍率均为 1）。若要用户侧不扣费，将 **Charged factor** 设为 `0`（或时段窗口 `factor: 0`）。
 
 ### 3. 预算校验
 
@@ -525,11 +525,11 @@ curl http://localhost:8787/v1/me \
 ```
 
 - `cache_read_price` 和 `cache_write_price` 默认等于 `input_price`
-- 部分路由可在 `price_override` 中使用 **`metered`**（供应侧单价）与 **`charged`**（用户预算单价）阶梯覆盖；未写某键时该侧回退到该模型 `models.pricing_profile`（**`standard_cost`** 始终仅按目录 profile）。
-- 路由级 **`route_group`** 会写入 `api_key_request_logs` 快照；相对目录标准价的倍率保存在路由 **`price_override`** 的 **`charged_factor`** / **`metered_factor`**（不再使用独立 `billing_factor` 列）。
-  - **`metered_cost`**：优先 `price_override.metered`，否则模型目录 profile
-  - **`standard_cost`**：按 `models` 标准价格计算（不受 `price_override` 影响）
-  - **`charged_cost`**：优先 `price_override.charged`，否则模型目录 profile（详见 `docs/developers/reference/streaming-billing.md`）
+- 路由 **`price_override`** 以 **`charged_factor` / `metered_factor`**（及可选每日 **`schedule`**）相对目录价计费；嵌套 `metered`/`charged` tiers 忽略。
+- 路由级 **`route_group`** 会写入 `api_key_request_logs` 快照。
+  - **`metered_cost`**：目录价 × `metered_factor` × `schedule.metered`
+  - **`standard_cost`**：仅 `models.pricing_profile`（不乘路由倍率）
+  - **`charged_cost`**：目录价 × `charged_factor` × `schedule.charged`（详见 `docs/developers/reference/streaming-billing.md`）
 - `api_keys.budget_spent` 仅按 `charged_cost` 累加
 
 ### 使用量追踪
@@ -537,7 +537,7 @@ curl http://localhost:8787/v1/me \
 每次请求会记录到 `api_key_request_logs`，主要包括：
 
 - Token 使用量（输入/输出/缓存读取/缓存写入/推理等）
-- `metered_cost` / `standard_cost` / `charged_cost`（金额由 tiers/profile 决定；`charged_factor` / `metered_factor` 不参与乘法）
+- `metered_cost` / `standard_cost` / `charged_cost`（目录选档 × 路由倍率；见上）
 - `route_group`（请求时选用的路由快照）
 - `request_protocol`（入口协议）与 `upstream_protocol`（路由级上游协议快照）
 - 延迟、状态（success/error/incomplete/cancelled 等）

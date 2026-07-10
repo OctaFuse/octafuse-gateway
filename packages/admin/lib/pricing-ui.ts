@@ -2,12 +2,7 @@
  * 管理 UI：定价 profile 摘要、列表排序键、请求日志 `pricing_audit` 可读摘要。
  * 单价单位文案中的币别与 `system_config.BILLING_CURRENCY` 对齐（调用方传入 ISO 码，默认 USD）。
  */
-import {
-	extractMeteredProfileFromPriceOverrideJson,
-	extractChargedProfileFromPriceOverrideJson,
-	parsePricingProfile,
-	type PricingTierPrices,
-} from '@octafuse/core/db/pricing-profile';
+import { parsePricingProfile, type PricingTierPrices } from '@octafuse/core/db/pricing-profile';
 
 import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 
@@ -157,18 +152,7 @@ export function getCatalogPricingTierRows(
 }
 
 /**
- * 路由 `price_override.charged` 各档展示行（无则空数组）。
- */
-export function getRouteChargedProfileTierRows(
-	priceOverrideJson: string | null | undefined,
-	currencyCode = 'USD'
-): CatalogPricingTierDisplayRow[] {
-	const nested = extractChargedProfileFromPriceOverrideJson(priceOverrideJson);
-	return getCatalogPricingTierRows({ pricing_profile: nested }, currencyCode);
-}
-
-/**
- * 管理端辅助：目录各档 × `charged_factor`（仅展示；**不**等于运行时 `charged_cost`，后者见 `price_override.charged` / 目录 profile）。
+ * 管理端辅助：目录各档 × `charged_factor`（展示用；与运行时 charged 基数一致，未含 schedule）。
  * `chargedFactor` 非有限数时返回空数组。
  */
 export function getUserChargedCatalogTierRows(
@@ -215,14 +199,13 @@ export type RoutePriceOverrideCardHint = {
 };
 
 /**
- * 路由列表卡片：定价一行文案（无嵌套 tiers 时明确「继承目录」，有 tiers 时强调 metered 覆盖）。
+ * 路由列表卡片：定价一行文案（目录 × charged/metered factor；可选 schedule）。
  */
 export function getRoutePriceOverrideCardHint(
 	priceOverrideJson: string | null | undefined,
-	currencyCode = 'USD',
+	_currencyCode = 'USD',
 	labels: PricingLabels = DEFAULT_PRICING_LABELS
 ): RoutePriceOverrideCardHint {
-	const u = billingPerMUnit(currencyCode);
 	const raw = priceOverrideJson?.trim();
 	if (!raw) {
 		return {
@@ -239,82 +222,13 @@ export function getRoutePriceOverrideCardHint(
 	if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
 		return { variant: 'warning', text: labels.invalidPriceOverrideRoot };
 	}
-	const nested = extractMeteredProfileFromPriceOverrideJson(raw);
-	const p = parsePricingProfile(nested ?? undefined);
-	if (p && p.tiers.length > 0) {
-		const minIn = Math.min(...p.tiers.map((t) => t.input_price));
-		let text: string;
-		if (p.tiers.length === 1) {
-			text = formatLabel(labels.meteredOverrideSingle, {
-				price: p.tiers[0]!.input_price,
-				unit: u,
-			});
-		} else {
-			text = formatLabel(labels.meteredOverrideMulti, {
-				count: p.tiers.length,
-				minIn,
-				unit: u,
-			});
-		}
-		const ucNested = extractChargedProfileFromPriceOverrideJson(raw);
-		const ucParsed = parsePricingProfile(ucNested ?? undefined);
-		if (ucParsed && ucParsed.tiers.length > 0) {
-			const ucMin = Math.min(...ucParsed.tiers.map((t) => t.input_price));
-			text +=
-				ucParsed.tiers.length === 1
-					? ` · ${formatLabel(labels.chargedOverrideSingle, {
-							price: ucParsed.tiers[0]!.input_price,
-							unit: u,
-						})}`
-					: ` · ${formatLabel(labels.chargedOverrideMulti, {
-							count: ucParsed.tiers.length,
-							minIn: ucMin,
-							unit: u,
-						})}`;
-		}
+	const charged = parseChargedFactorFromPriceOverride(raw) ?? 1;
+	const metered = parseMeteredFactorFromPriceOverride(raw) ?? 1;
+	const hasSchedule =
+		obj.schedule != null && typeof obj.schedule === 'object' && !Array.isArray(obj.schedule);
+	const text = `Catalog × Ch ${charged} · M ${metered}${hasSchedule ? ' · schedule' : ''}`;
+	if (Number.isFinite(charged) && Number.isFinite(metered)) {
 		return { variant: 'override', text };
-	}
-	const ucNestedOnly = extractChargedProfileFromPriceOverrideJson(raw);
-	const ucOnly = parsePricingProfile(ucNestedOnly ?? undefined);
-	if (ucOnly && ucOnly.tiers.length > 0) {
-		const ucMin = Math.min(...ucOnly.tiers.map((t) => t.input_price));
-		const text =
-			ucOnly.tiers.length === 1
-				? formatLabel(labels.chargedOnlySingle, {
-						price: ucOnly.tiers[0]!.input_price,
-						unit: u,
-					})
-				: formatLabel(labels.chargedOnlyMulti, {
-						count: ucOnly.tiers.length,
-						minIn: ucMin,
-						unit: u,
-					});
-		return { variant: 'override', text };
-	}
-	const pf = obj.provider_factor;
-	let pfNum: number | null = null;
-	if (typeof pf === 'number' && Number.isFinite(pf)) {
-		pfNum = pf;
-	} else if (typeof pf === 'string' && pf.trim() !== '') {
-		const n = parseFloat(pf.trim());
-		if (Number.isFinite(n)) {
-			pfNum = n;
-		}
-	}
-	const keys = Object.keys(obj).filter((k) => obj[k] !== undefined && obj[k] !== null);
-	const onlyFactor =
-		keys.length === 1 && keys[0] === 'provider_factor' && pfNum != null;
-	if (onlyFactor && pfNum != null) {
-		return {
-			variant: 'inherit',
-			text: formatLabel(labels.providerFactorOnly, { factor: pfNum }),
-		};
-	}
-	if (keys.length > 0) {
-		return {
-			variant: 'inherit',
-			text: labels.noMeteredOverride,
-		};
 	}
 	return {
 		variant: 'inherit',
@@ -388,11 +302,19 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 		if (typeof o.v === 'number') {
 			parts.push(`v${o.v}`);
 		}
-		if (typeof o.v === 'number' && o.v === 3 && o.snapshot && typeof o.snapshot === 'object') {
+		if (
+			typeof o.v === 'number' &&
+			(o.v === 3 || o.v === 4) &&
+			o.snapshot &&
+			typeof o.snapshot === 'object'
+		) {
 			const snap = o.snapshot as Record<string, unknown>;
 			const uc = snap.user_charge as Record<string, unknown> | undefined;
 			if (uc && typeof uc.source === 'string') {
 				parts.push(`charged ${uc.source}`);
+			}
+			if (uc && typeof uc.effective_factor === 'number') {
+				parts.push(`×${uc.effective_factor}`);
 			}
 		}
 		if (typeof o.basis_tokens === 'number') {

@@ -7,19 +7,20 @@ import {
 	type UpstreamProtocol,
 } from '@/lib/upstream-protocol';
 import {
-	extractChargedProfileFromPriceOverrideJson,
-	extractMeteredProfileFromPriceOverrideJson,
-	parsePricingProfile,
-} from '@octafuse/core/db/pricing-profile';
+	findDailyWindowOverlap,
+	parseHhMmToMinutes,
+	parseRouteBaseFactors,
+	parseRoutePricingSchedule,
+	type DailyScheduleWindow,
+} from '@octafuse/core/db/pricing-schedule';
 import { stickyRuleKey } from '@octafuse/core/db/model-sticky-config';
-import {
-	profileJsonToDraftRows,
-	serializeDraftRowsToProfileJson,
-	tierPricesToDraft,
-	type PricingTierDraftRow,
-} from '@/lib/pricing-tiers-draft';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
-import type { RouteFormData, RouteListRow, RouteProtocolGroupSection } from './types';
+import type {
+	RouteFormData,
+	RouteListRow,
+	RouteProtocolGroupSection,
+	RouteScheduleFormSide,
+} from './types';
 import { FACTOR_CHIP_BASE, PROTOCOL_DISPLAY_LABEL } from './types';
 
 export function compareRouteProtocolsForDisplay(a: string, b: string): number {
@@ -157,116 +158,56 @@ export function factorChipClassForValue(n: number): string {
 	return `${FACTOR_CHIP_BASE} bg-emerald-100 text-emerald-900 ring-emerald-200/90`;
 }
 
-function recomputeCatalogTierDraftsFromFactor(
-	factorText: string,
-	model: GatewayModel | undefined
-): { ok: true; tiers: PricingTierDraftRow[] } | { ok: false } {
-	const trimmed = factorText.trim();
-	const factor = trimmed === '' ? 1 : parseFloat(trimmed);
-	if (!Number.isFinite(factor) || factor < 0) {
-		return { ok: false };
+function parseNonNegativeFactorText(text: string, fieldLabel: string): number {
+	const trimmed = text.trim();
+	const n = trimmed === '' ? 1 : Number(trimmed);
+	if (!Number.isFinite(n) || n < 0) {
+		throw new Error(`${fieldLabel} must be a number ≥ 0`);
 	}
-	if (!model) {
-		return { ok: false };
-	}
-	const prof = parsePricingProfile(model.pricing_profile ?? undefined);
-	if (!prof || prof.tiers.length === 0) {
-		return { ok: false };
-	}
-	const scaledTiers = prof.tiers.map((t) => ({
-		upto: t.upto,
-		label: null,
-		input_price: Number((t.input_price * factor).toFixed(6)),
-		output_price: Number((t.output_price * factor).toFixed(6)),
-		cache_read_price:
-			t.cache_read_price != null ? Number((t.cache_read_price * factor).toFixed(6)) : null,
-		cache_write_price:
-			t.cache_write_price != null ? Number((t.cache_write_price * factor).toFixed(6)) : null,
-	}));
-	return { ok: true, tiers: scaledTiers.map((t) => tierPricesToDraft(t)) };
+	return n;
 }
 
-export function recomputeOverrideTiersFromProviderFactor(
-	factorText: string,
-	model: GatewayModel | undefined
-): { ok: true; tiers: PricingTierDraftRow[] } | { ok: false } {
-	return recomputeCatalogTierDraftsFromFactor(factorText, model);
-}
-
-export function recomputeChargedTiersFromChargedFactor(
-	factorText: string,
-	model: GatewayModel | undefined
-): { ok: true; tiers: PricingTierDraftRow[] } | { ok: false } {
-	const trimmed = factorText.trim();
-	const factor = trimmed === '' ? 1 : parseFloat(trimmed);
-	if (!Number.isFinite(factor) || factor < 0) {
-		return { ok: false };
-	}
-	return recomputeCatalogTierDraftsFromFactor(factorText, model);
-}
-
-export function parsePriceOverride(json: string | null): {
-	metered_override_tiers: PricingTierDraftRow[];
-	charged_override_tiers: PricingTierDraftRow[];
-	provider_factor?: string;
-	charged_factor?: string;
-} {
-	if (!json) {
-		return { metered_override_tiers: [], charged_override_tiers: [] };
-	}
-	try {
-		const o = JSON.parse(json) as Record<string, unknown>;
-		const nested = extractMeteredProfileFromPriceOverrideJson(json);
-		const ucNested = extractChargedProfileFromPriceOverrideJson(json);
-		return {
-			metered_override_tiers: profileJsonToDraftRows(nested),
-			charged_override_tiers: profileJsonToDraftRows(ucNested),
-			charged_factor: (() => {
-				const v = o.charged_factor;
-				if (typeof v === 'number' && Number.isFinite(v)) return String(v);
-				if (typeof v === 'string') {
-					const n = parseFloat(v.trim());
-					if (Number.isFinite(n)) return String(n);
-				}
-				return '';
-			})(),
-			provider_factor: (() => {
-				const v = o.provider_factor;
-				if (typeof v === 'number' && Number.isFinite(v)) return String(v);
-				if (typeof v === 'string') {
-					const n = parseFloat(v.trim());
-					if (Number.isFinite(n)) return String(n);
-				}
-				return '';
-			})(),
-		};
-	} catch {
-		return { metered_override_tiers: [], charged_override_tiers: [] };
-	}
-}
-
-export function buildFormDataFromRoute(route: GatewayModelRoute, models: GatewayModel[]): RouteFormData {
-	const po = parsePriceOverride(route.price_override ?? null);
-	const routeModel = models.find((m) => m.id === route.model_id);
-	let metered_override_tiers = po.metered_override_tiers;
-	let charged_override_tiers = po.charged_override_tiers;
-	let provider_factor = po.provider_factor ?? '';
-	const charged_factor =
-		po.charged_factor && po.charged_factor.trim() !== '' ? po.charged_factor : '1';
-	if (routeModel) {
-		if (charged_override_tiers.length === 0) {
-			const c = recomputeChargedTiersFromChargedFactor(charged_factor, routeModel);
-			if (c.ok) charged_override_tiers = c.tiers;
+function validateScheduleSide(
+	windows: RouteScheduleFormSide,
+	sideLabel: string
+): DailyScheduleWindow[] {
+	const cleaned: DailyScheduleWindow[] = [];
+	for (let i = 0; i < windows.length; i++) {
+		const w = windows[i]!;
+		const start = String(w.start ?? '').trim();
+		const end = String(w.end ?? '').trim();
+		const factorText = w.factor.trim();
+		const factor = factorText === '' ? Number.NaN : Number(factorText);
+		if (!start || !end) {
+			throw new Error(`${sideLabel} window ${i + 1}: start and end are required (HH:mm)`);
 		}
-		if (metered_override_tiers.length === 0) {
-			const pfText = provider_factor.trim() === '' ? '1' : provider_factor;
-			const m = recomputeOverrideTiersFromProviderFactor(pfText, routeModel);
-			if (m.ok) {
-				metered_override_tiers = m.tiers;
-				if (provider_factor.trim() === '') provider_factor = '1';
-			}
+		const startMinutes = parseHhMmToMinutes(start);
+		const endMinutes = parseHhMmToMinutes(end);
+		if (
+			startMinutes == null ||
+			startMinutes === 24 * 60 ||
+			endMinutes == null ||
+			startMinutes === endMinutes
+		) {
+			throw new Error(
+				`${sideLabel} window ${i + 1}: start must be HH:mm, end may also be 24:00, and duration must be non-zero`
+			);
 		}
+		if (!Number.isFinite(factor) || factor < 0) {
+			throw new Error(`${sideLabel} window ${i + 1}: factor must be a number ≥ 0`);
+		}
+		cleaned.push({ start, end, factor });
 	}
+	const overlap = findDailyWindowOverlap(cleaned);
+	if (overlap) {
+		throw new Error(`${sideLabel}: ${overlap}`);
+	}
+	return cleaned;
+}
+
+export function buildFormDataFromRoute(route: GatewayModelRoute, _models: GatewayModel[]): RouteFormData {
+	const factors = parseRouteBaseFactors(route.price_override ?? null);
+	const schedule = parseRoutePricingSchedule(route.price_override ?? null);
 	return {
 		model_id: route.model_id,
 		provider_id: route.provider_id,
@@ -275,12 +216,12 @@ export function buildFormDataFromRoute(route: GatewayModelRoute, models: Gateway
 			? route.upstream_protocol
 			: 'openai') as UpstreamProtocol,
 		priority: route.priority,
-		metered_override_tiers,
-		charged_override_tiers,
 		custom_params_json: route.custom_params ?? '',
 		route_group: route.route_group ?? 'default',
-		charged_factor,
-		provider_factor,
+		charged_factor: String(factors.chargedFactor),
+		metered_factor: String(factors.meteredFactor),
+		schedule_charged: schedule.charged.map((w) => ({ ...w, factor: String(w.factor) })),
+		schedule_metered: schedule.metered.map((w) => ({ ...w, factor: String(w.factor) })),
 	};
 }
 
@@ -298,50 +239,21 @@ export function buildRouteSavePayload(
 		return JSON.stringify(parsed);
 	};
 
-	const priceOverride: Record<string, unknown> = {};
-	const profileSerialized = serializeDraftRowsToProfileJson(formData.metered_override_tiers);
-	if (!profileSerialized.ok) {
-		throw new Error(profileSerialized.error);
-	}
-	if (!profileSerialized.json) {
-		throw new Error(
-			'Metered cost is required: add at least one tier (use Provider factor × Standard or edit manually).'
-		);
-	}
-	priceOverride.metered = JSON.parse(profileSerialized.json) as { tiers: unknown };
+	const chargedFactor = parseNonNegativeFactorText(formData.charged_factor, 'Charged factor');
+	const meteredFactor = parseNonNegativeFactorText(formData.metered_factor, 'Metered factor');
+	const scheduleCharged = validateScheduleSide(formData.schedule_charged, 'Charged schedule');
+	const scheduleMetered = validateScheduleSide(formData.schedule_metered, 'Metered schedule');
 
-	const chargedSerialized = serializeDraftRowsToProfileJson(formData.charged_override_tiers);
-	if (!chargedSerialized.ok) {
-		throw new Error(chargedSerialized.error);
+	const priceOverride: Record<string, unknown> = {
+		charged_factor: chargedFactor,
+		metered_factor: meteredFactor,
+	};
+	if (scheduleCharged.length > 0 || scheduleMetered.length > 0) {
+		priceOverride.schedule = {
+			...(scheduleCharged.length > 0 ? { charged: scheduleCharged } : {}),
+			...(scheduleMetered.length > 0 ? { metered: scheduleMetered } : {}),
+		};
 	}
-	if (!chargedSerialized.json) {
-		throw new Error(
-			'Charged cost is required: add at least one tier (use Charged factor × Standard or edit manually).'
-		);
-	}
-	priceOverride.charged = JSON.parse(chargedSerialized.json) as { tiers: unknown };
-
-	if (formData.provider_factor.trim() !== '') {
-		const v = parseFloat(formData.provider_factor.trim());
-		if (!Number.isFinite(v) || v < 0) {
-			throw new Error('Provider factor must be a number ≥ 0');
-		}
-		priceOverride.provider_factor = v;
-	}
-
-	const cfText = formData.charged_factor.trim();
-	const chargedFactorParsed = cfText === '' ? 1 : parseFloat(cfText);
-	if (!Number.isFinite(chargedFactorParsed) || chargedFactorParsed < 0) {
-		throw new Error('Charged factor must be a number ≥ 0');
-	}
-	priceOverride.charged_factor = chargedFactorParsed;
-
-	const mfText = formData.provider_factor.trim();
-	const meteredFactorParsed = mfText === '' ? 1 : parseFloat(mfText);
-	if (!Number.isFinite(meteredFactorParsed) || meteredFactorParsed < 0) {
-		throw new Error('Metered factor must be a number ≥ 0');
-	}
-	priceOverride.metered_factor = meteredFactorParsed;
 
 	const payload: Record<string, unknown> = {
 		model_id: formData.model_id,
@@ -558,30 +470,32 @@ export function buildActiveFilterSummary(params: {
 }
 
 export function createInitialRouteForm(
-	models: GatewayModel[],
+	_models: GatewayModel[],
 	presetModelId?: string
 ): RouteFormData {
-	const mid = presetModelId ?? '';
-	const presetModel = models.find((m) => m.id === mid);
-	let metered_override_tiers: PricingTierDraftRow[] = [];
-	let charged_override_tiers: PricingTierDraftRow[] = [];
-	if (presetModel) {
-		const m = recomputeOverrideTiersFromProviderFactor('1', presetModel);
-		if (m.ok) metered_override_tiers = m.tiers;
-		const c = recomputeChargedTiersFromChargedFactor('1', presetModel);
-		if (c.ok) charged_override_tiers = c.tiers;
-	}
 	return {
-		model_id: mid,
+		model_id: presetModelId ?? '',
 		provider_id: '',
 		provider_model_name: '',
 		upstream_protocol: 'openai',
 		priority: 0,
-		metered_override_tiers,
-		charged_override_tiers,
 		custom_params_json: '',
 		route_group: 'default',
 		charged_factor: '1',
-		provider_factor: '1',
+		metered_factor: '1',
+		schedule_charged: [],
+		schedule_metered: [],
 	};
+}
+
+/** Format schedule windows for list-card hint, e.g. `00–08×0.5`. */
+export function formatScheduleWindowsHint(windows: DailyScheduleWindow[]): string | null {
+	if (windows.length === 0) return null;
+	return windows
+		.map((w) => {
+			const a = w.start.slice(0, 5);
+			const b = w.end.slice(0, 5);
+			return `${a.slice(0, 2)}–${b.slice(0, 2)}×${formatFactorValue(w.factor)}`;
+		})
+		.join(' ');
 }

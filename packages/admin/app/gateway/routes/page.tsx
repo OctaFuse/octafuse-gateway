@@ -120,6 +120,7 @@ function RoutesContent() {
 				selectedProvider={state.selectedProvider}
 				catalogStandardTierRows={state.catalogStandardTierRows}
 				allowedProtocolsForProvider={state.allowedProtocolsForProvider}
+				businessTimezone={state.businessTimezone}
 				onClose={state.closeRouteModal}
 				onFormChange={state.setFormData}
 				onSave={state.handleSave}
