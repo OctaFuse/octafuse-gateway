@@ -610,41 +610,124 @@ export default function GatewayAuditLogsPage() {
       </div>
 
       <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-4 xl:grid-cols-[minmax(28rem,1.5fr)_minmax(18rem,0.8fr)]">
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <label className="block text-sm font-medium text-gray-600">{t('filters.eventType')}</label>
-              <div className="flex shrink-0 items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterEventTypes([...API_KEY_BUDGET_AUDIT_EVENT_TYPES]);
-                    setPage(1);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  {tCommon('selectAll')}
-                </button>
-                <span className="text-gray-300">|</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
-                    setPage(1);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  {t('filters.defaultEventTypes')}
-                </button>
-                <span className="text-gray-500">{tCommon('selected', { count: filterEventTypes.length })}</span>
-              </div>
+        <div className="min-w-0">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium text-gray-600">{t('filters.eventType')}</label>
+            <div className="flex shrink-0 items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterEventTypes([...API_KEY_BUDGET_AUDIT_EVENT_TYPES]);
+                  setPage(1);
+                }}
+                className="text-blue-600 hover:underline"
+              >
+                {tCommon('selectAll')}
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
+                  setPage(1);
+                }}
+                className="text-blue-600 hover:underline"
+              >
+                {t('filters.defaultEventTypes')}
+              </button>
+              <span className="text-gray-500">{tCommon('selected', { count: filterEventTypes.length })}</span>
             </div>
-            <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
-              {API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((eventType) => {
-                const checked = filterEventTypes.includes(eventType);
+          </div>
+          <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
+            {API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((eventType) => {
+              const checked = filterEventTypes.includes(eventType);
+              return (
+                <label
+                  key={eventType}
+                  className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
+                    checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={checked && filterEventTypes.length === 1}
+                    onChange={(e) => setEventTypeChecked(eventType, e.target.checked)}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="font-mono">{eventType}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-4 min-w-0">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium text-gray-600">{t('filters.source')}</label>
+            <div className="flex shrink-0 items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
+                  setPage(1);
+                }}
+                className="text-blue-600 hover:underline"
+              >
+                {tCommon('selectAll')}
+              </button>
+              <span className="text-gray-500">{tCommon('selected', { count: filterSources.length })}</span>
+            </div>
+          </div>
+          <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
+            {API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS.map((source) => {
+              const checked = filterSources.includes(source);
+              return (
+                <label
+                  key={source}
+                  className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
+                    checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={checked && filterSources.length === 1}
+                    onChange={(e) => setSourceChecked(source, e.target.checked)}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className="font-mono">{source}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-4 min-w-0">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium text-gray-600">{t('filters.reasonCode')}</label>
+            <div className="flex shrink-0 items-center gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterReasonCodes([...reasonCodeOptions]);
+                  setPage(1);
+                }}
+                className="text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
+                disabled={reasonCodeOptions.length === 0}
+              >
+                {tCommon('selectAll')}
+              </button>
+              <span className="text-gray-500">{tCommon('selected', { count: filterReasonCodes.length })}</span>
+            </div>
+          </div>
+          <div className="flex min-h-12 max-h-28 flex-wrap gap-2 overflow-y-auto rounded-md border border-gray-300 bg-gray-50/60 p-2">
+            {reasonCodeOptions.length > 0 ? (
+              reasonCodeOptions.map((reasonCode) => {
+                const checked = filterReasonCodes.includes(reasonCode);
                 return (
                   <label
-                    key={eventType}
+                    key={reasonCode}
                     className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
                       checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
                     }`}
@@ -652,17 +735,21 @@ export default function GatewayAuditLogsPage() {
                     <input
                       type="checkbox"
                       checked={checked}
-                      disabled={checked && filterEventTypes.length === 1}
-                      onChange={(e) => setEventTypeChecked(eventType, e.target.checked)}
+                      disabled={checked && filterReasonCodes.length === 1}
+                      onChange={(e) => setReasonCodeChecked(reasonCode, e.target.checked)}
                       className="h-3.5 w-3.5"
                     />
-                    <span className="font-mono">{eventType}</span>
+                    <span className="font-mono">{reasonCode}</span>
                   </label>
                 );
-              })}
-            </div>
+              })
+            ) : (
+              <span className="px-1 py-1 text-xs text-gray-400">{t('filters.noReasonCodes')}</span>
+            )}
           </div>
+        </div>
 
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(16rem,1.2fr)_minmax(12rem,1fr)_minmax(14rem,1fr)_auto]">
           <div className="min-w-0">
             <div className="mb-2 flex items-center justify-between gap-3">
               <label className="block text-sm font-medium text-gray-600">{t('filters.actor')}</label>
@@ -680,7 +767,7 @@ export default function GatewayAuditLogsPage() {
                 <span className="text-gray-500">{tCommon('selected', { count: filterActorTypes.length })}</span>
               </div>
             </div>
-            <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
+            <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
               {API_KEY_BUDGET_AUDIT_ACTOR_TYPES.map((actorType) => {
                 const checked = filterActorTypes.includes(actorType);
                 return (
@@ -703,98 +790,6 @@ export default function GatewayAuditLogsPage() {
               })}
             </div>
           </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(28rem,1.2fr)_minmax(28rem,1fr)]">
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <label className="block text-sm font-medium text-gray-600">{t('filters.source')}</label>
-              <div className="flex shrink-0 items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
-                    setPage(1);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  {tCommon('selectAll')}
-                </button>
-                <span className="text-gray-500">{tCommon('selected', { count: filterSources.length })}</span>
-              </div>
-            </div>
-            <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
-              {API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS.map((source) => {
-                const checked = filterSources.includes(source);
-                return (
-                  <label
-                    key={source}
-                    className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
-                      checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={checked && filterSources.length === 1}
-                      onChange={(e) => setSourceChecked(source, e.target.checked)}
-                      className="h-3.5 w-3.5"
-                    />
-                    <span className="font-mono">{source}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <label className="block text-sm font-medium text-gray-600">{t('filters.reasonCode')}</label>
-              <div className="flex shrink-0 items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterReasonCodes([...reasonCodeOptions]);
-                    setPage(1);
-                  }}
-                  className="text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
-                  disabled={reasonCodeOptions.length === 0}
-                >
-                  {tCommon('selectAll')}
-                </button>
-                <span className="text-gray-500">{tCommon('selected', { count: filterReasonCodes.length })}</span>
-              </div>
-            </div>
-            <div className="flex min-h-12 max-h-28 flex-wrap gap-2 overflow-y-auto rounded-md border border-gray-300 bg-gray-50/60 p-2">
-              {reasonCodeOptions.length > 0 ? (
-                reasonCodeOptions.map((reasonCode) => {
-                  const checked = filterReasonCodes.includes(reasonCode);
-                  return (
-                    <label
-                      key={reasonCode}
-                      className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
-                        checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={checked && filterReasonCodes.length === 1}
-                        onChange={(e) => setReasonCodeChecked(reasonCode, e.target.checked)}
-                        className="h-3.5 w-3.5"
-                      />
-                      <span className="font-mono">{reasonCode}</span>
-                    </label>
-                  );
-                })
-              ) : (
-                <span className="px-1 py-1 text-xs text-gray-400">{t('filters.noReasonCodes')}</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(12rem,1fr)_minmax(14rem,1fr)_auto]">
           <div>
             <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
             <input
