@@ -101,8 +101,8 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 			userEmail?: string;
 			eventTypes?: string[];
 			actorTypes?: string[];
-			reasonCode?: string;
-			source?: string;
+			reasonCodes?: string[];
+			sources?: string[];
 			correlationId?: string;
 			startDate?: string;
 			endDate?: string;
@@ -120,8 +120,12 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 			if (options.actorTypes && options.actorTypes.length > 0) {
 				conditions.push(inArray(myUserAuditLogsTable.actorType, options.actorTypes));
 			}
-			if (options.reasonCode) conditions.push(eq(myUserAuditLogsTable.reasonCode, options.reasonCode));
-			if (options.source) conditions.push(eq(myUserAuditLogsTable.source, options.source));
+			if (options.reasonCodes && options.reasonCodes.length > 0) {
+				conditions.push(inArray(myUserAuditLogsTable.reasonCode, options.reasonCodes));
+			}
+			if (options.sources && options.sources.length > 0) {
+				conditions.push(inArray(myUserAuditLogsTable.source, options.sources));
+			}
 			if (options.correlationId) conditions.push(eq(myUserAuditLogsTable.correlationId, options.correlationId));
 			if (options.startDate) conditions.push(sql`${myUserAuditLogsTable.createdAt} >= ${options.startDate}`);
 			if (options.endDate) conditions.push(sql`${myUserAuditLogsTable.createdAt} <= ${options.endDate}`);
@@ -169,6 +173,16 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 				}),
 				total,
 			};
+		},
+
+		async getGlobalUserAuditLogFilterOptions(): Promise<{ reasonCodes: string[] }> {
+			const rows = await drizzle
+				.select({ reasonCode: myUserAuditLogsTable.reasonCode })
+				.from(myUserAuditLogsTable)
+				.where(sql`${myUserAuditLogsTable.reasonCode} IS NOT NULL AND ${myUserAuditLogsTable.reasonCode} <> ''`)
+				.groupBy(myUserAuditLogsTable.reasonCode)
+				.orderBy(myUserAuditLogsTable.reasonCode);
+			return { reasonCodes: rows.map((row) => row.reasonCode).filter((value): value is string => !!value) };
 		},
 	};
 }

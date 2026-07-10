@@ -65,12 +65,13 @@ export interface UserAuditLogsRepository {
 		userEmail?: string;
 		eventTypes?: string[];
 		actorTypes?: string[];
-		reasonCode?: string;
-		source?: string;
+		reasonCodes?: string[];
+		sources?: string[];
 		correlationId?: string;
 		startDate?: string;
 		endDate?: string;
 	}): Promise<{ logs: GlobalUserAuditLogRow[]; total: number }>;
+	getGlobalUserAuditLogFilterOptions(): Promise<{ reasonCodes: string[] }>;
 }
 
 export interface ApiKeysRepository {

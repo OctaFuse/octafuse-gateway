@@ -100,8 +100,8 @@ export async function listAdminGlobalBudgetAuditLogsService(
 		user_email?: string;
 		event_type?: string | string[];
 		actor_type?: string | string[];
-		reason_code?: string;
-		source?: string;
+		reason_code?: string | string[];
+		source?: string | string[];
 		correlation_id?: string;
 		start_date?: string;
 		end_date?: string;
@@ -117,6 +117,14 @@ export async function listAdminGlobalBudgetAuditLogsService(
 		.flatMap((value) => value.split(','))
 		.map((value) => value.trim())
 		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
+	const reasonCodes = (Array.isArray(input.reason_code) ? input.reason_code : input.reason_code ? [input.reason_code] : [])
+		.flatMap((value) => value.split(','))
+		.map((value) => value.trim())
+		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
+	const sources = (Array.isArray(input.source) ? input.source : input.source ? [input.source] : [])
+		.flatMap((value) => value.split(','))
+		.map((value) => value.trim())
+		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
 	const result = await repos.userAuditLogs.getGlobalUserAuditLogs({
 		page,
 		pageSize,
@@ -125,13 +133,17 @@ export async function listAdminGlobalBudgetAuditLogsService(
 		userEmail: input.user_email,
 		eventTypes: eventTypes.length > 0 ? eventTypes : undefined,
 		actorTypes: actorTypes.length > 0 ? actorTypes : undefined,
-		reasonCode: input.reason_code,
-		source: input.source,
+		reasonCodes: reasonCodes.length > 0 ? reasonCodes : undefined,
+		sources: sources.length > 0 ? sources : undefined,
 		correlationId: input.correlation_id,
 		startDate: input.start_date,
 		endDate: input.end_date,
 	});
 	return { ...result, page, page_size: pageSize };
+}
+
+export async function listAdminGlobalBudgetAuditLogFilterOptionsService(repos: GatewayRepositories) {
+	return repos.userAuditLogs.getGlobalUserAuditLogFilterOptions();
 }
 
 /** 配置列表；空 value 转为 `''` 便于前端表单展示。 */

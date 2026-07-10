@@ -98,6 +98,22 @@ export const API_KEY_BUDGET_AUDIT_EVENT_TYPES = [
 /** 与 octafuse `ApiKeyBudgetAuditActorType` 对齐 */
 export const API_KEY_BUDGET_AUDIT_ACTOR_TYPES = ['system', 'admin', 'service'] as const;
 
+/** 与 octafuse `UserAuditSourceChannel` 对齐（筛选多选与网关枚举一致） */
+export const API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS = [
+  'gateway_usage',
+  'gateway_auth',
+  'gateway_user_service',
+  'gateway_key_service',
+  'key_provision',
+  'gateway_user_provision',
+  'admin_users',
+  'admin_budget_transition',
+  'admin_keys',
+  'admin_user_key',
+  'usage_charge',
+  'period_reset',
+] as const;
+
 export interface GatewayProvider {
   id: string;
   name: string;

@@ -158,8 +158,8 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 			userEmail?: string;
 			eventTypes?: string[];
 			actorTypes?: string[];
-			reasonCode?: string;
-			source?: string;
+			reasonCodes?: string[];
+			sources?: string[];
 			correlationId?: string;
 			startDate?: string;
 			endDate?: string;
@@ -189,13 +189,13 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 				conditions.push(`a.actor_type IN (${options.actorTypes.map(() => '?').join(', ')})`);
 				bindValues.push(...options.actorTypes);
 			}
-			if (options.reasonCode) {
-				conditions.push('a.reason_code = ?');
-				bindValues.push(options.reasonCode);
+			if (options.reasonCodes && options.reasonCodes.length > 0) {
+				conditions.push(`a.reason_code IN (${options.reasonCodes.map(() => '?').join(', ')})`);
+				bindValues.push(...options.reasonCodes);
 			}
-			if (options.source) {
-				conditions.push('a.source = ?');
-				bindValues.push(options.source);
+			if (options.sources && options.sources.length > 0) {
+				conditions.push(`a.source IN (${options.sources.map(() => '?').join(', ')})`);
+				bindValues.push(...options.sources);
 			}
 			if (options.correlationId) {
 				conditions.push('a.correlation_id = ?');
@@ -227,6 +227,17 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 			return {
 				logs: (rows.results ?? []).map((r) => ({ ...mapAuditRow(r), user_email: r.user_email })),
 				total,
+			};
+		},
+
+		async getGlobalUserAuditLogFilterOptions(): Promise<{ reasonCodes: string[] }> {
+			const rows = await raw
+				.prepare(
+					`SELECT DISTINCT reason_code FROM user_audit_logs WHERE reason_code IS NOT NULL AND reason_code <> '' ORDER BY reason_code`
+				)
+				.all<{ reason_code: string }>();
+			return {
+				reasonCodes: (rows.results ?? []).map((row) => row.reason_code).filter((value) => value !== ''),
 			};
 		},
 	};

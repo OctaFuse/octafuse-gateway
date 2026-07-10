@@ -4,12 +4,13 @@
  * 全站用户审计日志（`user_audit_logs`）：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
  */
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { readApiJson } from '@/lib/api-json';
 import {
   API_KEY_BUDGET_AUDIT_ACTOR_TYPES,
   API_KEY_BUDGET_AUDIT_EVENT_TYPES,
+  API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS,
   type GatewayApiKeyBudgetAuditLog,
 } from '@/lib/types';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
@@ -34,6 +35,12 @@ const DEFAULT_AUDIT_LOG_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((t
 const AUDIT_LOG_EVENT_TYPE_SET = new Set<string>(API_KEY_BUDGET_AUDIT_EVENT_TYPES);
 const DEFAULT_AUDIT_LOG_ACTOR_TYPES = [...API_KEY_BUDGET_AUDIT_ACTOR_TYPES];
 const AUDIT_LOG_ACTOR_TYPE_SET = new Set<string>(API_KEY_BUDGET_AUDIT_ACTOR_TYPES);
+const DEFAULT_AUDIT_LOG_SOURCE_CHANNELS = [...API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS];
+const AUDIT_LOG_SOURCE_CHANNEL_SET = new Set<string>(API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS);
+
+type AuditLogFilterOptions = {
+  reasonCodes: string[];
+};
 
 function normalizeAuditEventTypes(values: string[]): string[] {
   const normalized: string[] = [];
@@ -57,6 +64,28 @@ function normalizeAuditActorTypes(values: string[]): string[] {
   return normalized;
 }
 
+function normalizeAuditSourceChannels(values: string[]): string[] {
+  const normalized: string[] = [];
+  values
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .forEach((value) => {
+      if (AUDIT_LOG_SOURCE_CHANNEL_SET.has(value) && !normalized.includes(value)) normalized.push(value);
+    });
+  return normalized;
+}
+
+function normalizeAuditReasonCodes(values: string[]): string[] {
+  const normalized: string[] = [];
+  values
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .forEach((value) => {
+      if (value !== '' && !normalized.includes(value)) normalized.push(value);
+    });
+  return normalized;
+}
+
 function appendAuditEventTypeParams(params: URLSearchParams, eventTypes: string[]): void {
   eventTypes.forEach((eventType) => params.append('event_type', eventType));
 }
@@ -64,6 +93,18 @@ function appendAuditEventTypeParams(params: URLSearchParams, eventTypes: string[
 function appendAuditActorTypeParams(params: URLSearchParams, actorTypes: string[]): void {
   if (actorTypes.length === DEFAULT_AUDIT_LOG_ACTOR_TYPES.length) return;
   actorTypes.forEach((actorType) => params.append('actor_type', actorType));
+}
+
+function appendAuditSourceParams(params: URLSearchParams, sources: string[]): void {
+  if (sources.length === DEFAULT_AUDIT_LOG_SOURCE_CHANNELS.length) return;
+  sources.forEach((source) => params.append('source', source));
+}
+
+function appendAuditReasonCodeParams(params: URLSearchParams, reasonCodes: string[], allReasonCodes: string[]): void {
+  const selectedSet = new Set(reasonCodes);
+  const isAllSelected = allReasonCodes.length > 0 && allReasonCodes.every((reasonCode) => selectedSet.has(reasonCode));
+  if (reasonCodes.length === 0 || isAllSelected) return;
+  reasonCodes.forEach((reasonCode) => params.append('reason_code', reasonCode));
 }
 
 /** change_payload 展开行：去掉已由 Budget plan / Time / Event 列展示的键 */
@@ -359,11 +400,13 @@ export default function GatewayAuditLogsPage() {
   const [filterUserEmail, setFilterUserEmail] = useState('');
   const [filterEventTypes, setFilterEventTypes] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
   const [filterActorTypes, setFilterActorTypes] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
-  const [filterReasonCode, setFilterReasonCode] = useState('');
-  const [filterSource, setFilterSource] = useState('');
+  const [filterReasonCodes, setFilterReasonCodes] = useState<string[]>([]);
+  const [filterSources, setFilterSources] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
+  const [reasonCodeOptions, setReasonCodeOptions] = useState<string[]>([]);
   const [filterCorrelationId, setFilterCorrelationId] = useState('');
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
   const [detailLog, setDetailLog] = useState<GatewayApiKeyBudgetAuditLog | null>(null);
+  const reasonCodeUrlFilterRef = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -372,8 +415,8 @@ export default function GatewayAuditLogsPage() {
     const userEmail = params.get('user_email');
     const eventTypes = normalizeAuditEventTypes(params.getAll('event_type'));
     const actorTypes = normalizeAuditActorTypes(params.getAll('actor_type'));
-    const reasonCode = params.get('reason_code');
-    const source = params.get('source');
+    const reasonCodes = normalizeAuditReasonCodes(params.getAll('reason_code'));
+    const sources = normalizeAuditSourceChannels(params.getAll('source'));
     const correlationId = params.get('correlation_id');
     const startDate = params.get('start_date');
     const endDate = params.get('end_date');
@@ -383,8 +426,11 @@ export default function GatewayAuditLogsPage() {
     if (userEmail != null) setFilterUserEmail(userEmail);
     if (eventTypes.length > 0) setFilterEventTypes(eventTypes);
     if (actorTypes.length > 0) setFilterActorTypes(actorTypes);
-    if (reasonCode != null) setFilterReasonCode(reasonCode);
-    if (source != null) setFilterSource(source);
+    if (reasonCodes.length > 0) {
+      reasonCodeUrlFilterRef.current = true;
+      setFilterReasonCodes(reasonCodes);
+    }
+    if (sources.length > 0) setFilterSources(sources);
     if (correlationId != null) setFilterCorrelationId(correlationId);
     const hasStart = startDate != null && startDate !== '';
     const hasEnd = endDate != null && endDate !== '';
@@ -405,6 +451,28 @@ export default function GatewayAuditLogsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchFilterOptions() {
+      try {
+        const response = await fetch('/api/admin/budget-audit-logs/filters');
+        const data = await readApiJson<AuditLogFilterOptions>(response);
+        if (!data.success || cancelled) return;
+        const options = data.data?.reasonCodes ?? [];
+        setReasonCodeOptions(options);
+        if (!reasonCodeUrlFilterRef.current) {
+          setFilterReasonCodes(options);
+        }
+      } catch (e) {
+        console.error('Fetch audit log filter options error:', e);
+      }
+    }
+    fetchFilterOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useReplaceListPageQuery(
     () => {
       const params = new URLSearchParams({
@@ -416,8 +484,8 @@ export default function GatewayAuditLogsPage() {
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       appendAuditEventTypeParams(params, filterEventTypes);
       appendAuditActorTypeParams(params, filterActorTypes);
-      if (filterReasonCode) params.append('reason_code', filterReasonCode);
-      if (filterSource) params.append('source', filterSource);
+      appendAuditReasonCodeParams(params, filterReasonCodes, reasonCodeOptions);
+      appendAuditSourceParams(params, filterSources);
       if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
       if (rangeValue.start_date) params.append('start_date', rangeValue.start_date);
       if (rangeValue.end_date) params.append('end_date', rangeValue.end_date);
@@ -431,8 +499,9 @@ export default function GatewayAuditLogsPage() {
       filterUserEmail,
       filterEventTypes,
       filterActorTypes,
-      filterReasonCode,
-      filterSource,
+      filterReasonCodes,
+      filterSources,
+      reasonCodeOptions,
       filterCorrelationId,
       rangeValue.start_date,
       rangeValue.end_date,
@@ -451,8 +520,8 @@ export default function GatewayAuditLogsPage() {
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       appendAuditEventTypeParams(params, filterEventTypes);
       appendAuditActorTypeParams(params, filterActorTypes);
-      if (filterReasonCode) params.append('reason_code', filterReasonCode);
-      if (filterSource) params.append('source', filterSource);
+      appendAuditReasonCodeParams(params, filterReasonCodes, reasonCodeOptions);
+      appendAuditSourceParams(params, filterSources);
       if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
       if (rangeValue.start_date) params.append('start_date', rangeValue.start_date);
       if (rangeValue.end_date) params.append('end_date', rangeValue.end_date);
@@ -475,8 +544,9 @@ export default function GatewayAuditLogsPage() {
     filterUserEmail,
     filterEventTypes,
     filterActorTypes,
-    filterReasonCode,
-    filterSource,
+    filterReasonCodes,
+    filterSources,
+    reasonCodeOptions,
     filterCorrelationId,
     rangeValue.start_date,
     rangeValue.end_date,
@@ -501,6 +571,22 @@ export default function GatewayAuditLogsPage() {
       if (checked) return current.includes(actorType) ? current : [...current, actorType];
       if (current.length <= 1) return current;
       return current.filter((value) => value !== actorType);
+    });
+    setPage(1);
+  };
+  const setSourceChecked = (source: string, checked: boolean) => {
+    setFilterSources((current) => {
+      if (checked) return current.includes(source) ? current : [...current, source];
+      if (current.length <= 1) return current;
+      return current.filter((value) => value !== source);
+    });
+    setPage(1);
+  };
+  const setReasonCodeChecked = (reasonCode: string, checked: boolean) => {
+    setFilterReasonCodes((current) => {
+      if (checked) return current.includes(reasonCode) ? current : [...current, reasonCode];
+      if (current.length <= 1) return current;
+      return current.filter((value) => value !== reasonCode);
     });
     setPage(1);
   };
@@ -619,7 +705,96 @@ export default function GatewayAuditLogsPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(12rem,1fr)_minmax(14rem,1fr)_minmax(12rem,0.9fr)_minmax(14rem,1fr)_auto]">
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(28rem,1.2fr)_minmax(28rem,1fr)]">
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-medium text-gray-600">{t('filters.source')}</label>
+              <div className="flex shrink-0 items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
+                    setPage(1);
+                  }}
+                  className="text-blue-600 hover:underline"
+                >
+                  {tCommon('selectAll')}
+                </button>
+                <span className="text-gray-500">{tCommon('selected', { count: filterSources.length })}</span>
+              </div>
+            </div>
+            <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
+              {API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS.map((source) => {
+                const checked = filterSources.includes(source);
+                return (
+                  <label
+                    key={source}
+                    className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
+                      checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={checked && filterSources.length === 1}
+                      onChange={(e) => setSourceChecked(source, e.target.checked)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span className="font-mono">{source}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-medium text-gray-600">{t('filters.reasonCode')}</label>
+              <div className="flex shrink-0 items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterReasonCodes([...reasonCodeOptions]);
+                    setPage(1);
+                  }}
+                  className="text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
+                  disabled={reasonCodeOptions.length === 0}
+                >
+                  {tCommon('selectAll')}
+                </button>
+                <span className="text-gray-500">{tCommon('selected', { count: filterReasonCodes.length })}</span>
+              </div>
+            </div>
+            <div className="flex min-h-12 max-h-28 flex-wrap gap-2 overflow-y-auto rounded-md border border-gray-300 bg-gray-50/60 p-2">
+              {reasonCodeOptions.length > 0 ? (
+                reasonCodeOptions.map((reasonCode) => {
+                  const checked = filterReasonCodes.includes(reasonCode);
+                  return (
+                    <label
+                      key={reasonCode}
+                      className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
+                        checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={checked && filterReasonCodes.length === 1}
+                        onChange={(e) => setReasonCodeChecked(reasonCode, e.target.checked)}
+                        className="h-3.5 w-3.5"
+                      />
+                      <span className="font-mono">{reasonCode}</span>
+                    </label>
+                  );
+                })
+              ) : (
+                <span className="px-1 py-1 text-xs text-gray-400">{t('filters.noReasonCodes')}</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(12rem,1fr)_minmax(14rem,1fr)_auto]">
           <div>
             <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
             <input
@@ -628,26 +803,6 @@ export default function GatewayAuditLogsPage() {
               onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
               placeholder={t('filters.exactMatch')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.reasonCode')}</label>
-            <input
-              type="text"
-              value={filterReasonCode}
-              onChange={(e) => { setFilterReasonCode(e.target.value); setPage(1); }}
-              placeholder={t('filters.reasonPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.source')}</label>
-            <input
-              type="text"
-              value={filterSource}
-              onChange={(e) => { setFilterSource(e.target.value); setPage(1); }}
-              placeholder={t('filters.sourcePlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
             />
           </div>
           <div>
@@ -666,8 +821,8 @@ export default function GatewayAuditLogsPage() {
               onClick={() => {
                 setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
                 setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
-                setFilterReasonCode('');
-                setFilterSource('');
+                setFilterReasonCodes([...reasonCodeOptions]);
+                setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
                 setFilterCorrelationId('');
                 setFilterUserEmail('');
                 setFilterUserId('');
