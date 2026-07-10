@@ -171,26 +171,102 @@ export default function PlaygroundPage() {
 		return { mergedReasoningDisplay: reasoningDisplay, mergedBodyDisplay: bodyDisplay };
 	}, [mergedAssistantParts, responseText, sending]);
 
-	const filteredRoutes = useMemo(() => {
-		return routes.filter((r) => {
-			if (filterModel.trim() && !r.model_id.toLowerCase().includes(filterModel.trim().toLowerCase())) {
-				return false;
-			}
-			if (filterProvider.trim()) {
-				const q = filterProvider.trim().toLowerCase();
-				if (!r.provider_id.toLowerCase().includes(q) && !(r.provider_name ?? '').toLowerCase().includes(q)) {
-					return false;
-				}
-			}
-			if (filterProtocol.trim() && !r.upstream_protocol.toLowerCase().includes(filterProtocol.trim().toLowerCase())) {
-				return false;
-			}
-			if (filterGroup.trim() && !r.route_group.toLowerCase().includes(filterGroup.trim().toLowerCase())) {
-				return false;
-			}
+	const matchesFilters = useCallback(
+		(
+			r: RouteListRow,
+			omit: 'model' | 'provider' | 'protocol' | 'group' | null = null
+		) => {
+			if (omit !== 'model' && filterModel && r.model_id !== filterModel) return false;
+			if (omit !== 'provider' && filterProvider && r.provider_id !== filterProvider) return false;
+			if (omit !== 'protocol' && filterProtocol && r.upstream_protocol !== filterProtocol) return false;
+			if (omit !== 'group' && filterGroup && r.route_group !== filterGroup) return false;
 			return true;
-		});
-	}, [routes, filterModel, filterProvider, filterProtocol, filterGroup]);
+		},
+		[filterModel, filterProvider, filterProtocol, filterGroup]
+	);
+
+	const filteredRoutes = useMemo(
+		() => routes.filter((r) => matchesFilters(r)),
+		[routes, matchesFilters]
+	);
+
+	/** Model 下拉：按当前其它筛选项联动（不含 model 自身）。 */
+	const modelOptions = useMemo(() => {
+		const pool = routes.filter((r) => matchesFilters(r, 'model'));
+		const byId = new Map<string, { id: string; label: string }>();
+		for (const r of pool) {
+			if (byId.has(r.model_id)) continue;
+			const name = (r.model_name ?? '').trim();
+			byId.set(r.model_id, {
+				id: r.model_id,
+				label: name && name !== r.model_id ? `${name} (${r.model_id})` : r.model_id,
+			});
+		}
+		return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
+	}, [routes, matchesFilters]);
+
+	/** Provider 下拉：按当前其它筛选项联动（不含 provider 自身）。 */
+	const providerOptions = useMemo(() => {
+		const pool = routes.filter((r) => matchesFilters(r, 'provider'));
+		const byId = new Map<string, { id: string; label: string }>();
+		for (const r of pool) {
+			if (byId.has(r.provider_id)) continue;
+			const name = (r.provider_name ?? '').trim();
+			byId.set(r.provider_id, {
+				id: r.provider_id,
+				label: name && name !== r.provider_id ? `${name} (${r.provider_id})` : r.provider_id,
+			});
+		}
+		return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
+	}, [routes, matchesFilters]);
+
+	const protocolOptions = useMemo(() => {
+		const set = new Set<string>();
+		for (const r of routes) {
+			if (!matchesFilters(r, 'protocol')) continue;
+			if (r.upstream_protocol) set.add(r.upstream_protocol);
+		}
+		return [...set].sort((a, b) => a.localeCompare(b));
+	}, [routes, matchesFilters]);
+
+	const groupOptions = useMemo(() => {
+		const set = new Set<string>();
+		for (const r of routes) {
+			if (!matchesFilters(r, 'group')) continue;
+			if (r.route_group) set.add(r.route_group);
+		}
+		return [...set].sort((a, b) => a.localeCompare(b));
+	}, [routes, matchesFilters]);
+
+	useEffect(() => {
+		if (filterModel && !modelOptions.some((o) => o.id === filterModel)) {
+			setFilterModel('');
+		}
+	}, [filterModel, modelOptions]);
+
+	useEffect(() => {
+		if (filterProvider && !providerOptions.some((o) => o.id === filterProvider)) {
+			setFilterProvider('');
+		}
+	}, [filterProvider, providerOptions]);
+
+	useEffect(() => {
+		if (filterProtocol && !protocolOptions.includes(filterProtocol)) {
+			setFilterProtocol('');
+		}
+	}, [filterProtocol, protocolOptions]);
+
+	useEffect(() => {
+		if (filterGroup && !groupOptions.includes(filterGroup)) {
+			setFilterGroup('');
+		}
+	}, [filterGroup, groupOptions]);
+
+	useEffect(() => {
+		if (selectedId && !filteredRoutes.some((r) => r.id === selectedId)) {
+			setSelectedId('');
+		}
+	}, [selectedId, filteredRoutes]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -381,43 +457,63 @@ export default function PlaygroundPage() {
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
 									<label className={labelClass}>{t('modelId')}</label>
-									<input
-										type="text"
-										placeholder={t('placeholders.contains')}
+									<select
 										value={filterModel}
 										onChange={(e) => setFilterModel(e.target.value)}
 										className={inputClass}
-									/>
+									>
+										<option value="">{t('placeholders.allModels')}</option>
+										{modelOptions.map((o) => (
+											<option key={o.id} value={o.id}>
+												{o.label}
+											</option>
+										))}
+									</select>
 								</div>
 								<div>
 									<label className={labelClass}>{t('provider')}</label>
-									<input
-										type="text"
-										placeholder={t('placeholders.idOrNameContains')}
+									<select
 										value={filterProvider}
 										onChange={(e) => setFilterProvider(e.target.value)}
 										className={inputClass}
-									/>
+									>
+										<option value="">{t('placeholders.allProviders')}</option>
+										{providerOptions.map((o) => (
+											<option key={o.id} value={o.id}>
+												{o.label}
+											</option>
+										))}
+									</select>
 								</div>
 								<div>
 									<label className={labelClass}>{t('protocol')}</label>
-									<input
-										type="text"
-										placeholder={t('placeholders.protocol')}
+									<select
 										value={filterProtocol}
 										onChange={(e) => setFilterProtocol(e.target.value)}
 										className={inputClass}
-									/>
+									>
+										<option value="">{t('placeholders.allProtocols')}</option>
+										{protocolOptions.map((p) => (
+											<option key={p} value={p}>
+												{p}
+											</option>
+										))}
+									</select>
 								</div>
 								<div>
 									<label className={labelClass}>{t('routeGroup')}</label>
-									<input
-										type="text"
-										placeholder={t('placeholders.routeGroup')}
+									<select
 										value={filterGroup}
 										onChange={(e) => setFilterGroup(e.target.value)}
 										className={inputClass}
-									/>
+									>
+										<option value="">{t('placeholders.allRouteGroups')}</option>
+										{groupOptions.map((g) => (
+											<option key={g} value={g}>
+												{g}
+											</option>
+										))}
+									</select>
 								</div>
 							</div>
 							<div>

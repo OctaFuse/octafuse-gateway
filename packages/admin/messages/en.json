@@ -605,10 +605,10 @@
 		"rawPayload": "Raw payload",
 		"emptyResponseHint": "Run Send to see upstream status, headers, and body or stream output here.",
 		"placeholders": {
-			"contains": "Contains…",
-			"idOrNameContains": "id or name contains…",
-			"protocol": "openai, anthropic, …",
-			"routeGroup": "default, free, …"
+			"allModels": "All models",
+			"allProviders": "All providers",
+			"allProtocols": "All protocols",
+			"allRouteGroups": "All route groups"
 		}
 	},
 	"simulator": {

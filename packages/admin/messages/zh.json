@@ -605,10 +605,10 @@
 		"rawPayload": "原始报文",
 		"emptyResponseHint": "点击发送后，这里会显示上游状态、响应头、响应体或流式输出。",
 		"placeholders": {
-			"contains": "包含…",
-			"idOrNameContains": "ID 或名称包含…",
-			"protocol": "openai、anthropic、…",
-			"routeGroup": "default、free、…"
+			"allModels": "全部模型",
+			"allProviders": "全部供应商",
+			"allProtocols": "全部协议",
+			"allRouteGroups": "全部路由组"
 		}
 	},
 	"simulator": {
