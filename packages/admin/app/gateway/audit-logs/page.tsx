@@ -289,6 +289,7 @@ function appendPayloadDiffRows(rows: AuditDiffRow[], raw: string | null | undefi
       });
     } else if ('from' in metadata || 'to' in metadata) {
       pushAuditDiffRow(rows, 'payload', 'metadata', metadata.from, metadata.to);
+      pushNestedAuditDiffRows(rows, 'payload', 'metadata', metadata.from, metadata.to);
     } else {
       Object.entries(metadata).forEach(([key, value]) => {
         if (key === 'operation') return;
@@ -326,6 +327,18 @@ function auditDiffRows(item: GatewayApiKeyBudgetAuditLog): AuditDiffRow[] {
     const key = `${row.field}:${row.before}:${row.after}`;
     if (seen.has(key)) return false;
     seen.add(key);
+    return true;
+  });
+}
+
+function isSerializedAuditObject(value: string): boolean {
+  return isAuditObject(parseAuditJsonObject(value));
+}
+
+function auditSummaryDiffRows(rows: AuditDiffRow[]): AuditDiffRow[] {
+  return rows.filter((row) => {
+    if (row.field === 'metadata') return false;
+    if (isSerializedAuditObject(row.before) || isSerializedAuditObject(row.after)) return false;
     return true;
   });
 }
@@ -719,6 +732,7 @@ export default function GatewayAuditLogsPage() {
                     );
                     const reasonDisplay = auditReasonOneLine(ex.reason_code, ex.reason_text);
                     const diffRows = auditDiffRows(item);
+                    const summaryDiffRows = auditSummaryDiffRows(diffRows);
                     return (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-3 py-2 align-top">
@@ -872,9 +886,9 @@ export default function GatewayAuditLogsPage() {
                       </td>
                       <td className="px-3 py-2 text-gray-600 min-w-[14rem] max-w-lg align-top">
                         <div className="space-y-1 text-xs leading-snug">
-                          {diffRows.length > 0 ? (
+                          {summaryDiffRows.length > 0 ? (
                             <>
-                              {diffRows.slice(0, 3).map((row, index) => (
+                              {summaryDiffRows.slice(0, 3).map((row, index) => (
                                 <div key={`${item.id}-diff-${index}`} className="grid grid-cols-[minmax(5rem,8rem)_1fr] gap-x-2">
                                   <span className="truncate font-mono text-gray-700" title={row.field}>
                                     {row.field}
@@ -892,11 +906,22 @@ export default function GatewayAuditLogsPage() {
                                 className="mt-1 text-xs text-blue-600 hover:underline"
                               >
                                 {t('labels.viewChangeDetail')}
-                                {diffRows.length > 3 ? ` · ${t('labels.more', { count: diffRows.length - 3 })}` : ''}
+                                {summaryDiffRows.length > 3 ? ` · ${t('labels.more', { count: summaryDiffRows.length - 3 })}` : ''}
                               </button>
                             </>
                           ) : (
-                            <span className="text-gray-400">—</span>
+                            <>
+                              <span className="text-gray-400">—</span>
+                              {diffRows.length > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailLog(item)}
+                                  className="ml-2 text-xs text-blue-600 hover:underline"
+                                >
+                                  {t('labels.viewChangeDetail')}
+                                </button>
+                              ) : null}
+                            </>
                           )}
                         </div>
                       </td>
