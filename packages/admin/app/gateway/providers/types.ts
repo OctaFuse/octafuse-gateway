@@ -54,13 +54,6 @@ export type ProviderKeyFormData = {
 	status: string;
 };
 
-export type ProviderOverview = {
-	total: number;
-	activeKeys: number;
-	withoutKeys: number;
-	protocols: { openai: number; anthropic: number; gemini: number };
-};
-
 export type EditingProviderKeyState = {
 	providerId: string;
 	key: ProviderKeyRow;

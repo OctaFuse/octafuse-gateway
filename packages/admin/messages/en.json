@@ -283,7 +283,7 @@
 	"providers": {
 		"title": "Providers",
 		"subtitle": "Upstream AI endpoints consumed by {product}",
-		"importHint": "Use Import to seed common CN-region endpoints; then click a row and replace the placeholder API key.",
+		"importHint": "Use Import to seed common provider endpoints (base URLs) so you don't have to look them up; then click a row and replace the placeholder API key.",
 		"emptySearch": "No providers match this name",
 		"empty": "No providers found",
 		"searchPlaceholder": "Search provider name",
@@ -291,12 +291,6 @@
 		"expandKeys": "Expand keys",
 		"collapseKeys": "Collapse keys",
 		"loadingKeys": "Loading keys…",
-		"summary": {
-			"pendingKeys": "{count} provider(s) still use the import placeholder API key. Click a row to edit and enter a real upstream key before routing traffic.",
-			"providers": "Providers",
-			"activeKeys": "Active Keys",
-			"withoutKeys": "{count} provider(s) have no active upstream key."
-		},
 		"card": {
 			"pending": "Pending",
 			"noKey": "No key",
@@ -314,7 +308,7 @@
 		},
 		"import": {
 			"title": "Import from templates",
-			"subtitle": "Prefills OpenAI-compatible base URLs (CN-first catalog). Each import creates a new provider row.",
+			"subtitle": "Prefills common OpenAI-compatible base URLs. Each import creates a new provider row.",
 			"searchPlaceholder": "Search template name",
 			"clearSearch": "Clear template search",
 			"clear": "Clear",

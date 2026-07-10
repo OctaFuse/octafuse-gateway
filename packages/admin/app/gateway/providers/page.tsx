@@ -9,7 +9,6 @@ import { ProviderCard } from './components/provider-card';
 import { ProviderImportModal } from './components/provider-import-modal';
 import { ProviderKeyModal } from './components/provider-key-modal';
 import { ProviderModal } from './components/provider-modal';
-import { ProviderSummary } from './components/provider-summary';
 import { ProviderToolbar } from './components/provider-toolbar';
 import { useProvidersPageState } from './use-providers-page-state';
 
@@ -56,8 +55,6 @@ export default function GatewayProvidersPage() {
 					</button>
 				</div>
 			</div>
-
-			<ProviderSummary pendingKeyCount={state.pendingKeyCount} overview={state.providerOverview} />
 
 			<ProviderToolbar
 				providerSearch={state.providerSearch}

@@ -61,29 +61,11 @@ export function useProvidersPageState() {
 	const [keyEditError, setKeyEditError] = useState('');
 
 	const existingProviderIds = useMemo(() => new Set(providers.map((p) => p.id)), [providers]);
-	const pendingKeyCount = useMemo(() => providers.filter((p) => p.has_pending_key).length, [providers]);
 	const filteredProviders = useMemo(() => {
 		const query = providerSearch.trim().toLowerCase();
 		if (!query) return providers;
 		return providers.filter((provider) => provider.name.toLowerCase().includes(query));
 	}, [providerSearch, providers]);
-	const providerOverview = useMemo(() => {
-		const protocols = filteredProviders.reduce(
-			(acc, provider) => {
-				if (provider.base_url_openai?.trim()) acc.openai++;
-				if (provider.base_url_anthropic?.trim()) acc.anthropic++;
-				if (provider.base_url_gemini?.trim()) acc.gemini++;
-				return acc;
-			},
-			{ openai: 0, anthropic: 0, gemini: 0 }
-		);
-		return {
-			total: filteredProviders.length,
-			activeKeys: filteredProviders.reduce((sum, provider) => sum + (provider.active_key_count ?? 0), 0),
-			withoutKeys: filteredProviders.filter((provider) => (provider.active_key_count ?? 0) === 0).length,
-			protocols,
-		};
-	}, [filteredProviders]);
 	const importSelectedCount = useMemo(
 		() => Object.values(importSelected).filter(Boolean).length,
 		[importSelected]
@@ -543,8 +525,6 @@ export function useProvidersPageState() {
 		providerSearch,
 		setProviderSearch,
 		filteredProviders,
-		pendingKeyCount,
-		providerOverview,
 		copiedId,
 		expandedProviderIds,
 		providerKeyPreviewById,

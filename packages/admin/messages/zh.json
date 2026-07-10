@@ -283,7 +283,7 @@
 	"providers": {
 		"title": "供应商",
 		"subtitle": "{product} 使用的上游 AI 供应商端点",
-		"importHint": "使用「导入」预填常见中国区端点；然后点击行并替换占位 API Key。",
+		"importHint": "使用「导入」可预填常见供应商端点（含 base URL），免去自行查找；然后点击行并替换占位 API Key。",
 		"emptySearch": "没有匹配该名称的供应商",
 		"empty": "未找到供应商",
 		"searchPlaceholder": "搜索供应商名称",
@@ -291,12 +291,6 @@
 		"expandKeys": "展开 Keys",
 		"collapseKeys": "收起 Keys",
 		"loadingKeys": "加载 Keys 中…",
-		"summary": {
-			"pendingKeys": "{count} 个供应商仍使用导入占位 API Key。点击行编辑并填入真实上游 Key，再路由流量。",
-			"providers": "供应商",
-			"activeKeys": "活跃 Keys",
-			"withoutKeys": "{count} 个供应商没有活跃的上游 Key。"
-		},
 		"card": {
 			"pending": "待处理",
 			"noKey": "无 Key",
@@ -314,7 +308,7 @@
 		},
 		"import": {
 			"title": "从模板导入",
-			"subtitle": "预填 OpenAI 兼容的基础 URL（中国区优先目录）。每次导入会创建新的供应商行。",
+			"subtitle": "预填常见 OpenAI 兼容的基础 URL。每次导入会创建新的供应商行。",
 			"searchPlaceholder": "搜索模板名称",
 			"clearSearch": "清除模板搜索",
 			"clear": "清除",
@@ -356,7 +350,7 @@
 		"keys": {
 			"editTitle": "编辑供应商 Key",
 			"newTitle": "新建供应商 Key",
-			"label": "Label",
+			"label": "名称",
 			"labelMaxLength": "最多 {max} 个字符",
 			"replaceApiKey": "替换 API Key",
 			"apiKey": "API Key",
