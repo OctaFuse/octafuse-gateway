@@ -1,6 +1,13 @@
 # Octafuse Gateway
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](./LICENSE)
+[![Release](https://img.shields.io/github/v/release/OctaFuse/octafuse-gateway?sort=semver&display_name=tag&color=2f80ed)](https://github.com/OctaFuse/octafuse-gateway/releases)
+[![Package Versions](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/verify-package-versions.yml/badge.svg)](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/verify-package-versions.yml)
+[![Docker Images](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/octafuse-docker-images.yml/badge.svg)](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/octafuse-docker-images.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white)](./.nvmrc)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare.md)
+[![Docker](https://img.shields.io/badge/Docker-Compose%20v2.20%2B-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
+[![Databases](https://img.shields.io/badge/DB-D1%20%7C%20Postgres%20%7C%20MySQL-5B6EE1)](./docs/operators/)
 
 **Octafuse Gateway** 是一个可自托管的开源 **AI Gateway**。它把分散在不同模型供应商、账号计划和 API Key 后面的模型能力，统一成 **一个 Base URL、一个 API Key**，并提供路由、预算、计费、日志与审计能力。
 

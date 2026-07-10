@@ -1,6 +1,13 @@
 # Octafuse Gateway
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](./LICENSE)
+[![Release](https://img.shields.io/github/v/release/OctaFuse/octafuse-gateway?sort=semver&display_name=tag&color=2f80ed)](https://github.com/OctaFuse/octafuse-gateway/releases)
+[![Package Versions](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/verify-package-versions.yml/badge.svg)](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/verify-package-versions.yml)
+[![Docker Images](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/octafuse-docker-images.yml/badge.svg)](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/octafuse-docker-images.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white)](./.nvmrc)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare.md)
+[![Docker](https://img.shields.io/badge/Docker-Compose%20v2.20%2B-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
+[![Databases](https://img.shields.io/badge/DB-D1%20%7C%20Postgres%20%7C%20MySQL-5B6EE1)](./docs/operators/)
 
 **Octafuse Gateway** is a self-hostable open-source **AI Gateway**. It consolidates model access across vendors, plans, and API keys into **one Base URL and one API Key**, with routing, budgets, billing, logs, and audit built in.
 
