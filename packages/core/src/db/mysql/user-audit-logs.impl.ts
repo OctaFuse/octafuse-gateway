@@ -1,7 +1,7 @@
 /**
  * MySQL：`user_audit_logs`。
  */
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { GlobalUserAuditLogRow, UserAuditLogRow } from '../../types';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { UserAuditLogsRepository } from '../../storage/gateway-repository-interfaces';
@@ -99,8 +99,8 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 			userId?: string;
 			apiKeyId?: string;
 			userEmail?: string;
-			eventType?: string;
-			actorType?: string;
+			eventTypes?: string[];
+			actorTypes?: string[];
 			reasonCode?: string;
 			source?: string;
 			correlationId?: string;
@@ -114,8 +114,12 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 			if (options.userId) conditions.push(eq(myUserAuditLogsTable.userId, options.userId));
 			if (options.apiKeyId) conditions.push(eq(myUserAuditLogsTable.apiKeyId, options.apiKeyId));
 			if (options.userEmail) conditions.push(eq(myUsersTable.email, options.userEmail));
-			if (options.eventType) conditions.push(eq(myUserAuditLogsTable.eventType, options.eventType));
-			if (options.actorType) conditions.push(eq(myUserAuditLogsTable.actorType, options.actorType));
+			if (options.eventTypes && options.eventTypes.length > 0) {
+				conditions.push(inArray(myUserAuditLogsTable.eventType, options.eventTypes));
+			}
+			if (options.actorTypes && options.actorTypes.length > 0) {
+				conditions.push(inArray(myUserAuditLogsTable.actorType, options.actorTypes));
+			}
 			if (options.reasonCode) conditions.push(eq(myUserAuditLogsTable.reasonCode, options.reasonCode));
 			if (options.source) conditions.push(eq(myUserAuditLogsTable.source, options.source));
 			if (options.correlationId) conditions.push(eq(myUserAuditLogsTable.correlationId, options.correlationId));

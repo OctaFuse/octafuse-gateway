@@ -1,7 +1,7 @@
 /**
  * Postgres：`user_audit_logs`。
  */
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { GlobalUserAuditLogRow, UserAuditLogRow } from '../../types';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { UserAuditLogsRepository } from '../../storage/gateway-repository-interfaces';
@@ -99,8 +99,8 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 			userId?: string;
 			apiKeyId?: string;
 			userEmail?: string;
-			eventType?: string;
-			actorType?: string;
+			eventTypes?: string[];
+			actorTypes?: string[];
 			reasonCode?: string;
 			source?: string;
 			correlationId?: string;
@@ -114,8 +114,12 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 			if (options.userId) conditions.push(eq(pgUserAuditLogsTable.userId, options.userId));
 			if (options.apiKeyId) conditions.push(eq(pgUserAuditLogsTable.apiKeyId, options.apiKeyId));
 			if (options.userEmail) conditions.push(eq(pgUsersTable.email, options.userEmail));
-			if (options.eventType) conditions.push(eq(pgUserAuditLogsTable.eventType, options.eventType));
-			if (options.actorType) conditions.push(eq(pgUserAuditLogsTable.actorType, options.actorType));
+			if (options.eventTypes && options.eventTypes.length > 0) {
+				conditions.push(inArray(pgUserAuditLogsTable.eventType, options.eventTypes));
+			}
+			if (options.actorTypes && options.actorTypes.length > 0) {
+				conditions.push(inArray(pgUserAuditLogsTable.actorType, options.actorTypes));
+			}
 			if (options.reasonCode) conditions.push(eq(pgUserAuditLogsTable.reasonCode, options.reasonCode));
 			if (options.source) conditions.push(eq(pgUserAuditLogsTable.source, options.source));
 			if (options.correlationId) conditions.push(eq(pgUserAuditLogsTable.correlationId, options.correlationId));

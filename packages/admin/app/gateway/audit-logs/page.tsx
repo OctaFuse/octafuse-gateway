@@ -31,6 +31,42 @@ const OMIT_AUDIT_LOG_SNAPSHOT_FIELDS = [
 	'budget_reset_at',
 ] as const;
 
+const DEFAULT_AUDIT_LOG_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((type) => type !== 'usage_charge');
+const AUDIT_LOG_EVENT_TYPE_SET = new Set<string>(API_KEY_BUDGET_AUDIT_EVENT_TYPES);
+const DEFAULT_AUDIT_LOG_ACTOR_TYPES = [...API_KEY_BUDGET_AUDIT_ACTOR_TYPES];
+const AUDIT_LOG_ACTOR_TYPE_SET = new Set<string>(API_KEY_BUDGET_AUDIT_ACTOR_TYPES);
+
+function normalizeAuditEventTypes(values: string[]): string[] {
+  const normalized: string[] = [];
+  values
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .forEach((value) => {
+      if (AUDIT_LOG_EVENT_TYPE_SET.has(value) && !normalized.includes(value)) normalized.push(value);
+    });
+  return normalized;
+}
+
+function normalizeAuditActorTypes(values: string[]): string[] {
+  const normalized: string[] = [];
+  values
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .forEach((value) => {
+      if (AUDIT_LOG_ACTOR_TYPE_SET.has(value) && !normalized.includes(value)) normalized.push(value);
+    });
+  return normalized;
+}
+
+function appendAuditEventTypeParams(params: URLSearchParams, eventTypes: string[]): void {
+  eventTypes.forEach((eventType) => params.append('event_type', eventType));
+}
+
+function appendAuditActorTypeParams(params: URLSearchParams, actorTypes: string[]): void {
+  if (actorTypes.length === DEFAULT_AUDIT_LOG_ACTOR_TYPES.length) return;
+  actorTypes.forEach((actorType) => params.append('actor_type', actorType));
+}
+
 /** change_payload 展开行：去掉已由 Budget plan / Time / Event 列展示的键 */
 function shouldOmitChangePayloadDisplayLine(line: string): boolean {
 	const colon = line.indexOf(':');
@@ -225,8 +261,8 @@ export default function GatewayAuditLogsPage() {
   const [filterApiKeyId, setFilterApiKeyId] = useState('');
   const [filterUserId, setFilterUserId] = useState('');
   const [filterUserEmail, setFilterUserEmail] = useState('');
-  const [filterEventType, setFilterEventType] = useState('');
-  const [filterActorType, setFilterActorType] = useState('');
+  const [filterEventTypes, setFilterEventTypes] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
+  const [filterActorTypes, setFilterActorTypes] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
   const [filterReasonCode, setFilterReasonCode] = useState('');
   const [filterSource, setFilterSource] = useState('');
   const [filterCorrelationId, setFilterCorrelationId] = useState('');
@@ -237,8 +273,8 @@ export default function GatewayAuditLogsPage() {
     const apiKeyId = params.get('api_key_id');
     const userId = params.get('user_id');
     const userEmail = params.get('user_email');
-    const eventType = params.get('event_type');
-    const actorType = params.get('actor_type');
+    const eventTypes = normalizeAuditEventTypes(params.getAll('event_type'));
+    const actorTypes = normalizeAuditActorTypes(params.getAll('actor_type'));
     const reasonCode = params.get('reason_code');
     const source = params.get('source');
     const correlationId = params.get('correlation_id');
@@ -248,8 +284,8 @@ export default function GatewayAuditLogsPage() {
     if (apiKeyId != null) setFilterApiKeyId(apiKeyId);
     if (userId != null) setFilterUserId(userId);
     if (userEmail != null) setFilterUserEmail(userEmail);
-    if (eventType != null) setFilterEventType(eventType);
-    if (actorType != null) setFilterActorType(actorType);
+    if (eventTypes.length > 0) setFilterEventTypes(eventTypes);
+    if (actorTypes.length > 0) setFilterActorTypes(actorTypes);
     if (reasonCode != null) setFilterReasonCode(reasonCode);
     if (source != null) setFilterSource(source);
     if (correlationId != null) setFilterCorrelationId(correlationId);
@@ -281,8 +317,8 @@ export default function GatewayAuditLogsPage() {
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
       if (filterUserId) params.append('user_id', filterUserId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
-      if (filterEventType) params.append('event_type', filterEventType);
-      if (filterActorType) params.append('actor_type', filterActorType);
+      appendAuditEventTypeParams(params, filterEventTypes);
+      appendAuditActorTypeParams(params, filterActorTypes);
       if (filterReasonCode) params.append('reason_code', filterReasonCode);
       if (filterSource) params.append('source', filterSource);
       if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
@@ -296,8 +332,8 @@ export default function GatewayAuditLogsPage() {
       filterApiKeyId,
       filterUserId,
       filterUserEmail,
-      filterEventType,
-      filterActorType,
+      filterEventTypes,
+      filterActorTypes,
       filterReasonCode,
       filterSource,
       filterCorrelationId,
@@ -316,8 +352,8 @@ export default function GatewayAuditLogsPage() {
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
       if (filterUserId) params.append('user_id', filterUserId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
-      if (filterEventType) params.append('event_type', filterEventType);
-      if (filterActorType) params.append('actor_type', filterActorType);
+      appendAuditEventTypeParams(params, filterEventTypes);
+      appendAuditActorTypeParams(params, filterActorTypes);
       if (filterReasonCode) params.append('reason_code', filterReasonCode);
       if (filterSource) params.append('source', filterSource);
       if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
@@ -340,8 +376,8 @@ export default function GatewayAuditLogsPage() {
     filterApiKeyId,
     filterUserId,
     filterUserEmail,
-    filterEventType,
-    filterActorType,
+    filterEventTypes,
+    filterActorTypes,
     filterReasonCode,
     filterSource,
     filterCorrelationId,
@@ -355,6 +391,22 @@ export default function GatewayAuditLogsPage() {
   }, [fetchLogs]);
 
   const totalPages = Math.ceil(total / pageSize);
+  const setEventTypeChecked = (eventType: string, checked: boolean) => {
+    setFilterEventTypes((current) => {
+      if (checked) return current.includes(eventType) ? current : [...current, eventType];
+      if (current.length <= 1) return current;
+      return current.filter((value) => value !== eventType);
+    });
+    setPage(1);
+  };
+  const setActorTypeChecked = (actorType: string, checked: boolean) => {
+    setFilterActorTypes((current) => {
+      if (checked) return current.includes(actorType) ? current : [...current, actorType];
+      if (current.length <= 1) return current;
+      return current.filter((value) => value !== actorType);
+    });
+    setPage(1);
+  };
 
   return (
     <div className="p-8">
@@ -373,112 +425,163 @@ export default function GatewayAuditLogsPage() {
         />
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-4">
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.eventType')}</label>
-          <select
-            value={filterEventType}
-            onChange={(e) => { setFilterEventType(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[11rem]"
-          >
-            <option value="">{tCommon('all')}</option>
-            {API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+      <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-4 xl:grid-cols-[minmax(28rem,1.5fr)_minmax(18rem,0.8fr)]">
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-medium text-gray-600">{t('filters.eventType')}</label>
+              <div className="flex shrink-0 items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterEventTypes([...API_KEY_BUDGET_AUDIT_EVENT_TYPES]);
+                    setPage(1);
+                  }}
+                  className="text-blue-600 hover:underline"
+                >
+                  {tCommon('selectAll')}
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
+                    setPage(1);
+                  }}
+                  className="text-blue-600 hover:underline"
+                >
+                  {t('filters.defaultEventTypes')}
+                </button>
+                <span className="text-gray-500">{tCommon('selected', { count: filterEventTypes.length })}</span>
+              </div>
+            </div>
+            <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
+              {API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((eventType) => {
+                const checked = filterEventTypes.includes(eventType);
+                return (
+                  <label
+                    key={eventType}
+                    className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
+                      checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={checked && filterEventTypes.length === 1}
+                      onChange={(e) => setEventTypeChecked(eventType, e.target.checked)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span className="font-mono">{eventType}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-medium text-gray-600">{t('filters.actor')}</label>
+              <div className="flex shrink-0 items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
+                    setPage(1);
+                  }}
+                  className="text-blue-600 hover:underline"
+                >
+                  {tCommon('selectAll')}
+                </button>
+                <span className="text-gray-500">{tCommon('selected', { count: filterActorTypes.length })}</span>
+              </div>
+            </div>
+            <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
+              {API_KEY_BUDGET_AUDIT_ACTOR_TYPES.map((actorType) => {
+                const checked = filterActorTypes.includes(actorType);
+                return (
+                  <label
+                    key={actorType}
+                    className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
+                      checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={checked && filterActorTypes.length === 1}
+                      onChange={(e) => setActorTypeChecked(actorType, e.target.checked)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span className="font-mono">{actorType}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.actor')}</label>
-          <select
-            value={filterActorType}
-            onChange={(e) => { setFilterActorType(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[8rem]"
-          >
-            <option value="">{tCommon('all')}</option>
-            {API_KEY_BUDGET_AUDIT_ACTOR_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.userId')}</label>
-          <input
-            type="text"
-            value={filterUserId}
-            onChange={(e) => { setFilterUserId(e.target.value); setPage(1); }}
-            placeholder={t('filters.userIdPlaceholder')}
-            className="px-3 py-2 border border-gray-300 rounded-md w-72 font-mono text-xs"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
-          <input
-            type="text"
-            value={filterUserEmail}
-            onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
-            placeholder={t('filters.exactMatch')}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm w-56"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.apiKeyId')}</label>
-          <input
-            type="text"
-            value={filterApiKeyId}
-            onChange={(e) => { setFilterApiKeyId(e.target.value); setPage(1); }}
-            placeholder={t('filters.apiKeyPlaceholder')}
-            className="px-3 py-2 border border-gray-300 rounded-md w-64 font-mono text-xs"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.reasonCode')}</label>
-          <input
-            type="text"
-            value={filterReasonCode}
-            onChange={(e) => { setFilterReasonCode(e.target.value); setPage(1); }}
-            placeholder={t('filters.reasonPlaceholder')}
-            className="px-3 py-2 border border-gray-300 rounded-md w-56 font-mono text-xs"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.source')}</label>
-          <input
-            type="text"
-            value={filterSource}
-            onChange={(e) => { setFilterSource(e.target.value); setPage(1); }}
-            placeholder={t('filters.sourcePlaceholder')}
-            className="px-3 py-2 border border-gray-300 rounded-md w-44 font-mono text-xs"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.correlationId')}</label>
-          <input
-            type="text"
-            value={filterCorrelationId}
-            onChange={(e) => { setFilterCorrelationId(e.target.value); setPage(1); }}
-            placeholder={t('filters.correlationPlaceholder')}
-            className="px-3 py-2 border border-gray-300 rounded-md w-64 font-mono text-xs"
-          />
-        </div>
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={() => {
-              setFilterEventType('');
-              setFilterActorType('');
-              setFilterReasonCode('');
-              setFilterSource('');
-              setFilterCorrelationId('');
-              setFilterUserEmail('');
-              setFilterUserId('');
-              setFilterApiKeyId('');
-              setRangeValue({ preset: 'custom', start_date: '', end_date: '' });
-              setPage(1);
-            }}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-          >
-            {tCommon('clearFiltersLower')}
-          </button>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(12rem,1fr)_minmax(14rem,1fr)_minmax(12rem,0.9fr)_minmax(14rem,1fr)_auto]">
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
+            <input
+              type="text"
+              value={filterUserEmail}
+              onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
+              placeholder={t('filters.exactMatch')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.reasonCode')}</label>
+            <input
+              type="text"
+              value={filterReasonCode}
+              onChange={(e) => { setFilterReasonCode(e.target.value); setPage(1); }}
+              placeholder={t('filters.reasonPlaceholder')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.source')}</label>
+            <input
+              type="text"
+              value={filterSource}
+              onChange={(e) => { setFilterSource(e.target.value); setPage(1); }}
+              placeholder={t('filters.sourcePlaceholder')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.correlationId')}</label>
+            <input
+              type="text"
+              value={filterCorrelationId}
+              onChange={(e) => { setFilterCorrelationId(e.target.value); setPage(1); }}
+              placeholder={t('filters.correlationPlaceholder')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => {
+                setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
+                setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
+                setFilterReasonCode('');
+                setFilterSource('');
+                setFilterCorrelationId('');
+                setFilterUserEmail('');
+                setFilterUserId('');
+                setFilterApiKeyId('');
+                setRangeValue({ preset: 'custom', start_date: '', end_date: '' });
+                setPage(1);
+              }}
+              className="h-10 whitespace-nowrap px-4 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+            >
+              {tCommon('clearFiltersLower')}
+            </button>
+          </div>
         </div>
       </div>
 

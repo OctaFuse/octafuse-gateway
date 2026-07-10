@@ -904,6 +904,7 @@
 			"reasonCode": "Reason code",
 			"source": "Source",
 			"correlationId": "Correlation ID",
+			"defaultEventTypes": "Default",
 			"userIdPlaceholder": "Gateway users.id (uuid)",
 			"exactMatch": "Exact match",
 			"apiKeyPlaceholder": "UUID",

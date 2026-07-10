@@ -904,6 +904,7 @@
 			"reasonCode": "原因代码",
 			"source": "来源",
 			"correlationId": "Correlation ID",
+			"defaultEventTypes": "默认",
 			"userIdPlaceholder": "Gateway users.id（UUID）",
 			"exactMatch": "精确匹配",
 			"apiKeyPlaceholder": "UUID",

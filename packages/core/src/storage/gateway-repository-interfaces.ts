@@ -63,8 +63,8 @@ export interface UserAuditLogsRepository {
 		userId?: string;
 		apiKeyId?: string;
 		userEmail?: string;
-		eventType?: string;
-		actorType?: string;
+		eventTypes?: string[];
+		actorTypes?: string[];
 		reasonCode?: string;
 		source?: string;
 		correlationId?: string;

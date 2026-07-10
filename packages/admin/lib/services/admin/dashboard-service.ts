@@ -98,8 +98,8 @@ export async function listAdminGlobalBudgetAuditLogsService(
 		user_id?: string;
 		api_key_id?: string;
 		user_email?: string;
-		event_type?: string;
-		actor_type?: string;
+		event_type?: string | string[];
+		actor_type?: string | string[];
 		reason_code?: string;
 		source?: string;
 		correlation_id?: string;
@@ -109,14 +109,22 @@ export async function listAdminGlobalBudgetAuditLogsService(
 ): Promise<AdminGlobalBudgetAuditLogsOutput> {
 	const page = Math.max(1, Number.parseInt(String(input.page ?? '1'), 10));
 	const pageSize = Math.min(100, Math.max(1, Number.parseInt(String(input.page_size ?? '20'), 10)));
+	const eventTypes = (Array.isArray(input.event_type) ? input.event_type : input.event_type ? [input.event_type] : [])
+		.flatMap((value) => value.split(','))
+		.map((value) => value.trim())
+		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
+	const actorTypes = (Array.isArray(input.actor_type) ? input.actor_type : input.actor_type ? [input.actor_type] : [])
+		.flatMap((value) => value.split(','))
+		.map((value) => value.trim())
+		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
 	const result = await repos.userAuditLogs.getGlobalUserAuditLogs({
 		page,
 		pageSize,
 		userId: input.user_id,
 		apiKeyId: input.api_key_id,
 		userEmail: input.user_email,
-		eventType: input.event_type,
-		actorType: input.actor_type,
+		eventTypes: eventTypes.length > 0 ? eventTypes : undefined,
+		actorTypes: actorTypes.length > 0 ? actorTypes : undefined,
 		reasonCode: input.reason_code,
 		source: input.source,
 		correlationId: input.correlation_id,

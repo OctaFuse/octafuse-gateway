@@ -156,8 +156,8 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 			userId?: string;
 			apiKeyId?: string;
 			userEmail?: string;
-			eventType?: string;
-			actorType?: string;
+			eventTypes?: string[];
+			actorTypes?: string[];
 			reasonCode?: string;
 			source?: string;
 			correlationId?: string;
@@ -181,13 +181,13 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 				conditions.push('u.email = ?');
 				bindValues.push(options.userEmail);
 			}
-			if (options.eventType) {
-				conditions.push('a.event_type = ?');
-				bindValues.push(options.eventType);
+			if (options.eventTypes && options.eventTypes.length > 0) {
+				conditions.push(`a.event_type IN (${options.eventTypes.map(() => '?').join(', ')})`);
+				bindValues.push(...options.eventTypes);
 			}
-			if (options.actorType) {
-				conditions.push('a.actor_type = ?');
-				bindValues.push(options.actorType);
+			if (options.actorTypes && options.actorTypes.length > 0) {
+				conditions.push(`a.actor_type IN (${options.actorTypes.map(() => '?').join(', ')})`);
+				bindValues.push(...options.actorTypes);
 			}
 			if (options.reasonCode) {
 				conditions.push('a.reason_code = ?');
