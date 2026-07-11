@@ -19,6 +19,7 @@ import {
 } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
+import { successRateClassName } from '@/lib/analytics-rate-style';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
 import type { ApiResponse, ModelUsageRow, UserUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
@@ -260,7 +261,7 @@ export default function UserUsagePage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <span className={r.success_rate >= 95 ? 'text-green-600' : r.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
+                        <span className={successRateClassName(r.success_rate)}>
                           {r.success_rate.toFixed(1)}%
                         </span>
                       </td>
@@ -323,7 +324,7 @@ export default function UserUsagePage() {
                                           {formatGatewayMoneyCode(modelRow.avg_charged_per_request, billingCurrency, 6)}
                                         </td>
                                         <td className="px-3 py-2 text-sm">
-                                          <span className={modelRow.success_rate >= 95 ? 'text-green-600' : modelRow.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
+                                          <span className={successRateClassName(modelRow.success_rate)}>
                                             {modelRow.success_rate.toFixed(1)}%
                                           </span>
                                         </td>

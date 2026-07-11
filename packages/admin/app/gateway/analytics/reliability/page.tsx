@@ -11,6 +11,7 @@ import { readApiJson } from '@/lib/api-json';
 import { createRangeValue, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
+import { successRateClassName } from '@/lib/analytics-rate-style';
 import type { ProviderReliabilityRow, ModelProviderRow, GatewayRequestLog } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
@@ -104,7 +105,7 @@ export default function ReliabilityPage() {
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.provider_name ?? p.provider_id}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.request_count.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm">
-                      <span className={p.success_rate >= 95 ? 'text-green-600' : p.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
+                      <span className={successRateClassName(p.success_rate)}>
                         {p.success_rate.toFixed(1)}%
                       </span>
                     </td>
@@ -160,7 +161,7 @@ export default function ReliabilityPage() {
                       <td className="px-4 py-3 text-sm text-gray-600">{r.provider_name ?? r.provider_id}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.request_count.toLocaleString()}</td>
                       <td className="px-4 py-3 text-sm">
-                        <span className={r.success_rate >= 95 ? 'text-green-600' : r.success_rate >= 80 ? 'text-yellow-600' : 'text-red-600'}>
+                        <span className={successRateClassName(r.success_rate)}>
                           {r.success_rate.toFixed(1)}%
                         </span>
                       </td>
