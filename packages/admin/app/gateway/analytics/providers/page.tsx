@@ -223,7 +223,7 @@ export default function ProviderUsagePage() {
                 <Th label={tA('columns.inputTokens')} columnKey="input_tokens" />
                 <Th label={tA('columns.outputTokens')} columnKey="output_tokens" />
                 <Th label={tA('columns.cacheHitRate')} columnKey="cache_hit_rate" />
-                <Th label={tA('columns.std')} columnKey="standard_cost" />
+                <Th label={tA('columns.standard')} columnKey="standard_cost" />
                 <Th label={tA('columns.charged')} columnKey="charged_cost" />
                 <Th label={tA('columns.metered')} columnKey="metered_cost" />
                 <Th label={tA('columns.avgChargedPerReq')} columnKey="avg_charged_per_request" />
@@ -310,7 +310,7 @@ export default function ProviderUsagePage() {
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.inputTokens')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.outputTokens')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.cacheHitRate')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.std')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.standard')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.charged')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.metered')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgChargedPerReq')}</th>

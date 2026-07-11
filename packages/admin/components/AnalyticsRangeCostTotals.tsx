@@ -23,7 +23,7 @@ export function AnalyticsRangeCostTotals(props: {
 	return (
 		<div className="flex flex-wrap justify-end items-baseline gap-x-6 gap-y-1 ml-auto">
 			<span className="text-gray-500">
-				{t('rangeTotal')} <span className="text-gray-700 font-medium">{t('std')}</span>: {val(totals.standard)}
+				{t('rangeTotal')} <span className="text-gray-700 font-medium">{t('standard')}</span>: {val(totals.standard)}
 			</span>
 			<span className="text-gray-500">
 				<span className="text-gray-700 font-medium">{t('charged')}</span>: {val(totals.charged)}

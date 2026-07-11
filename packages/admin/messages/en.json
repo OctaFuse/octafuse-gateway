@@ -1006,7 +1006,7 @@
 			"inputTokens": "Input tokens",
 			"outputTokens": "Output tokens",
 			"cacheHitRate": "Cache hit rate",
-			"std": "Std",
+			"standard": "Standard",
 			"charged": "Charged",
 			"metered": "Metered",
 			"avgChargedPerReq": "Avg charged/req",
@@ -1040,7 +1040,7 @@
 		"noData": "No data",
 		"rangeTotals": {
 			"rangeTotal": "Range total",
-			"std": "Std",
+			"standard": "Standard",
 			"charged": "Charged",
 			"metered": "Metered"
 		},
@@ -1129,6 +1129,6 @@
 		},
 		"cost": "Cost: {amount}",
 		"providerLabel": "Provider: {id}",
-		"stdMetered": "Std {std} · Metered {metered}"
+		"stdMetered": "Standard {std} · Metered {metered}"
 	}
 }

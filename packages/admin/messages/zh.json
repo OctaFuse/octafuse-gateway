@@ -1006,9 +1006,9 @@
 			"inputTokens": "输入 Token",
 			"outputTokens": "输出 Token",
 			"cacheHitRate": "缓存命中率",
-			"std": "Std",
-			"charged": "Charged",
-			"metered": "Metered",
+			"standard": "标准",
+			"charged": "计费",
+			"metered": "成本",
 			"avgChargedPerReq": "平均计费/请求",
 			"successRate": "成功率",
 			"avgLatencyMs": "平均延迟",
@@ -1040,9 +1040,9 @@
 		"noData": "无数据",
 		"rangeTotals": {
 			"rangeTotal": "范围合计",
-			"std": "Std",
-			"charged": "Charged",
-			"metered": "Metered"
+			"standard": "标准",
+			"charged": "计费",
+			"metered": "成本"
 		},
 		"tokenDisplay": {
 			"label": "Token 显示",
@@ -1129,6 +1129,6 @@
 		},
 		"cost": "成本：{amount}",
 		"providerLabel": "供应商：{id}",
-		"stdMetered": "Std {std} · Metered {metered}"
+		"stdMetered": "标准 {std} · 成本 {metered}"
 	}
 }
