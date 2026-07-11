@@ -42,6 +42,14 @@ function mapAnalyticsTtftFields(r: {
 }
 
 /**
+ * Prompt cache 命中率（%）。
+ * 网关语义：`input_tokens = regular + cache_read + cache_write`，故分母用 `input_tokens`。
+ */
+function computeCacheHitRate(inputTokens: number, cacheReadTokens: number): number {
+	return inputTokens > 0 ? (cacheReadTokens / inputTokens) * 100 : 0;
+}
+
+/**
  * 全局请求日志分页（将查询字符串参数映射为 `getRequestLogs` 的 options）。
  * @param input.page / page_size 字符串或数字均可，非法时由 parseInt 处理
  */
@@ -322,10 +330,7 @@ export async function getAdminStatsService(
 			total_tokens: row.totalTokens,
 			charged_cost: row.chargedCost,
 			avg_latency_ms: row.avgLatencyMs,
-			cache_hit_rate:
-				row.inputTokens + row.cacheReadTokens > 0
-					? (row.cacheReadTokens / (row.inputTokens + row.cacheReadTokens)) * 100
-					: 0,
+			cache_hit_rate: computeCacheHitRate(row.inputTokens, row.cacheReadTokens),
 		})),
 		granularity,
 		recentLogs,
@@ -360,6 +365,9 @@ export async function getModelAnalyticsService(
 		const reqCount = Number(r.request_count);
 		const successCount = Number(r.success_count);
 		const chargedCost = Number(r.charged_cost);
+		const inputTokens = Number(r.input_tokens);
+		const cacheReadTokens = Number(r.cache_read_tokens ?? 0);
+		const cacheWriteTokens = Number(r.cache_write_tokens ?? 0);
 		return {
 			model_id: r.model_id,
 			route_group: r.route_group ?? 'default',
@@ -367,8 +375,11 @@ export async function getModelAnalyticsService(
 			charged_cost: chargedCost,
 			metered_cost: Number(r.metered_cost),
 			standard_cost: Number(r.standard_cost),
-			input_tokens: Number(r.input_tokens),
+			input_tokens: inputTokens,
 			output_tokens: Number(r.output_tokens),
+			cache_read_tokens: cacheReadTokens,
+			cache_write_tokens: cacheWriteTokens,
+			cache_hit_rate: computeCacheHitRate(inputTokens, cacheReadTokens),
 			success_count: successCount,
 			error_count: Number(r.error_count),
 			success_rate: reqCount > 0 ? (successCount / reqCount) * 100 : 0,
@@ -412,6 +423,9 @@ export async function getProviderAnalyticsService(
 		const reqCount = Number(r.request_count);
 		const successCount = Number(r.success_count);
 		const chargedCost = Number(r.charged_cost);
+		const inputTokens = Number(r.input_tokens);
+		const cacheReadTokens = Number(r.cache_read_tokens ?? 0);
+		const cacheWriteTokens = Number(r.cache_write_tokens ?? 0);
 		const nameRaw = r.provider_name;
 		return {
 			provider_id: r.provider_id,
@@ -420,8 +434,11 @@ export async function getProviderAnalyticsService(
 			charged_cost: chargedCost,
 			metered_cost: Number(r.metered_cost),
 			standard_cost: Number(r.standard_cost),
-			input_tokens: Number(r.input_tokens),
+			input_tokens: inputTokens,
 			output_tokens: Number(r.output_tokens),
+			cache_read_tokens: cacheReadTokens,
+			cache_write_tokens: cacheWriteTokens,
+			cache_hit_rate: computeCacheHitRate(inputTokens, cacheReadTokens),
 			distinct_models: Number(r.distinct_models),
 			success_count: successCount,
 			error_count: Number(r.error_count),

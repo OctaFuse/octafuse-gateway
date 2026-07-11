@@ -12,6 +12,13 @@ export type AnalyticsTtftMetrics = {
 	content_ttft_rate: number;
 };
 
+type TtftPrimaryKind = 'reasoning' | 'content' | 'effective';
+
+type TtftPrimary = {
+	kind: TtftPrimaryKind;
+	ms: number;
+};
+
 function formatRate(rate: number): string {
 	return `${rate.toFixed(1)}%`;
 }
@@ -35,20 +42,33 @@ export function buildAnalyticsTtftTooltip(metrics: AnalyticsTtftMetrics, t: (key
 	return lines.join('\n');
 }
 
-export function formatAnalyticsTtftPrimary(metrics: AnalyticsTtftMetrics): string | null {
+export function resolveAnalyticsTtftPrimary(metrics: AnalyticsTtftMetrics): TtftPrimary | null {
 	const hasReasoning =
 		metrics.reasoning_ttft_rate > 0 && metrics.avg_first_reasoning_token_ms != null;
-	if (hasReasoning) {
-		return `R ${formatLatencyMs(metrics.avg_first_reasoning_token_ms)}`;
+	if (hasReasoning && metrics.avg_first_reasoning_token_ms != null) {
+		return { kind: 'reasoning', ms: metrics.avg_first_reasoning_token_ms };
 	}
 	if (metrics.avg_first_token_ms != null) {
-		return `C ${formatLatencyMs(metrics.avg_first_token_ms)}`;
+		return { kind: 'content', ms: metrics.avg_first_token_ms };
 	}
 	if (metrics.avg_effective_ttft_ms != null) {
-		return formatLatencyMs(metrics.avg_effective_ttft_ms);
+		return { kind: 'effective', ms: metrics.avg_effective_ttft_ms };
 	}
 	return null;
 }
+
+export function formatAnalyticsTtftPrimary(metrics: AnalyticsTtftMetrics): string | null {
+	const primary = resolveAnalyticsTtftPrimary(metrics);
+	if (primary == null) return null;
+	if (primary.kind === 'reasoning') return `R ${formatLatencyMs(primary.ms)}`;
+	if (primary.kind === 'content') return `C ${formatLatencyMs(primary.ms)}`;
+	return formatLatencyMs(primary.ms);
+}
+
+const TTFT_BADGE_CLASS: Record<'reasoning' | 'content', string> = {
+	reasoning: 'bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-200/80',
+	content: 'bg-sky-100 text-sky-800 ring-1 ring-inset ring-sky-200/80',
+};
 
 export function AnalyticsTtftCell({
 	metrics,
@@ -58,14 +78,21 @@ export function AnalyticsTtftCell({
 	noDataLabel: string;
 }) {
 	const t = useTranslations('analytics');
-	const primary = formatAnalyticsTtftPrimary(metrics);
+	const primary = resolveAnalyticsTtftPrimary(metrics);
 	if (primary == null) {
 		return <span className="text-gray-400">{noDataLabel}</span>;
 	}
 	const tooltip = buildAnalyticsTtftTooltip(metrics, t);
 	return (
-		<span className="tabular-nums" title={tooltip}>
-			{primary}
+		<span className="inline-flex items-center gap-1.5 tabular-nums" title={tooltip}>
+			{primary.kind === 'reasoning' || primary.kind === 'content' ? (
+				<span
+					className={`inline-flex min-w-[1.125rem] items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none ${TTFT_BADGE_CLASS[primary.kind]}`}
+				>
+					{primary.kind === 'reasoning' ? 'R' : 'C'}
+				</span>
+			) : null}
+			<span className="text-gray-700">{formatLatencyMs(primary.ms)}</span>
 		</span>
 	);
 }

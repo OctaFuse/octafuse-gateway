@@ -19,6 +19,7 @@ import {
   type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { formatLatencyMs } from '@/lib/format-latency';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
 import type { ApiResponse, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
@@ -132,6 +133,9 @@ export default function ProviderUsagePage() {
       'request_count',
       'input_tokens',
       'output_tokens',
+      'cache_read_tokens',
+      'cache_write_tokens',
+      'cache_hit_rate',
       'standard_cost',
       'charged_cost',
       'metered_cost',
@@ -159,6 +163,9 @@ export default function ProviderUsagePage() {
       String(r.request_count),
       String(r.input_tokens),
       String(r.output_tokens),
+      String(r.cache_read_tokens),
+      String(r.cache_write_tokens),
+      String(r.cache_hit_rate),
       String(r.standard_cost ?? 0),
       String(r.charged_cost),
       String(r.metered_cost),
@@ -215,6 +222,7 @@ export default function ProviderUsagePage() {
                 <Th label={tA('columns.requests')} columnKey="request_count" />
                 <Th label={tA('columns.inputTokens')} columnKey="input_tokens" />
                 <Th label={tA('columns.outputTokens')} columnKey="output_tokens" />
+                <Th label={tA('columns.cacheHitRate')} columnKey="cache_hit_rate" />
                 <Th label={tA('columns.std')} columnKey="standard_cost" />
                 <Th label={tA('columns.charged')} columnKey="charged_cost" />
                 <Th label={tA('columns.metered')} columnKey="metered_cost" />
@@ -257,6 +265,7 @@ export default function ProviderUsagePage() {
                       <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
                       <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
                       <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.cache_hit_rate.toFixed(1)}%</td>
                       <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                         {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                       </td>
@@ -274,18 +283,18 @@ export default function ProviderUsagePage() {
                           {r.success_rate.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{r.avg_latency_ms != null ? formatLatencyMs(r.avg_latency_ms) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         <AnalyticsTtftCell metrics={r} noDataLabel={tCommon('noData')} />
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_upstream_response_ms != null ? Math.round(r.avg_upstream_response_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{r.avg_upstream_response_ms != null ? formatLatencyMs(r.avg_upstream_response_ms) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.tokens_per_second != null ? r.tokens_per_second.toFixed(1) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.failover_rate.toFixed(1)}%</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.avg_attempts != null ? r.avg_attempts.toFixed(2) : tCommon('noData')}</td>
                     </tr>
                     {isExpanded ? (
                       <tr key={`${r.provider_id}:models`} className="bg-blue-50/60">
-                        <td colSpan={15} className="border-l-4 border-blue-300 px-5 py-4">
+                        <td colSpan={16} className="border-l-4 border-blue-300 px-5 py-4">
                           {isModelRowsLoading ? (
                             <div className="py-4 text-sm text-gray-500">{tA('loadingModelUsage')}</div>
                           ) : modelRows.length === 0 ? (
@@ -300,6 +309,7 @@ export default function ProviderUsagePage() {
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.requests')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.inputTokens')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.outputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.cacheHitRate')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.std')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.charged')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.metered')}</th>
@@ -331,6 +341,7 @@ export default function ProviderUsagePage() {
                                         <td className="px-3 py-2 text-sm text-gray-900">{modelRow.request_count.toLocaleString()}</td>
                                         <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={modelRow.input_tokens} mode={tokenDisplayMode} /></td>
                                         <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={modelRow.output_tokens} mode={tokenDisplayMode} /></td>
+                                        <td className="px-3 py-2 text-sm text-gray-600">{modelRow.cache_hit_rate.toFixed(1)}%</td>
                                         <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
                                           {formatGatewayMoneyCode(modelRow.standard_cost ?? 0, billingCurrency, 4)}
                                         </td>
@@ -348,8 +359,8 @@ export default function ProviderUsagePage() {
                                             {modelRow.success_rate.toFixed(1)}%
                                           </span>
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600">
-                                          {modelRow.avg_latency_ms != null ? Math.round(modelRow.avg_latency_ms) : tCommon('noData')}
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+                                          {modelRow.avg_latency_ms != null ? formatLatencyMs(modelRow.avg_latency_ms) : tCommon('noData')}
                                         </td>
                                         <td className="px-3 py-2 text-sm text-gray-600">
                                           <AnalyticsTtftCell metrics={modelRow} noDataLabel={tCommon('noData')} />

@@ -18,6 +18,7 @@ import {
   type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { formatLatencyMs } from '@/lib/format-latency';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
 import type { ApiResponse, ModelUsageRow, UserUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
@@ -327,7 +328,7 @@ export default function UserUsagePage() {
                                           </span>
                                         </td>
                                         <td className="px-3 py-2 text-sm text-gray-600">
-                                          {modelRow.avg_latency_ms != null ? Math.round(modelRow.avg_latency_ms) : tCommon('noData')}
+                                          {modelRow.avg_latency_ms != null ? formatLatencyMs(modelRow.avg_latency_ms) : tCommon('noData')}
                                         </td>
                                       </tr>
                                     );

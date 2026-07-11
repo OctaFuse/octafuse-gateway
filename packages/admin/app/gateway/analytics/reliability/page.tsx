@@ -10,6 +10,7 @@ import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
 import { createRangeValue, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { formatLatencyMs } from '@/lib/format-latency';
 import type { ProviderReliabilityRow, ModelProviderRow, GatewayRequestLog } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
@@ -108,8 +109,8 @@ export default function ReliabilityPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.error_count}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{p.avg_latency_ms != null ? Math.round(p.avg_latency_ms) : tCommon('noData')}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{p.avg_upstream_response_ms != null ? Math.round(p.avg_upstream_response_ms) : tCommon('noData')}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{p.avg_latency_ms != null ? formatLatencyMs(p.avg_latency_ms) : tCommon('noData')}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{p.avg_upstream_response_ms != null ? formatLatencyMs(p.avg_upstream_response_ms) : tCommon('noData')}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.failover_rate.toFixed(1)}%</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.avg_attempts != null ? p.avg_attempts.toFixed(2) : tCommon('noData')}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
@@ -163,8 +164,8 @@ export default function ReliabilityPage() {
                           {r.success_rate.toFixed(1)}%
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_latency_ms != null ? Math.round(r.avg_latency_ms) : tCommon('noData')}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.avg_upstream_response_ms != null ? Math.round(r.avg_upstream_response_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{r.avg_latency_ms != null ? formatLatencyMs(r.avg_latency_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{r.avg_upstream_response_ms != null ? formatLatencyMs(r.avg_upstream_response_ms) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.failover_rate.toFixed(1)}%</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.avg_attempts != null ? r.avg_attempts.toFixed(2) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">

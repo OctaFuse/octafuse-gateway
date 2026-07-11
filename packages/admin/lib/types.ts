@@ -345,6 +345,9 @@ export interface ModelUsageRow extends AnalyticsRowCosts {
   request_count: number;
   input_tokens: number;
   output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  cache_hit_rate: number;
   success_count: number;
   error_count: number;
   success_rate: number;
@@ -369,6 +372,9 @@ export interface ProviderUsageRow extends AnalyticsRowCosts {
   request_count: number;
   input_tokens: number;
   output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  cache_hit_rate: number;
   distinct_models: number;
   success_count: number;
   error_count: number;

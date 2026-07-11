@@ -86,6 +86,8 @@ export interface ModelAnalyticsRow {
 	standard_cost: number;
 	input_tokens: number;
 	output_tokens: number;
+	cache_read_tokens: number;
+	cache_write_tokens: number;
 	success_count: number;
 	error_count: number;
 	avg_latency_ms: number | null;
@@ -128,6 +130,8 @@ export interface ProviderAnalyticsRow {
 	standard_cost: number;
 	input_tokens: number;
 	output_tokens: number;
+	cache_read_tokens: number;
+	cache_write_tokens: number;
 	distinct_models: number;
 	success_count: number;
 	error_count: number;
