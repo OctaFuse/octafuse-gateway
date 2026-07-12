@@ -10,7 +10,7 @@
 		"build:cf": "npm run cf-typegen && opennextjs-cloudflare build",
 		"start": "next start",
 		"lint": "eslint .",
-		"preview": "npm run build:cf && opennextjs-cloudflare preview --port 8789 --persist-to ../../.wrangler/state",
+		"preview": "node ./scripts/ensure-dev-vars.mjs && npm run build:cf && opennextjs-cloudflare preview --port 8789 --persist-to ../../.wrangler/state",
 		"deploy": "npm run build:cf && opennextjs-cloudflare deploy",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
 		"typecheck": "tsc -p tsconfig.json --noEmit",

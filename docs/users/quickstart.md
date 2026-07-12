@@ -29,8 +29,9 @@ npm run dev:admin
 |------|-------------|
 | Proxy Worker | `http://127.0.0.1:8787` |
 | Admin preview | `http://127.0.0.1:8789` |
+| 控制台登录 | `admin` / `admin`（本地默认；首次 `dev:admin` 会自动生成 `packages/admin/.dev.vars`） |
 | D1 本地状态 | `./.wrangler/state` |
-| Admin API Bearer | `sk-dev-admin-key` |
+| Admin API Bearer | `sk-dev-admin-key`（管理 API，不是网页密码） |
 
 ## 2. 部署到 Cloudflare
 
@@ -66,7 +67,7 @@ curl -sS http://127.0.0.1:8787/v1/chat/completions \
 
 ## 生产前必须改的默认值
 
-- 修改 Admin 登录密码。
+- 修改 Admin 登录密码（本地默认 `admin` / `admin` **仅本机**；上云用 bootstrap / Worker Secret 设强密码）。
 - 将 `system_config.MASTER_KEY` 从开发种子 `sk-dev-admin-key` 轮换为强随机值。
 - 为 Provider API Key、数据库连接串、Admin 密码和 Cloudflare 凭证使用部署平台的 secret / env 管理能力。
 

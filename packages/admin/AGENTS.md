@@ -51,7 +51,7 @@ After a remote deploy (`deploy:*` / `db:migrate:remote`) on this machine, run **
 | Variable | Purpose |
 |----------|---------|
 | `ADMIN_USERNAME` | Console login username; in **`wrangler.jsonc`** `vars` for Cloudflare (placeholder `admin` ok). |
-| `ADMIN_PASSWORD` | Console login password; **do not** commit in `wrangler.jsonc`. Local: **`packages/admin/.dev.vars`** (see `.dev.vars.example`). Production: Worker **Secret** — `npx wrangler secret put ADMIN_PASSWORD --name <ADMIN_WORKER_NAME>`. |
+| `ADMIN_PASSWORD` | Console login password; **do not** commit in `wrangler.jsonc`. Local: **`packages/admin/.dev.vars`** (see `.dev.vars.example`; `npm run preview` / `dev:admin` auto-creates with **`admin` / `admin`** via `scripts/ensure-dev-vars.mjs` if missing). Production: Worker **Secret** — `npx wrangler secret put ADMIN_PASSWORD --name <ADMIN_WORKER_NAME>`. |
 | D1 `DB` | Shared logical DB `octafuse` with Proxy |
 | `DATABASE_URL` | **Node / self-hosted Postgres only** (same name as `@octafuse/proxy` Node; do not use on Cloudflare Workers D1 mode) |
 | `DATABASE_DRIVER` | **Node / self-hosted**: same semantics as Proxy (`@octafuse/core`); omit → `postgres`; invalid or inconsistent with `DATABASE_URL` → **error** |

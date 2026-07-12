@@ -85,8 +85,16 @@ grep database_id packages/proxy/wrangler.jsonc || echo "OK: 本地 D1 (DB)"
 
 ```bash
 npm run dev:admin
-# 等价于在 packages/admin 执行：build:cf 后 preview，:8789，--persist-to ../../.wrangler/state
+# 等价于在 packages/admin 执行：ensure-dev-vars → build:cf → preview，:8789，--persist-to ../../.wrangler/state
 ```
+
+| 项 | 本地默认 |
+|----|----------|
+| 控制台登录 | `admin` / `admin` |
+| 凭据文件 | `packages/admin/.dev.vars`（gitignore；缺失时 `scripts/ensure-dev-vars.mjs` 自动生成） |
+| 管理 API Bearer | D1 `system_config.MASTER_KEY`（种子 `sk-dev-admin-key`） |
+
+可编辑 `.dev.vars` 改本地密码；**不要**把该文件提交到 Git。上云请用 Worker Secret，勿沿用本地默认。
 
 仅改 UI、不需要 D1 时：
 
