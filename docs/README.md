@@ -15,7 +15,7 @@
 
 | 目标 | 从这里开始 |
 |------|------------|
-| 先跑起来并完成一次调用 | [users/quickstart.md](./users/quickstart.md) |
+| 先跑起来并完成一次调用（本地 D1 → Cloudflare 上云） | [users/quickstart.md](./users/quickstart.md) |
 | 理解 Gateway 能力和核心概念 | [users/features.md](./users/features.md) |
 | 部署后在 Admin 里配置 Provider、Route、用户 Key | [users/configuration.md](./users/configuration.md) |
 | 把已有 AI 客户端接到 Gateway | [users/connect-clients.md](./users/connect-clients.md) |
@@ -23,6 +23,7 @@
 | 查 Proxy / Admin API | [developers/api/README.md](./developers/api/README.md) |
 | 本地二开或贡献代码 | [developers/local-development.md](./developers/local-development.md) |
 | 部署到生产环境 | [operators/deployment/README.md](./operators/deployment/) |
+| Cloudflare 外部一键上云 | [operators/deployment/cloudflare-quickstart.md](./operators/deployment/cloudflare-quickstart.md) |
 
 ## 内容取舍
 

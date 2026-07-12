@@ -2,7 +2,11 @@
 
 本目录存放 **Wrangler / Workers Builds** 用的实例变量（Worker 名、D1、`routes`）。**不**用于 Node + Postgres 本地开发——那部分见仓库根 [`.env.example`](../.env.example)。
 
+**外部用户首次上云**：请先读 **[Cloudflare 快速部署](../docs/operators/deployment/cloudflare-quickstart.md)**（`npm run bootstrap:cloudflare`）。本页偏运维路径与 Dashboard 配置。
+
 详细运维说明：[docs/operators/deployment/cloudflare.md](../docs/operators/deployment/cloudflare.md)。生产 **Connect to Git** 的 Dashboard 配置见 **[§C](#git-自动部署connect-to-git)**。
+
+> 本仓库**不提供**「Deploy to Cloudflare」单按钮：官方 Deploy Button 无法一次部署 monorepo 双 Worker + 共享 D1；请用 quickstart CLI。
 
 ---
 
@@ -10,6 +14,7 @@
 
 | 路径 | 何时用 | 需要 `cloudflare-worker/*.env`？ | 需要远程 D1？ |
 |------|--------|----------------------------------|---------------|
+| **[外部快速部署](../docs/operators/deployment/cloudflare-quickstart.md)** | 自有账号首次上云 | ✅ 由 `bootstrap:cloudflare` 生成 | ✅ 脚本创建或复用 |
 | **[A. 本地开发](#a-本地-cloudflare-开发不上线)** | 本机改代码、本地 D1 | ❌ 不需要 | ❌ 仅 `.wrangler/state` |
 | **[B. dev 演示部署](#b-dev-演示远程-octafusedev)** | 长期公共测试 `test-api.octafuse.dev` | ✅ [`example.env`](./example.env) | ✅ 独立 dev 库 |
 | **[C. 生产 Git 自动部署](#c-生产-git-自动部署)** | 自有生产环境 | ❌ 不进 Git；用 **Build variables** 或本地 gitignore env | ✅ 各实例生产库 |
@@ -189,13 +194,22 @@ packages/admin/*, packages/core/*, scripts/deploy/*, package.json, package-lock.
 
 ### 本地 CLI 发版（补充）
 
+推荐（与 bootstrap 同一套实例 env）：
+
+```bash
+npm run deploy:cloudflare -- <your-instance> --migrate
+npm run deploy:cloudflare -- <your-instance>
+```
+
+等价的手动命令：
+
 ```bash
 npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run db:migrate:remote
 npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run deploy:proxy
 npx dotenv -e ./cloudflare-worker/<your-instance>.env -- npm run deploy:admin
 ```
 
----
+外部用户首次请用 [`npm run bootstrap:cloudflare`](../docs/operators/deployment/cloudflare-quickstart.md)。
 
 ## 环境变量说明
 

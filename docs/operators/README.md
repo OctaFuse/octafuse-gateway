@@ -6,8 +6,9 @@
 
 | 场景 | 文档 |
 |------|------|
-| 部署模式总览 | [deployment/README.md](./deployment/) |
-| Cloudflare Worker + Admin + D1 | [deployment/cloudflare.md](./deployment/cloudflare.md) |
+| 部署模式总览（Cloudflare 默认） | [deployment/README.md](./deployment/) |
+| Cloudflare 外部用户快速部署 | [deployment/cloudflare-quickstart.md](./deployment/cloudflare-quickstart.md) |
+| Cloudflare Worker + Admin + D1（运维） | [deployment/cloudflare.md](./deployment/cloudflare.md) |
 | Docker / 自托管 / Postgres / MySQL | [deployment/docker.md](./deployment/docker.md) |
 | Zeabur 容器平台 | [deployment/zeabur.md](./deployment/zeabur.md) |
 

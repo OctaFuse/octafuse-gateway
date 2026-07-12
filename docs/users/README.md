@@ -6,7 +6,7 @@
 
 | 任务 | 文档 |
 |------|------|
-| 用 Docker 或本地 D1 快速启动 | [quickstart.md](./quickstart.md) |
+| 本地 D1 → Cloudflare 上云（默认路径） | [quickstart.md](./quickstart.md) |
 | 先了解 Gateway 能解决什么问题 | [features.md](./features.md) |
 | 部署后配置 Provider、模型路由、用户 Key | [configuration.md](./configuration.md) |
 | 将客户端或工具指向 Gateway | [connect-clients.md](./connect-clients.md) |

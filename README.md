@@ -3,32 +3,38 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](./LICENSE)
 [![Release](https://img.shields.io/github/v/release/OctaFuse/octafuse-gateway?sort=semver&display_name=tag&color=2f80ed)](https://github.com/OctaFuse/octafuse-gateway/releases)
 [![Package Versions](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/verify-package-versions.yml/badge.svg)](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/verify-package-versions.yml)
-[![Docker Images](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/octafuse-docker-images.yml/badge.svg)](https://github.com/OctaFuse/octafuse-gateway/actions/workflows/octafuse-docker-images.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white)](./.nvmrc)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare.md)
-[![Docker](https://img.shields.io/badge/Docker-Compose%20v2.20%2B-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
-[![Databases](https://img.shields.io/badge/DB-D1%20%7C%20Postgres%20%7C%20MySQL-5B6EE1)](./docs/operators/)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare-quickstart.md)
+[![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
 
-**Octafuse Gateway** 是一个可自托管的开源 **AI Gateway**。它把分散在不同模型供应商、账号计划和 API Key 后面的模型能力，统一成 **一个 Base URL、一个 API Key**，并提供路由、预算、计费、日志与审计能力。
+**Octafuse Gateway** 是可自托管的开源 **AI Gateway**：把多供应商、多账号、多 API Key 收成 **一个 Base URL、一个 API Key**，并带路由、预算、计费与审计。
+
+默认跑在 **Cloudflare Workers + D1** 上——个人与小流量通常可在免费额度内完成部署与日常使用；也支持 Docker / Postgres / MySQL 自托管（见[部署文档](./docs/operators/deployment/)）。
 
 **English:** [README.en.md](./README.en.md) · **官网：** [octafuse.dev/zh](https://octafuse.dev/zh/)
 
+## 为什么选 Octafuse
+
+| | |
+|---|---|
+| **Cloudflare 可免费上云** | 一条 CLI 部署 Proxy + Admin + 共享 D1；无需自备服务器，边缘全球可用。 |
+| **统一入口** | 客户端只配一个 Gateway URL 和一个 Key，即可走 OpenAI / Anthropic / Gemini 风格接口访问多上游。 |
+| **可运营，不只是转发** | Admin 管理 Provider、Route、用户 Key 与预算；`/api/admin/*` 可对接门户或脚本；请求与成本可观测、可对账。 |
+
 ## 它能做什么
 
-- **把多个模型入口合成一个入口**：客户端只需要配置一个 Gateway Base URL 和一个 Key，即可通过 OpenAI / Anthropic / Gemini 风格接口访问背后的多个上游 Provider。
-- **把模型选择从业务代码里移出来**：在 Admin 里维护 Provider、Model 和 Route；同一个模型 ID 可以按 route group、优先级、权重或可用性路由到不同上游，便于切换、灰度和故障转移。
-- **按用户、客户或团队发放独立 Key**：为不同使用方创建 API Key，设置预算、启停状态和周期重置；客户端可通过 `GET /v1/me` 查询自己的额度与身份信息。
-- **沉淀统一的计费口径**：同时记录 `metered_cost`、`standard_cost`、`charged_cost`，便于区分上游实际成本、标准价格和最终扣费金额，支持后续对账或接入自有 billing。
-- **集中观测请求与成本**：在管理台查看请求日志、错误、延迟、Token、模型用量、Provider 用量、用户用量和可靠性指标，排查问题时不需要来回切多个供应商控制台。
-- **提供运维与自动化接口**：Admin UI 适合人工配置，`/api/admin/*` 适合门户、后台或脚本自动创建用户、发 Key、同步预算和读取配置。
-- **支持上线前联调**：Playground 可针对单条路由试调用上游，不计入用户 Key 账单；Simulator 可在浏览器里模拟客户端调用流程。
+- **多模型入口合成一个入口**：同一模型 ID 可按优先级、权重或可用性路由到不同上游，便于切换、灰度和故障转移。
+- **按用户 / 客户 / 团队发独立 Key**：设预算与周期重置；客户端可用 `GET /v1/me` 查额度。
+- **明确的计费口径**：同时记录 `metered_cost`、`standard_cost`、`charged_cost`，便于对账或接入自有 billing。
+- **集中观测**：请求日志、延迟、Token、模型 / Provider / 用户用量，不必在多个供应商控制台间切换。
+- **上线前联调**：Playground 试调单路由（不计用户账单）；Simulator 模拟客户端调用。
 
 ## 适用场景
 
-- **个人用户汇总自己的 AI / Coding 资源**：把不同平台上的 Coding plan、模型账号、本地模型或备用 Provider 接到 Octafuse，再用自己的统一 Gateway URL 和 API Key 接入各种 Coding 工具、IDE 插件、命令行工具或其它 AI 应用。后续新增、替换或临时切换上游时，不需要逐个修改客户端配置。
-- **独立开发者或小团队统一管理 Token 成本**：把多个项目、成员或客户的调用统一经过 Gateway，为每个使用方发独立 Key，按预算和日志区分使用情况。这样既能复用团队持有的模型资源，也能看清谁在用、用了多少、成本落在哪里。
-- **企业或平台接入自有业务系统**：通过 User 和 API Key 管理，把 Gateway 接到内部后台、SaaS 门户或客户系统中，自动开通用户、分配预算、同步额度、审计请求，并用统一的成本口径支持计费、对账、风控和资源分配。
-- **多供应商容灾与灰度**：为同一个模型入口配置多个上游 Provider，在某个供应商不可用、额度不足、价格变化或需要测试新模型时，通过路由策略切换，而不是推动所有客户端改配置。
+- **个人**：汇总各平台 Coding plan、模型账号与备用 Provider，用一把 Key 接入 IDE / CLI / 其它 AI 应用。
+- **小团队**：多项目、多成员共用上游资源，用独立 Key + 预算分清用量与成本。
+- **平台 / 企业**：通过 Admin API 开通用户、同步额度、审计请求，支撑计费与风控。
+- **多供应商容灾**：上游不可用或额度不足时改路由策略，而不是改遍所有客户端。
 
 ## 界面预览
 
@@ -42,60 +48,16 @@
 
 ## 快速开始
 
-先 clone 仓库：
+默认路径是 **Cloudflare**：先在本机用 Wrangler + 本地 D1 跑通，再一键部署到你的 Cloudflare 账号。
 
 ```bash
 git clone https://github.com/OctaFuse/octafuse-gateway.git
 cd octafuse-gateway
 ```
 
-本地体验推荐 Docker；开发 Cloudflare Worker / D1 路径时再使用 npm + Wrangler。
+### 1. 本机启动（本地 D1）
 
-### 方式 A：Docker
-
-前置要求：Docker Compose **v2.20+**。
-
-```bash
-docker compose -f docker/compose/quickstart.yml up --build
-curl -sS http://localhost:8787/health
-```
-
-默认地址：
-
-| 服务 | 地址 / 默认值 |
-|------|---------------|
-| Proxy | `http://localhost:8787` |
-| Admin | `http://localhost:8789` |
-| Admin 登录 | `admin` / `changeme` |
-| Admin API Bearer | `sk-dev-admin-key` |
-
-打开 Admin 后，按这个顺序完成配置：
-
-1. 添加或导入 **Provider**，填入真实上游 API Key。
-2. 创建或启用 **Model Route**。
-3. 创建用户 **API Key**。
-4. 用用户 Key 调用 Proxy。
-
-示例请求：
-
-```bash
-curl -sS http://localhost:8787/v1/chat/completions \
-  -H "Authorization: Bearer sk-your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
-```
-
-停止服务：
-
-```bash
-docker compose -f docker/compose/quickstart.yml down
-```
-
-> Docker quickstart 不需要复制 `.env.example`。如需 MySQL、外置数据库、预构建镜像或 Nginx 流式反代，见 [Docker 部署文档](./docs/operators/deployment/docker.md)。
-
-### 方式 B：Cloudflare 本地 D1
-
-前置要求：Node.js **20+**、npm。此路径使用本地 Wrangler 和本地 D1，不需要先登录 Cloudflare。
+前置：Node.js **20+**。无需 Cloudflare 账号。
 
 ```bash
 npm install
@@ -109,39 +71,68 @@ npm run dev:proxy
 npm run dev:admin
 ```
 
-默认地址：
-
 | 服务 | 地址 / 位置 |
 |------|-------------|
-| Proxy Worker | `http://127.0.0.1:8787` |
-| Admin 预览 | `http://127.0.0.1:8789` |
-| D1 本地状态 | `./.wrangler/state` |
+| Proxy | `http://127.0.0.1:8787` |
+| Admin | `http://127.0.0.1:8789` |
+| 本地 D1 | `./.wrangler/state` |
 | Admin API Bearer | `sk-dev-admin-key` |
 
-远程 Cloudflare 部署前，需要先创建 D1、设置 Worker Build variables，并在部署依赖新表结构的代码前运行远程迁移。完整流程见 [Cloudflare 部署文档](./docs/operators/deployment/cloudflare.md)。
+### 2. 部署到 Cloudflare
+
+前置：Cloudflare 账号，本机已 `npx wrangler login`。
+
+```bash
+npm install
+npx wrangler login
+npm run bootstrap:cloudflare
+```
+
+完成后按终端提示核对 `GATEWAY_URL` / `GATEWAY_MASTER_URL`，并用 `GET $GATEWAY_URL/health` 验证。完整步骤见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)；发版与 Workers Builds 见 [Cloudflare 运维](./docs/operators/deployment/cloudflare.md)。
+
+### 3. 打开 Admin 后配置
+
+1. 添加或导入 **Provider**，填入真实上游 API Key。
+2. 创建或启用 **Model Route**。
+3. 创建用户 **API Key**。
+4. 用用户 Key 调用 Proxy。
+
+```bash
+curl -sS http://127.0.0.1:8787/v1/chat/completions \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+上云后把主机换成你的 Proxy URL。
+
+### 不用 Cloudflare？
+
+Docker / Postgres / MySQL / Zeabur 等自托管路径见 [部署文档](./docs/operators/deployment/)（含 [Docker](./docs/operators/deployment/docker.md)）。
 
 ## 文档入口
 
 | 读者 / 任务 | 链接 |
 |-------------|------|
-| 使用者：快速部署、功能介绍、Admin 配置、客户端接入 | [docs/users/](./docs/users/) |
-| 开发者：API、系统集成、本地开发、架构与行为语义 | [docs/developers/](./docs/developers/) |
-| 部署 / 运维：Cloudflare、Docker、Zeabur、数据库迁移 | [docs/operators/](./docs/operators/) |
-| 维护者：发版、Changesets、镜像发布、文档规范 | [docs/maintainers/](./docs/maintainers/) |
+| 使用者：快速开始、功能、Admin 配置、客户端接入 | [docs/users/](./docs/users/) |
+| 开发者：API、集成、本地开发、架构 | [docs/developers/](./docs/developers/) |
+| 部署 / 运维：Cloudflare、Docker、Zeabur、迁移 | [docs/operators/](./docs/operators/) |
+| 维护者：发版、Changesets、文档规范 | [docs/maintainers/](./docs/maintainers/) |
 | HTTP 示例 | [examples/README.md](./examples/README.md) |
 
 ## 常用命令
 
 ```bash
 npm install
-npm run db:migrate          # 本地 D1
-npm run dev:proxy           # Proxy Worker :8787
-npm run dev:admin           # Admin preview :8789
+npm run db:migrate            # 本地 D1
+npm run dev:proxy             # Proxy :8787
+npm run dev:admin             # Admin :8789
 
-npm run db:migrate:pg       # Postgres
-npm run db:migrate:mysql    # MySQL 8
-npm run dev:proxy:node      # Node + SQL Proxy
-npm run dev:admin:node      # Node + SQL Admin
+npm run bootstrap:cloudflare  # 首次部署到 Cloudflare
+npm run deploy:cloudflare -- <instance> --migrate  # 已有实例发版
+
+npm run db:migrate:pg         # Postgres（自托管）
+npm run db:migrate:mysql      # MySQL 8（自托管）
 ```
 
 ## 贡献与安全

@@ -11,11 +11,23 @@
 
 ## 常见部署模式
 
-1. **Cloudflare 全托管（默认）**：Proxy Worker + Admin，共用 D1。见 [cloudflare-worker/README.md](../../../cloudflare-worker/README.md) 与 [cloudflare.md](./cloudflare.md)。
-2. **Hybrid**：Proxy Node + Postgres，Admin 继续 Cloudflare + D1。见 [docker.md](./docker.md)。
-3. **Full self-hosted PG**：Proxy Node + Admin Node，共用 Postgres。见 [docker.md](./docker.md) 与 [d1-postgres-cutover.md](../migrations/d1-postgres-cutover.md)。
-4. **Full self-hosted MySQL**：同上形态，共用 MySQL 8（`DATABASE_DRIVER=mysql`，迁移 `migrations-mysql/`）。见 [docker.md](./docker.md)（含 **`docker/compose/node-mysql.yml`** 与 UTC 时区说明）。
-5. **自托管 Docker + Postgres / MySQL（无 Cloudflare 依赖）**：镜像由 CI 推到 **GHCR**（或你在镜像仓库侧 mirror 到自建 Harbor 等），宿主机拉镜像、迁移、启停；编排与变量见 [docker.md](./docker.md)。
-6. **Zeabur（容器平台）**：Proxy + Admin 为常驻 Service；**migrate 为一次性 Job**（勿常驻，否则 CrashLoop）。见 [zeabur.md](./zeabur.md)。
+**默认推荐 Cloudflare**（个人与小流量通常可在免费额度内运行）。本地试用与一键上云见使用者文档 [users/quickstart.md](../../users/quickstart.md)。
+
+### Cloudflare（默认）
+
+Proxy Worker + Admin，共用 D1。
+
+- **外部用户首次**：[cloudflare-quickstart.md](./cloudflare-quickstart.md)（`npm run bootstrap:cloudflare`）
+- 运维 / Workers Builds：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md) 与 [cloudflare.md](./cloudflare.md)
+
+### 自托管（Docker / 容器平台）
+
+不用 Cloudflare，或需要 Postgres / MySQL / 内网部署时走这里。
+
+1. **Full self-hosted PG**：Proxy Node + Admin Node，共用 Postgres。见 [docker.md](./docker.md) 与 [d1-postgres-cutover.md](../migrations/d1-postgres-cutover.md)。
+2. **Full self-hosted MySQL**：同上形态，共用 MySQL 8（`DATABASE_DRIVER=mysql`，迁移 `migrations-mysql/`）。见 [docker.md](./docker.md)（含 **`docker/compose/node-mysql.yml`** 与 UTC 时区说明）。
+3. **自托管 Docker + Postgres / MySQL（无 Cloudflare 依赖）**：镜像由 CI 推到 **GHCR**（或你在镜像仓库侧 mirror 到自建 Harbor 等），宿主机拉镜像、迁移、启停；编排与变量见 [docker.md](./docker.md)。
+4. **Hybrid**：Proxy Node + Postgres，Admin 继续 Cloudflare + D1。见 [docker.md](./docker.md)。
+5. **Zeabur（容器平台）**：Proxy + Admin 为常驻 Service；**migrate 为一次性 Job**（勿常驻，否则 CrashLoop）。见 [zeabur.md](./zeabur.md)。
 
 本地与多套 D1 数据目录见 [local-development.md](../../developers/local-development.md)。D1 与 Postgres 之间迁移或对账见 [d1-postgres-cutover.md](../migrations/d1-postgres-cutover.md)（脚本在 `scripts/db/cutover/`）。

@@ -1,10 +1,14 @@
 # 线上部署：Cloudflare（Proxy Worker + Admin + D1）
 
-本文说明 **octafuse-gateway** 在 Cloudflare 上的三种用法：**本地 D1 开发**、**dev 演示（octafuse.dev）**、**生产 Git 自动部署**。
+本文说明 **octafuse-gateway** 在 Cloudflare 上的运维路径：**本地 D1 开发**、**dev 演示（octafuse.dev）**、**生产 Git 自动部署**。
 
-**快速入口**：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md)（路径速查 + 命令清单）。
+**外部用户首次上云**（推荐）：[cloudflare-quickstart.md](./cloudflare-quickstart.md)（`npm run bootstrap:cloudflare`）。本页不替代该 quickstart。
+
+**路径速查**：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md)。
 
 表结构以 **`packages/core/migrations-d1/`** 为准。Docker 自托管见 [deployment-docker.md](./docker.md)。
+
+> 本仓库不以 Cloudflare Deploy Button 作为主路径：官方 Deploy Button 无法一次装齐 monorepo 双 Worker + 共享 D1。
 
 ---
 

@@ -7,7 +7,7 @@ Non-runtime helpers: smoke tests, DB migration / reconciliation tooling, and dev
 | Path | Purpose |
 |------|---------|
 | `smoke/` | HTTP smoke against a running Node **Proxy** / **Admin** (`test:gateway:*-smoke`) plus in-process **`@octafuse/core`** write-path tests. See [smoke/README.md](./smoke/README.md). |
-| `deploy/` | Cloudflare：`gen-wrangler.mjs`（从 `*.base.jsonc` + env 生成 wrangler 配置）、`wrangler-d1-cli.mjs`（按生成配置跑 D1 命令）。**远程 deploy 会在 wrangler 里写入 `database_id`，继续本地 dev 前须再 `npm run gen:wrangler`** — 见 [local-development.md §1](../docs/developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)。 |
+| `deploy/` | Cloudflare：`gen-wrangler.mjs`、`wrangler-d1-cli.mjs`、**`bootstrap-cloudflare.mjs`**（外部首次一键）、**`deploy-instance.mjs`**（`npm run deploy:cloudflare`）。**远程 deploy 会在 wrangler 里写入 `database_id`，继续本地 dev 前须再 `npm run gen:wrangler`** — 见 [local-development.md §1](../docs/developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)。外部用户入口：[cloudflare-quickstart.md](../docs/operators/deployment/cloudflare-quickstart.md)。 |
 | `print-dev-start.mjs` | Optional banner before `wrangler dev` (local URL hints). |
 | `db/` | Remote D1 export, D1↔Postgres ETL / reconciliation, Postgres diagnostics (**schema apply** lives in **`packages/core/src/migrate/`** via **`npm run db:migrate:pg`** / **`db:migrate:mysql`**) |
 
