@@ -57,7 +57,16 @@ npm run dev:proxy    # :8787
 npm run dev:admin    # :8789（另开终端）
 ```
 
-上云：`npx wrangler login` → `npm run bootstrap:cloudflare`（详见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)）。
+启动后：
+
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| Proxy | http://127.0.0.1:8787 | 推理入口（`/v1/chat/completions` 等） |
+| Admin 控制台 | http://127.0.0.1:8789 | 浏览器打开；本地默认登录 **`admin` / `admin`** |
+
+首次 `dev:admin` 会自动生成 `packages/admin/.dev.vars`（含上述账号）。配 Provider / Route / 用户 Key 后再调 Proxy；步骤与 curl 见 **[docs/users/quickstart.md](./docs/users/quickstart.md)**。
+
+上云：`npx wrangler login` → `npm run bootstrap:cloudflare`（详见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)）。生产务必改掉默认 Admin 密码，并轮换 `MASTER_KEY`。
 
 不用 Cloudflare？见 [部署文档](./docs/operators/deployment/)（含 [Docker](./docs/operators/deployment/docker.md)）。
 

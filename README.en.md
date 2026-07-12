@@ -57,7 +57,16 @@ npm run dev:proxy    # :8787
 npm run dev:admin    # :8789 (second terminal)
 ```
 
-Cloud deploy: `npx wrangler login` → `npm run bootstrap:cloudflare` (see [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md)).
+After starting:
+
+| Service | URL | Notes |
+|---------|-----|--------|
+| Proxy | http://127.0.0.1:8787 | Inference (`/v1/chat/completions`, etc.) |
+| Admin console | http://127.0.0.1:8789 | Open in browser; local default login **`admin` / `admin`** |
+
+The first `dev:admin` run auto-creates `packages/admin/.dev.vars` (with the credentials above). Configure Provider / Route / user Key, then call Proxy; steps and curl: **[docs/users/quickstart.md](./docs/users/quickstart.md)**.
+
+Cloud deploy: `npx wrangler login` → `npm run bootstrap:cloudflare` (see [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md)). Change the default Admin password and rotate `MASTER_KEY` before production.
 
 Not using Cloudflare? See [deployment docs](./docs/operators/deployment/) (including [Docker](./docs/operators/deployment/docker.md)).
 
