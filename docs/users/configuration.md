@@ -43,9 +43,10 @@ Route 决定客户端请求的模型 ID 如何转到上游。
 - 对客户端暴露稳定的模型名，例如 `gpt-4.1`、`claude-sonnet` 或团队内部命名。
 - 同一模型下配置多个 Provider 路由，用优先级、权重或 route group 做切换。
 - 在 Route 上配置默认参数，例如思考参数、输出长度或供应商扩展字段。
-- 设置价格口径，保证请求日志里的成本和扣费符合你的业务预期。
+- 设置价格口径：先维护模型**目录标准价**，再在路由上设用户计费 / 供应成本的基础倍率；如需对齐供应商高峰 / 闲时价，再配置 **Daily schedule**（每日时段倍率，时区见系统配置的业务时区）。
+- 在请求日志中核对三笔账：供应成本、目录标准价、用户计费是否符合业务预期。
 
-Route 默认参数合并规则见 [developers/api/user.md](../developers/api/user.md#route-默认参数合并)。
+Route 默认参数合并规则见 [developers/api/user.md](../developers/api/user.md#route-默认参数合并)；时段调价契约见 [developers/api/admin.md](../developers/api/admin.md) 中的 `price_override.schedule`。
 
 ## 5. 创建用户与 API Key
 
@@ -83,7 +84,7 @@ curl -sS http://localhost:8787/v1/me \
 
 - 请求日志：是否命中正确模型、Provider、Route 和上游 Key。
 - 错误状态：401 多半是认证问题；403 常见于预算或配额；502 多与路由或上游有关。
-- 成本字段：区分 `metered_cost`、`standard_cost` 和 `charged_cost`。
+- 成本字段：区分 **供应成本**、**目录标准价**、**用户计费**（日志 / API 字段分别为 `metered_cost`、`standard_cost`、`charged_cost`）。
 - 审计日志：确认预算扣减、周期重置、Key 生命周期等事件。
 
 更细的日志和计费语义见 [developers/reference/streaming-billing.md](../developers/reference/streaming-billing.md) 与 [developers/reference/user-audit-logs.md](../developers/reference/user-audit-logs.md)。

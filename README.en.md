@@ -23,7 +23,8 @@ The default runtime is **Cloudflare Workers + D1** — individuals and light tra
 
 - **Many model endpoints → one entry**: Route one model ID by priority, weight, or availability for switching, rollout, and failover.
 - **Per-user / customer / team keys**: Budgets and reset periods; clients can inspect quota via `GET /v1/me`.
-- **Explicit billing semantics**: Record `metered_cost`, `standard_cost`, and `charged_cost` for reconciliation or your own billing.
+- **Explicit billing semantics**: Each request records three amounts—**supplier cost** (your estimated upstream spend), **catalog list price** (model baseline), and **charged to user** (what hits their budget)—for reconciliation or your own billing.
+- **Time-of-day pricing**: Per-route daily schedule multipliers for supplier cost and user charge (business timezone peak / off-peak), matching vendor time-based price strategies.
 - **Centralized observability**: Logs, latency, tokens, and usage by model / provider / user — without hopping vendor consoles.
 - **Safe pre-prod checks**: Playground tests one route without billing a user key; Simulator rehearses client calls.
 
@@ -31,7 +32,7 @@ The default runtime is **Cloudflare Workers + D1** — individuals and light tra
 
 - **Personal hub**: Wire coding plans, model accounts, and backups into one key for IDEs, CLIs, and other AI apps.
 - **Small teams**: Share upstream capacity across projects and people with separate keys and budgets.
-- **Platforms / enterprises**: Provision users, sync quota, and audit via Admin API for billing and risk control.
+- **Platforms / enterprises**: Provision users, sync quota, and audit via Admin API for billing and risk control; align route pricing with vendor time-of-day rates.
 - **Multi-provider resilience**: Change routing when an upstream fails or runs out of quota — not every client config.
 
 ## Screenshots
