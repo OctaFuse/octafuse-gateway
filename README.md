@@ -46,7 +46,7 @@
 
 ## 快速开始
 
-默认路径是 **Cloudflare**（本地 D1 → 一键上云）。完整步骤、Admin 配置与 curl 示例见 **[docs/users/quickstart.md](./docs/users/quickstart.md)**。
+本机先用本地 D1 跑起来：
 
 ```bash
 git clone https://github.com/OctaFuse/octafuse-gateway.git
@@ -57,18 +57,29 @@ npm run dev:proxy    # :8787
 npm run dev:admin    # :8789（另开终端）
 ```
 
-启动后：
-
 | 服务 | 地址 | 说明 |
 |------|------|------|
-| Proxy | http://127.0.0.1:8787 | 推理入口（`/v1/chat/completions` 等） |
-| Admin 控制台 | http://127.0.0.1:8789 | 浏览器打开；本地默认登录 **`admin` / `admin`** |
+| Proxy | http://127.0.0.1:8787 | 推理入口 |
+| Admin | http://127.0.0.1:8789 | 控制台；本地默认账号 **`admin` / `admin`** |
 
-首次 `dev:admin` 会自动生成 `packages/admin/.dev.vars`（含上述账号）。配 Provider / Route / 用户 Key 后再调 Proxy；步骤与 curl 见 **[docs/users/quickstart.md](./docs/users/quickstart.md)**。
+首次 `dev:admin` 会生成 `packages/admin/.dev.vars`。打开 Admin → 配 Provider / Route / 用户 Key → 再用用户 Key 调 Proxy。更完整的步骤与 curl 示例见 [docs/users/quickstart.md](./docs/users/quickstart.md)。
 
-上云：`npx wrangler login` → `npm run bootstrap:cloudflare`（详见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)）。生产务必改掉默认 Admin 密码，并轮换 `MASTER_KEY`。
 
-不用 Cloudflare？见 [部署文档](./docs/operators/deployment/)（含 [Docker](./docs/operators/deployment/docker.md)）。
+如果你想直接部署到 Cloudflare 云上：
+
+```bash
+npx wrangler login
+npm run bootstrap:cloudflare
+```
+
+详见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)。上生产前请改掉默认 Admin 密码，并轮换 `MASTER_KEY`。
+
+### 其他部署方式
+
+- [Cloudflare 运维 / Workers Builds / 多实例](./docs/operators/deployment/cloudflare.md)
+- [Docker（Postgres / MySQL）](./docs/operators/deployment/docker.md)
+- [Zeabur 等容器平台](./docs/operators/deployment/zeabur.md)
+- [部署文档索引](./docs/operators/deployment/)
 
 ## 文档入口
 

@@ -44,9 +44,9 @@ The default runtime is **Cloudflare Workers + D1** — individuals and light tra
 |---|---|
 | ![Octafuse Gateway model routes page with provider priorities and route groups](./docs/assets/screenshots/routes.png) | ![Octafuse Gateway playground page for testing one route without billing an API key](./docs/assets/screenshots/playground.png) |
 
-## Quick Start
+## Quick start
 
-Default path: **Cloudflare** (local D1 → bootstrap). Full steps, Admin setup, and curl examples: **[docs/users/quickstart.md](./docs/users/quickstart.md)**.
+Run locally with D1 first:
 
 ```bash
 git clone https://github.com/OctaFuse/octafuse-gateway.git
@@ -57,18 +57,29 @@ npm run dev:proxy    # :8787
 npm run dev:admin    # :8789 (second terminal)
 ```
 
-After starting:
-
 | Service | URL | Notes |
 |---------|-----|--------|
-| Proxy | http://127.0.0.1:8787 | Inference (`/v1/chat/completions`, etc.) |
-| Admin console | http://127.0.0.1:8789 | Open in browser; local default login **`admin` / `admin`** |
+| Proxy | http://127.0.0.1:8787 | Inference |
+| Admin | http://127.0.0.1:8789 | Console; local default **`admin` / `admin`** |
 
-The first `dev:admin` run auto-creates `packages/admin/.dev.vars` (with the credentials above). Configure Provider / Route / user Key, then call Proxy; steps and curl: **[docs/users/quickstart.md](./docs/users/quickstart.md)**.
+The first `dev:admin` creates `packages/admin/.dev.vars`. Open Admin → add Provider / Route / user Key → call Proxy with that key. Full steps and curl examples: [docs/users/quickstart.md](./docs/users/quickstart.md).
 
-Cloud deploy: `npx wrangler login` → `npm run bootstrap:cloudflare` (see [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md)). Change the default Admin password and rotate `MASTER_KEY` before production.
 
-Not using Cloudflare? See [deployment docs](./docs/operators/deployment/) (including [Docker](./docs/operators/deployment/docker.md)).
+If you want to deploy directly to Cloudflare:
+
+```bash
+npx wrangler login
+npm run bootstrap:cloudflare
+```
+
+See [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md). Change the default Admin password and rotate `MASTER_KEY` before production.
+
+### Other deployment options
+
+- [Cloudflare ops / Workers Builds / multi-instance](./docs/operators/deployment/cloudflare.md)
+- [Docker (Postgres / MySQL)](./docs/operators/deployment/docker.md)
+- [Zeabur and similar platforms](./docs/operators/deployment/zeabur.md)
+- [Deployment docs index](./docs/operators/deployment/)
 
 ## Documentation
 
