@@ -1,15 +1,10 @@
 # 可选部署：Docker + SQL（Postgres 或 MySQL）（gateway-proxy + gateway-admin）
 
-本文描述在容器环境同时运行 **`@octafuse/proxy`**（对外推理）与 **`@octafuse/admin`**（管理 UI + `/api/admin/*`），二者**共用同一关系型库**（Postgres 或 **MySQL 8**）。默认生产仍以 Cloudflare 为主（见 [deployment-cloudflare.md](./cloudflare.md)）。
+本文描述在容器环境同时运行 **`@octafuse/proxy`**（对外推理）与 **`@octafuse/admin`**（管理 UI + `/api/admin/*`），二者**共用同一关系型库**（Postgres 或 **MySQL 8**）。默认生产仍以 Cloudflare 为主（见 [cloudflare.md](./cloudflare.md)）。
 
-## 1. 部署模式对照
+## 1. 本文覆盖范围
 
-|模式|Proxy|Admin|数据库|
-|------|------|------|------|
-|Cloudflare 全托管（默认）|Worker|Pages/OpenNext|D1|
-|Hybrid|Node（容器）|Pages/OpenNext|Proxy=Postgres，Admin=D1|
-|Full self-hosted PG（本文 §2–§5）|Node 容器|Next.js 容器|同一 Postgres|
-|Full self-hosted MySQL（本文 §8）|Node 容器|Next.js 容器|同一 MySQL 8|
+本文聚焦 **Full self-hosted PG / MySQL**（以及 Hybrid 中 Proxy 侧容器）的镜像、环境变量、Compose 与迁移。完整拓扑矩阵（含 Cloudflare 全托管）见 **[runtime-data.md](../../developers/architecture/runtime-data.md)**。
 
 > Proxy 不暴露 `/admin/*`；管理 HTTP 全部由 Admin 在 **`/api/admin/*`** 提供。
 
@@ -41,13 +36,11 @@
 
 ### 时区与时间查询（重要）
 
-- **统一目标**：Gateway 的时间存储与查询窗口都按 **UTC** 口径运行。
-- **Postgres**：建议在 `DATABASE_URL` 增加 `options=-c timezone=UTC`，例如：
-  - `postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC`
-  - 这样可避免数据库实例默认时区不是 UTC 时，`created_at` 相关查询出现时间窗错位。
-- **MySQL**：当前 Gateway 主写路径多数由应用层写入 `new Date().toISOString()`（UTC），因此通常不容易出现与 Postgres 相同的错位。
-  - 但若你依赖数据库侧 `CURRENT_TIMESTAMP`（手工 SQL、临时脚本、后续新表默认值），仍会受 MySQL 会话/实例 `time_zone` 影响。
-  - 建议将 MySQL 实例（或会话）时区设置为 UTC，保持与 Gateway 查询窗口一致。
+完整约定见 [time-and-timezone.md](../../developers/reference/time-and-timezone.md)。容器侧要点：
+
+- **统一目标**：时间存储与查询窗口按 **UTC**。
+- **Postgres**：`DATABASE_URL` 建议带 `options=-c%20timezone%3DUTC`。
+- **MySQL**：应用层多写 ISO UTC；若依赖库侧 `CURRENT_TIMESTAMP`，仍须把实例/会话时区设为 UTC。
 
 ## 3. 本仓库镜像（本地构建）
 
@@ -175,7 +168,7 @@ docker run --rm -p 8787:8787 \
 
 - **默认关闭**：未设置 `AUTO_MIGRATE` 时，入口脚本跳过迁移，行为与旧版一致。
 - **幂等且并发安全**：`schema_migrations` 记录版本 + `pg_advisory_lock`；无新 SQL 时近乎空操作。proxy 与 admin 同时开启也安全，但通常只需在一个 Service 上设 `AUTO_MIGRATE=1`。
-- **Zeabur**：推荐在 proxy 或 admin 环境变量中设 `AUTO_MIGRATE=1`，无需单独 migrate Service。见 [deployment-zeabur.md](./zeabur.md) §3 方式 0。
+- **Zeabur**：推荐在 proxy 或 admin 环境变量中设 `AUTO_MIGRATE=1`，无需单独 migrate Service。见 [zeabur.md](./zeabur.md) §3 方式 0。
 
 ### Postgres
 
@@ -235,7 +228,7 @@ Compose 中 `migrate` 服务使用 **migrate 专用镜像**执行 `npm run db:mi
 
 ### Zeabur（容器平台）
 
-**推荐**：在 proxy 或 admin 上设 **`AUTO_MIGRATE=1`**（见 [deployment-zeabur.md](./zeabur.md) §3 方式 0）。
+**推荐**：在 proxy 或 admin 上设 **`AUTO_MIGRATE=1`**（见 [zeabur.md](./zeabur.md) §3 方式 0）。
 
 若不用 `AUTO_MIGRATE`，Zeabur 将每个 **Service** 视为常驻进程；**migrate 镜像跑完即退出**，若作为 Service 长期运行会触发 `BackOff restarting failed container`（迁移成功也会如此）。备选做法：
 
@@ -243,11 +236,11 @@ Compose 中 `migrate` 服务使用 **migrate 专用镜像**执行 `npm run db:mi
 2. **或**：Zeabur PREBUILT migrate Service 跑完后 **Settings → Suspend Service**。
 3. **不要**把 migrate 与 proxy/admin 一样当作 7×24 常驻 Service。
 
-详见 **[deployment-zeabur.md](./zeabur.md)** 与 [`docker/examples/env.zeabur.example`](../../../docker/examples/env.zeabur.example)。
+详见 **[zeabur.md](./zeabur.md)** 与 [`docker/examples/env.zeabur.example`](../../../docker/examples/env.zeabur.example)。
 
 ## 6. 非 Docker：本机 Node + Postgres（开发）
 
-仍可直接用 npm 启动（不经过镜像），与 [local-testing-environments.md](../../developers/local-development.md) 一致。
+仍可直接用 npm 启动（不经过镜像），与 [local-development.md](../../developers/local-development.md) 一致。
 
 ## 7. 发布后最小验证
 

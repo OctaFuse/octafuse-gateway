@@ -68,14 +68,7 @@ Route 默认参数合并规则见 [developers/api/user.md](../developers/api/use
 curl -sS http://localhost:8787/health
 ```
 
-用户推理验证：
-
-```bash
-curl -sS http://localhost:8787/v1/chat/completions \
-  -H "Authorization: Bearer sk-your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
-```
+用户推理与各协议客户端示例见 [connect-clients.md](./connect-clients.md)；完整 API 字段见 [developers/api/user.md](../developers/api/user.md)。
 
 预算状态验证：
 

@@ -1,12 +1,12 @@
 # 可选：D1 → Postgres 迁移、对账与灰度（运维脚本）
 
-本文面向需要在 **D1** 与 **Postgres** 之间做 **ETL / 对账 / 切换演练** 的运维场景，对应仓库内 **`scripts/db/cutover/`** 下的 TypeScript 工具。默认生产仍以 **Cloudflare Worker + D1** 为主；切到 Postgres 时，**推理流量**由 **Node 版 Proxy**（`packages/proxy`）承担，**管理面**由 **Admin 应用**承担（Hybrid 时可继续 D1，Full self-hosted PG 时应接入同一 Postgres；Docker 双镜像见 [deployment-docker.md](../deployment/docker.md)）。
+本文面向需要在 **D1** 与 **Postgres** 之间做 **ETL / 对账 / 切换演练** 的运维场景，对应仓库内 **`scripts/db/cutover/`** 下的 TypeScript 工具。默认生产仍以 **Cloudflare Worker + D1** 为主；切到 Postgres 时，**推理流量**由 **Node 版 Proxy**（`packages/proxy`）承担，**管理面**由 **Admin 应用**承担（Hybrid 时可继续 D1，Full self-hosted PG 时应接入同一 Postgres；Docker 双镜像见 [docker.md](../deployment/docker.md)）。
 
 ## 0. 前置条件
 
 - 目标 Postgres 已具备与业务一致的 schema（见 **`npm run db:migrate:pg`** / **`packages/core/src/migrate/postgres.ts`** 与 **`packages/core/migrations-postgres/`**）。
 - 可访问源 D1（远程或本地持久化目录）。
-- 已阅读 [deployment-docker.md](../deployment/docker.md) 中 Node Proxy 的边界（**无 `/admin` HTTP**）。
+- 已阅读 [docker.md](../deployment/docker.md) 中 Node Proxy 的边界（**无 `/admin` HTTP**）。
 
 > 默认 ETL 使用 `--d1-source=remote`。迁移**本地** D1 时加 `--d1-source=local`，并可配 `--d1-persist-to=./.wrangler/state`（与本地 wrangler 一致）。
 

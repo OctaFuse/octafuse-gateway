@@ -1,6 +1,6 @@
 # Octafuse Gateway 文档
 
-这套文档按读者任务组织，而不是按文件类型堆放。先选择自己的角色，再进入对应目录。
+这套文档按读者任务组织。先选择自己的角色，再进入对应目录。
 
 ## 读者入口
 
@@ -25,11 +25,17 @@
 | 部署到生产环境 | [operators/deployment/README.md](./operators/deployment/) |
 | Cloudflare 外部一键上云 | [operators/deployment/cloudflare-quickstart.md](./operators/deployment/cloudflare-quickstart.md) |
 
-## 内容取舍
+## Canonical 文档（改一处即可）
 
-这次重构保留了现有文档里与代码强绑定的部分：API、架构、运行时矩阵、审计、计费、时间语义和部署细节。这些内容仍然有价值，只是移动到了更适合的读者路径下。
-
-面向纯使用者的内容此前不足，所以新增了 `users/` 下的快速开始、功能地图、配置流程和客户端接入指南。它们故意不展开代码实现，目标是让使用者能完成部署、配置和日常排障。
+| 主题 | 权威文档 |
+|------|----------|
+| 运行时 × 数据库矩阵 | [developers/architecture/runtime-data.md](./developers/architecture/runtime-data.md) |
+| 使用者最短路径 | [users/quickstart.md](./users/quickstart.md) |
+| CF 首次上云 | [operators/deployment/cloudflare-quickstart.md](./operators/deployment/cloudflare-quickstart.md) |
+| CF 运维 / Workers Builds | [operators/deployment/cloudflare.md](./operators/deployment/cloudflare.md) |
+| Docker / PG / MySQL 自托管 | [operators/deployment/docker.md](./operators/deployment/docker.md) |
+| 下游集成 env | [developers/integration.md](./developers/integration.md) |
+| 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范
 

@@ -11,7 +11,7 @@
 #
 # 若出现「GitHub Actions is not permitted to create or approve pull requests」：
 # 1) 仓库 Settings → Actions → General → Workflow permissions：勾选「Allow GitHub Actions to create and approve pull requests」；
-#    或 2) 在 Repo secrets 配置 CHANGESETS_GITHUB_TOKEN（PAT：contents + pull-requests），见 docs/ops/release-versioning.md。
+#    或 2) 在 Repo secrets 配置 CHANGESETS_GITHUB_TOKEN（PAT：contents + pull-requests），见 docs/maintainers/release-versioning.md。
 
 name: Release
 

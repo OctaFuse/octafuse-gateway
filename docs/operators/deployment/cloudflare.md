@@ -4,9 +4,7 @@
 
 **外部用户首次上云**（推荐）：[cloudflare-quickstart.md](./cloudflare-quickstart.md)（`npm run bootstrap:cloudflare`）。本页不替代该 quickstart。
 
-**路径速查**：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md)。
-
-表结构以 **`packages/core/migrations-d1/`** 为准。Docker 自托管见 [deployment-docker.md](./docker.md)。
+实例 env 文件约定：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md)。表结构以 **`packages/core/migrations-d1/`** 为准。Docker 自托管见 [docker.md](./docker.md)。
 
 > 本仓库不以 Cloudflare Deploy Button 作为主路径：官方 Deploy Button 无法一次装齐 monorepo 双 Worker + 共享 D1。
 
@@ -34,19 +32,7 @@
 
 ## 1. 本地 Cloudflare 开发
 
-目标：本机 Worker，**不**部署到 Cloudflare，D1 在 `.wrangler/state`。
-
-```bash
-npm install
-npm run db:migrate
-npm run dev:proxy    # :8787
-npm run dev:admin    # :8789
-```
-
-- `postinstall` 已跑 `gen:wrangler`（无 `D1_DATABASE_ID` 即可）。
-- **不需要** `cloudflare-worker/*.env`。
-- 在本机执行过 `deploy:*` / `db:migrate:remote` 后，继续本地 dev 前须 **`npm run gen:wrangler`**（见 [local-testing-environments.md §1](../../developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)）。
-- 详见 [local-testing-environments.md](../../developers/local-development.md) §1–2。
+本机 Worker、不上线；步骤见 [users/quickstart.md](../../users/quickstart.md) §1。远程 deploy 后继续本地 dev 前须 `npm run gen:wrangler`，详见 [local-development.md §1](../../developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)。
 
 ---
 
@@ -70,7 +56,9 @@ npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:proxy
 npx dotenv -e ./cloudflare-worker/example.env -- npm run deploy:admin
 ```
 
-dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../../../cloudflare-worker/README.md#c-生产-git-自动部署)。
+dev 演示**仅 CLI 发版**（有新 SQL 时先 `db:migrate:remote`）；生产 Connect to Git 见下方 §4。
+
+下游测试变量：`GATEWAY_URL` / `GATEWAY_MASTER_URL` / `GATEWAY_MASTER_KEY`（见 [integration.md](../../developers/integration.md)）。
 
 ---
 
@@ -84,7 +72,7 @@ dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../
 | dev 演示 | `*-dev`，D1 `octafuse-gateway-dev` | `test-api.octafuse.dev` 等（见 `example.env`） |
 | 自有 fork / 第二实例 | 自定 Worker 名与 D1 名，避免与同账号其它实例冲突 | 可选 `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` |
 
-本地 CLI：复制 [`example.env`](../../../cloudflare-worker/example.env) 为 gitignore 的 `cloudflare-worker/<name>.env`，填生产值后 `dotenv -e ... deploy:*`（与 Build variables 同名同值）。
+本地 CLI：复制 [`example.env`](../../../cloudflare-worker/example.env) 为 gitignore 的 `cloudflare-worker/<name>.env`，填生产值后 `dotenv -e ... deploy:*`（与 Build variables 同名同值）。首次也可直接用 [cloudflare-quickstart.md](./cloudflare-quickstart.md)。
 
 ### 环境变量（Build variables / 本地 `.env`）
 
@@ -92,7 +80,7 @@ dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../
 |------|------|
 | `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` | **须与 Dashboard Worker 名一致** |
 | `D1_DATABASE_NAME` | D1 逻辑名 |
-| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**。写入生成的 `wrangler.jsonc` 后，本机 `dev:proxy`/`dev:admin` 会连**另一套**本地 D1；继续本地开发前执行 `npm run gen:wrangler`（见 [local-testing-environments.md §1](../../developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
+| `D1_DATABASE_ID` | 远程 deploy / migrate **必填**。写入生成的 `wrangler.jsonc` 后，本机 `dev:proxy`/`dev:admin` 会连**另一套**本地 D1；继续本地开发前执行 `npm run gen:wrangler`（见 [local-development.md §1](../../developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
 | `D1_MIGRATIONS_WORKER_NAME` | 可选；仅 `wrangler d1 migrations` 配置名，**无需建 Worker** |
 | `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 |
 
@@ -100,15 +88,31 @@ dev 演示**仅 CLI 发版**（见上方命令）；Connect to Git 见 [§C](../
 
 ## 4. Workers Builds（Connect to Git）
 
-Dashboard → Worker → **Settings → Builds**。Worker 名须与 `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` 一致（[Workers name requirement](https://developers.cloudflare.com/workers/ci-cd/builds/troubleshoot/#workers-name-requirement)）。
+Dashboard → Worker → **Settings → Builds**。Worker 名须与 `PROXY_WORKER_NAME` / `ADMIN_WORKER_NAME` 一致（[Workers name requirement](https://developers.cloudflare.com/workers/ci-cd/builds/troubleshoot/#workers-name-requirement)）。Proxy 与 Admin **各绑一次**。
+
+### Dashboard 通用设置
+
+| 项 | 值 |
+|----|-----|
+| **Root directory** | **留空**（monorepo 根；`npm ci` / `gen:wrangler` 必须在仓库根执行） |
+| **非生产分支构建** | 按需勾选 |
 
 ### Build variables
 
-在 **Build variables** 填入上表变量（proxy / admin 两个 Worker 各配一套；`D1_DATABASE_ID` 两边相同）。**生产 UUID 只放 Dashboard，不进 Git。**
+在 **Build variables** 填入 §3 上表变量（proxy / admin 两个 Worker 各配一套；`D1_DATABASE_ID` 两边相同）。**生产 UUID 只放 Dashboard，不进 Git。**
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `PROXY_WORKER_NAME` | Proxy Worker | 须与 Dashboard Worker 名一致 |
+| `ADMIN_WORKER_NAME` | Admin Worker | 同上 |
+| `D1_DATABASE_NAME` | ✅ | D1 逻辑名 |
+| `D1_DATABASE_ID` | ✅ | `npx wrangler d1 list`；**只放 Dashboard** |
+| `D1_MIGRATIONS_WORKER_NAME` | 可选 | 仅迁移脚本配置名 |
+| `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 | 写入 wrangler `routes` |
 
 ### 构建 / 部署命令
 
-**Root directory 留空**（monorepo 根）。`npm ci` / `gen:wrangler` 必须在仓库根执行；不必把 Root 设为 `packages/proxy` 再在 Build 里 `cd ../..`。
+**勿**在 Deploy 填 `npm run deploy:proxy` / `npm run deploy:admin`——CI 已拆分 build 与 deploy；Deploy 再跑 `deploy:*` 会重复生成配置。
 
 | Worker | Build command | Deploy command |
 |--------|---------------|----------------|
@@ -124,37 +128,35 @@ Dashboard → Worker → **Settings → Builds**。Worker 名须与 `PROXY_WORKE
 
 ### Build watch paths（减少无关 push 触发部署）
 
-Dashboard → **Settings → Builds → Build watch paths**。默认 `includes: *` 表示**任意文件变更都会构建**；本仓为 monorepo，建议为 **Proxy / Admin 分别配置**，避免只改文档或另一 Worker 时也部署。
+Dashboard → **Settings → Builds → Build watch paths**。默认 `includes: *` 表示**任意文件变更都会构建**；本仓为 monorepo，建议为 **Proxy / Admin 分别配置**，Exclude 留空。
 
 判定规则（[Build watch paths](https://developers.cloudflare.com/workers/ci-cd/builds/build-watch-paths/)）：先匹配 **Exclude**，再匹配 **Include**；push 中任一变更路径命中 Include 则构建，否则跳过。
 
-**Proxy Worker**
+**Proxy — Include**（一行粘贴）：
 
-| | 路径（逗号分隔，一行粘贴到 Dashboard） |
-|--|----------------------------------------|
-| **Include** | `packages/proxy/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*` |
-| **Exclude** | （留空） |
+```
+packages/proxy/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*
+```
 
-**Admin Worker**
+**Admin — Include**：
 
-| | 路径 |
-|--|------|
-| **Include** | `packages/admin/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*` |
-| **Exclude** | （留空） |
+```
+packages/admin/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*
+```
 
 说明：
 
-- 改 **`packages/core`** 或根 **`package.json` / `package-lock.json`** 时两个 Worker 都会构建（共享依赖与 `gen-wrangler`）。
+- 改 **`packages/core`** 或根 **`package.json` / `package-lock.json`** 时两个 Worker 都会构建。
 - 仅改 **`packages/proxy`** → 只构建 Proxy；仅改 **`packages/admin`** → 只构建 Admin。
-- **`docs/`、`docker/`、`examples/`、`cloudflare-worker/example.env`** 等不在 Include 内 → **不会**触发 Worker 构建。
-- 改 **`packages/core/migrations-d1/`** 会触发构建，但 **不会**自动跑迁移；仍需本地 `db:migrate:remote` 后再依赖新 schema 的代码 push。
-- 需要强制全量构建时：Dashboard 手动 **Retry deployment**，或 push 空 commit（Cloudflare 对 0 file 的 push 会默认构建）。
-
-Dashboard 逐步配置见 [cloudflare-worker/README.md §C](../../../cloudflare-worker/README.md#git-自动部署connect-to-git)。
+- **`docs/`、`docker/`、`examples/`** 等不在 Include 内 → **不会**触发 Worker 构建。
+- 改 **`packages/core/migrations-d1/`** 会触发构建，但 **不会**自动跑迁移；仍需本地 `db:migrate:remote`。
+- 需要强制全量构建时：Dashboard 手动 **Retry deployment**，或 push 空 commit。
 
 ### 本地 CLI（与 CI 相同生成逻辑）
 
 ```bash
+npm run deploy:cloudflare -- <instance> --migrate   # 推荐
+# 或手动：
 npx dotenv -e ./cloudflare-worker/<instance>.env -- npm run gen:wrangler -- --remote
 npx dotenv -e ./cloudflare-worker/<instance>.env -- npm run db:migrate:remote
 npx dotenv -e ./cloudflare-worker/<instance>.env -- npm run deploy:proxy
@@ -171,7 +173,7 @@ npx wrangler d1 create octafuse-gateway-dev   # 或你的生产 D1 名
 npx wrangler d1 list
 ```
 
-将 **`D1_DATABASE_ID`** 写入 Build variables 或 gitignore 的 `cloudflare-worker/<name>.env`。
+将 **`D1_DATABASE_ID`** 写入 Build variables 或 gitignore 的 `cloudflare-worker/<name>.env`。外部首次上云优先用 [cloudflare-quickstart.md](./cloudflare-quickstart.md)（脚本会创建或复用 D1）。
 
 ---
 
@@ -187,7 +189,7 @@ npx wrangler d1 list
 ## 7. 认证与下游
 
 - 管理 API Bearer 须与 D1 **`system_config.MASTER_KEY`** 一致（见 [api/admin.md](../../developers/api/admin.md)）。
-- 下游门户：`GATEWAY_URL`（Proxy）、`GATEWAY_MASTER_URL`（Admin）、`GATEWAY_MASTER_KEY`。
+- 下游门户：`GATEWAY_URL`（Proxy）、`GATEWAY_MASTER_URL`（Admin）、`GATEWAY_MASTER_KEY`（见 [integration.md](../../developers/integration.md)）。
 
 ---
 
@@ -202,7 +204,7 @@ npx wrangler d1 list
 
 同一 Cloudflare 账号可跑多套 Worker（不同 `PROXY_WORKER_NAME` / `D1_DATABASE_ID`）。升级 **gen-wrangler** 或迁移流程时，建议：
 
-1. 先在 **dev 演示**（`example.env` + CLI 发版）或 **staging / 生产 Worker**（Connect to Git）验证变更。
+1. 先在 **dev 演示**（`example.env` + CLI 发版）或 staging 验证变更。
 2. 再更新生产 Worker 的 Build variables；必要时对生产 Worker **Pause Builds**，配好变量后再恢复。
 3. 有新 D1 SQL：**先** `db:migrate:remote`（对应实例 env），**再**部署依赖新 schema 的 Worker。
 
@@ -218,4 +220,4 @@ Workers Builds 部署历史 **Rollback**；或 Pause Builds 后回滚版本。
 
 ---
 
-**相关**：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md) · [部署索引](./README.md) · [本地测试](../../developers/local-development.md)
+**相关**：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md) · [部署索引](./README.md) · [local-development.md](../../developers/local-development.md)

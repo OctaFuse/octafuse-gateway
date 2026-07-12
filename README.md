@@ -46,67 +46,20 @@
 
 ## 快速开始
 
-默认路径是 **Cloudflare**：先在本机用 Wrangler + 本地 D1 跑通，再一键部署到你的 Cloudflare 账号。
+默认路径是 **Cloudflare**（本地 D1 → 一键上云）。完整步骤、Admin 配置与 curl 示例见 **[docs/users/quickstart.md](./docs/users/quickstart.md)**。
 
 ```bash
 git clone https://github.com/OctaFuse/octafuse-gateway.git
 cd octafuse-gateway
-```
-
-### 1. 本机启动（本地 D1）
-
-前置：Node.js **20+**。无需 Cloudflare 账号。
-
-```bash
 npm install
 npm run db:migrate
-npm run dev:proxy
+npm run dev:proxy    # :8787
+npm run dev:admin    # :8789（另开终端）
 ```
 
-另开一个终端：
+上云：`npx wrangler login` → `npm run bootstrap:cloudflare`（详见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)）。
 
-```bash
-npm run dev:admin
-```
-
-| 服务 | 地址 / 位置 |
-|------|-------------|
-| Proxy | `http://127.0.0.1:8787` |
-| Admin | `http://127.0.0.1:8789` |
-| 本地 D1 | `./.wrangler/state` |
-| Admin API Bearer | `sk-dev-admin-key` |
-
-### 2. 部署到 Cloudflare
-
-前置：Cloudflare 账号，本机已 `npx wrangler login`。
-
-```bash
-npm install
-npx wrangler login
-npm run bootstrap:cloudflare
-```
-
-完成后按终端提示核对 `GATEWAY_URL` / `GATEWAY_MASTER_URL`，并用 `GET $GATEWAY_URL/health` 验证。完整步骤见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)；发版与 Workers Builds 见 [Cloudflare 运维](./docs/operators/deployment/cloudflare.md)。
-
-### 3. 打开 Admin 后配置
-
-1. 添加或导入 **Provider**，填入真实上游 API Key。
-2. 创建或启用 **Model Route**。
-3. 创建用户 **API Key**。
-4. 用用户 Key 调用 Proxy。
-
-```bash
-curl -sS http://127.0.0.1:8787/v1/chat/completions \
-  -H "Authorization: Bearer sk-your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
-```
-
-上云后把主机换成你的 Proxy URL。
-
-### 不用 Cloudflare？
-
-Docker / Postgres / MySQL / Zeabur 等自托管路径见 [部署文档](./docs/operators/deployment/)（含 [Docker](./docs/operators/deployment/docker.md)）。
+不用 Cloudflare？见 [部署文档](./docs/operators/deployment/)（含 [Docker](./docs/operators/deployment/docker.md)）。
 
 ## 文档入口
 

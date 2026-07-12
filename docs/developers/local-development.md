@@ -1,19 +1,20 @@
 # 本地开发与测试：Octafuse
 
-本文说明如何在本地组合 **Proxy Worker**、**Admin（OpenNext）** 与 **D1**，以及可选 **Node + Postgres** 或 **Node + MySQL**。整体「运行时 × 数据库」矩阵见 **[architecture/runtime-data.md](./architecture/runtime-data.md)**。
+本文说明如何在本地组合 **Proxy Worker**、**Admin（OpenNext）** 与 **D1**，以及可选 **Node + Postgres** 或 **Node + MySQL**。整体「运行时 × 数据库」矩阵见 **[architecture/runtime-data.md](./architecture/runtime-data.md)**（canonical）。
 
-**Cloudflare 本地开发 vs 远程部署**：本文件 §1–2 为**本机 D1**（不上线）。远程 dev 演示、生产 Git 部署见 **[cloudflare-worker/README.md](../../cloudflare-worker/README.md)**。
+**Cloudflare 本地开发 vs 远程部署**：本文件 §1–2 为**本机 D1**（不上线）。远程 dev 演示、生产 Git 部署见 **[cloudflare.md](../operators/deployment/cloudflare.md)**；实例 env 约定见 [cloudflare-worker/README.md](../../cloudflare-worker/README.md)。
 
-## 拓扑模式（本地/部署一致口径）
+## 拓扑模式（摘要）
 
-| 模式 | Proxy | Admin | 数据库 |
-|------|------|------|------|
-| Cloudflare 全托管（默认） | Worker (`npm run dev:proxy`) | OpenNext preview (`npm run dev:admin`) | D1 |
-| Hybrid | Node (`npm run dev:proxy:node`) | OpenNext preview (`npm run dev:admin`) | Proxy=Postgres，Admin=D1 |
-| Full self-hosted PG | Node (`npm run dev:proxy:node`) | Node（`npm run dev:admin:node`，:8789） | Postgres |
-| Full self-hosted MySQL | Node + **`DATABASE_DRIVER=mysql`** | Node + **`DATABASE_DRIVER=mysql`** | MySQL 8 |
+本地命令与 [runtime-data.md](./architecture/runtime-data.md) 部署模式一一对应：
 
-> 说明：当前仓库默认开发路径仍是 Cloudflare + D1。若要演练 Full self-hosted PG，请确保 Admin 运行时已按你们环境接入同一 Postgres。
+| 模式 | 本地命令要点 |
+|------|----------------|
+| Cloudflare 全托管（默认） | `dev:proxy` + `dev:admin` + D1 |
+| Hybrid | `dev:proxy:node`（Postgres）+ `dev:admin`（D1） |
+| Full self-hosted PG / MySQL | `dev:proxy:node` + `dev:admin:node`（同一 `DATABASE_URL`；MySQL 须 `DATABASE_DRIVER=mysql`） |
+
+> 当前仓库默认开发路径仍是 Cloudflare + D1。
 
 ## 0. 环境变量模板
 
@@ -154,61 +155,11 @@ curl -sS http://127.0.0.1:8789/api/admin/config \
   -H 'Authorization: Bearer sk-dev-admin-key'
 ```
 
-## 6. Docker 本地样例（Node + PG，双容器）
+## 6. Docker 本地样例
 
-### 6.1 用仓库根目录 `Dockerfile.*` 构建并启动（推荐）
+Compose 命令、预构建镜像、端口映射与 migrate profile 见 **[docker.md](../operators/deployment/docker.md)** §4–§5（`docker/compose/node-pg.yml` / `node-mysql.yml`）。
 
-根目录构建 **gateway-proxy** 与 **gateway-admin** 两个镜像，并与 Postgres 一起编排：
-
-```bash
-docker compose -f docker/compose/node-pg.yml up -d postgres
-docker compose -f docker/compose/node-pg.yml --profile migrate run --rm migrate
-docker compose -f docker/compose/node-pg.yml up -d gateway-proxy gateway-admin
-```
-
-若本机 **`8787` / `8789`** 已被占用，可改映射到其它主机端口（容器内端口不变），例如：
-
-```bash
-GATEWAY_PROXY_HOST_PORT=28787 GATEWAY_ADMIN_HOST_PORT=28789 \
-  docker compose -f docker/compose/node-pg.yml up -d gateway-proxy gateway-admin
-```
-
-等价地可先手动构建镜像：
-
-```bash
-docker build -f Dockerfile.proxy -t octafuse-proxy:local .
-docker build -f Dockerfile.admin -t octafuse-admin:local .
-```
-
-### 6.2 Docker：Node + MySQL（双容器，本地构建镜像）
-
-**`docker/compose/node-mysql.yml`** 内置 **MySQL 8.4** 与 **`db:migrate:mysql:docker`** 流程（须先 migrate 再起应用）：
-
-```bash
-docker compose -f docker/compose/node-mysql.yml up -d mysql
-docker compose -f docker/compose/node-mysql.yml --profile migrate run --rm migrate
-docker compose -f docker/compose/node-mysql.yml up -d gateway-proxy gateway-admin
-```
-
-预构建镜像示例已收敛为外置 Postgres 的 proxy/admin 独立部署；MySQL 场景保留根目录本地构建编排。
-
-### 6.3 用预构建镜像（GHCR、自建 Harbor 或任意私有 registry）
-
-从第二私有 registry（自建 Harbor 等）拉取时，在 `docker/examples/env.*.example` 中按对应注释将 `GATEWAY_*_IMAGE` 改为 `registry.example.com/<namespace>/octafuse-gateway-{proxy,admin,migrate}:v1.0.0` 形态（见 [deployment-docker.md](../operators/deployment/docker.md) §4.2），再按需改 tag。
-
-```bash
-cd docker/examples
-cp env.compose.external.example .env.gateway
-# 编辑 GATEWAY_PROXY_IMAGE、GATEWAY_ADMIN_IMAGE、GATEWAY_MIGRATE_IMAGE、DATABASE_URL、ADMIN_PASSWORD 等
-docker compose --env-file .env.gateway -f gateway.proxy.yml -f gateway.admin.yml --profile migrate run --rm migrate
-docker compose --env-file .env.gateway -f gateway.proxy.yml -f gateway.admin.yml up -d
-```
-
-常用诊断：在配置好 `DATABASE_URL` 后可用 `npm run db:list:pg` 或 `npx tsx scripts/db/diag/list-pg-databases.ts`（于**仓库根**执行）核对库名与主机。
-
-### 6.4 Full self-hosted PG（不用 Docker：本机双进程）
-
-不跑 Compose 时，可分别用 Node 起 Proxy 与 Admin（同一 `DATABASE_URL`），见上文第 5 节与 [deployment-docker.md](../operators/deployment/docker.md) §6。
+本机不用 Docker 时，Full self-hosted PG 双进程见上文 §5 与 [docker.md](../operators/deployment/docker.md) §6。
 
 ## 7. 与外部集成方联调
 

@@ -29,7 +29,7 @@ _run_migrate() {
 	fi
 	echo "[docker-entrypoint:migrate] MIGRATE_DONE"
 	echo "[docker-entrypoint:migrate] 一次性任务已完成，容器将正常退出。"
-	echo "[docker-entrypoint:migrate] Zeabur/K8s 上请勿将此镜像作为常驻 Service；见 docs/ops/deployment-zeabur.md"
+	echo "[docker-entrypoint:migrate] Zeabur/K8s 上请勿将此镜像作为常驻 Service；见 docs/operators/deployment/zeabur.md"
 }
 
 case "$_eff" in

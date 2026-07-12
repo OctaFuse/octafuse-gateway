@@ -1,6 +1,6 @@
 # 部署文档索引（Octafuse）
 
-多运行时（Cloudflare / Node）与多数据库（D1 / Postgres / MySQL）的架构总览见 **[runtime-data.md](../../developers/architecture/runtime-data.md)**。
+多运行时（Cloudflare / Node）与多数据库（D1 / Postgres / MySQL）的架构总览见 **[runtime-data.md](../../developers/architecture/runtime-data.md)**（部署模式矩阵 SSOT）。
 
 ## 数据库与迁移
 
@@ -9,25 +9,17 @@
 
 **Compose 宿主机环境文件**（镜像、`DATABASE_URL`、`ADMIN_*`）：从 **`docker/examples/env.*.example`** 复制到 **`docker/deploy/`** 下自建文件（勿提交），约定见 **[docker/deploy/README.md](../../../docker/deploy/README.md)**。
 
-## 常见部署模式
+## 怎么选文档
 
-**默认推荐 Cloudflare**（个人与小流量通常可在免费额度内运行）。本地试用与一键上云见使用者文档 [users/quickstart.md](../../users/quickstart.md)。
+**默认推荐 Cloudflare**（个人与小流量通常可在免费额度内运行）。本地试用与一键上云见 [users/quickstart.md](../../users/quickstart.md)。
 
-### Cloudflare（默认）
+| 场景 | 文档 |
+|------|------|
+| Cloudflare 首次上云 | [cloudflare-quickstart.md](./cloudflare-quickstart.md) |
+| Cloudflare 运维 / Workers Builds / 多实例 | [cloudflare.md](./cloudflare.md) · 实例 env：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md) |
+| Docker / Postgres / MySQL / Hybrid 自托管 | [docker.md](./docker.md) |
+| Zeabur 等容器平台 | [zeabur.md](./zeabur.md) |
+| D1 ↔ Postgres ETL / 对账 | [d1-postgres-cutover.md](../migrations/d1-postgres-cutover.md) |
+| 本地开发组合 | [local-development.md](../../developers/local-development.md) |
 
-Proxy Worker + Admin，共用 D1。
-
-- **外部用户首次**：[cloudflare-quickstart.md](./cloudflare-quickstart.md)（`npm run bootstrap:cloudflare`）
-- 运维 / Workers Builds：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md) 与 [cloudflare.md](./cloudflare.md)
-
-### 自托管（Docker / 容器平台）
-
-不用 Cloudflare，或需要 Postgres / MySQL / 内网部署时走这里。
-
-1. **Full self-hosted PG**：Proxy Node + Admin Node，共用 Postgres。见 [docker.md](./docker.md) 与 [d1-postgres-cutover.md](../migrations/d1-postgres-cutover.md)。
-2. **Full self-hosted MySQL**：同上形态，共用 MySQL 8（`DATABASE_DRIVER=mysql`，迁移 `migrations-mysql/`）。见 [docker.md](./docker.md)（含 **`docker/compose/node-mysql.yml`** 与 UTC 时区说明）。
-3. **自托管 Docker + Postgres / MySQL（无 Cloudflare 依赖）**：镜像由 CI 推到 **GHCR**（或你在镜像仓库侧 mirror 到自建 Harbor 等），宿主机拉镜像、迁移、启停；编排与变量见 [docker.md](./docker.md)。
-4. **Hybrid**：Proxy Node + Postgres，Admin 继续 Cloudflare + D1。见 [docker.md](./docker.md)。
-5. **Zeabur（容器平台）**：Proxy + Admin 为常驻 Service；**migrate 为一次性 Job**（勿常驻，否则 CrashLoop）。见 [zeabur.md](./zeabur.md)。
-
-本地与多套 D1 数据目录见 [local-development.md](../../developers/local-development.md)。D1 与 Postgres 之间迁移或对账见 [d1-postgres-cutover.md](../migrations/d1-postgres-cutover.md)（脚本在 `scripts/db/cutover/`）。
+拓扑对照（CF / Hybrid / Full PG / MySQL）以 [runtime-data.md](../../developers/architecture/runtime-data.md) 为准，本文不重复完整矩阵。

@@ -143,6 +143,6 @@ npx changeset
 
 ## 相关文档
 
-- [deployment-docker.md](../operators/deployment/docker.md) — GHCR 与 Compose  
+- [docker.md](../operators/deployment/docker.md) — GHCR 与 Compose  
 - [CHANGELOG.md](../../CHANGELOG.md) — 聚合变更记录  
 - [`.changeset/README.md`](../../.changeset/README.md) — Changesets 快速说明  

@@ -268,7 +268,7 @@ jobs:
             echo ""
             echo "---"
             echo ""
-            echo "Release process: [.changeset/README.md](.changeset/README.md) · [docs/ops/release-versioning.md](docs/ops/release-versioning.md)"
+            echo "Release process: [.changeset/README.md](.changeset/README.md) · [docs/maintainers/release-versioning.md](docs/maintainers/release-versioning.md)"
           } > release-notes.md
           cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
 

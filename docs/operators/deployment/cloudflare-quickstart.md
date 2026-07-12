@@ -2,7 +2,7 @@
 
 面向 **自有 Cloudflare 账号** 的首次上云：一条 CLI 完成 **共享 D1 + Proxy Worker + Admin Worker**。
 
-运维细节 / Workers Builds / 多实例生产：[cloudflare.md](./cloudflare.md) · 配置目录：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md)。
+运维细节 / Workers Builds / 多实例：[cloudflare.md](./cloudflare.md) · 实例 env 约定：[cloudflare-worker/README.md](../../../cloudflare-worker/README.md)。
 
 > **不做「Deploy to Cloudflare」单按钮**：官方 [Deploy buttons](https://developers.cloudflare.com/workers/platform/deploy-buttons/) **不会**把 monorepo 里的多个 Worker 一次装齐；本仓库还依赖 `gen-wrangler` 注入共享 `D1_DATABASE_ID`。请用下方 CLI。
 

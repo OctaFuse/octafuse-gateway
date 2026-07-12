@@ -145,7 +145,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
 
 ## 5. 使用 GHCR 预构建镜像（免 Git 构建）
 
-若 CI 已推送镜像（见 [deployment-docker.md](./docker.md) § GitHub Actions）：
+若 CI 已推送镜像（见 [docker.md](./docker.md) § GitHub Actions）：
 
 | Service | 镜像示例 |
 |---------|----------|
@@ -155,13 +155,15 @@ DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
 
 在 Zeabur 选择 **Docker Images** 创建 proxy/admin 常驻 Service；migrate 按 §3 方式 A 或 B 处理。
 
-## 6. 与 SoloEnt 门户联调
+## 6. 与外部门户联调
 
-- **Proxy** 对外 URL → 门户 `GATEWAY_URL`（客户端推理）
-- **Admin** 对外 URL → 门户 `GATEWAY_MASTER_URL`（`/api/admin/*`）
+下游集成方（自建门户 / SaaS）通常需要：
+
+- **Proxy** 对外 URL → `GATEWAY_URL`（客户端推理）
+- **Admin** 对外 URL → `GATEWAY_MASTER_URL`（`/api/admin/*`）
 - `MASTER_KEY` 以库内 `system_config.MASTER_KEY` 为准（迁移 `0002_seed.sql` 默认值，生产务必修改）
 
-Postgres 时区建议 URL 带 `options=-c%20timezone%3DUTC`，见 [deployment-docker.md](./docker.md) § 时区。
+完整 env 约定见 [integration.md](../../developers/integration.md)。Postgres 时区建议 URL 带 `options=-c%20timezone%3DUTC`，见 [docker.md](./docker.md) § 时区。
 
 ## 7. 发布后验证
 
@@ -181,6 +183,6 @@ Postgres 时区建议 URL 带 `options=-c%20timezone%3DUTC`，见 [deployment-do
 
 ## 9. 相关文档
 
-- [deployment-docker.md](./docker.md) — 镜像与 Compose 通用说明
+- [docker.md](./docker.md) — 镜像与 Compose 通用说明
 - [docker/examples/env.zeabur.example](../../../docker/examples/env.zeabur.example) — Zeabur 环境变量模板
 - [scripts/deploy/zeabur-migrate-once.sh](../../../scripts/deploy/zeabur-migrate-once.sh) — 本地/CI 一次性迁移脚本

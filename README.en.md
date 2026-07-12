@@ -46,67 +46,20 @@ The default runtime is **Cloudflare Workers + D1** — individuals and light tra
 
 ## Quick Start
 
-Default path: **Cloudflare** — try locally with Wrangler + local D1, then bootstrap onto your Cloudflare account.
+Default path: **Cloudflare** (local D1 → bootstrap). Full steps, Admin setup, and curl examples: **[docs/users/quickstart.md](./docs/users/quickstart.md)**.
 
 ```bash
 git clone https://github.com/OctaFuse/octafuse-gateway.git
 cd octafuse-gateway
-```
-
-### 1. Run locally (local D1)
-
-Requirements: Node.js **20+**. No Cloudflare account needed.
-
-```bash
 npm install
 npm run db:migrate
-npm run dev:proxy
+npm run dev:proxy    # :8787
+npm run dev:admin    # :8789 (second terminal)
 ```
 
-In a second terminal:
+Cloud deploy: `npx wrangler login` → `npm run bootstrap:cloudflare` (see [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md)).
 
-```bash
-npm run dev:admin
-```
-
-| Service | URL / location |
-|---------|----------------|
-| Proxy | `http://127.0.0.1:8787` |
-| Admin | `http://127.0.0.1:8789` |
-| Local D1 | `./.wrangler/state` |
-| Admin API Bearer | `sk-dev-admin-key` |
-
-### 2. Deploy to Cloudflare
-
-Requirements: a Cloudflare account and `npx wrangler login`.
-
-```bash
-npm install
-npx wrangler login
-npm run bootstrap:cloudflare
-```
-
-Follow the CLI for `GATEWAY_URL` / `GATEWAY_MASTER_URL`, then verify with `GET $GATEWAY_URL/health`. Full steps: [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md). Ops / Workers Builds: [Cloudflare deployment](./docs/operators/deployment/cloudflare.md).
-
-### 3. Configure in Admin
-
-1. Add or import a **Provider** with a real upstream API key.
-2. Create or enable a **Model Route**.
-3. Create a user **API Key**.
-4. Call Proxy with that key.
-
-```bash
-curl -sS http://127.0.0.1:8787/v1/chat/completions \
-  -H "Authorization: Bearer sk-your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
-```
-
-After cloud deploy, use your Proxy URL as the host.
-
-### Not using Cloudflare?
-
-Docker / Postgres / MySQL / Zeabur self-hosting: [deployment docs](./docs/operators/deployment/) (including [Docker](./docs/operators/deployment/docker.md)).
+Not using Cloudflare? See [deployment docs](./docs/operators/deployment/) (including [Docker](./docs/operators/deployment/docker.md)).
 
 ## Documentation
 
