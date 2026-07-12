@@ -15,11 +15,9 @@ The default runtime is **Cloudflare Workers + D1** — individuals and light tra
 
 ## Why Octafuse
 
-| | |
-|---|---|
-| **Free-tier Cloudflare deploy** | One CLI deploys Proxy + Admin + shared D1 — no server to babysit, edge-native by default. |
-| **One endpoint** | Clients use one Gateway URL and one key across OpenAI / Anthropic / Gemini-style APIs to many upstreams. |
-| **Operable, not just a proxy** | Admin manages Providers, Routes, user keys, and budgets; `/api/admin/*` fits portals and scripts; requests and cost stay observable and reconcilable. |
+- **Free-tier Cloudflare deploy** — One CLI deploys Proxy + Admin + shared D1; no server to babysit, edge-native by default.
+- **One endpoint** — Clients use one Gateway URL and one key across OpenAI / Anthropic / Gemini-style APIs to many upstreams.
+- **Operable, not just a proxy** — Admin manages Providers, Routes, user keys, and budgets; `/api/admin/*` fits portals and scripts; requests and cost stay observable and reconcilable.
 
 ## What It Does
 

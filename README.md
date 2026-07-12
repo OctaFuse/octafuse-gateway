@@ -15,11 +15,9 @@
 
 ## 为什么选 Octafuse
 
-| | |
-|---|---|
-| **Cloudflare 可免费上云** | 一条 CLI 部署 Proxy + Admin + 共享 D1；无需自备服务器，边缘全球可用。 |
-| **统一入口** | 客户端只配一个 Gateway URL 和一个 Key，即可走 OpenAI / Anthropic / Gemini 风格接口访问多上游。 |
-| **可运营，不只是转发** | Admin 管理 Provider、Route、用户 Key 与预算；`/api/admin/*` 可对接门户或脚本；请求与成本可观测、可对账。 |
+- **Cloudflare 可免费上云** — 一条 CLI 部署 Proxy + Admin + 共享 D1；无需自备服务器，边缘全球可用。
+- **统一入口** — 客户端只配一个 Gateway URL 和一个 Key，即可走 OpenAI / Anthropic / Gemini 风格接口访问多上游。
+- **可运营，不只是转发** — Admin 管理 Provider、Route、用户 Key 与预算；`/api/admin/*` 可对接门户或脚本；请求与成本可观测、可对账。
 
 ## 它能做什么
 
