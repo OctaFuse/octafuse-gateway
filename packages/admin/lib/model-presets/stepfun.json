@@ -1,1 +1,44 @@
-[]
+[
+	{
+		"id": "step-3.7-flash",
+		"display_name": "Step 3.7 Flash",
+		"vendor": "stepfun",
+		"context_window": 256000,
+		"max_tokens": 256000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.2,
+						"output_price": 1.15,
+						"cache_read_price": 0.04,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.35,
+						"output_price": 8.1,
+						"cache_read_price": 0.27,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-05-29"
+	}
+]
