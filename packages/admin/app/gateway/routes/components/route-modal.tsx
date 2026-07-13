@@ -174,23 +174,6 @@ export function RouteModal(props: Props) {
 								</div>
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t('providerModelName')}
-									</label>
-									<input
-										type="text"
-										value={formData.provider_model_name}
-										onChange={(e) =>
-											onFormChange({ ...formData, provider_model_name: e.target.value })
-										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-										placeholder={t('providerModelPlaceholder')}
-										required
-									/>
-								</div>
-							</div>
-							<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
 										{t('upstreamProtocol')}
 									</label>
 									<select
@@ -214,6 +197,23 @@ export function RouteModal(props: Props) {
 											? t('protocolHintConfigured')
 											: t('protocolHintSelectProvider')}
 									</p>
+								</div>
+							</div>
+							<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+								<div>
+									<label className="mb-1 block text-sm font-medium text-gray-700">
+										{t('providerModelName')}
+									</label>
+									<input
+										type="text"
+										value={formData.provider_model_name}
+										onChange={(e) =>
+											onFormChange({ ...formData, provider_model_name: e.target.value })
+										}
+										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+										placeholder={t('providerModelPlaceholder')}
+										required
+									/>
 								</div>
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">{t('routeGroup')}</label>
