@@ -11,7 +11,7 @@ import { ConfigCardShell } from '@/components/ConfigCardShell';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
 import {
-	DEFAULT_WEB_SEARCH_COST_USD,
+	DEFAULT_WEB_SEARCH_COST,
 	DEFAULT_WEB_SEARCH_PROVIDER,
 	getWebSearchProviderOptions,
 	WEB_SEARCH_API_KEY_KEY,
@@ -35,7 +35,7 @@ function syncWebSearchUi(
 	);
 	setApiKey(rows.find((r) => r.key === WEB_SEARCH_API_KEY_KEY)?.value ?? '');
 	const costRaw = rows.find((r) => r.key === WEB_SEARCH_COST_KEY)?.value?.trim() ?? '';
-	setCost(costRaw || String(DEFAULT_WEB_SEARCH_COST_USD));
+	setCost(costRaw || String(DEFAULT_WEB_SEARCH_COST));
 }
 
 export default function GatewayToolsConfigPage() {
@@ -51,7 +51,7 @@ export default function GatewayToolsConfigPage() {
 	const [webSearchProvider, setWebSearchProvider] = useState<WebSearchProvider>(DEFAULT_WEB_SEARCH_PROVIDER);
 	const [webSearchApiKeyDraft, setWebSearchApiKeyDraft] = useState('');
 	const [webSearchApiKeyVisible, setWebSearchApiKeyVisible] = useState(false);
-	const [webSearchCostDraft, setWebSearchCostDraft] = useState(String(DEFAULT_WEB_SEARCH_COST_USD));
+	const [webSearchCostDraft, setWebSearchCostDraft] = useState(String(DEFAULT_WEB_SEARCH_COST));
 	const [webSearchSaving, setWebSearchSaving] = useState(false);
 
 	const clearSaveSuccess = useCallback(() => {

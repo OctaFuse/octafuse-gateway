@@ -15,7 +15,8 @@ export const WEB_SEARCH_PROVIDERS = ['bocha'] as const;
 export type WebSearchProvider = (typeof WEB_SEARCH_PROVIDERS)[number];
 
 export const DEFAULT_WEB_SEARCH_PROVIDER: WebSearchProvider = 'bocha';
-export const DEFAULT_WEB_SEARCH_COST_USD = 0.001;
+/** 默认单价；数值单位随 Gateway `system_config.BILLING_CURRENCY`（USD/CNY…），非固定美元。 */
+export const DEFAULT_WEB_SEARCH_COST = 0.001;
 
 export function isWebSearchProvider(value: string): value is WebSearchProvider {
 	return (WEB_SEARCH_PROVIDERS as readonly string[]).includes(value);
@@ -43,7 +44,8 @@ export function parseWebSearchCostInput(raw: string | null | undefined): number 
 export type ResolvedWebSearchConfig = {
 	provider: WebSearchProvider;
 	apiKey: string | null;
-	costUsd: number;
+	/** 单价；单位随 Gateway 计费币种（`BILLING_CURRENCY`）。 */
+	cost: number;
 	sources: {
 		provider: 'system_config' | 'default';
 		apiKey: 'system_config' | 'missing';
@@ -95,7 +97,7 @@ function buildResolved(
 	return {
 		provider,
 		apiKey: configKey || null,
-		costUsd: parsedCost ?? DEFAULT_WEB_SEARCH_COST_USD,
+		cost: parsedCost ?? DEFAULT_WEB_SEARCH_COST,
 		sources: {
 			provider: providerSource,
 			apiKey: configKey ? 'system_config' : 'missing',

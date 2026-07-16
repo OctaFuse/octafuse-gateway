@@ -32,7 +32,7 @@ webSearchRoutes.post('/', async (c) => {
 		return c.json({ error: 'Web search provider is misconfigured' }, 503);
 	}
 
-	const { provider, apiKey: providerApiKey, costUsd: toolCost } = resolved.config;
+	const { provider, apiKey: providerApiKey, cost: toolCost } = resolved.config;
 	if (!providerApiKey) {
 		return c.json({ error: 'Web search is not configured' }, 503);
 	}
@@ -112,7 +112,8 @@ webSearchRoutes.post('/', async (c) => {
 		return c.json({
 			data: {
 				results,
-				cost_usd: chargedCost,
+				// 单位随 Gateway `BILLING_CURRENCY`（USD/CNY…），非固定美元
+				cost: chargedCost,
 			},
 		});
 	} catch (err) {

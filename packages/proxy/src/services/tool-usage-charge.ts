@@ -88,7 +88,7 @@ export async function chargeToolUsage(params: ChargeToolUsageParams): Promise<{ 
 			pricingAudit: JSON.stringify({
 				kind: 'fixed_tool_cost',
 				tool_id: params.toolId,
-				charged_usd: chargedCost,
+				charged_cost: chargedCost,
 			}),
 		},
 		shouldChargeBudget,

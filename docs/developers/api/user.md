@@ -491,7 +491,7 @@ Authorization: Bearer <USER_API_KEY>
 2. 从 Admin `system_config` 读取搜索配置（无环境变量回退）：
    - `WEB_SEARCH_PROVIDER`（白名单，首版仅 `bocha`；非法值 → **503**）
    - `WEB_SEARCH_API_KEY`（未配置 → **503**）
-   - `WEB_SEARCH_COST`（成功单价 USD，默认 **0.001**）
+   - `WEB_SEARCH_COST`（成功单价，单位随 `BILLING_CURRENCY`；默认 **0.001**）
 3. 调用所选引擎；**仅成功**后按单价计入 `users.budget_spent`
 4. 上游失败不扣费
 
@@ -510,7 +510,7 @@ Authorization: Bearer <USER_API_KEY>
         "summary": "…"
       }
     ],
-    "cost_usd": 0.001
+    "cost": 0.001
   }
 }
 ```

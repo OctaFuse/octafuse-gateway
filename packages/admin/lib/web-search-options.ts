@@ -2,7 +2,7 @@
  * Tools → Configuration：Web Search 引擎下拉（与 `@octafuse/core` 白名单一致）。
  */
 import {
-	DEFAULT_WEB_SEARCH_COST_USD,
+	DEFAULT_WEB_SEARCH_COST,
 	DEFAULT_WEB_SEARCH_PROVIDER,
 	WEB_SEARCH_API_KEY_KEY,
 	WEB_SEARCH_COST_KEY,
@@ -12,7 +12,7 @@ import {
 } from '@octafuse/core/lib/web-search-system-config';
 
 export {
-	DEFAULT_WEB_SEARCH_COST_USD,
+	DEFAULT_WEB_SEARCH_COST,
 	DEFAULT_WEB_SEARCH_PROVIDER,
 	WEB_SEARCH_API_KEY_KEY,
 	WEB_SEARCH_COST_KEY,
