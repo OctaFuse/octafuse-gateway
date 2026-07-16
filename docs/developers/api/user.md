@@ -457,6 +457,68 @@ curl "http://localhost:8787/catalog/models?route_groups=default,web"
 
 ---
 
+## Web Search（Agent 工具）
+
+协议无关的产品 API（与 `/v1/me` 同类），供桌面 agent 在模型发起 `web_search` tool call 后调用。**不是** OpenAI / Anthropic / Gemini 推理协议的一部分。
+
+### 请求
+
+```
+POST /v1/tools/web-search
+Authorization: Bearer <USER_API_KEY>
+```
+
+### 请求体
+
+```json
+{
+  "query": "latest TypeScript release notes",
+  "allowed_domains": ["typescriptlang.org"],
+  "blocked_domains": [],
+  "count": 8
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `query` | 必填；至少 2 个字符 |
+| `allowed_domains` / `blocked_domains` | 可选；**不可同时**提供 |
+| `count` | 可选；1–10，默认 8 |
+
+### 行为
+
+1. 校验用户 API Key；`budget_max` 非空且额度不足 → **403** `{ "error": "Budget exceeded" }`
+2. 从 Admin `system_config` 读取搜索配置（无环境变量回退）：
+   - `WEB_SEARCH_PROVIDER`（白名单，首版仅 `bocha`；非法值 → **503**）
+   - `WEB_SEARCH_API_KEY`（未配置 → **503**）
+   - `WEB_SEARCH_COST`（成功单价 USD，默认 **0.001**）
+3. 调用所选引擎；**仅成功**后按单价计入 `users.budget_spent`
+4. 上游失败不扣费
+
+运营侧在 Admin → **Tools → Configuration** 配置上述三项；调用记录见 **Tools → Invocations**（与 Request Logs 同源，`provider_id=octafuse-tools`）。
+
+### 响应
+
+```json
+{
+  "data": {
+    "results": [
+      {
+        "title": "…",
+        "url": "https://…",
+        "snippet": "…",
+        "summary": "…"
+      }
+    ],
+    "cost_usd": 0.001
+  }
+}
+```
+
+用量日志 `api_key_request_logs` 中 `model_id` 记为 `tool:web-search`，`provider_id` 为 `octafuse-tools`。
+
+---
+
 ## 获取当前用户预算状态
 
 获取当前认证用户的预算使用情况。

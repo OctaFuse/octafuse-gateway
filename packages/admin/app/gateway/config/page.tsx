@@ -1,15 +1,17 @@
 'use client';
 
 /**
- * `system_config`：`MASTER_KEY`（置顶）、`BUSINESS_TIMEZONE`、`BILLING_CURRENCY` 与 Add 均为卡片，
- * 左栏标题+描述、右栏表单与按钮。Master key / webhook 等敏感字段支持 Show/Hide。
+ * `system_config`：`MASTER_KEY`（置顶）、`BUSINESS_TIMEZONE`、`BILLING_CURRENCY`、
+ * 错误 Webhook 与 Add 均为卡片；敏感字段支持 Show/Hide。
+ * 产品工具配置见 `/gateway/tools`。
  */
-import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
 	EyeIcon,
 	EyeSlashIcon,
 	PlusIcon,
 } from '@heroicons/react/24/outline';
+import { ConfigCardShell } from '@/components/ConfigCardShell';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
 import { BILLING_CURRENCY_KEY, getBillingCurrencyOptions } from '@/lib/billing-currency-options';
@@ -22,6 +24,11 @@ import {
 	ALERT_WEBHOOK_FEISHU_URL_KEY,
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
+import {
+	WEB_SEARCH_API_KEY_KEY,
+	WEB_SEARCH_COST_KEY,
+	WEB_SEARCH_PROVIDER_KEY,
+} from '@/lib/web-search-options';
 import { useTranslations } from 'next-intl';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
 
@@ -38,6 +45,7 @@ function syncBillingCurrencyUi(rows: SystemConfigRow[], setSelect: (v: string) =
 	/** 历史非法或非白名单值在 UI 上归一为 USD，保存时需用户显式选 CNY 再写入。 */
 	setSelect(v === 'CNY' ? 'CNY' : 'USD');
 }
+
 
 function syncBusinessTimezoneUi(
 	rows: SystemConfigRow[],
@@ -137,31 +145,6 @@ function WebhookUrlField({
 			)}
 		</div>
 	);
-}
-
-/** 左栏标题与说明，右栏控件与操作（大屏横向，小屏纵向堆叠）。 */
-function ConfigCardShell({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="mb-6 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
-        <div className="min-w-0 lg:w-[min(100%,22rem)] xl:w-96 shrink-0">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <div className="mt-2 text-sm text-gray-500 leading-relaxed">{description}</div>
-        </div>
-        <div className="min-w-0 flex-1 border-t border-gray-100 pt-6 lg:border-t-0 lg:border-l lg:border-gray-200 lg:pl-8 lg:pt-0">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function GatewayConfigPage() {
@@ -272,6 +255,15 @@ export default function GatewayConfigPage() {
     if (k === ALERT_WEBHOOK_WECOM_URL_KEY || k === ALERT_WEBHOOK_FEISHU_URL_KEY) {
       clearSaveSuccess();
       setSaveError(t('errors.useWebhooksSection'));
+      return;
+    }
+    if (
+      k === WEB_SEARCH_PROVIDER_KEY ||
+      k === WEB_SEARCH_API_KEY_KEY ||
+      k === WEB_SEARCH_COST_KEY
+    ) {
+      clearSaveSuccess();
+      setSaveError(t('errors.useToolsSection'));
       return;
     }
     setSaveError('');

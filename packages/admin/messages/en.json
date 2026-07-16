@@ -113,6 +113,7 @@
 			"overview": "Overview",
 			"inference": "Inference",
 			"user": "User",
+			"tools": "Tools",
 			"analytics": "Analytics",
 			"system": "System"
 		},
@@ -127,6 +128,8 @@
 			"apiKeys": "API Keys",
 			"requestLogs": "Request Logs",
 			"auditLogs": "Audit Logs",
+			"toolsConfig": "Configuration",
+			"toolInvocations": "Invocations",
 			"modelUsage": "Model Usage",
 			"providerUsage": "Provider Usage",
 			"userUsage": "User Usage",
@@ -1099,7 +1102,65 @@
 			"useBillingCurrencySection": "Use the \"Billing currency\" section for BILLING_CURRENCY.",
 			"useMasterKeySection": "Use the \"Admin API master key\" section for MASTER_KEY.",
 			"useWebhooksSection": "Use the \"Proxy error webhooks\" section for ALERT_WEBHOOK_WECOM_URL / ALERT_WEBHOOK_FEISHU_URL.",
+			"useToolsSection": "Use Tools → Configuration for WEB_SEARCH_PROVIDER / WEB_SEARCH_API_KEY / WEB_SEARCH_COST.",
 			"invalidIanaTimezone": "Invalid IANA timezone (e.g. Asia/Shanghai, America/New_York)"
+		}
+	},
+	"tools": {
+		"catalog": {
+			"webSearch": "Web Search"
+		},
+		"config": {
+			"title": "Tools",
+			"subtitle": "Configure product tools under /v1/tools/* (engine, API key, unit cost). Settings are stored in system_config and share the user chat budget.",
+			"viewInvocations": "View invocations →",
+			"saveWebSearch": "Save web search"
+		},
+		"webSearch": {
+			"title": "Web search",
+			"description": "Powers POST /v1/tools/web-search. Choose an implemented engine only—free text is rejected. Leave the API key empty and save to clear it (endpoint returns 503 until set again).",
+			"provider": "Search engine",
+			"cost": "Cost per success (USD)",
+			"apiKey": "Provider API key",
+			"apiKeyPlaceholder": "Paste engine API key",
+			"apiKeyHint": "Required for the tool to accept traffic. Cleared keys fall back to nothing (no env).",
+			"providers": {
+				"bocha": "Bocha (博查)"
+			}
+		},
+		"invocations": {
+			"title": "Tool invocations",
+			"subtitle": "Calls billed as provider octafuse-tools (model_id tool:*). Click a row to inspect query and result summary. Same underlying rows as Request Logs.",
+			"configureTools": "Configure tools →",
+			"openInRequestLogs": "Open in Request Logs",
+			"toolFilter": "Tool",
+			"allTools": "All tools",
+			"status": "Status",
+			"empty": "No tool invocations in this range.",
+			"columns": {
+				"time": "Time",
+				"tool": "Tool",
+				"query": "Query",
+				"user": "User",
+				"status": "Status",
+				"results": "Results",
+				"cost": "Cost",
+				"latency": "Latency"
+			},
+			"detail": {
+				"request": "Request",
+				"response": "Response",
+				"responseFormat": "Response format",
+				"formatList": "List",
+				"formatJson": "JSON",
+				"noListResults": "No list items to show; switch to JSON if a raw payload exists.",
+				"noResponseStored": "No response summary stored (older rows only kept the query, or the call failed before results).",
+				"hint": "Response summaries are truncated for ops review; full chat transcripts stay on the client."
+			}
+		},
+		"errors": {
+			"invalidWebSearchProvider": "Search engine must be one of the implemented options.",
+			"invalidWebSearchCost": "Cost must be a non-negative number (USD)."
 		}
 	},
 	"pricing": {

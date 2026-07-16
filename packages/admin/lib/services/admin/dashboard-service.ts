@@ -3,6 +3,13 @@
  */
 import type { GatewayRepositories } from '@octafuse/core';
 import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } from '@octafuse/core/lib/billing-currency';
+import {
+	parseWebSearchCostInput,
+	parseWebSearchProviderInput,
+	WEB_SEARCH_COST_KEY,
+	WEB_SEARCH_PROVIDER_KEY,
+	WEB_SEARCH_PROVIDERS,
+} from '@octafuse/core/lib/web-search-system-config';
 import { badRequest } from './errors';
 import { clampAnalyticsRange, rangeToDates, resolveStatsDateRange } from './shared';
 import { getBusinessDayWindow, getBusinessTimezone } from '@octafuse/core/lib/business-timezone';
@@ -183,6 +190,20 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 			throw badRequest('BILLING_CURRENCY must be USD or CNY');
 		}
 		value = parsed;
+	}
+	if (key === WEB_SEARCH_PROVIDER_KEY) {
+		const parsed = parseWebSearchProviderInput(value);
+		if (!parsed) {
+			throw badRequest(`WEB_SEARCH_PROVIDER must be one of: ${WEB_SEARCH_PROVIDERS.join(', ')}`);
+		}
+		value = parsed;
+	}
+	if (key === WEB_SEARCH_COST_KEY) {
+		const parsed = parseWebSearchCostInput(value);
+		if (parsed == null) {
+			throw badRequest('WEB_SEARCH_COST must be a non-negative number');
+		}
+		value = String(parsed);
 	}
 	await repos.systemConfig.upsertSystemConfigValue(key, value);
 }

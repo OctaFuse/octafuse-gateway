@@ -113,6 +113,7 @@
 			"overview": "概览",
 			"inference": "推理",
 			"user": "用户",
+			"tools": "Tools",
 			"analytics": "分析",
 			"system": "系统"
 		},
@@ -127,6 +128,8 @@
 			"apiKeys": "API Keys",
 			"requestLogs": "请求日志",
 			"auditLogs": "审计日志",
+			"toolsConfig": "配置",
+			"toolInvocations": "调用记录",
 			"modelUsage": "模型用量",
 			"providerUsage": "供应商用量",
 			"userUsage": "用户用量",
@@ -1099,7 +1102,65 @@
 			"useBillingCurrencySection": "请使用「计费货币」区块配置 BILLING_CURRENCY。",
 			"useMasterKeySection": "请使用「Admin API Master key」区块配置 MASTER_KEY。",
 			"useWebhooksSection": "请使用「Proxy 错误 Webhook」区块配置 ALERT_WEBHOOK_WECOM_URL / ALERT_WEBHOOK_FEISHU_URL。",
+			"useToolsSection": "请使用 Tools → 配置 管理 WEB_SEARCH_PROVIDER / WEB_SEARCH_API_KEY / WEB_SEARCH_COST。",
 			"invalidIanaTimezone": "无效的 IANA 时区（例如 Asia/Shanghai、America/New_York）"
+		}
+	},
+	"tools": {
+		"catalog": {
+			"webSearch": "Web Search"
+		},
+		"config": {
+			"title": "Tools",
+			"subtitle": "配置 /v1/tools/* 产品工具（引擎、API Key、单价）。写入 system_config，与对话共用用户额度。",
+			"viewInvocations": "查看调用记录 →",
+			"saveWebSearch": "保存 Web Search"
+		},
+		"webSearch": {
+			"title": "Web Search",
+			"description": "供 POST /v1/tools/web-search 使用。仅可选已实现的引擎，禁止自由文本。留空 API Key 并保存将清除密钥（未配置时接口返回 503）。",
+			"provider": "搜索引擎",
+			"cost": "成功单价（USD）",
+			"apiKey": "引擎 API Key",
+			"apiKeyPlaceholder": "粘贴引擎 API Key",
+			"apiKeyHint": "有流量前必须配置；清除后不会回退到环境变量。",
+			"providers": {
+				"bocha": "博查（Bocha）"
+			}
+		},
+		"invocations": {
+			"title": "工具调用记录",
+			"subtitle": "记账为 provider octafuse-tools（model_id 为 tool:*）。点击行可查看查询词与结果摘要；与 Request Logs 同源。",
+			"configureTools": "配置 Tools →",
+			"openInRequestLogs": "在 Request Logs 中打开",
+			"toolFilter": "工具",
+			"allTools": "全部工具",
+			"status": "状态",
+			"empty": "该时间范围内没有工具调用。",
+			"columns": {
+				"time": "时间",
+				"tool": "工具",
+				"query": "查询",
+				"user": "用户",
+				"status": "状态",
+				"results": "结果数",
+				"cost": "费用",
+				"latency": "延迟"
+			},
+			"detail": {
+				"request": "请求",
+				"response": "响应",
+				"responseFormat": "响应格式",
+				"formatList": "列表",
+				"formatJson": "JSON",
+				"noListResults": "无可列表展示的条目；若有原始载荷可切换到 JSON。",
+				"noResponseStored": "未存储响应摘要（旧记录仅有查询词，或调用在返回结果前失败）。",
+				"hint": "响应摘要已截断，便于运营排查；完整对话内容仍在客户端。"
+			}
+		},
+		"errors": {
+			"invalidWebSearchProvider": "搜索引擎必须为已实现的选项之一。",
+			"invalidWebSearchCost": "单价须为非负数字（USD）。"
 		}
 	},
 	"pricing": {

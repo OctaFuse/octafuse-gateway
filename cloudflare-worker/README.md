@@ -48,6 +48,10 @@ npm run deploy:cloudflare -- <instance>               # 仅双 Worker
 
 实现：`npm run gen:wrangler` → [`scripts/deploy/gen-wrangler.mjs`](../scripts/deploy/gen-wrangler.mjs)。
 
+### Proxy 工具密钥（Web Search）
+
+在 **Admin → Tools → Configuration** 写入 `system_config`（`WEB_SEARCH_PROVIDER` / `WEB_SEARCH_API_KEY` / `WEB_SEARCH_COST`）。无需 Wrangler secret 或 Proxy 环境变量。
+
 ---
 
 ## 与根目录 `.env.example` 的区别

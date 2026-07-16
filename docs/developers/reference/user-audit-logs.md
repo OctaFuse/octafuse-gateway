@@ -20,9 +20,9 @@
 
 ### 1. 用量扣费（`usage_charge`）
 
-- **代码**：`packages/proxy/src/services/usage-tracker.ts` → `recordUsage`。
+- **代码**：`packages/proxy/src/services/usage-tracker.ts` → `recordUsage`（推理）；`packages/proxy/src/services/tool-usage-charge.ts` → `chargeToolUsage`（`/v1/tools/*`）。
 - **事务**：`insertRequestUsageAndChargeTx`（与 `api_key_request_logs` 同事务）。
-- **Cause**：`source=gateway_usage`，`reason_code=request_usage_charged_cost`，`correlation_id` 常与请求日志 id 对齐。
+- **Cause**：`source=gateway_usage`；推理为 `reason_code=request_usage_charged_cost`，工具为 `reason_code=tool_usage_charged_cost`；`correlation_id` 常与请求日志 id 对齐。
 
 ### 2. 鉴权 / 读详情时的周期懒重置（`period_reset`）
 

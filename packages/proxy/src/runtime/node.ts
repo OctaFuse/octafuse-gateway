@@ -61,6 +61,7 @@ function printNodeStartupBanner(
 		`  Chat           POST ${base}/v1/chat/completions`,
 		`  Anthropic      POST ${base}/v1/messages`,
 		`  Gemini         POST ${base}/v1beta/models/{model}:generateContent`,
+		`  Web search     POST ${base}/v1/tools/web-search`,
 		'',
 		`  数据库         ${dbLineLabel}  ${redactedUrl}`,
 		`  DATABASE_DRIVER ${dbDriver}`,

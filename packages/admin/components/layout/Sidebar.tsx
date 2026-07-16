@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 左侧导航：Dashboard、推理与路由、分析、系统（含 Config 与 Logout）；底部外链与版本号。
+ * 左侧导航：Dashboard、推理与路由、Tools、分析、系统（含 Config 与 Logout）；底部外链与版本号。
  */
 import Link from 'next/link';
 import BrandExternalLinks from '@/components/layout/BrandExternalLinks';
@@ -24,6 +24,8 @@ import {
   UsersIcon,
   ShieldCheckIcon,
   Cog6ToothIcon,
+  WrenchScrewdriverIcon,
+  QueueListIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import { adminAppVersion } from '@/lib/app-version';
@@ -63,6 +65,13 @@ const menuGroups: MenuGroup[] = [
       { nameKey: 'apiKeys', href: '/gateway/keys', icon: KeyIcon },
       { nameKey: 'requestLogs', href: '/gateway/request-logs', icon: DocumentChartBarIcon },
       { nameKey: 'auditLogs', href: '/gateway/audit-logs', icon: ClipboardDocumentListIcon },
+    ],
+  },
+  {
+    groupKey: 'tools',
+    items: [
+      { nameKey: 'toolsConfig', href: '/gateway/tools', icon: WrenchScrewdriverIcon },
+      { nameKey: 'toolInvocations', href: '/gateway/tools/invocations', icon: QueueListIcon },
     ],
   },
   {
@@ -130,7 +139,8 @@ export default function Sidebar() {
                 const isActive =
                   pathname === item.href ||
                   (item.href === '/gateway/users' &&
-                    (pathname === '/gateway/users' || pathname?.startsWith('/gateway/users/')));
+                    (pathname === '/gateway/users' || pathname?.startsWith('/gateway/users/'))) ||
+                  (item.href === '/gateway/tools' && pathname === '/gateway/tools');
                 const Icon = item.icon;
 
                 return (
