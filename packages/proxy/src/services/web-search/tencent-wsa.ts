@@ -3,24 +3,8 @@
  * POST https://api.wsa.cloud.tencent.com/SearchPro
  */
 
-export type TencentWsaWebSearchResult = {
-	title: string;
-	url: string;
-	snippet?: string;
-	summary?: string;
-	siteName?: string;
-	datePublished?: string;
-};
-
-export type TencentWsaWebSearchParams = {
-	apiKey: string;
-	query: string;
-	count?: number;
-	allowedDomains?: string[];
-	blockedDomains?: string[];
-	/** fetch 实现；默认 globalThis.fetch */
-	fetchImpl?: typeof fetch;
-};
+import { clampCount, filterResults, normalizeHost } from './domain-filter';
+import { WebSearchProviderError, type WebSearchParams, type WebSearchResult } from './types';
 
 type TencentWsaPage = {
 	title?: string;
@@ -48,54 +32,6 @@ type TencentWsaRawResponse = {
 };
 
 const TENCENT_WSA_ENDPOINT = 'https://api.wsa.cloud.tencent.com/SearchPro';
-const DEFAULT_COUNT = 8;
-const MAX_COUNT = 10;
-
-function clampCount(count: number | undefined): number {
-	if (typeof count !== 'number' || !Number.isFinite(count)) {
-		return DEFAULT_COUNT;
-	}
-	return Math.min(Math.max(Math.trunc(count), 1), MAX_COUNT);
-}
-
-function normalizeHost(input: string): string {
-	return input
-		.trim()
-		.toLowerCase()
-		.replace(/^https?:\/\//, '')
-		.replace(/\/.*$/, '');
-}
-
-function hostMatches(urlStr: string, domains: string[]): boolean {
-	let host: string;
-	try {
-		host = new URL(urlStr).hostname.toLowerCase();
-	} catch {
-		return false;
-	}
-	return domains.some((d) => {
-		const domain = normalizeHost(d);
-		return domain && (host === domain || host.endsWith(`.${domain}`));
-	});
-}
-
-function filterResults(
-	results: TencentWsaWebSearchResult[],
-	allowedDomains?: string[],
-	blockedDomains?: string[]
-): TencentWsaWebSearchResult[] {
-	const allowed = allowedDomains?.map(normalizeHost).filter(Boolean) ?? [];
-	const blocked = blockedDomains?.map(normalizeHost).filter(Boolean) ?? [];
-	return results.filter((r) => {
-		if (allowed.length > 0 && !hostMatches(r.url, allowed)) {
-			return false;
-		}
-		if (blocked.length > 0 && hostMatches(r.url, blocked)) {
-			return false;
-		}
-		return true;
-	});
-}
 
 function mapErrorStatus(code: string | undefined): number {
 	switch (code) {
@@ -113,19 +49,7 @@ function mapErrorStatus(code: string | undefined): number {
 	}
 }
 
-export class TencentWsaWebSearchError extends Error {
-	constructor(
-		message: string,
-		readonly status: number
-	) {
-		super(message);
-		this.name = 'TencentWsaWebSearchError';
-	}
-}
-
-export async function searchTencentWsaWeb(
-	params: TencentWsaWebSearchParams
-): Promise<TencentWsaWebSearchResult[]> {
+export async function searchTencentWsaWeb(params: WebSearchParams): Promise<WebSearchResult[]> {
 	const fetchImpl = params.fetchImpl ?? fetch;
 	const count = clampCount(params.count);
 	const allowed = params.allowedDomains?.map(normalizeHost).filter(Boolean) ?? [];
@@ -154,29 +78,32 @@ export async function searchTencentWsaWeb(
 	try {
 		json = JSON.parse(text) as TencentWsaRawResponse;
 	} catch {
-		throw new TencentWsaWebSearchError(
+		throw new WebSearchProviderError(
 			`Tencent WSA returned non-JSON (HTTP ${response.status})`,
-			response.status || 502
+			response.status || 502,
+			'tencent_wsa'
 		);
 	}
 
 	const err = json.Response?.Error;
 	if (err?.Code || err?.Message) {
-		throw new TencentWsaWebSearchError(
+		throw new WebSearchProviderError(
 			err.Message || err.Code || 'Tencent WSA error',
-			mapErrorStatus(err.Code)
+			mapErrorStatus(err.Code),
+			'tencent_wsa'
 		);
 	}
 
 	if (!response.ok) {
-		throw new TencentWsaWebSearchError(
+		throw new WebSearchProviderError(
 			json.message || json.error || json.Response?.Msg || `Tencent WSA HTTP ${response.status}`,
-			response.status
+			response.status,
+			'tencent_wsa'
 		);
 	}
 
 	const pagesRaw = json.Response?.Pages ?? [];
-	const mapped: TencentWsaWebSearchResult[] = [];
+	const mapped: WebSearchResult[] = [];
 	for (const pageStr of pagesRaw) {
 		if (typeof pageStr !== 'string' || !pageStr.trim()) {
 			continue;

@@ -3,24 +3,8 @@
  * POST https://maasaisearchproxy.aliyuncs.com/api/web-search
  */
 
-export type CleverSeeWebSearchResult = {
-	title: string;
-	url: string;
-	snippet?: string;
-	summary?: string;
-	siteName?: string;
-	datePublished?: string;
-};
-
-export type CleverSeeWebSearchParams = {
-	apiKey: string;
-	query: string;
-	count?: number;
-	allowedDomains?: string[];
-	blockedDomains?: string[];
-	/** fetch 实现；默认 globalThis.fetch */
-	fetchImpl?: typeof fetch;
-};
+import { clampCount, filterResults, normalizeHost } from './domain-filter';
+import { WebSearchProviderError, type WebSearchParams, type WebSearchResult } from './types';
 
 type CleverSeeRawResult = {
 	title?: string;
@@ -40,68 +24,8 @@ type CleverSeeRawResponse = {
 };
 
 const CLEVERSEE_ENDPOINT = 'https://maasaisearchproxy.aliyuncs.com/api/web-search';
-const DEFAULT_COUNT = 8;
-const MAX_COUNT = 10;
 
-function clampCount(count: number | undefined): number {
-	if (typeof count !== 'number' || !Number.isFinite(count)) {
-		return DEFAULT_COUNT;
-	}
-	return Math.min(Math.max(Math.trunc(count), 1), MAX_COUNT);
-}
-
-function normalizeHost(input: string): string {
-	return input
-		.trim()
-		.toLowerCase()
-		.replace(/^https?:\/\//, '')
-		.replace(/\/.*$/, '');
-}
-
-function hostMatches(urlStr: string, domains: string[]): boolean {
-	let host: string;
-	try {
-		host = new URL(urlStr).hostname.toLowerCase();
-	} catch {
-		return false;
-	}
-	return domains.some((d) => {
-		const domain = normalizeHost(d);
-		return domain && (host === domain || host.endsWith(`.${domain}`));
-	});
-}
-
-function filterResults(
-	results: CleverSeeWebSearchResult[],
-	allowedDomains?: string[],
-	blockedDomains?: string[]
-): CleverSeeWebSearchResult[] {
-	const allowed = allowedDomains?.map(normalizeHost).filter(Boolean) ?? [];
-	const blocked = blockedDomains?.map(normalizeHost).filter(Boolean) ?? [];
-	return results.filter((r) => {
-		if (allowed.length > 0 && !hostMatches(r.url, allowed)) {
-			return false;
-		}
-		if (blocked.length > 0 && hostMatches(r.url, blocked)) {
-			return false;
-		}
-		return true;
-	});
-}
-
-export class CleverSeeWebSearchError extends Error {
-	constructor(
-		message: string,
-		readonly status: number
-	) {
-		super(message);
-		this.name = 'CleverSeeWebSearchError';
-	}
-}
-
-export async function searchCleverSeeWeb(
-	params: CleverSeeWebSearchParams
-): Promise<CleverSeeWebSearchResult[]> {
+export async function searchCleverSeeWeb(params: WebSearchParams): Promise<WebSearchResult[]> {
 	const fetchImpl = params.fetchImpl ?? fetch;
 	const limit = clampCount(params.count);
 	const allowed = params.allowedDomains?.map(normalizeHost).filter(Boolean) ?? [];
@@ -137,16 +61,18 @@ export async function searchCleverSeeWeb(
 	try {
 		json = JSON.parse(text) as CleverSeeRawResponse;
 	} catch {
-		throw new CleverSeeWebSearchError(
+		throw new WebSearchProviderError(
 			`CleverSee returned non-JSON (HTTP ${response.status})`,
-			response.status || 502
+			response.status || 502,
+			'cleversee'
 		);
 	}
 
 	if (!response.ok) {
-		throw new CleverSeeWebSearchError(
+		throw new WebSearchProviderError(
 			json.message || `CleverSee HTTP ${response.status}`,
-			response.status
+			response.status,
+			'cleversee'
 		);
 	}
 
@@ -158,14 +84,15 @@ export async function searchCleverSeeWeb(
 					? 400
 					: json.code
 				: 502;
-		throw new CleverSeeWebSearchError(
+		throw new WebSearchProviderError(
 			json.message || `CleverSee error code ${json.code}`,
-			status
+			status,
+			'cleversee'
 		);
 	}
 
 	const pages = json.data?.result ?? [];
-	const mapped: CleverSeeWebSearchResult[] = pages
+	const mapped: WebSearchResult[] = pages
 		.filter((p) => typeof p.url === 'string' && p.url.trim())
 		.map((p) => ({
 			title: (p.title || p.url || '').trim(),

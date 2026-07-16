@@ -22,6 +22,7 @@ import {
 	WEB_SEARCH_PROVIDERS,
 	type WebSearchProvider,
 } from '@/lib/web-search-options';
+import { WebSearchProviderGuideModal } from './components/web-search-provider-guide-modal';
 
 function syncWebSearchUi(
 	rows: SystemConfigRow[],
@@ -56,6 +57,7 @@ export default function GatewayToolsConfigPage() {
 	const [webSearchApiKeyVisible, setWebSearchApiKeyVisible] = useState(false);
 	const [webSearchCostDraft, setWebSearchCostDraft] = useState(String(DEFAULT_WEB_SEARCH_COST));
 	const [webSearchSaving, setWebSearchSaving] = useState(false);
+	const [providerGuideOpen, setProviderGuideOpen] = useState(false);
 
 	const clearSaveSuccess = useCallback(() => {
 		if (saveSuccessTimerRef.current != null) {
@@ -196,7 +198,16 @@ export default function GatewayToolsConfigPage() {
 				<div className="flex flex-col gap-4">
 					<div className="flex flex-wrap items-end gap-3">
 						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">{t('webSearch.provider')}</label>
+							<div className="mb-1 flex items-center gap-2">
+								<label className="block text-xs font-medium text-gray-600">{t('webSearch.provider')}</label>
+								<button
+									type="button"
+									onClick={() => setProviderGuideOpen(true)}
+									className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+								>
+									{t('webSearch.providerGuideLink')}
+								</button>
+							</div>
 							<select
 								value={webSearchProvider}
 								onChange={(e) => setWebSearchProvider(e.target.value as WebSearchProvider)}
@@ -280,6 +291,12 @@ export default function GatewayToolsConfigPage() {
 					</button>
 				</div>
 			</ConfigCardShell>
+
+			<WebSearchProviderGuideModal
+				open={providerGuideOpen}
+				activeProvider={webSearchProvider}
+				onClose={() => setProviderGuideOpen(false)}
+			/>
 		</div>
 	);
 }

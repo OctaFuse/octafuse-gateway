@@ -1120,6 +1120,7 @@
 			"title": "Web search",
 			"description": "Powers POST /v1/tools/web-search. Choose an implemented engine only—free text is rejected. Leave the API key empty and save to clear it (endpoint returns 503 until set again).",
 			"provider": "Search engine",
+			"providerGuideLink": "Engine guide",
 			"providerDocs": "Docs & API key →",
 			"cost": "Cost per success ({currency})",
 			"apiKey": "Provider API key",
@@ -1130,6 +1131,43 @@
 				"tavily": "Tavily",
 				"cleversee": "Alibaba CleverSee (开析)",
 				"tencent_wsa": "Tencent Cloud WSA"
+			},
+			"providerGuide": {
+				"title": "Search engine guide",
+				"subtitle": "Index / sources and when to pick each engine. Not a direct Baidu or Google API.",
+				"disclaimer": "None of these call Baidu or Google official search APIs. Each uses its own or partner web index; result URLs may still point at baidu.com, google.com, etc.",
+				"selected": "Currently selected",
+				"docsLink": "Docs & API key →",
+				"labels": {
+					"sources": "Sources",
+					"bestFor": "Best for"
+				},
+				"items": {
+					"bocha": {
+						"badge": "China preferred",
+						"summary": "AI-oriented Chinese search engine with its own large web index (positioned as a domestic Bing Search API alternative).",
+						"sources": "Hundreds of millions to ~10B web pages plus partner content (news, encyclopedia, short video, weather, academic, etc.). Not Baidu/Google.",
+						"bestFor": "China-region users, Chinese queries, domestic compliance."
+					},
+					"tavily": {
+						"badge": "International preferred",
+						"summary": "LLM-oriented retrieval layer: search + extract + rank in one call. Built for agents/RAG, not a classic SERP dump.",
+						"sources": "Own crawler plus third-party aggregation (often associated with independent indexes such as Brave). Not an official Google/Baidu API.",
+						"bestFor": "International region, English research, agent workflows."
+					},
+					"cleversee": {
+						"badge": "",
+						"summary": "Alibaba CleverSee (开析) AI-native web search with mainland_china / global region modes.",
+						"sources": "Alibaba’s own AI search index. Docs do not claim Baidu or Google backends. Gateway default is mainland_china; domain allow-lists switch to global.",
+						"bestFor": "When you need an explicit China vs global region switch on Alibaba Cloud."
+					},
+					"tencent_wsa": {
+						"badge": "",
+						"summary": "Tencent Cloud Web Search API (WSA), officially based on Sogou Search.",
+						"sources": "Open web via Sogou plus Tencent ecosystem (Tencent News, Sogou Baike, Penguin accounts). Higher tiers add VR/authority verticals.",
+						"bestFor": "China Chinese web as an alternative to Bocha; strong Sogou/Tencent content mix."
+					}
+				}
 			}
 		},
 		"invocations": {

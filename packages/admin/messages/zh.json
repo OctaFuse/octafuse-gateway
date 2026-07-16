@@ -1120,6 +1120,7 @@
 			"title": "Web Search",
 			"description": "供 POST /v1/tools/web-search 使用。仅可选已实现的引擎，禁止自由文本。留空 API Key 并保存将清除密钥（未配置时接口返回 503）。",
 			"provider": "搜索引擎",
+			"providerGuideLink": "引擎说明",
 			"providerDocs": "官网与 API Key →",
 			"cost": "成功单价（{currency}）",
 			"apiKey": "引擎 API Key",
@@ -1130,6 +1131,43 @@
 				"tavily": "Tavily",
 				"cleversee": "阿里云 CleverSee（开析）",
 				"tencent_wsa": "腾讯云联网搜索 WSA"
+			},
+			"providerGuide": {
+				"title": "搜索引擎说明",
+				"subtitle": "各引擎的索引 / 信源与适用场景。均非百度或谷歌官方搜索 API。",
+				"disclaimer": "这些引擎都不是直接调用百度 / 谷歌官方搜索 API，而是各自（或合作方）的网页索引；结果链接里仍可能出现 baidu.com、google.com 等站点。",
+				"selected": "当前已选",
+				"docsLink": "官网与 API Key →",
+				"labels": {
+					"sources": "信源",
+					"bestFor": "更适合"
+				},
+				"items": {
+					"bocha": {
+						"badge": "国内首选",
+						"summary": "面向 AI 的中文搜索引擎，自建大规模网页索引（定位为国内可用的 Bing Search API 替代）。",
+						"sources": "近百亿级网页 + 生态内容（新闻、百科、短视频、天气、学术等）。不是百度 / 谷歌官方 API。",
+						"bestFor": "中国区用户、中文查询、国内合规场景。"
+					},
+					"tavily": {
+						"badge": "国际首选",
+						"summary": "面向 LLM 的检索层：搜索 + 抓取精炼 + 排序一次返回，适合 Agent / RAG，而非传统 SERP 列表。",
+						"sources": "自有爬虫 + 第三方聚合（业界常与 Brave 等独立索引关联）。不是谷歌 / 百度官方 API。",
+						"bestFor": "国际区、英文资料检索、Agent 工作流。"
+					},
+					"cleversee": {
+						"badge": "",
+						"summary": "阿里云 CleverSee（开析）AI 原生联网搜索，支持 mainland_china / global 信源范围。",
+						"sources": "阿里自研 AI 搜索索引；文档未宣称绑定百度或谷歌。Gateway 默认 mainland_china，配置域名白名单时会切到 global。",
+						"bestFor": "需要在阿里云上显式切换「国内 / 全球」检索范围时。"
+					},
+					"tencent_wsa": {
+						"badge": "",
+						"summary": "腾讯云联网搜索 API（WSA），官方说明底层来自搜狗搜索。",
+						"sources": "搜狗全网公开页 + 腾讯内容生态（腾讯新闻、搜狗百科、企鹅号等）；高版本含 VR / 权威垂域。",
+						"bestFor": "国内中文检索的博查备选，偏搜狗 / 腾讯内容。"
+					}
+				}
 			}
 		},
 		"invocations": {

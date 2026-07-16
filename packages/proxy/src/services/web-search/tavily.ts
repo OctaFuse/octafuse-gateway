@@ -2,24 +2,8 @@
  * Tavily Web Search API 客户端（https://api.tavily.com/search）。
  */
 
-export type TavilyWebSearchResult = {
-	title: string;
-	url: string;
-	snippet?: string;
-	summary?: string;
-	siteName?: string;
-	datePublished?: string;
-};
-
-export type TavilyWebSearchParams = {
-	apiKey: string;
-	query: string;
-	count?: number;
-	allowedDomains?: string[];
-	blockedDomains?: string[];
-	/** fetch 实现；默认 globalThis.fetch */
-	fetchImpl?: typeof fetch;
-};
+import { clampCount, filterResults, normalizeHost } from './domain-filter';
+import { WebSearchProviderError, type WebSearchParams, type WebSearchResult } from './types';
 
 type TavilyRawResult = {
 	title?: string;
@@ -36,54 +20,6 @@ type TavilyRawResponse = {
 };
 
 const TAVILY_ENDPOINT = 'https://api.tavily.com/search';
-const DEFAULT_COUNT = 8;
-const MAX_COUNT = 10;
-
-function clampCount(count: number | undefined): number {
-	if (typeof count !== 'number' || !Number.isFinite(count)) {
-		return DEFAULT_COUNT;
-	}
-	return Math.min(Math.max(Math.trunc(count), 1), MAX_COUNT);
-}
-
-function normalizeHost(input: string): string {
-	return input
-		.trim()
-		.toLowerCase()
-		.replace(/^https?:\/\//, '')
-		.replace(/\/.*$/, '');
-}
-
-function hostMatches(urlStr: string, domains: string[]): boolean {
-	let host: string;
-	try {
-		host = new URL(urlStr).hostname.toLowerCase();
-	} catch {
-		return false;
-	}
-	return domains.some((d) => {
-		const domain = normalizeHost(d);
-		return domain && (host === domain || host.endsWith(`.${domain}`));
-	});
-}
-
-function filterResults(
-	results: TavilyWebSearchResult[],
-	allowedDomains?: string[],
-	blockedDomains?: string[]
-): TavilyWebSearchResult[] {
-	const allowed = allowedDomains?.map(normalizeHost).filter(Boolean) ?? [];
-	const blocked = blockedDomains?.map(normalizeHost).filter(Boolean) ?? [];
-	return results.filter((r) => {
-		if (allowed.length > 0 && !hostMatches(r.url, allowed)) {
-			return false;
-		}
-		if (blocked.length > 0 && hostMatches(r.url, blocked)) {
-			return false;
-		}
-		return true;
-	});
-}
 
 function extractErrorMessage(json: TavilyRawResponse, fallback: string): string {
 	if (typeof json.error === 'string' && json.error.trim()) {
@@ -101,17 +37,7 @@ function extractErrorMessage(json: TavilyRawResponse, fallback: string): string 
 	return fallback;
 }
 
-export class TavilyWebSearchError extends Error {
-	constructor(
-		message: string,
-		readonly status: number
-	) {
-		super(message);
-		this.name = 'TavilyWebSearchError';
-	}
-}
-
-export async function searchTavilyWeb(params: TavilyWebSearchParams): Promise<TavilyWebSearchResult[]> {
+export async function searchTavilyWeb(params: WebSearchParams): Promise<WebSearchResult[]> {
 	const fetchImpl = params.fetchImpl ?? fetch;
 	const maxResults = clampCount(params.count);
 	const body: Record<string, unknown> = {
@@ -139,18 +65,23 @@ export async function searchTavilyWeb(params: TavilyWebSearchParams): Promise<Ta
 	try {
 		json = JSON.parse(text) as TavilyRawResponse;
 	} catch {
-		throw new TavilyWebSearchError(`Tavily returned non-JSON (HTTP ${response.status})`, response.status || 502);
+		throw new WebSearchProviderError(
+			`Tavily returned non-JSON (HTTP ${response.status})`,
+			response.status || 502,
+			'tavily'
+		);
 	}
 
 	if (!response.ok) {
-		throw new TavilyWebSearchError(
+		throw new WebSearchProviderError(
 			extractErrorMessage(json, `Tavily HTTP ${response.status}`),
-			response.status
+			response.status,
+			'tavily'
 		);
 	}
 
 	const pages = json.results ?? [];
-	const mapped: TavilyWebSearchResult[] = pages
+	const mapped: WebSearchResult[] = pages
 		.filter((p) => typeof p.url === 'string' && p.url.trim())
 		.map((p) => {
 			const content = p.content?.trim() || undefined;
