@@ -489,7 +489,7 @@ Authorization: Bearer <USER_API_KEY>
 
 1. 校验用户 API Key；`budget_max` 非空且额度不足 → **403** `{ "error": "Budget exceeded" }`
 2. 从 Admin `system_config` 读取搜索配置（无环境变量回退）：
-   - `WEB_SEARCH_PROVIDER`（白名单：`bocha` | `tavily`；非法值 → **503**）
+   - `WEB_SEARCH_PROVIDER`（白名单：`bocha` | `tavily` | `cleversee` | `tencent_wsa`；非法值 → **503**）
    - `WEB_SEARCH_API_KEY`（未配置 → **503**）
    - `WEB_SEARCH_COST`（成功单价，单位随 `BILLING_CURRENCY`；默认 **0.001**）
 3. 调用所选引擎；**仅成功**后按单价计入 `users.budget_spent`

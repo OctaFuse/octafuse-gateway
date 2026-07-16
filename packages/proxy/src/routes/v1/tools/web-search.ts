@@ -7,8 +7,13 @@ import { Hono } from 'hono';
 import type { Env } from '../../../app';
 import { requireApiKey } from '../../../middleware/auth';
 import { BochaWebSearchError, searchBochaWeb } from '../../../services/bocha-web-search';
+import { CleverSeeWebSearchError, searchCleverSeeWeb } from '../../../services/cleversee-web-search';
 import { canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
 import { TavilyWebSearchError, searchTavilyWeb } from '../../../services/tavily-web-search';
+import {
+	TencentWsaWebSearchError,
+	searchTencentWsaWeb,
+} from '../../../services/tencent-wsa-web-search';
 
 type ToolsEnv = Env & { Variables: { apiKey: import('../../../middleware/auth').ApiKeyContext } };
 
@@ -20,6 +25,12 @@ type WebSearchResult = {
 	siteName?: string;
 	datePublished?: string;
 };
+
+type ProviderHttpError =
+	| BochaWebSearchError
+	| TavilyWebSearchError
+	| CleverSeeWebSearchError
+	| TencentWsaWebSearchError;
 
 export const webSearchRoutes = new Hono<ToolsEnv>();
 
@@ -33,8 +44,13 @@ function asStringArray(value: unknown): string[] | undefined {
 	return out.length > 0 ? out : undefined;
 }
 
-function isProviderHttpError(err: unknown): err is BochaWebSearchError | TavilyWebSearchError {
-	return err instanceof BochaWebSearchError || err instanceof TavilyWebSearchError;
+function isProviderHttpError(err: unknown): err is ProviderHttpError {
+	return (
+		err instanceof BochaWebSearchError ||
+		err instanceof TavilyWebSearchError ||
+		err instanceof CleverSeeWebSearchError ||
+		err instanceof TencentWsaWebSearchError
+	);
 }
 
 webSearchRoutes.post('/', async (c) => {
@@ -81,23 +97,23 @@ webSearchRoutes.post('/', async (c) => {
 	const started = Date.now();
 
 	try {
+		const searchParams = {
+			apiKey: providerApiKey,
+			query,
+			count,
+			allowedDomains,
+			blockedDomains,
+		};
+
 		let results: WebSearchResult[];
 		if (provider === 'bocha') {
-			results = await searchBochaWeb({
-				apiKey: providerApiKey,
-				query,
-				count,
-				allowedDomains,
-				blockedDomains,
-			});
+			results = await searchBochaWeb(searchParams);
 		} else if (provider === 'tavily') {
-			results = await searchTavilyWeb({
-				apiKey: providerApiKey,
-				query,
-				count,
-				allowedDomains,
-				blockedDomains,
-			});
+			results = await searchTavilyWeb(searchParams);
+		} else if (provider === 'cleversee') {
+			results = await searchCleverSeeWeb(searchParams);
+		} else if (provider === 'tencent_wsa') {
+			results = await searchTencentWsaWeb(searchParams);
 		} else {
 			// 类型上不应到达；白名单扩展时在此分支新引擎
 			return c.json({ error: 'Web search provider is not implemented' }, 503);

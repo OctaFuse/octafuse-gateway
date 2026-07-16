@@ -27,6 +27,8 @@ export type WebSearchProviderOption = { value: WebSearchProvider; label: string 
 export const WEB_SEARCH_PROVIDER_DOCS_URL: Record<WebSearchProvider, string> = {
 	bocha: 'https://open.bochaai.com/',
 	tavily: 'https://app.tavily.com/',
+	cleversee: 'https://help.aliyun.com/zh/product/3037946.html',
+	tencent_wsa: 'https://cloud.tencent.com/product/wsa',
 };
 
 type WebSearchProviderLabelKey = `webSearch.providers.${WebSearchProvider}`;

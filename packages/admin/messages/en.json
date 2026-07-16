@@ -1127,7 +1127,9 @@
 			"apiKeyHint": "Required for the tool to accept traffic. Cleared keys fall back to nothing (no env).",
 			"providers": {
 				"bocha": "Bocha (博查)",
-				"tavily": "Tavily"
+				"tavily": "Tavily",
+				"cleversee": "Alibaba CleverSee (开析)",
+				"tencent_wsa": "Tencent Cloud WSA"
 			}
 		},
 		"invocations": {

@@ -11,7 +11,7 @@ export const WEB_SEARCH_API_KEY_KEY = 'WEB_SEARCH_API_KEY';
 export const WEB_SEARCH_COST_KEY = 'WEB_SEARCH_COST';
 
 /** 已实现的搜索引擎（Admin 下拉仅允许这些值） */
-export const WEB_SEARCH_PROVIDERS = ['bocha', 'tavily'] as const;
+export const WEB_SEARCH_PROVIDERS = ['bocha', 'tavily', 'cleversee', 'tencent_wsa'] as const;
 export type WebSearchProvider = (typeof WEB_SEARCH_PROVIDERS)[number];
 
 export const DEFAULT_WEB_SEARCH_PROVIDER: WebSearchProvider = 'bocha';
