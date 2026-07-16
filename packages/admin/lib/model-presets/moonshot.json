@@ -3,8 +3,8 @@
 		"id": "kimi-k2.5",
 		"display_name": "Kimi K2.5",
 		"vendor": "moonshot",
-		"context_window": 262144,
-		"max_tokens": 262144,
+		"context_window": 256000,
+		"max_tokens": 256000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -45,8 +45,8 @@
 		"id": "kimi-k2.6",
 		"display_name": "Kimi K2.6",
 		"vendor": "moonshot",
-		"context_window": 262144,
-		"max_tokens": 262144,
+		"context_window": 256000,
+		"max_tokens": 256000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -124,5 +124,47 @@
 			]
 		},
 		"released": "2026-06-12"
+	},
+	{
+		"id": "kimi-k3",
+		"display_name": "Kimi K3",
+		"vendor": "moonshot",
+		"context_window": 1000000,
+		"max_tokens": 1000000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3,
+						"output_price": 15,
+						"cache_read_price": 0.3,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 20,
+						"output_price": 100,
+						"cache_read_price": 2,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-07-16"
 	}
 ]
