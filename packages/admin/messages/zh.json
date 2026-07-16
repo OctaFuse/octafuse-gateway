@@ -1120,12 +1120,14 @@
 			"title": "Web Search",
 			"description": "供 POST /v1/tools/web-search 使用。仅可选已实现的引擎，禁止自由文本。留空 API Key 并保存将清除密钥（未配置时接口返回 503）。",
 			"provider": "搜索引擎",
-			"cost": "成功单价（USD）",
+			"providerDocs": "官网与 API Key →",
+			"cost": "成功单价（{currency}）",
 			"apiKey": "引擎 API Key",
 			"apiKeyPlaceholder": "粘贴引擎 API Key",
 			"apiKeyHint": "有流量前必须配置；清除后不会回退到环境变量。",
 			"providers": {
-				"bocha": "博查（Bocha）"
+				"bocha": "博查（Bocha）",
+				"tavily": "Tavily"
 			}
 		},
 		"invocations": {
@@ -1160,7 +1162,7 @@
 		},
 		"errors": {
 			"invalidWebSearchProvider": "搜索引擎必须为已实现的选项之一。",
-			"invalidWebSearchCost": "单价须为非负数字（USD）。"
+			"invalidWebSearchCost": "单价须为非负数字。"
 		}
 	},
 	"pricing": {

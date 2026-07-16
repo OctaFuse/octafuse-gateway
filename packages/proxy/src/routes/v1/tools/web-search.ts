@@ -8,8 +8,18 @@ import type { Env } from '../../../app';
 import { requireApiKey } from '../../../middleware/auth';
 import { BochaWebSearchError, searchBochaWeb } from '../../../services/bocha-web-search';
 import { canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
+import { TavilyWebSearchError, searchTavilyWeb } from '../../../services/tavily-web-search';
 
 type ToolsEnv = Env & { Variables: { apiKey: import('../../../middleware/auth').ApiKeyContext } };
+
+type WebSearchResult = {
+	title: string;
+	url: string;
+	snippet?: string;
+	summary?: string;
+	siteName?: string;
+	datePublished?: string;
+};
 
 export const webSearchRoutes = new Hono<ToolsEnv>();
 
@@ -21,6 +31,10 @@ function asStringArray(value: unknown): string[] | undefined {
 	}
 	const out = value.filter((v): v is string => typeof v === 'string' && v.trim().length > 0).map((v) => v.trim());
 	return out.length > 0 ? out : undefined;
+}
+
+function isProviderHttpError(err: unknown): err is BochaWebSearchError | TavilyWebSearchError {
+	return err instanceof BochaWebSearchError || err instanceof TavilyWebSearchError;
 }
 
 webSearchRoutes.post('/', async (c) => {
@@ -67,9 +81,17 @@ webSearchRoutes.post('/', async (c) => {
 	const started = Date.now();
 
 	try {
-		let results: Awaited<ReturnType<typeof searchBochaWeb>>;
+		let results: WebSearchResult[];
 		if (provider === 'bocha') {
 			results = await searchBochaWeb({
+				apiKey: providerApiKey,
+				query,
+				count,
+				allowedDomains,
+				blockedDomains,
+			});
+		} else if (provider === 'tavily') {
+			results = await searchTavilyWeb({
 				apiKey: providerApiKey,
 				query,
 				count,
@@ -138,9 +160,9 @@ webSearchRoutes.post('/', async (c) => {
 			console.warn('[Gateway Tools] failed to log web-search error', logErr);
 		}
 
-		if (err instanceof BochaWebSearchError) {
+		if (isProviderHttpError(err)) {
 			const status = err.status >= 400 && err.status < 600 ? err.status : 502;
-			// 勿把博查 401 原样透出为「用户 Key 无效」
+			// 勿把引擎 401 原样透出为「用户 Key 无效」
 			if (status === 401 || status === 403) {
 				return c.json({ error: 'Web search provider rejected the request' }, 502);
 			}

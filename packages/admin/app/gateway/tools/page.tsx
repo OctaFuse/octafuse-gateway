@@ -10,12 +10,14 @@ import { useTranslations } from 'next-intl';
 import { ConfigCardShell } from '@/components/ConfigCardShell';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
+import { useBillingCurrency } from '@/lib/use-billing-currency';
 import {
 	DEFAULT_WEB_SEARCH_COST,
 	DEFAULT_WEB_SEARCH_PROVIDER,
 	getWebSearchProviderOptions,
 	WEB_SEARCH_API_KEY_KEY,
 	WEB_SEARCH_COST_KEY,
+	WEB_SEARCH_PROVIDER_DOCS_URL,
 	WEB_SEARCH_PROVIDER_KEY,
 	WEB_SEARCH_PROVIDERS,
 	type WebSearchProvider,
@@ -41,6 +43,7 @@ function syncWebSearchUi(
 export default function GatewayToolsConfigPage() {
 	const t = useTranslations('tools');
 	const tCommon = useTranslations('common');
+	const { currency: billingCurrency } = useBillingCurrency();
 	const webSearchProviderOptions = getWebSearchProviderOptions((k) => t(k));
 
 	const [isLoading, setIsLoading] = useState(true);
@@ -208,7 +211,7 @@ export default function GatewayToolsConfigPage() {
 						</div>
 						<div className="min-w-[8rem]">
 							<label htmlFor="web-search-cost" className="mb-1 block text-xs font-medium text-gray-600">
-								{t('webSearch.cost')}
+								{t('webSearch.cost', { currency: billingCurrency })}
 							</label>
 							<input
 								id="web-search-cost"
@@ -255,7 +258,17 @@ export default function GatewayToolsConfigPage() {
 							autoComplete="new-password"
 							className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 shadow-sm"
 						/>
-						<p className="mt-1 text-xs text-gray-500">{t('webSearch.apiKeyHint')}</p>
+						<p className="mt-1 text-xs text-gray-500">
+							{t('webSearch.apiKeyHint')}{' '}
+							<a
+								href={WEB_SEARCH_PROVIDER_DOCS_URL[webSearchProvider]}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+							>
+								{t('webSearch.providerDocs')}
+							</a>
+						</p>
 					</div>
 					<button
 						type="button"

@@ -23,12 +23,20 @@ export {
 
 export type WebSearchProviderOption = { value: WebSearchProvider; label: string };
 
+/** 各引擎官网 / 申请 API Key 入口（非 i18n） */
+export const WEB_SEARCH_PROVIDER_DOCS_URL: Record<WebSearchProvider, string> = {
+	bocha: 'https://open.bochaai.com/',
+	tavily: 'https://app.tavily.com/',
+};
+
+type WebSearchProviderLabelKey = `webSearch.providers.${WebSearchProvider}`;
+
 /** 展示名；value 必须落在 `WEB_SEARCH_PROVIDERS`。 */
 export function getWebSearchProviderOptions(
-	t: (key: 'webSearch.providers.bocha') => string
+	t: (key: WebSearchProviderLabelKey) => string
 ): ReadonlyArray<WebSearchProviderOption> {
 	return WEB_SEARCH_PROVIDERS.map((value) => ({
 		value,
-		label: t(`webSearch.providers.${value}` as 'webSearch.providers.bocha'),
+		label: t(`webSearch.providers.${value}`),
 	}));
 }

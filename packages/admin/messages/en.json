@@ -1120,12 +1120,14 @@
 			"title": "Web search",
 			"description": "Powers POST /v1/tools/web-search. Choose an implemented engine only—free text is rejected. Leave the API key empty and save to clear it (endpoint returns 503 until set again).",
 			"provider": "Search engine",
-			"cost": "Cost per success (USD)",
+			"providerDocs": "Docs & API key →",
+			"cost": "Cost per success ({currency})",
 			"apiKey": "Provider API key",
 			"apiKeyPlaceholder": "Paste engine API key",
 			"apiKeyHint": "Required for the tool to accept traffic. Cleared keys fall back to nothing (no env).",
 			"providers": {
-				"bocha": "Bocha (博查)"
+				"bocha": "Bocha (博查)",
+				"tavily": "Tavily"
 			}
 		},
 		"invocations": {
@@ -1160,7 +1162,7 @@
 		},
 		"errors": {
 			"invalidWebSearchProvider": "Search engine must be one of the implemented options.",
-			"invalidWebSearchCost": "Cost must be a non-negative number (USD)."
+			"invalidWebSearchCost": "Cost must be a non-negative number."
 		}
 	},
 	"pricing": {
