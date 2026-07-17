@@ -80,7 +80,7 @@ function ModelsContent() {
 									<p className="mt-1 text-xs text-gray-500">{t('emptyHint')}</p>
 								</div>
 							) : (
-								<div className="grid gap-3 2xl:grid-cols-2">
+								<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
 									{state.selectedVendorItems.map((model) => (
 										<ModelCard
 											key={model.id}

@@ -33,25 +33,25 @@ function ModelIdentityHeader(props: { model: ModelListItem }) {
 			: t('routesPlural', { count: model.routes_count });
 
 	return (
-		<div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-			<div className="flex min-w-0 flex-1 items-start gap-3">
+		<div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+			<div className="flex min-w-0 flex-1 items-start gap-2">
 				<ModelVendorIcon vendor={model.vendor} size="identity" />
 				<div className="min-w-0 flex-1">
-					<div className="flex flex-wrap items-center gap-1.5">
-						<h3 className="truncate text-base font-semibold text-gray-900" title={displayName}>
+					<div className="flex flex-wrap items-center gap-1">
+						<h3 className="truncate text-sm font-semibold text-gray-900" title={displayName}>
 							{displayName}
 						</h3>
 						<span
 							className={
 								isImageGenerationModel(model)
-									? 'shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800'
-									: 'shrink-0 rounded-md bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-800'
+									? 'shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800'
+									: 'shrink-0 rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800'
 							}
 						>
 							{isImageGenerationModel(model) ? t('kindImage') : t('kindLlm')}
 						</span>
 						<span
-							className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600"
+							className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600"
 							title={t('routesTitle', {
 								routes: routesLabel,
 								active: t('activeRoutes', { count: model.active_routes_count }),
@@ -85,7 +85,7 @@ function ModelIdentityHeader(props: { model: ModelListItem }) {
 						) : null}
 					</>
 				) : (
-					<span className="text-xs text-gray-400">{t('noTags')}</span>
+					<span className="text-[10px] text-gray-400">{t('noTags')}</span>
 				)}
 			</div>
 		</div>
@@ -96,33 +96,28 @@ function ModelCapabilityPanel({ model }: { model: ModelListItem }) {
 	const t = useTranslations('models.card');
 	const tCommon = useTranslations('common');
 	const isImage = isImageGenerationModel(model);
+	const cellClass = 'rounded-md border border-gray-100 bg-gray-50/60 px-2 py-1.5';
 	return (
 		<div>
 			<h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('capabilities')}</h4>
-			<div
-				className={
-					isImage
-						? 'mt-2 grid gap-2 sm:grid-cols-2'
-						: 'mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4'
-				}
-			>
+			<div className="mt-1.5 grid grid-cols-2 gap-1.5">
 				{!isImage ? (
 					<>
-						<div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+						<div className={cellClass}>
 							<p className="text-[11px] text-gray-400">{t('totalContext')}</p>
-							<p className="mt-0.5 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
+							<p className="mt-0.5 text-xs font-semibold text-gray-900 tabular-nums tracking-tight">
 								{formatCompactTokens(model.context_window)}
 							</p>
 						</div>
-						<div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+						<div className={cellClass}>
 							<p className="text-[11px] text-gray-400">{t('maxOutput')}</p>
-							<p className="mt-0.5 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
+							<p className="mt-0.5 text-xs font-semibold text-gray-900 tabular-nums tracking-tight">
 								{formatCompactTokens(model.max_tokens)}
 							</p>
 						</div>
 					</>
 				) : null}
-				<div className="min-w-0 rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+				<div className={`min-w-0 ${cellClass}`}>
 					<p className="text-[11px] text-gray-400">{t('modalities')}</p>
 					<div className="mt-1">
 						<ModelModalitiesBadgeFromRaw
@@ -132,9 +127,9 @@ function ModelCapabilityPanel({ model }: { model: ModelListItem }) {
 						/>
 					</div>
 				</div>
-				<div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+				<div className={cellClass}>
 					<p className="text-[11px] text-gray-400">{t('released')}</p>
-					<p className="mt-0.5 text-sm text-gray-700 tabular-nums">{model.released_at || tCommon('noData')}</p>
+					<p className="mt-0.5 text-xs text-gray-700 tabular-nums">{model.released_at || tCommon('noData')}</p>
 				</div>
 			</div>
 		</div>
@@ -159,10 +154,6 @@ function ModelPricingPanel(props: {
 	);
 	const hasTokenCols = tokenColumns.length > 0;
 	const hasEstimateMatrix = imageDisplay?.matrix != null;
-	const pricingGridClass =
-		tokenColumns.length >= 5
-			? 'grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5'
-			: 'grid gap-2 sm:grid-cols-2 2xl:grid-cols-4';
 
 	return (
 		<div>
@@ -175,14 +166,14 @@ function ModelPricingPanel(props: {
 				) : null}
 			</div>
 			{!hasTokenCols ? (
-				<p className="mt-2 text-sm text-gray-400">{tCommon('noData')}</p>
+				<p className="mt-1.5 text-xs text-gray-400">{tCommon('noData')}</p>
 			) : (
-				<div className="mt-2 space-y-2">
-					<div className={pricingGridClass}>
+				<div className="mt-1.5 space-y-1.5">
+					<div className="grid grid-cols-2 gap-1.5">
 						{tokenColumns.map((col) => (
 							<div
 								key={col.title}
-								className="rounded-md border border-gray-100 bg-gray-50/70 px-3 py-2"
+								className="rounded-md border border-gray-100 bg-gray-50/70 px-2 py-1.5"
 							>
 								<p
 									className="truncate text-[11px] font-medium text-gray-500"
@@ -190,7 +181,7 @@ function ModelPricingPanel(props: {
 								>
 									{col.title}
 								</p>
-								<div className="mt-1.5 space-y-1 tabular-nums leading-snug">
+								<div className="mt-1 space-y-1 tabular-nums leading-snug">
 									{col.lines.map((line, lineIdx) => (
 										<div
 											key={`${col.title}-${lineIdx}`}
@@ -271,20 +262,20 @@ function ModelDetailsPanel(props: {
 	}
 
 	return (
-		<div className="grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2">
+		<div className="grid gap-2 border-t border-gray-100 pt-2.5 sm:grid-cols-2">
 			<div className="min-w-0">
 				<h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('description')}</h4>
 				{description ? (
-					<p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-gray-600" title={description}>
+					<p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-600" title={description}>
 						{description}
 					</p>
 				) : (
-					<p className="mt-1.5 text-sm text-gray-400">{tCommon('noData')}</p>
+					<p className="mt-1 text-xs text-gray-400">{tCommon('noData')}</p>
 				)}
 			</div>
 			<div className="min-w-0">
 				<h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('metadata')}</h4>
-				<div className="mt-1.5">
+				<div className="mt-1">
 					<ModelMetadataCell model={model} onView={onViewMetadata} />
 				</div>
 			</div>
@@ -305,7 +296,7 @@ export function ModelCard(props: {
 		<article
 			role="button"
 			tabIndex={0}
-			className="cursor-pointer rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 focus:outline-none focus-visible:border-blue-400 focus-visible:bg-blue-50/30 focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 active:translate-y-0 sm:p-5"
+			className="cursor-pointer rounded-xl border border-gray-200/80 bg-white p-3 shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 focus:outline-none focus-visible:border-blue-400 focus-visible:bg-blue-50/30 focus-visible:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-500 active:translate-y-0"
 			onClick={() => void onEdit(model)}
 			onKeyDown={(e) => {
 				if (e.key === 'Enter' || e.key === ' ') {
@@ -315,7 +306,7 @@ export function ModelCard(props: {
 			}}
 		>
 			<ModelIdentityHeader model={model} />
-			<div className="mt-4 space-y-4">
+			<div className="mt-2.5 space-y-2.5">
 				<ModelCapabilityPanel model={model} />
 				<ModelPricingPanel
 					model={model}
