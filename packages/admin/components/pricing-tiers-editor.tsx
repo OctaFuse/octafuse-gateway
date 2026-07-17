@@ -75,6 +75,7 @@ export function PricingTiersEditor({
 	variant = 'llm',
 }: PricingTiersEditorProps) {
 	const t = useTranslations('pricing.tiersEditor');
+	const tImage = useTranslations('pricing.readOnlyImage');
 	const tPricing = useTranslations('pricing');
 	const tCommon = useTranslations('common');
 	const billCode = billingCurrencyCode.trim().toUpperCase();
@@ -88,6 +89,16 @@ export function PricingTiersEditor({
 	const hasToolbarLeft = Boolean(toolbarStart) || Boolean(title);
 	const isImage = variant === 'image';
 	const colSpan = isImage ? 7 : 6;
+	/** Image 列名与 Route 只读区共用 `pricing.readOnlyImage`，避免两套文案分叉 */
+	const imageColHeaders = isImage
+		? ([
+				tImage('textInput'),
+				tImage('cachedText'),
+				tImage('imageInput'),
+				tImage('cachedImageInput'),
+				tImage('imageOutput'),
+			] as const)
+		: null;
 
 	const addTier = () => {
 		const base = rows.length > 0 ? rows[rows.length - 1]! : createEmptyTierRow();
@@ -152,17 +163,21 @@ export function PricingTiersEditor({
 			<div className="overflow-hidden rounded-md border border-gray-200 bg-white">
 				<div className="overflow-x-auto">
 					<table className="min-w-full divide-y divide-gray-200 text-left text-xs">
-						<thead className="bg-gray-50 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+						<thead
+							className={
+								isImage
+									? 'bg-gray-50 text-[11px] font-medium text-gray-500'
+									: 'bg-gray-50 text-[10px] font-semibold uppercase tracking-wide text-gray-500'
+							}
+						>
 							<tr>
 								<th className="whitespace-nowrap px-2 py-2">{t('upto')}</th>
-								{isImage ? (
-									<>
-										<th className="whitespace-nowrap px-2 py-2">{t('textInput')}</th>
-										<th className="whitespace-nowrap px-2 py-2">{t('cachedText')}</th>
-										<th className="whitespace-nowrap px-2 py-2">{t('imageInput')}</th>
-										<th className="whitespace-nowrap px-2 py-2">{t('cachedImageInput')}</th>
-										<th className="whitespace-nowrap px-2 py-2">{t('imageOutput')}</th>
-									</>
+								{imageColHeaders ? (
+									imageColHeaders.map((label) => (
+										<th key={label} className="whitespace-nowrap px-2 py-2">
+											{label}
+										</th>
+									))
 								) : (
 									<>
 										<th className="whitespace-nowrap px-2 py-2">{t('input')}</th>
