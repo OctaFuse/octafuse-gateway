@@ -133,7 +133,8 @@ export interface GatewayModel {
   /** Vendor / manufacturer (e.g. Anthropic, OpenAI). Default stored value: other */
   vendor: string;
   context_window: number | null;
-  max_tokens: number;
+  /** Chat max output tokens; null for image-generation models */
+  max_tokens: number | null;
   /** `{ "tiers": [...] }` JSON；与 `models.pricing_profile` 一致 */
   pricing_profile?: string | null;
   /** JSON array string, e.g. `["text","image"]` */

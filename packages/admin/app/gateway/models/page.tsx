@@ -6,7 +6,6 @@
  */
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
-import { ALL_VENDORS_KEY } from './types';
 import { useModelsPageState } from './use-models-page-state';
 import { ModelCard } from './components/model-card';
 import { ModelCatalogToolbar } from './components/model-catalog-toolbar';
@@ -46,13 +45,16 @@ function ModelsContent() {
 				<div className="flex min-w-0 flex-col lg:flex-row lg:items-start">
 					<ModelFilterSidebar
 						modelCount={state.models.length}
-						hasVendorFilter={state.hasVendorFilter}
+						hasActiveFilter={state.hasActiveFilter}
 						selectedVendorItemsCount={state.selectedVendorItems.length}
 						isAllVendors={state.isAllVendors}
 						selectedVendor={state.selectedVendor}
 						modelsByVendor={state.modelsByVendor}
+						selectedKind={state.selectedKind}
+						kindCounts={state.kindCounts}
 						onSelectVendor={state.setSelectedVendor}
-						onClearFilter={() => state.setSelectedVendor(ALL_VENDORS_KEY)}
+						onSelectKind={state.setSelectedKind}
+						onClearFilter={state.clearFilters}
 					/>
 
 					<section className="min-w-0 flex-1 bg-slate-100/70">
@@ -123,6 +125,8 @@ function ModelsContent() {
 				catalogRows={state.importCatalogRows}
 				filteredCatalogRows={state.filteredImportCatalogRows}
 				catalogSearch={state.importCatalogSearch}
+				catalogKind={state.importCatalogKind}
+				kindCounts={state.importCatalogKindCounts}
 				catalogLoading={state.importCatalogLoading}
 				catalogError={state.importCatalogError}
 				selected={state.importSelected}
@@ -133,6 +137,7 @@ function ModelsContent() {
 				existingModelIds={state.existingModelIds}
 				onClose={() => state.setShowImportCatalogModal(false)}
 				onCatalogSearchChange={state.setImportCatalogSearch}
+				onCatalogKindChange={state.setImportCatalogKind}
 				onSelectAll={state.selectAllImportPresets}
 				onClearSelection={state.clearImportPresetSelection}
 				onReload={() => void state.loadImportCatalog()}

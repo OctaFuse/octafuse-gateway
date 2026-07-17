@@ -108,13 +108,37 @@ export type PricingMetricColumn = {
 	title: string;
 	/** 悬停完整说明（表头缩写用） */
 	headerTitle?: string;
+	/** 单价单位：token 按百万；图片按张 */
+	unitKind?: 'per_m' | 'per_image';
 	lines: PricingMetricLine[];
 };
 
+function hasNonZeroTokenTiers(tiers: PricingTierPrices[]): boolean {
+	return tiers.some(
+		(t) =>
+			t.input_price > 0 ||
+			t.output_price > 0 ||
+			(t.cache_read_price != null && t.cache_read_price > 0) ||
+			(t.cache_write_price != null && t.cache_write_price > 0) ||
+			(t.image_input_price != null && t.image_input_price > 0) ||
+			(t.image_output_price != null && t.image_output_price > 0)
+	);
+}
+
+function hasImageTokenTiers(tiers: PricingTierPrices[]): boolean {
+	return tiers.some(
+		(t) =>
+			(t.image_input_price != null && t.image_input_price > 0) ||
+			(t.image_input_cache_price != null && t.image_input_cache_price > 0) ||
+			(t.image_output_price != null && t.image_output_price > 0)
+	);
+}
+
 export function buildPricingMetricColumns(pricingProfile: string | null | undefined): PricingMetricColumn[] {
 	const profile = parsePricingProfile(pricingProfile ?? undefined);
-	if (!profile || profile.tiers.length === 0) return [];
+	if (!profile) return [];
 
+	const columns: PricingMetricColumn[] = [];
 	const buildMetricLines = (pickPrice: (tier: PricingTierPrices) => number | null): PricingMetricLine[] =>
 		profile.tiers.map((tier, tierIdx) => {
 			const previous = tierIdx === 0 ? null : profile.tiers[tierIdx - 1]!.upto;
@@ -124,31 +148,76 @@ export function buildPricingMetricColumns(pricingProfile: string | null | undefi
 			};
 		});
 
-	const columns: PricingMetricColumn[] = [
-		{
-			title: 'Input Price',
-			headerTitle: 'Input price (per 1M tokens)',
-			lines: buildMetricLines((tier) => tier.input_price),
-		},
-		{
-			title: 'Output Price',
-			headerTitle: 'Output price (per 1M tokens)',
-			lines: buildMetricLines((tier) => tier.output_price),
-		},
-		{
-			title: 'Cache Read',
-			headerTitle: 'Cache read (per 1M tokens)',
-			lines: buildMetricLines((tier) => tier.cache_read_price ?? null),
-		},
-	];
-
-	if (profile.tiers.some((tier) => tier.cache_write_price != null)) {
-		columns.push({
-			title: 'Cache Write',
-			headerTitle: 'Cache write (per 1M tokens)',
-			lines: buildMetricLines((tier) => tier.cache_write_price ?? null),
-		});
+	if (hasImageTokenTiers(profile.tiers)) {
+		columns.push(
+			{
+				title: 'Text Input',
+				headerTitle: 'Text input (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.input_price),
+			},
+			{
+				title: 'Cached Text',
+				headerTitle: 'Cached text input (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.cache_read_price ?? null),
+			},
+			{
+				title: 'Image Input',
+				headerTitle: 'Image input (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.image_input_price ?? null),
+			},
+			{
+				title: 'Cached Image Input',
+				headerTitle: 'Cached image input (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.image_input_cache_price ?? null),
+			},
+			{
+				title: 'Image Output',
+				headerTitle: 'Image output (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.image_output_price ?? null),
+			}
+		);
+		return columns;
 	}
+
+	const showTokenColumns = profile.tiers.length > 0 && hasNonZeroTokenTiers(profile.tiers);
+
+	if (showTokenColumns) {
+		columns.push(
+			{
+				title: 'Input Price',
+				headerTitle: 'Input price (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.input_price),
+			},
+			{
+				title: 'Output Price',
+				headerTitle: 'Output price (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.output_price),
+			},
+			{
+				title: 'Cache Read',
+				headerTitle: 'Cache read (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.cache_read_price ?? null),
+			}
+		);
+
+		if (profile.tiers.some((tier) => tier.cache_write_price != null)) {
+			columns.push({
+				title: 'Cache Write',
+				headerTitle: 'Cache write (per 1M tokens)',
+				unitKind: 'per_m',
+				lines: buildMetricLines((tier) => tier.cache_write_price ?? null),
+			});
+		}
+	}
+
 	return columns;
 }
 

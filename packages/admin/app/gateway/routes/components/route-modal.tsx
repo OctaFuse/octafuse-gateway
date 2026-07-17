@@ -2,8 +2,10 @@
 
 import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
-import type { CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
+import { isImageRouteModel } from '@/lib/image-generations';
+import type { CatalogImagePricingDisplay, CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import {
 	UPSTREAM_PROTOCOLS,
@@ -28,6 +30,8 @@ type Props = {
 	selectedModel: GatewayModel | undefined;
 	selectedProvider: GatewayProvider | undefined;
 	catalogStandardTierRows: CatalogPricingTierDisplayRow[];
+	catalogImagePricingDisplay: CatalogImagePricingDisplay | null;
+	selectedModelIsImage: boolean;
 	allowedProtocolsForProvider: UpstreamProtocol[];
 	businessTimezone: string;
 	onClose: () => void;
@@ -51,6 +55,8 @@ export function RouteModal(props: Props) {
 		providers,
 		selectedProvider,
 		catalogStandardTierRows,
+		catalogImagePricingDisplay,
+		selectedModelIsImage,
 		allowedProtocolsForProvider,
 		businessTimezone,
 		onClose,
@@ -104,29 +110,34 @@ export function RouteModal(props: Props) {
 					</button>
 				</div>
 
-				<div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+				<div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
 					{saveError && (
-						<div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+						<div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
 							{saveError}
 						</div>
 					)}
 
-					<div className="space-y-5">
-						<section className="rounded-lg border border-gray-200 bg-gray-50/80 p-4">
-							<h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+					<div className="space-y-4">
+						<section className="rounded-lg border border-gray-200 bg-gray-50/80 p-3.5">
+							<h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
 								{t('basicMapping')}
 							</h3>
-							<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+							<div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">{t('modelRequired')}</label>
 									<select
 										value={formData.model_id}
-										onChange={(e) =>
+										onChange={(e) => {
+											const nextModelId = e.target.value;
+											const nextModel = models.find((m) => m.id === nextModelId);
 											onFormChange({
 												...formData,
-												model_id: e.target.value,
-											})
-										}
+												model_id: nextModelId,
+												...(nextModel && isImageRouteModel(nextModel)
+													? { upstream_protocol: 'openai' as const }
+													: {}),
+											});
+										}}
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 										required
 									>
@@ -184,7 +195,15 @@ export function RouteModal(props: Props) {
 												upstream_protocol: e.target.value as UpstreamProtocol,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+										disabled={selectedModelIsImage}
+										title={
+											selectedModelIsImage
+												? t('protocolHintImageOpenaiOnly')
+												: selectedProvider
+													? t('protocolHintConfigured')
+													: t('protocolHintSelectProvider')
+										}
+										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
 									>
 										{allowedProtocolsForProvider.map((p) => (
 											<option key={p} value={p}>
@@ -192,14 +211,10 @@ export function RouteModal(props: Props) {
 											</option>
 										))}
 									</select>
-									<p className="mt-1 text-xs text-gray-500">
-										{selectedProvider
-											? t('protocolHintConfigured')
-											: t('protocolHintSelectProvider')}
-									</p>
+									{selectedModelIsImage ? (
+										<p className="mt-1 text-[11px] text-amber-700">{t('protocolHintImageOpenaiOnly')}</p>
+									) : null}
 								</div>
-							</div>
-							<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
 										{t('providerModelName')}
@@ -216,18 +231,28 @@ export function RouteModal(props: Props) {
 									/>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('routeGroup')}</label>
+									<label
+										className="mb-1 block text-sm font-medium text-gray-700"
+										title={t('routeGroupHint')}
+									>
+										{t('routeGroup')}
+									</label>
 									<input
 										type="text"
 										value={formData.route_group}
 										onChange={(e) => onFormChange({ ...formData, route_group: e.target.value })}
 										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 										placeholder={t('routeGroupPlaceholder')}
+										title={t('routeGroupHint')}
 									/>
-									<p className="mt-1 text-xs text-gray-500">{t('routeGroupHint')}</p>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('priority')}</label>
+									<label
+										className="mb-1 block text-sm font-medium text-gray-700"
+										title={t('priorityHint')}
+									>
+										{t('priority')}
+									</label>
 									<input
 										type="number"
 										value={formData.priority}
@@ -237,36 +262,58 @@ export function RouteModal(props: Props) {
 												priority: parseInt(e.target.value, 10) || 0,
 											})
 										}
+										title={t('priorityHint')}
 										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 									/>
-									<p className="mt-1 text-xs text-gray-500">{t('priorityHint')}</p>
 								</div>
 							</div>
 						</section>
 
-						<div className="space-y-5">
+						<div className="space-y-3">
 							<RoutePricePanel
 								variant="neutral"
 								title={t('standardCatalog')}
-								subtitle={t('standardCatalogHint')}
+								subtitle={
+									selectedModelIsImage
+										? t('standardCatalogHintImage')
+										: t('standardCatalogHint')
+								}
 							>
-								<div className="min-h-0 flex-1">
+								{selectedModelIsImage ? (
+									<ReadOnlyImagePricing
+										compact
+										tokenRatesLayout="grid"
+										display={catalogImagePricingDisplay}
+										emptyLabel={
+											formData.model_id
+												? t('noCatalogImagePricing')
+												: t('selectModelForTiers')
+										}
+										tableTitle={t('readOnlyCatalogImageEstimate')}
+										tokenRatesTitle={t('imageTokenRates')}
+										estimateMatrixHint={t('imageEstimateHint')}
+										expandLabel={t('expandImageEstimate')}
+										collapseLabel={t('readOnlyCatalogImageEstimate')}
+									/>
+								) : (
 									<ReadOnlyPricingTiersTable
 										rows={catalogStandardTierRows}
 										emptyLabel={
-											formData.model_id ? t('noCatalogPricing') : t('selectModelForTiers')
+											formData.model_id
+												? t('noCatalogPricing')
+												: t('selectModelForTiers')
 										}
 										tableTitle={t('readOnlyCatalogRates')}
 										billingCurrencyCode={billingCurrency}
 									/>
-								</div>
+								)}
 							</RoutePricePanel>
 
-							<p className="text-xs text-gray-600">
+							<p className="text-[11px] text-gray-500">
 								{t('billingTimezoneHint', { timezone: businessTimezone })}
 							</p>
 
-							<div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-stretch">
+							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
 								<div className="flex h-full min-h-0 min-w-0 flex-col">
 									<RoutePricePanel
 										fillHeight
@@ -297,7 +344,7 @@ export function RouteModal(props: Props) {
 										}
 									>
 										<div>
-											<p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+											<p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
 												{t('dailySchedule')}
 											</p>
 											<DailyScheduleEditor
@@ -346,7 +393,7 @@ export function RouteModal(props: Props) {
 										}
 									>
 										<div>
-											<p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+											<p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
 												{t('dailySchedule')}
 											</p>
 											<DailyScheduleEditor
@@ -367,24 +414,24 @@ export function RouteModal(props: Props) {
 							</div>
 						</div>
 
-						<section className="rounded-lg border border-gray-200 bg-white p-4">
-							<h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-								{t('requestDefaults')}
-							</h3>
-							<p className="mb-3 text-xs text-gray-600">{t('requestDefaultsHint')}</p>
-							<div className="flex min-h-0 flex-col">
-								<label className="mb-1.5 text-sm font-medium text-gray-700">{t('customParams')}</label>
-								<textarea
-									rows={8}
-									value={formData.custom_params_json}
-									onChange={(e) =>
-										onFormChange({ ...formData, custom_params_json: e.target.value })
-									}
-									className="min-h-[160px] w-full flex-1 resize-y rounded-md border border-gray-300 px-3 py-2 font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-									placeholder={t('customParamsPlaceholder')}
-									spellCheck={false}
-								/>
+						<section className="rounded-lg border border-gray-200 bg-white p-3.5">
+							<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+								<h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+									{t('requestDefaults')}
+								</h3>
+								<p className="text-[11px] text-gray-500">{t('requestDefaultsHint')}</p>
 							</div>
+							<label className="mb-1 block text-sm font-medium text-gray-700">{t('customParams')}</label>
+							<textarea
+								rows={4}
+								value={formData.custom_params_json}
+								onChange={(e) =>
+									onFormChange({ ...formData, custom_params_json: e.target.value })
+								}
+								className="min-h-[96px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+								placeholder={t('customParamsPlaceholder')}
+								spellCheck={false}
+							/>
 						</section>
 
 						<section className="rounded-lg border border-gray-200 bg-white p-4">

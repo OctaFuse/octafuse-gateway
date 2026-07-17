@@ -5,6 +5,12 @@ import { useTranslations } from 'next-intl';
 import { flushSync } from 'react-dom';
 import { readApiJson } from '@/lib/api-json';
 import {
+	imageRequestMetaFromBody,
+	isImageRouteModel,
+	parseImagesGenerationsResponse,
+	type ImagePreviewItem,
+} from '@/lib/image-generations';
+import {
 	inferPlaygroundParseMode,
 	mergeAssistantTextParts,
 	type PlaygroundProtocol,
@@ -19,6 +25,7 @@ import type { AdminKeyListItem, AdminModelRow } from '@/lib/services/admin/types
 import type { ApiResponse } from '@/lib/types';
 import {
 	BODY_TEMPLATES,
+	bodyTemplateForSelection,
 	KEYS_PAGE_SIZE,
 	LS_KEY_ID,
 	LS_MODEL_ID,
@@ -74,6 +81,7 @@ export function useSimulatorPageState() {
 	const [wirePreview, setWirePreview] = useState<WirePreview | null>(null);
 	const [wireOpen, setWireOpen] = useState(false);
 	const [responseTab, setResponseTab] = useState<ResponseTab>('merged');
+	const [imagePreviews, setImagePreviews] = useState<ImagePreviewItem[]>([]);
 	const [hydrated, setHydrated] = useState(false);
 
 	const streamEndRef = useRef<HTMLSpanElement>(null);
@@ -116,6 +124,11 @@ export function useSimulatorPageState() {
 		[models, selectedModelId]
 	);
 
+	const selectedModelIsImage = useMemo(
+		() => (selectedModel ? isImageRouteModel(selectedModel) : false),
+		[selectedModel]
+	);
+
 	const modelRoutingString = useMemo(() => {
 		if (!selectedModelId) return '';
 		return buildModelRoutingString(selectedModelId, routeGroup);
@@ -130,10 +143,19 @@ export function useSimulatorPageState() {
 		const parsed = tryParseProxyBaseUrl(proxyBaseUrl);
 		if (!parsed.ok) return 'proxyBaseUrl';
 		if (!selectedModelId) return 'model';
+		if (selectedModelIsImage && protocol !== 'openai') return 'imageProtocol';
 		if (revealLoading && selectedKeyId) return 'keyLoading';
 		if (!revealedSk || !revealedSk.startsWith('sk-')) return 'key';
 		return null;
-	}, [proxyBaseUrl, selectedModelId, revealLoading, selectedKeyId, revealedSk]);
+	}, [
+		proxyBaseUrl,
+		selectedModelId,
+		selectedModelIsImage,
+		protocol,
+		revealLoading,
+		selectedKeyId,
+		revealedSk,
+	]);
 
 	const sendBlockedHint = useMemo(() => {
 		switch (sendBlockReason) {
@@ -141,6 +163,8 @@ export function useSimulatorPageState() {
 				return t('readyNeedProxyUrl');
 			case 'model':
 				return t('readyNeedModel');
+			case 'imageProtocol':
+				return t('readyNeedOpenaiForImage');
 			case 'keyLoading':
 				return t('readyNeedKeyLoading');
 			case 'key':
@@ -172,6 +196,7 @@ export function useSimulatorPageState() {
 				geminiAction: protocol === 'gemini' ? geminiAction : undefined,
 				body: bodyObj,
 				apiKey: revealedSk,
+				imagesGenerations: selectedModelIsImage && protocol === 'openai',
 			});
 			return {
 				method: 'POST',
@@ -182,7 +207,16 @@ export function useSimulatorPageState() {
 		} catch {
 			return null;
 		}
-	}, [proxyBaseUrl, selectedModelId, revealedSk, bodyText, modelRoutingString, protocol, geminiAction]);
+	}, [
+		proxyBaseUrl,
+		selectedModelId,
+		revealedSk,
+		bodyText,
+		modelRoutingString,
+		protocol,
+		geminiAction,
+		selectedModelIsImage,
+	]);
 
 	const displayWire = wirePreview ?? liveWirePreview;
 
@@ -319,6 +353,28 @@ export function useSimulatorPageState() {
 		}
 	}, [selectedModelId, routeGroup, routeGroupsForModel]);
 
+	const prevSelectedWasImageRef = useRef(false);
+
+	/** Image models: force openai + generations template; leaving image restores chat template. */
+	useEffect(() => {
+		if (selectedModelIsImage) {
+			if (protocol !== 'openai') {
+				setProtocolState('openai');
+			}
+			setBodyText(bodyTemplateForSelection('openai', true));
+			setBodyError(null);
+			setImagePreviews([]);
+			prevSelectedWasImageRef.current = true;
+			return;
+		}
+		if (prevSelectedWasImageRef.current) {
+			setBodyText(bodyTemplateForSelection(protocol, false));
+			setBodyError(null);
+			setImagePreviews([]);
+			prevSelectedWasImageRef.current = false;
+		}
+	}, [selectedModelId, selectedModelIsImage]); // eslint-disable-line react-hooks/exhaustive-deps -- template only on model kind switch
+
 	const loadKeys = useCallback(async () => {
 		setLoadingKeys(true);
 		setKeysError(null);
@@ -379,28 +435,35 @@ export function useSimulatorPageState() {
 		};
 	}, [selectedKeyId, tCommon]);
 
-	const applyProtocolTemplate = useCallback((next: SimulatorProtocol) => {
-		setProtocolState(next);
-		setBodyText(BODY_TEMPLATES[next]);
-		setBodyError(null);
-	}, []);
+	const applyProtocolTemplate = useCallback(
+		(next: SimulatorProtocol, isImage = selectedModelIsImage) => {
+			setProtocolState(next);
+			setBodyText(bodyTemplateForSelection(next, isImage && next === 'openai'));
+			setBodyError(null);
+		},
+		[selectedModelIsImage]
+	);
 
 	const requestProtocolChange = useCallback(
 		(next: SimulatorProtocol) => {
 			if (next === protocol) return;
-			if (isBodyDirty(bodyText, protocol)) {
+			if (selectedModelIsImage && next !== 'openai') {
+				setInfoHint(t('readyNeedOpenaiForImage'));
+				return;
+			}
+			if (isBodyDirty(bodyText, protocol, selectedModelIsImage)) {
 				const ok = window.confirm(t('protocolSwitchConfirm'));
 				if (!ok) return;
 			}
 			applyProtocolTemplate(next);
 		},
-		[protocol, bodyText, t, applyProtocolTemplate]
+		[protocol, bodyText, t, applyProtocolTemplate, selectedModelIsImage]
 	);
 
 	const applyCurrentTemplate = useCallback(() => {
-		setBodyText(BODY_TEMPLATES[protocol]);
+		setBodyText(bodyTemplateForSelection(protocol, selectedModelIsImage));
 		setBodyError(null);
-	}, [protocol]);
+	}, [protocol, selectedModelIsImage]);
 
 	const stop = useCallback(() => {
 		abortRef.current?.abort();
@@ -453,6 +516,7 @@ export function useSimulatorPageState() {
 			}
 		}
 
+		const useImages = selectedModelIsImage && protocol === 'openai';
 		const built = buildSimulatorRequest({
 			baseUrl: base,
 			protocol,
@@ -460,12 +524,14 @@ export function useSimulatorPageState() {
 			geminiAction: protocol === 'gemini' ? geminiAction : undefined,
 			body: bodyObj,
 			apiKey: revealedSk,
+			imagesGenerations: useImages,
 		});
 
 		setBodyError(null);
 		setSending(true);
 		setResponseText('');
 		setUsageHint(null);
+		setImagePreviews([]);
 		setResponseMeta(null);
 		setResponseTab('merged');
 		setWirePreview({
@@ -508,15 +574,27 @@ export function useSimulatorPageState() {
 				if (!res.ok) {
 					setUsageHint(null);
 					const errObj = j.error;
-					const nested =
+					const nestedMsg =
 						errObj && typeof errObj === 'object' && 'message' in errObj
 							? String((errObj as { message?: unknown }).message ?? '')
 							: '';
+					const nestedUrl =
+						errObj && typeof errObj === 'object' && 'upstream_url' in errObj
+							? String((errObj as { upstream_url?: unknown }).upstream_url ?? '')
+							: '';
 					let msg = (j.message ?? '').trim();
 					if (!msg && typeof errObj === 'string') msg = errObj;
-					if (!msg) msg = nested.trim();
+					if (!msg) msg = nestedMsg.trim();
 					if (!msg) msg = tCommon('requestFailed');
+					if (nestedUrl) msg = `${msg}\nupstream: ${nestedUrl}`;
 					setBodyError(msg);
+				} else if (useImages) {
+					const parsedImg = parseImagesGenerationsResponse(
+						JSON.stringify(j),
+						imageRequestMetaFromBody(bodyObj)
+					);
+					setImagePreviews(parsedImg.images);
+					setUsageHint(parsedImg.usageHint);
 				} else {
 					setUsageHint(tryParseUsageSummary(JSON.stringify(j), protoNorm));
 				}
@@ -548,14 +626,20 @@ export function useSimulatorPageState() {
 
 			const text = await res.text();
 			setResponseText(text);
-			let summary: string | null = null;
-			try {
-				summary = tryParseUsageSummary(text, protoNorm);
-			} catch {
-				summary = null;
+			if (useImages && res.ok) {
+				const parsedImg = parseImagesGenerationsResponse(text, imageRequestMetaFromBody(bodyObj));
+				setImagePreviews(parsedImg.images);
+				setUsageHint(parsedImg.usageHint);
+			} else {
+				let summary: string | null = null;
+				try {
+					summary = tryParseUsageSummary(text, protoNorm);
+				} catch {
+					summary = null;
+				}
+				setUsageHint(summary);
 			}
-			setUsageHint(summary);
-			if (!res.ok && !summary) {
+			if (!res.ok) {
 				setBodyError(text.slice(0, 500) || `HTTP ${res.status}`);
 			}
 		} catch (e) {
@@ -573,6 +657,7 @@ export function useSimulatorPageState() {
 	}, [
 		proxyBaseUrl,
 		selectedModelId,
+		selectedModelIsImage,
 		revealLoading,
 		revealedSk,
 		bodyText,
@@ -597,7 +682,7 @@ export function useSimulatorPageState() {
 		protocol,
 		requestProtocolChange,
 		applyCurrentTemplate,
-		bodyDirty: isBodyDirty(bodyText, protocol),
+		bodyDirty: isBodyDirty(bodyText, protocol, selectedModelIsImage),
 		geminiAction,
 		setGeminiAction,
 		filterModel,
@@ -611,8 +696,10 @@ export function useSimulatorPageState() {
 		setRouteGroup,
 		routeGroupsForModel,
 		selectedModel,
+		selectedModelIsImage,
 		modelRoutingString,
 		matchingRoutes,
+		imagePreviews,
 		keys,
 		keysTotal,
 		filterKeyEmail,

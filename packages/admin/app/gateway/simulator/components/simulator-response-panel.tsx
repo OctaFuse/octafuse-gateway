@@ -3,6 +3,8 @@
 import type { RefObject } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { ImageGenerationsPreview } from '@/components/image-generations-preview';
+import type { ImagePreviewItem } from '@/lib/image-generations';
 import { buildRequestLogsHref } from '../simulator-utils';
 import type { ResponseMeta, ResponseTab, SimulatorProtocol } from '../types';
 
@@ -10,6 +12,7 @@ type Props = {
 	responseMeta: ResponseMeta | null;
 	responseText: string;
 	usageHint: string | null;
+	imagePreviews: ImagePreviewItem[];
 	responseTab: ResponseTab;
 	onResponseTabChange: (tab: ResponseTab) => void;
 	mergedReasoningDisplay: string;
@@ -26,6 +29,7 @@ export function SimulatorResponsePanel({
 	responseMeta,
 	responseText,
 	usageHint,
+	imagePreviews,
 	responseTab,
 	onResponseTabChange,
 	mergedReasoningDisplay,
@@ -38,7 +42,8 @@ export function SimulatorResponsePanel({
 	protocol,
 }: Props) {
 	const t = useTranslations('simulator');
-	const hasContent = Boolean(responseMeta || responseText);
+	const hasContent = Boolean(responseMeta || responseText || imagePreviews.length > 0);
+	const isImageResponse = imagePreviews.length > 0;
 	const logsHref = buildRequestLogsHref({
 		apiKeyId: selectedKeyId || undefined,
 		modelId: selectedModelId || undefined,
@@ -110,6 +115,9 @@ export function SimulatorResponsePanel({
 					) : null}
 
 					{responseTab === 'merged' ? (
+						isImageResponse ? (
+							<ImageGenerationsPreview images={imagePreviews} label={t('imagePreview')} />
+						) : (
 						<div className="rounded-md border border-slate-200 overflow-hidden divide-y divide-slate-200">
 							<div>
 								<div className="text-[11px] font-semibold text-amber-900/85 uppercase tracking-wide px-3 py-1.5 bg-amber-50 border-b border-amber-100">
@@ -133,6 +141,7 @@ export function SimulatorResponsePanel({
 								</pre>
 							</div>
 						</div>
+						)
 					) : (
 						<pre className="max-h-[min(520px,55vh)] overflow-auto p-4 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-900 font-mono whitespace-pre-wrap break-words">
 							{responseText}

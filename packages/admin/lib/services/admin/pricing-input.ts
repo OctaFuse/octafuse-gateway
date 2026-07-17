@@ -20,7 +20,7 @@ export function coerceModelPricingProfileInput(raw: unknown): string | null {
 		}
 		if (!parsePricingProfile(t)) {
 			throw badRequest(
-				'pricing_profile: invalid JSON or unsupported shape (expected `{ "tiers": [...] }`)'
+				'pricing_profile: invalid JSON or unsupported shape (expected `{ "tiers": [...], "image"?: { "default": number, ... } }`)'
 			);
 		}
 		return t;

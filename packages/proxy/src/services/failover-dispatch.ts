@@ -26,10 +26,17 @@ import {
 } from './upstream-failure-classifier';
 import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
 
+/** 协议 driver 可选透传（如 Images 已解析的 body / usage，避免 route 侧重复 parse）。 */
+export type ProxyDispatchMeta = {
+	imageUsage?: import('@octafuse/core').ImageTokenUsage | null;
+	parsedBody?: unknown;
+};
+
 export type ProxyDispatchResult = {
 	response: Response;
 	usagePromise: Promise<UsageFromStream>;
 	upstreamRequestId: string | null;
+	meta?: ProxyDispatchMeta;
 };
 
 export type ProxyFailoverResult = {
@@ -41,6 +48,7 @@ export type ProxyFailoverResult = {
 	circuitEvents: GatewayCircuitAlertEvent[];
 	/** 因已有 provider key 熔断短路、无需重复 webhook 告警 */
 	suppressErrorAlert: boolean;
+	meta?: ProxyDispatchMeta;
 };
 
 /** 粘性路由上下文：由各协议路由在解析 `models.sticky_config` 后传入；null=该请求无粘性。 */
@@ -316,11 +324,13 @@ export async function failoverDispatchWithKeyPool(
 		let response: Response;
 		let usagePromise: Promise<UsageFromStream>;
 		let upstreamRequestId: string | null = null;
+		let dispatchMeta: ProxyDispatchMeta | undefined;
 		try {
 			const dispatched = await dispatch(attemptRoute, requestSignal, timing, timingAttempt);
 			response = dispatched.response;
 			usagePromise = dispatched.usagePromise;
 			upstreamRequestId = dispatched.upstreamRequestId;
+			dispatchMeta = dispatched.meta;
 		} catch (err) {
 			timing?.markAttemptError(timingAttempt, err);
 			if (hasNextAttempt) timing?.markAttemptFailover(timingAttempt);
@@ -341,7 +351,15 @@ export async function failoverDispatchWithKeyPool(
 			markProviderKeySuccess(key.id);
 			scheduleUsageRelease(key, usagePromise);
 			rebindOnSuccess(attempt);
-			return { response, usagePromise, upstreamRequestId, chosenRoute: attemptRoute, circuitEvents, suppressErrorAlert: false };
+			return {
+				response,
+				usagePromise,
+				upstreamRequestId,
+				chosenRoute: attemptRoute,
+				circuitEvents,
+				suppressErrorAlert: false,
+				meta: dispatchMeta,
+			};
 		}
 
 		// 非 2xx：无流式在途，立即释放并发。
@@ -359,6 +377,7 @@ export async function failoverDispatchWithKeyPool(
 				chosenRoute: attemptRoute,
 				circuitEvents,
 				suppressErrorAlert: false,
+				meta: dispatchMeta,
 			};
 		}
 

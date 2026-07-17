@@ -10,6 +10,8 @@ type Props = {
 	onProxyBaseUrlChange: (v: string) => void;
 	protocol: SimulatorProtocol;
 	onProtocolChange: (p: SimulatorProtocol) => void;
+	/** Image-generation catalog models: only openai /images/generations is supported. */
+	lockOpenaiForImage?: boolean;
 	geminiAction: SimulatorGeminiAction;
 	onGeminiActionChange: (a: SimulatorGeminiAction) => void;
 	filterKeyEmail: string;
@@ -31,6 +33,7 @@ export function SimulatorSetupPanel({
 	onProxyBaseUrlChange,
 	protocol,
 	onProtocolChange,
+	lockOpenaiForImage = false,
 	geminiAction,
 	onGeminiActionChange,
 	filterKeyEmail,
@@ -68,21 +71,31 @@ export function SimulatorSetupPanel({
 				<div>
 					<label className={labelClass}>{t('protocol')}</label>
 					<div className="flex flex-wrap gap-3 pt-1 text-sm">
-						{(['openai', 'anthropic', 'gemini'] as const).map((p) => (
-							<label key={p} className="inline-flex items-center gap-2 cursor-pointer">
-								<input
-									type="radio"
-									name="simProtocol"
-									checked={protocol === p}
-									onChange={() => onProtocolChange(p)}
-									className="text-blue-600 focus:ring-blue-500"
-								/>
-								{p}
-							</label>
-						))}
+						{(['openai', 'anthropic', 'gemini'] as const).map((p) => {
+							const disabled = lockOpenaiForImage && p !== 'openai';
+							return (
+								<label
+									key={p}
+									className={`inline-flex items-center gap-2 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+								>
+									<input
+										type="radio"
+										name="simProtocol"
+										checked={protocol === p}
+										disabled={disabled}
+										onChange={() => onProtocolChange(p)}
+										className="text-blue-600 focus:ring-blue-500"
+									/>
+									{p}
+								</label>
+							);
+						})}
 					</div>
+					{lockOpenaiForImage ? (
+						<p className="mt-1.5 text-xs text-amber-800/90">{t('protocolLockedImage')}</p>
+					) : null}
 				</div>
-				{protocol === 'gemini' ? (
+				{protocol === 'gemini' && !lockOpenaiForImage ? (
 					<fieldset className="flex flex-wrap items-center gap-3 text-sm border border-gray-200 rounded-md px-3 py-2">
 						<legend className="sr-only">{t('geminiAction')}</legend>
 						<span className="text-gray-600 font-medium">{t('geminiAction')}</span>

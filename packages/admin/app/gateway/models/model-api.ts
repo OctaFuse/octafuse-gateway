@@ -1,3 +1,4 @@
+import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { readApiJson } from '@/lib/api-json';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import { serializeDraftRowsToProfileJson, type PricingTierDraftRow } from '@/lib/pricing-tiers-draft';
@@ -32,12 +33,22 @@ export async function saveModel(
 		return { success: false, message: metaParsed.error };
 	}
 
+	const isImage = isImageGenerationModel({
+		output_modalities: formData.output_modalities,
+		pricing_profile: tierJson.json,
+	});
+	const parsedMax = formData.max_tokens.trim() ? parseInt(formData.max_tokens, 10) : NaN;
 	const payload = {
 		...formData,
 		tags: formData.tags,
 		vendor: normalizeModelVendorInput(formData.vendor),
-		context_window: formData.context_window ? parseInt(formData.context_window, 10) : null,
-		max_tokens: parseInt(formData.max_tokens, 10) || 4096,
+		// Image models: chat context / max_tokens are N/A — always clear on save
+		context_window: isImage
+			? null
+			: formData.context_window
+				? parseInt(formData.context_window, 10)
+				: null,
+		max_tokens: isImage ? null : Number.isFinite(parsedMax) ? parsedMax : 4096,
 		input_modalities: formData.input_modalities,
 		output_modalities: formData.output_modalities,
 		released_at: formData.released_at.trim() || null,

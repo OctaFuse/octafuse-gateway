@@ -210,6 +210,9 @@ export function scaleBillingPrices(prices: BillingPriceSnapshot, factor: number)
 		output_price: scale(prices.output_price),
 		cache_read_price: scale(prices.cache_read_price),
 		cache_write_price: scale(prices.cache_write_price),
+		image_input_price: scale(prices.image_input_price),
+		image_input_cache_price: scale(prices.image_input_cache_price),
+		image_output_price: scale(prices.image_output_price),
 	};
 }
 

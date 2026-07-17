@@ -107,3 +107,38 @@ export function providerSupportsUpstreamProtocol(
 ): boolean {
   return readProviderProtocolBase(protocol, provider) != null;
 }
+
+export type OpenAiImagesPathSuffix = 'generations' | 'edits';
+
+/**
+ * 拼接 OpenAI 兼容 Images 上游 URL。
+ *
+ * - 常规：`{baseUrl}/images/{generations|edits}`（`baseUrl` 形如 `https://api.openai.com/v1`）
+ * - 若 `baseUrl` 已是完整 Images 端点（标准 `/images/generations`，或网宿等
+ *   `.../openai-image-generations`），则不再追加路径，避免错误 URL 挂死上游。
+ */
+export function buildOpenAiCompatibleImagesUrl(
+	baseUrl: string,
+	suffix: OpenAiImagesPathSuffix
+): string {
+	const base = baseUrl.trim().replace(/\/+$/, '');
+	if (!base) {
+		throw new Error('OpenAI images base URL is empty');
+	}
+
+	const lower = base.toLowerCase();
+	const standardGenerations = /\/images\/generations$/i.test(lower);
+	const standardEdits = /\/images\/edits$/i.test(lower);
+	/** 网宿等把文生图做成独立 gateway path，而非 OpenAI `/v1` 根 */
+	const vendorGenerations = /(?:^|\/)(?:openai-)?image-generations$/i.test(lower);
+	const vendorEdits = /(?:^|\/)(?:openai-)?image-edits$/i.test(lower);
+
+	if (suffix === 'generations' && (standardGenerations || vendorGenerations)) {
+		return base;
+	}
+	if (suffix === 'edits' && (standardEdits || vendorEdits)) {
+		return base;
+	}
+
+	return `${base}/images/${suffix}`;
+}

@@ -51,6 +51,7 @@ export default function SimulatorPage() {
 								onProxyBaseUrlChange={s.setProxyBaseUrl}
 								protocol={s.protocol}
 								onProtocolChange={s.requestProtocolChange}
+								lockOpenaiForImage={s.selectedModelIsImage}
 								geminiAction={s.geminiAction}
 								onGeminiActionChange={s.setGeminiAction}
 								filterKeyEmail={s.filterKeyEmail}
@@ -78,6 +79,7 @@ export default function SimulatorPage() {
 								onRouteGroupChange={s.setRouteGroup}
 								routeGroupsForModel={s.routeGroupsForModel}
 								selectedModel={s.selectedModel}
+								selectedModelIsImage={s.selectedModelIsImage}
 								modelRoutingString={s.modelRoutingString}
 								matchingRoutes={s.matchingRoutes}
 							/>
@@ -105,6 +107,7 @@ export default function SimulatorPage() {
 							responseMeta={s.responseMeta}
 							responseText={s.responseText}
 							usageHint={s.usageHint}
+							imagePreviews={s.imagePreviews}
 							responseTab={s.responseTab}
 							onResponseTabChange={s.setResponseTab}
 							mergedReasoningDisplay={s.mergedReasoningDisplay}

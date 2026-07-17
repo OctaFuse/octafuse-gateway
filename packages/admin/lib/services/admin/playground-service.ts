@@ -2,12 +2,14 @@
  * Playground：按单条 `model_routes` 直连上游，不经过 Proxy、不鉴 API Key、不写 `api_key_request_logs`、不计费、无 failover。
  */
 import type { GatewayRepositories } from '@octafuse/core';
+import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import {
 	type GeminiContentAction,
 	prepareGeminiUpstreamFetch,
 } from '@octafuse/core/gemini-upstream-url';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
+	buildOpenAiCompatibleImagesUrl,
 	normalizeUpstreamProtocol,
 	resolveEffectiveBaseUrl,
 } from '@octafuse/core/upstream-protocol';
@@ -23,6 +25,8 @@ export type PlaygroundResolvedRoute = {
 	customParams: Record<string, unknown> | null;
 	providerKeyId: string;
 	providerKeyLabel: string;
+	/** Catalog model is image-generation (`output_modalities` includes image). */
+	isImageModel: boolean;
 };
 
 type JsonObject = Record<string, unknown>;
@@ -117,6 +121,14 @@ export async function resolvePlaygroundRoute(
 
 	const resolvedKey = await resolvePlaygroundProviderKey(repos, provider.id, providerKeyId);
 
+	const model = await repos.models.getModelDetailWithRouteCounts(row.model_id);
+	const isImageModel = model
+		? isImageGenerationModel({
+				output_modalities: model.output_modalities as string | null | undefined,
+				pricing_profile: model.pricing_profile as string | null | undefined,
+			})
+		: false;
+
 	return {
 		upstreamProtocol: protocol,
 		baseUrl,
@@ -125,6 +137,7 @@ export async function resolvePlaygroundRoute(
 		customParams,
 		providerKeyId: resolvedKey.id,
 		providerKeyLabel: resolvedKey.label,
+		isImageModel,
 	};
 }
 
@@ -142,6 +155,10 @@ function stripApiKeyFromUrlForHeader(urlString: string): string {
 
 function openAiChatCompletionsUrl(baseUrl: string): string {
 	return `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+}
+
+function openAiImagesGenerationsUrl(baseUrl: string): string {
+	return buildOpenAiCompatibleImagesUrl(baseUrl, 'generations');
 }
 
 function anthropicMessagesUrl(baseUrl: string): string {
@@ -198,9 +215,17 @@ export async function invokePlaygroundUpstream(
 
 	const start = Date.now();
 
+	if (route.isImageModel && route.upstreamProtocol !== 'openai') {
+		throw badRequest(
+			'Image-generation models require upstream_protocol=openai (Playground Images only calls /images/generations).'
+		);
+	}
+
 	switch (route.upstreamProtocol) {
 		case 'openai': {
-			url = openAiChatCompletionsUrl(route.baseUrl);
+			url = route.isImageModel
+				? openAiImagesGenerationsUrl(route.baseUrl)
+				: openAiChatCompletionsUrl(route.baseUrl);
 			headers = {
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${route.providerApiKey}`,

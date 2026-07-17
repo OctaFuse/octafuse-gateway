@@ -23,6 +23,11 @@ export type PricingTiersEditorProps = {
 	toolbarStart?: ReactNode;
 	/** ISO 4217，与网关 `BILLING_CURRENCY` 一致 */
 	billingCurrencyCode?: string;
+	/**
+	 * `image`：展示 Image token 单价列（text / cached text / image in / cached image in / image out）。
+	 * `llm`（默认）：chat 常用 input/output/cache 列。
+	 */
+	variant?: 'llm' | 'image';
 };
 
 function updateRow(
@@ -39,6 +44,27 @@ const DEFAULT_PROMOTED_FINITE_UPTO = '1000000';
 const linkActionClass =
 	'text-sm font-medium text-blue-600 underline-offset-2 hover:text-blue-800 hover:underline bg-transparent p-0 border-0 cursor-pointer';
 
+function PriceCell(props: {
+	value: string;
+	placeholder: string;
+	ariaLabel: string;
+	onChange: (value: string) => void;
+}) {
+	return (
+		<td className="px-1 py-1.5">
+			<input
+				type="text"
+				inputMode="decimal"
+				value={props.value}
+				onChange={(e) => props.onChange(e.target.value)}
+				className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+				placeholder={props.placeholder}
+				aria-label={props.ariaLabel}
+			/>
+		</td>
+	);
+}
+
 export function PricingTiersEditor({
 	rows,
 	onChange,
@@ -46,6 +72,7 @@ export function PricingTiersEditor({
 	title,
 	toolbarStart,
 	billingCurrencyCode = 'USD',
+	variant = 'llm',
 }: PricingTiersEditorProps) {
 	const t = useTranslations('pricing.tiersEditor');
 	const tPricing = useTranslations('pricing');
@@ -53,11 +80,14 @@ export function PricingTiersEditor({
 	const billCode = billingCurrencyCode.trim().toUpperCase();
 	const billSym = getGatewayCurrencySymbol(billCode);
 	const perMPlaceholder = `${billSym}/M`;
-	const unitFooter = t('footer', { currency: billSym });
+	const unitFooter =
+		variant === 'image' ? t('footerImage', { currency: billSym }) : t('footer', { currency: billSym });
 	const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
 	const canRemove = rows.length > minRows;
 	const jsonPreview = formatPricingProfilePreview(rows);
 	const hasToolbarLeft = Boolean(toolbarStart) || Boolean(title);
+	const isImage = variant === 'image';
+	const colSpan = isImage ? 7 : 6;
 
 	const addTier = () => {
 		const base = rows.length > 0 ? rows[rows.length - 1]! : createEmptyTierRow();
@@ -76,6 +106,9 @@ export function PricingTiersEditor({
 			output_price: base.output_price,
 			cache_read_price: base.cache_read_price,
 			cache_write_price: base.cache_write_price,
+			image_input_price: base.image_input_price,
+			image_input_cache_price: base.image_input_cache_price,
+			image_output_price: base.image_output_price,
 		};
 		onChange(rows.length > 0 ? [...promoted, newLast] : [newLast]);
 	};
@@ -113,117 +146,165 @@ export function PricingTiersEditor({
 					</button>
 				</div>
 			</div>
+			{isImage ? (
+				<p className="text-[11px] text-gray-500 leading-relaxed">{t('imageHint')}</p>
+			) : null}
 			<div className="overflow-hidden rounded-md border border-gray-200 bg-white">
 				<div className="overflow-x-auto">
 					<table className="min-w-full divide-y divide-gray-200 text-left text-xs">
 						<thead className="bg-gray-50 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-						<tr>
-							<th className="whitespace-nowrap px-2 py-2">{t('upto')}</th>
-							<th className="whitespace-nowrap px-2 py-2">{t('input')}</th>
-							<th className="whitespace-nowrap px-2 py-2">{t('output')}</th>
-							<th className="whitespace-nowrap px-2 py-2">{t('cacheRead')}</th>
-							<th className="whitespace-nowrap px-2 py-2">{t('cacheWrite')}</th>
-							<th className="w-10 px-1 py-2 text-center"> </th>
-						</tr>
+							<tr>
+								<th className="whitespace-nowrap px-2 py-2">{t('upto')}</th>
+								{isImage ? (
+									<>
+										<th className="whitespace-nowrap px-2 py-2">{t('textInput')}</th>
+										<th className="whitespace-nowrap px-2 py-2">{t('cachedText')}</th>
+										<th className="whitespace-nowrap px-2 py-2">{t('imageInput')}</th>
+										<th className="whitespace-nowrap px-2 py-2">{t('cachedImageInput')}</th>
+										<th className="whitespace-nowrap px-2 py-2">{t('imageOutput')}</th>
+									</>
+								) : (
+									<>
+										<th className="whitespace-nowrap px-2 py-2">{t('input')}</th>
+										<th className="whitespace-nowrap px-2 py-2">{t('output')}</th>
+										<th className="whitespace-nowrap px-2 py-2">{t('cacheRead')}</th>
+										<th className="whitespace-nowrap px-2 py-2">{t('cacheWrite')}</th>
+									</>
+								)}
+								<th className="w-10 px-1 py-2 text-center"> </th>
+							</tr>
 						</thead>
 						<tbody className="divide-y divide-gray-100">
-						{rows.length === 0 ? (
-							<tr>
-								<td colSpan={6} className="px-3 py-4 text-center text-gray-500">
-									{t('noTiers')}
-								</td>
-							</tr>
-						) : (
-							rows.map((r, rowIndex) => {
-								const isLast = rowIndex === rows.length - 1;
-								return (
-									<tr key={r.id} className="align-top">
-										<td className="px-1 py-1.5">
-											{isLast ? (
-												<div
-													className="flex min-h-[1.75rem] min-w-[4.5rem] items-center rounded border border-dashed border-gray-200 bg-gray-50 px-1.5 font-mono text-[11px] text-gray-600 tabular-nums"
-													title={t('lastTierOpenEnded')}
-													aria-label={`upto open bound for tier ${r.id}`}
-												>
-													{tCommon('infinity')}
-												</div>
+							{rows.length === 0 ? (
+								<tr>
+									<td colSpan={colSpan} className="px-3 py-4 text-center text-gray-500">
+										{t('noTiers')}
+									</td>
+								</tr>
+							) : (
+								rows.map((r, rowIndex) => {
+									const isLast = rowIndex === rows.length - 1;
+									return (
+										<tr key={r.id} className="align-top">
+											<td className="px-1 py-1.5">
+												{isLast ? (
+													<div
+														className="flex min-h-[1.75rem] min-w-[4.5rem] items-center rounded border border-dashed border-gray-200 bg-gray-50 px-1.5 font-mono text-[11px] text-gray-600 tabular-nums"
+														title={t('lastTierOpenEnded')}
+														aria-label={`upto open bound for tier ${r.id}`}
+													>
+														{tCommon('infinity')}
+													</div>
+												) : (
+													<input
+														type="text"
+														inputMode="numeric"
+														value={r.upto}
+														onChange={(e) =>
+															onChange(updateRow(rows, r.id, { upto: e.target.value }))
+														}
+														className="w-full min-w-[4.5rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+														placeholder="0"
+														aria-label={`upto for tier ${r.id}`}
+													/>
+												)}
+											</td>
+											{isImage ? (
+												<>
+													<PriceCell
+														value={r.input_price}
+														placeholder={perMPlaceholder}
+														ariaLabel={`text input price ${r.id}`}
+														onChange={(v) =>
+															onChange(updateRow(rows, r.id, { input_price: v }))
+														}
+													/>
+													<PriceCell
+														value={r.cache_read_price}
+														placeholder={tPricing('emptyCachePlaceholder')}
+														ariaLabel={`cached text price ${r.id}`}
+														onChange={(v) =>
+															onChange(updateRow(rows, r.id, { cache_read_price: v }))
+														}
+													/>
+													<PriceCell
+														value={r.image_input_price}
+														placeholder={perMPlaceholder}
+														ariaLabel={`image input price ${r.id}`}
+														onChange={(v) =>
+															onChange(updateRow(rows, r.id, { image_input_price: v }))
+														}
+													/>
+													<PriceCell
+														value={r.image_input_cache_price}
+														placeholder={tPricing('emptyCachePlaceholder')}
+														ariaLabel={`cached image input price ${r.id}`}
+														onChange={(v) =>
+															onChange(
+																updateRow(rows, r.id, { image_input_cache_price: v })
+															)
+														}
+													/>
+													<PriceCell
+														value={r.image_output_price}
+														placeholder={perMPlaceholder}
+														ariaLabel={`image output price ${r.id}`}
+														onChange={(v) =>
+															onChange(updateRow(rows, r.id, { image_output_price: v }))
+														}
+													/>
+												</>
 											) : (
-												<input
-													type="text"
-													inputMode="numeric"
-													value={r.upto}
-													onChange={(e) =>
-														onChange(updateRow(rows, r.id, { upto: e.target.value }))
-													}
-													className="w-full min-w-[4.5rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-													placeholder="0"
-													aria-label={`upto for tier ${r.id}`}
-												/>
+												<>
+													<PriceCell
+														value={r.input_price}
+														placeholder={perMPlaceholder}
+														ariaLabel={`input price ${r.id}`}
+														onChange={(v) =>
+															onChange(updateRow(rows, r.id, { input_price: v }))
+														}
+													/>
+													<PriceCell
+														value={r.output_price}
+														placeholder={perMPlaceholder}
+														ariaLabel={`output price ${r.id}`}
+														onChange={(v) =>
+															onChange(updateRow(rows, r.id, { output_price: v }))
+														}
+													/>
+													<PriceCell
+														value={r.cache_read_price}
+														placeholder={tPricing('emptyCachePlaceholder')}
+														ariaLabel={`cache read ${r.id}`}
+														onChange={(v) =>
+															onChange(updateRow(rows, r.id, { cache_read_price: v }))
+														}
+													/>
+													<PriceCell
+														value={r.cache_write_price}
+														placeholder={tPricing('emptyCachePlaceholder')}
+														ariaLabel={`cache write ${r.id}`}
+														onChange={(v) =>
+															onChange(updateRow(rows, r.id, { cache_write_price: v }))
+														}
+													/>
+												</>
 											)}
-										</td>
-										<td className="px-1 py-1.5">
-											<input
-												type="text"
-												inputMode="decimal"
-												value={r.input_price}
-												onChange={(e) =>
-													onChange(updateRow(rows, r.id, { input_price: e.target.value }))
-												}
-												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-												placeholder={perMPlaceholder}
-											/>
-										</td>
-										<td className="px-1 py-1.5">
-											<input
-												type="text"
-												inputMode="decimal"
-												value={r.output_price}
-												onChange={(e) =>
-													onChange(updateRow(rows, r.id, { output_price: e.target.value }))
-												}
-												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-												placeholder={perMPlaceholder}
-											/>
-										</td>
-										<td className="px-1 py-1.5">
-											<input
-												type="text"
-												inputMode="decimal"
-												value={r.cache_read_price}
-												onChange={(e) =>
-													onChange(updateRow(rows, r.id, { cache_read_price: e.target.value }))
-												}
-												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-												placeholder={tPricing('emptyCachePlaceholder')}
-											/>
-										</td>
-										<td className="px-1 py-1.5">
-											<input
-												type="text"
-												inputMode="decimal"
-												value={r.cache_write_price}
-												onChange={(e) =>
-													onChange(updateRow(rows, r.id, { cache_write_price: e.target.value }))
-												}
-												className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-												placeholder={tPricing('emptyCachePlaceholder')}
-											/>
-										</td>
-										<td className="px-0 py-1.5 text-center">
-											<button
-												type="button"
-												disabled={!canRemove}
-												onClick={() => removeTier(r.id)}
-												className="rounded px-1 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30"
-												title={t('removeTier')}
-											>
-												×
-											</button>
-										</td>
-									</tr>
-								);
-							})
-						)}
+											<td className="px-0 py-1.5 text-center">
+												<button
+													type="button"
+													disabled={!canRemove}
+													onClick={() => removeTier(r.id)}
+													className="rounded px-1 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30"
+													title={t('removeTier')}
+												>
+													×
+												</button>
+											</td>
+										</tr>
+									);
+								})
+							)}
 						</tbody>
 					</table>
 				</div>

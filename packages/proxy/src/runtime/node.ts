@@ -59,6 +59,8 @@ function printNodeStartupBanner(
 		`  服务地址       ${base}`,
 		`  健康检查       GET  ${base}/health`,
 		`  Chat           POST ${base}/v1/chat/completions`,
+		`  Images         POST ${base}/v1/images/generations`,
+		`  Image edits    POST ${base}/v1/images/edits`,
 		`  Anthropic      POST ${base}/v1/messages`,
 		`  Gemini         POST ${base}/v1beta/models/{model}:generateContent`,
 		`  Web search     POST ${base}/v1/tools/web-search`,

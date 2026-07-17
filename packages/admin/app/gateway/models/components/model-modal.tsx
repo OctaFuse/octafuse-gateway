@@ -3,6 +3,7 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import {
+	isImageGenerationModel,
 	MODEL_INPUT_MODALITIES,
 	MODEL_OUTPUT_MODALITIES,
 } from '@octafuse/core/db/model-modalities';
@@ -58,6 +59,9 @@ export function ModelModal(props: Props) {
 
 	const t = useTranslations('models.modal');
 	const tCommon = useTranslations('common');
+	const isImageModel = isImageGenerationModel({
+		output_modalities: formData.output_modalities,
+	});
 
 	if (!open) return null;
 
@@ -143,26 +147,42 @@ export function ModelModal(props: Props) {
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('contextWindow')}</label>
-							<input
-								type="number"
-								value={formData.context_window}
-								onChange={(e) => onFormChange({ ...formData, context_window: e.target.value })}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t('contextWindowPlaceholder')}
-							/>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('maxTokens')}</label>
-							<input
-								type="number"
-								value={formData.max_tokens}
-								onChange={(e) => onFormChange({ ...formData, max_tokens: e.target.value })}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t('maxTokensPlaceholder')}
-							/>
-						</div>
+						{!isImageModel ? (
+							<>
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-1">
+										{t('contextWindow')}
+									</label>
+									<input
+										type="number"
+										value={formData.context_window}
+										onChange={(e) =>
+											onFormChange({ ...formData, context_window: e.target.value })
+										}
+										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+										placeholder={t('contextWindowPlaceholder')}
+									/>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-1">
+										{t('maxTokens')}
+									</label>
+									<input
+										type="number"
+										value={formData.max_tokens}
+										onChange={(e) =>
+											onFormChange({ ...formData, max_tokens: e.target.value })
+										}
+										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+										placeholder={t('maxTokensPlaceholder')}
+									/>
+								</div>
+							</>
+						) : (
+							<div className="col-span-2 rounded-md border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs text-amber-800">
+								{t('imageNoTokenLimits')}
+							</div>
+						)}
 						<div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2.5">
 							<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 								<div className="min-w-0 flex-1 space-y-2.5">
@@ -224,13 +244,24 @@ export function ModelModal(props: Props) {
 							</div>
 						</div>
 						<div className="col-span-2">
-							<PricingTiersEditor
-								title={t('pricingProfile')}
-								rows={pricingTierRows}
-								onChange={onPricingTierRowsChange}
-								billingCurrencyCode={billingCurrency}
-								minRows={0}
-							/>
+							{isImageModel ? (
+								<PricingTiersEditor
+									title={t('imageTokenPricing')}
+									rows={pricingTierRows}
+									onChange={onPricingTierRowsChange}
+									billingCurrencyCode={billingCurrency}
+									minRows={0}
+									variant="image"
+								/>
+							) : (
+								<PricingTiersEditor
+									title={t('pricingProfile')}
+									rows={pricingTierRows}
+									onChange={onPricingTierRowsChange}
+									billingCurrencyCode={billingCurrency}
+									minRows={0}
+								/>
+							)}
 						</div>
 						<div className="col-span-2">
 							<label className="block text-sm font-medium text-gray-700 mb-1">{t('tags')}</label>

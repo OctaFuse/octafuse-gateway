@@ -1,3 +1,4 @@
+import { IMAGE_GENERATIONS_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
 import type { AdminKeyListItem, AdminModelRow, RouteListRow } from './types';
 
@@ -35,6 +36,17 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
 }`,
 };
 
+/** Chat or Images generations template for the current selection. */
+export function bodyTemplateForSelection(
+	protocol: SimulatorProtocol,
+	isImageModel: boolean
+): string {
+	if (isImageModel && protocol === 'openai') {
+		return IMAGE_GENERATIONS_BODY_TEMPLATE;
+	}
+	return BODY_TEMPLATES[protocol];
+}
+
 /** Matches Proxy `resolveModelRouting`: default group sends model id only, else `id:group`. */
 export function buildModelRoutingString(modelId: string, routeGroup: string): string {
 	const g = routeGroup.trim();
@@ -60,8 +72,15 @@ export function normalizeBodyWhitespace(text: string): string {
 	return text.replace(/\r\n/g, '\n').trim();
 }
 
-export function isBodyDirty(bodyText: string, protocol: SimulatorProtocol): boolean {
-	return normalizeBodyWhitespace(bodyText) !== normalizeBodyWhitespace(BODY_TEMPLATES[protocol]);
+export function isBodyDirty(
+	bodyText: string,
+	protocol: SimulatorProtocol,
+	isImageModel = false
+): boolean {
+	return (
+		normalizeBodyWhitespace(bodyText) !==
+		normalizeBodyWhitespace(bodyTemplateForSelection(protocol, isImageModel))
+	);
 }
 
 /** Effective route_group for matching: empty / default → routes with empty or "default" group. */

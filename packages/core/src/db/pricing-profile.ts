@@ -4,17 +4,27 @@
  * `price_override` 内历史 nested `metered` / `charged` tiers **不计价**（运行时忽略）。
  * 单价数值币种见 `system_config.BILLING_CURRENCY`（ISO 4217，默认 USD），与 `api_keys` 预算同币。
  *
- * **形状**：`{ "tiers": [ { "upto", "label", "input_price", "output_price", "cache_read_price"?, "cache_write_price"? } ] }`。
+ * **Token 形状**：`{ "tiers": [ { "upto", "label", "input_price", "output_price", "cache_read_price"?, "cache_write_price"?, "image_input_price"?, "image_input_cache_price"?, "image_output_price"? } ] }`。
  * 单档固定价：仅一档，末档 **`upto` 为 JSON `null`** 表示输入 token 上界无限。
  * 多档阶梯：非末档 `upto` 为有限数字 **≥ 0**；末档 **`upto` 为 `null`**（无限上界）或有限上界；选档 basis 为上游 **`input_tokens`**。
+ *
+ * **图片 token 计价（OpenAI GPT Image）**：用 tier 上 `image_*` 单价 × 上游 `usage` 分项（text / image input / image output）。
+ *
+ * **Legacy `image` 块**：历史按张配置；**不计费**。解析时仍可读入供 Kind 兜底等，Admin 不再写入。
  */
 
-/** 每百万 token 单价快照（与 `usage-tracker.computeMeteredCost` 对齐）。 */
+/** 每百万 token 单价快照（与 `usage-tracker.computeMeteredCost` / image token 计费对齐）。 */
 export type BillingPriceSnapshot = {
 	input_price: number | null;
 	output_price: number | null;
 	cache_read_price: number | null;
 	cache_write_price: number | null;
+	/** Image API：参考图 / edits 的 image input（$/1M） */
+	image_input_price: number | null;
+	/** Image API：cached image input（$/1M） */
+	image_input_cache_price: number | null;
+	/** Image API：生成图的 image output（$/1M） */
+	image_output_price: number | null;
 };
 
 /**
@@ -28,10 +38,29 @@ export interface PricingTierPrices {
 	output_price: number;
 	cache_read_price: number | null;
 	cache_write_price: number | null;
+	image_input_price: number | null;
+	image_input_cache_price: number | null;
+	image_output_price: number | null;
 }
+
+/**
+ * Legacy 按张块（仅历史数据 / Kind 兜底；**不计费**）。
+ * @deprecated 勿再写入；Image 请用 tier `image_*` 单价。
+ */
+export type ImagePricingConfig = {
+	default: number;
+	by_quality?: Record<string, number>;
+	by_size?: Record<string, number>;
+	by_quality_size?: Record<string, number>;
+};
 
 export interface ParsedPricingProfile {
 	tiers: PricingTierPrices[];
+	/**
+	 * Legacy 按张块（若存在）。**不参与扣费**；仅 Kind 判定等只读用途。
+	 * @deprecated
+	 */
+	image?: ImagePricingConfig | null;
 }
 
 /** 单次计费侧解析结果，写入 `api_key_request_logs.pricing_audit.snapshot` 子树。 */
@@ -57,6 +86,9 @@ const ZERO_BILLING_SNAPSHOT: BillingPriceSnapshot = {
 	output_price: 0,
 	cache_read_price: 0,
 	cache_write_price: 0,
+	image_input_price: 0,
+	image_input_cache_price: 0,
+	image_output_price: 0,
 };
 
 function asFiniteNumber(v: unknown): number | null {
@@ -190,14 +222,80 @@ function parseTiersArray(raw: unknown): PricingTierPrices[] | null {
 			output_price,
 			cache_read_price: asOptionalPrice(row.cache_read_price),
 			cache_write_price: asOptionalPrice(row.cache_write_price),
+			image_input_price: asOptionalPrice(row.image_input_price),
+			image_input_cache_price: asOptionalPrice(row.image_input_cache_price),
+			image_output_price: asOptionalPrice(row.image_output_price),
 		});
 	}
 	return tiers;
 }
 
+/** 是否配置了 Image token 分项单价（OpenAI GPT Image 路径）。 */
+export function profileHasImageTokenPricing(
+	profile: ParsedPricingProfile | null | undefined
+): boolean {
+	if (!profile?.tiers?.length) {
+		return false;
+	}
+	for (const t of profile.tiers) {
+		if (
+			(t.image_output_price != null && t.image_output_price > 0) ||
+			(t.image_input_price != null && t.image_input_price > 0)
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Legacy 按张 map：宽松读取——跳过非法条目，不因个别脏键整段失败。
+ * 仅供 Kind 兜底展示；不计费。
+ */
+function parseLooseNonNegativePriceMap(raw: unknown): Record<string, number> | undefined {
+	if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
+		return undefined;
+	}
+	const out: Record<string, number> = {};
+	for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+		const key = String(k).trim().toLowerCase();
+		if (!key) continue;
+		const n = asFiniteNumber(v);
+		if (n == null || n < 0) continue;
+		out[key] = n;
+	}
+	return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** Legacy `image` 块：有合法 default 即视为存在（Kind 兜底）；maps 尽力而为。 */
+function parseImagePricingConfig(raw: unknown): ImagePricingConfig | null | undefined {
+	if (raw === undefined) {
+		return undefined;
+	}
+	if (raw === null) {
+		return null;
+	}
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+		return null;
+	}
+	const o = raw as Record<string, unknown>;
+	const defaultPrice = asFiniteNumber(o.default);
+	if (defaultPrice == null || defaultPrice < 0) {
+		return null;
+	}
+	const cfg: ImagePricingConfig = { default: defaultPrice };
+	const byQuality = parseLooseNonNegativePriceMap(o.by_quality);
+	if (byQuality) cfg.by_quality = byQuality;
+	const bySize = parseLooseNonNegativePriceMap(o.by_size);
+	if (bySize) cfg.by_size = bySize;
+	const byQualitySize = parseLooseNonNegativePriceMap(o.by_quality_size);
+	if (byQualitySize) cfg.by_quality_size = byQualitySize;
+	return cfg;
+}
+
 /**
  * 解析并校验 `pricing_profile` JSON 文本；不合法时返回 `null`（调用方按无 profile 处理，单价按 0）。
- * 仅接受 **`{ "tiers": [ ... ] }`**。
+ * 接受 **`{ "tiers": [ ... ], "image"?: { ... } }`**；`image` 非法时忽略该键（仍返回 tiers），不计费。
  */
 export function parsePricingProfile(jsonText: string | null | undefined): ParsedPricingProfile | null {
 	if (jsonText == null || String(jsonText).trim() === '') {
@@ -217,7 +315,15 @@ export function parsePricingProfile(jsonText: string | null | undefined): Parsed
 	if (!tiers) {
 		return null;
 	}
-	return { tiers };
+	if (o.image === undefined) {
+		return { tiers };
+	}
+	const image = parseImagePricingConfig(o.image);
+	// 非法 / null image：忽略，避免历史脏数据拖垮整个 profile
+	if (image == null) {
+		return { tiers };
+	}
+	return { tiers, image };
 }
 
 /**
@@ -248,6 +354,9 @@ function materializeFromParsed(
 		output_price: tier.output_price,
 		cache_read_price: tier.cache_read_price,
 		cache_write_price: tier.cache_write_price,
+		image_input_price: tier.image_input_price,
+		image_input_cache_price: tier.image_input_cache_price,
+		image_output_price: tier.image_output_price,
 	};
 	return {
 		prices,

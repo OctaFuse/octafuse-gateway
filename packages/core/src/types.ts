@@ -81,7 +81,8 @@ export interface ModelRow {
   /** 厂商；缺省归类为 other */
   vendor: string;
   context_window: number | null;
-  max_tokens: number;
+  /** Chat max output tokens; null for image-generation models */
+  max_tokens: number | null;
   /** `{ "tiers": [...] }` JSON 文本，与 `parsePricingProfile` 契约一致 */
   pricing_profile: string | null;
   /** `json_group_array(model_tags.tag)` */

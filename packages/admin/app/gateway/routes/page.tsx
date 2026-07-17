@@ -39,10 +39,12 @@ function RoutesContent() {
 						visibleRouteCount={state.visibleRouteCount}
 						hasActiveFilters={state.hasActiveFilters}
 						filterStatus={state.filterStatus}
+						filterKind={state.filterKind}
 						filterRouteGroup={state.filterRouteGroup}
 						filterVendor={state.filterVendor}
 						filterProviderId={state.filterProviderId}
 						statusCounts={state.statusCounts}
+						kindCounts={state.kindCounts}
 						routesCount={state.routes.length}
 						routeGroupFilterOptions={state.routeGroupFilterOptions}
 						routeGroupCounts={state.routeGroupCounts}
@@ -50,6 +52,7 @@ function RoutesContent() {
 						providers={state.providers}
 						providerRouteCounts={state.providerRouteCounts}
 						onFilterStatusChange={state.setFilterStatus}
+						onFilterKindChange={state.setFilterKind}
 						onFilterRouteGroupChange={state.setFilterRouteGroup}
 						onFilterVendorChange={state.setFilterVendor}
 						onFilterProviderIdChange={state.setFilterProviderId}
@@ -119,6 +122,8 @@ function RoutesContent() {
 				selectedModel={state.selectedModel}
 				selectedProvider={state.selectedProvider}
 				catalogStandardTierRows={state.catalogStandardTierRows}
+				catalogImagePricingDisplay={state.catalogImagePricingDisplay}
+				selectedModelIsImage={state.selectedModelIsImage}
 				allowedProtocolsForProvider={state.allowedProtocolsForProvider}
 				businessTimezone={state.businessTimezone}
 				onClose={state.closeRouteModal}

@@ -59,7 +59,7 @@ export function createMySqlModelsRepository(db: MySqlDatabaseClient): ModelsRepo
 				displayName: params.displayName == null ? null : String(params.displayName),
 				vendor: params.vendor,
 				contextWindow: params.contextWindow == null ? null : Number(params.contextWindow),
-				maxTokens: params.maxTokens == null ? 8192 : Number(params.maxTokens),
+				maxTokens: params.maxTokens == null ? null : Number(params.maxTokens),
 				pricingProfile: params.pricingProfile == null ? null : String(params.pricingProfile),
 				description: params.description == null ? null : String(params.description),
 				metadata: params.metadata == null ? null : String(params.metadata),

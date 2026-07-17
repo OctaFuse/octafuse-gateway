@@ -194,11 +194,15 @@ export type AdminStaticModelPresetCatalogItem = {
 	id: string;
 	display_name: string | null;
 	vendor: string;
+	/** LLM vs 文生图（与列表页 Kind 一致：`output` 含 `image`，否则兜底看 USD `pricing.image`）。 */
+	kind: 'llm' | 'image';
 	context_window: number | null;
 	max_tokens: number | null;
 	/** `pricing.usd` 档位数，便于预览阶梯 */
 	tier_count_usd: number;
-	/** USD 分支价格摘要（每档一行，单位为每百万 token）。 */
+	/** 表格短文案（如 `$0.053 / image` 或 `$2 / $8`）。 */
+	pricing_label_usd: string | null;
+	/** 悬停详情：token 档位行，或按张 default + quality×size 矩阵。 */
 	pricing_preview_usd: string | null;
 };
 

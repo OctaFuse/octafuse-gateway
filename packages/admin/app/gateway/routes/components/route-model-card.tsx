@@ -1,11 +1,14 @@
 'use client';
 
 import { ClipboardDocumentIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { useTranslations } from 'next-intl';
 import type { GatewayModel } from '@/lib/types';
+import { tagBadgeClass } from '../../models/model-utils';
 import type { RouteListRow } from '../types';
 import type { RouteModelGroup } from '../route-utils';
+import { parseModelTagsList } from '../route-utils';
 import { RouteProtocolSections } from './route-protocol-section';
 
 type Props = {
@@ -39,19 +42,38 @@ export function RouteModelCard(props: Props) {
 		onOpenStickyDialog,
 	} = props;
 	const t = useTranslations('routes.card');
+	const tModelsCard = useTranslations('models.card');
 	const { model_id, title, groupRoutes, activeCount } = card;
+	const isImage = meta ? isImageGenerationModel(meta) : false;
 	const contextStr = formatCompactTokens(meta?.context_window);
 	const maxStr = formatCompactTokens(meta?.max_tokens);
-	const modelStatsTitle = t('contextMaxOutput', { context: contextStr, max: maxStr });
+	const modelStatsTitle = isImage
+		? t('imageModelHint')
+		: t('contextMaxOutput', { context: contextStr, max: maxStr });
+	const modelStatsLine = isImage
+		? t('imageModelHint')
+		: t('contextLine', { context: contextStr, max: maxStr });
+	const tags = parseModelTagsList(meta);
+	const tagShown = tags.slice(0, 6);
+	const tagExtra = tags.length - tagShown.length;
 
 	return (
 		<div className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 focus-within:border-blue-400 focus-within:bg-blue-50/30 focus-within:shadow-lg focus-within:ring-2 focus-within:ring-blue-500 active:translate-y-0">
 			<div className="flex items-start justify-between gap-2 border-b border-gray-100 bg-white px-4 py-3 transition-colors group-hover:bg-blue-50/30 group-focus-within:bg-blue-50/30">
 				<div className="min-w-0 flex-1">
-					<div className="flex min-w-0 items-center gap-1">
+					<div className="flex min-w-0 flex-wrap items-center gap-1.5">
 						<h4 className="min-w-0 truncate text-sm font-semibold leading-snug text-gray-900" title={title}>
 							{title}
 						</h4>
+						<span
+							className={
+								isImage
+									? 'shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800'
+									: 'shrink-0 rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800'
+							}
+						>
+							{isImage ? tModelsCard('kindImage') : tModelsCard('kindLlm')}
+						</span>
 						<button
 							type="button"
 							onClick={() => void onCopyModelId(model_id)}
@@ -72,13 +94,33 @@ export function RouteModelCard(props: Props) {
 					</div>
 					<div className="mt-0.5 flex min-w-0 items-center gap-1.5">
 						<p className="min-w-0 truncate text-[11px] text-gray-500" title={modelStatsTitle}>
-							{t('contextLine', { context: contextStr, max: maxStr })}
+							{modelStatsLine}
 						</p>
 						{copiedModelId === model_id ? (
 							<span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
 								{t('copied')}
 							</span>
 						) : null}
+					</div>
+					<div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1">
+						{tagShown.length > 0 ? (
+							<>
+								{tagShown.map((tag) => (
+									<span
+										key={tag}
+										className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
+										title={t('modelTagTitle', { tag })}
+									>
+										{tag}
+									</span>
+								))}
+								{tagExtra > 0 ? (
+									<span className="self-center text-[10px] text-gray-400">+{tagExtra}</span>
+								) : null}
+							</>
+						) : (
+							<span className="text-[10px] text-gray-400">{tModelsCard('noTags')}</span>
+						)}
 					</div>
 				</div>
 				<div className="flex shrink-0 items-center gap-1">

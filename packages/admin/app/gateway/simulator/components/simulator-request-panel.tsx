@@ -2,6 +2,7 @@
 
 import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { RequestTargetUrl } from '@/components/request-target-url';
 import { codeBlockClass, inputClass, labelClass, prettyJsonBody } from '../simulator-utils';
 import type { WirePreview } from '../types';
 
@@ -83,6 +84,12 @@ export function SimulatorRequestPanel({
 			{infoHint ? (
 				<div className="p-2.5 bg-blue-50 border border-blue-200 rounded-md text-blue-900 text-sm">{infoHint}</div>
 			) : null}
+			<RequestTargetUrl
+				label={t('requestTargetUrl')}
+				method={displayWire?.method ?? 'POST'}
+				url={displayWire?.url}
+				emptyHint={t('requestTargetUrlEmpty')}
+			/>
 			<div className="flex-1 min-h-0 flex flex-col">
 				<label className={labelClass}>JSON</label>
 				<textarea

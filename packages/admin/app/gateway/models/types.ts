@@ -12,9 +12,13 @@ export type PresetCatalogRow = {
 	id: string;
 	display_name: string | null;
 	vendor: string;
+	/** `llm` | `image` — same Kind as Models list filter */
+	kind: 'llm' | 'image';
 	context_window: number | null;
 	max_tokens: number | null;
 	tier_count_usd: number;
+	/** Short cell label (USD catalog branch). */
+	pricing_label_usd: string | null;
 	pricing_preview_usd: string | null;
 };
 
@@ -51,6 +55,17 @@ export type ModelImportResult = {
 
 /** Sidebar filter: show models from every vendor (`?vendor=all`). */
 export const ALL_VENDORS_KEY = 'all';
+
+/** Sidebar Kind filter (`?kind=all|llm|image`). */
+export const ALL_KINDS_KEY = 'all';
+export type ModelKindFilter = 'all' | 'llm' | 'image';
+
+export function parseKindFilterParam(value: string | null): ModelKindFilter {
+	if (value == null || value.trim() === '') return ALL_KINDS_KEY;
+	const v = value.trim().toLowerCase();
+	if (v === 'llm' || v === 'image') return v;
+	return ALL_KINDS_KEY;
+}
 
 export const EMPTY_MODEL_FORM: ModelFormData = {
 	id: '',

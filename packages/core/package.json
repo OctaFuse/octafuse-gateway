@@ -27,6 +27,7 @@
 			"default": "./src/index.ts"
 		},
 		"./db/pricing-profile": "./src/db/pricing-profile.ts",
+		"./db/image-token-usage": "./src/db/image-token-usage.ts",
 		"./db/pricing-schedule": "./src/db/pricing-schedule.ts",
 		"./db/model-modalities": "./src/db/model-modalities.ts",
 		"./db/model-sticky-config": "./src/db/model-sticky-config.ts",

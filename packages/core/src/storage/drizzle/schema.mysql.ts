@@ -112,7 +112,8 @@ export const modelsTable = mysqlTable('models', {
 	displayName: text('display_name'),
 	vendor: varchar('vendor', { length: COL.VENDOR }).notNull().default('other'),
 	contextWindow: int('context_window'),
-	maxTokens: int('max_tokens').notNull().default(8192),
+	/** Chat completion max output tokens; NULL for image-generation models. */
+	maxTokens: int('max_tokens').default(8192),
 	pricingProfile: text('pricing_profile'),
 	description: text('description'),
 	metadata: text('metadata'),

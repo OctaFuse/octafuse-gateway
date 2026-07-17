@@ -7,6 +7,7 @@ import {
 	coerceModelInputModalitiesInput,
 	coerceModelOutputModalitiesInput,
 	coerceModelReleasedAtInput,
+	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import {
 	BILLING_CURRENCY_KEY,
@@ -44,35 +45,77 @@ function formatPriceForPreview(value: unknown): string | null {
 	return Number.isInteger(value) ? String(value) : String(value);
 }
 
-function buildUsdPricingPreviewText(rawUsdPricing: unknown): string | null {
-	if (!rawUsdPricing || typeof rawUsdPricing !== 'object' || Array.isArray(rawUsdPricing)) return null;
-	const tiers = (rawUsdPricing as Record<string, unknown>).tiers;
+type CatalogPricingPreview = {
+	label: string | null;
+	detail: string | null;
+};
+
+function buildUsdTokenPricingPreview(rawUsdPricing: Record<string, unknown>): CatalogPricingPreview | null {
+	const tiers = rawUsdPricing.tiers;
 	if (!Array.isArray(tiers) || tiers.length === 0) return null;
 
 	const lines: string[] = [];
+	let firstIn: string | null = null;
+	let firstOut: string | null = null;
+	let firstImageIn: string | null = null;
+	let firstImageOut: string | null = null;
 	for (let i = 0; i < tiers.length; i++) {
 		const tier = tiers[i];
 		if (!tier || typeof tier !== 'object' || Array.isArray(tier)) continue;
 		const tierObj = tier as Record<string, unknown>;
 		const inPrice = formatPriceForPreview(tierObj.input_price);
 		const outPrice = formatPriceForPreview(tierObj.output_price);
+		const imageIn = formatPriceForPreview(tierObj.image_input_price);
+		const imageOut = formatPriceForPreview(tierObj.image_output_price);
+		if (firstIn == null && inPrice != null) firstIn = inPrice;
+		if (firstOut == null && outPrice != null) firstOut = outPrice;
+		if (firstImageIn == null && imageIn != null) firstImageIn = imageIn;
+		if (firstImageOut == null && imageOut != null) firstImageOut = imageOut;
 		const cacheReadPrice = formatPriceForPreview(tierObj.cache_read_price);
 		const cacheWritePrice = formatPriceForPreview(tierObj.cache_write_price);
+		const imageInCache = formatPriceForPreview(tierObj.image_input_cache_price);
 		const upto = tierObj.upto;
 		const rangeLabel =
 			typeof upto === 'number' && Number.isFinite(upto) ? `<=${upto}` : 'all tokens';
 		const parts = [
-			`input ${inPrice ?? '—'}`,
-			`output ${outPrice ?? '—'}`,
+			`text-in ${inPrice ?? '—'}`,
+			`text-out ${outPrice ?? '—'}`,
 			`cache-read ${cacheReadPrice ?? '—'}`,
 		];
 		if (cacheWritePrice != null) {
 			parts.push(`cache-write ${cacheWritePrice}`);
 		}
-		lines.push(`Tier ${i + 1} (${rangeLabel}): ${parts.join(' · ')}`);
+		if (imageIn != null || imageOut != null) {
+			parts.push(`img-in ${imageIn ?? '—'}`);
+			if (imageInCache != null) {
+				parts.push(`img-in-cache ${imageInCache}`);
+			}
+			parts.push(`img-out ${imageOut ?? '—'}`);
+		}
+		lines.push(`Tier ${i + 1} (${rangeLabel}): ${parts.join(' · ')} ($/M)`);
 	}
 	if (lines.length === 0) return null;
-	return lines.join('\n');
+	const hasImageToken = firstImageOut != null || firstImageIn != null;
+	const label = hasImageToken
+		? `$${firstIn ?? '—'} / $${firstImageIn ?? '—'} / $${firstImageOut ?? '—'} /M`
+		: firstIn != null || firstOut != null
+			? `$${firstIn ?? '—'} / $${firstOut ?? '—'} /M`
+			: `${tiers.length} tier(s)`;
+	return { label, detail: lines.join('\n') };
+}
+
+/** USD 分支：Image / LLM 均展示 token 档位摘要（Image 含 img-in / img-out）。 */
+function buildUsdCatalogPricingPreview(
+	rawUsdPricing: unknown,
+	_kind: 'llm' | 'image'
+): CatalogPricingPreview {
+	if (!rawUsdPricing || typeof rawUsdPricing !== 'object' || Array.isArray(rawUsdPricing)) {
+		return { label: null, detail: null };
+	}
+	return buildUsdTokenPricingPreview(rawUsdPricing as Record<string, unknown>) ?? {
+		label: null,
+		detail: null,
+	};
 }
 
 /** 全部模型列表，`tags` 从 JSON 字符串解析为数组。 */
@@ -82,14 +125,14 @@ export async function listModelsService(repos: GatewayRepositories): Promise<Adm
 }
 
 /**
- * 创建模型并写入标签；`max_tokens` 默认 8192。
+ * 创建模型并写入标签。
+ * LLM：`max_tokens` 缺省 8192；文生图（`output` 含 image）：`context_window` / `max_tokens` 可为 null。
  * @throws `badRequest` 缺 id
  */
 export async function createModelService(repos: GatewayRepositories, body: AdminModelMutationInput): Promise<AdminCreatedIdOutput> {
 	const id = String(body.id ?? '');
 	if (!id) throw badRequest('Model ID is required');
 
-	const maxTokens = body.max_tokens ?? 8192;
 	const pricingProfile =
 		body.pricing_profile !== undefined ? coerceModelPricingProfileInput(body.pricing_profile) : null;
 	if (!pricingProfile) {
@@ -100,12 +143,26 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 	const outputModalities =
 		body.output_modalities !== undefined ? coerceModelOutputModalitiesInput(body.output_modalities) : null;
 	const releasedAt = body.released_at !== undefined ? coerceModelReleasedAtInput(body.released_at) : null;
+	const isImage = isImageGenerationModel({
+		output_modalities: outputModalities,
+		pricing_profile: pricingProfile,
+	});
+	const maxTokens = isImage
+		? body.max_tokens == null
+			? null
+			: Number(body.max_tokens)
+		: (body.max_tokens ?? 8192);
+	const contextWindow = isImage
+		? body.context_window == null
+			? null
+			: Number(body.context_window)
+		: body.context_window;
 
 	await repos.models.insertModel({
 		id,
 		displayName: body.display_name,
 		vendor: normalizeModelVendorInput(body.vendor),
-		contextWindow: body.context_window,
+		contextWindow,
 		maxTokens,
 		pricingProfile,
 		description: body.description,
@@ -182,14 +239,24 @@ export function listStaticModelPresetCatalogForAdmin(): AdminStaticModelPresetCa
 					tierCountUsd = tiers.length;
 				}
 			}
+			const kind: AdminStaticModelPresetCatalogItem['kind'] = isImageGenerationModel({
+				output_modalities: p.modalities?.output ?? null,
+				pricing_profile:
+					usd != null && typeof usd === 'object' ? JSON.stringify(usd) : null,
+			})
+				? 'image'
+				: 'llm';
+			const pricing = buildUsdCatalogPricingPreview(usd, kind);
 			return {
 				id,
 				display_name: (p.display_name != null ? String(p.display_name) : null) || null,
 				vendor: normalizeModelVendorInput(p.vendor),
+				kind,
 				context_window: p.context_window ?? null,
 				max_tokens: p.max_tokens ?? null,
 				tier_count_usd: tierCountUsd,
-				pricing_preview_usd: buildUsdPricingPreviewText(usd),
+				pricing_label_usd: pricing.label,
+				pricing_preview_usd: pricing.detail,
 			};
 		})
 		.filter((row) => row.id.length > 0);
@@ -238,12 +305,17 @@ export async function importModelsFromStaticPresetsService(
 				throw badRequest(`Static preset "${id}": missing or invalid pricing for ${billingUsed}`);
 			}
 
+			const presetIsImage = isImageGenerationModel({
+				output_modalities: preset.modalities?.output ?? null,
+				pricing_profile: pricingProfile,
+			});
 			const body: AdminModelMutationInput = {
 				id,
 				display_name: preset.display_name ?? null,
 				vendor: normalizeModelVendorInput(preset.vendor),
 				context_window: preset.context_window ?? null,
-				max_tokens: preset.max_tokens ?? 8192,
+				// Preserve null for image presets; LLM presets still default in createModelService
+				max_tokens: presetIsImage ? (preset.max_tokens ?? null) : (preset.max_tokens ?? 8192),
 				pricing_profile: pricingProfile,
 				tags: Array.isArray(preset.tags) ? preset.tags.map((t) => String(t)) : [],
 				input_modalities: preset.modalities?.input ?? null,

@@ -22,6 +22,11 @@ export type BuildSimulatorRequestInput = {
 	body: Record<string, unknown>;
 	/** Full `sk-…` or already prefixed with Bearer */
 	apiKey: string;
+	/**
+	 * OpenAI only: use Proxy `POST /v1/images/generations` instead of chat completions
+	 * (image-generation catalog models).
+	 */
+	imagesGenerations?: boolean;
 };
 
 export type BuildSimulatorRequestResult = {
@@ -51,8 +56,9 @@ export function buildSimulatorRequest(input: BuildSimulatorRequestInput): BuildS
 	switch (input.protocol) {
 		case 'openai': {
 			const merged = { ...input.body, model: input.modelForRouting };
+			const path = input.imagesGenerations ? '/v1/images/generations' : '/v1/chat/completions';
 			return {
-				url: `${base}/v1/chat/completions`,
+				url: `${base}${path}`,
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: auth,

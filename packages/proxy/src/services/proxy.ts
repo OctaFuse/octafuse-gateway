@@ -5,13 +5,22 @@
 import type { GatewayRepositories } from '@octafuse/core';
 import type { RouteResult } from './model-router';
 import { dispatchOpenAiRoute } from './egress/openai-driver';
+import {
+	dispatchOpenAiImageEdits,
+	dispatchOpenAiImageGenerations,
+	type NormalizedImageEditRequest,
+} from './egress/openai-images-driver';
 import { dispatchAnthropicRoute } from './egress/anthropic-driver';
 import { dispatchGeminiRoute } from './egress/gemini-driver';
-import { failoverDispatchWithKeyPool, type FailoverDispatchOptions } from './failover-dispatch';
+import {
+	failoverDispatchWithKeyPool,
+	type FailoverDispatchOptions,
+	type ProxyDispatchMeta,
+} from './failover-dispatch';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
 
-export type { FailoverDispatchOptions, StickyDispatchContext } from './failover-dispatch';
+export type { FailoverDispatchOptions, StickyDispatchContext, ProxyDispatchMeta } from './failover-dispatch';
 
 /** 各协议 driver 从上游响应/stream 汇总出的用量（供 `usage-tracker` 计价）。 */
 export interface UsageFromStream {
@@ -49,6 +58,8 @@ export interface ProxyResult {
 	circuitEvents: GatewayCircuitAlertEvent[];
 	/** 因已有熔断短路、无需重复 webhook 告警 */
 	suppressErrorAlert: boolean;
+	/** Images 等协议透传已解析字段，避免 route 侧重复 parse */
+	meta?: ProxyDispatchMeta;
 }
 
 /** 无用量或解析失败时的零值占位（避免 undefined 传播）。 */
@@ -100,6 +111,48 @@ export async function proxyAnthropicMessages(
 		'anthropic',
 		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
 			dispatchAnthropicRoute(route, body, signal, timing, attempt),
+		requestSignal,
+		options
+	);
+}
+
+/**
+ * 代理 OpenAI Images Generations。
+ */
+export async function proxyImageGenerations(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	body: Record<string, unknown>,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
+): Promise<ProxyResult> {
+	return failoverDispatchWithKeyPool(
+		repos,
+		routes,
+		'openai',
+		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
+			dispatchOpenAiImageGenerations(route, body, signal, timing, attempt),
+		requestSignal,
+		options
+	);
+}
+
+/**
+ * 代理 OpenAI Images Edits（multipart；每次 attempt 重建 FormData）。
+ */
+export async function proxyImageEdits(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	edit: NormalizedImageEditRequest,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
+): Promise<ProxyResult> {
+	return failoverDispatchWithKeyPool(
+		repos,
+		routes,
+		'openai',
+		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
+			dispatchOpenAiImageEdits(route, edit, signal, timing, attempt),
 		requestSignal,
 		options
 	);

@@ -2,10 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getCatalogPricingTierRows } from '@/lib/pricing-ui';
+import { useTranslations } from 'next-intl';
+import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import {
+	parseModelStickyConfig,
+	stickyRuleKey,
+} from '@octafuse/core/db/model-sticky-config';
+import { useBusinessTimezone } from '@/components/BusinessTimezoneProvider';
+import { isImageRouteModel } from '@/lib/image-generations';
+import { getCatalogImagePricingDisplay, getCatalogPricingTierRows } from '@/lib/pricing-ui';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import { normalizeRouteGroup } from '@/lib/route-group-ui';
-import { useBusinessTimezone } from '@/components/BusinessTimezoneProvider';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
@@ -15,9 +22,10 @@ import {
 } from '@/lib/upstream-protocol';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import {
-	parseModelStickyConfig,
-	stickyRuleKey,
-} from '@octafuse/core/db/model-sticky-config';
+	ALL_KINDS_KEY,
+	parseKindFilterParam,
+	type ModelKindFilter,
+} from '../models/types';
 import {
 	deleteRoute,
 	fetchRoutesPageData,
@@ -45,6 +53,7 @@ import {
 
 export function useRoutesPageState() {
 	const searchParams = useSearchParams();
+	const tFilter = useTranslations('filter');
 	const [routes, setRoutes] = useState<RouteListRow[]>([]);
 	const [models, setModels] = useState<GatewayModel[]>([]);
 	const [providers, setProviders] = useState<GatewayProvider[]>([]);
@@ -57,6 +66,7 @@ export function useRoutesPageState() {
 	const [filterProviderId, setFilterProviderId] = useState('');
 	const [filterRouteGroup, setFilterRouteGroup] = useState('');
 	const [filterStatus, setFilterStatus] = useState('');
+	const [filterKind, setFilterKind] = useState<ModelKindFilter>(ALL_KINDS_KEY);
 	const [saveError, setSaveError] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -78,10 +88,12 @@ export function useRoutesPageState() {
 		const providerId = searchParams.get('provider_id');
 		const status = searchParams.get('status');
 		const routeGroup = searchParams.get('route_group');
+		const kind = searchParams.get('kind');
 		setFilterVendor(vendor ? normalizeModelVendorInput(vendor) : '');
 		setFilterProviderId(providerId ?? '');
 		setFilterStatus(status ?? '');
 		setFilterRouteGroup(routeGroup ?? '');
+		setFilterKind(parseKindFilterParam(kind));
 	}, [searchParams]);
 
 	useReplaceListPageQuery(() => {
@@ -90,8 +102,9 @@ export function useRoutesPageState() {
 		if (filterProviderId) params.set('provider_id', filterProviderId);
 		if (filterRouteGroup) params.set('route_group', filterRouteGroup);
 		if (filterStatus) params.set('status', filterStatus);
+		if (filterKind && filterKind !== ALL_KINDS_KEY) params.set('kind', filterKind);
 		return params;
-	}, [filterVendor, filterProviderId, filterRouteGroup, filterStatus]);
+	}, [filterVendor, filterProviderId, filterRouteGroup, filterStatus, filterKind]);
 
 	const refreshRoutesPage = useCallback(async () => {
 		try {
@@ -166,6 +179,16 @@ export function useRoutesPageState() {
 		return { all: routes.length, active, inactive };
 	}, [routes]);
 
+	const kindCounts = useMemo(() => {
+		let llm = 0;
+		let image = 0;
+		for (const m of models) {
+			if (isImageGenerationModel(m)) image += 1;
+			else llm += 1;
+		}
+		return { all: models.length, llm, image };
+	}, [models]);
+
 	const routesByModel = useMemo(
 		() =>
 			buildRoutesByModel({
@@ -176,8 +199,18 @@ export function useRoutesPageState() {
 				filterProviderId,
 				filterRouteGroup,
 				filterStatus,
+				filterKind,
 			}),
-		[routes, models, modelMeta, filterVendor, filterProviderId, filterRouteGroup, filterStatus]
+		[
+			routes,
+			models,
+			modelMeta,
+			filterVendor,
+			filterProviderId,
+			filterRouteGroup,
+			filterStatus,
+			filterKind,
+		]
 	);
 
 	const routeCards = useMemo(
@@ -198,7 +231,11 @@ export function useRoutesPageState() {
 	);
 
 	const hasActiveFilters = Boolean(
-		filterVendor || filterProviderId || filterRouteGroup || filterStatus
+		filterVendor ||
+			filterProviderId ||
+			filterRouteGroup ||
+			filterStatus ||
+			filterKind !== ALL_KINDS_KEY
 	);
 
 	const activeFilterSummary = useMemo(
@@ -208,9 +245,19 @@ export function useRoutesPageState() {
 				filterRouteGroup,
 				filterVendor,
 				filterProviderId,
+				filterKind,
 				providers,
+				kindLabels: { llm: tFilter('kindLlm'), image: tFilter('kindImage') },
 			}),
-		[filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers]
+		[
+			filterStatus,
+			filterRouteGroup,
+			filterVendor,
+			filterProviderId,
+			filterKind,
+			providers,
+			tFilter,
+		]
 	);
 
 	const selectedProvider = useMemo(
@@ -223,15 +270,31 @@ export function useRoutesPageState() {
 		[models, formData.model_id]
 	);
 
+	const selectedModelIsImage = useMemo(
+		() => (selectedModel ? isImageRouteModel(selectedModel) : false),
+		[selectedModel]
+	);
+
 	const catalogStandardTierRows = useMemo(() => {
-		if (!selectedModel) return [];
+		if (!selectedModel || selectedModelIsImage) return [];
 		return getCatalogPricingTierRows(selectedModel, billingCurrency);
-	}, [selectedModel, billingCurrency]);
+	}, [selectedModel, selectedModelIsImage, billingCurrency]);
+
+	const catalogImagePricingDisplay = useMemo(() => {
+		if (!selectedModel || !selectedModelIsImage) return null;
+		return getCatalogImagePricingDisplay(selectedModel, billingCurrency);
+	}, [selectedModel, selectedModelIsImage, billingCurrency]);
 
 	const allowedProtocolsForProvider = useMemo((): UpstreamProtocol[] => {
 		if (!selectedProvider) return [];
-		return UPSTREAM_PROTOCOLS.filter((proto) => providerSupportsUpstreamProtocol(proto, selectedProvider));
-	}, [selectedProvider]);
+		const supported = UPSTREAM_PROTOCOLS.filter((proto) =>
+			providerSupportsUpstreamProtocol(proto, selectedProvider)
+		);
+		if (selectedModelIsImage) {
+			return supported.includes('openai') ? ['openai'] : [];
+		}
+		return supported;
+	}, [selectedProvider, selectedModelIsImage]);
 
 	useEffect(() => {
 		if (!showModal || !selectedProvider || allowedProtocolsForProvider.length === 0) return;
@@ -241,11 +304,19 @@ export function useRoutesPageState() {
 		});
 	}, [showModal, formData.provider_id, selectedProvider, allowedProtocolsForProvider]);
 
+	useEffect(() => {
+		if (!showModal || !selectedModelIsImage) return;
+		setFormData((fd) =>
+			fd.upstream_protocol === 'openai' ? fd : { ...fd, upstream_protocol: 'openai' }
+		);
+	}, [showModal, selectedModelIsImage, formData.model_id]);
+
 	const clearAllFilters = useCallback(() => {
 		setFilterVendor('');
 		setFilterProviderId('');
 		setFilterRouteGroup('');
 		setFilterStatus('');
+		setFilterKind(ALL_KINDS_KEY);
 	}, []);
 
 	const handleCreate = useCallback(
@@ -444,12 +515,15 @@ export function useRoutesPageState() {
 		setFilterRouteGroup,
 		filterStatus,
 		setFilterStatus,
+		filterKind,
+		setFilterKind,
 		hasActiveFilters,
 		clearAllFilters,
 		activeFilterSummary,
 		visibleModelCount,
 		visibleRouteCount,
 		statusCounts,
+		kindCounts,
 		routeGroupFilterOptions,
 		routeGroupCounts,
 		vendorFilterOptions,
@@ -471,6 +545,8 @@ export function useRoutesPageState() {
 		selectedProvider,
 		selectedModel,
 		catalogStandardTierRows,
+		catalogImagePricingDisplay,
+		selectedModelIsImage,
 		allowedProtocolsForProvider,
 		businessTimezone,
 		stickyDialog,

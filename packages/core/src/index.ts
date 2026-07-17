@@ -30,6 +30,7 @@ export * from './db/model-sticky-config';
 export * from './db/request-logs-types';
 export * from './db/pricing-audit';
 export * from './db/pricing-profile';
+export * from './db/image-token-usage';
 export * from './db/pricing-schedule';
 export * from './db/model-modalities';
 export * from './db/request-log-status-filter';

@@ -7,18 +7,29 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useTranslations } from 'next-intl';
 import { flushSync } from 'react-dom';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { ImageGenerationsPreview } from '@/components/image-generations-preview';
+import { RequestTargetUrl } from '@/components/request-target-url';
 import { readApiJson } from '@/lib/api-json';
+import {
+	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	imageRequestMetaFromBody,
+	isImageRouteModel,
+	parseImagesGenerationsResponse,
+	type ImagePreviewItem,
+} from '@/lib/image-generations';
 import {
 	inferPlaygroundParseMode,
 	mergeAssistantTextParts,
 	type PlaygroundProtocol,
 } from '@/lib/playground/merge-assistant-text';
+import { previewPlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
 import {
 	normalizeProtocol,
 	parseLastStreamUsage,
 	tryParseUsageSummary,
 } from '@/lib/playground/usage-parsing';
-import type { ApiResponse } from '@/lib/types';
+import type { AdminModelRow } from '@/lib/services/admin/types';
+import type { ApiResponse, GatewayProvider } from '@/lib/types';
 
 const inputClass =
 	'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white';
@@ -115,6 +126,8 @@ export default function PlaygroundPage() {
 	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
 	const [routes, setRoutes] = useState<RouteListRow[]>([]);
+	const [modelsById, setModelsById] = useState<Map<string, AdminModelRow>>(new Map());
+	const [providersById, setProvidersById] = useState<Map<string, GatewayProvider>>(new Map());
 	const [loadingRoutes, setLoadingRoutes] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -139,6 +152,7 @@ export default function PlaygroundPage() {
 	/** 与最后一次 Send 时的路由协议一致，避免切换下拉后拼接错乱 */
 	const [responseProtocol, setResponseProtocol] = useState<PlaygroundProtocol>('openai');
 	const [usageHint, setUsageHint] = useState<string | null>(null);
+	const [imagePreviews, setImagePreviews] = useState<ImagePreviewItem[]>([]);
 	/** Send 成功后由响应头 `x-playground-request-body` 解析（服务端合并后的实际上游 JSON）。 */
 	const [lastSentWireBody, setLastSentWireBody] = useState<string | null>(null);
 	const streamEndRef = useRef<HTMLSpanElement>(null);
@@ -148,6 +162,29 @@ export default function PlaygroundPage() {
 		() => routes.find((r) => r.id === selectedId) ?? null,
 		[routes, selectedId]
 	);
+
+	const selectedIsImage = useMemo(() => {
+		if (!selected) return false;
+		const m = modelsById.get(selected.model_id);
+		return m ? isImageRouteModel(m) : false;
+	}, [selected, modelsById]);
+
+	const imageSendBlocked =
+		selectedIsImage && normalizeProtocol(selected?.upstream_protocol ?? 'openai') !== 'openai';
+
+	const previewUpstreamUrl = useMemo(() => {
+		if (!selected) return null;
+		return previewPlaygroundUpstreamUrl({
+			provider: providersById.get(selected.provider_id),
+			upstreamProtocol: selected.upstream_protocol,
+			providerModelName: selected.provider_model_name,
+			isImageModel: selectedIsImage,
+			geminiAction,
+		});
+	}, [selected, providersById, selectedIsImage, geminiAction]);
+
+	/** 发送后以上游实际 URL 为准；否则展示与 Send 同规则的预览。 */
+	const requestTargetUrl = responseMeta?.upstreamUrl ?? previewUpstreamUrl;
 
 	const mergedAssistantParts = useMemo(() => {
 		const mode = inferPlaygroundParseMode(responseMeta?.contentType ?? null);
@@ -274,13 +311,25 @@ export default function PlaygroundPage() {
 			setLoadingRoutes(true);
 			setLoadError(null);
 			try {
-				const res = await fetch('/api/admin/routes');
-				const data = await readApiJson<RouteListRow[]>(res);
+				const [rRes, mRes, pRes] = await Promise.all([
+					fetch('/api/admin/routes'),
+					fetch('/api/admin/models'),
+					fetch('/api/admin/providers'),
+				]);
+				const data = await readApiJson<RouteListRow[]>(rRes);
+				const modelsData = await readApiJson<AdminModelRow[]>(mRes);
+				const providersData = await readApiJson<GatewayProvider[]>(pRes);
 				if (cancelled) return;
 				if (data.success && Array.isArray(data.data)) {
 					setRoutes(data.data);
 				} else {
 					setLoadError(data.message ?? tCommon('failedToLoadRoutes'));
+				}
+				if (modelsData.success && Array.isArray(modelsData.data)) {
+					setModelsById(new Map(modelsData.data.map((m) => [m.id, m])));
+				}
+				if (providersData.success && Array.isArray(providersData.data)) {
+					setProvidersById(new Map(providersData.data.map((p) => [p.id, p])));
 				}
 			} catch (e) {
 				if (!cancelled) setLoadError(e instanceof Error ? e.message : tCommon('failedToLoadRoutes'));
@@ -291,15 +340,26 @@ export default function PlaygroundPage() {
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [tCommon]);
 
 	useEffect(() => {
 		const r = routes.find((x) => x.id === selectedId);
 		if (!r) return;
 		const proto = normalizeProtocol(r.upstream_protocol);
-		setBodyText(BODY_TEMPLATES[proto] ?? BODY_TEMPLATES.openai);
+		const m = modelsById.get(r.model_id);
+		const isImage = m ? isImageRouteModel(m) : false;
+		setBodyText(
+			isImage && proto === 'openai'
+				? IMAGE_GENERATIONS_BODY_TEMPLATE
+				: (BODY_TEMPLATES[proto] ?? BODY_TEMPLATES.openai)
+		);
 		setBodyError(null);
-	}, [selectedId, routes]);
+		setImagePreviews([]);
+		setResponseMeta(null);
+		setLastSentWireBody(null);
+		setResponseText('');
+		setUsageHint(null);
+	}, [selectedId, routes, modelsById]);
 
 	const scrollStreamToBottom = useCallback(() => {
 		streamEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -309,6 +369,10 @@ export default function PlaygroundPage() {
 	const send = async () => {
 		if (!selected) {
 			setBodyError(tCommon('selectRouteFirst'));
+			return;
+		}
+		if (imageSendBlocked) {
+			setBodyError(t('imageOpenaiOnly'));
 			return;
 		}
 		let bodyObj: Record<string, unknown>;
@@ -326,10 +390,12 @@ export default function PlaygroundPage() {
 		setSending(true);
 		setResponseText('');
 		setUsageHint(null);
+		setImagePreviews([]);
 		setResponseMeta(null);
 		setLastSentWireBody(null);
 
 		const proto = normalizeProtocol(selected.upstream_protocol);
+		const useImages = selectedIsImage && proto === 'openai';
 		setResponseProtocol(proto);
 		const payload: {
 			routeId: string;
@@ -379,6 +445,13 @@ export default function PlaygroundPage() {
 					if (!msg) msg = nested.trim();
 					if (!msg) msg = tCommon('requestFailed');
 					setBodyError(msg);
+				} else if (useImages) {
+					const parsedImg = parseImagesGenerationsResponse(
+						JSON.stringify(j),
+						imageRequestMetaFromBody(bodyObj)
+					);
+					setImagePreviews(parsedImg.images);
+					setUsageHint(parsedImg.usageHint);
 				} else {
 					const summary = tryParseUsageSummary(JSON.stringify(j), proto);
 					setUsageHint(summary);
@@ -412,13 +485,19 @@ export default function PlaygroundPage() {
 
 			const text = await res.text();
 			setResponseText(text);
-			let summary: string | null = null;
-			try {
-				summary = tryParseUsageSummary(text, proto);
-			} catch {
-				summary = null;
+			if (useImages && res.ok) {
+				const parsedImg = parseImagesGenerationsResponse(text, imageRequestMetaFromBody(bodyObj));
+				setImagePreviews(parsedImg.images);
+				setUsageHint(parsedImg.usageHint);
+			} else {
+				let summary: string | null = null;
+				try {
+					summary = tryParseUsageSummary(text, proto);
+				} catch {
+					summary = null;
+				}
+				setUsageHint(summary);
 			}
-			setUsageHint(summary);
 		} catch (e) {
 			setResponseText('');
 			setBodyError(e instanceof Error ? e.message : tCommon('requestFailed'));
@@ -598,14 +677,23 @@ export default function PlaygroundPage() {
 								<button
 									type="button"
 									onClick={() => void send()}
-									disabled={sending || !selected}
+									disabled={sending || !selected || imageSendBlocked}
 									className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
 								>
 									<PaperAirplaneIcon className="h-4 w-4" />
 									{sending ? tCommon('sending') : tCommon('send')}
 								</button>
 							</div>
-							{normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' && (
+							{imageSendBlocked ? (
+								<div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-sm">
+									{t('imageOpenaiOnly')}
+								</div>
+							) : null}
+							{selectedIsImage && !imageSendBlocked ? (
+								<p className="text-xs text-gray-500">{t('imageGenerationsHint')}</p>
+							) : null}
+							{normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' &&
+								!selectedIsImage && (
 								<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
 									<legend className="sr-only">{t('geminiAction')}</legend>
 									<span className="text-gray-600 font-medium">{t('geminiAction')}</span>
@@ -630,6 +718,16 @@ export default function PlaygroundPage() {
 									</label>
 								</fieldset>
 							)}
+							<div className="space-y-1">
+								<RequestTargetUrl
+									label={t('requestTargetUrl')}
+									url={requestTargetUrl}
+									emptyHint={t('requestTargetUrlEmpty')}
+								/>
+								{selected ? (
+									<p className="text-[11px] text-gray-400">{t('requestTargetUrlHint')}</p>
+								) : null}
+							</div>
 							<div>
 								<label className={labelClass}>JSON</label>
 								<textarea
@@ -682,7 +780,7 @@ export default function PlaygroundPage() {
 									</div>
 								)}
 							</div>
-							{responseMeta || responseText ? (
+							{responseMeta || responseText || imagePreviews.length > 0 ? (
 								<>
 									{responseMeta?.upstreamUrl && (
 										<div className="text-xs text-gray-500 break-all">
@@ -696,7 +794,11 @@ export default function PlaygroundPage() {
 											{usageHint}
 										</div>
 									)}
+									{imagePreviews.length > 0 ? (
+										<ImageGenerationsPreview images={imagePreviews} label={t('imagePreview')} />
+									) : null}
 									<div className="space-y-3">
+										{imagePreviews.length === 0 ? (
 										<div>
 											<div className="text-xs font-medium text-gray-600 mb-1">{t('mergedContent')}</div>
 											<div className="rounded-md border border-slate-200 overflow-hidden divide-y divide-slate-200">
@@ -719,6 +821,7 @@ export default function PlaygroundPage() {
 												</div>
 											</div>
 										</div>
+										) : null}
 										<div>
 											<div className="text-xs font-medium text-gray-600 mb-1">{t('rawPayload')}</div>
 											<pre className="max-h-[min(520px,50vh)] overflow-auto p-4 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-900 font-mono whitespace-pre-wrap break-words">

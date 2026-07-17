@@ -108,3 +108,8 @@ export function formatGatewayMoneyCompact(
 export function formatPerMillionTokenUnit(currencyCode: string): string {
 	return `${getGatewayCurrencySymbol(currencyCode)}/1M`;
 }
+
+/** 表头或说明：`$ /image`（按张） */
+export function formatPerImageUnit(currencyCode: string): string {
+	return `${getGatewayCurrencySymbol(currencyCode)}/image`;
+}

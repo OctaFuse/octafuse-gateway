@@ -519,6 +519,80 @@ Authorization: Bearer <USER_API_KEY>
 
 ---
 
+## Images（图片生成 / 编辑）
+
+OpenAI 兼容 Images API，供桌面 Agent 的 `generate_image` 等工具调用。鉴权与 Chat 相同（用户 API Key）；模型须在目录中配置 **OpenAI 协议**路由，且 `pricing_profile.tiers` 含 Image token 单价（见 Admin 模型页 / 预设 `gpt-image-2`）。
+
+### 生成
+
+```
+POST /v1/images/generations
+Authorization: Bearer <USER_API_KEY>
+Content-Type: application/json
+```
+
+```json
+{
+  "model": "gpt-image-2",
+  "prompt": "A watercolor book cover of a coastal lighthouse at dusk",
+  "n": 1,
+  "size": "auto",
+  "quality": "auto",
+  "background": "auto"
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `model` | 必填；支持 `id:route_group` 后缀 |
+| `prompt` | 必填；最长 4000 字符 |
+| `n` | 仅允许 **1**（首期） |
+| `size` / `quality` / `background` | 可选；默认建议 `auto` |
+| `response_format` | 可选；**仅当调用方显式传入时透传**。默认由上游决定（GPT Image 系列通常直接返回 `b64_json`，且不接受该参数） |
+
+### 编辑（参考图）
+
+```
+POST /v1/images/edits
+Authorization: Bearer <USER_API_KEY>
+Content-Type: multipart/form-data
+```
+
+表单字段：`model`、`prompt`、`n=1`、可选 `size`/`quality`/`background`，以及最多 **5** 个 `image` 文件（`image/png` \| `image/jpeg` \| `image/webp`，单文件 ≤ 20MB）。
+
+### 计费与审计
+
+对齐 [OpenAI Image generation · Cost](https://platform.openai.com/docs/guides/image-generation)：
+
+**最终费用** =  
+`text_input × $/M` + `cached_text × $/M` + `image_input × $/M` + `cached_image_input × $/M` + `image_output × $/M`  
+再乘路由 `charged_factor` / `metered_factor`（与 Chat 一致）。
+
+1. 预检额度：用 quality×size **估算** image output tokens（偏保守，含短 prompt / edits 余量）× 目录 token 单价 × `charged_factor`
+2. **仅**上游返回至少一张有效图片时，按响应 **`usage` 真实分项**扣费；错误、超时或空结果写零费用日志
+3. Request log **不**保存 prompt 原文、参考图或 Base64；`raw_usage` 保存上游 usage JSON；`pricing_audit.kind=image_tokens`
+4. 模型须配置 tier `image_*` 单价；无配置则不计费。Gateway **不**再支持按张固定价（按张套餐留给业务层）
+
+`pricing_profile` 示例（`gpt-image-2` token 价，USD/1M）：
+
+```json
+{
+  "tiers": [{
+    "upto": null,
+    "input_price": 5,
+    "output_price": 0,
+    "cache_read_price": 1.25,
+    "image_input_price": 8,
+    "image_input_cache_price": 2,
+    "image_output_price": 30
+  }]
+}
+```
+
+短 prompt generations 的费用通常由 **image_output** 主导；edits 会额外计入 **image_input**。Admin 中为图片模型配置 `output_modalities: ["image"]` 及上述价目即可。
+
+---
+
 ## 获取当前用户预算状态
 
 获取当前认证用户的预算使用情况。

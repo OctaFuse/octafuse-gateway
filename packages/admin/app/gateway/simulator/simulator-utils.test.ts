@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { IMAGE_GENERATIONS_BODY_TEMPLATE } from '../../../lib/image-generations';
 import {
+	bodyTemplateForSelection,
 	buildModelRoutingString,
 	buildRequestLogsHref,
 	filterMatchingActiveRoutes,
@@ -98,5 +100,12 @@ describe('simulator-utils', () => {
 			false
 		);
 		assert.equal(isBodyDirty('{ "messages": [] }', 'openai'), true);
+		assert.equal(isBodyDirty(IMAGE_GENERATIONS_BODY_TEMPLATE, 'openai', true), false);
+		assert.equal(isBodyDirty(IMAGE_GENERATIONS_BODY_TEMPLATE, 'openai', false), true);
+	});
+
+	it('bodyTemplateForSelection switches image generations template', () => {
+		assert.equal(bodyTemplateForSelection('openai', true), IMAGE_GENERATIONS_BODY_TEMPLATE);
+		assert.notEqual(bodyTemplateForSelection('openai', false), IMAGE_GENERATIONS_BODY_TEMPLATE);
 	});
 });

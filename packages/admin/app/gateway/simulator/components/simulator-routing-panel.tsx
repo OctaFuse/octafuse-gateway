@@ -31,6 +31,7 @@ type Props = {
 	onRouteGroupChange: (g: string) => void;
 	routeGroupsForModel: string[];
 	selectedModel: AdminModelRow | null;
+	selectedModelIsImage?: boolean;
 	modelRoutingString: string;
 	matchingRoutes: RouteListRow[];
 };
@@ -47,10 +48,12 @@ export function SimulatorRoutingPanel({
 	onRouteGroupChange,
 	routeGroupsForModel,
 	selectedModel,
+	selectedModelIsImage = false,
 	modelRoutingString,
 	matchingRoutes,
 }: Props) {
 	const t = useTranslations('simulator');
+	const tRoutes = useTranslations('routes.card');
 
 	return (
 		<section className={panelClass}>
@@ -103,7 +106,11 @@ export function SimulatorRoutingPanel({
 			{selectedModel ? (
 				<div className="grid grid-cols-1 gap-2 pt-2 border-t border-gray-100">
 					<ReadonlyField label={t('routingModelString')}>{modelRoutingString || '—'}</ReadonlyField>
-					<ReadonlyField label="max_tokens">{String(selectedModel.max_tokens ?? '—')}</ReadonlyField>
+					{selectedModelIsImage ? (
+						<ReadonlyField label={t('modelKind')}>{tRoutes('imageModelHint')}</ReadonlyField>
+					) : (
+						<ReadonlyField label="max_tokens">{String(selectedModel.max_tokens ?? '—')}</ReadonlyField>
+					)}
 				</div>
 			) : null}
 

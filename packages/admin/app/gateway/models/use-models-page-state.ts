@@ -3,8 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { parseModelModalitiesJson } from '@octafuse/core/db/model-modalities';
 import {
+	isImageGenerationModel,
+	parseModelModalitiesJson,
+} from '@octafuse/core/db/model-modalities';
+import {
+	createDefaultImageTokenTierRow,
 	createDefaultNewModelTierRow,
 	profileJsonToDraftRows,
 	type PricingTierDraftRow,
@@ -27,10 +31,13 @@ import {
 	parseVendorFilterParam,
 } from './model-utils';
 import {
+	ALL_KINDS_KEY,
 	ALL_VENDORS_KEY,
 	EMPTY_MODEL_FORM,
+	parseKindFilterParam,
 	type MetadataPreviewState,
 	type ModelFormData,
+	type ModelKindFilter,
 	type ModelListItem,
 	type PresetCatalogRow,
 } from './types';
@@ -40,6 +47,7 @@ export function useModelsPageState() {
 	const searchParams = useSearchParams();
 	const [models, setModels] = useState<ModelListItem[]>([]);
 	const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
+	const [selectedKind, setSelectedKind] = useState<ModelKindFilter>(ALL_KINDS_KEY);
 	const [isLoading, setIsLoading] = useState(true);
 	const [showModal, setShowModal] = useState(false);
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
@@ -55,6 +63,7 @@ export function useModelsPageState() {
 	const [importCatalogError, setImportCatalogError] = useState('');
 	const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
 	const [importCatalogSearch, setImportCatalogSearch] = useState('');
+	const [importCatalogKind, setImportCatalogKind] = useState<ModelKindFilter>(ALL_KINDS_KEY);
 	const [importSubmitting, setImportSubmitting] = useState(false);
 	const [metadataPreview, setMetadataPreview] = useState<MetadataPreviewState | null>(null);
 	const { currency: billingCurrency } = useBillingCurrency();
@@ -77,19 +86,52 @@ export function useModelsPageState() {
 		[importCatalogRows, existingModelIds]
 	);
 
+	const importCatalogKindCounts = useMemo(() => {
+		let llm = 0;
+		let image = 0;
+		for (const row of importCatalogRows) {
+			if (row.kind === 'image') image += 1;
+			else llm += 1;
+		}
+		return { all: importCatalogRows.length, llm, image };
+	}, [importCatalogRows]);
+
 	const filteredImportCatalogRows = useMemo(() => {
 		const query = importCatalogSearch.trim().toLowerCase();
-		if (!query) return importCatalogRows;
 		return importCatalogRows.filter((row) => {
+			if (importCatalogKind === 'image' && row.kind !== 'image') return false;
+			if (importCatalogKind === 'llm' && row.kind !== 'llm') return false;
+			if (!query) return true;
 			const id = row.id.toLowerCase();
 			const name = (row.display_name ?? '').toLowerCase();
 			return id.includes(query) || name.includes(query);
 		});
-	}, [importCatalogSearch, importCatalogRows]);
+	}, [importCatalogSearch, importCatalogKind, importCatalogRows]);
 
-	const modelsByVendor = useMemo(() => groupModelsByVendor(models), [models]);
+	const kindFilteredModels = useMemo(() => {
+		if (selectedKind === ALL_KINDS_KEY) return models;
+		if (selectedKind === 'image') {
+			return models.filter((m) => isImageGenerationModel(m));
+		}
+		return models.filter((m) => !isImageGenerationModel(m));
+	}, [models, selectedKind]);
+
+	const modelsByVendor = useMemo(
+		() => groupModelsByVendor(kindFilteredModels),
+		[kindFilteredModels]
+	);
 
 	const vendorKeys = useMemo(() => modelsByVendor.map(([key]) => key), [modelsByVendor]);
+
+	const kindCounts = useMemo(() => {
+		let llm = 0;
+		let image = 0;
+		for (const m of models) {
+			if (isImageGenerationModel(m)) image += 1;
+			else llm += 1;
+		}
+		return { all: models.length, llm, image };
+	}, [models]);
 
 	const selectedVendorItems = useMemo(() => {
 		if (selectedVendor === ALL_VENDORS_KEY) {
@@ -103,6 +145,10 @@ export function useModelsPageState() {
 		const vendorParam = searchParams.get('vendor');
 		if (vendorParam !== null) {
 			setSelectedVendor(parseVendorFilterParam(vendorParam));
+		}
+		const kindParam = searchParams.get('kind');
+		if (kindParam !== null) {
+			setSelectedKind(parseKindFilterParam(kindParam));
 		}
 	}, [searchParams]);
 
@@ -124,8 +170,9 @@ export function useModelsPageState() {
 	useReplaceListPageQuery(() => {
 		const params = new URLSearchParams();
 		if (selectedVendor) params.set('vendor', selectedVendor);
+		if (selectedKind && selectedKind !== ALL_KINDS_KEY) params.set('kind', selectedKind);
 		return params;
-	}, [selectedVendor]);
+	}, [selectedVendor, selectedKind]);
 
 	const refreshModels = useCallback(async () => {
 		try {
@@ -179,6 +226,7 @@ export function useModelsPageState() {
 		setShowImportCatalogModal(true);
 		setImportCatalogError('');
 		setImportCatalogSearch('');
+		setImportCatalogKind(ALL_KINDS_KEY);
 		setImportSelected({});
 		void loadImportCatalog();
 	}, [loadImportCatalog]);
@@ -254,14 +302,19 @@ export function useModelsPageState() {
 
 	const fillFormFromModel = useCallback((model: ModelListItem) => {
 		const listTags = Array.isArray(model.tags) ? model.tags : [];
+		const outputMods = parseModelModalitiesJson(model.output_modalities) ?? ['text'];
+		const imageModel = isImageGenerationModel({
+			output_modalities: outputMods,
+			pricing_profile: model.pricing_profile,
+		});
 		setFormData({
 			id: model.id,
 			display_name: model.display_name || '',
 			vendor: normalizeModelVendorInput(model.vendor),
-			context_window: model.context_window?.toString() || '',
-			max_tokens: model.max_tokens?.toString() || '4096',
+			context_window: imageModel ? '' : model.context_window?.toString() || '',
+			max_tokens: imageModel ? '' : model.max_tokens?.toString() || '4096',
 			input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
-			output_modalities: parseModelModalitiesJson(model.output_modalities) ?? ['text'],
+			output_modalities: outputMods,
 			released_at: model.released_at ?? '',
 			tags: listTags,
 			description: model.description ?? '',
@@ -346,7 +399,19 @@ export function useModelsPageState() {
 				const next = current.includes(modality)
 					? current.filter((m) => m !== modality)
 					: [...current, modality];
-				return { ...prev, [kind]: next.length > 0 ? next : [modality] };
+				const nextList = next.length > 0 ? next : [modality];
+				if (kind === 'output_modalities' && nextList.includes('image')) {
+					setPricingTierRows((rows) =>
+						rows.length === 0 ? [createDefaultImageTokenTierRow()] : rows
+					);
+					return {
+						...prev,
+						[kind]: nextList,
+						context_window: '',
+						max_tokens: '',
+					};
+				}
+				return { ...prev, [kind]: nextList };
 			});
 		},
 		[]
@@ -376,22 +441,37 @@ export function useModelsPageState() {
 		setShowModal(false);
 	}, [isDeleting, isSaving]);
 
+	const clearFilters = useCallback(() => {
+		setSelectedVendor(ALL_VENDORS_KEY);
+		setSelectedKind(ALL_KINDS_KEY);
+	}, []);
+
 	const isAllVendors = selectedVendor === ALL_VENDORS_KEY;
+	const isAllKinds = selectedKind === ALL_KINDS_KEY;
 	const activeVendorKey = isAllVendors ? (vendorKeys[0] ?? 'other') : selectedVendor || vendorKeys[0] || 'other';
 	const activeVendorTitle = isAllVendors ? tCatalog('allVendors') : getModelVendorLabel(activeVendorKey);
 	const hasVendorFilter = !isAllVendors;
+	const hasKindFilter = !isAllKinds;
+	const hasActiveFilter = hasVendorFilter || hasKindFilter;
 
 	return {
 		isLoading,
 		models,
 		selectedVendor,
 		setSelectedVendor,
+		selectedKind,
+		setSelectedKind,
+		kindCounts,
 		selectedVendorItems,
 		modelsByVendor,
 		isAllVendors,
+		isAllKinds,
 		activeVendorKey,
 		activeVendorTitle,
 		hasVendorFilter,
+		hasKindFilter,
+		hasActiveFilter,
+		clearFilters,
 		billingCurrency,
 		showModal,
 		editingModel,
@@ -409,6 +489,9 @@ export function useModelsPageState() {
 		importCatalogRows,
 		importCatalogSearch,
 		setImportCatalogSearch,
+		importCatalogKind,
+		setImportCatalogKind,
+		importCatalogKindCounts,
 		filteredImportCatalogRows,
 		importCatalogLoading,
 		importCatalogError,

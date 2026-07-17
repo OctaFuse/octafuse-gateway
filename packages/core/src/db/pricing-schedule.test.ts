@@ -120,7 +120,15 @@ describe('scaleBillingPrices', () => {
 	it('scales finite prices and keeps null', () => {
 		assert.deepEqual(
 			scaleBillingPrices(
-				{ input_price: 1, output_price: 2, cache_read_price: null, cache_write_price: 0.5 },
+				{
+					input_price: 1,
+					output_price: 2,
+					cache_read_price: null,
+					cache_write_price: 0.5,
+					image_input_price: 8,
+					image_input_cache_price: null,
+					image_output_price: 30,
+				},
 				0.5
 			),
 			{
@@ -128,6 +136,9 @@ describe('scaleBillingPrices', () => {
 				output_price: 1,
 				cache_read_price: null,
 				cache_write_price: 0.25,
+				image_input_price: 4,
+				image_input_cache_price: null,
+				image_output_price: 15,
 			}
 		);
 	});

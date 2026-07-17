@@ -33,6 +33,7 @@ export type ResponseTab = 'merged' | 'raw';
 export type SendBlockReason =
 	| 'proxyBaseUrl'
 	| 'model'
+	| 'imageProtocol'
 	| 'keyLoading'
 	| 'key'
 	| null;

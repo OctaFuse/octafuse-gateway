@@ -1,7 +1,14 @@
 /**
  * Model input/output modalities — aligned with OpenRouter-style capability labels.
  * Stored in `models.input_modalities` / `models.output_modalities` as JSON string arrays.
+ *
+ * Kind (LLM vs image-generation) is derived — no separate DB column:
+ * - Image generation: `output_modalities` includes `image`
+ * - Fallback when output modalities missing: `pricing_profile.image` present
+ * - Do **not** use `input_modalities` containing `image` (multimodal LLMs also accept images)
  */
+
+import { parsePricingProfile } from './pricing-profile';
 
 export const MODEL_INPUT_MODALITIES = ['text', 'image', 'audio', 'video', 'file'] as const;
 export const MODEL_OUTPUT_MODALITIES = ['text', 'image', 'audio'] as const;
@@ -94,4 +101,45 @@ export function modelModalitiesJsonEqual(a: string | null | undefined, b: string
 		if (pa[i] !== pb[i]) return false;
 	}
 	return true;
+}
+
+/** Fields needed to classify catalog models as LLM vs image-generation. */
+export type ModelKindFields = {
+	/** Stored JSON text, or already-parsed modality list */
+	output_modalities?: string | string[] | null;
+	pricing_profile?: string | null;
+};
+
+function normalizeOutputModalitiesList(
+	raw: string | string[] | null | undefined
+): string[] | null {
+	if (raw == null) return null;
+	if (Array.isArray(raw)) {
+		const out: string[] = [];
+		for (const item of raw) {
+			const v = String(item).trim().toLowerCase();
+			if (v) out.push(v);
+		}
+		return out.length > 0 ? out : null;
+	}
+	return parseModelModalitiesJson(raw);
+}
+
+/**
+ * Whether this catalog model is an image-generation model (e.g. gpt-image-2).
+ * Prefer `output_modalities` containing `image`; only fall back to `pricing_profile.image`
+ * when output modalities are missing.
+ */
+export function isImageGenerationModel(m: ModelKindFields): boolean {
+	const output = normalizeOutputModalitiesList(m.output_modalities);
+	if (output != null) {
+		return output.includes('image');
+	}
+	const profile = parsePricingProfile(m.pricing_profile ?? undefined);
+	return profile?.image != null;
+}
+
+/** Text for image-generation models; true for chat / multimodal LLMs and unknown. */
+export function isTextLlmModel(m: ModelKindFields): boolean {
+	return !isImageGenerationModel(m);
 }

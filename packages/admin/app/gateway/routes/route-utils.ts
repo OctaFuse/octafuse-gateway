@@ -1,3 +1,12 @@
+import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import { stickyRuleKey } from '@octafuse/core/db/model-sticky-config';
+import {
+	findDailyWindowOverlap,
+	parseHhMmToMinutes,
+	parseRouteBaseFactors,
+	parseRoutePricingSchedule,
+	type DailyScheduleWindow,
+} from '@octafuse/core/db/pricing-schedule';
 import { compareModelsByReleasedAtDesc } from '@/lib/model-catalog-sort';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
 import { compareRouteGroupsForDisplay, normalizeRouteGroup } from '@/lib/route-group-ui';
@@ -6,15 +15,11 @@ import {
 	isUpstreamProtocol,
 	type UpstreamProtocol,
 } from '@/lib/upstream-protocol';
-import {
-	findDailyWindowOverlap,
-	parseHhMmToMinutes,
-	parseRouteBaseFactors,
-	parseRoutePricingSchedule,
-	type DailyScheduleWindow,
-} from '@octafuse/core/db/pricing-schedule';
-import { stickyRuleKey } from '@octafuse/core/db/model-sticky-config';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
+import {
+	ALL_KINDS_KEY,
+	type ModelKindFilter,
+} from '../models/types';
 import type {
 	RouteFormData,
 	RouteListRow,
@@ -319,6 +324,35 @@ export type RouteModelGroup = {
 	vendor: string;
 };
 
+export function modelMatchesKindFilter(
+	meta: GatewayModel | undefined,
+	filterKind: ModelKindFilter
+): boolean {
+	if (filterKind === ALL_KINDS_KEY) return true;
+	const isImage = meta ? isImageGenerationModel(meta) : false;
+	return filterKind === 'image' ? isImage : !isImage;
+}
+
+/** Normalize API tags (string[] or JSON string) for route card display. */
+export function parseModelTagsList(meta: GatewayModel | undefined): string[] {
+	if (!meta) return [];
+	const raw = (meta as { tags?: unknown }).tags;
+	if (Array.isArray(raw)) {
+		return raw.map((t) => String(t).trim()).filter(Boolean);
+	}
+	if (typeof raw === 'string' && raw.trim()) {
+		try {
+			const parsed = JSON.parse(raw) as unknown;
+			if (Array.isArray(parsed)) {
+				return parsed.map((t) => String(t).trim()).filter(Boolean);
+			}
+		} catch {
+			// ignore
+		}
+	}
+	return [];
+}
+
 export function buildRoutesByModel(params: {
 	routes: RouteListRow[];
 	models: GatewayModel[];
@@ -327,18 +361,31 @@ export function buildRoutesByModel(params: {
 	filterProviderId: string;
 	filterRouteGroup: string;
 	filterStatus: string;
+	filterKind?: ModelKindFilter;
 }): RouteModelGroup[] {
-	const { routes, models, modelMeta, filterVendor, filterProviderId, filterRouteGroup, filterStatus } =
-		params;
+	const {
+		routes,
+		models,
+		modelMeta,
+		filterVendor,
+		filterProviderId,
+		filterRouteGroup,
+		filterStatus,
+		filterKind = ALL_KINDS_KEY,
+	} = params;
 
 	const modelMatchesVendor = (modelId: string) => {
 		if (!filterVendor) return true;
 		return normalizeModelVendorInput(modelMeta.get(modelId)?.vendor) === filterVendor;
 	};
 
+	const modelMatchesKind = (modelId: string) =>
+		modelMatchesKindFilter(modelMeta.get(modelId), filterKind);
+
 	const routeByModelId = new Map<string, RouteListRow[]>();
 	for (const r of routes) {
 		if (!modelMatchesVendor(r.model_id)) continue;
+		if (!modelMatchesKind(r.model_id)) continue;
 		if (filterProviderId && r.provider_id !== filterProviderId) continue;
 		if (filterStatus && r.status !== filterStatus) continue;
 		if (filterRouteGroup && normalizeRouteGroup(r.route_group) !== filterRouteGroup) continue;
@@ -354,10 +401,12 @@ export function buildRoutesByModel(params: {
 	const candidateModelIds = new Set<string>();
 	for (const model of models) {
 		if (!modelMatchesVendor(model.id)) continue;
+		if (!modelMatchesKind(model.id)) continue;
 		candidateModelIds.add(model.id);
 	}
 	for (const route of routes) {
 		if (!modelMatchesVendor(route.model_id)) continue;
+		if (!modelMatchesKind(route.model_id)) continue;
 		candidateModelIds.add(route.model_id);
 	}
 
@@ -455,11 +504,24 @@ export function buildActiveFilterSummary(params: {
 	filterRouteGroup: string;
 	filterVendor: string;
 	filterProviderId: string;
+	filterKind?: ModelKindFilter;
 	providers: GatewayProvider[];
+	/** Localized kind labels; when omitted, English fallbacks are used. */
+	kindLabels?: { llm: string; image: string };
 }): string[] {
-	const { filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers } = params;
+	const {
+		filterStatus,
+		filterRouteGroup,
+		filterVendor,
+		filterProviderId,
+		filterKind = ALL_KINDS_KEY,
+		providers,
+		kindLabels,
+	} = params;
 	const parts: string[] = [];
 	if (filterStatus) parts.push(filterStatus === 'active' ? 'Active' : 'Inactive');
+	if (filterKind === 'llm') parts.push(kindLabels?.llm ?? 'LLM');
+	if (filterKind === 'image') parts.push(kindLabels?.image ?? 'Image');
 	if (filterRouteGroup) parts.push(`Group: ${filterRouteGroup}`);
 	if (filterVendor) parts.push(getModelVendorLabel(filterVendor));
 	if (filterProviderId) {

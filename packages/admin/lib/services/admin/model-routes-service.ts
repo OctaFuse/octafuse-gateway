@@ -2,6 +2,7 @@
  * 管理后台 `model_routes` CRUD：校验上游协议与 provider 是否配置对应 base URL，并规范化 JSON 参数字段。
  */
 import type { GatewayRepositories } from '@octafuse/core';
+import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { badRequest, notFound } from './errors';
 import { coerceRoutePriceOverrideInput, assertRoutePriceOverrideFactors } from './pricing-input';
@@ -11,6 +12,27 @@ import type {
 	AdminModelRouteMutationInput,
 	AdminModelRouteRow,
 } from './types';
+
+/** Image-generation catalog models may only use OpenAI Images–compatible routes. */
+async function assertImageModelOpenaiProtocol(
+	repos: GatewayRepositories,
+	modelId: string,
+	proto: 'openai' | 'anthropic' | 'gemini'
+): Promise<void> {
+	const model = await repos.models.getModelDetailWithRouteCounts(modelId);
+	if (!model) return;
+	if (
+		isImageGenerationModel({
+			output_modalities: model.output_modalities as string | null | undefined,
+			pricing_profile: model.pricing_profile as string | null | undefined,
+		}) &&
+		proto !== 'openai'
+	) {
+		throw badRequest(
+			'Image-generation models require upstream_protocol=openai (Gateway Images API only uses OpenAI routes).'
+		);
+	}
+}
 
 /**
  * 路由列表；`model_id` / `provider_id` 来自查询串，可选。
@@ -55,6 +77,7 @@ export async function createModelRouteService(
 	if (!providerSupportsUpstreamProtocol(proto, provider)) {
 		throw badRequest(`Provider has no base URL for upstream protocol "${proto}".`);
 	}
+	await assertImageModelOpenaiProtocol(repos, modelId, proto);
 
 	const routeGroup =
 		typeof body.route_group === 'string' && body.route_group.trim() !== '' ? body.route_group.trim() : 'default';
@@ -120,6 +143,15 @@ export async function updateModelRouteService(
 	}
 	const hasPatch = Object.values(patch).some((v) => v !== undefined);
 	if (!hasPatch) return;
+
+	const existing = await repos.routes.getModelRouteRowById(id);
+	if (!existing) throw notFound('Route not found');
+	const effectiveModelId =
+		patch.model_id !== undefined ? String(patch.model_id) : String(existing.model_id);
+	const effectiveProto = (patch.upstream_protocol !== undefined
+		? patch.upstream_protocol
+		: existing.upstream_protocol) as 'openai' | 'anthropic' | 'gemini';
+	await assertImageModelOpenaiProtocol(repos, effectiveModelId, effectiveProto);
 
 	const changes = await repos.routes.updateModelRouteByPatch(id, patch);
 	if (!changes) throw notFound('Route not found');

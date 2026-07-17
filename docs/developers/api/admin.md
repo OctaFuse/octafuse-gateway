@@ -565,6 +565,28 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 - **行为**：仅处理 `ids` 中在静态目录存在的 id；根据当前 **`BILLING_CURRENCY`**（`USD` → `usd` 分支，`CNY` → `cny` 分支；库内为其他历史值时按 **`USD`** 分支取价）写入 `models.pricing_profile`；**已存在同 `id` 的不导入、不覆盖**，该 id 记入 **`skipped_existing`**；否则 **INSERT** 新建并写入 `model_tags`。未知 id 或校验失败记入 **`failed`**，其余仍处理。
 - **响应** `data`：`{ "billing_currency_used", "created", "updated"（恒为 0）, "skipped_existing": string[], "failed": [{ "id", "message" }] }`。
 
+### 运维验收：文生图模型 `gpt-image-2`
+
+不新增独立「Images」管理页；与 LLM 共用 Models + Routes。Admin 内闭环：**Routes → Playground → Simulator → Request Logs**。
+
+1. **Provider**：配置可用的 OpenAI（或兼容）Provider Key。
+2. **Import**：Admin → Models → Import → 勾选 **`gpt-image-2`**（`output_modalities: ["image"]`，`pricing_profile.tiers` 含 `image_*` token 单价）。**已存在同 id 不会覆盖**——旧按张行需 **删除后 re-import** 或打开编辑填入 token 单价后保存。
+3. **列表**：筛选 Kind=Image，卡片应显示 Image token 单价（如 text / img-in / img-out）及可选输出侧估算矩阵。
+4. **Routes**：为 `gpt-image-2` 建路由；弹窗 Billing「Standard (catalog)」应显示 **token 单价** + 估算矩阵；`upstream_protocol` **锁定 openai**（保存 anthropic/gemini 应 400）。
+5. **Playground**（不计费、不写 logs）：选该 openai 路由 → Send → 上游 `…/images/generations` 返回图并可预览。非 openai 路由禁用 Send。
+6. **Simulator**（真实 Proxy）：选同一模型 → 协议锁定 openai → 请求打到 `{proxy}/v1/images/generations` → 出图；**Open Request Logs** 核对 `raw_usage` 与 `pricing_audit.kind=image_tokens`，`charged_cost` 随 usage 分项变化（非固定按张）。
+7. **回归**：任意 LLM 模型仍走 chat/completions（Playground / Simulator 行为不变）。
+8. **curl**（可选，用户 API Key）：
+
+```bash
+curl -sS "$GATEWAY_URL/v1/images/generations" \
+  -H "Authorization: Bearer $USER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-image-2","prompt":"a red apple","size":"1024x1024","quality":"low","n":1}'
+```
+
+成功响应含图片；请求日志按上游 `usage` token 分项扣费。用户 API 说明见 [user.md「Images」](user.md#images图片生成--编辑)。
+
 ### `provider_api_keys.limit_config`（`PATCH /admin/providers/:id/keys/:keyId`）
 
 Per-key **网关侧**软限流（进程内存；与上游供应商限额独立）。写入 `provider_api_keys.limit_config` 列（TEXT JSON）。
@@ -600,7 +622,19 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
 
 ### `pricing_profile` / `price_override` 契约（`/admin/models`、`/admin/routes`）
 
-- **模型目录价**：`models.pricing_profile`（TEXT JSON，canonical `{ "tiers": [...] }`）。非末档 `upto` 为有限数字 **≥ 0**；**末档 `upto` 为 JSON `null`**（开放上界）。选档 basis 为上游 **`input_tokens`**（`packages/core/src/db/pricing-profile.ts`）。
+- **模型目录价**：`models.pricing_profile`（TEXT JSON）。
+  - **Token（LLM / Image）**：canonical `{ "tiers": [...] }`。非末档 `upto` 为有限数字 **≥ 0**；**末档 `upto` 为 JSON `null`**（开放上界）。LLM 选档 basis 为上游 **`input_tokens`**（`packages/core/src/db/pricing-profile.ts`）。
+  - **Image token 计价（唯一扣费路径，对齐 OpenAI）**：tier 上配置 `input_price`（text）、`cache_read_price`（cached text）、`image_input_price`、`image_input_cache_price`、`image_output_price`（均为 **$/1M tokens**）。
+    - **最终费用** = `text×input` + `cached_text×cache_read` + `image_in×image_input` + `cached_image_in×image_input_cache` + `image_out×image_output`，再乘路由 `charged_factor` / `metered_factor`。
+    - **扣费权威**：上游 Images API 响应 `usage`。`pricing_audit.kind=image_tokens`。无 `image_*` 单价则**不计费**。
+    - `gpt-image-2` 静态预设（USD/1M）：text **5**、cached text **1.25**、image in **8**、cached image in **2**、image out **30**；CNY ≈ ×7.25。
+    - quality×size 仅作 Admin **估算展示**与预检余量（估算 output tokens × `image_output_price`），**非扣费**。按张套餐语义应在业务层实现，不在 Gateway。
+  - **Legacy `image` 按张块**：历史字段；解析可读入供 Kind 兜底，**不参与扣费**；Admin 保存时会清除（只写 `tiers`）。旧行需填 token 单价后保存或删后 re-import。
+- **模型 Kind（Admin UI，无独立 DB 列）**：
+  - **Image（文生图）**：`output_modalities` 含 `image`（**不要**用 `input` 含 `image` 判断——多模态 LLM 也会有）。
+  - **LLM**：其余；仅当 `output_modalities` 缺失时，才用历史 `pricing_profile.image` 兜底判定。
+  - 列表支持 `?kind=all|llm|image` 与 `?vendor=` 组合筛选；卡片展示 Kind 徽章与 Image token / 估算矩阵摘要。
+  - 文生图**不使用**聊天字段 `context_window` / `max_tokens`（预设与保存均为 `null`；Admin 卡片/表单隐藏这两项）。LLM 的 `max_tokens` 缺省仍为 8192。迁移 **`0010_models_max_tokens_nullable`** 允许 `max_tokens` 为 NULL。
 - **路由计价（canonical）**：`model_routes.price_override` 只维护倍率，**不再**要求 nested `metered` / `charged` tiers：
 
 ```json

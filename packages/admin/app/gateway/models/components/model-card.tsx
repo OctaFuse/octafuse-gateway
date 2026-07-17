@@ -4,8 +4,14 @@ import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import { ModelModalitiesBadgeFromRaw } from '@/components/model-modalities-badge';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
+import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
-import { formatGatewayMoneyCompact, formatPerMillionTokenUnit } from '@/lib/format-gateway-currency';
+import {
+	formatGatewayMoneyCompact,
+	formatPerMillionTokenUnit,
+} from '@/lib/format-gateway-currency';
+import { getCatalogImagePricingDisplay } from '@/lib/pricing-ui';
+import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import {
 	buildMetadataSummary,
 	buildPricingMetricColumns,
@@ -35,6 +41,15 @@ function ModelIdentityHeader(props: { model: ModelListItem }) {
 						<h3 className="truncate text-base font-semibold text-gray-900" title={displayName}>
 							{displayName}
 						</h3>
+						<span
+							className={
+								isImageGenerationModel(model)
+									? 'shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800'
+									: 'shrink-0 rounded-md bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-800'
+							}
+						>
+							{isImageGenerationModel(model) ? t('kindImage') : t('kindLlm')}
+						</span>
 						<span
 							className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600"
 							title={t('routesTitle', {
@@ -80,22 +95,33 @@ function ModelIdentityHeader(props: { model: ModelListItem }) {
 function ModelCapabilityPanel({ model }: { model: ModelListItem }) {
 	const t = useTranslations('models.card');
 	const tCommon = useTranslations('common');
+	const isImage = isImageGenerationModel(model);
 	return (
 		<div>
 			<h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('capabilities')}</h4>
-			<div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-				<div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
-					<p className="text-[11px] text-gray-400">{t('totalContext')}</p>
-					<p className="mt-0.5 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
-						{formatCompactTokens(model.context_window)}
-					</p>
-				</div>
-				<div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
-					<p className="text-[11px] text-gray-400">{t('maxOutput')}</p>
-					<p className="mt-0.5 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
-						{formatCompactTokens(model.max_tokens)}
-					</p>
-				</div>
+			<div
+				className={
+					isImage
+						? 'mt-2 grid gap-2 sm:grid-cols-2'
+						: 'mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4'
+				}
+			>
+				{!isImage ? (
+					<>
+						<div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+							<p className="text-[11px] text-gray-400">{t('totalContext')}</p>
+							<p className="mt-0.5 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
+								{formatCompactTokens(model.context_window)}
+							</p>
+						</div>
+						<div className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
+							<p className="text-[11px] text-gray-400">{t('maxOutput')}</p>
+							<p className="mt-0.5 text-sm font-semibold text-gray-900 tabular-nums tracking-tight">
+								{formatCompactTokens(model.max_tokens)}
+							</p>
+						</div>
+					</>
+				) : null}
 				<div className="min-w-0 rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2">
 					<p className="text-[11px] text-gray-400">{t('modalities')}</p>
 					<div className="mt-1">
@@ -116,58 +142,90 @@ function ModelCapabilityPanel({ model }: { model: ModelListItem }) {
 }
 
 function ModelPricingPanel(props: {
+	model: ModelListItem;
 	pricingColumns: PricingMetricColumn[];
 	billingCurrency: string;
 }) {
-	const { pricingColumns, billingCurrency } = props;
+	const { model, pricingColumns, billingCurrency } = props;
 	const t = useTranslations('models.card');
 	const tCommon = useTranslations('common');
+	const imageDisplay = useMemo(
+		() => getCatalogImagePricingDisplay(model, billingCurrency),
+		[model, billingCurrency]
+	);
+	const tokenColumns = useMemo(
+		() => pricingColumns.filter((c) => (c.unitKind ?? 'per_m') === 'per_m'),
+		[pricingColumns]
+	);
+	const hasTokenCols = tokenColumns.length > 0;
+	const hasEstimateMatrix = imageDisplay?.matrix != null;
+	const pricingGridClass =
+		tokenColumns.length >= 5
+			? 'grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5'
+			: 'grid gap-2 sm:grid-cols-2 2xl:grid-cols-4';
 
 	return (
 		<div>
 			<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
 				<h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{t('pricing')}</h4>
-				<span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
-					{formatPerMillionTokenUnit(billingCurrency)}
-				</span>
+				{hasTokenCols ? (
+					<span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
+						{formatPerMillionTokenUnit(billingCurrency)}
+					</span>
+				) : null}
 			</div>
-			{pricingColumns.length === 0 ? (
+			{!hasTokenCols ? (
 				<p className="mt-2 text-sm text-gray-400">{tCommon('noData')}</p>
 			) : (
-				<div className="mt-2 grid gap-2 sm:grid-cols-2 2xl:grid-cols-4">
-					{pricingColumns.map((col) => (
-						<div
-							key={col.title}
-							className="rounded-md border border-gray-100 bg-gray-50/70 px-3 py-2"
-						>
-							<p
-								className="truncate text-[11px] font-medium text-gray-500"
-								title={col.headerTitle ?? col.title}
+				<div className="mt-2 space-y-2">
+					<div className={pricingGridClass}>
+						{tokenColumns.map((col) => (
+							<div
+								key={col.title}
+								className="rounded-md border border-gray-100 bg-gray-50/70 px-3 py-2"
 							>
-								{col.title}
-							</p>
-							<div className="mt-1.5 space-y-1 tabular-nums leading-snug">
-								{col.lines.map((line, lineIdx) => (
-									<div
-										key={`${col.title}-${lineIdx}`}
-										className="flex flex-wrap items-baseline gap-x-1.5"
-										title={
-											line.price == null
-												? line.condition
-												: `${line.condition} ${formatGatewayMoneyCompact(line.price, billingCurrency)}`
-										}
-									>
-										<span className="shrink-0 text-[11px] text-gray-400">{line.condition}</span>
-										<span className="text-xs font-semibold text-gray-900">
-											{line.price == null
-												? tCommon('noData')
-												: formatGatewayMoneyCompact(line.price, billingCurrency)}
-										</span>
-									</div>
-								))}
+								<p
+									className="truncate text-[11px] font-medium text-gray-500"
+									title={col.headerTitle ?? col.title}
+								>
+									{col.title}
+								</p>
+								<div className="mt-1.5 space-y-1 tabular-nums leading-snug">
+									{col.lines.map((line, lineIdx) => (
+										<div
+											key={`${col.title}-${lineIdx}`}
+											className="flex flex-wrap items-baseline gap-x-1.5"
+											title={
+												line.price == null
+													? line.condition
+													: `${line.condition} ${formatGatewayMoneyCompact(line.price, billingCurrency)}`
+											}
+										>
+											<span className="shrink-0 text-[11px] text-gray-400">{line.condition}</span>
+											<span className="text-xs font-semibold text-gray-900">
+												{line.price == null
+													? tCommon('noData')
+													: formatGatewayMoneyCompact(line.price, billingCurrency)}
+											</span>
+										</div>
+									))}
+								</div>
 							</div>
-						</div>
-					))}
+						))}
+					</div>
+					{hasEstimateMatrix ? (
+						<ReadOnlyImagePricing
+							compact
+							display={imageDisplay}
+							emptyLabel={tCommon('noData')}
+							tableTitle={t('imageEstimateMatrix')}
+							estimateMatrixHint={t('imageEstimateHint')}
+							expandLabel={t('viewImageEstimate')}
+							collapseLabel={t('imageEstimateMatrix')}
+							showTokenRates={false}
+							showMatrix
+						/>
+					) : null}
 				</div>
 			)}
 		</div>
@@ -259,7 +317,11 @@ export function ModelCard(props: {
 			<ModelIdentityHeader model={model} />
 			<div className="mt-4 space-y-4">
 				<ModelCapabilityPanel model={model} />
-				<ModelPricingPanel pricingColumns={pricingColumns} billingCurrency={billingCurrency} />
+				<ModelPricingPanel
+					model={model}
+					pricingColumns={pricingColumns}
+					billingCurrency={billingCurrency}
+				/>
 				<ModelDetailsPanel model={model} onViewMetadata={onViewMetadata} />
 			</div>
 		</article>

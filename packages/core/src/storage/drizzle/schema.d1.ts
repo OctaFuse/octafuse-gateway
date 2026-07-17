@@ -79,7 +79,8 @@ export const modelsTable = sqliteTable('models', {
 	displayName: text('display_name'),
 	vendor: text('vendor').notNull().default('other'),
 	contextWindow: integer('context_window'),
-	maxTokens: integer('max_tokens').notNull().default(8192),
+	/** Chat completion max output tokens; NULL for image-generation models. */
+	maxTokens: integer('max_tokens').default(8192),
 	/** JSON：统一阶梯/固定价（`models` 列价真源）。 */
 	pricingProfile: text('pricing_profile'),
 	description: text('description'),

@@ -14,7 +14,7 @@
 		"deploy": "npm run build:cf && opennextjs-cloudflare deploy",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"test:unit": "tsx --test lib/services/admin/*.test.ts"
+		"test:unit": "tsx --test lib/services/admin/*.test.ts lib/pricing-ui-image.test.ts lib/image-generations.test.ts lib/simulator/endpoint.test.ts app/gateway/simulator/simulator-utils.test.ts ../core/src/db/image-token-usage.test.ts ../proxy/src/services/image-usage-charge.test.ts"
 	},
 	"dependencies": {
 		"@heroicons/react": "^2.2.0",
