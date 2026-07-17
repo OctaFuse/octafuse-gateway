@@ -309,11 +309,20 @@ Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0
 
 OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（全量可见，不按 API Key 区分）。
 
+面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（`output_modalities` 不含 `image` 的文本模型；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）默认不出现在本列表，请使用 `POST /v1/images/*`，或显式传 `kind=image` / `kind=all`。
+
 ### 请求
 
 ```
 GET /v1/models
 ```
+
+可选查询参数：
+
+| 参数 | 说明 |
+|------|------|
+| `route_groups` | CSV，大小写不敏感。未传 → 默认 `default,free`；传入后仅保留匹配的 group（无匹配则该模型不出现） |
+| `kind` | `llm`（**默认**）仅文本/多模态 LLM；`image` 仅文生图；`all` 不过滤 kind。非法值回退为 `llm` |
 
 ### 响应
 
@@ -368,7 +377,16 @@ GET /v1/models
 ### 示例
 
 ```bash
+# Agent / Chat：默认仅 LLM
 curl http://localhost:8787/v1/models \
+  -H "Authorization: Bearer sk-xxx..."
+
+# 仅文生图
+curl "http://localhost:8787/v1/models?kind=image" \
+  -H "Authorization: Bearer sk-xxx..."
+
+# 全部 kind
+curl "http://localhost:8787/v1/models?kind=all" \
   -H "Authorization: Bearer sk-xxx..."
 ```
 
@@ -442,6 +460,7 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 | 部署 | Proxy | Proxy | Admin |
 | 认证 | 用户 API Key | **无** | MASTER_KEY |
 | 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — |
+| 默认 `kind` | `llm`（排除文生图） | 不过滤 kind | — |
 | 协议能力 | 不返回 | `protocols` / `protocols_by_group` | 不返回 |
 | 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD |
 

@@ -1,14 +1,21 @@
 /**
  * 用户路由：`GET /v1/models` — OpenAI 兼容列表形态，附带 `model_info`（定价、tags、route_groups 等）。
  * 未传 `route_groups` 时默认仅返回 `default`/`free`，主要为兼容 agent 默认拉列表（FREE/VIP 分组）。
+ * 未传 `kind` 时默认仅返回 LLM（排除文生图，如 gpt-image-2）；文生图见 `POST /v1/images/*`。
  */
-import { parseModelModalitiesJson, parsePricingProfile } from '@octafuse/core';
+import {
+	isImageGenerationModel,
+	isTextLlmModel,
+	parseModelModalitiesJson,
+	parsePricingProfile,
+} from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../app';
 import { requireApiKey } from '../../middleware/auth';
 import {
 	filterRouteGroupsByAllowlist,
 	parseMetadata,
+	parseModelsKindQuery,
 	parseModelsRouteGroupsQuery,
 	parseRouteGroupsJson,
 	parseTags,
@@ -21,7 +28,11 @@ export const modelsRoutes = new Hono<ModelsEnv>();
 
 modelsRoutes.use('*', requireApiKey);
 
-export { DEFAULT_MODELS_ROUTE_GROUPS, parseModelsRouteGroupsQuery } from '../../lib/model-list-parse';
+export {
+	DEFAULT_MODELS_ROUTE_GROUPS,
+	parseModelsKindQuery,
+	parseModelsRouteGroupsQuery,
+} from '../../lib/model-list-parse';
 
 /**
  * `/v1/models` 中扩展字段：定价、能力与展示用元数据。
@@ -80,17 +91,29 @@ function displayCompatPricesFromProfile(pricingProfile: string | null): {
 }
 
 /**
- * `GET /v1/models` — 可选 `route_groups`（CSV）过滤 `model_info.route_groups`。
- * 未传时默认 `default,free`，主要为兼容 agent 默认拉列表方式；
+ * `GET /v1/models` — 可选 `route_groups`（CSV）过滤 `model_info.route_groups`；
+ * 可选 `kind`：`llm`（默认）| `image` | `all`。
+ * 未传 `route_groups` 时默认 `default,free`，主要为兼容 agent 默认拉列表方式；
  * 业务需额外分组时可显式传 `route_groups=web` 或 `route_groups=default,free,web`。
  */
 modelsRoutes.get('/', async (c) => {
 	const repos = c.get('repositories');
 	const models = await listPublicModelsWithRoutes(repos);
 	const allowedRouteGroups = parseModelsRouteGroupsQuery(c.req.query('route_groups'));
+	const kind = parseModelsKindQuery(c.req.query('kind'));
 
 	const list: ModelResponse[] = [];
 	for (const m of models) {
+		const kindFields = {
+			output_modalities: m.output_modalities,
+			pricing_profile: m.pricing_profile,
+		};
+		if (kind === 'llm' && !isTextLlmModel(kindFields)) {
+			continue;
+		}
+		if (kind === 'image' && !isImageGenerationModel(kindFields)) {
+			continue;
+		}
 		const { input_price, output_price } = displayCompatPricesFromProfile(m.pricing_profile);
 		const routeGroups = filterRouteGroupsByAllowlist(
 			parseRouteGroupsJson(m.route_groups ?? null),

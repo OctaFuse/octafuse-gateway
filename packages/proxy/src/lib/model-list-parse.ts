@@ -76,6 +76,25 @@ export function parseModelsRouteGroupsQuery(raw: string | undefined): string[] {
 	return out.length > 0 ? out : [...DEFAULT_MODELS_ROUTE_GROUPS];
 }
 
+/** Model kind filter for agent-facing `GET /v1/models`. */
+export type ModelsKindFilter = 'llm' | 'image' | 'all';
+
+/**
+ * Parse `kind` for `GET /v1/models`.
+ * Empty / missing / unknown → `llm`（默认排除文生图，兼容 chat/agent 拉列表）。
+ * `image` → 仅文生图；`all` → 不按 kind 过滤。
+ */
+export function parseModelsKindQuery(raw: string | undefined): ModelsKindFilter {
+	if (raw == null || raw.trim() === '') {
+		return 'llm';
+	}
+	const v = raw.trim().toLowerCase();
+	if (v === 'image' || v === 'all' || v === 'llm') {
+		return v;
+	}
+	return 'llm';
+}
+
 /**
  * Parse `route_groups` CSV for `GET /catalog/models`.
  * Empty / missing → `null` (include all active route groups).
