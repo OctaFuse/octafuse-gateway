@@ -1,10 +1,16 @@
 'use client';
 
-import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+	ChevronDownIcon,
+	ChevronRightIcon,
+	DocumentDuplicateIcon,
+	TrashIcon,
+} from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { protocolFormHasOverrides } from '../provider-utils';
 import type { GatewayProvider, ProtocolEndpointForm, ProviderFormData } from '../types';
+import { ProviderProtocolIcon } from './provider-protocol-icon';
 
 type ProviderModalProps = {
 	open: boolean;
@@ -22,10 +28,11 @@ type ProviderModalProps = {
 };
 
 const inputClass =
-	'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+	'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 function ProtocolFields(props: {
 	protocolLabel: string;
+	baseUrlLabel: string;
 	basePlaceholder: string;
 	baseHint?: string;
 	form: ProtocolEndpointForm;
@@ -44,6 +51,7 @@ function ProtocolFields(props: {
 }) {
 	const {
 		protocolLabel,
+		baseUrlLabel,
 		basePlaceholder,
 		baseHint,
 		form,
@@ -54,109 +62,138 @@ function ProtocolFields(props: {
 		onChange,
 	} = props;
 	const [advancedOpen, setAdvancedOpen] = useState(() => protocolFormHasOverrides(protocol, form));
+	const overridesPanelId = useId();
 
 	return (
-		<div className="space-y-2">
-			<label className="block text-sm font-medium text-gray-800">{protocolLabel}</label>
-			<input
-				type="url"
-				value={form.base}
-				onChange={(e) => onChange({ ...form, base: e.target.value })}
-				className={inputClass}
-				placeholder={basePlaceholder}
-				autoComplete="off"
-			/>
-			{baseHint ? <p className="text-xs text-gray-500">{baseHint}</p> : null}
-			<button
-				type="button"
-				className="text-xs font-medium text-blue-600 hover:text-blue-800"
-				onClick={() => setAdvancedOpen((v) => !v)}
-			>
-				{advancedOpen ? `▾ ${advancedToggle}` : `▸ ${advancedToggle}`}
-			</button>
-			{advancedOpen ? (
-				<div className="space-y-2 border-l-2 border-gray-200 pl-3">
-					<p className="text-xs text-gray-500">{advancedHint}</p>
-					{protocol === 'openai' ? (
-						<>
+		<div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+			<div className="mb-3 flex items-center gap-2">
+				<ProviderProtocolIcon protocol={protocol} />
+				<h4 className="text-sm font-semibold text-gray-900">{protocolLabel}</h4>
+			</div>
+
+			<div className="space-y-2">
+				<label className="mb-1 block text-xs font-medium text-gray-600">{baseUrlLabel}</label>
+				<input
+					type="url"
+					value={form.base}
+					onChange={(e) => onChange({ ...form, base: e.target.value })}
+					className={inputClass}
+					placeholder={basePlaceholder}
+					autoComplete="off"
+				/>
+				{baseHint ? <p className="text-xs text-gray-500">{baseHint}</p> : null}
+			</div>
+
+			<div className="mt-3">
+				<button
+					type="button"
+					className="flex w-full items-center gap-1.5 rounded-md px-1 py-1.5 text-left text-xs font-medium text-blue-600 hover:bg-blue-50 hover:text-blue-800"
+					onClick={() => setAdvancedOpen((v) => !v)}
+					aria-expanded={advancedOpen}
+					aria-controls={overridesPanelId}
+				>
+					{advancedOpen ? (
+						<ChevronDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+					) : (
+						<ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+					)}
+					<span>{advancedToggle}</span>
+				</button>
+				{advancedOpen ? (
+					<div
+						id={overridesPanelId}
+						className="mt-2 space-y-3 rounded-md border border-gray-100 bg-gray-50/80 p-3"
+					>
+						<p className="text-xs text-gray-500">{advancedHint}</p>
+						{protocol === 'openai' ? (
+							<>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">{capLabels.chat}</label>
+									<input
+										type="url"
+										value={form.chat}
+										onChange={(e) => onChange({ ...form, chat: e.target.value })}
+										className={inputClass}
+										autoComplete="off"
+									/>
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.imagesGenerations}
+									</label>
+									<input
+										type="url"
+										value={form.images_generations}
+										onChange={(e) =>
+											onChange({ ...form, images_generations: e.target.value })
+										}
+										className={inputClass}
+										autoComplete="off"
+									/>
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.imagesEdits}
+									</label>
+									<input
+										type="url"
+										value={form.images_edits}
+										onChange={(e) => onChange({ ...form, images_edits: e.target.value })}
+										className={inputClass}
+										autoComplete="off"
+									/>
+								</div>
+							</>
+						) : null}
+						{protocol === 'anthropic' ? (
 							<div>
-								<label className="mb-1 block text-xs text-gray-600">{capLabels.chat}</label>
+								<label className="mb-1 block text-xs text-gray-600">{capLabels.messages}</label>
 								<input
 									type="url"
-									value={form.chat}
-									onChange={(e) => onChange({ ...form, chat: e.target.value })}
+									value={form.messages}
+									onChange={(e) => onChange({ ...form, messages: e.target.value })}
 									className={inputClass}
 									autoComplete="off"
 								/>
 							</div>
-							<div>
-								<label className="mb-1 block text-xs text-gray-600">
-									{capLabels.imagesGenerations}
-								</label>
-								<input
-									type="url"
-									value={form.images_generations}
-									onChange={(e) => onChange({ ...form, images_generations: e.target.value })}
-									className={inputClass}
-									autoComplete="off"
-								/>
-							</div>
-							<div>
-								<label className="mb-1 block text-xs text-gray-600">{capLabels.imagesEdits}</label>
-								<input
-									type="url"
-									value={form.images_edits}
-									onChange={(e) => onChange({ ...form, images_edits: e.target.value })}
-									className={inputClass}
-									autoComplete="off"
-								/>
-							</div>
-						</>
-					) : null}
-					{protocol === 'anthropic' ? (
-						<div>
-							<label className="mb-1 block text-xs text-gray-600">{capLabels.messages}</label>
-							<input
-								type="url"
-								value={form.messages}
-								onChange={(e) => onChange({ ...form, messages: e.target.value })}
-								className={inputClass}
-								autoComplete="off"
-							/>
-						</div>
-					) : null}
-					{protocol === 'gemini' ? (
-						<>
-							<div>
-								<label className="mb-1 block text-xs text-gray-600">
-									{capLabels.generateContent}
-								</label>
-								<input
-									type="url"
-									value={form.generateContent}
-									onChange={(e) => onChange({ ...form, generateContent: e.target.value })}
-									className={inputClass}
-									placeholder="https://…/models/{model}:generateContent"
-									autoComplete="off"
-								/>
-							</div>
-							<div>
-								<label className="mb-1 block text-xs text-gray-600">
-									{capLabels.streamGenerateContent}
-								</label>
-								<input
-									type="url"
-									value={form.streamGenerateContent}
-									onChange={(e) => onChange({ ...form, streamGenerateContent: e.target.value })}
-									className={inputClass}
-									placeholder="https://…/models/{model}:streamGenerateContent"
-									autoComplete="off"
-								/>
-							</div>
-						</>
-					) : null}
-				</div>
-			) : null}
+						) : null}
+						{protocol === 'gemini' ? (
+							<>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.generateContent}
+									</label>
+									<input
+										type="url"
+										value={form.generateContent}
+										onChange={(e) =>
+											onChange({ ...form, generateContent: e.target.value })
+										}
+										className={inputClass}
+										placeholder="https://…/models/{model}:generateContent"
+										autoComplete="off"
+									/>
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.streamGenerateContent}
+									</label>
+									<input
+										type="url"
+										value={form.streamGenerateContent}
+										onChange={(e) =>
+											onChange({ ...form, streamGenerateContent: e.target.value })
+										}
+										className={inputClass}
+										placeholder="https://…/models/{model}:streamGenerateContent"
+										autoComplete="off"
+									/>
+								</div>
+							</>
+						) : null}
+					</div>
+				) : null}
+			</div>
 		</div>
 	);
 }
@@ -179,6 +216,7 @@ export function ProviderModal(props: ProviderModalProps) {
 
 	const t = useTranslations('providers.modal');
 	const tCommon = useTranslations('common');
+	const titleId = useId();
 
 	if (!open) return null;
 
@@ -201,11 +239,14 @@ export function ProviderModal(props: ProviderModalProps) {
 			}}
 		>
 			<div
-				className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${editingProvider ? 'max-w-3xl' : 'max-w-2xl'}`}
+				className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={titleId}
 			>
 				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
 					<div>
-						<h2 className="text-xl font-bold text-gray-900">
+						<h2 id={titleId} className="text-xl font-bold text-gray-900">
 							{editingProvider ? t('editTitle') : t('newTitle')}
 						</h2>
 						{!editingProvider && duplicateSourceId && (
@@ -260,7 +301,7 @@ export function ProviderModal(props: ProviderModalProps) {
 									type="text"
 									value={formData.name}
 									onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
-									className={inputClass}
+									className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 									placeholder={t('namePlaceholder')}
 									autoComplete="off"
 									required
@@ -268,42 +309,47 @@ export function ProviderModal(props: ProviderModalProps) {
 							</div>
 						</section>
 
-						<section className="space-y-5 border-t border-gray-100 pt-6">
+						<section className="space-y-4 border-t border-gray-100 pt-6">
 							<div>
 								<h3 className="text-sm font-semibold text-gray-900">{t('endpoints')}</h3>
 								<p className="mt-0.5 text-xs text-gray-500">{t('endpointsHint')}</p>
 							</div>
-							<ProtocolFields
-								protocolLabel={t('openaiOptional')}
-								basePlaceholder={t('openaiPlaceholder')}
-								form={formData.openai}
-								protocol="openai"
-								advancedToggle={t('advancedToggle')}
-								advancedHint={t('advancedHint')}
-								capLabels={capLabels}
-								onChange={(openai) => onFormChange({ ...formData, openai })}
-							/>
-							<ProtocolFields
-								protocolLabel={t('anthropicOptional')}
-								basePlaceholder={t('anthropicPlaceholder')}
-								form={formData.anthropic}
-								protocol="anthropic"
-								advancedToggle={t('advancedToggle')}
-								advancedHint={t('advancedHint')}
-								capLabels={capLabels}
-								onChange={(anthropic) => onFormChange({ ...formData, anthropic })}
-							/>
-							<ProtocolFields
-								protocolLabel={t('geminiOptional')}
-								basePlaceholder={t('geminiPlaceholder')}
-								baseHint={t('geminiHint')}
-								form={formData.gemini}
-								protocol="gemini"
-								advancedToggle={t('advancedToggle')}
-								advancedHint={t('advancedHint')}
-								capLabels={capLabels}
-								onChange={(gemini) => onFormChange({ ...formData, gemini })}
-							/>
+							<div className="space-y-3">
+								<ProtocolFields
+									protocolLabel={t('openaiOptional')}
+									baseUrlLabel={t('baseUrl')}
+									basePlaceholder={t('openaiPlaceholder')}
+									form={formData.openai}
+									protocol="openai"
+									advancedToggle={t('advancedToggle')}
+									advancedHint={t('advancedHint')}
+									capLabels={capLabels}
+									onChange={(openai) => onFormChange({ ...formData, openai })}
+								/>
+								<ProtocolFields
+									protocolLabel={t('anthropicOptional')}
+									baseUrlLabel={t('baseUrl')}
+									basePlaceholder={t('anthropicPlaceholder')}
+									form={formData.anthropic}
+									protocol="anthropic"
+									advancedToggle={t('advancedToggle')}
+									advancedHint={t('advancedHint')}
+									capLabels={capLabels}
+									onChange={(anthropic) => onFormChange({ ...formData, anthropic })}
+								/>
+								<ProtocolFields
+									protocolLabel={t('geminiOptional')}
+									baseUrlLabel={t('baseUrl')}
+									basePlaceholder={t('geminiPlaceholder')}
+									baseHint={t('geminiHint')}
+									form={formData.gemini}
+									protocol="gemini"
+									advancedToggle={t('advancedToggle')}
+									advancedHint={t('advancedHint')}
+									capLabels={capLabels}
+									onChange={(gemini) => onFormChange({ ...formData, gemini })}
+								/>
+							</div>
 						</section>
 
 						<section className="space-y-3 border-t border-gray-100 pt-6">
@@ -317,7 +363,7 @@ export function ProviderModal(props: ProviderModalProps) {
 								rows={3}
 								value={formData.description}
 								onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
-								className={inputClass}
+								className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder={t('descriptionPlaceholder')}
 								autoComplete="off"
 								aria-labelledby="provider-description-heading"
