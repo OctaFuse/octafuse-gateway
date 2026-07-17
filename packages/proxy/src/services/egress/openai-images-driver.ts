@@ -10,6 +10,7 @@ import {
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { EMPTY_USAGE } from '../proxy';
+import { buildRouteRequestBody } from '../route-default-params';
 import { extractUpstreamRequestId } from './upstream-request-id';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 
@@ -44,6 +45,8 @@ export const IMAGE_GENERATION_TIMEOUT_MS = 120_000;
 export const IMAGE_MAX_PROMPT_CHARS = 4_000;
 export const IMAGE_MAX_REFERENCE_COUNT = 5;
 export const IMAGE_MAX_BYTES_PER_FILE = 20 * 1024 * 1024;
+/** 与文档 5×20MB 对齐的总上传上限，避免 Worker 内存被多图打爆 */
+export const IMAGE_MAX_TOTAL_UPLOAD_BYTES = IMAGE_MAX_REFERENCE_COUNT * IMAGE_MAX_BYTES_PER_FILE;
 export const IMAGE_ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 
 export type ImageEditUpload = {
@@ -281,8 +284,9 @@ export async function dispatchOpenAiImageGenerations(
 	meta: { imageUsage: ImageTokenUsage | null; parsedBody: unknown };
 }> {
 	const url = buildImagesUrl(route.baseUrl, 'generations');
+	// 与 chat/messages 一致：每条 failover 路由合并各自 custom_params，用户字段优先
 	const requestBody = {
-		...body,
+		...buildRouteRequestBody(route, body),
 		model: route.providerModelName,
 	};
 	console.log(
@@ -375,28 +379,26 @@ export async function dispatchOpenAiImageEdits(
 		`[Gateway Images] upstream edits POST ${url} baseUrl=${route.baseUrl} providerModel=${route.providerModelName} providerId=${route.providerId}`
 	);
 	const form = new FormData();
+	// custom_params 作为额外表单字段；用户/规范化字段优先覆盖
+	const mergedExtras = buildRouteRequestBody(route, {
+		...(edit.extra ?? {}),
+		prompt: edit.prompt,
+		n: edit.n,
+		...(edit.size ? { size: edit.size } : {}),
+		...(edit.quality ? { quality: edit.quality } : {}),
+		...(edit.background ? { background: edit.background } : {}),
+	});
 	form.append('model', route.providerModelName);
-	form.append('prompt', edit.prompt);
-	form.append('n', String(edit.n));
-	if (edit.size) {
-		form.append('size', edit.size);
-	}
-	if (edit.quality) {
-		form.append('quality', edit.quality);
-	}
-	if (edit.background) {
-		form.append('background', edit.background);
-	}
-	for (const [k, v] of Object.entries(edit.extra ?? {})) {
+	for (const [k, v] of Object.entries(mergedExtras)) {
 		if (v == null) continue;
+		if (k === 'model' || k === 'image' || k === 'images') continue;
 		if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
 			form.append(k, String(v));
 		}
 	}
 	for (const img of edit.images) {
-		const copy = new Uint8Array(img.bytes.byteLength);
-		copy.set(img.bytes);
-		const blob = new Blob([copy.buffer], { type: img.mimeType });
+		// 直接用已有 Uint8Array 构造 Blob，避免再 copy 一份驻留内存
+		const blob = new Blob([img.bytes], { type: img.mimeType });
 		form.append('image', blob, img.filename || 'image.png');
 	}
 

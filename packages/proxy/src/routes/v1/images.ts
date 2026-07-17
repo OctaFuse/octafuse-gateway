@@ -23,13 +23,15 @@ import { proxyImageEdits, proxyImageGenerations, type ProxyResult } from '../../
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
 import {
 	canAffordImageCost,
-	estimateImageCosts,
+	estimateImageBudgetPrecheck,
 	recordImageUsage,
 	type ImageBillingParams,
 } from '../../services/image-usage-charge';
 import {
 	countValidImageResults,
+	IMAGE_MAX_BYTES_PER_FILE,
 	IMAGE_MAX_REFERENCE_COUNT,
+	IMAGE_MAX_TOTAL_UPLOAD_BYTES,
 	normalizeImageCommonParams,
 	redactImageRequestForLog,
 	validateImageUpload,
@@ -136,32 +138,53 @@ async function parseMultipartEdits(c: {
 	}
 
 	const images: ImageEditUpload[] = [];
-	const collectFile = async (value: unknown, fallbackName: string) => {
-		if (value == null) return;
-		// Hono File / Blob
+	let totalBytes = 0;
+	const collectFile = async (value: unknown, fallbackName: string): Promise<string | null> => {
+		if (value == null) return null;
+		// Hono File / Blob：先按 size 预检再读入，避免无界 arrayBuffer
 		if (typeof value === 'object' && value !== null && 'arrayBuffer' in value) {
 			const file = value as File;
+			const declaredSize =
+				typeof file.size === 'number' && Number.isFinite(file.size) ? file.size : null;
+			if (declaredSize != null) {
+				if (declaredSize > IMAGE_MAX_BYTES_PER_FILE) {
+					return `each image must be at most ${IMAGE_MAX_BYTES_PER_FILE} bytes`;
+				}
+				if (totalBytes + declaredSize > IMAGE_MAX_TOTAL_UPLOAD_BYTES) {
+					return `total image upload must be at most ${IMAGE_MAX_TOTAL_UPLOAD_BYTES} bytes`;
+				}
+			}
 			const buf = new Uint8Array(await file.arrayBuffer());
+			if (buf.byteLength > IMAGE_MAX_BYTES_PER_FILE) {
+				return `each image must be at most ${IMAGE_MAX_BYTES_PER_FILE} bytes`;
+			}
+			if (totalBytes + buf.byteLength > IMAGE_MAX_TOTAL_UPLOAD_BYTES) {
+				return `total image upload must be at most ${IMAGE_MAX_TOTAL_UPLOAD_BYTES} bytes`;
+			}
+			totalBytes += buf.byteLength;
 			images.push({
 				filename: (file as { name?: string }).name || fallbackName,
 				mimeType: file.type || 'application/octet-stream',
 				bytes: buf,
 			});
-			return;
+			return null;
 		}
 		if (typeof value === 'string' && value.startsWith('data:')) {
-			return;
+			return null;
 		}
+		return null;
 	};
 
 	const imageField = body.image ?? body.images;
 	if (Array.isArray(imageField)) {
 		let i = 0;
 		for (const item of imageField) {
-			await collectFile(item, `image-${i++}.png`);
+			const err = await collectFile(item, `image-${i++}.png`);
+			if (err) return { ok: false, error: err };
 		}
 	} else {
-		await collectFile(imageField, 'image.png');
+		const err = await collectFile(imageField, 'image.png');
+		if (err) return { ok: false, error: err };
 	}
 
 	// Also accept image[] style keys if parseBody flattened differently
@@ -171,10 +194,12 @@ async function parseMultipartEdits(c: {
 		if (Array.isArray(value)) {
 			let i = 0;
 			for (const item of value) {
-				await collectFile(item, `image-${i++}.png`);
+				const err = await collectFile(item, `image-${i++}.png`);
+				if (err) return { ok: false, error: err };
 			}
 		} else {
-			await collectFile(value, 'image.png');
+			const err = await collectFile(value, 'image.png');
+			if (err) return { ok: false, error: err };
 		}
 	}
 
@@ -411,16 +436,18 @@ imageRoutes.post('/generations', async (c) => {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
 
-	const primaryRoute = routes[0]!;
-	const estimate = await estimateImageCosts(repos, {
-		modelPricingProfileJson: model.pricing_profile ?? null,
-		routePriceOverrideJson: primaryRoute.priceOverrideRaw,
-		quality: common.quality ?? 'auto',
-		size: common.size ?? 'auto',
-		imageCount: common.n,
-		isEdit: false,
-		requestStartedAtMs: start,
-	});
+	const estimate = await estimateImageBudgetPrecheck(
+		repos,
+		{
+			modelPricingProfileJson: model.pricing_profile ?? null,
+			quality: common.quality ?? 'auto',
+			size: common.size ?? 'auto',
+			imageCount: common.n,
+			isEdit: false,
+			requestStartedAtMs: start,
+		},
+		routes.map((route) => route.priceOverrideRaw)
+	);
 	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost)) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
@@ -531,16 +558,19 @@ imageRoutes.post('/edits', async (c) => {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
 
-	const primaryRoute = routes[0]!;
-	const estimate = await estimateImageCosts(repos, {
-		modelPricingProfileJson: model.pricing_profile ?? null,
-		routePriceOverrideJson: primaryRoute.priceOverrideRaw,
-		quality: edit.quality ?? 'auto',
-		size: edit.size ?? 'auto',
-		imageCount: edit.n,
-		isEdit: true,
-		requestStartedAtMs: start,
-	});
+	const estimate = await estimateImageBudgetPrecheck(
+		repos,
+		{
+			modelPricingProfileJson: model.pricing_profile ?? null,
+			quality: edit.quality ?? 'auto',
+			size: edit.size ?? 'auto',
+			imageCount: edit.n,
+			isEdit: true,
+			referenceCount: edit.images.length,
+			requestStartedAtMs: start,
+		},
+		routes.map((route) => route.priceOverrideRaw)
+	);
 	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost)) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
@@ -605,6 +635,7 @@ imageRoutes.post('/edits', async (c) => {
 			size: edit.size ?? 'auto',
 			imageCount: edit.n,
 			isEdit: true,
+			referenceCount: edit.images.length,
 			requestStartedAtMs: start,
 		},
 		clientModelId: rawModelId,

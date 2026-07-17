@@ -39,7 +39,8 @@
 		"db:export:remote:data": "tsx scripts/db/d1-remote-export/export-remote-data.ts",
 		"test:gateway:node-smoke": "dotenv -c -- tsx scripts/smoke/test-node-core-routes.ts",
 		"test:gateway:postgres-smoke": "dotenv -c -- tsx scripts/smoke/test-postgres-core-routes.ts",
-		"test:gateway:sql-storage-smoke": "dotenv -c -- tsx scripts/smoke/test-storage-concurrent-charge.ts"
+		"test:gateway:sql-storage-smoke": "dotenv -c -- tsx scripts/smoke/test-storage-concurrent-charge.ts",
+		"test:unit": "npm run test:unit -w @octafuse/core && npm run test:unit -w @octafuse/proxy && npm run test:unit -w @octafuse/admin"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.1",

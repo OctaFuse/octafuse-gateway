@@ -29,4 +29,27 @@ describe('buildOpenAiCompatibleImagesUrl', () => {
 			'https://aigateway.edgecloudapp.com/v1/abc/openai-image-generations';
 		assert.equal(buildOpenAiCompatibleImagesUrl(base, 'generations'), base);
 	});
+
+	it('rewrites full generations endpoint to edits (no double append)', () => {
+		assert.equal(
+			buildOpenAiCompatibleImagesUrl(
+				'https://api.openai.com/v1/images/generations',
+				'edits'
+			),
+			'https://api.openai.com/v1/images/edits'
+		);
+		assert.equal(
+			buildOpenAiCompatibleImagesUrl('https://api.openai.com/v1/images/edits', 'generations'),
+			'https://api.openai.com/v1/images/generations'
+		);
+	});
+
+	it('rewrites wangsu generations endpoint to edits sibling', () => {
+		const base =
+			'https://aigateway.edgecloudapp.com/v1/abc/openai-image-generations';
+		assert.equal(
+			buildOpenAiCompatibleImagesUrl(base, 'edits'),
+			'https://aigateway.edgecloudapp.com/v1/abc/openai-image-edits'
+		);
+	});
 });

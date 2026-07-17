@@ -10,7 +10,8 @@
 		"prebuild": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch(e){}\"",
 		"build": "npm run build:migrate && npm run build:node-index",
 		"build:migrate": "tsc -p tsconfig.build.migrate.json",
-		"build:node-index": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --packages=external --log-level=warning"
+		"build:node-index": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --packages=external --log-level=warning",
+		"test:unit": "tsx --test src/db/image-token-usage.test.ts src/db/pricing-profile.test.ts src/db/pricing-schedule.test.ts src/db/model-modalities.test.ts src/lib/business-timezone.test.ts src/services/budget-transition-service.test.ts src/upstream-protocol-images-url.test.ts"
 	},
 	"files": [
 		"dist",
@@ -67,6 +68,7 @@
 		"@cloudflare/workers-types": "^4.20250427.0",
 		"@types/node": "^25.5.0",
 		"esbuild": "^0.27.3",
+		"tsx": "^4.21.0",
 		"typescript": "^5.7.2"
 	}
 }

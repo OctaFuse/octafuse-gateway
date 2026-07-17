@@ -63,4 +63,21 @@ describe('profileHasImageTokenPricing', () => {
 		);
 		assert.equal(profileHasImageTokenPricing(p), true);
 	});
+
+	it('rejects negative image_* prices (whole profile invalid)', () => {
+		const p = parsePricingProfile(
+			JSON.stringify({
+				tiers: [
+					{
+						upto: null,
+						input_price: 5,
+						output_price: 0,
+						image_output_price: -30,
+					},
+				],
+			})
+		);
+		assert.equal(p, null);
+		assert.equal(profileHasImageTokenPricing(p), false);
+	});
 });

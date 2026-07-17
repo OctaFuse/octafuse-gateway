@@ -564,8 +564,8 @@ Content-Type: multipart/form-data
 
 对齐 [OpenAI Image generation · Cost](https://platform.openai.com/docs/guides/image-generation)：
 
-**最终费用** =  
-`text_input × $/M` + `cached_text × $/M` + `image_input × $/M` + `cached_image_input × $/M` + `image_output × $/M`  
+**最终费用** =
+`text_input × $/M` + `cached_text × $/M` + `image_input × $/M` + `cached_image_input × $/M` + `image_output × $/M`
 再乘路由 `charged_factor` / `metered_factor`（与 Chat 一致）。
 
 1. 预检额度：用 quality×size **估算** image output tokens（偏保守，含短 prompt / edits 余量）× 目录 token 单价 × `charged_factor`

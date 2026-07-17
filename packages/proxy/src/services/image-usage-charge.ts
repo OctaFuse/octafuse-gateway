@@ -9,7 +9,6 @@ import {
 	changedFieldsToJson,
 	computeChangedFields,
 	computeImageTokenMeteredCost,
-	EMPTY_IMAGE_TOKEN_USAGE,
 	getBusinessTimezone,
 	getUserBudgetSnapshot,
 	insertRequestUsageAndChargeTx,
@@ -43,6 +42,8 @@ export type ImageBillingParams = {
 	imageCount: number;
 	/** generations vs edits（预检是否加 image input 余量） */
 	isEdit?: boolean;
+	/** edits 参考图张数；预检按张数×单图余量，缺省按上限 */
+	referenceCount?: number;
 	/** 请求进入 Gateway 的时间；每日时段倍率在该时刻锁定 */
 	requestStartedAtMs?: number;
 };
@@ -117,7 +118,8 @@ async function resolveRouteFactors(
 function estimateImageTokenCosts(
 	params: ImageBillingParams,
 	usage: ImageTokenUsage,
-	factors: Awaited<ReturnType<typeof resolveRouteFactors>>
+	factors: Awaited<ReturnType<typeof resolveRouteFactors>>,
+	auditExtra?: Record<string, unknown>
 ): ImageCostBreakdown {
 	// Image 目录价通常为单档 flat；仍复用 LLM 的 input-tokens 选档 API（basis 取 text+image_input）。
 	const basis = usage.text_tokens + usage.image_input_tokens;
@@ -146,6 +148,7 @@ function estimateImageTokenCosts(
 		kind: 'image_tokens',
 		quality: params.quality ?? null,
 		size: params.size ?? null,
+		...(auditExtra ?? {}),
 		tokens: {
 			text: usage.text_tokens,
 			cached_text: usage.cached_text_tokens,
@@ -202,7 +205,7 @@ function estimateImageTokenCosts(
 export async function estimateImageCosts(
 	repos: GatewayRepositories,
 	params: ImageBillingParams,
-	options?: { usage?: ImageTokenUsage | null }
+	options?: { usage?: ImageTokenUsage | null; auditExtra?: Record<string, unknown> }
 ): Promise<ImageCostBreakdown> {
 	const profile = parsePricingProfile(params.modelPricingProfileJson ?? null);
 	const factors = await resolveRouteFactors(
@@ -219,8 +222,9 @@ export async function estimateImageCosts(
 				size: params.size,
 				isEdit: params.isEdit,
 				imageCount: params.imageCount,
+				referenceCount: params.referenceCount,
 			});
-		return estimateImageTokenCosts(params, usage, factors);
+		return estimateImageTokenCosts(params, usage, factors, options?.auditExtra);
 	}
 
 	return {
@@ -245,6 +249,30 @@ export async function estimateImageCosts(
 		},
 		billingKind: 'image_tokens',
 	};
+}
+
+/**
+ * 预算预检：对全部候选路由分别估算，取 **最高 charged_cost**。
+ * 避免首路由失败后由更高 charged_factor 的 failover 路由成功导致预算越界。
+ */
+export async function estimateImageBudgetPrecheck(
+	repos: GatewayRepositories,
+	params: Omit<ImageBillingParams, 'routePriceOverrideJson'>,
+	routePriceOverrideJsons: Array<string | null | undefined>
+): Promise<ImageCostBreakdown> {
+	const overrides =
+		routePriceOverrideJsons.length > 0 ? routePriceOverrideJsons : [null];
+	let best: ImageCostBreakdown | null = null;
+	for (const override of overrides) {
+		const costs = await estimateImageCosts(repos, {
+			...params,
+			routePriceOverrideJson: override ?? null,
+		});
+		if (!best || costs.chargedCost > best.chargedCost) {
+			best = costs;
+		}
+	}
+	return best!;
 }
 
 export function canAffordImageCost(
@@ -326,8 +354,30 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 			billingKind: 'image_tokens',
 		};
 	} else if (profileHasImageTokenPricing(profile)) {
-		const usage = params.imageUsage ?? EMPTY_IMAGE_TOKEN_USAGE;
-		costs = await estimateImageCosts(params.repos, { ...params.billing, imageCount }, { usage });
+		// 成功但上游未返回 usage：禁止静默按 0 计费，回退保守预检并写入审计原因
+		if (params.imageUsage) {
+			costs = await estimateImageCosts(
+				params.repos,
+				{ ...params.billing, imageCount },
+				{ usage: params.imageUsage }
+			);
+		} else {
+			const fallbackUsage = buildImagePrecheckUsage({
+				quality: params.billing.quality,
+				size: params.billing.size,
+				isEdit: params.billing.isEdit,
+				imageCount,
+				referenceCount: params.billing.referenceCount,
+			});
+			costs = await estimateImageCosts(
+				params.repos,
+				{ ...params.billing, imageCount },
+				{
+					usage: fallbackUsage,
+					auditExtra: { usage_source: 'precheck_fallback', error: 'missing_upstream_usage' },
+				}
+			);
+		}
 	} else {
 		costs = await estimateImageCosts(params.repos, { ...params.billing, imageCount });
 	}

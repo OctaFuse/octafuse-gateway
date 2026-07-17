@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GatewayRepositories } from '@octafuse/core';
-import { estimateImageCosts } from './image-usage-charge';
+import { estimateImageBudgetPrecheck, estimateImageCosts } from './image-usage-charge';
 
 const TOKEN_PROFILE = JSON.stringify({
 	tiers: [
@@ -125,5 +125,76 @@ describe('estimateImageCosts', () => {
 			imageCount: 1,
 		});
 		assert.equal(costs.chargedCost, 0);
+	});
+
+	it('budget precheck uses max charged_factor across failover routes', async () => {
+		const cheap = JSON.stringify({ charged_factor: 1, metered_factor: 1 });
+		const expensive = JSON.stringify({ charged_factor: 2, metered_factor: 1 });
+		const withCheapOnly = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: TOKEN_PROFILE,
+			routePriceOverrideJson: cheap,
+			quality: 'high',
+			size: '1536x1024',
+			imageCount: 1,
+		});
+		const precheck = await estimateImageBudgetPrecheck(
+			mockRepos(),
+			{
+				modelPricingProfileJson: TOKEN_PROFILE,
+				quality: 'high',
+				size: '1536x1024',
+				imageCount: 1,
+			},
+			[cheap, expensive]
+		);
+		assert.ok(precheck.chargedCost > withCheapOnly.chargedCost);
+		assert.ok(Math.abs(precheck.chargedCost - withCheapOnly.chargedCost * 2) < 1e-6);
+	});
+
+	it('auto/unknown quality precheck uses upper-bound output tokens', async () => {
+		const auto = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: TOKEN_PROFILE,
+			routePriceOverrideJson: null,
+			quality: 'auto',
+			size: '1024x1024',
+			imageCount: 1,
+		});
+		const high = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: TOKEN_PROFILE,
+			routePriceOverrideJson: null,
+			quality: 'high',
+			size: '1024x1024',
+			imageCount: 1,
+		});
+		const medium = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: TOKEN_PROFILE,
+			routePriceOverrideJson: null,
+			quality: 'medium',
+			size: '1024x1024',
+			imageCount: 1,
+		});
+		assert.ok(Math.abs(auto.chargedCost - high.chargedCost) < 1e-9);
+		assert.ok(auto.chargedCost > medium.chargedCost);
+	});
+});
+
+describe('missing upstream usage fallback', () => {
+	it('precheck fallback bills conservatively and audits reason', async () => {
+		const fallback = await estimateImageCosts(
+			mockRepos(),
+			{
+				modelPricingProfileJson: TOKEN_PROFILE,
+				routePriceOverrideJson: null,
+				quality: 'high',
+				size: '1536x1024',
+				imageCount: 1,
+			},
+			{
+				auditExtra: { usage_source: 'precheck_fallback', error: 'missing_upstream_usage' },
+			}
+		);
+		assert.ok(fallback.chargedCost > 0);
+		assert.ok(fallback.pricingAuditJson.includes('missing_upstream_usage'));
+		assert.ok(fallback.pricingAuditJson.includes('precheck_fallback'));
 	});
 });

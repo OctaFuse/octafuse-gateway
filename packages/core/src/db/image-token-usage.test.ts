@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+	buildImagePrecheckUsage,
 	computeImageTokenMeteredCost,
+	estimateImageOutputTokensForPrecheck,
+	IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM,
+	IMAGE_PRECHECK_MAX_REFERENCE_COUNT,
 	parseOpenAiImageUsage,
 } from './image-token-usage';
 import type { BillingPriceSnapshot } from './pricing-profile';
@@ -108,5 +112,52 @@ describe('computeImageTokenMeteredCost', () => {
 		// uncached text 60*5 + cached text 40*1.25 + uncached img 150*8 + cached img 50*2
 		const expected = (60 * 5 + 40 * 1.25 + 150 * 8 + 50 * 2) / 1_000_000;
 		assert.ok(Math.abs(cost - expected) < 1e-12);
+	});
+});
+
+describe('estimateImageOutputTokensForPrecheck', () => {
+	it('uses exact table for known quality×size', () => {
+		assert.equal(estimateImageOutputTokensForPrecheck('high', '1536x1024'), 5500);
+	});
+
+	it('takes upper bound for auto quality', () => {
+		assert.equal(estimateImageOutputTokensForPrecheck('auto', '1024x1024'), 7033);
+	});
+
+	it('takes upper bound for unknown quality/size', () => {
+		assert.equal(estimateImageOutputTokensForPrecheck('ultra', '4096x4096'), 7033);
+	});
+});
+
+describe('buildImagePrecheckUsage', () => {
+	it('scales edit image_input by reference count up to max', () => {
+		const one = buildImagePrecheckUsage({
+			quality: 'medium',
+			size: '1024x1024',
+			isEdit: true,
+			imageCount: 1,
+			referenceCount: 1,
+		});
+		assert.equal(one.image_input_tokens, IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM);
+
+		const five = buildImagePrecheckUsage({
+			quality: 'medium',
+			size: '1024x1024',
+			isEdit: true,
+			imageCount: 1,
+			referenceCount: 5,
+		});
+		assert.equal(
+			five.image_input_tokens,
+			IMAGE_PRECHECK_MAX_REFERENCE_COUNT * IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM
+		);
+
+		const omitted = buildImagePrecheckUsage({
+			quality: 'medium',
+			size: '1024x1024',
+			isEdit: true,
+			imageCount: 1,
+		});
+		assert.equal(omitted.image_input_tokens, five.image_input_tokens);
 	});
 });

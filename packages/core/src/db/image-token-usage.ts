@@ -143,7 +143,7 @@ export function computeImageTokenMeteredCost(
 
 /**
  * 官方计算器输出侧估算美元（image output only）÷ $30/1M → 预估 image output tokens。
- * 用于预检与 Admin 估算表；`auto` 映射 medium / 1024x1024。
+ * 用于预检与 Admin 估算表；`auto` / 未知 quality×size 取表内上界（偏保守）。
  * 核对来源：OpenAI Image generation Calculating costs（GPT Image 2）。
  */
 export const GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS: Record<string, number> = {
@@ -165,41 +165,91 @@ export const GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS: Record<string, number> = {
 	'auto:auto': 1767,
 };
 
+const KNOWN_QUALITIES = ['low', 'medium', 'high'] as const;
+const KNOWN_SIZES = ['1024x1024', '1024x1536', '1536x1024'] as const;
+
 /** 预检：短 prompt 文本余量 */
 export const IMAGE_PRECHECK_TEXT_TOKEN_HEADROOM = 2_000;
-/** 预检：edits 参考图 image input 余量 */
+/** 预检：每张 edits 参考图 image input 余量 */
 export const IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM = 4_000;
+/** 与 Proxy edits 上限对齐（见 openai-images-driver IMAGE_MAX_REFERENCE_COUNT） */
+export const IMAGE_PRECHECK_MAX_REFERENCE_COUNT = 5;
 
+function maxEstimatedOutputTokensInTable(): number {
+	let max = 0;
+	for (const v of Object.values(GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS)) {
+		if (v > max) max = v;
+	}
+	return max > 0 ? max : 7033;
+}
+
+/**
+ * 预检用 image output tokens：精确命中表项则用之；
+ * `auto` 或未知 quality/size 取表内对应维度上界（真正保守）。
+ */
 export function estimateImageOutputTokensForPrecheck(
 	quality?: string | null,
 	size?: string | null
 ): number {
-	const q = (quality?.trim().toLowerCase() || 'auto') || 'auto';
-	const s = (size?.trim().toLowerCase() || 'auto') || 'auto';
-	const key = `${q}:${s}`;
-	return GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS[key] ?? GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS['auto:auto']!;
+	const qRaw = (quality?.trim().toLowerCase() || 'auto') || 'auto';
+	const sRaw = (size?.trim().toLowerCase() || 'auto') || 'auto';
+	const exact = GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS[`${qRaw}:${sRaw}`];
+	if (exact != null && qRaw !== 'auto' && sRaw !== 'auto') {
+		return exact;
+	}
+
+	const qualities: readonly string[] =
+		qRaw === 'auto' || !KNOWN_QUALITIES.includes(qRaw as (typeof KNOWN_QUALITIES)[number])
+			? KNOWN_QUALITIES
+			: [qRaw];
+	const sizes: readonly string[] =
+		sRaw === 'auto' || !KNOWN_SIZES.includes(sRaw as (typeof KNOWN_SIZES)[number])
+			? KNOWN_SIZES
+			: [sRaw];
+
+	let max = 0;
+	for (const q of qualities) {
+		for (const s of sizes) {
+			const v = GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS[`${q}:${s}`];
+			if (v != null && v > max) max = v;
+		}
+	}
+	return max > 0 ? max : maxEstimatedOutputTokensInTable();
 }
 
-/** 构建预检用的 ImageTokenUsage（偏保守）。 */
+/** 构建预检用的 ImageTokenUsage（偏保守上界）。 */
 export function buildImagePrecheckUsage(options: {
 	quality?: string | null;
 	size?: string | null;
 	/** generations=false → edits，加 image input 余量 */
 	isEdit?: boolean;
 	imageCount?: number;
+	/** edits 参考图张数；缺省按上限 5 保守估算 */
+	referenceCount?: number;
 }): ImageTokenUsage {
 	const n = Math.max(1, Math.floor(options.imageCount ?? 1));
 	const perImageOut = estimateImageOutputTokensForPrecheck(options.quality, options.size);
+	const refs = options.isEdit
+		? Math.min(
+				IMAGE_PRECHECK_MAX_REFERENCE_COUNT,
+				Math.max(
+					1,
+					Math.floor(
+						options.referenceCount != null && Number.isFinite(options.referenceCount)
+							? options.referenceCount
+							: IMAGE_PRECHECK_MAX_REFERENCE_COUNT
+					)
+				)
+			)
+		: 0;
+	const imageIn = refs * IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM;
 	return {
 		text_tokens: IMAGE_PRECHECK_TEXT_TOKEN_HEADROOM,
 		cached_text_tokens: 0,
-		image_input_tokens: options.isEdit ? IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM : 0,
+		image_input_tokens: imageIn,
 		cached_image_input_tokens: 0,
 		image_output_tokens: perImageOut * n,
-		total_tokens:
-			IMAGE_PRECHECK_TEXT_TOKEN_HEADROOM +
-			(options.isEdit ? IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM : 0) +
-			perImageOut * n,
+		total_tokens: IMAGE_PRECHECK_TEXT_TOKEN_HEADROOM + imageIn + perImageOut * n,
 		raw_usage: null,
 	};
 }

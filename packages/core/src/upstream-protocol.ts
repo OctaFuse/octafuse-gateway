@@ -114,8 +114,10 @@ export type OpenAiImagesPathSuffix = 'generations' | 'edits';
  * 拼接 OpenAI 兼容 Images 上游 URL。
  *
  * - 常规：`{baseUrl}/images/{generations|edits}`（`baseUrl` 形如 `https://api.openai.com/v1`）
- * - 若 `baseUrl` 已是完整 Images 端点（标准 `/images/generations`，或网宿等
- *   `.../openai-image-generations`），则不再追加路径，避免错误 URL 挂死上游。
+ * - 若 `baseUrl` 已是完整 Images 端点（标准 `/images/generations` 或 `/images/edits`，
+ *   或网宿等 `.../openai-image-generations`），则：
+ *   - 操作与端点一致时直接返回（不再追加路径）
+ *   - 操作交叉时改写为对侧端点，避免 `.../generations/images/edits` 之类错误 URL
  */
 export function buildOpenAiCompatibleImagesUrl(
 	baseUrl: string,
@@ -133,11 +135,33 @@ export function buildOpenAiCompatibleImagesUrl(
 	const vendorGenerations = /(?:^|\/)(?:openai-)?image-generations$/i.test(lower);
 	const vendorEdits = /(?:^|\/)(?:openai-)?image-edits$/i.test(lower);
 
-	if (suffix === 'generations' && (standardGenerations || vendorGenerations)) {
-		return base;
+	if (standardGenerations) {
+		return suffix === 'generations'
+			? base
+			: base.replace(/\/images\/generations$/i, '/images/edits');
 	}
-	if (suffix === 'edits' && (standardEdits || vendorEdits)) {
-		return base;
+	if (standardEdits) {
+		return suffix === 'edits'
+			? base
+			: base.replace(/\/images\/edits$/i, '/images/generations');
+	}
+
+	if (vendorGenerations) {
+		if (suffix === 'generations') {
+			return base;
+		}
+		// openai-image-generations → openai-image-edits；image-generations → image-edits
+		return base.replace(/(openai-)?image-generations$/i, (_m, openaiPrefix: string | undefined) =>
+			`${openaiPrefix ?? ''}image-edits`
+		);
+	}
+	if (vendorEdits) {
+		if (suffix === 'edits') {
+			return base;
+		}
+		return base.replace(/(openai-)?image-edits$/i, (_m, openaiPrefix: string | undefined) =>
+			`${openaiPrefix ?? ''}image-generations`
+		);
 	}
 
 	return `${base}/images/${suffix}`;

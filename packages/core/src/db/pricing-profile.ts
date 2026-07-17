@@ -108,6 +108,21 @@ function asOptionalPrice(v: unknown): number | null {
 	return asFiniteNumber(v);
 }
 
+/** 可选单价：空 → null；有限非负 → number；负数 → `'invalid'`（整段 profile 拒绝）。 */
+function asNonNegativeOptionalPrice(v: unknown): number | null | 'invalid' {
+	if (v === undefined || v === null || v === '') {
+		return null;
+	}
+	const n = asFiniteNumber(v);
+	if (n == null) {
+		return 'invalid';
+	}
+	if (n < 0) {
+		return 'invalid';
+	}
+	return n;
+}
+
 function tierLabelFromRow(row: Record<string, unknown>): string | null {
 	const raw = row.label;
 	if (raw == null) {
@@ -215,6 +230,17 @@ function parseTiersArray(raw: unknown): PricingTierPrices[] | null {
 		if (input_price == null || output_price == null) {
 			return null;
 		}
+		const image_input_price = asNonNegativeOptionalPrice(row.image_input_price);
+		const image_input_cache_price = asNonNegativeOptionalPrice(row.image_input_cache_price);
+		const image_output_price = asNonNegativeOptionalPrice(row.image_output_price);
+		// 显式负数视为非法 profile（避免负单价抵扣预算）
+		if (
+			image_input_price === 'invalid' ||
+			image_input_cache_price === 'invalid' ||
+			image_output_price === 'invalid'
+		) {
+			return null;
+		}
 		tiers.push({
 			upto,
 			label: tierLabelFromRow(row),
@@ -222,9 +248,9 @@ function parseTiersArray(raw: unknown): PricingTierPrices[] | null {
 			output_price,
 			cache_read_price: asOptionalPrice(row.cache_read_price),
 			cache_write_price: asOptionalPrice(row.cache_write_price),
-			image_input_price: asOptionalPrice(row.image_input_price),
-			image_input_cache_price: asOptionalPrice(row.image_input_cache_price),
-			image_output_price: asOptionalPrice(row.image_output_price),
+			image_input_price,
+			image_input_cache_price,
+			image_output_price,
 		});
 	}
 	return tiers;
