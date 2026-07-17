@@ -10,6 +10,8 @@ import {
 import {
 	createDefaultImageTokenTierRow,
 	createDefaultNewModelTierRow,
+	draftRowsHaveImageTokenPrices,
+	draftRowsLookLikeImageOnly,
 	profileJsonToDraftRows,
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
@@ -33,10 +35,12 @@ import {
 import {
 	ALL_KINDS_KEY,
 	ALL_VENDORS_KEY,
+	EMPTY_IMAGE_MODEL_FORM,
 	EMPTY_MODEL_FORM,
 	parseKindFilterParam,
 	type MetadataPreviewState,
 	type ModelFormData,
+	type ModelFormKind,
 	type ModelKindFilter,
 	type ModelListItem,
 	type PresetCatalogRow,
@@ -323,15 +327,60 @@ export function useModelsPageState() {
 		setPricingTierRows(profileJsonToDraftRows(model.pricing_profile));
 	}, []);
 
-	const handleCreate = useCallback((presetVendorKey?: string) => {
-		setEditingModel(null);
-		setFormData({
-			...EMPTY_MODEL_FORM,
-			vendor: presetVendorKey !== undefined ? presetVendorKey : EMPTY_MODEL_FORM.vendor,
+	const handleCreate = useCallback(
+		(presetVendorKey?: string, kind: ModelFormKind = 'llm') => {
+			setEditingModel(null);
+			const vendor =
+				presetVendorKey !== undefined ? presetVendorKey : EMPTY_MODEL_FORM.vendor;
+			if (kind === 'image') {
+				setFormData({
+					...EMPTY_IMAGE_MODEL_FORM,
+					vendor,
+				});
+				setPricingTierRows([createDefaultImageTokenTierRow()]);
+			} else {
+				setFormData({
+					...EMPTY_MODEL_FORM,
+					vendor,
+				});
+				setPricingTierRows([createDefaultNewModelTierRow()]);
+			}
+			setShowModal(true);
+			setSaveError('');
+		},
+		[]
+	);
+
+	/** 切换 Kind：同步 modalities / token 字段，并在无对应单价时写入默认档。 */
+	const applyFormKind = useCallback((kind: ModelFormKind) => {
+		if (kind === 'image') {
+			setFormData((prev) => ({
+				...prev,
+				input_modalities: prev.input_modalities.includes('image')
+					? prev.input_modalities
+					: [...prev.input_modalities, 'image'],
+				output_modalities: prev.output_modalities.includes('image')
+					? prev.output_modalities
+					: ['image'],
+				context_window: '',
+				max_tokens: '',
+			}));
+			setPricingTierRows((rows) =>
+				draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
+			);
+			return;
+		}
+		setFormData((prev) => {
+			const withoutImage = prev.output_modalities.filter((m) => m !== 'image');
+			return {
+				...prev,
+				output_modalities: withoutImage.length > 0 ? withoutImage : ['text'],
+				max_tokens: prev.max_tokens.trim() !== '' ? prev.max_tokens : '8192',
+			};
 		});
-		setPricingTierRows([createDefaultNewModelTierRow()]);
-		setShowModal(true);
-		setSaveError('');
+		setPricingTierRows((rows) =>
+			draftRowsLookLikeImageOnly(rows) ? [createDefaultNewModelTierRow()] : rows
+		);
 	}, []);
 
 	const handleEdit = useCallback(
@@ -401,14 +450,31 @@ export function useModelsPageState() {
 					: [...current, modality];
 				const nextList = next.length > 0 ? next : [modality];
 				if (kind === 'output_modalities' && nextList.includes('image')) {
+					// 已有 LLM 默认档时也要换成 Image token 默认（此前仅 rows.length===0 才换）
 					setPricingTierRows((rows) =>
-						rows.length === 0 ? [createDefaultImageTokenTierRow()] : rows
+						draftRowsHaveImageTokenPrices(rows)
+							? rows
+							: [createDefaultImageTokenTierRow()]
 					);
 					return {
 						...prev,
 						[kind]: nextList,
 						context_window: '',
 						max_tokens: '',
+					};
+				}
+				if (
+					kind === 'output_modalities' &&
+					!nextList.includes('image') &&
+					prev.output_modalities.includes('image')
+				) {
+					setPricingTierRows((rows) =>
+						draftRowsLookLikeImageOnly(rows) ? [createDefaultNewModelTierRow()] : rows
+					);
+					return {
+						...prev,
+						[kind]: nextList,
+						max_tokens: prev.max_tokens.trim() !== '' ? prev.max_tokens : '8192',
 					};
 				}
 				return { ...prev, [kind]: nextList };
@@ -510,6 +576,7 @@ export function useModelsPageState() {
 		clearImportPresetSelection,
 		runImportSelectedPresets,
 		handleCreate,
+		applyFormKind,
 		handleEdit,
 		handleDelete,
 		handleAddTag,

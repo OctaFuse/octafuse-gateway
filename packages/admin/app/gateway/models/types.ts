@@ -80,3 +80,13 @@ export const EMPTY_MODEL_FORM: ModelFormData = {
 	description: '',
 	metadata: '',
 };
+
+/** 手工新建 Image 模型时的模态默认值（对齐 gpt-image-2：text+image → image）。 */
+export const EMPTY_IMAGE_MODEL_FORM: ModelFormData = {
+	...EMPTY_MODEL_FORM,
+	max_tokens: '',
+	input_modalities: ['text', 'image'],
+	output_modalities: ['image'],
+};
+
+export type ModelFormKind = 'llm' | 'image';

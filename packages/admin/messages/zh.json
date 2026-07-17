@@ -446,6 +446,11 @@
 		"modal": {
 			"editTitle": "编辑模型",
 			"newTitle": "新建模型",
+			"kind": "类型",
+			"kindLlm": "大语言模型",
+			"kindImage": "文生图",
+			"kindHintLlm": "对话 / 补全模型，使用 input / output / cache token 定价。",
+			"kindHintImage": "文生图模型：OUTPUT 含 image、Image token 单价，无上下文 / Max Tokens。",
 			"modelIdRequired": "Model ID *",
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "显示名称",

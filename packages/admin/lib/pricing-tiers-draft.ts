@@ -85,6 +85,31 @@ export function createDefaultImageTokenTierRow(): PricingTierDraftRow {
 	};
 }
 
+function draftPricePositive(raw: string): boolean {
+	const t = raw.trim();
+	if (!t) return false;
+	const n = Number(t);
+	return Number.isFinite(n) && n > 0;
+}
+
+/** 是否已填 image_* token 单价（切换 Kind 时避免覆盖用户已填价）。 */
+export function draftRowsHaveImageTokenPrices(rows: PricingTierDraftRow[]): boolean {
+	return rows.some(
+		(r) =>
+			draftPricePositive(r.image_input_price) ||
+			draftPricePositive(r.image_input_cache_price) ||
+			draftPricePositive(r.image_output_price)
+	);
+}
+
+/**
+ * 看起来像纯 Image 档（有 image_*、无正的 LLM output）——切回 LLM 时可安全换成 LLM 默认档。
+ */
+export function draftRowsLookLikeImageOnly(rows: PricingTierDraftRow[]): boolean {
+	if (!draftRowsHaveImageTokenPrices(rows)) return false;
+	return !rows.some((r) => draftPricePositive(r.output_price));
+}
+
 export function tierPricesToDraft(t: PricingTierPrices): PricingTierDraftRow {
 	return {
 		id: nextRowId(),

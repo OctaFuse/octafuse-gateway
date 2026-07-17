@@ -64,7 +64,12 @@ function ModelsContent() {
 							hasModels={state.models.length > 0}
 							importSubmitting={state.importSubmitting}
 							onImport={state.openImportCatalogModal}
-							onCreate={() => state.handleCreate(state.isAllVendors ? undefined : state.activeVendorKey)}
+							onCreate={() =>
+								state.handleCreate(
+									state.isAllVendors ? undefined : state.activeVendorKey,
+									state.selectedKind === 'image' ? 'image' : 'llm'
+								)
+							}
 							createTitle={createTitle}
 						/>
 
@@ -109,6 +114,7 @@ function ModelsContent() {
 				onAddTag={state.handleAddTag}
 				onRemoveTag={state.handleRemoveTag}
 				onToggleModality={state.toggleFormModality}
+				onKindChange={state.applyFormKind}
 				onSave={state.handleSave}
 				onDelete={state.handleDelete}
 			/>

@@ -446,6 +446,11 @@
 		"modal": {
 			"editTitle": "Edit Model",
 			"newTitle": "New Model",
+			"kind": "Kind",
+			"kindLlm": "LLM",
+			"kindImage": "Image",
+			"kindHintLlm": "Chat / completion models with token pricing (input / output / cache).",
+			"kindHintImage": "Image-generation models: output includes image, Image token rates, no context/max tokens.",
 			"modelIdRequired": "Model ID *",
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "Display Name",

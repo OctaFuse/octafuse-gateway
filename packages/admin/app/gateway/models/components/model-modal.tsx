@@ -31,6 +31,8 @@ type Props = {
 	onAddTag: () => void;
 	onRemoveTag: (tag: string) => void;
 	onToggleModality: (kind: 'input_modalities' | 'output_modalities', modality: string) => void;
+	/** 切换 LLM / Image Kind（同步 modalities 与默认 pricing） */
+	onKindChange: (kind: 'llm' | 'image') => void;
 	onSave: () => void;
 	onDelete: (id: string) => void;
 };
@@ -53,6 +55,7 @@ export function ModelModal(props: Props) {
 		onAddTag,
 		onRemoveTag,
 		onToggleModality,
+		onKindChange,
 		onSave,
 		onDelete,
 	} = props;
@@ -62,6 +65,7 @@ export function ModelModal(props: Props) {
 	const isImageModel = isImageGenerationModel({
 		output_modalities: formData.output_modalities,
 	});
+	const formKind: 'llm' | 'image' = isImageModel ? 'image' : 'llm';
 
 	if (!open) return null;
 
@@ -98,6 +102,45 @@ export function ModelModal(props: Props) {
 					)}
 
 					<div className="grid grid-cols-2 gap-4">
+						<div className="col-span-2">
+							<label className="block text-sm font-medium text-gray-700 mb-1.5">
+								{t('kind')}
+							</label>
+							<div
+								className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
+								role="group"
+								aria-label={t('kind')}
+							>
+								{(
+									[
+										{ id: 'llm' as const, label: t('kindLlm') },
+										{ id: 'image' as const, label: t('kindImage') },
+									] as const
+								).map((opt) => {
+									const active = formKind === opt.id;
+									return (
+										<button
+											key={opt.id}
+											type="button"
+											disabled={isSaving || isDeleting}
+											onClick={() => {
+												if (formKind !== opt.id) onKindChange(opt.id);
+											}}
+											className={
+												active
+													? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
+													: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
+											}
+										>
+											{opt.label}
+										</button>
+									);
+								})}
+							</div>
+							<p className="mt-1.5 text-[11px] text-gray-500 leading-relaxed">
+								{isImageModel ? t('kindHintImage') : t('kindHintLlm')}
+							</p>
+						</div>
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">{t('modelIdRequired')}</label>
 							<input
