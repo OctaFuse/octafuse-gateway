@@ -1,12 +1,33 @@
 import type { GatewayProvider } from '@/lib/types';
 import {
+	listConfiguredCapabilities,
 	parseProviderEndpoints,
 	serializeProviderEndpoints,
+	type ProviderEndpointCapability,
 	type ProviderEndpointsMap,
 	type ProtocolEndpointsConfig,
 } from '@octafuse/core/provider-endpoints';
-import type { ProtocolEndpointForm, ProviderFormData, ProviderProtocolSummary } from './types';
+import type {
+	ProtocolEndpointForm,
+	ProviderCapabilityBadge,
+	ProviderFormData,
+	ProviderProtocolSummary,
+} from './types';
 import { EMPTY_PROTOCOL_FORM } from './types';
+
+/** 完整 capability → 卡片紧凑标签（OpenAI images.* 合并为 images）。 */
+export function capabilityDisplayBadges(
+	capabilities: readonly ProviderEndpointCapability[]
+): ProviderCapabilityBadge[] {
+	const badges: ProviderCapabilityBadge[] = [];
+	const set = new Set(capabilities);
+	if (set.has('chat')) badges.push('chat');
+	if (set.has('images.generations') || set.has('images.edits')) badges.push('images');
+	if (set.has('messages')) badges.push('messages');
+	if (set.has('generateContent')) badges.push('generateContent');
+	if (set.has('streamGenerateContent')) badges.push('streamGenerateContent');
+	return badges;
+}
 
 export { PROVIDER_KEY_LABEL_MAX_LENGTH } from '@/lib/provider-key-label';
 
@@ -132,7 +153,16 @@ export function getProviderProtocolSummaries(provider: GatewayProvider): Provide
 	const rows: ProviderProtocolSummary[] = [];
 	if (map.openai) {
 		const url = map.openai.base || map.openai.endpoints?.chat || Object.values(map.openai.endpoints ?? {})[0] || '';
-		if (url) rows.push({ key: 'openai', label: 'OpenAI', url });
+		if (url) {
+			const capabilities = listConfiguredCapabilities(map, 'openai');
+			rows.push({
+				key: 'openai',
+				label: 'OpenAI',
+				url,
+				capabilities,
+				badges: capabilityDisplayBadges(capabilities),
+			});
+		}
 	}
 	if (map.anthropic) {
 		const url =
@@ -140,7 +170,16 @@ export function getProviderProtocolSummaries(provider: GatewayProvider): Provide
 			map.anthropic.endpoints?.messages ||
 			Object.values(map.anthropic.endpoints ?? {})[0] ||
 			'';
-		if (url) rows.push({ key: 'anthropic', label: 'Anthropic', url });
+		if (url) {
+			const capabilities = listConfiguredCapabilities(map, 'anthropic');
+			rows.push({
+				key: 'anthropic',
+				label: 'Anthropic',
+				url,
+				capabilities,
+				badges: capabilityDisplayBadges(capabilities),
+			});
+		}
 	}
 	if (map.gemini) {
 		const url =
@@ -148,7 +187,16 @@ export function getProviderProtocolSummaries(provider: GatewayProvider): Provide
 			map.gemini.endpoints?.generateContent ||
 			Object.values(map.gemini.endpoints ?? {})[0] ||
 			'';
-		if (url) rows.push({ key: 'gemini', label: 'Gemini', url });
+		if (url) {
+			const capabilities = listConfiguredCapabilities(map, 'gemini');
+			rows.push({
+				key: 'gemini',
+				label: 'Gemini',
+				url,
+				capabilities,
+				badges: capabilityDisplayBadges(capabilities),
+			});
+		}
 	}
 	return rows;
 }

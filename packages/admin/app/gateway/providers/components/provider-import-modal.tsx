@@ -2,6 +2,7 @@
 
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { parseProviderEndpoints } from '@octafuse/core/provider-endpoints';
+import { summarizeOpenAiImportEndpoints } from '@/lib/provider-import-preset';
 import { useTranslations } from 'next-intl';
 import type { ProviderImportCatalogRow } from '../types';
 
@@ -194,12 +195,25 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 													{row.vendor_label} · {t('protocols')}: {row.protocols.join(', ') || '—'}
 												</p>
 												{(() => {
-													const openaiBase = parseProviderEndpoints({ endpoints: row.endpoints }).openai?.base;
-													return openaiBase ? (
-														<p className="mt-1 break-all text-[11px] text-gray-400" title={openaiBase}>
-															{t('openaiBase', { url: openaiBase })}
+													const openai = summarizeOpenAiImportEndpoints(
+														parseProviderEndpoints({ endpoints: row.endpoints })
+													);
+													if (!openai) return null;
+													const labelKey = openai.hasBase ? 'openaiBase' : 'openaiChat';
+													const caps =
+														openai.capabilities.length > 0
+															? openai.capabilities.join(', ')
+															: '';
+													return (
+														<p className="mt-1 break-all text-[11px] text-gray-400" title={openai.url}>
+															{t(labelKey, { url: openai.url })}
+															{caps ? (
+																<span className="ml-1 text-gray-500">
+																	{t('openaiCaps', { caps })}
+																</span>
+															) : null}
 														</p>
-													) : null;
+													);
 												})()}
 												{row.description && <p className="mt-1 text-xs text-gray-600">{row.description}</p>}
 											</div>

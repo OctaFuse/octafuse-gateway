@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+	listConfiguredCapabilities,
 	parseProviderEndpoints,
 	providerSupportsUpstreamProtocol,
 	resolveUpstreamEndpoint,
@@ -88,5 +89,50 @@ describe('validateAndNormalizeProviderEndpoints', () => {
 				}),
 			/must include \{model\}/
 		);
+	});
+});
+
+describe('listConfiguredCapabilities', () => {
+	it('returns all protocol capabilities when base is set', () => {
+		assert.deepEqual(
+			listConfiguredCapabilities(
+				{ openai: { base: 'https://api.openai.com/v1' } },
+				'openai'
+			),
+			['chat', 'images.generations', 'images.edits']
+		);
+	});
+
+	it('returns only explicit overrides when base is absent', () => {
+		assert.deepEqual(
+			listConfiguredCapabilities(
+				{
+					openai: {
+						endpoints: { chat: 'https://vendor.example/chat' },
+					},
+				},
+				'openai'
+			),
+			['chat']
+		);
+	});
+
+	it('returns all capabilities when base is set even with partial overrides', () => {
+		assert.deepEqual(
+			listConfiguredCapabilities(
+				{
+					openai: {
+						base: 'https://api.openai.com/v1',
+						endpoints: { chat: 'https://vendor.example/chat' },
+					},
+				},
+				'openai'
+			),
+			['chat', 'images.generations', 'images.edits']
+		);
+	});
+
+	it('returns empty array when protocol is not configured', () => {
+		assert.deepEqual(listConfiguredCapabilities({}, 'anthropic'), []);
 	});
 });

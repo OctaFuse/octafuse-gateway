@@ -290,7 +290,7 @@
 	"providers": {
 		"title": "供应商",
 		"subtitle": "{product} 使用的上游 AI 供应商端点",
-		"importHint": "使用「导入」可预填常见供应商端点（含 base URL），免去自行查找；然后点击行并替换占位 API Key。",
+		"importHint": "使用「导入」可预填常见供应商端点。仅 LLM 的模板写入 chat URL（非 Base）；具备 Images 的保留 Base URL。导入后请打开行并添加 API Key。",
 		"emptySearch": "没有匹配该名称的供应商",
 		"empty": "未找到供应商",
 		"searchPlaceholder": "搜索供应商名称",
@@ -311,11 +311,20 @@
 			"copyKey": "复制 {label}",
 			"copiedKey": "已复制 {label}",
 			"keyEnabled": "Key {label} 已启用（取消勾选以禁用）",
-			"keyDisabled": "Key {label} 已禁用（勾选以启用）"
+			"keyDisabled": "Key {label} 已禁用（勾选以启用）",
+			"capabilitiesTitle": "{label}：{caps} · {url}",
+			"capabilitiesSr": "{label} 能力：{caps}",
+			"cap": {
+				"chat": "chat",
+				"images": "images",
+				"messages": "messages",
+				"generateContent": "generate",
+				"streamGenerateContent": "stream"
+			}
 		},
 		"import": {
 			"title": "从模板导入",
-			"subtitle": "预填常见 OpenAI 兼容的基础 URL。每次导入会创建新的供应商行。",
+			"subtitle": "预填常见端点。仅 LLM 的 OpenAI 模板导入 chat URL；具备 Images 的保留 Base URL。每次导入会创建新的供应商行。",
 			"searchPlaceholder": "搜索模板名称",
 			"clearSearch": "清除模板搜索",
 			"clear": "清除",
@@ -327,6 +336,8 @@
 			"selectRow": "选择 {name}",
 			"protocols": "protocols",
 			"openaiBase": "OpenAI base：{url}",
+			"openaiChat": "OpenAI chat：{url}",
+			"openaiCaps": "· {caps}",
 			"importSelected": "导入选中项（{count}）"
 		},
 		"modal": {
@@ -341,7 +352,7 @@
 			"nameRequired": "名称 *",
 			"namePlaceholder": "例如 OpenAI",
 			"endpoints": "端点",
-			"endpointsHint": "每个协议填一个 Base URL 即可。仅非标准上游需要展开覆盖完整 URL。",
+			"endpointsHint": "每个协议填 Base URL 表示具备全部能力。非标准路径可展开覆盖；若要限制能力范围，请清空 Base，只填写支持的覆盖 URL。",
 			"openaiOptional": "OpenAI",
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
@@ -351,7 +362,7 @@
 			"geminiPlaceholder": "https://generativelanguage.googleapis.com/v1beta/models",
 			"geminiHint": "{model} 之前的完整路径前缀。Developer：…/v1beta/models；Vertex Express：…/v1/publishers/google/models。",
 			"advancedToggle": "URL 覆盖",
-			"advancedHint": "可选完整 URL（支持 {model}）。留空则从上方 Base URL 派生。",
+			"advancedHint": "可选完整 URL（支持 {model}）。若已填 Base，留空字段仍会从 Base 派生（视为具备全部能力）。若要限制能力范围（例如仅 chat），请清空 Base，只填写支持的覆盖 URL。",
 			"capChat": "chat (/v1/chat/completions)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
 			"capImagesEdits": "images.edits (/v1/images/edits)",

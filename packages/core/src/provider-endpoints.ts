@@ -353,3 +353,22 @@ export function providerSupportsUpstreamProtocol(
 ): boolean {
 	return protocolHasEndpointsConfig(parseProviderEndpoints(provider), protocol);
 }
+
+/**
+ * 列出某协议在配置下可用的 capability（与 {@link resolveUpstreamEndpoint} 语义一致）：
+ * - 有 `base` → 该协议全部 capability
+ * - 无 `base`、仅有 overrides → 仅已配置的那些
+ * - 未配置协议 → 空数组
+ */
+export function listConfiguredCapabilities(
+	map: ProviderEndpointsMap,
+	protocol: UpstreamProtocol
+): ProviderEndpointCapability[] {
+	const cfg = map[protocol];
+	if (!cfg) return [];
+	const all = CAPABILITIES_BY_PROTOCOL[protocol];
+	if (cfg.base) return [...all];
+	const endpoints = cfg.endpoints;
+	if (!endpoints) return [];
+	return all.filter((cap) => Boolean(endpoints[cap]));
+}

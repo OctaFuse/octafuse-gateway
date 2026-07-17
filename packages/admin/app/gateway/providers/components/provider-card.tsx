@@ -117,27 +117,58 @@ export function ProviderCard(props: ProviderCardProps) {
 
 				<div className="mt-2 flex min-h-[2rem] items-start">
 					{protocols.length > 0 ? (
-						<div className="flex w-full flex-wrap gap-1.5">
+						<div className="flex w-full flex-wrap items-start gap-2">
 							{protocols.map((protocol) => {
 								const feedbackId = `endpoint:${provider.id}:${protocol.key}`;
+								const badgeLabels = protocol.badges.map((badge) => t(`cap.${badge}`));
+								const capabilitiesTitle =
+									protocol.capabilities.length > 0
+										? t('capabilitiesTitle', {
+												label: protocol.label,
+												caps: protocol.capabilities.join(', '),
+												url: protocol.url,
+											})
+										: tUpstream('endpointCopyTitle', { label: protocol.label, url: protocol.url });
 								return (
-									<button
-										key={protocol.key}
-										type="button"
-										onClick={(e) => {
-											e.stopPropagation();
-											void onCopyEndpoint(protocol.url, feedbackId);
-										}}
-										className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-										title={tUpstream('endpointCopyTitle', { label: protocol.label, url: protocol.url })}
-									>
-										{copiedId === feedbackId ? (
-											<CheckIcon className="h-4 w-4 shrink-0 text-green-600" aria-hidden />
-										) : (
-											<ProviderProtocolIcon protocol={protocol.key} />
+									<div key={protocol.key} className="inline-flex max-w-full items-center gap-1">
+										<button
+											type="button"
+											onClick={(e) => {
+												e.stopPropagation();
+												void onCopyEndpoint(protocol.url, feedbackId);
+											}}
+											className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+											title={capabilitiesTitle}
+										>
+											{copiedId === feedbackId ? (
+												<CheckIcon className="h-4 w-4 shrink-0 text-green-600" aria-hidden />
+											) : (
+												<ProviderProtocolIcon protocol={protocol.key} />
+											)}
+											<span className="sr-only">{protocol.label}</span>
+										</button>
+										{protocol.badges.length > 0 && (
+											<div
+												className="flex min-w-0 flex-wrap gap-0.5"
+												title={capabilitiesTitle}
+											>
+												{protocol.badges.map((badge) => (
+													<span
+														key={badge}
+														className="rounded bg-slate-100 px-1 py-0.5 text-[10px] font-medium leading-3 text-slate-600"
+													>
+														{t(`cap.${badge}`)}
+													</span>
+												))}
+												<span className="sr-only">
+													{t('capabilitiesSr', {
+														label: protocol.label,
+														caps: badgeLabels.join(', '),
+													})}
+												</span>
+											</div>
 										)}
-										<span className="sr-only">{protocol.label}</span>
-									</button>
+									</div>
 								);
 							})}
 						</div>

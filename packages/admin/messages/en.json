@@ -290,7 +290,7 @@
 	"providers": {
 		"title": "Providers",
 		"subtitle": "Upstream AI endpoints consumed by {product}",
-		"importHint": "Use Import to seed common provider endpoints (base URLs) so you don't have to look them up; then click a row and replace the placeholder API key.",
+		"importHint": "Use Import to seed common provider endpoints. LLM-only templates use a chat URL (not Base); full OpenAI-capable ones keep a Base URL. Then open a row and add an API key.",
 		"emptySearch": "No providers match this name",
 		"empty": "No providers found",
 		"searchPlaceholder": "Search provider name",
@@ -311,11 +311,20 @@
 			"copyKey": "Copy {label}",
 			"copiedKey": "Copied {label}",
 			"keyEnabled": "Key {label} enabled (uncheck to disable)",
-			"keyDisabled": "Key {label} disabled (check to enable)"
+			"keyDisabled": "Key {label} disabled (check to enable)",
+			"capabilitiesTitle": "{label}: {caps} · {url}",
+			"capabilitiesSr": "{label} capabilities: {caps}",
+			"cap": {
+				"chat": "chat",
+				"images": "images",
+				"messages": "messages",
+				"generateContent": "generate",
+				"streamGenerateContent": "stream"
+			}
 		},
 		"import": {
 			"title": "Import from templates",
-			"subtitle": "Prefills common OpenAI-compatible base URLs. Each import creates a new provider row.",
+			"subtitle": "Prefills common endpoints. LLM-only OpenAI templates import chat URLs; providers with Images keep a Base URL. Each import creates a new provider row.",
 			"searchPlaceholder": "Search template name",
 			"clearSearch": "Clear template search",
 			"clear": "Clear",
@@ -327,6 +336,8 @@
 			"selectRow": "Select {name}",
 			"protocols": "protocols",
 			"openaiBase": "OpenAI base: {url}",
+			"openaiChat": "OpenAI chat: {url}",
+			"openaiCaps": "· {caps}",
 			"importSelected": "Import selected ({count})"
 		},
 		"modal": {
@@ -341,7 +352,7 @@
 			"nameRequired": "Name *",
 			"namePlaceholder": "e.g., OpenAI",
 			"endpoints": "Endpoints",
-			"endpointsHint": "One base URL per protocol. Most providers only need this. Expand overrides only for non-standard full URLs.",
+			"endpointsHint": "One base URL per protocol for full capabilities. Expand overrides for non-standard URLs, or clear Base and fill only supported overrides to limit capabilities.",
 			"openaiOptional": "OpenAI",
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
@@ -351,7 +362,7 @@
 			"geminiPlaceholder": "https://generativelanguage.googleapis.com/v1beta/models",
 			"geminiHint": "Full path prefix before {model}. Developer: …/v1beta/models; Vertex Express: …/v1/publishers/google/models.",
 			"advancedToggle": "URL overrides",
-			"advancedHint": "Optional full URLs (supports {model}). Leave blank to derive from the base URL above.",
+			"advancedHint": "Optional full URLs (supports {model}). With a Base URL, blank fields still derive from Base (all capabilities). To limit capabilities (e.g. chat only), clear Base and fill only the overrides you support.",
 			"capChat": "chat (/v1/chat/completions)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
 			"capImagesEdits": "images.edits (/v1/images/edits)",

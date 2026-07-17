@@ -4,7 +4,9 @@
 		"vendor_key": "deepseek",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.deepseek.com"
+				"endpoints": {
+					"chat": "https://api.deepseek.com/chat/completions"
+				}
 			}
 		}
 	},
@@ -13,7 +15,9 @@
 		"vendor_key": "volcengine",
 		"endpoints": {
 			"openai": {
-				"base": "https://ark.cn-beijing.volces.com/api/v3"
+				"endpoints": {
+					"chat": "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+				}
 			}
 		}
 	},
@@ -22,7 +26,9 @@
 		"vendor_key": "volcengine",
 		"endpoints": {
 			"openai": {
-				"base": "https://ark.cn-beijing.volces.com/api/coding/v3"
+				"endpoints": {
+					"chat": "https://ark.cn-beijing.volces.com/api/coding/v3/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://ark.cn-beijing.volces.com/api/coding"
@@ -35,7 +41,9 @@
 		"vendor_key": "volcengine",
 		"endpoints": {
 			"openai": {
-				"base": "https://ark.cn-beijing.volces.com/api/plan/v3"
+				"endpoints": {
+					"chat": "https://ark.cn-beijing.volces.com/api/plan/v3/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://ark.cn-beijing.volces.com/api/plan"
@@ -48,7 +56,9 @@
 		"vendor_key": "aliyun",
 		"endpoints": {
 			"openai": {
-				"base": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+				"endpoints": {
+					"chat": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -57,7 +67,9 @@
 		"vendor_key": "aliyun",
 		"endpoints": {
 			"openai": {
-				"base": "https://coding.dashscope.aliyuncs.com/v1"
+				"endpoints": {
+					"chat": "https://coding.dashscope.aliyuncs.com/v1/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://coding.dashscope.aliyuncs.com/apps/anthropic"
@@ -70,7 +82,9 @@
 		"vendor_key": "tencent",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.hunyuan.cloud.tencent.com/v1"
+				"endpoints": {
+					"chat": "https://api.hunyuan.cloud.tencent.com/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -79,7 +93,9 @@
 		"vendor_key": "tencent",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.lkeap.cloud.tencent.com/plan/v3"
+				"endpoints": {
+					"chat": "https://api.lkeap.cloud.tencent.com/plan/v3/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://api.lkeap.cloud.tencent.com/plan/anthropic"
@@ -92,7 +108,9 @@
 		"vendor_key": "baidu",
 		"endpoints": {
 			"openai": {
-				"base": "https://qianfan.baidubce.com/v2"
+				"endpoints": {
+					"chat": "https://qianfan.baidubce.com/v2/chat/completions"
+				}
 			}
 		}
 	},
@@ -101,7 +119,9 @@
 		"vendor_key": "zhipu",
 		"endpoints": {
 			"openai": {
-				"base": "https://open.bigmodel.cn/api/paas/v4"
+				"endpoints": {
+					"chat": "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+				}
 			}
 		}
 	},
@@ -110,43 +130,51 @@
 		"vendor_key": "zhipu",
 		"endpoints": {
 			"openai": {
-				"base": "https://open.bigmodel.cn/api/coding/paas/v4"
+				"endpoints": {
+					"chat": "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://open.bigmodel.cn/api/anthropic"
 			}
 		},
-		"description": "GLM Coding Plan OpenAI base URL; Anthropic base URL for tools such as Claude Code. Do not mix with the general /api/paas/v4 path."
+		"description": "GLM Coding Plan OpenAI chat endpoint (LLM only); Anthropic base for tools such as Claude Code. Do not mix with the general /api/paas/v4 path."
 	},
 	{
 		"name": "Z.AI GLM (International)",
 		"vendor_key": "zhipu",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.z.ai/api/paas/v4"
+				"endpoints": {
+					"chat": "https://api.z.ai/api/paas/v4/chat/completions"
+				}
 			}
 		},
-		"description": "Z.AI international OpenAI-compatible base URL (api.z.ai); pay-as-you-go API key. China-region users should use the Zhipu GLM template (open.bigmodel.cn) instead."
+		"description": "Z.AI international OpenAI-compatible chat endpoint (api.z.ai; LLM only); pay-as-you-go API key. China-region users should use the Zhipu GLM template (open.bigmodel.cn) instead."
 	},
 	{
 		"name": "Z.AI GLM (Coding Plan)",
 		"vendor_key": "zhipu",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.z.ai/api/coding/paas/v4"
+				"endpoints": {
+					"chat": "https://api.z.ai/api/coding/paas/v4/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://api.z.ai/api/anthropic"
 			}
 		},
-		"description": "GLM Coding Plan international endpoints (api.z.ai); Anthropic base URL for tools such as Claude Code. Do not mix with the general /api/paas/v4 path or plan quota will not apply. See Z.AI developer docs."
+		"description": "GLM Coding Plan international chat endpoint (api.z.ai; LLM only); Anthropic base for tools such as Claude Code. Do not mix with the general /api/paas/v4 path or plan quota will not apply. See Z.AI developer docs."
 	},
 	{
 		"name": "Meituan LongCat",
 		"vendor_key": "meituan",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.longcat.chat/openai"
+				"endpoints": {
+					"chat": "https://api.longcat.chat/openai/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://api.longcat.chat/anthropic"
@@ -159,7 +187,9 @@
 		"vendor_key": "moonshot",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.moonshot.cn/v1"
+				"endpoints": {
+					"chat": "https://api.moonshot.cn/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -168,17 +198,21 @@
 		"vendor_key": "moonshot",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.kimi.com/coding/v1"
+				"endpoints": {
+					"chat": "https://api.kimi.com/coding/v1/chat/completions"
+				}
 			}
 		},
-		"description": "OpenAI-compatible base URL for Kimi Code CLI / Coding plan (api.kimi.com), separate from the standard moonshot.cn platform. See Kimi Code CLI docs (platform & models)."
+		"description": "OpenAI-compatible chat endpoint for Kimi Code CLI / Coding plan (api.kimi.com; LLM only), separate from the standard moonshot.cn platform. See Kimi Code CLI docs (platform & models)."
 	},
 	{
 		"name": "MiniMax",
 		"vendor_key": "minimax",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.minimaxi.com/v1"
+				"endpoints": {
+					"chat": "https://api.minimaxi.com/v1/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://api.minimaxi.com/anthropic"
@@ -209,13 +243,15 @@
 		"vendor_key": "google",
 		"endpoints": {
 			"openai": {
-				"base": "https://generativelanguage.googleapis.com/v1beta/openai"
+				"endpoints": {
+					"chat": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+				}
 			},
 			"gemini": {
 				"base": "https://generativelanguage.googleapis.com/v1beta/models"
 			}
 		},
-		"description": "Developer API: native Gemini base includes `/v1beta/models` (`key=`); OpenAI-compatible base includes `/v1beta/openai` (Bearer). See ai.google.dev/gemini-api/docs/openai."
+		"description": "Developer API: native Gemini base includes `/v1beta/models` (`key=`); OpenAI-compatible path is chat-only (`/v1beta/openai/chat/completions`, Bearer). See ai.google.dev/gemini-api/docs/openai."
 	},
 	{
 		"name": "Google Vertex AI (Express Mode · API Key)",
@@ -232,7 +268,9 @@
 		"vendor_key": "mistral",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.mistral.ai/v1"
+				"endpoints": {
+					"chat": "https://api.mistral.ai/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -241,7 +279,9 @@
 		"vendor_key": "groq",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.groq.com/openai/v1"
+				"endpoints": {
+					"chat": "https://api.groq.com/openai/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -250,7 +290,9 @@
 		"vendor_key": "xai",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.x.ai/v1"
+				"endpoints": {
+					"chat": "https://api.x.ai/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -259,7 +301,9 @@
 		"vendor_key": "together",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.together.xyz/v1"
+				"endpoints": {
+					"chat": "https://api.together.xyz/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -268,7 +312,9 @@
 		"vendor_key": "fireworks",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.fireworks.ai/inference/v1"
+				"endpoints": {
+					"chat": "https://api.fireworks.ai/inference/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -277,17 +323,21 @@
 		"vendor_key": "perplexity",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.perplexity.ai"
+				"endpoints": {
+					"chat": "https://api.perplexity.ai/chat/completions"
+				}
 			}
 		},
-		"description": "OpenAI-compatible Chat Completions; base path per Perplexity official docs."
+		"description": "OpenAI-compatible Chat Completions only (no Images API on this template). Path per Perplexity official docs."
 	},
 	{
 		"name": "Cohere (OpenAI Compatibility)",
 		"vendor_key": "cohere",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.cohere.ai/compatibility/v1"
+				"endpoints": {
+					"chat": "https://api.cohere.ai/compatibility/v1/chat/completions"
+				}
 			}
 		},
 		"description": "Uses the Cohere Compatibility API (OpenAI SDK migration path). See Cohere docs compatibility section."
@@ -297,7 +347,9 @@
 		"vendor_key": "nvidia",
 		"endpoints": {
 			"openai": {
-				"base": "https://integrate.api.nvidia.com/v1"
+				"endpoints": {
+					"chat": "https://integrate.api.nvidia.com/v1/chat/completions"
+				}
 			}
 		},
 		"description": "Common NIM OpenAI-compatible entry point; models and regions per NVIDIA Build / NGC docs."
@@ -317,17 +369,21 @@
 		"vendor_key": "stepfun",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.stepfun.com/v1"
+				"endpoints": {
+					"chat": "https://api.stepfun.com/v1/chat/completions"
+				}
 			}
 		},
-		"description": "OpenAI-compatible entry point; other product lines such as Step Plan may use different base URLs—see StepFun platform docs."
+		"description": "OpenAI-compatible chat endpoint (LLM only); other product lines such as Step Plan may use different URLs—see StepFun platform docs."
 	},
 	{
 		"name": "Baichuan AI",
 		"vendor_key": "baichuan",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.baichuan-ai.com/v1"
+				"endpoints": {
+					"chat": "https://api.baichuan-ai.com/v1/chat/completions"
+				}
 			}
 		}
 	},
@@ -336,23 +392,27 @@
 		"vendor_key": "xiaomi",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.xiaomimimo.com/v1"
+				"endpoints": {
+					"chat": "https://api.xiaomimimo.com/v1/chat/completions"
+				}
 			}
 		},
-		"description": "OpenAI-compatible entry point; host and path per latest Xiaomi MiMo platform docs."
+		"description": "OpenAI-compatible chat endpoint (LLM only); host and path per latest Xiaomi MiMo platform docs."
 	},
 	{
 		"name": "Xiaomi MiMo (Token Plan)",
 		"vendor_key": "xiaomi",
 		"endpoints": {
 			"openai": {
-				"base": "https://token-plan-cn.xiaomimimo.com/v1"
+				"endpoints": {
+					"chat": "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
+				}
 			},
 			"anthropic": {
 				"base": "https://token-plan-cn.xiaomimimo.com/anthropic"
 			}
 		},
-		"description": "Xiaomi MiMo Token Plan OpenAI-compatible base URL; Anthropic base URL for tools such as Claude Code. Do not mix with the general API endpoint."
+		"description": "Xiaomi MiMo Token Plan OpenAI chat endpoint (LLM only); Anthropic base for tools such as Claude Code. Do not mix with the general API endpoint."
 	},
 	{
 		"name": "OpenRouter",
@@ -377,9 +437,11 @@
 		"vendor_key": "ollama",
 		"endpoints": {
 			"openai": {
-				"base": "http://127.0.0.1:11434/v1"
+				"endpoints": {
+					"chat": "http://127.0.0.1:11434/v1/chat/completions"
+				}
 			}
 		},
-		"description": "Default local Ollama OpenAI-compatible base URL; for remote or container deployments, change to the reachable `http(s)://host:port/v1`."
+		"description": "Default local Ollama OpenAI-compatible chat endpoint (LLM only). For remote or container deployments, change the host/port in the chat URL."
 	}
 ]

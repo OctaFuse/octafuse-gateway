@@ -89,6 +89,24 @@ flowchart TB
 - 迁移 **`0012_drop_provider_base_url_columns`**：删除 `base_url_openai` / `base_url_anthropic` / `base_url_gemini`；读写仅以 **`endpoints`** 为准（`parseProviderEndpoints` / Admin 写入）。
 - 形状：`{ "openai"?: { "base"?: string, "endpoints"?: { "chat"|"images.generations"|"images.edits": url } }, "anthropic"?: …, "gemini"?: … }`。`base` 走标准路径派生；capability 完整 URL 模板存在则不再追加后缀。
 
+#### Endpoint capability 维护规则
+
+与 `resolveUpstreamEndpoint` / `listConfiguredCapabilities` 语义一致：
+
+| 配置方式 | 可用 capability | Admin 卡片展示 |
+|---------|-----------------|----------------|
+| 只填 `base` | 该协议全部 capability | 全部标签（OpenAI：`chat` + `images`） |
+| 只填部分 capability URL、**不填 base** | **仅**已填写的那些 | 仅对应标签（如只配 chat → `chat`） |
+| 填了 `base` + 部分 overrides | **仍是全部**；空的 override ≠ 禁用，只是「用 base 派生」 | 全部标签 |
+
+运营约定：
+
+- **全能力上游**：填 Base URL；需要非标准路径时再填个别 URL overrides。
+- **部分能力上游**（例如仅 chat 的中转）：**清空 Base**，只填写支持的 URL overrides。
+- **不要**用「填了 Base 但留空某些 override」表达「不支持该能力」——运行时仍会从 Base 派生并可能打到错误路径。
+
+Admin 静态导入模板（`packages/admin/lib/provider-import-presets.json`）遵循同一约定：默认 LLM 供应商写入 `openai.endpoints.chat`；仅 OpenAI / Azure OpenAI / OpenRouter / SiliconFlow 等具备 Images 的模板保留 `openai.base`。
+
 ---
 
 ## 用户 / API Key / 用量数据流（Proxy）
