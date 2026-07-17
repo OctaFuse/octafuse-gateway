@@ -17,18 +17,14 @@ function snakeToCamel(key: string): string {
 function mapPgProviderRow(r: {
 	id: string;
 	name: string;
-	baseUrlOpenai: string | null;
-	baseUrlAnthropic: string | null;
-	baseUrlGemini: string | null;
+	endpoints: string | null;
 	description: string | null;
 	createdAt: string;
 }): ProviderRow {
 	return {
 		id: r.id,
 		name: r.name,
-		base_url_openai: r.baseUrlOpenai,
-		base_url_anthropic: r.baseUrlAnthropic,
-		base_url_gemini: r.baseUrlGemini,
+		endpoints: r.endpoints,
 		description: r.description,
 		created_at: r.createdAt,
 	};
@@ -37,18 +33,14 @@ function mapPgProviderRow(r: {
 function providerRecordFromPg(r: {
 	id: string;
 	name: string;
-	baseUrlOpenai: string | null;
-	baseUrlAnthropic: string | null;
-	baseUrlGemini: string | null;
+	endpoints: string | null;
 	description: string | null;
 	createdAt: string;
 }): ProviderAdminRow {
 	return {
 		id: r.id,
 		name: r.name,
-		base_url_openai: r.baseUrlOpenai,
-		base_url_anthropic: r.baseUrlAnthropic,
-		base_url_gemini: r.baseUrlGemini,
+		endpoints: r.endpoints,
 		description: r.description,
 		created_at: r.createdAt,
 	};
@@ -70,18 +62,14 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 		async insertProvider(params: {
 			id: string;
 			name: string;
-			baseUrlOpenai: string | null;
-			baseUrlAnthropic: string | null;
-			baseUrlGemini: string | null;
+			endpoints: string | null;
 			description: unknown;
 		}): Promise<void> {
 			const now = new Date().toISOString();
 			await drizzle.insert(pgProvidersTable).values({
 				id: params.id,
 				name: params.name,
-				baseUrlOpenai: params.baseUrlOpenai,
-				baseUrlAnthropic: params.baseUrlAnthropic,
-				baseUrlGemini: params.baseUrlGemini,
+				endpoints: params.endpoints,
 				description: params.description == null ? null : String(params.description),
 				createdAt: now,
 			});
@@ -123,9 +111,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 			const rows = await drizzle
 				.select({
 					id: pgProvidersTable.id,
-					base_url_openai: pgProvidersTable.baseUrlOpenai,
-					base_url_anthropic: pgProvidersTable.baseUrlAnthropic,
-					base_url_gemini: pgProvidersTable.baseUrlGemini,
+					endpoints: pgProvidersTable.endpoints,
 				})
 				.from(pgProvidersTable)
 				.where(eq(pgProvidersTable.id, providerId))

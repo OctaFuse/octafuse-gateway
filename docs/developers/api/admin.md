@@ -553,7 +553,7 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 面向用户的「有活跃路由的模型」列表：**Agent / SDK** 用 **`GET /v1/models`**（用户 Key）；**门户 / 公开 discovery** 用 Proxy **`GET /catalog/models`**（无需 Key，含协议能力，见 [用户接口](./user.md#公开模型目录catalog-discovery)）。
 
-**管理端基础数据**（`Authorization: Bearer <MASTER_KEY>`，响应多为 `{ success, data, count? }`）：**`/admin/keys`**（上文）与 **`/admin/providers`**（`POST` 创建时 body 仍含 **`api_key`**，服务端写入 **`provider_api_keys`** 的 `label=default` 行；`providers` 表不再存密钥。列表响应含 **`active_key_count`** / **`has_pending_key`**。含 **`GET/POST /admin/providers/:id/keys`**、**`PATCH/DELETE /admin/providers/:id/keys/:keyId`** 多 key 管理；key 列表脱敏 `fingerprint` + **`is_pending_import`**，不回显明文）、**`/admin/models`**（含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**）、**`/admin/routes`**（REST：`GET/POST` 集合，`GET/PATCH/DELETE /:id`；路由列表支持 `GET /admin/routes?model_id=&provider_id=`）。**`POST /admin/routes`** 省略或空白 **`route_group`** 时写入 **`default`**；**`PATCH`** 若包含 **`route_group`** 则不得为仅空白字符串（否则 **400** `route_group cannot be empty`）。
+**管理端基础数据**（`Authorization: Bearer <MASTER_KEY>`，响应多为 `{ success, data, count? }`）：**`/admin/keys`**（上文）与 **`/admin/providers`**（`POST`/`PATCH` body 以 **`endpoints`** JSON 为权威：`{ "openai"?: { "base"?: string, "endpoints"?: { "chat"|"images.generations"|"images.edits": url } }, "anthropic"?: …, "gemini"?: … }`。`base` 走标准路径派生；capability 完整 URL 模板存在则不再追加后缀。列表/详情含 `endpoints`（已无 `base_url_*` 列）。`POST` 创建时 body 仍可含 **`api_key`**，服务端写入 **`provider_api_keys`** 的 `label=default` 行；`providers` 表不再存密钥。列表响应含 **`active_key_count`** / **`has_pending_key`**。含 **`GET/POST /admin/providers/:id/keys`**、**`PATCH/DELETE /admin/providers/:id/keys/:keyId`** 多 key 管理；key 列表脱敏 `fingerprint` + **`is_pending_import`**，不回显明文）、**`/admin/models`**（含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**；models 不引用 provider base URL，image 的 openai-only 锁在 **route `upstream_protocol`**）、**`/admin/routes`**（REST：`GET/POST` 集合，`GET/PATCH/DELETE /:id`；路由列表支持 `GET /admin/routes?model_id=&provider_id=`；创建时校验 provider 对该协议是否配置了 `endpoints` base 或任一 capability）。**`POST /admin/routes`** 省略或空白 **`route_group`** 时写入 **`default`**；**`PATCH`** 若包含 **`route_group`** 则不得为仅空白字符串（否则 **400** `route_group cannot be empty`）。
 
 ### `GET /admin/models/import/catalog`
 
@@ -569,11 +569,11 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 不新增独立「Images」管理页；与 LLM 共用 Models + Routes。Admin 内闭环：**Routes → Playground → Simulator → Request Logs**。
 
-1. **Provider**：配置可用的 OpenAI（或兼容）Provider Key。
+1. **Provider**：配置可用的 OpenAI（或兼容）Provider Key，并在 `endpoints.openai` 写 `base`（如 `https://api.openai.com/v1`）或 `endpoints.images.generations` 完整 URL。
 2. **Import**：Admin → Models → Import → 勾选 **`gpt-image-2`**（`output_modalities: ["image"]`，`pricing_profile.tiers` 含 `image_*` token 单价）。**已存在同 id 不会覆盖**——旧按张行需 **删除后 re-import** 或打开编辑填入 token 单价后保存。
 3. **列表**：筛选 Kind=Image，卡片应显示 Image token 单价（如 text / img-in / img-out）及可选输出侧估算矩阵。
-4. **Routes**：为 `gpt-image-2` 建路由；弹窗 Billing「Standard (catalog)」应显示 **token 单价** + 估算矩阵；`upstream_protocol` **锁定 openai**（保存 anthropic/gemini 应 400）。
-5. **Playground**（不计费、不写 logs）：选该 openai 路由 → Send → 上游 `…/images/generations` 返回图并可预览。非 openai 路由禁用 Send。
+4. **Routes**：为 `gpt-image-2` 建路由；弹窗 Billing「Standard (catalog)」应显示 **token 单价** + 估算矩阵；`upstream_protocol` **锁定 openai**（保存 anthropic/gemini 应 400）。Models admin 本身不引用 provider base URL。
+5. **Playground**（不计费、不写 logs）：选该 openai 路由 → Send → 上游由 `resolveUpstreamEndpoint(…, images.generations)` 解析（通常 `…/images/generations`）返回图并可预览。非 openai 路由禁用 Send。
 6. **Simulator**（真实 Proxy）：选同一模型 → 协议锁定 openai → 请求打到 `{proxy}/v1/images/generations` → 出图；**Open Request Logs** 核对 `raw_usage` 与 `pricing_audit.kind=image_tokens`，`charged_cost` 随 usage 分项变化（非固定按张）。
 7. **回归**：任意 LLM 模型仍走 chat/completions（Playground / Simulator 行为不变）。
 8. **curl**（可选，用户 API Key）：

@@ -1,4 +1,5 @@
 import type { GatewayProvider } from '@/lib/types';
+import type { ProviderEndpointsMap } from '@octafuse/core/provider-endpoints';
 
 /** `GET /admin/providers/import/catalog` */
 export type ProviderImportCatalogRow = {
@@ -7,9 +8,7 @@ export type ProviderImportCatalogRow = {
 	vendor_key: string;
 	vendor_label: string;
 	protocols: Array<'openai' | 'anthropic' | 'gemini'>;
-	base_url_openai: string | null;
-	base_url_anthropic: string | null;
-	base_url_gemini: string | null;
+	endpoints: string | null;
 	description: string | null;
 };
 
@@ -34,12 +33,23 @@ export type ProviderProtocolSummary = {
 	url: string;
 };
 
+/** 单协议表单：base + Advanced capability 覆盖 */
+export type ProtocolEndpointForm = {
+	base: string;
+	chat: string;
+	images_generations: string;
+	images_edits: string;
+	messages: string;
+	generateContent: string;
+	streamGenerateContent: string;
+};
+
 export type ProviderFormData = {
 	id: string;
 	name: string;
-	base_url_openai: string;
-	base_url_anthropic: string;
-	base_url_gemini: string;
+	openai: ProtocolEndpointForm;
+	anthropic: ProtocolEndpointForm;
+	gemini: ProtocolEndpointForm;
 	description: string;
 };
 
@@ -64,12 +74,22 @@ export type ProviderImportResult = {
 	failed: Array<{ id: string; message: string }>;
 };
 
+export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
+	base: '',
+	chat: '',
+	images_generations: '',
+	images_edits: '',
+	messages: '',
+	generateContent: '',
+	streamGenerateContent: '',
+};
+
 export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 	id: '',
 	name: '',
-	base_url_openai: '',
-	base_url_anthropic: '',
-	base_url_gemini: '',
+	openai: { ...EMPTY_PROTOCOL_FORM },
+	anthropic: { ...EMPTY_PROTOCOL_FORM },
+	gemini: { ...EMPTY_PROTOCOL_FORM },
 	description: '',
 };
 
@@ -84,4 +104,4 @@ export const EMPTY_KEY_EDIT_FORM: ProviderKeyFormData = {
 	status: 'active',
 };
 
-export type { GatewayProvider };
+export type { GatewayProvider, ProviderEndpointsMap };

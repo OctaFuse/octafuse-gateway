@@ -15,18 +15,14 @@ import { asMySqlPool } from './mysql2-compat';
 function providerRecordFromMy(r: {
 	id: string;
 	name: string;
-	baseUrlOpenai: string | null;
-	baseUrlAnthropic: string | null;
-	baseUrlGemini: string | null;
+	endpoints: string | null;
 	description: string | null;
 	createdAt: string;
 }): ProviderAdminRow {
 	return {
 		id: r.id,
 		name: r.name,
-		base_url_openai: r.baseUrlOpenai,
-		base_url_anthropic: r.baseUrlAnthropic,
-		base_url_gemini: r.baseUrlGemini,
+		endpoints: r.endpoints,
 		description: r.description,
 		created_at: r.createdAt,
 	};
@@ -35,18 +31,14 @@ function providerRecordFromMy(r: {
 function mapMyProviderRow(r: {
 	id: string;
 	name: string;
-	baseUrlOpenai: string | null;
-	baseUrlAnthropic: string | null;
-	baseUrlGemini: string | null;
+	endpoints: string | null;
 	description: string | null;
 	createdAt: string;
 }): ProviderRow {
 	return {
 		id: r.id,
 		name: r.name,
-		base_url_openai: r.baseUrlOpenai,
-		base_url_anthropic: r.baseUrlAnthropic,
-		base_url_gemini: r.baseUrlGemini,
+		endpoints: r.endpoints,
 		description: r.description,
 		created_at: r.createdAt,
 	};
@@ -70,18 +62,14 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 		async insertProvider(params: {
 			id: string;
 			name: string;
-			baseUrlOpenai: string | null;
-			baseUrlAnthropic: string | null;
-			baseUrlGemini: string | null;
+			endpoints: string | null;
 			description: unknown;
 		}): Promise<void> {
 			const now = new Date().toISOString();
 			await drizzle.insert(myProvidersTable).values({
 				id: params.id,
 				name: params.name,
-				baseUrlOpenai: params.baseUrlOpenai,
-				baseUrlAnthropic: params.baseUrlAnthropic,
-				baseUrlGemini: params.baseUrlGemini,
+				endpoints: params.endpoints,
 				description: params.description == null ? null : String(params.description),
 				createdAt: now,
 			});
@@ -120,9 +108,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 			const rows = await drizzle
 				.select({
 					id: myProvidersTable.id,
-					base_url_openai: myProvidersTable.baseUrlOpenai,
-					base_url_anthropic: myProvidersTable.baseUrlAnthropic,
-					base_url_gemini: myProvidersTable.baseUrlGemini,
+					endpoints: myProvidersTable.endpoints,
 				})
 				.from(myProvidersTable)
 				.where(eq(myProvidersTable.id, providerId))

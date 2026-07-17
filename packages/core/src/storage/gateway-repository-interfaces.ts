@@ -196,9 +196,8 @@ export interface ProvidersRepository {
 	insertProvider(params: {
 		id: string;
 		name: string;
-		baseUrlOpenai: string | null;
-		baseUrlAnthropic: string | null;
-		baseUrlGemini: string | null;
+		/** `providers.endpoints` JSON 文本 */
+		endpoints: string | null;
 		description: unknown;
 	}): Promise<void>;
 	updateProviderByPatch(id: string, body: Record<string, unknown>): Promise<number>;

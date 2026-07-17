@@ -69,9 +69,8 @@ export type ModelRouteDetailRow = ModelRouteRow & { created_at?: string };
 export interface ProviderAdminRow {
 	id: string;
 	name: string;
-	base_url_openai: string | null;
-	base_url_anthropic: string | null;
-	base_url_gemini: string | null;
+	/** 协议端点 JSON（权威） */
+	endpoints: string | null;
 	description: string | null;
 	created_at: string;
 }

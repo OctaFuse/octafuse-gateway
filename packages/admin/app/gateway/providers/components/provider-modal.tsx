@@ -2,7 +2,9 @@
 
 import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import type { GatewayProvider, ProviderFormData } from '../types';
+import { useState } from 'react';
+import { protocolFormHasOverrides } from '../provider-utils';
+import type { GatewayProvider, ProtocolEndpointForm, ProviderFormData } from '../types';
 
 type ProviderModalProps = {
 	open: boolean;
@@ -18,6 +20,146 @@ type ProviderModalProps = {
 	onDelete: (id: string) => void;
 	onDuplicate: (provider: GatewayProvider) => void;
 };
+
+const inputClass =
+	'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+function ProtocolFields(props: {
+	protocolLabel: string;
+	basePlaceholder: string;
+	baseHint?: string;
+	form: ProtocolEndpointForm;
+	protocol: 'openai' | 'anthropic' | 'gemini';
+	advancedToggle: string;
+	advancedHint: string;
+	capLabels: {
+		chat: string;
+		imagesGenerations: string;
+		imagesEdits: string;
+		messages: string;
+		generateContent: string;
+		streamGenerateContent: string;
+	};
+	onChange: (next: ProtocolEndpointForm) => void;
+}) {
+	const {
+		protocolLabel,
+		basePlaceholder,
+		baseHint,
+		form,
+		protocol,
+		advancedToggle,
+		advancedHint,
+		capLabels,
+		onChange,
+	} = props;
+	const [advancedOpen, setAdvancedOpen] = useState(() => protocolFormHasOverrides(protocol, form));
+
+	return (
+		<div className="space-y-2">
+			<label className="block text-sm font-medium text-gray-800">{protocolLabel}</label>
+			<input
+				type="url"
+				value={form.base}
+				onChange={(e) => onChange({ ...form, base: e.target.value })}
+				className={inputClass}
+				placeholder={basePlaceholder}
+				autoComplete="off"
+			/>
+			{baseHint ? <p className="text-xs text-gray-500">{baseHint}</p> : null}
+			<button
+				type="button"
+				className="text-xs font-medium text-blue-600 hover:text-blue-800"
+				onClick={() => setAdvancedOpen((v) => !v)}
+			>
+				{advancedOpen ? `▾ ${advancedToggle}` : `▸ ${advancedToggle}`}
+			</button>
+			{advancedOpen ? (
+				<div className="space-y-2 border-l-2 border-gray-200 pl-3">
+					<p className="text-xs text-gray-500">{advancedHint}</p>
+					{protocol === 'openai' ? (
+						<>
+							<div>
+								<label className="mb-1 block text-xs text-gray-600">{capLabels.chat}</label>
+								<input
+									type="url"
+									value={form.chat}
+									onChange={(e) => onChange({ ...form, chat: e.target.value })}
+									className={inputClass}
+									autoComplete="off"
+								/>
+							</div>
+							<div>
+								<label className="mb-1 block text-xs text-gray-600">
+									{capLabels.imagesGenerations}
+								</label>
+								<input
+									type="url"
+									value={form.images_generations}
+									onChange={(e) => onChange({ ...form, images_generations: e.target.value })}
+									className={inputClass}
+									autoComplete="off"
+								/>
+							</div>
+							<div>
+								<label className="mb-1 block text-xs text-gray-600">{capLabels.imagesEdits}</label>
+								<input
+									type="url"
+									value={form.images_edits}
+									onChange={(e) => onChange({ ...form, images_edits: e.target.value })}
+									className={inputClass}
+									autoComplete="off"
+								/>
+							</div>
+						</>
+					) : null}
+					{protocol === 'anthropic' ? (
+						<div>
+							<label className="mb-1 block text-xs text-gray-600">{capLabels.messages}</label>
+							<input
+								type="url"
+								value={form.messages}
+								onChange={(e) => onChange({ ...form, messages: e.target.value })}
+								className={inputClass}
+								autoComplete="off"
+							/>
+						</div>
+					) : null}
+					{protocol === 'gemini' ? (
+						<>
+							<div>
+								<label className="mb-1 block text-xs text-gray-600">
+									{capLabels.generateContent}
+								</label>
+								<input
+									type="url"
+									value={form.generateContent}
+									onChange={(e) => onChange({ ...form, generateContent: e.target.value })}
+									className={inputClass}
+									placeholder="https://…/models/{model}:generateContent"
+									autoComplete="off"
+								/>
+							</div>
+							<div>
+								<label className="mb-1 block text-xs text-gray-600">
+									{capLabels.streamGenerateContent}
+								</label>
+								<input
+									type="url"
+									value={form.streamGenerateContent}
+									onChange={(e) => onChange({ ...form, streamGenerateContent: e.target.value })}
+									className={inputClass}
+									placeholder="https://…/models/{model}:streamGenerateContent"
+									autoComplete="off"
+								/>
+							</div>
+						</>
+					) : null}
+				</div>
+			) : null}
+		</div>
+	);
+}
 
 export function ProviderModal(props: ProviderModalProps) {
 	const {
@@ -39,6 +181,15 @@ export function ProviderModal(props: ProviderModalProps) {
 	const tCommon = useTranslations('common');
 
 	if (!open) return null;
+
+	const capLabels = {
+		chat: t('capChat'),
+		imagesGenerations: t('capImagesGenerations'),
+		imagesEdits: t('capImagesEdits'),
+		messages: t('capMessages'),
+		generateContent: t('capGenerateContent'),
+		streamGenerateContent: t('capStreamGenerateContent'),
+	};
 
 	return (
 		<div
@@ -74,114 +225,103 @@ export function ProviderModal(props: ProviderModalProps) {
 					</button>
 				</div>
 
-				<div className="min-h-0 flex-1 overflow-y-auto p-6">
+				<div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
 					{saveError && (
-						<div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">{saveError}</div>
+						<div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+							{saveError}
+						</div>
 					)}
 
-					<div className="space-y-6">
-						<section className="rounded-lg border border-gray-200 bg-slate-50/70 p-4 space-y-3">
+					<div className="space-y-8">
+						<section className="space-y-3">
 							<div>
 								<h3 className="text-sm font-semibold text-gray-900">{t('general')}</h3>
-								<p className="text-xs text-gray-500 mt-0.5">{t('generalHint')}</p>
+								<p className="mt-0.5 text-xs text-gray-500">{t('generalHint')}</p>
 							</div>
-							<div className="space-y-3">
-								{!editingProvider && (
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">{t('id')}</label>
-										<input
-											type="text"
-											value={formData.id}
-											onChange={(e) => onFormChange({ ...formData, id: e.target.value })}
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono bg-white"
-											placeholder={t('idPlaceholder')}
-											autoComplete="off"
-										/>
-										<p className="mt-1 text-xs text-gray-500">{t('idHint')}</p>
-									</div>
-								)}
+							{!editingProvider && (
 								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">{t('nameRequired')}</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('id')}</label>
 									<input
 										type="text"
-										value={formData.name}
-										onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
-										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-										placeholder={t('namePlaceholder')}
+										value={formData.id}
+										onChange={(e) => onFormChange({ ...formData, id: e.target.value })}
+										className={`${inputClass} font-mono`}
+										placeholder={t('idPlaceholder')}
 										autoComplete="off"
-										required
 									/>
+									<p className="mt-1 text-xs text-gray-500">{t('idHint')}</p>
 								</div>
+							)}
+							<div>
+								<label className="mb-1 block text-sm font-medium text-gray-700">
+									{t('nameRequired')}
+								</label>
+								<input
+									type="text"
+									value={formData.name}
+									onChange={(e) => onFormChange({ ...formData, name: e.target.value })}
+									className={inputClass}
+									placeholder={t('namePlaceholder')}
+									autoComplete="off"
+									required
+								/>
 							</div>
 						</section>
 
-						<section className="rounded-lg border border-gray-200 bg-slate-50/70 p-4 space-y-3">
+						<section className="space-y-5 border-t border-gray-100 pt-6">
 							<div>
 								<h3 className="text-sm font-semibold text-gray-900">{t('endpoints')}</h3>
-								<p className="text-xs text-gray-500 mt-0.5">{t('endpointsHint')}</p>
+								<p className="mt-0.5 text-xs text-gray-500">{t('endpointsHint')}</p>
 							</div>
-							<div className="space-y-3">
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										{t('openaiOptional')}
-									</label>
-									<input
-										type="url"
-										value={formData.base_url_openai}
-										onChange={(e) => onFormChange({ ...formData, base_url_openai: e.target.value })}
-										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-										placeholder={t('openaiPlaceholder')}
-										autoComplete="off"
-									/>
-								</div>
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										{t('anthropicOptional')}
-									</label>
-									<input
-										type="url"
-										value={formData.base_url_anthropic}
-										onChange={(e) => onFormChange({ ...formData, base_url_anthropic: e.target.value })}
-										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-										placeholder={t('anthropicPlaceholder')}
-										autoComplete="off"
-									/>
-								</div>
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										{t('geminiOptional')}
-									</label>
-									<input
-										type="url"
-										value={formData.base_url_gemini}
-										onChange={(e) => onFormChange({ ...formData, base_url_gemini: e.target.value })}
-										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-										placeholder={t('geminiPlaceholder')}
-										autoComplete="off"
-									/>
-									<p className="text-xs text-gray-500 mt-1">{t('geminiHint')}</p>
-								</div>
-							</div>
+							<ProtocolFields
+								protocolLabel={t('openaiOptional')}
+								basePlaceholder={t('openaiPlaceholder')}
+								form={formData.openai}
+								protocol="openai"
+								advancedToggle={t('advancedToggle')}
+								advancedHint={t('advancedHint')}
+								capLabels={capLabels}
+								onChange={(openai) => onFormChange({ ...formData, openai })}
+							/>
+							<ProtocolFields
+								protocolLabel={t('anthropicOptional')}
+								basePlaceholder={t('anthropicPlaceholder')}
+								form={formData.anthropic}
+								protocol="anthropic"
+								advancedToggle={t('advancedToggle')}
+								advancedHint={t('advancedHint')}
+								capLabels={capLabels}
+								onChange={(anthropic) => onFormChange({ ...formData, anthropic })}
+							/>
+							<ProtocolFields
+								protocolLabel={t('geminiOptional')}
+								basePlaceholder={t('geminiPlaceholder')}
+								baseHint={t('geminiHint')}
+								form={formData.gemini}
+								protocol="gemini"
+								advancedToggle={t('advancedToggle')}
+								advancedHint={t('advancedHint')}
+								capLabels={capLabels}
+								onChange={(gemini) => onFormChange({ ...formData, gemini })}
+							/>
 						</section>
 
-						<section className="rounded-lg border border-gray-200 bg-slate-50/70 p-4 space-y-3">
+						<section className="space-y-3 border-t border-gray-100 pt-6">
 							<div>
 								<h3 id="provider-description-heading" className="text-sm font-semibold text-gray-900">
 									{t('description')}
 								</h3>
-								<p className="text-xs text-gray-500 mt-0.5">{t('descriptionHint')}</p>
+								<p className="mt-0.5 text-xs text-gray-500">{t('descriptionHint')}</p>
 							</div>
-							<div>
-								<textarea
-									rows={3}
-									value={formData.description}
-									onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
-									className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-									placeholder={t('descriptionPlaceholder')}
-									autoComplete="off"
-									aria-labelledby="provider-description-heading"
-								/>
-							</div>
+							<textarea
+								rows={3}
+								value={formData.description}
+								onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
+								className={inputClass}
+								placeholder={t('descriptionPlaceholder')}
+								autoComplete="off"
+								aria-labelledby="provider-description-heading"
+							/>
 						</section>
 					</div>
 				</div>
@@ -224,9 +364,9 @@ export function ProviderModal(props: ProviderModalProps) {
 							type="button"
 							onClick={() => void onSave()}
 							disabled={isSaving || isDeleting}
-							className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+							className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
 						>
-							{isSaving ? tCommon('saving') : tCommon('save')}
+							{isSaving ? tCommon('saving') : editingProvider ? tCommon('save') : tCommon('create')}
 						</button>
 					</div>
 				</div>

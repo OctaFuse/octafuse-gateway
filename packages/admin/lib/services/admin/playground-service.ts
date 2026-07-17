@@ -1,25 +1,26 @@
 /**
  * Playground：按单条 `model_routes` 直连上游，不经过 Proxy、不鉴 API Key、不写 `api_key_request_logs`、不计费、无 failover。
  */
-import type { GatewayRepositories } from '@octafuse/core';
+import type { GatewayRepositories, ProviderEndpointsMap } from '@octafuse/core';
 import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import {
 	type GeminiContentAction,
 	prepareGeminiUpstreamFetch,
 } from '@octafuse/core/gemini-upstream-url';
-import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
-	buildOpenAiCompatibleImagesUrl,
-	normalizeUpstreamProtocol,
-	resolveEffectiveBaseUrl,
-} from '@octafuse/core/upstream-protocol';
+	parseProviderEndpoints,
+	resolveUpstreamEndpoint,
+} from '@octafuse/core/provider-endpoints';
+import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
+import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { AdminServiceError, badRequest, notFound } from './errors';
 import { resolvePlaygroundProviderKey } from './provider-api-keys-service';
 
 /** 与 Proxy `RouteResult` 对齐的最小子集，供合并默认参数与拼 URL。 */
 export type PlaygroundResolvedRoute = {
 	upstreamProtocol: UpstreamProtocol;
-	baseUrl: string;
+	providerEndpoints: ProviderEndpointsMap;
+	providerId: string;
 	providerApiKey: string;
 	providerModelName: string;
 	customParams: Record<string, unknown> | null;
@@ -107,12 +108,7 @@ export async function resolvePlaygroundRoute(
 		throw badRequest(e instanceof Error ? e.message : 'Invalid upstream_protocol');
 	}
 
-	let baseUrl: string;
-	try {
-		baseUrl = resolveEffectiveBaseUrl(protocol, provider, provider.id);
-	} catch (e) {
-		throw badRequest(e instanceof Error ? e.message : 'Failed to resolve upstream base URL');
-	}
+	const providerEndpoints = parseProviderEndpoints(provider);
 
 	const customParams = parseJsonObject(row.custom_params);
 	if (row.custom_params && !customParams) {
@@ -131,7 +127,8 @@ export async function resolvePlaygroundRoute(
 
 	return {
 		upstreamProtocol: protocol,
-		baseUrl,
+		providerEndpoints,
+		providerId: provider.id,
 		providerApiKey: resolvedKey.api_key,
 		providerModelName: row.provider_model_name,
 		customParams,
@@ -153,26 +150,23 @@ function stripApiKeyFromUrlForHeader(urlString: string): string {
 	}
 }
 
-function openAiChatCompletionsUrl(baseUrl: string): string {
-	return `${baseUrl.replace(/\/$/, '')}/chat/completions`;
-}
-
-function openAiImagesGenerationsUrl(baseUrl: string): string {
-	return buildOpenAiCompatibleImagesUrl(baseUrl, 'generations');
-}
-
-function anthropicMessagesUrl(baseUrl: string): string {
-	return `${baseUrl.replace(/\/$/, '')}/v1/messages`;
-}
-
-/** Playground Gemini 分支：按 baseUrl 策略构造 URL 与 headers（与 Proxy 一致）。 */
+/** Playground Gemini 分支：按 endpoints 解析 URL 与 headers（与 Proxy 一致）。 */
 export function buildPlaygroundGeminiUpstreamRequest(
-	baseUrl: string,
-	modelName: string,
-	action: GeminiContentAction,
-	apiKey: string
+	route: PlaygroundResolvedRoute,
+	action: GeminiContentAction
 ): { url: string; headers: Record<string, string> } {
-	const { url, headers } = prepareGeminiUpstreamFetch({ baseUrl, modelName, action, apiKey });
+	const resolvedUrl = resolveUpstreamEndpoint('gemini', action, route.providerEndpoints, {
+		model: route.providerModelName,
+		action,
+		providerId: route.providerId,
+	});
+	const { url, headers } = prepareGeminiUpstreamFetch({
+		resolvedUrl,
+		modelName: route.providerModelName,
+		action,
+		apiKey: route.providerApiKey,
+		authBaseHint: route.providerEndpoints.gemini?.base,
+	});
 	return { url: url.toString(), headers };
 }
 
@@ -223,9 +217,16 @@ export async function invokePlaygroundUpstream(
 
 	switch (route.upstreamProtocol) {
 		case 'openai': {
-			url = route.isImageModel
-				? openAiImagesGenerationsUrl(route.baseUrl)
-				: openAiChatCompletionsUrl(route.baseUrl);
+			try {
+				url = resolveUpstreamEndpoint(
+					'openai',
+					route.isImageModel ? 'images.generations' : 'chat',
+					route.providerEndpoints,
+					{ providerId: route.providerId }
+				);
+			} catch (e) {
+				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve OpenAI upstream URL');
+			}
 			headers = {
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${route.providerApiKey}`,
@@ -234,7 +235,13 @@ export async function invokePlaygroundUpstream(
 			break;
 		}
 		case 'anthropic': {
-			url = anthropicMessagesUrl(route.baseUrl);
+			try {
+				url = resolveUpstreamEndpoint('anthropic', 'messages', route.providerEndpoints, {
+					providerId: route.providerId,
+				});
+			} catch (e) {
+				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve Anthropic upstream URL');
+			}
 			headers = {
 				'Content-Type': 'application/json',
 				'x-api-key': route.providerApiKey,
@@ -246,12 +253,12 @@ export async function invokePlaygroundUpstream(
 		case 'gemini': {
 			const action: GeminiContentAction =
 				input.geminiAction === 'streamGenerateContent' ? 'streamGenerateContent' : 'generateContent';
-			const geminiRequest = buildPlaygroundGeminiUpstreamRequest(
-				route.baseUrl,
-				route.providerModelName,
-				action,
-				route.providerApiKey
-			);
+			let geminiRequest: { url: string; headers: Record<string, string> };
+			try {
+				geminiRequest = buildPlaygroundGeminiUpstreamRequest(route, action);
+			} catch (e) {
+				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve Gemini upstream URL');
+			}
 			url = geminiRequest.url;
 			headers = geminiRequest.headers;
 			requestBody = merged;

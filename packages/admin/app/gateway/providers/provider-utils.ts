@@ -1,5 +1,12 @@
 import type { GatewayProvider } from '@/lib/types';
-import type { ProviderProtocolSummary } from './types';
+import {
+	parseProviderEndpoints,
+	serializeProviderEndpoints,
+	type ProviderEndpointsMap,
+	type ProtocolEndpointsConfig,
+} from '@octafuse/core/provider-endpoints';
+import type { ProtocolEndpointForm, ProviderFormData, ProviderProtocolSummary } from './types';
+import { EMPTY_PROTOCOL_FORM } from './types';
 
 export { PROVIDER_KEY_LABEL_MAX_LENGTH } from '@/lib/provider-key-label';
 
@@ -51,14 +58,98 @@ export function formatLimitConfig(raw: string | null): string {
 	return parts.length > 0 ? parts.join(' · ') : '—';
 }
 
+function protocolFormFromConfig(cfg: ProtocolEndpointsConfig | undefined): ProtocolEndpointForm {
+	const form: ProtocolEndpointForm = { ...EMPTY_PROTOCOL_FORM };
+	if (!cfg) return form;
+	form.base = cfg.base ?? '';
+	const eps = cfg.endpoints ?? {};
+	form.chat = eps.chat ?? '';
+	form.images_generations = eps['images.generations'] ?? '';
+	form.images_edits = eps['images.edits'] ?? '';
+	form.messages = eps.messages ?? '';
+	form.generateContent = eps.generateContent ?? '';
+	form.streamGenerateContent = eps.streamGenerateContent ?? '';
+	return form;
+}
+
+/** Provider 行 → 弹窗表单（`endpoints` 列）。 */
+export function providerToFormData(provider: GatewayProvider): Omit<ProviderFormData, 'id' | 'name' | 'description'> & {
+	openai: ProtocolEndpointForm;
+	anthropic: ProtocolEndpointForm;
+	gemini: ProtocolEndpointForm;
+} {
+	const map = parseProviderEndpoints(provider);
+	return {
+		openai: protocolFormFromConfig(map.openai),
+		anthropic: protocolFormFromConfig(map.anthropic),
+		gemini: protocolFormFromConfig(map.gemini),
+	};
+}
+
+function configFromProtocolForm(
+	protocol: 'openai' | 'anthropic' | 'gemini',
+	form: ProtocolEndpointForm
+): ProtocolEndpointsConfig | undefined {
+	const base = form.base.trim();
+	const endpoints: NonNullable<ProtocolEndpointsConfig['endpoints']> = {};
+	if (protocol === 'openai') {
+		if (form.chat.trim()) endpoints.chat = form.chat.trim();
+		if (form.images_generations.trim()) endpoints['images.generations'] = form.images_generations.trim();
+		if (form.images_edits.trim()) endpoints['images.edits'] = form.images_edits.trim();
+	} else if (protocol === 'anthropic') {
+		if (form.messages.trim()) endpoints.messages = form.messages.trim();
+	} else {
+		if (form.generateContent.trim()) endpoints.generateContent = form.generateContent.trim();
+		if (form.streamGenerateContent.trim()) {
+			endpoints.streamGenerateContent = form.streamGenerateContent.trim();
+		}
+	}
+	if (!base && Object.keys(endpoints).length === 0) return undefined;
+	const cfg: ProtocolEndpointsConfig = {};
+	if (base) cfg.base = base;
+	if (Object.keys(endpoints).length > 0) cfg.endpoints = endpoints;
+	return cfg;
+}
+
+/** 表单 → API `endpoints` 对象。 */
+export function formDataToEndpointsMap(form: ProviderFormData): ProviderEndpointsMap {
+	const map: ProviderEndpointsMap = {};
+	const openai = configFromProtocolForm('openai', form.openai);
+	const anthropic = configFromProtocolForm('anthropic', form.anthropic);
+	const gemini = configFromProtocolForm('gemini', form.gemini);
+	if (openai) map.openai = openai;
+	if (anthropic) map.anthropic = anthropic;
+	if (gemini) map.gemini = gemini;
+	return map;
+}
+
+export function formDataToEndpointsJson(form: ProviderFormData): string | null {
+	return serializeProviderEndpoints(formDataToEndpointsMap(form));
+}
+
 export function getProviderProtocolSummaries(provider: GatewayProvider): ProviderProtocolSummary[] {
+	const map = parseProviderEndpoints(provider);
 	const rows: ProviderProtocolSummary[] = [];
-	const openaiUrl = provider.base_url_openai?.trim() ?? '';
-	const anthropicUrl = provider.base_url_anthropic?.trim() ?? '';
-	const geminiUrl = provider.base_url_gemini?.trim() ?? '';
-	if (openaiUrl) rows.push({ key: 'openai', label: 'OpenAI', url: openaiUrl });
-	if (anthropicUrl) rows.push({ key: 'anthropic', label: 'Anthropic', url: anthropicUrl });
-	if (geminiUrl) rows.push({ key: 'gemini', label: 'Gemini', url: geminiUrl });
+	if (map.openai) {
+		const url = map.openai.base || map.openai.endpoints?.chat || Object.values(map.openai.endpoints ?? {})[0] || '';
+		if (url) rows.push({ key: 'openai', label: 'OpenAI', url });
+	}
+	if (map.anthropic) {
+		const url =
+			map.anthropic.base ||
+			map.anthropic.endpoints?.messages ||
+			Object.values(map.anthropic.endpoints ?? {})[0] ||
+			'';
+		if (url) rows.push({ key: 'anthropic', label: 'Anthropic', url });
+	}
+	if (map.gemini) {
+		const url =
+			map.gemini.base ||
+			map.gemini.endpoints?.generateContent ||
+			Object.values(map.gemini.endpoints ?? {})[0] ||
+			'';
+		if (url) rows.push({ key: 'gemini', label: 'Gemini', url });
+	}
 	return rows;
 }
 
@@ -78,4 +169,16 @@ export function sortProviderKeyRows<T extends { priority: number; weight: number
 	return rows
 		.slice()
 		.sort((a, b) => b.priority - a.priority || b.weight - a.weight || a.label.localeCompare(b.label));
+}
+
+/** 某协议 Advanced 区是否有任意覆盖（用于默认展开）。 */
+export function protocolFormHasOverrides(
+	protocol: 'openai' | 'anthropic' | 'gemini',
+	form: ProtocolEndpointForm
+): boolean {
+	if (protocol === 'openai') {
+		return !!(form.chat.trim() || form.images_generations.trim() || form.images_edits.trim());
+	}
+	if (protocol === 'anthropic') return !!form.messages.trim();
+	return !!(form.generateContent.trim() || form.streamGenerateContent.trim());
 }

@@ -1,5 +1,5 @@
 /**
- * 管理端内置 **上游 Provider** 静态模板：用于一键导入 `providers` 行（预填各协议 base URL）。
+ * 管理端内置 **上游 Provider** 静态模板：用于一键导入 `providers` 行（预填 `endpoints`）。
  *
  * 权威列表见 [provider-import-presets.json](./provider-import-presets.json)。`vendor_key` 应对齐
  * [model-vendors.json](./model-vendors.json) 中的 `key`（展示名用 `getModelVendorLabel`）。
@@ -9,13 +9,13 @@
 import rawPresets from './provider-import-presets.json';
 import { getModelVendorLabel, normalizeModelVendorInput } from './model-vendor';
 import type { AdminProviderImportCatalogItem } from '@/lib/services/admin/types';
+import type { ProviderEndpointsMap } from '@octafuse/core/provider-endpoints';
+import { parseProviderEndpoints, serializeProviderEndpoints } from '@octafuse/core/provider-endpoints';
 
 export type StaticProviderImportPresetRow = {
 	name: string;
 	vendor_key: string;
-	base_url_openai: string | null;
-	base_url_anthropic: string | null;
-	base_url_gemini: string | null;
+	endpoints: ProviderEndpointsMap;
 	/** 可选；JSON 中可省略，导入后写入 providers.description 时为 null */
 	description?: string | null;
 };
@@ -28,14 +28,15 @@ export type StaticProviderImportPresetWithKey = StaticProviderImportPresetRow & 
 const STATIC_ROWS = rawPresets as StaticProviderImportPresetRow[];
 
 function protocolsForPreset(p: StaticProviderImportPresetRow): AdminProviderImportCatalogItem['protocols'] {
+	const map = parseProviderEndpoints({ endpoints: p.endpoints });
 	const out: AdminProviderImportCatalogItem['protocols'] = [];
-	if (p.base_url_openai?.trim()) out.push('openai');
-	if (p.base_url_anthropic?.trim()) out.push('anthropic');
-	if (p.base_url_gemini?.trim()) out.push('gemini');
+	if (map.openai) out.push('openai');
+	if (map.anthropic) out.push('anthropic');
+	if (map.gemini) out.push('gemini');
 	return out;
 }
 
-/** 全部静态模板行（含 catalog 键与各协议 base URL）。 */
+/** 全部静态模板行（含 catalog 键与 endpoints）。 */
 export function listStaticProviderImportPresets(): StaticProviderImportPresetWithKey[] {
 	return STATIC_ROWS.filter((r) => String(r.name ?? '').trim().length > 0).map((row, index) => ({
 		...row,
@@ -47,15 +48,14 @@ export function listStaticProviderImportPresets(): StaticProviderImportPresetWit
 export function listStaticProviderImportCatalogForAdmin(): AdminProviderImportCatalogItem[] {
 	return listStaticProviderImportPresets().map((p) => {
 		const vendorCanon = normalizeModelVendorInput(p.vendor_key);
+		const map = parseProviderEndpoints({ endpoints: p.endpoints });
 		return {
 			id: p.catalog_key,
 			name: String(p.name ?? '').trim(),
 			vendor_key: vendorCanon,
 			vendor_label: getModelVendorLabel(vendorCanon),
 			protocols: protocolsForPreset(p),
-			base_url_openai: p.base_url_openai?.trim() || null,
-			base_url_anthropic: p.base_url_anthropic?.trim() || null,
-			base_url_gemini: p.base_url_gemini?.trim() || null,
+			endpoints: serializeProviderEndpoints(map),
 			description: p.description != null && String(p.description).trim() ? String(p.description).trim() : null,
 		};
 	});

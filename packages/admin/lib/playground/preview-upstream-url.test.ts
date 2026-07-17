@@ -7,8 +7,11 @@ describe('previewPlaygroundUpstreamUrl', () => {
 		const url = previewPlaygroundUpstreamUrl({
 			provider: {
 				id: 'p1',
-				base_url_openai:
-					'https://aigateway.edgecloudapp.com/v1/abc/openai-image-generations',
+				endpoints: JSON.stringify({
+					openai: {
+						base: 'https://aigateway.edgecloudapp.com/v1/abc/openai-image-generations',
+					},
+				}),
 			},
 			upstreamProtocol: 'openai',
 			providerModelName: 'gpt-image-2',
@@ -22,7 +25,12 @@ describe('previewPlaygroundUpstreamUrl', () => {
 
 	it('appends /images/generations for standard OpenAI roots', () => {
 		const url = previewPlaygroundUpstreamUrl({
-			provider: { id: 'p1', base_url_openai: 'https://api.openai.com/v1' },
+			provider: {
+				id: 'p1',
+				endpoints: JSON.stringify({
+					openai: { base: 'https://api.openai.com/v1' },
+				}),
+			},
 			upstreamProtocol: 'openai',
 			providerModelName: 'gpt-image-2',
 			isImageModel: true,

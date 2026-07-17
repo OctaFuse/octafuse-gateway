@@ -1,13 +1,15 @@
 /**
- * 模型路由解析：把 `model_routes` 行 + `providers` 拼成可上游请求的 `RouteResult`（baseUrl、协议、`price_override` 等）。
+ * 模型路由解析：把 `model_routes` 行 + `providers` 拼成可上游请求的 `RouteResult`
+ *（`providerEndpoints`、协议、`price_override` 等）。
  * 与 `route-selection` 配合：本模块负责「行 → 可调用对象」，不负责选哪几条 failover。
+ * 完整上游 URL 由各 driver 按 capability 调用 `resolveUpstreamEndpoint`。
  */
-import type { GatewayRepositories, ModelRouteRow, UpstreamProtocol } from '@octafuse/core';
+import type { GatewayRepositories, ModelRouteRow, ProviderEndpointsMap, UpstreamProtocol } from '@octafuse/core';
 import {
   extractMeteredProfileFromPriceOverrideJson,
   extractChargedProfileFromPriceOverrideJson,
   normalizeUpstreamProtocol,
-  resolveEffectiveBaseUrl,
+  parseProviderEndpoints,
 } from '@octafuse/core';
 
 export interface RouteResult {
@@ -16,8 +18,11 @@ export interface RouteResult {
   providerName: string;
   providerModelName: string;
   upstreamProtocol: UpstreamProtocol;
-  /** 该协议下上游 API 根 URL（如 OpenAI 风格 POST …/chat/completions） */
-  baseUrl: string;
+  /**
+   * 解析后的 provider endpoints（`providers.endpoints`）。
+   * Driver 按 capability 调用 `resolveUpstreamEndpoint`。
+   */
+  providerEndpoints: ProviderEndpointsMap;
   providerApiKey: string;
   /** 原始 `model_routes.price_override` JSON，供审计与嵌套 profile 解析 */
   priceOverrideRaw: string | null;
@@ -54,7 +59,7 @@ async function routeRowToResult(repos: GatewayRepositories, route: ModelRouteRow
     return null;
   }
   const protocol = normalizeUpstreamProtocol(route.upstream_protocol);
-  const baseUrl = resolveEffectiveBaseUrl(protocol, provider, provider.id);
+  const providerEndpoints = parseProviderEndpoints(provider);
   const customParams = parseJsonObject(route.custom_params);
   if (route.custom_params && !customParams) {
     console.warn(
@@ -72,7 +77,7 @@ async function routeRowToResult(repos: GatewayRepositories, route: ModelRouteRow
     providerName: provider.name,
     providerModelName: route.provider_model_name,
     upstreamProtocol: protocol,
-    baseUrl,
+    providerEndpoints,
     providerApiKey: '',
     priceOverrideRaw: route.price_override,
     routeMeteredProfileJson: extractMeteredProfileFromPriceOverrideJson(route.price_override),

@@ -90,10 +90,11 @@ flowchart TB
 4. **用户预算**：`budgetMax != null && budgetSpent >= budgetMax` → **403**（与 provider key 限流无关）。
 5. **路由行查询**：
    - `getActiveModelRouteRows` → `selectActiveRouteRows(explicitGroup)`（默认 `default`）
-   - `resolveRouteResultsFromRows` → `RouteResult[]`
+   - `resolveRouteResultsFromRows` → `RouteResult[]`（携带 `providerEndpoints`：`parseProviderEndpoints(provider)`；**不再**在 router 层拼死完整上游 URL）
    - 无有效 route group → **400**
    - 解析异常 → **502**
 6. **协议过滤**：例如 chat 路由保留 `upstreamProtocol === 'openai'`；无匹配 → **502**。
+7. **Driver 出站 URL**：各 driver 按 capability 调用 `resolveUpstreamEndpoint`（`chat` / `images.generations` / `images.edits` / `messages` / `generateContent` / `streamGenerateContent`）。capability 模板优先，否则从 `base` 派生；Gemini 鉴权与 `alt=sse` 仍由 `prepareGeminiUpstreamFetch` 处理。
 
 ### 2.2 敏感内容熔断（可选，调度前）
 

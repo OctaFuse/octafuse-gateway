@@ -1,22 +1,22 @@
 /**
- * Playground：按所选路由 + Provider base_url 预览将要打到的上游完整 URL（与 invoke 拼接规则一致）。
+ * Playground：按所选路由 + Provider endpoints 预览将要打到的上游完整 URL（与 invoke 拼接规则一致）。
  */
 import {
 	type GeminiContentAction,
 	prepareGeminiUpstreamFetch,
 } from '@octafuse/core/gemini-upstream-url';
 import {
-	buildOpenAiCompatibleImagesUrl,
+	parseProviderEndpoints,
+	resolveUpstreamEndpoint,
+	type ProviderEndpointsSource,
+} from '@octafuse/core/provider-endpoints';
+import {
 	normalizeUpstreamProtocol,
-	resolveEffectiveBaseUrl,
 	type UpstreamProtocol,
 } from '@octafuse/core/upstream-protocol';
 
-export type PlaygroundProviderBaseUrls = {
+export type PlaygroundProviderBaseUrls = ProviderEndpointsSource & {
 	id: string;
-	base_url_openai: string | null;
-	base_url_anthropic?: string | null;
-	base_url_gemini?: string | null;
 };
 
 function stripApiKeyFromUrl(urlString: string): string {
@@ -32,7 +32,7 @@ function stripApiKeyFromUrl(urlString: string): string {
 }
 
 /**
- * @returns 完整上游 URL；缺 Provider / base_url / 非法协议时返回 null
+ * @returns 完整上游 URL；缺 Provider / endpoints / 非法协议时返回 null
  */
 export function previewPlaygroundUpstreamUrl(input: {
 	provider: PlaygroundProviderBaseUrls | null | undefined;
@@ -51,34 +51,43 @@ export function previewPlaygroundUpstreamUrl(input: {
 		return null;
 	}
 
-	let baseUrl: string;
+	const providerEndpoints = parseProviderEndpoints(provider);
+
 	try {
-		baseUrl = resolveEffectiveBaseUrl(protocol, provider, provider.id);
+		switch (protocol) {
+			case 'openai': {
+				const capability = input.isImageModel ? 'images.generations' : 'chat';
+				return resolveUpstreamEndpoint(protocol, capability, providerEndpoints, {
+					providerId: provider.id,
+				});
+			}
+			case 'anthropic':
+				return resolveUpstreamEndpoint(protocol, 'messages', providerEndpoints, {
+					providerId: provider.id,
+				});
+			case 'gemini': {
+				const action: GeminiContentAction =
+					input.geminiAction === 'streamGenerateContent'
+						? 'streamGenerateContent'
+						: 'generateContent';
+				const resolvedUrl = resolveUpstreamEndpoint(protocol, action, providerEndpoints, {
+					model: input.providerModelName || 'model',
+					action,
+					providerId: provider.id,
+				});
+				const { url } = prepareGeminiUpstreamFetch({
+					resolvedUrl,
+					modelName: input.providerModelName || 'model',
+					action,
+					apiKey: 'preview',
+					authBaseHint: providerEndpoints.gemini?.base,
+				});
+				return stripApiKeyFromUrl(url.toString());
+			}
+			default:
+				return null;
+		}
 	} catch {
 		return null;
-	}
-
-	switch (protocol) {
-		case 'openai':
-			return input.isImageModel
-				? buildOpenAiCompatibleImagesUrl(baseUrl, 'generations')
-				: `${baseUrl.replace(/\/$/, '')}/chat/completions`;
-		case 'anthropic':
-			return `${baseUrl.replace(/\/$/, '')}/v1/messages`;
-		case 'gemini': {
-			const action: GeminiContentAction =
-				input.geminiAction === 'streamGenerateContent'
-					? 'streamGenerateContent'
-					: 'generateContent';
-			const { url } = prepareGeminiUpstreamFetch({
-				baseUrl,
-				modelName: input.providerModelName || 'model',
-				action,
-				apiKey: 'preview',
-			});
-			return stripApiKeyFromUrl(url.toString());
-		}
-		default:
-			return null;
 	}
 }

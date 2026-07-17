@@ -16,6 +16,7 @@ import {
 import {
 	limitConfigToFormFields,
 	PROVIDER_KEY_LABEL_MAX_LENGTH,
+	providerToFormData,
 	suggestDuplicateProviderId,
 } from './provider-utils';
 import type {
@@ -26,7 +27,7 @@ import type {
 	ProviderKeyFormData,
 	ProviderKeyRow,
 } from './types';
-import { EMPTY_KEY_EDIT_FORM, EMPTY_PROVIDER_FORM } from './types';
+import { EMPTY_KEY_EDIT_FORM, EMPTY_PROTOCOL_FORM, EMPTY_PROVIDER_FORM } from './types';
 
 export function useProvidersPageState() {
 	const [providers, setProviders] = useState<GatewayProvider[]>([]);
@@ -360,7 +361,13 @@ export function useProvidersPageState() {
 	const handleCreate = useCallback(() => {
 		setEditingProvider(null);
 		setDuplicateSourceId(null);
-		setFormData({ ...EMPTY_PROVIDER_FORM, id: '' });
+		setFormData({
+			...EMPTY_PROVIDER_FORM,
+			id: '',
+			openai: { ...EMPTY_PROTOCOL_FORM },
+			anthropic: { ...EMPTY_PROTOCOL_FORM },
+			gemini: { ...EMPTY_PROTOCOL_FORM },
+		});
 		setShowModal(true);
 		setSaveError('');
 	}, []);
@@ -371,9 +378,7 @@ export function useProvidersPageState() {
 		setFormData({
 			id: provider.id,
 			name: provider.name,
-			base_url_openai: provider.base_url_openai ?? '',
-			base_url_anthropic: provider.base_url_anthropic ?? '',
-			base_url_gemini: provider.base_url_gemini ?? '',
+			...providerToFormData(provider),
 			description: provider.description ?? '',
 		});
 		setShowModal(true);
@@ -387,9 +392,7 @@ export function useProvidersPageState() {
 			setFormData({
 				id: suggestDuplicateProviderId(provider.id, existingProviderIds),
 				name: `${provider.name} (copy)`,
-				base_url_openai: provider.base_url_openai ?? '',
-				base_url_anthropic: provider.base_url_anthropic ?? '',
-				base_url_gemini: provider.base_url_gemini ?? '',
+				...providerToFormData(provider),
 				description: provider.description ?? '',
 			});
 			setShowModal(true);

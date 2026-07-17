@@ -11,7 +11,7 @@
 		"build": "npm run build:migrate && npm run build:node-index",
 		"build:migrate": "tsc -p tsconfig.build.migrate.json",
 		"build:node-index": "esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.js --packages=external --log-level=warning",
-		"test:unit": "tsx --test src/db/image-token-usage.test.ts src/db/pricing-profile.test.ts src/db/pricing-schedule.test.ts src/db/model-modalities.test.ts src/lib/business-timezone.test.ts src/services/budget-transition-service.test.ts src/upstream-protocol-images-url.test.ts"
+		"test:unit": "tsx --test src/db/image-token-usage.test.ts src/db/pricing-profile.test.ts src/db/pricing-schedule.test.ts src/db/model-modalities.test.ts src/lib/business-timezone.test.ts src/services/budget-transition-service.test.ts src/upstream-protocol-images-url.test.ts src/provider-endpoints.test.ts"
 	},
 	"files": [
 		"dist",
@@ -57,6 +57,7 @@
 		"./storage/runtime-database-config": "./src/storage/runtime-database-config.ts",
 		"./storage/context": "./src/storage/context.ts",
 		"./upstream-protocol": "./src/upstream-protocol.ts",
+		"./provider-endpoints": "./src/provider-endpoints.ts",
 		"./gemini-upstream-url": "./src/gemini-upstream-url.ts"
 	},
 	"dependencies": {

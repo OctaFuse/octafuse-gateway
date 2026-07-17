@@ -4,13 +4,7 @@
  * 防止传入任意字符串被拼入 SQL。
  */
 
-export const PROVIDER_PATCH_COLS = new Set([
-	'name',
-	'base_url_openai',
-	'base_url_anthropic',
-	'base_url_gemini',
-	'description',
-]);
+export const PROVIDER_PATCH_COLS = new Set(['name', 'endpoints', 'description']);
 
 export const PROVIDER_API_KEY_PATCH_COLS = new Set([
 	'label',

@@ -8,7 +8,9 @@ function minimalRoute(overrides: Partial<RouteResult>): RouteResult {
 		providerName: 'Test Provider',
 		providerModelName: 'gemini-2.5-flash',
 		upstreamProtocol: 'gemini',
-		baseUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
+		providerEndpoints: {
+			gemini: { base: 'https://generativelanguage.googleapis.com/v1beta/models' },
+		},
 		providerApiKey: 'provider-key',
 		priceOverrideRaw: null,
 		routeMeteredProfileJson: null,
@@ -42,7 +44,9 @@ describe('dispatchGeminiRoute upstream auth', () => {
 
 		await dispatchGeminiRoute(
 			minimalRoute({
-				baseUrl: 'https://api.qnaigc.com//bypass/vertex/v1/models',
+				providerEndpoints: {
+					gemini: { base: 'https://api.qnaigc.com//bypass/vertex/v1/models' },
+				},
 				providerApiKey: 'bearer-token',
 			}),
 			{},
@@ -66,7 +70,9 @@ describe('dispatchGeminiRoute upstream auth', () => {
 
 		await dispatchGeminiRoute(
 			minimalRoute({
-				baseUrl: 'https://api.modelink.ai/bypass/vertex/v1/models',
+				providerEndpoints: {
+					gemini: { base: 'https://api.modelink.ai/bypass/vertex/v1/models' },
+				},
 				providerApiKey: 'modelink-token',
 			}),
 			{},

@@ -97,9 +97,8 @@ export type AdminKeyUpdateInput = {
 export type AdminProviderMutationInput = {
 	id?: unknown;
 	name?: unknown;
-	base_url_openai?: unknown;
-	base_url_anthropic?: unknown;
-	base_url_gemini?: unknown;
+	/** `{ openai?: { base?, endpoints? }, … }` 对象或 JSON 字符串 */
+	endpoints?: unknown;
 	api_key?: unknown;
 	description?: unknown;
 	[key: string]: unknown;
@@ -123,9 +122,8 @@ export type AdminProviderImportCatalogItem = {
 	vendor_key: string;
 	vendor_label: string;
 	protocols: Array<'openai' | 'anthropic' | 'gemini'>;
-	base_url_openai: string | null;
-	base_url_anthropic: string | null;
-	base_url_gemini: string | null;
+	/** 序列化后的 endpoints JSON（可 null） */
+	endpoints: string | null;
 	description: string | null;
 };
 
@@ -227,9 +225,7 @@ export type AdminModelsImportOutput = {
 export type AdminProviderRow = {
 	id: string;
 	name: string;
-	base_url_openai: string | null;
-	base_url_anthropic: string | null;
-	base_url_gemini: string | null;
+	endpoints: string | null;
 	description: string | null;
 	created_at: string;
 	active_key_count?: number;

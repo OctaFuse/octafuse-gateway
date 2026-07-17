@@ -187,13 +187,6 @@ export function normalizeJsonObjectField(
 }
 
 /**
- * 判断 provider 行是否配置了某协议所需的非空 base_url。
+ * 判断 provider 行是否配置了某协议所需的 endpoints（base 或任一 capability；含 legacy 列回退）。
  */
-export function providerSupportsUpstreamProtocol(
-	protocol: 'openai' | 'anthropic' | 'gemini',
-	provider: { base_url_openai: string | null; base_url_anthropic: string | null; base_url_gemini: string | null }
-): boolean {
-	if (protocol === 'openai') return !!(provider.base_url_openai && provider.base_url_openai.trim() !== '');
-	if (protocol === 'anthropic') return !!(provider.base_url_anthropic && provider.base_url_anthropic.trim() !== '');
-	return !!(provider.base_url_gemini && provider.base_url_gemini.trim() !== '');
-}
+export { providerSupportsUpstreamProtocol } from '@octafuse/core/provider-endpoints';

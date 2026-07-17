@@ -2,11 +2,7 @@
  * OpenAI 兼容 Images API 上游驱动：`/images/generations`（JSON）与 `/images/edits`（multipart）。
  * 首期面向 GPT Image；Gateway 对外保持 OpenAI 形状，日志禁止写入 prompt 原文与 Base64。
  */
-import {
-	buildOpenAiCompatibleImagesUrl,
-	parseOpenAiImageUsage,
-	type ImageTokenUsage,
-} from '@octafuse/core';
+import { parseOpenAiImageUsage, resolveUpstreamEndpoint, type ImageTokenUsage } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { EMPTY_USAGE } from '../proxy';
@@ -66,10 +62,6 @@ export type NormalizedImageEditRequest = {
 	/** 透传给上游的其余安全字段（不含 prompt / 文件） */
 	extra?: Record<string, unknown>;
 };
-
-function buildImagesUrl(baseUrl: string, suffix: 'generations' | 'edits'): string {
-	return buildOpenAiCompatibleImagesUrl(baseUrl, suffix);
-}
 
 type ImageAbortReason = 'none' | 'gateway_timeout' | 'client_abort';
 
@@ -283,14 +275,16 @@ export async function dispatchOpenAiImageGenerations(
 	upstreamRequestId: string | null;
 	meta: { imageUsage: ImageTokenUsage | null; parsedBody: unknown };
 }> {
-	const url = buildImagesUrl(route.baseUrl, 'generations');
+	const url = resolveUpstreamEndpoint('openai', 'images.generations', route.providerEndpoints, {
+		providerId: route.providerId,
+	});
 	// 与 chat/messages 一致：每条 failover 路由合并各自 custom_params，用户字段优先
 	const requestBody = {
 		...buildRouteRequestBody(route, body),
 		model: route.providerModelName,
 	};
 	console.log(
-		`[Gateway Images] upstream generations POST ${url} baseUrl=${route.baseUrl} providerModel=${route.providerModelName} providerId=${route.providerId}`
+		`[Gateway Images] upstream generations POST ${url} providerModel=${route.providerModelName} providerId=${route.providerId}`
 	);
 	const startedAt = Date.now();
 	const { signal, clear, getAbortReason } = withTimeoutSignal(
@@ -374,9 +368,11 @@ export async function dispatchOpenAiImageEdits(
 	upstreamRequestId: string | null;
 	meta: { imageUsage: ImageTokenUsage | null; parsedBody: unknown };
 }> {
-	const url = buildImagesUrl(route.baseUrl, 'edits');
+	const url = resolveUpstreamEndpoint('openai', 'images.edits', route.providerEndpoints, {
+		providerId: route.providerId,
+	});
 	console.log(
-		`[Gateway Images] upstream edits POST ${url} baseUrl=${route.baseUrl} providerModel=${route.providerModelName} providerId=${route.providerId}`
+		`[Gateway Images] upstream edits POST ${url} providerModel=${route.providerModelName} providerId=${route.providerId}`
 	);
 	const form = new FormData();
 	// custom_params 作为额外表单字段；用户/规范化字段优先覆盖

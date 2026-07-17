@@ -1,6 +1,6 @@
 import { readApiJson } from '@/lib/api-json';
 import type { GatewayProvider } from '@/lib/types';
-import { buildLimitConfigJson } from './provider-utils';
+import { buildLimitConfigJson, formDataToEndpointsMap } from './provider-utils';
 import type {
 	ProviderFormData,
 	ProviderImportCatalogRow,
@@ -32,10 +32,9 @@ export async function saveProvider(
 	editingProviderId: string | null
 ): Promise<{ success: true } | { success: false; message: string }> {
 	const payload: Record<string, unknown> = {
-		...formData,
-		base_url_openai: formData.base_url_openai.trim() || null,
-		base_url_anthropic: formData.base_url_anthropic.trim() || null,
-		base_url_gemini: formData.base_url_gemini.trim() || null,
+		name: formData.name,
+		description: formData.description,
+		endpoints: formDataToEndpointsMap(formData),
 	};
 
 	let response: Response;

@@ -117,10 +117,8 @@ export const API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS = [
 export interface GatewayProvider {
   id: string;
   name: string;
-  /** OpenAI-compatible upstream base */
-  base_url_openai: string | null;
-  base_url_anthropic?: string | null;
-  base_url_gemini?: string | null;
+  /** 协议端点 JSON；见 `providers.endpoints` */
+  endpoints?: string | null;
   description: string | null;
   created_at: string;
   active_key_count?: number;

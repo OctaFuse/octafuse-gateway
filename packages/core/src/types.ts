@@ -66,10 +66,11 @@ export interface ResolvedGatewayKeyRow extends ApiKeyRow {
 export interface ProviderRow {
   id: string;
   name: string;
-  /** OpenAI 兼容上游根 URL（仅 openai 协议路由必需） */
-  base_url_openai: string | null;
-  base_url_anthropic?: string | null;
-  base_url_gemini?: string | null;
+  /**
+   * 协议端点 JSON（权威）：`{ openai?: { base?, endpoints? }, anthropic?, gemini? }`。
+   * 见 `parseProviderEndpoints` / `resolveUpstreamEndpoint`。
+   */
+  endpoints?: string | null;
   description: string | null;
   created_at: string;
 }

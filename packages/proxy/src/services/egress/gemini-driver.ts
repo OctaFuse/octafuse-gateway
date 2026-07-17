@@ -1,7 +1,7 @@
 /**
- * Gemini generateContent / streamGenerateContent 出站：按 `base_url_gemini` 前缀构建 URL、解析 JSON 或 SSE 中的 usageMetadata。
+ * Gemini generateContent / streamGenerateContent 出站：按 `providers.endpoints.gemini` 解析 URL、解析 JSON 或 SSE 中的 usageMetadata。
  */
-import { prepareGeminiUpstreamFetch } from '@octafuse/core';
+import { prepareGeminiUpstreamFetch, resolveUpstreamEndpoint } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -301,7 +301,7 @@ async function nonStreamResponseWithUsage(
 }
 
 /**
- * 调用 Gemini `{base}/{model}:{action}`（`base_url_gemini` 须含完整路径前缀）：URL 查询串可与客户端 `search` 合并；
+ * 调用 Gemini `{base}/{model}:{action}`（`endpoints.gemini.base` 须含完整路径前缀）：URL 查询串可与客户端 `search` 合并；
  * 官方上游缺省追加 `?key=`，部分 bypass/vertex 兼容服务使用 `Authorization: Bearer`（见 `resolveGeminiUpstreamAuth`）。
  * `streamGenerateContent` 走 SSE 解析（上游强制 `alt=sse`）；`generateContent` 单次 JSON 用 `usageMetadata`。
  * @param search 原始 query 字符串（可含或不含 `?`），会与上游所需参数合并
@@ -315,12 +315,18 @@ export async function dispatchGeminiRoute(
   timing?: RequestTimingCollector | null,
   attempt?: RequestTimingAttempt
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
+  const resolvedUrl = resolveUpstreamEndpoint('gemini', action, route.providerEndpoints, {
+    model: route.providerModelName,
+    action,
+    providerId: route.providerId,
+  });
   const { url, headers } = prepareGeminiUpstreamFetch({
-    baseUrl: route.baseUrl,
+    resolvedUrl,
     modelName: route.providerModelName,
     action,
     apiKey: route.providerApiKey,
     search,
+    authBaseHint: route.providerEndpoints.gemini?.base,
   });
 
   const requestBody = buildRouteRequestBody(route, body);

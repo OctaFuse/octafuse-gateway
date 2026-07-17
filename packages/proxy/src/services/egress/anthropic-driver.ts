@@ -1,6 +1,7 @@
 /**
  * Anthropic Messages 协议出站：组装 URL、合并路由默认参数、流式 SSE 解析 usage，并在断连后限时 drain。
  */
+import { resolveUpstreamEndpoint } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -49,10 +50,6 @@ function usageFromAnthropic(u: AnthropicUsage): UsageFromStream {
     total_tokens: inputTokensTotal + outputTokens,
     raw_usage: rawJson,
   };
-}
-
-function buildUrl(baseUrl: string): string {
-  return `${baseUrl.replace(/\/$/, '')}/v1/messages`;
 }
 
 function applyUsage(target: UsageFromStream, next: UsageFromStream): void {
@@ -284,7 +281,9 @@ export async function dispatchAnthropicRoute(
   timing?: RequestTimingCollector | null,
   attempt?: RequestTimingAttempt
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
-  const url = buildUrl(route.baseUrl);
+  const url = resolveUpstreamEndpoint('anthropic', 'messages', route.providerEndpoints, {
+    providerId: route.providerId,
+  });
   const requestBody = {
     ...buildRouteRequestBody(route, body),
     model: route.providerModelName,

@@ -2,280 +2,384 @@
 	{
 		"name": "DeepSeek",
 		"vendor_key": "deepseek",
-		"base_url_openai": "https://api.deepseek.com",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.deepseek.com"
+			}
+		}
 	},
 	{
 		"name": "Volcengine Ark",
 		"vendor_key": "volcengine",
-		"base_url_openai": "https://ark.cn-beijing.volces.com/api/v3",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://ark.cn-beijing.volces.com/api/v3"
+			}
+		}
 	},
 	{
 		"name": "Volcengine Ark (Coding Plan)",
 		"vendor_key": "volcengine",
-		"base_url_openai": "https://ark.cn-beijing.volces.com/api/coding/v3",
-		"base_url_anthropic": "https://ark.cn-beijing.volces.com/api/coding",
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://ark.cn-beijing.volces.com/api/coding/v3"
+			},
+			"anthropic": {
+				"base": "https://ark.cn-beijing.volces.com/api/coding"
+			}
+		},
 		"description": "Coding Plan–only endpoints (/api/coding…). Do not mix with the standard /api/v3 base URL or plan quota will not apply. See Volcengine official docs."
 	},
 	{
 		"name": "Volcengine Ark (Agent Plan)",
 		"vendor_key": "volcengine",
-		"base_url_openai": "https://ark.cn-beijing.volces.com/api/plan/v3",
-		"base_url_anthropic": "https://ark.cn-beijing.volces.com/api/plan",
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://ark.cn-beijing.volces.com/api/plan/v3"
+			},
+			"anthropic": {
+				"base": "https://ark.cn-beijing.volces.com/api/plan"
+			}
+		},
 		"description": "Agent Plan–only endpoints (/api/plan…). Do not mix with the standard /api/v3 base URL or plan quota will not apply. See Volcengine official docs."
 	},
 	{
 		"name": "Alibaba Cloud Bailian",
 		"vendor_key": "aliyun",
-		"base_url_openai": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+			}
+		}
 	},
 	{
 		"name": "Alibaba Cloud Bailian (Coding Plan)",
 		"vendor_key": "aliyun",
-		"base_url_openai": "https://coding.dashscope.aliyuncs.com/v1",
-		"base_url_anthropic": "https://coding.dashscope.aliyuncs.com/apps/anthropic",
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://coding.dashscope.aliyuncs.com/v1"
+			},
+			"anthropic": {
+				"base": "https://coding.dashscope.aliyuncs.com/apps/anthropic"
+			}
+		},
 		"description": "Coding Plan–only endpoints and plan keys (sk-sp-*), separate from pay-as-you-go compatible-mode. See Alibaba Cloud \"Coding Plan tool integration\" docs."
 	},
 	{
 		"name": "Tencent Hunyuan",
 		"vendor_key": "tencent",
-		"base_url_openai": "https://api.hunyuan.cloud.tencent.com/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.hunyuan.cloud.tencent.com/v1"
+			}
+		}
 	},
 	{
 		"name": "Tencent TokenHub (Hy Token Plan)",
 		"vendor_key": "tencent",
-		"base_url_openai": "https://api.lkeap.cloud.tencent.com/plan/v3",
-		"base_url_anthropic": "https://api.lkeap.cloud.tencent.com/plan/anthropic",
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.lkeap.cloud.tencent.com/plan/v3"
+			},
+			"anthropic": {
+				"base": "https://api.lkeap.cloud.tencent.com/plan/anthropic"
+			}
+		},
 		"description": "Hy Token Plan personal subscription endpoints (/plan/v3, /plan/anthropic). Shares the same API key (sk-tp-*) as the general Token Plan; usage is deducted from the Hy plan bundle by model ID (hy3, hy3-preview). Do not mix with pay-as-you-go tokenhub.tencentmaas.com/v1 or legacy api.hunyuan.cloud.tencent.com. See TokenHub \"Token Plan personal edition\" docs."
 	},
 	{
 		"name": "Baidu Qianfan",
 		"vendor_key": "baidu",
-		"base_url_openai": "https://qianfan.baidubce.com/v2",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://qianfan.baidubce.com/v2"
+			}
+		}
 	},
 	{
 		"name": "Zhipu GLM",
 		"vendor_key": "zhipu",
-		"base_url_openai": "https://open.bigmodel.cn/api/paas/v4",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://open.bigmodel.cn/api/paas/v4"
+			}
+		}
 	},
 	{
 		"name": "Zhipu GLM (Coding Plan)",
 		"vendor_key": "zhipu",
-		"base_url_openai": "https://open.bigmodel.cn/api/coding/paas/v4",
-		"base_url_anthropic": "https://open.bigmodel.cn/api/anthropic",
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://open.bigmodel.cn/api/coding/paas/v4"
+			},
+			"anthropic": {
+				"base": "https://open.bigmodel.cn/api/anthropic"
+			}
+		},
 		"description": "GLM Coding Plan OpenAI base URL; Anthropic base URL for tools such as Claude Code. Do not mix with the general /api/paas/v4 path."
 	},
 	{
 		"name": "Z.AI GLM (International)",
 		"vendor_key": "zhipu",
-		"base_url_openai": "https://api.z.ai/api/paas/v4",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.z.ai/api/paas/v4"
+			}
+		},
 		"description": "Z.AI international OpenAI-compatible base URL (api.z.ai); pay-as-you-go API key. China-region users should use the Zhipu GLM template (open.bigmodel.cn) instead."
 	},
 	{
 		"name": "Z.AI GLM (Coding Plan)",
 		"vendor_key": "zhipu",
-		"base_url_openai": "https://api.z.ai/api/coding/paas/v4",
-		"base_url_anthropic": "https://api.z.ai/api/anthropic",
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.z.ai/api/coding/paas/v4"
+			},
+			"anthropic": {
+				"base": "https://api.z.ai/api/anthropic"
+			}
+		},
 		"description": "GLM Coding Plan international endpoints (api.z.ai); Anthropic base URL for tools such as Claude Code. Do not mix with the general /api/paas/v4 path or plan quota will not apply. See Z.AI developer docs."
 	},
 	{
 		"name": "Meituan LongCat",
 		"vendor_key": "meituan",
-		"base_url_openai": "https://api.longcat.chat/openai",
-		"base_url_anthropic": "https://api.longcat.chat/anthropic",
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.longcat.chat/openai"
+			},
+			"anthropic": {
+				"base": "https://api.longcat.chat/anthropic"
+			}
+		},
 		"description": "Dual OpenAI- and Anthropic-compatible endpoints; upstream model IDs such as LongCat-2.0. See longcat.chat platform docs."
 	},
 	{
 		"name": "Moonshot AI",
 		"vendor_key": "moonshot",
-		"base_url_openai": "https://api.moonshot.cn/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.moonshot.cn/v1"
+			}
+		}
 	},
 	{
 		"name": "Kimi Code (Coding API)",
 		"vendor_key": "moonshot",
-		"base_url_openai": "https://api.kimi.com/coding/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.kimi.com/coding/v1"
+			}
+		},
 		"description": "OpenAI-compatible base URL for Kimi Code CLI / Coding plan (api.kimi.com), separate from the standard moonshot.cn platform. See Kimi Code CLI docs (platform & models)."
 	},
 	{
 		"name": "MiniMax",
 		"vendor_key": "minimax",
-		"base_url_openai": "https://api.minimaxi.com/v1",
-		"base_url_anthropic": "https://api.minimaxi.com/anthropic",
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.minimaxi.com/v1"
+			},
+			"anthropic": {
+				"base": "https://api.minimaxi.com/anthropic"
+			}
+		}
 	},
 	{
 		"name": "OpenAI",
 		"vendor_key": "openai",
-		"base_url_openai": "https://api.openai.com/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.openai.com/v1"
+			}
+		}
 	},
 	{
 		"name": "Anthropic",
 		"vendor_key": "anthropic",
-		"base_url_openai": null,
-		"base_url_anthropic": "https://api.anthropic.com",
-		"base_url_gemini": null,
+		"endpoints": {
+			"anthropic": {
+				"base": "https://api.anthropic.com"
+			}
+		},
 		"description": "Root URL has no path suffix; the gateway appends `/v1/messages`. See Anthropic console docs."
 	},
 	{
 		"name": "Google Gemini (Generative Language API)",
 		"vendor_key": "google",
-		"base_url_openai": "https://generativelanguage.googleapis.com/v1beta/openai",
-		"base_url_anthropic": null,
-		"base_url_gemini": "https://generativelanguage.googleapis.com/v1beta/models",
+		"endpoints": {
+			"openai": {
+				"base": "https://generativelanguage.googleapis.com/v1beta/openai"
+			},
+			"gemini": {
+				"base": "https://generativelanguage.googleapis.com/v1beta/models"
+			}
+		},
 		"description": "Developer API: native Gemini base includes `/v1beta/models` (`key=`); OpenAI-compatible base includes `/v1beta/openai` (Bearer). See ai.google.dev/gemini-api/docs/openai."
 	},
 	{
 		"name": "Google Vertex AI (Express Mode · API Key)",
 		"vendor_key": "google",
-		"base_url_openai": null,
-		"base_url_anthropic": null,
-		"base_url_gemini": "https://aiplatform.googleapis.com/v1/publishers/google/models",
+		"endpoints": {
+			"gemini": {
+				"base": "https://aiplatform.googleapis.com/v1/publishers/google/models"
+			}
+		},
 		"description": "Vertex Express: base includes the full prefix `/v1/publishers/google/models` (use `.../v1beta1/publishers/google/models` for v1beta1). API key via `key=`; no project/location/OAuth required. Express has no official OpenAI-compatible endpoint."
 	},
 	{
 		"name": "Mistral AI",
 		"vendor_key": "mistral",
-		"base_url_openai": "https://api.mistral.ai/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.mistral.ai/v1"
+			}
+		}
 	},
 	{
 		"name": "Groq (OpenAI Compatible)",
 		"vendor_key": "groq",
-		"base_url_openai": "https://api.groq.com/openai/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.groq.com/openai/v1"
+			}
+		}
 	},
 	{
 		"name": "xAI (Grok)",
 		"vendor_key": "xai",
-		"base_url_openai": "https://api.x.ai/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.x.ai/v1"
+			}
+		}
 	},
 	{
 		"name": "Together AI",
 		"vendor_key": "together",
-		"base_url_openai": "https://api.together.xyz/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.together.xyz/v1"
+			}
+		}
 	},
 	{
 		"name": "Fireworks AI",
 		"vendor_key": "fireworks",
-		"base_url_openai": "https://api.fireworks.ai/inference/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.fireworks.ai/inference/v1"
+			}
+		}
 	},
 	{
 		"name": "Perplexity",
 		"vendor_key": "perplexity",
-		"base_url_openai": "https://api.perplexity.ai",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.perplexity.ai"
+			}
+		},
 		"description": "OpenAI-compatible Chat Completions; base path per Perplexity official docs."
 	},
 	{
 		"name": "Cohere (OpenAI Compatibility)",
 		"vendor_key": "cohere",
-		"base_url_openai": "https://api.cohere.ai/compatibility/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.cohere.ai/compatibility/v1"
+			}
+		},
 		"description": "Uses the Cohere Compatibility API (OpenAI SDK migration path). See Cohere docs compatibility section."
 	},
 	{
 		"name": "NVIDIA NIM (integrate.api)",
 		"vendor_key": "nvidia",
-		"base_url_openai": "https://integrate.api.nvidia.com/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://integrate.api.nvidia.com/v1"
+			}
+		},
 		"description": "Common NIM OpenAI-compatible entry point; models and regions per NVIDIA Build / NGC docs."
 	},
 	{
 		"name": "Azure OpenAI (replace resource name)",
 		"vendor_key": "azure",
-		"base_url_openai": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai"
+			}
+		},
 		"description": "Replace YOUR_RESOURCE_NAME with your Azure portal OpenAI resource name; deployment paths and `api-version` per Microsoft official docs."
 	},
 	{
 		"name": "StepFun",
 		"vendor_key": "stepfun",
-		"base_url_openai": "https://api.stepfun.com/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.stepfun.com/v1"
+			}
+		},
 		"description": "OpenAI-compatible entry point; other product lines such as Step Plan may use different base URLs—see StepFun platform docs."
 	},
 	{
 		"name": "Baichuan AI",
 		"vendor_key": "baichuan",
-		"base_url_openai": "https://api.baichuan-ai.com/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.baichuan-ai.com/v1"
+			}
+		}
 	},
 	{
 		"name": "Xiaomi MiMo",
 		"vendor_key": "xiaomi",
-		"base_url_openai": "https://api.xiaomimimo.com/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://api.xiaomimimo.com/v1"
+			}
+		},
 		"description": "OpenAI-compatible entry point; host and path per latest Xiaomi MiMo platform docs."
 	},
 	{
 		"name": "Xiaomi MiMo (Token Plan)",
 		"vendor_key": "xiaomi",
-		"base_url_openai": "https://token-plan-cn.xiaomimimo.com/v1",
-		"base_url_anthropic": "https://token-plan-cn.xiaomimimo.com/anthropic",
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "https://token-plan-cn.xiaomimimo.com/v1"
+			},
+			"anthropic": {
+				"base": "https://token-plan-cn.xiaomimimo.com/anthropic"
+			}
+		},
 		"description": "Xiaomi MiMo Token Plan OpenAI-compatible base URL; Anthropic base URL for tools such as Claude Code. Do not mix with the general API endpoint."
 	},
 	{
 		"name": "OpenRouter",
 		"vendor_key": "openrouter",
-		"base_url_openai": "https://openrouter.ai/api/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://openrouter.ai/api/v1"
+			}
+		}
 	},
 	{
 		"name": "SiliconFlow",
 		"vendor_key": "siliconflow",
-		"base_url_openai": "https://api.siliconflow.cn/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null
+		"endpoints": {
+			"openai": {
+				"base": "https://api.siliconflow.cn/v1"
+			}
+		}
 	},
 	{
 		"name": "Ollama (Local)",
 		"vendor_key": "ollama",
-		"base_url_openai": "http://127.0.0.1:11434/v1",
-		"base_url_anthropic": null,
-		"base_url_gemini": null,
+		"endpoints": {
+			"openai": {
+				"base": "http://127.0.0.1:11434/v1"
+			}
+		},
 		"description": "Default local Ollama OpenAI-compatible base URL; for remote or container deployments, change to the reachable `http(s)://host:port/v1`."
 	}
 ]

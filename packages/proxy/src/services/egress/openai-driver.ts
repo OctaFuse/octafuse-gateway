@@ -1,3 +1,4 @@
+import { resolveUpstreamEndpoint } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -120,10 +121,6 @@ function usageFromProvider(u: ProviderUsage): UsageFromStream {
     total_tokens: u.total_tokens ?? promptTokens + completionTokens,
     raw_usage: rawJson,
   };
-}
-
-function buildUrl(baseUrl: string): string {
-  return `${baseUrl.replace(/\/$/, '')}/chat/completions`;
 }
 
 /**
@@ -413,7 +410,7 @@ async function nonStreamResponseWithUsage(
 /**
  * 向供应商发起 OpenAI 兼容 `POST …/chat/completions`：合并路由默认参数、`model` 换为上游名。
  * 流式响应解析 SSE 中的 usage（含对客户端转发的 usage 裁剪逻辑，见文件头说明）；非 JSON 200 走流处理分支。
- * @param route 已解析的 openai 协议路由（含 baseUrl、密钥、providerModelName）
+ * @param route 已解析的 openai 协议路由（含 providerEndpoints、密钥、providerModelName）
  * @param body 客户端原始 JSON 体
  * @param requestSignal 用于检测取消并在断连后限时 drain 上游以尽量拿到末尾 usage
  * @returns 原样或包装后的 `Response` + 异步解析完成的 `usagePromise`
@@ -425,7 +422,9 @@ export async function dispatchOpenAiRoute(
   timing?: RequestTimingCollector | null,
   attempt?: RequestTimingAttempt
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
-  const url = buildUrl(route.baseUrl);
+  const url = resolveUpstreamEndpoint('openai', 'chat', route.providerEndpoints, {
+    providerId: route.providerId,
+  });
   const requestBody = {
     ...buildRouteRequestBody(route, body),
     model: route.providerModelName,

@@ -9,7 +9,7 @@ function route(overrides: Partial<RouteResult> = {}): RouteResult {
 		providerName: 'Provider A',
 		providerModelName: 'model-a',
 		upstreamProtocol: 'openai',
-		baseUrl: 'https://example.test/v1',
+		providerEndpoints: { openai: { base: 'https://example.test/v1' } },
 		providerApiKey: 'secret',
 		priceOverrideRaw: null,
 		routeMeteredProfileJson: null,

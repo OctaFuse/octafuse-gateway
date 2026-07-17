@@ -14,7 +14,7 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		async listProviders(): Promise<ProviderAdminRow[]> {
 			const rows = await raw
 				.prepare(
-					`SELECT id, name, base_url_openai, base_url_anthropic, base_url_gemini, description, created_at
+					`SELECT id, name, endpoints, description, created_at
 			 FROM providers ORDER BY created_at DESC`
 				)
 				.all<ProviderAdminRow>();
@@ -29,24 +29,15 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		async insertProvider(params: {
 			id: string;
 			name: string;
-			baseUrlOpenai: string | null;
-			baseUrlAnthropic: string | null;
-			baseUrlGemini: string | null;
+			endpoints: string | null;
 			description: unknown;
 		}): Promise<void> {
 			await raw
 				.prepare(
-					`INSERT INTO providers (id, name, base_url_openai, base_url_anthropic, base_url_gemini, description)
-			 VALUES (?, ?, ?, ?, ?, ?)`
+					`INSERT INTO providers (id, name, endpoints, description)
+			 VALUES (?, ?, ?, ?)`
 				)
-				.bind(
-					params.id,
-					params.name,
-					params.baseUrlOpenai,
-					params.baseUrlAnthropic,
-					params.baseUrlGemini,
-					params.description ?? null
-				)
+				.bind(params.id, params.name, params.endpoints, params.description ?? null)
 				.run();
 		},
 
@@ -80,7 +71,7 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 
 		async getProviderProtocolBases(providerId: string): Promise<ProviderProtocolBases | null> {
 			return raw
-				.prepare('SELECT id, base_url_openai, base_url_anthropic, base_url_gemini FROM providers WHERE id = ?')
+				.prepare('SELECT id, endpoints FROM providers WHERE id = ?')
 				.bind(providerId)
 				.first<ProviderProtocolBases>();
 		},

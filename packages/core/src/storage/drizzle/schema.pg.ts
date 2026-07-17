@@ -57,9 +57,8 @@ export const apiKeysTable = pgTable('api_keys', {
 export const providersTable = pgTable('providers', {
 	id: text('id').primaryKey(),
 	name: text('name').notNull(),
-	baseUrlOpenai: text('base_url_openai'),
-	baseUrlAnthropic: text('base_url_anthropic'),
-	baseUrlGemini: text('base_url_gemini'),
+	/** JSON: `{ openai?: { base?, endpoints? }, … }` */
+	endpoints: text('endpoints'),
 	description: text('description'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });

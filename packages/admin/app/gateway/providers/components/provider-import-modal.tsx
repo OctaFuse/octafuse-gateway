@@ -1,6 +1,7 @@
 'use client';
 
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { parseProviderEndpoints } from '@octafuse/core/provider-endpoints';
 import { useTranslations } from 'next-intl';
 import type { ProviderImportCatalogRow } from '../types';
 
@@ -192,11 +193,14 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 												<p className="text-xs text-gray-500">
 													{row.vendor_label} · {t('protocols')}: {row.protocols.join(', ') || '—'}
 												</p>
-												{row.base_url_openai && (
-													<p className="mt-1 break-all text-[11px] text-gray-400" title={row.base_url_openai}>
-														{t('openaiBase', { url: row.base_url_openai })}
-													</p>
-												)}
+												{(() => {
+													const openaiBase = parseProviderEndpoints({ endpoints: row.endpoints }).openai?.base;
+													return openaiBase ? (
+														<p className="mt-1 break-all text-[11px] text-gray-400" title={openaiBase}>
+															{t('openaiBase', { url: openaiBase })}
+														</p>
+													) : null;
+												})()}
 												{row.description && <p className="mt-1 text-xs text-gray-600">{row.description}</p>}
 											</div>
 										</div>

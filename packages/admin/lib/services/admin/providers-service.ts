@@ -1,16 +1,33 @@
-/** 管理后台 `providers` CRUD：多协议 base URL、密钥与说明的校验与持久化。 */
+/** 管理后台 `providers` CRUD：`endpoints` JSON 校验与持久化。 */
 import type { GatewayRepositories } from '@octafuse/core';
+import {
+	serializeProviderEndpoints,
+	validateAndNormalizeProviderEndpoints,
+	type ProviderEndpointsMap,
+} from '@octafuse/core/provider-endpoints';
 import {
 	listStaticProviderImportPresets,
 } from '@/lib/provider-import-preset';
 import { badRequest, conflict, notFound } from './errors';
-import { nullIfEmpty } from './shared';
 import type {
 	AdminCreatedIdOutput,
 	AdminProviderMutationInput,
 	AdminProviderRow,
 	AdminProvidersImportOutput,
 } from './types';
+
+function resolveEndpointsFromMutation(body: AdminProviderMutationInput): string | null {
+	if (body.endpoints === undefined || body.endpoints === null) {
+		return null;
+	}
+	let map: ProviderEndpointsMap;
+	try {
+		map = validateAndNormalizeProviderEndpoints(body.endpoints);
+	} catch (e) {
+		throw badRequest(e instanceof Error ? e.message : 'Invalid endpoints');
+	}
+	return serializeProviderEndpoints(map);
+}
 
 /** 供应商列表（含 key 池摘要，仅 BFF/管理端使用）。 */
 export async function listProvidersService(repos: GatewayRepositories): Promise<AdminProviderRow[]> {
@@ -28,16 +45,17 @@ export async function listProvidersService(repos: GatewayRepositories): Promise<
 }
 
 /**
- * 创建供应商；可指定 `id`，冲突抛 `conflict`；协议 base URL 均可为空，路由会按所选协议校验可用性。
+ * 创建供应商；可指定 `id`，冲突抛 `conflict`；协议 endpoints 均可为空，路由会按所选协议校验可用性。
  */
 export async function createProviderService(repos: GatewayRepositories, body: AdminProviderMutationInput): Promise<AdminCreatedIdOutput> {
 	const customId = String(body.id ?? '').trim();
 	const name = String(body.name ?? '');
-	const baseUrlOpenai = nullIfEmpty(body.base_url_openai as string | null | undefined);
 	const apiKey = String(body.api_key ?? '').trim();
 	if (!name) {
 		throw badRequest('name is required');
 	}
+
+	const endpointsJson = resolveEndpointsFromMutation(body);
 
 	const id = customId || crypto.randomUUID();
 	if (customId && (await repos.providers.providerIdExists(id))) {
@@ -47,9 +65,7 @@ export async function createProviderService(repos: GatewayRepositories, body: Ad
 	await repos.providers.insertProvider({
 		id,
 		name,
-		baseUrlOpenai,
-		baseUrlAnthropic: nullIfEmpty(body.base_url_anthropic as string | null | undefined),
-		baseUrlGemini: nullIfEmpty(body.base_url_gemini as string | null | undefined),
+		endpoints: endpointsJson,
 		description: body.description,
 	});
 
@@ -76,18 +92,14 @@ export async function getProviderService(repos: GatewayRepositories, id: string)
 }
 
 /**
- * PATCH 供应商；空白协议 base URL 会规范化为 null。
+ * PATCH 供应商；写 `endpoints`（权威）。
  */
 export async function updateProviderService(repos: GatewayRepositories, id: string, body: AdminProviderMutationInput): Promise<void> {
 	const patch = { ...body } as Record<string, unknown>;
-	if ('base_url_openai' in patch) {
-		patch.base_url_openai = nullIfEmpty(patch.base_url_openai as string | null | undefined);
-	}
-	if ('base_url_anthropic' in patch) {
-		patch.base_url_anthropic = nullIfEmpty(patch.base_url_anthropic as string | null | undefined);
-	}
-	if ('base_url_gemini' in patch) {
-		patch.base_url_gemini = nullIfEmpty(patch.base_url_gemini as string | null | undefined);
+	delete patch.api_key;
+
+	if ('endpoints' in patch) {
+		patch.endpoints = resolveEndpointsFromMutation(body);
 	}
 
 	const changes = await repos.providers.updateProviderByPatch(id, patch);
@@ -155,9 +167,7 @@ export async function importProvidersFromStaticPresetsService(
 
 			await createProviderService(repos, {
 				name,
-				base_url_openai: preset.base_url_openai,
-				base_url_anthropic: preset.base_url_anthropic,
-				base_url_gemini: preset.base_url_gemini,
+				endpoints: preset.endpoints,
 				description: preset.description ?? null,
 			});
 

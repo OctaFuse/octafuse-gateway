@@ -16,7 +16,7 @@ function makeRoute(providerId: string): RouteResult {
 		providerName: providerId,
 		providerModelName: 'model-x',
 		upstreamProtocol: 'openai',
-		baseUrl: 'https://example.com/v1',
+		providerEndpoints: { openai: { base: 'https://example.com/v1' } },
 		providerApiKey: '',
 		priceOverrideRaw: null,
 		routeMeteredProfileJson: null,

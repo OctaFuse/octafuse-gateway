@@ -103,7 +103,7 @@ function emptyRoute(protocol: UpstreamProtocol): RouteResult {
 		providerName: '',
 		providerModelName: '',
 		upstreamProtocol: protocol,
-		baseUrl: '',
+		providerEndpoints: {},
 		providerApiKey: '',
 		priceOverrideRaw: null,
 		routeMeteredProfileJson: null,
