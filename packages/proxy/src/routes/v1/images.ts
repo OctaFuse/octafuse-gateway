@@ -26,6 +26,7 @@ import {
 	estimateImageBudgetPrecheck,
 	recordImageUsage,
 	type ImageBillingParams,
+	type ImageCostBreakdown,
 } from '../../services/image-usage-charge';
 import {
 	countValidImageResults,
@@ -241,6 +242,8 @@ type FinalizeImageParams = {
 	requestBodyForLog: string | null;
 	operation: 'generations' | 'edits';
 	billing: ImageBillingParams;
+	/** 入口预算预检（客户端取消时按此金额扣费） */
+	budgetPrecheck: ImageCostBreakdown;
 	/** generations 用 rawModelId；edits 同 */
 	clientModelId: string;
 	common: {
@@ -271,6 +274,7 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 		requestBodyForLog,
 		operation,
 		billing,
+		budgetPrecheck,
 		clientModelId,
 		common,
 		referenceCount,
@@ -286,6 +290,8 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 	const imageUsage = response.ok ? (proxyResult.meta?.imageUsage ?? null) : null;
 	const validImages = response.ok ? countValidImageResults(parsedBody) : 0;
 	const latency = Date.now() - start;
+	const clientAbortPrecheck =
+		proxyResult.meta?.imageAbortReason === 'client_abort' ? budgetPrecheck : null;
 
 	let responseText: string;
 	if (errorBodyText != null) {
@@ -367,6 +373,7 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 			billing,
 			effectiveImageCount: validImages,
 			imageUsage,
+			clientAbortPrecheck,
 			providerKeyId: chosenRoute.providerKeyId ?? null,
 			providerKeyLabel: chosenRoute.providerKeyLabel ?? null,
 			providerKeyFingerprint: chosenRoute.providerKeyFingerprint ?? null,
@@ -528,6 +535,7 @@ imageRoutes.post('/generations', async (c) => {
 			isEdit: false,
 			requestStartedAtMs: start,
 		},
+		budgetPrecheck: estimate,
 		clientModelId: rawModelId,
 		common,
 		start,
@@ -638,6 +646,7 @@ imageRoutes.post('/edits', async (c) => {
 			referenceCount: edit.images.length,
 			requestStartedAtMs: start,
 		},
+		budgetPrecheck: estimate,
 		clientModelId: rawModelId,
 		common: {
 			prompt: edit.prompt,

@@ -10,6 +10,9 @@ import { buildRouteRequestBody } from '../route-default-params';
 import { extractUpstreamRequestId } from './upstream-request-id';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 
+/** 与 `ProxyDispatchMeta.imageAbortReason` 对齐；勿从 failover-dispatch 反向 import（避免环依赖）。 */
+export type ImageDispatchAbortReason = 'client_abort' | 'gateway_timeout';
+
 function usageFromStreamFromImage(body: unknown): {
 	usagePromise: Promise<UsageFromStream>;
 	imageUsage: ImageTokenUsage | null;
@@ -32,12 +35,31 @@ function usageFromStreamFromImage(body: unknown): {
 
 function imageDispatchMeta(
 	body: unknown,
-	imageUsage: ImageTokenUsage | null
-): { imageUsage: ImageTokenUsage | null; parsedBody: unknown } {
-	return { imageUsage, parsedBody: body };
+	imageUsage: ImageTokenUsage | null,
+	imageAbortReason?: ImageDispatchAbortReason
+): {
+	imageUsage: ImageTokenUsage | null;
+	parsedBody: unknown;
+	imageAbortReason?: ImageDispatchAbortReason;
+} {
+	return {
+		imageUsage,
+		parsedBody: body,
+		...(imageAbortReason ? { imageAbortReason } : {}),
+	};
 }
 
-export const IMAGE_GENERATION_TIMEOUT_MS = 120_000;
+function resolveImageAbortReasonForMeta(
+	abortReason: ImageAbortReason,
+	requestSignal?: AbortSignal
+): ImageDispatchAbortReason | undefined {
+	const resolved: ImageAbortReason =
+		abortReason === 'none' && requestSignal?.aborted ? 'client_abort' : abortReason;
+	return resolved === 'client_abort' || resolved === 'gateway_timeout' ? resolved : undefined;
+}
+
+/** Wait for upstream Images API; high-quality / large sizes can take several minutes. */
+export const IMAGE_GENERATION_TIMEOUT_MS = 300_000;
 export const IMAGE_MAX_PROMPT_CHARS = 4_000;
 export const IMAGE_MAX_REFERENCE_COUNT = 5;
 export const IMAGE_MAX_BYTES_PER_FILE = 20 * 1024 * 1024;
@@ -321,13 +343,10 @@ export async function dispatchOpenAiImageGenerations(
 			abortReason !== 'none' ||
 			requestSignal?.aborted ||
 			(err instanceof Error && err.name === 'AbortError');
+		const resolvedAbort =
+			abortReason === 'none' && requestSignal?.aborted ? 'client_abort' : abortReason;
 		const error = aborted
-			? imageAbortErrorPayload(
-					'generation',
-					url,
-					abortReason === 'none' && requestSignal?.aborted ? 'client_abort' : abortReason,
-					IMAGE_GENERATION_TIMEOUT_MS
-				)
+			? imageAbortErrorPayload('generation', url, resolvedAbort, IMAGE_GENERATION_TIMEOUT_MS)
 			: {
 					message: 'Image generation upstream failed',
 					upstream_url: url,
@@ -346,7 +365,11 @@ export async function dispatchOpenAiImageGenerations(
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
-			meta: imageDispatchMeta(errorBody, null),
+			meta: imageDispatchMeta(
+				errorBody,
+				null,
+				aborted ? resolveImageAbortReasonForMeta(resolvedAbort, requestSignal) : undefined
+			),
 		};
 	} finally {
 		clear();
@@ -432,13 +455,10 @@ export async function dispatchOpenAiImageEdits(
 			abortReason !== 'none' ||
 			requestSignal?.aborted ||
 			(err instanceof Error && err.name === 'AbortError');
+		const resolvedAbort =
+			abortReason === 'none' && requestSignal?.aborted ? 'client_abort' : abortReason;
 		const error = aborted
-			? imageAbortErrorPayload(
-					'edit',
-					url,
-					abortReason === 'none' && requestSignal?.aborted ? 'client_abort' : abortReason,
-					IMAGE_GENERATION_TIMEOUT_MS
-				)
+			? imageAbortErrorPayload('edit', url, resolvedAbort, IMAGE_GENERATION_TIMEOUT_MS)
 			: {
 					message: 'Image edit upstream failed',
 					upstream_url: url,
@@ -457,7 +477,11 @@ export async function dispatchOpenAiImageEdits(
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
-			meta: imageDispatchMeta(errorBody, null),
+			meta: imageDispatchMeta(
+				errorBody,
+				null,
+				aborted ? resolveImageAbortReasonForMeta(resolvedAbort, requestSignal) : undefined
+			),
 		};
 	} finally {
 		clear();

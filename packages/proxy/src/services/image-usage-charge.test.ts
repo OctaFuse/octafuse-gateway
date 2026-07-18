@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GatewayRepositories } from '@octafuse/core';
-import { estimateImageBudgetPrecheck, estimateImageCosts } from './image-usage-charge';
+import {
+	estimateImageBudgetPrecheck,
+	estimateImageCosts,
+	withClientAbortPrecheckAudit,
+} from './image-usage-charge';
 
 const TOKEN_PROFILE = JSON.stringify({
 	tiers: [
@@ -196,5 +200,26 @@ describe('missing upstream usage fallback', () => {
 		assert.ok(fallback.chargedCost > 0);
 		assert.ok(fallback.pricingAuditJson.includes('missing_upstream_usage'));
 		assert.ok(fallback.pricingAuditJson.includes('precheck_fallback'));
+	});
+});
+
+describe('client abort precheck audit', () => {
+	it('tags budget precheck breakdown with client_abort_precheck without changing cost', async () => {
+		const precheck = await estimateImageBudgetPrecheck(
+			mockRepos(),
+			{
+				modelPricingProfileJson: TOKEN_PROFILE,
+				quality: 'high',
+				size: '1024x1024',
+				imageCount: 1,
+				isEdit: false,
+			},
+			[null]
+		);
+		assert.ok(precheck.chargedCost > 0);
+		const audited = withClientAbortPrecheckAudit(precheck);
+		assert.equal(audited.chargedCost, precheck.chargedCost);
+		assert.equal(audited.meteredCost, precheck.meteredCost);
+		assert.ok(audited.pricingAuditJson.includes('client_abort_precheck'));
 	});
 });

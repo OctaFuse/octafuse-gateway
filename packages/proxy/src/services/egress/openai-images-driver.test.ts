@@ -5,8 +5,15 @@ import {
 	normalizeImageCommonParams,
 	redactImageRequestForLog,
 	validateImageUpload,
+	IMAGE_GENERATION_TIMEOUT_MS,
 	IMAGE_MAX_PROMPT_CHARS,
 } from './openai-images-driver';
+
+describe('IMAGE_GENERATION_TIMEOUT_MS', () => {
+	it('allows ~5 minutes for high-quality / large upstream generations', () => {
+		assert.equal(IMAGE_GENERATION_TIMEOUT_MS, 300_000);
+	});
+});
 
 describe('normalizeImageCommonParams', () => {
 	it('requires prompt and forces n=1', () => {

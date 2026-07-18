@@ -116,6 +116,83 @@ describe('failoverDispatchWithKeyPool — all keys unavailable', () => {
 	});
 });
 
+describe('failoverDispatchWithKeyPool — image abort (no failover)', () => {
+	it('does not try next key when meta.imageAbortReason is client_abort', async () => {
+		const key1 = makeKey('k1');
+		const key2 = makeKey('k2');
+		const dispatch = vi.fn(async () => ({
+			response: new Response(
+				JSON.stringify({
+					error: { message: 'cancelled', abort_reason: 'client_abort' },
+				}),
+				{ status: 504 }
+			),
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
+			meta: { imageAbortReason: 'client_abort' as const, parsedBody: { error: {} }, imageUsage: null },
+		}));
+		const routes = [makeRoute('p1')];
+		const repos = mockRepos(new Map([['p1', [key1, key2]]]));
+
+		const result = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+
+		expect(dispatch).toHaveBeenCalledTimes(1);
+		expect(result.response.status).toBe(504);
+		expect(result.meta?.imageAbortReason).toBe('client_abort');
+	});
+
+	it('does not try next key when meta.imageAbortReason is gateway_timeout', async () => {
+		const key1 = makeKey('k1');
+		const key2 = makeKey('k2');
+		const dispatch = vi.fn(async () => ({
+			response: new Response(
+				JSON.stringify({
+					error: { message: 'timeout', abort_reason: 'gateway_timeout' },
+				}),
+				{ status: 504 }
+			),
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
+			meta: {
+				imageAbortReason: 'gateway_timeout' as const,
+				parsedBody: { error: {} },
+				imageUsage: null,
+			},
+		}));
+		const routes = [makeRoute('p1')];
+		const repos = mockRepos(new Map([['p1', [key1, key2]]]));
+
+		const result = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+
+		expect(dispatch).toHaveBeenCalledTimes(1);
+		expect(result.response.status).toBe(504);
+	});
+
+	it('still retries ordinary 504 without imageAbortReason', async () => {
+		const key1 = makeKey('k1');
+		const key2 = makeKey('k2');
+		const dispatch = vi
+			.fn()
+			.mockResolvedValueOnce({
+				response: new Response('gateway timeout', { status: 504 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			})
+			.mockResolvedValueOnce({
+				response: new Response('ok', { status: 200 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			});
+		const routes = [makeRoute('p1')];
+		const repos = mockRepos(new Map([['p1', [key1, key2]]]));
+
+		const result = await failoverDispatchWithKeyPool(repos, routes, 'openai', dispatch);
+
+		expect(dispatch).toHaveBeenCalledTimes(2);
+		expect(result.response.status).toBe(200);
+	});
+});
+
 describe('failoverDispatchWithKeyPool — soft server failures', () => {
 	it('does not open circuit after upstream 524 so the next request still dispatches', async () => {
 		const key = makeKey('k1');

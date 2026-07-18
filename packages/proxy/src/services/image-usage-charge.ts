@@ -283,6 +283,26 @@ export function canAffordImageCost(
 	return canAffordToolCost(budgetMax, budgetSpent, chargedCost);
 }
 
+/** 将预算预检 breakdown 标为客户端取消扣费审计。 */
+export function withClientAbortPrecheckAudit(costs: ImageCostBreakdown): ImageCostBreakdown {
+	let audit: Record<string, unknown> = {};
+	try {
+		const parsed = JSON.parse(costs.pricingAuditJson) as unknown;
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+			audit = parsed as Record<string, unknown>;
+		}
+	} catch {
+		/* keep empty */
+	}
+	return {
+		...costs,
+		pricingAuditJson: JSON.stringify({
+			...audit,
+			usage_source: 'client_abort_precheck',
+		}),
+	};
+}
+
 export type RecordImageUsageParams = {
 	repos: GatewayRepositories;
 	apiKeyId: string;
@@ -306,6 +326,11 @@ export type RecordImageUsageParams = {
 	effectiveImageCount?: number;
 	/** 上游解析的 token usage；token 路径扣费权威 */
 	imageUsage?: ImageTokenUsage | null;
+	/**
+	 * 客户端主动取消：传入入口预算预检 breakdown，按该金额扣费（审计 `client_abort_precheck`）。
+	 * Gateway 超时 / 其它错误勿传。
+	 */
+	clientAbortPrecheck?: ImageCostBreakdown | null;
 	providerKeyId?: string | null;
 	providerKeyLabel?: string | null;
 	providerKeyFingerprint?: string | null;
@@ -316,20 +341,28 @@ export type RecordImageUsageParams = {
 };
 
 /**
- * 写入用量日志并在成功且 charged>0 时扣费。
+ * 写入用量日志并在成功（或客户端取消预检）且 charged>0 时扣费。
  */
 export async function recordImageUsage(params: RecordImageUsageParams): Promise<{
 	requestLogId: string;
 	chargedCost: number;
 }> {
-	const imageCount =
-		params.status === 'success'
-			? Math.max(0, Math.floor(params.effectiveImageCount ?? params.billing.imageCount))
+	const chargeClientAbort =
+		params.status === 'error' &&
+		params.clientAbortPrecheck != null &&
+		params.clientAbortPrecheck.chargedCost > 0;
+
+	const imageCount = params.status === 'success'
+		? Math.max(0, Math.floor(params.effectiveImageCount ?? params.billing.imageCount))
+		: chargeClientAbort
+			? Math.max(1, Math.floor(params.billing.imageCount))
 			: 0;
 
 	const profile = parsePricingProfile(params.billing.modelPricingProfileJson ?? null);
 	let costs: ImageCostBreakdown;
-	if (params.status === 'error') {
+	if (chargeClientAbort && params.clientAbortPrecheck) {
+		costs = withClientAbortPrecheckAudit(params.clientAbortPrecheck);
+	} else if (params.status === 'error') {
 		// 错误路径不计费：直接构造零 breakdown，避免 resolveRouteFactors / 业务时区查询
 		costs = {
 			unitPrice: 0,
@@ -382,10 +415,11 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 		costs = await estimateImageCosts(params.repos, { ...params.billing, imageCount });
 	}
 
-	const chargedCost = params.status === 'error' ? 0 : costs.chargedCost;
-	const meteredCost = params.status === 'error' ? 0 : costs.meteredCost;
-	const standardCost = params.status === 'error' ? 0 : costs.standardCost;
-	const shouldChargeBudget = params.status !== 'error' && chargedCost > 0;
+	const errorWithoutCharge = params.status === 'error' && !chargeClientAbort;
+	const chargedCost = errorWithoutCharge ? 0 : costs.chargedCost;
+	const meteredCost = errorWithoutCharge ? 0 : costs.meteredCost;
+	const standardCost = errorWithoutCharge ? 0 : costs.standardCost;
+	const shouldChargeBudget = !errorWithoutCharge && chargedCost > 0;
 	const id = crypto.randomUUID();
 	const userSnapshot = shouldChargeBudget
 		? await getUserBudgetSnapshot(params.repos, params.userId)
@@ -408,10 +442,18 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 		params.imageUsage?.raw_usage ??
 		(params.status === 'success'
 			? JSON.stringify({ image_count: imageCount, billing_kind: costs.billingKind })
-			: null);
+			: chargeClientAbort
+				? JSON.stringify({
+						image_count: imageCount,
+						billing_kind: costs.billingKind,
+						usage_source: 'client_abort_precheck',
+					})
+				: null);
 
 	console.log(
-		`[Gateway Usage] recordImageUsage model_id=${params.modelId} status=${params.status} kind=${costs.billingKind} images=${imageCount} metered=${meteredCost} standard=${standardCost} charged=${chargedCost}`
+		`[Gateway Usage] recordImageUsage model_id=${params.modelId} status=${params.status} kind=${costs.billingKind} images=${imageCount} metered=${meteredCost} standard=${standardCost} charged=${chargedCost}${
+			chargeClientAbort ? ' client_abort_precheck=1' : ''
+		}`
 	);
 
 	await insertRequestUsageAndChargeTx(params.repos, {

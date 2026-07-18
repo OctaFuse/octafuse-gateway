@@ -26,11 +26,22 @@ import {
 } from './upstream-failure-classifier';
 import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
 
+/** Images 合成 abort（Gateway 超时 / 客户端取消）——禁止 failover 再打上游。 */
+export type ImageDispatchAbortReason = 'client_abort' | 'gateway_timeout';
+
 /** 协议 driver 可选透传（如 Images 已解析的 body / usage，避免 route 侧重复 parse）。 */
 export type ProxyDispatchMeta = {
 	imageUsage?: import('@octafuse/core').ImageTokenUsage | null;
 	parsedBody?: unknown;
+	/** 仅 Images：上游 wait 被 abort 时由 driver 写入（见 openai-images-driver） */
+	imageAbortReason?: ImageDispatchAbortReason;
 };
+
+/** Images abort 的 504 不得换 key / 换路由（避免客户端取消或超时后二次打 OpenAI）。 */
+export function shouldFailImmediatelyForImageAbort(meta?: ProxyDispatchMeta | null): boolean {
+	const reason = meta?.imageAbortReason;
+	return reason === 'client_abort' || reason === 'gateway_timeout';
+}
 
 export type ProxyDispatchResult = {
 	response: Response;
@@ -365,7 +376,11 @@ export async function failoverDispatchWithKeyPool(
 		// 非 2xx：无流式在途，立即释放并发。
 		releaseProviderKeyUsage(key, 0);
 
-		const classification = classifyUpstreamHttpFailure(response.status);
+		const classification: UpstreamFailureClassification = shouldFailImmediatelyForImageAbort(
+			dispatchMeta
+		)
+			? { action: 'fail_immediately' }
+			: classifyUpstreamHttpFailure(response.status);
 		logKeySwitchAlert(attemptRoute, classification, response.status);
 
 		if (classification.action === 'fail_immediately') {

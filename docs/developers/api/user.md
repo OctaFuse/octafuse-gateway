@@ -586,10 +586,12 @@ Content-Type: multipart/form-data
 `text_input × $/M` + `cached_text × $/M` + `image_input × $/M` + `cached_image_input × $/M` + `image_output × $/M`
 再乘路由 `charged_factor` / `metered_factor`（与 Chat 一致）。
 
-1. 预检额度：用 quality×size **估算** image output tokens（偏保守，含短 prompt / edits 余量）× 目录 token 单价 × `charged_factor`
-2. **仅**上游返回至少一张有效图片时，按响应 **`usage` 真实分项**扣费；错误、超时或空结果写零费用日志
-3. Request log **不**保存 prompt 原文、参考图或 Base64；`raw_usage` 保存上游 usage JSON；`pricing_audit.kind=image_tokens`
-4. 模型须配置 tier `image_*` 单价；无配置则不计费。Gateway **不**再支持按张固定价（按张套餐留给业务层）
+1. 预检额度：用 quality×size **估算** image output tokens（偏保守，含短 prompt / edits 余量）× 目录 token 单价 × `charged_factor`（取全候选路由最高）
+2. **成功出图**：上游返回至少一张有效图片时，按响应 **`usage` 真实分项**扣费
+3. **客户端主动取消**（`abort_reason=client_abort`，请求已发出）：按入口**同一套 token 预检**扣费，`pricing_audit.usage_source=client_abort_precheck`（日志 `status=error`）
+4. **Gateway 超时 / 上游错误 / 空结果**：写零费用日志（不计费）；超时与取消的合成 504 **不**再 failover 打下一 key/路由
+5. Request log **不**保存 prompt 原文、参考图或 Base64；`raw_usage` 保存上游 usage JSON（取消预检扣费时为审计占位）；`pricing_audit.kind=image_tokens`
+6. 模型须配置 tier `image_*` 单价；无配置则不计费。Gateway **不**再支持按张固定价（按张套餐留给业务层）
 
 `pricing_profile` 示例（`gpt-image-2` token 价，USD/1M）：
 
