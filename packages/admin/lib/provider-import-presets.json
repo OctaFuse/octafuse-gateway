@@ -15,11 +15,10 @@
 		"vendor_key": "volcengine",
 		"endpoints": {
 			"openai": {
-				"endpoints": {
-					"chat": "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
-				}
+				"base": "https://ark.cn-beijing.volces.com/api/v3"
 			}
-		}
+		},
+		"description": "OpenAI-compatible root (/api/v3): chat/completions + images/generations (e.g. Seedream). Coding/Agent Plan templates use separate bases—do not mix."
 	},
 	{
 		"name": "Volcengine Ark (Coding Plan)",
@@ -119,11 +118,10 @@
 		"vendor_key": "zhipu",
 		"endpoints": {
 			"openai": {
-				"endpoints": {
-					"chat": "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-				}
+				"base": "https://open.bigmodel.cn/api/paas/v4"
 			}
-		}
+		},
+		"description": "China-region OpenAI-compatible root (/api/paas/v4): chat/completions + images/generations (GLM-Image / CogView). Coding Plan template stays chat-only."
 	},
 	{
 		"name": "Zhipu GLM (Coding Plan)",
@@ -145,12 +143,10 @@
 		"vendor_key": "zhipu",
 		"endpoints": {
 			"openai": {
-				"endpoints": {
-					"chat": "https://api.z.ai/api/paas/v4/chat/completions"
-				}
+				"base": "https://api.z.ai/api/paas/v4"
 			}
 		},
-		"description": "Z.AI international OpenAI-compatible chat endpoint (api.z.ai; LLM only); pay-as-you-go API key. China-region users should use the Zhipu GLM template (open.bigmodel.cn) instead."
+		"description": "Z.AI international OpenAI-compatible root (api.z.ai/api/paas/v4): chat/completions + images/generations (glm-image); pay-as-you-go API key. China-region users should use the Zhipu GLM template (open.bigmodel.cn) instead."
 	},
 	{
 		"name": "Z.AI GLM (Coding Plan)",
@@ -243,15 +239,13 @@
 		"vendor_key": "google",
 		"endpoints": {
 			"openai": {
-				"endpoints": {
-					"chat": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
-				}
+				"base": "https://generativelanguage.googleapis.com/v1beta/openai"
 			},
 			"gemini": {
 				"base": "https://generativelanguage.googleapis.com/v1beta/models"
 			}
 		},
-		"description": "Developer API: native Gemini base includes `/v1beta/models` (`key=`); OpenAI-compatible path is chat-only (`/v1beta/openai/chat/completions`, Bearer). See ai.google.dev/gemini-api/docs/openai."
+		"description": "Developer API: native Gemini base includes `/v1beta/models` (`key=`); OpenAI-compatible root is `/v1beta/openai` (chat + images/generations, Bearer; prefer response_format=b64_json for images). See ai.google.dev/gemini-api/docs/openai."
 	},
 	{
 		"name": "Google Vertex AI (Express Mode · API Key)",
@@ -290,22 +284,20 @@
 		"vendor_key": "xai",
 		"endpoints": {
 			"openai": {
-				"endpoints": {
-					"chat": "https://api.x.ai/v1/chat/completions"
-				}
+				"base": "https://api.x.ai/v1"
 			}
-		}
+		},
+		"description": "OpenAI-compatible root (api.x.ai/v1): chat/completions + images/generations (Grok Imagine). See docs.x.ai."
 	},
 	{
 		"name": "Together AI",
 		"vendor_key": "together",
 		"endpoints": {
 			"openai": {
-				"endpoints": {
-					"chat": "https://api.together.xyz/v1/chat/completions"
-				}
+				"base": "https://api.together.xyz/v1"
 			}
-		}
+		},
+		"description": "OpenAI-compatible root (api.together.xyz/v1): chat/completions + images/generations (e.g. FLUX). Host may also be api.together.ai—see Together docs."
 	},
 	{
 		"name": "Fireworks AI",
@@ -419,9 +411,13 @@
 		"vendor_key": "openrouter",
 		"endpoints": {
 			"openai": {
-				"base": "https://openrouter.ai/api/v1"
+				"base": "https://openrouter.ai/api/v1",
+				"endpoints": {
+					"images.generations": "https://openrouter.ai/api/v1/images"
+				}
 			}
-		}
+		},
+		"description": "OpenAI-compatible chat via /api/v1; Images use OpenRouter's dedicated POST /api/v1/images (not /images/generations). See openrouter.ai/docs image API."
 	},
 	{
 		"name": "SiliconFlow",

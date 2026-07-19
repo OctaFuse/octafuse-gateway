@@ -105,7 +105,7 @@ flowchart TB
 - **部分能力上游**（例如仅 chat 的中转）：**清空 Base**，只填写支持的 URL overrides。
 - **不要**用「填了 Base 但留空某些 override」表达「不支持该能力」——运行时仍会从 Base 派生并可能打到错误路径。
 
-Admin 静态导入模板（`packages/admin/lib/provider-import-presets.json`）遵循同一约定：默认 LLM 供应商写入 `openai.endpoints.chat`；仅 OpenAI / Azure OpenAI / OpenRouter / SiliconFlow 等具备 Images 的模板保留 `openai.base`。
+Admin 静态导入模板（`packages/admin/lib/provider-import-presets.json`）遵循同一约定：默认 LLM 供应商写入 `openai.endpoints.chat`；具备 OpenAI 兼容 Images 的模板写 `openai.base`（如 OpenAI、Azure OpenAI、SiliconFlow、Volcengine Ark、Zhipu/Z.AI、xAI、Together、Gemini OpenAI 兼容层等）。OpenRouter Images 路径为 `/api/v1/images`，在 `openai.base` 之外用 `endpoints.images.generations` 覆盖。
 
 ---
 
