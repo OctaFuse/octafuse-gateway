@@ -8,40 +8,38 @@ import { locales, type Locale } from '@/lib/locale';
 
 type Variant = 'sidebar' | 'login';
 
-const rootClass = 'flex items-center gap-2';
-
-const iconClass: Record<Variant, string> = {
-	sidebar: 'shrink-0 text-gray-500',
-	login: 'shrink-0 text-gray-400',
+const shellClass: Record<Variant, string> = {
+	sidebar:
+		'flex w-full items-center gap-2 rounded-xl border border-gray-700/70 bg-gray-950/50 p-1 shadow-inner shadow-black/20',
+	login:
+		'flex w-full items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-1',
 };
 
-const segmentGroupClass: Record<Variant, string> = {
+const iconWrapClass: Record<Variant, string> = {
 	sidebar:
-		'flex flex-1 min-w-0 gap-0.5 rounded-lg border border-gray-700/80 bg-gray-800/60 p-1',
+		'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gray-800/80 text-gray-400',
 	login:
-		'flex flex-1 min-w-0 gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-1',
+		'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-gray-500 shadow-sm ring-1 ring-gray-200/80',
 };
 
 const segmentBase: Record<Variant, string> = {
 	sidebar:
-		'flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-50',
+		'relative flex-1 rounded-lg px-2 py-1.5 text-xs font-medium tracking-wide transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 disabled:cursor-not-allowed',
 	login:
-		'flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+		'relative flex-1 rounded-lg px-2 py-1.5 text-xs font-medium tracking-wide transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
 };
 
 const segmentActive: Record<Variant, string> = {
-	sidebar: 'bg-gray-700 text-white shadow-sm',
-	login: 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/80',
+	sidebar:
+		'bg-gray-700 text-white shadow-sm shadow-black/30 ring-1 ring-white/10',
+	login:
+		'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/90',
 };
 
 const segmentInactive: Record<Variant, string> = {
-	sidebar: 'text-gray-400 hover:bg-gray-700/60 hover:text-gray-200',
-	login: 'text-gray-500 hover:bg-white/90 hover:text-gray-800',
+	sidebar: 'text-gray-500 hover:bg-gray-800/70 hover:text-gray-200',
+	login: 'text-gray-500 hover:bg-white/70 hover:text-gray-800',
 };
-
-function localeButtonLabel(locale: Locale, t: (key: 'en' | 'zh') => string): string {
-	return locale === 'en' ? 'EN' : t('zh');
-}
 
 export default function LocaleSwitcher({ variant }: { variant: Variant }) {
 	const t = useTranslations('locale');
@@ -62,12 +60,16 @@ export default function LocaleSwitcher({ variant }: { variant: Variant }) {
 	};
 
 	return (
-		<div className={rootClass} role="group" aria-label={t('label')}>
-			<GlobeAltIcon
-				className={`h-4 w-4 ${iconClass[variant]}`}
-				aria-hidden
-			/>
-			<div className={segmentGroupClass[variant]}>
+		<div
+			className={`${shellClass[variant]} ${isPending ? 'opacity-70' : ''}`}
+			role="group"
+			aria-label={t('label')}
+			aria-busy={isPending}
+		>
+			<span className={iconWrapClass[variant]} aria-hidden>
+				<GlobeAltIcon className="h-3.5 w-3.5" />
+			</span>
+			<div className="flex min-w-0 flex-1 gap-0.5">
 				{locales.map((code) => {
 					const isActive = code === locale;
 					return (
@@ -78,9 +80,11 @@ export default function LocaleSwitcher({ variant }: { variant: Variant }) {
 							aria-pressed={isActive}
 							aria-label={`${t('label')}: ${t(code)}`}
 							onClick={() => onSelect(code)}
-							className={`${segmentBase[variant]} ${isActive ? segmentActive[variant] : segmentInactive[variant]}`}
+							className={`${segmentBase[variant]} ${isActive ? segmentActive[variant] : segmentInactive[variant]} ${isPending ? 'opacity-60' : ''}`}
 						>
-							{localeButtonLabel(code, t)}
+							<span className="relative z-10 block truncate text-center">
+								{t(code)}
+							</span>
 						</button>
 					);
 				})}
