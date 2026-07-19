@@ -293,5 +293,149 @@
 			]
 		},
 		"released": "2026-06-23"
+	},
+	{
+		"id": "seedream-5.0-pro",
+		"display_name": "Doubao Seedream 5.0 Pro",
+		"vendor": "bytedance",
+		"context_window": null,
+		"max_tokens": null,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 0.73,
+						"image_input_cache_price": null,
+						"image_output_price": 4.88
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 4.88,
+						"image_input_cache_price": null,
+						"image_output_price": 32.55
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-07-08"
+	},
+	{
+		"id": "seedream-5.0-lite",
+		"display_name": "Doubao Seedream 5.0 Lite",
+		"vendor": "bytedance",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": null,
+						"image_input_cache_price": null,
+						"image_output_price": 3.8
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": null,
+						"image_input_cache_price": null,
+						"image_output_price": 27.54
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-02-13"
+	},
+	{
+		"id": "seedream-4.5",
+		"display_name": "Doubao Seedream 4.5",
+		"vendor": "bytedance",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": null,
+						"image_input_cache_price": null,
+						"image_output_price": 4.34
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": null,
+						"image_input_cache_price": null,
+						"image_output_price": 27.13
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2025-11-28"
 	}
 ]
