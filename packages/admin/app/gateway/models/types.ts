@@ -16,10 +16,11 @@ export type PresetCatalogRow = {
 	kind: 'llm' | 'image';
 	context_window: number | null;
 	max_tokens: number | null;
-	tier_count_usd: number;
-	/** Short cell label (USD catalog branch). */
-	pricing_label_usd: string | null;
-	pricing_preview_usd: string | null;
+	/** Tier count for the billing-currency catalog branch. */
+	tier_count: number;
+	/** Short cell label (USD/CNY branch per `BILLING_CURRENCY`). */
+	pricing_label: string | null;
+	pricing_preview: string | null;
 };
 
 export type ModelFormData = {

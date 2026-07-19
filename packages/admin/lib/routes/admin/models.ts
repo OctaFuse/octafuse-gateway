@@ -10,7 +10,7 @@ import {
 	getModelService,
 	importModelsFromStaticPresetsService,
 	listModelsService,
-	listStaticModelPresetCatalogForAdmin,
+	listStaticModelPresetCatalogForAdminService,
 	updateModelService,
 } from '@/lib/services/admin/models-service';
 import type {
@@ -52,11 +52,19 @@ adminModelsRoutes.post('/', async (c) => {
 	}
 });
 
-/** 列出内置静态目录中可导入的模型（不含完整 pricing JSON）。 */
+/** 列出内置静态目录中可导入的模型（不含完整 pricing JSON；价格预览按当前 BILLING_CURRENCY）。 */
 adminModelsRoutes.get('/import/catalog', async (c) => {
 	try {
-		const data = listStaticModelPresetCatalogForAdmin();
-		return c.json(normalizeApiTimeFields({ success: true, data, count: data.length }));
+		const repos = c.get('repositories');
+		const { billing_currency, items } = await listStaticModelPresetCatalogForAdminService(repos);
+		return c.json(
+			normalizeApiTimeFields({
+				success: true,
+				data: items,
+				count: items.length,
+				billing_currency,
+			})
+		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to list import catalog');
 	}

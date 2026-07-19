@@ -459,7 +459,7 @@
 			"pricing": "定价",
 			"alreadyInGatewayRow": "{id} 已在 Gateway 中",
 			"importPresetRow": "导入预设 {id}",
-			"usdTiers": "USD 档位：{count}",
+			"catalogTiers": "{count} 档",
 			"pricingPerImageFallback": "Image token 单价",
 			"importSelected": "导入选中项（{count}）"
 		},

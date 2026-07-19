@@ -397,11 +397,11 @@ export function ModelImportModal(props: Props) {
 										const alreadyInGateway = existingModelIds.has(row.id);
 										const kind = row.kind === 'image' ? 'image' : 'llm';
 										const pricingLabel =
-											row.pricing_label_usd ??
+											row.pricing_label ??
 											(kind === 'image'
 												? t('pricingPerImageFallback')
-												: t('usdTiers', { count: row.tier_count_usd }));
-										const pricingDetail = row.pricing_preview_usd ?? pricingLabel;
+												: t('catalogTiers', { count: row.tier_count }));
+										const pricingDetail = row.pricing_preview ?? pricingLabel;
 										return (
 											<tr
 												key={row.id}

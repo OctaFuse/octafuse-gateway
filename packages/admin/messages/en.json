@@ -459,7 +459,7 @@
 			"pricing": "Pricing",
 			"alreadyInGatewayRow": "{id} already in gateway",
 			"importPresetRow": "Import preset {id}",
-			"usdTiers": "USD tiers: {count}",
+			"catalogTiers": "{count} tier(s)",
 			"pricingPerImageFallback": "image token rates",
 			"importSelected": "Import selected ({count})"
 		},

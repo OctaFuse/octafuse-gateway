@@ -196,12 +196,12 @@ export type AdminStaticModelPresetCatalogItem = {
 	kind: 'llm' | 'image';
 	context_window: number | null;
 	max_tokens: number | null;
-	/** `pricing.usd` 档位数，便于预览阶梯 */
-	tier_count_usd: number;
-	/** 表格短文案（如 `$0.053 / image` 或 `$2 / $8`）。 */
-	pricing_label_usd: string | null;
-	/** 悬停详情：token 档位行，或按张 default + quality×size 矩阵。 */
-	pricing_preview_usd: string | null;
+	/** 当前计费币种对应目录价分支的档位数 */
+	tier_count: number;
+	/** 表格短文案（如 `¥12 / ¥36 /M` 或 `$2 / $8 /M`）。 */
+	pricing_label: string | null;
+	/** 悬停详情：token 档位行（单位与 `BILLING_CURRENCY` 一致）。 */
+	pricing_preview: string | null;
 };
 
 /** `POST /admin/models/import` 请求体：仅导入选中的预设 id。 */

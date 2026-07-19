@@ -14,6 +14,7 @@ import {
 	tryParseGatewaySupportedBillingCurrencyInput,
 	type GatewaySupportedBillingCurrency,
 } from '@octafuse/core/lib/billing-currency';
+import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
 import { badRequest, notFound } from './errors';
 import { coerceModelPricingProfileInput } from './pricing-input';
@@ -50,9 +51,16 @@ type CatalogPricingPreview = {
 	detail: string | null;
 };
 
-function buildUsdTokenPricingPreview(rawUsdPricing: Record<string, unknown>): CatalogPricingPreview | null {
-	const tiers = rawUsdPricing.tiers;
+function buildTokenPricingPreview(
+	rawPricing: Record<string, unknown>,
+	billing: GatewaySupportedBillingCurrency
+): CatalogPricingPreview | null {
+	const tiers = rawPricing.tiers;
 	if (!Array.isArray(tiers) || tiers.length === 0) return null;
+
+	const sym = getGatewayCurrencySymbol(billing);
+	const unit = `${sym}/M`;
+	const money = (n: string | null) => (n == null ? '—' : `${sym}${n}`);
 
 	const lines: string[] = [];
 	let firstIn: string | null = null;
@@ -92,27 +100,28 @@ function buildUsdTokenPricingPreview(rawUsdPricing: Record<string, unknown>): Ca
 			}
 			parts.push(`img-out ${imageOut ?? '—'}`);
 		}
-		lines.push(`Tier ${i + 1} (${rangeLabel}): ${parts.join(' · ')} ($/M)`);
+		lines.push(`Tier ${i + 1} (${rangeLabel}): ${parts.join(' · ')} (${unit})`);
 	}
 	if (lines.length === 0) return null;
 	const hasImageToken = firstImageOut != null || firstImageIn != null;
 	const label = hasImageToken
-		? `$${firstIn ?? '—'} / $${firstImageIn ?? '—'} / $${firstImageOut ?? '—'} /M`
+		? `${money(firstIn)} / ${money(firstImageIn)} / ${money(firstImageOut)} /M`
 		: firstIn != null || firstOut != null
-			? `$${firstIn ?? '—'} / $${firstOut ?? '—'} /M`
+			? `${money(firstIn)} / ${money(firstOut)} /M`
 			: `${tiers.length} tier(s)`;
 	return { label, detail: lines.join('\n') };
 }
 
-/** USD 分支：Image / LLM 均展示 token 档位摘要（Image 含 img-in / img-out）。 */
-function buildUsdCatalogPricingPreview(
-	rawUsdPricing: unknown,
-	_kind: 'llm' | 'image'
+/** 按 `BILLING_CURRENCY` 选用的目录价分支：Image / LLM 均展示 token 档位摘要。 */
+function buildCatalogPricingPreview(
+	rawPricing: unknown,
+	_kind: 'llm' | 'image',
+	billing: GatewaySupportedBillingCurrency
 ): CatalogPricingPreview {
-	if (!rawUsdPricing || typeof rawUsdPricing !== 'object' || Array.isArray(rawUsdPricing)) {
+	if (!rawPricing || typeof rawPricing !== 'object' || Array.isArray(rawPricing)) {
 		return { label: null, detail: null };
 	}
-	return buildUsdTokenPricingPreview(rawUsdPricing as Record<string, unknown>) ?? {
+	return buildTokenPricingPreview(rawPricing as Record<string, unknown>, billing) ?? {
 		label: null,
 		detail: null,
 	};
@@ -226,27 +235,34 @@ export async function deleteModelService(repos: GatewayRepositories, id: string)
 	if (!changes) throw notFound('Model not found');
 }
 
-/** 列出内置静态预设（供导入前勾选）；不访问数据库。 */
-export function listStaticModelPresetCatalogForAdmin(): AdminStaticModelPresetCatalogItem[] {
+/**
+ * 列出内置静态预设（供导入前勾选）。
+ * 价格预览按 `billing`（与导入写入同源的 USD/CNY 分支）；默认 USD 便于单测。
+ */
+export function listStaticModelPresetCatalogForAdmin(
+	billing: GatewaySupportedBillingCurrency = 'USD'
+): AdminStaticModelPresetCatalogItem[] {
 	return listStaticModelPresets()
 		.map((p) => {
 			const id = String(p.id ?? '').trim();
-			const usd = p.pricing?.usd;
-			let tierCountUsd = 0;
-			if (usd && typeof usd === 'object' && !Array.isArray(usd)) {
-				const tiers = (usd as Record<string, unknown>).tiers;
+			const pricingRaw = pickPresetPricingRawForBillingCurrency(p, billing);
+			let tierCount = 0;
+			if (pricingRaw && typeof pricingRaw === 'object' && !Array.isArray(pricingRaw)) {
+				const tiers = (pricingRaw as Record<string, unknown>).tiers;
 				if (Array.isArray(tiers)) {
-					tierCountUsd = tiers.length;
+					tierCount = tiers.length;
 				}
 			}
 			const kind: AdminStaticModelPresetCatalogItem['kind'] = isImageGenerationModel({
 				output_modalities: p.modalities?.output ?? null,
 				pricing_profile:
-					usd != null && typeof usd === 'object' ? JSON.stringify(usd) : null,
+					pricingRaw != null && typeof pricingRaw === 'object'
+						? JSON.stringify(pricingRaw)
+						: null,
 			})
 				? 'image'
 				: 'llm';
-			const pricing = buildUsdCatalogPricingPreview(usd, kind);
+			const pricing = buildCatalogPricingPreview(pricingRaw, kind, billing);
 			return {
 				id,
 				display_name: (p.display_name != null ? String(p.display_name) : null) || null,
@@ -254,12 +270,28 @@ export function listStaticModelPresetCatalogForAdmin(): AdminStaticModelPresetCa
 				kind,
 				context_window: p.context_window ?? null,
 				max_tokens: p.max_tokens ?? null,
-				tier_count_usd: tierCountUsd,
-				pricing_label_usd: pricing.label,
-				pricing_preview_usd: pricing.detail,
+				tier_count: tierCount,
+				pricing_label: pricing.label,
+				pricing_preview: pricing.detail,
 			};
 		})
 		.filter((row) => row.id.length > 0);
+}
+
+/** 读取当前 `BILLING_CURRENCY` 后列出导入目录（价格预览与即将写入的分支一致）。 */
+export async function listStaticModelPresetCatalogForAdminService(
+	repos: GatewayRepositories
+): Promise<{
+	billing_currency: GatewaySupportedBillingCurrency;
+	items: AdminStaticModelPresetCatalogItem[];
+}> {
+	const rawCurrency = await repos.systemConfig.getConfig(BILLING_CURRENCY_KEY);
+	const billing: GatewaySupportedBillingCurrency =
+		tryParseGatewaySupportedBillingCurrencyInput(rawCurrency ?? '') ?? 'USD';
+	return {
+		billing_currency: billing,
+		items: listStaticModelPresetCatalogForAdmin(billing),
+	};
 }
 
 /**
