@@ -17,7 +17,7 @@ import {
 } from '@/lib/upstream-protocol';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import {
-	ALL_KINDS_KEY,
+	DEFAULT_KIND_FILTER,
 	type ModelKindFilter,
 } from '../models/types';
 import type {
@@ -328,7 +328,6 @@ export function modelMatchesKindFilter(
 	meta: GatewayModel | undefined,
 	filterKind: ModelKindFilter
 ): boolean {
-	if (filterKind === ALL_KINDS_KEY) return true;
 	const isImage = meta ? isImageGenerationModel(meta) : false;
 	return filterKind === 'image' ? isImage : !isImage;
 }
@@ -371,7 +370,7 @@ export function buildRoutesByModel(params: {
 		filterProviderId,
 		filterRouteGroup,
 		filterStatus,
-		filterKind = ALL_KINDS_KEY,
+		filterKind = DEFAULT_KIND_FILTER,
 	} = params;
 
 	const modelMatchesVendor = (modelId: string) => {
@@ -504,24 +503,11 @@ export function buildActiveFilterSummary(params: {
 	filterRouteGroup: string;
 	filterVendor: string;
 	filterProviderId: string;
-	filterKind?: ModelKindFilter;
 	providers: GatewayProvider[];
-	/** Localized kind labels; when omitted, English fallbacks are used. */
-	kindLabels?: { llm: string; image: string };
 }): string[] {
-	const {
-		filterStatus,
-		filterRouteGroup,
-		filterVendor,
-		filterProviderId,
-		filterKind = ALL_KINDS_KEY,
-		providers,
-		kindLabels,
-	} = params;
+	const { filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers } = params;
 	const parts: string[] = [];
 	if (filterStatus) parts.push(filterStatus === 'active' ? 'Active' : 'Inactive');
-	if (filterKind === 'llm') parts.push(kindLabels?.llm ?? 'LLM');
-	if (filterKind === 'image') parts.push(kindLabels?.image ?? 'Image');
 	if (filterRouteGroup) parts.push(`Group: ${filterRouteGroup}`);
 	if (filterVendor) parts.push(getModelVendorLabel(filterVendor));
 	if (filterProviderId) {

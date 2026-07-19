@@ -661,7 +661,7 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
 - **模型 Kind（Admin UI，无独立 DB 列）**：
   - **Image（文生图）**：`output_modalities` 含 `image`（**不要**用 `input` 含 `image` 判断——多模态 LLM 也会有）。
   - **LLM**：其余；仅当 `output_modalities` 缺失时，才用历史 `pricing_profile.image` 兜底判定。
-  - 列表支持 `?kind=all|llm|image` 与 `?vendor=` 组合筛选；卡片展示 Kind 徽章与 Image token / 估算矩阵摘要。
+  - Models / Routes UI 侧栏 Kind 为 **`llm` | `image`（无 All）**，URL `?kind=` 与 `?vendor=` 组合；默认 `llm`。卡片按当前 Kind 展示（Image 含 token / 估算矩阵摘要，不再叠 Kind 徽章）。
   - 文生图**不使用**聊天字段 `context_window` / `max_tokens`（预设与保存均为 `null`；Admin 卡片/表单隐藏这两项）。LLM 的 `max_tokens` 缺省仍为 8192。迁移 **`0010_models_max_tokens_nullable`** 允许 `max_tokens` 为 NULL。
 - **路由计价（canonical）**：`model_routes.price_override` 只维护倍率，**不再**要求 nested `metered` / `charged` tiers：
 

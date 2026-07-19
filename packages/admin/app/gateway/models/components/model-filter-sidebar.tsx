@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { FilterNavButton, FilterNavSection } from '../../components/filter-nav';
 import { getModelVendorLabel } from '@/lib/model-vendor';
-import { ALL_KINDS_KEY, ALL_VENDORS_KEY, type ModelKindFilter } from '../types';
+import { ALL_VENDORS_KEY, type ModelKindFilter } from '../types';
 
 type Props = {
 	modelCount: number;
@@ -13,7 +13,7 @@ type Props = {
 	selectedVendor: string;
 	modelsByVendor: [string, unknown[]][];
 	selectedKind: ModelKindFilter;
-	kindCounts: { all: number; llm: number; image: number };
+	kindCounts: { llm: number; image: number };
 	onSelectVendor: (vendor: string) => void;
 	onSelectKind: (kind: ModelKindFilter) => void;
 	onClearFilter: () => void;
@@ -69,12 +69,6 @@ export function ModelFilterSidebar(props: Props) {
 				</div>
 
 				<FilterNavSection title={t('kind')} ariaLabel={t('kindAria')}>
-					<FilterNavButton
-						label={tFilter('all')}
-						count={kindCounts.all}
-						isActive={selectedKind === ALL_KINDS_KEY}
-						onClick={() => onSelectKind(ALL_KINDS_KEY)}
-					/>
 					<FilterNavButton
 						label={t('kindLlm')}
 						count={kindCounts.llm}

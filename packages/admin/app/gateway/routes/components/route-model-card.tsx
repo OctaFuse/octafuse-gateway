@@ -65,15 +65,6 @@ export function RouteModelCard(props: Props) {
 						<h4 className="min-w-0 truncate text-sm font-semibold leading-snug text-gray-900" title={title}>
 							{title}
 						</h4>
-						<span
-							className={
-								isImage
-									? 'shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800'
-									: 'shrink-0 rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800'
-							}
-						>
-							{isImage ? tModelsCard('kindImage') : tModelsCard('kindLlm')}
-						</span>
 						<button
 							type="button"
 							onClick={() => void onCopyModelId(model_id)}

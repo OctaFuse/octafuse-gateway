@@ -2,7 +2,7 @@
 
 /**
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
- * 左侧 Vendor 列表 + 右侧当前 Vendor 模型表；含 All 总览；`?vendor=` 持久化选中项（`useSearchParams` + Suspense）。
+ * 左侧 Kind（LLM | Image，无 All）+ Vendor；右侧当前筛选模型卡片；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
  */
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';

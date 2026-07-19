@@ -37,56 +37,47 @@ function ModelIdentityHeader(props: { model: ModelListItem }) {
 			<div className="flex min-w-0 flex-1 items-start gap-2">
 				<ModelVendorIcon vendor={model.vendor} size="identity" />
 				<div className="min-w-0 flex-1">
-					<div className="flex flex-wrap items-center gap-1">
-						<h3 className="truncate text-sm font-semibold text-gray-900" title={displayName}>
-							{displayName}
-						</h3>
-						<span
-							className={
-								isImageGenerationModel(model)
-									? 'shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800'
-									: 'shrink-0 rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-800'
-							}
-						>
-							{isImageGenerationModel(model) ? t('kindImage') : t('kindLlm')}
-						</span>
-						<span
-							className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600"
-							title={t('routesTitle', {
-								routes: routesLabel,
-								active: t('activeRoutes', { count: model.active_routes_count }),
-							})}
-						>
-							{routesLabel}
-							<span className="mx-1 text-gray-300" aria-hidden>
-								·
-							</span>
-							{t('activeRoutes', { count: model.active_routes_count })}
-						</span>
-					</div>
+					<h3 className="truncate text-sm font-semibold text-gray-900" title={displayName}>
+						{displayName}
+					</h3>
 					<p className="mt-0.5 truncate font-mono text-xs text-gray-500" title={model.id}>
 						{model.id}
 					</p>
 				</div>
 			</div>
-			<div className="flex shrink-0 flex-wrap items-center justify-start gap-1 sm:justify-end">
-				{tagShown.length ? (
-					<>
-						{tagShown.map((tag) => (
-							<span
-								key={tag}
-								className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
-							>
-								{tag}
-							</span>
-						))}
-						{tagExtra > 0 ? (
-							<span className="self-center text-[10px] text-gray-400">+{tagExtra}</span>
-						) : null}
-					</>
-				) : (
-					<span className="text-[10px] text-gray-400">{t('noTags')}</span>
-				)}
+			<div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+				<div className="flex flex-wrap items-center justify-start gap-1 sm:justify-end">
+					{tagShown.length ? (
+						<>
+							{tagShown.map((tag) => (
+								<span
+									key={tag}
+									className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
+								>
+									{tag}
+								</span>
+							))}
+							{tagExtra > 0 ? (
+								<span className="self-center text-[10px] text-gray-400">+{tagExtra}</span>
+							) : null}
+						</>
+					) : (
+						<span className="text-[10px] text-gray-400">{t('noTags')}</span>
+					)}
+				</div>
+				<span
+					className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600"
+					title={t('routesTitle', {
+						routes: routesLabel,
+						active: t('activeRoutes', { count: model.active_routes_count }),
+					})}
+				>
+					{routesLabel}
+					<span className="mx-1 text-gray-300" aria-hidden>
+						·
+					</span>
+					{t('activeRoutes', { count: model.active_routes_count })}
+				</span>
 			</div>
 		</div>
 	);
@@ -169,11 +160,17 @@ function ModelPricingPanel(props: {
 				<p className="mt-1.5 text-xs text-gray-400">{tCommon('noData')}</p>
 			) : (
 				<div className="mt-1.5 space-y-1.5">
-					<div className="grid grid-cols-2 gap-1.5">
+					<div
+						className={
+							isImageGenerationModel(model)
+								? 'grid grid-cols-2 gap-1.5'
+								: 'grid grid-cols-4 gap-1'
+						}
+					>
 						{tokenColumns.map((col) => (
 							<div
 								key={col.title}
-								className="rounded-md border border-gray-100 bg-gray-50/70 px-2 py-1.5"
+								className="min-w-0 rounded-md border border-gray-100 bg-gray-50/70 px-1.5 py-1.5 sm:px-2"
 							>
 								<p
 									className="truncate text-[11px] font-medium text-gray-500"
@@ -185,15 +182,17 @@ function ModelPricingPanel(props: {
 									{col.lines.map((line, lineIdx) => (
 										<div
 											key={`${col.title}-${lineIdx}`}
-											className="flex flex-wrap items-baseline gap-x-1.5"
+											className="flex min-w-0 flex-col gap-0.5 sm:flex-wrap sm:flex-row sm:items-baseline sm:gap-x-1"
 											title={
 												line.price == null
 													? line.condition
 													: `${line.condition} ${formatGatewayMoneyCompact(line.price, billingCurrency)}`
 											}
 										>
-											<span className="shrink-0 text-[11px] text-gray-400">{line.condition}</span>
-											<span className="text-xs font-semibold text-gray-900">
+											<span className="shrink-0 truncate text-[10px] text-gray-400 sm:text-[11px]">
+												{line.condition}
+											</span>
+											<span className="truncate text-xs font-semibold text-gray-900">
 												{line.price == null
 													? tCommon('noData')
 													: formatGatewayMoneyCompact(line.price, billingCurrency)}

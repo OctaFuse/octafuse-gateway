@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sortImportCatalogRows } from '../model-utils';
-import { ALL_KINDS_KEY, type ModelKindFilter, type PresetCatalogRow } from '../types';
+import { type ModelKindFilter, type PresetCatalogRow } from '../types';
 
 type Props = {
 	open: boolean;
@@ -16,7 +16,7 @@ type Props = {
 	filteredCatalogRows: PresetCatalogRow[];
 	catalogSearch: string;
 	catalogKind: ModelKindFilter;
-	kindCounts: { all: number; llm: number; image: number };
+	kindCounts: { llm: number; image: number };
 	catalogLoading: boolean;
 	catalogError: string;
 	selected: Record<string, boolean>;
@@ -200,15 +200,16 @@ export function ModelImportModal(props: Props) {
 	if (!open) return null;
 
 	const hasSearch = catalogSearch.trim().length > 0;
-	const hasKindFilter = catalogKind !== ALL_KINDS_KEY;
-	const hasActiveListFilter = hasSearch || hasKindFilter;
+	const hasActiveListFilter = hasSearch;
 	const sortedRows = sortImportCatalogRows(filteredCatalogRows);
 	const canSelectAllVisible = filteredCatalogRows.some((r) => !existingModelIds.has(r.id));
 	const canImport = catalogRows.some((r) => selected[r.id] && !existingModelIds.has(r.id));
 	const unit = formatPerMillionTokenUnit(billingCurrency);
-	/** Image-only view：隐藏 Context / Max Tokens（文生图不用）。Kind 仅在 All 时有区分价值。 */
-	const showKindColumn = catalogKind === ALL_KINDS_KEY;
+	/** 始终单 Kind：不展示 Kind 列；Image 视图隐藏 Context / Max Tokens。 */
+	const showKindColumn = false;
 	const showTokenColumns = catalogKind !== 'image';
+	const kindScopedTotal =
+		catalogKind === 'image' ? kindCounts.image : kindCounts.llm;
 
 	return (
 		<div
@@ -295,13 +296,6 @@ export function ModelImportModal(props: Props) {
 							{t('kind')}
 						</span>
 						<KindFilterChip
-							label={tCommon('all')}
-							count={kindCounts.all}
-							active={catalogKind === ALL_KINDS_KEY}
-							disabled={catalogLoading}
-							onClick={() => onCatalogKindChange(ALL_KINDS_KEY)}
-						/>
-						<KindFilterChip
 							label={tKind('kindLlm')}
 							count={kindCounts.llm}
 							active={catalogKind === 'llm'}
@@ -324,7 +318,7 @@ export function ModelImportModal(props: Props) {
 									{' '}
 									{t('selectedShowing', {
 										filtered: filteredCatalogRows.length,
-										total: catalogRows.length,
+										total: kindScopedTotal,
 									})}
 								</>
 							) : null}

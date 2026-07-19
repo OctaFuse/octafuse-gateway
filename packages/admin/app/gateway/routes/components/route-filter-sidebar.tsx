@@ -3,7 +3,7 @@
 import { FilterNavButton, FilterNavSection } from '../../components/filter-nav';
 import type { GatewayProvider } from '@/lib/types';
 import { useTranslations } from 'next-intl';
-import { ALL_KINDS_KEY, type ModelKindFilter } from '../../models/types';
+import { type ModelKindFilter } from '../../models/types';
 
 type Props = {
 	visibleModelCount: number;
@@ -15,7 +15,7 @@ type Props = {
 	filterVendor: string;
 	filterProviderId: string;
 	statusCounts: { all: number; active: number; inactive: number };
-	kindCounts: { all: number; llm: number; image: number };
+	kindCounts: { llm: number; image: number };
 	routesCount: number;
 	routeGroupFilterOptions: string[];
 	routeGroupCounts: Map<string, number>;
@@ -104,12 +104,6 @@ export function RouteFilterSidebar(props: Props) {
 				</FilterNavSection>
 
 				<FilterNavSection title={t('kind')} ariaLabel={t('kindAria')}>
-					<FilterNavButton
-						label={t('all')}
-						count={kindCounts.all}
-						isActive={filterKind === ALL_KINDS_KEY}
-						onClick={() => onFilterKindChange(ALL_KINDS_KEY)}
-					/>
 					<FilterNavButton
 						label={t('kindLlm')}
 						count={kindCounts.llm}

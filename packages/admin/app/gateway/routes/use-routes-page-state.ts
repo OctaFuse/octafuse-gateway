@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import {
 	parseModelStickyConfig,
@@ -22,7 +21,7 @@ import {
 } from '@/lib/upstream-protocol';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import {
-	ALL_KINDS_KEY,
+	DEFAULT_KIND_FILTER,
 	parseKindFilterParam,
 	type ModelKindFilter,
 } from '../models/types';
@@ -53,7 +52,6 @@ import {
 
 export function useRoutesPageState() {
 	const searchParams = useSearchParams();
-	const tFilter = useTranslations('filter');
 	const [routes, setRoutes] = useState<RouteListRow[]>([]);
 	const [models, setModels] = useState<GatewayModel[]>([]);
 	const [providers, setProviders] = useState<GatewayProvider[]>([]);
@@ -66,7 +64,7 @@ export function useRoutesPageState() {
 	const [filterProviderId, setFilterProviderId] = useState('');
 	const [filterRouteGroup, setFilterRouteGroup] = useState('');
 	const [filterStatus, setFilterStatus] = useState('');
-	const [filterKind, setFilterKind] = useState<ModelKindFilter>(ALL_KINDS_KEY);
+	const [filterKind, setFilterKind] = useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
 	const [saveError, setSaveError] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -102,7 +100,7 @@ export function useRoutesPageState() {
 		if (filterProviderId) params.set('provider_id', filterProviderId);
 		if (filterRouteGroup) params.set('route_group', filterRouteGroup);
 		if (filterStatus) params.set('status', filterStatus);
-		if (filterKind && filterKind !== ALL_KINDS_KEY) params.set('kind', filterKind);
+		params.set('kind', filterKind);
 		return params;
 	}, [filterVendor, filterProviderId, filterRouteGroup, filterStatus, filterKind]);
 
@@ -186,7 +184,7 @@ export function useRoutesPageState() {
 			if (isImageGenerationModel(m)) image += 1;
 			else llm += 1;
 		}
-		return { all: models.length, llm, image };
+		return { llm, image };
 	}, [models]);
 
 	const routesByModel = useMemo(
@@ -231,11 +229,7 @@ export function useRoutesPageState() {
 	);
 
 	const hasActiveFilters = Boolean(
-		filterVendor ||
-			filterProviderId ||
-			filterRouteGroup ||
-			filterStatus ||
-			filterKind !== ALL_KINDS_KEY
+		filterVendor || filterProviderId || filterRouteGroup || filterStatus
 	);
 
 	const activeFilterSummary = useMemo(
@@ -245,19 +239,9 @@ export function useRoutesPageState() {
 				filterRouteGroup,
 				filterVendor,
 				filterProviderId,
-				filterKind,
 				providers,
-				kindLabels: { llm: tFilter('kindLlm'), image: tFilter('kindImage') },
 			}),
-		[
-			filterStatus,
-			filterRouteGroup,
-			filterVendor,
-			filterProviderId,
-			filterKind,
-			providers,
-			tFilter,
-		]
+		[filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers]
 	);
 
 	const selectedProvider = useMemo(
@@ -316,7 +300,6 @@ export function useRoutesPageState() {
 		setFilterProviderId('');
 		setFilterRouteGroup('');
 		setFilterStatus('');
-		setFilterKind(ALL_KINDS_KEY);
 	}, []);
 
 	const handleCreate = useCallback(

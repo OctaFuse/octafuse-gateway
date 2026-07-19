@@ -56,15 +56,18 @@ export type ModelImportResult = {
 /** Sidebar filter: show models from every vendor (`?vendor=all`). */
 export const ALL_VENDORS_KEY = 'all';
 
-/** Sidebar Kind filter (`?kind=all|llm|image`). */
-export const ALL_KINDS_KEY = 'all';
-export type ModelKindFilter = 'all' | 'llm' | 'image';
+/**
+ * Models / Routes Kind 视图（`?kind=llm|image`）。
+ * 无 All：始终只看一种；缺省 / 非法值回退 LLM。
+ */
+export const DEFAULT_KIND_FILTER = 'llm' as const;
+export type ModelKindFilter = 'llm' | 'image';
 
 export function parseKindFilterParam(value: string | null): ModelKindFilter {
-	if (value == null || value.trim() === '') return ALL_KINDS_KEY;
+	if (value == null || value.trim() === '') return DEFAULT_KIND_FILTER;
 	const v = value.trim().toLowerCase();
 	if (v === 'llm' || v === 'image') return v;
-	return ALL_KINDS_KEY;
+	return DEFAULT_KIND_FILTER;
 }
 
 export const EMPTY_MODEL_FORM: ModelFormData = {
