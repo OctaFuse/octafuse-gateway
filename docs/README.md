@@ -35,6 +35,7 @@
 | CF 运维 / Workers Builds | [operators/deployment/cloudflare.md](./operators/deployment/cloudflare.md) |
 | Docker / PG / MySQL 自托管 | [operators/deployment/docker.md](./operators/deployment/docker.md) |
 | 下游集成 env | [developers/integration.md](./developers/integration.md) |
+| 文生图模型（gpt-image-2 / Seedream） | [developers/reference/image-models.md](./developers/reference/image-models.md) |
 | 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范

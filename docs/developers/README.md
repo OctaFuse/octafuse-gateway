@@ -14,7 +14,7 @@
 | 查 Proxy / Admin API 契约 | [api/README.md](./api/) |
 | 启动本地 D1、Node + Postgres 或 Node + MySQL 开发环境 | [local-development.md](./local-development.md) |
 | 理解运行时、数据库和请求生命周期 | [architecture/](./architecture/) |
-| 查计费、审计、时间、Provider 参数等行为语义 | [reference/](./reference/) |
+| 查计费、审计、时间、Provider 参数、文生图模型等行为语义 | [reference/](./reference/)（含 [image-models.md](./reference/image-models.md)） |
 
 ## 代码边界
 

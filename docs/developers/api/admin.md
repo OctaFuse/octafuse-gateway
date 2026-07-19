@@ -567,6 +567,8 @@ curl "http://localhost:8787/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### 运维验收：文生图模型 `gpt-image-2`
 
+> 模型与计费总览见 [文生图模型（Image Models）](../reference/image-models.md)。
+
 不新增独立「Images」管理页；与 LLM 共用 Models + Routes。Admin 内闭环：**Routes → Playground → Simulator → Request Logs**。
 
 1. **Provider**：配置可用的 OpenAI（或兼容）Provider Key，并在 `endpoints.openai` 写 `base`（如 `https://api.openai.com/v1`）或 `endpoints.images.generations` 完整 URL。
@@ -586,6 +588,31 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 ```
 
 成功响应含图片；请求日志按上游 `usage` token 分项扣费。用户 API 说明见 [user.md「Images」](user.md#images图片生成--编辑)。
+
+### 运维验收：国内文生图 `seedream-*`（火山方舟）
+
+与 `gpt-image-2` 共用同一套 OpenAI Images 驱动与 token 扣费；差异在 Provider base、上游模型 id、以及目录价按「元/张 ÷ 典型 output_tokens」折算。
+
+1. **Provider**：Admin → Providers → Import → **Volcengine Ark**（**不要**写 `openai.base`；只配 `endpoints.chat` + `endpoints.images.generations`，避免派生出不存在的 `/images/edits`）。填入火山 API Key。
+2. **Import**：Models → Import → 勾选官方 id（与上游同名，对齐 `gpt-image-2` 约定）：**`doubao-seedream-5-0-260128`** / **`doubao-seedream-5-0-pro`**。**已存在同 id 不会覆盖**——改价需删后 re-import 或 PATCH。
+3. **目录价口径**（按张折算 token；上游通常只返回 `usage.output_tokens≈16384`，故 **仅配置 `image_output_price`**，`image_input_price` 为 null）：
+   | catalog / `provider_model_name` | 官方约价 | 典型 tokens | `image_output_price`（CNY/1M） | USD/1M |
+   |---|---|---|---|---|
+   | `doubao-seedream-5-0-260128` | ¥0.22 / 张 | 16384 | **13.43** | **2.14** |
+   | `doubao-seedream-5-0-pro` | ¥0.36 / 张（≤2.36MP） | 16384 | **21.97** | **3.05** |
+4. **Routes**：`upstream_protocol=openai`（锁定）；`provider_model_name` 与 catalog id 同名即可。`watermark` / `sequential_image_generation` 等由客户端请求或 route `custom_params` 按需传入，**不**写在模型预设里。
+5. **Playground / Simulator**：选该路由 → generations；Seedream **图生图**走 `POST /v1/images/generations` + JSON `image`（勿用 multipart `/v1/images/edits`，火山无 OpenAI edits 形态）。
+6. **Request Logs**：核对 `pricing_audit.kind=image_tokens`、`tokens.image_output≈16384`、`charged_cost≈官方单价×charged_factor`。
+7. **curl**（用户 API Key）：
+
+```bash
+curl -sS "$GATEWAY_URL/v1/images/generations" \
+  -H "Authorization: Bearer $USER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"doubao-seedream-5-0-260128","prompt":"海边灯塔水彩封面","size":"2K","n":1,"watermark":false}'
+```
+
+实测后若 `output_tokens` 与 16384 偏差大，按 `官方元/张 ÷ (实测tokens/1e6)` 重算 `image_output_price` 并 PATCH 模型。
 
 ### `provider_api_keys.limit_config`（`PATCH /admin/providers/:id/keys/:keyId`）
 
@@ -628,7 +655,8 @@ Opt-in **粘性 key 路由**：同一用户尽量连续命中同一把 provider 
     - **最终费用** = `text×input` + `cached_text×cache_read` + `image_in×image_input` + `cached_image_in×image_input_cache` + `image_out×image_output`，再乘路由 `charged_factor` / `metered_factor`。
     - **扣费权威**：上游 Images API 响应 `usage`。`pricing_audit.kind=image_tokens`。无 `image_*` 单价则**不计费**。
     - `gpt-image-2` 静态预设（USD/1M）：text **5**、cached text **1.25**、image in **8**、cached image in **2**、image out **30**；CNY ≈ ×7.25。
-    - quality×size 仅作 Admin **估算展示**与预检余量（估算 output tokens × `image_output_price`），**非扣费**。按张套餐语义应在业务层实现，不在 Gateway。
+    - Seedream（火山按张计费）：上游 `usage` 通常只有 `output_tokens`，目录 **仅设 `image_output_price`**（按「元/张 ÷ 典型 tokens/1M」折算，见上文 Seedream 验收表）；`image_input_*` 置 null。
+    - quality×size / Seedream `2K`/`4K` 仅作 Admin **估算展示**与预检余量（估算 output tokens × `image_output_price`），**非扣费**。按张套餐语义应在业务层实现，不在 Gateway。
   - **Legacy `image` 按张块**：历史字段；解析可读入供 Kind 兜底，**不参与扣费**；Admin 保存时会清除（只写 `tiers`）。旧行需填 token 单价后保存或删后 re-import。
 - **模型 Kind（Admin UI，无独立 DB 列）**：
   - **Image（文生图）**：`output_modalities` 含 `image`（**不要**用 `input` 含 `image` 判断——多模态 LLM 也会有）。

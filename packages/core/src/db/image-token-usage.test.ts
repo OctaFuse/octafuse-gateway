@@ -7,6 +7,7 @@ import {
 	IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM,
 	IMAGE_PRECHECK_MAX_REFERENCE_COUNT,
 	parseOpenAiImageUsage,
+	SEEDREAM_TYPICAL_OUTPUT_TOKENS,
 } from './image-token-usage';
 import type { BillingPriceSnapshot } from './pricing-profile';
 
@@ -56,8 +57,50 @@ describe('parseOpenAiImageUsage', () => {
 		assert.equal(usage!.image_output_tokens, 200);
 	});
 
+	it('parses Seedream-style usage (output_tokens only, generated_images)', () => {
+		const usage = parseOpenAiImageUsage({
+			usage: {
+				generated_images: 1,
+				output_tokens: SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+				total_tokens: SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+			},
+		});
+		assert.ok(usage);
+		assert.equal(usage!.text_tokens, 0);
+		assert.equal(usage!.image_input_tokens, 0);
+		assert.equal(usage!.image_output_tokens, SEEDREAM_TYPICAL_OUTPUT_TOKENS);
+		assert.equal(usage!.total_tokens, SEEDREAM_TYPICAL_OUTPUT_TOKENS);
+	});
+
 	it('returns null without usage', () => {
 		assert.equal(parseOpenAiImageUsage({ data: [] }), null);
+	});
+});
+
+describe('Seedream image_output_price calibration', () => {
+	it('lite CNY catalog ≈ ¥0.22/image at typical output tokens', () => {
+		const cost = computeImageTokenMeteredCost(
+			{
+				text_tokens: 0,
+				cached_text_tokens: 0,
+				image_input_tokens: 0,
+				cached_image_input_tokens: 0,
+				image_output_tokens: SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+				total_tokens: SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+				raw_usage: null,
+			},
+			{
+				input_price: 0,
+				output_price: 0,
+				cache_read_price: null,
+				cache_write_price: null,
+				image_input_price: null,
+				image_input_cache_price: null,
+				image_output_price: 13.43,
+			}
+		);
+		// 16384 * 13.43 / 1e6 ≈ 0.2200
+		assert.ok(Math.abs(cost - 0.22) < 0.001);
 	});
 });
 
@@ -120,12 +163,34 @@ describe('estimateImageOutputTokensForPrecheck', () => {
 		assert.equal(estimateImageOutputTokensForPrecheck('high', '1536x1024'), 5500);
 	});
 
-	it('takes upper bound for auto quality', () => {
+	it('takes upper bound for auto quality on GPT sizes', () => {
 		assert.equal(estimateImageOutputTokensForPrecheck('auto', '1024x1024'), 7033);
 	});
 
-	it('takes upper bound for unknown quality/size', () => {
-		assert.equal(estimateImageOutputTokensForPrecheck('ultra', '4096x4096'), 7033);
+	it('uses Seedream typical tokens for 2K/4K aliases', () => {
+		assert.equal(estimateImageOutputTokensForPrecheck(null, '2K'), SEEDREAM_TYPICAL_OUTPUT_TOKENS);
+		assert.equal(
+			estimateImageOutputTokensForPrecheck('auto', '4k'),
+			SEEDREAM_TYPICAL_OUTPUT_TOKENS * 2
+		);
+	});
+
+	it('uses Seedream-scale estimate for large explicit pixel sizes', () => {
+		assert.equal(
+			estimateImageOutputTokensForPrecheck('ultra', '4096x4096'),
+			SEEDREAM_TYPICAL_OUTPUT_TOKENS * 2
+		);
+		assert.equal(
+			estimateImageOutputTokensForPrecheck(null, '2048x2048'),
+			SEEDREAM_TYPICAL_OUTPUT_TOKENS
+		);
+	});
+
+	it('uses max of GPT and Seedream when both quality and size are auto', () => {
+		assert.equal(
+			estimateImageOutputTokensForPrecheck('auto', 'auto'),
+			SEEDREAM_TYPICAL_OUTPUT_TOKENS
+		);
 	});
 });
 

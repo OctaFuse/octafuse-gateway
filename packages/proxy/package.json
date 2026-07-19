@@ -13,7 +13,7 @@
 		"build": "esbuild src/runtime/node.ts --bundle --platform=node --format=esm --outfile=dist/runtime/node.js --packages=external --log-level=warning",
 		"start:node:dist": "node dist/runtime/node.js",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"test:unit": "tsx --test src/lib/model-list-parse.test.ts src/services/image-usage-charge.test.ts src/services/egress/openai-images-driver.test.ts src/services/request-timing.test.ts src/services/egress/timing-delta.test.ts"
+		"test:unit": "tsx --test src/lib/model-list-parse.test.ts src/services/image-usage-charge.test.ts src/services/image-generation-extras.test.ts src/services/egress/openai-images-driver.test.ts src/services/request-timing.test.ts src/services/egress/timing-delta.test.ts"
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.19.13",

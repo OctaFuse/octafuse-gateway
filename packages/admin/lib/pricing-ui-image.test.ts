@@ -30,6 +30,29 @@ describe('getCatalogImagePricingDisplay', () => {
 		assert.equal(display!.matrix!.cells.high?.['1536x1024'], '0.165');
 	});
 
+	it('includes Seedream flat×2k estimate row', () => {
+		const display = getCatalogImagePricingDisplay(
+			{
+				pricing_profile: JSON.stringify({
+					tiers: [
+						{
+							upto: null,
+							input_price: 0,
+							output_price: 0,
+							image_output_price: 13.43,
+						},
+					],
+				}),
+			},
+			'CNY'
+		);
+		assert.ok(display);
+		assert.ok(display!.matrix?.cells.flat?.['2k']);
+		// 16384 * 13.43 / 1e6 ≈ 0.22
+		const flat2k = Number(display!.matrix!.cells.flat!['2k']);
+		assert.ok(Math.abs(flat2k - 0.22) < 0.001);
+	});
+
 	it('returns null for legacy per-image-only profiles', () => {
 		const display = getCatalogImagePricingDisplay(
 			{

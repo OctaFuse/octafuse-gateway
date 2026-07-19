@@ -539,7 +539,9 @@ Authorization: Bearer <USER_API_KEY>
 
 ## Images（图片生成 / 编辑）
 
-OpenAI 兼容 Images API，供桌面 Agent 的 `generate_image` 等工具调用。鉴权与 Chat 相同（用户 API Key）；模型须在目录中配置 **OpenAI 协议**路由，且 `pricing_profile.tiers` 含 Image token 单价（见 Admin 模型页 / 预设 `gpt-image-2`）。
+> 模型清单、Provider、参数对照、计费折算与验收清单见权威整理：[文生图模型（Image Models）](../reference/image-models.md)。
+
+OpenAI 兼容 Images API，供桌面 Agent 的 `generate_image` 等工具调用。鉴权与 Chat 相同（用户 API Key）；模型须在目录中配置 **OpenAI 协议**路由，且 `pricing_profile.tiers` 含 Image token 单价（见 Admin 模型页 / 预设 `gpt-image-2`、`doubao-seedream-5-0-*`）。
 
 ### 生成
 
@@ -560,13 +562,27 @@ Content-Type: application/json
 }
 ```
 
+国内 Seedream（火山方舟）示例（catalog id 与上游同名）：
+
+```json
+{
+  "model": "doubao-seedream-5-0-260128",
+  "prompt": "海边灯塔水彩封面",
+  "n": 1,
+  "size": "2K",
+  "watermark": false
+}
+```
+
 | 字段 | 说明 |
 |------|------|
 | `model` | 必填；支持 `id:route_group` 后缀 |
 | `prompt` | 必填；最长 4000 字符 |
 | `n` | 仅允许 **1**（首期） |
-| `size` / `quality` / `background` | 可选；默认建议 `auto` |
+| `size` / `quality` / `background` | 可选；GPT Image 常用 `auto` / `1024x…`；Seedream 常用 `2K` / `4K` |
 | `response_format` | 可选；**仅当调用方显式传入时透传**。默认由上游决定（GPT Image 系列通常直接返回 `b64_json`，且不接受该参数） |
+| `watermark` / `sequential_image_generation` / `optimize_prompt_options` | 可选；Seedream 等兼容扩展，**显式传入时透传**；也可由路由 `custom_params` 注入默认值 |
+| `image` | 可选；Seedream **图生图 / 多图融合**用 JSON 字符串或字符串数组（URL / data URL），走本 generations 端点，**不是** multipart `/edits` |
 
 ### 编辑（参考图）
 

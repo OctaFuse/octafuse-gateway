@@ -15,10 +15,13 @@
 		"vendor_key": "volcengine",
 		"endpoints": {
 			"openai": {
-				"base": "https://ark.cn-beijing.volces.com/api/v3"
+				"endpoints": {
+					"chat": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+					"images.generations": "https://ark.cn-beijing.volces.com/api/v3/images/generations"
+				}
 			}
 		},
-		"description": "OpenAI-compatible root (/api/v3): chat/completions + images/generations (e.g. Seedream). Coding/Agent Plan templates use separate bases—do not mix."
+		"description": "Capability URLs only (no openai.base): chat/completions + images/generations. Seedream has no /images/edits — i2i uses generations + JSON `image`. Do not set base or Gateway would derive a dead edits URL. Coding/Agent Plan templates use separate paths—do not mix."
 	},
 	{
 		"name": "Volcengine Ark (Coding Plan)",

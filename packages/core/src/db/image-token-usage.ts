@@ -165,8 +165,30 @@ export const GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS: Record<string, number> = {
 	'auto:auto': 1767,
 };
 
+/**
+ * 火山 Seedream OpenAI 兼容响应常见 `usage.output_tokens`（按张折算进 Gateway token 计费）。
+ * 目录 `image_output_price` 按 [官方元/张] ÷ (本值/1M) 校准。
+ */
+export const SEEDREAM_TYPICAL_OUTPUT_TOKENS = 16_384;
+
+/**
+ * Seedream / 国内 OpenAI 兼容文生图 size 档位 → 预估 image output tokens（偏保守）。
+ * quality 键用 `flat`（无 GPT quality 分档）；Admin 估算矩阵与预检共用。
+ */
+export const SEEDREAM_ESTIMATED_OUTPUT_TOKENS: Record<string, number> = {
+	'flat:2k': SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+	'flat:3k': SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+	'flat:4k': SEEDREAM_TYPICAL_OUTPUT_TOKENS * 2,
+	'flat:auto': SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+	/** 兼容客户端直接传 `size=2K` 且 quality 缺省/auto 的预检 key */
+	'auto:2k': SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+	'auto:3k': SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+	'auto:4k': SEEDREAM_TYPICAL_OUTPUT_TOKENS * 2,
+};
+
 const KNOWN_QUALITIES = ['low', 'medium', 'high'] as const;
 const KNOWN_SIZES = ['1024x1024', '1024x1536', '1536x1024'] as const;
+const SEEDREAM_SIZE_ALIASES = new Set(['2k', '3k', '4k']);
 
 /** 预检：短 prompt 文本余量 */
 export const IMAGE_PRECHECK_TEXT_TOKEN_HEADROOM = 2_000;
@@ -175,7 +197,7 @@ export const IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM = 4_000;
 /** 与 Proxy edits 上限对齐（见 openai-images-driver IMAGE_MAX_REFERENCE_COUNT） */
 export const IMAGE_PRECHECK_MAX_REFERENCE_COUNT = 5;
 
-function maxEstimatedOutputTokensInTable(): number {
+function maxEstimatedOutputTokensInGptTable(): number {
 	let max = 0;
 	for (const v of Object.values(GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS)) {
 		if (v > max) max = v;
@@ -183,9 +205,22 @@ function maxEstimatedOutputTokensInTable(): number {
 	return max > 0 ? max : 7033;
 }
 
+/** 解析 `2048x2048` / `2048*2048`；任一边 ≥ 2048 视为 Seedream 类高分辨率。 */
+function parseExplicitPixelSize(size: string): { w: number; h: number } | null {
+	const m = /^(\d{3,5})\s*[x*×]\s*(\d{3,5})$/i.exec(size.trim());
+	if (!m) return null;
+	const w = Number(m[1]);
+	const h = Number(m[2]);
+	if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
+	return { w, h };
+}
+
 /**
- * 预检用 image output tokens：精确命中表项则用之；
- * `auto` 或未知 quality/size 取表内对应维度上界（真正保守）。
+ * 预检用 image output tokens：
+ * 1) GPT Image quality×size 精确表；
+ * 2) Seedream `2K`/`4K`/大像素尺寸；
+ * 3) GPT 表维度上界；
+ * 4) 未知档位取 Seedream 典型值（避免低估国内按张折算模型）。
  */
 export function estimateImageOutputTokensForPrecheck(
 	quality?: string | null,
@@ -193,9 +228,24 @@ export function estimateImageOutputTokensForPrecheck(
 ): number {
 	const qRaw = (quality?.trim().toLowerCase() || 'auto') || 'auto';
 	const sRaw = (size?.trim().toLowerCase() || 'auto') || 'auto';
-	const exact = GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS[`${qRaw}:${sRaw}`];
-	if (exact != null && qRaw !== 'auto' && sRaw !== 'auto') {
-		return exact;
+
+	const gptExact = GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS[`${qRaw}:${sRaw}`];
+	if (gptExact != null && qRaw !== 'auto' && sRaw !== 'auto') {
+		return gptExact;
+	}
+
+	const seedreamExact =
+		SEEDREAM_ESTIMATED_OUTPUT_TOKENS[`${qRaw}:${sRaw}`] ??
+		SEEDREAM_ESTIMATED_OUTPUT_TOKENS[`flat:${sRaw}`];
+	if (seedreamExact != null && SEEDREAM_SIZE_ALIASES.has(sRaw)) {
+		return seedreamExact;
+	}
+
+	const pixels = parseExplicitPixelSize(sRaw);
+	if (pixels && Math.max(pixels.w, pixels.h) >= 2048) {
+		const area = pixels.w * pixels.h;
+		// 约 4K（≥ 8MP）按双倍典型 token；否则按 2K 典型值
+		return area >= 8_000_000 ? SEEDREAM_TYPICAL_OUTPUT_TOKENS * 2 : SEEDREAM_TYPICAL_OUTPUT_TOKENS;
 	}
 
 	const qualities: readonly string[] =
@@ -214,7 +264,15 @@ export function estimateImageOutputTokensForPrecheck(
 			if (v != null && v > max) max = v;
 		}
 	}
-	return max > 0 ? max : maxEstimatedOutputTokensInTable();
+	if (max > 0 && (KNOWN_SIZES.includes(sRaw as (typeof KNOWN_SIZES)[number]) || sRaw === 'auto')) {
+		// 已知 GPT size / auto：保留 GPT 上界；完全未知 size 走 Seedream 典型值
+		if (sRaw === 'auto' && (qRaw === 'auto' || !KNOWN_QUALITIES.includes(qRaw as (typeof KNOWN_QUALITIES)[number]))) {
+			// 未指定 quality/size：取 GPT 与 Seedream 上界的较大者，避免国内模型预检低估
+			return Math.max(max, SEEDREAM_TYPICAL_OUTPUT_TOKENS);
+		}
+		return max;
+	}
+	return Math.max(maxEstimatedOutputTokensInGptTable(), SEEDREAM_TYPICAL_OUTPUT_TOKENS);
 }
 
 /** 构建预检用的 ImageTokenUsage（偏保守上界）。 */

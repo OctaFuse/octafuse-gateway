@@ -28,6 +28,7 @@ import {
 	type ImageBillingParams,
 	type ImageCostBreakdown,
 } from '../../services/image-usage-charge';
+import { applyOpenAiImageGenerationExtras } from '../../services/image-generation-extras';
 import {
 	countValidImageResults,
 	IMAGE_MAX_BYTES_PER_FILE,
@@ -497,6 +498,8 @@ imageRoutes.post('/generations', async (c) => {
 	if (typeof body.output_format === 'string') {
 		upstreamBody.output_format = body.output_format;
 	}
+	// Seedream 等兼容扩展：用户显式传入时透传；亦可由 route `custom_params` 注入默认值
+	applyOpenAiImageGenerationExtras(upstreamBody, body);
 
 	const stickyContext = buildStickyDispatchContext({
 		stickyConfigRaw: model.sticky_config ?? null,

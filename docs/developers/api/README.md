@@ -17,6 +17,7 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 
 - [运行时与数据存储架构](../architecture/runtime-data.md)（Cloudflare / Node，D1 / Postgres / MySQL）
 - [渠道模型思考参数配置说明](../reference/provider-thinking-configs.md)
+- [文生图模型（gpt-image-2 / Seedream）](../reference/image-models.md)
 - [流式计费与客户端取消](../reference/streaming-billing.md)
 - [Admin 分层约束](../architecture/admin-layered.md)
 - [用户审计日志（`user_audit_logs`）](../reference/user-audit-logs.md)
@@ -55,6 +56,8 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 | 端点 | 方法 | 描述 |
 |------|------|------|
 | `/v1/chat/completions` | POST | OpenAI 兼容聊天 |
+| `/v1/images/generations` | POST | OpenAI 兼容文生图（见 [image-models](../reference/image-models.md)） |
+| `/v1/images/edits` | POST | OpenAI 兼容图编辑（multipart；Seedream 不适用） |
 | `/v1/messages` | POST | Anthropic Messages |
 | `/v1beta/models/:modelAction` | POST | Gemini `generateContent` / `streamGenerateContent` |
 | `/v1/models` | GET | 模型列表（需用户 Key；OpenAI 兼容形态） |

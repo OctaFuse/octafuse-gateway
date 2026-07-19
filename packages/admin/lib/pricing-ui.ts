@@ -2,7 +2,11 @@
  * 管理 UI：定价 profile 摘要、列表排序键、请求日志 `pricing_audit` 可读摘要。
  * 单价单位文案中的币别与 `system_config.BILLING_CURRENCY` 对齐（调用方传入 ISO 码，默认 USD）。
  */
-import { GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS } from '@octafuse/core/db/image-token-usage';
+import {
+	GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS,
+	SEEDREAM_ESTIMATED_OUTPUT_TOKENS,
+	SEEDREAM_TYPICAL_OUTPUT_TOKENS,
+} from '@octafuse/core/db/image-token-usage';
 import {
 	parsePricingProfile,
 	profileHasImageTokenPricing,
@@ -232,6 +236,29 @@ function formatPriceCell(n: number): string {
 	return String(rounded);
 }
 
+/**
+ * 合并 GPT Image 与 Seedream（flat/2K/4K）估算表，供 Admin 只读矩阵展示。
+ * Seedream 无 quality 分档，用 `flat` 行；与 GPT 行并存，避免国内模型只看到低估的 GPT size。
+ */
+function listImageOutputTokenEstimateEntries(): Array<{ quality: string; size: string; tokens: number }> {
+	const out: Array<{ quality: string; size: string; tokens: number }> = [];
+	for (const [key, tokens] of Object.entries(GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS)) {
+		const idx = key.indexOf(':');
+		if (idx <= 0) continue;
+		out.push({ quality: key.slice(0, idx), size: key.slice(idx + 1), tokens });
+	}
+	for (const [key, tokens] of Object.entries(SEEDREAM_ESTIMATED_OUTPUT_TOKENS)) {
+		const idx = key.indexOf(':');
+		if (idx <= 0) continue;
+		const quality = key.slice(0, idx);
+		const size = key.slice(idx + 1);
+		// Admin 矩阵只展示 flat 行，避免与 GPT 的 auto:* 重复
+		if (quality !== 'flat') continue;
+		out.push({ quality, size, tokens });
+	}
+	return out;
+}
+
 function buildEstimateMatrixFromImageOutputPrice(
 	imageOutputPricePerM: number
 ): CatalogImagePricingMatrix | null {
@@ -239,11 +266,7 @@ function buildEstimateMatrixFromImageOutputPrice(
 	const cells: Record<string, Record<string, string>> = {};
 	const qualities = new Set<string>();
 	const sizes = new Set<string>();
-	for (const [key, tokens] of Object.entries(GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS)) {
-		const idx = key.indexOf(':');
-		if (idx <= 0) continue;
-		const q = key.slice(0, idx);
-		const s = key.slice(idx + 1);
+	for (const { quality: q, size: s, tokens } of listImageOutputTokenEstimateEntries()) {
 		qualities.add(q);
 		sizes.add(s);
 		if (!cells[q]) cells[q] = {};
@@ -257,8 +280,8 @@ function buildEstimateMatrixFromImageOutputPrice(
 	};
 }
 
-const QUALITY_ORDER = ['low', 'medium', 'high', 'auto'];
-const SIZE_ORDER = ['1024x1024', '1024x1536', '1536x1024', 'auto'];
+const QUALITY_ORDER = ['low', 'medium', 'high', 'auto', 'flat'];
+const SIZE_ORDER = ['1024x1024', '1024x1536', '1536x1024', '2k', '3k', '4k', 'auto'];
 
 function sortQualityKeys(keys: string[]): string[] {
 	return [...keys].sort((a, b) => {
@@ -300,10 +323,9 @@ export function getCatalogImagePricingDisplay(
 	const matrix = buildEstimateMatrixFromImageOutputPrice(imageOut);
 	const mediumAuto =
 		matrix?.cells.auto?.auto ??
+		matrix?.cells.flat?.['2k'] ??
 		matrix?.cells.medium?.['1024x1024'] ??
-		formatPriceCell(
-			((GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS['auto:auto'] ?? 0) * imageOut) / 1_000_000
-		);
+		formatPriceCell((SEEDREAM_TYPICAL_OUTPUT_TOKENS * imageOut) / 1_000_000);
 	return {
 		unit: perImageUnit,
 		billingKind: 'image_tokens',
