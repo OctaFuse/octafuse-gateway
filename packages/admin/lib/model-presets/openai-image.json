@@ -1,0 +1,49 @@
+[
+	{
+		"id": "gpt-image-2",
+		"display_name": "GPT Image 2",
+		"vendor": "openai",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5.0,
+						"output_price": 0,
+						"cache_read_price": 1.25,
+						"cache_write_price": null,
+						"image_input_price": 8.0,
+						"image_input_cache_price": 2.0,
+						"image_output_price": 30.0
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 36.25,
+						"output_price": 0,
+						"cache_read_price": 9.0625,
+						"cache_write_price": null,
+						"image_input_price": 58.0,
+						"image_input_cache_price": 14.5,
+						"image_output_price": 217.5
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-04-01"
+	}
+]

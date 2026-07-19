@@ -1,0 +1,102 @@
+[
+	{
+		"id": "gemini-3.1-flash-image",
+		"display_name": "Gemini 3.1 Flash Image",
+		"vendor": "google",
+		"context_window": null,
+		"max_tokens": null,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 0.5,
+						"image_input_cache_price": null,
+						"image_output_price": 60
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3.625,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 3.625,
+						"image_input_cache_price": null,
+						"image_output_price": 435
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-02-01"
+	},
+	{
+		"id": "gemini-3-pro-image-preview",
+		"display_name": "Gemini 3 Pro Image Preview",
+		"vendor": "google",
+		"context_window": null,
+		"max_tokens": null,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 2,
+						"image_input_cache_price": null,
+						"image_output_price": 120
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 14.5,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 14.5,
+						"image_input_cache_price": null,
+						"image_output_price": 870
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2025-11-01"
+	}
+]

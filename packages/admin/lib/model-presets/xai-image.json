@@ -1,0 +1,52 @@
+[
+	{
+		"id": "grok-imagine-image-quality",
+		"display_name": "Grok Imagine Image Quality",
+		"vendor": "xai",
+		"context_window": null,
+		"max_tokens": null,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": null,
+						"image_input_cache_price": null,
+						"image_output_price": 3.05
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": null,
+						"image_input_cache_price": null,
+						"image_output_price": 22.13
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-05-04"
+	}
+]
