@@ -80,6 +80,21 @@
 		"description": "Coding Plan–only endpoints and plan keys (sk-sp-*), separate from pay-as-you-go compatible-mode. See Alibaba Cloud \"Coding Plan tool integration\" docs."
 	},
 	{
+		"name": "Qwen AI Platform (Token Plan)",
+		"vendor_key": "aliyun",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions"
+				}
+			},
+			"anthropic": {
+				"base": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"
+			}
+		},
+		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + Anthropic base; plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. Image models use a separate Skill path—not this chat template. See platform.qianwenai.com Token Plan docs."
+	},
+	{
 		"name": "Tencent Hunyuan",
 		"vendor_key": "tencent",
 		"endpoints": {
