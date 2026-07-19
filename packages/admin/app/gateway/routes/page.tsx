@@ -2,9 +2,11 @@
 
 /**
  * 模型路由：`model_routes` CRUD、协议与 route_group、URL 查询参数驱动列表筛选（`useSearchParams` + Suspense）。
+ * 模型卡片标题 / 铅笔图标可就地打开 ModelModal（改 Tag 等），无需跳转 Models 页。
  */
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
+import { ModelModal } from '../models/components/model-modal';
 import { useRoutesPageState } from './use-routes-page-state';
 import { RouteFilterSidebar } from './components/route-filter-sidebar';
 import { RouteModal } from './components/route-modal';
@@ -97,6 +99,7 @@ function RoutesContent() {
 											onCopyModelId={state.copyModelId}
 											onCreate={state.handleCreate}
 											onEdit={state.handleEdit}
+											onEditModel={(modelId) => void state.modelEdit.openEditById(modelId)}
 											onToggleStatus={state.handleToggleStatus}
 											onOpenStickyDialog={state.handleOpenStickyDialog}
 										/>
@@ -131,6 +134,28 @@ function RoutesContent() {
 				onSave={state.handleSave}
 				onDelete={() => state.editingRoute && void state.handleDelete(state.editingRoute.id)}
 				onDuplicate={() => state.editingRoute && state.handleDuplicate(state.editingRoute)}
+			/>
+
+			<ModelModal
+				open={state.modelEdit.showModal}
+				editingModel={state.modelEdit.editingModel}
+				formData={state.modelEdit.formData}
+				pricingTierRows={state.modelEdit.pricingTierRows}
+				tagInput={state.modelEdit.tagInput}
+				saveError={state.modelEdit.saveError}
+				isSaving={state.modelEdit.isSaving}
+				isDeleting={state.modelEdit.isDeleting}
+				billingCurrency={state.modelEdit.billingCurrency}
+				onClose={state.modelEdit.closeModal}
+				onFormChange={state.modelEdit.setFormData}
+				onPricingTierRowsChange={state.modelEdit.setPricingTierRows}
+				onTagInputChange={state.modelEdit.setTagInput}
+				onAddTag={state.modelEdit.handleAddTag}
+				onRemoveTag={state.modelEdit.handleRemoveTag}
+				onToggleModality={state.modelEdit.toggleFormModality}
+				onKindChange={state.modelEdit.applyFormKind}
+				onSave={() => void state.modelEdit.handleSave()}
+				onDelete={(id) => void state.modelEdit.handleDelete(id)}
 			/>
 
 			{state.stickyDialog && (

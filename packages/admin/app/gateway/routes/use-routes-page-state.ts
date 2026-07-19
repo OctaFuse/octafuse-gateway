@@ -25,6 +25,7 @@ import {
 	parseKindFilterParam,
 	type ModelKindFilter,
 } from '../models/types';
+import { useModelEditModal } from '../models/use-model-edit-modal';
 import {
 	deleteRoute,
 	fetchRoutesPageData,
@@ -116,6 +117,8 @@ export function useRoutesPageState() {
 			setIsLoading(false);
 		}
 	}, []);
+
+	const modelEdit = useModelEditModal({ onChanged: refreshRoutesPage });
 
 	useEffect(() => {
 		void refreshRoutesPage();
@@ -550,5 +553,6 @@ export function useRoutesPageState() {
 		closeRouteModal,
 		closeStickyDialog,
 		refreshRoutesPage,
+		modelEdit,
 	};
 }

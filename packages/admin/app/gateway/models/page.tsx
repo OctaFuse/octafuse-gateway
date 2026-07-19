@@ -3,6 +3,7 @@
 /**
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
  * 左侧 Kind（LLM | Image，无 All）+ Vendor；右侧当前筛选模型卡片；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
+ * `?edit=<model_id>` 可从 Routes 等入口深链直接打开编辑弹窗（消费后从 URL 清除）。
  */
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';

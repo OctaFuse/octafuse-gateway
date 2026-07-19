@@ -1,6 +1,6 @@
 'use client';
 
-import { ClipboardDocumentIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { useTranslations } from 'next-intl';
@@ -19,6 +19,7 @@ type Props = {
 	onCopyModelId: (modelId: string) => void;
 	onCreate: (modelId: string) => void;
 	onEdit: (route: RouteListRow) => void;
+	onEditModel: (modelId: string) => void;
 	onToggleStatus: (route: RouteListRow) => void;
 	onOpenStickyDialog: (
 		modelId: string,
@@ -38,6 +39,7 @@ export function RouteModelCard(props: Props) {
 		onCopyModelId,
 		onCreate,
 		onEdit,
+		onEditModel,
 		onToggleStatus,
 		onOpenStickyDialog,
 	} = props;
@@ -62,9 +64,25 @@ export function RouteModelCard(props: Props) {
 			<div className="flex items-start justify-between gap-2 border-b border-gray-100 bg-white px-4 py-3 transition-colors group-hover:bg-blue-50/30 group-focus-within:bg-blue-50/30">
 				<div className="min-w-0 flex-1">
 					<div className="flex min-w-0 flex-wrap items-center gap-1.5">
-						<h4 className="min-w-0 truncate text-sm font-semibold leading-snug text-gray-900" title={title}>
-							{title}
+						<h4 className="min-w-0 truncate text-sm font-semibold leading-snug text-gray-900">
+							<button
+								type="button"
+								onClick={() => onEditModel(model_id)}
+								className="max-w-full truncate text-left text-gray-900 underline-offset-2 hover:text-blue-700 hover:underline focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-blue-500"
+								title={t('editModelTitle', { title })}
+							>
+								{title}
+							</button>
 						</h4>
+						<button
+							type="button"
+							onClick={() => onEditModel(model_id)}
+							className="shrink-0 rounded-md p-0.5 text-gray-400 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+							title={t('editModel', { title })}
+							aria-label={t('editModelAria', { title })}
+						>
+							<PencilSquareIcon className="h-4 w-4" />
+						</button>
 						<button
 							type="button"
 							onClick={() => void onCopyModelId(model_id)}

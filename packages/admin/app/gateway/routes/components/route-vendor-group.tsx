@@ -19,6 +19,7 @@ type Props = {
 	onCopyModelId: (modelId: string) => void;
 	onCreate: (modelId: string) => void;
 	onEdit: (route: RouteListRow) => void;
+	onEditModel: (modelId: string) => void;
 	onToggleStatus: (route: RouteListRow) => void;
 	onOpenStickyDialog: (
 		modelId: string,
@@ -41,6 +42,7 @@ export function RouteVendorGroup(props: Props) {
 		onCopyModelId,
 		onCreate,
 		onEdit,
+		onEditModel,
 		onToggleStatus,
 		onOpenStickyDialog,
 	} = props;
@@ -83,6 +85,7 @@ export function RouteVendorGroup(props: Props) {
 						onCopyModelId={onCopyModelId}
 						onCreate={onCreate}
 						onEdit={onEdit}
+						onEditModel={onEditModel}
 						onToggleStatus={onToggleStatus}
 						onOpenStickyDialog={onOpenStickyDialog}
 					/>

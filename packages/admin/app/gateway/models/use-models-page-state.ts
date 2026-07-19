@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
 	isImageGenerationModel,
 	parseModelModalitiesJson,
@@ -49,6 +49,9 @@ import {
 export function useModelsPageState() {
 	const tCatalog = useTranslations('models.catalog');
 	const searchParams = useSearchParams();
+	const router = useRouter();
+	const pathname = usePathname();
+	const editDeepLinkHandledRef = useRef<string | null>(null);
 	const [models, setModels] = useState<ModelListItem[]>([]);
 	const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
 	const [selectedKind, setSelectedKind] = useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
@@ -396,6 +399,39 @@ export function useModelsPageState() {
 		},
 		[fillFormFromModel]
 	);
+
+	/** Routes 等入口可通过 `?edit=<model_id>` 直接打开编辑弹窗。 */
+	useEffect(() => {
+		if (isLoading) return;
+		const editId = searchParams.get('edit')?.trim() ?? '';
+		if (!editId) {
+			editDeepLinkHandledRef.current = null;
+			return;
+		}
+		if (editDeepLinkHandledRef.current === editId) return;
+
+		const clearEditParam = () => {
+			const params = new URLSearchParams(searchParams.toString());
+			if (!params.has('edit')) return;
+			params.delete('edit');
+			const qs = params.toString();
+			router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+		};
+
+		const model = models.find((m) => m.id === editId);
+		editDeepLinkHandledRef.current = editId;
+		if (!model) {
+			console.warn(`Model deep-link edit id not found: ${editId}`);
+			clearEditParam();
+			return;
+		}
+
+		setSelectedKind(isImageGenerationModel(model) ? 'image' : 'llm');
+		const vendor = normalizeModelVendorInput(model.vendor);
+		if (vendor) setSelectedVendor(vendor);
+		void handleEdit(model);
+		clearEditParam();
+	}, [handleEdit, isLoading, models, pathname, router, searchParams]);
 
 	const handleDelete = useCallback(
 		async (id: string) => {
