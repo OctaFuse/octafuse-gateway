@@ -37,4 +37,20 @@ describe('previewPlaygroundUpstreamUrl', () => {
 		});
 		assert.equal(url, 'https://api.openai.com/v1/images/generations');
 	});
+
+	it('appends /images/edits when imageOperation is edits', () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: 'p1',
+				endpoints: JSON.stringify({
+					openai: { base: 'https://api.openai.com/v1' },
+				}),
+			},
+			upstreamProtocol: 'openai',
+			providerModelName: 'gpt-image-2',
+			isImageModel: true,
+			imageOperation: 'edits',
+		});
+		assert.equal(url, 'https://api.openai.com/v1/images/edits');
+	});
 });

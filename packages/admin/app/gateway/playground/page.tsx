@@ -11,10 +11,15 @@ import { ImageGenerationsPreview } from '@/components/image-generations-preview'
 import { RequestTargetUrl } from '@/components/request-target-url';
 import { readApiJson } from '@/lib/api-json';
 import {
+	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	IMAGE_MAX_REFERENCE_COUNT,
 	imageRequestMetaFromBody,
 	isImageRouteModel,
 	parseImagesGenerationsResponse,
+	readFileAsDataUrl,
+	validateEditImageFiles,
+	type ImageOperation,
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
 import {
@@ -140,6 +145,8 @@ export default function PlaygroundPage() {
 	const [bodyText, setBodyText] = useState(BODY_TEMPLATES.openai);
 	const [bodyError, setBodyError] = useState<string | null>(null);
 	const [geminiAction, setGeminiAction] = useState<'generateContent' | 'streamGenerateContent'>('streamGenerateContent');
+	const [imageOperation, setImageOperation] = useState<ImageOperation>('generations');
+	const [editFiles, setEditFiles] = useState<File[]>([]);
 
 	const [sending, setSending] = useState(false);
 	const [responseMeta, setResponseMeta] = useState<{
@@ -179,9 +186,10 @@ export default function PlaygroundPage() {
 			upstreamProtocol: selected.upstream_protocol,
 			providerModelName: selected.provider_model_name,
 			isImageModel: selectedIsImage,
+			imageOperation: selectedIsImage ? imageOperation : undefined,
 			geminiAction,
 		});
-	}, [selected, providersById, selectedIsImage, geminiAction]);
+	}, [selected, providersById, selectedIsImage, imageOperation, geminiAction]);
 
 	/** 发送后以上游实际 URL 为准；否则展示与 Send 同规则的预览。 */
 	const requestTargetUrl = responseMeta?.upstreamUrl ?? previewUpstreamUrl;
@@ -348,6 +356,8 @@ export default function PlaygroundPage() {
 		const proto = normalizeProtocol(r.upstream_protocol);
 		const m = modelsById.get(r.model_id);
 		const isImage = m ? isImageRouteModel(m) : false;
+		setImageOperation('generations');
+		setEditFiles([]);
 		setBodyText(
 			isImage && proto === 'openai'
 				? IMAGE_GENERATIONS_BODY_TEMPLATE
@@ -360,6 +370,17 @@ export default function PlaygroundPage() {
 		setResponseText('');
 		setUsageHint(null);
 	}, [selectedId, routes, modelsById]);
+
+	const onImageOperationChange = (next: ImageOperation) => {
+		setImageOperation(next);
+		if (selectedIsImage && normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'openai') {
+			setBodyText(next === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE);
+			setBodyError(null);
+		}
+		if (next === 'generations') {
+			setEditFiles([]);
+		}
+	};
 
 	const scrollStreamToBottom = useCallback(() => {
 		streamEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -386,6 +407,29 @@ export default function PlaygroundPage() {
 			setBodyError(tCommon('invalidJson'));
 			return;
 		}
+
+		const proto = normalizeProtocol(selected.upstream_protocol);
+		const useImages = selectedIsImage && proto === 'openai';
+		const effectiveImageOp: ImageOperation | undefined = useImages ? imageOperation : undefined;
+
+		if (effectiveImageOp === 'edits') {
+			const validated = validateEditImageFiles(editFiles);
+			if (!validated.ok) {
+				setBodyError(validated.error);
+				return;
+			}
+			try {
+				const dataUrls = await Promise.all(editFiles.map((f) => readFileAsDataUrl(f)));
+				bodyObj = {
+					...bodyObj,
+					image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
+				};
+			} catch (e) {
+				setBodyError(e instanceof Error ? e.message : tCommon('requestFailed'));
+				return;
+			}
+		}
+
 		setBodyError(null);
 		setSending(true);
 		setResponseText('');
@@ -394,16 +438,18 @@ export default function PlaygroundPage() {
 		setResponseMeta(null);
 		setLastSentWireBody(null);
 
-		const proto = normalizeProtocol(selected.upstream_protocol);
-		const useImages = selectedIsImage && proto === 'openai';
 		setResponseProtocol(proto);
 		const payload: {
 			routeId: string;
 			body: Record<string, unknown>;
 			geminiAction?: 'generateContent' | 'streamGenerateContent';
+			imageOperation?: ImageOperation;
 		} = { routeId: selected.id, body: bodyObj };
 		if (proto === 'gemini') {
 			payload.geminiAction = geminiAction;
+		}
+		if (effectiveImageOp) {
+			payload.imageOperation = effectiveImageOp;
 		}
 
 		try {
@@ -677,7 +723,14 @@ export default function PlaygroundPage() {
 								<button
 									type="button"
 									onClick={() => void send()}
-									disabled={sending || !selected || imageSendBlocked}
+									disabled={
+										sending ||
+										!selected ||
+										imageSendBlocked ||
+										(selectedIsImage &&
+											imageOperation === 'edits' &&
+											!validateEditImageFiles(editFiles).ok)
+									}
 									className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
 								>
 									<PaperAirplaneIcon className="h-4 w-4" />
@@ -689,8 +742,88 @@ export default function PlaygroundPage() {
 									{t('imageOpenaiOnly')}
 								</div>
 							) : null}
+							<div className="space-y-1">
+								<RequestTargetUrl
+									label={t('requestTargetUrl')}
+									url={requestTargetUrl}
+									emptyHint={t('requestTargetUrlEmpty')}
+								/>
+								{selected ? (
+									<p className="text-[11px] text-gray-400">{t('requestTargetUrlHint')}</p>
+								) : null}
+							</div>
 							{selectedIsImage && !imageSendBlocked ? (
-								<p className="text-xs text-gray-500">{t('imageGenerationsHint')}</p>
+								<>
+									<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
+										<legend className="sr-only">{t('imageOperation')}</legend>
+										<span className="text-gray-600 font-medium">{t('imageOperation')}</span>
+										<label className="inline-flex items-center gap-2 cursor-pointer">
+											<input
+												type="radio"
+												name="playgroundImageOperation"
+												className="text-blue-600 focus:ring-blue-500"
+												checked={imageOperation === 'generations'}
+												onChange={() => onImageOperationChange('generations')}
+												disabled={sending}
+											/>
+											generations
+										</label>
+										<label className="inline-flex items-center gap-2 cursor-pointer">
+											<input
+												type="radio"
+												name="playgroundImageOperation"
+												className="text-blue-600 focus:ring-blue-500"
+												checked={imageOperation === 'edits'}
+												onChange={() => onImageOperationChange('edits')}
+												disabled={sending}
+											/>
+											edits
+										</label>
+									</fieldset>
+									<p className="text-xs text-gray-500">
+										{imageOperation === 'edits' ? t('imageEditsHint') : t('imageGenerationsHint')}
+									</p>
+									{imageOperation === 'edits' ? (
+										<div>
+											<label className={labelClass}>{t('referenceImages')}</label>
+											<input
+												type="file"
+												accept="image/png,image/jpeg,image/webp,image/*"
+												multiple
+												disabled={sending}
+												className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+												onChange={(e) => {
+													const list = e.target.files ? Array.from(e.target.files) : [];
+													setEditFiles(list.slice(0, IMAGE_MAX_REFERENCE_COUNT));
+												}}
+											/>
+											<p className="mt-1 text-[11px] text-gray-400">
+												{t('referenceImagesHint', { max: IMAGE_MAX_REFERENCE_COUNT })}
+												{editFiles.length > 0
+													? ` · ${t('referenceImagesSelected', { count: editFiles.length })}`
+													: ''}
+											</p>
+											{editFiles.length === 0 ? (
+												<p className="mt-1 text-xs text-amber-700">{t('referenceImagesRequired')}</p>
+											) : null}
+											{(() => {
+												if (editFiles.length === 0) return null;
+												const validated = validateEditImageFiles(editFiles);
+												if (validated.ok) return null;
+												return <p className="mt-1 text-xs text-red-600">{validated.error}</p>;
+											})()}
+											{editFiles.length > 0 ? (
+												<ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
+													{editFiles.map((f) => (
+														<li key={`${f.name}-${f.size}-${f.lastModified}`}>
+															{f.name} ({f.size} bytes)
+														</li>
+													))}
+												</ul>
+											) : null}
+										</div>
+									) : null}
+								</>
 							) : null}
 							{normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' &&
 								!selectedIsImage && (
@@ -718,16 +851,6 @@ export default function PlaygroundPage() {
 									</label>
 								</fieldset>
 							)}
-							<div className="space-y-1">
-								<RequestTargetUrl
-									label={t('requestTargetUrl')}
-									url={requestTargetUrl}
-									emptyHint={t('requestTargetUrlEmpty')}
-								/>
-								{selected ? (
-									<p className="text-[11px] text-gray-400">{t('requestTargetUrlHint')}</p>
-								) : null}
-							</div>
 							<div>
 								<label className={labelClass}>JSON</label>
 								<textarea

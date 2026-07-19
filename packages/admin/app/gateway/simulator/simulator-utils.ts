@@ -1,4 +1,8 @@
-import { IMAGE_GENERATIONS_BODY_TEMPLATE } from '@/lib/image-generations';
+import {
+	IMAGE_EDITS_BODY_TEMPLATE,
+	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	type ImageOperation,
+} from '@/lib/image-generations';
 import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
 import type { AdminKeyListItem, AdminModelRow, RouteListRow } from './types';
 
@@ -36,13 +40,14 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
 }`,
 };
 
-/** Chat or Images generations template for the current selection. */
+/** Chat or Images generations/edits template for the current selection. */
 export function bodyTemplateForSelection(
 	protocol: SimulatorProtocol,
-	isImageModel: boolean
+	isImageModel: boolean,
+	imageOperation: ImageOperation = 'generations'
 ): string {
 	if (isImageModel && protocol === 'openai') {
-		return IMAGE_GENERATIONS_BODY_TEMPLATE;
+		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
 	}
 	return BODY_TEMPLATES[protocol];
 }
@@ -75,11 +80,12 @@ export function normalizeBodyWhitespace(text: string): string {
 export function isBodyDirty(
 	bodyText: string,
 	protocol: SimulatorProtocol,
-	isImageModel = false
+	isImageModel = false,
+	imageOperation: ImageOperation = 'generations'
 ): boolean {
 	return (
 		normalizeBodyWhitespace(bodyText) !==
-		normalizeBodyWhitespace(bodyTemplateForSelection(protocol, isImageModel))
+		normalizeBodyWhitespace(bodyTemplateForSelection(protocol, isImageModel, imageOperation))
 	);
 }
 

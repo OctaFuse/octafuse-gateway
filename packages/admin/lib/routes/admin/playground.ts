@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
 import { requireMasterKey } from '@/lib/middleware/admin-auth';
 import type { GeminiContentAction } from '@octafuse/core/gemini-upstream-url';
+import type { ImageOperation } from '@/lib/image-generations';
 import { invokePlaygroundUpstream } from '@/lib/services/admin/playground-service';
 import { handleAdminRouteError } from './error-response';
 
@@ -17,6 +18,7 @@ type PlaygroundPostBody = {
 	routeId?: unknown;
 	body?: unknown;
 	geminiAction?: unknown;
+	imageOperation?: unknown;
 	providerKeyId?: unknown;
 };
 
@@ -44,6 +46,16 @@ adminPlaygroundRoutes.post('/', async (c) => {
 		);
 	}
 
+	let imageOperation: ImageOperation | undefined;
+	if (parsed.imageOperation === 'generations' || parsed.imageOperation === 'edits') {
+		imageOperation = parsed.imageOperation;
+	} else if (parsed.imageOperation != null && parsed.imageOperation !== '') {
+		return c.json(
+			{ success: false as const, message: 'imageOperation must be generations or edits' },
+			400
+		);
+	}
+
 	try {
 		const { response, upstreamUrlForHeader, latencyMs, upstreamWireBodyJson } =
 			await invokePlaygroundUpstream(
@@ -52,6 +64,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 					routeId,
 					body: rawBody as Record<string, unknown>,
 					geminiAction,
+					imageOperation,
 					providerKeyId: typeof parsed.providerKeyId === 'string' ? parsed.providerKeyId : undefined,
 				},
 				c.req.raw.signal

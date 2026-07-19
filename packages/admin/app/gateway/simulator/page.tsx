@@ -102,6 +102,11 @@ export default function SimulatorPage() {
 							sendBlockedHint={s.sendBlockedHint}
 							onSend={() => void s.send()}
 							onStop={() => s.stop()}
+							showImageOperation={s.selectedModelIsImage && s.protocol === 'openai'}
+							imageOperation={s.imageOperation}
+							onImageOperationChange={s.setImageOperation}
+							editFiles={s.editFiles}
+							onEditFilesChange={s.setEditFiles}
 						/>
 						<SimulatorResponsePanel
 							responseMeta={s.responseMeta}

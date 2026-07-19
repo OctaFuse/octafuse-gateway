@@ -13,6 +13,12 @@ import {
 } from '@octafuse/core/provider-endpoints';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
+import {
+	IMAGE_MAX_BYTES_PER_FILE,
+	IMAGE_MAX_REFERENCE_COUNT,
+	IMAGE_MAX_TOTAL_UPLOAD_BYTES,
+	type ImageOperation,
+} from '@/lib/image-generations';
 import { AdminServiceError, badRequest, notFound } from './errors';
 import { resolvePlaygroundProviderKey } from './provider-api-keys-service';
 
@@ -175,9 +181,114 @@ export type PlaygroundInvokeInput = {
 	body: Record<string, unknown>;
 	/** 仅 `upstream_protocol === gemini` 时使用；缺省为 `generateContent`。 */
 	geminiAction?: GeminiContentAction;
+	/**
+	 * Image models: `generations` (JSON) or `edits` (multipart).
+	 * Default: generations when `isImageModel`, otherwise ignored.
+	 * For edits, `body.image` / `body.images` should be data URL string(s).
+	 */
+	imageOperation?: ImageOperation;
 	/** 可选：指定 `provider_api_keys.id` 做连通性测试。 */
 	providerKeyId?: string | null;
 };
+
+type DecodedEditImage = {
+	filename: string;
+	mimeType: string;
+	bytes: Uint8Array;
+};
+
+function decodeDataUrlImage(
+	raw: string,
+	fallbackName: string
+): DecodedEditImage | { error: string } {
+	const trimmed = raw.trim();
+	const m = /^data:([^;]+);base64,(.+)$/i.exec(trimmed);
+	if (!m) {
+		return { error: `image must be a data URL (got ${fallbackName})` };
+	}
+	const mimeType = m[1].trim() || 'application/octet-stream';
+	const b64 = m[2].replace(/\s/g, '');
+	let binary: string;
+	try {
+		binary = atob(b64);
+	} catch {
+		return { error: `invalid base64 in ${fallbackName}` };
+	}
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	if (bytes.byteLength > IMAGE_MAX_BYTES_PER_FILE) {
+		return { error: `each image must be at most ${IMAGE_MAX_BYTES_PER_FILE} bytes` };
+	}
+	const ext =
+		mimeType.includes('jpeg') || mimeType.includes('jpg')
+			? 'jpg'
+			: mimeType.includes('webp')
+				? 'webp'
+				: 'png';
+	return {
+		filename: fallbackName.includes('.') ? fallbackName : `${fallbackName}.${ext}`,
+		mimeType,
+		bytes,
+	};
+}
+
+function collectEditImagesFromBody(
+	body: Record<string, unknown>
+): { ok: true; images: DecodedEditImage[] } | { ok: false; error: string } {
+	const images: DecodedEditImage[] = [];
+	let total = 0;
+
+	const push = (value: unknown, name: string): string | null => {
+		if (typeof value !== 'string' || value.trim() === '') {
+			return `image field ${name} must be a non-empty data URL string`;
+		}
+		const decoded = decodeDataUrlImage(value, name);
+		if ('error' in decoded) return decoded.error;
+		if (total + decoded.bytes.byteLength > IMAGE_MAX_TOTAL_UPLOAD_BYTES) {
+			return `total image upload must be at most ${IMAGE_MAX_TOTAL_UPLOAD_BYTES} bytes`;
+		}
+		total += decoded.bytes.byteLength;
+		images.push(decoded);
+		return null;
+	};
+
+	const field = body.image ?? body.images;
+	if (Array.isArray(field)) {
+		let i = 0;
+		for (const item of field) {
+			const err = push(item, `image-${i++}`);
+			if (err) return { ok: false, error: err };
+		}
+	} else if (field != null) {
+		const err = push(field, 'image');
+		if (err) return { ok: false, error: err };
+	}
+
+	if (images.length === 0) {
+		return { ok: false, error: 'At least one reference image (data URL) is required for edits' };
+	}
+	if (images.length > IMAGE_MAX_REFERENCE_COUNT) {
+		return {
+			ok: false,
+			error: `At most ${IMAGE_MAX_REFERENCE_COUNT} reference images are allowed`,
+		};
+	}
+	return { ok: true, images };
+}
+
+function appendOptionalFormString(fd: FormData, key: string, value: unknown): void {
+	if (value == null) return;
+	if (typeof value === 'string') {
+		const t = value.trim();
+		if (t !== '') fd.append(key, t);
+		return;
+	}
+	if (typeof value === 'number' && Number.isFinite(value)) {
+		fd.append(key, String(value));
+	}
+}
 
 export type PlaygroundInvokeResult = {
 	response: Response;
@@ -205,25 +316,79 @@ export async function invokePlaygroundUpstream(
 	const merged = mergePlaygroundRequestBody(route, userBody);
 	let url: string;
 	let headers: Record<string, string>;
-	let requestBody: Record<string, unknown>;
+	let fetchBody: BodyInit;
+	let upstreamWireBodyJson: string;
 
 	const start = Date.now();
 
 	if (route.isImageModel && route.upstreamProtocol !== 'openai') {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai (Playground Images only calls /images/generations).'
+			'Image-generation models require upstream_protocol=openai (Playground Images only calls /images/generations or /images/edits).'
 		);
 	}
 
+	const imageOperation: ImageOperation | null = route.isImageModel
+		? input.imageOperation === 'edits'
+			? 'edits'
+			: 'generations'
+		: null;
+
 	switch (route.upstreamProtocol) {
 		case 'openai': {
-			try {
-				url = resolveUpstreamEndpoint(
-					'openai',
-					route.isImageModel ? 'images.generations' : 'chat',
-					route.providerEndpoints,
-					{ providerId: route.providerId }
+			if (imageOperation === 'edits') {
+				const collected = collectEditImagesFromBody(merged);
+				if (!collected.ok) throw badRequest(collected.error);
+				try {
+					url = resolveUpstreamEndpoint('openai', 'images.edits', route.providerEndpoints, {
+						providerId: route.providerId,
+					});
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve OpenAI edits URL');
+				}
+				const fd = new FormData();
+				fd.append('model', route.providerModelName);
+				appendOptionalFormString(fd, 'prompt', merged.prompt);
+				appendOptionalFormString(fd, 'n', merged.n);
+				appendOptionalFormString(fd, 'size', merged.size);
+				appendOptionalFormString(fd, 'quality', merged.quality);
+				appendOptionalFormString(fd, 'background', merged.background);
+				const fileSummaries: string[] = [];
+				for (const img of collected.images) {
+					const copy = img.bytes.buffer.slice(
+						img.bytes.byteOffset,
+						img.bytes.byteOffset + img.bytes.byteLength
+					) as ArrayBuffer;
+					const file = new File([copy], img.filename, { type: img.mimeType });
+					fd.append('image', file, img.filename);
+					fileSummaries.push(`${img.filename} (${img.bytes.byteLength} bytes, ${img.mimeType})`);
+				}
+				headers = {
+					Authorization: `Bearer ${route.providerApiKey}`,
+				};
+				fetchBody = fd;
+				upstreamWireBodyJson = JSON.stringify(
+					{
+						__playground_multipart: true,
+						operation: 'images.edits',
+						model: route.providerModelName,
+						prompt: typeof merged.prompt === 'string' ? merged.prompt : undefined,
+						n: merged.n,
+						size: merged.size,
+						quality: merged.quality,
+						background: merged.background,
+						images: fileSummaries,
+					},
+					null,
+					2
 				);
+				break;
+			}
+
+			const capability = imageOperation === 'generations' ? 'images.generations' : 'chat';
+			try {
+				url = resolveUpstreamEndpoint('openai', capability, route.providerEndpoints, {
+					providerId: route.providerId,
+				});
 			} catch (e) {
 				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve OpenAI upstream URL');
 			}
@@ -231,7 +396,12 @@ export async function invokePlaygroundUpstream(
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${route.providerApiKey}`,
 			};
-			requestBody = { ...merged, model: route.providerModelName };
+			const requestBody: Record<string, unknown> = { ...merged, model: route.providerModelName };
+			// Strip accidental data-URL image fields from generations JSON
+			delete requestBody.image;
+			delete requestBody.images;
+			fetchBody = JSON.stringify(requestBody);
+			upstreamWireBodyJson = fetchBody;
 			break;
 		}
 		case 'anthropic': {
@@ -247,7 +417,9 @@ export async function invokePlaygroundUpstream(
 				'x-api-key': route.providerApiKey,
 				'anthropic-version': '2023-06-01',
 			};
-			requestBody = { ...merged, model: route.providerModelName };
+			const requestBody = { ...merged, model: route.providerModelName };
+			fetchBody = JSON.stringify(requestBody);
+			upstreamWireBodyJson = fetchBody;
 			break;
 		}
 		case 'gemini': {
@@ -261,7 +433,8 @@ export async function invokePlaygroundUpstream(
 			}
 			url = geminiRequest.url;
 			headers = geminiRequest.headers;
-			requestBody = merged;
+			fetchBody = JSON.stringify(merged);
+			upstreamWireBodyJson = fetchBody;
 			break;
 		}
 		default: {
@@ -275,7 +448,7 @@ export async function invokePlaygroundUpstream(
 		response = await fetch(url, {
 			method: 'POST',
 			headers,
-			body: JSON.stringify(requestBody),
+			body: fetchBody,
 			signal: requestSignal,
 		});
 	} catch (e) {
@@ -287,7 +460,6 @@ export async function invokePlaygroundUpstream(
 	const upstreamUrlForHeader =
 		route.upstreamProtocol === 'gemini' ? stripApiKeyFromUrlForHeader(url) : url;
 
-	let upstreamWireBodyJson = JSON.stringify(requestBody);
 	/** 响应自定义头不宜过大；超长时截断并标注（避免中间截断破坏 JSON）。 */
 	const WIRE_BODY_HEADER_MAX = 6144;
 	if (upstreamWireBodyJson.length > WIRE_BODY_HEADER_MAX) {

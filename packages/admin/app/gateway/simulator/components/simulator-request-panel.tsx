@@ -3,6 +3,11 @@
 import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { RequestTargetUrl } from '@/components/request-target-url';
+import {
+	IMAGE_MAX_REFERENCE_COUNT,
+	validateEditImageFiles,
+	type ImageOperation,
+} from '@/lib/image-generations';
 import { codeBlockClass, inputClass, labelClass, prettyJsonBody } from '../simulator-utils';
 import type { WirePreview } from '../types';
 
@@ -21,6 +26,12 @@ type Props = {
 	sendBlockedHint: string | null;
 	onSend: () => void;
 	onStop: () => void;
+	/** Image catalog model selected with openai protocol. */
+	showImageOperation?: boolean;
+	imageOperation?: ImageOperation;
+	onImageOperationChange?: (op: ImageOperation) => void;
+	editFiles?: File[];
+	onEditFilesChange?: (files: File[]) => void;
 };
 
 export function SimulatorRequestPanel({
@@ -38,6 +49,11 @@ export function SimulatorRequestPanel({
 	sendBlockedHint,
 	onSend,
 	onStop,
+	showImageOperation = false,
+	imageOperation = 'generations',
+	onImageOperationChange,
+	editFiles = [],
+	onEditFilesChange,
 }: Props) {
 	const t = useTranslations('simulator');
 	const tCommon = useTranslations('common');
@@ -90,6 +106,81 @@ export function SimulatorRequestPanel({
 				url={displayWire?.url}
 				emptyHint={t('requestTargetUrlEmpty')}
 			/>
+			{showImageOperation ? (
+				<>
+					<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
+						<legend className="sr-only">{t('imageOperation')}</legend>
+						<span className="text-gray-600 font-medium">{t('imageOperation')}</span>
+						<label className="inline-flex items-center gap-2 cursor-pointer">
+							<input
+								type="radio"
+								name="simulatorImageOperation"
+								className="text-blue-600 focus:ring-blue-500"
+								checked={imageOperation === 'generations'}
+								onChange={() => onImageOperationChange?.('generations')}
+								disabled={sending}
+							/>
+							generations
+						</label>
+						<label className="inline-flex items-center gap-2 cursor-pointer">
+							<input
+								type="radio"
+								name="simulatorImageOperation"
+								className="text-blue-600 focus:ring-blue-500"
+								checked={imageOperation === 'edits'}
+								onChange={() => onImageOperationChange?.('edits')}
+								disabled={sending}
+							/>
+							edits
+						</label>
+					</fieldset>
+					{imageOperation === 'generations' ? (
+						<p className="text-xs text-gray-500">{t('imageGenerationsHint')}</p>
+					) : (
+						<p className="text-xs text-gray-500">{t('imageEditsHint')}</p>
+					)}
+					{imageOperation === 'edits' ? (
+						<div>
+							<label className={labelClass}>{t('referenceImages')}</label>
+							<input
+								type="file"
+								accept="image/png,image/jpeg,image/webp,image/*"
+								multiple
+								disabled={sending}
+								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+								onChange={(e) => {
+									const list = e.target.files ? Array.from(e.target.files) : [];
+									onEditFilesChange?.(list.slice(0, IMAGE_MAX_REFERENCE_COUNT));
+								}}
+							/>
+							<p className="mt-1 text-[11px] text-gray-400">
+								{t('referenceImagesHint', { max: IMAGE_MAX_REFERENCE_COUNT })}
+								{editFiles.length > 0
+									? ` · ${t('referenceImagesSelected', { count: editFiles.length })}`
+									: ''}
+							</p>
+							{editFiles.length === 0 ? (
+								<p className="mt-1 text-xs text-amber-700">{t('referenceImagesRequired')}</p>
+							) : null}
+							{(() => {
+								if (editFiles.length === 0) return null;
+								const validated = validateEditImageFiles(editFiles);
+								if (validated.ok) return null;
+								return <p className="mt-1 text-xs text-red-600">{validated.error}</p>;
+							})()}
+							{editFiles.length > 0 ? (
+								<ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
+									{editFiles.map((f) => (
+										<li key={`${f.name}-${f.size}-${f.lastModified}`}>
+											{f.name} ({f.size} bytes)
+										</li>
+									))}
+								</ul>
+							) : null}
+						</div>
+					) : null}
+				</>
+			) : null}
 			<div className="flex-1 min-h-0 flex flex-col">
 				<label className={labelClass}>JSON</label>
 				<textarea
@@ -131,7 +222,11 @@ export function SimulatorRequestPanel({
 							</div>
 							<div>
 								<div className="text-[11px] font-medium text-gray-500 mb-1">{t('wireBody')}</div>
-								<pre className={codeBlockClass}>{prettyJsonBody(displayWire.bodyText)}</pre>
+								<pre className={codeBlockClass}>
+									{displayWire.isMultipart
+										? displayWire.bodyText
+										: prettyJsonBody(displayWire.bodyText)}
+								</pre>
 							</div>
 						</div>
 					) : (

@@ -28,6 +28,51 @@ describe('buildSimulatorRequest openai', () => {
 		assert.equal(parsed.model, 'gpt-image-2');
 		assert.equal(parsed.prompt, 'a red apple');
 	});
+
+	it('uses images/generations when imageOperation is generations', () => {
+		const result = buildSimulatorRequest({
+			baseUrl: 'https://gateway.example.com',
+			protocol: 'openai',
+			modelForRouting: 'gpt-image-2',
+			body: { prompt: 'hi' },
+			apiKey: 'sk-test',
+			imageOperation: 'generations',
+		});
+		assert.equal(result.url, 'https://gateway.example.com/v1/images/generations');
+		assert.equal(result.formData, undefined);
+	});
+
+	it('builds multipart for images/edits', () => {
+		const file = new File([Uint8Array.from([137, 80, 78, 71])], 'ref.png', { type: 'image/png' });
+		const result = buildSimulatorRequest({
+			baseUrl: 'https://gateway.example.com',
+			protocol: 'openai',
+			modelForRouting: 'gpt-image-2',
+			body: { prompt: 'make it green', n: 1, size: '1024x1024' },
+			apiKey: 'sk-test',
+			imageOperation: 'edits',
+			editImages: [file],
+		});
+		assert.equal(result.url, 'https://gateway.example.com/v1/images/edits');
+		assert.ok(result.formData);
+		assert.equal(result.headers['Content-Type'], undefined);
+		assert.equal(result.headers.Authorization, 'Bearer sk-test');
+		assert.match(result.multipartSummary ?? '', /ref\.png/);
+	});
+
+	it('previews images/edits URL even when no reference files yet', () => {
+		const result = buildSimulatorRequest({
+			baseUrl: 'https://gateway.example.com',
+			protocol: 'openai',
+			modelForRouting: 'gpt-image-2',
+			body: { prompt: 'make it green' },
+			apiKey: 'sk-test',
+			imageOperation: 'edits',
+			editImages: [],
+		});
+		assert.equal(result.url, 'https://gateway.example.com/v1/images/edits');
+		assert.match(result.multipartSummary ?? '', /none selected/);
+	});
 });
 
 describe('buildSimulatorRequest gemini', () => {

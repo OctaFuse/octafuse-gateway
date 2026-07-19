@@ -8,6 +8,8 @@ import {
 	imageRequestMetaFromBody,
 	isImageRouteModel,
 	parseImagesGenerationsResponse,
+	validateEditImageFiles,
+	type ImageOperation,
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
 import {
@@ -47,6 +49,8 @@ export function useSimulatorPageState() {
 	const [proxyBaseUrl, setProxyBaseUrl] = useState('');
 	const [protocol, setProtocolState] = useState<SimulatorProtocol>('openai');
 	const [geminiAction, setGeminiAction] = useState<SimulatorGeminiAction>('streamGenerateContent');
+	const [imageOperation, setImageOperationState] = useState<ImageOperation>('generations');
+	const [editFiles, setEditFiles] = useState<File[]>([]);
 
 	const [models, setModels] = useState<AdminModelRow[]>([]);
 	const [routes, setRoutes] = useState<RouteListRow[]>([]);
@@ -144,6 +148,10 @@ export function useSimulatorPageState() {
 		if (!parsed.ok) return 'proxyBaseUrl';
 		if (!selectedModelId) return 'model';
 		if (selectedModelIsImage && protocol !== 'openai') return 'imageProtocol';
+		if (selectedModelIsImage && protocol === 'openai' && imageOperation === 'edits') {
+			const validated = validateEditImageFiles(editFiles);
+			if (!validated.ok) return 'editImages';
+		}
 		if (revealLoading && selectedKeyId) return 'keyLoading';
 		if (!revealedSk || !revealedSk.startsWith('sk-')) return 'key';
 		return null;
@@ -152,6 +160,8 @@ export function useSimulatorPageState() {
 		selectedModelId,
 		selectedModelIsImage,
 		protocol,
+		imageOperation,
+		editFiles,
 		revealLoading,
 		selectedKeyId,
 		revealedSk,
@@ -165,6 +175,12 @@ export function useSimulatorPageState() {
 				return t('readyNeedModel');
 			case 'imageProtocol':
 				return t('readyNeedOpenaiForImage');
+			case 'editImages': {
+				// Empty-file hint is shown under the reference-images control; only surface size/count errors here.
+				if (editFiles.length === 0) return null;
+				const validated = validateEditImageFiles(editFiles);
+				return validated.ok ? null : validated.error;
+			}
 			case 'keyLoading':
 				return t('readyNeedKeyLoading');
 			case 'key':
@@ -172,7 +188,7 @@ export function useSimulatorPageState() {
 			default:
 				return null;
 		}
-	}, [sendBlockReason, t]);
+	}, [sendBlockReason, editFiles, t]);
 
 	const liveWirePreview = useMemo((): WirePreview | null => {
 		const parsed = tryParseProxyBaseUrl(proxyBaseUrl);
@@ -189,6 +205,7 @@ export function useSimulatorPageState() {
 			bodyObj = { ...bodyObj, model: routing };
 		}
 		try {
+			const useImages = selectedModelIsImage && protocol === 'openai';
 			const built = buildSimulatorRequest({
 				baseUrl: parsed.base,
 				protocol,
@@ -196,13 +213,15 @@ export function useSimulatorPageState() {
 				geminiAction: protocol === 'gemini' ? geminiAction : undefined,
 				body: bodyObj,
 				apiKey: revealedSk,
-				imagesGenerations: selectedModelIsImage && protocol === 'openai',
+				imageOperation: useImages ? imageOperation : undefined,
+				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
 			});
 			return {
 				method: 'POST',
 				url: built.url,
 				headers: redactHeaders(built.headers),
-				bodyText: built.bodyText,
+				bodyText: built.formData ? (built.multipartSummary ?? '(multipart)') : built.bodyText,
+				isMultipart: Boolean(built.formData),
 			};
 		} catch {
 			return null;
@@ -216,6 +235,8 @@ export function useSimulatorPageState() {
 		protocol,
 		geminiAction,
 		selectedModelIsImage,
+		imageOperation,
+		editFiles,
 	]);
 
 	const displayWire = wirePreview ?? liveWirePreview;
@@ -355,25 +376,42 @@ export function useSimulatorPageState() {
 
 	const prevSelectedWasImageRef = useRef(false);
 
-	/** Image models: force openai + generations template; leaving image restores chat template. */
+	/** Image models: force openai + image template; leaving image restores chat template. */
 	useEffect(() => {
 		if (selectedModelIsImage) {
 			if (protocol !== 'openai') {
 				setProtocolState('openai');
 			}
-			setBodyText(bodyTemplateForSelection('openai', true));
+			setBodyText(bodyTemplateForSelection('openai', true, imageOperation));
 			setBodyError(null);
 			setImagePreviews([]);
 			prevSelectedWasImageRef.current = true;
 			return;
 		}
 		if (prevSelectedWasImageRef.current) {
+			setImageOperationState('generations');
+			setEditFiles([]);
 			setBodyText(bodyTemplateForSelection(protocol, false));
 			setBodyError(null);
 			setImagePreviews([]);
 			prevSelectedWasImageRef.current = false;
 		}
 	}, [selectedModelId, selectedModelIsImage]); // eslint-disable-line react-hooks/exhaustive-deps -- template only on model kind switch
+
+	const setImageOperation = useCallback(
+		(next: ImageOperation) => {
+			if (next === imageOperation) return;
+			setImageOperationState(next);
+			if (selectedModelIsImage && protocol === 'openai') {
+				setBodyText(bodyTemplateForSelection('openai', true, next));
+				setBodyError(null);
+			}
+			if (next === 'generations') {
+				setEditFiles([]);
+			}
+		},
+		[imageOperation, selectedModelIsImage, protocol]
+	);
 
 	const loadKeys = useCallback(async () => {
 		setLoadingKeys(true);
@@ -438,10 +476,12 @@ export function useSimulatorPageState() {
 	const applyProtocolTemplate = useCallback(
 		(next: SimulatorProtocol, isImage = selectedModelIsImage) => {
 			setProtocolState(next);
-			setBodyText(bodyTemplateForSelection(next, isImage && next === 'openai'));
+			setBodyText(
+				bodyTemplateForSelection(next, isImage && next === 'openai', imageOperation)
+			);
 			setBodyError(null);
 		},
-		[selectedModelIsImage]
+		[selectedModelIsImage, imageOperation]
 	);
 
 	const requestProtocolChange = useCallback(
@@ -451,19 +491,19 @@ export function useSimulatorPageState() {
 				setInfoHint(t('readyNeedOpenaiForImage'));
 				return;
 			}
-			if (isBodyDirty(bodyText, protocol, selectedModelIsImage)) {
+			if (isBodyDirty(bodyText, protocol, selectedModelIsImage, imageOperation)) {
 				const ok = window.confirm(t('protocolSwitchConfirm'));
 				if (!ok) return;
 			}
 			applyProtocolTemplate(next);
 		},
-		[protocol, bodyText, t, applyProtocolTemplate, selectedModelIsImage]
+		[protocol, bodyText, t, applyProtocolTemplate, selectedModelIsImage, imageOperation]
 	);
 
 	const applyCurrentTemplate = useCallback(() => {
-		setBodyText(bodyTemplateForSelection(protocol, selectedModelIsImage));
+		setBodyText(bodyTemplateForSelection(protocol, selectedModelIsImage, imageOperation));
 		setBodyError(null);
-	}, [protocol, selectedModelIsImage]);
+	}, [protocol, selectedModelIsImage, imageOperation]);
 
 	const stop = useCallback(() => {
 		abortRef.current?.abort();
@@ -517,15 +557,30 @@ export function useSimulatorPageState() {
 		}
 
 		const useImages = selectedModelIsImage && protocol === 'openai';
-		const built = buildSimulatorRequest({
-			baseUrl: base,
-			protocol,
-			modelForRouting: routing,
-			geminiAction: protocol === 'gemini' ? geminiAction : undefined,
-			body: bodyObj,
-			apiKey: revealedSk,
-			imagesGenerations: useImages,
-		});
+		if (useImages && imageOperation === 'edits') {
+			const validated = validateEditImageFiles(editFiles);
+			if (!validated.ok) {
+				setBodyError(validated.error);
+				return;
+			}
+		}
+
+		let built;
+		try {
+			built = buildSimulatorRequest({
+				baseUrl: base,
+				protocol,
+				modelForRouting: routing,
+				geminiAction: protocol === 'gemini' ? geminiAction : undefined,
+				body: bodyObj,
+				apiKey: revealedSk,
+				imageOperation: useImages ? imageOperation : undefined,
+				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
+			});
+		} catch (e) {
+			setBodyError(e instanceof Error ? e.message : tCommon('requestFailed'));
+			return;
+		}
 
 		setBodyError(null);
 		setSending(true);
@@ -538,7 +593,8 @@ export function useSimulatorPageState() {
 			method: 'POST',
 			url: built.url,
 			headers: redactHeaders(built.headers),
-			bodyText: built.bodyText,
+			bodyText: built.formData ? (built.multipartSummary ?? '(multipart)') : built.bodyText,
+			isMultipart: Boolean(built.formData),
 		});
 		setWireOpen(true);
 
@@ -550,7 +606,7 @@ export function useSimulatorPageState() {
 			const res = await fetch(built.url, {
 				method: 'POST',
 				headers: built.headers,
-				body: built.bodyText,
+				body: built.formData ?? built.bodyText,
 				signal: ac.signal,
 			});
 
@@ -658,6 +714,8 @@ export function useSimulatorPageState() {
 		proxyBaseUrl,
 		selectedModelId,
 		selectedModelIsImage,
+		imageOperation,
+		editFiles,
 		revealLoading,
 		revealedSk,
 		bodyText,
@@ -682,9 +740,13 @@ export function useSimulatorPageState() {
 		protocol,
 		requestProtocolChange,
 		applyCurrentTemplate,
-		bodyDirty: isBodyDirty(bodyText, protocol, selectedModelIsImage),
+		bodyDirty: isBodyDirty(bodyText, protocol, selectedModelIsImage, imageOperation),
 		geminiAction,
 		setGeminiAction,
+		imageOperation,
+		setImageOperation,
+		editFiles,
+		setEditFiles,
 		filterModel,
 		setFilterModel,
 		filteredModels,

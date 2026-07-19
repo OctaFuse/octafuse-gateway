@@ -26,7 +26,11 @@ export type WirePreview = {
 	url: string;
 	headers: Record<string, string>;
 	bodyText: string;
+	/** When true, bodyText is a multipart summary (not JSON). */
+	isMultipart?: boolean;
 };
+
+export type { ImageOperation } from '@/lib/image-generations';
 
 export type ResponseTab = 'merged' | 'raw';
 
@@ -34,6 +38,7 @@ export type SendBlockReason =
 	| 'proxyBaseUrl'
 	| 'model'
 	| 'imageProtocol'
+	| 'editImages'
 	| 'keyLoading'
 	| 'key'
 	| null;

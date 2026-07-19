@@ -1,7 +1,16 @@
 /**
- * Shared helpers for Admin Playground / Simulator image-generation (JSON generations only).
+ * Shared helpers for Admin Playground / Simulator image APIs
+ * (`/images/generations` JSON and `/images/edits` multipart).
  */
 import { isImageGenerationModel, type ModelKindFields } from '@octafuse/core/db/model-modalities';
+
+/** OpenAI Images operation: text-to-image vs image edit. */
+export type ImageOperation = 'generations' | 'edits';
+
+/** Align with Proxy `openai-images-driver` limits (admin must not depend on `@octafuse/proxy`). */
+export const IMAGE_MAX_REFERENCE_COUNT = 5;
+export const IMAGE_MAX_BYTES_PER_FILE = 20 * 1024 * 1024;
+export const IMAGE_MAX_TOTAL_UPLOAD_BYTES = IMAGE_MAX_REFERENCE_COUNT * IMAGE_MAX_BYTES_PER_FILE;
 
 /** Default request body for `POST …/images/generations` (model field overwritten at send). */
 export const IMAGE_GENERATIONS_BODY_TEMPLATE = `{
@@ -12,8 +21,65 @@ export const IMAGE_GENERATIONS_BODY_TEMPLATE = `{
   "quality": "low"
 }`;
 
+/**
+ * Default JSON fields for images/edits (reference images are uploaded separately as multipart files).
+ * model field overwritten at send.
+ */
+export const IMAGE_EDITS_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "prompt": "make the apple green",
+  "n": 1,
+  "size": "1024x1024",
+  "quality": "low"
+}`;
+
 export function isImageRouteModel(m: ModelKindFields): boolean {
 	return isImageGenerationModel(m);
+}
+
+/** Validate reference image files before send (Playground / Simulator). */
+export function validateEditImageFiles(
+	files: File[]
+): { ok: true } | { ok: false; error: string } {
+	if (files.length === 0) {
+		return { ok: false, error: 'At least one reference image is required' };
+	}
+	if (files.length > IMAGE_MAX_REFERENCE_COUNT) {
+		return {
+			ok: false,
+			error: `At most ${IMAGE_MAX_REFERENCE_COUNT} reference images are allowed`,
+		};
+	}
+	let total = 0;
+	for (const file of files) {
+		if (file.size > IMAGE_MAX_BYTES_PER_FILE) {
+			return {
+				ok: false,
+				error: `each image must be at most ${IMAGE_MAX_BYTES_PER_FILE} bytes`,
+			};
+		}
+		total += file.size;
+		if (total > IMAGE_MAX_TOTAL_UPLOAD_BYTES) {
+			return {
+				ok: false,
+				error: `total image upload must be at most ${IMAGE_MAX_TOTAL_UPLOAD_BYTES} bytes`,
+			};
+		}
+	}
+	return { ok: true };
+}
+
+/** Read a File as a data URL (for Playground JSON → server multipart). */
+export function readFileAsDataUrl(file: File): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			if (typeof reader.result === 'string') resolve(reader.result);
+			else reject(new Error('Failed to read file as data URL'));
+		};
+		reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
+		reader.readAsDataURL(file);
+	});
 }
 
 export type ImagePreviewItem =
