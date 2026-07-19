@@ -126,12 +126,13 @@ export function ProviderKeyModal(props: ProviderKeyModalProps) {
 								{editingProviderKey ? t('replaceApiKey') : t('apiKey')}
 							</label>
 							<input
-								type="password"
+								type="text"
 								value={form.api_key}
 								onChange={(e) => onFormChange({ ...form, api_key: e.target.value })}
-								className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder={editingProviderKey ? t('leaveBlank') : t('apiKeyPlaceholder')}
-								autoComplete="new-password"
+								autoComplete="off"
+								spellCheck={false}
 							/>
 						</div>
 

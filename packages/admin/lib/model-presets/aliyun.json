@@ -1,5 +1,46 @@
 [
 	{
+		"id": "qwen3.8-max-preview",
+		"display_name": "Qwen3.8 Max Preview",
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2.5,
+						"output_price": 7.5,
+						"cache_read_price": 0.5,
+						"cache_write_price": 3.125
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 12,
+						"output_price": 36,
+						"cache_read_price": 2.4,
+						"cache_write_price": 15
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-07-19"
+	},
+	{
 		"id": "qwen3.7-plus",
 		"display_name": "Qwen3.7 Plus",
 		"vendor": "aliyun",
