@@ -10,7 +10,13 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { DashboardModelDistributionChart } from '@/components/dashboard/DashboardModelDistributionChart';
 import { DashboardTokenTrendChart } from '@/components/dashboard/DashboardTokenTrendChart';
-import { createRangeValue, formatGatewayRangeSummary, type GatewayTimeRangeValue } from '@/lib/analytics-range';
+import {
+	createRangeValue,
+	DEFAULT_GATEWAY_TIME_RANGE_PRESET,
+	formatGatewayRangeSummary,
+	isRollingPreset,
+	type GatewayTimeRangeValue,
+} from '@/lib/analytics-range';
 import { readApiJson } from '@/lib/api-json';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
@@ -32,7 +38,7 @@ export default function DashboardPage() {
 	const tTimeRange = useTranslations('timeRange');
 	const [stats, setStats] = useState<DashboardStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
-	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
+	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
 	const { currency: billingCurrency } = useBillingCurrency();
 	const { businessTimezone, formatTime } = useGatewayDateTime();
 
@@ -57,7 +63,8 @@ export default function DashboardPage() {
 			const params = new URLSearchParams();
 			if (rangeValue.start_date) params.set('start_date', rangeValue.start_date);
 			if (rangeValue.end_date) params.set('end_date', rangeValue.end_date);
-			if (rangeValue.preset !== 'custom') params.set('range', rangeValue.preset);
+			// 仅滚动预设走 `range=`；日历快捷与自定义只传绝对起止，避免后端未知 preset 回落默认窗
+			if (isRollingPreset(rangeValue.preset)) params.set('range', rangeValue.preset);
 			const response = await fetch(`/api/admin/stats?${params.toString()}`);
 			const data = await readApiJson<DashboardStats>(response);
 			if (data.success && data.data != null) {

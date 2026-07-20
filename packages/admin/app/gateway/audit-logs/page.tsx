@@ -14,7 +14,12 @@ import {
   type GatewayApiKeyBudgetAuditLog,
 } from '@/lib/types';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
-import { createRangeValue, detectRollingPreset, type GatewayTimeRangeValue } from '@/lib/analytics-range';
+import {
+  createRangeValue,
+  DEFAULT_GATEWAY_TIME_RANGE_PRESET,
+  detectRollingPreset,
+  type GatewayTimeRangeValue,
+} from '@/lib/analytics-range';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
@@ -404,7 +409,7 @@ export default function GatewayAuditLogsPage() {
   const [filterSources, setFilterSources] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
   const [reasonCodeOptions, setReasonCodeOptions] = useState<string[]>([]);
   const [filterCorrelationId, setFilterCorrelationId] = useState('');
-  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
+  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
   const [detailLog, setDetailLog] = useState<GatewayApiKeyBudgetAuditLog | null>(null);
   const reasonCodeUrlFilterRef = useRef(false);
 
@@ -443,7 +448,7 @@ export default function GatewayAuditLogsPage() {
         end_date: e,
       });
     } else if (startDate == null && endDate == null) {
-      setRangeValue(createRangeValue('1d'));
+      setRangeValue(createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
     }
     if (p != null) {
       const n = parseInt(p, 10);

@@ -8,7 +8,11 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
-import { createRangeValue, type GatewayTimeRangeValue } from '@/lib/analytics-range';
+import {
+  createRangeValue,
+  DEFAULT_GATEWAY_TIME_RANGE_PRESET,
+  type GatewayTimeRangeValue,
+} from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
 import { successRateClassName } from '@/lib/analytics-rate-style';
@@ -30,7 +34,7 @@ export default function ReliabilityPage() {
   const [modelProviders, setModelProviders] = useState<ModelProviderRow[]>([]);
   const [recentErrors, setRecentErrors] = useState<GatewayRequestLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
+  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
   const { currency: billingCurrency } = useBillingCurrency();
   const { formatDateTime } = useGatewayDateTime();
 

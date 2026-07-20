@@ -15,6 +15,7 @@ import { readJson } from '@/lib/api-json';
 import {
   compareAnalyticsTableRows,
   createRangeValue,
+  DEFAULT_GATEWAY_TIME_RANGE_PRESET,
   sumAnalyticsCosts,
   type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
@@ -39,8 +40,8 @@ export default function ProviderUsagePage() {
   const tCommon = useTranslations('common');
   const [rows, setRows] = useState<ProviderUsageRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
-  const [committedQuery, setCommittedQuery] = useState(() => createRangeValue('1d'));
+  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
+  const [committedQuery, setCommittedQuery] = useState(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
   const [sortKey, setSortKey] = useState<SortKey>('provider_name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');

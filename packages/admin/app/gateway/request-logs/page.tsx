@@ -16,7 +16,12 @@ import {
 import { UPSTREAM_PROTOCOLS } from '@/lib/upstream-protocol';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
-import { createRangeValue, detectRollingPreset, type GatewayTimeRangeValue } from '@/lib/analytics-range';
+import {
+  createRangeValue,
+  DEFAULT_GATEWAY_TIME_RANGE_PRESET,
+  detectRollingPreset,
+  type GatewayTimeRangeValue,
+} from '@/lib/analytics-range';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { summarizePricingAuditJson } from '@/lib/pricing-ui';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
@@ -50,7 +55,7 @@ export default function GatewayRequestLogsPage() {
   const [filterModel, setFilterModel] = useState('');
   const [filterUserEmail, setFilterUserEmail] = useState('');
   const [filterApiKeyId, setFilterApiKeyId] = useState('');
-  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
+  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
   const [filterProviderId, setFilterProviderId] = useState('');
   const [filterRouteGroup, setFilterRouteGroup] = useState('');
   const [filterProtocol, setFilterProtocol] = useState('');
@@ -115,7 +120,7 @@ export default function GatewayRequestLogsPage() {
         end_date: e,
       });
     } else if (startDate == null && endDate == null) {
-      setRangeValue(createRangeValue('1d'));
+      setRangeValue(createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
     }
     if (routeGroup != null) setFilterRouteGroup(routeGroup);
     if (protocol != null) setFilterProtocol(protocol);

@@ -149,6 +149,11 @@
 			"7d": "7d",
 			"14d": "14d",
 			"30d": "30d"
+		},
+		"calendar": {
+			"today": "Today",
+			"this_week": "WTD",
+			"this_month": "MTD"
 		}
 	},
 	"options": {
@@ -249,7 +254,10 @@
 			"1d": "Last 1d",
 			"7d": "Last 7 days",
 			"14d": "Last 14 days",
-			"30d": "Last 30 days"
+			"30d": "Last 30 days",
+			"today": "Today",
+			"this_week": "WTD",
+			"this_month": "MTD"
 		}
 	},
 	"filter": {

@@ -8,7 +8,12 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
-import { createRangeValue, detectRollingPreset, type GatewayTimeRangeValue } from '@/lib/analytics-range';
+import {
+	createRangeValue,
+	DEFAULT_GATEWAY_TIME_RANGE_PRESET,
+	detectRollingPreset,
+	type GatewayTimeRangeValue,
+} from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import {
 	findGatewayToolById,
@@ -29,7 +34,7 @@ export default function GatewayToolInvocationsPage() {
 
 	const [toolFilter, setToolFilter] = useState('');
 	const [filterStatus, setFilterStatus] = useState('');
-	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue('1d'));
+	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
 	const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
 	const [total, setTotal] = useState(0);
 	const [page, setPage] = useState(1);
