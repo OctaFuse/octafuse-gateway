@@ -73,7 +73,9 @@ async function resolveOpenAiImageRoutes(
 > {
 	const resolved = await resolveModelRouting(repos, rawModelId);
 	if (!resolved) {
-		return { ok: false, status: 404, error: 'Model not found' };
+		const modelForLog = truncateModelIdForLog(rawModelId);
+		console.warn(`[Gateway Images] model not found clientModel=${modelForLog}`);
+		return { ok: false, status: 404, error: `Model not found: ${modelForLog}` };
 	}
 	const { model, baseModelId, explicitGroup } = resolved;
 	const effectiveRouteGroup = explicitGroup?.trim() || 'default';
@@ -107,6 +109,15 @@ function modelDisplayName(model: { display_name?: string | null }, baseModelId: 
 	return model.display_name != null && String(model.display_name).trim() !== ''
 		? String(model.display_name).trim()
 		: baseModelId;
+}
+
+/** Cap length so a pathological clientModel cannot flood logs / error bodies. */
+function truncateModelIdForLog(rawModelId: string, maxLen = 200): string {
+	const trimmed = rawModelId.trim();
+	if (trimmed.length <= maxLen) {
+		return trimmed;
+	}
+	return `${trimmed.slice(0, maxLen)}…`;
 }
 
 async function parseMultipartEdits(c: {
@@ -435,6 +446,11 @@ imageRoutes.post('/generations', async (c) => {
 
 	const routed = await resolveOpenAiImageRoutes(repos, rawModelId);
 	if (!routed.ok) {
+		if (routed.status !== 404) {
+			console.warn(
+				`[Gateway Images] generations route resolve failed status=${routed.status} clientModel=${truncateModelIdForLog(rawModelId)} error=${routed.error}`
+			);
+		}
 		return c.json({ error: routed.error }, routed.status);
 	}
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
@@ -560,6 +576,11 @@ imageRoutes.post('/edits', async (c) => {
 
 	const routed = await resolveOpenAiImageRoutes(repos, rawModelId);
 	if (!routed.ok) {
+		if (routed.status !== 404) {
+			console.warn(
+				`[Gateway Images] edits route resolve failed status=${routed.status} clientModel=${truncateModelIdForLog(rawModelId)} error=${routed.error}`
+			);
+		}
 		return c.json({ error: routed.error }, routed.status);
 	}
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
