@@ -1,6 +1,6 @@
 /**
  * Octafuse Gateway — admin UI chrome (non-translatable URLs & identifiers).
- * User-facing product copy lives in messages/en.json (brand.*, metadata.*).
+ * User-facing product copy lives in messages/*.json (brand.*, metadata.*).
  */
 export const OCTAFUSE_GITHUB_REPO_WEB = 'https://github.com/OctaFuse/octafuse-gateway';
 

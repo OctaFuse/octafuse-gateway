@@ -1,6 +1,6 @@
 'use client';
 
-import { GlobeAltIcon } from '@heroicons/react/24/outline';
+import { ChevronUpDownIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
@@ -22,23 +22,16 @@ const iconWrapClass: Record<Variant, string> = {
 		'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-gray-500 shadow-sm ring-1 ring-gray-200/80',
 };
 
-const segmentBase: Record<Variant, string> = {
+const selectClass: Record<Variant, string> = {
 	sidebar:
-		'relative flex-1 rounded-lg px-2 py-1.5 text-xs font-medium tracking-wide transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 disabled:cursor-not-allowed',
+		'h-8 w-full cursor-pointer appearance-none rounded-lg bg-transparent py-1 pl-2 pr-8 text-sm font-medium text-gray-200 outline-none transition-colors hover:bg-gray-800/70 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 disabled:cursor-not-allowed',
 	login:
-		'relative flex-1 rounded-lg px-2 py-1.5 text-xs font-medium tracking-wide transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+		'h-8 w-full cursor-pointer appearance-none rounded-lg bg-transparent py-1 pl-2 pr-8 text-sm font-medium text-gray-800 outline-none transition-colors hover:bg-white focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
 };
 
-const segmentActive: Record<Variant, string> = {
-	sidebar:
-		'bg-gray-700 text-white shadow-sm shadow-black/30 ring-1 ring-white/10',
-	login:
-		'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/90',
-};
-
-const segmentInactive: Record<Variant, string> = {
-	sidebar: 'text-gray-500 hover:bg-gray-800/70 hover:text-gray-200',
-	login: 'text-gray-500 hover:bg-white/70 hover:text-gray-800',
+const chevronClass: Record<Variant, string> = {
+	sidebar: 'text-gray-500',
+	login: 'text-gray-400',
 };
 
 export default function LocaleSwitcher({ variant }: { variant: Variant }) {
@@ -62,32 +55,29 @@ export default function LocaleSwitcher({ variant }: { variant: Variant }) {
 	return (
 		<div
 			className={`${shellClass[variant]} ${isPending ? 'opacity-70' : ''}`}
-			role="group"
-			aria-label={t('label')}
 			aria-busy={isPending}
 		>
 			<span className={iconWrapClass[variant]} aria-hidden>
 				<GlobeAltIcon className="h-3.5 w-3.5" />
 			</span>
-			<div className="flex min-w-0 flex-1 gap-0.5">
-				{locales.map((code) => {
-					const isActive = code === locale;
-					return (
-						<button
-							key={code}
-							type="button"
-							disabled={isPending}
-							aria-pressed={isActive}
-							aria-label={`${t('label')}: ${t(code)}`}
-							onClick={() => onSelect(code)}
-							className={`${segmentBase[variant]} ${isActive ? segmentActive[variant] : segmentInactive[variant]} ${isPending ? 'opacity-60' : ''}`}
-						>
-							<span className="relative z-10 block truncate text-center">
-								{t(code)}
-							</span>
-						</button>
-					);
-				})}
+			<div className="relative min-w-0 flex-1">
+				<select
+					value={locale}
+					disabled={isPending}
+					aria-label={t('label')}
+					onChange={(event) => onSelect(event.target.value as Locale)}
+					className={`${selectClass[variant]} ${isPending ? 'opacity-60' : ''}`}
+				>
+					{locales.map((code) => (
+						<option key={code} value={code}>
+							{t(code)}
+						</option>
+					))}
+				</select>
+				<ChevronUpDownIcon
+					className={`pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 ${chevronClass[variant]}`}
+					aria-hidden
+				/>
 			</div>
 		</div>
 	);

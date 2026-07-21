@@ -73,20 +73,21 @@ Admin UI uses **[next-intl](https://next-intl.dev)** in **without-i18n-routing**
 
 | Path | Role |
 |------|------|
-| `lib/i18n.ts` | Locales (`en`, `zh`), cookie-based `getRequestConfig` |
+| `lib/i18n.ts` | Locales (`en`, `zh`, `ja`, `ko`), cookie-based `getRequestConfig` |
 | `lib/locale.ts` | `LOCALE_COOKIE` (`NEXT_LOCALE`), `resolveLocale()` |
 | `app/api/locale/route.ts` | `POST` sets locale cookie |
 | `components/layout/LocaleSwitcher.tsx` | Language dropdown (sidebar + login) |
 | `messages/en.json` | English copy |
 | `messages/zh.json` | 简体中文 copy |
+| `messages/ja.json` | 日本語 copy |
+| `messages/ko.json` | 한국어 copy |
 
 **Conventions for new UI copy:**
 
-- Add strings to `messages/en.json` under the matching namespace (`sidebar`, `providers`, `config`, `common`, …).
+- Add strings to all files under `messages/` with identical key structure, using `messages/en.json` as the structural baseline (`sidebar`, `providers`, `config`, `common`, …).
 - Client components: `useTranslations('namespace')`; server layout/metadata: `getTranslations` from `next-intl/server`.
 - Do **not** hardcode user-visible English in JSX or `lib/*` UI helpers — pass `t()` or a labels object (see `lib/pricing-ui.ts` `PricingLabels`, `getBusinessTimezoneOptions`, `getBillingCurrencyOptions`).
 - **Out of scope**: Hono/service error messages (display `data.message` as-is), JSON presets (`provider-import-presets.json`, `model-presets/*`), provider/model IDs.
-- **Not yet implemented**: additional locales beyond `en` / `zh`.
 
 ## Docs
 

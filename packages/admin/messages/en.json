@@ -2,7 +2,9 @@
 	"locale": {
 		"label": "Language",
 		"en": "English",
-		"zh": "中文"
+		"zh": "中文",
+		"ja": "日本語",
+		"ko": "한국어"
 	},
 	"metadata": {
 		"title": "Octafuse Gateway · Admin",

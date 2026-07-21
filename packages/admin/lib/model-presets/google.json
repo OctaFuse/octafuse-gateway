@@ -1,5 +1,49 @@
 [
 	{
+		"id": "gemini-3.6-flash",
+		"display_name": "Gemini 3.6 Flash",
+		"vendor": "google",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.5,
+						"output_price": 7.5,
+						"cache_read_price": 0.15,
+						"cache_write_price": 0.08333
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10.8,
+						"output_price": 54,
+						"cache_read_price": 1.08,
+						"cache_write_price": 0.59998
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-07-21"
+	},
+	{
 		"id": "gemini-3.1-pro-preview",
 		"display_name": "Gemini 3.1 Pro Preview",
 		"vendor": "google",
@@ -144,6 +188,50 @@
 			]
 		},
 		"released": "2026-05-19"
+	},
+	{
+		"id": "gemini-3.5-flash-lite",
+		"display_name": "Gemini 3.5 Flash Lite",
+		"vendor": "google",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.3,
+						"output_price": 2.5,
+						"cache_read_price": 0.03,
+						"cache_write_price": 0.08333
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2.16,
+						"output_price": 18,
+						"cache_read_price": 0.216,
+						"cache_write_price": 0.59998
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-07-21"
 	},
 	{
 		"id": "gemini-3.1-flash-lite-preview",
