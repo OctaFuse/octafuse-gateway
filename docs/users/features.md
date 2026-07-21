@@ -1,17 +1,18 @@
 # 功能地图
 
-Octafuse Gateway 的核心目标是把多个上游模型供应商、账号计划和 API Key 统一成一个 Gateway 入口，并在这个入口上做路由、预算、日志、审计和成本口径沉淀。
+Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统一接入 Chat、图片生成 / 编辑、可扩展 Agent Tools、私有模型服务和多上游 Provider，并在一个 Gateway 入口上管理路由、密钥、预算、计费、日志与审计。
 
 ## 核心组件
 
 | 概念 | 作用 |
 |------|------|
-| Proxy | 对外推理入口，提供 OpenAI / Anthropic / Gemini 兼容接口。 |
+| Proxy | 对外 AI 能力入口，提供 OpenAI / Anthropic / Gemini 兼容推理、Images 与 `/v1/tools/*`。 |
 | Admin | 管理 UI 与 `/api/admin/*`，用于维护 Provider、模型、路由、用户、Key、日志与配置。 |
 | Provider | 一个上游模型供应商或兼容端点，例如 OpenAI、Anthropic、Gemini、自建兼容服务。 |
 | Provider API Key | Provider 下可轮换、限流、熔断的真实上游密钥。 |
 | Model / Route | Gateway 暴露给客户端的模型入口，以及它如何路由到上游 Provider。 |
 | Route group | 同一个模型 ID 下的分组能力，例如默认组、灰度组、不同协议组。 |
+| Agent Tool | 通过 `/v1/tools/*` 暴露给 Agent 的可扩展能力；当前包含 Search / Fetch / Deep Search。 |
 | User / API Key | Gateway 发给实际使用方的身份与访问密钥，可绑定预算、状态和元数据。 |
 
 ## 主要能力

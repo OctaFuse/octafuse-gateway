@@ -7,7 +7,9 @@
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare-quickstart.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
 
-**Octafuse Gateway** is a self-hostable open-source **AI Gateway**: consolidate vendors, accounts, and API keys into **one Base URL and one API Key**, with routing, budgets, billing, and audit.
+> **Unify AI capabilities. Control every call.**
+
+**Octafuse Gateway** is a self-hostable open-source **AI capability gateway and operations control plane**. Unify Chat, image generation / edit, extensible Agent Tools, private model services, and upstream providers while centrally managing routing, keys, budgets, billing, and audit. Clients still need only one Gateway URL and one user key.
 
 The default runtime is **Cloudflare Workers + D1** — individuals and light traffic can usually deploy and run within the free tier. Docker / Postgres / MySQL self-hosting is also supported (see [deployment docs](./docs/operators/deployment/)).
 
@@ -16,7 +18,7 @@ The default runtime is **Cloudflare Workers + D1** — individuals and light tra
 ## Why Octafuse
 
 - **Free-tier Cloudflare deploy** — One CLI deploys Proxy + Admin + shared D1; no server to babysit, edge-native by default.
-- **One endpoint** — Clients use one Gateway URL and one key across OpenAI / Anthropic / Gemini-style APIs to many upstreams.
+- **One AI capability entrypoint** — Clients use one Gateway URL and one key for Chat, image generation, and Agent Tools, with OpenAI / Anthropic / Gemini-style APIs across many upstreams.
 - **Operable, not just a proxy** — Admin manages Providers, Routes, user keys, and budgets; `/api/admin/*` fits portals and scripts; requests and cost stay observable and reconcilable.
 
 ## What It Does

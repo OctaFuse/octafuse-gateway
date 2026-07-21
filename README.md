@@ -7,7 +7,9 @@
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare-quickstart.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
 
-**Octafuse Gateway** 是可自托管的开源 **AI Gateway**：把多供应商、多账号、多 API Key 收成 **一个 Base URL、一个 API Key**，并带路由、预算、计费与审计。
+> **统一 AI 能力，掌控每一次调用。**
+
+**Octafuse Gateway** 是可自托管的开源 **AI 能力网关与运营控制面**：统一接入 Chat、图片生成 / 编辑、可扩展 Agent Tools、私有模型服务与多上游 Provider，集中管理路由、密钥、预算、计费和审计。客户端仍然只需一个 Gateway URL 和一把用户 Key。
 
 默认跑在 **Cloudflare Workers + D1** 上——个人与小流量通常可在免费额度内完成部署与日常使用；也支持 Docker / Postgres / MySQL 自托管（见[部署文档](./docs/operators/deployment/)）。
 
@@ -16,7 +18,7 @@
 ## 为什么选 Octafuse
 
 - **Cloudflare 可免费上云** — 一条 CLI 部署 Proxy + Admin + 共享 D1；无需自备服务器，边缘全球可用。
-- **统一入口** — 客户端只配一个 Gateway URL 和一个 Key，即可走 OpenAI / Anthropic / Gemini 风格接口访问多上游。
+- **统一 AI 能力入口** — 客户端只配一个 Gateway URL 和一个 Key，即可调用 Chat、图片生成和 Agent Tools，并通过 OpenAI / Anthropic / Gemini 风格接口访问多上游。
 - **可运营，不只是转发** — Admin 管理 Provider、Route、用户 Key 与预算；`/api/admin/*` 可对接门户或脚本；请求与成本可观测、可对账。
 
 ## 它能做什么
