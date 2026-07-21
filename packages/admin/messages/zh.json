@@ -1214,14 +1214,16 @@
 	"tools": {
 		"catalog": {
 			"webSearch": "Web Search",
-			"webFetch": "Web Fetch"
+			"webFetch": "Web Fetch",
+			"webDeepSearch": "Web Deep Search"
 		},
 		"config": {
 			"title": "Tools",
 			"subtitle": "配置 /v1/tools/* 产品工具（引擎、API Key、单价）。写入 system_config，与对话共用用户额度。",
 			"viewInvocations": "查看调用记录 →",
 			"saveWebSearch": "保存 Web Search",
-			"saveWebFetch": "保存 Web Fetch"
+			"saveWebFetch": "保存 Web Fetch",
+			"saveWebDeepSearch": "保存 Web Deep Search"
 		},
 		"webSearch": {
 			"title": "Web Search",
@@ -1302,6 +1304,22 @@
 				"jina": "Jina Reader"
 			}
 		},
+		"webDeepSearch": {
+			"title": "Web Deep Search",
+			"descriptionCatalog": "供 POST /v1/tools/web-deep-search 使用。搜+读一体引擎（Firecrawl Search / Jina Search），结果含页面正文，比普通 Web Search 更重、更贵。为每个引擎配置 Key 与单价后选择 Active。",
+			"active": "当前 Active 引擎",
+			"catalogProvider": "引擎",
+			"noKey": "无 Key",
+			"needKeyToActivate": "请先为至少一个引擎填写 API Key 再保存。",
+			"providerDocs": "官网与 API Key →",
+			"cost": "成功单价（{currency}）",
+			"apiKey": "引擎 API Key",
+			"apiKeyPlaceholder": "粘贴引擎 API Key",
+			"providers": {
+				"firecrawl": "Firecrawl Search",
+				"jina": "Jina Search"
+			}
+		},
 		"invocations": {
 			"title": "工具调用记录",
 			"subtitle": "记账为 provider octafuse-tools（model_id 为 tool:*）。点击行可查看查询词与结果摘要；与 Request Logs 同源。",
@@ -1337,6 +1355,7 @@
 			"invalidWebSearchCost": "每个引擎的单价须为非负数字。",
 			"invalidWebFetchProvider": "抓取引擎必须为已实现的选项之一。",
 			"invalidWebFetchCost": "每个引擎的单价须为非负数字。",
+			"invalidWebDeepSearchCost": "每个 Deep Search 引擎的单价须为非负数字。",
 			"noKeyCannotActivate": "未配置 API Key 的引擎不能设为 Active。",
 			"switchActiveBeforeClearingKey": "若要清空当前 Active 引擎的 Key，请先把 Active 切到仍有 Key 的引擎并保存，再清空旧 Key。"
 		}

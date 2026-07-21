@@ -23,6 +23,13 @@ import {
 	WEB_FETCH_PROVIDER_KEY,
 	WEB_FETCH_PROVIDERS,
 } from '@octafuse/core/lib/web-fetch-system-config';
+import {
+	parseWebDeepSearchActiveInput,
+	parseWebDeepSearchCatalogInput,
+	WEB_DEEP_SEARCH_ACTIVE_KEY,
+	WEB_DEEP_SEARCH_CATALOG_KEY,
+	WEB_DEEP_SEARCH_PROVIDERS,
+} from '@octafuse/core/lib/web-deep-search-system-config';
 import { badRequest } from './errors';
 import { clampAnalyticsRange, rangeToDates, resolveStatsDateRange } from './shared';
 import { getBusinessDayWindow, getBusinessTimezone } from '@octafuse/core/lib/business-timezone';
@@ -286,6 +293,42 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		const entryKey = catalog[active]?.apiKey?.trim() ?? '';
 		if (!entryKey) {
 			throw badRequest(`Cannot activate web-fetch provider "${active}" without an API key`);
+		}
+		value = active;
+	}
+
+	if (key === WEB_DEEP_SEARCH_CATALOG_KEY) {
+		const catalog = parseWebDeepSearchCatalogInput(value);
+		if (catalog == null) {
+			throw badRequest(
+				`WEB_DEEP_SEARCH_CATALOG must be a JSON object with whitelist providers (${WEB_DEEP_SEARCH_PROVIDERS.join(', ')}) and { apiKey: string, cost: number }`
+			);
+		}
+		const activeRaw = await repos.systemConfig.getConfig(WEB_DEEP_SEARCH_ACTIVE_KEY);
+		const active = parseWebDeepSearchActiveInput(activeRaw);
+		if (active) {
+			const entryKey = catalog[active]?.apiKey?.trim() ?? '';
+			if (!entryKey) {
+				throw badRequest(
+					`Cannot save WEB_DEEP_SEARCH_CATALOG: active provider "${active}" would have no API key; change WEB_DEEP_SEARCH_ACTIVE first`
+				);
+			}
+		}
+		value = JSON.stringify(catalog);
+	}
+	if (key === WEB_DEEP_SEARCH_ACTIVE_KEY) {
+		const active = parseWebDeepSearchActiveInput(value);
+		if (!active) {
+			throw badRequest(`WEB_DEEP_SEARCH_ACTIVE must be one of: ${WEB_DEEP_SEARCH_PROVIDERS.join(', ')}`);
+		}
+		const catalogRaw = await repos.systemConfig.getConfig(WEB_DEEP_SEARCH_CATALOG_KEY);
+		const catalog = parseWebDeepSearchCatalogInput(catalogRaw);
+		if (catalog == null) {
+			throw badRequest('WEB_DEEP_SEARCH_CATALOG must be configured before setting WEB_DEEP_SEARCH_ACTIVE');
+		}
+		const entryKey = catalog[active]?.apiKey?.trim() ?? '';
+		if (!entryKey) {
+			throw badRequest(`Cannot activate web-deep-search provider "${active}" without an API key`);
 		}
 		value = active;
 	}

@@ -38,6 +38,10 @@ import {
 	WEB_FETCH_COST_KEY,
 	WEB_FETCH_PROVIDER_KEY,
 } from '@/lib/web-fetch-options';
+import {
+	WEB_DEEP_SEARCH_ACTIVE_KEY,
+	WEB_DEEP_SEARCH_CATALOG_KEY,
+} from '@/lib/web-deep-search-options';
 import { useTranslations } from 'next-intl';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
 
@@ -276,7 +280,9 @@ export default function GatewayConfigPage() {
       k === WEB_FETCH_API_KEY_KEY ||
       k === WEB_FETCH_COST_KEY ||
       k === WEB_FETCH_ACTIVE_KEY ||
-      k === WEB_FETCH_CATALOG_KEY
+      k === WEB_FETCH_CATALOG_KEY ||
+      k === WEB_DEEP_SEARCH_ACTIVE_KEY ||
+      k === WEB_DEEP_SEARCH_CATALOG_KEY
     ) {
       clearSaveSuccess();
       setSaveError(t('errors.useToolsSection'));

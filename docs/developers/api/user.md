@@ -601,6 +601,70 @@ Authorization: Bearer <USER_API_KEY>
 
 ---
 
+## Web Deep Search（Agent 工具）
+
+协议无关的产品 API，供「搜 + 读」一体的深度检索（Firecrawl Search / Jina Search）。相对普通 Web Search，结果常含页面正文，延迟与单价更高。**不是** OpenAI / Anthropic / Gemini 推理协议的一部分。
+
+### 请求
+
+```
+POST /v1/tools/web-deep-search
+Authorization: Bearer <USER_API_KEY>
+```
+
+### 请求体
+
+```json
+{
+  "query": "latest TypeScript release notes",
+  "count": 5
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `query` | 必填；至少 2 个字符 |
+| `count` | 可选；1–10，默认 5 |
+
+### 行为
+
+1. 校验用户 API Key；额度不足 → **403** `{ "error": "Budget exceeded" }`
+2. 从 Admin `system_config` 读取配置（无环境变量回退）：
+   - `WEB_DEEP_SEARCH_ACTIVE`（白名单：`firecrawl` \| `jina`；非法值 → **503**）
+   - `WEB_DEEP_SEARCH_CATALOG`（JSON：按引擎 `{ "apiKey", "cost" }`；Active 必须有非空 `apiKey`，否则 **503**）
+   - 默认单价 **0.01**（catalog 未写 cost 时），单位随 `BILLING_CURRENCY`
+3. 调用 Active 引擎；**仅成功**后按该引擎单价计入 `users.budget_spent`
+4. 上游失败不扣费；上游 **401/403** 映射为 **502**
+
+运营侧在 Admin → **Tools → Configuration** 配置；调用记录见 **Tools → Invocations**（`model_id=tool:web-deep-search`）。
+
+### 响应
+
+```json
+{
+  "data": {
+    "results": [
+      {
+        "title": "…",
+        "url": "https://…",
+        "snippet": "…",
+        "content": "# markdown…"
+      }
+    ],
+    "cost": 0.01
+  }
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `results[].content` | 可选；页面正文（deep search 核心字段） |
+| `cost` | 本次扣费；单位随 `BILLING_CURRENCY` |
+
+用量日志 `api_key_request_logs` 中 `model_id` 记为 `tool:web-deep-search`，`provider_id` 为 `octafuse-tools`。
+
+---
+
 ## Images（图片生成 / 编辑）
 
 > 模型清单、Provider、参数对照、计费折算与验收清单见权威整理：[文生图模型（Image Models）](../reference/image-models.md)。

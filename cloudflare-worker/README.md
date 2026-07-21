@@ -54,6 +54,7 @@ npm run deploy:cloudflare -- <instance>               # 仅双 Worker
 
 - Web Search：`WEB_SEARCH_ACTIVE` + `WEB_SEARCH_CATALOG`（按引擎存 API Key / 单价）
 - Web Fetch：`WEB_FETCH_ACTIVE` + `WEB_FETCH_CATALOG`
+- Web Deep Search：`WEB_DEEP_SEARCH_ACTIVE` + `WEB_DEEP_SEARCH_CATALOG`（Firecrawl / Jina 搜+读）
 
 无需 Wrangler secret 或 Proxy 环境变量。旧全局三键仅兼容读取，新配置请用 Catalog。
 

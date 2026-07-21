@@ -62,7 +62,12 @@ export function parseToolResponseSummary(rawUsage: string | null | undefined): T
 		.map((x) => ({
 			title: typeof x.title === 'string' ? x.title : undefined,
 			url: typeof x.url === 'string' ? x.url : undefined,
-			snippet: typeof x.snippet === 'string' ? x.snippet : undefined,
+			snippet:
+				typeof x.snippet === 'string'
+					? x.snippet
+					: typeof x.content_preview === 'string'
+						? x.content_preview
+						: undefined,
 			siteName: typeof x.siteName === 'string' ? x.siteName : undefined,
 		}));
 

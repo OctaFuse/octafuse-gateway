@@ -47,6 +47,7 @@
 		"./lib/alert-webhook-system-config": "./src/lib/alert-webhook-system-config.ts",
 		"./lib/web-search-system-config": "./src/lib/web-search-system-config.ts",
 		"./lib/web-fetch-system-config": "./src/lib/web-fetch-system-config.ts",
+		"./lib/web-deep-search-system-config": "./src/lib/web-deep-search-system-config.ts",
 		"./lib/money-precision": "./src/lib/money-precision.ts",
 		"./lib/string-utils": "./src/lib/string-utils.ts",
 		"./lib/time-format": "./src/lib/time-format.ts",

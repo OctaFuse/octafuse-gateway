@@ -1214,14 +1214,16 @@
 	"tools": {
 		"catalog": {
 			"webSearch": "Web Search",
-			"webFetch": "Web Fetch"
+			"webFetch": "Web Fetch",
+			"webDeepSearch": "Web Deep Search"
 		},
 		"config": {
 			"title": "Tools",
 			"subtitle": "Configure product tools under /v1/tools/* (engine, API key, unit cost). Settings are stored in system_config and share the user chat budget.",
 			"viewInvocations": "View invocations →",
 			"saveWebSearch": "Save web search",
-			"saveWebFetch": "Save web fetch"
+			"saveWebFetch": "Save web fetch",
+			"saveWebDeepSearch": "Save web deep search"
 		},
 		"webSearch": {
 			"title": "Web search",
@@ -1302,6 +1304,22 @@
 				"jina": "Jina Reader"
 			}
 		},
+		"webDeepSearch": {
+			"title": "Web deep search",
+			"descriptionCatalog": "Powers POST /v1/tools/web-deep-search. Search-and-read engines (Firecrawl Search / Jina Search) return page content with results—heavier and costlier than plain web search. Configure per-provider key and cost, then pick Active.",
+			"active": "Active provider",
+			"catalogProvider": "Provider",
+			"noKey": "no key",
+			"needKeyToActivate": "Add an API key to at least one provider before saving.",
+			"providerDocs": "Docs & API key →",
+			"cost": "Cost per success ({currency})",
+			"apiKey": "Provider API key",
+			"apiKeyPlaceholder": "Paste provider API key",
+			"providers": {
+				"firecrawl": "Firecrawl Search",
+				"jina": "Jina Search"
+			}
+		},
 		"invocations": {
 			"title": "Tool invocations",
 			"subtitle": "Calls billed as provider octafuse-tools (model_id tool:*). Click a row to inspect query and result summary. Same underlying rows as Request Logs.",
@@ -1337,6 +1355,7 @@
 			"invalidWebSearchCost": "Cost must be a non-negative number for every engine.",
 			"invalidWebFetchProvider": "Fetch provider must be one of the implemented options.",
 			"invalidWebFetchCost": "Cost must be a non-negative number for every provider.",
+			"invalidWebDeepSearchCost": "Cost must be a non-negative number for every deep-search provider.",
 			"noKeyCannotActivate": "Cannot activate a provider without an API key.",
 			"switchActiveBeforeClearingKey": "Switch Active to another engine that still has a key before clearing the current engine’s key, then save again to clear it."
 		}

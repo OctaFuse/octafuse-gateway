@@ -43,6 +43,7 @@ export * from './lib/billing-currency';
 export * from './lib/alert-webhook-system-config';
 export * from './lib/web-search-system-config';
 export * from './lib/web-fetch-system-config';
+export * from './lib/web-deep-search-system-config';
 export * from './lib/money-precision';
 export * from './lib/string-utils';
 export * from './lib/time-format';
