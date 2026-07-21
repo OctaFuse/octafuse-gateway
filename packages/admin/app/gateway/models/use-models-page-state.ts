@@ -8,11 +8,15 @@ import {
 	parseModelModalitiesJson,
 } from '@octafuse/core/db/model-modalities';
 import {
+	createDefaultImagePerImageDraft,
 	createDefaultImageTokenTierRow,
 	createDefaultNewModelTierRow,
 	draftRowsHaveImageTokenPrices,
 	draftRowsLookLikeImageOnly,
-	profileJsonToDraftRows,
+	profileJsonToDraftState,
+	type ImageBillingModeDraft,
+	type ImagePerImageDraft,
+	type ImagePricingDraftState,
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
@@ -60,6 +64,10 @@ export function useModelsPageState() {
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
 	const [formData, setFormData] = useState<ModelFormData>(EMPTY_MODEL_FORM);
 	const [pricingTierRows, setPricingTierRows] = useState<PricingTierDraftRow[]>([]);
+	const [imageBillingMode, setImageBillingMode] = useState<ImageBillingModeDraft>('token');
+	const [imagePerImageDraft, setImagePerImageDraft] = useState<ImagePerImageDraft>(
+		createDefaultImagePerImageDraft()
+	);
 	const [tagInput, setTagInput] = useState('');
 	const [saveError, setSaveError] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
@@ -305,27 +313,47 @@ export function useModelsPageState() {
 		}
 	}, [billingCurrency, existingModelIds, importCatalogRows, importSelected, refreshModels]);
 
-	const fillFormFromModel = useCallback((model: ModelListItem) => {
-		const listTags = Array.isArray(model.tags) ? model.tags : [];
-		const outputMods = parseModelModalitiesJson(model.output_modalities) ?? ['text'];
-		const imageModel = isImageGenerationModel({
-			output_modalities: outputMods,
-			pricing_profile: model.pricing_profile,
-		});
-		setFormData({
-			id: model.id,
-			display_name: model.display_name || '',
-			vendor: normalizeModelVendorInput(model.vendor),
-			context_window: imageModel ? '' : model.context_window?.toString() || '',
-			max_tokens: imageModel ? '' : model.max_tokens?.toString() || '4096',
-			input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
-			output_modalities: outputMods,
-			released_at: model.released_at ?? '',
-			tags: listTags,
-			description: model.description ?? '',
-			metadata: formatMetadataForEditor(model.metadata),
-		});
-		setPricingTierRows(profileJsonToDraftRows(model.pricing_profile));
+	const applyImagePricingDraft = useCallback((draft: ImagePricingDraftState) => {
+		setImageBillingMode(draft.mode);
+		setPricingTierRows(draft.tiers);
+		setImagePerImageDraft(draft.perImage);
+	}, []);
+
+	const fillFormFromModel = useCallback(
+		(model: ModelListItem) => {
+			const listTags = Array.isArray(model.tags) ? model.tags : [];
+			const outputMods = parseModelModalitiesJson(model.output_modalities) ?? ['text'];
+			const imageModel = isImageGenerationModel({
+				output_modalities: outputMods,
+				pricing_profile: model.pricing_profile,
+			});
+			setFormData({
+				id: model.id,
+				display_name: model.display_name || '',
+				vendor: normalizeModelVendorInput(model.vendor),
+				context_window: imageModel ? '' : model.context_window?.toString() || '',
+				max_tokens: imageModel ? '' : model.max_tokens?.toString() || '4096',
+				input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
+				output_modalities: outputMods,
+				released_at: model.released_at ?? '',
+				tags: listTags,
+				description: model.description ?? '',
+				metadata: formatMetadataForEditor(model.metadata),
+			});
+			applyImagePricingDraft(profileJsonToDraftState(model.pricing_profile));
+		},
+		[applyImagePricingDraft]
+	);
+
+	const handleImageBillingModeChange = useCallback((mode: ImageBillingModeDraft) => {
+		setImageBillingMode(mode);
+		if (mode === 'per_image') {
+			setPricingTierRows([]);
+			return;
+		}
+		setPricingTierRows((rows) =>
+			draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
+		);
 	}, []);
 
 	const handleCreate = useCallback(
@@ -338,7 +366,11 @@ export function useModelsPageState() {
 					...EMPTY_IMAGE_MODEL_FORM,
 					vendor,
 				});
-				setPricingTierRows([createDefaultImageTokenTierRow()]);
+				applyImagePricingDraft({
+					mode: 'token',
+					tiers: [createDefaultImageTokenTierRow()],
+					perImage: createDefaultImagePerImageDraft(),
+				});
 			} else {
 				setFormData({
 					...EMPTY_MODEL_FORM,
@@ -349,7 +381,7 @@ export function useModelsPageState() {
 			setShowModal(true);
 			setSaveError('');
 		},
-		[]
+		[applyImagePricingDraft]
 	);
 
 	/** 切换 Kind：同步 modalities / token 字段，并在无对应单价时写入默认档。 */
@@ -366,9 +398,16 @@ export function useModelsPageState() {
 				context_window: '',
 				max_tokens: '',
 			}));
-			setPricingTierRows((rows) =>
-				draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
-			);
+			setImageBillingMode((mode) => {
+				if (mode === 'per_image') {
+					setPricingTierRows([]);
+				} else {
+					setPricingTierRows((rows) =>
+						draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
+					);
+				}
+				return mode;
+			});
 			return;
 		}
 		setFormData((prev) => {
@@ -484,12 +523,18 @@ export function useModelsPageState() {
 					: [...current, modality];
 				const nextList = next.length > 0 ? next : [modality];
 				if (kind === 'output_modalities' && nextList.includes('image')) {
-					// 已有 LLM 默认档时也要换成 Image token 默认（此前仅 rows.length===0 才换）
-					setPricingTierRows((rows) =>
-						draftRowsHaveImageTokenPrices(rows)
-							? rows
-							: [createDefaultImageTokenTierRow()]
-					);
+					setImageBillingMode((mode) => {
+						if (mode === 'per_image') {
+							setPricingTierRows([]);
+						} else {
+							setPricingTierRows((rows) =>
+								draftRowsHaveImageTokenPrices(rows)
+									? rows
+									: [createDefaultImageTokenTierRow()]
+							);
+						}
+						return mode;
+					});
 					return {
 						...prev,
 						[kind]: nextList,
@@ -521,7 +566,20 @@ export function useModelsPageState() {
 		setSaveError('');
 		setIsSaving(true);
 		try {
-			const result = await saveModel(formData, pricingTierRows, editingModel?.id ?? null);
+			const isImage = isImageGenerationModel({ output_modalities: formData.output_modalities });
+			const imageDraft = isImage
+				? {
+						mode: imageBillingMode,
+						tiers: pricingTierRows,
+						perImage: imagePerImageDraft,
+					}
+				: null;
+			const result = await saveModel(
+				formData,
+				pricingTierRows,
+				editingModel?.id ?? null,
+				imageDraft
+			);
 			if (result.success) {
 				setShowModal(false);
 				void refreshModels();
@@ -534,7 +592,14 @@ export function useModelsPageState() {
 		} finally {
 			setIsSaving(false);
 		}
-	}, [editingModel?.id, formData, pricingTierRows, refreshModels]);
+	}, [
+		editingModel?.id,
+		formData,
+		imageBillingMode,
+		imagePerImageDraft,
+		pricingTierRows,
+		refreshModels,
+	]);
 
 	const closeModal = useCallback(() => {
 		if (isSaving || isDeleting) return;
@@ -574,6 +639,10 @@ export function useModelsPageState() {
 		setFormData,
 		pricingTierRows,
 		setPricingTierRows,
+		imageBillingMode,
+		setImageBillingMode: handleImageBillingModeChange,
+		imagePerImageDraft,
+		setImagePerImageDraft,
 		tagInput,
 		setTagInput,
 		saveError,

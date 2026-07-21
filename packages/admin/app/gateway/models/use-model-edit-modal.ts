@@ -6,11 +6,15 @@ import {
 	parseModelModalitiesJson,
 } from '@octafuse/core/db/model-modalities';
 import {
+	createDefaultImagePerImageDraft,
 	createDefaultImageTokenTierRow,
 	createDefaultNewModelTierRow,
 	draftRowsHaveImageTokenPrices,
 	draftRowsLookLikeImageOnly,
-	profileJsonToDraftRows,
+	profileJsonToDraftState,
+	type ImageBillingModeDraft,
+	type ImagePerImageDraft,
+	type ImagePricingDraftState,
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
@@ -30,6 +34,21 @@ type Options = {
 	onChanged?: () => void | Promise<void>;
 };
 
+function createInitialImagePricingDraft(mode: ImageBillingModeDraft = 'token'): ImagePricingDraftState {
+	if (mode === 'per_image') {
+		return {
+			mode: 'per_image',
+			tiers: [],
+			perImage: createDefaultImagePerImageDraft(),
+		};
+	}
+	return {
+		mode: 'token',
+		tiers: [createDefaultImageTokenTierRow()],
+		perImage: createDefaultImagePerImageDraft(),
+	};
+}
+
 /**
  * ModelModal 编辑态：可在 Models 页与 Routes 页复用（Routes 就地弹窗改 Tag 等）。
  */
@@ -40,33 +59,46 @@ export function useModelEditModal(options?: Options) {
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
 	const [formData, setFormData] = useState<ModelFormData>(EMPTY_MODEL_FORM);
 	const [pricingTierRows, setPricingTierRows] = useState<PricingTierDraftRow[]>([]);
+	const [imageBillingMode, setImageBillingMode] = useState<ImageBillingModeDraft>('token');
+	const [imagePerImageDraft, setImagePerImageDraft] = useState<ImagePerImageDraft>(
+		createDefaultImagePerImageDraft()
+	);
 	const [tagInput, setTagInput] = useState('');
 	const [saveError, setSaveError] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	const fillFormFromModel = useCallback((model: ModelListItem) => {
-		const listTags = Array.isArray(model.tags) ? model.tags : [];
-		const outputMods = parseModelModalitiesJson(model.output_modalities) ?? ['text'];
-		const imageModel = isImageGenerationModel({
-			output_modalities: outputMods,
-			pricing_profile: model.pricing_profile,
-		});
-		setFormData({
-			id: model.id,
-			display_name: model.display_name || '',
-			vendor: normalizeModelVendorInput(model.vendor),
-			context_window: imageModel ? '' : model.context_window?.toString() || '',
-			max_tokens: imageModel ? '' : model.max_tokens?.toString() || '4096',
-			input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
-			output_modalities: outputMods,
-			released_at: model.released_at ?? '',
-			tags: listTags,
-			description: model.description ?? '',
-			metadata: formatMetadataForEditor(model.metadata),
-		});
-		setPricingTierRows(profileJsonToDraftRows(model.pricing_profile));
+	const applyImagePricingDraft = useCallback((draft: ImagePricingDraftState) => {
+		setImageBillingMode(draft.mode);
+		setPricingTierRows(draft.tiers);
+		setImagePerImageDraft(draft.perImage);
 	}, []);
+
+	const fillFormFromModel = useCallback(
+		(model: ModelListItem) => {
+			const listTags = Array.isArray(model.tags) ? model.tags : [];
+			const outputMods = parseModelModalitiesJson(model.output_modalities) ?? ['text'];
+			const imageModel = isImageGenerationModel({
+				output_modalities: outputMods,
+				pricing_profile: model.pricing_profile,
+			});
+			setFormData({
+				id: model.id,
+				display_name: model.display_name || '',
+				vendor: normalizeModelVendorInput(model.vendor),
+				context_window: imageModel ? '' : model.context_window?.toString() || '',
+				max_tokens: imageModel ? '' : model.max_tokens?.toString() || '4096',
+				input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
+				output_modalities: outputMods,
+				released_at: model.released_at ?? '',
+				tags: listTags,
+				description: model.description ?? '',
+				metadata: formatMetadataForEditor(model.metadata),
+			});
+			applyImagePricingDraft(profileJsonToDraftState(model.pricing_profile));
+		},
+		[applyImagePricingDraft]
+	);
 
 	const handleCreate = useCallback((presetVendorKey?: string, kind: ModelFormKind = 'llm') => {
 		setEditingModel(null);
@@ -76,49 +108,74 @@ export function useModelEditModal(options?: Options) {
 				...EMPTY_IMAGE_MODEL_FORM,
 				vendor,
 			});
-			setPricingTierRows([createDefaultImageTokenTierRow()]);
+			applyImagePricingDraft(createInitialImagePricingDraft('token'));
 		} else {
 			setFormData({
 				...EMPTY_MODEL_FORM,
 				vendor,
 			});
 			setPricingTierRows([createDefaultNewModelTierRow()]);
+			setImageBillingMode('token');
+			setImagePerImageDraft(createDefaultImagePerImageDraft());
 		}
 		setShowModal(true);
 		setSaveError('');
+	}, [applyImagePricingDraft]);
+
+	const handleImageBillingModeChange = useCallback((mode: ImageBillingModeDraft) => {
+		setImageBillingMode(mode);
+		if (mode === 'per_image') {
+			setPricingTierRows([]);
+			return;
+		}
+		setPricingTierRows((rows) =>
+			draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
+		);
 	}, []);
 
 	/** 切换 Kind：同步 modalities / token 字段，并在无对应单价时写入默认档。 */
-	const applyFormKind = useCallback((kind: ModelFormKind) => {
-		if (kind === 'image') {
-			setFormData((prev) => ({
-				...prev,
-				input_modalities: prev.input_modalities.includes('image')
-					? prev.input_modalities
-					: [...prev.input_modalities, 'image'],
-				output_modalities: prev.output_modalities.includes('image')
-					? prev.output_modalities
-					: ['image'],
-				context_window: '',
-				max_tokens: '',
-			}));
+	const applyFormKind = useCallback(
+		(kind: ModelFormKind) => {
+			if (kind === 'image') {
+				setFormData((prev) => ({
+					...prev,
+					input_modalities: prev.input_modalities.includes('image')
+						? prev.input_modalities
+						: [...prev.input_modalities, 'image'],
+					output_modalities: prev.output_modalities.includes('image')
+						? prev.output_modalities
+						: ['image'],
+					context_window: '',
+					max_tokens: '',
+				}));
+				setImageBillingMode((mode) => {
+					if (mode === 'per_image') {
+						setPricingTierRows([]);
+					} else {
+						setPricingTierRows((rows) =>
+							draftRowsHaveImageTokenPrices(rows)
+								? rows
+								: [createDefaultImageTokenTierRow()]
+						);
+					}
+					return mode;
+				});
+				return;
+			}
+			setFormData((prev) => {
+				const withoutImage = prev.output_modalities.filter((m) => m !== 'image');
+				return {
+					...prev,
+					output_modalities: withoutImage.length > 0 ? withoutImage : ['text'],
+					max_tokens: prev.max_tokens.trim() !== '' ? prev.max_tokens : '8192',
+				};
+			});
 			setPricingTierRows((rows) =>
-				draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
+				draftRowsLookLikeImageOnly(rows) ? [createDefaultNewModelTierRow()] : rows
 			);
-			return;
-		}
-		setFormData((prev) => {
-			const withoutImage = prev.output_modalities.filter((m) => m !== 'image');
-			return {
-				...prev,
-				output_modalities: withoutImage.length > 0 ? withoutImage : ['text'],
-				max_tokens: prev.max_tokens.trim() !== '' ? prev.max_tokens : '8192',
-			};
-		});
-		setPricingTierRows((rows) =>
-			draftRowsLookLikeImageOnly(rows) ? [createDefaultNewModelTierRow()] : rows
-		);
-	}, []);
+		},
+		[]
+	);
 
 	const handleEdit = useCallback(
 		async (model: ModelListItem) => {
@@ -204,11 +261,18 @@ export function useModelEditModal(options?: Options) {
 					: [...current, modality];
 				const nextList = next.length > 0 ? next : [modality];
 				if (kind === 'output_modalities' && nextList.includes('image')) {
-					setPricingTierRows((rows) =>
-						draftRowsHaveImageTokenPrices(rows)
-							? rows
-							: [createDefaultImageTokenTierRow()]
-					);
+					setImageBillingMode((mode) => {
+						if (mode === 'per_image') {
+							setPricingTierRows([]);
+						} else {
+							setPricingTierRows((rows) =>
+								draftRowsHaveImageTokenPrices(rows)
+									? rows
+									: [createDefaultImageTokenTierRow()]
+							);
+						}
+						return mode;
+					});
 					return {
 						...prev,
 						[kind]: nextList,
@@ -240,7 +304,20 @@ export function useModelEditModal(options?: Options) {
 		setSaveError('');
 		setIsSaving(true);
 		try {
-			const result = await saveModel(formData, pricingTierRows, editingModel?.id ?? null);
+			const isImage = isImageGenerationModel({ output_modalities: formData.output_modalities });
+			const imageDraft: ImagePricingDraftState | null = isImage
+				? {
+						mode: imageBillingMode,
+						tiers: pricingTierRows,
+						perImage: imagePerImageDraft,
+					}
+				: null;
+			const result = await saveModel(
+				formData,
+				pricingTierRows,
+				editingModel?.id ?? null,
+				imageDraft
+			);
 			if (result.success) {
 				setShowModal(false);
 				await onChanged?.();
@@ -253,7 +330,14 @@ export function useModelEditModal(options?: Options) {
 		} finally {
 			setIsSaving(false);
 		}
-	}, [editingModel?.id, formData, onChanged, pricingTierRows]);
+	}, [
+		editingModel?.id,
+		formData,
+		imageBillingMode,
+		imagePerImageDraft,
+		onChanged,
+		pricingTierRows,
+	]);
 
 	const closeModal = useCallback(() => {
 		if (isSaving || isDeleting) return;
@@ -268,6 +352,10 @@ export function useModelEditModal(options?: Options) {
 		setFormData,
 		pricingTierRows,
 		setPricingTierRows,
+		imageBillingMode,
+		setImageBillingMode: handleImageBillingModeChange,
+		imagePerImageDraft,
+		setImagePerImageDraft,
 		tagInput,
 		setTagInput,
 		saveError,

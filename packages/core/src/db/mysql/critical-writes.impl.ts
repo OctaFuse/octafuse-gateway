@@ -227,6 +227,9 @@ export async function insertRequestUsageAndChargeTxMy(
 			providerKeyFingerprint: params.requestLog.providerKeyFingerprint ?? null,
 			upstreamRequestId: params.requestLog.upstreamRequestId ?? null,
 			upstreamMessageId: params.requestLog.upstreamMessageId ?? null,
+			billingKind: params.requestLog.billingKind ?? null,
+			inputImageCount: params.requestLog.inputImageCount ?? 0,
+			outputImageCount: params.requestLog.outputImageCount ?? 0,
 			createdAt: now,
 		});
 		if (!params.shouldChargeBudget) {

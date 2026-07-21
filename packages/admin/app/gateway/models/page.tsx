@@ -103,6 +103,10 @@ function ModelsContent() {
 				editingModel={state.editingModel}
 				formData={state.formData}
 				pricingTierRows={state.pricingTierRows}
+				imageBillingMode={state.imageBillingMode}
+				onImageBillingModeChange={state.setImageBillingMode}
+				imagePerImageDraft={state.imagePerImageDraft}
+				onImagePerImageDraftChange={state.setImagePerImageDraft}
 				tagInput={state.tagInput}
 				saveError={state.saveError}
 				isSaving={state.isSaving}

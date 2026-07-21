@@ -353,8 +353,24 @@ export default function GatewayRequestLogsPage() {
     return `×${ratio.toLocaleString('en-US', { maximumFractionDigits: 3 })}`;
   };
 
-  /** Tokens：input/output；第二行 cache（无命中时留空以对齐 Cost 三行） */
+  /** Tokens：input/output；第二行 cache（无命中时留空以对齐 Cost 三行）；按张计费显示张数 */
   const renderTokensCell = (log: GatewayRequestLog) => {
+    if (log.billing_kind === 'image_per_image') {
+      const inN = log.input_image_count ?? 0;
+      const outN = log.output_image_count ?? 0;
+      const line =
+        inN > 0 && outN > 0
+          ? `${inN}×${outN} img`
+          : `${inN + outN} ${inN + outN === 1 ? 'image' : 'images'}`;
+      return (
+        <div className="leading-tight space-y-0.5">
+          <div className="text-gray-900 tabular-nums" title={t('titles.imagePerImageUsage')}>
+            {line}
+          </div>
+          <div className="text-gray-400 tabular-nums min-h-[1em]">{'\u00A0'}</div>
+        </div>
+      );
+    }
     const hasCache = log.cache_read_tokens > 0 || log.cache_write_tokens > 0;
     return (
       <div className="leading-tight space-y-0.5">

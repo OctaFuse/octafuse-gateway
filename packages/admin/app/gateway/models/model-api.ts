@@ -1,7 +1,7 @@
 import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { readApiJson } from '@/lib/api-json';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
-import { serializeDraftRowsToProfileJson, type PricingTierDraftRow } from '@/lib/pricing-tiers-draft';
+import { serializeDraftRowsToProfileJson, serializeImagePricingDraft, type ImagePricingDraftState, type PricingTierDraftRow } from '@/lib/pricing-tiers-draft';
 import { parseMetadataForSave } from './model-utils';
 import type { ModelFormData, ModelImportResult, ModelListItem, PresetCatalogRow } from './types';
 
@@ -22,9 +22,16 @@ export async function fetchModelDetail(id: string): Promise<ModelListItem> {
 export async function saveModel(
 	formData: ModelFormData,
 	pricingTierRows: PricingTierDraftRow[],
-	editingModelId: string | null
+	editingModelId: string | null,
+	imagePricingDraft?: ImagePricingDraftState | null
 ): Promise<{ success: true } | { success: false; message: string }> {
-	const tierJson = serializeDraftRowsToProfileJson(pricingTierRows);
+	const isImage = isImageGenerationModel({
+		output_modalities: formData.output_modalities,
+	});
+	const tierJson =
+		isImage && imagePricingDraft
+			? serializeImagePricingDraft(imagePricingDraft)
+			: serializeDraftRowsToProfileJson(pricingTierRows);
 	if (!tierJson.ok) {
 		return { success: false, message: tierJson.error };
 	}
@@ -33,7 +40,7 @@ export async function saveModel(
 		return { success: false, message: metaParsed.error };
 	}
 
-	const isImage = isImageGenerationModel({
+	const isImageResolved = isImageGenerationModel({
 		output_modalities: formData.output_modalities,
 		pricing_profile: tierJson.json,
 	});
@@ -43,12 +50,12 @@ export async function saveModel(
 		tags: formData.tags,
 		vendor: normalizeModelVendorInput(formData.vendor),
 		// Image models: chat context / max_tokens are N/A — always clear on save
-		context_window: isImage
+		context_window: isImageResolved
 			? null
 			: formData.context_window
 				? parseInt(formData.context_window, 10)
 				: null,
-		max_tokens: isImage ? null : Number.isFinite(parsedMax) ? parsedMax : 4096,
+		max_tokens: isImageResolved ? null : Number.isFinite(parsedMax) ? parsedMax : 4096,
 		input_modalities: formData.input_modalities,
 		output_modalities: formData.output_modalities,
 		released_at: formData.released_at.trim() || null,

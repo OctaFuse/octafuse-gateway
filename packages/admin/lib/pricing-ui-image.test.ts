@@ -3,10 +3,11 @@ import { describe, it } from 'node:test';
 import { getCatalogImagePricingDisplay, summarizePricingAuditJson } from './pricing-ui';
 
 describe('getCatalogImagePricingDisplay', () => {
-	it('shows image token rates and estimate matrix', () => {
+	it('shows image token rates without estimate matrix', () => {
 		const display = getCatalogImagePricingDisplay(
 			{
 				pricing_profile: JSON.stringify({
+					image_billing_mode: 'token',
 					tiers: [
 						{
 							upto: null,
@@ -24,36 +25,31 @@ describe('getCatalogImagePricingDisplay', () => {
 		);
 		assert.ok(display);
 		assert.equal(display!.billingKind, 'image_tokens');
-		assert.equal(display!.tokenRates.imageOutput, '30');
-		assert.equal(display!.matrixIsEstimate, true);
-		assert.ok(display!.matrix);
-		assert.equal(display!.matrix!.cells.high?.['1536x1024'], '0.165');
+		assert.equal(display!.tokenRates?.imageOutput, '30');
+		assert.equal(display!.tokenRates?.imageInput, '8');
+		assert.equal(display!.defaultLine, '30 $/M');
 	});
 
-	it('includes Seedream flat×2k estimate row', () => {
+	it('shows authoritative per_image default price', () => {
 		const display = getCatalogImagePricingDisplay(
 			{
 				pricing_profile: JSON.stringify({
-					tiers: [
-						{
-							upto: null,
-							input_price: 0,
-							output_price: 0,
-							image_output_price: 13.43,
-						},
-					],
+					image_billing_mode: 'per_image',
+					image: {
+						default: 0.22,
+						uncertain_result_policy: 'requested',
+					},
 				}),
 			},
 			'CNY'
 		);
 		assert.ok(display);
-		assert.ok(display!.matrix?.cells.flat?.['2k']);
-		// 16384 * 13.43 / 1e6 ≈ 0.22
-		const flat2k = Number(display!.matrix!.cells.flat!['2k']);
-		assert.ok(Math.abs(flat2k - 0.22) < 0.001);
+		assert.equal(display!.billingKind, 'image_per_image');
+		assert.equal(display!.perImageDefault, '0.22');
+		assert.equal(display!.defaultLine, '0.22 ¥/image');
 	});
 
-	it('returns null for legacy per-image-only profiles', () => {
+	it('returns null for legacy image-only block without mode', () => {
 		const display = getCatalogImagePricingDisplay(
 			{
 				pricing_profile: JSON.stringify({
@@ -87,5 +83,25 @@ describe('summarizePricingAuditJson', () => {
 		assert.ok(line!.includes('text/img-in/img-out 20/0/5500'));
 		assert.ok(line!.includes('high×1536x1024'));
 		assert.ok(line!.includes('×1.2'));
+	});
+
+	it('summarizes image_per_image audit', () => {
+		const line = summarizePricingAuditJson(
+			JSON.stringify({
+				v: 4,
+				kind: 'image_per_image',
+				input_image_count: 1,
+				output_image_count: 2,
+				output_unit_price: 0.22,
+				input_unit_price: 0.05,
+				result_confirmed: false,
+				uncertain_result_policy: 'requested',
+			})
+		);
+		assert.ok(line);
+		assert.ok(line!.includes('image_per_image'));
+		assert.ok(line!.includes('1 in / 2 out'));
+		assert.ok(line!.includes('out 0.22/img'));
+		assert.ok(line!.includes('uncertain'));
 	});
 });

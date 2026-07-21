@@ -50,4 +50,10 @@ export type InsertRequestLogParams = {
 	upstreamRequestId?: string | null;
 	/** 上游响应 body message id（应用层生成结果 id：chatcmpl-* / msg_* / responseId） */
 	upstreamMessageId?: string | null;
+	/** Image 计费种类：`image_tokens` | `image_per_image` */
+	billingKind?: string | null;
+	/** 按张计费：参考图张数 */
+	inputImageCount?: number;
+	/** 按张计费：生成图张数 */
+	outputImageCount?: number;
 };

@@ -5,6 +5,7 @@ import {
 	estimateImageBudgetPrecheck,
 	estimateImageCosts,
 	withClientAbortPrecheckAudit,
+	withUncertainResultAudit,
 } from './image-usage-charge';
 
 const TOKEN_PROFILE = JSON.stringify({
@@ -28,6 +29,18 @@ const LEGACY_ONLY_PROFILE = JSON.stringify({
 		by_quality_size: {
 			'high:1536x1024': 0.165,
 			'medium:1024x1024': 0.053,
+		},
+	},
+});
+
+const PER_IMAGE_PROFILE = JSON.stringify({
+	image_billing_mode: 'per_image',
+	image: {
+		default: 0.04,
+		by_quality_size: { 'high:1536x1024': 0.165 },
+		input: {
+			default: 0.01,
+			by_quality_size: { 'high:1024x1024': 0.02 },
 		},
 	},
 });
@@ -70,6 +83,7 @@ describe('estimateImageCosts', () => {
 		assert.equal(costs.billingKind, 'image_tokens');
 		assert.ok(Math.abs(costs.chargedCost - 0.1651) < 1e-6);
 		assert.equal(costs.logTokens.outputTokens, 5500);
+		assert.equal(costs.logImageCounts?.outputImageCount, 0);
 		assert.ok(costs.pricingAuditJson.includes('"kind":"image_tokens"'));
 	});
 
@@ -117,7 +131,61 @@ describe('estimateImageCosts', () => {
 		});
 		assert.equal(costs.billingKind, 'image_tokens');
 		assert.equal(costs.chargedCost, 0);
-		assert.ok(costs.pricingAuditJson.includes('missing_image_token_pricing'));
+		assert.ok(costs.pricingAuditJson.includes('missing_image_pricing'));
+	});
+
+	it('explicit per_image mode bills by output count', async () => {
+		const costs = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: null,
+			quality: 'high',
+			size: '1536x1024',
+			imageCount: 1,
+			operation: 'generations',
+		});
+		assert.equal(costs.billingKind, 'image_per_image');
+		assert.ok(Math.abs(costs.chargedCost - 0.165) < 1e-9);
+		assert.equal(costs.unitPrice, 0.165);
+		assert.equal(costs.logTokens.totalTokens, 0);
+		assert.equal(costs.logImageCounts?.outputImageCount, 1);
+		assert.equal(costs.logImageCounts?.inputImageCount, 0);
+		assert.ok(costs.pricingAuditJson.includes('"kind":"image_per_image"'));
+		assert.ok(costs.pricingAuditJson.includes('"output_unit_price":0.165'));
+	});
+
+	it('per_image adds input.default × referenceCount', async () => {
+		const costs = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: null,
+			quality: 'high',
+			size: '1536x1024',
+			imageCount: 1,
+			referenceCount: 2,
+		});
+		assert.equal(costs.billingKind, 'image_per_image');
+		// output high:1536x1024 = 0.165; input 无匹配档 → default 0.01 × 2 refs
+		assert.ok(Math.abs(costs.chargedCost - (0.165 + 0.01 * 2)) < 1e-9);
+		assert.equal(costs.logImageCounts?.inputImageCount, 2);
+		assert.equal(costs.logImageCounts?.outputImageCount, 1);
+	});
+
+	it('per_image applies charged_factor from route override', async () => {
+		const base = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: null,
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+		});
+		const doubled = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: JSON.stringify({ charged_factor: 2, metered_factor: 1 }),
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+		});
+		assert.equal(base.billingKind, 'image_per_image');
+		assert.ok(Math.abs(doubled.chargedCost - base.chargedCost * 2) < 1e-9);
 	});
 
 	it('LLM profile without image prices yields zero image cost', async () => {
@@ -203,8 +271,8 @@ describe('missing upstream usage fallback', () => {
 	});
 });
 
-describe('client abort precheck audit', () => {
-	it('tags budget precheck breakdown with client_abort_precheck without changing cost', async () => {
+describe('uncertain result precheck audit', () => {
+	it('tags budget precheck with client_abort_precheck without changing cost', async () => {
 		const precheck = await estimateImageBudgetPrecheck(
 			mockRepos(),
 			{
@@ -221,5 +289,18 @@ describe('client abort precheck audit', () => {
 		assert.equal(audited.chargedCost, precheck.chargedCost);
 		assert.equal(audited.meteredCost, precheck.meteredCost);
 		assert.ok(audited.pricingAuditJson.includes('client_abort_precheck'));
+	});
+
+	it('supports gateway_timeout_precheck audit source', async () => {
+		const precheck = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: null,
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+		});
+		const audited = withUncertainResultAudit(precheck, 'gateway_timeout_precheck');
+		assert.equal(audited.chargedCost, precheck.chargedCost);
+		assert.ok(audited.pricingAuditJson.includes('gateway_timeout_precheck'));
 	});
 });

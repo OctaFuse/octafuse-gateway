@@ -10,32 +10,50 @@
 		],
 		"pricing": {
 			"usd": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 0,
-						"output_price": 0,
-						"cache_read_price": null,
-						"cache_write_price": null,
-						"image_input_price": null,
-						"image_input_cache_price": null,
-						"image_output_price": 3.05
-					}
-				]
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.045,
+					"by_size": {
+						"2k": 0.045,
+						"3k": 0.09,
+						"4k": 0.09
+					},
+					"by_quality_size": {
+						"flat:2k": 0.045,
+						"flat:3k": 0.09,
+						"flat:4k": 0.09,
+						"auto:2k": 0.045,
+						"auto:3k": 0.09,
+						"auto:4k": 0.09
+					},
+					"input": {
+						"default": 0.003
+					},
+					"uncertain_result_policy": "requested"
+				}
 			},
 			"cny": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 0,
-						"output_price": 0,
-						"cache_read_price": null,
-						"cache_write_price": null,
-						"image_input_price": null,
-						"image_input_cache_price": null,
-						"image_output_price": 21.97
-					}
-				]
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.3,
+					"by_size": {
+						"2k": 0.3,
+						"3k": 0.6,
+						"4k": 0.6
+					},
+					"by_quality_size": {
+						"flat:2k": 0.3,
+						"flat:3k": 0.6,
+						"flat:4k": 0.6,
+						"auto:2k": 0.3,
+						"auto:3k": 0.6,
+						"auto:4k": 0.6
+					},
+					"input": {
+						"default": 0.02
+					},
+					"uncertain_result_policy": "requested"
+				}
 			}
 		},
 		"modalities": {
@@ -57,32 +75,18 @@
 		"max_tokens": null,
 		"pricing": {
 			"usd": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 0,
-						"output_price": 0,
-						"cache_read_price": null,
-						"cache_write_price": null,
-						"image_input_price": null,
-						"image_input_cache_price": null,
-						"image_output_price": 2.14
-					}
-				]
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.035,
+					"uncertain_result_policy": "requested"
+				}
 			},
 			"cny": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 0,
-						"output_price": 0,
-						"cache_read_price": null,
-						"cache_write_price": null,
-						"image_input_price": null,
-						"image_input_cache_price": null,
-						"image_output_price": 13.43
-					}
-				]
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.22,
+					"uncertain_result_policy": "requested"
+				}
 			}
 		},
 		"modalities": {

@@ -77,8 +77,8 @@ describe('parseOpenAiImageUsage', () => {
 	});
 });
 
-describe('Seedream image_output_price calibration', () => {
-	it('lite CNY catalog ≈ ¥0.22/image at typical output tokens', () => {
+describe('SEEDREAM_TYPICAL_OUTPUT_TOKENS (token-precheck constant only)', () => {
+	it('documents historical fold math (per_image models no longer use this for billing)', () => {
 		const cost = computeImageTokenMeteredCost(
 			{
 				text_tokens: 0,
@@ -99,7 +99,7 @@ describe('Seedream image_output_price calibration', () => {
 				image_output_price: 13.43,
 			}
 		);
-		// 16384 * 13.43 / 1e6 ≈ 0.2200
+		// 16384 * 13.43 / 1e6 ≈ 0.2200 (legacy fold; Seedream now uses per_image.default)
 		assert.ok(Math.abs(cost - 0.22) < 0.001);
 	});
 });

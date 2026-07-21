@@ -28,7 +28,7 @@ import {
 	type ImageBillingParams,
 	type ImageCostBreakdown,
 } from '../../services/image-usage-charge';
-import { applyOpenAiImageGenerationExtras } from '../../services/image-generation-extras';
+import { applyOpenAiImageGenerationExtras, countOpenAiGenerationReferenceImages } from '../../services/image-generation-extras';
 import {
 	countValidImageResults,
 	IMAGE_MAX_BYTES_PER_FILE,
@@ -302,8 +302,22 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 	const imageUsage = response.ok ? (proxyResult.meta?.imageUsage ?? null) : null;
 	const validImages = response.ok ? countValidImageResults(parsedBody) : 0;
 	const latency = Date.now() - start;
+	const imageAbortReason = proxyResult.meta?.imageAbortReason ?? null;
 	const clientAbortPrecheck =
-		proxyResult.meta?.imageAbortReason === 'client_abort' ? budgetPrecheck : null;
+		imageAbortReason === 'client_abort' || imageAbortReason === 'gateway_timeout'
+			? budgetPrecheck
+			: null;
+
+	let upstreamSupplierCostUsdTicks: number | null = null;
+	if (parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody)) {
+		const usage = (parsedBody as Record<string, unknown>).usage;
+		if (usage && typeof usage === 'object' && !Array.isArray(usage)) {
+			const ticks = (usage as Record<string, unknown>).cost_in_usd_ticks;
+			if (typeof ticks === 'number' && Number.isFinite(ticks)) {
+				upstreamSupplierCostUsdTicks = ticks;
+			}
+		}
+	}
 
 	let responseText: string;
 	if (errorBodyText != null) {
@@ -386,6 +400,9 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 			effectiveImageCount: validImages,
 			imageUsage,
 			clientAbortPrecheck,
+			imageAbortReason,
+			resultConfirmed: status === 'success' && validImages > 0,
+			upstreamSupplierCostUsdTicks,
 			providerKeyId: chosenRoute.providerKeyId ?? null,
 			providerKeyLabel: chosenRoute.providerKeyLabel ?? null,
 			providerKeyFingerprint: chosenRoute.providerKeyFingerprint ?? null,
@@ -460,6 +477,8 @@ imageRoutes.post('/generations', async (c) => {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
 
+	const referenceCount = countOpenAiGenerationReferenceImages(body);
+
 	const estimate = await estimateImageBudgetPrecheck(
 		repos,
 		{
@@ -468,6 +487,8 @@ imageRoutes.post('/generations', async (c) => {
 			size: common.size ?? 'auto',
 			imageCount: common.n,
 			isEdit: false,
+			referenceCount,
+			operation: 'generations',
 			requestStartedAtMs: start,
 		},
 		routes.map((route) => route.priceOverrideRaw)
@@ -552,11 +573,14 @@ imageRoutes.post('/generations', async (c) => {
 			size: common.size ?? 'auto',
 			imageCount: common.n,
 			isEdit: false,
+			referenceCount,
+			operation: 'generations',
 			requestStartedAtMs: start,
 		},
 		budgetPrecheck: estimate,
 		clientModelId: rawModelId,
 		common,
+		referenceCount,
 		start,
 		timing,
 	});
@@ -599,6 +623,7 @@ imageRoutes.post('/edits', async (c) => {
 			imageCount: edit.n,
 			isEdit: true,
 			referenceCount: edit.images.length,
+			operation: 'edits',
 			requestStartedAtMs: start,
 		},
 		routes.map((route) => route.priceOverrideRaw)
@@ -668,6 +693,7 @@ imageRoutes.post('/edits', async (c) => {
 			imageCount: edit.n,
 			isEdit: true,
 			referenceCount: edit.images.length,
+			operation: 'edits',
 			requestStartedAtMs: start,
 		},
 		budgetPrecheck: estimate,

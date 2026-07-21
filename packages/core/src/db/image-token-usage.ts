@@ -166,14 +166,14 @@ export const GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS: Record<string, number> = {
 };
 
 /**
- * 火山 Seedream OpenAI 兼容响应常见 `usage.output_tokens`（按张折算进 Gateway token 计费）。
- * 目录 `image_output_price` 按 [官方元/张] ÷ (本值/1M) 校准。
+ * 上游 OpenAI 兼容文生图偶发返回的典型 `usage.output_tokens` 量级。
+ * **仅用于 token 模式预检上界**（未知 size 时避免低估）；按张模型请用 `image_billing_mode: per_image`，勿再折算校准。
  */
 export const SEEDREAM_TYPICAL_OUTPUT_TOKENS = 16_384;
 
 /**
- * Seedream / 国内 OpenAI 兼容文生图 size 档位 → 预估 image output tokens（偏保守）。
- * quality 键用 `flat`（无 GPT quality 分档）；Admin 估算矩阵与预检共用。
+ * Seedream 类 size 档位 → 预估 image output tokens（偏保守）。
+ * quality 键用 `flat`；**仅 token 模式预检 / Admin token 估算矩阵**，非 per_image 扣费权威。
  */
 export const SEEDREAM_ESTIMATED_OUTPUT_TOKENS: Record<string, number> = {
 	'flat:2k': SEEDREAM_TYPICAL_OUTPUT_TOKENS,

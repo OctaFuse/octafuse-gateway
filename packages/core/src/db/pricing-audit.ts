@@ -25,6 +25,17 @@
  * ```
  * - `snapshot.user_charge` / `supplier`：目录选档 × base_factor × schedule_factor 后的单价。
  * - `basis_tokens`：选档依据（上游 usage 的 input 侧 token 数）。
+ *
+ * ## Image 计费扩展（`snapshot` 内 `kind` 字段）
+ * - **`kind: 'image_tokens'`**：OpenAI GPT Image token 分项；沿用 tier `image_*` 与 usage 分项。
+ * - **`kind: 'image_per_image'`**：按张计费；典型字段：
+ *   - `operation`：`generations` | `edits`
+ *   - `input_image_count` / `output_image_count`：参考图 / 生成张数
+ *   - `output_unit_price` / `input_unit_price`：目录选档后单价（$/张）
+ *   - `result_confirmed`：上游是否确认 output 张数
+ *   - `uncertain_result_policy`：`requested` | `zero`（profile `image.uncertain_result_policy`）
+ *   - `usage_source`：计费张数来源（如 `response.data` / `request.n`）
+ * 对应 `api_key_request_logs.billing_kind` / `input_image_count` / `output_image_count` 列。
  */
 
 /** 当前写入的 `pricing_audit` JSON schema 版本号。 */

@@ -14,7 +14,7 @@ API 字段细节见 [用户接口 · Images](../api/user.md#images图片生成--
 | 路由协议 | `model_routes.upstream_protocol` **锁定 `openai`**（anthropic/gemini 保存应 400） |
 | Kind 判定 | `output_modalities` 含 **`image`**（勿用 input 含 image——多模态 LLM 也会有） |
 | Catalog 列表 | 默认 `/v1/models` **不含** 纯 image 模型；需 `kind=image` / `kind=all`，或直接打 Images API |
-| 计费权威 | 上游响应 **`usage` 分项** × tier `image_*` / text 单价；**无按张固定价**（按张套餐留给业务层） |
+| 计费权威 | **双模式**：`pricing_profile.image_billing_mode` = `token`（usage 分项 × `image_*`）或 `per_image`（确认输出张数 × `image.default`，可选参考图 `image.input`） |
 
 ## 目录中的 Image 预设
 
@@ -28,15 +28,15 @@ API 字段细节见 [用户接口 · Images](../api/user.md#images图片生成--
 
 Admin → Models → Import 勾选导入；**同 id 已存在不会覆盖**——改价需删后 re-import 或 PATCH。
 
-| Catalog id | 展示名 | Vendor | 典型区域 | 图生图 / 编辑 | 说明 |
-|------------|--------|--------|----------|---------------|------|
-| `gpt-image-2` | GPT Image 2 | openai | 海外 | **`/v1/images/edits`**（multipart，最多 5 张） | OpenAI 官方 token 分项价 |
-| `doubao-seedream-5-0-260128` | Doubao Seedream 5.0 | bytedance | 国内（火山方舟） | generations + JSON **`image`** | 官方按张；Gateway 用 `output_tokens≈16384` 折算 |
-| `doubao-seedream-5-0-pro` | Doubao Seedream 5.0 Pro | bytedance | 国内（火山方舟） | 同上 | 同上；官方约价更高 |
-| `glm-image` | GLM Image | zhipu | 国内 / Z.AI 国际 | generations（按上游） | 官方约 ¥0.1/张 → 同上折算 |
-| `grok-imagine-image-quality` | Grok Imagine Image Quality | xai | 海外 | generations（及上游 edits） | 官方约 $0.05/张 → 同上折算 |
-| `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | google | 海外 | generations（OpenAI 兼容层） | Nano Banana 2；官方 $/1M token |
-| `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | google | 海外 | 同上 | Nano Banana Pro；官方 $/1M token |
+| Catalog id | 展示名 | Vendor | 典型区域 | 图生图 / 编辑 | 计费模式 |
+|------------|--------|--------|----------|---------------|----------|
+| `gpt-image-2` | GPT Image 2 | openai | 海外 | **`/v1/images/edits`**（multipart，最多 5 张） | **`token`**（官方 $/1M） |
+| `doubao-seedream-5-0` | Doubao Seedream 5.0 | bytedance | 国内（火山方舟） | generations + JSON **`image`** | **`per_image`**（¥0.22/张一口价） |
+| `doubao-seedream-5-0-pro` | Doubao Seedream 5.0 Pro | bytedance | 国内（火山方舟） | 同上 | **`per_image`**（¥0.30/¥0.60 按像素档 + 参考图） |
+| `glm-image` | GLM Image | zhipu | 国内 / Z.AI 国际 | generations（按上游） | **`per_image`**（¥0.1/次） |
+| `grok-imagine-image-quality` | Grok Imagine Image Quality | xai | 海外 | generations（及上游 edits） | **`per_image`**（1K $0.05 / 2K $0.07；input $0.01） |
+| `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | google | 海外 | generations（OpenAI 兼容层） | **`token`**（Nano Banana 2） |
+| `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | google | 海外 | 同上 | **`token`**（Nano Banana Pro） |
 
 约定：
 
@@ -121,23 +121,32 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 curl -sS "$GATEWAY_URL/v1/images/generations" \
   -H "Authorization: Bearer $USER_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model":"doubao-seedream-5-0-260128","prompt":"海边灯塔水彩封面","size":"2K","n":1,"watermark":false}'
+  -d '{"model":"doubao-seedream-5-0","prompt":"海边灯塔水彩封面","size":"2K","n":1,"watermark":false}'
 ```
 
 Seedream 图生图（勿打 `/edits`）：
 
 ```json
 {
-  "model": "doubao-seedream-5-0-260128",
+  "model": "doubao-seedream-5-0",
   "prompt": "把背景换成黄昏海边",
   "size": "2K",
   "image": "https://example.com/ref.png"
 }
 ```
 
-## 计费
+## 计费（双模式）
 
-对齐 OpenAI Image 分项（再乘路由 `charged_factor` / `metered_factor`）：
+`models.pricing_profile` 用显式 **`image_billing_mode`** 区分（禁止混配）：
+
+| 模式 | 适用 | 扣费权威 | `pricing_audit.kind` |
+|------|------|----------|----------------------|
+| **`token`** | gpt-image-2、Gemini Nano Banana | 上游 `usage` 分项 × tier `image_*` / text 单价 | `image_tokens` |
+| **`per_image`** | Seedream / GLM / Grok | 确认输出张数 × `image.default`（+ 可选参考图 `image.input`）；**无需 / 不计价 `tiers`** | `image_per_image` |
+
+再乘路由 `charged_factor` / `metered_factor`。Request log 另有结构化列 `billing_kind`、`input_image_count`、`output_image_count`。
+
+### token 模式
 
 ```text
 charged ≈
@@ -151,15 +160,32 @@ charged ≈
 
 | 规则 | 行为 |
 |------|------|
-| 成功出图 | 按响应 `usage` 真实分项扣费；`pricing_audit.kind=image_tokens` |
-| 客户端取消（已发出） | 按预检 token 扣费；`usage_source=client_abort_precheck` |
-| 超时 / 上游错误 / 空结果 | 零费用日志，不计费 |
-| 无 `image_*`（及所需 text）单价 | **不计费** |
-| Legacy 按张 `pricing_profile.image` | 可读入兜底 Kind，**不参与扣费**；Admin 保存会清除 |
+| 成功出图 | 按响应 `usage` 真实分项扣费 |
+| 客户端取消 / Gateway 超时（已发出） | 按入口 token 预检扣费（防亏损） |
+| 明确上游错误且未发出 / 空结果 | 零费用 |
+| 无 mode 且无正 `image_*` | **不计费** |
+
+### per_image 模式
+
+```text
+charged ≈
+  output_unit × confirmed_output_count
++ input_unit × reference_count
+（再 × charged_factor）
+```
+
+| 规则 | 行为 |
+|------|------|
+| 成功出图 | 按有效返回图片数 + 请求参考图数结算；**忽略** usage tokens |
+| 客户端取消 / Gateway 超时 / 结果不明（已发出） | 默认按请求张数扣费（`uncertain_result_policy=requested`）；可配置 `zero` |
+| 明确失败且未发出 / 空结果 | 零费用 |
+| 无显式 `image_billing_mode: per_image` 的 legacy `image` 块 | **不计费**（避免旧数据突然扣款） |
+
+已部署库可用：`node scripts/db/migrate-image-billing-modes.mjs --dry-run`（再 `--apply`）。
 
 ### 预设单价（摘要）
 
-**`gpt-image-2`**（USD / 1M；CNY ≈ ×7.25）：
+**`gpt-image-2`**（`token`；USD / 1M；CNY ≈ ×7.25）：
 
 | 分项 | USD | CNY |
 |------|-----|-----|
@@ -169,44 +195,30 @@ charged ≈
 | `image_input_cache_price` | 2 | 14.5 |
 | `image_output_price` | 30 | 217.5 |
 
-短 prompt generations 费用通常由 **image_output** 主导；edits 另计 **image_input**。
+**按张类**（`per_image`；`image.default` 为权威单价 / 张；官方来源见备注）：
 
-**按张折算类**（官方按张；上游常只回 `usage.output_tokens≈16384`；仅配置 **`image_output_price`**，`image_input_*` 为 null）：
+| Catalog id | CNY / 张 | USD / 张 | 备注 |
+|------------|----------|----------|------|
+| `doubao-seedream-5-0` | **0.22** | **0.035** | 火山方舟一口价；BytePlus $0.035；**不按 4K 翻倍** |
+| `doubao-seedream-5-0-pro` | **0.30**（≤2.36MP）/ **0.60**（>2.36MP） | **0.045** / **0.09** | `by_size`：`2k`→低档，`3k`/`4k`→高档；`image.input` CNY **0.02** / USD **0.003**（官方首张免费网关暂按全量计） |
+| `glm-image` | **0.1** | **0.014** | 智谱官方 ¥0.1/次；USD ≈ ×7.25 |
+| `grok-imagine-image-quality` | **0.36**（1K）/ **0.51**（2K） | **0.05** / **0.07** | xAI 官方；`image.input.default` USD **0.01**（CNY ≈0.07） |
 
-| Catalog id | 官方约价 | 典型 tokens | `image_output_price` CNY/1M | USD/1M |
-|------------|----------|-------------|-----------------------------|--------|
-| `doubao-seedream-5-0-260128` | ¥0.22 / 张 | 16384 | **13.43** | **2.14** |
-| `doubao-seedream-5-0-pro` | ¥0.36 / 张（≤2.36MP） | 16384 | **21.97** | **3.05** |
-| `glm-image` | ¥0.1 / 张 | 16384 | **6.1** | **0.84** |
-| `grok-imagine-image-quality` | $0.05 / 张 | 16384 | **22.13** | **3.05** |
+**Google Nano Banana**（`token`；官方 $/1M；CNY ≈ ×7.25）：
 
-折算：
-
-```text
-image_output_price = 官方单价/张 ÷ (典型_output_tokens / 1_000_000)
-```
-
-实测 `output_tokens` 偏离 16384 时，按上式重算并 PATCH。常量：`SEEDREAM_TYPICAL_OUTPUT_TOKENS`（`packages/core/src/db/image-token-usage.ts`）。上游若无 `usage`，则**不计费**（与全局规则一致）。
-
-**Google Nano Banana**（官方 $/1M tokens；CNY ≈ ×7.25）：
-
-| Catalog id | text/image `input_price` USD | `image_output_price` USD | input CNY | img-out CNY |
-|------------|------------------------------|--------------------------|-----------|-------------|
-| `gemini-3.1-flash-image` | 0.5 | **60** | 3.625 | **435** |
-| `gemini-3-pro-image-preview` | 2 | **120** | 14.5 | **870** |
+| Catalog id | text/image `input_price` | text `output_price` | `image_output_price` | input CNY | text-out CNY | img-out CNY |
+|------------|--------------------------|---------------------|----------------------|-----------|--------------|-------------|
+| `gemini-3.1-flash-image` | 0.5 | **3** | **60** | 3.625 | **21.75** | **435** |
+| `gemini-3-pro-image-preview` | 2 | **12** | **120** | 14.5 | **87** | **870** |
 
 ## 预检与估算
 
-预检用 quality×size **估算** image output tokens（偏保守）× 目录单价 × 候选路由最高 `charged_factor`，用于预算闸门；**最终扣费仍以成功响应 usage 为准**。
+| 模式 | 预检 | 最终扣费 |
+|------|------|----------|
+| **token** | quality×size **估算** output tokens（偏保守）× 单价 × 最高 `charged_factor` | 成功响应 **usage** |
+| **per_image** | `unit × 请求输出张数 + input_unit × 参考图数` × 最高 factor | 成功响应 **有效图片数** |
 
-| 场景 | 估算行为 |
-|------|----------|
-| GPT Image 已知 quality×size | 查 GPT 估算表 |
-| Seedream `2K`/`3K`/`4K` | 典型 16384；`4K` 按 2× |
-| 显式大像素（边 ≥2048） | ≥8MP 按 2× 典型，否则 1× |
-| 完全未知 | 取 GPT 上界与 Seedream 典型的较大者，避免国内模型低估 |
-
-Admin Routes / Models 上的估算矩阵仅供展示，**不是**扣费权威。
+Admin Routes / Models 只展示目录权威价：token 模式为 `/1M` 分项；per_image 为 `/image` 单价。不再展示 quality×size 估算矩阵。
 
 ## Route 配置清单
 
@@ -222,12 +234,11 @@ Admin Routes / Models 上的估算矩阵仅供展示，**不是**扣费权威。
 Admin 闭环：**Routes → Playground → Simulator → Request Logs**（无独立 Images 管理页）。
 
 1. Import Provider + Image 模型预设  
-2. 建 openai 路由；Billing 显示 token 单价（Seedream 主要为 img-out）  
+2. 建 openai 路由；Billing：token 模型显示 `/M`，per_image 显示 `/image`  
 3. Playground 出图（不计费）  
 4. Simulator / curl 打 Proxy，核对：
-   - `pricing_audit.kind=image_tokens`
-   - GPT：`charged_cost` 随 usage 分项变化  
-   - Seedream：`tokens.image_output≈16384`，`charged_cost≈官方单价×charged_factor`  
+   - GPT：`pricing_audit.kind=image_tokens`，`charged_cost` 随 usage 分项变化  
+   - Seedream：`pricing_audit.kind=image_per_image`，`output_image_count=1`，`charged_cost≈官方单价×charged_factor`  
 5. Seedream 勿用 multipart `/edits` 做图生图  
 
 逐步细节：[gpt-image-2 验收](../api/admin.md#运维验收文生图模型-gpt-image-2) · [Seedream 验收](../api/admin.md#运维验收国内文生图-seedream-火山方舟)。

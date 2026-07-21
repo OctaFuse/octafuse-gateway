@@ -112,7 +112,32 @@ function buildTokenPricingPreview(
 	return { label, detail: lines.join('\n') };
 }
 
-/** 按 `BILLING_CURRENCY` 选用的目录价分支：Image / LLM 均展示 token 档位摘要。 */
+function buildPerImagePricingPreview(
+	rawPricing: Record<string, unknown>,
+	billing: GatewaySupportedBillingCurrency
+): CatalogPricingPreview | null {
+	const mode = rawPricing.image_billing_mode;
+	const image = rawPricing.image;
+	const imageObj =
+		image && typeof image === 'object' && !Array.isArray(image)
+			? (image as Record<string, unknown>)
+			: null;
+	const defaultPrice = imageObj ? formatPriceForPreview(imageObj.default) : null;
+	if (mode !== 'per_image' && defaultPrice == null) {
+		return null;
+	}
+	if (defaultPrice == null) {
+		return null;
+	}
+	const sym = getGatewayCurrencySymbol(billing);
+	const unit = `${sym}/image`;
+	return {
+		label: `${sym}${defaultPrice} ${unit}`,
+		detail: `Per-image output default: ${sym}${defaultPrice} ${unit}`,
+	};
+}
+
+/** 按 `BILLING_CURRENCY` 选用的目录价分支：Image token / per_image / LLM 档位摘要。 */
 function buildCatalogPricingPreview(
 	rawPricing: unknown,
 	_kind: 'llm' | 'image',
@@ -121,10 +146,14 @@ function buildCatalogPricingPreview(
 	if (!rawPricing || typeof rawPricing !== 'object' || Array.isArray(rawPricing)) {
 		return { label: null, detail: null };
 	}
-	return buildTokenPricingPreview(rawPricing as Record<string, unknown>, billing) ?? {
-		label: null,
-		detail: null,
-	};
+	const obj = rawPricing as Record<string, unknown>;
+	return (
+		buildPerImagePricingPreview(obj, billing) ??
+		buildTokenPricingPreview(obj, billing) ?? {
+			label: null,
+			detail: null,
+		}
+	);
 }
 
 /** 全部模型列表，`tags` 从 JSON 字符串解析为数组。 */

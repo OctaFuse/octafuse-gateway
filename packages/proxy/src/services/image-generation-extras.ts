@@ -3,6 +3,18 @@
  * 用户显式传入才写入；路由默认值仍由 `buildRouteRequestBody` + `custom_params` 合并。
  */
 
+/** JSON generations 请求体中的参考图张数（`image` 字符串或字符串数组）。 */
+export function countOpenAiGenerationReferenceImages(body: Record<string, unknown>): number {
+	const image = body.image;
+	if (typeof image === 'string' && image.trim() !== '') {
+		return 1;
+	}
+	if (Array.isArray(image)) {
+		return image.filter((v): v is string => typeof v === 'string' && v.trim() !== '').length;
+	}
+	return 0;
+}
+
 /**
  * 将 OpenAI Images generations 的兼容扩展字段写入上游体。
  * 覆盖：`watermark` / `sequential_image_generation*` / `image` / `optimize_prompt_options`。

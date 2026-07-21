@@ -141,6 +141,10 @@ function RoutesContent() {
 				editingModel={state.modelEdit.editingModel}
 				formData={state.modelEdit.formData}
 				pricingTierRows={state.modelEdit.pricingTierRows}
+				imageBillingMode={state.modelEdit.imageBillingMode}
+				onImageBillingModeChange={state.modelEdit.setImageBillingMode}
+				imagePerImageDraft={state.modelEdit.imagePerImageDraft}
+				onImagePerImageDraftChange={state.modelEdit.setImagePerImageDraft}
 				tagInput={state.modelEdit.tagInput}
 				saveError={state.modelEdit.saveError}
 				isSaving={state.modelEdit.isSaving}

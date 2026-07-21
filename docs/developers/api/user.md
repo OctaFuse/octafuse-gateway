@@ -566,7 +566,7 @@ Content-Type: application/json
 
 ```json
 {
-  "model": "doubao-seedream-5-0-260128",
+  "model": "doubao-seedream-5-0",
   "prompt": "海边灯塔水彩封面",
   "n": 1,
   "size": "2K",
@@ -596,23 +596,25 @@ Content-Type: multipart/form-data
 
 ### 计费与审计
 
-对齐 [OpenAI Image generation · Cost](https://platform.openai.com/docs/guides/image-generation)：
+Image 模型支持两种 `pricing_profile.image_billing_mode`（再乘路由 `charged_factor` / `metered_factor`）：
 
-**最终费用** =
-`text_input × $/M` + `cached_text × $/M` + `image_input × $/M` + `cached_image_input × $/M` + `image_output × $/M`
-再乘路由 `charged_factor` / `metered_factor`（与 Chat 一致）。
+| 模式 | 最终费用 | `pricing_audit.kind` |
+|------|----------|----------------------|
+| **`token`**（GPT Image / Gemini） | usage 分项 × `$/1M`（对齐 [OpenAI Image Cost](https://platform.openai.com/docs/guides/image-generation)） | `image_tokens` |
+| **`per_image`**（Seedream / GLM / Grok） | `output_unit × 确认输出张数 + input_unit × 参考图数` | `image_per_image` |
 
-1. 预检额度：用 quality×size **估算** image output tokens（偏保守，含短 prompt / edits 余量）× 目录 token 单价 × `charged_factor`（取全候选路由最高）
-2. **成功出图**：上游返回至少一张有效图片时，按响应 **`usage` 真实分项**扣费
-3. **客户端主动取消**（`abort_reason=client_abort`，请求已发出）：按入口**同一套 token 预检**扣费，`pricing_audit.usage_source=client_abort_precheck`（日志 `status=error`）
-4. **Gateway 超时 / 上游错误 / 空结果**：写零费用日志（不计费）；超时与取消的合成 504 **不**再 failover 打下一 key/路由
-5. Request log **不**保存 prompt 原文、参考图或 Base64；`raw_usage` 保存上游 usage JSON（取消预检扣费时为审计占位）；`pricing_audit.kind=image_tokens`
-6. 模型须配置 tier `image_*` 单价；无配置则不计费。Gateway **不**再支持按张固定价（按张套餐留给业务层）
+1. **预检额度**：token 模式用 quality×size **估算** tokens；per_image 模式用请求张数 × 单价；均取全候选路由最高 `charged_factor`
+2. **成功出图**：token 按 **`usage` 真实分项**；per_image 按 **有效返回图片数**（忽略 usage tokens）
+3. **客户端取消 / Gateway 超时**（请求已发出）：默认按入口预检扣费（防亏损）；per_image 可用 `uncertain_result_policy=zero` 覆盖；合成 504 **不** failover
+4. **明确上游错误且未发出 / 空结果**：零费用日志
+5. Request log **不**保存 prompt 原文、参考图或 Base64；列含 `billing_kind`、`input_image_count`、`output_image_count`；`raw_usage` / `pricing_audit` 供审计
+6. 须配置对应模式目录价；无合法 mode/价格则不计费。详见 [image-models.md](../reference/image-models.md)
 
-`pricing_profile` 示例（`gpt-image-2` token 价，USD/1M）：
+`pricing_profile` 示例（`gpt-image-2` **token**，USD/1M）：
 
 ```json
 {
+  "image_billing_mode": "token",
   "tiers": [{
     "upto": null,
     "input_price": 5,
@@ -625,7 +627,21 @@ Content-Type: multipart/form-data
 }
 ```
 
-短 prompt generations 的费用通常由 **image_output** 主导；edits 会额外计入 **image_input**。Admin 中为图片模型配置 `output_modalities: ["image"]` 及上述价目即可。
+短 prompt generations 的费用通常由 **image_output** 主导；edits 会额外计入 **image_input**。
+
+`pricing_profile` 示例（Seedream **per_image**，CNY/张）：
+
+```json
+{
+  "image_billing_mode": "per_image",
+  "image": {
+    "default": 0.22,
+    "uncertain_result_policy": "requested"
+  }
+}
+```
+
+Admin 中为图片模型配置 `output_modalities: ["image"]` 及对应 mode 价目即可。
 
 ---
 

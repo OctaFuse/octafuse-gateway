@@ -289,11 +289,7 @@ export function RouteModal(props: Props) {
 												? t('noCatalogImagePricing')
 												: t('selectModelForTiers')
 										}
-										tableTitle={t('readOnlyCatalogImageEstimate')}
 										tokenRatesTitle={t('imageTokenRates')}
-										estimateMatrixHint={t('imageEstimateHint')}
-										expandLabel={t('expandImageEstimate')}
-										collapseLabel={t('readOnlyCatalogImageEstimate')}
 									/>
 								) : (
 									<ReadOnlyPricingTiersTable

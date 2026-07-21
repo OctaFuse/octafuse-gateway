@@ -150,6 +150,9 @@ export const apiKeyRequestLogsTable = sqliteTable('api_key_request_logs', {
 	providerKeyFingerprint: text('provider_key_fingerprint'),
 	upstreamRequestId: text('upstream_request_id'),
 	upstreamMessageId: text('upstream_message_id'),
+	billingKind: text('billing_kind'),
+	inputImageCount: integer('input_image_count').notNull().default(0),
+	outputImageCount: integer('output_image_count').notNull().default(0),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 

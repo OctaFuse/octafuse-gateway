@@ -10,11 +10,12 @@
 		],
 		"pricing": {
 			"usd": {
+				"image_billing_mode": "token",
 				"tiers": [
 					{
 						"upto": null,
 						"input_price": 0.5,
-						"output_price": 0,
+						"output_price": 3,
 						"cache_read_price": null,
 						"cache_write_price": null,
 						"image_input_price": 0.5,
@@ -24,11 +25,12 @@
 				]
 			},
 			"cny": {
+				"image_billing_mode": "token",
 				"tiers": [
 					{
 						"upto": null,
 						"input_price": 3.625,
-						"output_price": 0,
+						"output_price": 21.75,
 						"cache_read_price": null,
 						"cache_write_price": null,
 						"image_input_price": 3.625,
@@ -60,11 +62,12 @@
 		],
 		"pricing": {
 			"usd": {
+				"image_billing_mode": "token",
 				"tiers": [
 					{
 						"upto": null,
 						"input_price": 2,
-						"output_price": 0,
+						"output_price": 12,
 						"cache_read_price": null,
 						"cache_write_price": null,
 						"image_input_price": 2,
@@ -74,11 +77,12 @@
 				]
 			},
 			"cny": {
+				"image_billing_mode": "token",
 				"tiers": [
 					{
 						"upto": null,
 						"input_price": 14.5,
-						"output_price": 0,
+						"output_price": 87,
 						"cache_read_price": null,
 						"cache_write_price": null,
 						"image_input_price": 14.5,

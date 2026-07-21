@@ -3,13 +3,10 @@
  * 单价单位文案中的币别与 `system_config.BILLING_CURRENCY` 对齐（调用方传入 ISO 码，默认 USD）。
  */
 import {
-	GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS,
-	SEEDREAM_ESTIMATED_OUTPUT_TOKENS,
-	SEEDREAM_TYPICAL_OUTPUT_TOKENS,
-} from '@octafuse/core/db/image-token-usage';
-import {
 	parsePricingProfile,
+	profileHasImagePerImagePricing,
 	profileHasImageTokenPricing,
+	resolveImageBillingMode,
 	type PricingTierPrices,
 } from '@octafuse/core/db/pricing-profile';
 
@@ -26,6 +23,8 @@ export type PricingLabels = {
 	tieredMulti: string;
 	/** Image token catalog, e.g. `image tokens · text {text} / img-in {imageIn} / img-out {imageOut} {unit}` */
 	imageTokens: string;
+	/** Per-image catalog, e.g. `{price}/image` */
+	imagePerImage: string;
 	inheritsCatalog: string;
 	invalidPriceOverrideJson: string;
 	invalidPriceOverrideRoot: string;
@@ -44,6 +43,7 @@ const DEFAULT_PRICING_LABELS: PricingLabels = {
 	tieredSingle: 'tiered · in/out {input} / {output} {unit}',
 	tieredMulti: 'tiered · {count} tier(s) · from {minIn} {unit} in',
 	imageTokens: 'image tokens · text {text} / img-in {imageIn} / img-out {imageOut} {unit}',
+	imagePerImage: '{price} {unit}',
 	inheritsCatalog: 'Inherits catalog · metered uses model pricing_profile',
 	invalidPriceOverrideJson: 'Invalid price_override JSON',
 	invalidPriceOverrideRoot: 'Invalid price_override root',
@@ -88,6 +88,9 @@ function billingPerImageUnit(currencyCode: string): string {
 export function catalogInputPriceSortKey(m: CatalogPricingFields): number {
 	const p = parsePricingProfile(m.pricing_profile ?? undefined);
 	if (!p) return Number.NEGATIVE_INFINITY;
+	if (profileHasImagePerImagePricing(p) && p.image?.default != null) {
+		return p.image.default;
+	}
 	if (profileHasImageTokenPricing(p)) {
 		const outs = p.tiers
 			.map((t) => t.image_output_price)
@@ -109,6 +112,13 @@ export function formatCatalogPricingSummary(
 	const p = parsePricingProfile(m.pricing_profile ?? undefined);
 	if (!p) {
 		return labels.noData;
+	}
+	if (profileHasImagePerImagePricing(p) && p.image?.default != null) {
+		const sym = getGatewayCurrencySymbol((currencyCode || 'USD').trim().toUpperCase());
+		return formatLabel(labels.imagePerImage, {
+			price: `${sym}${p.image.default}`,
+			unit: billingPerImageUnit(currencyCode),
+		});
 	}
 	if (profileHasImageTokenPricing(p) && p.tiers.length > 0) {
 		const t = p.tiers[0]!;
@@ -192,18 +202,10 @@ export function getCatalogPricingTierRows(
 	return p.tiers.map((t, i) => tierToDisplayRow(t, i === 0 ? null : p.tiers[i - 1]!.upto, currencyCode));
 }
 
-/** 路由弹窗等只读区：按张价摘要行（fallback / 无矩阵时） */
+/** 路由弹窗等只读区：按张价摘要行 */
 export type CatalogImagePricingDisplayRow = {
 	label: string;
 	priceLine: string;
-};
-
-/** quality × size 矩阵单元格 */
-export type CatalogImagePricingMatrix = {
-	qualities: string[];
-	sizes: string[];
-	/** cells[quality][size] = 价格数字字符串（不含单位） */
-	cells: Record<string, Record<string, string>>;
 };
 
 /** Image token 分项单价（$/1M） */
@@ -216,118 +218,58 @@ export type CatalogImageTokenRatesDisplay = {
 	imageOutput: string;
 };
 
-/** 路由 / Models 只读：Image token 价 + quality×size **输出侧估算**（非扣费） */
+/** 路由 / Models 只读：Image 目录权威价（token 分项或 per_image 单价） */
 export type CatalogImagePricingDisplay = {
-	/** 估算矩阵单位（约 $/image，仅输出侧） */
 	unit: string;
-	billingKind: 'image_tokens';
-	tokenRates: CatalogImageTokenRatesDisplay;
-	/** 估算参考（如 medium×1024） */
+	billingKind: 'image_tokens' | 'image_per_image';
+	tokenRates?: CatalogImageTokenRatesDisplay;
+	/** 摘要行（token：img-out /1M；per_image：default /image） */
 	defaultLine: string;
-	/** 由 image_output_price × 估算 tokens 生成；非扣费权威 */
-	matrix: CatalogImagePricingMatrix | null;
+	/** per_image 权威 output 单价 */
+	perImageDefault?: string;
+	/** per_image 可选 input 参考图单价 */
+	perImageInputDefault?: string | null;
+	uncertainResultPolicy?: 'requested' | 'zero';
 	fallbackRows: CatalogImagePricingDisplayRow[];
-	matrixIsEstimate: true;
 };
 
-function formatPriceCell(n: number): string {
-	if (!Number.isFinite(n)) return '—';
-	const rounded = Math.round(n * 1_000_000) / 1_000_000;
-	return String(rounded);
-}
-
 /**
- * 合并 GPT Image 与 Seedream（flat/2K/4K）估算表，供 Admin 只读矩阵展示。
- * Seedream 无 quality 分档，用 `flat` 行；与 GPT 行并存，避免国内模型只看到低估的 GPT size。
- */
-function listImageOutputTokenEstimateEntries(): Array<{ quality: string; size: string; tokens: number }> {
-	const out: Array<{ quality: string; size: string; tokens: number }> = [];
-	for (const [key, tokens] of Object.entries(GPT_IMAGE_2_ESTIMATED_OUTPUT_TOKENS)) {
-		const idx = key.indexOf(':');
-		if (idx <= 0) continue;
-		out.push({ quality: key.slice(0, idx), size: key.slice(idx + 1), tokens });
-	}
-	for (const [key, tokens] of Object.entries(SEEDREAM_ESTIMATED_OUTPUT_TOKENS)) {
-		const idx = key.indexOf(':');
-		if (idx <= 0) continue;
-		const quality = key.slice(0, idx);
-		const size = key.slice(idx + 1);
-		// Admin 矩阵只展示 flat 行，避免与 GPT 的 auto:* 重复
-		if (quality !== 'flat') continue;
-		out.push({ quality, size, tokens });
-	}
-	return out;
-}
-
-function buildEstimateMatrixFromImageOutputPrice(
-	imageOutputPricePerM: number
-): CatalogImagePricingMatrix | null {
-	if (!(imageOutputPricePerM > 0)) return null;
-	const cells: Record<string, Record<string, string>> = {};
-	const qualities = new Set<string>();
-	const sizes = new Set<string>();
-	for (const { quality: q, size: s, tokens } of listImageOutputTokenEstimateEntries()) {
-		qualities.add(q);
-		sizes.add(s);
-		if (!cells[q]) cells[q] = {};
-		cells[q]![s] = formatPriceCell((tokens * imageOutputPricePerM) / 1_000_000);
-	}
-	if (qualities.size === 0) return null;
-	return {
-		qualities: sortQualityKeys([...qualities]),
-		sizes: sortSizeKeys([...sizes]),
-		cells,
-	};
-}
-
-const QUALITY_ORDER = ['low', 'medium', 'high', 'auto', 'flat'];
-const SIZE_ORDER = ['1024x1024', '1024x1536', '1536x1024', '2k', '3k', '4k', 'auto'];
-
-function sortQualityKeys(keys: string[]): string[] {
-	return [...keys].sort((a, b) => {
-		const ia = QUALITY_ORDER.indexOf(a);
-		const ib = QUALITY_ORDER.indexOf(b);
-		if (ia !== -1 || ib !== -1) {
-			return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-		}
-		return a.localeCompare(b);
-	});
-}
-
-function sortSizeKeys(keys: string[]): string[] {
-	return [...keys].sort((a, b) => {
-		const ia = SIZE_ORDER.indexOf(a);
-		const ib = SIZE_ORDER.indexOf(b);
-		if (ia !== -1 || ib !== -1) {
-			return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
-		}
-		return a.localeCompare(b);
-	});
-}
-
-/**
- * Image 目录只读展示：token 分项价（扣费权威）+ quality×size **输出侧估算**矩阵。
- * 无 image_* 单价时返回 `null`（legacy 按张块不再展示为目录价）。
+ * Image 目录只读展示：
+ * - **per_image**：权威 `image.default`（及可选 input）
+ * - **token**：目录 token 分项价（不计 quality×size 估算）
  */
 export function getCatalogImagePricingDisplay(
 	m: CatalogPricingFields,
 	currencyCode = 'USD'
 ): CatalogImagePricingDisplay | null {
 	const p = parsePricingProfile(m.pricing_profile ?? undefined);
-	if (!p || !profileHasImageTokenPricing(p) || p.tiers.length === 0) return null;
+	if (!p) return null;
 
 	const perImageUnit = billingPerImageUnit(currencyCode);
+	const mode = resolveImageBillingMode(p);
+
+	if (mode === 'per_image' && profileHasImagePerImagePricing(p) && p.image) {
+		const defaultPrice = String(p.image.default);
+		const inputDefault =
+			p.image.input?.default != null ? String(p.image.input.default) : null;
+		return {
+			unit: perImageUnit,
+			billingKind: 'image_per_image',
+			defaultLine: `${defaultPrice} ${perImageUnit}`,
+			perImageDefault: defaultPrice,
+			perImageInputDefault: inputDefault,
+			uncertainResultPolicy: p.image.uncertain_result_policy ?? 'requested',
+			fallbackRows: [],
+		};
+	}
+
+	if (!profileHasImageTokenPricing(p) || p.tiers.length === 0) return null;
+
 	const perMUnit = billingPerMUnit(currencyCode);
 	const t = p.tiers[0]!;
-	const imageOut = t.image_output_price ?? 0;
-	const matrix = buildEstimateMatrixFromImageOutputPrice(imageOut);
-	const mediumAuto =
-		matrix?.cells.auto?.auto ??
-		matrix?.cells.flat?.['2k'] ??
-		matrix?.cells.medium?.['1024x1024'] ??
-		formatPriceCell((SEEDREAM_TYPICAL_OUTPUT_TOKENS * imageOut) / 1_000_000);
+	const imageOut = t.image_output_price != null ? String(t.image_output_price) : '—';
 	return {
-		unit: perImageUnit,
+		unit: perMUnit,
 		billingKind: 'image_tokens',
 		tokenRates: {
 			unit: perMUnit,
@@ -336,12 +278,10 @@ export function getCatalogImagePricingDisplay(
 			imageInput: t.image_input_price != null ? String(t.image_input_price) : '—',
 			cachedImageInput:
 				t.image_input_cache_price != null ? String(t.image_input_cache_price) : '—',
-			imageOutput: t.image_output_price != null ? String(t.image_output_price) : '—',
+			imageOutput: imageOut,
 		},
-		defaultLine: `${mediumAuto} ${perImageUnit}`,
-		matrix,
+		defaultLine: `${imageOut} ${perMUnit}`,
 		fallbackRows: [],
-		matrixIsEstimate: true,
 	};
 }
 
@@ -354,20 +294,7 @@ export function getCatalogImagePricingRows(
 ): CatalogImagePricingDisplayRow[] {
 	const display = getCatalogImagePricingDisplay(m, currencyCode);
 	if (!display) return [];
-	const rows: CatalogImagePricingDisplayRow[] = [
-		{ label: 'default', priceLine: display.defaultLine },
-	];
-	if (display.matrix) {
-		for (const q of display.matrix.qualities) {
-			for (const s of display.matrix.sizes) {
-				const price = display.matrix.cells[q]?.[s];
-				if (price == null) continue;
-				rows.push({ label: `${q}:${s}`, priceLine: `${price} ${display.unit}` });
-			}
-		}
-	}
-	rows.push(...display.fallbackRows);
-	return rows;
+	return [{ label: 'default', priceLine: display.defaultLine }, ...display.fallbackRows];
 }
 
 /**
@@ -540,6 +467,26 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 			}
 			if (typeof o.quality === 'string' && typeof o.size === 'string') {
 				parts.push(`${o.quality}×${o.size}`);
+			}
+		}
+		if (o.kind === 'image_per_image') {
+			parts.push('image_per_image');
+			const inN = typeof o.input_image_count === 'number' ? o.input_image_count : 0;
+			const outN = typeof o.output_image_count === 'number' ? o.output_image_count : 0;
+			parts.push(`${inN} in / ${outN} out`);
+			const outPrice = typeof o.output_unit_price === 'number' ? o.output_unit_price : null;
+			const inPrice = typeof o.input_unit_price === 'number' ? o.input_unit_price : null;
+			if (outPrice != null) {
+				parts.push(`out ${outPrice}/img`);
+			}
+			if (inPrice != null && inPrice > 0) {
+				parts.push(`in ${inPrice}/img`);
+			}
+			if (typeof o.result_confirmed === 'boolean') {
+				parts.push(o.result_confirmed ? 'confirmed' : 'uncertain');
+			}
+			if (typeof o.uncertain_result_policy === 'string') {
+				parts.push(`policy ${o.uncertain_result_policy}`);
 			}
 		}
 		if (

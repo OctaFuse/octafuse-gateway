@@ -182,6 +182,9 @@ export const apiKeyRequestLogsTable = mysqlTable('api_key_request_logs', {
 	providerKeyFingerprint: varchar('provider_key_fingerprint', { length: 64 }),
 	upstreamRequestId: varchar('upstream_request_id', { length: 200 }),
 	upstreamMessageId: varchar('upstream_message_id', { length: 200 }),
+	billingKind: varchar('billing_kind', { length: 32 }),
+	inputImageCount: int('input_image_count').notNull().default(0),
+	outputImageCount: int('output_image_count').notNull().default(0),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 

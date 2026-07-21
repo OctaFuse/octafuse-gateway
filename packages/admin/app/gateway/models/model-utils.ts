@@ -1,7 +1,7 @@
 import { catalogInputPriceSortKey } from '@/lib/pricing-ui';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
-import { parsePricingProfile, type PricingTierPrices } from '@octafuse/core/db/pricing-profile';
+import { parsePricingProfile, profileHasImagePerImagePricing, type PricingTierPrices } from '@octafuse/core/db/pricing-profile';
 import type { MetadataSummary, ModelListItem, PresetCatalogRow } from './types';
 import { ALL_VENDORS_KEY } from './types';
 
@@ -147,6 +147,25 @@ export function buildPricingMetricColumns(pricingProfile: string | null | undefi
 				price: pickPrice(tier),
 			};
 		});
+
+	if (profileHasImagePerImagePricing(profile) && profile.image) {
+		columns.push({
+			title: 'Output',
+			headerTitle: 'Output (per image)',
+			unitKind: 'per_image',
+			lines: [{ condition: 'All', price: profile.image.default }],
+		});
+		const inputDefault = profile.image.input?.default;
+		if (inputDefault != null && inputDefault > 0) {
+			columns.push({
+				title: 'Input Ref',
+				headerTitle: 'Reference input (per image)',
+				unitKind: 'per_image',
+				lines: [{ condition: 'All', price: inputDefault }],
+			});
+		}
+		return columns;
+	}
 
 	if (hasImageTokenTiers(profile.tiers)) {
 		columns.push(

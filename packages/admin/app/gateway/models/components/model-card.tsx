@@ -8,6 +8,7 @@ import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import {
 	formatGatewayMoneyCompact,
+	formatPerImageUnit,
 	formatPerMillionTokenUnit,
 } from '@/lib/format-gateway-currency';
 import { getCatalogImagePricingDisplay } from '@/lib/pricing-ui';
@@ -143,8 +144,14 @@ function ModelPricingPanel(props: {
 		() => pricingColumns.filter((c) => (c.unitKind ?? 'per_m') === 'per_m'),
 		[pricingColumns]
 	);
+	const perImageColumns = useMemo(
+		() => pricingColumns.filter((c) => c.unitKind === 'per_image'),
+		[pricingColumns]
+	);
 	const hasTokenCols = tokenColumns.length > 0;
-	const hasEstimateMatrix = imageDisplay?.matrix != null;
+	const hasPerImageCols = perImageColumns.length > 0;
+	const hasAnyCols = hasTokenCols || hasPerImageCols;
+	const showPerImageSummary = imageDisplay?.billingKind === 'image_per_image';
 
 	return (
 		<div>
@@ -155,8 +162,13 @@ function ModelPricingPanel(props: {
 						{formatPerMillionTokenUnit(billingCurrency)}
 					</span>
 				) : null}
+				{hasPerImageCols ? (
+					<span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
+						{formatPerImageUnit(billingCurrency)}
+					</span>
+				) : null}
 			</div>
-			{!hasTokenCols ? (
+			{!hasAnyCols ? (
 				<p className="mt-1.5 text-xs text-gray-400">{tCommon('noData')}</p>
 			) : (
 				<div className="mt-1.5 space-y-1.5">
@@ -167,7 +179,7 @@ function ModelPricingPanel(props: {
 								: 'grid grid-cols-4 gap-1'
 						}
 					>
-						{tokenColumns.map((col) => (
+						{[...tokenColumns, ...perImageColumns].map((col) => (
 							<div
 								key={col.title}
 								className="min-w-0 rounded-md border border-gray-100 bg-gray-50/70 px-1.5 py-1.5 sm:px-2"
@@ -203,17 +215,12 @@ function ModelPricingPanel(props: {
 							</div>
 						))}
 					</div>
-					{hasEstimateMatrix ? (
+					{showPerImageSummary ? (
 						<ReadOnlyImagePricing
 							compact
 							display={imageDisplay}
 							emptyLabel={tCommon('noData')}
-							tableTitle={t('imageEstimateMatrix')}
-							estimateMatrixHint={t('imageEstimateHint')}
-							expandLabel={t('viewImageEstimate')}
-							collapseLabel={t('imageEstimateMatrix')}
 							showTokenRates={false}
-							showMatrix
 						/>
 					) : null}
 				</div>

@@ -10,7 +10,7 @@ import {
 import { ModelModalitiesBadgeFromRaw } from '@/components/model-modalities-badge';
 import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
 import { MODEL_VENDOR_OPTIONS } from '@/lib/model-vendor';
-import type { PricingTierDraftRow } from '@/lib/pricing-tiers-draft';
+import type { ImageBillingModeDraft, ImagePerImageDraft, PricingTierDraftRow } from '@/lib/pricing-tiers-draft';
 import { tagBadgeClass } from '../model-utils';
 import type { ModelFormData, ModelListItem } from '../types';
 
@@ -19,6 +19,10 @@ type Props = {
 	editingModel: ModelListItem | null;
 	formData: ModelFormData;
 	pricingTierRows: PricingTierDraftRow[];
+	imageBillingMode?: ImageBillingModeDraft;
+	onImageBillingModeChange?: (mode: ImageBillingModeDraft) => void;
+	imagePerImageDraft?: ImagePerImageDraft;
+	onImagePerImageDraftChange?: (draft: ImagePerImageDraft) => void;
 	tagInput: string;
 	saveError: string;
 	isSaving: boolean;
@@ -43,6 +47,10 @@ export function ModelModal(props: Props) {
 		editingModel,
 		formData,
 		pricingTierRows,
+		imageBillingMode = 'token',
+		onImageBillingModeChange,
+		imagePerImageDraft,
+		onImagePerImageDraftChange,
 		tagInput,
 		saveError,
 		isSaving,
@@ -295,6 +303,10 @@ export function ModelModal(props: Props) {
 									billingCurrencyCode={billingCurrency}
 									minRows={0}
 									variant="image"
+									imageBillingMode={imageBillingMode}
+									onImageBillingModeChange={onImageBillingModeChange}
+									perImageDraft={imagePerImageDraft}
+									onPerImageDraftChange={onImagePerImageDraftChange}
 								/>
 							) : (
 								<PricingTiersEditor
