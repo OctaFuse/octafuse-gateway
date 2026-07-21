@@ -28,7 +28,15 @@ webSearchRoutes.post('/', async (c) => {
 	const repos = c.get('repositories');
 	const resolved = await resolveWebSearchConfig(repos);
 	if (!resolved.ok) {
-		console.warn('[Gateway Tools] invalid WEB_SEARCH_PROVIDER', resolved.raw);
+		if (resolved.reason === 'active_missing_key') {
+			console.warn('[Gateway Tools] WEB_SEARCH_ACTIVE has no API key', resolved.provider);
+			return c.json({ error: 'Web search is not configured' }, 503);
+		}
+		if (resolved.reason === 'invalid_catalog') {
+			console.warn('[Gateway Tools] invalid WEB_SEARCH_CATALOG');
+			return c.json({ error: 'Web search provider is misconfigured' }, 503);
+		}
+		console.warn('[Gateway Tools] invalid WEB_SEARCH_ACTIVE', resolved.raw);
 		return c.json({ error: 'Web search provider is misconfigured' }, 503);
 	}
 

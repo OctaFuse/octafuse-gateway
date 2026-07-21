@@ -507,13 +507,14 @@ Authorization: Bearer <USER_API_KEY>
 
 1. 校验用户 API Key；`budget_max` 非空且额度不足 → **403** `{ "error": "Budget exceeded" }`
 2. 从 Admin `system_config` 读取搜索配置（无环境变量回退）：
-   - `WEB_SEARCH_PROVIDER`（白名单：`bocha` | `tavily` | `cleversee` | `tencent_wsa`；非法值 → **503**）
-   - `WEB_SEARCH_API_KEY`（未配置 → **503**）
-   - `WEB_SEARCH_COST`（成功单价，单位随 `BILLING_CURRENCY`；默认 **0.001**）
-3. 调用所选引擎；**仅成功**后按单价计入 `users.budget_spent`
+   - `WEB_SEARCH_ACTIVE`（白名单：`bocha` | `tavily` | `cleversee` | `tencent_wsa`；非法值 → **503**）
+   - `WEB_SEARCH_CATALOG`（JSON：按引擎存 `{ "apiKey", "cost" }`；Active 引擎必须有非空 `apiKey`，否则 **503**）
+   - 默认单价（catalog 未写 cost 时）**0.001**，单位随 `BILLING_CURRENCY`
+   - 兼容：若尚无 `WEB_SEARCH_CATALOG`，仍可读旧三键 `WEB_SEARCH_PROVIDER` / `WEB_SEARCH_API_KEY` / `WEB_SEARCH_COST`（仅读取，Admin 不再写入）
+3. 调用 Active 引擎；**仅成功**后按该引擎单价计入 `users.budget_spent`
 4. 上游失败不扣费
 
-运营侧在 Admin → **Tools → Configuration** 配置上述三项；调用记录见 **Tools → Invocations**（与 Request Logs 同源，`provider_id=octafuse-tools`）。
+运营侧在 Admin → **Tools → Configuration** 按引擎维护 catalog 并选择 Active；调用记录见 **Tools → Invocations**（与 Request Logs 同源，`provider_id=octafuse-tools`）。
 
 ### 响应
 
@@ -534,6 +535,69 @@ Authorization: Bearer <USER_API_KEY>
 ```
 
 用量日志 `api_key_request_logs` 中 `model_id` 记为 `tool:web-search`，`provider_id` 为 `octafuse-tools`。
+
+---
+
+## Web Fetch（Agent 工具）
+
+协议无关的产品 API（与 `/v1/me` 同类），供桌面 agent 在模型发起 `web_fetch` tool call 后调用。**不是** OpenAI / Anthropic / Gemini 推理协议的一部分。
+
+### 请求
+
+```
+POST /v1/tools/web-fetch
+Authorization: Bearer <USER_API_KEY>
+```
+
+### 请求体
+
+```json
+{
+  "url": "https://example.com/page"
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `url` | 必填；仅 `http` / `https`。Gateway 拒绝 localhost、私网字面量与元数据 host（不做 DNS 反查） |
+
+未知字段可忽略。
+
+### 行为
+
+1. 校验用户 API Key；`budget_max` 非空且额度不足 → **403** `{ "error": "Budget exceeded" }`
+2. 从 Admin `system_config` 读取抓取配置（无环境变量回退）：
+   - `WEB_FETCH_ACTIVE`（白名单：`firecrawl` | `tavily` | `jina`；默认 `firecrawl`；非法值 → **503**）
+   - `WEB_FETCH_CATALOG`（JSON：按引擎存 `{ "apiKey", "cost" }`；Active 引擎必须有非空 `apiKey`，否则 **503**）
+   - 默认单价（catalog 未写 cost 时）**0.002**，单位随 `BILLING_CURRENCY`
+   - 兼容：若尚无 `WEB_FETCH_CATALOG`，仍可读旧三键 `WEB_FETCH_PROVIDER` / `WEB_FETCH_API_KEY` / `WEB_FETCH_COST`（仅读取，Admin 不再写入）
+3. URL 校验失败 → **400**
+4. 调用 Active 引擎；**仅成功**后按该引擎单价计入 `users.budget_spent`
+5. 上游失败不扣费；上游 **401/403** 映射为 **502**（勿透出成用户 Key 无效）
+
+运营侧在 Admin → **Tools → Configuration** 按引擎维护 catalog 并选择 Active；调用记录见 **Tools → Invocations**（与 Request Logs 同源，`provider_id=octafuse-tools`）。
+
+### 响应
+
+```json
+{
+  "data": {
+    "url": "https://example.com/page",
+    "title": "…",
+    "content": "# markdown…",
+    "cost": 0.002
+  }
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `url` | 最终页面 URL（引擎回写时可能与请求不同） |
+| `title` | 可选；页面标题 |
+| `content` | Markdown 正文 |
+| `cost` | 本次扣费；单位随 `BILLING_CURRENCY` |
+
+用量日志 `api_key_request_logs` 中 `model_id` 记为 `tool:web-fetch`，`provider_id` 为 `octafuse-tools`。
 
 ---
 

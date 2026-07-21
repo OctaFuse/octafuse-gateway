@@ -4,12 +4,25 @@
 import type { GatewayRepositories } from '@octafuse/core';
 import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } from '@octafuse/core/lib/billing-currency';
 import {
-	parseWebSearchCostInput,
-	parseWebSearchProviderInput,
+	parseWebSearchActiveInput,
+	parseWebSearchCatalogInput,
+	WEB_SEARCH_ACTIVE_KEY,
+	WEB_SEARCH_API_KEY_KEY,
+	WEB_SEARCH_CATALOG_KEY,
 	WEB_SEARCH_COST_KEY,
 	WEB_SEARCH_PROVIDER_KEY,
 	WEB_SEARCH_PROVIDERS,
 } from '@octafuse/core/lib/web-search-system-config';
+import {
+	parseWebFetchActiveInput,
+	parseWebFetchCatalogInput,
+	WEB_FETCH_ACTIVE_KEY,
+	WEB_FETCH_API_KEY_KEY,
+	WEB_FETCH_CATALOG_KEY,
+	WEB_FETCH_COST_KEY,
+	WEB_FETCH_PROVIDER_KEY,
+	WEB_FETCH_PROVIDERS,
+} from '@octafuse/core/lib/web-fetch-system-config';
 import { badRequest } from './errors';
 import { clampAnalyticsRange, rangeToDates, resolveStatsDateRange } from './shared';
 import { getBusinessDayWindow, getBusinessTimezone } from '@octafuse/core/lib/business-timezone';
@@ -191,19 +204,90 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		}
 		value = parsed;
 	}
-	if (key === WEB_SEARCH_PROVIDER_KEY) {
-		const parsed = parseWebSearchProviderInput(value);
-		if (!parsed) {
-			throw badRequest(`WEB_SEARCH_PROVIDER must be one of: ${WEB_SEARCH_PROVIDERS.join(', ')}`);
-		}
-		value = parsed;
+	const legacyToolKeys = new Set([
+		WEB_SEARCH_PROVIDER_KEY,
+		WEB_SEARCH_API_KEY_KEY,
+		WEB_SEARCH_COST_KEY,
+		WEB_FETCH_PROVIDER_KEY,
+		WEB_FETCH_API_KEY_KEY,
+		WEB_FETCH_COST_KEY,
+	]);
+	if (legacyToolKeys.has(key)) {
+		throw badRequest(
+			`${key} is deprecated; use Tools → Configuration (WEB_*_ACTIVE / WEB_*_CATALOG) instead`
+		);
 	}
-	if (key === WEB_SEARCH_COST_KEY) {
-		const parsed = parseWebSearchCostInput(value);
-		if (parsed == null) {
-			throw badRequest('WEB_SEARCH_COST must be a non-negative number');
+
+	if (key === WEB_SEARCH_CATALOG_KEY) {
+		const catalog = parseWebSearchCatalogInput(value);
+		if (catalog == null) {
+			throw badRequest(
+				`WEB_SEARCH_CATALOG must be a JSON object with whitelist providers (${WEB_SEARCH_PROVIDERS.join(', ')}) and { apiKey: string, cost: number }`
+			);
 		}
-		value = String(parsed);
+		const activeRaw = await repos.systemConfig.getConfig(WEB_SEARCH_ACTIVE_KEY);
+		const active = parseWebSearchActiveInput(activeRaw);
+		if (active) {
+			const entryKey = catalog[active]?.apiKey?.trim() ?? '';
+			if (!entryKey) {
+				throw badRequest(
+					`Cannot save WEB_SEARCH_CATALOG: active provider "${active}" would have no API key; change WEB_SEARCH_ACTIVE first`
+				);
+			}
+		}
+		value = JSON.stringify(catalog);
+	}
+	if (key === WEB_SEARCH_ACTIVE_KEY) {
+		const active = parseWebSearchActiveInput(value);
+		if (!active) {
+			throw badRequest(`WEB_SEARCH_ACTIVE must be one of: ${WEB_SEARCH_PROVIDERS.join(', ')}`);
+		}
+		const catalogRaw = await repos.systemConfig.getConfig(WEB_SEARCH_CATALOG_KEY);
+		const catalog = parseWebSearchCatalogInput(catalogRaw);
+		if (catalog == null) {
+			throw badRequest('WEB_SEARCH_CATALOG must be configured before setting WEB_SEARCH_ACTIVE');
+		}
+		const entryKey = catalog[active]?.apiKey?.trim() ?? '';
+		if (!entryKey) {
+			throw badRequest(`Cannot activate web-search provider "${active}" without an API key`);
+		}
+		value = active;
+	}
+
+	if (key === WEB_FETCH_CATALOG_KEY) {
+		const catalog = parseWebFetchCatalogInput(value);
+		if (catalog == null) {
+			throw badRequest(
+				`WEB_FETCH_CATALOG must be a JSON object with whitelist providers (${WEB_FETCH_PROVIDERS.join(', ')}) and { apiKey: string, cost: number }`
+			);
+		}
+		const activeRaw = await repos.systemConfig.getConfig(WEB_FETCH_ACTIVE_KEY);
+		const active = parseWebFetchActiveInput(activeRaw);
+		if (active) {
+			const entryKey = catalog[active]?.apiKey?.trim() ?? '';
+			if (!entryKey) {
+				throw badRequest(
+					`Cannot save WEB_FETCH_CATALOG: active provider "${active}" would have no API key; change WEB_FETCH_ACTIVE first`
+				);
+			}
+		}
+		value = JSON.stringify(catalog);
+	}
+	if (key === WEB_FETCH_ACTIVE_KEY) {
+		const active = parseWebFetchActiveInput(value);
+		if (!active) {
+			throw badRequest(`WEB_FETCH_ACTIVE must be one of: ${WEB_FETCH_PROVIDERS.join(', ')}`);
+		}
+		const catalogRaw = await repos.systemConfig.getConfig(WEB_FETCH_CATALOG_KEY);
+		const catalog = parseWebFetchCatalogInput(catalogRaw);
+		if (catalog == null) {
+			throw badRequest('WEB_FETCH_CATALOG must be configured before setting WEB_FETCH_ACTIVE');
+		}
+		const entryKey = catalog[active]?.apiKey?.trim() ?? '';
+		if (!entryKey) {
+			throw badRequest(`Cannot activate web-fetch provider "${active}" without an API key`);
+		}
+		value = active;
 	}
 	await repos.systemConfig.upsertSystemConfigValue(key, value);
 }

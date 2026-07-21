@@ -25,10 +25,19 @@ import {
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
 import {
+	WEB_SEARCH_ACTIVE_KEY,
 	WEB_SEARCH_API_KEY_KEY,
+	WEB_SEARCH_CATALOG_KEY,
 	WEB_SEARCH_COST_KEY,
 	WEB_SEARCH_PROVIDER_KEY,
 } from '@/lib/web-search-options';
+import {
+	WEB_FETCH_ACTIVE_KEY,
+	WEB_FETCH_API_KEY_KEY,
+	WEB_FETCH_CATALOG_KEY,
+	WEB_FETCH_COST_KEY,
+	WEB_FETCH_PROVIDER_KEY,
+} from '@/lib/web-fetch-options';
 import { useTranslations } from 'next-intl';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
 
@@ -260,7 +269,14 @@ export default function GatewayConfigPage() {
     if (
       k === WEB_SEARCH_PROVIDER_KEY ||
       k === WEB_SEARCH_API_KEY_KEY ||
-      k === WEB_SEARCH_COST_KEY
+      k === WEB_SEARCH_COST_KEY ||
+      k === WEB_SEARCH_ACTIVE_KEY ||
+      k === WEB_SEARCH_CATALOG_KEY ||
+      k === WEB_FETCH_PROVIDER_KEY ||
+      k === WEB_FETCH_API_KEY_KEY ||
+      k === WEB_FETCH_COST_KEY ||
+      k === WEB_FETCH_ACTIVE_KEY ||
+      k === WEB_FETCH_CATALOG_KEY
     ) {
       clearSaveSuccess();
       setSaveError(t('errors.useToolsSection'));

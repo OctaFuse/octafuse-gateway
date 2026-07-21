@@ -11,7 +11,7 @@ export type GatewayToolDefinition = {
 	/** 写入 `api_key_request_logs.model_id` */
 	modelId: string;
 	/** next-intl key under `tools.catalog.*` */
-	nameKey: 'webSearch';
+	nameKey: 'webSearch' | 'webFetch';
 	/** 配置锚点（Tools Config 页内） */
 	configAnchor: string;
 };
@@ -23,6 +23,12 @@ export const GATEWAY_TOOLS: readonly GatewayToolDefinition[] = [
 		modelId: 'tool:web-search',
 		nameKey: 'webSearch',
 		configAnchor: 'web-search',
+	},
+	{
+		id: 'web-fetch',
+		modelId: 'tool:web-fetch',
+		nameKey: 'webFetch',
+		configAnchor: 'web-fetch',
 	},
 ] as const;
 

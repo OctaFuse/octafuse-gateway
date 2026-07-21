@@ -1207,24 +1207,31 @@
 			"useBillingCurrencySection": "Use the \"Billing currency\" section for BILLING_CURRENCY.",
 			"useMasterKeySection": "Use the \"Admin API master key\" section for MASTER_KEY.",
 			"useWebhooksSection": "Use the \"Proxy error webhooks\" section for ALERT_WEBHOOK_WECOM_URL / ALERT_WEBHOOK_FEISHU_URL.",
-			"useToolsSection": "Use Tools → Configuration for WEB_SEARCH_PROVIDER / WEB_SEARCH_API_KEY / WEB_SEARCH_COST.",
+			"useToolsSection": "Use Tools → Configuration for WEB_*_ACTIVE / WEB_*_CATALOG (per-provider API key and cost).",
 			"invalidIanaTimezone": "Invalid IANA timezone (e.g. Asia/Shanghai, America/New_York)"
 		}
 	},
 	"tools": {
 		"catalog": {
-			"webSearch": "Web Search"
+			"webSearch": "Web Search",
+			"webFetch": "Web Fetch"
 		},
 		"config": {
 			"title": "Tools",
 			"subtitle": "Configure product tools under /v1/tools/* (engine, API key, unit cost). Settings are stored in system_config and share the user chat budget.",
 			"viewInvocations": "View invocations →",
-			"saveWebSearch": "Save web search"
+			"saveWebSearch": "Save web search",
+			"saveWebFetch": "Save web fetch"
 		},
 		"webSearch": {
 			"title": "Web search",
 			"description": "Powers POST /v1/tools/web-search. Choose an implemented engine only—free text is rejected. Leave the API key empty and save to clear it (endpoint returns 503 until set again).",
+			"descriptionCatalog": "Powers POST /v1/tools/web-search. Configure API key and cost per engine, then pick Active. Switching Active uses that engine’s saved key and cost. Engines without a key cannot be activated.",
 			"provider": "Search engine",
+			"active": "Active engine",
+			"catalogProvider": "Engine",
+			"noKey": "no key",
+			"needKeyToActivate": "Add an API key to at least one engine before saving.",
 			"providerGuideLink": "Engine guide",
 			"providerDocs": "Docs & API key →",
 			"cost": "Cost per success ({currency})",
@@ -1275,6 +1282,26 @@
 				}
 			}
 		},
+		"webFetch": {
+			"title": "Web fetch",
+			"description": "Powers POST /v1/tools/web-fetch. Choose an implemented scraper only—free text is rejected. Leave the API key empty and save to clear it (endpoint returns 503 until set again).",
+			"descriptionCatalog": "Powers POST /v1/tools/web-fetch. Configure API key and cost per scraper, then pick Active. Switching Active uses that scraper’s saved key and cost. Scrapers without a key cannot be activated.",
+			"provider": "Fetch provider",
+			"active": "Active provider",
+			"catalogProvider": "Provider",
+			"noKey": "no key",
+			"needKeyToActivate": "Add an API key to at least one provider before saving.",
+			"providerDocs": "Docs & API key →",
+			"cost": "Cost per success ({currency})",
+			"apiKey": "Provider API key",
+			"apiKeyPlaceholder": "Paste provider API key",
+			"apiKeyHint": "Required for the tool to accept traffic. Cleared keys fall back to nothing (no env).",
+			"providers": {
+				"firecrawl": "Firecrawl",
+				"tavily": "Tavily Extract",
+				"jina": "Jina Reader"
+			}
+		},
 		"invocations": {
 			"title": "Tool invocations",
 			"subtitle": "Calls billed as provider octafuse-tools (model_id tool:*). Click a row to inspect query and result summary. Same underlying rows as Request Logs.",
@@ -1307,7 +1334,11 @@
 		},
 		"errors": {
 			"invalidWebSearchProvider": "Search engine must be one of the implemented options.",
-			"invalidWebSearchCost": "Cost must be a non-negative number."
+			"invalidWebSearchCost": "Cost must be a non-negative number for every engine.",
+			"invalidWebFetchProvider": "Fetch provider must be one of the implemented options.",
+			"invalidWebFetchCost": "Cost must be a non-negative number for every provider.",
+			"noKeyCannotActivate": "Cannot activate a provider without an API key.",
+			"switchActiveBeforeClearingKey": "Switch Active to another engine that still has a key before clearing the current engine’s key, then save again to clear it."
 		}
 	},
 	"pricing": {

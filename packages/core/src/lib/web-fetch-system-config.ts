@@ -1,50 +1,50 @@
 /**
- * Agent Web Search（`POST /v1/tools/web-search`）的 `system_config` 键与解析。
- * 权威配置：`WEB_SEARCH_ACTIVE` + `WEB_SEARCH_CATALOG`（JSON）；旧三键仅读时兼容。
+ * Agent Web Fetch（`POST /v1/tools/web-fetch`）的 `system_config` 键与解析。
+ * 权威配置：`WEB_FETCH_ACTIVE` + `WEB_FETCH_CATALOG`（JSON）；旧三键仅读时兼容。
  */
 
 import type { GatewayRepositories } from '../storage/repositories';
 import { roundGatewayMoney } from './money-precision';
 
 /** @deprecated 旧全局三键；仅读时兼容，Admin 不再写入 */
-export const WEB_SEARCH_PROVIDER_KEY = 'WEB_SEARCH_PROVIDER';
+export const WEB_FETCH_PROVIDER_KEY = 'WEB_FETCH_PROVIDER';
 /** @deprecated 旧全局三键；仅读时兼容，Admin 不再写入 */
-export const WEB_SEARCH_API_KEY_KEY = 'WEB_SEARCH_API_KEY';
+export const WEB_FETCH_API_KEY_KEY = 'WEB_FETCH_API_KEY';
 /** @deprecated 旧全局三键；仅读时兼容，Admin 不再写入 */
-export const WEB_SEARCH_COST_KEY = 'WEB_SEARCH_COST';
+export const WEB_FETCH_COST_KEY = 'WEB_FETCH_COST';
 
-export const WEB_SEARCH_ACTIVE_KEY = 'WEB_SEARCH_ACTIVE';
-export const WEB_SEARCH_CATALOG_KEY = 'WEB_SEARCH_CATALOG';
+export const WEB_FETCH_ACTIVE_KEY = 'WEB_FETCH_ACTIVE';
+export const WEB_FETCH_CATALOG_KEY = 'WEB_FETCH_CATALOG';
 
-/** 已实现的搜索引擎（Admin 下拉仅允许这些值） */
-export const WEB_SEARCH_PROVIDERS = ['bocha', 'tavily', 'cleversee', 'tencent_wsa'] as const;
-export type WebSearchProvider = (typeof WEB_SEARCH_PROVIDERS)[number];
+/** 已实现的抓取引擎（Admin 下拉仅允许这些值） */
+export const WEB_FETCH_PROVIDERS = ['firecrawl', 'tavily', 'jina'] as const;
+export type WebFetchProvider = (typeof WEB_FETCH_PROVIDERS)[number];
 
-export const DEFAULT_WEB_SEARCH_PROVIDER: WebSearchProvider = 'bocha';
+export const DEFAULT_WEB_FETCH_PROVIDER: WebFetchProvider = 'firecrawl';
 /** 默认单价；数值单位随 Gateway `system_config.BILLING_CURRENCY`（USD/CNY…），非固定美元。 */
-export const DEFAULT_WEB_SEARCH_COST = 0.001;
+export const DEFAULT_WEB_FETCH_COST = 0.002;
 
-export type WebSearchCatalogEntry = {
+export type WebFetchCatalogEntry = {
 	apiKey: string;
 	cost: number;
 };
 
-export type WebSearchCatalog = Partial<Record<WebSearchProvider, WebSearchCatalogEntry>>;
+export type WebFetchCatalog = Partial<Record<WebFetchProvider, WebFetchCatalogEntry>>;
 
-export function isWebSearchProvider(value: string): value is WebSearchProvider {
-	return (WEB_SEARCH_PROVIDERS as readonly string[]).includes(value);
+export function isWebFetchProvider(value: string): value is WebFetchProvider {
+	return (WEB_FETCH_PROVIDERS as readonly string[]).includes(value);
 }
 
-export function parseWebSearchProviderInput(raw: string | null | undefined): WebSearchProvider | null {
+export function parseWebFetchProviderInput(raw: string | null | undefined): WebFetchProvider | null {
 	const v = raw?.trim().toLowerCase() ?? '';
 	if (!v) {
 		return null;
 	}
-	return isWebSearchProvider(v) ? v : null;
+	return isWebFetchProvider(v) ? v : null;
 }
 
-/** @deprecated 旧 COST 键解析；catalog 写入请用 {@link parseWebSearchCatalogInput} */
-export function parseWebSearchCostInput(raw: string | null | undefined): number | null {
+/** @deprecated 旧 COST 键解析；catalog 写入请用 {@link parseWebFetchCatalogInput} */
+export function parseWebFetchCostInput(raw: string | null | undefined): number | null {
 	if (raw == null || !String(raw).trim()) {
 		return null;
 	}
@@ -55,15 +55,15 @@ export function parseWebSearchCostInput(raw: string | null | undefined): number 
 	return roundGatewayMoney(n);
 }
 
-export function parseWebSearchActiveInput(raw: string | null | undefined): WebSearchProvider | null {
-	return parseWebSearchProviderInput(raw);
+export function parseWebFetchActiveInput(raw: string | null | undefined): WebFetchProvider | null {
+	return parseWebFetchProviderInput(raw);
 }
 
 /**
  * 解析 catalog JSON。非法 JSON / 非对象 → `null`。
  * 白名单外的 key 丢弃；单项非法 → 整包 `null`（写入校验用）。
  */
-export function parseWebSearchCatalogInput(raw: string | null | undefined): WebSearchCatalog | null {
+export function parseWebFetchCatalogInput(raw: string | null | undefined): WebFetchCatalog | null {
 	if (raw == null || !String(raw).trim()) {
 		return null;
 	}
@@ -76,11 +76,10 @@ export function parseWebSearchCatalogInput(raw: string | null | undefined): WebS
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		return null;
 	}
-	const out: WebSearchCatalog = {};
+	const out: WebFetchCatalog = {};
 	for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-		const provider = parseWebSearchProviderInput(key);
+		const provider = parseWebFetchProviderInput(key);
 		if (!provider) {
-			// 写入校验：未知 provider 拒绝整包
 			return null;
 		}
 		if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -93,14 +92,14 @@ export function parseWebSearchCatalogInput(raw: string | null | undefined): WebS
 		const costRaw = rec.cost;
 		let cost: number;
 		if (costRaw === undefined || costRaw === null || costRaw === '') {
-			cost = DEFAULT_WEB_SEARCH_COST;
+			cost = DEFAULT_WEB_FETCH_COST;
 		} else if (typeof costRaw === 'number') {
 			if (!Number.isFinite(costRaw) || costRaw < 0) {
 				return null;
 			}
 			cost = roundGatewayMoney(costRaw);
 		} else if (typeof costRaw === 'string') {
-			const parsedCost = parseWebSearchCostInput(costRaw);
+			const parsedCost = parseWebFetchCostInput(costRaw);
 			if (parsedCost == null) {
 				return null;
 			}
@@ -114,7 +113,7 @@ export function parseWebSearchCatalogInput(raw: string | null | undefined): WebS
 }
 
 /** 宽松解析：丢弃非法单项与未知 provider（供 resolve / UI seed）。 */
-export function parseWebSearchCatalogLenient(raw: string | null | undefined): WebSearchCatalog | null {
+export function parseWebFetchCatalogLenient(raw: string | null | undefined): WebFetchCatalog | null {
 	if (raw == null || !String(raw).trim()) {
 		return null;
 	}
@@ -127,9 +126,9 @@ export function parseWebSearchCatalogLenient(raw: string | null | undefined): We
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
 		return null;
 	}
-	const out: WebSearchCatalog = {};
+	const out: WebFetchCatalog = {};
 	for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-		const provider = parseWebSearchProviderInput(key);
+		const provider = parseWebFetchProviderInput(key);
 		if (!provider || !value || typeof value !== 'object' || Array.isArray(value)) {
 			continue;
 		}
@@ -137,11 +136,11 @@ export function parseWebSearchCatalogLenient(raw: string | null | undefined): We
 		if (typeof rec.apiKey !== 'string') {
 			continue;
 		}
-		let cost = DEFAULT_WEB_SEARCH_COST;
+		let cost = DEFAULT_WEB_FETCH_COST;
 		if (typeof rec.cost === 'number' && Number.isFinite(rec.cost) && rec.cost >= 0) {
 			cost = roundGatewayMoney(rec.cost);
 		} else if (typeof rec.cost === 'string') {
-			const parsedCost = parseWebSearchCostInput(rec.cost);
+			const parsedCost = parseWebFetchCostInput(rec.cost);
 			if (parsedCost != null) {
 				cost = parsedCost;
 			}
@@ -151,12 +150,12 @@ export function parseWebSearchCatalogLenient(raw: string | null | undefined): We
 	return out;
 }
 
-export function serializeWebSearchCatalog(catalog: WebSearchCatalog): string {
+export function serializeWebFetchCatalog(catalog: WebFetchCatalog): string {
 	return JSON.stringify(catalog);
 }
 
-export type ResolvedWebSearchConfig = {
-	provider: WebSearchProvider;
+export type ResolvedWebFetchConfig = {
+	provider: WebFetchProvider;
 	apiKey: string | null;
 	/** 单价；单位随 Gateway 计费币种（`BILLING_CURRENCY`）。 */
 	cost: number;
@@ -164,51 +163,50 @@ export type ResolvedWebSearchConfig = {
 		provider: 'system_config' | 'default';
 		apiKey: 'system_config' | 'missing';
 		cost: 'system_config' | 'default';
-		/** 配置来自 catalog 还是旧三键兼容 */
 		mode: 'catalog' | 'legacy';
 	};
 };
 
-export type ResolveWebSearchConfigResult =
-	| { ok: true; config: ResolvedWebSearchConfig }
+export type ResolveWebFetchConfigResult =
+	| { ok: true; config: ResolvedWebFetchConfig }
 	| { ok: false; reason: 'invalid_provider'; raw: string }
 	| { ok: false; reason: 'invalid_catalog' }
 	| { ok: false; reason: 'active_missing_key'; provider: string };
 
 /**
- * 从 `system_config` 解析 Web Search 配置。
- * 优先 `WEB_SEARCH_CATALOG` + `WEB_SEARCH_ACTIVE`；无 catalog 时回退旧三键（不落库）。
+ * 从 `system_config` 解析 Web Fetch 配置。
+ * 优先 `WEB_FETCH_CATALOG` + `WEB_FETCH_ACTIVE`；无 catalog 时回退旧三键（不落库）。
  */
-export async function resolveWebSearchConfig(
+export async function resolveWebFetchConfig(
 	repos: GatewayRepositories
-): Promise<ResolveWebSearchConfigResult> {
+): Promise<ResolveWebFetchConfigResult> {
 	const [catalogRaw, activeRaw, legacyProviderRaw, legacyApiKeyRaw, legacyCostRaw] = await Promise.all([
-		repos.systemConfig.getConfig(WEB_SEARCH_CATALOG_KEY),
-		repos.systemConfig.getConfig(WEB_SEARCH_ACTIVE_KEY),
-		repos.systemConfig.getConfig(WEB_SEARCH_PROVIDER_KEY),
-		repos.systemConfig.getConfig(WEB_SEARCH_API_KEY_KEY),
-		repos.systemConfig.getConfig(WEB_SEARCH_COST_KEY),
+		repos.systemConfig.getConfig(WEB_FETCH_CATALOG_KEY),
+		repos.systemConfig.getConfig(WEB_FETCH_ACTIVE_KEY),
+		repos.systemConfig.getConfig(WEB_FETCH_PROVIDER_KEY),
+		repos.systemConfig.getConfig(WEB_FETCH_API_KEY_KEY),
+		repos.systemConfig.getConfig(WEB_FETCH_COST_KEY),
 	]);
 
 	const catalogPresent = catalogRaw != null && String(catalogRaw).trim().length > 0;
 	if (catalogPresent) {
-		const catalog = parseWebSearchCatalogLenient(catalogRaw);
+		const catalog = parseWebFetchCatalogLenient(catalogRaw);
 		if (catalog == null) {
 			return { ok: false, reason: 'invalid_catalog' };
 		}
 
 		const activeTrimmed = activeRaw?.trim() ?? '';
-		let provider: WebSearchProvider;
-		let providerSource: ResolvedWebSearchConfig['sources']['provider'];
+		let provider: WebFetchProvider;
+		let providerSource: ResolvedWebFetchConfig['sources']['provider'];
 		if (activeTrimmed) {
-			const parsed = parseWebSearchActiveInput(activeTrimmed);
+			const parsed = parseWebFetchActiveInput(activeTrimmed);
 			if (!parsed) {
 				return { ok: false, reason: 'invalid_provider', raw: activeTrimmed };
 			}
 			provider = parsed;
 			providerSource = 'system_config';
 		} else {
-			provider = DEFAULT_WEB_SEARCH_PROVIDER;
+			provider = DEFAULT_WEB_FETCH_PROVIDER;
 			providerSource = 'default';
 		}
 
@@ -218,7 +216,7 @@ export async function resolveWebSearchConfig(
 			return { ok: false, reason: 'active_missing_key', provider };
 		}
 
-		const cost = entry?.cost ?? DEFAULT_WEB_SEARCH_COST;
+		const cost = entry?.cost ?? DEFAULT_WEB_FETCH_COST;
 		return {
 			ok: true,
 			config: {
@@ -235,10 +233,9 @@ export async function resolveWebSearchConfig(
 		};
 	}
 
-	// 旧三键兼容（不落库）
 	const providerTrimmed = legacyProviderRaw?.trim() ?? '';
 	if (providerTrimmed) {
-		const parsed = parseWebSearchProviderInput(providerTrimmed);
+		const parsed = parseWebFetchProviderInput(providerTrimmed);
 		if (!parsed) {
 			return { ok: false, reason: 'invalid_provider', raw: providerTrimmed };
 		}
@@ -247,23 +244,23 @@ export async function resolveWebSearchConfig(
 
 	return {
 		ok: true,
-		config: buildLegacyResolved(DEFAULT_WEB_SEARCH_PROVIDER, 'default', legacyApiKeyRaw, legacyCostRaw),
+		config: buildLegacyResolved(DEFAULT_WEB_FETCH_PROVIDER, 'default', legacyApiKeyRaw, legacyCostRaw),
 	};
 }
 
 function buildLegacyResolved(
-	provider: WebSearchProvider,
-	providerSource: ResolvedWebSearchConfig['sources']['provider'],
+	provider: WebFetchProvider,
+	providerSource: ResolvedWebFetchConfig['sources']['provider'],
 	apiKeyRaw: string | null,
 	costRaw: string | null
-): ResolvedWebSearchConfig {
+): ResolvedWebFetchConfig {
 	const configKey = apiKeyRaw?.trim() || '';
-	const parsedCost = parseWebSearchCostInput(costRaw);
+	const parsedCost = parseWebFetchCostInput(costRaw);
 
 	return {
 		provider,
 		apiKey: configKey || null,
-		cost: parsedCost ?? DEFAULT_WEB_SEARCH_COST,
+		cost: parsedCost ?? DEFAULT_WEB_FETCH_COST,
 		sources: {
 			provider: providerSource,
 			apiKey: configKey ? 'system_config' : 'missing',

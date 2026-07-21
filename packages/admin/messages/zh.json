@@ -1207,24 +1207,31 @@
 			"useBillingCurrencySection": "请使用「计费货币」区块配置 BILLING_CURRENCY。",
 			"useMasterKeySection": "请使用「Admin API Master key」区块配置 MASTER_KEY。",
 			"useWebhooksSection": "请使用「Proxy 错误 Webhook」区块配置 ALERT_WEBHOOK_WECOM_URL / ALERT_WEBHOOK_FEISHU_URL。",
-			"useToolsSection": "请使用 Tools → 配置 管理 WEB_SEARCH_PROVIDER / WEB_SEARCH_API_KEY / WEB_SEARCH_COST。",
+			"useToolsSection": "请使用 Tools → 配置 管理 WEB_*_ACTIVE / WEB_*_CATALOG（按引擎维护 API Key 与单价）。",
 			"invalidIanaTimezone": "无效的 IANA 时区（例如 Asia/Shanghai、America/New_York）"
 		}
 	},
 	"tools": {
 		"catalog": {
-			"webSearch": "Web Search"
+			"webSearch": "Web Search",
+			"webFetch": "Web Fetch"
 		},
 		"config": {
 			"title": "Tools",
 			"subtitle": "配置 /v1/tools/* 产品工具（引擎、API Key、单价）。写入 system_config，与对话共用用户额度。",
 			"viewInvocations": "查看调用记录 →",
-			"saveWebSearch": "保存 Web Search"
+			"saveWebSearch": "保存 Web Search",
+			"saveWebFetch": "保存 Web Fetch"
 		},
 		"webSearch": {
 			"title": "Web Search",
 			"description": "供 POST /v1/tools/web-search 使用。仅可选已实现的引擎，禁止自由文本。留空 API Key 并保存将清除密钥（未配置时接口返回 503）。",
+			"descriptionCatalog": "供 POST /v1/tools/web-search 使用。为每个引擎分别配置 API Key 与单价，再选择 Active。切换 Active 会自动使用该引擎已保存的密钥与单价；未配置 Key 的引擎不可激活。",
 			"provider": "搜索引擎",
+			"active": "当前 Active 引擎",
+			"catalogProvider": "引擎",
+			"noKey": "无 Key",
+			"needKeyToActivate": "请先为至少一个引擎填写 API Key 再保存。",
 			"providerGuideLink": "引擎说明",
 			"providerDocs": "官网与 API Key →",
 			"cost": "成功单价（{currency}）",
@@ -1275,6 +1282,26 @@
 				}
 			}
 		},
+		"webFetch": {
+			"title": "Web Fetch",
+			"description": "供 POST /v1/tools/web-fetch 使用。仅可选已实现的抓取引擎，禁止自由文本。留空 API Key 并保存将清除密钥（未配置时接口返回 503）。",
+			"descriptionCatalog": "供 POST /v1/tools/web-fetch 使用。为每个抓取引擎分别配置 API Key 与单价，再选择 Active。切换 Active 会自动使用该引擎已保存的密钥与单价；未配置 Key 的引擎不可激活。",
+			"provider": "抓取引擎",
+			"active": "当前 Active 引擎",
+			"catalogProvider": "引擎",
+			"noKey": "无 Key",
+			"needKeyToActivate": "请先为至少一个引擎填写 API Key 再保存。",
+			"providerDocs": "官网与 API Key →",
+			"cost": "成功单价（{currency}）",
+			"apiKey": "引擎 API Key",
+			"apiKeyPlaceholder": "粘贴引擎 API Key",
+			"apiKeyHint": "有流量前必须配置；清除后不会回退到环境变量。",
+			"providers": {
+				"firecrawl": "Firecrawl",
+				"tavily": "Tavily Extract",
+				"jina": "Jina Reader"
+			}
+		},
 		"invocations": {
 			"title": "工具调用记录",
 			"subtitle": "记账为 provider octafuse-tools（model_id 为 tool:*）。点击行可查看查询词与结果摘要；与 Request Logs 同源。",
@@ -1307,7 +1334,11 @@
 		},
 		"errors": {
 			"invalidWebSearchProvider": "搜索引擎必须为已实现的选项之一。",
-			"invalidWebSearchCost": "单价须为非负数字。"
+			"invalidWebSearchCost": "每个引擎的单价须为非负数字。",
+			"invalidWebFetchProvider": "抓取引擎必须为已实现的选项之一。",
+			"invalidWebFetchCost": "每个引擎的单价须为非负数字。",
+			"noKeyCannotActivate": "未配置 API Key 的引擎不能设为 Active。",
+			"switchActiveBeforeClearingKey": "若要清空当前 Active 引擎的 Key，请先把 Active 切到仍有 Key 的引擎并保存，再清空旧 Key。"
 		}
 	},
 	"pricing": {

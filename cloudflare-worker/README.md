@@ -48,9 +48,14 @@ npm run deploy:cloudflare -- <instance>               # 仅双 Worker
 
 实现：`npm run gen:wrangler` → [`scripts/deploy/gen-wrangler.mjs`](../scripts/deploy/gen-wrangler.mjs)。
 
-### Proxy 工具密钥（Web Search）
+### Proxy 工具密钥（Web Search / Web Fetch）
 
-在 **Admin → Tools → Configuration** 写入 `system_config`（`WEB_SEARCH_PROVIDER` / `WEB_SEARCH_API_KEY` / `WEB_SEARCH_COST`）。无需 Wrangler secret 或 Proxy 环境变量。
+在 **Admin → Tools → Configuration** 写入 `system_config`：
+
+- Web Search：`WEB_SEARCH_ACTIVE` + `WEB_SEARCH_CATALOG`（按引擎存 API Key / 单价）
+- Web Fetch：`WEB_FETCH_ACTIVE` + `WEB_FETCH_CATALOG`
+
+无需 Wrangler secret 或 Proxy 环境变量。旧全局三键仅兼容读取，新配置请用 Catalog。
 
 ---
 

@@ -38,7 +38,13 @@ export function parseToolRequestSummary(requestBody: string | null | undefined):
 		return { query: null, provider: null, raw };
 	}
 	const rec = raw as Record<string, unknown>;
-	const query = typeof rec.query === 'string' ? rec.query : null;
+	// web-search 用 query；web-fetch 用 url（列表「查询」列复用）
+	const query =
+		typeof rec.query === 'string'
+			? rec.query
+			: typeof rec.url === 'string'
+				? rec.url
+				: null;
 	const provider = typeof rec.provider === 'string' ? rec.provider : null;
 	return { query, provider, raw };
 }
@@ -59,5 +65,15 @@ export function parseToolResponseSummary(rawUsage: string | null | undefined): T
 			snippet: typeof x.snippet === 'string' ? x.snippet : undefined,
 			siteName: typeof x.siteName === 'string' ? x.siteName : undefined,
 		}));
+
+	// web-fetch：单页摘要（content_preview / title / url）
+	if (results.length === 0 && (typeof rec.content_preview === 'string' || typeof rec.url === 'string')) {
+		results.push({
+			title: typeof rec.title === 'string' ? rec.title : undefined,
+			url: typeof rec.url === 'string' ? rec.url : undefined,
+			snippet: typeof rec.content_preview === 'string' ? rec.content_preview : undefined,
+		});
+	}
+
 	return { resultCount: resultCount ?? (results.length > 0 ? results.length : null), results, raw };
 }
