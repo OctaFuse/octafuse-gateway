@@ -9,7 +9,7 @@
 
 **Octafuse Gateway** 是面向 Agent 的可自托管开源 AI 网关。它汇聚多供应商模型、图像生成与编辑、Agent Tools，以及自建或私有部署的 AI 服务，将分散的 AI 资源组织为统一入口，并通过路由、密钥、预算、用量和审计，实现资源的集中管理、调度与控制。它不只是中转模型请求，而是为 Agent 集中提供可发现、可调用、可管理且可持续扩展的资源与能力支持。
 
-**English:** [README.en.md](./README.en.md) · **官网：** [octafuse.dev/zh](https://octafuse.dev/zh/)
+**语言：** [中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [한국어](./README.ko.md) · **官网：** [octafuse.dev/zh](https://octafuse.dev/zh/)
 
 ## 核心能力
 
@@ -41,7 +41,7 @@
 | Docker 部署 | ✓ | ✓ | ✓ | ✓ |
 | Cloudflare 边缘部署 | ✓ | — | — | — |
 | 数据库支持 | D1/SQLite、Postgres、MySQL | SQLite、Postgres、MySQL | Postgres | SQLite、Postgres |
-| Agent支持 | 内置常用工具，如：联网搜索、网页抓取、深度搜索等 | — | MCP、A2A | MCP |
+| Agent 支持 | 内置常用工具，如：联网搜索、网页抓取、深度搜索等 | — | MCP、A2A | MCP |
 | 计费能力 | **三账本、分时倍率、工具按次计费** | 额度与用量计费 | 用量追踪与预算 | 分层预算与用量治理 |
 
 “—”表示对应项目的官方公开文档未将其列为同类内建能力，不代表无法通过插件、外部服务或二次开发实现。各项目都在持续演进，具体能力和授权范围请以各自仓库与官方文档为准。

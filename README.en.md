@@ -7,81 +7,84 @@
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare-quickstart.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
 
-> **Unify AI capabilities. Control every call.**
+**Octafuse Gateway** is a self-hostable, open-source AI gateway built for agents. It brings together models from multiple providers, image generation and editing, Agent Tools, and self-hosted or privately deployed AI services behind a single endpoint. Centralized routing, key management, budgets, usage tracking, and auditing make these resources easier to operate, orchestrate, and govern. More than a model proxy, Octafuse provides a centralized, extensible foundation for discovering, invoking, and managing AI capabilities.
 
-**Octafuse Gateway** is a self-hostable open-source **AI capability gateway and operations control plane**. Unify Chat, image generation / edit, extensible Agent Tools, private model services, and upstream providers while centrally managing routing, keys, budgets, billing, and audit. Clients still need only one Gateway URL and one user key.
+**Languages:** [中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [한국어](./README.ko.md) · **Website:** [octafuse.dev](https://octafuse.dev/en/)
 
-The default runtime is **Cloudflare Workers + D1** — individuals and light traffic can usually deploy and run within the free tier. Docker / Postgres / MySQL self-hosting is also supported (see [deployment docs](./docs/operators/deployment/)).
+## Core Capabilities
 
-**中文：** [README.md](./README.md) · **Website:** [octafuse.dev](https://octafuse.dev/en/)
+- Unified AI resource endpoint: Connect to models from multiple upstream providers, self-hosted or privately deployed model services, image capabilities, and Agent Tools through one Gateway URL and user API key.
+- Multi-protocol compatibility: Provides endpoints compatible with the OpenAI Chat Completions, Anthropic Messages, Gemini, and OpenAI Images APIs.
+- Routing and failover: Select upstreams by route group, priority, and availability; use **sticky routing** to improve prompt cache hit rates and automatically fail over on rate limits or outages.
+- Upstream key pools: Centrally manage Provider API keys with priority, weight, RPM / TPM limits, concurrency limits, and circuit-breaker state, then route requests based on each key's remaining capacity in real time.
+- User API keys and budgets: Issue separate keys for individuals, teams, customers, or projects; configure recurring budgets, status, and metadata; and let users inspect their own quota.
+- Image generation and editing: Call image models through OpenAI Images-compatible endpoints, supporting both token-based and per-image pricing.
+- **Agent Tools API**: Access agent tools consistently through `/v1/tools/*`, with invocation logs and per-call billing. Built-in tools currently include web search (`web-search`), web fetch (`web-fetch`), and deep search (`web-deep-search`).
+- **Public capability catalog**: Discover available models, protocols, and capabilities through `/catalog/models` without a user API key, making portal and client integration straightforward.
+- **Three ledgers and time-of-day pricing**: Track provider cost, catalog list price, and user charges separately, with peak / off-peak multipliers configurable in the business timezone.
+- Observability and integration testing: Inspect requests, latency, token usage, cost, and audit records in one place, and validate routing or client calls with Playground / Simulator.
+- Admin control plane and API: Manage Providers, models, routes, users, and configuration through the Admin console and `/api/admin/*`, or integrate your own portal and automation.
+- Flexible deployment: Deploy for free on **Cloudflare Workers + D1**, or self-host with Docker + Postgres / MySQL.
 
-## Why Octafuse
+See the [feature map](./docs/users/features.md) for the complete capability set, routing semantics, and billing definitions.
 
-- **Free-tier Cloudflare deploy** — One CLI deploys Proxy + Admin + shared D1; no server to babysit, edge-native by default.
-- **One AI capability entrypoint** — Clients use one Gateway URL and one key for Chat, image generation, and Agent Tools, with OpenAI / Anthropic / Gemini-style APIs across many upstreams.
-- **Operable, not just a proxy** — Admin manages Providers, Routes, user keys, and budgets; `/api/admin/*` fits portals and scripts; requests and cost stay observable and reconcilable.
+## How It Differs from Other Open-Source AI Gateways
 
-## What It Does
+[New API](https://github.com/QuantumNous/new-api), [LiteLLM](https://github.com/BerriAI/litellm), and [Bifrost](https://github.com/maximhq/bifrost) are all strong open-source AI gateways with different strengths. Their foundational capabilities overlap, but they target different users and use cases; Octafuse places greater emphasis on built-in agent capabilities and operational control over AI resources. This table compares public editions only and is not a ranking.
 
-- **Many model endpoints → one entry**: Route one model ID by **route priority**, availability, and the Provider key pool for switching, rollout, and failover; opt-in **sticky** can improve prompt cache hits (inside a key pool: priority / headroom / **weight** — see the boundary note below).
-- **Images (image generation / edit)**: OpenAI-compatible `POST /v1/images/generations` and `POST /v1/images/edits`, with token-metered and per-image (`per_image`) catalog pricing.
-- **Agent Tools**: Extensible product APIs for agents (`/v1/tools/*`, not chat protocols). Shipping today: web tools (`web-search` / `web-fetch` / `web-deep-search`); more tools can be added later. Configure engine keys under Admin → Tools — **one Active engine per tool**, **per-call billing, no charge on failure**.
-- **Public catalog**: `GET /catalog/models` needs no user key for portal discovery of runtime models and protocols; Agents / SDKs still use authenticated `GET /v1/models` by default.
-- **Per-user / customer / team keys**: Budgets and reset periods; clients can inspect quota via `GET /v1/me`.
-- **Explicit billing semantics**: Each request records three amounts—**supplier cost** (your estimated upstream spend), **catalog list price** (model baseline), and **charged to user** (what hits their budget)—for reconciliation or your own billing.
-- **Time-of-day pricing**: Per-route daily schedule multipliers for supplier cost and user charge (business timezone peak / off-peak), matching vendor time-based price strategies.
-- **Centralized observability**: Logs, latency, tokens, and usage by model / provider / user — without hopping vendor consoles.
-- **Safe pre-prod checks**: Playground tests one route without billing a user key; Simulator rehearses client calls (including Images).
+| Dimension | Octafuse Gateway | New API | LiteLLM | Bifrost |
+|-----------|------------------|---------|---------|---------|
+| Unified capability endpoint | Models, images, Agent Tools | Models, images, audio / video, document reranking | Models, images, audio, vector embeddings, document reranking | Models, multimodal inputs, MCP |
+| Routing and failover | Route groups, priorities, sticky routing, circuit breakers | Weighted routing, retry on failure | Load balancing, retries, failover | Load balancing, automatic failover |
+| Keys and budgets | Upstream key pools, user keys, recurring budgets | `Tokens` (API keys), quotas, users | Virtual keys, project / user budgets | Virtual keys, hierarchical budgets |
+| Administration and observability | Admin console and API, logs, cost, audit | Admin console, usage, billing | Admin console, logs, usage, cost | Admin console, logs, metrics, tracing |
+| Docker deployment | ✓ | ✓ | ✓ | ✓ |
+| Cloudflare edge deployment | ✓ | — | — | — |
+| Database support | D1/SQLite, Postgres, MySQL | SQLite, Postgres, MySQL | Postgres | SQLite, Postgres |
+| Agent support | Built-in Agent Tools, including web search, web fetch, and deep search | — | MCP, A2A | MCP |
+| Billing capabilities | **Three ledgers, time-of-day multipliers, per-call tool billing** | Quota- and usage-based billing | Usage tracking and budgets | Hierarchical budgets and usage governance |
 
-### Routing boundary (route priority ≠ key weight; sticky)
-
-| Layer | Fields | Role |
-|-------|--------|------|
-| **Route** | `priority` (lower tries first within a `route_group`) | Chooses which upstream route to try; there is **no** route-level weight. |
-| **Provider key pool** | key `priority` / headroom / `weight` | After a route is selected, schedules among that Provider’s upstream keys; `weight` only randomizes when headroom is nearly tied. |
-| **Sticky** | model `sticky_config` (opt-in per protocol × route group) | Prefer the same upstream key for the same user to improve **prompt cache** hits; short-wait on soft rate limits; still fail over on hard upstream failures. |
-
-Tools need your own third-party engine API keys; each shipped tool has **exactly one Active engine** at a time. Behavior and field contracts: [docs/developers/api/user.md](./docs/developers/api/user.md) and [docs/developers/reference/image-models.md](./docs/developers/reference/image-models.md).
-
-## Use Cases
-
-- **Personal hub**: Wire coding plans, model accounts, and backups into one key for IDEs, CLIs, and other AI apps.
-- **Small teams**: Share upstream capacity across projects and people with separate keys and budgets.
-- **Platforms / enterprises**: Provision users, sync quota, and audit via Admin API for billing and risk control; align route pricing with vendor time-of-day rates.
-- **Multi-provider resilience**: Change routing when an upstream fails or runs out of quota — not every client config.
+“—” means the project's official public documentation does not list the capability as a comparable built-in feature. It may still be possible through plugins, external services, or custom development. All projects continue to evolve; consult their repositories and official documentation for current capabilities and licensing.
 
 ## Screenshots
 
-| Operations overview | Provider management |
+| Operations overview | Model routing |
 |---|---|
-| ![Octafuse Gateway dashboard with usage, cost, latency, and recent requests](./docs/assets/screenshots/dashboard.png) | ![Octafuse Gateway providers page with upstream endpoint cards and key status](./docs/assets/screenshots/providers.png) |
+| ![Octafuse Gateway operations overview](./docs/assets/screenshots/dashboard.png) | ![Octafuse Gateway model routing](./docs/assets/screenshots/routes.png) |
 
-| Model routing | Playground |
-|---|---|
-| ![Octafuse Gateway model routes page with provider priorities and route groups](./docs/assets/screenshots/routes.png) | ![Octafuse Gateway playground page for testing one route without billing an API key](./docs/assets/screenshots/playground.png) |
+See [docs/assets/screenshots/](./docs/assets/screenshots/) for more views, including Provider management and Playground.
 
-## Quick start
+## Quick Start
 
-Run locally with D1 first:
+Requires **Node.js 20+**. Run Proxy and Admin concurrently in **two terminals**.
 
 ```bash
 git clone https://github.com/OctaFuse/octafuse-gateway.git
 cd octafuse-gateway
 npm install
 npm run db:migrate
-npm run dev:proxy    # :8787
-npm run dev:admin    # :8789 (second terminal)
 ```
 
-| Service | URL | Notes |
-|---------|-----|--------|
-| Proxy | http://127.0.0.1:8787 | Inference |
-| Admin | http://127.0.0.1:8789 | Console; local default **`admin` / `admin`** |
+Terminal 1 — Proxy (`:8787`):
 
-The first `dev:admin` creates `packages/admin/.dev.vars`. Open Admin → add Provider / Route / user Key → call Proxy with that key. Full steps and curl examples: [docs/users/quickstart.md](./docs/users/quickstart.md).
+```bash
+npm run dev:proxy
+```
 
+Terminal 2 — Admin (`:8789`):
 
-If you want to deploy directly to Cloudflare:
+```bash
+npm run dev:admin
+```
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Proxy | http://127.0.0.1:8787 | Inference endpoint |
+| Admin | http://127.0.0.1:8789 | Console; local default credentials: **`admin` / `admin`** |
+
+The first `dev:admin` run creates `packages/admin/.dev.vars`. Open Admin, configure a Provider, Route, and user API key, then call Proxy with that key. See [docs/users/quickstart.md](./docs/users/quickstart.md) for detailed steps and `curl` examples.
+
+### Deploy to Cloudflare
 
 ```bash
 npx wrangler login
@@ -90,37 +93,18 @@ npm run bootstrap:cloudflare
 
 See [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md). Change the default Admin password and rotate `MASTER_KEY` before production.
 
-### Other deployment options
-
-- [Cloudflare ops / Workers Builds / multi-instance](./docs/operators/deployment/cloudflare.md)
-- [Docker (Postgres / MySQL)](./docs/operators/deployment/docker.md)
-- [Zeabur and similar platforms](./docs/operators/deployment/zeabur.md)
-- [Deployment docs index](./docs/operators/deployment/)
+For Docker self-hosting and Postgres / MySQL options, see the [deployment documentation index](./docs/operators/deployment/README.md).
 
 ## Documentation
 
-| Reader / task | Link |
-|---------------|------|
-| Users: quickstart, features, Admin setup, clients | [docs/users/](./docs/users/) |
-| Developers: API, integration, local dev, architecture | [docs/developers/](./docs/developers/) |
-| Operators: Cloudflare, Docker, Zeabur, migrations | [docs/operators/](./docs/operators/) |
-| Maintainers: releases, Changesets, docs rules | [docs/maintainers/](./docs/maintainers/) |
+| Task | Link |
+|------|------|
+| Feature map, Admin setup, client integration | [docs/users/](./docs/users/) |
+| Local setup and example requests | [docs/users/quickstart.md](./docs/users/quickstart.md) |
+| APIs, integration, local development, architecture | [docs/developers/](./docs/developers/) |
+| Cloudflare / Docker / migrations | [docs/operators/](./docs/operators/) |
+| Releases and maintenance | [docs/maintainers/](./docs/maintainers/) |
 | HTTP examples | [examples/README.md](./examples/README.md) |
-
-## Common Commands
-
-```bash
-npm install
-npm run db:migrate            # local D1
-npm run dev:proxy             # Proxy :8787
-npm run dev:admin             # Admin :8789
-
-npm run bootstrap:cloudflare  # first Cloudflare deploy
-npm run deploy:cloudflare -- <instance> --migrate  # redeploy existing instance
-
-npm run db:migrate:pg         # Postgres (self-host)
-npm run db:migrate:mysql      # MySQL 8 (self-host)
-```
 
 ## Contributing and Security
 
@@ -131,4 +115,4 @@ npm run db:migrate:mysql      # MySQL 8 (self-host)
 
 ## License
 
-Licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [LICENSE](./LICENSE).
+This repository is licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [LICENSE](./LICENSE).
