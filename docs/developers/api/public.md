@@ -19,9 +19,11 @@ GET /
 ```json
 {
   "name": "octafuse-proxy",
-  "version": "0.1.0"
+  "version": "1.9.0"
 }
 ```
+
+`version` 与 `@octafuse/proxy` 的 `package.json` 一致（发版后随 Changesets 提升）。
 
 ### 示例
 

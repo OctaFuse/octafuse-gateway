@@ -21,12 +21,25 @@
 
 ## 它能做什么
 
-- **多模型入口合成一个入口**：同一模型 ID 可按优先级、权重或可用性路由到不同上游，便于切换、灰度和故障转移。
+- **多模型入口合成一个入口**：同一模型 ID 可按 **route priority**、可用性与 Provider Key 池调度到不同上游，便于切换、灰度和故障转移；可按模型开启 **粘性（sticky）** 提升 prompt cache 命中（Key 池内另有 priority / headroom / **weight**，见下文边界）。
+- **图片生成 / 编辑（Images）**：OpenAI 兼容 `POST /v1/images/generations` 与 `POST /v1/images/edits`；支持 token 分项与按张（`per_image`）两种目录计价。
+- **Agent Tools**：面向 Agent 的可扩展产品 API 面（`/v1/tools/*`，非推理协议）。当前已提供联网类工具（`web-search` / `web-fetch` / `web-deep-search`），后续可继续接入更多工具；Admin → Tools 配置引擎 Key，**每种工具仅一个 Active 引擎**，**按次计费、失败不扣费**。
+- **公开 Catalog**：`GET /catalog/models` 无需用户 Key，供门户发现运行时模型与协议能力；Agent / SDK 默认仍用需鉴权的 `GET /v1/models`。
 - **按用户 / 客户 / 团队发独立 Key**：设预算与周期重置；客户端可用 `GET /v1/me` 查额度。
 - **明确的计费口径**：每次请求同时记三笔账——**供应成本**（你付给上游的估算）、**目录标准价**（模型标价基准）、**用户计费**（扣用户预算的金额），便于对账或接入自有 billing。
 - **按时段动态调价**：路由可按每日窗口给供应成本 / 用户计费分别设倍率（业务时区下的高峰 / 闲时），适配各家模型按时段定价。
 - **集中观测**：请求日志、延迟、Token、模型 / Provider / 用户用量，不必在多个供应商控制台间切换。
-- **上线前联调**：Playground 试调单路由（不计用户账单）；Simulator 模拟客户端调用。
+- **上线前联调**：Playground 试调单路由（不计用户账单）；Simulator 模拟客户端调用（含 Images）。
+
+### 路由边界（route priority ≠ key weight；含粘性）
+
+| 层 | 字段 | 作用 |
+|----|------|------|
+| **Route** | `priority`（同 `route_group` 内数字越小越先试） | 决定先试哪条上游 route；**没有** route-level weight。 |
+| **Provider Key 池** | key `priority` / headroom / `weight` | 命中某条 route 后，在该 Provider 的多把上游 Key 间调度；`weight` 仅在余量接近时加权随机。 |
+| **粘性（sticky）** | 模型 `sticky_config`（按协议 × route group opt-in） | 同一用户尽量连续命中同一把上游 Key，提升上游 **prompt cache** 命中率；限流短等待、上游故障仍会 failover。 |
+
+Tools 依赖你自备的第三方引擎 API Key；每种已接入工具**同时只有一个 Active 引擎**。行为与字段真源见 [docs/developers/api/user.md](./docs/developers/api/user.md) 与 [docs/developers/reference/image-models.md](./docs/developers/reference/image-models.md)。
 
 ## 适用场景
 

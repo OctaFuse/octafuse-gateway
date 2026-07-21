@@ -20,12 +20,17 @@ Octafuse Gateway 的核心目标是把多个上游模型供应商、账号计划
 |------|------|
 | 统一入口 | 客户端只需要配置 Gateway Base URL 和用户 Key。 |
 | 多协议兼容 | 支持 OpenAI Chat Completions、Anthropic Messages、Gemini `v1beta` 风格入口。 |
-| 路由与故障转移 | 同一模型可配置多条上游路由，按优先级、权重、可用性和 key pool 状态调度。 |
+| 图片生成 / 编辑（Images） | OpenAI 兼容 `/v1/images/*`；目录价支持 **token** 分项与 **per_image** 按张；默认 `GET /v1/models` 不含纯 image 模型，可用 `kind=image` / `kind=all` 或直接打 Images API。 |
+| Agent Tools | 面向 Agent 的可扩展产品 API（`/v1/tools/*`）。当前提供联网类工具（`web-search` / `web-fetch` / `web-deep-search`），后续可继续扩展；Admin → **Tools** 配置第三方引擎 Key；**每种工具仅一个 Active 引擎**；**按次计费，上游失败不扣费**。调用记入请求日志（`provider_id=octafuse-tools`）。 |
+| 公开 Catalog | `GET /catalog/models` 无需用户 Key，聚合 active 路由的模型与协议能力，适合门户 discovery；与需鉴权的 `GET /v1/models`（默认 LLM、含 `default,free` route group）分工不同。 |
+| 路由与故障转移 | 同一模型可配置多条上游路由，按 **route priority**、可用性和 Provider **key pool**（key priority / headroom / weight）调度。**Route 层没有 weight**；weight 只作用于 Key 池内余量接近时的打散。可按模型开启 **粘性（sticky）**，让同一用户尽量复用同一把上游 Key，提高 prompt cache 命中。 |
 | 预算与计费 | 按用户 Key 记录请求、Token、成本与扣费，支持周期预算和用量查询。每次请求区分 **供应成本**、**目录标准价**、**用户计费** 三笔账，便于对账与毛利分析。路由可配基础倍率与**每日时段倍率**（业务时区下的高峰 / 闲时），对齐各家模型按时段定价。 |
-| Provider Key 管理 | 对上游 Key 做状态、RPM / TPM、并发、熔断和 sticky 配置。 |
-| 日志与审计 | 请求日志记录调用链路，审计日志记录预算扣减、用户与 Key 生命周期等事件。 |
-| Playground / Simulator | 在 Admin 内测试路由与客户端调用，不需要来回切换供应商控制台。 |
+| Provider Key 管理 | 对上游 Key 做状态、RPM / TPM、并发、熔断和 sticky 配置；同一 Provider 可维护多把 Key。 |
+| 日志与审计 | 请求日志记录调用链路（含 Images / Tools），审计日志记录预算扣减、用户与 Key 生命周期等事件；Admin Analytics 可按模型 / Provider / 用户观察用量。 |
+| Playground / Simulator | 在 Admin 内测试路由与客户端调用（含 Images），不需要来回切换供应商控制台。 |
 | 管理 API | 外部门户、后台或脚本可通过 `/api/admin/*` 自动创建用户、发 Key、同步预算和读取配置。 |
+
+行为与计费字段以 [developers/api/user.md](../developers/api/user.md)、[developers/reference/image-models.md](../developers/reference/image-models.md) 为准。
 
 ## 适合的使用方式
 

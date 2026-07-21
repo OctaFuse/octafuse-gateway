@@ -31,6 +31,7 @@ Provider 导入模板的维护说明见 [developers/reference/provider-import-pr
 - 按供应商真实额度设置 RPM / TPM / 并发限制。
 - 生产环境将限制设置为供应商真实上限的保守值，避免刚好撞线。
 - 失效或不再使用的 Key 及时禁用或删除。
+- **Key `weight`** 只影响「同一 Provider、余量接近」时的加权随机，**不要**把它理解成 route 权重。
 
 限流、熔断和 sticky 的实现细节见 [developers/architecture/proxy-request-lifecycle.md](../developers/architecture/proxy-request-lifecycle.md)。
 
@@ -41,14 +42,26 @@ Route 决定客户端请求的模型 ID 如何转到上游。
 常见做法：
 
 - 对客户端暴露稳定的模型名，例如 `gpt-4.1`、`claude-sonnet` 或团队内部命名。
-- 同一模型下配置多个 Provider 路由，用优先级、权重或 route group 做切换。
+- 同一模型下配置多个 Provider 路由，用 **route priority**（数字越小越先试）或 **route group** 做切换 / 灰度；**Route 没有 weight 字段**。
+- 图片生成模型：导入或手建后确认 `output_modalities` 含 `image`、`pricing_profile` 的 `image_billing_mode`（`token` / `per_image`），并挂 **OpenAI 协议** active 路由；细节见 [developers/reference/image-models.md](../developers/reference/image-models.md)。
+- 需要提高上游 prompt cache 命中时：在模型上按「协议 × route group」开启 **粘性（sticky）**，让同一用户尽量复用同一把 Provider Key。
 - 在 Route 上配置默认参数，例如思考参数、输出长度或供应商扩展字段。
 - 设置价格口径：先维护模型**目录标准价**，再在路由上设用户计费 / 供应成本的基础倍率；如需对齐供应商高峰 / 闲时价，再配置 **Daily schedule**（每日时段倍率，时区见系统配置的业务时区）。
 - 在请求日志中核对三笔账：供应成本、目录标准价、用户计费是否符合业务预期。
 
-Route 默认参数合并规则见 [developers/api/user.md](../developers/api/user.md#route-默认参数合并)；时段调价契约见 [developers/api/admin.md](../developers/api/admin.md) 中的 `price_override.schedule`。
+Route 默认参数合并规则见 [developers/api/user.md](../developers/api/user.md#route-默认参数合并)；时段调价契约见 [developers/api/admin.md](../developers/api/admin.md) 中的 `price_override.schedule`；粘性见 [developers/architecture/proxy-request-lifecycle.md](../developers/architecture/proxy-request-lifecycle.md#35-粘性绑定)。
 
-## 5. 创建用户与 API Key
+## 5. 配置 Agent Tools（可选）
+
+Agent Tools 是 Proxy 上面向 Agent 的 **可扩展产品 API**（`/v1/tools/*`），**不是** Chat Completions 的一部分。当前已接入联网类工具，后续可继续扩展。在 Admin → **Tools → Configuration**：
+
+- 为当前已支持的工具（如 Web Search / Web Fetch / Web Deep Search）分别维护引擎 catalog（API Key + 单价）。
+- 每种工具只选 **一个 Active** 引擎；未配置 Key 的引擎不可激活，调用时返回 **503**。
+- 成功按次扣用户预算；上游失败不扣费。调用记录见 **Tools → Invocations**（与 Request Logs 同源）。
+
+字段与引擎白名单见 [developers/api/user.md](../developers/api/user.md) 中各 Tools 章节。
+
+## 6. 创建用户与 API Key
 
 用户 API Key 是客户端真正使用的凭证。
 
@@ -61,15 +74,16 @@ Route 默认参数合并规则见 [developers/api/user.md](../developers/api/use
 
 用户、Key、预算和审计的数据模型见 [developers/architecture/user-keys-data-model.md](../developers/architecture/user-keys-data-model.md)。
 
-## 6. 验证调用
+## 7. 验证调用
 
 最小验证：
 
 ```bash
 curl -sS http://localhost:8787/health
+curl -sS http://localhost:8787/catalog/models
 ```
 
-用户推理与各协议客户端示例见 [connect-clients.md](./connect-clients.md)；完整 API 字段见 [developers/api/user.md](../developers/api/user.md)。
+用户推理、Images、Tools 与各协议客户端示例见 [connect-clients.md](./connect-clients.md)；完整 API 字段见 [developers/api/user.md](../developers/api/user.md)。
 
 预算状态验证：
 
@@ -78,13 +92,13 @@ curl -sS http://localhost:8787/v1/me \
   -H "Authorization: Bearer sk-your-api-key"
 ```
 
-## 7. 日常观察
+## 8. 日常观察
 
 日常排障优先看：
 
-- 请求日志：是否命中正确模型、Provider、Route 和上游 Key。
-- 错误状态：401 多半是认证问题；403 常见于预算或配额；502 多与路由或上游有关。
-- 成本字段：区分 **供应成本**、**目录标准价**、**用户计费**（日志 / API 字段分别为 `metered_cost`、`standard_cost`、`charged_cost`）。
+- 请求日志：是否命中正确模型、Provider、Route 和上游 Key；Tools 行为 `model_id` 形如 `tool:web-search`。
+- 错误状态：401 多半是认证问题；403 常见于预算或配额；502 多与路由或上游有关；Tools 未配置 Active Key 时为 **503**。
+- 成本字段：区分 **供应成本**、**目录标准价**、**用户计费**（日志 / API 字段分别为 `metered_cost`、`standard_cost`、`charged_cost`）；Images 另见 `billing_kind` / image count 列。
 - 审计日志：确认预算扣减、周期重置、Key 生命周期等事件。
 
-更细的日志和计费语义见 [developers/reference/streaming-billing.md](../developers/reference/streaming-billing.md) 与 [developers/reference/user-audit-logs.md](../developers/reference/user-audit-logs.md)。
+更细的日志和计费语义见 [developers/reference/streaming-billing.md](../developers/reference/streaming-billing.md)、[developers/reference/image-models.md](../developers/reference/image-models.md) 与 [developers/reference/user-audit-logs.md](../developers/reference/user-audit-logs.md)。

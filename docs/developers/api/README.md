@@ -56,11 +56,14 @@ OpenAI 兼容的 AI Gateway：用户推理、API Key 与目录管理、用量与
 | 端点 | 方法 | 描述 |
 |------|------|------|
 | `/v1/chat/completions` | POST | OpenAI 兼容聊天 |
-| `/v1/images/generations` | POST | OpenAI 兼容文生图（见 [image-models](../reference/image-models.md)） |
-| `/v1/images/edits` | POST | OpenAI 兼容图编辑（multipart；Seedream 不适用） |
+| `/v1/images/generations` | POST | OpenAI 兼容图片生成（见 [image-models](../reference/image-models.md)） |
+| `/v1/images/edits` | POST | OpenAI 兼容图片编辑（multipart；Seedream 不适用） |
+| `/v1/tools/web-search` | POST | Agent Tools：联网搜索（按次计费；Admin Tools 配置 Active 引擎） |
+| `/v1/tools/web-fetch` | POST | Agent Tools：网页抓取（按次计费） |
+| `/v1/tools/web-deep-search` | POST | Agent Tools：深度检索（搜+读；按次计费） |
 | `/v1/messages` | POST | Anthropic Messages |
 | `/v1beta/models/:modelAction` | POST | Gemini `generateContent` / `streamGenerateContent` |
-| `/v1/models` | GET | 模型列表（需用户 Key；OpenAI 兼容形态） |
+| `/v1/models` | GET | 模型列表（需用户 Key；OpenAI 兼容形态；默认不含纯 image） |
 | `/catalog/models` | GET | 公开模型目录 discovery（无需 Key；含 `protocols_by_group`，见 [详细说明](./user.md#公开模型目录catalog-discovery)） |
 | `/v1/me` | GET | 预算与元数据 |
 

@@ -21,12 +21,25 @@ The default runtime is **Cloudflare Workers + D1** — individuals and light tra
 
 ## What It Does
 
-- **Many model endpoints → one entry**: Route one model ID by priority, weight, or availability for switching, rollout, and failover.
+- **Many model endpoints → one entry**: Route one model ID by **route priority**, availability, and the Provider key pool for switching, rollout, and failover; opt-in **sticky** can improve prompt cache hits (inside a key pool: priority / headroom / **weight** — see the boundary note below).
+- **Images (image generation / edit)**: OpenAI-compatible `POST /v1/images/generations` and `POST /v1/images/edits`, with token-metered and per-image (`per_image`) catalog pricing.
+- **Agent Tools**: Extensible product APIs for agents (`/v1/tools/*`, not chat protocols). Shipping today: web tools (`web-search` / `web-fetch` / `web-deep-search`); more tools can be added later. Configure engine keys under Admin → Tools — **one Active engine per tool**, **per-call billing, no charge on failure**.
+- **Public catalog**: `GET /catalog/models` needs no user key for portal discovery of runtime models and protocols; Agents / SDKs still use authenticated `GET /v1/models` by default.
 - **Per-user / customer / team keys**: Budgets and reset periods; clients can inspect quota via `GET /v1/me`.
 - **Explicit billing semantics**: Each request records three amounts—**supplier cost** (your estimated upstream spend), **catalog list price** (model baseline), and **charged to user** (what hits their budget)—for reconciliation or your own billing.
 - **Time-of-day pricing**: Per-route daily schedule multipliers for supplier cost and user charge (business timezone peak / off-peak), matching vendor time-based price strategies.
 - **Centralized observability**: Logs, latency, tokens, and usage by model / provider / user — without hopping vendor consoles.
-- **Safe pre-prod checks**: Playground tests one route without billing a user key; Simulator rehearses client calls.
+- **Safe pre-prod checks**: Playground tests one route without billing a user key; Simulator rehearses client calls (including Images).
+
+### Routing boundary (route priority ≠ key weight; sticky)
+
+| Layer | Fields | Role |
+|-------|--------|------|
+| **Route** | `priority` (lower tries first within a `route_group`) | Chooses which upstream route to try; there is **no** route-level weight. |
+| **Provider key pool** | key `priority` / headroom / `weight` | After a route is selected, schedules among that Provider’s upstream keys; `weight` only randomizes when headroom is nearly tied. |
+| **Sticky** | model `sticky_config` (opt-in per protocol × route group) | Prefer the same upstream key for the same user to improve **prompt cache** hits; short-wait on soft rate limits; still fail over on hard upstream failures. |
+
+Tools need your own third-party engine API keys; each shipped tool has **exactly one Active engine** at a time. Behavior and field contracts: [docs/developers/api/user.md](./docs/developers/api/user.md) and [docs/developers/reference/image-models.md](./docs/developers/reference/image-models.md).
 
 ## Use Cases
 

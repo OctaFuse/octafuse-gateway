@@ -7,9 +7,9 @@
 | 任务 | 文档 |
 |------|------|
 | 本地 D1 → Cloudflare 上云（默认路径） | [quickstart.md](./quickstart.md) |
-| 先了解 Gateway 能解决什么问题 | [features.md](./features.md) |
-| 部署后配置 Provider、模型路由、用户 Key | [configuration.md](./configuration.md) |
-| 将客户端或工具指向 Gateway | [connect-clients.md](./connect-clients.md) |
+| 先了解 Gateway 能解决什么问题（含图片生成、Agent Tools、Catalog） | [features.md](./features.md) |
+| 部署后配置 Provider、模型路由、Tools、用户 Key | [configuration.md](./configuration.md) |
+| 将客户端或工具指向 Gateway（Chat / Images / Tools） | [connect-clients.md](./connect-clients.md) |
 
 ## 不在这里展开的内容
 
