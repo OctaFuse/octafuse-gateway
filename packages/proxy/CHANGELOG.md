@@ -1,5 +1,12 @@
 # @octafuse/proxy
 
+## 1.10.1
+
+### Patch Changes
+
+- Updated dependencies [[`c6e475b`](https://github.com/OctaFuse/octafuse-gateway/commit/c6e475b822dd1d4d753cf9a251ca79d71e47f192)]:
+  - @octafuse/core@1.10.1
+
 ## 1.10.0
 
 ### Minor Changes

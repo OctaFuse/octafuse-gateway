@@ -1,5 +1,11 @@
 # @octafuse/core
 
+## 1.10.1
+
+### Patch Changes
+
+- [`c6e475b`](https://github.com/OctaFuse/octafuse-gateway/commit/c6e475b822dd1d4d753cf9a251ca79d71e47f192) Thanks [@dyc87112](https://github.com/dyc87112)! - Fix MySQL 8.4 seed migration ambiguity; pin Admin to `@opennextjs/cloudflare@1.19.4` (upstream unused-OG bundle fix) and set `NEXT_PRIVATE_MINIMAL_MODE=1` so Workers skip the broken middleware-manifest require—no `patch-package` needed.
+
 ## 1.10.0
 
 ### Minor Changes
