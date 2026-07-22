@@ -14,7 +14,7 @@
 		"packages/admin"
 	],
 	"scripts": {
-		"postinstall": "patch-package && npm run gen:wrangler",
+		"postinstall": "npm run gen:wrangler",
 		"gen:wrangler": "node scripts/deploy/gen-wrangler.mjs",
 		"verify:package-versions": "node scripts/ci/verify-package-versions.mjs",
 		"ci:changeset-tag-push": "changeset tag && node scripts/ci/push-root-release-tag.mjs",
@@ -47,7 +47,6 @@
 		"@changesets/cli": "^2.29.8",
 		"@types/node": "^25.5.0",
 		"dotenv-cli": "^11.0.0",
-		"patch-package": "^8.0.0",
 		"tsx": "^4.21.0",
 		"typescript": "^5.7.2",
 		"wrangler": "^4.107.0"

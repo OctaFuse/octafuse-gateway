@@ -19,7 +19,7 @@
 	"dependencies": {
 		"@heroicons/react": "^2.2.0",
 		"@octafuse/core": "*",
-		"@opennextjs/cloudflare": "^1.16.3",
+		"@opennextjs/cloudflare": "1.19.4",
 		"@swc/helpers": "^0.5.18",
 		"hono": "^4.12.9",
 		"next": "^16.1.6",

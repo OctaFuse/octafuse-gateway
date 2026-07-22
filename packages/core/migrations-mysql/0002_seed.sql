@@ -22,6 +22,6 @@ INSERT INTO system_config (`key`, value, description, updated_at) VALUES
   )
 AS new
 ON DUPLICATE KEY UPDATE
-  value = IF(`key` = 'MASTER_KEY', value, new.value),
+  value = IF(system_config.`key` = 'MASTER_KEY', system_config.value, new.value),
   description = new.description,
   updated_at = new.updated_at;

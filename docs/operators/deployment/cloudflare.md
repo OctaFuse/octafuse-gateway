@@ -135,13 +135,13 @@ Dashboard → **Settings → Builds → Build watch paths**。默认 `includes: 
 **Proxy — Include**（一行粘贴）：
 
 ```
-packages/proxy/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*
+packages/proxy/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json
 ```
 
 **Admin — Include**：
 
 ```
-packages/admin/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json, patches/*
+packages/admin/*, packages/core/*, scripts/deploy/*, package.json, package-lock.json
 ```
 
 说明：
@@ -196,7 +196,15 @@ npx wrangler d1 list
 ## 8. 健康检查
 
 - Proxy：`GET /health`
+- Admin：首页、浏览器登录，以及携带 `MASTER_KEY` 的 `GET /api/admin/config`
+- D1 迁移：`npx wrangler d1 execute <name> --remote --config packages/core/wrangler.d1.jsonc --command 'SELECT COUNT(*) AS applied FROM d1_migrations;'`
 - 日志：`npx wrangler tail`（Worker 名见 Build variables）
+
+### Workers Free 的 3 MiB 体积限制
+
+Cloudflare Workers Free 的单 Worker gzip 上限为 **3 MiB**。Admin 依赖 **`@opennextjs/cloudflare@1.19.4+`**（未使用 `ImageResponse` / `opengraph-image` 时不再误打包 `@vercel/og` / `resvg.wasm`）。部署输出的 `Total Upload ... gzip` 应低于套餐上限。若仍超限，检查是否误引入 OG 路由或过大依赖。
+
+Admin 的 `wrangler.base.jsonc` 设置了 **`NEXT_PRIVATE_MINIMAL_MODE=1`**：本应用无 Next `middleware.ts`，用以避开 Workerd 上 `getMiddlewareManifest()` 动态 `require` 导致的全站 500（上游 [opennextjs-cloudflare#1232](https://github.com/opennextjs/opennextjs-cloudflare/issues/1232)）。若日后引入 middleware，需等上游正式修复后再去掉该变量。
 
 ---
 

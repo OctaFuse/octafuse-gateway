@@ -50,6 +50,8 @@ npm run bootstrap:cloudflare -- \
 
 **耗时**：Proxy 通常较快；Admin 为 OpenNext 构建，**首次可能数分钟**。
 
+> Workers Free 的单 Worker gzip 上限为 **3 MiB**。Admin 使用 **`@opennextjs/cloudflare@1.19.4+`**，未使用 OG 路由时不会误打包 `@vercel/og` / `resvg.wasm`。若部署报 **10027 / exceeded size limit**，请确认依赖版本与 gzip 体积（见 [cloudflare.md](./cloudflare.md) §8）。
+
 脚本会：
 
 1. 检查 `wrangler whoami`
@@ -65,7 +67,8 @@ npm run bootstrap:cloudflare -- \
 
 1. Proxy：`GET https://<proxy-workers-dev-or-domain>/health`
 2. Admin：打开 Admin URL，用刚才的 `ADMIN_PASSWORD` 登录（默认用户名见 wrangler `ADMIN_USERNAME`，一般为 `admin`）
-3. 下游门户：
+3. 立即在 Admin Config 轮换种子 `MASTER_KEY`（`sk-dev-admin-key` 仅用于初装），并确认旧 Key 已返回 401
+4. 下游门户：
 
 ```env
 GATEWAY_URL=https://<proxy>

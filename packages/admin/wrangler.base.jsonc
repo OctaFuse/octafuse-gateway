@@ -23,6 +23,9 @@
 		"head_sampling_rate": 1
 	},
 	"vars": {
-		"ADMIN_USERNAME": "admin"
+		"ADMIN_USERNAME": "admin",
+		// Admin 无 Next middleware.ts。Workerd 上 getMiddlewareManifest() 的动态 require 会 500；
+		// 上游 issue 仍 open 时用 minimal mode 跳过该路径（见 opennextjs-cloudflare#1232）。
+		"NEXT_PRIVATE_MINIMAL_MODE": "1"
 	}
 }
