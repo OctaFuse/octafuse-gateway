@@ -196,7 +196,13 @@ npx wrangler d1 list
 ## 8. 健康检查
 
 - Proxy：`GET /health`
+- Admin：首页、浏览器登录，以及携带 `MASTER_KEY` 的 `GET /api/admin/config`
+- D1 迁移：`npx wrangler d1 execute <name> --remote --config packages/core/wrangler.d1.jsonc --command 'SELECT COUNT(*) AS applied FROM d1_migrations;'`
 - 日志：`npx wrangler tail`（Worker 名见 Build variables）
+
+### Workers Free 的 3 MiB 体积限制
+
+Cloudflare Workers Free 的单 Worker gzip 上限为 **3 MiB**。OpenNext 1.19.1 会在未使用 OG 图片路由时仍让 Wrangler 解析 `@vercel/og`、`resvg.wasm` 等依赖，可能导致 Admin 部署返回 **10027 / exceeded size limit**。本仓的 `patches/@opennextjs+cloudflare+1.19.1.patch` 已回移 OpenNext 1.19.4 的修复；若维护旧 fork，请同步该补丁或升级到包含上游修复的版本。部署输出的 `Total Upload ... gzip` 应低于套餐上限。
 
 ---
 

@@ -31,3 +31,22 @@ index d816e83..b2c04e6 100644
  export const buildIdRule = `
  rule:
    pattern:
+diff --git a/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js b/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
+index 8cb687d..17f26aa 100644
+--- a/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
++++ b/node_modules/@opennextjs/cloudflare/dist/cli/build/bundle-server.js
+@@ -102,10 +102,12 @@ export async function bundleServer(buildOpts, projectOpts) {
+         ],
+         external: [
+             "./middleware/handler.mjs",
+-            // Do not bundle og when it is not used
+-            ...(useOg ? [] : ["next/dist/compiled/@vercel/og/index.edge.js"]),
+         ],
+         alias: {
++            // Do not let Wrangler resolve and bundle @vercel/og when it is not used.
++            ...(useOg ? {} : {
++                "next/dist/compiled/@vercel/og/index.edge.js": path.join(buildOpts.outputDir, "cloudflare-templates/shims/throw.js"),
++            }),
+             // Workers have `fetch` so the `node-fetch` polyfill is not needed
+             "next/dist/compiled/node-fetch": path.join(buildOpts.outputDir, "cloudflare-templates/shims/fetch.js"),
+             // Workers have builtin Web Sockets

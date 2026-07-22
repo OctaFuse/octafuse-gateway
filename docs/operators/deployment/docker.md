@@ -44,6 +44,8 @@
 
 ## 3. 本仓库镜像（本地构建）
 
+本地构建前除 `docker version` 与 `docker compose version` 外，还应确认 `docker buildx version` 可用。本仓 Dockerfile 使用 BuildKit 的 `RUN --mount=type=cache`，缺少 Buildx 时构建会直接失败。
+
 **仓库根目录**提供三个 **多阶段** Dockerfile（**`node:22-alpine`**；运行层不含全量 monorepo 源码与「三 workspace 全量」`node_modules`；**不含** `tsx` / 仓库根 `scripts/db/*`；健康检查用 **Node 内嵌 `fetch`**，不装 `curl`）：
 
 |文件|进程|默认端口|运行层说明|
@@ -131,7 +133,7 @@ docker compose -f docker/compose/node-mysql.yml up -d gateway-proxy gateway-admi
 
 Proxy / Admin / migrate 均注入 **`DATABASE_DRIVER=mysql`** 与 **`DATABASE_URL=mysql://…`**（见该 compose 文件）。首次使用前须成功执行 migrate（与 Postgres 流程相同，命令改为 **`db:migrate:mysql:docker`**）。
 
-主机端口与 **`8787` / `8789`** 冲突时，可在 **`docker/deploy/`** 下供 Compose 使用的 `.env` 中设置 **`GATEWAY_PROXY_PORT`**、**`GATEWAY_ADMIN_PORT`**（仅控制宿主机映射；容器内进程仍为 `8787`/`8789`）。模板见 **`docker/examples/env.*.example`**。
+主机端口与 **`8787` / `8789`** 冲突时，仓库内置的 `docker/compose/node-pg.yml`、`node-mysql.yml` 与 `quickstart.yml` 使用 **`GATEWAY_PROXY_HOST_PORT`** / **`GATEWAY_ADMIN_HOST_PORT`**。预构建镜像模板 `docker/examples/*.yml` 则使用 **`GATEWAY_PROXY_PORT`** / **`GATEWAY_ADMIN_PORT`**；两套变量只控制宿主机映射，容器内进程仍为 `8787` / `8789`，不要混用。
 
 ### 4.2 预构建镜像（GHCR / 自建 Harbor / 任意私有 registry）
 
@@ -194,6 +196,8 @@ npm run db:migrate:pg:docker
 ### MySQL 8
 
 与 Postgres 对称：**Proxy / Admin / 一次性 migrate** 共用 **`DATABASE_URL`**；Node 连接 MySQL 时须设置 **`DATABASE_DRIVER=mysql`**（省略时默认为 `postgres`）。
+
+MySQL 8.4 会严格检查 `INSERT ... AS new ON DUPLICATE KEY UPDATE` 中的歧义列。本仓 `0002_seed.sql` 已将目标列限定为 `system_config.key` / `system_config.value`；旧 fork 若在种子迁移看到 `Column 'key' in field list is ambiguous`，请先同步该迁移修复。若失败发生在已有业务数据的库中，不要删除卷，应先备份并核对已创建对象后再恢复。
 
 `system_config` 默认值由迁移 **`packages/core/migrations-mysql/0002_seed.sql`** 写入。
 
