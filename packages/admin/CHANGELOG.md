@@ -1,5 +1,14 @@
 # @octafuse/admin
 
+## 1.10.2
+
+### Patch Changes
+
+- [#69](https://github.com/OctaFuse/octafuse-gateway/pull/69) [`33941bf`](https://github.com/OctaFuse/octafuse-gateway/commit/33941bf54c8578a50b49c3abc327d956153b0bcf) Thanks [@dyc87112](https://github.com/dyc87112)! - Fix Admin console login being kicked out immediately on plain HTTP (e.g. Docker quickstart): make `admin_session` `Secure` opt-in via `ADMIN_COOKIE_SECURE` instead of always-on ([#36](https://github.com/OctaFuse/octafuse-gateway/issues/36)).
+
+- Updated dependencies []:
+  - @octafuse/core@1.10.2
+
 ## 1.10.1
 
 ### Patch Changes
