@@ -47,6 +47,8 @@ services:
       PORT: "8789"
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      # 可选加固；需要时在 .env 设 ADMIN_COOKIE_SECURE=1（见 docs/operators/deployment/docker.md §7.3）
+      ADMIN_COOKIE_SECURE: ${ADMIN_COOKIE_SECURE:-}
     healthcheck:
       test:
         [
