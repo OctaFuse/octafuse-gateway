@@ -17,6 +17,7 @@
 - Multi-protocol compatibility: Provides endpoints compatible with the OpenAI Chat Completions, Anthropic Messages, Gemini, and OpenAI Images APIs.
 - Routing and failover: Select upstreams by route group, priority, and availability; use **sticky routing** to improve prompt cache hit rates and automatically fail over on rate limits or outages.
 - Upstream key pools: Centrally manage Provider API keys with priority, weight, RPM / TPM limits, concurrency limits, and circuit-breaker state, then route requests based on each key's remaining capacity in real time.
+- **Provider and model presets**: Ship a large import catalog covering official model vendors, aggregation platforms, and Coding / Token Plans, with Base URLs and model catalog details prefilled so you spend less time hunting docs and hand-editing endpoints.
 - User API keys and budgets: Issue separate keys for individuals, teams, customers, or projects; configure recurring budgets, status, and metadata; and let users inspect their own quota.
 - Image generation and editing: Call image models through OpenAI Images-compatible endpoints, supporting both token-based and per-image pricing.
 - **Agent Tools API**: Access agent tools consistently through `/v1/tools/*`, with invocation logs and per-call billing. Built-in tools currently include web search (`web-search`), web fetch (`web-fetch`), and deep search (`web-deep-search`).
@@ -37,6 +38,7 @@ See the [feature map](./docs/users/features.md) for the complete capability set,
 | Unified capability endpoint | Models, images, Agent Tools | Models, images, audio / video, document reranking | Models, images, audio, vector embeddings, document reranking | Models, multimodal inputs, MCP |
 | Routing and failover | Route groups, priorities, sticky routing, circuit breakers | Weighted routing, retry on failure | Load balancing, retries, failover | Load balancing, automatic failover |
 | Keys and budgets | Upstream key pools, user keys, recurring budgets | `Tokens` (API keys), quotas, users | Virtual keys, project / user budgets | Virtual keys, hierarchical budgets |
+| Provider / model presets | **Official vendors + aggregators + Coding / Token Plans; one-click Base URL and catalog pricing import** | Manual channel setup | Broadest provider coverage | Basic manual setup |
 | Administration and observability | Admin console and API, logs, cost, audit | Admin console, usage, billing | Admin console, logs, usage, cost | Admin console, logs, metrics, tracing |
 | Docker deployment | ✓ | ✓ | ✓ | ✓ |
 | Cloudflare edge deployment | ✓ | — | — | — |
