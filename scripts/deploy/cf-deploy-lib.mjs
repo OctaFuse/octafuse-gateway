@@ -6,11 +6,17 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import readline from "node:readline/promises";
-import { stdin as input, stdout as output } from "node:process";
+import {
+	platform,
+	stdin as input,
+	stdout as output,
+} from "node:process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = join(__dirname, "../..");
 export const CF_WORKER_DIR = join(REPO_ROOT, "cloudflare-worker");
+const NPM_COMMAND = platform === "win32" ? "npm.cmd" : "npm";
+const NPX_COMMAND = platform === "win32" ? "npx.cmd" : "npx";
 
 export function log(msg) {
 	console.log(`[cf-deploy] ${msg}`);
@@ -59,11 +65,10 @@ export function runNpmWithEnv(vars, extraArgs) {
 	const env = { ...process.env, ...vars };
 	const args = ["npm", "run", ...extraArgs];
 	log(`>>> ${args.join(" ")}`);
-	const result = spawnSync(args[0], args.slice(1), {
+	const result = spawnSync(NPM_COMMAND, args.slice(1), {
 		cwd: REPO_ROOT,
 		env,
 		stdio: "inherit",
-		shell: true,
 	});
 	if ((result.status ?? 1) !== 0) {
 		throw new Error(`command failed (${result.status}): ${args.join(" ")}`);
@@ -82,11 +87,10 @@ export function runWrangler(wranglerArgs, opts = {}) {
 			? ["pipe", "inherit", "inherit"]
 			: "inherit";
 	log(`>>> npx wrangler ${wranglerArgs.join(" ")}`);
-	const result = spawnSync("npx", ["wrangler", ...wranglerArgs], {
+	const result = spawnSync(NPX_COMMAND, ["wrangler", ...wranglerArgs], {
 		cwd: REPO_ROOT,
 		env,
 		stdio,
-		shell: true,
 		input: opts.input,
 		encoding: opts.capture ? "utf8" : undefined,
 	});
@@ -269,22 +273,22 @@ export function putAdminPasswordSecret(adminWorkerName, password) {
 }
 
 /**
- * Best-effort MASTER_KEY read after remote migrate.
+ * Explicit MASTER_KEY read for deploy-instance --show-master-key.
  * @param {Record<string, string>} vars
  */
 export function fetchRemoteMasterKey(vars) {
 	const env = { ...process.env, ...vars };
 	// Ensure generated config matches instance
 	const gen = spawnSync(
-		"npm",
+		NPM_COMMAND,
 		["run", "gen:wrangler", "--", "--remote"],
-		{ cwd: REPO_ROOT, env, stdio: "pipe", shell: true, encoding: "utf8" },
+		{ cwd: REPO_ROOT, env, stdio: "pipe", encoding: "utf8" },
 	);
 	if ((gen.status ?? 1) !== 0) {
 		return null;
 	}
 	const result = spawnSync(
-		"npx",
+		NPX_COMMAND,
 		[
 			"wrangler",
 			"d1",
@@ -297,7 +301,7 @@ export function fetchRemoteMasterKey(vars) {
 			"--command",
 			"SELECT value FROM system_config WHERE key = 'MASTER_KEY' LIMIT 1",
 		],
-		{ cwd: REPO_ROOT, env, stdio: "pipe", shell: true, encoding: "utf8" },
+		{ cwd: REPO_ROOT, env, stdio: "pipe", encoding: "utf8" },
 	);
 	if ((result.status ?? 1) !== 0) {
 		return null;
@@ -378,7 +382,6 @@ export function namesFromPrefix(prefix) {
 export function printDownstreamHints({
 	proxyUrl,
 	adminUrl,
-	masterKey,
 	proxyWorkerName,
 	adminWorkerName,
 }) {
@@ -388,7 +391,7 @@ export function printDownstreamHints({
 		console.log(`GATEWAY_URL=${proxyUrl}`);
 	} else {
 		console.log(
-			`GATEWAY_URL=https://<account-subdomain>.workers.dev  # Worker: ${proxyWorkerName}`,
+			`GATEWAY_URL=https://${proxyWorkerName}.<account-subdomain>.workers.dev`,
 		);
 		console.log(
 			`# Or open Dashboard → Workers → ${proxyWorkerName} for the workers.dev URL`,
@@ -398,21 +401,12 @@ export function printDownstreamHints({
 		console.log(`GATEWAY_MASTER_URL=${adminUrl}`);
 	} else {
 		console.log(
-			`GATEWAY_MASTER_URL=https://<account-subdomain>.workers.dev  # Worker: ${adminWorkerName}`,
+			`GATEWAY_MASTER_URL=https://${adminWorkerName}.<account-subdomain>.workers.dev`,
 		);
 	}
-	if (masterKey) {
-		console.log(`GATEWAY_MASTER_KEY=${masterKey}`);
-		if (masterKey === "sk-dev-admin-key") {
-			log(
-				"WARNING: MASTER_KEY is still the seed value sk-dev-admin-key. Rotate it in Admin → Config before production use.",
-			);
-		}
-	} else {
-		console.log(
-			`GATEWAY_MASTER_KEY=<from D1 system_config.MASTER_KEY — Admin Config or: npm run deploy:cloudflare -- <instance> --show-master-key>`,
-		);
-	}
+	console.log(
+		`GATEWAY_MASTER_KEY=<from D1 system_config.MASTER_KEY — rotate it in Admin Config; explicit recovery: npm run deploy:cloudflare -- <instance> --show-master-key>`,
+	);
 	console.log("");
 	log("Verify: GET $GATEWAY_URL/health · open $GATEWAY_MASTER_URL and sign in with ADMIN_PASSWORD");
 }

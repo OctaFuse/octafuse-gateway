@@ -17,7 +17,7 @@
  *   --reuse-d1                  Fail if D1 name missing (do not create)
  *   --d1-id <uuid>              Use this D1 id (skip create/list match by name)
  *   --skip-secret               Do not set ADMIN_PASSWORD Worker secret
- *   --yes, -y                   Accept defaults; non-interactive where possible
+ *   --yes, -y                   Accept bootstrap defaults (migration still confirms on a TTY)
  *   --help, -h
  */
 import { existsSync } from "node:fs";
@@ -25,7 +25,6 @@ import {
 	assertWranglerLoggedIn,
 	ensureD1Database,
 	envPathForInstance,
-	fetchRemoteMasterKey,
 	log,
 	logError,
 	namesFromPrefix,
@@ -53,7 +52,7 @@ Options:
   --reuse-d1                  Require existing D1 with that name
   --d1-id <uuid>              Use existing D1 id directly
   --skip-secret               Skip wrangler secret put ADMIN_PASSWORD
-  --yes, -y                   Non-interactive defaults
+  --yes, -y                   Accept bootstrap defaults; migration still confirms on a TTY
   --help, -h
 
 Example:
@@ -258,8 +257,6 @@ async function main() {
 		}
 	}
 
-	const masterKey = fetchRemoteMasterKey(vars);
-
 	const proxyUrl = names.proxyCustomDomain
 		? `https://${names.proxyCustomDomain}`
 		: undefined;
@@ -270,7 +267,6 @@ async function main() {
 	printDownstreamHints({
 		proxyUrl,
 		adminUrl,
-		masterKey,
 		proxyWorkerName: names.proxyWorkerName,
 		adminWorkerName: names.adminWorkerName,
 	});

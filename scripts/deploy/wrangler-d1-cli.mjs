@@ -11,6 +11,7 @@ import { spawnSync } from "node:child_process";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "../..");
 const D1_CONFIG = join(ROOT, "packages/core/wrangler.d1.jsonc");
+const NPX_COMMAND = process.platform === "win32" ? "npx.cmd" : "npx";
 
 function loadDatabaseName() {
 	let config;
@@ -48,10 +49,9 @@ const args = [
 	"./packages/core/wrangler.d1.jsonc",
 ];
 
-const result = spawnSync("npx", ["wrangler", ...args], {
+const result = spawnSync(NPX_COMMAND, ["wrangler", ...args], {
 	cwd: ROOT,
 	stdio: "inherit",
-	shell: true,
 });
 
 process.exit(result.status ?? 1);

@@ -202,7 +202,7 @@ npx wrangler d1 list
 
 ### Workers Free 的 3 MiB 体积限制
 
-Cloudflare Workers Free 的单 Worker gzip 上限为 **3 MiB**。Admin 依赖 **`@opennextjs/cloudflare@1.19.4+`**（未使用 `ImageResponse` / `opengraph-image` 时不再误打包 `@vercel/og` / `resvg.wasm`）。部署输出的 `Total Upload ... gzip` 应低于套餐上限。若仍超限，检查是否误引入 OG 路由或过大依赖。
+Cloudflare Workers Free 的单 Worker gzip 上限为 **3 MiB**。Admin 依赖 **`@opennextjs/cloudflare@1.19.4+`**（未使用 `ImageResponse` / `opengraph-image` 时不再误打包 `@vercel/og` / `resvg.wasm`）。部署输出的 `Total Upload ... gzip` 应低于套餐上限。若仍超限，检查是否误引入 OG 路由或过大依赖。若免费额度余量吃紧或流量上来，也推荐升级 [Workers Paid](https://developers.cloudflare.com/workers/platform/pricing/)（约 $5/月）——量大管饱，性价比极高。
 
 Admin 的 `wrangler.base.jsonc` 设置了 **`NEXT_PRIVATE_MINIMAL_MODE=1`**：本应用无 Next `middleware.ts`，用以避开 Workerd 上 `getMiddlewareManifest()` 动态 `require` 导致的全站 500（上游 [opennextjs-cloudflare#1232](https://github.com/opennextjs/opennextjs-cloudflare/issues/1232)）。若日后引入 middleware，需等上游正式修复后再去掉该变量。
 

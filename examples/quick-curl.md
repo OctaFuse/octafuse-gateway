@@ -23,8 +23,11 @@ curl -sS http://127.0.0.1:8787/v1/chat/completions \
 
 `MASTER_KEY` must match `system_config.MASTER_KEY` in the database. The development seed (`packages/core/migrations-{d1,postgres,mysql}/0002_seed.sql`) writes the placeholder `sk-dev-admin-key` for local Docker quickstart only. Admin app default in Docker quickstart is often `http://127.0.0.1:8789`.
 
+The Admin app does not expose `/api/admin/health`. Use a real, read-only
+Admin API route to verify authentication and database access:
+
 ```bash
-curl -sS http://127.0.0.1:8789/api/admin/health \
+curl -sS http://127.0.0.1:8789/api/admin/business-timezone \
   -H "Authorization: Bearer sk-dev-admin-key"
 ```
 
