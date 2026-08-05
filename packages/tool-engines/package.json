@@ -1,6 +1,6 @@
 {
 	"name": "@octafuse/tool-engines",
-	"version": "2.1.1",
+	"version": "2.1.2",
 	"private": true,
 	"type": "module",
 	"description": "Shared Tool engine clients (web-search / web-fetch / web-deep-search / ai-detection). Source-only; consume via bundlers.",

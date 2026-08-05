@@ -1,5 +1,33 @@
 # @octafuse/tool-engines
 
+## 2.1.2
+
+### Patch Changes
+
+- [#85](https://github.com/OctaFuse/octafuse-gateway/pull/85) [`9b7a9f6`](https://github.com/OctaFuse/octafuse-gateway/commit/9b7a9f6ddea090970d35f9b71976becd936c73f0) Thanks [@dyc87112](https://github.com/dyc87112)! - 优化 Admin 路由与 Provider 体验，请求日志补充外部系统字段，并修复干净仓库下 Admin 本地开发（Turbopack）无法解析 core 源码的问题。
+
+  ### Admin
+
+  - **路由列表 / 拓扑**：同优先级内按状态、权重与名称稳定排序；因子状态芯片与无障碍文案完善。
+  - **路由详情**：自定义参数展示与 tooltip；布局响应式调整。
+  - **Provider 卡片**：布局与按钮交互优化；移除未使用的 endpoint 复制入口。
+  - **请求日志**：补充展示 `external_system`，便于区分外部系统来源。
+  - **本地开发**：修复 Turbopack 下 `@octafuse/core` 源码解析，干净 checkout 可运行 `dev:admin`。
+
+  ### Core
+
+  - **请求日志**：读写路径补充 `external_system` 字段（D1 / Postgres / MySQL）。
+
+  ### 升级说明
+
+  - 数据库迁移：无
+  - 配置变更：无
+  - 兼容性影响：无（纯增量字段与 Admin UX）
+  - 建议操作：更新 proxy / admin / migrate 三镜像后滚动重启
+
+- Updated dependencies [[`9b7a9f6`](https://github.com/OctaFuse/octafuse-gateway/commit/9b7a9f6ddea090970d35f9b71976becd936c73f0)]:
+  - @octafuse/core@2.1.2
+
 ## 2.1.1
 
 ### Patch Changes
