@@ -49,7 +49,7 @@ flowchart LR
 
 2. **`.github/workflows/octafuse-docker-images.yml`**（**`push` → `tags/v*`**，或由 Release **dispatch**；或 **`workflow_dispatch`**）  
    - 构建并推送 **GHCR** 三镜像。  
-   - 在 **tag 发版**路径下创建/更新 **GitHub Release**：正文含 **`CHANGELOG.md` 中对应 `## X.Y.Z` 段落**（What's changed）与各镜像 **digest**。
+   - 在 **tag 发版**路径下创建/更新 **GitHub Release**：正文由 **`npm run release:notes`**（`scripts/release/render-release-notes.mjs`）生成——**本次更新 / 变更内容 / 升级说明** + 折叠区 **镜像 digest** + 相关链接；优先读取可选覆盖文件 **`docs/releases/X.Y.Z.md`**，否则从 **`CHANGELOG.md`** 对应段落规范化（去掉 `Patch Changes` 与 commit/`Thanks @` 前缀）。
 
 3. **`.github/workflows/verify-package-versions.yml`**  
    - PR / `main` / `v*` 标签上校验：根与 workspace **`version` 一致**；在 **tag** 上校验 **`v` + version** 与标签名一致。
@@ -112,6 +112,21 @@ npx changeset
 
 选择 **patch / minor / major**，提交生成的 `.changeset/<id>.md`。
 
+**changeset 文案（供 GitHub Release 渲染）**：
+
+1. **首段**：一句话「本次更新」摘要（面向运维 / 集成方）。  
+2. **分区**：用 `### Proxy` / `### Admin` / `### Core` / `### 文档` 等列出变更；每条 `**能力名称**：用户可感知的变化。`  
+3. **可选** `### 升级说明`：有迁移 / 配置 / 破坏性时必写；缺省时 Release 渲染为「迁移/配置/兼容性：无」。  
+4. **不要**依赖 `### Patch Changes` 或 commit/`Thanks @` 出现在公开发布首屏——这些由 Changesets 写入 `CHANGELOG.md`，Release 脚本会剥离。
+
+本地预览（Version PR 合并、`CHANGELOG` 已有 `## X.Y.Z` 之后）：
+
+```bash
+npm run release:notes -- --version X.Y.Z
+```
+
+需要完全手写某版本正文时，可新增 **`docs/releases/X.Y.Z.md`**（含 `## 本次更新` / `## 变更内容` / `## 升级说明`），CI 会优先使用。
+
 ### 2. 生成版本 PR
 
 合并上述 PR 到 **`main`** 后，**Release** workflow 会创建 **Version Packages** PR。**维护者审核 diff**（版本号、`CHANGELOG.md`）后合并。
@@ -146,3 +161,5 @@ npx changeset
 - [docker.md](../operators/deployment/docker.md) — GHCR 与 Compose  
 - [CHANGELOG.md](../../CHANGELOG.md) — 聚合变更记录  
 - [`.changeset/README.md`](../../.changeset/README.md) — Changesets 快速说明  
+- [`docs/releases/`](../releases/) — 可选：某版本 GitHub Release 正文覆盖（如 `2.1.2.md`）  
+- `npm run release:notes -- --version X.Y.Z` — 本地预览 Release 正文  

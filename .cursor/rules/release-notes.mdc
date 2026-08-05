@@ -1,0 +1,72 @@
+---
+description: Octafuse Gateway GitHub Release notes 结构与 Changesets 文案约定
+globs: CHANGELOG.md,.changeset/**/*,.github/workflows/octafuse-docker-images.yml,scripts/release/**/*,docs/maintainers/release-versioning.md
+alwaysApply: false
+---
+
+# Release notes 约定
+
+GitHub Release 面向运维与集成方；`CHANGELOG.md` 保留 Changesets 开发追踪信息。二者分层，**不要**把原始 `### Patch Changes` + commit/`Thanks @` 原样当作公开发布说明。
+
+## GitHub Release 正文结构（固定顺序）
+
+```markdown
+## 本次更新
+
+一句话概括本版本解决了什么问题、带来什么价值。
+
+## 变更内容
+
+### Proxy
+- **能力名称**：用户可感知的变化。
+
+### Admin
+- **能力名称**：用户可感知的变化。
+
+### 文档
+- …
+
+## 升级说明
+
+- 数据库迁移：无
+- 配置变更：无
+- 兼容性影响：无
+- 建议操作：更新 proxy / admin / migrate 三镜像后滚动重启
+
+<details>
+<summary><strong>容器镜像与 SHA256 digest</strong></summary>
+
+### Proxy
+- 镜像：`ghcr.io/...-proxy:vX.Y.Z`
+- Digest：`sha256:...`
+
+### Admin
+- 镜像：`ghcr.io/...-admin:vX.Y.Z`
+- Digest：`sha256:...`
+
+### Migrate
+- 镜像：`ghcr.io/...-migrate:vX.Y.Z`
+- Digest：`sha256:...`
+
+</details>
+
+## 相关链接
+
+- [完整代码差异](https://github.com/OctaFuse/octafuse-gateway/compare/vA.B.C...vX.Y.Z)
+- [完整 CHANGELOG](https://github.com/OctaFuse/octafuse-gateway/blob/vX.Y.Z/CHANGELOG.md)
+```
+
+## 内容规则
+
+1. **不要**在 Release 首屏展示 `Patch Changes` / `Minor Changes` / `Major Changes`。
+2. **不要**在变更条目前缀提交哈希或 `Thanks @…`（可放在相关链接或留给 CHANGELOG）。
+3. 每条只表达一个变化：`**能力名称**：用户可感知的变化。`
+4. changeset 正文：首段为「本次更新」摘要；随后用 `### Proxy` / `### Admin` / `### 文档` / `### Core` 等分区；需要时加 `### 升级说明`。
+5. 避免在单个 changeset 列表项内部再嵌套会破坏 Markdown 列表的标题层级；分区标题写在摘要段之后、列表之前。
+6. 语言与标题统一中文语境；Release 标题形如 `OctaFuse vX.Y.Z`。
+7. Digest 默认放在 `<details>` 折叠区；镜像 tag 与 digest 一并给出。
+
+## 工具
+
+- 渲染：`npm run release:notes -- --version X.Y.Z`（`scripts/release/render-release-notes.mjs`）
+- CI：`octafuse-docker-images.yml` 在 tag 发版路径调用同一脚本写入 GitHub Release

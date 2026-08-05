@@ -19,6 +19,7 @@
 		"gen:wrangler": "node scripts/deploy/gen-wrangler.mjs",
 		"verify:package-versions": "node scripts/ci/verify-package-versions.mjs",
 		"ci:changeset-tag-push": "changeset tag && node scripts/ci/push-root-release-tag.mjs",
+		"release:notes": "node scripts/release/render-release-notes.mjs",
 		"dev:proxy": "npm run dev -w @octafuse/proxy",
 		"dev:proxy:node": "dotenv -c -- npm run dev:node -w @octafuse/proxy",
 		"dev:admin": "npm run preview -w @octafuse/admin",

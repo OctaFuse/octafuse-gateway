@@ -12,7 +12,9 @@
 npx changeset
 ```
 
-按提示选择 **major / minor / patch**，并写一句摘要。会生成 `.changeset/<随机名>.md`，随 PR 提交即可。
+按提示选择 **major / minor / patch**，并写摘要。会生成 `.changeset/<随机名>.md`，随 PR 提交即可。
+
+文案建议：首段一句话摘要 + `### Proxy` / `### Admin` 等分区列表（见 [release-versioning.md](../docs/maintainers/release-versioning.md) §维护者日常操作）。GitHub Release 由 `npm run release:notes` 渲染，勿指望原始 `Patch Changes` 格式直接作为对外说明。
 
 ## 发版流程（自动化）
 

@@ -209,12 +209,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout (CHANGELOG only)
+      - name: Checkout (release note sources)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
           sparse-checkout: |
             CHANGELOG.md
+            docs/releases
+            scripts/release/render-release-notes.mjs
           sparse-checkout-cone-mode: false
 
       - name: Download digest artifacts
@@ -230,46 +232,25 @@ jobs:
           OWNER_REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
           TAG="${{ github.ref_name }}"
           VERSION="${TAG#v}"
-          awk -v ver="$VERSION" '
-            $0 ~ "^## " ver "$" {flag=1; next}
-            flag && /^## / {exit}
-            flag {print}
-          ' CHANGELOG.md > changelog-section.md || true
-          if [ ! -s changelog-section.md ]; then
-            echo "_(CHANGELOG 中未找到 \`## ${VERSION}\` 段落；请核对 Version PR 是否更新了 CHANGELOG。)_" > changelog-section.md
-          fi
           resolve_digest_file() {
             local s="$1"
             find digest-artifacts -name "${s}.digest" -type f 2>/dev/null | head -1
           }
-          {
-            echo "## What's changed"
-            echo ""
-            cat changelog-section.md
-            echo ""
-            echo "---"
-            echo ""
-            echo "## Container images (GHCR)"
-            echo ""
-            echo "Tag **${TAG}** — multi-arch manifest digests (proxy / admin / migrate):"
-            echo ""
-            for s in proxy admin migrate; do
-              f=$(resolve_digest_file "$s")
-              if [ -n "$f" ] && [ -f "$f" ]; then
-                d=$(tr -d '\n\r' < "$f")
-                echo "- **${s}**: \`${d}\`"
-                echo "  - \`ghcr.io/${OWNER_REPO_LC}-${s}@${d}\`"
-              else
-                echo "- **${s}**: _(digest artifact missing)_"
-              fi
-            done
-            echo ""
-            echo "Pull by digest for reproducible deploys, or by tag \`${TAG}\` after verifying digest."
-            echo ""
-            echo "---"
-            echo ""
-            echo "Release process: [.changeset/README.md](.changeset/README.md) · [docs/maintainers/release-versioning.md](docs/maintainers/release-versioning.md)"
-          } > release-notes.md
+          cmd=(
+            node scripts/release/render-release-notes.mjs
+            --version "${VERSION}"
+            --repo "${{ github.repository }}"
+            --owner-repo-lc "${OWNER_REPO_LC}"
+            --out release-notes.md
+          )
+          for s in proxy admin migrate; do
+            f=$(resolve_digest_file "$s")
+            if [ -n "$f" ] && [ -f "$f" ]; then
+              d=$(tr -d '\n\r' < "$f")
+              cmd+=(--digest "${s}=${d}")
+            fi
+          done
+          "${cmd[@]}"
           cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create or update GitHub Release
@@ -281,5 +262,5 @@ jobs:
           if gh release view "$TAG" --repo "${{ github.repository }}" 2>/dev/null; then
             gh release edit "$TAG" --repo "${{ github.repository }}" --notes-file release-notes.md
           else
-            gh release create "$TAG" --repo "${{ github.repository }}" --title "Octafuse ${TAG}" --notes-file release-notes.md
+            gh release create "$TAG" --repo "${{ github.repository }}" --title "OctaFuse ${TAG}" --notes-file release-notes.md
           fi
