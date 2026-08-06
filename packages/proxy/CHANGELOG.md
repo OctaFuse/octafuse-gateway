@@ -1,5 +1,13 @@
 # @octafuse/proxy
 
+## 2.2.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @octafuse/core@2.2.0
+  - @octafuse/tool-engines@2.2.0
+
 ## 2.1.2
 
 ### Patch Changes
