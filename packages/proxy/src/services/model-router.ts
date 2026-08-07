@@ -16,6 +16,7 @@ import {
 	extractMeteredProfileFromPriceOverrideJson,
 	extractChargedProfileFromPriceOverrideJson,
 	fingerprintProviderApiKey,
+	isRouteAdapterCompatible,
 	normalizeUpstreamProtocol,
 	parseProviderEndpoints,
 } from '@octafuse/core';
@@ -121,6 +122,20 @@ export interface SurfaceRouteResolution {
 	routes: RouteResult[];
 }
 
+/** request surface 只接收与显式 adapter 拓扑完全匹配的 target。 */
+export function routeMatchesSurface(
+	route: Pick<RouteResult, 'adapter' | 'upstreamProtocol' | 'upstreamOperation'>,
+	request: { protocol: UpstreamProtocol; operation: string }
+): boolean {
+	return isRouteAdapterCompatible({
+		adapter: route.adapter,
+		requestProtocol: request.protocol,
+		requestOperation: request.operation,
+		upstreamProtocol: route.upstreamProtocol,
+		upstreamOperation: route.upstreamOperation,
+	});
+}
+
 /**
  * Resolve an ingress surface to its pool targets.
  *
@@ -156,11 +171,6 @@ export async function resolveRoutesForSurface(
 				params.routeGroup
 			);
 	const routes = (await resolveRouteResultsFromRows(repos, rows))
-		.filter(
-			(route) =>
-				route.upstreamProtocol === params.requestProtocol &&
-				route.adapter === 'passthrough'
-		)
 		.map((route) => ({
 			...route,
 			modelSurfaceId: surface?.id ?? null,
@@ -168,7 +178,13 @@ export async function resolveRoutesForSurface(
 				route.upstreamOperation,
 				params.requestOperation
 			),
-		}));
+		}))
+		.filter((route) =>
+			routeMatchesSurface(route, {
+				protocol: params.requestProtocol,
+				operation: params.requestOperation,
+			})
+		);
 	return { surface, routes };
 }
 

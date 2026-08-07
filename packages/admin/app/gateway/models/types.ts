@@ -63,10 +63,22 @@ export type ModelImportResult = {
 export const ALL_VENDORS_KEY = 'all';
 
 /**
- * Models / Routes Kind 视图（`?kind=llm|image|audio`）。
- * 无 All：始终只看一种；缺省 / 非法值回退 LLM。
- * 权威定义见 `@/lib/invoke-kind`（Simulator / Playground 另含 `tool`）。
+ * 模型目录 Kind 视图（`?kind=all|llm|image|audio`）。
+ * 模型目录允许跨类型浏览；调试台继续使用 `@/lib/invoke-kind` 中不含 All 的模型类型。
  */
+export const MODEL_LIST_KIND_FILTERS = ['all', 'llm', 'image', 'audio'] as const;
+export type ModelListKindFilter = (typeof MODEL_LIST_KIND_FILTERS)[number];
+export const DEFAULT_MODEL_LIST_KIND_FILTER: ModelListKindFilter = 'all';
+
+export function parseModelListKindFilterParam(value: string | null): ModelListKindFilter {
+	if (value == null || value.trim() === '') return DEFAULT_MODEL_LIST_KIND_FILTER;
+	const normalized = value.trim().toLowerCase();
+	return (MODEL_LIST_KIND_FILTERS as readonly string[]).includes(normalized)
+		? (normalized as ModelListKindFilter)
+		: DEFAULT_MODEL_LIST_KIND_FILTER;
+}
+
+/** 调试台 / 旧模型类型联合，保持不含 All 的既有语义。 */
 export {
 	DEFAULT_KIND_FILTER,
 	type ModelKindFilter,

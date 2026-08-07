@@ -6,31 +6,26 @@ import {
 	resolveEffectiveBaseUrl as coreResolveEffectiveBaseUrl,
 	type ProviderEndpointsSource,
 } from '@octafuse/core/provider-endpoints';
+import {
+	normalizeUpstreamProtocol as normalizeCoreUpstreamProtocol,
+	UPSTREAM_PROTOCOLS as CORE_UPSTREAM_PROTOCOLS,
+	type UpstreamProtocol as CoreUpstreamProtocol,
+} from '@octafuse/core/upstream-protocol';
 import type { GatewayProvider } from './types';
 
-export type UpstreamProtocol = 'openai' | 'anthropic' | 'gemini';
+/** 管理端直接复用 Core 协议类型，避免新增协议后两处白名单分叉。 */
+export type UpstreamProtocol = CoreUpstreamProtocol;
 
-export const UPSTREAM_PROTOCOLS: readonly UpstreamProtocol[] = ['openai', 'anthropic', 'gemini'] as const;
+export const UPSTREAM_PROTOCOLS: readonly UpstreamProtocol[] = CORE_UPSTREAM_PROTOCOLS;
 
-const PROTOCOL_LIST = UPSTREAM_PROTOCOLS.join(', ');
-
-/** 字符串是否为三协议之一。 */
+/** 字符串是否为受支持的上游协议。 */
 export function isUpstreamProtocol(s: string): s is UpstreamProtocol {
 	return (UPSTREAM_PROTOCOLS as readonly string[]).includes(s);
 }
 
 /** 与 Gateway 一致：空白或非法值抛错；请求体未传时在调用方使用 `?? 'openai'`。 */
 export function normalizeUpstreamProtocol(raw: string): UpstreamProtocol {
-	const v = raw.trim().toLowerCase();
-	if (v === '') {
-		throw new Error('Invalid upstream_protocol: empty string');
-	}
-	if (v === 'anthropic' || v === 'gemini' || v === 'openai') {
-		return v;
-	}
-	throw new Error(
-		`Invalid upstream_protocol ${JSON.stringify(raw)}: expected one of ${PROTOCOL_LIST}`
-	);
+	return normalizeCoreUpstreamProtocol(raw);
 }
 
 function asEndpointsSource(provider: GatewayProvider | ProviderEndpointsSource): ProviderEndpointsSource {

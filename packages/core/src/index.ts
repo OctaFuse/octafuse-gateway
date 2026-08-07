@@ -7,6 +7,7 @@ export * from './upstream-protocol';
 export * from './provider-endpoints';
 export * from './gemini-upstream-url';
 export * from './route-topology';
+export * from './realtime-protocol';
 
 export * from './storage/context';
 export * from './storage/database-client';

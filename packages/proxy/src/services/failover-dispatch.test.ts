@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type { GatewayRepositories } from '@octafuse/core';
 import type { RouteResult } from './model-router';
 import { EMPTY_USAGE } from './proxy';
-import { failoverDispatch } from './failover-dispatch';
+import { failoverDispatch, isSuccessfulDispatchResponse } from './failover-dispatch';
 import {
 	isProviderCircuitOpen,
 	markProviderFailure,
@@ -49,6 +49,19 @@ beforeEach(() => {
 	resetProviderCircuitStateForTests();
 });
 
+describe('dispatch success response', () => {
+	it('accepts Cloudflare WebSocket 101 responses in addition to HTTP 2xx', () => {
+		assert.equal(
+			isSuccessfulDispatchResponse({
+				ok: false,
+				status: 101,
+				webSocket: {},
+			} as Response),
+			true
+		);
+	});
+});
+
 describe('failoverDispatch — all providers unavailable', () => {
 	it('returns 429 + Retry-After when every provider is circuit-open (no upstream dispatch)', async () => {
 		markProviderFailure('p1', 'rate_limit', 5_000);
@@ -85,6 +98,34 @@ describe('failoverDispatch — all providers unavailable', () => {
 
 		assert.equal(dispatch.mock.callCount(), 1);
 		assert.equal(result.response.status, 200);
+	});
+
+	it('accepts mixed protocol targets for an adapter-backed surface', async () => {
+		const dispatch = mock.fn(async () => ({
+			response: new Response('ok', { status: 200 }),
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
+		}));
+		const routes = [
+			makeRoute('dashscope', {
+				upstreamProtocol: 'dashscope',
+				providerEndpoints: {
+					dashscope: { base: 'https://workspace.example/api/v1' },
+				},
+			}),
+		];
+
+		const result = await failoverDispatch(
+			emptyRepos,
+			routes,
+			['openai', 'dashscope'],
+			dispatch,
+			undefined,
+			defaultOptions
+		);
+
+		assert.equal(dispatch.mock.callCount(), 1);
+		assert.equal(result.chosenRoute.upstreamProtocol, 'dashscope');
 	});
 });
 

@@ -384,6 +384,20 @@ export default function GatewayRequestLogsPage() {
         </div>
       );
     }
+    if (log.billing_kind === 'audio_per_character') {
+      const characters = log.audio_characters;
+      const line =
+        characters != null && Number.isFinite(characters)
+          ? `${Number(characters).toLocaleString()} chars`
+          : '—';
+      return (
+        <div className="leading-tight">
+          <div className="text-gray-900 tabular-nums" title={t('titles.audioPerCharacterUsage')}>
+            {line}
+          </div>
+        </div>
+      );
+    }
     const hasCache = log.cache_read_tokens > 0 || log.cache_write_tokens > 0;
     return (
       <div className="leading-tight space-y-0.5">

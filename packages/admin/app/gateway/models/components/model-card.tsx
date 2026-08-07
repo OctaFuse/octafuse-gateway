@@ -8,12 +8,16 @@ import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import {
 	formatGatewayMoneyCompact,
+	formatPerCharacterUnit,
 	formatPerImageUnit,
 	formatPerMillionTokenUnit,
 	formatPerSecondUnit,
 } from '@/lib/format-gateway-currency';
 import { getCatalogImagePricingDisplay } from '@/lib/pricing-ui';
-import { isAudioTranscriptionModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import {
+	isAudioModel,
+	isImageGenerationModel,
+} from '@octafuse/core/db/model-modalities';
 import {
 	buildMetadataSummary,
 	buildPricingMetricColumns,
@@ -88,7 +92,7 @@ function ModelIdentityHeader(props: { model: ModelListItem }) {
 function ModelCapabilityPanel({ model }: { model: ModelListItem }) {
 	const t = useTranslations('models.card');
 	const tCommon = useTranslations('common');
-	const hideTokenLimits = isImageGenerationModel(model) || isAudioTranscriptionModel(model);
+	const hideTokenLimits = isImageGenerationModel(model) || isAudioModel(model);
 	const cellClass = 'rounded-md border border-gray-100 bg-gray-50/60 px-2 py-1.5';
 	return (
 		<div>
@@ -153,10 +157,15 @@ function ModelPricingPanel(props: {
 		() => pricingColumns.filter((c) => c.unitKind === 'per_second'),
 		[pricingColumns]
 	);
+	const perCharacterColumns = useMemo(
+		() => pricingColumns.filter((c) => c.unitKind === 'per_character'),
+		[pricingColumns]
+	);
 	const hasTokenCols = tokenColumns.length > 0;
 	const hasPerImageCols = perImageColumns.length > 0;
 	const hasPerSecondCols = perSecondColumns.length > 0;
-	const hasAnyCols = hasTokenCols || hasPerImageCols || hasPerSecondCols;
+	const hasPerCharacterCols = perCharacterColumns.length > 0;
+	const hasAnyCols = hasTokenCols || hasPerImageCols || hasPerSecondCols || hasPerCharacterCols;
 	const showPerImageSummary = imageDisplay?.billingKind === 'image_per_image';
 
 	return (
@@ -178,6 +187,11 @@ function ModelPricingPanel(props: {
 						{formatPerSecondUnit(billingCurrency)}
 					</span>
 				) : null}
+				{hasPerCharacterCols ? (
+					<span className="text-[11px] font-normal normal-case tracking-normal text-gray-400 tabular-nums">
+						{formatPerCharacterUnit(billingCurrency)}
+					</span>
+				) : null}
 			</div>
 			{!hasAnyCols ? (
 				<p className="mt-1.5 text-xs text-gray-400">{tCommon('noData')}</p>
@@ -185,12 +199,17 @@ function ModelPricingPanel(props: {
 				<div className="mt-1.5 space-y-1.5">
 					<div
 						className={
-							isImageGenerationModel(model) || isAudioTranscriptionModel(model)
+							isImageGenerationModel(model) || isAudioModel(model)
 								? 'grid grid-cols-2 gap-1.5'
 								: 'grid grid-cols-4 gap-1'
 						}
 					>
-						{[...tokenColumns, ...perImageColumns, ...perSecondColumns].map((col) => (
+						{[
+							...tokenColumns,
+							...perImageColumns,
+							...perSecondColumns,
+							...perCharacterColumns,
+						].map((col) => (
 							<div
 								key={col.title}
 								className="min-w-0 rounded-md border border-gray-100 bg-gray-50/70 px-1.5 py-1.5 sm:px-2"

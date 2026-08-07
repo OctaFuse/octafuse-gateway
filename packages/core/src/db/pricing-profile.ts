@@ -13,9 +13,10 @@
  * - **`per_image`**（须显式 mode + `image` 块）：`image.default` / maps 按 quality×size 选 output 单价；可选 `image.input` 计参考图；`uncertain_result_policy` 控制未确认结果（默认 `requested`）。**不计价 `tiers`**（可省略；历史占位零档仍可解析）。
  * - **无 mode + 仅 legacy `image` 块**：解析可读入 `image`，但 **`resolveImageBillingMode` 返回 `null`（不计费）**；勿因 legacy 块自动恢复 per_image。
  *
- * **Audio 转写双模式**（`audio_billing_mode`）：
+ * **Audio 计费模式**（`audio_billing_mode`）：
  * - **`per_second`**（须显式 mode + `audio` 块）：`audio.price_per_second` × 时长秒数；可选 `minimum_seconds`（默认 1）。**不计价 `tiers`**（可省略）。对齐 whisper-1 官方按分钟/时长。
  * - **`token`**（须显式 mode + 非空 `tiers`）：`tiers[].input_price` / `output_price`（$/1M）× 上游 `usage`（type=tokens）。对齐 gpt-4o-*transcribe 官方按 token；**不计价 `audio` 块**。
+ * - **`per_character`**（须显式 mode + `audio` 块）：`audio.price_per_character` × TTS 上游真实 `usage.characters`；可选 `minimum_characters`（默认 0）。
  */
 
 /** 每百万 token 单价快照（与 `usage-tracker.computeMeteredCost` / image token 计费对齐）。 */
@@ -51,8 +52,8 @@ export interface PricingTierPrices {
 /** Image 按张计价：`image_billing_mode === 'per_image'` 时使用。 */
 export type ImageBillingMode = 'token' | 'per_image';
 
-/** Audio 计费模式：时长（whisper）或 token（gpt-4o-*transcribe）。 */
-export type AudioBillingMode = 'per_second' | 'token';
+/** Audio 计费模式：ASR 时长/token，或 TTS 字符数。 */
+export type AudioBillingMode = 'per_second' | 'token' | 'per_character';
 
 /** 按张单价一侧（output 或 `image.input` 参考图）。 */
 export type ImagePerSidePricing = {
@@ -73,27 +74,41 @@ export type ImagePricingConfig = {
 	uncertain_result_policy?: 'requested' | 'zero';
 };
 
-/** 音频按时长 `audio` 块。 */
-export type AudioPricingConfig = {
+/** ASR 按时长 `audio` 块。 */
+export type AudioPerSecondPricingConfig = {
 	/** $/秒 */
 	price_per_second: number;
 	/** 计费下限秒数；缺省 1 */
 	minimum_seconds?: number;
+	price_per_character?: never;
+	minimum_characters?: never;
 };
+
+/** TTS 按有效字符 `audio` 块。 */
+export type AudioPerCharacterPricingConfig = {
+	/** $/字符 */
+	price_per_character: number;
+	/** 计费下限字符数；缺省 0 */
+	minimum_characters?: number;
+	price_per_second?: never;
+	minimum_seconds?: never;
+};
+
+export type AudioPricingConfig = AudioPerSecondPricingConfig | AudioPerCharacterPricingConfig;
 
 export interface ParsedPricingProfile {
 	/**
 	 * Token / LLM / Audio-token 阶梯价。
-	 * `image_billing_mode === 'per_image'` 或 `audio_billing_mode === 'per_second'` 时可为空数组。
+	 * `image_billing_mode === 'per_image'`、`audio_billing_mode === 'per_second' | 'per_character'` 时可为空数组。
 	 */
 	tiers: PricingTierPrices[];
 	/** 显式 Image 计费模式；缺省时由 `resolveImageBillingMode` 推断（legacy 仅 image 块 → null）。 */
 	image_billing_mode?: ImageBillingMode;
 	/** 按张目录价；`per_image` 模式计费时使用。 */
 	image?: ImagePricingConfig | null;
-	/** 显式 Audio 计费模式：`per_second` 须 `audio`；`token` 须非空 `tiers`。 */
+	/** 显式 Audio 计费模式：按时长/字符须 `audio`，按 token 须非空 `tiers`。 */
 	audio_billing_mode?: AudioBillingMode;
-	/** 音频按时长目录价；`per_second` 模式计费时使用。 */
+	/** 音频按时长或字符目录价；由 `audio_billing_mode` 决定字段。 */
 	audio?: AudioPricingConfig | null;
 }
 
@@ -322,7 +337,10 @@ export function profileHasImagePerImagePricing(
 /** 是否配置了显式 audio per_second 目录价。 */
 export function profileHasAudioPerSecondPricing(
 	profile: ParsedPricingProfile | null | undefined
-): boolean {
+): profile is ParsedPricingProfile & {
+	audio_billing_mode: 'per_second';
+	audio: AudioPerSecondPricingConfig;
+} {
 	if (!profile || profile.audio_billing_mode !== 'per_second') {
 		return false;
 	}
@@ -347,10 +365,25 @@ export function profileHasAudioTokenPricing(
 	);
 }
 
+/** 是否配置了显式 audio per_character 目录价。 */
+export function profileHasAudioPerCharacterPricing(
+	profile: ParsedPricingProfile | null | undefined
+): profile is ParsedPricingProfile & {
+	audio_billing_mode: 'per_character';
+	audio: AudioPerCharacterPricingConfig;
+} {
+	if (!profile || profile.audio_billing_mode !== 'per_character') {
+		return false;
+	}
+	const p = profile.audio?.price_per_character;
+	return p != null && p >= 0;
+}
+
 /**
  * 解析 Audio 计费模式：
  * - `per_second` + 合法 `audio` → per_second
  * - `token` + 合法 tiers → token
+ * - `per_character` + 合法 `audio` → per_character
  */
 export function resolveAudioBillingMode(
 	profile: ParsedPricingProfile | null | undefined
@@ -363,6 +396,12 @@ export function resolveAudioBillingMode(
 	}
 	if (profile.audio_billing_mode === 'token' && profileHasAudioTokenPricing(profile)) {
 		return 'token';
+	}
+	if (
+		profile.audio_billing_mode === 'per_character' &&
+		profileHasAudioPerCharacterPricing(profile)
+	) {
+		return 'per_character';
 	}
 	return null;
 }
@@ -391,6 +430,34 @@ export function computeAudioPerSecondMeteredCost(options: {
 		minimum_seconds: options.minimumSeconds,
 	});
 	return options.pricePerSecond * billable;
+}
+
+/** TTS 计费字符数：上游真实整数用量与目录最小字符数取较大值。 */
+export function resolveBillableAudioCharacters(
+	characters: number,
+	audioCfg: AudioPricingConfig | null | undefined
+): number {
+	const min =
+		audioCfg?.minimum_characters != null &&
+		Number.isInteger(audioCfg.minimum_characters) &&
+		audioCfg.minimum_characters >= 0
+			? audioCfg.minimum_characters
+			: 0;
+	const used = Number.isFinite(characters) && characters > 0 ? Math.floor(characters) : 0;
+	return Math.max(used, min);
+}
+
+/** 原始 TTS 成本（未乘路由倍率）：billableCharacters × price_per_character。 */
+export function computeAudioPerCharacterMeteredCost(options: {
+	characters: number;
+	pricePerCharacter: number;
+	minimumCharacters?: number;
+}): number {
+	const billable = resolveBillableAudioCharacters(options.characters, {
+		price_per_character: options.pricePerCharacter,
+		minimum_characters: options.minimumCharacters,
+	});
+	return options.pricePerCharacter * billable;
 }
 
 /**
@@ -555,13 +622,13 @@ function parseAudioBillingMode(raw: unknown): AudioBillingMode | null | 'invalid
 	if (raw === undefined || raw === null) {
 		return null;
 	}
-	if (raw === 'per_second' || raw === 'token') {
+	if (raw === 'per_second' || raw === 'token' || raw === 'per_character') {
 		return raw;
 	}
 	return 'invalid';
 }
 
-/** `audio` 块：须有非负 `price_per_second`；`minimum_seconds` 可选。 */
+/** `audio` 块只允许一种计价维度，避免同一模型在运行时猜测用哪种单价。 */
 function parseAudioPricingConfig(raw: unknown): AudioPricingConfig | null | undefined {
 	if (raw === undefined) {
 		return undefined;
@@ -573,17 +640,31 @@ function parseAudioPricingConfig(raw: unknown): AudioPricingConfig | null | unde
 		return null;
 	}
 	const o = raw as Record<string, unknown>;
-	const price = asFiniteNumber(o.price_per_second);
-	if (price == null || price < 0) {
+	const secondPrice = asFiniteNumber(o.price_per_second);
+	const characterPrice = asFiniteNumber(o.price_per_character);
+	const hasSecond = secondPrice != null;
+	const hasCharacter = characterPrice != null;
+	if (hasSecond === hasCharacter) {
 		return null;
 	}
-	const cfg: AudioPricingConfig = { price_per_second: price };
-	if (o.minimum_seconds !== undefined && o.minimum_seconds !== null) {
-		const min = asFiniteNumber(o.minimum_seconds);
-		if (min == null || min < 0) {
+	if (hasSecond) {
+		if (secondPrice < 0) return null;
+		const cfg: AudioPerSecondPricingConfig = { price_per_second: secondPrice };
+		if (o.minimum_seconds !== undefined && o.minimum_seconds !== null) {
+			const min = asFiniteNumber(o.minimum_seconds);
+			if (min == null || min < 0) return null;
+			cfg.minimum_seconds = min;
+		}
+		return cfg;
+	}
+	if (characterPrice == null || characterPrice < 0) return null;
+	const cfg: AudioPerCharacterPricingConfig = { price_per_character: characterPrice };
+	if (o.minimum_characters !== undefined && o.minimum_characters !== null) {
+		const min = asFiniteNumber(o.minimum_characters);
+		if (min == null || !Number.isInteger(min) || min < 0) {
 			return null;
 		}
-		cfg.minimum_seconds = min;
+		cfg.minimum_characters = min;
 	}
 	return cfg;
 }
@@ -594,6 +675,7 @@ function parseAudioPricingConfig(raw: unknown): AudioPricingConfig | null | unde
  * - 按张：`{ "image_billing_mode": "per_image", "image": { ... } }`（`tiers` 可省略；若给出须合法）
  * - 音频时长：`{ "audio_billing_mode": "per_second", "audio": { "price_per_second": ... } }`（`tiers` 可省略）
  * - 音频 token：`{ "audio_billing_mode": "token", "tiers": [ { "input_price", "output_price", "upto": null } ] }`
+ * - TTS 字符：`{ "audio_billing_mode": "per_character", "audio": { "price_per_character": ... } }`（`tiers` 可省略）
  * 非法 `image_billing_mode` / `audio_billing_mode` → 整段 `null`；`image` / `audio` 非法时忽略该键（仍返回 tiers）。
  */
 export function parsePricingProfile(jsonText: string | null | undefined): ParsedPricingProfile | null {
@@ -619,7 +701,10 @@ export function parsePricingProfile(jsonText: string | null | undefined): Parsed
 		return null;
 	}
 
-	const allowsEmptyTiers = modeParsed === 'per_image' || audioModeParsed === 'per_second';
+	const allowsEmptyTiers =
+		modeParsed === 'per_image' ||
+		audioModeParsed === 'per_second' ||
+		audioModeParsed === 'per_character';
 
 	let tiers: PricingTierPrices[];
 	if (allowsEmptyTiers) {
@@ -646,7 +731,11 @@ export function parsePricingProfile(jsonText: string | null | undefined): Parsed
 	if (modeParsed === 'token' || modeParsed === 'per_image') {
 		result.image_billing_mode = modeParsed;
 	}
-	if (audioModeParsed === 'per_second' || audioModeParsed === 'token') {
+	if (
+		audioModeParsed === 'per_second' ||
+		audioModeParsed === 'token' ||
+		audioModeParsed === 'per_character'
+	) {
 		result.audio_billing_mode = audioModeParsed;
 	}
 	if (o.image !== undefined) {

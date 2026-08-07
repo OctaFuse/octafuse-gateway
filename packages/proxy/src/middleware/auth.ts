@@ -7,6 +7,7 @@ import { authenticateApiKey } from '../services/api-key-auth';
 import type { Env } from '../app';
 import { GatewayErrorCode } from '../services/gateway-error-codes';
 import { gatewayErrorJson } from '../services/gateway-error-response';
+import { parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
 
 /** 与 `authenticateApiKey` 结果一致，供 `/v1/*` 处理器使用。 */
 export type ApiKeyContext = {
@@ -37,6 +38,14 @@ function extractApiKey(c: { req: { header: (name: string) => string | undefined;
   if (bearer) {
     return bearer;
   }
+
+	// 浏览器 WebSocket 无法自定义 Authorization；实时入口从协商子协议读取 Key。
+	if (c.req.path.startsWith('/v1/dashscope/realtime')) {
+		const realtimeAuth = parseDashScopeRealtimeAuthProtocol(
+			c.req.header('Sec-WebSocket-Protocol')
+		);
+		if (realtimeAuth) return realtimeAuth.apiKey;
+	}
 
   const path = c.req.path;
 

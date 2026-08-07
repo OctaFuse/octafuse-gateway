@@ -13,7 +13,8 @@ import {
 	UsersIcon,
 } from '@heroicons/react/24/outline';
 import {
-	isAudioTranscriptionModel,
+	isAudioModel,
+	isAudioSpeechModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import { parseRoutePricingSchedule } from '@octafuse/core/db/pricing-schedule';
@@ -38,6 +39,7 @@ import {
 	hasBasePricingInversion,
 	parseModelTagsList,
 	protocolBadgeClass,
+	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
 	splitRoutesByProtocolAndRouteGroup,
 } from '../route-utils';
@@ -425,35 +427,6 @@ function RoutingMatchConnector({
 			</div>
 		</>
 	);
-}
-
-function requestSurfacePath(
-	protocol: string,
-	operation: string,
-	modelId: string
-): string {
-	if (protocol === 'openai') {
-		const paths: Record<string, string> = {
-			chat: '/v1/chat/completions',
-			responses: '/v1/responses',
-			'images.generations': '/v1/images/generations',
-			'images.edits': '/v1/images/edits',
-			'audio.transcriptions': '/v1/audio/transcriptions',
-		};
-		return operation === '*' ? '/v1/*' : (paths[operation] ?? `/v1/${operation}`);
-	}
-	if (protocol === 'anthropic') {
-		return operation === '*' ? '/v1/*' : '/v1/messages';
-	}
-	if (protocol === 'gemini') {
-		// `models.generate` is the routing-family operation, not the URL wire action.
-		// Real client paths use generateContent / streamGenerateContent after the last `:`.
-		if (operation === 'models.generate') {
-			return `/v1beta/models/${modelId}:{generateContent|streamGenerateContent}`;
-		}
-		return `/v1beta/models/${modelId}:${operation}`;
-	}
-	return operation === '*' ? '/*' : `/${operation}`;
 }
 
 type RequestSurfaceGroup = {
@@ -1086,11 +1059,13 @@ export function RouteModelFlow(props: Props) {
 	const tFlow = useTranslations('routes.flow');
 	const tModelsCard = useTranslations('models.card');
 	const isImage = meta ? isImageGenerationModel(meta) : false;
-	const isAudio = meta ? isAudioTranscriptionModel(meta) : false;
+	const isAudio = meta ? isAudioModel(meta) : false;
+	const isAudioSpeech = meta ? isAudioSpeechModel(meta) : false;
 	const context = formatCompactTokens(meta?.context_window);
 	const maxOutput = formatCompactTokens(meta?.max_tokens);
+	// ASR 与 TTS 同属 Audio；必须按计费能力区分，避免 TTS 被标成按秒转写。
 	const stats = isAudio
-		? t('audioModelHint')
+		? t(isAudioSpeech ? 'audioSpeechModelHint' : 'audioModelHint')
 		: isImage
 			? t('imageModelHint')
 			: t('contextLine', { context, max: maxOutput });

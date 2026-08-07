@@ -2,10 +2,11 @@
  * Model input/output modalities — aligned with OpenRouter-style capability labels.
  * Stored in `models.input_modalities` / `models.output_modalities` as JSON string arrays.
  *
- * Kind (LLM vs image-generation vs audio ASR) is derived — no separate DB column:
+ * Kind (LLM vs image-generation vs audio ASR/TTS) is derived — no separate DB column:
  * - Image generation: `output_modalities` includes `image`
  * - Fallback when output modalities missing: `pricing_profile.image` present
  * - Audio transcription: `pricing_profile.audio_billing_mode` 为 `per_second`（+ `audio`）或 `token`（+ tiers）
+ * - Audio speech: `pricing_profile.audio_billing_mode` 为 `per_character`（+ `audio`）
  * - Do **not** use `input_modalities` containing `image` (multimodal LLMs also accept images)
  */
 
@@ -104,7 +105,7 @@ export function modelModalitiesJsonEqual(a: string | null | undefined, b: string
 	return true;
 }
 
-/** Fields needed to classify catalog models as LLM vs image-generation vs audio ASR. */
+/** Fields needed to classify catalog models as LLM vs image-generation vs audio ASR/TTS. */
 export type ModelKindFields = {
 	/** Stored JSON text, or already-parsed modality list */
 	output_modalities?: string | string[] | null;
@@ -159,7 +160,24 @@ export function isAudioTranscriptionModel(m: ModelKindFields): boolean {
 	return false;
 }
 
-/** False for image-generation / ASR models; true for chat / multimodal LLMs and unknown. */
+/** Whether this catalog model synthesizes speech and bills by upstream characters. */
+export function isAudioSpeechModel(m: ModelKindFields): boolean {
+	const profile = parsePricingProfile(m.pricing_profile ?? undefined);
+	return (
+		profile?.audio_billing_mode === 'per_character' &&
+		profile.audio?.price_per_character != null
+	);
+}
+
+/** 该目录模型是否属于音频端点模型（ASR 或 TTS）。 */
+export function isAudioModel(m: ModelKindFields): boolean {
+	return isAudioTranscriptionModel(m) || isAudioSpeechModel(m);
+}
+
+/** False for image-generation / ASR / TTS models; true for chat / multimodal LLMs and unknown. */
 export function isTextLlmModel(m: ModelKindFields): boolean {
-	return !isImageGenerationModel(m) && !isAudioTranscriptionModel(m);
+	return (
+		!isImageGenerationModel(m) &&
+		!isAudioModel(m)
+	);
 }

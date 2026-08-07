@@ -16,7 +16,7 @@ export type InsertRequestLogParams = {
 	providerName: string | null;
 	requestBody: string | null;
 	upstreamRequestBody: string | null;
-	requestProtocol: 'openai' | 'anthropic' | 'gemini';
+	requestProtocol: UpstreamProtocol;
 	requestOperation?: string | null;
 	upstreamProtocol: UpstreamProtocol;
 	upstreamOperation?: string | null;
@@ -57,7 +57,7 @@ export type InsertRequestLogParams = {
 	upstreamRequestId?: string | null;
 	/** 上游响应 body message id（应用层生成结果 id：chatcmpl-* / msg_* / responseId） */
 	upstreamMessageId?: string | null;
-	/** 计费种类：`image_tokens` | `image_per_image` | `audio_per_second` | `audio_tokens` */
+	/** 计费种类：`image_tokens` | `image_per_image` | `audio_per_second` | `audio_tokens` | `audio_per_character` */
 	billingKind?: string | null;
 	/** 按张计费：参考图张数 */
 	inputImageCount?: number;
@@ -65,4 +65,6 @@ export type InsertRequestLogParams = {
 	outputImageCount?: number;
 	/** 音频转写：计费时长（秒） */
 	audioDurationSeconds?: number | null;
+	/** TTS：上游返回的有效计费字符数 */
+	audioCharacters?: number | null;
 };

@@ -2,18 +2,16 @@
 
 import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { isAudioSpeechModel } from '@octafuse/core/db/model-modalities';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
-import {
-	type CatalogAudioPricingDisplay,
-} from '@/lib/audio-transcriptions';
+import { type CatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
 import type { CatalogImagePricingDisplay, CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
+import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
-	UPSTREAM_PROTOCOLS,
-	type UpstreamProtocol,
-} from '@/lib/upstream-protocol';
-import {
+	applyDashScopeTtsRoutePreset,
+	compatibleAdaptersForRoute,
 	requestOperationsForModel,
 	upstreamOperationsForProviderModel,
 } from '../route-utils';
@@ -79,32 +77,40 @@ export function RouteModal(props: Props) {
 	const t = useTranslations('routes.modal');
 	const tModels = useTranslations('models.modal');
 	const tCommon = useTranslations('common');
-	const lockOpenaiProtocol = selectedModelIsImage || selectedModelIsAudio;
+	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
-		(protocol) => requestOperationsForModel(selectedModel, protocol).length > 0
+		(protocol) => requestOperationsForModel(selectedModel, protocol).length > 0,
 	);
-	const requestOperations = requestOperationsForModel(
-		selectedModel,
-		formData.request_protocol
-	);
+	const requestOperations = requestOperationsForModel(selectedModel, formData.request_protocol);
 	const upstreamOperations = upstreamOperationsForProviderModel(
 		selectedProvider,
 		selectedModel,
-		formData.upstream_protocol
+		formData.upstream_protocol,
 	);
+	const compatibleAdapters = compatibleAdaptersForRoute(formData);
+	const showCurrentAdapter =
+		Boolean(editingRoute) && !compatibleAdapters.includes(formData.adapter) && Boolean(formData.adapter);
 	const selectableProviders = providers.filter(
 		(provider) =>
-			(Boolean(editingRoute || duplicateSourceRouteId) &&
-				provider.id === formData.provider_id) ||
+			(Boolean(editingRoute || duplicateSourceRouteId) && provider.id === formData.provider_id) ||
 			UPSTREAM_PROTOCOLS.some(
-				(protocol) =>
-					upstreamOperationsForProviderModel(provider, selectedModel, protocol).length > 0
-			)
+				(protocol) => upstreamOperationsForProviderModel(provider, selectedModel, protocol).length > 0,
+			),
 	);
 	const showCurrentUpstreamOperation =
 		Boolean(editingRoute) &&
 		!upstreamOperations.includes(formData.upstream_operation) &&
 		Boolean(formData.upstream_operation);
+	const selectedModelIsSpeech = selectedModel ? isAudioSpeechModel(selectedModel) : false;
+	const dashScopeTtsOperations = selectedModelIsSpeech
+		? upstreamOperationsForProviderModel(selectedProvider, selectedModel, 'dashscope')
+		: [];
+	const canUseDashScopeTtsPresets =
+		!selectedModelIsImage &&
+		selectedModelIsSpeech &&
+		selectedProvider != null &&
+		(dashScopeTtsOperations.includes('audio.speech') ||
+			dashScopeTtsOperations.includes('audio.speech.realtime.inference'));
 
 	if (!open) return null;
 
@@ -129,9 +135,7 @@ export function RouteModal(props: Props) {
 							{editingRoute ? t('editTitle') : t('newTitle')}
 						</h2>
 						{!editingRoute && duplicateSourceRouteId && (
-							<p className="mt-1 text-xs text-gray-500">
-								{t('prefilledFrom', { id: duplicateSourceRouteId })}
-							</p>
+							<p className="mt-1 text-xs text-gray-500">{t('prefilledFrom', { id: duplicateSourceRouteId })}</p>
 						)}
 					</div>
 					<button
@@ -155,6 +159,36 @@ export function RouteModal(props: Props) {
 					)}
 
 					<div className="space-y-4">
+						{canUseDashScopeTtsPresets ? (
+							<section className="rounded-lg border border-blue-200 bg-blue-50/60 p-3.5">
+								<div className="mb-2">
+									<h3 className="text-xs font-semibold uppercase tracking-wide text-blue-900">
+										{t('audioPresetTitle')}
+									</h3>
+									<p className="mt-1 text-xs text-blue-800">{t('audioPresetHint')}</p>
+								</div>
+								<div className="flex flex-wrap gap-2">
+									{dashScopeTtsOperations.includes('audio.speech') ? (
+										<button
+											type="button"
+											className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											onClick={() => onFormChange(applyDashScopeTtsRoutePreset(formData, 'nonrealtime'))}
+										>
+											{t('audioPresetNonRealtime')}
+										</button>
+									) : null}
+									{dashScopeTtsOperations.includes('audio.speech.realtime.inference') ? (
+										<button
+											type="button"
+											className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											onClick={() => onFormChange(applyDashScopeTtsRoutePreset(formData, 'realtime'))}
+										>
+											{t('audioPresetRealtime')}
+										</button>
+									) : null}
+								</div>
+							</section>
+						) : null}
 						<section className="rounded-lg border border-gray-200 bg-gray-50/80 p-3.5">
 							<h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
 								{t('basicMapping')}
@@ -168,47 +202,30 @@ export function RouteModal(props: Props) {
 											const nextModelId = e.target.value;
 											const nextModel = models.find((m) => m.id === nextModelId);
 											const nextRequestProtocols = UPSTREAM_PROTOCOLS.filter(
-												(protocol) =>
-													requestOperationsForModel(nextModel, protocol).length > 0
+												(protocol) => requestOperationsForModel(nextModel, protocol).length > 0,
 											);
-											const requestProtocol = nextRequestProtocols.includes(
-												formData.request_protocol
-											)
+											const requestProtocol = nextRequestProtocols.includes(formData.request_protocol)
 												? formData.request_protocol
 												: nextRequestProtocols[0] ?? formData.request_protocol;
-											const nextRequestOperations = requestOperationsForModel(
-												nextModel,
-												requestProtocol
-											);
-											const requestOperation = nextRequestOperations.includes(
-												formData.request_operation
-											)
+											const nextRequestOperations = requestOperationsForModel(nextModel, requestProtocol);
+											const requestOperation = nextRequestOperations.includes(formData.request_operation)
 												? formData.request_operation
 												: nextRequestOperations[0] ?? formData.request_operation;
 											const nextUpstreamProtocols = selectedProvider
 												? UPSTREAM_PROTOCOLS.filter(
 														(protocol) =>
-															upstreamOperationsForProviderModel(
-																selectedProvider,
-																nextModel,
-																protocol
-															).length > 0
-													)
+															upstreamOperationsForProviderModel(selectedProvider, nextModel, protocol).length > 0,
+												  )
 												: [];
-											const upstreamProtocol = nextUpstreamProtocols.includes(
-												formData.upstream_protocol
-											)
+											const upstreamProtocol = nextUpstreamProtocols.includes(formData.upstream_protocol)
 												? formData.upstream_protocol
 												: nextUpstreamProtocols[0] ?? requestProtocol;
-											const nextUpstreamOperations =
-												upstreamOperationsForProviderModel(
-													selectedProvider,
-													nextModel,
-													upstreamProtocol
-												);
-											const upstreamOperation = nextUpstreamOperations.includes(
-												formData.upstream_operation
-											)
+											const nextUpstreamOperations = upstreamOperationsForProviderModel(
+												selectedProvider,
+												nextModel,
+												upstreamProtocol,
+											);
+											const upstreamOperation = nextUpstreamOperations.includes(formData.upstream_operation)
 												? formData.upstream_operation
 												: nextUpstreamOperations[0] ?? requestOperation;
 											onFormChange({
@@ -232,16 +249,13 @@ export function RouteModal(props: Props) {
 									</select>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t('requestProtocol')}
-									</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('requestProtocol')}</label>
 									<select
 										value={formData.request_protocol}
 										onChange={(e) => {
 											const requestProtocol = e.target.value as UpstreamProtocol;
 											const requestOperation =
-												requestOperationsForModel(selectedModel, requestProtocol)[0] ??
-												formData.request_operation;
+												requestOperationsForModel(selectedModel, requestProtocol)[0] ?? formData.request_operation;
 											onFormChange({
 												...formData,
 												request_protocol: requestProtocol,
@@ -252,28 +266,34 @@ export function RouteModal(props: Props) {
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100"
 									>
 										{requestProtocols.map((p) => (
-											<option key={p} value={p}>{p}</option>
+											<option key={p} value={p}>
+												{p}
+											</option>
 										))}
 									</select>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t('requestOperation')}
-									</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('requestOperation')}</label>
 									<select
 										value={formData.request_operation}
-										onChange={(e) => onFormChange({ ...formData, request_operation: e.target.value })}
+										onChange={(e) =>
+											onFormChange({
+												...formData,
+												request_operation: e.target.value,
+											})
+										}
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 									>
 										{requestOperations.map((operation) => (
 											<option key={operation} value={operation}>
-												{operation === 'models.generate'
-													? t('operationModelsGenerate')
-													: operation}
+												{operation === 'models.generate' ? t('operationModelsGenerate') : operation}
 											</option>
 										))}
 										{formData.request_operation === '*' ? <option value="*">*</option> : null}
 									</select>
+									{selectedModelIsAudio ? (
+										<p className="mt-1 text-[11px] text-gray-500">{t('audioPublicOperationHint')}</p>
+									) : null}
 								</div>
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerRequired')}</label>
@@ -286,26 +306,19 @@ export function RouteModal(props: Props) {
 												nextProvider != null
 													? UPSTREAM_PROTOCOLS.filter(
 															(proto) =>
-																upstreamOperationsForProviderModel(
-																	nextProvider,
-																	selectedModel,
-																	proto
-																).length > 0
-														)
+																upstreamOperationsForProviderModel(nextProvider, selectedModel, proto).length > 0,
+													  )
 													: [];
 											let nextProto = formData.upstream_protocol;
 											if (allowed.length > 0 && !allowed.includes(nextProto)) {
 												nextProto = allowed[0]!;
 											}
-											const supportedOperations =
-												upstreamOperationsForProviderModel(
-													nextProvider,
-													selectedModel,
-													nextProto
-												);
-											const nextOperation = supportedOperations.includes(
-												formData.upstream_operation
-											)
+											const supportedOperations = upstreamOperationsForProviderModel(
+												nextProvider,
+												selectedModel,
+												nextProto,
+											);
+											const nextOperation = supportedOperations.includes(formData.upstream_operation)
 												? formData.upstream_operation
 												: supportedOperations[0] ?? formData.upstream_operation;
 											onFormChange({
@@ -327,9 +340,7 @@ export function RouteModal(props: Props) {
 									</select>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t('upstreamProtocol')}
-									</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('upstreamProtocol')}</label>
 									<select
 										value={formData.upstream_protocol}
 										onChange={(e) => {
@@ -338,23 +349,12 @@ export function RouteModal(props: Props) {
 												...formData,
 												upstream_protocol: upstreamProtocol,
 												upstream_operation:
-													upstreamOperationsForProviderModel(
-														selectedProvider,
-														selectedModel,
-														upstreamProtocol
-													)[0] ?? formData.upstream_operation,
+													upstreamOperationsForProviderModel(selectedProvider, selectedModel, upstreamProtocol)[0] ??
+													formData.upstream_operation,
 											});
 										}}
-										disabled={lockOpenaiProtocol || !selectedProvider}
-										title={
-											selectedModelIsAudio
-												? t('protocolHintAudioOpenaiOnly')
-												: selectedModelIsImage
-													? t('protocolHintImageOpenaiOnly')
-													: selectedProvider
-														? t('protocolHintConfigured')
-														: t('protocolHintSelectProvider')
-										}
+										disabled={!selectedProvider}
+										title={selectedProvider ? t('protocolHintConfigured') : t('protocolHintSelectProvider')}
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
 									>
 										{allowedProtocolsForProvider.map((p) => (
@@ -363,31 +363,23 @@ export function RouteModal(props: Props) {
 											</option>
 										))}
 									</select>
-									{selectedModelIsAudio ? (
-										<p className="mt-1 text-[11px] text-amber-700">
-											{t('protocolHintAudioOpenaiOnly')}
-										</p>
-									) : selectedModelIsImage ? (
-										<p className="mt-1 text-[11px] text-amber-700">
-											{t('protocolHintImageOpenaiOnly')}
-										</p>
-									) : null}
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t('upstreamOperation')}
-									</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('upstreamOperation')}</label>
 									<select
 										value={formData.upstream_operation}
-										onChange={(e) => onFormChange({ ...formData, upstream_operation: e.target.value })}
+										onChange={(e) =>
+											onFormChange({
+												...formData,
+												upstream_operation: e.target.value,
+											})
+										}
 										disabled={!selectedProvider || upstreamOperations.length === 0}
 										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
 									>
 										{upstreamOperations.map((operation) => (
 											<option key={operation} value={operation}>
-												{operation === 'models.generate'
-													? t('operationModelsGenerate')
-													: operation}
+												{operation === 'models.generate' ? t('operationModelsGenerate') : operation}
 											</option>
 										))}
 										{showCurrentUpstreamOperation ? (
@@ -397,20 +389,19 @@ export function RouteModal(props: Props) {
 										) : null}
 									</select>
 									<p className="mt-1 text-[11px] text-gray-500">
-										{selectedProvider
-											? t('upstreamOperationHintConfigured')
-											: t('protocolHintSelectProvider')}
+										{selectedProvider ? t('upstreamOperationHintConfigured') : t('protocolHintSelectProvider')}
 									</p>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t('providerModelName')}
-									</label>
+									<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerModelName')}</label>
 									<input
 										type="text"
 										value={formData.provider_model_name}
 										onChange={(e) =>
-											onFormChange({ ...formData, provider_model_name: e.target.value })
+											onFormChange({
+												...formData,
+												provider_model_name: e.target.value,
+											})
 										}
 										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 										placeholder={t('providerModelPlaceholder')}
@@ -418,10 +409,7 @@ export function RouteModal(props: Props) {
 									/>
 								</div>
 								<div>
-									<label
-										className="mb-1 block text-sm font-medium text-gray-700"
-										title={t('routeGroupHint')}
-									>
+									<label className="mb-1 block text-sm font-medium text-gray-700" title={t('routeGroupHint')}>
 										{t('routeGroup')}
 									</label>
 									<input
@@ -435,10 +423,7 @@ export function RouteModal(props: Props) {
 								</div>
 								<div className="grid grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-3 xl:max-w-[66%]">
 									<div>
-										<label
-											className="mb-1 block text-sm font-medium text-gray-700"
-											title={t('priorityHint')}
-										>
+										<label className="mb-1 block text-sm font-medium text-gray-700" title={t('priorityHint')}>
 											{t('priority')}
 										</label>
 										<input
@@ -455,10 +440,7 @@ export function RouteModal(props: Props) {
 										/>
 									</div>
 									<div>
-										<label
-											className="mb-1 block text-sm font-medium text-gray-700"
-											title={t('weightHint')}
-										>
+										<label className="mb-1 block text-sm font-medium text-gray-700" title={t('weightHint')}>
 											{t('weight')}
 										</label>
 										<input
@@ -487,8 +469,8 @@ export function RouteModal(props: Props) {
 									selectedModelIsAudio
 										? t('standardCatalogHintAudio')
 										: selectedModelIsImage
-											? t('standardCatalogHintImage')
-											: t('standardCatalogHint')
+										? t('standardCatalogHintImage')
+										: t('standardCatalogHint')
 								}
 							>
 								{selectedModelIsAudio ? (
@@ -496,9 +478,7 @@ export function RouteModal(props: Props) {
 										catalogAudioPricingDisplay.mode === 'token' ? (
 											<ul className="divide-y divide-gray-100 rounded-md border border-gray-200 text-sm tabular-nums">
 												<li className="flex items-baseline justify-between gap-3 px-3 py-2">
-													<span className="text-xs text-gray-500">
-														{tModels('audioInputPricePerM')}
-													</span>
+													<span className="text-xs text-gray-500">{tModels('audioInputPricePerM')}</span>
 													<span className="font-medium text-gray-900">
 														{catalogAudioPricingDisplay.inputPrice}
 														<span className="ml-1 text-[10px] font-normal text-gray-400">
@@ -507,9 +487,7 @@ export function RouteModal(props: Props) {
 													</span>
 												</li>
 												<li className="flex items-baseline justify-between gap-3 px-3 py-2">
-													<span className="text-xs text-gray-500">
-														{tModels('audioOutputPricePerM')}
-													</span>
+													<span className="text-xs text-gray-500">{tModels('audioOutputPricePerM')}</span>
 													<span className="font-medium text-gray-900">
 														{catalogAudioPricingDisplay.outputPrice}
 														<span className="ml-1 text-[10px] font-normal text-gray-400">
@@ -518,12 +496,28 @@ export function RouteModal(props: Props) {
 													</span>
 												</li>
 											</ul>
+										) : catalogAudioPricingDisplay.mode === 'per_character' ? (
+											<ul className="divide-y divide-gray-100 rounded-md border border-gray-200 text-sm tabular-nums">
+												<li className="flex items-baseline justify-between gap-3 px-3 py-2">
+													<span className="text-xs text-gray-500">{t('audioPricePerCharacter')}</span>
+													<span className="font-medium text-gray-900">
+														{catalogAudioPricingDisplay.pricePerCharacter}
+														<span className="ml-1 text-[10px] font-normal text-gray-400">
+															{catalogAudioPricingDisplay.unit}
+														</span>
+													</span>
+												</li>
+												<li className="flex items-baseline justify-between gap-3 px-3 py-2">
+													<span className="text-xs text-gray-500">{t('audioMinimumCharacters')}</span>
+													<span className="font-medium text-gray-900">
+														{catalogAudioPricingDisplay.minimumCharacters}
+													</span>
+												</li>
+											</ul>
 										) : (
 											<ul className="divide-y divide-gray-100 rounded-md border border-gray-200 text-sm tabular-nums">
 												<li className="flex items-baseline justify-between gap-3 px-3 py-2">
-													<span className="text-xs text-gray-500">
-														{t('audioPricePerSecond')}
-													</span>
+													<span className="text-xs text-gray-500">{t('audioPricePerSecond')}</span>
 													<span className="font-medium text-gray-900">
 														{catalogAudioPricingDisplay.pricePerSecond}
 														<span className="ml-1 text-[10px] font-normal text-gray-400">
@@ -532,20 +526,14 @@ export function RouteModal(props: Props) {
 													</span>
 												</li>
 												<li className="flex items-baseline justify-between gap-3 px-3 py-2">
-													<span className="text-xs text-gray-500">
-														{t('audioMinimumSeconds')}
-													</span>
-													<span className="font-medium text-gray-900">
-														{catalogAudioPricingDisplay.minimumSeconds}
-													</span>
+													<span className="text-xs text-gray-500">{t('audioMinimumSeconds')}</span>
+													<span className="font-medium text-gray-900">{catalogAudioPricingDisplay.minimumSeconds}</span>
 												</li>
 											</ul>
 										)
 									) : (
 										<p className="text-sm text-gray-500">
-											{formData.model_id
-												? t('noCatalogAudioPricing')
-												: t('selectModelForTiers')}
+											{formData.model_id ? t('noCatalogAudioPricing') : t('selectModelForTiers')}
 										</p>
 									)
 								) : selectedModelIsImage ? (
@@ -553,30 +541,20 @@ export function RouteModal(props: Props) {
 										compact
 										tokenRatesLayout="grid"
 										display={catalogImagePricingDisplay}
-										emptyLabel={
-											formData.model_id
-												? t('noCatalogImagePricing')
-												: t('selectModelForTiers')
-										}
+										emptyLabel={formData.model_id ? t('noCatalogImagePricing') : t('selectModelForTiers')}
 										tokenRatesTitle={t('imageTokenRates')}
 									/>
 								) : (
 									<ReadOnlyPricingTiersTable
 										rows={catalogStandardTierRows}
-										emptyLabel={
-											formData.model_id
-												? t('noCatalogPricing')
-												: t('selectModelForTiers')
-										}
+										emptyLabel={formData.model_id ? t('noCatalogPricing') : t('selectModelForTiers')}
 										tableTitle={t('readOnlyCatalogRates')}
 										billingCurrencyCode={billingCurrency}
 									/>
 								)}
 							</RoutePricePanel>
 
-							<p className="text-[11px] text-gray-500">
-								{t('billingTimezoneHint', { timezone: businessTimezone })}
-							</p>
+							<p className="text-[11px] text-gray-500">{t('billingTimezoneHint', { timezone: businessTimezone })}</p>
 
 							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
 								<div className="flex h-full min-h-0 min-w-0 flex-col">
@@ -600,7 +578,10 @@ export function RouteModal(props: Props) {
 													value={formData.charged_factor}
 													title={t('chargedFactorTitle')}
 													onChange={(e) =>
-														onFormChange({ ...formData, charged_factor: e.target.value })
+														onFormChange({
+															...formData,
+															charged_factor: e.target.value,
+														})
 													}
 													className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
 													placeholder="1"
@@ -614,9 +595,7 @@ export function RouteModal(props: Props) {
 											</p>
 											<DailyScheduleEditor
 												windows={formData.schedule_charged}
-												onChange={(schedule_charged) =>
-													onFormChange({ ...formData, schedule_charged })
-												}
+												onChange={(schedule_charged) => onFormChange({ ...formData, schedule_charged })}
 												addLabel={t('addScheduleWindow')}
 												emptyLabel={t('scheduleEmpty')}
 												startLabel={t('scheduleStart')}
@@ -649,7 +628,10 @@ export function RouteModal(props: Props) {
 													value={formData.metered_factor}
 													title={t('meteredFactorTitle')}
 													onChange={(e) =>
-														onFormChange({ ...formData, metered_factor: e.target.value })
+														onFormChange({
+															...formData,
+															metered_factor: e.target.value,
+														})
 													}
 													className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
 													placeholder="1"
@@ -663,9 +645,7 @@ export function RouteModal(props: Props) {
 											</p>
 											<DailyScheduleEditor
 												windows={formData.schedule_metered}
-												onChange={(schedule_metered) =>
-													onFormChange({ ...formData, schedule_metered })
-												}
+												onChange={(schedule_metered) => onFormChange({ ...formData, schedule_metered })}
 												addLabel={t('addScheduleWindow')}
 												emptyLabel={t('scheduleEmpty')}
 												startLabel={t('scheduleStart')}
@@ -681,9 +661,7 @@ export function RouteModal(props: Props) {
 
 						<section className="rounded-lg border border-gray-200 bg-white p-3.5">
 							<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-								<h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-									{t('requestDefaults')}
-								</h3>
+								<h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t('requestDefaults')}</h3>
 								<p className="text-[11px] text-gray-500">{t('requestDefaultsHint')}</p>
 							</div>
 							<label className="mb-1 block text-sm font-medium text-gray-700">{t('customParams')}</label>
@@ -691,7 +669,10 @@ export function RouteModal(props: Props) {
 								rows={4}
 								value={formData.custom_params_json}
 								onChange={(e) =>
-									onFormChange({ ...formData, custom_params_json: e.target.value })
+									onFormChange({
+										...formData,
+										custom_params_json: e.target.value,
+									})
 								}
 								className="min-h-[96px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 								placeholder={t('customParamsPlaceholder')}
@@ -700,9 +681,7 @@ export function RouteModal(props: Props) {
 						</section>
 
 						<section className="rounded-lg border border-gray-200 bg-white p-4">
-							<h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-								{t('summary')}
-							</h3>
+							<h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t('summary')}</h3>
 							<div className="grid grid-cols-1 gap-2 text-xs text-gray-600 md:grid-cols-2">
 								<p>
 									<span className="font-medium text-gray-700">{t('summaryRoute')}</span>{' '}
@@ -713,8 +692,7 @@ export function RouteModal(props: Props) {
 								<p>
 									<span className="font-medium text-gray-700">{t('summaryRouting')}</span>{' '}
 									<span className="font-mono">{formData.upstream_protocol}</span> · {t('summaryGroup')}{' '}
-									<span className="font-mono">{formData.route_group.trim() || 'default'}</span> ·{' '}
-									{t('summaryPriority')}{' '}
+									<span className="font-mono">{formData.route_group.trim() || 'default'}</span> · {t('summaryPriority')}{' '}
 									<span className="font-mono">{formData.priority}</span> · {t('summaryStatus')}{' '}
 									<span className="font-mono">{editingRoute ? editingRoute.status : 'inactive'}</span>
 									{!editingRoute && <span className="text-gray-500"> {t('summaryEnableFromList')}</span>}
@@ -727,6 +705,30 @@ export function RouteModal(props: Props) {
 									<span className="font-medium text-gray-700">{t('summaryMeteredCost')}</span>{' '}
 									<span className="font-mono">{t('summaryMeteredCostDetail')}</span>
 								</p>
+							</div>
+							<div>
+								<label className="mb-1 block text-sm font-medium text-gray-700">{t('adapter')}</label>
+								<select
+									value={formData.adapter}
+									onChange={(e) => onFormChange({ ...formData, adapter: e.target.value })}
+									disabled={compatibleAdapters.length <= 1}
+									className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
+								>
+									{compatibleAdapters.length === 0 ? (
+										<option value={formData.adapter}>{t('noCompatibleAdapter')}</option>
+									) : null}
+									{compatibleAdapters.map((adapter) => (
+										<option key={adapter} value={adapter}>
+											{adapter}
+										</option>
+									))}
+									{showCurrentAdapter ? (
+										<option value={formData.adapter}>
+											{formData.adapter} · {t('currentLegacyValue')}
+										</option>
+									) : null}
+								</select>
+								<p className="mt-1 text-[11px] text-gray-500">{t('adapterHint')}</p>
 							</div>
 						</section>
 					</div>

@@ -1,4 +1,6 @@
 import {
+	isAudioModel,
+	isAudioSpeechModel,
 	isAudioTranscriptionModel,
 	isImageGenerationModel,
 	isTextLlmModel,
@@ -13,13 +15,18 @@ import { parseRoutePoolTierStrategies } from '@octafuse/core/db/route-pool-tier-
 import { parseRoutePoolStickyConfig } from '@octafuse/core/db/route-pool-sticky-types';
 import {
 	ANTHROPIC_ENDPOINT_CAPABILITIES,
+	DASHSCOPE_ENDPOINT_CAPABILITIES,
 	GEMINI_ENDPOINT_CAPABILITIES,
 	OPENAI_ENDPOINT_CAPABILITIES,
 	listConfiguredCapabilities,
 	parseProviderEndpoints,
 	type ProviderEndpointCapability,
 } from '@octafuse/core/provider-endpoints';
-import { REQUEST_OPERATIONS_BY_PROTOCOL } from '@octafuse/core/route-topology';
+import {
+	isRouteAdapterCompatible,
+	REQUEST_OPERATIONS_BY_PROTOCOL,
+	ROUTE_ADAPTERS,
+} from '@octafuse/core/route-topology';
 import {
 	findDailyWindowOverlap,
 	parseHhMmToMinutes,
@@ -30,24 +37,19 @@ import {
 import { compareModelsByReleasedAtDesc } from '@/lib/model-catalog-sort';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
 import { compareRouteGroupsForDisplay, normalizeRouteGroup } from '@/lib/route-group-ui';
-import {
-	UPSTREAM_PROTOCOLS,
-	isUpstreamProtocol,
-	type UpstreamProtocol,
-} from '@/lib/upstream-protocol';
+import { UPSTREAM_PROTOCOLS, isUpstreamProtocol, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import {
-	DEFAULT_KIND_FILTER,
-	type ModelKindFilter,
-} from '../models/types';
-import type {
-	RouteFormData,
-	RouteListRow,
-	RouteProtocolGroupSection,
-	RouteScheduleFormSide,
-	RouteStrategySource,
+	DEFAULT_ROUTE_KIND_FILTER,
+	FACTOR_CHIP_BASE,
+	PROTOCOL_DISPLAY_LABEL,
+	type RouteFormData,
+	type RouteKindFilter,
+	type RouteListRow,
+	type RouteProtocolGroupSection,
+	type RouteScheduleFormSide,
+	type RouteStrategySource,
 } from './types';
-import { FACTOR_CHIP_BASE, PROTOCOL_DISPLAY_LABEL } from './types';
 
 export function compareRouteProtocolsForDisplay(a: string, b: string): number {
 	const knownA = isUpstreamProtocol(a);
@@ -61,6 +63,36 @@ export function compareRouteProtocolsForDisplay(a: string, b: string): number {
 
 export function getProtocolDisplayLabel(protocol: string): string {
 	return PROTOCOL_DISPLAY_LABEL[protocol] ?? protocol;
+}
+
+/** 将公开协议操作映射为客户端实际调用路径，避免把带点的操作名直接拼进 URL。 */
+export function requestSurfacePath(protocol: string, operation: string, modelId: string): string {
+	if (protocol === 'openai') {
+		const paths: Record<string, string> = {
+			chat: '/v1/chat/completions',
+			responses: '/v1/responses',
+			'images.generations': '/v1/images/generations',
+			'images.edits': '/v1/images/edits',
+			'audio.transcriptions': '/v1/audio/transcriptions',
+			'audio.speech': '/v1/audio/speech',
+		};
+		return operation === '*' ? '/v1/*' : paths[operation] ?? `/v1/${operation}`;
+	}
+	if (protocol === 'anthropic') {
+		return operation === '*' ? '/v1/*' : '/v1/messages';
+	}
+	if (protocol === 'gemini') {
+		// `models.generate` 是路由族标识；真实客户端仍使用两种 Gemini wire action。
+		if (operation === 'models.generate') {
+			return `/v1beta/models/${modelId}:{generateContent|streamGenerateContent}`;
+		}
+		return `/v1beta/models/${modelId}:${operation}`;
+	}
+	if (protocol === 'dashscope' && operation.includes('.realtime.')) {
+		// 原生实时操作共享一个 WSS 入口，模型与操作通过查询参数选择。
+		return `/v1/dashscope/realtime?model=${encodeURIComponent(modelId)}&operation=${encodeURIComponent(operation)}`;
+	}
+	return operation === '*' ? '/*' : `/${operation}`;
 }
 
 export type EffectiveRouteStrategy = {
@@ -106,26 +138,40 @@ export function resolveEffectiveRouteStrategy(params: {
 	const operation = params.requestOperation?.trim();
 	if (operation && operation !== '*') {
 		const operationStrategy = policy?.rules.get(
-			routePolicyRuleKey(params.protocol, operation, params.routeGroup)
+			routePolicyRuleKey(params.protocol, operation, params.routeGroup),
 		)?.strategy;
 		if (operationStrategy) {
-			return { strategy: operationStrategy, source: 'modelOperation', inherited: true };
+			return {
+				strategy: operationStrategy,
+				source: 'modelOperation',
+				inherited: true,
+			};
 		}
 	}
 
-	const protocolStrategy = policy?.rules.get(
-		routePolicyRuleKey(params.protocol, null, params.routeGroup)
-	)?.strategy;
+	const protocolStrategy = policy?.rules.get(routePolicyRuleKey(params.protocol, null, params.routeGroup))?.strategy;
 	if (protocolStrategy) {
-		return { strategy: protocolStrategy, source: 'modelProtocol', inherited: true };
+		return {
+			strategy: protocolStrategy,
+			source: 'modelProtocol',
+			inherited: true,
+		};
 	}
 	if (policy?.strategy) {
 		return { strategy: policy.strategy, source: 'model', inherited: true };
 	}
 	if (params.globalStrategy && isRouteStrategyName(params.globalStrategy)) {
-		return { strategy: params.globalStrategy, source: 'global', inherited: true };
+		return {
+			strategy: params.globalStrategy,
+			source: 'global',
+			inherited: true,
+		};
 	}
-	return { strategy: DEFAULT_ROUTE_STRATEGY, source: 'default', inherited: true };
+	return {
+		strategy: DEFAULT_ROUTE_STRATEGY,
+		source: 'default',
+		inherited: true,
+	};
 }
 
 export function protocolBadgeClass(protocol: string): string {
@@ -172,19 +218,26 @@ export function splitRoutesByProtocolAndRouteGroup<
 		pool_sticky_idle_ttl_seconds?: number | null;
 		surfaces?: string | null;
 	},
->(
-	routes: T[]
-): RouteProtocolGroupSection<T>[] {
+>(routes: T[]): RouteProtocolGroupSection<T>[] {
 	const bySection = new Map<string, RouteProtocolGroupSection<T>>();
 	for (const r of routes) {
 		const g = normalizeRouteGroup(r.route_group);
 		const surfaces = parseRouteSurfaces(r.surfaces);
-		const entries = surfaces.length > 0
-			? surfaces
-			: [{ request_protocol: r.upstream_protocol, request_operation: '*', status: 'active' }];
+		const entries =
+			surfaces.length > 0
+				? surfaces
+				: [
+						{
+							request_protocol: r.upstream_protocol,
+							request_operation: '*',
+							status: 'active',
+						},
+				  ];
 		for (const surface of entries) {
 			if (surface.status === 'disabled') continue;
-			const protocol = String(surface.request_protocol ?? r.upstream_protocol).trim().toLowerCase();
+			const protocol = String(surface.request_protocol ?? r.upstream_protocol)
+				.trim()
+				.toLowerCase();
 			const requestOperation = String(surface.request_operation ?? '*');
 			const key = `${r.route_pool_id ?? 'legacy'}\u0000${surface.id ?? `${protocol}:${requestOperation}`}\u0000${g}`;
 			const sticky = parseRoutePoolStickyConfig({
@@ -207,7 +260,7 @@ export function splitRoutesByProtocolAndRouteGroup<
 					poolStickyIdleTtlSeconds: sticky.idleTtlSeconds,
 					group: g,
 					routes: [],
-				};
+			};
 			section.routes.push(r);
 			bySection.set(key, section);
 		}
@@ -222,7 +275,7 @@ export function splitRoutesByProtocolAndRouteGroup<
 /** Same-priority layer: active first, then weight DESC, then name / id. */
 export function compareRoutesWithinPriorityLayer(
 	a: Pick<GatewayModelRoute, 'status' | 'weight' | 'provider_model_name' | 'id'>,
-	b: Pick<GatewayModelRoute, 'status' | 'weight' | 'provider_model_name' | 'id'>
+	b: Pick<GatewayModelRoute, 'status' | 'weight' | 'provider_model_name' | 'id'>,
 ): number {
 	const enabledA = a.status === 'active' ? 1 : 0;
 	const enabledB = b.status === 'active' ? 1 : 0;
@@ -237,14 +290,8 @@ export function compareRoutesWithinPriorityLayer(
 }
 
 export function compareModelRoutesForCardDisplay(
-	a: Pick<
-		GatewayModelRoute,
-		'upstream_protocol' | 'priority' | 'status' | 'weight' | 'provider_model_name' | 'id'
-	>,
-	b: Pick<
-		GatewayModelRoute,
-		'upstream_protocol' | 'priority' | 'status' | 'weight' | 'provider_model_name' | 'id'
-	>
+	a: Pick<GatewayModelRoute, 'upstream_protocol' | 'priority' | 'status' | 'weight' | 'provider_model_name' | 'id'>,
+	b: Pick<GatewayModelRoute, 'upstream_protocol' | 'priority' | 'status' | 'weight' | 'provider_model_name' | 'id'>,
 ): number {
 	const knownA = isUpstreamProtocol(a.upstream_protocol);
 	const knownB = isUpstreamProtocol(b.upstream_protocol);
@@ -308,14 +355,7 @@ export function meteredFactorTooltip(value: number | null): string {
 
 export type RouteFactorKind = 'charged' | 'metered';
 
-export type RouteFactorLevel =
-	| 'invalid'
-	| 'zero'
-	| 'veryLow'
-	| 'low'
-	| 'baseline'
-	| 'high'
-	| 'veryHigh';
+export type RouteFactorLevel = 'invalid' | 'zero' | 'veryLow' | 'low' | 'baseline' | 'high' | 'veryHigh';
 
 /**
  * Keep small pricing fluctuations visually quiet, then increase emphasis when a
@@ -359,11 +399,7 @@ export function factorChipClassForValue(n: number, kind: RouteFactorKind): strin
 /** Base factors only; schedule windows may change the effective relationship. */
 export function hasBasePricingInversion(charged: number, metered: number): boolean {
 	return (
-		Number.isFinite(charged) &&
-		Number.isFinite(metered) &&
-		charged >= 0 &&
-		metered >= 0 &&
-		charged + 1e-6 < metered
+		Number.isFinite(charged) && Number.isFinite(metered) && charged >= 0 && metered >= 0 && charged + 1e-6 < metered
 	);
 }
 
@@ -376,10 +412,7 @@ function parseNonNegativeFactorText(text: string, fieldLabel: string): number {
 	return n;
 }
 
-function validateScheduleSide(
-	windows: RouteScheduleFormSide,
-	sideLabel: string
-): DailyScheduleWindow[] {
+function validateScheduleSide(windows: RouteScheduleFormSide, sideLabel: string): DailyScheduleWindow[] {
 	const cleaned: DailyScheduleWindow[] = [];
 	for (let i = 0; i < windows.length; i++) {
 		const w = windows[i]!;
@@ -392,14 +425,9 @@ function validateScheduleSide(
 		}
 		const startMinutes = parseHhMmToMinutes(start);
 		const endMinutes = parseHhMmToMinutes(end);
-		if (
-			startMinutes == null ||
-			startMinutes === 24 * 60 ||
-			endMinutes == null ||
-			startMinutes === endMinutes
-		) {
+		if (startMinutes == null || startMinutes === 24 * 60 || endMinutes == null || startMinutes === endMinutes) {
 			throw new Error(
-				`${sideLabel} window ${i + 1}: start must be HH:mm, end may also be 24:00, and duration must be non-zero`
+				`${sideLabel} window ${i + 1}: start must be HH:mm, end may also be 24:00, and duration must be non-zero`,
 			);
 		}
 		if (!Number.isFinite(factor) || factor < 0) {
@@ -426,8 +454,8 @@ export function buildFormDataFromRoute(route: GatewayModelRoute, _models: Gatewa
 			return typeof surface?.request_protocol === 'string' && isUpstreamProtocol(surface.request_protocol)
 				? surface.request_protocol
 				: isUpstreamProtocol(route.upstream_protocol)
-					? route.upstream_protocol
-					: 'openai';
+				? route.upstream_protocol
+				: 'openai';
 		})(),
 		request_operation: parseRouteSurfaces(route.surfaces)[0]?.request_operation ?? '*',
 		upstream_protocol: (isUpstreamProtocol(route.upstream_protocol)
@@ -441,14 +469,20 @@ export function buildFormDataFromRoute(route: GatewayModelRoute, _models: Gatewa
 		route_group: route.route_group ?? 'default',
 		charged_factor: String(factors.chargedFactor),
 		metered_factor: String(factors.meteredFactor),
-		schedule_charged: schedule.charged.map((w) => ({ ...w, factor: String(w.factor) })),
-		schedule_metered: schedule.metered.map((w) => ({ ...w, factor: String(w.factor) })),
+		schedule_charged: schedule.charged.map((w) => ({
+			...w,
+			factor: String(w.factor),
+		})),
+		schedule_metered: schedule.metered.map((w) => ({
+			...w,
+			factor: String(w.factor),
+		})),
 	};
 }
 
 export function buildRouteSavePayload(
 	formData: RouteFormData,
-	editingRoute: GatewayModelRoute | null
+	editingRoute: GatewayModelRoute | null,
 ): Record<string, unknown> {
 	const normalizeJsonText = (raw: string, fieldName: string): string | null => {
 		const text = raw.trim();
@@ -497,30 +531,68 @@ export function buildRouteSavePayload(
 	return payload;
 }
 
-export const CAPABILITIES_BY_PROTOCOL: Record<
-	string,
-	readonly ProviderEndpointCapability[]
-> = {
+export const CAPABILITIES_BY_PROTOCOL: Record<string, readonly ProviderEndpointCapability[]> = {
 	openai: OPENAI_ENDPOINT_CAPABILITIES,
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: GEMINI_ENDPOINT_CAPABILITIES,
+	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 };
 
 /** Public operations that make sense for the selected model modality. */
 export function requestOperationsForModel(
 	model: GatewayModel | undefined,
-	protocol: UpstreamProtocol
+	protocol: UpstreamProtocol,
 ): readonly string[] {
 	if (model && isImageGenerationModel(model)) {
 		return protocol === 'openai' ? ['images.generations', 'images.edits'] : [];
 	}
 	if (model && isAudioTranscriptionModel(model)) {
-		return protocol === 'openai' ? ['audio.transcriptions'] : [];
+		if (protocol === 'openai') return ['audio.transcriptions'];
+		if (protocol === 'dashscope') {
+			return ['audio.transcriptions.realtime.inference', 'audio.transcriptions.realtime.session'];
+		}
+		return [];
+	}
+	if (model && isAudioSpeechModel(model)) {
+		if (protocol === 'openai') return ['audio.speech'];
+		if (protocol === 'dashscope') {
+			// Qwen-Audio-TTS/CosyVoice 实时接口使用 inference 任务协议；
+			// Qwen-TTS-Realtime session 不在本项目支持范围内。
+			return ['audio.speech.realtime.inference'];
+		}
+		return [];
 	}
 	if (model && isTextLlmModel(model) && protocol === 'openai') {
 		return ['chat', 'responses'];
 	}
 	return REQUEST_OPERATIONS_BY_PROTOCOL[protocol];
+}
+
+export type DashScopeTtsRoutePreset = 'realtime' | 'nonrealtime';
+
+/**
+ * 将 DashScope TTS 的用户意图转换为完整路由拓扑。
+ * 非实时模式保持 OpenAI 兼容入口，实时模式使用网关原生 DashScope WSS 入口。
+ */
+export function applyDashScopeTtsRoutePreset(formData: RouteFormData, preset: DashScopeTtsRoutePreset): RouteFormData {
+	if (preset === 'nonrealtime') {
+		return {
+			...formData,
+			request_protocol: 'openai',
+			request_operation: 'audio.speech',
+			upstream_protocol: 'dashscope',
+			upstream_operation: 'audio.speech',
+			adapter: 'dashscope-tts-speech',
+		};
+	}
+	return {
+		...formData,
+		request_protocol: 'dashscope',
+		request_operation: 'audio.speech.realtime.inference',
+		upstream_protocol: 'dashscope',
+		upstream_operation: 'audio.speech.realtime.inference',
+		adapter: 'passthrough',
+	};
 }
 
 /**
@@ -531,14 +603,65 @@ export function requestOperationsForModel(
 export function upstreamOperationsForProviderModel(
 	provider: GatewayProvider | undefined,
 	model: GatewayModel | undefined,
-	protocol: UpstreamProtocol
+	protocol: UpstreamProtocol,
 ): readonly string[] {
 	if (!provider) return [];
 	const map = parseProviderEndpoints(provider);
 	if (!map[protocol]) return [];
 	const providerOperations = listConfiguredCapabilities(map, protocol);
+	const capabilities = new Set(providerOperations);
+
+	// DashScope 路由能力表示协议生命周期，供应商能力表示具体端点；此处显式映射。
+	if (model && isAudioTranscriptionModel(model)) {
+		if (protocol === 'openai') {
+			return capabilities.has('audio.transcriptions') ? ['audio.transcriptions'] : [];
+		}
+		if (protocol === 'dashscope') {
+			const operations: string[] = [];
+			if (capabilities.has('audio.transcriptions') && capabilities.has('audio.transcriptions.tasks')) {
+				operations.push('audio.transcriptions.async');
+			}
+			if (capabilities.has('audio.realtime.inference')) {
+				operations.push('audio.transcriptions.realtime.inference');
+			}
+			if (capabilities.has('audio.realtime.session')) {
+				operations.push('audio.transcriptions.realtime.session');
+			}
+			return operations;
+		}
+		return [];
+	}
+	if (model && isAudioSpeechModel(model)) {
+		if (protocol === 'openai') {
+			return capabilities.has('audio.speech') ? ['audio.speech'] : [];
+		}
+		if (protocol === 'dashscope') {
+			const operations: string[] = [];
+			if (capabilities.has('audio.speech')) operations.push('audio.speech');
+			if (capabilities.has('audio.realtime.inference')) {
+				operations.push('audio.speech.realtime.inference');
+			}
+			return operations;
+		}
+		return [];
+	}
 	const modelOperations = new Set(requestOperationsForModel(model, protocol));
 	return providerOperations.filter((operation) => modelOperations.has(operation));
+}
+
+/** 返回能精确连接当前对外端点与上游目标的 adapter。 */
+export function compatibleAdaptersForRoute(
+	input: Pick<RouteFormData, 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>,
+): readonly string[] {
+	return ROUTE_ADAPTERS.filter((adapter) =>
+		isRouteAdapterCompatible({
+			adapter,
+			requestProtocol: input.request_protocol,
+			requestOperation: input.request_operation,
+			upstreamProtocol: input.upstream_protocol,
+			upstreamOperation: input.upstream_operation,
+		}),
+	);
 }
 
 /** Prompt-cache-sensitive capabilities (affinity preferred). */
@@ -555,14 +678,17 @@ export function isPromptCacheSensitiveCapability(capability: string): boolean {
 export function readRoutePolicyFormFromRaw(
 	existingRaw: string | null | undefined,
 	protocol: string,
-	group: string
-): { protocolStrategy: string; tierStrategy: string; capabilityStrategies: Record<string, string> } {
+	group: string,
+): {
+	protocolStrategy: string;
+	tierStrategy: string;
+	capabilityStrategies: Record<string, string>;
+} {
 	const parsed = parseModelRoutePolicy(existingRaw);
 	const protocolStrategy = parsed?.rules.get(routePolicyRuleKey(protocol, null, group))?.strategy ?? '';
 	const capabilityStrategies: Record<string, string> = {};
 	for (const cap of CAPABILITIES_BY_PROTOCOL[protocol] ?? []) {
-		capabilityStrategies[cap] =
-			parsed?.rules.get(routePolicyRuleKey(protocol, cap, group))?.strategy ?? '';
+		capabilityStrategies[cap] = parsed?.rules.get(routePolicyRuleKey(protocol, cap, group))?.strategy ?? '';
 	}
 	return { protocolStrategy, tierStrategy: '', capabilityStrategies };
 }
@@ -575,7 +701,10 @@ export function buildRoutePolicyPatch(
 	existingRaw: string | null | undefined,
 	protocol: string,
 	group: string,
-	form: { protocolStrategy: string; capabilityStrategies: Record<string, string> }
+	form: {
+		protocolStrategy: string;
+		capabilityStrategies: Record<string, string>;
+	},
 ): string | null {
 	let existing: Record<string, unknown> = {};
 	try {
@@ -591,9 +720,7 @@ export function buildRoutePolicyPatch(
 
 	const keysToClear = [
 		routePolicyRuleKey(protocol, null, group),
-		...(CAPABILITIES_BY_PROTOCOL[protocol] ?? []).map((cap) =>
-			routePolicyRuleKey(protocol, cap, group)
-		),
+		...(CAPABILITIES_BY_PROTOCOL[protocol] ?? []).map((cap) => routePolicyRuleKey(protocol, cap, group)),
 	];
 	for (const k of keysToClear) {
 		delete existingRules[k];
@@ -601,7 +728,9 @@ export function buildRoutePolicyPatch(
 
 	const proto = form.protocolStrategy.trim().toLowerCase();
 	if (proto && isRouteStrategyName(proto)) {
-		existingRules[routePolicyRuleKey(protocol, null, group)] = { strategy: proto };
+		existingRules[routePolicyRuleKey(protocol, null, group)] = {
+			strategy: proto,
+		};
 	}
 	for (const [cap, raw] of Object.entries(form.capabilityStrategies)) {
 		const s = raw.trim().toLowerCase();
@@ -632,15 +761,13 @@ export type RouteModelGroup = {
 	vendor: string;
 };
 
-export function modelMatchesKindFilter(
-	meta: GatewayModel | undefined,
-	filterKind: ModelKindFilter
-): boolean {
+export function modelMatchesKindFilter(meta: GatewayModel | undefined, filterKind: RouteKindFilter): boolean {
+	if (filterKind === 'all') return true;
 	if (!meta) {
 		return filterKind === 'llm';
 	}
 	if (filterKind === 'image') return isImageGenerationModel(meta);
-	if (filterKind === 'audio') return isAudioTranscriptionModel(meta);
+	if (filterKind === 'audio') return isAudioModel(meta);
 	return isTextLlmModel(meta);
 }
 
@@ -672,7 +799,7 @@ export function buildRoutesByModel(params: {
 	filterProviderId: string;
 	filterRouteGroup: string;
 	filterStatus: string;
-	filterKind?: ModelKindFilter;
+	filterKind?: RouteKindFilter;
 }): RouteModelGroup[] {
 	const {
 		routes,
@@ -682,7 +809,7 @@ export function buildRoutesByModel(params: {
 		filterProviderId,
 		filterRouteGroup,
 		filterStatus,
-		filterKind = DEFAULT_KIND_FILTER,
+		filterKind = DEFAULT_ROUTE_KIND_FILTER,
 	} = params;
 
 	const modelMatchesVendor = (modelId: string) => {
@@ -690,8 +817,7 @@ export function buildRoutesByModel(params: {
 		return normalizeModelVendorInput(modelMeta.get(modelId)?.vendor) === filterVendor;
 	};
 
-	const modelMatchesKind = (modelId: string) =>
-		modelMatchesKindFilter(modelMeta.get(modelId), filterKind);
+	const modelMatchesKind = (modelId: string) => modelMatchesKindFilter(modelMeta.get(modelId), filterKind);
 
 	const routeByModelId = new Map<string, RouteListRow[]>();
 	for (const r of routes) {
@@ -745,14 +871,14 @@ export function buildRoutesByModel(params: {
 
 export function sortRouteCards(
 	routesByModel: RouteModelGroup[],
-	modelMeta: Map<string, GatewayModel>
+	modelMeta: Map<string, GatewayModel>,
 ): RouteModelGroup[] {
 	return [...routesByModel].sort((a, b) => {
 		const ma = modelMeta.get(a.model_id);
 		const mb = modelMeta.get(b.model_id);
 		return compareModelsByReleasedAtDesc(
 			ma ?? { id: a.model_id, display_name: a.title },
-			mb ?? { id: b.model_id, display_name: b.title }
+			mb ?? { id: b.model_id, display_name: b.title },
 		);
 	});
 }
@@ -790,7 +916,7 @@ export function buildVendorFilterOptions(params: {
 
 export function buildRouteCardVendorGroups(
 	routeCards: RouteModelGroup[],
-	filterVendor: string
+	filterVendor: string,
 ): Array<{ vendor: string; cards: RouteModelGroup[]; showHeader: boolean }> {
 	if (filterVendor) {
 		return [{ vendor: filterVendor, cards: routeCards, showHeader: false }];
@@ -829,15 +955,15 @@ export function buildActiveFilterSummary(params: {
 	return parts;
 }
 
-export function createInitialRouteForm(
-	models: GatewayModel[],
-	presetModelId?: string
-): RouteFormData {
+export function createInitialRouteForm(models: GatewayModel[], presetModelId?: string): RouteFormData {
 	const presetModel = presetModelId ? models.find((model) => model.id === presetModelId) : undefined;
-	const defaultOperation = presetModel && isImageGenerationModel(presetModel)
-		? 'images.generations'
-		: presetModel && isAudioTranscriptionModel(presetModel)
+	const defaultOperation =
+		presetModel && isImageGenerationModel(presetModel)
+			? 'images.generations'
+			: presetModel && isAudioTranscriptionModel(presetModel)
 			? 'audio.transcriptions'
+			: presetModel && isAudioSpeechModel(presetModel)
+			? 'audio.speech'
 			: 'chat';
 	return {
 		model_id: presetModelId ?? '',
