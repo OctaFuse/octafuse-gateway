@@ -141,21 +141,30 @@ function allProvidersBusyResponse(retryAfterMs: number | null): Response {
 	});
 }
 
+/** HTTP 2xx 与 Cloudflare WebSocket 101 都表示 driver 已成功建立上游请求。 */
+export function isSuccessfulDispatchResponse(response: Response): boolean {
+	return response.ok || (response.status === 101 && response.webSocket != null);
+}
+
 /**
  * 按「provider priority 层 → route strategy」调度上游请求。
  */
 export async function failoverDispatch(
 	_repos: GatewayRepositories,
 	routes: RouteResult[],
-	expectedProtocol: UpstreamProtocol,
+	expectedProtocol: UpstreamProtocol | readonly UpstreamProtocol[],
 	dispatch: DispatchFn,
 	requestSignal?: AbortSignal,
 	options?: FailoverDispatchOptions
 ): Promise<ProxyFailoverResult> {
 	const timing = options?.timing ?? null;
 	timing?.markUpstreamDispatchStart();
+	const expectedProtocols = Array.isArray(expectedProtocol)
+		? expectedProtocol
+		: [expectedProtocol];
+	const fallbackProtocol = expectedProtocols[0]!;
 	const protocolRoutes = routes.filter((route) => {
-		if (route.upstreamProtocol === expectedProtocol) return true;
+		if (expectedProtocols.includes(route.upstreamProtocol)) return true;
 		console.warn(
 			`[Gateway Proxy] unsupported protocol, skipping providerId=${route.providerId} protocol=${route.upstreamProtocol}`
 		);
@@ -171,7 +180,7 @@ export async function failoverDispatch(
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
-			chosenRoute: emptyRoute(expectedProtocol),
+			chosenRoute: emptyRoute(fallbackProtocol),
 			circuitEvents: [],
 			suppressErrorAlert: false,
 		};
@@ -255,7 +264,7 @@ export async function failoverDispatch(
 		lastResponse = response;
 		lastRoute = route;
 
-		if (response.ok) {
+		if (isSuccessfulDispatchResponse(response)) {
 			timing?.markFinalAttempt(timingAttempt);
 			markProviderSuccess(route.providerId);
 			return {

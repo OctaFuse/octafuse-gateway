@@ -494,9 +494,13 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 				? (o.snapshot as Record<string, unknown>)
 				: null;
 		const audioKind =
-			o.kind === 'audio_per_second' || o.kind === 'audio_tokens'
+			o.kind === 'audio_per_second' ||
+			o.kind === 'audio_tokens' ||
+			o.kind === 'audio_per_character'
 				? o.kind
-				: snapEarly?.kind === 'audio_per_second' || snapEarly?.kind === 'audio_tokens'
+				: snapEarly?.kind === 'audio_per_second' ||
+					  snapEarly?.kind === 'audio_tokens' ||
+					  snapEarly?.kind === 'audio_per_character'
 					? (snapEarly.kind as string)
 					: null;
 		if (audioKind === 'audio_per_second') {
@@ -533,6 +537,22 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 					audio != null ? `in/out/audio ${input}/${output}/${audio}` : `in/out ${input}/${output}`
 				);
 			}
+		}
+		if (audioKind === 'audio_per_character') {
+			parts.push('audio_per_character');
+			const audioSrc = o.kind === 'audio_per_character' ? o : (snapEarly ?? o);
+			const characters =
+				typeof audioSrc.characters === 'number' ? audioSrc.characters : null;
+			const billable =
+				typeof audioSrc.billable_characters === 'number'
+					? audioSrc.billable_characters
+					: characters;
+			if (billable != null) parts.push(`${billable} chars`);
+			const price =
+				typeof audioSrc.price_per_character === 'number'
+					? audioSrc.price_per_character
+					: null;
+			if (price != null) parts.push(`${price}/char`);
 		}
 		if (
 			typeof o.v === 'number' &&

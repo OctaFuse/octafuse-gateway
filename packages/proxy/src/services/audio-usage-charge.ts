@@ -9,6 +9,7 @@ import {
 	buildAudioTokenPrecheckUsage,
 	changedFieldsToJson,
 	computeAudioPerSecondMeteredCost,
+	computeAudioPerCharacterMeteredCost,
 	computeAudioTokenMeteredCost,
 	computeChangedFields,
 	EMPTY_AUDIO_TOKEN_USAGE,
@@ -20,9 +21,11 @@ import {
 	parseRoutePricingSchedule,
 	PRICING_AUDIT_JSON_SCHEMA_VERSION,
 	profileHasAudioPerSecondPricing,
+	profileHasAudioPerCharacterPricing,
 	profileHasAudioTokenPricing,
 	resolveAudioBillingMode,
 	resolveBillableAudioSeconds,
+	resolveBillableAudioCharacters,
 	resolveChargedBillingPrices,
 	resolveDailyScheduleFactor,
 	resolveStandardBillingPrices,
@@ -33,6 +36,8 @@ import {
 	snapshotWithOverrides,
 	userRowToSnapshot,
 	type AudioTokenUsage,
+	type AudioPerSecondPricingConfig,
+	type AudioPerCharacterPricingConfig,
 	type ParsedPricingProfile,
 	type PriceResolutionAuditSide,
 } from '@octafuse/core';
@@ -52,19 +57,24 @@ export type AudioBillingParams = {
 	requestStartedAtMs?: number;
 	/** token 模式最终扣费：上游真实 usage；缺省则不计费 */
 	tokenUsage?: AudioTokenUsage | null;
+	/** TTS 最终扣费：上游真实 usage.characters；缺省则不计费 */
+	characters?: number | null;
 };
 
 export type AudioCostBreakdown = {
 	durationSeconds: number;
 	billableSeconds: number;
 	pricePerSecond: number;
+	characters: number;
+	billableCharacters: number;
+	pricePerCharacter: number;
 	meteredCost: number;
 	standardCost: number;
 	chargedCost: number;
 	meteredFactor: number;
 	chargedFactor: number;
 	pricingAuditJson: string;
-	billingKind: 'audio_per_second' | 'audio_tokens';
+	billingKind: 'audio_per_second' | 'audio_tokens' | 'audio_per_character';
 	logTokens: {
 		inputTokens: number;
 		outputTokens: number;
@@ -121,10 +131,13 @@ async function resolveRouteFactors(
 
 function buildAudioPerSecondCosts(
 	billing: AudioBillingParams,
-	profile: ParsedPricingProfile,
+	profile: ParsedPricingProfile & {
+		audio_billing_mode: 'per_second';
+		audio: AudioPerSecondPricingConfig;
+	},
 	factors: Awaited<ReturnType<typeof resolveRouteFactors>>
 ): AudioCostBreakdown {
-	const audioCfg = profile.audio!;
+	const audioCfg = profile.audio;
 	const pricePerSecond = audioCfg.price_per_second;
 	const billableSeconds = resolveBillableAudioSeconds(billing.durationSeconds, audioCfg);
 	const baseCost = computeAudioPerSecondMeteredCost({
@@ -166,6 +179,9 @@ function buildAudioPerSecondCosts(
 		durationSeconds: billing.durationSeconds,
 		billableSeconds,
 		pricePerSecond,
+		characters: 0,
+		billableCharacters: 0,
+		pricePerCharacter: 0,
 		meteredCost,
 		standardCost,
 		chargedCost,
@@ -173,6 +189,65 @@ function buildAudioPerSecondCosts(
 		chargedFactor: factors.chargedFactor,
 		pricingAuditJson,
 		billingKind: 'audio_per_second',
+		logTokens: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+	};
+}
+
+function buildAudioPerCharacterCosts(
+	billing: AudioBillingParams,
+	profile: ParsedPricingProfile & {
+		audio_billing_mode: 'per_character';
+		audio: AudioPerCharacterPricingConfig;
+	},
+	factors: Awaited<ReturnType<typeof resolveRouteFactors>>
+): AudioCostBreakdown {
+	const characters = billing.characters ?? 0;
+	const pricePerCharacter = profile.audio.price_per_character;
+	const billableCharacters = resolveBillableAudioCharacters(characters, profile.audio);
+	const baseCost = computeAudioPerCharacterMeteredCost({
+		characters,
+		pricePerCharacter,
+		minimumCharacters: profile.audio.minimum_characters,
+	});
+	const meteredCost = roundGatewayMoney(baseCost * factors.meteredFactor);
+	const standardCost = roundGatewayMoney(baseCost);
+	const chargedCost = roundGatewayMoney(baseCost * factors.chargedFactor);
+	return {
+		durationSeconds: 0,
+		billableSeconds: 0,
+		pricePerSecond: 0,
+		characters,
+		billableCharacters,
+		pricePerCharacter,
+		meteredCost,
+		standardCost,
+		chargedCost,
+		meteredFactor: factors.meteredFactor,
+		chargedFactor: factors.chargedFactor,
+		pricingAuditJson: JSON.stringify({
+			v: PRICING_AUDIT_JSON_SCHEMA_VERSION,
+			kind: 'audio_per_character',
+			snapshot: {
+				kind: 'audio_per_character',
+				characters,
+				billable_characters: billableCharacters,
+				price_per_character: pricePerCharacter,
+				minimum_characters: profile.audio.minimum_characters ?? 0,
+				usage_source: 'upstream',
+				supplier: {
+					path: 'profile',
+					source: 'model_x_factor',
+					...factors.meteredAuditExtras,
+				},
+				standard: { path: 'profile', source: 'model' },
+				user_charge: {
+					path: 'profile',
+					source: 'model_x_factor',
+					...factors.chargedAuditExtras,
+				},
+			},
+		}),
+		billingKind: 'audio_per_character',
 		logTokens: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
 	};
 }
@@ -243,6 +318,9 @@ function buildAudioTokenCosts(
 		durationSeconds: billing.durationSeconds,
 		billableSeconds: 0,
 		pricePerSecond: 0,
+		characters: 0,
+		billableCharacters: 0,
+		pricePerCharacter: 0,
 		meteredCost,
 		standardCost,
 		chargedCost,
@@ -268,6 +346,9 @@ function zeroAudioCostBreakdown(
 		durationSeconds: billing.durationSeconds,
 		billableSeconds: 0,
 		pricePerSecond: 0,
+		characters: billing.characters ?? 0,
+		billableCharacters: 0,
+		pricePerCharacter: 0,
 		meteredCost: 0,
 		standardCost: 0,
 		chargedCost: 0,
@@ -318,9 +399,69 @@ function resolveAudioCostsForProfile(
 		});
 	}
 
+	if (mode === 'per_character' && profile && profileHasAudioPerCharacterPricing(profile)) {
+		if (billing.characters == null) {
+			return zeroAudioCostBreakdown(billing, factors, 'audio_per_character', {
+				error: 'missing_upstream_character_usage',
+			});
+		}
+		return buildAudioPerCharacterCosts(billing, profile, factors);
+	}
+
 	return zeroAudioCostBreakdown(billing, factors, 'audio_per_second', {
 		error: 'missing_audio_pricing',
 	});
+}
+
+/** 单条 TTS 路由的按字符成本；characters 必须来自上游，null 会明确审计为缺失。 */
+export async function estimateAudioSpeechCosts(
+	repos: GatewayRepositories,
+	billing: Pick<AudioBillingParams, 'modelPricingProfileJson' | 'requestStartedAtMs' | 'characters'> & {
+		routePriceOverrideJson?: string | null;
+	}
+): Promise<AudioCostBreakdown> {
+	const params: AudioBillingParams = {
+		...billing,
+		durationSeconds: 0,
+	};
+	return resolveAudioCostsForProfile(
+		params,
+		parsePricingProfile(billing.modelPricingProfileJson ?? null),
+		await resolveRouteFactors(repos, billing.routePriceOverrideJson, billing.requestStartedAtMs)
+	);
+}
+
+/** TTS 预算预检允许用输入字符数；最终扣费仍只接受上游 usage.characters。 */
+export async function estimateAudioSpeechBudgetPrecheck(
+	repos: GatewayRepositories,
+	billing: Pick<AudioBillingParams, 'modelPricingProfileJson' | 'requestStartedAtMs'> & {
+		inputCharacters: number;
+	},
+	routePriceOverrides: Array<string | null | undefined>
+): Promise<AudioCostBreakdown> {
+	const params: AudioBillingParams = {
+		...billing,
+		durationSeconds: 0,
+		durationSource: 'precheck',
+		characters: billing.inputCharacters,
+	};
+	const profile = parsePricingProfile(billing.modelPricingProfileJson ?? null);
+	let best: AudioCostBreakdown | null = null;
+	for (const override of routePriceOverrides.length > 0 ? routePriceOverrides : [null]) {
+		const factors = await resolveRouteFactors(repos, override, billing.requestStartedAtMs);
+		const costs = resolveAudioCostsForProfile(
+			{ ...params, routePriceOverrideJson: override },
+			profile,
+			factors
+		);
+		if (!best || costs.chargedCost >= best.chargedCost) best = costs;
+	}
+	return best ?? zeroAudioCostBreakdown(
+		params,
+		await resolveRouteFactors(repos, null, billing.requestStartedAtMs),
+		'audio_per_character',
+		{ error: 'missing_audio_pricing' }
+	);
 }
 
 /** 预算预检：per_second 用时长；token 用保守 token 上界（不用于最终扣费）。 */
@@ -384,7 +525,7 @@ export type RecordAudioUsageParams = {
 	providerName?: string | null;
 	requestBody?: string | null;
 	upstreamRequestBody?: string | null;
-	requestProtocol: 'openai';
+	requestProtocol: UpstreamProtocol;
 	requestOperation?: string | null;
 	upstreamProtocol: UpstreamProtocol;
 	upstreamOperation?: string | null;
@@ -423,7 +564,11 @@ export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<
 		costs = zeroAudioCostBreakdown(
 			params.billing,
 			factors,
-			mode === 'token' ? 'audio_tokens' : 'audio_per_second',
+			mode === 'token'
+				? 'audio_tokens'
+				: mode === 'per_character'
+					? 'audio_per_character'
+					: 'audio_per_second',
 			{ error: 'request_failed' }
 		);
 	} else {
@@ -462,6 +607,8 @@ export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<
 					billing_kind: costs.billingKind,
 					duration_seconds: costs.durationSeconds,
 					billable_seconds: costs.billableSeconds,
+					characters: costs.characters,
+					billable_characters: costs.billableCharacters,
 					duration_source: params.billing.durationSource ?? null,
 					file_bytes: params.billing.fileBytes ?? null,
 					...(costs.billingKind === 'audio_tokens'
@@ -478,7 +625,7 @@ export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<
 			: null;
 
 	console.log(
-		`[Gateway Usage] recordAudioUsage model_id=${params.modelId} status=${params.status} kind=${costs.billingKind} duration=${costs.durationSeconds} billable=${costs.billableSeconds} in=${costs.logTokens.inputTokens} out=${costs.logTokens.outputTokens} metered=${meteredCost} standard=${standardCost} charged=${chargedCost}`
+		`[Gateway Usage] recordAudioUsage model_id=${params.modelId} status=${params.status} kind=${costs.billingKind} duration=${costs.durationSeconds} billable=${costs.billableSeconds} characters=${costs.characters} billableCharacters=${costs.billableCharacters} in=${costs.logTokens.inputTokens} out=${costs.logTokens.outputTokens} metered=${meteredCost} standard=${standardCost} charged=${chargedCost}`
 	);
 
 	await insertRequestUsageAndChargeTx(params.repos, {
@@ -535,7 +682,14 @@ export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<
 			billingKind: costs.billingKind,
 			inputImageCount: 0,
 			outputImageCount: 0,
-			audioDurationSeconds: params.status === 'success' ? costs.durationSeconds : null,
+			audioDurationSeconds:
+				params.status === 'success' && costs.billingKind !== 'audio_per_character'
+					? costs.durationSeconds
+					: null,
+			audioCharacters:
+				params.status === 'success' && costs.billingKind === 'audio_per_character'
+					? costs.characters
+					: null,
 			providerKeyId: params.providerKeyId ?? null,
 			providerKeyLabel: params.providerKeyLabel ?? null,
 			providerKeyFingerprint: params.providerKeyFingerprint ?? null,

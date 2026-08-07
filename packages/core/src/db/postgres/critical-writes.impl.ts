@@ -239,6 +239,7 @@ export async function insertRequestUsageAndChargeTxPg(
 			inputImageCount: params.requestLog.inputImageCount ?? 0,
 			outputImageCount: params.requestLog.outputImageCount ?? 0,
 			audioDurationSeconds: params.requestLog.audioDurationSeconds ?? null,
+			audioCharacters: params.requestLog.audioCharacters ?? null,
 			createdAt: now,
 		});
 		if (!params.shouldChargeBudget) {

@@ -2,29 +2,53 @@
  * 上游 HTTP 代理与故障转移：按协议分发到 openai/anthropic/gemini driver，并在流开始前按路由顺序重试。
  * 返回的 `usagePromise` 在流结束后解析 token 用量，供 `usage-tracker` 记账。
  */
-import type { GatewayRepositories } from '@octafuse/core';
-import type { RouteResult } from './model-router';
-import { dispatchOpenAiRoute } from './egress/openai-driver';
+import type { GatewayRepositories } from "@octafuse/core";
+import type { RouteResult } from "./model-router";
+import { dispatchOpenAiRoute } from "./egress/openai-driver";
 import {
 	dispatchOpenAiImageEdits,
 	dispatchOpenAiImageGenerations,
 	type NormalizedImageEditRequest,
-} from './egress/openai-images-driver';
+} from "./egress/openai-images-driver";
 import {
 	dispatchOpenAiAudioTranscriptions,
 	type NormalizedAudioTranscriptionRequest,
-} from './egress/openai-audio-driver';
-import { dispatchAnthropicRoute } from './egress/anthropic-driver';
-import { dispatchGeminiRoute } from './egress/gemini-driver';
+} from "./egress/openai-audio-driver";
+import {
+	dispatchDashScopeAsyncAsr,
+	dispatchDashScopeSyncAsr,
+	type DashScopeAsrDispatchOptions,
+} from "./egress/dashscope-audio-driver";
+import {
+	dispatchDashScopeMiniMaxTts,
+	dispatchDashScopeQwenTts,
+	dispatchDashScopeSpeechSynthesizer,
+	dispatchOpenAiAudioSpeech,
+	type AudioSpeechDispatchOptions,
+	type NormalizedAudioSpeechRequest,
+} from "./egress/audio-speech-driver";
+import {
+	dispatchDashScopeRealtime,
+	type DashScopeRealtimeDispatchOptions,
+	type DashScopeRealtimeOperation,
+} from "./egress/dashscope-realtime-driver";
+import { dispatchAnthropicRoute } from "./egress/anthropic-driver";
+import { dispatchGeminiRoute } from "./egress/gemini-driver";
 import {
 	failoverDispatch,
 	type FailoverDispatchOptions,
 	type ProxyDispatchMeta,
-} from './failover-dispatch';
-import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
-import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
+} from "./failover-dispatch";
+import type { GatewayCircuitAlertEvent } from "./circuit-alert-types";
+import type {
+	RequestTimingAttempt,
+	RequestTimingCollector,
+} from "./request-timing";
 
-export type { FailoverDispatchOptions, ProxyDispatchMeta } from './failover-dispatch';
+export type {
+	FailoverDispatchOptions,
+	ProxyDispatchMeta,
+} from "./failover-dispatch";
 
 /** 各协议 driver 从上游响应/stream 汇总出的用量（供 `usage-tracker` 计价）。 */
 export interface UsageFromStream {
@@ -40,8 +64,14 @@ export interface UsageFromStream {
 	total_tokens: number;
 	/** 上游 usage 对象 JSON 字符串快照，便于审计 */
 	raw_usage: string | null;
+	/** TTS 上游返回的真实计费字符数；缺失时不按输入长度补算。 */
+	audio_characters?: number;
+	/** 实时 ASR 上游返回的真实计费时长（秒）。 */
+	audio_duration_seconds?: number;
 	/** 客户端在流结束前断开（如用户取消）时置位 */
 	cancelled?: boolean;
+	/** 上游流在终止事件前失败；用于把已返回 2xx headers 的半截流记为失败。 */
+	stream_error?: string;
 	/**
 	 * 上游响应 body 里的「生成结果」id（OpenAI `chatcmpl-*` / Anthropic `msg_*` / Gemini `responseId`）。
 	 * 与 header 侧 `upstreamRequestId` 语义不同：这是应用层 message id，穿透聚合商/CDN，随 usage 一起解析。
@@ -77,6 +107,15 @@ export const EMPTY_USAGE: UsageFromStream = {
 	raw_usage: null,
 };
 
+export type AudioTranscriptionProxyOptions = FailoverDispatchOptions & {
+	dashScope?: DashScopeAsrDispatchOptions;
+};
+
+export type AudioSpeechProxyOptions = FailoverDispatchOptions &
+	AudioSpeechDispatchOptions;
+export type DashScopeRealtimeProxyOptions = FailoverDispatchOptions &
+	DashScopeRealtimeDispatchOptions;
+
 /**
  * 代理 OpenAI Chat Completions：外层 provider 优先级 + 层内 route strategy failover。
  */
@@ -90,9 +129,13 @@ export async function proxyChatCompletions(
 	const result = await failoverDispatch(
 		repos,
 		routes,
-		'openai',
-		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
-			dispatchOpenAiRoute(route, body, signal, timing, attempt),
+		"openai",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchOpenAiRoute(route, body, signal, timing, attempt),
 		requestSignal,
 		options
 	);
@@ -112,9 +155,13 @@ export async function proxyAnthropicMessages(
 	return failoverDispatch(
 		repos,
 		routes,
-		'anthropic',
-		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
-			dispatchAnthropicRoute(route, body, signal, timing, attempt),
+		"anthropic",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchAnthropicRoute(route, body, signal, timing, attempt),
 		requestSignal,
 		options
 	);
@@ -133,9 +180,13 @@ export async function proxyImageGenerations(
 	return failoverDispatch(
 		repos,
 		routes,
-		'openai',
-		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
-			dispatchOpenAiImageGenerations(route, body, signal, timing, attempt),
+		"openai",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchOpenAiImageGenerations(route, body, signal, timing, attempt),
 		requestSignal,
 		options
 	);
@@ -154,9 +205,13 @@ export async function proxyImageEdits(
 	return failoverDispatch(
 		repos,
 		routes,
-		'openai',
-		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
-			dispatchOpenAiImageEdits(route, edit, signal, timing, attempt),
+		"openai",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchOpenAiImageEdits(route, edit, signal, timing, attempt),
 		requestSignal,
 		options
 	);
@@ -170,14 +225,156 @@ export async function proxyAudioTranscriptions(
 	routes: RouteResult[],
 	req: NormalizedAudioTranscriptionRequest,
 	requestSignal?: AbortSignal,
-	options?: FailoverDispatchOptions
+	options?: AudioTranscriptionProxyOptions
 ): Promise<ProxyResult> {
 	return failoverDispatch(
 		repos,
 		routes,
-		'openai',
-		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
-			dispatchOpenAiAudioTranscriptions(route, req, signal, timing, attempt),
+		["openai", "dashscope"],
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => {
+			if (
+				route.adapter === "passthrough" &&
+				route.upstreamProtocol === "openai"
+			) {
+				return dispatchOpenAiAudioTranscriptions(
+					route,
+					req,
+					signal,
+					timing,
+					attempt
+				);
+			}
+			if (
+				route.adapter === "dashscope-asr-qwen-file" ||
+				route.adapter === "dashscope-asr-fun-file"
+			) {
+				return dispatchDashScopeSyncAsr(
+					route,
+					req,
+					signal,
+					timing,
+					attempt,
+					options?.dashScope
+				);
+			}
+			if (route.adapter === "dashscope-asr-file-async") {
+				return dispatchDashScopeAsyncAsr(
+					route,
+					req,
+					signal,
+					timing,
+					attempt,
+					options?.dashScope
+				);
+			}
+			throw new Error(
+				`Unsupported audio transcription adapter: ${route.adapter}`
+			);
+		},
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 OpenAI Audio Speech，并按显式 adapter 转为三类 DashScope TTS 请求。 */
+export async function proxyAudioSpeech(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	request: NormalizedAudioSpeechRequest,
+	requestSignal?: AbortSignal,
+	options?: AudioSpeechProxyOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		["openai", "dashscope"],
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => {
+			if (
+				route.adapter === "passthrough" &&
+				route.upstreamProtocol === "openai"
+			) {
+				return dispatchOpenAiAudioSpeech(
+					route,
+					request,
+					signal,
+					timing,
+					attempt,
+					options
+				);
+			}
+			if (route.adapter === "dashscope-tts-speech") {
+				return dispatchDashScopeSpeechSynthesizer(
+					route,
+					request,
+					signal,
+					timing,
+					attempt,
+					options
+				);
+			}
+			if (route.adapter === "dashscope-tts-qwen") {
+				return dispatchDashScopeQwenTts(
+					route,
+					request,
+					signal,
+					timing,
+					attempt,
+					options
+				);
+			}
+			if (route.adapter === "dashscope-tts-minimax") {
+				return dispatchDashScopeMiniMaxTts(
+					route,
+					request,
+					signal,
+					timing,
+					attempt,
+					options
+				);
+			}
+			throw new Error(`Unsupported audio speech adapter: ${route.adapter}`);
+		},
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 DashScope 原生实时音频 WebSocket，建连失败时按普通路由规则切换供应商。 */
+export async function proxyDashScopeRealtime(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	operation: DashScopeRealtimeOperation,
+	requestSignal?: AbortSignal,
+	options?: DashScopeRealtimeProxyOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"dashscope",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchDashScopeRealtime(
+				route,
+				operation,
+				signal,
+				timing,
+				attempt,
+				options
+			),
 		requestSignal,
 		options
 	);
@@ -189,7 +386,7 @@ export async function proxyAudioTranscriptions(
 export async function proxyGeminiContent(
 	repos: GatewayRepositories,
 	routes: RouteResult[],
-	action: 'generateContent' | 'streamGenerateContent',
+	action: "generateContent" | "streamGenerateContent",
 	body: Record<string, unknown>,
 	search: string,
 	requestSignal?: AbortSignal,
@@ -198,8 +395,13 @@ export async function proxyGeminiContent(
 	return failoverDispatch(
 		repos,
 		routes,
-		'gemini',
-		(route, signal, timing?: RequestTimingCollector | null, attempt?: RequestTimingAttempt) =>
+		"gemini",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
 			dispatchGeminiRoute(route, body, action, search, signal, timing, attempt),
 		requestSignal,
 		options

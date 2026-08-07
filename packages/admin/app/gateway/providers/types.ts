@@ -3,6 +3,7 @@ import type {
 	ProviderEndpointCapability,
 	ProviderEndpointsMap,
 } from '@octafuse/core/provider-endpoints';
+import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 
 /** 卡片上紧凑展示的能力标签（OpenAI images.* 合并为 images；audio.transcriptions → audio）。 */
 export type ProviderCapabilityBadge =
@@ -21,13 +22,13 @@ export type ProviderImportCatalogRow = {
 	vendor_key: string;
 	icon_key: string;
 	vendor_label: string;
-	protocols: Array<'openai' | 'anthropic' | 'gemini'>;
+	protocols: UpstreamProtocol[];
 	endpoints: string | null;
 	description: string | null;
 };
 
 export type ProviderProtocolSummary = {
-	key: 'openai' | 'anthropic' | 'gemini';
+	key: UpstreamProtocol;
 	label: string;
 	baseUrl: string | null;
 	overrideCount: number;
@@ -55,6 +56,14 @@ export type ProtocolEndpointForm = {
 	images_generations: string;
 	images_edits: string;
 	audio_transcriptions: string;
+	audio_transcriptions_multimodal: string;
+	audio_transcriptions_tasks: string;
+	audio_speech: string;
+	audio_speech_multimodal: string;
+	audio_realtime_inference: string;
+	audio_realtime_session: string;
+	audio_hotwords: string;
+	audio_voices: string;
 	messages: string;
 	/** Canonical Gemini family override (`models.generate`, must include `{model}` + `{action}`). */
 	modelsGenerate: string;
@@ -76,6 +85,7 @@ export type ProviderFormData = {
 	openai: ProtocolEndpointForm;
 	anthropic: ProtocolEndpointForm;
 	gemini: ProtocolEndpointForm;
+	dashscope: ProtocolEndpointForm;
 	description: string;
 };
 
@@ -90,6 +100,14 @@ export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
 	images_generations: '',
 	images_edits: '',
 	audio_transcriptions: '',
+	audio_transcriptions_multimodal: '',
+	audio_transcriptions_tasks: '',
+	audio_speech: '',
+	audio_speech_multimodal: '',
+	audio_realtime_inference: '',
+	audio_realtime_session: '',
+	audio_hotwords: '',
+	audio_voices: '',
 	messages: '',
 	modelsGenerate: '',
 	generateContent: '',
@@ -105,6 +123,7 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 	openai: { ...EMPTY_PROTOCOL_FORM },
 	anthropic: { ...EMPTY_PROTOCOL_FORM },
 	gemini: { ...EMPTY_PROTOCOL_FORM },
+	dashscope: { ...EMPTY_PROTOCOL_FORM },
 	description: '',
 };
 

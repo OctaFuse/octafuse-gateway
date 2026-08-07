@@ -10,11 +10,11 @@
 		"build:cf": "npm run cf-typegen && opennextjs-cloudflare build",
 		"start": "next start",
 		"lint": "eslint .",
-		"preview": "node ./scripts/ensure-dev-vars.mjs && npm run build:cf && opennextjs-cloudflare preview --port 8789 --persist-to ../../.wrangler/state",
-		"deploy": "npm run build:cf && opennextjs-cloudflare deploy",
+		"preview": "node ./scripts/ensure-dev-vars.mjs && npm run build:cf && wrangler dev worker.ts --port 8789 --persist-to ../../.wrangler/state",
+		"deploy": "npm run build:cf && wrangler deploy worker.ts",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"test:unit": "tsx --test lib/services/admin/*.test.ts lib/pricing-ui-image.test.ts lib/image-generations.test.ts lib/simulator/endpoint.test.ts app/gateway/simulator/simulator-utils.test.ts app/gateway/routes/route-utils.test.ts app/gateway/routes/route-strategy-meta.test.ts app/gateway/providers/provider-utils.test.ts app/gateway/tools/components/provider-card-state.test.ts"
+		"test:unit": "tsx --test lib/services/admin/*.test.ts lib/dashscope-realtime-client.test.ts lib/pricing-ui-image.test.ts lib/image-generations.test.ts lib/simulator/endpoint.test.ts app/gateway/simulator/simulator-utils.test.ts app/gateway/routes/route-utils.test.ts app/gateway/routes/route-strategy-meta.test.ts app/gateway/providers/provider-utils.test.ts app/gateway/tools/components/provider-card-state.test.ts"
 	},
 	"dependencies": {
 		"@heroicons/react": "^2.2.0",

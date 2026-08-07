@@ -87,6 +87,17 @@ describe('parseModelRoutePolicy', () => {
 		);
 	});
 
+	it('accepts DashScope audio capabilities', () => {
+		const config = parseModelRoutePolicy(
+			JSON.stringify({
+				rules: {
+					'dashscope.audio.speech:default': { strategy: 'fixed_order' },
+				},
+			})
+		);
+		assert.equal(config?.rules.get('dashscope.audio.speech:default')?.strategy, 'fixed_order');
+	});
+
 	it('skips illegal strategy and illegal capability keys', () => {
 		const config = parseModelRoutePolicy(
 			JSON.stringify({

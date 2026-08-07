@@ -102,6 +102,19 @@ export type RoutesPageData = {
 	globalRouteStrategy: string | null;
 };
 
+/** 路由页独立的模型类型筛选；`all` 不改变模型管理页的筛选语义。 */
+export const ROUTE_KIND_FILTERS = ['all', 'llm', 'image', 'audio'] as const;
+export type RouteKindFilter = (typeof ROUTE_KIND_FILTERS)[number];
+export const DEFAULT_ROUTE_KIND_FILTER: RouteKindFilter = 'all';
+
+export function parseRouteKindFilterParam(value: string | null): RouteKindFilter {
+	if (value == null || value.trim() === '') return DEFAULT_ROUTE_KIND_FILTER;
+	const normalized = value.trim().toLowerCase();
+	return (ROUTE_KIND_FILTERS as readonly string[]).includes(normalized)
+		? (normalized as RouteKindFilter)
+		: DEFAULT_ROUTE_KIND_FILTER;
+}
+
 export const EMPTY_ROUTE_FORM: RouteFormData = {
 	model_id: '',
 	provider_id: '',
