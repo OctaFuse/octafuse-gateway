@@ -26,7 +26,7 @@ export type ResponseMeta = {
 };
 
 export type WirePreview = {
-	method: 'POST';
+	method: 'GET' | 'POST' | 'WebSocket';
 	url: string;
 	headers: Record<string, string>;
 	bodyText: string;

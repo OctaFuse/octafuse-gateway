@@ -96,6 +96,8 @@ export type AudioClientResponseFormat =
 
 export type NormalizedAudioTranscriptionRequest = {
 	file: AudioUpload;
+	/** DashScope 异步文件识别扩展：公网可访问的 HTTP(S)/OSS 音频地址。 */
+	fileSourceUrl?: string;
 	/** 客户端请求的 format；上游按模型能力选择（whisper 强制 verbose_json 取 duration） */
 	clientResponseFormat: AudioClientResponseFormat;
 	language?: string;
@@ -283,7 +285,8 @@ export function reshapeTranscriptionForClient(
 	return { text };
 }
 
-function buildClientResponse(
+/** 构造 OpenAI Audio 客户端响应；跨协议 adapter 复用相同输出契约。 */
+export function buildAudioTranscriptionClientResponse(
 	clientFormat: NormalizedAudioTranscriptionRequest['clientResponseFormat'],
 	clientBody: unknown,
 	status: number,
@@ -422,7 +425,7 @@ export async function dispatchOpenAiAudioTranscriptions(
 		const clientBody = response.ok
 			? reshapeTranscriptionForClient(upstreamBody, req.clientResponseFormat)
 			: upstreamBody;
-		const clientResponse = buildClientResponse(
+			const clientResponse = buildAudioTranscriptionClientResponse(
 			req.clientResponseFormat,
 			clientBody,
 			response.status,
@@ -496,7 +499,13 @@ export function redactAudioRequestForLog(input: {
 	language?: string;
 	responseFormat: string;
 	clientDurationSeconds?: number;
+	fileSourceUrl?: string;
 }): Record<string, unknown> {
+	let fileSourceOrigin: string | null = null;
+	if (input.fileSourceUrl) {
+		const url = new URL(input.fileSourceUrl);
+		fileSourceOrigin = url.protocol === 'oss:' ? 'oss:' : url.origin;
+	}
 	return {
 		operation: 'transcriptions',
 		model: input.model,
@@ -506,5 +515,6 @@ export function redactAudioRequestForLog(input: {
 		language: input.language ?? null,
 		response_format: input.responseFormat,
 		client_duration_seconds: input.clientDurationSeconds ?? null,
+		file_source_origin: fileSourceOrigin,
 	};
 }

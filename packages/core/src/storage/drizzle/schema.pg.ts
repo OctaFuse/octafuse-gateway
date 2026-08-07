@@ -184,6 +184,7 @@ export const apiKeyRequestLogsTable = pgTable('api_key_request_logs', {
 	inputImageCount: integer('input_image_count').notNull().default(0),
 	outputImageCount: integer('output_image_count').notNull().default(0),
 	audioDurationSeconds: real('audio_duration_seconds'),
+	audioCharacters: integer('audio_characters'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 

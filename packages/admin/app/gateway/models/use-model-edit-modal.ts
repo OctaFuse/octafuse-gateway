@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import {
-	isAudioTranscriptionModel,
+	isAudioModel,
 	isImageGenerationModel,
 	parseModelModalitiesJson,
 } from '@octafuse/core/db/model-modalities';
@@ -92,7 +92,7 @@ export function useModelEditModal(options?: Options) {
 				output_modalities: outputMods,
 				pricing_profile: model.pricing_profile,
 			});
-			const audioModel = isAudioTranscriptionModel({
+			const audioModel = isAudioModel({
 				pricing_profile: model.pricing_profile,
 			});
 			const kind: ModelFormKind = audioModel ? 'audio' : imageModel ? 'image' : 'llm';

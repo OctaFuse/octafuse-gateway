@@ -13,10 +13,12 @@ import { RequestTargetUrl } from '@/components/request-target-url';
 import { readApiJson } from '@/lib/api-json';
 import { PlaygroundToolsPanel } from './playground-tools-panel';
 import {
+	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
 	isAudioRouteModel,
 	validateAudioTranscriptionFile,
 } from '@/lib/audio-transcriptions';
+import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
@@ -35,25 +37,25 @@ import {
 	type PlaygroundProtocol,
 } from '@/lib/playground/merge-assistant-text';
 import { previewPlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
+import { normalizeProtocol, parseLastStreamUsage, tryParseUsageSummary } from '@/lib/playground/usage-parsing';
 import {
-	normalizeProtocol,
-	parseLastStreamUsage,
-	tryParseUsageSummary,
-} from '@/lib/playground/usage-parsing';
+	buildDashScopeRealtimeTtsTemplate,
+	buildDashScopeRealtimeAsrTemplate,
+	buildDashScopeSpeechBodyTemplate,
+	dashScopeRealtimeAudioContentType,
+	isDashScopeRealtimeOperation,
+	openDashScopeRealtimeClient,
+	stopDashScopeRealtimeClient,
+} from '@/lib/dashscope-realtime-client';
 import type { AdminModelRow } from '@/lib/services/admin/types';
 import type { ApiResponse, GatewayProvider } from '@/lib/types';
-import {
-	DEFAULT_KIND_FILTER,
-	type ModelKindFilter,
-} from '../models/types';
+import { DEFAULT_KIND_FILTER, type ModelKindFilter } from '../models/types';
 
 const inputClass =
 	'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white';
 const labelClass = 'block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1';
 
-function resolveRouteModelKind(
-	m: AdminModelRow | undefined
-): ModelKindFilter {
+function resolveRouteModelKind(m: AdminModelRow | undefined): ModelKindFilter {
 	if (!m) return 'llm';
 	if (isAudioRouteModel(m)) return 'audio';
 	if (isImageRouteModel(m)) return 'image';
@@ -109,7 +111,9 @@ const BODY_TEMPLATES: Record<string, string> = {
 function formatRouteLabel(r: RouteListRow): string {
 	const m = r.model_name || r.model_id;
 	const p = r.provider_name || r.provider_id;
-	return `${m} · ${p} · ${r.provider_model_name} · ${r.route_group} · ${r.upstream_protocol}.${r.upstream_operation ?? '*'}`;
+	return `${m} · ${p} · ${r.provider_model_name} · ${r.route_group} · ${r.upstream_protocol}.${
+		r.upstream_operation ?? '*'
+	}`;
 }
 
 /** 下拉项开头：active → 🟢，否则 🔴（不拼 status 文案，避免与 emoji 重复）。 */
@@ -156,10 +160,7 @@ function PlaygroundPageInner() {
 	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
 	const searchParams = useSearchParams();
-	const initialMode =
-		searchParams.get('mode') === 'tools' || searchParams.get('tool')
-			? 'tools'
-			: 'routes';
+	const initialMode = searchParams.get('mode') === 'tools' || searchParams.get('tool') ? 'tools' : 'routes';
 	const [playgroundMode, setPlaygroundMode] = useState<'routes' | 'tools'>(initialMode);
 	const initialToolId = searchParams.get('tool');
 	const initialProvider = searchParams.get('provider');
@@ -170,7 +171,7 @@ function PlaygroundPageInner() {
 	const [loadingRoutes, setLoadingRoutes] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
 
-	/** 与 Models/Routes 一致：无 All，默认 LLM，按 Kind 拆分模型列表 */
+	/** 调试台按单一 Kind 拆分模型列表，不提供模型目录的 All 视图。 */
 	const [filterKind, setFilterKind] = useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
 	const [filterModel, setFilterModel] = useState('');
 	const [filterProvider, setFilterProvider] = useState('');
@@ -180,10 +181,16 @@ function PlaygroundPageInner() {
 	const [selectedId, setSelectedId] = useState('');
 	const [bodyText, setBodyText] = useState(BODY_TEMPLATES.openai);
 	const [bodyError, setBodyError] = useState<string | null>(null);
-	const [geminiAction, setGeminiAction] = useState<'generateContent' | 'streamGenerateContent'>('streamGenerateContent');
+	const [geminiAction, setGeminiAction] = useState<'generateContent' | 'streamGenerateContent'>(
+		'streamGenerateContent',
+	);
 	const [imageOperation, setImageOperation] = useState<ImageOperation>('generations');
 	const [editFiles, setEditFiles] = useState<File[]>([]);
 	const [audioFile, setAudioFile] = useState<File | null>(null);
+	const [audioInputMode, setAudioInputMode] = useState<'file' | 'microphone'>('file');
+	const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
+	const realtimeAudioChunksRef = useRef<ArrayBuffer[]>([]);
+	const realtimeRef = useRef<WebSocket | null>(null);
 
 	const [sending, setSending] = useState(false);
 	const [responseMeta, setResponseMeta] = useState<{
@@ -202,10 +209,7 @@ function PlaygroundPageInner() {
 	const streamEndRef = useRef<HTMLSpanElement>(null);
 	const mergedStreamEndRef = useRef<HTMLSpanElement>(null);
 
-	const selected = useMemo(
-		() => routes.find((r) => r.id === selectedId) ?? null,
-		[routes, selectedId]
-	);
+	const selected = useMemo(() => routes.find((r) => r.id === selectedId) ?? null, [routes, selectedId]);
 
 	const selectedIsImage = useMemo(() => {
 		if (!selected) return false;
@@ -218,17 +222,39 @@ function PlaygroundPageInner() {
 		const m = modelsById.get(selected.model_id);
 		return m ? isAudioRouteModel(m) : false;
 	}, [selected, modelsById]);
+	const selectedIsAudioTranscription = useMemo(
+		() => (selected ? isAudioTranscriptionModel(modelsById.get(selected.model_id) ?? {}) : false),
+		[selected, modelsById],
+	);
+	const selectedDashScopeRealtimeOperation =
+		selectedIsAudio &&
+		selected?.upstream_protocol === 'dashscope' &&
+		isDashScopeRealtimeOperation(selected?.upstream_operation ?? '')
+			? (selected?.upstream_operation as
+					| 'audio.transcriptions.realtime.inference'
+					| 'audio.transcriptions.realtime.session'
+					| 'audio.speech.realtime.inference')
+			: null;
 
-	const imageSendBlocked =
-		selectedIsImage && normalizeProtocol(selected?.upstream_protocol ?? 'openai') !== 'openai';
+	const imageSendBlocked = selectedIsImage && normalizeProtocol(selected?.upstream_protocol ?? 'openai') !== 'openai';
+	const selectedAudioUpstreamProtocol = (selected?.upstream_protocol ?? 'openai').trim().toLowerCase();
+	// 调试台支持 OpenAI multipart、DashScope 同步 ASR Adapter，以及 DashScope 实时 WS。
 	const audioSendBlocked =
-		selectedIsAudio && normalizeProtocol(selected?.upstream_protocol ?? 'openai') !== 'openai';
+		selectedIsAudio && selectedAudioUpstreamProtocol !== 'openai' && selectedAudioUpstreamProtocol !== 'dashscope';
+	const selectedAudioUsesDashScope = selectedIsAudio && selectedAudioUpstreamProtocol === 'dashscope';
+	const selectedUsesDashScopeRealtime = selectedDashScopeRealtimeOperation != null;
+	const selectedCanUseMicrophone =
+		selectedDashScopeRealtimeOperation?.startsWith('audio.transcriptions.realtime.') ?? false;
+	// DashScope 的 inference 与 session ASR 都支持浏览器麦克风，区别在于音频事件格式。
+	const selectedNeedsAudioFile =
+		selectedIsAudioTranscription && (!selectedCanUseMicrophone || audioInputMode === 'file');
 
 	const previewUpstreamUrl = useMemo(() => {
 		if (!selected) return null;
 		return previewPlaygroundUpstreamUrl({
 			provider: providersById.get(selected.provider_id),
 			upstreamProtocol: selected.upstream_protocol,
+			upstreamOperation: selected.upstream_operation,
 			providerModelName: selected.provider_model_name,
 			isImageModel: selectedIsImage && !selectedIsAudio,
 			imageOperation: selectedIsImage && !selectedIsAudio ? imageOperation : undefined,
@@ -252,21 +278,19 @@ function PlaygroundPageInner() {
 		const hasRaw = responseText.trim().length > 0;
 		const p = mergedAssistantParts;
 		const reasoningDisplay =
-			p.reasoning ||
-			(sending && hasRaw ? '（接收中…）' : '') ||
-			(!sending && hasRaw && !p.reasoning ? '—' : '');
+			p.reasoning || (sending && hasRaw ? '（接收中…）' : '') || (!sending && hasRaw && !p.reasoning ? '—' : '');
 		const bodyDisplay =
 			p.body ||
 			(sending && hasRaw ? '（接收中…）' : '') ||
 			(!sending && hasRaw && !p.body ? (!p.reasoning ? '（无法从报文提取正文）' : '—') : '');
-		return { mergedReasoningDisplay: reasoningDisplay, mergedBodyDisplay: bodyDisplay };
+		return {
+			mergedReasoningDisplay: reasoningDisplay,
+			mergedBodyDisplay: bodyDisplay,
+		};
 	}, [mergedAssistantParts, responseText, sending]);
 
 	const matchesFilters = useCallback(
-		(
-			r: RouteListRow,
-			omit: 'model' | 'provider' | 'protocol' | 'group' | null = null
-		) => {
+		(r: RouteListRow, omit: 'model' | 'provider' | 'protocol' | 'group' | null = null) => {
 			if (resolveRouteModelKind(modelsById.get(r.model_id)) !== filterKind) return false;
 			if (omit !== 'model' && filterModel && r.model_id !== filterModel) return false;
 			if (omit !== 'provider' && filterProvider && r.provider_id !== filterProvider) return false;
@@ -274,7 +298,7 @@ function PlaygroundPageInner() {
 			if (omit !== 'group' && filterGroup && r.route_group !== filterGroup) return false;
 			return true;
 		},
-		[modelsById, filterKind, filterModel, filterProvider, filterProtocol, filterGroup]
+		[modelsById, filterKind, filterModel, filterProvider, filterProtocol, filterGroup],
 	);
 
 	const kindCounts = useMemo(() => {
@@ -295,21 +319,15 @@ function PlaygroundPageInner() {
 			setFilterModel('');
 			setSelectedId('');
 		},
-		[filterKind]
+		[filterKind],
 	);
 
 	const routesInKind = useMemo(
-		() =>
-			routes.filter(
-				(r) => resolveRouteModelKind(modelsById.get(r.model_id)) === filterKind
-			),
-		[routes, modelsById, filterKind]
+		() => routes.filter((r) => resolveRouteModelKind(modelsById.get(r.model_id)) === filterKind),
+		[routes, modelsById, filterKind],
 	);
 
-	const filteredRoutes = useMemo(
-		() => routes.filter((r) => matchesFilters(r)),
-		[routes, matchesFilters]
-	);
+	const filteredRoutes = useMemo(() => routes.filter((r) => matchesFilters(r)), [routes, matchesFilters]);
 
 	/** Model 下拉：按当前其它筛选项联动（不含 model 自身）。 */
 	const modelOptions = useMemo(() => {
@@ -433,15 +451,33 @@ function PlaygroundPageInner() {
 		const m = modelsById.get(r.model_id);
 		const isImage = m ? isImageRouteModel(m) : false;
 		const isAudio = m ? isAudioRouteModel(m) : false;
+		// DashScope 非实时音频由调试台转换后直连 HTTP，上游协议不是 OpenAI 也要使用音频模板。
+		const isAudioHttp = proto === 'openai' || proto === 'dashscope';
 		setImageOperation('generations');
 		setEditFiles([]);
 		setAudioFile(null);
+		setAudioInputMode('file');
+		setAudioPreviewUrl(null);
+		realtimeAudioChunksRef.current = [];
+		const realtime = isAudio && proto === 'dashscope' && isDashScopeRealtimeOperation(r.upstream_operation ?? '');
 		setBodyText(
-			isAudio && proto === 'openai'
-				? AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE
+			realtime
+				? r.upstream_operation?.startsWith('audio.speech.')
+					? buildDashScopeRealtimeTtsTemplate(r.provider_model_name)
+					: buildDashScopeRealtimeAsrTemplate(
+							(r.upstream_operation ?? 'audio.transcriptions.realtime.inference') as
+								| 'audio.transcriptions.realtime.inference'
+								| 'audio.transcriptions.realtime.session',
+					  )
+				: isAudio && isAudioHttp
+				? selectedIsAudioTranscription
+					? AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE
+					: proto === 'dashscope' && r.upstream_operation === 'audio.speech'
+					? buildDashScopeSpeechBodyTemplate(r.provider_model_name)
+					: AUDIO_SPEECH_BODY_TEMPLATE
 				: isImage && proto === 'openai'
-					? IMAGE_GENERATIONS_BODY_TEMPLATE
-					: (BODY_TEMPLATES[proto] ?? BODY_TEMPLATES.openai)
+				? IMAGE_GENERATIONS_BODY_TEMPLATE
+				: BODY_TEMPLATES[proto] ?? BODY_TEMPLATES.openai,
 		);
 		setBodyError(null);
 		setImagePreviews([]);
@@ -449,7 +485,13 @@ function PlaygroundPageInner() {
 		setLastSentWireBody(null);
 		setResponseText('');
 		setUsageHint(null);
-	}, [selectedId, routes, modelsById]);
+	}, [selectedId, routes, modelsById, selectedIsAudioTranscription]);
+
+	useEffect(() => {
+		return () => {
+			if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl);
+		};
+	}, [audioPreviewUrl]);
 
 	const onImageOperationChange = (next: ImageOperation) => {
 		setImageOperation(next);
@@ -466,6 +508,11 @@ function PlaygroundPageInner() {
 		streamEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 		mergedStreamEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 	}, []);
+
+	const stopRealtime = () => {
+		if (realtimeRef.current) stopDashScopeRealtimeClient(realtimeRef.current);
+		realtimeRef.current = null;
+	};
 
 	const send = async () => {
 		if (!selected) {
@@ -493,11 +540,23 @@ function PlaygroundPageInner() {
 		}
 
 		const proto = normalizeProtocol(selected.upstream_protocol);
-		const useAudio = selectedIsAudio && proto === 'openai';
+		const isRealtime = selectedDashScopeRealtimeOperation != null;
+		const useAudio =
+			selectedIsAudio &&
+			!isRealtime &&
+			(selectedAudioUpstreamProtocol === 'openai' || selectedAudioUpstreamProtocol === 'dashscope');
 		const useImages = selectedIsImage && !selectedIsAudio && proto === 'openai';
 		const effectiveImageOp: ImageOperation | undefined = useImages ? imageOperation : undefined;
 
-		if (useAudio) {
+		if (isRealtime) {
+			if (selectedDashScopeRealtimeOperation.startsWith('audio.transcriptions') && selectedNeedsAudioFile) {
+				const validated = validateAudioTranscriptionFile(audioFile);
+				if (!validated.ok) {
+					setBodyError(validated.error);
+					return;
+				}
+			}
+		} else if (useAudio && selectedIsAudioTranscription) {
 			const validated = validateAudioTranscriptionFile(audioFile);
 			if (!validated.ok) {
 				setBodyError(validated.error);
@@ -536,10 +595,73 @@ function PlaygroundPageInner() {
 		setResponseText('');
 		setUsageHint(null);
 		setImagePreviews([]);
+		setAudioPreviewUrl(null);
+		realtimeAudioChunksRef.current = [];
 		setResponseMeta(null);
 		setLastSentWireBody(null);
 
 		setResponseProtocol(proto);
+		if (isRealtime) {
+			const realtimeUrl = `${window.location.origin}/api/admin/playground/realtime?${new URLSearchParams({
+				routeId: selected.id,
+				operation: selectedDashScopeRealtimeOperation,
+			}).toString()}`;
+			const startedAt = performance.now();
+			const realtimeAudioType = dashScopeRealtimeAudioContentType(JSON.stringify(bodyObj));
+			setLastSentWireBody(JSON.stringify(bodyObj, null, 2));
+			try {
+				const socket = openDashScopeRealtimeClient({
+					url: realtimeUrl,
+					operation: selectedDashScopeRealtimeOperation,
+					initialMessage: JSON.stringify(bodyObj),
+					audioInput: selectedCanUseMicrophone ? audioInputMode : 'file',
+					audioFile: selectedNeedsAudioFile ? audioFile : undefined,
+					onOpen: () => {
+						setResponseMeta({
+							status: 101,
+							latencyMs: String(Math.round(performance.now() - startedAt)),
+							upstreamUrl: previewUpstreamUrl,
+							contentType: 'application/x-ndjson',
+						});
+					},
+					onMessage: (message) => {
+						const text = typeof message === 'string' ? message : `[binary frame: ${message.byteLength} bytes]`;
+						setResponseText((previous) => (previous ? `${previous}\n${text}` : text));
+					},
+					onAudioChunk: (chunk) => {
+						if (!selectedIsAudioTranscription) realtimeAudioChunksRef.current.push(chunk);
+					},
+					onError: (error) =>
+						setBodyError(error instanceof Error ? error.message : 'Realtime WebSocket transport error'),
+					onClose: (event) => {
+						if (!selectedIsAudioTranscription && realtimeAudioChunksRef.current.length > 0) {
+							const blob = new Blob(realtimeAudioChunksRef.current, {
+								type: realtimeAudioType,
+							});
+							setAudioPreviewUrl(URL.createObjectURL(blob));
+							realtimeAudioChunksRef.current = [];
+						}
+						setSending(false);
+						realtimeRef.current = null;
+						setResponseMeta(
+							(previous) =>
+								previous ?? {
+									status: 101,
+									latencyMs: String(Math.round(performance.now() - startedAt)),
+									upstreamUrl: previewUpstreamUrl,
+									contentType: 'application/x-ndjson',
+								},
+						);
+						if (event.code !== 1000 && event.reason) setBodyError(event.reason);
+					},
+				});
+				realtimeRef.current = socket;
+			} catch (error) {
+				setSending(false);
+				setBodyError(error instanceof Error ? error.message : tCommon('requestFailed'));
+			}
+			return;
+		}
 		const payload: {
 			routeId: string;
 			body: Record<string, unknown>;
@@ -573,6 +695,19 @@ function PlaygroundPageInner() {
 				contentType: ct,
 			});
 
+			if (
+				selectedIsAudio &&
+				!selectedIsAudioTranscription &&
+				res.ok &&
+				(ct.toLowerCase().startsWith('audio/') || ct.toLowerCase().startsWith('application/octet-stream'))
+			) {
+				const blob = await res.blob();
+				setAudioPreviewUrl(URL.createObjectURL(blob));
+				setResponseText(t('audioResponseReceived', { bytes: blob.size }));
+				setSending(false);
+				return;
+			}
+
 			const jsonErr = ct.includes('application/json') && !ct.includes('text/event-stream');
 			if (jsonErr) {
 				const j = (await res.json()) as ApiResponse<unknown> & {
@@ -593,10 +728,7 @@ function PlaygroundPageInner() {
 					if (!msg) msg = tCommon('requestFailed');
 					setBodyError(msg);
 				} else if (useImages) {
-					const parsedImg = parseImagesGenerationsResponse(
-						JSON.stringify(j),
-						imageRequestMetaFromBody(bodyObj)
-					);
+					const parsedImg = parseImagesGenerationsResponse(JSON.stringify(j), imageRequestMetaFromBody(bodyObj));
 					setImagePreviews(parsedImg.images);
 					setUsageHint(parsedImg.usageHint);
 				} else {
@@ -704,10 +836,7 @@ function PlaygroundPageInner() {
 
 			{playgroundMode === 'tools' ? (
 				<div className="max-w-3xl">
-					<PlaygroundToolsPanel
-						initialToolId={initialToolId}
-						initialProvider={initialProvider}
-					/>
+					<PlaygroundToolsPanel initialToolId={initialToolId} initialProvider={initialProvider} />
 				</div>
 			) : loadError ? (
 				<div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm max-w-3xl">{loadError}</div>
@@ -716,468 +845,559 @@ function PlaygroundPageInner() {
 					<div className="grid grid-cols-1 xl:grid-cols-2 xl:items-stretch gap-6">
 						<div className="min-w-0 flex flex-col h-full">
 							<div className="bg-white rounded-lg shadow-md p-6 space-y-4 flex flex-col h-full min-h-0">
-							<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">{t('routeSection')}</h2>
-							<div>
-								<label className={labelClass}>{t('kind')}</label>
-								<div
-									className="inline-flex w-full sm:w-auto rounded-md border border-gray-200 bg-gray-50 p-0.5"
-									role="group"
-									aria-label={t('kind')}
-								>
-									{(
-										[
-											{ id: 'llm' as const, label: t('kindLlm'), count: kindCounts.llm },
-											{ id: 'image' as const, label: t('kindImage'), count: kindCounts.image },
-											{ id: 'audio' as const, label: t('kindAudio'), count: kindCounts.audio },
-										] as const
-									).map((opt) => {
-										const active = filterKind === opt.id;
-										return (
-											<button
-												key={opt.id}
-												type="button"
-												onClick={() => onFilterKindChange(opt.id)}
-												className={
-													active
-														? 'flex-1 sm:flex-none rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
-														: 'flex-1 sm:flex-none rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
-												}
-											>
-												{opt.label}
-												<span className="ml-1.5 text-xs text-gray-400 tabular-nums">{opt.count}</span>
-											</button>
-										);
-									})}
-								</div>
-							</div>
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">
+									{t('routeSection')}
+								</h2>
 								<div>
-									<label className={labelClass}>{t('modelId')}</label>
-									<select
-										value={filterModel}
-										onChange={(e) => setFilterModel(e.target.value)}
-										className={inputClass}
+									<label className={labelClass}>{t('kind')}</label>
+									<div
+										className="inline-flex w-full sm:w-auto rounded-md border border-gray-200 bg-gray-50 p-0.5"
+										role="group"
+										aria-label={t('kind')}
 									>
-										<option value="">{t('placeholders.allModels')}</option>
-										{modelOptions.map((o) => (
-											<option key={o.id} value={o.id}>
-												{o.label}
+										{(
+											[
+												{
+													id: 'llm' as const,
+													label: t('kindLlm'),
+													count: kindCounts.llm,
+												},
+												{
+													id: 'image' as const,
+													label: t('kindImage'),
+													count: kindCounts.image,
+												},
+												{
+													id: 'audio' as const,
+													label: t('kindAudio'),
+													count: kindCounts.audio,
+												},
+											] as const
+										).map((opt) => {
+											const active = filterKind === opt.id;
+											return (
+												<button
+													key={opt.id}
+													type="button"
+													onClick={() => onFilterKindChange(opt.id)}
+													className={
+														active
+															? 'flex-1 sm:flex-none rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
+															: 'flex-1 sm:flex-none rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
+													}
+												>
+													{opt.label}
+													<span className="ml-1.5 text-xs text-gray-400 tabular-nums">{opt.count}</span>
+												</button>
+											);
+										})}
+									</div>
+								</div>
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									<div>
+										<label className={labelClass}>{t('modelId')}</label>
+										<select value={filterModel} onChange={(e) => setFilterModel(e.target.value)} className={inputClass}>
+											<option value="">{t('placeholders.allModels')}</option>
+											{modelOptions.map((o) => (
+												<option key={o.id} value={o.id}>
+													{o.label}
+												</option>
+											))}
+										</select>
+									</div>
+									<div>
+										<label className={labelClass}>{t('provider')}</label>
+										<select
+											value={filterProvider}
+											onChange={(e) => setFilterProvider(e.target.value)}
+											className={inputClass}
+										>
+											<option value="">{t('placeholders.allProviders')}</option>
+											{providerOptions.map((o) => (
+												<option key={o.id} value={o.id}>
+													{o.label}
+												</option>
+											))}
+										</select>
+									</div>
+									<div>
+										<label className={labelClass}>{t('protocol')}</label>
+										<select
+											value={filterProtocol}
+											onChange={(e) => setFilterProtocol(e.target.value)}
+											className={inputClass}
+										>
+											<option value="">{t('placeholders.allProtocols')}</option>
+											{protocolOptions.map((p) => (
+												<option key={p} value={p}>
+													{p}
+												</option>
+											))}
+										</select>
+									</div>
+									<div>
+										<label className={labelClass}>{t('routeGroup')}</label>
+										<select value={filterGroup} onChange={(e) => setFilterGroup(e.target.value)} className={inputClass}>
+											<option value="">{t('placeholders.allRouteGroups')}</option>
+											{groupOptions.map((g) => (
+												<option key={g} value={g}>
+													{g}
+												</option>
+											))}
+										</select>
+									</div>
+								</div>
+								<div>
+									<label className={labelClass}>{t('selectRoute')}</label>
+									<select
+										value={selectedId}
+										onChange={(e) => setSelectedId(e.target.value)}
+										className={`${inputClass} font-mono`}
+										size={Math.min(10, Math.max(6, Math.min(filteredRoutes.length, 10) || 6))}
+									>
+										<option value="">{t('selectRouteOption')}</option>
+										{filteredRoutes.map((r) => (
+											<option key={r.id} value={r.id}>
+												{routeActiveIndicator(r.status)} {formatRouteLabel(r)} · {r.id.slice(0, 8)}…
 											</option>
 										))}
 									</select>
+									<p className="mt-2 text-xs text-gray-500">
+										{t('routeCount', {
+											total: routesInKind.length,
+											filtered: filteredRoutes.length,
+										})}
+									</p>
 								</div>
-								<div>
-									<label className={labelClass}>{t('provider')}</label>
-									<select
-										value={filterProvider}
-										onChange={(e) => setFilterProvider(e.target.value)}
-										className={inputClass}
-									>
-										<option value="">{t('placeholders.allProviders')}</option>
-										{providerOptions.map((o) => (
-											<option key={o.id} value={o.id}>
-												{o.label}
-											</option>
-										))}
-									</select>
-								</div>
-								<div>
-									<label className={labelClass}>{t('protocol')}</label>
-									<select
-										value={filterProtocol}
-										onChange={(e) => setFilterProtocol(e.target.value)}
-										className={inputClass}
-									>
-										<option value="">{t('placeholders.allProtocols')}</option>
-										{protocolOptions.map((p) => (
-											<option key={p} value={p}>
-												{p}
-											</option>
-										))}
-									</select>
-								</div>
-								<div>
-									<label className={labelClass}>{t('routeGroup')}</label>
-									<select
-										value={filterGroup}
-										onChange={(e) => setFilterGroup(e.target.value)}
-										className={inputClass}
-									>
-										<option value="">{t('placeholders.allRouteGroups')}</option>
-										{groupOptions.map((g) => (
-											<option key={g} value={g}>
-												{g}
-											</option>
-										))}
-									</select>
-								</div>
-							</div>
-							<div>
-								<label className={labelClass}>{t('selectRoute')}</label>
-								<select
-									value={selectedId}
-									onChange={(e) => setSelectedId(e.target.value)}
-									className={`${inputClass} font-mono`}
-									size={Math.min(10, Math.max(6, Math.min(filteredRoutes.length, 10) || 6))}
-								>
-									<option value="">{t('selectRouteOption')}</option>
-									{filteredRoutes.map((r) => (
-										<option key={r.id} value={r.id}>
-											{routeActiveIndicator(r.status)} {formatRouteLabel(r)} · {r.id.slice(0, 8)}…
-										</option>
-									))}
-								</select>
-								<p className="mt-2 text-xs text-gray-500">
-									{t('routeCount', {
-										total: routesInKind.length,
-										filtered: filteredRoutes.length,
-									})}
-								</p>
-							</div>
 							</div>
 						</div>
 
 						<div className="min-w-0 flex flex-col h-full">
 							<div className="bg-white rounded-lg shadow-md p-6 space-y-4 flex flex-col h-full min-h-0">
-							<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3 break-words">
+								<h2 className="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3 break-words">
+									{selected ? (
+										<>
+											{t('selected')}：<span className="font-mono text-base font-normal">{selected.id}</span>
+										</>
+									) : (
+										t('selectedRoute')
+									)}
+								</h2>
 								{selected ? (
 									<>
-										{t('selected')}：<span className="font-mono text-base font-normal">{selected.id}</span>
+										<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+											<ReadonlyField label={t('modelId')}>{selected.model_id}</ReadonlyField>
+											<ReadonlyField label={t('modelName')}>{selected.model_name ?? '—'}</ReadonlyField>
+											<ReadonlyField label={t('providerId')}>{selected.provider_id}</ReadonlyField>
+											<ReadonlyField label={t('providerName')}>{selected.provider_name ?? '—'}</ReadonlyField>
+											<ReadonlyField label={t('upstreamProtocol')}>{selected.upstream_protocol}</ReadonlyField>
+											<ReadonlyField label="Upstream operation">{selected.upstream_operation ?? '*'}</ReadonlyField>
+											<ReadonlyField label={t('providerModel')}>{selected.provider_model_name}</ReadonlyField>
+											<ReadonlyField label={t('routeGroup')}>{selected.route_group}</ReadonlyField>
+											<ReadonlyField label="Routing pool">
+												{selected.pool_name ?? selected.route_pool_id ?? 'legacy'}
+											</ReadonlyField>
+											<ReadonlyField label="Public surfaces">{formatRouteJsonColumn(selected.surfaces)}</ReadonlyField>
+											<ReadonlyField label={t('priorityStatus')}>
+												{selected.priority} /{' '}
+												<span
+													className={
+														selected.status === 'active' ? 'text-green-700 font-medium' : 'text-amber-700 font-medium'
+													}
+												>
+													{selected.status}
+												</span>
+											</ReadonlyField>
+										</div>
+										<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100 min-w-0">
+											<div className="min-w-0 flex flex-col">
+												<div className="block text-xs font-medium text-gray-600 mb-1">custom_params</div>
+												<pre className={routeJsonPreClass}>{formatRouteJsonColumn(selected.custom_params)}</pre>
+											</div>
+											<div className="min-w-0 flex flex-col">
+												<div className="block text-xs font-medium text-gray-600 mb-1">price_override</div>
+												<pre className={routeJsonPreClass}>{formatRouteJsonColumn(selected.price_override)}</pre>
+											</div>
+										</div>
 									</>
 								) : (
-									t('selectedRoute')
+									<p className="text-sm text-gray-500">{t('chooseRouteHint')}</p>
 								)}
-							</h2>
-							{selected ? (
-								<>
-									<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-										<ReadonlyField label={t('modelId')}>{selected.model_id}</ReadonlyField>
-										<ReadonlyField label={t('modelName')}>{selected.model_name ?? '—'}</ReadonlyField>
-										<ReadonlyField label={t('providerId')}>{selected.provider_id}</ReadonlyField>
-										<ReadonlyField label={t('providerName')}>{selected.provider_name ?? '—'}</ReadonlyField>
-										<ReadonlyField label={t('upstreamProtocol')}>{selected.upstream_protocol}</ReadonlyField>
-										<ReadonlyField label="Upstream operation">{selected.upstream_operation ?? '*'}</ReadonlyField>
-										<ReadonlyField label={t('providerModel')}>{selected.provider_model_name}</ReadonlyField>
-										<ReadonlyField label={t('routeGroup')}>{selected.route_group}</ReadonlyField>
-										<ReadonlyField label="Routing pool">{selected.pool_name ?? selected.route_pool_id ?? 'legacy'}</ReadonlyField>
-										<ReadonlyField label="Public surfaces">
-											{formatRouteJsonColumn(selected.surfaces)}
-										</ReadonlyField>
-										<ReadonlyField label={t('priorityStatus')}>
-											{selected.priority} /{' '}
-											<span
-												className={
-													selected.status === 'active'
-														? 'text-green-700 font-medium'
-														: 'text-amber-700 font-medium'
-												}
-											>
-												{selected.status}
-											</span>
-										</ReadonlyField>
-									</div>
-									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-gray-100 min-w-0">
-										<div className="min-w-0 flex flex-col">
-											<div className="block text-xs font-medium text-gray-600 mb-1">custom_params</div>
-											<pre className={routeJsonPreClass}>{formatRouteJsonColumn(selected.custom_params)}</pre>
-										</div>
-										<div className="min-w-0 flex flex-col">
-											<div className="block text-xs font-medium text-gray-600 mb-1">price_override</div>
-											<pre className={routeJsonPreClass}>{formatRouteJsonColumn(selected.price_override)}</pre>
-										</div>
-									</div>
-								</>
-							) : (
-								<p className="text-sm text-gray-500">{t('chooseRouteHint')}</p>
-							)}
-						</div>
+							</div>
 						</div>
 					</div>
 
 					<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 						<div className="min-w-0">
-						<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
-							<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-gray-100 pb-3">
-								<h2 className="text-lg font-semibold text-gray-900">{t('requestBody')}</h2>
-								<button
-									type="button"
-									onClick={() => void send()}
-									disabled={
-										sending ||
-										!selected ||
-										imageSendBlocked ||
-										audioSendBlocked ||
-										(selectedIsAudio && !validateAudioTranscriptionFile(audioFile).ok) ||
-										(selectedIsImage &&
-											!selectedIsAudio &&
-											imageOperation === 'edits' &&
-											!validateEditImageFiles(editFiles).ok)
-									}
-									className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-								>
-									<PaperAirplaneIcon className="h-4 w-4" />
-									{sending ? tCommon('sending') : tCommon('send')}
-								</button>
-							</div>
-							{imageSendBlocked ? (
-								<div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-sm">
-									{t('imageOpenaiOnly')}
+							<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
+								<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 border-b border-gray-100 pb-3">
+									<h2 className="text-lg font-semibold text-gray-900">{t('requestBody')}</h2>
+									{sending && selectedDashScopeRealtimeOperation ? (
+										<button
+											type="button"
+											onClick={stopRealtime}
+											className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700"
+										>
+											{tCommon('stop')}
+										</button>
+									) : (
+										<button
+											type="button"
+											onClick={() => void send()}
+											disabled={
+												sending ||
+												!selected ||
+												imageSendBlocked ||
+												audioSendBlocked ||
+												(selectedNeedsAudioFile && !validateAudioTranscriptionFile(audioFile).ok) ||
+												(selectedIsImage &&
+													!selectedIsAudio &&
+													imageOperation === 'edits' &&
+													!validateEditImageFiles(editFiles).ok)
+											}
+											className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+										>
+											<PaperAirplaneIcon className="h-4 w-4" />
+											{sending ? tCommon('sending') : tCommon('send')}
+										</button>
+									)}
 								</div>
-							) : null}
-							{audioSendBlocked ? (
-								<div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-sm">
-									{t('audioOpenaiOnly')}
-								</div>
-							) : null}
-							<div className="space-y-1">
-								<RequestTargetUrl
-									label={t('requestTargetUrl')}
-									url={requestTargetUrl}
-									emptyHint={t('requestTargetUrlEmpty')}
-								/>
-								{selected ? (
-									<p className="text-[11px] text-gray-400">{t('requestTargetUrlHint')}</p>
+								{imageSendBlocked ? (
+									<div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-sm">
+										{t('imageOpenaiOnly')}
+									</div>
 								) : null}
-							</div>
-							{selectedIsAudio && !audioSendBlocked ? (
-								<div className="space-y-2">
-									<p className="text-xs text-gray-500">{t('audioTranscriptionsHint')}</p>
-									<div>
-										<label className={labelClass}>{t('audioFile')}</label>
-										<input
-											type="file"
-											accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac"
-											disabled={sending}
-											className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
-											onChange={(e) => {
-												const f = e.target.files?.[0] ?? null;
-												setAudioFile(f);
-											}}
-										/>
-										<p className="mt-1 text-[11px] text-gray-400">{t('audioFileHint')}</p>
-										{!audioFile ? (
-											<p className="mt-1 text-xs text-amber-700">{t('audioFileRequired')}</p>
-										) : (
-											<p className="mt-1 text-xs text-gray-600">
-												{audioFile.name} ({audioFile.size} bytes)
-											</p>
-										)}
-										{(() => {
-											if (!audioFile) return null;
-											const validated = validateAudioTranscriptionFile(audioFile);
-											if (validated.ok) return null;
-											return <p className="mt-1 text-xs text-red-600">{validated.error}</p>;
-										})()}
+								{audioSendBlocked ? (
+									<div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-sm">
+										{t('audioOpenaiOnly')}
 									</div>
-								</div>
-							) : null}
-							{selectedIsImage && !selectedIsAudio && !imageSendBlocked ? (
-								<>
-									<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
-										<legend className="sr-only">{t('imageOperation')}</legend>
-										<span className="text-gray-600 font-medium">{t('imageOperation')}</span>
-										<label className="inline-flex items-center gap-2 cursor-pointer">
-											<input
-												type="radio"
-												name="playgroundImageOperation"
-												className="text-blue-600 focus:ring-blue-500"
-												checked={imageOperation === 'generations'}
-												onChange={() => onImageOperationChange('generations')}
-												disabled={sending}
-											/>
-											generations
-										</label>
-										<label className="inline-flex items-center gap-2 cursor-pointer">
-											<input
-												type="radio"
-												name="playgroundImageOperation"
-												className="text-blue-600 focus:ring-blue-500"
-												checked={imageOperation === 'edits'}
-												onChange={() => onImageOperationChange('edits')}
-												disabled={sending}
-											/>
-											edits
-										</label>
-									</fieldset>
-									<p className="text-xs text-gray-500">
-										{imageOperation === 'edits' ? t('imageEditsHint') : t('imageGenerationsHint')}
-									</p>
-									{imageOperation === 'edits' ? (
-										<div>
-											<label className={labelClass}>{t('referenceImages')}</label>
-											<input
-												type="file"
-												accept="image/png,image/jpeg,image/webp,image/*"
-												multiple
-												disabled={sending}
-												className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
-												onChange={(e) => {
-													const list = e.target.files ? Array.from(e.target.files) : [];
-													setEditFiles(list.slice(0, IMAGE_MAX_REFERENCE_COUNT));
-												}}
-											/>
-											<p className="mt-1 text-[11px] text-gray-400">
-												{t('referenceImagesHint', { max: IMAGE_MAX_REFERENCE_COUNT })}
-												{editFiles.length > 0
-													? ` · ${t('referenceImagesSelected', { count: editFiles.length })}`
-													: ''}
-											</p>
-											{editFiles.length === 0 ? (
-												<p className="mt-1 text-xs text-amber-700">{t('referenceImagesRequired')}</p>
-											) : null}
-											{(() => {
-												if (editFiles.length === 0) return null;
-												const validated = validateEditImageFiles(editFiles);
-												if (validated.ok) return null;
-												return <p className="mt-1 text-xs text-red-600">{validated.error}</p>;
-											})()}
-											{editFiles.length > 0 ? (
-												<ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
-													{editFiles.map((f) => (
-														<li key={`${f.name}-${f.size}-${f.lastModified}`}>
-															{f.name} ({f.size} bytes)
-														</li>
-													))}
-												</ul>
-											) : null}
-										</div>
+								) : null}
+								<div className="space-y-1">
+									<RequestTargetUrl
+										label={t('requestTargetUrl')}
+										method={selectedUsesDashScopeRealtime ? 'WebSocket' : undefined}
+										url={requestTargetUrl}
+										emptyHint={t('requestTargetUrlEmpty')}
+									/>
+									{selected ? (
+										<p className="text-[11px] text-gray-400">
+											{t(selectedUsesDashScopeRealtime ? 'requestTargetUrlRealtimeHint' : 'requestTargetUrlHint')}
+										</p>
 									) : null}
-								</>
-							) : null}
-							{normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' &&
-								!selectedIsImage &&
-								!selectedIsAudio && (
-								<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
-									<legend className="sr-only">{t('geminiAction')}</legend>
-									<span className="text-gray-600 font-medium">{t('geminiAction')}</span>
-									<label className="inline-flex items-center gap-2 cursor-pointer">
-										<input
-											type="radio"
-											name="geminiAction"
-											className="text-blue-600 focus:ring-blue-500"
-											checked={geminiAction === 'generateContent'}
-											onChange={() => setGeminiAction('generateContent')}
-										/>
-										generateContent
-									</label>
-									<label className="inline-flex items-center gap-2 cursor-pointer">
-										<input
-											type="radio"
-											name="geminiAction"
-											checked={geminiAction === 'streamGenerateContent'}
-											onChange={() => setGeminiAction('streamGenerateContent')}
-										/>
-										streamGenerateContent
-									</label>
-								</fieldset>
-							)}
-							<div>
-								<label className={labelClass}>JSON</label>
-								<textarea
-									value={bodyText}
-									onChange={(e) => setBodyText(e.target.value)}
-									rows={8}
-									className={`${inputClass} font-mono text-sm min-h-[100px]`}
-									spellCheck={false}
-								/>
-							</div>
-							{bodyError && (
-								<div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{bodyError}</div>
-							)}
-							{lastSentWireBody != null && lastSentWireBody !== '' && (
-								<div className="pt-2 border-t border-gray-100 space-y-2">
-									<div>
-										<div className="text-xs font-medium text-gray-600 mb-1">
-											{t('sentBody')}
-											<span className="font-normal text-gray-500 normal-case tracking-normal">
-												{' '}
-												{t('sentBodyHint')}
-											</span>
-										</div>
-										<pre className={codeBlockClass}>{lastSentWireBody}</pre>
-									</div>
 								</div>
-							)}
-						</div>
-						</div>
-
-						<div className="min-w-0">
-						<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
-							<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 pb-3">
-								<h2 className="text-lg font-semibold text-gray-900 shrink-0">{t('response')}</h2>
-								{responseMeta && (
-									<div className="flex flex-wrap items-center justify-end gap-2 text-xs min-w-0">
-										<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
-											HTTP {responseMeta.status}
-										</span>
-										{responseMeta.latencyMs != null && (
-											<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
-												{responseMeta.latencyMs} ms
-											</span>
-										)}
-										{responseMeta.contentType && (
-											<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-700 max-w-full truncate" title={responseMeta.contentType}>
-												{responseMeta.contentType}
-											</span>
-										)}
+								{selectedIsAudio && !audioSendBlocked ? (
+									<div className="space-y-2">
+										<p className="text-xs text-gray-500">
+											{t(
+												selectedUsesDashScopeRealtime
+													? 'audioRealtimeDashScopeHint'
+													: selectedAudioUsesDashScope
+													? selectedIsAudioTranscription
+														? 'audioTranscriptionsDashScopeHint'
+														: 'audioSpeechHint'
+													: selectedIsAudioTranscription
+													? 'audioTranscriptionsHint'
+													: 'audioSpeechHint',
+											)}
+										</p>
+										{selectedCanUseMicrophone ? (
+											<fieldset className="flex flex-wrap items-center gap-4 rounded-md border border-gray-200 px-3 py-2 text-sm">
+												<legend className="sr-only">{t('audioInputMode')}</legend>
+												<span className="font-medium text-gray-600">{t('audioInputMode')}</span>
+												<label className="inline-flex cursor-pointer items-center gap-2">
+													<input
+														type="radio"
+														name="playgroundAudioInput"
+														className="text-blue-600 focus:ring-blue-500"
+														checked={audioInputMode === 'file'}
+														onChange={() => setAudioInputMode('file')}
+														disabled={sending}
+													/>
+													{t('audioInputFile')}
+												</label>
+												<label className="inline-flex cursor-pointer items-center gap-2">
+													<input
+														type="radio"
+														name="playgroundAudioInput"
+														className="text-blue-600 focus:ring-blue-500"
+														checked={audioInputMode === 'microphone'}
+														onChange={() => setAudioInputMode('microphone')}
+														disabled={sending}
+													/>
+													{t('audioInputMicrophone')}
+												</label>
+											</fieldset>
+										) : null}
+										{selectedNeedsAudioFile ? (
+											<div>
+												<label className={labelClass}>{t('audioFile')}</label>
+												<input
+													type="file"
+													accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac"
+													disabled={sending}
+													className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+													onChange={(e) => {
+														const f = e.target.files?.[0] ?? null;
+														setAudioFile(f);
+													}}
+												/>
+												<p className="mt-1 text-[11px] text-gray-400">
+													{t(
+														selectedUsesDashScopeRealtime
+															? 'audioRealtimeFileDashScopeHint'
+															: selectedAudioUsesDashScope
+															? 'audioFileDashScopeHint'
+															: 'audioFileHint',
+													)}
+												</p>
+												{!audioFile ? (
+													<p className="mt-1 text-xs text-amber-700">{t('audioFileRequired')}</p>
+												) : (
+													<p className="mt-1 text-xs text-gray-600">
+														{audioFile.name} ({audioFile.size} bytes)
+													</p>
+												)}
+												{(() => {
+													if (!audioFile) return null;
+													const validated = validateAudioTranscriptionFile(audioFile);
+													if (validated.ok) return null;
+													return <p className="mt-1 text-xs text-red-600">{validated.error}</p>;
+												})()}
+											</div>
+										) : null}
+									</div>
+								) : null}
+								{selectedIsImage && !selectedIsAudio && !imageSendBlocked ? (
+									<>
+										<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
+											<legend className="sr-only">{t('imageOperation')}</legend>
+											<span className="text-gray-600 font-medium">{t('imageOperation')}</span>
+											<label className="inline-flex items-center gap-2 cursor-pointer">
+												<input
+													type="radio"
+													name="playgroundImageOperation"
+													className="text-blue-600 focus:ring-blue-500"
+													checked={imageOperation === 'generations'}
+													onChange={() => onImageOperationChange('generations')}
+													disabled={sending}
+												/>
+												generations
+											</label>
+											<label className="inline-flex items-center gap-2 cursor-pointer">
+												<input
+													type="radio"
+													name="playgroundImageOperation"
+													className="text-blue-600 focus:ring-blue-500"
+													checked={imageOperation === 'edits'}
+													onChange={() => onImageOperationChange('edits')}
+													disabled={sending}
+												/>
+												edits
+											</label>
+										</fieldset>
+										<p className="text-xs text-gray-500">
+											{imageOperation === 'edits' ? t('imageEditsHint') : t('imageGenerationsHint')}
+										</p>
+										{imageOperation === 'edits' ? (
+											<div>
+												<label className={labelClass}>{t('referenceImages')}</label>
+												<input
+													type="file"
+													accept="image/png,image/jpeg,image/webp,image/*"
+													multiple
+													disabled={sending}
+													className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+													onChange={(e) => {
+														const list = e.target.files ? Array.from(e.target.files) : [];
+														setEditFiles(list.slice(0, IMAGE_MAX_REFERENCE_COUNT));
+													}}
+												/>
+												<p className="mt-1 text-[11px] text-gray-400">
+													{t('referenceImagesHint', {
+														max: IMAGE_MAX_REFERENCE_COUNT,
+													})}
+													{editFiles.length > 0
+														? ` · ${t('referenceImagesSelected', {
+																count: editFiles.length,
+														  })}`
+														: ''}
+												</p>
+												{editFiles.length === 0 ? (
+													<p className="mt-1 text-xs text-amber-700">{t('referenceImagesRequired')}</p>
+												) : null}
+												{(() => {
+													if (editFiles.length === 0) return null;
+													const validated = validateEditImageFiles(editFiles);
+													if (validated.ok) return null;
+													return <p className="mt-1 text-xs text-red-600">{validated.error}</p>;
+												})()}
+												{editFiles.length > 0 ? (
+													<ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
+														{editFiles.map((f) => (
+															<li key={`${f.name}-${f.size}-${f.lastModified}`}>
+																{f.name} ({f.size} bytes)
+															</li>
+														))}
+													</ul>
+												) : null}
+											</div>
+										) : null}
+									</>
+								) : null}
+								{normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' &&
+									!selectedIsImage &&
+									!selectedIsAudio && (
+										<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
+											<legend className="sr-only">{t('geminiAction')}</legend>
+											<span className="text-gray-600 font-medium">{t('geminiAction')}</span>
+											<label className="inline-flex items-center gap-2 cursor-pointer">
+												<input
+													type="radio"
+													name="geminiAction"
+													className="text-blue-600 focus:ring-blue-500"
+													checked={geminiAction === 'generateContent'}
+													onChange={() => setGeminiAction('generateContent')}
+												/>
+												generateContent
+											</label>
+											<label className="inline-flex items-center gap-2 cursor-pointer">
+												<input
+													type="radio"
+													name="geminiAction"
+													checked={geminiAction === 'streamGenerateContent'}
+													onChange={() => setGeminiAction('streamGenerateContent')}
+												/>
+												streamGenerateContent
+											</label>
+										</fieldset>
+									)}
+								<div>
+									<label className={labelClass}>JSON</label>
+									<textarea
+										value={bodyText}
+										onChange={(e) => setBodyText(e.target.value)}
+										rows={8}
+										className={`${inputClass} font-mono text-sm min-h-[100px]`}
+										spellCheck={false}
+									/>
+								</div>
+								{bodyError && (
+									<div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{bodyError}</div>
+								)}
+								{lastSentWireBody != null && lastSentWireBody !== '' && (
+									<div className="pt-2 border-t border-gray-100 space-y-2">
+										<div>
+											<div className="text-xs font-medium text-gray-600 mb-1">
+												{t('sentBody')}
+												<span className="font-normal text-gray-500 normal-case tracking-normal">
+													{' '}
+													{t('sentBodyHint')}
+												</span>
+											</div>
+											<pre className={codeBlockClass}>{lastSentWireBody}</pre>
+										</div>
 									</div>
 								)}
 							</div>
-							{responseMeta || responseText || imagePreviews.length > 0 ? (
-								<>
-									{responseMeta?.upstreamUrl && (
-										<div className="text-xs text-gray-500 break-all">
-											<span className="font-medium text-gray-600">{t('upstream')}</span>
-											{responseMeta.upstreamUrl}
+						</div>
+
+						<div className="min-w-0">
+							<div className="bg-white rounded-lg shadow-md p-6 space-y-4">
+								<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 pb-3">
+									<h2 className="text-lg font-semibold text-gray-900 shrink-0">{t('response')}</h2>
+									{responseMeta && (
+										<div className="flex flex-wrap items-center justify-end gap-2 text-xs min-w-0">
+											<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
+												HTTP {responseMeta.status}
+											</span>
+											{responseMeta.latencyMs != null && (
+												<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
+													{responseMeta.latencyMs} ms
+												</span>
+											)}
+											{responseMeta.contentType && (
+												<span
+													className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-700 max-w-full truncate"
+													title={responseMeta.contentType}
+												>
+													{responseMeta.contentType}
+												</span>
+											)}
 										</div>
 									)}
-									{usageHint && (
-										<div className="p-3 rounded-md bg-green-50 border border-green-200 text-sm text-green-900">
-											<span className="font-semibold">{t('usageDisplayOnly')}</span>
-											{usageHint}
-										</div>
-									)}
-									{imagePreviews.length > 0 ? (
-										<ImageGenerationsPreview images={imagePreviews} label={t('imagePreview')} />
-									) : null}
-									<div className="space-y-3">
-										{imagePreviews.length === 0 ? (
-										<div>
-											<div className="text-xs font-medium text-gray-600 mb-1">{t('mergedContent')}</div>
-											<div className="rounded-md border border-slate-200 overflow-hidden divide-y divide-slate-200">
+								</div>
+								{responseMeta || responseText || imagePreviews.length > 0 || audioPreviewUrl ? (
+									<>
+										{responseMeta?.upstreamUrl && (
+											<div className="text-xs text-gray-500 break-all">
+												<span className="font-medium text-gray-600">{t('upstream')}</span>
+												{responseMeta.upstreamUrl}
+											</div>
+										)}
+										{usageHint && (
+											<div className="p-3 rounded-md bg-green-50 border border-green-200 text-sm text-green-900">
+												<span className="font-semibold">{t('usageDisplayOnly')}</span>
+												{usageHint}
+											</div>
+										)}
+										{imagePreviews.length > 0 ? (
+											<ImageGenerationsPreview images={imagePreviews} label={t('imagePreview')} />
+										) : null}
+										{audioPreviewUrl ? (
+											<div className="rounded-md border border-slate-200 bg-slate-50 p-4 space-y-3">
+												<div className="text-sm font-medium text-gray-800">{t('audioPreview')}</div>
+												<audio className="w-full" controls src={audioPreviewUrl} />
+												<a
+													href={audioPreviewUrl}
+													download="speech-output"
+													className="inline-flex text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline"
+												>
+													{t('downloadAudio')}
+												</a>
+											</div>
+										) : null}
+										<div className="space-y-3">
+											{imagePreviews.length === 0 ? (
 												<div>
-													<div className="text-[11px] font-semibold text-amber-900/85 uppercase tracking-wide px-3 py-1.5 bg-amber-50 border-b border-amber-100">
-														{t('thinking')}
+													<div className="text-xs font-medium text-gray-600 mb-1">{t('mergedContent')}</div>
+													<div className="rounded-md border border-slate-200 overflow-hidden divide-y divide-slate-200">
+														<div>
+															<div className="text-[11px] font-semibold text-amber-900/85 uppercase tracking-wide px-3 py-1.5 bg-amber-50 border-b border-amber-100">
+																{t('thinking')}
+															</div>
+															<pre className="max-h-[min(220px,32vh)] overflow-auto p-3 bg-amber-50/60 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
+																{mergedReasoningDisplay}
+															</pre>
+														</div>
+														<div>
+															<div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide px-3 py-1.5 bg-slate-50 border-b border-slate-100">
+																{t('body')}
+															</div>
+															<pre className="max-h-[min(280px,38vh)] overflow-auto p-3 bg-slate-50 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
+																{mergedBodyDisplay}
+																<span
+																	ref={mergedStreamEndRef}
+																	className="inline-block w-0 h-0 overflow-hidden"
+																	aria-hidden
+																/>
+															</pre>
+														</div>
 													</div>
-													<pre className="max-h-[min(220px,32vh)] overflow-auto p-3 bg-amber-50/60 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
-														{mergedReasoningDisplay}
-													</pre>
 												</div>
-												<div>
-													<div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide px-3 py-1.5 bg-slate-50 border-b border-slate-100">
-														{t('body')}
-													</div>
-													<pre className="max-h-[min(280px,38vh)] overflow-auto p-3 bg-slate-50 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
-														{mergedBodyDisplay}
-														<span ref={mergedStreamEndRef} className="inline-block w-0 h-0 overflow-hidden" aria-hidden />
-													</pre>
-												</div>
+											) : null}
+											<div>
+												<div className="text-xs font-medium text-gray-600 mb-1">{t('rawPayload')}</div>
+												<pre className="max-h-[min(520px,50vh)] overflow-auto p-4 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-900 font-mono whitespace-pre-wrap break-words">
+													{responseText}
+													<span ref={streamEndRef} className="inline-block w-0 h-0 overflow-hidden" aria-hidden />
+												</pre>
 											</div>
 										</div>
-										) : null}
-										<div>
-											<div className="text-xs font-medium text-gray-600 mb-1">{t('rawPayload')}</div>
-											<pre className="max-h-[min(520px,50vh)] overflow-auto p-4 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-900 font-mono whitespace-pre-wrap break-words">
-												{responseText}
-												<span ref={streamEndRef} className="inline-block w-0 h-0 overflow-hidden" aria-hidden />
-											</pre>
-										</div>
-									</div>
-								</>
-							) : (
-								<p className="text-sm text-gray-500">{t('emptyResponseHint')}</p>
-							)}
-						</div>
+									</>
+								) : (
+									<p className="text-sm text-gray-500">{t('emptyResponseHint')}</p>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>

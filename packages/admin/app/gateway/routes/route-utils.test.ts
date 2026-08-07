@@ -2,13 +2,17 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import {
+	applyDashScopeTtsRoutePreset,
+	compatibleAdaptersForRoute,
 	factorChipClassForValue,
 	factorLevelForValue,
 	hasBasePricingInversion,
 	requestOperationsForModel,
+	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
 	upstreamOperationsForProviderModel,
 } from './route-utils';
+import { EMPTY_ROUTE_FORM } from './types';
 
 function model(overrides: Partial<GatewayModel> = {}): GatewayModel {
 	return {
@@ -35,15 +39,70 @@ function provider(endpoints: object): GatewayProvider {
 	};
 }
 
+describe('request surface path', () => {
+	it('maps OpenAI audio operations to their real slash-separated endpoints', () => {
+		assert.equal(requestSurfacePath('openai', 'audio.transcriptions', 'audio-model'), '/v1/audio/transcriptions');
+		assert.equal(requestSurfacePath('openai', 'audio.speech', 'audio-model'), '/v1/audio/speech');
+	});
+
+	it('shows the shared DashScope realtime WebSocket entry with routing parameters', () => {
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference', 'my fun/asr'),
+			'/v1/dashscope/realtime?model=my%20fun%2Fasr&operation=audio.transcriptions.realtime.inference',
+		);
+	});
+});
+
 describe('route form capability filters', () => {
+	it('builds DashScope TTS presets for both public modes', () => {
+		const nonRealtime = applyDashScopeTtsRoutePreset(EMPTY_ROUTE_FORM, 'nonrealtime');
+		assert.deepEqual(
+			{
+				requestProtocol: nonRealtime.request_protocol,
+				requestOperation: nonRealtime.request_operation,
+				upstreamProtocol: nonRealtime.upstream_protocol,
+				upstreamOperation: nonRealtime.upstream_operation,
+				adapter: nonRealtime.adapter,
+			},
+			{
+				requestProtocol: 'openai',
+				requestOperation: 'audio.speech',
+				upstreamProtocol: 'dashscope',
+				upstreamOperation: 'audio.speech',
+				adapter: 'dashscope-tts-speech',
+			},
+		);
+
+		const realtime = applyDashScopeTtsRoutePreset(EMPTY_ROUTE_FORM, 'realtime');
+		assert.deepEqual(
+			{
+				requestProtocol: realtime.request_protocol,
+				requestOperation: realtime.request_operation,
+				upstreamProtocol: realtime.upstream_protocol,
+				upstreamOperation: realtime.upstream_operation,
+				adapter: realtime.adapter,
+			},
+			{
+				requestProtocol: 'dashscope',
+				requestOperation: 'audio.speech.realtime.inference',
+				upstreamProtocol: 'dashscope',
+				upstreamOperation: 'audio.speech.realtime.inference',
+				adapter: 'passthrough',
+			},
+		);
+	});
+
 	it('limits public operations by model modality', () => {
 		assert.deepEqual(requestOperationsForModel(model(), 'openai'), ['chat', 'responses']);
 		assert.deepEqual(
 			requestOperationsForModel(
-				model({ input_modalities: '["text","image"]', output_modalities: '["image"]' }),
-				'openai'
+				model({
+					input_modalities: '["text","image"]',
+					output_modalities: '["image"]',
+				}),
+				'openai',
 			),
-			['images.generations', 'images.edits']
+			['images.generations', 'images.edits'],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -55,24 +114,65 @@ describe('route form capability filters', () => {
 						audio: { price_per_second: 0.0001, minimum_seconds: 1 },
 					}),
 				}),
-				'openai'
+				'openai',
 			),
-			['audio.transcriptions']
+			['audio.transcriptions'],
+		);
+		assert.deepEqual(
+			requestOperationsForModel(
+				model({
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_second',
+						audio: { price_per_second: 0.0001 },
+					}),
+				}),
+				'dashscope',
+			),
+			['audio.transcriptions.realtime.inference', 'audio.transcriptions.realtime.session'],
+		);
+		assert.deepEqual(
+			requestOperationsForModel(
+				model({
+					input_modalities: '["text"]',
+					output_modalities: '["audio"]',
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_character',
+						audio: { price_per_character: 0.0001 },
+					}),
+				}),
+				'openai',
+			),
+			['audio.speech'],
+		);
+		assert.deepEqual(
+			requestOperationsForModel(
+				model({
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_character',
+						audio: { price_per_character: 0.0001 },
+					}),
+				}),
+				'dashscope',
+			),
+			['audio.speech.realtime.inference'],
 		);
 	});
 
 	it('intersects provider endpoint capabilities with the model modality', () => {
-		const baseProvider = provider({ openai: { base: 'https://example.com/v1' } });
-		assert.deepEqual(upstreamOperationsForProviderModel(baseProvider, model(), 'openai'), [
-			'chat',
-		]);
+		const baseProvider = provider({
+			openai: { base: 'https://example.com/v1' },
+		});
+		assert.deepEqual(upstreamOperationsForProviderModel(baseProvider, model(), 'openai'), ['chat']);
 		assert.deepEqual(
 			upstreamOperationsForProviderModel(
 				baseProvider,
-				model({ input_modalities: '["text","image"]', output_modalities: '["image"]' }),
-				'openai'
+				model({
+					input_modalities: '["text","image"]',
+					output_modalities: '["image"]',
+				}),
+				'openai',
 			),
-			['images.generations', 'images.edits']
+			['images.generations', 'images.edits'],
 		);
 
 		const endpointOnlyProvider = provider({
@@ -85,10 +185,71 @@ describe('route form capability filters', () => {
 		assert.deepEqual(
 			upstreamOperationsForProviderModel(
 				endpointOnlyProvider,
-				model({ input_modalities: '["text","image"]', output_modalities: '["image"]' }),
-				'openai'
+				model({
+					input_modalities: '["text","image"]',
+					output_modalities: '["image"]',
+				}),
+				'openai',
 			),
-			['images.edits']
+			['images.edits'],
+		);
+	});
+
+	it('maps DashScope endpoint capabilities to explicit audio route operations', () => {
+		const dashScope = provider({
+			dashscope: { base: 'https://dashscope.aliyuncs.com/api/v1' },
+		});
+		const asr = model({
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_second',
+				audio: { price_per_second: 0.0001 },
+			}),
+		});
+		assert.deepEqual(upstreamOperationsForProviderModel(dashScope, asr, 'dashscope'), [
+			'audio.transcriptions.async',
+			'audio.transcriptions.realtime.inference',
+			'audio.transcriptions.realtime.session',
+		]);
+
+		const tts = model({
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_character',
+				audio: { price_per_character: 0.0001 },
+			}),
+		});
+		assert.deepEqual(upstreamOperationsForProviderModel(dashScope, tts, 'dashscope'), [
+			'audio.speech',
+			'audio.speech.realtime.inference',
+		]);
+	});
+
+	it('only offers adapters that exactly match the selected topology', () => {
+		assert.deepEqual(
+			compatibleAdaptersForRoute({
+				request_protocol: 'openai',
+				request_operation: 'audio.transcriptions',
+				upstream_protocol: 'dashscope',
+				upstream_operation: 'audio.transcriptions.multimodal',
+			}),
+			['dashscope-asr-qwen-file', 'dashscope-asr-fun-file'],
+		);
+		assert.deepEqual(
+			compatibleAdaptersForRoute({
+				request_protocol: 'openai',
+				request_operation: 'audio.speech',
+				upstream_protocol: 'dashscope',
+				upstream_operation: 'audio.speech.multimodal',
+			}),
+			['dashscope-tts-qwen', 'dashscope-tts-minimax'],
+		);
+		assert.deepEqual(
+			compatibleAdaptersForRoute({
+				request_protocol: 'openai',
+				request_operation: 'audio.transcriptions',
+				upstream_protocol: 'dashscope',
+				upstream_operation: 'audio.transcriptions.async',
+			}),
+			['dashscope-asr-file-async'],
 		);
 	});
 });

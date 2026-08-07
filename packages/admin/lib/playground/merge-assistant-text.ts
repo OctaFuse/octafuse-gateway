@@ -1,11 +1,11 @@
 /**
- * Playground：从上游原始报文（SSE / JSON / text）中提取 assistant 可读正文，
+ * Playground：从上游原始报文（SSE / JSON / NDJSON / text）中提取 assistant 可读正文，
  * 并将推理类字段与正文分列，便于区分。
  */
 
-export type PlaygroundProtocol = 'openai' | 'anthropic' | 'gemini';
+export type PlaygroundProtocol = "openai" | "anthropic" | "gemini" | "dashscope";
 
-export type PlaygroundResponseParseMode = 'sse' | 'json' | 'text';
+export type PlaygroundResponseParseMode = "sse" | "json" | "ndjson" | "text";
 
 /** 推理链 / thinking 与最终正文分列 */
 export type MergedAssistantParts = {
@@ -13,58 +13,69 @@ export type MergedAssistantParts = {
 	body: string;
 };
 
-const emptyParts = (): MergedAssistantParts => ({ reasoning: '', body: '' });
+const emptyParts = (): MergedAssistantParts => ({ reasoning: "", body: "" });
 
 /** 由响应 Content-Type 推断解析方式（与 Playground `send` 分支一致）。 */
-export function inferPlaygroundParseMode(contentType: string | null | undefined): PlaygroundResponseParseMode | null {
-	if (contentType == null || contentType === '') {
+export function inferPlaygroundParseMode(
+	contentType: string | null | undefined
+): PlaygroundResponseParseMode | null {
+	if (contentType == null || contentType === "") {
 		return null;
 	}
 	const lower = contentType.toLowerCase();
-	if (lower.includes('text/event-stream')) {
-		return 'sse';
+	if (lower.includes("text/event-stream")) {
+		return "sse";
 	}
-	if (lower.includes('application/json') && !lower.includes('text/event-stream')) {
-		return 'json';
+	if (lower.includes("ndjson") || lower.includes("x-json-stream")) {
+		return "ndjson";
 	}
-	return 'text';
+	if (
+		lower.includes("application/json") &&
+		!lower.includes("text/event-stream")
+	) {
+		return "json";
+	}
+	return "text";
 }
 
 function extractOpenAiMessageContent(content: unknown): string {
-	if (typeof content === 'string') {
+	if (typeof content === "string") {
 		return content;
 	}
 	if (!Array.isArray(content)) {
-		return '';
+		return "";
 	}
-	let s = '';
+	let s = "";
 	for (const part of content) {
-		if (!part || typeof part !== 'object') {
+		if (!part || typeof part !== "object") {
 			continue;
 		}
 		const p = part as { type?: unknown; text?: unknown };
-		if (p.type === 'text' && typeof p.text === 'string') {
+		if (p.type === "text" && typeof p.text === "string") {
 			s += p.text;
 		}
 	}
 	return s;
 }
 
-function appendOpenAiDeltaToParts(delta: Record<string, unknown>, parts: MergedAssistantParts): void {
+function appendOpenAiDeltaToParts(
+	delta: Record<string, unknown>,
+	parts: MergedAssistantParts
+): void {
 	const rc = delta.reasoning_content;
-	if (typeof rc === 'string' && rc.length > 0) {
+	if (typeof rc === "string" && rc.length > 0) {
 		parts.reasoning += rc;
 	}
 	const th = delta.thinking;
-	if (typeof th === 'string' && th.length > 0) {
+	if (typeof th === "string" && th.length > 0) {
 		parts.reasoning += th;
 	}
 	const r = delta.reasoning;
-	if (typeof r === 'string' && r.length > 0) {
+	if (typeof r === "string" && r.length > 0) {
 		parts.reasoning += r;
 	}
 	const c = delta.content;
-	if (typeof c === 'string' && c.length > 0) {
+	if (typeof c === "string" && c.length > 0) {
 		parts.body += c;
 	}
 }
@@ -73,11 +84,11 @@ function mergeOpenAiSseParts(raw: string): MergedAssistantParts {
 	const parts = emptyParts();
 	for (const line of raw.split(/\r?\n/)) {
 		const t = line.trim();
-		if (!t.startsWith('data:')) {
+		if (!t.startsWith("data:")) {
 			continue;
 		}
 		const payload = t.slice(5).trim();
-		if (payload === '[DONE]' || payload === '') {
+		if (payload === "[DONE]" || payload === "") {
 			continue;
 		}
 		let o: unknown;
@@ -86,7 +97,7 @@ function mergeOpenAiSseParts(raw: string): MergedAssistantParts {
 		} catch {
 			continue;
 		}
-		if (!o || typeof o !== 'object') {
+		if (!o || typeof o !== "object") {
 			continue;
 		}
 		const choices = (o as { choices?: unknown }).choices;
@@ -94,11 +105,11 @@ function mergeOpenAiSseParts(raw: string): MergedAssistantParts {
 			continue;
 		}
 		for (const ch of choices) {
-			if (!ch || typeof ch !== 'object') {
+			if (!ch || typeof ch !== "object") {
 				continue;
 			}
 			const delta = (ch as { delta?: unknown }).delta;
-			if (!delta || typeof delta !== 'object') {
+			if (!delta || typeof delta !== "object") {
 				continue;
 			}
 			appendOpenAiDeltaToParts(delta as Record<string, unknown>, parts);
@@ -109,64 +120,70 @@ function mergeOpenAiSseParts(raw: string): MergedAssistantParts {
 
 function mergeAnthropicSseParts(raw: string): MergedAssistantParts {
 	const parts = emptyParts();
-	let lastEvent = '';
+	let lastEvent = "";
 	for (const line of raw.split(/\r?\n/)) {
 		const trimmed = line.trimEnd();
-		if (trimmed.startsWith('event:')) {
+		if (trimmed.startsWith("event:")) {
 			lastEvent = trimmed.slice(6).trim();
 			continue;
 		}
-		if (!trimmed.startsWith('data:')) {
+		if (!trimmed.startsWith("data:")) {
 			continue;
 		}
 		const dataStr = trimmed.slice(5).trim();
-		if (dataStr === '' || dataStr === '[DONE]') {
-			lastEvent = '';
+		if (dataStr === "" || dataStr === "[DONE]") {
+			lastEvent = "";
 			continue;
 		}
 		let o: unknown;
 		try {
 			o = JSON.parse(dataStr);
 		} catch {
-			lastEvent = '';
+			lastEvent = "";
 			continue;
 		}
-		if (!o || typeof o !== 'object') {
-			lastEvent = '';
+		if (!o || typeof o !== "object") {
+			lastEvent = "";
 			continue;
 		}
 		const obj = o as Record<string, unknown>;
 		const isDelta =
-			lastEvent === 'content_block_delta' || obj.type === 'content_block_delta';
+			lastEvent === "content_block_delta" || obj.type === "content_block_delta";
 		if (isDelta) {
 			const delta = obj.delta as Record<string, unknown> | undefined;
 			if (!delta) {
-				lastEvent = '';
+				lastEvent = "";
 				continue;
 			}
-			if (delta.type === 'thinking_delta' && typeof delta.thinking === 'string') {
+			if (
+				delta.type === "thinking_delta" &&
+				typeof delta.thinking === "string"
+			) {
 				parts.reasoning += delta.thinking;
 			}
-			if (delta.type === 'text_delta' && typeof delta.text === 'string') {
+			if (delta.type === "text_delta" && typeof delta.text === "string") {
 				parts.body += delta.text;
 			}
 		}
-		lastEvent = '';
+		lastEvent = "";
 	}
 	return parts;
 }
 
 /** Gemini：带 `thought: true` 的 part 归入推理，其余有 text 的归入正文 */
-function appendGeminiPartsToParts(partsArr: unknown, parts: MergedAssistantParts): void {
+function appendGeminiPartsToParts(
+	partsArr: unknown,
+	parts: MergedAssistantParts
+): void {
 	if (!Array.isArray(partsArr)) {
 		return;
 	}
 	for (const p of partsArr) {
-		if (!p || typeof p !== 'object') {
+		if (!p || typeof p !== "object") {
 			continue;
 		}
 		const part = p as { text?: unknown; thought?: unknown };
-		if (typeof part.text !== 'string' || part.text.length === 0) {
+		if (typeof part.text !== "string" || part.text.length === 0) {
 			continue;
 		}
 		if (part.thought === true) {
@@ -179,7 +196,7 @@ function appendGeminiPartsToParts(partsArr: unknown, parts: MergedAssistantParts
 
 function extractGeminiCandidatesParts(o: unknown): MergedAssistantParts {
 	const parts = emptyParts();
-	if (!o || typeof o !== 'object') {
+	if (!o || typeof o !== "object") {
 		return parts;
 	}
 	const cands = (o as { candidates?: unknown }).candidates;
@@ -187,7 +204,7 @@ function extractGeminiCandidatesParts(o: unknown): MergedAssistantParts {
 		return parts;
 	}
 	const first = cands[0];
-	if (!first || typeof first !== 'object') {
+	if (!first || typeof first !== "object") {
 		return parts;
 	}
 	const content = (first as { content?: { parts?: unknown } }).content;
@@ -199,14 +216,14 @@ function mergeGeminiSseParts(raw: string): MergedAssistantParts {
 	const acc = emptyParts();
 	for (const line of raw.split(/\r?\n/)) {
 		const t = line.trim();
-		if (!t || t.startsWith(':')) {
+		if (!t || t.startsWith(":")) {
 			continue;
 		}
 		let jsonStr = t;
-		if (t.startsWith('data:')) {
+		if (t.startsWith("data:")) {
 			jsonStr = t.slice(5).trim();
 		}
-		if (!jsonStr.startsWith('{') && !jsonStr.startsWith('[')) {
+		if (!jsonStr.startsWith("{") && !jsonStr.startsWith("[")) {
 			continue;
 		}
 		let o: unknown;
@@ -222,49 +239,108 @@ function mergeGeminiSseParts(raw: string): MergedAssistantParts {
 	return acc;
 }
 
-function mergeFromJsonObjectParts(o: unknown, protocol: PlaygroundProtocol): MergedAssistantParts {
+function mergeFromJsonObjectParts(
+	o: unknown,
+	protocol: PlaygroundProtocol
+): MergedAssistantParts {
 	const parts = emptyParts();
-	if (!o || typeof o !== 'object') {
+	if (!o || typeof o !== "object") {
 		return parts;
 	}
-	if (protocol === 'openai') {
-		const choices = (o as { choices?: unknown }).choices;
+	if (protocol === "openai" || protocol === "dashscope") {
+		const object = o as Record<string, unknown>;
+		// OpenAI Audio Transcriptions 返回顶层 text；DashScope 直连调试返回 output.text。
+		if (typeof object.text === "string") {
+			parts.body = object.text;
+			return parts;
+		}
+		const output = object.output;
+		if (
+			output &&
+			typeof output === "object" &&
+			!Array.isArray(output) &&
+			typeof (output as Record<string, unknown>).text === "string"
+		) {
+			parts.body = (output as Record<string, unknown>).text as string;
+			return parts;
+		}
+		const choices = object.choices;
 		if (!Array.isArray(choices) || choices.length === 0) {
 			return parts;
 		}
 		const msg = (choices[0] as { message?: Record<string, unknown> }).message;
-		if (!msg || typeof msg !== 'object') {
+		if (!msg || typeof msg !== "object") {
 			return parts;
 		}
-		if (typeof msg.reasoning_content === 'string' && msg.reasoning_content.length > 0) {
+		if (
+			typeof msg.reasoning_content === "string" &&
+			msg.reasoning_content.length > 0
+		) {
 			parts.reasoning += msg.reasoning_content;
 		}
-		if (typeof msg.thinking === 'string' && msg.thinking.length > 0) {
+		if (typeof msg.thinking === "string" && msg.thinking.length > 0) {
 			parts.reasoning += msg.thinking;
 		}
 		parts.body += extractOpenAiMessageContent(msg.content);
 		return parts;
 	}
-	if (protocol === 'anthropic') {
+	if (protocol === "anthropic") {
 		const blocks = (o as { content?: unknown }).content;
 		if (!Array.isArray(blocks)) {
 			return parts;
 		}
 		for (const b of blocks) {
-			if (!b || typeof b !== 'object') {
+			if (!b || typeof b !== "object") {
 				continue;
 			}
 			const block = b as { type?: unknown; text?: unknown; thinking?: unknown };
-			if (block.type === 'thinking' && typeof block.thinking === 'string') {
+			if (block.type === "thinking" && typeof block.thinking === "string") {
 				parts.reasoning += block.thinking;
 			}
-			if (block.type === 'text' && typeof block.text === 'string') {
+			if (block.type === "text" && typeof block.text === "string") {
 				parts.body += block.text;
 			}
 		}
 		return parts;
 	}
 	return extractGeminiCandidatesParts(o);
+}
+
+/**
+ * DashScope 实时 ASR 返回的是逐行 JSON，且同一 sentence_id 会反复发送累计文本。
+ * 按句子覆盖而不是直接拼接，才能避免把中间结果重复显示在正文中。
+ */
+function mergeDashScopeNdjsonParts(raw: string): MergedAssistantParts {
+	const sentences = new Map<string, string>();
+	for (const line of raw.split(/\r?\n/)) {
+		const trimmed = line.trim();
+		if (!trimmed) continue;
+		let value: unknown;
+		try {
+			value = JSON.parse(trimmed) as unknown;
+		} catch {
+			continue;
+		}
+		if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+		const event = (value as { header?: { event?: unknown } }).header?.event;
+		if (event !== "result-generated") continue;
+		const output = (value as { payload?: { output?: unknown } }).payload?.output;
+		if (!output || typeof output !== "object" || Array.isArray(output)) continue;
+		const sentence = (output as { sentence?: unknown }).sentence;
+		if (!sentence || typeof sentence !== "object" || Array.isArray(sentence)) continue;
+		const sentenceId = (sentence as { sentence_id?: unknown }).sentence_id;
+		if (typeof sentenceId !== "string" && typeof sentenceId !== "number") continue;
+		const outputText = (output as { text?: unknown }).text;
+		const sentenceText = (sentence as { text?: unknown }).text;
+		const text =
+			typeof outputText === "string"
+				? outputText
+				: typeof sentenceText === "string"
+					? sentenceText
+					: "";
+		sentences.set(String(sentenceId), text);
+	}
+	return { reasoning: "", body: Array.from(sentences.values()).filter(Boolean).join("") };
 }
 
 /**
@@ -278,16 +354,16 @@ export function mergeAssistantTextParts(
 	if (!raw.trim()) {
 		return emptyParts();
 	}
-	if (mode === 'sse') {
-		if (protocol === 'openai') {
+	if (mode === "sse") {
+		if (protocol === "openai") {
 			return mergeOpenAiSseParts(raw);
 		}
-		if (protocol === 'anthropic') {
+		if (protocol === "anthropic") {
 			return mergeAnthropicSseParts(raw);
 		}
 		return mergeGeminiSseParts(raw);
 	}
-	if (mode === 'json') {
+	if (mode === "json") {
 		try {
 			const o = JSON.parse(raw) as unknown;
 			return mergeFromJsonObjectParts(o, protocol);
@@ -295,9 +371,14 @@ export function mergeAssistantTextParts(
 			return emptyParts();
 		}
 	}
+	if (mode === "ndjson") {
+		return protocol === "dashscope"
+			? mergeDashScopeNdjsonParts(raw)
+			: { reasoning: "", body: "" };
+	}
 	try {
 		const o = JSON.parse(raw) as unknown;
-		if (o && typeof o === 'object') {
+		if (o && typeof o === "object") {
 			return mergeFromJsonObjectParts(o, protocol);
 		}
 	} catch {

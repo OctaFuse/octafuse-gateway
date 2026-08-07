@@ -1,9 +1,7 @@
 /**
- * 用户路由：OpenAI 兼容 Audio Transcriptions
- * - `POST /v1/audio/transcriptions`（multipart）
- *
- * 流程：鉴权 → 解析 model/file → 预算预检 → openai 路由故障转移 → 成功后按秒扣费。
- * 日志禁止写入音频二进制。
+ * 用户路由：OpenAI 兼容 Audio Transcriptions / Speech。
+ * ASR 使用 multipart 文件，TTS 使用 JSON；两者共用鉴权、路由、预算和用量日志流程。
+ * 日志只保存脱敏后的元数据，不保存音频二进制。
  */
 import type { GatewayRepositories, ModelRow } from '@octafuse/core';
 import { Hono } from 'hono';
@@ -20,11 +18,17 @@ import {
 	buildTierKeyPrefix,
 	resolveRouteStrategyPlan,
 } from '../../services/route-strategies';
-import { proxyAudioTranscriptions, type ProxyResult } from '../../services/proxy';
+import {
+	proxyAudioSpeech,
+	proxyAudioTranscriptions,
+	type ProxyResult,
+	type UsageFromStream,
+} from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
 import {
 	canAffordAudioCost,
 	estimateAudioBudgetPrecheck,
+	estimateAudioSpeechBudgetPrecheck,
 	recordAudioUsage,
 } from '../../services/audio-usage-charge';
 import {
@@ -35,6 +39,12 @@ import {
 	validateAudioUpload,
 	type NormalizedAudioTranscriptionRequest,
 } from '../../services/egress/openai-audio-driver';
+import {
+	redactAudioSpeechRequestForLog,
+	type AudioSpeechResponseFormat,
+	type AudioSpeechVoice,
+	type NormalizedAudioSpeechRequest,
+} from '../../services/egress/audio-speech-driver';
 import {
 	formatHttpErrorTextForRequestLog,
 	materializeNonOkResponse,
@@ -48,6 +58,7 @@ import { GatewayErrorCode } from '../../services/gateway-error-codes';
 import { gatewayErrorJson } from '../../services/gateway-error-response';
 import { RequestTimingCollector } from '../../services/request-timing';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
+import { resolveTemporaryAudioPublisher } from '../../services/temporary-audio-upload';
 
 type AudioEnv = Env & { Variables: { apiKey: ApiKeyContext } };
 type AudioContext = Context<AudioEnv>;
@@ -58,7 +69,8 @@ audioRoutes.use('*', requireApiKey);
 
 async function resolveOpenAiAudioRoutes(
 	repos: GatewayRepositories,
-	rawModelId: string
+	rawModelId: string,
+	requestOperation: 'audio.transcriptions' | 'audio.speech'
 ): Promise<
 	| {
 			ok: true;
@@ -84,14 +96,14 @@ async function resolveOpenAiAudioRoutes(
 			modelId: baseModelId,
 			routeGroup: effectiveRouteGroup,
 			requestProtocol: 'openai',
-			requestOperation: 'audio.transcriptions',
+			requestOperation,
 		});
 		const routes = resolvedSurface.routes;
 		if (routes.length === 0) {
 			return {
 				ok: false,
 				status: 502,
-				error: `No OpenAI route in route group "${effectiveRouteGroup}" for this model`,
+					error: `No ${requestOperation === 'audio.speech' ? 'audio speech' : 'audio transcription'} route in route group "${effectiveRouteGroup}" for this model`,
 			};
 		}
 		return {
@@ -232,6 +244,20 @@ async function parseMultipartTranscription(c: {
 			clientDurationSeconds = n;
 		}
 	}
+	const fileSourceUrlRaw = multipartTextField(body.file_url);
+	let fileSourceUrl: string | undefined;
+	if (fileSourceUrlRaw) {
+		let parsedUrl: URL;
+		try {
+			parsedUrl = new URL(fileSourceUrlRaw);
+		} catch {
+			return { ok: false, error: 'file_url must be a valid URL' };
+		}
+		if (!['http:', 'https:', 'oss:'].includes(parsedUrl.protocol)) {
+			return { ok: false, error: 'file_url must use http(s) or oss' };
+		}
+		fileSourceUrl = parsedUrl.toString();
+	}
 
 	return {
 		ok: true,
@@ -242,8 +268,9 @@ async function parseMultipartTranscription(c: {
 			language,
 			prompt,
 			temperature,
-			clientDurationSeconds,
-		},
+				clientDurationSeconds,
+				fileSourceUrl,
+			},
 	};
 }
 
@@ -264,7 +291,7 @@ audioRoutes.post('/transcriptions', async (c) => {
 	}
 	const { model: rawModelId, transcription } = parsed;
 
-	const routed = await resolveOpenAiAudioRoutes(repos, rawModelId);
+	const routed = await resolveOpenAiAudioRoutes(repos, rawModelId, 'audio.transcriptions');
 	if (!routed.ok) {
 		if (routed.status !== 404) {
 			console.warn(
@@ -321,8 +348,9 @@ audioRoutes.post('/transcriptions', async (c) => {
 			byteLength: transcription.file.bytes.byteLength,
 			language: transcription.language,
 			responseFormat: transcription.clientResponseFormat,
-			clientDurationSeconds: transcription.clientDurationSeconds,
-		})
+				clientDurationSeconds: transcription.clientDurationSeconds,
+				fileSourceUrl: transcription.fileSourceUrl,
+			})
 	);
 
 	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {
@@ -366,6 +394,9 @@ audioRoutes.post('/transcriptions', async (c) => {
 			strategy: strategyPlan.base,
 			tierStrategies: strategyPlan.tierOverrides,
 			timing,
+			dashScope: {
+				publishUpload: resolveTemporaryAudioPublisher(c.env),
+			},
 		}
 	);
 
@@ -384,6 +415,340 @@ audioRoutes.post('/transcriptions', async (c) => {
 		timing,
 	});
 });
+
+const SPEECH_RESPONSE_FORMATS = new Set<AudioSpeechResponseFormat>([
+	'mp3',
+	'opus',
+	'aac',
+	'flac',
+	'wav',
+	'pcm',
+]);
+
+function parseSpeechVoice(value: unknown): AudioSpeechVoice | null {
+	if (typeof value === 'string' && value.trim() !== '') return value.trim();
+	if (
+		value != null &&
+		typeof value === 'object' &&
+		!Array.isArray(value) &&
+		typeof (value as Record<string, unknown>).id === 'string' &&
+		((value as Record<string, unknown>).id as string).trim() !== ''
+	) {
+		return { id: ((value as Record<string, unknown>).id as string).trim() };
+	}
+	return null;
+}
+
+function parseSpeechRequest(body: unknown):
+	| { ok: true; model: string; speech: NormalizedAudioSpeechRequest }
+	| { ok: false; error: string } {
+	if (!body || typeof body !== 'object' || Array.isArray(body)) {
+		return { ok: false, error: 'JSON body must be an object' };
+	}
+	const value = body as Record<string, unknown>;
+	const model = typeof value.model === 'string' ? value.model.trim() : '';
+	if (!model) return { ok: false, error: 'Missing model' };
+	const input = typeof value.input === 'string' ? value.input : '';
+	const inputCharacters = Array.from(input).length;
+	if (inputCharacters === 0) return { ok: false, error: 'Missing input' };
+	if (inputCharacters > 4096) return { ok: false, error: 'input must be at most 4096 characters' };
+	const voice = parseSpeechVoice(value.voice);
+	if (!voice) return { ok: false, error: 'Missing or invalid voice' };
+
+	const responseFormatRaw =
+		typeof value.response_format === 'string' ? value.response_format.trim().toLowerCase() : 'mp3';
+	if (!SPEECH_RESPONSE_FORMATS.has(responseFormatRaw as AudioSpeechResponseFormat)) {
+		return { ok: false, error: `Unsupported response_format: ${responseFormatRaw}` };
+	}
+	const speed = value.speed == null ? 1 : Number(value.speed);
+	if (!Number.isFinite(speed) || speed < 0.25 || speed > 4) {
+		return { ok: false, error: 'speed must be between 0.25 and 4.0' };
+	}
+	const streamFormatRaw =
+		typeof value.stream_format === 'string' ? value.stream_format.trim().toLowerCase() : 'audio';
+	if (streamFormatRaw !== 'audio' && streamFormatRaw !== 'sse') {
+		return { ok: false, error: 'stream_format must be audio or sse' };
+	}
+	let instructions: string | undefined;
+	if (value.instructions != null) {
+		if (typeof value.instructions !== 'string') {
+			return { ok: false, error: 'instructions must be a string' };
+		}
+		if (Array.from(value.instructions).length > 4096) {
+			return { ok: false, error: 'instructions must be at most 4096 characters' };
+		}
+		if (value.instructions !== '') instructions = value.instructions;
+	}
+
+	return {
+		ok: true,
+		model,
+		speech: {
+			input,
+			voice,
+			responseFormat: responseFormatRaw as AudioSpeechResponseFormat,
+			speed,
+			streamFormat: streamFormatRaw,
+			instructions,
+		},
+	};
+}
+
+audioRoutes.post('/speech', async (c) => {
+	const repos = c.get('repositories');
+	const apiKey = c.get('apiKey');
+	const start = Date.now();
+	const timing = new RequestTimingCollector();
+	let body: unknown;
+	try {
+		body = await c.req.json();
+	} catch {
+		return gatewayErrorJson(c, {
+			status: 400,
+			code: GatewayErrorCode.invalidJson,
+			message: 'Invalid JSON body',
+		});
+	}
+	const parsed = parseSpeechRequest(body);
+	if (!parsed.ok) {
+		return gatewayErrorJson(c, {
+			status: 400,
+			code: GatewayErrorCode.invalidRequest,
+			message: parsed.error,
+		});
+	}
+	const { model: rawModelId, speech } = parsed;
+	const routed = await resolveOpenAiAudioRoutes(repos, rawModelId, 'audio.speech');
+	if (!routed.ok) {
+		return gatewayErrorJson(c, {
+			status: routed.status as 400 | 403 | 404 | 502,
+			code:
+				routed.status === 404
+					? GatewayErrorCode.modelNotFound
+					: routed.status === 502
+						? GatewayErrorCode.routeResolutionFailed
+						: GatewayErrorCode.invalidRequest,
+			message: routed.error,
+		});
+	}
+	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
+	const modelNameForLog = modelDisplayName(model, baseModelId);
+	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+		return gatewayErrorJson(c, {
+			status: 403,
+			code: GatewayErrorCode.budgetExceeded,
+			message: 'Budget exceeded',
+		});
+	}
+	const estimate = await estimateAudioSpeechBudgetPrecheck(
+		repos,
+		{
+			modelPricingProfileJson: model.pricing_profile ?? null,
+			inputCharacters: Array.from(speech.input).length,
+			requestStartedAtMs: start,
+		},
+		routes.map((route) => route.priceOverrideRaw)
+	);
+	if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost)) {
+		return gatewayErrorJson(c, {
+			status: 403,
+			code: GatewayErrorCode.budgetExceeded,
+			message: 'Budget exceeded',
+		});
+	}
+
+	const requestBodyForLog = finalizeRequestLogJson(
+		redactAudioSpeechRequestForLog(rawModelId, speech)
+	);
+	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {
+		baseModelId,
+		modelNameForLog,
+		requestBodyForLog,
+		requestProtocol: 'openai',
+		startMs: start,
+		timing,
+		clientErrorCircuitEnabled: false,
+	});
+	if (circuitBlocked) return circuitBlocked;
+
+	const strategyPlan = await resolveRouteStrategyPlan({
+		routePolicyRaw: model.route_policy ?? null,
+		poolStrategy: routed.poolStrategy,
+		poolTierStrategies: routed.poolTierStrategies,
+		protocol: 'openai',
+		capability: 'audio.speech',
+		routeGroup: effectiveRouteGroup,
+		repos,
+	});
+	const affinityKey = buildAffinityKey(apiKey.userId, baseModelId, effectiveRouteGroup, 'openai');
+	const tierKeyPrefix = buildTierKeyPrefix(baseModelId, effectiveRouteGroup, 'openai');
+	timing.markGatewayComplete();
+	const proxyResult = await proxyAudioSpeech(
+		repos,
+		routes,
+		speech,
+		c.req.raw.signal,
+		{
+			affinityKey,
+			tierKeyPrefix,
+			strategy: strategyPlan.base,
+			tierStrategies: strategyPlan.tierOverrides,
+			timing,
+		}
+	);
+	return finalizeSpeechResponse({
+		c,
+		proxyResult,
+		apiKey,
+		repos,
+		baseModelId,
+		effectiveRouteGroup,
+		modelNameForLog,
+		requestBodyForLog,
+		modelPricingProfileJson: model.pricing_profile ?? null,
+		start,
+		timing,
+	});
+});
+
+async function finalizeSpeechResponse(params: {
+	c: AudioContext;
+	proxyResult: ProxyResult;
+	apiKey: ApiKeyContext;
+	repos: GatewayRepositories;
+	baseModelId: string;
+	effectiveRouteGroup: string;
+	modelNameForLog: string;
+	requestBodyForLog: string | null;
+	modelPricingProfileJson: string | null;
+	start: number;
+	timing: RequestTimingCollector;
+}): Promise<Response> {
+	const {
+		c,
+		proxyResult,
+		apiKey,
+		repos,
+		baseModelId,
+		effectiveRouteGroup,
+		modelNameForLog,
+		requestBodyForLog,
+		modelPricingProfileJson,
+		start,
+		timing,
+	} = params;
+	const { chosenRoute, upstreamRequestId, circuitEvents, suppressErrorAlert } = proxyResult;
+	const { response, errorBodyText } = await materializeNonOkResponse(proxyResult.response);
+	let userModelCircuitEvent = null;
+	if (response.ok) {
+		markUserModelSuccess(apiKey.userId, baseModelId);
+	} else if (errorBodyText != null) {
+		userModelCircuitEvent = maybeTriggerUserModelCircuitFromUpstream(
+			apiKey.userId,
+			baseModelId,
+			response.status,
+			response.headers.get('content-type'),
+			errorBodyText,
+			formatHttpErrorTextForRequestLog(
+				response.status,
+				response.headers.get('content-type'),
+				errorBodyText
+			),
+			{ clientErrorCircuitEnabled: false }
+		);
+	}
+	const alertCircuitEvents = userModelCircuitEvent
+		? [...circuitEvents, userModelCircuitEvent]
+		: circuitEvents;
+	const speechErrorMessage = (usage: UsageFromStream): string | undefined => {
+		if (response.ok && !usage.cancelled && !usage.stream_error) return undefined;
+		if (usage.cancelled) return 'Client disconnected before speech stream completed';
+		if (usage.stream_error) return `Speech stream failed: ${usage.stream_error}`;
+		if (errorBodyText != null) {
+			return formatHttpErrorTextForRequestLog(
+				response.status,
+				response.headers.get('content-type'),
+				errorBodyText
+			);
+		}
+		return `HTTP ${response.status}`;
+	};
+
+	scheduleBackgroundWork(
+		c,
+		proxyResult.usagePromise
+			.catch((): UsageFromStream => ({
+				input_tokens: 0,
+				output_tokens: 0,
+				cache_read_tokens: 0,
+				cache_write_tokens: 0,
+				reasoning_tokens: 0,
+				total_tokens: 0,
+				raw_usage: null,
+			}))
+			.then((usage) => {
+				const tokenUsage =
+					usage.input_tokens > 0 || usage.output_tokens > 0 || usage.total_tokens > 0
+						? {
+								input_tokens: usage.input_tokens,
+								output_tokens: usage.output_tokens,
+								total_tokens: usage.total_tokens,
+								audio_tokens: usage.output_tokens,
+								text_tokens: usage.input_tokens,
+								raw_usage: usage.raw_usage,
+							}
+						: null;
+				const status: 'success' | 'error' =
+					response.ok && !usage.cancelled && !usage.stream_error ? 'success' : 'error';
+				const errorMessage = speechErrorMessage(usage);
+				return recordAudioUsage({
+					repos,
+					apiKeyId: apiKey.keyId,
+					userId: apiKey.userId,
+					userEmail: apiKey.userEmail,
+					modelId: baseModelId,
+					providerId: chosenRoute.providerId,
+					providerModelName: chosenRoute.providerModelName,
+					modelName: modelNameForLog,
+					providerName: chosenRoute.providerName,
+					requestBody: requestBodyForLog,
+					requestProtocol: 'openai',
+					requestOperation: 'audio.speech',
+					upstreamProtocol: chosenRoute.upstreamProtocol,
+					upstreamOperation: chosenRoute.upstreamOperation,
+					modelSurfaceId: chosenRoute.modelSurfaceId,
+					routePoolId: chosenRoute.routePoolId,
+					routeTargetId: chosenRoute.targetId,
+					adapter: chosenRoute.adapter,
+					routeGroup: effectiveRouteGroup,
+					status,
+					latencyMs: Date.now() - start,
+					errorMessage,
+					billing: {
+						modelPricingProfileJson,
+						routePriceOverrideJson: chosenRoute.priceOverrideRaw,
+						durationSeconds: 0,
+						requestStartedAtMs: start,
+						characters: response.ok ? (usage.audio_characters ?? null) : null,
+						tokenUsage: response.ok ? tokenUsage : null,
+					},
+					providerKeyId: chosenRoute.providerKeyId ?? null,
+					providerKeyLabel: chosenRoute.providerKeyLabel ?? null,
+					providerKeyFingerprint: chosenRoute.providerKeyFingerprint ?? null,
+					upstreamRequestId,
+					timing: timing.snapshot(),
+					circuitEvents: alertCircuitEvents.length > 0 ? alertCircuitEvents : undefined,
+					suppressErrorAlert: suppressErrorAlert || undefined,
+				});
+			})
+			.catch((error) => {
+				console.error(
+					`[Gateway Audio] record speech usage failed baseModelId=${baseModelId} error=${error instanceof Error ? error.message : String(error)}`
+				);
+			})
+	);
+	return response;
+}
 
 async function finalizeAudioResponse(params: {
 	c: AudioContext;

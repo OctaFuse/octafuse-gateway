@@ -1,72 +1,92 @@
-import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
-import { previewPlaygroundUpstreamUrl } from './preview-upstream-url';
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { previewPlaygroundUpstreamUrl } from "./preview-upstream-url";
 
-describe('previewPlaygroundUpstreamUrl', () => {
-	it('builds wangsu-style image URL without appending /images/generations', () => {
+describe("previewPlaygroundUpstreamUrl", () => {
+	it("builds wangsu-style image URL without appending /images/generations", () => {
 		const url = previewPlaygroundUpstreamUrl({
 			provider: {
-				id: 'p1',
+				id: "p1",
 				endpoints: JSON.stringify({
 					openai: {
-						base: 'https://aigateway.edgecloudapp.com/v1/abc/openai-image-generations',
+						base: "https://aigateway.edgecloudapp.com/v1/abc/openai-image-generations",
 					},
 				}),
 			},
-			upstreamProtocol: 'openai',
-			providerModelName: 'gpt-image-2',
+			upstreamProtocol: "openai",
+			providerModelName: "gpt-image-2",
 			isImageModel: true,
 		});
 		assert.equal(
 			url,
-			'https://aigateway.edgecloudapp.com/v1/abc/openai-image-generations'
+			"https://aigateway.edgecloudapp.com/v1/abc/openai-image-generations"
 		);
 	});
 
-	it('appends /images/generations for standard OpenAI roots', () => {
+	it("appends /images/generations for standard OpenAI roots", () => {
 		const url = previewPlaygroundUpstreamUrl({
 			provider: {
-				id: 'p1',
+				id: "p1",
 				endpoints: JSON.stringify({
-					openai: { base: 'https://api.openai.com/v1' },
+					openai: { base: "https://api.openai.com/v1" },
 				}),
 			},
-			upstreamProtocol: 'openai',
-			providerModelName: 'gpt-image-2',
+			upstreamProtocol: "openai",
+			providerModelName: "gpt-image-2",
 			isImageModel: true,
 		});
-		assert.equal(url, 'https://api.openai.com/v1/images/generations');
+		assert.equal(url, "https://api.openai.com/v1/images/generations");
 	});
 
-	it('appends /images/edits when imageOperation is edits', () => {
+	it("appends /images/edits when imageOperation is edits", () => {
 		const url = previewPlaygroundUpstreamUrl({
 			provider: {
-				id: 'p1',
+				id: "p1",
 				endpoints: JSON.stringify({
-					openai: { base: 'https://api.openai.com/v1' },
+					openai: { base: "https://api.openai.com/v1" },
 				}),
 			},
-			upstreamProtocol: 'openai',
-			providerModelName: 'gpt-image-2',
+			upstreamProtocol: "openai",
+			providerModelName: "gpt-image-2",
 			isImageModel: true,
-			imageOperation: 'edits',
+			imageOperation: "edits",
 		});
-		assert.equal(url, 'https://api.openai.com/v1/images/edits');
+		assert.equal(url, "https://api.openai.com/v1/images/edits");
 	});
 
-	it('appends /audio/transcriptions for audio models', () => {
+	it("appends /audio/transcriptions for audio models", () => {
 		const url = previewPlaygroundUpstreamUrl({
 			provider: {
-				id: 'p1',
+				id: "p1",
 				endpoints: JSON.stringify({
-					openai: { base: 'https://api.openai.com/v1' },
+					openai: { base: "https://api.openai.com/v1" },
 				}),
 			},
-			upstreamProtocol: 'openai',
-			providerModelName: 'whisper-1',
+			upstreamProtocol: "openai",
+			providerModelName: "whisper-1",
 			isImageModel: false,
 			isAudioModel: true,
 		});
-		assert.equal(url, 'https://api.openai.com/v1/audio/transcriptions');
+		assert.equal(url, "https://api.openai.com/v1/audio/transcriptions");
+	});
+
+	it("builds the DashScope multimodal ASR URL from the selected route operation", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					dashscope: { base: "https://dashscope.aliyuncs.com/api/v1" },
+				}),
+			},
+			upstreamProtocol: "dashscope",
+			upstreamOperation: "audio.transcriptions.multimodal",
+			providerModelName: "fun-asr-realtime",
+			isImageModel: false,
+			isAudioModel: true,
+		});
+		assert.equal(
+			url,
+			"https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+		);
 	});
 });

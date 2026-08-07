@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
-	isAudioTranscriptionModel,
+	isAudioModel,
 	isImageGenerationModel,
 	isTextLlmModel,
 	parseModelModalitiesJson,
@@ -45,14 +45,16 @@ import {
 import {
 	ALL_VENDORS_KEY,
 	DEFAULT_KIND_FILTER,
+	DEFAULT_MODEL_LIST_KIND_FILTER,
 	EMPTY_AUDIO_MODEL_FORM,
 	EMPTY_IMAGE_MODEL_FORM,
 	EMPTY_MODEL_FORM,
-	parseKindFilterParam,
+	parseModelListKindFilterParam,
 	type MetadataPreviewState,
 	type ModelFormData,
 	type ModelFormKind,
 	type ModelKindFilter,
+	type ModelListKindFilter,
 	type ModelListItem,
 	type PresetCatalogRow,
 } from './types';
@@ -65,7 +67,7 @@ export function useModelsPageState() {
 	const editDeepLinkHandledRef = useRef<string | null>(null);
 	const [models, setModels] = useState<ModelListItem[]>([]);
 	const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
-	const [selectedKind, setSelectedKind] = useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
+	const [selectedKind, setSelectedKind] = useState<ModelListKindFilter>(DEFAULT_MODEL_LIST_KIND_FILTER);
 	const [isLoading, setIsLoading] = useState(true);
 	const [showModal, setShowModal] = useState(false);
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
@@ -144,11 +146,12 @@ export function useModelsPageState() {
 	}, [importCatalogSearch, importCatalogKind, importCatalogRows]);
 
 	const kindFilteredModels = useMemo(() => {
+		if (selectedKind === 'all') return models;
 		if (selectedKind === 'image') {
 			return models.filter((m) => isImageGenerationModel(m));
 		}
 		if (selectedKind === 'audio') {
-			return models.filter((m) => isAudioTranscriptionModel(m));
+			return models.filter((m) => isAudioModel(m));
 		}
 		return models.filter((m) => isTextLlmModel(m));
 	}, [models, selectedKind]);
@@ -166,7 +169,7 @@ export function useModelsPageState() {
 		let audio = 0;
 		for (const m of models) {
 			if (isImageGenerationModel(m)) image += 1;
-			else if (isAudioTranscriptionModel(m)) audio += 1;
+			else if (isAudioModel(m)) audio += 1;
 			else llm += 1;
 		}
 		return { llm, image, audio };
@@ -187,7 +190,7 @@ export function useModelsPageState() {
 		}
 		const kindParam = searchParams.get('kind');
 		if (kindParam !== null) {
-			setSelectedKind(parseKindFilterParam(kindParam));
+			setSelectedKind(parseModelListKindFilterParam(kindParam));
 		}
 	}, [searchParams]);
 
@@ -265,7 +268,8 @@ export function useModelsPageState() {
 		setShowImportCatalogModal(true);
 		setImportCatalogError('');
 		setImportCatalogSearch('');
-		setImportCatalogKind(selectedKind);
+		// 导入表格按单一类型显示对应计费列；模型目录选“全部”时从 LLM 目录开始。
+		setImportCatalogKind(selectedKind === 'all' ? DEFAULT_KIND_FILTER : selectedKind);
 		setImportSelected({});
 		void loadImportCatalog();
 	}, [loadImportCatalog, selectedKind]);
@@ -353,7 +357,7 @@ export function useModelsPageState() {
 				output_modalities: outputMods,
 				pricing_profile: model.pricing_profile,
 			});
-			const audioModel = isAudioTranscriptionModel({
+			const audioModel = isAudioModel({
 				pricing_profile: model.pricing_profile,
 			});
 			const kind: ModelFormKind = audioModel ? 'audio' : imageModel ? 'image' : 'llm';
@@ -539,7 +543,7 @@ export function useModelsPageState() {
 		}
 
 		setSelectedKind(
-			isImageGenerationModel(model) ? 'image' : isAudioTranscriptionModel(model) ? 'audio' : 'llm'
+			isImageGenerationModel(model) ? 'image' : isAudioModel(model) ? 'audio' : 'llm'
 		);
 		const vendor = normalizeModelVendorInput(model.vendor);
 		if (vendor) setSelectedVendor(vendor);
@@ -691,13 +695,14 @@ export function useModelsPageState() {
 
 	const clearFilters = useCallback(() => {
 		setSelectedVendor(ALL_VENDORS_KEY);
+		setSelectedKind(DEFAULT_MODEL_LIST_KIND_FILTER);
 	}, []);
 
 	const isAllVendors = selectedVendor === ALL_VENDORS_KEY;
 	const activeVendorKey = isAllVendors ? (vendorKeys[0] ?? 'other') : selectedVendor || vendorKeys[0] || 'other';
 	const activeVendorTitle = isAllVendors ? tCatalog('allVendors') : getModelVendorLabel(activeVendorKey);
 	const hasVendorFilter = !isAllVendors;
-	const hasActiveFilter = hasVendorFilter;
+	const hasActiveFilter = hasVendorFilter || selectedKind !== DEFAULT_MODEL_LIST_KIND_FILTER;
 
 	return {
 		isLoading,

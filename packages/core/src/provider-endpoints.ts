@@ -17,12 +17,20 @@ import {
 	UPSTREAM_PROTOCOLS,
 } from './upstream-protocol';
 
-/** OpenAI / Anthropic / Gemini 出站 capability（可扩展）。 */
+/** 上游协议 capability；DashScope 音频把 HTTP、任务查询和两类 WSS 明确拆开。 */
 export type ProviderEndpointCapability =
 	| 'chat'
 	| 'images.generations'
 	| 'images.edits'
 	| 'audio.transcriptions'
+	| 'audio.transcriptions.multimodal'
+	| 'audio.transcriptions.tasks'
+	| 'audio.speech'
+	| 'audio.speech.multimodal'
+	| 'audio.realtime.inference'
+	| 'audio.realtime.session'
+	| 'audio.hotwords'
+	| 'audio.voices'
 	| 'messages'
 	| 'models.generate'
 	| 'generateContent'
@@ -33,6 +41,7 @@ export const OPENAI_ENDPOINT_CAPABILITIES = [
 	'images.generations',
 	'images.edits',
 	'audio.transcriptions',
+	'audio.speech',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
 export const ANTHROPIC_ENDPOINT_CAPABILITIES = ['messages'] as const satisfies readonly ProviderEndpointCapability[];
@@ -47,10 +56,24 @@ export const GEMINI_LEGACY_ENDPOINT_CAPABILITIES = [
 	...GEMINI_LEGACY_GENERATE_OPERATIONS,
 ] as const satisfies readonly ProviderEndpointCapability[];
 
+/** DashScope 原生音频能力；同一 base 可派生官方 HTTP 与 WebSocket 路径。 */
+export const DASHSCOPE_ENDPOINT_CAPABILITIES = [
+	'audio.transcriptions',
+	'audio.transcriptions.multimodal',
+	'audio.transcriptions.tasks',
+	'audio.speech',
+	'audio.speech.multimodal',
+	'audio.realtime.inference',
+	'audio.realtime.session',
+	'audio.hotwords',
+	'audio.voices',
+] as const satisfies readonly ProviderEndpointCapability[];
+
 const CAPABILITIES_BY_PROTOCOL: Record<UpstreamProtocol, readonly ProviderEndpointCapability[]> = {
 	openai: OPENAI_ENDPOINT_CAPABILITIES,
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: GEMINI_ENDPOINT_CAPABILITIES,
+	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 };
 
 /** Write-side whitelist: gemini accepts canonical + legacy keys. */
@@ -61,6 +84,7 @@ export const WRITABLE_CAPABILITIES_BY_PROTOCOL: Record<
 	openai: OPENAI_ENDPOINT_CAPABILITIES,
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: [...GEMINI_ENDPOINT_CAPABILITIES, ...GEMINI_LEGACY_ENDPOINT_CAPABILITIES],
+	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 };
 
 const ALL_CAPABILITIES = new Set<string>([
@@ -68,6 +92,7 @@ const ALL_CAPABILITIES = new Set<string>([
 	...ANTHROPIC_ENDPOINT_CAPABILITIES,
 	...GEMINI_ENDPOINT_CAPABILITIES,
 	...GEMINI_LEGACY_ENDPOINT_CAPABILITIES,
+	...DASHSCOPE_ENDPOINT_CAPABILITIES,
 ]);
 
 /** 单协议配置：`base` 与/或按 capability 的完整 URL 模板。 */
@@ -197,6 +222,22 @@ function assertHttpUrl(url: string, label: string): void {
 	}
 }
 
+function assertWebSocketUrl(url: string, label: string): void {
+	let parsed: URL;
+	try {
+		parsed = new URL(url);
+	} catch {
+		throw new Error(`${label} is not a valid URL`);
+	}
+	if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
+		throw new Error(`${label} must be ws(s)`);
+	}
+}
+
+function isDashScopeRealtimeCapability(capability: string): boolean {
+	return capability === 'audio.realtime.inference' || capability === 'audio.realtime.session';
+}
+
 /**
  * 校验并规范化 admin 写入的 endpoints（对象或 JSON 字符串）。
  * @throws Error 结构 / 协议名 / capability / URL / Gemini `{model}` 不合法
@@ -244,7 +285,15 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 				}
 				const url = nonEmptyTrimmed(urlRaw);
 				if (!url) continue;
-				assertHttpUrl(url.replace(/\{model\}/g, 'm').replace(/\{action\}/g, 'a'), `endpoints.${protocol}.endpoints.${cap}`);
+				const urlForValidation = url
+					.replace(/\{model\}/g, 'm')
+					.replace(/\{action\}/g, 'a')
+					.replace(/\{task_id\}/g, 't');
+				if (protocol === 'dashscope' && isDashScopeRealtimeCapability(cap)) {
+					assertWebSocketUrl(urlForValidation, `endpoints.${protocol}.endpoints.${cap}`);
+				} else {
+					assertHttpUrl(urlForValidation, `endpoints.${protocol}.endpoints.${cap}`);
+				}
 				if (protocol === 'gemini') {
 					if (!url.includes('{model}')) {
 						throw new Error(
@@ -256,6 +305,15 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 							`endpoints.${protocol}.endpoints.${cap} must include {action} placeholder`
 						);
 					}
+				}
+				if (
+					protocol === 'dashscope' &&
+					cap === 'audio.transcriptions.tasks' &&
+					!url.includes('{task_id}')
+				) {
+					throw new Error(
+						`endpoints.${protocol}.endpoints.${cap} must include {task_id} placeholder`
+					);
 				}
 				mapped[cap as ProviderEndpointCapability] = url;
 			}
@@ -275,12 +333,12 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 
 function fillEndpointTemplate(
 	template: string,
-	vars: { model?: string; action?: string }
+	vars: { model?: string; action?: string; taskId?: string }
 ): string {
-	return template.replace(/\{model\}/g, () => encodeURIComponent(vars.model ?? '')).replace(
-		/\{action\}/g,
-		() => encodeURIComponent(vars.action ?? '')
-	);
+	return template
+		.replace(/\{model\}/g, () => encodeURIComponent(vars.model ?? ''))
+		.replace(/\{action\}/g, () => encodeURIComponent(vars.action ?? ''))
+		.replace(/\{task_id\}/g, () => encodeURIComponent(vars.taskId ?? ''));
 }
 
 export type ResolveUpstreamEndpointOptions = {
@@ -288,6 +346,8 @@ export type ResolveUpstreamEndpointOptions = {
 	/** Gemini action；与 capability 一致时可省略 */
 	action?: string;
 	providerId?: string;
+	/** DashScope 异步文件识别任务查询 ID。 */
+	taskId?: string;
 };
 
 function resolveGeminiWireAction(
@@ -304,6 +364,16 @@ function resolveGeminiWireAction(
 	throw new Error(
 		'Gemini upstream endpoint requires action (generateContent or streamGenerateContent)'
 	);
+}
+
+/** DashScope WSS 与 HTTP 共用 host，但协议和固定 API 根不同。 */
+function buildDashScopeWebSocketUrl(base: string, endpoint: 'inference' | 'realtime'): string {
+	const url = new URL(base);
+	url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+	url.pathname = `/api-ws/v1/${endpoint}`;
+	url.search = '';
+	url.hash = '';
+	return url.toString();
 }
 
 /**
@@ -367,7 +437,14 @@ export function resolveUpstreamEndpoint(
 
 	const template = cfg?.endpoints?.[resolvedCapability];
 	if (template) {
-		return fillEndpointTemplate(template, { model: options.model, action: options.action });
+		if (resolvedCapability === 'audio.transcriptions.tasks' && !options.taskId) {
+			throw new Error('DashScope task endpoint requires taskId');
+		}
+		return fillEndpointTemplate(template, {
+			model: options.model,
+			action: options.action,
+			taskId: options.taskId,
+		});
 	}
 
 	const base = cfg?.base;
@@ -381,7 +458,30 @@ export function resolveUpstreamEndpoint(
 			case 'images.edits':
 				return buildOpenAiCompatibleImagesUrl(root, 'edits');
 			case 'audio.transcriptions':
-				return `${root}/audio/transcriptions`;
+				return protocol === 'dashscope'
+					? `${root}/services/audio/asr/transcription`
+					: `${root}/audio/transcriptions`;
+			case 'audio.transcriptions.multimodal':
+				return `${root}/services/aigc/multimodal-generation/generation`;
+			case 'audio.transcriptions.tasks':
+				if (!options.taskId) {
+					throw new Error('DashScope task endpoint requires taskId');
+				}
+				return `${root}/tasks/${encodeURIComponent(options.taskId)}`;
+			case 'audio.speech':
+				return protocol === 'dashscope'
+					? `${root}/services/audio/tts/SpeechSynthesizer`
+					: `${root}/audio/speech`;
+			case 'audio.speech.multimodal':
+				return `${root}/services/aigc/multimodal-generation/generation`;
+			case 'audio.realtime.inference':
+				return buildDashScopeWebSocketUrl(root, 'inference');
+			case 'audio.realtime.session':
+				return buildDashScopeWebSocketUrl(root, 'realtime');
+			case 'audio.hotwords':
+				return `${root}/services/audio/asr/customization`;
+			case 'audio.voices':
+				return `${root}/services/audio/tts/customization`;
 			case 'messages':
 				return `${root}/v1/messages`;
 			default: {
