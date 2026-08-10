@@ -101,7 +101,7 @@ Authorization: Bearer <gateway-api-key>
 
 TTS 不支持 `audio.speech.realtime.session`（Qwen-TTS-Realtime 会话模式不在本期范围内）。
 
-客户端发送 DashScope 官方 `run-task` 或 `session.update` 事件。网关只把启动帧中的模型替换为路由配置的 Provider model，并转发后续文本、二进制帧和服务端事件。实时代理依赖 Cloudflare Workers 的 `WebSocketPair`；Node runtime 会返回 `501`，不会假装支持。
+客户端发送 DashScope 官方 `run-task` 或 `session.update` 事件。网关只把启动帧中的模型替换为路由配置的 Provider model，并转发后续文本、二进制帧和服务端事件。Cloudflare Worker 使用 `WebSocketPair`，Node Proxy runtime 使用 `ws` 的 HTTP upgrade 适配器；两条路径共用路由、鉴权、初始连接 failover、事件转发和用量记录逻辑。
 
 ## 热词与音色资源
 

@@ -41,7 +41,17 @@ export type DashScopeRealtimeDispatchOptions = {
 	fetchImpl?: typeof fetch;
 	/** 浏览器通过 Sec-WebSocket-Protocol 鉴权时，回写被选中的 token。 */
 	responseProtocol?: string;
+	/** Node 运行时的 upgrade 适配器；Worker 继续使用 WebSocketPair。 */
+	nodeDispatch?: DashScopeRealtimeNodeDispatch;
 };
+
+export type DashScopeRealtimeNodeDispatch = (
+	route: RouteResult,
+	operation: DashScopeRealtimeOperation,
+	requestSignal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt
+) => Promise<ProxyDispatchResult>;
 
 function asObject(value: unknown): JsonObject | null {
 	return value != null && typeof value === "object" && !Array.isArray(value)
@@ -334,6 +344,9 @@ export async function dispatchDashScopeRealtime(
 	attempt?: RequestTimingAttempt,
 	options: DashScopeRealtimeDispatchOptions = {}
 ): Promise<ProxyDispatchResult> {
+	if (options.nodeDispatch) {
+		return options.nodeDispatch(route, operation, requestSignal, timing, attempt);
+	}
 	if (typeof WebSocketPair === "undefined") {
 		return {
 			response: new Response(

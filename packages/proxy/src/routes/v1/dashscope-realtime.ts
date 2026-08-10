@@ -227,6 +227,7 @@ dashScopeRealtimeRoutes.get('/', async (c) => {
 		operationRaw,
 		c.req.raw.signal,
 		{
+			nodeDispatch: c.env.NODE_REALTIME_DISPATCH,
 			responseProtocol: parseDashScopeRealtimeAuthProtocol(
 				c.req.header('Sec-WebSocket-Protocol')
 			)?.protocol,
@@ -246,7 +247,10 @@ dashScopeRealtimeRoutes.get('/', async (c) => {
 			timing,
 		}
 	);
-	if (proxyResult.response.status !== 101 || !proxyResult.response.webSocket) {
+	const nodeUpgrade =
+		c.env.NODE_REALTIME_DISPATCH != null &&
+		proxyResult.response.headers.get('x-octafuse-realtime-upgrade') === '1';
+	if (!nodeUpgrade && (proxyResult.response.status !== 101 || !proxyResult.response.webSocket)) {
 		return proxyResult.response;
 	}
 

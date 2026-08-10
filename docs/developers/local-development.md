@@ -137,6 +137,8 @@ npm run db:migrate:pg   # 首次迁移（种子键由 `0002_seed.sql` 写入）
 npm run dev:proxy:node   # 等价于先 dotenv 加载根 .env，再执行 proxy 的 dev:node
 ```
 
+Node Proxy 同样暴露 `GET /v1/dashscope/realtime` WebSocket 入口；浏览器客户端通过 `Sec-WebSocket-Protocol` 传递网关 API Key，与 Cloudflare Proxy 入口使用同一协议。
+
 **或**在 **`packages/proxy`** 目录放置 `.env`（可复制 [`packages/proxy/.env.example`](../../packages/proxy/.env.example)），然后：
 
 ```bash

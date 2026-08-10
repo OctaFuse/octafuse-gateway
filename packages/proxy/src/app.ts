@@ -21,12 +21,15 @@ import { imageRoutes } from './routes/v1/images';
 import { audioRoutes } from './routes/v1/audio';
 import { dashScopeRealtimeRoutes } from './routes/v1/dashscope-realtime';
 import { proxyAppVersion } from './app-version';
+import type { DashScopeRealtimeNodeDispatch } from './services/egress/dashscope-realtime-driver';
 
 /** Cloudflare Worker bindings：D1 `DB`。Postgres 见 `src/runtime/node.ts`。 */
 export type GatewayBindings = {
 	DB?: D1Database;
 	/** 可选；仅允许 `d1` 或省略。 */
 	DATABASE_DRIVER?: string;
+	/** Node upgrade 请求临时注入的实时 WebSocket 调度器；不作为 Worker binding。 */
+	NODE_REALTIME_DISPATCH?: DashScopeRealtimeNodeDispatch;
 };
 
 export type Env = {
