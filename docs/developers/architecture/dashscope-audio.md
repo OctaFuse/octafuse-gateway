@@ -44,7 +44,7 @@ Adapter 是 route target 的必选、可校验能力，不使用字符串兜底�
 | `passthrough`              | 同协议、同 operation                                                 |
 | `dashscope-asr-qwen-file`  | OpenAI multipart ASR → Base64 Data URL → Qwen-ASR 多模态同步 ASR     |
 | `dashscope-asr-fun-file`   | OpenAI multipart ASR → Base64 Data URL → Fun-ASR-Realtime 非实时 ASR |
-| `dashscope-asr-file-async` | OpenAI multipart ASR → 临时文件 URL → DashScope 异步任务             |
+| `dashscope-asr-file-async` | OpenAI `audio.transcriptions` + `file_url` → DashScope 异步任务 |
 | `passthrough`              | DashScope 原生实时 ASR 事件 → DashScope 同名 task/session WebSocket  |
 | `dashscope-tts-speech`     | OpenAI speech → DashScope SpeechSynthesizer                          |
 | `dashscope-tts-qwen`       | OpenAI speech → DashScope Qwen-TTS 多模态 TTS                        |
@@ -82,7 +82,7 @@ API Key 继续使用现有 Provider key 存储；Workspace ID 不是密钥，可
 ## 文件与流式数据
 
 - 同步文件 ASR 可以直接发送上游支持的请求体。
-- 异步文件 ASR 只接受公网 `file_url`。客户端可显式传入 `file_url`；普通上传则必须通过 `AUDIO_UPLOADS` R2 binding 和 `PUBLIC_GATEWAY_BASE_URL` 生成随机临时 URL，并在任务完成或过期后删除。两者都没有时该 adapter 明确报错，不回退成同步请求。
+- 异步文件 ASR 只接受客户端提供的公网 `file_url`（HTTP(S) 或 OSS）。网关不代为上传文件，也不依赖 R2；缺少 `file_url` 时该 adapter 明确报错，不回退成同步请求。
 - TTS 音频和 ASR 大文件不得无界缓冲。HTTP/SSE 音频块使用 `ReadableStream` 转换并向客户端持续写出。
 - WebSocket 使用 `fetch(..., { headers: { Upgrade: 'websocket', Authorization: ... } })` 建立带鉴权头的上游连接；下游由 `WebSocketPair` 接入。二进制消息在 `accept()` 前固定为 `arraybuffer`。
 
@@ -120,14 +120,7 @@ POST /api/admin/providers/:providerId/dashscope/voices
 
 ## 本地配置
 
-同步 ASR、TTS 和资源管理无需额外存储。异步文件 ASR 需要 DashScope 能访问输入文件：请求可以直接带公开的 `file_url`；需要上传本地文件时，则必须同时配置：
-
-```dotenv
-AUDIO_UPLOADS_R2_BUCKET_NAME=<r2-bucket>
-PROXY_PUBLIC_BASE_URL=https://<public-proxy-domain>
-```
-
-生成的临时下载地址含随机 UUID，默认 15 分钟过期，任务完成后立即删除。未配置 R2 且请求又没有 `file_url` 时，`dashscope-asr-file-async` 会明确报错。
+同步 ASR、TTS、资源管理和异步文件 ASR 都无需额外存储。异步文件 ASR 请求必须携带 DashScope 可访问的公开 `file_url`。
 
 数据库还需要应用 `0020_request_log_audio_characters.sql`，用于记录 TTS 的真实字符数。
 

@@ -95,7 +95,8 @@ export type AudioClientResponseFormat =
 	| 'diarized_json';
 
 export type NormalizedAudioTranscriptionRequest = {
-	file: AudioUpload;
+	/** 同步/兼容 OpenAI 路由需要文件；DashScope 异步路由可只使用 fileSourceUrl。 */
+	file: AudioUpload | null;
 	/** DashScope 异步文件识别扩展：公网可访问的 HTTP(S)/OSS 音频地址。 */
 	fileSourceUrl?: string;
 	/** 客户端请求的 format；上游按模型能力选择（whisper 强制 verbose_json 取 duration） */
@@ -331,6 +332,10 @@ export async function dispatchOpenAiAudioTranscriptions(
 		audioTokenUsage: AudioTokenUsage | null;
 	};
 }> {
+	const file = req.file;
+	if (!file) {
+		throw new Error('Audio transcription requires a multipart file for this route');
+	}
 	const url = resolveUpstreamEndpoint('openai', 'audio.transcriptions', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -359,13 +364,13 @@ export async function dispatchOpenAiAudioTranscriptions(
 		}
 	}
 	// Copy into a fresh Uint8Array — `BlobPart` typing rejects some ArrayBufferView brands under Workers TS.
-	const blob = new Blob([new Uint8Array(req.file.bytes)], {
-		type: req.file.mimeType || 'application/octet-stream',
+	const blob = new Blob([new Uint8Array(file.bytes)], {
+		type: file.mimeType || 'application/octet-stream',
 	});
 	form.append(
 		'file',
 		blob,
-		resolveAudioUploadFilename(req.file.filename || '', req.file.mimeType || '')
+		resolveAudioUploadFilename(file.filename || '', file.mimeType || '')
 	);
 
 	const startedAt = Date.now();
@@ -403,16 +408,16 @@ export async function dispatchOpenAiAudioTranscriptions(
 			audioTokenUsage = parseOpenAiAudioTokenUsage(upstreamBody);
 			const resolved = resolveAudioBillingDuration({
 				upstreamSeconds: parseAudioDurationFromUpstreamBody(upstreamBody),
-				fileBytes: req.file.bytes.byteLength,
-				mimeType: req.file.mimeType,
-				fileBytesForParse: req.file.bytes,
+				fileBytes: file.bytes.byteLength,
+				mimeType: file.mimeType,
+				fileBytesForParse: file.bytes,
 				clientSeconds: req.clientDurationSeconds,
 			});
 			audioDurationSeconds = resolved.seconds;
 			audioDurationSource = resolved.source;
 			if (resolved.source !== 'upstream') {
 				console.log(
-					`[Gateway Audio] duration source=${resolved.source} seconds=${resolved.seconds} fileBytes=${req.file.bytes.byteLength}`
+					`[Gateway Audio] duration source=${resolved.source} seconds=${resolved.seconds} fileBytes=${file.bytes.byteLength}`
 				);
 			}
 			if (audioTokenUsage) {
@@ -440,7 +445,7 @@ export async function dispatchOpenAiAudioTranscriptions(
 				parsedBody: upstreamBody,
 				audioDurationSeconds,
 				audioDurationSource,
-				audioFileBytes: req.file.bytes.byteLength,
+				audioFileBytes: file.bytes.byteLength,
 				audioTokenUsage,
 			},
 		};
@@ -481,7 +486,7 @@ export async function dispatchOpenAiAudioTranscriptions(
 				parsedBody: errorBody,
 				audioDurationSeconds: null,
 				audioDurationSource: null,
-				audioFileBytes: req.file.bytes.byteLength,
+				audioFileBytes: file.bytes.byteLength,
 				audioTokenUsage: null,
 			},
 		};

@@ -1,4 +1,4 @@
-import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
+import type { D1Database } from '@cloudflare/workers-types';
 import type { GatewayRepositories, StorageContext } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Context, MiddlewareHandler } from 'hono';
@@ -19,17 +19,12 @@ import { aiDetectionRoutes } from './routes/v1/tools/ai-detection';
 import { toolsPricingRoutes } from './routes/v1/tools/pricing';
 import { imageRoutes } from './routes/v1/images';
 import { audioRoutes } from './routes/v1/audio';
-import { audioUploadRoutes } from './routes/v1/audio-uploads';
 import { dashScopeRealtimeRoutes } from './routes/v1/dashscope-realtime';
 import { proxyAppVersion } from './app-version';
 
 /** Cloudflare Worker bindings：D1 `DB`。Postgres 见 `src/runtime/node.ts`。 */
 export type GatewayBindings = {
 	DB?: D1Database;
-	/** DashScope 异步 ASR 的临时输入文件；仅配置此 binding 时允许上传文件转公网 URL。 */
-	AUDIO_UPLOADS?: R2Bucket;
-	/** AUDIO_UPLOADS 下载入口的公网 Proxy 根 URL。 */
-	PUBLIC_GATEWAY_BASE_URL?: string;
 	/** 可选；仅允许 `d1` 或省略。 */
 	DATABASE_DRIVER?: string;
 };
@@ -105,7 +100,6 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/health', healthRoutes);
 	app.route('/v1/chat/completions', chatRoutes);
 	app.route('/v1/images', imageRoutes);
-	app.route('/v1/audio/uploads', audioUploadRoutes);
 	app.route('/v1/audio', audioRoutes);
 	app.route('/v1/dashscope/realtime', dashScopeRealtimeRoutes);
 	app.route('/v1/messages', messagesRoutes);

@@ -372,7 +372,7 @@
 			"openaiOptional": "OpenAI",
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
-			"dashscopeOptional": "DashScope 音声",
+			"dashscopeOptional": "DashScope",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",

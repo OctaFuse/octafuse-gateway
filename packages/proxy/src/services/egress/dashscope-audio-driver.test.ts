@@ -313,7 +313,8 @@ describe('DashScope ASR dispatch', () => {
 				upstreamOperation: 'audio.transcriptions.async',
 				adapter: 'dashscope-asr-file-async',
 			}),
-			request({ fileSourceUrl: 'https://audio.example/sample.wav' }),
+			// 异步任务由客户端提供公网 URL，网关不需要接收或暂存音频文件。
+			request({ file: null, fileSourceUrl: 'https://audio.example/sample.wav' }),
 			undefined,
 			null,
 			undefined,

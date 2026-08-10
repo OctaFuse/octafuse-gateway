@@ -93,7 +93,7 @@ export interface ProxyResult {
 	/** Images 等协议透传已解析字段，避免 route 侧重复 parse */
 	meta?: ProxyDispatchMeta;
 	/** Sticky routing observation for `route_trace` */
-	stickyTrace?: StickyTraceSnapshot;
+	stickyTrace?: (() => Promise<StickyTraceSnapshot>) | undefined;
 	/** Background bind/touch mutations (schedule via waitUntil) */
 	stickyMutationPromise?: Promise<unknown> | null;
 }

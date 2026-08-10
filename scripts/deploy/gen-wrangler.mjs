@@ -41,8 +41,6 @@ function resolveNames() {
 		d1DatabaseId: trimEnv("D1_DATABASE_ID"),
 		proxyCustomDomain: trimEnv("PROXY_CUSTOM_DOMAIN"),
 		adminCustomDomain: trimEnv("ADMIN_CUSTOM_DOMAIN"),
-		audioUploadsR2BucketName: trimEnv("AUDIO_UPLOADS_R2_BUCKET_NAME"),
-		proxyPublicBaseUrl: trimEnv("PROXY_PUBLIC_BASE_URL"),
 	};
 }
 
@@ -86,11 +84,6 @@ function customDomainRoutes(domain) {
 
 function generateProxy(names) {
 	const base = readBase("packages/proxy/wrangler.base.jsonc");
-	if (Boolean(names.audioUploadsR2BucketName) !== Boolean(names.proxyPublicBaseUrl)) {
-		throw new Error(
-			"AUDIO_UPLOADS_R2_BUCKET_NAME and PROXY_PUBLIC_BASE_URL must be configured together",
-		);
-	}
 	const config = {
 		...base,
 		name: names.proxyWorkerName,
@@ -102,22 +95,6 @@ function generateProxy(names) {
 			),
 		],
 	};
-	if (names.audioUploadsR2BucketName) {
-		config.r2_buckets = [
-			{
-				binding: "AUDIO_UPLOADS",
-				bucket_name: names.audioUploadsR2BucketName,
-			},
-		];
-		config.vars = {
-			...(base.vars ?? {}),
-			PUBLIC_GATEWAY_BASE_URL: names.proxyPublicBaseUrl,
-		};
-	} else {
-		delete config.r2_buckets;
-		if (config.vars) delete config.vars.PUBLIC_GATEWAY_BASE_URL;
-	}
-
 	const routes = customDomainRoutes(names.proxyCustomDomain);
 	if (routes) {
 		config.routes = routes;

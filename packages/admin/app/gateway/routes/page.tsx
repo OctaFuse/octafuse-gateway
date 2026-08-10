@@ -59,6 +59,8 @@ function RoutesContent() {
 		readStickyRefreshInterval,
 		() => 'off' as const
 	);
+	const saveProviderSticky = state.handleSaveProviderSticky;
+	const stickyDialogPoolId = state.stickyDialog?.poolId;
 
 	const handleFlowDensityChange = useCallback((density: RouteFlowDensity) => {
 		try {
@@ -70,10 +72,10 @@ function RoutesContent() {
 	}, []);
 
 	const handleSaveProviderSticky = useCallback(async () => {
-		const poolId = state.stickyDialog?.poolId;
-		await state.handleSaveProviderSticky();
+		const poolId = stickyDialogPoolId;
+		await saveProviderSticky();
 		if (poolId) void invalidate(poolId);
-	}, [invalidate, state.handleSaveProviderSticky, state.stickyDialog?.poolId]);
+	}, [invalidate, saveProviderSticky, stickyDialogPoolId]);
 
 	if (state.isLoading) {
 		return (

@@ -25,17 +25,10 @@ export const DASHSCOPE_ASYNC_POLL_INTERVAL_MS = 1_000;
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
-export type PublishedAudioUpload = {
-	url: string;
-	cleanup: () => Promise<void>;
-};
-
 export type DashScopeAsrDispatchOptions = {
 	fetchImpl?: FetchLike;
 	pollIntervalMs?: number;
 	timeoutMs?: number;
-	/** 异步模型只收公网 URL；上传文件由调用方发布，并在本次任务结束后清理。 */
-	publishUpload?: (file: AudioUpload) => Promise<PublishedAudioUpload>;
 };
 
 type DashScopeAudioDispatchResult = {
@@ -95,6 +88,7 @@ export function buildDashScopeSyncAsrBody(
 	route: RouteResult,
 	req: NormalizedAudioTranscriptionRequest,
 ): Record<string, unknown> {
+	if (!req.file) throw new Error('DashScope synchronous ASR requires a multipart file');
 	const messages: Array<Record<string, unknown>> = [];
 	if (req.prompt) {
 		messages.push({ role: 'system', content: [{ text: req.prompt }] });
@@ -151,6 +145,7 @@ export function buildDashScopeFunAsrBody(
 	route: RouteResult,
 	req: NormalizedAudioTranscriptionRequest,
 ): Record<string, unknown> {
+	if (!req.file) throw new Error('DashScope synchronous ASR requires a multipart file');
 	if (req.language) {
 		throw new Error('DashScope Fun-ASR file API does not support the OpenAI language field');
 	}
@@ -352,9 +347,9 @@ function resolveDashScopeDuration(
 ): { seconds: number; source: AudioDurationSource } {
 	return resolveAudioBillingDuration({
 		upstreamSeconds,
-		fileBytes: req.file.bytes.byteLength,
-		mimeType: req.file.mimeType,
-		fileBytesForParse: req.file.bytes,
+		fileBytes: req.file?.bytes.byteLength ?? 0,
+		mimeType: req.file?.mimeType ?? 'application/octet-stream',
+		fileBytesForParse: req.file?.bytes,
 		clientSeconds: req.clientDurationSeconds,
 	});
 }
@@ -387,7 +382,7 @@ function errorDispatchResult(
 	message: string,
 ): DashScopeAudioDispatchResult {
 	const body = { error: { message } };
-	return clientResult(req, new Response(null, { status }), body, req.file.bytes.byteLength, null, null);
+	return clientResult(req, new Response(null, { status }), body, req.file?.bytes.byteLength ?? 0, null, null);
 }
 
 /** 按显式 adapter 分发 Qwen-ASR 或 Fun-ASR-Realtime 的同步文件调用。 */
@@ -399,6 +394,7 @@ export async function dispatchDashScopeSyncAsr(
 	attempt?: RequestTimingAttempt,
 	options: DashScopeAsrDispatchOptions = {},
 ): Promise<DashScopeAudioDispatchResult> {
+	if (!req.file) throw new Error('DashScope synchronous ASR requires a multipart file');
 	const isQwen = route.adapter === 'dashscope-asr-qwen-file';
 	const isFun = route.adapter === 'dashscope-asr-fun-file';
 	if (!isQwen && !isFun) {
@@ -494,15 +490,10 @@ export async function dispatchDashScopeAsyncAsr(
 ): Promise<DashScopeAudioDispatchResult> {
 	const fetchImpl = options.fetchImpl ?? fetch;
 	const timeout = withTimeout(requestSignal, options.timeoutMs ?? AUDIO_TRANSCRIPTION_TIMEOUT_MS);
-	let published: PublishedAudioUpload | null = null;
 	try {
-		const fileUrl = req.fileSourceUrl
-			? req.fileSourceUrl
-			: options.publishUpload
-			? (published = await options.publishUpload(req.file)).url
-			: null;
+		const fileUrl = req.fileSourceUrl;
 		if (!fileUrl) {
-			throw new Error('DashScope asynchronous ASR requires a file URL or an AUDIO_UPLOADS publisher');
+			throw new Error('DashScope asynchronous ASR requires a client-provided file_url');
 		}
 		const submitUrl = resolveUpstreamEndpoint('dashscope', 'audio.transcriptions', route.providerEndpoints, {
 			providerId: route.providerId,
@@ -522,7 +513,7 @@ export async function dispatchDashScopeAsyncAsr(
 		const submitRequestId = extractUpstreamRequestId(submitResponse.headers) ?? bodyRequestId(submitBody);
 		if (!submitResponse.ok) {
 			timing?.markStreamComplete();
-			return clientResult(req, submitResponse, submitBody, req.file.bytes.byteLength, null, submitRequestId);
+			return clientResult(req, submitResponse, submitBody, req.file?.bytes.byteLength ?? 0, null, submitRequestId);
 		}
 		const taskId = taskOutput(submitBody)?.task_id;
 		if (typeof taskId !== 'string' || !taskId.trim()) {
@@ -543,7 +534,7 @@ export async function dispatchDashScopeAsyncAsr(
 			const requestId = extractUpstreamRequestId(queryResponse.headers) ?? bodyRequestId(queryBody) ?? submitRequestId;
 			if (!queryResponse.ok) {
 				timing?.markStreamComplete();
-				return clientResult(req, queryResponse, queryBody, req.file.bytes.byteLength, null, requestId);
+				return clientResult(req, queryResponse, queryBody, req.file?.bytes.byteLength ?? 0, null, requestId);
 			}
 			const output = taskOutput(queryBody);
 			if (!output) {
@@ -566,7 +557,7 @@ export async function dispatchDashScopeAsyncAsr(
 						},
 						dashscope: queryBody,
 					},
-					req.file.bytes.byteLength,
+					req.file?.bytes.byteLength ?? 0,
 					null,
 					requestId,
 				);
@@ -592,7 +583,7 @@ export async function dispatchDashScopeAsyncAsr(
 						},
 						dashscope: queryBody,
 					},
-					req.file.bytes.byteLength,
+					req.file?.bytes.byteLength ?? 0,
 					null,
 					requestId,
 				);
@@ -607,7 +598,7 @@ export async function dispatchDashScopeAsyncAsr(
 			const resultBody = await parseJsonResponse(resultResponse);
 			if (!resultResponse.ok) {
 				timing?.markStreamComplete();
-				return clientResult(req, resultResponse, resultBody, req.file.bytes.byteLength, null, requestId);
+				return clientResult(req, resultResponse, resultBody, req.file?.bytes.byteLength ?? 0, null, requestId);
 			}
 			const normalized = normalizeDashScopeAsyncAsrResult(resultBody, queryBody);
 			const seconds = asFiniteNonNegativeNumber(asObject(normalized.usage)?.seconds);
@@ -616,7 +607,7 @@ export async function dispatchDashScopeAsyncAsr(
 				req,
 				queryResponse,
 				normalized,
-				req.file.bytes.byteLength,
+				req.file?.bytes.byteLength ?? 0,
 				resolveDashScopeDuration(req, seconds),
 				requestId,
 			);
@@ -635,6 +626,5 @@ export async function dispatchDashScopeAsyncAsr(
 		);
 	} finally {
 		timeout.clear();
-		if (published) await published.cleanup();
 	}
 }

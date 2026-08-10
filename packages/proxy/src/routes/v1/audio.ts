@@ -193,31 +193,6 @@ async function parseMultipartTranscription(c: {
 		return { ok: false, error: 'Missing model' };
 	}
 
-	const file = multipartFileField(body.file);
-	if (!file) {
-		return { ok: false, error: 'Missing audio file' };
-	}
-	const declaredSize =
-		typeof file.size === 'number' && Number.isFinite(file.size) ? file.size : null;
-	if (declaredSize != null && declaredSize > AUDIO_MAX_BYTES_PER_FILE) {
-		return { ok: false, error: `audio file must be at most ${AUDIO_MAX_BYTES_PER_FILE} bytes` };
-	}
-	const buf = new Uint8Array(await file.arrayBuffer());
-	const mimeType =
-		normalizeAudioMimeType(file.type || '') || 'application/octet-stream';
-	const upload = {
-		filename: resolveAudioUploadFilename(
-			(file as { name?: string }).name || '',
-			mimeType
-		),
-		mimeType,
-		bytes: buf,
-	};
-	const uploadErr = validateAudioUpload(upload);
-	if (uploadErr) {
-		return { ok: false, error: uploadErr };
-	}
-
 	const formatRaw = multipartTextField(body.response_format).toLowerCase() || 'json';
 	const clientResponseFormat = (
 		ALLOWED_RESPONSE_FORMATS.has(formatRaw) ? formatRaw : 'json'
@@ -259,6 +234,28 @@ async function parseMultipartTranscription(c: {
 			return { ok: false, error: 'file_url must use http(s) or oss' };
 		}
 		fileSourceUrl = parsedUrl.toString();
+	}
+
+	let upload: NormalizedAudioTranscriptionRequest['file'] = null;
+	const file = multipartFileField(body.file);
+	if (file) {
+		const declaredSize =
+			typeof file.size === 'number' && Number.isFinite(file.size) ? file.size : null;
+		if (declaredSize != null && declaredSize > AUDIO_MAX_BYTES_PER_FILE) {
+			return { ok: false, error: `audio file must be at most ${AUDIO_MAX_BYTES_PER_FILE} bytes` };
+		}
+		const buf = new Uint8Array(await file.arrayBuffer());
+		const mimeType = normalizeAudioMimeType(file.type || '') || 'application/octet-stream';
+		upload = {
+			filename: resolveAudioUploadFilename((file as { name?: string }).name || '', mimeType),
+			mimeType,
+			bytes: buf,
+		};
+		const uploadErr = validateAudioUpload(upload);
+		if (uploadErr) return { ok: false, error: uploadErr };
+	}
+	if (!upload && !fileSourceUrl) {
+		return { ok: false, error: 'Missing audio file or file_url' };
 	}
 
 	return {
@@ -326,9 +323,9 @@ audioRoutes.post('/transcriptions', async (c) => {
 		repos,
 		{
 			modelPricingProfileJson: model.pricing_profile ?? null,
-			fileBytes: transcription.file.bytes.byteLength,
-			mimeType: transcription.file.mimeType,
-			fileBytesForParse: transcription.file.bytes,
+			fileBytes: transcription.file?.bytes.byteLength ?? 0,
+			mimeType: transcription.file?.mimeType,
+			fileBytesForParse: transcription.file?.bytes,
 			clientDurationSeconds: transcription.clientDurationSeconds,
 			requestStartedAtMs: start,
 		},
@@ -345,9 +342,9 @@ audioRoutes.post('/transcriptions', async (c) => {
 	const requestBodyForLog = finalizeRequestLogJson(
 		redactAudioRequestForLog({
 			model: rawModelId,
-			filename: transcription.file.filename,
-			mimeType: transcription.file.mimeType,
-			byteLength: transcription.file.bytes.byteLength,
+			filename: transcription.file?.filename ?? '',
+			mimeType: transcription.file?.mimeType ?? '',
+			byteLength: transcription.file?.bytes.byteLength ?? 0,
 			language: transcription.language,
 			responseFormat: transcription.clientResponseFormat,
 				clientDurationSeconds: transcription.clientDurationSeconds,
@@ -382,7 +379,7 @@ audioRoutes.post('/transcriptions', async (c) => {
 	timing.markGatewayComplete();
 
 	console.log(
-		`[Gateway Audio] transcriptions baseModelId=${baseModelId} keyId=${apiKey.keyId} bytes=${transcription.file.bytes.byteLength}`
+		`[Gateway Audio] transcriptions baseModelId=${baseModelId} keyId=${apiKey.keyId} bytes=${transcription.file?.bytes.byteLength ?? 0}`
 	);
 
 	const stickySurface = routed.stickySurface;
@@ -412,7 +409,7 @@ audioRoutes.post('/transcriptions', async (c) => {
 		modelNameForLog,
 		requestBodyForLog,
 		modelPricingProfileJson: model.pricing_profile ?? null,
-		fileBytes: transcription.file.bytes.byteLength,
+		fileBytes: transcription.file?.bytes.byteLength ?? 0,
 		start,
 		timing,
 	});
