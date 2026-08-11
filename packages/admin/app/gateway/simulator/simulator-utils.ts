@@ -11,6 +11,7 @@ import {
 	DASHSCOPE_REALTIME_OPERATIONS,
 	buildDashScopeRealtimeAsrTemplate,
 	buildDashScopeRealtimeTtsTemplate,
+	buildDashScopeSpeechBodyTemplate,
 	type DashScopeRealtimeOperation,
 } from '@/lib/dashscope-realtime-client';
 import type { AdminKeyListItem, AdminModelRow, RouteListRow } from './types';
@@ -90,6 +91,10 @@ export function bodyTemplateForSelection(
 		return bodyTemplateForTool(toolId);
 	}
 	if (audioOperation && protocol === 'openai') {
+		if (audioOperation === 'speech' && providerModelName) {
+			// OpenAI surface 可能映射到 DashScope；模板音色必须匹配实际供应商模型。
+			return buildDashScopeSpeechBodyTemplate(providerModelName);
+		}
 		return audioOperation === 'speech' ? AUDIO_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
 	if (audioOperation && protocol === 'dashscope') {
@@ -188,11 +193,20 @@ export function isBodyDirty(
 	audioOperation: AudioOperation | null = null,
 	toolId?: string | null,
 	realtimeOperation?: DashScopeRealtimeOperation | null,
+	providerModelName?: string | null,
 ): boolean {
 	return (
 		normalizeBodyWhitespace(bodyText) !==
 		normalizeBodyWhitespace(
-			bodyTemplateForSelection(protocol, isImageModel, imageOperation, audioOperation, toolId, realtimeOperation),
+			bodyTemplateForSelection(
+				protocol,
+				isImageModel,
+				imageOperation,
+				audioOperation,
+				toolId,
+				realtimeOperation,
+				providerModelName,
+			),
 		)
 	);
 }

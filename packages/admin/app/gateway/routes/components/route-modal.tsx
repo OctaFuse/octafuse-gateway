@@ -79,13 +79,18 @@ export function RouteModal(props: Props) {
 	const tCommon = useTranslations('common');
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
-		(protocol) => requestOperationsForModel(selectedModel, protocol).length > 0,
+		(protocol) => requestOperationsForModel(selectedModel, protocol, formData.provider_model_name).length > 0,
 	);
-	const requestOperations = requestOperationsForModel(selectedModel, formData.request_protocol);
+	const requestOperations = requestOperationsForModel(
+		selectedModel,
+		formData.request_protocol,
+		formData.provider_model_name,
+	);
 	const upstreamOperations = upstreamOperationsForProviderModel(
 		selectedProvider,
 		selectedModel,
 		formData.upstream_protocol,
+		formData.provider_model_name,
 	);
 	const compatibleAdapters = compatibleAdaptersForRoute(formData);
 	const showCurrentAdapter =
@@ -94,7 +99,13 @@ export function RouteModal(props: Props) {
 		(provider) =>
 			(Boolean(editingRoute || duplicateSourceRouteId) && provider.id === formData.provider_id) ||
 			UPSTREAM_PROTOCOLS.some(
-				(protocol) => upstreamOperationsForProviderModel(provider, selectedModel, protocol).length > 0,
+				(protocol) =>
+					upstreamOperationsForProviderModel(
+						provider,
+						selectedModel,
+						protocol,
+						formData.provider_model_name,
+					).length > 0,
 			),
 	);
 	const showCurrentUpstreamOperation =
@@ -103,7 +114,12 @@ export function RouteModal(props: Props) {
 		Boolean(formData.upstream_operation);
 	const selectedModelIsSpeech = selectedModel ? isAudioSpeechModel(selectedModel) : false;
 	const dashScopeTtsOperations = selectedModelIsSpeech
-		? upstreamOperationsForProviderModel(selectedProvider, selectedModel, 'dashscope')
+		? upstreamOperationsForProviderModel(
+				selectedProvider,
+				selectedModel,
+				'dashscope',
+				formData.provider_model_name,
+		  )
 		: [];
 	const canUseDashScopeTtsPresets =
 		!selectedModelIsImage &&
@@ -202,20 +218,30 @@ export function RouteModal(props: Props) {
 											const nextModelId = e.target.value;
 											const nextModel = models.find((m) => m.id === nextModelId);
 											const nextRequestProtocols = UPSTREAM_PROTOCOLS.filter(
-												(protocol) => requestOperationsForModel(nextModel, protocol).length > 0,
+												(protocol) =>
+													requestOperationsForModel(nextModel, protocol, formData.provider_model_name).length > 0,
 											);
 											const requestProtocol = nextRequestProtocols.includes(formData.request_protocol)
 												? formData.request_protocol
 												: nextRequestProtocols[0] ?? formData.request_protocol;
-											const nextRequestOperations = requestOperationsForModel(nextModel, requestProtocol);
+											const nextRequestOperations = requestOperationsForModel(
+												nextModel,
+												requestProtocol,
+												formData.provider_model_name,
+											);
 											const requestOperation = nextRequestOperations.includes(formData.request_operation)
 												? formData.request_operation
 												: nextRequestOperations[0] ?? formData.request_operation;
 											const nextUpstreamProtocols = selectedProvider
 												? UPSTREAM_PROTOCOLS.filter(
 														(protocol) =>
-															upstreamOperationsForProviderModel(selectedProvider, nextModel, protocol).length > 0,
-												  )
+																	upstreamOperationsForProviderModel(
+																		selectedProvider,
+																		nextModel,
+																		protocol,
+																		formData.provider_model_name,
+																	).length > 0,
+														  )
 												: [];
 											const upstreamProtocol = nextUpstreamProtocols.includes(formData.upstream_protocol)
 												? formData.upstream_protocol
@@ -224,6 +250,7 @@ export function RouteModal(props: Props) {
 												selectedProvider,
 												nextModel,
 												upstreamProtocol,
+												formData.provider_model_name,
 											);
 											const upstreamOperation = nextUpstreamOperations.includes(formData.upstream_operation)
 												? formData.upstream_operation
@@ -255,7 +282,11 @@ export function RouteModal(props: Props) {
 										onChange={(e) => {
 											const requestProtocol = e.target.value as UpstreamProtocol;
 											const requestOperation =
-												requestOperationsForModel(selectedModel, requestProtocol)[0] ?? formData.request_operation;
+												requestOperationsForModel(
+													selectedModel,
+													requestProtocol,
+													formData.provider_model_name,
+												)[0] ?? formData.request_operation;
 											onFormChange({
 												...formData,
 												request_protocol: requestProtocol,
@@ -306,7 +337,12 @@ export function RouteModal(props: Props) {
 												nextProvider != null
 													? UPSTREAM_PROTOCOLS.filter(
 															(proto) =>
-																upstreamOperationsForProviderModel(nextProvider, selectedModel, proto).length > 0,
+																upstreamOperationsForProviderModel(
+																	nextProvider,
+																	selectedModel,
+																	proto,
+																	formData.provider_model_name,
+																).length > 0,
 													  )
 													: [];
 											let nextProto = formData.upstream_protocol;
@@ -317,6 +353,7 @@ export function RouteModal(props: Props) {
 												nextProvider,
 												selectedModel,
 												nextProto,
+												formData.provider_model_name,
 											);
 											const nextOperation = supportedOperations.includes(formData.upstream_operation)
 												? formData.upstream_operation
@@ -349,7 +386,12 @@ export function RouteModal(props: Props) {
 												...formData,
 												upstream_protocol: upstreamProtocol,
 												upstream_operation:
-													upstreamOperationsForProviderModel(selectedProvider, selectedModel, upstreamProtocol)[0] ??
+													upstreamOperationsForProviderModel(
+														selectedProvider,
+														selectedModel,
+														upstreamProtocol,
+														formData.provider_model_name,
+													)[0] ??
 													formData.upstream_operation,
 											});
 										}}
@@ -397,12 +439,31 @@ export function RouteModal(props: Props) {
 									<input
 										type="text"
 										value={formData.provider_model_name}
-										onChange={(e) =>
+										onChange={(e) => {
+											const providerModelName = e.target.value;
+											const nextRequestOperations = requestOperationsForModel(
+												selectedModel,
+												formData.request_protocol,
+												providerModelName,
+											);
+											const nextUpstreamOperations = upstreamOperationsForProviderModel(
+												selectedProvider,
+												selectedModel,
+												formData.upstream_protocol,
+												providerModelName,
+											);
+											// 模型名决定 DashScope ASR 生命周期，输入后同步纠正 surface 与 target。
 											onFormChange({
 												...formData,
-												provider_model_name: e.target.value,
-											})
-										}
+												provider_model_name: providerModelName,
+												request_operation: nextRequestOperations.includes(formData.request_operation)
+													? formData.request_operation
+													: nextRequestOperations[0] ?? formData.request_operation,
+												upstream_operation: nextUpstreamOperations.includes(formData.upstream_operation)
+													? formData.upstream_operation
+													: nextUpstreamOperations[0] ?? formData.upstream_operation,
+											});
+										}}
 										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 										placeholder={t('providerModelPlaceholder')}
 										required

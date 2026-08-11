@@ -245,12 +245,8 @@ export function useSimulatorPageState() {
 		if (dashScopeRealtimeOperation && realtimeOperationOptions.includes(dashScopeRealtimeOperation)) {
 			return dashScopeRealtimeOperation;
 		}
-		return (
-			realtimeOperationOptions[0] ??
-			(selectedAudioOperation === 'speech'
-				? 'audio.speech.realtime.inference'
-				: 'audio.transcriptions.realtime.inference')
-		);
+		// 没有匹配路由时不能虚构默认 operation，否则浏览器只会得到无法解释的握手错误。
+		return realtimeOperationOptions[0] ?? null;
 	}, [protocol, selectedAudioOperation, dashScopeRealtimeOperation, realtimeOperationOptions]);
 	const selectedCanUseMicrophone =
 		selectedDashScopeRealtimeOperation?.startsWith('audio.transcriptions.realtime.') ?? false;
@@ -310,6 +306,11 @@ export function useSimulatorPageState() {
 				: filterMatchingActiveRoutes(routes, selectedModelId, routeGroup, protocol, requestOperation ?? undefined),
 		[routes, selectedModelId, routeGroup, protocol, requestOperation, isToolKind],
 	);
+	const selectedDashScopeTtsProviderModelName = useMemo(() => {
+		if (selectedAudioOperation !== 'speech') return undefined;
+		const route = matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope');
+		return route?.provider_model_name ?? undefined;
+	}, [matchingRoutes, selectedAudioOperation]);
 
 	const sendBlockReason = useMemo((): SendBlockReason => {
 		const parsed = tryParseProxyBaseUrl(proxyBaseUrl);
@@ -322,6 +323,7 @@ export function useSimulatorPageState() {
 			if (selectedModelIsImage && !selectedModelIsAudio && protocol !== 'openai') {
 				return 'imageProtocol';
 			}
+			if (matchingRoutes.length === 0) return 'route';
 			if (selectedAudioOperation === 'transcriptions' && (protocol === 'openai' || protocol === 'dashscope')) {
 				if (!usesDashScopeMicrophone) {
 					const validated = validateAudioTranscriptionFile(audioFile);
@@ -352,6 +354,7 @@ export function useSimulatorPageState() {
 		revealLoading,
 		selectedKeyId,
 		revealedSk,
+		matchingRoutes,
 	]);
 
 	const sendBlockedHint = useMemo(() => {
@@ -371,6 +374,8 @@ export function useSimulatorPageState() {
 				const validated = validateAudioTranscriptionFile(audioFile);
 				return validated.ok ? null : validated.error;
 			}
+			case 'route':
+				return t('matchingRoutesEmpty');
 			case 'editImages': {
 				// Empty-file hint is shown under the reference-images control; only surface size/count errors here.
 				if (editFiles.length === 0) return null;
@@ -673,7 +678,7 @@ export function useSimulatorPageState() {
 					selectedAudioOperation,
 					undefined,
 					selectedDashScopeRealtimeOperation,
-					selectedDashScopeRealtimeOperation ? matchingRoutes[0]?.provider_model_name : undefined,
+					selectedDashScopeTtsProviderModelName,
 				),
 			);
 			setBodyError(null);
@@ -712,6 +717,7 @@ export function useSimulatorPageState() {
 		selectedModelIsImage,
 		selectedAudioOperation,
 		selectedDashScopeRealtimeOperation,
+		selectedDashScopeTtsProviderModelName,
 		matchingRoutes,
 		protocol,
 		imageOperation,
@@ -796,16 +802,24 @@ export function useSimulatorPageState() {
 	const applyProtocolTemplate = useCallback(
 		(next: SimulatorProtocol) => {
 			setProtocolState(next);
-			const providerModelName =
+			const nextRequestOperation =
 				next === 'dashscope' && selectedDashScopeRealtimeOperation
-					? filterMatchingActiveRoutes(
-							routes,
-							selectedModelId,
-							routeGroup,
-							'dashscope',
-							selectedDashScopeRealtimeOperation,
-					  )[0]?.provider_model_name
-					: undefined;
+					? selectedDashScopeRealtimeOperation
+					: resolveRequestOperation({
+							kind: filterKind,
+							protocol: next,
+							imageOperation,
+							audioOperation: selectedAudioOperation ?? undefined,
+							geminiAction,
+					  });
+			const nextRoute = filterMatchingActiveRoutes(
+				routes,
+				selectedModelId,
+				routeGroup,
+				next,
+				nextRequestOperation ?? undefined,
+			).find((candidate) => candidate.upstream_protocol === 'dashscope');
+			const providerModelName = selectedAudioOperation === 'speech' ? nextRoute?.provider_model_name : undefined;
 			setBodyText(
 				bodyTemplateForSelection(
 					next,
@@ -824,6 +838,8 @@ export function useSimulatorPageState() {
 			selectedAudioOperation,
 			selectedDashScopeRealtimeOperation,
 			imageOperation,
+			filterKind,
+			geminiAction,
 			routes,
 			selectedModelId,
 			routeGroup,
@@ -850,6 +866,7 @@ export function useSimulatorPageState() {
 					selectedAudioOperation,
 					undefined,
 					selectedDashScopeRealtimeOperation,
+					selectedDashScopeTtsProviderModelName,
 				)
 			) {
 				const ok = window.confirm(t('protocolSwitchConfirm'));
@@ -866,6 +883,7 @@ export function useSimulatorPageState() {
 			selectedModelIsAudio,
 			selectedAudioOperation,
 			selectedDashScopeRealtimeOperation,
+			selectedDashScopeTtsProviderModelName,
 			imageOperation,
 		],
 	);
@@ -881,7 +899,7 @@ export function useSimulatorPageState() {
 						selectedAudioOperation,
 						undefined,
 						selectedDashScopeRealtimeOperation,
-						selectedDashScopeRealtimeOperation ? matchingRoutes[0]?.provider_model_name : undefined,
+						selectedDashScopeTtsProviderModelName,
 				  ),
 		);
 		setBodyError(null);
@@ -893,8 +911,8 @@ export function useSimulatorPageState() {
 		selectedModelIsAudio,
 		selectedAudioOperation,
 		selectedDashScopeRealtimeOperation,
+		selectedDashScopeTtsProviderModelName,
 		imageOperation,
-		matchingRoutes,
 	]);
 
 	const stop = useCallback(() => {
@@ -922,6 +940,10 @@ export function useSimulatorPageState() {
 			}
 		} else if (!selectedModelId) {
 			setBodyError(t('errSelectModel'));
+			return;
+		} else if (matchingRoutes.length === 0) {
+			// WebSocket API 不暴露非 101 握手正文，发送前直接给出真实路由错误。
+			setBodyError(t('matchingRoutesEmpty'));
 			return;
 		}
 		if (revealLoading) {
@@ -1233,6 +1255,7 @@ export function useSimulatorPageState() {
 		selectedModelIsAudio,
 		selectedAudioOperation,
 		selectedDashScopeRealtimeOperation,
+		matchingRoutes,
 		selectedCanUseMicrophone,
 		imageOperation,
 		editFiles,
@@ -1271,6 +1294,7 @@ export function useSimulatorPageState() {
 			selectedAudioOperation,
 			isToolKind ? selectedToolId : null,
 			selectedDashScopeRealtimeOperation,
+			selectedDashScopeTtsProviderModelName,
 		),
 		geminiAction,
 		setGeminiAction,

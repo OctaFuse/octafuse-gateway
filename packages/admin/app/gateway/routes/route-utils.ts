@@ -23,6 +23,7 @@ import {
 	type ProviderEndpointCapability,
 } from '@octafuse/core/provider-endpoints';
 import {
+	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
 	REQUEST_OPERATIONS_BY_PROTOCOL,
 	ROUTE_ADAPTERS,
@@ -542,6 +543,7 @@ export const CAPABILITIES_BY_PROTOCOL: Record<string, readonly ProviderEndpointC
 export function requestOperationsForModel(
 	model: GatewayModel | undefined,
 	protocol: UpstreamProtocol,
+	providerModelName = '',
 ): readonly string[] {
 	if (model && isImageGenerationModel(model)) {
 		return protocol === 'openai' ? ['images.generations', 'images.edits'] : [];
@@ -549,7 +551,16 @@ export function requestOperationsForModel(
 	if (model && isAudioTranscriptionModel(model)) {
 		if (protocol === 'openai') return ['audio.transcriptions'];
 		if (protocol === 'dashscope') {
-			return ['audio.transcriptions.realtime.inference', 'audio.transcriptions.realtime.session'];
+			const operations = [
+				'audio.transcriptions.realtime.inference',
+				'audio.transcriptions.realtime.session',
+			];
+			// 供应商模型填写后只展示其真实协议，避免 Fun-ASR 被误配到 Qwen3 session。
+			return providerModelName.trim()
+				? operations.filter((operation) =>
+						isDashScopeRealtimeAsrModelOperationCompatible(providerModelName, operation),
+				  )
+				: operations;
 		}
 		return [];
 	}
@@ -604,6 +615,7 @@ export function upstreamOperationsForProviderModel(
 	provider: GatewayProvider | undefined,
 	model: GatewayModel | undefined,
 	protocol: UpstreamProtocol,
+	providerModelName = '',
 ): readonly string[] {
 	if (!provider) return [];
 	const map = parseProviderEndpoints(provider);
@@ -621,10 +633,22 @@ export function upstreamOperationsForProviderModel(
 			if (capabilities.has('audio.transcriptions') && capabilities.has('audio.transcriptions.tasks')) {
 				operations.push('audio.transcriptions.async');
 			}
-			if (capabilities.has('audio.realtime.inference')) {
+			if (
+				capabilities.has('audio.realtime.inference') &&
+				isDashScopeRealtimeAsrModelOperationCompatible(
+					providerModelName,
+					'audio.transcriptions.realtime.inference',
+				)
+			) {
 				operations.push('audio.transcriptions.realtime.inference');
 			}
-			if (capabilities.has('audio.realtime.session')) {
+			if (
+				capabilities.has('audio.realtime.session') &&
+				isDashScopeRealtimeAsrModelOperationCompatible(
+					providerModelName,
+					'audio.transcriptions.realtime.session',
+				)
+			) {
 				operations.push('audio.transcriptions.realtime.session');
 			}
 			return operations;

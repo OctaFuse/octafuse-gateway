@@ -27,9 +27,20 @@ describe('DashScope realtime TTS client messages', () => {
 		const body = JSON.parse(buildDashScopeRealtimeTtsTemplate('cosyvoice-v2')) as {
 			payload: { parameters: { voice: string } };
 		};
-		assert.equal(body.payload.parameters.voice, 'longanling');
+		assert.equal(body.payload.parameters.voice, 'longxiaochun_v2');
 		const httpBody = JSON.parse(buildDashScopeSpeechBodyTemplate('cosyvoice-v2')) as { voice: string };
-		assert.equal(httpBody.voice, 'longanling');
+		assert.equal(httpBody.voice, 'longxiaochun_v2');
+	});
+
+	it('uses model-specific Qwen-Audio-TTS system voices', () => {
+		const plus = JSON.parse(buildDashScopeSpeechBodyTemplate('qwen-audio-3.0-tts-plus')) as {
+			voice: string;
+		};
+		const flash = JSON.parse(buildDashScopeSpeechBodyTemplate('qwen-audio-3.0-tts-flash')) as {
+			voice: string;
+		};
+		assert.equal(plus.voice, 'longanlingxin');
+		assert.equal(flash.voice, 'longanhuan_v3.6');
 	});
 
 	it('maps the upstream format to a browser audio content type', () => {

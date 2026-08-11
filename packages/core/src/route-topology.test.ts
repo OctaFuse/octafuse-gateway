@@ -4,6 +4,7 @@ import {
 	GEMINI_GENERATE_OPERATION,
 	canonicalizeRequestOperation,
 	effectiveUpstreamOperation,
+	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
 	isRequestOperationForProtocol,
 	normalizeRouteOperation,
@@ -56,6 +57,39 @@ describe('route topology operations', () => {
 		assert.equal(isRequestOperationForProtocol('openai', '*'), true);
 		assert.equal(effectiveUpstreamOperation('*', 'images.generations'), 'images.generations');
 		assert.equal(effectiveUpstreamOperation('chat', 'responses'), 'chat');
+	});
+
+	it('keeps DashScope realtime ASR model families on their native lifecycle', () => {
+		for (const model of ['fun-asr-realtime', 'qwen-audio-3.0-asr-flash-streaming']) {
+			assert.equal(
+				isDashScopeRealtimeAsrModelOperationCompatible(
+					model,
+					'audio.transcriptions.realtime.inference',
+				),
+				true,
+			);
+			assert.equal(
+				isDashScopeRealtimeAsrModelOperationCompatible(
+					model,
+					'audio.transcriptions.realtime.session',
+				),
+				false,
+			);
+		}
+		assert.equal(
+			isDashScopeRealtimeAsrModelOperationCompatible(
+				'qwen3-asr-flash-realtime-2026-02-10',
+				'audio.transcriptions.realtime.session',
+			),
+			true,
+		);
+		assert.equal(
+			isDashScopeRealtimeAsrModelOperationCompatible(
+				'qwen3-asr-flash-realtime',
+				'audio.transcriptions.realtime.inference',
+			),
+			false,
+		);
 	});
 });
 

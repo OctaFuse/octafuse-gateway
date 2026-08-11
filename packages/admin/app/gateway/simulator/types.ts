@@ -46,6 +46,7 @@ export type SendBlockReason =
 	| 'audioProtocol'
 	| 'editImages'
 	| 'audioFile'
+	| 'route'
 	| 'keyLoading'
 	| 'key'
 	| null;

@@ -32,7 +32,7 @@ export const AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE = `{
 export const AUDIO_SPEECH_BODY_TEMPLATE = `{
   "model": "<auto>",
   "input": "你好，欢迎使用 OctaFuse Gateway。",
-  "voice": "Cherry",
+  "voice": "alloy",
   "response_format": "wav",
   "speed": 1
 }`;

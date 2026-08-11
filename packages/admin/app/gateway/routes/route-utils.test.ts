@@ -134,6 +134,32 @@ describe('route form capability filters', () => {
 		assert.deepEqual(
 			requestOperationsForModel(
 				model({
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_second',
+						audio: { price_per_second: 0.0001 },
+					}),
+				}),
+				'dashscope',
+				'fun-asr-realtime',
+			),
+			['audio.transcriptions.realtime.inference'],
+		);
+		assert.deepEqual(
+			requestOperationsForModel(
+				model({
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_second',
+						audio: { price_per_second: 0.0001 },
+					}),
+				}),
+				'dashscope',
+				'qwen3-asr-flash-realtime',
+			),
+			['audio.transcriptions.realtime.session'],
+		);
+		assert.deepEqual(
+			requestOperationsForModel(
+				model({
 					input_modalities: '["text"]',
 					output_modalities: '["audio"]',
 					pricing_profile: JSON.stringify({
@@ -211,6 +237,10 @@ describe('route form capability filters', () => {
 			'audio.transcriptions.realtime.inference',
 			'audio.transcriptions.realtime.session',
 		]);
+		assert.deepEqual(
+			upstreamOperationsForProviderModel(dashScope, asr, 'dashscope', 'fun-asr-realtime'),
+			['audio.transcriptions.async', 'audio.transcriptions.realtime.inference'],
+		);
 
 		const tts = model({
 			pricing_profile: JSON.stringify({

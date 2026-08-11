@@ -246,6 +246,41 @@ describe("simulator-utils", () => {
 			AUDIO_SPEECH_BODY_TEMPLATE
 		);
 		assert.equal(
+			JSON.parse(
+				bodyTemplateForSelection(
+					"openai",
+					false,
+					"generations",
+					"speech",
+					undefined,
+					undefined,
+					"cosyvoice-v2"
+				)
+			).voice,
+			"longxiaochun_v2"
+		);
+		assert.equal(
+			isBodyDirty(
+				bodyTemplateForSelection(
+					"openai",
+					false,
+					"generations",
+					"speech",
+					undefined,
+					undefined,
+					"cosyvoice-v2"
+				),
+				"openai",
+				false,
+				"generations",
+				"speech",
+				undefined,
+				undefined,
+				"cosyvoice-v2"
+			),
+			false
+		);
+		assert.equal(
 			JSON.parse(AUDIO_SPEECH_BODY_TEMPLATE).response_format,
 			"wav"
 		);

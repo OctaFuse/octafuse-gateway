@@ -14,7 +14,14 @@ export function isDashScopeRealtimeOperation(value: string): value is DashScopeR
 
 /** DashScope 的 Qwen-Audio-TTS 与 CosyVoice 音色集合不同，按供应商模型选择默认音色。 */
 export function dashScopeTtsVoiceForModel(providerModelName?: string | null): string {
-	return providerModelName?.toLowerCase().startsWith('cosyvoice') ? 'longanling' : 'longanlingxi';
+	const model = providerModelName?.trim().toLowerCase() ?? '';
+	// CosyVoice 音色与模型版本严格绑定；v2 不能使用 Qwen-Audio-TTS 的音色。
+	if (model === 'cosyvoice-v2') return 'longxiaochun_v2';
+	if (model === 'cosyvoice-v1') return 'longxiaochun';
+	if (model === 'cosyvoice-v3-flash' || model === 'cosyvoice-v3-plus') return 'longanyang';
+	if (model.startsWith('qwen-audio-3.0-tts-plus')) return 'longanlingxin';
+	if (model.startsWith('qwen-audio-3.0-tts-flash')) return 'longanhuan_v3.6';
+	return 'longanlingxi';
 }
 
 function isSessionOperation(operation: DashScopeRealtimeOperation): boolean {

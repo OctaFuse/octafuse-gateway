@@ -318,10 +318,15 @@ export function useRoutesPageState() {
 		const supported = UPSTREAM_PROTOCOLS.filter(
 			(proto) =>
 				providerSupportsUpstreamProtocol(proto, selectedProvider) &&
-				upstreamOperationsForProviderModel(selectedProvider, selectedModel, proto).length > 0
+				upstreamOperationsForProviderModel(
+					selectedProvider,
+					selectedModel,
+					proto,
+					formData.provider_model_name,
+				).length > 0
 		);
 		return supported;
-	}, [selectedProvider, selectedModel]);
+	}, [selectedProvider, selectedModel, formData.provider_model_name]);
 
 	useEffect(() => {
 		if (!showModal || !selectedProvider || allowedProtocolsForProvider.length === 0) return;
@@ -331,7 +336,8 @@ export function useRoutesPageState() {
 			const upstreamOperations = upstreamOperationsForProviderModel(
 				selectedProvider,
 				selectedModel,
-				upstreamProtocol
+				upstreamProtocol,
+				fd.provider_model_name,
 			);
 			return {
 				...fd,
@@ -342,6 +348,7 @@ export function useRoutesPageState() {
 	}, [
 		showModal,
 		formData.provider_id,
+		formData.provider_model_name,
 		selectedProvider,
 		selectedModel,
 		allowedProtocolsForProvider,

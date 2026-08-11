@@ -150,6 +150,25 @@ export function isRequestOperationForProtocol(
 	);
 }
 
+/**
+ * DashScope 实时 ASR 有两套不兼容的生命周期：Qwen3-ASR 使用 session，
+ * Fun-ASR/Qwen-Audio/Paraformer 使用 inference。供应商模型名是唯一可靠的上游标识。
+ */
+export function isDashScopeRealtimeAsrModelOperationCompatible(
+	providerModelName: string,
+	operation: string
+): boolean {
+	if (!operation.startsWith("audio.transcriptions.realtime.")) return true;
+	const model = providerModelName.trim().toLowerCase();
+	if (!model) return true;
+	const isQwen3SessionModel =
+		model === "qwen3-asr-flash-realtime" ||
+		model.startsWith("qwen3-asr-flash-realtime-");
+	return operation.endsWith(".session")
+		? isQwen3SessionModel
+		: !isQwen3SessionModel;
+}
+
 export function normalizeRouteOperation(raw: unknown): string {
 	const operation = typeof raw === "string" ? raw.trim() : "";
 	return operation || LEGACY_WILDCARD_OPERATION;
