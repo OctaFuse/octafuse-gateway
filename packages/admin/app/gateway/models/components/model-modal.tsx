@@ -92,6 +92,27 @@ export function ModelModal(props: Props) {
 			? 'speech'
 			: 'transcription';
 	const hideTokenLimits = isImageModel || isAudioModel;
+	// 三种模型类型使用固定的颜色与选中态，避免仅靠白色背景区分导致误选。
+	const kindOptions = [
+		{
+			id: 'llm' as const,
+			label: t('kindLlm'),
+			dotClass: 'bg-blue-500',
+			activeClass: 'border-blue-200 bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+		},
+		{
+			id: 'image' as const,
+			label: t('kindImage'),
+			dotClass: 'bg-violet-500',
+			activeClass: 'border-violet-200 bg-violet-50 text-violet-700 ring-1 ring-violet-200',
+		},
+		{
+			id: 'audio' as const,
+			label: t('kindAudio'),
+			dotClass: 'bg-emerald-500',
+			activeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+		},
+	] as const;
 
 	/** 音频能力是显式配置项：同步设置模态和计费，避免保存出 TTS + 按秒这类矛盾组合。 */
 	const changeAudioCapability = (next: 'transcription' | 'speech') => {
@@ -153,17 +174,11 @@ export function ModelModal(props: Props) {
 								{t('kind')}
 							</label>
 							<div
-								className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
+								className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1"
 								role="group"
 								aria-label={t('kind')}
 							>
-								{(
-									[
-										{ id: 'llm' as const, label: t('kindLlm') },
-										{ id: 'image' as const, label: t('kindImage') },
-										{ id: 'audio' as const, label: t('kindAudio') },
-									] as const
-								).map((opt) => {
+								{kindOptions.map((opt) => {
 									const active = formKind === opt.id;
 									return (
 										<button
@@ -173,12 +188,14 @@ export function ModelModal(props: Props) {
 											onClick={() => {
 												if (formKind !== opt.id) onKindChange(opt.id);
 											}}
-											className={
+											aria-pressed={active}
+											className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
 												active
-													? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
-													: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
-											}
+													? `${opt.activeClass} shadow-sm`
+													: 'border-transparent text-gray-600 hover:bg-white hover:text-gray-900'
+											}`}
 										>
+											<span aria-hidden="true" className={`h-2 w-2 rounded-full ${opt.dotClass}`} />
 											{opt.label}
 										</button>
 									);

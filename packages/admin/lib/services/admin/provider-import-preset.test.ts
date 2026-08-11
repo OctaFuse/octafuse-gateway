@@ -124,6 +124,14 @@ describe('provider import preset catalog metadata', () => {
 		assert.equal(inferStaticProviderIconKey(proxiedMimo), 'xiaomimimo');
 	});
 
+	it('includes the DashScope base needed to derive Alibaba audio endpoints', () => {
+		const bailian = listStaticProviderImportPresets().find(
+			(row) => row.name === 'Alibaba Cloud Bailian'
+		);
+		assert.ok(bailian);
+		assert.equal(bailian.endpoints.dashscope?.base, 'https://dashscope.aliyuncs.com/api/v1');
+	});
+
 	it('does not guess when configured endpoints identify different vendors', () => {
 		const conflicting = {
 			name: 'Mixed upstream',
