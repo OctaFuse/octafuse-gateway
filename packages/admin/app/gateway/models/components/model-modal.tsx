@@ -92,19 +92,15 @@ export function ModelModal(props: Props) {
 			? 'speech'
 			: 'transcription';
 	const hideTokenLimits = isImageModel || isAudioModel;
-	// 音频能力是互斥配置，用颜色和等宽按钮明确区分 ASR 与 TTS。
+	// 音频能力沿用下方“音频定价”的分段控件样式，保持弹窗内的视觉一致性。
 	const audioCapabilityOptions = [
 		{
 			id: 'transcription' as const,
 			label: t('audioCapabilityTranscription'),
-			dotClass: 'bg-cyan-500',
-			activeClass: 'border-cyan-200 bg-cyan-50 text-cyan-800 ring-1 ring-cyan-200',
 		},
 		{
 			id: 'speech' as const,
 			label: t('audioCapabilitySpeech'),
-			dotClass: 'bg-fuchsia-500',
-			activeClass: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800 ring-1 ring-fuchsia-200',
 		},
 	] as const;
 
@@ -213,7 +209,7 @@ export function ModelModal(props: Props) {
 									{t('audioCapability')}
 								</p>
 								<div
-									className="mt-2 flex w-full max-w-md rounded-lg border border-gray-200 bg-gray-100 p-1"
+									className="mt-2 inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
 									role="group"
 									aria-label={t('audioCapability')}
 								>
@@ -224,13 +220,12 @@ export function ModelModal(props: Props) {
 											disabled={isSaving || isDeleting}
 											onClick={() => changeAudioCapability(option.id)}
 											aria-pressed={audioCapability === option.id}
-											className={`flex-1 inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition-colors ${
+											className={
 												audioCapability === option.id
-													? `${option.activeClass} shadow-sm`
-													: 'border-transparent text-gray-600 hover:bg-white hover:text-gray-900'
-											}`}
+												? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
+												: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
+										}
 										>
-											<span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${option.dotClass}`} />
 											{option.label}
 										</button>
 									))}
