@@ -92,25 +92,19 @@ export function ModelModal(props: Props) {
 			? 'speech'
 			: 'transcription';
 	const hideTokenLimits = isImageModel || isAudioModel;
-	// 三种模型类型使用固定的颜色与选中态，避免仅靠白色背景区分导致误选。
-	const kindOptions = [
+	// 音频能力是互斥配置，用颜色和等宽按钮明确区分 ASR 与 TTS。
+	const audioCapabilityOptions = [
 		{
-			id: 'llm' as const,
-			label: t('kindLlm'),
-			dotClass: 'bg-blue-500',
-			activeClass: 'border-blue-200 bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+			id: 'transcription' as const,
+			label: t('audioCapabilityTranscription'),
+			dotClass: 'bg-cyan-500',
+			activeClass: 'border-cyan-200 bg-cyan-50 text-cyan-800 ring-1 ring-cyan-200',
 		},
 		{
-			id: 'image' as const,
-			label: t('kindImage'),
-			dotClass: 'bg-violet-500',
-			activeClass: 'border-violet-200 bg-violet-50 text-violet-700 ring-1 ring-violet-200',
-		},
-		{
-			id: 'audio' as const,
-			label: t('kindAudio'),
-			dotClass: 'bg-emerald-500',
-			activeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+			id: 'speech' as const,
+			label: t('audioCapabilitySpeech'),
+			dotClass: 'bg-fuchsia-500',
+			activeClass: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800 ring-1 ring-fuchsia-200',
 		},
 	] as const;
 
@@ -174,11 +168,17 @@ export function ModelModal(props: Props) {
 								{t('kind')}
 							</label>
 							<div
-								className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1"
+								className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
 								role="group"
 								aria-label={t('kind')}
 							>
-								{kindOptions.map((opt) => {
+								{(
+									[
+										{ id: 'llm' as const, label: t('kindLlm') },
+										{ id: 'image' as const, label: t('kindImage') },
+										{ id: 'audio' as const, label: t('kindAudio') },
+									] as const
+								).map((opt) => {
 									const active = formKind === opt.id;
 									return (
 										<button
@@ -188,14 +188,12 @@ export function ModelModal(props: Props) {
 											onClick={() => {
 												if (formKind !== opt.id) onKindChange(opt.id);
 											}}
-											aria-pressed={active}
-											className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+											className={
 												active
-													? `${opt.activeClass} shadow-sm`
-													: 'border-transparent text-gray-600 hover:bg-white hover:text-gray-900'
-											}`}
+													? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
+													: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
+											}
 										>
-											<span aria-hidden="true" className={`h-2 w-2 rounded-full ${opt.dotClass}`} />
 											{opt.label}
 										</button>
 									);
@@ -215,33 +213,24 @@ export function ModelModal(props: Props) {
 									{t('audioCapability')}
 								</p>
 								<div
-									className="mt-2 inline-flex rounded-md border border-gray-200 bg-white p-0.5"
+									className="mt-2 flex w-full max-w-md rounded-lg border border-gray-200 bg-gray-100 p-1"
 									role="group"
 									aria-label={t('audioCapability')}
 								>
-									{(
-										[
-											{
-												id: 'transcription' as const,
-												label: t('audioCapabilityTranscription'),
-											},
-											{
-												id: 'speech' as const,
-												label: t('audioCapabilitySpeech'),
-											},
-										] as const
-									).map((option) => (
+									{audioCapabilityOptions.map((option) => (
 										<button
 											key={option.id}
 											type="button"
 											disabled={isSaving || isDeleting}
 											onClick={() => changeAudioCapability(option.id)}
-											className={
+											aria-pressed={audioCapability === option.id}
+											className={`flex-1 inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold transition-colors ${
 												audioCapability === option.id
-													? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
-													: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
-											}
+													? `${option.activeClass} shadow-sm`
+													: 'border-transparent text-gray-600 hover:bg-white hover:text-gray-900'
+											}`}
 										>
+											<span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${option.dotClass}`} />
 											{option.label}
 										</button>
 									))}
