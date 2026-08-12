@@ -53,6 +53,9 @@ globs:
 | 模拟器 | Simulator |
 | 请求日志 | Request Logs |
 | 审计日志 | Audit Logs |
+| 系统集成 | Integration |
+| 集成密钥 | Integration Keys |
+| 访问审计 | Access Audit |
 | 智能体工具 | Agent Tools / Tools |
 | 工具配置 | Tools → Configuration |
 | 工具调用记录 | Tools → Invocations |

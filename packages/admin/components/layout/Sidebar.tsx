@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 左侧导航：Dashboard、推理与路由、Tools、分析、系统（含 Config 与 Logout）；底部外链与版本号。
+ * 左侧导航：Dashboard、推理与路由、Tools、分析、系统集成、系统（含 Config 与 Logout）；底部外链与版本号。
  */
 import Link from 'next/link';
 import BrandExternalLinks from '@/components/layout/BrandExternalLinks';
@@ -81,6 +81,12 @@ const menuGroups: MenuGroup[] = [
       { nameKey: 'providerUsage', href: '/gateway/analytics/providers', icon: ServerStackIcon },
       { nameKey: 'userUsage', href: '/gateway/analytics/users', icon: UsersIcon },
       { nameKey: 'reliability', href: '/gateway/analytics/reliability', icon: ShieldCheckIcon },
+    ],
+  },
+  {
+    groupKey: 'integration',
+    items: [
+      { nameKey: 'adminApiKeys', href: '/gateway/admin-api-keys', icon: KeyIcon },
     ],
   },
   {

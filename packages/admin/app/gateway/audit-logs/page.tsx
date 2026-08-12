@@ -11,6 +11,7 @@ import {
   API_KEY_BUDGET_AUDIT_ACTOR_TYPES,
   API_KEY_BUDGET_AUDIT_EVENT_TYPES,
   API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS,
+  USER_AUDIT_ACTOR_KINDS,
   type GatewayApiKeyBudgetAuditLog,
 } from '@/lib/types';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
@@ -42,6 +43,7 @@ const DEFAULT_AUDIT_LOG_ACTOR_TYPES = [...API_KEY_BUDGET_AUDIT_ACTOR_TYPES];
 const AUDIT_LOG_ACTOR_TYPE_SET = new Set<string>(API_KEY_BUDGET_AUDIT_ACTOR_TYPES);
 const DEFAULT_AUDIT_LOG_SOURCE_CHANNELS = [...API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS];
 const AUDIT_LOG_SOURCE_CHANNEL_SET = new Set<string>(API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS);
+const AUDIT_LOG_ACTOR_KIND_SET = new Set<string>(USER_AUDIT_ACTOR_KINDS);
 
 type AuditLogFilterOptions = {
   reasonCodes: string[];
@@ -67,6 +69,27 @@ function normalizeAuditActorTypes(values: string[]): string[] {
       if (AUDIT_LOG_ACTOR_TYPE_SET.has(value) && !normalized.includes(value)) normalized.push(value);
     });
   return normalized;
+}
+
+function normalizeAuditActorKinds(values: string[]): string[] {
+  const normalized: string[] = [];
+  values
+    .flatMap((value) => value.split(','))
+    .map((value) => value.trim())
+    .forEach((value) => {
+      if (AUDIT_LOG_ACTOR_KIND_SET.has(value) && !normalized.includes(value)) normalized.push(value);
+    });
+  return normalized;
+}
+
+/** `actor_id` 形如 `<kind>:<identifier>`；未知或缺失前缀时 kind 为 null，整串按标识符展示。 */
+function parseAuditActorId(actorId: string | null | undefined): { kind: string | null; identifier: string } {
+  if (!actorId) return { kind: null, identifier: '' };
+  const separator = actorId.indexOf(':');
+  if (separator === -1) return { kind: null, identifier: actorId };
+  const kind = actorId.slice(0, separator);
+  if (!AUDIT_LOG_ACTOR_KIND_SET.has(kind)) return { kind: null, identifier: actorId };
+  return { kind, identifier: actorId.slice(separator + 1) };
 }
 
 function normalizeAuditSourceChannels(values: string[]): string[] {
@@ -98,6 +121,11 @@ function appendAuditEventTypeParams(params: URLSearchParams, eventTypes: string[
 function appendAuditActorTypeParams(params: URLSearchParams, actorTypes: string[]): void {
   if (actorTypes.length === DEFAULT_AUDIT_LOG_ACTOR_TYPES.length) return;
   actorTypes.forEach((actorType) => params.append('actor_type', actorType));
+}
+
+function appendAuditActorKindParams(params: URLSearchParams, actorKinds: string[]): void {
+  if (actorKinds.length === USER_AUDIT_ACTOR_KINDS.length) return;
+  actorKinds.forEach((actorKind) => params.append('actor_kind', actorKind));
 }
 
 function appendAuditSourceParams(params: URLSearchParams, sources: string[]): void {
@@ -405,6 +433,8 @@ export default function GatewayAuditLogsPage() {
   const [filterUserEmail, setFilterUserEmail] = useState('');
   const [filterEventTypes, setFilterEventTypes] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
   const [filterActorTypes, setFilterActorTypes] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
+  const [filterActorKinds, setFilterActorKinds] = useState<string[]>(() => [...USER_AUDIT_ACTOR_KINDS]);
+  const [filterActorId, setFilterActorId] = useState('');
   const [filterReasonCodes, setFilterReasonCodes] = useState<string[]>([]);
   const [filterSources, setFilterSources] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
   const [reasonCodeOptions, setReasonCodeOptions] = useState<string[]>([]);
@@ -420,6 +450,8 @@ export default function GatewayAuditLogsPage() {
     const userEmail = params.get('user_email');
     const eventTypes = normalizeAuditEventTypes(params.getAll('event_type'));
     const actorTypes = normalizeAuditActorTypes(params.getAll('actor_type'));
+    const actorKinds = normalizeAuditActorKinds(params.getAll('actor_kind'));
+    const actorId = params.get('actor_id');
     const reasonCodes = normalizeAuditReasonCodes(params.getAll('reason_code'));
     const sources = normalizeAuditSourceChannels(params.getAll('source'));
     const correlationId = params.get('correlation_id');
@@ -431,6 +463,8 @@ export default function GatewayAuditLogsPage() {
     if (userEmail != null) setFilterUserEmail(userEmail);
     if (eventTypes.length > 0) setFilterEventTypes(eventTypes);
     if (actorTypes.length > 0) setFilterActorTypes(actorTypes);
+    if (actorKinds.length > 0) setFilterActorKinds(actorKinds);
+    if (actorId != null) setFilterActorId(actorId);
     if (reasonCodes.length > 0) {
       reasonCodeUrlFilterRef.current = true;
       setFilterReasonCodes(reasonCodes);
@@ -489,6 +523,8 @@ export default function GatewayAuditLogsPage() {
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       appendAuditEventTypeParams(params, filterEventTypes);
       appendAuditActorTypeParams(params, filterActorTypes);
+      appendAuditActorKindParams(params, filterActorKinds);
+      if (filterActorId) params.append('actor_id', filterActorId);
       appendAuditReasonCodeParams(params, filterReasonCodes, reasonCodeOptions);
       appendAuditSourceParams(params, filterSources);
       if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
@@ -504,6 +540,8 @@ export default function GatewayAuditLogsPage() {
       filterUserEmail,
       filterEventTypes,
       filterActorTypes,
+      filterActorKinds,
+      filterActorId,
       filterReasonCodes,
       filterSources,
       reasonCodeOptions,
@@ -525,6 +563,8 @@ export default function GatewayAuditLogsPage() {
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       appendAuditEventTypeParams(params, filterEventTypes);
       appendAuditActorTypeParams(params, filterActorTypes);
+      appendAuditActorKindParams(params, filterActorKinds);
+      if (filterActorId) params.append('actor_id', filterActorId);
       appendAuditReasonCodeParams(params, filterReasonCodes, reasonCodeOptions);
       appendAuditSourceParams(params, filterSources);
       if (filterCorrelationId) params.append('correlation_id', filterCorrelationId);
@@ -549,6 +589,8 @@ export default function GatewayAuditLogsPage() {
     filterUserEmail,
     filterEventTypes,
     filterActorTypes,
+    filterActorKinds,
+    filterActorId,
     filterReasonCodes,
     filterSources,
     reasonCodeOptions,
@@ -576,6 +618,14 @@ export default function GatewayAuditLogsPage() {
       if (checked) return current.includes(actorType) ? current : [...current, actorType];
       if (current.length <= 1) return current;
       return current.filter((value) => value !== actorType);
+    });
+    setPage(1);
+  };
+  const setActorKindChecked = (actorKind: string, checked: boolean) => {
+    setFilterActorKinds((current) => {
+      if (checked) return current.includes(actorKind) ? current : [...current, actorKind];
+      if (current.length <= 1) return current;
+      return current.filter((value) => value !== actorKind);
     });
     setPage(1);
   };
@@ -795,6 +845,57 @@ export default function GatewayAuditLogsPage() {
               })}
             </div>
           </div>
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-medium text-gray-600">{t('filters.actorKind')}</label>
+              <div className="flex shrink-0 items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterActorKinds([...USER_AUDIT_ACTOR_KINDS]);
+                    setPage(1);
+                  }}
+                  className="text-blue-600 hover:underline"
+                >
+                  {tCommon('selectAll')}
+                </button>
+                <span className="text-gray-500">{tCommon('selected', { count: filterActorKinds.length })}</span>
+              </div>
+            </div>
+            <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
+              {USER_AUDIT_ACTOR_KINDS.map((actorKind) => {
+                const checked = filterActorKinds.includes(actorKind);
+                return (
+                  <label
+                    key={actorKind}
+                    className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
+                      checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
+                    }`}
+                    title={actorKind}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={checked && filterActorKinds.length === 1}
+                      onChange={(e) => setActorKindChecked(actorKind, e.target.checked)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>{t(`actorKinds.${actorKind}`)}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.actorId')}</label>
+            <input
+              type="text"
+              value={filterActorId}
+              onChange={(e) => { setFilterActorId(e.target.value); setPage(1); }}
+              placeholder={t('filters.actorIdPlaceholder')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+            />
+          </div>
           <div>
             <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
             <input
@@ -821,6 +922,8 @@ export default function GatewayAuditLogsPage() {
               onClick={() => {
                 setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
                 setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
+                setFilterActorKinds([...USER_AUDIT_ACTOR_KINDS]);
+                setFilterActorId('');
                 setFilterReasonCodes([...reasonCodeOptions]);
                 setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
                 setFilterCorrelationId('');
@@ -934,9 +1037,21 @@ export default function GatewayAuditLogsPage() {
                           <div className="min-w-0">
                             <span className="text-gray-500">{t('labels.principal')}</span>
                             {ex.actor_id ? (
-                              <span className="font-mono text-[11px] text-gray-700 break-all" title={ex.actor_id}>
-                                {shortId(ex.actor_id)}
-                              </span>
+                              (() => {
+                                const { kind, identifier } = parseAuditActorId(ex.actor_id);
+                                return (
+                                  <span className="inline-flex min-w-0 flex-wrap items-baseline gap-1" title={ex.actor_id}>
+                                    {kind ? (
+                                      <span className="rounded bg-gray-100 px-1 text-[10px] text-gray-700">
+                                        {t(`actorKinds.${kind}`)}
+                                      </span>
+                                    ) : null}
+                                    <span className="font-mono text-[11px] text-gray-700 break-all">
+                                      {shortId(identifier)}
+                                    </span>
+                                  </span>
+                                );
+                              })()
                             ) : (
                               <span className="text-gray-400">—</span>
                             )}

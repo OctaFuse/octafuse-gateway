@@ -12,7 +12,7 @@
 - **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**：控制台登录。本地 `preview` / `dev:admin`：读 `.dev.vars`；若缺失会自动生成（默认 **`admin` / `admin`**，见 `scripts/ensure-dev-vars.mjs`）。生产：**`ADMIN_PASSWORD`** 用 Worker **Secret**（`npx wrangler secret put ADMIN_PASSWORD --name <ADMIN_WORKER_NAME>`）。
 - **数据库**：Wrangler 绑定 **`DB`**（D1）或根 `.env` 的 **`DATABASE_URL`** + **`DATABASE_DRIVER`**（Node；Postgres / MySQL）；须与 Proxy 指向同一逻辑库。
 
-外部自动化：`GATEWAY_MASTER_URL` + `Authorization: Bearer <MASTER_KEY>`。
+外部自动化：在后台创建具名、最小权限的 Admin API Key，然后使用 `GATEWAY_MASTER_URL` + `Authorization: Bearer <ADMIN_API_KEY>`。
 
 ## 命令
 
@@ -25,5 +25,4 @@ npm run deploy:admin
 单包开发：`cd packages/admin` 后 `npm run dev`（默认 `:3000`；无 D1 / SQL 时管理 API 会失败，仅适合改 UI）。完整 Admin API 联调请在根目录使用 `npm run dev:admin`（`:8789` + D1）或 `npm run dev:admin:node`（`:8789` + Postgres / MySQL）。
 
 文档：[docs/README.md](../../docs/README.md) · [route-topology.md](../../docs/developers/architecture/route-topology.md) · [admin API](../../docs/developers/api/admin.md) · [AGENTS.md](./AGENTS.md)
-
 

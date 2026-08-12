@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-	isAudioTranscriptionModel,
+	isAudioModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import { isRouteStrategyName } from '@octafuse/core/db/model-route-policy';
@@ -24,10 +24,10 @@ import {
 } from '@/lib/upstream-protocol';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import {
-	DEFAULT_KIND_FILTER,
-	parseKindFilterParam,
-	type ModelKindFilter,
-} from '../models/types';
+	DEFAULT_ROUTE_KIND_FILTER,
+	parseRouteKindFilterParam,
+	type RouteKindFilter,
+} from './types';
 import { useModelEditModal } from '../models/use-model-edit-modal';
 import {
 	deleteRoute,
@@ -44,6 +44,7 @@ import {
 	buildRoutePolicyPatch,
 	buildRoutesByModel,
 	buildVendorFilterOptions,
+	compatibleAdaptersForRoute,
 	createInitialRouteForm,
 	readRoutePolicyFormFromRaw,
 	resolveEffectiveRouteStrategy,
@@ -75,7 +76,7 @@ export function useRoutesPageState() {
 	const [filterProviderId, setFilterProviderId] = useState('');
 	const [filterRouteGroup, setFilterRouteGroup] = useState('');
 	const [filterStatus, setFilterStatus] = useState('');
-	const [filterKind, setFilterKind] = useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
+	const [filterKind, setFilterKind] = useState<RouteKindFilter>(DEFAULT_ROUTE_KIND_FILTER);
 	const [saveError, setSaveError] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -109,7 +110,7 @@ export function useRoutesPageState() {
 		setFilterProviderId(providerId ?? '');
 		setFilterStatus(status ?? '');
 		setFilterRouteGroup(routeGroup ?? '');
-		setFilterKind(parseKindFilterParam(kind));
+		setFilterKind(parseRouteKindFilterParam(kind));
 	}, [searchParams]);
 
 	useReplaceListPageQuery(() => {
@@ -210,10 +211,10 @@ export function useRoutesPageState() {
 		let audio = 0;
 		for (const m of models) {
 			if (isImageGenerationModel(m)) image += 1;
-			else if (isAudioTranscriptionModel(m)) audio += 1;
+			else if (isAudioModel(m)) audio += 1;
 			else llm += 1;
 		}
-		return { llm, image, audio };
+		return { all: models.length, llm, image, audio };
 	}, [models]);
 
 	const routesByModel = useMemo(
@@ -258,7 +259,11 @@ export function useRoutesPageState() {
 	);
 
 	const hasActiveFilters = Boolean(
-		filterVendor || filterProviderId || filterRouteGroup || filterStatus
+		filterVendor ||
+		filterProviderId ||
+		filterRouteGroup ||
+		filterStatus ||
+		filterKind !== DEFAULT_ROUTE_KIND_FILTER
 	);
 
 	const activeFilterSummary = useMemo(
@@ -293,8 +298,6 @@ export function useRoutesPageState() {
 		[selectedModel]
 	);
 
-	const lockOpenaiProtocol = selectedModelIsImage || selectedModelIsAudio;
-
 	const catalogStandardTierRows = useMemo(() => {
 		if (!selectedModel || selectedModelIsImage || selectedModelIsAudio) return [];
 		return getCatalogPricingTierRows(selectedModel, billingCurrency);
@@ -315,13 +318,15 @@ export function useRoutesPageState() {
 		const supported = UPSTREAM_PROTOCOLS.filter(
 			(proto) =>
 				providerSupportsUpstreamProtocol(proto, selectedProvider) &&
-				upstreamOperationsForProviderModel(selectedProvider, selectedModel, proto).length > 0
+				upstreamOperationsForProviderModel(
+					selectedProvider,
+					selectedModel,
+					proto,
+					formData.provider_model_name,
+				).length > 0
 		);
-		if (lockOpenaiProtocol) {
-			return supported.includes('openai') ? ['openai'] : [];
-		}
 		return supported;
-	}, [selectedProvider, selectedModel, lockOpenaiProtocol]);
+	}, [selectedProvider, selectedModel, formData.provider_model_name]);
 
 	useEffect(() => {
 		if (!showModal || !selectedProvider || allowedProtocolsForProvider.length === 0) return;
@@ -331,7 +336,8 @@ export function useRoutesPageState() {
 			const upstreamOperations = upstreamOperationsForProviderModel(
 				selectedProvider,
 				selectedModel,
-				upstreamProtocol
+				upstreamProtocol,
+				fd.provider_model_name,
 			);
 			return {
 				...fd,
@@ -342,19 +348,30 @@ export function useRoutesPageState() {
 	}, [
 		showModal,
 		formData.provider_id,
+		formData.provider_model_name,
 		selectedProvider,
 		selectedModel,
 		allowedProtocolsForProvider,
 	]);
 
 	useEffect(() => {
-		if (!showModal || !lockOpenaiProtocol) return;
-		setFormData((fd) =>
-			fd.upstream_protocol === 'openai' ? fd : { ...fd, upstream_protocol: 'openai' }
-		);
-	}, [showModal, lockOpenaiProtocol, formData.model_id]);
+		if (!showModal) return;
+		setFormData((fd) => {
+			const adapters = compatibleAdaptersForRoute(fd);
+			if (adapters.length === 0 || adapters.includes(fd.adapter)) return fd;
+			// 只在当前 adapter 失效时自动选择，保留用户对 Qwen/MiniMax 的明确选择。
+			return { ...fd, adapter: adapters[0]! };
+		});
+	}, [
+		showModal,
+		formData.request_protocol,
+		formData.request_operation,
+		formData.upstream_protocol,
+		formData.upstream_operation,
+	]);
 
 	const clearAllFilters = useCallback(() => {
+		setFilterKind(DEFAULT_ROUTE_KIND_FILTER);
 		setFilterVendor('');
 		setFilterProviderId('');
 		setFilterRouteGroup('');

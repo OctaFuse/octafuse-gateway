@@ -1,16 +1,21 @@
-'use client';
+"use client";
 
-import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
-import { useTranslations } from 'next-intl';
-import { RequestTargetUrl } from '@/components/request-target-url';
-import { validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
+import { PaperAirplaneIcon, StopIcon } from "@heroicons/react/24/outline";
+import { useTranslations } from "next-intl";
+import { RequestTargetUrl } from "@/components/request-target-url";
+import { validateAudioTranscriptionFile } from "@/lib/audio-transcriptions";
 import {
 	IMAGE_MAX_REFERENCE_COUNT,
 	validateEditImageFiles,
 	type ImageOperation,
-} from '@/lib/image-generations';
-import { codeBlockClass, inputClass, labelClass, prettyJsonBody } from '../simulator-utils';
-import type { WirePreview } from '../types';
+} from "@/lib/image-generations";
+import {
+	codeBlockClass,
+	inputClass,
+	labelClass,
+	prettyJsonBody,
+} from "../simulator-utils";
+import type { WirePreview } from "../types";
 
 type Props = {
 	bodyText: string;
@@ -35,8 +40,15 @@ type Props = {
 	onEditFilesChange?: (files: File[]) => void;
 	/** Audio ASR model selected with openai protocol. */
 	showAudioTranscriptions?: boolean;
+	/** Audio TTS model selected with openai protocol. */
+	showAudioSpeech?: boolean;
+	/** DashScope realtime TTS uses the native WebSocket task lifecycle. */
+	showAudioRealtime?: boolean;
 	audioFile?: File | null;
 	onAudioFileChange?: (file: File | null) => void;
+	showAudioRealtimeMicrophone?: boolean;
+	audioInputMode?: "file" | "microphone";
+	onAudioInputModeChange?: (mode: "file" | "microphone") => void;
 };
 
 export function SimulatorRequestPanel({
@@ -55,21 +67,28 @@ export function SimulatorRequestPanel({
 	onSend,
 	onStop,
 	showImageOperation = false,
-	imageOperation = 'generations',
+	imageOperation = "generations",
 	onImageOperationChange,
 	editFiles = [],
 	onEditFilesChange,
 	showAudioTranscriptions = false,
+	showAudioSpeech = false,
+	showAudioRealtime = false,
 	audioFile = null,
 	onAudioFileChange,
+	showAudioRealtimeMicrophone = false,
+	audioInputMode = "file",
+	onAudioInputModeChange,
 }: Props) {
-	const t = useTranslations('simulator');
-	const tCommon = useTranslations('common');
+	const t = useTranslations("simulator");
+	const tCommon = useTranslations("common");
 
 	return (
 		<section className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm space-y-3 flex flex-col min-h-0">
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<h2 className="text-sm font-semibold text-gray-900">{t('requestBody')}</h2>
+				<h2 className="text-sm font-semibold text-gray-900">
+					{t("requestBody")}
+				</h2>
 				<div className="flex flex-wrap items-center gap-2">
 					<button
 						type="button"
@@ -77,7 +96,7 @@ export function SimulatorRequestPanel({
 						disabled={!bodyDirty || sending}
 						className="text-xs px-2.5 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
 					>
-						{t('applyTemplate')}
+						{t("applyTemplate")}
 					</button>
 					{sending ? (
 						<button
@@ -86,7 +105,7 @@ export function SimulatorRequestPanel({
 							className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700"
 						>
 							<StopIcon className="h-4 w-4" />
-							{tCommon('stop')}
+							{tCommon("stop")}
 						</button>
 					) : (
 						<button
@@ -97,7 +116,7 @@ export function SimulatorRequestPanel({
 							className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							<PaperAirplaneIcon className="h-4 w-4" />
-							{tCommon('send')}
+							{tCommon("send")}
 						</button>
 					)}
 				</div>
@@ -106,57 +125,106 @@ export function SimulatorRequestPanel({
 				<p className="text-xs text-gray-500 -mt-1">{sendBlockedHint}</p>
 			) : null}
 			{infoHint ? (
-				<div className="p-2.5 bg-blue-50 border border-blue-200 rounded-md text-blue-900 text-sm">{infoHint}</div>
+				<div className="p-2.5 bg-blue-50 border border-blue-200 rounded-md text-blue-900 text-sm">
+					{infoHint}
+				</div>
 			) : null}
 			<RequestTargetUrl
-				label={t('requestTargetUrl')}
-				method={displayWire?.method ?? 'POST'}
+				label={t("requestTargetUrl")}
+			method={showAudioRealtime ? "WebSocket" : displayWire?.method ?? "POST"}
 				url={displayWire?.url}
-				emptyHint={t('requestTargetUrlEmpty')}
+				emptyHint={t("requestTargetUrlEmpty")}
 			/>
 			{showAudioTranscriptions ? (
 				<div className="space-y-2">
-					<p className="text-xs text-gray-500">{t('audioTranscriptionsHint')}</p>
-					<div>
-						<label className={labelClass}>{t('audioFile')}</label>
-						<input
-							type="file"
-							accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac"
-							disabled={sending}
-							className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
-							onChange={(e) => {
-								onAudioFileChange?.(e.target.files?.[0] ?? null);
-							}}
-						/>
-						<p className="mt-1 text-[11px] text-gray-400">{t('audioFileHint')}</p>
-						{!audioFile ? (
-							<p className="mt-1 text-xs text-amber-700">{t('audioFileRequired')}</p>
-						) : (
-							<p className="mt-1 text-xs text-gray-600">
-								{audioFile.name} ({audioFile.size} bytes)
+					<p className="text-xs text-gray-500">
+						{showAudioRealtimeMicrophone ? t("audioRealtimeDashScopeHint") : t("audioTranscriptionsHint")}
+					</p>
+					{showAudioRealtimeMicrophone ? (
+						<fieldset className="flex flex-wrap items-center gap-4 rounded-md border border-gray-200 px-3 py-2 text-sm">
+							<legend className="sr-only">{t("audioInputMode")}</legend>
+							<span className="font-medium text-gray-600">{t("audioInputMode")}</span>
+							<label className="inline-flex cursor-pointer items-center gap-2">
+								<input
+									type="radio"
+									name="simulatorAudioInput"
+									className="text-blue-600 focus:ring-blue-500"
+									checked={audioInputMode === "file"}
+									onChange={() => onAudioInputModeChange?.("file")}
+									disabled={sending}
+								/>
+								{t("audioInputFile")}
+							</label>
+							<label className="inline-flex cursor-pointer items-center gap-2">
+								<input
+									type="radio"
+									name="simulatorAudioInput"
+									className="text-blue-600 focus:ring-blue-500"
+									checked={audioInputMode === "microphone"}
+									onChange={() => onAudioInputModeChange?.("microphone")}
+									disabled={sending}
+								/>
+								{t("audioInputMicrophone")}
+							</label>
+					</fieldset>
+					) : null}
+					{!showAudioRealtimeMicrophone || audioInputMode === "file" ? (
+						<div>
+							<label className={labelClass}>{t("audioFile")}</label>
+							<input
+								type="file"
+								accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac"
+								disabled={sending}
+								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+								onChange={(e) => {
+									onAudioFileChange?.(e.target.files?.[0] ?? null);
+								}}
+							/>
+							<p className="mt-1 text-[11px] text-gray-400">
+								{showAudioRealtimeMicrophone
+									? t("audioRealtimeFileDashScopeHint")
+									: t("audioFileHint")}
 							</p>
-						)}
-						{(() => {
-							if (!audioFile) return null;
-							const validated = validateAudioTranscriptionFile(audioFile);
-							if (validated.ok) return null;
-							return <p className="mt-1 text-xs text-red-600">{validated.error}</p>;
-						})()}
-					</div>
+							{!audioFile ? (
+								<p className="mt-1 text-xs text-amber-700">
+									{t("audioFileRequired")}
+								</p>
+							) : (
+								<p className="mt-1 text-xs text-gray-600">
+									{audioFile.name} ({audioFile.size} bytes)
+								</p>
+							)}
+							{(() => {
+								if (!audioFile) return null;
+								const validated = validateAudioTranscriptionFile(audioFile);
+								if (validated.ok) return null;
+								return (
+									<p className="mt-1 text-xs text-red-600">{validated.error}</p>
+								);
+							})()}
+						</div>
+					) : null}
 				</div>
+			) : null}
+			{showAudioSpeech ? (
+				<p className="text-xs text-gray-500">
+					{showAudioRealtime ? t("audioRealtimeSpeechHint") : t("audioSpeechHint")}
+				</p>
 			) : null}
 			{showImageOperation ? (
 				<>
 					<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
-						<legend className="sr-only">{t('imageOperation')}</legend>
-						<span className="text-gray-600 font-medium">{t('imageOperation')}</span>
+						<legend className="sr-only">{t("imageOperation")}</legend>
+						<span className="text-gray-600 font-medium">
+							{t("imageOperation")}
+						</span>
 						<label className="inline-flex items-center gap-2 cursor-pointer">
 							<input
 								type="radio"
 								name="simulatorImageOperation"
 								className="text-blue-600 focus:ring-blue-500"
-								checked={imageOperation === 'generations'}
-								onChange={() => onImageOperationChange?.('generations')}
+								checked={imageOperation === "generations"}
+								onChange={() => onImageOperationChange?.("generations")}
 								disabled={sending}
 							/>
 							generations
@@ -166,21 +234,21 @@ export function SimulatorRequestPanel({
 								type="radio"
 								name="simulatorImageOperation"
 								className="text-blue-600 focus:ring-blue-500"
-								checked={imageOperation === 'edits'}
-								onChange={() => onImageOperationChange?.('edits')}
+								checked={imageOperation === "edits"}
+								onChange={() => onImageOperationChange?.("edits")}
 								disabled={sending}
 							/>
 							edits
 						</label>
 					</fieldset>
-					{imageOperation === 'generations' ? (
-						<p className="text-xs text-gray-500">{t('imageGenerationsHint')}</p>
+					{imageOperation === "generations" ? (
+						<p className="text-xs text-gray-500">{t("imageGenerationsHint")}</p>
 					) : (
-						<p className="text-xs text-gray-500">{t('imageEditsHint')}</p>
+						<p className="text-xs text-gray-500">{t("imageEditsHint")}</p>
 					)}
-					{imageOperation === 'edits' ? (
+					{imageOperation === "edits" ? (
 						<div>
-							<label className={labelClass}>{t('referenceImages')}</label>
+							<label className={labelClass}>{t("referenceImages")}</label>
 							<input
 								type="file"
 								accept="image/png,image/jpeg,image/webp,image/*"
@@ -193,19 +261,25 @@ export function SimulatorRequestPanel({
 								}}
 							/>
 							<p className="mt-1 text-[11px] text-gray-400">
-								{t('referenceImagesHint', { max: IMAGE_MAX_REFERENCE_COUNT })}
+								{t("referenceImagesHint", { max: IMAGE_MAX_REFERENCE_COUNT })}
 								{editFiles.length > 0
-									? ` · ${t('referenceImagesSelected', { count: editFiles.length })}`
-									: ''}
+									? ` · ${t("referenceImagesSelected", {
+											count: editFiles.length,
+									  })}`
+									: ""}
 							</p>
 							{editFiles.length === 0 ? (
-								<p className="mt-1 text-xs text-amber-700">{t('referenceImagesRequired')}</p>
+								<p className="mt-1 text-xs text-amber-700">
+									{t("referenceImagesRequired")}
+								</p>
 							) : null}
 							{(() => {
 								if (editFiles.length === 0) return null;
 								const validated = validateEditImageFiles(editFiles);
 								if (validated.ok) return null;
-								return <p className="mt-1 text-xs text-red-600">{validated.error}</p>;
+								return (
+									<p className="mt-1 text-xs text-red-600">{validated.error}</p>
+								);
 							})()}
 							{editFiles.length > 0 ? (
 								<ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
@@ -231,7 +305,9 @@ export function SimulatorRequestPanel({
 				/>
 			</div>
 			{bodyError ? (
-				<div className="p-2.5 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{bodyError}</div>
+				<div className="p-2.5 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+					{bodyError}
+				</div>
 			) : null}
 
 			<div className="border-t border-gray-100 pt-2">
@@ -241,26 +317,32 @@ export function SimulatorRequestPanel({
 					className="flex w-full items-center justify-between text-left text-xs font-medium text-gray-600 hover:text-gray-900"
 					aria-expanded={wireOpen}
 				>
-					<span>{t('wirePreview')}</span>
-					<span className="text-gray-400">{wireOpen ? '▾' : '▸'}</span>
+					<span>{t("wirePreview")}</span>
+					<span className="text-gray-400">{wireOpen ? "▾" : "▸"}</span>
 				</button>
 				{wireOpen ? (
 					displayWire ? (
 						<div className="mt-2 space-y-2">
 							<div className="text-xs text-gray-600">
-								<span className="font-semibold text-gray-700">{displayWire.method}</span>{' '}
+								<span className="font-semibold text-gray-700">
+									{displayWire.method}
+								</span>{" "}
 								<span className="font-mono break-all">{displayWire.url}</span>
 							</div>
 							<div>
-								<div className="text-[11px] font-medium text-gray-500 mb-1">{t('wireHeaders')}</div>
+								<div className="text-[11px] font-medium text-gray-500 mb-1">
+									{t("wireHeaders")}
+								</div>
 								<pre className={codeBlockClass}>
 									{Object.entries(displayWire.headers)
 										.map(([k, v]) => `${k}: ${v}`)
-										.join('\n')}
+										.join("\n")}
 								</pre>
 							</div>
 							<div>
-								<div className="text-[11px] font-medium text-gray-500 mb-1">{t('wireBody')}</div>
+								<div className="text-[11px] font-medium text-gray-500 mb-1">
+									{t("wireBody")}
+								</div>
 								<pre className={codeBlockClass}>
 									{displayWire.isMultipart
 										? displayWire.bodyText
@@ -269,7 +351,9 @@ export function SimulatorRequestPanel({
 							</div>
 						</div>
 					) : (
-						<p className="mt-2 text-xs text-gray-500">{t('wirePreviewEmpty')}</p>
+						<p className="mt-2 text-xs text-gray-500">
+							{t("wirePreviewEmpty")}
+						</p>
 					)
 				) : null}
 			</div>

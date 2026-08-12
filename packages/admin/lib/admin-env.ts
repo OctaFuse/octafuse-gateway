@@ -1,5 +1,6 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import type { GatewayRepositories, StorageContext } from '@octafuse/core';
+import type { AdminPrincipal } from '@/lib/admin-principal';
 
 /** Admin Hono 应用：Cloudflare 绑定与请求级变量。 */
 export type AdminBindings = {
@@ -10,11 +11,13 @@ export type AdminBindings = {
 	/** 与 `DATABASE_URL` 命名对齐；Node 下省略视为 `postgres`（见 `@octafuse/core`）。 */
 	DATABASE_DRIVER?: string;
 	STORAGE_CONTEXT?: StorageContext;
+	ADMIN_PRINCIPAL?: AdminPrincipal;
 };
 
 export type AdminEnv = {
 	Bindings: AdminBindings;
 	Variables: {
 		repositories: GatewayRepositories;
+		principal: AdminPrincipal;
 	};
 };

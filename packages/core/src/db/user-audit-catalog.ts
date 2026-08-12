@@ -39,6 +39,35 @@ export type UserAuditSourceChannel = (typeof USER_AUDIT_SOURCE_CHANNELS)[number]
 
 export const USER_AUDIT_ACTOR_TYPES = ['system', 'admin', 'service'] as const satisfies readonly ApiKeyBudgetAuditActorType[];
 
+/**
+ * `actor_id` 的身份前缀。`actor_type` 只区分类别（admin / system / service），
+ * 同一类别下仍有多个身份实例——例如 `admin` 既包含控制台会话，也包含每一把集成密钥，
+ * 追责与泄露回溯依赖此前缀 + 完整 `actor_id`。
+ */
+export const USER_AUDIT_ACTOR_KINDS = ['console', 'admin_key', 'admin', 'system', 'service'] as const;
+
+export type UserAuditActorKind = (typeof USER_AUDIT_ACTOR_KINDS)[number];
+
+const ACTOR_KIND_SET = new Set<string>(USER_AUDIT_ACTOR_KINDS);
+
+/** 过滤出合法的 actor kind，去重；非法值静默丢弃。 */
+export function normalizeUserAuditActorKinds(values: readonly string[]): UserAuditActorKind[] {
+	return [...new Set(values.filter((value): value is UserAuditActorKind => ACTOR_KIND_SET.has(value)))];
+}
+
+/**
+ * `actor_id LIKE 'kind:%'` 的等价半开区间 `[lower, upper)`。
+ *
+ * 不用 LIKE 有两个原因：`admin_key` 含下划线，在 LIKE 中是单字符通配符，需要 ESCAPE 子句，
+ * 而 ESCAPE 的反斜杠字面量写法在 Postgres 与 MySQL 之间并不一致；区间比较则同样能走
+ * `(actor_id, created_at)` 索引，且没有转义歧义。
+ */
+export function userAuditActorKindPrefixRange(kind: UserAuditActorKind): { lower: string; upper: string } {
+	const separator = ':';
+	const nextChar = String.fromCharCode(separator.charCodeAt(0) + 1);
+	return { lower: `${kind}${separator}`, upper: `${kind}${nextChar}` };
+}
+
 /** 系统自动化（扣费、周期重置等） */
 export const SYSTEM_GATEWAY_ACTOR_ID = 'system:gateway';
 

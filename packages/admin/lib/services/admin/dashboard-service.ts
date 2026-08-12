@@ -143,8 +143,17 @@ export async function listAdminGlobalRequestLogsService(
 	return { ...result, page, page_size: pageSize };
 }
 
+/** 多值过滤参数：可重复出现，也可在单个值里用逗号分隔；去空去重。 */
+function parseMultiValueFilter(input: string | string[] | undefined): string[] | undefined {
+	const values = (Array.isArray(input) ? input : input ? [input] : [])
+		.flatMap((value) => value.split(','))
+		.map((value) => value.trim())
+		.filter((value, index, all) => value !== '' && all.indexOf(value) === index);
+	return values.length > 0 ? values : undefined;
+}
+
 /**
- * 全局 `user_audit_logs` 分页（可选 api_key_id、user_email、event_type、actor_type、时间窗）。
+ * 全局 `user_audit_logs` 分页（可选 api_key_id、user_email、event_type、actor_type、actor_id、actor_kind、时间窗）。
  */
 export async function listAdminGlobalBudgetAuditLogsService(
 	repos: GatewayRepositories,
@@ -156,6 +165,8 @@ export async function listAdminGlobalBudgetAuditLogsService(
 		user_email?: string;
 		event_type?: string | string[];
 		actor_type?: string | string[];
+		actor_id?: string;
+		actor_kind?: string | string[];
 		reason_code?: string | string[];
 		source?: string | string[];
 		correlation_id?: string;
@@ -165,32 +176,18 @@ export async function listAdminGlobalBudgetAuditLogsService(
 ): Promise<AdminGlobalBudgetAuditLogsOutput> {
 	const page = Math.max(1, Number.parseInt(String(input.page ?? '1'), 10));
 	const pageSize = Math.min(100, Math.max(1, Number.parseInt(String(input.page_size ?? '20'), 10)));
-	const eventTypes = (Array.isArray(input.event_type) ? input.event_type : input.event_type ? [input.event_type] : [])
-		.flatMap((value) => value.split(','))
-		.map((value) => value.trim())
-		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
-	const actorTypes = (Array.isArray(input.actor_type) ? input.actor_type : input.actor_type ? [input.actor_type] : [])
-		.flatMap((value) => value.split(','))
-		.map((value) => value.trim())
-		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
-	const reasonCodes = (Array.isArray(input.reason_code) ? input.reason_code : input.reason_code ? [input.reason_code] : [])
-		.flatMap((value) => value.split(','))
-		.map((value) => value.trim())
-		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
-	const sources = (Array.isArray(input.source) ? input.source : input.source ? [input.source] : [])
-		.flatMap((value) => value.split(','))
-		.map((value) => value.trim())
-		.filter((value, index, values) => value !== '' && values.indexOf(value) === index);
 	const result = await repos.userAuditLogs.getGlobalUserAuditLogs({
 		page,
 		pageSize,
 		userId: input.user_id,
 		apiKeyId: input.api_key_id,
 		userEmail: input.user_email,
-		eventTypes: eventTypes.length > 0 ? eventTypes : undefined,
-		actorTypes: actorTypes.length > 0 ? actorTypes : undefined,
-		reasonCodes: reasonCodes.length > 0 ? reasonCodes : undefined,
-		sources: sources.length > 0 ? sources : undefined,
+		eventTypes: parseMultiValueFilter(input.event_type),
+		actorTypes: parseMultiValueFilter(input.actor_type),
+		actorId: input.actor_id?.trim() || undefined,
+		actorKinds: parseMultiValueFilter(input.actor_kind),
+		reasonCodes: parseMultiValueFilter(input.reason_code),
+		sources: parseMultiValueFilter(input.source),
 		correlationId: input.correlation_id,
 		startDate: input.start_date,
 		endDate: input.end_date,
@@ -224,6 +221,9 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		throw badRequest('value must be string');
 	}
 	const key = body.key.trim();
+	if (key === 'MASTER_KEY') {
+		throw badRequest('MASTER_KEY is removed; use Integration Keys');
+	}
 	let value = body.value == null ? '' : String(body.value);
 	if (key === BILLING_CURRENCY_KEY) {
 		const parsed = tryParseGatewaySupportedBillingCurrencyInput(value);

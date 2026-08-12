@@ -19,6 +19,9 @@ import { adminPlaygroundRoutes } from '@/lib/routes/admin/playground';
 import { adminProvidersRoutes } from '@/lib/routes/admin/providers';
 import { adminRequestLogsRoutes } from '@/lib/routes/admin/request-logs';
 import { adminStatsRoutes } from '@/lib/routes/admin/stats';
+import { adminAccessKeysRoutes } from '@/lib/routes/admin/access-keys';
+import { getAdminAuthorizationDecision } from '@/lib/admin-permissions';
+import { hasAdminPermission } from '@/lib/admin-principal';
 
 export function createAdminApp(): Hono<AdminEnv> {
 	const app = new Hono<AdminEnv>();
@@ -36,7 +39,35 @@ export function createAdminApp(): Hono<AdminEnv> {
 	app.use('*', async (c, next) => {
 		const { repositories } = await resolveAdminStorageContext(c.env);
 		c.set('repositories', repositories);
+		const principal = c.env.ADMIN_PRINCIPAL;
+		if (!principal) return c.json({ success: false, message: 'Unauthorized' }, 401);
+		c.set('principal', principal);
 		await next();
+	});
+
+	app.use('/admin/*', async (c, next) => {
+		const principal = c.get('principal');
+		const decision = getAdminAuthorizationDecision(c.req.method, c.req.path);
+		if (decision.kind === 'console_only') {
+			if (principal.type !== 'console') {
+				return c.json({ success: false, message: 'Forbidden', required_permission: 'console_session' }, 403);
+			}
+			if (c.req.path.startsWith('/admin/access-keys') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(c.req.method.toUpperCase())) {
+				const origin = c.req.header('origin');
+				if (!origin || origin !== new URL(c.req.url).origin) {
+					return c.json({ success: false, message: 'Forbidden: invalid Origin' }, 403);
+				}
+			}
+			return next();
+		}
+		if (decision.kind === 'authenticated') return next();
+		if (decision.kind === 'deny') {
+			return c.json({ success: false, message: 'Forbidden: admin route is not registered' }, 403);
+		}
+		if (!hasAdminPermission(principal, decision.permission)) {
+			return c.json({ success: false, message: 'Forbidden', required_permission: decision.permission }, 403);
+		}
+		return next();
 	});
 
 	app.route('/admin/users', adminUsersRoutes);
@@ -51,6 +82,7 @@ export function createAdminApp(): Hono<AdminEnv> {
 	app.route('/admin/budget-audit-logs', adminBudgetAuditLogsRoutes);
 	app.route('/admin/business-timezone', adminBusinessTimezoneRoutes);
 	app.route('/admin/analytics', adminAnalyticsRoutes);
+	app.route('/admin/access-keys', adminAccessKeysRoutes);
 
 	app.get('/admin', (c) => c.json({ name: 'octafuse-admin-api', version: adminAppVersion }));
 

@@ -1,10 +1,11 @@
 /**
  * 管理 UI：`pricing_profile` 的 `{ tiers }` 表单行与 JSON 序列化（与 `@octafuse/core` 解析一致）。
  * Image 双模式：`image_billing_mode` token / per_image + 可选 `image` 块。
- * Audio 双模式：`audio_billing_mode` per_second（`audio` 块）/ token（`tiers`）。
+ * Audio 三模式：ASR per_second/token，TTS per_character。
  */
 import {
 	parsePricingProfile,
+	profileHasAudioPerCharacterPricing,
 	profileHasAudioPerSecondPricing,
 	profileHasAudioTokenPricing,
 	profileHasImagePerImagePricing,
@@ -29,14 +30,17 @@ export type ImagePricingDraftState = {
 	perImage: ImagePerImageDraft;
 };
 
-export type AudioBillingModeDraft = 'per_second' | 'token';
+export type AudioBillingModeDraft = 'per_second' | 'token' | 'per_character';
 
-/** Audio 转写双模式草稿：per_second（whisper）或 token（gpt-4o-*transcribe）。 */
+/** Audio 草稿：ASR 按秒/token，TTS 按上游有效字符数。 */
 export type AudioPricingDraftState = {
 	mode: AudioBillingModeDraft;
 	/** per_second 字段 */
 	price_per_second: string;
 	minimum_seconds: string;
+	/** per_character 字段 */
+	price_per_character: string;
+	minimum_characters: string;
 	/** token 字段（通常单档开放上界） */
 	tiers: PricingTierDraftRow[];
 };
@@ -47,6 +51,8 @@ export function createDefaultAudioPricingDraft(): AudioPricingDraftState {
 		mode: 'per_second',
 		price_per_second: '0.0001',
 		minimum_seconds: '1',
+		price_per_character: '',
+		minimum_characters: '0',
 		tiers: [],
 	};
 }
@@ -135,6 +141,8 @@ export function createDefaultAudioTokenPricingDraft(): AudioPricingDraftState {
 		mode: 'token',
 		price_per_second: '',
 		minimum_seconds: '1',
+		price_per_character: '',
+		minimum_characters: '0',
 		tiers: [
 			{
 				id: nextRowId(),
@@ -148,6 +156,18 @@ export function createDefaultAudioTokenPricingDraft(): AudioPricingDraftState {
 				image_output_price: '',
 			},
 		],
+	};
+}
+
+/** 新建 TTS 模型默认不猜供应商价格，要求管理员明确填写每字符单价。 */
+export function createDefaultAudioCharacterPricingDraft(): AudioPricingDraftState {
+	return {
+		mode: 'per_character',
+		price_per_second: '',
+		minimum_seconds: '1',
+		price_per_character: '',
+		minimum_characters: '0',
+		tiers: [],
 	};
 }
 
@@ -265,7 +285,7 @@ export function profileJsonToDraftState(json: string | null | undefined): ImageP
 	};
 }
 
-/** 从已存 JSON 解析 Audio 双模式编辑态；非 audio profile 返回 per_second 默认草稿。 */
+/** 从已存 JSON 解析 Audio 三模式编辑态；非 audio profile 返回 per_second 默认草稿。 */
 export function profileJsonToAudioDraftState(
 	json: string | null | undefined
 ): AudioPricingDraftState {
@@ -286,7 +306,20 @@ export function profileJsonToAudioDraftState(
 			mode: 'token',
 			price_per_second: '',
 			minimum_seconds: '1',
+			price_per_character: '',
+			minimum_characters: '0',
 			tiers,
+		};
+	}
+	if (profileHasAudioPerCharacterPricing(p) && p.audio) {
+		return {
+			mode: 'per_character',
+			price_per_second: '',
+			minimum_seconds: '1',
+			price_per_character: String(p.audio.price_per_character),
+			minimum_characters:
+				p.audio.minimum_characters != null ? String(p.audio.minimum_characters) : '0',
+			tiers: [],
 		};
 	}
 	if (profileHasAudioPerSecondPricing(p) && p.audio) {
@@ -295,6 +328,8 @@ export function profileJsonToAudioDraftState(
 			price_per_second: String(p.audio.price_per_second),
 			minimum_seconds:
 				p.audio.minimum_seconds != null ? String(p.audio.minimum_seconds) : '1',
+			price_per_character: '',
+			minimum_characters: '0',
 			tiers: [],
 		};
 	}
@@ -401,9 +436,10 @@ export function serializeDraftRowsToProfileJson(rows: PricingTierDraftRow[]): Se
 }
 
 /**
- * Audio 转写：按 mode 序列化。
+ * Audio：按 mode 序列化。
  * - token → `{ audio_billing_mode: "token", tiers: [...] }`
  * - per_second → `{ audio_billing_mode: "per_second", audio: {...} }`（无 tiers）
+ * - per_character → `{ audio_billing_mode: "per_character", audio: {...} }`（无 tiers）
  */
 export function serializeAudioPricingDraft(draft: AudioPricingDraftState): SerializeTiersResult {
 	if (draft.mode === 'token') {
@@ -426,6 +462,31 @@ export function serializeAudioPricingDraft(draft: AudioPricingDraftState): Seria
 		} catch {
 			return { ok: false, error: 'Failed to serialize token audio profile' };
 		}
+	}
+	if (draft.mode === 'per_character') {
+		const pricePerCharacter = Number(draft.price_per_character.trim());
+		if (!Number.isFinite(pricePerCharacter) || pricePerCharacter < 0) {
+			return { ok: false, error: 'Audio price_per_character must be a finite number ≥ 0' };
+		}
+		const minTrim = draft.minimum_characters.trim();
+		const minimumCharacters = minTrim === '' ? 0 : Number(minTrim);
+		if (!Number.isInteger(minimumCharacters) || minimumCharacters < 0) {
+			return {
+				ok: false,
+				error: 'Audio minimum_characters must be an integer ≥ 0 or empty (default 0)',
+			};
+		}
+		const json = JSON.stringify({
+			audio_billing_mode: 'per_character',
+			audio: {
+				price_per_character: pricePerCharacter,
+				minimum_characters: minimumCharacters,
+			},
+		});
+		if (!parsePricingProfile(json)) {
+			return { ok: false, error: 'Serialized per-character audio profile failed pricing validation' };
+		}
+		return { ok: true, json };
 	}
 
 	const pricePerSecond = Number(draft.price_per_second.trim());

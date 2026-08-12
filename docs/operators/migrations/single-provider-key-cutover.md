@@ -77,13 +77,13 @@ DATABASE_URL='postgres://...' node scripts/db/export-provider-api-keys.mjs > pro
 ```bash
 # 1) 新建 Provider（复制原 endpoints + 丢弃的 api_key）
 curl -X POST "$GATEWAY_MASTER_URL/api/admin/providers" \
-  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Authorization: Bearer $ADMIN_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name":"vendor-b","api_key":"...","status":"active","endpoints":{...}}'
 
 # 2) 为模型挂路由（priority 分层；同层用 weight）
 curl -X POST "$GATEWAY_MASTER_URL/api/admin/routes" \
-  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Authorization: Bearer $ADMIN_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model_id":"glm-4","provider_id":"<new-id>","provider_model_name":"...","priority":10,"weight":1,"route_group":"default","upstream_protocol":"openai"}'
 ```
@@ -96,7 +96,7 @@ curl -X POST "$GATEWAY_MASTER_URL/api/admin/routes" \
 
 ```bash
 curl -X PUT "$GATEWAY_MASTER_URL/api/admin/config" \
-  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Authorization: Bearer $ADMIN_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"key":"ROUTE_STRATEGY","value":"affinity"}'
 ```
@@ -108,7 +108,7 @@ curl -X PUT "$GATEWAY_MASTER_URL/api/admin/config" \
 ## 5. 验证清单
 
 - [ ] `GET /api/admin/providers`：列表含脱敏 `api_key`、`status`；**无** `/keys` 子资源
-- [ ] `GET /api/admin/providers/:id/api-key`：可揭示明文（鉴权 MASTER_KEY）
+- [ ] `GET /api/admin/providers/:id/api-key`：可揭示明文（需 `providers.secrets.read`）
 - [ ] `GET /api/admin/routes`：行含 `weight`、`route_pool_id`、`surfaces`、`upstream_operation`、`adapter`
 - [ ] `GET /api/admin/config`：存在 `ROUTE_STRATEGY=affinity`（或你设定的值）
 - [ ] `route_pools` / `model_surfaces` 已创建；历史路由均有 `route_pool_id`

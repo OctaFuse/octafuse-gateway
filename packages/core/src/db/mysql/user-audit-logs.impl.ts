@@ -1,7 +1,7 @@
 /**
  * MySQL：`user_audit_logs`。
  */
-import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, lt, or, sql } from 'drizzle-orm';
 import type { GlobalUserAuditLogRow, UserAuditLogRow } from '../../types';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { UserAuditLogsRepository } from '../../storage/gateway-repository-interfaces';
@@ -12,6 +12,7 @@ import {
 import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
 import { toUserAuditLogDrizzleInsert } from '../user-audit-drizzle-insert';
 import { deriveUserAuditBudgetFromSnapshots } from '../user-audit-log-derived';
+import { normalizeUserAuditActorKinds, userAuditActorKindPrefixRange } from '../user-audit-catalog';
 
 type MyAuditSelectRow = {
 	id: string;
@@ -101,6 +102,8 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 			userEmail?: string;
 			eventTypes?: string[];
 			actorTypes?: string[];
+			actorId?: string;
+			actorKinds?: string[];
 			reasonCodes?: string[];
 			sources?: string[];
 			correlationId?: string;
@@ -119,6 +122,18 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 			}
 			if (options.actorTypes && options.actorTypes.length > 0) {
 				conditions.push(inArray(myUserAuditLogsTable.actorType, options.actorTypes));
+			}
+			if (options.actorId) conditions.push(eq(myUserAuditLogsTable.actorId, options.actorId));
+			const actorKinds = normalizeUserAuditActorKinds(options.actorKinds ?? []);
+			if (actorKinds.length > 0) {
+				conditions.push(
+					or(
+						...actorKinds.map((kind) => {
+							const { lower, upper } = userAuditActorKindPrefixRange(kind);
+							return and(gte(myUserAuditLogsTable.actorId, lower), lt(myUserAuditLogsTable.actorId, upper));
+						})
+					)!
+				);
 			}
 			if (options.reasonCodes && options.reasonCodes.length > 0) {
 				conditions.push(inArray(myUserAuditLogsTable.reasonCode, options.reasonCodes));

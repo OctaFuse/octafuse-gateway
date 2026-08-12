@@ -95,7 +95,6 @@ function generateProxy(names) {
 			),
 		],
 	};
-
 	const routes = customDomainRoutes(names.proxyCustomDomain);
 	if (routes) {
 		config.routes = routes;

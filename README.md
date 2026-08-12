@@ -166,7 +166,7 @@ npx wrangler login
 npm run bootstrap:cloudflare
 ```
 
-详见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)。用于生产环境前，请修改默认管理后台密码，并轮换 `MASTER_KEY`。
+详见 [Cloudflare 快速部署](./docs/operators/deployment/cloudflare-quickstart.md)。用于生产环境前，请修改默认管理后台密码，并为外部集成创建独立、最小权限的 Admin API Key。
 
 Docker 自托管及 Postgres / MySQL 数据库方案见 [部署文档索引](./docs/operators/deployment/README.md)。
 

@@ -106,7 +106,7 @@ export function listPlaygroundToolProviders(toolId: GatewayToolId): readonly str
 }
 
 /**
- * 直连引擎试调用（MASTER_KEY 管理面）。
+ * 直连引擎试调用（Admin 管理面）。
  */
 export async function invokePlaygroundTool(
 	repos: GatewayRepositories,

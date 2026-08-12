@@ -4,14 +4,13 @@
 import type { GatewayRepositories, UpstreamProtocol } from '@octafuse/core';
 import {
 	canonicalizeRequestOperation,
+	isDashScopeRealtimeAsrModelOperationCompatible,
+	isRouteAdapterCompatible,
 	isRequestOperationForProtocol,
 	normalizeRouteOperation,
 	PASSTHROUGH_ROUTE_ADAPTER,
 } from '@octafuse/core';
-import {
-	isAudioTranscriptionModel,
-	isImageGenerationModel,
-} from '@octafuse/core/db/model-modalities';
+import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { isRouteStrategyName } from '@octafuse/core/db/model-route-policy';
 import { normalizeRoutePoolTierStrategiesInput } from '@octafuse/core/db/route-pool-tier-strategies';
@@ -31,7 +30,7 @@ import type {
 async function assertImageModelOpenaiProtocol(
 	repos: GatewayRepositories,
 	modelId: string,
-	proto: 'openai' | 'anthropic' | 'gemini'
+	proto: UpstreamProtocol
 ): Promise<void> {
 	const model = await repos.models.getModelDetailWithRouteCounts(modelId);
 	if (!model) return;
@@ -48,22 +47,33 @@ async function assertImageModelOpenaiProtocol(
 	}
 }
 
-/** Audio transcription catalog models may only use OpenAI Audio–compatible routes. */
-async function assertAudioModelOpenaiProtocol(
-	repos: GatewayRepositories,
-	modelId: string,
-	proto: 'openai' | 'anthropic' | 'gemini'
-): Promise<void> {
-	const model = await repos.models.getModelDetailWithRouteCounts(modelId);
-	if (!model) return;
+/** 跨协议路由必须命中 Core 中声明的精确 adapter 映射，不能靠协议名推断转换。 */
+function assertRouteAdapterTopology(input: {
+	adapter: string;
+	requestProtocol: UpstreamProtocol;
+	requestOperation: string;
+	upstreamProtocol: UpstreamProtocol;
+	upstreamOperation: string;
+}): void {
+	if (!isRouteAdapterCompatible(input)) {
+		throw badRequest(
+			`Adapter "${input.adapter}" does not support ${input.requestProtocol}.${input.requestOperation} -> ${input.upstreamProtocol}.${input.upstreamOperation}`
+		);
+	}
+}
+
+/** Fun-ASR/Qwen-Audio 与 Qwen3-ASR 的 WebSocket 生命周期不同，禁止保存可连接但必然失败的组合。 */
+function assertDashScopeRealtimeAsrTopology(input: {
+	upstreamProtocol: UpstreamProtocol;
+	upstreamOperation: string;
+	providerModelName: string;
+}): void {
 	if (
-		isAudioTranscriptionModel({
-			pricing_profile: model.pricing_profile as string | null | undefined,
-		}) &&
-		proto !== 'openai'
+		input.upstreamProtocol === 'dashscope' &&
+		!isDashScopeRealtimeAsrModelOperationCompatible(input.providerModelName, input.upstreamOperation)
 	) {
 		throw badRequest(
-			'Audio transcription models require upstream_protocol=openai (Gateway Audio API only uses OpenAI routes).'
+			`DashScope ASR model "${input.providerModelName}" is not compatible with upstream_operation "${input.upstreamOperation}"`,
 		);
 	}
 }
@@ -99,7 +109,7 @@ export async function createModelRouteService(
 	const customParamsNorm = normalizeJsonObjectField(body.custom_params, 'custom_params');
 	if (!customParamsNorm.ok) throw badRequest(customParamsNorm.message);
 
-	let proto: 'openai' | 'anthropic' | 'gemini';
+	let proto: UpstreamProtocol;
 	try {
 		proto = normalizeUpstreamProtocol(String(body.upstream_protocol ?? 'openai'));
 	} catch (e) {
@@ -112,7 +122,6 @@ export async function createModelRouteService(
 		throw badRequest(`Provider has no base URL for upstream protocol "${proto}".`);
 	}
 	await assertImageModelOpenaiProtocol(repos, modelId, proto);
-	await assertAudioModelOpenaiProtocol(repos, modelId, proto);
 
 	const routeGroup =
 		typeof body.route_group === 'string' && body.route_group.trim() !== '' ? body.route_group.trim() : 'default';
@@ -142,21 +151,19 @@ export async function createModelRouteService(
 			`upstream_operation "${upstreamOperation}" is not valid for upstream_protocol "${proto}"`
 		);
 	}
+	assertDashScopeRealtimeAsrTopology({
+		upstreamProtocol: proto,
+		upstreamOperation,
+		providerModelName,
+	});
 	const adapter = String(body.adapter ?? PASSTHROUGH_ROUTE_ADAPTER).trim() || PASSTHROUGH_ROUTE_ADAPTER;
-	if (adapter !== PASSTHROUGH_ROUTE_ADAPTER) {
-		throw badRequest('Only adapter="passthrough" is supported in this release');
-	}
-	if (requestProtocol !== proto && adapter === PASSTHROUGH_ROUTE_ADAPTER) {
-		throw badRequest('Cross-protocol targets require a conversion adapter');
-	}
-	if (
-		adapter === PASSTHROUGH_ROUTE_ADAPTER &&
-		requestOperation !== '*' &&
-		upstreamOperation !== '*' &&
-		requestOperation !== upstreamOperation
-	) {
-		throw badRequest('Different request and upstream operations require a conversion adapter');
-	}
+	assertRouteAdapterTopology({
+		adapter,
+		requestProtocol,
+		requestOperation,
+		upstreamProtocol: proto,
+		upstreamOperation,
+	});
 
 	const topology = await repos.routes.ensureModelSurfacePool({
 		poolId: crypto.randomUUID(),
@@ -253,18 +260,21 @@ export async function updateModelRouteService(
 	if (!existing) throw notFound('Route not found');
 	const effectiveModelId =
 		patch.model_id !== undefined ? String(patch.model_id) : String(existing.model_id);
-	const effectiveProto = (patch.upstream_protocol !== undefined
-		? patch.upstream_protocol
-		: existing.upstream_protocol) as 'openai' | 'anthropic' | 'gemini';
+	const effectiveProto = normalizeUpstreamProtocol(
+		String(patch.upstream_protocol !== undefined ? patch.upstream_protocol : existing.upstream_protocol)
+	);
 	const effectiveProviderId =
 		patch.provider_id !== undefined ? String(patch.provider_id) : String(existing.provider_id);
+	const effectiveProviderModelName =
+		patch.provider_model_name !== undefined
+			? String(patch.provider_model_name)
+			: String(existing.provider_model_name);
 	const provider = await repos.providers.getProviderProtocolBases(effectiveProviderId);
 	if (!provider) throw badRequest('Provider not found');
 	if (!providerSupportsUpstreamProtocol(effectiveProto, provider)) {
 		throw badRequest(`Provider has no base URL for upstream protocol "${effectiveProto}".`);
 	}
 	await assertImageModelOpenaiProtocol(repos, effectiveModelId, effectiveProto);
-	await assertAudioModelOpenaiProtocol(repos, effectiveModelId, effectiveProto);
 
 	const requestProtocolRaw = body.request_protocol;
 	const requestOperationRaw = body.request_operation;
@@ -273,28 +283,41 @@ export async function updateModelRouteService(
 		existing.route_pool_id != null && String(existing.route_pool_id).trim() !== ''
 			? String(existing.route_pool_id)
 			: null;
-	if (
+	const updatesTopology =
 		requestProtocolRaw !== undefined ||
 		requestOperationRaw !== undefined ||
-		routeGroupChanging
-	) {
+		body.upstream_protocol !== undefined ||
+		body.upstream_operation !== undefined ||
+		body.adapter !== undefined ||
+		routeGroupChanging;
+	const effectiveUpstreamOperation = canonicalizeRequestOperation(
+		effectiveProto,
+		normalizeRouteOperation(body.upstream_operation ?? existing.upstream_operation),
+	);
+	if (!isRequestOperationForProtocol(effectiveProto, effectiveUpstreamOperation)) {
+		throw badRequest(
+			`upstream_operation "${effectiveUpstreamOperation}" is not valid for upstream_protocol "${effectiveProto}"`,
+		);
+	}
+	assertDashScopeRealtimeAsrTopology({
+		upstreamProtocol: effectiveProto,
+		upstreamOperation: effectiveUpstreamOperation,
+		providerModelName: effectiveProviderModelName,
+	});
+	if (updatesTopology) {
+		// request surface 存在独立表中；拓扑变更要求调用方提交完整 surface，避免从 target 行猜测。
+		if (requestProtocolRaw === undefined || requestOperationRaw === undefined) {
+			throw badRequest('Topology updates require request_protocol and request_operation');
+		}
 		let requestProtocol: UpstreamProtocol;
 		try {
-			requestProtocol = normalizeUpstreamProtocol(
-				String(requestProtocolRaw ?? effectiveProto)
-			);
+			requestProtocol = normalizeUpstreamProtocol(String(requestProtocolRaw));
 		} catch (e) {
 			throw badRequest(e instanceof Error ? e.message : 'Invalid request_protocol');
 		}
-		// When body omits request_operation (e.g. only route_group change), keep the
-		// passthrough-aligned operation from the existing target instead of defaulting to '*'.
 		const requestOperation = canonicalizeRequestOperation(
 			requestProtocol,
-			normalizeRouteOperation(
-				requestOperationRaw !== undefined && requestOperationRaw !== null
-					? requestOperationRaw
-					: existing.upstream_operation
-			)
+			normalizeRouteOperation(requestOperationRaw)
 		);
 		if (!isRequestOperationForProtocol(requestProtocol, requestOperation)) {
 			throw badRequest(
@@ -305,21 +328,13 @@ export async function updateModelRouteService(
 			body.adapter === undefined
 				? String(existing.adapter ?? PASSTHROUGH_ROUTE_ADAPTER)
 				: String(body.adapter).trim() || PASSTHROUGH_ROUTE_ADAPTER;
-		if (requestProtocol !== effectiveProto && effectiveAdapter === PASSTHROUGH_ROUTE_ADAPTER) {
-			throw badRequest('Cross-protocol targets require a conversion adapter');
-		}
-		const effectiveUpstreamOperation = canonicalizeRequestOperation(
-			effectiveProto,
-			normalizeRouteOperation(body.upstream_operation ?? existing.upstream_operation)
-		);
-		if (
-			effectiveAdapter === PASSTHROUGH_ROUTE_ADAPTER &&
-			requestOperation !== '*' &&
-			effectiveUpstreamOperation !== '*' &&
-			requestOperation !== effectiveUpstreamOperation
-		) {
-			throw badRequest('Different request and upstream operations require a conversion adapter');
-		}
+		assertRouteAdapterTopology({
+			adapter: effectiveAdapter,
+			requestProtocol,
+			requestOperation,
+			upstreamProtocol: effectiveProto,
+			upstreamOperation: effectiveUpstreamOperation,
+		});
 		const effectiveGroup =
 			patch.route_group !== undefined
 				? String(patch.route_group)
@@ -334,25 +349,8 @@ export async function updateModelRouteService(
 			poolName: `${requestProtocol}.${requestOperation} · ${effectiveGroup}`,
 		});
 		patch.route_pool_id = topology.poolId;
-	}
-	if (patch.upstream_operation !== undefined) {
-		const operation = canonicalizeRequestOperation(
-			effectiveProto,
-			normalizeRouteOperation(patch.upstream_operation)
-		);
-		if (!isRequestOperationForProtocol(effectiveProto, operation)) {
-			throw badRequest(
-				`upstream_operation "${operation}" is not valid for upstream_protocol "${effectiveProto}"`
-			);
-		}
-		patch.upstream_operation = operation;
-	}
-	if (patch.adapter !== undefined) {
-		const adapter = String(patch.adapter).trim() || PASSTHROUGH_ROUTE_ADAPTER;
-		if (adapter !== PASSTHROUGH_ROUTE_ADAPTER) {
-			throw badRequest('Only adapter="passthrough" is supported in this release');
-		}
-		patch.adapter = adapter;
+		patch.upstream_operation = effectiveUpstreamOperation;
+		patch.adapter = effectiveAdapter;
 	}
 
 	const hasPatch = Object.values(patch).some((v) => v !== undefined);

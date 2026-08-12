@@ -101,7 +101,7 @@
 | 用途 | 推荐占位符 |
 |------|------------|
 | 用户 API Key（`sk-…`） | `sk-your-api-key`、`sk-xxx`、`sk-xxx...` |
-| 管理 Master Key（运行时） | `<MASTER_KEY>` 或文档中明确标注的**开发种子** `sk-dev-admin-key`（见下方 §2.3） |
+| Admin API Key（运行时） | `<ADMIN_API_KEY>` 或 `sk-admin-xxx` |
 | 控制台密码 | `change-me`、`replace-me`、`changeme`（任选其一，跨文件保持一致） |
 | Postgres / MySQL 用户名 | `gateway_user`、`postgres`、`octafuse`（仅限本机/容器内默认用户；勿写真实生产用户名） |
 | Postgres / MySQL 密码 | `change-me`（与控制台密码区分）；compose 内置库可用 `postgres` / `octafuse` 等本机默认值 |
@@ -129,18 +129,18 @@
 
 ### 2.3 关于 `sk-dev-admin-key`
 
-`sk-dev-admin-key` 是本仓三套迁移种子（`packages/core/migrations-{d1,postgres,mysql}/0002_seed.sql`）写入 `system_config.MASTER_KEY` 的**开发缺省值**，仅用于：
+`sk-dev-admin-key` 是本仓三套迁移种子（`packages/core/migrations-{d1,postgres,mysql}/0002_seed.sql`）写入历史 `system_config.MASTER_KEY` 的**开发缺省值**。`0023_admin_access_identity.sql` 会将它幂等复制为 `legacy-master`，仅用于：
 
 - 仓内文档/示例中演示本机或 Docker quickstart 的最小可运行 `curl`；
 - `scripts/smoke/` 与本地联调；
 - 各 `docker/compose/*.yml` 内本地 Postgres / MySQL 容器默认环境。
 
-**生产环境必须**在 Admin 的 Config 页面或直连 SQL 中将 `MASTER_KEY` 改为强随机值，并同步更新调用方 `GATEWAY_MASTER_KEY`。任何文档示例中出现 `sk-dev-admin-key` 都应附近期内已存在的“生产请轮换”提示（参见 [`docs/developers/api/admin.md`](./developers/api/admin.md) §认证）。
+**生产环境必须**在集成密钥（Integration Keys）页面为外部集成创建独立、最小权限 Key，完成切换后轮换或吊销 `legacy-master`。后续迁移会删除历史 `MASTER_KEY` 配置行；新版认证只读取 `admin_api_keys`。
 
 ### 2.4 命令片段约定
 
 - 演示登录注册私有 registry 时，用 `--password-stdin` + 环境变量（如 `printf '%s' "$GHCR_TOKEN" | docker login …`），**禁止**把 token 写在命令行字面里。
-- `curl` / `wrangler` / `psql` 示例中需要 token / Bearer 时，使用 `<MASTER_KEY>` 或 `sk-xxx`，必要时配合一句“由 `system_config.MASTER_KEY` 决定”的引导。
+- `curl` / `wrangler` / `psql` 示例中需要 Admin Bearer 时，使用 `<ADMIN_API_KEY>` 或 `sk-admin-xxx`，并标注所需权限。
 - 不在示例 SQL 中写真实业务数据；演示 INSERT 时使用 `user-123` / `user@example.com` 等。
 
 ## 3. 评审清单（Docs PR Reviewer Checklist）

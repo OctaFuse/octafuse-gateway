@@ -2,10 +2,15 @@
  * 上游协议枚举与 OpenAI Images URL 派生。
  * Provider 端点解析见 `provider-endpoints.ts`（`providers.endpoints` JSON）。
  */
-export type UpstreamProtocol = 'openai' | 'anthropic' | 'gemini';
+export type UpstreamProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope';
 
 /** 允许写入 D1 或参与校验的协议字面量列表。 */
-export const UPSTREAM_PROTOCOLS: readonly UpstreamProtocol[] = ['openai', 'anthropic', 'gemini'] as const;
+export const UPSTREAM_PROTOCOLS: readonly UpstreamProtocol[] = [
+	'openai',
+	'anthropic',
+	'gemini',
+	'dashscope',
+] as const;
 
 const PROTOCOL_LIST = UPSTREAM_PROTOCOLS.join(', ');
 
@@ -20,7 +25,7 @@ export function normalizeUpstreamProtocol(raw: string): UpstreamProtocol {
 	if (v === '') {
 		throw new Error('Invalid upstream_protocol: empty string');
 	}
-	if (v === 'anthropic' || v === 'gemini' || v === 'openai') {
+	if (v === 'anthropic' || v === 'gemini' || v === 'openai' || v === 'dashscope') {
 		return v;
 	}
 	throw new Error(

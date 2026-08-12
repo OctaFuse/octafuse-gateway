@@ -1,9 +1,11 @@
 'use client';
 
+import { isAudioSpeechModel } from '@octafuse/core/db/model-modalities';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { GatewayToolDefinition } from '@/lib/gateway-tools';
 import type { InvokeKind } from '@/lib/invoke-kind';
+import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
 import {
 	formatModelOptionLabel,
 	inputClass,
@@ -23,6 +25,7 @@ function ReadonlyField({ label, children }: { label: string; children: ReactNode
 
 type Props = {
 	filterKind: InvokeKind;
+	protocol: SimulatorProtocol;
 	onFilterKindChange: (kind: InvokeKind) => void;
 	kindCounts: { llm: number; image: number; audio: number; tool: number };
 	isToolKind: boolean;
@@ -42,12 +45,16 @@ type Props = {
 	selectedModel: AdminModelRow | null;
 	selectedModelIsImage?: boolean;
 	selectedModelIsAudio?: boolean;
+	realtimeOperation: string | null;
+	realtimeOperationOptions: readonly string[];
+	onRealtimeOperationChange: (operation: string) => void;
 	modelRoutingString: string;
 	matchingRoutes: RouteListRow[];
 };
 
 export function SimulatorRoutingPanel({
 	filterKind,
+	protocol,
 	onFilterKindChange,
 	kindCounts,
 	isToolKind,
@@ -67,12 +74,19 @@ export function SimulatorRoutingPanel({
 	selectedModel,
 	selectedModelIsImage = false,
 	selectedModelIsAudio = false,
+	realtimeOperation,
+	realtimeOperationOptions,
+	onRealtimeOperationChange,
 	modelRoutingString,
 	matchingRoutes,
 }: Props) {
 	const t = useTranslations('simulator');
 	const tRoutes = useTranslations('routes.card');
 	const tTools = useTranslations('tools.catalog');
+	// 模拟器复用 Audio 分类，但 TTS 的能力与计费提示不能沿用 ASR 文案。
+	const selectedModelIsAudioSpeech = selectedModel
+		? isAudioSpeechModel(selectedModel)
+		: false;
 
 	return (
 		<section className={panelClass}>
@@ -185,13 +199,31 @@ export function SimulatorRoutingPanel({
 						</select>
 						<p className="mt-1 text-xs text-gray-500">{t('routeGroupHint')}</p>
 					</div>
+					{protocol === 'dashscope' && selectedModelIsAudio && realtimeOperationOptions.length > 0 ? (
+						<div>
+							<label className={labelClass}>{t('realtimeOperation')}</label>
+							<select
+								value={realtimeOperation ?? ''}
+								onChange={(e) => onRealtimeOperationChange(e.target.value)}
+								className={`${inputClass} font-mono`}
+							>
+								{realtimeOperationOptions.map((operation) => (
+									<option key={operation} value={operation}>
+										{operation}
+									</option>
+								))}
+							</select>
+						</div>
+					) : null}
 					{selectedModel ? (
 						<div className="grid grid-cols-1 gap-2 pt-2 border-t border-gray-100">
 							<ReadonlyField label={t('routingModelString')}>
 								{modelRoutingString || '—'}
 							</ReadonlyField>
 							{selectedModelIsAudio ? (
-								<ReadonlyField label={t('modelKind')}>{tRoutes('audioModelHint')}</ReadonlyField>
+								<ReadonlyField label={t('modelKind')}>
+									{tRoutes(selectedModelIsAudioSpeech ? 'audioSpeechModelHint' : 'audioModelHint')}
+								</ReadonlyField>
 							) : selectedModelIsImage ? (
 								<ReadonlyField label={t('modelKind')}>{tRoutes('imageModelHint')}</ReadonlyField>
 							) : (

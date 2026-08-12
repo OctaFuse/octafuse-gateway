@@ -38,6 +38,7 @@ export async function createKey(
 		name?: string | null;
 		metadata?: string | null;
 		provision_reason?: string | null;
+		actor_id?: string | null;
 	}
 ): Promise<{ key: string; key_id: string }> {
 	const u = await repos.users.getById(params.user_id);
@@ -71,7 +72,7 @@ export async function createKey(
 			apiKeyId: id,
 			eventType: 'key_created',
 			actorType: 'admin',
-			actorId: 'master_key',
+			actorId: params.actor_id ?? 'master_key',
 			reasonCode: 'key_create',
 			reasonText: provisionReason,
 			beforeSpent: 0,

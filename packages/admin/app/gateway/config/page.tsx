@@ -1,15 +1,14 @@
 'use client';
 
 /**
- * `system_config`：`MASTER_KEY`（置顶）、`BUSINESS_TIMEZONE`、`BILLING_CURRENCY`、
- * `ROUTE_STRATEGY`、错误 Webhook 与 Add 均为卡片；敏感字段支持 Show/Hide。
+ * `system_config`：`BUSINESS_TIMEZONE`、`BILLING_CURRENCY`、
+ * `ROUTE_STRATEGY`、错误 Webhook 均为专用卡片；敏感字段支持 Show/Hide。
  * 产品工具配置见 `/gateway/tools`。
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
 	EyeIcon,
 	EyeSlashIcon,
-	PlusIcon,
 } from '@heroicons/react/24/outline';
 import { ConfigCardShell } from '@/components/ConfigCardShell';
 import { readApiJson } from '@/lib/api-json';
@@ -30,38 +29,11 @@ import {
 	ALERT_WEBHOOK_FEISHU_URL_KEY,
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
-import {
-	WEB_SEARCH_ACTIVE_KEY,
-	WEB_SEARCH_API_KEY_KEY,
-	WEB_SEARCH_CATALOG_KEY,
-	WEB_SEARCH_COST_KEY,
-	WEB_SEARCH_PROVIDER_KEY,
-} from '@/lib/web-search-options';
-import {
-	WEB_FETCH_ACTIVE_KEY,
-	WEB_FETCH_API_KEY_KEY,
-	WEB_FETCH_CATALOG_KEY,
-	WEB_FETCH_COST_KEY,
-	WEB_FETCH_PROVIDER_KEY,
-} from '@/lib/web-fetch-options';
-import {
-	WEB_DEEP_SEARCH_ACTIVE_KEY,
-	WEB_DEEP_SEARCH_CATALOG_KEY,
-} from '@/lib/web-deep-search-options';
-import {
-	AI_DETECTION_ACTIVE_KEY,
-	AI_DETECTION_CATALOG_KEY,
-} from '@/lib/ai-detection-options';
 import { useTranslations } from 'next-intl';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
 import { GlobalRouteStrategySection } from './global-route-strategy-section';
 
 const OTHER_TZ = '__other__';
-
-const MASTER_KEY_KEY = 'MASTER_KEY';
-
-const MASTER_KEY_DEFAULT_DESCRIPTION =
-	'Bearer token for Gateway admin API. Set in Admin Config.';
 
 function syncBillingCurrencyUi(rows: SystemConfigRow[], setSelect: (v: string) => void) {
 	const row = rows.find((r) => r.key === BILLING_CURRENCY_KEY);
@@ -185,14 +157,10 @@ export default function GatewayConfigPage() {
   const { refresh: refreshBusinessTimezone } = useBusinessTimezoneContext();
   const businessTimezoneOptions = getBusinessTimezoneOptions((k) => tOptions(k));
   const billingCurrencyOptions = getBillingCurrencyOptions((k) => tOptions(k));
-  const [config, setConfig] = useState<SystemConfigRow[]>([]);
+  const [, setConfig] = useState<SystemConfigRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [newKey, setNewKey] = useState('');
-  const [newValue, setNewValue] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const [bizSelectValue, setBizSelectValue] = useState('UTC');
   const [bizOtherValue, setBizOtherValue] = useState('');
   const [bizSaving, setBizSaving] = useState(false);
@@ -200,9 +168,6 @@ export default function GatewayConfigPage() {
   const [billSaving, setBillSaving] = useState(false);
   const [routeStrategyValue, setRouteStrategyValue] = useState<string>(DEFAULT_ROUTE_STRATEGY);
   const [routeStrategySaving, setRouteStrategySaving] = useState(false);
-  const [masterKeyDraft, setMasterKeyDraft] = useState('');
-  const [masterKeyVisible, setMasterKeyVisible] = useState(false);
-  const [masterSaving, setMasterSaving] = useState(false);
   const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wecomWebhookDraft, setWecomWebhookDraft] = useState('');
   const [feishuWebhookDraft, setFeishuWebhookDraft] = useState('');
@@ -220,8 +185,6 @@ export default function GatewayConfigPage() {
         syncBusinessTimezoneUi(data.data, setBizSelectValue, setBizOtherValue);
         syncBillingCurrencyUi(data.data, setBillSelectValue);
         syncRouteStrategyUi(data.data, setRouteStrategyValue);
-        const masterRow = data.data.find((r) => r.key === MASTER_KEY_KEY);
-        setMasterKeyDraft(masterRow?.value ?? '');
         const wecomRow = data.data.find((r) => r.key === ALERT_WEBHOOK_WECOM_URL_KEY);
         const feishuRow = data.data.find((r) => r.key === ALERT_WEBHOOK_FEISHU_URL_KEY);
         setWecomWebhookDraft(wecomRow?.value ?? '');
@@ -266,90 +229,6 @@ export default function GatewayConfigPage() {
       saveSuccessTimerRef.current = null;
     }, 2500);
   }, [tCommon]);
-
-  const handleAdd = async () => {
-    const k = newKey.trim();
-    if (!k) return;
-    if (k === BUSINESS_TIMEZONE_KEY) {
-      clearSaveSuccess();
-      setSaveError(t('errors.useBusinessTimezoneSection'));
-      return;
-    }
-    if (k === BILLING_CURRENCY_KEY) {
-      clearSaveSuccess();
-      setSaveError(t('errors.useBillingCurrencySection'));
-      return;
-    }
-    if (k === ROUTE_STRATEGY_KEY) {
-      clearSaveSuccess();
-      setSaveError(t('errors.useRouteStrategySection'));
-      return;
-    }
-    if (k === MASTER_KEY_KEY) {
-      clearSaveSuccess();
-      setSaveError(t('errors.useMasterKeySection'));
-      return;
-    }
-    if (k === ALERT_WEBHOOK_WECOM_URL_KEY || k === ALERT_WEBHOOK_FEISHU_URL_KEY) {
-      clearSaveSuccess();
-      setSaveError(t('errors.useWebhooksSection'));
-      return;
-    }
-    if (
-      k === WEB_SEARCH_PROVIDER_KEY ||
-      k === WEB_SEARCH_API_KEY_KEY ||
-      k === WEB_SEARCH_COST_KEY ||
-      k === WEB_SEARCH_ACTIVE_KEY ||
-      k === WEB_SEARCH_CATALOG_KEY ||
-      k === WEB_FETCH_PROVIDER_KEY ||
-      k === WEB_FETCH_API_KEY_KEY ||
-      k === WEB_FETCH_COST_KEY ||
-      k === WEB_FETCH_ACTIVE_KEY ||
-      k === WEB_FETCH_CATALOG_KEY ||
-      k === WEB_DEEP_SEARCH_ACTIVE_KEY ||
-      k === WEB_DEEP_SEARCH_CATALOG_KEY ||
-      k === AI_DETECTION_ACTIVE_KEY ||
-      k === AI_DETECTION_CATALOG_KEY
-    ) {
-      clearSaveSuccess();
-      setSaveError(t('errors.useToolsSection'));
-      return;
-    }
-    setSaveError('');
-    clearSaveSuccess();
-    setIsSaving(true);
-    try {
-      const response = await fetch('/api/admin/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: k, value: newValue }),
-      });
-      const data = await readApiJson(response);
-      if (data.success) {
-        flashSaveSuccess(data.message);
-        setConfig((prev) => {
-          const idx = prev.findIndex((r) => r.key === k);
-          if (idx >= 0) {
-            const copy = [...prev];
-            copy[idx] = { ...copy[idx], value: newValue };
-            return copy;
-          }
-          return [...prev, { key: k, value: newValue, description: null }];
-        });
-        setNewKey('');
-        setNewValue('');
-        setShowAdd(false);
-      } else {
-        clearSaveSuccess();
-        setSaveError(data.message || tCommon('saveFailed'));
-      }
-    } catch (error) {
-      clearSaveSuccess();
-      setSaveError(tCommon('requestFailed'));
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleSaveBillingCurrency = async () => {
     const raw = billSelectValue;
@@ -562,48 +441,6 @@ export default function GatewayConfigPage() {
     }
   };
 
-  const handleSaveMasterKey = async () => {
-    const raw = masterKeyDraft.trim();
-    if (!raw) {
-      clearSaveSuccess();
-      setSaveError(tCommon('masterKeyCannotBeEmpty'));
-      return;
-    }
-    setSaveError('');
-    clearSaveSuccess();
-    setMasterSaving(true);
-    try {
-      const response = await fetch('/api/admin/config', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: MASTER_KEY_KEY, value: raw }),
-      });
-      const data = await readApiJson(response);
-      if (data.success) {
-        flashSaveSuccess(data.message);
-        setConfig((prev) => {
-          const idx = prev.findIndex((r) => r.key === MASTER_KEY_KEY);
-          const desc = prev[idx]?.description ?? MASTER_KEY_DEFAULT_DESCRIPTION;
-          const nextRow: SystemConfigRow = { key: MASTER_KEY_KEY, value: raw, description: desc };
-          if (idx >= 0) {
-            const copy = [...prev];
-            copy[idx] = nextRow;
-            return copy;
-          }
-          return [...prev, nextRow];
-        });
-      } else {
-        clearSaveSuccess();
-        setSaveError(data.message || tCommon('saveFailed'));
-      }
-    } catch {
-      clearSaveSuccess();
-      setSaveError(tCommon('requestFailed'));
-    } finally {
-      setMasterSaving(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -614,20 +451,11 @@ export default function GatewayConfigPage() {
 
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {t('subtitle', { product: tBrand('product') })}
-          </p>
-        </div>
-        <button
-          onClick={() => { setShowAdd(true); setSaveError(''); clearSaveSuccess(); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <PlusIcon className="h-5 w-5" />
-          {t('add')}
-        </button>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          {t('subtitle', { product: tBrand('product') })}
+        </p>
       </div>
 
       {saveError && (
@@ -639,56 +467,6 @@ export default function GatewayConfigPage() {
           {saveSuccess}
         </div>
       )}
-
-      <ConfigCardShell
-        title={t('masterKey.title')}
-        description={t('masterKey.description')}
-      >
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[12rem] flex-1 max-w-md">
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <label htmlFor="master-key" className="block text-xs font-medium text-gray-600">
-                {t('masterKey.label')}
-              </label>
-              <button
-                type="button"
-                onClick={() => setMasterKeyVisible((v) => !v)}
-                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                aria-pressed={masterKeyVisible}
-              >
-                {masterKeyVisible ? (
-                  <>
-                    <EyeSlashIcon className="h-4 w-4" aria-hidden />
-                    {tCommon('hide')}
-                  </>
-                ) : (
-                  <>
-                    <EyeIcon className="h-4 w-4" aria-hidden />
-                    {tCommon('show')}
-                  </>
-                )}
-              </button>
-            </div>
-            <input
-              id="master-key"
-              type={masterKeyVisible ? 'text' : 'password'}
-              value={masterKeyDraft}
-              onChange={(e) => setMasterKeyDraft(e.target.value)}
-              placeholder={t('masterKey.placeholder')}
-              autoComplete="new-password"
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono text-gray-900 shadow-sm"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => void handleSaveMasterKey()}
-            disabled={masterSaving}
-            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-          >
-            {masterSaving ? tCommon('saving') : t('saveMasterKey')}
-          </button>
-        </div>
-      </ConfigCardShell>
 
       <ConfigCardShell
         title={t('businessTimezone.title')}
@@ -823,51 +601,6 @@ export default function GatewayConfigPage() {
           </button>
         </div>
       </ConfigCardShell>
-
-      {showAdd && (
-        <ConfigCardShell
-          title={t('addKey.title')}
-          description={t('addKey.description')}
-        >
-          <div className="flex flex-wrap items-end gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{t('addKey.key')}</label>
-              <input
-                type="text"
-                value={newKey}
-                onChange={(e) => setNewKey(e.target.value)}
-                placeholder={t('addKey.keyPlaceholder')}
-                className="min-w-[12rem] rounded-md border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{t('addKey.value')}</label>
-              <input
-                type="text"
-                value={newValue}
-                onChange={(e) => setNewValue(e.target.value)}
-                placeholder={t('addKey.valuePlaceholder')}
-                className="min-w-[12rem] rounded-md border border-gray-300 px-3 py-2 text-sm font-mono shadow-sm"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={isSaving || !newKey.trim()}
-              className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              {isSaving ? tCommon('saving') : tCommon('save')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowAdd(false); setNewKey(''); setNewValue(''); setSaveError(''); clearSaveSuccess(); }}
-              className="text-sm text-gray-600 hover:text-gray-800"
-            >
-              {tCommon('cancel')}
-            </button>
-          </div>
-        </ConfigCardShell>
-      )}
     </div>
   );
 }

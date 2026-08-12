@@ -126,17 +126,20 @@
 				"endpoints": {
 					"chat": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 				}
+			},
+			"dashscope": {
+				"base": "https://dashscope.aliyuncs.com/api/v1"
 			}
 		},
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "阿里云百炼",
-					"description": "阿里云百炼标准模型服务，提供 OpenAI 兼容的对话 API。"
+					"description": "阿里云百炼标准模型服务，提供 OpenAI 兼容的对话 API，以及 DashScope 原生 ASR/TTS 接口。"
 				},
 				"en": {
 					"name": "Alibaba Cloud Model Studio",
-					"description": "Alibaba Cloud Model Studio’s standard OpenAI-compatible chat API."
+					"description": "Alibaba Cloud Model Studio’s standard OpenAI-compatible chat API plus native DashScope ASR/TTS endpoints."
 				}
 			},
 			"links": {
@@ -187,20 +190,27 @@
 					"chat": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions"
 				}
 			},
+			"dashscope": {
+				"endpoints": {
+					"audio.speech": "https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer",
+					"audio.realtime.inference": "wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference",
+					"audio.realtime.session": "wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime"
+				}
+			},
 			"anthropic": {
 				"base": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"
 			}
 		},
-		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + Anthropic base; plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. Image models use a separate Skill path—not this chat template. See platform.qianwenai.com Token Plan docs.",
+		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + DashScope TTS + Anthropic base; audio endpoints are limited to qwen-audio-3.0-tts-plus and qwen-audio-3.0-realtime-plus. Plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. See platform.qianwenai.com Token Plan docs.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "千问 AI 平台（Token Plan）",
-					"description": "千问 Token Plan 个人版与团队版端点，支持 OpenAI 与 Anthropic 协议。"
+					"description": "千问 Token Plan 个人版与团队版端点，支持 OpenAI、DashScope TTS 与 Anthropic 协议。"
 				},
 				"en": {
 					"name": "Qwen AI Platform (Token Plan)",
-					"description": "Personal and team Token Plan endpoints for OpenAI and Anthropic protocols."
+					"description": "Personal and team Token Plan endpoints for OpenAI, DashScope TTS, and Anthropic protocols."
 				}
 			},
 			"links": {

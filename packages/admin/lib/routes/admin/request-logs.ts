@@ -3,13 +3,13 @@
  */
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
-import { requireMasterKey } from '@/lib/middleware/admin-auth';
+import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import { listAdminGlobalRequestLogsService } from '@/lib/services/admin/dashboard-service';
 import { handleAdminRouteError } from './error-response';
 import { normalizeApiTimeFields } from '@octafuse/core/lib/time-format';
 export const adminRequestLogsRoutes = new Hono<AdminEnv>();
 
-adminRequestLogsRoutes.use('*', requireMasterKey);
+adminRequestLogsRoutes.use('*', requireAdminPrincipal);
 
 /** 查询参数与 `listAdminGlobalRequestLogsService` 一致：page、page_size、api_key_id、user_email、model_id、provider_id、route_group、protocol、status、start_date、end_date。 */
 adminRequestLogsRoutes.get('/', async (c) => {

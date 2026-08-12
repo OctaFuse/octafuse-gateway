@@ -18,8 +18,9 @@ export type ModelKindFilter = (typeof MODEL_KIND_FILTERS)[number];
 export const DEFAULT_KIND_FILTER: ModelKindFilter = 'llm';
 export const DEFAULT_INVOKE_KIND: InvokeKind = 'llm';
 
-export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini';
+export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope';
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
+export type AudioOperation = 'transcriptions' | 'speech';
 
 /** 与 `GATEWAY_TOOLS` 登记的 id 对齐（显式联合，避免被 `GatewayToolDefinition.id: string` 拓宽）。 */
 export type GatewayToolId = 'web-search' | 'web-fetch' | 'web-deep-search' | 'ai-detection';
@@ -54,9 +55,7 @@ export function parseInvokeKindParam(value: string | null): InvokeKind {
 export function parseGatewayToolId(value: string | null | undefined): GatewayToolId | null {
 	const found = findGatewayToolById(value);
 	if (!found) return null;
-	return (GATEWAY_TOOL_IDS as readonly string[]).includes(found.id)
-		? (found.id as GatewayToolId)
-		: null;
+	return (GATEWAY_TOOL_IDS as readonly string[]).includes(found.id) ? (found.id as GatewayToolId) : null;
 }
 
 export function gatewayToolDefinition(toolId: string | null | undefined): GatewayToolDefinition | undefined {
@@ -77,13 +76,19 @@ export function resolveRequestOperation(input: {
 	kind: InvokeKind;
 	protocol: SimulatorProtocol;
 	imageOperation?: ImageOperation;
+	audioOperation?: AudioOperation;
 	geminiAction?: GeminiContentAction;
 }): string | null {
 	switch (input.kind) {
 		case 'tool':
 			return null;
 		case 'audio':
-			return 'audio.transcriptions';
+			if (input.protocol === 'dashscope') {
+				return input.audioOperation === 'speech'
+					? 'audio.speech.realtime.inference'
+					: 'audio.transcriptions.realtime.inference';
+			}
+			return input.audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
 		case 'image':
 			return `images.${input.imageOperation === 'edits' ? 'edits' : 'generations'}`;
 		case 'llm':
@@ -104,10 +109,11 @@ export function resolveRequestOperation(input: {
 export function resolveOpenaiUpstreamCapability(input: {
 	kind: Exclude<InvokeKind, 'tool'>;
 	imageOperation?: ImageOperation;
+	audioOperation?: AudioOperation;
 }): ProviderEndpointCapability {
 	switch (input.kind) {
 		case 'audio':
-			return 'audio.transcriptions';
+			return input.audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
 		case 'image':
 			return input.imageOperation === 'edits' ? 'images.edits' : 'images.generations';
 		case 'llm':
@@ -136,13 +142,14 @@ export function resolveProxyPathForModelInvoke(input: {
 	kind: Exclude<InvokeKind, 'tool'>;
 	protocol: SimulatorProtocol | UpstreamProtocol;
 	imageOperation?: ImageOperation;
+	audioOperation?: AudioOperation;
 	geminiAction?: GeminiContentAction;
 	/** Gemini path 中的 model 段（已 encode 前的原始值由调用方 encode） */
 	geminiModelSegment?: string;
 }): string {
 	const protocol = input.protocol;
 	if (input.kind === 'audio') {
-		return '/v1/audio/transcriptions';
+		return input.audioOperation === 'speech' ? '/v1/audio/speech' : '/v1/audio/transcriptions';
 	}
 	if (input.kind === 'image') {
 		return input.imageOperation === 'edits' ? '/v1/images/edits' : '/v1/images/generations';
@@ -150,8 +157,7 @@ export function resolveProxyPathForModelInvoke(input: {
 	// llm
 	if (protocol === 'anthropic') return '/v1/messages';
 	if (protocol === 'gemini') {
-		const action =
-			input.geminiAction === 'generateContent' ? 'generateContent' : 'streamGenerateContent';
+		const action = input.geminiAction === 'generateContent' ? 'generateContent' : 'streamGenerateContent';
 		const model = encodeURIComponent(input.geminiModelSegment || 'model');
 		return `/v1beta/models/${model}:${action}`;
 	}

@@ -77,7 +77,7 @@ export interface ProviderRow {
   id: string;
   name: string;
   /**
-   * 协议端点 JSON（权威）：`{ openai?: { base?, endpoints? }, anthropic?, gemini? }`。
+	 * 协议端点 JSON（权威）：`{ openai?: { base?, endpoints? }, anthropic?, gemini?, dashscope? }`。
    * 见 `parseProviderEndpoints` / `resolveUpstreamEndpoint`。
    */
   endpoints?: string | null;
@@ -215,14 +215,16 @@ export interface RequestLogRow {
   upstream_request_id: string | null;
   /** 上游响应 body 里的生成结果 id（OpenAI `chatcmpl-*` / Anthropic `msg_*` / Gemini `responseId`）；应用层，穿透聚合商 */
   upstream_message_id: string | null;
-  /** 计费种类：`image_tokens` | `image_per_image` | `audio_per_second` | `audio_tokens`；旧行为 null */
+	/** 计费种类：`image_tokens` | `image_per_image` | `audio_per_second` | `audio_tokens` | `audio_per_character`；旧行为 null */
   billing_kind: string | null;
   /** 按张计费：参考图张数 */
   input_image_count: number;
   /** 按张计费：生成图张数 */
   output_image_count: number;
   /** 音频转写：计费时长（秒） */
-  audio_duration_seconds: number | null;
+	audio_duration_seconds: number | null;
+	/** TTS：上游返回的有效计费字符数 */
+	audio_characters: number | null;
   created_at: string;
 }
 

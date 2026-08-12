@@ -3,7 +3,7 @@
  */
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
-import { requireMasterKey } from '@/lib/middleware/admin-auth';
+import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import {
 	createModelService,
 	deleteModelService,
@@ -22,7 +22,7 @@ import { handleAdminRouteError } from './error-response';
 import { normalizeApiTimeFields } from '@octafuse/core/lib/time-format';
 export const adminModelsRoutes = new Hono<AdminEnv>();
 
-adminModelsRoutes.use('*', requireMasterKey);
+adminModelsRoutes.use('*', requireAdminPrincipal);
 
 /** 全量列表（含 tags）。 */
 adminModelsRoutes.get('/', async (c) => {

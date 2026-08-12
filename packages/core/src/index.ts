@@ -7,6 +7,7 @@ export * from './upstream-protocol';
 export * from './provider-endpoints';
 export * from './gemini-upstream-url';
 export * from './route-topology';
+export * from './realtime-protocol';
 
 export * from './storage/context';
 export * from './storage/database-client';
@@ -39,6 +40,7 @@ export * from './db/pricing-schedule';
 export * from './db/model-modalities';
 export * from './db/request-log-status-filter';
 export * from './db/system-config-types';
+export * from './db/admin-access-types';
 
 export * from './lib/business-timezone';
 export * from './lib/billing-currency';

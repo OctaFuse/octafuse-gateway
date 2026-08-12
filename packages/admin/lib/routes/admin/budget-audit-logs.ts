@@ -3,7 +3,7 @@
  */
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
-import { requireMasterKey } from '@/lib/middleware/admin-auth';
+import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import {
 	listAdminGlobalBudgetAuditLogFilterOptionsService,
 	listAdminGlobalBudgetAuditLogsService,
@@ -12,7 +12,7 @@ import { handleAdminRouteError } from './error-response';
 import { normalizeApiTimeFields } from '@octafuse/core/lib/time-format';
 export const adminBudgetAuditLogsRoutes = new Hono<AdminEnv>();
 
-adminBudgetAuditLogsRoutes.use('*', requireMasterKey);
+adminBudgetAuditLogsRoutes.use('*', requireAdminPrincipal);
 
 adminBudgetAuditLogsRoutes.get('/filters', async (c) => {
 	try {
@@ -24,13 +24,14 @@ adminBudgetAuditLogsRoutes.get('/filters', async (c) => {
 	}
 });
 
-/** 查询参数：page、page_size、user_id、api_key_id、user_email、event_type（可重复）、actor_type（可重复）、reason_code（可重复）、source（可重复）、correlation_id、start_date、end_date。 */
+/** 查询参数：page、page_size、user_id、api_key_id、user_email、event_type（可重复）、actor_type（可重复）、actor_id、actor_kind（可重复）、reason_code（可重复）、source（可重复）、correlation_id、start_date、end_date。 */
 adminBudgetAuditLogsRoutes.get('/', async (c) => {
 	try {
 		const repos = c.get('repositories');
 		const searchParams = new URL(c.req.url, 'http://localhost').searchParams;
 		const eventTypes = searchParams.getAll('event_type');
 		const actorTypes = searchParams.getAll('actor_type');
+		const actorKinds = searchParams.getAll('actor_kind');
 		const reasonCodes = searchParams.getAll('reason_code');
 		const sources = searchParams.getAll('source');
 		const result = await listAdminGlobalBudgetAuditLogsService(repos, {
@@ -41,6 +42,8 @@ adminBudgetAuditLogsRoutes.get('/', async (c) => {
 			user_email: c.req.query('user_email') ?? undefined,
 			event_type: eventTypes.length > 0 ? eventTypes : undefined,
 			actor_type: actorTypes.length > 0 ? actorTypes : undefined,
+			actor_id: c.req.query('actor_id') ?? undefined,
+			actor_kind: actorKinds.length > 0 ? actorKinds : undefined,
 			reason_code: reasonCodes.length > 0 ? reasonCodes : undefined,
 			source: sources.length > 0 ? sources : undefined,
 			correlation_id: c.req.query('correlation_id') ?? undefined,

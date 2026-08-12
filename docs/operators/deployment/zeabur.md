@@ -161,7 +161,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
 
 - **代理服务** 对外 URL → `GATEWAY_URL`（客户端推理）
 - **管理后台** 对外 URL → `GATEWAY_MASTER_URL`（`/api/admin/*`）
-- `MASTER_KEY`（主密钥）以库内 `system_config.MASTER_KEY` 为准（迁移 `0002_seed.sql` 默认值，生产务必修改）
+- 集成密钥（Integration Keys）在后台 **系统集成 → 集成密钥** 页创建；历史 `system_config.MASTER_KEY` 在迁移到 `legacy-master` 后会被删除
 
 完整 env 约定见 [integration.md](../../developers/integration.md)。Postgres 时区建议 URL 带 `options=-c%20timezone%3DUTC`，见 [docker.md](./docker.md) § 时区。
 
@@ -170,7 +170,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
 1. **migrate**（若本次执行）：日志含 `[migrate-postgres] 全部完成。` 与 `MIGRATE_DONE`；**无**连续 `BackOff restarting`（migrate Service 应已 Suspend 或未创建）。
 2. **代理服务**：`curl -fsS https://<proxy-host>/health`
 3. **管理后台**：`curl -fsS -o /dev/null -w '%{http_code}\n' https://<admin-host>/`
-4. **管理后台 API**（可选）：`curl -fsS https://<admin-host>/api/admin/config -H 'Authorization: Bearer <MASTER_KEY>'`
+4. **管理后台 API**（可选）：`curl -fsS https://<admin-host>/api/admin/config -H 'Authorization: Bearer <ADMIN_API_KEY>'`（Key 需 `config.read`）
 
 ## 8. 常见错误
 

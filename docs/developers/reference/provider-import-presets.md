@@ -19,7 +19,7 @@ Admin 在 **Gateway Providers** 页面提供「从模板导入」：预填各协
   - **同名**（忽略大小写）与已有 Provider 冲突时，显示名自动追加 `(2)`、`(3)` 等后缀（`providers.name` 仍 UNIQUE）。
   - 新行不含 API Key，须在 UI 中手动添加后方可用于上游调用。
 
-认证与其它 Admin 路由相同：`Authorization: Bearer <MASTER_KEY>`。
+认证与其它 Admin 路由相同：后台 Session，或具有 `providers.read` / `providers.write` 权限的 `Authorization: Bearer <ADMIN_API_KEY>`。
 
 ## 维护约定
 

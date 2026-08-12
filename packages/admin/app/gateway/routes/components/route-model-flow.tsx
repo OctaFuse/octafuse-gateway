@@ -13,7 +13,8 @@ import {
 	UsersIcon,
 } from '@heroicons/react/24/outline';
 import {
-	isAudioTranscriptionModel,
+	isAudioModel,
+	isAudioSpeechModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import { parseRoutePricingSchedule } from '@octafuse/core/db/pricing-schedule';
@@ -38,6 +39,7 @@ import {
 	hasBasePricingInversion,
 	parseModelTagsList,
 	protocolBadgeClass,
+	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
 	splitRoutesByProtocolAndRouteGroup,
 } from '../route-utils';
@@ -134,8 +136,6 @@ type Props = {
 function RouteTarget({
 	route,
 	provider,
-	requestProtocol,
-	requestOperation,
 	stickyBindingCount,
 	togglingId,
 	onEdit,
@@ -143,8 +143,6 @@ function RouteTarget({
 }: {
 	route: RouteListRow;
 	provider: GatewayProvider | undefined;
-	requestProtocol: string;
-	requestOperation: string;
 	stickyBindingCount: number;
 	togglingId: string | null;
 	onEdit: (route: RouteListRow) => void;
@@ -166,13 +164,6 @@ function RouteTarget({
 	const hasPricingInversion = hasBasePricingInversion(chargedValue, meteredValue);
 	const enabled = route.status === 'active';
 	const providerDisabled = provider?.status === 'disabled';
-	const configuredUpstreamOperation = route.upstream_operation ?? '*';
-	const effectiveUpstreamOperation =
-		configuredUpstreamOperation === '*' ? requestOperation : configuredUpstreamOperation;
-	const showUpstreamMapping =
-		route.upstream_protocol !== requestProtocol ||
-		effectiveUpstreamOperation !== requestOperation ||
-		(route.adapter != null && route.adapter !== 'passthrough');
 
 	return (
 		<div
@@ -228,16 +219,11 @@ function RouteTarget({
 					</button>
 				</div>
 			</div>
+			{/* 上游端点暂不放在路由卡片里，避免把协议映射细节和基础状态信息混在一起。 */}
 			<div className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t bg-white/55 px-2.5 py-1.5 ${
 				enabled ? 'border-emerald-200' : 'border-red-200'
 			}`}>
 				<div className="flex min-w-0 flex-wrap items-center gap-1">
-					{showUpstreamMapping ? (
-						<span className={`inline-flex items-center gap-1 whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${protocolBadgeClass(route.upstream_protocol)}`}>
-							<UpstreamProtocolBrandIcon protocol={route.upstream_protocol} />
-							{route.upstream_protocol}.{effectiveUpstreamOperation}
-						</span>
-					) : null}
 					<span
 						className="rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 ring-1 ring-inset ring-violet-200"
 						title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
@@ -425,35 +411,6 @@ function RoutingMatchConnector({
 			</div>
 		</>
 	);
-}
-
-function requestSurfacePath(
-	protocol: string,
-	operation: string,
-	modelId: string
-): string {
-	if (protocol === 'openai') {
-		const paths: Record<string, string> = {
-			chat: '/v1/chat/completions',
-			responses: '/v1/responses',
-			'images.generations': '/v1/images/generations',
-			'images.edits': '/v1/images/edits',
-			'audio.transcriptions': '/v1/audio/transcriptions',
-		};
-		return operation === '*' ? '/v1/*' : (paths[operation] ?? `/v1/${operation}`);
-	}
-	if (protocol === 'anthropic') {
-		return operation === '*' ? '/v1/*' : '/v1/messages';
-	}
-	if (protocol === 'gemini') {
-		// `models.generate` is the routing-family operation, not the URL wire action.
-		// Real client paths use generateContent / streamGenerateContent after the last `:`.
-		if (operation === 'models.generate') {
-			return `/v1beta/models/${modelId}:{generateContent|streamGenerateContent}`;
-		}
-		return `/v1beta/models/${modelId}:${operation}`;
-	}
-	return operation === '*' ? '/*' : `/${operation}`;
 }
 
 type RequestSurfaceGroup = {
@@ -782,8 +739,6 @@ function PriorityTierPanel({
 							key={route.id}
 							route={route}
 							provider={providerMeta.get(route.provider_id)}
-							requestProtocol={section.protocol}
-							requestOperation={section.requestOperation}
 							stickyBindingCount={stickyCountsByTarget.get(route.id) ?? 0}
 							togglingId={togglingId}
 							onEdit={onEdit}
@@ -1086,11 +1041,13 @@ export function RouteModelFlow(props: Props) {
 	const tFlow = useTranslations('routes.flow');
 	const tModelsCard = useTranslations('models.card');
 	const isImage = meta ? isImageGenerationModel(meta) : false;
-	const isAudio = meta ? isAudioTranscriptionModel(meta) : false;
+	const isAudio = meta ? isAudioModel(meta) : false;
+	const isAudioSpeech = meta ? isAudioSpeechModel(meta) : false;
 	const context = formatCompactTokens(meta?.context_window);
 	const maxOutput = formatCompactTokens(meta?.max_tokens);
+	// ASR 与 TTS 同属 Audio；必须按计费能力区分，避免 TTS 被标成按秒转写。
 	const stats = isAudio
-		? t('audioModelHint')
+		? t(isAudioSpeech ? 'audioSpeechModelHint' : 'audioModelHint')
 		: isImage
 			? t('imageModelHint')
 			: t('contextLine', { context, max: maxOutput });

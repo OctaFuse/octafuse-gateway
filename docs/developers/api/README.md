@@ -34,7 +34,7 @@
 | 认证类型 | 使用场景 | 说明 |
 |---------|---------|------|
 | 无认证 | 健康检查、公开目录 | Proxy：`/`、`/health`、**`GET /catalog/models`**（运行时模型能力发现，见 [用户接口](./user.md#公开模型目录catalog-discovery)） |
-| Bearer Token (MASTER_KEY) | 管理接口 | 与 D1 `system_config.MASTER_KEY` 一致；请求打在 **`{GATEWAY_MASTER_URL}/api/admin/...`**（Admin Pages 根 URL） |
+| 具名 Admin API Key | 管理接口 | 后台创建并授予资源权限；请求打在 **`{GATEWAY_MASTER_URL}/api/admin/...`**（Admin Pages 根 URL） |
 | Bearer Token (User Key) | 用户接口 | `sk-…`，请求打在 **Proxy** 的 `/v1/*` 等 |
 | `x-api-key` | Anthropic 兼容 | `POST /v1/messages` |
 | `?key=` / `x-goog-api-key` | Gemini 兼容 | `POST /v1beta/models/...` |

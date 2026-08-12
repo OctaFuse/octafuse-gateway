@@ -98,6 +98,12 @@ export const API_KEY_BUDGET_AUDIT_EVENT_TYPES = [
 /** 与 octafuse `ApiKeyBudgetAuditActorType` 对齐 */
 export const API_KEY_BUDGET_AUDIT_ACTOR_TYPES = ['system', 'admin', 'service'] as const;
 
+/**
+ * 与 octafuse `USER_AUDIT_ACTOR_KINDS` 对齐：`actor_id` 的身份前缀。
+ * `actor_type` 只到类别，同一类别下仍有多个身份（`admin` 既是控制台会话也是每把集成密钥）。
+ */
+export const USER_AUDIT_ACTOR_KINDS = ['console', 'admin_key', 'admin', 'system', 'service'] as const;
+
 /** 与 octafuse `UserAuditSourceChannel` 对齐（筛选多选与网关枚举一致） */
 export const API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS = [
   'gateway_usage',
@@ -263,7 +269,7 @@ export interface GatewayRequestLog {
   raw_usage?: string | null;
   /** 计费审计 JSON（单列）；结构见 `@octafuse/core` `pricing-audit.ts` */
   pricing_audit?: string | null;
-  /** Image / Audio 计费种类：`image_tokens` | `image_per_image` | `audio_per_second` | `audio_tokens`；旧行为 null */
+  /** Image / Audio 计费种类：`image_tokens` | `image_per_image` | `audio_per_second` | `audio_tokens` | `audio_per_character`；旧行为 null */
   billing_kind?: string | null;
   /** 按张计费：参考图张数 */
   input_image_count?: number;
@@ -271,6 +277,7 @@ export interface GatewayRequestLog {
   output_image_count?: number;
   /** 按秒计费：音频时长（秒） */
   audio_duration_seconds?: number | null;
+  audio_characters?: number | null;
   created_at: string;
 }
 

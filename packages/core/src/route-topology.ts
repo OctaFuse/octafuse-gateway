@@ -1,4 +1,4 @@
-import type { UpstreamProtocol } from './upstream-protocol';
+import type { UpstreamProtocol } from "./upstream-protocol";
 
 /** Gemini generate-content family (stream + non-stream). */
 export const GEMINI_GENERATE_OPERATION = 'models.generate';
@@ -12,22 +12,131 @@ export const GEMINI_LEGACY_GENERATE_OPERATIONS = [
 /** Stable request-operation identifiers. `*` is reserved for migrated legacy surfaces/targets. */
 export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 	openai: [
-		'chat',
-		'responses',
-		'images.generations',
-		'images.edits',
-		'audio.transcriptions',
+		"chat",
+		"responses",
+		"images.generations",
+		"images.edits",
+		"audio.transcriptions",
+		"audio.speech",
 	],
 	anthropic: ['messages'],
 	gemini: [GEMINI_GENERATE_OPERATION],
+	dashscope: [
+		"audio.transcriptions",
+		"audio.transcriptions.multimodal",
+		"audio.transcriptions.async",
+		"audio.transcriptions.realtime.inference",
+		"audio.transcriptions.realtime.session",
+		"audio.speech",
+		"audio.speech.stream",
+		"audio.speech.multimodal",
+		"audio.speech.realtime.inference",
+		"audio.speech.realtime.session",
+	],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =
 	| (typeof REQUEST_OPERATIONS_BY_PROTOCOL)[UpstreamProtocol][number]
-	| '*';
+	| "*";
 
-export const LEGACY_WILDCARD_OPERATION: RequestOperation = '*';
-export const PASSTHROUGH_ROUTE_ADAPTER = 'passthrough';
+export const LEGACY_WILDCARD_OPERATION: RequestOperation = "*";
+export const PASSTHROUGH_ROUTE_ADAPTER = "passthrough";
+
+/** 显式 adapter 白名单；跨协议映射必须命中下方精确声明。 */
+export const ROUTE_ADAPTERS = [
+	PASSTHROUGH_ROUTE_ADAPTER,
+	"dashscope-asr-qwen-file",
+	"dashscope-asr-fun-file",
+	"dashscope-asr-file-async",
+	"dashscope-tts-speech",
+	"dashscope-tts-qwen",
+	"dashscope-tts-minimax",
+] as const;
+
+export type RouteAdapter = (typeof ROUTE_ADAPTERS)[number];
+
+type RouteAdapterMapping = {
+	requestProtocol: UpstreamProtocol;
+	requestOperation: string;
+	upstreamProtocol: UpstreamProtocol;
+	upstreamOperation: string;
+};
+
+/** 每个转换 adapter 只承担一种协议生命周期，禁止根据模型名隐式切换。 */
+const ROUTE_ADAPTER_MAPPINGS: Record<
+	Exclude<RouteAdapter, "passthrough">,
+	RouteAdapterMapping
+> = {
+	"dashscope-asr-qwen-file": {
+		requestProtocol: "openai",
+		requestOperation: "audio.transcriptions",
+		upstreamProtocol: "dashscope",
+		upstreamOperation: "audio.transcriptions.multimodal",
+	},
+	"dashscope-asr-fun-file": {
+		requestProtocol: "openai",
+		requestOperation: "audio.transcriptions",
+		upstreamProtocol: "dashscope",
+		upstreamOperation: "audio.transcriptions.multimodal",
+	},
+	"dashscope-asr-file-async": {
+		requestProtocol: "openai",
+		requestOperation: "audio.transcriptions",
+		upstreamProtocol: "dashscope",
+		upstreamOperation: "audio.transcriptions.async",
+	},
+	"dashscope-tts-speech": {
+		requestProtocol: "openai",
+		requestOperation: "audio.speech",
+		upstreamProtocol: "dashscope",
+		upstreamOperation: "audio.speech",
+	},
+	"dashscope-tts-qwen": {
+		requestProtocol: "openai",
+		requestOperation: "audio.speech",
+		upstreamProtocol: "dashscope",
+		upstreamOperation: "audio.speech.multimodal",
+	},
+	"dashscope-tts-minimax": {
+		requestProtocol: "openai",
+		requestOperation: "audio.speech",
+		upstreamProtocol: "dashscope",
+		upstreamOperation: "audio.speech.multimodal",
+	},
+};
+
+export function isRouteAdapter(raw: string): raw is RouteAdapter {
+	return (ROUTE_ADAPTERS as readonly string[]).includes(raw);
+}
+
+/**
+ * 校验 request surface 与 upstream target 是否由 adapter 明确定义。
+ * passthrough 只允许同协议且 operation 相同（`*` 保留迁移兼容）。
+ */
+export function isRouteAdapterCompatible(input: {
+	adapter: string;
+	requestProtocol: UpstreamProtocol;
+	requestOperation: string;
+	upstreamProtocol: UpstreamProtocol;
+	upstreamOperation: string;
+}): boolean {
+	if (!isRouteAdapter(input.adapter)) return false;
+	if (input.adapter === PASSTHROUGH_ROUTE_ADAPTER) {
+		return (
+			input.requestProtocol === input.upstreamProtocol &&
+			(input.requestOperation === LEGACY_WILDCARD_OPERATION ||
+				input.upstreamOperation === LEGACY_WILDCARD_OPERATION ||
+				input.requestOperation === input.upstreamOperation)
+		);
+	}
+	const mapping = ROUTE_ADAPTER_MAPPINGS[input.adapter];
+	return (
+		input.requestProtocol === mapping.requestProtocol &&
+		input.requestOperation === mapping.requestOperation &&
+		input.upstreamProtocol === mapping.upstreamProtocol &&
+		input.upstreamOperation === mapping.upstreamOperation
+	);
+}
 
 export function isRequestOperationForProtocol(
 	protocol: UpstreamProtocol,
@@ -35,12 +144,33 @@ export function isRequestOperationForProtocol(
 ): boolean {
 	return (
 		operation === LEGACY_WILDCARD_OPERATION ||
-		(REQUEST_OPERATIONS_BY_PROTOCOL[protocol] as readonly string[]).includes(operation)
+		(REQUEST_OPERATIONS_BY_PROTOCOL[protocol] as readonly string[]).includes(
+			operation
+		)
 	);
 }
 
+/**
+ * DashScope 实时 ASR 有两套不兼容的生命周期：Qwen3-ASR 使用 session，
+ * Fun-ASR/Qwen-Audio/Paraformer 使用 inference。供应商模型名是唯一可靠的上游标识。
+ */
+export function isDashScopeRealtimeAsrModelOperationCompatible(
+	providerModelName: string,
+	operation: string
+): boolean {
+	if (!operation.startsWith("audio.transcriptions.realtime.")) return true;
+	const model = providerModelName.trim().toLowerCase();
+	if (!model) return true;
+	const isQwen3SessionModel =
+		model === "qwen3-asr-flash-realtime" ||
+		model.startsWith("qwen3-asr-flash-realtime-");
+	return operation.endsWith(".session")
+		? isQwen3SessionModel
+		: !isQwen3SessionModel;
+}
+
 export function normalizeRouteOperation(raw: unknown): string {
-	const operation = typeof raw === 'string' ? raw.trim() : '';
+	const operation = typeof raw === "string" ? raw.trim() : "";
 	return operation || LEGACY_WILDCARD_OPERATION;
 }
 
@@ -77,7 +207,9 @@ export function effectiveUpstreamOperation(
 	requestOperation: string
 ): string {
 	const configured = normalizeRouteOperation(configuredOperation);
-	return configured === LEGACY_WILDCARD_OPERATION ? requestOperation : configured;
+	return configured === LEGACY_WILDCARD_OPERATION
+		? requestOperation
+		: configured;
 }
 
 export interface RoutePoolRow {

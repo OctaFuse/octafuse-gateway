@@ -1,6 +1,6 @@
 # 管理接口
 
-需要 `MASTER_KEY` 认证的管理 API。
+后台 Console Session 与具名 Admin API Key 共用的管理 API。
 
 ## 部署与路径（Octafuse）
 
@@ -9,13 +9,21 @@
 
 ## 认证
 
-所有管理接口需要在请求头中携带 `Authorization: Bearer <MASTER_KEY>`。
+外部系统在请求头中携带具名 Admin API Key：
 
 ```bash
-Authorization: Bearer sk-admin-xxx
+Authorization: Bearer sk-admin-<64 hex characters>
 ```
 
-`MASTER_KEY` 的权威来源是当前 Admin 所连数据库的 **`system_config`** 表（键名 `MASTER_KEY`）：表结构见各引擎迁移 **`packages/core/migrations-{d1,postgres,mysql}/0001_baseline.sql`**；开发默认值在 **`packages/core/migrations-d1/0002_seed.sql`**（D1 种子；Postgres/MySQL 亦有对应 **`0002_seed.sql`**，幂等 upsert，占位 `sk-dev-admin-key`）。生产环境应在本 **Admin** 应用的 Config 页面或 SQL 将 `MASTER_KEY` 改为强随机密钥；与本地 `.env*`、Worker Secret 等 **无绑定**，`requireMasterKey` 只与库中该键的值比对。
+浏览器登录会创建数据库 Session，并通过 `admin_session` Cookie 识别为 `console:<username>`。Console 拥有完整业务权限，也是唯一可以管理集成密钥的主体。
+
+集成密钥（Integration Keys）在后台 **系统集成 → 集成密钥（Integration Keys）** 创建。每个外部集成应使用独立、最小权限 Key；Key 主体记录为 `admin_key:<id>`。权限包括 `users.*`、`user_keys.*`、`providers.*`、`models.*`、`routes.*`、`config.*`、`analytics.read`、`logs.read` 和 `playground.execute`；`*.write` 自动包含对应 `*.read`，`*` 代表全部可委派业务权限，但不包含集成密钥或 Session 管理。
+
+升级迁移会把非空 `system_config.MASTER_KEY` 原值复制为普通全权限 Key `legacy-master`，确保旧调用方继续工作；随后的迁移会删除该配置行。新认证只读取 `admin_api_keys`。请在稳定后为外部系统创建具名 Key，并轮换或吊销 `legacy-master`。
+
+无效或已吊销 Key 返回 `401`；权限不足返回 `403`，响应包含 `required_permission`。任何 Bearer Key（包括 `*`）均不能访问 `/admin/access-keys/*`。
+
+登录成功 / 失败、登出与 `401` 未认证不落库，而是以结构化 JSON 写入日志流（Cloudflare Logs / 容器 stdout），`event` 取值 `admin.auth.login`、`admin.auth.login_failed`、`admin.auth.logout`、`admin.auth.unauthorized`，附带 `client_ip`、`user_agent`，Bearer 场景另附 `key_prefix`（前 12 位）。请在日志平台按 `event` 建立告警规则（例如同一 IP 的 `admin.auth.login_failed` 频次）。
 
 ## 时间与时区约定
 
@@ -32,13 +40,13 @@ Authorization: Bearer sk-admin-xxx
 - 成功：`{ "success": true, "data": ... }`，部分接口另有 `message`、`total`、`page`、`page_size` 等字段。
 - 失败：`{ "success": false, "message": "..." }`，HTTP 状态码 4xx/5xx。
 
-若 **`Authorization` 缺失或与 `system_config` 中 `MASTER_KEY` 不一致**，在到达上述处理函数前由 `requireMasterKey` 返回 **`{ "error": "Unauthorized" }`**（401），不使用 `success` 信封。
+若认证无效，在到达业务处理函数前返回 `{ "success": false, "message": "Unauthorized" }`（401）；权限不足返回 403。
 
 ---
 
 ## Admin API 矩阵 {#admin-api-matrix}
 
-逻辑分层：**Catalog**（供应商 → 模型 → 模型路由）、**Tenancy / Billing**（用户 / Key、`system_config` 中的配额相关项）、**Observability**（全站日志、按 Key 日志、分析聚合）。下列为 **Admin 应用** 对外 **`/api/admin/*`**（内部 **`/admin/*`**）的路径与主要数据表；**消费者**指典型调用方（均需有效 `MASTER_KEY`，Bearer 与库内 `MASTER_KEY` 一致）。
+逻辑分层：**Catalog**（供应商 → 模型 → 模型路由）、**Tenancy / Billing**（用户 / Key、`system_config` 中的配额相关项）、**Observability**（全站日志、按 Key 日志、分析聚合）。下列为 **Admin 应用** 对外 **`/api/admin/*`**（内部 **`/admin/*`**）的路径与主要数据表；外部调用方需持有对应资源权限。
 
 | 路径 | 方法 | 主表 / 数据源 | 消费者 |
 |------|------|----------------|--------|
@@ -71,6 +79,7 @@ Authorization: Bearer sk-admin-xxx
 | `/admin/playground` | POST | Routes：`routeId` 直连上游；Tools：`toolId`+`provider` 读 catalog 直连引擎（均可测、不计费、不写日志、无 failover） | Admin UI、运维联调 |
 | `/admin/stats` | GET | 多表聚合（含 `api_key_request_logs`、`api_keys` 等） | Admin UI |
 | `/admin/config` | GET, PUT | `system_config`（含 `ROUTE_STRATEGY`） | Admin UI |
+| `/admin/access-keys`、`/:id`、`/:id/secret`、`/:id/rotate`、`/:id/revoke` | GET, POST, PATCH | `admin_api_keys`；仅 Console Session，同源写请求 | Admin UI |
 | `/admin/business-timezone` | GET | `system_config.BUSINESS_TIMEZONE` | Admin UI（Provider 首屏加载） |
 | `/admin/request-logs` | GET | `api_key_request_logs`（**GlobalLogs**，多条件筛选分页） | Admin UI |
 | `/admin/budget-audit-logs` | GET | **`user_audit_logs`**（左联 **`users`** 取 `email` 等，多维筛选分页） | Admin UI |
@@ -88,8 +97,8 @@ Authorization: Bearer sk-admin-xxx
 | 接口 | 部署 | 鉴权 | 数据含义 |
 |------|------|------|----------|
 | **`GET /catalog/models`**（Proxy） | `GATEWAY_URL` | 无 | **运行时**可调用模型 + `protocols` / `protocols_by_group`（由 active `model_routes` 聚合） |
-| **`GET /admin/models`** | Admin `/api/admin/*` | MASTER_KEY | 库内 **全部**模型 CRUD 列表（含 tags、路由计数；**不**含按 route 的协议聚合） |
-| **`GET /admin/models/import/catalog`** | Admin | MASTER_KEY | 仓库内 **静态 preset** 摘要，供导入 UI 勾选，**非**运行时 route 真相 |
+| **`GET /admin/models`** | Admin `/api/admin/*` | Console Session 或 `models.read` | 库内 **全部**模型 CRUD 列表（含 tags、路由计数；**不**含按 route 的协议聚合） |
+| **`GET /admin/models/import/catalog`** | Admin | Console Session 或 `models.read` | 仓库内 **静态 preset** 摘要，供导入 UI 勾选，**非**运行时 route 真相 |
 
 门户 / 公开站应使用 Proxy **`GET /catalog/models`**，详见 [用户接口 · 公开模型目录](./user.md#公开模型目录catalog-discovery)。Agent 与兼容客户端默认仍用 **`GET /v1/models`**（需用户 Key，默认 `default,free` route group）。
 
@@ -560,7 +569,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 面向用户的「有活跃路由的模型」列表：**Agent / SDK** 用 **`GET /v1/models`**（用户 Key）；**门户 / 公开 discovery** 用 Proxy **`GET /catalog/models`**（无需 Key，含协议能力，见 [用户接口](./user.md#公开模型目录catalog-discovery)）。
 
-**管理端基础数据**（`Authorization: Bearer <MASTER_KEY>`，响应多为 `{ success, data, count? }`）：**`/admin/keys`**（上文用户 Key）与下列 Catalog API。
+**管理端基础数据**（Console Session 或具有对应权限的 `Authorization: Bearer <ADMIN_API_KEY>`，响应多为 `{ success, data, count? }`）：**`/admin/keys`**（上文用户 Key）与下列 Catalog API。
 
 ### Providers（`/admin/providers`）
 
@@ -792,7 +801,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 
 ## 仪表盘与聚合（`/admin/stats`、`/admin/config`、…） {#admindashboard}
 
-与 **`/admin/keys`** 相同，全程 **`Authorization: Bearer <MASTER_KEY>`**。成功响应一般为 `{ "success": true, ... }`；校验失败多为 `{ "success": false, "message": "..." }`。若未带有效 Master Key，中间件返回 **`{ "error": "Unauthorized" }`**（401）。
+与 **`/admin/keys`** 相同，请求需使用 Console Session，或携带具有对应权限的 **`Authorization: Bearer <ADMIN_API_KEY>`**。成功响应一般为 `{ "success": true, ... }`；无效或已吊销 Key 返回 401，权限不足返回 403 及 `required_permission`。
 
 ### `GET /admin/stats`
 

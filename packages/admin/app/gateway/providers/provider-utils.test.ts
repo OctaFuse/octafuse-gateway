@@ -15,7 +15,7 @@ function providerWithEndpoints(endpoints: unknown): GatewayProvider {
 		status: 'active',
 		endpoints: JSON.stringify(endpoints),
 		description: null,
-		created_at: null,
+		created_at: '',
 	} as GatewayProvider;
 }
 

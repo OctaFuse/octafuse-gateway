@@ -38,7 +38,7 @@ After a remote deploy (`deploy:*` / `db:migrate:remote`) on this machine, run **
 
 | Path | Role |
 |------|------|
-| `app/api/admin/[...path]/route.ts` | Cookie or Bearer (`MASTER_KEY`) auth; rewrite URL → Hono |
+| `app/api/admin/[...path]/route.ts` | Database Session or named Admin API Key auth; rewrite URL → Hono |
 | `lib/admin-app.ts` | Hono: `/admin/keys`, `/admin/providers`, … |
 | `lib/routes/admin/*` | Admin HTTP handlers |
 | `lib/services/admin/*` | Admin services (use `@octafuse/core`) |
@@ -57,7 +57,7 @@ After a remote deploy (`deploy:*` / `db:migrate:remote`) on this machine, run **
 | `DATABASE_URL` | **Node / self-hosted Postgres only** (same name as `@octafuse/proxy` Node; do not use on Cloudflare Workers D1 mode) |
 | `DATABASE_DRIVER` | **Node / self-hosted**: same semantics as Proxy (`@octafuse/core`); omit → `postgres`; invalid or inconsistent with `DATABASE_URL` → **error** |
 
-Downstream portals: set **`GATEWAY_MASTER_URL`** to this app’s origin, call **`/api/admin/...`**, header **`Authorization: Bearer <MASTER_KEY>`** (must match D1 `system_config.MASTER_KEY`).
+Downstream portals: set **`GATEWAY_MASTER_URL`** to this app’s origin, create a named least-privilege key in **Integration Keys**, then call **`/api/admin/...`** with `Authorization: Bearer <ADMIN_API_KEY>`.
 
 ## Monorepo build notes
 

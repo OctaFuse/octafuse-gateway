@@ -6,6 +6,8 @@ import { buildPlaygroundGeminiUpstreamRequest } from './playground-service';
 function route(base: string, apiKey: string): PlaygroundResolvedRoute {
 	return {
 		upstreamProtocol: 'gemini',
+		upstreamOperation: 'generateContent',
+		adapter: 'passthrough',
 		providerEndpoints: { gemini: { base } },
 		providerId: 'p1',
 		providerApiKey: apiKey,

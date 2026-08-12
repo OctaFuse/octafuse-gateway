@@ -1,7 +1,4 @@
-import {
-	isAudioTranscriptionModel,
-	isImageGenerationModel,
-} from '@octafuse/core/db/model-modalities';
+import { isAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { readApiJson } from '@/lib/api-json';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import {
@@ -59,7 +56,7 @@ export async function saveModel(
 	});
 	const isAudioResolved =
 		isAudio ||
-		isAudioTranscriptionModel({
+		isAudioModel({
 			pricing_profile: tierJson.json,
 		});
 	const skipTokenLimits = isImageResolved || isAudioResolved;

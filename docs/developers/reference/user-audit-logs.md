@@ -9,10 +9,24 @@
 | 维度 | 列 | 含义 |
 |------|-----|------|
 | **Event** | `event_type` | 业务事件：`usage_charge`、`period_reset`、`admin_adjust`、`key_created`、`key_revoked`、`key_deleted`、`user_created`、`user_deleted` 等。 |
-| **Actor** | `actor_type` + `actor_id` | `system` / `admin` / `service` 与稳定 principal（如新写入中的 `admin:gateway_master_key`）。 |
+| **Actor** | `actor_type` + `actor_id` | `system` / `admin` / `service` 与稳定 principal（新写入为 `console:<username>` 或 `admin_key:<id>`；历史 `admin:gateway_master_key` 保持原样）。 |
 | **Cause** | `source` + `reason_code` + `reason_text` | 入口通道、机器可筛码、人类可读说明。 |
 | **快照** | `before_user_snapshot` / `after_user_snapshot` / `changed_fields` | `UserAuditSnapshot` JSON；金额类展示以快照为准。 |
 | **扩展** | `change_payload` | JSON：周期前后值、管理端 patch 摘要、删除上下文等。 |
+
+### `actor_id` 取值约定
+
+`actor_type` 只到类别，不足以定位到具体操作者：`admin` 既包含后台控制台会话，也包含每一把集成密钥。追责与密钥泄露回溯依赖 `actor_id`，其格式为 **`<kind>:<identifier>`**：
+
+| 前缀 | 含义 | 示例 |
+|------|------|------|
+| `console` | 浏览器控制台会话，identifier 为登录用户名 | `console:admin` |
+| `admin_key` | 集成密钥（Integration Key），identifier 为 `admin_api_keys.id` | `admin_key:8f3c…` |
+| `admin` | 历史 Master Key 调用，保持原样不回填 | `admin:gateway_master_key` |
+| `system` | 网关自动化（扣费、周期重置） | `system:gateway` |
+| `service` | 内部服务（用户幂等创建等） | `service:user_provision` |
+
+因此「后台管理员操作」与「集成密钥经 Admin API 操作」的区分靠 `actor_id` 前缀，而非 `actor_type`。枚举定义见 `packages/core/src/db/user-audit-catalog.ts` 的 `USER_AUDIT_ACTOR_KINDS`。
 
 写入前由 `assertAndFinalizeUserAuditInsert`（`packages/core/src/db/user-audit-catalog.ts`）做枚举与缺省归一化。跨服务审计载荷类型为 **`InsertUserBudgetAuditLogParams`**（`packages/core/src/db/user-budget-audit-params.ts`），映射到插入行见 **`userBudgetAuditToInsertRow*`**（`packages/core/src/db/user-budget-audit-mapper.ts`）。
 
@@ -58,8 +72,14 @@
 
 ## 相关接口与表结构
 
-- 全局列表：`GET /api/admin/budget-audit-logs`（查询参数含 `user_id`、`api_key_id`、`user_email`、`event_type`、`actor_type`、`reason_code`、`source`、`correlation_id`、时间窗等）— 详见 [api/admin.md](../api/admin.md)。
-- 基线 DDL：`packages/core/migrations-{d1,postgres,mysql}/0001_baseline.sql` 中 `CREATE TABLE user_audit_logs` 与相关索引。
+- 全局列表：`GET /api/admin/budget-audit-logs`（查询参数含 `user_id`、`api_key_id`、`user_email`、`event_type`、`actor_type`、`actor_id`、`actor_kind`、`reason_code`、`source`、`correlation_id`、时间窗等）— 详见 [api/admin.md](../api/admin.md)。
+  - `actor_id`：精确匹配完整主体，如 `actor_id=admin_key:8f3c…`，用于锁定单把密钥做的全部改动。
+  - `actor_kind`：按上表前缀过滤，可重复或逗号分隔取并集，如 `actor_kind=console&actor_kind=admin_key`；非法值静默忽略。
+- 基线 DDL：`packages/core/migrations-{d1,postgres,mysql}/0001_baseline.sql` 中 `CREATE TABLE user_audit_logs` 与相关索引；`0025_user_audit_actor_index.sql` 补 `(actor_id, created_at)` 索引以支撑上述两个过滤。
+
+## 管理端访问审计
+
+早期版本曾提供独立的 `admin_audit_logs` 表与「Access Audit」页面，记录 Admin API 的写操作与权限拒绝。该功能在**单管理员账号**下与本表信息重叠，且被限制为 Console Session 专属而无法对接外部系统，已整体移除（含建表语句）。认证类安全事件改由结构化日志承载，见 [api/admin.md](../api/admin.md) 的认证章节。待多管理员账号体系落地后再重新设计，届时应一并支持外部系统按权限读取。
 
 ## 旧文档名
 

@@ -21,7 +21,7 @@ Proxy Worker  ──────┐
                     ├── shared D1
 Admin Worker  ──────┘
     ▲
-    │  browser login / MASTER_KEY
+    │  browser Session / named Admin API Key
 Operator
 ```
 
@@ -223,7 +223,7 @@ GATEWAY_MASTER_URL=https://my-octafuse-prod-admin.<account-subdomain>.workers.de
 
 `<account-subdomain>` 不是 Account ID。请复制 Wrangler 的真实输出，或打开 Cloudflare Dashboard → Workers & Pages → 对应 Worker 查看 URL。
 
-普通引导脚本**不会把 D1 中的 `MASTER_KEY` 打到终端**。这是管理后台 API 的主密钥（Master Key），不等同于管理后台网页登录密码。
+普通引导脚本不会输出集成密钥。网页登录密码只用于建立数据库 Session；外部系统使用的具名集成密钥请在后台 **系统集成 → 集成密钥（Integration Keys）** 创建。
 
 ---
 
@@ -289,10 +289,10 @@ Browser → Admin Worker → D1
 
 ```bash
 curl -sS "$GATEWAY_MASTER_URL/api/admin/business-timezone" \
-  -H "Authorization: Bearer <MASTER_KEY>"
+  -H "Authorization: Bearer <ADMIN_API_KEY>"
 ```
 
-`<MASTER_KEY>` 需先从 **系统 → 配置** 取得，或在需要时显式运行 `npm run deploy:cloudflare -- <instance> --show-master-key`（普通引导脚本不会打印该值）。有效主密钥应返回 HTTP 200。
+`<ADMIN_API_KEY>` 需在 **系统集成 → 集成密钥（Integration Keys）** 创建，并至少授予 `config.read`（该接口映射到配置读取权限）。有效 Key 应返回 HTTP 200。
 
 ### 7.4 检查 D1 迁移
 
@@ -315,21 +315,21 @@ npx dotenv -e ./cloudflare-worker/production.env -- \
 
 ## 8. 立即完成安全初始化
 
-管理后台登录密码与管理后台 API 主密钥是两套凭据：
+管理后台登录密码、Admin API Key 与用户推理 Key 是三套凭据：
 
 | 凭据 | 用途 | 存储位置 |
 |------|------|----------|
 | `ADMIN_PASSWORD` | 浏览器登录管理后台 | Cloudflare Worker Secret |
-| `MASTER_KEY` | 调用 `/api/admin/*` | D1 `system_config` |
+| 具名 Admin API Key | 按权限调用 `/api/admin/*` | D1 `admin_api_keys` |
 | 用户 API Key | 调用代理服务 `/v1/*` | D1，管理后台创建 |
 
-首次迁移会写入公开的开发占位值 `sk-dev-admin-key`。部署后立即：
+升级迁移会将历史 `MASTER_KEY` 复制为普通全权限 Key `legacy-master`，并删除 `system_config.MASTER_KEY`。部署后立即：
 
 1. 打开管理后台；
-2. 进入 **系统 → 配置**；
-3. 找到 **主密钥（Admin API master key）**；
-4. 替换为强随机值并保存；
-5. 把新值安全地写入需要调用管理后台 API 的服务端环境变量 `GATEWAY_MASTER_KEY`；
+2. 进入 **系统集成 → 集成密钥（Integration Keys）**；
+3. 为每个外部系统创建独立、最小权限 Key；
+4. 把新值安全地写入对应外部系统的服务端环境变量（可继续命名为 `GATEWAY_MASTER_KEY`）；
+5. 确认外部系统切换完成后，轮换或吊销 `legacy-master`；
 6. 不要把它放在浏览器前端代码、公开仓库或截图里。
 
 可以在本机生成随机值：
@@ -338,7 +338,7 @@ npx dotenv -e ./cloudflare-worker/production.env -- \
 openssl rand -hex 32
 ```
 
-轮换后确认旧占位值失效：
+吊销后确认旧占位值失效：
 
 ```bash
 curl -o /dev/null -sS -w '%{http_code}\n' \
@@ -599,7 +599,7 @@ npm run deploy:cloudflare -- production --admin-only
 - 管理后台首页；
 - `/api/auth/login`；
 - 登录后的配置页面；
-- 带有效 `MASTER_KEY` 的 `/api/admin/business-timezone`。
+- 带有效 Console Session，或具有 `config.read` 权限 Admin API Key 的 `/api/admin/business-timezone`。
 
 ### `/catalog/models` 返回空数组
 
@@ -607,7 +607,7 @@ npm run deploy:cloudflare -- production --admin-only
 
 ### 管理后台登录 401
 
-`ADMIN_PASSWORD` 与 `MASTER_KEY` 不同。重设网页登录密码：
+`ADMIN_PASSWORD` 仅用于网页登录，与 Admin API Key 不同。重设网页登录密码：
 
 ```bash
 npx wrangler secret put ADMIN_PASSWORD --name <admin-worker-name>

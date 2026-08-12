@@ -33,7 +33,7 @@
 |`AUTO_MIGRATE`|否|与代理服务相同：真值时启动前自动迁移（见 §5）。默认关闭。|
 |迁移方式（备选）|—|未设 `AUTO_MIGRATE` 时：迁移由 `migrate` 服务独立执行，管理后台仅负责应用进程。|
 
-`MASTER_KEY`（主密钥）仍以数据库 `system_config.MASTER_KEY` 为准（迁移 `0002_seed.sql` 写入的默认值、管理后台配置页或 SQL）。
+迁移会把数据库中原有 `system_config.MASTER_KEY` 复制为普通全权限集成密钥 `legacy-master`，并删除该配置行。新版认证只读取 `admin_api_keys`。部署后请登录后台，在 **系统集成 → 集成密钥（Integration Keys）** 为外部系统创建具名最小权限 Key。
 
 ### 时区与时间查询（重要）
 
@@ -253,7 +253,7 @@ Compose 中 `migrate` 服务使用 **migrate 专用镜像**执行 `npm run db:mi
 
 1. 代理服务：`GET /health` 成功。
 2. 代理服务：`GET /v1/models`（有效 `sk-`）抽样成功。
-3. 管理后台：`GET /api/admin/config` 等（`Authorization: Bearer <MASTER_KEY>`）。
+3. 管理后台：`GET /api/admin/config` 等（`Authorization: Bearer <ADMIN_API_KEY>`，且 Key 具有相应权限）。
 4. 管理后台：浏览器打开根路径 `/` 或 `/dashboard`，确认静态资源与页面可加载（standalone 已包含 `HOSTNAME=0.0.0.0` 监听）。
 
 ### 7.1 镜像体积与层（可选）
@@ -262,12 +262,12 @@ Compose 中 `migrate` 服务使用 **migrate 专用镜像**执行 `npm run db:mi
 
 ### 7.2 与 `docker/compose/node-pg.yml` 对齐的示例
 
-完成迁移后（迁移 `0002_seed.sql` 写入的默认 `MASTER_KEY` 与 D1 一致，示例为 **`sk-dev-admin-key`**）：
+完成迁移后，先用浏览器登录后台并创建至少含 `config.read` 的具名 Admin API Key：
 
 ```bash
 curl -fsS http://127.0.0.1:8787/health
 curl -fsS http://127.0.0.1:8789/api/admin/config \
-  -H 'Authorization: Bearer sk-dev-admin-key'
+  -H 'Authorization: Bearer <ADMIN_API_KEY>'
 ```
 
 ### 7.3 生产 HTTPS 建议
