@@ -7,8 +7,9 @@ import {
 	TrashIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslations } from "next-intl";
-import { useId, useState } from "react";
-import { protocolFormHasOverrides } from "../provider-utils";
+import { useEffect, useId, useState } from "react";
+import { protocolFormHasOverrides, protocolFormIsConfigured } from "../provider-utils";
+import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
 	GatewayProvider,
 	ProtocolEndpointForm,
@@ -35,8 +36,17 @@ type ProviderModalProps = {
 const inputClass =
 	"w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500";
 
+const PROTOCOL_TABS: Array<{
+	key: UpstreamProtocol;
+	labelKey: "openaiOptional" | "anthropicOptional" | "geminiOptional" | "dashscopeOptional";
+}> = [
+	{ key: "openai", labelKey: "openaiOptional" },
+	{ key: "anthropic", labelKey: "anthropicOptional" },
+	{ key: "gemini", labelKey: "geminiOptional" },
+	{ key: "dashscope", labelKey: "dashscopeOptional" },
+];
+
 function ProtocolFields(props: {
-	protocolLabel: string;
 	baseUrlLabel: string;
 	basePlaceholder: string;
 	baseHint?: string;
@@ -64,7 +74,6 @@ function ProtocolFields(props: {
 	onChange: (next: ProtocolEndpointForm) => void;
 }) {
 	const {
-		protocolLabel,
 		baseUrlLabel,
 		basePlaceholder,
 		baseHint,
@@ -82,11 +91,6 @@ function ProtocolFields(props: {
 
 	return (
 		<div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-			<div className="mb-3 flex items-center gap-2">
-				<ProviderProtocolIcon protocol={protocol} />
-				<h4 className="text-sm font-semibold text-gray-900">{protocolLabel}</h4>
-			</div>
-
 			<div className="space-y-2">
 				<label className="mb-1 block text-xs font-medium text-gray-600">
 					{baseUrlLabel}
@@ -328,6 +332,17 @@ export function ProviderModal(props: ProviderModalProps) {
 	const t = useTranslations("providers.modal");
 	const tCommon = useTranslations("common");
 	const titleId = useId();
+	const [endpointTab, setEndpointTab] = useState<UpstreamProtocol>("openai");
+
+	useEffect(() => {
+		if (!open) return;
+		const firstConfigured = PROTOCOL_TABS.find(({ key }) =>
+			protocolFormIsConfigured(key, formData[key])
+		);
+		setEndpointTab(firstConfigured?.key ?? "openai");
+		// 仅在打开不同供应商时选中已配置协议；输入过程中不重置 Tab。
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [open, editingProvider?.id, duplicateSourceId]);
 
 	if (!open) return null;
 
@@ -489,57 +504,103 @@ export function ProviderModal(props: ProviderModalProps) {
 									{t("endpointsHint")}
 								</p>
 							</div>
-							<div className="space-y-3">
-								<ProtocolFields
-									protocolLabel={t("openaiOptional")}
-									baseUrlLabel={t("baseUrl")}
-									basePlaceholder={t("openaiPlaceholder")}
-									form={formData.openai}
-									protocol="openai"
-									advancedToggle={t("advancedToggle")}
-									advancedHint={t("advancedHint")}
-									capLabels={capLabels}
-									onChange={(openai) => onFormChange({ ...formData, openai })}
-								/>
-								<ProtocolFields
-									protocolLabel={t("anthropicOptional")}
-									baseUrlLabel={t("baseUrl")}
-									basePlaceholder={t("anthropicPlaceholder")}
-									form={formData.anthropic}
-									protocol="anthropic"
-									advancedToggle={t("advancedToggle")}
-									advancedHint={t("advancedHint")}
-									capLabels={capLabels}
-									onChange={(anthropic) =>
-										onFormChange({ ...formData, anthropic })
-									}
-								/>
-								<ProtocolFields
-									protocolLabel={t("geminiOptional")}
-									baseUrlLabel={t("baseUrl")}
-									basePlaceholder={t("geminiPlaceholder")}
-									baseHint={t("geminiHint")}
-									form={formData.gemini}
-									protocol="gemini"
-									advancedToggle={t("advancedToggle")}
-									advancedHint={t("advancedHint")}
-									capLabels={capLabels}
-									onChange={(gemini) => onFormChange({ ...formData, gemini })}
-								/>
-								<ProtocolFields
-									protocolLabel={t("dashscopeOptional")}
-									baseUrlLabel={t("baseUrl")}
-									basePlaceholder={t("dashscopePlaceholder")}
-									baseHint={t("dashscopeHint")}
-									form={formData.dashscope}
-									protocol="dashscope"
-									advancedToggle={t("advancedToggle")}
-									advancedHint={t("advancedHint")}
-									capLabels={capLabels}
-									onChange={(dashscope) =>
-										onFormChange({ ...formData, dashscope })
-									}
-								/>
+							<div
+								className="flex flex-wrap gap-1 rounded-lg border border-gray-200 bg-slate-50 p-1"
+								role="tablist"
+								aria-label={t("endpointsTabsAria")}
+							>
+								{PROTOCOL_TABS.map(({ key, labelKey }) => {
+									const selected = endpointTab === key;
+									const configured = protocolFormIsConfigured(key, formData[key]);
+									return (
+										<button
+											key={key}
+											type="button"
+											role="tab"
+											id={`provider-endpoint-tab-${key}`}
+											aria-selected={selected}
+											aria-controls={`provider-endpoint-panel-${key}`}
+											onClick={() => setEndpointTab(key)}
+											className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+												selected
+													? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+													: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
+											}`}
+										>
+											<span className="h-4 w-4 shrink-0">
+												<ProviderProtocolIcon protocol={key} />
+											</span>
+											{t(labelKey)}
+											{configured ? (
+												<span
+													className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+													title={t("configured")}
+													aria-label={t("configured")}
+												/>
+											) : null}
+										</button>
+									);
+								})}
+							</div>
+							<div
+								role="tabpanel"
+								id={`provider-endpoint-panel-${endpointTab}`}
+								aria-labelledby={`provider-endpoint-tab-${endpointTab}`}
+							>
+								{endpointTab === "openai" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("openaiPlaceholder")}
+										form={formData.openai}
+										protocol="openai"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHint")}
+										capLabels={capLabels}
+										onChange={(openai) => onFormChange({ ...formData, openai })}
+									/>
+								) : null}
+								{endpointTab === "anthropic" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("anthropicPlaceholder")}
+										form={formData.anthropic}
+										protocol="anthropic"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHint")}
+										capLabels={capLabels}
+										onChange={(anthropic) =>
+											onFormChange({ ...formData, anthropic })
+										}
+									/>
+								) : null}
+								{endpointTab === "gemini" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("geminiPlaceholder")}
+										baseHint={t("geminiHint")}
+										form={formData.gemini}
+										protocol="gemini"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHint")}
+										capLabels={capLabels}
+										onChange={(gemini) => onFormChange({ ...formData, gemini })}
+									/>
+								) : null}
+								{endpointTab === "dashscope" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("dashscopePlaceholder")}
+										baseHint={t("dashscopeHint")}
+										form={formData.dashscope}
+										protocol="dashscope"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHint")}
+										capLabels={capLabels}
+										onChange={(dashscope) =>
+											onFormChange({ ...formData, dashscope })
+										}
+									/>
+								) : null}
 							</div>
 						</section>
 

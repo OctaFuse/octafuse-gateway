@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
 	deleteProvider,
 	fetchImportCatalog,
@@ -11,17 +13,47 @@ import {
 	toggleProviderStatus,
 } from './provider-api';
 import {
-	getProviderProtocolSummaries,
+	providerMatchesListFilter,
+	providerMatchesSearch,
 	providerToFormData,
 	suggestDuplicateProviderId,
 } from './provider-utils';
-import type { GatewayProvider, ProviderFormData, ProviderImportCatalogRow } from './types';
-import { EMPTY_PROTOCOL_FORM, EMPTY_PROVIDER_FORM } from './types';
+import type {
+	GatewayProvider,
+	ProviderFormData,
+	ProviderImportCatalogRow,
+	ProviderListFilter,
+} from './types';
+import {
+	DEFAULT_PROVIDER_LIST_FILTER,
+	EMPTY_PROTOCOL_FORM,
+	EMPTY_PROVIDER_FORM,
+	PROVIDER_LIST_FILTERS,
+	parseProviderListFilterParam,
+} from './types';
+
+function emptyFilterCounts(): Record<ProviderListFilter, number> {
+	return {
+		all: 0,
+		active: 0,
+		disabled: 0,
+		pending: 0,
+		no_key: 0,
+		openai: 0,
+		anthropic: 0,
+		gemini: 0,
+		dashscope: 0,
+	};
+}
 
 export function useProvidersPageState() {
+	const searchParams = useSearchParams();
 	const [providers, setProviders] = useState<GatewayProvider[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [providerSearch, setProviderSearch] = useState('');
+	const [selectedFilter, setSelectedFilter] = useState<ProviderListFilter>(
+		DEFAULT_PROVIDER_LIST_FILTER
+	);
 	const [showModal, setShowModal] = useState(false);
 	const [editingProvider, setEditingProvider] = useState<GatewayProvider | null>(null);
 	const [duplicateSourceId, setDuplicateSourceId] = useState<string | null>(null);
@@ -39,31 +71,56 @@ export function useProvidersPageState() {
 	const [importSubmitting, setImportSubmitting] = useState(false);
 	const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
 
+	useEffect(() => {
+		const q = searchParams.get('q');
+		if (q !== null) {
+			setProviderSearch(q);
+		}
+		const filterParam = searchParams.get('filter');
+		if (filterParam !== null) {
+			setSelectedFilter(parseProviderListFilterParam(filterParam));
+		}
+	}, [searchParams]);
+
+	useReplaceListPageQuery(() => {
+		const params = new URLSearchParams();
+		const q = providerSearch.trim();
+		if (q) params.set('q', q);
+		if (selectedFilter !== DEFAULT_PROVIDER_LIST_FILTER) {
+			params.set('filter', selectedFilter);
+		}
+		return params;
+	}, [providerSearch, selectedFilter]);
+
 	const existingProviderIds = useMemo(() => new Set(providers.map((p) => p.id)), [providers]);
-	const filteredProviders = useMemo(() => {
-		const query = providerSearch.trim().toLowerCase();
-		if (!query) return providers;
-		return providers.filter((provider) => {
-			const endpointSearch = getProviderProtocolSummaries(provider)
-				.flatMap((protocol) => [
-					protocol.label,
-					protocol.baseUrl ?? '',
-					...protocol.capabilities,
-					...protocol.endpoints.map((endpoint) => endpoint.url),
-				])
-				.join(' ');
-			return [
-				provider.name,
-				provider.id,
-				provider.description ?? '',
-				provider.status ?? '',
-				endpointSearch,
-			]
-				.join(' ')
-				.toLowerCase()
-				.includes(query);
-		});
-	}, [providerSearch, providers]);
+
+	const searchMatchedProviders = useMemo(
+		() => providers.filter((provider) => providerMatchesSearch(provider, providerSearch)),
+		[providerSearch, providers]
+	);
+
+	const filterCounts = useMemo(() => {
+		const counts = emptyFilterCounts();
+		counts.all = searchMatchedProviders.length;
+		for (const provider of searchMatchedProviders) {
+			for (const filter of PROVIDER_LIST_FILTERS) {
+				if (filter === 'all') continue;
+				if (providerMatchesListFilter(provider, filter)) {
+					counts[filter] += 1;
+				}
+			}
+		}
+		return counts;
+	}, [searchMatchedProviders]);
+
+	const filteredProviders = useMemo(
+		() =>
+			searchMatchedProviders.filter((provider) =>
+				providerMatchesListFilter(provider, selectedFilter)
+			),
+		[searchMatchedProviders, selectedFilter]
+	);
+
 	const importSelectedCount = useMemo(
 		() => Object.values(importSelected).filter(Boolean).length,
 		[importSelected]
@@ -302,6 +359,9 @@ export function useProvidersPageState() {
 		providers,
 		providerSearch,
 		setProviderSearch,
+		selectedFilter,
+		setSelectedFilter,
+		filterCounts,
 		filteredProviders,
 		copiedId,
 		statusTogglingId,

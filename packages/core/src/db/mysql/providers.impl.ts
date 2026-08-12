@@ -1,7 +1,7 @@
 /**
  * MySQL：`providers` 表（Drizzle + mysql2）。
  */
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { ResultSetHeader } from 'mysql2/promise';
 import type { ProviderRow } from '../../types';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
@@ -12,25 +12,15 @@ import type { ProviderAdminRow } from '../../storage/repository-dtos';
 import { PROVIDER_PATCH_COLS } from '../patch-allowlists';
 import { asMySqlPool } from './mysql2-compat';
 
-function providerRecordFromMy(r: {
-	id: string;
-	name: string;
-	endpoints: string | null;
-	apiKey: string;
-	status: string;
-	description: string | null;
-	createdAt: string;
-}): ProviderAdminRow {
-	return {
-		id: r.id,
-		name: r.name,
-		endpoints: r.endpoints,
-		api_key: r.apiKey,
-		status: r.status,
-		description: r.description,
-		created_at: r.createdAt,
-	};
-}
+const PROVIDER_LIST_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.endpoints, p.api_key, p.status, p.description, p.created_at,
+		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
+		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
+	FROM providers p ORDER BY p.created_at DESC`;
+
+const PROVIDER_DETAIL_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.endpoints, p.api_key, p.status, p.description, p.created_at,
+		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
+		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
+	FROM providers p WHERE p.id = ?`;
 
 function mapMyProviderRow(r: {
 	id: string;
@@ -58,8 +48,30 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 
 	return {
 		async listProviders(): Promise<ProviderAdminRow[]> {
-			const rows = await drizzle.select().from(myProvidersTable).orderBy(desc(myProvidersTable.createdAt));
-			return rows.map(providerRecordFromMy);
+			const [rows] = await pool.query<
+				Array<{
+					id: string;
+					name: string;
+					endpoints: string | null;
+					api_key: string;
+					status: string;
+					description: string | null;
+					created_at: string;
+					routes_count: number;
+					active_routes_count: number;
+				}>
+			>(PROVIDER_LIST_WITH_ROUTE_COUNTS_SQL);
+			return rows.map((r) => ({
+				id: r.id,
+				name: r.name,
+				endpoints: r.endpoints,
+				api_key: r.api_key,
+				status: r.status,
+				description: r.description,
+				created_at: r.created_at,
+				routes_count: Number(r.routes_count ?? 0),
+				active_routes_count: Number(r.active_routes_count ?? 0),
+			}));
 		},
 
 		async providerIdExists(id: string): Promise<boolean> {
@@ -112,8 +124,32 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 		},
 
 		async getProviderRowById(id: string): Promise<ProviderAdminRow | null> {
-			const rows = await drizzle.select().from(myProvidersTable).where(eq(myProvidersTable.id, id)).limit(1);
-			return rows[0] ? providerRecordFromMy(rows[0]) : null;
+			const [rows] = await pool.query<
+				Array<{
+					id: string;
+					name: string;
+					endpoints: string | null;
+					api_key: string;
+					status: string;
+					description: string | null;
+					created_at: string;
+					routes_count: number;
+					active_routes_count: number;
+				}>
+			>(PROVIDER_DETAIL_WITH_ROUTE_COUNTS_SQL, [id]);
+			const r = rows[0];
+			if (!r) return null;
+			return {
+				id: r.id,
+				name: r.name,
+				endpoints: r.endpoints,
+				api_key: r.api_key,
+				status: r.status,
+				description: r.description,
+				created_at: r.created_at,
+				routes_count: Number(r.routes_count ?? 0),
+				active_routes_count: Number(r.active_routes_count ?? 0),
+			};
 		},
 
 		async getProviderProtocolBases(providerId: string): Promise<ProviderProtocolBases | null> {

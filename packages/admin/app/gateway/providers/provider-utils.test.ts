@@ -2,13 +2,15 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
 	formDataToEndpointsMap,
+	getProviderKeyStatus,
+	providerMatchesListFilter,
 	providerToFormData,
 	tryCollapseGeminiLegacyEndpoints,
 } from './provider-utils';
 import { EMPTY_PROVIDER_FORM } from './types';
 import type { GatewayProvider } from '@/lib/types';
 
-function providerWithEndpoints(endpoints: unknown): GatewayProvider {
+function providerWithEndpoints(endpoints: unknown, extras: Partial<GatewayProvider> = {}): GatewayProvider {
 	return {
 		id: 'p1',
 		name: 'P1',
@@ -16,8 +18,40 @@ function providerWithEndpoints(endpoints: unknown): GatewayProvider {
 		endpoints: JSON.stringify(endpoints),
 		description: null,
 		created_at: '',
+		...extras,
 	} as GatewayProvider;
 }
+
+describe('getProviderKeyStatus / providerMatchesListFilter', () => {
+	it('classifies pending, disabled, no_key, and key_set', () => {
+		assert.equal(
+			getProviderKeyStatus(providerWithEndpoints({}, { has_pending_key: true, api_key: '(empty)' })),
+			'pending'
+		);
+		assert.equal(
+			getProviderKeyStatus(providerWithEndpoints({}, { status: 'disabled', api_key: 'sk-****' })),
+			'disabled'
+		);
+		assert.equal(
+			getProviderKeyStatus(providerWithEndpoints({}, { api_key: '(empty)' })),
+			'no_key'
+		);
+		assert.equal(
+			getProviderKeyStatus(providerWithEndpoints({}, { api_key: 'sk-****' })),
+			'key_set'
+		);
+	});
+
+	it('matches protocol and status filters', () => {
+		const openai = providerWithEndpoints({
+			openai: { base: 'https://api.openai.com/v1' },
+		}, { api_key: 'sk-****' });
+		assert.equal(providerMatchesListFilter(openai, 'openai'), true);
+		assert.equal(providerMatchesListFilter(openai, 'anthropic'), false);
+		assert.equal(providerMatchesListFilter(openai, 'active'), true);
+		assert.equal(providerMatchesListFilter(openai, 'pending'), false);
+	});
+});
 
 describe('tryCollapseGeminiLegacyEndpoints', () => {
 	it('collapses URLs that differ only by trailing action', () => {

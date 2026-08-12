@@ -42,7 +42,7 @@ function normalizeProviderStatus(raw: unknown): 'active' | 'disabled' {
 	throw badRequest('status must be active or disabled');
 }
 
-/** 列表/详情脱敏：明文 `api_key` → masked；附带 `has_pending_key`。 */
+/** 列表/详情脱敏：明文 `api_key` → masked；附带 `has_pending_key` 与路由计数。 */
 function enrichProviderRow(provider: AdminProviderRow): AdminProviderRow {
 	const plaintext = typeof provider.api_key === 'string' ? provider.api_key : '';
 	const vendorKey = inferStaticProviderVendorKey(provider);
@@ -53,6 +53,8 @@ function enrichProviderRow(provider: AdminProviderRow): AdminProviderRow {
 		api_key: maskProviderApiKeyForAdmin(plaintext),
 		status: provider.status === 'disabled' ? 'disabled' : 'active',
 		has_pending_key: isPendingProviderImportApiKey(plaintext),
+		routes_count: Number(provider.routes_count ?? 0),
+		active_routes_count: Number(provider.active_routes_count ?? 0),
 	};
 }
 

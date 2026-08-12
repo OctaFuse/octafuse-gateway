@@ -128,3 +128,39 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 };
 
 export type { GatewayProvider, ProviderEndpointsMap };
+
+/** Providers 页列表筛选（URL `?filter=`）。 */
+export type ProviderListFilter =
+	| 'all'
+	| 'active'
+	| 'disabled'
+	| 'pending'
+	| 'no_key'
+	| 'openai'
+	| 'anthropic'
+	| 'gemini'
+	| 'dashscope';
+
+export const DEFAULT_PROVIDER_LIST_FILTER: ProviderListFilter = 'all';
+
+export const PROVIDER_LIST_FILTERS: readonly ProviderListFilter[] = [
+	'all',
+	'active',
+	'disabled',
+	'pending',
+	'no_key',
+	'openai',
+	'anthropic',
+	'gemini',
+	'dashscope',
+] as const;
+
+export function parseProviderListFilterParam(raw: string | null): ProviderListFilter {
+	if (!raw) return DEFAULT_PROVIDER_LIST_FILTER;
+	return (PROVIDER_LIST_FILTERS as readonly string[]).includes(raw)
+		? (raw as ProviderListFilter)
+		: DEFAULT_PROVIDER_LIST_FILTER;
+}
+
+/** 卡片状态行：密钥 / 启停摘要。 */
+export type ProviderKeyStatusKind = 'pending' | 'disabled' | 'no_key' | 'key_set';
