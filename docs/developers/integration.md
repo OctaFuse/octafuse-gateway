@@ -15,10 +15,10 @@
 
 | Key | 用途 | 风险 |
 |-----|------|------|
-| `GATEWAY_MASTER_KEY` / `MASTER_KEY` | 调用 `/api/admin/*`，创建用户、发 Key、读日志、改配置。 | 高权限，只能放服务端。 |
+| 集成密钥（Integration Keys；环境变量可沿用 `GATEWAY_MASTER_KEY`） | 调用获授权的 `/api/admin/*` 业务接口。 | 只能放服务端；每个集成独立、最小权限。 |
 | 用户 API Key | 客户端调用 `/v1/*`、`/v1beta/*`（含推理、Images、Audio、Agent Tools 与 `/v1/me`）。 | 可发给实际使用方，按用户预算和状态控制。 |
 
-生产环境必须将开发默认 `sk-dev-admin-key` 轮换为强随机值。
+在后台 **系统集成 → 集成密钥（Integration Keys）** 为每个集成创建独立 Key。额度与路由自动化通常只需 `routes.read`、`routes.write`、`analytics.read`，排障时再按需增加 `logs.read`。不要共用迁移生成的 `legacy-master`。
 
 ## 常见集成流程
 

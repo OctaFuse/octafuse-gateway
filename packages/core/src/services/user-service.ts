@@ -230,7 +230,8 @@ function validateExternalPair(external_system?: string | null, external_user_id?
 async function insertUserCreatedAudit(
 	repos: GatewayRepositories,
 	created: UserRow,
-	reasonCode: 'user_provision_external' | 'user_provision_preferred_id' | 'user_provision_email'
+	reasonCode: 'user_provision_external' | 'user_provision_preferred_id' | 'user_provision_email',
+	actor?: { type: 'admin' | 'service'; id: string; source: 'admin_users' | 'admin_keys' | 'gateway_user_provision' }
 ): Promise<void> {
 	const spent = roundGatewayMoney(Number(created.budget_spent ?? 0));
 	const bmax = created.budget_max ?? null;
@@ -243,8 +244,8 @@ async function insertUserCreatedAudit(
 			id: crypto.randomUUID(),
 			apiKeyId: null,
 			eventType: 'user_created',
-			actorType: 'service',
-			actorId: '',
+			actorType: actor?.type ?? 'service',
+			actorId: actor?.id ?? '',
 			reasonCode,
 			reasonText: 'User provisioned',
 			beforeSpent: 0,
@@ -263,7 +264,7 @@ async function insertUserCreatedAudit(
 			beforeUserSnapshot: null,
 			afterUserSnapshot: afterSnap,
 			changedFields: null,
-			source: 'gateway_user_provision',
+			source: actor?.source ?? 'gateway_user_provision',
 			correlationId: crypto.randomUUID(),
 		})
 	);
@@ -283,6 +284,7 @@ export async function getOrCreateUser(
 		budget_period?: BudgetPeriod;
 		budget_base?: number | null;
 		metadata?: string | null;
+		audit_actor?: { type: 'admin' | 'service'; id: string; source: 'admin_users' | 'admin_keys' | 'gateway_user_provision' };
 	}
 ): Promise<UserRow> {
 	validateExternalPair(params.external_system, params.external_user_id);
@@ -316,7 +318,7 @@ export async function getOrCreateUser(
 		});
 		const created = await repos.users.getById(id);
 		if (!created) throw new Error('getOrCreateUser: failed to read created user');
-		await insertUserCreatedAudit(repos, created, 'user_provision_external');
+		await insertUserCreatedAudit(repos, created, 'user_provision_external', params.audit_actor);
 		return created;
 	}
 
@@ -338,7 +340,7 @@ export async function getOrCreateUser(
 		});
 		const created = await repos.users.getById(params.preferUserId);
 		if (!created) throw new Error('getOrCreateUser: failed to read created user');
-		await insertUserCreatedAudit(repos, created, 'user_provision_preferred_id');
+		await insertUserCreatedAudit(repos, created, 'user_provision_preferred_id', params.audit_actor);
 		return created;
 	}
 
@@ -358,7 +360,7 @@ export async function getOrCreateUser(
 	});
 	const created = await repos.users.getById(id);
 	if (!created) throw new Error('getOrCreateUser: failed to read created user');
-	await insertUserCreatedAudit(repos, created, 'user_provision_email');
+	await insertUserCreatedAudit(repos, created, 'user_provision_email', params.audit_actor);
 	return created;
 }
 

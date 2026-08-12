@@ -85,7 +85,7 @@ export async function listAdminKeys(
 /**
  * 在已有用户下新建密钥；无 `user_id` 时须提供 `external_system` + `external_user_id` + `email` 以幂等取/建用户。
  */
-export async function createAdminKey(repos: GatewayRepositories, input: AdminKeyCreateInput): Promise<AdminKeyCreateOutput> {
+export async function createAdminKey(repos: GatewayRepositories, input: AdminKeyCreateInput, actorId: string): Promise<AdminKeyCreateOutput> {
 	let metaString: string | null | undefined;
 
 	if (input.metadata !== undefined && input.metadata !== null) {
@@ -127,6 +127,7 @@ export async function createAdminKey(repos: GatewayRepositories, input: AdminKey
 			budget_period: 'none',
 			budget_base: 0,
 			metadata: null,
+			audit_actor: { type: 'admin', id: actorId, source: 'admin_keys' },
 		});
 		userId = u.id;
 	}
@@ -136,6 +137,7 @@ export async function createAdminKey(repos: GatewayRepositories, input: AdminKey
 		name: input.name ?? null,
 		metadata: metaString ?? null,
 		provision_reason: input.reason,
+		actor_id: actorId,
 	});
 
 	return {
@@ -184,7 +186,8 @@ export async function getAdminKeyLogs(
 export async function updateAdminKey(
 	repos: GatewayRepositories,
 	idOrKey: string,
-	input: AdminKeyUpdateInput
+	input: AdminKeyUpdateInput,
+	actorId: string
 ): Promise<AdminKeyUpdateOutput> {
 	const raw = input as Record<string, unknown>;
 	for (const k of ['budget_max', 'budget_base', 'budget_spent', 'budget_period', 'reset_budget', 'budget_reset_at', 'user_email']) {
@@ -290,7 +293,7 @@ export async function updateAdminKey(
 				apiKeyId: row.id,
 				eventType,
 				actorType: 'admin',
-				actorId: 'master_key',
+				actorId,
 				reasonCode,
 				reasonText: reasonText,
 				beforeSpent: spent,
@@ -364,7 +367,7 @@ export async function getAdminKeyById(repos: GatewayRepositories, idOrKey: strin
 }
 
 /** 物理删除密钥；未找到抛 `notFound`。 */
-export async function deleteAdminKey(repos: GatewayRepositories, idOrKey: string): Promise<void> {
+export async function deleteAdminKey(repos: GatewayRepositories, idOrKey: string, actorId: string): Promise<void> {
 	const row = await resolveKeyRowAnyStatus(repos, idOrKey);
 	if (!row) throw notFound('Key not found');
 	const userAud = await repos.users.getById(row.user_id);
@@ -380,7 +383,7 @@ export async function deleteAdminKey(repos: GatewayRepositories, idOrKey: string
 			apiKeyId: row.id,
 			eventType: 'key_deleted',
 			actorType: 'admin',
-			actorId: 'master_key',
+			actorId,
 			reasonCode: 'admin_key_delete',
 			reasonText: 'API key permanently deleted',
 			beforeSpent: spent,

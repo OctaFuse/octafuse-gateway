@@ -3,7 +3,7 @@
  */
 import { Hono } from "hono";
 import type { AdminEnv } from "@/lib/admin-env";
-import { requireMasterKey } from "@/lib/middleware/admin-auth";
+import { requireAdminPrincipal } from "@/lib/middleware/admin-auth";
 import { listStaticProviderImportCatalogForAdmin } from "@/lib/provider-import-preset";
 import {
 	createProviderService,
@@ -28,7 +28,7 @@ import { normalizeApiTimeFields } from "@octafuse/core/lib/time-format";
 
 export const adminProvidersRoutes = new Hono<AdminEnv>();
 
-adminProvidersRoutes.use("*", requireMasterKey);
+adminProvidersRoutes.use("*", requireAdminPrincipal);
 
 /** 全量列表。 */
 adminProvidersRoutes.get("/", async (c) => {

@@ -11,6 +11,7 @@ import { createD1SystemConfigRepository } from '../db/d1/system-config.impl';
 import { createD1RoutePoolStickyBindingsRepository } from '../db/d1/route-pool-sticky-bindings.impl';
 import { createD1UserAuditLogsRepository } from '../db/d1/user-audit-logs.impl';
 import { createD1UsersRepository } from '../db/d1/users.impl';
+import { createD1AdminAccessRepository } from '../db/d1/admin-access.impl';
 
 export function createD1Repositories(client: GatewayDatabaseClient): GatewayRepositories {
 	if (client.driver !== 'd1') {
@@ -29,5 +30,6 @@ export function createD1Repositories(client: GatewayDatabaseClient): GatewayRepo
 		modelRouting: createD1ModelRoutingRepository(client),
 		userAuditLogs: createD1UserAuditLogsRepository(client),
 		routePoolSticky: createD1RoutePoolStickyBindingsRepository(client),
+		adminAccess: createD1AdminAccessRepository(client),
 	};
 }

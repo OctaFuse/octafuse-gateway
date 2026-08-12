@@ -3,11 +3,10 @@
  * OpenNext 的 Next Server Function 只转发 HTTP 状态和 body，会丢失 Response.webSocket，
  * 因此实时调试请求必须在最外层 Worker 中直接交给 Hono。
  */
-import { checkAuth } from './auth';
+import { authenticateAdminRequest } from './auth';
 import { handleGatewayApiError } from './api-error';
 import type { AdminBindings } from './admin-env';
 import { getAdminApp } from './admin-app';
-import { getMasterKey } from './services/admin/master-key-service';
 import { resolveAdminStorageContext } from './storage-context';
 
 function rewriteToInternalAdminPath(request: Request): Request {
@@ -29,32 +28,15 @@ export async function handleAdminRealtimeUpgrade(
 			ASSETS: env.ASSETS,
 		};
 		const storage = await resolveAdminStorageContext(runtimeBindings, 'cloudflare');
-		const masterKey = await getMasterKey(storage.repositories);
-		if (!masterKey) {
-			return Response.json(
-				{ error: 'Server configuration error: MASTER_KEY not set' },
-				{ status: 500 },
-			);
-		}
-
-		let outbound: Request;
-		if (checkAuth(request)) {
-			const headers = new Headers(request.headers);
-			headers.set('Authorization', `Bearer ${masterKey}`);
-			outbound = new Request(request, { headers });
-		} else {
-			const authorization = request.headers.get('Authorization');
-			if (authorization !== `Bearer ${masterKey}`) {
-				return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-			}
-			outbound = request;
-		}
+		const principal = await authenticateAdminRequest(request, storage.repositories);
+		if (!principal) return Response.json({ success: false, message: 'Unauthorized' }, { status: 401 });
 
 		const appBindings: AdminBindings = {
 			...runtimeBindings,
 			STORAGE_CONTEXT: storage,
+			ADMIN_PRINCIPAL: principal,
 		};
-		return getAdminApp().fetch(rewriteToInternalAdminPath(outbound), appBindings, ctx);
+		return getAdminApp().fetch(rewriteToInternalAdminPath(request), appBindings, ctx);
 	} catch (error) {
 		return handleGatewayApiError({ route: 'admin.realtime.worker', error });
 	}

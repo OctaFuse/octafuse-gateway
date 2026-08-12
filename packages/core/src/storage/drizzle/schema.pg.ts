@@ -230,6 +230,27 @@ export const userAuditLogsTable = pgTable('user_audit_logs', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 
+export const adminApiKeysTable = pgTable('admin_api_keys', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull().unique(),
+	description: text('description'),
+	secretKey: text('secret_key').notNull().unique(),
+	keyPrefix: text('key_prefix').notNull(),
+	permissionsJson: text('permissions_json').notNull().default('[]'),
+	status: text('status').notNull().default('active'),
+	lastUsedAt: timestamp('last_used_at', { withTimezone: true, mode: 'string' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
+	revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'string' }),
+});
+
+export const adminSessionsTable = pgTable('admin_sessions', {
+	tokenHash: text('token_hash').primaryKey(),
+	username: text('username').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
+	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'string' }).notNull(),
+});
+
 export const pgCoreSchema = {
 	usersTable,
 	apiKeysTable,
@@ -241,4 +262,6 @@ export const pgCoreSchema = {
 	apiKeyRequestLogsTable,
 	systemConfigTable,
 	userAuditLogsTable,
+	adminApiKeysTable,
+	adminSessionsTable,
 };

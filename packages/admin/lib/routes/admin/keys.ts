@@ -1,11 +1,11 @@
 /**
  * 管理路由：`/admin/keys` — API 密钥列表（分页、邮箱、`user_id`）、
- * 创建、查询、更新（仅 name/metadata/status）、物理删除及单 key 请求日志。全程 `requireMasterKey`。
+ * 创建、查询、更新（仅 name/metadata/status）、物理删除及单 key 请求日志。全程要求 Admin principal。
  */
 import { Hono } from 'hono';
 import { parseApiKeyListSortQuery } from '@octafuse/core/db/api-keys-list-sort';
 import type { AdminEnv } from '@/lib/admin-env';
-import { requireMasterKey } from '@/lib/middleware/admin-auth';
+import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import {
 	createAdminKey,
 	deleteAdminKey,
@@ -19,7 +19,7 @@ import { handleAdminRouteError, jsonErr } from './error-response';
 import { normalizeApiTimeFields } from '@octafuse/core/lib/time-format';
 export const adminKeysRoutes = new Hono<AdminEnv>();
 
-adminKeysRoutes.use('*', requireMasterKey);
+adminKeysRoutes.use('*', requireAdminPrincipal);
 
 /** 查询：page、page_size、email、user_id、sort、order。 */
 adminKeysRoutes.get('/', async (c) => {
@@ -53,7 +53,7 @@ adminKeysRoutes.post('/', async (c) => {
 	}
 	try {
 		const repos = c.get('repositories');
-		const result = await createAdminKey(repos, body);
+		const result = await createAdminKey(repos, body, c.get('principal').id);
 		return c.json(
 			normalizeApiTimeFields({
 				success: true as const,
@@ -101,7 +101,7 @@ adminKeysRoutes.patch('/:id', async (c) => {
 	}
 	try {
 		const repos = c.get('repositories');
-		const data = await updateAdminKey(repos, c.req.param('id'), body);
+		const data = await updateAdminKey(repos, c.req.param('id'), body, c.get('principal').id);
 		return c.json(
 			normalizeApiTimeFields({
 				success: true as const,
@@ -128,7 +128,7 @@ adminKeysRoutes.get('/:id', async (c) => {
 adminKeysRoutes.delete('/:id', async (c) => {
 	try {
 		const repos = c.get('repositories');
-		await deleteAdminKey(repos, c.req.param('id'));
+		await deleteAdminKey(repos, c.req.param('id'), c.get('principal').id);
 		return c.json({ success: true as const, message: 'Key deleted successfully' });
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to delete key');

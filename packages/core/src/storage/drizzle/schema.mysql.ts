@@ -259,6 +259,27 @@ export const userAuditLogsTable = mysqlTable('user_audit_logs', {
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 
+export const adminApiKeysTable = mysqlTable('admin_api_keys', {
+	id: varchar('id', { length: 128 }).primaryKey(),
+	name: varchar('name', { length: 255 }).notNull().unique(),
+	description: text('description'),
+	secretKey: varchar('secret_key', { length: COL.KEY }).notNull().unique(),
+	keyPrefix: varchar('key_prefix', { length: 32 }).notNull(),
+	permissionsJson: text('permissions_json').notNull(),
+	status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
+	lastUsedAt: timestamp('last_used_at', { fsp: 6, mode: 'string' }),
+	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
+	updatedAt: timestamp('updated_at', { fsp: 6, mode: 'string' }).notNull(),
+	revokedAt: timestamp('revoked_at', { fsp: 6, mode: 'string' }),
+});
+
+export const adminSessionsTable = mysqlTable('admin_sessions', {
+	tokenHash: varchar('token_hash', { length: 64 }).primaryKey(),
+	username: varchar('username', { length: 255 }).notNull(),
+	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
+	expiresAt: timestamp('expires_at', { fsp: 6, mode: 'string' }).notNull(),
+});
+
 export const mysqlCoreSchema = {
 	usersTable,
 	apiKeysTable,
@@ -270,4 +291,6 @@ export const mysqlCoreSchema = {
 	apiKeyRequestLogsTable,
 	systemConfigTable,
 	userAuditLogsTable,
+	adminApiKeysTable,
+	adminSessionsTable,
 };

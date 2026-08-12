@@ -118,6 +118,7 @@
 			"user": "사용자",
 			"tools": "Tools",
 			"analytics": "분석",
+			"integration": "시스템 통합",
 			"system": "시스템"
 		},
 		"nav": {
@@ -137,7 +138,8 @@
 			"providerUsage": "Provider 사용량",
 			"userUsage": "사용자 사용량",
 			"reliability": "안정성",
-			"config": "설정"
+			"config": "설정",
+			"adminApiKeys": "통합 키"
 		},
 		"version": "v{version}"
 	},
@@ -1406,6 +1408,8 @@
 		"filters": {
 			"eventType": "이벤트 유형",
 			"actor": "작업자",
+			"actorKind": "작업 출처",
+			"actorId": "작업 주체 ID",
 			"userId": "User ID",
 			"userEmail": "사용자 이메일",
 			"apiKeyId": "API Key ID",
@@ -1419,7 +1423,15 @@
 			"apiKeyPlaceholder": "UUID",
 			"reasonPlaceholder": "예: request_usage_charged_cost",
 			"sourcePlaceholder": "usage_charge, period_reset…",
-			"correlationPlaceholder": "request_log_id / 업무 참조"
+			"correlationPlaceholder": "request_log_id / 업무 참조",
+			"actorIdPlaceholder": "console:admin / admin_key:<uuid>"
+		},
+		"actorKinds": {
+			"console": "콘솔 세션",
+			"admin_key": "통합 키",
+			"admin": "레거시 Master Key",
+			"system": "시스템 자동화",
+			"service": "내부 서비스"
 		},
 		"totalRecords": "전체: 레코드 {count}건",
 		"table": {
@@ -1533,20 +1545,34 @@
 			"numeric": "숫자"
 		}
 	},
+	"adminApiKeys": {
+		"title": "통합 키",
+		"subtitle": "외부 시스템마다 독립적인 최소 권한 키를 생성합니다. 콘솔 세션은 별도로 관리됩니다.",
+		"rotateHint": "행을 클릭해 편집하세요. 시크릿 재생성은 저장 후에 적용됩니다.",
+		"create": "키 생성",
+		"createTitle": "통합 키 생성",
+		"editTitle": "통합 키 편집",
+		"name": "이름",
+		"description": "설명",
+		"key": "키",
+		"permissions": "권한",
+		"lastUsed": "최근 사용",
+		"reveal": "시크릿 표시",
+		"hideSecret": "시크릿 숨기기",
+		"regenerate": "재생성",
+		"secretDraftHint": "재생성은 폼의 값만 바꿉니다. 적용하려면 저장하세요.",
+		"secretPendingHint": "새 시크릿이 대기 중입니다. 저장 전까지 이전 값이 유효합니다.",
+		"activate": "활성화",
+		"deactivate": "폐기",
+		"empty": "통합 키가 없습니다",
+		"status": { "active": "활성", "revoked": "폐기됨" }
+	},
 	"config": {
 		"title": "시스템 설정",
 		"subtitle": "{product} Proxy와 이 Admin 앱이 공유하는 Key-Value 설정입니다(환경 변수 중복 없음)",
-		"add": "추가",
-		"saveMasterKey": "Master key 저장",
 		"saveTimezone": "시간대 저장",
 		"saveCurrency": "통화 저장",
 		"saveErrorWebhooks": "오류 Webhook 저장",
-		"masterKey": {
-			"title": "Admin API master key",
-			"description": "/api/admin/*의 Authorization에 사용하는 Bearer Secret입니다(이 콘솔 및 서버 측 호출자). Gateway Admin API를 호출하는 외부 통합에는 GATEWAY_MASTER_KEY와 같은 값을 설정하세요.",
-			"label": "Master key",
-			"placeholder": "Admin Bearer Secret 입력"
-		},
 		"businessTimezone": {
 			"title": "업무 시간대",
 			"description": "IANA 이름(예: Asia/Shanghai)입니다. 무료 등급 일일 할당량의 날짜와 대시보드의 \"오늘\" 통계를 결정합니다. 유효하지 않은 값은 Gateway에서 UTC로 대체됩니다.",
@@ -1569,22 +1595,8 @@
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
 			"feishuPlaceholder": "https://open.feishu.cn/open-apis/bot/v2/hook/…"
 		},
-		"addKey": {
-			"title": "설정 Key 추가",
-			"description": "기타 system_config Key를 Upsert합니다. 이 페이지의 전용 섹션에서 사용하는 예약 Key는 여기서 추가할 수 없습니다.",
-			"key": "Key",
-			"value": "Value",
-			"keyPlaceholder": "예: MY_FEATURE_FLAG",
-			"valuePlaceholder": "예: 20"
-		},
 		"errors": {
-			"useBusinessTimezoneSection": "BUSINESS_TIMEZONE은 \"업무 시간대\" 섹션에서 설정하세요.",
-			"useBillingCurrencySection": "BILLING_CURRENCY는 \"결제 통화\" 섹션에서 설정하세요.",
-			"useMasterKeySection": "MASTER_KEY는 \"Admin API master key\" 섹션에서 설정하세요.",
-			"useWebhooksSection": "ALERT_WEBHOOK_WECOM_URL / ALERT_WEBHOOK_FEISHU_URL은 \"Proxy 오류 Webhooks\" 섹션에서 설정하세요.",
-			"useToolsSection": "WEB_*_ACTIVE / WEB_*_CATALOG은 Tools → 설정에서 관리하세요(Provider별 API Key 및 비용).",
-			"invalidIanaTimezone": "유효하지 않은 IANA 시간대입니다(예: Asia/Shanghai, America/New_York)",
-			"useRouteStrategySection": "ROUTE_STRATEGY는 \"전역 라우트 전략\" 섹션에서 설정하세요."
+			"invalidIanaTimezone": "유효하지 않은 IANA 시간대입니다(예: Asia/Shanghai, America/New_York)"
 		},
 		"routeStrategy": {
 			"title": "전역 라우트 전략",

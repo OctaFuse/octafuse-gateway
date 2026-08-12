@@ -68,7 +68,7 @@ curl -sS http://127.0.0.1:8787/v1/chat/completions \
 ## 生产前必须改的默认值
 
 - 修改管理后台登录密码（本地默认 `admin` / `admin` **仅本机**；上云用 bootstrap / Worker Secret 设强密码）。
-- 将 `system_config.MASTER_KEY` 从开发种子 `sk-dev-admin-key` 轮换为强随机值。
+- 登录后台为外部集成创建具名、最小权限的 Admin API Key；升级环境确认切换完成后轮换或吊销 `legacy-master`。
 - 为供应商 API Key、数据库连接串、管理后台密码和 Cloudflare 凭证使用部署平台的 secret / env 管理能力。
 
 敏感信息规则见 [CONVENTIONS.md](../CONVENTIONS.md)。

@@ -1,7 +1,9 @@
 /**
- * 供前端判断是否存在 `admin_session` cookie（不验证 token 内容，与 `checkAuth` 策略一致）。
+ * 供前端校验数据库中的真实 Session（含过期时间）。
  */
 import { cookies } from 'next/headers';
+import { hashSessionToken } from '@/lib/auth';
+import { resolveAdminRequestRuntime } from '@/lib/admin-request-runtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,9 +13,12 @@ export async function GET() {
     const sessionToken = cookieStore.get('admin_session');
 
     if (sessionToken && sessionToken.value) {
-      return Response.json({
-        authenticated: true,
-      });
+      const { storage } = await resolveAdminRequestRuntime();
+      const session = await storage.repositories.adminAccess.getValidSession(
+        await hashSessionToken(sessionToken.value),
+        new Date().toISOString()
+      );
+      if (session) return Response.json({ authenticated: true, username: session.username });
     }
 
     return Response.json({

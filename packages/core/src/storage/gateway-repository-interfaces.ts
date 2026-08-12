@@ -38,6 +38,37 @@ import type {
 	RoutePoolStickyBindingRow,
 	RoutePoolStickyBindingTargetCount,
 } from '../db/route-pool-sticky-types';
+import type {
+	AdminApiKeyRow,
+	AdminSessionRow,
+	InsertAdminApiKeyParams,
+} from '../db/admin-access-types';
+
+export interface AdminAccessRepository {
+	listApiKeys(): Promise<AdminApiKeyRow[]>;
+	getApiKeyById(id: string): Promise<AdminApiKeyRow | null>;
+	getActiveApiKeyBySecret(secretKey: string): Promise<AdminApiKeyRow | null>;
+	insertApiKey(params: InsertAdminApiKeyParams): Promise<void>;
+	updateApiKey(
+		id: string,
+		patch: {
+			name?: string;
+			description?: string | null;
+			permissionsJson?: string;
+			secretKey?: string;
+			keyPrefix?: string;
+			status?: 'active' | 'revoked';
+			revokedAt?: string | null;
+		}
+	): Promise<boolean>;
+	rotateApiKey(id: string, secretKey: string, keyPrefix: string): Promise<boolean>;
+	revokeApiKey(id: string): Promise<boolean>;
+	touchApiKey(id: string): Promise<void>;
+	insertSession(session: AdminSessionRow): Promise<void>;
+	getValidSession(tokenHash: string, nowIso: string): Promise<AdminSessionRow | null>;
+	deleteSession(tokenHash: string): Promise<void>;
+	deleteExpiredSessions(nowIso: string): Promise<void>;
+}
 
 /** 管理端分析聚合 */
 export interface AdminAnalyticsRepository {
@@ -64,6 +95,10 @@ export interface UserAuditLogsRepository {
 		userEmail?: string;
 		eventTypes?: string[];
 		actorTypes?: string[];
+		/** 精确匹配完整 `actor_id`，如 `console:admin`、`admin_key:<uuid>`。 */
+		actorId?: string;
+		/** 按 `actor_id` 的身份前缀过滤（`console` / `admin_key` / `system` / …），多值取并集。 */
+		actorKinds?: string[];
 		reasonCodes?: string[];
 		sources?: string[];
 		correlationId?: string;

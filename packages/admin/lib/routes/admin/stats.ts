@@ -3,13 +3,13 @@
  */
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
-import { requireMasterKey } from '@/lib/middleware/admin-auth';
+import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import { getAdminStatsService } from '@/lib/services/admin/dashboard-service';
 import { handleAdminRouteError } from './error-response';
 import { normalizeApiTimeFields } from '@octafuse/core/lib/time-format';
 export const adminStatsRoutes = new Hono<AdminEnv>();
 
-adminStatsRoutes.use('*', requireMasterKey);
+adminStatsRoutes.use('*', requireAdminPrincipal);
 
 /** 查询参数：`start_date` + `end_date`（UTC，与 Request Logs / Analytics 一致）优先；否则 `range` 预设，默认 `1d`。 */
 adminStatsRoutes.get('/', async (c) => {

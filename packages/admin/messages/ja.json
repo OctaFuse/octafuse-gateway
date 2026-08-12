@@ -118,6 +118,7 @@
 			"user": "ユーザー",
 			"tools": "Tools",
 			"analytics": "分析",
+			"integration": "システム連携",
 			"system": "システム"
 		},
 		"nav": {
@@ -137,7 +138,8 @@
 			"providerUsage": "Provider 使用量",
 			"userUsage": "ユーザー使用量",
 			"reliability": "信頼性",
-			"config": "設定"
+			"config": "設定",
+			"adminApiKeys": "連携キー"
 		},
 		"version": "v{version}"
 	},
@@ -1406,6 +1408,8 @@
 		"filters": {
 			"eventType": "イベント種別",
 			"actor": "実行者",
+			"actorKind": "実行元",
+			"actorId": "実行主体 ID",
 			"userId": "User ID",
 			"userEmail": "ユーザーのメールアドレス",
 			"apiKeyId": "API Key ID",
@@ -1419,7 +1423,15 @@
 			"apiKeyPlaceholder": "UUID",
 			"reasonPlaceholder": "例：request_usage_charged_cost",
 			"sourcePlaceholder": "usage_charge、period_reset…",
-			"correlationPlaceholder": "request_log_id / 業務参照"
+			"correlationPlaceholder": "request_log_id / 業務参照",
+			"actorIdPlaceholder": "console:admin / admin_key:<uuid>"
+		},
+		"actorKinds": {
+			"console": "コンソールセッション",
+			"admin_key": "連携キー",
+			"admin": "旧 Master Key",
+			"system": "システム自動処理",
+			"service": "内部サービス"
 		},
 		"totalRecords": "合計：{count} 件",
 		"table": {
@@ -1533,20 +1545,34 @@
 			"numeric": "数値"
 		}
 	},
+	"adminApiKeys": {
+		"title": "連携キー",
+		"subtitle": "外部システムごとに独立した最小権限キーを作成します。コンソールセッションは別管理です。",
+		"rotateHint": "行をクリックして編集します。シークレットの再生成は保存後に反映されます。",
+		"create": "キーを作成",
+		"createTitle": "連携キーを作成",
+		"editTitle": "連携キーを編集",
+		"name": "名前",
+		"description": "説明",
+		"key": "キー",
+		"permissions": "権限",
+		"lastUsed": "最終使用",
+		"reveal": "シークレットを表示",
+		"hideSecret": "シークレットを隠す",
+		"regenerate": "再生成",
+		"secretDraftHint": "再生成はフォーム内の値だけを更新します。反映するには保存してください。",
+		"secretPendingHint": "新しいシークレットは未保存です。保存するまで旧値は有効です。",
+		"activate": "有効化",
+		"deactivate": "失効",
+		"empty": "連携キーはありません",
+		"status": { "active": "有効", "revoked": "失効済み" }
+	},
 	"config": {
 		"title": "システム設定",
 		"subtitle": "{product} Proxy とこの Admin アプリで共有する Key-Value 設定（環境変数の重複不要）",
-		"add": "追加",
-		"saveMasterKey": "Master key を保存",
 		"saveTimezone": "タイムゾーンを保存",
 		"saveCurrency": "通貨を保存",
 		"saveErrorWebhooks": "エラー Webhook を保存",
-		"masterKey": {
-			"title": "Admin API master key",
-			"description": "/api/admin/* の Authorization に使用する Bearer Secret（このコンソールとサーバー側の呼び出し元）。Gateway Admin API を呼び出す外部連携には、GATEWAY_MASTER_KEY と同じ値を設定してください。",
-			"label": "Master key",
-			"placeholder": "Admin Bearer Secret を入力"
-		},
 		"businessTimezone": {
 			"title": "業務タイムゾーン",
 			"description": "IANA 名（例：Asia/Shanghai）。無料枠の日次クォータの暦日と、ダッシュボードの「今日」の統計を制御します。無効な値は Gateway で UTC にフォールバックします。",
@@ -1569,22 +1595,8 @@
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
 			"feishuPlaceholder": "https://open.feishu.cn/open-apis/bot/v2/hook/…"
 		},
-		"addKey": {
-			"title": "設定 Key を追加",
-			"description": "その他の system_config Key を upsert します。このページの専用セクションで予約されている Key は追加できません。",
-			"key": "Key",
-			"value": "Value",
-			"keyPlaceholder": "例：MY_FEATURE_FLAG",
-			"valuePlaceholder": "例：20"
-		},
 		"errors": {
-			"useBusinessTimezoneSection": "BUSINESS_TIMEZONE は「業務タイムゾーン」セクションで設定してください。",
-			"useBillingCurrencySection": "BILLING_CURRENCY は「請求通貨」セクションで設定してください。",
-			"useMasterKeySection": "MASTER_KEY は「Admin API master key」セクションで設定してください。",
-			"useWebhooksSection": "ALERT_WEBHOOK_WECOM_URL / ALERT_WEBHOOK_FEISHU_URL は「Proxy エラー Webhook」セクションで設定してください。",
-			"useToolsSection": "WEB_*_ACTIVE / WEB_*_CATALOG（Provider ごとの API Key とコスト）は Tools → 設定を使用してください。",
-			"invalidIanaTimezone": "無効な IANA タイムゾーンです（例：Asia/Shanghai、America/New_York）",
-			"useRouteStrategySection": "ROUTE_STRATEGY は「グローバルルート戦略」セクションで設定してください。"
+			"invalidIanaTimezone": "無効な IANA タイムゾーンです（例：Asia/Shanghai、America/New_York）"
 		},
 		"routeStrategy": {
 			"title": "グローバルルート戦略",

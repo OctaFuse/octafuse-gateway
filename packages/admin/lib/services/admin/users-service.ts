@@ -135,7 +135,7 @@ function isExternalSystemEmailUniqueViolation(error: unknown): boolean {
 	);
 }
 
-export async function createAdminUser(repos: GatewayRepositories, input: AdminUserCreateInput) {
+export async function createAdminUser(repos: GatewayRepositories, input: AdminUserCreateInput, actorId: string) {
 	const emailTrim = String(input.email ?? '').trim();
 	if (!emailTrim) {
 		throw badRequest('email is required');
@@ -172,6 +172,7 @@ export async function createAdminUser(repos: GatewayRepositories, input: AdminUs
 			budget_period,
 			budget_base,
 			metadata: metaString,
+			audit_actor: { type: 'admin', id: actorId, source: 'admin_users' },
 		});
 	} catch (error) {
 		if (isExternalSystemEmailUniqueViolation(error)) {
@@ -195,7 +196,7 @@ export async function getAdminUserByRouteId(repos: GatewayRepositories, raw: str
 	return info;
 }
 
-export async function updateAdminUser(repos: GatewayRepositories, raw: string, input: AdminUserUpdateInput) {
+export async function updateAdminUser(repos: GatewayRepositories, raw: string, input: AdminUserUpdateInput, actorId: string) {
 	const userId = await resolveAdminUserId(repos, raw);
 	const row = await repos.users.getById(userId);
 	if (!row) throw notFound('User not found');
@@ -417,7 +418,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				apiKeyId: null,
 				eventType: 'admin_adjust',
 				actorType: 'admin',
-				actorId: 'master_key',
+				actorId,
 				reasonCode: 'admin_patch_budget',
 				reasonText: reasonText,
 				beforeSpent: Number(row.budget_spent ?? 0),
@@ -456,7 +457,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				apiKeyId: null,
 				eventType: 'admin_adjust',
 				actorType: 'admin',
-				actorId: 'master_key',
+				actorId,
 				reasonCode,
 				reasonText: reasonText,
 				beforeSpent: spent,
@@ -538,18 +539,19 @@ export async function previewAdminBudgetTransition(
 export async function applyAdminBudgetTransition(
 	repos: GatewayRepositories,
 	raw: string,
-	input: AdminBudgetTransitionInput
+	input: AdminBudgetTransitionInput,
+	actorId: string
 ) {
 	const userId = await resolveAdminUserId(repos, raw);
 	const params = parseAdminBudgetTransitionInput(input);
-	const result = await applyBudgetTransition(repos, userId, params);
+	const result = await applyBudgetTransition(repos, userId, params, actorId);
 	if (!result) throw notFound('User not found');
 	const info = await getUserInfo(repos, userId);
 	if (!info) throw notFound('User not found');
 	return { transition: result.preview, user: info };
 }
 
-export async function deleteAdminUser(repos: GatewayRepositories, raw: string): Promise<void> {
+export async function deleteAdminUser(repos: GatewayRepositories, raw: string, actorId: string): Promise<void> {
 	const userId = await resolveAdminUserId(repos, raw);
 	const row = await repos.users.getById(userId);
 	if (!row) throw notFound('User not found');
@@ -565,7 +567,7 @@ export async function deleteAdminUser(repos: GatewayRepositories, raw: string): 
 			apiKeyId: null,
 			eventType: 'user_deleted',
 			actorType: 'admin',
-			actorId: 'master_key',
+			actorId,
 			reasonCode: 'admin_user_delete',
 			reasonText: 'User permanently deleted',
 			beforeSpent: spent,
@@ -599,7 +601,8 @@ export async function listAdminUserKeys(repos: GatewayRepositories, raw: string)
 export async function createAdminUserKey(
 	repos: GatewayRepositories,
 	raw: string,
-	input: { name?: string | null; metadata?: unknown; reason?: string }
+	input: { name?: string | null; metadata?: unknown; reason?: string },
+	actorId: string
 ) {
 	const userId = await resolveAdminUserId(repos, raw);
 	let metaString: string | null = null;
@@ -623,6 +626,7 @@ export async function createAdminUserKey(
 		name: input.name ?? null,
 		metadata: metaString,
 		provision_reason: input.reason,
+		actor_id: actorId,
 	});
 }
 
@@ -632,7 +636,7 @@ async function assertKeyBelongsToUser(repos: GatewayRepositories, userId: string
 	return row;
 }
 
-export async function deleteAdminUserKey(repos: GatewayRepositories, rawUser: string, keyId: string): Promise<void> {
+export async function deleteAdminUserKey(repos: GatewayRepositories, rawUser: string, keyId: string, actorId: string): Promise<void> {
 	const userId = await resolveAdminUserId(repos, rawUser);
 	const row = await assertKeyBelongsToUser(repos, userId, keyId);
 	const userAud = await repos.users.getById(userId);
@@ -648,7 +652,7 @@ export async function deleteAdminUserKey(repos: GatewayRepositories, rawUser: st
 			apiKeyId: keyId,
 			eventType: 'key_deleted',
 			actorType: 'admin',
-			actorId: 'master_key',
+			actorId,
 			reasonCode: 'admin_user_key_delete',
 			reasonText: 'API key permanently deleted',
 			beforeSpent: spent,
@@ -690,7 +694,8 @@ export async function patchAdminUserKey(
 	repos: GatewayRepositories,
 	rawUser: string,
 	keyId: string,
-	input: AdminUserKeyPatchInput
+	input: AdminUserKeyPatchInput,
+	actorId: string
 ) {
 	const userId = await resolveAdminUserId(repos, rawUser);
 	const row = await assertKeyBelongsToUser(repos, userId, keyId);
@@ -784,7 +789,7 @@ export async function patchAdminUserKey(
 				apiKeyId: keyId,
 				eventType,
 				actorType: 'admin',
-				actorId: 'master_key',
+				actorId,
 				reasonCode,
 				reasonText: reasonText,
 				beforeSpent: spent,

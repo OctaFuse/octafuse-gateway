@@ -137,7 +137,8 @@ export async function previewBudgetTransition(
 export async function applyBudgetTransition(
 	repos: GatewayRepositories,
 	userId: string,
-	input: BudgetTransitionParams
+	input: BudgetTransitionParams,
+	actorId: string = 'master_key'
 ): Promise<{ preview: BudgetTransitionPreview; applied: BudgetTransitionSnapshot } | null> {
 	const row = await repos.users.getById(userId);
 	if (!row) return null;
@@ -176,7 +177,7 @@ export async function applyBudgetTransition(
 			apiKeyId: null,
 			eventType: 'admin_adjust',
 			actorType: 'admin',
-			actorId: 'master_key',
+			actorId,
 			reasonCode: 'budget_transition',
 			reasonText,
 			beforeSpent: before.budget_spent,

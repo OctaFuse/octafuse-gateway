@@ -35,7 +35,7 @@ npm run dev:proxy    # http://127.0.0.1:8787
 
 管理类 HTTP **不在**该端口上；需要管理 API 或 UI 时使用下文第 2 节 Admin。
 
-用户推理接口的 `Authorization: Bearer` 使用库内 `sk-…`；管理密钥与 D1 **`system_config.MASTER_KEY`** 一致（开发种子见 `packages/core/migrations-d1/0002_seed.sql`）。
+用户推理接口的 `Authorization: Bearer` 使用库内 `sk-…`；管理 API 使用后台创建的具名 `sk-admin-…` Key。历史 `system_config.MASTER_KEY` 会迁移为 `legacy-master` 兼容 Key，随后从 `system_config` 删除。
 
 ### ⚠️ 本地 D1 与 `database_id`（远程 deploy 后必读）
 
@@ -92,7 +92,7 @@ npm run dev:admin
 |----|----------|
 | 控制台登录 | `admin` / `admin` |
 | 凭据文件 | `packages/admin/.dev.vars`（gitignore；缺失时 `scripts/ensure-dev-vars.mjs` 自动生成） |
-| 管理 API Bearer | D1 `system_config.MASTER_KEY`（种子 `sk-dev-admin-key`） |
+| 管理 API Bearer | D1 `admin_api_keys` 中的具名 Key（本地可登录后台创建） |
 
 可编辑 `.dev.vars` 改本地密码；**不要**把该文件提交到 Git。上云请用 Worker Secret，勿沿用本地默认。
 
@@ -158,11 +158,11 @@ npm run dev:admin:node   # 等价：dotenv 加载根 .env 后执行 packages/adm
 
 或在本包：`cd packages/admin && npm run dev:node`（需本目录 `.env` 或 `ln -s ../../.env .env`）。
 
-随后可用 Bearer（`system_config.MASTER_KEY`）直连验证：
+随后可用具名 Admin API Key（至少 `config.read`）直连验证：
 
 ```bash
 curl -sS http://127.0.0.1:8789/api/admin/config \
-  -H 'Authorization: Bearer sk-dev-admin-key'
+	-H 'Authorization: Bearer <ADMIN_API_KEY>'
 ```
 
 ## 6. Docker 本地样例
@@ -174,7 +174,7 @@ Compose 命令、预构建镜像、端口映射与 migrate profile 见 **[docker
 ## 7. 与外部集成方联调
 
 - **用户推理**：`GATEWAY_URL=http://127.0.0.1:8787`（Proxy）。
-- **管理 API**：`GATEWAY_MASTER_URL=http://127.0.0.1:8789`（或你本地 Admin preview 的 origin），路径 **`/api/admin/...`**；`GATEWAY_MASTER_KEY` 与 D1 `MASTER_KEY` 一致。
+- **管理 API**：`GATEWAY_MASTER_URL=http://127.0.0.1:8789`（或你本地 Admin preview 的 origin），路径 **`/api/admin/...`**；`GATEWAY_MASTER_KEY` 可保存后台创建的具名 Admin API Key。
 
 ## 8. 冒烟脚本
 

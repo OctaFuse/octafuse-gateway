@@ -118,6 +118,7 @@
 			"user": "用户",
 			"tools": "Tools",
 			"analytics": "分析",
+			"integration": "系统集成",
 			"system": "系统"
 		},
 		"nav": {
@@ -137,7 +138,8 @@
 			"providerUsage": "供应商用量",
 			"userUsage": "用户用量",
 			"reliability": "可靠性",
-			"config": "配置"
+			"config": "配置",
+			"adminApiKeys": "集成密钥"
 		},
 		"version": "v{version}"
 	},
@@ -1406,6 +1408,8 @@
 		"filters": {
 			"eventType": "事件类型",
 			"actor": "操作者",
+			"actorKind": "操作来源",
+			"actorId": "操作主体 ID",
 			"userId": "用户 ID",
 			"userEmail": "用户 Email",
 			"apiKeyId": "API Key ID",
@@ -1419,7 +1423,15 @@
 			"apiKeyPlaceholder": "UUID",
 			"reasonPlaceholder": "例如 request_usage_charged_cost",
 			"sourcePlaceholder": "usage_charge、period_reset…",
-			"correlationPlaceholder": "request_log_id / 业务引用"
+			"correlationPlaceholder": "request_log_id / 业务引用",
+			"actorIdPlaceholder": "console:admin / admin_key:<uuid>"
+		},
+		"actorKinds": {
+			"console": "控制台会话",
+			"admin_key": "集成密钥",
+			"admin": "历史 Master Key",
+			"system": "系统自动化",
+			"service": "内部服务"
 		},
 		"totalRecords": "总计：{count} 条记录",
 		"table": {
@@ -1533,20 +1545,34 @@
 			"numeric": "数字"
 		}
 	},
+	"adminApiKeys": {
+		"title": "集成密钥",
+		"subtitle": "为每个外部系统创建独立的最小权限密钥；控制台会话单独管理。",
+		"rotateHint": "点击一行即可编辑。重新生成密钥仅在点击保存后生效。",
+		"create": "创建密钥",
+		"createTitle": "创建集成密钥",
+		"editTitle": "编辑集成密钥",
+		"name": "名称",
+		"description": "说明",
+		"key": "密钥",
+		"permissions": "权限",
+		"lastUsed": "最近使用",
+		"reveal": "显示密钥",
+		"hideSecret": "隐藏密钥",
+		"regenerate": "重新生成",
+		"secretDraftHint": "重新生成只更新表单中的值，需保存后才会真正生效。",
+		"secretPendingHint": "新密钥待保存；保存前旧密钥仍然有效。",
+		"activate": "激活",
+		"deactivate": "吊销",
+		"empty": "暂无集成密钥",
+		"status": { "active": "有效", "revoked": "已吊销" }
+	},
 	"config": {
 		"title": "系统配置",
 		"subtitle": "{product} Proxy 与本管理应用共享的键值设置（无需重复环境变量）",
-		"add": "添加",
-		"saveMasterKey": "保存 Master key",
 		"saveTimezone": "保存时区",
 		"saveCurrency": "保存货币",
 		"saveErrorWebhooks": "保存错误 Webhook",
-		"masterKey": {
-			"title": "Admin API Master key",
-			"description": "/api/admin/* 上 Authorization 的 Bearer 密钥（本控制台及服务端调用方）。外部集成方调用 Gateway Admin API 时，须设置与 GATEWAY_MASTER_KEY 相同的值。",
-			"label": "Master key",
-			"placeholder": "输入 Admin Bearer 密钥"
-		},
 		"businessTimezone": {
 			"title": "业务时区",
 			"description": "IANA 名称（例如 Asia/Shanghai）。控制免费档每日配额日历日及仪表盘「今日」统计。无效值在 Gateway 上回退为 UTC。",
@@ -1569,22 +1595,8 @@
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
 			"feishuPlaceholder": "https://open.feishu.cn/open-apis/bot/v2/hook/…"
 		},
-		"addKey": {
-			"title": "添加配置键",
-			"description": "插入或更新任意其他 system_config 键。本页专用区块保留的键不能在此添加。",
-			"key": "Key",
-			"value": "Value",
-			"keyPlaceholder": "例如 MY_FEATURE_FLAG",
-			"valuePlaceholder": "例如 20"
-		},
 		"errors": {
-			"useBusinessTimezoneSection": "请使用「业务时区」区块配置 BUSINESS_TIMEZONE。",
-			"useBillingCurrencySection": "请使用「计费货币」区块配置 BILLING_CURRENCY。",
-			"useMasterKeySection": "请使用「Admin API Master key」区块配置 MASTER_KEY。",
-			"useWebhooksSection": "请使用「Proxy 错误 Webhook」区块配置 ALERT_WEBHOOK_WECOM_URL / ALERT_WEBHOOK_FEISHU_URL。",
-			"useToolsSection": "请使用 Tools → 配置 管理 WEB_*_ACTIVE / WEB_*_CATALOG（按引擎维护 API Key 与单价）。",
-			"invalidIanaTimezone": "无效的 IANA 时区（例如 Asia/Shanghai、America/New_York）",
-			"useRouteStrategySection": "请使用「全局路由策略」区块配置 ROUTE_STRATEGY。"
+			"invalidIanaTimezone": "无效的 IANA 时区（例如 Asia/Shanghai、America/New_York）"
 		},
 		"routeStrategy": {
 			"title": "全局路由策略",

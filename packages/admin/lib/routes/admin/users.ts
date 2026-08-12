@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import { parseUserListSortQuery } from '@octafuse/core/db/users-list-sort';
 import type { AdminEnv } from '@/lib/admin-env';
-import { requireMasterKey } from '@/lib/middleware/admin-auth';
+import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import {
 	createAdminUser,
 	createAdminUserKey,
@@ -27,7 +27,7 @@ import { normalizeApiTimeFields } from '@octafuse/core/lib/time-format';
 
 export const adminUsersRoutes = new Hono<AdminEnv>();
 
-adminUsersRoutes.use('*', requireMasterKey);
+adminUsersRoutes.use('*', requireAdminPrincipal);
 
 adminUsersRoutes.get('/', async (c) => {
 	try {
@@ -62,7 +62,7 @@ adminUsersRoutes.post('/', async (c) => {
 	}
 	try {
 		const repos = c.get('repositories');
-		const data = await createAdminUser(repos, body);
+		const data = await createAdminUser(repos, body, c.get('principal').id);
 		return c.json(
 			normalizeApiTimeFields({
 				success: true as const,
@@ -136,7 +136,7 @@ adminUsersRoutes.post('/:id/keys', async (c) => {
 	}
 	try {
 		const repos = c.get('repositories');
-		const result = await createAdminUserKey(repos, c.req.param('id'), body);
+		const result = await createAdminUserKey(repos, c.req.param('id'), body, c.get('principal').id);
 		return c.json(
 			normalizeApiTimeFields({
 				success: true as const,
@@ -158,7 +158,7 @@ adminUsersRoutes.patch('/:id/keys/:keyId', async (c) => {
 	}
 	try {
 		const repos = c.get('repositories');
-		const data = await patchAdminUserKey(repos, c.req.param('id'), c.req.param('keyId'), body);
+		const data = await patchAdminUserKey(repos, c.req.param('id'), c.req.param('keyId'), body, c.get('principal').id);
 		return c.json(normalizeApiTimeFields({ success: true as const, message: 'Key updated', data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to update user key');
@@ -168,7 +168,7 @@ adminUsersRoutes.patch('/:id/keys/:keyId', async (c) => {
 adminUsersRoutes.delete('/:id/keys/:keyId', async (c) => {
 	try {
 		const repos = c.get('repositories');
-		await deleteAdminUserKey(repos, c.req.param('id'), c.req.param('keyId'));
+		await deleteAdminUserKey(repos, c.req.param('id'), c.req.param('keyId'), c.get('principal').id);
 		return c.json({ success: true as const, message: 'Key deleted successfully' });
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to delete user key');
@@ -200,7 +200,7 @@ adminUsersRoutes.post('/:id/budget/transition', async (c) => {
 	}
 	try {
 		const repos = c.get('repositories');
-		const data = await applyAdminBudgetTransition(repos, c.req.param('id'), body);
+		const data = await applyAdminBudgetTransition(repos, c.req.param('id'), body, c.get('principal').id);
 		return c.json(
 			normalizeApiTimeFields({
 				success: true as const,
@@ -232,7 +232,7 @@ adminUsersRoutes.patch('/:id', async (c) => {
 	}
 	try {
 		const repos = c.get('repositories');
-		const data = await updateAdminUser(repos, c.req.param('id'), body);
+		const data = await updateAdminUser(repos, c.req.param('id'), body, c.get('principal').id);
 		return c.json(normalizeApiTimeFields({ success: true as const, message: 'User updated successfully', data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to update user');
@@ -242,7 +242,7 @@ adminUsersRoutes.patch('/:id', async (c) => {
 adminUsersRoutes.delete('/:id', async (c) => {
 	try {
 		const repos = c.get('repositories');
-		await deleteAdminUser(repos, c.req.param('id'));
+		await deleteAdminUser(repos, c.req.param('id'), c.get('principal').id);
 		return c.json({ success: true as const, message: 'User deleted successfully' });
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to delete user');

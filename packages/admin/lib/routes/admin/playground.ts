@@ -5,7 +5,7 @@
  */
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
-import { requireMasterKey } from '@/lib/middleware/admin-auth';
+import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import type { GeminiContentAction } from '@octafuse/core/gemini-upstream-url';
 import type { ImageOperation } from '@/lib/image-generations';
 import { invokePlaygroundUpstream } from '@/lib/services/admin/playground-service';
@@ -18,7 +18,7 @@ import { handleAdminRouteError } from './error-response';
 
 export const adminPlaygroundRoutes = new Hono<AdminEnv>();
 
-adminPlaygroundRoutes.use('*', requireMasterKey);
+adminPlaygroundRoutes.use('*', requireAdminPrincipal);
 
 adminPlaygroundRoutes.get('/realtime', async (c) => {
 	if (c.req.header('Upgrade')?.toLowerCase() !== 'websocket') {

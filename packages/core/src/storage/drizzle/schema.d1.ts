@@ -228,6 +228,27 @@ export const userAuditLogsTable = sqliteTable('user_audit_logs', {
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const adminApiKeysTable = sqliteTable('admin_api_keys', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull().unique(),
+	description: text('description'),
+	secretKey: text('secret_key').notNull().unique(),
+	keyPrefix: text('key_prefix').notNull(),
+	permissionsJson: text('permissions_json').notNull().default('[]'),
+	status: text('status').notNull().default('active'),
+	lastUsedAt: text('last_used_at'),
+	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+	revokedAt: text('revoked_at'),
+});
+
+export const adminSessionsTable = sqliteTable('admin_sessions', {
+	tokenHash: text('token_hash').primaryKey(),
+	username: text('username').notNull(),
+	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+	expiresAt: text('expires_at').notNull(),
+});
+
 export const d1CoreSchema = {
 	usersTable,
 	apiKeysTable,
@@ -239,4 +260,6 @@ export const d1CoreSchema = {
 	apiKeyRequestLogsTable,
 	systemConfigTable,
 	userAuditLogsTable,
+	adminApiKeysTable,
+	adminSessionsTable,
 };

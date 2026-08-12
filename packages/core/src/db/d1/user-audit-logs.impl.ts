@@ -6,7 +6,11 @@ import type { GlobalUserAuditLogRow, UserAuditLogRow } from '../../types';
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { UserAuditLogsRepository } from '../../storage/gateway-repository-interfaces';
 import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
-import { assertAndFinalizeUserAuditInsert } from '../user-audit-catalog';
+import {
+	assertAndFinalizeUserAuditInsert,
+	normalizeUserAuditActorKinds,
+	userAuditActorKindPrefixRange,
+} from '../user-audit-catalog';
 import { deriveUserAuditBudgetFromSnapshots } from '../user-audit-log-derived';
 
 type AuditSqlRow = {
@@ -158,6 +162,8 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 			userEmail?: string;
 			eventTypes?: string[];
 			actorTypes?: string[];
+			actorId?: string;
+			actorKinds?: string[];
 			reasonCodes?: string[];
 			sources?: string[];
 			correlationId?: string;
@@ -188,6 +194,19 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 			if (options.actorTypes && options.actorTypes.length > 0) {
 				conditions.push(`a.actor_type IN (${options.actorTypes.map(() => '?').join(', ')})`);
 				bindValues.push(...options.actorTypes);
+			}
+			if (options.actorId) {
+				conditions.push('a.actor_id = ?');
+				bindValues.push(options.actorId);
+			}
+			const actorKinds = normalizeUserAuditActorKinds(options.actorKinds ?? []);
+			if (actorKinds.length > 0) {
+				const ranges = actorKinds.map((kind) => {
+					const { lower, upper } = userAuditActorKindPrefixRange(kind);
+					bindValues.push(lower, upper);
+					return '(a.actor_id >= ? AND a.actor_id < ?)';
+				});
+				conditions.push(`(${ranges.join(' OR ')})`);
 			}
 			if (options.reasonCodes && options.reasonCodes.length > 0) {
 				conditions.push(`a.reason_code IN (${options.reasonCodes.map(() => '?').join(', ')})`);

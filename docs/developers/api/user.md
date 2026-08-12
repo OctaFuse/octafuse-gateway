@@ -476,7 +476,7 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 | 维度 | `GET /v1/models` | `GET /catalog/models` | `GET /admin/models` |
 |------|------------------|------------------------|---------------------|
 | 部署 | Proxy | Proxy | Admin |
-| 认证 | 用户 API Key | **无** | MASTER_KEY |
+| 认证 | 用户 API Key | **无** | Console Session 或具名 Admin API Key |
 | 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — |
 | 默认 `kind` | `llm`（排除文生图） | 不过滤 kind | — |
 | 协议能力 | 不返回 | `protocols` / `protocols_by_group` | 不返回 |

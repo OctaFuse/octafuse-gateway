@@ -118,6 +118,7 @@
 			"user": "User",
 			"tools": "Tools",
 			"analytics": "Analytics",
+			"integration": "Integration",
 			"system": "System"
 		},
 		"nav": {
@@ -137,7 +138,8 @@
 			"providerUsage": "Provider Usage",
 			"userUsage": "User Usage",
 			"reliability": "Reliability",
-			"config": "Config"
+			"config": "Config",
+			"adminApiKeys": "Integration Keys"
 		},
 		"version": "v{version}"
 	},
@@ -1406,6 +1408,8 @@
 		"filters": {
 			"eventType": "Event type",
 			"actor": "Actor",
+			"actorKind": "Actor identity",
+			"actorId": "Actor ID",
 			"userId": "User ID",
 			"userEmail": "User email",
 			"apiKeyId": "API key ID",
@@ -1419,7 +1423,15 @@
 			"apiKeyPlaceholder": "UUID",
 			"reasonPlaceholder": "e.g. request_usage_charged_cost",
 			"sourcePlaceholder": "usage_charge, period_reset…",
-			"correlationPlaceholder": "request_log_id / business reference"
+			"correlationPlaceholder": "request_log_id / business reference",
+			"actorIdPlaceholder": "console:admin / admin_key:<uuid>"
+		},
+		"actorKinds": {
+			"console": "Console session",
+			"admin_key": "Integration key",
+			"admin": "Legacy master key",
+			"system": "System automation",
+			"service": "Internal service"
 		},
 		"totalRecords": "Total: {count} records",
 		"table": {
@@ -1533,20 +1545,34 @@
 			"numeric": "Number"
 		}
 	},
+	"adminApiKeys": {
+		"title": "Integration Keys",
+		"subtitle": "Create a separate, least-privilege key for each external system. Console sessions are managed separately.",
+		"rotateHint": "Click a row to edit. Regenerating the secret only applies after you save.",
+		"create": "Create key",
+		"createTitle": "Create integration key",
+		"editTitle": "Edit integration key",
+		"name": "Name",
+		"description": "Description",
+		"key": "Key",
+		"permissions": "Permissions",
+		"lastUsed": "Last used",
+		"reveal": "Show secret",
+		"hideSecret": "Hide secret",
+		"regenerate": "Regenerate",
+		"secretDraftHint": "Regenerate creates a new value in this form only. Save to apply it.",
+		"secretPendingHint": "A new secret is pending. The old value stays valid until you save.",
+		"activate": "Activate",
+		"deactivate": "Revoke",
+		"empty": "No integration keys",
+		"status": { "active": "Active", "revoked": "Revoked" }
+	},
 	"config": {
 		"title": "System config",
 		"subtitle": "Key-value settings shared by the {product} proxy and this admin app (no duplicate env vars)",
-		"add": "Add",
-		"saveMasterKey": "Save master key",
 		"saveTimezone": "Save timezone",
 		"saveCurrency": "Save currency",
 		"saveErrorWebhooks": "Save error webhooks",
-		"masterKey": {
-			"title": "Admin API master key",
-			"description": "Bearer secret for Authorization on /api/admin/* (this console and server-side callers). Set the same value as GATEWAY_MASTER_KEY on any external integrator that calls the Gateway Admin API.",
-			"label": "Master key",
-			"placeholder": "Enter admin Bearer secret"
-		},
 		"businessTimezone": {
 			"title": "Business timezone",
 			"description": "IANA name (e.g. Asia/Shanghai). Controls the calendar day for free-tier daily quota and \"today\" stats on the dashboard. Invalid values fall back to UTC on the Gateway.",
@@ -1569,22 +1595,8 @@
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
 			"feishuPlaceholder": "https://open.feishu.cn/open-apis/bot/v2/hook/…"
 		},
-		"addKey": {
-			"title": "Add config key",
-			"description": "Upsert any other system_config key. Keys reserved for the dedicated sections on this page cannot be added here.",
-			"key": "Key",
-			"value": "Value",
-			"keyPlaceholder": "e.g. MY_FEATURE_FLAG",
-			"valuePlaceholder": "e.g. 20"
-		},
 		"errors": {
-			"useBusinessTimezoneSection": "Use the \"Business timezone\" section for BUSINESS_TIMEZONE.",
-			"useBillingCurrencySection": "Use the \"Billing currency\" section for BILLING_CURRENCY.",
-			"useMasterKeySection": "Use the \"Admin API master key\" section for MASTER_KEY.",
-			"useWebhooksSection": "Use the \"Proxy error webhooks\" section for ALERT_WEBHOOK_WECOM_URL / ALERT_WEBHOOK_FEISHU_URL.",
-			"useToolsSection": "Use Tools → Configuration for WEB_*_ACTIVE / WEB_*_CATALOG (per-provider API key and cost).",
-			"invalidIanaTimezone": "Invalid IANA timezone (e.g. Asia/Shanghai, America/New_York)",
-			"useRouteStrategySection": "Use the \"Global route strategy\" section for ROUTE_STRATEGY."
+			"invalidIanaTimezone": "Invalid IANA timezone (e.g. Asia/Shanghai, America/New_York)"
 		},
 		"routeStrategy": {
 			"title": "Global route strategy",

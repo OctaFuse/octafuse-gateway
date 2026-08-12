@@ -3,7 +3,7 @@
  */
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
-import { requireMasterKey } from '@/lib/middleware/admin-auth';
+import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import {
 	getModelAnalyticsService,
 	getProviderAnalyticsService,
@@ -14,7 +14,7 @@ import { handleAdminRouteError } from './error-response';
 import { normalizeApiTimeFields } from '@octafuse/core/lib/time-format';
 export const adminAnalyticsRoutes = new Hono<AdminEnv>();
 
-adminAnalyticsRoutes.use('*', requireMasterKey);
+adminAnalyticsRoutes.use('*', requireAdminPrincipal);
 
 /** 查询参数：start_date、end_date、tag（模型标签筛选）、provider_id（供应商筛选）、user_email（用户邮箱精确匹配）。 */
 adminAnalyticsRoutes.get('/models', async (c) => {

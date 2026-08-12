@@ -1,6 +1,7 @@
 import type { GatewayDatabaseClient } from './database-client';
 import type {
 	AdminAnalyticsRepository,
+	AdminAccessRepository,
 	ApiKeysRepository,
 	ModelRoutesRepository,
 	ModelRoutingRepository,
@@ -30,6 +31,7 @@ export interface GatewayRepositories {
 	readonly modelRouting: ModelRoutingRepository;
 	readonly userAuditLogs: UserAuditLogsRepository;
 	readonly routePoolSticky: RoutePoolStickyBindingsRepository;
+	readonly adminAccess: AdminAccessRepository;
 }
 
 /** 统一取 Hono 上下文中的 `GatewayDatabaseClient`。 */

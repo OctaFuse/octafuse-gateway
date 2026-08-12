@@ -9,8 +9,8 @@
 | 代理服务 URL | 客户端实际调用地址，例如 `http://localhost:8787` 或 `https://gateway.example.com`。 |
 | 管理后台 URL | 管理控制台地址，例如 `http://localhost:8789` 或 `https://gateway-admin.example.com`。 |
 | 管理后台登录 | 只用于打开管理 UI。 |
-| `MASTER_KEY` | 管理 API Bearer，用于外部系统调用 `/api/admin/*`。生产必须轮换开发默认值。 |
-| 用户 API Key | 发给客户端调用代理服务（Proxy）的 Key，不应与 `MASTER_KEY` 混用。 |
+| Admin API Key | 后台创建的具名、可授权 Bearer，用于外部系统调用 `/api/admin/*`。建议每个集成独立且最小权限。 |
+| 用户 API Key | 发给客户端调用代理服务（Proxy）的 Key，不应与 Admin API Key 混用。 |
 
 ## 2. 配置供应商
 

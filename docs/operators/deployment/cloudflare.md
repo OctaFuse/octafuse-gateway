@@ -188,7 +188,7 @@ npx wrangler d1 list
 
 ## 7. 认证与下游
 
-- 管理 API Bearer 须与 D1 **`system_config.MASTER_KEY`** 一致（见 [api/admin.md](../../developers/api/admin.md)）。
+- 管理 API 使用后台创建的具名 Admin API Key，并按资源权限授权（见 [api/admin.md](../../developers/api/admin.md)）。
 - 下游门户：`GATEWAY_URL`（代理服务）、`GATEWAY_MASTER_URL`（管理后台）、`GATEWAY_MASTER_KEY`（见 [integration.md](../../developers/integration.md)）。
 
 ---
@@ -196,7 +196,7 @@ npx wrangler d1 list
 ## 8. 健康检查
 
 - 代理服务：`GET /health`
-- 管理后台：首页、浏览器登录，以及携带 `MASTER_KEY` 的 `GET /api/admin/config`
+- 管理后台：首页、数据库 Session 登录，以及携带具名 Admin API Key（含 `config.read`）的 `GET /api/admin/config`
 - D1 迁移：`npx wrangler d1 execute <name> --remote --config packages/core/wrangler.d1.jsonc --command 'SELECT COUNT(*) AS applied FROM d1_migrations;'`
 - 日志：`npx wrangler tail`（Worker 名见 Build variables）
 
