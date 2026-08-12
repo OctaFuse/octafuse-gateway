@@ -75,6 +75,12 @@ export function previewPlaygroundUpstreamUrl(input: {
 				const capability = resolveOpenaiUpstreamCapability({
 					kind,
 					imageOperation: input.imageOperation,
+					audioOperation:
+						kind === "audio" && input.upstreamOperation === "audio.speech"
+							? "speech"
+							: kind === "audio"
+								? "transcriptions"
+								: undefined,
 				});
 				return resolveUpstreamEndpoint(
 					protocol,

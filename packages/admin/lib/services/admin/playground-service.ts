@@ -428,6 +428,39 @@ export type PlaygroundDashScopeSpeechRequest = {
 	wireBodyJson: string;
 };
 
+export type PlaygroundOpenAiSpeechRequest = {
+	url: string;
+	headers: Record<string, string>;
+	bodyText: string;
+	wireBodyJson: string;
+};
+
+/** 调试台按 OpenAI `/audio/speech` 契约构造 JSON TTS 请求，避免误走 ASR multipart 分支。 */
+export function buildPlaygroundOpenAiSpeechRequest(
+	route: PlaygroundResolvedRoute,
+	body: Record<string, unknown>,
+): PlaygroundOpenAiSpeechRequest {
+	if (route.upstreamOperation !== 'audio.speech') {
+		throw badRequest(`Playground does not support OpenAI TTS operation ${JSON.stringify(route.upstreamOperation)}`);
+	}
+	const upstreamBody = {
+		...body,
+		model: route.providerModelName,
+	};
+	const url = resolveUpstreamEndpoint('openai', 'audio.speech', route.providerEndpoints, {
+		providerId: route.providerId,
+	});
+	return {
+		url,
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${route.providerApiKey}`,
+		},
+		bodyText: JSON.stringify(upstreamBody),
+		wireBodyJson: JSON.stringify(upstreamBody, null, 2),
+	};
+}
+
 /** 调试台按 DashScope SpeechSynthesizer 的非流式 HTTP 契约构造 TTS 请求。 */
 export function buildPlaygroundDashScopeSpeechRequest(
 	route: PlaygroundResolvedRoute,
@@ -640,12 +673,25 @@ export async function invokePlaygroundUpstream(
 	switch (route.upstreamProtocol) {
 		case 'openai': {
 			if (route.isAudioModel) {
+				if (route.upstreamOperation === 'audio.speech') {
+					const request = buildPlaygroundOpenAiSpeechRequest(route, merged);
+					url = request.url;
+					headers = request.headers;
+					fetchBody = request.bodyText;
+					upstreamWireBodyJson = request.wireBodyJson;
+					break;
+				}
+				if (route.upstreamOperation !== 'audio.transcriptions') {
+					throw badRequest(
+						`Playground does not support OpenAI audio operation ${JSON.stringify(route.upstreamOperation)}`,
+					);
+				}
 				const collected = collectAudioFileFromBody(merged);
 				if (!collected.ok) throw badRequest(collected.error);
 				try {
 					url = resolveUpstreamEndpoint(
 						'openai',
-						resolveOpenaiUpstreamCapability({ kind: 'audio' }),
+						resolveOpenaiUpstreamCapability({ kind: 'audio', audioOperation: 'transcriptions' }),
 						route.providerEndpoints,
 						{
 							providerId: route.providerId,

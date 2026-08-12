@@ -70,6 +70,23 @@ describe("previewPlaygroundUpstreamUrl", () => {
 		assert.equal(url, "https://api.openai.com/v1/audio/transcriptions");
 	});
 
+	it("appends /audio/speech for an OpenAI TTS route", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					openai: { base: "https://api.openai.com/v1" },
+				}),
+			},
+			upstreamProtocol: "openai",
+			upstreamOperation: "audio.speech",
+			providerModelName: "fss-cosyvoice-v2",
+			isImageModel: false,
+			isAudioModel: true,
+		});
+		assert.equal(url, "https://api.openai.com/v1/audio/speech");
+	});
+
 	it("builds the DashScope multimodal ASR URL from the selected route operation", () => {
 		const url = previewPlaygroundUpstreamUrl({
 			provider: {
