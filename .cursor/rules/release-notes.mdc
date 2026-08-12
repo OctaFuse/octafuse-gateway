@@ -54,6 +54,10 @@ GitHub Release 面向运维与集成方；`CHANGELOG.md` 保留 Changesets 开�
 
 - [完整代码差异](https://github.com/OctaFuse/octafuse-gateway/compare/vA.B.C...vX.Y.Z)
 - [完整 CHANGELOG](https://github.com/OctaFuse/octafuse-gateway/blob/vX.Y.Z/CHANGELOG.md)
+
+## 致谢
+
+（仅当本版本有外部贡献者时；放在 release notes 最底部。`docs/releases/X.Y.Z.md` 可写 `## 致谢`，渲染脚本会保留到相关链接之后。）
 ```
 
 ## 内容规则
@@ -65,6 +69,7 @@ GitHub Release 面向运维与集成方；`CHANGELOG.md` 保留 Changesets 开�
 5. 避免在单个 changeset 列表项内部再嵌套会破坏 Markdown 列表的标题层级；分区标题写在摘要段之后、列表之前。
 6. 语言与标题统一中文语境；Release 标题形如 `OctaFuse vX.Y.Z`。
 7. Digest 默认放在 `<details>` 折叠区；镜像 tag 与 digest 一并给出。
+8. 若本版本有外部贡献者：在 `docs/releases/X.Y.Z.md` 增加 `## 致谢`（GitHub @login + PR 链接），渲染后位于正文最底部。
 
 ## 工具
 

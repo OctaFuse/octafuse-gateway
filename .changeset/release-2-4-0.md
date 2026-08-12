@@ -1,0 +1,38 @@
+---
+"octafuse": minor
+---
+
+OctaFuse Gateway v2.4.0 新增 DashScope 原生 ASR/TTS 与实时音频能力，并将 Admin 认证从单一 `MASTER_KEY` 升级为具名 Admin API Keys；Routes Flow 粘滞运维体验同步增强。
+
+### Proxy
+
+- **DashScope 音频路由**：支持经 OpenAI 兼容面或 DashScope 原生协议调用文件 ASR / TTS，并按适配器转发至百炼上游。
+- **DashScope Realtime**：新增 `GET /v1/dashscope/realtime` WebSocket 入口，透传原生实时 ASR / TTS 事件；Node 运行时补齐 realtime 代理。
+- **音频计费字符**：请求日志新增 `audio_characters`，TTS 按上游有效计费字符独立记账。
+
+### Admin
+
+- **Admin API Keys**：控制台支持具名集成密钥的创建、轮换、吊销与权限；浏览器会话与 Bearer Key 身份分离，Access Keys 管理仅 Console Session 可写。
+- **DashScope 预设与联调**：Qwen Token Plan / Provider 导入增加 DashScope 音频端点与 ASR/TTS 模型目录；Playground 支持 DashScope realtime 联调；路由列表隐藏上游端点噪音展示。
+- **粘滞运维 UX**：Routes Flow 增强粘滞绑定摘要、刷新、用户数与拓扑默认密度等运维可视能力。
+- **阿里云 TTS 定价**：修正 Aliyun TTS 单价，并补充 CosyVoice 3.5 预设。
+
+### Core
+
+- **迁移 0022**：`api_key_request_logs` 增加 `audio_characters`（D1 / Postgres / MySQL）。
+- **迁移 0023**：新增 `admin_api_keys` / `admin_sessions`，并将历史 `system_config.MASTER_KEY` 复制为全权限 Key `legacy-master`。
+- **迁移 0024**：删除遗留 `system_config.MASTER_KEY` 配置行。
+- **迁移 0025**：为 `user_audit_logs(actor_id, created_at)` 增加检索索引。
+
+### 文档
+
+- **DashScope 音频架构**：新增 [dashscope-audio.md](./docs/developers/architecture/dashscope-audio.md)。
+- **Admin 认证**：更新 Admin API / Cloudflare 部署说明中的具名 Key 与 `legacy-master` 轮换指引。
+
+### 升级说明
+
+- **数据库迁移**：必须应用 **0022**–**0025**；三种数据库语义一致。
+- **发布顺序**：维护窗口内先备份 → 执行迁移 → 立即部署同一版本的 Proxy / Admin / migrate；禁止新旧版本混跑（尤其 0023/0024 认证切换）。
+- **配置变更**：部署后尽快在 **系统集成 → 集成密钥** 为外部系统创建最小权限 Key，更新其 `GATEWAY_MASTER_KEY`（或等价变量），再轮换/吊销 `legacy-master`；Bearer Key（含 `*`）不可管理 `/admin/access-keys/*`。
+- **兼容性影响**：客户端推理 URL 不变；旧 `MASTER_KEY` 值在迁移后仍可通过 `legacy-master` 调用 Admin API，直至吊销。
+- **建议操作**：验证 Admin 登录、具名 Key 权限、DashScope ASR/TTS/realtime 冒烟，以及 chat / messages / gemini / images 既有协议回归。
