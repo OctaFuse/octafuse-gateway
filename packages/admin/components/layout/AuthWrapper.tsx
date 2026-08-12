@@ -106,9 +106,14 @@ export default function AuthWrapper({ children }: Props) {
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold text-center mb-1 text-gray-800">{tBrand('loginHeading')}</h1>
-          <p className="text-center text-xs text-gray-500 mb-6">{tBrand('operatorConsole')}</p>
+        <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
+          <div className="mb-6 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-gray-800">{tBrand('loginHeading')}</h1>
+              <p className="mt-1 text-xs text-gray-500">{tBrand('operatorConsole')}</p>
+            </div>
+            <LocaleSwitcher variant="login" />
+          </div>
           <form onSubmit={handleLogin}>
             <div className="mb-4">
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
@@ -151,8 +156,7 @@ export default function AuthWrapper({ children }: Props) {
               {isLoading ? t('loggingIn') : t('login')}
             </button>
           </form>
-          <div className="mt-6 pt-4 border-t border-gray-100 space-y-4">
-            <LocaleSwitcher variant="login" />
+          <div className="mt-6 border-t border-gray-100 pt-4">
             <BrandExternalLinks variant="login" />
           </div>
         </div>

@@ -123,14 +123,15 @@ export default function Sidebar() {
   return (
     <aside className="sticky top-0 h-dvh w-64 shrink-0 bg-gray-900">
       <div className="flex h-full flex-col">
-      {/* Logo / Brand */}
-      <div className="flex h-16 flex-col justify-center px-6 bg-gray-950 leading-tight">
-        <Link href="/dashboard" className="block hover:opacity-90">
-          <span className="block text-lg font-bold tracking-tight text-white">{tBrand('wordmark')}</span>
-          <span className="block text-[11px] font-medium uppercase tracking-wider text-gray-400">
+      {/* Logo / Brand + locale */}
+      <div className="flex h-16 items-center justify-between gap-2 bg-gray-950 px-4 leading-tight">
+        <Link href="/dashboard" className="min-w-0 block hover:opacity-90">
+          <span className="block truncate text-lg font-bold tracking-tight text-white">{tBrand('wordmark')}</span>
+          <span className="block truncate text-[11px] font-medium uppercase tracking-wider text-gray-400">
             {tBrand('sidebarSubtitle')}
           </span>
         </Link>
+        <LocaleSwitcher variant="header" />
       </div>
 
       {/* Navigation */}
@@ -186,10 +187,9 @@ export default function Sidebar() {
       </nav>
 
       {/* Footer: links + version */}
-      <div className="p-4 border-t border-gray-800 space-y-3">
-        <LocaleSwitcher variant="sidebar" />
+      <div className="space-y-3 border-t border-gray-800 p-4">
         <BrandExternalLinks variant="sidebar" />
-        <p className="text-xs text-gray-500 text-center">{t('version', { version: adminAppVersion })}</p>
+        <p className="text-center text-xs text-gray-500">{t('version', { version: adminAppVersion })}</p>
       </div>
       </div>
     </aside>
