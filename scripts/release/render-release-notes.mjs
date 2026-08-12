@@ -9,6 +9,7 @@
  *     --out release-notes.md
  *
  * Optional override: docs/releases/X.Y.Z.md (full body for 本次更新 + 变更内容 + 升级说明;
+ * optional ## 致谢 is preserved at the bottom after 相关链接;
  * digests / 相关链接 still appended by this script).
  */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -160,6 +161,7 @@ function defaultSummary(version) {
  * @param {string} opts.summary
  * @param {string} opts.changes
  * @param {string} opts.upgrade
+ * @param {string} [opts.acknowledgements]
  * @param {Record<string, string>} opts.digests
  * @param {string} opts.repo
  * @param {string} opts.prevTag
@@ -221,6 +223,12 @@ function renderNotes(opts) {
 		`- [发版流程](https://github.com/${opts.repo}/blob/${tag}/docs/maintainers/release-versioning.md)`,
 	);
 	lines.push("");
+	if (opts.acknowledgements?.trim()) {
+		lines.push("## 致谢");
+		lines.push("");
+		lines.push(opts.acknowledgements.trim());
+		lines.push("");
+	}
 	return lines.join("\n");
 }
 
@@ -255,6 +263,7 @@ Options:
 	let summary = "";
 	let changes = "";
 	let upgrade = "";
+	let acknowledgements = "";
 
 	if (existsSync(overridePath)) {
 		const override = readFileSync(overridePath, "utf8").trim();
@@ -269,15 +278,18 @@ Options:
 		const sumM = raw.match(/## 本次更新\s*\n+([\s\S]*?)(?=\n## |\s*$)/);
 		const chM = raw.match(/## 变更内容\s*\n+([\s\S]*?)(?=\n## |\s*$)/);
 		const upM = raw.match(/## 升级说明\s*\n+([\s\S]*?)(?=\n## |\s*$)/);
+		const ackM = raw.match(/## 致谢\s*\n+([\s\S]*?)(?=\n## |\s*$)/);
 		if (sumM || chM) {
 			summary = (sumM?.[1] ?? "").trim();
 			changes = (chM?.[1] ?? "").trim();
 			upgrade = (upM?.[1] ?? "").trim();
+			acknowledgements = (ackM?.[1] ?? "").trim();
 		} else {
 			({ summary, changes, upgrade } = parts);
 			if (changes.startsWith("### __CHANGES_ANCHOR__")) {
 				changes = changes.replace(/^### __CHANGES_ANCHOR__\n*/, "").trim();
 			}
+			acknowledgements = (ackM?.[1] ?? "").trim();
 		}
 	} else {
 		const changelog = readFileSync(args.changelog, "utf8");
@@ -303,6 +315,7 @@ Options:
 		summary,
 		changes,
 		upgrade,
+		acknowledgements,
 		digests: args.digests,
 		repo: args.repo,
 		prevTag: args.prevTag,
