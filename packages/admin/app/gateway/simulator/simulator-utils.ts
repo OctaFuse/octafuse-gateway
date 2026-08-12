@@ -1,16 +1,19 @@
-import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
+import { AUDIO_SPEECH_BODY_TEMPLATE, AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
 	type ImageOperation,
 } from '@/lib/image-generations';
-import {
-	GATEWAY_TOOLS,
-	findGatewayToolById,
-	type GatewayToolDefinition,
-} from '@/lib/gateway-tools';
-import type { GatewayToolId } from '@/lib/invoke-kind';
+import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
+import type { AudioOperation, GatewayToolId } from '@/lib/invoke-kind';
 import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
+import {
+	DASHSCOPE_REALTIME_OPERATIONS,
+	buildDashScopeRealtimeAsrTemplate,
+	buildDashScopeRealtimeTtsTemplate,
+	buildDashScopeSpeechBodyTemplate,
+	type DashScopeRealtimeOperation,
+} from '@/lib/dashscope-realtime-client';
 import type { AdminKeyListItem, AdminModelRow, RouteListRow } from './types';
 
 export const LS_PROXY = 'octafuse.simulator.proxyBaseUrl';
@@ -47,6 +50,7 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
 	gemini: `{
   "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }]
 }`,
+	dashscope: '{}',
 };
 
 /** Agent Tools request body templates（对齐 Proxy `/v1/tools/*` 入参）。 */
@@ -78,19 +82,82 @@ export function bodyTemplateForSelection(
 	protocol: SimulatorProtocol,
 	isImageModel: boolean,
 	imageOperation: ImageOperation = 'generations',
-	isAudioModel = false,
-	toolId?: string | null
+	audioOperation: AudioOperation | null = null,
+	toolId?: string | null,
+	realtimeOperation?: DashScopeRealtimeOperation | null,
+	providerModelName?: string | null,
 ): string {
 	if (toolId) {
 		return bodyTemplateForTool(toolId);
 	}
-	if (isAudioModel && protocol === 'openai') {
-		return AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+	if (audioOperation && protocol === 'openai') {
+		if (audioOperation === 'speech' && providerModelName) {
+			// OpenAI surface 可能映射到 DashScope；模板音色必须匹配实际供应商模型。
+			return buildDashScopeSpeechBodyTemplate(providerModelName);
+		}
+		return audioOperation === 'speech' ? AUDIO_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+	}
+	if (audioOperation && protocol === 'dashscope') {
+		return audioOperation === 'speech'
+			? buildDashScopeRealtimeTtsTemplate(providerModelName)
+			: buildDashScopeRealtimeAsrTemplate(realtimeOperation ?? undefined);
 	}
 	if (isImageModel && protocol === 'openai') {
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
 	}
 	return BODY_TEMPLATES[protocol];
+}
+
+/** 从当前模型路由中提取 DashScope 实时 ASR/TTS 的可用对外生命周期。 */
+export function listDashScopeRealtimeOperations(
+	routes: RouteListRow[],
+	modelId: string,
+	routeGroup: string,
+	audioOperation: AudioOperation,
+): readonly DashScopeRealtimeOperation[] {
+	const allowed = new Set(
+		DASHSCOPE_REALTIME_OPERATIONS.filter((operation) => operation.startsWith(`audio.${audioOperation}.`)),
+	);
+	const found = new Set<DashScopeRealtimeOperation>();
+	for (const route of routes) {
+		if (
+			route.model_id !== modelId ||
+			String(route.status).toLowerCase() !== 'active' ||
+			route.upstream_protocol !== 'dashscope' ||
+			!routeGroupMatchesSelection(route.route_group, routeGroup)
+		) {
+			continue;
+		}
+		const upstreamOperation = route.upstream_operation ?? '';
+		let matchedSurface = false;
+		if (route.surfaces) {
+			try {
+				const surfaces = JSON.parse(route.surfaces) as Array<{
+					request_protocol?: string;
+					request_operation?: string;
+					status?: string;
+				}>;
+				for (const surface of surfaces) {
+					if (surface.status === 'disabled' || surface.request_protocol !== 'dashscope') {
+						continue;
+					}
+					matchedSurface = true;
+					const operation = surface.request_operation ?? '';
+					if (allowed.has(operation as DashScopeRealtimeOperation)) {
+						found.add(operation as DashScopeRealtimeOperation);
+					} else if (operation === '*' && allowed.has(upstreamOperation as DashScopeRealtimeOperation)) {
+						found.add(upstreamOperation as DashScopeRealtimeOperation);
+					}
+				}
+			} catch {
+				// Legacy rows without readable surfaces fall back to their upstream operation.
+			}
+		}
+		if (!matchedSurface && allowed.has(upstreamOperation as DashScopeRealtimeOperation)) {
+			found.add(upstreamOperation as DashScopeRealtimeOperation);
+		}
+	}
+	return DASHSCOPE_REALTIME_OPERATIONS.filter((operation) => found.has(operation));
 }
 
 /** Matches Proxy `resolveModelRouting`: default group sends model id only, else `id:group`. */
@@ -123,13 +190,23 @@ export function isBodyDirty(
 	protocol: SimulatorProtocol,
 	isImageModel = false,
 	imageOperation: ImageOperation = 'generations',
-	isAudioModel = false,
-	toolId?: string | null
+	audioOperation: AudioOperation | null = null,
+	toolId?: string | null,
+	realtimeOperation?: DashScopeRealtimeOperation | null,
+	providerModelName?: string | null,
 ): boolean {
 	return (
 		normalizeBodyWhitespace(bodyText) !==
 		normalizeBodyWhitespace(
-			bodyTemplateForSelection(protocol, isImageModel, imageOperation, isAudioModel, toolId)
+			bodyTemplateForSelection(
+				protocol,
+				isImageModel,
+				imageOperation,
+				audioOperation,
+				toolId,
+				realtimeOperation,
+				providerModelName,
+			),
 		)
 	);
 }
@@ -149,7 +226,7 @@ export function filterMatchingActiveRoutes(
 	modelId: string,
 	routeGroup: string,
 	requestProtocol?: string,
-	requestOperation?: string
+	requestOperation?: string,
 ): RouteListRow[] {
 	if (!modelId) return [];
 	const matchesSurface = (route: RouteListRow): boolean => {
@@ -164,7 +241,7 @@ export function filterMatchingActiveRoutes(
 				(surface) =>
 					surface.status !== 'disabled' &&
 					surface.request_protocol === requestProtocol &&
-					(surface.request_operation === requestOperation || surface.request_operation === '*')
+					(surface.request_operation === requestOperation || surface.request_operation === '*'),
 			);
 		} catch {
 			return true;
@@ -176,7 +253,7 @@ export function filterMatchingActiveRoutes(
 				r.model_id === modelId &&
 				String(r.status).toLowerCase() === 'active' &&
 				routeGroupMatchesSelection(r.route_group, routeGroup) &&
-				matchesSurface(r)
+				matchesSurface(r),
 		)
 		.sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id));
 }
@@ -232,7 +309,9 @@ export function listGatewayTools(): readonly GatewayToolDefinition[] {
 	return GATEWAY_TOOLS;
 }
 
-export function tryParseProxyBaseUrl(raw: string): { ok: true; base: string } | { ok: false; reason: 'empty' | 'invalid' } {
+export function tryParseProxyBaseUrl(
+	raw: string,
+): { ok: true; base: string } | { ok: false; reason: 'empty' | 'invalid' } {
 	const trimmed = raw.trim();
 	if (!trimmed) return { ok: false, reason: 'empty' };
 	try {

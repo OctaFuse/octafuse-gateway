@@ -228,6 +228,7 @@ export const apiKeyRequestLogsTable = mysqlTable('api_key_request_logs', {
 	inputImageCount: int('input_image_count').notNull().default(0),
 	outputImageCount: int('output_image_count').notNull().default(0),
 	audioDurationSeconds: double('audio_duration_seconds'),
+	audioCharacters: int('audio_characters'),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 

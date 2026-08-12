@@ -98,6 +98,36 @@ describe('resolveUpstreamEndpoint', () => {
 			'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 		);
 	});
+
+	it('derives DashScope HTTP and WebSocket audio endpoints from one API base', () => {
+		const endpoints = {
+			dashscope: {
+				base: 'https://workspace.cn-beijing.maas.aliyuncs.com/api/v1',
+			},
+		};
+		assert.equal(
+			resolveUpstreamEndpoint('dashscope', 'audio.transcriptions.multimodal', endpoints),
+			'https://workspace.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('dashscope', 'audio.transcriptions', endpoints),
+			'https://workspace.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/asr/transcription'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('dashscope', 'audio.transcriptions.tasks', endpoints, {
+				taskId: 'task/1',
+			}),
+			'https://workspace.cn-beijing.maas.aliyuncs.com/api/v1/tasks/task%2F1'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('dashscope', 'audio.realtime.inference', endpoints),
+			'wss://workspace.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('dashscope', 'audio.realtime.session', endpoints),
+			'wss://workspace.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime'
+		);
+	});
 });
 
 describe('providerSupportsUpstreamProtocol', () => {
@@ -155,6 +185,29 @@ describe('validateAndNormalizeProviderEndpoints', () => {
 			/must include \{action\}/
 		);
 	});
+
+	it('accepts wss only for DashScope realtime capabilities', () => {
+		const normalized = validateAndNormalizeProviderEndpoints({
+			dashscope: {
+				endpoints: {
+					'audio.realtime.inference': 'wss://workspace.example/api-ws/v1/inference',
+				},
+			},
+		});
+		assert.equal(
+			normalized.dashscope?.endpoints?.['audio.realtime.inference'],
+			'wss://workspace.example/api-ws/v1/inference'
+		);
+		assert.throws(
+			() =>
+				validateAndNormalizeProviderEndpoints({
+					dashscope: {
+						endpoints: { 'audio.speech': 'wss://workspace.example/tts' },
+					},
+				}),
+			/must be http\(s\)/
+		);
+	});
 });
 
 describe('listConfiguredCapabilities', () => {
@@ -164,7 +217,7 @@ describe('listConfiguredCapabilities', () => {
 				{ openai: { base: 'https://api.openai.com/v1' } },
 				'openai'
 			),
-			['chat', 'images.generations', 'images.edits', 'audio.transcriptions']
+			['chat', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech']
 		);
 	});
 
@@ -193,7 +246,7 @@ describe('listConfiguredCapabilities', () => {
 				},
 				'openai'
 			),
-			['chat', 'images.generations', 'images.edits', 'audio.transcriptions']
+			['chat', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech']
 		);
 	});
 
@@ -214,6 +267,26 @@ describe('listConfiguredCapabilities', () => {
 				'gemini'
 			),
 			['models.generate']
+		);
+	});
+
+	it('lists every DashScope capability when its API base is configured', () => {
+		assert.deepEqual(
+			listConfiguredCapabilities(
+				{ dashscope: { base: 'https://dashscope.aliyuncs.com/api/v1' } },
+				'dashscope'
+			),
+			[
+				'audio.transcriptions',
+				'audio.transcriptions.multimodal',
+				'audio.transcriptions.tasks',
+				'audio.speech',
+				'audio.speech.multimodal',
+				'audio.realtime.inference',
+				'audio.realtime.session',
+				'audio.hotwords',
+				'audio.voices',
+			]
 		);
 	});
 });

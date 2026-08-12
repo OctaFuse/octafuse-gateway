@@ -8,6 +8,7 @@ import type {
 	RequestLogRow,
 } from '@octafuse/core';
 import type { ModelRouteJoinRow } from '@octafuse/core';
+import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 
 export type BudgetPeriod = 'none' | 'daily' | 'weekly' | 'monthly';
 
@@ -115,7 +116,7 @@ export type AdminProviderImportCatalogItem = {
 	/** Provider 产品级静态图标 key；不写入数据库。 */
 	icon_key: string;
 	vendor_label: string;
-	protocols: Array<'openai' | 'anthropic' | 'gemini'>;
+	protocols: UpstreamProtocol[];
 	/** 序列化后的 endpoints JSON（可 null） */
 	endpoints: string | null;
 	description: string | null;
@@ -175,7 +176,7 @@ export type AdminModelRouteMutationInput = {
 	request_operation?: unknown;
 	/** Provider-side capability. `*` follows the request operation. */
 	upstream_operation?: unknown;
-	/** Request conversion adapter; first release supports `passthrough`. */
+	/** 显式 request conversion adapter；跨协议组合由 Core 白名单校验。 */
 	adapter?: unknown;
 	route_pool_id?: unknown;
 	[key: string]: unknown;

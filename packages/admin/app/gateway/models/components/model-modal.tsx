@@ -10,6 +10,7 @@ import { ModelModalitiesBadgeFromRaw } from '@/components/model-modalities-badge
 import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
 import { MODEL_VENDOR_OPTIONS } from '@/lib/model-vendor';
 import {
+	createDefaultAudioCharacterPricingDraft,
 	createDefaultAudioPricingDraft,
 	createDefaultAudioTokenPricingDraft,
 	type AudioBillingModeDraft,
@@ -86,7 +87,42 @@ export function ModelModal(props: Props) {
 	const tCommon = useTranslations('common');
 	const isImageModel = formKind === 'image';
 	const isAudioModel = formKind === 'audio';
+	const audioCapability =
+		isAudioModel && audioPricingDraft?.mode === 'per_character'
+			? 'speech'
+			: 'transcription';
 	const hideTokenLimits = isImageModel || isAudioModel;
+	// 音频能力沿用下方“音频定价”的分段控件样式，保持弹窗内的视觉一致性。
+	const audioCapabilityOptions = [
+		{
+			id: 'transcription' as const,
+			label: t('audioCapabilityTranscription'),
+		},
+		{
+			id: 'speech' as const,
+			label: t('audioCapabilitySpeech'),
+		},
+	] as const;
+
+	/** 音频能力是显式配置项：同步设置模态和计费，避免保存出 TTS + 按秒这类矛盾组合。 */
+	const changeAudioCapability = (next: 'transcription' | 'speech') => {
+		if (!isAudioModel || !onAudioPricingDraftChange || next === audioCapability) return;
+		if (next === 'speech') {
+			onFormChange({
+				...formData,
+				input_modalities: ['text'],
+				output_modalities: ['audio'],
+			});
+			onAudioPricingDraftChange(createDefaultAudioCharacterPricingDraft());
+			return;
+		}
+		onFormChange({
+			...formData,
+			input_modalities: ['audio'],
+			output_modalities: ['text'],
+		});
+		onAudioPricingDraftChange(createDefaultAudioPricingDraft());
+	};
 
 	if (!open) return null;
 
@@ -167,6 +203,40 @@ export function ModelModal(props: Props) {
 										: t('kindHintLlm')}
 							</p>
 						</div>
+						{isAudioModel ? (
+							<div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 p-3">
+								<p className="text-sm font-medium text-gray-800">
+									{t('audioCapability')}
+								</p>
+								<div
+									className="mt-2 inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
+									role="group"
+									aria-label={t('audioCapability')}
+								>
+									{audioCapabilityOptions.map((option) => (
+										<button
+											key={option.id}
+											type="button"
+											disabled={isSaving || isDeleting}
+											onClick={() => changeAudioCapability(option.id)}
+											aria-pressed={audioCapability === option.id}
+											className={
+												audioCapability === option.id
+												? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
+												: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
+										}
+										>
+											{option.label}
+										</button>
+									))}
+								</div>
+								<p className="mt-2 text-[11px] leading-relaxed text-gray-500">
+									{audioCapability === 'speech'
+										? t('audioCapabilityHintSpeech')
+										: t('audioCapabilityHintTranscription')}
+								</p>
+							</div>
+						) : null}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">{t('modelIdRequired')}</label>
 							<input
@@ -265,11 +335,12 @@ export function ModelModal(props: Props) {
 													key={m}
 													className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
 												>
-													<input
-														type="checkbox"
-														checked={formData.input_modalities.includes(m)}
-														onChange={() => onToggleModality('input_modalities', m)}
-														className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+											<input
+												type="checkbox"
+												checked={formData.input_modalities.includes(m)}
+												onChange={() => onToggleModality('input_modalities', m)}
+												disabled={isAudioModel || isSaving || isDeleting}
+												className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 													/>
 													{m}
 												</label>
@@ -286,11 +357,12 @@ export function ModelModal(props: Props) {
 													key={m}
 													className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
 												>
-													<input
-														type="checkbox"
-														checked={formData.output_modalities.includes(m)}
-														onChange={() => onToggleModality('output_modalities', m)}
-														className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+											<input
+												type="checkbox"
+												checked={formData.output_modalities.includes(m)}
+												onChange={() => onToggleModality('output_modalities', m)}
+												disabled={isAudioModel || isSaving || isDeleting}
+												className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 													/>
 													{m}
 												</label>
@@ -325,18 +397,23 @@ export function ModelModal(props: Props) {
 											role="group"
 											aria-label={t('audioBillingMode')}
 										>
-											{(
-												[
-													{
-														id: 'per_second' as const,
-														label: t('audioBillingModePerSecond'),
-													},
-													{
-														id: 'token' as const,
-														label: t('audioBillingModeToken'),
-													},
-												] as const
-											).map((opt) => {
+										{(audioCapability === 'speech'
+											? [
+												{
+													id: 'per_character' as const,
+													label: t('audioBillingModePerCharacter'),
+												},
+											]
+											: [
+												{
+													id: 'per_second' as const,
+												label: t('audioBillingModePerSecond'),
+											},
+											{
+													id: 'token' as const,
+													label: t('audioBillingModeToken'),
+												},
+											]).map((opt) => {
 												const active = audioPricingDraft.mode === opt.id;
 												return (
 													<button
@@ -359,8 +436,22 @@ export function ModelModal(props: Props) {
 																			: createDefaultAudioPricingDraft()
 																					.minimum_seconds,
 																});
-																return;
-															}
+														return;
+													}
+													if (nextMode === 'per_character') {
+														onAudioPricingDraftChange({
+															...createDefaultAudioCharacterPricingDraft(),
+															price_per_character:
+																audioPricingDraft.price_per_character.trim() !== ''
+																	? audioPricingDraft.price_per_character
+																	: '',
+															minimum_characters:
+																audioPricingDraft.minimum_characters.trim() !== ''
+																	? audioPricingDraft.minimum_characters
+																	: '0',
+														});
+														return;
+													}
 															onAudioPricingDraftChange(
 																audioPricingDraft.tiers.length > 0
 																	? {
@@ -441,6 +532,50 @@ export function ModelModal(props: Props) {
 															],
 														});
 													}}
+													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+												/>
+											</div>
+										</div>
+									) : audioPricingDraft.mode === 'per_character' ? (
+										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+											<div>
+												<label className="mb-1 block text-xs font-medium text-gray-600">
+													{t('audioPricePerCharacter')}
+													<span className="ml-1 font-normal text-gray-400">
+														({billingCurrency}/char)
+													</span>
+												</label>
+												<input
+													type="number"
+													step="any"
+													min="0"
+													value={audioPricingDraft.price_per_character}
+													onChange={(e) =>
+														onAudioPricingDraftChange({
+															...audioPricingDraft,
+															mode: 'per_character',
+															price_per_character: e.target.value,
+														})
+													}
+													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+												/>
+											</div>
+											<div>
+												<label className="mb-1 block text-xs font-medium text-gray-600">
+													{t('audioMinimumCharacters')}
+												</label>
+												<input
+													type="number"
+													step="1"
+													min="0"
+													value={audioPricingDraft.minimum_characters}
+													onChange={(e) =>
+														onAudioPricingDraftChange({
+															...audioPricingDraft,
+															mode: 'per_character',
+															minimum_characters: e.target.value,
+														})
+													}
 													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 												/>
 											</div>

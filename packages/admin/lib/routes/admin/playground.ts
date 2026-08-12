@@ -10,11 +10,45 @@ import type { GeminiContentAction } from '@octafuse/core/gemini-upstream-url';
 import type { ImageOperation } from '@/lib/image-generations';
 import { invokePlaygroundUpstream } from '@/lib/services/admin/playground-service';
 import { invokePlaygroundTool } from '@/lib/services/admin/playground-tools-service';
+import {
+	dispatchPlaygroundDashScopeRealtime,
+	PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS,
+} from '@/lib/services/admin/playground-realtime-service';
 import { handleAdminRouteError } from './error-response';
 
 export const adminPlaygroundRoutes = new Hono<AdminEnv>();
 
 adminPlaygroundRoutes.use('*', requireMasterKey);
+
+adminPlaygroundRoutes.get('/realtime', async (c) => {
+	if (c.req.header('Upgrade')?.toLowerCase() !== 'websocket') {
+		return c.json({ success: false as const, message: 'Expected a WebSocket upgrade request' }, 426);
+	}
+	const routeId = c.req.query('routeId')?.trim() ?? '';
+	const operation = c.req.query('operation')?.trim() ?? '';
+	if (!routeId) return c.json({ success: false as const, message: 'routeId is required' }, 400);
+	if (!(PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS as readonly string[]).includes(operation)) {
+		return c.json({ success: false as const, message: `Unsupported realtime operation: ${operation || '(empty)'}` }, 400);
+	}
+	try {
+		const result = await dispatchPlaygroundDashScopeRealtime(
+			c.get('repositories'),
+			{ routeId, operation },
+			c.req.raw.signal
+		);
+		const headers = new Headers(result.response.headers);
+		headers.set('x-playground-upstream-url', result.upstreamUrl);
+		headers.set('x-playground-mode', 'realtime');
+		return new Response(result.response.body, {
+			status: result.response.status,
+			statusText: result.response.statusText,
+			headers,
+			webSocket: result.response.webSocket,
+		});
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Playground realtime invoke failed');
+	}
+});
 
 type PlaygroundPostBody = {
 	routeId?: unknown;

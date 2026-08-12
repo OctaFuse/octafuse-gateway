@@ -3,19 +3,19 @@
 import { FilterNavButton, FilterNavSection } from '../../components/filter-nav';
 import type { GatewayProvider } from '@/lib/types';
 import { useTranslations } from 'next-intl';
-import { type ModelKindFilter } from '../../models/types';
+import type { RouteKindFilter } from '../types';
 
 type Props = {
 	visibleModelCount: number;
 	visibleRouteCount: number;
 	hasActiveFilters: boolean;
 	filterStatus: string;
-	filterKind: ModelKindFilter;
+	filterKind: RouteKindFilter;
 	filterRouteGroup: string;
 	filterVendor: string;
 	filterProviderId: string;
 	statusCounts: { all: number; active: number; inactive: number };
-	kindCounts: { llm: number; image: number; audio: number };
+	kindCounts: { all: number; llm: number; image: number; audio: number };
 	routesCount: number;
 	routeGroupFilterOptions: string[];
 	routeGroupCounts: Map<string, number>;
@@ -23,7 +23,7 @@ type Props = {
 	providers: GatewayProvider[];
 	providerRouteCounts: Map<string, number>;
 	onFilterStatusChange: (status: string) => void;
-	onFilterKindChange: (kind: ModelKindFilter) => void;
+	onFilterKindChange: (kind: RouteKindFilter) => void;
 	onFilterRouteGroupChange: (group: string) => void;
 	onFilterVendorChange: (vendor: string) => void;
 	onFilterProviderIdChange: (providerId: string) => void;
@@ -104,6 +104,12 @@ export function RouteFilterSidebar(props: Props) {
 				</FilterNavSection>
 
 				<FilterNavSection title={t('kind')} ariaLabel={t('kindAria')}>
+					<FilterNavButton
+						label={t('all')}
+						count={kindCounts.all}
+						isActive={filterKind === 'all'}
+						onClick={() => onFilterKindChange('all')}
+					/>
 					<FilterNavButton
 						label={t('kindLlm')}
 						count={kindCounts.llm}

@@ -10,8 +10,8 @@ type Props = {
 	onProxyBaseUrlChange: (v: string) => void;
 	protocol: SimulatorProtocol;
 	onProtocolChange: (p: SimulatorProtocol) => void;
-	/** Image-generation catalog models: only openai /images/generations is supported. */
-	lockOpenaiForImage?: boolean;
+	/** Image 入口仍锁定 OpenAI；Audio 可选择 OpenAI HTTP 或 DashScope 原生 WebSocket。 */
+	openaiLockKind?: 'image' | 'audio';
 	/** Tools mode: protocol / Gemini action do not apply. */
 	hideProtocolControls?: boolean;
 	geminiAction: SimulatorGeminiAction;
@@ -35,7 +35,7 @@ export function SimulatorSetupPanel({
 	onProxyBaseUrlChange,
 	protocol,
 	onProtocolChange,
-	lockOpenaiForImage = false,
+	openaiLockKind,
 	hideProtocolControls = false,
 	geminiAction,
 	onGeminiActionChange,
@@ -54,6 +54,7 @@ export function SimulatorSetupPanel({
 }: Props) {
 	const t = useTranslations('simulator');
 	const tCommon = useTranslations('common');
+	const openaiLocked = openaiLockKind === 'image';
 
 	return (
 		<div className="space-y-4">
@@ -78,8 +79,10 @@ export function SimulatorSetupPanel({
 						<div>
 							<label className={labelClass}>{t('protocol')}</label>
 							<div className="flex flex-wrap gap-3 pt-1 text-sm">
-								{(['openai', 'anthropic', 'gemini'] as const).map((p) => {
-									const disabled = lockOpenaiForImage && p !== 'openai';
+								{(['openai', 'anthropic', 'gemini', 'dashscope'] as const).map((p) => {
+									const disabled =
+										(openaiLocked && p !== 'openai') ||
+										(p === 'dashscope' && openaiLockKind !== 'audio');
 									return (
 										<label
 											key={p}
@@ -98,11 +101,13 @@ export function SimulatorSetupPanel({
 									);
 								})}
 							</div>
-							{lockOpenaiForImage ? (
-								<p className="mt-1.5 text-xs text-amber-800/90">{t('protocolLockedImage')}</p>
+							{openaiLockKind ? (
+								<p className="mt-1.5 text-xs text-amber-800/90">
+									{t(openaiLockKind === 'audio' ? 'protocolLockedAudio' : 'protocolLockedImage')}
+								</p>
 							) : null}
 						</div>
-						{protocol === 'gemini' && !lockOpenaiForImage ? (
+						{protocol === 'gemini' && !openaiLocked ? (
 							<fieldset className="flex flex-wrap items-center gap-3 text-sm border border-gray-200 rounded-md px-3 py-2">
 								<legend className="sr-only">{t('geminiAction')}</legend>
 								<span className="text-gray-600 font-medium">{t('geminiAction')}</span>

@@ -740,5 +740,395 @@
 			]
 		},
 		"released": "2026-03-15"
+	},
+	{
+		"id": "qwen-audio-3.0-asr-flash-streaming",
+		"display_name": "Qwen Audio 3.0 ASR Flash Streaming",
+		"description": "DashScope real-time speech recognition for low-latency streaming audio.",
+		"i18n": {
+			"en": "DashScope real-time speech recognition for low-latency streaming audio.",
+			"zh": "DashScope 实时语音识别模型，适合低延迟流式音频输入。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000047142857,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00033,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen-audio-3.0-asr-flash-filetrans",
+		"display_name": "Qwen Audio 3.0 ASR Flash Filetrans",
+		"description": "DashScope asynchronous speech recognition for recorded audio files.",
+		"i18n": {
+			"en": "DashScope asynchronous speech recognition for recorded audio files.",
+			"zh": "DashScope 非实时语音识别模型，适合录音文件转写。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000031428571,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen3-asr-flash-realtime",
+		"display_name": "Qwen3 ASR Flash Realtime",
+		"description": "DashScope Qwen3 ASR real-time speech recognition over WebSocket sessions.",
+		"i18n": {
+			"en": "DashScope Qwen3 ASR real-time speech recognition over WebSocket sessions.",
+			"zh": "DashScope Qwen3 ASR 实时语音识别，使用 WebSocket 会话模式。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000047142857,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00033,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen3-asr-flash-filetrans",
+		"display_name": "Qwen3 ASR Flash Filetrans",
+		"description": "DashScope Qwen3 ASR asynchronous speech recognition for recorded audio files.",
+		"i18n": {
+			"en": "DashScope Qwen3 ASR asynchronous speech recognition for recorded audio files.",
+			"zh": "DashScope Qwen3 ASR 非实时语音识别，适合录音文件转写。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000031428571,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen3-asr-flash",
+		"display_name": "Qwen3 ASR Flash",
+		"description": "DashScope Qwen3 ASR for synchronous audio transcription.",
+		"i18n": {
+			"en": "DashScope Qwen3 ASR for synchronous audio transcription.",
+			"zh": "DashScope Qwen3 ASR 同步语音识别模型。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000031428571,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "fun-asr-realtime",
+		"display_name": "Fun-ASR Realtime",
+		"description": "DashScope Fun-ASR real-time speech recognition over WebSocket streaming.",
+		"i18n": {
+			"en": "DashScope Fun-ASR real-time speech recognition over WebSocket streaming.",
+			"zh": "DashScope Fun-ASR 实时语音识别，使用 WebSocket 流式输入。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000047142857,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00033,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "fun-asr",
+		"display_name": "Fun-ASR",
+		"description": "DashScope Fun-ASR asynchronous speech recognition for recorded audio files.",
+		"i18n": {
+			"en": "DashScope Fun-ASR asynchronous speech recognition for recorded audio files.",
+			"zh": "DashScope Fun-ASR 非实时语音识别，适合录音文件转写。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000031428571,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen-audio-3.0-tts-plus",
+		"display_name": "Qwen Audio 3.0 TTS Plus",
+		"description": "DashScope high-quality text-to-speech model billed by generated characters.",
+		"i18n": {
+			"en": "DashScope high-quality text-to-speech model billed by generated characters.",
+			"zh": "DashScope 高质量语音合成模型，按生成字符数计费。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.2,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 1.4,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "qwen-audio-3.0-tts-flash",
+		"display_name": "Qwen Audio 3.0 TTS Flash",
+		"description": "DashScope low-latency text-to-speech model billed by generated characters.",
+		"i18n": {
+			"en": "DashScope low-latency text-to-speech model billed by generated characters.",
+			"zh": "DashScope 低延迟语音合成模型，按生成字符数计费。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.142857143,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 1,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v1",
+		"display_name": "CosyVoice V1",
+		"description": "DashScope text-to-speech model with streaming synthesis support.",
+		"i18n": {
+			"en": "DashScope text-to-speech model with streaming synthesis support.",
+			"zh": "DashScope CosyVoice V1 语音合成模型，支持流式合成。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.285714286,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 2,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v2",
+		"display_name": "CosyVoice V2",
+		"description": "DashScope text-to-speech model with streaming synthesis support.",
+		"i18n": {
+			"en": "DashScope text-to-speech model with streaming synthesis support.",
+			"zh": "DashScope CosyVoice V2 语音合成模型，支持流式合成。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.285714286,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 2,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v3-flash",
+		"display_name": "CosyVoice V3 Flash",
+		"description": "DashScope low-latency text-to-speech model billed by generated characters.",
+		"i18n": {
+			"en": "DashScope low-latency text-to-speech model billed by generated characters.",
+			"zh": "DashScope CosyVoice V3 Flash 低延迟语音合成模型。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.142857143,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 1,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v3-plus",
+		"display_name": "CosyVoice V3 Plus",
+		"description": "DashScope high-quality text-to-speech model billed by generated characters.",
+		"i18n": {
+			"en": "DashScope high-quality text-to-speech model billed by generated characters.",
+			"zh": "DashScope CosyVoice V3 Plus 高质量语音合成模型。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.285714286,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 2,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
 	}
 ]

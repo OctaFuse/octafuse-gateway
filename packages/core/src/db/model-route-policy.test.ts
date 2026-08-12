@@ -87,6 +87,18 @@ describe('parseModelRoutePolicy', () => {
 		);
 	});
 
+	it('accepts DashScope audio capabilities', () => {
+		// 使用 2.3.0 仍支持的策略名，测试聚焦协议 capability 而非已移除的旧策略。
+		const config = parseModelRoutePolicy(
+			JSON.stringify({
+				rules: {
+				'dashscope.audio.speech:default': { strategy: 'weight_priority' },
+				},
+			})
+		);
+		assert.equal(config?.rules.get('dashscope.audio.speech:default')?.strategy, 'weight_priority');
+	});
+
 	it('skips illegal strategy and illegal capability keys', () => {
 		const config = parseModelRoutePolicy(
 			JSON.stringify({

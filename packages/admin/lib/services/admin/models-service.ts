@@ -7,7 +7,7 @@ import {
 	coerceModelInputModalitiesInput,
 	coerceModelOutputModalitiesInput,
 	coerceModelReleasedAtInput,
-	isAudioTranscriptionModel,
+	isAudioModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import {
@@ -160,6 +160,24 @@ function buildPerSecondAudioPricingPreview(
 	};
 }
 
+function buildPerCharacterAudioPricingPreview(
+	rawPricing: Record<string, unknown>,
+	billing: GatewaySupportedBillingCurrency
+): CatalogPricingPreview | null {
+	const audio = rawPricing.audio;
+	const audioObj =
+		audio && typeof audio === 'object' && !Array.isArray(audio)
+			? (audio as Record<string, unknown>)
+			: null;
+	const price = audioObj ? formatPriceForPreview(audioObj.price_per_character) : null;
+	if (rawPricing.audio_billing_mode !== 'per_character' || price == null) return null;
+	const sym = getGatewayCurrencySymbol(billing);
+	return {
+		label: `${sym}${price} ${sym}/char`,
+		detail: `Speech synthesis: ${sym}${price} ${sym}/char`,
+	};
+}
+
 /** 按 `BILLING_CURRENCY` 选用的目录价分支：Audio / Image / LLM 档位摘要。 */
 function buildCatalogPricingPreview(
 	rawPricing: unknown,
@@ -171,6 +189,7 @@ function buildCatalogPricingPreview(
 	}
 	const obj = rawPricing as Record<string, unknown>;
 	return (
+		buildPerCharacterAudioPricingPreview(obj, billing) ??
 		buildPerSecondAudioPricingPreview(obj, billing) ??
 		buildPerImagePricingPreview(obj, billing) ??
 		buildTokenPricingPreview(obj, billing) ?? {
@@ -209,7 +228,7 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 		output_modalities: outputModalities,
 		pricing_profile: pricingProfile,
 	});
-	const isAudio = isAudioTranscriptionModel({
+	const isAudio = isAudioModel({
 		output_modalities: outputModalities,
 		pricing_profile: pricingProfile,
 	});
@@ -319,7 +338,7 @@ export function listStaticModelPresetCatalogForAdmin(
 			};
 			const kind: AdminStaticModelPresetCatalogItem['kind'] = isImageGenerationModel(kindFields)
 				? 'image'
-				: isAudioTranscriptionModel(kindFields)
+				: isAudioModel(kindFields)
 					? 'audio'
 					: 'llm';
 			const pricing = buildCatalogPricingPreview(pricingRaw, kind, billing);

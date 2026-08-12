@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+	computeAudioPerCharacterMeteredCost,
 	computeAudioPerSecondMeteredCost,
 	parsePricingProfile,
+	profileHasAudioPerCharacterPricing,
 	profileHasAudioPerSecondPricing,
 	profileHasAudioTokenPricing,
 	profileHasImagePerImagePricing,
 	profileHasImageTokenPricing,
 	resolveAudioBillingMode,
+	resolveBillableAudioCharacters,
 	resolveBillableAudioSeconds,
 	resolveImageBillingMode,
 	resolveImageCatalogUnitPrice,
@@ -275,6 +278,29 @@ describe('parsePricingProfile audio_billing_mode', () => {
 		assert.equal(profileHasAudioTokenPricing(p), true);
 		assert.equal(resolveAudioBillingMode(p), 'token');
 		assert.equal(profileHasAudioPerSecondPricing(p), false);
+	});
+
+	it('parses TTS per_character mode and computes its minimum charge', () => {
+		const p = parsePricingProfile(
+			JSON.stringify({
+				audio_billing_mode: 'per_character',
+				audio: { price_per_character: 0.0002, minimum_characters: 10 },
+			})
+		);
+		assert.ok(p);
+		assert.equal(p!.audio_billing_mode, 'per_character');
+		assert.equal(p!.tiers.length, 0);
+		assert.equal(profileHasAudioPerCharacterPricing(p), true);
+		assert.equal(resolveAudioBillingMode(p), 'per_character');
+		assert.equal(resolveBillableAudioCharacters(3, p!.audio), 10);
+		assert.equal(
+			computeAudioPerCharacterMeteredCost({
+				characters: 3,
+				pricePerCharacter: 0.0002,
+				minimumCharacters: 10,
+			}),
+			0.002
+		);
 	});
 });
 

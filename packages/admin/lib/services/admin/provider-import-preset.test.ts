@@ -28,6 +28,21 @@ function replaceEndpointPaths(endpoints: ProviderEndpointsMap): ProviderEndpoint
 }
 
 describe('provider import preset catalog metadata', () => {
+	it('includes the limited Qwen Token Plan DashScope audio endpoints', () => {
+		const qwenTokenPlan = listStaticProviderImportPresets().find(
+			(row) => row.name === 'Qwen AI Platform (Token Plan)'
+		);
+		assert.ok(qwenTokenPlan);
+		assert.deepEqual(qwenTokenPlan.endpoints.dashscope?.endpoints, {
+			'audio.speech':
+				'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer',
+			'audio.realtime.inference':
+				'wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference',
+			'audio.realtime.session':
+				'wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime',
+		});
+	});
+
 	it('keeps localized catalog copy and an official platform link for every preset', () => {
 		const rows = listStaticProviderImportPresets();
 
@@ -122,6 +137,14 @@ describe('provider import preset catalog metadata', () => {
 		} satisfies { name: string; endpoints: ProviderEndpointsMap };
 		assert.equal(inferStaticProviderVendorKey(proxiedMimo), 'xiaomi');
 		assert.equal(inferStaticProviderIconKey(proxiedMimo), 'xiaomimimo');
+	});
+
+	it('includes the DashScope base needed to derive Alibaba audio endpoints', () => {
+		const bailian = listStaticProviderImportPresets().find(
+			(row) => row.name === 'Alibaba Cloud Bailian'
+		);
+		assert.ok(bailian);
+		assert.equal(bailian.endpoints.dashscope?.base, 'https://dashscope.aliyuncs.com/api/v1');
 	});
 
 	it('does not guess when configured endpoints identify different vendors', () => {

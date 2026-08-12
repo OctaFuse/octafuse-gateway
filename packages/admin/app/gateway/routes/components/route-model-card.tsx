@@ -2,7 +2,7 @@
 
 import { ClipboardDocumentIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/outline';
 import {
-	isAudioTranscriptionModel,
+	isAudioModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
@@ -50,7 +50,7 @@ export function RouteModelCard(props: Props) {
 	const tModelsCard = useTranslations('models.card');
 	const { model_id, title, groupRoutes, activeCount } = card;
 	const isImage = meta ? isImageGenerationModel(meta) : false;
-	const isAudio = meta ? isAudioTranscriptionModel(meta) : false;
+	const isAudio = meta ? isAudioModel(meta) : false;
 	const contextStr = formatCompactTokens(meta?.context_window);
 	const maxStr = formatCompactTokens(meta?.max_tokens);
 	const modelStatsTitle = isAudio

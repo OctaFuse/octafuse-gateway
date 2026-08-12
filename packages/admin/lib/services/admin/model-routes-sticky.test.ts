@@ -5,7 +5,8 @@ import { updateRoutePoolPolicyService } from './model-routes-service';
 
 describe('updateRoutePoolPolicyService sticky_routing', () => {
 	it('accepts sticky_routing and writes sticky fields', async () => {
-		const updateRoutePoolPolicy = mock.fn(async () => 1);
+		// 显式声明 mock 参数，保留调用参数类型以覆盖 sticky 字段写入断言。
+		const updateRoutePoolPolicy = mock.fn(async (_poolId: string, _patch: unknown) => 1);
 		const repos = {
 			routes: { updateRoutePoolPolicy },
 		} as unknown as GatewayRepositories;

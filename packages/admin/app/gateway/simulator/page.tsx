@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
 /**
  * Browser-side simulator: calls the Proxy directly (user-provided Base URL) with a real API key,
  * exercising auth, routing, billing, and request logs (unlike Playground upstream tests).
  */
-import { useTranslations } from 'next-intl';
-import { SimulatorRequestPanel } from './components/simulator-request-panel';
-import { SimulatorResponsePanel } from './components/simulator-response-panel';
-import { SimulatorRoutingPanel } from './components/simulator-routing-panel';
-import { SimulatorSetupPanel } from './components/simulator-setup-panel';
-import { useSimulatorPageState } from './use-simulator-page-state';
+import { useTranslations } from "next-intl";
+import { SimulatorRequestPanel } from "./components/simulator-request-panel";
+import { SimulatorResponsePanel } from "./components/simulator-response-panel";
+import { SimulatorRoutingPanel } from "./components/simulator-routing-panel";
+import { SimulatorSetupPanel } from "./components/simulator-setup-panel";
+import { useSimulatorPageState } from "./use-simulator-page-state";
 
 export default function SimulatorPage() {
-	const t = useTranslations('simulator');
-	const tBrand = useTranslations('brand');
-	const tCommon = useTranslations('common');
+	const t = useTranslations("simulator");
+	const tBrand = useTranslations("brand");
+	const tCommon = useTranslations("common");
 	const s = useSimulatorPageState();
 
 	if (s.loadingCatalog) {
 		return (
 			<div className="flex items-center justify-center h-full min-h-[240px]">
-				<div className="text-gray-600">{tCommon('loading')}</div>
+				<div className="text-gray-600">{tCommon("loading")}</div>
 			</div>
 		);
 	}
@@ -28,11 +28,13 @@ export default function SimulatorPage() {
 	return (
 		<div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-5 sm:mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+					{t("title")}
+				</h1>
 				<p className="mt-1 text-sm text-gray-500 max-w-3xl">
-					{t('subtitle', { product: tBrand('product') })}
+					{t("subtitle", { product: tBrand("product") })}
 					<span className="text-gray-400"> · </span>
-					{t('usageNote')}
+					{t("usageNote")}
 				</p>
 			</div>
 
@@ -51,8 +53,12 @@ export default function SimulatorPage() {
 								onProxyBaseUrlChange={s.setProxyBaseUrl}
 								protocol={s.protocol}
 								onProtocolChange={s.requestProtocolChange}
-								lockOpenaiForImage={
-									!s.isToolKind && (s.selectedModelIsImage || s.selectedModelIsAudio)
+								openaiLockKind={
+									!s.isToolKind && s.selectedModelIsImage
+										? "image"
+										: !s.isToolKind && s.selectedModelIsAudio
+											? "audio"
+											: undefined
 								}
 								hideProtocolControls={s.isToolKind}
 								geminiAction={s.geminiAction}
@@ -72,6 +78,7 @@ export default function SimulatorPage() {
 							/>
 							<SimulatorRoutingPanel
 								filterKind={s.filterKind}
+								protocol={s.protocol}
 								onFilterKindChange={s.setFilterKind}
 								kindCounts={s.kindCounts}
 								isToolKind={s.isToolKind}
@@ -91,6 +98,9 @@ export default function SimulatorPage() {
 								selectedModel={s.selectedModel}
 								selectedModelIsImage={s.selectedModelIsImage}
 								selectedModelIsAudio={s.selectedModelIsAudio}
+								realtimeOperation={s.selectedDashScopeRealtimeOperation}
+								realtimeOperationOptions={s.realtimeOperationOptions}
+								onRealtimeOperationChange={s.setDashScopeRealtimeOperation}
 								modelRoutingString={s.modelRoutingString}
 								matchingRoutes={s.matchingRoutes}
 							/>
@@ -114,13 +124,26 @@ export default function SimulatorPage() {
 							onSend={() => void s.send()}
 							onStop={() => s.stop()}
 							showImageOperation={
-								s.selectedModelIsImage && !s.selectedModelIsAudio && s.protocol === 'openai'
+								s.selectedModelIsImage &&
+								!s.selectedModelIsAudio &&
+								s.protocol === "openai"
 							}
 							imageOperation={s.imageOperation}
 							onImageOperationChange={s.setImageOperation}
 							editFiles={s.editFiles}
 							onEditFilesChange={s.setEditFiles}
-							showAudioTranscriptions={s.selectedModelIsAudio && s.protocol === 'openai'}
+							showAudioTranscriptions={
+								s.selectedAudioOperation === "transcriptions" &&
+									 (s.protocol === "openai" || s.protocol === "dashscope")
+							}
+							showAudioRealtimeMicrophone={s.selectedCanUseMicrophone}
+							audioInputMode={s.audioInputMode}
+							onAudioInputModeChange={s.setAudioInputMode}
+							showAudioSpeech={
+								s.selectedAudioOperation === "speech" &&
+								(s.protocol === "openai" || s.protocol === "dashscope")
+							}
+							showAudioRealtime={s.protocol === "dashscope" && s.selectedAudioOperation != null}
 							audioFile={s.audioFile}
 							onAudioFileChange={s.setAudioFile}
 						/>
@@ -129,6 +152,7 @@ export default function SimulatorPage() {
 							responseText={s.responseText}
 							usageHint={s.usageHint}
 							imagePreviews={s.imagePreviews}
+							audioPreviewUrl={s.audioPreviewUrl}
 							responseTab={s.responseTab}
 							onResponseTabChange={s.setResponseTab}
 							mergedReasoningDisplay={s.mergedReasoningDisplay}

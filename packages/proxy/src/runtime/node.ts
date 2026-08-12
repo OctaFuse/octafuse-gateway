@@ -4,9 +4,15 @@ import {
 	resolveNodeDatabaseConfig,
 	type StorageContext,
 } from '@octafuse/core';
-import { serve } from '@hono/node-server';
+import { createAdaptorServer } from '@hono/node-server';
+import type { IncomingMessage } from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { createProxyApp } from '../app';
+import {
+	createNodeDashScopeRealtimeDispatch,
+	createNodeWebSocketServer,
+	type NodeWebSocket,
+} from './node-realtime';
 
 let nodeStoragePromise: Promise<StorageContext> | null = null;
 
@@ -64,6 +70,7 @@ function printNodeStartupBanner(
 		`  Anthropic      POST ${base}/v1/messages`,
 		`  Gemini         POST ${base}/v1beta/models/{model}:generateContent`,
 		`  Web search     POST ${base}/v1/tools/web-search`,
+		`  DashScope WS   GET  ${base}/v1/dashscope/realtime`,
 		'',
 		`  数据库         ${dbLineLabel}  ${redactedUrl}`,
 		`  DATABASE_DRIVER ${dbDriver}`,
@@ -100,10 +107,52 @@ export async function startNodeServer(port = Number(process.env.PORT ?? 8787)): 
 	});
 
 	const app = createNodeApp();
-	serve({
-		fetch: app.fetch,
-		port,
+	const server = createAdaptorServer({ fetch: app.fetch });
+	const websocketServer = createNodeWebSocketServer();
+	// HTTP upgrade 先由 ws 完成握手，再把已接受的 socket 注入共享 Hono 路由。
+	server.on('upgrade', (request, socket, head) => {
+		const pathname = new URL(
+			request.url ?? '/',
+			`http://${request.headers.host ?? '127.0.0.1'}`
+		).pathname;
+		if (pathname !== '/v1/dashscope/realtime') {
+			socket.destroy();
+			return;
+		}
+		websocketServer.handleUpgrade(request, socket, head, (client) => {
+			void handleNodeRealtimeUpgrade(app, request, client);
+		});
 	});
+	server.listen(port);
+}
+
+async function handleNodeRealtimeUpgrade(
+	app: ReturnType<typeof createNodeApp>,
+	request: IncomingMessage,
+	client: NodeWebSocket
+): Promise<void> {
+	const protocol = (request.socket as { encrypted?: boolean }).encrypted ? 'https' : 'http';
+	const url = `${protocol}://${request.headers.host ?? '127.0.0.1'}${request.url ?? '/'}`;
+	const headers = new Headers();
+	for (const [key, value] of Object.entries(request.headers)) {
+		if (typeof value === 'string') headers.set(key, value);
+		else if (Array.isArray(value)) headers.set(key, value.join(', '));
+	}
+	const fetchRequest = new Request(url, {
+		method: 'GET',
+		headers,
+	});
+	try {
+		const response = await app.fetch(fetchRequest, {
+			NODE_REALTIME_DISPATCH: createNodeDashScopeRealtimeDispatch(client),
+		});
+		if (response.headers.get('x-octafuse-realtime-upgrade') === '1') return;
+		const message = (await response.clone().text()).trim() || `HTTP ${response.status}`;
+		if (client.readyState !== 3) client.close(1008, message.slice(0, 123));
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		if (client.readyState !== 3) client.close(1011, message.slice(0, 123));
+	}
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]!).href) {

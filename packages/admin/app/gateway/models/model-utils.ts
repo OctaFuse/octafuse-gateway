@@ -3,6 +3,7 @@ import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import {
 	parsePricingProfile,
+	profileHasAudioPerCharacterPricing,
 	profileHasAudioPerSecondPricing,
 	profileHasAudioTokenPricing,
 	profileHasImagePerImagePricing,
@@ -115,7 +116,7 @@ export type PricingMetricColumn = {
 	/** 悬停完整说明（表头缩写用） */
 	headerTitle?: string;
 	/** 单价单位：token 按百万；图片按张 */
-	unitKind?: 'per_m' | 'per_image' | 'per_second';
+	unitKind?: 'per_m' | 'per_image' | 'per_second' | 'per_character';
 	lines: PricingMetricLine[];
 };
 
@@ -160,6 +161,16 @@ export function buildPricingMetricColumns(pricingProfile: string | null | undefi
 			headerTitle: 'Audio transcription (per second)',
 			unitKind: 'per_second',
 			lines: [{ condition: 'All', price: profile.audio.price_per_second }],
+		});
+		return columns;
+	}
+
+	if (profileHasAudioPerCharacterPricing(profile) && profile.audio) {
+		columns.push({
+			title: 'Audio',
+			headerTitle: 'Speech synthesis (per character)',
+			unitKind: 'per_character',
+			lines: [{ condition: 'All', price: profile.audio.price_per_character }],
 		});
 		return columns;
 	}
