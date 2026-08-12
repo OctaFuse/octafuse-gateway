@@ -802,6 +802,36 @@
 		}
 	},
 	{
+		"id": "qwen-audio-3.0-asr-flash",
+		"display_name": "Qwen Audio 3.0 ASR Flash",
+		"description": "DashScope synchronous speech recognition for short recorded audio.",
+		"i18n": {
+			"en": "DashScope synchronous speech recognition for short recorded audio.",
+			"zh": "DashScope 同步语音识别模型，适合短录音转写。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000031428571,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
 		"id": "qwen3-asr-flash-realtime",
 		"display_name": "Qwen3 ASR Flash Realtime",
 		"description": "DashScope Qwen3 ASR real-time speech recognition over WebSocket sessions.",
@@ -964,14 +994,14 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.2,
+					"price_per_character": 0.00002,
 					"minimum_characters": 0
 				}
 			},
 			"cny": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 1.4,
+					"price_per_character": 0.00014,
 					"minimum_characters": 0
 				}
 			}
@@ -994,14 +1024,14 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.142857143,
+					"price_per_character": 0.0000142857143,
 					"minimum_characters": 0
 				}
 			},
 			"cny": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 1,
+					"price_per_character": 0.0001,
 					"minimum_characters": 0
 				}
 			}
@@ -1024,14 +1054,14 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.285714286,
+					"price_per_character": 0.0000285714286,
 					"minimum_characters": 0
 				}
 			},
 			"cny": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 2,
+					"price_per_character": 0.0002,
 					"minimum_characters": 0
 				}
 			}
@@ -1054,14 +1084,14 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.285714286,
+					"price_per_character": 0.0000285714286,
 					"minimum_characters": 0
 				}
 			},
 			"cny": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 2,
+					"price_per_character": 0.0002,
 					"minimum_characters": 0
 				}
 			}
@@ -1084,14 +1114,14 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.142857143,
+					"price_per_character": 0.0000142857143,
 					"minimum_characters": 0
 				}
 			},
 			"cny": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 1,
+					"price_per_character": 0.0001,
 					"minimum_characters": 0
 				}
 			}
@@ -1114,14 +1144,14 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.285714286,
+					"price_per_character": 0.0000285714286,
 					"minimum_characters": 0
 				}
 			},
 			"cny": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 2,
+					"price_per_character": 0.0002,
 					"minimum_characters": 0
 				}
 			}
@@ -1130,5 +1160,67 @@
 			"input": ["text"],
 			"output": ["audio"]
 		}
+	},
+	{
+		"id": "cosyvoice-v3.5-flash",
+		"display_name": "CosyVoice V3.5 Flash",
+		"description": "DashScope CosyVoice 3.5 Flash TTS with voice cloning/design and instruction control; billed by generated characters.",
+		"i18n": {
+			"en": "DashScope CosyVoice 3.5 Flash TTS with voice cloning/design and instruction control; billed by generated characters.",
+			"zh": "DashScope CosyVoice V3.5 Flash 语音合成，支持声音复刻/设计与指令控制，按生成字符数计费。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0000114285714,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00008,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		},
+		"released": "2026-02-27"
+	},
+	{
+		"id": "cosyvoice-v3.5-plus",
+		"display_name": "CosyVoice V3.5 Plus",
+		"description": "DashScope CosyVoice 3.5 Plus high-expressiveness TTS with voice cloning/design and instruction control; billed by generated characters.",
+		"i18n": {
+			"en": "DashScope CosyVoice 3.5 Plus high-expressiveness TTS with voice cloning/design and instruction control; billed by generated characters.",
+			"zh": "DashScope CosyVoice V3.5 Plus 高表现力语音合成，支持声音复刻/设计与指令控制，按生成字符数计费。"
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0000214285714,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00015,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		},
+		"released": "2026-02-27"
 	}
 ]

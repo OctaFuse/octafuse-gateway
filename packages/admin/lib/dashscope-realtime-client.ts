@@ -18,7 +18,15 @@ export function dashScopeTtsVoiceForModel(providerModelName?: string | null): st
 	// CosyVoice 音色与模型版本严格绑定；v2 不能使用 Qwen-Audio-TTS 的音色。
 	if (model === 'cosyvoice-v2') return 'longxiaochun_v2';
 	if (model === 'cosyvoice-v1') return 'longxiaochun';
-	if (model === 'cosyvoice-v3-flash' || model === 'cosyvoice-v3-plus') return 'longanyang';
+	// v3.5 仅支持复刻/设计音色（无系统音色）；模板仍填占位，调试前需换成已创建的 voice id。
+	if (
+		model === 'cosyvoice-v3-flash' ||
+		model === 'cosyvoice-v3-plus' ||
+		model === 'cosyvoice-v3.5-flash' ||
+		model === 'cosyvoice-v3.5-plus'
+	) {
+		return 'longanyang';
+	}
 	if (model.startsWith('qwen-audio-3.0-tts-plus')) return 'longanlingxin';
 	if (model.startsWith('qwen-audio-3.0-tts-flash')) return 'longanhuan_v3.6';
 	return 'longanlingxi';

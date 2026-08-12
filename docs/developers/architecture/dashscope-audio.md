@@ -122,7 +122,7 @@ POST /api/admin/providers/:providerId/dashscope/voices
 
 同步 ASR、TTS、资源管理和异步文件 ASR 都无需额外存储。异步文件 ASR 请求必须携带 DashScope 可访问的公开 `file_url`。
 
-数据库还需要应用 `0020_request_log_audio_characters.sql`，用于记录 TTS 的真实字符数。
+数据库还需要应用 `0022_request_log_audio_characters.sql`，用于记录 TTS 的真实字符数。
 
 ## 计费与日志
 

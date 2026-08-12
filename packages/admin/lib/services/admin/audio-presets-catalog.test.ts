@@ -10,11 +10,14 @@ const EXPECTED_AUDIO_IDS = [
 	'cosyvoice-v2',
 	'cosyvoice-v3-flash',
 	'cosyvoice-v3-plus',
+	'cosyvoice-v3.5-flash',
+	'cosyvoice-v3.5-plus',
 	'fun-asr',
 	'fun-asr-realtime',
 	'gpt-4o-mini-transcribe',
 	'gpt-4o-transcribe',
 	'gpt-4o-transcribe-diarize',
+	'qwen-audio-3.0-asr-flash',
 	'qwen-audio-3.0-asr-flash-filetrans',
 	'qwen-audio-3.0-asr-flash-streaming',
 	'qwen-audio-3.0-tts-flash',
@@ -106,8 +109,14 @@ describe('static audio model presets (*-audio.json)', () => {
 		assert.equal(asPricing(fileAsr.pricing.cny).audio_billing_mode, 'per_second');
 		assert.equal(asPricing(fileAsr.pricing.cny).audio?.price_per_second, 0.00022);
 
+		// 官方标价为「元/万字符」；目录存「每字符」单价，供 usage.characters × price 扣费。
 		const tts = byId.get('qwen-audio-3.0-tts-plus')!;
 		assert.equal(asPricing(tts.pricing.cny).audio_billing_mode, 'per_character');
-		assert.equal(asPricing(tts.pricing.cny).audio?.price_per_character, 1.4);
+		assert.equal(asPricing(tts.pricing.cny).audio?.price_per_character, 0.00014);
+		assert.equal(asPricing(tts.pricing.usd).audio?.price_per_character, 0.00002);
+
+		const cosy35 = byId.get('cosyvoice-v3.5-plus')!;
+		assert.equal(asPricing(cosy35.pricing.cny).audio?.price_per_character, 0.00015);
+		assert.equal(asPricing(cosy35.pricing.usd).audio?.price_per_character, 0.0000214285714);
 	});
 });

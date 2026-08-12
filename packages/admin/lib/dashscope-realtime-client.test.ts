@@ -30,6 +30,10 @@ describe('DashScope realtime TTS client messages', () => {
 		assert.equal(body.payload.parameters.voice, 'longxiaochun_v2');
 		const httpBody = JSON.parse(buildDashScopeSpeechBodyTemplate('cosyvoice-v2')) as { voice: string };
 		assert.equal(httpBody.voice, 'longxiaochun_v2');
+		const v35 = JSON.parse(buildDashScopeSpeechBodyTemplate('cosyvoice-v3.5-plus')) as {
+			voice: string;
+		};
+		assert.equal(v35.voice, 'longanyang');
 	});
 
 	it('uses model-specific Qwen-Audio-TTS system voices', () => {
