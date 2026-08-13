@@ -119,7 +119,7 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 	id: '',
 	name: '',
 	api_key: '',
-	status: 'active',
+	status: 'disabled',
 	openai: { ...EMPTY_PROTOCOL_FORM },
 	anthropic: { ...EMPTY_PROTOCOL_FORM },
 	gemini: { ...EMPTY_PROTOCOL_FORM },

@@ -675,7 +675,7 @@ export function RouteModal(props: Props) {
 							) : null}
 						</section>
 
-						<section>
+						<section className="pt-4">
 							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
 								<div className="flex min-h-0 min-w-0 flex-col">
 									<h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
