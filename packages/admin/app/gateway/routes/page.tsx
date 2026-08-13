@@ -4,7 +4,7 @@
  * 模型路由：`model_routes` CRUD、协议与 route_group、URL 查询参数驱动列表筛选（`useSearchParams` + Suspense）。
  * 模型卡片标题 / 铅笔图标可就地打开 ModelModal（改 Tag 等），无需跳转 Models 页。
  */
-import { Suspense, useCallback, useSyncExternalStore } from 'react';
+import { Suspense, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { ModelModal } from '../models/components/model-modal';
 import { useRoutesPageState } from './use-routes-page-state';
@@ -15,7 +15,8 @@ import { ProviderStickyDialog } from './components/provider-sticky-dialog';
 import { RoutePolicyDialog } from './components/route-policy-dialog';
 import { RouteVendorGroup } from './components/route-vendor-group';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
-import { RouteSurfaceCatalog } from './components/route-surface-catalog';
+import { RouteSurfaceCatalog, UnroutedModelsPanel } from './components/route-surface-catalog';
+import { buildRouteSurfaceCatalog } from './route-utils';
 import {
 	readStickyRefreshInterval,
 	subscribeStickyRefreshInterval,
@@ -76,6 +77,18 @@ function RoutesContent() {
 		await saveProviderSticky();
 		if (poolId) void invalidate(poolId);
 	}, [invalidate, saveProviderSticky, stickyDialogPoolId]);
+
+	const byModelLayout = useMemo(() => {
+		const unrouted = buildRouteSurfaceCatalog(state.routeCards).unrouted;
+		const unroutedIds = new Set(unrouted.map((card) => card.model_id));
+		const vendorGroups = state.routeCardVendorGroups
+			.map((group) => ({
+				...group,
+				cards: group.cards.filter((card) => !unroutedIds.has(card.model_id)),
+			}))
+			.filter((group) => group.cards.length > 0);
+		return { vendorGroups, unrouted };
+	}, [state.routeCardVendorGroups, state.routeCards]);
 
 	if (state.isLoading) {
 		return (
@@ -165,9 +178,9 @@ function RoutesContent() {
 									onOpenProviderStickyDialog={state.handleOpenProviderStickyDialog}
 								/>
 							) : (
-								<div>
+								<div className="space-y-6">
 									<div className={state.filterVendor ? '' : 'space-y-8'}>
-										{state.routeCardVendorGroups.map(
+										{byModelLayout.vendorGroups.map(
 											({ vendor, cards, showHeader }, vendorGroupIdx) => (
 												<RouteVendorGroup
 													key={vendor}
@@ -194,6 +207,15 @@ function RoutesContent() {
 											)
 										)}
 									</div>
+									<UnroutedModelsPanel
+										cards={byModelLayout.unrouted}
+										copiedModelId={state.copiedModelId}
+										onCopyModelId={state.copyModelId}
+										onEditModel={(modelId) =>
+											void state.modelEdit.openEditById(modelId)
+										}
+										onCreate={state.handleCreate}
+									/>
 								</div>
 							)}
 						</div>

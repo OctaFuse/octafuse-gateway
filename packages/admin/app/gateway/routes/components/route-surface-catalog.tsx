@@ -172,6 +172,46 @@ function CatalogModelNode({
 	);
 }
 
+export function UnroutedModelsPanel({
+	cards,
+	copiedModelId,
+	onCopyModelId,
+	onEditModel,
+	onCreate,
+}: {
+	cards: RouteModelGroup[];
+	copiedModelId: string | null;
+	onCopyModelId: (modelId: string) => void;
+	onEditModel: (modelId: string) => void;
+	onCreate: Props['onCreate'];
+}) {
+	const t = useTranslations('routes.flow');
+	if (cards.length === 0) return null;
+
+	return (
+		<section className="overflow-hidden rounded-xl border border-dashed border-gray-300 bg-white/80 shadow-sm">
+			<div className="border-b border-gray-200 px-4 py-3">
+				<h3 className="text-sm font-semibold text-gray-900">{t('unroutedTitle')}</h3>
+				<p className="mt-0.5 text-xs text-gray-500">{t('unroutedHint')}</p>
+			</div>
+			<div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+				{cards.map((card) => (
+					<CatalogModelNode
+						key={card.model_id}
+						card={card}
+						copiedModelId={copiedModelId}
+						onCopyModelId={onCopyModelId}
+						onEditModel={onEditModel}
+						onCreate={onCreate}
+						showAddRoute
+						showCopy
+					/>
+				))}
+			</div>
+		</section>
+	);
+}
+
 function CatalogUpstream({
 	section,
 	card,
@@ -469,7 +509,6 @@ export function RouteSurfaceCatalog(props: Props) {
 		onOpenStrategyDialog,
 		onOpenProviderStickyDialog,
 	} = props;
-	const t = useTranslations('routes.flow');
 	const catalog = useMemo(() => buildRouteSurfaceCatalog(cards), [cards]);
 
 	return (
@@ -493,28 +532,13 @@ export function RouteSurfaceCatalog(props: Props) {
 				/>
 			))}
 
-			{catalog.unrouted.length > 0 ? (
-				<section className="overflow-hidden rounded-xl border border-dashed border-gray-300 bg-white/80 shadow-sm">
-					<div className="border-b border-gray-200 px-4 py-3">
-						<h3 className="text-sm font-semibold text-gray-900">{t('unroutedTitle')}</h3>
-						<p className="mt-0.5 text-xs text-gray-500">{t('unroutedHint')}</p>
-					</div>
-					<div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-						{catalog.unrouted.map((card) => (
-							<CatalogModelNode
-								key={card.model_id}
-								card={card}
-								copiedModelId={copiedModelId}
-								onCopyModelId={onCopyModelId}
-								onEditModel={onEditModel}
-								onCreate={onCreate}
-								showAddRoute
-								showCopy
-							/>
-						))}
-					</div>
-				</section>
-			) : null}
+			<UnroutedModelsPanel
+				cards={catalog.unrouted}
+				copiedModelId={copiedModelId}
+				onCopyModelId={onCopyModelId}
+				onEditModel={onEditModel}
+				onCreate={onCreate}
+			/>
 		</div>
 	);
 }
