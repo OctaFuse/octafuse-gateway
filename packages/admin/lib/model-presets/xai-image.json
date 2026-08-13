@@ -1,5 +1,46 @@
 [
 	{
+		"id": "grok-imagine-image-2.0",
+		"display_name": "Grok Imagine Image 2.0",
+		"description": "xAI's Imagine Image 2.0 model for precise generation, editing, and multi-reference creative work. It follows detailed instructions, preserves identity across edits, and supports 1K/2K output.",
+		"i18n": {
+			"en": "xAI's Imagine Image 2.0 model for precise generation, editing, and multi-reference creative work. It follows detailed instructions, preserves identity across edits, and supports 1K/2K output.",
+			"zh": "xAI Imagine Image 2.0 模型，面向精确生成、编辑与多参考图创作。指令遵循更细，编辑时保持主体一致，并支持 1K/2K 输出。"
+		},
+		"vendor": "xai",
+		"context_window": null,
+		"max_tokens": null,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.04,
+					"uncertain_result_policy": "requested"
+				}
+			},
+			"cny": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.28,
+					"uncertain_result_policy": "requested"
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-08-07"
+	},
+	{
 		"id": "grok-imagine-image-quality",
 		"display_name": "Grok Imagine Image Quality",
 		"description": "A high-fidelity xAI model for fast image generation, editing, and reference-guided creation.",
@@ -10,9 +51,6 @@
 		"vendor": "xai",
 		"context_window": null,
 		"max_tokens": null,
-		"tags": [
-			"New"
-		],
 		"pricing": {
 			"usd": {
 				"image_billing_mode": "per_image",

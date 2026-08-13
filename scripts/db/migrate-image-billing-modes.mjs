@@ -67,6 +67,15 @@ const TARGETS = {
 		cny: { default: 0.1 },
 		usd: { default: 0.014 },
 	},
+	'grok-imagine-image-2.0': {
+		aliases: [],
+		cny: {
+			default: 0.28,
+		},
+		usd: {
+			default: 0.04,
+		},
+	},
 	'grok-imagine-image-quality': {
 		aliases: [],
 		cny: {

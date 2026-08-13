@@ -1,11 +1,11 @@
 [
 	{
-		"id": "grok-4.5",
-		"display_name": "Grok 4.5",
-		"description": "A frontier Grok model for coding, knowledge work, STEM, and demanding reasoning. It is positioned as xAI’s highest-capability option for frontier coding, knowledge work, and STEM tasks.",
+		"id": "grok-4.6",
+		"display_name": "Grok 4.6",
+		"description": "A frontier Grok model for long-running agents, coding, and knowledge work. It focuses on multi-step agents, ambitious interactive and visual work, and sustained coding trajectories.",
 		"i18n": {
-			"en": "A frontier Grok model for coding, knowledge work, STEM, and demanding reasoning. It is positioned as xAI’s highest-capability option for frontier coding, knowledge work, and STEM tasks.",
-			"zh": "面向编程、知识工作、STEM 与复杂推理的前沿 Grok 模型。定位为 xAI 面向前沿编程、知识工作和 STEM 任务的最高能力档位。"
+			"en": "A frontier Grok model for long-running agents, coding, and knowledge work. It focuses on multi-step agents, ambitious interactive and visual work, and sustained coding trajectories.",
+			"zh": "面向长时运行 Agent、编程与知识工作的前沿 Grok 模型。侧重多步 Agent、复杂交互与视觉任务，以及可持续推进的编程轨迹。"
 		},
 		"vendor": "xai",
 		"context_window": 500000,
@@ -17,10 +17,17 @@
 			"usd": {
 				"tiers": [
 					{
-						"upto": null,
+						"upto": 200000,
 						"input_price": 2,
 						"output_price": 6,
 						"cache_read_price": 0.5,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 12,
+						"cache_read_price": 1,
 						"cache_write_price": null
 					}
 				]
@@ -28,10 +35,77 @@
 			"cny": {
 				"tiers": [
 					{
-						"upto": null,
+						"upto": 200000,
 						"input_price": 14,
 						"output_price": 42,
 						"cache_read_price": 3.5,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 28,
+						"output_price": 84,
+						"cache_read_price": 7,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-08-12"
+	},
+	{
+		"id": "grok-4.5",
+		"display_name": "Grok 4.5",
+		"description": "A general-purpose Grok model for coding, knowledge work, STEM, and demanding reasoning. It supports both reasoning and non-reasoning modes for agentic software and workflow tasks.",
+		"i18n": {
+			"en": "A general-purpose Grok model for coding, knowledge work, STEM, and demanding reasoning. It supports both reasoning and non-reasoning modes for agentic software and workflow tasks.",
+			"zh": "面向编程、知识工作、STEM 与复杂推理的通用 Grok 模型。支持思考与非思考模式，适合 Agent 软件工程与工作流任务。"
+		},
+		"vendor": "xai",
+		"context_window": 500000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.3,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 12,
+						"cache_read_price": 0.6,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 14,
+						"output_price": 42,
+						"cache_read_price": 2.1,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 28,
+						"output_price": 84,
+						"cache_read_price": 4.2,
 						"cache_write_price": null
 					}
 				]
@@ -63,10 +137,17 @@
 			"usd": {
 				"tiers": [
 					{
-						"upto": null,
+						"upto": 200000,
 						"input_price": 1.25,
 						"output_price": 2.5,
 						"cache_read_price": 0.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2.5,
+						"output_price": 5,
+						"cache_read_price": 0.4,
 						"cache_write_price": null
 					}
 				]
@@ -74,10 +155,17 @@
 			"cny": {
 				"tiers": [
 					{
-						"upto": null,
+						"upto": 200000,
 						"input_price": 8.75,
 						"output_price": 17.5,
 						"cache_read_price": 1.4,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 17.5,
+						"output_price": 35,
+						"cache_read_price": 2.8,
 						"cache_write_price": null
 					}
 				]

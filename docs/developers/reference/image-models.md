@@ -34,6 +34,7 @@ Admin → Models → Import 勾选导入；**同 id 已存在不会覆盖**—�
 | `doubao-seedream-5-0` | Doubao Seedream 5.0 | bytedance | 国内（火山方舟） | generations + JSON **`image`** | **`per_image`**（¥0.22/张一口价） |
 | `doubao-seedream-5-0-pro` | Doubao Seedream 5.0 Pro | bytedance | 国内（火山方舟） | 同上 | **`per_image`**（¥0.30/¥0.60 按像素档 + 参考图） |
 | `glm-image` | GLM Image | zhipu | 国内 / Z.AI 国际 | generations（按上游） | **`per_image`**（¥0.1/次） |
+| `grok-imagine-image-2.0` | Grok Imagine Image 2.0 | xai | 海外 | generations（及上游 edits） | **`per_image`**（$0.04/张一口价） |
 | `grok-imagine-image-quality` | Grok Imagine Image Quality | xai | 海外 | generations（及上游 edits） | **`per_image`**（1K $0.05 / 2K $0.07；input $0.01） |
 | `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | google | 海外 | generations（OpenAI 兼容层） | **`token`**（Nano Banana 2） |
 | `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | google | 海外 | 同上 | **`token`**（Nano Banana Pro） |
@@ -76,9 +77,10 @@ Coding Plan / Agent Plan 模板路径不同，**勿与标准 `/api/v3` 混用**�
 - 国际模板 **Z.AI GLM (International)**：`https://api.z.ai/api/paas/v4`
 - Coding Plan 模板为 chat-only，**不要**用来跑 Images。
 
-### xAI（`grok-imagine-image-quality`）
+### xAI（`grok-imagine-image-2.0` / `grok-imagine-image-quality`）
 
 - 模板 **xAI (Grok)**：`endpoints.openai.base` = `https://api.x.ai/v1`（派生 `images/generations`）。
+- `grok-imagine-image-2.0` 为 2026-08-07 正式 API 型号；官网输出一口价 **$0.04/张**（支持 `quality=low|medium` 与 `resolution=1k|2k`，价目页未再按分辨率拆档）。
 
 ### Google Gemini（Nano Banana）
 
@@ -202,6 +204,7 @@ charged ≈
 | `doubao-seedream-5-0` | **0.22** | **0.035** | 火山方舟一口价；BytePlus $0.035；**不按 4K 翻倍** |
 | `doubao-seedream-5-0-pro` | **0.30**（≤2.36MP）/ **0.60**（>2.36MP） | **0.045** / **0.09** | `by_size`：`2k`→低档，`3k`/`4k`→高档；`image.input` CNY **0.02** / USD **0.003**（官方首张免费网关暂按全量计） |
 | `glm-image` | **0.1** | **0.014** | 智谱官方 ¥0.1/次；USD ≈ ×7.14（国内权威 CNY） |
+| `grok-imagine-image-2.0` | **0.28** | **0.04** | xAI 官方一口价；CNY = USD ×7；价目页未单列参考图单价 |
 | `grok-imagine-image-quality` | **0.35**（1K）/ **0.49**（2K） | **0.05** / **0.07** | xAI 官方；CNY = USD ×7；`image.input.default` USD **0.01**（CNY **0.07**） |
 
 **Google Nano Banana**（`token`；官方 $/1M；CNY = ×7）：
