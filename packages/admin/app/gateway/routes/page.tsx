@@ -108,39 +108,38 @@ function RoutesContent() {
 			<RouteFlowOverview view={workspaceView} />
 
 			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
-				<div className="flex min-w-0 flex-col lg:flex-row lg:items-start">
-					<RouteFilterSidebar
-						visibleModelCount={state.visibleModelCount}
-						visibleRouteCount={state.visibleRouteCount}
-						hasActiveFilters={state.hasActiveFilters}
-						filterStatus={state.filterStatus}
-						filterKind={state.filterKind}
-						filterRouteGroup={state.filterRouteGroup}
-						filterVendor={state.filterVendor}
-						filterProviderId={state.filterProviderId}
-						statusCounts={state.statusCounts}
-						kindCounts={state.kindCounts}
-						routesCount={state.routes.length}
-						routeGroupFilterOptions={state.routeGroupFilterOptions}
-						routeGroupCounts={state.routeGroupCounts}
-						vendorFilterOptions={state.vendorFilterOptions}
-						providers={state.providers}
-						providerRouteCounts={state.providerRouteCounts}
-						onFilterStatusChange={state.setFilterStatus}
-						onFilterKindChange={state.setFilterKind}
-						onFilterRouteGroupChange={state.setFilterRouteGroup}
-						onFilterVendorChange={state.setFilterVendor}
-						onFilterProviderIdChange={state.setFilterProviderId}
-						onClearAllFilters={state.clearAllFilters}
-					/>
+				<RouteFilterSidebar
+					visibleModelCount={state.visibleModelCount}
+					visibleRouteCount={state.visibleRouteCount}
+					hasActiveFilters={state.hasActiveFilters}
+					filterStatus={state.filterStatus}
+					filterKind={state.filterKind}
+					filterRouteGroup={state.filterRouteGroup}
+					filterVendor={state.filterVendor}
+					filterProviderId={state.filterProviderId}
+					statusCounts={state.statusCounts}
+					kindCounts={state.kindCounts}
+					routesCount={state.routes.length}
+					routeGroupFilterOptions={state.routeGroupFilterOptions}
+					routeGroupCounts={state.routeGroupCounts}
+					vendorFilterOptions={state.vendorFilterOptions}
+					providers={state.providers}
+					providerRouteCounts={state.providerRouteCounts}
+					onFilterStatusChange={state.setFilterStatus}
+					onFilterKindChange={state.setFilterKind}
+					onFilterRouteGroupChange={state.setFilterRouteGroup}
+					onFilterVendorChange={state.setFilterVendor}
+					onFilterProviderIdChange={state.setFilterProviderId}
+					onClearAllFilters={state.clearAllFilters}
+				/>
 
-					<section className="min-w-0 flex-1 bg-slate-100/70">
-						<RouteWorkspaceHeader
-							activeFilterSummary={state.activeFilterSummary}
-							view={workspaceView}
-							onViewChange={handleWorkspaceViewChange}
-							stickyRefreshIntervalMs={stickyRefreshIntervalMs}
-						/>
+				<section className="min-w-0 bg-slate-100/70">
+					<RouteWorkspaceHeader
+						activeFilterSummary={state.activeFilterSummary}
+						view={workspaceView}
+						onViewChange={handleWorkspaceViewChange}
+						stickyRefreshIntervalMs={stickyRefreshIntervalMs}
+					/>
 
 						<div className="bg-slate-100/70 p-4 sm:p-6">
 							{state.routesByModel.length === 0 ? (
@@ -218,9 +217,8 @@ function RoutesContent() {
 									/>
 								</div>
 							)}
-						</div>
-					</section>
-				</div>
+					</div>
+				</section>
 			</div>
 
 			<RouteModal
