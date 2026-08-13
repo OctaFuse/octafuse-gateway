@@ -1,20 +1,20 @@
 'use client';
 
-import { Squares2X2Icon, QueueListIcon, ViewColumnsIcon } from '@heroicons/react/24/outline';
+import { QueueListIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import type { StickyRefreshIntervalMs } from '../sticky-refresh-preference';
-import type { RouteFlowDensity } from '../types';
+import type { RouteWorkspaceView } from '../types';
 import { StickyRefreshControl } from './sticky-refresh-control';
 
 type Props = {
 	activeFilterSummary: string[];
-	density: RouteFlowDensity;
-	onDensityChange: (density: RouteFlowDensity) => void;
+	view: RouteWorkspaceView;
+	onViewChange: (view: RouteWorkspaceView) => void;
 	stickyRefreshIntervalMs: StickyRefreshIntervalMs;
 };
 
 export function RouteWorkspaceHeader(props: Props) {
-	const { activeFilterSummary, density, onDensityChange, stickyRefreshIntervalMs } = props;
+	const { activeFilterSummary, view, onViewChange, stickyRefreshIntervalMs } = props;
 	const t = useTranslations('routes.workspace');
 
 	return (
@@ -39,49 +39,35 @@ export function RouteWorkspaceHeader(props: Props) {
 				<div
 					className="inline-flex rounded-lg bg-slate-100 p-0.5 ring-1 ring-inset ring-slate-200"
 					role="group"
-					aria-label={t('densityGroupAria')}
+					aria-label={t('viewGroupAria')}
 				>
 					<button
 						type="button"
-						onClick={() => onDensityChange('summary')}
+						onClick={() => onViewChange('overview')}
 						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-							density === 'summary'
+							view === 'overview'
 								? 'bg-white text-slate-900 shadow-sm'
 								: 'text-slate-600 hover:text-slate-900'
 						}`}
-						aria-pressed={density === 'summary'}
-						title={t('densitySummaryHint')}
+						aria-pressed={view === 'overview'}
+						title={t('viewOverviewHint')}
+					>
+						<RectangleGroupIcon className="h-4 w-4" />
+						{t('viewOverview')}
+					</button>
+					<button
+						type="button"
+						onClick={() => onViewChange('byModel')}
+						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+							view === 'byModel'
+								? 'bg-white text-slate-900 shadow-sm'
+								: 'text-slate-600 hover:text-slate-900'
+						}`}
+						aria-pressed={view === 'byModel'}
+						title={t('viewByModelHint')}
 					>
 						<QueueListIcon className="h-4 w-4" />
-						{t('densitySummary')}
-					</button>
-					<button
-						type="button"
-						onClick={() => onDensityChange('topology')}
-						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-							density === 'topology'
-								? 'bg-white text-slate-900 shadow-sm'
-								: 'text-slate-600 hover:text-slate-900'
-						}`}
-						aria-pressed={density === 'topology'}
-						title={t('densityTopologyHint')}
-					>
-						<Squares2X2Icon className="h-4 w-4" />
-						{t('densityTopology')}
-					</button>
-					<button
-						type="button"
-						onClick={() => onDensityChange('surface')}
-						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-							density === 'surface'
-								? 'bg-white text-slate-900 shadow-sm'
-								: 'text-slate-600 hover:text-slate-900'
-						}`}
-						aria-pressed={density === 'surface'}
-						title={t('densitySurfaceHint')}
-					>
-						<ViewColumnsIcon className="h-4 w-4" />
-						{t('densitySurface')}
+						{t('viewByModel')}
 					</button>
 				</div>
 			</div>

@@ -8,7 +8,7 @@ import {
 	MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import type { RouteFlowDensity } from '../types';
+import type { RouteWorkspaceView } from '../types';
 
 const STEPS = [
 	{ key: 'request', icon: CursorArrowRaysIcon },
@@ -18,10 +18,10 @@ const STEPS = [
 ] as const;
 
 type Props = {
-	density?: RouteFlowDensity;
+	view?: RouteWorkspaceView;
 };
 
-export function RouteFlowOverview({ density = 'topology' }: Props) {
+export function RouteFlowOverview({ view = 'byModel' }: Props) {
 	const t = useTranslations('routes.flow');
 
 	return (
@@ -31,11 +31,7 @@ export function RouteFlowOverview({ density = 'topology' }: Props) {
 					{t('overviewTitle')}
 				</h2>
 				<p className="mt-0.5 text-xs text-gray-500">
-					{density === 'summary'
-						? t('overviewHintSummary')
-						: density === 'surface'
-							? t('overviewHintSurface')
-							: t('overviewHintTopology')}
+					{view === 'overview' ? t('overviewHintOverview') : t('overviewHintByModel')}
 				</p>
 			</div>
 			<div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] sm:items-center">

@@ -21,17 +21,17 @@ import {
 	subscribeStickyRefreshInterval,
 } from './sticky-refresh-preference';
 import { StickySummaryProvider, useStickyRefreshControls } from './sticky-summary-store';
-import { parseRouteFlowDensity, type RouteFlowDensity } from './types';
+import { parseRouteWorkspaceView, type RouteWorkspaceView } from './types';
 
 const FLOW_DENSITY_STORAGE_KEY = 'octafuse.admin.routes.flowDensity';
 const FLOW_DENSITY_EVENT = 'octafuse-admin-routes-flow-density';
 
-function readStoredFlowDensity(): RouteFlowDensity {
-	if (typeof window === 'undefined') return 'topology';
+function readStoredWorkspaceView(): RouteWorkspaceView {
+	if (typeof window === 'undefined') return 'byModel';
 	try {
-		return parseRouteFlowDensity(window.localStorage.getItem(FLOW_DENSITY_STORAGE_KEY));
+		return parseRouteWorkspaceView(window.localStorage.getItem(FLOW_DENSITY_STORAGE_KEY));
 	} catch {
-		return 'topology';
+		return 'byModel';
 	}
 }
 
@@ -49,10 +49,10 @@ function RoutesContent() {
 	const tCommon = useTranslations('common');
 	const state = useRoutesPageState();
 	const { invalidate } = useStickyRefreshControls();
-	const flowDensity = useSyncExternalStore(
+	const workspaceView = useSyncExternalStore(
 		subscribeFlowDensity,
-		readStoredFlowDensity,
-		() => 'topology' as const
+		readStoredWorkspaceView,
+		() => 'byModel' as const
 	);
 	const stickyRefreshIntervalMs = useSyncExternalStore(
 		subscribeStickyRefreshInterval,
@@ -62,9 +62,9 @@ function RoutesContent() {
 	const saveProviderSticky = state.handleSaveProviderSticky;
 	const stickyDialogPoolId = state.stickyDialog?.poolId;
 
-	const handleFlowDensityChange = useCallback((density: RouteFlowDensity) => {
+	const handleWorkspaceViewChange = useCallback((view: RouteWorkspaceView) => {
 		try {
-			window.localStorage.setItem(FLOW_DENSITY_STORAGE_KEY, density);
+			window.localStorage.setItem(FLOW_DENSITY_STORAGE_KEY, view);
 		} catch {
 			// Ignore quota / private-mode failures; preference is best-effort.
 		}
@@ -92,7 +92,7 @@ function RoutesContent() {
 				<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 			</div>
 
-			<RouteFlowOverview density={flowDensity} />
+			<RouteFlowOverview view={workspaceView} />
 
 			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
 				<div className="flex min-w-0 flex-col lg:flex-row lg:items-start">
@@ -124,8 +124,8 @@ function RoutesContent() {
 					<section className="min-w-0 flex-1 bg-slate-100/70">
 						<RouteWorkspaceHeader
 							activeFilterSummary={state.activeFilterSummary}
-							density={flowDensity}
-							onDensityChange={handleFlowDensityChange}
+							view={workspaceView}
+							onViewChange={handleWorkspaceViewChange}
 							stickyRefreshIntervalMs={stickyRefreshIntervalMs}
 						/>
 
@@ -146,7 +146,7 @@ function RoutesContent() {
 										</p>
 									) : null}
 								</div>
-							) : flowDensity === 'surface' ? (
+							) : workspaceView === 'overview' ? (
 								<RouteSurfaceCatalog
 									cards={state.routeCards}
 									modelMeta={state.modelMeta}
@@ -178,7 +178,7 @@ function RoutesContent() {
 													modelMeta={state.modelMeta}
 													providerMeta={state.providerMeta}
 													globalRouteStrategy={state.globalRouteStrategy}
-													density={flowDensity}
+													density="topology"
 													copiedModelId={state.copiedModelId}
 													togglingId={state.togglingId}
 													onCopyModelId={state.copyModelId}

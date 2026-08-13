@@ -244,7 +244,7 @@ function CatalogUpstream({
 			meta={meta}
 			providerMeta={providerMeta}
 			globalRouteStrategy={globalRouteStrategy}
-			density="summary"
+			density="topology"
 			togglingId={togglingId}
 			onCreate={onCreate}
 			onEdit={onEdit}
@@ -290,7 +290,7 @@ function GroupToUpstreamBranch({
 	return (
 		<div className="relative py-3 xl:pl-4">
 			<BranchConnectors index={branchIndex} count={branchCount} colorClass={railColor} />
-			<div className="grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(320px,1fr)] xl:items-center">
+			<div className="grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(420px,1fr)] xl:items-center">
 				<div className="relative flex min-w-0 flex-col justify-center xl:pr-4">
 					<RouteGroupNode modelId={card.model_id} routeGroup={section.group} />
 					<span
