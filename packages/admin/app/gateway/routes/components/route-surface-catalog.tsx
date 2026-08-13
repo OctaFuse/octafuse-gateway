@@ -15,7 +15,7 @@ import {
 	type SurfaceCatalogGroup,
 } from '../route-utils';
 import type { RouteListRow, RouteProtocolGroupSection } from '../types';
-import { RequestSurfaceNode, UpstreamPoolPanel } from './route-model-flow';
+import { RequestSurfaceNode, RouteGroupNode, UpstreamPoolPanel } from './route-model-flow';
 
 type Props = {
 	cards: RouteModelGroup[];
@@ -167,76 +167,6 @@ function CatalogModelNode({
 						total: card.groupRoutes.length,
 					})}
 				</span>
-			</div>
-		</div>
-	);
-}
-
-function RouteGroupNode({
-	modelId,
-	routeGroup,
-	copiedModelId,
-	onCopyModelId,
-}: {
-	modelId: string;
-	routeGroup: string;
-	copiedModelId: string | null;
-	onCopyModelId: (modelId: string) => void;
-}) {
-	const t = useTranslations('routes.flow');
-	const tCard = useTranslations('routes.card');
-	const requestedModelId = routeGroup === 'default' ? modelId : `${modelId}:${routeGroup}`;
-	const isDefaultGroup = routeGroup === 'default';
-	const copied = copiedModelId === requestedModelId;
-
-	return (
-		<div
-			className={`w-full min-w-0 rounded-lg border px-3 py-2.5 shadow-sm ${
-				isDefaultGroup
-					? 'border-sky-200 bg-sky-50/75'
-					: 'border-violet-200 bg-violet-50/75'
-			}`}
-			aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
-		>
-			<div className="flex min-w-0 items-center gap-1.5">
-				<span
-					className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${
-						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
-					}`}
-				>
-					{t('routeGroup')}
-				</span>
-				<span
-					className={`min-w-0 truncate text-[11px] font-semibold ${
-						isDefaultGroup ? 'text-sky-900' : 'text-violet-900'
-					}`}
-				>
-					{routeGroup}
-				</span>
-			</div>
-			<div className="mt-1 flex min-w-0 items-center gap-0.5">
-				<span
-					className={`min-w-0 truncate font-mono text-[10px] ${
-						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
-					}`}
-					title={`model=${requestedModelId}`}
-				>
-					model={requestedModelId}
-				</span>
-				<button
-					type="button"
-					onClick={() => void onCopyModelId(requestedModelId)}
-					className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-						copied
-							? 'bg-emerald-50 text-emerald-600'
-							: isDefaultGroup
-								? 'text-sky-500 hover:bg-sky-100 hover:text-sky-800'
-								: 'text-violet-500 hover:bg-violet-100 hover:text-violet-800'
-					}`}
-					title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
-				>
-					<ClipboardDocumentIcon className="h-3.5 w-3.5" />
-				</button>
 			</div>
 		</div>
 	);
@@ -557,7 +487,7 @@ export function RouteSurfaceCatalog(props: Props) {
 						<h3 className="text-sm font-semibold text-gray-900">{t('unroutedTitle')}</h3>
 						<p className="mt-0.5 text-xs text-gray-500">{t('unroutedHint')}</p>
 					</div>
-					<div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+					<div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 						{catalog.unrouted.map((card) => (
 							<CatalogModelNode
 								key={card.model_id}

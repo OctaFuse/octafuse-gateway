@@ -19,23 +19,20 @@ export function RouteWorkspaceHeader(props: Props) {
 
 	return (
 		<div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
-			<div className="flex min-w-0 flex-wrap items-center gap-3">
-				<div className="min-w-0">
-					<h2 className="text-base font-semibold text-gray-900">{t('title')}</h2>
-					{activeFilterSummary.length > 0 ? (
-						<p
-							className="mt-0.5 truncate text-xs text-gray-500"
-							title={activeFilterSummary.join(' · ')}
-						>
-							{t('filteredBy', { summary: activeFilterSummary.join(' · ') })}
-						</p>
-					) : (
-						<p className="mt-0.5 text-xs text-gray-500">{t('allModelsRoutes')}</p>
-					)}
-				</div>
-				<StickyRefreshControl intervalMs={stickyRefreshIntervalMs} />
+			<div className="min-w-0">
+				<h2 className="text-base font-semibold text-gray-900">{t('title')}</h2>
+				{activeFilterSummary.length > 0 ? (
+					<p
+						className="mt-0.5 truncate text-xs text-gray-500"
+						title={activeFilterSummary.join(' · ')}
+					>
+						{t('filteredBy', { summary: activeFilterSummary.join(' · ') })}
+					</p>
+				) : (
+					<p className="mt-0.5 text-xs text-gray-500">{t('allModelsRoutes')}</p>
+				)}
 			</div>
-			<div className="flex shrink-0 flex-wrap items-center gap-2">
+			<div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
 				<div
 					className="inline-flex rounded-lg bg-slate-100 p-0.5 ring-1 ring-inset ring-slate-200"
 					role="group"
@@ -70,6 +67,7 @@ export function RouteWorkspaceHeader(props: Props) {
 						{t('viewByModel')}
 					</button>
 				</div>
+				<StickyRefreshControl intervalMs={stickyRefreshIntervalMs} />
 			</div>
 		</div>
 	);

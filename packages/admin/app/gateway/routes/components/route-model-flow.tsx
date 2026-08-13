@@ -379,53 +379,73 @@ function UpstreamToolbar({
 	);
 }
 
-function RoutingMatchConnector({
+export function RouteGroupNode({
 	modelId,
 	routeGroup,
+	copiedModelId,
+	onCopyModelId,
 }: {
 	modelId: string;
 	routeGroup: string;
+	copiedModelId: string | null;
+	onCopyModelId: (modelId: string) => void;
 }) {
 	const t = useTranslations('routes.flow');
+	const tCard = useTranslations('routes.card');
 	const requestedModelId = routeGroup === 'default' ? modelId : `${modelId}:${routeGroup}`;
 	const isDefaultGroup = routeGroup === 'default';
-
-	const modelBlock = (
-		<span
-			className={`line-clamp-2 max-w-full break-all rounded-md px-2 py-0.5 text-center font-mono text-[10px] font-semibold leading-3 ring-1 ring-inset ${
-				isDefaultGroup
-					? 'bg-sky-50 text-sky-700 ring-sky-200'
-					: 'bg-violet-50 text-violet-700 ring-violet-200'
-			}`}
-			title={`model=${requestedModelId}`}
-		>
-			model={requestedModelId}
-		</span>
-	);
+	const copied = copiedModelId === requestedModelId;
 
 	return (
-		<>
-			{/* Desktop: requested model stays on the routing rail. */}
-			<div
-				className="relative hidden min-w-0 items-center justify-center xl:flex"
-				aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
-			>
+		<div
+			className={`w-full min-w-0 rounded-lg border px-3 py-2.5 shadow-sm ${
+				isDefaultGroup
+					? 'border-sky-200 bg-sky-50/75'
+					: 'border-violet-200 bg-violet-50/75'
+			}`}
+			aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
+		>
+			<div className="flex min-w-0 items-center gap-1.5">
 				<span
-					className={`absolute inset-x-0 top-1/2 h-px ${
-						isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300'
+					className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${
+						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
 					}`}
-					aria-hidden
-				/>
-				<div className="relative z-[1] flex w-full max-w-full justify-center">{modelBlock}</div>
+				>
+					{t('routeGroup')}
+				</span>
+				<span
+					className={`min-w-0 truncate text-[11px] font-semibold ${
+						isDefaultGroup ? 'text-sky-900' : 'text-violet-900'
+					}`}
+				>
+					{routeGroup}
+				</span>
 			</div>
-			{/* Mobile: keep the requested model before the downstream pool. */}
-			<div
-				className="flex min-w-0 justify-center py-0.5 xl:hidden"
-				aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
-			>
-				{modelBlock}
+			<div className="mt-1 flex min-w-0 items-center gap-0.5">
+				<span
+					className={`min-w-0 truncate font-mono text-[10px] ${
+						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
+					}`}
+					title={`model=${requestedModelId}`}
+				>
+					model={requestedModelId}
+				</span>
+				<button
+					type="button"
+					onClick={() => void onCopyModelId(requestedModelId)}
+					className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+						copied
+							? 'bg-emerald-50 text-emerald-600'
+							: isDefaultGroup
+								? 'text-sky-500 hover:bg-sky-100 hover:text-sky-800'
+								: 'text-violet-500 hover:bg-violet-100 hover:text-violet-800'
+					}`}
+					title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
+				>
+					<ClipboardDocumentIcon className="h-3.5 w-3.5" />
+				</button>
 			</div>
-		</>
+		</div>
 	);
 }
 
@@ -917,7 +937,9 @@ function FlowBranch({
 	density,
 	branchIndex,
 	branchCount,
+	copiedModelId,
 	togglingId,
+	onCopyModelId,
 	onCreate,
 	onEdit,
 	onToggleStatus,
@@ -926,8 +948,12 @@ function FlowBranch({
 }: UpstreamPoolPanelProps & {
 	branchIndex: number;
 	branchCount: number;
+	copiedModelId: string | null;
+	onCopyModelId: (modelId: string) => void;
 }) {
 	const isSummary = density === 'summary';
+	const isDefaultGroup = section.group === 'default';
+	const groupRail = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
 	const railClass =
 		branchIndex === 0
 			? 'top-1/2 bottom-0'
@@ -950,19 +976,25 @@ function FlowBranch({
 			<div
 				className={
 					isSummary
-						? 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(150px,240px)_auto_minmax(320px,1fr)] xl:items-center'
-						: 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(150px,240px)_auto_minmax(420px,1fr)] xl:items-center'
+						? 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(320px,1fr)] xl:items-center'
+						: 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(420px,1fr)] xl:items-center'
 				}
 			>
-				<RoutingMatchConnector
-					modelId={card.model_id}
-					routeGroup={section.group}
-				/>
-
-				<div className="flex items-center justify-center py-0.5" aria-hidden>
-					<ArrowDownIcon className="h-4 w-4 text-blue-400 xl:hidden" />
+				<div className="relative flex min-w-0 flex-col justify-center xl:pr-4">
+					<RouteGroupNode
+						modelId={card.model_id}
+						routeGroup={section.group}
+						copiedModelId={copiedModelId}
+						onCopyModelId={onCopyModelId}
+					/>
+					<span
+						className={`absolute right-0 top-1/2 hidden h-px w-4 xl:block ${groupRail}`}
+						aria-hidden
+					/>
+					<div className="flex justify-center pt-1 xl:hidden" aria-hidden>
+						<ArrowDownIcon className="h-4 w-4 text-blue-400" />
+					</div>
 				</div>
-
 				<UpstreamPoolPanel
 					section={section}
 					card={card}
@@ -989,7 +1021,9 @@ function FlowSection({
 	providerMeta,
 	globalRouteStrategy,
 	density,
+	copiedModelId,
 	togglingId,
+	onCopyModelId,
 	onCreate,
 	onEdit,
 	onToggleStatus,
@@ -1002,7 +1036,9 @@ function FlowSection({
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
 	density: RouteFlowDensity;
+	copiedModelId: string | null;
 	togglingId: string | null;
+	onCopyModelId: (modelId: string) => void;
 	onCreate: Props['onCreate'];
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
@@ -1034,7 +1070,9 @@ function FlowSection({
 							density={density}
 							branchIndex={branchIndex}
 							branchCount={surface.sections.length}
+							copiedModelId={copiedModelId}
 							togglingId={togglingId}
+							onCopyModelId={onCopyModelId}
 							onCreate={onCreate}
 							onEdit={onEdit}
 							onToggleStatus={onToggleStatus}
@@ -1150,7 +1188,9 @@ export function RouteModelFlow(props: Props) {
 						providerMeta={providerMeta}
 						globalRouteStrategy={globalRouteStrategy}
 						density={density}
+						copiedModelId={copiedModelId}
 						togglingId={togglingId}
+						onCopyModelId={onCopyModelId}
 						onCreate={onCreate}
 						onEdit={onEdit}
 						onToggleStatus={onToggleStatus}
