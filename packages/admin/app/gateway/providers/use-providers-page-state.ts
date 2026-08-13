@@ -189,7 +189,7 @@ export function useProvidersPageState() {
 			...EMPTY_PROVIDER_FORM,
 			id: '',
 			api_key: '',
-			status: 'active',
+			status: 'disabled',
 			openai: { ...EMPTY_PROTOCOL_FORM },
 			anthropic: { ...EMPTY_PROTOCOL_FORM },
 			gemini: { ...EMPTY_PROTOCOL_FORM },
@@ -220,7 +220,7 @@ export function useProvidersPageState() {
 				name: `${provider.name} (copy)`,
 				...providerToFormData(provider),
 				api_key: '',
-				status: provider.status === 'disabled' ? 'disabled' : 'active',
+				status: 'disabled',
 				description: provider.description ?? '',
 			});
 			setShowModal(true);

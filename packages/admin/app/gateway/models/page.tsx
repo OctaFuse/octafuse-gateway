@@ -2,7 +2,7 @@
 
 /**
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
- * 左侧 Kind（All | LLM | Image | Audio）+ Vendor；右侧当前筛选模型卡片；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
+ * 页面筛选条 Kind（All | LLM | Image | Audio）+ Vendor；下方 Model Catalog 卡片；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
  * `?edit=<model_id>` 可从 Routes 等入口深链直接打开编辑弹窗（消费后从 URL 清除）。
  */
 import { Suspense } from 'react';
@@ -42,24 +42,22 @@ function ModelsContent() {
 				</p>
 			</div>
 
-			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
-				<div className="flex min-w-0 flex-col lg:flex-row lg:items-start">
-					<ModelFilterSidebar
-						modelCount={state.models.length}
-						hasActiveFilter={state.hasActiveFilter}
-						selectedVendorItemsCount={state.selectedVendorItems.length}
-						isAllVendors={state.isAllVendors}
-						selectedVendor={state.selectedVendor}
-						modelsByVendor={state.modelsByVendor}
-						selectedKind={state.selectedKind}
-						kindCounts={state.kindCounts}
-						onSelectVendor={state.setSelectedVendor}
-						onSelectKind={state.setSelectedKind}
-						onClearFilter={state.clearFilters}
-					/>
+			<ModelFilterSidebar
+				modelCount={state.models.length}
+				hasActiveFilter={state.hasActiveFilter}
+				isAllVendors={state.isAllVendors}
+				selectedVendor={state.selectedVendor}
+				modelsByVendor={state.modelsByVendor}
+				selectedKind={state.selectedKind}
+				kindCounts={state.kindCounts}
+				onSelectVendor={state.setSelectedVendor}
+				onSelectKind={state.setSelectedKind}
+				onClearFilter={state.clearFilters}
+			/>
 
-					<section className="min-w-0 flex-1 bg-slate-100/70">
-						<ModelCatalogToolbar
+			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
+				<section className="min-w-0 bg-slate-100/70">
+					<ModelCatalogToolbar
 							activeVendorTitle={state.activeVendorTitle}
 							selectedCount={state.selectedVendorItems.length}
 							hasModels={state.models.length > 0}
@@ -99,7 +97,6 @@ function ModelsContent() {
 							)}
 						</div>
 					</section>
-				</div>
 			</div>
 
 			<ModelModal

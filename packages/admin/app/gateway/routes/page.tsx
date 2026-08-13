@@ -4,7 +4,7 @@
  * 模型路由：`model_routes` CRUD、协议与 route_group、URL 查询参数驱动列表筛选（`useSearchParams` + Suspense）。
  * 模型卡片标题 / 铅笔图标可就地打开 ModelModal（改 Tag 等），无需跳转 Models 页。
  */
-import { Suspense, useCallback, useSyncExternalStore } from 'react';
+import { Suspense, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { ModelModal } from '../models/components/model-modal';
 import { useRoutesPageState } from './use-routes-page-state';
@@ -15,23 +15,24 @@ import { ProviderStickyDialog } from './components/provider-sticky-dialog';
 import { RoutePolicyDialog } from './components/route-policy-dialog';
 import { RouteVendorGroup } from './components/route-vendor-group';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
+import { RouteSurfaceCatalog, UnroutedModelsPanel } from './components/route-surface-catalog';
+import { buildRouteSurfaceCatalog } from './route-utils';
 import {
 	readStickyRefreshInterval,
 	subscribeStickyRefreshInterval,
 } from './sticky-refresh-preference';
 import { StickySummaryProvider, useStickyRefreshControls } from './sticky-summary-store';
-import type { RouteFlowDensity } from './types';
+import { parseRouteWorkspaceView, type RouteWorkspaceView } from './types';
 
 const FLOW_DENSITY_STORAGE_KEY = 'octafuse.admin.routes.flowDensity';
 const FLOW_DENSITY_EVENT = 'octafuse-admin-routes-flow-density';
 
-function readStoredFlowDensity(): RouteFlowDensity {
-	if (typeof window === 'undefined') return 'topology';
+function readStoredWorkspaceView(): RouteWorkspaceView {
+	if (typeof window === 'undefined') return 'byModel';
 	try {
-		const raw = window.localStorage.getItem(FLOW_DENSITY_STORAGE_KEY);
-		return raw === 'summary' ? 'summary' : 'topology';
+		return parseRouteWorkspaceView(window.localStorage.getItem(FLOW_DENSITY_STORAGE_KEY));
 	} catch {
-		return 'topology';
+		return 'byModel';
 	}
 }
 
@@ -49,10 +50,10 @@ function RoutesContent() {
 	const tCommon = useTranslations('common');
 	const state = useRoutesPageState();
 	const { invalidate } = useStickyRefreshControls();
-	const flowDensity = useSyncExternalStore(
+	const workspaceView = useSyncExternalStore(
 		subscribeFlowDensity,
-		readStoredFlowDensity,
-		() => 'topology' as const
+		readStoredWorkspaceView,
+		() => 'byModel' as const
 	);
 	const stickyRefreshIntervalMs = useSyncExternalStore(
 		subscribeStickyRefreshInterval,
@@ -62,9 +63,9 @@ function RoutesContent() {
 	const saveProviderSticky = state.handleSaveProviderSticky;
 	const stickyDialogPoolId = state.stickyDialog?.poolId;
 
-	const handleFlowDensityChange = useCallback((density: RouteFlowDensity) => {
+	const handleWorkspaceViewChange = useCallback((view: RouteWorkspaceView) => {
 		try {
-			window.localStorage.setItem(FLOW_DENSITY_STORAGE_KEY, density);
+			window.localStorage.setItem(FLOW_DENSITY_STORAGE_KEY, view);
 		} catch {
 			// Ignore quota / private-mode failures; preference is best-effort.
 		}
@@ -76,6 +77,18 @@ function RoutesContent() {
 		await saveProviderSticky();
 		if (poolId) void invalidate(poolId);
 	}, [invalidate, saveProviderSticky, stickyDialogPoolId]);
+
+	const byModelLayout = useMemo(() => {
+		const unrouted = buildRouteSurfaceCatalog(state.routeCards).unrouted;
+		const unroutedIds = new Set(unrouted.map((card) => card.model_id));
+		const vendorGroups = state.routeCardVendorGroups
+			.map((group) => ({
+				...group,
+				cards: group.cards.filter((card) => !unroutedIds.has(card.model_id)),
+			}))
+			.filter((group) => group.cards.length > 0);
+		return { vendorGroups, unrouted };
+	}, [state.routeCardVendorGroups, state.routeCards]);
 
 	if (state.isLoading) {
 		return (
@@ -92,42 +105,41 @@ function RoutesContent() {
 				<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 			</div>
 
-			<RouteFlowOverview density={flowDensity} />
+			<RouteFlowOverview view={workspaceView} />
+
+			<RouteFilterSidebar
+				visibleModelCount={state.visibleModelCount}
+				visibleRouteCount={state.visibleRouteCount}
+				hasActiveFilters={state.hasActiveFilters}
+				filterStatus={state.filterStatus}
+				filterKind={state.filterKind}
+				filterRouteGroup={state.filterRouteGroup}
+				filterVendor={state.filterVendor}
+				filterProviderId={state.filterProviderId}
+				statusCounts={state.statusCounts}
+				kindCounts={state.kindCounts}
+				routesCount={state.routes.length}
+				routeGroupFilterOptions={state.routeGroupFilterOptions}
+				routeGroupCounts={state.routeGroupCounts}
+				vendorFilterOptions={state.vendorFilterOptions}
+				providers={state.providers}
+				providerRouteCounts={state.providerRouteCounts}
+				onFilterStatusChange={state.setFilterStatus}
+				onFilterKindChange={state.setFilterKind}
+				onFilterRouteGroupChange={state.setFilterRouteGroup}
+				onFilterVendorChange={state.setFilterVendor}
+				onFilterProviderIdChange={state.setFilterProviderId}
+				onClearAllFilters={state.clearAllFilters}
+			/>
 
 			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
-				<div className="flex min-w-0 flex-col lg:flex-row lg:items-start">
-					<RouteFilterSidebar
-						visibleModelCount={state.visibleModelCount}
-						visibleRouteCount={state.visibleRouteCount}
-						hasActiveFilters={state.hasActiveFilters}
-						filterStatus={state.filterStatus}
-						filterKind={state.filterKind}
-						filterRouteGroup={state.filterRouteGroup}
-						filterVendor={state.filterVendor}
-						filterProviderId={state.filterProviderId}
-						statusCounts={state.statusCounts}
-						kindCounts={state.kindCounts}
-						routesCount={state.routes.length}
-						routeGroupFilterOptions={state.routeGroupFilterOptions}
-						routeGroupCounts={state.routeGroupCounts}
-						vendorFilterOptions={state.vendorFilterOptions}
-						providers={state.providers}
-						providerRouteCounts={state.providerRouteCounts}
-						onFilterStatusChange={state.setFilterStatus}
-						onFilterKindChange={state.setFilterKind}
-						onFilterRouteGroupChange={state.setFilterRouteGroup}
-						onFilterVendorChange={state.setFilterVendor}
-						onFilterProviderIdChange={state.setFilterProviderId}
-						onClearAllFilters={state.clearAllFilters}
+				<section className="min-w-0 bg-slate-100/70">
+					<RouteWorkspaceHeader
+						activeFilterSummary={state.activeFilterSummary}
+						view={workspaceView}
+						onViewChange={handleWorkspaceViewChange}
+						stickyRefreshIntervalMs={stickyRefreshIntervalMs}
 					/>
-
-					<section className="min-w-0 flex-1 bg-slate-100/70">
-						<RouteWorkspaceHeader
-							activeFilterSummary={state.activeFilterSummary}
-							density={flowDensity}
-							onDensityChange={handleFlowDensityChange}
-							stickyRefreshIntervalMs={stickyRefreshIntervalMs}
-						/>
 
 						<div className="bg-slate-100/70 p-4 sm:p-6">
 							{state.routesByModel.length === 0 ? (
@@ -146,10 +158,28 @@ function RoutesContent() {
 										</p>
 									) : null}
 								</div>
+							) : workspaceView === 'overview' ? (
+								<RouteSurfaceCatalog
+									cards={state.routeCards}
+									modelMeta={state.modelMeta}
+									providerMeta={state.providerMeta}
+									globalRouteStrategy={state.globalRouteStrategy}
+									copiedModelId={state.copiedModelId}
+									togglingId={state.togglingId}
+									onCopyModelId={state.copyModelId}
+									onCreate={state.handleCreate}
+									onEdit={state.handleEdit}
+									onEditModel={(modelId) =>
+										void state.modelEdit.openEditById(modelId)
+									}
+									onToggleStatus={state.handleToggleStatus}
+									onOpenStrategyDialog={state.handleOpenStrategyDialog}
+									onOpenProviderStickyDialog={state.handleOpenProviderStickyDialog}
+								/>
 							) : (
-								<div>
+								<div className="space-y-6">
 									<div className={state.filterVendor ? '' : 'space-y-8'}>
-										{state.routeCardVendorGroups.map(
+										{byModelLayout.vendorGroups.map(
 											({ vendor, cards, showHeader }, vendorGroupIdx) => (
 												<RouteVendorGroup
 													key={vendor}
@@ -160,7 +190,7 @@ function RoutesContent() {
 													modelMeta={state.modelMeta}
 													providerMeta={state.providerMeta}
 													globalRouteStrategy={state.globalRouteStrategy}
-													density={flowDensity}
+													density="topology"
 													copiedModelId={state.copiedModelId}
 													togglingId={state.togglingId}
 													onCopyModelId={state.copyModelId}
@@ -176,11 +206,19 @@ function RoutesContent() {
 											)
 										)}
 									</div>
+									<UnroutedModelsPanel
+										cards={byModelLayout.unrouted}
+										copiedModelId={state.copiedModelId}
+										onCopyModelId={state.copyModelId}
+										onEditModel={(modelId) =>
+											void state.modelEdit.openEditById(modelId)
+										}
+										onCreate={state.handleCreate}
+									/>
 								</div>
 							)}
-						</div>
-					</section>
-				</div>
+					</div>
+				</section>
 			</div>
 
 			<RouteModal

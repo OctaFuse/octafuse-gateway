@@ -28,7 +28,7 @@ import {
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { tagBadgeClass } from '../../models/model-utils';
 import { useStickySummary } from '../sticky-summary-store';
-import type { RouteModelGroup } from '../route-utils';
+import type { RouteModelGroup, RequestSurfaceGroup } from '../route-utils';
 import {
 	compareRoutesWithinPriorityLayer,
 	factorChipClassForValue,
@@ -36,6 +36,7 @@ import {
 	formatFactorMultiplier,
 	formatFactorMultiplierForChip,
 	formatScheduleWindowsHint,
+	groupSectionsByRequestSurface,
 	hasBasePricingInversion,
 	parseModelTagsList,
 	protocolBadgeClass,
@@ -297,22 +298,68 @@ function RouteTarget({
 	);
 }
 
+const CONNECTOR_PLUS_BUTTON_CLASS =
+	'inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-blue-50 hover:text-blue-600 hover:ring-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+
+export function FlowConnectorAdd({
+	railClass,
+	label,
+	onClick,
+}: {
+	railClass: string;
+	label: string;
+	onClick: () => void;
+}) {
+	return (
+		<>
+			<div className="pointer-events-none absolute right-0 top-1/2 hidden h-5 w-8 -translate-y-1/2 items-center justify-center xl:flex">
+				<span className={`absolute inset-x-0 top-1/2 h-px ${railClass}`} aria-hidden />
+				<span className="pointer-events-auto relative z-[1]">
+					<button
+						type="button"
+						onClick={onClick}
+						title={label}
+						aria-label={label}
+						className={CONNECTOR_PLUS_BUTTON_CLASS}
+					>
+						<PlusIcon className="h-3 w-3" />
+					</button>
+				</span>
+			</div>
+			<div className="flex justify-center pt-1 xl:hidden">
+				<button
+					type="button"
+					onClick={onClick}
+					title={label}
+					aria-label={label}
+					className={CONNECTOR_PLUS_BUTTON_CLASS}
+				>
+					<PlusIcon className="h-3 w-3" />
+				</button>
+			</div>
+		</>
+	);
+}
+
 function UpstreamToolbar({
 	routeGroup,
 	poolId,
 	stickyEnabled,
 	stickyIdleTtlSeconds,
+	activeCount,
+	totalCount,
 	onOpenSticky,
-	onAdd,
 }: {
 	routeGroup: string;
 	poolId: string | null;
 	stickyEnabled: boolean;
 	stickyIdleTtlSeconds: number;
+	activeCount: number;
+	totalCount: number;
 	onOpenSticky: () => void;
-	onAdd: () => void;
 }) {
 	const t = useTranslations('routes.flow');
+	const tCard = useTranslations('routes.card');
 	const isDefaultGroup = routeGroup === 'default';
 
 	return (
@@ -342,6 +389,16 @@ function UpstreamToolbar({
 				>
 					{routeGroup}
 				</span>
+				<span
+					className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1 ring-inset ${
+						activeCount > 0
+							? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+							: 'bg-red-50 text-red-700 ring-red-200'
+					}`}
+					title={tCard('activeTotalRoutes', { active: activeCount, total: totalCount })}
+				>
+					{t('tierActiveTotal', { active: activeCount, total: totalCount })}
+				</span>
 			</div>
 			<div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
 				<ProviderStickyChip
@@ -350,104 +407,87 @@ function UpstreamToolbar({
 					poolId={poolId}
 					onClick={onOpenSticky}
 				/>
+			</div>
+		</div>
+	);
+}
+
+export function RouteGroupNode({
+	modelId,
+	routeGroup,
+	copiedModelId,
+	onCopyModelId,
+}: {
+	modelId: string;
+	routeGroup: string;
+	copiedModelId: string | null;
+	onCopyModelId: (modelId: string) => void;
+}) {
+	const t = useTranslations('routes.flow');
+	const tCard = useTranslations('routes.card');
+	const requestedModelId = routeGroup === 'default' ? modelId : `${modelId}:${routeGroup}`;
+	const isDefaultGroup = routeGroup === 'default';
+	const copied = copiedModelId === requestedModelId;
+
+	return (
+		<div
+			className={`w-full min-w-0 rounded-lg border px-3 py-2.5 shadow-sm ${
+				isDefaultGroup
+					? 'border-sky-200 bg-sky-50/75'
+					: 'border-violet-200 bg-violet-50/75'
+			}`}
+			aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
+		>
+			<div className="flex min-w-0 items-center gap-1.5">
+				<span
+					className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${
+						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
+					}`}
+				>
+					{t('routeGroup')}
+				</span>
+				<span
+					className={`min-w-0 truncate text-[11px] font-semibold ${
+						isDefaultGroup ? 'text-sky-900' : 'text-violet-900'
+					}`}
+				>
+					{routeGroup}
+				</span>
+			</div>
+			<div className="mt-1 flex min-w-0 items-center gap-0.5">
+				<span
+					className={`min-w-0 truncate font-mono text-[10px] ${
+						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
+					}`}
+					title={`model=${requestedModelId}`}
+				>
+					model={requestedModelId}
+				</span>
 				<button
 					type="button"
-					onClick={onAdd}
-					className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-blue-600 ring-1 ring-inset ring-blue-200 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					onClick={() => void onCopyModelId(requestedModelId)}
+					className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+						copied
+							? 'bg-emerald-50 text-emerald-600'
+							: isDefaultGroup
+								? 'text-sky-500 hover:bg-sky-100 hover:text-sky-800'
+								: 'text-violet-500 hover:bg-violet-100 hover:text-violet-800'
+					}`}
+					title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
 				>
-					<PlusIcon className="h-3 w-3" />
-					{t('addProvider')}
+					<ClipboardDocumentIcon className="h-3.5 w-3.5" />
 				</button>
 			</div>
 		</div>
 	);
 }
 
-function RoutingMatchConnector({
-	modelId,
-	routeGroup,
-}: {
-	modelId: string;
-	routeGroup: string;
-}) {
-	const t = useTranslations('routes.flow');
-	const requestedModelId = routeGroup === 'default' ? modelId : `${modelId}:${routeGroup}`;
-	const isDefaultGroup = routeGroup === 'default';
-
-	const modelBlock = (
-		<span
-			className={`line-clamp-2 max-w-full break-all rounded-md px-2 py-0.5 text-center font-mono text-[10px] font-semibold leading-3 ring-1 ring-inset ${
-				isDefaultGroup
-					? 'bg-sky-50 text-sky-700 ring-sky-200'
-					: 'bg-violet-50 text-violet-700 ring-violet-200'
-			}`}
-			title={`model=${requestedModelId}`}
-		>
-			model={requestedModelId}
-		</span>
-	);
-
-	return (
-		<>
-			{/* Desktop: requested model stays on the routing rail. */}
-			<div
-				className="relative hidden min-w-0 items-center justify-center xl:flex"
-				aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
-			>
-				<span
-					className={`absolute inset-x-0 top-1/2 h-px ${
-						isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300'
-					}`}
-					aria-hidden
-				/>
-				<div className="relative z-[1] flex w-full max-w-full justify-center">{modelBlock}</div>
-			</div>
-			{/* Mobile: keep the requested model before the downstream pool. */}
-			<div
-				className="flex min-w-0 justify-center py-0.5 xl:hidden"
-				aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
-			>
-				{modelBlock}
-			</div>
-		</>
-	);
-}
-
-type RequestSurfaceGroup = {
-	key: string;
-	protocol: string;
-	protocolLabel: string;
-	requestOperation: string;
-	sections: RouteProtocolGroupSection<RouteListRow>[];
-};
-
-function groupSectionsByRequestSurface(
-	sections: RouteProtocolGroupSection<RouteListRow>[]
-): RequestSurfaceGroup[] {
-	const groups = new Map<string, RequestSurfaceGroup>();
-	for (const section of sections) {
-		const key = `${section.protocol}\u0000${section.requestOperation}`;
-		const group =
-			groups.get(key) ??
-			{
-				key,
-				protocol: section.protocol,
-				protocolLabel: section.protocolLabel,
-				requestOperation: section.requestOperation,
-				sections: [],
-			};
-		group.sections.push(section);
-		groups.set(key, group);
-	}
-	return [...groups.values()];
-}
-
-function RequestSurfaceNode({
+export function RequestSurfaceNode({
 	surface,
 	modelId,
 }: {
-	surface: RequestSurfaceGroup;
-	modelId: string;
+	surface: Pick<RequestSurfaceGroup, 'protocol' | 'protocolLabel' | 'requestOperation'>;
+	modelId?: string;
 }) {
 	const t = useTranslations('routes.flow');
 	const surfacePath = requestSurfacePath(
@@ -754,37 +794,33 @@ function PriorityTierPanel({
 	);
 }
 
-function FlowBranch({
-	section,
-	card,
-	meta,
-	providerMeta,
-	globalRouteStrategy,
-	density,
-	branchIndex,
-	branchCount,
-	togglingId,
-	onCreate,
-	onEdit,
-	onToggleStatus,
-	onOpenStrategyDialog,
-	onOpenProviderStickyDialog,
-}: {
+type UpstreamPoolPanelProps = {
 	section: RouteProtocolGroupSection<RouteListRow>;
 	card: RouteModelGroup;
 	meta: GatewayModel | undefined;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
 	density: RouteFlowDensity;
-	branchIndex: number;
-	branchCount: number;
 	togglingId: string | null;
-	onCreate: Props['onCreate'];
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
 	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
-}) {
+};
+
+export function UpstreamPoolPanel({
+	section,
+	card,
+	meta,
+	providerMeta,
+	globalRouteStrategy,
+	density,
+	togglingId,
+	onEdit,
+	onToggleStatus,
+	onOpenStrategyDialog,
+	onOpenProviderStickyDialog,
+}: UpstreamPoolPanelProps) {
 	const t = useTranslations('routes.flow');
 	const [failoverOpen, setFailoverOpen] = useState(false);
 	const priorityLayers = [...section.routes.reduce((map, route) => {
@@ -829,8 +865,123 @@ function FlowBranch({
 
 	const isSummary = density === 'summary';
 	const isDefaultGroup = section.group === 'default';
-	// The branch line targets the visual center of the complete route-group
-	// configuration, regardless of whether provider details are collapsed.
+	const totalCount = section.routes.length;
+	const activeCount = section.routes.filter((route) => route.status === 'active').length;
+
+	return (
+		<>
+			<div
+				className={`min-w-0 overflow-hidden rounded-xl border shadow-sm ring-1 ${
+					isDefaultGroup
+						? 'border-slate-200/90 border-l-4 border-l-sky-400 bg-white ring-sky-100/90'
+						: 'border-slate-200/90 border-l-4 border-l-violet-400 bg-white ring-violet-100/90'
+				}`}
+			>
+				<UpstreamToolbar
+					routeGroup={section.group}
+					poolId={section.poolId}
+					stickyEnabled={section.poolStickyEnabled}
+					stickyIdleTtlSeconds={section.poolStickyIdleTtlSeconds}
+					activeCount={activeCount}
+					totalCount={totalCount}
+					onOpenSticky={() =>
+						onOpenProviderStickyDialog(
+							card.model_id,
+							card.title,
+							section.protocol,
+							section.protocolLabel,
+							section.group,
+							section.requestOperation,
+							section.poolId,
+							section.poolStickyEnabled,
+							section.poolStickyIdleTtlSeconds,
+							section.routes.map((r) => ({
+								id: r.id,
+								providerName: r.provider_name || r.provider_id,
+								priority: r.priority,
+								weight: Number(r.weight ?? 1) || 1,
+							}))
+						)
+					}
+				/>
+				<div
+					className={`bg-slate-100/70 p-3 ${
+						isSummary
+							? 'flex min-w-0 flex-col items-stretch gap-1'
+							: 'flex min-w-0 flex-col items-stretch gap-3 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto'
+					}`}
+					aria-label={t('priorityLadderAria')}
+				>
+					{priorityLayers.map(([priority, routes], layerIndex) => (
+						<div
+							key={priority}
+							className={
+								isSummary
+									? 'flex min-w-0 flex-col items-stretch'
+									: 'flex min-w-0 shrink-0 flex-col items-stretch gap-2 md:flex-row md:items-center'
+							}
+						>
+							{layerIndex > 0 ? (
+								<FailoverConnector
+									density={density}
+									onOpen={() => setFailoverOpen(true)}
+								/>
+							) : null}
+							<PriorityTierPanel
+								priority={priority}
+								routes={routes}
+								layerIndex={layerIndex}
+								density={density}
+								expanded={isTierExpanded(priority)}
+								onToggleExpanded={() => togglePriority(priority)}
+								section={section}
+								card={card}
+								meta={meta}
+								providerMeta={providerMeta}
+								globalRouteStrategy={globalRouteStrategy}
+								stickyCountsByTarget={stickyCountsByTarget}
+								togglingId={togglingId}
+								onEdit={onEdit}
+								onToggleStatus={onToggleStatus}
+								onOpenStrategyDialog={onOpenStrategyDialog}
+							/>
+						</div>
+					))}
+				</div>
+			</div>
+			<FailoverRulesDialog open={failoverOpen} onClose={() => setFailoverOpen(false)} />
+		</>
+	);
+}
+
+function FlowBranch({
+	section,
+	card,
+	meta,
+	providerMeta,
+	globalRouteStrategy,
+	density,
+	branchIndex,
+	branchCount,
+	copiedModelId,
+	togglingId,
+	onCopyModelId,
+	onCreate,
+	onEdit,
+	onToggleStatus,
+	onOpenStrategyDialog,
+	onOpenProviderStickyDialog,
+}: UpstreamPoolPanelProps & {
+	branchIndex: number;
+	branchCount: number;
+	copiedModelId: string | null;
+	onCopyModelId: (modelId: string) => void;
+	onCreate: Props['onCreate'];
+}) {
+	const t = useTranslations('routes.flow');
+	const isSummary = density === 'summary';
+	const isDefaultGroup = section.group === 'default';
+	const groupRail = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
 	const railClass =
 		branchIndex === 0
 			? 'top-1/2 bottom-0'
@@ -853,103 +1004,43 @@ function FlowBranch({
 			<div
 				className={
 					isSummary
-						? 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(150px,240px)_auto_minmax(320px,1fr)] xl:items-center'
-						: 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(150px,240px)_auto_minmax(420px,1fr)] xl:items-center'
+						? 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(320px,1fr)] xl:items-center'
+						: 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(420px,1fr)] xl:items-center'
 				}
 			>
-				<RoutingMatchConnector
-					modelId={card.model_id}
-					routeGroup={section.group}
-				/>
-
-				<div className="flex items-center justify-center py-0.5" aria-hidden>
-					<ArrowDownIcon className="h-4 w-4 text-blue-400 xl:hidden" />
-				</div>
-
-				<div
-					className={`min-w-0 overflow-hidden rounded-xl border shadow-sm ring-1 ${
-						isDefaultGroup
-							? 'border-slate-200/90 border-l-4 border-l-sky-400 bg-white ring-sky-100/90'
-							: 'border-slate-200/90 border-l-4 border-l-violet-400 bg-white ring-violet-100/90'
-					}`}
-				>
-					<UpstreamToolbar
+				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
+					<RouteGroupNode
+						modelId={card.model_id}
 						routeGroup={section.group}
-						poolId={section.poolId}
-						stickyEnabled={section.poolStickyEnabled}
-						stickyIdleTtlSeconds={section.poolStickyIdleTtlSeconds}
-						onOpenSticky={() =>
-							onOpenProviderStickyDialog(
-								card.model_id,
-								card.title,
-								section.protocol,
-								section.protocolLabel,
-								section.group,
-								section.requestOperation,
-								section.poolId,
-								section.poolStickyEnabled,
-								section.poolStickyIdleTtlSeconds,
-								section.routes.map((r) => ({
-									id: r.id,
-									providerName: r.provider_name || r.provider_id,
-									priority: r.priority,
-									weight: Number(r.weight ?? 1) || 1,
-								}))
-							)
-						}
-						onAdd={() => onCreate(card.model_id, {
-							protocol: section.protocol,
-							operation: section.requestOperation,
-							group: section.group,
-						})}
+						copiedModelId={copiedModelId}
+						onCopyModelId={onCopyModelId}
 					/>
-					<div
-						className={`bg-slate-100/70 p-3 ${
-							isSummary
-								? 'flex min-w-0 flex-col items-stretch gap-1'
-								: 'flex min-w-0 flex-col items-stretch gap-3 md:flex-row md:flex-wrap'
-						}`}
-						aria-label={t('priorityLadderAria')}
-					>
-						{priorityLayers.map(([priority, routes], layerIndex) => (
-							<div
-								key={priority}
-								className={
-									isSummary
-										? 'flex min-w-0 flex-col items-stretch'
-										: 'flex min-w-0 flex-col items-stretch gap-2 md:flex-row'
-								}
-							>
-								{layerIndex > 0 ? (
-									<FailoverConnector
-										density={density}
-										onOpen={() => setFailoverOpen(true)}
-									/>
-								) : null}
-								<PriorityTierPanel
-									priority={priority}
-									routes={routes}
-									layerIndex={layerIndex}
-									density={density}
-									expanded={isTierExpanded(priority)}
-									onToggleExpanded={() => togglePriority(priority)}
-									section={section}
-									card={card}
-									meta={meta}
-									providerMeta={providerMeta}
-									globalRouteStrategy={globalRouteStrategy}
-									stickyCountsByTarget={stickyCountsByTarget}
-									togglingId={togglingId}
-									onEdit={onEdit}
-									onToggleStatus={onToggleStatus}
-									onOpenStrategyDialog={onOpenStrategyDialog}
-								/>
-							</div>
-						))}
-					</div>
+					<FlowConnectorAdd
+						railClass={groupRail}
+						label={t('addProvider')}
+						onClick={() =>
+							onCreate(card.model_id, {
+								protocol: section.protocol,
+								operation: section.requestOperation,
+								group: section.group,
+							})
+						}
+					/>
 				</div>
+				<UpstreamPoolPanel
+					section={section}
+					card={card}
+					meta={meta}
+					providerMeta={providerMeta}
+					globalRouteStrategy={globalRouteStrategy}
+					density={density}
+					togglingId={togglingId}
+					onEdit={onEdit}
+					onToggleStatus={onToggleStatus}
+					onOpenStrategyDialog={onOpenStrategyDialog}
+					onOpenProviderStickyDialog={onOpenProviderStickyDialog}
+				/>
 			</div>
-			<FailoverRulesDialog open={failoverOpen} onClose={() => setFailoverOpen(false)} />
 		</div>
 	);
 }
@@ -961,7 +1052,9 @@ function FlowSection({
 	providerMeta,
 	globalRouteStrategy,
 	density,
+	copiedModelId,
 	togglingId,
+	onCopyModelId,
 	onCreate,
 	onEdit,
 	onToggleStatus,
@@ -974,25 +1067,33 @@ function FlowSection({
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
 	density: RouteFlowDensity;
+	copiedModelId: string | null;
 	togglingId: string | null;
+	onCopyModelId: (modelId: string) => void;
 	onCreate: Props['onCreate'];
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
 	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
+	const t = useTranslations('routes.flow');
+
 	return (
 		<div className="bg-slate-50/70 px-3 sm:px-4">
 			<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
-				<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-4">
+				<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
 					<RequestSurfaceNode surface={surface} modelId={card.model_id} />
-					<span
-						className="absolute right-0 top-1/2 hidden h-px w-4 bg-blue-300 xl:block"
-						aria-hidden
+					<FlowConnectorAdd
+						railClass="bg-blue-300"
+						label={t('addRouteGroup')}
+						onClick={() =>
+							onCreate(card.model_id, {
+								protocol: surface.protocol,
+								operation: surface.requestOperation,
+								group: '',
+							})
+						}
 					/>
-					<div className="flex justify-center pt-1 xl:hidden" aria-hidden>
-						<ArrowDownIcon className="h-4 w-4 text-blue-400" />
-					</div>
 				</div>
 				<div>
 					{surface.sections.map((section, branchIndex) => (
@@ -1006,7 +1107,9 @@ function FlowSection({
 							density={density}
 							branchIndex={branchIndex}
 							branchCount={surface.sections.length}
+							copiedModelId={copiedModelId}
 							togglingId={togglingId}
+							onCopyModelId={onCopyModelId}
 							onCreate={onCreate}
 							onEdit={onEdit}
 							onToggleStatus={onToggleStatus}
@@ -1122,7 +1225,9 @@ export function RouteModelFlow(props: Props) {
 						providerMeta={providerMeta}
 						globalRouteStrategy={globalRouteStrategy}
 						density={density}
+						copiedModelId={copiedModelId}
 						togglingId={togglingId}
+						onCopyModelId={onCopyModelId}
 						onCreate={onCreate}
 						onEdit={onEdit}
 						onToggleStatus={onToggleStatus}

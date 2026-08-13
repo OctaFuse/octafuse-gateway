@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { ComponentProps } from 'react';
 import { FilterNavButton, FilterNavSection } from '../../components/filter-nav';
 import { getModelVendorLabel } from '@/lib/model-vendor';
 import { ALL_VENDORS_KEY, type ModelListKindFilter } from '../types';
@@ -8,7 +9,6 @@ import { ALL_VENDORS_KEY, type ModelListKindFilter } from '../types';
 type Props = {
 	modelCount: number;
 	hasActiveFilter: boolean;
-	selectedVendorItemsCount: number;
 	isAllVendors: boolean;
 	selectedVendor: string;
 	modelsByVendor: [string, unknown[]][];
@@ -19,11 +19,18 @@ type Props = {
 	onClearFilter: () => void;
 };
 
+function HorizontalSection(props: Omit<ComponentProps<typeof FilterNavSection>, 'orientation'>) {
+	return <FilterNavSection orientation="horizontal" {...props} />;
+}
+
+function HorizontalButton(props: Omit<ComponentProps<typeof FilterNavButton>, 'orientation'>) {
+	return <FilterNavButton orientation="horizontal" {...props} />;
+}
+
 export function ModelFilterSidebar(props: Props) {
 	const {
 		modelCount,
 		hasActiveFilter,
-		selectedVendorItemsCount,
 		isAllVendors,
 		selectedVendor,
 		modelsByVendor,
@@ -39,24 +46,38 @@ export function ModelFilterSidebar(props: Props) {
 
 	if (modelCount === 0) return null;
 
-	return (
-		<aside className="w-full shrink-0 border-b border-gray-200/80 bg-slate-50/80 lg:sticky lg:top-0 lg:w-60 lg:self-start lg:border-b-0 lg:border-r">
-			<div className="space-y-3 p-4">
-				<div>
-					<h2 className="text-sm font-semibold text-gray-900">{t('title')}</h2>
-					<p className="mt-0.5 text-xs text-gray-500">{t('browseHint')}</p>
-				</div>
+	const vendorTotal = modelsByVendor.reduce((n, [, items]) => n + items.length, 0);
 
-				<div className="flex items-center justify-between gap-2 rounded-lg border border-gray-200/60 bg-white/60 px-3 py-2">
-					<span className="text-xs text-gray-600">
-						{t('modelsCount', { count: modelCount })}
-						{hasActiveFilter ? (
-							<>
-								{' '}
-								{t('showing', { count: selectedVendorItemsCount })}
-							</>
-						) : null}
-					</span>
+	return (
+		<section className="mb-5 sm:mb-6" aria-label={t('title')}>
+			<div className="flex flex-col items-stretch gap-y-2">
+				<div className="flex min-w-0 items-center justify-between gap-3">
+					<HorizontalSection title={t('kind')} ariaLabel={t('kindAria')}>
+						<HorizontalButton
+							label={tFilter('all')}
+							count={modelCount}
+							isActive={selectedKind === 'all'}
+							onClick={() => onSelectKind('all')}
+						/>
+						<HorizontalButton
+							label={t('kindLlm')}
+							count={kindCounts.llm}
+							isActive={selectedKind === 'llm'}
+							onClick={() => onSelectKind('llm')}
+						/>
+						<HorizontalButton
+							label={t('kindImage')}
+							count={kindCounts.image}
+							isActive={selectedKind === 'image'}
+							onClick={() => onSelectKind('image')}
+						/>
+						<HorizontalButton
+							label={t('kindAudio')}
+							count={kindCounts.audio}
+							isActive={selectedKind === 'audio'}
+							onClick={() => onSelectKind('audio')}
+						/>
+					</HorizontalSection>
 					{hasActiveFilter ? (
 						<button
 							type="button"
@@ -68,42 +89,15 @@ export function ModelFilterSidebar(props: Props) {
 					) : null}
 				</div>
 
-				<FilterNavSection title={t('kind')} ariaLabel={t('kindAria')}>
-					<FilterNavButton
+				<HorizontalSection title={tFilter('vendor')} ariaLabel={t('vendorAria')}>
+					<HorizontalButton
 						label={tFilter('all')}
-						count={modelCount}
-						isActive={selectedKind === 'all'}
-						onClick={() => onSelectKind('all')}
-					/>
-					<FilterNavButton
-						label={t('kindLlm')}
-						count={kindCounts.llm}
-						isActive={selectedKind === 'llm'}
-						onClick={() => onSelectKind('llm')}
-					/>
-					<FilterNavButton
-						label={t('kindImage')}
-						count={kindCounts.image}
-						isActive={selectedKind === 'image'}
-						onClick={() => onSelectKind('image')}
-					/>
-					<FilterNavButton
-						label={t('kindAudio')}
-						count={kindCounts.audio}
-						isActive={selectedKind === 'audio'}
-						onClick={() => onSelectKind('audio')}
-					/>
-				</FilterNavSection>
-
-				<FilterNavSection title={tFilter('vendor')} ariaLabel={t('vendorAria')}>
-					<FilterNavButton
-						label={tFilter('all')}
-						count={modelsByVendor.reduce((n, [, items]) => n + items.length, 0)}
+						count={vendorTotal}
 						isActive={isAllVendors}
 						onClick={() => onSelectVendor(ALL_VENDORS_KEY)}
 					/>
 					{modelsByVendor.map(([vendorKey, items]) => (
-						<FilterNavButton
+						<HorizontalButton
 							key={vendorKey}
 							label={getModelVendorLabel(vendorKey)}
 							count={items.length}
@@ -111,8 +105,8 @@ export function ModelFilterSidebar(props: Props) {
 							onClick={() => onSelectVendor(vendorKey)}
 						/>
 					))}
-				</FilterNavSection>
+				</HorizontalSection>
 			</div>
-		</aside>
+		</section>
 	);
 }

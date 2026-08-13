@@ -6,8 +6,16 @@ export type RouteListRow = GatewayModelRoute & {
 	provider_name?: string;
 };
 
-/** Default: topology (full card flow). Summary collapses priority tiers. */
+/** Per-model card density: topology shows full provider cards; summary collapses priority tiers. */
 export type RouteFlowDensity = 'summary' | 'topology';
+
+/** Workspace layout: overview = all models on one surface flow; byModel = per-model topology. */
+export type RouteWorkspaceView = 'overview' | 'byModel';
+
+export function parseRouteWorkspaceView(value: string | null | undefined): RouteWorkspaceView {
+	if (value === 'overview' || value === 'surface') return 'overview';
+	return 'byModel';
+}
 
 export type RouteProtocolGroupSection<T> = {
 	key: string;

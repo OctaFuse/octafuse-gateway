@@ -66,8 +66,13 @@ export function getProtocolDisplayLabel(protocol: string): string {
 	return PROTOCOL_DISPLAY_LABEL[protocol] ?? protocol;
 }
 
+/** 跨模型汇总时路径里的模型占位符（Gemini / DashScope 入口含 model）。 */
+export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
+
 /** 将公开协议操作映射为客户端实际调用路径，避免把带点的操作名直接拼进 URL。 */
-export function requestSurfacePath(protocol: string, operation: string, modelId: string): string {
+export function requestSurfacePath(protocol: string, operation: string, modelId?: string): string {
+	const modelSegment =
+		modelId && modelId.length > 0 ? modelId : SURFACE_PATH_MODEL_PLACEHOLDER;
 	if (protocol === 'openai') {
 		const paths: Record<string, string> = {
 			chat: '/v1/chat/completions',
@@ -85,13 +90,17 @@ export function requestSurfacePath(protocol: string, operation: string, modelId:
 	if (protocol === 'gemini') {
 		// `models.generate` 是路由族标识；真实客户端仍使用两种 Gemini wire action。
 		if (operation === 'models.generate') {
-			return `/v1beta/models/${modelId}:{generateContent|streamGenerateContent}`;
+			return `/v1beta/models/${modelSegment}:{generateContent|streamGenerateContent}`;
 		}
-		return `/v1beta/models/${modelId}:${operation}`;
+		return `/v1beta/models/${modelSegment}:${operation}`;
 	}
 	if (protocol === 'dashscope' && operation.includes('.realtime.')) {
 		// 原生实时操作共享一个 WSS 入口，模型与操作通过查询参数选择。
-		return `/v1/dashscope/realtime?model=${encodeURIComponent(modelId)}&operation=${encodeURIComponent(operation)}`;
+		const modelParam =
+			modelId && modelId.length > 0
+				? encodeURIComponent(modelId)
+				: SURFACE_PATH_MODEL_PLACEHOLDER;
+		return `/v1/dashscope/realtime?model=${modelParam}&operation=${encodeURIComponent(operation)}`;
 	}
 	return operation === '*' ? '/*' : `/${operation}`;
 }
@@ -270,6 +279,43 @@ export function splitRoutesByProtocolAndRouteGroup<
 		const protocolCmp = compareRouteProtocolsForDisplay(a.protocol, b.protocol);
 		if (protocolCmp !== 0) return protocolCmp;
 		return compareRouteGroupsForDisplay(a.group, b.group);
+	});
+}
+
+export type RequestSurfaceGroup<T = RouteListRow> = {
+	key: string;
+	protocol: string;
+	protocolLabel: string;
+	requestOperation: string;
+	sections: RouteProtocolGroupSection<T>[];
+};
+
+export function requestSurfaceGroupKey(protocol: string, requestOperation: string): string {
+	return `${protocol}\u0000${requestOperation}`;
+}
+
+export function groupSectionsByRequestSurface<T>(
+	sections: RouteProtocolGroupSection<T>[],
+): RequestSurfaceGroup<T>[] {
+	const groups = new Map<string, RequestSurfaceGroup<T>>();
+	for (const section of sections) {
+		const key = requestSurfaceGroupKey(section.protocol, section.requestOperation);
+		const group =
+			groups.get(key) ??
+			{
+				key,
+				protocol: section.protocol,
+				protocolLabel: section.protocolLabel,
+				requestOperation: section.requestOperation,
+				sections: [],
+			};
+		group.sections.push(section);
+		groups.set(key, group);
+	}
+	return [...groups.values()].sort((a, b) => {
+		const protocolCmp = compareRouteProtocolsForDisplay(a.protocol, b.protocol);
+		if (protocolCmp !== 0) return protocolCmp;
+		return a.requestOperation.localeCompare(b.requestOperation, undefined, { sensitivity: 'base' });
 	});
 }
 
@@ -891,6 +937,59 @@ export function buildRoutesByModel(params: {
 			return { model_id, title, groupRoutes, activeCount: active, vendor };
 		})
 		.filter((group): group is RouteModelGroup => group !== null);
+}
+
+export type SurfaceCatalogModel = {
+	card: RouteModelGroup;
+	sections: RouteProtocolGroupSection<RouteListRow>[];
+};
+
+export type SurfaceCatalogGroup = {
+	key: string;
+	protocol: string;
+	protocolLabel: string;
+	requestOperation: string;
+	models: SurfaceCatalogModel[];
+};
+
+export type RouteSurfaceCatalogData = {
+	surfaces: SurfaceCatalogGroup[];
+	unrouted: RouteModelGroup[];
+};
+
+export function buildRouteSurfaceCatalog(cards: RouteModelGroup[]): RouteSurfaceCatalogData {
+	const surfaces = new Map<string, SurfaceCatalogGroup>();
+	const unrouted: RouteModelGroup[] = [];
+
+	for (const card of cards) {
+		const sections = splitRoutesByProtocolAndRouteGroup(card.groupRoutes);
+		const grouped = groupSectionsByRequestSurface(sections);
+		if (grouped.length === 0) {
+			unrouted.push(card);
+			continue;
+		}
+		for (const surface of grouped) {
+			const existing =
+				surfaces.get(surface.key) ??
+				{
+					key: surface.key,
+					protocol: surface.protocol,
+					protocolLabel: surface.protocolLabel,
+					requestOperation: surface.requestOperation,
+					models: [],
+				};
+			existing.models.push({ card, sections: surface.sections });
+			surfaces.set(surface.key, existing);
+		}
+	}
+
+	const sorted = [...surfaces.values()].sort((a, b) => {
+		const protocolCmp = compareRouteProtocolsForDisplay(a.protocol, b.protocol);
+		if (protocolCmp !== 0) return protocolCmp;
+		return a.requestOperation.localeCompare(b.requestOperation, undefined, { sensitivity: 'base' });
+	});
+
+	return { surfaces: sorted, unrouted };
 }
 
 export function sortRouteCards(

@@ -1,6 +1,7 @@
 'use client';
 
-import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
+import { ArrowDownIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { isAudioSpeechModel } from '@octafuse/core/db/model-modalities';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
@@ -77,6 +78,17 @@ export function RouteModal(props: Props) {
 	const t = useTranslations('routes.modal');
 	const tModels = useTranslations('models.modal');
 	const tCommon = useTranslations('common');
+	const adapterLabel = (adapter: string) =>
+		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
+	const hasCustomParams = formData.custom_params_json.trim().length > 0;
+	const customParamsSessionKey = `${open ? '1' : '0'}:${editingRoute?.id ?? ''}:${duplicateSourceRouteId ?? ''}`;
+	const [customParamsSession, setCustomParamsSession] = useState(customParamsSessionKey);
+	const [customParamsOpen, setCustomParamsOpen] = useState(() => open && hasCustomParams);
+	if (customParamsSession !== customParamsSessionKey) {
+		setCustomParamsSession(customParamsSessionKey);
+		setCustomParamsOpen(open && hasCustomParams);
+	}
+
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
 		(protocol) => requestOperationsForModel(selectedModel, protocol, formData.provider_model_name).length > 0,
@@ -205,335 +217,478 @@ export function RouteModal(props: Props) {
 								</div>
 							</section>
 						) : null}
-						<section className="rounded-lg border border-gray-200 bg-gray-50/80 p-3.5">
+						<section>
 							<h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
 								{t('basicMapping')}
 							</h3>
-							<div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('modelRequired')}</label>
-									<select
-										value={formData.model_id}
-										onChange={(e) => {
-											const nextModelId = e.target.value;
-											const nextModel = models.find((m) => m.id === nextModelId);
-											const nextRequestProtocols = UPSTREAM_PROTOCOLS.filter(
-												(protocol) =>
-													requestOperationsForModel(nextModel, protocol, formData.provider_model_name).length > 0,
-											);
-											const requestProtocol = nextRequestProtocols.includes(formData.request_protocol)
-												? formData.request_protocol
-												: nextRequestProtocols[0] ?? formData.request_protocol;
-											const nextRequestOperations = requestOperationsForModel(
-												nextModel,
-												requestProtocol,
-												formData.provider_model_name,
-											);
-											const requestOperation = nextRequestOperations.includes(formData.request_operation)
-												? formData.request_operation
-												: nextRequestOperations[0] ?? formData.request_operation;
-											const nextUpstreamProtocols = selectedProvider
-												? UPSTREAM_PROTOCOLS.filter(
+							<div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-stretch lg:gap-x-10">
+								<div className="flex h-full min-w-0 flex-col rounded-lg border border-blue-300 bg-blue-50 p-3 shadow-sm ring-1 ring-blue-100/80 border-l-4 border-l-blue-500">
+									<p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
+										{t('clientColumn')}
+									</p>
+									<div className="space-y-3">
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('modelRequired')}</label>
+											<select
+												value={formData.model_id}
+												onChange={(e) => {
+													const nextModelId = e.target.value;
+													const nextModel = models.find((m) => m.id === nextModelId);
+													const nextRequestProtocols = UPSTREAM_PROTOCOLS.filter(
 														(protocol) =>
-																	upstreamOperationsForProviderModel(
-																		selectedProvider,
-																		nextModel,
-																		protocol,
-																		formData.provider_model_name,
-																	).length > 0,
-														  )
-												: [];
-											const upstreamProtocol = nextUpstreamProtocols.includes(formData.upstream_protocol)
-												? formData.upstream_protocol
-												: nextUpstreamProtocols[0] ?? requestProtocol;
-											const nextUpstreamOperations = upstreamOperationsForProviderModel(
-												selectedProvider,
-												nextModel,
-												upstreamProtocol,
-												formData.provider_model_name,
-											);
-											const upstreamOperation = nextUpstreamOperations.includes(formData.upstream_operation)
-												? formData.upstream_operation
-												: nextUpstreamOperations[0] ?? requestOperation;
-											onFormChange({
-												...formData,
-												model_id: nextModelId,
-												request_protocol: requestProtocol,
-												request_operation: requestOperation,
-												upstream_protocol: upstreamProtocol,
-												upstream_operation: upstreamOperation,
-											});
-										}}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-										required
-									>
-										<option value="">{t('selectModel')}</option>
-										{models.map((m) => (
-											<option key={m.id} value={m.id}>
-												{m.display_name || m.id}
-											</option>
-										))}
-									</select>
-								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('requestProtocol')}</label>
-									<select
-										value={formData.request_protocol}
-										onChange={(e) => {
-											const requestProtocol = e.target.value as UpstreamProtocol;
-											const requestOperation =
-												requestOperationsForModel(
-													selectedModel,
-													requestProtocol,
-													formData.provider_model_name,
-												)[0] ?? formData.request_operation;
-											onFormChange({
-												...formData,
-												request_protocol: requestProtocol,
-												request_operation: requestOperation,
-											});
-										}}
-										disabled={lockOpenaiProtocol}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100"
-									>
-										{requestProtocols.map((p) => (
-											<option key={p} value={p}>
-												{p}
-											</option>
-										))}
-									</select>
-								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('requestOperation')}</label>
-									<select
-										value={formData.request_operation}
-										onChange={(e) =>
-											onFormChange({
-												...formData,
-												request_operation: e.target.value,
-											})
-										}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-									>
-										{requestOperations.map((operation) => (
-											<option key={operation} value={operation}>
-												{operation === 'models.generate' ? t('operationModelsGenerate') : operation}
-											</option>
-										))}
-										{formData.request_operation === '*' ? <option value="*">*</option> : null}
-									</select>
-									{selectedModelIsAudio ? (
-										<p className="mt-1 text-[11px] text-gray-500">{t('audioPublicOperationHint')}</p>
-									) : null}
-								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerRequired')}</label>
-									<select
-										value={formData.provider_id}
-										onChange={(e) => {
-											const nextId = e.target.value;
-											const nextProvider = providers.find((p) => p.id === nextId);
-											const allowed =
-												nextProvider != null
-													? UPSTREAM_PROTOCOLS.filter(
-															(proto) =>
-																upstreamOperationsForProviderModel(
-																	nextProvider,
-																	selectedModel,
-																	proto,
-																	formData.provider_model_name,
-																).length > 0,
-													  )
-													: [];
-											let nextProto = formData.upstream_protocol;
-											if (allowed.length > 0 && !allowed.includes(nextProto)) {
-												nextProto = allowed[0]!;
-											}
-											const supportedOperations = upstreamOperationsForProviderModel(
-												nextProvider,
-												selectedModel,
-												nextProto,
-												formData.provider_model_name,
-											);
-											const nextOperation = supportedOperations.includes(formData.upstream_operation)
-												? formData.upstream_operation
-												: supportedOperations[0] ?? formData.upstream_operation;
-											onFormChange({
-												...formData,
-												provider_id: nextId,
-												upstream_protocol: nextProto,
-												upstream_operation: nextOperation,
-											});
-										}}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-										required
-									>
-										<option value="">{t('selectProvider')}</option>
-										{selectableProviders.map((p) => (
-											<option key={p.id} value={p.id}>
-												{p.name || p.id}
-											</option>
-										))}
-									</select>
-								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('upstreamProtocol')}</label>
-									<select
-										value={formData.upstream_protocol}
-										onChange={(e) => {
-											const upstreamProtocol = e.target.value as UpstreamProtocol;
-											onFormChange({
-												...formData,
-												upstream_protocol: upstreamProtocol,
-												upstream_operation:
-													upstreamOperationsForProviderModel(
+															requestOperationsForModel(nextModel, protocol, formData.provider_model_name).length > 0,
+													);
+													const requestProtocol = nextRequestProtocols.includes(formData.request_protocol)
+														? formData.request_protocol
+														: nextRequestProtocols[0] ?? formData.request_protocol;
+													const nextRequestOperations = requestOperationsForModel(
+														nextModel,
+														requestProtocol,
+														formData.provider_model_name,
+													);
+													const requestOperation = nextRequestOperations.includes(formData.request_operation)
+														? formData.request_operation
+														: nextRequestOperations[0] ?? formData.request_operation;
+													const nextUpstreamProtocols = selectedProvider
+														? UPSTREAM_PROTOCOLS.filter(
+																(protocol) =>
+																			upstreamOperationsForProviderModel(
+																				selectedProvider,
+																				nextModel,
+																				protocol,
+																				formData.provider_model_name,
+																			).length > 0,
+																  )
+														: [];
+													const upstreamProtocol = nextUpstreamProtocols.includes(formData.upstream_protocol)
+														? formData.upstream_protocol
+														: nextUpstreamProtocols[0] ?? requestProtocol;
+													const nextUpstreamOperations = upstreamOperationsForProviderModel(
 														selectedProvider,
-														selectedModel,
+														nextModel,
 														upstreamProtocol,
 														formData.provider_model_name,
-													)[0] ??
-													formData.upstream_operation,
-											});
-										}}
-										disabled={!selectedProvider}
-										title={selectedProvider ? t('protocolHintConfigured') : t('protocolHintSelectProvider')}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
-									>
-										{allowedProtocolsForProvider.map((p) => (
-											<option key={p} value={p}>
-												{p}
-											</option>
-										))}
-									</select>
+													);
+													const upstreamOperation = nextUpstreamOperations.includes(formData.upstream_operation)
+														? formData.upstream_operation
+														: nextUpstreamOperations[0] ?? requestOperation;
+													onFormChange({
+														...formData,
+														model_id: nextModelId,
+														request_protocol: requestProtocol,
+														request_operation: requestOperation,
+														upstream_protocol: upstreamProtocol,
+														upstream_operation: upstreamOperation,
+													});
+												}}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+												required
+											>
+												<option value="">{t('selectModel')}</option>
+												{models.map((m) => (
+													<option key={m.id} value={m.id}>
+														{m.display_name || m.id}
+													</option>
+												))}
+											</select>
+										</div>
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('modelId')}</label>
+											<input
+												type="text"
+												value={formData.model_id}
+												readOnly
+												className="w-full cursor-default rounded-md border border-gray-300 bg-gray-100 px-3 py-2 font-mono text-sm text-gray-700"
+											/>
+										</div>
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('requestProtocol')}</label>
+											<select
+												value={formData.request_protocol}
+												onChange={(e) => {
+													const requestProtocol = e.target.value as UpstreamProtocol;
+													const requestOperation =
+														requestOperationsForModel(
+															selectedModel,
+															requestProtocol,
+															formData.provider_model_name,
+														)[0] ?? formData.request_operation;
+													onFormChange({
+														...formData,
+														request_protocol: requestProtocol,
+														request_operation: requestOperation,
+													});
+												}}
+												disabled={lockOpenaiProtocol}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100"
+											>
+												{requestProtocols.map((p) => (
+													<option key={p} value={p}>
+														{p}
+													</option>
+												))}
+											</select>
+										</div>
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('requestOperation')}</label>
+											<select
+												value={formData.request_operation}
+												onChange={(e) =>
+													onFormChange({
+														...formData,
+														request_operation: e.target.value,
+													})
+												}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											>
+												{requestOperations.map((operation) => (
+													<option key={operation} value={operation}>
+														{operation === 'models.generate' ? t('operationModelsGenerate') : operation}
+													</option>
+												))}
+												{formData.request_operation === '*' ? <option value="*">*</option> : null}
+											</select>
+											{selectedModelIsAudio ? (
+												<p className="mt-1 text-[11px] text-gray-500">{t('audioPublicOperationHint')}</p>
+											) : null}
+										</div>
+									</div>
 								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('upstreamOperation')}</label>
-									<select
-										value={formData.upstream_operation}
-										onChange={(e) =>
-											onFormChange({
-												...formData,
-												upstream_operation: e.target.value,
-											})
-										}
-										disabled={!selectedProvider || upstreamOperations.length === 0}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
-									>
-										{upstreamOperations.map((operation) => (
-											<option key={operation} value={operation}>
-												{operation === 'models.generate' ? t('operationModelsGenerate') : operation}
-											</option>
-										))}
-										{showCurrentUpstreamOperation ? (
-											<option value={formData.upstream_operation}>
-												{formData.upstream_operation} · {t('currentLegacyValue')}
-											</option>
-										) : null}
-									</select>
-									<p className="mt-1 text-[11px] text-gray-500">
-										{selectedProvider ? t('upstreamOperationHintConfigured') : t('protocolHintSelectProvider')}
+
+								<div
+									className={`flex min-w-0 flex-col items-stretch gap-2 lg:w-[16rem] ${
+										customParamsOpen ? 'h-full' : 'justify-center'
+									}`}
+								>
+									<div className="flex items-center justify-center py-1" aria-hidden>
+										<ArrowDownIcon className="h-8 w-8 text-blue-500 lg:hidden" />
+										<span className="hidden w-full items-center lg:flex">
+											<span className="h-[3px] min-w-0 flex-1 rounded-full bg-blue-400" />
+											<span className="h-0 w-0 shrink-0 border-y-[7px] border-l-[12px] border-y-transparent border-l-blue-500" />
+										</span>
+									</div>
+									<p className="text-center text-[10px] font-semibold uppercase tracking-wider text-blue-600">
+										{t('routeColumn')}
 									</p>
-								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerModelName')}</label>
-									<input
-										type="text"
-										value={formData.provider_model_name}
-										onChange={(e) => {
-											const providerModelName = e.target.value;
-											const nextRequestOperations = requestOperationsForModel(
-												selectedModel,
-												formData.request_protocol,
-												providerModelName,
-											);
-											const nextUpstreamOperations = upstreamOperationsForProviderModel(
-												selectedProvider,
-												selectedModel,
-												formData.upstream_protocol,
-												providerModelName,
-											);
-											// 模型名决定 DashScope ASR 生命周期，输入后同步纠正 surface 与 target。
-											onFormChange({
-												...formData,
-												provider_model_name: providerModelName,
-												request_operation: nextRequestOperations.includes(formData.request_operation)
-													? formData.request_operation
-													: nextRequestOperations[0] ?? formData.request_operation,
-												upstream_operation: nextUpstreamOperations.includes(formData.upstream_operation)
-													? formData.upstream_operation
-													: nextUpstreamOperations[0] ?? formData.upstream_operation,
-											});
-										}}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-										placeholder={t('providerModelPlaceholder')}
-										required
-									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700" title={t('routeGroupHint')}>
-										{t('routeGroup')}
-									</label>
-									<input
-										type="text"
-										value={formData.route_group}
-										onChange={(e) => onFormChange({ ...formData, route_group: e.target.value })}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-										placeholder={t('routeGroupPlaceholder')}
-										title={t('routeGroupHint')}
-									/>
-								</div>
-								<div className="grid grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-3 xl:max-w-[66%]">
 									<div>
-										<label className="mb-1 block text-sm font-medium text-gray-700" title={t('priorityHint')}>
-											{t('priority')}
+										<label className="mb-1 block text-sm font-medium text-gray-700" title={t('routeGroupHint')}>
+											{t('routeGroup')}
 										</label>
 										<input
-											type="number"
-											value={formData.priority}
-											onChange={(e) =>
-												onFormChange({
-													...formData,
-													priority: parseInt(e.target.value, 10) || 0,
-												})
-											}
-											title={t('priorityHint')}
-											className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											type="text"
+											value={formData.route_group}
+											onChange={(e) => onFormChange({ ...formData, route_group: e.target.value })}
+											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											placeholder={t('routeGroupPlaceholder')}
+											title={t('routeGroupHint')}
 										/>
 									</div>
+									<div className="grid grid-cols-2 gap-2">
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700" title={t('priorityHint')}>
+												{t('priority')}
+											</label>
+											<input
+												type="number"
+												value={formData.priority}
+												onChange={(e) =>
+													onFormChange({
+														...formData,
+														priority: parseInt(e.target.value, 10) || 0,
+													})
+												}
+												title={t('priorityHint')}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											/>
+										</div>
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700" title={t('weightHint')}>
+												{t('weight')}
+											</label>
+											<input
+												type="number"
+												min={1}
+												value={formData.weight}
+												onChange={(e) =>
+													onFormChange({
+														...formData,
+														weight: Math.max(1, parseInt(e.target.value, 10) || 1),
+													})
+												}
+												title={t('weightHint')}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											/>
+										</div>
+									</div>
 									<div>
-										<label className="mb-1 block text-sm font-medium text-gray-700" title={t('weightHint')}>
-											{t('weight')}
-										</label>
-										<input
-											type="number"
-											min={1}
-											value={formData.weight}
-											onChange={(e) =>
-												onFormChange({
-													...formData,
-													weight: Math.max(1, parseInt(e.target.value, 10) || 1),
-												})
-											}
-											title={t('weightHint')}
-											className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-										/>
+										<label className="mb-1 block text-sm font-medium text-gray-700">{t('adapter')}</label>
+										<select
+											value={formData.adapter}
+											onChange={(e) => onFormChange({ ...formData, adapter: e.target.value })}
+											disabled={compatibleAdapters.length <= 1}
+											title={formData.adapter}
+											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
+										>
+											{compatibleAdapters.length === 0 ? (
+												<option value={formData.adapter}>{t('noCompatibleAdapter')}</option>
+											) : null}
+											{compatibleAdapters.map((adapter) => (
+												<option key={adapter} value={adapter} title={adapter}>
+													{adapterLabel(adapter)}
+												</option>
+											))}
+											{showCurrentAdapter ? (
+												<option value={formData.adapter} title={formData.adapter}>
+													{adapterLabel(formData.adapter)} · {t('currentLegacyValue')}
+												</option>
+											) : null}
+										</select>
+										<p className="mt-1 text-[11px] text-gray-500">{t('adapterHint')}</p>
+									</div>
+									<div className={customParamsOpen ? 'flex min-h-0 flex-1 flex-col' : undefined}>
+										<button
+											type="button"
+											onClick={() => setCustomParamsOpen((prev) => !prev)}
+											id="route-custom-params-toggle"
+											aria-controls="route-custom-params"
+											aria-expanded={customParamsOpen}
+											className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/30 ${
+												customParamsOpen
+													? 'relative z-10 border-amber-400 bg-amber-50 text-amber-900'
+													: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+											}`}
+										>
+											<span>{t('customParams')}</span>
+											<span className="flex shrink-0 items-center gap-1.5">
+												{hasCustomParams ? (
+													<span
+														className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+															customParamsOpen ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'
+														}`}
+													>
+														JSON
+													</span>
+												) : null}
+												<ChevronDownIcon
+													className={`h-4 w-4 transition-transform ${
+														customParamsOpen ? 'text-amber-600' : '-rotate-90 text-gray-400'
+													}`}
+													aria-hidden
+												/>
+											</span>
+										</button>
+										{customParamsOpen ? (
+											<span
+												className="mx-auto hidden w-[3px] min-h-3 flex-1 bg-amber-400 lg:block"
+												aria-hidden
+											/>
+										) : null}
+									</div>
+								</div>
+
+								<div className="flex h-full min-w-0 flex-col rounded-lg border border-violet-300 bg-violet-50 p-3 shadow-sm ring-1 ring-violet-100/80 border-l-4 border-l-violet-500">
+									<p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-violet-700">
+										{t('upstreamColumn')}
+									</p>
+									<div className="space-y-3">
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerRequired')}</label>
+											<select
+												value={formData.provider_id}
+												onChange={(e) => {
+													const nextId = e.target.value;
+													const nextProvider = providers.find((p) => p.id === nextId);
+													const allowed =
+														nextProvider != null
+															? UPSTREAM_PROTOCOLS.filter(
+																	(proto) =>
+																		upstreamOperationsForProviderModel(
+																			nextProvider,
+																			selectedModel,
+																			proto,
+																			formData.provider_model_name,
+																		).length > 0,
+															  )
+															: [];
+													let nextProto = formData.upstream_protocol;
+													if (allowed.length > 0 && !allowed.includes(nextProto)) {
+														nextProto = allowed[0]!;
+													}
+													const supportedOperations = upstreamOperationsForProviderModel(
+														nextProvider,
+														selectedModel,
+														nextProto,
+														formData.provider_model_name,
+													);
+													const nextOperation = supportedOperations.includes(formData.upstream_operation)
+														? formData.upstream_operation
+														: supportedOperations[0] ?? formData.upstream_operation;
+													onFormChange({
+														...formData,
+														provider_id: nextId,
+														upstream_protocol: nextProto,
+														upstream_operation: nextOperation,
+													});
+												}}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+												required
+											>
+												<option value="">{t('selectProvider')}</option>
+												{selectableProviders.map((p) => (
+													<option key={p.id} value={p.id}>
+														{p.name || p.id}
+													</option>
+												))}
+											</select>
+										</div>
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerModelName')}</label>
+											<input
+												type="text"
+												value={formData.provider_model_name}
+												onChange={(e) => {
+													const providerModelName = e.target.value;
+													const nextRequestOperations = requestOperationsForModel(
+														selectedModel,
+														formData.request_protocol,
+														providerModelName,
+													);
+													const nextUpstreamOperations = upstreamOperationsForProviderModel(
+														selectedProvider,
+														selectedModel,
+														formData.upstream_protocol,
+														providerModelName,
+													);
+													// 模型名决定 DashScope ASR 生命周期，输入后同步纠正 surface 与 target。
+													onFormChange({
+														...formData,
+														provider_model_name: providerModelName,
+														request_operation: nextRequestOperations.includes(formData.request_operation)
+															? formData.request_operation
+															: nextRequestOperations[0] ?? formData.request_operation,
+														upstream_operation: nextUpstreamOperations.includes(formData.upstream_operation)
+															? formData.upstream_operation
+															: nextUpstreamOperations[0] ?? formData.upstream_operation,
+													});
+												}}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+												placeholder={t('providerModelPlaceholder')}
+												required
+											/>
+										</div>
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('upstreamProtocol')}</label>
+											<select
+												value={formData.upstream_protocol}
+												onChange={(e) => {
+													const upstreamProtocol = e.target.value as UpstreamProtocol;
+													onFormChange({
+														...formData,
+														upstream_protocol: upstreamProtocol,
+														upstream_operation:
+															upstreamOperationsForProviderModel(
+																selectedProvider,
+																selectedModel,
+																upstreamProtocol,
+																formData.provider_model_name,
+															)[0] ??
+															formData.upstream_operation,
+													});
+												}}
+												disabled={!selectedProvider}
+												title={selectedProvider ? t('protocolHintConfigured') : t('protocolHintSelectProvider')}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
+											>
+												{allowedProtocolsForProvider.map((p) => (
+													<option key={p} value={p}>
+														{p}
+													</option>
+												))}
+											</select>
+										</div>
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('upstreamOperation')}</label>
+											<select
+												value={formData.upstream_operation}
+												onChange={(e) =>
+													onFormChange({
+														...formData,
+														upstream_operation: e.target.value,
+													})
+												}
+												disabled={!selectedProvider || upstreamOperations.length === 0}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
+											>
+												{upstreamOperations.map((operation) => (
+													<option key={operation} value={operation}>
+														{operation === 'models.generate' ? t('operationModelsGenerate') : operation}
+													</option>
+												))}
+												{showCurrentUpstreamOperation ? (
+													<option value={formData.upstream_operation}>
+														{formData.upstream_operation} · {t('currentLegacyValue')}
+													</option>
+												) : null}
+											</select>
+											<p className="mt-1 text-[11px] text-gray-500">
+												{selectedProvider ? t('upstreamOperationHintConfigured') : t('protocolHintSelectProvider')}
+											</p>
+										</div>
 									</div>
 								</div>
 							</div>
+							{customParamsOpen ? (
+								<div>
+									<div
+										className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-x-10"
+										aria-hidden
+									>
+										<div />
+										<div className="flex justify-center lg:w-[16rem]">
+											<span className="h-3 w-[3px] bg-amber-400" />
+										</div>
+										<div />
+									</div>
+									<div
+										id="route-custom-params"
+										className="rounded-lg border border-amber-300 bg-amber-50/70 p-3"
+									>
+										<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+											<h4 className="text-sm font-medium text-amber-900">{t('customParams')}</h4>
+											<p className="text-[11px] text-amber-800/80">{t('requestDefaultsHint')}</p>
+										</div>
+										<textarea
+											rows={5}
+											value={formData.custom_params_json}
+											onChange={(e) =>
+												onFormChange({
+													...formData,
+													custom_params_json: e.target.value,
+												})
+											}
+											className="min-h-[120px] w-full resize-y rounded-md border border-amber-200 bg-white px-3 py-2 font-mono text-xs leading-relaxed focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+											placeholder={t('customParamsPlaceholder')}
+											spellCheck={false}
+										/>
+									</div>
+								</div>
+							) : null}
 						</section>
 
-						<div className="space-y-3">
-							<RoutePricePanel
-								variant="neutral"
-								title={t('standardCatalog')}
-								subtitle={
-									selectedModelIsAudio
-										? t('standardCatalogHintAudio')
-										: selectedModelIsImage
-										? t('standardCatalogHintImage')
-										: t('standardCatalogHint')
-								}
-							>
+						<section className="pt-4">
+							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
+								<div className="flex min-h-0 min-w-0 flex-col">
+									<h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+										{t('standardCatalog')}
+									</h3>
+									<p className="mb-2.5 text-[11px] text-gray-500">
+										{selectedModelIsAudio
+											? t('standardCatalogHintAudio')
+											: selectedModelIsImage
+												? t('standardCatalogHintImage')
+												: t('standardCatalogHint')}
+									</p>
+									<div className="flex min-h-0 flex-1 flex-col">
 								{selectedModelIsAudio ? (
 									catalogAudioPricingDisplay ? (
 										catalogAudioPricingDisplay.mode === 'token' ? (
@@ -607,17 +762,24 @@ export function RouteModal(props: Props) {
 									/>
 								) : (
 									<ReadOnlyPricingTiersTable
+										fillHeight
 										rows={catalogStandardTierRows}
 										emptyLabel={formData.model_id ? t('noCatalogPricing') : t('selectModelForTiers')}
 										tableTitle={t('readOnlyCatalogRates')}
 										billingCurrencyCode={billingCurrency}
 									/>
 								)}
-							</RoutePricePanel>
+									</div>
+								</div>
 
-							<p className="text-[11px] text-gray-500">{t('billingTimezoneHint', { timezone: businessTimezone })}</p>
-
-							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
+								<div className="flex min-h-0 min-w-0 flex-col">
+									<h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+										{t('pricingSection')}
+									</h3>
+									<p className="mb-2.5 text-[11px] text-gray-500">
+										{t('billingTimezoneHint', { timezone: businessTimezone })}
+									</p>
+									<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:items-stretch">
 								<div className="flex h-full min-h-0 min-w-0 flex-col">
 									<RoutePricePanel
 										fillHeight
@@ -625,12 +787,12 @@ export function RouteModal(props: Props) {
 										title={t('chargedCost')}
 										subtitle={t('chargedCostHint')}
 										headerEnd={
-											<div className="flex flex-col items-end gap-1">
+											<div className="flex flex-col items-start gap-0.5">
 												<label
 													htmlFor="user-cost-charged-factor"
 													className="whitespace-nowrap text-[11px] font-medium text-gray-600"
 												>
-													{t('chargedFactor')}
+													{t('factor')}
 												</label>
 												<input
 													id="user-cost-charged-factor"
@@ -644,17 +806,15 @@ export function RouteModal(props: Props) {
 															charged_factor: e.target.value,
 														})
 													}
-													className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+													className="w-12 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-mono tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
 													placeholder="1"
 												/>
 											</div>
 										}
 									>
 										<div>
-											<p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-												{t('dailySchedule')}
-											</p>
 											<DailyScheduleEditor
+												title={t('dailySchedule')}
 												windows={formData.schedule_charged}
 												onChange={(schedule_charged) => onFormChange({ ...formData, schedule_charged })}
 												addLabel={t('addScheduleWindow')}
@@ -675,12 +835,12 @@ export function RouteModal(props: Props) {
 										title={t('meteredCost')}
 										subtitle={t('meteredCostHint')}
 										headerEnd={
-											<div className="flex flex-col items-end gap-1">
+											<div className="flex flex-col items-start gap-0.5">
 												<label
 													htmlFor="gateway-route-metered-factor"
 													className="whitespace-nowrap text-[11px] font-medium text-gray-600"
 												>
-													{t('meteredFactor')}
+													{t('factor')}
 												</label>
 												<input
 													id="gateway-route-metered-factor"
@@ -694,17 +854,15 @@ export function RouteModal(props: Props) {
 															metered_factor: e.target.value,
 														})
 													}
-													className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+													className="w-12 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-mono tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
 													placeholder="1"
 												/>
 											</div>
 										}
 									>
 										<div>
-											<p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-												{t('dailySchedule')}
-											</p>
 											<DailyScheduleEditor
+												title={t('dailySchedule')}
 												windows={formData.schedule_metered}
 												onChange={(schedule_metered) => onFormChange({ ...formData, schedule_metered })}
 												addLabel={t('addScheduleWindow')}
@@ -717,79 +875,8 @@ export function RouteModal(props: Props) {
 										</div>
 									</RoutePricePanel>
 								</div>
-							</div>
-						</div>
-
-						<section className="rounded-lg border border-gray-200 bg-white p-3.5">
-							<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-								<h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t('requestDefaults')}</h3>
-								<p className="text-[11px] text-gray-500">{t('requestDefaultsHint')}</p>
-							</div>
-							<label className="mb-1 block text-sm font-medium text-gray-700">{t('customParams')}</label>
-							<textarea
-								rows={4}
-								value={formData.custom_params_json}
-								onChange={(e) =>
-									onFormChange({
-										...formData,
-										custom_params_json: e.target.value,
-									})
-								}
-								className="min-h-[96px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-								placeholder={t('customParamsPlaceholder')}
-								spellCheck={false}
-							/>
-						</section>
-
-						<section className="rounded-lg border border-gray-200 bg-white p-4">
-							<h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t('summary')}</h3>
-							<div className="grid grid-cols-1 gap-2 text-xs text-gray-600 md:grid-cols-2">
-								<p>
-									<span className="font-medium text-gray-700">{t('summaryRoute')}</span>{' '}
-									<span className="font-mono">{formData.model_id || '—'}</span> →{' '}
-									<span className="font-mono">{formData.provider_id || '—'}</span> /{' '}
-									<span className="font-mono">{formData.provider_model_name || '—'}</span>
-								</p>
-								<p>
-									<span className="font-medium text-gray-700">{t('summaryRouting')}</span>{' '}
-									<span className="font-mono">{formData.upstream_protocol}</span> · {t('summaryGroup')}{' '}
-									<span className="font-mono">{formData.route_group.trim() || 'default'}</span> · {t('summaryPriority')}{' '}
-									<span className="font-mono">{formData.priority}</span> · {t('summaryStatus')}{' '}
-									<span className="font-mono">{editingRoute ? editingRoute.status : 'inactive'}</span>
-									{!editingRoute && <span className="text-gray-500"> {t('summaryEnableFromList')}</span>}
-								</p>
-								<p>
-									<span className="font-medium text-gray-700">{t('summaryUserBilling')}</span>{' '}
-									<span className="font-mono">{t('summaryUserBillingDetail')}</span>
-								</p>
-								<p>
-									<span className="font-medium text-gray-700">{t('summaryMeteredCost')}</span>{' '}
-									<span className="font-mono">{t('summaryMeteredCostDetail')}</span>
-								</p>
-							</div>
-							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">{t('adapter')}</label>
-								<select
-									value={formData.adapter}
-									onChange={(e) => onFormChange({ ...formData, adapter: e.target.value })}
-									disabled={compatibleAdapters.length <= 1}
-									className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
-								>
-									{compatibleAdapters.length === 0 ? (
-										<option value={formData.adapter}>{t('noCompatibleAdapter')}</option>
-									) : null}
-									{compatibleAdapters.map((adapter) => (
-										<option key={adapter} value={adapter}>
-											{adapter}
-										</option>
-									))}
-									{showCurrentAdapter ? (
-										<option value={formData.adapter}>
-											{formData.adapter} · {t('currentLegacyValue')}
-										</option>
-									) : null}
-								</select>
-								<p className="mt-1 text-[11px] text-gray-500">{t('adapterHint')}</p>
+									</div>
+								</div>
 							</div>
 						</section>
 					</div>

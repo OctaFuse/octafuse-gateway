@@ -409,90 +409,97 @@ export function ProviderModal(props: ProviderModalProps) {
 					)}
 
 					<div className="space-y-8">
-						<section className="space-y-3">
-							<div>
-								<h3 className="text-sm font-semibold text-gray-900">
-									{t("general")}
-								</h3>
-								<p className="mt-0.5 text-xs text-gray-500">
-									{t("generalHint")}
-								</p>
-							</div>
-							{!editingProvider && (
+						<section className="grid items-stretch gap-6 md:grid-cols-2">
+							<div className="space-y-3">
+								<div>
+									<h3 className="text-sm font-semibold text-gray-900">
+										{t("general")}
+									</h3>
+									<p className="mt-0.5 text-xs text-gray-500">
+										{t("generalHint")}
+									</p>
+								</div>
+								{!editingProvider && (
+									<div>
+										<label className="mb-1 block text-sm font-medium text-gray-700">
+											{t("id")}
+										</label>
+										<input
+											type="text"
+											value={formData.id}
+											onChange={(e) =>
+												onFormChange({ ...formData, id: e.target.value })
+											}
+											className={`${inputClass} font-mono`}
+											placeholder={t("idPlaceholder")}
+											autoComplete="off"
+										/>
+										<p className="mt-1 text-xs text-gray-500">{t("idHint")}</p>
+									</div>
+								)}
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t("id")}
+										{t("nameRequired")}
 									</label>
 									<input
 										type="text"
-										value={formData.id}
+										value={formData.name}
 										onChange={(e) =>
-											onFormChange({ ...formData, id: e.target.value })
+											onFormChange({ ...formData, name: e.target.value })
+										}
+										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										placeholder={t("namePlaceholder")}
+										autoComplete="off"
+										required
+									/>
+								</div>
+								<div>
+									<label className="mb-1 block text-sm font-medium text-gray-700">
+										{editingProvider ? t("apiKeyOptional") : t("apiKeyRequired")}
+									</label>
+									<input
+										type="password"
+										value={formData.api_key}
+										onChange={(e) =>
+											onFormChange({ ...formData, api_key: e.target.value })
 										}
 										className={`${inputClass} font-mono`}
-										placeholder={t("idPlaceholder")}
-										autoComplete="off"
+										placeholder={
+											editingProvider
+												? t("apiKeyEditPlaceholder")
+												: t("apiKeyPlaceholder")
+										}
+										autoComplete="new-password"
 									/>
-									<p className="mt-1 text-xs text-gray-500">{t("idHint")}</p>
+									<p className="mt-1 text-xs text-gray-500">
+										{editingProvider ? t("apiKeyEditHint") : t("apiKeyHint")}
+									</p>
 								</div>
-							)}
-							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">
-									{t("nameRequired")}
-								</label>
-								<input
-									type="text"
-									value={formData.name}
+							</div>
+							<div className="flex min-h-0 flex-col">
+								<div>
+									<h3
+										id="provider-description-heading"
+										className="text-sm font-semibold text-gray-900"
+									>
+										{t("description")}
+									</h3>
+									<p className="mt-0.5 text-xs text-gray-500">
+										{t("descriptionHint")}
+									</p>
+								</div>
+								<textarea
+									rows={3}
+									value={formData.description}
 									onChange={(e) =>
-										onFormChange({ ...formData, name: e.target.value })
+										onFormChange({ ...formData, description: e.target.value })
 									}
-									className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder={t("namePlaceholder")}
+									className="mt-3 min-h-[7.5rem] w-full flex-1 resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+									placeholder={t("descriptionPlaceholder")}
 									autoComplete="off"
-									required
+									aria-labelledby="provider-description-heading"
 								/>
 							</div>
-							<div>
-								<label className="mb-1 block text-sm font-medium text-gray-700">
-									{editingProvider ? t("apiKeyOptional") : t("apiKeyRequired")}
-								</label>
-								<input
-									type="password"
-									value={formData.api_key}
-									onChange={(e) =>
-										onFormChange({ ...formData, api_key: e.target.value })
-									}
-									className={`${inputClass} font-mono`}
-									placeholder={
-										editingProvider
-											? t("apiKeyEditPlaceholder")
-											: t("apiKeyPlaceholder")
-									}
-									autoComplete="new-password"
-								/>
-								<p className="mt-1 text-xs text-gray-500">
-									{editingProvider ? t("apiKeyEditHint") : t("apiKeyHint")}
-								</p>
-							</div>
-							<label className="flex items-start gap-2.5">
-								<input
-									type="checkbox"
-									checked={formData.status === "active"}
-									onChange={(e) =>
-										onFormChange({
-											...formData,
-											status: e.target.checked ? "active" : "disabled",
-										})
-									}
-									className="mt-0.5 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500"
-								/>
-								<span className="text-sm text-gray-800">
-									<span className="font-medium">{t("statusEnabled")}</span>
-									<span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
-										{t("statusHint")}
-									</span>
-								</span>
-							</label>
 						</section>
 
 						<section className="space-y-4 border-t border-gray-100 pt-6">
@@ -555,7 +562,11 @@ export function ProviderModal(props: ProviderModalProps) {
 										protocol="openai"
 										advancedToggle={t("advancedToggle")}
 										advancedHint={t("advancedHint")}
-										capLabels={capLabels}
+										capLabels={{
+											...capLabels,
+											audioTranscriptions: t("capAudioTranscriptionsOpenai"),
+											audioSpeech: t("capAudioSpeechOpenai"),
+										}}
 										onChange={(openai) => onFormChange({ ...formData, openai })}
 									/>
 								) : null}
@@ -581,7 +592,7 @@ export function ProviderModal(props: ProviderModalProps) {
 										form={formData.gemini}
 										protocol="gemini"
 										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHint")}
+										advancedHint={t("advancedHintGemini")}
 										capLabels={capLabels}
 										onChange={(gemini) => onFormChange({ ...formData, gemini })}
 									/>
@@ -602,31 +613,6 @@ export function ProviderModal(props: ProviderModalProps) {
 									/>
 								) : null}
 							</div>
-						</section>
-
-						<section className="space-y-3 border-t border-gray-100 pt-6">
-							<div>
-								<h3
-									id="provider-description-heading"
-									className="text-sm font-semibold text-gray-900"
-								>
-									{t("description")}
-								</h3>
-								<p className="mt-0.5 text-xs text-gray-500">
-									{t("descriptionHint")}
-								</p>
-							</div>
-							<textarea
-								rows={3}
-								value={formData.description}
-								onChange={(e) =>
-									onFormChange({ ...formData, description: e.target.value })
-								}
-								className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t("descriptionPlaceholder")}
-								autoComplete="off"
-								aria-labelledby="provider-description-heading"
-							/>
 						</section>
 					</div>
 				</div>

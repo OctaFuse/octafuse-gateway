@@ -43,7 +43,11 @@ const DEFAULT_AUDIT_LOG_ACTOR_TYPES = [...API_KEY_BUDGET_AUDIT_ACTOR_TYPES];
 const AUDIT_LOG_ACTOR_TYPE_SET = new Set<string>(API_KEY_BUDGET_AUDIT_ACTOR_TYPES);
 const DEFAULT_AUDIT_LOG_SOURCE_CHANNELS = [...API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS];
 const AUDIT_LOG_SOURCE_CHANNEL_SET = new Set<string>(API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS);
+/** 完整前缀目录（含历史 `admin:`），表格徽章仍能识别老 Master Key 行。 */
 const AUDIT_LOG_ACTOR_KIND_SET = new Set<string>(USER_AUDIT_ACTOR_KINDS);
+/** 筛选 UI 不含历史 Master Key；全选时不传 `actor_kind`，默认列表仍含老 `admin:` 行。 */
+const AUDIT_LOG_ACTOR_KIND_FILTERS = ['console', 'admin_key', 'system', 'service'] as const;
+const AUDIT_LOG_ACTOR_KIND_FILTER_SET = new Set<string>(AUDIT_LOG_ACTOR_KIND_FILTERS);
 
 type AuditLogFilterOptions = {
   reasonCodes: string[];
@@ -77,7 +81,7 @@ function normalizeAuditActorKinds(values: string[]): string[] {
     .flatMap((value) => value.split(','))
     .map((value) => value.trim())
     .forEach((value) => {
-      if (AUDIT_LOG_ACTOR_KIND_SET.has(value) && !normalized.includes(value)) normalized.push(value);
+      if (AUDIT_LOG_ACTOR_KIND_FILTER_SET.has(value) && !normalized.includes(value)) normalized.push(value);
     });
   return normalized;
 }
@@ -124,7 +128,7 @@ function appendAuditActorTypeParams(params: URLSearchParams, actorTypes: string[
 }
 
 function appendAuditActorKindParams(params: URLSearchParams, actorKinds: string[]): void {
-  if (actorKinds.length === USER_AUDIT_ACTOR_KINDS.length) return;
+  if (actorKinds.length === AUDIT_LOG_ACTOR_KIND_FILTERS.length) return;
   actorKinds.forEach((actorKind) => params.append('actor_kind', actorKind));
 }
 
@@ -433,7 +437,7 @@ export default function GatewayAuditLogsPage() {
   const [filterUserEmail, setFilterUserEmail] = useState('');
   const [filterEventTypes, setFilterEventTypes] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
   const [filterActorTypes, setFilterActorTypes] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
-  const [filterActorKinds, setFilterActorKinds] = useState<string[]>(() => [...USER_AUDIT_ACTOR_KINDS]);
+  const [filterActorKinds, setFilterActorKinds] = useState<string[]>(() => [...AUDIT_LOG_ACTOR_KIND_FILTERS]);
   const [filterActorId, setFilterActorId] = useState('');
   const [filterReasonCodes, setFilterReasonCodes] = useState<string[]>([]);
   const [filterSources, setFilterSources] = useState<string[]>(() => [...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
@@ -804,7 +808,7 @@ export default function GatewayAuditLogsPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(16rem,1.2fr)_minmax(12rem,1fr)_minmax(14rem,1fr)_auto]">
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(16rem,1.2fr)_minmax(12rem,1fr)_minmax(14rem,1fr)]">
           <div className="min-w-0">
             <div className="mb-2 flex items-center justify-between gap-3">
               <label className="block text-sm font-medium text-gray-600">{t('filters.actor')}</label>
@@ -852,7 +856,7 @@ export default function GatewayAuditLogsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setFilterActorKinds([...USER_AUDIT_ACTOR_KINDS]);
+                    setFilterActorKinds([...AUDIT_LOG_ACTOR_KIND_FILTERS]);
                     setPage(1);
                   }}
                   className="text-blue-600 hover:underline"
@@ -863,7 +867,7 @@ export default function GatewayAuditLogsPage() {
               </div>
             </div>
             <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
-              {USER_AUDIT_ACTOR_KINDS.map((actorKind) => {
+              {AUDIT_LOG_ACTOR_KIND_FILTERS.map((actorKind) => {
                 const checked = filterActorKinds.includes(actorKind);
                 return (
                   <label
@@ -922,7 +926,7 @@ export default function GatewayAuditLogsPage() {
               onClick={() => {
                 setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
                 setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
-                setFilterActorKinds([...USER_AUDIT_ACTOR_KINDS]);
+                setFilterActorKinds([...AUDIT_LOG_ACTOR_KIND_FILTERS]);
                 setFilterActorId('');
                 setFilterReasonCodes([...reasonCodeOptions]);
                 setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
