@@ -15,6 +15,8 @@ import type {
 	ProtocolEndpointForm,
 	ProviderCapabilityBadge,
 	ProviderFormData,
+	ProviderKeyStatusKind,
+	ProviderListFilter,
 	ProviderProtocolSummary,
 } from "./types";
 import { EMPTY_PROTOCOL_FORM } from "./types";
@@ -267,6 +269,49 @@ export function getProviderProtocolSummaries(
 	return rows;
 }
 
+export function providerHasApiKey(provider: GatewayProvider): boolean {
+	const masked = provider.api_key?.trim() || '';
+	return Boolean(masked) && masked !== '(empty)' && !provider.has_pending_key;
+}
+
+export function getProviderKeyStatus(provider: GatewayProvider): ProviderKeyStatusKind {
+	if (provider.has_pending_key) return 'pending';
+	if (provider.status === 'disabled') return 'disabled';
+	if (!providerHasApiKey(provider)) return 'no_key';
+	return 'key_set';
+}
+
+export function providerMatchesSearch(provider: GatewayProvider, query: string): boolean {
+	const normalized = query.trim().toLowerCase();
+	if (!normalized) return true;
+	const endpointSearch = getProviderProtocolSummaries(provider)
+		.flatMap((protocol) => [
+			protocol.label,
+			protocol.baseUrl ?? '',
+			...protocol.capabilities,
+			...protocol.endpoints.map((endpoint) => endpoint.url),
+		])
+		.join(' ');
+	return [provider.name, provider.id, provider.description ?? '', provider.status ?? '', endpointSearch]
+		.join(' ')
+		.toLowerCase()
+		.includes(normalized);
+}
+
+export function providerMatchesListFilter(
+	provider: GatewayProvider,
+	filter: ProviderListFilter
+): boolean {
+	if (filter === 'all') return true;
+	if (filter === 'active') return provider.status !== 'disabled';
+	if (filter === 'disabled') return provider.status === 'disabled';
+	if (filter === 'pending') return Boolean(provider.has_pending_key);
+	if (filter === 'no_key') {
+		return !providerHasApiKey(provider) && !provider.has_pending_key;
+	}
+	return getProviderProtocolSummaries(provider).some((protocol) => protocol.key === filter);
+}
+
 export function suggestDuplicateProviderId(
 	sourceId: string,
 	existingIds: Set<string>
@@ -314,4 +359,11 @@ export function protocolFormHasOverrides(
 		form.audio_hotwords.trim() ||
 		form.audio_voices.trim()
 	);
+}
+
+export function protocolFormIsConfigured(
+	protocol: UpstreamProtocol,
+	form: ProtocolEndpointForm
+): boolean {
+	return Boolean(form.base.trim()) || protocolFormHasOverrides(protocol, form);
 }

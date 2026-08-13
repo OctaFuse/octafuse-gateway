@@ -93,6 +93,10 @@ export interface ProviderAdminRow {
 	status?: string;
 	description: string | null;
 	created_at: string;
+	/** `model_routes` 引用该 provider 的总数（列表/详情附带）。 */
+	routes_count?: number;
+	/** 其中 `status = active` 的数量。 */
+	active_routes_count?: number;
 }
 
 /** 分析：按模型 + 路由组聚合。 */

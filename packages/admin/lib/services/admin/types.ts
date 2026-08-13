@@ -250,6 +250,10 @@ export type AdminProviderRow = {
 	description: string | null;
 	created_at: string;
 	has_pending_key?: boolean;
+	/** `model_routes` 引用该 provider 的总数 */
+	routes_count?: number;
+	/** 其中 status=active 的数量 */
+	active_routes_count?: number;
 	[key: string]: unknown;
 };
 

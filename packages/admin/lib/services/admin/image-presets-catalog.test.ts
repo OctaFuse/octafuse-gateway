@@ -11,6 +11,7 @@ const EXPECTED_IMAGE_IDS = [
 	'gemini-3-pro-image-preview',
 	'glm-image',
 	'gpt-image-2',
+	'grok-imagine-image-2.0',
 	'grok-imagine-image-quality',
 ].sort();
 
@@ -69,6 +70,12 @@ describe('static image model presets (*-image.json)', () => {
 		const glm = byId.get('glm-image')!;
 		assert.equal(asPricing(glm.pricing.cny).image?.default, 0.1);
 		assert.equal(asPricing(glm.pricing.usd).image?.default, 0.014);
+
+		const grok2 = byId.get('grok-imagine-image-2.0')!;
+		const grok2Usd = asPricing(grok2.pricing.usd);
+		assert.equal(grok2Usd.image_billing_mode, 'per_image');
+		assert.equal(grok2Usd.image?.default, 0.04);
+		assert.equal(asPricing(grok2.pricing.cny).image?.default, 0.28);
 
 		const grok = byId.get('grok-imagine-image-quality')!;
 		const grokUsd = asPricing(grok.pricing.usd);

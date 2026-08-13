@@ -1,5 +1,98 @@
 [
 	{
+		"id": "deepseek-v4-pro",
+		"display_name": "DeepSeek V4 Pro",
+		"description": "The official DeepSeek V4 Pro flagship for advanced reasoning, coding, and sustained agent workloads. The 0813 production checkpoint keeps 1M context and dual thinking modes under the same API name.",
+		"i18n": {
+			"en": "The official DeepSeek V4 Pro flagship for advanced reasoning, coding, and sustained agent workloads. The 0813 production checkpoint keeps 1M context and dual thinking modes under the same API name.",
+			"zh": "DeepSeek V4 Pro 正式版旗舰模型，面向高级推理、编程与持续 Agent 任务。0813 生产检查点沿用同一 API 名称，提供 1M 上下文与思考/非思考双模式。"
+		},
+		"vendor": "deepseek",
+		"context_window": 1000000,
+		"max_tokens": 384000,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.435,
+						"output_price": 0.87,
+						"cache_read_price": 0.003625,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3,
+						"output_price": 6,
+						"cache_read_price": 0.025,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-08-13"
+	},
+	{
+		"id": "deepseek-v4-flash",
+		"display_name": "DeepSeek V4 Flash",
+		"description": "The official DeepSeek V4 Flash model for fast long-context reasoning, coding, and agents. The 0731 post-training refresh keeps the mixture-of-experts architecture while strengthening agentic coding and tool use.",
+		"i18n": {
+			"en": "The official DeepSeek V4 Flash model for fast long-context reasoning, coding, and agents. The 0731 post-training refresh keeps the mixture-of-experts architecture while strengthening agentic coding and tool use.",
+			"zh": "DeepSeek V4 Flash 正式版，面向高速长上下文推理、编程与 Agent。0731 后训练刷新保持混合专家架构，同时强化 Agent 编程与工具调用。"
+		},
+		"vendor": "deepseek",
+		"context_window": 1000000,
+		"max_tokens": 384000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.14,
+						"output_price": 0.28,
+						"cache_read_price": 0.0028,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 2,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-07-31"
+	},
+	{
 		"id": "deepseek-v3.2",
 		"display_name": "DeepSeek-V3.2",
 		"description": "An efficient DeepSeek model combining strong reasoning with agentic tool use. Its sparse-attention design targets efficient long-context reasoning while preserving strong tool-use performance.",
@@ -43,95 +136,5 @@
 			]
 		},
 		"released": "2025-12-01"
-	},
-	{
-		"id": "deepseek-v4-flash",
-		"display_name": "DeepSeek V4 Flash",
-		"description": "A fast DeepSeek mixture-of-experts model for long-context reasoning and coding. The efficiency-focused mixture-of-experts architecture activates only a small portion of its parameters for fast long-context inference.",
-		"i18n": {
-			"en": "A fast DeepSeek mixture-of-experts model for long-context reasoning and coding. The efficiency-focused mixture-of-experts architecture activates only a small portion of its parameters for fast long-context inference.",
-			"zh": "面向长上下文推理与编程任务的高速 DeepSeek 混合专家模型。效率优先的混合专家架构仅激活少量参数，以实现快速的长上下文推理。"
-		},
-		"vendor": "deepseek",
-		"context_window": 1000000,
-		"max_tokens": 384000,
-		"pricing": {
-			"usd": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 0.14,
-						"output_price": 0.28,
-						"cache_read_price": 0.028,
-						"cache_write_price": null
-					}
-				]
-			},
-			"cny": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 1,
-						"output_price": 2,
-						"cache_read_price": 0.02,
-						"cache_write_price": null
-					}
-				]
-			}
-		},
-		"modalities": {
-			"input": [
-				"text"
-			],
-			"output": [
-				"text"
-			]
-		},
-		"released": "2026-04-24"
-	},
-	{
-		"id": "deepseek-v4-pro",
-		"display_name": "DeepSeek V4 Pro",
-		"description": "A large DeepSeek mixture-of-experts model for advanced reasoning, coding, and agents. Its large mixture-of-experts design is aimed at advanced reasoning, coding, and sustained agent workloads.",
-		"i18n": {
-			"en": "A large DeepSeek mixture-of-experts model for advanced reasoning, coding, and agents. Its large mixture-of-experts design is aimed at advanced reasoning, coding, and sustained agent workloads.",
-			"zh": "面向高级推理、编程与 Agent 的大型 DeepSeek 混合专家模型。大规模混合专家架构面向高级推理、编程和持续运行的 Agent 任务。"
-		},
-		"vendor": "deepseek",
-		"context_window": 1000000,
-		"max_tokens": 384000,
-		"pricing": {
-			"usd": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 0.435,
-						"output_price": 0.87,
-						"cache_read_price": 0.003625,
-						"cache_write_price": null
-					}
-				]
-			},
-			"cny": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 3,
-						"output_price": 6,
-						"cache_read_price": 0.025,
-						"cache_write_price": null
-					}
-				]
-			}
-		},
-		"modalities": {
-			"input": [
-				"text"
-			],
-			"output": [
-				"text"
-			]
-		},
-		"released": "2026-04-24"
 	}
 ]
