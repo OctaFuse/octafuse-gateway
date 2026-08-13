@@ -91,12 +91,16 @@ function CatalogModelNode({
 	onCopyModelId,
 	onEditModel,
 	onCreate,
+	showAddRoute = false,
+	showCopy = false,
 }: {
 	card: RouteModelGroup;
 	copiedModelId: string | null;
 	onCopyModelId: (modelId: string) => void;
 	onEditModel: (modelId: string) => void;
 	onCreate: Props['onCreate'];
+	showAddRoute?: boolean;
+	showCopy?: boolean;
 }) {
 	const tCard = useTranslations('routes.card');
 	const tFlow = useTranslations('routes.flow');
@@ -112,22 +116,24 @@ function CatalogModelNode({
 					{card.title}
 				</button>
 				<div className="flex shrink-0 items-center">
-					<button
-						type="button"
-						onClick={() => void onCopyModelId(card.model_id)}
-						className={`rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-							copiedModelId === card.model_id
-								? 'bg-emerald-50 text-emerald-600'
-								: 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
-						}`}
-						title={
-							copiedModelId === card.model_id
-								? tCard('copiedModelId')
-								: tCard('copyModelId', { id: card.model_id })
-						}
-					>
-						<ClipboardDocumentIcon className="h-3.5 w-3.5" />
-					</button>
+					{showCopy ? (
+						<button
+							type="button"
+							onClick={() => void onCopyModelId(card.model_id)}
+							className={`rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+								copiedModelId === card.model_id
+									? 'bg-emerald-50 text-emerald-600'
+									: 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
+							}`}
+							title={
+								copiedModelId === card.model_id
+									? tCard('copiedModelId')
+									: tCard('copyModelId', { id: card.model_id })
+							}
+						>
+							<ClipboardDocumentIcon className="h-3.5 w-3.5" />
+						</button>
+					) : null}
 					<button
 						type="button"
 						onClick={() => onEditModel(card.model_id)}
@@ -138,15 +144,17 @@ function CatalogModelNode({
 					</button>
 				</div>
 			</div>
-			<div className="mt-2 flex items-center justify-between gap-2">
-				<button
-					type="button"
-					onClick={() => onCreate(card.model_id)}
-					className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-				>
-					<PlusIcon className="h-3 w-3" />
-					{tFlow('addRoute')}
-				</button>
+			<div className={`mt-2 flex items-center gap-2 ${showAddRoute ? 'justify-between' : ''}`}>
+				{showAddRoute ? (
+					<button
+						type="button"
+						onClick={() => onCreate(card.model_id)}
+						className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					>
+						<PlusIcon className="h-3 w-3" />
+						{tFlow('addRoute')}
+					</button>
+				) : null}
 				<span
 					className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
 						card.activeCount > 0
@@ -167,13 +175,19 @@ function CatalogModelNode({
 function RouteGroupNode({
 	modelId,
 	routeGroup,
+	copiedModelId,
+	onCopyModelId,
 }: {
 	modelId: string;
 	routeGroup: string;
+	copiedModelId: string | null;
+	onCopyModelId: (modelId: string) => void;
 }) {
 	const t = useTranslations('routes.flow');
+	const tCard = useTranslations('routes.card');
 	const requestedModelId = routeGroup === 'default' ? modelId : `${modelId}:${routeGroup}`;
 	const isDefaultGroup = routeGroup === 'default';
+	const copied = copiedModelId === requestedModelId;
 
 	return (
 		<div
@@ -200,13 +214,29 @@ function RouteGroupNode({
 					{routeGroup}
 				</span>
 			</div>
-			<div
-				className={`mt-1 truncate font-mono text-[10px] ${
-					isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
-				}`}
-				title={`model=${requestedModelId}`}
-			>
-				model={requestedModelId}
+			<div className="mt-1 flex min-w-0 items-center gap-0.5">
+				<span
+					className={`min-w-0 truncate font-mono text-[10px] ${
+						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
+					}`}
+					title={`model=${requestedModelId}`}
+				>
+					model={requestedModelId}
+				</span>
+				<button
+					type="button"
+					onClick={() => void onCopyModelId(requestedModelId)}
+					className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+						copied
+							? 'bg-emerald-50 text-emerald-600'
+							: isDefaultGroup
+								? 'text-sky-500 hover:bg-sky-100 hover:text-sky-800'
+								: 'text-violet-500 hover:bg-violet-100 hover:text-violet-800'
+					}`}
+					title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
+				>
+					<ClipboardDocumentIcon className="h-3.5 w-3.5" />
+				</button>
 			</div>
 		</div>
 	);
@@ -264,6 +294,8 @@ function GroupToUpstreamBranch({
 	branchIndex,
 	branchCount,
 	togglingId,
+	copiedModelId,
+	onCopyModelId,
 	onCreate,
 	onEdit,
 	onToggleStatus,
@@ -278,6 +310,8 @@ function GroupToUpstreamBranch({
 	branchIndex: number;
 	branchCount: number;
 	togglingId: string | null;
+	copiedModelId: string | null;
+	onCopyModelId: Props['onCopyModelId'];
 	onCreate: Props['onCreate'];
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
@@ -292,7 +326,12 @@ function GroupToUpstreamBranch({
 			<BranchConnectors index={branchIndex} count={branchCount} colorClass={railColor} />
 			<div className="grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(420px,1fr)] xl:items-center">
 				<div className="relative flex min-w-0 flex-col justify-center xl:pr-4">
-					<RouteGroupNode modelId={card.model_id} routeGroup={section.group} />
+					<RouteGroupNode
+						modelId={card.model_id}
+						routeGroup={section.group}
+						copiedModelId={copiedModelId}
+						onCopyModelId={onCopyModelId}
+					/>
 					<span
 						className={`absolute right-0 top-1/2 hidden h-px w-4 xl:block ${railColor}`}
 						aria-hidden
@@ -386,6 +425,8 @@ function ModelToGroupsBranch({
 							branchIndex={branchIndex}
 							branchCount={sections.length}
 							togglingId={togglingId}
+							copiedModelId={copiedModelId}
+							onCopyModelId={onCopyModelId}
 							onCreate={onCreate}
 							onEdit={onEdit}
 							onToggleStatus={onToggleStatus}
@@ -525,6 +566,8 @@ export function RouteSurfaceCatalog(props: Props) {
 								onCopyModelId={onCopyModelId}
 								onEditModel={onEditModel}
 								onCreate={onCreate}
+								showAddRoute
+								showCopy
 							/>
 						))}
 					</div>

@@ -303,6 +303,8 @@ function UpstreamToolbar({
 	poolId,
 	stickyEnabled,
 	stickyIdleTtlSeconds,
+	activeCount,
+	totalCount,
 	onOpenSticky,
 	onAdd,
 }: {
@@ -310,10 +312,13 @@ function UpstreamToolbar({
 	poolId: string | null;
 	stickyEnabled: boolean;
 	stickyIdleTtlSeconds: number;
+	activeCount: number;
+	totalCount: number;
 	onOpenSticky: () => void;
 	onAdd: () => void;
 }) {
 	const t = useTranslations('routes.flow');
+	const tCard = useTranslations('routes.card');
 	const isDefaultGroup = routeGroup === 'default';
 
 	return (
@@ -342,6 +347,16 @@ function UpstreamToolbar({
 					aria-label={`${t('routeGroup')}: ${routeGroup}`}
 				>
 					{routeGroup}
+				</span>
+				<span
+					className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1 ring-inset ${
+						activeCount > 0
+							? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+							: 'bg-red-50 text-red-700 ring-red-200'
+					}`}
+					title={tCard('activeTotalRoutes', { active: activeCount, total: totalCount })}
+				>
+					{t('tierActiveTotal', { active: activeCount, total: totalCount })}
 				</span>
 			</div>
 			<div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
@@ -799,6 +814,8 @@ export function UpstreamPoolPanel({
 
 	const isSummary = density === 'summary';
 	const isDefaultGroup = section.group === 'default';
+	const totalCount = section.routes.length;
+	const activeCount = section.routes.filter((route) => route.status === 'active').length;
 
 	return (
 		<>
@@ -814,6 +831,8 @@ export function UpstreamPoolPanel({
 					poolId={section.poolId}
 					stickyEnabled={section.poolStickyEnabled}
 					stickyIdleTtlSeconds={section.poolStickyIdleTtlSeconds}
+					activeCount={activeCount}
+					totalCount={totalCount}
 					onOpenSticky={() =>
 						onOpenProviderStickyDialog(
 							card.model_id,
@@ -843,7 +862,7 @@ export function UpstreamPoolPanel({
 					className={`bg-slate-100/70 p-3 ${
 						isSummary
 							? 'flex min-w-0 flex-col items-stretch gap-1'
-							: 'flex min-w-0 flex-col items-stretch gap-3 md:flex-row md:flex-wrap'
+							: 'flex min-w-0 flex-col items-stretch gap-3 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto'
 					}`}
 					aria-label={t('priorityLadderAria')}
 				>
@@ -853,7 +872,7 @@ export function UpstreamPoolPanel({
 							className={
 								isSummary
 									? 'flex min-w-0 flex-col items-stretch'
-									: 'flex min-w-0 flex-col items-stretch gap-2 md:flex-row'
+									: 'flex min-w-0 shrink-0 flex-col items-stretch gap-2 md:flex-row md:items-center'
 							}
 						>
 							{layerIndex > 0 ? (
