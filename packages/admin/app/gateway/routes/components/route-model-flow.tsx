@@ -298,6 +298,49 @@ function RouteTarget({
 	);
 }
 
+const CONNECTOR_PLUS_BUTTON_CLASS =
+	'inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-blue-50 hover:text-blue-600 hover:ring-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+
+export function FlowConnectorAdd({
+	railClass,
+	label,
+	onClick,
+}: {
+	railClass: string;
+	label: string;
+	onClick: () => void;
+}) {
+	return (
+		<>
+			<div className="pointer-events-none absolute right-0 top-1/2 hidden h-5 w-8 -translate-y-1/2 items-center justify-center xl:flex">
+				<span className={`absolute inset-x-0 top-1/2 h-px ${railClass}`} aria-hidden />
+				<span className="pointer-events-auto relative z-[1]">
+					<button
+						type="button"
+						onClick={onClick}
+						title={label}
+						aria-label={label}
+						className={CONNECTOR_PLUS_BUTTON_CLASS}
+					>
+						<PlusIcon className="h-3 w-3" />
+					</button>
+				</span>
+			</div>
+			<div className="flex justify-center pt-1 xl:hidden">
+				<button
+					type="button"
+					onClick={onClick}
+					title={label}
+					aria-label={label}
+					className={CONNECTOR_PLUS_BUTTON_CLASS}
+				>
+					<PlusIcon className="h-3 w-3" />
+				</button>
+			</div>
+		</>
+	);
+}
+
 function UpstreamToolbar({
 	routeGroup,
 	poolId,
@@ -306,7 +349,6 @@ function UpstreamToolbar({
 	activeCount,
 	totalCount,
 	onOpenSticky,
-	onAdd,
 }: {
 	routeGroup: string;
 	poolId: string | null;
@@ -315,7 +357,6 @@ function UpstreamToolbar({
 	activeCount: number;
 	totalCount: number;
 	onOpenSticky: () => void;
-	onAdd: () => void;
 }) {
 	const t = useTranslations('routes.flow');
 	const tCard = useTranslations('routes.card');
@@ -366,14 +407,6 @@ function UpstreamToolbar({
 					poolId={poolId}
 					onClick={onOpenSticky}
 				/>
-				<button
-					type="button"
-					onClick={onAdd}
-					className="inline-flex items-center gap-1 whitespace-nowrap rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-blue-600 ring-1 ring-inset ring-blue-200 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-				>
-					<PlusIcon className="h-3 w-3" />
-					{t('addProvider')}
-				</button>
 			</div>
 		</div>
 	);
@@ -769,7 +802,6 @@ type UpstreamPoolPanelProps = {
 	globalRouteStrategy: string | null;
 	density: RouteFlowDensity;
 	togglingId: string | null;
-	onCreate: Props['onCreate'];
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
@@ -784,7 +816,6 @@ export function UpstreamPoolPanel({
 	globalRouteStrategy,
 	density,
 	togglingId,
-	onCreate,
 	onEdit,
 	onToggleStatus,
 	onOpenStrategyDialog,
@@ -872,11 +903,6 @@ export function UpstreamPoolPanel({
 							}))
 						)
 					}
-					onAdd={() => onCreate(card.model_id, {
-						protocol: section.protocol,
-						operation: section.requestOperation,
-						group: section.group,
-					})}
 				/>
 				<div
 					className={`bg-slate-100/70 p-3 ${
@@ -950,7 +976,9 @@ function FlowBranch({
 	branchCount: number;
 	copiedModelId: string | null;
 	onCopyModelId: (modelId: string) => void;
+	onCreate: Props['onCreate'];
 }) {
+	const t = useTranslations('routes.flow');
 	const isSummary = density === 'summary';
 	const isDefaultGroup = section.group === 'default';
 	const groupRail = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
@@ -980,20 +1008,24 @@ function FlowBranch({
 						: 'grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(420px,1fr)] xl:items-center'
 				}
 			>
-				<div className="relative flex min-w-0 flex-col justify-center xl:pr-4">
+				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
 					<RouteGroupNode
 						modelId={card.model_id}
 						routeGroup={section.group}
 						copiedModelId={copiedModelId}
 						onCopyModelId={onCopyModelId}
 					/>
-					<span
-						className={`absolute right-0 top-1/2 hidden h-px w-4 xl:block ${groupRail}`}
-						aria-hidden
+					<FlowConnectorAdd
+						railClass={groupRail}
+						label={t('addProvider')}
+						onClick={() =>
+							onCreate(card.model_id, {
+								protocol: section.protocol,
+								operation: section.requestOperation,
+								group: section.group,
+							})
+						}
 					/>
-					<div className="flex justify-center pt-1 xl:hidden" aria-hidden>
-						<ArrowDownIcon className="h-4 w-4 text-blue-400" />
-					</div>
 				</div>
 				<UpstreamPoolPanel
 					section={section}
@@ -1003,7 +1035,6 @@ function FlowBranch({
 					globalRouteStrategy={globalRouteStrategy}
 					density={density}
 					togglingId={togglingId}
-					onCreate={onCreate}
 					onEdit={onEdit}
 					onToggleStatus={onToggleStatus}
 					onOpenStrategyDialog={onOpenStrategyDialog}
@@ -1045,18 +1076,24 @@ function FlowSection({
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
 	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
+	const t = useTranslations('routes.flow');
+
 	return (
 		<div className="bg-slate-50/70 px-3 sm:px-4">
 			<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
-				<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-4">
+				<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
 					<RequestSurfaceNode surface={surface} modelId={card.model_id} />
-					<span
-						className="absolute right-0 top-1/2 hidden h-px w-4 bg-blue-300 xl:block"
-						aria-hidden
+					<FlowConnectorAdd
+						railClass="bg-blue-300"
+						label={t('addRouteGroup')}
+						onClick={() =>
+							onCreate(card.model_id, {
+								protocol: surface.protocol,
+								operation: surface.requestOperation,
+								group: '',
+							})
+						}
 					/>
-					<div className="flex justify-center pt-1 xl:hidden" aria-hidden>
-						<ArrowDownIcon className="h-4 w-4 text-blue-400" />
-					</div>
 				</div>
 				<div>
 					{surface.sections.map((section, branchIndex) => (

@@ -660,6 +660,7 @@
 			"targetCount": "{count} target(s)",
 			"addToPool": "Add target",
 			"addProvider": "Add provider",
+			"addRouteGroup": "Add route group",
 			"enabledShort": "Enabled",
 			"disabledShort": "Disabled",
 			"addRoute": "Add route",

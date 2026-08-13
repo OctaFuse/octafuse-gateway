@@ -660,6 +660,7 @@
 			"targetCount": "{count} ターゲット",
 			"addToPool": "ターゲットを追加",
 			"addProvider": "プロバイダーを追加",
+			"addRouteGroup": "ルートグループを追加",
 			"enabledShort": "有効",
 			"disabledShort": "無効",
 			"addRoute": "ルートを追加",

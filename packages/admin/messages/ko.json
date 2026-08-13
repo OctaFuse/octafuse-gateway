@@ -660,6 +660,7 @@
 			"targetCount": "대상 {count}개",
 			"addToPool": "대상 추가",
 			"addProvider": "공급자 추가",
+			"addRouteGroup": "라우트 그룹 추가",
 			"enabledShort": "활성",
 			"disabledShort": "비활성",
 			"addRoute": "라우트 추가",

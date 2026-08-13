@@ -15,7 +15,7 @@ import {
 	type SurfaceCatalogGroup,
 } from '../route-utils';
 import type { RouteListRow, RouteProtocolGroupSection } from '../types';
-import { RequestSurfaceNode, RouteGroupNode, UpstreamPoolPanel } from './route-model-flow';
+import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupNode, UpstreamPoolPanel } from './route-model-flow';
 
 type Props = {
 	cards: RouteModelGroup[];
@@ -179,7 +179,6 @@ function CatalogUpstream({
 	providerMeta,
 	globalRouteStrategy,
 	togglingId,
-	onCreate,
 	onEdit,
 	onToggleStatus,
 	onOpenStrategyDialog,
@@ -191,7 +190,6 @@ function CatalogUpstream({
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
 	togglingId: string | null;
-	onCreate: Props['onCreate'];
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
@@ -206,7 +204,6 @@ function CatalogUpstream({
 			globalRouteStrategy={globalRouteStrategy}
 			density="topology"
 			togglingId={togglingId}
-			onCreate={onCreate}
 			onEdit={onEdit}
 			onToggleStatus={onToggleStatus}
 			onOpenStrategyDialog={onOpenStrategyDialog}
@@ -248,6 +245,7 @@ function GroupToUpstreamBranch({
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
 	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
+	const t = useTranslations('routes.flow');
 	const isDefaultGroup = section.group === 'default';
 	const railColor = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
 
@@ -255,20 +253,24 @@ function GroupToUpstreamBranch({
 		<div className="relative py-3 xl:pl-4">
 			<BranchConnectors index={branchIndex} count={branchCount} colorClass={railColor} />
 			<div className="grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(420px,1fr)] xl:items-center">
-				<div className="relative flex min-w-0 flex-col justify-center xl:pr-4">
+				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
 					<RouteGroupNode
 						modelId={card.model_id}
 						routeGroup={section.group}
 						copiedModelId={copiedModelId}
 						onCopyModelId={onCopyModelId}
 					/>
-					<span
-						className={`absolute right-0 top-1/2 hidden h-px w-4 xl:block ${railColor}`}
-						aria-hidden
+					<FlowConnectorAdd
+						railClass={railColor}
+						label={t('addProvider')}
+						onClick={() =>
+							onCreate(card.model_id, {
+								protocol: section.protocol,
+								operation: section.requestOperation,
+								group: section.group,
+							})
+						}
 					/>
-					<div className="flex justify-center pt-1 xl:hidden" aria-hidden>
-						<ArrowDownIcon className="h-4 w-4 text-blue-400" />
-					</div>
 				</div>
 				<CatalogUpstream
 					section={section}
@@ -277,7 +279,6 @@ function GroupToUpstreamBranch({
 					providerMeta={providerMeta}
 					globalRouteStrategy={globalRouteStrategy}
 					togglingId={togglingId}
-					onCreate={onCreate}
 					onEdit={onEdit}
 					onToggleStatus={onToggleStatus}
 					onOpenStrategyDialog={onOpenStrategyDialog}
@@ -292,6 +293,8 @@ function ModelToGroupsBranch({
 	model,
 	modelIndex,
 	modelCount,
+	protocol,
+	requestOperation,
 	modelMeta,
 	providerMeta,
 	globalRouteStrategy,
@@ -308,6 +311,8 @@ function ModelToGroupsBranch({
 	model: SurfaceCatalogGroup['models'][number];
 	modelIndex: number;
 	modelCount: number;
+	protocol: string;
+	requestOperation: string;
 	modelMeta: Map<string, GatewayModel>;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
@@ -321,13 +326,14 @@ function ModelToGroupsBranch({
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
 	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
+	const t = useTranslations('routes.flow');
 	const { card, sections } = model;
 
 	return (
 		<div className="relative py-3 xl:pl-4">
 			<BranchConnectors index={modelIndex} count={modelCount} colorClass="bg-blue-300" />
 			<div className="xl:grid xl:grid-cols-[minmax(160px,220px)_minmax(0,1fr)]">
-				<div className="relative flex min-w-0 flex-col justify-center xl:pr-4">
+				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
 					<CatalogModelNode
 						card={card}
 						copiedModelId={copiedModelId}
@@ -335,13 +341,17 @@ function ModelToGroupsBranch({
 						onEditModel={onEditModel}
 						onCreate={onCreate}
 					/>
-					<span
-						className="absolute right-0 top-1/2 hidden h-px w-4 bg-blue-300 xl:block"
-						aria-hidden
+					<FlowConnectorAdd
+						railClass="bg-blue-300"
+						label={t('addRouteGroup')}
+						onClick={() =>
+							onCreate(card.model_id, {
+								protocol,
+								operation: requestOperation,
+								group: '',
+							})
+						}
 					/>
-					<div className="flex justify-center pt-1 xl:hidden" aria-hidden>
-						<ArrowDownIcon className="h-4 w-4 text-blue-400" />
-					</div>
 				</div>
 				<div>
 					{sections.map((section, branchIndex) => (
@@ -420,6 +430,8 @@ function SurfaceCatalogSection({
 								model={model}
 								modelIndex={modelIndex}
 								modelCount={surface.models.length}
+								protocol={surface.protocol}
+								requestOperation={surface.requestOperation}
 								modelMeta={modelMeta}
 								providerMeta={providerMeta}
 								globalRouteStrategy={globalRouteStrategy}
