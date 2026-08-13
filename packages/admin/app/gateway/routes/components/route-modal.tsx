@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDownIcon, ArrowLongRightIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowDownIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { isAudioSpeechModel } from '@octafuse/core/db/model-modalities';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
@@ -211,7 +211,7 @@ export function RouteModal(props: Props) {
 							<h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
 								{t('basicMapping')}
 							</h3>
-							<div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-stretch">
+							<div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-stretch lg:gap-x-10">
 								<div className="flex h-full min-w-0 flex-col rounded-lg border border-blue-300 bg-blue-50 p-3 shadow-sm ring-1 ring-blue-100/80 border-l-4 border-l-blue-500">
 									<p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
 										{t('clientColumn')}
@@ -283,6 +283,15 @@ export function RouteModal(props: Props) {
 											</select>
 										</div>
 										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('modelId')}</label>
+											<input
+												type="text"
+												value={formData.model_id}
+												readOnly
+												className="w-full cursor-default rounded-md border border-gray-300 bg-gray-100 px-3 py-2 font-mono text-sm text-gray-700"
+											/>
+										</div>
+										<div>
 											<label className="mb-1 block text-sm font-medium text-gray-700">{t('requestProtocol')}</label>
 											<select
 												value={formData.request_protocol}
@@ -337,9 +346,12 @@ export function RouteModal(props: Props) {
 								</div>
 
 								<div className="flex min-w-0 flex-col items-stretch justify-center gap-2 lg:w-[16rem]">
-									<div className="flex items-center justify-center py-0.5" aria-hidden>
-										<ArrowDownIcon className="h-6 w-6 text-blue-400 lg:hidden" />
-										<ArrowLongRightIcon className="hidden h-8 w-8 text-blue-400 lg:block" />
+									<div className="flex items-center justify-center py-1" aria-hidden>
+										<ArrowDownIcon className="h-8 w-8 text-blue-500 lg:hidden" />
+										<span className="hidden w-full items-center lg:flex">
+											<span className="h-[3px] min-w-0 flex-1 rounded-full bg-blue-400" />
+											<span className="h-0 w-0 shrink-0 border-y-[7px] border-l-[12px] border-y-transparent border-l-blue-500" />
+										</span>
 									</div>
 									<p className="text-center text-[10px] font-semibold uppercase tracking-wider text-blue-600">
 										{t('routeColumn')}
@@ -477,6 +489,41 @@ export function RouteModal(props: Props) {
 											</select>
 										</div>
 										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerModelName')}</label>
+											<input
+												type="text"
+												value={formData.provider_model_name}
+												onChange={(e) => {
+													const providerModelName = e.target.value;
+													const nextRequestOperations = requestOperationsForModel(
+														selectedModel,
+														formData.request_protocol,
+														providerModelName,
+													);
+													const nextUpstreamOperations = upstreamOperationsForProviderModel(
+														selectedProvider,
+														selectedModel,
+														formData.upstream_protocol,
+														providerModelName,
+													);
+													// 模型名决定 DashScope ASR 生命周期，输入后同步纠正 surface 与 target。
+													onFormChange({
+														...formData,
+														provider_model_name: providerModelName,
+														request_operation: nextRequestOperations.includes(formData.request_operation)
+															? formData.request_operation
+															: nextRequestOperations[0] ?? formData.request_operation,
+														upstream_operation: nextUpstreamOperations.includes(formData.upstream_operation)
+															? formData.upstream_operation
+															: nextUpstreamOperations[0] ?? formData.upstream_operation,
+													});
+												}}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+												placeholder={t('providerModelPlaceholder')}
+												required
+											/>
+										</div>
+										<div>
 											<label className="mb-1 block text-sm font-medium text-gray-700">{t('upstreamProtocol')}</label>
 											<select
 												value={formData.upstream_protocol}
@@ -534,58 +581,32 @@ export function RouteModal(props: Props) {
 												{selectedProvider ? t('upstreamOperationHintConfigured') : t('protocolHintSelectProvider')}
 											</p>
 										</div>
-										<div>
-											<label className="mb-1 block text-sm font-medium text-gray-700">{t('providerModelName')}</label>
-											<input
-												type="text"
-												value={formData.provider_model_name}
-												onChange={(e) => {
-													const providerModelName = e.target.value;
-													const nextRequestOperations = requestOperationsForModel(
-														selectedModel,
-														formData.request_protocol,
-														providerModelName,
-													);
-													const nextUpstreamOperations = upstreamOperationsForProviderModel(
-														selectedProvider,
-														selectedModel,
-														formData.upstream_protocol,
-														providerModelName,
-													);
-													// 模型名决定 DashScope ASR 生命周期，输入后同步纠正 surface 与 target。
-													onFormChange({
-														...formData,
-														provider_model_name: providerModelName,
-														request_operation: nextRequestOperations.includes(formData.request_operation)
-															? formData.request_operation
-															: nextRequestOperations[0] ?? formData.request_operation,
-														upstream_operation: nextUpstreamOperations.includes(formData.upstream_operation)
-															? formData.upstream_operation
-															: nextUpstreamOperations[0] ?? formData.upstream_operation,
-													});
-												}}
-												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-												placeholder={t('providerModelPlaceholder')}
-												required
-											/>
-										</div>
 									</div>
 								</div>
 							</div>
 						</section>
 
-						<div className="space-y-3">
-							<RoutePricePanel
-								variant="neutral"
-								title={t('standardCatalog')}
-								subtitle={
-									selectedModelIsAudio
-										? t('standardCatalogHintAudio')
-										: selectedModelIsImage
-										? t('standardCatalogHintImage')
-										: t('standardCatalogHint')
-								}
-							>
+						<section>
+							<h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+								{t('pricingSection')}
+							</h3>
+							<p className="mb-2.5 text-[11px] text-gray-500">
+								{t('billingTimezoneHint', { timezone: businessTimezone })}
+							</p>
+							<div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-stretch">
+								<div className="flex h-full min-h-0 min-w-0 flex-col">
+									<RoutePricePanel
+										fillHeight
+										variant="neutral"
+										title={t('standardCatalog')}
+										subtitle={
+											selectedModelIsAudio
+												? t('standardCatalogHintAudio')
+												: selectedModelIsImage
+												? t('standardCatalogHintImage')
+												: t('standardCatalogHint')
+										}
+									>
 								{selectedModelIsAudio ? (
 									catalogAudioPricingDisplay ? (
 										catalogAudioPricingDisplay.mode === 'token' ? (
@@ -665,11 +686,9 @@ export function RouteModal(props: Props) {
 										billingCurrencyCode={billingCurrency}
 									/>
 								)}
-							</RoutePricePanel>
+									</RoutePricePanel>
+								</div>
 
-							<p className="text-[11px] text-gray-500">{t('billingTimezoneHint', { timezone: businessTimezone })}</p>
-
-							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
 								<div className="flex h-full min-h-0 min-w-0 flex-col">
 									<RoutePricePanel
 										fillHeight
@@ -770,7 +789,7 @@ export function RouteModal(props: Props) {
 									</RoutePricePanel>
 								</div>
 							</div>
-						</div>
+						</section>
 
 						<section className="rounded-lg border border-gray-200 bg-white p-3.5">
 							<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">

@@ -1,5 +1,6 @@
 'use client';
 
+import { TrashIcon } from '@heroicons/react/24/outline';
 import type { RouteScheduleFormSide, RouteScheduleFormWindow } from '../types';
 
 type Props = {
@@ -38,9 +39,9 @@ export function DailyScheduleEditor(props: Props) {
 					{windows.map((w, i) => (
 						<li
 							key={i}
-							className="flex flex-wrap items-end gap-2 rounded-md border border-gray-200 bg-white/80 p-2"
+							className="flex items-end gap-1.5 rounded-md border border-gray-200 bg-white/80 p-2"
 						>
-							<div>
+							<div className="min-w-0 flex-1">
 								<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
 									{startLabel}
 								</label>
@@ -50,10 +51,10 @@ export function DailyScheduleEditor(props: Props) {
 									placeholder="00:00"
 									value={w.start}
 									onChange={(e) => updateRow(i, { start: e.target.value })}
-									className="w-[4.5rem] rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums"
+									className="w-full min-w-0 rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums"
 								/>
 							</div>
-							<div>
+							<div className="min-w-0 flex-1">
 								<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
 									{endLabel}
 								</label>
@@ -63,10 +64,10 @@ export function DailyScheduleEditor(props: Props) {
 									placeholder="08:00"
 									value={w.end}
 									onChange={(e) => updateRow(i, { end: e.target.value })}
-									className="w-[4.5rem] rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums"
+									className="w-full min-w-0 rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums"
 								/>
 							</div>
-							<div>
+							<div className="min-w-0 flex-[0.85]">
 								<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
 									{factorLabel}
 								</label>
@@ -76,15 +77,17 @@ export function DailyScheduleEditor(props: Props) {
 									placeholder="1"
 									value={w.factor}
 									onChange={(e) => updateRow(i, { factor: e.target.value })}
-									className="w-[4rem] rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums"
+									className="w-full min-w-0 rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums"
 								/>
 							</div>
 							<button
 								type="button"
 								onClick={() => onChange(windows.filter((_, j) => j !== i))}
-								className="ml-auto rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-600 hover:bg-gray-50"
+								className="mb-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+								aria-label={removeLabel}
+								title={removeLabel}
 							>
-								{removeLabel}
+								<TrashIcon className="h-4 w-4" aria-hidden />
 							</button>
 						</li>
 					))}
