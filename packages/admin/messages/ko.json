@@ -556,7 +556,7 @@
 			"description": "설명",
 			"descriptionPlaceholder": "선택 사항, 내부 메모용",
 			"metadataJson": "Metadata (JSON)",
-			"metadataPlaceholder": "{\"key\": \"value\"}",
+			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "모델 삭제"
 		},
 		"metadata": {
@@ -802,7 +802,7 @@
 			"requestDefaults": "요청 기본값 (JSON)",
 			"requestDefaultsHint": "업스트림 본문에 Deep merge되며 클라이언트 필드가 우선합니다.",
 			"customParams": "사용자 지정 파라미터",
-			"customParamsPlaceholder": "{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}",
+			"customParamsPlaceholder": "'{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}'",
 			"summary": "요약",
 			"summaryRoute": "Route:",
 			"summaryRouting": "Routing:",
@@ -1845,7 +1845,7 @@
 	},
 	"pricing": {
 		"emptyCachePlaceholder": "비어 있음 = null",
-		"jsonPreviewLabel": "{ \"tiers\": [...] } 미리보기 (읽기 전용)",
+		"jsonPreviewLabel": "'{ \"tiers\": [...] }' 미리보기 (읽기 전용)",
 		"tokensTitle": "Tokens {count}개",
 		"tiersEditor": {
 			"add": "추가",

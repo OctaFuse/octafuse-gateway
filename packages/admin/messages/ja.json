@@ -556,7 +556,7 @@
 			"description": "説明",
 			"descriptionPlaceholder": "任意の内部メモ",
 			"metadataJson": "Metadata（JSON）",
-			"metadataPlaceholder": "{\"key\": \"value\"}",
+			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "モデルを削除"
 		},
 		"metadata": {
@@ -802,7 +802,7 @@
 			"requestDefaults": "リクエストのデフォルト（JSON）",
 			"requestDefaultsHint": "アップストリーム Body にディープマージされ、クライアント側の項目が優先されます。",
 			"customParams": "カスタムパラメーター",
-			"customParamsPlaceholder": "{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}",
+			"customParamsPlaceholder": "'{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}'",
 			"summary": "概要",
 			"summaryRoute": "Route：",
 			"summaryRouting": "ルーティング：",
@@ -1845,7 +1845,7 @@
 	},
 	"pricing": {
 		"emptyCachePlaceholder": "空欄 = null",
-		"jsonPreviewLabel": "{ \"tiers\": [...] } プレビュー（読み取り専用）",
+		"jsonPreviewLabel": "'{ \"tiers\": [...] }' プレビュー（読み取り専用）",
 		"tokensTitle": "{count} tokens",
 		"tiersEditor": {
 			"add": "追加",

@@ -556,7 +556,7 @@
 			"description": "描述",
 			"descriptionPlaceholder": "可选，仅供内部备注",
 			"metadataJson": "Metadata（JSON）",
-			"metadataPlaceholder": "{\"key\": \"value\"}",
+			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "删除模型"
 		},
 		"metadata": {
@@ -802,7 +802,7 @@
 			"requestDefaults": "请求默认值（JSON）",
 			"requestDefaultsHint": "深度合并到上游请求体；客户端字段优先。",
 			"customParams": "自定义参数",
-			"customParamsPlaceholder": "{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}",
+			"customParamsPlaceholder": "'{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}'",
 			"summary": "摘要",
 			"summaryRoute": "路由：",
 			"summaryRouting": "路由策略：",
@@ -1845,7 +1845,7 @@
 	},
 	"pricing": {
 		"emptyCachePlaceholder": "留空 = null",
-		"jsonPreviewLabel": "{ \"tiers\": [...] } 预览（只读）",
+		"jsonPreviewLabel": "'{ \"tiers\": [...] }' 预览（只读）",
 		"tokensTitle": "{count} tokens",
 		"tiersEditor": {
 			"add": "添加",
