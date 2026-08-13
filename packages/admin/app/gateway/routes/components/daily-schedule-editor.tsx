@@ -1,9 +1,10 @@
 'use client';
 
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import type { RouteScheduleFormSide, RouteScheduleFormWindow } from '../types';
 
 type Props = {
+	title: string;
 	windows: RouteScheduleFormSide;
 	onChange: (windows: RouteScheduleFormSide) => void;
 	addLabel: string;
@@ -16,6 +17,7 @@ type Props = {
 
 export function DailyScheduleEditor(props: Props) {
 	const {
+		title,
 		windows,
 		onChange,
 		addLabel,
@@ -32,6 +34,20 @@ export function DailyScheduleEditor(props: Props) {
 
 	return (
 		<div className="space-y-2">
+			<div className="flex items-center justify-between gap-2">
+				<p className="text-[11px] font-semibold tracking-wide text-gray-500">{title}</p>
+				<button
+					type="button"
+					onClick={() =>
+						onChange([...windows, { start: '00:00', end: '08:00', factor: '1' }])
+					}
+					className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+					aria-label={addLabel}
+					title={addLabel}
+				>
+					<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+				</button>
+			</div>
 			{windows.length === 0 ? (
 				<p className="text-xs text-gray-500">{emptyLabel}</p>
 			) : (
@@ -93,15 +109,6 @@ export function DailyScheduleEditor(props: Props) {
 					))}
 				</ul>
 			)}
-			<button
-				type="button"
-				onClick={() =>
-					onChange([...windows, { start: '00:00', end: '08:00', factor: '1' }])
-				}
-				className="rounded-md border border-dashed border-gray-300 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-			>
-				{addLabel}
-			</button>
 		</div>
 	);
 }

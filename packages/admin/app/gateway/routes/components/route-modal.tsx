@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowDownIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
+import { ArrowDownIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { isAudioSpeechModel } from '@octafuse/core/db/model-modalities';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
@@ -79,6 +80,15 @@ export function RouteModal(props: Props) {
 	const tCommon = useTranslations('common');
 	const adapterLabel = (adapter: string) =>
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
+	const hasCustomParams = formData.custom_params_json.trim().length > 0;
+	const customParamsSessionKey = `${open ? '1' : '0'}:${editingRoute?.id ?? ''}:${duplicateSourceRouteId ?? ''}`;
+	const [customParamsSession, setCustomParamsSession] = useState(customParamsSessionKey);
+	const [customParamsOpen, setCustomParamsOpen] = useState(() => open && hasCustomParams);
+	if (customParamsSession !== customParamsSessionKey) {
+		setCustomParamsSession(customParamsSessionKey);
+		setCustomParamsOpen(open && hasCustomParams);
+	}
+
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
 		(protocol) => requestOperationsForModel(selectedModel, protocol, formData.provider_model_name).length > 0,
@@ -345,7 +355,11 @@ export function RouteModal(props: Props) {
 									</div>
 								</div>
 
-								<div className="flex min-w-0 flex-col items-stretch justify-center gap-2 lg:w-[16rem]">
+								<div
+									className={`flex min-w-0 flex-col items-stretch gap-2 lg:w-[16rem] ${
+										customParamsOpen ? 'h-full' : 'justify-center'
+									}`}
+								>
 									<div className="flex items-center justify-center py-1" aria-hidden>
 										<ArrowDownIcon className="h-8 w-8 text-blue-500 lg:hidden" />
 										<span className="hidden w-full items-center lg:flex">
@@ -430,6 +444,45 @@ export function RouteModal(props: Props) {
 											) : null}
 										</select>
 										<p className="mt-1 text-[11px] text-gray-500">{t('adapterHint')}</p>
+									</div>
+									<div className={customParamsOpen ? 'flex min-h-0 flex-1 flex-col' : undefined}>
+										<button
+											type="button"
+											onClick={() => setCustomParamsOpen((prev) => !prev)}
+											id="route-custom-params-toggle"
+											aria-controls="route-custom-params"
+											aria-expanded={customParamsOpen}
+											className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/30 ${
+												customParamsOpen
+													? 'relative z-10 border-amber-400 bg-amber-50 text-amber-900'
+													: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+											}`}
+										>
+											<span>{t('customParams')}</span>
+											<span className="flex shrink-0 items-center gap-1.5">
+												{hasCustomParams ? (
+													<span
+														className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+															customParamsOpen ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'
+														}`}
+													>
+														JSON
+													</span>
+												) : null}
+												<ChevronDownIcon
+													className={`h-4 w-4 transition-transform ${
+														customParamsOpen ? 'text-amber-600' : '-rotate-90 text-gray-400'
+													}`}
+													aria-hidden
+												/>
+											</span>
+										</button>
+										{customParamsOpen ? (
+											<span
+												className="mx-auto hidden w-[3px] min-h-3 flex-1 bg-amber-400 lg:block"
+												aria-hidden
+											/>
+										) : null}
 									</div>
 								</div>
 
@@ -584,29 +637,58 @@ export function RouteModal(props: Props) {
 									</div>
 								</div>
 							</div>
+							{customParamsOpen ? (
+								<div>
+									<div
+										className="hidden lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-x-10"
+										aria-hidden
+									>
+										<div />
+										<div className="flex justify-center lg:w-[16rem]">
+											<span className="h-3 w-[3px] bg-amber-400" />
+										</div>
+										<div />
+									</div>
+									<div
+										id="route-custom-params"
+										className="rounded-lg border border-amber-300 bg-amber-50/70 p-3"
+									>
+										<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+											<h4 className="text-sm font-medium text-amber-900">{t('customParams')}</h4>
+											<p className="text-[11px] text-amber-800/80">{t('requestDefaultsHint')}</p>
+										</div>
+										<textarea
+											rows={5}
+											value={formData.custom_params_json}
+											onChange={(e) =>
+												onFormChange({
+													...formData,
+													custom_params_json: e.target.value,
+												})
+											}
+											className="min-h-[120px] w-full resize-y rounded-md border border-amber-200 bg-white px-3 py-2 font-mono text-xs leading-relaxed focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+											placeholder={t('customParamsPlaceholder')}
+											spellCheck={false}
+										/>
+									</div>
+								</div>
+							) : null}
 						</section>
 
 						<section>
-							<h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-								{t('pricingSection')}
-							</h3>
-							<p className="mb-2.5 text-[11px] text-gray-500">
-								{t('billingTimezoneHint', { timezone: businessTimezone })}
-							</p>
-							<div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-stretch">
-								<div className="flex h-full min-h-0 min-w-0 flex-col">
-									<RoutePricePanel
-										fillHeight
-										variant="neutral"
-										title={t('standardCatalog')}
-										subtitle={
-											selectedModelIsAudio
-												? t('standardCatalogHintAudio')
-												: selectedModelIsImage
+							<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
+								<div className="flex min-h-0 min-w-0 flex-col">
+									<h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+										{t('standardCatalog')}
+									</h3>
+									<p className="mb-2.5 text-[11px] text-gray-500">
+										{selectedModelIsAudio
+											? t('standardCatalogHintAudio')
+											: selectedModelIsImage
 												? t('standardCatalogHintImage')
-												: t('standardCatalogHint')
-										}
-									>
+												: t('standardCatalogHint')}
+									</p>
+									<div className="flex min-h-0 flex-1 flex-col">
 								{selectedModelIsAudio ? (
 									catalogAudioPricingDisplay ? (
 										catalogAudioPricingDisplay.mode === 'token' ? (
@@ -680,15 +762,24 @@ export function RouteModal(props: Props) {
 									/>
 								) : (
 									<ReadOnlyPricingTiersTable
+										fillHeight
 										rows={catalogStandardTierRows}
 										emptyLabel={formData.model_id ? t('noCatalogPricing') : t('selectModelForTiers')}
 										tableTitle={t('readOnlyCatalogRates')}
 										billingCurrencyCode={billingCurrency}
 									/>
 								)}
-									</RoutePricePanel>
+									</div>
 								</div>
 
+								<div className="flex min-h-0 min-w-0 flex-col">
+									<h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+										{t('pricingSection')}
+									</h3>
+									<p className="mb-2.5 text-[11px] text-gray-500">
+										{t('billingTimezoneHint', { timezone: businessTimezone })}
+									</p>
+									<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:items-stretch">
 								<div className="flex h-full min-h-0 min-w-0 flex-col">
 									<RoutePricePanel
 										fillHeight
@@ -696,12 +787,12 @@ export function RouteModal(props: Props) {
 										title={t('chargedCost')}
 										subtitle={t('chargedCostHint')}
 										headerEnd={
-											<div className="flex flex-col items-end gap-1">
+											<div className="flex flex-col items-start gap-0.5">
 												<label
 													htmlFor="user-cost-charged-factor"
 													className="whitespace-nowrap text-[11px] font-medium text-gray-600"
 												>
-													{t('chargedFactor')}
+													{t('factor')}
 												</label>
 												<input
 													id="user-cost-charged-factor"
@@ -715,17 +806,15 @@ export function RouteModal(props: Props) {
 															charged_factor: e.target.value,
 														})
 													}
-													className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+													className="w-12 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-mono tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
 													placeholder="1"
 												/>
 											</div>
 										}
 									>
 										<div>
-											<p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-												{t('dailySchedule')}
-											</p>
 											<DailyScheduleEditor
+												title={t('dailySchedule')}
 												windows={formData.schedule_charged}
 												onChange={(schedule_charged) => onFormChange({ ...formData, schedule_charged })}
 												addLabel={t('addScheduleWindow')}
@@ -746,12 +835,12 @@ export function RouteModal(props: Props) {
 										title={t('meteredCost')}
 										subtitle={t('meteredCostHint')}
 										headerEnd={
-											<div className="flex flex-col items-end gap-1">
+											<div className="flex flex-col items-start gap-0.5">
 												<label
 													htmlFor="gateway-route-metered-factor"
 													className="whitespace-nowrap text-[11px] font-medium text-gray-600"
 												>
-													{t('meteredFactor')}
+													{t('factor')}
 												</label>
 												<input
 													id="gateway-route-metered-factor"
@@ -765,17 +854,15 @@ export function RouteModal(props: Props) {
 															metered_factor: e.target.value,
 														})
 													}
-													className="w-[4.25rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+													className="w-12 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-mono tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
 													placeholder="1"
 												/>
 											</div>
 										}
 									>
 										<div>
-											<p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-												{t('dailySchedule')}
-											</p>
 											<DailyScheduleEditor
+												title={t('dailySchedule')}
 												windows={formData.schedule_metered}
 												onChange={(schedule_metered) => onFormChange({ ...formData, schedule_metered })}
 												addLabel={t('addScheduleWindow')}
@@ -788,55 +875,8 @@ export function RouteModal(props: Props) {
 										</div>
 									</RoutePricePanel>
 								</div>
-							</div>
-						</section>
-
-						<section className="rounded-lg border border-gray-200 bg-white p-3.5">
-							<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-								<h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{t('requestDefaults')}</h3>
-								<p className="text-[11px] text-gray-500">{t('requestDefaultsHint')}</p>
-							</div>
-							<label className="mb-1 block text-sm font-medium text-gray-700">{t('customParams')}</label>
-							<textarea
-								rows={4}
-								value={formData.custom_params_json}
-								onChange={(e) =>
-									onFormChange({
-										...formData,
-										custom_params_json: e.target.value,
-									})
-								}
-								className="min-h-[96px] w-full resize-y rounded-md border border-gray-300 px-3 py-2 font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-								placeholder={t('customParamsPlaceholder')}
-								spellCheck={false}
-							/>
-						</section>
-
-						<section className="rounded-lg border border-gray-200 bg-white p-4">
-							<h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{t('summary')}</h3>
-							<div className="grid grid-cols-1 gap-2 text-xs text-gray-600 md:grid-cols-2">
-								<p>
-									<span className="font-medium text-gray-700">{t('summaryRoute')}</span>{' '}
-									<span className="font-mono">{formData.model_id || '—'}</span> →{' '}
-									<span className="font-mono">{formData.provider_id || '—'}</span> /{' '}
-									<span className="font-mono">{formData.provider_model_name || '—'}</span>
-								</p>
-								<p>
-									<span className="font-medium text-gray-700">{t('summaryRouting')}</span>{' '}
-									<span className="font-mono">{formData.upstream_protocol}</span> · {t('summaryGroup')}{' '}
-									<span className="font-mono">{formData.route_group.trim() || 'default'}</span> · {t('summaryPriority')}{' '}
-									<span className="font-mono">{formData.priority}</span> · {t('summaryStatus')}{' '}
-									<span className="font-mono">{editingRoute ? editingRoute.status : 'inactive'}</span>
-									{!editingRoute && <span className="text-gray-500"> {t('summaryEnableFromList')}</span>}
-								</p>
-								<p>
-									<span className="font-medium text-gray-700">{t('summaryUserBilling')}</span>{' '}
-									<span className="font-mono">{t('summaryUserBillingDetail')}</span>
-								</p>
-								<p>
-									<span className="font-medium text-gray-700">{t('summaryMeteredCost')}</span>{' '}
-									<span className="font-mono">{t('summaryMeteredCostDetail')}</span>
-								</p>
+									</div>
+								</div>
 							</div>
 						</section>
 					</div>
