@@ -1,6 +1,6 @@
 'use client';
 
-import { Squares2X2Icon, QueueListIcon } from '@heroicons/react/24/outline';
+import { Squares2X2Icon, QueueListIcon, ViewColumnsIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import type { StickyRefreshIntervalMs } from '../sticky-refresh-preference';
 import type { RouteFlowDensity } from '../types';
@@ -68,6 +68,20 @@ export function RouteWorkspaceHeader(props: Props) {
 					>
 						<Squares2X2Icon className="h-4 w-4" />
 						{t('densityTopology')}
+					</button>
+					<button
+						type="button"
+						onClick={() => onDensityChange('surface')}
+						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+							density === 'surface'
+								? 'bg-white text-slate-900 shadow-sm'
+								: 'text-slate-600 hover:text-slate-900'
+						}`}
+						aria-pressed={density === 'surface'}
+						title={t('densitySurfaceHint')}
+					>
+						<ViewColumnsIcon className="h-4 w-4" />
+						{t('densitySurface')}
 					</button>
 				</div>
 			</div>

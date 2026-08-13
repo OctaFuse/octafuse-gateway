@@ -15,12 +15,13 @@ import { ProviderStickyDialog } from './components/provider-sticky-dialog';
 import { RoutePolicyDialog } from './components/route-policy-dialog';
 import { RouteVendorGroup } from './components/route-vendor-group';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
+import { RouteSurfaceCatalog } from './components/route-surface-catalog';
 import {
 	readStickyRefreshInterval,
 	subscribeStickyRefreshInterval,
 } from './sticky-refresh-preference';
 import { StickySummaryProvider, useStickyRefreshControls } from './sticky-summary-store';
-import type { RouteFlowDensity } from './types';
+import { parseRouteFlowDensity, type RouteFlowDensity } from './types';
 
 const FLOW_DENSITY_STORAGE_KEY = 'octafuse.admin.routes.flowDensity';
 const FLOW_DENSITY_EVENT = 'octafuse-admin-routes-flow-density';
@@ -28,8 +29,7 @@ const FLOW_DENSITY_EVENT = 'octafuse-admin-routes-flow-density';
 function readStoredFlowDensity(): RouteFlowDensity {
 	if (typeof window === 'undefined') return 'topology';
 	try {
-		const raw = window.localStorage.getItem(FLOW_DENSITY_STORAGE_KEY);
-		return raw === 'summary' ? 'summary' : 'topology';
+		return parseRouteFlowDensity(window.localStorage.getItem(FLOW_DENSITY_STORAGE_KEY));
 	} catch {
 		return 'topology';
 	}
@@ -146,6 +146,24 @@ function RoutesContent() {
 										</p>
 									) : null}
 								</div>
+							) : flowDensity === 'surface' ? (
+								<RouteSurfaceCatalog
+									cards={state.routeCards}
+									modelMeta={state.modelMeta}
+									providerMeta={state.providerMeta}
+									globalRouteStrategy={state.globalRouteStrategy}
+									copiedModelId={state.copiedModelId}
+									togglingId={state.togglingId}
+									onCopyModelId={state.copyModelId}
+									onCreate={state.handleCreate}
+									onEdit={state.handleEdit}
+									onEditModel={(modelId) =>
+										void state.modelEdit.openEditById(modelId)
+									}
+									onToggleStatus={state.handleToggleStatus}
+									onOpenStrategyDialog={state.handleOpenStrategyDialog}
+									onOpenProviderStickyDialog={state.handleOpenProviderStickyDialog}
+								/>
 							) : (
 								<div>
 									<div className={state.filterVendor ? '' : 'space-y-8'}>

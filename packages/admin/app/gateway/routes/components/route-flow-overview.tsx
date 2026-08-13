@@ -31,7 +31,11 @@ export function RouteFlowOverview({ density = 'topology' }: Props) {
 					{t('overviewTitle')}
 				</h2>
 				<p className="mt-0.5 text-xs text-gray-500">
-					{density === 'summary' ? t('overviewHintSummary') : t('overviewHintTopology')}
+					{density === 'summary'
+						? t('overviewHintSummary')
+						: density === 'surface'
+							? t('overviewHintSurface')
+							: t('overviewHintTopology')}
 				</p>
 			</div>
 			<div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] sm:items-center">

@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import {
 	applyDashScopeTtsRoutePreset,
+	buildRouteSurfaceCatalog,
 	compatibleAdaptersForRoute,
 	factorChipClassForValue,
 	factorLevelForValue,
@@ -11,7 +12,9 @@ import {
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
 	splitRoutesByProtocolAndRouteGroup,
+	SURFACE_PATH_MODEL_PLACEHOLDER,
 	upstreamOperationsForProviderModel,
+	type RouteModelGroup,
 } from './route-utils';
 import { EMPTY_ROUTE_FORM } from './types';
 
@@ -50,6 +53,17 @@ describe('request surface path', () => {
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference', 'my fun/asr'),
 			'/v1/dashscope/realtime?model=my%20fun%2Fasr&operation=audio.transcriptions.realtime.inference',
+		);
+	});
+
+	it('uses a model placeholder when the catalog path is not bound to one model', () => {
+		assert.equal(
+			requestSurfacePath('gemini', 'models.generate'),
+			`/v1beta/models/${SURFACE_PATH_MODEL_PLACEHOLDER}:{generateContent|streamGenerateContent}`,
+		);
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference'),
+			`/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation=audio.transcriptions.realtime.inference`,
 		);
 	});
 });
@@ -413,5 +427,85 @@ describe('provider sticky pool mapping', () => {
 		assert.equal(stickyOn?.poolStickyIdleTtlSeconds, 1800);
 		assert.equal(stickyOff?.poolStickyEnabled, false);
 		assert.equal(stickyOff?.poolStickyIdleTtlSeconds, 3600);
+	});
+});
+
+function catalogCard(
+	overrides: Partial<RouteModelGroup> & Pick<RouteModelGroup, 'model_id' | 'groupRoutes'>,
+): RouteModelGroup {
+	return {
+		title: overrides.title ?? overrides.model_id,
+		activeCount: overrides.activeCount ?? overrides.groupRoutes.length,
+		vendor: overrides.vendor ?? 'other',
+		...overrides,
+	};
+}
+
+describe('surface catalog grouping', () => {
+	it('inverts model cards into request-surface → model → route-group rows', () => {
+		const openaiSurface = JSON.stringify([
+			{
+				id: 'surf-chat',
+				request_protocol: 'openai',
+				request_operation: 'chat',
+				status: 'active',
+			},
+		]);
+		const catalog = buildRouteSurfaceCatalog([
+			catalogCard({
+				model_id: 'gpt-4o',
+				groupRoutes: [
+					{
+						id: 'r-default',
+						model_id: 'gpt-4o',
+						upstream_protocol: 'openai',
+						route_group: 'default',
+						route_pool_id: 'pool-default',
+						surfaces: openaiSurface,
+					} as RouteModelGroup['groupRoutes'][number],
+					{
+						id: 'r-vip',
+						model_id: 'gpt-4o',
+						upstream_protocol: 'openai',
+						route_group: 'vip',
+						route_pool_id: 'pool-vip',
+						surfaces: openaiSurface,
+					} as RouteModelGroup['groupRoutes'][number],
+				],
+			}),
+			catalogCard({
+				model_id: 'gpt-4.1',
+				groupRoutes: [
+					{
+						id: 'r-41',
+						model_id: 'gpt-4.1',
+						upstream_protocol: 'openai',
+						route_group: 'default',
+						route_pool_id: 'pool-41',
+						surfaces: openaiSurface,
+					} as RouteModelGroup['groupRoutes'][number],
+				],
+			}),
+			catalogCard({
+				model_id: 'orphan',
+				groupRoutes: [],
+			}),
+		]);
+
+		assert.equal(catalog.surfaces.length, 1);
+		assert.equal(catalog.surfaces[0]?.protocol, 'openai');
+		assert.equal(catalog.surfaces[0]?.requestOperation, 'chat');
+		assert.deepEqual(
+			catalog.surfaces[0]?.models.map((row) => row.card.model_id),
+			['gpt-4o', 'gpt-4.1'],
+		);
+		assert.deepEqual(
+			catalog.surfaces[0]?.models[0]?.sections.map((section) => section.group),
+			['default', 'vip'],
+		);
+		assert.deepEqual(
+			catalog.unrouted.map((card) => card.model_id),
+			['orphan'],
+		);
 	});
 });
