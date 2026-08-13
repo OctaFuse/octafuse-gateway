@@ -1447,7 +1447,7 @@
 			"reasonPlaceholder": "例如 request_usage_charged_cost",
 			"sourcePlaceholder": "usage_charge、period_reset…",
 			"correlationPlaceholder": "request_log_id / 业务引用",
-			"actorIdPlaceholder": "console:admin / admin_key:<uuid>"
+			"actorIdPlaceholder": "console:admin / admin_key:'<uuid>'"
 		},
 		"actorKinds": {
 			"console": "控制台会话",

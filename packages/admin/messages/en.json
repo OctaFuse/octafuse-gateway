@@ -1447,7 +1447,7 @@
 			"reasonPlaceholder": "e.g. request_usage_charged_cost",
 			"sourcePlaceholder": "usage_charge, period_reset…",
 			"correlationPlaceholder": "request_log_id / business reference",
-			"actorIdPlaceholder": "console:admin / admin_key:<uuid>"
+			"actorIdPlaceholder": "console:admin / admin_key:'<uuid>'"
 		},
 		"actorKinds": {
 			"console": "Console session",
