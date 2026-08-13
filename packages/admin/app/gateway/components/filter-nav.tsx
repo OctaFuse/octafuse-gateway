@@ -16,11 +16,11 @@ export function FilterNavSection({
 }) {
 	if (orientation === 'horizontal') {
 		return (
-			<nav className="inline-flex min-w-0 max-w-full items-center gap-2" aria-label={ariaLabel}>
-				<div className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+			<nav className="flex w-full min-w-0 items-center gap-3" aria-label={ariaLabel}>
+				<div className="w-28 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
 					{title}
 				</div>
-				<ul className="flex min-w-0 flex-wrap gap-1">{children}</ul>
+				<ul className="flex min-w-0 flex-1 flex-wrap gap-1">{children}</ul>
 			</nav>
 		);
 	}

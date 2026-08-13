@@ -69,15 +69,15 @@ export function RouteFilterSidebar(props: Props) {
 	const tCommon = useTranslations('common');
 
 	return (
-		<div className="border-b border-gray-200/80 bg-slate-50/90 px-4 py-3 sm:px-6">
-			<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+		<section className="mb-5 sm:mb-6" aria-label={t('title')}>
+			<div className="mb-3 flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
 				<div className="min-w-0">
-					<p className="text-xs text-gray-600">
-						<span className="font-medium text-gray-800">{t('title')}</span>
+					<h2 className="text-sm font-semibold text-gray-900">{t('title')}</h2>
+					<p className="mt-0.5 text-xs text-gray-500">
+						{t('narrowModelsRoutes')}
 						<span className="text-gray-300"> · </span>
 						{t('modelsAndRoutes', { models: visibleModelCount, routes: visibleRouteCount })}
 					</p>
-					<p className="mt-0.5 text-[11px] text-gray-400">{t('narrowModelsRoutes')}</p>
 				</div>
 				{hasActiveFilters ? (
 					<button
@@ -90,7 +90,7 @@ export function RouteFilterSidebar(props: Props) {
 				) : null}
 			</div>
 
-			<div className="mt-2.5 flex flex-wrap items-center gap-x-6 gap-y-2">
+			<div className="flex flex-col items-stretch gap-y-2">
 				<HorizontalSection title={t('status')} ariaLabel={t('statusAria')}>
 					<HorizontalButton
 						label={t('all')}
@@ -193,6 +193,6 @@ export function RouteFilterSidebar(props: Props) {
 					))}
 				</HorizontalSection>
 			</div>
-		</div>
+		</section>
 	);
 }
