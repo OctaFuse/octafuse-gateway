@@ -179,5 +179,53 @@
 			]
 		},
 		"released": "2026-06-13"
+	},
+	{
+		"id": "glm-5.3",
+		"display_name": "GLM-5.3",
+		"description": "A flagship GLM model for long-horizon coding, agents, and security review. It keeps the GLM-5.2 base and raises coding and agent performance through post-training.",
+		"i18n": {
+			"en": "A flagship GLM model for long-horizon coding, agents, and security review. It keeps the GLM-5.2 base and raises coding and agent performance through post-training.",
+			"zh": "面向长程编程、Agent 与安全审查的 GLM 旗舰模型。沿用 GLM-5.2 基座，通过后训练提升编程与智能体表现。"
+		},
+		"vendor": "zhipu",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.4,
+						"output_price": 4.4,
+						"cache_read_price": 0.26,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 8,
+						"output_price": 28,
+						"cache_read_price": 2,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-08-14"
 	}
 ]

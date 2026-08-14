@@ -17,6 +17,18 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.match(row!.pricing_preview ?? '', /¥\/M/);
 		assert.doesNotMatch(row!.pricing_preview ?? '', /\$\/M/);
 	});
+
+	it('includes glm-5.3 with GLM-5.2-aligned list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'glm-5.3');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'glm-5.3');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'GLM-5.3');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$1.4 / $4.4 /M');
+		assert.equal(cny!.pricing_label, '¥8 / ¥28 /M');
+	});
 });
 
 describe('import catalog localized model metadata', () => {
