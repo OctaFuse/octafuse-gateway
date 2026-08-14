@@ -738,6 +738,7 @@ export function compatibleAdaptersForRoute(
 export function isPromptCacheSensitiveCapability(capability: string): boolean {
 	return (
 		capability === 'chat' ||
+		capability === 'responses' ||
 		capability === 'messages' ||
 		capability === 'models.generate' ||
 		capability === 'generateContent' ||

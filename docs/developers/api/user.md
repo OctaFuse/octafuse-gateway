@@ -55,7 +55,7 @@ Authorization: Bearer sk-xxx...
 
 ### 3. 预算校验
 
-`POST /v1/chat/completions`、`POST /v1/messages` 与 Gemini `POST /v1beta/models/...` 在转发上游前，对 **用户 API Key** 统一执行 **`budget_max` / `budget_spent`** 校验：当 `budget_max` 非空且 `budget_spent >= budget_max` 时返回 **403** `Budget exceeded`。
+`POST /v1/chat/completions`、`POST /v1/responses`、`POST /v1/messages` 与 Gemini `POST /v1beta/models/...` 在转发上游前，对 **用户 API Key** 统一执行 **`budget_max` / `budget_spent`** 校验：当 `budget_max` 非空且 `budget_spent >= budget_max` 时返回 **403** `Budget exceeded`。
 
 路由组（`default`、`free` 等）仅影响 **选路与计费快照**（见下文用量日志），**不再**单独绕过预算或走按日免费次数表。一次性试用额度等场景请通过 **`budget_period = 'none'`** 与 `budget_max` / `budget_base` 在 **User** 上表达（经管理 API / 门户侧更新 `users`；API Key 仅用于鉴权与归集）。
 
@@ -185,6 +185,48 @@ curl http://localhost:8787/v1/chat/completions \
   -H "Authorization: Bearer sk-xxx..." \
   -H "Content-Type: application/json" \
   -d '{"model":"deepseek-v3.2:free","messages":[{"role":"user","content":"hi"}]}'
+```
+
+---
+
+## Responses
+
+OpenAI Responses 兼容入口，支持非流式 JSON 与 `stream=true` 的 typed SSE。上游必须配置 `openai.responses` 请求入口，并使用同协议 `passthrough`。
+
+### 请求
+
+```
+POST /v1/responses
+```
+
+### 请求体
+
+```json
+{
+  "model": "gpt-4.1",
+  "input": [
+    { "role": "user", "content": "Hello" }
+  ],
+  "stream": true,
+  "store": false
+}
+```
+
+`model` 可使用 **`baseId`** 或 **`baseId:route_group`**（见上文）。网关会将上游请求的 `model` 替换为路由上的 `provider_model_name`，其余字段默认原样透传。
+
+`previous_response_id` 仅在单一上游目标（或不会切换目标的路由池）下透传。多目标且无法保证回到同一上游时返回 **409** `responses.state_route_unavailable`。当前不提供 Conversations、background retrieve/cancel 或 Chat ↔ Responses 转换。
+
+### 示例
+
+```bash
+curl http://localhost:8787/v1/responses \
+  -H "Authorization: Bearer sk-xxx..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4.1",
+    "input": [{"role": "user", "content": "Hello"}],
+    "store": false
+  }'
 ```
 
 ---

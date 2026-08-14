@@ -1,5 +1,57 @@
 [
 	{
+		"id": "gemini-3.7-flash",
+		"display_name": "Gemini 3.7 Flash",
+		"description": "A high-efficiency Gemini workhorse for coding, agents, and knowledge work. It improves first-pass code accuracy, multi-step tool use, and production-ready application output over Gemini 3.6 Flash.",
+		"i18n": {
+			"en": "A high-efficiency Gemini workhorse for coding, agents, and knowledge work. It improves first-pass code accuracy, multi-step tool use, and production-ready application output over Gemini 3.6 Flash.",
+			"zh": "面向编程、Agent 与知识工作的高效率 Gemini 主力模型。相较 Gemini 3.6 Flash，提升首轮代码准确率、多步工具调用与可上线应用产出。"
+		},
+		"vendor": "google",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.5,
+						"output_price": 7.5,
+						"cache_read_price": 0.15,
+						"cache_write_price": 0.08333
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10.5,
+						"output_price": 52.5,
+						"cache_read_price": 1.05,
+						"cache_write_price": 0.58331
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-08-13"
+	},
+	{
 		"id": "gemini-3.6-flash",
 		"display_name": "Gemini 3.6 Flash",
 		"description": "A high-efficiency Gemini model for coding, agents, and web or application development. It focuses on polished coding and application outputs with fewer unnecessary edits across agentic workflows.",

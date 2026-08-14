@@ -1,7 +1,6 @@
 /**
  * Tencent Cloud API 3.0 TC3-HMAC-SHA256（POST JSON）。
  * 使用 WebCrypto（crypto.subtle），兼容 Cloudflare Workers 与 Node 18+。
- * 算法对齐 soloent-web `lib/tencent/tc3-sign.ts`（原 node:crypto 版）。
  */
 
 export type Tc3SignResult = {

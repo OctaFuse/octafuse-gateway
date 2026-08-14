@@ -699,16 +699,16 @@
 				"base": "https://api.x.ai/v1"
 			}
 		},
-		"description": "OpenAI-compatible root (api.x.ai/v1): chat/completions + images/generations (Grok Imagine). See docs.x.ai.",
+		"description": "OpenAI-compatible root (api.x.ai/v1): chat/completions, responses, and images/generations (Grok Imagine). See docs.x.ai.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "xAI（Grok）",
-					"description": "xAI 官方 OpenAI 兼容 API，支持 Grok 对话与图片生成。"
+					"description": "xAI 官方 OpenAI 兼容 API，支持 Grok 对话、Responses 与图片生成。"
 				},
 				"en": {
 					"name": "xAI (Grok)",
-					"description": "xAI’s OpenAI-compatible API for Grok chat and image generation."
+					"description": "xAI’s OpenAI-compatible API for Grok chat, Responses, and image generation."
 				}
 			},
 			"links": {

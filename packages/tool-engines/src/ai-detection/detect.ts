@@ -1,6 +1,5 @@
 /**
  * 按 driver 切段、并发检测、字符加权聚合总分。
- * 逻辑对齐 soloent-web `lib/ai-detection/detect.ts`。
  */
 
 import type { ResolvedAiDetectionConfig } from '@octafuse/core/lib/ai-detection-system-config';

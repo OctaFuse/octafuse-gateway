@@ -37,6 +37,22 @@ describe('resolveUpstreamEndpoint', () => {
 		assert.equal(url, 'https://api.openai.com/v1/chat/completions');
 	});
 
+	it('derives responses from openai base', () => {
+		const url = resolveUpstreamEndpoint('openai', 'responses', {
+			openai: { base: 'https://api.x.ai/v1' },
+		});
+		assert.equal(url, 'https://api.x.ai/v1/responses');
+	});
+
+	it('uses responses capability template without appending suffix', () => {
+		const url = resolveUpstreamEndpoint('openai', 'responses', {
+			openai: {
+				endpoints: { responses: 'https://vendor.example/custom/responses' },
+			},
+		});
+		assert.equal(url, 'https://vendor.example/custom/responses');
+	});
+
 	it('derives audio.transcriptions from openai base', () => {
 		const url = resolveUpstreamEndpoint('openai', 'audio.transcriptions', {
 			openai: { base: 'https://api.openai.com/v1' },
@@ -217,7 +233,7 @@ describe('listConfiguredCapabilities', () => {
 				{ openai: { base: 'https://api.openai.com/v1' } },
 				'openai'
 			),
-			['chat', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech']
+			['chat', 'responses', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech']
 		);
 	});
 
@@ -246,7 +262,7 @@ describe('listConfiguredCapabilities', () => {
 				},
 				'openai'
 			),
-			['chat', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech']
+			['chat', 'responses', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech']
 		);
 	});
 

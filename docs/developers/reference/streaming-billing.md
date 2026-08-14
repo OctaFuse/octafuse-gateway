@@ -1,6 +1,6 @@
 # 流式 Chat 计费与取消（当前实现）
 
-Proxy（`@octafuse/proxy`）在流式请求（`POST /v1/chat/completions`、`POST /v1/messages`、Gemini `streamGenerateContent` 等；实现见 `packages/proxy/src/services/egress/*-driver.ts`）中解析上游 SSE 的 `usage`，写入 `api_key_request_logs` 并更新 `users.budget_spent`。客户端中途取消或断连时，仍尽量在有限时间内从上游 **drain** 读出末尾 usage，避免长期 `incomplete` / 0 token。
+Proxy（`@octafuse/proxy`）在流式请求（`POST /v1/chat/completions`、`POST /v1/responses`、`POST /v1/messages`、Gemini `streamGenerateContent` 等；实现见 `packages/proxy/src/services/egress/*-driver.ts`）中解析上游 SSE 的 `usage`，写入 `api_key_request_logs` 并更新 `users.budget_spent`。客户端中途取消或断连时，仍尽量在有限时间内从上游 **drain** 读出末尾 usage，避免长期 `incomplete` / 0 token。Responses 的 usage 通常来自终态事件（`response.completed` / `response.incomplete`），并计入 reasoning / cached tokens。
 
 本文描述 Chat / Messages / Gemini 的流式 token 计费。Images、Audio 与 Agent Tools 分别使用 image token / 按张、audio token / 按时长、固定按次计费，见 [用户 API](../api/user.md) 与 [文生图模型说明](./image-models.md)。
 

@@ -20,6 +20,7 @@ import {
 /** 上游协议 capability；DashScope 音频把 HTTP、任务查询和两类 WSS 明确拆开。 */
 export type ProviderEndpointCapability =
 	| 'chat'
+	| 'responses'
 	| 'images.generations'
 	| 'images.edits'
 	| 'audio.transcriptions'
@@ -38,6 +39,7 @@ export type ProviderEndpointCapability =
 
 export const OPENAI_ENDPOINT_CAPABILITIES = [
 	'chat',
+	'responses',
 	'images.generations',
 	'images.edits',
 	'audio.transcriptions',
@@ -453,6 +455,8 @@ export function resolveUpstreamEndpoint(
 		switch (resolvedCapability) {
 			case 'chat':
 				return `${root}/chat/completions`;
+			case 'responses':
+				return `${root}/responses`;
 			case 'images.generations':
 				return buildOpenAiCompatibleImagesUrl(root, 'generations');
 			case 'images.edits':

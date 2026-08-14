@@ -593,6 +593,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
     "base": "https://api.example.com/v1",
     "endpoints": {
       "chat": "https://api.example.com/v1/chat/completions",
+      "responses": "https://api.example.com/v1/responses",
       "images.generations": "https://api.example.com/v1/images/generations",
       "images.edits": "https://api.example.com/v1/images/edits",
       "audio.transcriptions": "https://api.example.com/v1/audio/transcriptions"

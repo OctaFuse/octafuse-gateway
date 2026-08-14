@@ -58,6 +58,7 @@
 | 端点 | 方法 | 描述 |
 |------|------|------|
 | `/v1/chat/completions` | POST | OpenAI 兼容聊天 |
+| `/v1/responses` | POST | OpenAI Responses 透传（流式 / 非流式） |
 | `/v1/images/generations` | POST | OpenAI 兼容图片生成（见 [image-models](../reference/image-models.md)） |
 | `/v1/images/edits` | POST | OpenAI 兼容图片编辑（multipart；Seedream 不适用） |
 | `/v1/audio/transcriptions` | POST | OpenAI 兼容语音转写（multipart；`per_second` / `token` 双模式计费，见 [user.md](./user.md#语音转写audio-transcriptions)） |

@@ -22,6 +22,8 @@ export const GatewayErrorCode = {
 	routeResolutionFailed: 'gateway.route_resolution_failed',
 	invalidRequest: 'gateway.invalid_request',
 	upstreamRequestFailed: 'gateway.upstream_request_failed',
+	responsesStateRouteUnavailable: 'responses.state_route_unavailable',
+	responsesUnsupportedStateOperation: 'responses.unsupported_state_operation',
 
 	// circuit.*
 	circuitSensitiveContent: 'circuit.sensitive_content',

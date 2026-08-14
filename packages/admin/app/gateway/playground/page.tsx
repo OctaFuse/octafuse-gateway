@@ -98,6 +98,12 @@ const BODY_TEMPLATES: Record<string, string> = {
   "stream": true,
   "stream_options": { "include_usage": true }
 }`,
+	openai_responses: `{
+  "input": [{ "role": "user", "content": "Hello" }],
+  "max_output_tokens": 256,
+  "store": false,
+  "stream": true
+}`,
 	anthropic: `{
   "messages": [{ "role": "user", "content": "Hello" }],
   "max_tokens": 256,
@@ -477,6 +483,8 @@ function PlaygroundPageInner() {
 					: AUDIO_SPEECH_BODY_TEMPLATE
 				: isImage && proto === 'openai'
 				? IMAGE_GENERATIONS_BODY_TEMPLATE
+				: proto === 'openai' && r.upstream_operation === 'responses'
+				? BODY_TEMPLATES.openai_responses
 				: BODY_TEMPLATES[proto] ?? BODY_TEMPLATES.openai,
 		);
 		setBodyError(null);

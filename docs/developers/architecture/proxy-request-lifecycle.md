@@ -7,6 +7,7 @@
 | 入口 | 协议 | 路由文件 |
 |------|------|----------|
 | `POST /v1/chat/completions` | OpenAI | `packages/proxy/src/routes/v1/chat.ts` |
+| `POST /v1/responses` | OpenAI Responses | `packages/proxy/src/routes/v1/responses.ts` |
 | `POST /v1/messages` | Anthropic | `packages/proxy/src/routes/v1/messages.ts` |
 | `POST /v1beta/models/{model}:generateContent` 等 | Gemini | `packages/proxy/src/routes/v1/gemini.ts` |
 
@@ -77,7 +78,7 @@ flowchart TB
 | 错误码 | `services/gateway-error-codes.ts` / `gateway-error-response.ts` | `gateway.*` / `circuit.*` / `upstream.*` + `X-OctaFuse-Error-Code` |
 | 用量记账 | `services/usage-tracker.ts` | 流结束后写 `api_key_request_logs`、累加 `budget_spent` |
 
-> **客户端约定**：非 2xx 时以响应头 **`X-OctaFuse-Error-Code`**（及网关自造错误 body 顶层 / 嵌套 `code`）为**分类权威**；`error` / `error.message` 仍保留人类可读原文（上游透传或固定英文短句）。SoloEnt Agent 优先按该点分 code 归一化，再回退英文文案正则。
+> **客户端约定**：非 2xx 时以响应头 **`X-OctaFuse-Error-Code`**（及网关自造错误 body 顶层 / 嵌套 `code`）为**分类权威**；`error` / `error.message` 仍保留人类可读原文（上游透传或固定英文短句）。集成方应优先按该 code 分类，再回退英文文案。
 
 > **已移除**：供应商 key pool、旧 `models.sticky_config`、网关侧 RPM/TPM/并发软限流（`limit_config`）。一个供应商 = 一把 `api_key` + `status`。跨请求供应商粘性（Provider sticky）见路由池配置与 `route_pool_sticky_bindings`。
 

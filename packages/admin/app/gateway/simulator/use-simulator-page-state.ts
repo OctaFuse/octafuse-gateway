@@ -46,6 +46,7 @@ import {
 	type GatewayToolId,
 	type InvokeKind,
 	type ModelKindFilter,
+	type OpenaiLlmOperation,
 } from '@/lib/invoke-kind';
 import { GATEWAY_TOOLS } from '@/lib/gateway-tools';
 import {
@@ -56,6 +57,7 @@ import {
 	LS_INVOKE_KIND,
 	LS_KEY_ID,
 	LS_MODEL_ID,
+	LS_OPENAI_LLM_OPERATION,
 	LS_PROTOCOL,
 	LS_PROXY,
 	LS_ROUTE_GROUP,
@@ -81,6 +83,7 @@ export function useSimulatorPageState() {
 
 	const [proxyBaseUrl, setProxyBaseUrl] = useState('');
 	const [protocol, setProtocolState] = useState<SimulatorProtocol>('openai');
+	const [openaiLlmOperation, setOpenaiLlmOperationState] = useState<OpenaiLlmOperation>('chat');
 	const [geminiAction, setGeminiAction] = useState<SimulatorGeminiAction>('streamGenerateContent');
 	const [imageOperation, setImageOperationState] = useState<ImageOperation>('generations');
 	const [editFiles, setEditFiles] = useState<File[]>([]);
@@ -181,12 +184,16 @@ export function useSimulatorPageState() {
 						next === 'image',
 						imageOperation,
 						next === 'audio' ? 'transcriptions' : null,
+						undefined,
+						undefined,
+						undefined,
+						next === 'llm' ? openaiLlmOperation : 'chat',
 					),
 				);
 				setBodyError(null);
 			}
 		},
-		[filterKind, selectedToolId, protocol, imageOperation],
+		[filterKind, selectedToolId, protocol, imageOperation, openaiLlmOperation],
 	);
 
 	const selectTool = useCallback((id: string) => {
@@ -298,6 +305,7 @@ export function useSimulatorPageState() {
 				imageOperation,
 				audioOperation: selectedAudioOperation ?? undefined,
 				geminiAction,
+				llmOperation: protocol === 'openai' ? openaiLlmOperation : undefined,
 		  });
 	const matchingRoutes = useMemo(
 		() =>
@@ -438,6 +446,7 @@ export function useSimulatorPageState() {
 				protocol,
 				modelForRouting: routing || selectedToolId,
 				geminiAction: protocol === 'gemini' ? geminiAction : undefined,
+				llmOperation: protocol === 'openai' ? openaiLlmOperation : undefined,
 				body: bodyObj,
 				apiKey: revealedSk,
 				audioOperation: audioOperation ?? undefined,
@@ -465,6 +474,7 @@ export function useSimulatorPageState() {
 		modelRoutingString,
 		protocol,
 		geminiAction,
+		openaiLlmOperation,
 		filterKind,
 		selectedModelIsImage,
 		selectedModelIsAudio,
@@ -517,9 +527,22 @@ export function useSimulatorPageState() {
 			const u = localStorage.getItem(LS_PROXY);
 			if (u) setProxyBaseUrl(u);
 			const p = localStorage.getItem(LS_PROTOCOL);
+			const llmOpRaw = localStorage.getItem(LS_OPENAI_LLM_OPERATION);
+			const llmOp: OpenaiLlmOperation = llmOpRaw === 'responses' ? 'responses' : 'chat';
+			if (llmOpRaw === 'responses' || llmOpRaw === 'chat') {
+				setOpenaiLlmOperationState(llmOp);
+			}
 			if (p === 'openai' || p === 'anthropic' || p === 'gemini' || p === 'dashscope') {
 				setProtocolState(p);
-				setBodyText(BODY_TEMPLATES[p]);
+				setBodyText(
+					p === 'openai'
+						? bodyTemplateForSelection('openai', false, 'generations', null, undefined, undefined, undefined, llmOp)
+						: BODY_TEMPLATES[p],
+				);
+			} else if (llmOp === 'responses') {
+				setBodyText(
+					bodyTemplateForSelection('openai', false, 'generations', null, undefined, undefined, undefined, llmOp),
+				);
 			}
 			const kindRaw = localStorage.getItem(LS_INVOKE_KIND);
 			if (kindRaw && isInvokeKind(kindRaw)) {
@@ -562,6 +585,15 @@ export function useSimulatorPageState() {
 			// ignore
 		}
 	}, [protocol, hydrated]);
+
+	useEffect(() => {
+		if (!hydrated) return;
+		try {
+			localStorage.setItem(LS_OPENAI_LLM_OPERATION, openaiLlmOperation);
+		} catch {
+			// ignore
+		}
+	}, [openaiLlmOperation, hydrated]);
 
 	useEffect(() => {
 		if (!hydrated) return;
@@ -706,7 +738,7 @@ export function useSimulatorPageState() {
 			setImageOperationState('generations');
 			setEditFiles([]);
 			setAudioFile(null);
-			setBodyText(bodyTemplateForSelection(protocol, false, 'generations', null));
+			setBodyText(bodyTemplateForSelection(protocol, false, 'generations', null, undefined, undefined, undefined, openaiLlmOperation));
 			setBodyError(null);
 			setImagePreviews([]);
 			setAudioPreviewUrl(null);
@@ -721,6 +753,7 @@ export function useSimulatorPageState() {
 		matchingRoutes,
 		protocol,
 		imageOperation,
+		openaiLlmOperation,
 		setAudioInputMode,
 	]);
 
@@ -811,6 +844,7 @@ export function useSimulatorPageState() {
 							imageOperation,
 							audioOperation: selectedAudioOperation ?? undefined,
 							geminiAction,
+							llmOperation: next === 'openai' ? openaiLlmOperation : undefined,
 					  });
 			const nextRoute = filterMatchingActiveRoutes(
 				routes,
@@ -829,6 +863,7 @@ export function useSimulatorPageState() {
 					undefined,
 					next === 'dashscope' ? selectedDashScopeRealtimeOperation : null,
 					providerModelName,
+					next === 'openai' ? openaiLlmOperation : 'chat',
 				),
 			);
 			setBodyError(null);
@@ -840,6 +875,7 @@ export function useSimulatorPageState() {
 			imageOperation,
 			filterKind,
 			geminiAction,
+			openaiLlmOperation,
 			routes,
 			selectedModelId,
 			routeGroup,
@@ -867,6 +903,7 @@ export function useSimulatorPageState() {
 					undefined,
 					selectedDashScopeRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
+					openaiLlmOperation,
 				)
 			) {
 				const ok = window.confirm(t('protocolSwitchConfirm'));
@@ -885,6 +922,55 @@ export function useSimulatorPageState() {
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
 			imageOperation,
+			openaiLlmOperation,
+		],
+	);
+
+	const requestOpenaiLlmOperationChange = useCallback(
+		(next: OpenaiLlmOperation) => {
+			if (next === openaiLlmOperation) return;
+			if (
+				isBodyDirty(
+					bodyText,
+					protocol,
+					selectedModelIsImage && !selectedModelIsAudio,
+					imageOperation,
+					selectedAudioOperation,
+					undefined,
+					selectedDashScopeRealtimeOperation,
+					selectedDashScopeTtsProviderModelName,
+					openaiLlmOperation,
+				)
+			) {
+				const ok = window.confirm(t('openaiOperationSwitchConfirm'));
+				if (!ok) return;
+			}
+			setOpenaiLlmOperationState(next);
+			setBodyText(
+				bodyTemplateForSelection(
+					protocol,
+					selectedModelIsImage && !selectedModelIsAudio,
+					imageOperation,
+					selectedAudioOperation,
+					undefined,
+					selectedDashScopeRealtimeOperation,
+					selectedDashScopeTtsProviderModelName,
+					next,
+				),
+			);
+			setBodyError(null);
+		},
+		[
+			openaiLlmOperation,
+			bodyText,
+			protocol,
+			selectedModelIsImage,
+			selectedModelIsAudio,
+			imageOperation,
+			selectedAudioOperation,
+			selectedDashScopeRealtimeOperation,
+			selectedDashScopeTtsProviderModelName,
+			t,
 		],
 	);
 
@@ -900,6 +986,7 @@ export function useSimulatorPageState() {
 						undefined,
 						selectedDashScopeRealtimeOperation,
 						selectedDashScopeTtsProviderModelName,
+						openaiLlmOperation,
 				  ),
 		);
 		setBodyError(null);
@@ -913,6 +1000,7 @@ export function useSimulatorPageState() {
 		selectedDashScopeRealtimeOperation,
 		selectedDashScopeTtsProviderModelName,
 		imageOperation,
+		openaiLlmOperation,
 	]);
 
 	const stop = useCallback(() => {
@@ -1095,6 +1183,7 @@ export function useSimulatorPageState() {
 				protocol,
 				modelForRouting: routing || selectedToolId,
 				geminiAction: protocol === 'gemini' ? geminiAction : undefined,
+				llmOperation: protocol === 'openai' ? openaiLlmOperation : undefined,
 				body: bodyObj,
 				apiKey: revealedSk,
 				audioOperation: audioOperation ?? undefined,
@@ -1268,6 +1357,7 @@ export function useSimulatorPageState() {
 		protocol,
 		modelRoutingString,
 		geminiAction,
+		openaiLlmOperation,
 		t,
 		tCommon,
 		scrollStreamToBottom,
@@ -1295,9 +1385,12 @@ export function useSimulatorPageState() {
 			isToolKind ? selectedToolId : null,
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
+			openaiLlmOperation,
 		),
 		geminiAction,
 		setGeminiAction,
+		openaiLlmOperation,
+		requestOpenaiLlmOperationChange,
 		imageOperation,
 		setImageOperation,
 		editFiles,

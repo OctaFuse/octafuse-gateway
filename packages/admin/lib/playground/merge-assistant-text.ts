@@ -100,7 +100,22 @@ function mergeOpenAiSseParts(raw: string): MergedAssistantParts {
 		if (!o || typeof o !== "object") {
 			continue;
 		}
-		const choices = (o as { choices?: unknown }).choices;
+		const obj = o as Record<string, unknown>;
+		const eventType = typeof obj.type === "string" ? obj.type : "";
+		const eventDelta = typeof obj.delta === "string" ? obj.delta : "";
+		if (eventType === "response.output_text.delta" && eventDelta) {
+			parts.body += eventDelta;
+			continue;
+		}
+		if (
+			(eventType === "response.reasoning_text.delta" ||
+				eventType === "response.reasoning_summary_text.delta") &&
+			eventDelta
+		) {
+			parts.reasoning += eventDelta;
+			continue;
+		}
+		const choices = obj.choices;
 		if (!Array.isArray(choices)) {
 			continue;
 		}
@@ -239,6 +254,56 @@ function mergeGeminiSseParts(raw: string): MergedAssistantParts {
 	return acc;
 }
 
+function appendResponsesContentText(content: unknown, parts: MergedAssistantParts): void {
+	if (!Array.isArray(content)) {
+		return;
+	}
+	for (const part of content) {
+		if (!part || typeof part !== "object") {
+			continue;
+		}
+		const item = part as { type?: unknown; text?: unknown };
+		if (
+			(item.type === "output_text" || item.type === "summary_text" || item.type === "text") &&
+			typeof item.text === "string"
+		) {
+			if (item.type === "summary_text") {
+				parts.reasoning += item.text;
+			} else {
+				parts.body += item.text;
+			}
+		}
+	}
+}
+
+/** OpenAI Responses 非流式 JSON：`output[]` + 可选 `output_text`。 */
+function extractOpenAiResponsesOutputParts(
+	object: Record<string, unknown>
+): MergedAssistantParts | null {
+	const output = object.output;
+	if (!Array.isArray(output)) {
+		return null;
+	}
+	const parts = emptyParts();
+	for (const raw of output) {
+		if (!raw || typeof raw !== "object") {
+			continue;
+		}
+		const item = raw as { type?: unknown; content?: unknown; summary?: unknown };
+		if (item.type === "reasoning") {
+			appendResponsesContentText(item.summary, parts);
+			continue;
+		}
+		if (item.type === "message") {
+			appendResponsesContentText(item.content, parts);
+		}
+	}
+	if (!parts.body && typeof object.output_text === "string") {
+		parts.body = object.output_text;
+	}
+	return parts;
+}
+
 function mergeFromJsonObjectParts(
 	o: unknown,
 	protocol: PlaygroundProtocol
@@ -249,6 +314,10 @@ function mergeFromJsonObjectParts(
 	}
 	if (protocol === "openai" || protocol === "dashscope") {
 		const object = o as Record<string, unknown>;
+		const responsesParts = extractOpenAiResponsesOutputParts(object);
+		if (responsesParts) {
+			return responsesParts;
+		}
 		// OpenAI Audio Transcriptions 返回顶层 text；DashScope 直连调试返回 output.text。
 		if (typeof object.text === "string") {
 			parts.body = object.text;
