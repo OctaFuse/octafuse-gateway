@@ -9,6 +9,7 @@ import {
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
 } from "../../../lib/image-generations";
 import {
+	OPENAI_RESPONSES_BODY_TEMPLATE,
 	bodyTemplateForSelection,
 	buildModelRoutingString,
 	buildRequestLogsHref,
@@ -206,6 +207,50 @@ describe("simulator-utils", () => {
 		);
 	});
 
+	it("bodyTemplateForSelection uses OpenAI Responses template", () => {
+		assert.equal(
+			bodyTemplateForSelection(
+				"openai",
+				false,
+				"generations",
+				null,
+				undefined,
+				undefined,
+				undefined,
+				"responses"
+			),
+			OPENAI_RESPONSES_BODY_TEMPLATE
+		);
+		assert.equal(
+			isBodyDirty(
+				OPENAI_RESPONSES_BODY_TEMPLATE,
+				"openai",
+				false,
+				"generations",
+				null,
+				undefined,
+				undefined,
+				undefined,
+				"responses"
+			),
+			false
+		);
+		assert.equal(
+			isBodyDirty(
+				OPENAI_RESPONSES_BODY_TEMPLATE,
+				"openai",
+				false,
+				"generations",
+				null,
+				undefined,
+				undefined,
+				undefined,
+				"chat"
+			),
+			true
+		);
+	});
+
 	it("bodyTemplateForSelection switches image generations/edits templates", () => {
 		assert.equal(
 			bodyTemplateForSelection("openai", true),
@@ -306,6 +351,47 @@ describe("simulator-utils", () => {
 		assert.deepEqual(
 			mergeAssistantTextParts('{"output":{"text":"你好"}}', "openai", "json"),
 			{ reasoning: "", body: "你好" }
+		);
+	});
+
+	it("mergeAssistantTextParts extracts OpenAI Responses JSON and SSE", () => {
+		assert.deepEqual(
+			mergeAssistantTextParts(
+				JSON.stringify({
+					output: [
+						{
+							type: "reasoning",
+							summary: [{ type: "summary_text", text: "think" }],
+						},
+						{
+							type: "message",
+							content: [{ type: "output_text", text: "hi" }],
+						},
+					],
+				}),
+				"openai",
+				"json"
+			),
+			{ reasoning: "think", body: "hi" }
+		);
+		assert.deepEqual(
+			mergeAssistantTextParts(
+				JSON.stringify({ output: [], output_text: "fallback" }),
+				"openai",
+				"json"
+			),
+			{ reasoning: "", body: "fallback" }
+		);
+		assert.deepEqual(
+			mergeAssistantTextParts(
+				[
+					'data: {"type":"response.reasoning_summary_text.delta","delta":"think"}',
+					'data: {"type":"response.output_text.delta","delta":"hi"}',
+				].join("\n"),
+				"openai",
+				"sse"
+			),
+			{ reasoning: "think", body: "hi" }
 		);
 	});
 

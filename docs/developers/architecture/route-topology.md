@@ -42,7 +42,7 @@ model + route_group + request protocol + operation
 
 > **Gemini v2.2.0**：公开侧 / 上游侧配置只认 `models.generate`。客户端 URL 仍为 `POST /v1beta/models/{model}:{generateContent|streamGenerateContent}`；代理服务（Proxy）用 wire action 派生上游 URL，并把真实 action 写入 `route_trace.gemini.action`。历史 `generateContent` / `streamGenerateContent` 请求入口由迁移 `0017_gemini_models_generate.sql` 合并。详见 [gemini-models-generate-cutover.md](../../operators/migrations/gemini-models-generate-cutover.md)。
 
-> `responses` 已作为拓扑标识保留，但 2.0 的代理服务尚未挂载 `/v1/responses` 用户入口；配置该请求入口不会自动新增 HTTP endpoint。当前实际开放接口以 [用户 API](../api/user.md) 为准。
+> `POST /v1/responses` 已作为 OpenAI Responses 公开入口挂载。请求入口为 `openai` + `responses`，上游同样使用 `openai` + `responses` 与 `adapter=passthrough`。`previous_response_id` 仅在单一上游目标（或不会切换目标的路由池）下透传；多目标且无法保证回到同一上游时返回 `responses.state_route_unavailable`。当前不提供 Conversations、background retrieve/cancel 或 Chat ↔ Responses 转换。
 
 ## 运行时解析
 

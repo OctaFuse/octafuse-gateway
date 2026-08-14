@@ -81,6 +81,7 @@ export function previewPlaygroundUpstreamUrl(input: {
 							: kind === "audio"
 								? "transcriptions"
 								: undefined,
+					llmOperation: input.upstreamOperation === "responses" ? "responses" : "chat",
 				});
 				return resolveUpstreamEndpoint(
 					protocol,

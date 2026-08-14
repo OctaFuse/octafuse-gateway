@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { OpenaiLlmOperation } from '@/lib/invoke-kind';
 import type { SimulatorGeminiAction, SimulatorProtocol } from '@/lib/simulator/endpoint';
 import { formatKeyOptionLabel, inputClass, labelClass, panelClass } from '../simulator-utils';
 import type { AdminKeyListItem } from '../types';
@@ -16,6 +17,8 @@ type Props = {
 	hideProtocolControls?: boolean;
 	geminiAction: SimulatorGeminiAction;
 	onGeminiActionChange: (a: SimulatorGeminiAction) => void;
+	openaiLlmOperation: OpenaiLlmOperation;
+	onOpenaiLlmOperationChange: (op: OpenaiLlmOperation) => void;
 	filterKeyEmail: string;
 	onFilterKeyEmailChange: (v: string) => void;
 	loadingKeys: boolean;
@@ -39,6 +42,8 @@ export function SimulatorSetupPanel({
 	hideProtocolControls = false,
 	geminiAction,
 	onGeminiActionChange,
+	openaiLlmOperation,
+	onOpenaiLlmOperationChange,
 	filterKeyEmail,
 	onFilterKeyEmailChange,
 	loadingKeys,
@@ -107,6 +112,32 @@ export function SimulatorSetupPanel({
 								</p>
 							) : null}
 						</div>
+						{protocol === 'openai' && !openaiLockKind ? (
+							<fieldset className="flex flex-wrap items-center gap-3 text-sm border border-gray-200 rounded-md px-3 py-2">
+								<legend className="sr-only">{t('openaiOperation')}</legend>
+								<span className="text-gray-600 font-medium">{t('openaiOperation')}</span>
+								<label className="inline-flex items-center gap-2 cursor-pointer">
+									<input
+										type="radio"
+										name="openaiLlmOperationSim"
+										className="text-blue-600 focus:ring-blue-500"
+										checked={openaiLlmOperation === 'chat'}
+										onChange={() => onOpenaiLlmOperationChange('chat')}
+									/>
+									chat
+								</label>
+								<label className="inline-flex items-center gap-2 cursor-pointer">
+									<input
+										type="radio"
+										name="openaiLlmOperationSim"
+										checked={openaiLlmOperation === 'responses'}
+										onChange={() => onOpenaiLlmOperationChange('responses')}
+									/>
+									responses
+								</label>
+								<p className="basis-full text-xs text-gray-500">{t('openaiOperationHint')}</p>
+							</fieldset>
+						) : null}
 						{protocol === 'gemini' && !openaiLocked ? (
 							<fieldset className="flex flex-wrap items-center gap-3 text-sm border border-gray-200 rounded-md px-3 py-2">
 								<legend className="sr-only">{t('geminiAction')}</legend>

@@ -65,6 +65,7 @@ function printNodeStartupBanner(
 		`  服务地址       ${base}`,
 		`  健康检查       GET  ${base}/health`,
 		`  Chat           POST ${base}/v1/chat/completions`,
+		`  Responses      POST ${base}/v1/responses`,
 		`  Images         POST ${base}/v1/images/generations`,
 		`  Image edits    POST ${base}/v1/images/edits`,
 		`  Anthropic      POST ${base}/v1/messages`,

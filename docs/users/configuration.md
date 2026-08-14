@@ -39,7 +39,7 @@
 
 - 对客户端暴露稳定的模型名，例如 `gpt-4.1`、`claude-sonnet` 或团队内部命名。
 - 同一模型下配置多个供应商路由：
-  - **请求协议 / operation**：客户端从哪个协议与操作进入，例如 `openai.chat`、`anthropic.messages`、`openai.images.generations`。
+  - **请求协议 / operation**：客户端从哪个协议与操作进入，例如 `openai.chat`、`openai.responses`、`anthropic.messages`、`openai.images.generations`。同一模型可以同时挂 Chat 与 Responses，互不影响。
   - **上游协议 / operation**：上游目标实际调用的供应商能力。2.0 仅开放 `passthrough` adapter，因此请求协议与上游协议必须一致；`*` 用于迁移兼容。
   - **`priority`（层）**：数字**越大**越先试（硬序）。
   - **`weight`（同层）**：配合路由池 / 模型 / 全局路由策略（默认 **hash_affinity**）决定层内顺序。

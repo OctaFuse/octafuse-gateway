@@ -793,6 +793,7 @@ export async function invokePlaygroundUpstream(
 			const capability = resolveOpenaiUpstreamCapability({
 				kind: invokeKind === 'image' ? 'image' : 'llm',
 				imageOperation: imageOperation === 'generations' ? 'generations' : undefined,
+				llmOperation: route.upstreamOperation === 'responses' ? 'responses' : 'chat',
 			});
 			try {
 				url = resolveUpstreamEndpoint('openai', capability, route.providerEndpoints, {

@@ -1,6 +1,5 @@
 /**
  * 按引擎技术上限切段（与计费粒度 billingUnitChars 无关）。
- * 逻辑对齐 soloent-web `lib/ai-detection/segment.ts`。
  */
 
 export type TextSegment = {

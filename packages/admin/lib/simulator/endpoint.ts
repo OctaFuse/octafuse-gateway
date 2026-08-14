@@ -11,6 +11,7 @@ import {
 	type AudioOperation,
 	type GeminiContentAction,
 	type InvokeKind,
+	type OpenaiLlmOperation,
 	type SimulatorProtocol,
 } from "@/lib/invoke-kind";
 
@@ -51,6 +52,8 @@ export type BuildSimulatorRequestInput = {
 	imagesGenerations?: boolean;
 	/** Required when `imageOperation === 'edits'`: reference image files for multipart. */
 	editImages?: File[];
+	/** OpenAI LLM 入口：默认 chat（`/v1/chat/completions`），`responses` 打 `/v1/responses`。 */
+	llmOperation?: OpenaiLlmOperation;
 	/** OpenAI-compatible audio operation; transcriptions use multipart, speech uses JSON. */
 	audioOperation?: AudioOperation;
 	/** Required when `audioOperation === 'transcriptions'`: audio file for multipart. */
@@ -268,6 +271,7 @@ export function buildSimulatorRequest(
 				kind: kind === "image" ? "image" : "llm",
 				protocol: "openai",
 				imageOperation: imageOp === "generations" ? "generations" : undefined,
+				llmOperation: input.llmOperation,
 			});
 			return {
 				url: `${base}${path}`,

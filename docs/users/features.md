@@ -6,11 +6,11 @@ Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统�
 
 | 概念 | 作用 |
 |------|------|
-| 代理服务（Proxy） | 对外 AI 能力入口，提供 OpenAI / Anthropic / Gemini 兼容推理、Images、Audio Transcriptions 与 `/v1/tools/*`。 |
+| 代理服务（Proxy） | 对外 AI 能力入口，提供 OpenAI Chat / Responses、Anthropic、Gemini 兼容推理、Images、Audio Transcriptions 与 `/v1/tools/*`。 |
 | 管理后台（Admin） | 管理 UI 与 `/api/admin/*`，用于维护供应商、模型、路由、用户、Key、日志与配置。 |
 | 供应商（Provider） | 一个上游模型供应商或兼容端点；**一把**上游 API Key + `active` / `disabled`。 |
 | 模型 / 路由组（Model / Route group） | Gateway 暴露给客户端的模型 ID 与可选分组，例如 `model-id:default`、`model-id:free`。 |
-| 请求入口（Request Surface） | 客户端实际进入模型的协议与操作，例如 OpenAI `chat`、Anthropic `messages`、OpenAI `images.generations`。 |
+| 请求入口（Request Surface） | 客户端实际进入模型的协议与操作，例如 OpenAI `chat` / `responses`、Anthropic `messages`、OpenAI `images.generations`。 |
 | 路由池（Route Pool） | 一个请求入口指向的故障转移池，包含一组可替换的上游目标，可覆盖路由策略并选择性启用供应商粘性。 |
 | 上游目标（Upstream Target） | 具体的供应商 + 上游模型，包含 `priority` / `weight`、上游 operation、计费倍率与默认参数。 |
 | 路由策略（Route strategy） | 同池、同 priority 层内如何排序候选供应商：`hash_affinity`（默认）、`weighted_random`、`weight_priority`、`weighted_round_robin`。 |
@@ -22,7 +22,7 @@ Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统�
 | 能力 | 说明 |
 |------|------|
 | 统一入口 | 客户端只需要配置 Gateway Base URL 和用户 Key。 |
-| 多协议兼容 | 支持 OpenAI Chat Completions、Anthropic Messages、Gemini `v1beta` 风格入口。 |
+| 多协议兼容 | 支持 OpenAI Chat Completions、OpenAI Responses、Anthropic Messages、Gemini `v1beta` 风格入口。 |
 | 图片生成 / 编辑（Images） | OpenAI 兼容 `/v1/images/*`；目录价支持 **token** 分项与 **per_image** 按张；默认 `GET /v1/models` 不含纯 image 模型，可用 `kind=image` / `kind=all` 或直接打 Images API。 |
 | 语音转写（Audio） | OpenAI 兼容 `/v1/audio/transcriptions`；目录价支持 **`per_second`（按时长）** 与 **`token`（按上游 usage）** 双模式；默认 `GET /v1/models` 不含 ASR，可用 `kind=audio` / `kind=all`。 |
 | 智能体工具（Agent Tools） | 面向 Agent 的可扩展产品 API（`/v1/tools/*`）：`web-search` 支持博查、Tavily、阿里云 CleverSee、腾讯云 WSA；`web-fetch` 支持 Firecrawl、Tavily Extract、Jina Reader；`web-deep-search` 支持 Firecrawl Search、Jina Search；`ai-detection` 多引擎 catalog（当前实现腾讯云 TMS）。在管理后台的智能体工具 → 工具配置（Tools → Configuration）中，为每种工具配置多个引擎并选择一个活跃引擎（Active）；联网类工具**按次**、AI 率检测按**计费字符单元**写入三账本（供应成本 / 目录标准价 / 用户计费），**仅用户计费（charged）扣预算**；**上游失败不扣费**。调用记入请求日志（`provider_id=octafuse-tools`）。定价只读见 `GET /v1/tools/pricing`（含 `metered` / `standard` / `charged`，`cost` = charged）。 |

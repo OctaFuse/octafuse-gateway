@@ -56,6 +56,7 @@ function ProtocolFields(props: {
 	advancedHint: string;
 	capLabels: {
 		chat: string;
+		responses: string;
 		imagesGenerations: string;
 		imagesEdits: string;
 		audioTranscriptions: string;
@@ -138,6 +139,20 @@ function ProtocolFields(props: {
 										value={form.chat}
 										onChange={(e) =>
 											onChange({ ...form, chat: e.target.value })
+										}
+										className={inputClass}
+										autoComplete="off"
+									/>
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.responses}
+									</label>
+									<input
+										type="url"
+										value={form.responses}
+										onChange={(e) =>
+											onChange({ ...form, responses: e.target.value })
 										}
 										className={inputClass}
 										autoComplete="off"
@@ -348,6 +363,7 @@ export function ProviderModal(props: ProviderModalProps) {
 
 	const capLabels = {
 		chat: t('capChat'),
+		responses: t('capResponses'),
 		imagesGenerations: t('capImagesGenerations'),
 		imagesEdits: t('capImagesEdits'),
 		audioTranscriptions: t('capAudioTranscriptions'),

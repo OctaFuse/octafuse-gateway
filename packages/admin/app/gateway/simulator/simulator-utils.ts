@@ -5,7 +5,7 @@ import {
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
-import type { AudioOperation, GatewayToolId } from '@/lib/invoke-kind';
+import type { AudioOperation, GatewayToolId, OpenaiLlmOperation } from '@/lib/invoke-kind';
 import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
 import {
 	DASHSCOPE_REALTIME_OPERATIONS,
@@ -18,6 +18,7 @@ import type { AdminKeyListItem, AdminModelRow, RouteListRow } from './types';
 
 export const LS_PROXY = 'octafuse.simulator.proxyBaseUrl';
 export const LS_PROTOCOL = 'octafuse.simulator.protocol';
+export const LS_OPENAI_LLM_OPERATION = 'octafuse.simulator.openaiLlmOperation';
 export const LS_MODEL_ID = 'octafuse.simulator.modelId';
 export const LS_ROUTE_GROUP = 'octafuse.simulator.routeGroup';
 export const LS_KEY_ID = 'octafuse.simulator.keyId';
@@ -53,6 +54,15 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
 	dashscope: '{}',
 };
 
+/** OpenAI Responses：`input` + `store: false`，与调试台默认体对齐。 */
+export const OPENAI_RESPONSES_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "input": [{ "role": "user", "content": "Hello" }],
+  "max_output_tokens": 256,
+  "store": false,
+  "stream": true
+}`;
+
 /** Agent Tools request body templates（对齐 Proxy `/v1/tools/*` 入参）。 */
 export const TOOL_BODY_TEMPLATES: Record<GatewayToolId, string> = {
 	'web-search': `{
@@ -86,6 +96,7 @@ export function bodyTemplateForSelection(
 	toolId?: string | null,
 	realtimeOperation?: DashScopeRealtimeOperation | null,
 	providerModelName?: string | null,
+	llmOperation: OpenaiLlmOperation = 'chat',
 ): string {
 	if (toolId) {
 		return bodyTemplateForTool(toolId);
@@ -104,6 +115,9 @@ export function bodyTemplateForSelection(
 	}
 	if (isImageModel && protocol === 'openai') {
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
+	}
+	if (protocol === 'openai' && llmOperation === 'responses') {
+		return OPENAI_RESPONSES_BODY_TEMPLATE;
 	}
 	return BODY_TEMPLATES[protocol];
 }
@@ -194,6 +208,7 @@ export function isBodyDirty(
 	toolId?: string | null,
 	realtimeOperation?: DashScopeRealtimeOperation | null,
 	providerModelName?: string | null,
+	llmOperation: OpenaiLlmOperation = 'chat',
 ): boolean {
 	return (
 		normalizeBodyWhitespace(bodyText) !==
@@ -206,6 +221,7 @@ export function isBodyDirty(
 				toolId,
 				realtimeOperation,
 				providerModelName,
+				llmOperation,
 			),
 		)
 	);

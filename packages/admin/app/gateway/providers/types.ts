@@ -8,6 +8,7 @@ import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 /** 卡片上紧凑展示的能力标签（OpenAI images.* 合并为 images；audio.transcriptions → audio）。 */
 export type ProviderCapabilityBadge =
 	| 'chat'
+	| 'responses'
 	| 'images'
 	| 'audio'
 	| 'messages'
@@ -53,6 +54,7 @@ export type GeminiLegacyPerActionEndpoints = {
 export type ProtocolEndpointForm = {
 	base: string;
 	chat: string;
+	responses: string;
 	images_generations: string;
 	images_edits: string;
 	audio_transcriptions: string;
@@ -97,6 +99,7 @@ export type ProviderImportResult = {
 export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
 	base: '',
 	chat: '',
+	responses: '',
 	images_generations: '',
 	images_edits: '',
 	audio_transcriptions: '',

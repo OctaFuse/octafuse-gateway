@@ -5,6 +5,7 @@
 import type { GatewayRepositories } from "@octafuse/core";
 import type { RouteResult } from "./model-router";
 import { dispatchOpenAiRoute } from "./egress/openai-driver";
+import { dispatchOpenAiResponsesRoute } from "./egress/openai-responses-driver";
 import {
 	dispatchOpenAiImageEdits,
 	dispatchOpenAiImageGenerations,
@@ -142,6 +143,31 @@ export async function proxyChatCompletions(
 		options
 	);
 	return result;
+}
+
+/**
+ * 代理 OpenAI Responses API。
+ */
+export async function proxyResponses(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	body: Record<string, unknown>,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"openai",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchOpenAiResponsesRoute(route, body, signal, timing, attempt),
+		requestSignal,
+		options
+	);
 }
 
 /**

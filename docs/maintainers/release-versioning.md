@@ -45,9 +45,9 @@ flowchart LR
 5. **每次正式发布后把 `main` 同步回 `develop`**，使 Version Packages 产生的版本号和 changelog 进入开发线。优先使用 PR 或普通 merge，不改写共享分支历史。
 6. **旧版本并行维护不在当前自动化范围内。** `main` 升到 `v2.4.0` 后，如仍需单独发布 `v2.3.x`，不能直接套用本文流程；需先增加维护分支发版 workflow，避免从 `main` 错误打旧版本 tag。
 
-### SoloEnt 临时上线 / 版本发布前验证
+### 预发验证 / 非正式部署
 
-需要提前在 SoloEnt 或其它环境试用下一版本时，直接在 **Actions → Octafuse Docker Images → Run workflow** 选择 `develop` 或指定提交运行 `workflow_dispatch`，然后部署生成的 **commit SHA tag / digest**。该路径不创建 Git tag、GitHub Release，也不消费 changeset。
+需要在发版前把某一提交部署到预发或其它环境试用时，直接在 **Actions → Octafuse Docker Images → Run workflow** 选择 `develop` 或指定提交运行 `workflow_dispatch`，然后部署生成的 **commit SHA tag / digest**。该路径不创建 Git tag、GitHub Release，也不消费 changeset。
 
 不要为了临时部署把开发分支合入 `main`。否则后续从 `main` 发布的 patch 会同时包含这些未正式发布的功能，`2.3.x` 与 `2.4.0` 的版本边界将失效。若只需试用部分提交，可从目标稳定提交创建短期部署分支并 cherry-pick，仍使用 SHA/digest 部署。
 

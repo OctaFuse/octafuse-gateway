@@ -63,6 +63,8 @@ export default function SimulatorPage() {
 								hideProtocolControls={s.isToolKind}
 								geminiAction={s.geminiAction}
 								onGeminiActionChange={s.setGeminiAction}
+								openaiLlmOperation={s.openaiLlmOperation}
+								onOpenaiLlmOperationChange={s.requestOpenaiLlmOperationChange}
 								filterKeyEmail={s.filterKeyEmail}
 								onFilterKeyEmailChange={s.setFilterKeyEmail}
 								loadingKeys={s.loadingKeys}

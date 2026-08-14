@@ -203,7 +203,10 @@ describe('route form capability filters', () => {
 		const baseProvider = provider({
 			openai: { base: 'https://example.com/v1' },
 		});
-		assert.deepEqual(upstreamOperationsForProviderModel(baseProvider, model(), 'openai'), ['chat']);
+		assert.deepEqual(upstreamOperationsForProviderModel(baseProvider, model(), 'openai'), [
+			'chat',
+			'responses',
+		]);
 		assert.deepEqual(
 			upstreamOperationsForProviderModel(
 				baseProvider,

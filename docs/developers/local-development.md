@@ -51,7 +51,7 @@ npm run dev:proxy    # http://127.0.0.1:8787
 **常见触发**：在本机跑完
 
 ```bash
-./cloudflare-worker/deploy-soloent.sh --migrate   # 或任意 dotenv + deploy:proxy / db:migrate:remote
+npm run deploy:cloudflare -- <instance> --migrate   # 或任意 dotenv + deploy:proxy / db:migrate:remote
 ```
 
 之后未切回本地配置，直接 `npm run dev:proxy` / `dev:admin`。远程 deploy 会通过 `gen:wrangler --remote` 把 **`D1_DATABASE_ID` 写入** gitignore 的 `packages/proxy/wrangler.jsonc`、`packages/admin/wrangler.jsonc`、`packages/core/wrangler.d1.jsonc`。

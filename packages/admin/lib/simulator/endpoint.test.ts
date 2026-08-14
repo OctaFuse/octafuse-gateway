@@ -35,6 +35,21 @@ describe("buildSimulatorRequest openai", () => {
 		assert.equal(result.url, "https://gateway.example.com/v1/chat/completions");
 	});
 
+	it("uses /v1/responses when llmOperation is responses", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			protocol: "openai",
+			modelForRouting: "gpt-4.1",
+			llmOperation: "responses",
+			body: { input: [{ role: "user", content: "Hello" }], store: false },
+			apiKey: "sk-test",
+		});
+		assert.equal(result.url, "https://gateway.example.com/v1/responses");
+		const parsed = JSON.parse(result.bodyText) as { model: string; store: boolean };
+		assert.equal(parsed.model, "gpt-4.1");
+		assert.equal(parsed.store, false);
+	});
+
 	it("uses images/generations when imagesGenerations is set", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com/",

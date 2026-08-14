@@ -21,6 +21,8 @@ export const DEFAULT_INVOKE_KIND: InvokeKind = 'llm';
 export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope';
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
 export type AudioOperation = 'transcriptions' | 'speech';
+/** OpenAI LLM 公开入口：Chat Completions 或 Responses。 */
+export type OpenaiLlmOperation = 'chat' | 'responses';
 
 /** 与 `GATEWAY_TOOLS` 登记的 id 对齐（显式联合，避免被 `GatewayToolDefinition.id: string` 拓宽）。 */
 export type GatewayToolId = 'web-search' | 'web-fetch' | 'web-deep-search' | 'ai-detection';
@@ -78,6 +80,7 @@ export function resolveRequestOperation(input: {
 	imageOperation?: ImageOperation;
 	audioOperation?: AudioOperation;
 	geminiAction?: GeminiContentAction;
+	llmOperation?: OpenaiLlmOperation;
 }): string | null {
 	switch (input.kind) {
 		case 'tool':
@@ -92,7 +95,7 @@ export function resolveRequestOperation(input: {
 		case 'image':
 			return `images.${input.imageOperation === 'edits' ? 'edits' : 'generations'}`;
 		case 'llm':
-			if (input.protocol === 'openai') return 'chat';
+			if (input.protocol === 'openai') return input.llmOperation === 'responses' ? 'responses' : 'chat';
 			if (input.protocol === 'anthropic') return 'messages';
 			return 'models.generate';
 		default: {
@@ -110,6 +113,7 @@ export function resolveOpenaiUpstreamCapability(input: {
 	kind: Exclude<InvokeKind, 'tool'>;
 	imageOperation?: ImageOperation;
 	audioOperation?: AudioOperation;
+	llmOperation?: OpenaiLlmOperation;
 }): ProviderEndpointCapability {
 	switch (input.kind) {
 		case 'audio':
@@ -117,7 +121,7 @@ export function resolveOpenaiUpstreamCapability(input: {
 		case 'image':
 			return input.imageOperation === 'edits' ? 'images.edits' : 'images.generations';
 		case 'llm':
-			return 'chat';
+			return input.llmOperation === 'responses' ? 'responses' : 'chat';
 		default: {
 			const _exhaustive: never = input.kind;
 			return _exhaustive;
@@ -146,6 +150,7 @@ export function resolveProxyPathForModelInvoke(input: {
 	geminiAction?: GeminiContentAction;
 	/** Gemini path 中的 model 段（已 encode 前的原始值由调用方 encode） */
 	geminiModelSegment?: string;
+	llmOperation?: OpenaiLlmOperation;
 }): string {
 	const protocol = input.protocol;
 	if (input.kind === 'audio') {
@@ -161,7 +166,7 @@ export function resolveProxyPathForModelInvoke(input: {
 		const model = encodeURIComponent(input.geminiModelSegment || 'model');
 		return `/v1beta/models/${model}:${action}`;
 	}
-	return '/v1/chat/completions';
+	return input.llmOperation === 'responses' ? '/v1/responses' : '/v1/chat/completions';
 }
 
 /** empty kind counts for UI */
