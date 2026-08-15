@@ -29,9 +29,35 @@ describe('buildPlaygroundGeminiUpstreamRequest', () => {
 		assert.equal(result.headers.Authorization, undefined);
 	});
 
-	it('uses Authorization Bearer for bypass/vertex upstream', () => {
+	it('uses configured bearer for ZenMux Vertex prefix', () => {
 		const result = buildPlaygroundGeminiUpstreamRequest(
-			route('https://api.qnaigc.com//bypass/vertex/v1/models', 'provider-token'),
+			{
+				...route('https://zenmux.ai/api/vertex-ai/v1/publishers/google/models', 'zm-key'),
+				providerEndpoints: {
+					gemini: {
+						base: 'https://zenmux.ai/api/vertex-ai/v1/publishers/google/models',
+						auth: 'bearer',
+					},
+				},
+			},
+			'generateContent'
+		);
+		const u = new URL(result.url);
+		assert.equal(u.searchParams.has('key'), false);
+		assert.equal(result.headers.Authorization, 'Bearer zm-key');
+	});
+
+	it('uses Authorization Bearer when gemini.auth is bearer', () => {
+		const result = buildPlaygroundGeminiUpstreamRequest(
+			{
+				...route('https://api.qnaigc.com//bypass/vertex/v1/models', 'provider-token'),
+				providerEndpoints: {
+					gemini: {
+						base: 'https://api.qnaigc.com//bypass/vertex/v1/models',
+						auth: 'bearer',
+					},
+				},
+			},
 			'streamGenerateContent'
 		);
 		const u = new URL(result.url);

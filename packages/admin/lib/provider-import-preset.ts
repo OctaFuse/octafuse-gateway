@@ -8,6 +8,7 @@
  * - **全能力 OpenAI 上游**（含 Images）：写 `openai.base`
  * - **仅 LLM / Chat Completions**：写 `openai.endpoints.chat`（完整 URL），**不要**写 `base`
  * - Anthropic / Gemini：协议本身无 Images 分支时可用 `base`（Anthropic 仅 messages；Gemini 为 generate/stream）
+ * - Gemini Vertex 兼容聚合：写到 `{model}` 前的完整前缀，并设 `gemini.auth: "bearer"`
  *
  * 导入后不含 API Key，须在 Edit Provider 中手动添加。
  */

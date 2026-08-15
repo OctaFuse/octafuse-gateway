@@ -996,18 +996,22 @@
 			},
 			"anthropic": {
 				"base": "https://api.qnaigc.com"
+			},
+			"gemini": {
+				"base": "https://api.qnaigc.com/bypass/vertex/v1/models",
+				"auth": "bearer"
 			}
 		},
-		"description": "Qiniu AI Token API (api.qnaigc.com): OpenAI chat/completions + Anthropic Messages root. Image generation uses chat modalities, not /images/generations—keep openai as chat-only. Overseas host api.modelink.ai is a separate template if needed. See developer.qiniu.com/aitokenapi.",
+		"description": "Qiniu AI Token API (api.qnaigc.com): OpenAI chat/completions + Anthropic Messages root + Gemini Vertex-compatible bypass (/bypass/vertex/v1/models, Bearer). Image generation uses chat modalities, not /images/generations—keep openai as chat-only. Overseas host: swap api.qnaigc.com → api.modelink.ai (same paths, including Gemini). See developer.qiniu.com/aitokenapi.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "七牛云 AI",
-					"description": "七牛云 AI 大模型推理（Token API），支持 OpenAI 与 Anthropic 兼容协议。"
+					"description": "七牛云 AI 大模型推理（Token API），支持 OpenAI、Anthropic 与 Gemini（Vertex 兼容 + Bearer）。"
 				},
 				"en": {
 					"name": "Qiniu AI",
-					"description": "Qiniu AI Token API with OpenAI- and Anthropic-compatible access."
+					"description": "Qiniu AI Token API with OpenAI, Anthropic, and Gemini (Vertex-compatible, Bearer)."
 				}
 			},
 			"links": {
@@ -1119,18 +1123,22 @@
 			},
 			"anthropic": {
 				"base": "https://zenmux.ai/api/anthropic"
+			},
+			"gemini": {
+				"base": "https://zenmux.ai/api/vertex-ai/v1/publishers/google/models",
+				"auth": "bearer"
 			}
 		},
-		"description": "ZenMux aggregation API: OpenAI-compatible root (/api/v1) + Anthropic Messages base (/api/anthropic). Pay As You Go and Builder Plan (subscription, sk-ss-v1-* keys) share the same endpoints—billing differs by API key only, so one import template covers both. Vertex/Gemini native base is https://zenmux.ai/api/vertex-ai if you need a separate Gemini template. See docs.zenmux.ai.",
+		"description": "ZenMux aggregation API: OpenAI-compatible root (/api/v1) + Anthropic Messages base (/api/anthropic) + Gemini Vertex-compatible prefix (/api/vertex-ai/v1/publishers/google/models, Bearer). Pay As You Go and Builder Plan share the same endpoints—billing differs by API key only. Use provider_model_name without the google/ slug prefix. See docs.zenmux.ai.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "ZenMux",
-					"description": "ZenMux 聚合平台（Pay As You Go 与 Builder 订阅共用同一端点，按 API Key 区分计费）。"
+					"description": "ZenMux 聚合平台（OpenAI / Anthropic / Gemini；Pay As You Go 与 Builder 订阅共用端点，按 API Key 区分计费）。"
 				},
 				"en": {
 					"name": "ZenMux",
-					"description": "ZenMux aggregation API; Pay As You Go and Builder Plan share endpoints and differ by API key only."
+					"description": "ZenMux aggregation API (OpenAI, Anthropic, Gemini); Pay As You Go and Builder Plan share endpoints and differ by API key only."
 				}
 			},
 			"links": {

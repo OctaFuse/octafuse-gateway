@@ -72,7 +72,10 @@ describe('dispatchGeminiRoute upstream auth', () => {
 		await dispatchGeminiRoute(
 			minimalRoute({
 				providerEndpoints: {
-					gemini: { base: 'https://api.qnaigc.com//bypass/vertex/v1/models' },
+					gemini: {
+						base: 'https://api.qnaigc.com//bypass/vertex/v1/models',
+						auth: 'bearer',
+					},
 				},
 				providerApiKey: 'bearer-token',
 			}),
@@ -98,7 +101,10 @@ describe('dispatchGeminiRoute upstream auth', () => {
 		await dispatchGeminiRoute(
 			minimalRoute({
 				providerEndpoints: {
-					gemini: { base: 'https://api.modelink.ai/bypass/vertex/v1/models' },
+					gemini: {
+						base: 'https://api.modelink.ai/bypass/vertex/v1/models',
+						auth: 'bearer',
+					},
 				},
 				providerApiKey: 'modelink-token',
 			}),

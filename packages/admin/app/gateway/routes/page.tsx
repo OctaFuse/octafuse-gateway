@@ -9,7 +9,6 @@ import { useTranslations } from 'next-intl';
 import { ModelModal } from '../models/components/model-modal';
 import { useRoutesPageState } from './use-routes-page-state';
 import { RouteFilterSidebar } from './components/route-filter-sidebar';
-import { RouteFlowOverview } from './components/route-flow-overview';
 import { RouteModal } from './components/route-modal';
 import { ProviderStickyDialog } from './components/provider-sticky-dialog';
 import { RoutePolicyDialog } from './components/route-policy-dialog';
@@ -104,8 +103,6 @@ function RoutesContent() {
 				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
 				<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 			</div>
-
-			<RouteFlowOverview view={workspaceView} />
 
 			<RouteFilterSidebar
 				visibleModelCount={state.visibleModelCount}

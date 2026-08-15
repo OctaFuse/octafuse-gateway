@@ -121,7 +121,7 @@ export function previewPlaygroundUpstreamUrl(input: {
 					modelName: input.providerModelName || "model",
 					action,
 					apiKey: "preview",
-					authBaseHint: providerEndpoints.gemini?.base,
+					auth: providerEndpoints.gemini?.auth,
 				});
 				return stripApiKeyFromUrl(url.toString());
 			}

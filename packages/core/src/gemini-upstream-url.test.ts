@@ -120,28 +120,17 @@ describe('applyGeminiStreamQueryParams', () => {
 });
 
 describe('resolveGeminiUpstreamAuth', () => {
-	it('returns query-key for official Google Gemini base URLs', () => {
-		expect(
-			resolveGeminiUpstreamAuth('https://generativelanguage.googleapis.com/v1beta/models')
-		).toBe('query-key');
-		expect(
-			resolveGeminiUpstreamAuth('https://aiplatform.googleapis.com/v1/publishers/google/models')
-		).toBe('query-key');
+	it('defaults to query-key when auth is omitted', () => {
+		expect(resolveGeminiUpstreamAuth()).toBe('query-key');
+		expect(resolveGeminiUpstreamAuth(null)).toBe('query-key');
 	});
 
-	it('returns bearer for bypass/vertex compatible providers', () => {
-		expect(resolveGeminiUpstreamAuth('https://api.qnaigc.com/bypass/vertex/v1/models')).toBe(
-			'bearer'
-		);
-		expect(resolveGeminiUpstreamAuth('https://api.modelink.ai/bypass/vertex/v1/models')).toBe(
-			'bearer'
-		);
+	it('returns the configured scheme', () => {
+		expect(resolveGeminiUpstreamAuth('query-key')).toBe('query-key');
+		expect(resolveGeminiUpstreamAuth('bearer')).toBe('bearer');
 	});
 
 	it('normalizes trailing slash, host case, and duplicate slashes', () => {
-		expect(
-			resolveGeminiUpstreamAuth('https://API.QNAIGC.COM//bypass/vertex/v1/models/')
-		).toBe('bearer');
 		expect(
 			normalizeGeminiUpstreamBaseForAuthMatch(
 				'https://api.qnaigc.com//bypass/vertex/v1/models/'
@@ -162,15 +151,28 @@ describe('prepareGeminiUpstreamFetch', () => {
 		expect(headers.Authorization).toBeUndefined();
 	});
 
-	it('uses Authorization Bearer for bypass/vertex upstream', () => {
+	it('uses Authorization Bearer when auth is bearer', () => {
 		const { url, headers } = prepareGeminiUpstreamFetch({
 			baseUrl: 'https://api.modelink.ai/bypass/vertex/v1/models',
 			modelName: 'gemini-2.5-flash',
 			action: 'generateContent',
 			apiKey: 'provider-token',
+			auth: 'bearer',
 		});
 		expect(url.searchParams.has('key')).toBe(false);
 		expect(headers.Authorization).toBe('Bearer provider-token');
+	});
+
+	it('uses configured bearer on any host', () => {
+		const { url, headers } = prepareGeminiUpstreamFetch({
+			baseUrl: 'https://zenmux.ai/api/vertex-ai/v1/publishers/google/models',
+			modelName: 'gemini-2.5-flash',
+			action: 'generateContent',
+			apiKey: 'zm-key',
+			auth: 'bearer',
+		});
+		expect(url.searchParams.has('key')).toBe(false);
+		expect(headers.Authorization).toBe('Bearer zm-key');
 	});
 
 	it('sets alt=sse for streamGenerateContent on bearer upstream', () => {
@@ -179,6 +181,7 @@ describe('prepareGeminiUpstreamFetch', () => {
 			modelName: 'gemini-2.5-flash',
 			action: 'streamGenerateContent',
 			apiKey: 'provider-token',
+			auth: 'bearer',
 		});
 		expect(url.searchParams.get('alt')).toBe('sse');
 		expect(url.searchParams.has('key')).toBe(false);

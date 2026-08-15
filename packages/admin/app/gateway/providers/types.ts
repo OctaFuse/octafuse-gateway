@@ -3,7 +3,11 @@ import type {
 	ProviderEndpointCapability,
 	ProviderEndpointsMap,
 } from '@octafuse/core/provider-endpoints';
+import type { GeminiUpstreamAuthScheme } from '@octafuse/core/gemini-upstream-url';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
+
+/** 表单鉴权：`auto` 表示省略 `endpoints.gemini.auth`，运行时默认 `query-key`。 */
+export type GeminiAuthFormMode = 'auto' | GeminiUpstreamAuthScheme;
 
 /** 卡片上紧凑展示的能力标签（OpenAI images.* 合并为 images；audio.transcriptions → audio）。 */
 export type ProviderCapabilityBadge =
@@ -75,6 +79,8 @@ export type ProtocolEndpointForm = {
 	streamGenerateContent: string;
 	/** When set, save must round-trip these keys unchanged (do not invent a merged template). */
 	legacyPerAction?: GeminiLegacyPerActionEndpoints | null;
+	/** Gemini only. `auto` omits `auth` on save. */
+	auth: GeminiAuthFormMode;
 };
 
 export type ProviderFormData = {
@@ -116,6 +122,7 @@ export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
 	generateContent: '',
 	streamGenerateContent: '',
 	legacyPerAction: null,
+	auth: 'auto',
 };
 
 export const EMPTY_PROVIDER_FORM: ProviderFormData = {

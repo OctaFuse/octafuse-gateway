@@ -306,7 +306,7 @@ async function nonStreamResponseWithUsage(
 
 /**
  * 调用 Gemini `{base}/{model}:{action}`（`endpoints.gemini.base` 须含完整路径前缀）：URL 查询串可与客户端 `search` 合并；
- * 官方上游缺省追加 `?key=`，部分 bypass/vertex 兼容服务使用 `Authorization: Bearer`（见 `resolveGeminiUpstreamAuth`）。
+ * 官方上游缺省追加 `?key=`；`endpoints.gemini.auth` 为 `bearer` 时改用 `Authorization: Bearer`。
  * `streamGenerateContent` 走 SSE 解析（上游强制 `alt=sse`）；`generateContent` 单次 JSON 用 `usageMetadata`。
  * @param search 原始 query 字符串（可含或不含 `?`），会与上游所需参数合并
  */
@@ -335,7 +335,7 @@ export async function dispatchGeminiRoute(
     action,
     apiKey: route.providerApiKey,
     search,
-    authBaseHint: route.providerEndpoints.gemini?.base,
+    auth: route.providerEndpoints.gemini?.auth,
   });
 
   const requestBody = buildRouteRequestBody(route, body);

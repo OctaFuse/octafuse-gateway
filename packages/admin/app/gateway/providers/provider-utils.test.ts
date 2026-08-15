@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { parseProviderEndpoints } from '@octafuse/core/provider-endpoints';
+import { listStaticProviderImportCatalogForAdmin } from '@/lib/provider-import-preset';
 import {
 	formDataToEndpointsMap,
 	getProviderKeyStatus,
@@ -113,5 +115,56 @@ describe('provider gemini form fold / round-trip', () => {
 			'https://b.example/models/{model}:streamGenerateContent'
 		);
 		assert.equal(map.gemini?.endpoints?.['models.generate'], undefined);
+	});
+
+	it('round-trips gemini.auth and omits auto', () => {
+		const form = providerToFormData(
+			providerWithEndpoints({
+				gemini: {
+					base: 'https://zenmux.ai/api/vertex-ai/v1/publishers/google/models',
+					auth: 'bearer',
+				},
+			})
+		);
+		assert.equal(form.gemini.auth, 'bearer');
+		const map = formDataToEndpointsMap({
+			...EMPTY_PROVIDER_FORM,
+			...form,
+			id: 'p1',
+			name: 'P1',
+			description: '',
+		});
+		assert.equal(map.gemini?.auth, 'bearer');
+		const autoForm = {
+			...form,
+			gemini: { ...form.gemini, auth: 'auto' as const },
+		};
+		const autoMap = formDataToEndpointsMap({
+			...EMPTY_PROVIDER_FORM,
+			...autoForm,
+			id: 'p1',
+			name: 'P1',
+			description: '',
+		});
+		assert.equal(autoMap.gemini?.auth, undefined);
+	});
+});
+
+describe('Qiniu and ZenMux import presets', () => {
+	it('prefill Gemini Vertex prefix with bearer auth', () => {
+		const rows = listStaticProviderImportCatalogForAdmin();
+		const qiniu = rows.find((row) => row.vendor_key === 'qiniu');
+		const zenmux = rows.find((row) => row.vendor_key === 'zenmux');
+		assert.ok(qiniu);
+		assert.ok(zenmux);
+		const qiniuMap = parseProviderEndpoints({ endpoints: qiniu.endpoints });
+		const zenmuxMap = parseProviderEndpoints({ endpoints: zenmux.endpoints });
+		assert.equal(qiniuMap.gemini?.base, 'https://api.qnaigc.com/bypass/vertex/v1/models');
+		assert.equal(qiniuMap.gemini?.auth, 'bearer');
+		assert.equal(
+			zenmuxMap.gemini?.base,
+			'https://zenmux.ai/api/vertex-ai/v1/publishers/google/models'
+		);
+		assert.equal(zenmuxMap.gemini?.auth, 'bearer');
 	});
 });

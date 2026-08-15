@@ -72,6 +72,13 @@ function ProtocolFields(props: {
 		modelsGenerate: string;
 		legacyPerActionNotice: string;
 	};
+	authLabels?: {
+		label: string;
+		auto: string;
+		queryKey: string;
+		bearer: string;
+		hint: string;
+	};
 	onChange: (next: ProtocolEndpointForm) => void;
 }) {
 	const {
@@ -83,6 +90,7 @@ function ProtocolFields(props: {
 		advancedToggle,
 		advancedHint,
 		capLabels,
+		authLabels,
 		onChange,
 	} = props;
 	const [advancedOpen, setAdvancedOpen] = useState(() =>
@@ -106,6 +114,31 @@ function ProtocolFields(props: {
 				/>
 				{baseHint ? <p className="text-xs text-gray-500">{baseHint}</p> : null}
 			</div>
+			{protocol === "gemini" && authLabels ? (
+				<div className="mt-3 space-y-2">
+					<label className="mb-1 block text-xs font-medium text-gray-600">
+						{authLabels.label}
+					</label>
+					<select
+						value={form.auth}
+						onChange={(e) =>
+							onChange({
+								...form,
+								auth:
+									e.target.value === "query-key" || e.target.value === "bearer"
+										? e.target.value
+										: "auto",
+							})
+						}
+						className={inputClass}
+					>
+						<option value="auto">{authLabels.auto}</option>
+						<option value="query-key">{authLabels.queryKey}</option>
+						<option value="bearer">{authLabels.bearer}</option>
+					</select>
+					<p className="text-xs text-gray-500">{authLabels.hint}</p>
+				</div>
+			) : null}
 
 			<div className="mt-3">
 				<button
@@ -610,6 +643,13 @@ export function ProviderModal(props: ProviderModalProps) {
 										advancedToggle={t("advancedToggle")}
 										advancedHint={t("advancedHintGemini")}
 										capLabels={capLabels}
+										authLabels={{
+											label: t("geminiAuth"),
+											auto: t("geminiAuthAuto"),
+											queryKey: t("geminiAuthQueryKey"),
+											bearer: t("geminiAuthBearer"),
+											hint: t("geminiAuthHint"),
+										}}
 										onChange={(gemini) => onFormChange({ ...formData, gemini })}
 									/>
 								) : null}

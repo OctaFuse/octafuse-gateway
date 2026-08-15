@@ -4,7 +4,9 @@
  */
 import {
 	buildGeminiUpstreamActionUrl,
+	isGeminiUpstreamAuthScheme,
 	type GeminiContentAction,
+	type GeminiUpstreamAuthScheme,
 } from './gemini-upstream-url';
 import {
 	GEMINI_GENERATE_OPERATION,
@@ -101,6 +103,11 @@ const ALL_CAPABILITIES = new Set<string>([
 export type ProtocolEndpointsConfig = {
 	base?: string;
 	endpoints?: Partial<Record<ProviderEndpointCapability, string>>;
+	/**
+	 * Gemini 上游鉴权。仅 `gemini` 协议有效；省略则为 `query-key`。
+	 * Vertex 兼容聚合商（七牛、ZenMux 等）须显式写 `bearer`。
+	 */
+	auth?: GeminiUpstreamAuthScheme;
 };
 
 /** 解析后的 `providers.endpoints` 对象（仅含已配置协议）。 */
@@ -125,7 +132,10 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
 	return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-function normalizeProtocolConfig(raw: unknown): ProtocolEndpointsConfig | null {
+function normalizeProtocolConfig(
+	raw: unknown,
+	protocol: UpstreamProtocol
+): ProtocolEndpointsConfig | null {
 	if (!isPlainObject(raw)) return null;
 	const base = nonEmptyTrimmed(raw.base);
 	const endpointsRaw = raw.endpoints;
@@ -144,6 +154,7 @@ function normalizeProtocolConfig(raw: unknown): ProtocolEndpointsConfig | null {
 	const cfg: ProtocolEndpointsConfig = {};
 	if (base) cfg.base = trimSlash(base);
 	if (endpoints) cfg.endpoints = endpoints;
+	if (protocol === 'gemini' && isGeminiUpstreamAuthScheme(raw.auth)) cfg.auth = raw.auth;
 	return cfg;
 }
 
@@ -152,7 +163,7 @@ function normalizeEndpointsMap(raw: unknown): ProviderEndpointsMap | null {
 	const out: ProviderEndpointsMap = {};
 	for (const protocol of UPSTREAM_PROTOCOLS) {
 		if (!(protocol in raw)) continue;
-		const cfg = normalizeProtocolConfig(raw[protocol]);
+		const cfg = normalizeProtocolConfig(raw[protocol], protocol);
 		if (cfg) out[protocol] = cfg;
 	}
 	return Object.keys(out).length > 0 ? out : null;
@@ -206,6 +217,9 @@ export function serializeProviderEndpoints(map: ProviderEndpointsMap): string | 
 				if (t) eps[cap as ProviderEndpointCapability] = t;
 			}
 			if (Object.keys(eps).length > 0) entry.endpoints = eps;
+		}
+		if (protocol === 'gemini' && isGeminiUpstreamAuthScheme(cfg.auth)) {
+			entry.auth = cfg.auth;
 		}
 		if (entry.base || entry.endpoints) cleaned[protocol] = entry;
 	}
@@ -325,9 +339,20 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 		if (!base && !endpoints) {
 			continue;
 		}
+		if (protoRaw.auth !== undefined && protoRaw.auth !== null && protoRaw.auth !== '') {
+			if (protocol !== 'gemini') {
+				throw new Error('endpoints.auth is only supported on gemini');
+			}
+			if (!isGeminiUpstreamAuthScheme(protoRaw.auth)) {
+				throw new Error('endpoints.gemini.auth must be "query-key" or "bearer"');
+			}
+		}
 		const cfg: ProtocolEndpointsConfig = {};
 		if (base) cfg.base = trimSlash(base);
 		if (endpoints) cfg.endpoints = endpoints;
+		if (protocol === 'gemini' && isGeminiUpstreamAuthScheme(protoRaw.auth)) {
+			cfg.auth = protoRaw.auth;
+		}
 		out[protocol] = cfg;
 	}
 	return out;
