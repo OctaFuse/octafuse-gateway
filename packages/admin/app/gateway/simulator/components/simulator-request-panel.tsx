@@ -9,15 +9,27 @@ import {
 	validateEditImageFiles,
 	type ImageOperation,
 } from "@/lib/image-generations";
+import type { OpenaiLlmOperation } from "@/lib/invoke-kind";
+import type { SimulatorGeminiAction, SimulatorProtocol } from "@/lib/simulator/endpoint";
 import {
 	codeBlockClass,
 	inputClass,
 	labelClass,
 	prettyJsonBody,
+	type SimulatorClientSurfaceOptions,
 } from "../simulator-utils";
 import type { WirePreview } from "../types";
 
 type Props = {
+	protocol: SimulatorProtocol;
+	onProtocolChange: (p: SimulatorProtocol) => void;
+	supportedSurfaces: SimulatorClientSurfaceOptions;
+	hasSelectedModel: boolean;
+	hideProtocolControls?: boolean;
+	geminiAction: SimulatorGeminiAction;
+	onGeminiActionChange: (a: SimulatorGeminiAction) => void;
+	openaiLlmOperation: OpenaiLlmOperation;
+	onOpenaiLlmOperationChange: (op: OpenaiLlmOperation) => void;
 	bodyText: string;
 	onBodyTextChange: (v: string) => void;
 	bodyDirty: boolean;
@@ -52,6 +64,15 @@ type Props = {
 };
 
 export function SimulatorRequestPanel({
+	protocol,
+	onProtocolChange,
+	supportedSurfaces,
+	hasSelectedModel,
+	hideProtocolControls = false,
+	geminiAction,
+	onGeminiActionChange,
+	openaiLlmOperation,
+	onOpenaiLlmOperationChange,
 	bodyText,
 	onBodyTextChange,
 	bodyDirty,
@@ -83,8 +104,21 @@ export function SimulatorRequestPanel({
 	const t = useTranslations("simulator");
 	const tCommon = useTranslations("common");
 
+	const supportedProtocols = supportedSurfaces.protocols;
+	const supportedOpenaiOps = supportedSurfaces.openaiLlmOperations;
+	const supportedGeminiActions = supportedSurfaces.geminiActions;
+	const supportedImageOps = supportedSurfaces.imageOperations;
+	const showOpenaiOperation =
+		protocol === "openai" &&
+		!hideProtocolControls &&
+		supportedOpenaiOps.length > 1;
+	const showGeminiAction =
+		protocol === "gemini" &&
+		!hideProtocolControls &&
+		supportedGeminiActions.length > 1;
+
 	return (
-		<section className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm space-y-3 flex flex-col min-h-0">
+		<section className="flex h-full min-h-0 flex-col space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<h2 className="text-sm font-semibold text-gray-900">
 					{t("requestBody")}
@@ -129,6 +163,91 @@ export function SimulatorRequestPanel({
 					{infoHint}
 				</div>
 			) : null}
+			{hideProtocolControls ? (
+				<p className="text-xs text-gray-500">{t("toolProtocolHidden")}</p>
+			) : !hasSelectedModel ? null : supportedProtocols.length === 0 ? (
+				<p className="text-xs text-amber-800/90">{t("supportedSurfacesEmpty")}</p>
+			) : (
+				<div className="flex flex-wrap items-center gap-2">
+					<div
+						className="inline-flex flex-wrap rounded-md border border-gray-200 bg-gray-50 p-0.5"
+						role="group"
+						aria-label={t("protocol")}
+					>
+						{supportedProtocols.map((p) => {
+							const active = protocol === p;
+							return (
+								<button
+									key={p}
+									type="button"
+									disabled={sending}
+									onClick={() => onProtocolChange(p)}
+									className={
+										active
+											? "rounded px-2.5 py-1 text-xs font-medium bg-white text-gray-900 shadow-sm"
+											: "rounded px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-gray-900"
+									}
+								>
+									{p}
+								</button>
+							);
+						})}
+					</div>
+					{showOpenaiOperation ? (
+						<div
+							className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
+							role="group"
+							aria-label={t("openaiOperation")}
+							title={t("openaiOperationHint")}
+						>
+							{supportedOpenaiOps.map((op) => {
+								const active = openaiLlmOperation === op;
+								return (
+									<button
+										key={op}
+										type="button"
+										disabled={sending}
+										onClick={() => onOpenaiLlmOperationChange(op)}
+										className={
+											active
+												? "rounded px-2.5 py-1 text-xs font-medium bg-white text-gray-900 shadow-sm"
+												: "rounded px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-gray-900"
+										}
+									>
+										{op}
+									</button>
+								);
+							})}
+						</div>
+					) : null}
+					{showGeminiAction ? (
+						<div
+							className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
+							role="group"
+							aria-label={t("geminiAction")}
+						>
+							{supportedGeminiActions.map((action) => {
+								const active = geminiAction === action;
+								return (
+									<button
+										key={action}
+										type="button"
+										disabled={sending}
+										onClick={() => onGeminiActionChange(action)}
+										className={
+											active
+												? "rounded px-2.5 py-1 font-mono text-[11px] font-medium bg-white text-gray-900 shadow-sm"
+												: "rounded px-2.5 py-1 font-mono text-[11px] font-medium text-gray-600 hover:text-gray-900"
+										}
+									>
+										{action}
+									</button>
+								);
+							})}
+						</div>
+					) : null}
+				</div>
+			)}
 			<RequestTargetUrl
 				label={t("requestTargetUrl")}
 			method={showAudioRealtime ? "WebSocket" : displayWire?.method ?? "POST"}
@@ -213,34 +332,27 @@ export function SimulatorRequestPanel({
 			) : null}
 			{showImageOperation ? (
 				<>
-					<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
-						<legend className="sr-only">{t("imageOperation")}</legend>
-						<span className="text-gray-600 font-medium">
-							{t("imageOperation")}
-						</span>
-						<label className="inline-flex items-center gap-2 cursor-pointer">
-							<input
-								type="radio"
-								name="simulatorImageOperation"
-								className="text-blue-600 focus:ring-blue-500"
-								checked={imageOperation === "generations"}
-								onChange={() => onImageOperationChange?.("generations")}
-								disabled={sending}
-							/>
-							generations
-						</label>
-						<label className="inline-flex items-center gap-2 cursor-pointer">
-							<input
-								type="radio"
-								name="simulatorImageOperation"
-								className="text-blue-600 focus:ring-blue-500"
-								checked={imageOperation === "edits"}
-								onChange={() => onImageOperationChange?.("edits")}
-								disabled={sending}
-							/>
-							edits
-						</label>
-					</fieldset>
+					{supportedImageOps.length > 1 ? (
+						<fieldset className="flex flex-wrap items-center gap-4 text-sm border border-gray-200 rounded-md px-3 py-2">
+							<legend className="sr-only">{t("imageOperation")}</legend>
+							<span className="text-gray-600 font-medium">
+								{t("imageOperation")}
+							</span>
+							{supportedImageOps.map((op) => (
+								<label key={op} className="inline-flex items-center gap-2 cursor-pointer">
+									<input
+										type="radio"
+										name="simulatorImageOperation"
+										className="text-blue-600 focus:ring-blue-500"
+										checked={imageOperation === op}
+										onChange={() => onImageOperationChange?.(op)}
+										disabled={sending}
+									/>
+									{op}
+								</label>
+							))}
+						</fieldset>
+					) : null}
 					{imageOperation === "generations" ? (
 						<p className="text-xs text-gray-500">{t("imageGenerationsHint")}</p>
 					) : (
@@ -300,7 +412,7 @@ export function SimulatorRequestPanel({
 					value={bodyText}
 					onChange={(e) => onBodyTextChange(e.target.value)}
 					rows={12}
-					className={`${inputClass} font-mono text-sm min-h-[180px] flex-1`}
+					className={`${inputClass} min-h-[220px] flex-1 font-mono text-sm xl:min-h-0`}
 					spellCheck={false}
 				/>
 			</div>

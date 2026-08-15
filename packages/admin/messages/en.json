@@ -1113,7 +1113,7 @@
 		"filter": "Filter",
 		"modelFilterPlaceholder": "id / display name / vendor contains…",
 		"selectModel": "— Select a model —",
-		"modelCount": "{total} in this kind · {filtered} shown · 🟢 active route · 🔴 none",
+		"modelCount": "{total} in this kind · {filtered} shown",
 		"routeGroupOptional": "Route group (optional)",
 		"defaultRouteGroup": "Default (no explicit suffix)",
 		"routeGroupHint": "From active routes for this model. OpenAI/Anthropic set body.model to id or id:group; Gemini uses the same path segment.",
@@ -1198,7 +1198,16 @@
 		"toolProtocolHidden": "Tools always use JSON POST /v1/tools/* — protocol selection does not apply.",
 		"readyNeedTool": "Select a tool.",
 		"errSelectTool": "Select a tool before Send.",
-		"openToolsInvocations": "Open Tools Invocations"
+		"openToolsInvocations": "Open Tools Invocations",
+		"clientHint": "Same path a real client uses: Proxy Base URL + user API key. Auth, failover, billing, and request logs all apply.",
+		"routingTargetHint": "Pick the catalog model and route group the client would send. Proxy chooses the upstream; this page does not pin a single route.",
+		"noMatchingModels": "No models match the current search.",
+		"noRoutedModels": "No models in this kind have an active route.",
+		"modelHasRoute": "Routed",
+		"modelNoRoute": "No route",
+		"matchingRoutesSummary": "{count} matching active route(s)",
+		"matchingRoutesHint": "Read-only preview of active routes Proxy may use for this model and group. Failover still happens at request time.",
+		"supportedSurfacesEmpty": "No active public surface for this model and route group."
 	},
 	"users": {
 		"title": "Users",

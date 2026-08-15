@@ -1113,7 +1113,7 @@
 		"filter": "필터",
 		"modelFilterPlaceholder": "id / 표시 이름 / vendor 포함…",
 		"selectModel": "— 모델 선택 —",
-		"modelCount": "이 유형 {total}개 · 표시 {filtered}개 · 🟢 활성 Route 있음 · 🔴 없음",
+		"modelCount": "이 유형 {total}개 · 표시 {filtered}개",
 		"routeGroupOptional": "Route 그룹 (선택 사항)",
 		"defaultRouteGroup": "기본값 (명시적 접미사 없음)",
 		"routeGroupHint": "이 모델의 활성 Routes에서 가져옵니다. OpenAI/Anthropic은 body.model을 id 또는 id:group으로 설정하고, Gemini는 같은 경로 세그먼트를 사용합니다.",
@@ -1198,7 +1198,16 @@
 		"toolProtocolHidden": "Tools는 항상 JSON POST /v1/tools/* 입니다. 프로토콜 선택은 적용되지 않습니다.",
 		"readyNeedTool": "도구를 선택하세요.",
 		"errSelectTool": "전송 전에 도구를 선택하세요.",
-		"openToolsInvocations": "Tools Invocations 열기"
+		"openToolsInvocations": "Tools Invocations 열기",
+		"clientHint": "실제 클라이언트와 같습니다. Proxy Base URL + 사용자 API 키이며 인증, failover, 과금, 요청 로그가 모두 적용됩니다.",
+		"routingTargetHint": "클라이언트가 보낼 catalog 모델과 Route group을 고릅니다. 업스트림은 Proxy가 고르며, 여기서는 단일 Route를 고정하지 않습니다.",
+		"noMatchingModels": "현재 검색과 일치하는 모델이 없습니다.",
+		"noRoutedModels": "이 종류에 활성 Route가 있는 모델이 없습니다.",
+		"modelHasRoute": "라우트 있음",
+		"modelNoRoute": "라우트 없음",
+		"matchingRoutesSummary": "일치하는 활성 Route {count}개",
+		"matchingRoutesHint": "이 모델과 그룹에 대해 Proxy가 쓸 수 있는 활성 Route의 읽기 전용 미리보기입니다. Failover는 요청 시점에 발생합니다.",
+		"supportedSurfacesEmpty": "이 모델과 라우트 그룹에 활성 공개 Surface가 없습니다."
 	},
 	"users": {
 		"title": "사용자",
