@@ -617,14 +617,6 @@
 			"stickyRefreshUpdatedAgo": "{ago}前に更新"
 		},
 		"flow": {
-			"overviewTitle": "リクエスト処理フロー",
-			"overviewHint": "優先度レイヤーを上から下へ確認し、必要なときだけプロバイダー詳細を展開します。",
-			"overviewHintOverview": "総覧：左から右へ、リクエスト入口、モデル、ルートグループ、上流プロバイダーの順に確認します。",
-			"overviewHintByModel": "モデル別：各モデルを左から右へ確認できます。設定項目は実際に適用される段階に表示されます。",
-			"step": "ステップ {number}",
-			"requestStep": "クライアントリクエスト",
-			"lookupStep": "モデルを解決",
-			"policyStep": "ポリシーとフェイルオーバー",
 			"providerStep": "上流プロバイダー",
 			"requestNode": "リクエスト入口",
 			"catalogColumnSurface": "リクエスト入口",

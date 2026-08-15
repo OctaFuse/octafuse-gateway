@@ -617,14 +617,6 @@
 			"stickyRefreshUpdatedAgo": "{ago} 前更新"
 		},
 		"flow": {
-			"overviewTitle": "请求处理流程",
-			"overviewHint": "自上而下阅读优先级层，需要时再展开查看 Provider 详情。",
-			"overviewHintOverview": "总览：从左到右按客户端顺序阅读请求入口、模型、路由组与上游供应商。",
-			"overviewHintByModel": "按模型：从左到右查看每个模型的完整流转，可配置项显示在实际生效的环节中。",
-			"step": "步骤 {number}",
-			"requestStep": "客户端请求",
-			"lookupStep": "匹配模型",
-			"policyStep": "策略与故障转移",
 			"providerStep": "上游供应商",
 			"requestNode": "请求入口",
 			"catalogColumnSurface": "请求入口",

@@ -617,14 +617,6 @@
 			"stickyRefreshUpdatedAgo": "{ago} 전 업데이트"
 		},
 		"flow": {
-			"overviewTitle": "요청 처리 흐름",
-			"overviewHint": "우선순위 계층을 위에서 아래로 읽고, 필요할 때만 Provider 세부 정보를 펼치세요.",
-			"overviewHintOverview": "전체 보기: 왼쪽에서 오른쪽으로 요청 진입점, 모델, 라우트 그룹, 업스트림 공급자 순으로 확인합니다.",
-			"overviewHintByModel": "모델별: 각 모델을 왼쪽에서 오른쪽으로 확인하세요. 설정 항목은 실제로 적용되는 단계에 표시됩니다.",
-			"step": "단계 {number}",
-			"requestStep": "클라이언트 요청",
-			"lookupStep": "모델 확인",
-			"policyStep": "정책 및 장애 조치",
 			"providerStep": "업스트림 공급자",
 			"requestNode": "요청 진입점",
 			"catalogColumnSurface": "요청 진입점",
