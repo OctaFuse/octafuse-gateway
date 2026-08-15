@@ -35,6 +35,10 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 ![路由工作台：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](../assets/screenshots/routes.png)
 
+点击拓扑中的任一上游目标，即可在路由编辑页面集中配置客户端协议 / operation、路由组、上游映射、自定义参数，以及用户计费与供应成本倍率。
+
+![路由编辑页面：配置客户端入口、上游映射、自定义参数与计费倍率](../assets/screenshots/route-editor.png)
+
 常见做法：
 
 - 对客户端暴露稳定的模型名，例如 `gpt-4.1`、`claude-sonnet` 或团队内部命名。
@@ -48,7 +52,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 - 音频模型：ASR 可按时长或 Token 计费，TTS 可按字符计费；可使用 OpenAI 兼容的 `/v1/audio/transcriptions`、`/v1/audio/speech`，或 DashScope 原生实时音频。跨协议路由与 adapter 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
 - **路由策略**：先按 priority 层读路由池 `tier_strategies[priority]`（若有）；否则路由池 `strategy` → 模型 `route_policy.rules` 的 `{protocol}.{capability}:{group}` → `{protocol}:{group}` → 模型顶层 `route_policy.strategy` → 管理后台 Config 全局 `ROUTE_STRATEGY` → 代码默认 `hash_affinity`。四种策略及完整键格式见 [developers/reference/route-strategies.md](../developers/reference/route-strategies.md)。
 - **供应商粘性（Provider sticky，可选）**：在拓扑视图（Topology）的路由组 / 路由池节点打开粘性配置（关闭时芯片为 `Sticky · Off`，启用后为 `Sticky · {ttl}`），按路由池启用并设置空闲 TTL（默认 3600 秒）。它不是第五种层内策略：`hash_affinity` 用无状态哈希稳定首选，粘性则记住上次成功的上游目标，并可在绑定有效时跨 priority 优先尝试。弹窗还可查看绑定分布与路由权重、按用户解绑，或通过 `sticky_epoch` 整池失效；默认关闭。完整语义见 [供应商粘性（route-strategies）](../developers/reference/route-strategies.md#provider-sticky-routingpool-前置规则非第五策略)。
-- 在路由上配置默认参数，例如思考参数、输出长度或供应商扩展字段。
+- 在路由的 **Custom params** 中配置思考参数、输出长度或供应商扩展字段等默认值；它们会与上游请求体深度合并，客户端显式传入的字段优先，因此不能用于强制覆盖客户端参数。
 - 设置价格口径：先维护模型**目录标准价（Standard）**，再在路由上设用户计费（Charged）/ 供应成本（Metered）的基础倍率；如需对齐供应商高峰 / 闲时价，再配置**每日时段（Daily schedule）**倍率（时区见系统配置的业务时区）。
 - 在请求日志（Request Logs）中核对三笔账：供应成本、目录标准价、用户计费是否符合业务预期。
 
