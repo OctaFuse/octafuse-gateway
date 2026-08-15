@@ -54,7 +54,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 
 | 供应商接入 | 请求入口（Request Surface）→ 策略 → 上游目标（Upstream Target） 路由拓扑 |
 |---|---|
-| ![新建供应商：配置单个上游账号的 API 密钥与多协议端点](./docs/assets/screenshots/providers.png) | ![路由（Routes）：按协议、operation 和路由组组织路由策略与上游目标](./docs/assets/screenshots/routes.png) |
+| ![供应商：卡片网格展示密钥状态、协议能力与路由数](./docs/assets/screenshots/providers.png) | ![路由：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](./docs/assets/screenshots/routes.png) |
 
 供应商页面负责接入上游账号与协议端点；路由页面把客户端请求入口、路由策略和上游目标放在一条可视链路中。完整配置顺序见 [管理后台配置指南](./docs/users/configuration.md)。
 

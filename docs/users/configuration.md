@@ -27,13 +27,13 @@
 
 供应商导入模板的维护说明见 [developers/reference/provider-import-presets.md](../developers/reference/provider-import-presets.md)。
 
-![新建供应商表单：一个上游账号对应一把 API Key，并可分别配置 OpenAI、Anthropic 与 Gemini 端点](../assets/screenshots/providers.png)
+![供应商列表：卡片展示密钥状态、协议能力与路由数，可按状态和协议筛选](../assets/screenshots/providers.png)
 
 ## 3. 配置模型与路由
 
 2.0 的路由（Routes，页面标题 Model Routes）按 **请求入口（Request Surface）→ 路由池（Route Pool）→ 上游目标（Upstream Target）** 展示：请求入口表示客户端协议 / operation，路由池表示一组可故障转移的上游目标，上游目标才是具体供应商与上游模型。完整概念见 [developers/architecture/route-topology.md](../developers/architecture/route-topology.md)。
 
-![路由页面：从请求入口、路由组与策略连接到上游目标](../assets/screenshots/routes.png)
+![路由工作台：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](../assets/screenshots/routes.png)
 
 常见做法：
 
