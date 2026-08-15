@@ -1,6 +1,6 @@
 # Provider 导入模板（静态目录）
 
-Admin 在 **Gateway Providers** 页面提供「从模板导入」：预填各协议 **base URL**，用户只需在导入后 **编辑行并写入真实上游 API Key**。
+Admin 在 **Providers** 页面提供「从模板导入」：预填各协议的 Base URL 或能力端点，用户导入后打开 Provider 卡片并写入真实上游 API Key。列表以卡片展示密钥状态、路由数量与协议能力，并支持按状态和协议筛选。
 
 ## 数据位置
 
@@ -17,14 +17,14 @@ Admin 在 **Gateway Providers** 页面提供「从模板导入」：预填各协
 - `POST /api/admin/providers/import`（内部 `/admin/providers/import`）：请求体 `{ "ids": ["0", "1", ...] }`（catalog 键列表）。
   - **每次导入均新增** provider 行；`providers.id` 由服务端 `crypto.randomUUID()` 生成。
   - **同名**（忽略大小写）与已有 Provider 冲突时，显示名自动追加 `(2)`、`(3)` 等后缀（`providers.name` 仍 UNIQUE）。
-  - 新行不含 API Key，须在 UI 中手动添加后方可用于上游调用。
+  - 新行不含 API Key，须在 UI 中打开对应卡片并手动添加后方可用于上游调用。
 
 认证与其它 Admin 路由相同：后台 Session，或具有 `providers.read` / `providers.write` 权限的 `Authorization: Bearer <ADMIN_API_KEY>`。
 
 ## 维护约定
 
 1. **新增模板**：在 `provider-import-presets.json` 追加对象；保持 `name` 可读且尽量不与常见手工命名撞车（导入时会自动去重后缀）。
-2. **核对 endpoint**：以各云厂商**当前官方文档**为准；`description` 中可提示「以控制台为准」。
+2. **核对 endpoint**：以各云厂商**当前官方文档**为准；OpenAI 可分别配置 `chat`、`responses`、Images、Audio 等能力端点，DashScope 使用独立协议配置；`description` 中可提示「以控制台为准」。
 3. **占位密钥**：勿改为真实密钥写入仓库；占位串为 `PROVIDER_IMPORT_PENDING_API_KEY`（见 `provider-import-preset.ts`）。
 4. **扩展**：按同样 JSON 结构追加供应商模板即可；**勿**在 JSON 中写 provider id（与 catalog 键无关）。
 

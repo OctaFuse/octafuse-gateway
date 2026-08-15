@@ -62,6 +62,8 @@
 | `/v1/images/generations` | POST | OpenAI 兼容图片生成（见 [image-models](../reference/image-models.md)） |
 | `/v1/images/edits` | POST | OpenAI 兼容图片编辑（multipart；Seedream 不适用） |
 | `/v1/audio/transcriptions` | POST | OpenAI 兼容语音转写（multipart；`per_second` / `token` 双模式计费，见 [user.md](./user.md#语音转写audio-transcriptions)） |
+| `/v1/audio/speech` | POST | OpenAI 兼容语音合成（完整音频 / 流式；按字符计费） |
+| `/v1/dashscope/realtime` | GET / WebSocket | DashScope 原生实时 ASR / TTS（见 [dashscope-audio](../architecture/dashscope-audio.md)） |
 | `/v1/tools/web-search` | POST | Agent Tools：联网搜索（按次计费；Admin Tools 配置 Active 引擎） |
 | `/v1/tools/web-fetch` | POST | Agent Tools：网页抓取（按次计费） |
 | `/v1/tools/web-deep-search` | POST | Agent Tools：深度检索（搜+读；按次计费） |

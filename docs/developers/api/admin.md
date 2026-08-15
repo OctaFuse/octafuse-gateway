@@ -577,7 +577,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `endpoints`、`status`、`has_pending_key`（导入占位密钥） |
+| GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `endpoints`、`status`、`has_pending_key`、`routes_count`、`active_routes_count` |
 | POST | `/admin/providers` | 创建；**`name` + `api_key` 必填**；可选 `id`、`description`、`endpoints`、`status` |
 | GET | `/admin/providers/:id` | 详情（脱敏 `api_key`） |
 | PATCH | `/admin/providers/:id` | 部分更新；`api_key` 空串/未传 = **不改密钥**；`status` 仅 `active` \| `disabled` |
@@ -616,14 +616,14 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### Models / Routes
 
-- **`/admin/models`**：CRUD；`PATCH` 可写 **`route_policy`**（TEXT JSON 或 `null` 清空）。含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**。image / audio 的 openai-only 锁在 **route `upstream_protocol`**。
+- **`/admin/models`**：CRUD；`PATCH` 可写 **`route_policy`**（TEXT JSON 或 `null` 清空）。含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**。Image 路由使用 OpenAI 协议；Audio 路由支持 OpenAI 与 DashScope，按 operation / adapter 校验。
 - **`/admin/routes`**：REST `GET/POST`、`GET/PATCH/DELETE /:id`；列表支持 `?model_id=&provider_id=`。创建时校验 provider 对该协议是否配置了 `endpoints` base 或任一 capability，并创建或复用对应 Request Surface / Route Pool。
   - **`priority`**：层（Proxy 按 **DESC** 硬序）。
   - **`weight`**：同层权重，整数 **≥ 1**（默认 1）；非法 → **400**。
   - **`POST`** 省略或空白 **`route_group`** → **`default`**；**`PATCH`** 若含 `route_group` 则不得为仅空白（否则 **400**）。
-  - **`request_protocol` / `request_operation`**：公开请求入口，例如 `openai` + `chat`；省略 operation 使用兼容值 `*`。
+  - **`request_protocol` / `request_operation`**：公开请求入口，例如 `openai` + `chat` / `responses`；省略 operation 使用兼容值 `*`。
   - **`upstream_protocol` / `upstream_operation`**：Target 实际调用的协议 / capability；省略 operation 时跟随请求 operation。
-  - **`adapter`**：2.0 仅接受 `passthrough`；跨协议或不同 operation 转换会返回 **400**。
+  - **`adapter`**：同协议、同 operation 使用 `passthrough`；OpenAI ASR / TTS 转 DashScope 使用白名单中的显式 adapter。未声明的跨协议或 operation 组合返回 **400**，见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
   - **`GET` 响应**：除 Target 字段外包含 `route_pool_id` 与 `surfaces`（JSON 数组字符串），用于还原 Surface → Pool → Target 拓扑。
 - **`PATCH /admin/routes/pools/:poolId`**：设置当前 Pool 的策略与按层覆盖。body 示例：
 

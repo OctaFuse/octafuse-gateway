@@ -7,7 +7,7 @@
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare-quickstart.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
 
-**Octafuse Gateway**는 Agent를 위한 셀프 호스팅이 가능한 오픈 소스 AI Gateway입니다. 여러 Provider의 모델과 이미지 생성·편집 기능, 음성 전사, Agent Tools, 자체 구축 또는 비공개 배포한 AI 서비스를 하나의 진입점으로 통합합니다. 또한 Route, Key, 예산, 사용량, 감사 기능을 통해 분산된 AI 리소스를 중앙에서 관리하고 스케줄링하며 제어할 수 있습니다. 단순히 모델 요청을 전달하는 데 그치지 않고, Agent가 필요한 리소스와 기능을 탐색하고 호출하며 관리할 수 있도록 지속적으로 확장 가능한 기반을 제공합니다.
+**Octafuse Gateway**는 Agent를 위한 셀프 호스팅이 가능한 오픈 소스 AI Gateway입니다. 여러 Provider의 모델, OpenAI Responses, 이미지 생성·편집, ASR / TTS / 실시간 오디오, Agent Tools, 자체 구축 또는 비공개 배포한 AI 서비스를 하나의 진입점으로 통합합니다. 또한 Route, Key, 예산, 사용량, 감사 기능을 통해 분산된 AI 리소스를 중앙에서 관리하고 스케줄링하며 제어할 수 있습니다. 단순히 모델 요청을 전달하는 데 그치지 않고, Agent가 필요한 리소스와 기능을 탐색하고 호출하며 관리할 수 있도록 지속적으로 확장 가능한 기반을 제공합니다.
 
 **언어:** [中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [한국어](./README.ko.md) · **공식 웹사이트:** [octafuse.dev](https://octafuse.dev/en/)
 
@@ -22,11 +22,13 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
 3. 다중 프로토콜 지원:
     - OpenAI 엔드포인트:
       - Chat Completions: `POST /v1/chat/completions`
+      - Responses: `POST /v1/responses`
       - Images: `POST /v1/images/generations`, `POST /v1/images/edits`
-      - Audio Transcriptions: `POST /v1/audio/transcriptions`
+      - Audio: `POST /v1/audio/transcriptions`, `POST /v1/audio/speech`
       - Models: `GET /v1/models`
     - Anthropic 엔드포인트: `POST /v1/messages`
     - Google Gemini 엔드포인트: `POST /v1beta/models/{model}:generateContent` (`streamGenerateContent` 포함)
+    - DashScope 실시간 오디오: `GET /v1/dashscope/realtime`
 4. Agent 도구 연결: `/v1/tools/*`를 통해 Agent용 도구를 통합 제공하고 로그, 과금, 비용 관리를 중앙화합니다. 모델과 도구를 하나의 Gateway에서 사용할 수 있습니다.
     - 웹 검색(`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
     - 웹페이지 가져오기(`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader
@@ -157,7 +159,7 @@ npx wrangler login
 npm run bootstrap:cloudflare
 ```
 
-자세한 내용은 [Cloudflare 빠른 배포](./docs/operators/deployment/cloudflare-quickstart.md)를 참조하세요. 프로덕션 환경에서 사용하기 전에 기본 Admin 비밀번호를 변경하고 `MASTER_KEY`를 교체해야 합니다.
+자세한 내용은 [Cloudflare 빠른 배포](./docs/operators/deployment/cloudflare-quickstart.md)를 참조하세요. 프로덕션 환경에서 사용하기 전에 기본 Admin 비밀번호를 변경하고 외부 연동별로 이름이 지정된 최소 권한 Admin API Key를 생성하세요.
 
 Docker 셀프 호스팅과 Postgres / MySQL 데이터베이스 구성은 [배포 문서 인덱스](./docs/operators/deployment/README.md)를 참조하세요.
 

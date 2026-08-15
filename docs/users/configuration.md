@@ -31,7 +31,7 @@
 
 ## 3. 配置模型与路由
 
-2.0 的路由（Routes，页面标题 Model Routes）按 **请求入口（Request Surface）→ 路由池（Route Pool）→ 上游目标（Upstream Target）** 展示：请求入口表示客户端协议 / operation，路由池表示一组可故障转移的上游目标，上游目标才是具体供应商与上游模型。完整概念见 [developers/architecture/route-topology.md](../developers/architecture/route-topology.md)。
+Routes 工作台支持**总览（Overview）**与**按模型（By model）**两种视角，并在 **Unrouted models** 区域集中展示尚未启用请求入口的模型。拓扑仍按 **请求入口（Request Surface）→ 路由池（Route Pool）→ 上游目标（Upstream Target）** 组织：请求入口表示客户端协议 / operation，路由池表示一组可故障转移的上游目标，上游目标才是具体供应商与上游模型。完整概念见 [developers/architecture/route-topology.md](../developers/architecture/route-topology.md)。
 
 ![路由工作台：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](../assets/screenshots/routes.png)
 
@@ -40,12 +40,12 @@
 - 对客户端暴露稳定的模型名，例如 `gpt-4.1`、`claude-sonnet` 或团队内部命名。
 - 同一模型下配置多个供应商路由：
   - **请求协议 / operation**：客户端从哪个协议与操作进入，例如 `openai.chat`、`openai.responses`、`anthropic.messages`、`openai.images.generations`。同一模型可以同时挂 Chat 与 Responses，互不影响。
-  - **上游协议 / operation**：上游目标实际调用的供应商能力。2.0 仅开放 `passthrough` adapter，因此请求协议与上游协议必须一致；`*` 用于迁移兼容。
+  - **上游协议 / operation**：上游目标实际调用的供应商能力。同协议、同 operation 使用 `passthrough`；OpenAI ASR / TTS 转 DashScope 时必须选择对应的显式 adapter；`*` 仅用于迁移兼容。
   - **`priority`（层）**：数字**越大**越先试（硬序）。
   - **`weight`（同层）**：配合路由池 / 模型 / 全局路由策略（默认 **hash_affinity**）决定层内顺序。
   - **`route_group`**：如 `default` / `free`，客户端用 `modelId:group` 选择。
 - 图片生成模型：导入或手建后确认 `output_modalities` 含 `image`、`pricing_profile` 的 `image_billing_mode`（`token` / `per_image`），并挂 **OpenAI 协议** active 路由；细节见 [developers/reference/image-models.md](../developers/reference/image-models.md)。
-- 语音转写模型：导入或手建后确认 `pricing_profile.audio_billing_mode`（`per_second` / `token`）与对应单价块，并挂 **OpenAI 协议** active 路由；细节见 [developers/api/user.md「语音转写」](../developers/api/user.md#语音转写audio-transcriptions)。
+- 音频模型：ASR 可按时长或 Token 计费，TTS 可按字符计费；可使用 OpenAI 兼容的 `/v1/audio/transcriptions`、`/v1/audio/speech`，或 DashScope 原生实时音频。跨协议路由与 adapter 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
 - **路由策略**：先按 priority 层读路由池 `tier_strategies[priority]`（若有）；否则路由池 `strategy` → 模型 `route_policy.rules` 的 `{protocol}.{capability}:{group}` → `{protocol}:{group}` → 模型顶层 `route_policy.strategy` → 管理后台 Config 全局 `ROUTE_STRATEGY` → 代码默认 `hash_affinity`。四种策略及完整键格式见 [developers/reference/route-strategies.md](../developers/reference/route-strategies.md)。
 - **供应商粘性（Provider sticky，可选）**：在拓扑视图（Topology）的路由组 / 路由池节点打开粘性配置（关闭时芯片为 `Sticky · Off`，启用后为 `Sticky · {ttl}`），按路由池启用并设置空闲 TTL（默认 3600 秒）。它不是第五种层内策略：`hash_affinity` 用无状态哈希稳定首选，粘性则记住上次成功的上游目标，并可在绑定有效时跨 priority 优先尝试。弹窗还可查看绑定分布与路由权重、按用户解绑，或通过 `sticky_epoch` 整池失效；默认关闭。完整语义见 [供应商粘性（route-strategies）](../developers/reference/route-strategies.md#provider-sticky-routingpool-前置规则非第五策略)。
 - 在路由上配置默认参数，例如思考参数、输出长度或供应商扩展字段。

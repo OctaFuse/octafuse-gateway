@@ -31,7 +31,7 @@ npm run dev:admin
 | 管理后台 preview | `http://127.0.0.1:8789` |
 | 控制台登录 | `admin` / `admin`（本地默认；首次 `dev:admin` 会自动生成 `packages/admin/.dev.vars`） |
 | D1 本地状态 | `./.wrangler/state` |
-| 管理 API Bearer | `sk-dev-admin-key`（管理 API，不是网页密码） |
+| 管理 API Bearer | 登录后台后在 **系统集成 → 集成密钥** 创建（管理 API 使用，不是网页密码） |
 
 ## 2. 部署到 Cloudflare
 
@@ -62,6 +62,8 @@ curl -sS http://127.0.0.1:8787/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
 ```
+
+如果模型已配置 Responses 请求入口，也可以调用 `/v1/responses` 并发送 `input` 请求体；完整示例见 [connect-clients.md](./connect-clients.md)。
 
 配置细节见 [configuration.md](./configuration.md)；客户端接入见 [connect-clients.md](./connect-clients.md)。
 

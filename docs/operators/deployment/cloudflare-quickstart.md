@@ -465,7 +465,22 @@ curl -sS "$GATEWAY_URL/v1/chat/completions" \
   }'
 ```
 
-### 10.3 智能体工具（可选）
+### 10.3 OpenAI Responses（可选）
+
+如果该模型已经配置 `openai.responses` 请求入口与同协议上游：
+
+```bash
+curl -sS "$GATEWAY_URL/v1/responses" \
+  -H "Authorization: Bearer $OCTAFUSE_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "your-model-id",
+    "input": [{"role": "user", "content": "Say hello from Octafuse Responses."}],
+    "stream": false
+  }'
+```
+
+### 10.4 智能体工具（可选）
 
 如果已在管理后台中为 Web Search 配置 Active 引擎：
 

@@ -955,6 +955,49 @@ Admin 中为图片模型配置 `output_modalities: ["image"]` 及对应 mode 价
 
 ---
 
+## 语音合成（Audio Speech / TTS）
+
+OpenAI 兼容语音合成入口，支持完整音频响应与流式输出。鉴权、预算、路由与日志沿用用户 API Key 链路；请求入口为 `openai` + `audio.speech`。
+
+```text
+POST /v1/audio/speech
+Authorization: Bearer <USER_API_KEY>
+Content-Type: application/json
+```
+
+| 字段 | 说明 |
+|------|------|
+| `model` | 必填；支持 `id:route_group` 后缀 |
+| `input` | 必填；合成文本，最多 4096 个字符 |
+| `voice` | 必填；字符串或 `{ "id": "..." }` |
+| `response_format` | 可选；`mp3`（默认）/ `opus` / `aac` / `flac` / `wav` / `pcm` |
+| `speed` | 可选；`0.25`–`4.0`，默认 `1` |
+| `stream_format` | 可选；`audio`（默认）或 `sse` |
+| `instructions` | 可选；风格指令，最多 4096 个字符 |
+
+同协议 OpenAI 上游使用 `passthrough`；转到 DashScope SpeechSynthesizer、Qwen-TTS 或 MiniMax 时，必须选择对应的显式 adapter。TTS 目录价使用 `audio_billing_mode=per_character`，最终费用只采用上游返回的真实 `usage.characters`；缺失时不会用输入长度补算。
+
+```bash
+curl -sS "$GATEWAY_URL/v1/audio/speech" \
+  -H "Authorization: Bearer $USER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"your-tts-model","input":"你好，Octafuse。","voice":"your-voice"}' \
+  --output speech.mp3
+```
+
+### DashScope 原生实时音频
+
+实时 ASR / TTS 使用 WebSocket 入口：
+
+```text
+wss://<gateway>/v1/dashscope/realtime?model=<gateway-model>&operation=<operation>
+Authorization: Bearer <USER_API_KEY>
+```
+
+请求与上游都使用 `dashscope` 协议及同名 operation，事件和二进制音频帧保持原生语义。可用 operation、浏览器子协议鉴权、计费与部署边界见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
+
+---
+
 ## 语音转写（Audio Transcriptions）
 
 OpenAI 兼容 Audio Transcriptions API，供桌面 Agent 语音输入等场景调用。鉴权与 Chat 相同（用户 API Key）；模型须配置 **OpenAI 协议**路由，且 `pricing_profile` 含有效的 Audio 计费配置（见下方双模式）。

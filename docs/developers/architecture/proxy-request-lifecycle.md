@@ -86,7 +86,7 @@ flowchart TB
 
 ## 2. 请求生命周期（逐步）
 
-以下以 `POST /v1/chat/completions` 为例；`/v1/messages`、Gemini、Images、Audio 在「协议过滤」与 driver 处不同，调度内核一致。
+以下以 `POST /v1/chat/completions` 为例；`/v1/responses`、`/v1/messages`、Gemini、Images、Audio 在「协议过滤」与 driver 处不同，调度内核一致。
 
 ### 2.1 鉴权与解析
 

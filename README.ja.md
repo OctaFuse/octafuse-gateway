@@ -7,7 +7,7 @@
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare-quickstart.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
 
-**Octafuse Gateway** は、Agent 向けに設計されたセルフホスト可能なオープンソース AI Gateway です。複数の Provider が提供するモデル、画像生成・編集、音声文字起こし、Agent Tools、さらに自社運用またはプライベート環境に展開した AI サービスを統合し、分散した AI リソースを単一のエントリーポイントに集約します。Route、キー、予算、使用量、監査を一元管理することで、リソースの運用、振り分け、制御を効率化します。単なるモデルリクエストの中継にとどまらず、Agent に必要なリソースや機能を、検出・呼び出し・管理できる拡張可能な形で提供します。
+**Octafuse Gateway** は、Agent 向けに設計されたセルフホスト可能なオープンソース AI Gateway です。複数の Provider が提供するモデル、OpenAI Responses、画像生成・編集、ASR / TTS / リアルタイム音声、Agent Tools、さらに自社運用またはプライベート環境に展開した AI サービスを統合し、分散した AI リソースを単一のエントリーポイントに集約します。Route、キー、予算、使用量、監査を一元管理することで、リソースの運用、振り分け、制御を効率化します。単なるモデルリクエストの中継にとどまらず、Agent に必要なリソースや機能を、検出・呼び出し・管理できる拡張可能な形で提供します。
 
 **言語：** [中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [한국어](./README.ko.md) · **公式サイト：** [octafuse.dev](https://octafuse.dev/en/)
 
@@ -22,11 +22,13 @@ Octafuse Gateway の中核的な目標は、**一人会社（OPC）や企業向�
 3. 複数プロトコルへの対応：
     - OpenAI エンドポイント：
       - Chat Completions：`POST /v1/chat/completions`
+      - Responses：`POST /v1/responses`
       - Images：`POST /v1/images/generations`、`POST /v1/images/edits`
-      - Audio Transcriptions：`POST /v1/audio/transcriptions`
+      - Audio：`POST /v1/audio/transcriptions`、`POST /v1/audio/speech`
       - Models：`GET /v1/models`
     - Anthropic エンドポイント：`POST /v1/messages`
     - Google Gemini エンドポイント：`POST /v1beta/models/{model}:generateContent`（`streamGenerateContent` を含む）
+    - DashScope リアルタイム音声：`GET /v1/dashscope/realtime`
 4. Agent ツールの接続：`/v1/tools/*` で Agent 向けツールを統一的に提供し、ログ、課金、コスト管理を一元化します。モデルとツールを同じ Gateway から利用できます。
     - Web 検索（`POST /v1/tools/web-search`）：Bocha、Tavily、Alibaba Cloud CleverSee、Tencent Cloud WSA
     - Web ページ取得（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
@@ -157,7 +159,7 @@ npx wrangler login
 npm run bootstrap:cloudflare
 ```
 
-詳しくは、[Cloudflare クイックデプロイ](./docs/operators/deployment/cloudflare-quickstart.md)を参照してください。本番環境で使用する前に、Admin のデフォルトパスワードを変更し、`MASTER_KEY` をローテーションしてください。
+詳しくは、[Cloudflare クイックデプロイ](./docs/operators/deployment/cloudflare-quickstart.md)を参照してください。本番環境で使用する前に、Admin のデフォルトパスワードを変更し、外部連携ごとに名前付き・最小権限の Admin API Key を作成してください。
 
 Docker によるセルフホストと Postgres / MySQL の構成については、[デプロイドキュメント一覧](./docs/operators/deployment/README.md)を参照してください。
 

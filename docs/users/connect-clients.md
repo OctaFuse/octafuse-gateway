@@ -19,12 +19,21 @@ curl -sS http://localhost:8787/v1/chat/completions \
   -d '{"model":"your-route-model","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
-模型列表（需用户 Key；默认仅 LLM，不含纯文生图与 ASR）：
+Responses（需为模型配置 `openai.responses` 请求入口与同协议上游）：
+
+```bash
+curl -sS http://localhost:8787/v1/responses \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"your-route-model","input":[{"role":"user","content":"Hello"}],"stream":false}'
+```
+
+模型列表（需用户 Key；默认仅 LLM，不含纯文生图与音频模型）：
 
 ```bash
 curl -sS http://localhost:8787/v1/models \
   -H "Authorization: Bearer sk-your-api-key"
-# 文生图：?kind=image ；语音转写：?kind=audio ；全部：?kind=all
+# 文生图：?kind=image ；音频：?kind=audio ；全部：?kind=all
 ```
 
 公开 Catalog（**无需**用户 Key，适合门户 discovery）：
@@ -54,6 +63,18 @@ curl -sS http://localhost:8787/v1/audio/transcriptions \
   -F language=zh \
   -F response_format=json
 ```
+
+语音合成（TTS；需用户 Key + 已配置 `audio.speech` 路由）：
+
+```bash
+curl -sS http://localhost:8787/v1/audio/speech \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"your-tts-model","input":"你好，Octafuse。","voice":"your-voice"}' \
+  --output speech.mp3
+```
+
+DashScope 原生实时 ASR / TTS 使用 `/v1/dashscope/realtime` WebSocket 入口，连接参数与 operation 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
 
 智能体工具（Agent Tools；需用户 Key；管理后台 → 智能体工具已为对应工具配置活跃引擎与第三方 API Key）提供 `POST /v1/tools/web-search`、`POST /v1/tools/web-fetch`、`POST /v1/tools/web-deep-search`。示例如下：
 
