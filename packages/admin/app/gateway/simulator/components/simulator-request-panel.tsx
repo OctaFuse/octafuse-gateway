@@ -248,12 +248,6 @@ export function SimulatorRequestPanel({
 					) : null}
 				</div>
 			)}
-			<RequestTargetUrl
-				label={t("requestTargetUrl")}
-			method={showAudioRealtime ? "WebSocket" : displayWire?.method ?? "POST"}
-				url={displayWire?.url}
-				emptyHint={t("requestTargetUrlEmpty")}
-			/>
 			{showAudioTranscriptions ? (
 				<div className="space-y-2">
 					<p className="text-xs text-gray-500">
@@ -406,67 +400,102 @@ export function SimulatorRequestPanel({
 					) : null}
 				</>
 			) : null}
-			<div className="flex-1 min-h-0 flex flex-col">
-				<label className={labelClass}>JSON</label>
-				<textarea
-					value={bodyText}
-					onChange={(e) => onBodyTextChange(e.target.value)}
-					rows={12}
-					className={`${inputClass} min-h-[220px] flex-1 font-mono text-sm xl:min-h-0`}
-					spellCheck={false}
-				/>
-			</div>
-			{bodyError ? (
-				<div className="p-2.5 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-					{bodyError}
-				</div>
-			) : null}
-
-			<div className="border-t border-gray-100 pt-2">
-				<button
-					type="button"
-					onClick={() => onWireOpenChange(!wireOpen)}
-					className="flex w-full items-center justify-between text-left text-xs font-medium text-gray-600 hover:text-gray-900"
-					aria-expanded={wireOpen}
-				>
-					<span>{t("wirePreview")}</span>
-					<span className="text-gray-400">{wireOpen ? "▾" : "▸"}</span>
-				</button>
-				{wireOpen ? (
-					displayWire ? (
-						<div className="mt-2 space-y-2">
-							<div className="text-xs text-gray-600">
-								<span className="font-semibold text-gray-700">
-									{displayWire.method}
-								</span>{" "}
-								<span className="font-mono break-all">{displayWire.url}</span>
-							</div>
-							<div>
-								<div className="text-[11px] font-medium text-gray-500 mb-1">
-									{t("wireHeaders")}
-								</div>
-								<pre className={codeBlockClass}>
-									{Object.entries(displayWire.headers)
-										.map(([k, v]) => `${k}: ${v}`)
-										.join("\n")}
-								</pre>
-							</div>
-							<div>
-								<div className="text-[11px] font-medium text-gray-500 mb-1">
-									{t("wireBody")}
-								</div>
-								<pre className={codeBlockClass}>
-									{displayWire.isMultipart
-										? displayWire.bodyText
-										: prettyJsonBody(displayWire.bodyText)}
-								</pre>
-							</div>
+			<div
+				className={
+					wireOpen
+						? "flex min-h-0 flex-1 flex-col gap-3 xl:flex-row xl:items-stretch"
+						: "flex min-h-0 flex-1 flex-col gap-3"
+				}
+			>
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+					{wireOpen ? null : (
+						<RequestTargetUrl
+							label={t("requestTargetUrl")}
+							method={showAudioRealtime ? "WebSocket" : displayWire?.method ?? "POST"}
+							url={displayWire?.url}
+							emptyHint={t("requestTargetUrlEmpty")}
+						/>
+					)}
+					<div className="flex min-h-0 flex-1 flex-col">
+						<label className={labelClass}>JSON</label>
+						<textarea
+							value={bodyText}
+							onChange={(e) => onBodyTextChange(e.target.value)}
+							rows={12}
+							className={`${inputClass} min-h-[220px] flex-1 font-mono text-sm xl:min-h-0`}
+							spellCheck={false}
+						/>
+					</div>
+					{bodyError ? (
+						<div className="rounded-md border border-red-200 bg-red-50 p-2.5 text-sm text-red-600">
+							{bodyError}
 						</div>
-					) : (
-						<p className="mt-2 text-xs text-gray-500">
-							{t("wirePreviewEmpty")}
-						</p>
-					)
+					) : null}
+					{wireOpen ? null : (
+						<button
+							type="button"
+							onClick={() => onWireOpenChange(true)}
+							className="flex w-full items-center justify-between border-t border-gray-100 pt-2 text-left text-xs font-medium text-gray-600 hover:text-gray-900"
+							aria-expanded={false}
+						>
+							<span>{t("wirePreview")}</span>
+							<span className="text-gray-400">▸</span>
+						</button>
+					)}
+				</div>
+				{wireOpen ? (
+					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-md border border-gray-200 bg-slate-50/80 xl:max-w-[50%]">
+						<div className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-200 px-3 py-2">
+							<h3 className="text-xs font-semibold text-gray-800">{t("wirePreview")}</h3>
+							<button
+								type="button"
+								onClick={() => onWireOpenChange(false)}
+								className="text-xs font-medium text-gray-500 hover:text-gray-900"
+								aria-expanded={true}
+							>
+								{tCommon("close")}
+							</button>
+						</div>
+						<div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+							{displayWire ? (
+								<>
+									<div>
+										<div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+											{t("requestTargetUrl")}
+										</div>
+										<p className="break-all font-mono text-xs text-gray-800">
+											<span className="font-semibold text-gray-700">
+												{displayWire.method}
+											</span>{" "}
+											{displayWire.url}
+										</p>
+									</div>
+									<div>
+										<div className="mb-1 text-[11px] font-medium text-gray-500">
+											{t("wireHeaders")}
+										</div>
+										<pre className={codeBlockClass}>
+											{Object.entries(displayWire.headers)
+												.map(([k, v]) => `${k}: ${v}`)
+												.join("\n")}
+										</pre>
+									</div>
+									<div>
+										<div className="mb-1 text-[11px] font-medium text-gray-500">
+											{t("wireBody")}
+										</div>
+										<pre className={codeBlockClass}>
+											{displayWire.isMultipart
+												? displayWire.bodyText
+												: prettyJsonBody(displayWire.bodyText)}
+										</pre>
+									</div>
+								</>
+							) : (
+								<p className="text-xs text-gray-500">{t("wirePreviewEmpty")}</p>
+							)}
+						</div>
+					</div>
 				) : null}
 			</div>
 		</section>
