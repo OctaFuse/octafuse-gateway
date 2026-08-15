@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowDownIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { ArrowDownIcon, BeakerIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { isAudioSpeechModel } from '@octafuse/core/db/model-modalities';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
@@ -885,15 +886,24 @@ export function RouteModal(props: Props) {
 				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
 					<div className="flex flex-wrap items-center gap-2">
 						{editingRoute && (
-							<button
-								type="button"
-								onClick={onDelete}
-								disabled={isSaving || isDeleting}
-								className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-							>
-								<TrashIcon className="h-4 w-4" aria-hidden />
-								{isDeleting ? tCommon('deleting') : t('deleteRoute')}
-							</button>
+							<>
+								<button
+									type="button"
+									onClick={onDelete}
+									disabled={isSaving || isDeleting}
+									className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+								>
+									<TrashIcon className="h-4 w-4" aria-hidden />
+									{isDeleting ? tCommon('deleting') : t('deleteRoute')}
+								</button>
+								<Link
+									href={`/gateway/playground?routeId=${encodeURIComponent(editingRoute.id)}`}
+									className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+								>
+									<BeakerIcon className="h-4 w-4" aria-hidden />
+									{t('testInPlayground')}
+								</Link>
+							</>
 						)}
 					</div>
 					<div className="ml-auto flex gap-2 sm:gap-3">
