@@ -193,22 +193,11 @@ function renderNotes(opts) {
 	lines.push("");
 	lines.push("## 容器镜像");
 	lines.push("");
-	lines.push(`Tag **${tag}** — multi-arch manifest digests：`);
-	lines.push("");
+	lines.push("```text");
 	for (const name of ["proxy", "admin", "migrate"]) {
-		const d = opts.digests[name];
-		lines.push(`### ${name[0].toUpperCase()}${name.slice(1)}`);
-		lines.push("");
-		lines.push(`- 镜像：\`ghcr.io/${repoLc}-${name}:${tag}\``);
-		if (d) {
-			lines.push(`- Digest：\`${d}\``);
-			lines.push(`- 固定拉取：\`ghcr.io/${repoLc}-${name}@${d}\``);
-		} else {
-			lines.push("- Digest：_(缺失)_");
-		}
-		lines.push("");
+		lines.push(`ghcr.io/${repoLc}-${name}:${tag}`);
 	}
-	lines.push("可按 digest 做可复现部署，或在核对 digest 后使用 tag。");
+	lines.push("```");
 	lines.push("");
 	lines.push("## 相关链接");
 	lines.push("");

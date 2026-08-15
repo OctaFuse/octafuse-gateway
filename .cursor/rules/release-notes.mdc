@@ -35,17 +35,11 @@ GitHub Release 面向运维与集成方；`CHANGELOG.md` 保留 Changesets 开�
 
 ## 容器镜像
 
-### Proxy
-- 镜像：`ghcr.io/...-proxy:vX.Y.Z`
-- Digest：`sha256:...`
-
-### Admin
-- 镜像：`ghcr.io/...-admin:vX.Y.Z`
-- Digest：`sha256:...`
-
-### Migrate
-- 镜像：`ghcr.io/...-migrate:vX.Y.Z`
-- Digest：`sha256:...`
+```text
+ghcr.io/octafuse/octafuse-gateway-proxy:vX.Y.Z
+ghcr.io/octafuse/octafuse-gateway-admin:vX.Y.Z
+ghcr.io/octafuse/octafuse-gateway-migrate:vX.Y.Z
+```
 
 ## 相关链接
 
@@ -65,7 +59,7 @@ GitHub Release 面向运维与集成方；`CHANGELOG.md` 保留 Changesets 开�
 4. changeset 正文：首段为「本次更新」摘要；随后用 `### Proxy` / `### Admin` / `### 文档` / `### Core` 等分区；需要时加 `### 升级说明`。
 5. 避免在单个 changeset 列表项内部再嵌套会破坏 Markdown 列表的标题层级；分区标题写在摘要段之后、列表之前。
 6. 语言与标题统一中文语境；Release 标题形如 `OctaFuse vX.Y.Z`。
-7. 镜像 tag 与 digest 写在「升级说明」之后的 `## 容器镜像`（不要折叠）；digest 与固定拉取行一并给出。
+7. 「升级说明」之后用 `## 容器镜像` 列出三个官方 tag（与官网更新文相同，不要折叠、不要展开 digest）。
 8. 若本版本有外部贡献者：在 `docs/releases/X.Y.Z.md` 增加 `## 致谢`（GitHub @login + PR 链接），渲染后位于正文最底部。
 
 ## 工具

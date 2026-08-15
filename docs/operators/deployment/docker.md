@@ -314,7 +314,7 @@ gateway-admin.example.com {
 
 ### 8.1 预构建镜像（GHCR / 私有 registry）
 
-1. 编辑宿主机 env（通常在 `docker/deploy/`，由 `docker/examples/env.*.example` 复制）：将 `GATEWAY_PROXY_IMAGE`、`GATEWAY_ADMIN_IMAGE`、`GATEWAY_MIGRATE_IMAGE` 的 **tag** 改为目标版本（生产钉死 `vX.Y.Z`；可用 Release 正文中的 **digest** 做二次校验）。
+1. 编辑宿主机 env（通常在 `docker/deploy/`，由 `docker/examples/env.*.example` 复制）：将 `GATEWAY_PROXY_IMAGE`、`GATEWAY_ADMIN_IMAGE`、`GATEWAY_MIGRATE_IMAGE` 的 **tag** 改为目标版本（生产钉死 `vX.Y.Z`；需要可复现固定时从 GHCR 包页核对 **digest**）。
 2. 拉取 → 迁移 → 重建：
 
 ```bash
