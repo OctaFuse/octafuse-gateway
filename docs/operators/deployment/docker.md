@@ -96,11 +96,13 @@ docker run --rm -p 8789:8789 \
 
 **手动 dispatch** 下可选择 **`linux/amd64`**、**`linux/arm64`**（默认两者均勾选），须至少勾选一种架构。标签策略：**commit sha**、**分支名**、**semver**（在版本 tag 上）、**`latest`**（`main` 上手动构建，或 **稳定版 `vX.Y.Z` tag** 推送时）。
 
-推送后的 **GHCR** 镜像名（`github.repository` 转小写，与 workflow 中 `repository_lc` 一致；`<owner>/<repo>` 为你的 `OctaFuse/octafuse-gateway` 等形式）：
+推送后的 **GHCR** 镜像名（`github.repository` 转小写，与 workflow 中 `repository_lc` 一致）。本仓库官方镜像为：
 
-- `ghcr.io/<owner>/<repo>-proxy:<tag>`
-- `ghcr.io/<owner>/<repo>-admin:<tag>`
-- `ghcr.io/<owner>/<repo>-migrate:<tag>`
+- `ghcr.io/octafuse/octafuse-gateway-proxy:vX.Y.Z`
+- `ghcr.io/octafuse/octafuse-gateway-admin:vX.Y.Z`
+- `ghcr.io/octafuse/octafuse-gateway-migrate:vX.Y.Z`
+
+fork 或其它 GitHub 仓库发布时，格式为 `ghcr.io/<owner>/<repo>-{proxy,admin,migrate}:<tag>`。
 
 若将镜像同步到自建 Harbor 或其它私有 OCI registry，可在该侧做 **mirror / retag**，各 `docker/examples/env.*.example` 中注释给出了与发版一致的示例镜像名（固定 tag），格式如：
 
@@ -110,7 +112,7 @@ docker run --rm -p 8789:8789 \
 
 在 GitHub：**Actions** → **Octafuse Docker Images (GH hosted Ubuntu)** → **Run workflow**（手动路径）。该 workflow 已声明 **`permissions: packages: write`**；若组织策略限制默认 `GITHUB_TOKEN`，请在仓库 **设置（Settings）→ Actions → General** 中放行对 **Packages** 的写入，或改用具备 `write:packages` 的 **PAT** 并配置为 secret。
 
-`docker/examples/env.*.example` 里 **GHCR** 示例前缀请按你的 **`ghcr.io/<owner>/<repo>-…`** 实际替换；若使用其它镜像仓库，按各模板文件内注释替换为 `registry.example.com/<namespace>/...`，一般只随版本改 **tag**。
+`docker/examples/env.*.example` 里的 **GHCR** 示例已指向官方 `ghcr.io/octafuse/octafuse-gateway-*`；fork 或其它仓库请改前缀。若使用其它镜像仓库，按各模板文件内注释替换为 `registry.example.com/<namespace>/...`，一般只随版本改 **tag**。
 
 ## 4. Docker Compose 样例
 

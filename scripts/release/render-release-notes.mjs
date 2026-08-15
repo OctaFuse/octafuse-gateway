@@ -191,8 +191,7 @@ function renderNotes(opts) {
 	lines.push("");
 	lines.push(opts.upgrade || defaultUpgradeNotes());
 	lines.push("");
-	lines.push("<details>");
-	lines.push("<summary><strong>容器镜像与 SHA256 digest</strong></summary>");
+	lines.push("## 容器镜像");
 	lines.push("");
 	lines.push(`Tag **${tag}** — multi-arch manifest digests：`);
 	lines.push("");
@@ -210,8 +209,6 @@ function renderNotes(opts) {
 		lines.push("");
 	}
 	lines.push("可按 digest 做可复现部署，或在核对 digest 后使用 tag。");
-	lines.push("");
-	lines.push("</details>");
 	lines.push("");
 	lines.push("## 相关链接");
 	lines.push("");

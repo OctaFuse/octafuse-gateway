@@ -90,7 +90,7 @@ flowchart LR
 2. **`.github/workflows/octafuse-docker-images.yml`**（**`push` → `tags/v*`**，或由 Release **dispatch**；或 **`workflow_dispatch`**）
 
    - 构建并推送 **GHCR** 三镜像。
-   - 在 **tag 发版**路径下创建/更新 **GitHub Release**：正文由 **`npm run release:notes`**（`scripts/release/render-release-notes.mjs`）生成——**本次更新 / 变更内容 / 升级说明** + 折叠区 **镜像 digest** + 相关链接；优先读取可选覆盖文件 **`docs/releases/X.Y.Z.md`**，否则从 **`CHANGELOG.md`** 对应段落规范化（去掉 `Patch Changes` 与 commit/`Thanks @` 前缀）。
+   - 在 **tag 发版**路径下创建/更新 **GitHub Release**：正文由 **`npm run release:notes`**（`scripts/release/render-release-notes.mjs`）生成——**本次更新 / 变更内容 / 升级说明** + **容器镜像**（tag 与 digest，不折叠）+ 相关链接；优先读取可选覆盖文件 **`docs/releases/X.Y.Z.md`**，否则从 **`CHANGELOG.md`** 对应段落规范化（去掉 `Patch Changes` 与 commit/`Thanks @` 前缀）。
 
 3. **`.github/workflows/verify-package-versions.yml`**
    - `develop` / `release/**` / `hotfix/**` / `main` 相关 PR，以及 `main` / `develop` / `v*` 推送上校验：根与 workspace **`version` 一致**；在 **tag** 上校验 **`v` + version** 与标签名一致。
