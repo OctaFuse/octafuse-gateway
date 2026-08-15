@@ -1,24 +1,14 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { OpenaiLlmOperation } from '@/lib/invoke-kind';
-import type { SimulatorGeminiAction, SimulatorProtocol } from '@/lib/simulator/endpoint';
-import { formatKeyOptionLabel, inputClass, labelClass, panelClass } from '../simulator-utils';
+import { formatKeyOptionLabel, inputClass } from '../simulator-utils';
 import type { AdminKeyListItem } from '../types';
+
+const compactInputClass = `${inputClass} py-1.5`;
 
 type Props = {
 	proxyBaseUrl: string;
 	onProxyBaseUrlChange: (v: string) => void;
-	protocol: SimulatorProtocol;
-	onProtocolChange: (p: SimulatorProtocol) => void;
-	/** Image 入口仍锁定 OpenAI；Audio 可选择 OpenAI HTTP 或 DashScope 原生 WebSocket。 */
-	openaiLockKind?: 'image' | 'audio';
-	/** Tools mode: protocol / Gemini action do not apply. */
-	hideProtocolControls?: boolean;
-	geminiAction: SimulatorGeminiAction;
-	onGeminiActionChange: (a: SimulatorGeminiAction) => void;
-	openaiLlmOperation: OpenaiLlmOperation;
-	onOpenaiLlmOperationChange: (op: OpenaiLlmOperation) => void;
 	filterKeyEmail: string;
 	onFilterKeyEmailChange: (v: string) => void;
 	loadingKeys: boolean;
@@ -36,14 +26,6 @@ type Props = {
 export function SimulatorSetupPanel({
 	proxyBaseUrl,
 	onProxyBaseUrlChange,
-	protocol,
-	onProtocolChange,
-	openaiLockKind,
-	hideProtocolControls = false,
-	geminiAction,
-	onGeminiActionChange,
-	openaiLlmOperation,
-	onOpenaiLlmOperationChange,
 	filterKeyEmail,
 	onFilterKeyEmailChange,
 	loadingKeys,
@@ -59,148 +41,41 @@ export function SimulatorSetupPanel({
 }: Props) {
 	const t = useTranslations('simulator');
 	const tCommon = useTranslations('common');
-	const openaiLocked = openaiLockKind === 'image';
+	const keyStatus = [
+		t('keysShowing', { shown: keys.length, total: keysTotal }),
+		revealLoading && selectedKeyId ? t('loadingKey') : null,
+		!revealLoading && revealedSk && revealedSk.startsWith('sk-')
+			? t('loadedKey', { prefix: revealedSk.slice(0, 12), suffix: revealedSk.slice(-4) })
+			: null,
+	]
+		.filter(Boolean)
+		.join(' · ');
 
 	return (
-		<div className="space-y-4">
-			<section className={panelClass}>
-				<h2 className="text-sm font-semibold text-gray-900">{t('connection')}</h2>
-				<div>
-					<label className={labelClass}>{t('proxyBaseUrl')}</label>
+		<section className="shrink-0 border-b border-gray-200/80 bg-white px-3 py-2.5 sm:px-4">
+			<div className="flex flex-col gap-2 lg:flex-row lg:items-end">
+				<div className="min-w-0 flex-1">
+					<label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-gray-500">
+						{t('proxyBaseUrl')}
+					</label>
 					<input
 						type="url"
-						placeholder="https://your-proxy.example.com"
+						placeholder="http://127.0.0.1:8787"
 						value={proxyBaseUrl}
 						onChange={(e) => onProxyBaseUrlChange(e.target.value)}
-						className={inputClass}
+						className={compactInputClass}
 						autoComplete="off"
-					/>
-					<p className="mt-1.5 text-xs text-amber-800/90">{t('localDevHint')}</p>
-				</div>
-				{hideProtocolControls ? (
-					<p className="text-xs text-gray-500">{t('toolProtocolHidden')}</p>
-				) : (
-					<>
-						<div>
-							<label className={labelClass}>{t('protocol')}</label>
-							<div className="flex flex-wrap gap-3 pt-1 text-sm">
-								{(['openai', 'anthropic', 'gemini', 'dashscope'] as const).map((p) => {
-									const disabled =
-										(openaiLocked && p !== 'openai') ||
-										(p === 'dashscope' && openaiLockKind !== 'audio');
-									return (
-										<label
-											key={p}
-											className={`inline-flex items-center gap-2 ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-										>
-											<input
-												type="radio"
-												name="simProtocol"
-												checked={protocol === p}
-												disabled={disabled}
-												onChange={() => onProtocolChange(p)}
-												className="text-blue-600 focus:ring-blue-500"
-											/>
-											{p}
-										</label>
-									);
-								})}
-							</div>
-							{openaiLockKind ? (
-								<p className="mt-1.5 text-xs text-amber-800/90">
-									{t(openaiLockKind === 'audio' ? 'protocolLockedAudio' : 'protocolLockedImage')}
-								</p>
-							) : null}
-						</div>
-						{protocol === 'openai' && !openaiLockKind ? (
-							<fieldset className="flex flex-wrap items-center gap-3 text-sm border border-gray-200 rounded-md px-3 py-2">
-								<legend className="sr-only">{t('openaiOperation')}</legend>
-								<span className="text-gray-600 font-medium">{t('openaiOperation')}</span>
-								<label className="inline-flex items-center gap-2 cursor-pointer">
-									<input
-										type="radio"
-										name="openaiLlmOperationSim"
-										className="text-blue-600 focus:ring-blue-500"
-										checked={openaiLlmOperation === 'chat'}
-										onChange={() => onOpenaiLlmOperationChange('chat')}
-									/>
-									chat
-								</label>
-								<label className="inline-flex items-center gap-2 cursor-pointer">
-									<input
-										type="radio"
-										name="openaiLlmOperationSim"
-										checked={openaiLlmOperation === 'responses'}
-										onChange={() => onOpenaiLlmOperationChange('responses')}
-									/>
-									responses
-								</label>
-								<p className="basis-full text-xs text-gray-500">{t('openaiOperationHint')}</p>
-							</fieldset>
-						) : null}
-						{protocol === 'gemini' && !openaiLocked ? (
-							<fieldset className="flex flex-wrap items-center gap-3 text-sm border border-gray-200 rounded-md px-3 py-2">
-								<legend className="sr-only">{t('geminiAction')}</legend>
-								<span className="text-gray-600 font-medium">{t('geminiAction')}</span>
-								<label className="inline-flex items-center gap-2 cursor-pointer">
-									<input
-										type="radio"
-										name="geminiActionSim"
-										className="text-blue-600 focus:ring-blue-500"
-										checked={geminiAction === 'generateContent'}
-										onChange={() => onGeminiActionChange('generateContent')}
-									/>
-									generateContent
-								</label>
-								<label className="inline-flex items-center gap-2 cursor-pointer">
-									<input
-										type="radio"
-										name="geminiActionSim"
-										checked={geminiAction === 'streamGenerateContent'}
-										onChange={() => onGeminiActionChange('streamGenerateContent')}
-									/>
-									streamGenerateContent
-								</label>
-							</fieldset>
-						) : null}
-					</>
-				)}
-			</section>
-
-			<section className={panelClass}>
-				<h2 className="text-sm font-semibold text-gray-900">{t('apiKey')}</h2>
-				<div>
-					<label className={labelClass}>{t('emailContains')}</label>
-					<input
-						type="text"
-						value={filterKeyEmail}
-						onChange={(e) => onFilterKeyEmailChange(e.target.value)}
-						className={inputClass}
+						title={t('localDevHint')}
 					/>
 				</div>
-				<div className="flex flex-wrap items-center gap-2">
-					<button
-						type="button"
-						onClick={onRefreshKeys}
-						disabled={loadingKeys}
-						className="px-3 py-1.5 text-sm rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-					>
-						{loadingKeys ? tCommon('refreshing') : t('refreshList')}
-					</button>
-					<span className="text-xs text-gray-500">
-						{t('keysShowing', { shown: keys.length, total: keysTotal })}
-						{keysTotal > keys.length ? t('keysLimitHint') : ''}
-					</span>
-				</div>
-				{keysError ? (
-					<div className="p-2 text-sm text-red-600 bg-red-50 rounded border border-red-100">{keysError}</div>
-				) : null}
-				<div>
-					<label className={labelClass}>{t('apiKeyRowId')}</label>
+				<div className="min-w-0 flex-[1.4]">
+					<label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-gray-500">
+						{t('apiKey')}
+					</label>
 					<select
 						value={selectedKeyId}
 						onChange={(e) => onSelectedKeyIdChange(e.target.value)}
-						className={`${inputClass} font-mono`}
+						className={`${compactInputClass} font-mono`}
 					>
 						<option value="">{t('select')}</option>
 						{keys.map((k) => (
@@ -209,17 +84,37 @@ export function SimulatorSetupPanel({
 							</option>
 						))}
 					</select>
-					<div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
-						{revealLoading && selectedKeyId ? <span>{t('loadingKey')}</span> : null}
-						{!revealLoading && revealedSk && revealedSk.startsWith('sk-') ? (
-							<span className="font-mono text-gray-700 break-all">
-								{t('loadedKey', { prefix: revealedSk.slice(0, 12), suffix: revealedSk.slice(-4) })}
-							</span>
-						) : null}
-					</div>
 				</div>
-				{revealError ? <div className="text-sm text-red-600">{revealError}</div> : null}
-			</section>
-		</div>
+				<div className="flex min-w-0 flex-1 items-end gap-2">
+					<div className="min-w-0 flex-1">
+						<label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-gray-500">
+							{t('emailContains')}
+						</label>
+						<input
+							type="search"
+							value={filterKeyEmail}
+							onChange={(e) => onFilterKeyEmailChange(e.target.value)}
+							placeholder={t('emailContains')}
+							className={compactInputClass}
+						/>
+					</div>
+					<button
+						type="button"
+						onClick={onRefreshKeys}
+						disabled={loadingKeys}
+						className="shrink-0 rounded-md border border-gray-300 px-2.5 py-1.5 text-xs hover:bg-gray-50 disabled:opacity-50"
+					>
+						{loadingKeys ? tCommon('refreshing') : t('refreshList')}
+					</button>
+				</div>
+			</div>
+			<p className="mt-1.5 truncate text-[11px] text-gray-500" title={keyStatus}>
+				{keyStatus}
+			</p>
+			{keysError ? (
+				<div className="mt-1 rounded border border-red-100 bg-red-50 px-2 py-1 text-xs text-red-600">{keysError}</div>
+			) : null}
+			{revealError ? <div className="mt-1 text-xs text-red-600">{revealError}</div> : null}
+		</section>
 	);
 }

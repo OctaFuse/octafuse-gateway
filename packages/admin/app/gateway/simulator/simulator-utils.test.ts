@@ -16,6 +16,7 @@ import {
 	filterMatchingActiveRoutes,
 	isBodyDirty,
 	listDashScopeRealtimeOperations,
+	listSupportedClientSurfaces,
 	redactAuthHeader,
 	routeGroupMatchesSelection,
 } from "./simulator-utils";
@@ -113,6 +114,76 @@ describe("simulator-utils", () => {
 			matched.map((route) => route.id),
 			["chat", "legacy"]
 		);
+	});
+
+	it("listSupportedClientSurfaces keeps only public protocols and endpoints", () => {
+		const routes: RouteListRow[] = [
+			{
+				id: "chat",
+				model_id: "m1",
+				provider_id: "p1",
+				priority: 1,
+				status: "active",
+				route_group: "default",
+				surfaces: JSON.stringify([
+					{ request_protocol: "openai", request_operation: "chat", status: "active" },
+				]),
+			},
+			{
+				id: "gemini",
+				model_id: "m1",
+				provider_id: "p2",
+				priority: 1,
+				status: "active",
+				route_group: "vip",
+				surfaces: JSON.stringify([
+					{ request_protocol: "gemini", request_operation: "models.generate", status: "active" },
+				]),
+			},
+			{
+				id: "disabled",
+				model_id: "m1",
+				provider_id: "p3",
+				priority: 1,
+				status: "active",
+				route_group: "default",
+				surfaces: JSON.stringify([
+					{ request_protocol: "anthropic", request_operation: "messages", status: "disabled" },
+				]),
+			},
+		];
+		assert.deepEqual(listSupportedClientSurfaces(routes, "m1", ""), {
+			protocols: ["openai"],
+			openaiLlmOperations: ["chat"],
+			geminiActions: [],
+			imageOperations: [],
+		});
+		assert.deepEqual(listSupportedClientSurfaces(routes, "m1", "vip"), {
+			protocols: ["gemini"],
+			openaiLlmOperations: [],
+			geminiActions: ["generateContent", "streamGenerateContent"],
+			imageOperations: [],
+		});
+	});
+
+	it("listSupportedClientSurfaces expands wildcard openai surfaces", () => {
+		const routes: RouteListRow[] = [
+			{
+				id: "legacy",
+				model_id: "m1",
+				provider_id: "p1",
+				priority: 1,
+				status: "active",
+				route_group: "default",
+				upstream_protocol: "openai",
+			},
+		];
+		assert.deepEqual(listSupportedClientSurfaces(routes, "m1", ""), {
+			protocols: ["openai"],
+			openaiLlmOperations: ["chat", "responses"],
+			geminiActions: [],
+			imageOperations: ["generations", "edits"],
+		});
 	});
 
 	it("lists DashScope realtime operations from public route surfaces", () => {

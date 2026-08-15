@@ -1,3 +1,4 @@
+import { canonicalizeRequestOperation } from '@octafuse/core/route-topology';
 import { AUDIO_SPEECH_BODY_TEMPLATE, AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
@@ -5,8 +6,8 @@ import {
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
-import type { AudioOperation, GatewayToolId, OpenaiLlmOperation } from '@/lib/invoke-kind';
-import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
+import type { AudioOperation, GatewayToolId, OpenaiLlmOperation, SimulatorProtocol } from '@/lib/invoke-kind';
+import type { SimulatorGeminiAction } from '@/lib/simulator/endpoint';
 import {
 	DASHSCOPE_REALTIME_OPERATIONS,
 	buildDashScopeRealtimeAsrTemplate,
@@ -235,6 +236,123 @@ export function routeGroupMatchesSelection(routeGroup: string, selected: string)
 		return rg === 'default' || rg === '';
 	}
 	return rg === sel;
+}
+
+export const SIMULATOR_PROTOCOL_ORDER: readonly SimulatorProtocol[] = [
+	'openai',
+	'anthropic',
+	'gemini',
+	'dashscope',
+];
+
+export type SimulatorClientSurfaceOptions = {
+	protocols: SimulatorProtocol[];
+	openaiLlmOperations: OpenaiLlmOperation[];
+	geminiActions: SimulatorGeminiAction[];
+	imageOperations: ImageOperation[];
+};
+
+const EMPTY_CLIENT_SURFACES: SimulatorClientSurfaceOptions = {
+	protocols: [],
+	openaiLlmOperations: [],
+	geminiActions: [],
+	imageOperations: [],
+};
+
+type RouteSurfaceEntry = {
+	request_protocol?: string;
+	request_operation?: string;
+	status?: string;
+};
+
+function parseRouteSurfaceEntries(raw: string | null | undefined): RouteSurfaceEntry[] {
+	if (!raw) return [];
+	try {
+		const parsed = JSON.parse(raw) as unknown;
+		return Array.isArray(parsed)
+			? parsed.filter((entry): entry is RouteSurfaceEntry => Boolean(entry && typeof entry === 'object'))
+			: [];
+	} catch {
+		return [];
+	}
+}
+
+function isSimulatorProtocol(value: string): value is SimulatorProtocol {
+	return (SIMULATOR_PROTOCOL_ORDER as readonly string[]).includes(value);
+}
+
+function surfaceHasOperation(operations: Set<string>, ...wanted: string[]): boolean {
+	return operations.has('*') || wanted.some((operation) => operations.has(operation));
+}
+
+/**
+ * Client-facing protocols / endpoints from active public surfaces for the selected model + route group.
+ * Legacy rows without surfaces fall back to upstream_protocol + `*`.
+ */
+export function listSupportedClientSurfaces(
+	routes: RouteListRow[],
+	modelId: string,
+	routeGroup: string,
+): SimulatorClientSurfaceOptions {
+	if (!modelId) return EMPTY_CLIENT_SURFACES;
+
+	const operationsByProtocol = new Map<SimulatorProtocol, Set<string>>();
+	for (const route of routes) {
+		if (
+			route.model_id !== modelId ||
+			String(route.status).toLowerCase() !== 'active' ||
+			!routeGroupMatchesSelection(route.route_group, routeGroup)
+		) {
+			continue;
+		}
+		const parsed = parseRouteSurfaceEntries(route.surfaces);
+		const entries =
+			parsed.length > 0
+				? parsed
+				: [
+						{
+							request_protocol: route.upstream_protocol ?? 'openai',
+							request_operation: '*',
+							status: 'active',
+						},
+					];
+		for (const surface of entries) {
+			if (surface.status === 'disabled') continue;
+			const protocol = String(surface.request_protocol ?? route.upstream_protocol ?? '')
+				.trim()
+				.toLowerCase();
+			if (!isSimulatorProtocol(protocol)) continue;
+			const operation = canonicalizeRequestOperation(
+				protocol,
+				String(surface.request_operation ?? '*').trim() || '*',
+			);
+			const bucket = operationsByProtocol.get(protocol) ?? new Set<string>();
+			bucket.add(operation);
+			operationsByProtocol.set(protocol, bucket);
+		}
+	}
+
+	const protocols = SIMULATOR_PROTOCOL_ORDER.filter((protocol) => operationsByProtocol.has(protocol));
+	const openaiOps = operationsByProtocol.get('openai') ?? new Set<string>();
+	const openaiLlmOperations: OpenaiLlmOperation[] = [];
+	if (surfaceHasOperation(openaiOps, 'chat')) openaiLlmOperations.push('chat');
+	if (surfaceHasOperation(openaiOps, 'responses')) openaiLlmOperations.push('responses');
+
+	const geminiOps = operationsByProtocol.get('gemini') ?? new Set<string>();
+	const geminiActions: SimulatorGeminiAction[] = surfaceHasOperation(
+		geminiOps,
+		'models.generate',
+		'generateContent',
+		'streamGenerateContent',
+	)
+		? ['generateContent', 'streamGenerateContent']
+		: [];
+
+	const imageOperations: ImageOperation[] = [];
+	if (surfaceHasOperation(openaiOps, 'images.generations')) imageOperations.push('generations');
+	if (surfaceHasOperation(openaiOps, 'images.edits')) imageOperations.push('edits');
+
+	return { protocols, openaiLlmOperations, geminiActions, imageOperations };
 }
 
 export function filterMatchingActiveRoutes(

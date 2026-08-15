@@ -67,6 +67,7 @@ import {
 	isBodyDirty,
 	listDashScopeRealtimeOperations,
 	listGatewayTools,
+	listSupportedClientSurfaces,
 	redactHeaders,
 	tryParseProxyBaseUrl,
 } from './simulator-utils';
@@ -143,17 +144,32 @@ export function useSimulatorPageState() {
 	const streamEndRef = useRef<HTMLSpanElement>(null);
 	const mergedStreamEndRef = useRef<HTMLSpanElement>(null);
 
+	const modelIdsWithActiveRouter = useMemo(() => {
+		const s = new Set<string>();
+		for (const r of routes) {
+			if (r.model_id && String(r.status).toLowerCase() === 'active') {
+				s.add(r.model_id);
+			}
+		}
+		return s;
+	}, [routes]);
+
+	const routedModels = useMemo(
+		() => models.filter((m) => modelIdsWithActiveRouter.has(m.id)),
+		[models, modelIdsWithActiveRouter],
+	);
+
 	const kindCounts = useMemo(() => {
 		const counts = { ...emptyModelKindCounts(), tool: GATEWAY_TOOLS.length };
-		for (const m of models) {
+		for (const m of routedModels) {
 			counts[resolveModelKind(m)] += 1;
 		}
 		return counts;
-	}, [models]);
+	}, [routedModels]);
 
 	const modelsInKind = useMemo(
-		() => (isToolKind ? [] : models.filter((m) => resolveModelKind(m) === (filterKind as ModelKindFilter))),
-		[models, filterKind, isToolKind],
+		() => (isToolKind ? [] : routedModels.filter((m) => resolveModelKind(m) === (filterKind as ModelKindFilter))),
+		[routedModels, filterKind, isToolKind],
 	);
 
 	const filteredModels = useMemo(() => {
@@ -203,16 +219,6 @@ export function useSimulatorPageState() {
 		setBodyText(bodyTemplateForTool(parsed));
 		setBodyError(null);
 	}, []);
-
-	const modelIdsWithActiveRouter = useMemo(() => {
-		const s = new Set<string>();
-		for (const r of routes) {
-			if (r.model_id && String(r.status).toLowerCase() === 'active') {
-				s.add(r.model_id);
-			}
-		}
-		return s;
-	}, [routes]);
 
 	const routeGroupsForModel = useMemo(() => {
 		if (!selectedModelId) return [] as string[];
@@ -313,6 +319,10 @@ export function useSimulatorPageState() {
 				? []
 				: filterMatchingActiveRoutes(routes, selectedModelId, routeGroup, protocol, requestOperation ?? undefined),
 		[routes, selectedModelId, routeGroup, protocol, requestOperation, isToolKind],
+	);
+	const supportedSurfaces = useMemo(
+		() => (isToolKind ? listSupportedClientSurfaces([], '', '') : listSupportedClientSurfaces(routes, selectedModelId, routeGroup)),
+		[isToolKind, routes, selectedModelId, routeGroup],
 	);
 	const selectedDashScopeTtsProviderModelName = useMemo(() => {
 		if (selectedAudioOperation !== 'speech') return undefined;
@@ -680,6 +690,14 @@ export function useSimulatorPageState() {
 		}
 	}, [selectedModelId, routeGroup, routeGroupsForModel]);
 
+	useEffect(() => {
+		if (loadingCatalog || isToolKind || !selectedModelId) return;
+		if (!modelIdsWithActiveRouter.has(selectedModelId)) {
+			setSelectedModelId('');
+			setRouteGroup('');
+		}
+	}, [loadingCatalog, isToolKind, selectedModelId, modelIdsWithActiveRouter]);
+
 	/**
 	 * localStorage 恢复的模型可能是 Image/Audio：把 Kind 对齐到该模型，
 	 * 避免默认 LLM 视图立刻把选中项清掉。Tools 模式不跟模型对齐。
@@ -755,6 +773,55 @@ export function useSimulatorPageState() {
 		imageOperation,
 		openaiLlmOperation,
 		setAudioInputMode,
+	]);
+
+	useEffect(() => {
+		if (isToolKind || !selectedModelId || supportedSurfaces.protocols.length === 0) return;
+		const nextProtocol = supportedSurfaces.protocols.includes(protocol)
+			? protocol
+			: supportedSurfaces.protocols[0];
+		const nextOpenaiOp =
+			nextProtocol === 'openai' &&
+			supportedSurfaces.openaiLlmOperations.length > 0 &&
+			!supportedSurfaces.openaiLlmOperations.includes(openaiLlmOperation)
+				? supportedSurfaces.openaiLlmOperations[0]
+				: openaiLlmOperation;
+		const nextImageOp =
+			selectedModelIsImage &&
+			supportedSurfaces.imageOperations.length > 0 &&
+			!supportedSurfaces.imageOperations.includes(imageOperation)
+				? supportedSurfaces.imageOperations[0]
+				: imageOperation;
+		if (nextProtocol === protocol && nextOpenaiOp === openaiLlmOperation && nextImageOp === imageOperation) {
+			return;
+		}
+		if (nextProtocol !== protocol) setProtocolState(nextProtocol);
+		if (nextOpenaiOp !== openaiLlmOperation) setOpenaiLlmOperationState(nextOpenaiOp);
+		if (nextImageOp !== imageOperation) setImageOperationState(nextImageOp);
+		setBodyText(
+			bodyTemplateForSelection(
+				nextProtocol,
+				selectedModelIsImage && selectedAudioOperation == null && nextProtocol === 'openai',
+				nextImageOp,
+				nextProtocol === 'openai' || nextProtocol === 'dashscope' ? selectedAudioOperation : null,
+				undefined,
+				nextProtocol === 'dashscope' ? selectedDashScopeRealtimeOperation : null,
+				selectedDashScopeTtsProviderModelName,
+				nextProtocol === 'openai' ? nextOpenaiOp : 'chat',
+			),
+		);
+		setBodyError(null);
+	}, [
+		isToolKind,
+		selectedModelId,
+		supportedSurfaces,
+		protocol,
+		openaiLlmOperation,
+		imageOperation,
+		selectedModelIsImage,
+		selectedAudioOperation,
+		selectedDashScopeRealtimeOperation,
+		selectedDashScopeTtsProviderModelName,
 	]);
 
 	const setImageOperation = useCallback(
@@ -1374,6 +1441,7 @@ export function useSimulatorPageState() {
 		proxyBaseUrl,
 		setProxyBaseUrl,
 		protocol,
+		supportedSurfaces,
 		requestProtocolChange,
 		applyCurrentTemplate,
 		bodyDirty: isBodyDirty(
@@ -1409,7 +1477,6 @@ export function useSimulatorPageState() {
 		filteredModels,
 		models,
 		modelsInKind,
-		modelIdsWithActiveRouter,
 		selectedModelId,
 		selectModel,
 		selectedToolId,

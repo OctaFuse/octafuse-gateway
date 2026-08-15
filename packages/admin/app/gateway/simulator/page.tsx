@@ -26,12 +26,15 @@ export default function SimulatorPage() {
 	}
 
 	return (
-		<div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
-			<div className="mb-5 sm:mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-100/90 p-3 sm:p-4 lg:p-5 xl:h-dvh xl:overflow-hidden">
+			<div className="mb-3 shrink-0">
+				<h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
 					{t("title")}
 				</h1>
-				<p className="mt-1 text-sm text-gray-500 max-w-3xl">
+				<p
+					className="mt-0.5 max-w-4xl truncate text-xs text-gray-500"
+					title={`${t("subtitle", { product: tBrand("product") })} · ${t("usageNote")}`}
+				>
 					{t("subtitle", { product: tBrand("product") })}
 					<span className="text-gray-400"> · </span>
 					{t("usageNote")}
@@ -39,135 +42,131 @@ export default function SimulatorPage() {
 			</div>
 
 			{s.catalogError ? (
-				<div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm max-w-3xl">
+				<div className="mb-3 max-w-3xl rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
 					{s.catalogError}
 				</div>
 			) : null}
 
-			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
-				<div className="flex min-w-0 flex-col xl:flex-row xl:items-stretch">
-					<aside className="w-full shrink-0 border-b border-gray-200/80 bg-slate-50/80 p-4 xl:w-[380px] xl:border-b-0 xl:border-r xl:max-h-[calc(100vh-8rem)] xl:overflow-y-auto">
-						<div className="space-y-4">
-							<SimulatorSetupPanel
-								proxyBaseUrl={s.proxyBaseUrl}
-								onProxyBaseUrlChange={s.setProxyBaseUrl}
+			<div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
+				<SimulatorSetupPanel
+					proxyBaseUrl={s.proxyBaseUrl}
+					onProxyBaseUrlChange={s.setProxyBaseUrl}
+					filterKeyEmail={s.filterKeyEmail}
+					onFilterKeyEmailChange={s.setFilterKeyEmail}
+					loadingKeys={s.loadingKeys}
+					keysError={s.keysError}
+					keys={s.keys}
+					keysTotal={s.keysTotal}
+					onRefreshKeys={() => void s.loadKeys()}
+					selectedKeyId={s.selectedKeyId}
+					onSelectedKeyIdChange={s.setSelectedKeyId}
+					revealedSk={s.revealedSk}
+					revealLoading={s.revealLoading}
+					revealError={s.revealError}
+				/>
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col xl:flex-row xl:items-stretch">
+					<aside className="flex w-full min-h-0 shrink-0 flex-col border-b border-gray-200/80 bg-slate-50/80 p-3 xl:w-[380px] xl:overflow-hidden xl:border-b-0 xl:border-r">
+						<SimulatorRoutingPanel
+							filterKind={s.filterKind}
+							protocol={s.protocol}
+							onFilterKindChange={s.setFilterKind}
+							kindCounts={s.kindCounts}
+							isToolKind={s.isToolKind}
+							gatewayTools={s.gatewayTools}
+							selectedToolId={s.selectedToolId}
+							onSelectTool={s.selectTool}
+							filterModel={s.filterModel}
+							onFilterModelChange={s.setFilterModel}
+							filteredModels={s.filteredModels}
+							modelsInKindTotal={s.modelsInKind.length}
+							selectedModelId={s.selectedModelId}
+							onSelectModel={s.selectModel}
+							routeGroup={s.routeGroup}
+							onRouteGroupChange={s.setRouteGroup}
+							routeGroupsForModel={s.routeGroupsForModel}
+							realtimeOperation={s.selectedDashScopeRealtimeOperation}
+							realtimeOperationOptions={s.realtimeOperationOptions}
+							onRealtimeOperationChange={s.setDashScopeRealtimeOperation}
+							selectedModelIsAudio={s.selectedModelIsAudio}
+							modelRoutingString={s.modelRoutingString}
+							matchingRoutes={s.matchingRoutes}
+						/>
+					</aside>
+
+					<section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden bg-slate-100/70 p-3 sm:p-4">
+						<div className="min-h-0 flex-[3] overflow-y-auto">
+							<SimulatorRequestPanel
 								protocol={s.protocol}
 								onProtocolChange={s.requestProtocolChange}
-								openaiLockKind={
-									!s.isToolKind && s.selectedModelIsImage
-										? "image"
-										: !s.isToolKind && s.selectedModelIsAudio
-											? "audio"
-											: undefined
-								}
+								supportedSurfaces={s.supportedSurfaces}
+								hasSelectedModel={!s.isToolKind && Boolean(s.selectedModelId)}
 								hideProtocolControls={s.isToolKind}
 								geminiAction={s.geminiAction}
 								onGeminiActionChange={s.setGeminiAction}
 								openaiLlmOperation={s.openaiLlmOperation}
 								onOpenaiLlmOperationChange={s.requestOpenaiLlmOperationChange}
-								filterKeyEmail={s.filterKeyEmail}
-								onFilterKeyEmailChange={s.setFilterKeyEmail}
-								loadingKeys={s.loadingKeys}
-								keysError={s.keysError}
-								keys={s.keys}
-								keysTotal={s.keysTotal}
-								onRefreshKeys={() => void s.loadKeys()}
-								selectedKeyId={s.selectedKeyId}
-								onSelectedKeyIdChange={s.setSelectedKeyId}
-								revealedSk={s.revealedSk}
-								revealLoading={s.revealLoading}
-								revealError={s.revealError}
-							/>
-							<SimulatorRoutingPanel
-								filterKind={s.filterKind}
-								protocol={s.protocol}
-								onFilterKindChange={s.setFilterKind}
-								kindCounts={s.kindCounts}
-								isToolKind={s.isToolKind}
-								gatewayTools={s.gatewayTools}
-								selectedToolId={s.selectedToolId}
-								onSelectTool={s.selectTool}
-								filterModel={s.filterModel}
-								onFilterModelChange={s.setFilterModel}
-								filteredModels={s.filteredModels}
-								modelsInKindTotal={s.modelsInKind.length}
-								modelIdsWithActiveRouter={s.modelIdsWithActiveRouter}
-								selectedModelId={s.selectedModelId}
-								onSelectModel={s.selectModel}
-								routeGroup={s.routeGroup}
-								onRouteGroupChange={s.setRouteGroup}
-								routeGroupsForModel={s.routeGroupsForModel}
-								selectedModel={s.selectedModel}
-								selectedModelIsImage={s.selectedModelIsImage}
-								selectedModelIsAudio={s.selectedModelIsAudio}
-								realtimeOperation={s.selectedDashScopeRealtimeOperation}
-								realtimeOperationOptions={s.realtimeOperationOptions}
-								onRealtimeOperationChange={s.setDashScopeRealtimeOperation}
-								modelRoutingString={s.modelRoutingString}
-								matchingRoutes={s.matchingRoutes}
+								bodyText={s.bodyText}
+								onBodyTextChange={s.setBodyText}
+								bodyDirty={s.bodyDirty}
+								onApplyTemplate={s.applyCurrentTemplate}
+								infoHint={s.infoHint}
+								bodyError={s.bodyError}
+								displayWire={s.displayWire}
+								wireOpen={s.wireOpen}
+								onWireOpenChange={s.setWireOpen}
+								sending={s.sending}
+								canSend={s.canSend}
+								sendBlockedHint={s.sendBlockedHint}
+								onSend={() => void s.send()}
+								onStop={() => s.stop()}
+								showImageOperation={
+									s.selectedModelIsImage &&
+									!s.selectedModelIsAudio &&
+									s.protocol === "openai"
+								}
+								imageOperation={s.imageOperation}
+								onImageOperationChange={s.setImageOperation}
+								editFiles={s.editFiles}
+								onEditFilesChange={s.setEditFiles}
+								showAudioTranscriptions={
+									s.selectedAudioOperation === "transcriptions" &&
+									(s.protocol === "openai" || s.protocol === "dashscope")
+								}
+								showAudioRealtimeMicrophone={s.selectedCanUseMicrophone}
+								audioInputMode={s.audioInputMode}
+								onAudioInputModeChange={s.setAudioInputMode}
+								showAudioSpeech={
+									s.selectedAudioOperation === "speech" &&
+									(s.protocol === "openai" || s.protocol === "dashscope")
+								}
+								showAudioRealtime={
+									s.protocol === "dashscope" && s.selectedAudioOperation != null
+								}
+								audioFile={s.audioFile}
+								onAudioFileChange={s.setAudioFile}
 							/>
 						</div>
-					</aside>
-
-					<section className="min-w-0 flex-1 bg-slate-100/70 p-4 sm:p-5 space-y-4">
-						<SimulatorRequestPanel
-							bodyText={s.bodyText}
-							onBodyTextChange={s.setBodyText}
-							bodyDirty={s.bodyDirty}
-							onApplyTemplate={s.applyCurrentTemplate}
-							infoHint={s.infoHint}
-							bodyError={s.bodyError}
-							displayWire={s.displayWire}
-							wireOpen={s.wireOpen}
-							onWireOpenChange={s.setWireOpen}
-							sending={s.sending}
-							canSend={s.canSend}
-							sendBlockedHint={s.sendBlockedHint}
-							onSend={() => void s.send()}
-							onStop={() => s.stop()}
-							showImageOperation={
-								s.selectedModelIsImage &&
-								!s.selectedModelIsAudio &&
-								s.protocol === "openai"
-							}
-							imageOperation={s.imageOperation}
-							onImageOperationChange={s.setImageOperation}
-							editFiles={s.editFiles}
-							onEditFilesChange={s.setEditFiles}
-							showAudioTranscriptions={
-								s.selectedAudioOperation === "transcriptions" &&
-									 (s.protocol === "openai" || s.protocol === "dashscope")
-							}
-							showAudioRealtimeMicrophone={s.selectedCanUseMicrophone}
-							audioInputMode={s.audioInputMode}
-							onAudioInputModeChange={s.setAudioInputMode}
-							showAudioSpeech={
-								s.selectedAudioOperation === "speech" &&
-								(s.protocol === "openai" || s.protocol === "dashscope")
-							}
-							showAudioRealtime={s.protocol === "dashscope" && s.selectedAudioOperation != null}
-							audioFile={s.audioFile}
-							onAudioFileChange={s.setAudioFile}
-						/>
-						<SimulatorResponsePanel
-							responseMeta={s.responseMeta}
-							responseText={s.responseText}
-							usageHint={s.usageHint}
-							imagePreviews={s.imagePreviews}
-							audioPreviewUrl={s.audioPreviewUrl}
-							responseTab={s.responseTab}
-							onResponseTabChange={s.setResponseTab}
-							mergedReasoningDisplay={s.mergedReasoningDisplay}
-							mergedBodyDisplay={s.mergedBodyDisplay}
-							streamEndRef={s.streamEndRef}
-							mergedStreamEndRef={s.mergedStreamEndRef}
-							selectedKeyId={s.selectedKeyId}
-							selectedModelId={s.selectedModelId}
-							routeGroup={s.routeGroup}
-							protocol={s.protocol}
-							isToolKind={s.isToolKind}
-							selectedToolId={s.selectedToolId}
-						/>
+						<div className="min-h-0 flex-[2] overflow-y-auto">
+							<SimulatorResponsePanel
+								responseMeta={s.responseMeta}
+								responseText={s.responseText}
+								usageHint={s.usageHint}
+								imagePreviews={s.imagePreviews}
+								audioPreviewUrl={s.audioPreviewUrl}
+								responseTab={s.responseTab}
+								onResponseTabChange={s.setResponseTab}
+								mergedReasoningDisplay={s.mergedReasoningDisplay}
+								mergedBodyDisplay={s.mergedBodyDisplay}
+								streamEndRef={s.streamEndRef}
+								mergedStreamEndRef={s.mergedStreamEndRef}
+								selectedKeyId={s.selectedKeyId}
+								selectedModelId={s.selectedModelId}
+								routeGroup={s.routeGroup}
+								protocol={s.protocol}
+								isToolKind={s.isToolKind}
+								selectedToolId={s.selectedToolId}
+							/>
+						</div>
 					</section>
 				</div>
 			</div>

@@ -90,7 +90,7 @@ flowchart LR
 2. **`.github/workflows/octafuse-docker-images.yml`**（**`push` → `tags/v*`**，或由 Release **dispatch**；或 **`workflow_dispatch`**）
 
    - 构建并推送 **GHCR** 三镜像。
-   - 在 **tag 发版**路径下创建/更新 **GitHub Release**：正文由 **`npm run release:notes`**（`scripts/release/render-release-notes.mjs`）生成——**本次更新 / 变更内容 / 升级说明** + 折叠区 **镜像 digest** + 相关链接；优先读取可选覆盖文件 **`docs/releases/X.Y.Z.md`**，否则从 **`CHANGELOG.md`** 对应段落规范化（去掉 `Patch Changes` 与 commit/`Thanks @` 前缀）。
+   - 在 **tag 发版**路径下创建/更新 **GitHub Release**：正文由 **`npm run release:notes`**（`scripts/release/render-release-notes.mjs`）生成——**本次更新 / 变更内容 / 升级说明** + **容器镜像**（三个官方 tag，不折叠）+ 相关链接；优先读取可选覆盖文件 **`docs/releases/X.Y.Z.md`**，否则从 **`CHANGELOG.md`** 对应段落规范化（去掉 `Patch Changes` 与 commit/`Thanks @` 前缀）。
 
 3. **`.github/workflows/verify-package-versions.yml`**
    - `develop` / `release/**` / `hotfix/**` / `main` 相关 PR，以及 `main` / `develop` / `v*` 推送上校验：根与 workspace **`version` 一致**；在 **tag** 上校验 **`v` + version** 与标签名一致。
@@ -102,7 +102,7 @@ flowchart LR
 | 1. 功能与贡献 PR 合并到 **`develop`**                                                     | 贡献者 / 维护者 | 下一版本持续集成；不会触发 Release workflow                                                                                                                        |
 | 2. 发布前补齐并审核 `.changeset/*.md`，从 **`develop`**（或 `release/X.Y.Z`）PR 到 `main` | 维护者          | 合并后 **Release** 跑完 → 出现 **Version Packages** PR（`changeset-release/main` → `main`）                                                                        |
 | 3. 审核并 **合并 Version PR** 到 **`main`**                                               | 维护者          | **Release** 再跑 → **`npm run ci:changeset-tag-push`** 推 **`vX.Y.Z`** → **Docker** 跑（PAT 直推 tag）或由 **Release** dispatch **Docker**（仅 `GITHUB_TOKEN` 时） |
-| 4. 等 **Octafuse Docker Images** 绿                                                       | CI              | **GHCR** 有对应 tag 的镜像；**GitHub Release** 带 digest                                                                                                           |
+| 4. 等 **Octafuse Docker Images** 绿                                                       | CI              | **GHCR** 有对应 tag 的镜像；**GitHub Release** 列出三个官方镜像 tag                                                                                                 |
 | 5. 部署并回同步                                                                           | 维护者 / 运维   | 用镜像 tag 或 digest 更新环境；将 `main` 同步回 `develop`，删除已完成的 `release/X.Y.Z`                                                                            |
 
 **仅把代码推上 `main`、且没有待处理 changeset、也没有合并 Version PR** 时：不会打新 tag，**Docker 不会为「发版」自动跑**（这是预期），但这些代码仍会进入下一次从 `main` 产生的正式版本。因此只允许明确准备随下一次稳定版发布的代码进入 `main`。日常开发和临时部署使用 `develop` + **`workflow_dispatch`**。
@@ -177,7 +177,7 @@ npm run release:notes -- --version X.Y.Z
 
 ### 3. 打标签与镜像
 
-合并 Version PR 再次触发 **Release** → **`npm run ci:changeset-tag-push`**（`changeset tag` + 推送 **`vX.Y.Z`**）→ **Docker**（见上文「Docker 触发」：PAT 走 tag 事件；仅 `GITHUB_TOKEN` 时由 Release **dispatch**）→ **GitHub Release** 就绪（正文含 **`CHANGELOG.md` 对应版本段** + 镜像 **digest**）。
+合并 Version PR 再次触发 **Release** → **`npm run ci:changeset-tag-push`**（`changeset tag` + 推送 **`vX.Y.Z`**）→ **Docker**（见上文「Docker 触发」：PAT 走 tag 事件；仅 `GITHUB_TOKEN` 时由 Release **dispatch**）→ **GitHub Release** 就绪（正文含 **`CHANGELOG.md` 对应版本段** + 三个官方镜像 tag）。
 
 ### 4. 当前稳定版热修（patch）
 
@@ -192,7 +192,7 @@ npm run release:notes -- --version X.Y.Z
 
 | 场景                | 建议                                                                                                                                 |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **生产回滚**        | 使用上一稳定 **`vX.Y.Z`** 的镜像 **digest**（见对应 GitHub Release 正文）拉取部署；或临时使用同一 tag（若确认该 tag 未被覆盖重建）。 |
+| **生产回滚**        | 使用上一稳定 **`vX.Y.Z`** 镜像 tag 拉取部署；需要可复现固定时，从 GHCR 包页核对 **digest** 后再按 digest 拉取。 |
 | **标签错误**        | **勿**在已推送公共镜像后改写远程 tag；应发 **新版本** 或 **新 tag** 并更新部署文档。                                                 |
 | **仅验证镜像**      | 仍可使用 **Actions → Octafuse Docker Images → Run workflow**（`workflow_dispatch`），不依赖发版标签；**不会**自动写 GitHub Release。 |
 | **CI 版本校验失败** | 检查四个 `package.json` 的 `version` 是否一致；标签推送时检查 **`v`** + `version` 是否与 **`github.ref_name`** 一致。                |

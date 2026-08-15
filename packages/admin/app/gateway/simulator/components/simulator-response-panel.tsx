@@ -69,7 +69,7 @@ export function SimulatorResponsePanel({
 		: t("openRequestLogs");
 
 	return (
-		<section className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm space-y-3 flex flex-col min-h-0">
+		<section className="flex h-full min-h-0 flex-col space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
 			<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
 				<h2 className="text-sm font-semibold text-gray-900 shrink-0">
 					{t("response")}
@@ -194,7 +194,9 @@ export function SimulatorResponsePanel({
 					)}
 				</>
 			) : (
-				<p className="text-sm text-gray-500">{t("emptyResponseHint")}</p>
+				<p className="flex flex-1 items-center text-sm text-gray-500">
+					{t("emptyResponseHint")}
+				</p>
 			)}
 		</section>
 	);
