@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { prepareGeminiUpstreamFetch, resolveGeminiUpstreamAuth } from './gemini-upstream-url';
 import {
 	listConfiguredCapabilities,
 	parseProviderEndpoints,
 	providerSupportsUpstreamProtocol,
 	resolveUpstreamEndpoint,
+	serializeProviderEndpoints,
 	validateAndNormalizeProviderEndpoints,
 } from './provider-endpoints';
 
@@ -26,6 +28,39 @@ describe('parseProviderEndpoints', () => {
 	it('returns empty map when endpoints is empty object', () => {
 		const map = parseProviderEndpoints({ endpoints: '{}' });
 		assert.deepEqual(map, {});
+	});
+
+	it('uses configured gemini.auth and defaults to query-key', () => {
+		assert.equal(resolveGeminiUpstreamAuth('query-key'), 'query-key');
+		assert.equal(resolveGeminiUpstreamAuth(undefined), 'query-key');
+		const { url, headers } = prepareGeminiUpstreamFetch({
+			baseUrl: 'https://zenmux.ai/api/vertex-ai/v1/publishers/google/models',
+			modelName: 'gemini-2.5-flash',
+			action: 'generateContent',
+			apiKey: 'zm-key',
+			auth: 'bearer',
+		});
+		assert.equal(url.searchParams.has('key'), false);
+		assert.equal(headers.Authorization, 'Bearer zm-key');
+	});
+
+	it('round-trips gemini.auth and ignores auth on other protocols', () => {
+		const map = parseProviderEndpoints({
+			endpoints: {
+				openai: { base: 'https://api.openai.com/v1', auth: 'bearer' },
+				gemini: {
+					base: 'https://zenmux.ai/api/vertex-ai/v1/publishers/google/models',
+					auth: 'bearer',
+				},
+			},
+		});
+		assert.equal(map.openai?.auth, undefined);
+		assert.equal(map.gemini?.auth, 'bearer');
+		const serialized = serializeProviderEndpoints(map);
+		assert.ok(serialized);
+		const again = parseProviderEndpoints({ endpoints: serialized });
+		assert.equal(again.gemini?.auth, 'bearer');
+		assert.equal(again.openai?.auth, undefined);
 	});
 });
 
@@ -199,6 +234,33 @@ describe('validateAndNormalizeProviderEndpoints', () => {
 					},
 				}),
 			/must include \{action\}/
+		);
+	});
+
+	it('accepts gemini.auth bearer and rejects it on other protocols', () => {
+		const map = validateAndNormalizeProviderEndpoints({
+			gemini: {
+				base: 'https://zenmux.ai/api/vertex-ai/v1/publishers/google/models',
+				auth: 'bearer',
+			},
+		});
+		assert.equal(map.gemini?.auth, 'bearer');
+		assert.throws(
+			() =>
+				validateAndNormalizeProviderEndpoints({
+					openai: { base: 'https://api.openai.com/v1', auth: 'bearer' },
+				}),
+			/only supported on gemini/
+		);
+		assert.throws(
+			() =>
+				validateAndNormalizeProviderEndpoints({
+					gemini: {
+						base: 'https://generativelanguage.googleapis.com/v1beta/models',
+						auth: 'header',
+					},
+				}),
+			/must be "query-key" or "bearer"/
 		);
 	});
 

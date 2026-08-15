@@ -179,7 +179,7 @@ export function buildPlaygroundGeminiUpstreamRequest(
 		modelName: route.providerModelName,
 		action,
 		apiKey: route.providerApiKey,
-		authBaseHint: route.providerEndpoints.gemini?.base,
+		auth: route.providerEndpoints.gemini?.auth,
 	});
 	return { url: url.toString(), headers };
 }

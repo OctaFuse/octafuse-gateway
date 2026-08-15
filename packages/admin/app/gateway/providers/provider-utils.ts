@@ -63,6 +63,7 @@ function protocolFormFromConfig(cfg: ProtocolEndpointsConfig | undefined): Proto
 	const form: ProtocolEndpointForm = { ...EMPTY_PROTOCOL_FORM, legacyPerAction: null };
 	if (!cfg) return form;
 	form.base = cfg.base ?? "";
+	form.auth = cfg.auth ?? 'auto';
 	const eps = cfg.endpoints ?? {};
 	form.chat = eps.chat ?? '';
 	form.responses = eps.responses ?? '';
@@ -189,6 +190,9 @@ function configFromProtocolForm(
 	const cfg: ProtocolEndpointsConfig = {};
 	if (base) cfg.base = base;
 	if (Object.keys(endpoints).length > 0) cfg.endpoints = endpoints;
+	if (protocol === 'gemini' && (form.auth === 'query-key' || form.auth === 'bearer')) {
+		cfg.auth = form.auth;
+	}
 	return cfg;
 }
 

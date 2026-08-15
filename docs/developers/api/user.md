@@ -355,11 +355,13 @@ Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0
 |----------|------------------------------|-------------------|
 | Developer API | `https://generativelanguage.googleapis.com/v1beta/models` | `{base}/{upstreamModel}:{action}?key=` |
 | Vertex AI Express（API Key） | `https://aiplatform.googleapis.com/v1/publishers/google/models` | `{base}/{upstreamModel}:{action}?key=` |
-| 自定义反代 / 其他前缀 | 按上游文档写到 `{model}` 前 | `{base}/{upstreamModel}:{action}?key=` |
+| Vertex 兼容聚合（Bearer） | 写到 `{model}` 前，并设 `auth: "bearer"` | `{base}/{upstreamModel}:{action}` + `Authorization: Bearer` |
+| 自定义反代 / 其他前缀 | 按上游文档写到 `{model}` 前 | 由 `auth` 决定，省略则为 `?key=` |
 
 - **`upstreamModel`** 来自路由的 `provider_model_name`（裸模型名，如 `gemini-2.5-flash`），与客户端路径中的 `modelSegment`（可含 `:route_group`）独立。
 - 仅配置裸 host（如 `https://generativelanguage.googleapis.com`）会在出站时报错。
-- Vertex Express 与 Developer API 的请求体、响应体、SSE、`usageMetadata` 一致；出站鉴权仍按 base / URL 前缀选择 `?key=` 或 Bearer（见 `resolveGeminiUpstreamAuth`）。
+- Vertex Express 与 Developer API 的请求体、响应体、SSE、`usageMetadata` 一致。
+- 出站鉴权只认 `endpoints.gemini.auth`：`query-key`（`?key=`）或 `bearer`（`Authorization`）；省略则为 `query-key`。任意 Vertex 兼容上游在 Provider 上选 Bearer 即可，不必改核心代码。
 
 权威配置为 **`providers.endpoints`**（迁移 **`0012`** 已删除 `base_url_*` 三列）。Gemini 须在 Admin 或 API 中把 `endpoints.gemini.base` 配到 `{model}` 之前的完整路径前缀（见上表）。
 

@@ -9,14 +9,11 @@ export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
 /** Gemini 上游 provider key 传递方式：`query-key` 为 Google 官方 `?key=`；`bearer` 为 `Authorization: Bearer`。 */
 export type GeminiUpstreamAuthScheme = 'query-key' | 'bearer';
 
-/**
- * 使用 Bearer 鉴权（非 Google 官方 `?key=`）的 Gemini `endpoints.gemini.base` 前缀。
- * 匹配前会规范化 URL（trim、host 小写、路径折叠重复 `/`、去末尾 `/`）。
- */
-export const GEMINI_BEARER_AUTH_BASE_URLS: readonly string[] = [
-	'https://api.qnaigc.com/bypass/vertex/v1/models',
-	'https://api.modelink.ai/bypass/vertex/v1/models',
-];
+export const GEMINI_UPSTREAM_AUTH_SCHEMES = ['query-key', 'bearer'] as const satisfies readonly GeminiUpstreamAuthScheme[];
+
+export function isGeminiUpstreamAuthScheme(value: unknown): value is GeminiUpstreamAuthScheme {
+	return value === 'query-key' || value === 'bearer';
+}
 
 function trimTrailingSlash(baseUrl: string): string {
 	return baseUrl.replace(/\/$/, '');
@@ -71,7 +68,7 @@ export function applyGeminiStreamQueryParams(url: URL, action: GeminiContentActi
 	}
 }
 
-/** 供 Bearer allowlist 匹配：host 小写、路径折叠 `//`、去末尾 `/`。 */
+/** 规范化 Gemini base：host 小写、路径折叠 `//`、去末尾 `/`。 */
 export function normalizeGeminiUpstreamBaseForAuthMatch(baseUrl: string): string {
 	const trimmed = baseUrl.trim();
 	try {
@@ -84,23 +81,11 @@ export function normalizeGeminiUpstreamBaseForAuthMatch(baseUrl: string): string
 	}
 }
 
-/**
- * 按 Gemini base / 已解析 URL 解析上游 provider key 传递方式；未命中 allowlist 时默认 `query-key`。
- * 完整 action URL 时按 allowlist 前缀匹配（兼容 `endpoints` 模板覆盖）。
- */
-export function resolveGeminiUpstreamAuth(baseOrResolvedUrl: string): GeminiUpstreamAuthScheme {
-	const normalized = normalizeGeminiUpstreamBaseForAuthMatch(baseOrResolvedUrl);
-	for (const bearer of GEMINI_BEARER_AUTH_BASE_URLS) {
-		const prefix = normalizeGeminiUpstreamBaseForAuthMatch(bearer);
-		if (
-			normalized === prefix ||
-			normalized.startsWith(`${prefix}/`) ||
-			normalized.startsWith(`${prefix}:`)
-		) {
-			return 'bearer';
-		}
-	}
-	return 'query-key';
+/** 解析 Gemini 上游鉴权：只认 `endpoints.gemini.auth`，省略则为 `query-key`。 */
+export function resolveGeminiUpstreamAuth(
+	configuredAuth?: GeminiUpstreamAuthScheme | null
+): GeminiUpstreamAuthScheme {
+	return isGeminiUpstreamAuthScheme(configuredAuth) ? configuredAuth : 'query-key';
 }
 
 export type PrepareGeminiUpstreamFetchInput = {
@@ -119,8 +104,8 @@ export type PrepareGeminiUpstreamFetchInput = {
 	apiKey: string;
 	/** 原始 query 字符串（可含或不含 `?`），会与上游所需参数合并 */
 	search?: string;
-	/** 鉴权匹配用的 base 提示（通常为 `endpoints.gemini.base`）；缺省用 `baseUrl` 或 resolved URL */
-	authBaseHint?: string;
+	/** `endpoints.gemini.auth`；省略则为 `query-key` */
+	auth?: GeminiUpstreamAuthScheme | null;
 };
 
 export type PrepareGeminiUpstreamFetchResult = {
@@ -159,11 +144,7 @@ export function prepareGeminiUpstreamFetch(
 	}
 
 	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-	const authSubject =
-		input.authBaseHint?.trim() ||
-		input.baseUrl?.trim() ||
-		normalizeGeminiUpstreamBaseForAuthMatch(url.toString());
-	const authScheme = resolveGeminiUpstreamAuth(authSubject);
+	const authScheme = resolveGeminiUpstreamAuth(input.auth);
 	if (authScheme === 'bearer') {
 		headers.Authorization = `Bearer ${input.apiKey}`;
 	} else if (!url.searchParams.get('key')) {
