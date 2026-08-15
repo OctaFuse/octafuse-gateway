@@ -7,7 +7,7 @@
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare-quickstart.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
 
-**Octafuse Gateway** is a self-hostable, open-source AI gateway built for agents. It brings together models from multiple providers, image generation and editing, speech-to-text transcription, Agent Tools, and self-hosted or privately deployed AI services behind a single endpoint. Centralized routing, key management, budgets, usage tracking, and auditing make these resources easier to operate, orchestrate, and govern. More than a model proxy, Octafuse provides a centralized, extensible foundation for discovering, invoking, and managing AI capabilities.
+**Octafuse Gateway** is a self-hostable, open-source AI gateway built for agents. It brings together multi-provider models, OpenAI Responses, image generation and editing, ASR / TTS / realtime speech, Agent Tools, and self-hosted or privately deployed AI services behind a single endpoint. Centralized routing, key management, budgets, usage tracking, and auditing make these resources easier to operate, orchestrate, and govern. More than a model proxy, Octafuse provides a centralized, extensible foundation for discovering, invoking, and managing AI capabilities.
 
 **Languages:** [中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [한국어](./README.ko.md) · **Website:** [octafuse.dev](https://octafuse.dev/en/)
 
@@ -22,11 +22,13 @@ Its core capabilities include:
 3. Multi-protocol access:
     - OpenAI endpoints:
       - Chat Completions: `POST /v1/chat/completions`
+      - Responses: `POST /v1/responses`
       - Images: `POST /v1/images/generations`, `POST /v1/images/edits`
-      - Audio Transcriptions: `POST /v1/audio/transcriptions`
+      - Audio: `POST /v1/audio/transcriptions`, `POST /v1/audio/speech`
       - Models: `GET /v1/models`
     - Anthropic endpoint: `POST /v1/messages`
     - Google Gemini endpoint: `POST /v1beta/models/{model}:generateContent` (including `streamGenerateContent`)
+    - DashScope realtime audio: `GET /v1/dashscope/realtime`
 4. Agent tool access: Use `/v1/tools/*` to expose tools to agents with centralized logging, billing, and cost control, so models and tools share one Gateway:
     - Web search (`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
     - Web fetch (`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader
@@ -157,7 +159,7 @@ npx wrangler login
 npm run bootstrap:cloudflare
 ```
 
-See [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md). Change the default Admin password and rotate `MASTER_KEY` before production.
+See [Cloudflare quickstart](./docs/operators/deployment/cloudflare-quickstart.md). Before production, change the default Admin password and create a named least-privilege Admin API Key for each external integration.
 
 For Docker self-hosting and Postgres / MySQL options, see the [deployment documentation index](./docs/operators/deployment/README.md).
 

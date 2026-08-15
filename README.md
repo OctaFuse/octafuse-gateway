@@ -7,7 +7,7 @@
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1-F38020?logo=cloudflare&logoColor=white)](./docs/operators/deployment/cloudflare-quickstart.md)
 [![Docker](https://img.shields.io/badge/Docker-optional-2496ED?logo=docker&logoColor=white)](./docs/operators/deployment/docker.md)
 
-**Octafuse Gateway** 是面向 Agent 的可自托管开源 AI 网关。它汇聚多供应商模型、图像生成与编辑、语音转写、智能体工具（Agent Tools），以及自建或私有部署的 AI 服务，将分散的 AI 资源组织为统一入口，并通过路由、密钥、预算、用量和审计，实现资源的集中管理、调度与控制。它不只是中转模型请求，而是为 Agent 集中提供可发现、可调用、可管理且可持续扩展的资源与能力支持。
+**Octafuse Gateway** 是面向 Agent 的可自托管开源 AI 网关。它将不同供应商的文本、图像、语音与工具能力汇聚到统一入口，支持 Chat Completions、OpenAI Responses API、图像生成与编辑、ASR、TTS、实时语音和智能体工具（Agent Tools），也可以接入自建或私有部署的 AI 服务。通过统一的路由、密钥、预算、计费和审计，Octafuse 帮助个人与团队集中管理和调度分散的 AI 资源。它不只是转发模型请求，更是面向 Agent 的可发现、可调用、可治理、可持续扩展的 AI 能力底座。
 
 **语言：** [中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [한국어](./README.ko.md) · **官网：** [octafuse.dev](https://octafuse.dev/)
 
@@ -22,11 +22,13 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 3. 多协议接入：AI 模型全协议接入，目前支持:
     - OpenAI 端点：
       - Chat Completions：`POST /v1/chat/completions`
+      - Responses：`POST /v1/responses`
       - Images：`POST /v1/images/generations`、`POST /v1/images/edits`
-      - Audio Transcriptions：`POST /v1/audio/transcriptions`
+      - Audio：`POST /v1/audio/transcriptions`、`POST /v1/audio/speech`
       - Models：`GET /v1/models`
     - Anthropic 端点：`POST /v1/messages`
     - Google Gemini 端点：`POST /v1beta/models/{model}:generateContent`（含 `streamGenerateContent`）
+    - DashScope 实时音频：`GET /v1/dashscope/realtime`
 4. 智能体工具接入：通过 `/v1/tools/*` 统一接入各种供 Agent 使用的工具，并提供日志、计费、成本管控，以方便 Agent 同时从 Gateway 接入模型和工具。当前预置工具如下：
     - 联网搜索（`POST /v1/tools/web-search`）：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA
     - 网页抓取（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
@@ -78,14 +80,16 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 - **⚪ 无**：官方公开文档未将其列为同类内建能力
 
 <details>
-<summary><strong>展开完整能力对比（22 项）</strong></summary>
+<summary><strong>展开完整能力对比（24 项）</strong></summary>
 
 ### 能力接入与 Agent
 
 | 细分能力 | Octafuse | New API | LiteLLM | Sub2API | Bifrost |
 |---|:---:|:---:|:---:|:---:|:---:|
 | 供应商 / 模型预设与一键导入 | ✅ | 🟡 | 🟡 | 🟡 | 🟡 |
-| 原生协议与多模态覆盖 | 🟡¹ | ✅ | ✅ | ✅ | ✅ |
+| OpenAI、Anthropic、Gemini 主流协议接入 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| DashScope 原生实时音频与跨协议路由 | ✅¹ | ⚪ | ⚪ | ⚪ | ⚪ |
+| 文本、图像、语音与视频等多模态覆盖 | 🟡² | ✅ | ✅ | 🟡 | ✅ |
 | 内置联网搜索、抓取与深度搜索 | ✅ | ⚪ | 🟠 | 🟠 | 🟠 |
 | 工具供应商配置、调用日志与计费 | ✅ | ⚪ | 🟡 | 🟠 | 🟠 |
 
@@ -122,7 +126,9 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 | Docker 自托管部署 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cloudflare Workers 边缘部署 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
-<sup>1</sup> Octafuse 的原生协议与多模态覆盖仍在持续完善。
+<sup>1</sup> Octafuse 支持 DashScope 原生实时 ASR / TTS，并可将 OpenAI 兼容的 ASR / TTS 请求跨协议路由至 DashScope。
+<br />
+<sup>2</sup> Octafuse 当前已覆盖文本、图像、ASR、TTS 与实时语音；视频等能力尚未纳入统一请求入口。
 
 </details>
 
