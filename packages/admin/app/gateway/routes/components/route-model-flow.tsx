@@ -165,8 +165,8 @@ function RouteTarget({
 	);
 	const scheduleTooltip = splitScheduleSides
 		? t('badgeScheduleBothTooltip', {
-				charged: chargedScheduleHint,
-				metered: meteredScheduleHint,
+				charged: chargedScheduleHint ?? '',
+				metered: meteredScheduleHint ?? '',
 			})
 		: t('badgeScheduleTooltip', {
 				windows: chargedScheduleHint || meteredScheduleHint || '',
