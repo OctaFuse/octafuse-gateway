@@ -23,6 +23,7 @@ import {
 	type PlaygroundProtocol,
 } from '@/lib/playground/merge-assistant-text';
 import { previewPlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
+import { observePlaygroundResponse } from '@/lib/playground/response-observations';
 import { normalizeProtocol, parseLastStreamUsage, tryParseUsageSummary } from '@/lib/playground/usage-parsing';
 import {
 	dashScopeRealtimeAudioContentType,
@@ -38,9 +39,12 @@ import {
 	BODY_TEMPLATES,
 	decodeWireRequestBodyHeader,
 	isPlaygroundBodyDirty,
+	playgroundLlmSampleBody,
+	resolvePlaygroundLlmFamily,
 	resolveRouteModelKind,
 	routeMatchesSearch,
 	templateForRoute,
+	type PlaygroundLlmSampleId,
 } from './playground-utils';
 import type { FilterOption, GeminiAction, PlaygroundMode, ResponseMeta, ResponseTab, RouteListRow } from './types';
 
@@ -106,7 +110,6 @@ export function usePlaygroundPageState() {
 	const currentTemplate = selected
 		? templateForRoute(selected, modelsById.get(selected.model_id), imageOperation)
 		: BODY_TEMPLATES.openai;
-	const bodyDirty = isPlaygroundBodyDirty(bodyText, currentTemplate);
 	bodyDirtyRef.current = isPlaygroundBodyDirty(bodyText, templateBody);
 
 	const selectedIsImage = useMemo(() => {
@@ -168,6 +171,24 @@ export function usePlaygroundPageState() {
 		}
 		return mergeAssistantTextParts(responseText, responseProtocol, mode);
 	}, [responseText, responseProtocol, responseMeta?.contentType]);
+
+	const observationTags = useMemo(() => {
+		if (selectedIsImage || selectedIsAudio) return [];
+		return observePlaygroundResponse({
+			raw: responseText,
+			protocol: responseProtocol,
+			contentType: responseMeta?.contentType,
+			requestBodyText: lastSentWireBody ?? bodyText,
+		});
+	}, [
+		selectedIsImage,
+		selectedIsAudio,
+		responseText,
+		responseProtocol,
+		responseMeta?.contentType,
+		lastSentWireBody,
+		bodyText,
+	]);
 
 	const { mergedReasoningDisplay, mergedBodyDisplay } = useMemo(() => {
 		const hasRaw = responseText.trim().length > 0;
@@ -288,6 +309,22 @@ export function usePlaygroundPageState() {
 		setBodyError(null);
 		setBodyDirtyHint(false);
 	}, [selected, modelsById, imageOperation]);
+
+	const applyLlmSample = useCallback(
+		(sampleId: PlaygroundLlmSampleId) => {
+			const family = resolvePlaygroundLlmFamily(selected);
+			if (!family) return;
+			const next = playgroundLlmSampleBody(family, sampleId);
+			setBodyTextState(next);
+			setTemplateBody(next);
+			setBodyError(null);
+			setBodyDirtyHint(false);
+			if (family === 'gemini' && sampleId !== 'connectivity') {
+				setGeminiAction('streamGenerateContent');
+			}
+		},
+		[selected, setGeminiAction],
+	);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -737,9 +774,8 @@ export function usePlaygroundPageState() {
 		selected,
 		bodyText,
 		setBodyText,
-		bodyDirty,
 		bodyDirtyHint,
-		applyCurrentTemplate,
+		applyLlmSample,
 		bodyError,
 		geminiAction,
 		setGeminiAction,
@@ -777,6 +813,7 @@ export function usePlaygroundPageState() {
 		selectedCanUseMicrophone,
 		selectedNeedsAudioFile,
 		selectedDashScopeRealtimeOperation,
+		observationTags,
 		mergedReasoningDisplay,
 		mergedBodyDisplay,
 		streamEndRef,

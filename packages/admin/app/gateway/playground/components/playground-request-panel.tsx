@@ -10,15 +10,22 @@ import {
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { normalizeProtocol } from '@/lib/playground/usage-parsing';
-import { codeBlockClass, inputClass, labelClass } from '../playground-utils';
+import {
+	codeBlockClass,
+	inputClass,
+	labelClass,
+	matchPlaygroundLlmSample,
+	playgroundLlmFamilyForRoute,
+	PLAYGROUND_LLM_SAMPLE_IDS,
+	type PlaygroundLlmSampleId,
+} from '../playground-utils';
 import type { GeminiAction, RouteListRow } from '../types';
 
 type Props = {
 	bodyText: string;
 	onBodyTextChange: (v: string) => void;
-	bodyDirty: boolean;
 	bodyDirtyHint: boolean;
-	onApplyTemplate: () => void;
+	onApplyLlmSample: (sampleId: PlaygroundLlmSampleId) => void;
 	bodyError: string | null;
 	sending: boolean;
 	canSend: boolean;
@@ -54,9 +61,8 @@ type Props = {
 export function PlaygroundRequestPanel({
 	bodyText,
 	onBodyTextChange,
-	bodyDirty,
 	bodyDirtyHint,
-	onApplyTemplate,
+	onApplyLlmSample,
 	bodyError,
 	sending,
 	canSend,
@@ -92,20 +98,48 @@ export function PlaygroundRequestPanel({
 	const tCommon = useTranslations('common');
 	const showGemini =
 		normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' && !selectedIsImage && !selectedIsAudio;
+	const llmFamily = playgroundLlmFamilyForRoute(selected, {
+		isImage: selectedIsImage,
+		isAudio: selectedIsAudio,
+	});
+	const llmSample = llmFamily ? matchPlaygroundLlmSample(llmFamily, bodyText) : null;
+	const sampleLabel = (id: PlaygroundLlmSampleId) =>
+		id === 'connectivity' ? t('templateConnectivity') : id === 'tools' ? t('templateToolStream') : t('templateReasoning');
+	const llmSampleSwitcher = llmFamily ? (
+		<div
+			className="inline-flex rounded-md border border-slate-300 bg-slate-100 p-0.5"
+			role="group"
+			aria-label={t('templateSamples')}
+		>
+			{PLAYGROUND_LLM_SAMPLE_IDS.map((id) => {
+				const active = llmSample === id;
+				const label = sampleLabel(id);
+				return (
+					<button
+						key={id}
+						type="button"
+						onClick={() => onApplyLlmSample(id)}
+						disabled={sending}
+						title={label}
+						aria-pressed={active}
+						className={
+							active
+								? 'rounded px-2.5 py-1 text-xs font-semibold bg-slate-800 text-white disabled:cursor-not-allowed disabled:opacity-40'
+								: 'rounded px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-white hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40'
+						}
+					>
+						{label}
+					</button>
+				);
+			})}
+		</div>
+	) : null;
 
 	return (
-		<section className="flex min-h-0 flex-col space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
+		<section className="flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<h2 className="text-sm font-semibold text-gray-900">{t('requestBody')}</h2>
 				<div className="flex flex-wrap items-center gap-2">
-					<button
-						type="button"
-						onClick={onApplyTemplate}
-						disabled={!bodyDirty || sending}
-						className="rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-					>
-						{t('applyTemplate')}
-					</button>
 					{sending ? (
 						<button
 							type="button"
@@ -130,7 +164,11 @@ export function PlaygroundRequestPanel({
 				</div>
 			</div>
 
-			{bodyDirtyHint ? <p className="text-xs text-amber-800">{t('bodyDirtyHint')}</p> : null}
+			{bodyDirtyHint ? (
+				<p className="text-xs text-amber-800">
+					{t(llmFamily ? 'bodyDirtyHintLlm' : 'bodyDirtyHint')}
+				</p>
+			) : null}
 			{imageSendBlocked ? (
 				<div className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-sm text-amber-900">
 					{t('imageOpenaiOnly')}
@@ -336,7 +374,10 @@ export function PlaygroundRequestPanel({
 			) : null}
 
 			<div className="flex min-h-0 flex-1 flex-col">
-				<label className={labelClass}>JSON</label>
+				<div className="mb-1 flex items-center justify-between gap-2">
+					<label className="text-xs font-medium uppercase tracking-wider text-gray-500">JSON</label>
+					{llmSampleSwitcher}
+				</div>
 				<textarea
 					value={bodyText}
 					onChange={(e) => onBodyTextChange(e.target.value)}

@@ -49,10 +49,10 @@ flowchart LR
   error --> no
 ```
 
-- `success`：流正常结束。  
-- `cancelled`：客户端断开，drain 后 resolve。  
-- `incomplete`：异常或安全超时，usage 不全。  
-- `error`：上游非 2xx；**不**按该次结果扣 `budget_spent`。  
+- `success`：流正常结束。
+- `cancelled`：客户端断开，drain 后 resolve。
+- `incomplete`：异常或安全超时，usage 不全。
+- `error`：上游非 2xx；**不**按该次结果扣 `budget_spent`。
 - 扣费：`status !== 'error'` 且 `charged_cost > 0`。金额公式：目录 `models.pricing_profile` 按 `input_tokens` 选档后，`charged_cost` = 目录价 × `charged_factor` × `schedule.charged`（缺省倍率均为 1）；`metered_cost` 同理用 `metered_factor` / `schedule.metered`；`standard_cost` 仅为目录价。每日时段在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率；该时刻写入 `pricing_audit.schedule.evaluated_at_utc`。嵌套 `price_override.metered` / `charged` tiers **忽略**。详见 `packages/proxy/src/services/usage-tracker.ts` 与 `packages/core/src/db/pricing-schedule.ts`。
 
 ## 常量
@@ -86,7 +86,7 @@ flowchart LR
 
 ## 限制与排查日志
 
-- 上游在 drain 窗口内仍可能不发含 usage 的 chunk → 取消后 token 仍可能为 0。  
+- 上游在 drain 窗口内仍可能不发含 usage 的 chunk → 取消后 token 仍可能为 0。
 - 部分请求仅出现 “Network connection lost” 而无 signal → 依赖写失败或安全超时。
 
 日志关键词：`client disconnected, draining upstream`、`drain timeout`、`recordUsage`、`status=cancelled`。
