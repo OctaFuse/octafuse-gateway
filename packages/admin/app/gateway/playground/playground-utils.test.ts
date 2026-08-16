@@ -113,9 +113,12 @@ describe('playground-utils', () => {
 
 		const gemini = JSON.parse(LLM_SAMPLE_BODIES.gemini.tools) as {
 			tools?: Array<{ functionDeclarations?: Array<{ name?: string; parameters?: { additionalProperties?: unknown } }> }>;
+			toolConfig?: { functionCallingConfig?: { mode?: string; streamFunctionCallArguments?: boolean } };
 		};
 		assert.equal(gemini.tools?.[0]?.functionDeclarations?.[0]?.name, 'write_note');
 		assert.equal(gemini.tools?.[0]?.functionDeclarations?.[0]?.parameters?.additionalProperties, undefined);
+		assert.equal(gemini.toolConfig?.functionCallingConfig?.mode, 'ANY');
+		assert.equal(gemini.toolConfig?.functionCallingConfig?.streamFunctionCallArguments, true);
 	});
 
 	it('reasoning samples set protocol-native thinking fields', () => {

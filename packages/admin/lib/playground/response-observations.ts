@@ -238,21 +238,46 @@ function scanGemini(obj: Record<string, unknown>, scan: ToolScan, mode: Playgrou
 		}
 		if (p.functionCall && typeof p.functionCall === 'object') {
 			toolInChunk = true;
-			try {
-				toolArgChars += JSON.stringify(p.functionCall).length;
-			} catch {
-				toolArgChars += 1;
+			const argChars = geminiFunctionCallArgChars(p.functionCall as Record<string, unknown>);
+			if (argChars != null) {
+				toolArgChars += argChars;
 			}
 		}
 	}
 	if (bodyInChunk && mode === 'sse') scan.textDeltaCount += 1;
 	if (toolInChunk) {
 		scan.hasTool = true;
-		if (mode === 'sse') {
+		if (mode === 'sse' && toolArgChars > 0) {
 			scan.deltaCount += 1;
 			scan.deltaChars.push(toolArgChars);
 		}
 	}
+}
+
+/** Count streamed `partialArgs` fragments or a complete `args` object. Name-only / empty frames are ignored. */
+function geminiFunctionCallArgChars(functionCall: Record<string, unknown>): number | null {
+	const partialArgs = functionCall.partialArgs;
+	if (Array.isArray(partialArgs) && partialArgs.length > 0) {
+		let chars = 0;
+		let sawValue = false;
+		for (const partial of partialArgs) {
+			if (!partial || typeof partial !== 'object') continue;
+			const value = (partial as { stringValue?: unknown }).stringValue;
+			if (typeof value !== 'string') continue;
+			sawValue = true;
+			chars += value.length;
+		}
+		return sawValue ? chars : 0;
+	}
+	const args = functionCall.args;
+	if (args && typeof args === 'object' && !Array.isArray(args) && Object.keys(args).length > 0) {
+		try {
+			return JSON.stringify(args).length;
+		} catch {
+			return 1;
+		}
+	}
+	return null;
 }
 
 function scanResponsesFinish(obj: Record<string, unknown>, scan: ToolScan): void {

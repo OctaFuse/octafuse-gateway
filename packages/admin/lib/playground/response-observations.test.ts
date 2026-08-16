@@ -222,6 +222,76 @@ describe('observePlaygroundResponse', () => {
 		assert.equal(observed.find((t) => t.id === 'finish')?.finishReason, 'STOP');
 	});
 
+	it('Gemini SSE: partialArgs fragments are incremental, not bulk', () => {
+		const raw = [
+			{
+				candidates: [
+					{
+						content: {
+							parts: [{ functionCall: { name: 'write_note', id: 'call_1', willContinue: true } }],
+						},
+					},
+				],
+			},
+			{
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									functionCall: {
+										partialArgs: [{ jsonPath: '$.content', stringValue: 'Project Apollo', willContinue: true }],
+										willContinue: true,
+									},
+								},
+							],
+						},
+					},
+				],
+			},
+			{
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									functionCall: {
+										partialArgs: [{ jsonPath: '$.content', stringValue: ' represents exploration.', willContinue: true }],
+										willContinue: true,
+									},
+								},
+							],
+						},
+					},
+				],
+			},
+			{
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									functionCall: {
+										partialArgs: [{ jsonPath: '$.title', stringValue: 'Apollo Program Summary' }],
+										willContinue: true,
+									},
+								},
+							],
+						},
+					},
+				],
+			},
+			{
+				candidates: [{ content: { parts: [{ functionCall: {} }] }, finishReason: 'STOP' }],
+			},
+		]
+			.map((event) => `data: ${JSON.stringify(event)}\n\n`)
+			.join('');
+		const observed = tag(raw, 'gemini', 'text/event-stream');
+		assert.ok(observed.map((t) => t.id).includes('tool_incremental'));
+		assert.equal(observed.find((t) => t.id === 'finish')?.finishReason, 'STOP');
+	});
+
 	it('Gemini JSON: MAX_TOKENS warning and tool without stream verdict', () => {
 		const raw = JSON.stringify({
 			candidates: [

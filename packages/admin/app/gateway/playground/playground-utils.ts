@@ -151,6 +151,8 @@ export const LLM_SAMPLE_BODIES: Record<PlaygroundLlmFamily, Record<PlaygroundLlm
 		connectivity: `{
   "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }]
 }`,
+		// Vertex Gemini 3+ streams tool args only when this flag is on.
+		// Gemini Developer API rejects it (400); delete toolConfig to fall back to a one-shot args object.
 		tools: `{
   "contents": [{ "role": "user", "parts": [{ "text": "${WRITE_NOTE_PROMPT}" }] }],
   "tools": [{
@@ -159,7 +161,13 @@ export const LLM_SAMPLE_BODIES: Record<PlaygroundLlmFamily, Record<PlaygroundLlm
       "description": "Write a note with a title and a longer body.",
       "parameters": ${WRITE_NOTE_GEMINI_SCHEMA}
     }]
-  }]
+  }],
+  "toolConfig": {
+    "functionCallingConfig": {
+      "mode": "ANY",
+      "streamFunctionCallArguments": true
+    }
+  }
 }`,
 		reasoning: `{
   "contents": [{ "role": "user", "parts": [{ "text": "${REASONING_PROMPT}" }] }],
