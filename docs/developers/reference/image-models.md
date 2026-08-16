@@ -163,8 +163,8 @@ charged ≈
 | 规则 | 行为 |
 |------|------|
 | 成功出图 | 按响应 `usage` 真实分项扣费 |
-| 客户端取消 / Gateway 超时（已发出） | 按入口 token 预检扣费（防亏损） |
-| 明确上游错误且未发出 / 空结果 | 零费用 |
+| 客户端取消 / Gateway 超时（合成 504，已发出） | **零费用**（与上游 4xx/5xx 对齐；入口预检只拦额度，不落成实扣） |
+| 明确上游错误 / 网络 502 / 空结果 | 零费用 |
 | 无 mode 且无正 `image_*` | **不计费** |
 
 ### per_image 模式
@@ -179,7 +179,7 @@ charged ≈
 | 规则 | 行为 |
 |------|------|
 | 成功出图 | 按有效返回图片数 + 请求参考图数结算；**忽略** usage tokens |
-| 客户端取消 / Gateway 超时 / 结果不明（已发出） | 默认按请求张数扣费（`uncertain_result_policy=requested`）；可配置 `zero` |
+| 客户端取消 / Gateway 超时 / 结果不明（已发出） | **零费用**（与 token / 上游 4xx/5xx 对齐；`uncertain_result_policy` 不再作为 abort 扣费开关） |
 | 明确失败且未发出 / 空结果 | 零费用 |
 | 无显式 `image_billing_mode: per_image` 的 legacy `image` 块 | **不计费**（避免旧数据突然扣款） |
 

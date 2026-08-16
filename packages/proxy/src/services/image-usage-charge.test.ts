@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GatewayRepositories } from '@octafuse/core';
+import { parsePricingProfile, resolveImageBillingMode } from '@octafuse/core';
 import {
 	estimateImageBudgetPrecheck,
 	estimateImageCosts,
+	shouldChargeUncertainImageResult,
 	withClientAbortPrecheckAudit,
 	withUncertainResultAudit,
 } from './image-usage-charge';
@@ -302,5 +304,92 @@ describe('uncertain result precheck audit', () => {
 		const audited = withUncertainResultAudit(precheck, 'gateway_timeout_precheck');
 		assert.equal(audited.chargedCost, precheck.chargedCost);
 		assert.ok(audited.pricingAuditJson.includes('gateway_timeout_precheck'));
+	});
+});
+
+describe('shouldChargeUncertainImageResult', () => {
+	const tokenProfile = parsePricingProfile(TOKEN_PROFILE);
+	const perImageRequested = parsePricingProfile(PER_IMAGE_PROFILE);
+	const perImageZero = parsePricingProfile(
+		JSON.stringify({
+			image_billing_mode: 'per_image',
+			image: { default: 0.04, uncertain_result_policy: 'zero' },
+		})
+	);
+	const tokenPrecheck = { chargedCost: 0.98 };
+
+	it('does not charge token-mode client abort even when precheck > 0', () => {
+		assert.equal(
+			shouldChargeUncertainImageResult({
+				status: 'error',
+				mode: resolveImageBillingMode(tokenProfile),
+				profile: tokenProfile,
+				imageAbortReason: 'client_abort',
+				clientAbortPrecheck: tokenPrecheck,
+			}),
+			false
+		);
+	});
+
+	it('does not charge token-mode gateway timeout even when precheck > 0', () => {
+		assert.equal(
+			shouldChargeUncertainImageResult({
+				status: 'error',
+				mode: resolveImageBillingMode(tokenProfile),
+				profile: tokenProfile,
+				imageAbortReason: 'gateway_timeout',
+				clientAbortPrecheck: tokenPrecheck,
+			}),
+			false
+		);
+	});
+
+	it('does not charge explicit upstream 5xx / network 502 (error without abort)', () => {
+		assert.equal(
+			shouldChargeUncertainImageResult({
+				status: 'error',
+				mode: resolveImageBillingMode(tokenProfile),
+				profile: tokenProfile,
+				imageAbortReason: null,
+				clientAbortPrecheck: null,
+			}),
+			false
+		);
+		assert.equal(
+			shouldChargeUncertainImageResult({
+				status: 'error',
+				mode: resolveImageBillingMode(perImageRequested),
+				profile: perImageRequested,
+				imageAbortReason: null,
+				clientAbortPrecheck: null,
+			}),
+			false
+		);
+	});
+
+	it('does not charge per_image abort even when uncertain_result_policy is requested', () => {
+		assert.equal(
+			shouldChargeUncertainImageResult({
+				status: 'error',
+				mode: resolveImageBillingMode(perImageRequested),
+				profile: perImageRequested,
+				imageAbortReason: 'client_abort',
+				clientAbortPrecheck: { chargedCost: 0.04 },
+			}),
+			false
+		);
+	});
+
+	it('does not charge per_image abort when uncertain_result_policy is zero', () => {
+		assert.equal(
+			shouldChargeUncertainImageResult({
+				status: 'error',
+				mode: resolveImageBillingMode(perImageZero),
+				profile: perImageZero,
+				imageAbortReason: 'gateway_timeout',
+				clientAbortPrecheck: { chargedCost: 0.04 },
+			}),
+			false
+		);
 	});
 });

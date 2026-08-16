@@ -915,10 +915,10 @@ Image 模型支持两种 `pricing_profile.image_billing_mode`（再乘路由 `ch
 | **`token`**（GPT Image / Gemini） | usage 分项 × `$/1M`（对齐 [OpenAI Image Cost](https://platform.openai.com/docs/guides/image-generation)） | `image_tokens` |
 | **`per_image`**（Seedream / GLM / Grok） | `output_unit × 确认输出张数 + input_unit × 参考图数` | `image_per_image` |
 
-1. **预检额度**：token 模式用 quality×size **估算** tokens；per_image 模式用请求张数 × 单价；均取全候选路由最高 `charged_factor`
+1. **预检额度**：token 模式用 quality×size **估算** tokens；per_image 模式用请求张数 × 单价；均取全候选路由最高 `charged_factor`。预检只决定能不能打上游，**不**等于最终扣费
 2. **成功出图**：token 按 **`usage` 真实分项**；per_image 按 **有效返回图片数**（忽略 usage tokens）
-3. **客户端取消 / Gateway 超时**（请求已发出）：默认按入口预检扣费（防亏损）；per_image 可用 `uncertain_result_policy=zero` 覆盖；合成 504 **不** failover
-4. **明确上游错误且未发出 / 空结果**：零费用日志
+3. **客户端取消 / Gateway 超时**（请求已发出，合成 504）：token / per_image **均零费用**。合成 504 **不** failover
+4. **明确上游 4xx/5xx、网络合成 502、空结果**：零费用日志
 5. Request log **不**保存 prompt 原文、参考图或 Base64；列含 `billing_kind`、`input_image_count`、`output_image_count`；`raw_usage` / `pricing_audit` 供审计
 6. 须配置对应模式目录价；无合法 mode/价格则不计费。详见 [image-models.md](../reference/image-models.md)
 
@@ -947,11 +947,12 @@ Image 模型支持两种 `pricing_profile.image_billing_mode`（再乘路由 `ch
 {
   "image_billing_mode": "per_image",
   "image": {
-    "default": 0.22,
-    "uncertain_result_policy": "requested"
+    "default": 0.22
   }
 }
 ```
+
+`uncertain_result_policy` 仍可写入 profile，但取消 / 超时不再按它扣费。
 
 Admin 中为图片模型配置 `output_modalities: ["image"]` 及对应 mode 价目即可。
 
