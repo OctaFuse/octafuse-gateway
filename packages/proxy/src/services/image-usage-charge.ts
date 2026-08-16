@@ -78,7 +78,29 @@ export type ImageCostBreakdown = {
 export type UncertainResultUsageSource =
 	| 'client_abort_precheck'
 	| 'gateway_timeout_precheck'
+	| 'client_abort_no_charge'
+	| 'gateway_timeout_no_charge'
 	| 'uncertain_requested';
+
+export type ImageAbortReason = 'client_abort' | 'gateway_timeout';
+
+export type ShouldChargeUncertainImageResultParams = {
+	status: 'success' | 'error';
+	mode: ReturnType<typeof resolveImageBillingMode>;
+	profile: ParsedPricingProfile | null;
+	imageAbortReason?: ImageAbortReason | null;
+	clientAbortPrecheck?: { chargedCost: number } | null;
+};
+
+/**
+ * 未确认结果（客户端取消 / Gateway 超时）是否向用户扣费。
+ * token / per_image 一律不扣（与上游 4xx/5xx 对齐）；`uncertain_result_policy` 不再作为 abort 扣费开关。
+ */
+export function shouldChargeUncertainImageResult(
+	_params: ShouldChargeUncertainImageResultParams
+): boolean {
+	return false;
+}
 
 function pricingAtUtcFromParams(requestStartedAtMs?: number): Date {
 	const requestedPricingAtUtc =
@@ -416,13 +438,15 @@ export function withClientAbortPrecheckAudit(costs: ImageCostBreakdown): ImageCo
 }
 
 function resolveUncertainUsageSource(
-	imageAbortReason?: 'client_abort' | 'gateway_timeout' | null
+	imageAbortReason?: ImageAbortReason | null,
+	options?: { charged?: boolean }
 ): UncertainResultUsageSource {
+	const charged = options?.charged ?? true;
 	if (imageAbortReason === 'client_abort') {
-		return 'client_abort_precheck';
+		return charged ? 'client_abort_precheck' : 'client_abort_no_charge';
 	}
 	if (imageAbortReason === 'gateway_timeout') {
-		return 'gateway_timeout_precheck';
+		return charged ? 'gateway_timeout_precheck' : 'gateway_timeout_no_charge';
 	}
 	return 'uncertain_requested';
 }
@@ -463,11 +487,10 @@ export type RecordImageUsageParams = {
 	/** 上游解析的 token usage；token 路径扣费权威 */
 	imageUsage?: ImageTokenUsage | null;
 	/**
-	 * 客户端取消 / Gateway 超时：传入入口预算预检 breakdown（token 路径扣费权威）。
-	 * per_image 路径仍按 profile uncertain_result_policy 重算张数。
+	 * 客户端取消 / Gateway 超时：传入入口预算预检 breakdown，仅作审计对照，不再作为扣费权威。
 	 */
 	clientAbortPrecheck?: ImageCostBreakdown | null;
-	imageAbortReason?: 'client_abort' | 'gateway_timeout' | null;
+	imageAbortReason?: ImageAbortReason | null;
 	resultConfirmed?: boolean;
 	upstreamSupplierCostUsdTicks?: number | null;
 	providerKeyId?: string | null;
@@ -480,7 +503,7 @@ export type RecordImageUsageParams = {
 };
 
 /**
- * 写入用量日志并在成功（或防亏损预检扣费）且 charged>0 时扣费。
+ * 写入用量日志并在成功且 charged>0 时扣费。取消 / 超时 / 明确错误一律不扣。
  */
 export async function recordImageUsage(params: RecordImageUsageParams): Promise<{
 	requestLogId: string;
@@ -495,13 +518,13 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 			imageAbortReason === 'gateway_timeout' ||
 			params.clientAbortPrecheck != null);
 
-	const chargeUncertain =
-		isUncertainCharge &&
-		((params.clientAbortPrecheck != null && params.clientAbortPrecheck.chargedCost > 0) ||
-			(mode === 'per_image' &&
-				profile != null &&
-				profileHasImagePerImagePricing(profile) &&
-				(profile.image?.uncertain_result_policy ?? 'requested') !== 'zero'));
+	const chargeUncertain = shouldChargeUncertainImageResult({
+		status: params.status,
+		mode,
+		profile,
+		imageAbortReason,
+		clientAbortPrecheck: params.clientAbortPrecheck,
+	});
 
 	const outputImageCountForLog =
 		params.status === 'success'
@@ -512,53 +535,20 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 
 	let costs: ImageCostBreakdown;
 	if (isUncertainCharge) {
-		if (mode === 'per_image' && profile && profileHasImagePerImagePricing(profile)) {
-			const policy = profile.image?.uncertain_result_policy ?? 'requested';
-			if (policy === 'zero') {
-				const factors = await resolveRouteFactors(
-					params.repos,
-					params.billing.routePriceOverrideJson,
-					params.billing.requestStartedAtMs
-				);
-				costs = zeroImageCostBreakdown(params.billing, factors, 'image_per_image', {
-					uncertain_result_policy: 'zero',
-					result_confirmed: false,
-					usage_source: resolveUncertainUsageSource(imageAbortReason),
-				});
-			} else {
-				const factors = await resolveRouteFactors(
-					params.repos,
-					params.billing.routePriceOverrideJson,
-					params.billing.requestStartedAtMs
-				);
-				costs = estimateImagePerImageCosts(params.billing, profile, factors, {
-					outputCount: params.billing.imageCount,
-					referenceCount: params.billing.referenceCount,
-					auditExtra: {
-						result_confirmed: false,
-						uncertain_result_policy: policy,
-					},
-				});
-				costs = withUncertainResultAudit(
-					costs,
-					resolveUncertainUsageSource(imageAbortReason)
-				);
-			}
-		} else if (params.clientAbortPrecheck && params.clientAbortPrecheck.chargedCost > 0) {
-			costs = withUncertainResultAudit(
-				params.clientAbortPrecheck,
-				resolveUncertainUsageSource(imageAbortReason)
-			);
-		} else {
-			const factors = await resolveRouteFactors(
-				params.repos,
-				params.billing.routePriceOverrideJson,
-				params.billing.requestStartedAtMs
-			);
-			costs = zeroImageCostBreakdown(params.billing, factors, 'image_tokens', {
-				error: 'request_failed',
-			});
-		}
+		const factors = await resolveRouteFactors(
+			params.repos,
+			params.billing.routePriceOverrideJson,
+			params.billing.requestStartedAtMs
+		);
+		const billingKind =
+			mode === 'per_image' && profile && profileHasImagePerImagePricing(profile)
+				? 'image_per_image'
+				: 'image_tokens';
+		costs = zeroImageCostBreakdown(params.billing, factors, billingKind, {
+			error: 'request_failed',
+			result_confirmed: false,
+			usage_source: resolveUncertainUsageSource(imageAbortReason, { charged: false }),
+		});
 	} else if (params.status === 'error') {
 		const factors = await resolveRouteFactors(
 			params.repos,
@@ -650,13 +640,15 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 					input_image_count: logInputImages,
 					output_image_count: logOutputImages,
 				})
-			: chargeUncertain
+			: isUncertainCharge
 				? JSON.stringify({
 						image_count: logOutputImages,
 						billing_kind: costs.billingKind,
 						input_image_count: logInputImages,
 						output_image_count: logOutputImages,
-						usage_source: resolveUncertainUsageSource(imageAbortReason),
+						usage_source: resolveUncertainUsageSource(imageAbortReason, {
+							charged: chargeUncertain,
+						}),
 					})
 				: null);
 
