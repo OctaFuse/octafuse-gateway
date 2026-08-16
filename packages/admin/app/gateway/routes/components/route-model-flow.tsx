@@ -6,6 +6,7 @@ import {
 	ArrowLongRightIcon,
 	ChevronDownIcon,
 	ClipboardDocumentIcon,
+	ClockIcon,
 	ExclamationTriangleIcon,
 	PencilSquareIcon,
 	PlusIcon,
@@ -156,8 +157,20 @@ function RouteTarget({
 	const chargedValue = charged != null && Number.isFinite(charged) ? charged : 1;
 	const meteredValue = metered != null && Number.isFinite(metered) ? metered : 1;
 	const schedule = parseRoutePricingSchedule(route.price_override);
-	const scheduleHint =
-		formatScheduleWindowsHint(schedule.charged) || formatScheduleWindowsHint(schedule.metered);
+	const chargedScheduleHint = formatScheduleWindowsHint(schedule.charged);
+	const meteredScheduleHint = formatScheduleWindowsHint(schedule.metered);
+	const hasSchedule = Boolean(chargedScheduleHint || meteredScheduleHint);
+	const splitScheduleSides = Boolean(
+		chargedScheduleHint && meteredScheduleHint && chargedScheduleHint !== meteredScheduleHint
+	);
+	const scheduleTooltip = splitScheduleSides
+		? t('badgeScheduleBothTooltip', {
+				charged: chargedScheduleHint,
+				metered: meteredScheduleHint,
+			})
+		: t('badgeScheduleTooltip', {
+				windows: chargedScheduleHint || meteredScheduleHint || '',
+			});
 	const chargedLevel = factorLevelForValue(chargedValue);
 	const meteredLevel = factorLevelForValue(meteredValue);
 	const chargedStatus = tList(`factorStatus.charged.${chargedLevel}`);
@@ -201,7 +214,7 @@ function RouteTarget({
 						</button>
 						{stickyBindingCount > 0 ? (
 							<span
-								className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-indigo-700 ring-1 ring-inset ring-indigo-200"
+								className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-orange-800 ring-1 ring-inset ring-orange-300"
 								title={t('stickyBoundUsersTooltip', { count: stickyBindingCount })}
 								aria-label={t('stickyBoundUsersTooltip', { count: stickyBindingCount })}
 							>
@@ -248,7 +261,7 @@ function RouteTarget({
 						</span>
 					) : null}
 				</div>
-				<div className="ml-auto flex flex-wrap items-center justify-end gap-1">
+				<div className="ml-auto flex items-center justify-end gap-1">
 					<span
 						className={factorChipClassForValue(chargedValue, 'charged')}
 						title={t('badgeChargedTooltip', {
@@ -283,17 +296,37 @@ function RouteTarget({
 							{tList('baseInversionBadge')}
 						</span>
 					) : null}
-					{scheduleHint ? (
-						<span
-							className={`${FACTOR_CHIP_BASE} w-auto bg-sky-50 text-sky-800 ring-sky-200`}
-							title={t('badgeScheduleTooltip', { windows: scheduleHint })}
-							aria-label={t('badgeScheduleTooltip', { windows: scheduleHint })}
-						>
-							Schedule
-						</span>
-					) : null}
 				</div>
 			</div>
+			{hasSchedule ? (
+				<button
+					type="button"
+					onClick={() => onEdit(route)}
+					className={`flex w-full items-start gap-1 rounded-b-lg border-t bg-sky-50/70 px-2.5 py-1.5 text-left hover:bg-sky-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+						enabled ? 'border-emerald-200' : 'border-red-200'
+					}`}
+					title={scheduleTooltip}
+					aria-label={scheduleTooltip}
+				>
+					<ClockIcon className="mt-px h-3 w-3 shrink-0 text-sky-600" aria-hidden />
+					<span className="min-w-0 flex-1 space-y-0.5">
+						{splitScheduleSides ? (
+							<>
+								<span className="block text-[11px] leading-4 tabular-nums text-sky-900">
+									{t('chargedShort')} {chargedScheduleHint}
+								</span>
+								<span className="block text-[11px] leading-4 tabular-nums text-sky-900">
+									{t('meteredShort')} {meteredScheduleHint}
+								</span>
+							</>
+						) : (
+							<span className="block text-[11px] leading-4 tabular-nums text-sky-900">
+								{chargedScheduleHint || meteredScheduleHint}
+							</span>
+						)}
+					</span>
+				</button>
+			) : null}
 		</div>
 	);
 }

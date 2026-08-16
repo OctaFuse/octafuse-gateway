@@ -1109,14 +1109,24 @@ export function createInitialRouteForm(models: GatewayModel[], presetModelId?: s
 	};
 }
 
-/** Format schedule windows for list-card hint, e.g. `00–08×0.5`. */
+function formatScheduleRange(start: string, end: string): string {
+	return `${start.slice(0, 5)}–${end.slice(0, 5)}`;
+}
+
+/** Format schedule windows for list-card hint, e.g. `09:00–12:00, 14:00–18:00 ×2`. */
 export function formatScheduleWindowsHint(windows: DailyScheduleWindow[]): string | null {
 	if (windows.length === 0) return null;
-	return windows
-		.map((w) => {
-			const a = w.start.slice(0, 5);
-			const b = w.end.slice(0, 5);
-			return `${a.slice(0, 2)}–${b.slice(0, 2)}×${formatFactorValue(w.factor)}`;
-		})
-		.join(' ');
+	const groups: Array<{ ranges: string[]; factor: number }> = [];
+	for (const w of windows) {
+		const range = formatScheduleRange(w.start, w.end);
+		const last = groups[groups.length - 1];
+		if (last && last.factor === w.factor) {
+			last.ranges.push(range);
+		} else {
+			groups.push({ ranges: [range], factor: w.factor });
+		}
+	}
+	return groups
+		.map((g) => `${g.ranges.join(', ')} ${formatFactorMultiplier(g.factor)}`)
+		.join(' · ');
 }

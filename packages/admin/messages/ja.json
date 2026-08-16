@@ -678,6 +678,7 @@
 			"badgeChargedTooltip": "課金：{value} · {status}",
 			"badgeMeteredTooltip": "原価：{value} · {status}",
 			"badgeScheduleTooltip": "時間帯：{windows}",
+			"badgeScheduleBothTooltip": "課金時間帯：{charged} · 原価時間帯：{metered}",
 			"providerDisabled": "プロバイダー停止中",
 			"editRoute": "このルートを編集",
 			"stickyBoundUsersTooltip": "このプロバイダーの Sticky 有効ユーザー数：{count}"

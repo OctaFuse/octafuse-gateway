@@ -7,6 +7,7 @@ import {
 	compatibleAdaptersForRoute,
 	factorChipClassForValue,
 	factorLevelForValue,
+	formatScheduleWindowsHint,
 	hasBasePricingInversion,
 	requestOperationsForModel,
 	requestSurfacePath,
@@ -509,6 +510,39 @@ describe('surface catalog grouping', () => {
 		assert.deepEqual(
 			catalog.unrouted.map((card) => card.model_id),
 			['orphan'],
+		);
+	});
+});
+
+describe('formatScheduleWindowsHint', () => {
+	it('returns null for an empty schedule', () => {
+		assert.equal(formatScheduleWindowsHint([]), null);
+	});
+
+	it('groups consecutive windows that share a factor', () => {
+		assert.equal(
+			formatScheduleWindowsHint([
+				{ start: '09:00', end: '12:00', factor: 2 },
+				{ start: '14:00', end: '18:00', factor: 2 },
+			]),
+			'09:00–12:00, 14:00–18:00 ×2',
+		);
+	});
+
+	it('keeps different factors as separate groups', () => {
+		assert.equal(
+			formatScheduleWindowsHint([
+				{ start: '00:00', end: '08:00', factor: 0.5 },
+				{ start: '09:00', end: '18:00', factor: 2 },
+			]),
+			'00:00–08:00 ×0.5 · 09:00–18:00 ×2',
+		);
+	});
+
+	it('keeps minutes when a window is not on the hour', () => {
+		assert.equal(
+			formatScheduleWindowsHint([{ start: '09:30', end: '12:15', factor: 2 }]),
+			'09:30–12:15 ×2',
 		);
 	});
 });
