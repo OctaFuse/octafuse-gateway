@@ -100,17 +100,16 @@ function PlaygroundPageInner() {
 						)}
 					</aside>
 
-					<section className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto bg-slate-100/70 p-4 sm:p-5">
+					<section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto bg-slate-100/70 p-4 sm:p-5 xl:overflow-hidden">
 						{s.playgroundMode === 'tools' ? (
 							<PlaygroundToolsWorkspace state={tools} />
 						) : (
-							<>
+							<div className="flex min-h-0 flex-1 flex-col gap-4">
 								<PlaygroundRequestPanel
 									bodyText={s.bodyText}
 									onBodyTextChange={s.setBodyText}
-									bodyDirty={s.bodyDirty}
 									bodyDirtyHint={s.bodyDirtyHint}
-									onApplyTemplate={s.applyCurrentTemplate}
+									onApplyLlmSample={s.applyLlmSample}
 									bodyError={s.bodyError}
 									sending={s.sending}
 									canSend={s.canSend}
@@ -150,12 +149,13 @@ function PlaygroundPageInner() {
 									audioPreviewUrl={s.audioPreviewUrl}
 									responseTab={s.responseTab}
 									onResponseTabChange={s.setResponseTab}
+									observationTags={s.observationTags}
 									mergedReasoningDisplay={s.mergedReasoningDisplay}
 									mergedBodyDisplay={s.mergedBodyDisplay}
 									streamEndRef={s.streamEndRef}
 									mergedStreamEndRef={s.mergedStreamEndRef}
 								/>
-							</>
+							</div>
 						)}
 					</section>
 				</div>
