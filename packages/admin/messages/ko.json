@@ -678,6 +678,7 @@
 			"badgeChargedTooltip": "청구: {value} · {status}",
 			"badgeMeteredTooltip": "비용: {value} · {status}",
 			"badgeScheduleTooltip": "시간대: {windows}",
+			"badgeScheduleBothTooltip": "청구 시간대: {charged} · 비용 시간대: {metered}",
 			"providerDisabled": "공급자 중지",
 			"editRoute": "이 라우트 편집",
 			"stickyBoundUsersTooltip": "이 공급자의 Sticky 유효 사용자 수: {count}"

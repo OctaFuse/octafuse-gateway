@@ -678,6 +678,7 @@
 			"badgeChargedTooltip": "计费：{value} · {status}",
 			"badgeMeteredTooltip": "成本：{value} · {status}",
 			"badgeScheduleTooltip": "时段：{windows}",
+			"badgeScheduleBothTooltip": "计费时段：{charged} · 成本时段：{metered}",
 			"providerDisabled": "供应商停用",
 			"editRoute": "编辑此路由",
 			"stickyBoundUsersTooltip": "此供应商当前 Sticky 有效用户数：{count}"

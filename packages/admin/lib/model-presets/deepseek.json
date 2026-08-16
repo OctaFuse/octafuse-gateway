@@ -18,9 +18,9 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 0.435,
-						"output_price": 0.87,
-						"cache_read_price": 0.003625,
+						"input_price": 0.66,
+						"output_price": 1.98,
+						"cache_read_price": 0.022,
 						"cache_write_price": null
 					}
 				]
@@ -29,9 +29,9 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 3,
-						"output_price": 6,
-						"cache_read_price": 0.025,
+						"input_price": 4.5,
+						"output_price": 13.5,
+						"cache_read_price": 0.15,
 						"cache_write_price": null
 					}
 				]
@@ -63,9 +63,9 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 0.14,
-						"output_price": 0.28,
-						"cache_read_price": 0.0028,
+						"input_price": 0.22,
+						"output_price": 0.66,
+						"cache_read_price": 0.007,
 						"cache_write_price": null
 					}
 				]
@@ -74,9 +74,9 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 1,
-						"output_price": 2,
-						"cache_read_price": 0.02,
+						"input_price": 1.5,
+						"output_price": 4.5,
+						"cache_read_price": 0.05,
 						"cache_write_price": null
 					}
 				]

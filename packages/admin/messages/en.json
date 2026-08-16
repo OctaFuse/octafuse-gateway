@@ -678,6 +678,7 @@
 			"badgeChargedTooltip": "Charged: {value} · {status}",
 			"badgeMeteredTooltip": "Metered: {value} · {status}",
 			"badgeScheduleTooltip": "Schedule: {windows}",
+			"badgeScheduleBothTooltip": "Charged schedule: {charged} · Metered schedule: {metered}",
 			"providerDisabled": "Provider off",
 			"editRoute": "Edit this route",
 			"stickyBoundUsersTooltip": "Active sticky users on this provider: {count}"
