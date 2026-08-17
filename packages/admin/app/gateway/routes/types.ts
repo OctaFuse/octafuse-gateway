@@ -87,7 +87,8 @@ export type ProviderStickyFormState = {
 export type RouteScheduleFormWindow = {
 	start: string;
 	end: string;
-	factor: string;
+	charged_factor: string;
+	metered_factor: string;
 };
 
 export type RouteScheduleFormSide = RouteScheduleFormWindow[];
@@ -108,8 +109,7 @@ export type RouteFormData = {
 	route_group: string;
 	charged_factor: string;
 	metered_factor: string;
-	schedule_charged: RouteScheduleFormSide;
-	schedule_metered: RouteScheduleFormSide;
+	schedule_windows: RouteScheduleFormSide;
 };
 
 export type RoutePolicyDialogState = {
@@ -193,8 +193,7 @@ export const EMPTY_ROUTE_FORM: RouteFormData = {
 	route_group: 'default',
 	charged_factor: '1',
 	metered_factor: '1',
-	schedule_charged: [],
-	schedule_metered: [],
+	schedule_windows: [],
 };
 
 export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
@@ -206,7 +205,7 @@ export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
 export const ROUTE_GROUP_CARD_BADGE_CLASS = 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200';
 
 export const FACTOR_CHIP_BASE =
-	'inline-flex min-w-[3rem] w-auto shrink-0 justify-end whitespace-nowrap rounded-md px-1.5 py-0 text-[10px] font-semibold font-mono tabular-nums leading-4 ring-1 ring-inset';
+	'inline-flex w-auto shrink-0 whitespace-nowrap rounded-md px-1.5 py-0 text-[10px] font-semibold font-mono tabular-nums leading-4 ring-1 ring-inset';
 
 export const routePricePanelShell: Record<'neutral' | 'charged' | 'metered', string> = {
 	neutral:

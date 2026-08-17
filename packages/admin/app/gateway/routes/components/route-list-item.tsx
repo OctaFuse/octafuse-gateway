@@ -5,14 +5,14 @@ import {
 	parseChargedFactorFromPriceOverride,
 	parseMeteredFactorFromPriceOverride,
 } from '@/lib/pricing-ui';
-import { parseRoutePricingSchedule } from '@octafuse/core/db/pricing-schedule';
 import {
 	factorChipClassForValue,
 	factorLevelForValue,
 	formatFactorMultiplier,
 	formatFactorMultiplierForChip,
-	formatScheduleWindowsHint,
+	formatSharedScheduleWindowsHint,
 	hasBasePricingInversion,
+	resolveRouteScheduleDisplay,
 } from '../route-utils';
 import { FACTOR_CHIP_BASE } from '../types';
 import type { RouteListRow } from '../types';
@@ -31,9 +31,7 @@ export function RouteListItem(props: Props) {
 	const meteredF = parseMeteredFactorFromPriceOverride(route.price_override);
 	const chargedDisp = chargedF != null && Number.isFinite(chargedF) ? chargedF : 1;
 	const meteredDisp = meteredF != null && Number.isFinite(meteredF) ? meteredF : 1;
-	const schedule = parseRoutePricingSchedule(route.price_override);
-	const schHint =
-		formatScheduleWindowsHint(schedule.charged) || formatScheduleWindowsHint(schedule.metered);
+	const schHint = formatSharedScheduleWindowsHint(resolveRouteScheduleDisplay(route.price_override));
 	const chargedLevel = factorLevelForValue(chargedDisp);
 	const meteredLevel = factorLevelForValue(meteredDisp);
 	const chargedStatus = t(`factorStatus.charged.${chargedLevel}`);

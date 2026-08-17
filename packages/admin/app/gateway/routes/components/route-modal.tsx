@@ -1,8 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowDownIcon, BeakerIcon, ChevronDownIcon, DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+	ArrowDownIcon,
+	BeakerIcon,
+	ChevronDownIcon,
+	ClipboardDocumentIcon,
+	CodeBracketIcon,
+	DocumentDuplicateIcon,
+	PlusIcon,
+	TrashIcon,
+} from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { isAudioSpeechModel } from '@octafuse/core/db/model-modalities';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
@@ -14,6 +23,7 @@ import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protoc
 import {
 	applyDashScopeTtsRoutePreset,
 	compatibleAdaptersForRoute,
+	formatRoutePriceOverridePreview,
 	requestOperationsForModel,
 	upstreamOperationsForProviderModel,
 } from '../route-utils';
@@ -85,10 +95,15 @@ export function RouteModal(props: Props) {
 	const customParamsSessionKey = `${open ? '1' : '0'}:${editingRoute?.id ?? ''}:${duplicateSourceRouteId ?? ''}`;
 	const [customParamsSession, setCustomParamsSession] = useState(customParamsSessionKey);
 	const [customParamsOpen, setCustomParamsOpen] = useState(() => open && hasCustomParams);
+	const [priceOverrideJsonOpen, setPriceOverrideJsonOpen] = useState(false);
+	const [priceOverrideJsonCopied, setPriceOverrideJsonCopied] = useState(false);
 	if (customParamsSession !== customParamsSessionKey) {
 		setCustomParamsSession(customParamsSessionKey);
 		setCustomParamsOpen(open && hasCustomParams);
+		setPriceOverrideJsonOpen(false);
+		setPriceOverrideJsonCopied(false);
 	}
+	const priceOverridePreview = useMemo(() => formatRoutePriceOverridePreview(formData), [formData]);
 
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
@@ -774,108 +789,177 @@ export function RouteModal(props: Props) {
 								</div>
 
 								<div className="flex min-h-0 min-w-0 flex-col">
-									<h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
-										{t('pricingSection')}
-									</h3>
+									<div className="mb-1 flex items-center justify-between gap-2">
+										<h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+											{t('pricingSection')}
+										</h3>
+										<button
+											type="button"
+											onClick={() => setPriceOverrideJsonOpen((openJson) => !openJson)}
+											aria-expanded={priceOverrideJsonOpen}
+											aria-controls="route-price-override-json"
+											title={
+												priceOverrideJsonOpen ? t('hidePriceOverrideJson') : t('viewPriceOverrideJson')
+											}
+											className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 ${
+												priceOverrideJsonOpen
+													? 'border-blue-300 bg-blue-50 text-blue-800'
+													: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+											}`}
+										>
+											<CodeBracketIcon className="h-3.5 w-3.5" aria-hidden />
+											JSON
+										</button>
+									</div>
 									<p className="mb-2.5 text-[11px] text-gray-500">
 										{t('billingTimezoneHint', { timezone: businessTimezone })}
 									</p>
-									<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:items-stretch">
-								<div className="flex h-full min-h-0 min-w-0 flex-col">
-									<RoutePricePanel
-										fillHeight
-										variant="charged"
-										title={t('chargedCost')}
-										subtitle={t('chargedCostHint')}
-										headerEnd={
-											<div className="flex flex-col items-start gap-0.5">
-												<label
-													htmlFor="user-cost-charged-factor"
-													className="whitespace-nowrap text-[11px] font-medium text-gray-600"
-												>
-													{t('factor')}
-												</label>
-												<input
-													id="user-cost-charged-factor"
-													type="text"
-													inputMode="decimal"
-													value={formData.charged_factor}
-													title={t('chargedFactorTitle')}
-													onChange={(e) =>
+									{priceOverrideJsonOpen ? (
+										<div
+											id="route-price-override-json"
+											className="mb-3 space-y-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50/90 p-2"
+										>
+											<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+												<code className="rounded bg-white px-1 py-0.5 text-[10px] font-semibold text-gray-600">
+													price_override
+												</code>
+												{priceOverridePreview.ok ? (
+													<button
+														type="button"
+														onClick={() => {
+															if (!navigator.clipboard?.writeText) return;
+															void navigator.clipboard.writeText(priceOverridePreview.text).then(
+																() => {
+																	setPriceOverrideJsonCopied(true);
+																	window.setTimeout(() => setPriceOverrideJsonCopied(false), 1500);
+																},
+																() => {},
+															);
+														}}
+														className="text-[11px] font-medium text-blue-600 hover:text-blue-800"
+													>
+														{priceOverrideJsonCopied ? tCommon('copied') : tCommon('copy')}
+													</button>
+												) : null}
+											</div>
+											<textarea
+												readOnly
+												rows={Math.min(16, 6 + formData.schedule_windows.length * 6)}
+												value={priceOverridePreview.text}
+												className={`w-full resize-y rounded-md border bg-white px-2 py-1.5 font-mono text-[11px] leading-relaxed ${
+													priceOverridePreview.ok
+														? 'border-gray-200 text-gray-800'
+														: 'border-red-200 text-red-700'
+												}`}
+												spellCheck={false}
+												aria-label={t('viewPriceOverrideJson')}
+											/>
+										</div>
+									) : null}
+									<div className="flex min-h-0 flex-1 flex-col gap-3">
+										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+											<RoutePricePanel
+												variant="charged"
+												title={t('chargedCost')}
+												subtitle={t('chargedCostHint')}
+												headerEnd={
+													<div className="flex flex-col items-start gap-0.5">
+														<label
+															htmlFor="user-cost-charged-factor"
+															className="whitespace-nowrap text-[11px] font-medium text-gray-600"
+														>
+															{t('factor')}
+														</label>
+														<input
+															id="user-cost-charged-factor"
+															type="text"
+															inputMode="decimal"
+															value={formData.charged_factor}
+															title={t('chargedFactorTitle')}
+															onChange={(e) =>
+																onFormChange({
+																	...formData,
+																	charged_factor: e.target.value,
+																})
+															}
+															className="w-12 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-mono tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+															placeholder="1"
+														/>
+													</div>
+												}
+											/>
+											<RoutePricePanel
+												variant="metered"
+												title={t('meteredCost')}
+												subtitle={t('meteredCostHint')}
+												headerEnd={
+													<div className="flex flex-col items-start gap-0.5">
+														<label
+															htmlFor="gateway-route-metered-factor"
+															className="whitespace-nowrap text-[11px] font-medium text-gray-600"
+														>
+															{t('factor')}
+														</label>
+														<input
+															id="gateway-route-metered-factor"
+															type="text"
+															inputMode="decimal"
+															value={formData.metered_factor}
+															title={t('meteredFactorTitle')}
+															onChange={(e) =>
+																onFormChange({
+																	...formData,
+																	metered_factor: e.target.value,
+																})
+															}
+															className="w-12 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-mono tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+															placeholder="1"
+														/>
+													</div>
+												}
+											/>
+										</div>
+										<RoutePricePanel
+											variant="neutral"
+											title={t('dailySchedule')}
+											subtitle={t('pricingFormulaHint')}
+											headerEndBeside="subtitle"
+											headerEnd={
+												<button
+													type="button"
+													onClick={() =>
 														onFormChange({
 															...formData,
-															charged_factor: e.target.value,
+															schedule_windows: [
+																...formData.schedule_windows,
+																{
+																	start: '00:00',
+																	end: '08:00',
+																	charged_factor: '1',
+																	metered_factor: '1',
+																},
+															],
 														})
 													}
-													className="w-12 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-mono tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-													placeholder="1"
-												/>
-											</div>
-										}
-									>
-										<div>
+													className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+													aria-label={t('addScheduleWindow')}
+													title={t('addScheduleWindow')}
+												>
+													<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+												</button>
+											}
+										>
 											<DailyScheduleEditor
-												title={t('dailySchedule')}
-												windows={formData.schedule_charged}
-												onChange={(schedule_charged) => onFormChange({ ...formData, schedule_charged })}
-												addLabel={t('addScheduleWindow')}
+												windows={formData.schedule_windows}
+												onChange={(schedule_windows) => onFormChange({ ...formData, schedule_windows })}
 												emptyLabel={t('scheduleEmpty')}
 												startLabel={t('scheduleStart')}
 												endLabel={t('scheduleEnd')}
-												factorLabel={t('scheduleFactor')}
+												chargedFactorLabel={t('scheduleChargedFactor')}
+												meteredFactorLabel={t('scheduleMeteredFactor')}
 												removeLabel={tCommon('delete')}
 											/>
-										</div>
-									</RoutePricePanel>
-								</div>
-
-								<div className="flex h-full min-h-0 min-w-0 flex-col">
-									<RoutePricePanel
-										fillHeight
-										variant="metered"
-										title={t('meteredCost')}
-										subtitle={t('meteredCostHint')}
-										headerEnd={
-											<div className="flex flex-col items-start gap-0.5">
-												<label
-													htmlFor="gateway-route-metered-factor"
-													className="whitespace-nowrap text-[11px] font-medium text-gray-600"
-												>
-													{t('factor')}
-												</label>
-												<input
-													id="gateway-route-metered-factor"
-													type="text"
-													inputMode="decimal"
-													value={formData.metered_factor}
-													title={t('meteredFactorTitle')}
-													onChange={(e) =>
-														onFormChange({
-															...formData,
-															metered_factor: e.target.value,
-														})
-													}
-													className="w-12 rounded border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-mono tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
-													placeholder="1"
-												/>
-											</div>
-										}
-									>
-										<div>
-											<DailyScheduleEditor
-												title={t('dailySchedule')}
-												windows={formData.schedule_metered}
-												onChange={(schedule_metered) => onFormChange({ ...formData, schedule_metered })}
-												addLabel={t('addScheduleWindow')}
-												emptyLabel={t('scheduleEmpty')}
-												startLabel={t('scheduleStart')}
-												endLabel={t('scheduleEnd')}
-												factorLabel={t('scheduleFactor')}
-												removeLabel={tCommon('delete')}
-											/>
-										</div>
-									</RoutePricePanel>
-								</div>
+										</RoutePricePanel>
 									</div>
 								</div>
 							</div>

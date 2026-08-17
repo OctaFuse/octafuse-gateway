@@ -128,4 +128,53 @@ describe('coerceRoutePriceOverrideInput', () => {
 				(error as { status: unknown }).status === 400
 		);
 	});
+
+	it('keeps legacy schedule JSON without mode', () => {
+		assert.equal(
+			coerceRoutePriceOverrideInput({
+				charged_factor: 1,
+				schedule: { charged: [{ start: '09:00', end: '12:00', factor: 2 }] },
+			}),
+			JSON.stringify({
+				charged_factor: 1,
+				schedule: { charged: [{ start: '09:00', end: '12:00', factor: 2 }] },
+			})
+		);
+	});
+
+	it('round-trips schedule.mode override', () => {
+		assert.equal(
+			coerceRoutePriceOverrideInput({
+				charged_factor: 1,
+				metered_factor: 1,
+				schedule: {
+					mode: 'override',
+					charged: [{ start: '09:00', end: '12:00', factor: 2 }],
+					metered: [{ start: '09:00', end: '12:00', factor: 2 }],
+				},
+			}),
+			JSON.stringify({
+				charged_factor: 1,
+				metered_factor: 1,
+				schedule: {
+					mode: 'override',
+					charged: [{ start: '09:00', end: '12:00', factor: 2 }],
+					metered: [{ start: '09:00', end: '12:00', factor: 2 }],
+				},
+			})
+		);
+	});
+
+	it('rejects unknown schedule.mode', () => {
+		assert.throws(
+			() =>
+				coerceRoutePriceOverrideInput({
+					schedule: { mode: 'divide', charged: [{ start: '09:00', end: '12:00', factor: 2 }] },
+				}),
+			(error: unknown) =>
+				error instanceof Error &&
+				'status' in error &&
+				(error as { status: unknown }).status === 400
+		);
+	});
 });

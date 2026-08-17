@@ -1,8 +1,7 @@
 /**
  * 用量与计费：按百万 token 单价计算 `metered_cost`（供应成本）、`standard_cost`（目录标准成本）、`charged_cost`（用户预算）。
  * - 基数始终来自 `models.pricing_profile`（按 input_tokens 选档）。
- * - `metered_cost` = 目录价 × `metered_factor` × `schedule.metered`（缺省倍率 1）。
- * - `charged_cost` = 目录价 × `charged_factor` × `schedule.charged`（缺省倍率 1）。
+ * - `metered_cost` / `charged_cost` = 目录价 × 有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。
  * - `standard_cost` = 目录价（不乘路由倍率）。
  * - nested `price_override.metered` / `charged` tiers 忽略不计价。
  * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `users.budget_spent`。
@@ -17,6 +16,7 @@ import {
 	PRICING_AUDIT_JSON_SCHEMA_VERSION,
 	resolveChargedBillingPrices,
 	resolveDailyScheduleFactor,
+	resolveEffectiveRouteFactor,
 	resolveStandardBillingPrices,
 	resolveSupplierBillingPrices,
 	roundGatewayMoney,
@@ -81,8 +81,13 @@ function applyRouteFactorsToSide(options: {
 	catalog: { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide };
 	baseFactor: number;
 	scheduleFactor: ReturnType<typeof resolveDailyScheduleFactor>;
+	mode: ReturnType<typeof parseRoutePricingSchedule>['mode'];
 }): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
-	const effective = options.baseFactor * options.scheduleFactor.factor;
+	const effective = resolveEffectiveRouteFactor(
+		options.baseFactor,
+		options.scheduleFactor,
+		options.mode
+	);
 	const prices = scaleBillingPrices(options.catalog.prices, effective);
 	const sch = options.scheduleFactor;
 	return {
@@ -197,11 +202,13 @@ export async function recordUsage(
 		catalog: catalogSupplier,
 		baseFactor: baseFactors.meteredFactor,
 		scheduleFactor: meteredSch,
+		mode: schedule.mode,
 	});
 	const chargedResolved = applyRouteFactorsToSide({
 		catalog: catalogCharged,
 		baseFactor: baseFactors.chargedFactor,
 		scheduleFactor: chargedSch,
+		mode: schedule.mode,
 	});
 
 	const supplierCost = computeMeteredCost(

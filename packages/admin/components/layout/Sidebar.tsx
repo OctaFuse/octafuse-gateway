@@ -135,13 +135,13 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3">
         {menuGroups.map((group) => (
           <div key={group.groupKey}>
-            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            <h3 className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
               {t(`groups.${group.groupKey}`)}
             </h3>
-            <div className="space-y-1">
+            <div className="space-y-px">
               {group.items.map((item) => {
                 const isActive =
                   pathname === item.href ||
@@ -155,7 +155,7 @@ export default function Sidebar() {
                     key={item.nameKey}
                     href={item.href}
                     className={`
-                      group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg
+                      group flex items-center rounded-md px-3 py-2 text-sm font-medium
                       ${isActive
                         ? 'bg-gray-800 text-white'
                         : 'text-gray-300 hover:bg-gray-800 hover:text-white'
@@ -175,7 +175,7 @@ export default function Sidebar() {
                   type="button"
                   onClick={handleLogout}
                   disabled={isLoggingOut}
-                  className="group w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ArrowLeftStartOnRectangleIcon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-white" />
                   {isLoggingOut ? tAuth('loggingOut') : tAuth('logout')}

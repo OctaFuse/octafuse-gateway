@@ -91,14 +91,14 @@ function RoutesContent() {
 
 	if (state.isLoading) {
 		return (
-			<div className="flex items-center justify-center h-full">
+			<div className="flex min-h-full items-center justify-center bg-gray-100/90">
 				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-5 sm:mb-6">
 				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
 				<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
@@ -129,94 +129,88 @@ function RoutesContent() {
 				onClearAllFilters={state.clearAllFilters}
 			/>
 
-			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
-				<section className="min-w-0 bg-slate-100/70">
-					<RouteWorkspaceHeader
-						activeFilterSummary={state.activeFilterSummary}
-						view={workspaceView}
-						onViewChange={handleWorkspaceViewChange}
-						stickyRefreshIntervalMs={stickyRefreshIntervalMs}
-					/>
+			<section className="min-w-0">
+				<RouteWorkspaceHeader
+					activeFilterSummary={state.activeFilterSummary}
+					view={workspaceView}
+					onViewChange={handleWorkspaceViewChange}
+					stickyRefreshIntervalMs={stickyRefreshIntervalMs}
+				/>
+				<UnroutedModelsPanel
+					cards={byModelLayout.unrouted}
+					onEditModel={(modelId) => void state.modelEdit.openEditById(modelId)}
+					onCreate={state.handleCreate}
+				/>
 
-						<div className="bg-slate-100/70 p-4 sm:p-6">
-							{state.routesByModel.length === 0 ? (
-								<div className="rounded-xl border border-dashed border-gray-300 bg-white/80 py-16 text-center text-gray-500 shadow-sm">
-									<p className="text-sm font-medium text-gray-600">{t('empty')}</p>
-									{state.hasActiveFilters ? (
-										<p className="mt-1 text-xs text-gray-500">
-											{t('emptyFilteredPrefix')}{' '}
-											<button
-												type="button"
-												onClick={state.clearAllFilters}
-												className="font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:underline"
-											>
-												{tCommon('clearAllFilters')}
-											</button>
-										</p>
-									) : null}
-								</div>
-							) : workspaceView === 'overview' ? (
-								<RouteSurfaceCatalog
-									cards={state.routeCards}
-									modelMeta={state.modelMeta}
-									providerMeta={state.providerMeta}
-									globalRouteStrategy={state.globalRouteStrategy}
-									copiedModelId={state.copiedModelId}
-									togglingId={state.togglingId}
-									onCopyModelId={state.copyModelId}
-									onCreate={state.handleCreate}
-									onEdit={state.handleEdit}
-									onEditModel={(modelId) =>
-										void state.modelEdit.openEditById(modelId)
-									}
-									onToggleStatus={state.handleToggleStatus}
-									onOpenStrategyDialog={state.handleOpenStrategyDialog}
-									onOpenProviderStickyDialog={state.handleOpenProviderStickyDialog}
-								/>
-							) : (
-								<div className="space-y-6">
-									<div className={state.filterVendor ? '' : 'space-y-8'}>
-										{byModelLayout.vendorGroups.map(
-											({ vendor, cards, showHeader }, vendorGroupIdx) => (
-												<RouteVendorGroup
-													key={vendor}
-													vendor={vendor}
-													cards={cards}
-													showHeader={showHeader}
-													vendorGroupIdx={vendorGroupIdx}
-													modelMeta={state.modelMeta}
-													providerMeta={state.providerMeta}
-													globalRouteStrategy={state.globalRouteStrategy}
-													density="topology"
-													copiedModelId={state.copiedModelId}
-													togglingId={state.togglingId}
-													onCopyModelId={state.copyModelId}
-													onCreate={state.handleCreate}
-													onEdit={state.handleEdit}
-													onEditModel={(modelId) =>
-														void state.modelEdit.openEditById(modelId)
-													}
-													onToggleStatus={state.handleToggleStatus}
-													onOpenStrategyDialog={state.handleOpenStrategyDialog}
-													onOpenProviderStickyDialog={state.handleOpenProviderStickyDialog}
-												/>
-											)
-										)}
-									</div>
-									<UnroutedModelsPanel
-										cards={byModelLayout.unrouted}
-										copiedModelId={state.copiedModelId}
-										onCopyModelId={state.copyModelId}
-										onEditModel={(modelId) =>
-											void state.modelEdit.openEditById(modelId)
-										}
-										onCreate={state.handleCreate}
-									/>
-								</div>
-							)}
-					</div>
-				</section>
-			</div>
+				<div className="pt-4 sm:pt-6">
+					{state.routesByModel.length === 0 ? (
+						<div className="rounded-xl border border-dashed border-gray-300 bg-white/80 py-16 text-center text-gray-500 shadow-sm">
+							<p className="text-sm font-medium text-gray-600">{t('empty')}</p>
+							{state.hasActiveFilters ? (
+								<p className="mt-1 text-xs text-gray-500">
+									{t('emptyFilteredPrefix')}{' '}
+									<button
+										type="button"
+										onClick={state.clearAllFilters}
+										className="font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:underline"
+									>
+										{tCommon('clearAllFilters')}
+									</button>
+								</p>
+							) : null}
+						</div>
+					) : workspaceView === 'overview' ? (
+						<RouteSurfaceCatalog
+							cards={state.routeCards}
+							modelMeta={state.modelMeta}
+							providerMeta={state.providerMeta}
+							globalRouteStrategy={state.globalRouteStrategy}
+							copiedModelId={state.copiedModelId}
+							togglingId={state.togglingId}
+							onCopyModelId={state.copyModelId}
+							onCreate={state.handleCreate}
+							onEdit={state.handleEdit}
+							onEditModel={(modelId) =>
+								void state.modelEdit.openEditById(modelId)
+							}
+							onToggleStatus={state.handleToggleStatus}
+							onOpenStrategyDialog={state.handleOpenStrategyDialog}
+							onOpenProviderStickyDialog={state.handleOpenProviderStickyDialog}
+						/>
+					) : (
+						<div className="space-y-6">
+							<div className={state.filterVendor ? '' : 'space-y-8'}>
+								{byModelLayout.vendorGroups.map(
+									({ vendor, cards, showHeader }, vendorGroupIdx) => (
+										<RouteVendorGroup
+											key={vendor}
+											vendor={vendor}
+											cards={cards}
+											showHeader={showHeader}
+											vendorGroupIdx={vendorGroupIdx}
+											modelMeta={state.modelMeta}
+											providerMeta={state.providerMeta}
+											globalRouteStrategy={state.globalRouteStrategy}
+											density="topology"
+											copiedModelId={state.copiedModelId}
+											togglingId={state.togglingId}
+											onCopyModelId={state.copyModelId}
+											onCreate={state.handleCreate}
+											onEdit={state.handleEdit}
+											onEditModel={(modelId) =>
+												void state.modelEdit.openEditById(modelId)
+											}
+											onToggleStatus={state.handleToggleStatus}
+											onOpenStrategyDialog={state.handleOpenStrategyDialog}
+											onOpenProviderStickyDialog={state.handleOpenProviderStickyDialog}
+										/>
+									)
+								)}
+							</div>
+						</div>
+					)}
+				</div>
+			</section>
 
 			<RouteModal
 				open={state.showModal}
@@ -321,7 +315,7 @@ export default function GatewayRoutesPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex items-center justify-center h-full">
+				<div className="flex min-h-full items-center justify-center bg-gray-100/90">
 					<div className="text-gray-600">{tCommon('loading')}</div>
 				</div>
 			}

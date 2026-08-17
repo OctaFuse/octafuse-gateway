@@ -21,6 +21,7 @@ import {
 	profileHasImageTokenPricing,
 	resolveChargedBillingPrices,
 	resolveDailyScheduleFactor,
+	resolveEffectiveRouteFactor,
 	resolveImageBillingMode,
 	resolveImageCatalogUnitPrice,
 	resolveStandardBillingPrices,
@@ -126,8 +127,16 @@ async function resolveRouteFactors(
 	const schedule = parseRoutePricingSchedule(routePriceOverrideJson ?? null);
 	const chargedSch = resolveDailyScheduleFactor(schedule.charged, pricingAtUtc, businessTimezone);
 	const meteredSch = resolveDailyScheduleFactor(schedule.metered, pricingAtUtc, businessTimezone);
-	const meteredFactor = baseFactors.meteredFactor * meteredSch.factor;
-	const chargedFactor = baseFactors.chargedFactor * chargedSch.factor;
+	const meteredFactor = resolveEffectiveRouteFactor(
+		baseFactors.meteredFactor,
+		meteredSch,
+		schedule.mode
+	);
+	const chargedFactor = resolveEffectiveRouteFactor(
+		baseFactors.chargedFactor,
+		chargedSch,
+		schedule.mode
+	);
 	const schSide = (sch: typeof chargedSch, base: number, effective: number) => ({
 		base_factor: base,
 		schedule: {

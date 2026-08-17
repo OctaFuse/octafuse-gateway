@@ -1,30 +1,28 @@
 'use client';
 
-import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import type { RouteScheduleFormSide, RouteScheduleFormWindow } from '../types';
 
 type Props = {
-	title: string;
 	windows: RouteScheduleFormSide;
 	onChange: (windows: RouteScheduleFormSide) => void;
-	addLabel: string;
 	emptyLabel: string;
 	startLabel: string;
 	endLabel: string;
-	factorLabel: string;
+	chargedFactorLabel: string;
+	meteredFactorLabel: string;
 	removeLabel: string;
 };
 
 export function DailyScheduleEditor(props: Props) {
 	const {
-		title,
 		windows,
 		onChange,
-		addLabel,
 		emptyLabel,
 		startLabel,
 		endLabel,
-		factorLabel,
+		chargedFactorLabel,
+		meteredFactorLabel,
 		removeLabel,
 	} = props;
 
@@ -34,20 +32,6 @@ export function DailyScheduleEditor(props: Props) {
 
 	return (
 		<div className="space-y-2">
-			<div className="flex items-center justify-between gap-2">
-				<p className="text-[11px] font-semibold tracking-wide text-gray-500">{title}</p>
-				<button
-					type="button"
-					onClick={() =>
-						onChange([...windows, { start: '00:00', end: '08:00', factor: '1' }])
-					}
-					className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-					aria-label={addLabel}
-					title={addLabel}
-				>
-					<PlusIcon className="h-3.5 w-3.5" aria-hidden />
-				</button>
-			</div>
 			{windows.length === 0 ? (
 				<p className="text-xs text-gray-500">{emptyLabel}</p>
 			) : (
@@ -84,16 +68,29 @@ export function DailyScheduleEditor(props: Props) {
 								/>
 							</div>
 							<div className="min-w-0 flex-[0.85]">
-								<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
-									{factorLabel}
+								<label className="mb-0.5 block text-[10px] font-medium text-blue-700/80">
+									{chargedFactorLabel}
 								</label>
 								<input
 									type="text"
 									inputMode="decimal"
 									placeholder="1"
-									value={w.factor}
-									onChange={(e) => updateRow(i, { factor: e.target.value })}
-									className="w-full min-w-0 rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums"
+									value={w.charged_factor}
+									onChange={(e) => updateRow(i, { charged_factor: e.target.value })}
+									className="w-full min-w-0 rounded border border-blue-200 bg-blue-50/40 px-1.5 py-1 font-mono text-xs tabular-nums"
+								/>
+							</div>
+							<div className="min-w-0 flex-[0.85]">
+								<label className="mb-0.5 block text-[10px] font-medium text-emerald-700/80">
+									{meteredFactorLabel}
+								</label>
+								<input
+									type="text"
+									inputMode="decimal"
+									placeholder="1"
+									value={w.metered_factor}
+									onChange={(e) => updateRow(i, { metered_factor: e.target.value })}
+									className="w-full min-w-0 rounded border border-emerald-200 bg-emerald-50/40 px-1.5 py-1 font-mono text-xs tabular-nums"
 								/>
 							</div>
 							<button

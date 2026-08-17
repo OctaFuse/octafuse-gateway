@@ -558,7 +558,7 @@ GET /admin/keys/:id/logs?page=1&page_size=20&exclude_status=incomplete
 }
 ```
 
-> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`metered_cost` = 目录价 × `price_override.metered_factor` × 可选 `schedule.metered`，`charged_cost` = 目录价 × `charged_factor` × 可选 `schedule.charged`，`standard_cost` = 目录价（不乘路由倍率）；**Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule），成功后分别写入三列，仅 `charged_cost` 累加预算。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v4**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 为 `kind=fixed_tool_cost` + `unit_prices` / `totals`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
+> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`metered_cost` / `charged_cost` = 目录价 × 有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor），`standard_cost` = 目录价（不乘路由倍率）；**Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule），成功后分别写入三列，仅 `charged_cost` 累加预算。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v4**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 为 `kind=fixed_tool_cost` + `unit_prices` / `totals`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
 
 ### 示例
 
@@ -775,15 +775,19 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
   "charged_factor": 1.2,
   "metered_factor": 1.0,
   "schedule": {
-    "charged": [{ "start": "00:00", "end": "08:00", "factor": 0.5 }],
+    "mode": "override",
+    "charged": [{ "start": "00:00", "end": "08:00", "factor": 0.6 }],
     "metered": [{ "start": "00:00", "end": "08:00", "factor": 0.5 }]
   }
 }
 ```
 
-  - `charged_factor` / `metered_factor`：相对目录价的基础倍率（缺省 `1`；`metered_factor` 缺失时可回退读历史 `provider_factor`）；**参与运行时**。
-  - `schedule`（可选）：每日循环窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜；未命中 → 时段倍率 `1`。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。
-  - 运行时：`charged_cost` = 目录选档单价 × `charged_factor` × `schedule.charged`；`metered_cost` 同理；`standard_cost` 仅为目录价。嵌套 `metered`/`charged` tiers **写入时剥离、运行时忽略**。`pricing_audit.schedule.evaluated_at_utc` 记录本次选窗使用的请求开始时刻。
+  - `charged_factor` / `metered_factor`：相对目录价的默认倍率（缺省 `1`；`metered_factor` 缺失时可回退读历史 `provider_factor`）；未命中每日时段时使用。
+  - `schedule`（可选）：每日循环窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。
+  - `schedule.mode`：
+    - **缺省或 `"multiply"`**（存量）：`charged_cost` = 目录价 × `charged_factor` × 命中窗 `factor`（未命中窗按 `1`）；`metered_cost` 同理。
+    - **`"override"`**（Admin UI 新写入）：命中窗时窗口 `factor` 就是对标准价的倍率；未命中用上方默认 `charged_factor` / `metered_factor`。两侧共享同一套 start/end，各写自己的 `factor`。
+  - `standard_cost` 仅为目录价。嵌套 `metered`/`charged` tiers **写入时剥离、运行时忽略**。`pricing_audit.schedule.evaluated_at_utc` 记录本次选窗使用的请求开始时刻。非法 `mode` 在 Admin API 写入时拒绝。
 - **公开列表**：`GET /v1/models` 返回完整 `pricing_profile` 字符串；`model_info.input_price` / `output_price` 为 **兼容展示**：取各档中 **最低 `input_price`** 所在档的 in/out。详见 [user.md「获取模型列表」](user.md)。
 
 #### Gateway Admin UI — Model Routes「Billing & Cost」
@@ -793,9 +797,9 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 | 区块 | 含义 | 数据来源 |
 |------|------|----------|
 | **Standard price** | 目录标准价（只读） | `models.pricing_profile`（LLM/Image token/Audio token 的 tiers，或 Image per_image / Audio per_second 的单价块） |
-| **Charged factor** | 用户侧基础倍率 | `price_override.charged_factor`（运行时参与 `charged_cost`） |
-| **Metered factor** | 供应侧基础倍率 | `price_override.metered_factor`（运行时参与 `metered_cost`） |
-| **Daily schedule** | 每日时段倍率（两侧独立） | `price_override.schedule.charged` / `.metered` |
+| **Charged factor** | 用户侧默认倍率（窗外） | `price_override.charged_factor` |
+| **Metered factor** | 供应侧默认倍率（窗外） | `price_override.metered_factor` |
+| **Daily schedule** | 共享 start/end，每行 Charged / Metered 倍率（覆盖默认） | `price_override.schedule`（`mode: "override"`） |
 
 路由列表卡片展示 **`Ch ×`** / **`M ×`**；有 schedule 时附加 **Sch** 提示。
 

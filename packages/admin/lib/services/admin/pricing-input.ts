@@ -195,11 +195,12 @@ export function coerceRoutePriceOverrideInput(raw: unknown): string | null {
 		if (!coerced.ok) {
 			throw badRequest(coerced.message);
 		}
-		const { charged, metered } = coerced.schedule;
+		const { charged, metered, mode } = coerced.schedule;
 		if (charged.length === 0 && metered.length === 0) {
 			delete obj.schedule;
 		} else {
 			obj.schedule = {
+				...(coerced.persistMode ? { mode } : {}),
 				...(charged.length > 0 ? { charged } : {}),
 				...(metered.length > 0 ? { metered } : {}),
 			};

@@ -1,6 +1,6 @@
 /**
  * `models.pricing_profile`（目录标准价）解析与选档。
- * 路由侧金额 = 目录选档单价 × `price_override` 的 base factor × 每日 `schedule` 倍率（见 `pricing-schedule.ts`）。
+ * 路由侧金额 = 目录选档单价 × 有效倍率（见 `pricing-schedule.ts`：存量叠乘或 `schedule.mode=override`）。
  * `price_override` 内历史 nested `metered` / `charged` tiers **不计价**（运行时忽略）。
  * 单价数值币种见 `system_config.BILLING_CURRENCY`（ISO 4217，默认 USD），与 `api_keys` 预算同币。
  *
@@ -837,7 +837,7 @@ function resolveCatalogBillingPrices(options: {
 
 /**
  * 供应侧基数单价：始终来自 `models.pricing_profile`（忽略 route nested `metered`）。
- * 调用方再乘 `metered_factor × schedule.metered`。
+ * 调用方再按 `pricing-schedule` 合成有效倍率。
  */
 export function resolveSupplierBillingPrices(options: {
 	basisInputTokens: number;
@@ -870,7 +870,7 @@ export function resolveStandardBillingPrices(options: {
 
 /**
  * 用户预算侧基数单价：始终来自 `models.pricing_profile`（忽略 route nested `charged`）。
- * 调用方再乘 `charged_factor × schedule.charged`。
+ * 调用方再按 `pricing-schedule` 合成有效倍率。
  */
 export function resolveChargedBillingPrices(options: {
 	basisInputTokens: number;

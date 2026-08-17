@@ -171,6 +171,41 @@ describe('estimateImageCosts', () => {
 		assert.equal(costs.logImageCounts?.outputImageCount, 1);
 	});
 
+	it('per_image override schedule uses window factor instead of multiplying', async () => {
+		const allDay = [{ start: '00:00', end: '24:00', factor: 2 }];
+		const multiply = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: JSON.stringify({
+				charged_factor: 1.5,
+				metered_factor: 1,
+				schedule: { charged: allDay, metered: allDay },
+			}),
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+		});
+		const override = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: JSON.stringify({
+				charged_factor: 1.5,
+				metered_factor: 1,
+				schedule: { mode: 'override', charged: allDay, metered: allDay },
+			}),
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+		});
+		const base = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: null,
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+		});
+		assert.ok(Math.abs(multiply.chargedCost - base.chargedCost * 3) < 1e-9);
+		assert.ok(Math.abs(override.chargedCost - base.chargedCost * 2) < 1e-9);
+	});
+
 	it('per_image applies charged_factor from route override', async () => {
 		const base = await estimateImageCosts(mockRepos(), {
 			modelPricingProfileJson: PER_IMAGE_PROFILE,
