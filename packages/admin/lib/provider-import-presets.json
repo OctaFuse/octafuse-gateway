@@ -118,6 +118,63 @@
 		}
 	},
 	{
+		"name": "BytePlus ModelArk",
+		"vendor_key": "volcengine",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
+					"images.generations": "https://ark.ap-southeast.bytepluses.com/api/v3/images/generations"
+				}
+			}
+		},
+		"description": "BytePlus ModelArk (Volcengine international, ap-southeast). Capability URLs only: chat/completions + images/generations. Do not mix with China-region ark.cn-beijing.volces.com.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "BytePlus ModelArk",
+					"description": "火山方舟国际站（BytePlus）按量端点，覆盖对话与图片生成。"
+				},
+				"en": {
+					"name": "BytePlus ModelArk",
+					"description": "International Volcengine ModelArk endpoints for chat and image generation."
+				}
+			},
+			"links": {
+				"platform": "https://console.byteplus.com/ark/",
+				"api_keys": "https://console.byteplus.com/ark/region:ark+ap-southeast-1/apiKey"
+			}
+		}
+	},
+	{
+		"name": "BytePlus ModelArk (Coding Plan)",
+		"vendor_key": "volcengine",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://ark.ap-southeast.bytepluses.com/api/coding/v3/chat/completions"
+				}
+			}
+		},
+		"description": "BytePlus ModelArk Coding Plan–only endpoints (/api/coding…). Do not mix with the standard /api/v3 path or plan quota will not apply.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "BytePlus ModelArk（Coding Plan）",
+					"description": "BytePlus ModelArk Coding Plan 专用对话端点。"
+				},
+				"en": {
+					"name": "BytePlus ModelArk (Coding Plan)",
+					"description": "Coding Plan chat endpoints for BytePlus ModelArk."
+				}
+			},
+			"links": {
+				"platform": "https://console.byteplus.com/ark/",
+				"api_keys": "https://console.byteplus.com/ark/region:ark+ap-southeast-1/apiKey"
+			}
+		}
+	},
+	{
 		"name": "Alibaba Cloud Bailian",
 		"vendor_key": "aliyun",
 		"icon_key": "bailian",
@@ -177,6 +234,68 @@
 			"links": {
 				"platform": "https://bailian.console.aliyun.com/",
 				"api_keys": "https://bailian.console.aliyun.com/cn-beijing/?tab=app#/api-key"
+			}
+		}
+	},
+	{
+		"name": "Alibaba Cloud Bailian (International)",
+		"vendor_key": "aliyun",
+		"icon_key": "bailian",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
+				}
+			},
+			"dashscope": {
+				"base": "https://dashscope-intl.aliyuncs.com/api/v1"
+			}
+		},
+		"description": "Singapore / international Model Studio pay-as-you-go. Do not mix with China-region dashscope.aliyuncs.com or Coding Plan coding-intl.dashscope.aliyuncs.com keys.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "阿里云百炼（国际站）",
+					"description": "阿里云百炼国际站按量端点，提供 OpenAI 兼容对话与 DashScope 原生音频接口。"
+				},
+				"en": {
+					"name": "Alibaba Cloud Model Studio (International)",
+					"description": "International pay-as-you-go Model Studio endpoints for OpenAI-compatible chat plus native DashScope audio."
+				}
+			},
+			"links": {
+				"platform": "https://modelstudio.console.alibabacloud.com/"
+			}
+		}
+	},
+	{
+		"name": "Alibaba Cloud Bailian (Coding Plan International)",
+		"vendor_key": "aliyun",
+		"icon_key": "bailian",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://coding-intl.dashscope.aliyuncs.com/v1/chat/completions"
+				}
+			},
+			"anthropic": {
+				"base": "https://coding-intl.dashscope.aliyuncs.com/apps/anthropic"
+			}
+		},
+		"description": "International Coding Plan–only endpoints and plan keys (sk-sp-*). Do not mix with dashscope-intl.aliyuncs.com pay-as-you-go or China-region coding.dashscope.aliyuncs.com.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "阿里云百炼（Coding Plan 国际站）",
+					"description": "阿里云百炼国际站 Coding Plan 专用端点，使用独立的套餐 Key 与额度。"
+				},
+				"en": {
+					"name": "Alibaba Cloud Model Studio (Coding Plan International)",
+					"description": "International Coding Plan endpoints that use plan-specific keys and quota."
+				}
+			},
+			"links": {
+				"platform": "https://modelstudio.console.alibabacloud.com/"
 			}
 		}
 	},
@@ -583,6 +702,37 @@
 		}
 	},
 	{
+		"name": "Meta Model API",
+		"vendor_key": "meta",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.meta.ai/v1/chat/completions",
+					"responses": "https://api.meta.ai/v1/responses"
+				}
+			},
+			"anthropic": {
+				"base": "https://api.meta.ai"
+			}
+		},
+		"description": "Meta Model API (Muse Spark): OpenAI chat/completions + responses, and Anthropic Messages (root appends /v1/messages). Auth is Bearer MODEL_API_KEY. See llama.developer.meta.com / dev.meta.ai docs.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Meta Model API",
+					"description": "Meta 官方 Model API（Muse Spark），支持 OpenAI Chat / Responses 与 Anthropic Messages。"
+				},
+				"en": {
+					"name": "Meta Model API",
+					"description": "Meta’s official Model API for Muse Spark, with OpenAI Chat/Responses and Anthropic Messages."
+				}
+			},
+			"links": {
+				"platform": "https://llama.developer.meta.com/docs"
+			}
+		}
+	},
+	{
 		"name": "Google Gemini (Generative Language API)",
 		"vendor_key": "google",
 		"endpoints": {
@@ -692,6 +842,65 @@
 		}
 	},
 	{
+		"name": "Cerebras",
+		"vendor_key": "cerebras",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.cerebras.ai/v1/chat/completions"
+				}
+			}
+		},
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Cerebras",
+					"description": "Cerebras Inference 的 OpenAI 兼容高速对话 API。"
+				},
+				"en": {
+					"name": "Cerebras",
+					"description": "Cerebras Inference’s high-speed OpenAI-compatible chat API."
+				}
+			},
+			"links": {
+				"platform": "https://cloud.cerebras.ai/",
+				"api_keys": "https://cloud.cerebras.ai/"
+			}
+		}
+	},
+	{
+		"name": "SambaNova Cloud",
+		"vendor_key": "sambanova",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.sambanova.ai/v1/chat/completions",
+					"responses": "https://api.sambanova.ai/v1/responses"
+				}
+			},
+			"anthropic": {
+				"base": "https://api.sambanova.ai"
+			}
+		},
+		"description": "SambaCloud OpenAI chat/completions + responses, and Anthropic Messages (root appends /v1/messages). See docs.sambanova.ai.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "SambaNova Cloud",
+					"description": "SambaNova Cloud 推理 API，支持 OpenAI Chat / Responses 与 Anthropic Messages。"
+				},
+				"en": {
+					"name": "SambaNova Cloud",
+					"description": "SambaNova Cloud inference API with OpenAI Chat/Responses and Anthropic Messages."
+				}
+			},
+			"links": {
+				"platform": "https://cloud.sambanova.ai/",
+				"api_keys": "https://cloud.sambanova.ai/apis"
+			}
+		}
+	},
+	{
 		"name": "xAI (Grok)",
 		"vendor_key": "xai",
 		"endpoints": {
@@ -764,6 +973,61 @@
 			},
 			"links": {
 				"platform": "https://app.fireworks.ai/"
+			}
+		}
+	},
+	{
+		"name": "DeepInfra",
+		"vendor_key": "deepinfra",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.deepinfra.com/v1/openai/chat/completions"
+				}
+			}
+		},
+		"description": "OpenAI-compatible Chat Completions only on this template (SDK base is /v1/openai). See docs.deepinfra.com.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "DeepInfra",
+					"description": "DeepInfra 开源模型推理的 OpenAI 兼容对话 API。"
+				},
+				"en": {
+					"name": "DeepInfra",
+					"description": "DeepInfra’s OpenAI-compatible chat API for hosted open-source models."
+				}
+			},
+			"links": {
+				"platform": "https://deepinfra.com/",
+				"api_keys": "https://deepinfra.com/dash/api_keys"
+			}
+		}
+	},
+	{
+		"name": "Novita AI",
+		"vendor_key": "novita",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.novita.ai/openai/v1/chat/completions"
+				}
+			}
+		},
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Novita AI",
+					"description": "Novita 模型云的 OpenAI 兼容对话 API。"
+				},
+				"en": {
+					"name": "Novita AI",
+					"description": "Novita’s OpenAI-compatible chat API."
+				}
+			},
+			"links": {
+				"platform": "https://novita.ai/",
+				"api_keys": "https://novita.ai/settings"
 			}
 		}
 	},
@@ -1111,6 +1375,94 @@
 			"links": {
 				"platform": "https://opencode.ai/go",
 				"api_keys": "https://opencode.ai/auth"
+			}
+		}
+	},
+	{
+		"name": "Command Code",
+		"vendor_key": "commandcode",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.commandcode.ai/provider/v1/chat/completions"
+				}
+			},
+			"anthropic": {
+				"base": "https://api.commandcode.ai/provider"
+			}
+		},
+		"description": "Command Code Provider API: OpenAI chat/completions for GPT/open-source/Gemini-shaped models; Anthropic Messages for Claude (root appends /v1/messages). Sending a Claude model to /chat/completions (or the reverse) returns 400. Optional ZDR header x-cmd-zdr is not configured by this template. See commandcode.ai/docs/provider.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Command Code",
+					"description": "Command Code Provider API，按模型分别使用 OpenAI Chat Completions 或 Anthropic Messages。"
+				},
+				"en": {
+					"name": "Command Code",
+					"description": "Command Code Provider API with OpenAI Chat Completions and Anthropic Messages, split by model family."
+				}
+			},
+			"links": {
+				"platform": "https://commandcode.ai/provider",
+				"api_keys": "https://commandcode.ai/"
+			}
+		}
+	},
+	{
+		"name": "Hugging Face Inference Providers",
+		"vendor_key": "huggingface",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://router.huggingface.co/v1/chat/completions"
+				}
+			}
+		},
+		"description": "OpenAI-compatible chat-only router (router.huggingface.co/v1). Model IDs often use org/model:provider (or :fastest). Requires an HF token with Inference Providers permission. Not a full OpenAI Images/Audio root.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Hugging Face Inference Providers",
+					"description": "Hugging Face 推理路由的 OpenAI 兼容对话 API，可按模型指定上游供应商。"
+				},
+				"en": {
+					"name": "Hugging Face Inference Providers",
+					"description": "Hugging Face’s OpenAI-compatible chat router across many inference providers."
+				}
+			},
+			"links": {
+				"platform": "https://huggingface.co/docs/inference-providers",
+				"api_keys": "https://huggingface.co/settings/tokens"
+			}
+		}
+	},
+	{
+		"name": "Vercel AI Gateway",
+		"vendor_key": "vercel",
+		"endpoints": {
+			"openai": {
+				"base": "https://ai-gateway.vercel.sh/v1"
+			},
+			"anthropic": {
+				"base": "https://ai-gateway.vercel.sh"
+			}
+		},
+		"description": "Vercel AI Gateway: OpenAI-compatible root (/v1, chat + responses) and Anthropic Messages (root appends /v1/messages). Auth is the AI Gateway API key (or Vercel OIDC). Model IDs use provider/model slugs. See vercel.com/docs/ai-gateway.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Vercel AI Gateway",
+					"description": "Vercel AI Gateway 聚合网关，支持 OpenAI 兼容协议与 Anthropic Messages。"
+				},
+				"en": {
+					"name": "Vercel AI Gateway",
+					"description": "Vercel AI Gateway with OpenAI-compatible and Anthropic Messages endpoints."
+				}
+			},
+			"links": {
+				"platform": "https://vercel.com/ai-gateway",
+				"api_keys": "https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%2Fapi-keys"
 			}
 		}
 	},

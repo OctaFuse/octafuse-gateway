@@ -120,7 +120,12 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 
 	// Product-specific hosts must be checked before their parent cloud/vendor domains.
 	if (hostnameMatches(hostname, 'maas.aliyuncs.com')) return identity('aliyun', 'qwen');
-	if (hostnameMatches(hostname, 'dashscope.aliyuncs.com')) return identity('aliyun', 'bailian');
+	if (
+		hostnameMatches(hostname, 'dashscope.aliyuncs.com') ||
+		hostnameMatches(hostname, 'dashscope-intl.aliyuncs.com')
+	) {
+		return identity('aliyun', 'bailian');
+	}
 	if (
 		hostnameMatches(hostname, 'hunyuan.cloud.tencent.com') ||
 		hostnameMatches(hostname, 'lkeap.cloud.tencent.com')
@@ -136,6 +141,7 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 	const domainRules: ReadonlyArray<readonly [string, ProviderCatalogIdentity]> = [
 		['deepseek.com', identity('deepseek')],
 		['volces.com', identity('volcengine')],
+		['bytepluses.com', identity('volcengine')],
 		['qianfan.baidubce.com', identity('baidu')],
 		['bigmodel.cn', identity('zhipu')],
 		['moonshot.cn', identity('moonshot')],
@@ -145,9 +151,17 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 		['generativelanguage.googleapis.com', identity('google')],
 		['mistral.ai', identity('mistral')],
 		['groq.com', identity('groq')],
+		['cerebras.ai', identity('cerebras')],
+		['sambanova.ai', identity('sambanova')],
 		['x.ai', identity('xai')],
 		['together.xyz', identity('together')],
 		['fireworks.ai', identity('fireworks')],
+		['deepinfra.com', identity('deepinfra')],
+		['novita.ai', identity('novita')],
+		['huggingface.co', identity('huggingface')],
+		['commandcode.ai', identity('commandcode')],
+		['ai-gateway.vercel.sh', identity('vercel')],
+		['meta.ai', identity('meta')],
 		['perplexity.ai', identity('perplexity')],
 		['cohere.ai', identity('cohere')],
 		['api.nvidia.com', identity('nvidia')],
@@ -247,7 +261,7 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 	const vendorRules: ReadonlyArray<readonly [readonly string[], ProviderCatalogIdentity]> = [
 		[['azure openai', 'azure', '微软云'], identity('azure')],
 		[['deepseek', '深度求索'], identity('deepseek')],
-		[['volcengine', '火山方舟', '火山引擎'], identity('volcengine')],
+		[['volcengine', '火山方舟', '火山引擎', 'byteplus'], identity('volcengine')],
 		[['alibaba', 'aliyun', '阿里云'], identity('aliyun')],
 		[['tencent', '腾讯云'], identity('tencent')],
 		[['qianfan', '千帆', '百度'], identity('baidu')],
@@ -260,9 +274,17 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 		[['gemini', 'google', '谷歌'], identity('google')],
 		[['mistral'], identity('mistral')],
 		[['groq'], identity('groq')],
+		[['cerebras'], identity('cerebras')],
+		[['sambanova', 'samba nova'], identity('sambanova')],
 		[['x.ai', 'xai', 'grok'], identity('xai')],
 		[['together'], identity('together')],
 		[['fireworks'], identity('fireworks')],
+		[['deepinfra', 'deep infra'], identity('deepinfra')],
+		[['novita'], identity('novita')],
+		[['huggingface', 'hugging face'], identity('huggingface')],
+		[['commandcode', 'command code'], identity('commandcode')],
+		[['vercel'], identity('vercel')],
+		[['meta', 'muse spark'], identity('meta')],
 		[['perplexity'], identity('perplexity')],
 		[['cohere'], identity('cohere')],
 		[['nvidia', '英伟达', 'nim'], identity('nvidia')],
