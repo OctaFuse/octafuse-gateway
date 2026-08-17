@@ -15,7 +15,7 @@ import {
 	type SurfaceCatalogGroup,
 } from '../route-utils';
 import type { RouteListRow, RouteProtocolGroupSection } from '../types';
-import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupNode, UpstreamPoolPanel } from './route-model-flow';
+import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupNode, UpstreamPoolPanel, openSectionStickyDialog } from './route-model-flow';
 
 type Props = {
 	cards: RouteModelGroup[];
@@ -222,7 +222,6 @@ function CatalogUpstream({
 	onEdit,
 	onToggleStatus,
 	onOpenStrategyDialog,
-	onOpenProviderStickyDialog,
 }: {
 	section: RouteProtocolGroupSection<RouteListRow>;
 	card: RouteModelGroup;
@@ -233,7 +232,6 @@ function CatalogUpstream({
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
-	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
 	return (
 		<UpstreamPoolPanel
@@ -247,7 +245,6 @@ function CatalogUpstream({
 			onEdit={onEdit}
 			onToggleStatus={onToggleStatus}
 			onOpenStrategyDialog={onOpenStrategyDialog}
-			onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 		/>
 	);
 }
@@ -299,6 +296,12 @@ function GroupToUpstreamBranch({
 						routeGroup={section.group}
 						copiedModelId={copiedModelId}
 						onCopyModelId={onCopyModelId}
+						sticky={{
+							enabled: section.poolStickyEnabled,
+							idleTtlSeconds: section.poolStickyIdleTtlSeconds,
+							poolId: section.poolId,
+							onClick: () => openSectionStickyDialog(onOpenProviderStickyDialog, card, section),
+						}}
 					/>
 					<FlowConnectorAdd
 						railClass={railColor}
@@ -322,7 +325,6 @@ function GroupToUpstreamBranch({
 					onEdit={onEdit}
 					onToggleStatus={onToggleStatus}
 					onOpenStrategyDialog={onOpenStrategyDialog}
-					onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 				/>
 			</div>
 		</div>

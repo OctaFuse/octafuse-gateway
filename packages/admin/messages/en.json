@@ -617,7 +617,6 @@
 			"stickyRefreshUpdatedAgo": "Updated {ago} ago"
 		},
 		"flow": {
-			"providerStep": "Upstream",
 			"requestNode": "Surface",
 			"catalogColumnSurface": "Surface",
 			"catalogColumnModel": "Model",
@@ -664,9 +663,9 @@
 			"disabledShort": "Disabled",
 			"addRoute": "Add route",
 			"noProviders": "No providers available",
-			"firstAttempt": "First attempt layer",
+			"firstAttempt": "First attempt",
 			"fallback": "On failure, continue",
-			"fallbackLayer": "Fallback layer",
+			"fallbackLayer": "Fallback",
 			"weight": "W{value}",
 			"chargedShort": "C",
 			"meteredShort": "M",

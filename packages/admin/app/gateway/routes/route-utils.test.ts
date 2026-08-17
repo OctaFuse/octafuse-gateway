@@ -7,6 +7,7 @@ import {
 	compatibleAdaptersForRoute,
 	factorChipClassForValue,
 	factorLevelForValue,
+	formatFactorMultiplierForChip,
 	formatScheduleWindowsHint,
 	groupScheduleWindows,
 	scheduleWindowShapeKey,
@@ -334,6 +335,13 @@ describe('route factor presentation', () => {
 		assert.equal(hasBasePricingInversion(1, 1), false);
 		assert.equal(hasBasePricingInversion(1.1, 1), false);
 		assert.equal(hasBasePricingInversion(Number.NaN, 1), false);
+	});
+
+	it('drops trailing zeros on chip multipliers', () => {
+		assert.equal(formatFactorMultiplierForChip(1), '×1');
+		assert.equal(formatFactorMultiplierForChip(0), '×0');
+		assert.equal(formatFactorMultiplierForChip(1.9), '×1.9');
+		assert.equal(formatFactorMultiplierForChip(0.75), '×0.75');
 	});
 });
 

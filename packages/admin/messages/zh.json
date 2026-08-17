@@ -617,7 +617,6 @@
 			"stickyRefreshUpdatedAgo": "{ago} 前更新"
 		},
 		"flow": {
-			"providerStep": "上游供应商",
 			"requestNode": "请求入口",
 			"catalogColumnSurface": "请求入口",
 			"catalogColumnModel": "模型",
@@ -664,9 +663,9 @@
 			"disabledShort": "未启用",
 			"addRoute": "添加路由",
 			"noProviders": "当前没有可用供应商",
-			"firstAttempt": "首选层",
+			"firstAttempt": "首选",
 			"fallback": "失败后继续",
-			"fallbackLayer": "回退层",
+			"fallbackLayer": "回退",
 			"weight": "W{value}",
 			"chargedShort": "C",
 			"meteredShort": "M",

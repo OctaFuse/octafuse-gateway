@@ -374,8 +374,7 @@ export function formatFactorValue(n: number): string {
 }
 
 export function formatFactorValueForChip(n: number): string {
-	if (!Number.isFinite(n)) return '—';
-	return n.toFixed(2);
+	return formatFactorValue(n);
 }
 
 export function formatFactorMultiplier(value: number): string {
@@ -383,7 +382,7 @@ export function formatFactorMultiplier(value: number): string {
 }
 
 export function formatFactorMultiplierForChip(value: number): string {
-	return `×${formatFactorValueForChip(value)}`;
+	return formatFactorMultiplier(value);
 }
 
 export function chargedFactorTooltip(value: number | null): string {

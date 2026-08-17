@@ -452,74 +452,31 @@ export function FlowConnectorAdd({
 	);
 }
 
-function UpstreamToolbar({
-	routeGroup,
-	poolId,
-	stickyEnabled,
-	stickyIdleTtlSeconds,
-	activeCount,
-	totalCount,
-	onOpenSticky,
-}: {
-	routeGroup: string;
-	poolId: string | null;
-	stickyEnabled: boolean;
-	stickyIdleTtlSeconds: number;
-	activeCount: number;
-	totalCount: number;
-	onOpenSticky: () => void;
-}) {
-	const t = useTranslations('routes.flow');
-	const tCard = useTranslations('routes.card');
-	const isDefaultGroup = routeGroup === 'default';
+function stickyTargetsFromSection(section: RouteProtocolGroupSection<RouteListRow>) {
+	return section.routes.map((route) => ({
+		id: route.id,
+		providerName: route.provider_name || route.provider_id,
+		priority: route.priority,
+		weight: Number(route.weight ?? 1) || 1,
+	}));
+}
 
-	return (
-		<div
-			className={`flex min-w-0 flex-wrap items-center justify-between gap-2 border-b px-3 py-2.5 ${
-				isDefaultGroup
-					? 'border-sky-200 bg-sky-100/70'
-					: 'border-violet-200 bg-violet-100/70'
-			}`}
-		>
-			<div className="flex min-w-0 flex-wrap items-center gap-1.5">
-				<span
-					className={`text-[10px] font-semibold uppercase tracking-wider ${
-						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
-					}`}
-				>
-					{t('providerStep')}
-				</span>
-				<span
-					className={`max-w-full truncate rounded-md bg-white/85 px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
-						isDefaultGroup
-							? 'text-sky-800 ring-sky-200'
-							: 'text-violet-800 ring-violet-200'
-					}`}
-					title={t('routeGroup')}
-					aria-label={`${t('routeGroup')}: ${routeGroup}`}
-				>
-					{routeGroup}
-				</span>
-				<span
-					className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1 ring-inset ${
-						activeCount > 0
-							? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-							: 'bg-red-50 text-red-700 ring-red-200'
-					}`}
-					title={tCard('activeTotalRoutes', { active: activeCount, total: totalCount })}
-				>
-					{t('tierActiveTotal', { active: activeCount, total: totalCount })}
-				</span>
-			</div>
-			<div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5">
-				<ProviderStickyChip
-					enabled={stickyEnabled}
-					idleTtlSeconds={stickyIdleTtlSeconds}
-					poolId={poolId}
-					onClick={onOpenSticky}
-				/>
-			</div>
-		</div>
+export function openSectionStickyDialog(
+	onOpen: OpenProviderStickyDialog,
+	card: RouteModelGroup,
+	section: RouteProtocolGroupSection<RouteListRow>,
+) {
+	onOpen(
+		card.model_id,
+		card.title,
+		section.protocol,
+		section.protocolLabel,
+		section.group,
+		section.requestOperation,
+		section.poolId,
+		section.poolStickyEnabled,
+		section.poolStickyIdleTtlSeconds,
+		stickyTargetsFromSection(section),
 	);
 }
 
@@ -528,11 +485,18 @@ export function RouteGroupNode({
 	routeGroup,
 	copiedModelId,
 	onCopyModelId,
+	sticky,
 }: {
 	modelId: string;
 	routeGroup: string;
 	copiedModelId: string | null;
 	onCopyModelId: (modelId: string) => void;
+	sticky?: {
+		enabled: boolean;
+		idleTtlSeconds: number;
+		poolId: string | null;
+		onClick: () => void;
+	};
 }) {
 	const t = useTranslations('routes.flow');
 	const tCard = useTranslations('routes.card');
@@ -541,54 +505,66 @@ export function RouteGroupNode({
 	const copied = copiedModelId === requestedModelId;
 
 	return (
-		<div
-			className={`w-full min-w-0 rounded-lg border px-3 py-2.5 shadow-sm ${
-				isDefaultGroup
-					? 'border-sky-200 bg-sky-50/75'
-					: 'border-violet-200 bg-violet-50/75'
-			}`}
-			aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
-		>
-			<div className="flex min-w-0 items-center gap-1.5">
-				<span
-					className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${
-						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
-					}`}
-				>
-					{t('routeGroup')}
-				</span>
-				<span
-					className={`min-w-0 truncate text-[11px] font-semibold ${
-						isDefaultGroup ? 'text-sky-900' : 'text-violet-900'
-					}`}
-				>
-					{routeGroup}
-				</span>
+		<div className="w-full min-w-0">
+			<div
+				className={`w-full min-w-0 rounded-lg border px-3 py-2.5 shadow-sm ${
+					isDefaultGroup
+						? 'border-sky-200 bg-sky-50/75'
+						: 'border-violet-200 bg-violet-50/75'
+				}`}
+				aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}
+			>
+				<div className="flex min-w-0 items-center gap-1.5">
+					<span
+						className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${
+							isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
+						}`}
+					>
+						{t('routeGroup')}
+					</span>
+					<span
+						className={`min-w-0 truncate text-[11px] font-semibold ${
+							isDefaultGroup ? 'text-sky-900' : 'text-violet-900'
+						}`}
+					>
+						{routeGroup}
+					</span>
+				</div>
+				<div className="mt-1 flex min-w-0 items-center gap-0.5">
+					<span
+						className={`min-w-0 truncate font-mono text-[10px] ${
+							isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
+						}`}
+						title={`model=${requestedModelId}`}
+					>
+						model={requestedModelId}
+					</span>
+					<button
+						type="button"
+						onClick={() => void onCopyModelId(requestedModelId)}
+						className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+							copied
+								? 'bg-emerald-50 text-emerald-600'
+								: isDefaultGroup
+									? 'text-sky-500 hover:bg-sky-100 hover:text-sky-800'
+									: 'text-violet-500 hover:bg-violet-100 hover:text-violet-800'
+						}`}
+						title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
+					>
+						<ClipboardDocumentIcon className="h-3.5 w-3.5" />
+					</button>
+				</div>
 			</div>
-			<div className="mt-1 flex min-w-0 items-center gap-0.5">
-				<span
-					className={`min-w-0 truncate font-mono text-[10px] ${
-						isDefaultGroup ? 'text-sky-700' : 'text-violet-700'
-					}`}
-					title={`model=${requestedModelId}`}
-				>
-					model={requestedModelId}
-				</span>
-				<button
-					type="button"
-					onClick={() => void onCopyModelId(requestedModelId)}
-					className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-						copied
-							? 'bg-emerald-50 text-emerald-600'
-							: isDefaultGroup
-								? 'text-sky-500 hover:bg-sky-100 hover:text-sky-800'
-								: 'text-violet-500 hover:bg-violet-100 hover:text-violet-800'
-					}`}
-					title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
-				>
-					<ClipboardDocumentIcon className="h-3.5 w-3.5" />
-				</button>
-			</div>
+			{sticky ? (
+				<div className="mt-1.5 flex justify-center">
+					<ProviderStickyChip
+						enabled={sticky.enabled}
+						idleTtlSeconds={sticky.idleTtlSeconds}
+						poolId={sticky.poolId}
+						onClick={sticky.onClick}
+					/>
+				</div>
+			) : null}
 		</div>
 	);
 }
@@ -916,7 +892,6 @@ type UpstreamPoolPanelProps = {
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
-	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 };
 
 export function UpstreamPoolPanel({
@@ -930,7 +905,6 @@ export function UpstreamPoolPanel({
 	onEdit,
 	onToggleStatus,
 	onOpenStrategyDialog,
-	onOpenProviderStickyDialog,
 }: UpstreamPoolPanelProps) {
 	const t = useTranslations('routes.flow');
 	const [failoverOpen, setFailoverOpen] = useState(false);
@@ -975,90 +949,52 @@ export function UpstreamPoolPanel({
 	};
 
 	const isSummary = density === 'summary';
-	const isDefaultGroup = section.group === 'default';
-	const totalCount = section.routes.length;
-	const activeCount = section.routes.filter((route) => route.status === 'active').length;
 
 	return (
 		<>
 			<div
-				className={`min-w-0 overflow-hidden rounded-xl border shadow-sm ring-1 ${
-					isDefaultGroup
-						? 'border-slate-200/90 border-l-4 border-l-sky-400 bg-white ring-sky-100/90'
-						: 'border-slate-200/90 border-l-4 border-l-violet-400 bg-white ring-violet-100/90'
-				}`}
+				className={
+					isSummary
+						? 'flex min-w-0 flex-col items-stretch gap-1'
+						: 'flex min-w-0 flex-col items-stretch gap-3 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto'
+				}
+				aria-label={t('priorityLadderAria')}
 			>
-				<UpstreamToolbar
-					routeGroup={section.group}
-					poolId={section.poolId}
-					stickyEnabled={section.poolStickyEnabled}
-					stickyIdleTtlSeconds={section.poolStickyIdleTtlSeconds}
-					activeCount={activeCount}
-					totalCount={totalCount}
-					onOpenSticky={() =>
-						onOpenProviderStickyDialog(
-							card.model_id,
-							card.title,
-							section.protocol,
-							section.protocolLabel,
-							section.group,
-							section.requestOperation,
-							section.poolId,
-							section.poolStickyEnabled,
-							section.poolStickyIdleTtlSeconds,
-							section.routes.map((r) => ({
-								id: r.id,
-								providerName: r.provider_name || r.provider_id,
-								priority: r.priority,
-								weight: Number(r.weight ?? 1) || 1,
-							}))
-						)
-					}
-				/>
-				<div
-					className={`bg-slate-100/70 p-3 ${
-						isSummary
-							? 'flex min-w-0 flex-col items-stretch gap-1'
-							: 'flex min-w-0 flex-col items-stretch gap-3 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto'
-					}`}
-					aria-label={t('priorityLadderAria')}
-				>
-					{priorityLayers.map(([priority, routes], layerIndex) => (
-						<div
-							key={priority}
-							className={
-								isSummary
-									? 'flex min-w-0 flex-col items-stretch'
-									: 'flex min-w-0 shrink-0 flex-col items-stretch gap-2 md:flex-row md:items-center'
-							}
-						>
-							{layerIndex > 0 ? (
-								<FailoverConnector
-									density={density}
-									onOpen={() => setFailoverOpen(true)}
-								/>
-							) : null}
-							<PriorityTierPanel
-								priority={priority}
-								routes={routes}
-								layerIndex={layerIndex}
+				{priorityLayers.map(([priority, routes], layerIndex) => (
+					<div
+						key={priority}
+						className={
+							isSummary
+								? 'flex min-w-0 flex-col items-stretch'
+								: 'flex min-w-0 shrink-0 flex-col items-stretch gap-2 md:flex-row md:items-center'
+						}
+					>
+						{layerIndex > 0 ? (
+							<FailoverConnector
 								density={density}
-								expanded={isTierExpanded(priority)}
-								onToggleExpanded={() => togglePriority(priority)}
-								section={section}
-								card={card}
-								meta={meta}
-								providerMeta={providerMeta}
-								globalRouteStrategy={globalRouteStrategy}
-								stickyCountsByTarget={stickyCountsByTarget}
-								togglingId={togglingId}
-								onEdit={onEdit}
-								onToggleStatus={onToggleStatus}
-								onOpenStrategyDialog={onOpenStrategyDialog}
+								onOpen={() => setFailoverOpen(true)}
 							/>
-						</div>
-					))}
-				</div>
+						) : null}
+						<PriorityTierPanel
+							priority={priority}
+							routes={routes}
+							layerIndex={layerIndex}
+							density={density}
+							expanded={isTierExpanded(priority)}
+							onToggleExpanded={() => togglePriority(priority)}
+							section={section}
+							card={card}
+							meta={meta}
+							providerMeta={providerMeta}
+							globalRouteStrategy={globalRouteStrategy}
+							stickyCountsByTarget={stickyCountsByTarget}
+							togglingId={togglingId}
+							onEdit={onEdit}
+							onToggleStatus={onToggleStatus}
+							onOpenStrategyDialog={onOpenStrategyDialog}
+						/>
+					</div>
+				))}
 			</div>
 			<FailoverRulesDialog open={failoverOpen} onClose={() => setFailoverOpen(false)} />
 		</>
@@ -1088,6 +1024,7 @@ function FlowBranch({
 	copiedModelId: string | null;
 	onCopyModelId: (modelId: string) => void;
 	onCreate: Props['onCreate'];
+	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
 	const t = useTranslations('routes.flow');
 	const isSummary = density === 'summary';
@@ -1125,6 +1062,12 @@ function FlowBranch({
 						routeGroup={section.group}
 						copiedModelId={copiedModelId}
 						onCopyModelId={onCopyModelId}
+						sticky={{
+							enabled: section.poolStickyEnabled,
+							idleTtlSeconds: section.poolStickyIdleTtlSeconds,
+							poolId: section.poolId,
+							onClick: () => openSectionStickyDialog(onOpenProviderStickyDialog, card, section),
+						}}
 					/>
 					<FlowConnectorAdd
 						railClass={groupRail}
@@ -1149,7 +1092,6 @@ function FlowBranch({
 					onEdit={onEdit}
 					onToggleStatus={onToggleStatus}
 					onOpenStrategyDialog={onOpenStrategyDialog}
-					onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 				/>
 			</div>
 		</div>

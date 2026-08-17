@@ -617,7 +617,6 @@
 			"stickyRefreshUpdatedAgo": "{ago} 전 업데이트"
 		},
 		"flow": {
-			"providerStep": "업스트림 공급자",
 			"requestNode": "요청 진입점",
 			"catalogColumnSurface": "요청 진입점",
 			"catalogColumnModel": "모델",
@@ -664,9 +663,9 @@
 			"disabledShort": "비활성",
 			"addRoute": "라우트 추가",
 			"noProviders": "사용 가능한 공급자가 없습니다",
-			"firstAttempt": "첫 시도 계층",
+			"firstAttempt": "첫 시도",
 			"fallback": "실패 시 계속",
-			"fallbackLayer": "대체 계층",
+			"fallbackLayer": "대체",
 			"weight": "W{value}",
 			"chargedShort": "C",
 			"meteredShort": "M",

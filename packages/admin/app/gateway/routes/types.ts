@@ -206,7 +206,7 @@ export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
 export const ROUTE_GROUP_CARD_BADGE_CLASS = 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200';
 
 export const FACTOR_CHIP_BASE =
-	'inline-flex min-w-[3rem] w-auto shrink-0 justify-end whitespace-nowrap rounded-md px-1.5 py-0 text-[10px] font-semibold font-mono tabular-nums leading-4 ring-1 ring-inset';
+	'inline-flex w-auto shrink-0 whitespace-nowrap rounded-md px-1.5 py-0 text-[10px] font-semibold font-mono tabular-nums leading-4 ring-1 ring-inset';
 
 export const routePricePanelShell: Record<'neutral' | 'charged' | 'metered', string> = {
 	neutral:

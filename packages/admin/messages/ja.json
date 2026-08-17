@@ -617,7 +617,6 @@
 			"stickyRefreshUpdatedAgo": "{ago}前に更新"
 		},
 		"flow": {
-			"providerStep": "上流プロバイダー",
 			"requestNode": "リクエスト入口",
 			"catalogColumnSurface": "リクエスト入口",
 			"catalogColumnModel": "モデル",
@@ -664,9 +663,9 @@
 			"disabledShort": "無効",
 			"addRoute": "ルートを追加",
 			"noProviders": "利用可能なプロバイダーがありません",
-			"firstAttempt": "最初の試行レイヤー",
+			"firstAttempt": "最初の試行",
 			"fallback": "失敗時に続行",
-			"fallbackLayer": "フォールバックレイヤー",
+			"fallbackLayer": "フォールバック",
 			"weight": "W{value}",
 			"chargedShort": "C",
 			"meteredShort": "M",
