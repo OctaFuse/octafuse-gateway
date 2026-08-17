@@ -9,6 +9,7 @@ import {
 	matchResponsesPlaygroundSample,
 	PLAYGROUND_LLM_SAMPLE_IDS,
 	playgroundLlmFamilyForRoute,
+	playgroundLlmSampleBody,
 	resolvePlaygroundLlmFamily,
 	routeMatchesSearch,
 	templateForRoute,
@@ -138,6 +139,154 @@ describe('playground-utils', () => {
 			generationConfig?: { thinkingConfig?: { includeThoughts?: boolean } };
 		};
 		assert.equal(gemini.generationConfig?.thinkingConfig?.includeThoughts, true);
+	});
+
+	it('Claude reasoning samples follow Anthropic thinking modes by model generation', () => {
+		const parse = (modelId: string, providerModelName = modelId) =>
+			JSON.parse(
+				playgroundLlmSampleBody('anthropic', 'reasoning', { modelId, providerModelName }),
+			) as {
+				thinking?: { type?: string; budget_tokens?: number; display?: string };
+				output_config?: { effort?: string };
+			};
+
+		const haiku45 = parse('claude-haiku-4.5', 'claude-haiku-4-5-20251001');
+		assert.equal(haiku45.thinking?.type, 'enabled');
+		assert.equal(haiku45.thinking?.budget_tokens, 1024);
+		assert.equal(haiku45.output_config, undefined);
+
+		const sonnet45 = parse('claude-sonnet-4.5', 'claude-sonnet-4-5-20250929');
+		assert.equal(sonnet45.thinking?.type, 'enabled');
+		assert.equal(sonnet45.output_config, undefined);
+
+		const opus45 = parse('claude-opus-4.5', 'claude-opus-4-5-20251101');
+		assert.equal(opus45.thinking?.type, 'enabled');
+		assert.equal(opus45.thinking?.budget_tokens, 1024);
+		assert.equal(opus45.output_config?.effort, 'medium');
+
+		const sonnet46 = parse('claude-sonnet-4.6', 'claude-sonnet-4-6');
+		assert.equal(sonnet46.thinking?.type, 'adaptive');
+		assert.equal(sonnet46.thinking?.display, 'summarized');
+		assert.equal(sonnet46.output_config?.effort, 'high');
+		assert.equal(sonnet46.thinking?.budget_tokens, undefined);
+
+		const opus47 = parse('claude-opus-4.7', 'claude-opus-4-7');
+		assert.equal(opus47.thinking?.type, 'adaptive');
+		assert.equal(opus47.output_config?.effort, 'high');
+
+		const opus5 = parse('claude-opus-5');
+		assert.equal(opus5.thinking?.type, 'adaptive');
+		assert.equal(opus5.thinking?.display, 'summarized');
+
+		const fable5 = parse('claude-fable-5');
+		assert.equal(fable5.thinking?.type, 'adaptive');
+
+		const sonnet4 = parse('claude-sonnet-4', 'claude-sonnet-4-20250514');
+		assert.equal(sonnet4.thinking?.type, 'enabled');
+		assert.equal(sonnet4.output_config, undefined);
+
+		const sonnet37 = parse('claude-3.7-sonnet', 'claude-3-7-sonnet-20250219');
+		assert.equal(sonnet37.thinking?.type, 'enabled');
+		assert.equal(sonnet37.output_config, undefined);
+
+		assert.equal(
+			matchPlaygroundLlmSample(
+				'anthropic',
+				playgroundLlmSampleBody('anthropic', 'reasoning', { modelId: 'claude-opus-4.8' }),
+				{ modelId: 'claude-opus-4.8' },
+			),
+			'reasoning',
+		);
+	});
+
+	it('Gemini reasoning samples use thinkingBudget on 2.5 and thinkingLevel on 3+', () => {
+		const gemini25 = JSON.parse(
+			playgroundLlmSampleBody('gemini', 'reasoning', { modelId: 'gemini-2.5-pro' }),
+		) as { generationConfig?: { thinkingConfig?: { thinkingBudget?: number; thinkingLevel?: string } } };
+		assert.equal(gemini25.generationConfig?.thinkingConfig?.thinkingBudget, 1024);
+		assert.equal(gemini25.generationConfig?.thinkingConfig?.thinkingLevel, undefined);
+
+		const gemini35 = JSON.parse(
+			playgroundLlmSampleBody('gemini', 'reasoning', { modelId: 'gemini-3.5-flash' }),
+		) as { generationConfig?: { thinkingConfig?: { thinkingBudget?: number; thinkingLevel?: string } } };
+		assert.equal(gemini35.generationConfig?.thinkingConfig?.thinkingLevel, 'MEDIUM');
+		assert.equal(gemini35.generationConfig?.thinkingConfig?.thinkingBudget, undefined);
+	});
+
+	it('omits Chat Completions reasoning_effort for GPT-4o', () => {
+		const gpt4o = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-4o' }),
+		) as { reasoning_effort?: string; max_tokens?: number; max_completion_tokens?: number };
+		assert.equal(gpt4o.reasoning_effort, undefined);
+		assert.equal(gpt4o.max_tokens, 1024);
+		const gpt5 = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-5.4' }),
+		) as { reasoning_effort?: string; max_tokens?: number; max_completion_tokens?: number };
+		assert.equal(gpt5.reasoning_effort, 'medium');
+		assert.equal(gpt5.max_completion_tokens, 4096);
+		assert.equal(gpt5.max_tokens, undefined);
+	});
+
+	it('uses OpenAI-compat vendor thinking fields for DeepSeek, GLM, Qwen, MiniMax, and Kimi', () => {
+		const deepseek = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'deepseek-v4-pro' }),
+		) as { thinking?: { type?: string }; reasoning_effort?: string };
+		assert.equal(deepseek.thinking?.type, 'enabled');
+		assert.equal(deepseek.reasoning_effort, 'high');
+
+		const glm5 = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'glm-5' }),
+		) as { thinking?: { type?: string }; reasoning_effort?: string };
+		assert.equal(glm5.thinking?.type, 'enabled');
+		assert.equal(glm5.reasoning_effort, undefined);
+
+		const glm52 = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'glm-5.2' }),
+		) as { thinking?: { type?: string }; reasoning_effort?: string };
+		assert.equal(glm52.thinking?.type, 'enabled');
+		assert.equal(glm52.reasoning_effort, 'high');
+
+		const qwen = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'qwen3.8-max' }),
+		) as { enable_thinking?: boolean; reasoning_effort?: string; thinking?: unknown };
+		assert.equal(qwen.enable_thinking, true);
+		assert.equal(qwen.reasoning_effort, 'medium');
+		assert.equal(qwen.thinking, undefined);
+
+		const minimax = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'minimax-m2.7' }),
+		) as { reasoning_split?: boolean; thinking?: { type?: string }; reasoning_effort?: string };
+		assert.equal(minimax.reasoning_split, true);
+		assert.equal(minimax.thinking?.type, 'adaptive');
+		assert.equal(minimax.reasoning_effort, undefined);
+
+		const kimi = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'kimi-k2.5' }),
+		) as { thinking?: { type?: string } };
+		assert.equal(kimi.thinking?.type, 'enabled');
+
+		const doubao = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'doubao-seed-2-1-pro-260628' }),
+		) as { thinking?: { type?: string } };
+		assert.equal(doubao.thinking?.type, 'enabled');
+	});
+
+	it('uses max_completion_tokens for GPT-5 connectivity and omits Gemini 2.5 tool arg streaming', () => {
+		const gpt5 = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'connectivity', { modelId: 'gpt-5.4' }),
+		) as { max_completion_tokens?: number; max_tokens?: number };
+		assert.equal(gpt5.max_completion_tokens, 256);
+		assert.equal(gpt5.max_tokens, undefined);
+
+		const gemini25 = JSON.parse(
+			playgroundLlmSampleBody('gemini', 'tools', { modelId: 'gemini-2.5-flash' }),
+		) as { toolConfig?: { functionCallingConfig?: { streamFunctionCallArguments?: boolean } } };
+		assert.equal(gemini25.toolConfig?.functionCallingConfig?.streamFunctionCallArguments, undefined);
+
+		const gemini3 = JSON.parse(
+			playgroundLlmSampleBody('gemini', 'tools', { modelId: 'gemini-3.5-flash' }),
+		) as { toolConfig?: { functionCallingConfig?: { streamFunctionCallArguments?: boolean } } };
+		assert.equal(gemini3.toolConfig?.functionCallingConfig?.streamFunctionCallArguments, true);
 	});
 
 	it('resolvePlaygroundLlmFamily maps chat, responses, anthropic, gemini', () => {

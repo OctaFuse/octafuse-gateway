@@ -19,22 +19,19 @@ export default function SimulatorPage() {
 
 	if (s.loadingCatalog) {
 		return (
-			<div className="flex items-center justify-center h-full min-h-[240px]">
+			<div className="flex h-full min-h-[240px] items-center justify-center">
 				<div className="text-gray-600">{tCommon("loading")}</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-100/90 p-3 sm:p-4 lg:p-5 xl:h-dvh xl:overflow-hidden">
-			<div className="mb-3 shrink-0">
-				<h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-100/90 p-4 sm:p-6 lg:p-8 xl:h-dvh xl:overflow-hidden">
+			<div className="mb-4 shrink-0 sm:mb-5">
+				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
 					{t("title")}
 				</h1>
-				<p
-					className="mt-0.5 max-w-4xl truncate text-xs text-gray-500"
-					title={`${t("subtitle", { product: tBrand("product") })} · ${t("usageNote")}`}
-				>
+				<p className="mt-1 max-w-3xl text-sm text-gray-500">
 					{t("subtitle", { product: tBrand("product") })}
 					<span className="text-gray-400"> · </span>
 					{t("usageNote")}
@@ -42,7 +39,7 @@ export default function SimulatorPage() {
 			</div>
 
 			{s.catalogError ? (
-				<div className="mb-3 max-w-3xl rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+				<div className="mb-4 max-w-3xl rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
 					{s.catalogError}
 				</div>
 			) : null}
@@ -65,7 +62,7 @@ export default function SimulatorPage() {
 					revealError={s.revealError}
 				/>
 				<div className="flex min-h-0 min-w-0 flex-1 flex-col xl:flex-row xl:items-stretch">
-					<aside className="flex w-full min-h-0 shrink-0 flex-col border-b border-gray-200/80 bg-slate-50/80 p-3 xl:w-[380px] xl:overflow-hidden xl:border-b-0 xl:border-r">
+					<aside className="flex w-full shrink-0 flex-col border-b border-gray-200/80 bg-slate-50/80 p-4 xl:min-h-0 xl:w-[380px] xl:overflow-hidden xl:border-b-0 xl:border-r">
 						<SimulatorRoutingPanel
 							filterKind={s.filterKind}
 							protocol={s.protocol}
@@ -93,7 +90,7 @@ export default function SimulatorPage() {
 						/>
 					</aside>
 
-					<section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden bg-slate-100/70 p-3 sm:p-4">
+					<section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden bg-slate-100/70 p-4 sm:p-5">
 						<div className="min-h-0 flex-[3] overflow-y-auto">
 							<SimulatorRequestPanel
 								protocol={s.protocol}

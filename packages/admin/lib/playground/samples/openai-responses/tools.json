@@ -1,0 +1,31 @@
+{
+	"input": [
+		{
+			"role": "user",
+			"content": "Call write_note now. Put a title and a multi-sentence body in content. Do not answer with plain text."
+		}
+	],
+	"max_output_tokens": 512,
+	"store": false,
+	"stream": true,
+	"tools": [
+		{
+			"type": "function",
+			"name": "write_note",
+			"description": "Write a note with a title and a longer body.",
+			"strict": true,
+			"parameters": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["title", "content"],
+				"properties": {
+					"title": { "type": "string" },
+					"content": {
+						"type": "string",
+						"description": "Note body; use several sentences so arguments can stream."
+					}
+				}
+			}
+		}
+	]
+}

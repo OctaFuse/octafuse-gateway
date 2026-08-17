@@ -1,0 +1,38 @@
+{
+	"contents": [
+		{
+			"role": "user",
+			"parts": [
+				{
+					"text": "Call write_note now. Put a title and a multi-sentence body in content. Do not answer with plain text."
+				}
+			]
+		}
+	],
+	"tools": [
+		{
+			"functionDeclarations": [
+				{
+					"name": "write_note",
+					"description": "Write a note with a title and a longer body.",
+					"parameters": {
+						"type": "object",
+						"required": ["title", "content"],
+						"properties": {
+							"title": { "type": "string" },
+							"content": {
+								"type": "string",
+								"description": "Note body; use several sentences so arguments can stream."
+							}
+						}
+					}
+				}
+			]
+		}
+	],
+	"toolConfig": {
+		"functionCallingConfig": {
+			"mode": "ANY"
+		}
+	}
+}

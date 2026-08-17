@@ -1,0 +1,6 @@
+{
+	"input": [{ "role": "user", "content": "Hello" }],
+	"max_output_tokens": 256,
+	"store": false,
+	"stream": true
+}

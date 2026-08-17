@@ -1,0 +1,12 @@
+{
+	"input": [
+		{
+			"role": "user",
+			"content": "Think step by step, then answer in a few sentences: why does streaming tool arguments matter?"
+		}
+	],
+	"max_output_tokens": 1024,
+	"store": false,
+	"stream": true,
+	"reasoning": { "effort": "medium", "summary": "auto" }
+}

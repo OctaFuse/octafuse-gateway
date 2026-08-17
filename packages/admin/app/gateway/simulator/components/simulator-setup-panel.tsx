@@ -1,10 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { formatKeyOptionLabel, inputClass } from '../simulator-utils';
+import { formatKeyOptionLabel, inputClass, labelClass } from '../simulator-utils';
 import type { AdminKeyListItem } from '../types';
-
-const compactInputClass = `${inputClass} py-1.5`;
 
 type Props = {
 	proxyBaseUrl: string;
@@ -52,30 +50,26 @@ export function SimulatorSetupPanel({
 		.join(' · ');
 
 	return (
-		<section className="shrink-0 border-b border-gray-200/80 bg-white px-3 py-2.5 sm:px-4">
-			<div className="flex flex-col gap-2 lg:flex-row lg:items-end">
+		<section className="shrink-0 border-b border-gray-200/80 bg-white px-4 py-3 sm:px-5">
+			<div className="flex flex-col gap-3 lg:flex-row lg:items-end">
 				<div className="min-w-0 flex-1">
-					<label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-gray-500">
-						{t('proxyBaseUrl')}
-					</label>
+					<label className={labelClass}>{t('proxyBaseUrl')}</label>
 					<input
 						type="url"
 						placeholder="http://127.0.0.1:8787"
 						value={proxyBaseUrl}
 						onChange={(e) => onProxyBaseUrlChange(e.target.value)}
-						className={compactInputClass}
+						className={inputClass}
 						autoComplete="off"
 						title={t('localDevHint')}
 					/>
 				</div>
 				<div className="min-w-0 flex-[1.4]">
-					<label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-gray-500">
-						{t('apiKey')}
-					</label>
+					<label className={labelClass}>{t('apiKey')}</label>
 					<select
 						value={selectedKeyId}
 						onChange={(e) => onSelectedKeyIdChange(e.target.value)}
-						className={`${compactInputClass} font-mono`}
+						className={`${inputClass} font-mono`}
 					>
 						<option value="">{t('select')}</option>
 						{keys.map((k) => (
@@ -87,28 +81,26 @@ export function SimulatorSetupPanel({
 				</div>
 				<div className="flex min-w-0 flex-1 items-end gap-2">
 					<div className="min-w-0 flex-1">
-						<label className="mb-1 block text-[11px] font-medium uppercase tracking-wider text-gray-500">
-							{t('emailContains')}
-						</label>
+						<label className={labelClass}>{t('emailContains')}</label>
 						<input
 							type="search"
 							value={filterKeyEmail}
 							onChange={(e) => onFilterKeyEmailChange(e.target.value)}
 							placeholder={t('emailContains')}
-							className={compactInputClass}
+							className={inputClass}
 						/>
 					</div>
 					<button
 						type="button"
 						onClick={onRefreshKeys}
 						disabled={loadingKeys}
-						className="shrink-0 rounded-md border border-gray-300 px-2.5 py-1.5 text-xs hover:bg-gray-50 disabled:opacity-50"
+						className="shrink-0 rounded-md border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
 					>
 						{loadingKeys ? tCommon('refreshing') : t('refreshList')}
 					</button>
 				</div>
 			</div>
-			<p className="mt-1.5 truncate text-[11px] text-gray-500" title={keyStatus}>
+			<p className="mt-2 truncate text-xs text-gray-500" title={keyStatus}>
 				{keyStatus}
 			</p>
 			{keysError ? (

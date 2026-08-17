@@ -14,7 +14,7 @@
 		"deploy": "npm run build:cf && wrangler deploy worker.ts",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"test:unit": "tsx --test lib/services/admin/*.test.ts lib/dashscope-realtime-client.test.ts lib/pricing-ui-image.test.ts lib/image-generations.test.ts lib/simulator/endpoint.test.ts lib/playground/sse-event-summary.test.ts lib/playground/response-observations.test.ts app/gateway/simulator/simulator-utils.test.ts app/gateway/playground/playground-utils.test.ts app/gateway/routes/route-utils.test.ts app/gateway/routes/route-strategy-meta.test.ts app/gateway/providers/provider-utils.test.ts app/gateway/tools/components/provider-card-state.test.ts"
+		"test:unit": "tsx --test lib/services/admin/*.test.ts lib/dashscope-realtime-client.test.ts lib/pricing-ui-image.test.ts lib/image-generations.test.ts lib/simulator/endpoint.test.ts lib/playground/sse-event-summary.test.ts lib/playground/response-observations.test.ts lib/playground/samples/index.test.ts app/gateway/simulator/simulator-utils.test.ts app/gateway/playground/playground-utils.test.ts app/gateway/routes/route-utils.test.ts app/gateway/routes/route-strategy-meta.test.ts app/gateway/providers/provider-utils.test.ts app/gateway/tools/components/provider-card-state.test.ts"
 	},
 	"dependencies": {
 		"@heroicons/react": "^2.2.0",

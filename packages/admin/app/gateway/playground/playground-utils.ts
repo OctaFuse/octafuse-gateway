@@ -16,10 +16,26 @@ import {
 	buildDashScopeSpeechBodyTemplate,
 	isDashScopeRealtimeOperation,
 } from '@/lib/dashscope-realtime-client';
+import {
+	loadPlaygroundSampleBody,
+	PLAYGROUND_LLM_SAMPLE_IDS,
+	type PlaygroundLlmFamily,
+	type PlaygroundLlmSampleId,
+} from '@/lib/playground/samples';
 import { normalizeProtocol } from '@/lib/playground/usage-parsing';
 import type { AdminModelRow } from '@/lib/services/admin/types';
 import type { ModelKindFilter } from '../models/types';
 import type { RouteListRow } from './types';
+
+export {
+	PLAYGROUND_LLM_SAMPLE_IDS,
+	resolveClaudeThinkingProfile,
+	resolveGeminiThinkingProfile,
+	type ClaudeThinkingProfile,
+	type GeminiThinkingProfile,
+	type PlaygroundLlmFamily,
+	type PlaygroundLlmSampleId,
+} from '@/lib/playground/samples';
 
 export const inputClass =
 	'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white';
@@ -29,152 +45,26 @@ export const codeBlockClass =
 	'p-3 text-xs overflow-x-auto whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md font-mono text-gray-900';
 export const routeJsonPreClass = `${codeBlockClass} max-h-40 overflow-y-auto`;
 
-export type PlaygroundLlmFamily = 'openai_chat' | 'openai_responses' | 'anthropic' | 'gemini';
-
-export type PlaygroundLlmSampleId = 'connectivity' | 'tools' | 'reasoning';
-
-export const PLAYGROUND_LLM_SAMPLE_IDS: readonly PlaygroundLlmSampleId[] = [
-	'connectivity',
-	'tools',
-	'reasoning',
-];
-
-const WRITE_NOTE_PROMPT =
-	'Call write_note now. Put a title and a multi-sentence body in content. Do not answer with plain text.';
-const REASONING_PROMPT = 'Think step by step, then answer in a few sentences: why does streaming tool arguments matter?';
-
-const WRITE_NOTE_JSON_SCHEMA = `{
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["title", "content"],
-      "properties": {
-        "title": { "type": "string" },
-        "content": { "type": "string", "description": "Note body; use several sentences so arguments can stream." }
-      }
-    }`;
-
-/** Gemini functionDeclarations use an OpenAPI subset and reject additionalProperties. */
-const WRITE_NOTE_GEMINI_SCHEMA = `{
-      "type": "object",
-      "required": ["title", "content"],
-      "properties": {
-        "title": { "type": "string" },
-        "content": { "type": "string", "description": "Note body; use several sentences so arguments can stream." }
-      }
-    }`;
-
 export const LLM_SAMPLE_BODIES: Record<PlaygroundLlmFamily, Record<PlaygroundLlmSampleId, string>> = {
 	openai_chat: {
-		connectivity: `{
-  "messages": [{ "role": "user", "content": "Hello" }],
-  "max_tokens": 256,
-  "stream": true,
-  "stream_options": { "include_usage": true }
-}`,
-		tools: `{
-  "messages": [{ "role": "user", "content": "${WRITE_NOTE_PROMPT}" }],
-  "max_tokens": 512,
-  "stream": true,
-  "stream_options": { "include_usage": true },
-  "tools": [{
-    "type": "function",
-    "function": {
-      "name": "write_note",
-      "description": "Write a note with a title and a longer body.",
-      "parameters": ${WRITE_NOTE_JSON_SCHEMA}
-    }
-  }]
-}`,
-		reasoning: `{
-  "messages": [{ "role": "user", "content": "${REASONING_PROMPT}" }],
-  "max_tokens": 1024,
-  "stream": true,
-  "stream_options": { "include_usage": true },
-  "reasoning_effort": "medium"
-}`,
+		connectivity: loadPlaygroundSampleBody('openai_chat', 'connectivity'),
+		tools: loadPlaygroundSampleBody('openai_chat', 'tools'),
+		reasoning: loadPlaygroundSampleBody('openai_chat', 'reasoning'),
 	},
 	openai_responses: {
-		connectivity: `{
-  "input": [{ "role": "user", "content": "Hello" }],
-  "max_output_tokens": 256,
-  "store": false,
-  "stream": true
-}`,
-		tools: `{
-  "input": [{
-    "role": "user",
-    "content": "${WRITE_NOTE_PROMPT}"
-  }],
-  "max_output_tokens": 512,
-  "store": false,
-  "stream": true,
-  "tools": [{
-    "type": "function",
-    "name": "write_note",
-    "description": "Write a note with a title and a longer body.",
-    "strict": true,
-    "parameters": ${WRITE_NOTE_JSON_SCHEMA}
-  }]
-}`,
-		reasoning: `{
-  "input": [{ "role": "user", "content": "${REASONING_PROMPT}" }],
-  "max_output_tokens": 1024,
-  "store": false,
-  "stream": true,
-  "reasoning": { "effort": "medium", "summary": "auto" }
-}`,
+		connectivity: loadPlaygroundSampleBody('openai_responses', 'connectivity'),
+		tools: loadPlaygroundSampleBody('openai_responses', 'tools'),
+		reasoning: loadPlaygroundSampleBody('openai_responses', 'reasoning'),
 	},
 	anthropic: {
-		connectivity: `{
-  "messages": [{ "role": "user", "content": "Hello" }],
-  "max_tokens": 256,
-  "stream": true
-}`,
-		tools: `{
-  "messages": [{ "role": "user", "content": "${WRITE_NOTE_PROMPT}" }],
-  "max_tokens": 512,
-  "stream": true,
-  "tools": [{
-    "name": "write_note",
-    "description": "Write a note with a title and a longer body.",
-    "input_schema": ${WRITE_NOTE_JSON_SCHEMA}
-  }]
-}`,
-		reasoning: `{
-  "messages": [{ "role": "user", "content": "${REASONING_PROMPT}" }],
-  "max_tokens": 2048,
-  "stream": true,
-  "thinking": { "type": "enabled", "budget_tokens": 1024 }
-}`,
+		connectivity: loadPlaygroundSampleBody('anthropic', 'connectivity'),
+		tools: loadPlaygroundSampleBody('anthropic', 'tools'),
+		reasoning: loadPlaygroundSampleBody('anthropic', 'reasoning'),
 	},
 	gemini: {
-		connectivity: `{
-  "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }]
-}`,
-		// Vertex Gemini 3+ streams tool args only when this flag is on.
-		// Gemini Developer API rejects it (400); delete toolConfig to fall back to a one-shot args object.
-		tools: `{
-  "contents": [{ "role": "user", "parts": [{ "text": "${WRITE_NOTE_PROMPT}" }] }],
-  "tools": [{
-    "functionDeclarations": [{
-      "name": "write_note",
-      "description": "Write a note with a title and a longer body.",
-      "parameters": ${WRITE_NOTE_GEMINI_SCHEMA}
-    }]
-  }],
-  "toolConfig": {
-    "functionCallingConfig": {
-      "mode": "ANY",
-      "streamFunctionCallArguments": true
-    }
-  }
-}`,
-		reasoning: `{
-  "contents": [{ "role": "user", "parts": [{ "text": "${REASONING_PROMPT}" }] }],
-  "generationConfig": {
-    "thinkingConfig": { "includeThoughts": true, "thinkingBudget": 1024 }
-  }
-}`,
+		connectivity: loadPlaygroundSampleBody('gemini', 'connectivity'),
+		tools: loadPlaygroundSampleBody('gemini', 'tools'),
+		reasoning: loadPlaygroundSampleBody('gemini', 'reasoning'),
 	},
 };
 
@@ -277,8 +167,9 @@ export function templateForRoute(
 	if (isImage && proto === 'openai') {
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
 	}
-	if (isResponsesPlaygroundRoute(route)) {
-		return BODY_TEMPLATES.openai_responses;
+	const family = resolvePlaygroundLlmFamily(route);
+	if (family) {
+		return playgroundLlmSampleBody(family, 'connectivity', playgroundModelHintFromRoute(route));
 	}
 	return BODY_TEMPLATES[proto] ?? BODY_TEMPLATES.openai;
 }
@@ -314,16 +205,40 @@ export function playgroundLlmFamilyForRoute(
 	return resolvePlaygroundLlmFamily(route);
 }
 
-export function playgroundLlmSampleBody(family: PlaygroundLlmFamily, sampleId: PlaygroundLlmSampleId): string {
-	return LLM_SAMPLE_BODIES[family][sampleId];
+export type PlaygroundModelHint = {
+	modelId?: string | null;
+	providerModelName?: string | null;
+};
+
+export function playgroundModelHintFromRoute(
+	route: Pick<RouteListRow, 'model_id' | 'provider_model_name'> | null | undefined,
+): PlaygroundModelHint | null {
+	if (!route) return null;
+	return { modelId: route.model_id, providerModelName: route.provider_model_name };
+}
+
+export function playgroundModelHintText(model?: PlaygroundModelHint | null): string {
+	return [model?.modelId, model?.providerModelName]
+		.filter((part): part is string => part != null && String(part).trim() !== '')
+		.join(' ')
+		.toLowerCase();
+}
+
+export function playgroundLlmSampleBody(
+	family: PlaygroundLlmFamily,
+	sampleId: PlaygroundLlmSampleId,
+	model?: PlaygroundModelHint | null,
+): string {
+	return loadPlaygroundSampleBody(family, sampleId, playgroundModelHintText(model));
 }
 
 export function matchPlaygroundLlmSample(
 	family: PlaygroundLlmFamily,
 	bodyText: string,
+	model?: PlaygroundModelHint | null,
 ): PlaygroundLlmSampleId | null {
 	for (const sampleId of PLAYGROUND_LLM_SAMPLE_IDS) {
-		if (!isPlaygroundBodyDirty(bodyText, playgroundLlmSampleBody(family, sampleId))) {
+		if (!isPlaygroundBodyDirty(bodyText, playgroundLlmSampleBody(family, sampleId, model))) {
 			return sampleId;
 		}
 	}

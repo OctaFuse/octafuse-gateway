@@ -40,6 +40,7 @@ import {
 	decodeWireRequestBodyHeader,
 	isPlaygroundBodyDirty,
 	playgroundLlmSampleBody,
+	playgroundModelHintFromRoute,
 	resolvePlaygroundLlmFamily,
 	resolveRouteModelKind,
 	routeMatchesSearch,
@@ -314,7 +315,7 @@ export function usePlaygroundPageState() {
 		(sampleId: PlaygroundLlmSampleId) => {
 			const family = resolvePlaygroundLlmFamily(selected);
 			if (!family) return;
-			const next = playgroundLlmSampleBody(family, sampleId);
+			const next = playgroundLlmSampleBody(family, sampleId, playgroundModelHintFromRoute(selected));
 			setBodyTextState(next);
 			setTemplateBody(next);
 			setBodyError(null);

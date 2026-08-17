@@ -1,0 +1,6 @@
+{
+	"messages": [{ "role": "user", "content": "Hello" }],
+	"max_tokens": 256,
+	"stream": true,
+	"stream_options": { "include_usage": true }
+}

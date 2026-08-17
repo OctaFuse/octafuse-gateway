@@ -1,0 +1,51 @@
+{
+	"openai_chat": {
+		"connectivity": [
+			{ "when": "openai_max_completion_tokens", "id": "openai-chat/connectivity.max-completion" },
+			{ "id": "openai-chat/connectivity" }
+		],
+		"tools": [
+			{ "when": "openai_max_completion_tokens", "id": "openai-chat/tools.max-completion" },
+			{ "id": "openai-chat/tools" }
+		],
+		"reasoning": [
+			{ "when": "deepseek", "id": "openai-chat/reasoning.thinking-effort" },
+			{ "when": "glm_reasoning_effort", "id": "openai-chat/reasoning.thinking-effort" },
+			{ "when": "thinking_compat", "id": "openai-chat/reasoning.thinking" },
+			{ "when": "qwen", "id": "openai-chat/reasoning.qwen" },
+			{ "when": "minimax", "id": "openai-chat/reasoning.minimax" },
+			{ "when": "openai_no_reasoning_effort", "id": "openai-chat/reasoning.none" },
+			{ "when": "openai_max_completion_tokens", "id": "openai-chat/reasoning.effort-max-completion" },
+			{ "id": "openai-chat/reasoning.effort" }
+		]
+	},
+	"openai_responses": {
+		"connectivity": [{ "id": "openai-responses/connectivity" }],
+		"tools": [{ "id": "openai-responses/tools" }],
+		"reasoning": [
+			{ "when": "deepseek", "id": "openai-responses/reasoning.deepseek" },
+			{ "when": "openai_no_reasoning_effort", "id": "openai-responses/reasoning.none" },
+			{ "id": "openai-responses/reasoning" }
+		]
+	},
+	"anthropic": {
+		"connectivity": [{ "id": "anthropic/connectivity" }],
+		"tools": [{ "id": "anthropic/tools" }],
+		"reasoning": [
+			{ "when": "claude_adaptive", "id": "anthropic/reasoning.adaptive" },
+			{ "when": "claude_extended_effort", "id": "anthropic/reasoning.extended-effort" },
+			{ "id": "anthropic/reasoning.extended" }
+		]
+	},
+	"gemini": {
+		"connectivity": [{ "id": "gemini/connectivity" }],
+		"tools": [
+			{ "when": "gemini_2_5", "id": "gemini/tools.no-stream-args" },
+			{ "id": "gemini/tools" }
+		],
+		"reasoning": [
+			{ "when": "gemini_thinking_level", "id": "gemini/reasoning.level" },
+			{ "id": "gemini/reasoning.budget" }
+		]
+	}
+}
