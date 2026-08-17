@@ -8,6 +8,8 @@ import {
 	factorChipClassForValue,
 	factorLevelForValue,
 	formatScheduleWindowsHint,
+	groupScheduleWindows,
+	scheduleWindowShapeKey,
 	hasBasePricingInversion,
 	requestOperationsForModel,
 	requestSurfacePath,
@@ -525,7 +527,7 @@ describe('formatScheduleWindowsHint', () => {
 				{ start: '09:00', end: '12:00', factor: 2 },
 				{ start: '14:00', end: '18:00', factor: 2 },
 			]),
-			'09:00–12:00, 14:00–18:00 ×2',
+			'9:00-12:00, 14:00-18:00 ×2',
 		);
 	});
 
@@ -535,14 +537,46 @@ describe('formatScheduleWindowsHint', () => {
 				{ start: '00:00', end: '08:00', factor: 0.5 },
 				{ start: '09:00', end: '18:00', factor: 2 },
 			]),
-			'00:00–08:00 ×0.5 · 09:00–18:00 ×2',
+			'0:00-8:00 ×0.5 · 9:00-18:00 ×2',
 		);
 	});
 
 	it('keeps minutes when a window is not on the hour', () => {
 		assert.equal(
 			formatScheduleWindowsHint([{ start: '09:30', end: '12:15', factor: 2 }]),
-			'09:30–12:15 ×2',
+			'9:30-12:15 ×2',
+		);
+	});
+
+	it('strips leading zeros from hours', () => {
+		assert.equal(
+			formatScheduleWindowsHint([{ start: '09:00', end: '12:00', factor: 1.9 }]),
+			'9:00-12:00 ×1.9',
+		);
+	});
+});
+
+describe('schedule window helpers', () => {
+	it('treats matching start/end sequences as the same shape', () => {
+		assert.equal(
+			scheduleWindowShapeKey([
+				{ start: '09:00', end: '12:00', factor: 1.9 },
+				{ start: '14:00', end: '18:00', factor: 1.9 },
+			]),
+			scheduleWindowShapeKey([
+				{ start: '09:00', end: '12:00', factor: 2 },
+				{ start: '14:00', end: '18:00', factor: 2 },
+			]),
+		);
+	});
+
+	it('groups readable ranges for tooltip hints', () => {
+		assert.deepEqual(
+			groupScheduleWindows([
+				{ start: '09:00', end: '12:00', factor: 1.9 },
+				{ start: '14:00', end: '18:00', factor: 1.9 },
+			]),
+			[{ ranges: ['9:00-12:00', '14:00-18:00'], factor: 1.9 }],
 		);
 	});
 });

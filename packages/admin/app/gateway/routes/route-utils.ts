@@ -1109,14 +1109,25 @@ export function createInitialRouteForm(models: GatewayModel[], presetModelId?: s
 	};
 }
 
-function formatScheduleRange(start: string, end: string): string {
-	return `${start.slice(0, 5)}–${end.slice(0, 5)}`;
+function formatScheduleTime(value: string): string {
+	const hhmm = value.length >= 5 ? value.slice(0, 5) : value;
+	if (hhmm === '24:00') return '24:00';
+	const match = /^(\d{2}):([0-5]\d)$/.exec(hhmm);
+	if (!match) return hhmm;
+	return `${Number(match[1])}:${match[2]}`;
 }
 
-/** Format schedule windows for list-card hint, e.g. `09:00–12:00, 14:00–18:00 ×2`. */
-export function formatScheduleWindowsHint(windows: DailyScheduleWindow[]): string | null {
-	if (windows.length === 0) return null;
-	const groups: Array<{ ranges: string[]; factor: number }> = [];
+export function formatScheduleRange(start: string, end: string): string {
+	return `${formatScheduleTime(start)}-${formatScheduleTime(end)}`;
+}
+
+export type ScheduleWindowGroup = {
+	ranges: string[];
+	factor: number;
+};
+
+export function groupScheduleWindows(windows: DailyScheduleWindow[]): ScheduleWindowGroup[] {
+	const groups: ScheduleWindowGroup[] = [];
 	for (const w of windows) {
 		const range = formatScheduleRange(w.start, w.end);
 		const last = groups[groups.length - 1];
@@ -1126,6 +1137,17 @@ export function formatScheduleWindowsHint(windows: DailyScheduleWindow[]): strin
 			groups.push({ ranges: [range], factor: w.factor });
 		}
 	}
+	return groups;
+}
+
+export function scheduleWindowShapeKey(windows: DailyScheduleWindow[]): string {
+	return windows.map((w) => `${w.start.slice(0, 5)}|${w.end.slice(0, 5)}`).join(',');
+}
+
+/** Format schedule windows for tooltips, e.g. `9:00-12:00, 14:00-18:00 ×2`. */
+export function formatScheduleWindowsHint(windows: DailyScheduleWindow[]): string | null {
+	const groups = groupScheduleWindows(windows);
+	if (groups.length === 0) return null;
 	return groups
 		.map((g) => `${g.ranges.join(', ')} ${formatFactorMultiplier(g.factor)}`)
 		.join(' · ');

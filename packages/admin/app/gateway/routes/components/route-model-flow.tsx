@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type KeyboardEvent } from 'react';
+import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import {
 	ArrowDownIcon,
 	ArrowLongRightIcon,
@@ -18,7 +18,7 @@ import {
 	isAudioSpeechModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
-import { parseRoutePricingSchedule } from '@octafuse/core/db/pricing-schedule';
+import { parseRoutePricingSchedule, type DailyScheduleWindow } from '@octafuse/core/db/pricing-schedule';
 import { useTranslations } from 'next-intl';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
@@ -36,7 +36,9 @@ import {
 	factorLevelForValue,
 	formatFactorMultiplier,
 	formatFactorMultiplierForChip,
+	formatScheduleRange,
 	formatScheduleWindowsHint,
+	scheduleWindowShapeKey,
 	groupSectionsByRequestSurface,
 	hasBasePricingInversion,
 	parseModelTagsList,
@@ -134,6 +136,92 @@ type Props = {
 	onOpenStrategyDialog: OpenStrategyDialog;
 	onOpenProviderStickyDialog: OpenProviderStickyDialog;
 };
+
+function ScheduleFactorChip({ label, factor }: { label?: string; factor: number }) {
+	return (
+		<span className="inline-flex whitespace-nowrap rounded bg-white/80 px-1 py-px text-[10px] font-semibold tabular-nums text-sky-800 ring-1 ring-inset ring-sky-200/80">
+			{label ? `${label} ${formatFactorMultiplier(factor)}` : formatFactorMultiplier(factor)}
+		</span>
+	);
+}
+
+function ScheduleWindowRow({
+	label,
+	range,
+	chips,
+}: {
+	label?: string;
+	range: string;
+	chips: ReactNode;
+}) {
+	return (
+		<span className="flex min-w-0 items-center justify-between gap-1">
+			<span className="flex min-w-0 items-center gap-1 text-[11px] leading-4 text-sky-900">
+				{label ? <span className="shrink-0 font-semibold">{label}</span> : null}
+				<span className="whitespace-nowrap tabular-nums">{range}</span>
+			</span>
+			<span className="flex shrink-0 items-center gap-1">{chips}</span>
+		</span>
+	);
+}
+
+function RouteTargetScheduleBody({
+	chargedWindows,
+	meteredWindows,
+	chargedLabel,
+	meteredLabel,
+}: {
+	chargedWindows: DailyScheduleWindow[];
+	meteredWindows: DailyScheduleWindow[];
+	chargedLabel: string;
+	meteredLabel: string;
+}) {
+	const sameShape =
+		chargedWindows.length > 0 &&
+		meteredWindows.length > 0 &&
+		scheduleWindowShapeKey(chargedWindows) === scheduleWindowShapeKey(meteredWindows);
+	const showSideLabel = chargedWindows.length > 0 && meteredWindows.length > 0 && !sameShape;
+
+	return (
+		<span className="min-w-0 flex-1 space-y-0.5">
+			{sameShape
+				? chargedWindows.map((chargedWindow, index) => {
+						const meteredWindow = meteredWindows[index];
+						if (!meteredWindow) return null;
+						return (
+							<ScheduleWindowRow
+								key={`${chargedWindow.start}-${chargedWindow.end}-${index}`}
+								range={formatScheduleRange(chargedWindow.start, chargedWindow.end)}
+								chips={
+									<>
+										<ScheduleFactorChip label={chargedLabel} factor={chargedWindow.factor} />
+										<ScheduleFactorChip label={meteredLabel} factor={meteredWindow.factor} />
+									</>
+								}
+							/>
+						);
+					})
+				: [
+						...chargedWindows.map((chargedWindow, index) => (
+							<ScheduleWindowRow
+								key={`charged-${chargedWindow.start}-${chargedWindow.end}-${index}`}
+								label={showSideLabel ? chargedLabel : undefined}
+								range={formatScheduleRange(chargedWindow.start, chargedWindow.end)}
+								chips={<ScheduleFactorChip factor={chargedWindow.factor} />}
+							/>
+						)),
+						...meteredWindows.map((meteredWindow, index) => (
+							<ScheduleWindowRow
+								key={`metered-${meteredWindow.start}-${meteredWindow.end}-${index}`}
+								label={showSideLabel ? meteredLabel : undefined}
+								range={formatScheduleRange(meteredWindow.start, meteredWindow.end)}
+								chips={<ScheduleFactorChip factor={meteredWindow.factor} />}
+							/>
+						)),
+					]}
+		</span>
+	);
+}
 
 function RouteTarget({
 	route,
@@ -308,23 +396,13 @@ function RouteTarget({
 					title={scheduleTooltip}
 					aria-label={scheduleTooltip}
 				>
-					<ClockIcon className="mt-px h-3 w-3 shrink-0 text-sky-600" aria-hidden />
-					<span className="min-w-0 flex-1 space-y-0.5">
-						{splitScheduleSides ? (
-							<>
-								<span className="block text-[11px] leading-4 tabular-nums text-sky-900">
-									{t('chargedShort')} {chargedScheduleHint}
-								</span>
-								<span className="block text-[11px] leading-4 tabular-nums text-sky-900">
-									{t('meteredShort')} {meteredScheduleHint}
-								</span>
-							</>
-						) : (
-							<span className="block text-[11px] leading-4 tabular-nums text-sky-900">
-								{chargedScheduleHint || meteredScheduleHint}
-							</span>
-						)}
-					</span>
+					<ClockIcon className="mt-0.5 h-3 w-3 shrink-0 text-sky-600" aria-hidden />
+					<RouteTargetScheduleBody
+						chargedWindows={schedule.charged}
+						meteredWindows={schedule.metered}
+						chargedLabel={t('chargedShort')}
+						meteredLabel={t('meteredShort')}
+					/>
 				</button>
 			) : null}
 		</div>
