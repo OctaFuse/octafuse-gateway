@@ -91,14 +91,14 @@ function RoutesContent() {
 
 	if (state.isLoading) {
 		return (
-			<div className="flex items-center justify-center h-full">
+			<div className="flex min-h-full items-center justify-center bg-gray-100/90">
 				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-5 sm:mb-6">
 				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
 				<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
@@ -135,6 +135,11 @@ function RoutesContent() {
 					view={workspaceView}
 					onViewChange={handleWorkspaceViewChange}
 					stickyRefreshIntervalMs={stickyRefreshIntervalMs}
+				/>
+				<UnroutedModelsPanel
+					cards={byModelLayout.unrouted}
+					onEditModel={(modelId) => void state.modelEdit.openEditById(modelId)}
+					onCreate={state.handleCreate}
 				/>
 
 				<div className="pt-4 sm:pt-6">
@@ -202,15 +207,6 @@ function RoutesContent() {
 									)
 								)}
 							</div>
-							<UnroutedModelsPanel
-								cards={byModelLayout.unrouted}
-								copiedModelId={state.copiedModelId}
-								onCopyModelId={state.copyModelId}
-								onEditModel={(modelId) =>
-									void state.modelEdit.openEditById(modelId)
-								}
-								onCreate={state.handleCreate}
-							/>
 						</div>
 					)}
 				</div>
@@ -319,7 +315,7 @@ export default function GatewayRoutesPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex items-center justify-center h-full">
+				<div className="flex min-h-full items-center justify-center bg-gray-100/90">
 					<div className="text-gray-600">{tCommon('loading')}</div>
 				</div>
 			}

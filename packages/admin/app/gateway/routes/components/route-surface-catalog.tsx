@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import {
 	ArrowDownIcon,
-	ClipboardDocumentIcon,
 	PencilSquareIcon,
 	PlusIcon,
 } from '@heroicons/react/24/outline';
@@ -87,23 +86,12 @@ function BranchConnectors({
 
 function CatalogModelNode({
 	card,
-	copiedModelId,
-	onCopyModelId,
 	onEditModel,
-	onCreate,
-	showAddRoute = false,
-	showCopy = false,
 }: {
 	card: RouteModelGroup;
-	copiedModelId: string | null;
-	onCopyModelId: (modelId: string) => void;
 	onEditModel: (modelId: string) => void;
-	onCreate: Props['onCreate'];
-	showAddRoute?: boolean;
-	showCopy?: boolean;
 }) {
 	const tCard = useTranslations('routes.card');
-	const tFlow = useTranslations('routes.flow');
 
 	return (
 		<div className="w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
@@ -115,46 +103,16 @@ function CatalogModelNode({
 				>
 					{card.title}
 				</button>
-				<div className="flex shrink-0 items-center">
-					{showCopy ? (
-						<button
-							type="button"
-							onClick={() => void onCopyModelId(card.model_id)}
-							className={`rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-								copiedModelId === card.model_id
-									? 'bg-emerald-50 text-emerald-600'
-									: 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
-							}`}
-							title={
-								copiedModelId === card.model_id
-									? tCard('copiedModelId')
-									: tCard('copyModelId', { id: card.model_id })
-							}
-						>
-							<ClipboardDocumentIcon className="h-3.5 w-3.5" />
-						</button>
-					) : null}
-					<button
-						type="button"
-						onClick={() => onEditModel(card.model_id)}
-						className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-						title={tCard('editModel', { title: card.title })}
-					>
-						<PencilSquareIcon className="h-3.5 w-3.5" />
-					</button>
-				</div>
+				<button
+					type="button"
+					onClick={() => onEditModel(card.model_id)}
+					className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					title={tCard('editModel', { title: card.title })}
+				>
+					<PencilSquareIcon className="h-3.5 w-3.5" />
+				</button>
 			</div>
-			<div className={`mt-2 flex items-center gap-2 ${showAddRoute ? 'justify-between' : ''}`}>
-				{showAddRoute ? (
-					<button
-						type="button"
-						onClick={() => onCreate(card.model_id)}
-						className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-					>
-						<PlusIcon className="h-3 w-3" />
-						{tFlow('addRoute')}
-					</button>
-				) : null}
+			<div className="mt-2 flex items-center">
 				<span
 					className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
 						card.activeCount > 0
@@ -174,38 +132,52 @@ function CatalogModelNode({
 
 export function UnroutedModelsPanel({
 	cards,
-	copiedModelId,
-	onCopyModelId,
 	onEditModel,
 	onCreate,
 }: {
 	cards: RouteModelGroup[];
-	copiedModelId: string | null;
-	onCopyModelId: (modelId: string) => void;
 	onEditModel: (modelId: string) => void;
 	onCreate: Props['onCreate'];
 }) {
 	const t = useTranslations('routes.flow');
+	const tCard = useTranslations('routes.card');
 	if (cards.length === 0) return null;
 
 	return (
-		<section className="overflow-hidden rounded-xl border border-dashed border-gray-300 bg-white/80 shadow-sm">
-			<div className="border-b border-gray-200 px-4 py-3">
-				<h3 className="text-sm font-semibold text-gray-900">{t('unroutedTitle')}</h3>
-				<p className="mt-0.5 text-xs text-gray-500">{t('unroutedHint')}</p>
-			</div>
-			<div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+		<section
+			className="mt-3 rounded-xl border border-dashed border-amber-200/90 bg-amber-50/70 px-3 py-2"
+			title={t('unroutedHint')}
+		>
+			<div className="flex flex-wrap items-center gap-1.5">
+				<span className="mr-1 inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-amber-900">
+					{t('unroutedTitle')}
+					<span className="rounded-full bg-amber-100 px-1.5 py-px text-[10px] font-semibold tabular-nums text-amber-800 ring-1 ring-inset ring-amber-200">
+						{cards.length}
+					</span>
+				</span>
 				{cards.map((card) => (
-					<CatalogModelNode
+					<span
 						key={card.model_id}
-						card={card}
-						copiedModelId={copiedModelId}
-						onCopyModelId={onCopyModelId}
-						onEditModel={onEditModel}
-						onCreate={onCreate}
-						showAddRoute
-						showCopy
-					/>
+						className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-amber-200/80 bg-white pl-2 pr-0.5 text-[11px] text-gray-800 shadow-sm"
+					>
+						<button
+							type="button"
+							onClick={() => onEditModel(card.model_id)}
+							className="max-w-[11rem] truncate py-0.5 font-medium hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							title={tCard('editModel', { title: card.title })}
+						>
+							{card.title}
+						</button>
+						<button
+							type="button"
+							onClick={() => onCreate(card.model_id)}
+							className="rounded-full p-0.5 text-amber-700 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							title={t('addRoute')}
+							aria-label={`${t('addRoute')}: ${card.title}`}
+						>
+							<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+						</button>
+					</span>
 				))}
 			</div>
 		</section>
@@ -378,10 +350,7 @@ function ModelToGroupsBranch({
 				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
 					<CatalogModelNode
 						card={card}
-						copiedModelId={copiedModelId}
-						onCopyModelId={onCopyModelId}
 						onEditModel={onEditModel}
-						onCreate={onCreate}
 					/>
 					<FlowConnectorAdd
 						railClass="bg-blue-300"
@@ -533,14 +502,6 @@ export function RouteSurfaceCatalog(props: Props) {
 					onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 				/>
 			))}
-
-			<UnroutedModelsPanel
-				cards={catalog.unrouted}
-				copiedModelId={copiedModelId}
-				onCopyModelId={onCopyModelId}
-				onEditModel={onEditModel}
-				onCreate={onCreate}
-			/>
 		</div>
 	);
 }
