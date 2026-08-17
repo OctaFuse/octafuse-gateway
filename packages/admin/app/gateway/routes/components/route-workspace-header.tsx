@@ -18,7 +18,7 @@ export function RouteWorkspaceHeader(props: Props) {
 	const t = useTranslations('routes.workspace');
 
 	return (
-		<div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+		<div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm sm:px-6">
 			<div className="min-w-0">
 				<h2 className="text-base font-semibold text-gray-900">{t('title')}</h2>
 				{activeFilterSummary.length > 0 ? (
