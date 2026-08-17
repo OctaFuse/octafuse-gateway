@@ -4,10 +4,12 @@ import {
 	coerceRoutePricingScheduleInput,
 	findDailyWindowOverlap,
 	formatLocalHhMm,
+	mergeScheduleSidesToSharedWindows,
 	parseHhMmToMinutes,
 	parseRouteBaseFactors,
 	parseRoutePricingSchedule,
 	resolveDailyScheduleFactor,
+	resolveEffectiveRouteFactor,
 	scaleBillingPrices,
 } from './pricing-schedule';
 
@@ -36,11 +38,25 @@ describe('parseRouteBaseFactors', () => {
 
 describe('parseRoutePricingSchedule', () => {
 	it('returns empty sides when missing', () => {
-		assert.deepEqual(parseRoutePricingSchedule('{}'), { charged: [], metered: [] });
+		assert.deepEqual(parseRoutePricingSchedule('{}'), { mode: 'multiply', charged: [], metered: [] });
 		assert.deepEqual(parseRoutePricingSchedule('{"metered":{"tiers":[]}}'), {
+			mode: 'multiply',
 			charged: [],
 			metered: [],
 		});
+	});
+
+	it('parses override mode', () => {
+		const sch = parseRoutePricingSchedule(
+			JSON.stringify({
+				schedule: {
+					mode: 'override',
+					charged: [{ start: '09:00', end: '12:00', factor: 2 }],
+				},
+			})
+		);
+		assert.equal(sch.mode, 'override');
+		assert.equal(sch.charged[0]!.factor, 2);
 	});
 
 	it('parses valid windows', () => {
@@ -171,7 +187,23 @@ describe('findDailyWindowOverlap / coerce', () => {
 		assert.equal(r.ok, true);
 		if (r.ok) {
 			assert.equal(r.schedule.charged.length, 1);
+			assert.equal(r.schedule.mode, 'multiply');
+			assert.equal(r.persistMode, false);
 		}
+	});
+
+	it('coerce persists override mode and rejects unknown mode', () => {
+		const ok = coerceRoutePricingScheduleInput({
+			mode: 'override',
+			charged: [{ start: '09:00', end: '12:00', factor: 2 }],
+		});
+		assert.equal(ok.ok, true);
+		if (ok.ok) {
+			assert.equal(ok.schedule.mode, 'override');
+			assert.equal(ok.persistMode, true);
+		}
+		const bad = coerceRoutePricingScheduleInput({ mode: 'divide' });
+		assert.equal(bad.ok, false);
 	});
 
 	it('coerce rejects 24:00 as start and accepts it as end', () => {
@@ -184,5 +216,76 @@ describe('findDailyWindowOverlap / coerce', () => {
 			charged: [{ start: '08:00', end: '24:00', factor: 1 }],
 		});
 		assert.equal(valid.ok, true);
+	});
+});
+
+describe('resolveEffectiveRouteFactor', () => {
+	const hit = {
+		factor: 2,
+		localTime: '10:00',
+		timezone: 'Asia/Shanghai',
+		evaluatedAtUtc: '2026-07-10T02:00:00.000Z',
+		window: { start: '09:00', end: '12:00', factor: 2 },
+	};
+	const miss = {
+		factor: 1,
+		localTime: '08:00',
+		timezone: 'Asia/Shanghai',
+		evaluatedAtUtc: '2026-07-10T00:00:00.000Z',
+		window: null,
+	};
+
+	it('multiplies on legacy mode and overrides on override mode', () => {
+		assert.equal(resolveEffectiveRouteFactor(1.2, hit, 'multiply'), 2.4);
+		assert.equal(resolveEffectiveRouteFactor(1.2, hit, 'override'), 2);
+		assert.equal(resolveEffectiveRouteFactor(1.2, miss, 'multiply'), 1.2);
+		assert.equal(resolveEffectiveRouteFactor(1.2, miss, 'override'), 1.2);
+	});
+});
+
+describe('mergeScheduleSidesToSharedWindows', () => {
+	it('bakes multiply factors so open-save keeps the same effective rate', () => {
+		const rows = mergeScheduleSidesToSharedWindows(
+			[{ start: '09:00', end: '12:00', factor: 0.5 }],
+			[{ start: '09:00', end: '12:00', factor: 0.5 }],
+			{ mode: 'multiply', chargedBase: 1.2, meteredBase: 1 }
+		);
+		assert.deepEqual(rows, [
+			{ start: '09:00', end: '12:00', charged_factor: 0.6, metered_factor: 0.5 },
+		]);
+	});
+
+	it('keeps override window factors as-is', () => {
+		const rows = mergeScheduleSidesToSharedWindows(
+			[{ start: '09:00', end: '12:00', factor: 2 }],
+			[{ start: '09:00', end: '12:00', factor: 2 }],
+			{ mode: 'override', chargedBase: 1, meteredBase: 1 }
+		);
+		assert.deepEqual(rows, [
+			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 2 },
+		]);
+	});
+
+	it('splits asymmetric windows and fills the missing side with the default', () => {
+		const rows = mergeScheduleSidesToSharedWindows(
+			[{ start: '09:00', end: '12:00', factor: 2 }],
+			[{ start: '09:00', end: '18:00', factor: 1.5 }],
+			{ mode: 'multiply', chargedBase: 1, meteredBase: 1 }
+		);
+		assert.deepEqual(rows, [
+			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 1.5 },
+			{ start: '12:00', end: '18:00', charged_factor: 1, metered_factor: 1.5 },
+		]);
+	});
+
+	it('rejoins overnight segments that share factors', () => {
+		const rows = mergeScheduleSidesToSharedWindows(
+			[{ start: '22:00', end: '06:00', factor: 0.5 }],
+			[{ start: '22:00', end: '06:00', factor: 0.5 }],
+			{ mode: 'override', chargedBase: 1, meteredBase: 1 }
+		);
+		assert.deepEqual(rows, [
+			{ start: '22:00', end: '06:00', charged_factor: 0.5, metered_factor: 0.5 },
+		]);
 	});
 });

@@ -87,7 +87,8 @@ export type ProviderStickyFormState = {
 export type RouteScheduleFormWindow = {
 	start: string;
 	end: string;
-	factor: string;
+	charged_factor: string;
+	metered_factor: string;
 };
 
 export type RouteScheduleFormSide = RouteScheduleFormWindow[];
@@ -108,8 +109,7 @@ export type RouteFormData = {
 	route_group: string;
 	charged_factor: string;
 	metered_factor: string;
-	schedule_charged: RouteScheduleFormSide;
-	schedule_metered: RouteScheduleFormSide;
+	schedule_windows: RouteScheduleFormSide;
 };
 
 export type RoutePolicyDialogState = {
@@ -193,8 +193,7 @@ export const EMPTY_ROUTE_FORM: RouteFormData = {
 	route_group: 'default',
 	charged_factor: '1',
 	metered_factor: '1',
-	schedule_charged: [],
-	schedule_metered: [],
+	schedule_windows: [],
 };
 
 export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {

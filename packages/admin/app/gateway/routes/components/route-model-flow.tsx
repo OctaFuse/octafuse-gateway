@@ -18,7 +18,7 @@ import {
 	isAudioSpeechModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
-import { parseRoutePricingSchedule, type DailyScheduleWindow } from '@octafuse/core/db/pricing-schedule';
+import type { SharedScheduleWindow } from '@octafuse/core/db/pricing-schedule';
 import { useTranslations } from 'next-intl';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
@@ -37,8 +37,8 @@ import {
 	formatFactorMultiplier,
 	formatFactorMultiplierForChip,
 	formatScheduleRange,
-	formatScheduleWindowsHint,
-	scheduleWindowShapeKey,
+	formatSharedScheduleWindowsHint,
+	resolveRouteScheduleDisplay,
 	groupSectionsByRequestSurface,
 	hasBasePricingInversion,
 	parseModelTagsList,
@@ -166,59 +166,28 @@ function ScheduleWindowRow({
 }
 
 function RouteTargetScheduleBody({
-	chargedWindows,
-	meteredWindows,
+	windows,
 	chargedLabel,
 	meteredLabel,
 }: {
-	chargedWindows: DailyScheduleWindow[];
-	meteredWindows: DailyScheduleWindow[];
+	windows: SharedScheduleWindow[];
 	chargedLabel: string;
 	meteredLabel: string;
 }) {
-	const sameShape =
-		chargedWindows.length > 0 &&
-		meteredWindows.length > 0 &&
-		scheduleWindowShapeKey(chargedWindows) === scheduleWindowShapeKey(meteredWindows);
-	const showSideLabel = chargedWindows.length > 0 && meteredWindows.length > 0 && !sameShape;
-
 	return (
 		<span className="min-w-0 flex-1 space-y-0.5">
-			{sameShape
-				? chargedWindows.map((chargedWindow, index) => {
-						const meteredWindow = meteredWindows[index];
-						if (!meteredWindow) return null;
-						return (
-							<ScheduleWindowRow
-								key={`${chargedWindow.start}-${chargedWindow.end}-${index}`}
-								range={formatScheduleRange(chargedWindow.start, chargedWindow.end)}
-								chips={
-									<>
-										<ScheduleFactorChip label={chargedLabel} factor={chargedWindow.factor} />
-										<ScheduleFactorChip label={meteredLabel} factor={meteredWindow.factor} />
-									</>
-								}
-							/>
-						);
-					})
-				: [
-						...chargedWindows.map((chargedWindow, index) => (
-							<ScheduleWindowRow
-								key={`charged-${chargedWindow.start}-${chargedWindow.end}-${index}`}
-								label={showSideLabel ? chargedLabel : undefined}
-								range={formatScheduleRange(chargedWindow.start, chargedWindow.end)}
-								chips={<ScheduleFactorChip factor={chargedWindow.factor} />}
-							/>
-						)),
-						...meteredWindows.map((meteredWindow, index) => (
-							<ScheduleWindowRow
-								key={`metered-${meteredWindow.start}-${meteredWindow.end}-${index}`}
-								label={showSideLabel ? meteredLabel : undefined}
-								range={formatScheduleRange(meteredWindow.start, meteredWindow.end)}
-								chips={<ScheduleFactorChip factor={meteredWindow.factor} />}
-							/>
-						)),
-					]}
+			{windows.map((window, index) => (
+				<ScheduleWindowRow
+					key={`${window.start}-${window.end}-${index}`}
+					range={formatScheduleRange(window.start, window.end)}
+					chips={
+						<>
+							<ScheduleFactorChip label={chargedLabel} factor={window.charged_factor} />
+							<ScheduleFactorChip label={meteredLabel} factor={window.metered_factor} />
+						</>
+					}
+				/>
+			))}
 		</span>
 	);
 }
@@ -244,21 +213,12 @@ function RouteTarget({
 	const metered = parseMeteredFactorFromPriceOverride(route.price_override);
 	const chargedValue = charged != null && Number.isFinite(charged) ? charged : 1;
 	const meteredValue = metered != null && Number.isFinite(metered) ? metered : 1;
-	const schedule = parseRoutePricingSchedule(route.price_override);
-	const chargedScheduleHint = formatScheduleWindowsHint(schedule.charged);
-	const meteredScheduleHint = formatScheduleWindowsHint(schedule.metered);
-	const hasSchedule = Boolean(chargedScheduleHint || meteredScheduleHint);
-	const splitScheduleSides = Boolean(
-		chargedScheduleHint && meteredScheduleHint && chargedScheduleHint !== meteredScheduleHint
-	);
-	const scheduleTooltip = splitScheduleSides
-		? t('badgeScheduleBothTooltip', {
-				charged: chargedScheduleHint ?? '',
-				metered: meteredScheduleHint ?? '',
-			})
-		: t('badgeScheduleTooltip', {
-				windows: chargedScheduleHint || meteredScheduleHint || '',
-			});
+	const scheduleWindows = resolveRouteScheduleDisplay(route.price_override);
+	const scheduleHint = formatSharedScheduleWindowsHint(scheduleWindows);
+	const hasSchedule = Boolean(scheduleHint);
+	const scheduleTooltip = t('badgeScheduleTooltip', {
+		windows: scheduleHint || '',
+	});
 	const chargedLevel = factorLevelForValue(chargedValue);
 	const meteredLevel = factorLevelForValue(meteredValue);
 	const chargedStatus = tList(`factorStatus.charged.${chargedLevel}`);
@@ -398,8 +358,7 @@ function RouteTarget({
 				>
 					<ClockIcon className="mt-0.5 h-3 w-3 shrink-0 text-sky-600" aria-hidden />
 					<RouteTargetScheduleBody
-						chargedWindows={schedule.charged}
-						meteredWindows={schedule.metered}
+						windows={scheduleWindows}
 						chargedLabel={t('chargedShort')}
 						meteredLabel={t('meteredShort')}
 					/>

@@ -1,15 +1,20 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import type { GatewayModel, GatewayProvider } from '@/lib/types';
+import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import {
 	applyDashScopeTtsRoutePreset,
+	buildFormDataFromRoute,
+	buildRouteSavePayload,
+	formatRoutePriceOverridePreview,
 	buildRouteSurfaceCatalog,
 	compatibleAdaptersForRoute,
 	factorChipClassForValue,
 	factorLevelForValue,
 	formatFactorMultiplierForChip,
 	formatScheduleWindowsHint,
+	formatSharedScheduleWindowsHint,
 	groupScheduleWindows,
+	resolveRouteScheduleDisplay,
 	scheduleWindowShapeKey,
 	hasBasePricingInversion,
 	requestOperationsForModel,
@@ -586,5 +591,127 @@ describe('schedule window helpers', () => {
 			]),
 			[{ ranges: ['9:00-12:00', '14:00-18:00'], factor: 1.9 }],
 		);
+	});
+});
+
+function route(overrides: Partial<GatewayModelRoute> = {}): GatewayModelRoute {
+	return {
+		id: 'r1',
+		model_id: 'm1',
+		provider_id: 'p1',
+		provider_model_name: 'gpt',
+		priority: 0,
+		status: 'active',
+		route_group: 'default',
+		price_override: null,
+		custom_params: null,
+		upstream_protocol: 'openai',
+		...overrides,
+	};
+}
+
+describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
+	it('bakes legacy multiply windows into shared override rows', () => {
+		const form = buildFormDataFromRoute(
+			route({
+				price_override: JSON.stringify({
+					charged_factor: 1.2,
+					metered_factor: 1,
+					schedule: {
+						charged: [{ start: '09:00', end: '12:00', factor: 0.5 }],
+						metered: [{ start: '09:00', end: '18:00', factor: 2 }],
+					},
+				}),
+			}),
+			[],
+		);
+		assert.deepEqual(form.schedule_windows, [
+			{ start: '09:00', end: '12:00', charged_factor: '0.6', metered_factor: '2' },
+			{ start: '12:00', end: '18:00', charged_factor: '1.2', metered_factor: '2' },
+		]);
+	});
+
+	it('list display bakes multiply metered 0.5 × window 2 to effective 1', () => {
+		const windows = resolveRouteScheduleDisplay(
+			JSON.stringify({
+				charged_factor: 1,
+				metered_factor: 0.5,
+				schedule: {
+					charged: [
+						{ start: '09:00', end: '12:00', factor: 2 },
+						{ start: '14:00', end: '18:00', factor: 2 },
+					],
+					metered: [
+						{ start: '09:00', end: '12:00', factor: 2 },
+						{ start: '14:00', end: '18:00', factor: 2 },
+					],
+				},
+			}),
+		);
+		assert.deepEqual(windows, [
+			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 1 },
+			{ start: '14:00', end: '18:00', charged_factor: 2, metered_factor: 1 },
+		]);
+		assert.equal(
+			formatSharedScheduleWindowsHint(windows),
+			'9:00-12:00 C ×2 · M ×1 · 14:00-18:00 C ×2 · M ×1',
+		);
+	});
+
+	it('writes schedule.mode override with shared windows', () => {
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+				charged_factor: '1',
+				metered_factor: '1',
+				schedule_windows: [
+					{ start: '09:00', end: '12:00', charged_factor: '2', metered_factor: '2' },
+				],
+			},
+			null,
+		);
+		assert.equal(
+			payload.price_override,
+			JSON.stringify({
+				charged_factor: 1,
+				metered_factor: 1,
+				schedule: {
+					mode: 'override',
+					charged: [{ start: '09:00', end: '12:00', factor: 2 }],
+					metered: [{ start: '09:00', end: '12:00', factor: 2 }],
+				},
+			}),
+		);
+	});
+
+	it('previews the same price_override JSON that save writes', () => {
+		const form = {
+			...EMPTY_ROUTE_FORM,
+			model_id: 'm1',
+			provider_id: 'p1',
+			provider_model_name: 'gpt',
+			charged_factor: '1',
+			metered_factor: '1',
+			schedule_windows: [
+				{ start: '09:00', end: '12:00', charged_factor: '2', metered_factor: '2' },
+				{ start: '14:00', end: '18:00', charged_factor: '2', metered_factor: '2' },
+			],
+		};
+		const preview = formatRoutePriceOverridePreview(form);
+		assert.equal(preview.ok, true);
+		const payload = buildRouteSavePayload(form, null);
+		assert.equal(preview.text, JSON.stringify(JSON.parse(String(payload.price_override)), null, 2));
+	});
+
+	it('previews an error when a schedule window is invalid', () => {
+		const preview = formatRoutePriceOverridePreview({
+			...EMPTY_ROUTE_FORM,
+			schedule_windows: [{ start: '09:00', end: '09:00', charged_factor: '2', metered_factor: '2' }],
+		});
+		assert.equal(preview.ok, false);
+		assert.match(preview.text, /duration must be non-zero/);
 	});
 });

@@ -30,10 +30,13 @@ import {
 } from '@octafuse/core/route-topology';
 import {
 	findDailyWindowOverlap,
+	mergeScheduleSidesToSharedWindows,
+	normalizeScheduleFactor,
 	parseHhMmToMinutes,
 	parseRouteBaseFactors,
 	parseRoutePricingSchedule,
 	type DailyScheduleWindow,
+	type SharedScheduleWindow,
 } from '@octafuse/core/db/pricing-schedule';
 import { compareModelsByReleasedAtDesc } from '@/lib/model-catalog-sort';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
@@ -458,39 +461,92 @@ function parseNonNegativeFactorText(text: string, fieldLabel: string): number {
 	return n;
 }
 
-function validateScheduleSide(windows: RouteScheduleFormSide, sideLabel: string): DailyScheduleWindow[] {
-	const cleaned: DailyScheduleWindow[] = [];
+function parseSharedWindowFactor(text: string, fieldLabel: string, index: number): number {
+	const factor = text.trim() === '' ? Number.NaN : Number(text.trim());
+	if (!Number.isFinite(factor) || factor < 0) {
+		throw new Error(`Schedule window ${index + 1}: ${fieldLabel} must be a number ≥ 0`);
+	}
+	return factor;
+}
+
+export function buildRoutePriceOverride(formData: RouteFormData): Record<string, unknown> {
+	const chargedFactor = parseNonNegativeFactorText(formData.charged_factor, 'Charged factor');
+	const meteredFactor = parseNonNegativeFactorText(formData.metered_factor, 'Metered factor');
+	const scheduleWindows = validateSharedScheduleWindows(formData.schedule_windows);
+	const priceOverride: Record<string, unknown> = {
+		charged_factor: chargedFactor,
+		metered_factor: meteredFactor,
+	};
+	if (scheduleWindows.length > 0) {
+		priceOverride.schedule = {
+			mode: 'override',
+			charged: scheduleWindows.map((w) => ({
+				start: w.start,
+				end: w.end,
+				factor: w.charged_factor,
+			})),
+			metered: scheduleWindows.map((w) => ({
+				start: w.start,
+				end: w.end,
+				factor: w.metered_factor,
+			})),
+		};
+	}
+	return priceOverride;
+}
+
+export function formatRoutePriceOverridePreview(formData: RouteFormData): {
+	ok: true;
+	text: string;
+} | { ok: false; text: string } {
+	try {
+		return { ok: true, text: JSON.stringify(buildRoutePriceOverride(formData), null, 2) };
+	} catch (error) {
+		return {
+			ok: false,
+			text: error instanceof Error ? error.message : String(error),
+		};
+	}
+}
+
+function validateSharedScheduleWindows(windows: RouteScheduleFormSide): SharedScheduleWindow[] {
+	const cleaned: SharedScheduleWindow[] = [];
 	for (let i = 0; i < windows.length; i++) {
 		const w = windows[i]!;
 		const start = String(w.start ?? '').trim();
 		const end = String(w.end ?? '').trim();
-		const factorText = w.factor.trim();
-		const factor = factorText === '' ? Number.NaN : Number(factorText);
 		if (!start || !end) {
-			throw new Error(`${sideLabel} window ${i + 1}: start and end are required (HH:mm)`);
+			throw new Error(`Schedule window ${i + 1}: start and end are required (HH:mm)`);
 		}
 		const startMinutes = parseHhMmToMinutes(start);
 		const endMinutes = parseHhMmToMinutes(end);
 		if (startMinutes == null || startMinutes === 24 * 60 || endMinutes == null || startMinutes === endMinutes) {
 			throw new Error(
-				`${sideLabel} window ${i + 1}: start must be HH:mm, end may also be 24:00, and duration must be non-zero`,
+				`Schedule window ${i + 1}: start must be HH:mm, end may also be 24:00, and duration must be non-zero`,
 			);
 		}
-		if (!Number.isFinite(factor) || factor < 0) {
-			throw new Error(`${sideLabel} window ${i + 1}: factor must be a number ≥ 0`);
-		}
-		cleaned.push({ start, end, factor });
+		cleaned.push({
+			start,
+			end,
+			charged_factor: parseSharedWindowFactor(w.charged_factor, 'Charged factor', i),
+			metered_factor: parseSharedWindowFactor(w.metered_factor, 'Metered factor', i),
+		});
 	}
-	const overlap = findDailyWindowOverlap(cleaned);
+	const overlap = findDailyWindowOverlap(
+		cleaned.map((w) => ({ start: w.start, end: w.end, factor: w.charged_factor })),
+	);
 	if (overlap) {
-		throw new Error(`${sideLabel}: ${overlap}`);
+		throw new Error(`Schedule: ${overlap}`);
 	}
 	return cleaned;
 }
 
+export function formatScheduleFactorText(n: number): string {
+	return String(normalizeScheduleFactor(n));
+}
+
 export function buildFormDataFromRoute(route: GatewayModelRoute, _models: GatewayModel[]): RouteFormData {
 	const factors = parseRouteBaseFactors(route.price_override ?? null);
-	const schedule = parseRoutePricingSchedule(route.price_override ?? null);
 	return {
 		model_id: route.model_id,
 		provider_id: route.provider_id,
@@ -515,13 +571,11 @@ export function buildFormDataFromRoute(route: GatewayModelRoute, _models: Gatewa
 		route_group: route.route_group ?? 'default',
 		charged_factor: String(factors.chargedFactor),
 		metered_factor: String(factors.meteredFactor),
-		schedule_charged: schedule.charged.map((w) => ({
-			...w,
-			factor: String(w.factor),
-		})),
-		schedule_metered: schedule.metered.map((w) => ({
-			...w,
-			factor: String(w.factor),
+		schedule_windows: resolveRouteScheduleDisplay(route.price_override).map((w) => ({
+			start: w.start,
+			end: w.end,
+			charged_factor: formatScheduleFactorText(w.charged_factor),
+			metered_factor: formatScheduleFactorText(w.metered_factor),
 		})),
 	};
 }
@@ -540,21 +594,7 @@ export function buildRouteSavePayload(
 		return JSON.stringify(parsed);
 	};
 
-	const chargedFactor = parseNonNegativeFactorText(formData.charged_factor, 'Charged factor');
-	const meteredFactor = parseNonNegativeFactorText(formData.metered_factor, 'Metered factor');
-	const scheduleCharged = validateScheduleSide(formData.schedule_charged, 'Charged schedule');
-	const scheduleMetered = validateScheduleSide(formData.schedule_metered, 'Metered schedule');
-
-	const priceOverride: Record<string, unknown> = {
-		charged_factor: chargedFactor,
-		metered_factor: meteredFactor,
-	};
-	if (scheduleCharged.length > 0 || scheduleMetered.length > 0) {
-		priceOverride.schedule = {
-			...(scheduleCharged.length > 0 ? { charged: scheduleCharged } : {}),
-			...(scheduleMetered.length > 0 ? { metered: scheduleMetered } : {}),
-		};
-	}
+	const priceOverride = buildRoutePriceOverride(formData);
 
 	const payload: Record<string, unknown> = {
 		model_id: formData.model_id,
@@ -1103,8 +1143,7 @@ export function createInitialRouteForm(models: GatewayModel[], presetModelId?: s
 		route_group: 'default',
 		charged_factor: '1',
 		metered_factor: '1',
-		schedule_charged: [],
-		schedule_metered: [],
+		schedule_windows: [],
 	};
 }
 
@@ -1149,5 +1188,32 @@ export function formatScheduleWindowsHint(windows: DailyScheduleWindow[]): strin
 	if (groups.length === 0) return null;
 	return groups
 		.map((g) => `${g.ranges.join(', ')} ${formatFactorMultiplier(g.factor)}`)
+		.join(' · ');
+}
+
+/** 列表 / 表单共用：把存量叠乘 bake 成对标准价的有效倍率。 */
+export function resolveRouteScheduleDisplay(
+	priceOverride: string | null | undefined,
+): SharedScheduleWindow[] {
+	const factors = parseRouteBaseFactors(priceOverride ?? null);
+	const schedule = parseRoutePricingSchedule(priceOverride ?? null);
+	return mergeScheduleSidesToSharedWindows(schedule.charged, schedule.metered, {
+		mode: schedule.mode,
+		chargedBase: factors.chargedFactor,
+		meteredBase: factors.meteredFactor,
+	});
+}
+
+export function formatSharedScheduleWindowsHint(windows: SharedScheduleWindow[]): string | null {
+	if (windows.length === 0) return null;
+	return windows
+		.map((w) => {
+			const range = formatScheduleRange(w.start, w.end);
+			const same = w.charged_factor === w.metered_factor;
+			if (same) {
+				return `${range} ${formatFactorMultiplier(w.charged_factor)}`;
+			}
+			return `${range} C ${formatFactorMultiplier(w.charged_factor)} · M ${formatFactorMultiplier(w.metered_factor)}`;
+		})
 		.join(' · ');
 }
