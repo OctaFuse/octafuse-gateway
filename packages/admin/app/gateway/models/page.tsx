@@ -2,17 +2,16 @@
 
 /**
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
- * 页面筛选条 Kind（All | LLM | Image | Audio）+ Vendor；下方 Model Catalog 卡片；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
+ * 页面筛选条 Kind（All | LLM | Image | Audio）+ Vendor；下方紧凑卡片网格（与 Providers 同密度）；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
  * `?edit=<model_id>` 可从 Routes 等入口深链直接打开编辑弹窗（消费后从 URL 清除）。
  */
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { useModelsPageState } from './use-models-page-state';
+import { ModelAddCard } from './components/model-add-card';
 import { ModelCard } from './components/model-card';
-import { ModelCatalogToolbar } from './components/model-catalog-toolbar';
 import { ModelFilterSidebar } from './components/model-filter-sidebar';
 import { ModelImportModal } from './components/model-import-modal';
-import { ModelMetadataPreviewModal } from './components/model-metadata-preview-modal';
 import { ModelModal } from './components/model-modal';
 
 function ModelsContent() {
@@ -23,7 +22,7 @@ function ModelsContent() {
 
 	if (state.isLoading) {
 		return (
-			<div className="flex items-center justify-center h-full">
+			<div className="flex h-full min-h-full items-center justify-center bg-gray-100/90">
 				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
@@ -34,7 +33,7 @@ function ModelsContent() {
 		: t('createTitleVendor', { vendor: state.activeVendorTitle });
 
 	return (
-		<div className="min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-5 sm:mb-6">
 				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
 				<p className="mt-1 text-sm text-gray-500">
@@ -55,49 +54,37 @@ function ModelsContent() {
 				onClearFilter={state.clearFilters}
 			/>
 
-			<div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
-				<section className="min-w-0 bg-slate-100/70">
-					<ModelCatalogToolbar
-							activeVendorTitle={state.activeVendorTitle}
-							selectedCount={state.selectedVendorItems.length}
-							hasModels={state.models.length > 0}
-							importSubmitting={state.importSubmitting}
-							onImport={state.openImportCatalogModal}
-							onCreate={() => {
-								state.handleCreate(
-									state.isAllVendors ? undefined : state.activeVendorKey,
-									state.selectedKind === 'image'
-										? 'image'
-										: state.selectedKind === 'audio'
-											? 'audio'
-											: 'llm'
-								);
-							}}
-							createTitle={createTitle}
-						/>
-
-						<div className="bg-slate-100/70 p-4 sm:p-6">
-							{state.models.length === 0 ? (
-								<div className="rounded-xl border border-dashed border-gray-300 bg-white/80 py-16 text-center text-gray-500 shadow-sm">
-									<p className="text-sm font-medium text-gray-600">{t('empty')}</p>
-									<p className="mt-1 text-xs text-gray-500">{t('emptyHint')}</p>
-								</div>
-							) : (
-								<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-									{state.selectedVendorItems.map((model) => (
-										<ModelCard
-											key={model.id}
-											model={model}
-											billingCurrency={state.billingCurrency}
-											onEdit={state.handleEdit}
-											onViewMetadata={state.openMetadataPreview}
-										/>
-									))}
-								</div>
-							)}
-						</div>
-					</section>
+			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+				<ModelAddCard
+					importSubmitting={state.importSubmitting}
+					createTitle={createTitle}
+					onImport={state.openImportCatalogModal}
+					onCreate={() => {
+						state.handleCreate(
+							state.isAllVendors ? undefined : state.activeVendorKey,
+							state.selectedKind === 'image'
+								? 'image'
+								: state.selectedKind === 'audio'
+									? 'audio'
+									: 'llm'
+						);
+					}}
+				/>
+				{state.selectedVendorItems.map((model) => (
+					<ModelCard
+						key={model.id}
+						model={model}
+						billingCurrency={state.billingCurrency}
+						onEdit={state.handleEdit}
+					/>
+				))}
 			</div>
+			{state.selectedVendorItems.length === 0 && state.hasActiveFilter ? (
+				<p className="mt-4 text-center text-sm text-gray-500">
+					{t('empty')}
+					<span className="mt-1 block text-xs text-gray-400">{t('emptyHint')}</span>
+				</p>
+			) : null}
 
 			<ModelModal
 				open={state.showModal}
@@ -127,13 +114,6 @@ function ModelsContent() {
 				onSave={state.handleSave}
 				onDelete={state.handleDelete}
 			/>
-
-			{state.metadataPreview && (
-				<ModelMetadataPreviewModal
-					preview={state.metadataPreview}
-					onClose={() => state.setMetadataPreview(null)}
-				/>
-			)}
 
 			<ModelImportModal
 				open={state.showImportCatalogModal}
@@ -169,7 +149,7 @@ export default function GatewayModelsPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex items-center justify-center h-full">
+				<div className="flex h-full min-h-full items-center justify-center bg-gray-100/90">
 					<div className="text-gray-600">{tCommon('loading')}</div>
 				</div>
 			}

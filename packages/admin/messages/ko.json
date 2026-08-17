@@ -451,6 +451,10 @@
 		"emptyHint": "기본 제공 카탈로그에서 가져오거나 모델을 직접 생성하세요",
 		"createTitleAll": "새 모델 생성",
 		"createTitleVendor": "{vendor}에 새 모델 생성",
+		"addCard": {
+			"title": "모델 추가",
+			"subtitle": "카탈로그에서 가져오거나 빈 모델을 만듭니다"
+		},
 		"catalog": {
 			"title": "모델 카탈로그",
 			"allVendors": "모든 Vendor",
@@ -577,20 +581,14 @@
 			"routesTitle": "{routes}, 활성 {active}개",
 			"kindLlm": "LLM",
 			"kindImage": "이미지",
+			"kindAudio": "오디오",
 			"noTags": "태그 없음",
-			"capabilities": "기능",
-			"totalContext": "전체 Context",
-			"maxOutput": "최대 출력",
-			"modalities": "Modalities",
-			"released": "출시일",
-			"pricing": "요금",
-			"imageCatalogRates": "Image token 카탈로그 요금",
-			"imageTokenRates": "Image token 요금",
-			"imagePerImagePricing": "이미지당 카탈로그 요금",
-			"description": "설명",
-			"metadata": "Metadata",
-			"viewMetadataJson": "Metadata JSON 보기",
-			"kindAudio": "오디오"
+			"specs": "{context} · {max}",
+			"imageHint": "이미지",
+			"audioHint": "오디오",
+			"editModel": "{name} 편집",
+			"pricingNoData": "—",
+			"pricingTiers": "{count}단계"
 		}
 	},
 	"routes": {

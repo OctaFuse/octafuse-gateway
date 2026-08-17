@@ -451,6 +451,10 @@
 		"emptyHint": "組み込みカタログからインポートするか、モデルを手動で作成してください",
 		"createTitleAll": "新しいモデルを作成",
 		"createTitleVendor": "{vendor} にモデルを追加",
+		"addCard": {
+			"title": "モデルを追加",
+			"subtitle": "カタログからインポート、または空白で作成"
+		},
 		"catalog": {
 			"title": "モデルカタログ",
 			"allVendors": "すべてのベンダー",
@@ -577,20 +581,14 @@
 			"routesTitle": "{routes}、有効 {active} 件",
 			"kindLlm": "LLM",
 			"kindImage": "画像",
+			"kindAudio": "音声",
 			"noTags": "タグなし",
-			"capabilities": "機能",
-			"totalContext": "Total Context",
-			"maxOutput": "Max Output",
-			"modalities": "モダリティ",
-			"released": "リリース日",
-			"pricing": "料金",
-			"imageCatalogRates": "Image token カタログ料金",
-			"imageTokenRates": "Image token 料金",
-			"imagePerImagePricing": "画像単位のカタログ料金",
-			"description": "説明",
-			"metadata": "Metadata",
-			"viewMetadataJson": "Metadata JSON を表示",
-			"kindAudio": "音声"
+			"specs": "{context} · {max}",
+			"imageHint": "画像",
+			"audioHint": "音声",
+			"editModel": "{name} を編集",
+			"pricingNoData": "—",
+			"pricingTiers": "{count} 段階"
 		}
 	},
 	"routes": {

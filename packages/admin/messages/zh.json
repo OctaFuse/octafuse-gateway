@@ -451,6 +451,10 @@
 		"emptyHint": "从内置目录导入或手动创建模型",
 		"createTitleAll": "创建新模型",
 		"createTitleVendor": "在 {vendor} 下新建模型",
+		"addCard": {
+			"title": "添加模型",
+			"subtitle": "从目录导入，或新建空白模型"
+		},
 		"catalog": {
 			"title": "模型目录",
 			"allVendors": "全部模型厂商",
@@ -575,22 +579,16 @@
 			"routesPlural": "{count} 条路由",
 			"activeRoutes": "{count} 条活跃",
 			"routesTitle": "{routes}；{active} 条活跃",
-			"kindLlm": "大语言模型",
-			"kindImage": "文生图",
+			"kindLlm": "LLM",
+			"kindImage": "图像",
+			"kindAudio": "音频",
 			"noTags": "无标签",
-			"capabilities": "能力",
-			"totalContext": "总上下文",
-			"maxOutput": "最大输出",
-			"modalities": "模态",
-			"released": "发布日期",
-			"pricing": "定价",
-			"imageCatalogRates": "Image token 目录费率",
-			"imageTokenRates": "Image token 单价",
-			"imagePerImagePricing": "按张目录价",
-			"description": "描述",
-			"metadata": "Metadata",
-			"viewMetadataJson": "查看 Metadata JSON",
-			"kindAudio": "音频"
+			"specs": "{context} · {max}",
+			"imageHint": "图像",
+			"audioHint": "音频",
+			"editModel": "编辑 {name}",
+			"pricingNoData": "—",
+			"pricingTiers": "{count} 档"
 		}
 	},
 	"routes": {

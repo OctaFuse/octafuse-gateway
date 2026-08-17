@@ -451,6 +451,10 @@
 		"emptyHint": "Import from the built-in catalog or create a model manually",
 		"createTitleAll": "Create a new model",
 		"createTitleVendor": "New model under {vendor}",
+		"addCard": {
+			"title": "Add model",
+			"subtitle": "Import from the catalog or create a blank one"
+		},
 		"catalog": {
 			"title": "Model Catalog",
 			"allVendors": "All vendors",
@@ -577,20 +581,14 @@
 			"routesTitle": "{routes}; {active} active",
 			"kindLlm": "LLM",
 			"kindImage": "Image",
+			"kindAudio": "Audio",
 			"noTags": "No tags",
-			"capabilities": "Capabilities",
-			"totalContext": "Total Context",
-			"maxOutput": "Max Output",
-			"modalities": "Modalities",
-			"released": "Released",
-			"pricing": "Pricing",
-			"imageCatalogRates": "Image token catalog rates",
-			"imageTokenRates": "Image token rates",
-			"imagePerImagePricing": "Per-image catalog pricing",
-			"description": "Description",
-			"metadata": "Metadata",
-			"viewMetadataJson": "View metadata JSON",
-			"kindAudio": "Audio"
+			"specs": "{context} · {max}",
+			"imageHint": "Image",
+			"audioHint": "Audio",
+			"editModel": "Edit {name}",
+			"pricingNoData": "—",
+			"pricingTiers": "{count} tiers"
 		}
 	},
 	"routes": {

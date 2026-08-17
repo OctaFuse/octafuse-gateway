@@ -4,13 +4,15 @@
  */
 import {
 	parsePricingProfile,
+	profileHasAudioPerCharacterPricing,
+	profileHasAudioPerSecondPricing,
 	profileHasImagePerImagePricing,
 	profileHasImageTokenPricing,
 	resolveImageBillingMode,
 	type PricingTierPrices,
 } from '@octafuse/core/db/pricing-profile';
 
-import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
+import { formatGatewayMoneyCompact, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 
 export type CatalogPricingFields = {
 	pricing_profile?: string | null;
@@ -101,6 +103,53 @@ export function catalogInputPriceSortKey(m: CatalogPricingFields): number {
 		return Math.min(...p.tiers.map((t) => t.input_price));
 	}
 	return Number.NEGATIVE_INFINITY;
+}
+
+/** Models 卡片：金额与单位拆开，便于扫读（如 `¥2 / ¥6` + `/M`）。 */
+export type CatalogCardPricing = {
+	amount: string;
+	unit: string;
+	tierCount: number;
+};
+
+export function getCatalogCardPricing(
+	m: CatalogPricingFields,
+	currencyCode = 'USD',
+	emptyLabel = '—'
+): CatalogCardPricing {
+	const p = parsePricingProfile(m.pricing_profile ?? undefined);
+	if (!p) {
+		return { amount: emptyLabel, unit: '', tierCount: 0 };
+	}
+	const money = (n: number | null | undefined) =>
+		n == null || !Number.isFinite(n) ? emptyLabel : formatGatewayMoneyCompact(n, currencyCode);
+
+	if (profileHasAudioPerSecondPricing(p) && p.audio) {
+		return { amount: money(p.audio.price_per_second), unit: '/s', tierCount: 1 };
+	}
+	if (profileHasAudioPerCharacterPricing(p) && p.audio) {
+		return { amount: money(p.audio.price_per_character), unit: '/char', tierCount: 1 };
+	}
+	if (profileHasImagePerImagePricing(p) && p.image?.default != null) {
+		return { amount: money(p.image.default), unit: '/img', tierCount: 1 };
+	}
+	if (profileHasImageTokenPricing(p) && p.tiers.length > 0) {
+		const tier = p.tiers[0]!;
+		return {
+			amount: `${money(tier.input_price)} / ${money(tier.image_output_price ?? tier.output_price)}`,
+			unit: '/M',
+			tierCount: p.tiers.length,
+		};
+	}
+	if (p.tiers.length === 0) {
+		return { amount: emptyLabel, unit: '', tierCount: 0 };
+	}
+	const tier = p.tiers[0]!;
+	return {
+		amount: `${money(tier.input_price)} / ${money(tier.output_price)}`,
+		unit: '/M',
+		tierCount: p.tiers.length,
+	};
 }
 
 /** 模型目录表「定价」列一行摘要 */

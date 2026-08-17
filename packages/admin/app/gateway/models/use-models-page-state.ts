@@ -37,7 +37,6 @@ import {
 	saveModel,
 } from './model-api';
 import {
-	buildMetadataSummary,
 	formatMetadataForEditor,
 	groupModelsByVendor,
 	parseVendorFilterParam,
@@ -50,7 +49,6 @@ import {
 	EMPTY_IMAGE_MODEL_FORM,
 	EMPTY_MODEL_FORM,
 	parseModelListKindFilterParam,
-	type MetadataPreviewState,
 	type ModelFormData,
 	type ModelFormKind,
 	type ModelKindFilter,
@@ -93,14 +91,7 @@ export function useModelsPageState() {
 	const [importCatalogSearch, setImportCatalogSearch] = useState('');
 	const [importCatalogKind, setImportCatalogKind] = useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
 	const [importSubmitting, setImportSubmitting] = useState(false);
-	const [metadataPreview, setMetadataPreview] = useState<MetadataPreviewState | null>(null);
 	const { currency: billingCurrency } = useBillingCurrency();
-
-	const openMetadataPreview = useCallback((model: ModelListItem) => {
-		const summary = buildMetadataSummary(model.metadata);
-		if (summary.kind === 'empty') return;
-		setMetadataPreview({ model, summary });
-	}, []);
 
 	const importSelectedCount = useMemo(
 		() => Object.values(importSelected).filter(Boolean).length,
@@ -755,9 +746,6 @@ export function useModelsPageState() {
 		importableCatalogCount,
 		importSubmitting,
 		existingModelIds,
-		metadataPreview,
-		setMetadataPreview,
-		openMetadataPreview,
 		openImportCatalogModal,
 		loadImportCatalog,
 		toggleImportPreset,

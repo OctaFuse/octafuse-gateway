@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { getCatalogImagePricingDisplay, summarizePricingAuditJson } from './pricing-ui';
+import {
+	getCatalogCardPricing,
+	getCatalogImagePricingDisplay,
+	summarizePricingAuditJson,
+} from './pricing-ui';
 
 describe('getCatalogImagePricingDisplay', () => {
 	it('shows image token rates without estimate matrix', () => {
@@ -136,5 +140,39 @@ describe('summarizePricingAuditJson', () => {
 		assert.ok(line);
 		assert.ok(line!.includes('audio_tokens'));
 		assert.ok(line!.includes('120/15/100'));
+	});
+});
+
+describe('getCatalogCardPricing', () => {
+	it('formats LLM card pricing as in/out plus unit', () => {
+		const pricing = getCatalogCardPricing(
+			{
+				pricing_profile: JSON.stringify({
+					tiers: [
+						{ upto: 256000, input_price: 2, output_price: 6 },
+						{ upto: null, input_price: 4, output_price: 12 },
+					],
+				}),
+			},
+			'CNY'
+		);
+		assert.equal(pricing.amount, '¥2 / ¥6');
+		assert.equal(pricing.unit, '/M');
+		assert.equal(pricing.tierCount, 2);
+	});
+
+	it('formats per-image card pricing without repeating currency in the unit', () => {
+		const pricing = getCatalogCardPricing(
+			{
+				pricing_profile: JSON.stringify({
+					image_billing_mode: 'per_image',
+					image: { default: 0.25 },
+				}),
+			},
+			'USD'
+		);
+		assert.equal(pricing.amount, '$0.25');
+		assert.equal(pricing.unit, '/img');
+		assert.equal(pricing.tierCount, 1);
 	});
 });
