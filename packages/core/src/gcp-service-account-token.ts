@@ -173,20 +173,26 @@ export async function signGcpServiceAccountJwt(
 	const signature = await crypto.subtle.sign(
 		'RSASSA-PKCS1-v1_5',
 		key,
-		new TextEncoder().encode(signingInput)
+		bytesToArrayBuffer(new TextEncoder().encode(signingInput))
 	);
 	return `${signingInput}.${base64UrlEncode(new Uint8Array(signature))}`;
 }
 
 async function importRsaPrivateKey(pem: string): Promise<CryptoKey> {
-	const der = decodePemToDer(pem);
 	return crypto.subtle.importKey(
 		'pkcs8',
-		der,
+		bytesToArrayBuffer(decodePemToDer(pem)),
 		{ name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
 		false,
 		['sign']
 	);
+}
+
+/** Next / TS 6 把 `Uint8Array.buffer` 标成 `ArrayBufferLike`，Web Crypto 只要真正的 `ArrayBuffer`。 */
+function bytesToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+	const copy = new ArrayBuffer(bytes.byteLength);
+	new Uint8Array(copy).set(bytes);
+	return copy;
 }
 
 function decodePemToDer(pem: string): Uint8Array {
