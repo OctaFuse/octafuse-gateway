@@ -189,13 +189,13 @@ async function importRsaPrivateKey(pem: string): Promise<CryptoKey> {
 	);
 }
 
-function decodePemToDer(pem: string): ArrayBuffer {
+function decodePemToDer(pem: string): Uint8Array {
 	const normalized = pem.replace(/\\n/g, '\n').trim();
 	const pkcs8 = normalized.match(/-----BEGIN PRIVATE KEY-----([\s\S]+?)-----END PRIVATE KEY-----/);
-	if (pkcs8?.[1]) return base64ToArrayBuffer(pkcs8[1]);
+	if (pkcs8?.[1]) return uint8FromBase64(pkcs8[1]);
 	const pkcs1 = normalized.match(/-----BEGIN RSA PRIVATE KEY-----([\s\S]+?)-----END RSA PRIVATE KEY-----/);
 	if (pkcs1?.[1]) {
-		return wrapPkcs1ToPkcs8(new Uint8Array(base64ToArrayBuffer(pkcs1[1]))).buffer;
+		return wrapPkcs1ToPkcs8(uint8FromBase64(pkcs1[1]));
 	}
 	throw new Error('GCP service account private_key must be a PEM PRIVATE KEY');
 }
@@ -254,12 +254,12 @@ function base64Encode(bytes: Uint8Array): string {
 	return btoa(binary);
 }
 
-function base64ToArrayBuffer(base64: string): ArrayBuffer {
+function uint8FromBase64(base64: string): Uint8Array {
 	const cleaned = base64.replace(/\s+/g, '');
 	const binary = atob(cleaned);
 	const bytes = new Uint8Array(binary.length);
 	for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-	return bytes.buffer;
+	return bytes;
 }
 
 function truncateError(text: string): string {
