@@ -362,9 +362,9 @@ Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0
 - **`upstreamModel`** 来自路由的 `provider_model_name`（裸模型名，如 `gemini-2.5-flash`），与客户端路径中的 `modelSegment`（可含 `:route_group`）独立。
 - 仅配置裸 host（如 `https://generativelanguage.googleapis.com`）会在出站时报错。
 - Vertex Express 与 Developer API 的请求体、响应体、SSE、`usageMetadata` 一致。
-- **项目级 Vertex** 没有免 `project` / `location` 的通用 Gemini 前缀；`locations/global` 仍须带项目 ID。出站鉴权用 GCP access token（`gemini.auth: "bearer"`），不是 Express 的 `?key=`。
-- 官方 **OpenAI Chat Completions** 不走 `endpoints.gemini`，而走 `endpoints.openai`：`https://aiplatform.googleapis.com/v1/projects/{PROJECT}/locations/{LOCATION}/endpoints/openapi/chat/completions`。Express Mode 没有这条 OpenAI 端点。生图走 chat `modalities`，不要配 `/images/generations`。OpenAI 协议的 `provider_model_name` 需带 `google/` 前缀（如 `google/gemini-2.5-flash`）。
-- 出站鉴权只认 `endpoints.gemini.auth`：`query-key`（`?key=`）或 `bearer`（`Authorization`）；省略则为 `query-key`。任意 Vertex 兼容上游在供应商上选 Bearer 即可，不必改核心代码。
+- **项目级 Vertex** 没有免 `project` / `location` 的通用 Gemini 前缀；`locations/global` 仍须带项目 ID。凭证栏粘贴 **GCP 服务账号 JSON**（`"type": "service_account"`）；网关换成 OAuth access token 后，OpenAI 与原生 Gemini 都走 `Authorization: Bearer`。不要把服务账号 JSON 或 Vertex API Key 塞进 `?key=`。Express 的 Vertex API Key 只覆盖原生 Gemini。
+- 官方 **OpenAI Chat Completions** 不走 `endpoints.gemini`，而走 `endpoints.openai`：`https://aiplatform.googleapis.com/v1/projects/{PROJECT}/locations/{LOCATION}/endpoints/openapi/chat/completions`。Express Mode 没有这条 OpenAI 端点。生图走 chat `modalities`，不要配 `/images/generations`。OpenAI 协议的 `provider_model_name` 若缺少 `google/`，出站时会自动补上（原生 Gemini 不加）。
+- 出站鉴权只认 `endpoints.gemini.auth`：`query-key`（`?key=`）或 `bearer`（`Authorization`）；省略则为 `query-key`。服务账号会强制 Bearer。任意 Vertex 兼容上游在供应商上选 Bearer 即可，不必改核心代码。
 
 权威配置为 **`providers.endpoints`**（迁移 **`0012`** 已删除 `base_url_*` 三列）。Gemini 须在 Admin 或 API 中把 `endpoints.gemini.base` 配到 `{model}` 之前的完整路径前缀（见上表）。
 

@@ -6,6 +6,7 @@
  */
 import {
 	parseOpenAiAudioTokenUsage,
+	resolveProviderUpstreamSecret,
 	resolveUpstreamEndpoint,
 	type AudioTokenUsage,
 } from '@octafuse/core';
@@ -379,10 +380,11 @@ export async function dispatchOpenAiAudioTranscriptions(
 		AUDIO_TRANSCRIPTION_TIMEOUT_MS
 	);
 	try {
+		const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
-				Authorization: `Bearer ${route.providerApiKey}`,
+				Authorization: `Bearer ${secret}`,
 			},
 			body: form,
 			signal,

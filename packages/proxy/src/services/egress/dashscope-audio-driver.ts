@@ -4,7 +4,7 @@
  * - 同步 Fun-ASR-Realtime：同一多模态端点，但请求参数与响应结构独立；
  * - 异步 Qwen-Audio-3.0-ASR-Flash-Filetrans/Fun-ASR：提交公网 file_urls，轮询 task，再读取结果 JSON。
  */
-import { resolveUpstreamEndpoint } from '@octafuse/core';
+import { resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE, type UsageFromStream } from '../proxy';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
@@ -401,6 +401,7 @@ export async function dispatchDashScopeSyncAsr(
 		throw new Error(`Unsupported DashScope synchronous ASR adapter: ${route.adapter}`);
 	}
 	const fetchImpl = options.fetchImpl ?? fetch;
+	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const url = resolveUpstreamEndpoint('dashscope', 'audio.transcriptions.multimodal', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -409,7 +410,7 @@ export async function dispatchDashScopeSyncAsr(
 		const response = await fetchImpl(url, {
 			method: 'POST',
 			headers: {
-				Authorization: `Bearer ${route.providerApiKey}`,
+				Authorization: `Bearer ${secret}`,
 				'Content-Type': 'application/json',
 				...(isFun ? { 'X-DashScope-SSE': 'disable' } : {}),
 			},
@@ -489,6 +490,7 @@ export async function dispatchDashScopeAsyncAsr(
 	options: DashScopeAsrDispatchOptions = {},
 ): Promise<DashScopeAudioDispatchResult> {
 	const fetchImpl = options.fetchImpl ?? fetch;
+	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const timeout = withTimeout(requestSignal, options.timeoutMs ?? AUDIO_TRANSCRIPTION_TIMEOUT_MS);
 	try {
 		const fileUrl = req.fileSourceUrl;
@@ -501,7 +503,7 @@ export async function dispatchDashScopeAsyncAsr(
 		const submitResponse = await fetchImpl(submitUrl, {
 			method: 'POST',
 			headers: {
-				Authorization: `Bearer ${route.providerApiKey}`,
+				Authorization: `Bearer ${secret}`,
 				'Content-Type': 'application/json',
 				'X-DashScope-Async': 'enable',
 			},
@@ -527,7 +529,7 @@ export async function dispatchDashScopeAsyncAsr(
 			await waitForPoll(timeout.signal, options.pollIntervalMs ?? DASHSCOPE_ASYNC_POLL_INTERVAL_MS);
 			const queryResponse = await fetchImpl(queryUrl, {
 				method: 'GET',
-				headers: { Authorization: `Bearer ${route.providerApiKey}` },
+				headers: { Authorization: `Bearer ${secret}` },
 				signal: timeout.signal,
 			});
 			const queryBody = await parseJsonResponse(queryResponse);

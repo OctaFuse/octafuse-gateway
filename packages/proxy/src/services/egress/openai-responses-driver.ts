@@ -1,4 +1,4 @@
-import { resolveUpstreamEndpoint } from '@octafuse/core';
+import { applyVertexOpenAiModelPrefix, resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -378,16 +378,17 @@ export async function dispatchOpenAiResponsesRoute(
 	const url = resolveUpstreamEndpoint('openai', 'responses', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
+	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const requestBody = {
 		...buildRouteRequestBody(route, body),
-		model: route.providerModelName,
+		model: applyVertexOpenAiModelPrefix(url, route.providerModelName),
 	};
 
 	const response = await fetch(url, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			Authorization: `Bearer ${route.providerApiKey}`,
+			Authorization: `Bearer ${secret}`,
 		},
 		body: JSON.stringify(requestBody),
 	});

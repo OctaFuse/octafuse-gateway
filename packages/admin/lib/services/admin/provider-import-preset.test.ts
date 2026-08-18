@@ -226,6 +226,7 @@ describe('provider import preset catalog metadata', () => {
 			'https://aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/global/publishers/google/models'
 		);
 		assert.equal(projectScoped.endpoints.gemini?.auth, 'bearer');
+		assert.match(projectScoped.description ?? '', /service account JSON/i);
 	});
 
 	it('does not guess when configured endpoints identify different vendors', () => {

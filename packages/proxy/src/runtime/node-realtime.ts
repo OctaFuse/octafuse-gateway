@@ -4,6 +4,7 @@
  */
 import { createRequire } from 'node:module';
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http';
+import { resolveProviderUpstreamSecret } from '@octafuse/core';
 import { resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
 import type { UsageFromStream } from '../services/proxy';
 import { EMPTY_USAGE } from '../services/proxy';
@@ -116,8 +117,9 @@ async function connectUpstream(
 	const url = new URL(endpoint);
 	if (operation.endsWith('.session')) url.searchParams.set('model', route.providerModelName);
 
+	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const upstream = new WebSocketCtor(url.toString(), {
-		headers: { Authorization: `Bearer ${route.providerApiKey}` },
+		headers: { Authorization: `Bearer ${secret}` },
 	});
 	let requestId: string | null = null;
 	let settled = false;

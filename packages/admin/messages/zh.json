@@ -406,7 +406,7 @@
 			"geminiAuthAuto": "默认（?key=）",
 			"geminiAuthQueryKey": "Query key（?key=）",
 			"geminiAuthBearer": "Bearer（Authorization）",
-			"geminiAuthHint": "Developer API 与 Vertex Express 使用 ?key=。项目级 Vertex 与 Vertex 兼容聚合商（ZenMux、七牛等）必须选 Bearer。",
+			"geminiAuthHint": "Developer API 与 Vertex Express 使用 ?key=。项目级 Vertex 粘贴服务账号 JSON 时会自动走 Bearer。Vertex 兼容聚合商（ZenMux、七牛等）必须选 Bearer。",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "网关会从该 Base 派生 DashScope 的 HTTP 与 WSS 路径。使用工作空间端点时，请填写对应的 DashScope 主机。",
 			"advancedToggle": "URL 覆盖",
@@ -438,7 +438,7 @@
 			"apiKeyOptional": "API Key",
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "留空则保持原密钥",
-			"apiKeyHint": "该供应商的上游凭证。",
+			"apiKeyHint": "该供应商的上游凭证。项目级 Vertex 请粘贴 GCP 服务账号 JSON（不要填 Vertex API Key）。",
 			"apiKeyEditHint": "留空保持当前密钥；填写新值则替换。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 流式 + 非流式",
 			"legacyPerActionNotice": "该 Provider 仍保留无法安全合并的 generateContent / streamGenerateContent 覆盖项。保存时原样写回。复核后可改为单一 '{action}' 模板。"
@@ -1147,7 +1147,8 @@
 		"bodyDirtyHint": "切换路由后保留了当前请求体。",
 		"bodyDirtyHintResponses": "切换路由后保留了当前请求体。可点连通测试、工具流式或推理替换请求体。",
 		"bodyDirtyHintLlm": "切换路由后保留了当前请求体。可点连通测试、工具流式或推理替换请求体。",
-		"realtimeTransportError": "实时 WebSocket 传输出错"
+		"realtimeTransportError": "实时 WebSocket 传输出错",
+		"streamDisconnected": "读取上游流式响应时连接中断（{cause}）。可先把 stream 改为 false 验证，或刷新后再试。"
 	},
 	"simulator": {
 		"title": "模拟器",

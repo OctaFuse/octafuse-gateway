@@ -89,6 +89,14 @@ export function resolveGeminiUpstreamAuth(
 	return isGeminiUpstreamAuthScheme(configuredAuth) ? configuredAuth : 'query-key';
 }
 
+/** 服务账号必须走 Bearer，禁止把 JSON / access token 塞进 `?key=`。 */
+export function resolveGeminiAuthForUpstreamSecret(
+	configuredAuth: GeminiUpstreamAuthScheme | null | undefined,
+	isServiceAccount: boolean
+): GeminiUpstreamAuthScheme {
+	return isServiceAccount ? 'bearer' : resolveGeminiUpstreamAuth(configuredAuth);
+}
+
 export type PrepareGeminiUpstreamFetchInput = {
 	/**
 	 * 协议根 URL（到 `{model}` 之前）。与 `resolvedUrl` 二选一；

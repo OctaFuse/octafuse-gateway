@@ -802,16 +802,16 @@
 				"auth": "bearer"
 			}
 		},
-		"description": "Replace YOUR_PROJECT_ID (and `global` if you need a regional endpoint). Official Vertex OpenAI Chat Completions is `.../endpoints/openapi/chat/completions` (image gen uses chat `modalities`, not /images/generations). Native Gemini uses project-scoped `.../publishers/google/models` with Bearer. Paste a Google Cloud access token as the API key (tokens expire ~1h; see cloud.google.com/vertex-ai/generative-ai/docs/start/openai). OpenAI `provider_model_name` must include the `google/` prefix (e.g. google/gemini-2.5-flash).",
+		"description": "Replace YOUR_PROJECT_ID (and `global` if you need a regional endpoint). Official Vertex OpenAI Chat Completions is `.../endpoints/openapi/chat/completions` (image gen uses chat `modalities`, not /images/generations). Native Gemini uses project-scoped `.../publishers/google/models` with Bearer. Paste a GCP service account JSON as the API key; the gateway exchanges it for an OAuth access token used by both protocols. A Vertex API key only works with Express / native Gemini `?key=`, not this OpenAI endpoint. Missing `google/` on OpenAI `provider_model_name` is added automatically (Gemini native stays unprefixed).",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "Google Vertex AI（请替换项目 ID）",
-					"description": "正式 Vertex：OpenAI Chat Completions 与原生 Gemini；导入后替换项目 ID，API Key 填 GCP access token。"
+					"description": "正式 Vertex：OpenAI Chat Completions 与原生 Gemini；导入后替换项目 ID，API Key 栏粘贴 GCP 服务账号 JSON。"
 				},
 				"en": {
 					"name": "Google Vertex AI (replace project ID)",
-					"description": "Full Vertex: OpenAI Chat Completions plus native Gemini. Replace the project ID; use a GCP access token as the API key."
+					"description": "Full Vertex: OpenAI Chat Completions plus native Gemini. Replace the project ID; paste a GCP service account JSON as the API key."
 				}
 			},
 			"links": {

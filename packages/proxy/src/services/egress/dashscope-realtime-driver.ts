@@ -5,6 +5,7 @@
  *
  * 对外保持 DashScope 原生事件，网关只替换供应商模型名、转发帧并汇总真实 usage。
  */
+import { resolveProviderUpstreamSecret } from "@octafuse/core";
 import { resolveUpstreamEndpoint } from "@octafuse/core/provider-endpoints";
 import type { ProxyDispatchResult } from "../failover-dispatch";
 import type { RouteResult } from "../model-router";
@@ -376,9 +377,10 @@ export async function dispatchDashScopeRealtime(
 	if (isSessionOperation(operation))
 		url.searchParams.set("model", route.providerModelName);
 
+	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const upstreamResponse = await (options.fetchImpl ?? fetch)(url.toString(), {
 		headers: {
-			Authorization: `Bearer ${route.providerApiKey}`,
+			Authorization: `Bearer ${secret}`,
 			Upgrade: "websocket",
 		},
 		signal: requestSignal,

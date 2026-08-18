@@ -2,8 +2,17 @@
  * Playground：按单条 `model_routes` 直连上游，不经过 Proxy、不鉴 API Key、不写 `api_key_request_logs`、不计费、无 failover。
  */
 import type { GatewayRepositories, ProviderEndpointsMap } from '@octafuse/core';
+import {
+	applyVertexOpenAiModelPrefix,
+	isGcpServiceAccountJson,
+	resolveProviderUpstreamSecret,
+} from '@octafuse/core';
 import { isAudioModel as isCatalogAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
-import { type GeminiContentAction, prepareGeminiUpstreamFetch } from '@octafuse/core/gemini-upstream-url';
+import {
+	type GeminiContentAction,
+	prepareGeminiUpstreamFetch,
+	resolveGeminiAuthForUpstreamSecret,
+} from '@octafuse/core/gemini-upstream-url';
 import { parseProviderEndpoints, resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
@@ -152,6 +161,27 @@ export async function resolvePlaygroundRoute(
 	};
 }
 
+/** 服务账号 JSON 换成 access token，并强制 Gemini 走 Bearer。 */
+export async function applyPlaygroundUpstreamCredential(
+	route: PlaygroundResolvedRoute,
+): Promise<PlaygroundResolvedRoute> {
+	try {
+		const resolved = await resolveProviderUpstreamSecret(route.providerApiKey);
+		if (!resolved.isServiceAccount) return route;
+		const gemini = route.providerEndpoints.gemini;
+		return {
+			...route,
+			providerApiKey: resolved.secret,
+			providerEndpoints: {
+				...route.providerEndpoints,
+				...(gemini ? { gemini: { ...gemini, auth: 'bearer' as const } } : {}),
+			},
+		};
+	} catch (e) {
+		throw badRequest(e instanceof Error ? e.message : 'Failed to resolve provider credential');
+	}
+}
+
 function stripApiKeyFromUrlForHeader(urlString: string): string {
 	try {
 		const u = new URL(urlString);
@@ -179,7 +209,10 @@ export function buildPlaygroundGeminiUpstreamRequest(
 		modelName: route.providerModelName,
 		action,
 		apiKey: route.providerApiKey,
-		auth: route.providerEndpoints.gemini?.auth,
+		auth: resolveGeminiAuthForUpstreamSecret(
+			route.providerEndpoints.gemini?.auth,
+			isGcpServiceAccountJson(route.providerApiKey)
+		),
 	});
 	return { url: url.toString(), headers };
 }
@@ -642,7 +675,7 @@ export async function invokePlaygroundUpstream(
 	input: PlaygroundInvokeInput,
 	requestSignal?: AbortSignal,
 ): Promise<PlaygroundInvokeResult> {
-	const route = await resolvePlaygroundRoute(repos, input.routeId);
+	const route = await applyPlaygroundUpstreamCredential(await resolvePlaygroundRoute(repos, input.routeId));
 	const userBody = input.body;
 	if (!isPlainObject(userBody)) {
 		throw badRequest('body must be a JSON object');
@@ -808,7 +841,7 @@ export async function invokePlaygroundUpstream(
 			};
 			const requestBody: Record<string, unknown> = {
 				...merged,
-				model: route.providerModelName,
+				model: applyVertexOpenAiModelPrefix(url, route.providerModelName),
 			};
 			// Strip accidental data-URL image fields from generations JSON
 			delete requestBody.image;

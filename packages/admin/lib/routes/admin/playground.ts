@@ -14,6 +14,7 @@ import {
 	dispatchPlaygroundDashScopeRealtime,
 	PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS,
 } from '@/lib/services/admin/playground-realtime-service';
+import { copyPlaygroundUpstreamHeaders } from '@/lib/playground/proxy-response-headers';
 import { handleAdminRouteError } from './error-response';
 
 export const adminPlaygroundRoutes = new Hono<AdminEnv>();
@@ -96,7 +97,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 					c.req.raw.signal
 				);
 
-			const headers = new Headers(response.headers);
+			const headers = copyPlaygroundUpstreamHeaders(response.headers);
 			headers.set('x-playground-latency-ms', String(latencyMs));
 			headers.set('x-playground-upstream-status', String(response.status));
 			headers.set('x-playground-upstream-url', upstreamUrlForHeader);
@@ -153,7 +154,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 				c.req.raw.signal
 			);
 
-		const headers = new Headers(response.headers);
+		const headers = copyPlaygroundUpstreamHeaders(response.headers);
 		headers.set('x-playground-latency-ms', String(latencyMs));
 		headers.set('x-playground-upstream-status', String(response.status));
 		headers.set('x-playground-upstream-url', upstreamUrlForHeader);

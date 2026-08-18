@@ -406,7 +406,7 @@
 			"geminiAuthAuto": "デフォルト（?key=）",
 			"geminiAuthQueryKey": "Query key（?key=）",
 			"geminiAuthBearer": "Bearer（Authorization）",
-			"geminiAuthHint": "Developer API と Vertex Express は ?key= です。プロジェクト指定の Vertex および Vertex 互換の集約（ZenMux、Qiniu など）は Bearer を選んでください。",
+			"geminiAuthHint": "Developer API と Vertex Express は ?key= です。プロジェクト指定の Vertex にサービスアカウント JSON を貼ると自動で Bearer になります。Vertex 互換の集約（ZenMux、Qiniu など）は Bearer を選んでください。",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "この Base から DashScope の HTTP と WSS パスを生成します。ワークスペース用エンドポイントでは対応する DashScope ホストを指定してください。",
 			"advancedToggle": "URL の上書き",
@@ -438,7 +438,7 @@
 			"apiKeyOptional": "API Key",
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "空欄なら現行キーを維持",
-			"apiKeyHint": "このプロバイダーの上流認証情報。",
+			"apiKeyHint": "このプロバイダーの上流認証情報。プロジェクト指定の Vertex では GCP サービスアカウント JSON を貼ってください（Vertex API Key ではありません）。",
 			"apiKeyEditHint": "空欄で現行キーを維持。新しい値を入力すると置換します。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — ストリーム + 非ストリーム",
 			"legacyPerActionNotice": "このプロバイダーには安全に統合できない generateContent / streamGenerateContent の個別上書きが残っています。保存時はそのまま保持されます。確認後に単一の '{action}' テンプレートへ変更してください。"
@@ -1147,7 +1147,8 @@
 		"bodyDirtyHint": "Route 切替後も現在のリクエストボディを保持しています。",
 		"bodyDirtyHintResponses": "Route 切替後も現在のリクエストボディを保持しています。リクエストサンプルで置き換えられます。",
 		"bodyDirtyHintLlm": "Route 切替後も現在のリクエストボディを保持しています。リクエストサンプルで置き換えられます。",
-		"realtimeTransportError": "リアルタイム WebSocket の転送エラー"
+		"realtimeTransportError": "リアルタイム WebSocket の転送エラー",
+		"streamDisconnected": "上流のストリーム読み取り中に切断されました（{cause}）。stream を false にして確認するか、再試行してください。"
 	},
 	"simulator": {
 		"title": "Simulator",

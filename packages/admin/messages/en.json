@@ -406,7 +406,7 @@
 			"geminiAuthAuto": "Default (?key=)",
 			"geminiAuthQueryKey": "Query key (?key=)",
 			"geminiAuthBearer": "Bearer (Authorization)",
-			"geminiAuthHint": "Developer API and Vertex Express use ?key=. Project-scoped Vertex and Vertex-compatible aggregators (ZenMux, Qiniu, …) must select Bearer.",
+			"geminiAuthHint": "Developer API and Vertex Express use ?key=. Project-scoped Vertex with a service account JSON uses Bearer automatically. Vertex-compatible aggregators (ZenMux, Qiniu, …) must select Bearer.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "The gateway derives DashScope HTTP and WSS paths from this base. For a workspace endpoint, use the corresponding DashScope host.",
 			"advancedToggle": "URL overrides",
@@ -438,7 +438,7 @@
 			"apiKeyOptional": "API Key",
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "Leave blank to keep current key",
-			"apiKeyHint": "Upstream credential for this provider.",
+			"apiKeyHint": "Upstream credential for this provider. For project-scoped Vertex, paste a GCP service account JSON (not a Vertex API key).",
 			"apiKeyEditHint": "Leave blank to keep the current key. Enter a new value to replace it.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — stream + non-stream",
 			"legacyPerActionNotice": "This provider still has separate generateContent / streamGenerateContent overrides that cannot be safely merged. They are preserved as-is on save. Clear them in the database or set a single '{action}' template after review."
@@ -1147,7 +1147,8 @@
 		"bodyDirtyHint": "The request body was kept after switching routes.",
 		"bodyDirtyHintResponses": "The request body was kept after switching routes. Use a request sample to replace it.",
 		"bodyDirtyHintLlm": "The request body was kept after switching routes. Use a request sample to replace it.",
-		"realtimeTransportError": "Realtime WebSocket transport error"
+		"realtimeTransportError": "Realtime WebSocket transport error",
+		"streamDisconnected": "The stream dropped while reading the upstream response ({cause}). Try stream: false to confirm the call, then retry streaming."
 	},
 	"simulator": {
 		"title": "Simulator",
