@@ -3,6 +3,7 @@
  * 示例：
  * - Developer API：`https://generativelanguage.googleapis.com/v1beta/models`
  * - Vertex Express：`https://aiplatform.googleapis.com/v1/publishers/google/models`
+ * - 正式 Vertex（项目级）：`https://aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/google/models`
  */
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
 

@@ -201,6 +201,33 @@ describe('provider import preset catalog metadata', () => {
 		);
 	});
 
+	it('keeps Vertex Express on Gemini query-key and adds project-scoped OpenAI chat', () => {
+		const rows = listStaticProviderImportPresets();
+		const express = rows.find((row) => row.name === 'Google Vertex AI (Express Mode · API Key)');
+		const projectScoped = rows.find((row) => row.name === 'Google Vertex AI (replace project ID)');
+
+		assert.ok(express);
+		assert.equal(
+			express.endpoints.gemini?.base,
+			'https://aiplatform.googleapis.com/v1/publishers/google/models'
+		);
+		assert.equal(express.endpoints.gemini?.auth, undefined);
+		assert.equal(express.endpoints.openai, undefined);
+
+		assert.ok(projectScoped);
+		assert.equal(projectScoped.icon_key, 'vertexai');
+		assert.equal(
+			projectScoped.endpoints.openai?.endpoints?.chat,
+			'https://aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/global/endpoints/openapi/chat/completions'
+		);
+		assert.equal(projectScoped.endpoints.openai?.base, undefined);
+		assert.equal(
+			projectScoped.endpoints.gemini?.base,
+			'https://aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/global/publishers/google/models'
+		);
+		assert.equal(projectScoped.endpoints.gemini?.auth, 'bearer');
+	});
+
 	it('does not guess when configured endpoints identify different vendors', () => {
 		const conflicting = {
 			name: 'Mixed upstream',

@@ -770,7 +770,7 @@
 				"base": "https://aiplatform.googleapis.com/v1/publishers/google/models"
 			}
 		},
-		"description": "Vertex Express: base includes the full prefix `/v1/publishers/google/models` (use `.../v1beta1/publishers/google/models` for v1beta1). API key via `key=`; no project/location/OAuth required. Express has no official OpenAI-compatible endpoint.",
+		"description": "Vertex Express: base includes the full prefix `/v1/publishers/google/models` (use `.../v1beta1/publishers/google/models` for v1beta1). API key via `key=`; no project/location/OAuth required. Express has no official OpenAI-compatible endpoint—use the project-scoped Vertex preset for Chat Completions.",
 		"catalog": {
 			"i18n": {
 				"zh": {
@@ -780,6 +780,38 @@
 				"en": {
 					"name": "Google Vertex AI (Express Mode · API Key)",
 					"description": "Native Gemini endpoint for Vertex AI Express mode with API key authentication."
+				}
+			},
+			"links": {
+				"platform": "https://console.cloud.google.com/vertex-ai"
+			}
+		}
+	},
+	{
+		"name": "Google Vertex AI (replace project ID)",
+		"vendor_key": "google",
+		"icon_key": "vertexai",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/global/endpoints/openapi/chat/completions"
+				}
+			},
+			"gemini": {
+				"base": "https://aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/global/publishers/google/models",
+				"auth": "bearer"
+			}
+		},
+		"description": "Replace YOUR_PROJECT_ID (and `global` if you need a regional endpoint). Official Vertex OpenAI Chat Completions is `.../endpoints/openapi/chat/completions` (image gen uses chat `modalities`, not /images/generations). Native Gemini uses project-scoped `.../publishers/google/models` with Bearer. Paste a Google Cloud access token as the API key (tokens expire ~1h; see cloud.google.com/vertex-ai/generative-ai/docs/start/openai). OpenAI `provider_model_name` must include the `google/` prefix (e.g. google/gemini-2.5-flash).",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Google Vertex AI（请替换项目 ID）",
+					"description": "正式 Vertex：OpenAI Chat Completions 与原生 Gemini；导入后替换项目 ID，API Key 填 GCP access token。"
+				},
+				"en": {
+					"name": "Google Vertex AI (replace project ID)",
+					"description": "Full Vertex: OpenAI Chat Completions plus native Gemini. Replace the project ID; use a GCP access token as the API key."
 				}
 			},
 			"links": {
