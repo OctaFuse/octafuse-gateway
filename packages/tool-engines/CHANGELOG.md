@@ -1,5 +1,12 @@
 # @octafuse/tool-engines
 
+## 2.6.0
+
+### Patch Changes
+
+- Updated dependencies [[`dc7957d`](https://github.com/OctaFuse/octafuse-gateway/commit/dc7957d4b00294def2a3e17ae9e9fd5b5d68a99a)]:
+  - @octafuse/core@2.6.0
+
 ## 2.5.0
 
 ### Patch Changes

@@ -1,5 +1,27 @@
 # @octafuse/proxy
 
+## 2.6.0
+
+### Minor Changes
+
+- [#115](https://github.com/OctaFuse/octafuse-gateway/pull/115) [`dc7957d`](https://github.com/OctaFuse/octafuse-gateway/commit/dc7957d4b00294def2a3e17ae9e9fd5b5d68a99a) Thanks [@dyc87112](https://github.com/dyc87112)! - Project-scoped Vertex accepts a GCP service account JSON and uses one OAuth access token for official OpenAI (`.../endpoints/openapi`) and native Gemini.
+
+  ### Proxy
+
+  - Resolve provider credentials before egress; service accounts never go out as `?key=` or raw JSON
+  - Prefix Vertex OpenAI `provider_model_name` with `google/` when missing
+
+  ### Admin
+
+  - Playground uses the same credential resolve + OpenAI model prefix
+  - Project-scoped Vertex import template now asks for a service account JSON
+
+### Patch Changes
+
+- Updated dependencies [[`dc7957d`](https://github.com/OctaFuse/octafuse-gateway/commit/dc7957d4b00294def2a3e17ae9e9fd5b5d68a99a)]:
+  - @octafuse/core@2.6.0
+  - @octafuse/tool-engines@2.6.0
+
 ## 2.5.0
 
 ### Patch Changes
