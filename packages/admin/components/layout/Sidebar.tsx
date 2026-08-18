@@ -28,74 +28,29 @@ import {
   QueueListIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import { ADMIN_NAV_GROUPS, type AdminNavNameKey } from '@/lib/admin-nav';
 import { adminAppVersion } from '@/lib/app-version';
 
-interface MenuItem {
-  nameKey: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-interface MenuGroup {
-  groupKey: string;
-  items: MenuItem[];
-}
-
-const menuGroups: MenuGroup[] = [
-  {
-    groupKey: 'overview',
-    items: [
-      { nameKey: 'dashboard', href: '/dashboard', icon: HomeIcon },
-    ],
-  },
-  {
-    groupKey: 'inference',
-    items: [
-      { nameKey: 'providers', href: '/gateway/providers', icon: GlobeAltIcon },
-      { nameKey: 'models', href: '/gateway/models', icon: CpuChipIcon },
-      { nameKey: 'routes', href: '/gateway/routes', icon: ArrowsRightLeftIcon },
-      { nameKey: 'playground', href: '/gateway/playground', icon: BeakerIcon },
-      { nameKey: 'simulator', href: '/gateway/simulator', icon: PlayCircleIcon },
-    ],
-  },
-  {
-    groupKey: 'user',
-    items: [
-      { nameKey: 'users', href: '/gateway/users', icon: UsersIcon },
-      { nameKey: 'apiKeys', href: '/gateway/keys', icon: KeyIcon },
-      { nameKey: 'requestLogs', href: '/gateway/request-logs', icon: DocumentChartBarIcon },
-      { nameKey: 'auditLogs', href: '/gateway/audit-logs', icon: ClipboardDocumentListIcon },
-    ],
-  },
-  {
-    groupKey: 'tools',
-    items: [
-      { nameKey: 'toolsConfig', href: '/gateway/tools', icon: WrenchScrewdriverIcon },
-      { nameKey: 'toolInvocations', href: '/gateway/tools/invocations', icon: QueueListIcon },
-    ],
-  },
-  {
-    groupKey: 'analytics',
-    items: [
-      { nameKey: 'modelUsage', href: '/gateway/analytics/models', icon: ChartBarIcon },
-      { nameKey: 'providerUsage', href: '/gateway/analytics/providers', icon: ServerStackIcon },
-      { nameKey: 'userUsage', href: '/gateway/analytics/users', icon: UsersIcon },
-      { nameKey: 'reliability', href: '/gateway/analytics/reliability', icon: ShieldCheckIcon },
-    ],
-  },
-  {
-    groupKey: 'integration',
-    items: [
-      { nameKey: 'adminApiKeys', href: '/gateway/admin-api-keys', icon: KeyIcon },
-    ],
-  },
-  {
-    groupKey: 'system',
-    items: [
-      { nameKey: 'config', href: '/gateway/config', icon: Cog6ToothIcon },
-    ],
-  },
-];
+const NAV_ICONS: Record<AdminNavNameKey, React.ComponentType<{ className?: string }>> = {
+  dashboard: HomeIcon,
+  providers: GlobeAltIcon,
+  models: CpuChipIcon,
+  routes: ArrowsRightLeftIcon,
+  playground: BeakerIcon,
+  simulator: PlayCircleIcon,
+  users: UsersIcon,
+  apiKeys: KeyIcon,
+  requestLogs: DocumentChartBarIcon,
+  auditLogs: ClipboardDocumentListIcon,
+  toolsConfig: WrenchScrewdriverIcon,
+  toolInvocations: QueueListIcon,
+  modelUsage: ChartBarIcon,
+  providerUsage: ServerStackIcon,
+  userUsage: UsersIcon,
+  reliability: ShieldCheckIcon,
+  adminApiKeys: KeyIcon,
+  config: Cog6ToothIcon,
+};
 
 export default function Sidebar() {
   const t = useTranslations('sidebar');
@@ -136,7 +91,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-3">
-        {menuGroups.map((group) => (
+        {ADMIN_NAV_GROUPS.map((group) => (
           <div key={group.groupKey}>
             <h3 className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
               {t(`groups.${group.groupKey}`)}
@@ -148,7 +103,7 @@ export default function Sidebar() {
                   (item.href === '/gateway/users' &&
                     (pathname === '/gateway/users' || pathname?.startsWith('/gateway/users/'))) ||
                   (item.href === '/gateway/tools' && pathname === '/gateway/tools');
-                const Icon = item.icon;
+                const Icon = NAV_ICONS[item.nameKey];
 
                 return (
                   <Link

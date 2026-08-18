@@ -6,11 +6,16 @@ import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import AuthWrapper from '@/components/layout/AuthWrapper';
+import DocumentTitle from '@/components/layout/DocumentTitle';
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations('metadata');
+	const appTitle = t('title');
 	return {
-		title: t('title'),
+		title: {
+			default: appTitle,
+			template: `%s · ${appTitle}`,
+		},
 		description: t('description'),
 		robots: 'noindex, nofollow',
 	};
@@ -28,6 +33,7 @@ export default async function RootLayout({
 		<html lang={locale} data-scroll-behavior="smooth">
 			<body className="font-sans h-dvh overflow-hidden">
 				<NextIntlClientProvider locale={locale} messages={messages}>
+					<DocumentTitle />
 					<AuthWrapper>{children}</AuthWrapper>
 				</NextIntlClientProvider>
 			</body>
