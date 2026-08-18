@@ -311,8 +311,8 @@
 		"released": "2026-07-21"
 	},
 	{
-		"id": "gemini-3.1-flash-lite-preview",
-		"display_name": "Gemini 3.1 Flash Lite Preview",
+		"id": "gemini-3.1-flash-lite",
+		"display_name": "Gemini 3.1 Flash Lite",
 		"description": "A high-efficiency Gemini preview optimized for high-volume, latency-sensitive applications. It is tuned for high-volume workloads while approaching the quality of larger Flash models.",
 		"i18n": {
 			"en": "A high-efficiency Gemini preview optimized for high-volume, latency-sensitive applications. It is tuned for high-volume workloads while approaching the quality of larger Flash models.",
