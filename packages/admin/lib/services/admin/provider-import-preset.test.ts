@@ -147,6 +147,88 @@ describe('provider import preset catalog metadata', () => {
 		assert.equal(bailian.endpoints.dashscope?.base, 'https://dashscope.aliyuncs.com/api/v1');
 	});
 
+	it('includes official OpenAI/Anthropic endpoints for newly added import presets', () => {
+		const rows = listStaticProviderImportPresets();
+		const byName = new Map(rows.map((row) => [row.name, row]));
+		const chatOf = (name: string) => byName.get(name)?.endpoints.openai?.endpoints?.chat;
+		const openaiBaseOf = (name: string) => byName.get(name)?.endpoints.openai?.base;
+		const anthropicBaseOf = (name: string) => byName.get(name)?.endpoints.anthropic?.base;
+
+		assert.equal(
+			chatOf('Command Code'),
+			'https://api.commandcode.ai/provider/v1/chat/completions'
+		);
+		assert.equal(anthropicBaseOf('Command Code'), 'https://api.commandcode.ai/provider');
+		assert.equal(chatOf('Cerebras'), 'https://api.cerebras.ai/v1/chat/completions');
+		assert.equal(
+			chatOf('Hugging Face Inference Providers'),
+			'https://router.huggingface.co/v1/chat/completions'
+		);
+		assert.equal(openaiBaseOf('Vercel AI Gateway'), 'https://ai-gateway.vercel.sh/v1');
+		assert.equal(anthropicBaseOf('Vercel AI Gateway'), 'https://ai-gateway.vercel.sh');
+		assert.equal(chatOf('SambaNova Cloud'), 'https://api.sambanova.ai/v1/chat/completions');
+		assert.equal(anthropicBaseOf('SambaNova Cloud'), 'https://api.sambanova.ai');
+		assert.equal(
+			chatOf('DeepInfra'),
+			'https://api.deepinfra.com/v1/openai/chat/completions'
+		);
+		assert.equal(chatOf('Novita AI'), 'https://api.novita.ai/openai/v1/chat/completions');
+		assert.equal(chatOf('Meta Model API'), 'https://api.meta.ai/v1/chat/completions');
+		assert.equal(anthropicBaseOf('Meta Model API'), 'https://api.meta.ai');
+		assert.equal(
+			chatOf('Alibaba Cloud Bailian (International)'),
+			'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions'
+		);
+		assert.equal(
+			byName.get('Alibaba Cloud Bailian (International)')?.endpoints.dashscope?.base,
+			'https://dashscope-intl.aliyuncs.com/api/v1'
+		);
+		assert.equal(
+			chatOf('Alibaba Cloud Bailian (Coding Plan International)'),
+			'https://coding-intl.dashscope.aliyuncs.com/v1/chat/completions'
+		);
+		assert.equal(
+			anthropicBaseOf('Alibaba Cloud Bailian (Coding Plan International)'),
+			'https://coding-intl.dashscope.aliyuncs.com/apps/anthropic'
+		);
+		assert.equal(
+			chatOf('BytePlus ModelArk'),
+			'https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions'
+		);
+		assert.equal(
+			chatOf('BytePlus ModelArk (Coding Plan)'),
+			'https://ark.ap-southeast.bytepluses.com/api/coding/v3/chat/completions'
+		);
+	});
+
+	it('keeps Vertex Express on Gemini query-key and adds project-scoped OpenAI chat', () => {
+		const rows = listStaticProviderImportPresets();
+		const express = rows.find((row) => row.name === 'Google Vertex AI (Express Mode · API Key)');
+		const projectScoped = rows.find((row) => row.name === 'Google Vertex AI (replace project ID)');
+
+		assert.ok(express);
+		assert.equal(
+			express.endpoints.gemini?.base,
+			'https://aiplatform.googleapis.com/v1/publishers/google/models'
+		);
+		assert.equal(express.endpoints.gemini?.auth, undefined);
+		assert.equal(express.endpoints.openai, undefined);
+
+		assert.ok(projectScoped);
+		assert.equal(projectScoped.icon_key, 'vertexai');
+		assert.equal(
+			projectScoped.endpoints.openai?.endpoints?.chat,
+			'https://aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/global/endpoints/openapi/chat/completions'
+		);
+		assert.equal(projectScoped.endpoints.openai?.base, undefined);
+		assert.equal(
+			projectScoped.endpoints.gemini?.base,
+			'https://aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/global/publishers/google/models'
+		);
+		assert.equal(projectScoped.endpoints.gemini?.auth, 'bearer');
+		assert.match(projectScoped.description ?? '', /service account JSON/i);
+	});
+
 	it('does not guess when configured endpoints identify different vendors', () => {
 		const conflicting = {
 			name: 'Mixed upstream',

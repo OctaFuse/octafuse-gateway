@@ -1,0 +1,15 @@
+{
+	"contents": [
+		{
+			"role": "user",
+			"parts": [
+				{
+					"text": "Think step by step, then answer in a few sentences: why does streaming tool arguments matter?"
+				}
+			]
+		}
+	],
+	"generationConfig": {
+		"thinkingConfig": { "includeThoughts": true, "thinkingBudget": 1024 }
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"messages": [
+		{
+			"role": "user",
+			"content": "Think step by step, then answer in a few sentences: why does streaming tool arguments matter?"
+		}
+	],
+	"max_tokens": 4096,
+	"stream": true,
+	"stream_options": { "include_usage": true },
+	"thinking": { "type": "enabled" }
+}

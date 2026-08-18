@@ -1,7 +1,7 @@
 /**
  * Anthropic Messages 协议出站：组装 URL、合并路由默认参数、流式 SSE 解析 usage，并在断连后限时 drain。
  */
-import { resolveUpstreamEndpoint } from '@octafuse/core';
+import { resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -284,6 +284,7 @@ export async function dispatchAnthropicRoute(
   const url = resolveUpstreamEndpoint('anthropic', 'messages', route.providerEndpoints, {
     providerId: route.providerId,
   });
+  const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
   const requestBody = {
     ...buildRouteRequestBody(route, body),
     model: route.providerModelName,
@@ -292,7 +293,7 @@ export async function dispatchAnthropicRoute(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': route.providerApiKey,
+      'x-api-key': secret,
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify(requestBody),

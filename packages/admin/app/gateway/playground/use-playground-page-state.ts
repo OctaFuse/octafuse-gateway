@@ -40,6 +40,7 @@ import {
 	decodeWireRequestBodyHeader,
 	isPlaygroundBodyDirty,
 	playgroundLlmSampleBody,
+	playgroundModelHintFromRoute,
 	resolvePlaygroundLlmFamily,
 	resolveRouteModelKind,
 	routeMatchesSearch,
@@ -314,7 +315,7 @@ export function usePlaygroundPageState() {
 		(sampleId: PlaygroundLlmSampleId) => {
 			const family = resolvePlaygroundLlmFamily(selected);
 			if (!family) return;
-			const next = playgroundLlmSampleBody(family, sampleId);
+			const next = playgroundLlmSampleBody(family, sampleId, playgroundModelHintFromRoute(selected));
 			setBodyTextState(next);
 			setTemplateBody(next);
 			setBodyError(null);
@@ -741,8 +742,12 @@ export function usePlaygroundPageState() {
 			if (isAbortError(e)) {
 				return;
 			}
-			setResponseText('');
-			setBodyError(e instanceof Error ? e.message : tCommon('requestFailed'));
+			const raw = e instanceof Error ? e.message : tCommon('requestFailed');
+			setBodyError(
+				/network error|failed to fetch|fetch failed/i.test(raw)
+					? t('streamDisconnected', { cause: raw })
+					: raw,
+			);
 		} finally {
 			if (abortRef.current === ac) abortRef.current = null;
 			setSending(false);

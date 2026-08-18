@@ -2,6 +2,8 @@
  * Provider 上游密钥脱敏与指纹（日志 / Admin 展示）。
  */
 
+import { parseGcpServiceAccountJson } from '../gcp-service-account-token';
+
 /** 占位密钥：静态导入模板写入 default pool key，须在 Admin 中替换为真实密钥。 */
 export const PROVIDER_IMPORT_PENDING_API_KEY = '__OCTAFUSE_PENDING_PROVIDER_API_KEY__';
 
@@ -9,16 +11,23 @@ export function isPendingProviderImportApiKey(apiKey: string | null | undefined)
 	return typeof apiKey === 'string' && apiKey === PROVIDER_IMPORT_PENDING_API_KEY;
 }
 
-/** 尾号指纹，如 `…x7Kp`；短密钥返回 `***`。 */
+/** 尾号指纹，如 `…x7Kp`；短密钥返回 `***`。服务账号只暴露邮箱尾号，避免泄露私钥。 */
 export function fingerprintProviderApiKey(apiKey: string): string {
+	const account = parseGcpServiceAccountJson(apiKey);
+	if (account) {
+		const email = account.client_email;
+		return email.length <= 4 ? 'sa:***' : `sa:…${email.slice(-4)}`;
+	}
 	const trimmed = apiKey.trim();
 	if (trimmed.length === 0) return '***';
 	if (trimmed.length <= 4) return '***';
 	return `…${trimmed.slice(-4)}`;
 }
 
-/** Admin 列表脱敏预览，如 `sk-…x7Kp`。 */
+/** Admin 列表脱敏预览，如 `sk-…x7Kp`；服务账号展示 `sa:client_email`。 */
 export function maskProviderApiKeyForAdmin(apiKey: string): string {
+	const account = parseGcpServiceAccountJson(apiKey);
+	if (account) return `sa:${account.client_email}`;
 	const trimmed = apiKey.trim();
 	if (trimmed.length === 0) return '(empty)';
 	if (trimmed.length <= 8) return '***';

@@ -4,6 +4,8 @@
 import {
   GEMINI_GENERATE_OPERATION,
   prepareGeminiUpstreamFetch,
+  resolveGeminiAuthForUpstreamSecret,
+  resolveProviderUpstreamSecret,
   resolveUpstreamEndpoint,
 } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
@@ -329,13 +331,17 @@ export async function dispatchGeminiRoute(
       providerId: route.providerId,
     }
   );
+  const resolved = await resolveProviderUpstreamSecret(route.providerApiKey);
   const { url, headers } = prepareGeminiUpstreamFetch({
     resolvedUrl,
     modelName: route.providerModelName,
     action,
-    apiKey: route.providerApiKey,
+    apiKey: resolved.secret,
     search,
-    auth: route.providerEndpoints.gemini?.auth,
+    auth: resolveGeminiAuthForUpstreamSecret(
+      route.providerEndpoints.gemini?.auth,
+      resolved.isServiceAccount
+    ),
   });
 
   const requestBody = buildRouteRequestBody(route, body);

@@ -3,6 +3,7 @@
  * 示例：
  * - Developer API：`https://generativelanguage.googleapis.com/v1beta/models`
  * - Vertex Express：`https://aiplatform.googleapis.com/v1/publishers/google/models`
+ * - 正式 Vertex（项目级）：`https://aiplatform.googleapis.com/v1/projects/{project}/locations/{location}/publishers/google/models`
  */
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
 
@@ -86,6 +87,14 @@ export function resolveGeminiUpstreamAuth(
 	configuredAuth?: GeminiUpstreamAuthScheme | null
 ): GeminiUpstreamAuthScheme {
 	return isGeminiUpstreamAuthScheme(configuredAuth) ? configuredAuth : 'query-key';
+}
+
+/** 服务账号必须走 Bearer，禁止把 JSON / access token 塞进 `?key=`。 */
+export function resolveGeminiAuthForUpstreamSecret(
+	configuredAuth: GeminiUpstreamAuthScheme | null | undefined,
+	isServiceAccount: boolean
+): GeminiUpstreamAuthScheme {
+	return isServiceAccount ? 'bearer' : resolveGeminiUpstreamAuth(configuredAuth);
 }
 
 export type PrepareGeminiUpstreamFetchInput = {

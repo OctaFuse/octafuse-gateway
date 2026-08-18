@@ -9,6 +9,7 @@
  * - **仅 LLM / Chat Completions**：写 `openai.endpoints.chat`（完整 URL），**不要**写 `base`
  * - Anthropic / Gemini：协议本身无 Images 分支时可用 `base`（Anthropic 仅 messages；Gemini 为 generate/stream）
  * - Gemini Vertex 兼容聚合：写到 `{model}` 前的完整前缀，并设 `gemini.auth: "bearer"`
+ * - 正式 Vertex（项目级）：OpenAI 仅 Chat Completions（`.../endpoints/openapi/chat/completions`）；原生 Gemini 写项目级 `{model}` 前缀并设 `auth: "bearer"`
  *
  * 导入后不含 API Key，须在 Edit Provider 中手动添加。
  */
@@ -120,7 +121,12 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 
 	// Product-specific hosts must be checked before their parent cloud/vendor domains.
 	if (hostnameMatches(hostname, 'maas.aliyuncs.com')) return identity('aliyun', 'qwen');
-	if (hostnameMatches(hostname, 'dashscope.aliyuncs.com')) return identity('aliyun', 'bailian');
+	if (
+		hostnameMatches(hostname, 'dashscope.aliyuncs.com') ||
+		hostnameMatches(hostname, 'dashscope-intl.aliyuncs.com')
+	) {
+		return identity('aliyun', 'bailian');
+	}
 	if (
 		hostnameMatches(hostname, 'hunyuan.cloud.tencent.com') ||
 		hostnameMatches(hostname, 'lkeap.cloud.tencent.com')
@@ -136,6 +142,7 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 	const domainRules: ReadonlyArray<readonly [string, ProviderCatalogIdentity]> = [
 		['deepseek.com', identity('deepseek')],
 		['volces.com', identity('volcengine')],
+		['bytepluses.com', identity('volcengine')],
 		['qianfan.baidubce.com', identity('baidu')],
 		['bigmodel.cn', identity('zhipu')],
 		['moonshot.cn', identity('moonshot')],
@@ -145,9 +152,17 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 		['generativelanguage.googleapis.com', identity('google')],
 		['mistral.ai', identity('mistral')],
 		['groq.com', identity('groq')],
+		['cerebras.ai', identity('cerebras')],
+		['sambanova.ai', identity('sambanova')],
 		['x.ai', identity('xai')],
 		['together.xyz', identity('together')],
 		['fireworks.ai', identity('fireworks')],
+		['deepinfra.com', identity('deepinfra')],
+		['novita.ai', identity('novita')],
+		['huggingface.co', identity('huggingface')],
+		['commandcode.ai', identity('commandcode')],
+		['ai-gateway.vercel.sh', identity('vercel')],
+		['meta.ai', identity('meta')],
 		['perplexity.ai', identity('perplexity')],
 		['cohere.ai', identity('cohere')],
 		['api.nvidia.com', identity('nvidia')],
@@ -247,7 +262,7 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 	const vendorRules: ReadonlyArray<readonly [readonly string[], ProviderCatalogIdentity]> = [
 		[['azure openai', 'azure', '微软云'], identity('azure')],
 		[['deepseek', '深度求索'], identity('deepseek')],
-		[['volcengine', '火山方舟', '火山引擎'], identity('volcengine')],
+		[['volcengine', '火山方舟', '火山引擎', 'byteplus'], identity('volcengine')],
 		[['alibaba', 'aliyun', '阿里云'], identity('aliyun')],
 		[['tencent', '腾讯云'], identity('tencent')],
 		[['qianfan', '千帆', '百度'], identity('baidu')],
@@ -260,9 +275,17 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 		[['gemini', 'google', '谷歌'], identity('google')],
 		[['mistral'], identity('mistral')],
 		[['groq'], identity('groq')],
+		[['cerebras'], identity('cerebras')],
+		[['sambanova', 'samba nova'], identity('sambanova')],
 		[['x.ai', 'xai', 'grok'], identity('xai')],
 		[['together'], identity('together')],
 		[['fireworks'], identity('fireworks')],
+		[['deepinfra', 'deep infra'], identity('deepinfra')],
+		[['novita'], identity('novita')],
+		[['huggingface', 'hugging face'], identity('huggingface')],
+		[['commandcode', 'command code'], identity('commandcode')],
+		[['vercel'], identity('vercel')],
+		[['meta', 'muse spark'], identity('meta')],
 		[['perplexity'], identity('perplexity')],
 		[['cohere'], identity('cohere')],
 		[['nvidia', '英伟达', 'nim'], identity('nvidia')],

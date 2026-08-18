@@ -401,12 +401,12 @@
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
 			"geminiPlaceholder": "https://generativelanguage.googleapis.com/v1beta/models",
-			"geminiHint": "'{model}' 앞에 오는 전체 경로 접두사입니다. Developer: …/v1beta/models, Vertex Express: …/v1/publishers/google/models.",
+			"geminiHint": "'{model}' 앞에 오는 전체 경로 접두사입니다. Developer: …/v1beta/models, Vertex Express: …/v1/publishers/google/models, Vertex(프로젝트): …/v1/projects/{project}/locations/{location}/publishers/google/models.",
 			"geminiAuth": "업스트림 인증",
 			"geminiAuthAuto": "기본값(?key=)",
 			"geminiAuthQueryKey": "Query key(?key=)",
 			"geminiAuthBearer": "Bearer(Authorization)",
-			"geminiAuthHint": "Google 공식 API는 ?key=를 사용합니다. Vertex 호환 애그리게이터(ZenMux, Qiniu 등)는 Bearer를 선택해야 합니다.",
+			"geminiAuthHint": "Developer API와 Vertex Express는 ?key=를 사용합니다. 프로젝트 범위 Vertex에 서비스 계정 JSON을 붙여 넣으면 자동으로 Bearer를 사용합니다. Vertex 호환 애그리게이터(ZenMux, Qiniu 등)는 Bearer를 선택해야 합니다.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "이 Base에서 DashScope HTTP 및 WSS 경로를 생성합니다. 워크스페이스 엔드포인트는 해당 DashScope 호스트를 입력하세요.",
 			"advancedToggle": "URL 재정의",
@@ -438,7 +438,7 @@
 			"apiKeyOptional": "API Key",
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "비우면 현재 키 유지",
-			"apiKeyHint": "이 공급자의 업스트림 자격 증명.",
+			"apiKeyHint": "이 공급자의 업스트림 자격 증명. 프로젝트 범위 Vertex에는 GCP 서비스 계정 JSON을 붙여 넣으세요(Vertex API Key 아님).",
 			"apiKeyEditHint": "비우면 현재 키를 유지하고, 새 값을 입력하면 교체합니다.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 스트리밍 + 비스트리밍",
 			"legacyPerActionNotice": "이 Provider 에는 안전하게 병합할 수 없는 generateContent / streamGenerateContent 개별 오버라이드가 남아 있습니다. 저장 시 그대로 유지됩니다. 검토 후 단일 '{action}' 템플릿으로 변경하세요."
@@ -1147,7 +1147,8 @@
 		"bodyDirtyHint": "Route를 바꾼 뒤에도 현재 요청 본문을 유지했습니다.",
 		"bodyDirtyHintResponses": "Route를 바꾼 뒤에도 현재 요청 본문을 유지했습니다. 요청 샘플로 바꿀 수 있습니다.",
 		"bodyDirtyHintLlm": "Route를 바꾼 뒤에도 현재 요청 본문을 유지했습니다. 요청 샘플로 바꿀 수 있습니다.",
-		"realtimeTransportError": "실시간 WebSocket 전송 오류"
+		"realtimeTransportError": "실시간 WebSocket 전송 오류",
+		"streamDisconnected": "업스트림 스트림을 읽는 중 연결이 끊겼습니다({cause}). stream을 false로 바꾼 뒤 확인하거나 다시 시도하세요."
 	},
 	"simulator": {
 		"title": "Simulator",

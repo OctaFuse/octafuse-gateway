@@ -16,6 +16,7 @@ import {
 	labelClass,
 	matchPlaygroundLlmSample,
 	playgroundLlmFamilyForRoute,
+	playgroundModelHintFromRoute,
 	PLAYGROUND_LLM_SAMPLE_IDS,
 	type PlaygroundLlmSampleId,
 } from '../playground-utils';
@@ -102,7 +103,9 @@ export function PlaygroundRequestPanel({
 		isImage: selectedIsImage,
 		isAudio: selectedIsAudio,
 	});
-	const llmSample = llmFamily ? matchPlaygroundLlmSample(llmFamily, bodyText) : null;
+	const llmSample = llmFamily
+		? matchPlaygroundLlmSample(llmFamily, bodyText, playgroundModelHintFromRoute(selected))
+		: null;
 	const sampleLabel = (id: PlaygroundLlmSampleId) =>
 		id === 'connectivity' ? t('templateConnectivity') : id === 'tools' ? t('templateToolStream') : t('templateReasoning');
 	const llmSampleSwitcher = llmFamily ? (

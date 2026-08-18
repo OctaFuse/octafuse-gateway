@@ -1,7 +1,28 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { generateKeyPairSync } from 'node:crypto';
+import { afterEach, describe, it } from 'node:test';
+import { applyVertexOpenAiModelPrefix, clearGcpServiceAccountTokenCache, GCP_OAUTH_TOKEN_URL } from '@octafuse/core';
 import type { PlaygroundResolvedRoute } from './playground-service';
-import { buildPlaygroundGeminiUpstreamRequest } from './playground-service';
+import { applyPlaygroundUpstreamCredential, buildPlaygroundGeminiUpstreamRequest } from './playground-service';
+
+const { privateKey } = generateKeyPairSync('rsa', {
+	modulusLength: 2048,
+	publicKeyEncoding: { type: 'spki', format: 'pem' },
+	privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+});
+
+const SERVICE_ACCOUNT_JSON = JSON.stringify({
+	type: 'service_account',
+	client_email: 'vertex@demo.iam.gserviceaccount.com',
+	private_key: privateKey,
+});
+
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+	globalThis.fetch = originalFetch;
+	clearGcpServiceAccountTokenCache();
+});
 
 function route(base: string, apiKey: string): PlaygroundResolvedRoute {
 	return {
@@ -68,5 +89,63 @@ describe('buildPlaygroundGeminiUpstreamRequest', () => {
 		assert.equal(u.searchParams.has('key'), false);
 		assert.equal(u.searchParams.get('alt'), 'sse');
 		assert.equal(result.headers.Authorization, 'Bearer provider-token');
+	});
+
+	it('forces Bearer and never puts service account JSON in ?key=', () => {
+		const result = buildPlaygroundGeminiUpstreamRequest(
+			{
+				...route(
+					'https://aiplatform.googleapis.com/v1/projects/demo/locations/global/publishers/google/models',
+					SERVICE_ACCOUNT_JSON
+				),
+				providerEndpoints: {
+					gemini: {
+						base: 'https://aiplatform.googleapis.com/v1/projects/demo/locations/global/publishers/google/models',
+						auth: 'query-key',
+					},
+				},
+			},
+			'generateContent'
+		);
+		const u = new URL(result.url);
+		assert.equal(u.searchParams.has('key'), false);
+		assert.equal(result.headers.Authorization, `Bearer ${SERVICE_ACCOUNT_JSON}`);
+	});
+});
+
+describe('applyPlaygroundUpstreamCredential', () => {
+	it('exchanges a service account for an access token and forces Gemini bearer', async () => {
+		globalThis.fetch = (async (input) => {
+			assert.equal(String(input), GCP_OAUTH_TOKEN_URL);
+			return new Response(JSON.stringify({ access_token: 'ya29.playground', expires_in: 3600 }), {
+				status: 200,
+			});
+		}) as typeof fetch;
+
+		const resolved = await applyPlaygroundUpstreamCredential(
+			route(
+				'https://aiplatform.googleapis.com/v1/projects/demo/locations/global/publishers/google/models',
+				SERVICE_ACCOUNT_JSON
+			)
+		);
+		assert.equal(resolved.providerApiKey, 'ya29.playground');
+		assert.equal(resolved.providerEndpoints.gemini?.auth, 'bearer');
+
+		const request = buildPlaygroundGeminiUpstreamRequest(resolved, 'generateContent');
+		const u = new URL(request.url);
+		assert.equal(u.searchParams.has('key'), false);
+		assert.equal(request.headers.Authorization, 'Bearer ya29.playground');
+	});
+});
+
+describe('Vertex OpenAI playground model prefix', () => {
+	it('adds google/ only on official openapi chat URLs', () => {
+		assert.equal(
+			applyVertexOpenAiModelPrefix(
+				'https://aiplatform.googleapis.com/v1/projects/demo/locations/global/endpoints/openapi/chat/completions',
+				'gemini-2.5-flash'
+			),
+			'google/gemini-2.5-flash'
+		);
 	});
 });

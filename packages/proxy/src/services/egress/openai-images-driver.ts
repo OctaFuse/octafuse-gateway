@@ -2,7 +2,7 @@
  * OpenAI 兼容 Images API 上游驱动：`/images/generations`（JSON）与 `/images/edits`（multipart）。
  * 首期面向 GPT Image；Gateway 对外保持 OpenAI 形状，日志禁止写入 prompt 原文与 Base64。
  */
-import { parseOpenAiImageUsage, resolveUpstreamEndpoint, type ImageTokenUsage } from '@octafuse/core';
+import { parseOpenAiImageUsage, resolveProviderUpstreamSecret, resolveUpstreamEndpoint, type ImageTokenUsage } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { EMPTY_USAGE } from '../proxy';
@@ -314,11 +314,12 @@ export async function dispatchOpenAiImageGenerations(
 		IMAGE_GENERATION_TIMEOUT_MS
 	);
 	try {
+		const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				Authorization: `Bearer ${route.providerApiKey}`,
+				Authorization: `Bearer ${secret}`,
 			},
 			body: JSON.stringify(requestBody),
 			signal,
@@ -427,10 +428,11 @@ export async function dispatchOpenAiImageEdits(
 		IMAGE_GENERATION_TIMEOUT_MS
 	);
 	try {
+		const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
-				Authorization: `Bearer ${route.providerApiKey}`,
+				Authorization: `Bearer ${secret}`,
 			},
 			body: form,
 			signal,

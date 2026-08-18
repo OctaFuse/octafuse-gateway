@@ -6,6 +6,8 @@ export * from './types';
 export * from './upstream-protocol';
 export * from './provider-endpoints';
 export * from './gemini-upstream-url';
+export * from './gcp-service-account-token';
+export * from './vertex-openai-model';
 export * from './route-topology';
 export * from './realtime-protocol';
 
