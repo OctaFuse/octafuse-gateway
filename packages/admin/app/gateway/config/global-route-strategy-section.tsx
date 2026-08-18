@@ -39,51 +39,40 @@ export function GlobalRouteStrategySection({ value, saving, onSave }: Props) {
 
 	return (
 		<>
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-between">
-				<button
-					type="button"
-					onClick={openDialog}
-					disabled={saving}
-					className="min-w-0 flex-1 rounded-lg border border-indigo-200 bg-indigo-50/50 p-3.5 text-left transition hover:border-indigo-300 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					<div className="flex items-start justify-between gap-3">
-						<div className="min-w-0">
-							<div className="flex flex-wrap items-center gap-2">
-								<span className="text-sm font-semibold text-gray-900">{title}</span>
-								<span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-									{tStrategy('effective')}
-								</span>
-							</div>
-							{meta ? (
-								<p className="mt-0.5 font-mono text-[10px] text-gray-400">{meta.machineId}</p>
-							) : null}
-							<p className="mt-2 text-xs leading-relaxed text-gray-600">
-								{isRouteStrategyName(value)
-									? tStrategy(`description.${value}.summary`)
-									: null}
-							</p>
+			<div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-3.5">
+				<div className="flex items-start gap-3">
+					<div className="min-w-0 flex-1">
+						<div className="flex flex-wrap items-center gap-2">
+							<span className="text-sm font-semibold text-gray-900">{title}</span>
+							<span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+								{tStrategy('effective')}
+							</span>
 						</div>
 						{meta ? (
-							<div className="hidden w-44 shrink-0 sm:block">
-								<RouteStrategyDiagram
-									kind={meta.diagram}
-									active
-									caption={tStrategy(`diagramCaption.${meta.id}`)}
-								/>
-							</div>
+							<p className="mt-0.5 font-mono text-[10px] text-gray-400">{meta.machineId}</p>
 						) : null}
+						<p className="mt-2 text-xs leading-relaxed text-gray-600">
+							{isRouteStrategyName(value) ? tStrategy(`description.${value}.summary`) : null}
+						</p>
+						<button
+							type="button"
+							onClick={openDialog}
+							disabled={saving}
+							className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							<PencilSquareIcon className="h-4 w-4" />
+							{t('change')}
+						</button>
 					</div>
-				</button>
-				<div className="flex shrink-0 items-end">
-					<button
-						type="button"
-						onClick={openDialog}
-						disabled={saving}
-						className="inline-flex items-center gap-1.5 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						<PencilSquareIcon className="h-4 w-4" />
-						{t('change')}
-					</button>
+					{meta ? (
+						<div className="hidden w-44 shrink-0 sm:block">
+							<RouteStrategyDiagram
+								kind={meta.diagram}
+								active
+								caption={tStrategy(`diagramCaption.${meta.id}`)}
+							/>
+						</div>
+					) : null}
 				</div>
 			</div>
 
