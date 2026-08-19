@@ -1460,6 +1460,7 @@
 			"userSystem": "사용자 · 시스템",
 			"model": "모델",
 			"route": "Route",
+			"stream": "스트림",
 			"tokens": "Tokens",
 			"cost": "비용 ({currency})",
 			"profit": "이익 ({currency})"
@@ -1468,9 +1469,17 @@
 			"user": "사용자",
 			"system": "시스템"
 		},
+		"route": {
+			"inbound": "인바운드",
+			"upstream": "업스트림"
+		},
+		"stream": {
+			"yes": "스트림"
+		},
 		"titles": {
 			"model": "Gateway 모델 이름, 프로토콜 및 Route 그룹",
-			"route": "Provider, 업스트림 모델 및 Provider Key",
+			"route": "인바운드: 프로토콜 엔드포인트, 모델 ID, Route 그룹. 업스트림: 프로토콜 엔드포인트, 모델 ID",
+			"stream": "클라이언트가 스트리밍 응답을 요청했는지 여부",
 			"cost": "청구(C) 및 공급자 비용(M); 표준 카탈로그 가격은 상세 정보에서 확인",
 			"profit": "청구액 − 계측 비용 (요청당)",
 			"rowDetail": "클릭하여 요금 감사와 요청 / 사용량 본문 표시 또는 숨기기",

@@ -1460,6 +1460,7 @@
 			"userSystem": "User · System",
 			"model": "Model",
 			"route": "Route",
+			"stream": "Stream",
 			"tokens": "Tokens",
 			"cost": "Cost ({currency})",
 			"profit": "Profit ({currency})"
@@ -1468,9 +1469,17 @@
 			"user": "User",
 			"system": "System"
 		},
+		"route": {
+			"inbound": "Inbound",
+			"upstream": "Upstream"
+		},
+		"stream": {
+			"yes": "Stream"
+		},
 		"titles": {
 			"model": "Gateway model name, protocol, and route group",
-			"route": "Provider, upstream model, and provider key",
+			"route": "Inbound: protocol endpoint, model ID, and route group. Upstream: protocol endpoint and model ID",
+			"stream": "Whether the client requested a streaming response",
 			"cost": "Charged (C) and metered supplier cost (M); standard catalog price remains available in details",
 			"profit": "Charged − metered (per request)",
 			"rowDetail": "Click to show or hide pricing audit and request / usage bodies",

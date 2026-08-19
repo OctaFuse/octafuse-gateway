@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 全站请求日志表：多维筛选、分页；Model / Route 分列展示模型与上游路由；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
+ * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID 与路由组；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
  */
 import { useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
@@ -13,9 +13,12 @@ import {
   normalizeRouteGroup,
   routeGroupBadgeClass,
 } from '@/lib/route-group-ui';
+import { GATEWAY_TOOLS_PROVIDER_ID } from '@/lib/gateway-tools';
+import { proxyToolPath } from '@/lib/invoke-kind';
 import { UPSTREAM_PROTOCOLS } from '@/lib/upstream-protocol';
-import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
+import { requestLogProtocolPath, requestSurfacePath } from '../routes/route-utils';
+import { isRequestLogStreaming, parseGeminiWireAction } from './request-log-display';
 import {
   createRangeValue,
   DEFAULT_GATEWAY_TIME_RANGE_PRESET,
@@ -479,107 +482,109 @@ export default function GatewayRequestLogsPage() {
     }
   };
 
-  /** 客户端接入的 Gateway API 协议；旧行缺省时用路由快照 upstream_protocol */
-  const logProtocolKey = (log: GatewayRequestLog): string => {
-    const r = log.request_protocol?.trim().toLowerCase() ?? '';
-    const u = log.upstream_protocol?.trim().toLowerCase() ?? '';
-    return r || u || '';
+  /** 将协议 + operation 映射为客户端路径；缺省时回退空串。Gemini 用紧凑端点。 */
+  const protocolEndpointPath = (
+    protocol: string | null | undefined,
+    operation: string | null | undefined
+  ): string => {
+    const p = protocol?.trim().toLowerCase() ?? '';
+    const op = operation?.trim() ?? '';
+    if (!p && !op) return '';
+    if (!p) return op;
+    return requestLogProtocolPath(p, op || '*');
   };
 
-  const protocolIconOrDash = (p: string) =>
-    p ? (
-      <UpstreamProtocolBrandIcon protocol={p} />
-    ) : (
-      <span className="inline-flex h-3.5 w-3.5 items-center justify-center text-[10px] text-gray-400" title={t('titles.unknown')}>
-        —
+  const renderRouteLeg = (opts: {
+    label: string;
+    path: string;
+    pathTitle?: string;
+    modelId: string;
+    modelTitle?: string;
+    group?: string;
+  }) => (
+    <>
+      <span className="shrink-0 text-[10px] font-semibold text-slate-400">
+        {opts.label}
       </span>
-    );
-
-  /** Model 列压缩为两行：模型；协议 + route_group + operation。完整 ID 通过 title / 展开查看。 */
-  const renderModelCell = (log: GatewayRequestLog) => {
-    const protocol = logProtocolKey(log);
-    const name = log.model_name?.trim();
-    const id = log.model_id?.trim();
-    const route = normalizeRouteGroup(log.route_group);
-    return (
-      <div className="min-w-0 leading-tight">
-        <div
-          className="truncate font-medium text-gray-900"
-          title={[name, id ? `model_id: ${id}` : ''].filter(Boolean).join('\n') || undefined}
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span
+          className="shrink-0 max-w-[55%] truncate font-mono text-[11px] text-gray-700"
+          title={opts.pathTitle || opts.path || undefined}
         >
-          {name || id || <span className="font-normal text-gray-400">-</span>}
-        </div>
-        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden">
-          <span className="shrink-0" title={protocol ? `Protocol: ${protocol}` : 'Protocol unknown'}>
-            {protocolIconOrDash(protocol)}
-          </span>
+          {opts.path || '—'}
+        </span>
+        {opts.modelId ? (
           <span
-            className={`inline-flex shrink-0 items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(route)}`}
-            title={`route_group: ${route}`}
+            className="min-w-0 truncate font-mono text-[11px] font-medium text-gray-900"
+            title={opts.modelTitle || opts.modelId}
           >
-            @{route}
+            {opts.modelId}
           </span>
-          {log.request_operation ? (
-            <span
-              className="inline-flex min-w-0 items-center truncate rounded-md bg-blue-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200"
-              title={`request_operation: ${log.request_operation}`}
-            >
-              {log.request_operation}
-            </span>
-          ) : null}
-        </div>
+        ) : null}
+        {opts.group ? (
+          <span
+            className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-4 ${routeGroupBadgeClass(opts.group)}`}
+            title={`route_group: ${opts.group}`}
+          >
+            @{opts.group}
+          </span>
+        ) : null}
       </div>
-    );
-  };
+    </>
+  );
 
-  /** Route 列压缩为两行：Provider；上游模型 + 上游协议。Target / Key 进入展开详情。 */
+  /** Route 列：入站（协议端点 + model_id + 路由组）/ 上游（协议端点 + 上游 model id）。 */
   const renderRouteCell = (log: GatewayRequestLog) => {
-    const pname = log.provider_name?.trim();
-    const pid = log.provider_id?.trim();
-    const upstream = log.provider_model_name?.trim();
-    const providerDisplay = pname || pid;
-    const idOnly = !pname && Boolean(pid);
-    const providerTitle =
-      pname && pid && pname !== pid ? `Provider: ${pname} (id: ${pid})` : providerDisplay || undefined;
-    /** Agent Tools：第二行是引擎 id（如 bocha），不是 LLM upstream model；协议徽章占位勿展示 */
-    const isAgentTool = pid === 'octafuse-tools';
-    const showUpstreamProtocol = !isAgentTool && Boolean(log.upstream_protocol || log.upstream_operation);
-    const engineOrUpstreamTitle = isAgentTool
-      ? upstream
-        ? `Tool engine: ${upstream}`
-        : undefined
-      : upstream
-        ? `Upstream model: ${upstream}`
-        : undefined;
+    const inboundModelId = log.model_id?.trim() ?? '';
+    const upstreamModelId = log.provider_model_name?.trim() ?? '';
+    const route = normalizeRouteGroup(log.route_group);
+    const isAgentTool = log.provider_id === GATEWAY_TOOLS_PROVIDER_ID;
+    const geminiAction = parseGeminiWireAction(log.route_trace);
+    const inboundProtocol = (log.request_protocol || log.upstream_protocol)?.trim().toLowerCase() ?? '';
+    const inboundOperation = (log.request_operation || log.upstream_operation)?.trim() ?? '';
+    const upstreamProtocol = log.upstream_protocol?.trim().toLowerCase() ?? '';
+    const upstreamOperation = log.upstream_operation?.trim() ?? '';
+    const inboundPath = isAgentTool
+      ? (inboundModelId ? proxyToolPath(inboundModelId) : '')
+      : protocolEndpointPath(inboundProtocol, inboundOperation);
+    const upstreamPath = isAgentTool
+      ? ''
+      : protocolEndpointPath(upstreamProtocol, upstreamOperation);
+    const inboundPathTitle =
+      inboundProtocol === 'gemini' && inboundOperation
+        ? requestSurfacePath(inboundProtocol, geminiAction || inboundOperation, inboundModelId || undefined)
+        : inboundPath;
+    const upstreamPathTitle =
+      upstreamProtocol === 'gemini' && upstreamOperation
+        ? requestSurfacePath(upstreamProtocol, geminiAction || upstreamOperation, upstreamModelId || inboundModelId || undefined)
+        : upstreamPath;
+    const inboundTitle = [
+      log.model_name?.trim(),
+      inboundModelId ? `model_id: ${inboundModelId}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    const upstreamTitle = isAgentTool
+      ? (upstreamModelId ? `Tool engine: ${upstreamModelId}` : undefined)
+      : (upstreamModelId ? `Upstream model: ${upstreamModelId}` : undefined);
 
     return (
-      <div className="min-w-0 leading-tight">
-        <div
-          className={`truncate ${idOnly ? 'font-mono text-gray-800' : 'text-gray-900'}`}
-          title={providerTitle}
-        >
-          {providerDisplay || '-'}
-        </div>
-        {upstream || showUpstreamProtocol ? (
-          <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-            {upstream ? (
-              <span
-                className={`min-w-0 truncate font-mono ${isAgentTool ? 'text-indigo-700' : 'text-gray-600'}`}
-                title={engineOrUpstreamTitle}
-              >
-                {upstream}
-              </span>
-            ) : null}
-            {showUpstreamProtocol ? (
-              <span
-                className="shrink-0 truncate font-mono text-[10px] text-indigo-600"
-                title={[log.upstream_protocol, log.upstream_operation].filter(Boolean).join(' · ')}
-              >
-                {[log.upstream_protocol, log.upstream_operation].filter(Boolean).join(' · ')}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
+      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-1.5 gap-y-0.5 leading-tight">
+        {renderRouteLeg({
+          label: t('route.inbound'),
+          path: inboundPath,
+          pathTitle: inboundPathTitle,
+          modelId: inboundModelId,
+          modelTitle: inboundTitle || undefined,
+          group: route,
+        })}
+        {renderRouteLeg({
+          label: t('route.upstream'),
+          path: upstreamPath,
+          pathTitle: upstreamPathTitle,
+          modelId: upstreamModelId,
+          modelTitle: upstreamTitle,
+        })}
       </div>
     );
   };
@@ -754,17 +759,16 @@ export default function GatewayRequestLogsPage() {
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('headers.userSystem')}</th>
                 <th
                   scope="col"
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[9rem] max-w-xs"
-                  title={t('titles.model')}
-                >
-                  {t('headers.model')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[10rem] max-w-xs"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[16rem] max-w-md"
                   title={t('titles.route')}
                 >
                   {t('headers.route')}
+                </th>
+                <th
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  title={t('titles.stream')}
+                >
+                  {t('headers.stream')}
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   {t('headers.tokens')}
@@ -856,11 +860,20 @@ export default function GatewayRequestLogsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs max-w-xs">
-                      {renderModelCell(log)}
-                    </td>
-                    <td className="px-3 py-2 text-xs max-w-xs">
+                    <td className="px-3 py-2 text-xs max-w-md">
                       {renderRouteCell(log)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs">
+                      {isRequestLogStreaming(log) ? (
+                        <span
+                          className="inline-flex items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 ring-1 ring-inset ring-sky-200"
+                          title={t('titles.stream')}
+                        >
+                          {t('stream.yes')}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600 leading-tight">
                       {renderTokensCell(log)}
@@ -1010,8 +1023,8 @@ export default function GatewayRequestLogsPage() {
                                     ))}
                                   </div>
                                 ) : null}
-                              <div className="grid min-w-[110rem] grid-cols-5 items-stretch gap-3 p-3">
-                                <div className="min-w-0 flex h-full min-h-[22rem] flex-col border border-sky-200 rounded-md overflow-hidden bg-sky-50/50">
+                              <div className="grid min-w-[110rem] grid-cols-5 items-start gap-3 p-3">
+                                <div className="min-w-0 flex h-[28rem] flex-col overflow-hidden rounded-md border border-sky-200 bg-sky-50/50">
                                   <div className="px-2 py-1.5 border-b border-sky-200 bg-sky-100/50 flex items-center justify-between gap-2 shrink-0">
                                     <span className="text-xs font-medium text-sky-950">{t('detail.timing')}</span>
                                     <div className="flex items-center gap-1.5">
@@ -1052,7 +1065,7 @@ export default function GatewayRequestLogsPage() {
                                     {timingDisplay || tCommon('noDataFound')}
                                   </pre>
                                 </div>
-                                <div className="min-w-0 flex h-full min-h-[22rem] flex-col border border-violet-200 rounded-md overflow-hidden bg-violet-50/50">
+                                <div className="min-w-0 flex h-[28rem] flex-col overflow-hidden rounded-md border border-violet-200 bg-violet-50/50">
                                   <div className="px-2 py-1.5 border-b border-violet-200 bg-violet-100/40 flex items-center justify-between gap-2 shrink-0">
                                     <span className="text-xs font-medium text-violet-950">{t('detail.pricingAudit')}</span>
                                     <button
@@ -1097,7 +1110,7 @@ export default function GatewayRequestLogsPage() {
                                   return (
                                     <div
                                       key={col}
-                                      className="min-w-0 flex h-full min-h-[22rem] flex-col border border-gray-200 rounded-md overflow-hidden"
+                                      className="min-w-0 flex h-[28rem] flex-col overflow-hidden rounded-md border border-gray-200"
                                     >
                                       <div className="px-2 py-1.5 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-2 shrink-0">
                                         <span className="text-xs font-medium text-gray-700">{title}</span>

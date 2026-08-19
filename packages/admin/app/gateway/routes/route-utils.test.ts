@@ -18,6 +18,7 @@ import {
 	scheduleWindowShapeKey,
 	hasBasePricingInversion,
 	requestOperationsForModel,
+	requestLogProtocolPath,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
 	splitRoutesByProtocolAndRouteGroup,
@@ -74,6 +75,12 @@ describe('request surface path', () => {
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference'),
 			`/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation=audio.transcriptions.realtime.inference`,
 		);
+	});
+
+	it('compacts Gemini endpoints for request-log rows', () => {
+		assert.equal(requestLogProtocolPath('gemini', 'models.generate'), '/v1beta/models/{model}');
+		assert.equal(requestLogProtocolPath('gemini', 'streamGenerateContent'), '/v1beta/models/{model}');
+		assert.equal(requestLogProtocolPath('openai', 'chat'), '/v1/chat/completions');
 	});
 });
 

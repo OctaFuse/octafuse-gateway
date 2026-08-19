@@ -108,6 +108,17 @@ export function requestSurfacePath(protocol: string, operation: string, modelId?
 	return operation === '*' ? '/*' : `/${operation}`;
 }
 
+/**
+ * Request Logs 密集列表用协议端点：模型 ID 已另列，Gemini 不展开 `{model}:action`。
+ * 是否流式由独立列展示，不写进路径。
+ */
+export function requestLogProtocolPath(protocol: string, operation: string): string {
+	if (protocol === 'gemini') {
+		return '/v1beta/models/{model}';
+	}
+	return requestSurfacePath(protocol, operation);
+}
+
 export type EffectiveRouteStrategy = {
 	strategy: string;
 	source: RouteStrategySource;

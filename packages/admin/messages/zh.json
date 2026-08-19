@@ -1460,6 +1460,7 @@
 			"userSystem": "用户 · 系统",
 			"model": "模型",
 			"route": "路由",
+			"stream": "流式",
 			"tokens": "Token",
 			"cost": "成本（{currency}）",
 			"profit": "毛利（{currency}）"
@@ -1468,9 +1469,17 @@
 			"user": "用户",
 			"system": "系统"
 		},
+		"route": {
+			"inbound": "入站",
+			"upstream": "上游"
+		},
+		"stream": {
+			"yes": "流式"
+		},
 		"titles": {
 			"model": "Gateway 模型名称、协议与路由组",
-			"route": "供应商、上游模型与供应商 Key",
+			"route": "入站：协议端点、模型 ID、路由组。上游：协议端点、模型 ID",
+			"stream": "客户端是否请求流式响应",
 			"cost": "计费（C）与供应成本（M）；标准目录价可在详情中查看",
 			"profit": "计费 − 计量（单请求）",
 			"rowDetail": "点击显示或隐藏定价审计、请求体与用量报文",

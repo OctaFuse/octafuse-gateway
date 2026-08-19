@@ -1460,6 +1460,7 @@
 			"userSystem": "ユーザー · システム",
 			"model": "モデル",
 			"route": "Route",
+			"stream": "ストリーム",
 			"tokens": "Token",
 			"cost": "コスト（{currency}）",
 			"profit": "利益（{currency}）"
@@ -1468,9 +1469,17 @@
 			"user": "ユーザー",
 			"system": "システム"
 		},
+		"route": {
+			"inbound": "入口",
+			"upstream": "上流"
+		},
+		"stream": {
+			"yes": "ストリーム"
+		},
 		"titles": {
 			"model": "Gateway モデル名、プロトコル、Route Group",
-			"route": "Provider、アップストリームモデル、Provider Key",
+			"route": "入口：プロトコルエンドポイント、モデル ID、Route Group。上流：プロトコルエンドポイント、モデル ID",
+			"stream": "クライアントがストリーミング応答を要求したかどうか",
 			"cost": "請求（C）と仕入コスト（M）；標準カタログ価格は詳細で確認できます",
 			"profit": "請求額 − 計量額（リクエスト単位）",
 			"rowDetail": "クリックして料金監査とリクエスト / usage Body の表示を切り替え",
