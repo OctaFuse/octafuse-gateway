@@ -17,6 +17,8 @@ export const usersTable = pgTable(
 		budgetResetAt: timestamp('budget_reset_at', { withTimezone: true, mode: 'string' }),
 		status: text('status').notNull().default('active'),
 		metadata: text('metadata'),
+		/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
+		chargedCostFactors: text('charged_cost_factors'),
 		/** 上游命名空间（产品/租户），与 external_user_id 成对做幂等；纯网关用户二者皆空。 */
 		externalSystem: text('external_system'),
 		externalUserId: text('external_user_id'),

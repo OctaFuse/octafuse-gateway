@@ -53,7 +53,7 @@ flowchart LR
 - `cancelled`：客户端断开，drain 后 resolve。
 - `incomplete`：异常或安全超时，usage 不全。
 - `error`：上游非 2xx；**不**按该次结果扣 `budget_spent`。
-- 扣费：`status !== 'error'` 且 `charged_cost > 0`。金额公式：目录 `models.pricing_profile` 按 `input_tokens` 选档后，`charged_cost` / `metered_cost` = 目录价 × 有效倍率；`standard_cost` 仅为目录价。无 `schedule.mode`（存量）时有效倍率 = 基础倍率 × 命中窗 factor（未命中为 1）；`mode: "override"` 时命中窗用窗口 factor，未命中用基础倍率。每日时段在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率；该时刻写入 `pricing_audit.schedule.evaluated_at_utc`。嵌套 `price_override.metered` / `charged` tiers **忽略**。详见 `packages/proxy/src/services/usage-tracker.ts` 与 `packages/core/src/db/pricing-schedule.ts`。
+- 扣费：`status !== 'error'` 且 `charged_cost > 0`。金额公式：目录 `models.pricing_profile` 按 `input_tokens` 选档后，路由侧用户计费 / 供应成本 = 目录价 × 有效倍率；目录标准价仅为目录价。无 `schedule.mode`（存量）时有效倍率 = 基础倍率 × 命中窗 factor（未命中为 1）；`mode: "override"` 时命中窗用窗口 factor，未命中用基础倍率。若 `users.charged_cost_factors` 含该目录模型 ID，再对路由用户计费乘一次该倍率并六位四舍五入，得到最终 `charged_cost`（供应成本与目录标准价不变；未命中不改金额）。每日时段在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率；该时刻写入 `pricing_audit.schedule.evaluated_at_utc`。嵌套 `price_override.metered` / `charged` tiers **忽略**。`pricing_audit` v4 可带 `user_charged_factor`（未命中为 `null`）。详见 `packages/proxy/src/services/usage-tracker.ts` 与 `packages/core/src/db/pricing-schedule.ts`。
 
 ## 常量
 

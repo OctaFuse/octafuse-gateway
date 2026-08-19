@@ -323,6 +323,8 @@ audioRoutes.post('/transcriptions', async (c) => {
 		repos,
 		{
 			modelPricingProfileJson: model.pricing_profile ?? null,
+			catalogModelId: baseModelId,
+			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			fileBytes: transcription.file?.bytes.byteLength ?? 0,
 			mimeType: transcription.file?.mimeType,
 			fileBytesForParse: transcription.file?.bytes,
@@ -543,6 +545,8 @@ audioRoutes.post('/speech', async (c) => {
 		repos,
 		{
 			modelPricingProfileJson: model.pricing_profile ?? null,
+			catalogModelId: baseModelId,
+			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			inputCharacters: Array.from(speech.input).length,
 			requestStartedAtMs: start,
 		},
@@ -725,6 +729,8 @@ async function finalizeSpeechResponse(params: {
 					errorMessage,
 					billing: {
 						modelPricingProfileJson,
+						catalogModelId: baseModelId,
+						userChargedCostFactorsJson: apiKey.chargedCostFactors,
 						routePriceOverrideJson: chosenRoute.priceOverrideRaw,
 						durationSeconds: 0,
 						requestStartedAtMs: start,
@@ -865,6 +871,8 @@ async function finalizeAudioResponse(params: {
 				errorMessage,
 				billing: {
 					modelPricingProfileJson,
+					catalogModelId: baseModelId,
+					userChargedCostFactorsJson: apiKey.chargedCostFactors,
 					routePriceOverrideJson: chosenRoute.priceOverrideRaw,
 					durationSeconds,
 					durationSource,

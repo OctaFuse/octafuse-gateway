@@ -1270,12 +1270,13 @@
 	},
 	"users": {
 		"title": "사용자",
-		"subtitle": "Gateway 사용자(users) — 예산 및 외부 ID",
+		"subtitle": "예산, API 키, 외부 ID",
 		"createTitle": "사용자 생성",
 		"detailTitle": "사용자",
 		"userDetail": "사용자 세부 정보",
 		"newUser": "새 사용자",
 		"saveUser": "사용자 저장",
+		"saveSuccess": "사용자를 저장했습니다.",
 		"deleteUser": "사용자 삭제",
 		"apiKeys": "API Keys",
 		"newKey": "새 Key",
@@ -1285,20 +1286,28 @@
 		"invalidUserId": "유효하지 않은 user id",
 		"filters": {
 			"email": "이메일",
+			"emailPlaceholder": "이메일 검색…",
 			"externalSystem": "외부 시스템",
+			"externalSystemPlaceholder": "예: soloent",
 			"externalUserId": "외부 사용자 ID",
+			"externalUserIdPlaceholder": "외부 사용자 ID",
 			"status": "상태",
 			"contains": "포함…"
 		},
 		"table": {
 			"statusEmail": "상태 · 이메일",
+			"user": "사용자",
+			"budget": "예산",
+			"cycle": "주기",
 			"spent": "지출",
 			"max": "최대",
 			"base": "기준",
 			"period": "주기",
 			"resetAt": "재설정 시각",
 			"keys": "Keys",
+			"keysActiveOfTotal": "활성 / 전체",
 			"metadata": "Metadata",
+			"chargedCostFactors": "배율",
 			"created": "생성일",
 			"updated": "업데이트일",
 			"group": "그룹",
@@ -1317,6 +1326,9 @@
 			"budgetPeriod": "예산 주기",
 			"budgetResetAt": "예산 재설정 시각 (로컬)",
 			"metadataJsonObject": "Metadata (JSON 객체)",
+			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactorModelId": "모델 ID",
+			"chargedCostFactorValue": "배율",
 			"externalSystem": "외부 시스템",
 			"externalUserId": "외부 사용자 ID",
 			"name": "이름",
@@ -1330,7 +1342,18 @@
 			"budgetPeriod": "지출 / 최대 예산 재설정 주기입니다. none은 자동 재설정을 사용하지 않습니다.",
 			"budgetResetAt": "지출 및 기준값에서 가져온 최대 예산이 다음에 자동으로 재설정되는 시각입니다. 예산 주기가 none이면 무시됩니다.",
 			"metadataReplace": "저장하면 metadata 객체 전체가 교체됩니다. 현재 값을 유지하려면 비워 두세요.",
+			"chargedCostFactors": "카탈로그에서 모델을 선택한 뒤 배율을 설정합니다. 라우트 Charged cost 계산 후에 곱합니다. 없는 모델은 금액이 그대로입니다. 0이면 해당 모델은 과금하지 않습니다. LLM / Images / Audio만 적용되며 Agent Tools는 제외됩니다.",
 			"disabledUser": "사용 중지된 사용자는 어떤 API Key로도 새 요청을 보낼 수 없습니다."
+		},
+		"chargedCostFactors": {
+			"none": "Charged cost factors가 없습니다.",
+			"empty": "모델별 배율이 없습니다. 카탈로그와 라우트 Charged cost가 그대로 적용됩니다.",
+			"pickTitle": "카탈로그 모델 추가",
+			"pickSearch": "모델 검색…",
+			"pickEmpty": "일치하는 모델이 없습니다.",
+			"alreadyAdded": "추가됨",
+			"unknownModel": "카탈로그에 없음",
+			"saveSuccess": "Charged cost factors를 저장했습니다."
 		},
 		"externalIdentity": {
 			"title": "외부 ID",
@@ -1365,7 +1388,10 @@
 		"errors": {
 			"updateFailed": "업데이트 실패",
 			"deleteFailed": "삭제 실패",
-			"createFailed": "생성 실패"
+			"createFailed": "생성 실패",
+			"chargedCostFactorModelRequired": "각 Charged cost factor 행에는 모델 ID가 필요합니다.",
+			"chargedCostFactorValueInvalid": "Charged cost factor는 0 이상의 숫자여야 합니다.",
+			"chargedCostFactorDuplicate": "Charged cost factors에 중복된 모델 ID가 있습니다."
 		}
 	},
 	"keysPage": {
@@ -1388,8 +1414,9 @@
 			"key": "Key",
 			"name": "이름",
 			"userBudget": "사용자 예산",
-			"apiKeyMetadata": "API Key Metadata",
-			"created": "생성일"
+			"apiKeyMetadata": "Metadata",
+			"created": "생성일",
+			"links": "연결"
 		},
 		"create": {
 			"attachLegend": "Key 연결 방법",
@@ -1434,7 +1461,12 @@
 			"editMetadata": "이 Key에 저장되는 전체 JSON입니다. 비워 두면 삭제됩니다. 설정된 값은 GET /v1/me에 표시됩니다."
 		},
 		"links": {
-			"requestLogsForKey": "이 Key의 요청 로그 보기 →"
+			"requestLogsForKey": "이 Key의 요청 로그 보기 →",
+			"auditLogsForKey": "이 Key의 감사 로그 보기 →",
+			"openUserTitle": "사용자 상세 열기",
+			"openUserBudgetTitle": "사용자 예산 열기",
+			"requestLogsTitle": "이 Key의 요청 로그",
+			"auditLogsTitle": "이 Key의 감사 로그"
 		},
 		"copyKey": "Key 복사",
 		"copyId": "ID 복사",
@@ -1460,7 +1492,8 @@
 			"userSystem": "사용자 · 시스템",
 			"model": "모델",
 			"route": "Route",
-			"tokens": "Tokens",
+			"tags": "태그",
+			"usage": "사용량",
 			"cost": "비용 ({currency})",
 			"profit": "이익 ({currency})"
 		},
@@ -1468,9 +1501,45 @@
 			"user": "사용자",
 			"system": "시스템"
 		},
+		"route": {
+			"inbound": "인바운드",
+			"upstream": "업스트림"
+		},
+		"tags": {
+			"kind": {
+				"llm": "LLM",
+				"image": "이미지",
+				"tts": "TTS",
+				"asr": "ASR",
+				"tool": "도구"
+			},
+			"stream": "스트림",
+			"realtime": "실시간",
+			"reasoning": "추론",
+			"failover": "전환"
+		},
+		"usage": {
+			"tokens": "tok",
+			"images": "장",
+			"seconds": "초",
+			"characters": "자"
+		},
 		"titles": {
 			"model": "Gateway 모델 이름, 프로토콜 및 Route 그룹",
-			"route": "Provider, 업스트림 모델 및 Provider Key",
+			"route": "인바운드: 프로토콜 엔드포인트, 모델 ID, Route 그룹. 업스트림: 프로토콜 엔드포인트, 모델 ID, Provider",
+			"tags": "요청 특성: 모델 유형, 스트림, 추론, 페일오버",
+			"usage": "이 요청의 과금 사용량. 모델에 따라 토큰, 장수, 초, 문자 수",
+			"tag": {
+				"llm": "텍스트 / 멀티모달 대화 모델",
+				"image": "이미지 생성",
+				"tts": "음성 합성",
+				"asr": "음성 인식",
+				"tool": "Gateway 에이전트 도구",
+				"stream": "클라이언트가 스트리밍 응답을 요청함",
+				"realtime": "실시간 세션",
+				"reasoning": "추론 토큰 또는 추론 단계 TTFT",
+				"failover": "업스트림 실패 후 전환이 발생함"
+			},
 			"cost": "청구(C) 및 공급자 비용(M); 표준 카탈로그 가격은 상세 정보에서 확인",
 			"profit": "청구액 − 계측 비용 (요청당)",
 			"rowDetail": "클릭하여 요금 감사와 요청 / 사용량 본문 표시 또는 숨기기",

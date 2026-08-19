@@ -129,6 +129,20 @@ describe('summarizePricingAuditJson', () => {
 		assert.ok(line!.includes('0.0001/s'));
 	});
 
+	it('includes user charged cost factor', () => {
+		const line = summarizePricingAuditJson(
+			JSON.stringify({
+				v: 4,
+				user_charged_factor: 0.8,
+				snapshot: {
+					user_charge: { source: 'model_x_factor', effective_factor: 1.2, user_charged_factor: 0.8 },
+				},
+			})
+		);
+		assert.ok(line);
+		assert.ok(line!.includes('user ×0.8'));
+	});
+
 	it('summarizes audio_tokens audit', () => {
 		const line = summarizePricingAuditJson(
 			JSON.stringify({

@@ -33,6 +33,7 @@ Its core capabilities include:
     - Web search (`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
     - Web fetch (`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader
     - Deep search (`POST /v1/tools/web-deep-search`, search + read): Firecrawl Search, Jina Search
+    - AI-content detection (`POST /v1/tools/ai-detection`): Tencent Cloud TMS is implemented, with a multi-engine catalog ready for expansion
     - More Agent tools are planned, and contributions are welcome.
 5. Unified AI capability endpoint: All connected models, platforms, and tools are exposed through the deployed Octafuse Gateway Base URL, so clients only need to remember one endpoint.
 6. Multiple routing strategies: When a model has several upstream resources, choose the strategy that best matches the workload:

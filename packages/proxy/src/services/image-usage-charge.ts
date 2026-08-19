@@ -28,6 +28,7 @@ import {
 	resolveSupplierBillingPrices,
 	roundGatewayMoney,
 	scaleBillingPrices,
+	applyUserChargedCostToBreakdown,
 	snapshotToJson,
 	snapshotWithOverrides,
 	userRowToSnapshot,
@@ -53,6 +54,10 @@ export type ImageBillingParams = {
 	/** 请求进入 Gateway 的时间；每日时段倍率在该时刻锁定 */
 	requestStartedAtMs?: number;
 	operation?: 'generations' | 'edits';
+	/** 目录 `models.id`，用于查找用户 Charged 折扣 */
+	catalogModelId?: string;
+	/** `users.charged_cost_factors` JSON */
+	userChargedCostFactorsJson?: string | null;
 };
 
 export type ImageCostBreakdown = {
@@ -75,6 +80,17 @@ export type ImageCostBreakdown = {
 	logImageCounts?: { inputImageCount: number; outputImageCount: number };
 	billingKind: 'image_tokens' | 'image_per_image';
 };
+
+function withUserImageChargedFactor(
+	breakdown: ImageCostBreakdown,
+	params: ImageBillingParams
+): ImageCostBreakdown {
+	return applyUserChargedCostToBreakdown(
+		breakdown,
+		params.userChargedCostFactorsJson,
+		params.catalogModelId ?? ''
+	);
+}
 
 export type UncertainResultUsageSource =
 	| 'client_abort_precheck'
@@ -164,29 +180,32 @@ function zeroImageCostBreakdown(
 	billingKind: ImageCostBreakdown['billingKind'],
 	audit: Record<string, unknown>
 ): ImageCostBreakdown {
-	return {
-		unitPrice: 0,
-		imageCount: Math.max(0, Math.floor(params.imageCount)),
-		meteredCost: 0,
-		standardCost: 0,
-		chargedCost: 0,
-		meteredFactor: factors.meteredFactor,
-		chargedFactor: factors.chargedFactor,
-		pricingAuditJson: JSON.stringify({
-			v: PRICING_AUDIT_JSON_SCHEMA_VERSION,
-			kind: billingKind,
-			...audit,
-		}),
-		logTokens: {
-			inputTokens: 0,
-			outputTokens: 0,
-			cacheReadTokens: 0,
-			cacheWriteTokens: 0,
-			totalTokens: 0,
+	return withUserImageChargedFactor(
+		{
+			unitPrice: 0,
+			imageCount: Math.max(0, Math.floor(params.imageCount)),
+			meteredCost: 0,
+			standardCost: 0,
+			chargedCost: 0,
+			meteredFactor: factors.meteredFactor,
+			chargedFactor: factors.chargedFactor,
+			pricingAuditJson: JSON.stringify({
+				v: PRICING_AUDIT_JSON_SCHEMA_VERSION,
+				kind: billingKind,
+				...audit,
+			}),
+			logTokens: {
+				inputTokens: 0,
+				outputTokens: 0,
+				cacheReadTokens: 0,
+				cacheWriteTokens: 0,
+				totalTokens: 0,
+			},
+			logImageCounts: { inputImageCount: 0, outputImageCount: 0 },
+			billingKind,
 		},
-		logImageCounts: { inputImageCount: 0, outputImageCount: 0 },
-		billingKind,
-	};
+		params
+	);
 }
 
 function estimateImageTokenCosts(
@@ -252,7 +271,8 @@ function estimateImageTokenCosts(
 		},
 	});
 
-	return {
+	return withUserImageChargedFactor(
+		{
 		unitPrice: 0,
 		imageCount: Math.max(0, Math.floor(params.imageCount)),
 		meteredCost,
@@ -270,7 +290,9 @@ function estimateImageTokenCosts(
 		},
 		logImageCounts: { inputImageCount: 0, outputImageCount: 0 },
 		billingKind: 'image_tokens',
-	};
+		},
+		params
+	);
 }
 
 function estimateImagePerImageCosts(
@@ -322,25 +344,28 @@ function estimateImagePerImageCosts(
 		...(options?.auditExtra ?? {}),
 	});
 
-	return {
-		unitPrice: outputUnitPrice,
-		imageCount: outputCount,
-		meteredCost,
-		standardCost,
-		chargedCost,
-		meteredFactor: factors.meteredFactor,
-		chargedFactor: factors.chargedFactor,
-		pricingAuditJson,
-		logTokens: {
-			inputTokens: 0,
-			outputTokens: 0,
-			cacheReadTokens: 0,
-			cacheWriteTokens: 0,
-			totalTokens: 0,
+	return withUserImageChargedFactor(
+		{
+			unitPrice: outputUnitPrice,
+			imageCount: outputCount,
+			meteredCost,
+			standardCost,
+			chargedCost,
+			meteredFactor: factors.meteredFactor,
+			chargedFactor: factors.chargedFactor,
+			pricingAuditJson,
+			logTokens: {
+				inputTokens: 0,
+				outputTokens: 0,
+				cacheReadTokens: 0,
+				cacheWriteTokens: 0,
+				totalTokens: 0,
+			},
+			logImageCounts: { inputImageCount: referenceCount, outputImageCount: outputCount },
+			billingKind: 'image_per_image',
 		},
-		logImageCounts: { inputImageCount: referenceCount, outputImageCount: outputCount },
-		billingKind: 'image_per_image',
-	};
+		params
+	);
 }
 
 /**

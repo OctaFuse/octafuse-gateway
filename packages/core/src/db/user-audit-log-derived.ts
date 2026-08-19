@@ -27,6 +27,10 @@ export function parseUserAuditSnapshotFromJson(raw: string | null | undefined): 
 				: String(o.budget_reset_at);
 		const status = typeof o.status === 'string' ? o.status : '';
 		const metadata = o.metadata === undefined || o.metadata === null ? null : String(o.metadata);
+		const charged_cost_factors =
+			o.charged_cost_factors === undefined || o.charged_cost_factors === null
+				? null
+				: String(o.charged_cost_factors);
 		const external_system =
 			o.external_system === undefined || o.external_system === null ? null : String(o.external_system);
 		const external_user_id =
@@ -41,6 +45,7 @@ export function parseUserAuditSnapshotFromJson(raw: string | null | undefined): 
 			budget_reset_at,
 			status,
 			metadata,
+			charged_cost_factors,
 			external_system,
 			external_user_id,
 		};

@@ -24,6 +24,7 @@ type UserSqlRow = {
 	budget_reset_at: string | null;
 	status: string;
 	metadata: string | null;
+	charged_cost_factors: string | null;
 	external_system: string | null;
 	external_user_id: string | null;
 	created_at: string;
@@ -41,6 +42,7 @@ function mapUserRow(r: UserSqlRow): UserRow {
 		budget_reset_at: r.budget_reset_at,
 		status: r.status,
 		metadata: r.metadata,
+		charged_cost_factors: r.charged_cost_factors ?? null,
 		external_system: r.external_system,
 		external_user_id: r.external_user_id,
 		created_at: r.created_at,
@@ -129,8 +131,8 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 			const status = params.status ?? 'active';
 			await raw
 				.prepare(
-					`INSERT INTO users (id, email, budget_max, budget_base, budget_spent, budget_period, budget_reset_at, status, metadata, external_system, external_user_id, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+					`INSERT INTO users (id, email, budget_max, budget_base, budget_spent, budget_period, budget_reset_at, status, metadata, charged_cost_factors, external_system, external_user_id, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
 				)
 				.bind(
 					params.id,
@@ -142,6 +144,7 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 					budgetResetAt,
 					status,
 					params.metadata ?? null,
+					params.chargedCostFactors ?? null,
 					params.externalSystem ?? null,
 					params.externalUserId ?? null
 				)
@@ -198,6 +201,14 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 			const result = await raw
 				.prepare('UPDATE users SET metadata = ?, updated_at = datetime("now") WHERE id = ?')
 				.bind(metadataJson, id)
+				.run();
+			return result.meta.changes > 0;
+		},
+
+		async setUserChargedCostFactorsById(id: string, chargedCostFactorsJson: string | null): Promise<boolean> {
+			const result = await raw
+				.prepare('UPDATE users SET charged_cost_factors = ?, updated_at = datetime("now") WHERE id = ?')
+				.bind(chargedCostFactorsJson, id)
 				.run();
 			return result.meta.changes > 0;
 		},

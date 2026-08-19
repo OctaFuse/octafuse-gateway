@@ -787,6 +787,8 @@ imageRoutes.post('/generations', async (c) => {
 		repos,
 		{
 			modelPricingProfileJson: model.pricing_profile ?? null,
+			catalogModelId: baseModelId,
+			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			quality: common.quality ?? 'auto',
 			size: common.size ?? 'auto',
 			imageCount: common.n,
@@ -892,6 +894,8 @@ imageRoutes.post('/generations', async (c) => {
 		operation: 'generations',
 		billing: {
 			modelPricingProfileJson: model.pricing_profile ?? null,
+			catalogModelId: baseModelId,
+			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			routePriceOverrideJson: proxyResult.chosenRoute.priceOverrideRaw,
 			quality: common.quality ?? 'auto',
 			size: common.size ?? 'auto',
@@ -958,6 +962,8 @@ imageRoutes.post('/edits', async (c) => {
 		repos,
 		{
 			modelPricingProfileJson: model.pricing_profile ?? null,
+			catalogModelId: baseModelId,
+			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			quality: edit.quality ?? 'auto',
 			size: edit.size ?? 'auto',
 			imageCount: edit.n,
@@ -1047,6 +1053,8 @@ imageRoutes.post('/edits', async (c) => {
 		operation: 'edits',
 		billing: {
 			modelPricingProfileJson: model.pricing_profile ?? null,
+			catalogModelId: baseModelId,
+			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			routePriceOverrideJson: proxyResult.chosenRoute.priceOverrideRaw,
 			quality: edit.quality ?? 'auto',
 			size: edit.size ?? 'auto',

@@ -48,6 +48,7 @@ function mapPgUserRow(r: {
 	budgetResetAt: string | null;
 	status: string;
 	metadata: string | null;
+	chargedCostFactors: string | null;
 	externalSystem: string | null;
 	externalUserId: string | null;
 	createdAt: string;
@@ -63,6 +64,7 @@ function mapPgUserRow(r: {
 		budget_reset_at: r.budgetResetAt,
 		status: r.status,
 		metadata: r.metadata,
+		charged_cost_factors: r.chargedCostFactors ?? null,
 		external_system: r.externalSystem,
 		external_user_id: r.externalUserId,
 		created_at: r.createdAt,
@@ -149,6 +151,7 @@ export function createPostgresUsersRepository(db: PostgresDatabaseClient): Users
 				budgetResetAt: params.budgetResetAt ?? null,
 				status: params.status ?? 'active',
 				metadata: params.metadata ?? null,
+				chargedCostFactors: params.chargedCostFactors ?? null,
 				externalSystem: params.externalSystem ?? null,
 				externalUserId: params.externalUserId ?? null,
 				createdAt: now,
@@ -226,6 +229,16 @@ export function createPostgresUsersRepository(db: PostgresDatabaseClient): Users
 			const updated = await drizzle
 				.update(pgUsersTable)
 				.set({ metadata: metadataJson, updatedAt: now })
+				.where(eq(pgUsersTable.id, id))
+				.returning({ id: pgUsersTable.id });
+			return updated.length > 0;
+		},
+
+		async setUserChargedCostFactorsById(id: string, chargedCostFactorsJson: string | null): Promise<boolean> {
+			const now = new Date().toISOString();
+			const updated = await drizzle
+				.update(pgUsersTable)
+				.set({ chargedCostFactors: chargedCostFactorsJson, updatedAt: now })
 				.where(eq(pgUsersTable.id, id))
 				.returning({ id: pgUsersTable.id });
 			return updated.length > 0;

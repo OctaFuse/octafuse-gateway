@@ -3,15 +3,17 @@
 /**
  * 单个网关用户：预算计划、关联密钥、请求日志与用户审计。
  */
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ClipboardDocumentIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import { parseGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
-import type { GatewayApiKeyBudgetAuditLog, GatewayRequestLog } from '@/lib/types';
+import { ModelVendorIcon } from '@/components/model-vendor-icon';
+import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
+import type { GatewayApiKeyBudgetAuditLog, GatewayModel, GatewayRequestLog } from '@/lib/types';
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
@@ -23,6 +25,15 @@ import { normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui'
 
 /** 与「Δ spend」「budget_max」列重复，不在「User snapshot Δ」再展示 */
 const OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS = ['budget_spent', 'budget_max'] as const;
+
+type ChargedCostFactorRow = { modelId: string; factor: string };
+
+type CatalogModelOption = Pick<GatewayModel, 'id' | 'display_name' | 'vendor'>;
+
+function catalogModelLabel(model: CatalogModelOption | undefined, modelId: string): string {
+  const name = model?.display_name?.trim();
+  return name || modelId;
+}
 
 type UserDetail = {
   id: string;
@@ -36,9 +47,32 @@ type UserDetail = {
   budget_reset_at: string | null;
   status: string;
   metadata: Record<string, unknown> | null;
+  charged_cost_factors?: Record<string, number> | null;
   created_at: string;
   updated_at: string;
 };
+
+function factorsToRows(factors: Record<string, number> | null | undefined): ChargedCostFactorRow[] {
+  if (!factors) return [];
+  return Object.entries(factors).map(([modelId, factor]) => ({ modelId, factor: String(factor) }));
+}
+
+function rowsToFactors(
+  rows: ChargedCostFactorRow[]
+): { ok: true; value: Record<string, number> | null } | { ok: false; code: 'modelRequired' | 'valueInvalid' | 'duplicate' } {
+  const out: Record<string, number> = {};
+  for (const row of rows) {
+    const modelId = row.modelId.trim();
+    const factorRaw = row.factor.trim();
+    if (!modelId && !factorRaw) continue;
+    if (!modelId) return { ok: false, code: 'modelRequired' };
+    const n = Number(factorRaw);
+    if (!Number.isFinite(n) || n < 0) return { ok: false, code: 'valueInvalid' };
+    if (Object.prototype.hasOwnProperty.call(out, modelId)) return { ok: false, code: 'duplicate' };
+    out[modelId] = n;
+  }
+  return { ok: true, value: Object.keys(out).length > 0 ? out : null };
+}
 
 type KeyRow = {
   id: string;
@@ -104,7 +138,16 @@ export default function GatewayUserDetailPage() {
   const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
   const [audits, setAudits] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
   const [planError, setPlanError] = useState('');
+  const [planSuccess, setPlanSuccess] = useState('');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [factorsError, setFactorsError] = useState('');
+  const [factorsSuccess, setFactorsSuccess] = useState('');
+  const [isSavingFactors, setIsSavingFactors] = useState(false);
+  const planSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const factorsSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [catalogModels, setCatalogModels] = useState<CatalogModelOption[]>([]);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+  const [modelPickerSearch, setModelPickerSearch] = useState('');
   const [planForm, setPlanForm] = useState({
     email: '',
     status: 'active',
@@ -114,6 +157,7 @@ export default function GatewayUserDetailPage() {
     budget_period: 'none',
     budget_reset_at: '',
     metadata: '',
+    chargedCostFactorRows: [] as ChargedCostFactorRow[],
     external_system: '',
     external_user_id: '',
   });
@@ -152,6 +196,7 @@ export default function GatewayUserDetailPage() {
         budget_period: u.budget_period || 'none',
         budget_reset_at: formatLocalDateTimeInput(u.budget_reset_at),
         metadata: u.metadata ? JSON.stringify(u.metadata, null, 2) : '',
+        chargedCostFactorRows: factorsToRows(u.charged_cost_factors),
         external_system: u.external_system ?? '',
         external_user_id: u.external_user_id ?? '',
       });
@@ -216,8 +261,110 @@ export default function GatewayUserDetailPage() {
     loadAudits();
   }, [loadAudits]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/models');
+        const data = await readApiJson<CatalogModelOption[]>(res);
+        if (!cancelled && data.success && data.data) {
+          setCatalogModels(
+            [...data.data].sort((a, b) => {
+              const vendor = (a.vendor || '').localeCompare(b.vendor || '');
+              if (vendor !== 0) return vendor;
+              return catalogModelLabel(a, a.id).localeCompare(catalogModelLabel(b, b.id));
+            })
+          );
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const catalogById = useMemo(() => {
+    const map = new Map<string, CatalogModelOption>();
+    for (const model of catalogModels) map.set(model.id, model);
+    return map;
+  }, [catalogModels]);
+
+  const selectedFactorModelIds = useMemo(
+    () => new Set(planForm.chargedCostFactorRows.map((row) => row.modelId)),
+    [planForm.chargedCostFactorRows]
+  );
+
+  const pickerModelsByVendor = useMemo(() => {
+    const q = modelPickerSearch.trim().toLowerCase();
+    const filtered = catalogModels.filter((model) => {
+      if (!q) return true;
+      const label = catalogModelLabel(model, model.id).toLowerCase();
+      const vendor = (model.vendor || '').toLowerCase();
+      const vendorLabel = getModelVendorLabel(model.vendor).toLowerCase();
+      return (
+        model.id.toLowerCase().includes(q) ||
+        label.includes(q) ||
+        vendor.includes(q) ||
+        vendorLabel.includes(q)
+      );
+    });
+    const groups = new Map<string, CatalogModelOption[]>();
+    for (const model of filtered) {
+      const key = normalizeModelVendorInput(model.vendor);
+      const list = groups.get(key) ?? [];
+      list.push(model);
+      groups.set(key, list);
+    }
+    for (const list of groups.values()) {
+      list.sort((a, b) =>
+        catalogModelLabel(a, a.id).localeCompare(catalogModelLabel(b, b.id), undefined, {
+          sensitivity: 'base',
+        })
+      );
+    }
+    return [...groups.entries()].sort(([a], [b]) => {
+      if (a === 'other') return 1;
+      if (b === 'other') return -1;
+      return getModelVendorLabel(a).localeCompare(getModelVendorLabel(b), undefined, {
+        sensitivity: 'base',
+      });
+    });
+  }, [catalogModels, modelPickerSearch]);
+
+  const flashMessage = (
+    setter: (value: string) => void,
+    timerRef: { current: ReturnType<typeof setTimeout> | null },
+    message: string
+  ) => {
+    setter(message);
+    if (timerRef.current != null) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setter('');
+      timerRef.current = null;
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (planSuccessTimerRef.current != null) clearTimeout(planSuccessTimerRef.current);
+      if (factorsSuccessTimerRef.current != null) clearTimeout(factorsSuccessTimerRef.current);
+    };
+  }, []);
+
+  const addChargedCostFactorModel = (modelId: string) => {
+    if (!modelId || selectedFactorModelIds.has(modelId)) return;
+    setPlanForm((prev) => ({
+      ...prev,
+      chargedCostFactorRows: [...prev.chargedCostFactorRows, { modelId, factor: '1' }],
+    }));
+    setFactorsError('');
+  };
+
   const savePlan = async () => {
     setPlanError('');
+    setPlanSuccess('');
     setIsSavingPlan(true);
     try {
       const meta = normalizeMetadataClient(planForm.metadata);
@@ -263,6 +410,7 @@ export default function GatewayUserDetailPage() {
       const data = await readApiJson(res);
       if (data.success) {
         await loadUser();
+        flashMessage(setPlanSuccess, planSuccessTimerRef, t('saveSuccess'));
       } else {
         setPlanError(data.message || t('errors.updateFailed'));
       }
@@ -271,6 +419,44 @@ export default function GatewayUserDetailPage() {
       setPlanError(t('errors.updateFailed'));
     } finally {
       setIsSavingPlan(false);
+    }
+  };
+
+  const saveChargedCostFactors = async () => {
+    setFactorsError('');
+    setFactorsSuccess('');
+    const factors = rowsToFactors(planForm.chargedCostFactorRows);
+    if (!factors.ok) {
+      const factorErrors = {
+        modelRequired: t('errors.chargedCostFactorModelRequired'),
+        valueInvalid: t('errors.chargedCostFactorValueInvalid'),
+        duplicate: t('errors.chargedCostFactorDuplicate'),
+      };
+      setFactorsError(factorErrors[factors.code]);
+      return;
+    }
+    setIsSavingFactors(true);
+    try {
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          charged_cost_factors: factors.value,
+          reason: 'gwui:charged-cost-factors',
+        }),
+      });
+      const data = await readApiJson(res);
+      if (data.success) {
+        await loadUser();
+        flashMessage(setFactorsSuccess, factorsSuccessTimerRef, t('chargedCostFactors.saveSuccess'));
+      } else {
+        setFactorsError(data.message || t('errors.updateFailed'));
+      }
+    } catch (e) {
+      console.error(e);
+      setFactorsError(t('errors.updateFailed'));
+    } finally {
+      setIsSavingFactors(false);
     }
   };
 
@@ -418,10 +604,15 @@ export default function GatewayUserDetailPage() {
         <p className="text-sm text-gray-500 font-mono mt-1 break-all">{user.id}</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
+      <div className="grid items-stretch gap-6 lg:grid-cols-2">
+        <div className="bg-white rounded-lg shadow-md p-6 space-y-4 h-full">
           <h2 className="text-lg font-semibold text-gray-900">{t('userDetail')}</h2>
           {planError && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{planError}</div>}
+          {planSuccess && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700" role="status">
+              {planSuccess}
+            </div>
+          )}
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
@@ -609,8 +800,9 @@ export default function GatewayUserDetailPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-4">
+        <div className="flex h-full min-h-0 flex-col gap-6">
+        <div className="bg-white rounded-lg shadow-md p-6 flex min-h-0 flex-1 flex-col">
+          <div className="flex justify-between items-center mb-4 shrink-0">
             <h2 className="text-lg font-semibold text-gray-900">{t('apiKeys')}</h2>
             <button
               type="button"
@@ -632,7 +824,7 @@ export default function GatewayUserDetailPage() {
           {freshApiKey && (
             <NewApiKeySecretBanner secret={freshApiKey} onDismiss={() => setFreshApiKey(null)} />
           )}
-          <div className="overflow-x-auto">
+          <div className="min-h-0 flex-1 overflow-auto">
             <table className="min-w-full text-sm table-auto">
               <thead>
                 <tr className="border-b text-xs text-gray-500 uppercase">
@@ -711,6 +903,90 @@ export default function GatewayUserDetailPage() {
             </table>
             {keys.length === 0 && <p className="text-sm text-gray-500 py-4">{t('keysTable.noKeys')}</p>}
           </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6 flex min-h-0 flex-1 flex-col gap-3">
+          <div className="flex items-center justify-between gap-3 shrink-0">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {t('fields.chargedCostFactors')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setModelPickerSearch('');
+                setShowModelPicker(true);
+              }}
+              className="inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              {tCommon('add')}
+            </button>
+          </div>
+          <p className="text-xs text-gray-500">
+            {t('help.chargedCostFactors')}
+          </p>
+          {factorsError && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{factorsError}</div>}
+          {factorsSuccess && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700" role="status">
+              {factorsSuccess}
+            </div>
+          )}
+          {planForm.chargedCostFactorRows.length === 0 ? (
+            <p className="text-xs text-gray-400 flex-1">{t('chargedCostFactors.empty')}</p>
+          ) : (
+            <div className="min-h-0 flex-1 space-y-2 overflow-auto">
+              {planForm.chargedCostFactorRows.map((row, index) => {
+                const model = catalogById.get(row.modelId);
+                return (
+                  <div key={row.modelId} className="grid grid-cols-[1fr_7rem_auto] gap-2 items-center">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm text-gray-900">{catalogModelLabel(model, row.modelId)}</div>
+                      <div className="truncate font-mono text-[11px] text-gray-500" title={row.modelId}>
+                        {row.modelId}
+                        {!model ? ` · ${t('chargedCostFactors.unknownModel')}` : ''}
+                      </div>
+                    </div>
+                    <input
+                      type="number"
+                      min={0}
+                      step="any"
+                      value={row.factor}
+                      onChange={(e) => {
+                        const next = [...planForm.chargedCostFactorRows];
+                        next[index] = { ...next[index], factor: e.target.value };
+                        setPlanForm({ ...planForm, chargedCostFactorRows: next });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+                      placeholder={t('fields.chargedCostFactorValue')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPlanForm({
+                          ...planForm,
+                          chargedCostFactorRows: planForm.chargedCostFactorRows.filter((_, i) => i !== index),
+                        })
+                      }
+                      className="px-2 text-red-600 hover:text-red-800"
+                      aria-label={tCommon('delete')}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex justify-end pt-1 mt-auto shrink-0">
+            <button
+              type="button"
+              onClick={saveChargedCostFactors}
+              disabled={isSavingFactors}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSavingFactors ? tCommon('saving') : tCommon('save')}
+            </button>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -859,6 +1135,91 @@ export default function GatewayUserDetailPage() {
           {audits.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.auditLogs')}</p>}
         </div>
       </div>
+
+      {showModelPicker && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowModelPicker(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b flex justify-between items-center gap-3">
+              <h3 className="text-lg font-bold text-gray-900">{t('chargedCostFactors.pickTitle')}</h3>
+              <button
+                type="button"
+                onClick={() => setShowModelPicker(false)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label={tCommon('close')}
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="px-6 py-3 border-b">
+              <label className="relative block">
+                <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  value={modelPickerSearch}
+                  onChange={(e) => setModelPickerSearch(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-3 text-sm"
+                  placeholder={t('chargedCostFactors.pickSearch')}
+                  autoFocus
+                />
+              </label>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {pickerModelsByVendor.length === 0 ? (
+                <p className="py-6 text-sm text-gray-500">{t('chargedCostFactors.pickEmpty')}</p>
+              ) : (
+                <div className="space-y-5">
+                  {pickerModelsByVendor.map(([vendorKey, models]) => (
+                    <section key={vendorKey}>
+                      <div className="mb-2 flex items-center gap-2">
+                        <ModelVendorIcon vendor={vendorKey} size="compact" />
+                        <h4 className="text-sm font-semibold text-gray-900">{getModelVendorLabel(vendorKey)}</h4>
+                        <span className="text-xs text-gray-400">{models.length}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+                        {models.map((model) => {
+                          const added = selectedFactorModelIds.has(model.id);
+                          return (
+                            <button
+                              key={model.id}
+                              type="button"
+                              disabled={added}
+                              onClick={() => addChargedCostFactorModel(model.id)}
+                              className="flex min-w-0 items-start justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-left hover:border-blue-300 hover:bg-blue-50/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:bg-transparent"
+                            >
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm text-gray-900">{catalogModelLabel(model, model.id)}</span>
+                                <span className="block truncate font-mono text-[11px] text-gray-500">{model.id}</span>
+                              </span>
+                              {added ? (
+                                <span className="shrink-0 pt-0.5 text-xs text-gray-400">{t('chargedCostFactors.alreadyAdded')}</span>
+                              ) : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-3 border-t flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowModelPicker(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+              >
+                {tCommon('close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {metaViewKey && (() => {
         const m = summarizeMetadata(metaViewKey.metadata);

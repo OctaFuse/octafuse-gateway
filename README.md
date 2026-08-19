@@ -33,6 +33,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
     - 联网搜索（`POST /v1/tools/web-search`）：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA
     - 网页抓取（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
     - 深度搜索（`POST /v1/tools/web-deep-search`，搜+读一体）：Firecrawl Search、Jina Search
+    - AI 率检测（`POST /v1/tools/ai-detection`）：当前已实现腾讯云 TMS，并预留多引擎扩展目录
     - 更多工具持续接入中，也欢迎 PR 继续丰富智能体常用工具。
 5. AI 能力统一出口：与所有网关一样，它是请求的中枢，即使能力汇总的地方，也是能力集中分发的地方。上面所有接入的 AI 能力都通过Octafuse Gateway 部署后的地址提供统一的接入 BaseUrl。换言之，上面你接入的各种平台、工具的 BaseUrl都不需要记了，只需要记住网关的即可。
 6. 多样的路由策略：当一个模型我们有多个资源的时候，为了更高效的使用资源，可以根据情况配置不同的路由策略。目前支持四种策略：
@@ -56,7 +57,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 
 | 供应商接入 | 请求入口（Request Surface）→ 策略 → 上游目标（Upstream Target） 路由拓扑 |
 |---|---|
-| ![供应商：卡片网格展示密钥状态、协议能力与路由数](./docs/assets/screenshots/providers.png) | ![路由：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](./docs/assets/screenshots/routes.png) |
+| ![供应商：卡片网格展示密钥状态、协议能力与路由数](./docs/assets/screenshots/providers.webp) | ![路由：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](./docs/assets/screenshots/routes.webp) |
 
 供应商页面负责接入上游账号与协议端点；路由页面把客户端请求入口、路由策略和上游目标放在一条可视链路中。完整配置顺序见 [管理后台配置指南](./docs/users/configuration.md)。
 

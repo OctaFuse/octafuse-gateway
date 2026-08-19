@@ -52,7 +52,7 @@ export function ModelCard(props: {
 			: pricingTooltip;
 
 	return (
-		<article className="group relative flex flex-col gap-2.5 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/60">
+		<article className="group relative flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/60">
 			<button
 				type="button"
 				onClick={() => void onEdit(model)}

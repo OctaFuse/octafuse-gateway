@@ -1270,12 +1270,13 @@
 	},
 	"users": {
 		"title": "ユーザー",
-		"subtitle": "Gateway ユーザー（users）— 予算と外部 ID",
+		"subtitle": "予算、API キー、外部 ID",
 		"createTitle": "ユーザーを作成",
 		"detailTitle": "ユーザー",
 		"userDetail": "ユーザー詳細",
 		"newUser": "新しいユーザー",
 		"saveUser": "ユーザーを保存",
+		"saveSuccess": "ユーザーを保存しました。",
 		"deleteUser": "ユーザーを削除",
 		"apiKeys": "API Keys",
 		"newKey": "新しい Key",
@@ -1285,20 +1286,28 @@
 		"invalidUserId": "無効な user id です",
 		"filters": {
 			"email": "メールアドレス",
+			"emailPlaceholder": "メールアドレスを検索…",
 			"externalSystem": "外部システム",
+			"externalSystemPlaceholder": "例: soloent",
 			"externalUserId": "外部ユーザー ID",
+			"externalUserIdPlaceholder": "外部ユーザー ID",
 			"status": "ステータス",
 			"contains": "含む…"
 		},
 		"table": {
 			"statusEmail": "ステータス · メールアドレス",
+			"user": "ユーザー",
+			"budget": "予算",
+			"cycle": "周期",
 			"spent": "使用済み",
 			"max": "上限",
 			"base": "基準",
 			"period": "期間",
 			"resetAt": "リセット日時",
 			"keys": "Keys",
+			"keysActiveOfTotal": "有効 / 合計",
 			"metadata": "Metadata",
+			"chargedCostFactors": "倍率",
 			"created": "作成日時",
 			"updated": "更新日時",
 			"group": "グループ",
@@ -1317,6 +1326,9 @@
 			"budgetPeriod": "予算期間",
 			"budgetResetAt": "予算リセット日時（ローカル）",
 			"metadataJsonObject": "Metadata（JSON オブジェクト）",
+			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactorModelId": "モデル ID",
+			"chargedCostFactorValue": "倍率",
 			"externalSystem": "外部システム",
 			"externalUserId": "外部ユーザー ID",
 			"name": "名前",
@@ -1330,7 +1342,18 @@
 			"budgetPeriod": "使用額 / 予算上限のリセットサイクルです。none を選ぶと自動リセットされません。",
 			"budgetResetAt": "使用額（および基準額から復元される予算上限）が次回自動リセットされる日時です。予算期間が none の場合は無視されます。",
 			"metadataReplace": "保存すると metadata オブジェクト全体が置き換わります。現在の値を維持する場合は空欄にしてください。",
+			"chargedCostFactors": "カタログからモデルを選んで倍率を設定します。ルート Charged cost の後に乗算されます。未設定のモデルは金額を変えません。0 はそのモデルを課金しません。LLM / Images / Audio のみ（Agent Tools は対象外）。",
 			"disabledUser": "無効なユーザーは、どの API Key からも新しいリクエストを送信できません。"
+		},
+		"chargedCostFactors": {
+			"none": "Charged cost factors は未設定です。",
+			"empty": "モデル別倍率は未設定です。カタログとルートの Charged cost がそのまま適用されます。",
+			"pickTitle": "カタログモデルを追加",
+			"pickSearch": "モデルを検索…",
+			"pickEmpty": "一致するモデルがありません。",
+			"alreadyAdded": "追加済み",
+			"unknownModel": "カタログにありません",
+			"saveSuccess": "Charged cost factors を保存しました。"
 		},
 		"externalIdentity": {
 			"title": "外部 ID",
@@ -1365,7 +1388,10 @@
 		"errors": {
 			"updateFailed": "更新に失敗しました",
 			"deleteFailed": "削除に失敗しました",
-			"createFailed": "作成に失敗しました"
+			"createFailed": "作成に失敗しました",
+			"chargedCostFactorModelRequired": "Charged cost factor の各行にはモデル ID が必要です。",
+			"chargedCostFactorValueInvalid": "Charged cost factor は 0 以上の数値である必要があります。",
+			"chargedCostFactorDuplicate": "Charged cost factors に重複したモデル ID があります。"
 		}
 	},
 	"keysPage": {
@@ -1388,8 +1414,9 @@
 			"key": "Key",
 			"name": "名前",
 			"userBudget": "ユーザー予算",
-			"apiKeyMetadata": "API Key Metadata",
-			"created": "作成日時"
+			"apiKeyMetadata": "Metadata",
+			"created": "作成日時",
+			"links": "リンク"
 		},
 		"create": {
 			"attachLegend": "Key の関連付け方法",
@@ -1434,7 +1461,12 @@
 			"editMetadata": "この Key に保存され、GET /v1/me で返される完全な JSON です。空欄にするとクリアされます。"
 		},
 		"links": {
-			"requestLogsForKey": "この Key のリクエストログ →"
+			"requestLogsForKey": "この Key のリクエストログ →",
+			"auditLogsForKey": "この Key の監査ログ →",
+			"openUserTitle": "ユーザー詳細を開く",
+			"openUserBudgetTitle": "ユーザー予算を開く",
+			"requestLogsTitle": "この Key のリクエストログ",
+			"auditLogsTitle": "この Key の監査ログ"
 		},
 		"copyKey": "Key をコピー",
 		"copyId": "ID をコピー",
@@ -1460,7 +1492,8 @@
 			"userSystem": "ユーザー · システム",
 			"model": "モデル",
 			"route": "Route",
-			"tokens": "Token",
+			"tags": "タグ",
+			"usage": "使用量",
 			"cost": "コスト（{currency}）",
 			"profit": "利益（{currency}）"
 		},
@@ -1468,9 +1501,45 @@
 			"user": "ユーザー",
 			"system": "システム"
 		},
+		"route": {
+			"inbound": "入口",
+			"upstream": "上流"
+		},
+		"tags": {
+			"kind": {
+				"llm": "LLM",
+				"image": "画像",
+				"tts": "TTS",
+				"asr": "ASR",
+				"tool": "ツール"
+			},
+			"stream": "ストリーム",
+			"realtime": "リアルタイム",
+			"reasoning": "推論",
+			"failover": "切替"
+		},
+		"usage": {
+			"tokens": "tok",
+			"images": "枚",
+			"seconds": "秒",
+			"characters": "文字"
+		},
 		"titles": {
 			"model": "Gateway モデル名、プロトコル、Route Group",
-			"route": "Provider、アップストリームモデル、Provider Key",
+			"route": "入口：プロトコルエンドポイント、モデル ID、Route Group。上流：プロトコルエンドポイント、モデル ID、プロバイダー",
+			"tags": "リクエスト特性：モデル種別、ストリーム、推論、フェイルオーバー",
+			"usage": "このリクエストの課金使用量。モデルにより Token、枚数、秒数、文字数のいずれか",
+			"tag": {
+				"llm": "テキスト / マルチモーダル対話モデル",
+				"image": "画像生成",
+				"tts": "音声合成",
+				"asr": "音声認識",
+				"tool": "Gateway エージェントツール",
+				"stream": "クライアントがストリーミング応答を要求した",
+				"realtime": "リアルタイムセッション",
+				"reasoning": "推論 Token または推論段階の TTFT",
+				"failover": "上流の失敗後に切り替えが発生した"
+			},
 			"cost": "請求（C）と仕入コスト（M）；標準カタログ価格は詳細で確認できます",
 			"profit": "請求額 − 計量額（リクエスト単位）",
 			"rowDetail": "クリックして料金監査とリクエスト / usage Body の表示を切り替え",

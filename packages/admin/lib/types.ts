@@ -65,7 +65,7 @@ export interface GatewayApiKeyBudgetAuditLog {
   user_email?: string | null;
 }
 
-/** `GET /admin/users` 列表行（含 `active_keys_count`）。 */
+/** `GET /admin/users` 列表行（含 `active_keys_count` / `keys_count`）。 */
 export interface GatewayUserListItem {
   id: string;
   email: string;
@@ -78,9 +78,13 @@ export interface GatewayUserListItem {
   budget_reset_at: string | null;
   status: string;
   metadata: string | null;
+  /** 已解析的用户级 Charged cost factors；未配置时为 null */
+  charged_cost_factors?: Record<string, number> | null;
   created_at: string;
   updated_at: string;
   active_keys_count: number;
+  /** 该用户全部 API Key 数（含已吊销） */
+  keys_count: number;
 }
 
 /** 与 octafuse `ApiKeyBudgetAuditEventType` 对齐（筛选下拉与网关枚举一致） */

@@ -2,7 +2,7 @@
 
 /**
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
- * 页面筛选条 Kind（All | LLM | Image | Audio）+ Vendor；下方紧凑卡片网格（与 Providers 同密度）；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
+ * 页面筛选条 Kind（All | LLM | Image | Audio）+ Vendor；下方卡片网格（与 Providers 同密度）；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
  * `?edit=<model_id>` 可从 Routes 等入口深链直接打开编辑弹窗（消费后从 URL 清除）。
  */
 import { Suspense } from 'react';
@@ -54,7 +54,7 @@ function ModelsContent() {
 				onClearFilter={state.clearFilters}
 			/>
 
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+			<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 2xl:grid-cols-4">
 				<ModelAddCard
 					importSubmitting={state.importSubmitting}
 					createTitle={createTitle}

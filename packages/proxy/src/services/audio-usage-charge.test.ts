@@ -42,6 +42,46 @@ describe('TTS per-character billing', () => {
 		assert.match(costs.pricingAuditJson, /missing_upstream_character_usage/);
 	});
 
+	it('applies user charged cost factor after route charged cost', async () => {
+		const route = await estimateAudioSpeechCosts(mockRepos(), {
+			modelPricingProfileJson: PROFILE,
+			routePriceOverrideJson: JSON.stringify({ metered_factor: 1, charged_factor: 2 }),
+			characters: 5,
+			catalogModelId: 'qwen-tts',
+		});
+		const discounted = await estimateAudioSpeechCosts(mockRepos(), {
+			modelPricingProfileJson: PROFILE,
+			routePriceOverrideJson: JSON.stringify({ metered_factor: 1, charged_factor: 2 }),
+			characters: 5,
+			catalogModelId: 'qwen-tts',
+			userChargedCostFactorsJson: JSON.stringify({ 'qwen-tts': 0.5 }),
+		});
+		assert.ok(Math.abs(discounted.chargedCost - route.chargedCost * 0.5) < 1e-9);
+		assert.equal(discounted.meteredCost, route.meteredCost);
+		const audit = JSON.parse(discounted.pricingAuditJson) as { user_charged_factor: number };
+		assert.equal(audit.user_charged_factor, 0.5);
+	});
+
+	it('budget precheck uses the same user charged cost factor as the final charge', async () => {
+		const override = JSON.stringify({ metered_factor: 1, charged_factor: 2 });
+		const billing = {
+			modelPricingProfileJson: PROFILE,
+			catalogModelId: 'qwen-tts',
+			userChargedCostFactorsJson: JSON.stringify({ 'qwen-tts': 0.5 }),
+		};
+		const precheck = await estimateAudioSpeechBudgetPrecheck(
+			mockRepos(),
+			{ ...billing, inputCharacters: 5 },
+			[override]
+		);
+		const charge = await estimateAudioSpeechCosts(mockRepos(), {
+			...billing,
+			routePriceOverrideJson: override,
+			characters: 5,
+		});
+		assert.equal(precheck.chargedCost, charge.chargedCost);
+	});
+
 	it('uses input length only for the budget precheck and takes the most expensive route factor', async () => {
 		const costs = await estimateAudioSpeechBudgetPrecheck(
 			mockRepos(),

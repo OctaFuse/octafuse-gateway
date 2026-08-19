@@ -33,6 +33,7 @@ import {
 	resolveSupplierBillingPrices,
 	roundGatewayMoney,
 	scaleBillingPrices,
+	applyUserChargedCostToBreakdown,
 	snapshotToJson,
 	snapshotWithOverrides,
 	userRowToSnapshot,
@@ -60,6 +61,10 @@ export type AudioBillingParams = {
 	tokenUsage?: AudioTokenUsage | null;
 	/** TTS 最终扣费：上游真实 usage.characters；缺省则不计费 */
 	characters?: number | null;
+	/** 目录 `models.id`，用于查找用户 Charged 折扣 */
+	catalogModelId?: string;
+	/** `users.charged_cost_factors` JSON */
+	userChargedCostFactorsJson?: string | null;
 };
 
 export type AudioCostBreakdown = {
@@ -82,6 +87,17 @@ export type AudioCostBreakdown = {
 		totalTokens: number;
 	};
 };
+
+function withUserAudioChargedFactor(
+	breakdown: AudioCostBreakdown,
+	billing: AudioBillingParams
+): AudioCostBreakdown {
+	return applyUserChargedCostToBreakdown(
+		breakdown,
+		billing.userChargedCostFactorsJson,
+		billing.catalogModelId ?? ''
+	);
+}
 
 function pricingAtUtcFromParams(requestStartedAtMs?: number): Date {
 	const requestedPricingAtUtc =
@@ -184,7 +200,8 @@ function buildAudioPerSecondCosts(
 			},
 		},
 	});
-	return {
+	return withUserAudioChargedFactor(
+		{
 		durationSeconds: billing.durationSeconds,
 		billableSeconds,
 		pricePerSecond,
@@ -199,7 +216,9 @@ function buildAudioPerSecondCosts(
 		pricingAuditJson,
 		billingKind: 'audio_per_second',
 		logTokens: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-	};
+		},
+		billing
+	);
 }
 
 function buildAudioPerCharacterCosts(
@@ -221,7 +240,8 @@ function buildAudioPerCharacterCosts(
 	const meteredCost = roundGatewayMoney(baseCost * factors.meteredFactor);
 	const standardCost = roundGatewayMoney(baseCost);
 	const chargedCost = roundGatewayMoney(baseCost * factors.chargedFactor);
-	return {
+	return withUserAudioChargedFactor(
+		{
 		durationSeconds: 0,
 		billableSeconds: 0,
 		pricePerSecond: 0,
@@ -258,7 +278,9 @@ function buildAudioPerCharacterCosts(
 		}),
 		billingKind: 'audio_per_character',
 		logTokens: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-	};
+		},
+		billing
+	);
 }
 
 function buildAudioTokenCosts(
@@ -323,7 +345,8 @@ function buildAudioTokenCosts(
 		},
 	});
 
-	return {
+	return withUserAudioChargedFactor(
+		{
 		durationSeconds: billing.durationSeconds,
 		billableSeconds: 0,
 		pricePerSecond: 0,
@@ -342,7 +365,9 @@ function buildAudioTokenCosts(
 			outputTokens: usage.output_tokens,
 			totalTokens: usage.total_tokens,
 		},
-	};
+		},
+		billing
+	);
 }
 
 function zeroAudioCostBreakdown(
@@ -351,29 +376,32 @@ function zeroAudioCostBreakdown(
 	billingKind: AudioCostBreakdown['billingKind'],
 	auditExtra?: Record<string, unknown>
 ): AudioCostBreakdown {
-	return {
-		durationSeconds: billing.durationSeconds,
-		billableSeconds: 0,
-		pricePerSecond: 0,
-		characters: billing.characters ?? 0,
-		billableCharacters: 0,
-		pricePerCharacter: 0,
-		meteredCost: 0,
-		standardCost: 0,
-		chargedCost: 0,
-		meteredFactor: factors.meteredFactor,
-		chargedFactor: factors.chargedFactor,
-		pricingAuditJson: JSON.stringify({
-			v: PRICING_AUDIT_JSON_SCHEMA_VERSION,
-			kind: billingKind,
-			duration_seconds: billing.durationSeconds,
-			duration_source: billing.durationSource ?? null,
-			file_bytes: billing.fileBytes ?? null,
-			...auditExtra,
-		}),
-		billingKind,
-		logTokens: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-	};
+	return withUserAudioChargedFactor(
+		{
+			durationSeconds: billing.durationSeconds,
+			billableSeconds: 0,
+			pricePerSecond: 0,
+			characters: billing.characters ?? 0,
+			billableCharacters: 0,
+			pricePerCharacter: 0,
+			meteredCost: 0,
+			standardCost: 0,
+			chargedCost: 0,
+			meteredFactor: factors.meteredFactor,
+			chargedFactor: factors.chargedFactor,
+			pricingAuditJson: JSON.stringify({
+				v: PRICING_AUDIT_JSON_SCHEMA_VERSION,
+				kind: billingKind,
+				duration_seconds: billing.durationSeconds,
+				duration_source: billing.durationSource ?? null,
+				file_bytes: billing.fileBytes ?? null,
+				...auditExtra,
+			}),
+			billingKind,
+			logTokens: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+		},
+		billing
+	);
 }
 
 function resolveAudioCostsForProfile(
@@ -425,7 +453,14 @@ function resolveAudioCostsForProfile(
 /** 单条 TTS 路由的按字符成本；characters 必须来自上游，null 会明确审计为缺失。 */
 export async function estimateAudioSpeechCosts(
 	repos: GatewayRepositories,
-	billing: Pick<AudioBillingParams, 'modelPricingProfileJson' | 'requestStartedAtMs' | 'characters'> & {
+	billing: Pick<
+		AudioBillingParams,
+		| 'modelPricingProfileJson'
+		| 'requestStartedAtMs'
+		| 'characters'
+		| 'catalogModelId'
+		| 'userChargedCostFactorsJson'
+	> & {
 		routePriceOverrideJson?: string | null;
 	}
 ): Promise<AudioCostBreakdown> {
@@ -443,7 +478,13 @@ export async function estimateAudioSpeechCosts(
 /** TTS 预算预检允许用输入字符数；最终扣费仍只接受上游 usage.characters。 */
 export async function estimateAudioSpeechBudgetPrecheck(
 	repos: GatewayRepositories,
-	billing: Pick<AudioBillingParams, 'modelPricingProfileJson' | 'requestStartedAtMs'> & {
+	billing: Pick<
+		AudioBillingParams,
+		| 'modelPricingProfileJson'
+		| 'requestStartedAtMs'
+		| 'catalogModelId'
+		| 'userChargedCostFactorsJson'
+	> & {
 		inputCharacters: number;
 	},
 	routePriceOverrides: Array<string | null | undefined>

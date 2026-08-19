@@ -206,6 +206,30 @@ describe('estimateImageCosts', () => {
 		assert.ok(Math.abs(override.chargedCost - base.chargedCost * 2) < 1e-9);
 	});
 
+	it('applies user charged cost factor after route charged cost', async () => {
+		const route = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: JSON.stringify({ charged_factor: 2, metered_factor: 1 }),
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+			catalogModelId: 'gpt-image-1',
+		});
+		const discounted = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: JSON.stringify({ charged_factor: 2, metered_factor: 1 }),
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+			catalogModelId: 'gpt-image-1',
+			userChargedCostFactorsJson: JSON.stringify({ 'gpt-image-1': 0.5 }),
+		});
+		assert.ok(Math.abs(discounted.chargedCost - route.chargedCost * 0.5) < 1e-9);
+		assert.equal(discounted.meteredCost, route.meteredCost);
+		const audit = JSON.parse(discounted.pricingAuditJson) as { user_charged_factor: number };
+		assert.equal(audit.user_charged_factor, 0.5);
+	});
+
 	it('per_image applies charged_factor from route override', async () => {
 		const base = await estimateImageCosts(mockRepos(), {
 			modelPricingProfileJson: PER_IMAGE_PROFILE,

@@ -162,6 +162,7 @@ export interface UsersRepository {
 	): Promise<boolean>;
 	updateUserStatus(id: string, status: string): Promise<boolean>;
 	setUserMetadataById(id: string, metadataJson: string | null): Promise<boolean>;
+	setUserChargedCostFactorsById(id: string, chargedCostFactorsJson: string | null): Promise<boolean>;
 	setUserEmailById(id: string, email: string): Promise<boolean>;
 	/**
 	 * 同时更新一对 external 身份。两者要么都为非空字符串，要么都为 null

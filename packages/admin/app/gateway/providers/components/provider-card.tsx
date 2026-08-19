@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
-import type { GatewayProvider } from '../types';
+import type { GatewayProvider, ProviderKeyStatusKind } from '../types';
 import { getProviderKeyStatus, getProviderProtocolSummaries } from '../provider-utils';
 import { ProviderProtocolIcon } from './provider-protocol-icon';
 
@@ -20,10 +20,27 @@ type ProviderCardProps = {
 	onCopyApiKey: (provider: GatewayProvider) => void;
 };
 
-const STATUS_DOT: Record<string, string> = {
+const CARD_SHELL: Record<ProviderKeyStatusKind, string> = {
+	key_set: 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60',
+	no_key:
+		'border-rose-200 border-l-[3px] border-l-rose-500 bg-rose-50/80 hover:border-rose-300 hover:border-l-rose-500 hover:bg-rose-50',
+	pending:
+		'border-amber-200 border-l-[3px] border-l-amber-500 bg-amber-50/80 hover:border-amber-300 hover:border-l-amber-500 hover:bg-amber-50',
+	disabled:
+		'border-slate-200 bg-slate-50/90 text-slate-600 hover:border-slate-300 hover:bg-slate-100/80',
+};
+
+const STATUS_BADGE: Record<ProviderKeyStatusKind, string> = {
+	key_set: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+	no_key: 'bg-rose-100 text-rose-800 ring-rose-200',
+	pending: 'bg-amber-100 text-amber-900 ring-amber-200',
+	disabled: 'bg-slate-200/80 text-slate-600 ring-slate-300',
+};
+
+const STATUS_DOT: Record<ProviderKeyStatusKind, string> = {
 	key_set: 'bg-emerald-500',
 	pending: 'bg-amber-500',
-	no_key: 'bg-red-500',
+	no_key: 'bg-rose-500',
 	disabled: 'bg-slate-400',
 };
 
@@ -66,8 +83,19 @@ export function ProviderCard(props: ProviderCardProps) {
 					active: t('activeRoutes', { count: activeRoutesCount }),
 				});
 
+	const statusLabel =
+		keyStatus === 'key_set'
+			? t('keySet')
+			: keyStatus === 'pending'
+				? t('pending')
+				: keyStatus === 'no_key'
+					? t('noKey')
+					: t('disabled');
+
 	return (
-		<article className="group relative flex flex-col gap-2.5 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/60">
+		<article
+			className={`group relative flex flex-col gap-3 rounded-xl border p-4 shadow-sm transition-colors ${CARD_SHELL[keyStatus]}`}
+		>
 			<button
 				type="button"
 				onClick={() => onEdit(provider)}
@@ -126,20 +154,14 @@ export function ProviderCard(props: ProviderCardProps) {
 			</div>
 
 			<div className="pointer-events-none relative z-10 flex items-center justify-between gap-2">
-				<span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-gray-600">
+				<span
+					className={`inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset ${STATUS_BADGE[keyStatus]}`}
+				>
 					<span
 						className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[keyStatus]}`}
 						aria-hidden
 					/>
-					<span className="truncate">
-						{keyStatus === 'key_set'
-							? t('keySet')
-							: keyStatus === 'pending'
-								? t('pending')
-								: keyStatus === 'no_key'
-									? t('noKey')
-									: t('disabled')}
-					</span>
+					<span className="truncate">{statusLabel}</span>
 				</span>
 				<button
 					type="button"

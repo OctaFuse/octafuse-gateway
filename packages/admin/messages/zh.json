@@ -1270,12 +1270,13 @@
 	},
 	"users": {
 		"title": "用户",
-		"subtitle": "Gateway 用户（users）— 额度与外部身份",
+		"subtitle": "额度、API Key 与外部身份",
 		"createTitle": "创建用户",
 		"detailTitle": "用户",
 		"userDetail": "用户详情",
 		"newUser": "新建用户",
 		"saveUser": "保存用户",
+		"saveSuccess": "用户已保存。",
 		"deleteUser": "删除用户",
 		"apiKeys": "API Keys",
 		"newKey": "新建 Key",
@@ -1285,20 +1286,28 @@
 		"invalidUserId": "无效的用户 ID",
 		"filters": {
 			"email": "Email",
+			"emailPlaceholder": "搜索邮箱…",
 			"externalSystem": "外部系统",
+			"externalSystemPlaceholder": "例如 soloent",
 			"externalUserId": "外部用户 ID",
+			"externalUserIdPlaceholder": "外部用户 ID",
 			"status": "状态",
 			"contains": "包含…"
 		},
 		"table": {
 			"statusEmail": "状态 · Email",
+			"user": "用户",
+			"budget": "额度",
+			"cycle": "周期",
 			"spent": "已消费",
 			"max": "上限",
 			"base": "基准",
 			"period": "周期",
 			"resetAt": "重置时间",
 			"keys": "Keys",
+			"keysActiveOfTotal": "激活 / 总数",
 			"metadata": "Metadata",
+			"chargedCostFactors": "折扣倍率",
 			"created": "创建时间",
 			"updated": "更新时间",
 			"group": "分组",
@@ -1317,6 +1326,9 @@
 			"budgetPeriod": "额度周期",
 			"budgetResetAt": "额度重置时间（本地）",
 			"metadataJsonObject": "Metadata（JSON 对象）",
+			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactorModelId": "模型 ID",
+			"chargedCostFactorValue": "倍率",
 			"externalSystem": "外部系统",
 			"externalUserId": "外部用户 ID",
 			"name": "名称",
@@ -1330,7 +1342,18 @@
 			"budgetPeriod": "已消费 / 额度上限的重置周期。none 表示不自动重置。",
 			"budgetResetAt": "下一次自动重置已消费金额（并从额度基准恢复额度上限）的时间。额度周期为 none 时会被忽略。",
 			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
+			"chargedCostFactors": "从目录中选择模型后设置倍率。在路由 Charged cost 算完后再乘。未配置的模型金额不变；0 表示该模型不扣费。仅 LLM / Images / Audio，不含 Agent Tools。",
 			"disabledUser": "禁用用户后，该用户无法使用任何 API Key 发起新请求。"
+		},
+		"chargedCostFactors": {
+			"none": "未设置 Charged cost factors。",
+			"empty": "未设置按模型倍率。将按目录价与路由 Charged cost 原样扣费。",
+			"pickTitle": "添加目录模型",
+			"pickSearch": "搜索模型…",
+			"pickEmpty": "没有匹配的模型。",
+			"alreadyAdded": "已添加",
+			"unknownModel": "不在目录中",
+			"saveSuccess": "Charged cost factors 已保存。"
 		},
 		"externalIdentity": {
 			"title": "外部身份",
@@ -1365,7 +1388,10 @@
 		"errors": {
 			"updateFailed": "更新失败",
 			"deleteFailed": "删除失败",
-			"createFailed": "创建失败"
+			"createFailed": "创建失败",
+			"chargedCostFactorModelRequired": "每一行 Charged cost factor 都需要填写模型 ID。",
+			"chargedCostFactorValueInvalid": "Charged cost factor 必须是 ≥ 0 的数字。",
+			"chargedCostFactorDuplicate": "Charged cost factors 中存在重复的模型 ID。"
 		}
 	},
 	"keysPage": {
@@ -1388,8 +1414,9 @@
 			"key": "Key",
 			"name": "名称",
 			"userBudget": "用户额度",
-			"apiKeyMetadata": "API Key Metadata",
-			"created": "创建时间"
+			"apiKeyMetadata": "Metadata",
+			"created": "创建时间",
+			"links": "关联"
 		},
 		"create": {
 			"attachLegend": "如何关联 Key",
@@ -1434,7 +1461,12 @@
 			"editMetadata": "保存在此 Key 上的完整 JSON；留空则清除。GET /v1/me 会显示该值。"
 		},
 		"links": {
-			"requestLogsForKey": "查看此 Key 的请求日志 →"
+			"requestLogsForKey": "查看此 Key 的请求日志 →",
+			"auditLogsForKey": "查看此 Key 的审计日志 →",
+			"openUserTitle": "打开用户详情",
+			"openUserBudgetTitle": "打开用户额度",
+			"requestLogsTitle": "此 Key 的请求日志",
+			"auditLogsTitle": "此 Key 的审计日志"
 		},
 		"copyKey": "复制 Key",
 		"copyId": "复制 ID",
@@ -1460,7 +1492,8 @@
 			"userSystem": "用户 · 系统",
 			"model": "模型",
 			"route": "路由",
-			"tokens": "Token",
+			"tags": "标签",
+			"usage": "用量",
 			"cost": "成本（{currency}）",
 			"profit": "毛利（{currency}）"
 		},
@@ -1468,9 +1501,45 @@
 			"user": "用户",
 			"system": "系统"
 		},
+		"route": {
+			"inbound": "入站",
+			"upstream": "上游"
+		},
+		"tags": {
+			"kind": {
+				"llm": "LLM",
+				"image": "图像",
+				"tts": "TTS",
+				"asr": "ASR",
+				"tool": "工具"
+			},
+			"stream": "流式",
+			"realtime": "实时",
+			"reasoning": "推理",
+			"failover": "容灾"
+		},
+		"usage": {
+			"tokens": "tok",
+			"images": "张",
+			"seconds": "秒",
+			"characters": "字"
+		},
 		"titles": {
 			"model": "Gateway 模型名称、协议与路由组",
-			"route": "供应商、上游模型与供应商 Key",
+			"route": "入站：协议端点、模型 ID、路由组。上游：协议端点、模型 ID、供应商",
+			"tags": "请求特性：模型类型、流式、推理与容灾",
+			"usage": "本请求的计费用量：按模型可能是 Token、张数、秒数或字符数",
+			"tag": {
+				"llm": "文本 / 多模态对话模型",
+				"image": "图像生成",
+				"tts": "语音合成",
+				"asr": "语音转写",
+				"tool": "Gateway 智能体工具",
+				"stream": "客户端请求了流式响应",
+				"realtime": "实时会话",
+				"reasoning": "含推理 Token 或推理阶段 TTFT",
+				"failover": "上游尝试失败后发生了切换"
+			},
 			"cost": "计费（C）与供应成本（M）；标准目录价可在详情中查看",
 			"profit": "计费 − 计量（单请求）",
 			"rowDetail": "点击显示或隐藏定价审计、请求体与用量报文",

@@ -75,6 +75,7 @@ export function maybeBlockUserModelCircuit(
 			request_protocol: ctx.requestProtocol,
 			upstream_protocol: ctx.requestProtocol,
 			usage: EMPTY_USAGE,
+			user_charged_cost_factors_json: apiKey.chargedCostFactors,
 			request_started_at_ms: ctx.startMs,
 			route_group: 'default',
 			status: 'error',

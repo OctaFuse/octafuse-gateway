@@ -29,6 +29,8 @@ import {
 	userRowToSnapshot,
 } from '@octafuse/core/db/user-audit-snapshot';
 import { buildMetadataAuditChange } from './admin-profile-audit-metadata';
+import { resolveAdminChargedCostFactorsInput } from './user-charged-cost-factors';
+import { parseUserChargedCostFactors } from '@octafuse/core';
 import { badRequest, conflict, notFound } from './errors';
 import { normalizeMetadataInput } from './shared';
 import type { AdminUserCreateInput, AdminUserUpdateInput, AdminBudgetTransitionInput, JsonObject } from './types';
@@ -115,10 +117,12 @@ export async function listAdminUsers(
 	});
 	const data = await Promise.all(
 		users.map(async (u) => {
-			const keys = await repos.apiKeys.listKeysByUserId(u.id, { status: 'active' });
+			const keys = await repos.apiKeys.listKeysByUserId(u.id);
 			return {
 				...u,
-				active_keys_count: keys.length,
+				charged_cost_factors: parseUserChargedCostFactors(u.charged_cost_factors),
+				active_keys_count: keys.filter((key) => key.status === 'active').length,
+				keys_count: keys.length,
 			};
 		})
 	);
@@ -182,6 +186,11 @@ export async function createAdminUser(repos: GatewayRepositories, input: AdminUs
 			);
 		}
 		throw error;
+	}
+
+	if (Object.prototype.hasOwnProperty.call(input, 'charged_cost_factors')) {
+		const factorsJson = await resolveAdminChargedCostFactorsInput(repos, input.charged_cost_factors);
+		await repos.users.setUserChargedCostFactorsById(user.id, factorsJson);
 	}
 
 	const info = await getUserInfo(repos, user.id);
@@ -264,16 +273,23 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 		}
 	}
 
+	const hasChargedCostFactors = Object.prototype.hasOwnProperty.call(input, 'charged_cost_factors');
+	let nextChargedCostFactorsJson: string | null | undefined;
+	if (hasChargedCostFactors) {
+		nextChargedCostFactorsJson = await resolveAdminChargedCostFactorsInput(repos, input.charged_cost_factors);
+	}
+
 	if (
 		!hasBudgetField &&
 		!hasMetaObjectMerge &&
 		!hasMetaReplace &&
 		!hasStatus &&
 		!hasEmail &&
-		!hasExternalIdentity
+		!hasExternalIdentity &&
+		!hasChargedCostFactors
 	) {
 		throw badRequest(
-			'Provide at least one of email, budget_max, budget_base, budget_spent, budget_period, reset_budget, budget_reset_at, metadata, metadata_replace, status, external_system, external_user_id'
+			'Provide at least one of email, budget_max, budget_base, budget_spent, budget_period, reset_budget, budget_reset_at, metadata, metadata_replace, status, external_system, external_user_id, charged_cost_factors'
 		);
 	}
 
@@ -297,6 +313,10 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 			nextExternalSystem,
 			nextExternalUserId
 		);
+		if (!ok) throw new Error('Failed to update user');
+	}
+	if (hasChargedCostFactors && nextChargedCostFactorsJson !== undefined) {
+		const ok = await repos.users.setUserChargedCostFactorsById(userId, nextChargedCostFactorsJson);
 		if (!ok) throw new Error('Failed to update user');
 	}
 
@@ -369,9 +389,11 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 	const externalSystemChanged = (row.external_system ?? null) !== (rowAfter.external_system ?? null);
 	const externalUserIdChanged = (row.external_user_id ?? null) !== (rowAfter.external_user_id ?? null);
 	const externalChanged = externalSystemChanged || externalUserIdChanged;
+	const chargedCostFactorsChanged =
+		(row.charged_cost_factors ?? null) !== (rowAfter.charged_cost_factors ?? null);
 
 	let profileAuditPayload: Record<string, unknown> | null = null;
-	if (metadataChanged || statusChanged || emailChanged || externalChanged) {
+	if (metadataChanged || statusChanged || emailChanged || externalChanged || chargedCostFactorsChanged) {
 		profileAuditPayload = {};
 		if (emailChanged) {
 			profileAuditPayload.email = { from: row.email ?? null, to: rowAfter.email ?? null };
@@ -401,6 +423,12 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				operation = 'replace';
 			}
 			profileAuditPayload.metadata = buildMetadataAuditChange(row.metadata, rowAfter.metadata, operation, touchedKeys);
+		}
+		if (chargedCostFactorsChanged) {
+			profileAuditPayload.charged_cost_factors = {
+				from: parseUserChargedCostFactors(row.charged_cost_factors),
+				to: parseUserChargedCostFactors(rowAfter.charged_cost_factors),
+			};
 		}
 	}
 
@@ -440,12 +468,19 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				correlationId: crypto.randomUUID(),
 			})
 		);
-	} else if (metadataChanged || statusChanged || emailChanged || externalChanged) {
+	} else if (metadataChanged || statusChanged || emailChanged || externalChanged || chargedCostFactorsChanged) {
 		let reasonCode = 'admin_patch_profile';
-		if (metadataChanged && !statusChanged && !emailChanged) reasonCode = 'admin_patch_metadata';
-		else if (statusChanged && !metadataChanged && !emailChanged) reasonCode = 'admin_patch_status';
-		else if (emailChanged && !metadataChanged && !statusChanged && !externalChanged) reasonCode = 'admin_patch_email';
-		else if (externalChanged && !metadataChanged && !statusChanged && !emailChanged) reasonCode = 'admin_patch_external_identity';
+		if (metadataChanged && !statusChanged && !emailChanged && !externalChanged && !chargedCostFactorsChanged) {
+			reasonCode = 'admin_patch_metadata';
+		} else if (statusChanged && !metadataChanged && !emailChanged && !externalChanged && !chargedCostFactorsChanged) {
+			reasonCode = 'admin_patch_status';
+		} else if (emailChanged && !metadataChanged && !statusChanged && !externalChanged && !chargedCostFactorsChanged) {
+			reasonCode = 'admin_patch_email';
+		} else if (externalChanged && !metadataChanged && !statusChanged && !emailChanged && !chargedCostFactorsChanged) {
+			reasonCode = 'admin_patch_external_identity';
+		} else if (chargedCostFactorsChanged && !metadataChanged && !statusChanged && !emailChanged && !externalChanged) {
+			reasonCode = 'admin_patch_charged_cost_factors';
+		}
 		const spent = Number(rowAfter.budget_spent ?? 0);
 		const bmax = rowAfter.budget_max ?? null;
 		const bbase = rowAfter.budget_base ?? null;

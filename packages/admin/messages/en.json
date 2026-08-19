@@ -1270,12 +1270,13 @@
 	},
 	"users": {
 		"title": "Users",
-		"subtitle": "Gateway users (users) — budgets and external identity",
+		"subtitle": "Budgets, API keys, and external identity",
 		"createTitle": "Create user",
 		"detailTitle": "User",
 		"userDetail": "User Detail",
 		"newUser": "New user",
 		"saveUser": "Save user",
+		"saveSuccess": "User saved.",
 		"deleteUser": "Delete user",
 		"apiKeys": "API keys",
 		"newKey": "New key",
@@ -1285,20 +1286,28 @@
 		"invalidUserId": "Invalid user id",
 		"filters": {
 			"email": "Email",
+			"emailPlaceholder": "Search email…",
 			"externalSystem": "External system",
+			"externalSystemPlaceholder": "e.g. soloent",
 			"externalUserId": "External user ID",
+			"externalUserIdPlaceholder": "External user ID",
 			"status": "Status",
 			"contains": "Contains…"
 		},
 		"table": {
 			"statusEmail": "Status · Email",
+			"user": "User",
+			"budget": "Budget",
+			"cycle": "Cycle",
 			"spent": "Spent",
 			"max": "Max",
 			"base": "Base",
 			"period": "Period",
 			"resetAt": "Reset at",
 			"keys": "Keys",
+			"keysActiveOfTotal": "Active / total",
 			"metadata": "Metadata",
+			"chargedCostFactors": "Factors",
 			"created": "Created",
 			"updated": "Updated",
 			"group": "Group",
@@ -1317,6 +1326,9 @@
 			"budgetPeriod": "Budget period",
 			"budgetResetAt": "Budget reset at (local)",
 			"metadataJsonObject": "Metadata (JSON object)",
+			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactorModelId": "Model ID",
+			"chargedCostFactorValue": "Factor",
 			"externalSystem": "External system",
 			"externalUserId": "External user ID",
 			"name": "Name",
@@ -1330,7 +1342,18 @@
 			"budgetPeriod": "Reset cycle for spent / Budget max. none disables auto-reset.",
 			"budgetResetAt": "Next time spent (and Budget max from base) will auto-reset. Ignored when Budget period is none.",
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
+			"chargedCostFactors": "Pick catalog models, then set a factor. Applied after the route Charged cost. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools.",
 			"disabledUser": "Disabled users cannot use any API key for new requests."
+		},
+		"chargedCostFactors": {
+			"none": "No charged cost factors.",
+			"empty": "No per-model factors. Catalog and route Charged cost apply as-is.",
+			"pickTitle": "Add catalog model",
+			"pickSearch": "Search models…",
+			"pickEmpty": "No models match this search.",
+			"alreadyAdded": "Added",
+			"unknownModel": "not in catalog",
+			"saveSuccess": "Charged cost factors saved."
 		},
 		"externalIdentity": {
 			"title": "External identity",
@@ -1365,7 +1388,10 @@
 		"errors": {
 			"updateFailed": "Update failed",
 			"deleteFailed": "Delete failed",
-			"createFailed": "Create failed"
+			"createFailed": "Create failed",
+			"chargedCostFactorModelRequired": "Each Charged cost factor row needs a model ID.",
+			"chargedCostFactorValueInvalid": "Each Charged cost factor must be a number ≥ 0.",
+			"chargedCostFactorDuplicate": "Duplicate model IDs in Charged cost factors."
 		}
 	},
 	"keysPage": {
@@ -1388,8 +1414,9 @@
 			"key": "Key",
 			"name": "Name",
 			"userBudget": "User Budget",
-			"apiKeyMetadata": "Api Key Metadata",
-			"created": "Created"
+			"apiKeyMetadata": "Metadata",
+			"created": "Created",
+			"links": "Links"
 		},
 		"create": {
 			"attachLegend": "How to attach the key",
@@ -1434,7 +1461,12 @@
 			"editMetadata": "Full JSON stored on this key; cleared if empty. Shown on GET /v1/me."
 		},
 		"links": {
-			"requestLogsForKey": "Request logs for this key →"
+			"requestLogsForKey": "Request logs for this key →",
+			"auditLogsForKey": "Audit logs for this key →",
+			"openUserTitle": "Open user",
+			"openUserBudgetTitle": "Open user budget",
+			"requestLogsTitle": "Request logs for this key",
+			"auditLogsTitle": "Audit logs for this key"
 		},
 		"copyKey": "Copy key",
 		"copyId": "Copy ID",
@@ -1460,7 +1492,8 @@
 			"userSystem": "User · System",
 			"model": "Model",
 			"route": "Route",
-			"tokens": "Tokens",
+			"tags": "Tags",
+			"usage": "Usage",
 			"cost": "Cost ({currency})",
 			"profit": "Profit ({currency})"
 		},
@@ -1468,9 +1501,45 @@
 			"user": "User",
 			"system": "System"
 		},
+		"route": {
+			"inbound": "Inbound",
+			"upstream": "Upstream"
+		},
+		"tags": {
+			"kind": {
+				"llm": "LLM",
+				"image": "Image",
+				"tts": "TTS",
+				"asr": "ASR",
+				"tool": "Tool"
+			},
+			"stream": "Stream",
+			"realtime": "Realtime",
+			"reasoning": "Reason",
+			"failover": "Failover"
+		},
+		"usage": {
+			"tokens": "tok",
+			"images": "img",
+			"seconds": "s",
+			"characters": "chars"
+		},
 		"titles": {
 			"model": "Gateway model name, protocol, and route group",
-			"route": "Provider, upstream model, and provider key",
+			"route": "Inbound: protocol endpoint, model ID, and route group. Upstream: protocol endpoint, model ID, and provider",
+			"tags": "Request traits: model kind, streaming, reasoning, and failover",
+			"usage": "Billable usage for this request: tokens, images, seconds, or characters depending on the model",
+			"tag": {
+				"llm": "Text / multimodal chat model",
+				"image": "Image generation",
+				"tts": "Speech synthesis",
+				"asr": "Speech transcription",
+				"tool": "Gateway agent tool",
+				"stream": "Client requested a streaming response",
+				"realtime": "Realtime session",
+				"reasoning": "Reasoning tokens or reasoning-phase TTFT",
+				"failover": "Upstream switched after a failed attempt"
+			},
 			"cost": "Charged (C) and metered supplier cost (M); standard catalog price remains available in details",
 			"profit": "Charged − metered (per request)",
 			"rowDetail": "Click to show or hide pricing audit and request / usage bodies",

@@ -42,6 +42,8 @@ export const usersTable = mysqlTable(
 		budgetResetAt: timestamp('budget_reset_at', { fsp: 6, mode: 'string' }),
 		status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
 		metadata: text('metadata'),
+		/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
+		chargedCostFactors: text('charged_cost_factors'),
 		/** 上游命名空间（产品/租户），与 external_user_id 成对做幂等；纯网关用户二者皆空。 */
 		externalSystem: varchar('external_system', { length: COL.EXTERNAL_SYSTEM }),
 		externalUserId: varchar('external_user_id', { length: COL.EXTERNAL_USER_ID }),

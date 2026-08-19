@@ -18,6 +18,7 @@ import {
 	scheduleWindowShapeKey,
 	hasBasePricingInversion,
 	requestOperationsForModel,
+	requestLogProtocolPath,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
 	splitRoutesByProtocolAndRouteGroup,
@@ -74,6 +75,19 @@ describe('request surface path', () => {
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference'),
 			`/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation=audio.transcriptions.realtime.inference`,
 		);
+	});
+
+	it('maps DashScope HTTP audio operations to their OpenAI-compatible endpoints', () => {
+		assert.equal(requestSurfacePath('dashscope', 'audio.speech', 'cosyvoice-v2'), '/v1/audio/speech');
+		assert.equal(requestSurfacePath('dashscope', 'audio.speech.multimodal'), '/v1/audio/speech');
+		assert.equal(requestSurfacePath('dashscope', 'audio.transcriptions'), '/v1/audio/transcriptions');
+	});
+
+	it('compacts Gemini endpoints for request-log rows', () => {
+		assert.equal(requestLogProtocolPath('gemini', 'models.generate'), '/v1beta/models');
+		assert.equal(requestLogProtocolPath('gemini', 'streamGenerateContent'), '/v1beta/models');
+		assert.equal(requestLogProtocolPath('openai', 'chat'), '/v1/chat/completions');
+		assert.equal(requestLogProtocolPath('dashscope', 'audio.speech'), '/v1/audio/speech');
 	});
 });
 

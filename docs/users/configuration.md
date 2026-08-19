@@ -27,17 +27,17 @@
 
 供应商导入模板的维护说明见 [developers/reference/provider-import-presets.md](../developers/reference/provider-import-presets.md)。
 
-![供应商列表：卡片展示密钥状态、协议能力与路由数，可按状态和协议筛选](../assets/screenshots/providers.png)
+![供应商列表：卡片展示密钥状态、协议能力与路由数，可按状态和协议筛选](../assets/screenshots/providers.webp)
 
 ## 3. 配置模型与路由
 
 Routes 工作台支持**总览（Overview）**与**按模型（By model）**两种视角，并在 **Unrouted models** 区域集中展示尚未启用请求入口的模型。拓扑仍按 **请求入口（Request Surface）→ 路由池（Route Pool）→ 上游目标（Upstream Target）** 组织：请求入口表示客户端协议 / operation，路由池表示一组可故障转移的上游目标，上游目标才是具体供应商与上游模型。完整概念见 [developers/architecture/route-topology.md](../developers/architecture/route-topology.md)。
 
-![路由工作台：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](../assets/screenshots/routes.png)
+![路由工作台：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](../assets/screenshots/routes.webp)
 
 点击拓扑中的任一上游目标，即可在路由编辑页面集中配置客户端协议 / operation、路由组、上游映射、自定义参数，以及用户计费与供应成本倍率。
 
-![路由编辑页面：配置客户端入口、上游映射、自定义参数与计费倍率](../assets/screenshots/route-editor.png)
+![路由编辑页面：在一个弹窗内核对客户端入口、上游映射、目录标准价、默认计费倍率与每日覆盖时段](../assets/screenshots/route-editor.webp)
 
 常见做法：
 

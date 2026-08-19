@@ -20,6 +20,7 @@ export type ApiKeyContext = {
   budgetPeriod: string;
   budgetResetAt: string | null;
   metadata: Record<string, unknown> | null;
+  chargedCostFactors: string | null;
 };
 
 /** 日志中脱敏展示密钥前缀。 */
@@ -139,6 +140,7 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
     budgetPeriod: authResult.budgetPeriod,
     budgetResetAt: authResult.budgetResetAt,
     metadata: authResult.metadata,
+    chargedCostFactors: authResult.chargedCostFactors,
   });
   await next();
 });

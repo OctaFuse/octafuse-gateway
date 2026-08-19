@@ -7,7 +7,14 @@
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import Link from 'next/link';
-import { PlusIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
+import {
+  ClipboardDocumentIcon,
+  ClipboardDocumentListIcon,
+  DocumentTextIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
@@ -58,26 +65,20 @@ function keyStatusSwatchClass(status: string) {
   return 'bg-gray-300';
 }
 
-function formatUserBudgetOneLine(
-  key: GatewayApiKey,
-  currency: string,
-  timeZone: string,
-  noLimitLabel = 'no limit'
-): string {
-  const spent = formatGatewayMoneyCode(key.budget_spent, currency, 2);
-  const maxPart =
-    key.budget_max != null
-      ? formatGatewayMoneyCode(key.budget_max, currency, 2)
-      : noLimitLabel;
-  let line = `${spent} / ${maxPart}`;
-  const period = key.budget_period && key.budget_period !== 'none' ? key.budget_period : null;
-  if (period) {
-    line += ` · ${period}`;
-    if (key.budget_reset_at) {
-      line += ` · resets ${formatGatewayDateTime(key.budget_reset_at, timeZone)}`;
-    }
-  }
-  return line;
+function budgetUsageRatio(spent: number, max: number | null | undefined): number | null {
+  if (max == null || max <= 0) return null;
+  return Math.min(1, Math.max(0, spent / max));
+}
+
+function budgetBarClass(ratio: number): string {
+  if (ratio >= 1) return 'bg-red-500';
+  if (ratio >= 0.8) return 'bg-amber-500';
+  return 'bg-blue-500';
+}
+
+function displayMetadataSummary(summary: string): string {
+  const plan = /^plan_id:\s*(.+)$/.exec(summary);
+  return plan ? plan[1] : summary;
 }
 
 function ReadonlyRow({
@@ -132,7 +133,7 @@ export default function GatewayKeysPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
   const { currency: billingCurrency } = useBillingCurrency();
-  const { businessTimezone } = useGatewayDateTime();
+  const { businessTimezone, formatDate, formatTime } = useGatewayDateTime();
 
   const fetchKeys = useCallback(async () => {
     try {
@@ -172,19 +173,31 @@ export default function GatewayKeysPage() {
     setPage(1);
   };
 
+  const hasFilters = Boolean(filterEmail.trim() || filterUserId.trim());
+
+  const clearFilters = () => {
+    setFilterEmail('');
+    setFilterUserId('');
+    setPage(1);
+  };
+
   const SortableTh = ({ label, columnKey }: { label: string; columnKey: ApiKeyListSortKey }) => (
-    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+    <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
           toggleSort(columnKey);
         }}
-        className="hover:text-gray-700"
+        className={`inline-flex items-center gap-0.5 rounded px-0.5 hover:text-gray-800 ${
+          sortKey === columnKey ? 'text-gray-800' : 'text-gray-500'
+        }`}
         aria-label={`Sort by ${label}`}
       >
         {label}
-        {sortKey === columnKey && (sortDir === 'asc' ? ' ↑' : ' ↓')}
+        <span className={`text-[10px] leading-none ${sortKey === columnKey ? 'text-blue-600' : 'text-gray-300'}`}>
+          {sortKey === columnKey ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
       </button>
     </th>
   );
@@ -416,32 +429,25 @@ export default function GatewayKeysPage() {
   };
 
   const totalPages = Math.ceil(total / pageSize);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">{tCommon('loading')}</div>
-      </div>
-    );
-  }
+  const showSkeleton = isLoading && keys.length === 0;
+  const inputClass =
+    'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
   return (
     <div className="p-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{t('title')}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-gray-500">{t('subtitle')}</p>
         </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <PlusIcon className="h-5 w-5" />
-            {t('newKey')}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleCreate}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          <PlusIcon className="h-4 w-4" />
+          {t('newKey')}
+        </button>
       </div>
 
       {freshCreatedKey && (
@@ -450,69 +456,114 @@ export default function GatewayKeysPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="mb-4 flex justify-between items-center">
-        <div className="flex gap-4">
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{tCommon('email')}</label>
-            <input
-              type="text"
-              value={filterEmail}
-              onChange={(e) => { setFilterEmail(e.target.value); setPage(1); }}
-              placeholder={t('filters.emailPlaceholder')}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-gray-500">{tCommon('email')}</label>
+              <div className="relative">
+                <MagnifyingGlassIcon
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={filterEmail}
+                  onChange={(e) => { setFilterEmail(e.target.value); setPage(1); }}
+                  placeholder={t('filters.emailPlaceholder')}
+                  className={`${inputClass} pl-9`}
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('fields.userId')}</label>
+              <input
+                type="text"
+                value={filterUserId}
+                onChange={(e) => { setFilterUserId(e.target.value); setPage(1); }}
+                placeholder={t('filters.userIdPlaceholder')}
+                className={`${inputClass} font-mono text-xs`}
+                autoComplete="off"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('fields.userId')}</label>
-            <input
-              type="text"
-              value={filterUserId}
-              onChange={(e) => { setFilterUserId(e.target.value); setPage(1); }}
-              placeholder={t('filters.userIdPlaceholder')}
-              className="px-3 py-2 border border-gray-300 rounded-md text-xs w-72 font-mono"
-            />
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-          <span className="text-sm">{t('totalKeys', { count: total })}</span>
-          <span className="hidden sm:inline h-3 w-px bg-gray-200" aria-hidden />
-          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="flex flex-wrap items-center gap-3 pb-0.5 text-xs text-gray-500">
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+              >
+                <XMarkIcon className="h-3.5 w-3.5" aria-hidden />
+                {tCommon('clearFilters')}
+              </button>
+            )}
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500 shrink-0" aria-hidden />
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
               {tOptions('keyStatus.active')}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-400 shrink-0" aria-hidden />
+              <span className="inline-block h-2 w-2 rounded-full bg-gray-400" aria-hidden />
               {tOptions('keyStatus.revoked')}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gray-300 shrink-0" aria-hidden />
+              <span className="inline-block h-2 w-2 rounded-full bg-gray-300" aria-hidden />
               {t('statusOther')}
             </span>
-          </span>
+          </div>
         </div>
       </div>
 
-      {/* Keys Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
+        <table className="w-full min-w-[68rem] table-fixed">
+          <colgroup>
+            <col className="w-[22%]" />
+            <col className="w-[16%]" />
+            <col className="w-[10%]" />
+            <col className="w-[16%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
+          </colgroup>
+          <thead className="border-b border-gray-200 bg-gray-50/80">
             <tr>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.status')}</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.user')}</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.key')}</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.name')}</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('table.userBudget')}</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[10rem] max-w-xs">{t('table.apiKeyMetadata')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.user')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.key')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.name')}</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.userBudget')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.apiKeyMetadata')}</th>
               <SortableTh label={t('table.created')} columnKey="created_at" />
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.links')}</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-100">
+            {showSkeleton &&
+              Array.from({ length: 8 }).map((_, index) => (
+                <tr key={`skeleton-${index}`} className="animate-pulse">
+                  <td className="px-4 py-4"><div className="h-4 w-40 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-28 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-24 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-20 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-20 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-16 rounded bg-gray-100" /></td>
+                </tr>
+              ))}
             {keys.map((key) => {
-              const budgetLine = formatUserBudgetOneLine(key, billingCurrency, businessTimezone, tCommon('noLimit'));
               const meta = summarizeMetadata(key.metadata);
+              const revoked = key.status === 'revoked';
+              const ratio = budgetUsageRatio(key.budget_spent, key.budget_max);
+              const spentLabel = formatGatewayMoneyCode(key.budget_spent, billingCurrency, 2);
+              const maxLabel =
+                key.budget_max != null
+                  ? formatGatewayMoneyCode(key.budget_max, billingCurrency, 2)
+                  : tCommon('noLimit');
+              const periodActive = Boolean(key.budget_period && key.budget_period !== 'none');
+              const userHref = `/gateway/users/${encodeURIComponent(key.user_id)}`;
+              const logsHref = `/gateway/request-logs?api_key_id=${encodeURIComponent(key.id)}`;
+              const auditHref = `/gateway/audit-logs?api_key_id=${encodeURIComponent(key.id)}`;
               return (
               <tr
                 key={key.id}
@@ -524,57 +575,136 @@ export default function GatewayKeysPage() {
                   }
                 }}
                 tabIndex={0}
-                className="cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                className={`cursor-pointer transition-colors hover:bg-blue-50/40 focus:bg-blue-50/60 focus:outline-none ${
+                  revoked ? 'bg-gray-50/60' : ''
+                }`}
               >
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <span
-                    className={`inline-block w-2.5 h-2.5 rounded-sm shrink-0 ${keyStatusSwatchClass(key.status)}`}
-                    title={key.status}
-                    role="img"
-                    aria-label={`Status: ${key.status}`}
-                  />
+                <td className="px-4 py-3.5 overflow-hidden">
+                  <div className="flex min-w-0 items-start gap-2.5">
+                    <span
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${keyStatusSwatchClass(key.status)}`}
+                      title={key.status}
+                      role="img"
+                      aria-label={`Status: ${key.status}`}
+                    />
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Link
+                          href={userHref}
+                          onClick={(event) => event.stopPropagation()}
+                          className={`truncate text-sm font-medium hover:underline ${
+                            revoked ? 'text-gray-500' : 'text-blue-700'
+                          }`}
+                          title={t('links.openUserTitle')}
+                        >
+                          {key.user_email || tCommon('noData')}
+                        </Link>
+                        {revoked && (
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-600 ring-1 ring-inset ring-gray-200">
+                            {tOptions('keyStatus.revoked')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 truncate font-mono text-[11px] text-gray-400" title={key.user_id}>
+                        {key.user_id}
+                      </div>
+                    </div>
+                  </div>
                 </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{key.user_email || '—'}</div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono text-gray-900">{maskKey(key.key)}</span>
+                <td className="px-4 py-3.5 overflow-hidden">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="min-w-0 truncate font-mono text-sm text-gray-900" title={key.key}>
+                      {maskKey(key.key)}
+                    </span>
                     <button
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
                         copyToClipboard(key.key);
                       }}
-                      className="text-gray-400 hover:text-gray-600"
+                      className={`shrink-0 ${copiedKey === key.key ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
                       title={t('copyKey')}
                     >
                       <ClipboardDocumentIcon className="h-4 w-4" />
                     </button>
                   </div>
                 </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{key.name?.trim() ? key.name : '—'}</div>
+                <td className="px-4 py-3.5 overflow-hidden">
+                  {key.name?.trim() ? (
+                    <span className="block truncate text-sm text-gray-900" title={key.name}>{key.name}</span>
+                  ) : (
+                    <span className="text-gray-300">{tCommon('noData')}</span>
+                  )}
                 </td>
-                <td className="px-3 py-3 max-w-[20rem]">
-                  <div className="text-sm text-gray-900 truncate whitespace-nowrap" title={budgetLine}>
-                    {budgetLine}
-                  </div>
+                <td className="px-4 py-3.5 overflow-hidden">
+                  <Link
+                    href={userHref}
+                    onClick={(event) => event.stopPropagation()}
+                    className="block w-full text-right"
+                    title={t('links.openUserBudgetTitle')}
+                  >
+                    <div className="truncate text-sm tabular-nums text-gray-900">
+                      {spentLabel}
+                      <span className="text-gray-400"> / </span>
+                      <span className={key.budget_max == null ? 'text-gray-400' : 'text-gray-700'}>{maxLabel}</span>
+                    </div>
+                    {ratio != null ? (
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className={`h-full rounded-full ${budgetBarClass(ratio)}`}
+                          style={{ width: `${Math.max(ratio * 100, ratio > 0 ? 4 : 0)}%` }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="mt-1.5 h-1.5 rounded-full bg-gray-50" />
+                    )}
+                    {periodActive ? (
+                      <div className="mt-1 truncate text-[11px] capitalize text-gray-400">
+                        {key.budget_period}
+                        {key.budget_reset_at ? ` · ${formatDate(key.budget_reset_at)}` : ''}
+                      </div>
+                    ) : null}
+                  </Link>
                 </td>
-                <td className="px-3 py-3 max-w-xs">
+                <td className="px-4 py-3.5 overflow-hidden">
                   {meta.empty ? (
-                    <div className="text-sm text-gray-400">—</div>
+                    <span className="text-gray-300">{tCommon('noData')}</span>
                   ) : (
                     <span
-                      className={`block truncate text-xs font-mono ${meta.ok ? 'text-gray-700' : 'text-red-600'}`}
+                      className={`block truncate rounded-md bg-slate-50 px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                        meta.ok ? 'text-slate-700 ring-slate-200' : 'text-red-700 ring-red-200 bg-red-50'
+                      }`}
                       title={meta.summary}
                     >
-                      {meta.summary}
+                      {displayMetadataSummary(meta.summary)}
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
-                  {formatKeyTimestamp(key.created_at, businessTimezone)}
+                <td className="px-4 py-3.5 overflow-hidden whitespace-nowrap">
+                  <div className="truncate text-sm text-gray-700">{formatDate(key.created_at)}</div>
+                  <div className="truncate text-[11px] tabular-nums text-gray-400">{formatTime(key.created_at)}</div>
+                </td>
+                <td
+                  className="px-4 py-3.5 overflow-hidden text-right"
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => event.stopPropagation()}
+                >
+                  <div className="inline-flex items-center justify-end gap-1">
+                    <Link
+                      href={logsHref}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-blue-700"
+                      title={t('links.requestLogsTitle')}
+                    >
+                      <DocumentTextIcon className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      href={auditHref}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-blue-700"
+                      title={t('links.auditLogsTitle')}
+                    >
+                      <ClipboardDocumentListIcon className="h-4 w-4" />
+                    </Link>
+                  </div>
                 </td>
               </tr>
             );
@@ -582,36 +712,38 @@ export default function GatewayKeysPage() {
           </tbody>
         </table>
         </div>
-
-        {keys.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            {t('empty')}
+        {!showSkeleton && keys.length === 0 && (
+          <div className="px-4 py-16 text-center text-sm text-gray-500">{t('empty')}</div>
+        )}
+        {!showSkeleton && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-4 py-3">
+            <div className="text-sm text-gray-500">{t('totalKeys', { count: total })}</div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-40 hover:bg-gray-50"
+                >
+                  {tCommon('previous')}
+                </button>
+                <span className="min-w-[7rem] text-center text-sm text-gray-600">
+                  {tCommon('pageOf', { page, totalPages })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page === totalPages}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-40 hover:bg-gray-50"
+                >
+                  {tCommon('next')}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-4 flex justify-center gap-2">
-          <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          >
-            {tCommon('previous')}
-          </button>
-          <span className="px-4 py-2 text-sm text-gray-600">
-            {tCommon('pageOf', { page, totalPages })}
-          </span>
-          <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            disabled={page === totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-          >
-            {tCommon('next')}
-          </button>
-        </div>
-      )}
 
       {/* Create Modal */}
       {showModal && (
@@ -859,7 +991,9 @@ export default function GatewayKeysPage() {
                     </Link>
                   </ReadonlyRow>
                   <ReadonlyRow label={t('fields.userEmail')}>
-                    {selectedKey.user_email || '—'}
+                    <Link href={`/gateway/users/${encodeURIComponent(selectedKey.user_id)}`} className="text-sm text-blue-600 hover:underline break-all">
+                      {selectedKey.user_email || selectedKey.user_id}
+                    </Link>
                   </ReadonlyRow>
                   <div className="sm:col-span-2 grid gap-4 sm:grid-cols-2">
                     <ReadonlyRow label={t('fields.budgetReadonly')}>
@@ -894,6 +1028,12 @@ export default function GatewayKeysPage() {
                     className="font-medium text-blue-600 hover:text-blue-800"
                   >
                     {t('links.requestLogsForKey')}
+                  </a>
+                  <a
+                    href={`/gateway/audit-logs?api_key_id=${selectedKey.id}`}
+                    className="font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    {t('links.auditLogsForKey')}
                   </a>
                 </div>
               </div>

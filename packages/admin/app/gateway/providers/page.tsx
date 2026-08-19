@@ -50,7 +50,7 @@ function ProvidersContent() {
 				onFilterChange={state.setSelectedFilter}
 			/>
 
-			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+			<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 2xl:grid-cols-4">
 				<ProviderAddCard onImport={state.openImportModal} onCreate={state.handleCreate} />
 				{state.filteredProviders.map((provider) => (
 					<ProviderCard

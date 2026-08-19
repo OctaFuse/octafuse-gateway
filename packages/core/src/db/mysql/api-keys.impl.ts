@@ -71,6 +71,7 @@ function mapMyResolvedRow(
 		budgetPeriod: string;
 		budgetResetAt: string | null;
 		userMetadata: string | null;
+		userChargedCostFactors: string | null;
 	}
 ): ResolvedGatewayKeyRow {
 	const k = mapMyKeyRow(r);
@@ -78,6 +79,7 @@ function mapMyResolvedRow(
 		...k,
 		user_email: r.userEmail,
 		user_metadata: r.userMetadata,
+		user_charged_cost_factors: r.userChargedCostFactors ?? null,
 		budget_max: r.budgetMax == null ? null : parseMoney(r.budgetMax),
 		budget_base: parseMoney(r.budgetBase),
 		budget_spent: parseMoney(r.budgetSpent),
@@ -137,6 +139,7 @@ const resolvedCols = {
 	budgetPeriod: myUsersTable.budgetPeriod,
 	budgetResetAt: myUsersTable.budgetResetAt,
 	userMetadata: myUsersTable.metadata,
+	userChargedCostFactors: myUsersTable.chargedCostFactors,
 } as const;
 
 export function createMySqlApiKeysRepository(db: MySqlDatabaseClient): ApiKeysRepository {

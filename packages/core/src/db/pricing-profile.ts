@@ -128,6 +128,8 @@ export type PriceResolutionAuditSide = {
 		window: { start: string; end: string; factor: number } | null;
 	};
 	effective_factor?: number;
+	/** 路由 charged 之后的用户级折扣；未命中为 null */
+	user_charged_factor?: number | null;
 };
 
 const ZERO_BILLING_SNAPSHOT: BillingPriceSnapshot = {

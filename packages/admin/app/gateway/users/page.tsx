@@ -4,11 +4,12 @@
  * 网关用户列表：预算在 `users`；筛选与分页；跳转详情。
  */
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { summarizeChargedCostFactors } from '@/lib/summarize-charged-cost-factors';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { nextListSortStateWithAscToggle } from '@/lib/toggle-list-sort';
 import type { GatewayUserListItem } from '@/lib/types';
@@ -18,15 +19,58 @@ import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 type UserListSortKey = 'budget_spent' | 'budget_max' | 'budget_base' | 'budget_reset_at' | 'created_at';
 type SortDir = 'asc' | 'desc';
 
-/** 首列状态色块（实心）；悬停色块见完整 status 文案 */
-function statusSwatchClass(status: string): string {
-  if (status === 'active') return 'bg-emerald-500';
-  return 'bg-gray-400';
+function budgetUsageRatio(spent: number, max: number | null | undefined): number | null {
+  if (max == null || max <= 0) return null;
+  return Math.min(1, Math.max(0, spent / max));
 }
 
-function formatBudgetBase(value: number | null | undefined, currency: string): string {
-  if (value == null || value === 0) return '—';
-  return formatGatewayMoneyCode(value, currency, 2);
+function budgetBarClass(ratio: number): string {
+  if (ratio >= 1) return 'bg-red-500';
+  if (ratio >= 0.8) return 'bg-amber-500';
+  return 'bg-blue-500';
+}
+
+function displayMetadataSummary(summary: string): string {
+  const plan = /^plan_id:\s*(.+)$/.exec(summary);
+  return plan ? plan[1] : summary;
+}
+
+function periodLabel(
+  period: string | null | undefined,
+  labels: { daily: string; weekly: string; monthly: string }
+): string | null {
+  if (!period || period === 'none') return null;
+  if (period === 'daily' || period === 'weekly' || period === 'monthly') {
+    return labels[period];
+  }
+  return period;
+}
+
+function SummaryChip({
+  children,
+  title,
+  invalid,
+  onClick,
+}: {
+  children: ReactNode;
+  title: string;
+  invalid?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className={`flex w-full min-w-0 max-w-full items-center rounded-md px-2 py-1 text-left text-xs ring-1 ring-inset transition-colors hover:bg-white ${
+        invalid
+          ? 'bg-red-50 text-red-700 ring-red-200 hover:bg-red-50'
+          : 'bg-slate-50 text-slate-700 ring-slate-200 hover:ring-slate-300'
+      }`}
+    >
+      <span className="min-w-0 truncate font-medium">{children}</span>
+    </button>
+  );
 }
 
 export default function GatewayUsersPage() {
@@ -58,9 +102,10 @@ export default function GatewayUsersPage() {
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [metadataViewUser, setMetadataViewUser] = useState<GatewayUserListItem | null>(null);
+  const [factorsViewUser, setFactorsViewUser] = useState<GatewayUserListItem | null>(null);
   const [listError, setListError] = useState('');
   const { currency: billingCurrency } = useBillingCurrency();
-  const { formatDateTime } = useGatewayDateTime();
+  const { formatDateTime, formatDate, formatTime } = useGatewayDateTime();
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -106,6 +151,46 @@ export default function GatewayUsersPage() {
     setPage(1);
   };
 
+  const hasFilters = Boolean(
+    filterEmail.trim() || filterExternalSystem.trim() || filterExternalUserId.trim() || filterStatus
+  );
+
+  const clearFilters = () => {
+    setFilterEmail('');
+    setFilterExternalSystem('');
+    setFilterExternalUserId('');
+    setFilterStatus('');
+    setPage(1);
+  };
+
+  const SortButton = ({
+    label,
+    columnKey,
+  }: {
+    label: string;
+    columnKey: UserListSortKey;
+  }) => {
+    const active = sortKey === columnKey;
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleSort(columnKey);
+        }}
+        className={`inline-flex items-center gap-0.5 rounded px-0.5 hover:text-gray-800 ${
+          active ? 'text-gray-800' : 'text-gray-500'
+        }`}
+        aria-label={`Sort by ${label}`}
+      >
+        {label}
+        <span className={`text-[10px] leading-none ${active ? 'text-blue-600' : 'text-gray-300'}`}>
+          {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+        </span>
+      </button>
+    );
+  };
+
   const SortableTh = ({
     label,
     columnKey,
@@ -116,22 +201,11 @@ export default function GatewayUsersPage() {
     align?: 'left' | 'right';
   }) => (
     <th
-      className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase whitespace-nowrap ${
+      className={`px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap ${
         align === 'right' ? 'text-right' : 'text-left'
       }`}
     >
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleSort(columnKey);
-        }}
-        className={`hover:text-gray-700 ${align === 'right' ? 'inline-block' : ''}`}
-        aria-label={`Sort by ${label}`}
-      >
-        {label}
-        {sortKey === columnKey && (sortDir === 'asc' ? ' ↑' : ' ↓')}
-      </button>
+      <SortButton label={label} columnKey={columnKey} />
     </th>
   );
 
@@ -210,115 +284,200 @@ export default function GatewayUsersPage() {
     }
   };
 
-  if (isLoading && users.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-600">{tCommon('loading')}</div>
-      </div>
-    );
-  }
+  const statusFilterOptions: Array<{ value: string; label: string }> = [
+    { value: '', label: tCommon('all') },
+    { value: 'active', label: tOptions('userStatus.active') },
+    { value: 'disabled', label: tOptions('userStatus.disabled') },
+  ];
+  const showSkeleton = isLoading && users.length === 0;
+  const inputClass =
+    'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
   return (
     <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{t('title')}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-gray-500">{t('subtitle')}</p>
         </div>
         <button
           type="button"
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
-          <PlusIcon className="h-5 w-5" />
+          <PlusIcon className="h-4 w-4" />
           {t('newUser')}
         </button>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-4 justify-between">
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.email')}</label>
-            <input
-              type="text"
-              value={filterEmail}
-              onChange={(e) => { setFilterEmail(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm w-48"
-              placeholder={t('filters.contains')}
-            />
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.email')}</label>
+              <div className="relative">
+                <MagnifyingGlassIcon
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={filterEmail}
+                  onChange={(e) => { setFilterEmail(e.target.value); setPage(1); }}
+                  className={`${inputClass} pl-9`}
+                  placeholder={t('filters.emailPlaceholder')}
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.externalSystem')}</label>
+              <input
+                type="text"
+                value={filterExternalSystem}
+                onChange={(e) => { setFilterExternalSystem(e.target.value); setPage(1); }}
+                className={inputClass}
+                placeholder={t('filters.externalSystemPlaceholder')}
+                autoComplete="off"
+              />
+            </div>
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.externalUserId')}</label>
+              <input
+                type="text"
+                value={filterExternalUserId}
+                onChange={(e) => { setFilterExternalUserId(e.target.value); setPage(1); }}
+                className={inputClass}
+                placeholder={t('filters.externalUserIdPlaceholder')}
+                autoComplete="off"
+              />
+            </div>
+            <div className="min-w-0">
+              <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.status')}</label>
+              <div className="inline-flex w-full rounded-lg bg-gray-100 p-0.5">
+                {statusFilterOptions.map((option) => {
+                  const selected = filterStatus === option.value;
+                  return (
+                    <button
+                      key={option.value || 'all'}
+                      type="button"
+                      onClick={() => { setFilterStatus(option.value); setPage(1); }}
+                      className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium capitalize transition-colors ${
+                        selected
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-800'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.externalSystem')}</label>
-            <input
-              type="text"
-              value={filterExternalSystem}
-              onChange={(e) => { setFilterExternalSystem(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm w-40"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.externalUserId')}</label>
-            <input
-              type="text"
-              value={filterExternalUserId}
-              onChange={(e) => { setFilterExternalUserId(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm w-40"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.status')}</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            >
-              <option value="">{tCommon('all')}</option>
-              <option value="active">{tOptions('userStatus.active')}</option>
-              <option value="disabled">{tOptions('userStatus.disabled')}</option>
-            </select>
-          </div>
+          {hasFilters && (
+            <div className="flex shrink-0 items-end pb-0.5">
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+              >
+                <XMarkIcon className="h-3.5 w-3.5" aria-hidden />
+                {tCommon('clearFilters')}
+              </button>
+            </div>
+          )}
         </div>
-        <div className="text-sm text-gray-500 self-end">{t('totalUsers', { count: total })}</div>
       </div>
 
       {listError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">{listError}</div>
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{listError}</div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
+        <table className="w-full min-w-[68rem] table-fixed">
+          <colgroup>
+            <col className="w-[22%]" />
+            <col className="w-[16%]" />
+            <col className="w-[8%]" />
+            <col className="w-[10%]" />
+            <col className="w-[8%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
+          </colgroup>
+          <thead className="border-b border-gray-200 bg-gray-50/80">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                {t('table.statusEmail')}
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">
+                {t('table.user')}
               </th>
-              <SortableTh label={t('table.spent')} columnKey="budget_spent" align="right" />
-              <SortableTh label={t('table.max')} columnKey="budget_max" align="right" />
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
+                <div className="inline-flex items-center justify-end gap-1.5">
+                  <span className="text-gray-400">{t('table.budget')}</span>
+                  <SortButton label={t('table.spent')} columnKey="budget_spent" />
+                  <span className="text-gray-300">/</span>
+                  <SortButton label={t('table.max')} columnKey="budget_max" />
+                </div>
+              </th>
               <SortableTh label={t('table.base')} columnKey="budget_base" align="right" />
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
-                {t('table.period')}
-              </th>
-              <SortableTh label={t('table.resetAt')} columnKey="budget_reset_at" />
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+              <SortableTh label={t('table.cycle')} columnKey="budget_reset_at" />
+              <th
+                className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap"
+                title={t('table.keysActiveOfTotal')}
+              >
                 {t('table.keys')}
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap max-w-xs">
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">
                 {t('table.metadata')}
+              </th>
+              <th
+                className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap"
+                title={t('help.chargedCostFactors')}
+              >
+                {t('table.chargedCostFactors')}
               </th>
               <SortableTh label={t('table.created')} columnKey="created_at" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-100">
+            {showSkeleton &&
+              Array.from({ length: 8 }).map((_, index) => (
+                <tr key={`skeleton-${index}`} className="animate-pulse">
+                  <td className="px-4 py-4"><div className="h-4 w-48 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-28 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-16 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-20 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-8 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-20 rounded bg-gray-100" /></td>
+                </tr>
+              ))}
             {users.map((u) => {
               const detailHref = `/gateway/users/${encodeURIComponent(u.id)}`;
               const meta = summarizeMetadata(u.metadata);
+              const factors = summarizeChargedCostFactors(u.charged_cost_factors);
+              const disabled = u.status !== 'active';
+              const periodActive = Boolean(u.budget_period && u.budget_period !== 'none');
+              const hasBase = u.budget_base != null && u.budget_base !== 0;
+              const hasCycle = periodActive || Boolean(u.budget_reset_at);
+              const ratio = budgetUsageRatio(u.budget_spent, u.budget_max);
+              const spentLabel = formatGatewayMoneyCode(u.budget_spent, billingCurrency, 2);
+              const maxLabel =
+                u.budget_max != null
+                  ? formatGatewayMoneyCode(u.budget_max, billingCurrency, 2)
+                  : tCommon('noLimit');
+              const externalLabel = [u.external_system, u.external_user_id].filter(Boolean).join(' · ');
               return (
               <tr
                 key={u.id}
                 role="link"
                 tabIndex={0}
                 aria-label={`User detail: ${u.email || u.id}`}
-                className="hover:bg-gray-50 cursor-pointer"
+                className={`cursor-pointer transition-colors hover:bg-blue-50/40 focus:bg-blue-50/60 focus:outline-none ${
+                  disabled ? 'bg-gray-50/60' : ''
+                }`}
                 onClick={() => router.push(detailHref)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -327,100 +486,173 @@ export default function GatewayUsersPage() {
                   }
                 }}
               >
-                <td className="px-4 py-3 text-sm min-w-[12rem]">
-                  <div className="flex items-start gap-2 min-w-0">
+                <td className="px-4 py-3.5 overflow-hidden">
+                  <div className="flex min-w-0 items-start gap-2.5">
                     <span
-                      className={`inline-block w-2.5 h-2.5 rounded-sm shrink-0 mt-1 ${statusSwatchClass(u.status)}`}
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                        disabled ? 'bg-gray-400' : 'bg-emerald-500'
+                      }`}
                       title={u.status}
                       role="img"
                       aria-label={`Status: ${u.status}`}
                     />
-                    <div className="min-w-0 truncate font-medium text-gray-900" title={u.email || undefined}>
-                      {u.email || '—'}
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className={`truncate text-sm font-medium ${disabled ? 'text-gray-500' : 'text-gray-900'}`}
+                          title={u.email || undefined}
+                        >
+                          {u.email || tCommon('noData')}
+                        </span>
+                        {disabled && (
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-600 ring-1 ring-inset ring-gray-200">
+                            {tOptions('userStatus.disabled')}
+                          </span>
+                        )}
+                      </div>
+                      {externalLabel ? (
+                        <div className="mt-0.5 truncate font-mono text-[11px] text-gray-400" title={externalLabel}>
+                          {externalLabel}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
-                  {formatGatewayMoneyCode(u.budget_spent, billingCurrency, 2)}
+                <td className="px-4 py-3.5 overflow-hidden">
+                  <div className="w-full">
+                    <div className="truncate text-right text-sm tabular-nums text-gray-900">
+                      {spentLabel}
+                      <span className="text-gray-400"> / </span>
+                      <span className={u.budget_max == null ? 'text-gray-400' : 'text-gray-700'}>{maxLabel}</span>
+                    </div>
+                    {ratio != null ? (
+                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className={`h-full rounded-full ${budgetBarClass(ratio)}`}
+                          style={{ width: `${Math.max(ratio * 100, ratio > 0 ? 4 : 0)}%` }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="mt-1.5 h-1.5 rounded-full bg-gray-50" />
+                    )}
+                  </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
-                  {u.budget_max != null
-                    ? formatGatewayMoneyCode(u.budget_max, billingCurrency, 2)
-                    : tCommon('noLimit')}
+                <td className="px-4 py-3.5 overflow-hidden text-right text-sm tabular-nums whitespace-nowrap">
+                  {hasBase ? (
+                    <span className="text-gray-900">{formatGatewayMoneyCode(u.budget_base, billingCurrency, 2)}</span>
+                  ) : (
+                    <span className="text-gray-300">{tCommon('noData')}</span>
+                  )}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
-                  {formatBudgetBase(u.budget_base, billingCurrency)}
+                <td className="px-4 py-3.5 overflow-hidden">
+                  {hasCycle ? (
+                    <div className="min-w-0 space-y-0.5">
+                      {periodActive ? (
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium capitalize text-slate-700">
+                          {periodLabel(u.budget_period, {
+                            daily: tOptions('budgetPeriod.daily'),
+                            weekly: tOptions('budgetPeriod.weekly'),
+                            monthly: tOptions('budgetPeriod.monthly'),
+                          }) ?? u.budget_period}
+                        </span>
+                      ) : null}
+                      {u.budget_reset_at ? (
+                        <div className="truncate text-xs text-gray-500" title={formatDateTime(u.budget_reset_at)}>
+                          {formatDate(u.budget_reset_at)}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className="text-gray-300">{tCommon('noData')}</span>
+                  )}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                  {u.budget_period && u.budget_period !== 'none' ? u.budget_period : '—'}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                  {u.budget_reset_at ? formatDateTime(u.budget_reset_at) : '—'}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-900 text-right tabular-nums whitespace-nowrap">
-                  {u.active_keys_count}
+                <td className="px-4 py-3.5 overflow-hidden text-right">
+                  <span
+                    className="inline-flex items-center justify-end tabular-nums text-sm"
+                    title={t('table.keysActiveOfTotal')}
+                  >
+                    <span className={u.active_keys_count === 0 && (u.keys_count ?? 0) > 0 ? 'text-gray-400' : 'text-gray-900'}>
+                      {u.active_keys_count}
+                    </span>
+                    <span className="text-gray-400"> / </span>
+                    <span className="text-gray-700">{u.keys_count ?? u.active_keys_count}</span>
+                  </span>
                 </td>
                 <td
-                  className="px-4 py-3 max-w-xs"
+                  className="px-4 py-3.5 overflow-hidden"
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
                   {meta.empty ? (
-                    <div className="text-sm text-gray-400">—</div>
+                    <span className="text-gray-300">{tCommon('noData')}</span>
                   ) : (
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className={`block truncate text-xs font-mono ${meta.ok ? 'text-gray-700' : 'text-red-600'}`}
-                        title={meta.summary}
-                      >
-                        {meta.summary}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setMetadataViewUser(u)}
-                        className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
-                      >
-                        {tCommon('details')}
-                      </button>
-                    </div>
+                    <SummaryChip
+                      title={meta.summary}
+                      invalid={!meta.ok}
+                      onClick={() => setMetadataViewUser(u)}
+                    >
+                      {displayMetadataSummary(meta.summary)}
+                    </SummaryChip>
                   )}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                  {formatDateTime(u.created_at)}
+                <td
+                  className="px-4 py-3.5 overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  {factors.empty ? (
+                    <span className="text-gray-300">{tCommon('noData')}</span>
+                  ) : (
+                    <SummaryChip
+                      title={factors.summary}
+                      onClick={() => setFactorsViewUser(u)}
+                    >
+                      {factors.summary}
+                    </SummaryChip>
+                  )}
+                </td>
+                <td className="px-4 py-3.5 overflow-hidden whitespace-nowrap">
+                  <div className="truncate text-sm text-gray-700">{formatDate(u.created_at)}</div>
+                  <div className="truncate text-[11px] tabular-nums text-gray-400">{formatTime(u.created_at)}</div>
                 </td>
               </tr>
               );
             })}
           </tbody>
         </table>
-        {users.length === 0 && (
-          <div className="text-center py-12 text-gray-500">{t('emptyFiltered')}</div>
+        </div>
+        {!showSkeleton && users.length === 0 && (
+          <div className="px-4 py-16 text-center text-sm text-gray-500">{t('emptyFiltered')}</div>
+        )}
+        {!showSkeleton && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-4 py-3">
+            <div className="text-sm text-gray-500">{t('totalUsers', { count: total })}</div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-40 hover:bg-gray-50"
+                >
+                  {tCommon('previous')}
+                </button>
+                <span className="min-w-[7rem] text-center text-sm text-gray-600">
+                  {tCommon('pageOf', { page, totalPages })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 disabled:opacity-40 hover:bg-gray-50"
+                >
+                  {tCommon('next')}
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
-
-      {totalPages > 1 && (
-        <div className="mt-4 flex justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 hover:bg-gray-50"
-          >
-            {tCommon('previous')}
-          </button>
-          <span className="px-4 py-2 text-sm text-gray-600">
-            {tCommon('pageOf', { page, totalPages })}
-          </span>
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm disabled:opacity-50 hover:bg-gray-50"
-          >
-            {tCommon('next')}
-          </button>
-        </div>
-      )}
 
       {showCreate && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -599,6 +831,49 @@ export default function GatewayUsersPage() {
                 <button
                   type="button"
                   onClick={() => setMetadataViewUser(null)}
+                  className="px-3 py-1.5 bg-gray-800 text-white rounded-md text-sm hover:bg-gray-900"
+                >
+                  {tCommon('close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {factorsViewUser && (() => {
+        const f = summarizeChargedCostFactors(factorsViewUser.charged_cost_factors);
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+              <div className="px-6 py-4 border-b flex justify-between items-center">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900">{t('fields.chargedCostFactors')}</h2>
+                  <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={factorsViewUser.id}>
+                    {[factorsViewUser.email, factorsViewUser.id].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFactorsViewUser(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                {f.empty ? (
+                  <div className="text-sm text-gray-500">{t('chargedCostFactors.none')}</div>
+                ) : (
+                  <pre className="whitespace-pre-wrap break-all rounded-md bg-gray-50 border border-gray-200 p-4 text-xs font-mono text-gray-800">
+                    {f.full}
+                  </pre>
+                )}
+              </div>
+              <div className="px-6 py-3 border-t flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setFactorsViewUser(null)}
                   className="px-3 py-1.5 bg-gray-800 text-white rounded-md text-sm hover:bg-gray-900"
                 >
                   {tCommon('close')}

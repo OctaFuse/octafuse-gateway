@@ -11,6 +11,7 @@ export interface InsertUserParams {
 	budgetResetAt?: string | null;
 	status?: string;
 	metadata?: string | null;
+	chargedCostFactors?: string | null;
 	externalSystem?: string | null;
 	externalUserId?: string | null;
 }

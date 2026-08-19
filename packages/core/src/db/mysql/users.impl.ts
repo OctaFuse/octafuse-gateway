@@ -48,6 +48,7 @@ function mapMyUserRow(r: {
 	budgetResetAt: string | null;
 	status: string;
 	metadata: string | null;
+	chargedCostFactors: string | null;
 	externalSystem: string | null;
 	externalUserId: string | null;
 	createdAt: string;
@@ -63,6 +64,7 @@ function mapMyUserRow(r: {
 		budget_reset_at: r.budgetResetAt,
 		status: r.status,
 		metadata: r.metadata,
+		charged_cost_factors: r.chargedCostFactors ?? null,
 		external_system: r.externalSystem,
 		external_user_id: r.externalUserId,
 		created_at: r.createdAt,
@@ -149,6 +151,7 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 				budgetResetAt: params.budgetResetAt ?? null,
 				status: params.status ?? 'active',
 				metadata: params.metadata ?? null,
+				chargedCostFactors: params.chargedCostFactors ?? null,
 				externalSystem: params.externalSystem ?? null,
 				externalUserId: params.externalUserId ?? null,
 				createdAt: now,
@@ -223,6 +226,17 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			if (!existing[0]) return false;
 			const now = new Date().toISOString();
 			await drizzle.update(myUsersTable).set({ metadata: metadataJson, updatedAt: now }).where(eq(myUsersTable.id, id));
+			return true;
+		},
+
+		async setUserChargedCostFactorsById(id: string, chargedCostFactorsJson: string | null): Promise<boolean> {
+			const existing = await drizzle.select({ id: myUsersTable.id }).from(myUsersTable).where(eq(myUsersTable.id, id)).limit(1);
+			if (!existing[0]) return false;
+			const now = new Date().toISOString();
+			await drizzle
+				.update(myUsersTable)
+				.set({ chargedCostFactors: chargedCostFactorsJson, updatedAt: now })
+				.where(eq(myUsersTable.id, id));
 			return true;
 		},
 
