@@ -14,7 +14,7 @@ export function ProviderAddCard(props: ProviderAddCardProps) {
 	const tCommon = useTranslations('common');
 
 	return (
-		<article className="flex h-full min-h-[8.5rem] flex-col justify-between rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/50 p-3.5 shadow-sm">
+		<article className="flex h-full min-h-[8.5rem] flex-col justify-between rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/50 p-4 shadow-sm">
 			<div className="flex items-center gap-2.5">
 				<span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
 					<PlusIcon className="h-5 w-5" aria-hidden />
