@@ -1477,8 +1477,8 @@
 			"userSystem": "ユーザー · システム",
 			"model": "モデル",
 			"route": "Route",
-			"stream": "ストリーム",
-			"tokens": "Token",
+			"tags": "タグ",
+			"usage": "使用量",
 			"cost": "コスト（{currency}）",
 			"profit": "利益（{currency}）"
 		},
@@ -1490,13 +1490,41 @@
 			"inbound": "入口",
 			"upstream": "上流"
 		},
-		"stream": {
-			"yes": "ストリーム"
+		"tags": {
+			"kind": {
+				"llm": "LLM",
+				"image": "画像",
+				"tts": "TTS",
+				"asr": "ASR",
+				"tool": "ツール"
+			},
+			"stream": "ストリーム",
+			"realtime": "リアルタイム",
+			"reasoning": "推論",
+			"failover": "切替"
+		},
+		"usage": {
+			"tokens": "tok",
+			"images": "枚",
+			"seconds": "秒",
+			"characters": "文字"
 		},
 		"titles": {
 			"model": "Gateway モデル名、プロトコル、Route Group",
 			"route": "入口：プロトコルエンドポイント、モデル ID、Route Group。上流：プロトコルエンドポイント、モデル ID、プロバイダー",
-			"stream": "クライアントがストリーミング応答を要求したかどうか",
+			"tags": "リクエスト特性：モデル種別、ストリーム、推論、フェイルオーバー",
+			"usage": "このリクエストの課金使用量。モデルにより Token、枚数、秒数、文字数のいずれか",
+			"tag": {
+				"llm": "テキスト / マルチモーダル対話モデル",
+				"image": "画像生成",
+				"tts": "音声合成",
+				"asr": "音声認識",
+				"tool": "Gateway エージェントツール",
+				"stream": "クライアントがストリーミング応答を要求した",
+				"realtime": "リアルタイムセッション",
+				"reasoning": "推論 Token または推論段階の TTFT",
+				"failover": "上流の失敗後に切り替えが発生した"
+			},
 			"cost": "請求（C）と仕入コスト（M）；標準カタログ価格は詳細で確認できます",
 			"profit": "請求額 − 計量額（リクエスト単位）",
 			"rowDetail": "クリックして料金監査とリクエスト / usage Body の表示を切り替え",

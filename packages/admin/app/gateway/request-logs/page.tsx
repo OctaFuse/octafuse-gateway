@@ -18,7 +18,12 @@ import { proxyToolPath } from '@/lib/invoke-kind';
 import { UPSTREAM_PROTOCOLS } from '@/lib/upstream-protocol';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { requestLogProtocolPath, requestSurfacePath } from '../routes/route-utils';
-import { isRequestLogStreaming, parseGeminiWireAction } from './request-log-display';
+import {
+  parseGeminiWireAction,
+  requestLogFeatureTags,
+  type RequestLogFeatureKind,
+  type RequestLogFeatureTag,
+} from './request-log-display';
 import {
   createRangeValue,
   DEFAULT_GATEWAY_TIME_RANGE_PRESET,
@@ -164,6 +169,14 @@ export default function GatewayRequestLogsPage() {
       filterProtocol,
     ]
   );
+
+  const modelById = useMemo(() => {
+    const map = new Map<string, ModelListItem>();
+    for (const model of modelCatalog) {
+      map.set(model.id, model);
+    }
+    return map;
+  }, [modelCatalog]);
 
   const modelSelectOptions = useMemo(() => {
     const rows = [...modelCatalog]
@@ -356,56 +369,47 @@ export default function GatewayRequestLogsPage() {
     return `×${ratio.toLocaleString('en-US', { maximumFractionDigits: 3 })}`;
   };
 
-  /** Tokens：默认一行 input/output；存在 cache 时补充第二行；按张/按秒保持单行。 */
-  const renderTokensCell = (log: GatewayRequestLog) => {
+  const renderUsageValue = (value: string, unit: string, title: string) => (
+    <div className="leading-tight" title={title}>
+      <div className="inline-flex items-baseline gap-1 text-gray-900">
+        <span className="tabular-nums">{value}</span>
+        <span className="text-[10px] font-medium text-gray-400">{unit}</span>
+      </div>
+    </div>
+  );
+
+  /** 用量：按计费种类展示 Token / 张数 / 秒 / 字符；Token 行在有 cache 时补第二行。 */
+  const renderUsageCell = (log: GatewayRequestLog) => {
     if (log.billing_kind === 'image_per_image') {
       const inN = log.input_image_count ?? 0;
       const outN = log.output_image_count ?? 0;
-      const line =
-        inN > 0 && outN > 0
-          ? `${inN}×${outN} img`
-          : `${inN + outN} ${inN + outN === 1 ? 'image' : 'images'}`;
-      return (
-        <div className="leading-tight">
-          <div className="text-gray-900 tabular-nums" title={t('titles.imagePerImageUsage')}>
-            {line}
-          </div>
-        </div>
-      );
+      const value = inN > 0 && outN > 0 ? `${inN}×${outN}` : `${inN + outN}`;
+      return renderUsageValue(value, t('usage.images'), t('titles.imagePerImageUsage'));
     }
     if (log.billing_kind === 'audio_per_second') {
       const secs = log.audio_duration_seconds;
-      const line =
+      const value =
         secs != null && Number.isFinite(secs)
-          ? `${Number(secs).toLocaleString('en-US', { maximumFractionDigits: 3 })} s`
+          ? Number(secs).toLocaleString('en-US', { maximumFractionDigits: 3 })
           : '—';
-      return (
-        <div className="leading-tight">
-          <div className="text-gray-900 tabular-nums" title={t('titles.audioPerSecondUsage')}>
-            {line}
-          </div>
-        </div>
-      );
+      return renderUsageValue(value, t('usage.seconds'), t('titles.audioPerSecondUsage'));
     }
     if (log.billing_kind === 'audio_per_character') {
       const characters = log.audio_characters;
-      const line =
+      const value =
         characters != null && Number.isFinite(characters)
-          ? `${Number(characters).toLocaleString()} chars`
+          ? Number(characters).toLocaleString()
           : '—';
-      return (
-        <div className="leading-tight">
-          <div className="text-gray-900 tabular-nums" title={t('titles.audioPerCharacterUsage')}>
-            {line}
-          </div>
-        </div>
-      );
+      return renderUsageValue(value, t('usage.characters'), t('titles.audioPerCharacterUsage'));
     }
     const hasCache = log.cache_read_tokens > 0 || log.cache_write_tokens > 0;
     return (
       <div className="leading-tight space-y-0.5">
-        <div className="text-gray-900 tabular-nums" title={t('titles.inputOutputTokens')}>
-          {log.input_tokens} / {log.output_tokens}
+        <div className="inline-flex items-baseline gap-1 text-gray-900" title={t('titles.inputOutputTokens')}>
+          <span className="tabular-nums">
+            {log.input_tokens} / {log.output_tokens}
+          </span>
+          <span className="text-[10px] font-medium text-gray-400">{t('usage.tokens')}</span>
         </div>
         {hasCache ? (
           <div className="text-gray-400 tabular-nums" title={t('titles.cacheTokens')}>
@@ -496,6 +500,7 @@ export default function GatewayRequestLogsPage() {
 
   const renderRouteLeg = (opts: {
     label: string;
+    labelClass: string;
     path: string;
     pathTitle?: string;
     modelId: string;
@@ -504,43 +509,43 @@ export default function GatewayRequestLogsPage() {
     providerTitle?: string;
     group?: string;
   }) => (
-    <>
-      <span className="shrink-0 text-[10px] font-semibold text-slate-400">
+    <div className="flex max-w-full items-center gap-1.5">
+      <span className={`shrink-0 text-[10px] font-semibold leading-4 ${opts.labelClass}`}>
         {opts.label}
       </span>
-      <div className="flex min-w-0 items-center gap-1.5">
+      <span
+        className="shrink-0 max-w-[11rem] truncate rounded bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] leading-4 text-gray-500 ring-1 ring-inset ring-gray-200/80"
+        title={opts.pathTitle || opts.path || undefined}
+      >
+        {opts.path || '—'}
+      </span>
+      {opts.modelId ? (
         <span
-          className="shrink-0 max-w-[55%] truncate font-mono text-[11px] text-gray-700"
-          title={opts.pathTitle || opts.path || undefined}
+          className="min-w-0 truncate font-mono text-[11px] font-medium text-gray-900"
+          title={opts.modelTitle || opts.modelId}
         >
-          {opts.path || '—'}
+          {opts.modelId}
         </span>
-        {opts.modelId ? (
-          <span
-            className="min-w-0 truncate font-mono text-[11px] font-medium text-gray-900"
-            title={opts.modelTitle || opts.modelId}
-          >
-            {opts.modelId}
-          </span>
-        ) : null}
-        {opts.provider ? (
-          <span
-            className="inline-flex shrink-0 max-w-[40%] items-center truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-slate-600"
-            title={opts.providerTitle || opts.provider}
-          >
-            {opts.provider}
-          </span>
-        ) : null}
-        {opts.group ? (
-          <span
-            className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-4 ${routeGroupBadgeClass(opts.group)}`}
-            title={`route_group: ${opts.group}`}
-          >
-            @{opts.group}
-          </span>
-        ) : null}
-      </div>
-    </>
+      ) : (
+        <span className="text-[11px] text-gray-300">—</span>
+      )}
+      {opts.provider ? (
+        <span
+          className="inline-flex shrink-0 items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-sky-800 ring-1 ring-inset ring-sky-200/90"
+          title={opts.providerTitle || opts.provider}
+        >
+          {opts.provider}
+        </span>
+      ) : null}
+      {opts.group ? (
+        <span
+          className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-4 ${routeGroupBadgeClass(opts.group)}`}
+          title={`route_group: ${opts.group}`}
+        >
+          @{opts.group}
+        </span>
+      ) : null}
+    </div>
   );
 
   /** Route 列：入站（协议端点 + model_id + 路由组）/ 上游（协议端点 + 上游 model id + provider）。 */
@@ -592,9 +597,10 @@ export default function GatewayRequestLogsPage() {
       : undefined;
 
     return (
-      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-1.5 gap-y-0.5 leading-tight">
+      <div className="flex w-max max-w-[40rem] flex-col gap-1 leading-tight">
         {renderRouteLeg({
           label: t('route.inbound'),
+          labelClass: 'text-blue-600',
           path: inboundPath,
           pathTitle: inboundPathTitle,
           modelId: inboundModelId,
@@ -603,12 +609,56 @@ export default function GatewayRequestLogsPage() {
         })}
         {renderRouteLeg({
           label: t('route.upstream'),
+          labelClass: 'text-amber-600',
           path: upstreamPath,
           pathTitle: upstreamPathTitle,
           modelId: upstreamModelId,
           modelTitle: upstreamTitle,
           provider: upstreamProvider,
           providerTitle: upstreamProviderTitle,
+        })}
+      </div>
+    );
+  };
+
+  const featureKindClass = (kind: RequestLogFeatureKind): string => {
+    if (kind === 'image') return 'bg-violet-50 text-violet-700 ring-violet-200';
+    if (kind === 'tts') return 'bg-amber-50 text-amber-800 ring-amber-200';
+    if (kind === 'asr') return 'bg-orange-50 text-orange-800 ring-orange-200';
+    if (kind === 'tool') return 'bg-indigo-50 text-indigo-700 ring-indigo-200';
+    return 'bg-slate-50 text-slate-600 ring-slate-200';
+  };
+
+  const featureTagClass = (tag: RequestLogFeatureTag): string => {
+    if (tag.key === 'kind') return featureKindClass(tag.kind);
+    if (tag.key === 'stream') return 'bg-sky-50 text-sky-700 ring-sky-200';
+    if (tag.key === 'realtime') return 'bg-cyan-50 text-cyan-800 ring-cyan-200';
+    if (tag.key === 'reasoning') return 'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200';
+    return 'bg-rose-50 text-rose-700 ring-rose-200';
+  };
+
+  const featureTagLabel = (tag: RequestLogFeatureTag): string => {
+    if (tag.key === 'kind') return t(`tags.kind.${tag.kind}`);
+    return t(`tags.${tag.key}`);
+  };
+
+  const renderFeatureTags = (log: GatewayRequestLog) => {
+    const catalog = log.model_id ? modelById.get(log.model_id) : undefined;
+    const tags = requestLogFeatureTags(log, catalog);
+    if (tags.length === 0) return <span className="text-gray-400">—</span>;
+    return (
+      <div className="flex items-center gap-1 whitespace-nowrap">
+        {tags.map((tag) => {
+          const key = tag.key === 'kind' ? `kind-${tag.kind}` : tag.key;
+          return (
+            <span
+              key={key}
+              className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${featureTagClass(tag)}`}
+              title={t(`titles.tag.${tag.key === 'kind' ? tag.kind : tag.key}`)}
+            >
+              {featureTagLabel(tag)}
+            </span>
+          );
         })}
       </div>
     );
@@ -780,23 +830,26 @@ export default function GatewayRequestLogsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('headers.statusTime')}</th>
+                <th className="w-56 max-w-56 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('headers.statusTime')}</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('headers.userSystem')}</th>
                 <th
                   scope="col"
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[16rem] max-w-md"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[40rem]"
                   title={t('titles.route')}
                 >
                   {t('headers.route')}
                 </th>
                 <th
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                  title={t('titles.stream')}
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[9.5rem]"
+                  title={t('titles.tags')}
                 >
-                  {t('headers.stream')}
+                  {t('headers.tags')}
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                  {t('headers.tokens')}
+                <th
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  title={t('titles.usage')}
+                >
+                  {t('headers.usage')}
                 </th>
                 <th
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
@@ -837,8 +890,8 @@ export default function GatewayRequestLogsPage() {
                     aria-expanded={detailLogId === log.id}
                     title={t('titles.rowDetail')}
                   >
-                    <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600 leading-tight">
-                      <div className="flex items-center gap-2">
+                    <td className="w-56 max-w-56 px-3 py-2 text-xs text-gray-600 leading-tight">
+                      <div className="flex items-center gap-1.5">
                         <span
                           className={`inline-block w-2.5 h-2.5 rounded-sm shrink-0 ${statusSwatchClass(log.status)}`}
                           title={log.status}
@@ -846,14 +899,16 @@ export default function GatewayRequestLogsPage() {
                           aria-label={`Status: ${log.status}`}
                         />
                         <div className="min-w-0">
-                          <div>{formatDate(log.created_at)}</div>
+                          <div className="truncate tabular-nums" title={formatDate(log.created_at)}>
+                            {formatDate(log.created_at)}
+                          </div>
                           <div
-                            className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-400 tabular-nums"
+                            className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-400 tabular-nums"
                             title={formatTtftListLine(log).title ?? (log.first_token_ms != null ? `TTFT ${formatLatencyMs(log.first_token_ms)}` : undefined)}
                           >
-                            <span>{formatLatencyMs(log.latency_ms)}</span>
+                            <span className="shrink-0">{formatLatencyMs(log.latency_ms)}</span>
                             <span aria-hidden>·</span>
-                            <span>{formatTtftListLine(log).text}</span>
+                            <span className="truncate">{formatTtftListLine(log).text}</span>
                           </div>
                         </div>
                         <ChevronRightIcon
@@ -865,7 +920,7 @@ export default function GatewayRequestLogsPage() {
                       </div>
                       {log.status === 'error' && log.error_message?.trim() ? (
                         <div
-                          className="mt-1 max-w-[18rem] truncate text-[11px] leading-snug text-red-600"
+                          className="mt-1 truncate text-[11px] leading-snug text-red-600"
                           title={log.error_message}
                         >
                           {log.error_message.trim()}
@@ -885,23 +940,14 @@ export default function GatewayRequestLogsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs max-w-md">
+                    <td className="px-3 py-2 text-xs max-w-[40rem]">
                       {renderRouteCell(log)}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-xs">
-                      {isRequestLogStreaming(log) ? (
-                        <span
-                          className="inline-flex items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 ring-1 ring-inset ring-sky-200"
-                          title={t('titles.stream')}
-                        >
-                          {t('stream.yes')}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
+                    <td className="px-3 py-2 text-xs whitespace-nowrap">
+                      {renderFeatureTags(log)}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-600 leading-tight">
-                      {renderTokensCell(log)}
+                      {renderUsageCell(log)}
                     </td>
                     <td className="px-3 py-2 text-xs whitespace-nowrap">
                       {renderCostCell(standardCost, chargedCost, meteredCost)}

@@ -1477,8 +1477,8 @@
 			"userSystem": "User · System",
 			"model": "Model",
 			"route": "Route",
-			"stream": "Stream",
-			"tokens": "Tokens",
+			"tags": "Tags",
+			"usage": "Usage",
 			"cost": "Cost ({currency})",
 			"profit": "Profit ({currency})"
 		},
@@ -1490,13 +1490,41 @@
 			"inbound": "Inbound",
 			"upstream": "Upstream"
 		},
-		"stream": {
-			"yes": "Stream"
+		"tags": {
+			"kind": {
+				"llm": "LLM",
+				"image": "Image",
+				"tts": "TTS",
+				"asr": "ASR",
+				"tool": "Tool"
+			},
+			"stream": "Stream",
+			"realtime": "Realtime",
+			"reasoning": "Reason",
+			"failover": "Failover"
+		},
+		"usage": {
+			"tokens": "tok",
+			"images": "img",
+			"seconds": "s",
+			"characters": "chars"
 		},
 		"titles": {
 			"model": "Gateway model name, protocol, and route group",
 			"route": "Inbound: protocol endpoint, model ID, and route group. Upstream: protocol endpoint, model ID, and provider",
-			"stream": "Whether the client requested a streaming response",
+			"tags": "Request traits: model kind, streaming, reasoning, and failover",
+			"usage": "Billable usage for this request: tokens, images, seconds, or characters depending on the model",
+			"tag": {
+				"llm": "Text / multimodal chat model",
+				"image": "Image generation",
+				"tts": "Speech synthesis",
+				"asr": "Speech transcription",
+				"tool": "Gateway agent tool",
+				"stream": "Client requested a streaming response",
+				"realtime": "Realtime session",
+				"reasoning": "Reasoning tokens or reasoning-phase TTFT",
+				"failover": "Upstream switched after a failed attempt"
+			},
 			"cost": "Charged (C) and metered supplier cost (M); standard catalog price remains available in details",
 			"profit": "Charged − metered (per request)",
 			"rowDetail": "Click to show or hide pricing audit and request / usage bodies",

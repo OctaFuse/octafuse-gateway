@@ -1477,8 +1477,8 @@
 			"userSystem": "用户 · 系统",
 			"model": "模型",
 			"route": "路由",
-			"stream": "流式",
-			"tokens": "Token",
+			"tags": "标签",
+			"usage": "用量",
 			"cost": "成本（{currency}）",
 			"profit": "毛利（{currency}）"
 		},
@@ -1490,13 +1490,41 @@
 			"inbound": "入站",
 			"upstream": "上游"
 		},
-		"stream": {
-			"yes": "流式"
+		"tags": {
+			"kind": {
+				"llm": "LLM",
+				"image": "图像",
+				"tts": "TTS",
+				"asr": "ASR",
+				"tool": "工具"
+			},
+			"stream": "流式",
+			"realtime": "实时",
+			"reasoning": "推理",
+			"failover": "容灾"
+		},
+		"usage": {
+			"tokens": "tok",
+			"images": "张",
+			"seconds": "秒",
+			"characters": "字"
 		},
 		"titles": {
 			"model": "Gateway 模型名称、协议与路由组",
 			"route": "入站：协议端点、模型 ID、路由组。上游：协议端点、模型 ID、供应商",
-			"stream": "客户端是否请求流式响应",
+			"tags": "请求特性：模型类型、流式、推理与容灾",
+			"usage": "本请求的计费用量：按模型可能是 Token、张数、秒数或字符数",
+			"tag": {
+				"llm": "文本 / 多模态对话模型",
+				"image": "图像生成",
+				"tts": "语音合成",
+				"asr": "语音转写",
+				"tool": "Gateway 智能体工具",
+				"stream": "客户端请求了流式响应",
+				"realtime": "实时会话",
+				"reasoning": "含推理 Token 或推理阶段 TTFT",
+				"failover": "上游尝试失败后发生了切换"
+			},
 			"cost": "计费（C）与供应成本（M）；标准目录价可在详情中查看",
 			"profit": "计费 − 计量（单请求）",
 			"rowDetail": "点击显示或隐藏定价审计、请求体与用量报文",

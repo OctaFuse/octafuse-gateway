@@ -1477,8 +1477,8 @@
 			"userSystem": "사용자 · 시스템",
 			"model": "모델",
 			"route": "Route",
-			"stream": "스트림",
-			"tokens": "Tokens",
+			"tags": "태그",
+			"usage": "사용량",
 			"cost": "비용 ({currency})",
 			"profit": "이익 ({currency})"
 		},
@@ -1490,13 +1490,41 @@
 			"inbound": "인바운드",
 			"upstream": "업스트림"
 		},
-		"stream": {
-			"yes": "스트림"
+		"tags": {
+			"kind": {
+				"llm": "LLM",
+				"image": "이미지",
+				"tts": "TTS",
+				"asr": "ASR",
+				"tool": "도구"
+			},
+			"stream": "스트림",
+			"realtime": "실시간",
+			"reasoning": "추론",
+			"failover": "전환"
+		},
+		"usage": {
+			"tokens": "tok",
+			"images": "장",
+			"seconds": "초",
+			"characters": "자"
 		},
 		"titles": {
 			"model": "Gateway 모델 이름, 프로토콜 및 Route 그룹",
 			"route": "인바운드: 프로토콜 엔드포인트, 모델 ID, Route 그룹. 업스트림: 프로토콜 엔드포인트, 모델 ID, Provider",
-			"stream": "클라이언트가 스트리밍 응답을 요청했는지 여부",
+			"tags": "요청 특성: 모델 유형, 스트림, 추론, 페일오버",
+			"usage": "이 요청의 과금 사용량. 모델에 따라 토큰, 장수, 초, 문자 수",
+			"tag": {
+				"llm": "텍스트 / 멀티모달 대화 모델",
+				"image": "이미지 생성",
+				"tts": "음성 합성",
+				"asr": "음성 인식",
+				"tool": "Gateway 에이전트 도구",
+				"stream": "클라이언트가 스트리밍 응답을 요청함",
+				"realtime": "실시간 세션",
+				"reasoning": "추론 토큰 또는 추론 단계 TTFT",
+				"failover": "업스트림 실패 후 전환이 발생함"
+			},
 			"cost": "청구(C) 및 공급자 비용(M); 표준 카탈로그 가격은 상세 정보에서 확인",
 			"profit": "청구액 − 계측 비용 (요청당)",
 			"rowDetail": "클릭하여 요금 감사와 요청 / 사용량 본문 표시 또는 숨기기",
