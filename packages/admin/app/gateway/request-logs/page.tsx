@@ -509,43 +509,45 @@ export default function GatewayRequestLogsPage() {
     providerTitle?: string;
     group?: string;
   }) => (
-    <div className="flex max-w-full items-center gap-1.5">
-      <span className={`shrink-0 text-[10px] font-semibold leading-4 ${opts.labelClass}`}>
+    <>
+      <span className={`self-center text-[10px] font-semibold leading-4 ${opts.labelClass}`}>
         {opts.label}
       </span>
       <span
-        className="shrink-0 max-w-[11rem] truncate rounded bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] leading-4 text-gray-500 ring-1 ring-inset ring-gray-200/80"
+        className="max-w-[11rem] justify-self-start truncate rounded bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] leading-4 text-gray-500 ring-1 ring-inset ring-gray-200/80"
         title={opts.pathTitle || opts.path || undefined}
       >
         {opts.path || '—'}
       </span>
-      {opts.modelId ? (
-        <span
-          className="min-w-0 truncate font-mono text-[11px] font-medium text-gray-900"
-          title={opts.modelTitle || opts.modelId}
-        >
-          {opts.modelId}
-        </span>
-      ) : (
-        <span className="text-[11px] text-gray-300">—</span>
-      )}
-      {opts.provider ? (
-        <span
-          className="inline-flex shrink-0 items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-sky-800 ring-1 ring-inset ring-sky-200/90"
-          title={opts.providerTitle || opts.provider}
-        >
-          {opts.provider}
-        </span>
-      ) : null}
-      {opts.group ? (
-        <span
-          className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-4 ${routeGroupBadgeClass(opts.group)}`}
-          title={`route_group: ${opts.group}`}
-        >
-          @{opts.group}
-        </span>
-      ) : null}
-    </div>
+      <div className="flex min-w-0 items-center gap-1.5">
+        {opts.modelId ? (
+          <span
+            className="min-w-0 truncate font-mono text-[11px] font-medium text-gray-900"
+            title={opts.modelTitle || opts.modelId}
+          >
+            {opts.modelId}
+          </span>
+        ) : (
+          <span className="text-[11px] text-gray-300">—</span>
+        )}
+        {opts.provider ? (
+          <span
+            className="inline-flex shrink-0 items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-sky-800 ring-1 ring-inset ring-sky-200/90"
+            title={opts.providerTitle || opts.provider}
+          >
+            {opts.provider}
+          </span>
+        ) : null}
+        {opts.group ? (
+          <span
+            className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-4 ${routeGroupBadgeClass(opts.group)}`}
+            title={`route_group: ${opts.group}`}
+          >
+            @{opts.group}
+          </span>
+        ) : null}
+      </div>
+    </>
   );
 
   /** Route 列：入站（协议端点 + model_id + 路由组）/ 上游（协议端点 + 上游 model id + provider）。 */
@@ -597,7 +599,7 @@ export default function GatewayRequestLogsPage() {
       : undefined;
 
     return (
-      <div className="flex w-max max-w-[40rem] flex-col gap-1 leading-tight">
+      <div className="grid w-max max-w-[40rem] grid-cols-[auto_auto_minmax(0,max-content)] items-center gap-x-1.5 gap-y-1 leading-tight">
         {renderRouteLeg({
           label: t('route.inbound'),
           labelClass: 'text-blue-600',
