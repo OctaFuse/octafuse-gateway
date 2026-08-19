@@ -97,13 +97,24 @@ export function requestSurfacePath(protocol: string, operation: string, modelId?
 		}
 		return `/v1beta/models/${modelSegment}:${operation}`;
 	}
-	if (protocol === 'dashscope' && operation.includes('.realtime.')) {
-		// 原生实时操作共享一个 WSS 入口，模型与操作通过查询参数选择。
-		const modelParam =
-			modelId && modelId.length > 0
-				? encodeURIComponent(modelId)
-				: SURFACE_PATH_MODEL_PLACEHOLDER;
-		return `/v1/dashscope/realtime?model=${modelParam}&operation=${encodeURIComponent(operation)}`;
+	if (protocol === 'dashscope') {
+		if (operation.includes('.realtime.')) {
+			// 原生实时操作共享一个 WSS 入口，模型与操作通过查询参数选择。
+			const modelParam =
+				modelId && modelId.length > 0
+					? encodeURIComponent(modelId)
+					: SURFACE_PATH_MODEL_PLACEHOLDER;
+			return `/v1/dashscope/realtime?model=${modelParam}&operation=${encodeURIComponent(operation)}`;
+		}
+		const paths: Record<string, string> = {
+			'audio.speech': '/v1/audio/speech',
+			'audio.speech.stream': '/v1/audio/speech',
+			'audio.speech.multimodal': '/v1/audio/speech',
+			'audio.transcriptions': '/v1/audio/transcriptions',
+			'audio.transcriptions.multimodal': '/v1/audio/transcriptions',
+			'audio.transcriptions.async': '/v1/audio/transcriptions',
+		};
+		return operation === '*' ? '/*' : paths[operation] ?? `/${operation}`;
 	}
 	return operation === '*' ? '/*' : `/${operation}`;
 }
@@ -114,7 +125,7 @@ export function requestSurfacePath(protocol: string, operation: string, modelId?
  */
 export function requestLogProtocolPath(protocol: string, operation: string): string {
 	if (protocol === 'gemini') {
-		return '/v1beta/models/{model}';
+		return '/v1beta/models';
 	}
 	return requestSurfacePath(protocol, operation);
 }

@@ -1495,7 +1495,7 @@
 		},
 		"titles": {
 			"model": "Gateway model name, protocol, and route group",
-			"route": "Inbound: protocol endpoint, model ID, and route group. Upstream: protocol endpoint and model ID",
+			"route": "Inbound: protocol endpoint, model ID, and route group. Upstream: protocol endpoint, model ID, and provider",
 			"stream": "Whether the client requested a streaming response",
 			"cost": "Charged (C) and metered supplier cost (M); standard catalog price remains available in details",
 			"profit": "Charged − metered (per request)",

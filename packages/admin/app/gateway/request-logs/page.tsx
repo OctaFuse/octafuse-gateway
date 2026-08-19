@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID 与路由组；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
+ * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
  */
 import { useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
@@ -500,6 +500,8 @@ export default function GatewayRequestLogsPage() {
     pathTitle?: string;
     modelId: string;
     modelTitle?: string;
+    provider?: string;
+    providerTitle?: string;
     group?: string;
   }) => (
     <>
@@ -521,6 +523,14 @@ export default function GatewayRequestLogsPage() {
             {opts.modelId}
           </span>
         ) : null}
+        {opts.provider ? (
+          <span
+            className="inline-flex shrink-0 max-w-[40%] items-center truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-slate-600"
+            title={opts.providerTitle || opts.provider}
+          >
+            {opts.provider}
+          </span>
+        ) : null}
         {opts.group ? (
           <span
             className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-4 ${routeGroupBadgeClass(opts.group)}`}
@@ -533,7 +543,7 @@ export default function GatewayRequestLogsPage() {
     </>
   );
 
-  /** Route 列：入站（协议端点 + model_id + 路由组）/ 上游（协议端点 + 上游 model id）。 */
+  /** Route 列：入站（协议端点 + model_id + 路由组）/ 上游（协议端点 + 上游 model id + provider）。 */
   const renderRouteCell = (log: GatewayRequestLog) => {
     const inboundModelId = log.model_id?.trim() ?? '';
     const upstreamModelId = log.provider_model_name?.trim() ?? '';
@@ -564,9 +574,22 @@ export default function GatewayRequestLogsPage() {
     ]
       .filter(Boolean)
       .join('\n');
+    const catalogProviderName = log.provider_id
+      ? providerCatalog.find((p) => p.id === log.provider_id)?.name.trim()
+      : undefined;
+    const upstreamProvider =
+      log.provider_name?.trim()
+      || catalogProviderName
+      || log.provider_id?.trim()
+      || '';
     const upstreamTitle = isAgentTool
       ? (upstreamModelId ? `Tool engine: ${upstreamModelId}` : undefined)
       : (upstreamModelId ? `Upstream model: ${upstreamModelId}` : undefined);
+    const upstreamProviderTitle = upstreamProvider
+      ? (log.provider_id?.trim() && log.provider_id.trim() !== upstreamProvider
+        ? `Provider: ${upstreamProvider} (${log.provider_id.trim()})`
+        : `Provider: ${upstreamProvider}`)
+      : undefined;
 
     return (
       <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-1.5 gap-y-0.5 leading-tight">
@@ -584,6 +607,8 @@ export default function GatewayRequestLogsPage() {
           pathTitle: upstreamPathTitle,
           modelId: upstreamModelId,
           modelTitle: upstreamTitle,
+          provider: upstreamProvider,
+          providerTitle: upstreamProviderTitle,
         })}
       </div>
     );
