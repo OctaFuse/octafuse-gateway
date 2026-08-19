@@ -131,7 +131,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 `budget_reset_at` 排序时 NULL 规则：`asc` → `NULLS LAST`，`desc` → `NULLS FIRST`（与 Keys 列表一致）。
 
-响应：`{ success, data: [...], total, page, page_size }`；列表行含 **`active_keys_count`** 等（与实现 `AdminUserListItem` 对齐）。
+响应：`{ success, data: [...], total, page, page_size }`；列表行含 **`active_keys_count`**（激活中的 API Key 数）、**`keys_count`**（该用户全部 API Key 数，含已吊销）等（与实现 `AdminUserListItem` 对齐）。
 
 ### `POST /admin/users`
 
@@ -141,7 +141,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 ### `GET /admin/users/:id`
 
-用户详情（`getUserInfo`：含预算列、外部身份、`charged_cost_factors` 对象或 `null` 等；周期型预算可能触发懒重置）。**不含**密钥列表；枚举密钥请用 **`GET /admin/users/:id/keys`**。用户列表行（`GET /admin/users`）含 **`active_keys_count`**，其中 `charged_cost_factors` 同样解析为对象或 `null`。
+用户详情（`getUserInfo`：含预算列、外部身份、`charged_cost_factors` 对象或 `null` 等；周期型预算可能触发懒重置）。**不含**密钥列表；枚举密钥请用 **`GET /admin/users/:id/keys`**。用户列表行（`GET /admin/users`）含 **`active_keys_count`**、**`keys_count`**，其中 `charged_cost_factors` 同样解析为对象或 `null`。
 
 ### `PATCH /admin/users/:id`
 

@@ -117,11 +117,12 @@ export async function listAdminUsers(
 	});
 	const data = await Promise.all(
 		users.map(async (u) => {
-			const keys = await repos.apiKeys.listKeysByUserId(u.id, { status: 'active' });
+			const keys = await repos.apiKeys.listKeysByUserId(u.id);
 			return {
 				...u,
 				charged_cost_factors: parseUserChargedCostFactors(u.charged_cost_factors),
-				active_keys_count: keys.length,
+				active_keys_count: keys.filter((key) => key.status === 'active').length,
+				keys_count: keys.length,
 			};
 		})
 	);
