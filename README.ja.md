@@ -33,6 +33,7 @@ Octafuse Gateway の中核的な目標は、**一人会社（OPC）や企業向�
     - Web 検索（`POST /v1/tools/web-search`）：Bocha、Tavily、Alibaba Cloud CleverSee、Tencent Cloud WSA
     - Web ページ取得（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
     - 深掘り検索（`POST /v1/tools/web-deep-search`、検索 + 読み取り）：Firecrawl Search、Jina Search
+    - AI 生成テキスト検出（`POST /v1/tools/ai-detection`）：Tencent Cloud TMS を実装済みで、複数エンジンへ拡張できるカタログを用意しています
     - Agent 向けツールは今後も追加予定で、PR も歓迎します。
 5. AI 機能の統一エンドポイント：接続したモデル、プラットフォーム、ツールは、デプロイ済み Octafuse Gateway の Base URL から提供されます。クライアントが覚える接続先は 1 つだけです。
 6. 複数のルーティング戦略：同じモデルに複数のアップストリームリソースがある場合、用途に応じて次の戦略を選択できます。
