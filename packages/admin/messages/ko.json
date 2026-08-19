@@ -1300,6 +1300,7 @@
 			"resetAt": "재설정 시각",
 			"keys": "Keys",
 			"metadata": "Metadata",
+			"chargedCostFactors": "배율",
 			"created": "생성일",
 			"updated": "업데이트일",
 			"group": "그룹",
@@ -1338,6 +1339,7 @@
 			"disabledUser": "사용 중지된 사용자는 어떤 API Key로도 새 요청을 보낼 수 없습니다."
 		},
 		"chargedCostFactors": {
+			"none": "Charged cost factors가 없습니다.",
 			"empty": "모델별 배율이 없습니다. 카탈로그와 라우트 Charged cost가 그대로 적용됩니다.",
 			"pickTitle": "카탈로그 모델 추가",
 			"pickSearch": "모델 검색…",

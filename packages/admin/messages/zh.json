@@ -1300,6 +1300,7 @@
 			"resetAt": "重置时间",
 			"keys": "Keys",
 			"metadata": "Metadata",
+			"chargedCostFactors": "折扣倍率",
 			"created": "创建时间",
 			"updated": "更新时间",
 			"group": "分组",
@@ -1338,6 +1339,7 @@
 			"disabledUser": "禁用用户后，该用户无法使用任何 API Key 发起新请求。"
 		},
 		"chargedCostFactors": {
+			"none": "未设置 Charged cost factors。",
 			"empty": "未设置按模型倍率。将按目录价与路由 Charged cost 原样扣费。",
 			"pickTitle": "添加目录模型",
 			"pickSearch": "搜索模型…",

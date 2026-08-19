@@ -1300,6 +1300,7 @@
 			"resetAt": "リセット日時",
 			"keys": "Keys",
 			"metadata": "Metadata",
+			"chargedCostFactors": "倍率",
 			"created": "作成日時",
 			"updated": "更新日時",
 			"group": "グループ",
@@ -1338,6 +1339,7 @@
 			"disabledUser": "無効なユーザーは、どの API Key からも新しいリクエストを送信できません。"
 		},
 		"chargedCostFactors": {
+			"none": "Charged cost factors は未設定です。",
 			"empty": "モデル別倍率は未設定です。カタログとルートの Charged cost がそのまま適用されます。",
 			"pickTitle": "カタログモデルを追加",
 			"pickSearch": "モデルを検索…",

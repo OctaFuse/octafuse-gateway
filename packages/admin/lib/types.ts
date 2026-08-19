@@ -78,6 +78,8 @@ export interface GatewayUserListItem {
   budget_reset_at: string | null;
   status: string;
   metadata: string | null;
+  /** 已解析的用户级 Charged cost factors；未配置时为 null */
+  charged_cost_factors?: Record<string, number> | null;
   created_at: string;
   updated_at: string;
   active_keys_count: number;

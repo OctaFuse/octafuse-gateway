@@ -1300,6 +1300,7 @@
 			"resetAt": "Reset at",
 			"keys": "Keys",
 			"metadata": "Metadata",
+			"chargedCostFactors": "Factors",
 			"created": "Created",
 			"updated": "Updated",
 			"group": "Group",
@@ -1338,6 +1339,7 @@
 			"disabledUser": "Disabled users cannot use any API key for new requests."
 		},
 		"chargedCostFactors": {
+			"none": "No charged cost factors.",
 			"empty": "No per-model factors. Catalog and route Charged cost apply as-is.",
 			"pickTitle": "Add catalog model",
 			"pickSearch": "Search models…",

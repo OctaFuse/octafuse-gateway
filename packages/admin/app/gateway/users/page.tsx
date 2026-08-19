@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
+import { summarizeChargedCostFactors } from '@/lib/summarize-charged-cost-factors';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { nextListSortStateWithAscToggle } from '@/lib/toggle-list-sort';
 import type { GatewayUserListItem } from '@/lib/types';
@@ -58,6 +59,7 @@ export default function GatewayUsersPage() {
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [metadataViewUser, setMetadataViewUser] = useState<GatewayUserListItem | null>(null);
+  const [factorsViewUser, setFactorsViewUser] = useState<GatewayUserListItem | null>(null);
   const [listError, setListError] = useState('');
   const { currency: billingCurrency } = useBillingCurrency();
   const { formatDateTime } = useGatewayDateTime();
@@ -305,6 +307,12 @@ export default function GatewayUsersPage() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap max-w-xs">
                 {t('table.metadata')}
               </th>
+              <th
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap max-w-xs"
+                title={t('help.chargedCostFactors')}
+              >
+                {t('table.chargedCostFactors')}
+              </th>
               <SortableTh label={t('table.created')} columnKey="created_at" />
             </tr>
           </thead>
@@ -312,6 +320,7 @@ export default function GatewayUsersPage() {
             {users.map((u) => {
               const detailHref = `/gateway/users/${encodeURIComponent(u.id)}`;
               const meta = summarizeMetadata(u.metadata);
+              const factors = summarizeChargedCostFactors(u.charged_cost_factors);
               return (
               <tr
                 key={u.id}
@@ -378,6 +387,31 @@ export default function GatewayUsersPage() {
                       <button
                         type="button"
                         onClick={() => setMetadataViewUser(u)}
+                        className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
+                      >
+                        {tCommon('details')}
+                      </button>
+                    </div>
+                  )}
+                </td>
+                <td
+                  className="px-4 py-3 max-w-xs"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  {factors.empty ? (
+                    <div className="text-sm text-gray-400">—</div>
+                  ) : (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="block truncate text-xs font-mono text-gray-700"
+                        title={factors.summary}
+                      >
+                        {factors.summary}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setFactorsViewUser(u)}
                         className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
                       >
                         {tCommon('details')}
@@ -599,6 +633,49 @@ export default function GatewayUsersPage() {
                 <button
                   type="button"
                   onClick={() => setMetadataViewUser(null)}
+                  className="px-3 py-1.5 bg-gray-800 text-white rounded-md text-sm hover:bg-gray-900"
+                >
+                  {tCommon('close')}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {factorsViewUser && (() => {
+        const f = summarizeChargedCostFactors(factorsViewUser.charged_cost_factors);
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+              <div className="px-6 py-4 border-b flex justify-between items-center">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900">{t('fields.chargedCostFactors')}</h2>
+                  <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={factorsViewUser.id}>
+                    {[factorsViewUser.email, factorsViewUser.id].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFactorsViewUser(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                {f.empty ? (
+                  <div className="text-sm text-gray-500">{t('chargedCostFactors.none')}</div>
+                ) : (
+                  <pre className="whitespace-pre-wrap break-all rounded-md bg-gray-50 border border-gray-200 p-4 text-xs font-mono text-gray-800">
+                    {f.full}
+                  </pre>
+                )}
+              </div>
+              <div className="px-6 py-3 border-t flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setFactorsViewUser(null)}
                   className="px-3 py-1.5 bg-gray-800 text-white rounded-md text-sm hover:bg-gray-900"
                 >
                   {tCommon('close')}
