@@ -1414,8 +1414,9 @@
 			"key": "Key",
 			"name": "Name",
 			"userBudget": "User Budget",
-			"apiKeyMetadata": "Api Key Metadata",
-			"created": "Created"
+			"apiKeyMetadata": "Metadata",
+			"created": "Created",
+			"links": "Links"
 		},
 		"create": {
 			"attachLegend": "How to attach the key",
@@ -1460,7 +1461,12 @@
 			"editMetadata": "Full JSON stored on this key; cleared if empty. Shown on GET /v1/me."
 		},
 		"links": {
-			"requestLogsForKey": "Request logs for this key →"
+			"requestLogsForKey": "Request logs for this key →",
+			"auditLogsForKey": "Audit logs for this key →",
+			"openUserTitle": "Open user",
+			"openUserBudgetTitle": "Open user budget",
+			"requestLogsTitle": "Request logs for this key",
+			"auditLogsTitle": "Audit logs for this key"
 		},
 		"copyKey": "Copy key",
 		"copyId": "Copy ID",

@@ -1414,8 +1414,9 @@
 			"key": "Key",
 			"name": "이름",
 			"userBudget": "사용자 예산",
-			"apiKeyMetadata": "API Key Metadata",
-			"created": "생성일"
+			"apiKeyMetadata": "Metadata",
+			"created": "생성일",
+			"links": "연결"
 		},
 		"create": {
 			"attachLegend": "Key 연결 방법",
@@ -1460,7 +1461,12 @@
 			"editMetadata": "이 Key에 저장되는 전체 JSON입니다. 비워 두면 삭제됩니다. 설정된 값은 GET /v1/me에 표시됩니다."
 		},
 		"links": {
-			"requestLogsForKey": "이 Key의 요청 로그 보기 →"
+			"requestLogsForKey": "이 Key의 요청 로그 보기 →",
+			"auditLogsForKey": "이 Key의 감사 로그 보기 →",
+			"openUserTitle": "사용자 상세 열기",
+			"openUserBudgetTitle": "사용자 예산 열기",
+			"requestLogsTitle": "이 Key의 요청 로그",
+			"auditLogsTitle": "이 Key의 감사 로그"
 		},
 		"copyKey": "Key 복사",
 		"copyId": "ID 복사",

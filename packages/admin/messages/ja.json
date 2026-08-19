@@ -1414,8 +1414,9 @@
 			"key": "Key",
 			"name": "名前",
 			"userBudget": "ユーザー予算",
-			"apiKeyMetadata": "API Key Metadata",
-			"created": "作成日時"
+			"apiKeyMetadata": "Metadata",
+			"created": "作成日時",
+			"links": "リンク"
 		},
 		"create": {
 			"attachLegend": "Key の関連付け方法",
@@ -1460,7 +1461,12 @@
 			"editMetadata": "この Key に保存され、GET /v1/me で返される完全な JSON です。空欄にするとクリアされます。"
 		},
 		"links": {
-			"requestLogsForKey": "この Key のリクエストログ →"
+			"requestLogsForKey": "この Key のリクエストログ →",
+			"auditLogsForKey": "この Key の監査ログ →",
+			"openUserTitle": "ユーザー詳細を開く",
+			"openUserBudgetTitle": "ユーザー予算を開く",
+			"requestLogsTitle": "この Key のリクエストログ",
+			"auditLogsTitle": "この Key の監査ログ"
 		},
 		"copyKey": "Key をコピー",
 		"copyId": "ID をコピー",

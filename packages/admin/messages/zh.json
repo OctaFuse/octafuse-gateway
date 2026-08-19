@@ -1414,8 +1414,9 @@
 			"key": "Key",
 			"name": "名称",
 			"userBudget": "用户额度",
-			"apiKeyMetadata": "API Key Metadata",
-			"created": "创建时间"
+			"apiKeyMetadata": "Metadata",
+			"created": "创建时间",
+			"links": "关联"
 		},
 		"create": {
 			"attachLegend": "如何关联 Key",
@@ -1460,7 +1461,12 @@
 			"editMetadata": "保存在此 Key 上的完整 JSON；留空则清除。GET /v1/me 会显示该值。"
 		},
 		"links": {
-			"requestLogsForKey": "查看此 Key 的请求日志 →"
+			"requestLogsForKey": "查看此 Key 的请求日志 →",
+			"auditLogsForKey": "查看此 Key 的审计日志 →",
+			"openUserTitle": "打开用户详情",
+			"openUserBudgetTitle": "打开用户额度",
+			"requestLogsTitle": "此 Key 的请求日志",
+			"auditLogsTitle": "此 Key 的审计日志"
 		},
 		"copyKey": "复制 Key",
 		"copyId": "复制 ID",
