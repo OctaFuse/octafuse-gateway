@@ -71,6 +71,7 @@ function mapPgResolvedRow(
 		budgetPeriod: string;
 		budgetResetAt: string | null;
 		userMetadata: string | null;
+		userChargedCostFactors: string | null;
 	}
 ): ResolvedGatewayKeyRow {
 	const k = mapPgKeyRow(r);
@@ -78,6 +79,7 @@ function mapPgResolvedRow(
 		...k,
 		user_email: r.userEmail,
 		user_metadata: r.userMetadata,
+		user_charged_cost_factors: r.userChargedCostFactors ?? null,
 		budget_max: r.budgetMax == null ? null : parseMoney(r.budgetMax),
 		budget_base: parseMoney(r.budgetBase),
 		budget_spent: parseMoney(r.budgetSpent),
@@ -137,6 +139,7 @@ const resolvedCols = {
 	budgetPeriod: pgUsersTable.budgetPeriod,
 	budgetResetAt: pgUsersTable.budgetResetAt,
 	userMetadata: pgUsersTable.metadata,
+	userChargedCostFactors: pgUsersTable.chargedCostFactors,
 } as const;
 
 export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): ApiKeysRepository {

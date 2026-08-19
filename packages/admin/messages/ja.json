@@ -1276,6 +1276,7 @@
 		"userDetail": "ユーザー詳細",
 		"newUser": "新しいユーザー",
 		"saveUser": "ユーザーを保存",
+		"saveSuccess": "ユーザーを保存しました。",
 		"deleteUser": "ユーザーを削除",
 		"apiKeys": "API Keys",
 		"newKey": "新しい Key",
@@ -1317,6 +1318,9 @@
 			"budgetPeriod": "予算期間",
 			"budgetResetAt": "予算リセット日時（ローカル）",
 			"metadataJsonObject": "Metadata（JSON オブジェクト）",
+			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactorModelId": "モデル ID",
+			"chargedCostFactorValue": "倍率",
 			"externalSystem": "外部システム",
 			"externalUserId": "外部ユーザー ID",
 			"name": "名前",
@@ -1330,7 +1334,17 @@
 			"budgetPeriod": "使用額 / 予算上限のリセットサイクルです。none を選ぶと自動リセットされません。",
 			"budgetResetAt": "使用額（および基準額から復元される予算上限）が次回自動リセットされる日時です。予算期間が none の場合は無視されます。",
 			"metadataReplace": "保存すると metadata オブジェクト全体が置き換わります。現在の値を維持する場合は空欄にしてください。",
+			"chargedCostFactors": "カタログからモデルを選んで倍率を設定します。ルート Charged cost の後に乗算されます。未設定のモデルは金額を変えません。0 はそのモデルを課金しません。LLM / Images / Audio のみ（Agent Tools は対象外）。",
 			"disabledUser": "無効なユーザーは、どの API Key からも新しいリクエストを送信できません。"
+		},
+		"chargedCostFactors": {
+			"empty": "モデル別倍率は未設定です。カタログとルートの Charged cost がそのまま適用されます。",
+			"pickTitle": "カタログモデルを追加",
+			"pickSearch": "モデルを検索…",
+			"pickEmpty": "一致するモデルがありません。",
+			"alreadyAdded": "追加済み",
+			"unknownModel": "カタログにありません",
+			"saveSuccess": "Charged cost factors を保存しました。"
 		},
 		"externalIdentity": {
 			"title": "外部 ID",
@@ -1365,7 +1379,10 @@
 		"errors": {
 			"updateFailed": "更新に失敗しました",
 			"deleteFailed": "削除に失敗しました",
-			"createFailed": "作成に失敗しました"
+			"createFailed": "作成に失敗しました",
+			"chargedCostFactorModelRequired": "Charged cost factor の各行にはモデル ID が必要です。",
+			"chargedCostFactorValueInvalid": "Charged cost factor は 0 以上の数値である必要があります。",
+			"chargedCostFactorDuplicate": "Charged cost factors に重複したモデル ID があります。"
 		}
 	},
 	"keysPage": {

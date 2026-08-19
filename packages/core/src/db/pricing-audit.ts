@@ -24,6 +24,7 @@
  * }
  * ```
  * - `snapshot.user_charge` / `supplier`：目录选档 × base_factor × schedule_factor 后的单价。
+ * - `snapshot.user_charge.user_charged_factor`（及顶层 `user_charged_factor`）：用户级 Charged 折扣；未命中为 `null`。v4 可带该键。
  * - `basis_tokens`：选档依据（上游 usage 的 input 侧 token 数）。
  *
  * ## Image 计费扩展（`snapshot` 内 `kind` 字段）

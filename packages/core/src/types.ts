@@ -42,6 +42,8 @@ export interface UserRow {
 	budget_reset_at: string | null;
 	status: string;
 	metadata: string | null;
+	/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
+	charged_cost_factors: string | null;
 	external_system: string | null;
 	external_user_id: string | null;
 	created_at: string;
@@ -55,6 +57,8 @@ export interface ResolvedGatewayKeyRow extends ApiKeyRow {
 	user_email: string | null;
 	/** `users.metadata` JSON 文本（鉴权 JOIN 时一并读取，供 `/v1/me` 优先合并） */
 	user_metadata: string | null;
+	/** `users.charged_cost_factors` JSON 文本（鉴权 JOIN 时一并读取） */
+	user_charged_cost_factors: string | null;
 	budget_max: number | null;
 	budget_base: number;
 	budget_spent: number;

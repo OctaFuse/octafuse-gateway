@@ -17,6 +17,8 @@ export type AuthenticatedApiKey = {
 	budgetPeriod: string;
 	budgetResetAt: string | null;
 	metadata: Record<string, unknown> | null;
+	/** `users.charged_cost_factors` JSON；无折扣时为 null */
+	chargedCostFactors: string | null;
 };
 
 /**
@@ -60,5 +62,6 @@ export async function authenticateApiKey(repos: GatewayRepositories, key: string
 		budgetPeriod: row.budget_period,
 		budgetResetAt,
 		metadata,
+		chargedCostFactors: row.user_charged_cost_factors ?? null,
 	};
 }

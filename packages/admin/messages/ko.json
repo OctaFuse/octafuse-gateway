@@ -1276,6 +1276,7 @@
 		"userDetail": "사용자 세부 정보",
 		"newUser": "새 사용자",
 		"saveUser": "사용자 저장",
+		"saveSuccess": "사용자를 저장했습니다.",
 		"deleteUser": "사용자 삭제",
 		"apiKeys": "API Keys",
 		"newKey": "새 Key",
@@ -1317,6 +1318,9 @@
 			"budgetPeriod": "예산 주기",
 			"budgetResetAt": "예산 재설정 시각 (로컬)",
 			"metadataJsonObject": "Metadata (JSON 객체)",
+			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactorModelId": "모델 ID",
+			"chargedCostFactorValue": "배율",
 			"externalSystem": "외부 시스템",
 			"externalUserId": "외부 사용자 ID",
 			"name": "이름",
@@ -1330,7 +1334,17 @@
 			"budgetPeriod": "지출 / 최대 예산 재설정 주기입니다. none은 자동 재설정을 사용하지 않습니다.",
 			"budgetResetAt": "지출 및 기준값에서 가져온 최대 예산이 다음에 자동으로 재설정되는 시각입니다. 예산 주기가 none이면 무시됩니다.",
 			"metadataReplace": "저장하면 metadata 객체 전체가 교체됩니다. 현재 값을 유지하려면 비워 두세요.",
+			"chargedCostFactors": "카탈로그에서 모델을 선택한 뒤 배율을 설정합니다. 라우트 Charged cost 계산 후에 곱합니다. 없는 모델은 금액이 그대로입니다. 0이면 해당 모델은 과금하지 않습니다. LLM / Images / Audio만 적용되며 Agent Tools는 제외됩니다.",
 			"disabledUser": "사용 중지된 사용자는 어떤 API Key로도 새 요청을 보낼 수 없습니다."
+		},
+		"chargedCostFactors": {
+			"empty": "모델별 배율이 없습니다. 카탈로그와 라우트 Charged cost가 그대로 적용됩니다.",
+			"pickTitle": "카탈로그 모델 추가",
+			"pickSearch": "모델 검색…",
+			"pickEmpty": "일치하는 모델이 없습니다.",
+			"alreadyAdded": "추가됨",
+			"unknownModel": "카탈로그에 없음",
+			"saveSuccess": "Charged cost factors를 저장했습니다."
 		},
 		"externalIdentity": {
 			"title": "외부 ID",
@@ -1365,7 +1379,10 @@
 		"errors": {
 			"updateFailed": "업데이트 실패",
 			"deleteFailed": "삭제 실패",
-			"createFailed": "생성 실패"
+			"createFailed": "생성 실패",
+			"chargedCostFactorModelRequired": "각 Charged cost factor 행에는 모델 ID가 필요합니다.",
+			"chargedCostFactorValueInvalid": "Charged cost factor는 0 이상의 숫자여야 합니다.",
+			"chargedCostFactorDuplicate": "Charged cost factors에 중복된 모델 ID가 있습니다."
 		}
 	},
 	"keysPage": {

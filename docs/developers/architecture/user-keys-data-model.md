@@ -21,6 +21,7 @@ erDiagram
         text budget_reset_at
         text status
         text metadata
+        text charged_cost_factors "JSON { models.id: factor }；空为 NULL"
         text external_system
         text external_user_id
         text created_at
@@ -70,6 +71,7 @@ erDiagram
 5. **删除语义**：
    - 删除 **`users`**：`ON DELETE CASCADE` 删除其 **`api_keys`**；子表中若存在指向该用户的 FK，按迁移定义处理（`user_audit_logs.user_id` 为 **`ON DELETE SET NULL`**，审计行保留）。
    - 删除 **`api_keys`**：**不**级联删除请求日志；`api_key_request_logs.api_key_id` 为 **`ON DELETE SET NULL`**，`user_id` 保留以便按用户维度统计历史。
+6. **`charged_cost_factors`**：可选 JSON，键为目录 `models.id`，值为 ≥ 0 的用户计费倍率；`null` / `{}` 落库为 NULL。鉴权 JOIN 会带上该列。LLM / Images / Audio 在路由用户计费算完后再乘；智能体工具不应用。
 
 ## 请求日志与审计
 
@@ -78,7 +80,7 @@ erDiagram
 
 ## 关键读写路径（与实现对齐）
 
-- **鉴权**：`getApiKeyWithUserByKey` 单次 JOIN 读取 key + user 预算字段；周期懒重置走 **`updateUserBudgetWithAuditTx`**（Postgres/MySQL 带 `budget_reset_at` 条件更新以避免并发重复审计）。
+- **鉴权**：`getApiKeyWithUserByKey` 单次 JOIN 读取 key + user 预算字段与 `charged_cost_factors`；周期懒重置走 **`updateUserBudgetWithAuditTx`**（Postgres/MySQL 带 `budget_reset_at` 条件更新以避免并发重复审计）。
 - **扣费**：`insertRequestUsageAndChargeTx` 在同一事务内 **`INSERT api_key_request_logs`** + **`UPDATE users SET budget_spent = budget_spent + Δ`**（SQL 侧原子累加）+ **`INSERT user_audit_logs`**（`usage_charge`）。
 
 ## 验证（三引擎 / Proxy）

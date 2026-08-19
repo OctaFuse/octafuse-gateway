@@ -15,6 +15,7 @@ export type UserAuditSnapshot = {
 	budget_reset_at: string | null;
 	status: string;
 	metadata: string | null;
+	charged_cost_factors: string | null;
 	external_system: string | null;
 	external_user_id: string | null;
 };
@@ -30,6 +31,7 @@ export function userRowToSnapshot(row: UserRow): UserAuditSnapshot {
 		budget_reset_at: row.budget_reset_at,
 		status: row.status,
 		metadata: row.metadata,
+		charged_cost_factors: row.charged_cost_factors,
 		external_system: row.external_system,
 		external_user_id: row.external_user_id,
 	};
@@ -56,6 +58,7 @@ export function computeChangedFields(before: UserAuditSnapshot, after: UserAudit
 		'budget_reset_at',
 		'status',
 		'metadata',
+		'charged_cost_factors',
 		'external_system',
 		'external_user_id',
 	];
@@ -90,6 +93,7 @@ export function snapshotWithOverrides(
 			| 'budget_reset_at'
 			| 'status'
 			| 'metadata'
+			| 'charged_cost_factors'
 			| 'email'
 			| 'external_system'
 			| 'external_user_id'

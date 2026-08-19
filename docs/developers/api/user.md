@@ -51,7 +51,7 @@ Authorization: Bearer sk-xxx...
 
 模型 **`tags` 不参与**选组或计费。需要限定某一组时，请使用 **`baseId:your_group`**。
 
-**免费 / 零扣费**：`charged_cost` = 模型目录价 × 有效倍率。无 `schedule.mode` 时有效倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若要用户侧不扣费，将 **Charged factor** 或对应窗口 `factor` 设为 `0`。
+**免费 / 零扣费**：路由侧用户计费（Charged cost）= 模型目录价 × 有效倍率。无 `schedule.mode` 时有效倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 含该目录模型 ID，再对路由用户计费乘一次该倍率（六位四舍五入）；缺键不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`，或该用户该模型的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率。
 
 ### 3. 预算校验
 
@@ -1159,15 +1159,15 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 - 路由 **`price_override`** 以 **`charged_factor` / `metered_factor`**（及可选每日 **`schedule`**）相对目录价计费；嵌套 `metered`/`charged` tiers 忽略。
 - 路由级 **`route_group`** 会写入 `api_key_request_logs` 快照。
   - **`standard_cost`（目录标准价）**：按当前计费模式从 `models.pricing_profile` 计算，不乘路由倍率
-  - **`metered_cost`（供应成本）** / **`charged_cost`（用户扣费）**：目录价 × 有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。详见 `docs/developers/reference/streaming-billing.md`
-- `users.budget_spent` 仅按 `charged_cost` 累加
+  - **`metered_cost`（供应成本）** / **`charged_cost`（用户扣费）**：目录价 × 有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。若用户对该目录模型配置了用户计费倍率，仅对路由算出的用户扣费再乘一次；供应成本与目录标准价不变。详见 `docs/developers/reference/streaming-billing.md`
+- `users.budget_spent` 仅按最终 `charged_cost` 累加
 
 ### 使用量追踪
 
 每次请求会记录到 `api_key_request_logs`，主要包括：
 
 - Token 使用量（输入/输出/缓存读取/缓存写入/推理等）
-- `metered_cost` / `standard_cost` / `charged_cost`（目录选档 × 路由倍率；见上）
+- `metered_cost` / `standard_cost` / `charged_cost`（目录选档 × 路由倍率；用户扣费再可选乘用户计费倍率；见上）
 - `route_group`（请求时选用的路由快照）
 - `request_protocol` / `request_operation` 与 `upstream_protocol` / `upstream_operation`
 - `model_surface_id`、`route_pool_id`、`route_target_id`、`adapter`、`route_trace`

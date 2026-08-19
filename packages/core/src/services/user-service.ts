@@ -13,6 +13,7 @@ import {
 	snapshotToJson,
 	userRowToSnapshot,
 } from '../db/user-audit-snapshot';
+import { parseUserChargedCostFactors } from '../db/user-charged-cost-factors';
 
 /**
  * 将锚点日期按预算周期向前推一个周期（UTC）。
@@ -403,6 +404,7 @@ export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 		budget_reset_at,
 		status: row.status,
 		metadata,
+		charged_cost_factors: parseUserChargedCostFactors(row.charged_cost_factors),
 		created_at: row.created_at,
 		updated_at: row.updated_at,
 	};

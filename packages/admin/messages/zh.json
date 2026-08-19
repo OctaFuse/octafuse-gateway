@@ -1276,6 +1276,7 @@
 		"userDetail": "用户详情",
 		"newUser": "新建用户",
 		"saveUser": "保存用户",
+		"saveSuccess": "用户已保存。",
 		"deleteUser": "删除用户",
 		"apiKeys": "API Keys",
 		"newKey": "新建 Key",
@@ -1317,6 +1318,9 @@
 			"budgetPeriod": "额度周期",
 			"budgetResetAt": "额度重置时间（本地）",
 			"metadataJsonObject": "Metadata（JSON 对象）",
+			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactorModelId": "模型 ID",
+			"chargedCostFactorValue": "倍率",
 			"externalSystem": "外部系统",
 			"externalUserId": "外部用户 ID",
 			"name": "名称",
@@ -1330,7 +1334,17 @@
 			"budgetPeriod": "已消费 / 额度上限的重置周期。none 表示不自动重置。",
 			"budgetResetAt": "下一次自动重置已消费金额（并从额度基准恢复额度上限）的时间。额度周期为 none 时会被忽略。",
 			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
+			"chargedCostFactors": "从目录中选择模型后设置倍率。在路由 Charged cost 算完后再乘。未配置的模型金额不变；0 表示该模型不扣费。仅 LLM / Images / Audio，不含 Agent Tools。",
 			"disabledUser": "禁用用户后，该用户无法使用任何 API Key 发起新请求。"
+		},
+		"chargedCostFactors": {
+			"empty": "未设置按模型倍率。将按目录价与路由 Charged cost 原样扣费。",
+			"pickTitle": "添加目录模型",
+			"pickSearch": "搜索模型…",
+			"pickEmpty": "没有匹配的模型。",
+			"alreadyAdded": "已添加",
+			"unknownModel": "不在目录中",
+			"saveSuccess": "Charged cost factors 已保存。"
 		},
 		"externalIdentity": {
 			"title": "外部身份",
@@ -1365,7 +1379,10 @@
 		"errors": {
 			"updateFailed": "更新失败",
 			"deleteFailed": "删除失败",
-			"createFailed": "创建失败"
+			"createFailed": "创建失败",
+			"chargedCostFactorModelRequired": "每一行 Charged cost factor 都需要填写模型 ID。",
+			"chargedCostFactorValueInvalid": "Charged cost factor 必须是 ≥ 0 的数字。",
+			"chargedCostFactorDuplicate": "Charged cost factors 中存在重复的模型 ID。"
 		}
 	},
 	"keysPage": {

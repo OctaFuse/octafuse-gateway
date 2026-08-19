@@ -308,6 +308,7 @@ chatRoutes.post('/', async (c) => {
           usage: usageCollected,
           model_pricing_profile: model.pricing_profile ?? null,
           route_price_override_json: chosenRoute.priceOverrideRaw,
+          user_charged_cost_factors_json: apiKey.chargedCostFactors,
           route_metered_profile_json: chosenRoute.routeMeteredProfileJson,
           route_charged_profile_json: chosenRoute.routeChargedProfileJson,
           request_started_at_ms: start,

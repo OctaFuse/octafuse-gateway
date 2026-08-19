@@ -24,6 +24,8 @@ export type AdminUserCreateInput = {
 	budget_base?: number | null;
 	budget_period?: BudgetPeriod;
 	metadata?: unknown;
+	/** `{ "<models.id>": factor }`；null / {} 清空 */
+	charged_cost_factors?: Record<string, number> | null;
 };
 
 export type AdminUserUpdateInput = {
@@ -45,6 +47,8 @@ export type AdminUserUpdateInput = {
 	 */
 	external_system?: string | null;
 	external_user_id?: string | null;
+	/** `{ "<models.id>": factor }`；null / {} 清空 */
+	charged_cost_factors?: Record<string, number> | null;
 };
 
 /** ---------- `/admin/users/:id/budget/transition` 请求体 ---------- */

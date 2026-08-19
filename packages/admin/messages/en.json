@@ -1276,6 +1276,7 @@
 		"userDetail": "User Detail",
 		"newUser": "New user",
 		"saveUser": "Save user",
+		"saveSuccess": "User saved.",
 		"deleteUser": "Delete user",
 		"apiKeys": "API keys",
 		"newKey": "New key",
@@ -1317,6 +1318,9 @@
 			"budgetPeriod": "Budget period",
 			"budgetResetAt": "Budget reset at (local)",
 			"metadataJsonObject": "Metadata (JSON object)",
+			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactorModelId": "Model ID",
+			"chargedCostFactorValue": "Factor",
 			"externalSystem": "External system",
 			"externalUserId": "External user ID",
 			"name": "Name",
@@ -1330,7 +1334,17 @@
 			"budgetPeriod": "Reset cycle for spent / Budget max. none disables auto-reset.",
 			"budgetResetAt": "Next time spent (and Budget max from base) will auto-reset. Ignored when Budget period is none.",
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
+			"chargedCostFactors": "Pick catalog models, then set a factor. Applied after the route Charged cost. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools.",
 			"disabledUser": "Disabled users cannot use any API key for new requests."
+		},
+		"chargedCostFactors": {
+			"empty": "No per-model factors. Catalog and route Charged cost apply as-is.",
+			"pickTitle": "Add catalog model",
+			"pickSearch": "Search models…",
+			"pickEmpty": "No models match this search.",
+			"alreadyAdded": "Added",
+			"unknownModel": "not in catalog",
+			"saveSuccess": "Charged cost factors saved."
 		},
 		"externalIdentity": {
 			"title": "External identity",
@@ -1365,7 +1379,10 @@
 		"errors": {
 			"updateFailed": "Update failed",
 			"deleteFailed": "Delete failed",
-			"createFailed": "Create failed"
+			"createFailed": "Create failed",
+			"chargedCostFactorModelRequired": "Each Charged cost factor row needs a model ID.",
+			"chargedCostFactorValueInvalid": "Each Charged cost factor must be a number ≥ 0.",
+			"chargedCostFactorDuplicate": "Duplicate model IDs in Charged cost factors."
 		}
 	},
 	"keysPage": {

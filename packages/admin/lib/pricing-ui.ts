@@ -618,6 +618,23 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 				parts.push(`×${uc.effective_factor}`);
 			}
 		}
+		const snapForUser =
+			o.snapshot && typeof o.snapshot === 'object'
+				? (o.snapshot as Record<string, unknown>)
+				: null;
+		const ucForUser =
+			snapForUser?.user_charge && typeof snapForUser.user_charge === 'object'
+				? (snapForUser.user_charge as Record<string, unknown>)
+				: undefined;
+		const userFactor =
+			typeof o.user_charged_factor === 'number'
+				? o.user_charged_factor
+				: ucForUser && typeof ucForUser.user_charged_factor === 'number'
+					? ucForUser.user_charged_factor
+					: null;
+		if (userFactor != null) {
+			parts.push(`user ×${userFactor}`);
+		}
 		if (typeof o.basis_tokens === 'number') {
 			parts.push(`basis ${o.basis_tokens.toLocaleString()} in`);
 		}

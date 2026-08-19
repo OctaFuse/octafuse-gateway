@@ -21,6 +21,10 @@ import {
 	resolveSupplierBillingPrices,
 	roundGatewayMoney,
 	scaleBillingPrices,
+	applyUserChargedCostFactor,
+	attachUserChargedFactorToPricingAudit,
+	lookupUserChargedCostFactor,
+	parseUserChargedCostFactors,
 	type BillingPriceSnapshot,
 	type PriceResolutionAuditSide,
 	changedFieldsToJson,
@@ -146,6 +150,8 @@ export async function recordUsage(
 		usage: UsageFromStream;
 		model_pricing_profile?: string | null;
 		route_price_override_json?: string | null;
+		/** `users.charged_cost_factors` JSON；按 `model_id` 精确匹配后再乘路由 charged */
+		user_charged_cost_factors_json?: string | null;
 		/** @deprecated Ignored; nested metered tiers are not used for billing. */
 		route_metered_profile_json?: string | null;
 		/** @deprecated Ignored; nested charged tiers are not used for billing. */
@@ -232,17 +238,32 @@ export async function recordUsage(
 		chargedResolved.prices.cache_read_price,
 		chargedResolved.prices.cache_write_price
 	);
-	const chargedCost = roundGatewayMoney(chargedRaw);
+	const routeChargedCost = roundGatewayMoney(chargedRaw);
+	const factorsJson = params.user_charged_cost_factors_json ?? null;
+	if (factorsJson != null && factorsJson.trim() !== '' && parseUserChargedCostFactors(factorsJson) == null) {
+		console.warn(
+			`[Gateway Billing] invalid users.charged_cost_factors ignored model_id=${params.model_id}`
+		);
+	}
+	const userChargedFactor = lookupUserChargedCostFactor(
+		parseUserChargedCostFactors(factorsJson),
+		params.model_id
+	);
+	const chargedCost = applyUserChargedCostFactor(routeChargedCost, userChargedFactor);
+	chargedResolved.audit.user_charged_factor = userChargedFactor;
 	const supplierCostR = roundGatewayMoney(supplierCost);
 	const standardCostR = roundGatewayMoney(standardCost);
-	const pricingAuditJson = buildRequestPricingAuditJson({
-		usage: params.usage,
-		supplierAudit: supplierResolved.audit,
-		standardAudit: standardResolved.audit,
-		chargedAudit: chargedResolved.audit,
-	});
+	const pricingAuditJson = attachUserChargedFactorToPricingAudit(
+		buildRequestPricingAuditJson({
+			usage: params.usage,
+			supplierAudit: supplierResolved.audit,
+			standardAudit: standardResolved.audit,
+			chargedAudit: chargedResolved.audit,
+		}),
+		userChargedFactor
+	);
 	console.log(
-		`[Gateway Usage] recordUsage model_id=${params.model_id} request_protocol=${params.request_protocol} status=${params.status} route_group=${params.route_group} input_tokens=${params.usage.input_tokens} output_tokens=${params.usage.output_tokens} reasoning_tokens=${params.usage.reasoning_tokens} metered=${supplierCostR} standard=${standardCostR} charged=${chargedCost} charged_eff=${chargedResolved.audit.effective_factor} metered_eff=${supplierResolved.audit.effective_factor}`
+		`[Gateway Usage] recordUsage model_id=${params.model_id} request_protocol=${params.request_protocol} status=${params.status} route_group=${params.route_group} input_tokens=${params.usage.input_tokens} output_tokens=${params.usage.output_tokens} reasoning_tokens=${params.usage.reasoning_tokens} metered=${supplierCostR} standard=${standardCostR} charged=${chargedCost} charged_eff=${chargedResolved.audit.effective_factor} user_charged_factor=${userChargedFactor ?? 'none'} metered_eff=${supplierResolved.audit.effective_factor}`
 	);
 	const id = crypto.randomUUID();
 	const shouldChargeBudget = params.status !== 'error' && chargedCost > 0;
