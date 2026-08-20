@@ -199,6 +199,8 @@ describe('provider import preset catalog metadata', () => {
 			chatOf('BytePlus ModelArk (Coding Plan)'),
 			'https://ark.ap-southeast.bytepluses.com/api/coding/v3/chat/completions'
 		);
+		assert.equal(chatOf('SCNet'), 'https://api.scnet.cn/api/llm/v1/chat/completions');
+		assert.equal(anthropicBaseOf('SCNet'), 'https://api.scnet.cn/api/llm/anthropic');
 	});
 
 	it('keeps Vertex Express on Gemini query-key and adds project-scoped OpenAI chat', () => {

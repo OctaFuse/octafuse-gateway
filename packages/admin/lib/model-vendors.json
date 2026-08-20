@@ -29,6 +29,7 @@
   { "key": "perplexity", "label": "Perplexity" },
   { "key": "qiniu", "label": "Qiniu" },
   { "key": "sambanova", "label": "SambaNova" },
+  { "key": "scnet", "label": "SCNet" },
   { "key": "stability", "label": "Stability AI" },
   { "key": "stepfun", "label": "StepFun" },
   { "key": "tencent", "label": "Tencent" },
