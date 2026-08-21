@@ -41,6 +41,7 @@ import {
 	isPlaygroundBodyDirty,
 	playgroundLlmSampleBody,
 	playgroundModelHintFromRoute,
+	previewPlaygroundMergedBody,
 	resolvePlaygroundLlmFamily,
 	resolveRouteModelKind,
 	routeMatchesSearch,
@@ -103,7 +104,7 @@ export function usePlaygroundPageState() {
 	const [usageHint, setUsageHint] = useState<string | null>(null);
 	const [imagePreviews, setImagePreviews] = useState<ImagePreviewItem[]>([]);
 	const [lastSentWireBody, setLastSentWireBody] = useState<string | null>(null);
-	const [wireOpen, setWireOpen] = useState(false);
+	const [lastSentInputSnapshot, setLastSentInputSnapshot] = useState<string | null>(null);
 	const streamEndRef = useRef<HTMLSpanElement>(null);
 	const mergedStreamEndRef = useRef<HTMLSpanElement>(null);
 
@@ -399,7 +400,7 @@ export function usePlaygroundPageState() {
 		setImagePreviews([]);
 		setResponseMeta(null);
 		setLastSentWireBody(null);
-		setWireOpen(false);
+		setLastSentInputSnapshot(null);
 		setResponseText('');
 		setUsageHint(null);
 	}, [selectedId, routes, modelsById]);
@@ -549,6 +550,7 @@ export function usePlaygroundPageState() {
 		realtimeAudioChunksRef.current = [];
 		setResponseMeta(null);
 		setLastSentWireBody(null);
+		setLastSentInputSnapshot(null);
 		setResponseTab('merged');
 
 		setResponseProtocol(proto);
@@ -559,7 +561,16 @@ export function usePlaygroundPageState() {
 			}).toString()}`;
 			const startedAt = performance.now();
 			const realtimeAudioType = dashScopeRealtimeAudioContentType(JSON.stringify(bodyObj));
-			setLastSentWireBody(JSON.stringify(bodyObj, null, 2));
+			const realtimePreview = previewPlaygroundMergedBody({
+				bodyText: JSON.stringify(bodyObj),
+				customParams: selected.custom_params,
+				upstreamProtocol: selected.upstream_protocol,
+				providerModelName: selected.provider_model_name,
+			});
+			setLastSentWireBody(
+				realtimePreview.status === 'preview' ? realtimePreview.json : JSON.stringify(bodyObj, null, 2),
+			);
+			setLastSentInputSnapshot(bodyText);
 			try {
 				const socket = openDashScopeRealtimeClient({
 					url: realtimeUrl,
@@ -643,6 +654,7 @@ export function usePlaygroundPageState() {
 			const ct = res.headers.get('Content-Type') ?? '';
 
 			setLastSentWireBody(decodeWireRequestBodyHeader(res, t('decodeWireFailed')));
+			setLastSentInputSnapshot(bodyText);
 
 			setResponseMeta({
 				status: res.status,
@@ -804,9 +816,7 @@ export function usePlaygroundPageState() {
 		setResponseTab,
 		usageHint,
 		imagePreviews,
-		lastSentWireBody,
-		wireOpen,
-		setWireOpen,
+		lastSentWireBody: lastSentWireBody && lastSentInputSnapshot === bodyText ? lastSentWireBody : null,
 		requestTargetUrl,
 		selectedIsImage,
 		selectedIsAudio,

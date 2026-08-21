@@ -52,7 +52,6 @@ export function usePlaygroundToolsState(initialToolId?: string | null, initialPr
 	} | null>(null);
 	const [responseText, setResponseText] = useState('');
 	const [wireBody, setWireBody] = useState<string | null>(null);
-	const [wireOpen, setWireOpen] = useState(false);
 
 	useEffect(() => {
 		const nextProviders = providersForTool(toolId);
@@ -148,8 +147,6 @@ export function usePlaygroundToolsState(initialToolId?: string | null, initialPr
 		responseMeta,
 		responseText,
 		wireBody,
-		wireOpen,
-		setWireOpen,
 		applyTemplate,
 		send,
 	};
@@ -228,30 +225,37 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 						</button>
 					</div>
 				</div>
-				<textarea
-					value={state.bodyText}
-					onChange={(e) => state.setBodyText(e.target.value)}
-					rows={12}
-					className={`${inputClass} min-h-[180px] font-mono text-sm`}
-					spellCheck={false}
-				/>
+				<div className="grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
+					<div className="flex min-h-0 min-w-0 flex-col">
+						<label className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-500">
+							{t('inputBody')}
+						</label>
+						<textarea
+							value={state.bodyText}
+							onChange={(e) => state.setBodyText(e.target.value)}
+							rows={12}
+							className={`${inputClass} min-h-[180px] flex-1 font-mono text-sm`}
+							spellCheck={false}
+						/>
+					</div>
+					<div className="flex min-h-0 min-w-0 flex-col">
+						<div className="mb-1 flex items-center justify-between gap-2">
+							<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('sentBody')}</label>
+							{state.wireBody ? (
+								<span className="text-[11px] font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
+							) : null}
+						</div>
+						<p className="mb-1 text-[11px] text-gray-500">
+							{state.wireBody ? t('sentBodyHint') : t('sentBodyEmpty')}
+						</p>
+						<pre className={`${codeBlockClass} min-h-[180px] flex-1 overflow-y-auto`}>
+							{state.wireBody ?? '—'}
+						</pre>
+					</div>
+				</div>
 				{state.bodyError ? (
 					<div className="whitespace-pre-wrap rounded-md border border-red-200 bg-red-50 p-2.5 text-sm text-red-700">
 						{state.bodyError}
-					</div>
-				) : null}
-				{state.wireBody ? (
-					<div className="border-t border-gray-100 pt-2">
-						<button
-							type="button"
-							onClick={() => state.setWireOpen(!state.wireOpen)}
-							className="flex w-full items-center justify-between text-left text-xs font-medium text-gray-600 hover:text-gray-900"
-							aria-expanded={state.wireOpen}
-						>
-							<span>{t('sentBody')}</span>
-							<span className="text-gray-400">{state.wireOpen ? '▾' : '▸'}</span>
-						</button>
-						{state.wireOpen ? <pre className={`${codeBlockClass} mt-2`}>{state.wireBody}</pre> : null}
 					</div>
 				) : null}
 			</section>

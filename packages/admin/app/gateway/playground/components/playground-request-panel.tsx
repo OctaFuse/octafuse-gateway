@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { RequestTargetUrl } from '@/components/request-target-url';
@@ -17,6 +18,7 @@ import {
 	matchPlaygroundLlmSample,
 	playgroundLlmFamilyForRoute,
 	playgroundModelHintFromRoute,
+	previewPlaygroundMergedBody,
 	PLAYGROUND_LLM_SAMPLE_IDS,
 	type PlaygroundLlmSampleId,
 } from '../playground-utils';
@@ -55,8 +57,6 @@ type Props = {
 	geminiAction: GeminiAction;
 	onGeminiActionChange: (action: GeminiAction) => void;
 	lastSentWireBody: string | null;
-	wireOpen: boolean;
-	onWireOpenChange: (open: boolean) => void;
 };
 
 export function PlaygroundRequestPanel({
@@ -92,8 +92,6 @@ export function PlaygroundRequestPanel({
 	geminiAction,
 	onGeminiActionChange,
 	lastSentWireBody,
-	wireOpen,
-	onWireOpenChange,
 }: Props) {
 	const t = useTranslations('playground');
 	const tCommon = useTranslations('common');
@@ -106,6 +104,22 @@ export function PlaygroundRequestPanel({
 	const llmSample = llmFamily
 		? matchPlaygroundLlmSample(llmFamily, bodyText, playgroundModelHintFromRoute(selected))
 		: null;
+	const mergedPreview = useMemo(
+		() =>
+			previewPlaygroundMergedBody({
+				bodyText,
+				customParams: selected?.custom_params,
+				upstreamProtocol: selected?.upstream_protocol,
+				providerModelName: selected?.provider_model_name,
+			}),
+		[bodyText, selected?.custom_params, selected?.upstream_protocol, selected?.provider_model_name],
+	);
+	const actualBodyJson = lastSentWireBody ?? (mergedPreview.status === 'preview' ? mergedPreview.json : null);
+	const actualBodyHint = lastSentWireBody
+		? t('sentBodyHint')
+		: mergedPreview.status === 'invalid'
+			? t('sentBodyInvalidJson')
+			: t('sentBodyPreviewHint');
 	const sampleLabel = (id: PlaygroundLlmSampleId) =>
 		id === 'connectivity' ? t('templateConnectivity') : id === 'tools' ? t('templateToolStream') : t('templateReasoning');
 	const llmSampleSwitcher = llmFamily ? (
@@ -376,42 +390,38 @@ export function PlaygroundRequestPanel({
 				</fieldset>
 			) : null}
 
-			<div className="flex min-h-0 flex-1 flex-col">
-				<div className="mb-1 flex items-center justify-between gap-2">
-					<label className="text-xs font-medium uppercase tracking-wider text-gray-500">JSON</label>
-					{llmSampleSwitcher}
+			<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
+				<div className="flex min-h-0 min-w-0 flex-col">
+					<div className="mb-1 flex items-center justify-between gap-2">
+						<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('inputBody')}</label>
+						{llmSampleSwitcher}
+					</div>
+					<textarea
+						value={bodyText}
+						onChange={(e) => onBodyTextChange(e.target.value)}
+						rows={12}
+						className={`${inputClass} min-h-[180px] flex-1 font-mono text-sm`}
+						spellCheck={false}
+					/>
 				</div>
-				<textarea
-					value={bodyText}
-					onChange={(e) => onBodyTextChange(e.target.value)}
-					rows={12}
-					className={`${inputClass} min-h-[180px] flex-1 font-mono text-sm`}
-					spellCheck={false}
-				/>
+				<div className="flex min-h-0 min-w-0 flex-col">
+					<div className="mb-1 flex items-center justify-between gap-2">
+						<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('sentBody')}</label>
+						{lastSentWireBody ? (
+							<span className="text-[11px] font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
+						) : mergedPreview.status === 'preview' ? (
+							<span className="text-[11px] font-medium text-slate-500">{t('sentBodySourcePreview')}</span>
+						) : null}
+					</div>
+					<p className="mb-1 text-[11px] text-gray-500">{actualBodyHint}</p>
+					<pre className={`${codeBlockClass} min-h-[180px] flex-1 overflow-y-auto`}>
+						{actualBodyJson ?? '—'}
+					</pre>
+				</div>
 			</div>
 
 			{bodyError ? (
 				<div className="rounded-md border border-red-200 bg-red-50 p-2.5 text-sm text-red-600">{bodyError}</div>
-			) : null}
-
-			{lastSentWireBody ? (
-				<div className="border-t border-gray-100 pt-2">
-					<button
-						type="button"
-						onClick={() => onWireOpenChange(!wireOpen)}
-						className="flex w-full items-center justify-between text-left text-xs font-medium text-gray-600 hover:text-gray-900"
-						aria-expanded={wireOpen}
-					>
-						<span>{t('sentBody')}</span>
-						<span className="text-gray-400">{wireOpen ? '▾' : '▸'}</span>
-					</button>
-					{wireOpen ? (
-						<div className="mt-2 space-y-1">
-							<p className="text-[11px] text-gray-500">{t('sentBodyHint')}</p>
-							<pre className={codeBlockClass}>{lastSentWireBody}</pre>
-						</div>
-					) : null}
-				</div>
 			) : null}
 		</section>
 	);

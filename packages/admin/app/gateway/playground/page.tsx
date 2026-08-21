@@ -138,8 +138,6 @@ function PlaygroundPageInner() {
 									geminiAction={s.geminiAction}
 									onGeminiActionChange={s.setGeminiAction}
 									lastSentWireBody={s.lastSentWireBody}
-									wireOpen={s.wireOpen}
-									onWireOpenChange={s.setWireOpen}
 								/>
 								<PlaygroundResponsePanel
 									responseMeta={s.responseMeta}
