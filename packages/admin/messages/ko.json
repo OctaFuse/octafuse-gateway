@@ -1308,6 +1308,7 @@
 			"spent": "지출",
 			"max": "최대",
 			"base": "기준",
+			"resetTo": "재설정 {amount}",
 			"period": "주기",
 			"resetAt": "재설정 시각",
 			"keys": "Keys",

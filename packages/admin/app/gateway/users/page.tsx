@@ -399,13 +399,11 @@ export default function GatewayUsersPage() {
         <table className="w-full min-w-[68rem] table-fixed">
           <colgroup>
             <col className="w-[22%]" />
+            <col className="w-[26%]" />
+            <col className="w-[8%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
             <col className="w-[16%]" />
-            <col className="w-[8%]" />
-            <col className="w-[10%]" />
-            <col className="w-[8%]" />
-            <col className="w-[12%]" />
-            <col className="w-[12%]" />
-            <col className="w-[12%]" />
           </colgroup>
           <thead className="border-b border-gray-200 bg-gray-50/80">
             <tr>
@@ -418,10 +416,12 @@ export default function GatewayUsersPage() {
                   <SortButton label={t('table.spent')} columnKey="budget_spent" />
                   <span className="text-gray-300">/</span>
                   <SortButton label={t('table.max')} columnKey="budget_max" />
+                  <span className="text-gray-300">·</span>
+                  <SortButton label={t('table.base')} columnKey="budget_base" />
+                  <span className="text-gray-300">·</span>
+                  <SortButton label={t('table.cycle')} columnKey="budget_reset_at" />
                 </div>
               </th>
-              <SortableTh label={t('table.base')} columnKey="budget_base" align="right" />
-              <SortableTh label={t('table.cycle')} columnKey="budget_reset_at" />
               <th
                 className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap"
                 title={t('table.keysActiveOfTotal')}
@@ -445,9 +445,7 @@ export default function GatewayUsersPage() {
               Array.from({ length: 8 }).map((_, index) => (
                 <tr key={`skeleton-${index}`} className="animate-pulse">
                   <td className="px-4 py-4"><div className="h-4 w-48 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="ml-auto h-4 w-28 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="ml-auto h-4 w-16 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="h-4 w-20 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-40 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="ml-auto h-4 w-8 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-gray-100" /></td>
@@ -461,13 +459,26 @@ export default function GatewayUsersPage() {
               const disabled = u.status !== 'active';
               const periodActive = Boolean(u.budget_period && u.budget_period !== 'none');
               const hasBase = u.budget_base != null && u.budget_base !== 0;
-              const hasCycle = periodActive || Boolean(u.budget_reset_at);
               const ratio = budgetUsageRatio(u.budget_spent, u.budget_max);
               const spentLabel = formatGatewayMoneyCode(u.budget_spent, billingCurrency, 2);
               const maxLabel =
                 u.budget_max != null
                   ? formatGatewayMoneyCode(u.budget_max, billingCurrency, 2)
                   : tCommon('noLimit');
+              const periodText = periodActive
+                ? periodLabel(u.budget_period, {
+                    daily: tOptions('budgetPeriod.daily'),
+                    weekly: tOptions('budgetPeriod.weekly'),
+                    monthly: tOptions('budgetPeriod.monthly'),
+                  }) ?? u.budget_period
+                : null;
+              const cycleText = [periodText, u.budget_reset_at ? formatDate(u.budget_reset_at) : null]
+                .filter(Boolean)
+                .join(' · ');
+              const resetToText = hasBase
+                ? t('table.resetTo', { amount: formatGatewayMoneyCode(u.budget_base, billingCurrency, 2) })
+                : null;
+              const resetHint = [cycleText, resetToText].filter(Boolean).join(' ');
               const externalLabel = [u.external_system, u.external_user_id].filter(Boolean).join(' · ');
               return (
               <tr
@@ -520,10 +531,20 @@ export default function GatewayUsersPage() {
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden">
                   <div className="w-full">
-                    <div className="truncate text-right text-sm tabular-nums text-gray-900">
-                      {spentLabel}
-                      <span className="text-gray-400"> / </span>
-                      <span className={u.budget_max == null ? 'text-gray-400' : 'text-gray-700'}>{maxLabel}</span>
+                    <div className="flex items-baseline justify-end gap-2">
+                      {resetHint ? (
+                        <div
+                          className="min-w-0 flex-1 truncate text-left text-[11px] text-gray-500"
+                          title={u.budget_reset_at ? formatDateTime(u.budget_reset_at) : resetHint}
+                        >
+                          {resetHint}
+                        </div>
+                      ) : null}
+                      <div className="shrink-0 text-right text-sm tabular-nums text-gray-900">
+                        {spentLabel}
+                        <span className="text-gray-400"> / </span>
+                        <span className={u.budget_max == null ? 'text-gray-400' : 'text-gray-700'}>{maxLabel}</span>
+                      </div>
                     </div>
                     {ratio != null ? (
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
@@ -536,35 +557,6 @@ export default function GatewayUsersPage() {
                       <div className="mt-1.5 h-1.5 rounded-full bg-gray-50" />
                     )}
                   </div>
-                </td>
-                <td className="px-4 py-3.5 overflow-hidden text-right text-sm tabular-nums whitespace-nowrap">
-                  {hasBase ? (
-                    <span className="text-gray-900">{formatGatewayMoneyCode(u.budget_base, billingCurrency, 2)}</span>
-                  ) : (
-                    <span className="text-gray-300">{tCommon('noData')}</span>
-                  )}
-                </td>
-                <td className="px-4 py-3.5 overflow-hidden">
-                  {hasCycle ? (
-                    <div className="min-w-0 space-y-0.5">
-                      {periodActive ? (
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium capitalize text-slate-700">
-                          {periodLabel(u.budget_period, {
-                            daily: tOptions('budgetPeriod.daily'),
-                            weekly: tOptions('budgetPeriod.weekly'),
-                            monthly: tOptions('budgetPeriod.monthly'),
-                          }) ?? u.budget_period}
-                        </span>
-                      ) : null}
-                      {u.budget_reset_at ? (
-                        <div className="truncate text-xs text-gray-500" title={formatDateTime(u.budget_reset_at)}>
-                          {formatDate(u.budget_reset_at)}
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <span className="text-gray-300">{tCommon('noData')}</span>
-                  )}
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden text-right">
                   <span

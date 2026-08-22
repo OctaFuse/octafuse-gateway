@@ -1308,6 +1308,7 @@
 			"spent": "Spent",
 			"max": "Max",
 			"base": "Base",
+			"resetTo": "Reset to {amount}",
 			"period": "Period",
 			"resetAt": "Reset at",
 			"keys": "Keys",

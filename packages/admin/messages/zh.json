@@ -1308,6 +1308,7 @@
 			"spent": "已消费",
 			"max": "上限",
 			"base": "基准",
+			"resetTo": "重置为 {amount}",
 			"period": "周期",
 			"resetAt": "重置时间",
 			"keys": "Keys",

@@ -1308,6 +1308,7 @@
 			"spent": "使用済み",
 			"max": "上限",
 			"base": "基準",
+			"resetTo": "リセット先 {amount}",
 			"period": "期間",
 			"resetAt": "リセット日時",
 			"keys": "Keys",
