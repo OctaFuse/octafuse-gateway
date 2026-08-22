@@ -1,0 +1,177 @@
+[
+	{
+		"id": "qwen-image-3.0-pro",
+		"display_name": "Qwen Image 3.0 Pro",
+		"description": "Alibaba's flagship Qwen Image 3.0 model for dense layouts, multilingual text rendering, and photographic detail. Supports text-to-image and image editing up to 2K.",
+		"i18n": {
+			"en": "Alibaba's flagship Qwen Image 3.0 model for dense layouts, multilingual text rendering, and photographic detail. Supports text-to-image and image editing up to 2K.",
+			"zh": "阿里云千问图像 3.0 旗舰，面向复杂版面、多语言文字渲染与摄影级细节。支持文生图与图像编辑，最高 2K。"
+		},
+		"vendor": "aliyun",
+		"context_window": null,
+		"max_tokens": null,
+		"tags": [
+			"New"
+		],
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.036,
+					"by_size": {
+						"1k": 0.036,
+						"2k": 0.071
+					},
+					"input": {
+						"default": 0.003
+					},
+					"uncertain_result_policy": "requested"
+				}
+			},
+			"cny": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.25,
+					"by_size": {
+						"1k": 0.25,
+						"2k": 0.5
+					},
+					"input": {
+						"default": 0.02
+					},
+					"uncertain_result_policy": "requested"
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-07-21"
+	},
+	{
+		"id": "qwen-image-3.0",
+		"display_name": "Qwen Image 3.0",
+		"description": "A faster Qwen Image 3.0 model for general generation and editing. Same 2K ceiling as Pro, with a flat per-image output price.",
+		"i18n": {
+			"en": "A faster Qwen Image 3.0 model for general generation and editing. Same 2K ceiling as Pro, with a flat per-image output price.",
+			"zh": "千问图像 3.0 标准版，生成更快，能力与 Pro 同档（最高 2K），输出按张一口价。"
+		},
+		"vendor": "aliyun",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.026,
+					"input": {
+						"default": 0.003
+					},
+					"uncertain_result_policy": "requested"
+				}
+			},
+			"cny": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.18,
+					"input": {
+						"default": 0.02
+					},
+					"uncertain_result_policy": "requested"
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-07-21"
+	},
+	{
+		"id": "wan2.7-image-pro",
+		"display_name": "Wan 2.7 Image Pro",
+		"description": "Alibaba Wan 2.7 flagship for text-to-image, sequential sets, multi-reference editing, brand color control, and up to 4K generation.",
+		"i18n": {
+			"en": "Alibaba Wan 2.7 flagship for text-to-image, sequential sets, multi-reference editing, brand color control, and up to 4K generation.",
+			"zh": "阿里云万相 2.7 旗舰，支持文生图、组图、多图参考编辑与品牌色控制，文生图最高 4K。"
+		},
+		"vendor": "aliyun",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.071,
+					"uncertain_result_policy": "requested"
+				}
+			},
+			"cny": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.5,
+					"uncertain_result_policy": "requested"
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-04-01"
+	},
+	{
+		"id": "wan2.7-image",
+		"display_name": "Wan 2.7 Image",
+		"description": "A faster Wan 2.7 model for generation, sequential sets, and multi-reference editing, with a 2K output ceiling.",
+		"i18n": {
+			"en": "A faster Wan 2.7 model for generation, sequential sets, and multi-reference editing, with a 2K output ceiling.",
+			"zh": "万相 2.7 标准版，生成更快，支持文生图、组图与多图编辑，最高 2K。"
+		},
+		"vendor": "aliyun",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.029,
+					"uncertain_result_policy": "requested"
+				}
+			},
+			"cny": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.2,
+					"uncertain_result_policy": "requested"
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-04-01"
+	}
+]

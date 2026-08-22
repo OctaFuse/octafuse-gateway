@@ -25,6 +25,7 @@ API 字段细节见 [用户接口 · Images](../api/user.md#images图片生成--
 - 智谱：`packages/admin/lib/model-presets/zhipu-image.json`
 - xAI：`packages/admin/lib/model-presets/xai-image.json`
 - Google：`packages/admin/lib/model-presets/google-image.json`
+- 阿里云百炼：`packages/admin/lib/model-presets/aliyun-image.json`
 
 Admin → Models → Import 勾选导入；**同 id 已存在不会覆盖**——改价需删后 re-import 或 PATCH。
 
@@ -38,13 +39,17 @@ Admin → Models → Import 勾选导入；**同 id 已存在不会覆盖**—�
 | `grok-imagine-image-quality` | Grok Imagine Image Quality | xai | 海外 | generations（及上游 edits） | **`per_image`**（1K $0.05 / 2K $0.07；input $0.01） |
 | `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | google | 海外 | generations（OpenAI 兼容层） | **`token`**（Nano Banana 2） |
 | `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | google | 海外 | 同上 | **`token`**（Nano Banana Pro） |
+| `qwen-image-3.0-pro` | Qwen Image 3.0 Pro | aliyun | 国内（百炼） | DashScope 原生（非 OpenAI Images） | **`per_image`**（¥0.25/¥0.50 按 1K/2K + 参考图） |
+| `qwen-image-3.0` | Qwen Image 3.0 | aliyun | 国内（百炼） | 同上 | **`per_image`**（¥0.18/张 + 参考图） |
+| `wan2.7-image-pro` | Wan 2.7 Image Pro | aliyun | 国内（百炼） | 同上 | **`per_image`**（¥0.50/张一口价） |
+| `wan2.7-image` | Wan 2.7 Image | aliyun | 国内（百炼） | 同上 | **`per_image`**（¥0.20/张一口价） |
 
 约定：
 
 - Catalog id **=** 上游 `provider_model_name`（与 `gpt-image-2` 一致）；若控制台用推理接入点，Route 可填 `ep-…`。
 - 模型预设 **不** 写 `suggested_provider_model_name` / `suggested_custom_params`；默认参数由客户端或 Route `custom_params` 注入。
-- 旧 id（如 `doubao-seedream-4-5-*`、`cogview-*`、`gemini-2.5-flash-image`、`grok-imagine-image-pro`）不进静态预设；库里若仍有旧行需手工清理。
-- 新增厂商：补 `<vendor>-image.json` + Provider 模板（须有 OpenAI Images `images.generations`）+ 本文表格。阿里云百炼万相 / Qwen-Image 等非 OpenAI Images 路径暂不收录。
+- 旧 id（如 `doubao-seedream-4-5-*`、`cogview-*`、`gemini-2.5-flash-image`、`grok-imagine-image-pro`、`qwen-image` / `qwen-image-plus` / `qwen-image-2.0-*` / `wan2.6-*` / `wanx*`）不进静态预设；库里若仍有旧行需手工清理。
+- 新增厂商：补 `<vendor>-image.json` + Provider 模板（须有 OpenAI Images `images.generations`）+ 本文表格。阿里云百炼目录已收录当前代 `qwen-image-3.0*` / `wan2.7-image*`（按张计费）；上游仍是 DashScope 原生接口，**尚未**接入 Gateway OpenAI Images 驱动，导入后不能直接打 `/v1/images/generations`。
 
 ## Provider 配置
 
@@ -87,6 +92,12 @@ Coding Plan / Agent Plan 模板路径不同，**勿与标准 `/api/v3` 混用**�
 - 模板 **Google Gemini (Generative Language API)**：`endpoints.openai.base` = `https://generativelanguage.googleapis.com/v1beta/openai`
 - 官方 OpenAI 兼容层文档常见示例含 `gemini-3-pro-image-preview`；`gemini-3.1-flash-image` 为当前稳定型号，若兼容层拒识再按 Google 文档改 Route `provider_model_name`。
 - 建议请求显式 `response_format=b64_json`（与 Google 兼容文档一致）。
+
+### 阿里云百炼（`qwen-image-3.0*` / `wan2.7-image*`）
+
+- 模板 **Alibaba Cloud Bailian** 仍只配 OpenAI 兼容 Chat + DashScope 音频 Base；**不要**把 DashScope 原生生图 URL 写进 `images.generations`（OpenAI Images 驱动无法直打该路径）。
+- 官方：千问 3.0 走 `…/services/aigc/multimodal-generation/generation`；万相 2.7 走 `…/services/aigc/image-generation/generation`。二者均 **不** 支持 `compatible-mode` Images。
+- 目录用途：Admin → Models → Import 的价目与型号；真正经 Gateway `/v1/images/generations` 出图需等 DashScope 生图驱动，或上游另提供 OpenAI Images 兼容层。
 
 ## 参数对照
 
@@ -144,7 +155,7 @@ Seedream 图生图（勿打 `/edits`）：
 | 模式 | 适用 | 扣费权威 | `pricing_audit.kind` |
 |------|------|----------|----------------------|
 | **`token`** | gpt-image-2、Gemini Nano Banana | 上游 `usage` 分项 × tier `image_*` / text 单价 | `image_tokens` |
-| **`per_image`** | Seedream / GLM / Grok | 确认输出张数 × `image.default`（+ 可选参考图 `image.input`）；**无需 / 不计价 `tiers`** | `image_per_image` |
+| **`per_image`** | Seedream / GLM / Grok / 阿里云百炼 | 确认输出张数 × `image.default`（+ 可选参考图 `image.input`）；**无需 / 不计价 `tiers`** | `image_per_image` |
 
 再乘路由 `charged_factor` / `metered_factor`。Request log 另有结构化列 `billing_kind`、`input_image_count`、`output_image_count`。
 
@@ -204,6 +215,10 @@ charged ≈
 | `doubao-seedream-5-0` | **0.22** | **0.035** | 火山方舟一口价；BytePlus $0.035；**不按 4K 翻倍** |
 | `doubao-seedream-5-0-pro` | **0.30**（≤2.36MP）/ **0.60**（>2.36MP） | **0.045** / **0.09** | `by_size`：`2k`→低档，`3k`/`4k`→高档；`image.input` CNY **0.02** / USD **0.003**（官方首张免费网关暂按全量计） |
 | `glm-image` | **0.1** | **0.014** | 智谱官方 ¥0.1/次；USD ≈ ×7.14（国内权威 CNY） |
+| `qwen-image-3.0-pro` | **0.25**（1K）/ **0.50**（2K） | **0.036** / **0.071** | 百炼华北2 原价；`image.input` CNY **0.02** / USD **0.003**；USD = CNY ÷ 7 |
+| `qwen-image-3.0` | **0.18** | **0.026** | 1K/2K 同价；`image.input` 同上 |
+| `wan2.7-image-pro` | **0.50** | **0.071** | 一口价（含 4K 文生图）；官方输入不计费 |
+| `wan2.7-image` | **0.20** | **0.029** | 一口价，最高 2K；官方输入不计费 |
 | `grok-imagine-image-2.0` | **0.28** | **0.04** | xAI 官方一口价；CNY = USD ×7；价目页未单列参考图单价 |
 | `grok-imagine-image-quality` | **0.35**（1K）/ **0.49**（2K） | **0.05** / **0.07** | xAI 官方；CNY = USD ×7；`image.input.default` USD **0.01**（CNY **0.07**） |
 

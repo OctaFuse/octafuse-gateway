@@ -20,6 +20,7 @@
  * 合并顺序：与下方 import 列表一致（尚未录入价目的厂商保留 `[]` 占位文件；image 文件紧挨同 vendor 的 LLM 之后）。
  */
 import aliyunPresets from './model-presets/aliyun.json';
+import aliyunImagePresets from './model-presets/aliyun-image.json';
 import anthropicPresets from './model-presets/anthropic.json';
 import baichuanPresets from './model-presets/baichuan.json';
 import baiduPresets from './model-presets/baidu.json';
@@ -80,6 +81,7 @@ export type StaticModelPresetRow = {
 
 const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	aliyunPresets,
+	aliyunImagePresets,
 	anthropicPresets,
 	baichuanPresets,
 	baiduPresets,
