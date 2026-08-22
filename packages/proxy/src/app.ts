@@ -21,6 +21,7 @@ import { toolsPricingRoutes } from './routes/v1/tools/pricing';
 import { imageRoutes } from './routes/v1/images';
 import { audioRoutes } from './routes/v1/audio';
 import { dashScopeRealtimeRoutes } from './routes/v1/dashscope-realtime';
+import { dashScopeMultimodalRoutes } from './routes/v1/dashscope-multimodal';
 import { proxyAppVersion } from './app-version';
 import type { DashScopeRealtimeNodeDispatch } from './services/egress/dashscope-realtime-driver';
 
@@ -107,6 +108,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/v1/images', imageRoutes);
 	app.route('/v1/audio', audioRoutes);
 	app.route('/v1/dashscope/realtime', dashScopeRealtimeRoutes);
+	app.route('/v1/dashscope/services/aigc/multimodal-generation/generation', dashScopeMultimodalRoutes);
 	app.route('/v1/messages', messagesRoutes);
 	app.route('/v1beta', geminiRoutes);
 	app.route('/v1/me', meRoutes);

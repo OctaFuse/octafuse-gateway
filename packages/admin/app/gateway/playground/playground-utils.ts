@@ -1,6 +1,8 @@
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
+	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 	isAudioRouteModel,
 } from '@/lib/audio-transcriptions';
 import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
@@ -114,6 +116,76 @@ export function decodeWireRequestBodyHeader(res: Response, decodeFailedLabel: st
 	}
 }
 
+type JsonObject = Record<string, unknown>;
+
+function isPlainJsonObject(value: unknown): value is JsonObject {
+	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** 与 Proxy / Playground 服务端相同：custom_params 与用户体深度合并，用户字段优先。 */
+export function deepMergePlaygroundDefaults(defaultValue: unknown, userValue: unknown): unknown {
+	if (userValue !== undefined) {
+		if (Array.isArray(userValue)) {
+			return userValue;
+		}
+		if (isPlainJsonObject(defaultValue) && isPlainJsonObject(userValue)) {
+			const merged: JsonObject = {};
+			const keys = new Set([...Object.keys(defaultValue), ...Object.keys(userValue)]);
+			for (const key of keys) {
+				merged[key] = deepMergePlaygroundDefaults(defaultValue[key], userValue[key]);
+			}
+			return merged;
+		}
+		return userValue;
+	}
+	return defaultValue;
+}
+
+export type PlaygroundMergedBodyPreview = { status: 'invalid' } | { status: 'preview'; json: string };
+
+/**
+ * 客户端预览即将发往上游的 JSON：合并路由 `custom_params`，并在非 Gemini 协议写入 provider model。
+ * 发送后仍以服务端 `x-playground-request-body` 为准（multipart / Vertex 前缀等无法在本地完整复现）。
+ */
+export function previewPlaygroundMergedBody(input: {
+	bodyText: string;
+	customParams?: string | null;
+	upstreamProtocol?: string | null;
+	providerModelName?: string | null;
+}): PlaygroundMergedBodyPreview {
+	let userBody: unknown;
+	try {
+		userBody = JSON.parse(input.bodyText);
+	} catch {
+		return { status: 'invalid' };
+	}
+	if (!isPlainJsonObject(userBody)) {
+		return { status: 'invalid' };
+	}
+
+	let customParams: JsonObject = {};
+	const rawCustom = input.customParams?.trim() ?? '';
+	if (rawCustom) {
+		try {
+			const parsed = JSON.parse(rawCustom) as unknown;
+			if (isPlainJsonObject(parsed)) {
+				customParams = parsed;
+			}
+		} catch {
+			// 无效 custom_params 在 Send 时会被服务端拒绝；预览仍展示用户体。
+		}
+	}
+
+	const merged = deepMergePlaygroundDefaults(customParams, userBody);
+	const body: JsonObject = isPlainJsonObject(merged) ? { ...merged } : { ...userBody };
+	const proto = normalizeProtocol(input.upstreamProtocol ?? 'openai');
+	const model = input.providerModelName?.trim() ?? '';
+	if (model && proto !== 'gemini') {
+		body.model = model;
+	}
+	return { status: 'preview', json: JSON.stringify(body, null, 2) };
+}
+
 export function routeMatchesSearch(route: RouteListRow, query: string): boolean {
 	const needle = query.trim().toLowerCase();
 	if (!needle) return true;
@@ -152,13 +224,21 @@ export function templateForRoute(
 		return route.upstream_operation?.startsWith('audio.speech.')
 			? buildDashScopeRealtimeTtsTemplate(route.provider_model_name)
 			: buildDashScopeRealtimeAsrTemplate(
-					(route.upstream_operation ?? 'audio.transcriptions.realtime.inference') as
-						| 'audio.transcriptions.realtime.inference'
-						| 'audio.transcriptions.realtime.session',
+					route.upstream_operation && isDashScopeRealtimeOperation(route.upstream_operation)
+						? route.upstream_operation
+						: undefined,
 				);
 	}
 	if (isAudio && isAudioHttp) {
-		if (isAudioTranscription) return AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+		if (isAudioTranscription) {
+			if (route.adapter === 'dashscope-asr-file-async' || route.upstream_operation === 'audio.transcriptions.async') {
+				return AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE;
+			}
+			if (proto === 'dashscope' && route.adapter === 'passthrough') {
+				return DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE;
+			}
+			return AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+		}
 		if (proto === 'dashscope' && route.upstream_operation === 'audio.speech') {
 			return buildDashScopeSpeechBodyTemplate(route.provider_model_name);
 		}

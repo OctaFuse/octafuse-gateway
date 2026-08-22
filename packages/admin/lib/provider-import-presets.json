@@ -320,16 +320,16 @@
 				"base": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"
 			}
 		},
-		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + DashScope TTS + Anthropic base; audio endpoints are limited to qwen-audio-3.0-tts-plus and qwen-audio-3.0-realtime-plus. Plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. See platform.qianwenai.com Token Plan docs.",
+		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + DashScope TTS + Anthropic base; audio endpoints are limited to qwen-audio-3.0-tts-plus and qwen-audio-3.0-realtime-plus. This plan does not include qwen-audio-3.0-asr-flash / filetrans HTTP. Plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. See platform.qianwenai.com Token Plan docs.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "千问 AI 平台（Token Plan）",
-					"description": "千问 Token Plan 个人版与团队版端点，支持 OpenAI、DashScope TTS 与 Anthropic 协议。"
+					"description": "千问 Token Plan 个人版与团队版端点，支持 OpenAI、DashScope TTS 与 Anthropic 协议；不含 qwen-audio-3.0-asr-flash / filetrans 同步或异步 HTTP。"
 				},
 				"en": {
 					"name": "Qwen AI Platform (Token Plan)",
-					"description": "Personal and team Token Plan endpoints for OpenAI, DashScope TTS, and Anthropic protocols."
+					"description": "Personal and team Token Plan endpoints for OpenAI, DashScope TTS, and Anthropic protocols. Does not include qwen-audio-3.0-asr-flash or filetrans HTTP."
 				}
 			},
 			"links": {
@@ -1528,6 +1528,37 @@
 			"links": {
 				"platform": "https://zenmux.ai/",
 				"api_keys": "https://zenmux.ai/platform"
+			}
+		}
+	},
+	{
+		"name": "SCNet",
+		"vendor_key": "scnet",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.scnet.cn/api/llm/v1/chat/completions"
+				}
+			},
+			"anthropic": {
+				"base": "https://api.scnet.cn/api/llm/anthropic"
+			}
+		},
+		"description": "SCNet (National Supercomputing Internet) OpenAI chat + Anthropic Messages. Pay-as-you-go (sk-), Token Plan (sk-tp-), and Coding Plan (sk-sp-) share these endpoints—do not mix keys. Token Plan keys are intended for interactive AI tools, not backend batch APIs. See scnet.cn OpenAPI docs.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "超算互联网 SCNet",
+					"description": "国家超算互联网模型 API，支持 OpenAI 与 Anthropic 兼容协议。"
+				},
+				"en": {
+					"name": "SCNet",
+					"description": "National Supercomputing Internet model API with OpenAI- and Anthropic-compatible endpoints."
+				}
+			},
+			"links": {
+				"platform": "https://www.scnet.cn/ui/mall/",
+				"api_keys": "https://www.scnet.cn/ui/llm/apikeys"
 			}
 		}
 	},

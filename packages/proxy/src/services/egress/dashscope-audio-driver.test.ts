@@ -6,11 +6,15 @@ import {
 	audioUploadToDataUrl,
 	buildDashScopeAsyncAsrBody,
 	buildDashScopeFunAsrBody,
+	buildDashScopeQwenAudioAsrBody,
 	buildDashScopeSyncAsrBody,
 	dispatchDashScopeAsyncAsr,
+	dispatchDashScopeMultimodalPassthrough,
 	dispatchDashScopeSyncAsr,
+	extractDashScopeMultimodalDurationSeconds,
 	normalizeDashScopeAsyncAsrResult,
 	normalizeDashScopeFunAsrResult,
+	normalizeDashScopeQwenAudioAsrResult,
 	normalizeDashScopeSyncAsrResult,
 	resolveDashScopeFunAsrFormat,
 } from './dashscope-audio-driver';
@@ -92,6 +96,36 @@ describe('DashScope ASR request mapping', () => {
 		});
 	});
 
+	it('builds the documented Qwen-Audio-3.0 input_audio request', () => {
+		const body = buildDashScopeQwenAudioAsrBody(
+			route({
+				providerModelName: 'qwen-audio-3.0-asr-flash',
+				adapter: 'dashscope-asr-qwen-audio-file',
+				customParams: { sample_rate: '16000' },
+			}),
+			request({ language: 'zh', prompt: '会议纪要' }),
+		);
+		assert.deepEqual(body, {
+			model: 'qwen-audio-3.0-asr-flash',
+			input: {
+				messages: [
+					{
+						role: 'user',
+						content: [
+							{ type: 'input_text', text: '会议纪要' },
+							{ type: 'input_audio', input_audio: { data: 'data:audio/wav;base64,AQID' } },
+						],
+					},
+				],
+			},
+			parameters: {
+				sample_rate: '16000',
+				format: 'wav',
+				language_hints: ['zh'],
+			},
+		});
+	});
+
 	it('rejects OpenAI fields that the Fun-ASR file API cannot represent', () => {
 		assert.throws(
 			() => buildDashScopeFunAsrBody(route({ adapter: 'dashscope-asr-fun-file' }), request({ language: 'zh' })),
@@ -146,6 +180,19 @@ describe('DashScope ASR response mapping', () => {
 		assert.equal(normalized.text, '欢迎使用。');
 		assert.equal(normalized.duration, 1);
 		assert.equal(normalized.language, 'zh');
+	});
+
+	it('normalizes Qwen-Audio-3.0 output.text and usage.duration', () => {
+		const normalized = normalizeDashScopeQwenAudioAsrResult({
+			output: {
+				text: '欢迎使用千问音频。',
+				sentence: { sentence_id: 1, begin_time: 0, end_time: 1200, text: '欢迎使用千问音频。' },
+			},
+			usage: { duration: 1.5 },
+		});
+		assert.equal(normalized.text, '欢迎使用千问音频。');
+		assert.equal(normalized.duration, 1.5);
+		assert.equal(extractDashScopeMultimodalDurationSeconds({ usage: { duration: 1.5 } }), 1.5);
 	});
 
 	it('normalizes Fun-ASR-Realtime output and duration', () => {
@@ -226,6 +273,85 @@ describe('DashScope ASR dispatch', () => {
 		assert.equal(result.meta.audioDurationSeconds, 2);
 		assert.equal(result.meta.audioDurationSource, 'upstream');
 		assert.equal(result.upstreamRequestId, 'req-sync');
+	});
+
+	it('uses the Qwen-Audio-3.0 request and response contracts selected by its adapter', async () => {
+		let requestInit: RequestInit | undefined;
+		const result = await dispatchDashScopeSyncAsr(
+			route({
+				providerModelName: 'qwen-audio-3.0-asr-flash',
+				adapter: 'dashscope-asr-qwen-audio-file',
+			}),
+			request({ language: 'zh' }),
+			undefined,
+			null,
+			undefined,
+			{
+				fetchImpl: async (_input, init) => {
+					requestInit = init;
+					return new Response(
+						JSON.stringify({
+							request_id: 'req-audio30',
+							output: { text: 'Audio 3.0 结果' },
+							usage: { duration: 2.25 },
+						}),
+						{ status: 200 },
+					);
+				},
+			},
+		);
+
+		const headers = new Headers(requestInit?.headers);
+		assert.equal(headers.get('X-DashScope-SSE'), 'disable');
+		const sent = JSON.parse(String(requestInit?.body)) as {
+			input: { messages: Array<{ content: Array<Record<string, unknown>> }> };
+			parameters: { format: string; language_hints: string[] };
+		};
+		assert.equal(sent.input.messages[0]?.content[0]?.type, 'input_audio');
+		assert.equal(sent.parameters.format, 'wav');
+		assert.deepEqual(sent.parameters.language_hints, ['zh']);
+		assert.deepEqual(await result.response.json(), { text: 'Audio 3.0 结果' });
+		assert.equal(result.meta.audioDurationSeconds, 2.25);
+		assert.equal(result.upstreamRequestId, 'req-audio30');
+	});
+
+	it('forwards native DashScope multimodal JSON for passthrough', async () => {
+		let requestInit: RequestInit | undefined;
+		const result = await dispatchDashScopeMultimodalPassthrough(
+			route({
+				providerModelName: 'qwen-audio-3.0-asr-flash',
+				adapter: 'passthrough',
+			}),
+			{
+				model: 'public-asr',
+				input: { messages: [{ role: 'user', content: [{ type: 'input_audio', input_audio: { data: 'https://a.example/a.wav' } }] }] },
+				parameters: { format: 'wav' },
+			},
+			undefined,
+			null,
+			undefined,
+			{
+				fetchImpl: async (_input, init) => {
+					requestInit = init;
+					return new Response(
+						JSON.stringify({
+							request_id: 'req-pass',
+							output: { text: '透传结果' },
+							usage: { duration: 3 },
+						}),
+						{ status: 200 },
+					);
+				},
+			},
+		);
+		const sent = JSON.parse(String(requestInit?.body)) as { model: string };
+		assert.equal(sent.model, 'qwen-audio-3.0-asr-flash');
+		assert.deepEqual(await result.response.json(), {
+			request_id: 'req-pass',
+			output: { text: '透传结果' },
+			usage: { duration: 3 },
+		});
+		assert.equal(result.meta.audioDurationSeconds, 3);
 	});
 
 	it('uses the Fun-ASR request and response contracts selected by its adapter', async () => {

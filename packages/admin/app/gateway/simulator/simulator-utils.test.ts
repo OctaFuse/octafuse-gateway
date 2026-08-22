@@ -15,6 +15,7 @@ import {
 	buildRequestLogsHref,
 	filterMatchingActiveRoutes,
 	isBodyDirty,
+	listDashScopeAudioClientOperations,
 	listDashScopeRealtimeOperations,
 	listSupportedClientSurfaces,
 	redactAuthHeader,
@@ -228,6 +229,32 @@ describe("simulator-utils", () => {
 				"audio.transcriptions.realtime.session",
 			]
 		);
+	});
+
+	it("lists DashScope HTTP multimodal alongside realtime operations", () => {
+		const routes: RouteListRow[] = [
+			{
+				id: "http",
+				model_id: "m1",
+				provider_id: "p1",
+				priority: 1,
+				status: "active",
+				route_group: "default",
+				upstream_protocol: "dashscope",
+				upstream_operation: "audio.transcriptions.multimodal",
+				adapter: "passthrough",
+				surfaces: JSON.stringify([
+					{
+						request_protocol: "dashscope",
+						request_operation: "audio.transcriptions.multimodal",
+						status: "active",
+					},
+				]),
+			},
+		];
+		assert.deepEqual(listDashScopeAudioClientOperations(routes, "m1", "default", "transcriptions"), [
+			"audio.transcriptions.multimodal",
+		]);
 	});
 
 	it("redactAuthHeader masks sk keys", () => {

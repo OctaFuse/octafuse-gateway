@@ -160,6 +160,37 @@ describe("buildSimulatorRequest openai", () => {
 		assert.match(result.multipartSummary ?? "", /none selected/);
 	});
 
+	it("includes file_url in the OpenAI transcriptions multipart preview", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			protocol: "openai",
+			modelForRouting: "qwen-audio-3.0-asr-flash-filetrans",
+			body: { file_url: "https://audio.example/sample.wav", language: "zh" },
+			apiKey: "sk-test",
+			audioOperation: "transcriptions",
+			audioFile: null,
+		});
+		assert.match(result.multipartSummary ?? "", /file_url: https:\/\/audio.example\/sample.wav/);
+	});
+
+	it("builds DashScope multimodal HTTP transcriptions", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			kind: "audio",
+			protocol: "dashscope",
+			modelForRouting: "qwen-audio-3.0-asr-flash",
+			body: { input: { messages: [] }, parameters: { format: "wav" } },
+			apiKey: "sk-test",
+			audioOperation: "transcriptions",
+			dashscopeRequestOperation: "audio.transcriptions.multimodal",
+		});
+		assert.equal(
+			result.url,
+			"https://gateway.example.com/v1/dashscope/services/aigc/multimodal-generation/generation"
+		);
+		assert.equal(JSON.parse(result.bodyText).model, "qwen-audio-3.0-asr-flash");
+	});
+
 	it("builds JSON for audio/speech", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",

@@ -556,6 +556,21 @@ export function buildPlaygroundDashScopeSpeechRequest(
 	};
 }
 
+function redactPlaygroundAudioDataUrls(value: unknown): unknown {
+	if (typeof value === 'string' && value.startsWith('data:') && value.includes(';base64,')) {
+		return `[redacted data-url ${value.length} chars]`;
+	}
+	if (Array.isArray(value)) return value.map(redactPlaygroundAudioDataUrls);
+	if (value != null && typeof value === 'object') {
+		const out: Record<string, unknown> = {};
+		for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
+			out[key] = redactPlaygroundAudioDataUrls(nested);
+		}
+		return out;
+	}
+	return value;
+}
+
 /**
  * 调试台直连上游，不经过 Proxy；这里必须按路由 Adapter 生成与 Proxy 相同的同步 ASR wire body。
  */
@@ -566,7 +581,30 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 	if (route.upstreamOperation !== 'audio.transcriptions.multimodal') {
 		throw badRequest(`Playground does not support DashScope ASR operation ${JSON.stringify(route.upstreamOperation)}`);
 	}
-	if (route.adapter !== 'dashscope-asr-qwen-file' && route.adapter !== 'dashscope-asr-fun-file') {
+	if (route.adapter === 'passthrough') {
+		const url = resolveUpstreamEndpoint('dashscope', 'audio.transcriptions.multimodal', route.providerEndpoints, {
+			providerId: route.providerId,
+		});
+		const upstreamBody = {
+			...body,
+			model: route.providerModelName,
+		};
+		return {
+			url,
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${route.providerApiKey}`,
+				'X-DashScope-SSE': 'disable',
+			},
+			bodyText: JSON.stringify(upstreamBody),
+			wireBodyJson: JSON.stringify(redactPlaygroundAudioDataUrls(upstreamBody), null, 2),
+		};
+	}
+	if (
+		route.adapter !== 'dashscope-asr-qwen-file' &&
+		route.adapter !== 'dashscope-asr-qwen-audio-file' &&
+		route.adapter !== 'dashscope-asr-fun-file'
+	) {
 		throw badRequest(`Playground does not support DashScope audio adapter ${JSON.stringify(route.adapter)}`);
 	}
 
@@ -591,7 +629,30 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 	let wireBody: Record<string, unknown>;
 	const audioSummary = `${collected.file.filename} (${collected.file.bytes.byteLength} bytes, ${collected.file.mimeType})`;
 
-	if (route.adapter === 'dashscope-asr-fun-file') {
+	if (route.adapter === 'dashscope-asr-qwen-audio-file') {
+		const language = typeof body.language === 'string' ? body.language.trim() : '';
+		const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+		const content: Array<Record<string, unknown>> = [];
+		if (prompt) content.push({ type: 'input_text', text: prompt });
+		content.push({ type: 'input_audio', input_audio: { data: dataUrl } });
+		upstreamBody = {
+			model: route.providerModelName,
+			input: { messages: [{ role: 'user', content }] },
+			parameters: {
+				...(route.customParams ?? {}),
+				format: resolvePlaygroundFunAsrFormat(collected.file),
+				...(language ? { language_hints: [language] } : {}),
+			},
+		};
+		const wireContent = content.map((part) =>
+			part.type === 'input_audio' ? { type: 'input_audio', input_audio: { data: audioSummary } } : part,
+		);
+		wireBody = {
+			...upstreamBody,
+			input: { messages: [{ role: 'user', content: wireContent }] },
+		};
+		headers['X-DashScope-SSE'] = 'disable';
+	} else if (route.adapter === 'dashscope-asr-fun-file') {
 		const language = typeof body.language === 'string' ? body.language.trim() : '';
 		const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 		if (language) {
@@ -656,6 +717,142 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 		bodyText: JSON.stringify(upstreamBody),
 		wireBodyJson: JSON.stringify(wireBody, null, 2),
 	};
+}
+
+/** 调试台异步 filetrans：只接受公网 file_url，提交官方 `file_urls` + `language_hints`。 */
+export function buildPlaygroundDashScopeAsyncAsrRequest(
+	route: PlaygroundResolvedRoute,
+	body: Record<string, unknown>,
+): PlaygroundDashScopeSyncAsrRequest {
+	if (route.upstreamOperation !== 'audio.transcriptions.async' || route.adapter !== 'dashscope-asr-file-async') {
+		throw badRequest(`Playground does not support DashScope async adapter ${JSON.stringify(route.adapter)}`);
+	}
+	const fileUrl = typeof body.file_url === 'string' ? body.file_url.trim() : '';
+	if (!fileUrl) {
+		throw badRequest('DashScope asynchronous ASR requires a public file_url');
+	}
+	try {
+		const parsed = new URL(fileUrl);
+		if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:' && parsed.protocol !== 'oss:') {
+			throw new Error('unsupported scheme');
+		}
+	} catch {
+		throw badRequest('file_url must be a valid http(s) or oss URL');
+	}
+	const language = typeof body.language === 'string' ? body.language.trim() : '';
+	const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+	const parameters = { ...(route.customParams ?? {}) };
+	delete parameters.asr_options;
+	const upstreamBody = {
+		model: route.providerModelName,
+		input: {
+			file_urls: [fileUrl],
+			...(prompt
+				? {
+						context: [
+							{
+								role: 'user',
+								content: [{ type: 'input_text', text: prompt }],
+							},
+						],
+				  }
+				: {}),
+		},
+		parameters: {
+			...parameters,
+			...(language ? { language_hints: [language] } : {}),
+		},
+	};
+	const url = resolveUpstreamEndpoint('dashscope', 'audio.transcriptions', route.providerEndpoints, {
+		providerId: route.providerId,
+	});
+	return {
+		url,
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${route.providerApiKey}`,
+			'X-DashScope-Async': 'enable',
+		},
+		bodyText: JSON.stringify(upstreamBody),
+		wireBodyJson: JSON.stringify(upstreamBody, null, 2),
+	};
+}
+
+async function pollPlaygroundDashScopeAsyncAsr(
+	route: PlaygroundResolvedRoute,
+	submitResponse: Response,
+	requestSignal?: AbortSignal,
+): Promise<Response> {
+	const submitBody = (await submitResponse.json()) as unknown;
+	const output = isPlainObject(submitBody) && isPlainObject(submitBody.output) ? submitBody.output : null;
+	const taskId = output && typeof output.task_id === 'string' ? output.task_id.trim() : '';
+	if (!taskId) {
+		throw new AdminServiceError(502, 'DashScope asynchronous ASR response has no task_id');
+	}
+	const queryUrl = resolveUpstreamEndpoint('dashscope', 'audio.transcriptions.tasks', route.providerEndpoints, {
+		providerId: route.providerId,
+		taskId,
+	});
+	for (let attempt = 0; attempt < 60; attempt++) {
+		await new Promise<void>((resolve, reject) => {
+			const timer = setTimeout(resolve, 1000);
+			const onAbort = () => {
+				clearTimeout(timer);
+				reject(new DOMException('Aborted', 'AbortError'));
+			};
+			if (requestSignal?.aborted) {
+				onAbort();
+				return;
+			}
+			requestSignal?.addEventListener('abort', onAbort, { once: true });
+		});
+		const queryResponse = await fetch(queryUrl, {
+			method: 'GET',
+			headers: { Authorization: `Bearer ${route.providerApiKey}` },
+			signal: requestSignal,
+		});
+		const queryBody = (await queryResponse.json()) as unknown;
+		if (!queryResponse.ok) {
+			return new Response(JSON.stringify(queryBody), {
+				status: queryResponse.status,
+				headers: { 'Content-Type': 'application/json' },
+			});
+		}
+		const taskOutput = isPlainObject(queryBody) && isPlainObject(queryBody.output) ? queryBody.output : null;
+		const status = taskOutput && typeof taskOutput.task_status === 'string' ? taskOutput.task_status : '';
+		if (status === 'PENDING' || status === 'RUNNING') continue;
+		if (status !== 'SUCCEEDED') {
+			return new Response(JSON.stringify(queryBody), {
+				status: 502,
+				headers: { 'Content-Type': 'application/json' },
+			});
+		}
+		const results = taskOutput && Array.isArray(taskOutput.results) ? taskOutput.results : [];
+		const first = results[0] != null && isPlainObject(results[0]) ? results[0] : null;
+		const transcriptionUrl = first && typeof first.transcription_url === 'string' ? first.transcription_url : '';
+		if (!transcriptionUrl) {
+			throw new AdminServiceError(502, 'DashScope asynchronous ASR result has no transcription_url');
+		}
+		const resultResponse = await fetch(transcriptionUrl, { signal: requestSignal });
+		const resultBody = (await resultResponse.json()) as unknown;
+		return new Response(
+			JSON.stringify({
+				output: {
+					text:
+						isPlainObject(resultBody) && Array.isArray(resultBody.transcripts)
+							? resultBody.transcripts
+									.map((item) => (isPlainObject(item) && typeof item.text === 'string' ? item.text : ''))
+									.filter(Boolean)
+									.join('\n')
+							: '',
+				},
+				usage: isPlainObject(queryBody) ? queryBody.usage ?? null : null,
+				dashscope: { task: queryBody, result: resultBody },
+			}),
+			{ status: 200, headers: { 'Content-Type': 'application/json' } },
+		);
+	}
+	throw new AdminServiceError(504, 'DashScope asynchronous ASR timed out');
 }
 
 export type PlaygroundInvokeResult = {
@@ -887,10 +1084,23 @@ export async function invokePlaygroundUpstream(
 			if (!route.isAudioModel) {
 				throw badRequest('DashScope Playground routes must use an audio catalog model');
 			}
-			const request =
-				route.upstreamOperation === 'audio.speech'
-					? buildPlaygroundDashScopeSpeechRequest(route, merged)
-					: buildPlaygroundDashScopeSyncAsrRequest(route, merged);
+			if (route.upstreamOperation === 'audio.speech') {
+				const request = buildPlaygroundDashScopeSpeechRequest(route, merged);
+				url = request.url;
+				headers = request.headers;
+				fetchBody = request.bodyText;
+				upstreamWireBodyJson = request.wireBodyJson;
+				break;
+			}
+			if (route.upstreamOperation === 'audio.transcriptions.async') {
+				const request = buildPlaygroundDashScopeAsyncAsrRequest(route, merged);
+				url = request.url;
+				headers = request.headers;
+				fetchBody = request.bodyText;
+				upstreamWireBodyJson = request.wireBodyJson;
+				break;
+			}
+			const request = buildPlaygroundDashScopeSyncAsrRequest(route, merged);
 			url = request.url;
 			headers = request.headers;
 			fetchBody = request.bodyText;
@@ -946,6 +1156,13 @@ export async function invokePlaygroundUpstream(
 				`DashScope TTS audio download failed: ${error instanceof Error ? error.message : String(error)}`,
 			);
 		}
+	}
+	if (
+		route.upstreamProtocol === 'dashscope' &&
+		route.upstreamOperation === 'audio.transcriptions.async' &&
+		response.ok
+	) {
+		response = await pollPlaygroundDashScopeAsyncAsr(route, response, requestSignal);
 	}
 
 	const latencyMs = Date.now() - start;

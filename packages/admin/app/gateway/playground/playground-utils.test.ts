@@ -10,6 +10,7 @@ import {
 	PLAYGROUND_LLM_SAMPLE_IDS,
 	playgroundLlmFamilyForRoute,
 	playgroundLlmSampleBody,
+	previewPlaygroundMergedBody,
 	resolvePlaygroundLlmFamily,
 	routeMatchesSearch,
 	templateForRoute,
@@ -312,5 +313,54 @@ describe('playground-utils', () => {
 		assert.equal(isPlaygroundBodyDirty(BODY_TEMPLATES.openai, BODY_TEMPLATES.openai), false);
 		assert.equal(isPlaygroundBodyDirty(`  ${BODY_TEMPLATES.openai}  `, BODY_TEMPLATES.openai), false);
 		assert.equal(isPlaygroundBodyDirty('{ "messages": [] }', BODY_TEMPLATES.openai), true);
+	});
+
+	it('previewPlaygroundMergedBody merges custom_params with user fields winning', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({ model: 'glm-5.3', stream: true, messages: [] }),
+			customParams: JSON.stringify({ tool_stream: true, stream: false }),
+			upstreamProtocol: 'openai',
+			providerModelName: 'glm-5.3-upstream',
+		});
+		assert.equal(result.status, 'preview');
+		const body = JSON.parse(result.json) as {
+			tool_stream?: boolean;
+			stream?: boolean;
+			model?: string;
+		};
+		assert.equal(body.tool_stream, true);
+		assert.equal(body.stream, true);
+		assert.equal(body.model, 'glm-5.3-upstream');
+	});
+
+	it('previewPlaygroundMergedBody deep-merges nested custom_params objects', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({ parameters: { temperature: 0.2 } }),
+			customParams: JSON.stringify({ parameters: { temperature: 0.8, tool_stream: true } }),
+			upstreamProtocol: 'dashscope',
+			providerModelName: 'qwen-audio',
+		});
+		assert.equal(result.status, 'preview');
+		const body = JSON.parse(result.json) as {
+			model?: string;
+			parameters?: { temperature?: number; tool_stream?: boolean };
+		};
+		assert.equal(body.model, 'qwen-audio');
+		assert.equal(body.parameters?.temperature, 0.2);
+		assert.equal(body.parameters?.tool_stream, true);
+	});
+
+	it('previewPlaygroundMergedBody does not rewrite Gemini model and rejects invalid JSON', () => {
+		const preview = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({ contents: [] }),
+			customParams: JSON.stringify({ generationConfig: { thinkingConfig: { includeThoughts: true } } }),
+			upstreamProtocol: 'gemini',
+			providerModelName: 'gemini-3.1-pro',
+		});
+		assert.equal(preview.status, 'preview');
+		const body = JSON.parse(preview.json) as { model?: string; generationConfig?: unknown };
+		assert.equal(body.model, undefined);
+		assert.ok(body.generationConfig);
+		assert.equal(previewPlaygroundMergedBody({ bodyText: '{not json' }).status, 'invalid');
 	});
 });

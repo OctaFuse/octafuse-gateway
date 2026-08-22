@@ -51,6 +51,7 @@ const VENDOR_VISUALS: Record<string, IconVisual> = {
 	perplexity: { url: vendorIconAssets.perplexity, accent: '#20b8cd' },
 	qiniu: { url: vendorIconAssets.qiniu, accent: '#00a0e9' },
 	sambanova: { url: vendorIconAssets.sambanova, accent: '#ee4c2c' },
+	scnet: { accent: '#1b6cb5' },
 	siliconflow: { url: vendorIconAssets.siliconflow, accent: '#6d5dfc' },
 	stability: { url: vendorIconAssets.stability, accent: '#7c3aed' },
 	stepfun: { url: vendorIconAssets.stepfun, accent: '#2f6bff' },

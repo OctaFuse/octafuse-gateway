@@ -15,6 +15,17 @@ describe("routeMatchesSurface", () => {
 			),
 			true
 		);
+		assert.equal(
+			routeMatchesSurface(
+				{
+					adapter: "dashscope-asr-qwen-audio-file",
+					upstreamProtocol: "dashscope",
+					upstreamOperation: "audio.transcriptions.multimodal",
+				},
+				{ protocol: "openai", operation: "audio.transcriptions" }
+			),
+			true
+		);
 	});
 
 	it("rejects a cross-protocol passthrough target", () => {

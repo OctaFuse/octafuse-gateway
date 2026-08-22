@@ -95,7 +95,11 @@ describe('route topology operations', () => {
 
 describe('route adapters', () => {
 	it('maps both explicit synchronous DashScope ASR families to the multimodal endpoint', () => {
-		for (const adapter of ['dashscope-asr-qwen-file', 'dashscope-asr-fun-file']) {
+		for (const adapter of [
+			'dashscope-asr-qwen-file',
+			'dashscope-asr-qwen-audio-file',
+			'dashscope-asr-fun-file',
+		]) {
 			assert.equal(
 				isRouteAdapterCompatible({
 					adapter,

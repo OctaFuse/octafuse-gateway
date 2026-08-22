@@ -13,6 +13,10 @@ const EXPECTED_IMAGE_IDS = [
 	'gpt-image-2',
 	'grok-imagine-image-2.0',
 	'grok-imagine-image-quality',
+	'qwen-image-3.0',
+	'qwen-image-3.0-pro',
+	'wan2.7-image',
+	'wan2.7-image-pro',
 ].sort();
 
 /** Preset JSON pricing shape used by catalog price locks (may omit `tiers`). */
@@ -70,6 +74,30 @@ describe('static image model presets (*-image.json)', () => {
 		const glm = byId.get('glm-image')!;
 		assert.equal(asPricing(glm.pricing.cny).image?.default, 0.1);
 		assert.equal(asPricing(glm.pricing.usd).image?.default, 0.014);
+
+		const qwenPro = byId.get('qwen-image-3.0-pro')!;
+		const qwenProCny = asPricing(qwenPro.pricing.cny);
+		const qwenProUsd = asPricing(qwenPro.pricing.usd);
+		assert.equal(qwenProCny.image_billing_mode, 'per_image');
+		assert.equal(qwenProCny.image?.default, 0.25);
+		assert.equal(qwenProCny.image?.by_size?.['2k'], 0.5);
+		assert.equal(qwenProCny.image?.input?.default, 0.02);
+		assert.equal(qwenProUsd.image?.default, 0.036);
+		assert.equal(qwenProUsd.image?.by_size?.['2k'], 0.071);
+
+		const qwen = byId.get('qwen-image-3.0')!;
+		assert.equal(asPricing(qwen.pricing.cny).image?.default, 0.18);
+		assert.equal(asPricing(qwen.pricing.usd).image?.default, 0.026);
+		assert.equal(asPricing(qwen.pricing.cny).image?.input?.default, 0.02);
+
+		const wanPro = byId.get('wan2.7-image-pro')!;
+		assert.equal(asPricing(wanPro.pricing.cny).image?.default, 0.5);
+		assert.equal(asPricing(wanPro.pricing.usd).image?.default, 0.071);
+		assert.equal(asPricing(wanPro.pricing.cny).image?.input, undefined);
+
+		const wan = byId.get('wan2.7-image')!;
+		assert.equal(asPricing(wan.pricing.cny).image?.default, 0.2);
+		assert.equal(asPricing(wan.pricing.usd).image?.default, 0.029);
 
 		const grok2 = byId.get('grok-imagine-image-2.0')!;
 		const grok2Usd = asPricing(grok2.pricing.usd);
