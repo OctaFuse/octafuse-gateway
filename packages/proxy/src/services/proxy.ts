@@ -17,6 +17,7 @@ import {
 } from "./egress/openai-audio-driver";
 import {
 	dispatchDashScopeAsyncAsr,
+	dispatchDashScopeMultimodalPassthrough,
 	dispatchDashScopeSyncAsr,
 	type DashScopeAsrDispatchOptions,
 } from "./egress/dashscope-audio-driver";
@@ -279,6 +280,7 @@ export async function proxyAudioTranscriptions(
 			}
 			if (
 				route.adapter === "dashscope-asr-qwen-file" ||
+				route.adapter === "dashscope-asr-qwen-audio-file" ||
 				route.adapter === "dashscope-asr-fun-file"
 			) {
 				return dispatchDashScopeSyncAsr(
@@ -371,6 +373,46 @@ export async function proxyAudioSpeech(
 				);
 			}
 			throw new Error(`Unsupported audio speech adapter: ${route.adapter}`);
+		},
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 DashScope 同步多模态 ASR HTTP 透传（原生 JSON，不转 OpenAI transcriptions）。 */
+export async function proxyDashScopeMultimodalPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	body: Record<string, unknown>,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"dashscope",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => {
+			if (
+				route.adapter !== "passthrough" ||
+				route.upstreamOperation !== "audio.transcriptions.multimodal"
+			) {
+				throw new Error(
+					`Unsupported DashScope multimodal adapter: ${route.adapter}`
+				);
+			}
+			return dispatchDashScopeMultimodalPassthrough(
+				route,
+				body,
+				signal,
+				timing,
+				attempt,
+				options?.dashScope
+			);
 		},
 		requestSignal,
 		options

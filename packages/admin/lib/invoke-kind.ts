@@ -4,6 +4,7 @@
  */
 import type { ImageOperation } from '@/lib/image-generations';
 import type { ProviderEndpointCapability } from '@octafuse/core/provider-endpoints';
+import { DASHSCOPE_MULTIMODAL_GENERATION_PATH } from '@octafuse/core/route-topology';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
 
@@ -81,12 +82,14 @@ export function resolveRequestOperation(input: {
 	audioOperation?: AudioOperation;
 	geminiAction?: GeminiContentAction;
 	llmOperation?: OpenaiLlmOperation;
+	dashscopeRequestOperation?: string;
 }): string | null {
 	switch (input.kind) {
 		case 'tool':
 			return null;
 		case 'audio':
 			if (input.protocol === 'dashscope') {
+				if (input.dashscopeRequestOperation) return input.dashscopeRequestOperation;
 				return input.audioOperation === 'speech'
 					? 'audio.speech.realtime.inference'
 					: 'audio.transcriptions.realtime.inference';
@@ -154,6 +157,9 @@ export function resolveProxyPathForModelInvoke(input: {
 }): string {
 	const protocol = input.protocol;
 	if (input.kind === 'audio') {
+		if (protocol === 'dashscope' && input.audioOperation !== 'speech') {
+			return DASHSCOPE_MULTIMODAL_GENERATION_PATH;
+		}
 		return input.audioOperation === 'speech' ? '/v1/audio/speech' : '/v1/audio/transcriptions';
 	}
 	if (input.kind === 'image') {

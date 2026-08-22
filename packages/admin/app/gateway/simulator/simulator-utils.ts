@@ -1,5 +1,10 @@
 import { canonicalizeRequestOperation } from '@octafuse/core/route-topology';
-import { AUDIO_SPEECH_BODY_TEMPLATE, AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
+import {
+	AUDIO_SPEECH_BODY_TEMPLATE,
+	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
+	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
+} from '@/lib/audio-transcriptions';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
@@ -95,7 +100,7 @@ export function bodyTemplateForSelection(
 	imageOperation: ImageOperation = 'generations',
 	audioOperation: AudioOperation | null = null,
 	toolId?: string | null,
-	realtimeOperation?: DashScopeRealtimeOperation | null,
+	realtimeOperation?: string | null,
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
 ): string {
@@ -107,12 +112,19 @@ export function bodyTemplateForSelection(
 			// OpenAI surface 可能映射到 DashScope；模板音色必须匹配实际供应商模型。
 			return buildDashScopeSpeechBodyTemplate(providerModelName);
 		}
+		if (audioOperation === 'transcriptions' && realtimeOperation === 'audio.transcriptions.async') {
+			return AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE;
+		}
 		return audioOperation === 'speech' ? AUDIO_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
 	if (audioOperation && protocol === 'dashscope') {
-		return audioOperation === 'speech'
-			? buildDashScopeRealtimeTtsTemplate(providerModelName)
-			: buildDashScopeRealtimeAsrTemplate(realtimeOperation ?? undefined);
+		if (audioOperation === 'speech') {
+			return buildDashScopeRealtimeTtsTemplate(providerModelName);
+		}
+		if (realtimeOperation === 'audio.transcriptions.multimodal') {
+			return DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE;
+		}
+		return buildDashScopeRealtimeAsrTemplate(realtimeOperation ?? undefined);
 	}
 	if (isImageModel && protocol === 'openai') {
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
@@ -175,6 +187,57 @@ export function listDashScopeRealtimeOperations(
 	return DASHSCOPE_REALTIME_OPERATIONS.filter((operation) => found.has(operation));
 }
 
+export const DASHSCOPE_HTTP_ASR_OPERATION = 'audio.transcriptions.multimodal';
+
+/** 模拟器可选的 DashScope ASR 请求入口：同步 HTTP 透传 + 实时 WSS。 */
+export function listDashScopeAudioClientOperations(
+	routes: RouteListRow[],
+	modelId: string,
+	routeGroup: string,
+	audioOperation: AudioOperation,
+): readonly string[] {
+	const realtime = listDashScopeRealtimeOperations(routes, modelId, routeGroup, audioOperation);
+	if (audioOperation !== 'transcriptions') return realtime;
+	let hasMultimodal = false;
+	for (const route of routes) {
+		if (
+			route.model_id !== modelId ||
+			String(route.status).toLowerCase() !== 'active' ||
+			!routeGroupMatchesSelection(route.route_group, routeGroup)
+		) {
+			continue;
+		}
+		if (route.surfaces) {
+			try {
+				const surfaces = JSON.parse(route.surfaces) as Array<{
+					request_protocol?: string;
+					request_operation?: string;
+					status?: string;
+				}>;
+				for (const surface of surfaces) {
+					if (surface.status === 'disabled') continue;
+					if (
+						surface.request_protocol === 'dashscope' &&
+						surface.request_operation === DASHSCOPE_HTTP_ASR_OPERATION
+					) {
+						hasMultimodal = true;
+					}
+				}
+			} catch {
+				// ignore unreadable surfaces
+			}
+		}
+		if (
+			route.upstream_protocol === 'dashscope' &&
+			route.upstream_operation === DASHSCOPE_HTTP_ASR_OPERATION &&
+			route.adapter === 'passthrough'
+		) {
+			hasMultimodal = true;
+		}
+	}
+	return hasMultimodal ? [DASHSCOPE_HTTP_ASR_OPERATION, ...realtime] : realtime;
+}
+
 /** Matches Proxy `resolveModelRouting`: default group sends model id only, else `id:group`. */
 export function buildModelRoutingString(modelId: string, routeGroup: string): string {
 	const g = routeGroup.trim();
@@ -207,7 +270,7 @@ export function isBodyDirty(
 	imageOperation: ImageOperation = 'generations',
 	audioOperation: AudioOperation | null = null,
 	toolId?: string | null,
-	realtimeOperation?: DashScopeRealtimeOperation | null,
+	realtimeOperation?: string | null,
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
 ): boolean {

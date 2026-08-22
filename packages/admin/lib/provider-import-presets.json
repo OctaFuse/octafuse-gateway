@@ -320,16 +320,16 @@
 				"base": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"
 			}
 		},
-		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + DashScope TTS + Anthropic base; audio endpoints are limited to qwen-audio-3.0-tts-plus and qwen-audio-3.0-realtime-plus. Plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. See platform.qianwenai.com Token Plan docs.",
+		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + DashScope TTS + Anthropic base; audio endpoints are limited to qwen-audio-3.0-tts-plus and qwen-audio-3.0-realtime-plus. This plan does not include qwen-audio-3.0-asr-flash / filetrans HTTP. Plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. See platform.qianwenai.com Token Plan docs.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "千问 AI 平台（Token Plan）",
-					"description": "千问 Token Plan 个人版与团队版端点，支持 OpenAI、DashScope TTS 与 Anthropic 协议。"
+					"description": "千问 Token Plan 个人版与团队版端点，支持 OpenAI、DashScope TTS 与 Anthropic 协议；不含 qwen-audio-3.0-asr-flash / filetrans 同步或异步 HTTP。"
 				},
 				"en": {
 					"name": "Qwen AI Platform (Token Plan)",
-					"description": "Personal and team Token Plan endpoints for OpenAI, DashScope TTS, and Anthropic protocols."
+					"description": "Personal and team Token Plan endpoints for OpenAI, DashScope TTS, and Anthropic protocols. Does not include qwen-audio-3.0-asr-flash or filetrans HTTP."
 				}
 			},
 			"links": {

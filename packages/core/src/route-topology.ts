@@ -42,10 +42,15 @@ export type RequestOperation =
 export const LEGACY_WILDCARD_OPERATION: RequestOperation = "*";
 export const PASSTHROUGH_ROUTE_ADAPTER = "passthrough";
 
+/** Gateway 对外的 DashScope 同步多模态 HTTP 入口（与上游 path 对齐）。 */
+export const DASHSCOPE_MULTIMODAL_GENERATION_PATH =
+	"/v1/dashscope/services/aigc/multimodal-generation/generation";
+
 /** 显式 adapter 白名单；跨协议映射必须命中下方精确声明。 */
 export const ROUTE_ADAPTERS = [
 	PASSTHROUGH_ROUTE_ADAPTER,
 	"dashscope-asr-qwen-file",
+	"dashscope-asr-qwen-audio-file",
 	"dashscope-asr-fun-file",
 	"dashscope-asr-file-async",
 	"dashscope-tts-speech",
@@ -68,6 +73,12 @@ const ROUTE_ADAPTER_MAPPINGS: Record<
 	RouteAdapterMapping
 > = {
 	"dashscope-asr-qwen-file": {
+		requestProtocol: "openai",
+		requestOperation: "audio.transcriptions",
+		upstreamProtocol: "dashscope",
+		upstreamOperation: "audio.transcriptions.multimodal",
+	},
+	"dashscope-asr-qwen-audio-file": {
 		requestProtocol: "openai",
 		requestOperation: "audio.transcriptions",
 		upstreamProtocol: "dashscope",

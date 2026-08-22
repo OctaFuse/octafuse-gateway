@@ -1,6 +1,8 @@
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
+	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 	isAudioRouteModel,
 } from '@/lib/audio-transcriptions';
 import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
@@ -228,7 +230,15 @@ export function templateForRoute(
 				);
 	}
 	if (isAudio && isAudioHttp) {
-		if (isAudioTranscription) return AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+		if (isAudioTranscription) {
+			if (route.adapter === 'dashscope-asr-file-async' || route.upstream_operation === 'audio.transcriptions.async') {
+				return AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE;
+			}
+			if (proto === 'dashscope' && route.adapter === 'passthrough') {
+				return DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE;
+			}
+			return AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+		}
 		if (proto === 'dashscope' && route.upstream_operation === 'audio.speech') {
 			return buildDashScopeSpeechBodyTemplate(route.provider_model_name);
 		}

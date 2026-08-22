@@ -991,6 +991,18 @@ curl -sS "$GATEWAY_URL/v1/audio/speech" \
   --output speech.mp3
 ```
 
+### DashScope 同步 ASR HTTP 透传
+
+`qwen-audio-3.0-asr-flash` 也可走原生 JSON，不经过 OpenAI multipart：
+
+```
+POST /v1/dashscope/services/aigc/multimodal-generation/generation
+Authorization: Bearer <USER_API_KEY>
+Content-Type: application/json
+```
+
+请求/上游都是 `dashscope` + `audio.transcriptions.multimodal`，adapter 必须是 `passthrough`。网关只替换 `model` 为路由里的供应商模型名，返回上游原生 JSON（`output.text` / `usage.duration`）。契约见 [非实时语音识别](https://help.aliyun.com/zh/model-studio/non-real-time-speech-recognition-for-fun-asr-flash)。Qwen3-ASR 与 Qwen-Audio-3.0 同 URL、不同字段，转换链必须用对应 adapter。
+
 ### DashScope 原生实时音频
 
 实时 ASR / TTS 使用 WebSocket 入口：
@@ -1019,7 +1031,8 @@ Content-Type: multipart/form-data
 | 字段 | 说明 |
 |------|------|
 | `model` | 必填；支持 `id:route_group` 后缀 |
-| `file` | 必填；音频文件（如 `webm` / `mp3` / `wav` / `ogg` / `m4a`）；Gateway 硬上限约 **25MB** |
+| `file` | 同步转换链必填；音频文件（如 `webm` / `mp3` / `wav` / `ogg` / `m4a`）；Gateway 硬上限约 **25MB** |
+| `file_url` | 异步 filetrans（`dashscope-asr-file-async`）必填；公网 HTTP(S)/OSS URL。有 `file_url` 时可不传 `file` |
 | `language` | 可选；ISO-639-1（如 `zh`、`en`） |
 | `response_format` | 可选；`json`（默认）/ `text` / `srt` / `verbose_json` / `vtt` / `diarized_json`（说话人分离模型） |
 | `prompt` / `temperature` | 可选；透传上游 |

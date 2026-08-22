@@ -148,7 +148,10 @@ export function usePlaygroundPageState() {
 	const selectedCanUseMicrophone =
 		selectedDashScopeRealtimeOperation?.startsWith('audio.transcriptions.realtime.') ?? false;
 	const selectedNeedsAudioFile =
-		selectedIsAudioTranscription && (!selectedCanUseMicrophone || audioInputMode === 'file');
+		selectedIsAudioTranscription &&
+		selected?.adapter !== 'dashscope-asr-file-async' &&
+		!(selected?.adapter === 'passthrough' && selected?.upstream_operation === 'audio.transcriptions.multimodal') &&
+		(!selectedCanUseMicrophone || audioInputMode === 'file');
 
 	const previewUpstreamUrl = useMemo(() => {
 		if (!selected) return null;
@@ -502,7 +505,7 @@ export function usePlaygroundPageState() {
 					return;
 				}
 			}
-		} else if (useAudio && selectedIsAudioTranscription) {
+		} else if (useAudio && selectedIsAudioTranscription && selectedNeedsAudioFile) {
 			const validated = validateAudioTranscriptionFile(audioFile);
 			if (!validated.ok) {
 				setBodyError(validated.error);

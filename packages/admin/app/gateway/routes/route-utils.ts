@@ -23,6 +23,7 @@ import {
 	type ProviderEndpointCapability,
 } from '@octafuse/core/provider-endpoints';
 import {
+	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
 	REQUEST_OPERATIONS_BY_PROTOCOL,
@@ -111,7 +112,7 @@ export function requestSurfacePath(protocol: string, operation: string, modelId?
 			'audio.speech.stream': '/v1/audio/speech',
 			'audio.speech.multimodal': '/v1/audio/speech',
 			'audio.transcriptions': '/v1/audio/transcriptions',
-			'audio.transcriptions.multimodal': '/v1/audio/transcriptions',
+			'audio.transcriptions.multimodal': DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 			'audio.transcriptions.async': '/v1/audio/transcriptions',
 		};
 		return operation === '*' ? '/*' : paths[operation] ?? `/${operation}`;
@@ -658,16 +659,17 @@ export function requestOperationsForModel(
 	if (model && isAudioTranscriptionModel(model)) {
 		if (protocol === 'openai') return ['audio.transcriptions'];
 		if (protocol === 'dashscope') {
-			const operations = [
+			const realtimeOperations = [
 				'audio.transcriptions.realtime.inference',
 				'audio.transcriptions.realtime.session',
 			];
-			// 供应商模型填写后只展示其真实协议，避免 Fun-ASR 被误配到 Qwen3 session。
-			return providerModelName.trim()
-				? operations.filter((operation) =>
+			const compatibleRealtime = providerModelName.trim()
+				? realtimeOperations.filter((operation) =>
 						isDashScopeRealtimeAsrModelOperationCompatible(providerModelName, operation),
 				  )
-				: operations;
+				: realtimeOperations;
+			// 同步 HTTP 透传始终可选；实时 operation 按供应商模型族过滤。
+			return ['audio.transcriptions.multimodal', ...compatibleRealtime];
 		}
 		return [];
 	}
@@ -686,7 +688,43 @@ export function requestOperationsForModel(
 	return REQUEST_OPERATIONS_BY_PROTOCOL[protocol];
 }
 
+export type DashScopeAsrRoutePreset = 'flash-convert' | 'flash-passthrough' | 'filetrans';
 export type DashScopeTtsRoutePreset = 'realtime' | 'nonrealtime';
+
+/**
+ * 将 DashScope ASR 的用户意图转换为完整路由拓扑。
+ * flash 转换保持 OpenAI 兼容入口；透传使用原生 multimodal HTTP；filetrans 走异步 submit/poll。
+ */
+export function applyDashScopeAsrRoutePreset(formData: RouteFormData, preset: DashScopeAsrRoutePreset): RouteFormData {
+	if (preset === 'flash-convert') {
+		return {
+			...formData,
+			request_protocol: 'openai',
+			request_operation: 'audio.transcriptions',
+			upstream_protocol: 'dashscope',
+			upstream_operation: 'audio.transcriptions.multimodal',
+			adapter: 'dashscope-asr-qwen-audio-file',
+		};
+	}
+	if (preset === 'flash-passthrough') {
+		return {
+			...formData,
+			request_protocol: 'dashscope',
+			request_operation: 'audio.transcriptions.multimodal',
+			upstream_protocol: 'dashscope',
+			upstream_operation: 'audio.transcriptions.multimodal',
+			adapter: 'passthrough',
+		};
+	}
+	return {
+		...formData,
+		request_protocol: 'openai',
+		request_operation: 'audio.transcriptions',
+		upstream_protocol: 'dashscope',
+		upstream_operation: 'audio.transcriptions.async',
+		adapter: 'dashscope-asr-file-async',
+	};
+}
 
 /**
  * 将 DashScope TTS 的用户意图转换为完整路由拓扑。
@@ -737,6 +775,9 @@ export function upstreamOperationsForProviderModel(
 		}
 		if (protocol === 'dashscope') {
 			const operations: string[] = [];
+			if (capabilities.has('audio.transcriptions.multimodal')) {
+				operations.push('audio.transcriptions.multimodal');
+			}
 			if (capabilities.has('audio.transcriptions') && capabilities.has('audio.transcriptions.tasks')) {
 				operations.push('audio.transcriptions.async');
 			}

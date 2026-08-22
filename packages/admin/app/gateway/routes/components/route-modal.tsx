@@ -13,7 +13,7 @@ import {
 	TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import { isAudioSpeechModel } from '@octafuse/core/db/model-modalities';
+import { isAudioSpeechModel, isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
 import { type CatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
@@ -21,6 +21,7 @@ import type { CatalogImagePricingDisplay, CatalogPricingTierDisplayRow } from '@
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
+	applyDashScopeAsrRoutePreset,
 	applyDashScopeTtsRoutePreset,
 	compatibleAdaptersForRoute,
 	formatRoutePriceOverridePreview,
@@ -141,6 +142,7 @@ export function RouteModal(props: Props) {
 		!upstreamOperations.includes(formData.upstream_operation) &&
 		Boolean(formData.upstream_operation);
 	const selectedModelIsSpeech = selectedModel ? isAudioSpeechModel(selectedModel) : false;
+	const selectedModelIsTranscription = selectedModel ? isAudioTranscriptionModel(selectedModel) : false;
 	const dashScopeTtsOperations = selectedModelIsSpeech
 		? upstreamOperationsForProviderModel(
 				selectedProvider,
@@ -155,6 +157,20 @@ export function RouteModal(props: Props) {
 		selectedProvider != null &&
 		(dashScopeTtsOperations.includes('audio.speech') ||
 			dashScopeTtsOperations.includes('audio.speech.realtime.inference'));
+	const dashScopeAsrOperations = selectedModelIsTranscription
+		? upstreamOperationsForProviderModel(
+				selectedProvider,
+				selectedModel,
+				'dashscope',
+				formData.provider_model_name,
+		  )
+		: [];
+	const canUseDashScopeAsrPresets =
+		!selectedModelIsImage &&
+		selectedModelIsTranscription &&
+		selectedProvider != null &&
+		(dashScopeAsrOperations.includes('audio.transcriptions.multimodal') ||
+			dashScopeAsrOperations.includes('audio.transcriptions.async'));
 
 	if (!open) return null;
 
@@ -203,7 +219,7 @@ export function RouteModal(props: Props) {
 					)}
 
 					<div className="space-y-4">
-						{canUseDashScopeTtsPresets ? (
+						{canUseDashScopeTtsPresets || canUseDashScopeAsrPresets ? (
 							<section className="rounded-lg border border-blue-200 bg-blue-50/60 p-3.5">
 								<div className="mb-2">
 									<h3 className="text-xs font-semibold uppercase tracking-wide text-blue-900">
@@ -212,7 +228,34 @@ export function RouteModal(props: Props) {
 									<p className="mt-1 text-xs text-blue-800">{t('audioPresetHint')}</p>
 								</div>
 								<div className="flex flex-wrap gap-2">
-									{dashScopeTtsOperations.includes('audio.speech') ? (
+									{canUseDashScopeAsrPresets && dashScopeAsrOperations.includes('audio.transcriptions.multimodal') ? (
+										<>
+											<button
+												type="button"
+												className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+												onClick={() => onFormChange(applyDashScopeAsrRoutePreset(formData, 'flash-convert'))}
+											>
+												{t('audioPresetAsrFlashConvert')}
+											</button>
+											<button
+												type="button"
+												className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+												onClick={() => onFormChange(applyDashScopeAsrRoutePreset(formData, 'flash-passthrough'))}
+											>
+												{t('audioPresetAsrFlashPassthrough')}
+											</button>
+										</>
+									) : null}
+									{canUseDashScopeAsrPresets && dashScopeAsrOperations.includes('audio.transcriptions.async') ? (
+										<button
+											type="button"
+											className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											onClick={() => onFormChange(applyDashScopeAsrRoutePreset(formData, 'filetrans'))}
+										>
+											{t('audioPresetAsrFiletrans')}
+										</button>
+									) : null}
+									{canUseDashScopeTtsPresets && dashScopeTtsOperations.includes('audio.speech') ? (
 										<button
 											type="button"
 											className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
@@ -221,7 +264,7 @@ export function RouteModal(props: Props) {
 											{t('audioPresetNonRealtime')}
 										</button>
 									) : null}
-									{dashScopeTtsOperations.includes('audio.speech.realtime.inference') ? (
+									{canUseDashScopeTtsPresets && dashScopeTtsOperations.includes('audio.speech.realtime.inference') ? (
 										<button
 											type="button"
 											className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"

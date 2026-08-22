@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import {
+	applyDashScopeAsrRoutePreset,
 	applyDashScopeTtsRoutePreset,
 	buildFormDataFromRoute,
 	buildRouteSavePayload,
@@ -81,6 +82,10 @@ describe('request surface path', () => {
 		assert.equal(requestSurfacePath('dashscope', 'audio.speech', 'cosyvoice-v2'), '/v1/audio/speech');
 		assert.equal(requestSurfacePath('dashscope', 'audio.speech.multimodal'), '/v1/audio/speech');
 		assert.equal(requestSurfacePath('dashscope', 'audio.transcriptions'), '/v1/audio/transcriptions');
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.transcriptions.multimodal'),
+			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+		);
 	});
 
 	it('compacts Gemini endpoints for request-log rows', () => {
@@ -130,6 +135,33 @@ describe('route form capability filters', () => {
 		);
 	});
 
+	it('builds DashScope ASR presets for convert, passthrough and filetrans', () => {
+		const convert = applyDashScopeAsrRoutePreset(EMPTY_ROUTE_FORM, 'flash-convert');
+		assert.deepEqual(
+			{
+				requestProtocol: convert.request_protocol,
+				requestOperation: convert.request_operation,
+				upstreamProtocol: convert.upstream_protocol,
+				upstreamOperation: convert.upstream_operation,
+				adapter: convert.adapter,
+			},
+			{
+				requestProtocol: 'openai',
+				requestOperation: 'audio.transcriptions',
+				upstreamProtocol: 'dashscope',
+				upstreamOperation: 'audio.transcriptions.multimodal',
+				adapter: 'dashscope-asr-qwen-audio-file',
+			},
+		);
+		const passthrough = applyDashScopeAsrRoutePreset(EMPTY_ROUTE_FORM, 'flash-passthrough');
+		assert.equal(passthrough.request_protocol, 'dashscope');
+		assert.equal(passthrough.request_operation, 'audio.transcriptions.multimodal');
+		assert.equal(passthrough.adapter, 'passthrough');
+		const filetrans = applyDashScopeAsrRoutePreset(EMPTY_ROUTE_FORM, 'filetrans');
+		assert.equal(filetrans.upstream_operation, 'audio.transcriptions.async');
+		assert.equal(filetrans.adapter, 'dashscope-asr-file-async');
+	});
+
 	it('limits public operations by model modality', () => {
 		assert.deepEqual(requestOperationsForModel(model(), 'openai'), ['chat', 'responses']);
 		assert.deepEqual(
@@ -166,7 +198,7 @@ describe('route form capability filters', () => {
 				}),
 				'dashscope',
 			),
-			['audio.transcriptions.realtime.inference', 'audio.transcriptions.realtime.session'],
+			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.inference', 'audio.transcriptions.realtime.session'],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -179,7 +211,7 @@ describe('route form capability filters', () => {
 				'dashscope',
 				'fun-asr-realtime',
 			),
-			['audio.transcriptions.realtime.inference'],
+			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.inference'],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -192,7 +224,7 @@ describe('route form capability filters', () => {
 				'dashscope',
 				'qwen3-asr-flash-realtime',
 			),
-			['audio.transcriptions.realtime.session'],
+			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.session'],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -273,13 +305,14 @@ describe('route form capability filters', () => {
 			}),
 		});
 		assert.deepEqual(upstreamOperationsForProviderModel(dashScope, asr, 'dashscope'), [
+			'audio.transcriptions.multimodal',
 			'audio.transcriptions.async',
 			'audio.transcriptions.realtime.inference',
 			'audio.transcriptions.realtime.session',
 		]);
 		assert.deepEqual(
 			upstreamOperationsForProviderModel(dashScope, asr, 'dashscope', 'fun-asr-realtime'),
-			['audio.transcriptions.async', 'audio.transcriptions.realtime.inference'],
+			['audio.transcriptions.multimodal', 'audio.transcriptions.async', 'audio.transcriptions.realtime.inference'],
 		);
 
 		const tts = model({
@@ -302,7 +335,7 @@ describe('route form capability filters', () => {
 				upstream_protocol: 'dashscope',
 				upstream_operation: 'audio.transcriptions.multimodal',
 			}),
-			['dashscope-asr-qwen-file', 'dashscope-asr-fun-file'],
+			['dashscope-asr-qwen-file', 'dashscope-asr-qwen-audio-file', 'dashscope-asr-fun-file'],
 		);
 		assert.deepEqual(
 			compatibleAdaptersForRoute({
