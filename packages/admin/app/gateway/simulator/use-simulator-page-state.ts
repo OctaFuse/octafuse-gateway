@@ -28,6 +28,7 @@ import {
 } from '@/lib/simulator/endpoint';
 import {
 	dashScopeRealtimeAudioContentType,
+	isDashScopeRealtimeOperation,
 	openDashScopeRealtimeClient,
 	stopDashScopeRealtimeClient,
 	type DashScopeRealtimeOperation,
@@ -1166,7 +1167,7 @@ export function useSimulatorPageState() {
 			protocol === 'dashscope' && audioOperation != null && !selectedUsesDashScopeHttpAsr;
 		if (isDashScopeRealtime) {
 			const operation = selectedDashScopeRealtimeOperation;
-			if (!operation) {
+			if (!operation || !isDashScopeRealtimeOperation(operation)) {
 				setBodyError(t('readyNeedModel'));
 				return;
 			}

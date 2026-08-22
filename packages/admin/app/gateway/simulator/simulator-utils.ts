@@ -18,6 +18,7 @@ import {
 	buildDashScopeRealtimeAsrTemplate,
 	buildDashScopeRealtimeTtsTemplate,
 	buildDashScopeSpeechBodyTemplate,
+	isDashScopeRealtimeOperation,
 	type DashScopeRealtimeOperation,
 } from '@/lib/dashscope-realtime-client';
 import type { AdminKeyListItem, AdminModelRow, RouteListRow } from './types';
@@ -124,7 +125,11 @@ export function bodyTemplateForSelection(
 		if (realtimeOperation === 'audio.transcriptions.multimodal') {
 			return DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE;
 		}
-		return buildDashScopeRealtimeAsrTemplate(realtimeOperation ?? undefined);
+		return buildDashScopeRealtimeAsrTemplate(
+			realtimeOperation && isDashScopeRealtimeOperation(realtimeOperation)
+				? realtimeOperation
+				: undefined,
+		);
 	}
 	if (isImageModel && protocol === 'openai') {
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;

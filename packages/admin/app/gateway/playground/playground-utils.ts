@@ -224,9 +224,9 @@ export function templateForRoute(
 		return route.upstream_operation?.startsWith('audio.speech.')
 			? buildDashScopeRealtimeTtsTemplate(route.provider_model_name)
 			: buildDashScopeRealtimeAsrTemplate(
-					(route.upstream_operation ?? 'audio.transcriptions.realtime.inference') as
-						| 'audio.transcriptions.realtime.inference'
-						| 'audio.transcriptions.realtime.session',
+					route.upstream_operation && isDashScopeRealtimeOperation(route.upstream_operation)
+						? route.upstream_operation
+						: undefined,
 				);
 	}
 	if (isAudio && isAudioHttp) {
