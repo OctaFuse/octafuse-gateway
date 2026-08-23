@@ -21,6 +21,7 @@ import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
 	adapterBillingLabelKey,
+	adapterOptionMappingSuffix,
 	applyAdapterOptionToForm,
 	compatibleAdaptersForRoute,
 	formatRoutePriceOverridePreview,
@@ -423,9 +424,7 @@ export function RouteModal(props: Props) {
 													disabled={!option.available && option.descriptor.optionKey !== selectedAdapterOptionKey}
 												>
 													{adapterLabel(option.descriptor.id)}
-													{option.descriptor.id === 'passthrough'
-														? ` · ${option.descriptor.request.protocol}/${option.descriptor.request.operation}`
-														: ''}
+													{adapterOptionMappingSuffix(option.descriptor)}
 													{!option.available ? ` · ${t('adapterUnavailable')}` : ''}
 												</option>
 											))}

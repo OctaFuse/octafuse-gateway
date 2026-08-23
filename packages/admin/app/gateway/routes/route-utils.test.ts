@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import {
+	adapterOptionMappingSuffix,
 	applyDashScopeAsrRoutePreset,
 	applyDashScopeTtsRoutePreset,
 	buildFormDataFromRoute,
@@ -27,6 +28,7 @@ import {
 	upstreamOperationsForProviderModel,
 	type RouteModelGroup,
 } from './route-utils';
+import { getAdapterByOptionKey } from '@octafuse/core/adapters/registry';
 import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
 import { EMPTY_ROUTE_FORM } from './types';
 
@@ -383,6 +385,33 @@ describe('route form capability filters', () => {
 				upstream_operation: 'audio.transcriptions.async',
 			}),
 			['dashscope-asr-file-async'],
+		);
+	});
+
+	it('builds dropdown mapping suffixes from the registry', () => {
+		const passthrough = getAdapterByOptionKey('passthrough:openai:audio.transcriptions');
+		assert.ok(passthrough);
+		assert.equal(adapterOptionMappingSuffix(passthrough), ' · openai/audio.transcriptions');
+
+		const syncAsr = getAdapterByOptionKey('dashscope-asr-qwen-audio-file');
+		assert.ok(syncAsr);
+		assert.equal(
+			adapterOptionMappingSuffix(syncAsr),
+			' · openai/audio.transcriptions → dashscope/audio.transcriptions.multimodal',
+		);
+
+		const asyncAsr = getAdapterByOptionKey('dashscope-asr-file-async');
+		assert.ok(asyncAsr);
+		assert.equal(
+			adapterOptionMappingSuffix(asyncAsr),
+			' · openai/audio.transcriptions → dashscope/audio.transcriptions.async',
+		);
+
+		const tts = getAdapterByOptionKey('dashscope-tts-qwen');
+		assert.ok(tts);
+		assert.equal(
+			adapterOptionMappingSuffix(tts),
+			' · openai/audio.speech → dashscope/audio.speech.multimodal',
 		);
 	});
 });

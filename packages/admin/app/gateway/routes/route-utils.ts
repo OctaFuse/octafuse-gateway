@@ -834,6 +834,18 @@ export function adapterBillingLabelKey(billing: AdapterBilling): string {
 	return `adapterBilling.${billing}`;
 }
 
+/** 下拉项后缀：透传只标 request；转换标 request → upstream。 */
+export function adapterOptionMappingSuffix(descriptor: AdapterDescriptor): string {
+	const from = `${descriptor.request.protocol}/${descriptor.request.operation}`;
+	if (descriptor.id === 'passthrough') {
+		return ` · ${from}`;
+	}
+	const to = descriptor.upstream.operations
+		.map((operation) => `${descriptor.upstream.protocol}/${operation}`)
+		.join(', ');
+	return ` · ${from} → ${to}`;
+}
+
 /** 返回能精确连接当前对外端点与上游目标的 adapter。 */
 export function compatibleAdaptersForRoute(
 	input: Pick<RouteFormData, 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>,
