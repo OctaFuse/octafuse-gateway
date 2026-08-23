@@ -24,6 +24,7 @@ export type ProviderEndpointCapability =
 	| 'chat'
 	| 'responses'
 	| 'images.generations'
+	| 'images.generations.multimodal'
 	| 'images.edits'
 	| 'audio.transcriptions'
 	| 'audio.transcriptions.multimodal'
@@ -60,7 +61,7 @@ export const GEMINI_LEGACY_ENDPOINT_CAPABILITIES = [
 	...GEMINI_LEGACY_GENERATE_OPERATIONS,
 ] as const satisfies readonly ProviderEndpointCapability[];
 
-/** DashScope 原生音频能力；同一 base 可派生官方 HTTP 与 WebSocket 路径。 */
+/** DashScope 原生音频 / 生图能力；同一 base 可派生官方 HTTP 与 WebSocket 路径。 */
 export const DASHSCOPE_ENDPOINT_CAPABILITIES = [
 	'audio.transcriptions',
 	'audio.transcriptions.multimodal',
@@ -71,6 +72,7 @@ export const DASHSCOPE_ENDPOINT_CAPABILITIES = [
 	'audio.realtime.session',
 	'audio.hotwords',
 	'audio.voices',
+	'images.generations.multimodal',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
 const CAPABILITIES_BY_PROTOCOL: Record<UpstreamProtocol, readonly ProviderEndpointCapability[]> = {
@@ -502,6 +504,8 @@ export function resolveUpstreamEndpoint(
 					? `${root}/services/audio/tts/SpeechSynthesizer`
 					: `${root}/audio/speech`;
 			case 'audio.speech.multimodal':
+				return `${root}/services/aigc/multimodal-generation/generation`;
+			case 'images.generations.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
 			case 'audio.realtime.inference':
 				return buildDashScopeWebSocketUrl(root, 'inference');

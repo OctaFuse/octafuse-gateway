@@ -24,7 +24,9 @@ export type AdapterPresetIntent =
 	| 'dashscope-asr-flash-passthrough'
 	| 'dashscope-asr-filetrans'
 	| 'dashscope-tts-nonrealtime'
-	| 'dashscope-tts-realtime';
+	| 'dashscope-tts-realtime'
+	| 'dashscope-image-qwen'
+	| 'dashscope-image-wan';
 
 export interface AdapterDescriptor {
 	/** 写入 `model_routes.adapter` 的稳定 ID；语义变化时发新 ID，永不复用。 */
@@ -162,6 +164,40 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/speech',
 		roles: [],
 		lossyFeatures: ['voice_instructions'],
+	},
+	{
+		id: 'dashscope-image-qwen',
+		optionKey: 'dashscope-image-qwen',
+		request: { protocol: 'openai', operation: 'images.generations' },
+		upstream: { protocol: 'dashscope', operations: ['images.generations.multimodal'] },
+		modality: 'image',
+		modelKind: 'image',
+		exchange: 'unary',
+		billing: 'per_image',
+		requestPayload: 'json',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['images.generations.multimodal'],
+		publicPath: '/v1/images/generations',
+		roles: ['upstream'],
+		presetIntent: 'dashscope-image-qwen',
+		lossyFeatures: ['size_abbreviation', 'background'],
+	},
+	{
+		id: 'dashscope-image-wan',
+		optionKey: 'dashscope-image-wan',
+		request: { protocol: 'openai', operation: 'images.generations' },
+		upstream: { protocol: 'dashscope', operations: ['images.generations.multimodal'] },
+		modality: 'image',
+		modelKind: 'image',
+		exchange: 'unary',
+		billing: 'per_image',
+		requestPayload: 'json',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['images.generations.multimodal'],
+		publicPath: '/v1/images/generations',
+		roles: ['upstream'],
+		presetIntent: 'dashscope-image-wan',
+		lossyFeatures: ['background'],
 	},
 ] as const satisfies readonly AdapterDescriptor[];
 

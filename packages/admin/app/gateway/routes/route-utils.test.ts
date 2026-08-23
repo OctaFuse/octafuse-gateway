@@ -4,6 +4,7 @@ import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/typ
 import {
 	adapterOptionMappingSuffix,
 	applyDashScopeAsrRoutePreset,
+	applyDashScopeImageRoutePreset,
 	applyDashScopeTtsRoutePreset,
 	buildFormDataFromRoute,
 	buildRouteSavePayload,
@@ -193,6 +194,29 @@ describe('route form capability filters', () => {
 		assert.equal(applyDashScopeAsrRoutePreset(EMPTY_ROUTE_FORM, 'flash-passthrough').adapter, 'passthrough');
 	});
 
+	it('builds DashScope image presets for Qwen and Wan families', () => {
+		const qwen = applyDashScopeImageRoutePreset(EMPTY_ROUTE_FORM, 'qwen');
+		assert.deepEqual(
+			{
+				requestProtocol: qwen.request_protocol,
+				requestOperation: qwen.request_operation,
+				upstreamProtocol: qwen.upstream_protocol,
+				upstreamOperation: qwen.upstream_operation,
+				adapter: qwen.adapter,
+			},
+			{
+				requestProtocol: 'openai',
+				requestOperation: 'images.generations',
+				upstreamProtocol: 'dashscope',
+				upstreamOperation: 'images.generations.multimodal',
+				adapter: 'dashscope-image-qwen',
+			},
+		);
+		const wan = applyDashScopeImageRoutePreset(EMPTY_ROUTE_FORM, 'wan');
+		assert.equal(wan.adapter, 'dashscope-image-wan');
+		assert.equal(wan.upstream_operation, 'images.generations.multimodal');
+	});
+
 	it('limits public operations by model modality', () => {
 		assert.deepEqual(requestOperationsForModel(model(), 'openai'), ['chat', 'responses']);
 		assert.deepEqual(
@@ -356,6 +380,14 @@ describe('route form capability filters', () => {
 			'audio.speech',
 			'audio.speech.realtime.inference',
 		]);
+
+		const image = model({
+			input_modalities: '["text","image"]',
+			output_modalities: '["image"]',
+		});
+		assert.deepEqual(upstreamOperationsForProviderModel(dashScope, image, 'dashscope'), [
+			'images.generations.multimodal',
+		]);
 	});
 
 	it('only offers adapters that exactly match the selected topology', () => {
@@ -385,6 +417,15 @@ describe('route form capability filters', () => {
 				upstream_operation: 'audio.transcriptions.async',
 			}),
 			['dashscope-asr-file-async'],
+		);
+		assert.deepEqual(
+			compatibleAdaptersForRoute({
+				request_protocol: 'openai',
+				request_operation: 'images.generations',
+				upstream_protocol: 'dashscope',
+				upstream_operation: 'images.generations.multimodal',
+			}),
+			['dashscope-image-qwen', 'dashscope-image-wan'],
 		);
 	});
 

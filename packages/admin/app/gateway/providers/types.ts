@@ -60,6 +60,7 @@ export type ProtocolEndpointForm = {
 	chat: string;
 	responses: string;
 	images_generations: string;
+	images_generations_multimodal: string;
 	images_edits: string;
 	audio_transcriptions: string;
 	audio_transcriptions_multimodal: string;
@@ -107,6 +108,7 @@ export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
 	chat: '',
 	responses: '',
 	images_generations: '',
+	images_generations_multimodal: '',
 	images_edits: '',
 	audio_transcriptions: '',
 	audio_transcriptions_multimodal: '',

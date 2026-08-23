@@ -117,6 +117,52 @@ describe("simulator-utils", () => {
 		);
 	});
 
+	it("filterMatchingActiveRoutes keeps DashScope image conversion on the OpenAI Images surface", () => {
+		const surfaces = JSON.stringify([
+			{
+				request_protocol: "openai",
+				request_operation: "images.generations",
+				status: "active",
+			},
+		]);
+		const matched = filterMatchingActiveRoutes(
+			[
+				{
+					id: "wan",
+					model_id: "wan2.7-image",
+					provider_id: "aliyun",
+					priority: 1,
+					status: "active",
+					route_group: "default",
+					adapter: "dashscope-image-wan",
+					upstream_protocol: "dashscope",
+					upstream_operation: "images.generations.multimodal",
+					surfaces,
+				},
+				{
+					id: "passthrough",
+					model_id: "wan2.7-image",
+					provider_id: "aliyun",
+					priority: 0,
+					status: "active",
+					route_group: "default",
+					adapter: "passthrough",
+					upstream_protocol: "dashscope",
+					upstream_operation: "images.generations.multimodal",
+					surfaces,
+				},
+			],
+			"wan2.7-image",
+			"default",
+			"openai",
+			"images.generations"
+		);
+		assert.deepEqual(
+			matched.map((route) => route.id),
+			["wan"]
+		);
+	});
+
 	it("listSupportedClientSurfaces keeps only public protocols and endpoints", () => {
 		const routes: RouteListRow[] = [
 			{

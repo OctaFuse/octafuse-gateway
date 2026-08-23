@@ -120,6 +120,7 @@ function PlaygroundPageInner() {
 									selected={s.selected}
 									selectedUsesDashScopeRealtime={s.selectedUsesDashScopeRealtime}
 									imageSendBlocked={s.imageSendBlocked}
+									selectedImageUsesDashScope={s.selectedImageUsesDashScope}
 									audioSendBlocked={s.audioSendBlocked}
 									selectedIsImage={s.selectedIsImage}
 									selectedIsAudio={s.selectedIsAudio}

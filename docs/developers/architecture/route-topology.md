@@ -37,7 +37,7 @@ model + route_group + request protocol + operation
 | OpenAI | `chat`、`responses`、`images.generations`、`images.edits`、`audio.transcriptions`、`audio.speech` |
 | Anthropic | `messages` |
 | Gemini | **`models.generate`**（generate-content 家族，覆盖流式与非流式） |
-| DashScope | `audio.transcriptions.*`、`audio.speech.*`（文件、流式与实时操作见 [DashScope 音频架构](./dashscope-audio.md)） |
+| DashScope | `audio.transcriptions.*`、`audio.speech.*`（见 [DashScope 音频架构](./dashscope-audio.md)）、`images.generations.multimodal`（见 [DashScope 生图架构](./dashscope-image.md)） |
 
 `*` 是迁移兼容值。运行时先查精确 operation 的请求入口，查不到时再回退同协议的 `*` 请求入口。
 

@@ -41,6 +41,14 @@ describe('normalizeImageCommonParams', () => {
 		assert.equal(normalizeImageCommonParams({ prompt: 'hi', n: '2' }).ok, false);
 	});
 
+	it('allows n up to options.maxN while defaulting to 1', () => {
+		const allowed = normalizeImageCommonParams({ prompt: 'hi', n: 4 }, { maxN: 4 });
+		assert.equal(allowed.ok, true);
+		if (allowed.ok) assert.equal(allowed.n, 4);
+		assert.equal(normalizeImageCommonParams({ prompt: 'hi', n: 5 }, { maxN: 4 }).ok, false);
+		assert.equal(normalizeImageCommonParams({ prompt: 'hi', n: 2 }).ok, false);
+	});
+
 	it('rejects oversized prompt', () => {
 		const r = normalizeImageCommonParams({ prompt: 'x'.repeat(IMAGE_MAX_PROMPT_CHARS + 1) });
 		assert.equal(r.ok, false);

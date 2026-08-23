@@ -47,6 +47,7 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 		"audio.speech.multimodal",
 		"audio.speech.realtime.inference",
 		"audio.speech.realtime.session",
+		"images.generations.multimodal",
 	],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
@@ -81,7 +82,8 @@ export function isRouteAdapterCompatible(input: {
 		input.requestProtocol === mapping.requestProtocol &&
 		input.requestOperation === mapping.requestOperation &&
 		input.upstreamProtocol === mapping.upstreamProtocol &&
-		input.upstreamOperation === mapping.upstreamOperation
+		(input.upstreamOperation === LEGACY_WILDCARD_OPERATION ||
+			input.upstreamOperation === mapping.upstreamOperation)
 	);
 }
 
@@ -151,12 +153,19 @@ export function requestOperationAliasRank(operation: string): number {
 
 export function effectiveUpstreamOperation(
 	configuredOperation: string | null | undefined,
-	requestOperation: string
+	requestOperation: string,
+	adapter?: string | null
 ): string {
 	const configured = normalizeRouteOperation(configuredOperation);
-	return configured === LEGACY_WILDCARD_OPERATION
-		? requestOperation
-		: configured;
+	if (configured !== LEGACY_WILDCARD_OPERATION) return configured;
+	if (
+		adapter &&
+		adapter !== PASSTHROUGH_ROUTE_ADAPTER &&
+		isRouteAdapter(adapter)
+	) {
+		return ROUTE_ADAPTER_MAPPINGS[adapter].upstreamOperation;
+	}
+	return requestOperation;
 }
 
 export interface RoutePoolRow {

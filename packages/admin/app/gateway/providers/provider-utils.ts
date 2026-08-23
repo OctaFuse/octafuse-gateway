@@ -29,7 +29,9 @@ export function capabilityDisplayBadges(
 	const set = new Set(capabilities);
 	if (set.has('chat')) badges.push('chat');
 	if (set.has('responses')) badges.push('responses');
-	if (set.has('images.generations') || set.has('images.edits')) badges.push('images');
+	if (set.has('images.generations') || set.has('images.edits') || set.has('images.generations.multimodal')) {
+		badges.push('images');
+	}
 	if (capabilities.some((capability) => capability.startsWith('audio.'))) badges.push('audio');
 	if (set.has('messages')) badges.push('messages');
 	if (set.has(GEMINI_GENERATE_OPERATION) || set.has('generateContent') || set.has('streamGenerateContent')) {
@@ -68,6 +70,7 @@ function protocolFormFromConfig(cfg: ProtocolEndpointsConfig | undefined): Proto
 	form.chat = eps.chat ?? '';
 	form.responses = eps.responses ?? '';
 	form.images_generations = eps['images.generations'] ?? '';
+	form.images_generations_multimodal = eps['images.generations.multimodal'] ?? '';
 	form.images_edits = eps['images.edits'] ?? '';
 	form.audio_transcriptions = eps['audio.transcriptions'] ?? '';
 	form.audio_transcriptions_multimodal = eps['audio.transcriptions.multimodal'] ?? '';
@@ -158,6 +161,10 @@ function configFromProtocolForm(
 			endpoints[GEMINI_GENERATE_OPERATION] = form.modelsGenerate.trim();
 		}
 	} else {
+		if (form.images_generations_multimodal.trim()) {
+			endpoints["images.generations.multimodal"] =
+				form.images_generations_multimodal.trim();
+		}
 		if (form.audio_transcriptions.trim())
 			endpoints["audio.transcriptions"] = form.audio_transcriptions.trim();
 		if (form.audio_transcriptions_multimodal.trim()) {
@@ -357,6 +364,7 @@ export function protocolFormHasOverrides(
 		);
 	}
 	return !!(
+		form.images_generations_multimodal.trim() ||
 		form.audio_transcriptions.trim() ||
 		form.audio_transcriptions_multimodal.trim() ||
 		form.audio_transcriptions_tasks.trim() ||

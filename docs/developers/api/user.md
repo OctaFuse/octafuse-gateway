@@ -891,9 +891,9 @@ Content-Type: application/json
 |------|------|
 | `model` | 必填；支持 `id:route_group` 后缀 |
 | `prompt` | 必填；最长 4000 字符 |
-| `n` | 仅允许 **1**（首期） |
-| `size` / `quality` / `background` | 可选；GPT Image 常用 `auto` / `1024x…`；Seedream 常用 `2K` / `4K` |
-| `response_format` | 可选；**仅当调用方显式传入时透传**。默认由上游决定（GPT Image 系列通常直接返回 `b64_json`，且不接受该参数） |
+| `n` | OpenAI 透传仅允许 **1**。DashScope 转换按适配器放宽：千问 1–6、万相 1–4。万相官方默认 4，缺省时网关仍显式下发 1 |
+| `size` / `quality` / `background` | 可选；GPT Image 常用 `auto` / `1024x…`；Seedream 常用 `2K` / `4K`；千问只接受像素串（如 `1024*1024`），万相允许 `1K`/`2K`/`4K` |
+| `response_format` | 可选。OpenAI 透传仅当调用方显式传入时转发（GPT Image 系列通常直接返回 `b64_json`，且可能不接受该参数）。DashScope 转换默认返回 `data[].url`；显式 `b64_json` 时网关下载 OSS 链接并转 base64，失败降级回 `url` |
 | `watermark` / `sequential_image_generation` / `optimize_prompt_options` | 可选；Seedream 等兼容扩展，**显式传入时透传**；也可由路由 `custom_params` 注入默认值 |
 | `image` | 可选；Seedream **图生图 / 多图融合**用 JSON 字符串或字符串数组（URL / data URL），走本 generations 端点，**不是** multipart `/edits` |
 
@@ -916,7 +916,7 @@ Image 模型支持两种 `pricing_profile.image_billing_mode`（再乘路由 `ch
 | 模式 | 最终费用 | `pricing_audit.kind` |
 |------|----------|----------------------|
 | **`token`**（GPT Image / Gemini） | usage 分项 × `$/1M`（对齐 [OpenAI Image Cost](https://platform.openai.com/docs/guides/image-generation)） | `image_tokens` |
-| **`per_image`**（Seedream / GLM / Grok） | `output_unit × 确认输出张数 + input_unit × 参考图数` | `image_per_image` |
+| **`per_image`**（Seedream / GLM / Grok / 阿里云百炼） | `output_unit × 确认输出张数 + input_unit × 参考图数` | `image_per_image` |
 
 1. **预检额度**：token 模式用 quality×size **估算** tokens；per_image 模式用请求张数 × 单价；均取全候选路由最高 `charged_factor`。预检只决定能不能打上游，**不**等于最终扣费
 2. **成功出图**：token 按 **`usage` 真实分项**；per_image 按 **有效返回图片数**（忽略 usage tokens）

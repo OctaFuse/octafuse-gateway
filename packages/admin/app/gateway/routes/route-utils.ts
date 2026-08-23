@@ -691,6 +691,7 @@ export function requestOperationsForModel(
 
 export type DashScopeAsrRoutePreset = 'flash-convert' | 'flash-passthrough' | 'filetrans';
 export type DashScopeTtsRoutePreset = 'realtime' | 'nonrealtime';
+export type DashScopeImageRoutePreset = 'qwen' | 'wan';
 
 /**
  * 将 DashScope ASR 的用户意图转换为完整路由拓扑。
@@ -737,6 +738,20 @@ export function applyDashScopeTtsRoutePreset(formData: RouteFormData, preset: Da
 	return applyAdapterDescriptorToForm(formData, descriptor);
 }
 
+const IMAGE_PRESET_INTENT: Record<DashScopeImageRoutePreset, AdapterPresetIntent> = {
+	qwen: 'dashscope-image-qwen',
+	wan: 'dashscope-image-wan',
+};
+
+export function applyDashScopeImageRoutePreset(
+	formData: RouteFormData,
+	preset: DashScopeImageRoutePreset,
+): RouteFormData {
+	const descriptor = getAdapterByPresetIntent(IMAGE_PRESET_INTENT[preset]);
+	if (!descriptor) return formData;
+	return applyAdapterDescriptorToForm(formData, descriptor);
+}
+
 /**
  * Provider-side operations supported by both the provider endpoint config and
  * the selected model modality. A protocol base enables its standard derived
@@ -754,7 +769,7 @@ export function upstreamOperationsForProviderModel(
 	const providerOperations = listConfiguredCapabilities(map, protocol);
 	const capabilities = new Set(providerOperations);
 
-	if (model && (isAudioTranscriptionModel(model) || isAudioSpeechModel(model))) {
+	if (model && (isImageGenerationModel(model) || isAudioTranscriptionModel(model) || isAudioSpeechModel(model))) {
 		const kind = modelKindForModel(model);
 		const listed = sortOperationsForProtocol(protocol, upstreamOperationsFromRegistry(protocol, kind));
 		const operations = listed.filter((operation) => {

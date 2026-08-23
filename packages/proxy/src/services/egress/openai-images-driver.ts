@@ -134,13 +134,16 @@ function imageAbortErrorPayload(
 }
 
 /** 校验并规范化 generation / edit 公共参数（`n` 接受 number 或数字字符串，如 multipart）。 */
-export function normalizeImageCommonParams(input: {
-	prompt: unknown;
-	n?: unknown;
-	size?: unknown;
-	quality?: unknown;
-	background?: unknown;
-}):
+export function normalizeImageCommonParams(
+	input: {
+		prompt: unknown;
+		n?: unknown;
+		size?: unknown;
+		quality?: unknown;
+		background?: unknown;
+	},
+	options?: { maxN?: number }
+):
 	| { ok: true; prompt: string; n: number; size?: string; quality?: string; background?: string }
 	| { ok: false; error: string } {
 	const prompt = typeof input.prompt === 'string' ? input.prompt.trim() : '';
@@ -151,12 +154,18 @@ export function normalizeImageCommonParams(input: {
 		return { ok: false, error: `prompt must be at most ${IMAGE_MAX_PROMPT_CHARS} characters` };
 	}
 
+	const maxN = options?.maxN != null && Number.isInteger(options.maxN) && options.maxN >= 1
+		? options.maxN
+		: 1;
 	let n = 1;
 	if (input.n !== undefined && input.n !== null && input.n !== '') {
 		const nRaw =
 			typeof input.n === 'string' && input.n.trim() !== '' ? Number(input.n) : input.n;
-		if (typeof nRaw !== 'number' || !Number.isInteger(nRaw) || nRaw !== 1) {
-			return { ok: false, error: 'n must be 1' };
+		if (typeof nRaw !== 'number' || !Number.isInteger(nRaw) || nRaw < 1 || nRaw > maxN) {
+			return {
+				ok: false,
+				error: maxN === 1 ? 'n must be 1' : `n must be an integer between 1 and ${maxN}`,
+			};
 		}
 		n = nRaw;
 	}

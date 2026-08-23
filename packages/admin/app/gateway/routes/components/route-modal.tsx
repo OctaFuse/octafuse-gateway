@@ -23,6 +23,7 @@ import {
 	adapterBillingLabelKey,
 	adapterOptionMappingSuffix,
 	applyAdapterOptionToForm,
+	applyDashScopeImageRoutePreset,
 	compatibleAdaptersForRoute,
 	formatRoutePriceOverridePreview,
 	listAdapterOptionsForModel,
@@ -108,6 +109,7 @@ export function RouteModal(props: Props) {
 	}
 	const priceOverridePreview = useMemo(() => formatRoutePriceOverridePreview(formData), [formData]);
 
+	// Image models keep the public request protocol as OpenAI; upstream may be openai or dashscope.
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
 		(protocol) => requestOperationsForModel(selectedModel, protocol, formData.provider_model_name).length > 0,
@@ -434,6 +436,28 @@ export function RouteModal(props: Props) {
 												</option>
 											) : null}
 										</select>
+										{selectedModelIsImage ? (
+											<div className="mt-2 space-y-1.5">
+												<p className="text-[11px] font-medium text-gray-600">{t('imagePresetTitle')}</p>
+												<p className="text-[11px] text-gray-500">{t('imagePresetHint')}</p>
+												<div className="flex flex-wrap gap-1.5">
+													<button
+														type="button"
+														onClick={() => onFormChange(applyDashScopeImageRoutePreset(formData, 'qwen'))}
+														className="rounded-md border border-violet-200 bg-white px-2 py-1 text-[11px] font-medium text-violet-800 hover:bg-violet-50"
+													>
+														{t('imagePresetQwen')}
+													</button>
+													<button
+														type="button"
+														onClick={() => onFormChange(applyDashScopeImageRoutePreset(formData, 'wan'))}
+														className="rounded-md border border-violet-200 bg-white px-2 py-1 text-[11px] font-medium text-violet-800 hover:bg-violet-50"
+													>
+														{t('imagePresetWan')}
+													</button>
+												</div>
+											</div>
+										) : null}
 										<p className="mt-1 text-[11px] text-gray-500">{t('adapterFirstHint')}</p>
 										{selectedAdapterOption ? (
 											<p className="mt-1 text-[11px] text-gray-500">

@@ -106,4 +106,28 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			"https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
 		);
 	});
+
+	it("builds the DashScope multimodal image URL from the selected route operation", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					dashscope: {
+						endpoints: {
+							"images.generations.multimodal":
+								"https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+						},
+					},
+				}),
+			},
+			upstreamProtocol: "dashscope",
+			upstreamOperation: "images.generations.multimodal",
+			providerModelName: "qwen-image-3.0-pro",
+			isImageModel: true,
+		});
+		assert.equal(
+			url,
+			"https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+		);
+	});
 });

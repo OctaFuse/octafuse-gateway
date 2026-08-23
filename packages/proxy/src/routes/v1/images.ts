@@ -35,6 +35,7 @@ import {
 	type ImageEditUpload,
 	type NormalizedImageEditRequest,
 } from '../../services/egress/openai-images-driver';
+import { maxNForImageRoutes } from '../../services/egress/dashscope-images-driver';
 import {
 	formatHttpErrorTextForRequestLog,
 	materializeNonOkResponse,
@@ -651,7 +652,10 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 				status,
 				latencyMs: latency,
 				errorMessage,
-				billing,
+				billing: {
+					...billing,
+					size: proxyResult.meta?.imageBillingSize ?? billing.size,
+				},
 				effectiveImageCount: validImages,
 				imageUsage,
 				clientAbortPrecheck,
@@ -721,13 +725,30 @@ imageRoutes.post('/generations', async (c) => {
 		});
 	}
 
-	const common = normalizeImageCommonParams({
-		prompt: body.prompt,
-		n: body.n,
-		size: body.size,
-		quality: body.quality,
-		background: body.background,
-	});
+	const routed = await resolveOpenAiImageRoutes(repos, rawModelId, 'images.generations');
+	if (!routed.ok) {
+		return rejectImageRequest(c, routed.status, routed.error, {
+			operation: 'generations',
+			contentType,
+			contentLength,
+			bodyKeys,
+			hasModel: true,
+			clientModel: rawModelId,
+			promptChars: typeof body.prompt === 'string' ? body.prompt.length : 0,
+		});
+	}
+	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
+
+	const common = normalizeImageCommonParams(
+		{
+			prompt: body.prompt,
+			n: body.n,
+			size: body.size,
+			quality: body.quality,
+			background: body.background,
+		},
+		{ maxN: maxNForImageRoutes(routes) }
+	);
 	if (!common.ok) {
 		return rejectImageRequest(c, 400, common.error, {
 			operation: 'generations',
@@ -739,20 +760,6 @@ imageRoutes.post('/generations', async (c) => {
 			promptChars: typeof body.prompt === 'string' ? body.prompt.length : 0,
 		});
 	}
-
-	const routed = await resolveOpenAiImageRoutes(repos, rawModelId, 'images.generations');
-	if (!routed.ok) {
-		return rejectImageRequest(c, routed.status, routed.error, {
-			operation: 'generations',
-			contentType,
-			contentLength,
-			bodyKeys,
-			hasModel: true,
-			clientModel: rawModelId,
-			promptChars: common.prompt.length,
-		});
-	}
-	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
 	const modelNameForLog = modelDisplayName(model, baseModelId);
 
 	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {

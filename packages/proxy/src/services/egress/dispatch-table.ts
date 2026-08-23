@@ -24,6 +24,8 @@ import {
 	type AudioSpeechDispatchOptions,
 	type NormalizedAudioSpeechRequest,
 } from './audio-speech-driver';
+import { dispatchDashScopeImageGenerations } from './dashscope-images-driver';
+import { dispatchOpenAiImageGenerations } from './openai-images-driver';
 
 type Timing = {
 	signal?: AbortSignal;
@@ -44,9 +46,15 @@ const AUDIO_SPEECH_ADAPTERS = [
 	'dashscope-tts-minimax',
 ] as const satisfies readonly RouteAdapter[];
 
+const IMAGE_GENERATION_ADAPTERS = [
+	'dashscope-image-qwen',
+	'dashscope-image-wan',
+] as const satisfies readonly RouteAdapter[];
+
 export const IMPLEMENTED_CONVERSION_ADAPTERS: readonly RouteAdapter[] = [
 	...AUDIO_TRANSCRIPTION_ADAPTERS,
 	...AUDIO_SPEECH_ADAPTERS,
+	...IMAGE_GENERATION_ADAPTERS,
 ];
 
 export function implementedConversionAdapterIds(): readonly string[] {
@@ -104,6 +112,22 @@ export function dispatchAudioSpeech(
 		throw new Error(`Unsupported audio speech adapter: ${route.adapter}`);
 	}
 	return dispatch(route, request, signal, timing, attempt, options);
+}
+
+export function dispatchImageGenerations(
+	route: RouteResult,
+	body: Record<string, unknown>,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt
+): Promise<ProxyDispatchResult> {
+	if (route.adapter === 'passthrough' && route.upstreamProtocol === 'openai') {
+		return dispatchOpenAiImageGenerations(route, body, signal, timing, attempt);
+	}
+	if (route.adapter === 'dashscope-image-qwen' || route.adapter === 'dashscope-image-wan') {
+		return dispatchDashScopeImageGenerations(route, body, signal, timing, attempt);
+	}
+	throw new Error(`Unsupported image generation adapter: ${route.adapter}`);
 }
 
 export function dispatchMultimodalPassthrough(

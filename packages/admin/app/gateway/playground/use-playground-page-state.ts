@@ -139,7 +139,10 @@ export function usePlaygroundPageState() {
 					| 'audio.speech.realtime.inference')
 			: null;
 
-	const imageSendBlocked = selectedIsImage && normalizeProtocol(selected?.upstream_protocol ?? 'openai') !== 'openai';
+	const selectedImageUpstreamProtocol = normalizeProtocol(selected?.upstream_protocol ?? 'openai');
+	const imageSendBlocked =
+		selectedIsImage && selectedImageUpstreamProtocol !== 'openai' && selectedImageUpstreamProtocol !== 'dashscope';
+	const selectedImageUsesDashScope = selectedIsImage && selectedImageUpstreamProtocol === 'dashscope';
 	const selectedAudioUpstreamProtocol = (selected?.upstream_protocol ?? 'openai').trim().toLowerCase();
 	const audioSendBlocked =
 		selectedIsAudio && selectedAudioUpstreamProtocol !== 'openai' && selectedAudioUpstreamProtocol !== 'dashscope';
@@ -456,6 +459,7 @@ export function usePlaygroundPageState() {
 					? t('audioFileRequired')
 					: selectedIsImage &&
 						  !selectedIsAudio &&
+						  !selectedImageUsesDashScope &&
 						  imageOperation === 'edits' &&
 						  !validateEditImageFiles(editFiles).ok
 						? t('referenceImagesRequired')
@@ -494,8 +498,13 @@ export function usePlaygroundPageState() {
 			selectedIsAudio &&
 			!isRealtime &&
 			(selectedAudioUpstreamProtocol === 'openai' || selectedAudioUpstreamProtocol === 'dashscope');
-		const useImages = selectedIsImage && !selectedIsAudio && proto === 'openai';
-		const effectiveImageOp: ImageOperation | undefined = useImages ? imageOperation : undefined;
+		const useImages =
+			selectedIsImage && !selectedIsAudio && (proto === 'openai' || proto === 'dashscope');
+		const effectiveImageOp: ImageOperation | undefined = useImages
+			? proto === 'dashscope'
+				? 'generations'
+				: imageOperation
+			: undefined;
 
 		if (isRealtime) {
 			if (selectedDashScopeRealtimeOperation.startsWith('audio.transcriptions') && selectedNeedsAudioFile) {
@@ -825,6 +834,7 @@ export function usePlaygroundPageState() {
 		selectedIsAudio,
 		selectedIsAudioTranscription,
 		imageSendBlocked,
+		selectedImageUsesDashScope,
 		audioSendBlocked,
 		selectedAudioUsesDashScope,
 		selectedUsesDashScopeRealtime,

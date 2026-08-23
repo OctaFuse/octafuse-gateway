@@ -58,6 +58,7 @@ function ProtocolFields(props: {
 		chat: string;
 		responses: string;
 		imagesGenerations: string;
+		imagesGenerationsMultimodal: string;
 		imagesEdits: string;
 		audioTranscriptions: string;
 		audioTranscriptionsMultimodal: string;
@@ -314,6 +315,10 @@ function ProtocolFields(props: {
 							<>
 								{(
 									[
+										[
+											"images_generations_multimodal",
+											capLabels.imagesGenerationsMultimodal,
+										],
 										["audio_transcriptions", capLabels.audioTranscriptions],
 										[
 											"audio_transcriptions_multimodal",
@@ -398,6 +403,7 @@ export function ProviderModal(props: ProviderModalProps) {
 		chat: t('capChat'),
 		responses: t('capResponses'),
 		imagesGenerations: t('capImagesGenerations'),
+		imagesGenerationsMultimodal: t('capImagesGenerationsMultimodal'),
 		imagesEdits: t('capImagesEdits'),
 		audioTranscriptions: t('capAudioTranscriptions'),
 		audioTranscriptionsMultimodal: t('capAudioTranscriptionsMultimodal'),

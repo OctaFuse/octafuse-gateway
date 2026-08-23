@@ -8,7 +8,6 @@ import { dispatchOpenAiRoute } from "./egress/openai-driver";
 import { dispatchOpenAiResponsesRoute } from "./egress/openai-responses-driver";
 import {
 	dispatchOpenAiImageEdits,
-	dispatchOpenAiImageGenerations,
 	type NormalizedImageEditRequest,
 } from "./egress/openai-images-driver";
 import type { NormalizedAudioTranscriptionRequest } from "./egress/openai-audio-driver";
@@ -16,6 +15,7 @@ import type { DashScopeAsrDispatchOptions } from "./egress/dashscope-audio-drive
 import {
 	dispatchAudioSpeech,
 	dispatchAudioTranscriptions,
+	dispatchImageGenerations,
 	dispatchMultimodalPassthrough,
 } from "./egress/dispatch-table";
 import type {
@@ -202,13 +202,13 @@ export async function proxyImageGenerations(
 	return failoverDispatch(
 		repos,
 		routes,
-		"openai",
+		["openai", "dashscope"],
 		(
 			route,
 			signal,
 			timing?: RequestTimingCollector | null,
 			attempt?: RequestTimingAttempt
-		) => dispatchOpenAiImageGenerations(route, body, signal, timing, attempt),
+		) => dispatchImageGenerations(route, body, signal, timing, attempt),
 		requestSignal,
 		options
 	);

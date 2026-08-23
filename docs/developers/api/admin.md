@@ -689,9 +689,9 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 1. **Provider**：配置可用的 OpenAI（或兼容）Provider Key，并在 `endpoints.openai` 写 `base`（如 `https://api.openai.com/v1`）或 `endpoints.images.generations` 完整 URL。
 2. **Import**：Admin → Models → Import → 勾选 **`gpt-image-2`**（`output_modalities: ["image"]`，`pricing_profile.tiers` 含 `image_*` token 单价）。**已存在同 id 不会覆盖**——旧按张行需 **删除后 re-import** 或打开编辑填入 token 单价后保存。
 3. **列表**：筛选 Kind=Image，卡片应显示 Image token 单价（如 text / img-in / img-out）。
-4. **Routes**：为 `gpt-image-2` 建路由；弹窗 Billing「Standard (catalog)」应显示 **token 分项单价**；`upstream_protocol` **锁定 openai**（保存 anthropic/gemini 应 400）。Models admin 本身不引用 provider base URL。
-5. **Playground**（不计费、不写 logs）：选该 openai 路由 → Send → 上游由 `resolveUpstreamEndpoint(…, images.generations)` 解析（通常 `…/images/generations`）返回图并可预览。非 openai 路由禁用 Send。
-6. **Simulator**（真实 Proxy）：选同一模型 → 协议锁定 openai → 请求打到 `{proxy}/v1/images/generations` → 出图；**Open Request Logs** 核对 `raw_usage` 与 `pricing_audit.kind=image_tokens`，`charged_cost` 随 usage 分项变化（非固定按张）。
+4. **Routes**：为 `gpt-image-2` 建路由；弹窗 Billing「Standard (catalog)」应显示 **token 分项单价**；`upstream_protocol` 对 OpenAI 兼容生图锁定 `openai`，DashScope 转换允许 `dashscope`（保存 anthropic/gemini 应 400）。Models admin 本身不引用 provider base URL。
+5. **Playground**（不计费、不写 logs）：选 openai 透传路由 → Send → 上游由 `resolveUpstreamEndpoint(…, images.generations)` 解析（通常 `…/images/generations`）返回图并可预览。DashScope 转换路由同样可测：请求体仍用 OpenAI Images JSON，调试台改写成 `images.generations.multimodal`。anthropic / gemini 路由禁用 Send。
+6. **Simulator**（真实 Proxy）：选同一模型 → 协议锁定 openai → 请求打到 `{proxy}/v1/images/generations` → 出图；**Open Request Logs** 核对 `raw_usage` 与 `pricing_audit.kind=image_tokens`，`charged_cost` 随 usage 分项变化（非固定按张）。DashScope 转换路由也走这条 OpenAI 入口（adapter `dashscope-image-*`），不要改成 dashscope 协议。
 7. **回归**：任意 LLM 模型仍走 chat/completions（Playground / Simulator 行为不变）。
 8. **curl**（可选，用户 API Key）：
 

@@ -22,6 +22,8 @@ describe('adapter registry', () => {
 			'dashscope-tts-speech',
 			'dashscope-tts-qwen',
 			'dashscope-tts-minimax',
+			'dashscope-image-qwen',
+			'dashscope-image-wan',
 		]);
 	});
 
@@ -38,7 +40,7 @@ describe('adapter registry', () => {
 			upstreamProtocol: 'dashscope',
 			upstreamOperation: 'audio.speech.multimodal',
 		});
-		assert.equal(listConversionAdapters().length, 7);
+		assert.equal(listConversionAdapters().length, 9);
 	});
 
 	it('every conversion adapter is compatible with its own mapping', () => {
@@ -77,6 +79,9 @@ describe('adapter registry', () => {
 			'audio.speech.realtime.inference',
 			'audio.speech',
 		]);
+		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'image'), [
+			'images.generations.multimodal',
+		]);
 	});
 
 	it('resolves DashScope presets from registry intents', () => {
@@ -85,6 +90,8 @@ describe('adapter registry', () => {
 		assert.equal(getAdapterByPresetIntent('dashscope-asr-filetrans')?.id, 'dashscope-asr-file-async');
 		assert.equal(getAdapterByPresetIntent('dashscope-tts-nonrealtime')?.id, 'dashscope-tts-speech');
 		assert.equal(getAdapterByPresetIntent('dashscope-tts-realtime')?.id, 'passthrough');
+		assert.equal(getAdapterByPresetIntent('dashscope-image-qwen')?.id, 'dashscope-image-qwen');
+		assert.equal(getAdapterByPresetIntent('dashscope-image-wan')?.id, 'dashscope-image-wan');
 	});
 
 	it('maps public surface paths from registry metadata', () => {
