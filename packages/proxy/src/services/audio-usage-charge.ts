@@ -33,6 +33,7 @@ import {
 	resolveSupplierBillingPrices,
 	roundGatewayMoney,
 	scaleBillingPrices,
+	toScheduleAudit,
 	applyUserChargedCostToBreakdown,
 	snapshotToJson,
 	snapshotWithOverrides,
@@ -135,15 +136,7 @@ async function resolveRouteFactors(
 	);
 	const schSide = (sch: typeof chargedSch, base: number, effective: number) => ({
 		base_factor: base,
-		schedule: {
-			timezone: sch.timezone,
-			local_time: sch.localTime,
-			evaluated_at_utc: sch.evaluatedAtUtc,
-			factor: sch.factor,
-			window: sch.window
-				? { start: sch.window.start, end: sch.window.end, factor: sch.window.factor }
-				: null,
-		},
+		schedule: toScheduleAudit(sch),
 		effective_factor: effective,
 	});
 	return {

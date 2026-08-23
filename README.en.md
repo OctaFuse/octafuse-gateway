@@ -44,7 +44,7 @@ Its core capabilities include:
 7. Integrated user management and accounting:
     - Three-level External system, User, and API Key hierarchy: the external-system field separates systems or teams, while API Keys authenticate calls and drive charging and auditing
     - Three ledgers: every invocation records catalog price, actual provider cost, and user charge separately
-    - Time-of-day multipliers: peak / off-peak pricing improves cost accuracy and enables flexible customer pricing and promotions
+    - Time-of-day multipliers: peak / off-peak pricing, including weekday vs weekend rates, improves cost accuracy and enables flexible customer pricing and promotions
 8. Admin console and management APIs:
     - Full Admin UI and APIs for manual operation or integration with other portals
     - Observability and analytics for request details, statistics, and operational analysis

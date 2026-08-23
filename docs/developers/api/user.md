@@ -1169,7 +1169,7 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 
 - `cache_read_price` 和 `cache_write_price` 默认等于 `input_price`
 - Images 还支持 `per_image` 按张计价，Audio 支持 `per_second` 按时长或 `token` 计价，Agent Tools 使用固定按次单价；分别见上文对应章节。
-- 路由 **`price_override`** 以 **`charged_factor` / `metered_factor`**（及可选每日 **`schedule`**）相对目录价计费；嵌套 `metered`/`charged` tiers 忽略。
+- 路由 **`price_override`** 以 **`charged_factor` / `metered_factor`**（及可选分时 **`schedule`**，窗口可带 ISO `days`）相对目录价计费；嵌套 `metered`/`charged` tiers 忽略。
 - 路由级 **`route_group`** 会写入 `api_key_request_logs` 快照。
   - **`standard_cost`（目录标准价）**：按当前计费模式从 `models.pricing_profile` 计算，不乘路由倍率
   - **`metered_cost`（供应成本）** / **`charged_cost`（用户扣费）**：目录价 × 有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。若用户对该目录模型配置了用户计费倍率，仅对路由算出的用户扣费再乘一次；供应成本与目录标准价不变。详见 `docs/developers/reference/streaming-billing.md`

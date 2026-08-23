@@ -165,6 +165,25 @@ describe('coerceRoutePriceOverrideInput', () => {
 		);
 	});
 
+	it('round-trips schedule window days', () => {
+		assert.equal(
+			coerceRoutePriceOverrideInput({
+				charged_factor: 1,
+				schedule: {
+					mode: 'override',
+					charged: [{ start: '00:00', end: '24:00', factor: 1.2, days: [1, 2, 3, 4, 5] }],
+				},
+			}),
+			JSON.stringify({
+				charged_factor: 1,
+				schedule: {
+					mode: 'override',
+					charged: [{ start: '00:00', end: '24:00', factor: 1.2, days: [1, 2, 3, 4, 5] }],
+				},
+			})
+		);
+	});
+
 	it('rejects unknown schedule.mode', () => {
 		assert.throws(
 			() =>

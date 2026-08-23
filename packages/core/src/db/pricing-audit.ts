@@ -14,7 +14,7 @@
  *       "source": "model_x_factor",
  *       "basis_tokens": 200000,
  *       "base_factor": 1.0,
- *       "schedule": { "timezone": "Asia/Shanghai", "local_time": "07:15", "evaluated_at_utc": "2026-07-09T23:15:00.000Z", "factor": 0.5, "window": { ... } },
+ *       "schedule": { "timezone": "Asia/Shanghai", "local_time": "07:15", "local_weekday": 5, "evaluated_at_utc": "2026-07-09T23:15:00.000Z", "factor": 0.5, "window": { ... } },
  *       "effective_factor": 0.5,
  *       "prices": { ... }
  *     },

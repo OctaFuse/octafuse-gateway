@@ -120,6 +120,11 @@ Admin 前端格式化函数位于 `packages/admin/lib/datetime.ts`：
 
 - Admin 仪表盘「今日」卡片：`dashboard-service.ts` → `getAdminStatsService`
 - Admin 全站时间列与自定义时间窗（见上一节）
+- 路由分时时段（`price_override.schedule`）：`formatLocalHhMm` 与 `formatLocalIsoWeekday` 都按业务时区取墙钟时刻与 ISO 星期（1=周一 … 7=周日），不用 UTC weekday；评估时刻为请求进入 Gateway 的 `request_started_at_ms`
+
+### 分时时段的星期
+
+窗口可选 `days`（ISO 1–7）。省略表示每天循环，与历史「每日时段」一致。跨午夜窗口的 `days` 锚定**开始日**：周五 `22:00–06:00` 在周六 03:00 仍命中。`pricing_audit.schedule` 写入 `local_time`、`local_weekday` 与 `evaluated_at_utc`。
 
 API 文档中的相关说明见 [`docs/developers/api/admin.md`](../api/admin.md)（时间与时区约定一节）。
 
@@ -137,6 +142,7 @@ API 文档中的相关说明见 [`docs/developers/api/admin.md`](../api/admin.md
 | 模块 | 路径 |
 |------|------|
 | 业务时区读取、日界窗口、UTC↔墙钟换算 | `packages/core/src/lib/business-timezone.ts` |
+| 分时时段本地时刻 / ISO 星期 | `packages/core/src/db/pricing-schedule.ts` |
 | Admin 时区 Provider / Hook | `packages/admin/components/BusinessTimezoneProvider.tsx` |
 | Admin 时间格式化 Hook | `packages/admin/lib/use-gateway-datetime.ts` |
 | API 时间归一化 | `packages/core/src/lib/time-format.ts` |
