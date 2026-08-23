@@ -29,7 +29,7 @@ Operator
 
 ## 版本基线
 
-当前仓库版本为 **Octafuse Gateway 2.3.0**，D1 迁移共 **21 个**（截至 `0021_route_strategy_display_ids.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，从 2.2.0 升级 2.3.0 见 [迁移与切换索引](../README.md#迁移与切换)（0020 → 0021）。
+当前仓库版本为 **Octafuse Gateway 2.7.0**，D1 迁移共 **26 个**（截至 `0026_user_charged_cost_factors.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。升级到 2.7.0 必须应用 0026，并部署同版本的 Proxy 与 Admin。
 
 下列构建体积来自 2026-07-24 对 `1.10.2` 的历史实测，仅用于量级参考；当前部署应以本次终端输出为准：
 
@@ -41,7 +41,7 @@ Operator
 | `@opennextjs/cloudflare` | 1.19.4 |
 | 代理服务 gzip | 194.31 KiB |
 | 管理后台 gzip | 2925.55 KiB |
-| 当时 D1 migrations | 13 个全部成功（2.3.0 当前为 21 个） |
+| 当时 D1 migrations | 13 个全部成功（2.7.0 当前为 26 个） |
 
 Cloudflare Workers Free 的单 Worker gzip 上限为 3 MiB；管理后台实测低于该上限，但余量不大。部署时应检查自己终端中的 `Total Upload ... gzip`，不要只依赖本文的历史数值。限制以 [Cloudflare Workers Limits](https://developers.cloudflare.com/workers/platform/limits/#worker-size) 为准。若免费额度余量吃紧或流量上来，也推荐升级 [Workers Paid](https://developers.cloudflare.com/workers/platform/pricing/)（约 $5/月）——量大管饱，性价比极高。
 

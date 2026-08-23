@@ -28,6 +28,7 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
       - Models: `GET /v1/models`
     - Anthropic 엔드포인트: `POST /v1/messages`
     - Google Gemini 엔드포인트: `POST /v1beta/models/{model}:generateContent` (`streamGenerateContent` 포함)
+    - DashScope 동기식 멀티모달 ASR: `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
     - DashScope 실시간 오디오: `GET /v1/dashscope/realtime`
 4. Agent 도구 연결: `/v1/tools/*`를 통해 Agent용 도구를 통합 제공하고 로그, 과금, 비용 관리를 중앙화합니다. 모델과 도구를 하나의 Gateway에서 사용할 수 있습니다.
     - 웹 검색(`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
@@ -45,6 +46,7 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
     - External system, User, API Key의 3단계 구조: External system으로 시스템이나 팀을 구분하고 API Key로 인증, 과금, 감사를 수행합니다
     - 세 가지 원장: 각 호출의 카탈로그 가격, 실제 Provider 비용, 사용자 청구액을 별도로 기록합니다
     - 시간대별 배율: 피크 / 비피크 가격과 평일·주말 배수를 이용해 비용 계산 정확도를 높이고 고객 가격과 프로모션을 유연하게 구성합니다
+    - 모델별 사용자 배율: 사용자와 카탈로그 모델별로 할인, 할증 또는 무료 이용을 설정하며 카탈로그 가격과 Provider 비용은 변경하지 않습니다
 8. 관리 화면과 관리 API:
     - 수동 운영과 외부 포털 연동을 모두 지원하는 관리 화면 및 API
     - 요청 상세, 통계, 운영 분석을 제공하는 관측성과 데이터 분석

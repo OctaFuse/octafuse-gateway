@@ -95,6 +95,11 @@ flowchart TB
 - 迁移 **`0019_route_strategy_canonical_ids`**（2.2.0 历史阶段）：将 `affinity` / `strict` / `round_robin` 硬切换为当时的 canonical ID `cache_affinity` / `fixed_order` / `weighted_round_robin`（`weighted_random` 不变）。覆盖 `system_config.ROUTE_STRATEGY`、`route_pools.strategy`、`route_pools.tier_strategies`、`models.route_policy`。历史步骤见 [route-strategy-canonical-ids-cutover.md](../../operators/migrations/route-strategy-canonical-ids-cutover.md)。
 - 迁移 **`0020_route_pool_sticky_routing`**：`route_pools` 增加 `sticky_enabled` / `sticky_idle_ttl_seconds` / `sticky_epoch`；新表 **`route_pool_sticky_bindings`**（跨 isolate 共享供应商粘性）。见 [route-pool-sticky-routing-cutover.md](../../operators/migrations/route-pool-sticky-routing-cutover.md)。
 - 迁移 **`0021_route_strategy_display_ids`**：将 `cache_affinity` / `fixed_order` 再次硬切换为现行 `hash_affinity` / `weight_priority`，覆盖上述四个持久化位置且无旧 ID 别名。维护窗口步骤与校验 SQL 见 [route-strategy-display-ids-cutover.md](../../operators/migrations/route-strategy-display-ids-cutover.md)。
+- 迁移 **`0022_request_log_audio_characters`**：请求日志增加 `audio_characters`，独立记录 TTS 上游返回的有效计费字符数。
+- 迁移 **`0023_admin_access_identity`**：新增 `admin_api_keys` / `admin_sessions`，并把历史 `system_config.MASTER_KEY` 复制为全权限 `legacy-master`。
+- 迁移 **`0024_drop_legacy_master_key_config`**：删除历史 `system_config.MASTER_KEY` 配置行；新版管理认证只读取具名 Admin API Key 与控制台会话。
+- 迁移 **`0025_user_audit_actor_index`**：为 `user_audit_logs(actor_id, created_at)` 增加操作主体查询索引。
+- 迁移 **`0026_user_charged_cost_factors`**：`users` 增加 `charged_cost_factors`，按目录模型 ID 保存用户计费倍率。
 
 #### Endpoint capability 维护规则
 
@@ -128,7 +133,7 @@ sequenceDiagram
 
   C->>P: Authorization Bearer sk-...
   P->>DB: getApiKeyWithUserByKey(key)
-  DB-->>P: key + user budget 列
+  DB-->>P: key + user budget 列 + charged_cost_factors
   P->>P: maybeResetBudget(user)
   alt 周期到期需落库
     P->>DB: updateUserBudgetWithAuditTx
@@ -154,8 +159,10 @@ sequenceDiagram
 > **0018 按优先级层策略切换步骤**：见 **[route-pool-tier-strategies-cutover.md](../../operators/migrations/route-pool-tier-strategies-cutover.md)**。
 > **0019 历史 canonical 策略 ID 切换步骤**：见 **[route-strategy-canonical-ids-cutover.md](../../operators/migrations/route-strategy-canonical-ids-cutover.md)**。
 > **0020 / 0021（2.3.0）切换步骤**：见 **[route-pool-sticky-routing-cutover.md](../../operators/migrations/route-pool-sticky-routing-cutover.md)** 与 **[route-strategy-display-ids-cutover.md](../../operators/migrations/route-strategy-display-ids-cutover.md)**。
+> **0022–0025（2.4.0）升级说明**：见 **[2.4.0 发布说明](../../releases/2.4.0.md#升级说明)**。
+> **0026（2.7.0）升级说明**：见 **[2.7.0 发布说明](../../releases/2.7.0.md#升级说明)**。
 
-### Schema（迁移 **0015–0021**，三库同语义）
+### Schema（迁移 **0015–0026**，三库同语义）
 
 | 对象 | 含义 |
 |------|------|
@@ -168,6 +175,10 @@ sequenceDiagram
 | **`model_routes.route_pool_id` / `upstream_operation` / `adapter`** | 上游目标所属路由池、上游 capability 与转换方式；同协议使用 `passthrough`，OpenAI ASR / TTS 转 DashScope 使用显式白名单 adapter |
 | **`models.route_policy`** | 可选 TEXT JSON：`strategy` + `rules`；`NULL` = 回退全局 |
 | **`system_config.ROUTE_STRATEGY`** | 全局缺省策略（默认 `hash_affinity`；进程内缓存 30s） |
+| **`api_key_request_logs.audio_characters`** | TTS 上游返回的有效计费字符数；与 ASR 时长独立记录 |
+| **`admin_api_keys` / `admin_sessions`** | 具名管理 API Key 与持久化控制台会话；不再从 `system_config.MASTER_KEY` 鉴权 |
+| **`user_audit_logs(actor_id, created_at)`** | 按操作主体与时间检索用户审计的联合索引 |
+| **`users.charged_cost_factors`** | 可选 JSON：目录模型 ID → 非负用户计费倍率；只改变最终用户费用与预算累加 |
 
 已移除：`provider_api_keys`、`limit_config`（网关 RPM/TPM/并发软限流）、`models.sticky_config`（旧粘性 key 绑定；由路由池级 **供应商粘性** + `route_pool_sticky_bindings` 替代）。
 
