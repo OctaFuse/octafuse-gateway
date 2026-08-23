@@ -27,6 +27,7 @@ import {
 	upstreamOperationsForProviderModel,
 	type RouteModelGroup,
 } from './route-utils';
+import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
 import { EMPTY_ROUTE_FORM } from './types';
 
 function model(overrides: Partial<GatewayModel> = {}): GatewayModel {
@@ -160,6 +161,34 @@ describe('route form capability filters', () => {
 		const filetrans = applyDashScopeAsrRoutePreset(EMPTY_ROUTE_FORM, 'filetrans');
 		assert.equal(filetrans.upstream_operation, 'audio.transcriptions.async');
 		assert.equal(filetrans.adapter, 'dashscope-asr-file-async');
+	});
+
+	it('wires qwen-audio-3.0-asr-flash on Token Plan to convert and passthrough, not filetrans', () => {
+		const qwenTokenPlan = listStaticProviderImportPresets().find(
+			(row) => row.name === 'Qwen AI Platform (Token Plan)',
+		);
+		assert.ok(qwenTokenPlan);
+		const asr = model({
+			id: 'qwen-audio-3.0-asr-flash',
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_second',
+				audio: { price_per_second: 0.0001 },
+			}),
+		});
+		assert.deepEqual(
+			upstreamOperationsForProviderModel(
+				provider(qwenTokenPlan.endpoints),
+				asr,
+				'dashscope',
+				'qwen-audio-3.0-asr-flash',
+			),
+			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.inference'],
+		);
+		assert.equal(
+			applyDashScopeAsrRoutePreset(EMPTY_ROUTE_FORM, 'flash-convert').adapter,
+			'dashscope-asr-qwen-audio-file',
+		);
+		assert.equal(applyDashScopeAsrRoutePreset(EMPTY_ROUTE_FORM, 'flash-passthrough').adapter, 'passthrough');
 	});
 
 	it('limits public operations by model modality', () => {

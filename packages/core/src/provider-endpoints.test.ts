@@ -179,6 +179,24 @@ describe('resolveUpstreamEndpoint', () => {
 			'wss://workspace.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime'
 		);
 	});
+
+	it('uses the Token Plan multimodal override without deriving filetrans from a DashScope base', () => {
+		const endpoints = {
+			dashscope: {
+				endpoints: {
+					'audio.transcriptions.multimodal':
+						'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+				},
+			},
+		};
+		assert.equal(
+			resolveUpstreamEndpoint('dashscope', 'audio.transcriptions.multimodal', endpoints),
+			'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
+		);
+		assert.deepEqual(listConfiguredCapabilities(endpoints, 'dashscope'), [
+			'audio.transcriptions.multimodal',
+		]);
+	});
 });
 
 describe('providerSupportsUpstreamProtocol', () => {
