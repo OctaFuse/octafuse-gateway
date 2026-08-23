@@ -783,6 +783,17 @@
 				"dashscope-tts-minimax": "MiniMax TTS"
 			},
 			"noCompatibleAdapter": "No compatible adapter",
+			"adapterFirstHint": "Choose an adapter first. Public and upstream protocol fields are filled from the registry.",
+			"adapterUnavailable": "unavailable",
+			"adapterMissingCapabilities": "Provider is missing required endpoints: {capabilities}",
+			"adapterLossyFeatures": "Known unsupported features: {features}",
+			"adapterBilling": {
+				"tokens": "Billed by tokens",
+				"per_image": "Billed per image",
+				"per_second": "Billed per second",
+				"per_character": "Billed per character",
+				"per_call": "Billed per call"
+			},
 			"passthroughHint": "Passthrough only in this release; public and upstream protocols must match.",
 			"protocolHintConfigured": "Only configured provider protocols compatible with this model are shown.",
 			"protocolHintSelectProvider": "Select a provider first.",

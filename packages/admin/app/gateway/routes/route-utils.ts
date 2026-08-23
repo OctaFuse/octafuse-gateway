@@ -23,12 +23,26 @@ import {
 	type ProviderEndpointCapability,
 } from '@octafuse/core/provider-endpoints';
 import {
-	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
 	REQUEST_OPERATIONS_BY_PROTOCOL,
 	ROUTE_ADAPTERS,
 } from '@octafuse/core/route-topology';
+import {
+	adaptersForModelKind,
+	getAdapterByOptionKey,
+	getAdapterByPresetIntent,
+	listSelectableAdapters,
+	requestOperationsFromRegistry,
+	requestSurfacePath as requestSurfacePathFromRegistry,
+	requiredCapabilitiesForUpstreamOperation,
+	SURFACE_PATH_MODEL_PLACEHOLDER,
+	upstreamOperationsFromRegistry,
+	type AdapterBilling,
+	type AdapterDescriptor,
+	type AdapterModelKind,
+	type AdapterPresetIntent,
+} from '@octafuse/core/adapters/registry';
 import {
 	findDailyWindowOverlap,
 	formatIsoWeekdaysHint,
@@ -73,53 +87,11 @@ export function getProtocolDisplayLabel(protocol: string): string {
 }
 
 /** 跨模型汇总时路径里的模型占位符（Gemini / DashScope 入口含 model）。 */
-export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
+export { SURFACE_PATH_MODEL_PLACEHOLDER };
 
 /** 将公开协议操作映射为客户端实际调用路径，避免把带点的操作名直接拼进 URL。 */
 export function requestSurfacePath(protocol: string, operation: string, modelId?: string): string {
-	const modelSegment =
-		modelId && modelId.length > 0 ? modelId : SURFACE_PATH_MODEL_PLACEHOLDER;
-	if (protocol === 'openai') {
-		const paths: Record<string, string> = {
-			chat: '/v1/chat/completions',
-			responses: '/v1/responses',
-			'images.generations': '/v1/images/generations',
-			'images.edits': '/v1/images/edits',
-			'audio.transcriptions': '/v1/audio/transcriptions',
-			'audio.speech': '/v1/audio/speech',
-		};
-		return operation === '*' ? '/v1/*' : paths[operation] ?? `/v1/${operation}`;
-	}
-	if (protocol === 'anthropic') {
-		return operation === '*' ? '/v1/*' : '/v1/messages';
-	}
-	if (protocol === 'gemini') {
-		// `models.generate` 是路由族标识；真实客户端仍使用两种 Gemini wire action。
-		if (operation === 'models.generate') {
-			return `/v1beta/models/${modelSegment}:{generateContent|streamGenerateContent}`;
-		}
-		return `/v1beta/models/${modelSegment}:${operation}`;
-	}
-	if (protocol === 'dashscope') {
-		if (operation.includes('.realtime.')) {
-			// 原生实时操作共享一个 WSS 入口，模型与操作通过查询参数选择。
-			const modelParam =
-				modelId && modelId.length > 0
-					? encodeURIComponent(modelId)
-					: SURFACE_PATH_MODEL_PLACEHOLDER;
-			return `/v1/dashscope/realtime?model=${modelParam}&operation=${encodeURIComponent(operation)}`;
-		}
-		const paths: Record<string, string> = {
-			'audio.speech': '/v1/audio/speech',
-			'audio.speech.stream': '/v1/audio/speech',
-			'audio.speech.multimodal': '/v1/audio/speech',
-			'audio.transcriptions': '/v1/audio/transcriptions',
-			'audio.transcriptions.multimodal': DASHSCOPE_MULTIMODAL_GENERATION_PATH,
-			'audio.transcriptions.async': '/v1/audio/transcriptions',
-		};
-		return operation === '*' ? '/*' : paths[operation] ?? `/${operation}`;
-	}
-	return operation === '*' ? '/*' : `/${operation}`;
+	return requestSurfacePathFromRegistry(protocol, operation, modelId);
 }
 
 /**
@@ -674,43 +646,45 @@ export const CAPABILITIES_BY_PROTOCOL: Record<string, readonly ProviderEndpointC
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 };
 
+export function modelKindForModel(model: GatewayModel | undefined): AdapterModelKind {
+	if (model && isImageGenerationModel(model)) return 'image';
+	if (model && isAudioTranscriptionModel(model)) return 'audio.transcription';
+	if (model && isAudioSpeechModel(model)) return 'audio.speech';
+	return 'llm';
+}
+
+function sortOperationsForProtocol(protocol: UpstreamProtocol, operations: readonly string[]): string[] {
+	const order = REQUEST_OPERATIONS_BY_PROTOCOL[protocol] as readonly string[];
+	return [...operations].sort((a, b) => {
+		const ia = order.indexOf(a);
+		const ib = order.indexOf(b);
+		return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+	});
+}
+
+function filterRealtimeOperations(operations: readonly string[], providerModelName: string): string[] {
+	if (!providerModelName.trim()) return [...operations];
+	return operations.filter((operation) =>
+		isDashScopeRealtimeAsrModelOperationCompatible(providerModelName, operation),
+	);
+}
+
 /** Public operations that make sense for the selected model modality. */
 export function requestOperationsForModel(
 	model: GatewayModel | undefined,
 	protocol: UpstreamProtocol,
 	providerModelName = '',
 ): readonly string[] {
-	if (model && isImageGenerationModel(model)) {
-		return protocol === 'openai' ? ['images.generations', 'images.edits'] : [];
-	}
-	if (model && isAudioTranscriptionModel(model)) {
-		if (protocol === 'openai') return ['audio.transcriptions'];
-		if (protocol === 'dashscope') {
-			const realtimeOperations = [
-				'audio.transcriptions.realtime.inference',
-				'audio.transcriptions.realtime.session',
-			];
-			const compatibleRealtime = providerModelName.trim()
-				? realtimeOperations.filter((operation) =>
-						isDashScopeRealtimeAsrModelOperationCompatible(providerModelName, operation),
-				  )
-				: realtimeOperations;
-			// 同步 HTTP 透传始终可选；实时 operation 按供应商模型族过滤。
-			return ['audio.transcriptions.multimodal', ...compatibleRealtime];
+	if (
+		model &&
+		(isImageGenerationModel(model) || isAudioTranscriptionModel(model) || isAudioSpeechModel(model) || (isTextLlmModel(model) && protocol === 'openai'))
+	) {
+		const kind = modelKindForModel(model);
+		const operations = requestOperationsFromRegistry(protocol, kind);
+		if (kind === 'audio.transcription' && protocol === 'dashscope') {
+			return filterRealtimeOperations(operations, providerModelName);
 		}
-		return [];
-	}
-	if (model && isAudioSpeechModel(model)) {
-		if (protocol === 'openai') return ['audio.speech'];
-		if (protocol === 'dashscope') {
-			// Qwen-Audio-TTS/CosyVoice 实时接口使用 inference 任务协议；
-			// Qwen-TTS-Realtime session 不在本项目支持范围内。
-			return ['audio.speech.realtime.inference'];
-		}
-		return [];
-	}
-	if (model && isTextLlmModel(model) && protocol === 'openai') {
-		return ['chat', 'responses'];
+		return operations;
 	}
 	return REQUEST_OPERATIONS_BY_PROTOCOL[protocol];
 }
@@ -722,60 +696,45 @@ export type DashScopeTtsRoutePreset = 'realtime' | 'nonrealtime';
  * 将 DashScope ASR 的用户意图转换为完整路由拓扑。
  * flash 转换保持 OpenAI 兼容入口；透传使用原生 multimodal HTTP；filetrans 走异步 submit/poll。
  */
-export function applyDashScopeAsrRoutePreset(formData: RouteFormData, preset: DashScopeAsrRoutePreset): RouteFormData {
-	if (preset === 'flash-convert') {
-		return {
-			...formData,
-			request_protocol: 'openai',
-			request_operation: 'audio.transcriptions',
-			upstream_protocol: 'dashscope',
-			upstream_operation: 'audio.transcriptions.multimodal',
-			adapter: 'dashscope-asr-qwen-audio-file',
-		};
-	}
-	if (preset === 'flash-passthrough') {
-		return {
-			...formData,
-			request_protocol: 'dashscope',
-			request_operation: 'audio.transcriptions.multimodal',
-			upstream_protocol: 'dashscope',
-			upstream_operation: 'audio.transcriptions.multimodal',
-			adapter: 'passthrough',
-		};
-	}
+const ASR_PRESET_INTENT: Record<DashScopeAsrRoutePreset, AdapterPresetIntent> = {
+	'flash-convert': 'dashscope-asr-flash-convert',
+	'flash-passthrough': 'dashscope-asr-flash-passthrough',
+	filetrans: 'dashscope-asr-filetrans',
+};
+
+export function applyAdapterDescriptorToForm(
+	formData: RouteFormData,
+	descriptor: AdapterDescriptor,
+): RouteFormData {
 	return {
 		...formData,
-		request_protocol: 'openai',
-		request_operation: 'audio.transcriptions',
-		upstream_protocol: 'dashscope',
-		upstream_operation: 'audio.transcriptions.async',
-		adapter: 'dashscope-asr-file-async',
+		request_protocol: descriptor.request.protocol,
+		request_operation: descriptor.request.operation,
+		upstream_protocol: descriptor.upstream.protocol,
+		upstream_operation: descriptor.upstream.operations[0] ?? descriptor.request.operation,
+		adapter: descriptor.id,
 	};
+}
+
+export function applyDashScopeAsrRoutePreset(formData: RouteFormData, preset: DashScopeAsrRoutePreset): RouteFormData {
+	const descriptor = getAdapterByPresetIntent(ASR_PRESET_INTENT[preset]);
+	if (!descriptor) return formData;
+	return applyAdapterDescriptorToForm(formData, descriptor);
 }
 
 /**
  * 将 DashScope TTS 的用户意图转换为完整路由拓扑。
  * 非实时模式保持 OpenAI 兼容入口，实时模式使用网关原生 DashScope WSS 入口。
  */
+const TTS_PRESET_INTENT: Record<DashScopeTtsRoutePreset, AdapterPresetIntent> = {
+	nonrealtime: 'dashscope-tts-nonrealtime',
+	realtime: 'dashscope-tts-realtime',
+};
+
 export function applyDashScopeTtsRoutePreset(formData: RouteFormData, preset: DashScopeTtsRoutePreset): RouteFormData {
-	if (preset === 'nonrealtime') {
-		return {
-			...formData,
-			request_protocol: 'openai',
-			request_operation: 'audio.speech',
-			upstream_protocol: 'dashscope',
-			upstream_operation: 'audio.speech',
-			adapter: 'dashscope-tts-speech',
-		};
-	}
-	return {
-		...formData,
-		request_protocol: 'dashscope',
-		request_operation: 'audio.speech.realtime.inference',
-		upstream_protocol: 'dashscope',
-		upstream_operation: 'audio.speech.realtime.inference',
-		adapter: 'passthrough',
-	};
+	const descriptor = getAdapterByPresetIntent(TTS_PRESET_INTENT[preset]);
+	if (!descriptor) return formData;
+	return applyAdapterDescriptorToForm(formData, descriptor);
 }
 
 /**
@@ -795,57 +754,84 @@ export function upstreamOperationsForProviderModel(
 	const providerOperations = listConfiguredCapabilities(map, protocol);
 	const capabilities = new Set(providerOperations);
 
-	// DashScope 路由能力表示协议生命周期，供应商能力表示具体端点；此处显式映射。
-	if (model && isAudioTranscriptionModel(model)) {
-		if (protocol === 'openai') {
-			return capabilities.has('audio.transcriptions') ? ['audio.transcriptions'] : [];
+	if (model && (isAudioTranscriptionModel(model) || isAudioSpeechModel(model))) {
+		const kind = modelKindForModel(model);
+		const listed = sortOperationsForProtocol(protocol, upstreamOperationsFromRegistry(protocol, kind));
+		const operations = listed.filter((operation) => {
+			const required = requiredCapabilitiesForUpstreamOperation(protocol, operation);
+			return required.every((capability) => capabilities.has(capability as ProviderEndpointCapability));
+		});
+		if (kind === 'audio.transcription') {
+			return filterRealtimeOperations(operations, providerModelName);
 		}
-		if (protocol === 'dashscope') {
-			const operations: string[] = [];
-			if (capabilities.has('audio.transcriptions.multimodal')) {
-				operations.push('audio.transcriptions.multimodal');
-			}
-			if (capabilities.has('audio.transcriptions') && capabilities.has('audio.transcriptions.tasks')) {
-				operations.push('audio.transcriptions.async');
-			}
-			if (
-				capabilities.has('audio.realtime.inference') &&
-				isDashScopeRealtimeAsrModelOperationCompatible(
-					providerModelName,
-					'audio.transcriptions.realtime.inference',
-				)
-			) {
-				operations.push('audio.transcriptions.realtime.inference');
-			}
-			if (
-				capabilities.has('audio.realtime.session') &&
-				isDashScopeRealtimeAsrModelOperationCompatible(
-					providerModelName,
-					'audio.transcriptions.realtime.session',
-				)
-			) {
-				operations.push('audio.transcriptions.realtime.session');
-			}
-			return operations;
-		}
-		return [];
-	}
-	if (model && isAudioSpeechModel(model)) {
-		if (protocol === 'openai') {
-			return capabilities.has('audio.speech') ? ['audio.speech'] : [];
-		}
-		if (protocol === 'dashscope') {
-			const operations: string[] = [];
-			if (capabilities.has('audio.speech')) operations.push('audio.speech');
-			if (capabilities.has('audio.realtime.inference')) {
-				operations.push('audio.speech.realtime.inference');
-			}
-			return operations;
-		}
-		return [];
+		return operations;
 	}
 	const modelOperations = new Set(requestOperationsForModel(model, protocol));
 	return providerOperations.filter((operation) => modelOperations.has(operation));
+}
+
+export type AdapterOptionAvailability = {
+	descriptor: AdapterDescriptor;
+	available: boolean;
+	missingCapabilities: readonly string[];
+};
+
+export function listAdapterOptionsForModel(
+	model: GatewayModel | undefined,
+	provider: GatewayProvider | undefined,
+	providerModelName = '',
+): AdapterOptionAvailability[] {
+	const kind = modelKindForModel(model);
+	const capabilities = new Set<string>();
+	if (provider) {
+		const map = parseProviderEndpoints(provider);
+		for (const protocol of UPSTREAM_PROTOCOLS) {
+			if (!map[protocol]) continue;
+			for (const capability of listConfiguredCapabilities(map, protocol)) {
+				capabilities.add(capability);
+			}
+		}
+	}
+	return adaptersForModelKind(kind)
+		.filter((descriptor) => {
+			if (kind !== 'audio.transcription') return true;
+			return isDashScopeRealtimeAsrModelOperationCompatible(
+				providerModelName,
+				descriptor.request.operation,
+			);
+		})
+		.map((descriptor) => {
+			const missingCapabilities = provider
+				? descriptor.requiredUpstreamCapabilities.filter((capability) => !capabilities.has(capability))
+				: descriptor.requiredUpstreamCapabilities;
+			return {
+				descriptor,
+				available: missingCapabilities.length === 0 && Boolean(provider),
+				missingCapabilities,
+			};
+		});
+}
+
+export function resolveAdapterOptionKey(formData: Pick<RouteFormData, 'adapter' | 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>): string | null {
+	const match = listSelectableAdapters().find(
+		(descriptor) =>
+			descriptor.id === formData.adapter &&
+			descriptor.request.protocol === formData.request_protocol &&
+			descriptor.request.operation === formData.request_operation &&
+			descriptor.upstream.protocol === formData.upstream_protocol &&
+			descriptor.upstream.operations.includes(formData.upstream_operation),
+	);
+	return match?.optionKey ?? null;
+}
+
+export function applyAdapterOptionToForm(formData: RouteFormData, optionKey: string): RouteFormData {
+	const descriptor = getAdapterByOptionKey(optionKey);
+	if (!descriptor) return formData;
+	return applyAdapterDescriptorToForm(formData, descriptor);
+}
+
+export function adapterBillingLabelKey(billing: AdapterBilling): string {
+	return `adapterBilling.${billing}`;
 }
 
 /** 返回能精确连接当前对外端点与上游目标的 adapter。 */

@@ -30,7 +30,7 @@ type AnthropicUsage = {
 
 type SSEState = { lineBuffer: string };
 
-function usageFromAnthropic(u: AnthropicUsage): UsageFromStream {
+export function usageFromAnthropic(u: AnthropicUsage): UsageFromStream {
   const netInputAfterBreakpoint = u.input_tokens ?? 0;
   const outputTokens = u.output_tokens ?? 0;
   const cacheRead = u.cache_read_input_tokens ?? 0;

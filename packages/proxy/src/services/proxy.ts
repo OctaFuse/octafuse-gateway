@@ -11,23 +11,16 @@ import {
 	dispatchOpenAiImageGenerations,
 	type NormalizedImageEditRequest,
 } from "./egress/openai-images-driver";
+import type { NormalizedAudioTranscriptionRequest } from "./egress/openai-audio-driver";
+import type { DashScopeAsrDispatchOptions } from "./egress/dashscope-audio-driver";
 import {
-	dispatchOpenAiAudioTranscriptions,
-	type NormalizedAudioTranscriptionRequest,
-} from "./egress/openai-audio-driver";
-import {
-	dispatchDashScopeAsyncAsr,
-	dispatchDashScopeMultimodalPassthrough,
-	dispatchDashScopeSyncAsr,
-	type DashScopeAsrDispatchOptions,
-} from "./egress/dashscope-audio-driver";
-import {
-	dispatchDashScopeMiniMaxTts,
-	dispatchDashScopeQwenTts,
-	dispatchDashScopeSpeechSynthesizer,
-	dispatchOpenAiAudioSpeech,
-	type AudioSpeechDispatchOptions,
-	type NormalizedAudioSpeechRequest,
+	dispatchAudioSpeech,
+	dispatchAudioTranscriptions,
+	dispatchMultimodalPassthrough,
+} from "./egress/dispatch-table";
+import type {
+	AudioSpeechDispatchOptions,
+	NormalizedAudioSpeechRequest,
 } from "./egress/audio-speech-driver";
 import {
 	dispatchDashScopeRealtime,
@@ -265,47 +258,15 @@ export async function proxyAudioTranscriptions(
 			signal,
 			timing?: RequestTimingCollector | null,
 			attempt?: RequestTimingAttempt
-		) => {
-			if (
-				route.adapter === "passthrough" &&
-				route.upstreamProtocol === "openai"
-			) {
-				return dispatchOpenAiAudioTranscriptions(
-					route,
-					req,
-					signal,
-					timing,
-					attempt
-				);
-			}
-			if (
-				route.adapter === "dashscope-asr-qwen-file" ||
-				route.adapter === "dashscope-asr-qwen-audio-file" ||
-				route.adapter === "dashscope-asr-fun-file"
-			) {
-				return dispatchDashScopeSyncAsr(
-					route,
-					req,
-					signal,
-					timing,
-					attempt,
-					options?.dashScope
-				);
-			}
-			if (route.adapter === "dashscope-asr-file-async") {
-				return dispatchDashScopeAsyncAsr(
-					route,
-					req,
-					signal,
-					timing,
-					attempt,
-					options?.dashScope
-				);
-			}
-			throw new Error(
-				`Unsupported audio transcription adapter: ${route.adapter}`
-			);
-		},
+		) =>
+			dispatchAudioTranscriptions(
+				route,
+				req,
+				signal,
+				timing,
+				attempt,
+				options?.dashScope
+			),
 		requestSignal,
 		options
 	);
@@ -328,52 +289,8 @@ export async function proxyAudioSpeech(
 			signal,
 			timing?: RequestTimingCollector | null,
 			attempt?: RequestTimingAttempt
-		) => {
-			if (
-				route.adapter === "passthrough" &&
-				route.upstreamProtocol === "openai"
-			) {
-				return dispatchOpenAiAudioSpeech(
-					route,
-					request,
-					signal,
-					timing,
-					attempt,
-					options
-				);
-			}
-			if (route.adapter === "dashscope-tts-speech") {
-				return dispatchDashScopeSpeechSynthesizer(
-					route,
-					request,
-					signal,
-					timing,
-					attempt,
-					options
-				);
-			}
-			if (route.adapter === "dashscope-tts-qwen") {
-				return dispatchDashScopeQwenTts(
-					route,
-					request,
-					signal,
-					timing,
-					attempt,
-					options
-				);
-			}
-			if (route.adapter === "dashscope-tts-minimax") {
-				return dispatchDashScopeMiniMaxTts(
-					route,
-					request,
-					signal,
-					timing,
-					attempt,
-					options
-				);
-			}
-			throw new Error(`Unsupported audio speech adapter: ${route.adapter}`);
-		},
+		) =>
+			dispatchAudioSpeech(route, request, signal, timing, attempt, options),
 		requestSignal,
 		options
 	);
@@ -396,24 +313,15 @@ export async function proxyDashScopeMultimodalPassthrough(
 			signal,
 			timing?: RequestTimingCollector | null,
 			attempt?: RequestTimingAttempt
-		) => {
-			if (
-				route.adapter !== "passthrough" ||
-				route.upstreamOperation !== "audio.transcriptions.multimodal"
-			) {
-				throw new Error(
-					`Unsupported DashScope multimodal adapter: ${route.adapter}`
-				);
-			}
-			return dispatchDashScopeMultimodalPassthrough(
+		) =>
+			dispatchMultimodalPassthrough(
 				route,
 				body,
 				signal,
 				timing,
 				attempt,
 				options?.dashScope
-			);
-		},
+			),
 		requestSignal,
 		options
 	);

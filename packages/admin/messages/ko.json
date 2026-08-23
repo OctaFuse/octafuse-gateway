@@ -783,6 +783,17 @@
 				"dashscope-tts-minimax": "MiniMax TTS"
 			},
 			"noCompatibleAdapter": "호환되는 어댑터 없음",
+			"adapterFirstHint": "어댑터를 먼저 선택하세요. 공개/업스트림 프로토콜 필드는 레지스트리에서 채워집니다.",
+			"adapterUnavailable": "사용 불가",
+			"adapterMissingCapabilities": "공급자에 필요한 엔드포인트가 없습니다: {capabilities}",
+			"adapterLossyFeatures": "지원하지 않는 기능: {features}",
+			"adapterBilling": {
+				"tokens": "토큰 과금",
+				"per_image": "이미지당 과금",
+				"per_second": "초당 과금",
+				"per_character": "문자당 과금",
+				"per_call": "호출당 과금"
+			},
 			"passthroughHint": "현재 릴리스는 패스스루만 지원하며 공개 및 업스트림 프로토콜이 같아야 합니다.",
 			"protocolHintConfigured": "현재 모델과 호환되며 Provider에 설정된 프로토콜만 표시됩니다.",
 			"protocolHintSelectProvider": "먼저 Provider를 선택하세요.",

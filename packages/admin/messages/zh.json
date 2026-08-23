@@ -783,6 +783,17 @@
 				"dashscope-tts-minimax": "MiniMax 语音合成"
 			},
 			"noCompatibleAdapter": "没有兼容的适配器",
+			"adapterFirstHint": "先选择适配器。对外协议与上游协议字段会由注册表自动填入。",
+			"adapterUnavailable": "不可用",
+			"adapterMissingCapabilities": "供应商缺少所需端点：{capabilities}",
+			"adapterLossyFeatures": "已知不支持：{features}",
+			"adapterBilling": {
+				"tokens": "按 token 计费",
+				"per_image": "按张计费",
+				"per_second": "按秒计费",
+				"per_character": "按字符计费",
+				"per_call": "按次计费"
+			},
 			"passthroughHint": "当前版本仅支持透传，对外协议与上游协议需保持一致。",
 			"protocolHintConfigured": "仅显示该供应商已配置且适用于当前模型的协议。",
 			"protocolHintSelectProvider": "请先选择供应商。",

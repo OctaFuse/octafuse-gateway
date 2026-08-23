@@ -51,7 +51,7 @@ model + route_group + request protocol + operation
 2. 根据入口确定 `request_protocol` 与 `request_operation`。
 3. 查找 active 的精确请求入口；不存在时查通配请求入口。
 4. 读取该请求入口指向的 active 路由池及其 active 上游目标。
-5. 同协议、同 operation 使用 `adapter=passthrough`；OpenAI ASR / TTS 转 DashScope 时，必须命中明确的跨协议 adapter 映射，不能根据模型名猜测。
+5. 同协议、同 operation 使用 `adapter=passthrough`；OpenAI ASR / TTS 转 DashScope 时，必须命中明确的跨协议适配器映射，不能根据模型名猜测。适配器 ID 与映射以 `ADAPTER_REGISTRY` 为唯一来源，见 [adapters-and-drivers.md](./adapters-and-drivers.md)。
 6. 若路由池启用供应商粘性（Provider sticky），先查共享绑定；有效且可用的绑定上游目标会跨 `priority` 前置尝试。
 7. 对其余候选按 `priority` 分成优先级层，并在同层内应用有效路由策略与 `weight`。
 8. 跳过 disabled / 无 key / 已熔断的供应商，逐上游目标故障转移；成功后 bind / touch 粘性，供应商可归因失败时解绑并继续常规计划。

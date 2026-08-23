@@ -783,6 +783,17 @@
 				"dashscope-tts-minimax": "MiniMax TTS"
 			},
 			"noCompatibleAdapter": "互換性のあるアダプターがありません",
+			"adapterFirstHint": "先にアダプターを選択します。公開プロトコルと上流プロトコルはレジストリから自動入力されます。",
+			"adapterUnavailable": "利用不可",
+			"adapterMissingCapabilities": "プロバイダーに必要なエンドポイントがありません: {capabilities}",
+			"adapterLossyFeatures": "未対応の機能: {features}",
+			"adapterBilling": {
+				"tokens": "トークン課金",
+				"per_image": "画像ごとの課金",
+				"per_second": "秒ごとの課金",
+				"per_character": "文字ごとの課金",
+				"per_call": "呼び出しごとの課金"
+			},
 			"passthroughHint": "このリリースはパススルーのみで、公開・アップストリームのプロトコルは一致する必要があります。",
 			"protocolHintConfigured": "このモデルに対応し、Provider に設定済みのプロトコルのみ表示します。",
 			"protocolHintSelectProvider": "先に Provider を選択してください。",

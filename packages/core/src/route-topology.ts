@@ -1,4 +1,19 @@
 import type { UpstreamProtocol } from "./upstream-protocol";
+import {
+	PASSTHROUGH_ROUTE_ADAPTER,
+	ROUTE_ADAPTER_MAPPINGS,
+	isRouteAdapter,
+} from "./adapters/registry";
+
+export {
+	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	PASSTHROUGH_ROUTE_ADAPTER,
+	ROUTE_ADAPTER_MAPPINGS,
+	ROUTE_ADAPTERS,
+	isRouteAdapter,
+	type RouteAdapter,
+	type RouteAdapterMapping,
+} from "./adapters/registry";
 
 /** Gemini generate-content family (stream + non-stream). */
 export const GEMINI_GENERATE_OPERATION = 'models.generate';
@@ -40,85 +55,6 @@ export type RequestOperation =
 	| "*";
 
 export const LEGACY_WILDCARD_OPERATION: RequestOperation = "*";
-export const PASSTHROUGH_ROUTE_ADAPTER = "passthrough";
-
-/** Gateway 对外的 DashScope 同步多模态 HTTP 入口（与上游 path 对齐）。 */
-export const DASHSCOPE_MULTIMODAL_GENERATION_PATH =
-	"/v1/dashscope/services/aigc/multimodal-generation/generation";
-
-/** 显式 adapter 白名单；跨协议映射必须命中下方精确声明。 */
-export const ROUTE_ADAPTERS = [
-	PASSTHROUGH_ROUTE_ADAPTER,
-	"dashscope-asr-qwen-file",
-	"dashscope-asr-qwen-audio-file",
-	"dashscope-asr-fun-file",
-	"dashscope-asr-file-async",
-	"dashscope-tts-speech",
-	"dashscope-tts-qwen",
-	"dashscope-tts-minimax",
-] as const;
-
-export type RouteAdapter = (typeof ROUTE_ADAPTERS)[number];
-
-type RouteAdapterMapping = {
-	requestProtocol: UpstreamProtocol;
-	requestOperation: string;
-	upstreamProtocol: UpstreamProtocol;
-	upstreamOperation: string;
-};
-
-/** 每个转换 adapter 只承担一种协议生命周期，禁止根据模型名隐式切换。 */
-const ROUTE_ADAPTER_MAPPINGS: Record<
-	Exclude<RouteAdapter, "passthrough">,
-	RouteAdapterMapping
-> = {
-	"dashscope-asr-qwen-file": {
-		requestProtocol: "openai",
-		requestOperation: "audio.transcriptions",
-		upstreamProtocol: "dashscope",
-		upstreamOperation: "audio.transcriptions.multimodal",
-	},
-	"dashscope-asr-qwen-audio-file": {
-		requestProtocol: "openai",
-		requestOperation: "audio.transcriptions",
-		upstreamProtocol: "dashscope",
-		upstreamOperation: "audio.transcriptions.multimodal",
-	},
-	"dashscope-asr-fun-file": {
-		requestProtocol: "openai",
-		requestOperation: "audio.transcriptions",
-		upstreamProtocol: "dashscope",
-		upstreamOperation: "audio.transcriptions.multimodal",
-	},
-	"dashscope-asr-file-async": {
-		requestProtocol: "openai",
-		requestOperation: "audio.transcriptions",
-		upstreamProtocol: "dashscope",
-		upstreamOperation: "audio.transcriptions.async",
-	},
-	"dashscope-tts-speech": {
-		requestProtocol: "openai",
-		requestOperation: "audio.speech",
-		upstreamProtocol: "dashscope",
-		upstreamOperation: "audio.speech",
-	},
-	"dashscope-tts-qwen": {
-		requestProtocol: "openai",
-		requestOperation: "audio.speech",
-		upstreamProtocol: "dashscope",
-		upstreamOperation: "audio.speech.multimodal",
-	},
-	"dashscope-tts-minimax": {
-		requestProtocol: "openai",
-		requestOperation: "audio.speech",
-		upstreamProtocol: "dashscope",
-		upstreamOperation: "audio.speech.multimodal",
-	},
-};
-
-export function isRouteAdapter(raw: string): raw is RouteAdapter {
-	return (ROUTE_ADAPTERS as readonly string[]).includes(raw);
-}
 
 /**
  * 校验 request surface 与 upstream target 是否由 adapter 明确定义。
