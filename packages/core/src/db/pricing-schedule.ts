@@ -1,15 +1,25 @@
 /**
- * 路由 `price_override.schedule`：每日循环时段倍率。
+ * 路由 `price_override.schedule`：分时时段倍率（可选星期几）。
  * - 缺省 / `mode: "multiply"`（存量）：effective = base_factor × schedule_factor（未命中窗 schedule=1）。
  * - `mode: "override"`（Admin UI 新写入）：命中窗用窗口 factor，未命中用 base_factor。
+ * - 窗口可选 `days`（ISO 1=周一 … 7=周日）；缺省为每天循环。跨午夜时 `days` 锚定窗口开始日。
  * 时区由调用方传入（通常为 `system_config.BUSINESS_TIMEZONE`）。
  */
 import type { BillingPriceSnapshot } from './pricing-profile';
+
+/** ISO 8601 星期：1=周一 … 7=周日。 */
+export const ISO_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
+export const ISO_WEEKDAYS_MON_FRI = [1, 2, 3, 4, 5] as const;
+export const ISO_WEEKDAYS_SAT_SUN = [6, 7] as const;
+
+export type IsoWeekday = (typeof ISO_WEEKDAYS)[number];
 
 export type DailyScheduleWindow = {
 	start: string;
 	end: string;
 	factor: number;
+	/** ISO 1–7；省略表示每天。 */
+	days?: number[];
 };
 
 /** `multiply` = 旧叠乘；`override` = 窗口 factor 即对标准价的倍率。 */
@@ -21,24 +31,62 @@ export type RoutePricingSchedule = {
 	metered: DailyScheduleWindow[];
 };
 
-/** Admin 合并编辑用：共享 start/end，两侧各一列倍率（均为对标准价的有效倍率）。 */
+/** Admin 合并编辑用：共享 start/end（及可选 days），两侧各一列倍率（均为对标准价的有效倍率）。 */
 export type SharedScheduleWindow = {
 	start: string;
 	end: string;
 	charged_factor: number;
 	metered_factor: number;
+	days?: number[];
 };
 
 export type ScheduleFactorResolution = {
 	factor: number;
 	localTime: string;
+	/** 业务时区下的 ISO 星期（1=周一 … 7=周日）。 */
+	localWeekday: number;
 	timezone: string;
 	evaluatedAtUtc: string;
 	window: DailyScheduleWindow | null;
 };
 
+export type ScheduleAuditWindow = {
+	start: string;
+	end: string;
+	factor: number;
+	days?: number[];
+};
+
+export type ScheduleAuditSnapshot = {
+	timezone: string;
+	local_time: string;
+	local_weekday: number;
+	evaluated_at_utc: string;
+	factor: number;
+	window: ScheduleAuditWindow | null;
+};
+
 const HH_MM_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const END_24_RE = /^24:00$/;
+const MINUTES_PER_DAY = 24 * 60;
+const WEEK_MINUTES = 7 * MINUTES_PER_DAY;
+const ISO_WEEKDAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+const WEEKDAY_SHORT_TO_ISO: Record<string, number> = {
+	Mon: 1,
+	Monday: 1,
+	Tue: 2,
+	Tuesday: 2,
+	Wed: 3,
+	Wednesday: 3,
+	Thu: 4,
+	Thursday: 4,
+	Fri: 5,
+	Friday: 5,
+	Sat: 6,
+	Saturday: 6,
+	Sun: 7,
+	Sunday: 7,
+};
 
 /** 将 `HH:mm` 或 `24:00` 转为当日分钟数；非法返回 null。 */
 export function parseHhMmToMinutes(value: string): number | null {
@@ -66,7 +114,79 @@ function asNonNegativeFactor(v: unknown): number | null {
 	return null;
 }
 
-function parseWindowRow(row: unknown): DailyScheduleWindow | null {
+export function isIsoWeekday(n: number): n is IsoWeekday {
+	return Number.isInteger(n) && n >= 1 && n <= 7;
+}
+
+export function previousIsoWeekday(day: number): number {
+	return day === 1 ? 7 : day - 1;
+}
+
+export function nextIsoWeekday(day: number): number {
+	return day === 7 ? 1 : day + 1;
+}
+
+/** 省略 / 全 7 天 = 每天。 */
+export function isEveryIsoWeekday(days: number[] | undefined): boolean {
+	return days == null || days.length === 0 || days.length === 7;
+}
+
+export function effectiveIsoWeekdays(days: number[] | undefined): number[] {
+	return isEveryIsoWeekday(days) ? [...ISO_WEEKDAYS] : [...days!];
+}
+
+/**
+ * 解析 `days`：返回排序去重后的 1–7；全 7 天视为省略（每天）。
+ * 非法（空数组、非整数、越界）返回 `null`。
+ */
+export function normalizeIsoWeekdays(raw: unknown): number[] | undefined | null {
+	if (raw === undefined) {
+		return undefined;
+	}
+	if (!Array.isArray(raw) || raw.length === 0) {
+		return null;
+	}
+	const set = new Set<number>();
+	for (const item of raw) {
+		if (typeof item !== 'number' || !Number.isInteger(item) || !isIsoWeekday(item)) {
+			return null;
+		}
+		set.add(item);
+	}
+	const days = [...set].sort((a, b) => a - b);
+	if (days.length === 7) {
+		return undefined;
+	}
+	return days;
+}
+
+export function formatIsoWeekdaysHint(days: number[] | undefined): string | null {
+	if (isEveryIsoWeekday(days)) {
+		return null;
+	}
+	const sorted = effectiveIsoWeekdays(days);
+	if (sorted.join(',') === ISO_WEEKDAYS_MON_FRI.join(',')) {
+		return 'Mon–Fri';
+	}
+	if (sorted.join(',') === ISO_WEEKDAYS_SAT_SUN.join(',')) {
+		return 'Sat–Sun';
+	}
+	const ranges: string[] = [];
+	let i = 0;
+	while (i < sorted.length) {
+		let j = i;
+		while (j + 1 < sorted.length && sorted[j + 1] === sorted[j]! + 1) {
+			j++;
+		}
+		const start = ISO_WEEKDAY_SHORT[sorted[i]! - 1]!;
+		const end = ISO_WEEKDAY_SHORT[sorted[j]! - 1]!;
+		ranges.push(j === i ? start : `${start}–${end}`);
+		i = j + 1;
+	}
+	return ranges.join(', ');
+}
+
+function parseWindowTimeAndFactor(row: unknown): Omit<DailyScheduleWindow, 'days'> | null {
 	if (!row || typeof row !== 'object' || Array.isArray(row)) {
 		return null;
 	}
@@ -89,6 +209,28 @@ function parseWindowRow(row: unknown): DailyScheduleWindow | null {
 		return null;
 	}
 	return { start, end, factor };
+}
+
+function attachParsedDays(
+	base: Omit<DailyScheduleWindow, 'days'>,
+	raw: Record<string, unknown>
+): DailyScheduleWindow | null {
+	if (!Object.prototype.hasOwnProperty.call(raw, 'days')) {
+		return base;
+	}
+	const days = normalizeIsoWeekdays(raw.days);
+	if (days === null) {
+		return null;
+	}
+	return days ? { ...base, days } : base;
+}
+
+function parseWindowRow(row: unknown): DailyScheduleWindow | null {
+	const base = parseWindowTimeAndFactor(row);
+	if (!base || !row || typeof row !== 'object' || Array.isArray(row)) {
+		return null;
+	}
+	return attachParsedDays(base, row as Record<string, unknown>);
 }
 
 function parseWindowArray(raw: unknown): DailyScheduleWindow[] {
@@ -205,6 +347,58 @@ export function formatLocalHhMm(nowUtc: Date, timeZone: string): string {
 	return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
 }
 
+/** 在给定时区取 ISO 星期（1=周一 … 7=周日）。 */
+export function formatLocalIsoWeekday(nowUtc: Date, timeZone: string): number {
+	try {
+		const parts = new Intl.DateTimeFormat('en-US', {
+			timeZone,
+			weekday: 'short',
+		}).formatToParts(nowUtc);
+		const raw = parts.find((p) => p.type === 'weekday')?.value ?? '';
+		const iso = WEEKDAY_SHORT_TO_ISO[raw];
+		if (iso) {
+			return iso;
+		}
+	} catch {
+		// invalid IANA timezone — fall through
+	}
+	const js = nowUtc.getUTCDay();
+	return js === 0 ? 7 : js;
+}
+
+function appliesOnStartDay(w: DailyScheduleWindow, startDay: number): boolean {
+	if (isEveryIsoWeekday(w.days)) {
+		return true;
+	}
+	return w.days!.includes(startDay);
+}
+
+/** 半开区间；跨午夜时 `days` 锚定窗口开始日。 */
+export function windowCoversLocal(
+	w: DailyScheduleWindow,
+	minutes: number,
+	isoWeekday: number
+): boolean {
+	const startM = parseHhMmToMinutes(w.start);
+	const endM = parseHhMmToMinutes(w.end);
+	if (startM == null || endM == null) {
+		return false;
+	}
+	if (startM < endM) {
+		if (!(minutes >= startM && minutes < endM)) {
+			return false;
+		}
+		return appliesOnStartDay(w, isoWeekday);
+	}
+	if (minutes >= startM) {
+		return appliesOnStartDay(w, isoWeekday);
+	}
+	if (minutes < endM) {
+		return appliesOnStartDay(w, previousIsoWeekday(isoWeekday));
+	}
+	return false;
+}
+
 /**
  * 半开区间 `[start, end)`；`start > end` 表示跨午夜。
  * 未命中返回 factor 1、window null。
@@ -215,35 +409,48 @@ export function resolveDailyScheduleFactor(
 	businessTimezone: string
 ): ScheduleFactorResolution {
 	const localTime = formatLocalHhMm(nowUtc, businessTimezone);
+	const localWeekday = formatLocalIsoWeekday(nowUtc, businessTimezone);
 	const evaluatedAtUtc = nowUtc.toISOString();
+	const miss: ScheduleFactorResolution = {
+		factor: 1,
+		localTime,
+		localWeekday,
+		timezone: businessTimezone,
+		evaluatedAtUtc,
+		window: null,
+	};
 	const minutes = parseHhMmToMinutes(localTime);
 	if (minutes == null) {
-		return { factor: 1, localTime, timezone: businessTimezone, evaluatedAtUtc, window: null };
+		return miss;
 	}
 	for (const w of windows) {
-		const startM = parseHhMmToMinutes(w.start);
-		const endM = parseHhMmToMinutes(w.end);
-		if (startM == null || endM == null) {
-			continue;
-		}
-		let hit = false;
-		if (startM < endM) {
-			hit = minutes >= startM && minutes < endM;
-		} else {
-			// 跨午夜：例如 22:00–06:00
-			hit = minutes >= startM || minutes < endM;
-		}
-		if (hit) {
+		if (windowCoversLocal(w, minutes, localWeekday)) {
 			return {
 				factor: w.factor,
 				localTime,
+				localWeekday,
 				timezone: businessTimezone,
 				evaluatedAtUtc,
 				window: w,
 			};
 		}
 	}
-	return { factor: 1, localTime, timezone: businessTimezone, evaluatedAtUtc, window: null };
+	return miss;
+}
+
+export function toScheduleAudit(sch: ScheduleFactorResolution): ScheduleAuditSnapshot {
+	return {
+		timezone: sch.timezone,
+		local_time: sch.localTime,
+		local_weekday: sch.localWeekday,
+		evaluated_at_utc: sch.evaluatedAtUtc,
+		factor: sch.factor,
+		window: sch.window
+			? sch.window.days
+				? { start: sch.window.start, end: sch.window.end, factor: sch.window.factor, days: sch.window.days }
+				: { start: sch.window.start, end: sch.window.end, factor: sch.window.factor }
+			: null,
+	};
 }
 
 /** 对单价快照统一乘 factor；`null` 保持 `null`。 */
@@ -260,6 +467,9 @@ export function scaleBillingPrices(prices: BillingPriceSnapshot, factor: number)
 		image_output_price: scale(prices.image_output_price),
 	};
 }
+
+const WINDOW_SHAPE_HINT =
+	'expected { start, end, factor, days? }; start must be HH:mm, end may also be 24:00, factor ≥ 0, duration must be non-zero; days if present must be a non-empty unique array of integers 1–7 (Mon–Sun)';
 
 /**
  * Admin 校验用：解析并校验 schedule 两侧窗口（时间格式、factor≥0、禁止同侧重叠）。
@@ -299,13 +509,25 @@ export function coerceRoutePricingScheduleInput(
 		}
 		const windows: DailyScheduleWindow[] = [];
 		for (let i = 0; i < arr.length; i++) {
-			const w = parseWindowRow(arr[i]);
-			if (!w) {
+			const item = arr[i];
+			const base = parseWindowTimeAndFactor(item);
+			if (!base || !item || typeof item !== 'object' || Array.isArray(item)) {
 				return {
-					error: `price_override.schedule.${side}[${i}]: expected { start, end, factor }; start must be HH:mm, end may also be 24:00, factor ≥ 0, duration must be non-zero`,
+					error: `price_override.schedule.${side}[${i}]: ${WINDOW_SHAPE_HINT}`,
 				};
 			}
-			windows.push(w);
+			const rec = item as Record<string, unknown>;
+			if (Object.prototype.hasOwnProperty.call(rec, 'days')) {
+				const days = normalizeIsoWeekdays(rec.days);
+				if (days === null) {
+					return {
+						error: `price_override.schedule.${side}[${i}]: days must be a non-empty unique array of integers 1–7 (Mon–Sun)`,
+					};
+				}
+				windows.push(days ? { ...base, days } : base);
+			} else {
+				windows.push(base);
+			}
 		}
 		const overlapErr = findDailyWindowOverlap(windows);
 		if (overlapErr) {
@@ -324,21 +546,13 @@ export function coerceRoutePricingScheduleInput(
 	return { ok: true, schedule: { mode, charged, metered }, persistMode };
 }
 
-function minutesInWindow(w: DailyScheduleWindow, minutes: number): boolean {
-	const startM = parseHhMmToMinutes(w.start);
-	const endM = parseHhMmToMinutes(w.end);
-	if (startM == null || endM == null) {
-		return false;
-	}
-	if (startM < endM) {
-		return minutes >= startM && minutes < endM;
-	}
-	return minutes >= startM || minutes < endM;
-}
-
-function hitWindowAt(windows: DailyScheduleWindow[], minutes: number): DailyScheduleWindow | null {
+function hitWindowAt(
+	windows: DailyScheduleWindow[],
+	minutes: number,
+	isoWeekday: number
+): DailyScheduleWindow | null {
 	for (const w of windows) {
-		if (minutesInWindow(w, minutes)) {
+		if (windowCoversLocal(w, minutes, isoWeekday)) {
 			return w;
 		}
 	}
@@ -348,10 +562,11 @@ function hitWindowAt(windows: DailyScheduleWindow[], minutes: number): DailySche
 function effectiveSideFactorAt(
 	windows: DailyScheduleWindow[],
 	minutes: number,
+	isoWeekday: number,
 	mode: RoutePricingScheduleMode,
 	base: number
 ): number {
-	const hit = hitWindowAt(windows, minutes);
+	const hit = hitWindowAt(windows, minutes, isoWeekday);
 	if (mode === 'override') {
 		return normalizeScheduleFactor(hit ? hit.factor : base);
 	}
@@ -367,9 +582,53 @@ function formatMinutesToHhMm(minutes: number): string {
 	return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+function weekMinute(isoDay: number, minutes: number): number {
+	return (isoDay - 1) * MINUTES_PER_DAY + minutes;
+}
+
+function weekMinuteToLocal(wm: number): { minutes: number; isoWeekday: number } {
+	const wrapped = ((wm % WEEK_MINUTES) + WEEK_MINUTES) % WEEK_MINUTES;
+	return {
+		isoWeekday: Math.floor(wrapped / MINUTES_PER_DAY) + 1,
+		minutes: wrapped % MINUTES_PER_DAY,
+	};
+}
+
+function addWindowBounds(bounds: Set<number>, w: DailyScheduleWindow): void {
+	const startM = parseHhMmToMinutes(w.start);
+	const endM = parseHhMmToMinutes(w.end);
+	if (startM == null || endM == null) {
+		return;
+	}
+	for (const startDay of effectiveIsoWeekdays(w.days)) {
+		if (startM < endM) {
+			bounds.add(weekMinute(startDay, startM));
+			bounds.add(weekMinute(startDay, endM));
+		} else {
+			const startWm = weekMinute(startDay, startM);
+			const endWm = weekMinute(nextIsoWeekday(startDay), endM);
+			bounds.add(startWm);
+			bounds.add(endWm);
+			if (startWm > endWm) {
+				bounds.add(0);
+				bounds.add(WEEK_MINUTES);
+			}
+		}
+	}
+}
+
+type DayPiece = {
+	start: string;
+	end: string;
+	isoWeekday: number;
+	charged_factor: number;
+	metered_factor: number;
+};
+
 /**
  * 将两侧独立窗口并成共享 start/end 行，并把旧叠乘 bake 成对标准价的有效倍率。
  * 仅输出至少一侧命中窗口的区间；缺侧按「未命中」处理（override=base，multiply=base×1）。
+ * 按 days 集合拆行，避免工作日窗与周末窗被拼成一行。
  */
 export function mergeScheduleSidesToSharedWindows(
 	charged: DailyScheduleWindow[],
@@ -384,27 +643,14 @@ export function mergeScheduleSidesToSharedWindows(
 		return [];
 	}
 	const bounds = new Set<number>();
-	const addBounds = (w: DailyScheduleWindow) => {
-		const startM = parseHhMmToMinutes(w.start);
-		const endM = parseHhMmToMinutes(w.end);
-		if (startM == null || endM == null) {
-			return;
-		}
-		bounds.add(startM);
-		bounds.add(endM);
-		if (startM > endM) {
-			bounds.add(0);
-			bounds.add(24 * 60);
-		}
-	};
 	for (const w of charged) {
-		addBounds(w);
+		addWindowBounds(bounds, w);
 	}
 	for (const w of metered) {
-		addBounds(w);
+		addWindowBounds(bounds, w);
 	}
 	const sorted = [...bounds].sort((a, b) => a - b);
-	const raw: SharedScheduleWindow[] = [];
+	const dayPieces: DayPiece[] = [];
 	for (let i = 0; i < sorted.length - 1; i++) {
 		const a = sorted[i]!;
 		const b = sorted[i + 1]!;
@@ -412,52 +658,141 @@ export function mergeScheduleSidesToSharedWindows(
 			continue;
 		}
 		const mid = (a + b) / 2;
-		if (!hitWindowAt(charged, mid) && !hitWindowAt(metered, mid)) {
+		if (mid >= WEEK_MINUTES) {
 			continue;
 		}
-		raw.push({
-			start: formatMinutesToHhMm(a),
-			end: formatMinutesToHhMm(b),
-			charged_factor: effectiveSideFactorAt(charged, mid, options.mode, options.chargedBase),
-			metered_factor: effectiveSideFactorAt(metered, mid, options.mode, options.meteredBase),
-		});
+		const { minutes, isoWeekday } = weekMinuteToLocal(mid);
+		if (!hitWindowAt(charged, minutes, isoWeekday) && !hitWindowAt(metered, minutes, isoWeekday)) {
+			continue;
+		}
+		const chargedFactor = effectiveSideFactorAt(
+			charged,
+			minutes,
+			isoWeekday,
+			options.mode,
+			options.chargedBase
+		);
+		const meteredFactor = effectiveSideFactorAt(
+			metered,
+			minutes,
+			isoWeekday,
+			options.mode,
+			options.meteredBase
+		);
+		let t = a;
+		while (t < b) {
+			const dayStart = Math.floor(t / MINUTES_PER_DAY) * MINUTES_PER_DAY;
+			const nextMidnight = dayStart + MINUTES_PER_DAY;
+			const pieceEnd = Math.min(b, nextMidnight);
+			const dayIndex = Math.floor(t / MINUTES_PER_DAY);
+			if (dayIndex >= 7) {
+				break;
+			}
+			const startMin = t - dayStart;
+			const endMin = pieceEnd - dayStart;
+			if (startMin < endMin) {
+				dayPieces.push({
+					start: formatMinutesToHhMm(startMin),
+					end: formatMinutesToHhMm(endMin),
+					isoWeekday: dayIndex + 1,
+					charged_factor: chargedFactor,
+					metered_factor: meteredFactor,
+				});
+			}
+			t = pieceEnd;
+		}
 	}
-	const merged: SharedScheduleWindow[] = [];
-	for (const row of raw) {
-		const last = merged[merged.length - 1];
+
+	const mergedSameDay: DayPiece[] = [];
+	for (const row of dayPieces) {
+		const last = mergedSameDay[mergedSameDay.length - 1];
 		if (
 			last &&
+			last.isoWeekday === row.isoWeekday &&
 			last.end === row.start &&
 			last.charged_factor === row.charged_factor &&
 			last.metered_factor === row.metered_factor
 		) {
 			last.end = row.end;
 		} else {
-			merged.push({ ...row });
+			mergedSameDay.push({ ...row });
 		}
 	}
-	if (merged.length >= 2) {
-		const first = merged[0]!;
-		const last = merged[merged.length - 1]!;
-		if (
-			first.start === '00:00' &&
-			last.end === '24:00' &&
-			first.charged_factor === last.charged_factor &&
-			first.metered_factor === last.metered_factor
-		) {
-			merged[0] = {
-				start: last.start,
-				end: first.end,
-				charged_factor: first.charged_factor,
-				metered_factor: first.metered_factor,
-			};
-			merged.pop();
+
+	const isOvernightJoin = (evening: DayPiece, morning: DayPiece): boolean =>
+		evening.end === '24:00' &&
+		morning.start === '00:00' &&
+		morning.isoWeekday === nextIsoWeekday(evening.isoWeekday) &&
+		evening.start !== '00:00' &&
+		morning.end !== '24:00' &&
+		evening.charged_factor === morning.charged_factor &&
+		evening.metered_factor === morning.metered_factor;
+
+	const rejoined: DayPiece[] = [];
+	for (const row of mergedSameDay) {
+		const last = rejoined[rejoined.length - 1];
+		if (last && isOvernightJoin(last, row)) {
+			last.end = row.end;
+			continue;
+		}
+		rejoined.push({ ...row });
+	}
+	if (rejoined.length >= 2) {
+		const first = rejoined[0]!;
+		const last = rejoined[rejoined.length - 1]!;
+		if (isOvernightJoin(last, first)) {
+			last.end = first.end;
+			rejoined.shift();
 		}
 	}
-	return merged;
+
+	type Group = SharedScheduleWindow & { daysAcc: number[] };
+	const groups: Group[] = [];
+	for (const row of rejoined) {
+		const existing = groups.find(
+			(g) =>
+				g.start === row.start &&
+				g.end === row.end &&
+				g.charged_factor === row.charged_factor &&
+				g.metered_factor === row.metered_factor
+		);
+		if (existing) {
+			if (!existing.daysAcc.includes(row.isoWeekday)) {
+				existing.daysAcc.push(row.isoWeekday);
+			}
+		} else {
+			groups.push({
+				start: row.start,
+				end: row.end,
+				charged_factor: row.charged_factor,
+				metered_factor: row.metered_factor,
+				daysAcc: [row.isoWeekday],
+			});
+		}
+	}
+
+	return groups.map((g) => {
+		const days = [...g.daysAcc].sort((a, b) => a - b);
+		const out: SharedScheduleWindow = {
+			start: g.start,
+			end: g.end,
+			charged_factor: g.charged_factor,
+			metered_factor: g.metered_factor,
+		};
+		if (days.length < 7) {
+			out.days = days;
+		}
+		return out;
+	});
 }
 
-/** 检测同侧窗口是否在「展开到两日」后重叠（含跨午夜）。 */
+function windowOverlapLabel(w: DailyScheduleWindow): string {
+	const time = `${w.start}-${w.end}`;
+	const daysHint = formatIsoWeekdaysHint(w.days);
+	return daysHint ? `${time} ${daysHint}` : time;
+}
+
+/** 检测同侧窗口是否在一周循环上重叠（含跨午夜；无 `days` 视为每天）。 */
 export function findDailyWindowOverlap(windows: DailyScheduleWindow[]): string | null {
 	type Seg = { a: number; b: number; label: string };
 	const segs: Seg[] = [];
@@ -467,12 +802,20 @@ export function findDailyWindowOverlap(windows: DailyScheduleWindow[]): string |
 		if (startM == null || endM == null) {
 			continue;
 		}
-		const label = `${w.start}-${w.end}`;
-		if (startM < endM) {
-			segs.push({ a: startM, b: endM, label });
-		} else {
-			segs.push({ a: startM, b: 24 * 60, label });
-			segs.push({ a: 0, b: endM, label });
+		const label = windowOverlapLabel(w);
+		for (const startDay of effectiveIsoWeekdays(w.days)) {
+			if (startM < endM) {
+				segs.push({ a: weekMinute(startDay, startM), b: weekMinute(startDay, endM), label });
+			} else {
+				const startWm = weekMinute(startDay, startM);
+				const endWm = weekMinute(nextIsoWeekday(startDay), endM);
+				if (startWm < endWm) {
+					segs.push({ a: startWm, b: endWm, label });
+				} else {
+					segs.push({ a: startWm, b: WEEK_MINUTES, label });
+					segs.push({ a: 0, b: endWm, label });
+				}
+			}
 		}
 	}
 	segs.sort((x, y) => x.a - y.a || x.b - y.b);

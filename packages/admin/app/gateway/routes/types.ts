@@ -89,6 +89,8 @@ export type RouteScheduleFormWindow = {
 	end: string;
 	charged_factor: string;
 	metered_factor: string;
+	/** ISO 1–7；空数组表示每天。 */
+	days: number[];
 };
 
 export type RouteScheduleFormSide = RouteScheduleFormWindow[];

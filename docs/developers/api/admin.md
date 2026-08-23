@@ -778,18 +778,24 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
   "metered_factor": 1.0,
   "schedule": {
     "mode": "override",
-    "charged": [{ "start": "00:00", "end": "08:00", "factor": 0.6 }],
-    "metered": [{ "start": "00:00", "end": "08:00", "factor": 0.5 }]
+    "charged": [
+      { "start": "00:00", "end": "24:00", "factor": 1.2, "days": [1, 2, 3, 4, 5] },
+      { "start": "00:00", "end": "24:00", "factor": 0.8, "days": [6, 7] }
+    ],
+    "metered": [
+      { "start": "00:00", "end": "24:00", "factor": 1.2, "days": [1, 2, 3, 4, 5] },
+      { "start": "00:00", "end": "24:00", "factor": 0.8, "days": [6, 7] }
+    ]
   }
 }
 ```
 
-  - `charged_factor` / `metered_factor`：相对目录价的默认倍率（缺省 `1`；`metered_factor` 缺失时可回退读历史 `provider_factor`）；未命中每日时段时使用。
-  - `schedule`（可选）：每日循环窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。
+  - `charged_factor` / `metered_factor`：相对目录价的默认倍率（缺省 `1`；`metered_factor` 缺失时可回退读历史 `provider_factor`）；未命中分时时段时使用。
+  - `schedule`（可选）：分时窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜。可选 `days` 为 ISO 星期数组（`1`=周一 … `7`=周日）；省略表示每天。跨午夜时 `days` 锚定窗口**开始日**（例如周五 `22:00–06:00` 覆盖周五 22:00 至周六 06:00）。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。同侧窗口在一周循环上禁止重叠。
   - `schedule.mode`：
     - **缺省或 `"multiply"`**（存量）：`charged_cost` = 目录价 × `charged_factor` × 命中窗 `factor`（未命中窗按 `1`）；`metered_cost` 同理。
-    - **`"override"`**（Admin UI 新写入）：命中窗时窗口 `factor` 就是对标准价的倍率；未命中用上方默认 `charged_factor` / `metered_factor`。两侧共享同一套 start/end，各写自己的 `factor`。
-  - `standard_cost` 仅为目录价。嵌套 `metered`/`charged` tiers **写入时剥离、运行时忽略**。`pricing_audit.schedule.evaluated_at_utc` 记录本次选窗使用的请求开始时刻。非法 `mode` 在 Admin API 写入时拒绝。
+    - **`"override"`**（Admin UI 新写入）：命中窗时窗口 `factor` 就是对标准价的倍率；未命中用上方默认 `charged_factor` / `metered_factor`。两侧共享同一套 start/end（及可选 `days`），各写自己的 `factor`。
+  - `standard_cost` 仅为目录价。嵌套 `metered`/`charged` tiers **写入时剥离、运行时忽略**。`pricing_audit.schedule.evaluated_at_utc` 记录本次选窗使用的请求开始时刻，并带 `local_weekday`（1–7）。非法 `mode` 或非法 `days` 在 Admin API 写入时拒绝。
 - **公开列表**：`GET /v1/models` 返回完整 `pricing_profile` 字符串；`model_info.input_price` / `output_price` 为 **兼容展示**：取各档中 **最低 `input_price`** 所在档的 in/out。详见 [user.md「获取模型列表」](user.md)。
 
 #### Gateway Admin UI — Model Routes「Billing & Cost」
@@ -801,7 +807,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 | **Standard price** | 目录标准价（只读） | `models.pricing_profile`（LLM/Image token/Audio token 的 tiers，或 Image per_image / Audio per_second 的单价块） |
 | **Charged factor** | 用户侧默认倍率（窗外） | `price_override.charged_factor` |
 | **Metered factor** | 供应侧默认倍率（窗外） | `price_override.metered_factor` |
-| **Daily schedule** | 共享 start/end，每行 Charged / Metered 倍率（覆盖默认） | `price_override.schedule`（`mode: "override"`） |
+| **Schedule** | 共享 start/end 与可选星期，每行 Charged / Metered 倍率（覆盖默认） | `price_override.schedule`（`mode: "override"`） |
 
 路由列表卡片展示 **`Ch ×`** / **`M ×`**；有 schedule 时附加 **Sch** 提示。
 

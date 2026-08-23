@@ -37,7 +37,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 点击拓扑中的任一上游目标，即可在路由编辑页面集中配置客户端协议 / operation、路由组、上游映射、自定义参数，以及用户计费与供应成本倍率。
 
-![路由编辑页面：在一个弹窗内核对客户端入口、上游映射、目录标准价、默认计费倍率与每日覆盖时段](../assets/screenshots/route-editor.webp)
+![路由编辑页面：在一个弹窗内核对客户端入口、上游映射、目录标准价、默认计费倍率与分时覆盖时段](../assets/screenshots/route-editor.webp)
 
 常见做法：
 
@@ -53,7 +53,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 - **路由策略**：先按 priority 层读路由池 `tier_strategies[priority]`（若有）；否则路由池 `strategy` → 模型 `route_policy.rules` 的 `{protocol}.{capability}:{group}` → `{protocol}:{group}` → 模型顶层 `route_policy.strategy` → 管理后台 Config 全局 `ROUTE_STRATEGY` → 代码默认 `hash_affinity`。四种策略及完整键格式见 [developers/reference/route-strategies.md](../developers/reference/route-strategies.md)。
 - **供应商粘性（Provider sticky，可选）**：在拓扑视图（Topology）的路由组 / 路由池节点打开粘性配置（关闭时芯片为 `Sticky · Off`，启用后为 `Sticky · {ttl}`），按路由池启用并设置空闲 TTL（默认 3600 秒）。它不是第五种层内策略：`hash_affinity` 用无状态哈希稳定首选，粘性则记住上次成功的上游目标，并可在绑定有效时跨 priority 优先尝试。弹窗还可查看绑定分布与路由权重、按用户解绑，或通过 `sticky_epoch` 整池失效；默认关闭。完整语义见 [供应商粘性（route-strategies）](../developers/reference/route-strategies.md#provider-sticky-routingpool-前置规则非第五策略)。
 - 在路由的 **Custom params** 中配置思考参数、输出长度或供应商扩展字段等默认值；它们会与上游请求体深度合并，客户端显式传入的字段优先，因此不能用于强制覆盖客户端参数。
-- 设置价格口径：先维护模型**目录标准价（Standard）**，再在路由上设用户计费（Charged）/ 供应成本（Metered）的默认倍率；如需对齐供应商高峰 / 闲时价，再配置**每日时段（Daily schedule）**（共享起止时间，每行分别填两侧倍率；命中该时段时覆盖默认倍率；时区见系统配置的业务时区）。
+- 设置价格口径：先维护模型**目录标准价（Standard）**，再在路由上设用户计费（Charged）/ 供应成本（Metered）的默认倍率；如需对齐供应商高峰 / 闲时价，或区分工作日与周末，再配置**分时时段（Schedule）**（共享起止时间，每行可选星期，并分别填两侧倍率；命中该时段时覆盖默认倍率；时区见系统配置的业务时区）。
 - 在请求日志（Request Logs）中核对三笔账：供应成本、目录标准价、用户计费是否符合业务预期。
 
 路由默认参数合并规则见 [developers/api/user.md](../developers/api/user.md#route-默认参数合并)；时段调价契约见 [developers/api/admin.md](../developers/api/admin.md) 中的 `price_override.schedule`；调度与熔断见 [developers/architecture/proxy-request-lifecycle.md](../developers/architecture/proxy-request-lifecycle.md)。
@@ -70,7 +70,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
   - **AI 率检测（AI Detection）**：多引擎 catalog，当前仅腾讯云 TMS 已实现；按 `billingUnitChars` 字符单元计费
 - **仅保存配置**不会切换线上引擎；**保存并启用**会保存当前草稿并把该供应商设为此工具唯一的活跃引擎（Active）。未实现或凭证不完整的引擎不可启用。
 - 卡片会提示活跃、未保存、缺少凭证、暂不可用与亏损定价（`charged < metered`）等状态。清空当前活跃引擎的凭证前，应先切换到另一个凭证完整的引擎。
-- 成功请求分别按三种绝对单价写入 `metered_cost` / `standard_cost` / `charged_cost`，仅 **charged** 累加用户预算；上游失败三列均为 0。智能体工具不应用模型路由倍率或每日时段。币种由 `BILLING_CURRENCY` 决定，调用记录见 **智能体工具 → 工具调用记录（Tools → Invocations）**（与请求日志同源）。
+- 成功请求分别按三种绝对单价写入 `metered_cost` / `standard_cost` / `charged_cost`，仅 **charged** 累加用户预算；上游失败三列均为 0。智能体工具不应用模型路由倍率或分时时段。币种由 `BILLING_CURRENCY` 决定，调用记录见 **智能体工具 → 工具调用记录（Tools → Invocations）**（与请求日志同源）。
 
 字段与引擎白名单见 [developers/api/user.md](../developers/api/user.md) 中各 Tools 章节。
 

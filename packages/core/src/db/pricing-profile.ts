@@ -123,9 +123,11 @@ export type PriceResolutionAuditSide = {
 	schedule?: {
 		timezone: string;
 		local_time: string;
+		/** 业务时区 ISO 星期（1=周一 … 7=周日）。 */
+		local_weekday?: number;
 		evaluated_at_utc: string;
 		factor: number;
-		window: { start: string; end: string; factor: number } | null;
+		window: { start: string; end: string; factor: number; days?: number[] } | null;
 	};
 	effective_factor?: number;
 	/** 路由 charged 之后的用户级折扣；未命中为 null */

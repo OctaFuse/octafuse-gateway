@@ -673,8 +673,8 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 			[],
 		);
 		assert.deepEqual(form.schedule_windows, [
-			{ start: '09:00', end: '12:00', charged_factor: '0.6', metered_factor: '2' },
-			{ start: '12:00', end: '18:00', charged_factor: '1.2', metered_factor: '2' },
+			{ start: '09:00', end: '12:00', charged_factor: '0.6', metered_factor: '2', days: [] },
+			{ start: '12:00', end: '18:00', charged_factor: '1.2', metered_factor: '2', days: [] },
 		]);
 	});
 
@@ -715,7 +715,7 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 				charged_factor: '1',
 				metered_factor: '1',
 				schedule_windows: [
-					{ start: '09:00', end: '12:00', charged_factor: '2', metered_factor: '2' },
+					{ start: '09:00', end: '12:00', charged_factor: '2', metered_factor: '2', days: [] },
 				],
 			},
 			null,
@@ -743,8 +743,8 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 			charged_factor: '1',
 			metered_factor: '1',
 			schedule_windows: [
-				{ start: '09:00', end: '12:00', charged_factor: '2', metered_factor: '2' },
-				{ start: '14:00', end: '18:00', charged_factor: '2', metered_factor: '2' },
+				{ start: '09:00', end: '12:00', charged_factor: '2', metered_factor: '2', days: [] },
+				{ start: '14:00', end: '18:00', charged_factor: '2', metered_factor: '2', days: [] },
 			],
 		};
 		const preview = formatRoutePriceOverridePreview(form);
@@ -756,9 +756,70 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 	it('previews an error when a schedule window is invalid', () => {
 		const preview = formatRoutePriceOverridePreview({
 			...EMPTY_ROUTE_FORM,
-			schedule_windows: [{ start: '09:00', end: '09:00', charged_factor: '2', metered_factor: '2' }],
+			schedule_windows: [{ start: '09:00', end: '09:00', charged_factor: '2', metered_factor: '2', days: [] }],
 		});
 		assert.equal(preview.ok, false);
 		assert.match(preview.text, /duration must be non-zero/);
+	});
+
+	it('writes weekday and weekend days and omits a full week', () => {
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+				charged_factor: '1',
+				metered_factor: '1',
+				schedule_windows: [
+					{
+						start: '00:00',
+						end: '24:00',
+						charged_factor: '1.2',
+						metered_factor: '1.2',
+						days: [1, 2, 3, 4, 5],
+					},
+					{
+						start: '00:00',
+						end: '24:00',
+						charged_factor: '0.8',
+						metered_factor: '0.8',
+						days: [6, 7],
+					},
+				],
+			},
+			null,
+		);
+		assert.equal(
+			payload.price_override,
+			JSON.stringify({
+				charged_factor: 1,
+				metered_factor: 1,
+				schedule: {
+					mode: 'override',
+					charged: [
+						{ start: '00:00', end: '24:00', factor: 1.2, days: [1, 2, 3, 4, 5] },
+						{ start: '00:00', end: '24:00', factor: 0.8, days: [6, 7] },
+					],
+					metered: [
+						{ start: '00:00', end: '24:00', factor: 1.2, days: [1, 2, 3, 4, 5] },
+						{ start: '00:00', end: '24:00', factor: 0.8, days: [6, 7] },
+					],
+				},
+			}),
+		);
+
+		const form = buildFormDataFromRoute(
+			route({ price_override: String(payload.price_override) }),
+			[],
+		);
+		assert.deepEqual(form.schedule_windows, [
+			{ start: '00:00', end: '24:00', charged_factor: '1.2', metered_factor: '1.2', days: [1, 2, 3, 4, 5] },
+			{ start: '00:00', end: '24:00', charged_factor: '0.8', metered_factor: '0.8', days: [6, 7] },
+		]);
+		assert.equal(
+			formatSharedScheduleWindowsHint(resolveRouteScheduleDisplay(String(payload.price_override))),
+			'Mon–Fri 0:00-24:00 ×1.2 · Sat–Sun 0:00-24:00 ×0.8',
+		);
 	});
 });

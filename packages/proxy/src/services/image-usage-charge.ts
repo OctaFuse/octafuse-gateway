@@ -28,6 +28,7 @@ import {
 	resolveSupplierBillingPrices,
 	roundGatewayMoney,
 	scaleBillingPrices,
+	toScheduleAudit,
 	applyUserChargedCostToBreakdown,
 	snapshotToJson,
 	snapshotWithOverrides,
@@ -51,7 +52,7 @@ export type ImageBillingParams = {
 	isEdit?: boolean;
 	/** edits / generations 参考图张数 */
 	referenceCount?: number;
-	/** 请求进入 Gateway 的时间；每日时段倍率在该时刻锁定 */
+	/** 请求进入 Gateway 的时间；分时时段倍率在该时刻锁定 */
 	requestStartedAtMs?: number;
 	operation?: 'generations' | 'edits';
 	/** 目录 `models.id`，用于查找用户 Charged 折扣 */
@@ -155,15 +156,7 @@ async function resolveRouteFactors(
 	);
 	const schSide = (sch: typeof chargedSch, base: number, effective: number) => ({
 		base_factor: base,
-		schedule: {
-			timezone: sch.timezone,
-			local_time: sch.localTime,
-			evaluated_at_utc: sch.evaluatedAtUtc,
-			factor: sch.factor,
-			window: sch.window
-				? { start: sch.window.start, end: sch.window.end, factor: sch.window.factor }
-				: null,
-		},
+		schedule: toScheduleAudit(sch),
 		effective_factor: effective,
 	});
 	return {

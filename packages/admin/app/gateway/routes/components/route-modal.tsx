@@ -980,6 +980,7 @@ export function RouteModal(props: Props) {
 																	end: '08:00',
 																	charged_factor: '1',
 																	metered_factor: '1',
+																	days: [],
 																},
 															],
 														})
@@ -1001,6 +1002,21 @@ export function RouteModal(props: Props) {
 												chargedFactorLabel={t('scheduleChargedFactor')}
 												meteredFactorLabel={t('scheduleMeteredFactor')}
 												removeLabel={tCommon('delete')}
+												dayLabels={{
+													days: t('scheduleDays'),
+													everyday: t('scheduleEveryday'),
+													weekdays: t('scheduleWeekdays'),
+													weekend: t('scheduleWeekend'),
+													weekdayShort: [
+														t('weekdayMon'),
+														t('weekdayTue'),
+														t('weekdayWed'),
+														t('weekdayThu'),
+														t('weekdayFri'),
+														t('weekdaySat'),
+														t('weekdaySun'),
+													],
+												}}
 											/>
 										</RoutePricePanel>
 									</div>
