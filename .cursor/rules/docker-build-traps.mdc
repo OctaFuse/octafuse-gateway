@@ -1,0 +1,34 @@
+---
+description: Gateway Admin/Proxy Docker 构建已知陷阱。改 core 类型、adapter、Dockerfile 或 admin 时，先本地 typecheck，不要等 PR 的 Docker 冒烟再修。
+globs: Dockerfile*,packages/core/**,packages/admin/**,packages/proxy/**,docker/**,.github/workflows/docker-compose-smoke.yml,docs/operators/deployment/docker.md
+alwaysApply: false
+---
+
+# Docker 构建：迭代时就要拦住，不要留给 PR
+
+`verify` **不会**跑 Admin `next build`。PR 上的 `smoke-node-pg` 才第一次执行 `Dockerfile.admin` 的 `npm run build:docker`（`next build` 会 **strict 检查被 import 的 `@octafuse/core` 源码**）。改 core / admin / Dockerfile 后，完成前必须先：
+
+```bash
+npm run typecheck -w @octafuse/admin
+```
+
+这条约 6s，等价于镜像里最常见的 TypeScript 失败；不要用完整 `docker compose` 当第一次类型检查。
+
+## 已知会让镜像构建挂掉的模式
+
+1. **类型谓词把已收窄的 union 扩回去**（2026-08：`route-topology.ts` / `isRouteAdapter`）
+   - `ROUTE_ADAPTER_MAPPINGS` 的 key 是 `Exclude<RouteAdapter, 'passthrough'>`。
+   - `if (x !== 'passthrough' && isRouteAdapter(x))` 之后 `x` 又变成完整 `RouteAdapter`（含 `passthrough`），`next build` 报 *Property 'passthrough' does not exist*。
+   - 索引 mapping 必须用 `isConversionRouteAdapter`（或先 `isRouteAdapter` 再排除 passthrough）。新增 adapter / mapping 时同步类型守卫，不要用 `as` 糊弄。
+
+2. **esbuild 原生绑定**
+   - Docker 里 `npm ci --ignore-scripts` 后必须 `find …/esbuild/install.js -exec node {} \;`。
+   - **禁止** `npm rebuild esbuild`（多版本会报 Expected 0.25.4 but got 0.27.3）。
+
+3. **Admin Alpine / arm64 的 SWC musl**
+   - `next-intl` 读 `next.config` 需要 `@swc/core-linux-*-musl`。交叉构建时按 `Dockerfile.admin` 显式安装，不要删那一步。
+
+4. **Docker Admin 不跑 `wrangler types`**
+   - 镜像走 `build:docker` + `types/cloudflare-env-shim.d.ts`。不要让 admin 源码在无 wrangler 时必依赖生成的 CF 类型。
+
+改 Dockerfile / 构建脚本时同步 `docs/operators/deployment/docker.md`。新踩到的镜像失败补进本规则「已知模式」，不要只修 CI。

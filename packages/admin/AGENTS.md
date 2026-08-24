@@ -32,6 +32,8 @@ For full admin API debugging use **`npm run preview`** or root **`npm run dev:ad
 
 After a remote deploy (`deploy:*` / `db:migrate:remote`) on this machine, run **`npm run gen:wrangler`** before local D1 dev so Admin/Proxy/migrate share the same local SQLite identity — see [local-development.md §1](../../docs/developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读).
 
+After changing `@octafuse/core` types used by Admin (adapters, route topology, mappings), run **`npm run typecheck:admin`** (or `npm run typecheck -w @octafuse/admin`) **before** opening a PR. Docker `next build` typechecks imported core source; the `verify` job does not.
+
 **Self-hosted Postgres + containers**: **`Dockerfile.admin`** multi-stage build runs **`npm run build:docker`**（Next standalone，**不**跑 `wrangler types`，与 CI 中 `npm ci --ignore-scripts` 兼容；类型兜底见 **`types/cloudflare-env-shim.d.ts`**），默认 **`CMD`**: `node packages/admin/server.js`，`:8789`，应用进程 only。Schema changes use the **`Dockerfile.migrate`** image (`docker compose --profile migrate run --rm migrate`). Inject **`DATABASE_URL`**, **`DATABASE_DRIVER`** (default `postgres` if omitted), and **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**, same database as **`Dockerfile.proxy`**. See `../../docs/operators/deployment/docker.md`.
 
 ## Architecture
