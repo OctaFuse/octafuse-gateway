@@ -23,9 +23,13 @@
 | 2.1.2 → 2.2.0：路由策略 canonical ID 硬切换（迁移 0019） | [migrations/route-strategy-canonical-ids-cutover.md](./migrations/route-strategy-canonical-ids-cutover.md) |
 | 2.2.0 → 2.3.0：Route Pool Provider Sticky（迁移 0020） | [migrations/route-pool-sticky-routing-cutover.md](./migrations/route-pool-sticky-routing-cutover.md) |
 | 2.2.0 → 2.3.0：路由策略展示对齐 ID 硬切换（迁移 0021：`hash_affinity` / `weight_priority`） | [migrations/route-strategy-display-ids-cutover.md](./migrations/route-strategy-display-ids-cutover.md) |
+| 2.3.0 → 2.4.0：音频字符、具名 Admin Key 与审计索引（迁移 0022–0025） | [2.4.0 发布说明](../releases/2.4.0.md#升级说明) |
+| 2.6.0 → 2.7.0：用户级模型计费倍率（迁移 0026） | [2.7.0 发布说明](../releases/2.7.0.md#升级说明) |
 | User audit 兼容导出移除说明 | [migrations/user-audit-legacy-exports.md](./migrations/user-audit-legacy-exports.md) |
 
 升级到 **2.3.0** 时应在同一维护窗口内按 **0020 → 0021 → 同版本 Proxy / Admin 部署**执行；0021 无旧策略 ID 别名，禁止新旧版本混跑。
+
+升级到 **2.7.0** 时须确保迁移已执行到 **0026**。若当前为 2.3.0，需要依次执行 0022–0026；更早版本还应先完成上表中的前序迁移。随后统一部署 v2.7.0 的 Proxy、Admin 与 migrate 镜像。未配置 `charged_cost_factors` 的用户行为保持不变。
 
 ## 本地演练
 

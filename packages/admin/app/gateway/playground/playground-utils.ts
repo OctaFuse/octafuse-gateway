@@ -244,8 +244,11 @@ export function templateForRoute(
 		}
 		return AUDIO_SPEECH_BODY_TEMPLATE;
 	}
-	if (isImage && proto === 'openai') {
-		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
+	if (isImage && (proto === 'openai' || proto === 'dashscope')) {
+		if (proto === 'dashscope' || imageOperation !== 'edits') {
+			return IMAGE_GENERATIONS_BODY_TEMPLATE;
+		}
+		return IMAGE_EDITS_BODY_TEMPLATE;
 	}
 	const family = resolvePlaygroundLlmFamily(route);
 	if (family) {

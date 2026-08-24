@@ -26,8 +26,8 @@ import type {
 	AdminModelRouteRow,
 } from './types';
 
-/** Image-generation catalog models may only use OpenAI Images–compatible routes. */
-async function assertImageModelOpenaiProtocol(
+/** Image models keep an OpenAI public entry; upstream may be OpenAI passthrough or DashScope conversion. */
+async function assertImageModelUpstreamProtocol(
 	repos: GatewayRepositories,
 	modelId: string,
 	proto: UpstreamProtocol
@@ -39,10 +39,11 @@ async function assertImageModelOpenaiProtocol(
 			output_modalities: model.output_modalities as string | null | undefined,
 			pricing_profile: model.pricing_profile as string | null | undefined,
 		}) &&
-		proto !== 'openai'
+		proto !== 'openai' &&
+		proto !== 'dashscope'
 	) {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai (Gateway Images API only uses OpenAI routes).'
+			'Image-generation models require upstream_protocol=openai or dashscope (OpenAI Images passthrough or DashScope conversion).'
 		);
 	}
 }
@@ -121,7 +122,7 @@ export async function createModelRouteService(
 	if (!providerSupportsUpstreamProtocol(proto, provider)) {
 		throw badRequest(`Provider has no base URL for upstream protocol "${proto}".`);
 	}
-	await assertImageModelOpenaiProtocol(repos, modelId, proto);
+	await assertImageModelUpstreamProtocol(repos, modelId, proto);
 
 	const routeGroup =
 		typeof body.route_group === 'string' && body.route_group.trim() !== '' ? body.route_group.trim() : 'default';
@@ -274,7 +275,7 @@ export async function updateModelRouteService(
 	if (!providerSupportsUpstreamProtocol(effectiveProto, provider)) {
 		throw badRequest(`Provider has no base URL for upstream protocol "${effectiveProto}".`);
 	}
-	await assertImageModelOpenaiProtocol(repos, effectiveModelId, effectiveProto);
+	await assertImageModelUpstreamProtocol(repos, effectiveModelId, effectiveProto);
 
 	const requestProtocolRaw = body.request_protocol;
 	const requestOperationRaw = body.request_operation;

@@ -157,4 +157,4 @@ POST /api/admin/providers/:providerId/dashscope/voices
 4. 选择 TTS 模型、填写 `input`、`voice` 和 `response_format`，确认页面可以试听和下载，Request Logs 记录字符数。
 5. 分别用 `/inference` 与 `/realtime` operation 建立原生 WebSocket，确认启动事件中的公开模型名被替换为 Provider model，二进制可双向传输，终态事件后日志成功落库。
 6. 用管理员资源接口各执行一次 list/query；只有确实需要创建资源时再验证 create/delete，避免产生无用的供应商资源。
-7. 千问 Token Plan 预设不含 flash/filetrans HTTP；按量百炼 CN/Intl 使用 `dashscope.base` 即可派生 multimodal 与异步端点。
+7. 千问 Token Plan 预设显式配置 `audio.transcriptions.multimodal`（`qwen-audio-3.0-asr-flash` 同步 HTTP），不含 filetrans 异步端点，也不写 `dashscope.base`（避免派生热词 / 异步转写地址）。按量百炼 CN/Intl 使用 `dashscope.base` 即可派生 multimodal 与异步端点。

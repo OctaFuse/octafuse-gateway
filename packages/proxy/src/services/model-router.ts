@@ -174,17 +174,21 @@ export async function resolveRoutesForSurface(
 		.map((route) => ({
 			...route,
 			modelSurfaceId: surface?.id ?? null,
-			upstreamOperation: effectiveUpstreamOperation(
-				route.upstreamOperation,
-				params.requestOperation
-			),
 		}))
 		.filter((route) =>
 			routeMatchesSurface(route, {
 				protocol: params.requestProtocol,
 				operation: params.requestOperation,
 			})
-		);
+		)
+		.map((route) => ({
+			...route,
+			upstreamOperation: effectiveUpstreamOperation(
+				route.upstreamOperation,
+				params.requestOperation,
+				route.adapter
+			),
+		}));
 	return { surface, routes };
 }
 

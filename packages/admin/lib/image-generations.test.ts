@@ -29,6 +29,25 @@ describe('image-generations helpers', () => {
 		assert.match(parsed.usageHint ?? '', /quality=low/);
 	});
 
+	it('parseImagesGenerationsResponse extracts DashScope multimodal image URLs', () => {
+		const json = JSON.stringify({
+			output: {
+				choices: [
+					{
+						message: {
+							content: [{ image: 'https://oss.example.com/a.png' }],
+						},
+					},
+				],
+			},
+		});
+		const parsed = parseImagesGenerationsResponse(json, { size: '1024*1024', n: 1 });
+		assert.equal(parsed.count, 1);
+		assert.equal(parsed.images[0]?.kind, 'url');
+		assert.equal(parsed.images[0]?.src, 'https://oss.example.com/a.png');
+		assert.match(parsed.usageHint ?? '', /1 image/);
+	});
+
 	it('imageRequestMetaFromBody reads quality/size/n', () => {
 		assert.deepEqual(imageRequestMetaFromBody({ quality: 'high', size: '512x512', n: 3 }), {
 			quality: 'high',

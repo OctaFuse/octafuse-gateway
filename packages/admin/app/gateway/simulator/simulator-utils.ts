@@ -1,4 +1,5 @@
-import { canonicalizeRequestOperation } from '@octafuse/core/route-topology';
+import { canonicalizeRequestOperation, isRouteAdapterCompatible } from '@octafuse/core/route-topology';
+import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
@@ -432,21 +433,35 @@ export function filterMatchingActiveRoutes(
 ): RouteListRow[] {
 	if (!modelId) return [];
 	const matchesSurface = (route: RouteListRow): boolean => {
-		if (!requestProtocol || !requestOperation || !route.surfaces) return true;
+		if (!requestProtocol || !requestOperation) return true;
+		if (route.surfaces) {
+			try {
+				const surfaces = JSON.parse(route.surfaces) as Array<{
+					request_protocol?: string;
+					request_operation?: string;
+					status?: string;
+				}>;
+				const surfaceHit = surfaces.some(
+					(surface) =>
+						surface.status !== 'disabled' &&
+						surface.request_protocol === requestProtocol &&
+						(surface.request_operation === requestOperation || surface.request_operation === '*'),
+				);
+				if (!surfaceHit) return false;
+			} catch {
+				return true;
+			}
+		}
 		try {
-			const surfaces = JSON.parse(route.surfaces) as Array<{
-				request_protocol?: string;
-				request_operation?: string;
-				status?: string;
-			}>;
-			return surfaces.some(
-				(surface) =>
-					surface.status !== 'disabled' &&
-					surface.request_protocol === requestProtocol &&
-					(surface.request_operation === requestOperation || surface.request_operation === '*'),
-			);
+			return isRouteAdapterCompatible({
+				adapter: route.adapter?.trim() || 'passthrough',
+				requestProtocol: normalizeUpstreamProtocol(requestProtocol),
+				requestOperation,
+				upstreamProtocol: normalizeUpstreamProtocol(route.upstream_protocol ?? 'openai'),
+				upstreamOperation: route.upstream_operation?.trim() || '*',
+			});
 		} catch {
-			return true;
+			return false;
 		}
 	};
 	return routes

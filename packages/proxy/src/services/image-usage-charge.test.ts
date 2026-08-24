@@ -230,6 +230,27 @@ describe('estimateImageCosts', () => {
 		assert.equal(audit.user_charged_factor, 0.5);
 	});
 
+	it('per_image by_size 2k hits the catalog unit price', async () => {
+		const profile = JSON.stringify({
+			image_billing_mode: 'per_image',
+			image: {
+				default: 0.25,
+				by_size: { '1k': 0.25, '2k': 0.5 },
+			},
+		});
+		const costs = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: profile,
+			routePriceOverrideJson: null,
+			quality: 'auto',
+			size: '2k',
+			imageCount: 1,
+		});
+		assert.equal(costs.billingKind, 'image_per_image');
+		assert.ok(Math.abs(costs.chargedCost - 0.5) < 1e-9);
+		const audit = JSON.parse(costs.pricingAuditJson) as { size: string };
+		assert.equal(audit.size, '2k');
+	});
+
 	it('per_image applies charged_factor from route override', async () => {
 		const base = await estimateImageCosts(mockRepos(), {
 			modelPricingProfileJson: PER_IMAGE_PROFILE,

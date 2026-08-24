@@ -68,6 +68,8 @@ export type ProxyDispatchMeta = {
 	parsedBody?: unknown;
 	/** 仅 Images：上游 wait 被 abort 时由 driver 写入（见 openai-images-driver） */
 	imageAbortReason?: ImageDispatchAbortReason;
+	/** 仅 DashScope 生图：由上游 usage 推导的 per_image 档位（如 `1k` / `2k`） */
+	imageBillingSize?: string | null;
 	/** 仅 Audio transcriptions：计费时长（秒） */
 	audioDurationSeconds?: number | null;
 	/** 仅 Audio：duration 来源 */

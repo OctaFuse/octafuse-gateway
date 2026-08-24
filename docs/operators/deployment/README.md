@@ -21,6 +21,8 @@
 | Cloudflare 已上线实例升级 | [cloudflare-quickstart.md §12](./cloudflare-quickstart.md#12-后续升级) |
 | 2.1.2 → 2.2.0 数据迁移与维护窗口 | [迁移索引](../README.md#迁移与切换)（0017 → 0018 → 0019） |
 | 2.2.0 → 2.3.0 数据迁移与维护窗口 | [迁移索引](../README.md#迁移与切换)（0020 → 0021） |
+| 2.3.0 → 2.4.0 数据迁移与认证切换 | [迁移索引](../README.md#迁移与切换)（0022 → 0025） |
+| 2.6.0 → 2.7.0 用户级模型计费倍率 | [2.7.0 发布说明](../../releases/2.7.0.md#升级说明)（0026） |
 | Zeabur 等容器平台 | [zeabur.md](./zeabur.md) |
 | D1 ↔ Postgres ETL / 对账 | [d1-postgres-cutover.md](../migrations/d1-postgres-cutover.md) |
 | 本地开发组合 | [local-development.md](../../developers/local-development.md) |

@@ -86,6 +86,48 @@ export type ImagePreviewItem =
 	| { kind: 'b64'; src: string }
 	| { kind: 'url'; src: string };
 
+function asPreviewObject(value: unknown): Record<string, unknown> | null {
+	return value != null && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: null;
+}
+
+function collectOpenAiImagePreviews(data: unknown[]): ImagePreviewItem[] {
+	const images: ImagePreviewItem[] = [];
+	for (const item of data) {
+		if (!item || typeof item !== 'object') continue;
+		const row = item as { b64_json?: unknown; url?: unknown };
+		if (typeof row.b64_json === 'string' && row.b64_json.trim()) {
+			const b64 = row.b64_json.trim();
+			const src = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
+			images.push({ kind: 'b64', src });
+			continue;
+		}
+		if (typeof row.url === 'string' && row.url.trim()) {
+			images.push({ kind: 'url', src: row.url.trim() });
+		}
+	}
+	return images;
+}
+
+/** DashScope multimodal-generation: `output.choices[].message.content[].image`. */
+function collectDashScopeImagePreviews(parsed: Record<string, unknown>): ImagePreviewItem[] {
+	const output = asPreviewObject(parsed.output);
+	const choices = Array.isArray(output?.choices) ? output.choices : [];
+	const images: ImagePreviewItem[] = [];
+	for (const choice of choices) {
+		const message = asPreviewObject(asPreviewObject(choice)?.message);
+		const content = Array.isArray(message?.content) ? message.content : [];
+		for (const part of content) {
+			const image = asPreviewObject(part)?.image;
+			if (typeof image !== 'string' || !image.trim()) continue;
+			const src = image.trim();
+			images.push(src.startsWith('data:') ? { kind: 'b64', src } : { kind: 'url', src });
+		}
+	}
+	return images;
+}
+
 export type ParsedImagesGenerationsResponse = {
 	images: ImagePreviewItem[];
 	count: number;
@@ -111,22 +153,9 @@ export function parseImagesGenerationsResponse(
 	}
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return empty;
 	const data = (parsed as { data?: unknown }).data;
-	if (!Array.isArray(data)) return empty;
-
-	const images: ImagePreviewItem[] = [];
-	for (const item of data) {
-		if (!item || typeof item !== 'object') continue;
-		const row = item as { b64_json?: unknown; url?: unknown };
-		if (typeof row.b64_json === 'string' && row.b64_json.trim()) {
-			const b64 = row.b64_json.trim();
-			const src = b64.startsWith('data:') ? b64 : `data:image/png;base64,${b64}`;
-			images.push({ kind: 'b64', src });
-			continue;
-		}
-		if (typeof row.url === 'string' && row.url.trim()) {
-			images.push({ kind: 'url', src: row.url.trim() });
-		}
-	}
+	const images: ImagePreviewItem[] = Array.isArray(data)
+		? collectOpenAiImagePreviews(data)
+		: collectDashScopeImagePreviews(parsed as Record<string, unknown>);
 
 	const count = images.length;
 	if (count === 0) return empty;

@@ -56,6 +56,14 @@ describe('route topology operations', () => {
 		assert.equal(normalizeRouteOperation(undefined), '*');
 		assert.equal(isRequestOperationForProtocol('openai', '*'), true);
 		assert.equal(effectiveUpstreamOperation('*', 'images.generations'), 'images.generations');
+		assert.equal(
+			effectiveUpstreamOperation('*', 'images.generations', 'dashscope-image-wan'),
+			'images.generations.multimodal',
+		);
+		assert.equal(
+			effectiveUpstreamOperation('*', 'chat', 'passthrough'),
+			'chat',
+		);
 		assert.equal(effectiveUpstreamOperation('chat', 'responses'), 'chat');
 	});
 
@@ -160,6 +168,28 @@ describe('route adapters', () => {
 					requestOperation: 'audio.speech',
 					upstreamProtocol: 'dashscope',
 					upstreamOperation: 'audio.speech.multimodal',
+				}),
+				true
+			);
+		}
+		for (const adapter of ['dashscope-image-qwen', 'dashscope-image-wan']) {
+			assert.equal(
+				isRouteAdapterCompatible({
+					adapter,
+					requestProtocol: 'openai',
+					requestOperation: 'images.generations',
+					upstreamProtocol: 'dashscope',
+					upstreamOperation: 'images.generations.multimodal',
+				}),
+				true
+			);
+			assert.equal(
+				isRouteAdapterCompatible({
+					adapter,
+					requestProtocol: 'openai',
+					requestOperation: 'images.generations',
+					upstreamProtocol: 'dashscope',
+					upstreamOperation: '*',
 				}),
 				true
 			);

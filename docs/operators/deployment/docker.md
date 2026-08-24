@@ -57,6 +57,8 @@
 
 **代理服务 Node bundle 契约**：`packages/proxy/scripts/build.mjs` 用 esbuild 把所有 `@octafuse/*`（含 `@octafuse/core` 子路径与 `@octafuse/tool-engines`）打进 `dist/runtime/node.js`，仅把真实 npm 依赖（`hono`、`postgres` 等）标为 external。构建结束会校验产物中**不存在** `@octafuse/` 外部说明符；也可单独跑 `npm run verify:proxy-bundle`。
 
+开发改 `packages/core` 或 Admin 后，提交前先跑 **`npm run typecheck:admin`**（约数秒）。`verify` 不执行 `next build`；PR 的 Docker 冒烟才会在镜像里做类型检查。
+
 **管理后台镜像与 Cloudflare 构建分工**：`Dockerfile.admin` 在构建阶段执行 **`npm run build:docker -w @octafuse/admin`**（`next build` + `scripts/link-standalone-next.mjs`），**不**运行 `wrangler types`，因此镜像构建不依赖 **`workerd`**，可与 `npm ci --ignore-scripts` 的 CI 安装方式兼容。构建阶段会 **`COPY packages/tool-engines`**（调试台（Playground）Tools 与代理服务共用的引擎客户端，source-only），**不**再 COPY `packages/proxy`。部署到 Cloudflare（预览/生产）仍使用 **`npm run build:cf`** / **`npm run preview`** / **`npm run deploy`**（内含 `cf-typegen` 与 OpenNext Cloudflare 打包）。各 Dockerfile 在 `npm ci --ignore-scripts` 之后会 **`find node_modules -path '*/esbuild/install.js' -exec node {} \;`**：为树内**每一份** esbuild 执行其 `install.js`（`@octafuse/core` 与 `@opennextjs/*` 可能各带不同版本）。勿用 **`npm rebuild esbuild`**，否则多版本 esbuild 会触发「Expected 0.25.4 but got 0.27.3」类校验错误。
 
 典型未压缩体积：**proxy** 常见约 **一百多 MB**；**admin** 因 Next standalone 与 trace 较大，常见约 **两百 MB 量级**；**migrate** 最小。若仍见 **~1GB+** 单层或总量异常，多为旧版单阶段镜像或本地缓存标签，请 `docker build --no-cache` 重建后对比 `docker image ls` / `docker history`。
@@ -311,6 +313,8 @@ gateway-admin.example.com {
 ## 8. 如何更新版本
 
 升级前阅读目标版本 [GitHub Release](https://github.com/OctaFuse/octafuse-gateway/releases) / `CHANGELOG.md` 中的 **升级说明**（破坏性变更、必做迁移、维护窗口）。推荐顺序：**先 migrate，再滚动重启代理服务 / 管理后台**；或仅在一侧开启 `AUTO_MIGRATE=1`（见 §5）。
+
+> **升级到 v2.7.0**：必须应用迁移 **0026**。请将 Proxy、Admin 与 migrate 镜像统一升级到 v2.7.0，先执行 migrate，再启动应用；不要混用不同版本镜像。
 
 ### 8.1 预构建镜像（GHCR / 私有 registry）
 

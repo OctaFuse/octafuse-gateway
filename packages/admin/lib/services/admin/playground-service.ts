@@ -25,6 +25,7 @@ import {
 } from '@/lib/image-generations';
 import { modelKindFromFlags, resolveOpenaiUpstreamCapability } from '@/lib/invoke-kind';
 import { AdminServiceError, badRequest, notFound } from './errors';
+import { buildPlaygroundDashScopeImageRequest } from './playground-dashscope-image';
 import { isPendingProviderImportApiKey } from '@octafuse/core/db/provider-key-utils';
 
 /** 与 Proxy `RouteResult` 对齐的最小子集，供合并默认参数与拼 URL。 */
@@ -886,9 +887,9 @@ export async function invokePlaygroundUpstream(
 
 	const start = Date.now();
 
-	if (route.isImageModel && route.upstreamProtocol !== 'openai') {
+	if (route.isImageModel && route.upstreamProtocol !== 'openai' && route.upstreamProtocol !== 'dashscope') {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai (Playground Images only calls /images/generations or /images/edits).',
+			'Image-generation models require upstream_protocol=openai or dashscope (Playground Images calls /images/generations, /images/edits, or DashScope multimodal-generation).',
 		);
 	}
 	if (route.isAudioModel && route.upstreamProtocol !== 'openai' && route.upstreamProtocol !== 'dashscope') {
@@ -1081,8 +1082,21 @@ export async function invokePlaygroundUpstream(
 			break;
 		}
 		case 'dashscope': {
+			if (route.isImageModel) {
+				if (imageOperation === 'edits') {
+					throw badRequest(
+						'DashScope image routes only support generations (use JSON image for image-to-image).',
+					);
+				}
+				const request = buildPlaygroundDashScopeImageRequest(route, merged);
+				url = request.url;
+				headers = request.headers;
+				fetchBody = request.bodyText;
+				upstreamWireBodyJson = request.wireBodyJson;
+				break;
+			}
 			if (!route.isAudioModel) {
-				throw badRequest('DashScope Playground routes must use an audio catalog model');
+				throw badRequest('DashScope Playground routes must use an image or audio catalog model');
 			}
 			if (route.upstreamOperation === 'audio.speech') {
 				const request = buildPlaygroundDashScopeSpeechRequest(route, merged);

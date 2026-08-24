@@ -33,7 +33,12 @@ describe('provider import preset catalog metadata', () => {
 			(row) => row.name === 'Qwen AI Platform (Token Plan)'
 		);
 		assert.ok(qwenTokenPlan);
+		assert.equal(qwenTokenPlan.endpoints.dashscope?.base, undefined);
 		assert.deepEqual(qwenTokenPlan.endpoints.dashscope?.endpoints, {
+			'audio.transcriptions.multimodal':
+				'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+			'images.generations.multimodal':
+				'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
 			'audio.speech':
 				'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer',
 			'audio.realtime.inference':

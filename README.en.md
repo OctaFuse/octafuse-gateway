@@ -28,6 +28,7 @@ Its core capabilities include:
       - Models: `GET /v1/models`
     - Anthropic endpoint: `POST /v1/messages`
     - Google Gemini endpoint: `POST /v1beta/models/{model}:generateContent` (including `streamGenerateContent`)
+    - DashScope synchronous multimodal ASR: `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
     - DashScope realtime audio: `GET /v1/dashscope/realtime`
 4. Agent tool access: Use `/v1/tools/*` to expose tools to agents with centralized logging, billing, and cost control, so models and tools share one Gateway:
     - Web search (`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
@@ -45,6 +46,7 @@ Its core capabilities include:
     - Three-level External system, User, and API Key hierarchy: the external-system field separates systems or teams, while API Keys authenticate calls and drive charging and auditing
     - Three ledgers: every invocation records catalog price, actual provider cost, and user charge separately
     - Time-of-day multipliers: peak / off-peak pricing, including weekday vs weekend rates, improves cost accuracy and enables flexible customer pricing and promotions
+    - Per-model user factors: apply a discount, markup, or free access for one user and catalog model without changing catalog price or provider cost
 8. Admin console and management APIs:
     - Full Admin UI and APIs for manual operation or integration with other portals
     - Observability and analytics for request details, statistics, and operational analysis

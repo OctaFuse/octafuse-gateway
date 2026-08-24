@@ -41,6 +41,8 @@
 | 2.0 升级（单键供应商 + 路由拓扑，0015 / 0016） | [operators/migrations/single-provider-key-cutover.md](./operators/migrations/single-provider-key-cutover.md) |
 | 2.2.0 升级（Gemini / 按层策略 / canonical ID，0017–0019） | [operators/README.md](./operators/README.md#迁移与切换) |
 | 2.3.0 升级（供应商粘性（Provider sticky）/ 展示 ID 对齐，0020–0021） | [operators/README.md](./operators/README.md#迁移与切换) |
+| 2.4.0 升级（音频字符 / 具名 Admin Key / 审计索引，0022–0025） | [releases/2.4.0.md](./releases/2.4.0.md#升级说明) |
+| 2.7.0 升级（用户级模型计费倍率，0026） | [releases/2.7.0.md](./releases/2.7.0.md#升级说明) |
 | 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范

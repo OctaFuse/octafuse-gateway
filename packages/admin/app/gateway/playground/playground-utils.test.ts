@@ -16,6 +16,7 @@ import {
 	templateForRoute,
 	type PlaygroundLlmFamily,
 } from './playground-utils';
+import { IMAGE_GENERATIONS_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { RouteListRow } from './types';
 
 function route(overrides: Partial<RouteListRow> = {}): RouteListRow {
@@ -46,6 +47,21 @@ describe('playground-utils', () => {
 		assert.equal(routeMatchesSearch(r, 'openai.chat'), true);
 		assert.equal(routeMatchesSearch(r, 'route-abc'), true);
 		assert.equal(routeMatchesSearch(r, 'anthropic'), false);
+	});
+
+	it('templateForRoute uses Images JSON for DashScope image routes', () => {
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'dashscope',
+					upstream_operation: 'images.generations.multimodal',
+					adapter: 'dashscope-image-qwen',
+				}),
+				{ output_modalities: '["image"]' } as never,
+				'edits',
+			),
+			IMAGE_GENERATIONS_BODY_TEMPLATE,
+		);
 	});
 
 	it('templateForRoute picks Responses vs Chat from upstream_operation', () => {

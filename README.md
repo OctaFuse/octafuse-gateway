@@ -28,6 +28,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
       - Models：`GET /v1/models`
     - Anthropic 端点：`POST /v1/messages`
     - Google Gemini 端点：`POST /v1beta/models/{model}:generateContent`（含 `streamGenerateContent`）
+    - DashScope 同步多模态 ASR：`POST /v1/dashscope/services/aigc/multimodal-generation/generation`
     - DashScope 实时音频：`GET /v1/dashscope/realtime`
 4. 智能体工具接入：通过 `/v1/tools/*` 统一接入各种供 Agent 使用的工具，并提供日志、计费、成本管控，以方便 Agent 同时从 Gateway 接入模型和工具。当前预置工具如下：
     - 联网搜索（`POST /v1/tools/web-search`）：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA
@@ -45,6 +46,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
     - 支持系统（External system）、用户（User）、API 密钥三层维度：每个用户因为有一个External system字段，所以可以区分不同的系统或者团队。用户下面是 API 密钥，真正调用 Gateway 能力通过 API 密钥完成鉴权、扣费和审计。
     - 三账本设计：每一个调用对于计费涵盖三个费用计算，包括：目录价（模型/工具标准价）、成本价（实际采购价格）、用户价（用户扣除额度）
     - 分时倍率：有的模型有峰谷计费的设计，利用分时倍率可以更精准的计算成本数据；也支持按星期区分工作日与周末；同时如果对外服务，也可以更配置灵活的计价方案来支持运营促销
+    - 用户级模型倍率：可为单个用户按目录模型设置折扣、加价或免单；只改变最终用户计费与预算累加，不影响目录价和供应成本
 8. 管理后台（Admin）与管理API：
     - 具备完善的管理后台和管理接口，可以手工维护也可以接入其他系统门户使用
     - 可观测性与数据分析：详细记录了请求细节和各类数据，可以方便查看、统计、分析
@@ -89,7 +91,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 |---|:---:|:---:|:---:|:---:|:---:|
 | 供应商 / 模型预设与一键导入 | ✅ | 🟡 | 🟡 | 🟡 | 🟡 |
 | OpenAI、Anthropic、Gemini 主流协议接入 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| DashScope 原生实时音频与跨协议路由 | ✅¹ | ⚪ | ⚪ | ⚪ | ⚪ |
+| DashScope 原生同步 / 实时音频与跨协议路由 | ✅¹ | ⚪ | ⚪ | ⚪ | ⚪ |
 | 文本、图像、语音与视频等多模态覆盖 | 🟡² | ✅ | ✅ | 🟡 | ✅ |
 | 内置联网搜索、抓取与深度搜索 | ✅ | ⚪ | 🟠 | 🟠 | 🟠 |
 | 工具供应商配置、调用日志与计费 | ✅ | ⚪ | 🟡 | 🟠 | 🟠 |
@@ -127,7 +129,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 | Docker 自托管部署 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cloudflare Workers 边缘部署 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
-<sup>1</sup> Octafuse 支持 DashScope 原生实时 ASR / TTS，并可将 OpenAI 兼容的 ASR / TTS 请求跨协议路由至 DashScope。
+<sup>1</sup> Octafuse 支持 DashScope 原生同步 ASR、实时 ASR / TTS，并可将 OpenAI 兼容的 ASR / TTS 请求跨协议路由至 DashScope。
 <br />
 <sup>2</sup> Octafuse 当前已覆盖文本、图像、ASR、TTS 与实时语音；视频等能力尚未纳入统一请求入口。
 

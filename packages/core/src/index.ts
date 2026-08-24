@@ -8,6 +8,26 @@ export * from './provider-endpoints';
 export * from './gemini-upstream-url';
 export * from './gcp-service-account-token';
 export * from './vertex-openai-model';
+export {
+	ADAPTER_REGISTRY,
+	adaptersForModelKind,
+	getAdapterById,
+	getAdapterByOptionKey,
+	getAdapterByPresetIntent,
+	listConversionAdapters,
+	listSelectableAdapters,
+	requestOperationsFromRegistry,
+	requestSurfacePath,
+	requiredCapabilitiesForUpstreamOperation,
+	SURFACE_PATH_MODEL_PLACEHOLDER,
+	upstreamOperationsFromRegistry,
+	type AdapterBilling,
+	type AdapterDescriptor,
+	type AdapterExchange,
+	type AdapterModality,
+	type AdapterModelKind,
+	type AdapterPresetIntent,
+} from './adapters/registry';
 export * from './route-topology';
 export * from './realtime-protocol';
 

@@ -2,7 +2,7 @@
 
 本文档描述 **octafuse-gateway** `packages/proxy` 在收到一次 AI 推理请求后，从 HTTP 入口到上游供应商调用、故障转移（Failover）、异步记账的完整处理路径。
 
-**适用路由**（三协议共用同一调度内核，差异仅在协议过滤与 egress driver）：
+**适用路由**（文本入口共用 `runProxyPipeline`，差异只在 spec；调度内核仍是 `failoverDispatch`）：
 
 | 入口 | 协议 | 路由文件 |
 |------|------|----------|
@@ -10,6 +10,8 @@
 | `POST /v1/responses` | OpenAI Responses | `packages/proxy/src/routes/v1/responses.ts` |
 | `POST /v1/messages` | Anthropic | `packages/proxy/src/routes/v1/messages.ts` |
 | `POST /v1beta/models/{model}:generateContent` 等 | Gemini | `packages/proxy/src/routes/v1/gemini.ts` |
+
+图与音频入口复用流水线的选路与策略计算，计费仍走各自模块。适配器与驱动的边界见 [adapters-and-drivers.md](./adapters-and-drivers.md)。
 
 **相关文档**：
 
@@ -28,15 +30,16 @@ flowchart TB
   subgraph entry [HTTP 入口]
     app["createProxyApp (app.ts)"]
     auth["requireApiKey (middleware/auth.ts)"]
-    route["协议路由 chat / messages / gemini / images / audio"]
+    route["协议路由 chat / messages / responses / gemini / images / audio"]
   end
 
   subgraph preDispatch [调度前]
+    pipeline["runProxyPipeline / loadProxyRouteSurface"]
     model["resolveModelRouting"]
     surface["resolveRoutesForSurface"]
     budget["用户 budget 校验"]
     sensitive["敏感内容熔断检查"]
-    strategy["resolveRouteStrategy"]
+    strategy["resolveRouteStrategyPlan"]
   end
 
   subgraph dispatch [供应商调度]
@@ -55,7 +58,8 @@ flowchart TB
     usage["usagePromise → recordUsage (异步)"]
   end
 
-  app --> auth --> route --> model --> budget --> surface --> sensitive --> strategy --> failover
+  app --> auth --> route --> pipeline
+  pipeline --> model --> budget --> surface --> sensitive --> strategy --> failover
   failover --> planner
   planner --> strategies
   planner --> breaker
@@ -67,6 +71,7 @@ flowchart TB
 |------|------|------|
 | App 装配 | `packages/proxy/src/app.ts` | Hono 应用、路由挂载、注入 `repositories` |
 | 鉴权 | `middleware/auth.ts` → `services/api-key-auth.ts` | 提取 sk、校验用户 API Key、懒重置预算周期 |
+| 文本入口流水线 | `services/proxy-pipeline.ts` | Chat / Messages / Responses / Gemini 共用：模型解析、预算、选路、策略、熔断、usage 兜底与 `recordUsage` |
 | 模型与请求入口路由 | `resolve-model-route-group.ts`、`model-router.ts` | 解析 `model` / `:route_group`，按 request protocol / operation 查精确或通配请求入口（Request Surface），再读取路由池（Route Pool）的上游目标（Upstream Target）、JOIN 供应商（单键 `api_key`） |
 | 策略解析 | `route-strategies/index.ts` → `resolveRouteStrategyPlan` | 先解析路由池 → capability rule → protocol rule → model → global → `hash_affinity` 的 base，再叠加 `tier_strategies[priority]` |
 | 代理入口 | `services/proxy.ts` | 三协议（及 Images / Audio）统一调用 `failoverDispatch` |

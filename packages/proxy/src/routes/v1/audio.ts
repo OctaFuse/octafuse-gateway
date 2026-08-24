@@ -8,16 +8,9 @@ import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Env } from '../../app';
 import { requireApiKey, type ApiKeyContext } from '../../middleware/auth';
-import {
-	resolveRoutesForSurface,
-	type RouteResult,
-} from '../../services/model-router';
+import type { RouteResult } from '../../services/model-router';
 import { resolveModelRouting } from '../../services/resolve-model-route-group';
-import {
-	buildAffinityKey,
-	buildTierKeyPrefix,
-	resolveRouteStrategyPlan,
-} from '../../services/route-strategies';
+import { buildProxyFailoverOptions, loadProxyRouteSurface } from '../../services/proxy-pipeline';
 import {
 	proxyAudioSpeech,
 	proxyAudioTranscriptions,
@@ -58,7 +51,6 @@ import { GatewayErrorCode } from '../../services/gateway-error-codes';
 import { gatewayErrorJson } from '../../services/gateway-error-response';
 import { RequestTimingCollector } from '../../services/request-timing';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
-import { stickyConfigFromSurface } from '../../services/provider-sticky-routing';
 
 type AudioEnv = Env & { Variables: { apiKey: ApiKeyContext } };
 type AudioContext = Context<AudioEnv>;
@@ -92,35 +84,29 @@ async function resolveOpenAiAudioRoutes(
 	}
 	const { model, baseModelId, explicitGroup } = resolved;
 	const effectiveRouteGroup = explicitGroup?.trim() || 'default';
-	try {
-		const resolvedSurface = await resolveRoutesForSurface(repos, {
-			modelId: baseModelId,
-			routeGroup: effectiveRouteGroup,
-			requestProtocol: 'openai',
-			requestOperation,
-		});
-		const routes = resolvedSurface.routes;
-		if (routes.length === 0) {
-			return {
-				ok: false,
-				status: 502,
-					error: `No ${requestOperation === 'audio.speech' ? 'audio speech' : 'audio transcription'} route in route group "${effectiveRouteGroup}" for this model`,
-			};
-		}
-		return {
-			ok: true,
-			model,
-			baseModelId,
-			effectiveRouteGroup,
-			routes,
-			poolStrategy: resolvedSurface.surface?.pool_strategy ?? null,
-			poolTierStrategies: resolvedSurface.surface?.pool_tier_strategies ?? null,
-			stickySurface: resolvedSurface.surface,
-		};
-	} catch (err) {
-		const message = err instanceof Error ? err.message : 'Model route resolution failed';
-		return { ok: false, status: 502, error: message };
+	const loaded = await loadProxyRouteSurface(repos, {
+		modelId: baseModelId,
+		routeGroup: effectiveRouteGroup,
+		requestProtocol: 'openai',
+		requestOperation,
+	});
+	if (!loaded.ok) {
+		return { ok: false, status: 502, error: loaded.message };
 	}
+	if (loaded.loaded.routes.length === 0) {
+		return {
+			ok: false,
+			status: 502,
+			error: `No ${requestOperation === 'audio.speech' ? 'audio speech' : 'audio transcription'} route in route group "${effectiveRouteGroup}" for this model`,
+		};
+	}
+	return {
+		ok: true,
+		model,
+		baseModelId,
+		effectiveRouteGroup,
+		...loaded.loaded,
+	};
 }
 
 function modelDisplayName(model: { display_name?: string | null }, baseModelId: string): string {
@@ -367,38 +353,32 @@ audioRoutes.post('/transcriptions', async (c) => {
 		return circuitBlocked;
 	}
 
-	const strategyPlan = await resolveRouteStrategyPlan({
-		routePolicyRaw: model.route_policy ?? null,
-		poolStrategy: routed.poolStrategy,
-		poolTierStrategies: routed.poolTierStrategies,
+	const failoverOptions = await buildProxyFailoverOptions({
+		repos,
+		apiKey,
+		model,
+		baseModelId,
+		effectiveRouteGroup,
 		protocol: 'openai',
 		capability: 'audio.transcriptions',
-		routeGroup: effectiveRouteGroup,
-		repos,
+		poolStrategy: routed.poolStrategy,
+		poolTierStrategies: routed.poolTierStrategies,
+		stickySurface: routed.stickySurface,
+		routes,
+		timing,
 	});
-	const affinityKey = buildAffinityKey(apiKey.userId, baseModelId, effectiveRouteGroup, 'openai');
-	const tierKeyPrefix = buildTierKeyPrefix(baseModelId, effectiveRouteGroup, 'openai');
 	timing.markGatewayComplete();
 
 	console.log(
 		`[Gateway Audio] transcriptions baseModelId=${baseModelId} keyId=${apiKey.keyId} bytes=${transcription.file?.bytes.byteLength ?? 0}`
 	);
 
-	const stickySurface = routed.stickySurface;
 	const proxyResult = await proxyAudioTranscriptions(
 		repos,
 		routes,
 		transcription,
 		c.req.raw.signal,
-		{
-			affinityKey,
-			tierKeyPrefix,
-			strategy: strategyPlan.base,
-			tierStrategies: strategyPlan.tierOverrides,
-			timing,
-			routePoolId: stickySurface?.route_pool_id ?? routes[0]?.routePoolId ?? null,
-			sticky: stickyConfigFromSurface(stickySurface),
-		}
+		failoverOptions
 	);
 
 	return finalizeAudioResponse({
@@ -574,30 +554,28 @@ audioRoutes.post('/speech', async (c) => {
 	});
 	if (circuitBlocked) return circuitBlocked;
 
-	const strategyPlan = await resolveRouteStrategyPlan({
-		routePolicyRaw: model.route_policy ?? null,
-		poolStrategy: routed.poolStrategy,
-		poolTierStrategies: routed.poolTierStrategies,
+	const failoverOptions = await buildProxyFailoverOptions({
+		repos,
+		apiKey,
+		model,
+		baseModelId,
+		effectiveRouteGroup,
 		protocol: 'openai',
 		capability: 'audio.speech',
-		routeGroup: effectiveRouteGroup,
-		repos,
+		poolStrategy: routed.poolStrategy,
+		poolTierStrategies: routed.poolTierStrategies,
+		stickySurface: routed.stickySurface,
+		routes,
+		timing,
+		includeSticky: false,
 	});
-	const affinityKey = buildAffinityKey(apiKey.userId, baseModelId, effectiveRouteGroup, 'openai');
-	const tierKeyPrefix = buildTierKeyPrefix(baseModelId, effectiveRouteGroup, 'openai');
 	timing.markGatewayComplete();
 	const proxyResult = await proxyAudioSpeech(
 		repos,
 		routes,
 		speech,
 		c.req.raw.signal,
-		{
-			affinityKey,
-			tierKeyPrefix,
-			strategy: strategyPlan.base,
-			tierStrategies: strategyPlan.tierOverrides,
-			timing,
-		}
+		failoverOptions
 	);
 	return finalizeSpeechResponse({
 		c,

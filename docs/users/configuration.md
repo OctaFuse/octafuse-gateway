@@ -37,7 +37,9 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 点击拓扑中的任一上游目标，即可在路由编辑页面集中配置客户端协议 / operation、路由组、上游映射、自定义参数，以及用户计费与供应成本倍率。
 
-![路由编辑页面：在一个弹窗内核对客户端入口、上游映射、目录标准价、默认计费倍率与分时覆盖时段](../assets/screenshots/route-editor.webp)
+![路由编辑页面：在一个弹窗内核对客户端入口、上游映射、目录标准价、默认计费倍率，以及带星期选择的分时时段](../assets/screenshots/route-editor.webp)
+
+截图中的窗口选择了“每天（Every day）”。如果供应商在工作日与周末采用不同价格，可直接选择“工作日（Weekdays）”“周末（Weekend）”或逐日选择。
 
 常见做法：
 
@@ -49,11 +51,12 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
   - **`weight`（同层）**：配合路由池 / 模型 / 全局路由策略（默认 **hash_affinity**）决定层内顺序。
   - **`route_group`**：如 `default` / `free`，客户端用 `modelId:group` 选择。
 - 图片生成模型：导入或手建后确认 `output_modalities` 含 `image`、`pricing_profile` 的 `image_billing_mode`（`token` / `per_image`），并挂 **OpenAI 协议** active 路由；细节见 [developers/reference/image-models.md](../developers/reference/image-models.md)。
-- 音频模型：ASR 可按时长或 Token 计费，TTS 可按字符计费；可使用 OpenAI 兼容的 `/v1/audio/transcriptions`、`/v1/audio/speech`，或 DashScope 原生实时音频。跨协议路由与 adapter 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
+- 音频模型：ASR 可按时长或 Token 计费，TTS 可按字符计费；可使用 OpenAI 兼容的 `/v1/audio/transcriptions`、`/v1/audio/speech`，DashScope 同步多模态 ASR `POST /v1/dashscope/services/aigc/multimodal-generation/generation`，或 DashScope 原生实时音频。跨协议路由与 adapter 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
 - **路由策略**：先按 priority 层读路由池 `tier_strategies[priority]`（若有）；否则路由池 `strategy` → 模型 `route_policy.rules` 的 `{protocol}.{capability}:{group}` → `{protocol}:{group}` → 模型顶层 `route_policy.strategy` → 管理后台 Config 全局 `ROUTE_STRATEGY` → 代码默认 `hash_affinity`。四种策略及完整键格式见 [developers/reference/route-strategies.md](../developers/reference/route-strategies.md)。
 - **供应商粘性（Provider sticky，可选）**：在拓扑视图（Topology）的路由组 / 路由池节点打开粘性配置（关闭时芯片为 `Sticky · Off`，启用后为 `Sticky · {ttl}`），按路由池启用并设置空闲 TTL（默认 3600 秒）。它不是第五种层内策略：`hash_affinity` 用无状态哈希稳定首选，粘性则记住上次成功的上游目标，并可在绑定有效时跨 priority 优先尝试。弹窗还可查看绑定分布与路由权重、按用户解绑，或通过 `sticky_epoch` 整池失效；默认关闭。完整语义见 [供应商粘性（route-strategies）](../developers/reference/route-strategies.md#provider-sticky-routingpool-前置规则非第五策略)。
 - 在路由的 **Custom params** 中配置思考参数、输出长度或供应商扩展字段等默认值；它们会与上游请求体深度合并，客户端显式传入的字段优先，因此不能用于强制覆盖客户端参数。
 - 设置价格口径：先维护模型**目录标准价（Standard）**，再在路由上设用户计费（Charged）/ 供应成本（Metered）的默认倍率；如需对齐供应商高峰 / 闲时价，或区分工作日与周末，再配置**分时时段（Schedule）**（共享起止时间，每行可选星期，并分别填两侧倍率；命中该时段时覆盖默认倍率；时区见系统配置的业务时区）。
+- 以低谷价作为目录价时，DeepSeek 可将路由默认倍率设为 `1`，并为周一至周五 `09:00–12:00`、`14:00–18:00` 设置 `2` 倍覆盖；工作日其他时段和周末全天自动使用低谷价。
 - 在请求日志（Request Logs）中核对三笔账：供应成本、目录标准价、用户计费是否符合业务预期。
 
 路由默认参数合并规则见 [developers/api/user.md](../developers/api/user.md#route-默认参数合并)；时段调价契约见 [developers/api/admin.md](../developers/api/admin.md) 中的 `price_override.schedule`；调度与熔断见 [developers/architecture/proxy-request-lifecycle.md](../developers/architecture/proxy-request-lifecycle.md)。
@@ -78,14 +81,19 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 用户 API Key 是客户端真正使用的凭证。对接外部门户时可用 `external_system` 区分产品或租户，并以 `(external_system, external_user_id)` 幂等创建 User；预算归属 User，API Key 负责鉴权、扣费归集和审计。
 
+![用户详情：集中维护预算、API 密钥、外部身份和按模型设置的用户计费倍率；用户与密钥等标识已脱敏](../assets/screenshots/user-charged-cost-factors.webp)
+
 建议：
 
 - 为不同人、团队、客户或项目创建独立用户或独立 Key。
 - 给 Key 设置可识别名称和 metadata，方便后续审计。
 - 为用户设置预算与周期重置策略。
+- 需要为特定用户提供模型折扣或免单时，在用户详情的 **Charged cost factors** 中选择目录模型并填写倍率：`0.8` 表示八折，`0.5` 表示五折，`0` 表示该模型不扣费；未配置的模型保持路由计算出的价格。
 - 停用不再需要的 Key，而不是长期共享一把 Key。
 
-用户、Key、预算和审计的数据模型见 [developers/architecture/user-keys-data-model.md](../developers/architecture/user-keys-data-model.md)。
+最终用户费用为“目录标准价 × 路由用户计费倍率（含命中的分时时段）× 用户模型倍率”。用户模型倍率只改变最终 `charged_cost` 与预算累加，不改变目录价或供应成本；适用于 LLM、Images 与 Audio，不适用于 Agent Tools。
+
+用户、Key、预算、用户模型倍率和审计的数据模型见 [developers/architecture/user-keys-data-model.md](../developers/architecture/user-keys-data-model.md)。
 
 ## 6. 验证调用
 
@@ -109,9 +117,11 @@ curl -sS http://localhost:8787/v1/me \
 
 日常排障优先看：
 
-- 请求日志：是否命中正确模型、请求入口、路由池、上游目标与供应商；重点查看 `request_operation`、`model_surface_id`、`route_pool_id`、`route_target_id`、`route_trace`。启用供应商粘性后查看 `route_trace.sticky.lookup`、`attempted_target` 与 `result`，结合 cache read token 和 failover 次数判断绑定收益及异常解绑。`provider_key_*` 现为 provider id / name / key 指纹；Tools 行为 `model_id` 形如 `tool:web-search`。
+![请求日志：并列展示客户端入口、实际上游、功能标签、用量、用户计费、供应成本和利润；用户与外部系统信息已遮蔽](../assets/screenshots/request-logs-redacted.webp)
+
+- 请求日志：先在列表中核对客户端入口（Inbound）、实际上游（Upstream）、模型、路由组、供应商、功能标签和用量；展开后重点查看 `request_operation`、`model_surface_id`、`route_pool_id`、`route_target_id`、`route_trace`。启用供应商粘性后查看 `route_trace.sticky.lookup`、`attempted_target` 与 `result`，结合 cache read token 和 failover 次数判断绑定收益及异常解绑。`provider_key_*` 现为 provider id / name / key 指纹；Tools 行为 `model_id` 形如 `tool:web-search`。
 - 错误状态：401 多半是认证问题；403 常见于预算或配额；502 多与路由或上游有关；全部上游熔断时可能为网关 **429**；智能体工具未配置活跃引擎 Key 时为 **503**。
-- 成本字段：区分 **供应成本**、**目录标准价**、**用户计费**（日志 / API 字段分别为 `metered_cost`、`standard_cost`、`charged_cost`）；Images / Audio 另见 `billing_kind`（及 image count / `audio_duration_seconds` 等列）。
+- 成本字段：列表中的 `C` 是最终用户计费（`charged_cost`），`M` 是供应成本（`metered_cost`）；目录标准价为 `standard_cost`。2.7.0 的 `pricing_audit` 还可记录 `user_charged_factor`、`local_weekday` 和命中的分时时段；Images / Audio 另见 `billing_kind`（及 image count / `audio_duration_seconds` 等列）。
 - 审计日志（Audit Logs）：确认预算扣减、周期重置、Key 生命周期等事件。
 
 更细的日志和计费语义见 [developers/reference/streaming-billing.md](../developers/reference/streaming-billing.md)、[developers/reference/image-models.md](../developers/reference/image-models.md)、[developers/api/user.md「语音转写」](../developers/api/user.md#语音转写audio-transcriptions) 与 [developers/reference/user-audit-logs.md](../developers/reference/user-audit-logs.md)。

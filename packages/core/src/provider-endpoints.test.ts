@@ -178,6 +178,28 @@ describe('resolveUpstreamEndpoint', () => {
 			resolveUpstreamEndpoint('dashscope', 'audio.realtime.session', endpoints),
 			'wss://workspace.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime'
 		);
+		assert.equal(
+			resolveUpstreamEndpoint('dashscope', 'images.generations.multimodal', endpoints),
+			'https://workspace.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
+		);
+	});
+
+	it('uses the Token Plan multimodal override without deriving filetrans from a DashScope base', () => {
+		const endpoints = {
+			dashscope: {
+				endpoints: {
+					'audio.transcriptions.multimodal':
+						'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+				},
+			},
+		};
+		assert.equal(
+			resolveUpstreamEndpoint('dashscope', 'audio.transcriptions.multimodal', endpoints),
+			'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
+		);
+		assert.deepEqual(listConfiguredCapabilities(endpoints, 'dashscope'), [
+			'audio.transcriptions.multimodal',
+		]);
 	});
 });
 
@@ -364,6 +386,7 @@ describe('listConfiguredCapabilities', () => {
 				'audio.realtime.session',
 				'audio.hotwords',
 				'audio.voices',
+				'images.generations.multimodal',
 			]
 		);
 	});

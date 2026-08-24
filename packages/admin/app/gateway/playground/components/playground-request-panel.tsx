@@ -39,6 +39,7 @@ type Props = {
 	selected: RouteListRow | null;
 	selectedUsesDashScopeRealtime: boolean;
 	imageSendBlocked: boolean;
+	selectedImageUsesDashScope: boolean;
 	audioSendBlocked: boolean;
 	selectedIsImage: boolean;
 	selectedIsAudio: boolean;
@@ -74,6 +75,7 @@ export function PlaygroundRequestPanel({
 	selected,
 	selectedUsesDashScopeRealtime,
 	imageSendBlocked,
+	selectedImageUsesDashScope,
 	audioSendBlocked,
 	selectedIsImage,
 	selectedIsAudio,
@@ -293,36 +295,42 @@ export function PlaygroundRequestPanel({
 
 			{selectedIsImage && !selectedIsAudio && !imageSendBlocked ? (
 				<>
-					<fieldset className="flex flex-wrap items-center gap-4 rounded-md border border-gray-200 px-3 py-2 text-sm">
-						<legend className="sr-only">{t('imageOperation')}</legend>
-						<span className="font-medium text-gray-600">{t('imageOperation')}</span>
-						<label className="inline-flex cursor-pointer items-center gap-2">
-							<input
-								type="radio"
-								name="playgroundImageOperation"
-								className="text-blue-600 focus:ring-blue-500"
-								checked={imageOperation === 'generations'}
-								onChange={() => onImageOperationChange('generations')}
-								disabled={sending}
-							/>
-							generations
-						</label>
-						<label className="inline-flex cursor-pointer items-center gap-2">
-							<input
-								type="radio"
-								name="playgroundImageOperation"
-								className="text-blue-600 focus:ring-blue-500"
-								checked={imageOperation === 'edits'}
-								onChange={() => onImageOperationChange('edits')}
-								disabled={sending}
-							/>
-							edits
-						</label>
-					</fieldset>
-					<p className="text-xs text-gray-500">
-						{imageOperation === 'edits' ? t('imageEditsHint') : t('imageGenerationsHint')}
-					</p>
-					{imageOperation === 'edits' ? (
+					{selectedImageUsesDashScope ? (
+						<p className="text-xs text-gray-500">{t('imageDashScopeHint')}</p>
+					) : (
+						<>
+							<fieldset className="flex flex-wrap items-center gap-4 rounded-md border border-gray-200 px-3 py-2 text-sm">
+								<legend className="sr-only">{t('imageOperation')}</legend>
+								<span className="font-medium text-gray-600">{t('imageOperation')}</span>
+								<label className="inline-flex cursor-pointer items-center gap-2">
+									<input
+										type="radio"
+										name="playgroundImageOperation"
+										className="text-blue-600 focus:ring-blue-500"
+										checked={imageOperation === 'generations'}
+										onChange={() => onImageOperationChange('generations')}
+										disabled={sending}
+									/>
+									generations
+								</label>
+								<label className="inline-flex cursor-pointer items-center gap-2">
+									<input
+										type="radio"
+										name="playgroundImageOperation"
+										className="text-blue-600 focus:ring-blue-500"
+										checked={imageOperation === 'edits'}
+										onChange={() => onImageOperationChange('edits')}
+										disabled={sending}
+									/>
+									edits
+								</label>
+							</fieldset>
+							<p className="text-xs text-gray-500">
+								{imageOperation === 'edits' ? t('imageEditsHint') : t('imageGenerationsHint')}
+							</p>
+						</>
+					)}
+					{imageOperation === 'edits' && !selectedImageUsesDashScope ? (
 						<div>
 							<label className={labelClass}>{t('referenceImages')}</label>
 							<input

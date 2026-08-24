@@ -27,21 +27,21 @@ const CARD_SHELL: Record<ProviderKeyStatusKind, string> = {
 	pending:
 		'border-amber-200 border-l-[3px] border-l-amber-500 bg-amber-50/80 hover:border-amber-300 hover:border-l-amber-500 hover:bg-amber-50',
 	disabled:
-		'border-slate-200 bg-slate-50/90 text-slate-600 hover:border-slate-300 hover:bg-slate-100/80',
+		'border-slate-300 border-l-[3px] border-l-slate-500 bg-slate-200/90 text-slate-500 shadow-none hover:border-slate-400 hover:border-l-slate-500 hover:bg-slate-200',
 };
 
 const STATUS_BADGE: Record<ProviderKeyStatusKind, string> = {
 	key_set: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
 	no_key: 'bg-rose-100 text-rose-800 ring-rose-200',
 	pending: 'bg-amber-100 text-amber-900 ring-amber-200',
-	disabled: 'bg-slate-200/80 text-slate-600 ring-slate-300',
+	disabled: 'bg-slate-300 text-slate-700 ring-slate-400',
 };
 
 const STATUS_DOT: Record<ProviderKeyStatusKind, string> = {
 	key_set: 'bg-emerald-500',
 	pending: 'bg-amber-500',
 	no_key: 'bg-rose-500',
-	disabled: 'bg-slate-400',
+	disabled: 'bg-slate-500',
 };
 
 function routeUsageClass(routesCount: number, activeRoutesCount: number): string {
@@ -95,6 +95,7 @@ export function ProviderCard(props: ProviderCardProps) {
 	return (
 		<article
 			className={`group relative flex flex-col gap-3 rounded-xl border p-4 shadow-sm transition-colors ${CARD_SHELL[keyStatus]}`}
+			data-provider-status={isActive ? 'active' : 'disabled'}
 		>
 			<button
 				type="button"
@@ -109,14 +110,19 @@ export function ProviderCard(props: ProviderCardProps) {
 					vendor={provider.vendor_key}
 					iconKey={provider.icon_key}
 					size="default"
-					className="shrink-0"
+					className={`shrink-0 ${isActive ? '' : 'opacity-40 grayscale'}`}
 				/>
 				<div className="min-w-0 flex-1">
-					<h2 className="truncate text-sm font-semibold leading-5 text-gray-900" title={provider.name}>
+					<h2
+						className={`truncate text-sm font-semibold leading-5 ${isActive ? 'text-gray-900' : 'text-slate-500'}`}
+						title={provider.name}
+					>
 						{provider.name}
 					</h2>
 					<p
-						className={`mt-0.5 truncate text-[11px] font-medium leading-4 ${routeUsageClass(routesCount, activeRoutesCount)}`}
+						className={`mt-0.5 truncate text-[11px] font-medium leading-4 ${
+							isActive ? routeUsageClass(routesCount, activeRoutesCount) : 'text-slate-400'
+						}`}
 						title={routeTitle}
 					>
 						{routesCount <= 0 ? (
@@ -195,14 +201,18 @@ export function ProviderCard(props: ProviderCardProps) {
 							return (
 								<span
 									key={protocol.key}
-									className="inline-flex max-w-full items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600"
+									className={`inline-flex max-w-full items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] ${
+										isActive
+											? 'border-slate-200 bg-slate-50 text-slate-600'
+											: 'border-slate-200/80 bg-slate-200/50 text-slate-500 grayscale'
+									}`}
 									title={`${protocol.label} · ${capabilitySummary}`}
 								>
 									<span className="h-3.5 w-3.5 shrink-0">
 										<ProviderProtocolIcon protocol={protocol.key} />
 									</span>
 									{badgeLabels.length > 0 ? (
-										<span className="min-w-0 truncate text-slate-600">
+										<span className={`min-w-0 truncate ${isActive ? 'text-slate-600' : 'text-slate-500'}`}>
 											{badgeLabels.slice(0, 2).join(' · ')}
 											{badgeLabels.length > 2 ? ` +${badgeLabels.length - 2}` : ''}
 										</span>
@@ -214,7 +224,13 @@ export function ProviderCard(props: ProviderCardProps) {
 						})}
 					</div>
 				) : (
-					<span className="inline-flex rounded-md border border-dashed border-gray-200 bg-white px-2 py-0.5 text-[10px] text-gray-400">
+					<span
+						className={`inline-flex rounded-md border border-dashed px-2 py-0.5 text-[10px] ${
+							isActive
+								? 'border-gray-200 bg-white text-gray-400'
+								: 'border-slate-300 bg-slate-200/40 text-slate-400'
+						}`}
+					>
 						{t('noEndpoint')}
 					</span>
 				)}

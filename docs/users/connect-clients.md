@@ -74,7 +74,28 @@ curl -sS http://localhost:8787/v1/audio/speech \
   --output speech.mp3
 ```
 
-DashScope 原生实时 ASR / TTS 使用 `/v1/dashscope/realtime` WebSocket 入口，连接参数与 operation 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
+DashScope 同步多模态 ASR 使用原生 JSON 入口（需配置 `dashscope` + `audio.transcriptions.multimodal` 请求入口与同协议 `passthrough` 上游）：
+
+```bash
+curl -sS http://localhost:8787/v1/dashscope/services/aigc/multimodal-generation/generation \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "your-asr-model",
+    "input": {
+      "messages": [{
+        "role": "user",
+        "content": [{
+          "type": "input_audio",
+          "input_audio": {"data": "https://example.com/sample.wav"}
+        }]
+      }]
+    },
+    "parameters": {"format": "wav", "language_hints": ["zh"]}
+  }'
+```
+
+网关返回 DashScope 原生 JSON，并按上游 `usage.duration` / `usage.seconds` 记录时长和费用。DashScope 原生实时 ASR / TTS 则继续使用 `/v1/dashscope/realtime` WebSocket 入口；连接参数与 operation 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
 
 智能体工具（Agent Tools；需用户 Key；管理后台 → 智能体工具已为对应工具配置活跃引擎与第三方 API Key）提供 `POST /v1/tools/web-search`、`POST /v1/tools/web-fetch`、`POST /v1/tools/web-deep-search`。示例如下：
 

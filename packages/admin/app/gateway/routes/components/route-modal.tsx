@@ -13,7 +13,6 @@ import {
 	TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import { isAudioSpeechModel, isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
 import { type CatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
@@ -21,11 +20,13 @@ import type { CatalogImagePricingDisplay, CatalogPricingTierDisplayRow } from '@
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
-	applyDashScopeAsrRoutePreset,
-	applyDashScopeTtsRoutePreset,
+	adapterOptionMappingSuffix,
+	applyAdapterOptionToForm,
 	compatibleAdaptersForRoute,
 	formatRoutePriceOverridePreview,
+	listAdapterOptionsForModel,
 	requestOperationsForModel,
+	resolveAdapterOptionKey,
 	upstreamOperationsForProviderModel,
 } from '../route-utils';
 import type { RouteFormData, RouteListRow } from '../types';
@@ -106,6 +107,7 @@ export function RouteModal(props: Props) {
 	}
 	const priceOverridePreview = useMemo(() => formatRoutePriceOverridePreview(formData), [formData]);
 
+	// Image models keep the public request protocol as OpenAI; upstream may be openai or dashscope.
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
 		(protocol) => requestOperationsForModel(selectedModel, protocol, formData.provider_model_name).length > 0,
@@ -121,9 +123,25 @@ export function RouteModal(props: Props) {
 		formData.upstream_protocol,
 		formData.provider_model_name,
 	);
+	const adapterOptions = listAdapterOptionsForModel(
+		selectedModel,
+		selectedProvider,
+		formData.provider_model_name,
+	);
+	const selectedAdapterOptionKey = resolveAdapterOptionKey(formData);
+	const selectedAdapterOption = adapterOptions.find((option) => option.descriptor.optionKey === selectedAdapterOptionKey);
+	const visibleAdapterOptions = selectedProvider
+		? adapterOptions.filter(
+				(option) => option.available || option.descriptor.optionKey === selectedAdapterOptionKey,
+			)
+		: [];
 	const compatibleAdapters = compatibleAdaptersForRoute(formData);
 	const showCurrentAdapter =
-		Boolean(editingRoute) && !compatibleAdapters.includes(formData.adapter) && Boolean(formData.adapter);
+		Boolean(editingRoute) &&
+		!selectedAdapterOption &&
+		!compatibleAdapters.includes(formData.adapter) &&
+		Boolean(formData.adapter);
+	const lockTopology = Boolean(selectedAdapterOption) && !showCurrentAdapter;
 	const selectableProviders = providers.filter(
 		(provider) =>
 			(Boolean(editingRoute || duplicateSourceRouteId) && provider.id === formData.provider_id) ||
@@ -141,37 +159,6 @@ export function RouteModal(props: Props) {
 		Boolean(editingRoute) &&
 		!upstreamOperations.includes(formData.upstream_operation) &&
 		Boolean(formData.upstream_operation);
-	const selectedModelIsSpeech = selectedModel ? isAudioSpeechModel(selectedModel) : false;
-	const selectedModelIsTranscription = selectedModel ? isAudioTranscriptionModel(selectedModel) : false;
-	const dashScopeTtsOperations = selectedModelIsSpeech
-		? upstreamOperationsForProviderModel(
-				selectedProvider,
-				selectedModel,
-				'dashscope',
-				formData.provider_model_name,
-		  )
-		: [];
-	const canUseDashScopeTtsPresets =
-		!selectedModelIsImage &&
-		selectedModelIsSpeech &&
-		selectedProvider != null &&
-		(dashScopeTtsOperations.includes('audio.speech') ||
-			dashScopeTtsOperations.includes('audio.speech.realtime.inference'));
-	const dashScopeAsrOperations = selectedModelIsTranscription
-		? upstreamOperationsForProviderModel(
-				selectedProvider,
-				selectedModel,
-				'dashscope',
-				formData.provider_model_name,
-		  )
-		: [];
-	const canUseDashScopeAsrPresets =
-		!selectedModelIsImage &&
-		selectedModelIsTranscription &&
-		selectedProvider != null &&
-		(dashScopeAsrOperations.includes('audio.transcriptions.multimodal') ||
-			dashScopeAsrOperations.includes('audio.transcriptions.async'));
-
 	if (!open) return null;
 
 	return (
@@ -219,63 +206,6 @@ export function RouteModal(props: Props) {
 					)}
 
 					<div className="space-y-4">
-						{canUseDashScopeTtsPresets || canUseDashScopeAsrPresets ? (
-							<section className="rounded-lg border border-blue-200 bg-blue-50/60 p-3.5">
-								<div className="mb-2">
-									<h3 className="text-xs font-semibold uppercase tracking-wide text-blue-900">
-										{t('audioPresetTitle')}
-									</h3>
-									<p className="mt-1 text-xs text-blue-800">{t('audioPresetHint')}</p>
-								</div>
-								<div className="flex flex-wrap gap-2">
-									{canUseDashScopeAsrPresets && dashScopeAsrOperations.includes('audio.transcriptions.multimodal') ? (
-										<>
-											<button
-												type="button"
-												className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-												onClick={() => onFormChange(applyDashScopeAsrRoutePreset(formData, 'flash-convert'))}
-											>
-												{t('audioPresetAsrFlashConvert')}
-											</button>
-											<button
-												type="button"
-												className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-												onClick={() => onFormChange(applyDashScopeAsrRoutePreset(formData, 'flash-passthrough'))}
-											>
-												{t('audioPresetAsrFlashPassthrough')}
-											</button>
-										</>
-									) : null}
-									{canUseDashScopeAsrPresets && dashScopeAsrOperations.includes('audio.transcriptions.async') ? (
-										<button
-											type="button"
-											className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-											onClick={() => onFormChange(applyDashScopeAsrRoutePreset(formData, 'filetrans'))}
-										>
-											{t('audioPresetAsrFiletrans')}
-										</button>
-									) : null}
-									{canUseDashScopeTtsPresets && dashScopeTtsOperations.includes('audio.speech') ? (
-										<button
-											type="button"
-											className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-											onClick={() => onFormChange(applyDashScopeTtsRoutePreset(formData, 'nonrealtime'))}
-										>
-											{t('audioPresetNonRealtime')}
-										</button>
-									) : null}
-									{canUseDashScopeTtsPresets && dashScopeTtsOperations.includes('audio.speech.realtime.inference') ? (
-										<button
-											type="button"
-											className="rounded-md border border-blue-300 bg-white px-3 py-2 text-sm font-medium text-blue-800 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-											onClick={() => onFormChange(applyDashScopeTtsRoutePreset(formData, 'realtime'))}
-										>
-											{t('audioPresetRealtime')}
-										</button>
-									) : null}
-								</div>
-							</section>
-						) : null}
 						<section>
 							<h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
 								{t('basicMapping')}
@@ -378,7 +308,7 @@ export function RouteModal(props: Props) {
 														request_operation: requestOperation,
 													});
 												}}
-												disabled={lockOpenaiProtocol}
+												disabled={lockOpenaiProtocol || lockTopology}
 												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100"
 											>
 												{requestProtocols.map((p) => (
@@ -398,7 +328,8 @@ export function RouteModal(props: Props) {
 														request_operation: e.target.value,
 													})
 												}
-												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+												disabled={lockTopology}
+												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100"
 											>
 												{requestOperations.map((operation) => (
 													<option key={operation} value={operation}>
@@ -482,18 +413,27 @@ export function RouteModal(props: Props) {
 									<div>
 										<label className="mb-1 block text-sm font-medium text-gray-700">{t('adapter')}</label>
 										<select
-											value={formData.adapter}
-											onChange={(e) => onFormChange({ ...formData, adapter: e.target.value })}
-											disabled={compatibleAdapters.length <= 1}
+											value={selectedAdapterOptionKey ?? formData.adapter}
+											onChange={(e) => onFormChange(applyAdapterOptionToForm(formData, e.target.value))}
 											title={formData.adapter}
-											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
+											disabled={!selectedProvider}
+											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
 										>
-											{compatibleAdapters.length === 0 ? (
+											{!selectedProvider ? (
+												<option value={formData.adapter}>{t('protocolHintSelectProvider')}</option>
+											) : visibleAdapterOptions.length === 0 ? (
 												<option value={formData.adapter}>{t('noCompatibleAdapter')}</option>
 											) : null}
-											{compatibleAdapters.map((adapter) => (
-												<option key={adapter} value={adapter} title={adapter}>
-													{adapterLabel(adapter)}
+											{visibleAdapterOptions.map((option) => (
+												<option
+													key={option.descriptor.optionKey}
+													value={option.descriptor.optionKey}
+													title={option.descriptor.id}
+													disabled={!option.available && option.descriptor.optionKey !== selectedAdapterOptionKey}
+												>
+													{adapterLabel(option.descriptor.id)}
+													{adapterOptionMappingSuffix(option.descriptor)}
+													{!option.available ? ` · ${t('adapterUnavailable')}` : ''}
 												</option>
 											))}
 											{showCurrentAdapter ? (
@@ -502,7 +442,23 @@ export function RouteModal(props: Props) {
 												</option>
 											) : null}
 										</select>
-										<p className="mt-1 text-[11px] text-gray-500">{t('adapterHint')}</p>
+										<p className="mt-1 text-[11px] text-gray-500">
+											{selectedProvider ? t('adapterFirstHint') : t('protocolHintSelectProvider')}
+										</p>
+										{selectedAdapterOption && selectedAdapterOption.missingCapabilities.length > 0 ? (
+											<p className="mt-1 text-[11px] text-amber-700">
+												{t('adapterMissingCapabilities', {
+													capabilities: selectedAdapterOption.missingCapabilities.join(', '),
+												})}
+											</p>
+										) : null}
+										{selectedAdapterOption?.descriptor.lossyFeatures?.length ? (
+											<p className="mt-1 text-[11px] text-amber-700">
+												{t('adapterLossyFeatures', {
+													features: selectedAdapterOption.descriptor.lossyFeatures.join(', '),
+												})}
+											</p>
+										) : null}
 									</div>
 									<div className={customParamsOpen ? 'flex min-h-0 flex-1 flex-col' : undefined}>
 										<button
@@ -654,7 +610,7 @@ export function RouteModal(props: Props) {
 															formData.upstream_operation,
 													});
 												}}
-												disabled={!selectedProvider}
+												disabled={!selectedProvider || lockTopology}
 												title={selectedProvider ? t('protocolHintConfigured') : t('protocolHintSelectProvider')}
 												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
 											>
@@ -675,7 +631,7 @@ export function RouteModal(props: Props) {
 														upstream_operation: e.target.value,
 													})
 												}
-												disabled={!selectedProvider || upstreamOperations.length === 0}
+												disabled={!selectedProvider || upstreamOperations.length === 0 || lockTopology}
 												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
 											>
 												{upstreamOperations.map((operation) => (

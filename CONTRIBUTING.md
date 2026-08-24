@@ -37,3 +37,5 @@ Full runbook: **[docs/maintainers/release-versioning.md](./docs/maintainers/rele
 ## Development
 
 See the root [README.md](./README.md) for install, `npm` scripts, and Docker-based workflows. Run relevant smoke tests (for example `npm run test:gateway:postgres-smoke`) before submitting substantial changes when applicable.
+
+Changes under `packages/core`, `packages/admin`, or Dockerfiles must pass **`npm run typecheck:admin`** locally. PR Docker smoke runs `next build` inside `Dockerfile.admin` and typechecks imported core source; `verify` does not. Do not wait for `smoke-node-pg` to discover TypeScript errors.
