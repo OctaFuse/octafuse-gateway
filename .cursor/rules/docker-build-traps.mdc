@@ -31,4 +31,8 @@ npm run typecheck -w @octafuse/admin
 4. **Docker Admin 不跑 `wrangler types`**
    - 镜像走 `build:docker` + `types/cloudflare-env-shim.d.ts`。不要让 admin 源码在无 wrangler 时必依赖生成的 CF 类型。
 
+5. **`tsc` 认不出包内 SVG 子路径**（2026-08：`@lobehub/icons-static-svg/icons/*.svg`）
+   - `next build` 当静态资源；裸 `tsc` 报 TS2307。声明在 `packages/admin/types/static-svg.d.ts`。
+   - **不要**因此关掉或放宽 `typecheck:admin`。缺声明就补声明，门禁要对齐 Docker，而不是比它更松。
+
 改 Dockerfile / 构建脚本时同步 `docs/operators/deployment/docker.md`。新踩到的镜像失败补进本规则「已知模式」，不要只修 CI。

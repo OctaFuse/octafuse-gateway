@@ -31,6 +31,7 @@
   "include": [
     "next-env.d.ts",
     "types/cloudflare-env-shim.d.ts",
+    "types/static-svg.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
