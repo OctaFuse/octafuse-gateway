@@ -60,6 +60,10 @@ describe('route topology operations', () => {
 			effectiveUpstreamOperation('*', 'images.generations', 'dashscope-image-wan'),
 			'images.generations.multimodal',
 		);
+		assert.equal(
+			effectiveUpstreamOperation('*', 'chat', 'passthrough'),
+			'chat',
+		);
 		assert.equal(effectiveUpstreamOperation('chat', 'responses'), 'chat');
 	});
 

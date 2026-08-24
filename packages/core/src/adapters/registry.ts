@@ -443,6 +443,9 @@ export const ROUTE_ADAPTERS = [
 
 export type RouteAdapter = (typeof ROUTE_ADAPTERS)[number];
 
+/** 转换 adapter：在 `ROUTE_ADAPTER_MAPPINGS` 中有条目（不含 passthrough）。 */
+export type ConversionRouteAdapter = Exclude<RouteAdapter, typeof PASSTHROUGH_ROUTE_ADAPTER>;
+
 export type RouteAdapterMapping = {
 	requestProtocol: UpstreamProtocol;
 	requestOperation: string;
@@ -450,23 +453,25 @@ export type RouteAdapterMapping = {
 	upstreamOperation: string;
 };
 
-export const ROUTE_ADAPTER_MAPPINGS: Record<
-	Exclude<RouteAdapter, 'passthrough'>,
-	RouteAdapterMapping
-> = Object.fromEntries(
-	CONVERSION_ADAPTERS.map((adapter) => [
-		adapter.id,
-		{
-			requestProtocol: adapter.request.protocol,
-			requestOperation: adapter.request.operation,
-			upstreamProtocol: adapter.upstream.protocol,
-			upstreamOperation: adapter.upstream.operations[0]!,
-		} satisfies RouteAdapterMapping,
-	])
-) as Record<Exclude<RouteAdapter, 'passthrough'>, RouteAdapterMapping>;
+export const ROUTE_ADAPTER_MAPPINGS: Record<ConversionRouteAdapter, RouteAdapterMapping> =
+	Object.fromEntries(
+		CONVERSION_ADAPTERS.map((adapter) => [
+			adapter.id,
+			{
+				requestProtocol: adapter.request.protocol,
+				requestOperation: adapter.request.operation,
+				upstreamProtocol: adapter.upstream.protocol,
+				upstreamOperation: adapter.upstream.operations[0]!,
+			} satisfies RouteAdapterMapping,
+		]),
+	) as Record<ConversionRouteAdapter, RouteAdapterMapping>;
 
 export function isRouteAdapter(raw: string): raw is RouteAdapter {
 	return (ROUTE_ADAPTERS as readonly string[]).includes(raw);
+}
+
+export function isConversionRouteAdapter(raw: string): raw is ConversionRouteAdapter {
+	return raw !== PASSTHROUGH_ROUTE_ADAPTER && isRouteAdapter(raw);
 }
 
 export function listConversionAdapters(): readonly AdapterDescriptor[] {

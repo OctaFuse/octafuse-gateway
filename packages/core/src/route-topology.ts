@@ -2,6 +2,7 @@ import type { UpstreamProtocol } from "./upstream-protocol";
 import {
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
+	isConversionRouteAdapter,
 	isRouteAdapter,
 } from "./adapters/registry";
 
@@ -10,7 +11,9 @@ export {
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	ROUTE_ADAPTERS,
+	isConversionRouteAdapter,
 	isRouteAdapter,
+	type ConversionRouteAdapter,
 	type RouteAdapter,
 	type RouteAdapterMapping,
 } from "./adapters/registry";
@@ -77,6 +80,7 @@ export function isRouteAdapterCompatible(input: {
 				input.requestOperation === input.upstreamOperation)
 		);
 	}
+	if (!isConversionRouteAdapter(input.adapter)) return false;
 	const mapping = ROUTE_ADAPTER_MAPPINGS[input.adapter];
 	return (
 		input.requestProtocol === mapping.requestProtocol &&
@@ -158,11 +162,7 @@ export function effectiveUpstreamOperation(
 ): string {
 	const configured = normalizeRouteOperation(configuredOperation);
 	if (configured !== LEGACY_WILDCARD_OPERATION) return configured;
-	if (
-		adapter &&
-		adapter !== PASSTHROUGH_ROUTE_ADAPTER &&
-		isRouteAdapter(adapter)
-	) {
+	if (adapter && isConversionRouteAdapter(adapter)) {
 		return ROUTE_ADAPTER_MAPPINGS[adapter].upstreamOperation;
 	}
 	return requestOperation;

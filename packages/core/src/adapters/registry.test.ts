@@ -4,6 +4,7 @@ import { isRouteAdapterCompatible, ROUTE_ADAPTERS } from '../route-topology';
 import {
 	ADAPTER_REGISTRY,
 	getAdapterByPresetIntent,
+	isConversionRouteAdapter,
 	listConversionAdapters,
 	requestOperationsFromRegistry,
 	requestSurfacePath,
@@ -25,6 +26,12 @@ describe('adapter registry', () => {
 			'dashscope-image-qwen',
 			'dashscope-image-wan',
 		]);
+	});
+
+	it('treats only mapped adapters as conversion adapters', () => {
+		assert.equal(isConversionRouteAdapter('passthrough'), false);
+		assert.equal(isConversionRouteAdapter('dashscope-image-wan'), true);
+		assert.equal(isConversionRouteAdapter('not-an-adapter'), false);
 	});
 
 	it('keeps conversion mappings identical to the previous topology table', () => {
