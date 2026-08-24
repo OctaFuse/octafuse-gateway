@@ -20,10 +20,8 @@ import type { CatalogImagePricingDisplay, CatalogPricingTierDisplayRow } from '@
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
-	adapterBillingLabelKey,
 	adapterOptionMappingSuffix,
 	applyAdapterOptionToForm,
-	applyDashScopeImageRoutePreset,
 	compatibleAdaptersForRoute,
 	formatRoutePriceOverridePreview,
 	listAdapterOptionsForModel,
@@ -132,6 +130,11 @@ export function RouteModal(props: Props) {
 	);
 	const selectedAdapterOptionKey = resolveAdapterOptionKey(formData);
 	const selectedAdapterOption = adapterOptions.find((option) => option.descriptor.optionKey === selectedAdapterOptionKey);
+	const visibleAdapterOptions = selectedProvider
+		? adapterOptions.filter(
+				(option) => option.available || option.descriptor.optionKey === selectedAdapterOptionKey,
+			)
+		: [];
 	const compatibleAdapters = compatibleAdaptersForRoute(formData);
 	const showCurrentAdapter =
 		Boolean(editingRoute) &&
@@ -413,12 +416,15 @@ export function RouteModal(props: Props) {
 											value={selectedAdapterOptionKey ?? formData.adapter}
 											onChange={(e) => onFormChange(applyAdapterOptionToForm(formData, e.target.value))}
 											title={formData.adapter}
-											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											disabled={!selectedProvider}
+											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
 										>
-											{adapterOptions.length === 0 ? (
+											{!selectedProvider ? (
+												<option value={formData.adapter}>{t('protocolHintSelectProvider')}</option>
+											) : visibleAdapterOptions.length === 0 ? (
 												<option value={formData.adapter}>{t('noCompatibleAdapter')}</option>
 											) : null}
-											{adapterOptions.map((option) => (
+											{visibleAdapterOptions.map((option) => (
 												<option
 													key={option.descriptor.optionKey}
 													value={option.descriptor.optionKey}
@@ -436,34 +442,9 @@ export function RouteModal(props: Props) {
 												</option>
 											) : null}
 										</select>
-										{selectedModelIsImage ? (
-											<div className="mt-2 space-y-1.5">
-												<p className="text-[11px] font-medium text-gray-600">{t('imagePresetTitle')}</p>
-												<p className="text-[11px] text-gray-500">{t('imagePresetHint')}</p>
-												<div className="flex flex-wrap gap-1.5">
-													<button
-														type="button"
-														onClick={() => onFormChange(applyDashScopeImageRoutePreset(formData, 'qwen'))}
-														className="rounded-md border border-violet-200 bg-white px-2 py-1 text-[11px] font-medium text-violet-800 hover:bg-violet-50"
-													>
-														{t('imagePresetQwen')}
-													</button>
-													<button
-														type="button"
-														onClick={() => onFormChange(applyDashScopeImageRoutePreset(formData, 'wan'))}
-														className="rounded-md border border-violet-200 bg-white px-2 py-1 text-[11px] font-medium text-violet-800 hover:bg-violet-50"
-													>
-														{t('imagePresetWan')}
-													</button>
-												</div>
-											</div>
-										) : null}
-										<p className="mt-1 text-[11px] text-gray-500">{t('adapterFirstHint')}</p>
-										{selectedAdapterOption ? (
-											<p className="mt-1 text-[11px] text-gray-500">
-												{t(adapterBillingLabelKey(selectedAdapterOption.descriptor.billing))}
-											</p>
-										) : null}
+										<p className="mt-1 text-[11px] text-gray-500">
+											{selectedProvider ? t('adapterFirstHint') : t('protocolHintSelectProvider')}
+										</p>
 										{selectedAdapterOption && selectedAdapterOption.missingCapabilities.length > 0 ? (
 											<p className="mt-1 text-[11px] text-amber-700">
 												{t('adapterMissingCapabilities', {

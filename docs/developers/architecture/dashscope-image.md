@@ -59,7 +59,7 @@ POST {dashscope.base}/services/aigc/multimodal-generation/generation
 
 1. 新建或编辑供应商账号，启用 DashScope 协议并填写 API Key。按量百炼填写 `dashscope.base`；Token Plan 使用导入预设中的逐项覆盖。
 2. 在模型（Models）中导入 `aliyun-image.json` 四个型号。
-3. 在路由（Routes）中选择图像模型。请求协议保持 `openai` / `images.generations`。用生图路由快速配置选择千问或万相，或手动选适配器。
+3. 在路由（Routes）中选择图像模型。请求协议保持 `openai` / `images.generations`。适配器选千问或万相转换项。
 4. `Provider model` 必须填写百炼真实模型名，它与网关 `Model ID` 是两个独立字段。
 5. 调试台（Playground）选该 DashScope 转换路由，编辑 OpenAI Images JSON 后 Send；调试台会改写成 multimodal-generation。不支持 edits。
 

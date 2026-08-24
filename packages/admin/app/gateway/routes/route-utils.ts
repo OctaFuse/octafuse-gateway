@@ -38,7 +38,6 @@ import {
 	requiredCapabilitiesForUpstreamOperation,
 	SURFACE_PATH_MODEL_PLACEHOLDER,
 	upstreamOperationsFromRegistry,
-	type AdapterBilling,
 	type AdapterDescriptor,
 	type AdapterModelKind,
 	type AdapterPresetIntent,
@@ -843,10 +842,6 @@ export function applyAdapterOptionToForm(formData: RouteFormData, optionKey: str
 	const descriptor = getAdapterByOptionKey(optionKey);
 	if (!descriptor) return formData;
 	return applyAdapterDescriptorToForm(formData, descriptor);
-}
-
-export function adapterBillingLabelKey(billing: AdapterBilling): string {
-	return `adapterBilling.${billing}`;
 }
 
 /** 下拉项后缀：透传只标 request；转换标 request → upstream。 */
