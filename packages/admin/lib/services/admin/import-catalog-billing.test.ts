@@ -30,6 +30,18 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.pricing_label, '$1.4 / $4.4 /M');
 		assert.equal(cny!.pricing_label, '¥8 / ¥28 /M');
 	});
+
+	it('includes glm-5.3-flash with official Z.AI and BigModel list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'glm-5.3-flash');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'glm-5.3-flash');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'GLM-5.3-Flash');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$0.15 / $0.5 /M');
+		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.8 /M');
+	});
 });
 
 describe('import catalog localized model metadata', () => {
