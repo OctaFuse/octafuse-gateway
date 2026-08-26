@@ -40,6 +40,8 @@ export const usersTable = mysqlTable(
 		budgetSpent: decimal('budget_spent', { precision: 18, scale: 6 }).notNull().default('0'),
 		budgetPeriod: varchar('budget_period', { length: COL.PERIOD }).notNull().default('none'),
 		budgetResetAt: timestamp('budget_reset_at', { fsp: 6, mode: 'string' }),
+		walletGranted: decimal('wallet_granted', { precision: 18, scale: 6 }).notNull().default('0'),
+		walletSpent: decimal('wallet_spent', { precision: 18, scale: 6 }).notNull().default('0'),
 		status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
 		metadata: text('metadata'),
 		/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
@@ -205,6 +207,7 @@ export const apiKeyRequestLogsTable = mysqlTable('api_key_request_logs', {
 	meteredCost: decimal('metered_cost', { precision: 18, scale: 6 }).notNull().default('0'),
 	standardCost: decimal('standard_cost', { precision: 18, scale: 6 }).notNull().default('0'),
 	chargedCost: decimal('charged_cost', { precision: 18, scale: 6 }).notNull().default('0'),
+	chargedWalletCost: decimal('charged_wallet_cost', { precision: 18, scale: 6 }).notNull().default('0'),
 	routeGroup: varchar('route_group', { length: COL.ROUTE_GROUP }).notNull().default('default'),
 	status: varchar('status', { length: COL.STATUS }).notNull().default('success'),
 	latencyMs: int('latency_ms'),
@@ -258,6 +261,7 @@ export const userAuditLogsTable = mysqlTable('user_audit_logs', {
 	actorId: varchar('actor_id', { length: COL.ID }),
 	reasonCode: varchar('reason_code', { length: 128 }),
 	reasonText: text('reason_text'),
+	dedupKey: varchar('dedup_key', { length: 255 }),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 

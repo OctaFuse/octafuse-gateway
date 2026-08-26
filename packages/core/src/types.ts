@@ -13,7 +13,8 @@ export type ApiKeyBudgetAuditEventType =
 	| 'key_revoked'
 	| 'key_deleted'
 	| 'user_created'
-	| 'user_deleted';
+	| 'user_deleted'
+	| 'wallet_credit';
 
 export type ApiKeyBudgetAuditActorType = 'system' | 'admin' | 'service';
 
@@ -40,6 +41,10 @@ export interface UserRow {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	/** 累计发放的永久额度；余额为 granted − spent，不落列。 */
+	wallet_granted: number;
+	/** 累计消耗的永久额度。 */
+	wallet_spent: number;
 	status: string;
 	metadata: string | null;
 	/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
@@ -64,6 +69,8 @@ export interface ResolvedGatewayKeyRow extends ApiKeyRow {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted: number;
+	wallet_spent: number;
 }
 
 /** `providers.status` 枚举。 */
@@ -188,6 +195,8 @@ export interface RequestLogRow {
   standard_cost: number;
   /** 计入用户预算与日志展示的费用 */
   charged_cost: number;
+  /** 本次请求从永久池扣掉的部分；周期部分 = charged_cost − charged_wallet_cost */
+  charged_wallet_cost: number;
   /** 请求当时选用的 `route_group` */
   route_group: string;
   status: string;

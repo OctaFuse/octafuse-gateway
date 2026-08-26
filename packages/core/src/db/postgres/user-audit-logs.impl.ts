@@ -73,21 +73,25 @@ export function createPostgresUserAuditLogsRepository(db: PostgresDatabaseClient
 		async getUserAuditLogsByUserId(
 			userId: string,
 			page: number,
-			pageSize: number
+			pageSize: number,
+			eventType?: string
 		): Promise<{ logs: UserAuditLogRow[]; total: number }> {
 			const offset = (page - 1) * pageSize;
+			const where = eventType
+				? and(eq(pgUserAuditLogsTable.userId, userId), eq(pgUserAuditLogsTable.eventType, eventType))
+				: eq(pgUserAuditLogsTable.userId, userId);
 			const total = Number(
 				(
 					await drizzle
 						.select({ c: count() })
 						.from(pgUserAuditLogsTable)
-						.where(eq(pgUserAuditLogsTable.userId, userId))
+						.where(where)
 				)[0]?.c ?? 0
 			);
 			const rows = await drizzle
 				.select()
 				.from(pgUserAuditLogsTable)
-				.where(eq(pgUserAuditLogsTable.userId, userId))
+				.where(where)
 				.orderBy(desc(pgUserAuditLogsTable.createdAt))
 				.limit(pageSize)
 				.offset(offset);

@@ -648,6 +648,10 @@ export default function GatewayKeysPage() {
                       <span className="text-gray-400"> / </span>
                       <span className={key.budget_max == null ? 'text-gray-400' : 'text-gray-700'}>{maxLabel}</span>
                     </div>
+                    <div className="mt-0.5 truncate text-[11px] tabular-nums text-gray-400">
+                      {t('table.wallet')}{' '}
+                      {formatGatewayMoneyCode(Number(key.wallet_granted ?? 0) - Number(key.wallet_spent ?? 0), billingCurrency, 2)}
+                    </div>
                     {ratio != null ? (
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
                         <div
@@ -1004,6 +1008,15 @@ export default function GatewayKeysPage() {
                           <span className="ml-1 text-xs text-gray-500">
                             (base {formatGatewayMoneyCode(selectedKey.budget_base, billingCurrency, 2)})
                           </span>
+                        )}
+                      </div>
+                    </ReadonlyRow>
+                    <ReadonlyRow label={t('fields.walletReadonly')}>
+                      <div className="text-sm">
+                        {formatGatewayMoneyCode(
+                          Number(selectedKey.wallet_granted ?? 0) - Number(selectedKey.wallet_spent ?? 0),
+                          billingCurrency,
+                          2
                         )}
                       </div>
                     </ReadonlyRow>

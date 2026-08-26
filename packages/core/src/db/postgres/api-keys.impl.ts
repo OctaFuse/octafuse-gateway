@@ -72,6 +72,8 @@ function mapPgResolvedRow(
 		budgetResetAt: string | null;
 		userMetadata: string | null;
 		userChargedCostFactors: string | null;
+		walletGranted: string;
+		walletSpent: string;
 	}
 ): ResolvedGatewayKeyRow {
 	const k = mapPgKeyRow(r);
@@ -85,6 +87,8 @@ function mapPgResolvedRow(
 		budget_spent: parseMoney(r.budgetSpent),
 		budget_period: r.budgetPeriod,
 		budget_reset_at: r.budgetResetAt,
+		wallet_granted: parseMoney(r.walletGranted),
+		wallet_spent: parseMoney(r.walletSpent),
 	};
 }
 
@@ -99,6 +103,8 @@ function mapPgAdminListRow(r: {
 	budget_spent: string;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted: string;
+	wallet_spent: string;
 	status: string;
 	metadata: string | null;
 	created_at: string;
@@ -115,6 +121,8 @@ function mapPgAdminListRow(r: {
 		budget_spent: roundGatewayMoney(Number(r.budget_spent)),
 		budget_period: r.budget_period,
 		budget_reset_at: r.budget_reset_at,
+		wallet_granted: roundGatewayMoney(Number(r.wallet_granted ?? 0)),
+		wallet_spent: roundGatewayMoney(Number(r.wallet_spent ?? 0)),
 		status: r.status,
 		metadata: r.metadata,
 		created_at: r.created_at,
@@ -138,6 +146,8 @@ const resolvedCols = {
 	budgetSpent: pgUsersTable.budgetSpent,
 	budgetPeriod: pgUsersTable.budgetPeriod,
 	budgetResetAt: pgUsersTable.budgetResetAt,
+	walletGranted: pgUsersTable.walletGranted,
+	walletSpent: pgUsersTable.walletSpent,
 	userMetadata: pgUsersTable.metadata,
 	userChargedCostFactors: pgUsersTable.chargedCostFactors,
 } as const;
@@ -300,6 +310,8 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 					budget_spent: pgUsersTable.budgetSpent,
 					budget_period: pgUsersTable.budgetPeriod,
 					budget_reset_at: pgUsersTable.budgetResetAt,
+					wallet_granted: pgUsersTable.walletGranted,
+					wallet_spent: pgUsersTable.walletSpent,
 					status: pgApiKeysTable.status,
 					metadata: pgApiKeysTable.metadata,
 					created_at: pgApiKeysTable.createdAt,

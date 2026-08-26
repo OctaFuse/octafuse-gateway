@@ -6,7 +6,8 @@ import type { GatewayRepositories } from '../storage/repositories';
 import type { BudgetPeriod } from '../types';
 import type { UserRow } from '../types';
 import { roundGatewayMoney } from '../lib/money-precision';
-import { updateUserBudgetWithAuditTx } from '../storage/critical-write-paths';
+import { grantWalletCreditWithAuditTx, updateUserBudgetWithAuditTx } from '../storage/critical-write-paths';
+import type { GrantWalletCreditParams, GrantWalletCreditResult } from '../db/wallet-credit';
 import { userBudgetAuditToInsertRowFull } from '../db/user-budget-audit-mapper';
 import {
 	buildUserAuditSnapshotsForLazyPeriodReset,
@@ -14,6 +15,17 @@ import {
 	userRowToSnapshot,
 } from '../db/user-audit-snapshot';
 import { parseUserChargedCostFactors } from '../db/user-charged-cost-factors';
+import { computeWalletBalance } from './wallet-balance';
+
+export {
+	canAffordTotalCost,
+	computePeriodRemaining,
+	computeTotalRemaining,
+	computeWalletBalance,
+	hasPositiveTotalBalance,
+	splitChargeAcrossPools,
+	splitChargeFromBudgetSnapshot,
+} from './wallet-balance';
 
 /**
  * 将锚点日期按预算周期向前推一个周期（UTC）。
@@ -402,6 +414,9 @@ export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 		budget_spent: roundGatewayMoney(budget_spent),
 		budget_period: row.budget_period,
 		budget_reset_at,
+		wallet_granted: roundGatewayMoney(Number(row.wallet_granted ?? 0)),
+		wallet_spent: roundGatewayMoney(Number(row.wallet_spent ?? 0)),
+		wallet_balance: computeWalletBalance(Number(row.wallet_granted ?? 0), Number(row.wallet_spent ?? 0)),
 		status: row.status,
 		metadata,
 		charged_cost_factors: parseUserChargedCostFactors(row.charged_cost_factors),
@@ -447,6 +462,9 @@ export async function getKeyInfo(repos: GatewayRepositories, id: string) {
 		budget_spent: roundGatewayMoney(budget_spent),
 		budget_period: row.budget_period,
 		budget_reset_at,
+		wallet_granted: roundGatewayMoney(Number(row.wallet_granted ?? 0)),
+		wallet_spent: roundGatewayMoney(Number(row.wallet_spent ?? 0)),
+		wallet_balance: computeWalletBalance(Number(row.wallet_granted ?? 0), Number(row.wallet_spent ?? 0)),
 		status: row.status,
 		metadata,
 		created_at: row.created_at,
@@ -465,6 +483,8 @@ export async function updateUserPlan(
 		metadata?: string | null;
 		budget_spent?: number | null;
 		budget_base?: number | null;
+		wallet_granted?: number | null;
+		wallet_spent?: number | null;
 	}
 ): Promise<boolean> {
 	const resetBudget = params.reset_budget ?? true;
@@ -482,7 +502,9 @@ export async function updateUserPlan(
 		resetBudget,
 		params.metadata,
 		params.budget_spent,
-		params.budget_base
+		params.budget_base,
+		params.wallet_granted,
+		params.wallet_spent
 	);
 }
 
@@ -498,6 +520,8 @@ export async function updateUserPlanByApiKeyId(
 		metadata?: string | null;
 		budget_spent?: number | null;
 		budget_base?: number | null;
+		wallet_granted?: number | null;
+		wallet_spent?: number | null;
 	}
 ): Promise<boolean> {
 	const row = await repos.apiKeys.getApiKeyWithUserById(keyId);
@@ -534,4 +558,12 @@ export async function replaceKeyMetadata(repos: GatewayRepositories, id: string,
 
 export async function updateKeyStatus(repos: GatewayRepositories, id: string, status: string): Promise<boolean> {
 	return repos.apiKeys.updateApiKeyStatusById(id, status);
+}
+
+/** 永久额度增量加额（`dedup_key` 幂等）。 */
+export async function grantWalletCredit(
+	repos: GatewayRepositories,
+	params: GrantWalletCreditParams
+): Promise<GrantWalletCreditResult> {
+	return grantWalletCreditWithAuditTx(repos, params);
 }

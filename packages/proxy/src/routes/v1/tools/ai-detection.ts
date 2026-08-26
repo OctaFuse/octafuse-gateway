@@ -11,7 +11,7 @@ import {
 	detectAiRate,
 	getAiDetectionDriver,
 } from '@octafuse/tool-engines/ai-detection';
-import { canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
+import { apiKeyHasBalance, canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
 
 type ToolsEnv = Env & { Variables: { apiKey: import('../../../middleware/auth').ApiKeyContext } };
 
@@ -73,10 +73,10 @@ aiDetectionRoutes.post('/', async (c) => {
 	const totals = scaleToolUnitPrices(unitPrices, billingUnits);
 	const totalCharged = roundGatewayMoney(totals.charged);
 
-	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+	if (!apiKeyHasBalance(apiKey)) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
-	if (!canAffordToolCost(apiKey.budgetMax, apiKey.budgetSpent, totalCharged)) {
+	if (!canAffordToolCost(apiKey.budgetMax, apiKey.budgetSpent, totalCharged, apiKey.walletGranted, apiKey.walletSpent)) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
 

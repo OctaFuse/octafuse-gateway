@@ -19,6 +19,8 @@ erDiagram
         numeric budget_spent
         text budget_period
         text budget_reset_at
+        numeric wallet_granted
+        numeric wallet_spent
         text status
         text metadata
         text charged_cost_factors "JSON { models.id: factor }；空为 NULL"
@@ -56,6 +58,7 @@ erDiagram
         text reason_code
         text reason_text
         text request_log_id
+        text dedup_key "UNIQUE(user_id, dedup_key)；NULL 互不相等"
         text created_at
     }
 ```
@@ -66,7 +69,8 @@ erDiagram
 2. **`email`**：在基线 schema 中通过 **partial UNIQUE** 约束「同一命名空间内」唯一：
    - `external_system IS NOT NULL` 时：`UNIQUE(external_system, email)`；
    - **internal 用户**（`external_system IS NULL`）：`UNIQUE(email)`（仅此类行参与）。
-3. **`api_keys`**：不含任何 `budget_*` 或 `user_email`；列表/详情中的邮箱与预算来自 **`JOIN users`**。
+3. **`api_keys`**：不含任何 `budget_*`、`wallet_*` 或 `user_email`；列表/详情中的邮箱、周期额度与永久额度来自 **`JOIN users`**。
+3b. **周期额度 / 永久额度**：`budget_*` 只表示当期周期额度（Budget）；`wallet_granted` / `wallet_spent` 表示永久额度（Wallet），余额为派生值 `wallet_balance = wallet_granted − wallet_spent`（不落列）。`budget_max IS NULL` 仍为无限。扣费先周期、后永久；加购走 `POST /api/admin/users/:id/wallet/credit`（`user_audit_logs.dedup_key = external_ref` 幂等）。
 4. **多把 active key**：同一 `user_id` 下允许多条 `status = 'active'` 的密钥；创建密钥**不**再按 user 幂等。
 5. **删除语义**：
    - 删除 **`users`**：`ON DELETE CASCADE` 删除其 **`api_keys`**；子表中若存在指向该用户的 FK，按迁移定义处理（`user_audit_logs.user_id` 为 **`ON DELETE SET NULL`**，审计行保留）。
@@ -76,12 +80,13 @@ erDiagram
 ## 请求日志与审计
 
 - **`api_key_request_logs`**：写入时带 **`user_id`**（与鉴权时解析的 user 一致）及快照 **`user_email`**，便于全局检索而无需每次 `JOIN`。
-- **`user_audit_logs`**：用户级审计（预算扣减、周期懒重置、管理端 patch、密钥生命周期等）；可选 **`api_key_id`** 归因「由哪把 key 触发」。详细语义见 [`../reference/user-audit-logs.md`](../reference/user-audit-logs.md)。
+- **`user_audit_logs`**：用户级审计（周期额度扣减、永久额度加额、周期懒重置、管理端 patch、密钥生命周期等）；可选 **`api_key_id`** 归因「由哪把 key 触发」。`dedup_key` 用于加额幂等。详细语义见 [`../reference/user-audit-logs.md`](../reference/user-audit-logs.md)。
 
 ## 关键读写路径（与实现对齐）
 
 - **鉴权**：`getApiKeyWithUserByKey` 单次 JOIN 读取 key + user 预算字段与 `charged_cost_factors`；周期懒重置走 **`updateUserBudgetWithAuditTx`**（Postgres/MySQL 带 `budget_reset_at` 条件更新以避免并发重复审计）。
-- **扣费**：`insertRequestUsageAndChargeTx` 在同一事务内 **`INSERT api_key_request_logs`** + **`UPDATE users SET budget_spent = budget_spent + Δ`**（SQL 侧原子累加）+ **`INSERT user_audit_logs`**（`usage_charge`）。
+- **扣费**：`insertRequestUsageAndChargeTx` 在同一事务内 **`INSERT api_key_request_logs`**（含 `charged_wallet_cost`）+ **`UPDATE users SET budget_spent += Δ1, wallet_spent += Δ2`**（SQL 侧原子累加）+ **`INSERT user_audit_logs`**（`usage_charge`）。周期剩余不够时差额进永久池。
+- **加额**：`grantWalletCreditWithAuditTx` 在同一事务内插入 `event_type=wallet_credit` 审计（`dedup_key` 冲突则忽略），仅当新审计行真正落入时 `wallet_granted += amount`。
 
 ## 验证（三引擎 / Proxy）
 

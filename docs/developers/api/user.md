@@ -55,7 +55,7 @@ Authorization: Bearer sk-xxx...
 
 ### 3. 预算校验
 
-`POST /v1/chat/completions`、`POST /v1/responses`、`POST /v1/messages` 与 Gemini `POST /v1beta/models/...` 在转发上游前，对 **用户 API Key** 统一执行 **`budget_max` / `budget_spent`** 校验：当 `budget_max` 非空且 `budget_spent >= budget_max` 时返回 **403** `Budget exceeded`。
+`POST /v1/chat/completions`、`POST /v1/responses`、`POST /v1/messages` 与 Gemini `POST /v1beta/models/...` 在转发上游前，对 **用户 API Key** 校验 **周期额度 + 永久额度** 的总剩余：`budget_max` 为 `null` 表示周期不限额；否则总剩余 = `(budget_max − budget_spent) + (wallet_granted − wallet_spent)`。总剩余 ≤ 0 时返回 **403** `Budget exceeded`。因此 **周期上限为 0 但永久额度仍有余额** 的用户可以继续请求（例如 0027 把注册赠额迁入 wallet 后 `budget_max=0`、`wallet_granted=0.5`）。旧规则 `budget_spent >= budget_max` 会把 `0 >= 0` 误判为超额，已废弃。
 
 路由组（`default`、`free` 等）仅影响 **选路与计费快照**（见下文用量日志），**不再**单独绕过预算或走按日免费次数表。一次性试用额度等场景请通过 **`budget_period = 'none'`** 与 `budget_max` / `budget_base` 在 **User** 上表达（经管理 API / 门户侧更新 `users`；API Key 仅用于鉴权与归集）。
 

@@ -8,11 +8,12 @@
 
 | 维度 | 列 | 含义 |
 |------|-----|------|
-| **Event** | `event_type` | 业务事件：`usage_charge`、`period_reset`、`admin_adjust`、`key_created`、`key_revoked`、`key_deleted`、`user_created`、`user_deleted` 等。 |
+| **Event** | `event_type` | 业务事件：`usage_charge`、`period_reset`、`admin_adjust`、`wallet_credit`、`key_created`、`key_revoked`、`key_deleted`、`user_created`、`user_deleted` 等。 |
 | **Actor** | `actor_type` + `actor_id` | `system` / `admin` / `service` 与稳定 principal（新写入为 `console:<username>` 或 `admin_key:<id>`；历史 `admin:gateway_master_key` 保持原样）。 |
 | **Cause** | `source` + `reason_code` + `reason_text` | 入口通道、机器可筛码、人类可读说明。 |
 | **快照** | `before_user_snapshot` / `after_user_snapshot` / `changed_fields` | `UserAuditSnapshot` JSON；金额类展示以快照为准。 |
-| **扩展** | `change_payload` | JSON：周期前后值、管理端 patch 摘要、删除上下文等。 |
+| **扩展** | `change_payload` | JSON：周期前后值、管理端 patch 摘要、删除上下文、`wallet_credit` 的 `{ amount, kind, external_ref }` 等。 |
+| **幂等** | `dedup_key` | 可空。`wallet_credit` 写入 `external_ref`；`UNIQUE(user_id, dedup_key)`（Postgres 为 `WHERE dedup_key IS NOT NULL`）。NULL 互不相等，既有审计行不受影响。 |
 
 ### `actor_id` 取值约定
 
@@ -35,8 +36,15 @@
 ### 1. 用量扣费（`usage_charge`）
 
 - **代码**：`packages/proxy/src/services/usage-tracker.ts` → `recordUsage`（推理）；`packages/proxy/src/services/tool-usage-charge.ts` → `chargeToolUsage`（`/v1/tools/*`）。
-- **事务**：`insertRequestUsageAndChargeTx`（与 `api_key_request_logs` 同事务）。
+- **事务**：`insertRequestUsageAndChargeTx`（与 `api_key_request_logs` 同事务）。先扣周期额度，不够的差额扣永久额度；`charged_wallet_cost` 记录永久池部分。
 - **Cause**：`source=gateway_usage`；推理为 `reason_code=request_usage_charged_cost`，工具为 `reason_code=tool_usage_charged_cost`；`correlation_id` 常与请求日志 id 对齐。
+
+### 1b. 永久额度加额（`wallet_credit`）
+
+- **代码**：`grantWalletCreditWithAuditTx`；Admin `POST /api/admin/users/:id/wallet/credit`。
+- **Cause**：`source=admin_wallet`；`reason_code=wallet_credit_<kind>`（`topup` / `signup_bonus` / `admin_adjust` / `refund`）。
+- **幂等**：`dedup_key = external_ref`。同一 `(user_id, external_ref)` 重放只入账一次，响应 `duplicate`。金额允许负值（退款扣回）。
+- **查询**：现有 `GET /api/admin/budget-audit-logs?user_id=&event_type=wallet_credit`，不另建流水端点。
 
 ### 2. 鉴权 / 读详情时的周期懒重置（`period_reset`）
 
@@ -75,7 +83,7 @@
 - 全局列表：`GET /api/admin/budget-audit-logs`（查询参数含 `user_id`、`api_key_id`、`user_email`、`event_type`、`actor_type`、`actor_id`、`actor_kind`、`reason_code`、`source`、`correlation_id`、时间窗等）— 详见 [api/admin.md](../api/admin.md)。
   - `actor_id`：精确匹配完整主体，如 `actor_id=admin_key:8f3c…`，用于锁定单把密钥做的全部改动。
   - `actor_kind`：按上表前缀过滤，可重复或逗号分隔取并集，如 `actor_kind=console&actor_kind=admin_key`；非法值静默忽略。
-- 基线 DDL：`packages/core/migrations-{d1,postgres,mysql}/0001_baseline.sql` 中 `CREATE TABLE user_audit_logs` 与相关索引；`0025_user_audit_actor_index.sql` 补 `(actor_id, created_at)` 索引以支撑上述两个过滤。
+- 基线 DDL：`packages/core/migrations-{d1,postgres,mysql}/0001_baseline.sql` 中 `CREATE TABLE user_audit_logs` 与相关索引；`0025_user_audit_actor_index.sql` 补 `(actor_id, created_at)` 索引以支撑上述两个过滤。`0027_user_wallet_credit.sql` 增加 `dedup_key` 与 `UNIQUE(user_id, dedup_key)`。
 
 ## 管理端访问审计
 

@@ -18,6 +18,7 @@ import {
 	type UsageFromStream,
 } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
+import { apiKeyHasBalance } from '../../services/tool-usage-charge';
 import {
 	canAffordAudioCost,
 	estimateAudioBudgetPrecheck,
@@ -297,7 +298,7 @@ audioRoutes.post('/transcriptions', async (c) => {
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
 	const modelNameForLog = modelDisplayName(model, baseModelId);
 
-	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+	if (!apiKeyHasBalance(apiKey)) {
 		return gatewayErrorJson(c, {
 			status: 403,
 			code: GatewayErrorCode.budgetExceeded,
@@ -319,7 +320,7 @@ audioRoutes.post('/transcriptions', async (c) => {
 		},
 		routes.map((route) => route.priceOverrideRaw)
 	);
-	if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost)) {
+	if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
 		return gatewayErrorJson(c, {
 			status: 403,
 			code: GatewayErrorCode.budgetExceeded,
@@ -514,7 +515,7 @@ audioRoutes.post('/speech', async (c) => {
 	}
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
 	const modelNameForLog = modelDisplayName(model, baseModelId);
-	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+	if (!apiKeyHasBalance(apiKey)) {
 		return gatewayErrorJson(c, {
 			status: 403,
 			code: GatewayErrorCode.budgetExceeded,
@@ -532,7 +533,7 @@ audioRoutes.post('/speech', async (c) => {
 		},
 		routes.map((route) => route.priceOverrideRaw)
 	);
-	if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost)) {
+	if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
 		return gatewayErrorJson(c, {
 			status: 403,
 			code: GatewayErrorCode.budgetExceeded,

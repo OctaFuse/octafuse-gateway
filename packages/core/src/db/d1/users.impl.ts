@@ -22,6 +22,8 @@ type UserSqlRow = {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted: number;
+	wallet_spent: number;
 	status: string;
 	metadata: string | null;
 	charged_cost_factors: string | null;
@@ -40,6 +42,8 @@ function mapUserRow(r: UserSqlRow): UserRow {
 		budget_spent: roundGatewayMoney(Number(r.budget_spent)),
 		budget_period: r.budget_period,
 		budget_reset_at: r.budget_reset_at,
+		wallet_granted: roundGatewayMoney(Number(r.wallet_granted ?? 0)),
+		wallet_spent: roundGatewayMoney(Number(r.wallet_spent ?? 0)),
 		status: r.status,
 		metadata: r.metadata,
 		charged_cost_factors: r.charged_cost_factors ?? null,
@@ -159,7 +163,9 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 			resetBudget: boolean = true,
 			metadata?: string | null,
 			budget_spent_override?: number | null,
-			budget_base?: number | null
+			budget_base?: number | null,
+			wallet_granted?: number | null,
+			wallet_spent?: number | null
 		): Promise<boolean> {
 			const setClauses: string[] = ['budget_max = ?', 'budget_period = ?', 'budget_reset_at = ?', 'updated_at = datetime("now")'];
 			const bindValues: unknown[] = [
@@ -176,6 +182,14 @@ export function createD1UsersRepository(db: D1DatabaseClient): UsersRepository {
 			if (budget_base !== undefined) {
 				setClauses.push('budget_base = ?');
 				bindValues.push(budget_base != null ? roundGatewayMoney(budget_base) : 0);
+			}
+			if (wallet_granted !== undefined) {
+				setClauses.push('wallet_granted = ?');
+				bindValues.push(roundGatewayMoney(wallet_granted ?? 0));
+			}
+			if (wallet_spent !== undefined) {
+				setClauses.push('wallet_spent = ?');
+				bindValues.push(roundGatewayMoney(wallet_spent ?? 0));
 			}
 			if (metadata !== undefined) {
 				setClauses.push('metadata = ?');

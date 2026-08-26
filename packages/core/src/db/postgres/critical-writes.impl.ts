@@ -6,6 +6,14 @@ import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
 import type { InsertUserBudgetAuditLogParams } from '../user-budget-audit-params';
 import type { InsertKeyParams } from '../api-keys-types';
 import type { InsertRequestLogParams } from '../request-logs-types';
+import type { GrantWalletCreditParams, GrantWalletCreditResult } from '../wallet-credit';
+import {
+	buildWalletCreditAuditRow,
+	mapStorageUserToRow,
+	walletCreditResult,
+	WalletCreditUserNotFoundError,
+} from '../wallet-credit';
+import type { UserBudgetSnapshot } from '../../storage/critical-write-paths';
 import {
 	userBudgetAuditToInsertRowForBudgetTx,
 	userBudgetAuditToInsertRowForCreateKey,
@@ -26,13 +34,15 @@ import {
 export async function getUserBudgetSnapshotPg(
 	client: PostgresDatabaseClient,
 	userId: string
-): Promise<{ budgetSpent: number; budgetMax: number | null; budgetPeriod: string | null; budgetResetAt: string | null } | null> {
+): Promise<UserBudgetSnapshot | null> {
 	const row = await client.drizzle
 		.select({
 			budgetSpent: pgUsersTable.budgetSpent,
 			budgetMax: pgUsersTable.budgetMax,
 			budgetPeriod: pgUsersTable.budgetPeriod,
 			budgetResetAt: pgUsersTable.budgetResetAt,
+			walletGranted: pgUsersTable.walletGranted,
+			walletSpent: pgUsersTable.walletSpent,
 		})
 		.from(pgUsersTable)
 		.where(eq(pgUsersTable.id, userId))
@@ -43,6 +53,8 @@ export async function getUserBudgetSnapshotPg(
 		budgetMax: row[0].budgetMax == null ? null : parseMoney(row[0].budgetMax),
 		budgetPeriod: row[0].budgetPeriod,
 		budgetResetAt: row[0].budgetResetAt,
+		walletGranted: parseMoney(row[0].walletGranted),
+		walletSpent: parseMoney(row[0].walletSpent),
 	};
 }
 
@@ -178,11 +190,14 @@ export async function insertRequestUsageAndChargeTxPg(
 		userId: string;
 		beforeSpent: number;
 		chargedCost: number;
+		chargedFromWallet?: number;
 		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
 	}
 ): Promise<void> {
 	const charged = roundGatewayMoney(params.chargedCost);
-	const afterSpent = roundGatewayMoney(params.beforeSpent + charged);
+	const fromWallet = roundGatewayMoney(params.chargedFromWallet ?? params.requestLog.chargedWalletCost ?? 0);
+	const fromBudget = roundGatewayMoney(charged - fromWallet);
+	const afterSpent = roundGatewayMoney(params.beforeSpent + fromBudget);
 	const now = nowIso();
 	await client.drizzle.transaction(async (tx) => {
 		await tx.insert(pgRequestLogsTable).values({
@@ -215,6 +230,7 @@ export async function insertRequestUsageAndChargeTxPg(
 			meteredCost: String(roundGatewayMoney(params.requestLog.meteredCost)),
 			standardCost: String(roundGatewayMoney(params.requestLog.standardCost)),
 			chargedCost: String(roundGatewayMoney(params.requestLog.chargedCost)),
+			chargedWalletCost: String(fromWallet),
 			routeGroup: params.requestLog.routeGroup,
 			status: params.requestLog.status,
 			latencyMs: params.requestLog.latencyMs ?? null,
@@ -248,7 +264,8 @@ export async function insertRequestUsageAndChargeTxPg(
 		await tx
 			.update(pgUsersTable)
 			.set({
-				budgetSpent: sql`${pgUsersTable.budgetSpent} + ${String(charged)}`,
+				budgetSpent: sql`${pgUsersTable.budgetSpent} + ${String(fromBudget)}`,
+				walletSpent: sql`${pgUsersTable.walletSpent} + ${String(fromWallet)}`,
 				updatedAt: now,
 			})
 			.where(eq(pgUsersTable.id, params.userId));
@@ -256,4 +273,49 @@ export async function insertRequestUsageAndChargeTxPg(
 		const auditRow = userBudgetAuditToInsertRowForUsageCharge(params.userId, afterSpent, charged, params.audit);
 		await tx.insert(pgUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(auditRow, now));
 	});
+}
+
+export async function grantWalletCreditWithAuditTxPg(
+	client: PostgresDatabaseClient,
+	params: GrantWalletCreditParams
+): Promise<GrantWalletCreditResult> {
+	const rows = await client.drizzle.select().from(pgUsersTable).where(eq(pgUsersTable.id, params.userId)).limit(1);
+	if (!rows[0]) {
+		throw new WalletCreditUserNotFoundError(params.userId);
+	}
+	const auditId = crypto.randomUUID();
+	const { audit } = buildWalletCreditAuditRow(mapStorageUserToRow(rows[0]), params, auditId);
+	const amount = roundGatewayMoney(params.amount);
+	const now = nowIso();
+	let applied = false;
+	await client.drizzle.transaction(async (tx) => {
+		await tx.insert(pgUserAuditLogsTable).values(toUserAuditLogDrizzleInsert(audit, now)).onConflictDoNothing();
+		const updated = await tx
+			.update(pgUsersTable)
+			.set({
+				walletGranted: sql`${pgUsersTable.walletGranted} + ${String(amount)}`,
+				updatedAt: now,
+			})
+			.where(
+				and(
+					eq(pgUsersTable.id, params.userId),
+					sql`EXISTS (SELECT 1 FROM ${pgUserAuditLogsTable} WHERE ${pgUserAuditLogsTable.id} = ${auditId})`
+				)
+			)
+			.returning({ id: pgUsersTable.id });
+		applied = updated.length > 0;
+	});
+	const after = await client.drizzle
+		.select({
+			walletGranted: pgUsersTable.walletGranted,
+			walletSpent: pgUsersTable.walletSpent,
+		})
+		.from(pgUsersTable)
+		.where(eq(pgUsersTable.id, params.userId))
+		.limit(1);
+	return walletCreditResult(
+		applied ? 'applied' : 'duplicate',
+		parseMoney(after[0]?.walletGranted),
+		parseMoney(after[0]?.walletSpent)
+	);
 }

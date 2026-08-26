@@ -3,7 +3,7 @@
  * 各端点只提供协议相关的 parse / redact / dispatch hook。
  */
 import type { Context } from 'hono';
-import type { GatewayRepositories, ModelRow, ResolvedModelSurfaceRow, UpstreamProtocol } from '@octafuse/core';
+import { hasPositiveTotalBalance, type GatewayRepositories, type ModelRow, type ResolvedModelSurfaceRow, type UpstreamProtocol } from '@octafuse/core';
 import type { Env } from '../app';
 import type { ApiKeyContext } from '../middleware/auth';
 import { scheduleBackgroundWork } from '../runtime/schedule-background-work';
@@ -253,7 +253,7 @@ export async function runProxyPipeline<TBody>(
 	const { model, baseModelId, explicitGroup } = resolved;
 	const effectiveRouteGroup = explicitGroup?.trim() || 'default';
 
-	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+	if (!hasPositiveTotalBalance(apiKey.budgetMax, apiKey.budgetSpent, apiKey.walletGranted, apiKey.walletSpent)) {
 		return gatewayErrorJson(c, {
 			status: 403,
 			code: GatewayErrorCode.budgetExceeded,

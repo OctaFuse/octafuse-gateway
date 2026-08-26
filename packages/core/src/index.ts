@@ -53,6 +53,7 @@ export * from './db/model-route-policy';
 export * from './db/route-pool-tier-strategies';
 export * from './db/route-pool-sticky-types';
 export * from './db/request-logs-types';
+export * from './db/wallet-credit';
 export * from './db/pricing-audit';
 export * from './db/pricing-profile';
 export * from './db/image-token-usage';
@@ -80,5 +81,6 @@ export * from './lib/time-format';
 export * from './lib/resolve-me-metadata';
 
 export * from './services/user-service';
+export * from './services/wallet-balance';
 export * from './services/budget-transition-service';
 export * from './services/key-service';

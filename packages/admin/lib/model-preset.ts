@@ -67,8 +67,6 @@ export type StaticModelPresetRow = {
 	vendor?: string | null;
 	context_window?: number | null;
 	max_tokens?: number | null;
-	/** Gateway `model_tags` (e.g. `New`, `Hot`, `Discount:0.3` for VIP/default, `Discount.free:0.5` for free route). */
-	tags?: string[];
 	/** OpenRouter-style input/output modalities. */
 	modalities?: StaticModelPresetModalities;
 	/** Model release date `YYYY-MM-DD`. */

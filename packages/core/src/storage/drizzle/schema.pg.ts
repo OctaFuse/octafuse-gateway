@@ -15,6 +15,8 @@ export const usersTable = pgTable(
 		budgetSpent: numeric('budget_spent', { precision: 18, scale: 6 }).notNull().default('0'),
 		budgetPeriod: text('budget_period').notNull().default('none'),
 		budgetResetAt: timestamp('budget_reset_at', { withTimezone: true, mode: 'string' }),
+		walletGranted: numeric('wallet_granted', { precision: 18, scale: 6 }).notNull().default('0'),
+		walletSpent: numeric('wallet_spent', { precision: 18, scale: 6 }).notNull().default('0'),
 		status: text('status').notNull().default('active'),
 		metadata: text('metadata'),
 		/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
@@ -176,6 +178,7 @@ export const apiKeyRequestLogsTable = pgTable('api_key_request_logs', {
 	meteredCost: numeric('metered_cost', { precision: 18, scale: 6 }).notNull().default('0'),
 	standardCost: numeric('standard_cost', { precision: 18, scale: 6 }).notNull().default('0'),
 	chargedCost: numeric('charged_cost', { precision: 18, scale: 6 }).notNull().default('0'),
+	chargedWalletCost: numeric('charged_wallet_cost', { precision: 18, scale: 6 }).notNull().default('0'),
 	routeGroup: text('route_group').notNull().default('default'),
 	status: text('status').notNull().default('success'),
 	latencyMs: integer('latency_ms'),
@@ -229,6 +232,7 @@ export const userAuditLogsTable = pgTable('user_audit_logs', {
 	actorId: text('actor_id'),
 	reasonCode: text('reason_code'),
 	reasonText: text('reason_text'),
+	dedupKey: text('dedup_key'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 });
 

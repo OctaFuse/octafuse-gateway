@@ -5,7 +5,15 @@ import type { D1PreparedStatement } from '@cloudflare/workers-types';
 import { eq } from 'drizzle-orm';
 import type { InsertUserAuditLogParams } from '../user-audit-logs-types';
 import type { InsertUserBudgetAuditLogParams } from '../user-budget-audit-params';
-import { buildInsertUserAuditLogStatement } from './user-audit-logs.impl';
+import { buildInsertOrIgnoreUserAuditLogStatement, buildInsertUserAuditLogStatement } from './user-audit-logs.impl';
+import type { GrantWalletCreditParams, GrantWalletCreditResult } from '../wallet-credit';
+import {
+	buildWalletCreditAuditRow,
+	mapStorageUserToRow,
+	walletCreditResult,
+	WalletCreditUserNotFoundError,
+} from '../wallet-credit';
+import type { UserBudgetSnapshot } from '../../storage/critical-write-paths';
 import {
 	userBudgetAuditToInsertRowForBudgetTx,
 	userBudgetAuditToInsertRowForCreateKey,
@@ -30,13 +38,15 @@ function ensureD1Batch(client: D1DatabaseClient, statements: D1PreparedStatement
 export async function getUserBudgetSnapshotD1(
 	client: D1DatabaseClient,
 	userId: string
-): Promise<{ budgetSpent: number; budgetMax: number | null; budgetPeriod: string | null; budgetResetAt: string | null } | null> {
+): Promise<UserBudgetSnapshot | null> {
 	const row = await client.drizzle
 		.select({
 			budgetSpent: d1UsersTable.budgetSpent,
 			budgetMax: d1UsersTable.budgetMax,
 			budgetPeriod: d1UsersTable.budgetPeriod,
 			budgetResetAt: d1UsersTable.budgetResetAt,
+			walletGranted: d1UsersTable.walletGranted,
+			walletSpent: d1UsersTable.walletSpent,
 		})
 		.from(d1UsersTable)
 		.where(eq(d1UsersTable.id, userId))
@@ -47,6 +57,8 @@ export async function getUserBudgetSnapshotD1(
 		budgetMax: row[0].budgetMax == null ? null : parseMoney(row[0].budgetMax),
 		budgetPeriod: row[0].budgetPeriod,
 		budgetResetAt: row[0].budgetResetAt,
+		walletGranted: parseMoney(row[0].walletGranted),
+		walletSpent: parseMoney(row[0].walletSpent),
 	};
 }
 
@@ -164,20 +176,62 @@ export async function insertRequestUsageAndChargeTxD1(
 		userId: string;
 		beforeSpent: number;
 		chargedCost: number;
+		chargedFromWallet?: number;
 		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
 	}
 ): Promise<void> {
 	const charged = roundGatewayMoney(params.chargedCost);
-	const afterSpent = roundGatewayMoney(params.beforeSpent + charged);
-	const statements: D1PreparedStatement[] = [buildInsertRequestLogStatement(client.raw, params.requestLog)];
+	const fromWallet = roundGatewayMoney(params.chargedFromWallet ?? params.requestLog.chargedWalletCost ?? 0);
+	const fromBudget = roundGatewayMoney(charged - fromWallet);
+	const afterSpent = roundGatewayMoney(params.beforeSpent + fromBudget);
+	const requestLog: InsertRequestLogParams = { ...params.requestLog, chargedWalletCost: fromWallet };
+	const statements: D1PreparedStatement[] = [buildInsertRequestLogStatement(client.raw, requestLog)];
 	if (params.shouldChargeBudget) {
 		statements.push(
 			client.raw
-				.prepare(`UPDATE users SET budget_spent = budget_spent + ?, updated_at = datetime('now') WHERE id = ?`)
-				.bind(charged, params.userId)
+				.prepare(
+					`UPDATE users SET budget_spent = budget_spent + ?, wallet_spent = wallet_spent + ?, updated_at = datetime('now') WHERE id = ?`
+				)
+				.bind(fromBudget, fromWallet, params.userId)
 		);
 		const auditRow = userBudgetAuditToInsertRowForUsageCharge(params.userId, afterSpent, charged, params.audit);
 		statements.push(buildInsertUserAuditLogStatement(client.raw, auditRow));
 	}
 	await ensureD1Batch(client, statements);
+}
+
+export async function grantWalletCreditWithAuditTxD1(
+	client: D1DatabaseClient,
+	params: GrantWalletCreditParams
+): Promise<GrantWalletCreditResult> {
+	const rows = await client.drizzle.select().from(d1UsersTable).where(eq(d1UsersTable.id, params.userId)).limit(1);
+	if (!rows[0]) {
+		throw new WalletCreditUserNotFoundError(params.userId);
+	}
+	const auditId = crypto.randomUUID();
+	const { audit } = buildWalletCreditAuditRow(mapStorageUserToRow(rows[0]), params, auditId);
+	const amount = roundGatewayMoney(params.amount);
+	const results = await client.raw.batch([
+		buildInsertOrIgnoreUserAuditLogStatement(client.raw, audit),
+		client.raw
+			.prepare(
+				`UPDATE users SET wallet_granted = wallet_granted + ?, updated_at = datetime('now')
+				 WHERE id = ? AND EXISTS (SELECT 1 FROM user_audit_logs WHERE id = ?)`
+			)
+			.bind(amount, params.userId, auditId),
+	]);
+	const applied = (results[1]?.meta?.changes ?? 0) > 0;
+	const after = await client.drizzle
+		.select({
+			walletGranted: d1UsersTable.walletGranted,
+			walletSpent: d1UsersTable.walletSpent,
+		})
+		.from(d1UsersTable)
+		.where(eq(d1UsersTable.id, params.userId))
+		.limit(1);
+	return walletCreditResult(
+		applied ? 'applied' : 'duplicate',
+		parseMoney(after[0]?.walletGranted),
+		parseMoney(after[0]?.walletSpent)
+	);
 }

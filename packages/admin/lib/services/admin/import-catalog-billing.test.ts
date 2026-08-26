@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { listStaticModelPresets } from '@/lib/model-preset';
 import { listStaticModelPresetCatalogForAdmin } from './models-service';
 
 describe('import catalog pricing preview follows billing currency', () => {
@@ -39,6 +40,18 @@ describe('import catalog localized model metadata', () => {
 			assert.ok(row.description?.trim(), `${row.id}: English fallback`);
 			assert.ok(row.i18n?.en.trim(), `${row.id}: English catalog description`);
 			assert.ok(row.i18n?.zh.trim(), `${row.id}: Chinese catalog description`);
+		}
+	});
+});
+
+describe('static model presets do not seed tags', () => {
+	it('omits tags so import does not write model_tags', () => {
+		for (const preset of listStaticModelPresets()) {
+			assert.equal(
+				(preset as { tags?: unknown }).tags,
+				undefined,
+				`${preset.id}: presets must not include tags`
+			);
 		}
 	});
 });

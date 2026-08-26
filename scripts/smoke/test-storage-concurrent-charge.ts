@@ -19,6 +19,7 @@ import {
 	createKey,
 	getOrCreateUser,
 	getUserBudgetSnapshot,
+	grantWalletCreditWithAuditTx,
 	insertRequestUsageAndChargeTx,
 	roundGatewayMoney,
 	snapshotToJson,
@@ -187,6 +188,110 @@ export async function runStorageConcurrentChargeSmoke(): Promise<void> {
 	}
 	console.log('%s concurrent charge ok (budget_spent=%s)', tag, expected);
 
+	const grantRef = `smoke-wallet-${ext}`;
+	const grant1 = await grantWalletCreditWithAuditTx(repos, {
+		userId: user.id,
+		amount: 5,
+		kind: 'topup',
+		externalRef: grantRef,
+		reason: 'storage smoke wallet grant',
+		source: 'admin_wallet',
+	});
+	const grant2 = await grantWalletCreditWithAuditTx(repos, {
+		userId: user.id,
+		amount: 5,
+		kind: 'topup',
+		externalRef: grantRef,
+		reason: 'storage smoke wallet grant replay',
+		source: 'admin_wallet',
+	});
+	if (grant1.status !== 'applied' || grant2.status !== 'duplicate') {
+		throw new Error(`${tag} wallet grant idempotency: first=${grant1.status} second=${grant2.status}`);
+	}
+	if (grant1.walletGranted !== grant2.walletGranted) {
+		throw new Error(
+			`${tag} wallet grant replay changed granted: ${grant1.walletGranted} vs ${grant2.walletGranted}`
+		);
+	}
+	console.log('%s wallet grant idempotent ok (granted=%s)', tag, grant1.walletGranted);
+
+	const crossExt = `${ext}-cross`;
+	const crossUser = await getOrCreateUser(repos, {
+		external_system: 'gateway-storage-smoke',
+		external_user_id: crossExt,
+		email: `${crossExt}@smoke.local`,
+		budget_max: 0.1,
+		budget_period: 'none',
+		budget_base: 0.1,
+		metadata: null,
+	});
+	await grantWalletCreditWithAuditTx(repos, {
+		userId: crossUser.id,
+		amount: 2,
+		kind: 'topup',
+		externalRef: `smoke-cross-wallet-${ext}`,
+		reason: 'storage smoke cross-pool wallet',
+		source: 'admin_wallet',
+	});
+	const crossRow = await repos.users.getById(crossUser.id);
+	if (!crossRow) throw new Error('cross-pool user missing');
+	const k3 = await createKey(repos, { user_id: crossUser.id, name: 'c3', provision_reason: tag });
+	const k4 = await createKey(repos, { user_id: crossUser.id, name: 'c4', provision_reason: tag });
+	const periodCharge = 0.1;
+	const walletCharge = 0.08;
+	const log3 = crypto.randomUUID();
+	const log4 = crypto.randomUUID();
+	await Promise.all([
+		insertRequestUsageAndChargeTx(repos, {
+			userId: crossUser.id,
+			requestLog: buildRequestLog({
+				id: log3,
+				userId: crossUser.id,
+				apiKeyId: k3.key_id,
+				charged: periodCharge,
+			}),
+			shouldChargeBudget: true,
+			beforeSpent: 0,
+			chargedCost: periodCharge,
+			chargedFromWallet: 0,
+			audit: buildUsageAudit(crossRow, 0, periodCharge, k3.key_id, log3),
+		}),
+		insertRequestUsageAndChargeTx(repos, {
+			userId: crossUser.id,
+			requestLog: buildRequestLog({
+				id: log4,
+				userId: crossUser.id,
+				apiKeyId: k4.key_id,
+				charged: walletCharge,
+			}),
+			shouldChargeBudget: true,
+			beforeSpent: 0,
+			chargedCost: walletCharge,
+			chargedFromWallet: walletCharge,
+			audit: buildUsageAudit(crossRow, 0, walletCharge, k4.key_id, log4),
+		}),
+	]);
+	const crossSnap = await getUserBudgetSnapshot(repos, crossUser.id);
+	const wantBudget = roundGatewayMoney(periodCharge);
+	const wantWallet = roundGatewayMoney(walletCharge);
+	if (!crossSnap || roundGatewayMoney(crossSnap.budgetSpent) !== wantBudget) {
+		throw new Error(
+			`${tag} cross-pool budget_spent mismatch: want ${wantBudget}, got ${crossSnap?.budgetSpent ?? 'null'}`
+		);
+	}
+	if (roundGatewayMoney(crossSnap.walletSpent) !== wantWallet) {
+		throw new Error(
+			`${tag} cross-pool wallet_spent mismatch: want ${wantWallet}, got ${crossSnap.walletSpent}`
+		);
+	}
+	console.log(
+		'%s concurrent cross-pool charge ok (budget_spent=%s wallet_spent=%s)',
+		tag,
+		wantBudget,
+		wantWallet
+	);
+
+	await repos.users.deleteUserHard(crossUser.id);
 	await repos.users.deleteUserHard(user.id);
 	console.log('%s cleanup deleteUserHard ok', tag);
 

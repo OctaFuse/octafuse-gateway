@@ -25,6 +25,8 @@ export function parseUserAuditSnapshotFromJson(raw: string | null | undefined): 
 			o.budget_reset_at === undefined || o.budget_reset_at === null || o.budget_reset_at === ''
 				? null
 				: String(o.budget_reset_at);
+		const wallet_granted = roundGatewayMoney(Number(o.wallet_granted ?? 0));
+		const wallet_spent = roundGatewayMoney(Number(o.wallet_spent ?? 0));
 		const status = typeof o.status === 'string' ? o.status : '';
 		const metadata = o.metadata === undefined || o.metadata === null ? null : String(o.metadata);
 		const charged_cost_factors =
@@ -43,6 +45,8 @@ export function parseUserAuditSnapshotFromJson(raw: string | null | undefined): 
 			budget_spent,
 			budget_period,
 			budget_reset_at,
+			wallet_granted,
+			wallet_spent,
 			status,
 			metadata,
 			charged_cost_factors,

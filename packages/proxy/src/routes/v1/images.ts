@@ -23,6 +23,7 @@ import {
 	type ImageBillingParams,
 	type ImageCostBreakdown,
 } from '../../services/image-usage-charge';
+import { apiKeyHasBalance } from '../../services/tool-usage-charge';
 import { applyOpenAiImageGenerationExtras, countOpenAiGenerationReferenceImages } from '../../services/image-generation-extras';
 import {
 	countValidImageResults,
@@ -762,7 +763,7 @@ imageRoutes.post('/generations', async (c) => {
 	}
 	const modelNameForLog = modelDisplayName(model, baseModelId);
 
-	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+	if (!apiKeyHasBalance(apiKey)) {
 		return rejectImageRequest(c, 403, 'Budget exceeded', {
 			operation: 'generations',
 			contentType,
@@ -792,7 +793,7 @@ imageRoutes.post('/generations', async (c) => {
 		},
 		routes.map((route) => route.priceOverrideRaw)
 	);
-	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost)) {
+	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
 		return rejectImageRequest(c, 403, 'Budget exceeded', {
 			operation: 'generations',
 			contentType,
@@ -938,7 +939,7 @@ imageRoutes.post('/edits', async (c) => {
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
 	const modelNameForLog = modelDisplayName(model, baseModelId);
 
-	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+	if (!apiKeyHasBalance(apiKey)) {
 		return rejectImageRequest(c, 403, 'Budget exceeded', {
 			operation: 'edits',
 			contentType: c.req.header('content-type') ?? null,
@@ -967,7 +968,7 @@ imageRoutes.post('/edits', async (c) => {
 		},
 		routes.map((route) => route.priceOverrideRaw)
 	);
-	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost)) {
+	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
 		return rejectImageRequest(c, 403, 'Budget exceeded', {
 			operation: 'edits',
 			contentType: c.req.header('content-type') ?? null,

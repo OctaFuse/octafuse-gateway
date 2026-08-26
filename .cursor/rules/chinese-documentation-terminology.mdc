@@ -61,6 +61,8 @@ globs:
 | 工具调用记录 | Tools → Invocations |
 | 主密钥 | Master Key |
 | 引导脚本 | bootstrap |
+| 周期额度 | Budget |
+| 永久额度 | Wallet |
 
 示例：
 

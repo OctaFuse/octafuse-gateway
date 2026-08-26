@@ -85,8 +85,8 @@
 		"model": "モデル",
 		"provider": "Provider",
 		"email": "メールアドレス",
-		"metadata": "Metadata",
-		"key": "Key",
+		"metadata": "メタデータ",
+		"key": "キー",
 		"showing": "{filtered} / {total} 件を表示",
 		"selected": "{count} 件選択済み",
 		"masterKeyCannotBeEmpty": "Master key は必須です",
@@ -1326,7 +1326,10 @@
 		"table": {
 			"statusEmail": "ステータス · メールアドレス",
 			"user": "ユーザー",
-			"budget": "予算",
+			"budget": "周期予算",
+			"wallet": "ウォレット",
+			"walletBalance": "残高",
+			"walletSpent": "使用済み",
 			"cycle": "周期",
 			"spent": "使用済み",
 			"max": "上限",
@@ -1334,10 +1337,10 @@
 			"resetTo": "リセット先 {amount}",
 			"period": "期間",
 			"resetAt": "リセット日時",
-			"keys": "Keys",
+			"keys": "キー",
 			"keysActiveOfTotal": "有効 / 合計",
-			"metadata": "Metadata",
-			"chargedCostFactors": "倍率",
+			"metadata": "メタデータ",
+			"chargedCostFactors": "モデル割引",
 			"created": "作成日時",
 			"updated": "更新日時",
 			"group": "グループ",
@@ -1350,13 +1353,16 @@
 		"fields": {
 			"email": "メールアドレス",
 			"status": "ステータス",
-			"budgetMax": "予算上限",
-			"budgetBase": "予算基準額",
-			"budgetSpent": "使用済み予算",
-			"budgetPeriod": "予算期間",
-			"budgetResetAt": "予算リセット日時（ローカル）",
-			"metadataJsonObject": "Metadata（JSON オブジェクト）",
-			"chargedCostFactors": "Charged cost factors",
+			"budgetMax": "周期予算上限",
+			"budgetBase": "周期予算基準額",
+			"budgetSpent": "使用済み周期予算",
+			"budgetPeriod": "周期予算期間",
+			"budgetResetAt": "周期予算リセット日時（ローカル）",
+			"walletGranted": "総付与額",
+			"walletSpent": "総使用額",
+			"walletBalance": "現在残高",
+			"metadataJsonObject": "メタデータ（JSON オブジェクト）",
+			"chargedCostFactors": "モデル割引",
 			"chargedCostFactorModelId": "モデル ID",
 			"chargedCostFactorValue": "倍率",
 			"externalSystem": "外部システム",
@@ -1366,14 +1372,16 @@
 		},
 		"help": {
 			"createUser": "新しい Gateway ユーザーを作成します。メールアドレスは必須で、その他の項目は任意です。別システムのアカウントに関連付けるには、下部の「外部 ID」セクションを使用してください。",
-			"budgetMax": "現在のサイクルで使用できる最大金額です。空欄の場合は上限なしです。",
-			"budgetBase": "予算サイクルのリセット時に予算上限へ復元する基準額です。",
-			"budgetSpent": "現在のサイクルですでに使用した金額です。手動調整が必要な場合のみ編集してください。",
-			"budgetPeriod": "使用額 / 予算上限のリセットサイクルです。none を選ぶと自動リセットされません。",
-			"budgetResetAt": "使用額（および基準額から復元される予算上限）が次回自動リセットされる日時です。予算期間が none の場合は無視されます。",
+			"budgetMax": "現在のサイクルで利用できる最大金額。空欄は上限なし。",
+			"budgetBase": "周期リセット時の上限の参考額。",
+			"budgetSpent": "現在のサイクル予算のうち、すでに使用した金額。",
+			"budgetPeriod": "リセット周期の種類。none は自動リセットなし。",
+			"budgetResetAt": "次回リセット日時",
+			"walletGranted": "累計で付与したウォレット。ここでの保存は絶対値の運用修正です。通常のチャージは下の付与履歴を使ってください。",
+			"walletSpent": "ウォレットからすでに消費した累計額。",
+			"walletBalance": "現在残高 = 総付与額 − 総使用額（読み取り専用）。周期リセットや契約満了では消えません。",
 			"metadataReplace": "保存すると metadata オブジェクト全体が置き換わります。現在の値を維持する場合は空欄にしてください。",
-			"chargedCostFactors": "カタログからモデルを選んで倍率を設定します。ルート Charged cost の後に乗算されます。未設定のモデルは金額を変えません。0 はそのモデルを課金しません。LLM / Images / Audio のみ（Agent Tools は対象外）。",
-			"disabledUser": "無効なユーザーは、どの API Key からも新しいリクエストを送信できません。"
+			"chargedCostFactors": "カタログからモデルを選んで倍率を設定します。ルート Charged cost の後に乗算されます。未設定のモデルは金額を変えません。0 はそのモデルを課金しません。LLM / Images / Audio のみ（Agent Tools は対象外）。"
 		},
 		"chargedCostFactors": {
 			"none": "Charged cost factors は未設定です。",
@@ -1391,7 +1399,7 @@
 			"createHint": "別システム（自社 SaaS、OAuth Provider など）のアカウントに関連付けるための項目です。Gateway 内部専用ユーザーの場合は両方とも空欄にしてください。両方を設定すると、（external system、external user ID）の組み合わせに対して冪等に作成されます。"
 		},
 		"metadata": {
-			"none": "Metadata はありません。",
+			"none": "メタデータはありません。",
 			"invalidRaw": "保存値が有効な JSON ではないため、元の文字列を表示しています。"
 		},
 		"keysTable": {
@@ -1400,16 +1408,23 @@
 			"activeClickToRevoke": "有効：クリックして失効",
 			"inactiveClickToActivate": "無効：クリックして有効化"
 		},
+		"hints": {
+			"budgetTitle": "周期予算について",
+			"walletTitle": "ウォレットについて",
+			"budgetVsWallet": "周期予算は契約周期でリセットされ、満了時にゼロになります。ウォレットはトップアップ由来で、周期リセットや満了では消えません。課金は周期予算を先に消費し、足りない分をウォレットから引きます。"
+		},
 		"detailSections": {
 			"recentRequestLogs": "最近のリクエストログ",
 			"userAuditLogs": "ユーザー監査ログ",
+			"walletCredits": "ウォレット付与履歴",
 			"keyMetadata": "Key metadata",
 			"newApiKey": "新しい API Key",
 			"moreCount": "他 {count} 件"
 		},
 		"empty": {
 			"requestLogs": "リクエストログはありません",
-			"auditLogs": "監査ログはありません"
+			"auditLogs": "監査ログはありません",
+			"walletCredits": "ウォレット付与イベントはありません"
 		},
 		"confirm": {
 			"deleteUser": "このユーザーとすべての Key を完全に削除しますか？監査履歴は保持されます（ユーザーリンクは解除されます）。",
@@ -1443,7 +1458,8 @@
 			"user": "ユーザー",
 			"key": "Key",
 			"name": "名前",
-			"userBudget": "ユーザー予算",
+			"userBudget": "ユーザー周期予算",
+			"wallet": "ウォレット",
 			"apiKeyMetadata": "Metadata",
 			"created": "作成日時",
 			"links": "リンク"
@@ -1471,8 +1487,9 @@
 			"secretKey": "Secret key",
 			"status": "ステータス",
 			"userIdAuth": "User ID（認証）",
-			"budgetReadonly": "予算（読み取り専用）",
-			"budgetPeriodReset": "予算期間 / リセット",
+			"budgetReadonly": "周期予算（読み取り専用）",
+			"budgetPeriodReset": "周期予算期間 / リセット",
+			"walletReadonly": "ウォレット（読み取り専用）",
 			"created": "作成日時",
 			"updated": "更新日時"
 		},
@@ -1680,6 +1697,8 @@
 			"before": "変更前",
 			"after": "変更後",
 			"delta": "差分",
+			"budgetPool": "周期",
+			"walletPool": "ウォレット",
 			"max": "上限：",
 			"base": "基準：",
 			"period": "期間：",
@@ -1747,7 +1766,8 @@
 			"userEmail": "ユーザー（メール）",
 			"models": "モデル",
 			"lastActive": "最終アクティブ",
-			"budgetUsage": "予算使用量",
+			"budgetUsage": "周期予算使用量",
+			"wallet": "ウォレット",
 			"errors": "エラー",
 			"modelProvider": "モデル / Provider"
 		},

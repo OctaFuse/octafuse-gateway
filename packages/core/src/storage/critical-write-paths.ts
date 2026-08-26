@@ -2,10 +2,12 @@ import type { D1Database } from '@cloudflare/workers-types';
 import type { InsertUserBudgetAuditLogParams } from '../db/user-budget-audit-params';
 import type { InsertKeyParams } from '../db/api-keys-types';
 import type { InsertRequestLogParams } from '../db/request-logs-types';
+import type { GrantWalletCreditParams, GrantWalletCreditResult } from '../db/wallet-credit';
 import {
 	createApiKeyWithAuditD1,
 	getSystemConfigValueD1,
 	getUserBudgetSnapshotD1,
+	grantWalletCreditWithAuditTxD1,
 	insertRequestUsageAndChargeTxD1,
 	updateUserBudgetWithAuditTxD1,
 	applyUserBudgetTransitionWithAuditD1,
@@ -14,6 +16,7 @@ import {
 	createApiKeyWithAuditMy,
 	getSystemConfigValueMy,
 	getUserBudgetSnapshotMy,
+	grantWalletCreditWithAuditTxMy,
 	insertRequestUsageAndChargeTxMy,
 	updateUserBudgetWithAuditTxMy,
 	applyUserBudgetTransitionWithAuditMy,
@@ -22,6 +25,7 @@ import {
 	createApiKeyWithAuditPg,
 	getSystemConfigValuePg,
 	getUserBudgetSnapshotPg,
+	grantWalletCreditWithAuditTxPg,
 	insertRequestUsageAndChargeTxPg,
 	updateUserBudgetWithAuditTxPg,
 	applyUserBudgetTransitionWithAuditPg,
@@ -30,6 +34,15 @@ import type { GatewayDatabaseClient } from './database-client';
 import { createD1DatabaseClient } from './database-client';
 import type { InsertUserAuditLogParams } from '../db/user-audit-logs-types';
 import type { GatewayRepositories } from './repositories';
+
+export type UserBudgetSnapshot = {
+	budgetSpent: number;
+	budgetMax: number | null;
+	budgetPeriod: string | null;
+	budgetResetAt: string | null;
+	walletGranted: number;
+	walletSpent: number;
+};
 
 export type StorageRef = D1Database | GatewayDatabaseClient | GatewayRepositories;
 
@@ -46,7 +59,7 @@ export function resolveDatabaseClient(storage: StorageRef): GatewayDatabaseClien
 export async function getUserBudgetSnapshot(
 	storage: StorageRef,
 	userId: string
-): Promise<{ budgetSpent: number; budgetMax: number | null; budgetPeriod: string | null; budgetResetAt: string | null } | null> {
+): Promise<UserBudgetSnapshot | null> {
 	const client = resolveDatabaseClient(storage);
 	if (client.driver === 'd1') {
 		return getUserBudgetSnapshotD1(client, userId);
@@ -125,6 +138,8 @@ export async function insertRequestUsageAndChargeTx(
 		userId: string;
 		beforeSpent: number;
 		chargedCost: number;
+		/** 本次从永久池扣掉的部分；缺省 0（整笔走周期） */
+		chargedFromWallet?: number;
 		audit: Omit<InsertUserBudgetAuditLogParams, 'id' | 'afterSpent' | 'deltaSpent'>;
 	}
 ): Promise<void> {
@@ -162,4 +177,22 @@ export async function applyUserBudgetTransitionWithAuditTx(
 		return applyUserBudgetTransitionWithAuditMy(client, params);
 	}
 	return applyUserBudgetTransitionWithAuditPg(client, params);
+}
+
+/**
+ * 永久额度增量加额：`wallet_granted += amount` + 一条 `wallet_credit` 审计。
+ * 靠 `user_audit_logs.dedup_key = external_ref` 幂等；重放返回 `duplicate`。
+ */
+export async function grantWalletCreditWithAuditTx(
+	storage: StorageRef,
+	params: GrantWalletCreditParams
+): Promise<GrantWalletCreditResult> {
+	const client = resolveDatabaseClient(storage);
+	if (client.driver === 'd1') {
+		return grantWalletCreditWithAuditTxD1(client, params);
+	}
+	if (client.driver === 'mysql') {
+		return grantWalletCreditWithAuditTxMy(client, params);
+	}
+	return grantWalletCreditWithAuditTxPg(client, params);
 }

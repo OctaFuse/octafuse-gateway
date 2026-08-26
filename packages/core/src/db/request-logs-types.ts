@@ -34,6 +34,8 @@ export type InsertRequestLogParams = {
 	meteredCost: number;
 	standardCost: number;
 	chargedCost: number;
+	/** 本次从永久池扣掉的部分；缺省 0 */
+	chargedWalletCost?: number;
 	routeGroup: string;
 	status: 'success' | 'error' | 'incomplete' | 'cancelled';
 	latencyMs: number | null;

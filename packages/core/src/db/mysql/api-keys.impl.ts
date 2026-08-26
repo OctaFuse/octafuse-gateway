@@ -72,6 +72,8 @@ function mapMyResolvedRow(
 		budgetResetAt: string | null;
 		userMetadata: string | null;
 		userChargedCostFactors: string | null;
+		walletGranted: string;
+		walletSpent: string;
 	}
 ): ResolvedGatewayKeyRow {
 	const k = mapMyKeyRow(r);
@@ -85,6 +87,8 @@ function mapMyResolvedRow(
 		budget_spent: parseMoney(r.budgetSpent),
 		budget_period: r.budgetPeriod,
 		budget_reset_at: r.budgetResetAt,
+		wallet_granted: parseMoney(r.walletGranted),
+		wallet_spent: parseMoney(r.walletSpent),
 	};
 }
 
@@ -99,6 +103,8 @@ function mapMyAdminListRow(r: {
 	budget_spent: string;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted: string;
+	wallet_spent: string;
 	status: string;
 	metadata: string | null;
 	created_at: string;
@@ -115,6 +121,8 @@ function mapMyAdminListRow(r: {
 		budget_spent: roundGatewayMoney(Number(r.budget_spent)),
 		budget_period: r.budget_period,
 		budget_reset_at: r.budget_reset_at,
+		wallet_granted: roundGatewayMoney(Number(r.wallet_granted ?? 0)),
+		wallet_spent: roundGatewayMoney(Number(r.wallet_spent ?? 0)),
 		status: r.status,
 		metadata: r.metadata,
 		created_at: r.created_at,
@@ -138,6 +146,8 @@ const resolvedCols = {
 	budgetSpent: myUsersTable.budgetSpent,
 	budgetPeriod: myUsersTable.budgetPeriod,
 	budgetResetAt: myUsersTable.budgetResetAt,
+	walletGranted: myUsersTable.walletGranted,
+	walletSpent: myUsersTable.walletSpent,
 	userMetadata: myUsersTable.metadata,
 	userChargedCostFactors: myUsersTable.chargedCostFactors,
 } as const;
@@ -314,6 +324,8 @@ export function createMySqlApiKeysRepository(db: MySqlDatabaseClient): ApiKeysRe
 					budget_spent: myUsersTable.budgetSpent,
 					budget_period: myUsersTable.budgetPeriod,
 					budget_reset_at: myUsersTable.budgetResetAt,
+					wallet_granted: myUsersTable.walletGranted,
+					wallet_spent: myUsersTable.walletSpent,
 					status: myApiKeysTable.status,
 					metadata: myApiKeysTable.metadata,
 					created_at: myApiKeysTable.createdAt,

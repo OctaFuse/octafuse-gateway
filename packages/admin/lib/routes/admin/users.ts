@@ -8,6 +8,7 @@ import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import {
 	createAdminUser,
 	createAdminUserKey,
+	creditAdminUserWallet,
 	deleteAdminUser,
 	deleteAdminUserKey,
 	getAdminUserAuditLogs,
@@ -102,7 +103,11 @@ adminUsersRoutes.get('/:id/audit-logs', async (c) => {
 		const repos = c.get('repositories');
 		const page = Math.max(1, parseInt(c.req.query('page') ?? '1', 10));
 		const page_size = Math.min(100, Math.max(1, parseInt(c.req.query('page_size') ?? '20', 10)));
-		const result = await getAdminUserAuditLogs(repos, c.req.param('id'), { page, page_size });
+		const result = await getAdminUserAuditLogs(repos, c.req.param('id'), {
+			page,
+			page_size,
+			event_type: c.req.query('event_type') ?? undefined,
+		});
 		return c.json(
 			normalizeApiTimeFields({
 				success: true as const,
@@ -210,6 +215,29 @@ adminUsersRoutes.post('/:id/budget/transition', async (c) => {
 		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to apply budget transition');
+	}
+});
+
+adminUsersRoutes.post('/:id/wallet/credit', async (c) => {
+	let body: { amount?: unknown; kind?: unknown; external_ref?: unknown; reason?: unknown };
+	try {
+		body = await c.req.json();
+	} catch {
+		return jsonErr(c, 400, 'Invalid JSON body');
+	}
+	try {
+		const repos = c.get('repositories');
+		const data = await creditAdminUserWallet(repos, c.req.param('id'), body, c.get('principal').id);
+		return c.json(
+			normalizeApiTimeFields({
+				success: true as const,
+				status: data.status,
+				message: data.status === 'applied' ? 'Wallet credit applied' : 'Wallet credit already applied',
+				data,
+			})
+		);
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to credit wallet');
 	}
 });
 
