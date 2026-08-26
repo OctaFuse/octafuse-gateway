@@ -224,5 +224,53 @@
 			]
 		},
 		"released": "2026-08-14"
+	},
+	{
+		"id": "glm-5.3-flash",
+		"display_name": "GLM-5.3-Flash",
+		"description": "A native multimodal GLM Flash model for visual coding, agents, and professional workflows. It outperforms GLM-5.2 at a fraction of the cost, with native image, video, and file understanding.",
+		"i18n": {
+			"en": "A native multimodal GLM Flash model for visual coding, agents, and professional workflows. It outperforms GLM-5.2 at a fraction of the cost, with native image, video, and file understanding.",
+			"zh": "面向视觉编程、Agent 与专业工作流的 GLM 原生多模态 Flash 模型。以远低于 GLM-5.2 的成本提供更强智能，原生支持图片、视频与文件理解。"
+		},
+		"vendor": "zhipu",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.15,
+						"output_price": 0.5,
+						"cache_read_price": 0.03,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.8,
+						"output_price": 2.8,
+						"cache_read_price": 0.23,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-08-26"
 	}
 ]
