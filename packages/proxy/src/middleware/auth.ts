@@ -8,6 +8,7 @@ import type { Env } from '../app';
 import { GatewayErrorCode } from '../services/gateway-error-codes';
 import { gatewayErrorJson } from '../services/gateway-error-response';
 import { parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
+import { hasPositiveTotalBalance } from '@octafuse/core';
 
 /** 与 `authenticateApiKey` 结果一致，供 `/v1/*` 处理器使用。 */
 export type ApiKeyContext = {
@@ -17,6 +18,8 @@ export type ApiKeyContext = {
   userEmail: string | null;
   budgetMax: number | null;
   budgetSpent: number;
+  walletGranted: number;
+  walletSpent: number;
   budgetPeriod: string;
   budgetResetAt: string | null;
   metadata: Record<string, unknown> | null;
@@ -121,8 +124,12 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
     !isChatRoute &&
     !isImagesRoute &&
     !isAudioRoute &&
-    authResult.budgetMax != null &&
-    authResult.budgetSpent >= authResult.budgetMax
+    !hasPositiveTotalBalance(
+      authResult.budgetMax,
+      authResult.budgetSpent,
+      authResult.walletGranted,
+      authResult.walletSpent
+    )
   ) {
     return gatewayErrorJson(c, {
       status: 403,
@@ -137,6 +144,8 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
     userEmail: authResult.userEmail,
     budgetMax: authResult.budgetMax,
     budgetSpent: authResult.budgetSpent,
+    walletGranted: authResult.walletGranted,
+    walletSpent: authResult.walletSpent,
     budgetPeriod: authResult.budgetPeriod,
     budgetResetAt: authResult.budgetResetAt,
     metadata: authResult.metadata,

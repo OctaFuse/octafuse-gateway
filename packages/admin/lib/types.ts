@@ -20,6 +20,8 @@ export interface GatewayApiKey {
   budget_spent: number;
   budget_period: string;
   budget_reset_at: string | null;
+  wallet_granted?: number;
+  wallet_spent?: number;
   status: string;
   /** JSON string; extensible key data (e.g. plan), surfaced on GET /v1/me */
   metadata: string | null;
@@ -76,6 +78,8 @@ export interface GatewayUserListItem {
   budget_spent: number;
   budget_period: string;
   budget_reset_at: string | null;
+  wallet_granted?: number;
+  wallet_spent?: number;
   status: string;
   metadata: string | null;
   /** 已解析的用户级 Charged cost factors；未配置时为 null */
@@ -97,6 +101,7 @@ export const API_KEY_BUDGET_AUDIT_EVENT_TYPES = [
   'key_deleted',
   'user_created',
   'user_deleted',
+  'wallet_credit',
 ] as const;
 
 /** 与 octafuse `ApiKeyBudgetAuditActorType` 对齐 */
@@ -460,6 +465,8 @@ export interface UserUsageRow extends AnalyticsRowCosts {
   last_active_at: string | null;
   budget_max: number | null;
   budget_spent: number;
+  wallet_granted?: number | null;
+  wallet_spent?: number | null;
   budget_usage_rate: number | null;
   success_rate: number;
   error_count: number;

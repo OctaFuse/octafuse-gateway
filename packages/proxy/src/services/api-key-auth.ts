@@ -14,6 +14,10 @@ export type AuthenticatedApiKey = {
 	budgetMax: number | null;
 	/** 当前周期已计入的消耗（可能已懒重置） */
 	budgetSpent: number;
+	/** 累计发放的永久额度 */
+	walletGranted: number;
+	/** 累计消耗的永久额度 */
+	walletSpent: number;
 	budgetPeriod: string;
 	budgetResetAt: string | null;
 	metadata: Record<string, unknown> | null;
@@ -59,6 +63,8 @@ export async function authenticateApiKey(repos: GatewayRepositories, key: string
 		userEmail: row.user_email,
 		budgetMax,
 		budgetSpent: roundGatewayMoney(budgetSpent),
+		walletGranted: roundGatewayMoney(Number(row.wallet_granted ?? 0)),
+		walletSpent: roundGatewayMoney(Number(row.wallet_spent ?? 0)),
 		budgetPeriod: row.budget_period,
 		budgetResetAt,
 		metadata,

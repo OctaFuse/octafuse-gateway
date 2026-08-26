@@ -100,6 +100,7 @@ flowchart TB
 - 迁移 **`0024_drop_legacy_master_key_config`**：删除历史 `system_config.MASTER_KEY` 配置行；新版管理认证只读取具名 Admin API Key 与控制台会话。
 - 迁移 **`0025_user_audit_actor_index`**：为 `user_audit_logs(actor_id, created_at)` 增加操作主体查询索引。
 - 迁移 **`0026_user_charged_cost_factors`**：`users` 增加 `charged_cost_factors`，按目录模型 ID 保存用户计费倍率。
+- 迁移 **`0027_user_wallet_credit`**：`users` 增加 `wallet_granted` / `wallet_spent`（永久额度）；`user_audit_logs.dedup_key` + `UNIQUE(user_id, dedup_key)`；`api_key_request_logs.charged_wallet_cost`。老数据把加购余额从 `budget_max` 拆出；`budget_max IS NULL` 与到期清零行（`max=0 AND period=none`）不抬回 `budget_base`。步骤见 [0027-user-wallet-credit.md](../../operators/migrations/0027-user-wallet-credit.md)。
 
 #### Endpoint capability 维护规则
 
@@ -133,15 +134,15 @@ sequenceDiagram
 
   C->>P: Authorization Bearer sk-...
   P->>DB: getApiKeyWithUserByKey(key)
-  DB-->>P: key + user budget 列 + charged_cost_factors
-  P->>P: maybeResetBudget(user)
+  DB-->>P: key + user budget / wallet 列 + charged_cost_factors
+  P->>P: maybeResetBudget(user)（不动永久池）
   alt 周期到期需落库
     P->>DB: updateUserBudgetWithAuditTx
   end
-  P-->>C: 403 if spent >= budget_max（可配置）
+  P-->>C: 403 if 总余额 ≤ 0（budget_max 非空时：周期剩余 + wallet_balance）
   C->>P: chat / messages / gemini
   P->>DB: insertRequestUsageAndChargeTx
-  Note over DB: INSERT request_log + UPDATE users.budget_spent += Δ + INSERT user_audit_logs
+  Note over DB: INSERT request_log + UPDATE budget_spent / wallet_spent += Δ + INSERT user_audit_logs
 ```
 
 - **表级关系与不变量**（email / external 约束、多 active key、级联规则）：[user-keys-data-model.md](./user-keys-data-model.md)。
@@ -179,6 +180,9 @@ sequenceDiagram
 | **`admin_api_keys` / `admin_sessions`** | 具名管理 API Key 与持久化控制台会话；不再从 `system_config.MASTER_KEY` 鉴权 |
 | **`user_audit_logs(actor_id, created_at)`** | 按操作主体与时间检索用户审计的联合索引 |
 | **`users.charged_cost_factors`** | 可选 JSON：目录模型 ID → 非负用户计费倍率；只改变最终用户费用与预算累加 |
+| **`users.wallet_granted` / `wallet_spent`** | 永久额度累计发放 / 累计消耗；余额派生，不随周期重置或到期清零 |
+| **`user_audit_logs.dedup_key`** | 加额幂等键（`UNIQUE(user_id, dedup_key)`）；`wallet_credit` 用 `external_ref` |
+| **`api_key_request_logs.charged_wallet_cost`** | 本次请求从永久池扣掉的部分；周期部分 = `charged_cost − charged_wallet_cost` |
 
 已移除：`provider_api_keys`、`limit_config`（网关 RPM/TPM/并发软限流）、`models.sticky_config`（旧粘性 key 绑定；由路由池级 **供应商粘性** + `route_pool_sticky_bindings` 替代）。
 

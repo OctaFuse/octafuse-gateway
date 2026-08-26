@@ -61,16 +61,19 @@ function mapAuditRow(r: AuditSqlRow): UserAuditLogRow {
 	};
 }
 
-export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertUserAuditLogParams): D1PreparedStatement {
+export function buildInsertOrIgnoreUserAuditLogStatement(
+	db: D1Database,
+	params: InsertUserAuditLogParams
+): D1PreparedStatement {
 	const p = assertAndFinalizeUserAuditInsert(params);
 	return db
 		.prepare(
-			`INSERT INTO user_audit_logs (
+			`INSERT OR IGNORE INTO user_audit_logs (
         id, user_id, api_key_id, event_type, actor_type,
         request_log_id, change_payload,
         before_user_snapshot, after_user_snapshot, changed_fields,
-        correlation_id, source, actor_id, reason_code, reason_text
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        correlation_id, source, actor_id, reason_code, reason_text, dedup_key
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		)
 		.bind(
 			p.id,
@@ -87,7 +90,39 @@ export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertU
 			p.source ?? null,
 			p.actorId ?? null,
 			p.reasonCode ?? null,
-			p.reasonText ?? null
+			p.reasonText ?? null,
+			p.dedupKey ?? null
+		);
+}
+
+export function buildInsertUserAuditLogStatement(db: D1Database, params: InsertUserAuditLogParams): D1PreparedStatement {
+	const p = assertAndFinalizeUserAuditInsert(params);
+	return db
+		.prepare(
+			`INSERT INTO user_audit_logs (
+        id, user_id, api_key_id, event_type, actor_type,
+        request_log_id, change_payload,
+        before_user_snapshot, after_user_snapshot, changed_fields,
+        correlation_id, source, actor_id, reason_code, reason_text, dedup_key
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		)
+		.bind(
+			p.id,
+			p.userId,
+			p.apiKeyId ?? null,
+			p.eventType,
+			p.actorType,
+			p.requestLogId ?? null,
+			p.changePayload ?? null,
+			p.beforeUserSnapshot ?? null,
+			p.afterUserSnapshot ?? null,
+			p.changedFields ?? null,
+			p.correlationId ?? null,
+			p.source ?? null,
+			p.actorId ?? null,
+			p.reasonCode ?? null,
+			p.reasonText ?? null,
+			p.dedupKey ?? null
 		);
 }
 
@@ -135,18 +170,22 @@ export function createD1UserAuditLogsRepository(db: D1DatabaseClient): UserAudit
 		async getUserAuditLogsByUserId(
 			userId: string,
 			page: number,
-			pageSize: number
+			pageSize: number,
+			eventType?: string
 		): Promise<{ logs: UserAuditLogRow[]; total: number }> {
 			const offset = (page - 1) * pageSize;
+			const eventClause = eventType ? ' AND event_type = ?' : '';
+			const countBinds = eventType ? [userId, eventType] : [userId];
 			const countRow = await raw
-				.prepare('SELECT COUNT(*) AS total FROM user_audit_logs WHERE user_id = ?')
-				.bind(userId)
+				.prepare(`SELECT COUNT(*) AS total FROM user_audit_logs WHERE user_id = ?${eventClause}`)
+				.bind(...countBinds)
 				.first<{ total: number }>();
+			const listBinds = eventType ? [userId, eventType, pageSize, offset] : [userId, pageSize, offset];
 			const logsRes = await raw
 				.prepare(
-					`SELECT ${auditRowColumnsNoAlias} FROM user_audit_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
+					`SELECT ${auditRowColumnsNoAlias} FROM user_audit_logs WHERE user_id = ?${eventClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`
 				)
-				.bind(userId, pageSize, offset)
+				.bind(...listBinds)
 				.all<AuditSqlRow>();
 			return {
 				logs: (logsRes.results ?? []).map(mapAuditRow),

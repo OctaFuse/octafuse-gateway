@@ -1327,6 +1327,9 @@
 			"statusEmail": "Status · Email",
 			"user": "User",
 			"budget": "Budget",
+			"wallet": "Wallet",
+			"walletBalance": "Balance",
+			"walletSpent": "Spent",
 			"cycle": "Cycle",
 			"spent": "Spent",
 			"max": "Max",
@@ -1355,6 +1358,9 @@
 			"budgetSpent": "Budget spent",
 			"budgetPeriod": "Budget period",
 			"budgetResetAt": "Budget reset at (local)",
+			"walletGranted": "Total granted",
+			"walletSpent": "Total spent",
+			"walletBalance": "Current balance",
 			"metadataJsonObject": "Metadata (JSON object)",
 			"chargedCostFactors": "Charged cost factors",
 			"chargedCostFactorModelId": "Model ID",
@@ -1371,6 +1377,9 @@
 			"budgetSpent": "Amount already spent from the current cycle budget.",
 			"budgetPeriod": "Reset cycle type. none disables auto-reset.",
 			"budgetResetAt": "Next reset time",
+			"walletGranted": "Cumulative Wallet credits issued. Saving writes the absolute value (ops correction). Use Wallet credits below for top-ups.",
+			"walletSpent": "Cumulative amount already consumed from Wallet.",
+			"walletBalance": "Current balance = total granted − total spent. Read-only; Wallet does not reset with the cycle or expire with the subscription.",
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
 			"chargedCostFactors": "Pick catalog models, then set a factor. Applied after the route Charged cost. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools."
 		},
@@ -1399,16 +1408,23 @@
 			"activeClickToRevoke": "Active: click to revoke",
 			"inactiveClickToActivate": "Inactive: click to activate"
 		},
+		"hints": {
+			"budgetTitle": "About Budget",
+			"walletTitle": "About Wallet",
+			"budgetVsWallet": "Budget resets with the subscription cycle and is cleared on expiry. Wallet comes from top-ups and stays after cycle reset or expiry. Charges consume Budget first, then Wallet."
+		},
 		"detailSections": {
 			"recentRequestLogs": "Recent request logs",
 			"userAuditLogs": "User audit logs",
+			"walletCredits": "Wallet credits",
 			"keyMetadata": "Key metadata",
 			"newApiKey": "New API key",
 			"moreCount": "+{count} more"
 		},
 		"empty": {
 			"requestLogs": "No request logs",
-			"auditLogs": "No audit logs"
+			"auditLogs": "No audit logs",
+			"walletCredits": "No Wallet credit events"
 		},
 		"confirm": {
 			"deleteUser": "Permanently delete this user and all keys? Audit history will remain (user link cleared).",
@@ -1443,6 +1459,7 @@
 			"key": "Key",
 			"name": "Name",
 			"userBudget": "User Budget",
+			"wallet": "Wallet",
 			"apiKeyMetadata": "Metadata",
 			"created": "Created",
 			"links": "Links"
@@ -1472,6 +1489,7 @@
 			"userIdAuth": "User ID (auth)",
 			"budgetReadonly": "Budget (read-only)",
 			"budgetPeriodReset": "Budget Period / Reset",
+			"walletReadonly": "Wallet (read-only)",
 			"created": "Created",
 			"updated": "Updated"
 		},
@@ -1679,6 +1697,8 @@
 			"before": "before",
 			"after": "after",
 			"delta": "delta",
+			"budgetPool": "budget",
+			"walletPool": "wallet",
 			"max": "max:",
 			"base": "base:",
 			"period": "period:",
@@ -1747,6 +1767,7 @@
 			"models": "Models",
 			"lastActive": "Last active",
 			"budgetUsage": "Budget usage",
+			"wallet": "Wallet",
 			"errors": "Errors",
 			"modelProvider": "Model / Provider"
 		},

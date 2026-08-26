@@ -85,7 +85,8 @@ export interface UserAuditLogsRepository {
 	getUserAuditLogsByUserId(
 		userId: string,
 		page: number,
-		pageSize: number
+		pageSize: number,
+		eventType?: string
 	): Promise<{ logs: UserAuditLogRow[]; total: number }>;
 	getGlobalUserAuditLogs(options: {
 		page?: number;
@@ -158,7 +159,9 @@ export interface UsersRepository {
 		resetBudget?: boolean,
 		metadata?: string | null,
 		budget_spent_override?: number | null,
-		budget_base?: number | null
+		budget_base?: number | null,
+		wallet_granted?: number | null,
+		wallet_spent?: number | null
 	): Promise<boolean>;
 	updateUserStatus(id: string, status: string): Promise<boolean>;
 	setUserMetadataById(id: string, metadataJson: string | null): Promise<boolean>;

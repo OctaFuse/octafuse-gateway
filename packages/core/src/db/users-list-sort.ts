@@ -6,6 +6,8 @@ export const USER_LIST_SORT_FIELDS = [
 	'budget_max',
 	'budget_base',
 	'budget_reset_at',
+	'wallet_granted',
+	'wallet_spent',
 	'created_at',
 ] as const;
 export type UserListSortField = (typeof USER_LIST_SORT_FIELDS)[number];
@@ -68,7 +70,7 @@ export function buildD1UserListOrderByClause(sort: UserListSortField, order: Use
 		const nulls = order === 'asc' ? 'NULLS LAST' : 'NULLS FIRST';
 		return `ORDER BY ${sort} ${dir} ${nulls}, created_at ${tieDir}`;
 	}
-	if (sort === 'budget_spent' || sort === 'budget_base') {
+	if (sort === 'budget_spent' || sort === 'budget_base' || sort === 'wallet_granted' || sort === 'wallet_spent') {
 		return `ORDER BY ${sort} ${dir}, created_at ${tieDir}`;
 	}
 	return `ORDER BY created_at ${dir}`;

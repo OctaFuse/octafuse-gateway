@@ -32,6 +32,7 @@ import {
 	applyUserChargedCostToBreakdown,
 	snapshotToJson,
 	snapshotWithOverrides,
+	splitChargeFromBudgetSnapshot,
 	userRowToSnapshot,
 	type ImageTokenUsage,
 	type ParsedPricingProfile,
@@ -431,9 +432,11 @@ export async function estimateImageBudgetPrecheck(
 export function canAffordImageCost(
 	budgetMax: number | null,
 	budgetSpent: number,
-	chargedCost: number
+	chargedCost: number,
+	walletGranted = 0,
+	walletSpent = 0
 ): boolean {
-	return canAffordToolCost(budgetMax, budgetSpent, chargedCost);
+	return canAffordToolCost(budgetMax, budgetSpent, chargedCost, walletGranted, walletSpent);
 }
 
 /** 将 breakdown 标为未确认结果扣费审计（client abort / gateway timeout / 按请求张数）。 */
@@ -641,12 +644,16 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 		? await getUserBudgetSnapshot(params.repos, params.userId)
 		: null;
 	const beforeSpent = userSnapshot?.budgetSpent ?? 0;
+	const split = splitChargeFromBudgetSnapshot(userSnapshot, chargedCost);
 	const userRow = shouldChargeBudget ? await params.repos.users.getById(params.userId) : null;
-	const afterSpentVal = roundGatewayMoney(beforeSpent + chargedCost);
+	const afterSpentVal = split.afterPeriodSpent;
 	let usageSnaps: { before: string; after: string; changed: string | null } | null = null;
 	if (userRow) {
 		const beforeS = userRowToSnapshot(userRow);
-		const afterS = snapshotWithOverrides(beforeS, { budget_spent: afterSpentVal });
+		const afterS = snapshotWithOverrides(beforeS, {
+			budget_spent: afterSpentVal,
+			wallet_spent: roundGatewayMoney(Number(userRow.wallet_spent ?? 0) + split.fromWallet),
+		});
 		usageSnaps = {
 			before: snapshotToJson(beforeS),
 			after: snapshotToJson(afterS),
@@ -722,6 +729,7 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 			meteredCost,
 			standardCost,
 			chargedCost,
+			chargedWalletCost: split.fromWallet,
 			routeGroup: params.routeGroup,
 			status: params.status,
 			latencyMs: params.latencyMs,
@@ -749,6 +757,7 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 		shouldChargeBudget,
 		beforeSpent,
 		chargedCost,
+		chargedFromWallet: split.fromWallet,
 		audit: {
 			apiKeyId: params.apiKeyId,
 			eventType: 'usage_charge',

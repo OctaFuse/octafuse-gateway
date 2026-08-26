@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { summarizeChargedCostFactors } from '@/lib/summarize-charged-cost-factors';
@@ -16,7 +17,7 @@ import type { GatewayUserListItem } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
-type UserListSortKey = 'budget_spent' | 'budget_max' | 'budget_base' | 'budget_reset_at' | 'created_at';
+type UserListSortKey = 'budget_spent' | 'budget_max' | 'budget_base' | 'budget_reset_at' | 'wallet_granted' | 'wallet_spent' | 'created_at';
 type SortDir = 'asc' | 'desc';
 
 function budgetUsageRatio(spent: number, max: number | null | undefined): number | null {
@@ -398,12 +399,13 @@ export default function GatewayUsersPage() {
         <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
         <table className="w-full min-w-[68rem] table-fixed">
           <colgroup>
+            <col className="w-[20%]" />
             <col className="w-[22%]" />
-            <col className="w-[26%]" />
+            <col className="w-[14%]" />
             <col className="w-[8%]" />
-            <col className="w-[14%]" />
-            <col className="w-[14%]" />
-            <col className="w-[16%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
           </colgroup>
           <thead className="border-b border-gray-200 bg-gray-50/80">
             <tr>
@@ -413,6 +415,9 @@ export default function GatewayUsersPage() {
               <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
                 <div className="inline-flex items-center justify-end gap-1.5">
                   <span className="text-gray-400">{t('table.budget')}</span>
+                  <InfoHintPopover label={t('hints.budgetTitle')}>
+                    <p>{t('hints.budgetVsWallet')}</p>
+                  </InfoHintPopover>
                   <SortButton label={t('table.spent')} columnKey="budget_spent" />
                   <span className="text-gray-300">/</span>
                   <SortButton label={t('table.max')} columnKey="budget_max" />
@@ -420,6 +425,17 @@ export default function GatewayUsersPage() {
                   <SortButton label={t('table.base')} columnKey="budget_base" />
                   <span className="text-gray-300">·</span>
                   <SortButton label={t('table.cycle')} columnKey="budget_reset_at" />
+                </div>
+              </th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
+                <div className="inline-flex items-center justify-end gap-1.5">
+                  <span className="text-gray-400">{t('table.wallet')}</span>
+                  <InfoHintPopover label={t('hints.walletTitle')}>
+                    <p>{t('hints.budgetVsWallet')}</p>
+                  </InfoHintPopover>
+                  <SortButton label={t('table.walletBalance')} columnKey="wallet_granted" />
+                  <span className="text-gray-300">/</span>
+                  <SortButton label={t('table.walletSpent')} columnKey="wallet_spent" />
                 </div>
               </th>
               <th
@@ -446,6 +462,7 @@ export default function GatewayUsersPage() {
                 <tr key={`skeleton-${index}`} className="animate-pulse">
                   <td className="px-4 py-4"><div className="h-4 w-48 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="ml-auto h-4 w-40 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-24 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="ml-auto h-4 w-8 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-gray-100" /></td>
@@ -556,6 +573,18 @@ export default function GatewayUsersPage() {
                     ) : (
                       <div className="mt-1.5 h-1.5 rounded-full bg-gray-50" />
                     )}
+                  </div>
+                </td>
+                <td className="px-4 py-3.5 overflow-hidden text-right">
+                  <div className="text-sm tabular-nums text-gray-900">
+                    {formatGatewayMoneyCode(
+                      Number(u.wallet_granted ?? 0) - Number(u.wallet_spent ?? 0),
+                      billingCurrency,
+                      2
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-[11px] tabular-nums text-gray-400">
+                    {t('table.walletSpent')} {formatGatewayMoneyCode(Number(u.wallet_spent ?? 0), billingCurrency, 2)}
                   </div>
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden text-right">

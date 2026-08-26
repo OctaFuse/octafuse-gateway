@@ -21,6 +21,7 @@ export function toUserAuditLogDrizzleInsert(
 	actorId: string | null;
 	reasonCode: string | null;
 	reasonText: string | null;
+	dedupKey: string | null;
 	createdAt: string;
 } {
 	const p = assertAndFinalizeUserAuditInsert(params);
@@ -40,6 +41,7 @@ export function toUserAuditLogDrizzleInsert(
 		actorId: p.actorId ?? null,
 		reasonCode: p.reasonCode ?? null,
 		reasonText: p.reasonText ?? null,
+		dedupKey: p.dedupKey ?? null,
 		createdAt,
 	};
 }

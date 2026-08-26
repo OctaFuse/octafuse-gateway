@@ -35,6 +35,12 @@ function userListOrderByClauses(sort: UserListSortField, order: UserListSortOrde
 	if (sort === 'budget_base') {
 		return [isAsc ? asc(myUsersTable.budgetBase) : desc(myUsersTable.budgetBase), tie];
 	}
+	if (sort === 'wallet_granted') {
+		return [isAsc ? asc(myUsersTable.walletGranted) : desc(myUsersTable.walletGranted), tie];
+	}
+	if (sort === 'wallet_spent') {
+		return [isAsc ? asc(myUsersTable.walletSpent) : desc(myUsersTable.walletSpent), tie];
+	}
 	return [isAsc ? asc(myUsersTable.createdAt) : desc(myUsersTable.createdAt)];
 }
 
@@ -46,6 +52,8 @@ function mapMyUserRow(r: {
 	budgetSpent: string;
 	budgetPeriod: string;
 	budgetResetAt: string | null;
+	walletGranted: string;
+	walletSpent: string;
 	status: string;
 	metadata: string | null;
 	chargedCostFactors: string | null;
@@ -62,6 +70,8 @@ function mapMyUserRow(r: {
 		budget_spent: parseMoney(r.budgetSpent),
 		budget_period: r.budgetPeriod,
 		budget_reset_at: r.budgetResetAt,
+		wallet_granted: parseMoney(r.walletGranted),
+		wallet_spent: parseMoney(r.walletSpent),
 		status: r.status,
 		metadata: r.metadata,
 		charged_cost_factors: r.chargedCostFactors ?? null,
@@ -167,7 +177,9 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			resetBudget: boolean = true,
 			metadata?: string | null,
 			budget_spent_override?: number | null,
-			budget_base?: number | null
+			budget_base?: number | null,
+			wallet_granted?: number | null,
+			wallet_spent?: number | null
 		): Promise<boolean> {
 			const existing = await drizzle.select({ id: myUsersTable.id }).from(myUsersTable).where(eq(myUsersTable.id, id)).limit(1);
 			if (!existing[0]) return false;
@@ -180,6 +192,12 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			};
 			if (budget_base !== undefined) {
 				baseSet.budgetBase = String(budget_base != null ? roundGatewayMoney(budget_base) : 0);
+			}
+			if (wallet_granted !== undefined) {
+				baseSet.walletGranted = String(roundGatewayMoney(wallet_granted ?? 0));
+			}
+			if (wallet_spent !== undefined) {
+				baseSet.walletSpent = String(roundGatewayMoney(wallet_spent ?? 0));
 			}
 			if (budget_spent_override !== undefined) {
 				await drizzle

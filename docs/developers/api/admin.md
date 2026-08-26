@@ -58,6 +58,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/users/:id/audit-logs` | GET | `user_audit_logs`（按 `user_id`） | Admin UI |
 | `/admin/users/:id/budget/transition/preview` | POST | `users`（只读计算） | 外部集成方 |
 | `/admin/users/:id/budget/transition` | POST | `users` + `user_audit_logs`（原子转换） | 外部集成方 |
+| `/admin/users/:id/wallet/credit` | POST | `users.wallet_granted` + `user_audit_logs`（`wallet_credit`，`dedup_key` 幂等） | 门户加购、外部集成方 |
 | `/admin/keys` | GET | `api_keys` **JOIN** `users`（分页列表；预算只读） | Admin UI、外部集成方 |
 | `/admin/keys` | POST | `api_keys`（+ 可能 `users`） | 外部集成方、运维脚本 |
 | `/admin/keys/:id` | GET | `api_keys` **JOIN** `users` | 外部集成方、Admin UI |
@@ -145,7 +146,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 ### `PATCH /admin/users/:id`
 
-更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对、`charged_cost_factors`（对象或 `null`，校验规则与创建相同）等。仅改用户计费倍率时，审计 `reason_code` 为 `admin_patch_charged_cost_factors`。**密钥级字段不可在此修改**。
+更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对、`charged_cost_factors`（对象或 `null`，校验规则与创建相同）、`wallet_granted` / `wallet_spent`（永久额度绝对值，运维修正）等。仅改用户计费倍率时，审计 `reason_code` 为 `admin_patch_charged_cost_factors`。**密钥级字段不可在此修改**。加购增量请用下方 **`wallet/credit`**，不要把金额加进 `budget_max`。
 
 用于**绝对值**设置、运维修正、取消/到期回收等不依赖当前预算快照的变更。若需基于当前 `budget_max/budget_spent` 计算结转并原子写入，请使用下方 **`budget/transition`**。
 
@@ -171,7 +172,20 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 原子应用上述转换并写入 `user_audit_logs`（`eventType=admin_adjust`，`reasonCode=budget_transition`）。请求体与 preview 相同（`metadata`/`reason` 在 apply 时生效）。
 
-响应：`{ success, message, data: { transition: { before, after, carryover }, user: <getUserInfo> } }`。
+响应：`{ success, message, data: { transition: { before, after, carryover }, user: <getUserInfo> } }`。换档只动周期额度，永久额度不变。
+
+### `POST /admin/users/:id/wallet/credit`
+
+永久额度增量加额（门户加购、注册赠额、退款扣回）。请求体：
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `amount` | 是 | 非零数字；负值用于退款扣回 |
+| `kind` | 是 | `topup` \| `signup_bonus` \| `admin_adjust` \| `refund` |
+| `external_ref` | 是 | 写入 `user_audit_logs.dedup_key`；同一用户同一引用重放不重复加额 |
+| `reason` | 否 | 审计 `reason_text` |
+
+响应：`{ success, data: { status: "applied" \| "duplicate", walletGranted, walletSpent, walletBalance } }`。加额流水用现有 `GET /admin/budget-audit-logs?user_id=&event_type=wallet_credit`，不另建端点。
 
 ### `DELETE /admin/users/:id`
 

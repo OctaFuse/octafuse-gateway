@@ -13,6 +13,8 @@ export type UserAuditSnapshot = {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted: number;
+	wallet_spent: number;
 	status: string;
 	metadata: string | null;
 	charged_cost_factors: string | null;
@@ -29,6 +31,8 @@ export function userRowToSnapshot(row: UserRow): UserAuditSnapshot {
 		budget_spent: roundGatewayMoney(Number(row.budget_spent)),
 		budget_period: row.budget_period,
 		budget_reset_at: row.budget_reset_at,
+		wallet_granted: roundGatewayMoney(Number(row.wallet_granted ?? 0)),
+		wallet_spent: roundGatewayMoney(Number(row.wallet_spent ?? 0)),
 		status: row.status,
 		metadata: row.metadata,
 		charged_cost_factors: row.charged_cost_factors,
@@ -56,6 +60,8 @@ export function computeChangedFields(before: UserAuditSnapshot, after: UserAudit
 		'budget_spent',
 		'budget_period',
 		'budget_reset_at',
+		'wallet_granted',
+		'wallet_spent',
 		'status',
 		'metadata',
 		'charged_cost_factors',
@@ -66,7 +72,7 @@ export function computeChangedFields(before: UserAuditSnapshot, after: UserAudit
 	for (const k of keys) {
 		const bv = before[k];
 		const av = after[k];
-		if (k === 'budget_max' || k === 'budget_base' || k === 'budget_spent') {
+		if (k === 'budget_max' || k === 'budget_base' || k === 'budget_spent' || k === 'wallet_granted' || k === 'wallet_spent') {
 			const nb = typeof bv === 'number' ? bv : bv == null ? null : Number(bv);
 			const na = typeof av === 'number' ? av : av == null ? null : Number(av);
 			if (!moneyEqual(nb, na)) out.push(k);
@@ -91,6 +97,8 @@ export function snapshotWithOverrides(
 			| 'budget_spent'
 			| 'budget_period'
 			| 'budget_reset_at'
+			| 'wallet_granted'
+			| 'wallet_spent'
 			| 'status'
 			| 'metadata'
 			| 'charged_cost_factors'

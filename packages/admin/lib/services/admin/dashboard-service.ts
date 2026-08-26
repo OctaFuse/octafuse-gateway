@@ -696,6 +696,8 @@ export async function getUserAnalyticsService(
 		const successCount = Number(r.success_count);
 		const budgetMax = r.budget_max != null ? Number(r.budget_max) : null;
 		const budgetSpent = Number(r.budget_spent ?? 0);
+		const walletGranted = r.wallet_granted != null ? Number(r.wallet_granted) : 0;
+		const walletSpent = r.wallet_spent != null ? Number(r.wallet_spent) : 0;
 		return {
 			user_email: r.user_email,
 			request_count: reqCount,
@@ -708,6 +710,8 @@ export async function getUserAnalyticsService(
 			last_active_at: r.last_active_at,
 			budget_max: budgetMax,
 			budget_spent: budgetSpent,
+			wallet_granted: walletGranted,
+			wallet_spent: walletSpent,
 			budget_usage_rate: budgetMax != null && budgetMax > 0 ? (budgetSpent / budgetMax) * 100 : null,
 			success_rate: reqCount > 0 ? (successCount / reqCount) * 100 : 0,
 			error_count: Number(r.error_count),

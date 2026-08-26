@@ -1326,7 +1326,10 @@
 		"table": {
 			"statusEmail": "状态 · Email",
 			"user": "用户",
-			"budget": "额度",
+			"budget": "周期额度",
+			"wallet": "永久额度",
+			"walletBalance": "余额",
+			"walletSpent": "已消费",
 			"cycle": "周期",
 			"spent": "已消费",
 			"max": "上限",
@@ -1350,11 +1353,14 @@
 		"fields": {
 			"email": "Email",
 			"status": "状态",
-			"budgetMax": "额度上限",
-			"budgetBase": "额度基准",
-			"budgetSpent": "已消费额度",
-			"budgetPeriod": "额度周期",
-			"budgetResetAt": "额度重置时间（本地）",
+			"budgetMax": "周期额度上限",
+			"budgetBase": "周期额度基准",
+			"budgetSpent": "已消费周期额度",
+			"budgetPeriod": "周期额度周期",
+			"budgetResetAt": "周期额度重置时间（本地）",
+			"walletGranted": "总额度",
+			"walletSpent": "总消费",
+			"walletBalance": "当前余额",
 			"metadataJsonObject": "元数据（JSON 对象）",
 			"chargedCostFactors": "模型折扣",
 			"chargedCostFactorModelId": "模型 ID",
@@ -1371,6 +1377,9 @@
 			"budgetSpent": "当前周期金额中的已消费金额。",
 			"budgetPeriod": "重置周期类型，none 表示不自动重置。",
 			"budgetResetAt": "下一次重置时间",
+			"walletGranted": "累计发放的永久额度。此处保存为绝对值修正；日常加购请用下方加额流水。",
+			"walletSpent": "已从永久额度扣掉的累计金额。",
+			"walletBalance": "当前余额 = 总额度 − 总消费，只读。永久额度不随周期重置或订阅到期清零。",
 			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
 			"chargedCostFactors": "从目录中选择模型后设置倍率。在路由 Charged cost 算完后再乘。未配置的模型金额不变；0 表示该模型不扣费。仅 LLM / Images / Audio，不含 Agent Tools。"
 		},
@@ -1399,16 +1408,23 @@
 			"activeClickToRevoke": "活跃：点击吊销",
 			"inactiveClickToActivate": "未启用：点击激活"
 		},
+		"hints": {
+			"budgetTitle": "周期额度说明",
+			"walletTitle": "永久额度说明",
+			"budgetVsWallet": "周期额度随订阅周期重置，到期清零。永久额度来自加购，不随周期或到期清零。扣费先周期、后永久。"
+		},
 		"detailSections": {
 			"recentRequestLogs": "近期请求日志",
 			"userAuditLogs": "用户审计日志",
+			"walletCredits": "加额流水",
 			"keyMetadata": "Key metadata",
 			"newApiKey": "新建 API Key",
 			"moreCount": "+{count} 更多"
 		},
 		"empty": {
 			"requestLogs": "暂无请求日志",
-			"auditLogs": "暂无审计日志"
+			"auditLogs": "暂无审计日志",
+			"walletCredits": "暂无永久额度加额记录"
 		},
 		"confirm": {
 			"deleteUser": "确定要永久删除该用户及其所有 Key 吗？审计历史会保留（用户链接会被清除）。",
@@ -1442,7 +1458,8 @@
 			"user": "用户",
 			"key": "Key",
 			"name": "名称",
-			"userBudget": "用户额度",
+			"userBudget": "用户周期额度",
+			"wallet": "永久额度",
 			"apiKeyMetadata": "Metadata",
 			"created": "创建时间",
 			"links": "关联"
@@ -1470,8 +1487,9 @@
 			"secretKey": "Secret Key",
 			"status": "状态",
 			"userIdAuth": "用户 ID（鉴权）",
-			"budgetReadonly": "额度（只读）",
-			"budgetPeriodReset": "额度周期 / 重置",
+			"budgetReadonly": "周期额度（只读）",
+			"budgetPeriodReset": "周期额度周期 / 重置",
+			"walletReadonly": "永久额度（只读）",
 			"created": "创建时间",
 			"updated": "更新时间"
 		},
@@ -1493,7 +1511,7 @@
 			"requestLogsForKey": "查看此 Key 的请求日志 →",
 			"auditLogsForKey": "查看此 Key 的审计日志 →",
 			"openUserTitle": "打开用户详情",
-			"openUserBudgetTitle": "打开用户额度",
+			"openUserBudgetTitle": "打开用户周期额度",
 			"requestLogsTitle": "此 Key 的请求日志",
 			"auditLogsTitle": "此 Key 的审计日志"
 		},
@@ -1578,7 +1596,7 @@
 			"audioPerCharacterUsage": "语音合成计费字符数",
 			"cacheTokens": "Cache read / cache write Token",
 			"standardCatalogPrice": "标准价（目录价）",
-			"chargedUserBudget": "计费（用户额度）",
+			"chargedUserBudget": "计费",
 			"meteredSupplierCost": "计量（供应成本）",
 			"unknown": "未知"
 		},
@@ -1663,7 +1681,7 @@
 			"actor": "操作者",
 			"identity": "Email / 用户 / Key",
 			"spend": "消费",
-			"budgetPlan": "额度计划",
+			"budgetPlan": "周期额度计划",
 			"userChangeDetail": "用户变更详情"
 		},
 		"labels": {
@@ -1679,6 +1697,8 @@
 			"before": "变更前",
 			"after": "变更后",
 			"delta": "差值",
+			"budgetPool": "周期",
+			"walletPool": "永久",
 			"max": "上限：",
 			"base": "基准：",
 			"period": "周期：",
@@ -1746,7 +1766,8 @@
 			"userEmail": "用户（email）",
 			"models": "模型",
 			"lastActive": "最后活跃",
-			"budgetUsage": "额度使用",
+			"budgetUsage": "周期额度使用",
+			"wallet": "永久额度",
 			"errors": "错误",
 			"modelProvider": "模型 / 供应商"
 		},

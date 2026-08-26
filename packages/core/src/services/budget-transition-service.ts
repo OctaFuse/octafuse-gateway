@@ -33,6 +33,9 @@ export type BudgetTransitionSnapshot = {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted: number;
+	wallet_spent: number;
+	wallet_balance: number;
 };
 
 export type BudgetTransitionPreview = {
@@ -49,12 +52,17 @@ function snapshotFromUserRow(row: UserRow): BudgetTransitionSnapshot {
 		row.budget_max,
 		row.budget_base
 	);
+	const walletGranted = roundGatewayMoney(Number(row.wallet_granted ?? 0));
+	const walletSpent = roundGatewayMoney(Number(row.wallet_spent ?? 0));
 	return {
 		budget_max: lazy.budget_max,
 		budget_base: roundGatewayMoney(Number(row.budget_base ?? 0)),
 		budget_spent: lazy.budget_spent,
 		budget_period: row.budget_period,
 		budget_reset_at: lazy.budget_reset_at,
+		wallet_granted: walletGranted,
+		wallet_spent: walletSpent,
+		wallet_balance: roundGatewayMoney(walletGranted - walletSpent),
 	};
 }
 
@@ -93,6 +101,9 @@ export function computeBudgetTransition(
 			budget_spent: nextSpent,
 			budget_period: input.budget_period,
 			budget_reset_at: budgetResetAt,
+			wallet_granted: before.wallet_granted,
+			wallet_spent: before.wallet_spent,
+			wallet_balance: before.wallet_balance,
 		},
 		carryover,
 	};
@@ -127,6 +138,9 @@ export async function previewBudgetTransition(
 		budget_spent: info.budget_spent,
 		budget_period: info.budget_period,
 		budget_reset_at: info.budget_reset_at,
+		wallet_granted: info.wallet_granted,
+		wallet_spent: info.wallet_spent,
+		wallet_balance: info.wallet_balance,
 	};
 	return computeBudgetTransition(before, input);
 }

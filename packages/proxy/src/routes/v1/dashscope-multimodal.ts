@@ -20,6 +20,7 @@ import {
 import { proxyDashScopeMultimodalPassthrough, type ProxyResult } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
 import { canAffordAudioCost, estimateAudioBudgetPrecheck, recordAudioUsage } from '../../services/audio-usage-charge';
+import { apiKeyHasBalance } from '../../services/tool-usage-charge';
 import { formatHttpErrorTextForRequestLog, materializeNonOkResponse } from '../../services/request-log-record-status';
 import {
 	maybeBlockUserModelCircuit,
@@ -176,7 +177,7 @@ dashScopeMultimodalRoutes.post('/', async (c) => {
 	}
 	const { model, baseModelId, effectiveRouteGroup, routes, stickySurface } = routed;
 	const modelNameForLog = modelDisplayName(model, baseModelId);
-	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+	if (!apiKeyHasBalance(apiKey)) {
 		return gatewayErrorJson(c, {
 			status: 403,
 			code: GatewayErrorCode.budgetExceeded,
@@ -194,7 +195,7 @@ dashScopeMultimodalRoutes.post('/', async (c) => {
 		},
 		routes.map((route) => route.priceOverrideRaw),
 	);
-	if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost)) {
+	if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
 		return gatewayErrorJson(c, {
 			status: 403,
 			code: GatewayErrorCode.budgetExceeded,

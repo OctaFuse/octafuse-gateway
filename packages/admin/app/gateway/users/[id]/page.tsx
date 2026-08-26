@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ClipboardDocumentIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { readApiJson } from '@/lib/api-json';
 import { parseGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
@@ -45,6 +46,9 @@ type UserDetail = {
   budget_spent: number;
   budget_period: string;
   budget_reset_at: string | null;
+  wallet_granted?: number;
+  wallet_spent?: number;
+  wallet_balance?: number;
   status: string;
   metadata: Record<string, unknown> | null;
   charged_cost_factors?: Record<string, number> | null;
@@ -137,6 +141,7 @@ export default function GatewayUserDetailPage() {
   const [keys, setKeys] = useState<KeyRow[]>([]);
   const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
   const [audits, setAudits] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
+  const [walletCredits, setWalletCredits] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
   const [planError, setPlanError] = useState('');
   const [planSuccess, setPlanSuccess] = useState('');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
@@ -156,6 +161,8 @@ export default function GatewayUserDetailPage() {
     budget_spent: '',
     budget_period: 'none',
     budget_reset_at: '',
+    wallet_granted: '',
+    wallet_spent: '',
     metadata: '',
     chargedCostFactorRows: [] as ChargedCostFactorRow[],
     external_system: '',
@@ -195,6 +202,8 @@ export default function GatewayUserDetailPage() {
         budget_spent: String(u.budget_spent ?? 0),
         budget_period: u.budget_period || 'none',
         budget_reset_at: formatLocalDateTimeInput(u.budget_reset_at),
+        wallet_granted: String(u.wallet_granted ?? 0),
+        wallet_spent: String(u.wallet_spent ?? 0),
         metadata: u.metadata ? JSON.stringify(u.metadata, null, 2) : '',
         chargedCostFactorRows: factorsToRows(u.charged_cost_factors),
         external_system: u.external_system ?? '',
@@ -245,6 +254,24 @@ export default function GatewayUserDetailPage() {
     }
   }, [userId]);
 
+  const loadWalletCredits = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const q = new URLSearchParams({
+        page: '1',
+        page_size: String(USER_DETAIL_RECENT_LIMIT),
+        event_type: 'wallet_credit',
+      });
+      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/audit-logs?${q}`);
+      const data = await readApiJson<GatewayApiKeyBudgetAuditLog[]>(res);
+      if (data.success) {
+        setWalletCredits(data.data ?? []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [userId]);
+
   useEffect(() => {
     loadUser();
   }, [loadUser]);
@@ -260,6 +287,10 @@ export default function GatewayUserDetailPage() {
   useEffect(() => {
     loadAudits();
   }, [loadAudits]);
+
+  useEffect(() => {
+    loadWalletCredits();
+  }, [loadWalletCredits]);
 
   useEffect(() => {
     let cancelled = false;
@@ -295,6 +326,14 @@ export default function GatewayUserDetailPage() {
     () => new Set(planForm.chargedCostFactorRows.map((row) => row.modelId)),
     [planForm.chargedCostFactorRows]
   );
+
+  const walletPreviewBalance = useMemo(() => {
+    const granted = Number(planForm.wallet_granted);
+    const spent = Number(planForm.wallet_spent);
+    const g = Number.isFinite(granted) ? granted : 0;
+    const s = Number.isFinite(spent) ? spent : 0;
+    return g - s;
+  }, [planForm.wallet_granted, planForm.wallet_spent]);
 
   const pickerModelsByVendor = useMemo(() => {
     const q = modelPickerSearch.trim().toLowerCase();
@@ -394,6 +433,8 @@ export default function GatewayUserDetailPage() {
         budget_spent: parseFloat(planForm.budget_spent) || 0,
         budget_period: planForm.budget_period,
         budget_reset_at: planForm.budget_reset_at ? new Date(planForm.budget_reset_at).toISOString() : null,
+        wallet_granted: parseFloat(planForm.wallet_granted) || 0,
+        wallet_spent: parseFloat(planForm.wallet_spent) || 0,
         external_system: extS || null,
         external_user_id: extU || null,
         reason: 'gwui:user-plan',
@@ -643,7 +684,12 @@ export default function GatewayUserDetailPage() {
               </div>
             </div>
             <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-sky-950">{t('table.budget')}</h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-semibold text-sky-950">{t('table.budget')}</h3>
+                <InfoHintPopover label={t('hints.budgetTitle')}>
+                  <p>{t('hints.budgetVsWallet')}</p>
+                </InfoHintPopover>
+              </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -724,6 +770,52 @@ export default function GatewayUserDetailPage() {
                   <p className="mt-1 text-xs text-gray-500">
                     {t('help.budgetResetAt')}
                   </p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg border border-violet-200 bg-violet-50/70 p-4 space-y-3">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-semibold text-violet-950">{t('table.wallet')}</h3>
+                <InfoHintPopover label={t('hints.walletTitle')}>
+                  <p>{t('hints.budgetVsWallet')}</p>
+                </InfoHintPopover>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.walletGranted')}</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={planForm.wallet_granted}
+                    onChange={(e) => setPlanForm({ ...planForm, wallet_granted: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t('help.walletGranted')}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.walletSpent')}</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={planForm.wallet_spent}
+                    onChange={(e) => setPlanForm({ ...planForm, wallet_spent: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t('help.walletSpent')}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.walletBalance')}</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={formatGatewayMoneyCode(walletPreviewBalance, billingCurrency, 2)}
+                    className={`w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm ${
+                      walletPreviewBalance < 0 ? 'text-red-600' : 'text-gray-700'
+                    }`}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t('help.walletBalance')}</p>
                 </div>
               </div>
             </div>
@@ -1050,6 +1142,68 @@ export default function GatewayUserDetailPage() {
             </tbody>
           </table>
           {logs.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.requestLogs')}</p>}
+        </div>
+      </div>
+
+      <div className="mt-6 bg-white rounded-lg shadow-md p-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.walletCredits')}</h2>
+          <Link
+            href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}&event_type=wallet_credit`}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            {tCommon('more')}
+          </Link>
+        </div>
+        <div className="overflow-x-auto text-xs">
+          <table className="min-w-full">
+            <thead>
+              <tr className="text-left text-gray-500 border-b">
+                <th className="py-2 pr-2">{tCommon('time')}</th>
+                <th className="py-2 pr-2">{t('table.event')}</th>
+                <th className="py-2 pr-2">{t('table.sourceTrace')}</th>
+                <th className="py-2 pr-2">{t('table.userSnapshotDelta')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {walletCredits.map((a) => {
+                const snapLines = summarizeUserSnapshotDiffLines({
+                  before_user_snapshot: a.before_user_snapshot ?? null,
+                  after_user_snapshot: a.after_user_snapshot ?? null,
+                  changed_fields: a.changed_fields ?? null,
+                  omitSnapshotFields: OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS,
+                });
+                return (
+                  <tr key={a.id} className="border-b border-gray-50 align-top">
+                    <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(a.created_at)}</td>
+                    <td className="py-2 pr-2">
+                      <div className="font-medium">{a.event_type}</div>
+                      {(a.reason_code || a.reason_text) ? (
+                        <div className="text-gray-600 mt-0.5 max-w-[14rem] line-clamp-2" title={a.reason_text ?? a.reason_code ?? ''}>
+                          {a.reason_text || a.reason_code}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="py-2 pr-2 font-mono text-[11px] text-gray-700">
+                      {a.source ? <div className="text-violet-800">{a.source}</div> : <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="py-2 pr-2 text-gray-600">
+                      {snapLines.length === 0 ? (
+                        <span className="text-gray-400">—</span>
+                      ) : (
+                        snapLines.slice(0, 4).map((line, i) => (
+                          <div key={`${a.id}-w-${i}`} className="line-clamp-2 font-mono text-[11px]" title={line}>
+                            {line}
+                          </div>
+                        ))
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {walletCredits.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.walletCredits')}</p>}
         </div>
       </div>
 

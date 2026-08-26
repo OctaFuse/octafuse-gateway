@@ -52,6 +52,8 @@ type ResolvedSqlRow = KeySqlRow & {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted: number;
+	wallet_spent: number;
 };
 
 function mapResolvedRow(r: ResolvedSqlRow): ResolvedGatewayKeyRow {
@@ -66,6 +68,8 @@ function mapResolvedRow(r: ResolvedSqlRow): ResolvedGatewayKeyRow {
 		budget_spent: roundGatewayMoney(Number(r.budget_spent)),
 		budget_period: r.budget_period,
 		budget_reset_at: r.budget_reset_at,
+		wallet_granted: roundGatewayMoney(Number(r.wallet_granted ?? 0)),
+		wallet_spent: roundGatewayMoney(Number(r.wallet_spent ?? 0)),
 	};
 }
 
@@ -82,7 +86,7 @@ export function buildInsertApiKeyStatement(db: D1Database, params: InsertKeyPara
 export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysRepository & ApiKeysD1Statements {
 	const raw = db.raw;
 	const resolvedSelect = `SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.last_used_at, k.created_at, k.updated_at,
-    u.email AS user_email, u.metadata AS user_metadata, u.charged_cost_factors AS user_charged_cost_factors, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at
+    u.email AS user_email, u.metadata AS user_metadata, u.charged_cost_factors AS user_charged_cost_factors, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at, u.wallet_granted, u.wallet_spent
     FROM api_keys k INNER JOIN users u ON u.id = k.user_id`;
 
 	return {
@@ -212,7 +216,7 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 			const rows = await raw
 				.prepare(
 					`SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.created_at, k.updated_at,
-            u.email AS user_email, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at
+            u.email AS user_email, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at, u.wallet_granted, u.wallet_spent
        FROM api_keys k INNER JOIN users u ON u.id = k.user_id ${whereClause} ${orderBy} LIMIT ? OFFSET ?`
 				)
 				.bind(...bindValues, pageSize, offset)
@@ -231,6 +235,8 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 					budget_spent: number;
 					budget_period: string;
 					budget_reset_at: string | null;
+					wallet_granted: number;
+					wallet_spent: number;
 				}>();
 			const keys: AdminApiKeyListItem[] = (rows.results ?? []).map((r) => ({
 				id: r.id,
@@ -243,6 +249,8 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 				budget_spent: roundGatewayMoney(Number(r.budget_spent)),
 				budget_period: r.budget_period,
 				budget_reset_at: r.budget_reset_at,
+				wallet_granted: roundGatewayMoney(Number(r.wallet_granted ?? 0)),
+				wallet_spent: roundGatewayMoney(Number(r.wallet_spent ?? 0)),
 				status: r.status,
 				metadata: r.metadata,
 				created_at: r.created_at,

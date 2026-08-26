@@ -1326,7 +1326,10 @@
 		"table": {
 			"statusEmail": "상태 · 이메일",
 			"user": "사용자",
-			"budget": "예산",
+			"budget": "주기 예산",
+			"wallet": "월렛",
+			"walletBalance": "잔액",
+			"walletSpent": "사용액",
 			"cycle": "주기",
 			"spent": "지출",
 			"max": "최대",
@@ -1350,11 +1353,14 @@
 		"fields": {
 			"email": "이메일",
 			"status": "상태",
-			"budgetMax": "최대 예산",
-			"budgetBase": "기준 예산",
-			"budgetSpent": "사용 예산",
-			"budgetPeriod": "예산 주기",
-			"budgetResetAt": "예산 재설정 시각 (로컬)",
+			"budgetMax": "주기 예산 상한",
+			"budgetBase": "주기 예산 기준",
+			"budgetSpent": "사용한 주기 예산",
+			"budgetPeriod": "주기 예산 주기",
+			"budgetResetAt": "주기 예산 재설정 시각 (로컬)",
+			"walletGranted": "총 지급액",
+			"walletSpent": "총 사용액",
+			"walletBalance": "현재 잔액",
 			"metadataJsonObject": "메타데이터 (JSON 객체)",
 			"chargedCostFactors": "모델 할인",
 			"chargedCostFactorModelId": "모델 ID",
@@ -1371,6 +1377,9 @@
 			"budgetSpent": "현재 주기 금액 중 이미 사용한 금액.",
 			"budgetPeriod": "재설정 주기 유형. none은 자동 재설정 없음.",
 			"budgetResetAt": "다음 재설정 시각",
+			"walletGranted": "누적 지급된 월렛입니다. 여기서 저장하면 절댓값으로 수정됩니다. 일반 충전은 아래 지급 내역을 사용하세요.",
+			"walletSpent": "월렛에서 이미 차감된 누적 금액입니다.",
+			"walletBalance": "현재 잔액 = 총 지급액 − 총 사용액이며 읽기 전용입니다. 주기 재설정이나 구독 만료 시에도 유지됩니다.",
 			"metadataReplace": "저장하면 metadata 객체 전체가 교체됩니다. 현재 값을 유지하려면 비워 두세요.",
 			"chargedCostFactors": "카탈로그에서 모델을 선택한 뒤 배율을 설정합니다. 라우트 Charged cost 계산 후에 곱합니다. 없는 모델은 금액이 그대로입니다. 0이면 해당 모델은 과금하지 않습니다. LLM / Images / Audio만 적용되며 Agent Tools는 제외됩니다."
 		},
@@ -1399,16 +1408,23 @@
 			"activeClickToRevoke": "활성: 클릭하여 폐기",
 			"inactiveClickToActivate": "비활성: 클릭하여 활성화"
 		},
+		"hints": {
+			"budgetTitle": "주기 예산 안내",
+			"walletTitle": "월렛 안내",
+			"budgetVsWallet": "주기 예산은 구독 주기마다 재설정되며 만료 시 0이 됩니다. 월렛은 충전으로 지급되며 주기 재설정이나 만료 후에도 유지됩니다. 과금은 주기 예산을 먼저 쓰고, 부족분은 월렛에서 차감합니다."
+		},
 		"detailSections": {
 			"recentRequestLogs": "최근 요청 로그",
 			"userAuditLogs": "사용자 감사 로그",
+			"walletCredits": "월렛 지급 내역",
 			"keyMetadata": "Key Metadata",
 			"newApiKey": "새 API Key",
 			"moreCount": "+{count}개 더 보기"
 		},
 		"empty": {
 			"requestLogs": "요청 로그가 없습니다",
-			"auditLogs": "감사 로그가 없습니다"
+			"auditLogs": "감사 로그가 없습니다",
+			"walletCredits": "월렛 지급 이벤트가 없습니다"
 		},
 		"confirm": {
 			"deleteUser": "이 사용자와 모든 Key를 영구 삭제하시겠습니까? 감사 기록은 유지되며 사용자 링크만 제거됩니다.",
@@ -1442,7 +1458,8 @@
 			"user": "사용자",
 			"key": "Key",
 			"name": "이름",
-			"userBudget": "사용자 예산",
+			"userBudget": "사용자 주기 예산",
+			"wallet": "월렛",
 			"apiKeyMetadata": "Metadata",
 			"created": "생성일",
 			"links": "연결"
@@ -1470,8 +1487,9 @@
 			"secretKey": "Secret Key",
 			"status": "상태",
 			"userIdAuth": "User ID (auth)",
-			"budgetReadonly": "예산 (읽기 전용)",
-			"budgetPeriodReset": "예산 주기 / 재설정",
+			"budgetReadonly": "주기 예산 (읽기 전용)",
+			"budgetPeriodReset": "주기 예산 주기 / 재설정",
+			"walletReadonly": "월렛 (읽기 전용)",
 			"created": "생성일",
 			"updated": "업데이트일"
 		},
@@ -1679,6 +1697,8 @@
 			"before": "변경 전",
 			"after": "변경 후",
 			"delta": "변화량",
+			"budgetPool": "주기",
+			"walletPool": "월렛",
 			"max": "최대:",
 			"base": "기준:",
 			"period": "주기:",
@@ -1746,7 +1766,8 @@
 			"userEmail": "사용자 (이메일)",
 			"models": "모델",
 			"lastActive": "마지막 활동",
-			"budgetUsage": "예산 사용량",
+			"budgetUsage": "주기 예산 사용량",
+			"wallet": "월렛",
 			"errors": "오류",
 			"modelProvider": "모델 / Provider"
 		},

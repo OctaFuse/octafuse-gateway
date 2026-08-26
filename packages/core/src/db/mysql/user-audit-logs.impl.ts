@@ -73,21 +73,25 @@ export function createMySqlUserAuditLogsRepository(db: MySqlDatabaseClient): Use
 		async getUserAuditLogsByUserId(
 			userId: string,
 			page: number,
-			pageSize: number
+			pageSize: number,
+			eventType?: string
 		): Promise<{ logs: UserAuditLogRow[]; total: number }> {
 			const offset = (page - 1) * pageSize;
+			const where = eventType
+				? and(eq(myUserAuditLogsTable.userId, userId), eq(myUserAuditLogsTable.eventType, eventType))
+				: eq(myUserAuditLogsTable.userId, userId);
 			const total = Number(
 				(
 					await drizzle
 						.select({ c: count() })
 						.from(myUserAuditLogsTable)
-						.where(eq(myUserAuditLogsTable.userId, userId))
+						.where(where)
 				)[0]?.c ?? 0
 			);
 			const rows = await drizzle
 				.select()
 				.from(myUserAuditLogsTable)
-				.where(eq(myUserAuditLogsTable.userId, userId))
+				.where(where)
 				.orderBy(desc(myUserAuditLogsTable.createdAt))
 				.limit(pageSize)
 				.offset(offset);

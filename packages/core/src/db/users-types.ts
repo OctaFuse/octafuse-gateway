@@ -9,6 +9,8 @@ export interface InsertUserParams {
 	budgetSpent?: number | null;
 	budgetPeriod?: string;
 	budgetResetAt?: string | null;
+	walletGranted?: number | null;
+	walletSpent?: number | null;
 	status?: string;
 	metadata?: string | null;
 	chargedCostFactors?: string | null;

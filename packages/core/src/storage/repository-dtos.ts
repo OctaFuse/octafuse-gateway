@@ -18,6 +18,8 @@ export interface AdminApiKeyListItem {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted: number;
+	wallet_spent: number;
 	status: string;
 	metadata: string | null;
 	created_at: string;
@@ -139,6 +141,8 @@ export interface UserAnalyticsRow {
 	last_active_at: string | null;
 	budget_max: number | null;
 	budget_spent: number | null;
+	wallet_granted: number | null;
+	wallet_spent: number | null;
 	success_count: number;
 	error_count: number;
 }

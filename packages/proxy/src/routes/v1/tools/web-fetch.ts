@@ -6,7 +6,7 @@ import { resolveWebFetchConfig } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../../app';
 import { requireApiKey } from '../../../middleware/auth';
-import { canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
+import { apiKeyHasBalance, canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
 import {
 	assertFetchUrlSafe,
 	fetchUrlByProvider,
@@ -47,10 +47,10 @@ webFetchRoutes.post('/', async (c) => {
 		return c.json({ error: 'Web fetch is not configured' }, 503);
 	}
 
-	if (apiKey.budgetMax != null && apiKey.budgetSpent >= apiKey.budgetMax) {
+	if (!apiKeyHasBalance(apiKey)) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
-	if (!canAffordToolCost(apiKey.budgetMax, apiKey.budgetSpent, unitCharged)) {
+	if (!canAffordToolCost(apiKey.budgetMax, apiKey.budgetSpent, unitCharged, apiKey.walletGranted, apiKey.walletSpent)) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
 

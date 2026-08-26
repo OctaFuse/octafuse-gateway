@@ -32,6 +32,7 @@ import {
 	computeChangedFields,
 	snapshotToJson,
 	snapshotWithOverrides,
+	splitChargeFromBudgetSnapshot,
 	userRowToSnapshot,
 } from '@octafuse/core';
 import type { UsageFromStream } from './proxy';
@@ -262,12 +263,16 @@ export async function recordUsage(
 	const shouldChargeBudget = params.status !== 'error' && chargedCost > 0;
 	const userSnapshot = shouldChargeBudget ? await getUserBudgetSnapshot(repos, params.user_id) : null;
 	const beforeSpent = userSnapshot?.budgetSpent ?? 0;
+	const split = splitChargeFromBudgetSnapshot(userSnapshot, chargedCost);
 	const userRow = shouldChargeBudget ? await repos.users.getById(params.user_id) : null;
-	const afterSpentVal = roundGatewayMoney(beforeSpent + chargedCost);
+	const afterSpentVal = split.afterPeriodSpent;
 	let usageSnaps: { before: string; after: string; changed: string | null } | null = null;
 	if (userRow) {
 		const beforeS = userRowToSnapshot(userRow);
-		const afterS = snapshotWithOverrides(beforeS, { budget_spent: afterSpentVal });
+		const afterS = snapshotWithOverrides(beforeS, {
+			budget_spent: afterSpentVal,
+			wallet_spent: roundGatewayMoney(Number(userRow.wallet_spent ?? 0) + split.fromWallet),
+		});
 		usageSnaps = {
 			before: snapshotToJson(beforeS),
 			after: snapshotToJson(afterS),
@@ -314,6 +319,7 @@ export async function recordUsage(
 			meteredCost: supplierCostR,
 			standardCost: standardCostR,
 			chargedCost: chargedCost,
+			chargedWalletCost: split.fromWallet,
 			routeGroup: params.route_group,
 			status: params.status,
 			latencyMs: params.latency_ms ?? null,
@@ -338,6 +344,7 @@ export async function recordUsage(
 		shouldChargeBudget,
 		beforeSpent,
 		chargedCost,
+		chargedFromWallet: split.fromWallet,
 		audit: {
 			apiKeyId: params.api_key_id,
 			eventType: 'usage_charge',

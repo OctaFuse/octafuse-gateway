@@ -13,8 +13,10 @@ import {
 	replaceKeyMetadata,
 	updateKeyMetadata,
 	updateKeyStatus,
+	grantWalletCredit,
 	updateUserPlan,
 } from '@octafuse/core/services/user-service';
+import { isWalletCreditKind, WalletCreditUserNotFoundError } from '@octafuse/core';
 import {
 	applyBudgetTransition,
 	previewBudgetTransition,
@@ -214,6 +216,9 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 	const budget_base_in = input.budget_base;
 	const budget_period_in = input.budget_period;
 	const budget_spent_in = input.budget_spent;
+	const wallet_granted_in = input.wallet_granted;
+	const wallet_spent_in = input.wallet_spent;
+	const hasWalletField = wallet_granted_in !== undefined || wallet_spent_in !== undefined;
 	const hasBudgetField =
 		budget_max_in !== undefined ||
 		budget_base_in !== undefined ||
@@ -281,6 +286,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 
 	if (
 		!hasBudgetField &&
+		!hasWalletField &&
 		!hasMetaObjectMerge &&
 		!hasMetaReplace &&
 		!hasStatus &&
@@ -289,7 +295,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 		!hasChargedCostFactors
 	) {
 		throw badRequest(
-			'Provide at least one of email, budget_max, budget_base, budget_spent, budget_period, reset_budget, budget_reset_at, metadata, metadata_replace, status, external_system, external_user_id, charged_cost_factors'
+			'Provide at least one of email, budget_max, budget_base, budget_spent, budget_period, reset_budget, budget_reset_at, wallet_granted, wallet_spent, metadata, metadata_replace, status, external_system, external_user_id, charged_cost_factors'
 		);
 	}
 
@@ -320,12 +326,12 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 		if (!ok) throw new Error('Failed to update user');
 	}
 
-	if (hasMetaObjectMerge && !hasBudgetField && !hasMetaReplace) {
+	if (hasMetaObjectMerge && !hasBudgetField && !hasWalletField && !hasMetaReplace) {
 		const existing: JsonObject = row.metadata ? (JSON.parse(row.metadata) as JsonObject) : {};
 		const merged = JSON.stringify({ ...existing, ...(input.metadata as JsonObject) });
 		const ok = await repos.users.setUserMetadataById(userId, merged);
 		if (!ok) throw new Error('Failed to update user');
-	} else if (hasBudgetField || hasMetaReplace) {
+	} else if (hasBudgetField || hasWalletField || hasMetaReplace) {
 		const effMax = budget_max_in === undefined ? row.budget_max : budget_max_in;
 		const effPeriod = (budget_period_in ?? row.budget_period) as BudgetPeriod;
 		let mergedMetadataJson: string | null | undefined;
@@ -366,6 +372,8 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 			metadata: mergedMetadataJson,
 			budget_spent: budget_spent_in,
 			budget_base: budget_base_in,
+			wallet_granted: wallet_granted_in,
+			wallet_spent: wallet_spent_in,
 		});
 		if (!ok) throw new Error('Failed to update user');
 	}
@@ -878,10 +886,50 @@ export async function getAdminUserLogs(
 export async function getAdminUserAuditLogs(
 	repos: GatewayRepositories,
 	rawUser: string,
-	input: { page?: number; page_size?: number }
+	input: { page?: number; page_size?: number; event_type?: string }
 ) {
 	const userId = await resolveAdminUserId(repos, rawUser);
 	const page = Math.max(1, Number(input.page ?? 1));
 	const page_size = Math.min(100, Math.max(1, Number(input.page_size ?? 20)));
-	return repos.userAuditLogs.getUserAuditLogsByUserId(userId, page, page_size);
+	const eventType = input.event_type?.trim() || undefined;
+	return repos.userAuditLogs.getUserAuditLogsByUserId(userId, page, page_size, eventType);
+}
+
+export async function creditAdminUserWallet(
+	repos: GatewayRepositories,
+	rawUser: string,
+	input: { amount?: unknown; kind?: unknown; external_ref?: unknown; reason?: unknown },
+	actorId: string
+) {
+	const userId = await resolveAdminUserId(repos, rawUser);
+	const amount = Number(input.amount);
+	if (!Number.isFinite(amount) || amount === 0) {
+		throw badRequest('amount must be a non-zero number');
+	}
+	const kind = typeof input.kind === 'string' ? input.kind.trim() : '';
+	if (!isWalletCreditKind(kind)) {
+		throw badRequest('kind must be one of topup, signup_bonus, admin_adjust, refund');
+	}
+	const externalRef = typeof input.external_ref === 'string' ? input.external_ref.trim() : '';
+	if (!externalRef) {
+		throw badRequest('external_ref is required');
+	}
+	const reason = typeof input.reason === 'string' ? input.reason.trim() : undefined;
+	try {
+		return await grantWalletCredit(repos, {
+			userId,
+			amount,
+			kind,
+			externalRef,
+			reason,
+			actorType: 'admin',
+			actorId,
+			source: 'admin_wallet',
+		});
+	} catch (error) {
+		if (error instanceof WalletCreditUserNotFoundError) {
+			throw notFound('User not found');
+		}
+		throw error;
+	}
 }

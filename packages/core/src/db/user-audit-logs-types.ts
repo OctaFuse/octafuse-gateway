@@ -25,6 +25,8 @@ export interface InsertUserAuditLogParams {
 	actorId?: string | null;
 	reasonCode?: string | null;
 	reasonText?: string | null;
+	/** 幂等键；`wallet_credit` 用 `external_ref`。NULL 不参与唯一约束。 */
+	dedupKey?: string | null;
 }
 
 /** 事务内写审计时的扩展字段（预算周期等合并进 change_payload；actor/reason 走表列）。 */

@@ -332,6 +332,9 @@ export async function updateAdminKey(
 		budget_spent: info.budget_spent,
 		budget_period: info.budget_period,
 		budget_reset_at: info.budget_reset_at,
+		wallet_granted: info.wallet_granted,
+		wallet_spent: info.wallet_spent,
+		wallet_balance: info.wallet_balance,
 		metadata: info.metadata ?? undefined,
 	};
 }
@@ -357,6 +360,9 @@ export async function getAdminKeyById(repos: GatewayRepositories, idOrKey: strin
 		budget_spent: info.budget_spent,
 		budget_period: info.budget_period,
 		budget_reset_at: info.budget_reset_at,
+		wallet_granted: info.wallet_granted,
+		wallet_spent: info.wallet_spent,
+		wallet_balance: info.wallet_balance,
 		status: info.status,
 		metadata: info.metadata ?? undefined,
 		created_at: info.created_at,

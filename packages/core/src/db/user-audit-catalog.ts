@@ -15,6 +15,7 @@ export const USER_AUDIT_EVENT_TYPES = [
 	'key_deleted',
 	'user_created',
 	'user_deleted',
+	'wallet_credit',
 ] as const;
 
 /** 来源通道（`source`）：入口/通路，不与 `event_type` 混用 */
@@ -30,6 +31,8 @@ export const USER_AUDIT_SOURCE_CHANNELS = [
 	'admin_budget_transition',
 	'admin_keys',
 	'admin_user_key',
+	/** Admin `POST /users/:id/wallet/credit`（永久额度加额） */
+	'admin_wallet',
 	/** 历史兼容：仅归一化读入，新写入不应再产生 */
 	'usage_charge',
 	'period_reset',

@@ -15,6 +15,8 @@ export const usersTable = sqliteTable(
 		budgetSpent: real('budget_spent').notNull().default(0),
 		budgetPeriod: text('budget_period').notNull().default('none'),
 		budgetResetAt: text('budget_reset_at'),
+		walletGranted: real('wallet_granted').notNull().default(0),
+		walletSpent: real('wallet_spent').notNull().default(0),
 		status: text('status').notNull().default('active'),
 		metadata: text('metadata'),
 		/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
@@ -174,6 +176,7 @@ export const apiKeyRequestLogsTable = sqliteTable('api_key_request_logs', {
 	meteredCost: real('metered_cost').notNull().default(0),
 	standardCost: real('standard_cost').notNull().default(0),
 	chargedCost: real('charged_cost').notNull().default(0),
+	chargedWalletCost: real('charged_wallet_cost').notNull().default(0),
 	routeGroup: text('route_group').notNull().default('default'),
 	status: text('status').notNull().default('success'),
 	latencyMs: integer('latency_ms'),
@@ -227,6 +230,7 @@ export const userAuditLogsTable = sqliteTable('user_audit_logs', {
 	actorId: text('actor_id'),
 	reasonCode: text('reason_code'),
 	reasonText: text('reason_text'),
+	dedupKey: text('dedup_key'),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 

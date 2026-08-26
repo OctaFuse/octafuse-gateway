@@ -85,6 +85,8 @@ export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClien
 				MAX(rl.created_at) as last_active_at,
 				${sqlMoneyRound('MAX(u.budget_max)')} as budget_max,
 				${sqlMoneyRound('MAX(u.budget_spent)')} as budget_spent,
+				${sqlMoneyRound('MAX(u.wallet_granted)')} as wallet_granted,
+				${sqlMoneyRound('MAX(u.wallet_spent)')} as wallet_spent,
 				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END)::bigint as success_count,
 				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END)::bigint as error_count
 			FROM api_key_request_logs rl

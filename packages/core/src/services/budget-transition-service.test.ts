@@ -11,6 +11,9 @@ test('computeBudgetTransition carries remaining budget forward', () => {
 			budget_spent: 1,
 			budget_period: 'monthly',
 			budget_reset_at: '2026-06-23T15:31:49.000Z',
+			wallet_granted: 5,
+			wallet_spent: 1,
+			wallet_balance: 4,
 		},
 		{
 			target_budget_base: 100,
@@ -24,6 +27,9 @@ test('computeBudgetTransition carries remaining budget forward', () => {
 	assert.equal(result.after.budget_max, 109);
 	assert.equal(result.after.budget_spent, 0);
 	assert.equal(result.after.budget_base, 100);
+	assert.equal(result.after.wallet_granted, 5);
+	assert.equal(result.after.wallet_spent, 1);
+	assert.equal(result.after.wallet_balance, 4);
 });
 
 test('computeBudgetTransition deducts overage from next period', () => {
@@ -34,6 +40,9 @@ test('computeBudgetTransition deducts overage from next period', () => {
 			budget_spent: 12,
 			budget_period: 'monthly',
 			budget_reset_at: '2026-06-23T15:31:49.000Z',
+			wallet_granted: 5,
+			wallet_spent: 1,
+			wallet_balance: 4,
 		},
 		{
 			target_budget_base: 100,
@@ -55,6 +64,9 @@ test('computeBudgetTransition none strategy skips carryover', () => {
 			budget_spent: 1,
 			budget_period: 'monthly',
 			budget_reset_at: null,
+			wallet_granted: 5,
+			wallet_spent: 1,
+			wallet_balance: 4,
 		},
 		{
 			target_budget_base: 100,

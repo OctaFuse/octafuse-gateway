@@ -49,6 +49,10 @@ export type AdminUserUpdateInput = {
 	external_user_id?: string | null;
 	/** `{ "<models.id>": factor }`；null / {} 清空 */
 	charged_cost_factors?: Record<string, number> | null;
+	/** 永久额度累计发放（绝对值运维修正） */
+	wallet_granted?: number | null;
+	/** 永久额度累计消耗（绝对值运维修正） */
+	wallet_spent?: number | null;
 };
 
 /** ---------- `/admin/users/:id/budget/transition` 请求体 ---------- */
@@ -301,6 +305,8 @@ export type AdminKeyListItem = {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted?: number;
+	wallet_spent?: number;
 	status: string;
 	metadata: string | null;
 	created_at: string;
@@ -359,6 +365,9 @@ export type AdminKeyUpdateOutput =
 			budget_spent: number;
 			budget_period: string;
 			budget_reset_at: string | null;
+			wallet_granted?: number;
+			wallet_spent?: number;
+			wallet_balance?: number;
 			metadata?: JsonObject;
 	  };
 
@@ -374,6 +383,9 @@ export type AdminKeyDetailOutput = {
 	budget_spent: number;
 	budget_period: string;
 	budget_reset_at: string | null;
+	wallet_granted?: number;
+	wallet_spent?: number;
+	wallet_balance?: number;
 	status: string;
 	metadata?: JsonObject;
 	created_at: string;
@@ -548,6 +560,8 @@ export type AdminUserAnalyticsRow = {
 	last_active_at: unknown;
 	budget_max: number | null;
 	budget_spent: number;
+	wallet_granted?: number | null;
+	wallet_spent?: number | null;
 	budget_usage_rate: number | null;
 	success_rate: number;
 	error_count: number;

@@ -256,6 +256,12 @@ type AuditDiffRow = {
   after: string;
 };
 
+function snapshotMoneyField(raw: string | null | undefined, key: string): number {
+  const parsed = parseAuditJsonObject(raw);
+  const n = Number(parsed?.[key] ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function parseAuditJsonObject(raw: string | null | undefined): Record<string, unknown> | null {
   const trimmed = raw?.trim();
   if (!trimmed) return null;
@@ -992,6 +998,10 @@ export default function GatewayAuditLogsPage() {
                       ex.before_budget_reset_at,
                       ex.after_budget_reset_at
                     );
+                    const walletDelta =
+                      snapshotMoneyField(item.after_user_snapshot, 'wallet_spent') -
+                      snapshotMoneyField(item.before_user_snapshot, 'wallet_spent');
+                    const showSplitCharge = item.event_type === 'usage_charge' || walletDelta !== 0;
                     const reasonDisplay = auditReasonOneLine(ex.reason_code, ex.reason_text);
                     const diffRows = auditDiffRows(item);
                     const summaryDiffRows = auditSummaryDiffRows(diffRows);
@@ -1110,6 +1120,18 @@ export default function GatewayAuditLogsPage() {
                               {formatSignedMoney(item.delta_spent, billingCurrency)}
                             </span>
                           </div>
+                          {showSplitCharge ? (
+                            <>
+                              <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline text-[11px] text-gray-500">
+                                <span className="text-right">{t('labels.budgetPool')}</span>
+                                <span>{formatSignedMoney(item.delta_spent, billingCurrency)}</span>
+                              </div>
+                              <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline text-[11px] text-gray-500">
+                                <span className="text-right">{t('labels.walletPool')}</span>
+                                <span>{formatSignedMoney(walletDelta, billingCurrency)}</span>
+                              </div>
+                            </>
+                          ) : null}
                         </div>
                       </td>
                       <td className="px-3 py-2 align-top text-xs text-gray-600">
