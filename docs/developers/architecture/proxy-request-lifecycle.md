@@ -95,10 +95,10 @@ flowchart TB
 
 ### 2.1 鉴权与解析
 
-1. **`requireApiKey`**：从 `Authorization: Bearer sk-...`、`x-api-key` 或 query `key` 提取密钥；`authenticateApiKey` 查库并注入 `c.set('apiKey')`（含 `userId`、`budgetMax`、`budgetSpent` 等）。
+1. **`requireApiKey`**：从 `Authorization: Bearer sk-...`、`x-api-key` 或 query `key` 提取密钥；`authenticateApiKey` 查库并注入 `c.set('apiKey')`（含 `userId`、`budgetMax`、`budgetSpent`、`walletGranted`、`walletSpent` 等）。
 2. **解析 JSON body**：非法 JSON → **400**；缺少 `model` → **400**。
 3. **`resolveModelRouting`**：支持 `baseModelId` 或 `baseModelId:route_group`；模型不存在 → **404**。
-4. **用户预算**：`budgetMax != null && budgetSpent >= budgetMax` → **403**。
+4. **用户额度**：`hasPositiveTotalBalance(budgetMax, budgetSpent, walletGranted, walletSpent)` 为假 → **403**。`budgetMax == null` 表示周期不限额；否则看周期剩余 + 永久余额。**`budgetMax=0` 且 wallet 仍有余额时允许请求**（勿用旧式 `budgetSpent >= budgetMax`，`0 >= 0` 会误杀）。
 5. **请求入口 / 路由池查询**：
    - `resolveRoutesForSurface` 按 `modelId + routeGroup + requestProtocol + requestOperation` 查精确请求入口，未命中时回退 `request_operation='*'`
    - 请求入口命中后按 `route_pool_id` 读取 active 上游目标；滚动升级期间若 0016 尚不可用，临时回退旧的 model / group 路径

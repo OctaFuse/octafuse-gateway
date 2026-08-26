@@ -28,6 +28,11 @@ test('total remaining: null max is unlimited; otherwise period + wallet', () => 
 	assert.equal(hasPositiveTotalBalance(40, 40, 0, 0), false);
 	assert.equal(canAffordTotalCost(40, 39, 1, 0, 2), true);
 	assert.equal(canAffordTotalCost(40, 40, 1, 0, 2), false);
+	// 0027 注册赠额：周期 max=0 但 wallet 仍有余额，不得按 spent>=max 判超额。
+	assert.equal(computeTotalRemaining(0, 0, 0.5, 0), 0.5);
+	assert.equal(hasPositiveTotalBalance(0, 0, 0.5, 0), true);
+	assert.equal(canAffordTotalCost(0, 0, 0.5, 0, 0.01), true);
+	assert.equal(hasPositiveTotalBalance(0, 0, 0, 0), false);
 });
 
 test('legacy backfill fixtures (base = 40)', () => {
