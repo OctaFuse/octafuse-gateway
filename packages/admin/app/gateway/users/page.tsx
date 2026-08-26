@@ -673,56 +673,59 @@ export default function GatewayUsersPage() {
                   placeholder="user@example.com"
                 />
               </div>
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.budgetMax')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={createForm.budget_max}
-                    onChange={(e) => setCreateForm({ ...createForm, budget_max: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder={tCommon('noLimit')}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetMax')}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.budgetBase')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={createForm.budget_base}
-                    onChange={(e) => setCreateForm({ ...createForm, budget_base: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder={tCommon('optional')}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetBase')}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.budgetPeriod')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                  </label>
-                  <select
-                    value={createForm.budget_period}
-                    onChange={(e) => setCreateForm({ ...createForm, budget_period: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  >
-                    <option value="none">{tOptions('budgetPeriod.none')}</option>
-                    <option value="daily">{tOptions('budgetPeriod.daily')}</option>
-                    <option value="weekly">{tOptions('budgetPeriod.weekly')}</option>
-                    <option value="monthly">{tOptions('budgetPeriod.monthly')}</option>
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetPeriod')}
-                  </p>
+              <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-sky-950">{t('table.budget')}</h3>
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('fields.budgetMax')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={createForm.budget_max}
+                      onChange={(e) => setCreateForm({ ...createForm, budget_max: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      placeholder={tCommon('noLimit')}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      {t('help.budgetMax')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('fields.budgetBase')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={createForm.budget_base}
+                      onChange={(e) => setCreateForm({ ...createForm, budget_base: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      placeholder={tCommon('optional')}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      {t('help.budgetBase')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('fields.budgetPeriod')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                    </label>
+                    <select
+                      value={createForm.budget_period}
+                      onChange={(e) => setCreateForm({ ...createForm, budget_period: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                    >
+                      <option value="none">{tOptions('budgetPeriod.none')}</option>
+                      <option value="daily">{tOptions('budgetPeriod.daily')}</option>
+                      <option value="weekly">{tOptions('budgetPeriod.weekly')}</option>
+                      <option value="monthly">{tOptions('budgetPeriod.monthly')}</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {t('help.budgetPeriod')}
+                    </p>
+                  </div>
                 </div>
               </div>
               <div>

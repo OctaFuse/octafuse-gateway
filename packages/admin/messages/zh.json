@@ -85,8 +85,8 @@
 		"model": "模型",
 		"provider": "供应商",
 		"email": "Email",
-		"metadata": "Metadata",
-		"key": "Key",
+		"metadata": "元数据",
+		"key": "密钥",
 		"showing": "显示 {filtered} / {total}",
 		"selected": "已选 {count}",
 		"masterKeyCannotBeEmpty": "Master key 不能为空",
@@ -1334,10 +1334,10 @@
 			"resetTo": "重置为 {amount}",
 			"period": "周期",
 			"resetAt": "重置时间",
-			"keys": "Keys",
+			"keys": "密钥",
 			"keysActiveOfTotal": "激活 / 总数",
-			"metadata": "Metadata",
-			"chargedCostFactors": "折扣倍率",
+			"metadata": "元数据",
+			"chargedCostFactors": "模型折扣",
 			"created": "创建时间",
 			"updated": "更新时间",
 			"group": "分组",
@@ -1355,8 +1355,8 @@
 			"budgetSpent": "已消费额度",
 			"budgetPeriod": "额度周期",
 			"budgetResetAt": "额度重置时间（本地）",
-			"metadataJsonObject": "Metadata（JSON 对象）",
-			"chargedCostFactors": "Charged cost factors",
+			"metadataJsonObject": "元数据（JSON 对象）",
+			"chargedCostFactors": "模型折扣",
 			"chargedCostFactorModelId": "模型 ID",
 			"chargedCostFactorValue": "倍率",
 			"externalSystem": "外部系统",
@@ -1366,14 +1366,13 @@
 		},
 		"help": {
 			"createUser": "创建新的 Gateway 用户。Email 为必填项；其他字段均可选。若要将此用户关联到其他系统中的账号，请使用底部的“外部身份”区域。",
-			"budgetMax": "当前周期内可消费的最大金额。留空表示无限制。",
-			"budgetBase": "额度周期重置时用于恢复额度上限的参考金额。",
-			"budgetSpent": "当前周期已消费金额。仅在需要人工调整时修改。",
-			"budgetPeriod": "已消费 / 额度上限的重置周期。none 表示不自动重置。",
-			"budgetResetAt": "下一次自动重置已消费金额（并从额度基准恢复额度上限）的时间。额度周期为 none 时会被忽略。",
+			"budgetMax": "当前周期内可用最大金额，留空表示无限制。",
+			"budgetBase": "周期重置时用于参考的上限金额。",
+			"budgetSpent": "当前周期金额中的已消费金额。",
+			"budgetPeriod": "重置周期类型，none 表示不自动重置。",
+			"budgetResetAt": "下一次重置时间",
 			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
-			"chargedCostFactors": "从目录中选择模型后设置倍率。在路由 Charged cost 算完后再乘。未配置的模型金额不变；0 表示该模型不扣费。仅 LLM / Images / Audio，不含 Agent Tools。",
-			"disabledUser": "禁用用户后，该用户无法使用任何 API Key 发起新请求。"
+			"chargedCostFactors": "从目录中选择模型后设置倍率。在路由 Charged cost 算完后再乘。未配置的模型金额不变；0 表示该模型不扣费。仅 LLM / Images / Audio，不含 Agent Tools。"
 		},
 		"chargedCostFactors": {
 			"none": "未设置 Charged cost factors。",
@@ -1391,7 +1390,7 @@
 			"createHint": "使用这些字段将用户关联到其他系统中的账号（例如你的 SaaS 或 OAuth 提供方）。两个字段都留空表示仅 Gateway 内部用户。两个字段均填写时，创建操作会按（外部系统、外部用户 ID）保持幂等。"
 		},
 		"metadata": {
-			"none": "无 metadata。",
+			"none": "无元数据。",
 			"invalidRaw": "存储值不是有效 JSON；正在显示原始字符串。"
 		},
 		"keysTable": {

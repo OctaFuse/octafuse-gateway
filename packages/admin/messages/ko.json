@@ -85,8 +85,8 @@
 		"model": "모델",
 		"provider": "Provider",
 		"email": "이메일",
-		"metadata": "Metadata",
-		"key": "Key",
+		"metadata": "메타데이터",
+		"key": "키",
 		"showing": "{filtered} / {total}개 표시",
 		"selected": "{count}개 선택됨",
 		"masterKeyCannotBeEmpty": "Master key를 입력해야 합니다",
@@ -1334,10 +1334,10 @@
 			"resetTo": "재설정 {amount}",
 			"period": "주기",
 			"resetAt": "재설정 시각",
-			"keys": "Keys",
+			"keys": "키",
 			"keysActiveOfTotal": "활성 / 전체",
-			"metadata": "Metadata",
-			"chargedCostFactors": "배율",
+			"metadata": "메타데이터",
+			"chargedCostFactors": "모델 할인",
 			"created": "생성일",
 			"updated": "업데이트일",
 			"group": "그룹",
@@ -1355,8 +1355,8 @@
 			"budgetSpent": "사용 예산",
 			"budgetPeriod": "예산 주기",
 			"budgetResetAt": "예산 재설정 시각 (로컬)",
-			"metadataJsonObject": "Metadata (JSON 객체)",
-			"chargedCostFactors": "Charged cost factors",
+			"metadataJsonObject": "메타데이터 (JSON 객체)",
+			"chargedCostFactors": "모델 할인",
 			"chargedCostFactorModelId": "모델 ID",
 			"chargedCostFactorValue": "배율",
 			"externalSystem": "외부 시스템",
@@ -1366,14 +1366,13 @@
 		},
 		"help": {
 			"createUser": "새 Gateway 사용자를 생성합니다. 이메일은 필수이고 다른 모든 필드는 선택 사항입니다. 이 사용자를 다른 시스템의 계정에 연결하려면 하단의 외부 ID 섹션을 사용하세요.",
-			"budgetMax": "현재 주기에 사용할 수 있는 최대 금액입니다. 비워 두면 제한이 없습니다.",
-			"budgetBase": "예산 주기가 재설정될 때 최대 예산을 복원하는 데 사용하는 기준 금액입니다.",
-			"budgetSpent": "현재 주기에 이미 사용한 금액입니다. 수동 조정이 필요한 경우에만 편집하세요.",
-			"budgetPeriod": "지출 / 최대 예산 재설정 주기입니다. none은 자동 재설정을 사용하지 않습니다.",
-			"budgetResetAt": "지출 및 기준값에서 가져온 최대 예산이 다음에 자동으로 재설정되는 시각입니다. 예산 주기가 none이면 무시됩니다.",
+			"budgetMax": "현재 주기에 사용할 수 있는 최대 금액. 비워 두면 제한 없음.",
+			"budgetBase": "주기 재설정 시 참고하는 상한 금액.",
+			"budgetSpent": "현재 주기 금액 중 이미 사용한 금액.",
+			"budgetPeriod": "재설정 주기 유형. none은 자동 재설정 없음.",
+			"budgetResetAt": "다음 재설정 시각",
 			"metadataReplace": "저장하면 metadata 객체 전체가 교체됩니다. 현재 값을 유지하려면 비워 두세요.",
-			"chargedCostFactors": "카탈로그에서 모델을 선택한 뒤 배율을 설정합니다. 라우트 Charged cost 계산 후에 곱합니다. 없는 모델은 금액이 그대로입니다. 0이면 해당 모델은 과금하지 않습니다. LLM / Images / Audio만 적용되며 Agent Tools는 제외됩니다.",
-			"disabledUser": "사용 중지된 사용자는 어떤 API Key로도 새 요청을 보낼 수 없습니다."
+			"chargedCostFactors": "카탈로그에서 모델을 선택한 뒤 배율을 설정합니다. 라우트 Charged cost 계산 후에 곱합니다. 없는 모델은 금액이 그대로입니다. 0이면 해당 모델은 과금하지 않습니다. LLM / Images / Audio만 적용되며 Agent Tools는 제외됩니다."
 		},
 		"chargedCostFactors": {
 			"none": "Charged cost factors가 없습니다.",
@@ -1391,7 +1390,7 @@
 			"createHint": "이 필드로 사용자를 다른 시스템의 계정(예: 자체 SaaS, OAuth Provider)에 연결합니다. Gateway 내부 전용 사용자는 두 필드를 모두 비워 두세요. 두 필드가 모두 설정되면 (external system, external user ID) 쌍을 기준으로 멱등하게 생성됩니다."
 		},
 		"metadata": {
-			"none": "Metadata가 없습니다.",
+			"none": "메타데이터가 없습니다.",
 			"invalidRaw": "저장된 값이 유효한 JSON이 아니므로 원시 문자열을 표시합니다."
 		},
 		"keysTable": {

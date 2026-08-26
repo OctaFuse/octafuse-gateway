@@ -1366,14 +1366,13 @@
 		},
 		"help": {
 			"createUser": "Creates a new gateway user. Email is required; all other fields are optional. To link this user to an account in another system, use the External identity section at the bottom.",
-			"budgetMax": "Maximum spendable amount in the current cycle. Leave empty for unlimited.",
-			"budgetBase": "Reference amount used to reset Budget max when the budget cycle resets.",
-			"budgetSpent": "Amount already spent in the current cycle. Edit only to manually adjust.",
-			"budgetPeriod": "Reset cycle for spent / Budget max. none disables auto-reset.",
-			"budgetResetAt": "Next time spent (and Budget max from base) will auto-reset. Ignored when Budget period is none.",
+			"budgetMax": "Maximum available amount in the current cycle. Leave empty for unlimited.",
+			"budgetBase": "Reference cap used when the cycle resets.",
+			"budgetSpent": "Amount already spent from the current cycle budget.",
+			"budgetPeriod": "Reset cycle type. none disables auto-reset.",
+			"budgetResetAt": "Next reset time",
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
-			"chargedCostFactors": "Pick catalog models, then set a factor. Applied after the route Charged cost. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools.",
-			"disabledUser": "Disabled users cannot use any API key for new requests."
+			"chargedCostFactors": "Pick catalog models, then set a factor. Applied after the route Charged cost. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools."
 		},
 		"chargedCostFactors": {
 			"none": "No charged cost factors.",
