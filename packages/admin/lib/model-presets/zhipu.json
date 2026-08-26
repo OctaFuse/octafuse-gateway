@@ -191,9 +191,6 @@
 		"vendor": "zhipu",
 		"context_window": 1000000,
 		"max_tokens": 128000,
-		"tags": [
-			"New"
-		],
 		"pricing": {
 			"usd": {
 				"tiers": [

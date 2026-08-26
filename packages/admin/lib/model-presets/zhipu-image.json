@@ -10,9 +10,6 @@
 		"vendor": "zhipu",
 		"context_window": null,
 		"max_tokens": null,
-		"tags": [
-			"New"
-		],
 		"pricing": {
 			"usd": {
 				"image_billing_mode": "per_image",

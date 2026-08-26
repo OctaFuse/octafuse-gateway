@@ -10,9 +10,6 @@
 		"vendor": "xai",
 		"context_window": 500000,
 		"max_tokens": 128000,
-		"tags": [
-			"New"
-		],
 		"pricing": {
 			"usd": {
 				"tiers": [
