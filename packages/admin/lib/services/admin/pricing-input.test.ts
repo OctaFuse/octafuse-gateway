@@ -4,6 +4,7 @@ import {
 	assertRoutePriceOverrideMatchesCatalog,
 	coerceModelPricingProfileInput,
 	coerceRoutePriceOverrideInput,
+	routePriceOverrideHasScheduleWindows,
 } from './pricing-input';
 
 describe('coerceModelPricingProfileInput', () => {
@@ -123,6 +124,21 @@ describe('assertRoutePriceOverrideMatchesCatalog', () => {
 			{ start: '00:30', end: '08:30', factor: 0.5 },
 			{ start: '09:00', end: '12:00', factor: 1.6, days: [1, 2, 3, 4, 5] },
 		],
+	});
+
+	it('treats empty route schedule as no time-window multipliers', () => {
+		assert.equal(routePriceOverrideHasScheduleWindows(null), false);
+		assert.equal(routePriceOverrideHasScheduleWindows('{}'), false);
+		assert.equal(
+			routePriceOverrideHasScheduleWindows(JSON.stringify({ charged_factor: 1.2 })),
+			false
+		);
+		assert.equal(
+			routePriceOverrideHasScheduleWindows(
+				JSON.stringify({ schedule: { charged: [{ start: '00:00', end: '08:00', factor: 1 }] } })
+			),
+			true
+		);
 	});
 
 	it('allows free route windows when the model has no catalog schedule', () => {

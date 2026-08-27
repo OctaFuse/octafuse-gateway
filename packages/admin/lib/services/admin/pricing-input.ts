@@ -126,6 +126,14 @@ export function assertRoutePriceOverrideMatchesCatalog(
 	}
 }
 
+/** 路由是否已配置任一侧分时窗口。两侧皆空表示尚未设时段倍率，计费按 1。 */
+export function routePriceOverrideHasScheduleWindows(
+	priceOverrideJson: string | null | undefined
+): boolean {
+	const schedule = parseRoutePricingSchedule(priceOverrideJson ?? null);
+	return schedule.charged.length > 0 || schedule.metered.length > 0;
+}
+
 /**
  * 将请求体中的 `pricing_profile` 规范为可写入 `models.pricing_profile` 的 JSON 文本；空表示清除或未设置。
  * @throws `badRequest` 非空但无法解析为合法 profile

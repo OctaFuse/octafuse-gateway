@@ -133,7 +133,7 @@ Admin 前端格式化函数位于 `packages/admin/lib/datetime.ts`：
 1. **官方当刻价**：`models.pricing_profile` 选档后再乘模型 `schedule` 命中倍率（未命中为 1）→ 写入 `standard_cost`。
 2. **自家溢价 / 让利**：再乘路由 `charged_factor` / `metered_factor` 与路由 `schedule`（以及可选的用户计费倍率）→ `charged_cost` / `metered_cost`。
 
-因此 `charged / standard` 只反映相对官方当刻价的折扣或溢价。模型未配置官方时段时，路由可自由配窗口；一旦模型配置了官方时段，路由两侧窗口集合必须与官方窗口完全一致。
+因此 `charged / standard` 只反映相对官方当刻价的折扣或溢价。模型未配置官方时段时，路由可自由配窗口；一旦模型配置了官方时段，之后写入的路由两侧窗口集合必须与官方窗口完全一致。存量路由若还没有分时窗口，不阻止先在模型上写入官方时段（运行时路由时段倍率按 1）。
 
 API 文档中的相关说明见 [`docs/developers/api/admin.md`](../api/admin.md)（时间与时区约定一节）。
 

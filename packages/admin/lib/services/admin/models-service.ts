@@ -22,6 +22,7 @@ import {
 	assertRoutePriceOverrideMatchesCatalog,
 	catalogScheduleFromPricingProfile,
 	coerceModelPricingProfileInput,
+	routePriceOverrideHasScheduleWindows,
 } from './pricing-input';
 import { normalizeModelVendorInput, parseTagsJson } from './shared';
 import type {
@@ -297,6 +298,9 @@ export async function updateModelService(repos: GatewayRepositories, id: string,
 			const routes = await repos.modelRouting.getModelRoutesByModelId(id);
 			const conflicts: string[] = [];
 			for (const route of routes) {
+				if (!routePriceOverrideHasScheduleWindows(route.price_override)) {
+					continue;
+				}
 				try {
 					assertRoutePriceOverrideMatchesCatalog(rest.pricing_profile as string | null, route.price_override);
 				} catch (err) {
