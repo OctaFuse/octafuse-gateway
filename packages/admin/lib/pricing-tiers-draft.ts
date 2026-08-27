@@ -12,6 +12,11 @@ import {
 	profileHasImageTokenPricing,
 	type PricingTierPrices,
 } from '@octafuse/core/db/pricing-profile';
+import {
+	findDailyWindowOverlap,
+	parseHhMmToMinutes,
+	type DailyScheduleWindow,
+} from '@octafuse/core/db/pricing-schedule';
 
 /** 末档开放上界在表单中的占位（序列化时恒为 JSON `null`，不读此字段）。 */
 export const DRAFT_UPTO_OPEN_SENTINEL = '';
@@ -601,5 +606,124 @@ export function formatPricingProfilePreview(
 		return JSON.stringify(JSON.parse(res.json) as { tiers: unknown }, null, 2);
 	} catch {
 		return res.json;
+	}
+}
+
+export type CatalogScheduleFormWindow = {
+	start: string;
+	end: string;
+	factor: string;
+	days: number[];
+};
+
+export function profileJsonToCatalogScheduleDraft(
+	json: string | null | undefined
+): CatalogScheduleFormWindow[] {
+	const profile = parsePricingProfile(json ?? undefined);
+	return (profile?.schedule ?? []).map((w) => ({
+		start: w.start,
+		end: w.end,
+		factor: String(w.factor),
+		days: w.days ? [...w.days] : [],
+	}));
+}
+
+export function serializeCatalogScheduleDraft(
+	windows: CatalogScheduleFormWindow[]
+): { ok: true; windows: DailyScheduleWindow[] } | { ok: false; error: string } {
+	const out: DailyScheduleWindow[] = [];
+	for (let i = 0; i < windows.length; i++) {
+		const row = windows[i]!;
+		const start = row.start.trim();
+		const end = row.end.trim();
+		const startM = parseHhMmToMinutes(start);
+		const endM = parseHhMmToMinutes(end);
+		if (startM == null || startM === 24 * 60 || endM == null || startM === endM) {
+			return {
+				ok: false,
+				error: `Catalog schedule window ${i + 1}: start must be HH:mm, end may also be 24:00, duration must be non-zero`,
+			};
+		}
+		const factor = Number(row.factor.trim());
+		if (!Number.isFinite(factor) || factor < 0) {
+			return { ok: false, error: `Catalog schedule window ${i + 1}: factor must be a number ≥ 0` };
+		}
+		const days = [...new Set(row.days.filter((d) => Number.isInteger(d) && d >= 1 && d <= 7))].sort(
+			(a, b) => a - b
+		);
+		const window: DailyScheduleWindow = { start, end, factor };
+		if (days.length > 0 && days.length < 7) {
+			window.days = days;
+		}
+		out.push(window);
+	}
+	const overlap = findDailyWindowOverlap(out);
+	if (overlap) {
+		return { ok: false, error: `Catalog schedule: ${overlap}` };
+	}
+	return { ok: true, windows: out };
+}
+
+export function attachCatalogScheduleToProfileJson(
+	json: string | null,
+	windows: DailyScheduleWindow[]
+): SerializeTiersResult {
+	if (!json) {
+		if (windows.length === 0) {
+			return { ok: true, json: null };
+		}
+		return { ok: false, error: 'Catalog schedule requires a pricing profile' };
+	}
+	try {
+		const obj = JSON.parse(json) as Record<string, unknown>;
+		if (windows.length === 0) {
+			delete obj.schedule;
+		} else {
+			obj.schedule = windows.map((w) =>
+				w.days ? { start: w.start, end: w.end, factor: w.factor, days: w.days } : { start: w.start, end: w.end, factor: w.factor }
+			);
+		}
+		const next = JSON.stringify(obj);
+		if (!parsePricingProfile(next)) {
+			return { ok: false, error: 'Serialized profile with catalog schedule failed validation' };
+		}
+		return { ok: true, json: next };
+	} catch {
+		return { ok: false, error: 'Failed to attach catalog schedule' };
+	}
+}
+
+/** 模型弹窗只读预览：标准价 + 时段倍率，形状与保存到 `pricing_profile` 的 JSON 一致。 */
+export function formatCatalogPricingProfilePreview(input: {
+	kind: 'llm' | 'image' | 'audio';
+	rows: PricingTierDraftRow[];
+	imageDraft?: ImagePricingDraftState;
+	audioDraft?: AudioPricingDraftState;
+	schedule?: CatalogScheduleFormWindow[];
+}): { ok: boolean; text: string } {
+	const tierJson =
+		input.kind === 'audio' && input.audioDraft
+			? serializeAudioPricingDraft(input.audioDraft)
+			: input.kind === 'image' && input.imageDraft
+				? serializeImagePricingDraft(input.imageDraft)
+				: serializeDraftRowsToProfileJson(input.rows);
+	if (!tierJson.ok) {
+		return { ok: false, text: `// ${tierJson.error}` };
+	}
+	const scheduleDraft = serializeCatalogScheduleDraft(input.schedule ?? []);
+	if (!scheduleDraft.ok) {
+		return { ok: false, text: `// ${scheduleDraft.error}` };
+	}
+	const withSchedule = attachCatalogScheduleToProfileJson(tierJson.json, scheduleDraft.windows);
+	if (!withSchedule.ok) {
+		return { ok: false, text: `// ${withSchedule.error}` };
+	}
+	if (!withSchedule.json) {
+		return { ok: true, text: '// No pricing_profile (null)' };
+	}
+	try {
+		return { ok: true, text: JSON.stringify(JSON.parse(withSchedule.json) as object, null, 2) };
+	} catch {
+		return { ok: true, text: withSchedule.json };
 	}
 }

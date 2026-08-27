@@ -29,7 +29,7 @@ Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统�
 | 公开 Catalog | `GET /catalog/models` 无需用户 Key，聚合 active 路由的模型与协议能力，适合门户 discovery；与需鉴权的 `GET /v1/models`（默认 LLM、含 `default,free` route group）分工不同。 |
 | 路由与故障转移 | 客户端请求先按协议 / operation 命中请求入口，再进入路由池：池内按 **priority** 分层，同层按 **策略 + weight** 排序；失败则换下一供应商（供应商级熔断）。默认策略 **hash_affinity** 提高上游 prompt cache 命中。详见 [路由拓扑](../developers/architecture/route-topology.md)与 [路由策略](../developers/reference/route-strategies.md)。 |
 | 供应商粘性（Provider sticky） | 路由池可选择记住用户上次成功的上游目标，在空闲 TTL 内跨请求、跨运行实例并可跨 priority 优先尝试；供应商可归因故障会解绑，配置变更可通过 epoch 整池失效。它与四种层内策略正交、默认关闭，适合提高 Prompt Cache 连续性。界面芯片为 `Sticky · Off` / `Sticky · {ttl}`。 |
-| 预算与计费 | 按用户 Key 记录请求、Token、成本与扣费，支持周期预算和用量查询。模型与智能体工具均区分 **供应成本（Metered）**、**目录标准价（Standard）**、**用户计费（Charged）** 三笔账（工具在 catalog 直接配绝对单价，无 Route factor/schedule）；`budget_spent` 只累加 charged。模型路由可配默认倍率，并在**分时时段（Schedule）**里按可选星期覆盖倍率；用户详情还可按目录模型设置用户倍率，在路由用户计费之后继续打折、加价或免单。 |
+| 预算与计费 | 按用户 Key 记录请求、Token、成本与扣费，支持周期预算和用量查询。模型与智能体工具均区分 **供应成本（Metered）**、**官方当刻目录价（Standard）**、**用户计费（Charged）** 三笔账（工具在 catalog 直接配绝对单价，无 Route factor/schedule）；`budget_spent` 只累加 charged。模型可配官方分时时段；路由倍率叠在官方当刻价之上，并可在**分时时段（Schedule）**里按可选星期覆盖倍率；用户详情还可按目录模型设置用户倍率，在路由用户计费之后继续打折、加价或免单。 |
 | 预置供应商 / 模型 | 管理后台可从静态目录一键导入：除官方模型厂外，还覆盖聚合平台与各类 Coding / Token Plan；预填 Base URL 与模型目录价等信息，导入后补齐真实 API Key 并挂路由即可使用。完整清单见官网 [Providers Catalog](https://octafuse.dev/zh/catalog/providers/) 与 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；Coding / Token Plan 的专用 endpoint 不应与普通按量模板混用。 |
 | 供应商管理 | 每个供应商维护单键、启用状态与 `endpoints`；明文 key 仅经 reveal 接口查看。多账号 = 多个供应商。 |
 | 日志与审计 | 请求日志（Request Logs）并列展示客户端入口与实际上游、功能标签、用量和费用（含 Images / Audio / Tools），展开后可核对路由、星期时段与用户模型倍率；审计日志记录预算扣减、用户与 Key 生命周期等事件。 |

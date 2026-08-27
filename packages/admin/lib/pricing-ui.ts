@@ -605,7 +605,7 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 		}
 		if (
 			typeof o.v === 'number' &&
-			(o.v === 3 || o.v === 4) &&
+			(o.v === 3 || o.v === 4 || o.v === 5) &&
 			o.snapshot &&
 			typeof o.snapshot === 'object'
 		) {
@@ -616,6 +616,16 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 			}
 			if (uc && typeof uc.effective_factor === 'number') {
 				parts.push(`×${uc.effective_factor}`);
+			}
+			if (o.v === 5) {
+				const std = snap.standard as Record<string, unknown> | undefined;
+				const catSch =
+					std && typeof std.schedule === 'object' && std.schedule
+						? (std.schedule as Record<string, unknown>)
+						: null;
+				if (catSch && typeof catSch.factor === 'number' && catSch.factor !== 1) {
+					parts.push(`catalog ×${catSch.factor}`);
+				}
 			}
 		}
 		const snapForUser =

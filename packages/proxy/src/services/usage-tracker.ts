@@ -1,8 +1,8 @@
 /**
- * 用量与计费：按百万 token 单价计算 `metered_cost`（供应成本）、`standard_cost`（目录标准成本）、`charged_cost`（用户预算）。
+ * 用量与计费：按百万 token 单价计算 `metered_cost`（供应成本）、`standard_cost`（官方当刻目录成本）、`charged_cost`（用户预算）。
  * - 基数始终来自 `models.pricing_profile`（按 input_tokens 选档）。
- * - `metered_cost` / `charged_cost` = 目录价 × 有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。
- * - `standard_cost` = 目录价（不乘路由倍率）。
+ * - `standard_cost` = 目录价 × 官方时段倍率（不含路由倍率）。
+ * - `metered_cost` / `charged_cost` = 官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。
  * - nested `price_override.metered` / `charged` tiers 忽略不计价。
  * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `users.budget_spent`。
  */
@@ -11,6 +11,7 @@ import {
 	getBusinessTimezone,
 	getUserBudgetSnapshot,
 	insertRequestUsageAndChargeTx,
+	parsePricingProfile,
 	parseRouteBaseFactors,
 	parseRoutePricingSchedule,
 	PRICING_AUDIT_JSON_SCHEMA_VERSION,
@@ -184,18 +185,31 @@ export async function recordUsage(
 	const schedule = parseRoutePricingSchedule(params.route_price_override_json ?? null);
 	const chargedSch = resolveDailyScheduleFactor(schedule.charged, pricingAtUtc, businessTimezone);
 	const meteredSch = resolveDailyScheduleFactor(schedule.metered, pricingAtUtc, businessTimezone);
+	const catalogProfile = parsePricingProfile(params.model_pricing_profile ?? null);
+	const catalogSch = resolveDailyScheduleFactor(
+		catalogProfile?.schedule ?? [],
+		pricingAtUtc,
+		businessTimezone
+	);
+	const catalogSchedule = toScheduleAudit(catalogSch);
 
 	const catalogSupplier = resolveSupplierBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: params.model_pricing_profile ?? null,
+		catalogScheduleFactor: catalogSch.factor,
+		catalogSchedule,
 	});
 	const standardResolved = resolveStandardBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: params.model_pricing_profile ?? null,
+		catalogScheduleFactor: catalogSch.factor,
+		catalogSchedule,
 	});
 	const catalogCharged = resolveChargedBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: params.model_pricing_profile ?? null,
+		catalogScheduleFactor: catalogSch.factor,
+		catalogSchedule,
 	});
 
 	const supplierResolved = applyRouteFactorsToSide({

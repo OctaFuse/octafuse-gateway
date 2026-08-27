@@ -2,10 +2,13 @@ import { isAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-mo
 import { readApiJson } from '@/lib/api-json';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import {
+	attachCatalogScheduleToProfileJson,
 	serializeAudioPricingDraft,
+	serializeCatalogScheduleDraft,
 	serializeDraftRowsToProfileJson,
 	serializeImagePricingDraft,
 	type AudioPricingDraftState,
+	type CatalogScheduleFormWindow,
 	type ImagePricingDraftState,
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
@@ -31,7 +34,8 @@ export async function saveModel(
 	pricingTierRows: PricingTierDraftRow[],
 	editingModelId: string | null,
 	imagePricingDraft?: ImagePricingDraftState | null,
-	audioPricingDraft?: AudioPricingDraftState | null
+	audioPricingDraft?: AudioPricingDraftState | null,
+	catalogScheduleWindows?: CatalogScheduleFormWindow[]
 ): Promise<{ success: true } | { success: false; message: string }> {
 	const isImage = isImageGenerationModel({
 		output_modalities: formData.output_modalities,
@@ -45,6 +49,14 @@ export async function saveModel(
 	if (!tierJson.ok) {
 		return { success: false, message: tierJson.error };
 	}
+	const scheduleDraft = serializeCatalogScheduleDraft(catalogScheduleWindows ?? []);
+	if (!scheduleDraft.ok) {
+		return { success: false, message: scheduleDraft.error };
+	}
+	const withSchedule = attachCatalogScheduleToProfileJson(tierJson.json, scheduleDraft.windows);
+	if (!withSchedule.ok) {
+		return { success: false, message: withSchedule.error };
+	}
 	const metaParsed = parseMetadataForSave(formData.metadata);
 	if (!metaParsed.ok) {
 		return { success: false, message: metaParsed.error };
@@ -52,12 +64,12 @@ export async function saveModel(
 
 	const isImageResolved = isImageGenerationModel({
 		output_modalities: formData.output_modalities,
-		pricing_profile: tierJson.json,
+		pricing_profile: withSchedule.json,
 	});
 	const isAudioResolved =
 		isAudio ||
 		isAudioModel({
-			pricing_profile: tierJson.json,
+			pricing_profile: withSchedule.json,
 		});
 	const skipTokenLimits = isImageResolved || isAudioResolved;
 	const parsedMax = formData.max_tokens.trim() ? parseInt(formData.max_tokens, 10) : NaN;
@@ -75,7 +87,7 @@ export async function saveModel(
 		input_modalities: formData.input_modalities,
 		output_modalities: formData.output_modalities,
 		released_at: formData.released_at.trim() || null,
-		pricing_profile: tierJson.json,
+		pricing_profile: withSchedule.json,
 		metadata: metaParsed.value,
 	};
 

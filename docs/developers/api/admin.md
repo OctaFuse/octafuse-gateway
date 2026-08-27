@@ -574,7 +574,7 @@ GET /admin/keys/:id/logs?page=1&page_size=20&exclude_status=incomplete
 }
 ```
 
-> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`metered_cost` / 路由侧 `charged_cost` = 目录价 × 有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor），`standard_cost` = 目录价（不乘路由倍率）；若 `users.charged_cost_factors` 含该目录模型 ID，再对路由用户计费乘一次该倍率并六位四舍五入（只改最终 `charged_cost` 与预算累加）。**Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule，也不应用用户计费倍率），成功后分别写入三列，仅 `charged_cost` 累加预算。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v4**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 为 `kind=fixed_tool_cost` + `unit_prices` / `totals`；v4 模型审计可带 `user_charged_factor`，未命中为 `null`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
+> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`standard_cost` = 阶梯目录价 × 模型官方时段倍率（官方当刻价，不乘路由倍率）；`metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）；若 `users.charged_cost_factors` 含该目录模型 ID，再对路由用户计费乘一次该倍率并六位四舍五入（只改最终 `charged_cost` 与预算累加）。**Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule，也不应用用户计费倍率或模型官方时段），成功后分别写入三列，仅 `charged_cost` 累加预算。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v5**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 仍为 `kind=fixed_tool_cost` + `unit_prices` / `totals`；v4 历史行仍可解析，v5 模型审计可带 `catalog_schedule` 与 `user_charged_factor`，未命中为 `null`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
 
 ### 示例
 
@@ -777,6 +777,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
     - **`per_second`**：`{ "audio_billing_mode": "per_second", "audio": { "price_per_second", "minimum_seconds"? } }`（**无 `tiers`**）。扣费权威 = 计费秒数 × `price_per_second`；`pricing_audit.kind=audio_per_second`。日志列 `billing_kind=audio_per_second`、`audio_duration_seconds`。
     - **`token`**：`{ "audio_billing_mode": "token", "tiers": [ { "input_price", "output_price", "upto": null } ] }`（$/1M）。扣费权威 = 上游 transcription `usage`（`type=tokens`）；`pricing_audit.kind=audio_tokens`。日志列 `billing_kind=audio_tokens`，并写入 input/output token。
     - 预设：`whisper-1` → `per_second`；`gpt-4o-mini-transcribe` / `gpt-4o-transcribe` / `gpt-4o-transcribe-diarize` → `token`（见 [user.md「语音转写」](user.md#语音转写audio-transcriptions)）。
+  - **官方分时时段（`schedule`，可选）**：与 `tiers` / `image` / `audio` 同级，写入已有 `pricing_profile` TEXT JSON，无独立迁移。元素复用路由侧窗口形状 `{ start, end, factor, days? }`，单一 `factor` 作用于该档全部单价（input / output / cache / image_* / audio_*）。命中窗口取 `factor`，未命中为 `1`（无需 `mode`）。时区沿用 `system_config.BUSINESS_TIMEZONE`，不写入 JSON。半开区间 `[start, end)`，仅 `end` 可为 `24:00`，`start` 不得为 `24:00`；`factor ≥ 0`；同侧窗口禁止重叠。非法 `schedule` 会使整个 `pricing_profile` 解析失败。未配置时行为与历史一致。
   - Request log：迁移 **`0013_request_log_image_billing`** 增加 `billing_kind`、`input_image_count`、`output_image_count`；**`0014_request_log_audio_billing`** 增加 `audio_duration_seconds`。
 - **模型 Kind（Admin UI，无独立 DB 列）**：
   - **Audio（语音转写）**：`pricing_profile` 含有效 `audio_billing_mode`（`per_second` + `audio`，或 `token` + `tiers`）；见 `isAudioTranscriptionModel`（`packages/core`）。
@@ -804,13 +805,14 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 }
 ```
 
-  - `charged_factor` / `metered_factor`：相对目录价的默认倍率（缺省 `1`；`metered_factor` 缺失时可回退读历史 `provider_factor`）；未命中分时时段时使用。
+  - `charged_factor` / `metered_factor`：相对**官方当刻价**（阶梯目录价 × 模型 `pricing_profile.schedule` 命中倍率，未命中为 1）的默认倍率（缺省 `1`；`metered_factor` 缺失时可回退读历史 `provider_factor`）；未命中路由分时时段时使用。
   - `schedule`（可选）：分时窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜。可选 `days` 为 ISO 星期数组（`1`=周一 … `7`=周日）；省略表示每天。跨午夜时 `days` 锚定窗口**开始日**（例如周五 `22:00–06:00` 覆盖周五 22:00 至周六 06:00）。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。同侧窗口在一周循环上禁止重叠。
+  - **与模型官方时段严格一致**：模型 `pricing_profile.schedule` **为空**时，路由可自由配置时段。模型官方时段**非空**时，路由 `schedule.charged[]` 与 `schedule.metered[]` 的窗口集合必须**各自**与官方窗口逐一相同（`start` / `end` / `days`；空 `days` 与全 7 天等价）。`POST`/`PATCH /admin/routes` 在校验 `price_override` 后按最终 `model_id` 检查。`PATCH /admin/models` 若官方窗口集合变化且新官方时段非空，会把该模型下**所有**（含未激活）且**已配置分时窗口**的路由 `schedule` 重置为同一套窗口（两侧 `factor` 恢复为 `1`），未配置时段的路由保持为空（运行时按 1）。管理后台在模型时段倍率区展示固定说明。
   - `schedule.mode`：
-    - **缺省或 `"multiply"`**（存量）：`charged_cost` = 目录价 × `charged_factor` × 命中窗 `factor`（未命中窗按 `1`）；`metered_cost` 同理。
-    - **`"override"`**（Admin UI 新写入）：命中窗时窗口 `factor` 就是对标准价的倍率；未命中用上方默认 `charged_factor` / `metered_factor`。两侧共享同一套 start/end（及可选 `days`），各写自己的 `factor`。
-  - `standard_cost` 仅为目录价。嵌套 `metered`/`charged` tiers **写入时剥离、运行时忽略**。`pricing_audit.schedule.evaluated_at_utc` 记录本次选窗使用的请求开始时刻，并带 `local_weekday`（1–7）。非法 `mode` 或非法 `days` 在 Admin API 写入时拒绝。
-- **公开列表**：`GET /v1/models` 返回完整 `pricing_profile` 字符串；`model_info.input_price` / `output_price` 为 **兼容展示**：取各档中 **最低 `input_price`** 所在档的 in/out。详见 [user.md「获取模型列表」](user.md)。
+    - **缺省或 `"multiply"`**（存量）：`charged_cost` = 官方当刻价 × `charged_factor` × 命中窗 `factor`（未命中窗按 `1`）；`metered_cost` 同理。
+    - **`"override"`**（Admin UI 新写入）：命中窗时窗口 `factor` 就是对官方当刻价的倍率；未命中用上方默认 `charged_factor` / `metered_factor`。两侧共享同一套 start/end（及可选 `days`），各写自己的 `factor`。
+  - `standard_cost` = 官方当刻目录价（含模型时段，不含路由倍率）。嵌套 `metered`/`charged` tiers **写入时剥离、运行时忽略**。`pricing_audit` 新写入为 **v5**：`snapshot.standard.schedule` 记录目录时段；supplier / user_charge 侧用 `catalog_schedule` 区分目录时段与路由 `schedule`。`evaluated_at_utc` 记录本次选窗使用的请求开始时刻，并带 `local_weekday`（1–7）。非法 `mode` 或非法 `days` 在 Admin API 写入时拒绝。**历史日志不回补**：上线前写入的 `standard_cost` 仍是裸目录价。
+- **公开列表**：`GET /v1/models` 返回完整 `pricing_profile` 字符串（含 `schedule` 定义，若已配置）；`model_info.input_price` / `output_price` 为 **兼容展示**：取各档中 **最低 `input_price`** 所在档的 in/out，**不含**官方时段。外部自行计算当刻价时须另行约定 `BUSINESS_TIMEZONE`。详见 [user.md「获取模型列表」](user.md)。
 
 #### Gateway Admin UI — Model Routes「Billing & Cost」
 
@@ -818,10 +820,10 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 
 | 区块 | 含义 | 数据来源 |
 |------|------|----------|
-| **Standard price** | 目录标准价（只读） | `models.pricing_profile`（LLM/Image token/Audio token 的 tiers，或 Image per_image / Audio per_second 的单价块） |
+| **Standard price** | 官方当刻目录价（只读；含模型官方时段） | `models.pricing_profile`（LLM/Image token/Audio token 的 tiers，或 Image per_image / Audio per_second 的单价块，再乘 `schedule`） |
 | **Charged factor** | 用户侧默认倍率（窗外） | `price_override.charged_factor` |
 | **Metered factor** | 供应侧默认倍率（窗外） | `price_override.metered_factor` |
-| **Schedule** | 共享 start/end 与可选星期，每行 Charged / Metered 倍率（覆盖默认） | `price_override.schedule`（`mode: "override"`） |
+| **Schedule** | 共享 start/end 与可选星期，每行 Charged / Metered 倍率（覆盖默认）。模型已配官方时段时窗口只读，只能改两侧倍率 | `price_override.schedule`（`mode: "override"`） |
 
 路由列表卡片展示 **`Ch ×`** / **`M ×`**；有 schedule 时附加 **Sch** 提示。
 

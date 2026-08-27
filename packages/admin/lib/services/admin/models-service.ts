@@ -2,6 +2,7 @@
  * 管理后台 `models` + `model_tags`：列表/详情（含路由计数）、创建、部分更新、级联删除、静态目录导入。
  */
 import type { GatewayRepositories } from '@octafuse/core';
+import { catalogScheduleKeysEqual } from '@octafuse/core/db/pricing-schedule';
 import { normalizeModelRoutePolicyInput } from '@octafuse/core/db/model-route-policy';
 import {
 	coerceModelInputModalitiesInput,
@@ -18,7 +19,12 @@ import {
 import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
 import { badRequest, notFound } from './errors';
-import { coerceModelPricingProfileInput } from './pricing-input';
+import {
+	catalogScheduleFromPricingProfile,
+	coerceModelPricingProfileInput,
+	resetRoutePriceOverrideScheduleToCatalog,
+	routePriceOverrideHasScheduleWindows,
+} from './pricing-input';
 import { normalizeModelVendorInput, parseTagsJson } from './shared';
 import type {
 	AdminCreatedIdOutput,
@@ -296,6 +302,10 @@ export async function updateModelService(repos: GatewayRepositories, id: string,
 			throw badRequest(err instanceof Error ? err.message : 'Invalid route_policy');
 		}
 	}
+	const existing =
+		'pricing_profile' in rest && rest.pricing_profile !== undefined
+			? await repos.modelRouting.getModelById(id)
+			: null;
 	const coerced = applyModelMutationCoercion(rest);
 	const changes = await repos.models.updateModelByPatch(id, coerced);
 	if (Object.keys(rest).some((k) => k !== 'id' && rest[k] !== undefined) && changes === 0) {
@@ -303,6 +313,22 @@ export async function updateModelService(repos: GatewayRepositories, id: string,
 	}
 	if (tags !== undefined) {
 		await repos.models.replaceModelTags(id, Array.isArray(tags) ? tags.map((t) => String(t)) : []);
+	}
+	if (existing && rest.pricing_profile !== undefined) {
+		const previous = catalogScheduleFromPricingProfile(existing.pricing_profile);
+		const next = catalogScheduleFromPricingProfile(
+			typeof rest.pricing_profile === 'string' ? rest.pricing_profile : null
+		);
+		if (next.length > 0 && !catalogScheduleKeysEqual(previous, next)) {
+			const routes = await repos.routes.listModelRoutesWithJoins({ modelId: id });
+			for (const route of routes) {
+				if (!routePriceOverrideHasScheduleWindows(route.price_override)) {
+					continue;
+				}
+				const aligned = resetRoutePriceOverrideScheduleToCatalog(route.price_override, next);
+				await repos.routes.updateModelRouteByPatch(route.id, { price_override: aligned });
+			}
+		}
 	}
 }
 

@@ -6,8 +6,10 @@ import {
 	applyDashScopeAsrRoutePreset,
 	applyDashScopeImageRoutePreset,
 	applyDashScopeTtsRoutePreset,
+	alignRouteScheduleWindowsToCatalog,
 	buildFormDataFromRoute,
 	buildRouteSavePayload,
+	catalogScheduleWindowsFromModel,
 	formatRoutePriceOverridePreview,
 	buildRouteSurfaceCatalog,
 	compatibleAdaptersForRoute,
@@ -920,5 +922,57 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 			formatSharedScheduleWindowsHint(resolveRouteScheduleDisplay(String(payload.price_override))),
 			'Mon–Fri 0:00-24:00 ×1.2 · Sat–Sun 0:00-24:00 ×0.8',
 		);
+	});
+
+	it('rebuilds route windows from catalog and keeps existing factors', () => {
+		const catalogModel = model({
+			id: 'm1',
+			pricing_profile: JSON.stringify({
+				tiers: [{ upto: null, input_price: 1, output_price: 2 }],
+				schedule: [
+					{ start: '00:30', end: '08:30', factor: 0.5 },
+					{ start: '09:00', end: '12:00', factor: 1.6, days: [1, 2, 3, 4, 5] },
+				],
+			}),
+		});
+		assert.deepEqual(catalogScheduleWindowsFromModel(catalogModel), [
+			{ start: '00:30', end: '08:30', factor: 0.5 },
+			{ start: '09:00', end: '12:00', factor: 1.6, days: [1, 2, 3, 4, 5] },
+		]);
+		assert.deepEqual(
+			alignRouteScheduleWindowsToCatalog(catalogScheduleWindowsFromModel(catalogModel), [
+				{ start: '00:30', end: '08:30', charged_factor: '0.8', metered_factor: '0.9', days: [] },
+				{ start: '13:00', end: '14:00', charged_factor: '3', metered_factor: '3', days: [] },
+			]),
+			[
+				{ start: '00:30', end: '08:30', days: [], charged_factor: '0.8', metered_factor: '0.9' },
+				{
+					start: '09:00',
+					end: '12:00',
+					days: [1, 2, 3, 4, 5],
+					charged_factor: '1',
+					metered_factor: '1',
+				},
+			],
+		);
+		const form = buildFormDataFromRoute(
+			route({
+				model_id: 'm1',
+				price_override: JSON.stringify({
+					charged_factor: 1,
+					metered_factor: 1,
+					schedule: {
+						mode: 'override',
+						charged: [{ start: '00:30', end: '08:30', factor: 0.7 }],
+						metered: [{ start: '00:30', end: '08:30', factor: 0.6 }],
+					},
+				}),
+			}),
+			[catalogModel],
+		);
+		assert.deepEqual(form.schedule_windows, [
+			{ start: '00:30', end: '08:30', days: [], charged_factor: '0.7', metered_factor: '0.6' },
+			{ start: '09:00', end: '12:00', days: [1, 2, 3, 4, 5], charged_factor: '1', metered_factor: '1' },
+		]);
 	});
 });

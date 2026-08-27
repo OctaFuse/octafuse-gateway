@@ -112,10 +112,13 @@ function pricingAtUtcFromParams(requestStartedAtMs?: number): Date {
 async function resolveRouteFactors(
 	repos: GatewayRepositories,
 	routePriceOverrideJson: string | null | undefined,
-	requestStartedAtMs?: number
+	requestStartedAtMs?: number,
+	modelPricingProfileJson?: string | null
 ): Promise<{
 	meteredFactor: number;
 	chargedFactor: number;
+	catalogFactor: number;
+	catalogSchedule: ReturnType<typeof toScheduleAudit>;
 	meteredAuditExtras: Pick<PriceResolutionAuditSide, 'base_factor' | 'schedule' | 'effective_factor'>;
 	chargedAuditExtras: Pick<PriceResolutionAuditSide, 'base_factor' | 'schedule' | 'effective_factor'>;
 }> {
@@ -125,6 +128,12 @@ async function resolveRouteFactors(
 	const schedule = parseRoutePricingSchedule(routePriceOverrideJson ?? null);
 	const chargedSch = resolveDailyScheduleFactor(schedule.charged, pricingAtUtc, businessTimezone);
 	const meteredSch = resolveDailyScheduleFactor(schedule.metered, pricingAtUtc, businessTimezone);
+	const catalogProfile = parsePricingProfile(modelPricingProfileJson ?? null);
+	const catalogSch = resolveDailyScheduleFactor(
+		catalogProfile?.schedule ?? [],
+		pricingAtUtc,
+		businessTimezone
+	);
 	const meteredFactor = resolveEffectiveRouteFactor(
 		baseFactors.meteredFactor,
 		meteredSch,
@@ -143,6 +152,8 @@ async function resolveRouteFactors(
 	return {
 		meteredFactor,
 		chargedFactor,
+		catalogFactor: catalogSch.factor,
+		catalogSchedule: toScheduleAudit(catalogSch),
 		meteredAuditExtras: schSide(meteredSch, baseFactors.meteredFactor, meteredFactor),
 		chargedAuditExtras: schSide(chargedSch, baseFactors.chargedFactor, chargedFactor),
 	};
@@ -164,9 +175,10 @@ function buildAudioPerSecondCosts(
 		pricePerSecond,
 		minimumSeconds: audioCfg.minimum_seconds,
 	});
-	const meteredCost = roundGatewayMoney(baseCost * factors.meteredFactor);
-	const standardCost = roundGatewayMoney(baseCost);
-	const chargedCost = roundGatewayMoney(baseCost * factors.chargedFactor);
+	const catalogBase = baseCost * factors.catalogFactor;
+	const meteredCost = roundGatewayMoney(catalogBase * factors.meteredFactor);
+	const standardCost = roundGatewayMoney(catalogBase);
+	const chargedCost = roundGatewayMoney(catalogBase * factors.chargedFactor);
 	const pricingAuditJson = JSON.stringify({
 		v: PRICING_AUDIT_JSON_SCHEMA_VERSION,
 		kind: 'audio_per_second',
@@ -181,15 +193,18 @@ function buildAudioPerSecondCosts(
 			supplier: {
 				path: 'profile',
 				source: 'model_x_factor',
+				catalog_schedule: factors.catalogSchedule,
 				...factors.meteredAuditExtras,
 			},
 			standard: {
 				path: 'profile',
 				source: 'model',
+				schedule: factors.catalogSchedule,
 			},
 			user_charge: {
 				path: 'profile',
 				source: 'model_x_factor',
+				catalog_schedule: factors.catalogSchedule,
 				...factors.chargedAuditExtras,
 			},
 		},
@@ -231,9 +246,10 @@ function buildAudioPerCharacterCosts(
 		pricePerCharacter,
 		minimumCharacters: profile.audio.minimum_characters,
 	});
-	const meteredCost = roundGatewayMoney(baseCost * factors.meteredFactor);
-	const standardCost = roundGatewayMoney(baseCost);
-	const chargedCost = roundGatewayMoney(baseCost * factors.chargedFactor);
+	const catalogBase = baseCost * factors.catalogFactor;
+	const meteredCost = roundGatewayMoney(catalogBase * factors.meteredFactor);
+	const standardCost = roundGatewayMoney(catalogBase);
+	const chargedCost = roundGatewayMoney(catalogBase * factors.chargedFactor);
 	return withUserAudioChargedFactor(
 		{
 		durationSeconds: 0,
@@ -260,12 +276,14 @@ function buildAudioPerCharacterCosts(
 				supplier: {
 					path: 'profile',
 					source: 'model_x_factor',
+					catalog_schedule: factors.catalogSchedule,
 					...factors.meteredAuditExtras,
 				},
-				standard: { path: 'profile', source: 'model' },
+				standard: { path: 'profile', source: 'model', schedule: factors.catalogSchedule },
 				user_charge: {
 					path: 'profile',
 					source: 'model_x_factor',
+					catalog_schedule: factors.catalogSchedule,
 					...factors.chargedAuditExtras,
 				},
 			},
@@ -287,14 +305,20 @@ function buildAudioTokenCosts(
 	const supplier = resolveSupplierBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: billing.modelPricingProfileJson,
+		catalogScheduleFactor: factors.catalogFactor,
+		catalogSchedule: factors.catalogSchedule,
 	});
 	const standard = resolveStandardBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: billing.modelPricingProfileJson,
+		catalogScheduleFactor: factors.catalogFactor,
+		catalogSchedule: factors.catalogSchedule,
 	});
 	const charged = resolveChargedBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: billing.modelPricingProfileJson,
+		catalogScheduleFactor: factors.catalogFactor,
+		catalogSchedule: factors.catalogSchedule,
 	});
 
 	const supplierPrices = scaleBillingPrices(supplier.prices, factors.meteredFactor);
@@ -465,7 +489,12 @@ export async function estimateAudioSpeechCosts(
 	return resolveAudioCostsForProfile(
 		params,
 		parsePricingProfile(billing.modelPricingProfileJson ?? null),
-		await resolveRouteFactors(repos, billing.routePriceOverrideJson, billing.requestStartedAtMs)
+		await resolveRouteFactors(
+			repos,
+			billing.routePriceOverrideJson,
+			billing.requestStartedAtMs,
+			billing.modelPricingProfileJson
+		)
 	);
 }
 
@@ -492,7 +521,12 @@ export async function estimateAudioSpeechBudgetPrecheck(
 	const profile = parsePricingProfile(billing.modelPricingProfileJson ?? null);
 	let best: AudioCostBreakdown | null = null;
 	for (const override of routePriceOverrides.length > 0 ? routePriceOverrides : [null]) {
-		const factors = await resolveRouteFactors(repos, override, billing.requestStartedAtMs);
+		const factors = await resolveRouteFactors(
+			repos,
+			override,
+			billing.requestStartedAtMs,
+			billing.modelPricingProfileJson
+		);
 		const costs = resolveAudioCostsForProfile(
 			{ ...params, routePriceOverrideJson: override },
 			profile,
@@ -502,7 +536,7 @@ export async function estimateAudioSpeechBudgetPrecheck(
 	}
 	return best ?? zeroAudioCostBreakdown(
 		params,
-		await resolveRouteFactors(repos, null, billing.requestStartedAtMs),
+		await resolveRouteFactors(repos, null, billing.requestStartedAtMs, billing.modelPricingProfileJson),
 		'audio_per_character',
 		{ error: 'missing_audio_pricing' }
 	);
@@ -538,7 +572,12 @@ export async function estimateAudioBudgetPrecheck(
 	const overrides =
 		routePriceOverrides.length > 0 ? routePriceOverrides : [billing.routePriceOverrideJson];
 	for (const override of overrides) {
-		const factors = await resolveRouteFactors(repos, override, billing.requestStartedAtMs);
+		const factors = await resolveRouteFactors(
+			repos,
+			override,
+			billing.requestStartedAtMs,
+			billing.modelPricingProfileJson
+		);
 		const costs = resolveAudioCostsForProfile(
 			{ ...params, routePriceOverrideJson: override },
 			profile,
@@ -550,7 +589,11 @@ export async function estimateAudioBudgetPrecheck(
 			best = costs;
 		}
 	}
-	return best ?? zeroAudioCostBreakdown(params, await resolveRouteFactors(repos, null), 'audio_per_second', {
+	return best ?? zeroAudioCostBreakdown(
+		params,
+		await resolveRouteFactors(repos, null, billing.requestStartedAtMs, billing.modelPricingProfileJson),
+		'audio_per_second',
+		{
 		error: 'missing_audio_pricing',
 	});
 }
@@ -605,7 +648,8 @@ export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<
 	const factors = await resolveRouteFactors(
 		params.repos,
 		params.billing.routePriceOverrideJson,
-		params.billing.requestStartedAtMs
+		params.billing.requestStartedAtMs,
+		params.billing.modelPricingProfileJson
 	);
 
 	let costs: AudioCostBreakdown;

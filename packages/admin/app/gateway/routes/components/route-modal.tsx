@@ -21,7 +21,9 @@ import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
 	adapterOptionMappingSuffix,
+	alignRouteScheduleWindowsToCatalog,
 	applyAdapterOptionToForm,
+	catalogScheduleWindowsFromModel,
 	compatibleAdaptersForRoute,
 	formatRoutePriceOverridePreview,
 	listAdapterOptionsForModel,
@@ -30,7 +32,12 @@ import {
 	upstreamOperationsForProviderModel,
 } from '../route-utils';
 import type { RouteFormData, RouteListRow } from '../types';
-import { DailyScheduleEditor } from './daily-schedule-editor';
+import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
+import {
+	formatIsoWeekdaysHint,
+	resolveDailyScheduleFactor,
+	scheduleWindowKey,
+} from '@octafuse/core/db/pricing-schedule';
 import { RoutePricePanel } from './route-price-panel';
 
 type Props = {
@@ -106,6 +113,18 @@ export function RouteModal(props: Props) {
 		setPriceOverrideJsonCopied(false);
 	}
 	const priceOverridePreview = useMemo(() => formatRoutePriceOverridePreview(formData), [formData]);
+	const catalogScheduleWindows = useMemo(
+		() => catalogScheduleWindowsFromModel(selectedModel),
+		[selectedModel]
+	);
+	const catalogScheduleLocked = catalogScheduleWindows.length > 0;
+	const catalogNowSchedule = useMemo(
+		() => resolveDailyScheduleFactor(catalogScheduleWindows, new Date(), businessTimezone),
+		[catalogScheduleWindows, businessTimezone]
+	);
+	const catalogNowWindowKey = catalogNowSchedule.window
+		? scheduleWindowKey(catalogNowSchedule.window)
+		: null;
 
 	// Image models keep the public request protocol as OpenAI; upstream may be openai or dashscope.
 	const lockOpenaiProtocol = selectedModelIsImage;
@@ -268,6 +287,10 @@ export function RouteModal(props: Props) {
 														request_operation: requestOperation,
 														upstream_protocol: upstreamProtocol,
 														upstream_operation: upstreamOperation,
+														schedule_windows: alignRouteScheduleWindowsToCatalog(
+															catalogScheduleWindowsFromModel(nextModel),
+															[]
+														),
 													});
 												}}
 												className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
@@ -703,6 +726,7 @@ export function RouteModal(props: Props) {
 												? t('standardCatalogHintImage')
 												: t('standardCatalogHint')}
 									</p>
+									<RoutePricePanel variant="neutral" fillHeight>
 									<div className="flex min-h-0 flex-1 flex-col">
 								{selectedModelIsAudio ? (
 									catalogAudioPricingDisplay ? (
@@ -777,14 +801,64 @@ export function RouteModal(props: Props) {
 									/>
 								) : (
 									<ReadOnlyPricingTiersTable
-										fillHeight
+										fillHeight={!catalogScheduleLocked}
 										rows={catalogStandardTierRows}
 										emptyLabel={formData.model_id ? t('noCatalogPricing') : t('selectModelForTiers')}
 										tableTitle={t('readOnlyCatalogRates')}
 										billingCurrencyCode={billingCurrency}
 									/>
 								)}
+								{catalogScheduleLocked ? (
+									<div className="mt-3 border-t border-gray-200/90 pt-3">
+										<div className="mb-1.5 min-w-0">
+											<h4 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700">
+												{t('catalogOfficialSchedule')}
+											</h4>
+											<p className="mt-0.5 text-[11px] text-gray-500">
+												{t('catalogScheduleLockedHint')}
+											</p>
+										</div>
+										<ul className="divide-y divide-gray-100">
+											{catalogScheduleWindows.map((w, i) => {
+												const daysHint = formatIsoWeekdaysHint(w.days);
+												const daysLabel =
+													daysHint === 'Mon–Fri'
+														? t('scheduleWeekdays')
+														: daysHint === 'Sat–Sun'
+															? t('scheduleWeekend')
+															: daysHint ?? t('scheduleEveryday');
+												const active = catalogNowWindowKey === scheduleWindowKey(w);
+												return (
+													<li
+														key={`${w.start}-${w.end}-${i}`}
+														className="flex items-center justify-between gap-3 py-1.5 text-[11px]"
+													>
+														<div className="min-w-0">
+															<p className="font-mono tabular-nums text-gray-800">
+																{w.start}–{w.end}
+																<span className="ml-1.5 font-sans text-[10px] text-gray-500">
+																	{daysLabel}
+																</span>
+															</p>
+														</div>
+														<div className="flex shrink-0 items-center gap-2">
+															{active ? (
+																<span className="text-[10px] font-medium text-gray-500">
+																	{t('catalogScheduleNow')}
+																</span>
+															) : null}
+															<span className="font-mono text-xs tabular-nums text-gray-800">
+																×{w.factor}
+															</span>
+														</div>
+													</li>
+												);
+											})}
+										</ul>
 									</div>
+								) : null}
+									</div>
+									</RoutePricePanel>
 								</div>
 
 								<div className="flex min-h-0 min-w-0 flex-col">
@@ -924,6 +998,7 @@ export function RouteModal(props: Props) {
 											subtitle={t('pricingFormulaHint')}
 											headerEndBeside="subtitle"
 											headerEnd={
+												catalogScheduleLocked ? null : (
 												<button
 													type="button"
 													onClick={() =>
@@ -947,11 +1022,20 @@ export function RouteModal(props: Props) {
 												>
 													<PlusIcon className="h-3.5 w-3.5" aria-hidden />
 												</button>
+												)
 											}
 										>
 											<DailyScheduleEditor
-												windows={formData.schedule_windows}
+												windows={
+													catalogScheduleLocked
+														? alignRouteScheduleWindowsToCatalog(
+																catalogScheduleWindows,
+																formData.schedule_windows
+															)
+														: formData.schedule_windows
+												}
 												onChange={(schedule_windows) => onFormChange({ ...formData, schedule_windows })}
+												lockWindows={catalogScheduleLocked}
 												emptyLabel={t('scheduleEmpty')}
 												startLabel={t('scheduleStart')}
 												endLabel={t('scheduleEnd')}

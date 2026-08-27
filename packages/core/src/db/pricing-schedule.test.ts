@@ -13,6 +13,8 @@ import {
 	resolveDailyScheduleFactor,
 	resolveEffectiveRouteFactor,
 	scaleBillingPrices,
+	assertRouteScheduleMatchesCatalog,
+	scheduleWindowKey,
 } from './pricing-schedule';
 
 describe('parseHhMmToMinutes', () => {
@@ -478,5 +480,73 @@ describe('mergeScheduleSidesToSharedWindows', () => {
 			{ start: '09:00', end: '18:00', charged_factor: 2, metered_factor: 1, days: [1, 2, 3, 4, 5] },
 			{ start: '09:00', end: '18:00', charged_factor: 1, metered_factor: 1.5, days: [6, 7] },
 		]);
+	});
+});
+
+describe('assertRouteScheduleMatchesCatalog', () => {
+	const catalog = [
+		{ start: '00:30', end: '08:30', factor: 0.5 },
+		{ start: '09:00', end: '12:00', factor: 1.6, days: [1, 2, 3, 4, 5] },
+	];
+
+	it('allows any route schedule when catalog is empty', () => {
+		const result = assertRouteScheduleMatchesCatalog([], {
+			mode: 'override',
+			charged: [{ start: '01:00', end: '02:00', factor: 2 }],
+			metered: [],
+		});
+		assert.equal(result.ok, true);
+	});
+
+	it('accepts matching charged and metered window sets', () => {
+		const result = assertRouteScheduleMatchesCatalog(catalog, {
+			mode: 'override',
+			charged: [
+				{ start: '00:30', end: '08:30', factor: 0.8 },
+				{ start: '09:00', end: '12:00', factor: 1.1, days: [1, 2, 3, 4, 5] },
+			],
+			metered: [
+				{ start: '09:00', end: '12:00', factor: 0.9, days: [1, 2, 3, 4, 5] },
+				{ start: '00:30', end: '08:30', factor: 1 },
+			],
+		});
+		assert.equal(result.ok, true);
+	});
+
+	it('treats omitted days as every weekday', () => {
+		assert.equal(
+			scheduleWindowKey({ start: '00:00', end: '08:00' }),
+			scheduleWindowKey({ start: '00:00', end: '08:00', days: [1, 2, 3, 4, 5, 6, 7] })
+		);
+		const result = assertRouteScheduleMatchesCatalog(
+			[{ start: '00:00', end: '08:00', factor: 0.5, days: [1, 2, 3, 4, 5, 6, 7] }],
+			{
+				mode: 'override',
+				charged: [{ start: '00:00', end: '08:00', factor: 1 }],
+				metered: [{ start: '00:00', end: '08:00', factor: 1 }],
+			}
+		);
+		assert.equal(result.ok, true);
+	});
+
+	it('rejects missing or extra windows on either side', () => {
+		const missing = assertRouteScheduleMatchesCatalog(catalog, {
+			mode: 'override',
+			charged: [{ start: '00:30', end: '08:30', factor: 1 }],
+			metered: catalog,
+		});
+		assert.equal(missing.ok, false);
+		if (!missing.ok) {
+			assert.match(missing.message, /schedule\.charged missing/);
+		}
+		const extra = assertRouteScheduleMatchesCatalog(catalog, {
+			mode: 'override',
+			charged: catalog,
+			metered: [...catalog, { start: '13:00', end: '14:00', factor: 1 }],
+		});
+		assert.equal(extra.ok, false);
+		if (!extra.ok) {
+			assert.match(extra.message, /schedule\.metered extra/);
+		}
 	});
 });

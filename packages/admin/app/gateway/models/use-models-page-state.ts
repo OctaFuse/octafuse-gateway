@@ -18,8 +18,10 @@ import {
 	draftRowsHaveImageTokenPrices,
 	draftRowsLookLikeImageOnly,
 	profileJsonToAudioDraftState,
+	profileJsonToCatalogScheduleDraft,
 	profileJsonToDraftState,
 	type AudioPricingDraftState,
+	type CatalogScheduleFormWindow,
 	type ImageBillingModeDraft,
 	type ImagePerImageDraft,
 	type ImagePricingDraftState,
@@ -72,6 +74,9 @@ export function useModelsPageState() {
 	const [formData, setFormData] = useState<ModelFormData>(EMPTY_MODEL_FORM);
 	const [formKind, setFormKind] = useState<ModelFormKind>('llm');
 	const [pricingTierRows, setPricingTierRows] = useState<PricingTierDraftRow[]>([]);
+	const [catalogScheduleWindows, setCatalogScheduleWindows] = useState<CatalogScheduleFormWindow[]>(
+		[]
+	);
 	const [imageBillingMode, setImageBillingMode] = useState<ImageBillingModeDraft>('token');
 	const [imagePerImageDraft, setImagePerImageDraft] = useState<ImagePerImageDraft>(
 		createDefaultImagePerImageDraft()
@@ -372,6 +377,7 @@ export function useModelsPageState() {
 			} else {
 				applyImagePricingDraft(profileJsonToDraftState(model.pricing_profile));
 			}
+			setCatalogScheduleWindows(profileJsonToCatalogScheduleDraft(model.pricing_profile));
 		},
 		[applyImagePricingDraft]
 	);
@@ -417,6 +423,7 @@ export function useModelsPageState() {
 				});
 				setPricingTierRows([createDefaultNewModelTierRow()]);
 			}
+			setCatalogScheduleWindows([]);
 			setShowModal(true);
 			setSaveError('');
 		},
@@ -497,6 +504,7 @@ export function useModelsPageState() {
 			fillFormFromModel(model);
 			try {
 				const fullModel = await fetchModelDetail(model.id);
+				setEditingModel(fullModel);
 				fillFormFromModel(fullModel);
 			} catch (error) {
 				console.error('Fetch model details error:', error);
@@ -654,7 +662,8 @@ export function useModelsPageState() {
 				pricingTierRows,
 				editingModel?.id ?? null,
 				imageDraft,
-				audioDraft
+				audioDraft,
+				catalogScheduleWindows
 			);
 			if (result.success) {
 				setShowModal(false);
@@ -670,7 +679,8 @@ export function useModelsPageState() {
 		}
 	}, [
 		audioPricingDraft,
-		editingModel?.id,
+		catalogScheduleWindows,
+		editingModel,
 		formData,
 		formKind,
 		imageBillingMode,
@@ -719,6 +729,8 @@ export function useModelsPageState() {
 		formKind,
 		pricingTierRows,
 		setPricingTierRows,
+		catalogScheduleWindows,
+		setCatalogScheduleWindows,
 		imageBillingMode,
 		setImageBillingMode: handleImageBillingModeChange,
 		imagePerImageDraft,

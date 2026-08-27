@@ -3,10 +3,10 @@
  *
  * 写入侧 `JSON.stringify`；读侧按需 `JSON.parse`。
  *
- * ## 当前形状（`v === 4`）
+ * ## 当前形状（`v === 5`）
  * ```json
  * {
- *   "v": 4,
+ *   "v": 5,
  *   "basis_tokens": 200000,
  *   "snapshot": {
  *     "supplier": {
@@ -14,18 +14,21 @@
  *       "source": "model_x_factor",
  *       "basis_tokens": 200000,
  *       "base_factor": 1.0,
- *       "schedule": { "timezone": "Asia/Shanghai", "local_time": "07:15", "local_weekday": 5, "evaluated_at_utc": "2026-07-09T23:15:00.000Z", "factor": 0.5, "window": { ... } },
- *       "effective_factor": 0.5,
+ *       "catalog_schedule": { "timezone": "Asia/Shanghai", "local_time": "07:15", "local_weekday": 5, "evaluated_at_utc": "2026-07-09T23:15:00.000Z", "factor": 0.5, "window": { ... } },
+ *       "schedule": { "timezone": "Asia/Shanghai", "local_time": "07:15", "local_weekday": 5, "evaluated_at_utc": "2026-07-09T23:15:00.000Z", "factor": 1.2, "window": { ... } },
+ *       "effective_factor": 1.2,
  *       "prices": { ... }
  *     },
- *     "standard": { "path": "profile", "source": "model", "basis_tokens": 200000, "prices": { ... } },
+ *     "standard": { "path": "profile", "source": "model", "basis_tokens": 200000, "schedule": { "...": "catalog schedule" }, "prices": { ... } },
  *     "user_charge": { "...": "same shape as supplier" }
  *   }
  * }
  * ```
- * - `snapshot.user_charge` / `supplier`：目录选档 × base_factor × schedule_factor 后的单价。
- * - `snapshot.user_charge.user_charged_factor`（及顶层 `user_charged_factor`）：用户级 Charged 折扣；未命中为 `null`。v4 可带该键。
+ * - `snapshot.standard`：目录选档 × **官方时段倍率**（不含路由倍率）。v5 起 `schedule` 为目录时段。
+ * - `snapshot.user_charge` / `supplier`：官方当刻价 × 路由 base_factor × 路由 schedule_factor。`catalog_schedule` 为目录时段，`schedule` 为路由时段。
+ * - `snapshot.user_charge.user_charged_factor`（及顶层 `user_charged_factor`）：用户级 Charged 折扣；未命中为 `null`。
  * - `basis_tokens`：选档依据（上游 usage 的 input 侧 token 数）。
+ * - v4 历史日志：`standard` 无 `schedule`（裸目录价）；supplier / user_charge 仅有路由 `schedule`。
  *
  * ## Image 计费扩展（`snapshot` 内 `kind` 字段）
  * - **`kind: 'image_tokens'`**：OpenAI GPT Image token 分项；沿用 tier `image_*` 与 usage 分项。
@@ -40,7 +43,7 @@
  */
 
 /** 当前写入的 `pricing_audit` JSON schema 版本号。 */
-export const PRICING_AUDIT_JSON_SCHEMA_VERSION = 4 as const;
+export const PRICING_AUDIT_JSON_SCHEMA_VERSION = 5 as const;
 
 /** 写入 `pricing_audit` 时的 JSON 形状参考。 */
 export interface PricingAuditJson {

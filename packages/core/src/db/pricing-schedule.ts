@@ -792,6 +792,137 @@ function windowOverlapLabel(w: DailyScheduleWindow): string {
 	return daysHint ? `${time} ${daysHint}` : time;
 }
 
+/**
+ * 规范化窗口形状键：只比 start/end/days，不含 factor。
+ * `days` 省略 / 空 / 全 7 天 视为每天（同一键）。
+ */
+export function scheduleWindowKey(w: Pick<DailyScheduleWindow, 'start' | 'end' | 'days'>): string {
+	const start = w.start.trim();
+	const end = w.end.trim();
+	const days = isEveryIsoWeekday(w.days) ? '*' : effectiveIsoWeekdays(w.days).join(',');
+	return `${start}|${end}|${days}`;
+}
+
+export function formatScheduleWindowKey(w: Pick<DailyScheduleWindow, 'start' | 'end' | 'days'>): string {
+	const time = `${w.start.trim()}-${w.end.trim()}`;
+	const daysHint = formatIsoWeekdaysHint(w.days);
+	return daysHint ? `${time} ${daysHint}` : time;
+}
+
+export function catalogScheduleKeysEqual(
+	a: Array<Pick<DailyScheduleWindow, 'start' | 'end' | 'days'>>,
+	b: Array<Pick<DailyScheduleWindow, 'start' | 'end' | 'days'>>
+): boolean {
+	if (a.length !== b.length) {
+		return false;
+	}
+	const ka = new Set(a.map(scheduleWindowKey));
+	const kb = new Set(b.map(scheduleWindowKey));
+	if (ka.size !== kb.size) {
+		return false;
+	}
+	for (const k of ka) {
+		if (!kb.has(k)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+function diffScheduleWindowSets(
+	catalog: DailyScheduleWindow[],
+	route: DailyScheduleWindow[]
+): { missing: string[]; extra: string[] } {
+	const catalogMap = new Map(catalog.map((w) => [scheduleWindowKey(w), w]));
+	const routeMap = new Map(route.map((w) => [scheduleWindowKey(w), w]));
+	const missing: string[] = [];
+	const extra: string[] = [];
+	for (const [k, w] of catalogMap) {
+		if (!routeMap.has(k)) {
+			missing.push(formatScheduleWindowKey(w));
+		}
+	}
+	for (const [k, w] of routeMap) {
+		if (!catalogMap.has(k)) {
+			extra.push(formatScheduleWindowKey(w));
+		}
+	}
+	return { missing, extra };
+}
+
+export type CatalogScheduleMatchResult =
+	| { ok: true }
+	| { ok: false; message: string; missing: string[]; extra: string[] };
+
+/**
+ * model 目录时段与 route 时段的严格一致校验。
+ * - catalog 为空：route 可自由配置。
+ * - catalog 非空：`schedule.charged[]` 与 `schedule.metered[]` 的窗口集合必须各自与 catalog 逐一相同。
+ */
+export function assertRouteScheduleMatchesCatalog(
+	catalogWindows: DailyScheduleWindow[],
+	routeSchedule: RoutePricingSchedule
+): CatalogScheduleMatchResult {
+	if (catalogWindows.length === 0) {
+		return { ok: true };
+	}
+	const problems: string[] = [];
+	let missing: string[] = [];
+	let extra: string[] = [];
+	for (const side of ['charged', 'metered'] as const) {
+		const diff = diffScheduleWindowSets(catalogWindows, routeSchedule[side]);
+		if (diff.missing.length > 0 || diff.extra.length > 0) {
+			const parts: string[] = [];
+			if (diff.missing.length > 0) {
+				parts.push(`missing: ${diff.missing.join(', ')}`);
+			}
+			if (diff.extra.length > 0) {
+				parts.push(`extra: ${diff.extra.join(', ')}`);
+			}
+			problems.push(`schedule.${side} ${parts.join('; ')}`);
+			missing = diff.missing;
+			extra = diff.extra;
+		}
+	}
+	if (problems.length === 0) {
+		return { ok: true };
+	}
+	return {
+		ok: false,
+		message: `Route time windows must match the model catalog schedule exactly. ${problems.join('. ')}`,
+		missing,
+		extra,
+	};
+}
+
+/**
+ * 严格解析目录价 `pricing_profile.schedule`：任一窗口非法或重叠则失败。
+ * `undefined` / `null` / `[]` → 空数组（无官方时段）。
+ */
+export function parseCatalogScheduleWindows(raw: unknown): DailyScheduleWindow[] | null {
+	if (raw === undefined || raw === null) {
+		return [];
+	}
+	if (!Array.isArray(raw)) {
+		return null;
+	}
+	if (raw.length === 0) {
+		return [];
+	}
+	const windows: DailyScheduleWindow[] = [];
+	for (const item of raw) {
+		const w = parseWindowRow(item);
+		if (!w) {
+			return null;
+		}
+		windows.push(w);
+	}
+	if (findDailyWindowOverlap(windows)) {
+		return null;
+	}
+	return windows;
+}
+
 /** 检测同侧窗口是否在一周循环上重叠（含跨午夜；无 `days` 视为每天）。 */
 export function findDailyWindowOverlap(windows: DailyScheduleWindow[]): string | null {
 	type Seg = { a: number; b: number; label: string };

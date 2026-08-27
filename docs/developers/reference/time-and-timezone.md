@@ -120,11 +120,20 @@ Admin 前端格式化函数位于 `packages/admin/lib/datetime.ts`：
 
 - Admin 仪表盘「今日」卡片：`dashboard-service.ts` → `getAdminStatsService`
 - Admin 全站时间列与自定义时间窗（见上一节）
-- 路由分时时段（`price_override.schedule`）：`formatLocalHhMm` 与 `formatLocalIsoWeekday` 都按业务时区取墙钟时刻与 ISO 星期（1=周一 … 7=周日），不用 UTC weekday；评估时刻为请求进入 Gateway 的 `request_started_at_ms`
+- 模型官方分时时段（`models.pricing_profile.schedule`）与路由分时时段（`price_override.schedule`）：`formatLocalHhMm` 与 `formatLocalIsoWeekday` 都按业务时区取墙钟时刻与 ISO 星期（1=周一 … 7=周日），不用 UTC weekday；评估时刻为请求进入 Gateway 的 `request_started_at_ms`。两层共用同一时区与同一锁定时刻。
 
 ### 分时时段的星期
 
-窗口可选 `days`（ISO 1–7）。省略表示每天循环，与历史「每日时段」一致。跨午夜窗口的 `days` 锚定**开始日**：周五 `22:00–06:00` 在周六 03:00 仍命中。`pricing_audit.schedule` 写入 `local_time`、`local_weekday` 与 `evaluated_at_utc`。
+窗口可选 `days`（ISO 1–7）。省略表示每天循环，与历史「每日时段」一致。跨午夜窗口的 `days` 锚定**开始日**：周五 `22:00–06:00` 在周六 03:00 仍命中。`pricing_audit` 的目录时段写在 `snapshot.standard.schedule`（以及 supplier / user_charge 的 `catalog_schedule`），路由时段仍写在对应侧的 `schedule`，均含 `local_time`、`local_weekday` 与 `evaluated_at_utc`。
+
+### 模型官方时段与路由时段
+
+计费是两层叠乘，不是二选一：
+
+1. **官方当刻价**：`models.pricing_profile` 选档后再乘模型 `schedule` 命中倍率（未命中为 1）→ 写入 `standard_cost`。
+2. **自家溢价 / 让利**：再乘路由 `charged_factor` / `metered_factor` 与路由 `schedule`（以及可选的用户计费倍率）→ `charged_cost` / `metered_cost`。
+
+因此 `charged / standard` 只反映相对官方当刻价的折扣或溢价。模型未配置官方时段时，路由可自由配窗口；一旦模型配置了官方时段，路由两侧窗口集合必须与官方窗口完全一致。保存模型时若官方窗口集合变化，已配置时段的路由（含未激活）会被重置为同一套窗口（窗口倍率恢复为 1）；尚未配置时段的路由保持为空。
 
 API 文档中的相关说明见 [`docs/developers/api/admin.md`](../api/admin.md)（时间与时区约定一节）。
 

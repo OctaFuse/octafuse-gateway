@@ -51,7 +51,7 @@ Authorization: Bearer sk-xxx...
 
 模型 **`tags` 不参与**选组或计费。需要限定某一组时，请使用 **`baseId:your_group`**。
 
-**免费 / 零扣费**：路由侧用户计费（Charged cost）= 模型目录价 × 有效倍率。无 `schedule.mode` 时有效倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 含该目录模型 ID，再对路由用户计费乘一次该倍率（六位四舍五入）；缺键不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`，或该用户该模型的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率。
+**免费 / 零扣费**：路由侧用户计费（Charged cost）= 官方当刻价（目录档 × 模型官方时段倍率）× 路由有效倍率。无 `schedule.mode` 时有效倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 含该目录模型 ID，再对路由用户计费乘一次该倍率（六位四舍五入）；缺键不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`，或该用户该模型的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率或模型官方时段。
 
 ### 3. 预算校验
 
@@ -430,9 +430,9 @@ GET /v1/models
 | `route_groups` | string[] | 当前模型下 **活跃路由** 的去重 `route_group` 列表，供客户端构造请求中的 `baseId:group` |
 | `context_window` | number \| null | 上下文窗口大小（token 数） |
 | `max_tokens` | number \| null | 目录/展示用参考（常见最大输出能力）；**转发时不用于截断**，实际输出上限见上文「输出长度」 |
-| `pricing_profile` | string \| null | 模型主定价 JSON（canonical：`{ "tiers": [ { "upto", "label", "input_price", "output_price", … } ] }`）；**末档 `upto` 为 `null` 表示开放上界**；完整阶梯与 cache 价以此为准 |
-| `input_price` | number \| null | **兼容展示**：由 `pricing_profile` 派生（取各档中 **最低** `input_price` 所在档的输入价）；无合法 profile 时为 `null` |
-| `output_price` | number \| null | **兼容展示**：与上档同行的输出价（$/1M） |
+| `pricing_profile` | string \| null | 模型主定价 JSON（canonical：`{ "tiers": [ { "upto", "label", "input_price", "output_price", … } ], "schedule"?: [ { "start", "end", "factor", "days"? } ] }`）；**末档 `upto` 为 `null` 表示开放上界**；完整阶梯与 cache 价以此为准。可选 `schedule` 为官方分时倍率（时区为 `BUSINESS_TIMEZONE`，不写入 JSON） |
+| `input_price` | number \| null | **兼容展示**：由 `pricing_profile` 派生（取各档中 **最低** `input_price` 所在档的输入价，**不含**官方时段）；无合法 profile 时为 `null` |
+| `output_price` | number \| null | **兼容展示**：与上档同行的输出价（$/1M），同样不含官方时段 |
 | `description` | string \| null | 模型描述 |
 | `input_modalities` | string[] \| null | 支持的输入模态（OpenRouter 风格）：`text`、`image`、`audio`、`video`、`file`；客户端可据此限制附件类型 |
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
@@ -516,7 +516,7 @@ GET /catalog/models
 }
 ```
 
-Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`（语义与 `model_info` 一致；`pricing_profile` 为解析后的对象）。
+Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`（语义与 `model_info` 一致；`pricing_profile` 为解析后的对象，可含 `schedule`）。响应**不**附带 `business_timezone`；外部要自行计算当刻官方价时，须与运营另行约定 `system_config.BUSINESS_TIMEZONE`。
 
 ### 与 `GET /v1/models` / Admin 的差异
 
@@ -1169,10 +1169,10 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 
 - `cache_read_price` 和 `cache_write_price` 默认等于 `input_price`
 - Images 还支持 `per_image` 按张计价，Audio 支持 `per_second` 按时长或 `token` 计价，Agent Tools 使用固定按次单价；分别见上文对应章节。
-- 路由 **`price_override`** 以 **`charged_factor` / `metered_factor`**（及可选分时 **`schedule`**，窗口可带 ISO `days`）相对目录价计费；嵌套 `metered`/`charged` tiers 忽略。
+- 路由 **`price_override`** 以 **`charged_factor` / `metered_factor`**（及可选分时 **`schedule`**，窗口可带 ISO `days`）相对官方当刻价计费；嵌套 `metered`/`charged` tiers 忽略。
 - 路由级 **`route_group`** 会写入 `api_key_request_logs` 快照。
-  - **`standard_cost`（目录标准价）**：按当前计费模式从 `models.pricing_profile` 计算，不乘路由倍率
-  - **`metered_cost`（供应成本）** / **`charged_cost`（用户扣费）**：目录价 × 有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。若用户对该目录模型配置了用户计费倍率，仅对路由算出的用户扣费再乘一次；供应成本与目录标准价不变。详见 `docs/developers/reference/streaming-billing.md`
+  - **`standard_cost`（官方当刻目录价）**：按当前计费模式从 `models.pricing_profile` 选档后再乘模型官方时段倍率，不乘路由倍率
+  - **`metered_cost`（供应成本）** / **`charged_cost`（用户扣费）**：官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。若用户对该目录模型配置了用户计费倍率，仅对路由算出的用户扣费再乘一次；供应成本与官方当刻价不变。详见 `docs/developers/reference/streaming-billing.md`
 - `users.budget_spent` 仅按最终 `charged_cost` 累加
 
 ### 使用量追踪
@@ -1180,7 +1180,7 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 每次请求会记录到 `api_key_request_logs`，主要包括：
 
 - Token 使用量（输入/输出/缓存读取/缓存写入/推理等）
-- `metered_cost` / `standard_cost` / `charged_cost`（目录选档 × 路由倍率；用户扣费再可选乘用户计费倍率；见上）
+- `metered_cost` / `standard_cost` / `charged_cost`（目录选档 × 官方时段得到 `standard_cost`，再 × 路由倍率；用户扣费再可选乘用户计费倍率；见上）
 - `route_group`（请求时选用的路由快照）
 - `request_protocol` / `request_operation` 与 `upstream_protocol` / `upstream_operation`
 - `model_surface_id`、`route_pool_id`、`route_target_id`、`adapter`、`route_trace`

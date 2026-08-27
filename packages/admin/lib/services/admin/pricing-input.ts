@@ -6,7 +6,13 @@ import {
 	type ImagePricingConfig,
 	type ParsedPricingProfile,
 } from '@octafuse/core/db/pricing-profile';
-import { coerceRoutePricingScheduleInput } from '@octafuse/core/db/pricing-schedule';
+import {
+	assertRouteScheduleMatchesCatalog,
+	coerceRoutePricingScheduleInput,
+	isEveryIsoWeekday,
+	parseRoutePricingSchedule,
+	type DailyScheduleWindow,
+} from '@octafuse/core/db/pricing-schedule';
 import { badRequest } from './errors';
 
 function serializeImagePricingConfig(image: ImagePricingConfig): Record<string, unknown> {
@@ -41,10 +47,14 @@ function serializeImagePricingConfig(image: ImagePricingConfig): Record<string, 
 
 /** per_image 权威形状：无 `tiers`（历史占位零档写入时剥离）。 */
 function canonicalizePerImageProfile(profile: ParsedPricingProfile): string {
-	return JSON.stringify({
+	const out: Record<string, unknown> = {
 		image_billing_mode: 'per_image',
 		image: serializeImagePricingConfig(profile.image!),
-	});
+	};
+	if (profile.schedule.length > 0) {
+		out.schedule = profile.schedule;
+	}
+	return JSON.stringify(out);
 }
 
 function assertImageBillingProfileConstraints(profile: ParsedPricingProfile): void {
@@ -93,6 +103,80 @@ function validatePricingProfileJson(json: string): string {
 		return canonicalizePerImageProfile(profile);
 	}
 	return json;
+}
+
+export function catalogScheduleFromPricingProfile(
+	pricingProfileJson: string | null | undefined
+): DailyScheduleWindow[] {
+	const profile = parsePricingProfile(pricingProfileJson);
+	return profile?.schedule ?? [];
+}
+
+export function assertRoutePriceOverrideMatchesCatalog(
+	pricingProfileJson: string | null | undefined,
+	priceOverrideJson: string | null | undefined
+): void {
+	const catalog = catalogScheduleFromPricingProfile(pricingProfileJson);
+	if (catalog.length === 0) {
+		return;
+	}
+	const schedule = parseRoutePricingSchedule(priceOverrideJson ?? null);
+	const match = assertRouteScheduleMatchesCatalog(catalog, schedule);
+	if (!match.ok) {
+		throw badRequest(match.message);
+	}
+}
+
+/** 路由是否已配置任一侧分时窗口。两侧皆空表示尚未设时段倍率，计费按 1。 */
+export function routePriceOverrideHasScheduleWindows(
+	priceOverrideJson: string | null | undefined
+): boolean {
+	const schedule = parseRoutePricingSchedule(priceOverrideJson ?? null);
+	return schedule.charged.length > 0 || schedule.metered.length > 0;
+}
+
+function catalogWindowToResetRouteRow(window: DailyScheduleWindow): Record<string, unknown> {
+	const row: Record<string, unknown> = {
+		start: window.start,
+		end: window.end,
+		factor: 1,
+	};
+	if (window.days && !isEveryIsoWeekday(window.days)) {
+		row.days = [...window.days];
+	}
+	return row;
+}
+
+/**
+ * 按官方窗口重写路由 `schedule`（两侧窗口对齐，倍率重置为 1），保留 charged/metered 默认倍率。
+ * 官方时段为空时去掉 `schedule`，路由恢复可自由配置。
+ */
+export function resetRoutePriceOverrideScheduleToCatalog(
+	priceOverrideJson: string | null | undefined,
+	catalog: DailyScheduleWindow[]
+): string | null {
+	let obj: Record<string, unknown> = {};
+	if (priceOverrideJson != null && String(priceOverrideJson).trim() !== '') {
+		try {
+			const parsed = JSON.parse(String(priceOverrideJson)) as unknown;
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+				obj = { ...(parsed as Record<string, unknown>) };
+			}
+		} catch {
+			obj = {};
+		}
+	}
+	if (catalog.length === 0) {
+		delete obj.schedule;
+	} else {
+		const windows = catalog.map(catalogWindowToResetRouteRow);
+		obj.schedule = {
+			mode: 'override',
+			charged: windows,
+			metered: windows,
+		};
+	}
+	return coerceRoutePriceOverrideInput(obj);
 }
 
 /**

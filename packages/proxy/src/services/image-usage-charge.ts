@@ -132,10 +132,13 @@ function pricingAtUtcFromParams(requestStartedAtMs?: number): Date {
 async function resolveRouteFactors(
 	repos: GatewayRepositories,
 	routePriceOverrideJson: string | null | undefined,
-	requestStartedAtMs?: number
+	requestStartedAtMs?: number,
+	modelPricingProfileJson?: string | null
 ): Promise<{
 	meteredFactor: number;
 	chargedFactor: number;
+	catalogFactor: number;
+	catalogSchedule: ReturnType<typeof toScheduleAudit>;
 	meteredAuditExtras: Pick<PriceResolutionAuditSide, 'base_factor' | 'schedule' | 'effective_factor'>;
 	chargedAuditExtras: Pick<PriceResolutionAuditSide, 'base_factor' | 'schedule' | 'effective_factor'>;
 }> {
@@ -145,6 +148,12 @@ async function resolveRouteFactors(
 	const schedule = parseRoutePricingSchedule(routePriceOverrideJson ?? null);
 	const chargedSch = resolveDailyScheduleFactor(schedule.charged, pricingAtUtc, businessTimezone);
 	const meteredSch = resolveDailyScheduleFactor(schedule.metered, pricingAtUtc, businessTimezone);
+	const catalogProfile = parsePricingProfile(modelPricingProfileJson ?? null);
+	const catalogSch = resolveDailyScheduleFactor(
+		catalogProfile?.schedule ?? [],
+		pricingAtUtc,
+		businessTimezone
+	);
 	const meteredFactor = resolveEffectiveRouteFactor(
 		baseFactors.meteredFactor,
 		meteredSch,
@@ -163,6 +172,8 @@ async function resolveRouteFactors(
 	return {
 		meteredFactor,
 		chargedFactor,
+		catalogFactor: catalogSch.factor,
+		catalogSchedule: toScheduleAudit(catalogSch),
 		meteredAuditExtras: schSide(meteredSch, baseFactors.meteredFactor, meteredFactor),
 		chargedAuditExtras: schSide(chargedSch, baseFactors.chargedFactor, chargedFactor),
 	};
@@ -213,14 +224,20 @@ function estimateImageTokenCosts(
 	const supplier = resolveSupplierBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: params.modelPricingProfileJson,
+		catalogScheduleFactor: factors.catalogFactor,
+		catalogSchedule: factors.catalogSchedule,
 	});
 	const standard = resolveStandardBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: params.modelPricingProfileJson,
+		catalogScheduleFactor: factors.catalogFactor,
+		catalogSchedule: factors.catalogSchedule,
 	});
 	const charged = resolveChargedBillingPrices({
 		basisInputTokens: basis,
 		modelPricingProfileJson: params.modelPricingProfileJson,
+		catalogScheduleFactor: factors.catalogFactor,
+		catalogSchedule: factors.catalogSchedule,
 	});
 
 	const supplierPrices = scaleBillingPrices(supplier.prices, factors.meteredFactor);
@@ -319,9 +336,10 @@ function estimateImagePerImageCosts(
 		outputUnitPrice,
 		inputUnitPrice,
 	});
-	const meteredCost = roundGatewayMoney(baseCost * factors.meteredFactor);
-	const standardCost = roundGatewayMoney(baseCost);
-	const chargedCost = roundGatewayMoney(baseCost * factors.chargedFactor);
+	const catalogBase = baseCost * factors.catalogFactor;
+	const meteredCost = roundGatewayMoney(catalogBase * factors.meteredFactor);
+	const standardCost = roundGatewayMoney(catalogBase);
+	const chargedCost = roundGatewayMoney(catalogBase * factors.chargedFactor);
 
 	const pricingAuditJson = JSON.stringify({
 		v: PRICING_AUDIT_JSON_SCHEMA_VERSION,
@@ -335,6 +353,7 @@ function estimateImagePerImageCosts(
 		...(params.operation ? { operation: params.operation } : {}),
 		metered_factor: factors.meteredFactor,
 		charged_factor: factors.chargedFactor,
+		catalog_schedule: factors.catalogSchedule,
 		...(options?.auditExtra ?? {}),
 	});
 
@@ -375,7 +394,8 @@ export async function estimateImageCosts(
 	const factors = await resolveRouteFactors(
 		repos,
 		params.routePriceOverrideJson,
-		params.requestStartedAtMs
+		params.requestStartedAtMs,
+		params.modelPricingProfileJson
 	);
 	const mode = resolveImageBillingMode(profile);
 
@@ -568,7 +588,8 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 		const factors = await resolveRouteFactors(
 			params.repos,
 			params.billing.routePriceOverrideJson,
-			params.billing.requestStartedAtMs
+			params.billing.requestStartedAtMs,
+			params.billing.modelPricingProfileJson
 		);
 		const billingKind =
 			mode === 'per_image' && profile && profileHasImagePerImagePricing(profile)
@@ -583,7 +604,8 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 		const factors = await resolveRouteFactors(
 			params.repos,
 			params.billing.routePriceOverrideJson,
-			params.billing.requestStartedAtMs
+			params.billing.requestStartedAtMs,
+			params.billing.modelPricingProfileJson
 		);
 		costs = zeroImageCostBreakdown(params.billing, factors, 'image_tokens', {
 			error: 'request_failed',
@@ -592,7 +614,8 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 		const factors = await resolveRouteFactors(
 			params.repos,
 			params.billing.routePriceOverrideJson,
-			params.billing.requestStartedAtMs
+			params.billing.requestStartedAtMs,
+			params.billing.modelPricingProfileJson
 		);
 		const auditExtra: Record<string, unknown> = { result_confirmed: params.resultConfirmed ?? true };
 		if (params.upstreamSupplierCostUsdTicks != null) {

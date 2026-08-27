@@ -191,7 +191,7 @@ export interface RequestLogRow {
   total_tokens: number;
   /** 未乘路由倍率的原始 token 成本 */
   metered_cost: number;
-  /** 按 models 标准价格计算的 token 成本（不受 route price_override 影响） */
+  /** 官方当刻目录价（含 model 时段倍率），不含 route 倍率 */
   standard_cost: number;
   /** 计入用户预算与日志展示的费用 */
   charged_cost: number;
