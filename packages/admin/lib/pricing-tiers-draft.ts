@@ -692,3 +692,38 @@ export function attachCatalogScheduleToProfileJson(
 		return { ok: false, error: 'Failed to attach catalog schedule' };
 	}
 }
+
+/** 模型弹窗只读预览：标准价 + 时段倍率，形状与保存到 `pricing_profile` 的 JSON 一致。 */
+export function formatCatalogPricingProfilePreview(input: {
+	kind: 'llm' | 'image' | 'audio';
+	rows: PricingTierDraftRow[];
+	imageDraft?: ImagePricingDraftState;
+	audioDraft?: AudioPricingDraftState;
+	schedule?: CatalogScheduleFormWindow[];
+}): { ok: boolean; text: string } {
+	const tierJson =
+		input.kind === 'audio' && input.audioDraft
+			? serializeAudioPricingDraft(input.audioDraft)
+			: input.kind === 'image' && input.imageDraft
+				? serializeImagePricingDraft(input.imageDraft)
+				: serializeDraftRowsToProfileJson(input.rows);
+	if (!tierJson.ok) {
+		return { ok: false, text: `// ${tierJson.error}` };
+	}
+	const scheduleDraft = serializeCatalogScheduleDraft(input.schedule ?? []);
+	if (!scheduleDraft.ok) {
+		return { ok: false, text: `// ${scheduleDraft.error}` };
+	}
+	const withSchedule = attachCatalogScheduleToProfileJson(tierJson.json, scheduleDraft.windows);
+	if (!withSchedule.ok) {
+		return { ok: false, text: `// ${withSchedule.error}` };
+	}
+	if (!withSchedule.json) {
+		return { ok: true, text: '// No pricing_profile (null)' };
+	}
+	try {
+		return { ok: true, text: JSON.stringify(JSON.parse(withSchedule.json) as object, null, 2) };
+	} catch {
+		return { ok: true, text: withSchedule.json };
+	}
+}

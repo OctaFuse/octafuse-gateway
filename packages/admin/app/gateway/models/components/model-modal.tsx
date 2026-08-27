@@ -1,6 +1,7 @@
 'use client';
 
-import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useMemo, useState } from 'react';
+import { CodeBracketIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
 import {
@@ -14,6 +15,8 @@ import {
 	createDefaultAudioCharacterPricingDraft,
 	createDefaultAudioPricingDraft,
 	createDefaultAudioTokenPricingDraft,
+	createDefaultImagePerImageDraft,
+	formatCatalogPricingProfilePreview,
 	type AudioBillingModeDraft,
 	type AudioPricingDraftState,
 	type CatalogScheduleFormWindow,
@@ -94,6 +97,40 @@ export function ModelModal(props: Props) {
 	const tRoutes = useTranslations('routes.modal');
 	const isImageModel = formKind === 'image';
 	const isAudioModel = formKind === 'audio';
+	const pricingProfileJsonSessionKey = `${open ? '1' : '0'}:${editingModel?.id ?? 'new'}`;
+	const [pricingProfileJsonSession, setPricingProfileJsonSession] = useState(pricingProfileJsonSessionKey);
+	const [pricingProfileJsonOpen, setPricingProfileJsonOpen] = useState(false);
+	const [pricingProfileJsonCopied, setPricingProfileJsonCopied] = useState(false);
+	if (pricingProfileJsonSession !== pricingProfileJsonSessionKey) {
+		setPricingProfileJsonSession(pricingProfileJsonSessionKey);
+		setPricingProfileJsonOpen(false);
+		setPricingProfileJsonCopied(false);
+	}
+	const pricingProfilePreview = useMemo(
+		() =>
+			formatCatalogPricingProfilePreview({
+				kind: formKind,
+				rows: pricingTierRows,
+				imageDraft: isImageModel
+					? {
+							mode: imageBillingMode,
+							tiers: pricingTierRows,
+							perImage: imagePerImageDraft ?? createDefaultImagePerImageDraft(),
+						}
+					: undefined,
+				audioDraft: audioPricingDraft,
+				schedule: catalogScheduleWindows,
+			}),
+		[
+			formKind,
+			pricingTierRows,
+			isImageModel,
+			imageBillingMode,
+			imagePerImageDraft,
+			audioPricingDraft,
+			catalogScheduleWindows,
+		]
+	);
 	const audioCapability =
 		isAudioModel && audioPricingDraft?.mode === 'per_character'
 			? 'speech'
@@ -135,39 +172,39 @@ export function ModelModal(props: Props) {
 
 	return (
 		<div
-			className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !isSaving && !isDeleting) {
 					onClose();
 				}
 			}}
 		>
-			<div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-				<div className="px-6 py-4 border-b flex justify-between items-center sticky top-0 bg-white">
-					<h2 className="text-xl font-bold text-gray-900">
+			<div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5">
+				<div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4">
+					<h2 className="text-lg font-semibold text-gray-900">
 						{editingModel ? t('editTitle') : t('newTitle')}
 					</h2>
 					<button
 						type="button"
 						onClick={onClose}
-						className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
 						disabled={isSaving || isDeleting}
 						aria-label={tCommon('close')}
 					>
-						x
+						×
 					</button>
 				</div>
 
-				<div className="p-6">
+				<div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
 					{saveError && (
 						<div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
 							{saveError}
 						</div>
 					)}
 
-					<div className="grid grid-cols-2 gap-4">
+					<div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
 						{!editingModel ? (
-						<div className="col-span-2">
+						<div className="col-span-2 lg:col-span-3">
 							<label className="block text-sm font-medium text-gray-700 mb-1.5">
 								{t('kind')}
 							</label>
@@ -213,7 +250,7 @@ export function ModelModal(props: Props) {
 						</div>
 						) : null}
 						{isAudioModel ? (
-							<div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 p-3">
+							<div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 p-3 lg:col-span-3">
 								<p className="text-sm font-medium text-gray-800">
 									{t('audioCapability')}
 								</p>
@@ -327,11 +364,13 @@ export function ModelModal(props: Props) {
 								</div>
 							</>
 						) : (
-							<div className="col-span-2 rounded-md border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs text-amber-800">
+							<div className="col-span-2 rounded-md border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 lg:col-span-3">
 								{isAudioModel ? t('audioNoTokenLimits') : t('imageNoTokenLimits')}
 							</div>
 						)}
-						<div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2.5">
+					</div>
+
+					<div className="mt-5 rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2.5">
 							<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 								<div className="min-w-0 flex-1 space-y-2.5">
 									<div className="grid gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
@@ -388,14 +427,83 @@ export function ModelModal(props: Props) {
 											inputRaw={JSON.stringify(formData.input_modalities)}
 											outputRaw={JSON.stringify(formData.output_modalities)}
 											size="sm"
+											spacing="relaxed"
 										/>
 									</div>
 								</div>
 							</div>
 						</div>
-						<div className="col-span-2">
+
+					<section className="mt-5 rounded-lg border border-sky-100 bg-sky-50 p-4">
+						<div className="mb-3 flex items-center justify-between gap-2">
+							<h3 className="text-sm font-medium text-gray-800">{t('pricingProfile')}</h3>
+							<button
+								type="button"
+								onClick={() => setPricingProfileJsonOpen((openJson) => !openJson)}
+								aria-expanded={pricingProfileJsonOpen}
+								aria-controls="model-pricing-profile-json"
+								title={
+									pricingProfileJsonOpen ? t('hidePricingProfileJson') : t('viewPricingProfileJson')
+								}
+								className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 ${
+									pricingProfileJsonOpen
+										? 'border-blue-300 bg-blue-50 text-blue-800'
+										: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+								}`}
+							>
+								<CodeBracketIcon className="h-3.5 w-3.5" aria-hidden />
+								JSON
+							</button>
+						</div>
+						{pricingProfileJsonOpen ? (
+							<div
+								id="model-pricing-profile-json"
+								className="mb-3 space-y-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50/90 p-2"
+							>
+								<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+									<code className="rounded bg-white px-1 py-0.5 text-[10px] font-semibold text-gray-600">
+										pricing_profile
+									</code>
+									{pricingProfilePreview.ok ? (
+										<button
+											type="button"
+											onClick={() => {
+												if (!navigator.clipboard?.writeText) return;
+												void navigator.clipboard.writeText(pricingProfilePreview.text).then(
+													() => {
+														setPricingProfileJsonCopied(true);
+														window.setTimeout(() => setPricingProfileJsonCopied(false), 1500);
+													},
+													() => {},
+												);
+											}}
+											className="text-[11px] font-medium text-blue-600 hover:text-blue-800"
+										>
+											{pricingProfileJsonCopied ? tCommon('copied') : tCommon('copy')}
+										</button>
+									) : null}
+								</div>
+								<textarea
+									readOnly
+									rows={Math.min(
+										16,
+										6 + pricingTierRows.length * 3 + catalogScheduleWindows.length * 3
+									)}
+									value={pricingProfilePreview.text}
+									className={`w-full resize-y rounded-md border bg-white px-2 py-1.5 font-mono text-[11px] leading-relaxed ${
+										pricingProfilePreview.ok
+											? 'border-gray-200 text-gray-800'
+											: 'border-red-200 text-red-700'
+									}`}
+									spellCheck={false}
+									aria-label={t('viewPricingProfileJson')}
+								/>
+							</div>
+						) : null}
+						<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+							<div className="min-w-0 rounded-md border border-slate-200/80 bg-white p-3">
 							{isAudioModel && audioPricingDraft && onAudioPricingDraftChange ? (
-								<div className="space-y-3 rounded-md border border-gray-200 bg-white p-3">
+								<div className="space-y-3">
 									<p className="text-sm font-medium text-gray-800">{t('audioPricing')}</p>
 									<div className="space-y-1.5">
 										<p className="text-[11px] font-medium text-gray-600">
@@ -650,19 +758,18 @@ export function ModelModal(props: Props) {
 								/>
 							) : (
 								<PricingTiersEditor
-									title={t('pricingProfile')}
+									title={t('standardPricing')}
 									rows={pricingTierRows}
 									onChange={onPricingTierRowsChange}
 									billingCurrencyCode={billingCurrency}
 									minRows={0}
 								/>
 							)}
+							</div>
 							{onCatalogScheduleWindowsChange ? (
-								<div className="mt-4 space-y-2 rounded-md border border-gray-200 bg-gray-50/60 p-3">
-									<div className="flex items-start justify-between gap-2">
-										<div>
-											<h4 className="text-sm font-medium text-gray-800">{t('catalogSchedule')}</h4>
-										</div>
+								<div className="min-w-0 rounded-md border border-slate-200/80 bg-white p-3">
+									<div className="mb-2 flex items-center justify-between gap-2">
+										<h4 className="text-sm font-medium text-gray-800">{t('catalogSchedule')}</h4>
 										<button
 											type="button"
 											onClick={() =>
@@ -706,73 +813,76 @@ export function ModelModal(props: Props) {
 								</div>
 							) : null}
 						</div>
-						<div className="col-span-2">
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('tags')}</label>
-							<div className="flex flex-wrap gap-2 mb-2">
-								{formData.tags.map((tag) => (
-									<span
-										key={tag}
-										className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm ${tagBadgeClass(tag)}`}
-									>
-										{tag}
-										<button
-											type="button"
-											onClick={() => onRemoveTag(tag)}
-											className="text-gray-500 hover:text-red-600"
-											aria-label={t('removeTag', { tag })}
-										>
-											×
-										</button>
-									</span>
-								))}
-							</div>
-							<div className="flex gap-2">
-								<input
-									type="text"
-									value={tagInput}
-									onChange={(e) => onTagInputChange(e.target.value)}
-									onKeyDown={(e) => {
-										if (e.key === 'Enter' || e.key === ',') {
-											e.preventDefault();
-											onAddTag();
-										}
-									}}
-									className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder={t('tagsPlaceholder')}
-								/>
-								<button
-									type="button"
-									onClick={onAddTag}
-									className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+					</section>
+
+					<div className="mt-5">
+						<label className="mb-1 block text-sm font-medium text-gray-700">{t('tags')}</label>
+						<div className="mb-2 flex flex-wrap gap-2">
+							{formData.tags.map((tag) => (
+								<span
+									key={tag}
+									className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm ${tagBadgeClass(tag)}`}
 								>
-									{tCommon('add')}
-								</button>
-							</div>
+									{tag}
+									<button
+										type="button"
+										onClick={() => onRemoveTag(tag)}
+										className="text-gray-500 hover:text-red-600"
+										aria-label={t('removeTag', { tag })}
+									>
+										×
+									</button>
+								</span>
+							))}
 						</div>
-						<div className="col-span-2">
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('description')}</label>
+						<div className="flex gap-2">
+							<input
+								type="text"
+								value={tagInput}
+								onChange={(e) => onTagInputChange(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' || e.key === ',') {
+										e.preventDefault();
+										onAddTag();
+									}
+								}}
+								className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								placeholder={t('tagsPlaceholder')}
+							/>
+							<button
+								type="button"
+								onClick={onAddTag}
+								className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+							>
+								{tCommon('add')}
+							</button>
+						</div>
+					</div>
+					<div className="mt-5 grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
+						<div className="flex min-h-36 flex-col">
+							<label className="mb-1 block text-sm font-medium text-gray-700">{t('description')}</label>
 							<textarea
-								rows={3}
+								rows={4}
 								value={formData.description}
 								onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="min-h-0 w-full flex-1 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder={t('descriptionPlaceholder')}
 							/>
 						</div>
-						<div className="col-span-2">
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('metadataJson')}</label>
+						<div className="flex min-h-36 flex-col">
+							<label className="mb-1 block text-sm font-medium text-gray-700">{t('metadataJson')}</label>
 							<textarea
-								rows={6}
+								rows={4}
 								value={formData.metadata}
 								onChange={(e) => onFormChange({ ...formData, metadata: e.target.value })}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+								className="min-h-0 w-full flex-1 rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder={t('metadataPlaceholder')}
 							/>
 						</div>
 					</div>
 				</div>
 
-				<div className="px-6 py-4 border-t flex flex-wrap items-center justify-between gap-3 sticky bottom-0 bg-gray-50">
+				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
 					<div>
 						{editingModel && (
 							<button

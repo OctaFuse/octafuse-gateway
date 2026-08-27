@@ -57,6 +57,8 @@ type SharedProps = {
 	dayLabels: ScheduleDayLabels;
 	/** 锁定时间与星期（仅允许改倍率）；用于 route 继承 model 官方时段。 */
 	lockWindows?: boolean;
+	/** `inline`：星期与起止/倍率同一行，适合更宽的弹窗。 */
+	layout?: 'stacked' | 'inline';
 };
 
 type Props = SharedProps & (DualProps | SingleProps);
@@ -101,7 +103,9 @@ export function DailyScheduleEditor(props: Props) {
 		removeLabel,
 		dayLabels,
 		lockWindows = false,
+		layout = 'stacked',
 	} = props;
+	const inline = layout === 'inline';
 	const isSingle = props.variant === 'single';
 
 	const updateRow = (index: number, patch: Record<string, unknown>) => {
@@ -122,9 +126,13 @@ export function DailyScheduleEditor(props: Props) {
 						return (
 							<li
 								key={i}
-								className="space-y-1.5 rounded-md border border-gray-200 bg-white/80 p-2"
+								className={
+									inline
+										? 'flex flex-wrap items-end gap-2 rounded-md border border-gray-200 bg-white/80 p-2'
+										: 'space-y-1.5 rounded-md border border-gray-200 bg-white/80 p-2'
+								}
 							>
-								<div className="flex flex-wrap items-center gap-1">
+								<div className={inline ? 'flex min-w-0 flex-1 flex-wrap items-center gap-1' : 'flex flex-wrap items-center gap-1'}>
 									<span className="mr-0.5 text-[10px] font-medium text-gray-500">
 										{dayLabels.days}
 									</span>
@@ -185,7 +193,7 @@ export function DailyScheduleEditor(props: Props) {
 										);
 									})}
 								</div>
-								<div className="flex items-end gap-1.5">
+								<div className={inline ? 'flex w-full shrink-0 items-end gap-1.5 sm:w-auto sm:min-w-[17rem]' : 'flex items-end gap-1.5'}>
 									<div className="min-w-0 flex-1">
 										<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
 											{startLabel}

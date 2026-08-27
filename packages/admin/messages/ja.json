@@ -549,6 +549,9 @@
 			"output": "Output",
 			"preview": "プレビュー",
 			"pricingProfile": "Pricing Profile",
+			"viewPricingProfileJson": "pricing_profile JSON を表示",
+			"hidePricingProfileJson": "JSON を隠す",
+			"standardPricing": "標準価格",
 			"catalogSchedule": "スケジュール",
 			"catalogScheduleHint": "",
 			"catalogScheduleEmpty": "時間帯の設定はありません。",
@@ -573,12 +576,12 @@
 			"removeTag": "{tag} を削除",
 			"description": "説明",
 			"descriptionPlaceholder": "任意の内部メモ",
-			"metadataJson": "Metadata（JSON）",
+			"metadataJson": "メタデータ（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "モデルを削除"
 		},
 		"metadata": {
-			"title": "Metadata"
+			"title": "メタデータ"
 		},
 		"card": {
 			"routes": "{count} Route",

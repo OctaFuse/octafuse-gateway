@@ -549,6 +549,9 @@
 			"output": "Output",
 			"preview": "미리보기",
 			"pricingProfile": "요금 프로필",
+			"viewPricingProfileJson": "pricing_profile JSON 보기",
+			"hidePricingProfileJson": "JSON 숨기기",
+			"standardPricing": "표준 가격",
 			"catalogSchedule": "일정",
 			"catalogScheduleHint": "",
 			"catalogScheduleEmpty": "아직 일정 설정이 없습니다.",
@@ -573,12 +576,12 @@
 			"removeTag": "{tag} 제거",
 			"description": "설명",
 			"descriptionPlaceholder": "선택 사항, 내부 메모용",
-			"metadataJson": "Metadata (JSON)",
+			"metadataJson": "메타데이터 (JSON)",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "모델 삭제"
 		},
 		"metadata": {
-			"title": "Metadata"
+			"title": "메타데이터"
 		},
 		"card": {
 			"routes": "Route {count}개",

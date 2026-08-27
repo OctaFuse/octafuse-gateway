@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 
 import type {
@@ -13,7 +14,6 @@ import {
 	createEmptyTierRow,
 	DRAFT_UPTO_OPEN_SENTINEL,
 	ensureLastRowOpenUptoDraft,
-	formatPricingProfilePreview,
 } from '@/lib/pricing-tiers-draft';
 
 export type PricingTiersEditorProps = {
@@ -49,9 +49,6 @@ function updateRow(
 
 /** 原仅末档（开放上界）时拆档，给上一档一个可编辑的默认上界 */
 const DEFAULT_PROMOTED_FINITE_UPTO = '1000000';
-
-const linkActionClass =
-	'text-sm font-medium text-blue-600 underline-offset-2 hover:text-blue-800 hover:underline bg-transparent p-0 border-0 cursor-pointer';
 
 function PriceCell(props: {
 	value: string;
@@ -102,13 +99,7 @@ export function PricingTiersEditor({
 				? tBilling('footerPerImage', { currency: billSym })
 				: t('footerImage', { currency: billSym })
 			: t('footer', { currency: billSym });
-	const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
 	const canRemove = rows.length > minRows;
-	const imageDraftForPreview =
-		variant === 'image' && perImageDraft
-			? { mode: imageBillingMode, perImage: perImageDraft }
-			: undefined;
-	const jsonPreview = formatPricingProfilePreview(rows, imageDraftForPreview);
 	const hasToolbarLeft = Boolean(toolbarStart) || Boolean(title);
 	const isImage = variant === 'image';
 	const isPerImage = isImage && imageBillingMode === 'per_image';
@@ -171,18 +162,16 @@ export function PricingTiersEditor({
 				) : null}
 				<div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5">
 					{!isPerImage ? (
-						<button type="button" onClick={addTier} className={linkActionClass}>
-							{t('add')}
+						<button
+							type="button"
+							onClick={addTier}
+							className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900"
+							aria-label={t('add')}
+							title={t('add')}
+						>
+							<PlusIcon className="h-3.5 w-3.5" aria-hidden />
 						</button>
 					) : null}
-					<button
-						type="button"
-						onClick={() => setJsonPreviewOpen((v) => !v)}
-						aria-expanded={jsonPreviewOpen}
-						className={linkActionClass}
-					>
-						{jsonPreviewOpen ? tCommon('hide') : t('preview')}
-					</button>
 				</div>
 			</div>
 			{isImage && onImageBillingModeChange ? (
@@ -450,34 +439,6 @@ export function PricingTiersEditor({
 					</p>
 				</div>
 			)}
-			{jsonPreviewOpen ? (
-				<div className="space-y-1.5">
-					<div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-						<label className="text-xs font-medium text-gray-600">
-							<code className="rounded bg-gray-100 px-1">{tPricing('jsonPreviewLabel')}</code>
-						</label>
-						<button
-							type="button"
-							onClick={() => {
-								if (navigator.clipboard?.writeText) {
-									void navigator.clipboard.writeText(jsonPreview).catch(() => {});
-								}
-							}}
-							className={linkActionClass}
-						>
-							{tCommon('copy')}
-						</button>
-					</div>
-					<textarea
-						readOnly
-						rows={Math.min(14, 4 + rows.length * 3)}
-						value={jsonPreview}
-						className="w-full resize-y rounded-md border border-dashed border-gray-300 bg-gray-50/90 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-gray-800"
-						spellCheck={false}
-						aria-label="pricing_profile JSON preview"
-					/>
-				</div>
-			) : null}
 		</div>
 	);
 }

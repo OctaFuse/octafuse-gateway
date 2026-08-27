@@ -549,6 +549,9 @@
 			"output": "Output",
 			"preview": "预览",
 			"pricingProfile": "定价配置",
+			"viewPricingProfileJson": "查看定价配置 JSON",
+			"hidePricingProfileJson": "收起 JSON",
+			"standardPricing": "标准价格",
 			"catalogSchedule": "时段倍率",
 			"catalogScheduleHint": "",
 			"catalogScheduleEmpty": "暂无时段配置",
@@ -573,12 +576,12 @@
 			"removeTag": "移除 {tag}",
 			"description": "描述",
 			"descriptionPlaceholder": "可选，仅供内部备注",
-			"metadataJson": "Metadata（JSON）",
+			"metadataJson": "元数据（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "删除模型"
 		},
 		"metadata": {
-			"title": "Metadata"
+			"title": "元数据"
 		},
 		"card": {
 			"routes": "{count} 条路由",

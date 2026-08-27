@@ -109,15 +109,17 @@ export function ModelModalityChips({
 	modalities: string[] | null | undefined;
 	size?: 'sm' | 'md';
 }) {
-	return <ModalityGroup modalities={modalities} size={size} />;
+	return <ModalityGroup modalities={modalities} size={size} chipGap="gap-1" />;
 }
 
 function ModalityGroup({
 	modalities,
 	size,
+	chipGap,
 }: {
 	modalities: string[] | null | undefined;
 	size: 'sm' | 'md';
+	chipGap: string;
 }) {
 	const tCommon = useTranslations('common');
 	const sorted = sortModalities(modalities ?? []);
@@ -125,7 +127,7 @@ function ModalityGroup({
 		return <span className="text-xs text-gray-400">{tCommon('noData')}</span>;
 	}
 	return (
-		<span className="inline-flex items-center gap-1">
+		<span className={`inline-flex items-center ${chipGap}`}>
 			{sorted.map((m) => (
 				<ModalityChip key={m} modality={m} size={size} />
 			))}
@@ -149,11 +151,13 @@ export function ModelModalitiesBadge({
 	inputModalities,
 	outputModalities,
 	size = 'sm',
+	spacing = 'compact',
 	className = '',
 }: {
 	inputModalities: string[] | null | undefined;
 	outputModalities: string[] | null | undefined;
 	size?: 'sm' | 'md';
+	spacing?: 'compact' | 'relaxed';
 	className?: string;
 }) {
 	const t = useTranslations('modalities');
@@ -165,20 +169,22 @@ export function ModelModalitiesBadge({
 	}
 
 	const arrowClass = size === 'sm' ? 'text-[10px]' : 'text-xs';
+	const rowGap = spacing === 'relaxed' ? 'gap-x-2.5 gap-y-1.5' : 'gap-x-1 gap-y-1';
+	const chipGap = spacing === 'relaxed' ? 'gap-1.5' : 'gap-1';
 
 	return (
 		<span
-			className={`inline-flex flex-wrap items-center gap-x-1 gap-y-1 ${className}`}
+			className={`inline-flex flex-wrap items-center ${rowGap} ${className}`}
 			aria-label={t('ariaSummary', {
 				input: input.join(', ') || t('none'),
 				output: output.join(', ') || t('none'),
 			})}
 		>
-			<ModalityGroup modalities={input} size={size} />
+			<ModalityGroup modalities={input} size={size} chipGap={chipGap} />
 			<span className={`text-gray-400 ${arrowClass}`} aria-hidden>
 				→
 			</span>
-			<ModalityGroup modalities={output} size={size} />
+			<ModalityGroup modalities={output} size={size} chipGap={chipGap} />
 		</span>
 	);
 }
@@ -187,11 +193,13 @@ export function ModelModalitiesBadgeFromRaw({
 	inputRaw,
 	outputRaw,
 	size = 'sm',
+	spacing = 'compact',
 	className = '',
 }: {
 	inputRaw: string | null | undefined;
 	outputRaw: string | null | undefined;
 	size?: 'sm' | 'md';
+	spacing?: 'compact' | 'relaxed';
 	className?: string;
 }) {
 	return (
@@ -199,6 +207,7 @@ export function ModelModalitiesBadgeFromRaw({
 			inputModalities={parseModelModalitiesJson(inputRaw)}
 			outputModalities={parseModelModalitiesJson(outputRaw)}
 			size={size}
+			spacing={spacing}
 			className={className}
 		/>
 	);
