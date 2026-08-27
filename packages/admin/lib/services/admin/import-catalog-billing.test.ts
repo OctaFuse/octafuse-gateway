@@ -42,6 +42,18 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.pricing_label, '$0.15 / $0.5 /M');
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.8 /M');
 	});
+
+	it('includes qwen3.8-flash with official Model Studio list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-flash');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen3.8-flash');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Qwen3.8 Flash');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$0.16 / $0.47 /M');
+		assert.equal(cny!.pricing_label, '¥1 / ¥3 /M');
+	});
 });
 
 describe('import catalog localized model metadata', () => {
