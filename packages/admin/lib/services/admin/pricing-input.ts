@@ -9,6 +9,7 @@ import {
 import {
 	assertRouteScheduleMatchesCatalog,
 	coerceRoutePricingScheduleInput,
+	isEveryIsoWeekday,
 	parseRoutePricingSchedule,
 	type DailyScheduleWindow,
 } from '@octafuse/core/db/pricing-schedule';
@@ -132,6 +133,50 @@ export function routePriceOverrideHasScheduleWindows(
 ): boolean {
 	const schedule = parseRoutePricingSchedule(priceOverrideJson ?? null);
 	return schedule.charged.length > 0 || schedule.metered.length > 0;
+}
+
+function catalogWindowToResetRouteRow(window: DailyScheduleWindow): Record<string, unknown> {
+	const row: Record<string, unknown> = {
+		start: window.start,
+		end: window.end,
+		factor: 1,
+	};
+	if (window.days && !isEveryIsoWeekday(window.days)) {
+		row.days = [...window.days];
+	}
+	return row;
+}
+
+/**
+ * 按官方窗口重写路由 `schedule`（两侧窗口对齐，倍率重置为 1），保留 charged/metered 默认倍率。
+ * 官方时段为空时去掉 `schedule`，路由恢复可自由配置。
+ */
+export function resetRoutePriceOverrideScheduleToCatalog(
+	priceOverrideJson: string | null | undefined,
+	catalog: DailyScheduleWindow[]
+): string | null {
+	let obj: Record<string, unknown> = {};
+	if (priceOverrideJson != null && String(priceOverrideJson).trim() !== '') {
+		try {
+			const parsed = JSON.parse(String(priceOverrideJson)) as unknown;
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+				obj = { ...(parsed as Record<string, unknown>) };
+			}
+		} catch {
+			obj = {};
+		}
+	}
+	if (catalog.length === 0) {
+		delete obj.schedule;
+	} else {
+		const windows = catalog.map(catalogWindowToResetRouteRow);
+		obj.schedule = {
+			mode: 'override',
+			charged: windows,
+			metered: windows,
+		};
+	}
+	return coerceRoutePriceOverrideInput(obj);
 }
 
 /**

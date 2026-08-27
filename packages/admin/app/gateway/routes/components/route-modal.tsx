@@ -36,6 +36,7 @@ import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
 import {
 	formatIsoWeekdaysHint,
 	resolveDailyScheduleFactor,
+	scheduleWindowKey,
 } from '@octafuse/core/db/pricing-schedule';
 import { RoutePricePanel } from './route-price-panel';
 
@@ -117,10 +118,13 @@ export function RouteModal(props: Props) {
 		[selectedModel]
 	);
 	const catalogScheduleLocked = catalogScheduleWindows.length > 0;
-	const catalogNowFactor = useMemo(
-		() => resolveDailyScheduleFactor(catalogScheduleWindows, new Date(), businessTimezone).factor,
+	const catalogNowSchedule = useMemo(
+		() => resolveDailyScheduleFactor(catalogScheduleWindows, new Date(), businessTimezone),
 		[catalogScheduleWindows, businessTimezone]
 	);
+	const catalogNowWindowKey = catalogNowSchedule.window
+		? scheduleWindowKey(catalogNowSchedule.window)
+		: null;
 
 	// Image models keep the public request protocol as OpenAI; upstream may be openai or dashscope.
 	const lockOpenaiProtocol = selectedModelIsImage;
@@ -796,7 +800,7 @@ export function RouteModal(props: Props) {
 									/>
 								) : (
 									<ReadOnlyPricingTiersTable
-										fillHeight
+										fillHeight={!catalogScheduleLocked}
 										rows={catalogStandardTierRows}
 										emptyLabel={formData.model_id ? t('noCatalogPricing') : t('selectModelForTiers')}
 										tableTitle={t('readOnlyCatalogRates')}
@@ -804,22 +808,57 @@ export function RouteModal(props: Props) {
 									/>
 								)}
 								{catalogScheduleLocked ? (
-									<div className="mt-3 space-y-1.5 rounded-md border border-amber-200 bg-amber-50/70 p-2">
-										<p className="text-[11px] font-medium text-amber-900">{t('catalogScheduleLockedHint')}</p>
-										<ul className="space-y-0.5 text-[11px] text-amber-900/90">
+									<div className="mt-3 rounded-md border border-sky-200 bg-sky-50/80 p-2.5">
+										<div className="mb-2 min-w-0">
+											<h4 className="text-[11px] font-semibold uppercase tracking-wide text-sky-900">
+												{t('catalogOfficialSchedule')}
+											</h4>
+											<p className="mt-0.5 text-[11px] text-sky-900/70">
+												{t('catalogScheduleLockedHint')}
+											</p>
+										</div>
+										<ul className="overflow-hidden rounded-md border border-sky-200/80 bg-white">
 											{catalogScheduleWindows.map((w, i) => {
-												const days = formatIsoWeekdaysHint(w.days);
+												const daysHint = formatIsoWeekdaysHint(w.days);
+												const daysLabel =
+													daysHint === 'Mon–Fri'
+														? t('scheduleWeekdays')
+														: daysHint === 'Sat–Sun'
+															? t('scheduleWeekend')
+															: daysHint ?? t('scheduleEveryday');
+												const active = catalogNowWindowKey === scheduleWindowKey(w);
 												return (
-													<li key={`${w.start}-${w.end}-${i}`} className="font-mono tabular-nums">
-														{w.start}–{w.end}
-														{days ? ` ${days}` : ''} ×{w.factor}
+													<li
+														key={`${w.start}-${w.end}-${i}`}
+														className={`flex items-center justify-between gap-3 px-2.5 py-1.5 text-[11px] ${
+															active ? 'bg-sky-50' : ''
+														} ${i > 0 ? 'border-t border-sky-100' : ''}`}
+													>
+														<div className="min-w-0">
+															<p className="font-mono tabular-nums text-gray-900">
+																{w.start}–{w.end}
+															</p>
+															<p className="text-[10px] text-gray-500">{daysLabel}</p>
+														</div>
+														<div className="flex shrink-0 items-center gap-2">
+															{active ? (
+																<span className="rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-800">
+																	{t('catalogScheduleNow')}
+																</span>
+															) : null}
+															<span className="font-mono text-xs font-semibold tabular-nums text-gray-900">
+																×{w.factor}
+															</span>
+														</div>
 													</li>
 												);
 											})}
 										</ul>
-										<p className="text-[11px] text-amber-800">
-											{t('catalogEffectiveNow', { factor: String(catalogNowFactor) })}
-										</p>
+										{catalogNowSchedule.window ? null : (
+											<p className="mt-1.5 text-[11px] text-sky-900/70">
+												{t('catalogScheduleOffWindow')}
+											</p>
+										)}
 									</div>
 								) : null}
 									</div>

@@ -768,22 +768,27 @@ export function ModelModal(props: Props) {
 							</div>
 							{onCatalogScheduleWindowsChange ? (
 								<div className="min-w-0 rounded-md border border-slate-200/80 bg-white p-3">
-									<div className="mb-2 flex items-center justify-between gap-2">
-										<h4 className="text-sm font-medium text-gray-800">{t('catalogSchedule')}</h4>
-										<button
-											type="button"
-											onClick={() =>
-												onCatalogScheduleWindowsChange([
-													...catalogScheduleWindows,
-													{ start: '00:00', end: '08:00', factor: '1', days: [] },
-												])
-											}
-											className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900"
-											aria-label={t('addCatalogScheduleWindow')}
-											title={t('addCatalogScheduleWindow')}
-										>
-											<PlusIcon className="h-3.5 w-3.5" aria-hidden />
-										</button>
+									<div className="mb-3">
+										<div className="flex items-start justify-between gap-2">
+											<h4 className="text-sm font-medium text-gray-800">{t('catalogSchedule')}</h4>
+											<button
+												type="button"
+												onClick={() =>
+													onCatalogScheduleWindowsChange([
+														...catalogScheduleWindows,
+														{ start: '00:00', end: '08:00', factor: '1', days: [] },
+													])
+												}
+												className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900"
+												aria-label={t('addCatalogScheduleWindow')}
+												title={t('addCatalogScheduleWindow')}
+											>
+												<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+											</button>
+										</div>
+										<p className="mt-1 text-xs leading-5 text-slate-500">
+											{t('catalogScheduleHint')}
+										</p>
 									</div>
 									<DailyScheduleEditor
 										variant="single"

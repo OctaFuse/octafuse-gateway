@@ -247,6 +247,7 @@ export function useModelEditModal(options?: Options) {
 			fillFormFromModel(model);
 			try {
 				const fullModel = await fetchModelDetail(model.id);
+				setEditingModel(fullModel);
 				fillFormFromModel(fullModel);
 			} catch (error) {
 				console.error('Fetch model details error:', error);
@@ -406,7 +407,7 @@ export function useModelEditModal(options?: Options) {
 	}, [
 		audioPricingDraft,
 		catalogScheduleWindows,
-		editingModel?.id,
+		editingModel,
 		formData,
 		formKind,
 		imageBillingMode,

@@ -55,7 +55,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 - **路由策略**：先按 priority 层读路由池 `tier_strategies[priority]`（若有）；否则路由池 `strategy` → 模型 `route_policy.rules` 的 `{protocol}.{capability}:{group}` → `{protocol}:{group}` → 模型顶层 `route_policy.strategy` → 管理后台 Config 全局 `ROUTE_STRATEGY` → 代码默认 `hash_affinity`。四种策略及完整键格式见 [developers/reference/route-strategies.md](../developers/reference/route-strategies.md)。
 - **供应商粘性（Provider sticky，可选）**：在拓扑视图（Topology）的路由组 / 路由池节点打开粘性配置（关闭时芯片为 `Sticky · Off`，启用后为 `Sticky · {ttl}`），按路由池启用并设置空闲 TTL（默认 3600 秒）。它不是第五种层内策略：`hash_affinity` 用无状态哈希稳定首选，粘性则记住上次成功的上游目标，并可在绑定有效时跨 priority 优先尝试。弹窗还可查看绑定分布与路由权重、按用户解绑，或通过 `sticky_epoch` 整池失效；默认关闭。完整语义见 [供应商粘性（route-strategies）](../developers/reference/route-strategies.md#provider-sticky-routingpool-前置规则非第五策略)。
 - 在路由的 **Custom params** 中配置思考参数、输出长度或供应商扩展字段等默认值；它们会与上游请求体深度合并，客户端显式传入的字段优先，因此不能用于强制覆盖客户端参数。
-- 设置价格口径：**先在模型（Models）维护目录标准价（Standard），并按需配置官方分时时段（Official time windows）**；官方时段表示供应商自己的闲时 / 高峰价。再打开路由（Model Routes）填写用户计费（Charged）/ 供应成本（Metered）两侧倍率。模型已配官方时段时，路由窗口会被锁定为同一套起止时间与星期，只能改两侧倍率。模型未配官方时段时，路由仍可自由配置分时时段（Schedule）。时区见系统配置的业务时区。
+- 设置价格口径：**先在模型（Models）维护目录标准价（Standard），并按需配置官方分时时段（Official time windows）**；官方时段表示供应商自己的闲时 / 高峰价。再打开路由（Model Routes）填写用户计费（Charged）/ 供应成本（Metered）两侧倍率。模型已配官方时段时，路由窗口会被锁定为同一套起止时间与星期，只能改两侧倍率。保存模型时若官方窗口集合变化，已配置时段的路由会被重置为同一套窗口（窗口倍率恢复为 1）。模型未配官方时段时，路由仍可自由配置分时时段（Schedule）。时区见系统配置的业务时区。
 - 以低谷价作为目录价、且**不**在模型上配官方时段时，DeepSeek 可将路由默认倍率设为 `1`，并为周一至周五 `09:00–12:00`、`14:00–18:00` 设置 `2` 倍覆盖；工作日其他时段和周末全天自动使用低谷价。若官方本身已有分时价，应把官方窗口写在模型上，路由只填自家溢价或让利，避免把官方涨跌算进 `charged / standard`。
 - 在请求日志（Request Logs）中核对三笔账：供应成本、官方当刻目录价、用户计费是否符合业务预期。上线官方分时之前的历史日志仍是裸目录价，不会回补。
 

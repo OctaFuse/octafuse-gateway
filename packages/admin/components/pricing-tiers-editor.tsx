@@ -151,28 +151,31 @@ export function PricingTiersEditor({
 
 	return (
 		<div className="space-y-3">
-			<div
-				className={`mb-1 flex min-h-[1.25rem] flex-wrap items-center gap-x-3 gap-y-2 ${hasToolbarLeft ? 'justify-between' : 'justify-end'}`}
-			>
-				{hasToolbarLeft ? (
-					<div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 text-left">
-						{toolbarStart}
-						{title ? <span className="text-sm font-medium text-gray-700">{title}</span> : null}
-					</div>
-				) : null}
-				<div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5">
-					{!isPerImage ? (
-						<button
-							type="button"
-							onClick={addTier}
-							className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900"
-							aria-label={t('add')}
-							title={t('add')}
-						>
-							<PlusIcon className="h-3.5 w-3.5" aria-hidden />
-						</button>
+			<div>
+				<div
+					className={`flex min-h-[1.25rem] flex-wrap items-start gap-x-3 gap-y-2 ${hasToolbarLeft ? 'justify-between' : 'justify-end'}`}
+				>
+					{hasToolbarLeft ? (
+						<div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 text-left">
+							{toolbarStart}
+							{title ? <span className="text-sm font-medium text-gray-800">{title}</span> : null}
+						</div>
 					) : null}
+					<div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5">
+						{!isPerImage ? (
+							<button
+								type="button"
+								onClick={addTier}
+								className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900"
+								aria-label={t('add')}
+								title={t('add')}
+							>
+								<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+							</button>
+						) : null}
+					</div>
 				</div>
+				<p className="mt-1 text-xs leading-5 text-slate-500">{unitFooter}</p>
 			</div>
 			{isImage && onImageBillingModeChange ? (
 				<div className="space-y-1.5">
@@ -266,9 +269,6 @@ export function PricingTiersEditor({
 							</select>
 						</div>
 					</div>
-					<p className="border-t border-gray-100 bg-gray-50/90 px-2 py-1.5 text-[11px] leading-snug text-gray-500">
-						{unitFooter}
-					</p>
 				</div>
 			) : (
 				<div className="overflow-hidden rounded-md border border-gray-200 bg-white">
@@ -434,9 +434,6 @@ export function PricingTiersEditor({
 							</tbody>
 						</table>
 					</div>
-					<p className="border-t border-gray-100 bg-gray-50/90 px-2 py-1.5 text-[11px] leading-snug text-gray-500">
-						{unitFooter}
-					</p>
 				</div>
 			)}
 		</div>

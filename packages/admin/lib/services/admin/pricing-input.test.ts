@@ -4,6 +4,7 @@ import {
 	assertRoutePriceOverrideMatchesCatalog,
 	coerceModelPricingProfileInput,
 	coerceRoutePriceOverrideInput,
+	resetRoutePriceOverrideScheduleToCatalog,
 	routePriceOverrideHasScheduleWindows,
 } from './pricing-input';
 
@@ -174,6 +175,32 @@ describe('assertRoutePriceOverrideMatchesCatalog', () => {
 				(error as { status: unknown }).status === 400 &&
 				error.message.includes('schedule.charged missing')
 		);
+	});
+});
+
+describe('resetRoutePriceOverrideScheduleToCatalog', () => {
+	it('rewrites both sides to catalog windows with factor 1 and keeps default factors', () => {
+		const next = resetRoutePriceOverrideScheduleToCatalog(
+			JSON.stringify({
+				charged_factor: 1.2,
+				schedule: {
+					mode: 'override',
+					charged: [{ start: '01:00', end: '02:00', factor: 3 }],
+					metered: [{ start: '01:00', end: '02:00', factor: 4 }],
+				},
+			}),
+			[{ start: '00:00', end: '08:00', factor: 2 }]
+		);
+		assert.ok(next);
+		const obj = JSON.parse(next!) as {
+			charged_factor: number;
+			schedule: { mode: string; charged: Array<{ start: string; factor: number }>; metered: Array<{ factor: number }> };
+		};
+		assert.equal(obj.charged_factor, 1.2);
+		assert.equal(obj.schedule.mode, 'override');
+		assert.equal(obj.schedule.charged[0]?.start, '00:00');
+		assert.equal(obj.schedule.charged[0]?.factor, 1);
+		assert.equal(obj.schedule.metered[0]?.factor, 1);
 	});
 });
 
