@@ -1,7 +1,8 @@
 'use client';
 
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
 import {
 	MODEL_INPUT_MODALITIES,
 	MODEL_OUTPUT_MODALITIES,
@@ -15,6 +16,7 @@ import {
 	createDefaultAudioTokenPricingDraft,
 	type AudioBillingModeDraft,
 	type AudioPricingDraftState,
+	type CatalogScheduleFormWindow,
 	type ImageBillingModeDraft,
 	type ImagePerImageDraft,
 	type PricingTierDraftRow,
@@ -29,6 +31,8 @@ type Props = {
 	/** 当前 Kind（含 audio；由父级 formKind 驱动，避免仅靠 modalities 误判） */
 	formKind: ModelFormKind;
 	pricingTierRows: PricingTierDraftRow[];
+	catalogScheduleWindows?: CatalogScheduleFormWindow[];
+	onCatalogScheduleWindowsChange?: (windows: CatalogScheduleFormWindow[]) => void;
 	imageBillingMode?: ImageBillingModeDraft;
 	onImageBillingModeChange?: (mode: ImageBillingModeDraft) => void;
 	imagePerImageDraft?: ImagePerImageDraft;
@@ -60,6 +64,8 @@ export function ModelModal(props: Props) {
 		formData,
 		formKind,
 		pricingTierRows,
+		catalogScheduleWindows = [],
+		onCatalogScheduleWindowsChange,
 		imageBillingMode = 'token',
 		onImageBillingModeChange,
 		imagePerImageDraft,
@@ -85,6 +91,7 @@ export function ModelModal(props: Props) {
 
 	const t = useTranslations('models.modal');
 	const tCommon = useTranslations('common');
+	const tRoutes = useTranslations('routes.modal');
 	const isImageModel = formKind === 'image';
 	const isAudioModel = formKind === 'audio';
 	const audioCapability =
@@ -159,6 +166,7 @@ export function ModelModal(props: Props) {
 					)}
 
 					<div className="grid grid-cols-2 gap-4">
+						{!editingModel ? (
 						<div className="col-span-2">
 							<label className="block text-sm font-medium text-gray-700 mb-1.5">
 								{t('kind')}
@@ -203,6 +211,7 @@ export function ModelModal(props: Props) {
 										: t('kindHintLlm')}
 							</p>
 						</div>
+						) : null}
 						{isAudioModel ? (
 							<div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 p-3">
 								<p className="text-sm font-medium text-gray-800">
@@ -648,6 +657,54 @@ export function ModelModal(props: Props) {
 									minRows={0}
 								/>
 							)}
+							{onCatalogScheduleWindowsChange ? (
+								<div className="mt-4 space-y-2 rounded-md border border-gray-200 bg-gray-50/60 p-3">
+									<div className="flex items-start justify-between gap-2">
+										<div>
+											<h4 className="text-sm font-medium text-gray-800">{t('catalogSchedule')}</h4>
+										</div>
+										<button
+											type="button"
+											onClick={() =>
+												onCatalogScheduleWindowsChange([
+													...catalogScheduleWindows,
+													{ start: '00:00', end: '08:00', factor: '1', days: [] },
+												])
+											}
+											className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900"
+											aria-label={t('addCatalogScheduleWindow')}
+											title={t('addCatalogScheduleWindow')}
+										>
+											<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+										</button>
+									</div>
+									<DailyScheduleEditor
+										variant="single"
+										windows={catalogScheduleWindows}
+										onChange={onCatalogScheduleWindowsChange}
+										emptyLabel={t('catalogScheduleEmpty')}
+										startLabel={tRoutes('scheduleStart')}
+										endLabel={tRoutes('scheduleEnd')}
+										factorLabel={t('catalogScheduleFactor')}
+										removeLabel={tCommon('delete')}
+										dayLabels={{
+											days: tRoutes('scheduleDays'),
+											everyday: tRoutes('scheduleEveryday'),
+											weekdays: tRoutes('scheduleWeekdays'),
+											weekend: tRoutes('scheduleWeekend'),
+											weekdayShort: [
+												tRoutes('weekdayMon'),
+												tRoutes('weekdayTue'),
+												tRoutes('weekdayWed'),
+												tRoutes('weekdayThu'),
+												tRoutes('weekdayFri'),
+												tRoutes('weekdaySat'),
+												tRoutes('weekdaySun'),
+											],
+										}}
+									/>
+								</div>
+							) : null}
 						</div>
 						<div className="col-span-2">
 							<label className="block text-sm font-medium text-gray-700 mb-1">{t('tags')}</label>

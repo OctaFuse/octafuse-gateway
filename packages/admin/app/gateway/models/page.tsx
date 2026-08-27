@@ -92,6 +92,8 @@ function ModelsContent() {
 				formData={state.formData}
 				formKind={state.formKind}
 				pricingTierRows={state.pricingTierRows}
+				catalogScheduleWindows={state.catalogScheduleWindows}
+				onCatalogScheduleWindowsChange={state.setCatalogScheduleWindows}
 				imageBillingMode={state.imageBillingMode}
 				onImageBillingModeChange={state.setImageBillingMode}
 				imagePerImageDraft={state.imagePerImageDraft}

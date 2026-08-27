@@ -245,6 +245,8 @@ function RoutesContent() {
 				formData={state.modelEdit.formData}
 				formKind={state.modelEdit.formKind}
 				pricingTierRows={state.modelEdit.pricingTierRows}
+				catalogScheduleWindows={state.modelEdit.catalogScheduleWindows}
+				onCatalogScheduleWindowsChange={state.modelEdit.setCatalogScheduleWindows}
 				imageBillingMode={state.modelEdit.imageBillingMode}
 				onImageBillingModeChange={state.modelEdit.setImageBillingMode}
 				imagePerImageDraft={state.modelEdit.imagePerImageDraft}

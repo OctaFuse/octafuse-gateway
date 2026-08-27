@@ -11,9 +11,12 @@ const PROFILE = JSON.stringify({
 	audio: { price_per_character: 0.001, minimum_characters: 2 },
 });
 
-function mockRepos(): GatewayRepositories {
+function mockRepos(timezone?: string): GatewayRepositories {
 	return {
-		systemConfig: { getConfig: async () => null },
+		systemConfig: {
+			getConfig: async (key: string) =>
+				key === 'BUSINESS_TIMEZONE' ? timezone ?? null : null,
+		},
 	} as unknown as GatewayRepositories;
 }
 
@@ -80,6 +83,32 @@ describe('TTS per-character billing', () => {
 			characters: 5,
 		});
 		assert.equal(precheck.chargedCost, charge.chargedCost);
+	});
+
+	it('includes official catalog schedule in standard_cost', async () => {
+		const profile = JSON.stringify({
+			audio_billing_mode: 'per_character',
+			audio: { price_per_character: 0.001, minimum_characters: 2 },
+			schedule: [{ start: '09:00', end: '12:00', factor: 1.6, days: [1, 2, 3, 4, 5] }],
+		});
+		const route = JSON.stringify({
+			charged_factor: 1,
+			metered_factor: 1,
+			schedule: {
+				mode: 'override',
+				charged: [{ start: '09:00', end: '12:00', factor: 0.5, days: [1, 2, 3, 4, 5] }],
+				metered: [{ start: '09:00', end: '12:00', factor: 1, days: [1, 2, 3, 4, 5] }],
+			},
+		});
+		const friday = await estimateAudioSpeechCosts(mockRepos('Asia/Shanghai'), {
+			modelPricingProfileJson: profile,
+			routePriceOverrideJson: route,
+			characters: 5,
+			requestStartedAtMs: Date.parse('2026-07-10T01:30:00.000Z'),
+		});
+		assert.equal(friday.standardCost, 0.008);
+		assert.equal(friday.chargedCost, 0.004);
+		assert.equal(friday.chargedCost / friday.standardCost, 0.5);
 	});
 
 	it('uses input length only for the budget precheck and takes the most expensive route factor', async () => {

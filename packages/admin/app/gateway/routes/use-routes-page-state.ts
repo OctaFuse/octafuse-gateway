@@ -38,8 +38,10 @@ import {
 	toggleRouteStatus,
 } from './route-api';
 import {
+	alignRouteScheduleWindowsToCatalog,
 	buildActiveFilterSummary,
 	buildFormDataFromRoute,
+	catalogScheduleWindowsFromModel,
 	buildRouteCardVendorGroups,
 	buildRoutePolicyPatch,
 	buildRoutesByModel,
@@ -484,7 +486,16 @@ export function useRoutesPageState() {
 		setSaveError('');
 		setIsSaving(true);
 		try {
-			const result = await saveRoute(formData, editingRoute);
+			const catalog = catalogScheduleWindowsFromModel(
+				models.find((m) => m.id === formData.model_id)
+			);
+			const result = await saveRoute(
+				{
+					...formData,
+					schedule_windows: alignRouteScheduleWindowsToCatalog(catalog, formData.schedule_windows),
+				},
+				editingRoute
+			);
 			if (result.success) {
 				setShowModal(false);
 				setEditingRoute(null);
@@ -499,7 +510,7 @@ export function useRoutesPageState() {
 		} finally {
 			setIsSaving(false);
 		}
-	}, [editingRoute, formData, refreshRoutesPage]);
+	}, [editingRoute, formData, models, refreshRoutesPage]);
 
 	const handleOpenStrategyDialog = useCallback(
 		(

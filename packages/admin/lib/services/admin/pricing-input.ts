@@ -6,7 +6,12 @@ import {
 	type ImagePricingConfig,
 	type ParsedPricingProfile,
 } from '@octafuse/core/db/pricing-profile';
-import { coerceRoutePricingScheduleInput } from '@octafuse/core/db/pricing-schedule';
+import {
+	assertRouteScheduleMatchesCatalog,
+	coerceRoutePricingScheduleInput,
+	parseRoutePricingSchedule,
+	type DailyScheduleWindow,
+} from '@octafuse/core/db/pricing-schedule';
 import { badRequest } from './errors';
 
 function serializeImagePricingConfig(image: ImagePricingConfig): Record<string, unknown> {
@@ -41,10 +46,14 @@ function serializeImagePricingConfig(image: ImagePricingConfig): Record<string, 
 
 /** per_image 权威形状：无 `tiers`（历史占位零档写入时剥离）。 */
 function canonicalizePerImageProfile(profile: ParsedPricingProfile): string {
-	return JSON.stringify({
+	const out: Record<string, unknown> = {
 		image_billing_mode: 'per_image',
 		image: serializeImagePricingConfig(profile.image!),
-	});
+	};
+	if (profile.schedule.length > 0) {
+		out.schedule = profile.schedule;
+	}
+	return JSON.stringify(out);
 }
 
 function assertImageBillingProfileConstraints(profile: ParsedPricingProfile): void {
@@ -93,6 +102,28 @@ function validatePricingProfileJson(json: string): string {
 		return canonicalizePerImageProfile(profile);
 	}
 	return json;
+}
+
+export function catalogScheduleFromPricingProfile(
+	pricingProfileJson: string | null | undefined
+): DailyScheduleWindow[] {
+	const profile = parsePricingProfile(pricingProfileJson);
+	return profile?.schedule ?? [];
+}
+
+export function assertRoutePriceOverrideMatchesCatalog(
+	pricingProfileJson: string | null | undefined,
+	priceOverrideJson: string | null | undefined
+): void {
+	const catalog = catalogScheduleFromPricingProfile(pricingProfileJson);
+	if (catalog.length === 0) {
+		return;
+	}
+	const schedule = parseRoutePricingSchedule(priceOverrideJson ?? null);
+	const match = assertRouteScheduleMatchesCatalog(catalog, schedule);
+	if (!match.ok) {
+		throw badRequest(match.message);
+	}
 }
 
 /**

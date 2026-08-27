@@ -51,10 +51,11 @@ const LLM_PROFILE = JSON.stringify({
 	tiers: [{ upto: null, input_price: 2, output_price: 12, cache_read_price: 0.2 }],
 });
 
-function mockRepos(): GatewayRepositories {
+function mockRepos(timezone?: string): GatewayRepositories {
 	return {
 		systemConfig: {
-			getConfig: async () => null,
+			getConfig: async (key: string) =>
+				key === 'BUSINESS_TIMEZONE' ? timezone ?? null : null,
 		},
 	} as unknown as GatewayRepositories;
 }
@@ -204,6 +205,45 @@ describe('estimateImageCosts', () => {
 		});
 		assert.ok(Math.abs(multiply.chargedCost - base.chargedCost * 3) < 1e-9);
 		assert.ok(Math.abs(override.chargedCost - base.chargedCost * 2) < 1e-9);
+	});
+
+	it('stacks official catalog schedule before route factors', async () => {
+		const profile = JSON.stringify({
+			image_billing_mode: 'per_image',
+			image: { default: 0.04 },
+			schedule: [{ start: '23:00', end: '02:00', factor: 0.5 }],
+		});
+		const route = JSON.stringify({
+			charged_factor: 1,
+			metered_factor: 1,
+			schedule: {
+				mode: 'override',
+				charged: [{ start: '23:00', end: '02:00', factor: 0.8 }],
+				metered: [{ start: '23:00', end: '02:00', factor: 1.2 }],
+			},
+		});
+		const hit = await estimateImageCosts(mockRepos('Asia/Shanghai'), {
+			modelPricingProfileJson: profile,
+			routePriceOverrideJson: route,
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+			requestStartedAtMs: Date.parse('2026-07-10T15:30:00.000Z'),
+		});
+		assert.equal(hit.standardCost, 0.02);
+		assert.equal(hit.chargedCost, 0.016);
+		assert.equal(hit.meteredCost, 0.024);
+		assert.equal(hit.chargedCost / hit.standardCost, 0.8);
+		const miss = await estimateImageCosts(mockRepos('Asia/Shanghai'), {
+			modelPricingProfileJson: profile,
+			routePriceOverrideJson: route,
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+			requestStartedAtMs: Date.parse('2026-07-10T18:30:00.000Z'),
+		});
+		assert.equal(miss.standardCost, 0.04);
+		assert.equal(miss.chargedCost, 0.04);
 	});
 
 	it('applies user charged cost factor after route charged cost', async () => {

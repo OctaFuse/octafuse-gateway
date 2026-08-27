@@ -1,3 +1,4 @@
+import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
 import {
 	isAudioModel,
 	isAudioSpeechModel,
@@ -51,6 +52,7 @@ import {
 	parseHhMmToMinutes,
 	parseRouteBaseFactors,
 	parseRoutePricingSchedule,
+	scheduleWindowKey,
 	type DailyScheduleWindow,
 	type SharedScheduleWindow,
 } from '@octafuse/core/db/pricing-schedule';
@@ -68,6 +70,7 @@ import {
 	type RouteListRow,
 	type RouteProtocolGroupSection,
 	type RouteScheduleFormSide,
+	type RouteScheduleFormWindow,
 	type RouteStrategySource,
 } from './types';
 
@@ -565,8 +568,43 @@ export function formatScheduleFactorText(n: number): string {
 	return String(normalizeScheduleFactor(n));
 }
 
-export function buildFormDataFromRoute(route: GatewayModelRoute, _models: GatewayModel[]): RouteFormData {
+export function catalogScheduleWindowsFromModel(
+	model: GatewayModel | undefined | null
+): DailyScheduleWindow[] {
+	return parsePricingProfile(model?.pricing_profile ?? undefined)?.schedule ?? [];
+}
+
+export function alignRouteScheduleWindowsToCatalog(
+	catalog: DailyScheduleWindow[],
+	existing: RouteScheduleFormWindow[],
+	defaultFactor = '1'
+): RouteScheduleFormWindow[] {
+	if (catalog.length === 0) {
+		return existing;
+	}
+	const byKey = new Map(existing.map((w) => [scheduleWindowKey(w), w]));
+	return catalog.map((w) => {
+		const prev = byKey.get(scheduleWindowKey(w));
+		return {
+			start: w.start,
+			end: w.end,
+			days: w.days ? [...w.days] : [],
+			charged_factor: prev?.charged_factor ?? defaultFactor,
+			metered_factor: prev?.metered_factor ?? defaultFactor,
+		};
+	});
+}
+
+export function buildFormDataFromRoute(route: GatewayModelRoute, models: GatewayModel[]): RouteFormData {
 	const factors = parseRouteBaseFactors(route.price_override ?? null);
+	const existingWindows = resolveRouteScheduleDisplay(route.price_override).map((w) => ({
+		start: w.start,
+		end: w.end,
+		charged_factor: formatScheduleFactorText(w.charged_factor),
+		metered_factor: formatScheduleFactorText(w.metered_factor),
+		days: w.days ?? [],
+	}));
+	const catalog = catalogScheduleWindowsFromModel(models.find((m) => m.id === route.model_id));
 	return {
 		model_id: route.model_id,
 		provider_id: route.provider_id,
@@ -591,13 +629,7 @@ export function buildFormDataFromRoute(route: GatewayModelRoute, _models: Gatewa
 		route_group: route.route_group ?? 'default',
 		charged_factor: String(factors.chargedFactor),
 		metered_factor: String(factors.meteredFactor),
-		schedule_windows: resolveRouteScheduleDisplay(route.price_override).map((w) => ({
-			start: w.start,
-			end: w.end,
-			charged_factor: formatScheduleFactorText(w.charged_factor),
-			metered_factor: formatScheduleFactorText(w.metered_factor),
-			days: w.days ?? [],
-		})),
+		schedule_windows: alignRouteScheduleWindowsToCatalog(catalog, existingWindows),
 	};
 }
 
@@ -1241,7 +1273,10 @@ export function createInitialRouteForm(models: GatewayModel[], presetModelId?: s
 		route_group: 'default',
 		charged_factor: '1',
 		metered_factor: '1',
-		schedule_windows: [],
+		schedule_windows: alignRouteScheduleWindowsToCatalog(
+			catalogScheduleWindowsFromModel(presetModel),
+			[]
+		),
 	};
 }
 

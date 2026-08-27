@@ -15,8 +15,10 @@ import {
 	draftRowsHaveImageTokenPrices,
 	draftRowsLookLikeImageOnly,
 	profileJsonToAudioDraftState,
+	profileJsonToCatalogScheduleDraft,
 	profileJsonToDraftState,
 	type AudioPricingDraftState,
+	type CatalogScheduleFormWindow,
 	type ImageBillingModeDraft,
 	type ImagePerImageDraft,
 	type ImagePricingDraftState,
@@ -66,6 +68,9 @@ export function useModelEditModal(options?: Options) {
 	const [formData, setFormData] = useState<ModelFormData>(EMPTY_MODEL_FORM);
 	const [formKind, setFormKind] = useState<ModelFormKind>('llm');
 	const [pricingTierRows, setPricingTierRows] = useState<PricingTierDraftRow[]>([]);
+	const [catalogScheduleWindows, setCatalogScheduleWindows] = useState<CatalogScheduleFormWindow[]>(
+		[]
+	);
 	const [imageBillingMode, setImageBillingMode] = useState<ImageBillingModeDraft>('token');
 	const [imagePerImageDraft, setImagePerImageDraft] = useState<ImagePerImageDraft>(
 		createDefaultImagePerImageDraft()
@@ -116,6 +121,7 @@ export function useModelEditModal(options?: Options) {
 			} else {
 				applyImagePricingDraft(profileJsonToDraftState(model.pricing_profile));
 			}
+			setCatalogScheduleWindows(profileJsonToCatalogScheduleDraft(model.pricing_profile));
 		},
 		[applyImagePricingDraft]
 	);
@@ -147,6 +153,7 @@ export function useModelEditModal(options?: Options) {
 				setImageBillingMode('token');
 				setImagePerImageDraft(createDefaultImagePerImageDraft());
 			}
+			setCatalogScheduleWindows([]);
 			setShowModal(true);
 			setSaveError('');
 		},
@@ -381,7 +388,8 @@ export function useModelEditModal(options?: Options) {
 				pricingTierRows,
 				editingModel?.id ?? null,
 				imageDraft,
-				audioDraft
+				audioDraft,
+				catalogScheduleWindows
 			);
 			if (result.success) {
 				setShowModal(false);
@@ -397,6 +405,7 @@ export function useModelEditModal(options?: Options) {
 		}
 	}, [
 		audioPricingDraft,
+		catalogScheduleWindows,
 		editingModel?.id,
 		formData,
 		formKind,
@@ -420,6 +429,8 @@ export function useModelEditModal(options?: Options) {
 		formKind,
 		pricingTierRows,
 		setPricingTierRows,
+		catalogScheduleWindows,
+		setCatalogScheduleWindows,
 		imageBillingMode,
 		setImageBillingMode: handleImageBillingModeChange,
 		imagePerImageDraft,

@@ -17,7 +17,11 @@ import { normalizeRoutePoolTierStrategiesInput } from '@octafuse/core/db/route-p
 import { buildAffinityKey, hashAffinityKey } from '@octafuse/core/db/route-affinity-key';
 import { normalizeStickyRoutingInput } from '@octafuse/core/db/route-pool-sticky-types';
 import { badRequest, notFound } from './errors';
-import { coerceRoutePriceOverrideInput, assertRoutePriceOverrideFactors } from './pricing-input';
+import {
+	assertRoutePriceOverrideFactors,
+	assertRoutePriceOverrideMatchesCatalog,
+	coerceRoutePriceOverrideInput,
+} from './pricing-input';
 import { normalizeJsonObjectField, providerSupportsUpstreamProtocol } from './shared';
 import { listAdminUsers, resolveAdminUserId } from './users-service';
 import type {
@@ -178,6 +182,10 @@ export async function createModelRouteService(
 	const id = crypto.randomUUID();
 	const priceOverride = coerceRoutePriceOverrideInput(body.price_override);
 	assertRoutePriceOverrideFactors(priceOverride);
+	const catalogModel = await repos.modelRouting.getModelById(modelId);
+	if (catalogModel) {
+		assertRoutePriceOverrideMatchesCatalog(catalogModel.pricing_profile, priceOverride);
+	}
 
 	const weightRaw = body.weight;
 	const weight =
@@ -352,6 +360,15 @@ export async function updateModelRouteService(
 		patch.route_pool_id = topology.poolId;
 		patch.upstream_operation = effectiveUpstreamOperation;
 		patch.adapter = effectiveAdapter;
+	}
+
+	const effectivePriceOverride =
+		patch.price_override !== undefined
+			? (patch.price_override as string | null)
+			: existing.price_override;
+	const catalogModel = await repos.modelRouting.getModelById(effectiveModelId);
+	if (catalogModel) {
+		assertRoutePriceOverrideMatchesCatalog(catalogModel.pricing_profile, effectivePriceOverride);
 	}
 
 	const hasPatch = Object.values(patch).some((v) => v !== undefined);

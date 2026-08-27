@@ -4,6 +4,9 @@ import {
 	computeAudioPerCharacterMeteredCost,
 	computeAudioPerSecondMeteredCost,
 	parsePricingProfile,
+	resolveChargedBillingPrices,
+	resolveStandardBillingPrices,
+	resolveSupplierBillingPrices,
 	profileHasAudioPerCharacterPricing,
 	profileHasAudioPerSecondPricing,
 	profileHasAudioTokenPricing,
@@ -322,5 +325,104 @@ describe('resolveImageBillingMode compatibility', () => {
 			})
 		);
 		assert.equal(resolveImageBillingMode(p), null);
+	});
+});
+
+describe('parsePricingProfile catalog schedule', () => {
+	it('defaults to empty schedule when omitted', () => {
+		const p = parsePricingProfile(
+			JSON.stringify({
+				tiers: [{ upto: null, input_price: 4.5, output_price: 13.5 }],
+			})
+		);
+		assert.ok(p);
+		assert.deepEqual(p!.schedule, []);
+	});
+
+	it('parses official windows including weekday-only', () => {
+		const p = parsePricingProfile(
+			JSON.stringify({
+				tiers: [{ upto: null, input_price: 4.5, output_price: 13.5 }],
+				schedule: [
+					{ start: '00:30', end: '08:30', factor: 0.5 },
+					{ start: '09:00', end: '12:00', factor: 1.6, days: [1, 2, 3, 4, 5] },
+				],
+			})
+		);
+		assert.ok(p);
+		assert.equal(p!.schedule.length, 2);
+		assert.equal(p!.schedule[0]!.factor, 0.5);
+		assert.deepEqual(p!.schedule[1]!.days, [1, 2, 3, 4, 5]);
+	});
+
+	it('rejects overlapping windows and invalid shapes by failing the whole profile', () => {
+		assert.equal(
+			parsePricingProfile(
+				JSON.stringify({
+					tiers: [{ upto: null, input_price: 1, output_price: 2 }],
+					schedule: [
+						{ start: '00:00', end: '12:00', factor: 0.5 },
+						{ start: '08:00', end: '18:00', factor: 1.2 },
+					],
+				})
+			),
+			null
+		);
+		assert.equal(
+			parsePricingProfile(
+				JSON.stringify({
+					tiers: [{ upto: null, input_price: 1, output_price: 2 }],
+					schedule: [{ start: '24:00', end: '08:00', factor: 0.5 }],
+				})
+			),
+			null
+		);
+		assert.equal(
+			parsePricingProfile(
+				JSON.stringify({
+					tiers: [{ upto: null, input_price: 1, output_price: 2 }],
+					schedule: [{ start: '09:00', end: '09:00', factor: 1 }],
+				})
+			),
+			null
+		);
+		assert.equal(
+			parsePricingProfile(
+				JSON.stringify({
+					tiers: [{ upto: null, input_price: 1, output_price: 2 }],
+					schedule: 'not-an-array',
+				})
+			),
+			null
+		);
+	});
+});
+
+describe('resolve*BillingPrices catalog schedule factor', () => {
+	const profile = JSON.stringify({
+		tiers: [{ upto: null, input_price: 4, output_price: 12, cache_read_price: 0.4 }],
+	});
+
+	it('scales standard / supplier / charged after tier pick', () => {
+		const standard = resolveStandardBillingPrices({
+			basisInputTokens: 100,
+			modelPricingProfileJson: profile,
+			catalogScheduleFactor: 0.5,
+		});
+		const supplier = resolveSupplierBillingPrices({
+			basisInputTokens: 100,
+			modelPricingProfileJson: profile,
+			catalogScheduleFactor: 0.5,
+		});
+		const charged = resolveChargedBillingPrices({
+			basisInputTokens: 100,
+			modelPricingProfileJson: profile,
+			catalogScheduleFactor: 0.5,
+		});
+		assert.equal(standard.prices.input_price, 2);
+		assert.equal(standard.prices.output_price, 6);
+		assert.equal(standard.prices.cache_read_price, 0.2);
+		assert.equal(supplier.prices.input_price, 2);
+		assert.equal(charged.prices.input_price, 2);
 	});
 });

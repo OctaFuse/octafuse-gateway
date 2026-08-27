@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { coerceModelPricingProfileInput, coerceRoutePriceOverrideInput } from './pricing-input';
+import {
+	assertRoutePriceOverrideMatchesCatalog,
+	coerceModelPricingProfileInput,
+	coerceRoutePriceOverrideInput,
+} from './pricing-input';
 
 describe('coerceModelPricingProfileInput', () => {
 	it('rejects token mode with image.default', () => {
@@ -82,6 +86,78 @@ describe('coerceModelPricingProfileInput', () => {
 			image: { default: 0.05 },
 		});
 		assert.ok(json);
+	});
+
+	it('accepts a valid catalog schedule on the model profile', () => {
+		const json = coerceModelPricingProfileInput({
+			tiers: [{ upto: null, input_price: 4.5, output_price: 13.5 }],
+			schedule: [{ start: '00:30', end: '08:30', factor: 0.5 }],
+		});
+		assert.ok(json);
+		const obj = JSON.parse(json!) as { schedule: unknown[] };
+		assert.equal(obj.schedule.length, 1);
+	});
+
+	it('rejects overlapping catalog schedule windows', () => {
+		assert.throws(
+			() =>
+				coerceModelPricingProfileInput({
+					tiers: [{ upto: null, input_price: 1, output_price: 2 }],
+					schedule: [
+						{ start: '00:00', end: '12:00', factor: 0.5 },
+						{ start: '08:00', end: '18:00', factor: 1.2 },
+					],
+				}),
+			(error: unknown) =>
+				error instanceof Error &&
+				'status' in error &&
+				(error as { status: unknown }).status === 400
+		);
+	});
+});
+
+describe('assertRoutePriceOverrideMatchesCatalog', () => {
+	const catalog = JSON.stringify({
+		tiers: [{ upto: null, input_price: 1, output_price: 2 }],
+		schedule: [
+			{ start: '00:30', end: '08:30', factor: 0.5 },
+			{ start: '09:00', end: '12:00', factor: 1.6, days: [1, 2, 3, 4, 5] },
+		],
+	});
+
+	it('allows free route windows when the model has no catalog schedule', () => {
+		assert.doesNotThrow(() =>
+			assertRoutePriceOverrideMatchesCatalog(
+				JSON.stringify({ tiers: [{ upto: null, input_price: 1, output_price: 2 }] }),
+				JSON.stringify({
+					schedule: { charged: [{ start: '01:00', end: '02:00', factor: 2 }] },
+				})
+			)
+		);
+	});
+
+	it('rejects a route that is missing a catalog window', () => {
+		assert.throws(
+			() =>
+				assertRoutePriceOverrideMatchesCatalog(
+					catalog,
+					JSON.stringify({
+						schedule: {
+							mode: 'override',
+							charged: [{ start: '00:30', end: '08:30', factor: 1 }],
+							metered: [
+								{ start: '00:30', end: '08:30', factor: 1 },
+								{ start: '09:00', end: '12:00', factor: 1, days: [1, 2, 3, 4, 5] },
+							],
+						},
+					})
+				),
+			(error: unknown) =>
+				error instanceof Error &&
+				'status' in error &&
+				(error as { status: unknown }).status === 400 &&
+				error.message.includes('schedule.charged missing')
+		);
 	});
 });
 

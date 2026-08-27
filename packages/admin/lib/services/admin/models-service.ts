@@ -18,7 +18,11 @@ import {
 import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
 import { badRequest, notFound } from './errors';
-import { coerceModelPricingProfileInput } from './pricing-input';
+import {
+	assertRoutePriceOverrideMatchesCatalog,
+	catalogScheduleFromPricingProfile,
+	coerceModelPricingProfileInput,
+} from './pricing-input';
 import { normalizeModelVendorInput, parseTagsJson } from './shared';
 import type {
 	AdminCreatedIdOutput,
@@ -286,6 +290,28 @@ export async function updateModelService(repos: GatewayRepositories, id: string,
 	}
 	if ('pricing_profile' in rest && rest.pricing_profile !== undefined) {
 		rest.pricing_profile = coerceModelPricingProfileInput(rest.pricing_profile);
+		const catalog = catalogScheduleFromPricingProfile(
+			typeof rest.pricing_profile === 'string' ? rest.pricing_profile : null
+		);
+		if (catalog.length > 0) {
+			const routes = await repos.modelRouting.getModelRoutesByModelId(id);
+			const conflicts: string[] = [];
+			for (const route of routes) {
+				try {
+					assertRoutePriceOverrideMatchesCatalog(rest.pricing_profile as string | null, route.price_override);
+				} catch (err) {
+					const detail = err instanceof Error ? err.message : 'mismatched schedule';
+					conflicts.push(
+						`route ${route.id} provider=${route.provider_id} (${route.provider_model_name}): ${detail}`
+					);
+				}
+			}
+			if (conflicts.length > 0) {
+				throw badRequest(
+					`Cannot change model catalog schedule while ${conflicts.length} route(s) have mismatched time windows. Adjust those routes first. ${conflicts.join(' | ')}`
+				);
+			}
+		}
 	}
 	if ('route_policy' in rest && rest.route_policy !== undefined) {
 		try {

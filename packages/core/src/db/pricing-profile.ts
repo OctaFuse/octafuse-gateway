@@ -17,7 +17,17 @@
  * - **`per_second`**（须显式 mode + `audio` 块）：`audio.price_per_second` × 时长秒数；可选 `minimum_seconds`（默认 1）。**不计价 `tiers`**（可省略）。对齐 whisper-1 官方按分钟/时长。
  * - **`token`**（须显式 mode + 非空 `tiers`）：`tiers[].input_price` / `output_price`（$/1M）× 上游 `usage`（type=tokens）。对齐 gpt-4o-*transcribe 官方按 token；**不计价 `audio` 块**。
  * - **`per_character`**（须显式 mode + `audio` 块）：`audio.price_per_character` × TTS 上游真实 `usage.characters`；可选 `minimum_characters`（默认 0）。
+ *
+ * **官方分时时段**（可选顶层 `schedule`）：`DailyScheduleWindow[]`，命中窗取 `factor`，未命中为 1。
+ * 非法 / 重叠窗口使整段 profile 解析失败。时区由 `BUSINESS_TIMEZONE` 决定，不写入 JSON。
  */
+
+import {
+	parseCatalogScheduleWindows,
+	scaleBillingPrices,
+	type DailyScheduleWindow,
+	type ScheduleAuditSnapshot,
+} from './pricing-schedule';
 
 /** 每百万 token 单价快照（与 `usage-tracker.computeMeteredCost` / image token 计费对齐）。 */
 export type BillingPriceSnapshot = {
@@ -110,6 +120,8 @@ export interface ParsedPricingProfile {
 	audio_billing_mode?: AudioBillingMode;
 	/** 音频按时长或字符目录价；由 `audio_billing_mode` 决定字段。 */
 	audio?: AudioPricingConfig | null;
+	/** 官方分时时段；缺省空数组（无时段，factor=1）。 */
+	schedule: DailyScheduleWindow[];
 }
 
 /** 单次计费侧解析结果，写入 `api_key_request_logs.pricing_audit.snapshot` 子树。 */
@@ -132,6 +144,15 @@ export type PriceResolutionAuditSide = {
 	effective_factor?: number;
 	/** 路由 charged 之后的用户级折扣；未命中为 null */
 	user_charged_factor?: number | null;
+	/** 目录价官方时段（v5+；standard 侧写在 `schedule`，supplier/user_charge 写在此键以免与路由时段混淆）。 */
+	catalog_schedule?: {
+		timezone: string;
+		local_time: string;
+		local_weekday?: number;
+		evaluated_at_utc: string;
+		factor: number;
+		window: { start: string; end: string; factor: number; days?: number[] } | null;
+	};
 };
 
 const ZERO_BILLING_SNAPSHOT: BillingPriceSnapshot = {
@@ -731,7 +752,7 @@ export function parsePricingProfile(jsonText: string | null | undefined): Parsed
 		tiers = parsed;
 	}
 
-	const result: ParsedPricingProfile = { tiers };
+	const result: ParsedPricingProfile = { tiers, schedule: [] };
 	if (modeParsed === 'token' || modeParsed === 'per_image') {
 		result.image_billing_mode = modeParsed;
 	}
@@ -754,6 +775,15 @@ export function parsePricingProfile(jsonText: string | null | undefined): Parsed
 		if (audio != null) {
 			result.audio = audio;
 		}
+	}
+	if (Object.prototype.hasOwnProperty.call(o, 'schedule')) {
+		const schedule = parseCatalogScheduleWindows(o.schedule);
+		if (schedule == null) {
+			return null;
+		}
+		result.schedule = schedule;
+	} else {
+		result.schedule = [];
 	}
 	return result;
 }
@@ -817,31 +847,79 @@ function materializeFromParsed(
 	};
 }
 
+function applyCatalogScheduleToResolved(
+	result: { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide },
+	options: {
+		catalogScheduleFactor?: number;
+		catalogSchedule?: ScheduleAuditSnapshot;
+		/** standard 侧写 `schedule`；supplier / charged 写 `catalog_schedule`。 */
+		scheduleField: 'schedule' | 'catalog_schedule';
+	}
+): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
+	const factor = options.catalogScheduleFactor;
+	const prices = factor != null ? scaleBillingPrices(result.prices, factor) : result.prices;
+	const audit: PriceResolutionAuditSide = {
+		...result.audit,
+		prices,
+	};
+	if (options.catalogSchedule) {
+		if (options.scheduleField === 'schedule') {
+			audit.schedule = options.catalogSchedule;
+		} else {
+			audit.catalog_schedule = options.catalogSchedule;
+		}
+	}
+	return { prices, audit };
+}
+
 function resolveCatalogBillingPrices(options: {
 	basisInputTokens: number;
 	modelPricingProfileJson: string | null | undefined;
 	source: 'model_x_factor' | 'model';
+	catalogScheduleFactor?: number;
+	catalogSchedule?: ScheduleAuditSnapshot;
 }): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
+	const scheduleField = options.source === 'model' ? 'schedule' : 'catalog_schedule';
 	if (options.modelPricingProfileJson?.trim()) {
 		const parsed = parsePricingProfile(options.modelPricingProfileJson.trim());
 		if (parsed) {
-			return materializeFromParsed(options.basisInputTokens, parsed, options.source);
+			return applyCatalogScheduleToResolved(
+				materializeFromParsed(options.basisInputTokens, parsed, options.source),
+				{
+					catalogScheduleFactor: options.catalogScheduleFactor,
+					catalogSchedule: options.catalogSchedule,
+					scheduleField,
+				}
+			);
 		}
 	}
-	return {
-		prices: ZERO_BILLING_SNAPSHOT,
-		audit: {
-			path: 'missing_profile',
-			source: options.source === 'model_x_factor' ? 'model_x_factor' : 'model',
-			basis_tokens: options.basisInputTokens,
+	return applyCatalogScheduleToResolved(
+		{
 			prices: ZERO_BILLING_SNAPSHOT,
+			audit: {
+				path: 'missing_profile',
+				source: options.source === 'model_x_factor' ? 'model_x_factor' : 'model',
+				basis_tokens: options.basisInputTokens,
+				prices: ZERO_BILLING_SNAPSHOT,
+			},
 		},
-	};
+		{
+			catalogScheduleFactor: options.catalogScheduleFactor,
+			catalogSchedule: options.catalogSchedule,
+			scheduleField,
+		}
+	);
 }
+
+type CatalogScheduleResolveOptions = {
+	catalogScheduleFactor?: number;
+	catalogSchedule?: ScheduleAuditSnapshot;
+};
 
 /**
  * 供应侧基数单价：始终来自 `models.pricing_profile`（忽略 route nested `metered`）。
- * 调用方再按 `pricing-schedule` 合成有效倍率。
+ * 可选 `catalogScheduleFactor` 在选档后、路由倍率前作用于全部单价。
+ * 调用方再按 `pricing-schedule` 合成路由有效倍率。
  */
 export function resolveSupplierBillingPrices(options: {
 	basisInputTokens: number;
@@ -850,31 +928,36 @@ export function resolveSupplierBillingPrices(options: {
 	/** @deprecated Ignored. */
 	routeNestedMeteredProfileJson?: string | null | undefined;
 	modelPricingProfileJson: string | null | undefined;
-}): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
+} & CatalogScheduleResolveOptions): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
 	return resolveCatalogBillingPrices({
 		basisInputTokens: options.basisInputTokens,
 		modelPricingProfileJson: options.modelPricingProfileJson,
 		source: 'model_x_factor',
+		catalogScheduleFactor: options.catalogScheduleFactor,
+		catalogSchedule: options.catalogSchedule,
 	});
 }
 
 /**
- * 标准价侧单价：仅 `models.pricing_profile`；无合法 profile 时单价为 0。
+ * 标准价侧单价：`models.pricing_profile` 选档后再乘官方时段倍率；无合法 profile 时单价为 0。
  */
 export function resolveStandardBillingPrices(options: {
 	basisInputTokens: number;
 	modelPricingProfileJson: string | null | undefined;
-}): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
+} & CatalogScheduleResolveOptions): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
 	return resolveCatalogBillingPrices({
 		basisInputTokens: options.basisInputTokens,
 		modelPricingProfileJson: options.modelPricingProfileJson,
 		source: 'model',
+		catalogScheduleFactor: options.catalogScheduleFactor,
+		catalogSchedule: options.catalogSchedule,
 	});
 }
 
 /**
  * 用户预算侧基数单价：始终来自 `models.pricing_profile`（忽略 route nested `charged`）。
- * 调用方再按 `pricing-schedule` 合成有效倍率。
+ * 可选 `catalogScheduleFactor` 在选档后、路由倍率前作用于全部单价。
+ * 调用方再按 `pricing-schedule` 合成路由有效倍率。
  */
 export function resolveChargedBillingPrices(options: {
 	basisInputTokens: number;
@@ -883,10 +966,12 @@ export function resolveChargedBillingPrices(options: {
 	/** @deprecated Ignored. */
 	routeNestedChargedProfileJson?: string | null | undefined;
 	modelPricingProfileJson: string | null | undefined;
-}): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
+} & CatalogScheduleResolveOptions): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
 	return resolveCatalogBillingPrices({
 		basisInputTokens: options.basisInputTokens,
 		modelPricingProfileJson: options.modelPricingProfileJson,
 		source: 'model_x_factor',
+		catalogScheduleFactor: options.catalogScheduleFactor,
+		catalogSchedule: options.catalogSchedule,
 	});
 }
