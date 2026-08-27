@@ -94,6 +94,53 @@
 		"released": "2026-07-19"
 	},
 	{
+		"id": "qwen3.8-flash",
+		"display_name": "Qwen3.8 Flash",
+		"description": "A fast multimodal Qwen3.8 model with a native 1M context window for coding, agents, documents, and visual understanding. Near-flagship quality at a fraction of Qwen3.8 Max cost, with image and video input.",
+		"i18n": {
+			"en": "A fast multimodal Qwen3.8 model with a native 1M context window for coding, agents, documents, and visual understanding. Near-flagship quality at a fraction of Qwen3.8 Max cost, with image and video input.",
+			"zh": "通义千问最新多模态 Flash 模型，兼具理解生成能力与响应速度。原生百万级上下文，适合编程辅助、智能体协作、超长文档与图文/长视频理解，以更低推理成本接近旗舰效果。"
+		},
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.16,
+						"output_price": 0.47,
+						"cache_read_price": 0.016,
+						"cache_write_price": 0.2
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 3,
+						"cache_read_price": 0.1,
+						"cache_write_price": 1.25
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-08-26"
+	},
+	{
 		"id": "qwen3.7-plus",
 		"display_name": "Qwen3.7 Plus",
 		"description": "A cost-efficient multimodal Qwen model for general reasoning, vision, and production applications. It combines text and image understanding with a cost-conscious design for production-scale multimodal reasoning.",
