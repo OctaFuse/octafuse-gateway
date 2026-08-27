@@ -726,6 +726,7 @@ export function RouteModal(props: Props) {
 												? t('standardCatalogHintImage')
 												: t('standardCatalogHint')}
 									</p>
+									<RoutePricePanel variant="neutral" fillHeight>
 									<div className="flex min-h-0 flex-1 flex-col">
 								{selectedModelIsAudio ? (
 									catalogAudioPricingDisplay ? (
@@ -808,16 +809,16 @@ export function RouteModal(props: Props) {
 									/>
 								)}
 								{catalogScheduleLocked ? (
-									<div className="mt-3 rounded-md border border-sky-200 bg-sky-50/80 p-2.5">
-										<div className="mb-2 min-w-0">
-											<h4 className="text-[11px] font-semibold uppercase tracking-wide text-sky-900">
+									<div className="mt-3 border-t border-gray-200/90 pt-3">
+										<div className="mb-1.5 min-w-0">
+											<h4 className="text-[11px] font-semibold uppercase tracking-wide text-gray-700">
 												{t('catalogOfficialSchedule')}
 											</h4>
-											<p className="mt-0.5 text-[11px] text-sky-900/70">
+											<p className="mt-0.5 text-[11px] text-gray-500">
 												{t('catalogScheduleLockedHint')}
 											</p>
 										</div>
-										<ul className="overflow-hidden rounded-md border border-sky-200/80 bg-white">
+										<ul className="divide-y divide-gray-100">
 											{catalogScheduleWindows.map((w, i) => {
 												const daysHint = formatIsoWeekdaysHint(w.days);
 												const daysLabel =
@@ -830,23 +831,23 @@ export function RouteModal(props: Props) {
 												return (
 													<li
 														key={`${w.start}-${w.end}-${i}`}
-														className={`flex items-center justify-between gap-3 px-2.5 py-1.5 text-[11px] ${
-															active ? 'bg-sky-50' : ''
-														} ${i > 0 ? 'border-t border-sky-100' : ''}`}
+														className="flex items-center justify-between gap-3 py-1.5 text-[11px]"
 													>
 														<div className="min-w-0">
-															<p className="font-mono tabular-nums text-gray-900">
+															<p className="font-mono tabular-nums text-gray-800">
 																{w.start}–{w.end}
+																<span className="ml-1.5 font-sans text-[10px] text-gray-500">
+																	{daysLabel}
+																</span>
 															</p>
-															<p className="text-[10px] text-gray-500">{daysLabel}</p>
 														</div>
 														<div className="flex shrink-0 items-center gap-2">
 															{active ? (
-																<span className="rounded bg-sky-100 px-1 py-0.5 text-[10px] font-semibold text-sky-800">
+																<span className="text-[10px] font-medium text-gray-500">
 																	{t('catalogScheduleNow')}
 																</span>
 															) : null}
-															<span className="font-mono text-xs font-semibold tabular-nums text-gray-900">
+															<span className="font-mono text-xs tabular-nums text-gray-800">
 																×{w.factor}
 															</span>
 														</div>
@@ -854,14 +855,10 @@ export function RouteModal(props: Props) {
 												);
 											})}
 										</ul>
-										{catalogNowSchedule.window ? null : (
-											<p className="mt-1.5 text-[11px] text-sky-900/70">
-												{t('catalogScheduleOffWindow')}
-											</p>
-										)}
 									</div>
 								) : null}
 									</div>
+									</RoutePricePanel>
 								</div>
 
 								<div className="flex min-h-0 min-w-0 flex-col">
