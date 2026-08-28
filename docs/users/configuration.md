@@ -57,7 +57,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 - 在路由的 **Custom params** 中配置思考参数、输出长度或供应商扩展字段等默认值；它们会与上游请求体深度合并，客户端显式传入的字段优先，因此不能用于强制覆盖客户端参数。
 - 设置价格口径：**先在模型（Models）维护目录标准价（Standard），并按需配置官方分时时段（Official time windows）**；官方时段表示供应商自己的闲时 / 高峰价。再打开路由（Model Routes）填写用户计费（Charged）/ 供应成本（Metered）两侧倍率。模型已配官方时段时，路由窗口会被锁定为同一套起止时间与星期，只能改两侧倍率；每个时段下方会预览该窗的明细价（目录价 × 官方时段 × 本行倍率）。保存模型时若官方窗口集合变化，已配置时段的路由会被重置为同一套窗口（窗口倍率恢复为 1）。模型未配官方时段时，路由仍可自由配置分时时段（Schedule）。时区见系统配置的业务时区。
 - 以低谷价作为目录价、且**不**在模型上配官方时段时，DeepSeek 可将路由默认倍率设为 `1`，并为周一至周五 `09:00–12:00`、`14:00–18:00` 设置 `2` 倍覆盖；工作日其他时段和周末全天自动使用低谷价。若官方本身已有分时价，应把官方窗口写在模型上，路由只填自家溢价或让利，避免把官方涨跌算进 `charged / standard`。
-- 前台折扣不再用手填 `Discount*` 标签。`GET /v1/models` 的 `discounts` 由官方时段 × 代表路由（该路由组里优先级最高、同层权重最高的活跃路由）的计费倍率自动算出；旧客户端继续读派生的 `Discount.<group>:<composite>` 标签。模型编辑里的 `Discount*` 标签会被网关覆盖。
+- 前台折扣不再用手填 `Discount*` 标签。`GET /v1/models` 的 `discounts` 由官方时段 × 代表路由（该路由组里优先级最高、同层权重最高的活跃路由）的计费倍率自动算出；官方时段未覆盖的钟点会补目录价兜底窗（含只写工作日高峰的模型：工作日空隙与周末整日都会补谷档），因此 DeepSeek V4 这类「工作日两段 ×2」会保持 `kind: schedule`，门户才能画出峰/谷。旧客户端继续读派生的 `Discount.<group>:<composite>` 标签。模型编辑里的 `Discount*` 标签会被网关覆盖。
 - 在请求日志（Request Logs）中核对三笔账：供应成本、官方当刻目录价、用户计费是否符合业务预期。上线官方分时之前的历史日志仍是裸目录价，不会回补。
 
 路由默认参数合并规则见 [developers/api/user.md](../developers/api/user.md#route-默认参数合并)；时段调价契约见 [developers/api/admin.md](../developers/api/admin.md) 中的 `pricing_profile.schedule` 与 `price_override.schedule`；调度与熔断见 [developers/architecture/proxy-request-lifecycle.md](../developers/architecture/proxy-request-lifecycle.md)。
