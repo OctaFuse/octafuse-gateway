@@ -14,6 +14,7 @@ import {
 	parseRoutePricingSchedule,
 	resolveEffectiveRouteFactor,
 	windowCoversLocal,
+	effectiveIsoWeekdays,
 	type DailyScheduleWindow,
 	type RoutePricingScheduleMode,
 } from './pricing-schedule';
@@ -139,43 +140,101 @@ function mergeAdjacentDailyWindows(windows: DailyScheduleWindow[]): DailySchedul
 	return out;
 }
 
+function mergeGapWindowsByDays(windows: DailyScheduleWindow[]): DailyScheduleWindow[] {
+	const grouped = new Map<string, { window: DailyScheduleWindow; days: Set<number> }>();
+	for (const w of windows) {
+		const key = `${w.start}|${w.end}|${w.factor}`;
+		const days = effectiveIsoWeekdays(w.days);
+		const existing = grouped.get(key);
+		if (existing) {
+			for (const day of days) existing.days.add(day);
+			continue;
+		}
+		grouped.set(key, { window: { start: w.start, end: w.end, factor: w.factor }, days: new Set(days) });
+	}
+	const out: DailyScheduleWindow[] = [];
+	for (const { window, days } of grouped.values()) {
+		const sorted = [...days].sort((a, b) => a - b);
+		if (sorted.length === 7) {
+			out.push(window);
+		} else {
+			out.push({ ...window, days: sorted });
+		}
+	}
+	return out;
+}
+
 /**
  * 目录（或路由）时段未覆盖满每天 24h 时补 factor=1 的兜底窗。
- * 带 `days` 限制的窗口不补（避免把工作日窗扩成每天）。
+ * 带 `days` 的窗口按 ISO 星期逐日补缝（工作日高峰之外的谷、周末整日）。
  */
 export function fillDailyScheduleGaps(windows: DailyScheduleWindow[]): DailyScheduleWindow[] {
 	if (windows.length === 0) {
 		return [];
 	}
-	if (windows.some((w) => !isEveryIsoWeekday(w.days))) {
-		return windows;
-	}
-	const bounds = new Set<number>([0, MINUTES_PER_DAY]);
-	for (const w of windows) {
-		for (const seg of windowToDaySegments(w)) {
-			bounds.add(seg.start);
-			bounds.add(seg.end);
+	if (windows.every((w) => isEveryIsoWeekday(w.days))) {
+		const bounds = new Set<number>([0, MINUTES_PER_DAY]);
+		for (const w of windows) {
+			for (const seg of windowToDaySegments(w)) {
+				bounds.add(seg.start);
+				bounds.add(seg.end);
+			}
 		}
+		const sorted = [...bounds].sort((a, b) => a - b);
+		const gaps: DailyScheduleWindow[] = [];
+		for (let i = 0; i < sorted.length - 1; i++) {
+			const a = sorted[i]!;
+			const b = sorted[i + 1]!;
+			if (a >= b) {
+				continue;
+			}
+			const mid = Math.floor((a + b) / 2);
+			const covered = windows.some((w) => windowCoversLocal(w, mid, 1));
+			if (!covered) {
+				gaps.push({
+					start: formatMinutesToHhMm(a),
+					end: formatMinutesToHhMm(b),
+					factor: 1,
+				});
+			}
+		}
+		return [...windows, ...mergeAdjacentDailyWindows(gaps)];
 	}
-	const sorted = [...bounds].sort((a, b) => a - b);
-	const gaps: DailyScheduleWindow[] = [];
-	for (let i = 0; i < sorted.length - 1; i++) {
-		const a = sorted[i]!;
-		const b = sorted[i + 1]!;
-		if (a >= b) {
+
+	const extras: DailyScheduleWindow[] = [];
+	for (let day = 1; day <= 7; day++) {
+		const applicable = windows.filter((w) => effectiveIsoWeekdays(w.days).includes(day));
+		if (applicable.length === 0) {
+			extras.push({ start: '00:00', end: '24:00', factor: 1, days: [day] });
 			continue;
 		}
-		const mid = Math.floor((a + b) / 2);
-		const covered = windows.some((w) => windowCoversLocal(w, mid, 1));
-		if (!covered) {
-			gaps.push({
-				start: formatMinutesToHhMm(a),
-				end: formatMinutesToHhMm(b),
-				factor: 1,
-			});
+		const bounds = new Set<number>([0, MINUTES_PER_DAY]);
+		for (const w of applicable) {
+			for (const seg of windowToDaySegments(w)) {
+				bounds.add(seg.start);
+				bounds.add(seg.end);
+			}
+		}
+		const sorted = [...bounds].sort((a, b) => a - b);
+		for (let i = 0; i < sorted.length - 1; i++) {
+			const a = sorted[i]!;
+			const b = sorted[i + 1]!;
+			if (a >= b) {
+				continue;
+			}
+			const mid = Math.floor((a + b) / 2);
+			const covered = applicable.some((w) => windowCoversLocal(w, mid, day));
+			if (!covered) {
+				extras.push({
+					start: formatMinutesToHhMm(a),
+					end: formatMinutesToHhMm(b),
+					factor: 1,
+					days: [day],
+				});
+			}
 		}
 	}
-	return [...windows, ...mergeAdjacentDailyWindows(gaps)];
+	return [...windows, ...mergeGapWindowsByDays(extras)];
 }
 
 function windowMidpoint(w: DailyScheduleWindow): { minutes: number; isoWeekday: number } {

@@ -447,7 +447,7 @@ GET /v1/models
 | `input_modalities` | string[] \| null | 支持的输入模态（OpenRouter 风格）：`text`、`image`、`audio`、`video`、`file`；客户端可据此限制附件类型 |
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
 | `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
-| `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条。不含用户级 `charged_cost_factors` |
+| `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条。官方或路由时段未覆盖的钟点会补 `catalog_factor=1` 的兜底窗（含带 `days` 的工作日高峰：工作日空隙与周末整日都会补），因此仅工作日高峰、倍率相同的官方窗不会被压成 `kind: flat`。不含用户级 `charged_cost_factors` |
 | `metadata` | object \| undefined | 扩展元数据 |
 
 ### 示例

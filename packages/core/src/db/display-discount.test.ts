@@ -43,9 +43,17 @@ describe('fillDailyScheduleGaps', () => {
 		);
 	});
 
-	it('does not fill when windows are weekday-restricted', () => {
+	it('fills weekday gaps and weekend full-day windows', () => {
 		const src = [{ start: '00:30', end: '08:30', factor: 0.5, days: [1, 2, 3, 4, 5] }];
-		assert.deepEqual(fillDailyScheduleGaps(src), src);
+		const filled = fillDailyScheduleGaps(src);
+		const weekdayMorning = filled.find((w) => w.start === '00:00' && w.end === '00:30');
+		const weekdayRest = filled.find((w) => w.start === '08:30' && w.end === '24:00');
+		const weekend = filled.find((w) => w.start === '00:00' && w.end === '24:00');
+		assert.deepEqual(weekdayMorning?.days, [1, 2, 3, 4, 5]);
+		assert.deepEqual(weekdayRest?.days, [1, 2, 3, 4, 5]);
+		assert.deepEqual(weekend?.days, [6, 7]);
+		assert.equal(weekdayMorning?.factor, 1);
+		assert.equal(weekend?.factor, 1);
 	});
 });
 
@@ -151,6 +159,29 @@ describe('buildDisplayDiscountForRoute', () => {
 		assert.equal(afternoon!.composite_factor, 0.7);
 		assert.equal(formatDisplayDiscountLabel(morning!.composite_factor), '-20%');
 		assert.equal(formatDisplayDiscountLabel(afternoon!.composite_factor), '-30%');
+	});
+
+	it('keeps official weekday peak hours as schedule instead of flattening', () => {
+		const group = buildDisplayDiscountForRoute({
+			pricingProfileJson: profileWithSchedule([
+				{ start: '09:00', end: '12:00', factor: 2, days: [1, 2, 3, 4, 5] },
+				{ start: '14:00', end: '18:00', factor: 2, days: [1, 2, 3, 4, 5] },
+			]),
+			priceOverrideJson: JSON.stringify({ charged_factor: 0.8 }),
+			timezone: 'Asia/Shanghai',
+			priority: 8,
+			weight: 1,
+			now: new Date('2026-08-28T03:00:00.000Z'),
+		});
+		assert.equal(group.kind, 'schedule');
+		const morning = group.windows.find((w) => w.start === '09:00' && w.end === '12:00');
+		const noonGap = group.windows.find((w) => w.start === '12:00' && w.end === '14:00');
+		assert.ok(morning);
+		assert.ok(noonGap);
+		assert.equal(morning!.catalog_factor, 2);
+		assert.equal(morning!.composite_factor, 1.6);
+		assert.equal(noonGap!.catalog_factor, 1);
+		assert.equal(noonGap!.composite_factor, 0.8);
 	});
 
 	it('fills overnight catalog windows without inventing extra days', () => {
