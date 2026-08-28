@@ -43,4 +43,8 @@ npm run typecheck -w @octafuse/admin
    - `runtime/node-server.ts` 会打进 `@/lib/*`。插件若把 `@/lib/foo` **join 成无扩展名绝对路径**，esbuild 不再补 `.ts`，Docker 报 `Cannot read file: .../lib/admin-principal`。
    - 正确做法：`build.resolve('./lib/foo', { resolveDir: pkgRoot })`，让默认解析补扩展名 / `index`。改该脚本后至少本地跑 `node packages/admin/scripts/build-node-server.mjs`。
 
+8. **Admin `node-server.mjs` 不得把 `drizzle-orm` / `hono` 标 external**（2026-08）
+   - 入口会打进 `@octafuse/core`。Admin 运行层只 COPY `postgres` / `mysql2` / `ws` + Next standalone，**没有** `drizzle-orm`。全量 external 时容器启动报 `Cannot find package 'drizzle-orm'`。
+   - 仅 `next` / `ws` / `postgres` / `mysql2` 可为 external；其余纯 JS 依赖打进 bundle。脚本用 metafile 拦住未登记的裸导入。
+
 改 Dockerfile / 构建脚本时同步 `docs/operators/deployment/docker.md`。新踩到的镜像失败补进本规则「已知模式」，不要只修 CI。
