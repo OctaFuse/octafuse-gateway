@@ -1,5 +1,50 @@
 [
 	{
+		"id": "hy4-preview",
+		"display_name": "Hy4 preview",
+		"description": "Tencent's next-generation productivity model with significantly enhanced Agent and complex task execution capabilities. Hy4 preview features 770B total parameters with 49B active parameters and is optimized for agentic, coding, and productivity scenarios, with stronger capabilities in understanding, planning, tool use, and sustained execution for complex tasks.",
+		"i18n": {
+			"en": "Tencent's next-generation productivity model with significantly enhanced Agent and complex task execution capabilities. Hy4 preview features 770B total parameters with 49B active parameters and is optimized for agentic, coding, and productivity scenarios, with stronger capabilities in understanding, planning, tool use, and sustained execution for complex tasks.",
+			"zh": "腾讯新一代生产力模型，Agent 与复杂任务执行能力全面升级。Hy4 preview 总参数 770B、激活参数 49B，面向 Agent、Coding 与生产力场景优化，强化复杂任务中的理解、规划、工具调用与持续执行能力。"
+		},
+		"vendor": "tencent",
+		"context_window": 1024000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.834,
+						"output_price": 2.501,
+						"cache_read_price": 0.042,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 18,
+						"cache_read_price": 0.3,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-08-28"
+	},
+	{
 		"id": "hy3",
 		"display_name": "Hy3",
 		"description": "A Tencent mixture-of-experts model for configurable reasoning and production agents. Configurable reasoning effort lets production systems trade latency for depth across agentic workloads.",
