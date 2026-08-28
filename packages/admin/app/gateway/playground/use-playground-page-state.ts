@@ -88,7 +88,7 @@ export function usePlaygroundPageState() {
 	const [imageOperation, setImageOperation] = useState<ImageOperation>('generations');
 	const [editFiles, setEditFiles] = useState<File[]>([]);
 	const [audioFile, setAudioFile] = useState<File | null>(null);
-	const [audioInputMode, setAudioInputMode] = useState<'file' | 'microphone'>('file');
+	const [audioInputMode, setAudioInputMode] = useState<'file' | 'microphone'>('microphone');
 	const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
 	const realtimeAudioChunksRef = useRef<ArrayBuffer[]>([]);
 	const realtimeRef = useRef<WebSocket | null>(null);
@@ -200,6 +200,15 @@ export function usePlaygroundPageState() {
 
 	const { mergedReasoningDisplay, mergedBodyDisplay } = useMemo(() => {
 		const hasRaw = responseText.trim().length > 0;
+		if (selectedUsesDashScopeRealtime) {
+			return {
+				mergedReasoningDisplay: '',
+				mergedBodyDisplay:
+					mergedAssistantParts.body ||
+					responseText.trim() ||
+					(sending ? t('realtimeWaitingTaskStarted') : ''),
+			};
+		}
 		const p = mergedAssistantParts;
 		const receiving = t('receiving');
 		const reasoningDisplay =
@@ -212,7 +221,7 @@ export function usePlaygroundPageState() {
 			mergedReasoningDisplay: reasoningDisplay,
 			mergedBodyDisplay: bodyDisplay,
 		};
-	}, [mergedAssistantParts, responseText, sending, t]);
+	}, [mergedAssistantParts, responseText, sending, selectedUsesDashScopeRealtime, t]);
 
 	const kindCounts = useMemo(() => {
 		const counts = { llm: 0, image: 0, audio: 0 };
@@ -583,6 +592,8 @@ export function usePlaygroundPageState() {
 				realtimePreview.status === 'preview' ? realtimePreview.json : JSON.stringify(bodyObj, null, 2),
 			);
 			setLastSentInputSnapshot(bodyText);
+			const waitingText = t('realtimeWaitingTaskStarted');
+			setResponseText(waitingText);
 			try {
 				const socket = openDashScopeRealtimeClient({
 					url: realtimeUrl,
@@ -597,10 +608,13 @@ export function usePlaygroundPageState() {
 							upstreamUrl: previewUpstreamUrl,
 							contentType: 'application/x-ndjson',
 						});
+						setResponseText(waitingText);
 					},
 					onMessage: (message) => {
 						const text = typeof message === 'string' ? message : `[binary frame: ${message.byteLength} bytes]`;
-						setResponseText((previous) => (previous ? `${previous}\n${text}` : text));
+						setResponseText((previous) =>
+							!previous || previous === waitingText ? text : `${previous}\n${text}`,
+						);
 					},
 					onAudioChunk: (chunk) => {
 						if (!selectedIsAudioTranscription) realtimeAudioChunksRef.current.push(chunk);
@@ -626,7 +640,14 @@ export function usePlaygroundPageState() {
 									contentType: 'application/x-ndjson',
 								},
 						);
-						if (event.code !== 1000 && event.reason) setBodyError(event.reason);
+						if (event.code !== 1000 || event.reason) {
+							setBodyError(
+								t('realtimeClosed', {
+									code: String(event.code),
+									reason: event.reason ? `: ${event.reason}` : '',
+								}),
+							);
+						}
 					},
 				});
 				realtimeRef.current = socket;

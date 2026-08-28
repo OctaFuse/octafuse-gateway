@@ -4,8 +4,7 @@
  */
 import nextWorker from './.open-next/worker.js';
 import { handleAdminRealtimeUpgrade } from './lib/admin-realtime-worker';
-
-const PLAYGROUND_REALTIME_PATH = '/api/admin/playground/realtime';
+import { PLAYGROUND_REALTIME_PATH } from './lib/playground-realtime-path';
 
 export default {
 	async fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {

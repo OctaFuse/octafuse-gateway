@@ -29,7 +29,7 @@ function eventName(event: JsonObject): string {
 }
 
 /** 与 Proxy 保持同一模型注入和 custom_params 合并规则。 */
-function rewriteClientMessage(
+export function rewritePlaygroundRealtimeClientMessage(
 	route: PlaygroundResolvedRoute,
 	operation: PlaygroundDashScopeRealtimeOperation,
 	message: string,
@@ -84,32 +84,50 @@ export type PlaygroundRealtimeDispatchResult = {
 	upstreamUrl: string;
 };
 
-/** 解析路由并建立调试台专用的非计费原生 WebSocket。 */
-export async function dispatchPlaygroundDashScopeRealtime(
-	repos: GatewayRepositories,
-	input: { routeId: string; operation: string },
-	requestSignal?: AbortSignal,
-): Promise<PlaygroundRealtimeDispatchResult> {
-	if (!isRealtimeOperation(input.operation)) {
-		throw new AdminServiceError(400, `Unsupported realtime operation: ${input.operation || '(empty)'}`);
-	}
-	const operation = input.operation;
-	if (typeof WebSocketPair === 'undefined') {
-		throw new AdminServiceError(501, 'DashScope realtime requires the Cloudflare Workers runtime');
-	}
+export type PlaygroundRealtimeNodeDispatch = (
+	route: PlaygroundResolvedRoute,
+	operation: PlaygroundDashScopeRealtimeOperation,
+	requestSignal: AbortSignal | undefined,
+	upstreamUrl: string,
+) => Promise<Response>;
 
-	const route = await resolvePlaygroundRoute(repos, input.routeId);
+export type PlaygroundRealtimeDispatchOptions = {
+	nodeDispatch?: PlaygroundRealtimeNodeDispatch;
+};
+
+function withSessionModel(endpoint: string, operation: PlaygroundDashScopeRealtimeOperation, model: string): string {
+	const url = new URL(endpoint);
+	if (operation.endsWith('.session')) url.searchParams.set('model', model);
+	return url.toString();
+}
+
+/** 在已解析路由上建立调试台专用的非计费原生 WebSocket（Workers 或 Node dispatch）。 */
+export async function connectPlaygroundDashScopeRealtime(
+	route: PlaygroundResolvedRoute,
+	operation: PlaygroundDashScopeRealtimeOperation,
+	requestSignal?: AbortSignal,
+	options?: PlaygroundRealtimeDispatchOptions,
+): Promise<PlaygroundRealtimeDispatchResult> {
 	if (route.upstreamProtocol !== 'dashscope' || !route.isAudioModel) {
 		throw new AdminServiceError(400, 'Playground realtime routes must use an audio DashScope route');
 	}
 	const endpoint = resolveUpstreamEndpoint('dashscope', realtimeCapability(operation), route.providerEndpoints, {
 		providerId: route.providerId,
 	});
-	const url = outboundWebSocketFetchUrl(endpoint);
-	if (operation.endsWith('.session')) {
-		// DashScope 的 Qwen 实时会话从 URL 的 model 参数选择上游模型。
-		url.searchParams.set('model', route.providerModelName);
+	if (options?.nodeDispatch) {
+		const response = await options.nodeDispatch(
+			route,
+			operation,
+			requestSignal,
+			withSessionModel(endpoint, operation, route.providerModelName),
+		);
+		return { response, upstreamUrl: endpoint };
 	}
+	if (typeof WebSocketPair === 'undefined') {
+		throw new AdminServiceError(501, 'DashScope realtime requires the Cloudflare Workers runtime');
+	}
+
+	const url = outboundWebSocketFetchUrl(withSessionModel(endpoint, operation, route.providerModelName));
 	const upstreamResponse = await fetch(url.toString(), {
 		headers: {
 			Authorization: `Bearer ${route.providerApiKey}`,
@@ -131,7 +149,10 @@ export async function dispatchPlaygroundDashScopeRealtime(
 
 	server.addEventListener('message', (event) => {
 		try {
-			const data = typeof event.data === 'string' ? rewriteClientMessage(route, operation, event.data) : event.data;
+			const data =
+				typeof event.data === 'string'
+					? rewritePlaygroundRealtimeClientMessage(route, operation, event.data)
+					: event.data;
 			upstream.send(data);
 		} catch {
 			closeSocket(server, 1011, 'Gateway upstream send failed');
@@ -169,4 +190,18 @@ export async function dispatchPlaygroundDashScopeRealtime(
 		}),
 		upstreamUrl: endpoint,
 	};
+}
+
+/** 解析路由并建立调试台专用的非计费原生 WebSocket。 */
+export async function dispatchPlaygroundDashScopeRealtime(
+	repos: GatewayRepositories,
+	input: { routeId: string; operation: string },
+	requestSignal?: AbortSignal,
+	options?: PlaygroundRealtimeDispatchOptions,
+): Promise<PlaygroundRealtimeDispatchResult> {
+	if (!isRealtimeOperation(input.operation)) {
+		throw new AdminServiceError(400, `Unsupported realtime operation: ${input.operation || '(empty)'}`);
+	}
+	const route = await resolvePlaygroundRoute(repos, input.routeId);
+	return connectPlaygroundDashScopeRealtime(route, input.operation, requestSignal, options);
 }

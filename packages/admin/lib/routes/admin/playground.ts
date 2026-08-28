@@ -35,7 +35,8 @@ adminPlaygroundRoutes.get('/realtime', async (c) => {
 		const result = await dispatchPlaygroundDashScopeRealtime(
 			c.get('repositories'),
 			{ routeId, operation },
-			c.req.raw.signal
+			c.env.NODE_PLAYGROUND_REALTIME_DISPATCH ? undefined : c.req.raw.signal,
+			{ nodeDispatch: c.env.NODE_PLAYGROUND_REALTIME_DISPATCH },
 		);
 		const headers = new Headers(result.response.headers);
 		headers.set('x-playground-upstream-url', result.upstreamUrl);

@@ -4,6 +4,8 @@ import {
 	buildDashScopeRealtimeTtsTemplate,
 	buildDashScopeSpeechBodyTemplate,
 	dashScopeRealtimeAudioContentType,
+	encodePcm16,
+	shouldTreatAsRawPcmAudioFile,
 } from './dashscope-realtime-client';
 
 describe('DashScope realtime TTS client messages', () => {
@@ -56,5 +58,14 @@ describe('DashScope realtime TTS client messages', () => {
 		assert.equal(dashScopeRealtimeAudioContentType(JSON.stringify(base)), 'audio/wav');
 		base.payload.parameters.format = 'pcm';
 		assert.equal(dashScopeRealtimeAudioContentType(JSON.stringify(base)), 'audio/pcm');
+	});
+
+	it('treats .pcm filenames as raw 16-bit frames and resamples float audio to 16 kHz', () => {
+		assert.equal(shouldTreatAsRawPcmAudioFile({ name: 'speech.pcm' }), true);
+		assert.equal(shouldTreatAsRawPcmAudioFile({ name: 'speech.wav' }), false);
+		const pcm = encodePcm16(new Float32Array([0, 1, -1]), 16_000);
+		assert.equal(pcm.byteLength, 6);
+		assert.equal(new DataView(pcm.buffer).getInt16(2, true), 0x7fff);
+		assert.equal(new DataView(pcm.buffer).getInt16(4, true), -0x8000);
 	});
 });

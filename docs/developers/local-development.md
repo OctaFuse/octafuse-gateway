@@ -160,6 +160,8 @@ npm run dev:admin:node   # 等价：dotenv 加载根 .env 后执行 packages/adm
 
 或在本包：`cd packages/admin && npm run dev:node`（需本目录 `.env` 或 `ln -s ../../.env .env`）。
 
+`dev:admin:node` 使用自定义 HTTP 入口：普通页面仍由 Next 处理，调试台实时 WebSocket（`/api/admin/playground/realtime`）在 Upgrade 时旁路，用 `ws` 连上游。热更新的 Upgrade 会转交 Next。Docker 镜像入口是同一套逻辑的编译产物 `packages/admin/node-server.mjs`。
+
 随后可用具名 Admin API Key（至少 `config.read`）直连验证：
 
 ```bash

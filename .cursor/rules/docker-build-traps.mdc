@@ -35,4 +35,8 @@ npm run typecheck -w @octafuse/admin
    - `next build` 当静态资源；裸 `tsc` 报 TS2307。声明在 `packages/admin/types/static-svg.d.ts`。
    - **不要**因此关掉或放宽 `typecheck:admin`。缺声明就补声明，门禁要对齐 Docker，而不是比它更松。
 
+6. **Admin 实时 WebSocket 依赖 `ws`**
+   - `Dockerfile.admin` 运行层必须 `COPY` `node_modules/ws`；`CMD` 是 `node packages/admin/node-server.mjs`（`build:docker` 会跑 `scripts/build-node-server.mjs`）。
+   - 不要改回裸 `packages/admin/server.js`，否则 Node 调试台实时 ASR 会再次 501。
+
 改 Dockerfile / 构建脚本时同步 `docs/operators/deployment/docker.md`。新踩到的镜像失败补进本规则「已知模式」，不要只修 CI。

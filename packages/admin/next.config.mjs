@@ -15,6 +15,7 @@ const coreSrcIndex = path.join(__dirname, '../core/src/index.ts');
 const nextConfig = {
 	output: 'standalone',
 	transpilePackages: ['@octafuse/core', '@octafuse/tool-engines'],
+	serverExternalPackages: ['ws'],
 	images: {
 		unoptimized: true,
 	},

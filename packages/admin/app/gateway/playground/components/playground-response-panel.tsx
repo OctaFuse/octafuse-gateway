@@ -244,15 +244,17 @@ export function PlaygroundResponsePanel({
 							</div>
 						) : (
 							<div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-slate-200">
-								<div className="flex min-h-0 flex-[0.4] flex-col">
-									<div className="shrink-0 border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-900/85">
-										{t('thinking')}
+								{mergedReasoningDisplay ? (
+									<div className="flex min-h-0 flex-[0.4] flex-col">
+										<div className="shrink-0 border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-900/85">
+											{t('thinking')}
+										</div>
+										<pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words bg-amber-50/60 p-3 font-mono text-sm text-gray-900">
+											{mergedReasoningDisplay}
+										</pre>
 									</div>
-									<pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words bg-amber-50/60 p-3 font-mono text-sm text-gray-900">
-										{mergedReasoningDisplay}
-									</pre>
-								</div>
-								<div className="flex min-h-0 flex-1 flex-col border-t border-slate-200">
+								) : null}
+								<div className={`flex min-h-0 flex-1 flex-col ${mergedReasoningDisplay ? 'border-t border-slate-200' : ''}`}>
 									<div className="shrink-0 border-b border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
 										{t('body')}
 									</div>

@@ -261,7 +261,7 @@ export function PlaygroundRequestPanel({
 							<label className={labelClass}>{t('audioFile')}</label>
 							<input
 								type="file"
-								accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac"
+								accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac,.pcm"
 								disabled={sending}
 								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
 								onChange={(e) => onAudioFileChange(e.target.files?.[0] ?? null)}

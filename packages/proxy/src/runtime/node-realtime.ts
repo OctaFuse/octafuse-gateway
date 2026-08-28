@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http';
 import { resolveProviderUpstreamSecret } from '@octafuse/core';
 import { resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
+import { pickDashScopeRealtimeSubprotocol } from '@octafuse/core/realtime-protocol';
 import type { UsageFromStream } from '../services/proxy';
 import { EMPTY_USAGE } from '../services/proxy';
 import type { ProxyDispatchResult } from '../services/failover-dispatch';
@@ -361,6 +362,6 @@ export function createNodeDashScopeRealtimeDispatch(
 export function createNodeWebSocketServer(): NodeWebSocketServer {
 	return new wsModule.WebSocketServer({
 		noServer: true,
-		handleProtocols: (protocols) => protocols.values().next().value ?? false,
+		handleProtocols: (protocols) => pickDashScopeRealtimeSubprotocol(protocols),
 	});
 }

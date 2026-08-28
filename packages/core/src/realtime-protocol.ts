@@ -22,3 +22,13 @@ export function parseDashScopeRealtimeAuthProtocol(
 	const apiKey = offered.slice(DASHSCOPE_REALTIME_AUTH_PROTOCOL_PREFIX.length).trim();
 	return apiKey ? { apiKey, protocol: offered } : null;
 }
+
+/**
+ * Node `ws` `handleProtocols`：优先回写网关鉴权子协议，避免客户端同时 offer 其他值时选错。
+ */
+export function pickDashScopeRealtimeSubprotocol(protocols: Iterable<string>): string | false {
+	const offered = [...protocols];
+	const auth = offered.find((value) => value.startsWith(DASHSCOPE_REALTIME_AUTH_PROTOCOL_PREFIX));
+	if (auth) return auth;
+	return offered[0] ?? false;
+}
