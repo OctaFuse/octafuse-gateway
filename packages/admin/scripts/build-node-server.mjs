@@ -14,11 +14,20 @@ const outfile = join(pkgRoot, '.next/standalone/packages/admin/node-server.mjs')
 const bundleWorkspacePackages = {
 	name: 'bundle-workspace-packages',
 	setup(build) {
-		build.onResolve({ filter: /^@\// }, (args) => ({
-			path: join(pkgRoot, args.path.slice(2)),
-		}));
+		// `@/lib/foo` 必须再走 esbuild 默认解析（补 `.ts` / `index.ts`）。
+		// 直接 join 成无扩展名绝对路径会被当成最终文件，Docker 构建报 Cannot read file。
+		build.onResolve({ filter: /^@\// }, (args) => {
+			if (args.pluginData?.octafuseAliasResolved) {
+				return undefined;
+			}
+			return build.resolve(`./${args.path.slice(2)}`, {
+				kind: args.kind,
+				resolveDir: pkgRoot,
+				pluginData: { octafuseAliasResolved: true },
+			});
+		});
 		build.onResolve({ filter: /^[^./]/ }, (args) => {
-			if (args.path.startsWith('@octafuse/')) {
+			if (args.path.startsWith('@octafuse/') || args.path.startsWith('@/')) {
 				return undefined;
 			}
 			return { path: args.path, external: true };
