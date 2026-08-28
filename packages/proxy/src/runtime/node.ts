@@ -121,6 +121,8 @@ export async function startNodeServer(port = Number(process.env.PORT ?? 8787)): 
 			return;
 		}
 		websocketServer.handleUpgrade(request, socket, head, (client) => {
+			// 握手完成后立刻暂停读，避免鉴权/连上游窗口内无 message 监听器而丢弃 run-task。
+			client.pause();
 			void handleNodeRealtimeUpgrade(app, request, client);
 		});
 	});
@@ -147,7 +149,10 @@ async function handleNodeRealtimeUpgrade(
 		const response = await app.fetch(fetchRequest, {
 			NODE_REALTIME_DISPATCH: createNodeDashScopeRealtimeDispatch(client),
 		});
-		if (response.headers.get('x-octafuse-realtime-upgrade') === '1') return;
+		if (response.headers.get('x-octafuse-realtime-upgrade') === '1') {
+			client.resume();
+			return;
+		}
 		const message = (await response.clone().text()).trim() || `HTTP ${response.status}`;
 		if (client.readyState !== 3) client.close(1008, message.slice(0, 123));
 	} catch (error) {

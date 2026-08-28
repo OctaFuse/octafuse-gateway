@@ -43,10 +43,24 @@ type ErrorListener = (error: Error) => void;
 type SocketEvent = 'message' | 'close' | 'error';
 type SocketListener = MessageListener | CloseListener | ErrorListener;
 
+function isValidWsCloseCode(code: number): boolean {
+	return (
+		(code >= 1000 &&
+			code <= 1014 &&
+			code !== 1004 &&
+			code !== 1005 &&
+			code !== 1006) ||
+		(code >= 3000 && code <= 4999)
+	);
+}
+
 class FakeSocket implements NodeWebSocket {
 	readyState = 1;
 	binaryType = '';
 	sent: Array<string | Buffer> = [];
+	closeCodes: number[] = [];
+	private paused = false;
+	private readonly queuedMessages: Array<{ data: Buffer; isBinary: boolean }> = [];
 	private readonly messageListeners: MessageListener[] = [];
 	private readonly closeListeners: CloseListener[] = [];
 	private readonly errorListeners: ErrorListener[] = [];
@@ -85,9 +99,24 @@ class FakeSocket implements NodeWebSocket {
 	}
 
 	close(code = 1000, reason = ''): void {
+		if (typeof code !== 'number' || !isValidWsCloseCode(code)) {
+			throw new TypeError('First argument must be a valid error code number');
+		}
+		this.closeCodes.push(code);
 		if (this.readyState === 3) return;
 		this.readyState = 3;
 		for (const listener of [...this.closeListeners]) listener(code, Buffer.from(reason));
+	}
+
+	pause(): void {
+		this.paused = true;
+	}
+
+	resume(): void {
+		this.paused = false;
+		for (const queued of this.queuedMessages.splice(0)) {
+			this.dispatchMessage(queued.data, queued.isBinary);
+		}
 	}
 
 	emitOpen(): void {
@@ -96,15 +125,29 @@ class FakeSocket implements NodeWebSocket {
 
 	emitMessage(data: string | Buffer, isBinary = typeof data !== 'string'): void {
 		const buffer = typeof data === 'string' ? Buffer.from(data) : data;
-		for (const listener of [...this.messageListeners]) listener(buffer, isBinary);
+		if (this.paused) {
+			this.queuedMessages.push({ data: buffer, isBinary });
+			return;
+		}
+		this.dispatchMessage(buffer, isBinary);
 	}
 
 	emitUpstreamMessage(data: string | Buffer, isBinary = typeof data !== 'string'): void {
 		this.emitMessage(data, isBinary);
 	}
 
+	emitPeerClose(code = 1000, reason = ''): void {
+		if (this.readyState === 3) return;
+		this.readyState = 3;
+		for (const listener of [...this.closeListeners]) listener(code, Buffer.from(reason));
+	}
+
 	emitClose(code = 1000, reason = ''): void {
 		this.close(code, reason);
+	}
+
+	private dispatchMessage(data: Buffer, isBinary: boolean): void {
+		for (const listener of [...this.messageListeners]) listener(data, isBinary);
 	}
 }
 
@@ -142,5 +185,57 @@ describe('Node DashScope realtime adapter', () => {
 		upstream!.emitClose();
 		const usage = await result.usagePromise;
 		assert.equal(usage.audio_duration_seconds, 1.5);
+	});
+
+	it('still records usage when the client closes with reserved code 1005', async () => {
+		const client = new FakeSocket();
+		let upstream: FakeSocket | null = null;
+		const WebSocketCtor = function (_url: string): NodeWebSocket {
+			upstream = new FakeSocket();
+			queueMicrotask(() => upstream?.emitOpen());
+			return upstream;
+		} as unknown as NodeWebSocketConstructor;
+
+		const dispatch = createNodeDashScopeRealtimeDispatch(client, WebSocketCtor);
+		const resultPromise = dispatch(route(), 'audio.transcriptions.realtime.inference');
+		await new Promise<void>((resolve) => queueMicrotask(resolve));
+		assert.ok(upstream);
+		const result = await resultPromise;
+
+		upstream!.emitUpstreamMessage(JSON.stringify({
+			header: { event: 'task-finished', task_id: 'task-1' },
+			payload: { usage: { duration: 1.5 } },
+		}), false);
+		assert.doesNotThrow(() => client.emitPeerClose(1005));
+		const usage = await result.usagePromise;
+		assert.equal(usage.audio_duration_seconds, 1.5);
+		assert.equal(upstream!.closeCodes[0], 1000);
+	});
+
+	it('forwards messages queued while the client socket is paused', async () => {
+		const client = new FakeSocket();
+		client.pause();
+		client.emitMessage(JSON.stringify({
+			header: { action: 'run-task' },
+			payload: { model: 'gateway-model' },
+		}), false);
+
+		let upstream: FakeSocket | null = null;
+		const WebSocketCtor = function (_url: string): NodeWebSocket {
+			upstream = new FakeSocket();
+			queueMicrotask(() => upstream?.emitOpen());
+			return upstream;
+		} as unknown as NodeWebSocketConstructor;
+
+		const dispatch = createNodeDashScopeRealtimeDispatch(client, WebSocketCtor);
+		const resultPromise = dispatch(route({ providerModelName: 'fun-asr-realtime-v2' }), 'audio.transcriptions.realtime.inference');
+		await new Promise<void>((resolve) => queueMicrotask(resolve));
+		assert.ok(upstream);
+		await resultPromise;
+
+		assert.equal(upstream!.sent.length, 0);
+		client.resume();
+		assert.equal(typeof upstream!.sent[0], 'string');
+		assert.equal(JSON.parse(String(upstream!.sent[0])).payload.model, 'fun-asr-realtime-v2');
 	});
 });

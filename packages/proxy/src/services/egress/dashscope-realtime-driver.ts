@@ -243,11 +243,39 @@ export function outboundWebSocketFetchUrl(endpoint: string): URL {
 	return url;
 }
 
+/**
+ * RFC 6455 / `ws` 合法 Close 码。1004、1005、1006、1015 是保留码，
+ * 写入 Close 帧会抛 TypeError，并可能让后续 usage 记账永远不执行。
+ */
+export function normalizeWebSocketCloseCode(code: number | undefined): number {
+	if (typeof code !== "number" || !Number.isInteger(code)) return 1000;
+	if (
+		(code >= 1000 &&
+			code <= 1014 &&
+			code !== 1004 &&
+			code !== 1005 &&
+			code !== 1006) ||
+		(code >= 3000 && code <= 4999)
+	) {
+		return code;
+	}
+	return 1000;
+}
+
 function closeSocket(socket: WebSocket, code = 1000, reason = ""): void {
 	// Workers' allowHalfOpen sockets remain CLOSING after the peer sends Close;
 	// calling close again is required to complete that handshake.
 	if (socket.readyState === WebSocket.CLOSED) return;
-	socket.close(code, reason.slice(0, 123));
+	const safeCode = normalizeWebSocketCloseCode(code);
+	try {
+		socket.close(safeCode, reason.slice(0, 123));
+	} catch {
+		try {
+			socket.close(1000);
+		} catch {
+			// ignore
+		}
+	}
 }
 
 function bridgeSockets(params: {
@@ -310,28 +338,40 @@ function bridgeSockets(params: {
 
 		server.addEventListener("close", (event) => {
 			clientClosedFirst = true;
-			closeSocket(upstream, event.code, event.reason);
-			// `server.accept({ allowHalfOpen: true })` leaves this side in CLOSING.
-			// Complete the client close handshake before recording usage.
-			closeSocket(server, event.code, event.reason);
-			finish();
+			try {
+				closeSocket(upstream, event.code, event.reason);
+				// `server.accept({ allowHalfOpen: true })` leaves this side in CLOSING.
+				// Complete the client close handshake before recording usage.
+				closeSocket(server, event.code, event.reason);
+			} finally {
+				finish();
+			}
 		});
 		upstream.addEventListener("close", (event) => {
-			closeSocket(server, event.code, event.reason);
-			finish(
-				event.code === 1000
-					? null
-					: `Upstream WebSocket closed with code ${event.code}`
-			);
+			try {
+				closeSocket(server, event.code, event.reason);
+			} finally {
+				finish(
+					event.code === 1000
+						? null
+						: `Upstream WebSocket closed with code ${event.code}`
+				);
+			}
 		});
 		server.addEventListener("error", () => {
 			clientClosedFirst = true;
-			closeSocket(upstream, 1011, "Client WebSocket error");
-			finish("Client WebSocket transport error");
+			try {
+				closeSocket(upstream, 1011, "Client WebSocket error");
+			} finally {
+				finish("Client WebSocket transport error");
+			}
 		});
 		upstream.addEventListener("error", () => {
-			closeSocket(server, 1011, "Upstream WebSocket error");
-			finish("Upstream WebSocket transport error");
+			try {
+				closeSocket(server, 1011, "Upstream WebSocket error");
+			} finally {
+				finish("Upstream WebSocket transport error");
+			}
 		});
 	});
 }
