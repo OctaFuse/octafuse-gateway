@@ -12,6 +12,15 @@ export function isDashScopeRealtimeOperation(value: string): value is DashScopeR
 	return (DASHSCOPE_REALTIME_OPERATIONS as readonly string[]).includes(value);
 }
 
+/** 实时 ASR 默认麦克风；HTTP 文件识别与实时 TTS 仍用文件。 */
+export function defaultAudioInputModeForDashScopeOperation(
+	operation: string | null | undefined,
+): 'file' | 'microphone' {
+	return typeof operation === 'string' && operation.startsWith('audio.transcriptions.realtime.')
+		? 'microphone'
+		: 'file';
+}
+
 /** DashScope 的 Qwen-Audio-TTS 与 CosyVoice 音色集合不同，按供应商模型选择默认音色。 */
 export function dashScopeTtsVoiceForModel(providerModelName?: string | null): string {
 	const model = providerModelName?.trim().toLowerCase() ?? '';

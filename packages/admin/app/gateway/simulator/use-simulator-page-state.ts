@@ -28,6 +28,7 @@ import {
 } from '@/lib/simulator/endpoint';
 import {
 	dashScopeRealtimeAudioContentType,
+	defaultAudioInputModeForDashScopeOperation,
 	isDashScopeRealtimeOperation,
 	openDashScopeRealtimeClient,
 	stopDashScopeRealtimeClient,
@@ -751,7 +752,7 @@ export function useSimulatorPageState() {
 			setAudioPreviewUrl(null);
 			setEditFiles([]);
 			setAudioFile(null);
-			setAudioInputMode('file');
+			setAudioInputMode(defaultAudioInputModeForDashScopeOperation(selectedDashScopeRealtimeOperation));
 			prevSelectedSpecialKindRef.current = 'audio';
 			return;
 		}

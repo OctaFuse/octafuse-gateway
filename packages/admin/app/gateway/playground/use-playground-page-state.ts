@@ -27,6 +27,7 @@ import { observePlaygroundResponse } from '@/lib/playground/response-observation
 import { normalizeProtocol, parseLastStreamUsage, tryParseUsageSummary } from '@/lib/playground/usage-parsing';
 import {
 	dashScopeRealtimeAudioContentType,
+	defaultAudioInputModeForDashScopeOperation,
 	isDashScopeRealtimeOperation,
 	openDashScopeRealtimeClient,
 	stopDashScopeRealtimeClient,
@@ -401,7 +402,7 @@ export function usePlaygroundPageState() {
 		setImageOperation('generations');
 		setEditFiles([]);
 		setAudioFile(null);
-		setAudioInputMode('file');
+		setAudioInputMode(defaultAudioInputModeForDashScopeOperation(r.upstream_operation));
 		setAudioPreviewUrl(null);
 		realtimeAudioChunksRef.current = [];
 		if (!bodyDirtyRef.current) {
