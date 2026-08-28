@@ -60,6 +60,7 @@ export * from './db/image-token-usage';
 export * from './db/audio-token-usage';
 export * from './db/image-per-image-usage';
 export * from './db/pricing-schedule';
+export * from './db/display-discount';
 export * from './db/user-charged-cost-factors';
 export * from './db/model-modalities';
 export * from './db/request-log-status-filter';

@@ -7,16 +7,18 @@ import {
 	parseModelModalitiesJson,
 	parsePricingProfile,
 	UPSTREAM_PROTOCOLS,
+	type DisplayDiscountGroup,
 	type GatewayRepositories,
 	type ModelRouteJoinRow,
 	type ParsedPricingProfile,
 	type UpstreamProtocol,
 } from '@octafuse/core';
+import { filterRouteGroupsByAllowlist, parseMetadata } from '../lib/model-list-parse';
 import {
-	filterRouteGroupsByAllowlist,
-	parseMetadata,
-	parseTags,
-} from '../lib/model-list-parse';
+	buildModelDisplayDiscounts,
+	loadPublicModelListContext,
+	tagsWithDerivedDiscounts,
+} from './public-models';
 
 export type CatalogDiscoveryModel = {
 	id: string;
@@ -34,6 +36,7 @@ export type CatalogDiscoveryModel = {
 	input_modalities: string[] | null;
 	output_modalities: string[] | null;
 	released_at: string | null;
+	discounts?: Record<string, DisplayDiscountGroup>;
 	metadata?: Record<string, unknown>;
 };
 
@@ -78,27 +81,11 @@ function buildProtocolsByGroup(routes: ModelRouteJoinRow[]): Record<string, Upst
 	return out;
 }
 
-function groupActiveRoutesByModel(routes: ModelRouteJoinRow[]): Map<string, ModelRouteJoinRow[]> {
-	const map = new Map<string, ModelRouteJoinRow[]>();
-	for (const row of routes) {
-		if (row.status !== 'active') continue;
-		const list = map.get(row.model_id);
-		if (list) {
-			list.push(row);
-		} else {
-			map.set(row.model_id, [row]);
-		}
-	}
-	return map;
-}
-
 export async function listCatalogDiscoveryModels(
 	repos: GatewayRepositories,
 	options?: { routeGroups?: string[] | null }
 ): Promise<CatalogDiscoveryModel[]> {
-	const models = await repos.modelRouting.listModelsWithActiveRoutes();
-	const allRoutes = await repos.routes.listModelRoutesWithJoins({});
-	const routesByModel = groupActiveRoutesByModel(allRoutes);
+	const { models, routesByModel, timezone } = await loadPublicModelListContext(repos);
 	const allowedGroups = options?.routeGroups ?? null;
 
 	const list: CatalogDiscoveryModel[] = [];
@@ -129,6 +116,13 @@ export async function listCatalogDiscoveryModels(
 			continue;
 		}
 
+		const discounts = buildModelDisplayDiscounts({
+			model: m,
+			routes,
+			timezone,
+			allowedRouteGroups: routeGroups,
+		});
+
 		list.push({
 			id: m.id,
 			display_name: m.display_name,
@@ -136,8 +130,9 @@ export async function listCatalogDiscoveryModels(
 			context_window: m.context_window,
 			max_tokens: m.max_tokens,
 			pricing_profile: parsePricingProfile(m.pricing_profile ?? undefined),
-			tags: parseTags(m.tags),
+			tags: tagsWithDerivedDiscounts(m, discounts),
 			route_groups: routeGroups,
+			discounts,
 			protocols,
 			protocols_by_group: protocolsByGroup,
 			recommended_protocol: resolveRecommendedProtocol(protocols),

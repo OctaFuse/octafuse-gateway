@@ -16,7 +16,11 @@ import { useTranslations } from 'next-intl';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
 import { type CatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
-import type { CatalogImagePricingDisplay, CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
+import {
+	getUserChargedCatalogTierRows,
+	type CatalogImagePricingDisplay,
+	type CatalogPricingTierDisplayRow,
+} from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
@@ -39,6 +43,7 @@ import {
 	scheduleWindowKey,
 } from '@octafuse/core/db/pricing-schedule';
 import { RoutePricePanel } from './route-price-panel';
+import { ScheduleWindowEffectivePrices } from './schedule-window-effective-prices';
 
 type Props = {
 	open: boolean;
@@ -118,6 +123,9 @@ export function RouteModal(props: Props) {
 		[selectedModel]
 	);
 	const catalogScheduleLocked = catalogScheduleWindows.length > 0;
+	const editorScheduleWindows = catalogScheduleLocked
+		? alignRouteScheduleWindowsToCatalog(catalogScheduleWindows, formData.schedule_windows)
+		: formData.schedule_windows;
 	const catalogNowSchedule = useMemo(
 		() => resolveDailyScheduleFactor(catalogScheduleWindows, new Date(), businessTimezone),
 		[catalogScheduleWindows, businessTimezone]
@@ -818,7 +826,7 @@ export function RouteModal(props: Props) {
 												{t('catalogScheduleLockedHint')}
 											</p>
 										</div>
-										<ul className="divide-y divide-gray-100">
+										<ul className="space-y-2.5">
 											{catalogScheduleWindows.map((w, i) => {
 												const daysHint = formatIsoWeekdaysHint(w.days);
 												const daysLabel =
@@ -828,29 +836,52 @@ export function RouteModal(props: Props) {
 															? t('scheduleWeekend')
 															: daysHint ?? t('scheduleEveryday');
 												const active = catalogNowWindowKey === scheduleWindowKey(w);
+												const officialRows =
+													selectedModel &&
+													!selectedModelIsImage &&
+													!selectedModelIsAudio &&
+													catalogStandardTierRows.length > 0
+														? getUserChargedCatalogTierRows(selectedModel, w.factor, billingCurrency)
+														: [];
 												return (
 													<li
 														key={`${w.start}-${w.end}-${i}`}
-														className="flex items-center justify-between gap-3 py-1.5 text-[11px]"
+														className={
+															active
+																? 'space-y-1.5 rounded-md border border-amber-300 bg-amber-50/80 p-2 ring-1 ring-amber-200/80'
+																: 'space-y-1.5 rounded-md border border-gray-200 bg-white p-2'
+														}
 													>
-														<div className="min-w-0">
-															<p className="font-mono tabular-nums text-gray-800">
-																{w.start}–{w.end}
-																<span className="ml-1.5 font-sans text-[10px] text-gray-500">
-																	{daysLabel}
+														<div className="flex items-center justify-between gap-3 text-[11px]">
+															<div className="min-w-0">
+																<p className={`font-mono tabular-nums ${active ? 'text-amber-950' : 'text-gray-800'}`}>
+																	{w.start}–{w.end}
+																	<span className={`ml-1.5 font-sans text-[10px] ${active ? 'text-amber-800/80' : 'text-gray-500'}`}>
+																		{daysLabel}
+																	</span>
+																</p>
+															</div>
+															<div className="flex shrink-0 items-center gap-2">
+																{active ? (
+																	<span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+																		{t('catalogScheduleNow')}
+																	</span>
+																) : null}
+																<span className={`font-mono text-xs tabular-nums ${active ? 'text-amber-950' : 'text-gray-800'}`}>
+																	×{w.factor}
 																</span>
-															</p>
+															</div>
 														</div>
-														<div className="flex shrink-0 items-center gap-2">
-															{active ? (
-																<span className="text-[10px] font-medium text-gray-500">
-																	{t('catalogScheduleNow')}
-																</span>
-															) : null}
-															<span className="font-mono text-xs tabular-nums text-gray-800">
-																×{w.factor}
-															</span>
-														</div>
+														{officialRows.length > 0 ? (
+															<ReadOnlyPricingTiersTable
+																dense
+																hideUnitFooter
+																rows={officialRows}
+																emptyLabel={t('noCatalogPricing')}
+																tableTitle={t('catalogWindowPricesHint')}
+																billingCurrencyCode={billingCurrency}
+															/>
+														) : null}
 													</li>
 												);
 											})}
@@ -1026,14 +1057,7 @@ export function RouteModal(props: Props) {
 											}
 										>
 											<DailyScheduleEditor
-												windows={
-													catalogScheduleLocked
-														? alignRouteScheduleWindowsToCatalog(
-																catalogScheduleWindows,
-																formData.schedule_windows
-															)
-														: formData.schedule_windows
-												}
+												windows={editorScheduleWindows}
 												onChange={(schedule_windows) => onFormChange({ ...formData, schedule_windows })}
 												lockWindows={catalogScheduleLocked}
 												emptyLabel={t('scheduleEmpty')}
@@ -1042,6 +1066,23 @@ export function RouteModal(props: Props) {
 												chargedFactorLabel={t('scheduleChargedFactor')}
 												meteredFactorLabel={t('scheduleMeteredFactor')}
 												removeLabel={tCommon('delete')}
+												renderWindowExtra={
+													catalogScheduleLocked &&
+													selectedModel &&
+													!selectedModelIsImage &&
+													!selectedModelIsAudio &&
+													catalogStandardTierRows.length > 0
+														? (i) => (
+																<ScheduleWindowEffectivePrices
+																	billingCurrency={billingCurrency}
+																	catalogFactor={catalogScheduleWindows[i]?.factor ?? 1}
+																	chargedFactorText={editorScheduleWindows[i]?.charged_factor ?? ''}
+																	meteredFactorText={editorScheduleWindows[i]?.metered_factor ?? ''}
+																	model={selectedModel}
+																/>
+															)
+														: undefined
+												}
 												dayLabels={{
 													days: t('scheduleDays'),
 													everyday: t('scheduleEveryday'),
