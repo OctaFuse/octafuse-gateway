@@ -47,4 +47,9 @@ npm run typecheck -w @octafuse/admin
    - 入口会打进 `@octafuse/core`。Admin 运行层只 COPY `postgres` / `mysql2` / `ws` + Next standalone，**没有** `drizzle-orm`。全量 external 时容器启动报 `Cannot find package 'drizzle-orm'`。
    - 仅 `next` / `ws` / `postgres` / `mysql2` 可为 external；其余纯 JS 依赖打进 bundle。脚本用 metafile 拦住未登记的裸导入。
 
+9. **Admin standalone 必须设 `__NEXT_PRIVATE_STANDALONE_CONFIG`**（2026-08）
+   - `node packages/admin/node-server.mjs` 走 `next({ dir })` → `loadConfig` → `loadWebpackHook()`。standalone 裁掉 `next/dist/compiled/webpack`，未设该变量会 `Cannot find module 'next/dist/compiled/webpack/webpack-lib'`。
+   - 生产入口必须读 `.next/required-server-files.json` 的 `config`（镜像里没有 `next.config.mjs`）。
+   - **本地假阴性**：在仓库内启动 standalone 会向上解析到根 `node_modules/next`（含 webpack-lib），容器里没有。改入口或 Dockerfile.admin 后跑 `npm run verify:standalone -w @octafuse/admin`（把 standalone 拷到系统临时目录再启动），不要只在仓库内 `node .next/standalone/...`。
+
 改 Dockerfile / 构建脚本时同步 `docs/operators/deployment/docker.md`。新踩到的镜像失败补进本规则「已知模式」，不要只修 CI。

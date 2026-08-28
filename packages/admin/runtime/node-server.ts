@@ -2,12 +2,13 @@
  * Admin Node HTTP 入口：普通请求交给 Next，调试台实时 WS 在 Upgrade 时旁路。
  * `next dev` 的 HMR 也走 Upgrade，非 playground 路径必须转交 Next。
  */
+import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import next from 'next';
+import next, { type NextConfig } from 'next';
 import { PLAYGROUND_REALTIME_PATH } from '../lib/playground-realtime-path';
 import {
 	handleAdminNodeRealtimeUpgrade,
@@ -45,6 +46,33 @@ function resolveAdminDir(): string {
 	return basename(here) === 'runtime' ? join(here, '..') : here;
 }
 
+/**
+ * Next standalone 运行层没有 `next.config.mjs`，且裁掉了 `next/dist/compiled/webpack`。
+ * 必须复用构建期序列化配置（等价官方 `standalone/.../server.js`）。
+ *
+ * 设置 `__NEXT_PRIVATE_STANDALONE_CONFIG` 后 Next 会跳过 `loadEnvConfig`
+ *（不再读 next.config / `.env`）；容器 / compose 注入的环境变量不受影响。
+ */
+function loadStandaloneConfig(dir: string): NextConfig | null {
+	const file = join(dir, '.next/required-server-files.json');
+	if (!existsSync(file)) {
+		return null;
+	}
+	const parsed = JSON.parse(readFileSync(file, 'utf8')) as { config?: NextConfig };
+	return parsed.config ?? null;
+}
+
+function applyStandaloneConfig(dir: string): NextConfig | undefined {
+	const config = loadStandaloneConfig(dir);
+	if (!config) {
+		throw new Error(
+			`[octafuse-admin] missing ${join(dir, '.next/required-server-files.json')}; production must start from Next standalone output`,
+		);
+	}
+	process.env.__NEXT_PRIVATE_STANDALONE_CONFIG ??= JSON.stringify(config);
+	return config;
+}
+
 async function handlePlaygroundUpgrade(request: IncomingMessage, client: NodeWebSocket): Promise<void> {
 	try {
 		const response = await handleAdminNodeRealtimeUpgrade(
@@ -77,7 +105,14 @@ export async function startAdminNodeServer(
 ): Promise<void> {
 	const dev = process.env.NODE_ENV !== 'production';
 	const dir = resolveAdminDir();
-	const app = next({ dev, hostname, port, dir }) as NextServerWithUpgrade;
+	const conf = dev ? undefined : applyStandaloneConfig(dir);
+	const app = next({
+		dev,
+		hostname,
+		port,
+		dir,
+		...(conf ? { conf } : {}),
+	}) as NextServerWithUpgrade;
 	await app.prepare();
 	app.didWebSocketSetup = true;
 	const handle = app.getRequestHandler();

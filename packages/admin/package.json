@@ -7,6 +7,7 @@
 		"dev:node": "dotenv -c -- env PORT=8789 tsx runtime/node-server.ts",
 		"build": "npm run cf-typegen && next build && node ./scripts/link-standalone-next.mjs",
 		"build:docker": "next build && node ./scripts/link-standalone-next.mjs && node ./scripts/build-node-server.mjs",
+		"verify:standalone": "node ./scripts/verify-standalone-boot.mjs",
 		"build:cf": "npm run cf-typegen && opennextjs-cloudflare build",
 		"start": "NODE_ENV=production tsx runtime/node-server.ts",
 		"lint": "eslint .",
