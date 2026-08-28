@@ -412,6 +412,16 @@ GET /v1/models
         "input_modalities": ["text", "image", "file"],
         "output_modalities": ["text"],
         "released_at": "2024-06-05",
+        "discounts": {
+          "default": {
+            "timezone": "Asia/Shanghai",
+            "kind": "flat",
+            "schedule_mode": "multiply",
+            "route": { "priority": 10, "weight": 1 },
+            "current": { "catalog_factor": 1, "route_factor": 0.7, "composite_factor": 0.7 },
+            "windows": [{ "catalog_factor": 1, "route_factor": 0.7, "composite_factor": 0.7 }]
+          }
+        },
         "metadata": {}
       }
     }
@@ -426,7 +436,7 @@ GET /v1/models
 |------|------|------|
 | `display_name` | string \| null | 模型显示名称 |
 | `vendor` | string | 模型供应商标识，如 `openai`、`anthropic`、`google` |
-| `tags` | string[] | 模型标签数组，如 `["free", "general"]`（**仅展示/目录元数据**，不参与自动选组或计费公式） |
+| `tags` | string[] | 模型标签数组，如 `["free", "general"]`（**仅展示/目录元数据**，不参与自动选组或计费公式）。`Discount:<factor>` / `Discount.<group>:<factor>` 由网关按当刻 `discounts` 自动派生，手工写入会被覆盖 |
 | `route_groups` | string[] | 当前模型下 **活跃路由** 的去重 `route_group` 列表，供客户端构造请求中的 `baseId:group` |
 | `context_window` | number \| null | 上下文窗口大小（token 数） |
 | `max_tokens` | number \| null | 目录/展示用参考（常见最大输出能力）；**转发时不用于截断**，实际输出上限见上文「输出长度」 |
@@ -437,6 +447,7 @@ GET /v1/models
 | `input_modalities` | string[] \| null | 支持的输入模态（OpenRouter 风格）：`text`、`image`、`audio`、`video`、`file`；客户端可据此限制附件类型 |
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
 | `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
+| `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条。不含用户级 `charged_cost_factors` |
 | `metadata` | object \| undefined | 扩展元数据 |
 
 ### 示例
@@ -516,7 +527,7 @@ GET /catalog/models
 }
 ```
 
-Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`（语义与 `model_info` 一致；`pricing_profile` 为解析后的对象，可含 `schedule`）。响应**不**附带 `business_timezone`；外部要自行计算当刻官方价时，须与运营另行约定 `system_config.BUSINESS_TIMEZONE`。
+Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`、`discounts`（语义与 `model_info` 一致；`pricing_profile` 为解析后的对象，可含 `schedule`）。`discounts.*.timezone` 即 `system_config.BUSINESS_TIMEZONE`。
 
 ### 与 `GET /v1/models` / Admin 的差异
 

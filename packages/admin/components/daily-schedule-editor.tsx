@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import {
 	ISO_WEEKDAYS,
@@ -59,6 +60,8 @@ type SharedProps = {
 	lockWindows?: boolean;
 	/** `inline`：星期与起止/倍率同一行，适合更宽的弹窗。 */
 	layout?: 'stacked' | 'inline';
+	/** 每行倍率下方的只读预览（如官方时段锁定时的明细价）。 */
+	renderWindowExtra?: (index: number) => ReactNode;
 };
 
 type Props = SharedProps & (DualProps | SingleProps);
@@ -104,6 +107,7 @@ export function DailyScheduleEditor(props: Props) {
 		dayLabels,
 		lockWindows = false,
 		layout = 'stacked',
+		renderWindowExtra,
 	} = props;
 	const inline = layout === 'inline';
 	const isSingle = props.variant === 'single';
@@ -278,6 +282,9 @@ export function DailyScheduleEditor(props: Props) {
 										</button>
 									)}
 								</div>
+								{renderWindowExtra ? (
+									<div className={inline ? 'w-full min-w-0' : 'min-w-0'}>{renderWindowExtra(i)}</div>
+								) : null}
 							</li>
 						);
 					})}

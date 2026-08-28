@@ -1,0 +1,454 @@
+/**
+ * 对外目录折扣：从模型官方时段 + 代表路由 `price_override` 派生前台展示用 factor。
+ * 不参与计费；计费仍走 usage-tracker。用户级 `charged_cost_factors` 不进入本结构。
+ */
+import { parsePricingProfile } from './pricing-profile';
+import {
+	formatLocalHhMm,
+	formatLocalIsoWeekday,
+	isEveryIsoWeekday,
+	nextIsoWeekday,
+	normalizeScheduleFactor,
+	parseHhMmToMinutes,
+	parseRouteBaseFactors,
+	parseRoutePricingSchedule,
+	resolveEffectiveRouteFactor,
+	windowCoversLocal,
+	type DailyScheduleWindow,
+	type RoutePricingScheduleMode,
+} from './pricing-schedule';
+
+export const DISPLAY_DISCOUNT_TAG_PREFIX = 'Discount:' as const;
+export const DISPLAY_DISCOUNT_GROUP_TAG_PREFIX = 'Discount.' as const;
+
+export type DisplayDiscountKind = 'flat' | 'schedule';
+
+export type DisplayDiscountWindow = {
+	start?: string;
+	end?: string;
+	days?: number[];
+	catalog_factor: number;
+	route_factor: number;
+	composite_factor: number;
+};
+
+export type DisplayDiscountGroup = {
+	timezone: string;
+	kind: DisplayDiscountKind;
+	schedule_mode: RoutePricingScheduleMode;
+	route: { priority: number; weight: number };
+	current: DisplayDiscountWindow;
+	windows: DisplayDiscountWindow[];
+};
+
+export type DisplayDiscountRouteInput = {
+	status: string;
+	priority: number;
+	weight?: number;
+	route_group?: string | null;
+	price_override: string | null;
+};
+
+const MINUTES_PER_DAY = 24 * 60;
+
+export function normalizeDisplayRouteGroup(routeGroup?: string | null): string {
+	const g = routeGroup?.trim();
+	return g && g.length > 0 ? g : 'default';
+}
+
+export function isDisplayDiscountTag(tag: string): boolean {
+	const lower = tag.trim().toLowerCase();
+	return (
+		lower.startsWith(DISPLAY_DISCOUNT_TAG_PREFIX.toLowerCase()) ||
+		lower.startsWith(DISPLAY_DISCOUNT_GROUP_TAG_PREFIX.toLowerCase())
+	);
+}
+
+export function formatDisplayDiscountLabel(composite: number): string {
+	if (!Number.isFinite(composite) || composite <= 0 || composite >= 1) {
+		return '';
+	}
+	const percent = (1 - composite) * 100;
+	const percentLabel = Number.isInteger(percent) ? percent.toString() : percent.toFixed(1).replace(/\.0$/, '');
+	return `-${percentLabel}%`;
+}
+
+export function formatDisplayDiscountFactor(n: number): string {
+	const x = normalizeScheduleFactor(n);
+	if (!Number.isFinite(x)) {
+		return '1';
+	}
+	return x.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+/** `status=active` 时按 priority DESC、weight DESC 取第一条。 */
+export function pickRepresentativeRoute<T extends DisplayDiscountRouteInput>(routes: readonly T[]): T | null {
+	const active = routes.filter((r) => r.status === 'active');
+	if (active.length === 0) {
+		return null;
+	}
+	const sorted = [...active].sort((a, b) => {
+		const byPriority = (b.priority ?? 0) - (a.priority ?? 0);
+		if (byPriority !== 0) {
+			return byPriority;
+		}
+		return (b.weight ?? 1) - (a.weight ?? 1);
+	});
+	return sorted[0] ?? null;
+}
+
+function formatMinutesToHhMm(minutes: number): string {
+	if (minutes >= MINUTES_PER_DAY) {
+		return '24:00';
+	}
+	const h = Math.floor(minutes / 60);
+	const m = minutes % 60;
+	return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function windowToDaySegments(w: DailyScheduleWindow): Array<{ start: number; end: number }> {
+	const startM = parseHhMmToMinutes(w.start);
+	const endM = parseHhMmToMinutes(w.end);
+	if (startM == null || endM == null) {
+		return [];
+	}
+	if (startM < endM) {
+		return [{ start: startM, end: endM }];
+	}
+	return [
+		{ start: startM, end: MINUTES_PER_DAY },
+		{ start: 0, end: endM },
+	];
+}
+
+function mergeAdjacentDailyWindows(windows: DailyScheduleWindow[]): DailyScheduleWindow[] {
+	const sorted = [...windows].sort((a, b) => {
+		const as = parseHhMmToMinutes(a.start) ?? 0;
+		const bs = parseHhMmToMinutes(b.start) ?? 0;
+		return as - bs;
+	});
+	const out: DailyScheduleWindow[] = [];
+	for (const w of sorted) {
+		const last = out[out.length - 1];
+		if (last && last.end === w.start && last.factor === w.factor && isEveryIsoWeekday(last.days) && isEveryIsoWeekday(w.days)) {
+			last.end = w.end;
+		} else {
+			out.push({ ...w });
+		}
+	}
+	return out;
+}
+
+/**
+ * 目录（或路由）时段未覆盖满每天 24h 时补 factor=1 的兜底窗。
+ * 带 `days` 限制的窗口不补（避免把工作日窗扩成每天）。
+ */
+export function fillDailyScheduleGaps(windows: DailyScheduleWindow[]): DailyScheduleWindow[] {
+	if (windows.length === 0) {
+		return [];
+	}
+	if (windows.some((w) => !isEveryIsoWeekday(w.days))) {
+		return windows;
+	}
+	const bounds = new Set<number>([0, MINUTES_PER_DAY]);
+	for (const w of windows) {
+		for (const seg of windowToDaySegments(w)) {
+			bounds.add(seg.start);
+			bounds.add(seg.end);
+		}
+	}
+	const sorted = [...bounds].sort((a, b) => a - b);
+	const gaps: DailyScheduleWindow[] = [];
+	for (let i = 0; i < sorted.length - 1; i++) {
+		const a = sorted[i]!;
+		const b = sorted[i + 1]!;
+		if (a >= b) {
+			continue;
+		}
+		const mid = Math.floor((a + b) / 2);
+		const covered = windows.some((w) => windowCoversLocal(w, mid, 1));
+		if (!covered) {
+			gaps.push({
+				start: formatMinutesToHhMm(a),
+				end: formatMinutesToHhMm(b),
+				factor: 1,
+			});
+		}
+	}
+	return [...windows, ...mergeAdjacentDailyWindows(gaps)];
+}
+
+function windowMidpoint(w: DailyScheduleWindow): { minutes: number; isoWeekday: number } {
+	const startM = parseHhMmToMinutes(w.start) ?? 0;
+	const endM = parseHhMmToMinutes(w.end) ?? MINUTES_PER_DAY;
+	const startDay = !isEveryIsoWeekday(w.days) && w.days?.[0] ? w.days[0] : 1;
+	if (startM < endM) {
+		return { minutes: Math.floor((startM + endM) / 2), isoWeekday: startDay };
+	}
+	const duration = MINUTES_PER_DAY - startM + endM;
+	const midOffset = Math.floor(duration / 2);
+	if (startM + midOffset < MINUTES_PER_DAY) {
+		return { minutes: startM + midOffset, isoWeekday: startDay };
+	}
+	return { minutes: startM + midOffset - MINUTES_PER_DAY, isoWeekday: nextIsoWeekday(startDay) };
+}
+
+function hitWindowAt(
+	windows: DailyScheduleWindow[],
+	minutes: number,
+	isoWeekday: number
+): DailyScheduleWindow | null {
+	for (const w of windows) {
+		if (windowCoversLocal(w, minutes, isoWeekday)) {
+			return w;
+		}
+	}
+	return null;
+}
+
+function resolveRouteFactorAt(
+	chargedWindows: DailyScheduleWindow[],
+	mode: RoutePricingScheduleMode,
+	baseCharged: number,
+	minutes: number,
+	isoWeekday: number
+): number {
+	const hit = hitWindowAt(chargedWindows, minutes, isoWeekday);
+	return resolveEffectiveRouteFactor(
+		baseCharged,
+		{
+			factor: hit?.factor ?? 1,
+			localTime: formatMinutesToHhMm(minutes),
+			localWeekday: isoWeekday,
+			timezone: 'UTC',
+			evaluatedAtUtc: '',
+			window: hit,
+		},
+		mode
+	);
+}
+
+function toDisplayWindow(
+	shape: DailyScheduleWindow | { start?: string; end?: string; days?: number[] },
+	catalogFactor: number,
+	routeFactor: number
+): DisplayDiscountWindow {
+	const composite = normalizeScheduleFactor(catalogFactor * routeFactor);
+	const out: DisplayDiscountWindow = {
+		catalog_factor: normalizeScheduleFactor(catalogFactor),
+		route_factor: normalizeScheduleFactor(routeFactor),
+		composite_factor: composite,
+	};
+	if (shape.start) {
+		out.start = shape.start;
+	}
+	if (shape.end) {
+		out.end = shape.end;
+	}
+	if (shape.days && shape.days.length > 0) {
+		out.days = shape.days;
+	}
+	return out;
+}
+
+function flattenIfUniform(windows: DisplayDiscountWindow[]): {
+	kind: DisplayDiscountKind;
+	windows: DisplayDiscountWindow[];
+} {
+	if (windows.length === 0) {
+		const flat = toDisplayWindow({}, 1, 1);
+		return { kind: 'flat', windows: [flat] };
+	}
+	const first = windows[0]!.composite_factor;
+	const uniform = windows.every((w) => w.composite_factor === first);
+	if (uniform) {
+		return {
+			kind: 'flat',
+			windows: [
+				{
+					catalog_factor: windows[0]!.catalog_factor,
+					route_factor: windows[0]!.route_factor,
+					composite_factor: first,
+				},
+			],
+		};
+	}
+	return { kind: 'schedule', windows };
+}
+
+export function resolveDisplayDiscountAt(
+	windows: DisplayDiscountWindow[],
+	nowUtc: Date,
+	timezone: string
+): DisplayDiscountWindow | null {
+	if (windows.length === 0) {
+		return null;
+	}
+	if (windows.length === 1 && windows[0]!.start == null) {
+		return windows[0]!;
+	}
+	const minutes = parseHhMmToMinutes(formatLocalHhMm(nowUtc, timezone));
+	const weekday = formatLocalIsoWeekday(nowUtc, timezone);
+	if (minutes == null) {
+		return windows[0] ?? null;
+	}
+	for (const w of windows) {
+		if (!w.start || !w.end) {
+			continue;
+		}
+		const shape: DailyScheduleWindow = { start: w.start, end: w.end, factor: w.composite_factor, days: w.days };
+		if (windowCoversLocal(shape, minutes, weekday)) {
+			return w;
+		}
+	}
+	return null;
+}
+
+export function buildDisplayDiscountForRoute(options: {
+	pricingProfileJson: string | null | undefined;
+	priceOverrideJson: string | null | undefined;
+	timezone: string;
+	priority: number;
+	weight: number;
+	now?: Date;
+}): DisplayDiscountGroup {
+	const now = options.now ?? new Date();
+	const profile = parsePricingProfile(options.pricingProfileJson ?? undefined);
+	const catalogWindows = profile?.schedule ?? [];
+	const schedule = parseRoutePricingSchedule(options.priceOverrideJson);
+	const bases = parseRouteBaseFactors(options.priceOverrideJson);
+	const mode = schedule.mode;
+
+	let sourceWindows: DailyScheduleWindow[];
+	let catalogLookup: DailyScheduleWindow[];
+	if (catalogWindows.length > 0) {
+		sourceWindows = fillDailyScheduleGaps(catalogWindows);
+		catalogLookup = catalogWindows;
+	} else if (schedule.charged.length > 0) {
+		sourceWindows = fillDailyScheduleGaps(schedule.charged);
+		catalogLookup = [];
+	} else {
+		sourceWindows = [];
+		catalogLookup = [];
+	}
+
+	const priced: DisplayDiscountWindow[] =
+		sourceWindows.length === 0
+			? [toDisplayWindow({}, 1, bases.chargedFactor)]
+			: sourceWindows.map((w) => {
+					const mid = windowMidpoint(w);
+					const catalogHit = hitWindowAt(catalogLookup, mid.minutes, mid.isoWeekday);
+					const catalogFactor = catalogHit?.factor ?? 1;
+					const routeFactor = resolveRouteFactorAt(
+						schedule.charged,
+						mode,
+						bases.chargedFactor,
+						mid.minutes,
+						mid.isoWeekday
+					);
+					return toDisplayWindow(w, catalogFactor, routeFactor);
+				});
+
+	const { kind, windows } = flattenIfUniform(priced);
+	const liveMinutes = parseHhMmToMinutes(formatLocalHhMm(now, options.timezone));
+	const liveWeekday = formatLocalIsoWeekday(now, options.timezone);
+	const liveCatalog =
+		liveMinutes == null ? 1 : (hitWindowAt(catalogLookup, liveMinutes, liveWeekday)?.factor ?? 1);
+	const liveRoute =
+		liveMinutes == null
+			? bases.chargedFactor
+			: resolveRouteFactorAt(schedule.charged, mode, bases.chargedFactor, liveMinutes, liveWeekday);
+	const liveCurrent = toDisplayWindow(
+		resolveDisplayDiscountAt(windows, now, options.timezone) ?? {},
+		liveCatalog,
+		liveRoute
+	);
+	const matched = resolveDisplayDiscountAt(windows, now, options.timezone);
+	const current =
+		matched ??
+		(kind === 'flat'
+			? windows[0]!
+			: liveCurrent);
+
+	return {
+		timezone: options.timezone,
+		kind,
+		schedule_mode: mode,
+		route: { priority: options.priority, weight: options.weight },
+		current,
+		windows,
+	};
+}
+
+export function buildDisplayDiscountsByRouteGroup(options: {
+	routes: readonly DisplayDiscountRouteInput[];
+	pricingProfileJson: string | null | undefined;
+	timezone: string;
+	now?: Date;
+	allowedRouteGroups?: readonly string[] | null;
+}): Record<string, DisplayDiscountGroup> {
+	const byGroup = new Map<string, DisplayDiscountRouteInput[]>();
+	for (const row of options.routes) {
+		if (row.status !== 'active') {
+			continue;
+		}
+		const group = normalizeDisplayRouteGroup(row.route_group);
+		const list = byGroup.get(group);
+		if (list) {
+			list.push(row);
+		} else {
+			byGroup.set(group, [row]);
+		}
+	}
+
+	const allowed =
+		options.allowedRouteGroups == null
+			? null
+			: new Set(options.allowedRouteGroups.map((g) => g.trim().toLowerCase()).filter(Boolean));
+
+	const out: Record<string, DisplayDiscountGroup> = {};
+	for (const [group, rows] of byGroup) {
+		if (allowed && !allowed.has(group.toLowerCase())) {
+			continue;
+		}
+		const representative = pickRepresentativeRoute(rows);
+		if (!representative) {
+			continue;
+		}
+		out[group] = buildDisplayDiscountForRoute({
+			pricingProfileJson: options.pricingProfileJson,
+			priceOverrideJson: representative.price_override,
+			timezone: options.timezone,
+			priority: representative.priority ?? 0,
+			weight: representative.weight ?? 1,
+			now: options.now,
+		});
+	}
+	return out;
+}
+
+function derivedTagForGroup(group: string, composite: number): string | null {
+	if (!Number.isFinite(composite) || composite <= 0 || composite >= 1) {
+		return null;
+	}
+	return `${DISPLAY_DISCOUNT_GROUP_TAG_PREFIX}${group}:${formatDisplayDiscountFactor(composite)}`;
+}
+
+/**
+ * 去掉手填 `Discount:*` / `Discount.*`，再按当刻 composite 注入 `Discount.<group>:<factor>`。
+ */
+export function mergeDerivedDiscountTags(
+	tags: readonly string[],
+	discounts: Record<string, DisplayDiscountGroup>
+): string[] {
+	const kept = tags.filter((tag) => typeof tag === 'string' && tag.trim() !== '' && !isDisplayDiscountTag(tag));
+	const derived: string[] = [];
+	const groups = Object.keys(discounts).sort((a, b) => a.localeCompare(b));
+	for (const group of groups) {
+		const tag = derivedTagForGroup(group, discounts[group]!.current.composite_factor);
+		if (tag) {
+			derived.push(tag);
+		}
+	}
+	return [...kept, ...derived];
+}

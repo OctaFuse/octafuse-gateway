@@ -9,6 +9,7 @@ import {
 	isTextLlmModel,
 	parseModelModalitiesJson,
 	parsePricingProfile,
+	type DisplayDiscountGroup,
 } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../app';
@@ -19,9 +20,12 @@ import {
 	parseModelsKindQuery,
 	parseModelsRouteGroupsQuery,
 	parseRouteGroupsJson,
-	parseTags,
 } from '../../lib/model-list-parse';
-import { listPublicModelsWithRoutes } from '../../services/public-models';
+import {
+	buildModelDisplayDiscounts,
+	loadPublicModelListContext,
+	tagsWithDerivedDiscounts,
+} from '../../services/public-models';
 
 type ModelsEnv = Env & { Variables: { apiKey: import('../../middleware/auth').ApiKeyContext } };
 
@@ -63,6 +67,11 @@ interface ModelInfoResponse {
 	output_modalities: string[] | null;
 	/** Model release date `YYYY-MM-DD`. */
 	released_at: string | null;
+	/**
+	 * 按 route_group 派生的前台折扣（官方时段 × 代表路由 charged 有效倍率）。
+	 * `Discount:*` tags 由此自动注入，不再手填。
+	 */
+	discounts?: Record<string, DisplayDiscountGroup>;
 	metadata?: Record<string, unknown>;
 }
 
@@ -99,7 +108,7 @@ function displayCompatPricesFromProfile(pricingProfile: string | null): {
  */
 modelsRoutes.get('/', async (c) => {
 	const repos = c.get('repositories');
-	const models = await listPublicModelsWithRoutes(repos);
+	const { models, routesByModel, timezone } = await loadPublicModelListContext(repos);
 	const allowedRouteGroups = parseModelsRouteGroupsQuery(c.req.query('route_groups'));
 	const kind = parseModelsKindQuery(c.req.query('kind'));
 
@@ -127,6 +136,12 @@ modelsRoutes.get('/', async (c) => {
 		if (routeGroups.length === 0) {
 			continue;
 		}
+		const discounts = buildModelDisplayDiscounts({
+			model: m,
+			routes: routesByModel.get(m.id) ?? [],
+			timezone,
+			allowedRouteGroups: routeGroups,
+		});
 		list.push({
 			id: m.id,
 			object: 'model',
@@ -134,8 +149,9 @@ modelsRoutes.get('/', async (c) => {
 			model_info: {
 				display_name: m.display_name,
 				vendor: m.vendor,
-				tags: parseTags(m.tags),
+				tags: tagsWithDerivedDiscounts(m, discounts),
 				route_groups: routeGroups,
+				discounts,
 				context_window: m.context_window,
 				max_tokens: m.max_tokens,
 				pricing_profile: m.pricing_profile,
