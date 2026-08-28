@@ -4,18 +4,19 @@
 	"private": true,
 	"scripts": {
 		"dev": "next dev",
-		"dev:node": "dotenv -c -- next dev -p 8789",
+		"dev:node": "dotenv -c -- env PORT=8789 tsx runtime/node-server.ts",
 		"build": "npm run cf-typegen && next build && node ./scripts/link-standalone-next.mjs",
-		"build:docker": "next build && node ./scripts/link-standalone-next.mjs",
+		"build:docker": "next build && node ./scripts/link-standalone-next.mjs && node ./scripts/build-node-server.mjs",
+		"verify:standalone": "node ./scripts/verify-standalone-boot.mjs",
 		"build:cf": "npm run cf-typegen && opennextjs-cloudflare build",
-		"start": "next start",
+		"start": "NODE_ENV=production tsx runtime/node-server.ts",
 		"lint": "eslint .",
 		"preview": "node ./scripts/ensure-dev-vars.mjs && npm run build:cf && wrangler dev worker.ts --port 8789 --persist-to ../../.wrangler/state",
 		"deploy": "npm run build:cf && wrangler deploy worker.ts",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"pretest:unit": "npm run build:node-index -w @octafuse/core",
-		"test:unit": "tsx --test lib/admin-nav.test.ts lib/summarize-charged-cost-factors.test.ts lib/services/admin/*.test.ts lib/playground/proxy-response-headers.test.ts lib/playground/preview-upstream-url.test.ts lib/dashscope-realtime-client.test.ts lib/pricing-ui-image.test.ts lib/image-generations.test.ts lib/simulator/endpoint.test.ts lib/playground/sse-event-summary.test.ts lib/playground/response-observations.test.ts lib/playground/samples/index.test.ts app/gateway/simulator/simulator-utils.test.ts app/gateway/playground/playground-utils.test.ts app/gateway/routes/route-utils.test.ts app/gateway/routes/route-strategy-meta.test.ts app/gateway/providers/provider-utils.test.ts app/gateway/tools/components/provider-card-state.test.ts app/gateway/request-logs/request-log-display.test.ts"
+		"test:unit": "tsx --test lib/admin-nav.test.ts lib/summarize-charged-cost-factors.test.ts lib/services/admin/*.test.ts lib/playground/proxy-response-headers.test.ts lib/playground/preview-upstream-url.test.ts lib/dashscope-realtime-client.test.ts lib/playground-node-realtime.test.ts lib/pricing-ui-image.test.ts lib/image-generations.test.ts lib/simulator/endpoint.test.ts lib/playground/sse-event-summary.test.ts lib/playground/response-observations.test.ts lib/playground/samples/index.test.ts app/gateway/simulator/simulator-utils.test.ts app/gateway/playground/playground-utils.test.ts app/gateway/routes/route-utils.test.ts app/gateway/routes/route-strategy-meta.test.ts app/gateway/providers/provider-utils.test.ts app/gateway/tools/components/provider-card-state.test.ts app/gateway/request-logs/request-log-display.test.ts"
 	},
 	"dependencies": {
 		"@heroicons/react": "^2.2.0",
@@ -30,7 +31,8 @@
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",
 		"recharts": "^2.15.4",
-		"simple-icons": "^16.13.0"
+		"simple-icons": "^16.13.0",
+		"ws": "^8.21.0"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20260305.0",
@@ -41,8 +43,10 @@
 		"dotenv-cli": "^11.0.0",
 		"eslint": "^9.39.2",
 		"eslint-config-next": "^16.1.6",
+		"esbuild": "^0.27.3",
 		"postcss": "^8.4.35",
 		"tailwindcss": "^3.4.1",
+		"tsx": "^4.21.0",
 		"typescript": "^5.7.2",
 		"wrangler": "^4.107.0"
 	}

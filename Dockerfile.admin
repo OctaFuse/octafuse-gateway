@@ -1,4 +1,4 @@
-# gateway-admin — Next.js standalone 多阶段（运行层仅含 standalone + static）
+# gateway-admin — Next.js standalone 多阶段（运行层仅含 standalone + static + 实时 WS 入口）
 # Build: docker build -f Dockerfile.admin -t octafuse-admin:latest .
 # Base: Node 22 on Alpine 3.22, pinned digest for reproducible builds / scanner baselines.
 # Bump digest: docker buildx imagetools inspect docker.io/library/node:22-alpine3.22
@@ -88,6 +88,7 @@ COPY --from=builder /app/node_modules/named-placeholders ./node_modules/named-pl
 COPY --from=builder /app/node_modules/safer-buffer ./node_modules/safer-buffer
 COPY --from=builder /app/node_modules/sql-escaper ./node_modules/sql-escaper
 COPY --from=builder /app/node_modules/mysql2 ./node_modules/mysql2
+COPY --from=builder /app/node_modules/ws ./node_modules/ws
 
 EXPOSE 8789
 
@@ -95,4 +96,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
 	CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8789)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 ENTRYPOINT ["/app/docker/entrypoint.app.sh"]
-CMD ["node", "packages/admin/server.js"]
+CMD ["node", "packages/admin/node-server.mjs"]

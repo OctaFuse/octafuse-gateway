@@ -21,7 +21,7 @@ Inside **`packages/admin`** (needs `.env` here or `ln -s ../../.env .env`):
 
 ```bash
 npm run dev           # :3000, no D1 (admin API returns 500; UI-only edits)
-npm run dev:node      # :8789 + Postgres (same port as preview)
+npm run dev:node      # :8789 + Postgres + playground realtime WS (same port as preview)
 npm run build:cf      # OpenNext output + worker.js
 npm run preview       # :8789 + D1 (--persist-to ../../.wrangler/state)
 npm run deploy        # Deploy to Cloudflare
@@ -34,7 +34,7 @@ After a remote deploy (`deploy:*` / `db:migrate:remote`) on this machine, run **
 
 After changing `@octafuse/core` types used by Admin (adapters, route topology, mappings), run **`npm run typecheck:admin`** (or `npm run typecheck -w @octafuse/admin`) **before** opening a PR. Docker `next build` typechecks imported core source; the `verify` job does not.
 
-**Self-hosted Postgres + containers**: **`Dockerfile.admin`** multi-stage build runs **`npm run build:docker`**（Next standalone，**不**跑 `wrangler types`，与 CI 中 `npm ci --ignore-scripts` 兼容；类型兜底见 **`types/cloudflare-env-shim.d.ts`**），默认 **`CMD`**: `node packages/admin/server.js`，`:8789`，应用进程 only。Schema changes use the **`Dockerfile.migrate`** image (`docker compose --profile migrate run --rm migrate`). Inject **`DATABASE_URL`**, **`DATABASE_DRIVER`** (default `postgres` if omitted), and **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**, same database as **`Dockerfile.proxy`**. See `../../docs/operators/deployment/docker.md`.
+**Self-hosted Postgres + containers**: **`Dockerfile.admin`** multi-stage build runs **`npm run build:docker`**（Next standalone + `scripts/build-node-server.mjs`，**不**跑 `wrangler types`，与 CI 中 `npm ci --ignore-scripts` 兼容；类型兜底见 **`types/cloudflare-env-shim.d.ts`**），默认 **`CMD`**: `node packages/admin/node-server.mjs`，`:8789`，应用进程 only。Schema changes use the **`Dockerfile.migrate`** image (`docker compose --profile migrate run --rm migrate`). Inject **`DATABASE_URL`**, **`DATABASE_DRIVER`** (default `postgres` if omitted), and **`ADMIN_USERNAME` / `ADMIN_PASSWORD`**, same database as **`Dockerfile.proxy`**. See `../../docs/operators/deployment/docker.md`.
 
 ## Architecture
 

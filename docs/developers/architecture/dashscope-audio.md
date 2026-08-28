@@ -105,7 +105,7 @@ Authorization: Bearer <gateway-api-key>
 
 TTS 不支持 `audio.speech.realtime.session`（Qwen-TTS-Realtime 会话模式不在本期范围内）。
 
-客户端发送 DashScope 官方 `run-task` 或 `session.update` 事件。网关只把启动帧中的模型替换为路由配置的供应商模型名，并转发后续文本、二进制帧和服务端事件。Cloudflare Worker 使用 `WebSocketPair`，Node 代理服务运行时使用 `ws` 的 HTTP upgrade 适配器；两条路径共用路由、鉴权、初始连接 failover、事件转发和用量记录逻辑。
+Cloudflare Worker 使用 `WebSocketPair`，Node 代理服务与 Node 管理后台运行时使用 `ws` 的 HTTP upgrade 适配器。代理服务路径共用路由、鉴权、初始连接 failover、事件转发和用量记录逻辑；调试台路径不计费、不写请求日志、无 failover。
 
 ### 运行时差异（Node 与 Workers）
 
@@ -113,7 +113,7 @@ TTS 不支持 `audio.speech.realtime.session`（Qwen-TTS-Realtime 会话模式�
 | ---- | ------------------ | ------------- |
 | 下游握手缓冲 | `WebSocketPair` 会在 `accept()` 前排队客户端消息 | 握手由 `ws` 先完成，再异步鉴权与连上游。升级回调里立刻 `pause()` 底层读，等 `x-octafuse-realtime-upgrade` 后再 `resume()`，避免丢掉立刻发出的 `run-task` |
 | Close 码 | 客户端不带状态码关闭时仍应记账 | 同左。`1005` / `1006` 等保留码不能写入 Close 帧，网关会规范化为 `1000` 后再转发，并保证用量记录不依赖关闭是否成功 |
-| 调试台 | 实时入口可用 | 调试台实时入口仍要求 Workers 运行时（`WebSocketPair`），本地 Node 请用脚本或客户端直连代理服务 |
+| 调试台 | 实时入口可用 | 调试台实时入口同样可用：自定义 Node HTTP 入口拦截 `/api/admin/playground/realtime`，用 `ws` 桥上游（不计费）。本地 `npm run dev:admin:node` 与 Docker `node packages/admin/node-server.mjs` 都走这条路径 |
 
 客户端建议：
 

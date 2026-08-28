@@ -12,6 +12,15 @@ export function isDashScopeRealtimeOperation(value: string): value is DashScopeR
 	return (DASHSCOPE_REALTIME_OPERATIONS as readonly string[]).includes(value);
 }
 
+/** 实时 ASR 默认麦克风；HTTP 文件识别与实时 TTS 仍用文件。 */
+export function defaultAudioInputModeForDashScopeOperation(
+	operation: string | null | undefined,
+): 'file' | 'microphone' {
+	return typeof operation === 'string' && operation.startsWith('audio.transcriptions.realtime.')
+		? 'microphone'
+		: 'file';
+}
+
 /** DashScope 的 Qwen-Audio-TTS 与 CosyVoice 音色集合不同，按供应商模型选择默认音色。 */
 export function dashScopeTtsVoiceForModel(providerModelName?: string | null): string {
 	const model = providerModelName?.trim().toLowerCase() ?? '';
@@ -284,10 +293,10 @@ function encodeBase64(bytes: Uint8Array): string {
 }
 
 /** 将浏览器原生采样率的 Float32 音频转换为 DashScope 需要的 16-bit PCM。 */
-function encodePcm16(samples: Float32Array, sourceSampleRate: number): Uint8Array {
+export function encodePcm16(samples: Float32Array, sourceSampleRate: number): Uint8Array {
 	const targetSampleRate = 16_000;
 	const ratio = sourceSampleRate / targetSampleRate;
-	const targetLength = Math.floor(samples.length / ratio);
+	const targetLength = Math.max(0, Math.floor(samples.length / ratio));
 	const output = new Uint8Array(targetLength * 2);
 	const view = new DataView(output.buffer);
 	for (let index = 0; index < targetLength; index += 1) {
@@ -296,6 +305,47 @@ function encodePcm16(samples: Float32Array, sourceSampleRate: number): Uint8Arra
 		view.setInt16(index * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
 	}
 	return output;
+}
+
+/** 裸 `.pcm` 按 16 kHz / 16-bit / 单声道直传；其余格式交给浏览器解码。 */
+export function shouldTreatAsRawPcmAudioFile(file: { name: string }): boolean {
+	return file.name.trim().toLowerCase().endsWith('.pcm');
+}
+
+function mixAudioBufferToMono(buffer: AudioBuffer): Float32Array {
+	const length = buffer.length;
+	const output = new Float32Array(length);
+	const channels = Math.max(1, buffer.numberOfChannels);
+	for (let channel = 0; channel < channels; channel += 1) {
+		const data = buffer.getChannelData(channel);
+		for (let index = 0; index < length; index += 1) {
+			output[index] += (data[index] ?? 0) / channels;
+		}
+	}
+	return output;
+}
+
+export function audioBufferToPcm16(buffer: AudioBuffer): Uint8Array {
+	const samples = buffer.numberOfChannels <= 1 ? buffer.getChannelData(0) : mixAudioBufferToMono(buffer);
+	return encodePcm16(samples, buffer.sampleRate);
+}
+
+async function decodeAudioFileToPcm16(file: File): Promise<Uint8Array> {
+	const bytes = new Uint8Array(await file.arrayBuffer());
+	if (shouldTreatAsRawPcmAudioFile(file)) return bytes;
+	if (typeof AudioContext === 'undefined') {
+		throw new Error('当前环境无法解码音频文件，请使用 16 kHz 单声道 PCM');
+	}
+	const context = new AudioContext();
+	try {
+		const copy = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+		const decoded = await context.decodeAudioData(copy);
+		return audioBufferToPcm16(decoded);
+	} catch {
+		throw new Error('无法解码音频文件，请改用 wav/mp3/ogg，或提供 16 kHz 单声道 PCM');
+	} finally {
+		if (context.state !== 'closed') await context.close();
+	}
 }
 
 const realtimeFinishers = new WeakMap<WebSocket, () => void>();
@@ -466,7 +516,7 @@ export function openDashScopeRealtimeClient(options: DashScopeRealtimeClientOpti
 			return;
 		}
 		if (!options.audioFile) return;
-		const bytes = new Uint8Array(await options.audioFile.arrayBuffer());
+		const bytes = await decodeAudioFileToPcm16(options.audioFile);
 		const chunkSize = options.audioChunkBytes ?? 3200;
 		const interval = options.audioChunkIntervalMs ?? 20;
 		let offset = 0;
