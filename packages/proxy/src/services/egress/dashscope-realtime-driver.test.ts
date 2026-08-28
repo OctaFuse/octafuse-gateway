@@ -4,6 +4,7 @@ import type { RouteResult } from "../model-router";
 import {
 	DashScopeRealtimeUsageCollector,
 	dispatchDashScopeRealtime,
+	normalizeWebSocketCloseCode,
 	outboundWebSocketFetchUrl,
 	rewriteDashScopeRealtimeClientMessage,
 } from "./dashscope-realtime-driver";
@@ -191,6 +192,18 @@ class FakeSocket extends EventTarget {
 	send(_data: unknown): void {}
 
 	close(code = 1000, reason = ""): void {
+		if (
+			typeof code !== "number" ||
+			!Number.isInteger(code) ||
+			code < 1000 ||
+			code > 4999 ||
+			(code > 1014 && code < 3000) ||
+			code === 1004 ||
+			code === 1005 ||
+			code === 1006
+		) {
+			throw new TypeError("First argument must be a valid error code number");
+		}
 		this.closeCalls.push({ code, reason });
 		this.readyState = 3;
 	}
@@ -284,5 +297,95 @@ describe("DashScope realtime bridge lifecycle", () => {
 				(globalThis as typeof globalThis & { WebSocketPair: unknown }).WebSocketPair = previousWebSocketPair;
 			}
 		}
+	});
+
+	it("records usage when the client closes with reserved code 1005", async () => {
+		const client = new FakeSocket();
+		const server = new FakeSocket();
+		const upstream = new FakeSocket();
+		const previousWebSocket = globalThis.WebSocket;
+		const previousResponse = globalThis.Response;
+		const previousWebSocketPair = (globalThis as typeof globalThis & {
+			WebSocketPair?: unknown;
+		}).WebSocketPair;
+		(globalThis as typeof globalThis & { WebSocket: unknown }).WebSocket = {
+			CLOSING: 2,
+			CLOSED: 3,
+		};
+		(globalThis as typeof globalThis & { WebSocketPair: unknown }).WebSocketPair =
+			class {
+				0 = client;
+				1 = server;
+			};
+		(globalThis as typeof globalThis & { Response: unknown }).Response = class {
+			readonly status = 101;
+			readonly webSocket = client;
+			constructor(
+				_body: unknown,
+				_init: { status: number; webSocket: WebSocket; headers: Headers }
+			) {}
+		} as unknown as typeof Response;
+
+		try {
+			const result = await dispatchDashScopeRealtime(
+				{
+					...route({
+						providerEndpoints: {
+							dashscope: { base: "https://dashscope.aliyuncs.com/api/v1" },
+						},
+					}),
+				},
+				"audio.transcriptions.realtime.inference",
+				undefined,
+				undefined,
+				undefined,
+				{ fetchImpl: (async () => ({
+					status: 101,
+					headers: new Headers(),
+					webSocket: upstream,
+				})) as typeof fetch }
+			);
+
+			upstream.dispatchEvent(
+				new MessageEvent("message", {
+					data: JSON.stringify({
+						header: { event: "task-finished", task_id: "task-1" },
+						payload: { usage: { duration: 2 } },
+					}),
+				})
+			);
+
+			dispatchClose(server, 1005, "");
+			const usage = await result.usagePromise;
+			assert.equal(usage.audio_duration_seconds, 2);
+			assert.equal(usage.stream_error, undefined);
+			assert.equal(upstream.closeCalls[0]?.code, 1000);
+			assert.equal(server.closeCalls[0]?.code, 1000);
+		} finally {
+			if (previousWebSocket === undefined) delete (globalThis as { WebSocket?: unknown }).WebSocket;
+			else (globalThis as typeof globalThis & { WebSocket: unknown }).WebSocket = previousWebSocket;
+			(globalThis as typeof globalThis & { Response: typeof Response }).Response = previousResponse;
+			if (previousWebSocketPair === undefined) {
+				delete (globalThis as { WebSocketPair?: unknown }).WebSocketPair;
+			} else {
+				(globalThis as typeof globalThis & { WebSocketPair: unknown }).WebSocketPair = previousWebSocketPair;
+			}
+		}
+	});
+});
+
+describe("normalizeWebSocketCloseCode", () => {
+	it("keeps sendable codes and maps reserved or out-of-range codes to 1000", () => {
+		assert.equal(normalizeWebSocketCloseCode(1000), 1000);
+		assert.equal(normalizeWebSocketCloseCode(1011), 1011);
+		assert.equal(normalizeWebSocketCloseCode(3000), 3000);
+		assert.equal(normalizeWebSocketCloseCode(4999), 4999);
+		assert.equal(normalizeWebSocketCloseCode(1004), 1000);
+		assert.equal(normalizeWebSocketCloseCode(1005), 1000);
+		assert.equal(normalizeWebSocketCloseCode(1006), 1000);
+		assert.equal(normalizeWebSocketCloseCode(1015), 1000);
+		assert.equal(normalizeWebSocketCloseCode(0), 1000);
+		assert.equal(normalizeWebSocketCloseCode(undefined), 1000);
+		assert.equal(normalizeWebSocketCloseCode(1000.5), 1000);
 	});
 });

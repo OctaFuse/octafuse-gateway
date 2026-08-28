@@ -49,7 +49,18 @@ npx tsx --test scripts/smoke/test-critical-write-paths.ts
 1. `custom_params`
 2. 用户请求体（用户字段优先）
 
-可在 Admin 配好路由后，用「不传某字段 / 显式覆盖」做回归。
+可在管理后台配好路由后，用「不传某字段 / 显式覆盖」做回归。
+
+### DashScope 实时 ASR（需真实上游）
+
+`test-dashscope-realtime-asr.ts` **不进 CI**。未设置 `GATEWAY_API_KEY` 或 `GATEWAY_REALTIME_PCM` 时跳过。需要已启动的代理服务、已配置的流式 ASR 路由，以及 16 kHz / 16 bit / 单声道裸 PCM：
+
+```bash
+ffmpeg -i speech.wav -ar 16000 -ac 1 -f s16le speech.pcm
+GATEWAY_API_KEY=sk-... GATEWAY_REALTIME_PCM=./speech.pcm npx tsx scripts/smoke/test-dashscope-realtime-asr.ts
+```
+
+可选 `GATEWAY_MASTER_URL` + `GATEWAY_MASTER_KEY` 核对请求日志里 `billing_kind=audio_per_second` 且状态为成功。脚本结束时不带 Close 码关闭套接字，用于回归 Node 运行时的保留码记账。
 
 ## 说明
 

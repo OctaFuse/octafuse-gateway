@@ -43,6 +43,18 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.8 /M');
 	});
 
+	it('includes hy4-preview with official TokenHub list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'hy4-preview');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'hy4-preview');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Hy4 preview');
+		assert.equal(usd!.context_window, 1024000);
+		assert.equal(usd!.max_tokens, 64000);
+		assert.equal(usd!.pricing_label, '$0.834 / $2.501 /M');
+		assert.equal(cny!.pricing_label, '¥6 / ¥18 /M');
+	});
+
 	it('includes qwen3.8-flash with official Model Studio list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-flash');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen3.8-flash');

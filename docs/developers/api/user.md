@@ -1023,7 +1023,7 @@ wss://<gateway>/v1/dashscope/realtime?model=<gateway-model>&operation=<operation
 Authorization: Bearer <USER_API_KEY>
 ```
 
-请求与上游都使用 `dashscope` 协议及同名 operation，事件和二进制音频帧保持原生语义。可用 operation、浏览器子协议鉴权、计费与部署边界见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
+请求与上游都使用 `dashscope` 协议及同名 operation，事件和二进制音频帧保持原生语义。可用 operation、浏览器子协议鉴权、Node / Workers 运行时差异、Close 码约束与计费见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
 
 ---
 

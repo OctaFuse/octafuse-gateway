@@ -105,7 +105,31 @@ Authorization: Bearer <gateway-api-key>
 
 TTS 不支持 `audio.speech.realtime.session`（Qwen-TTS-Realtime 会话模式不在本期范围内）。
 
-客户端发送 DashScope 官方 `run-task` 或 `session.update` 事件。网关只把启动帧中的模型替换为路由配置的 Provider model，并转发后续文本、二进制帧和服务端事件。Cloudflare Worker 使用 `WebSocketPair`，Node Proxy runtime 使用 `ws` 的 HTTP upgrade 适配器；两条路径共用路由、鉴权、初始连接 failover、事件转发和用量记录逻辑。
+客户端发送 DashScope 官方 `run-task` 或 `session.update` 事件。网关只把启动帧中的模型替换为路由配置的供应商模型名，并转发后续文本、二进制帧和服务端事件。Cloudflare Worker 使用 `WebSocketPair`，Node 代理服务运行时使用 `ws` 的 HTTP upgrade 适配器；两条路径共用路由、鉴权、初始连接 failover、事件转发和用量记录逻辑。
+
+### 运行时差异（Node 与 Workers）
+
+| 行为 | Cloudflare Workers | Node 代理服务 |
+| ---- | ------------------ | ------------- |
+| 下游握手缓冲 | `WebSocketPair` 会在 `accept()` 前排队客户端消息 | 握手由 `ws` 先完成，再异步鉴权与连上游。升级回调里立刻 `pause()` 底层读，等 `x-octafuse-realtime-upgrade` 后再 `resume()`，避免丢掉立刻发出的 `run-task` |
+| Close 码 | 客户端不带状态码关闭时仍应记账 | 同左。`1005` / `1006` 等保留码不能写入 Close 帧，网关会规范化为 `1000` 后再转发，并保证用量记录不依赖关闭是否成功 |
+| 调试台 | 实时入口可用 | 调试台实时入口仍要求 Workers 运行时（`WebSocketPair`），本地 Node 请用脚本或客户端直连代理服务 |
+
+客户端建议：
+
+1. 鉴权优先 `Authorization: Bearer <USER_API_KEY>`；浏览器无法自定义请求头时再用 `Sec-WebSocket-Protocol`。
+2. 等 `task-started` 后再推二进制音频；推送节奏按真实时间约 100ms / 3200 字节（16 kHz / 16 bit / 单声道 PCM）。
+3. 停止时发 `finish-task`，等到 `task-finished` 再关套接字，并尽量显式 `close(1000)`。
+4. `result-generated` 是句子级修订：未定稿的 `sentence` 整体替换当前句，只有 `sentence_end: true` 才定稿。不要按 `begin_time` 分组拼接。
+
+手工冒烟（需真实供应商 Key 与裸 PCM）：
+
+```bash
+GATEWAY_API_KEY=sk-... GATEWAY_REALTIME_PCM=/path/to/speech.pcm \
+  npx tsx scripts/smoke/test-dashscope-realtime-asr.ts
+```
+
+裸 PCM 须为 `-f s16le -ar 16000 -ac 1`。脚本结束时故意调用不带状态码的 `close()`，用于回归 Node 路径的计费落库。
 
 ## 热词与音色资源
 

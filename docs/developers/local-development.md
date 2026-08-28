@@ -137,7 +137,9 @@ npm run db:migrate:pg   # 首次迁移（种子键由 `0002_seed.sql` 写入）
 npm run dev:proxy:node   # 等价于先 dotenv 加载根 .env，再执行 proxy 的 dev:node
 ```
 
-Node Proxy 同样暴露 `GET /v1/dashscope/realtime` WebSocket 入口；浏览器客户端通过 `Sec-WebSocket-Protocol` 传递网关 API Key，与 Cloudflare Proxy 入口使用同一协议。
+Node Proxy 同样暴露 `GET /v1/dashscope/realtime` WebSocket 入口。浏览器无法自定义 `Authorization` 时，可通过 `Sec-WebSocket-Protocol` 传递网关 API Key（`octafuse-api-key.<sk>`），与 Cloudflare 代理服务入口使用同一协议。Node 客户端应优先使用 `Authorization: Bearer`。
+
+握手完成后立刻发送 `run-task` 是安全的：Node 运行时会在鉴权与连上游完成前 `pause()` 底层读，避免无监听器时丢掉首帧。关闭套接字时请尽量显式传入 `1000`；不带状态码（对端看到 `1005`）也会被规范化后记账，但显式码更稳妥。细节见 [DashScope 音频架构](./architecture/dashscope-audio.md)。
 
 **或**在 **`packages/proxy`** 目录放置 `.env`（可复制 [`packages/proxy/.env.example`](../../packages/proxy/.env.example)），然后：
 
@@ -178,7 +180,7 @@ Compose 命令、预构建镜像、端口映射与 migrate profile 见 **[docker
 
 ## 8. 冒烟脚本
 
-`scripts/smoke/` 下为 **HTTP 核心链路**冒烟（`npm run test:gateway:node-smoke` / `test:gateway:postgres-smoke`，需已启动 Node **Proxy** / **Admin**）以及 **`@octafuse/core`** 关键写路径 mock 单测（`npx tsx --test scripts/smoke/test-critical-write-paths.ts`）。说明见 [scripts/smoke/README.md](../../scripts/smoke/README.md)。协议级手工回归请用 curl 或自有客户端，不再随仓附带官方 SDK 示例脚本。
+`scripts/smoke/` 下为 **HTTP 核心链路**冒烟（`npm run test:gateway:node-smoke` / `test:gateway:postgres-smoke`，需已启动 Node **代理服务** / **管理后台**）、**`@octafuse/core`** 关键写路径 mock 单测（`npx tsx --test scripts/smoke/test-critical-write-paths.ts`），以及可选的 DashScope 实时 ASR 手工冒烟（`npx tsx scripts/smoke/test-dashscope-realtime-asr.ts`，需真实供应商 Key 与裸 PCM）。说明见 [scripts/smoke/README.md](../../scripts/smoke/README.md)。协议级手工回归请用 curl 或自有客户端，不再随仓附带官方 SDK 示例脚本。
 
 ---
 
