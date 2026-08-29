@@ -29,7 +29,7 @@ Operator
 
 ## 版本基线
 
-当前仓库版本为 **Octafuse Gateway 2.7.0**，D1 迁移共 **26 个**（截至 `0026_user_charged_cost_factors.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。升级到 2.7.0 必须应用 0026，并部署同版本的 Proxy 与 Admin。
+当前仓库版本为 **Octafuse Gateway 2.8.0**，D1 迁移共 **27 个**（截至 `0027_user_wallet_credit.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。升级到 2.8.0 必须应用 0027，并遵循“先部署同版本 Proxy / Admin、再迁移、最后切换门户加额接口”的顺序。
 
 下列构建体积来自 2026-07-24 对 `1.10.2` 的历史实测，仅用于量级参考；当前部署应以本次终端输出为准：
 
@@ -41,7 +41,7 @@ Operator
 | `@opennextjs/cloudflare` | 1.19.4 |
 | 代理服务 gzip | 194.31 KiB |
 | 管理后台 gzip | 2925.55 KiB |
-| 当时 D1 migrations | 13 个全部成功（2.7.0 当前为 26 个） |
+| 当时 D1 migrations | 13 个全部成功（2.8.0 当前为 27 个） |
 
 Cloudflare Workers Free 的单 Worker gzip 上限为 3 MiB；管理后台实测低于该上限，但余量不大。部署时应检查自己终端中的 `Total Upload ... gzip`，不要只依赖本文的历史数值。限制以 [Cloudflare Workers Limits](https://developers.cloudflare.com/workers/platform/limits/#worker-size) 为准。若免费额度余量吃紧或流量上来，也推荐升级 [Workers Paid](https://developers.cloudflare.com/workers/platform/pricing/)（约 $5/月）——量大管饱，性价比极高。
 
@@ -536,7 +536,7 @@ git pull --ff-only
 npm ci
 ```
 
-有新 D1 migration 时：
+若目标版本没有声明特殊上线顺序，有新 D1 migration 时：
 
 ```bash
 npm run deploy:cloudflare -- production --migrate
@@ -555,7 +555,16 @@ npm run deploy:cloudflare -- production --proxy-only
 npm run deploy:cloudflare -- production --admin-only
 ```
 
-推荐顺序是**先迁移，后部署依赖新 schema 的 Worker**。D1 migration 不会因为 Worker 重新部署而自动执行。
+默认顺序是**先迁移，后部署依赖新 schema 的 Worker**。D1 migration 不会因为 Worker 重新部署而自动执行；若目标版本的 Release 给出专用顺序，应以该版本说明为准。
+
+> **升级到 v2.8.0**：0027 会把原有剩余额度回填到永久额度。先部署同为 v2.8.0 的 Proxy 与 Admin，再单独执行远程迁移，最后让门户改用 `POST /api/admin/users/:id/wallet/credit`。不要使用带 `--migrate` 的单条命令颠倒这一顺序。
+
+```bash
+npm run deploy:cloudflare -- production
+npm run deploy:cloudflare -- production --migrate-only
+```
+
+迁移前建议先运行 [0027 只读审计脚本](../migrations/0027-user-wallet-credit-audit.d1.sql) 核对回填范围。迁移后检查用户的周期额度、永久额度以及请求日志中的 `charged_wallet_cost`。
 
 ---
 

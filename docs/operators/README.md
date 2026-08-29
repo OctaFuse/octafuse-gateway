@@ -25,11 +25,14 @@
 | 2.2.0 → 2.3.0：路由策略展示对齐 ID 硬切换（迁移 0021：`hash_affinity` / `weight_priority`） | [migrations/route-strategy-display-ids-cutover.md](./migrations/route-strategy-display-ids-cutover.md) |
 | 2.3.0 → 2.4.0：音频字符、具名 Admin Key 与审计索引（迁移 0022–0025） | [2.4.0 发布说明](../releases/2.4.0.md#升级说明) |
 | 2.6.0 → 2.7.0：用户级模型计费倍率（迁移 0026） | [2.7.0 发布说明](../releases/2.7.0.md#升级说明) |
+| 2.7.0 → 2.8.0：周期额度与永久额度拆分（迁移 0027） | [2.8.0 发布说明](../releases/2.8.0.md#升级说明) · [0027 迁移说明](./migrations/0027-user-wallet-credit.md) |
 | User audit 兼容导出移除说明 | [migrations/user-audit-legacy-exports.md](./migrations/user-audit-legacy-exports.md) |
 
 升级到 **2.3.0** 时应在同一维护窗口内按 **0020 → 0021 → 同版本 Proxy / Admin 部署**执行；0021 无旧策略 ID 别名，禁止新旧版本混跑。
 
 升级到 **2.7.0** 时须确保迁移已执行到 **0026**。若当前为 2.3.0，需要依次执行 0022–0026；更早版本还应先完成上表中的前序迁移。随后统一部署 v2.7.0 的 Proxy、Admin 与 migrate 镜像。未配置 `charged_cost_factors` 的用户行为保持不变。
+
+升级到 **2.8.0** 时必须应用 **0027**。先部署同为 v2.8.0 的 Proxy 与 Admin，再执行迁移，最后让门户改用 `POST /api/admin/users/:id/wallet/credit`；不要再通过累加 `budget_max` 发放购买额度。上线前可运行 [0027 只读审计脚本](./migrations/0027-user-wallet-credit-audit.sql) 检查回填范围。
 
 ## 本地演练
 
