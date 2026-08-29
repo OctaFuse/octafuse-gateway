@@ -1127,6 +1127,10 @@ GET /v1/me
 {
   "budget_max": 100.00,
   "budget_spent": 15.50,
+  "wallet_granted": 20.00,
+  "wallet_spent": 3.00,
+  "wallet_balance": 17.00,
+  "total_remaining": 101.50,
   "budget_period": "monthly",
   "budget_reset_at": "2024-02-01T00:00:00.000Z",
   "billing_currency": "USD",
@@ -1143,6 +1147,10 @@ GET /v1/me
 |------|------|------|
 | `budget_max` | number \| null | 预算上限；`null` 表示无限制 |
 | `budget_spent` | number | 当前周期已消费金额 |
+| `wallet_granted` | number | 累计发放的永久额度 |
+| `wallet_spent` | number | 已从永久额度扣除的累计金额 |
+| `wallet_balance` | number | 永久额度当前余额，即 `wallet_granted − wallet_spent` |
+| `total_remaining` | number \| null | 周期剩余与永久额度余额之和；周期额度不限时返回 `null` |
 | `budget_period` | string | 预算周期: `"none"` \| `"daily"` \| `"weekly"` \| `"monthly"` |
 | `budget_reset_at` | string \| null | 下次预算重置时间 (ISO 8601) |
 | `billing_currency` | string | 计费币种：来自 `system_config.BILLING_CURRENCY` 的 **ISO 4217** 三字码（如 `USD`、`CNY`）；与 `pricing_profile` 单价及本接口预算数值同币；未配置或非法时回退 `USD` |
@@ -1155,7 +1163,7 @@ curl http://localhost:8787/v1/me \
   -H "Authorization: Bearer sk-xxx..."
 ```
 
-> 即使预算已超限，此端点仍然可以访问。客户端可使用此端点显示用户的预算状态。
+> 即使额度已用完，此端点仍然可以访问。客户端可使用此端点分别显示周期额度、永久额度和总剩余额度。
 
 ---
 

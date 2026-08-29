@@ -53,6 +53,17 @@ curl -sS http://localhost:8787/v1/images/generations \
 
 图片编辑使用 `POST /v1/images/edits`（multipart）；并非所有上游都实现 OpenAI edits 形态，具体兼容性见 [文生图模型说明](../developers/reference/image-models.md)。
 
+阿里云百炼千问 / 万相生图也使用同一个 OpenAI Images 入口。只要管理员已为模型配置 `dashscope-image-qwen` 或 `dashscope-image-wan` 路由，客户端无需了解 DashScope 上游地址：
+
+```bash
+curl -sS http://localhost:8787/v1/images/generations \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"qwen-image-3.0","prompt":"水彩风格的海边灯塔","n":1,"size":"1024x1024"}'
+```
+
+千问 / 万相生成默认返回 `data[].url`；需要 Base64 时可显式传入 `"response_format":"b64_json"`。模型参数限制和按张计费规则见 [DashScope 生图架构](../developers/architecture/dashscope-image.md)。
+
 语音转写（Audio；需用户 Key + 已配置 OpenAI 协议 ASR 路由）：
 
 ```bash
@@ -140,5 +151,7 @@ POST /v1beta/models/your-route-model:streamGenerateContent?alt=sse&key=sk-your-a
 curl -sS http://localhost:8787/v1/me \
   -H "Authorization: Bearer sk-your-api-key"
 ```
+
+响应中的 `budget_max` / `budget_spent` 表示周期额度，`wallet_granted` / `wallet_spent` / `wallet_balance` 表示永久额度；`total_remaining` 是两部分可用余额之和。`budget_max` 和 `total_remaining` 为 `null` 时表示周期额度不限额。
 
 完整用户接口见 [developers/api/user.md](../developers/api/user.md)。
