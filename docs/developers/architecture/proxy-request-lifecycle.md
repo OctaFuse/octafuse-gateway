@@ -104,9 +104,9 @@ flowchart TB
    - 请求入口命中后按 `route_pool_id` 读取 active 上游目标；滚动升级期间若 0016 尚不可用，临时回退旧的 model / group 路径
    - `resolveRouteResultsFromRows` → `RouteResult[]`（携带请求入口 / 路由池 / 上游目标、operation、`providerApiKey`、`routePriority`、`routeWeight`；**供应商 disabled / 无 api_key 的行会被跳过**）
    - 无匹配请求入口、路由池或上游目标 → **400 / 502**
-6. **协议 / adapter 过滤**：2.0 保留 `upstreamProtocol === requestProtocol` 且 `adapter === 'passthrough'` 的上游目标；无匹配 → **502**。
+6. **协议 / adapter 过滤**：`isRouteAdapterCompatible` 按注册表校验请求入口与上游目标。`passthrough` 仅允许同协议、同 operation；转换 adapter 必须精确匹配注册表声明的 request / upstream 映射。无匹配 → **502**。
 7. **`resolveRouteStrategyPlan`**：解析 base（`route_pools.strategy` → `models.route_policy` → `system_config.ROUTE_STRATEGY`）以及 `route_pools.tier_strategies`；编排时每层优先用 tier override（见 [route-strategies.md](../reference/route-strategies.md)）。
-8. **Driver 出站 URL**：各 driver 按 capability 调用 `resolveUpstreamEndpoint`；Gemini 鉴权与 `alt=sse` 仍由 `prepareGeminiUpstreamFetch` 处理。
+8. **Adapter / Driver 出站**：文本透传入口使用对应协议 driver；Images / Audio 由 `dispatch-table.ts` 按 adapter 选择转换 driver。各 driver 再按 capability 调用 `resolveUpstreamEndpoint`；Gemini 鉴权与 `alt=sse` 仍由 `prepareGeminiUpstreamFetch` 处理。
 
 ### 2.2 User+model 熔断（调度前）
 
