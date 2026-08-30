@@ -8,18 +8,12 @@ import { authenticateAdminRequest } from './auth';
 import { handleGatewayApiError } from './api-error';
 import type { AdminBindings } from './admin-env';
 import { getAdminApp } from './admin-app';
+import { isSameOriginBrowserWrite, rewriteToInternalAdminPath } from './admin-request-rewrite';
 import { resolveAdminStorageContext } from './storage-context';
 import {
 	createPlaygroundNodeRealtimeDispatch,
 	type NodeWebSocket,
 } from './playground-node-realtime';
-
-function rewriteToInternalAdminPath(request: Request): Request {
-	const url = new URL(request.url);
-	const prefix = '/api/admin';
-	url.pathname = '/admin' + url.pathname.slice(prefix.length);
-	return new Request(url, request);
-}
 
 export function incomingMessageToFetchRequest(request: IncomingMessage): Request {
 	const protocol = (request.socket as { encrypted?: boolean }).encrypted ? 'https' : 'http';
@@ -52,6 +46,7 @@ export async function handleAdminNodeRealtimeUpgrade(
 		const appBindings: AdminBindings = {
 			STORAGE_CONTEXT: storage,
 			ADMIN_PRINCIPAL: principal,
+			ADMIN_CSRF_SAME_ORIGIN: isSameOriginBrowserWrite(request),
 			NODE_PLAYGROUND_REALTIME_DISPATCH: createPlaygroundNodeRealtimeDispatch(client),
 		};
 		return getAdminApp().fetch(rewriteToInternalAdminPath(request), appBindings);

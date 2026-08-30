@@ -8,20 +8,10 @@ import type { AdminBindings } from '@/lib/admin-env';
 import { getAdminApp } from '@/lib/admin-app';
 import { handleGatewayApiError } from '@/lib/api-error';
 import { resolveAdminRequestRuntime } from '@/lib/admin-request-runtime';
+import { isSameOriginBrowserWrite, rewriteToInternalAdminPath } from '@/lib/admin-request-rewrite';
 import { getBearerKeyPrefix, logAdminAuthEvent } from '@/lib/security-log';
 
 export const dynamic = 'force-dynamic';
-
-function rewriteToInternalAdminPath(request: Request): Request {
-	const u = new URL(request.url);
-	const prefix = '/api/admin';
-	if (!u.pathname.startsWith(prefix)) {
-		return request;
-	}
-	const rest = u.pathname.slice(prefix.length);
-	u.pathname = '/admin' + (rest === '' ? '' : rest);
-	return new Request(u.toString(), request);
-}
 
 async function handle(request: Request): Promise<Response> {
 	try {
@@ -43,6 +33,7 @@ async function handle(request: Request): Promise<Response> {
 			...runtimeBindings,
 			STORAGE_CONTEXT: storage,
 			ADMIN_PRINCIPAL: principal,
+			ADMIN_CSRF_SAME_ORIGIN: isSameOriginBrowserWrite(request),
 		};
 		if (ctx) {
 			return app.fetch(internalReq, appBindings, ctx);
