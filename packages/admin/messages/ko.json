@@ -30,6 +30,7 @@
 		"refreshing": "새로고침 중…",
 		"sending": "전송 중…",
 		"cancel": "취소",
+		"confirm": "확인",
 		"close": "닫기",
 		"save": "저장",
 		"create": "생성",
@@ -376,7 +377,12 @@
 			"openaiBase": "OpenAI base: {url}",
 			"openaiChat": "OpenAI chat: {url}",
 			"openaiCaps": "· {caps}",
-			"importSelected": "선택 항목 가져오기 ({count})"
+			"importSelected": "선택 항목 가져오기 ({count})",
+			"selectNone": "템플릿을 하나 이상 선택하세요.",
+			"finished": "Provider {created}개를 가져왔습니다.",
+			"finishedWithFail": "Provider {created}개를 가져왔습니다. {failed}개 실패.",
+			"failed": "가져오기에 실패했습니다",
+			"copyFailed": "API Key 복사에 실패했습니다"
 		},
 		"modal": {
 			"editTitle": "Provider 편집",
@@ -435,6 +441,7 @@
 			"descriptionHint": "내부 참고용이며 업스트림으로 전송되지 않습니다.",
 			"descriptionPlaceholder": "선택적 내부 설명",
 			"deleteProvider": "Provider 삭제",
+			"confirmDelete": "이 Provider를 삭제할까요?",
 			"apiKeyRequired": "API Key *",
 			"apiKeyOptional": "API Key",
 			"apiKeyPlaceholder": "sk-…",
@@ -518,7 +525,12 @@
 			"catalogTiers": "{count}개 구간",
 			"pricingPerImageFallback": "image token 요금",
 			"importSelected": "선택 항목 가져오기 ({count})",
-			"pricingPerSecondFallback": "초 단위 오디오"
+			"pricingPerSecondFallback": "초 단위 오디오",
+			"selectNone": "Gateway에 아직 없는 프리셋을 하나 이상 선택하세요.",
+			"finished": "모델 {created}개를 가져왔습니다.",
+			"finishedWithSkip": "모델 {created}개를 가져왔습니다. 이미 있는 {skipped}개는 건너뛰었습니다.",
+			"finishedWithFail": "모델 {created}개를 가져왔습니다. {failed}개 실패.",
+			"failed": "가져오기에 실패했습니다"
 		},
 		"modal": {
 			"editTitle": "모델 편집",
@@ -578,7 +590,8 @@
 			"descriptionPlaceholder": "선택 사항, 내부 메모용",
 			"metadataJson": "메타데이터 (JSON)",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
-			"deleteModel": "모델 삭제"
+			"deleteModel": "모델 삭제",
+			"confirmDelete": "이 모델과 연결된 모든 Route를 삭제할까요?"
 		},
 		"metadata": {
 			"title": "메타데이터"
@@ -864,6 +877,7 @@
 			"customParams": "사용자 지정 파라미터",
 			"customParamsPlaceholder": "'{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}'",
 			"deleteRoute": "Route 삭제",
+			"confirmDelete": "이 Route를 삭제할까요?",
 			"testInPlayground": "Playground에서 테스트",
 			"protocolHintAudioOpenaiOnly": "음성 전사 모델은 upstream_protocol=openai가 필요합니다.",
 			"standardCatalogHintAudio": "이 ASR 또는 TTS 모델의 카탈로그 오디오 요금(읽기 전용).",

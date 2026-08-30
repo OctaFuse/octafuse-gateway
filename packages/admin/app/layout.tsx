@@ -5,6 +5,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
+import { FeedbackProvider } from '@/components/feedback';
 import AuthWrapper from '@/components/layout/AuthWrapper';
 import DocumentTitle from '@/components/layout/DocumentTitle';
 
@@ -33,8 +34,10 @@ export default async function RootLayout({
 		<html lang={locale} data-scroll-behavior="smooth">
 			<body className="font-sans h-dvh overflow-hidden">
 				<NextIntlClientProvider locale={locale} messages={messages}>
-					<DocumentTitle />
-					<AuthWrapper>{children}</AuthWrapper>
+					<FeedbackProvider>
+						<DocumentTitle />
+						<AuthWrapper>{children}</AuthWrapper>
+					</FeedbackProvider>
 				</NextIntlClientProvider>
 			</body>
 		</html>

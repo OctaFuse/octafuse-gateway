@@ -30,6 +30,7 @@
 		"refreshing": "更新中…",
 		"sending": "送信中…",
 		"cancel": "キャンセル",
+		"confirm": "確認",
 		"close": "閉じる",
 		"save": "保存",
 		"create": "作成",
@@ -376,7 +377,12 @@
 			"openaiBase": "OpenAI base：{url}",
 			"openaiChat": "OpenAI chat：{url}",
 			"openaiCaps": "· {caps}",
-			"importSelected": "選択項目をインポート（{count}）"
+			"importSelected": "選択項目をインポート（{count}）",
+			"selectNone": "テンプレートを 1 件以上選択してください。",
+			"finished": "{created} 件の Provider をインポートしました。",
+			"finishedWithFail": "{created} 件の Provider をインポートしました。{failed} 件失敗しました。",
+			"failed": "インポートに失敗しました",
+			"copyFailed": "API Key のコピーに失敗しました"
 		},
 		"modal": {
 			"editTitle": "Provider を編集",
@@ -435,6 +441,7 @@
 			"descriptionHint": "内部参照専用です。アップストリームには送信されません。",
 			"descriptionPlaceholder": "任意の内部向け説明",
 			"deleteProvider": "Provider を削除",
+			"confirmDelete": "この Provider を削除しますか？",
 			"apiKeyRequired": "API Key *",
 			"apiKeyOptional": "API Key",
 			"apiKeyPlaceholder": "sk-…",
@@ -518,7 +525,12 @@
 			"catalogTiers": "{count} 段階",
 			"pricingPerImageFallback": "Image token 料金",
 			"importSelected": "選択項目をインポート（{count}）",
-			"pricingPerSecondFallback": "秒単位の音声"
+			"pricingPerSecondFallback": "秒単位の音声",
+			"selectNone": "Gateway に未登録のプリセットを 1 件以上選択してください。",
+			"finished": "{created} 件のモデルをインポートしました。",
+			"finishedWithSkip": "{created} 件のモデルをインポートしました。既存の {skipped} 件をスキップしました。",
+			"finishedWithFail": "{created} 件のモデルをインポートしました。{failed} 件失敗しました。",
+			"failed": "インポートに失敗しました"
 		},
 		"modal": {
 			"editTitle": "モデルを編集",
@@ -578,7 +590,8 @@
 			"descriptionPlaceholder": "任意の内部メモ",
 			"metadataJson": "メタデータ（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
-			"deleteModel": "モデルを削除"
+			"deleteModel": "モデルを削除",
+			"confirmDelete": "このモデルと関連 Route をすべて削除しますか？"
 		},
 		"metadata": {
 			"title": "メタデータ"
@@ -864,6 +877,7 @@
 			"customParams": "カスタムパラメーター",
 			"customParamsPlaceholder": "'{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}'",
 			"deleteRoute": "Route を削除",
+			"confirmDelete": "この Route を削除しますか？",
 			"testInPlayground": "Playground でテスト",
 			"protocolHintAudioOpenaiOnly": "音声文字起こしモデルは upstream_protocol=openai が必要です。",
 			"standardCatalogHintAudio": "この ASR または TTS モデルのカタログ音声料金（読み取り専用）。",

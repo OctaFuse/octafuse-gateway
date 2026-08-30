@@ -30,6 +30,7 @@
 		"refreshing": "刷新中…",
 		"sending": "发送中…",
 		"cancel": "取消",
+		"confirm": "确定",
 		"close": "关闭",
 		"save": "保存",
 		"create": "创建",
@@ -376,7 +377,12 @@
 			"openaiBase": "OpenAI base：{url}",
 			"openaiChat": "OpenAI chat：{url}",
 			"openaiCaps": "· {caps}",
-			"importSelected": "导入选中项（{count}）"
+			"importSelected": "导入选中项（{count}）",
+			"selectNone": "请至少选择一个模板。",
+			"finished": "已导入 {created} 个供应商。",
+			"finishedWithFail": "已导入 {created} 个供应商。{failed} 个失败。",
+			"failed": "导入失败",
+			"copyFailed": "复制 API Key 失败"
 		},
 		"modal": {
 			"editTitle": "编辑供应商",
@@ -435,6 +441,7 @@
 			"descriptionHint": "仅供内部参考；不会发送到上游。",
 			"descriptionPlaceholder": "可选的内部描述",
 			"deleteProvider": "删除供应商",
+			"confirmDelete": "删除该供应商？",
 			"apiKeyRequired": "API Key *",
 			"apiKeyOptional": "API Key",
 			"apiKeyPlaceholder": "sk-…",
@@ -518,7 +525,12 @@
 			"catalogTiers": "{count} 档",
 			"pricingPerImageFallback": "Image token 单价",
 			"importSelected": "导入选中项（{count}）",
-			"pricingPerSecondFallback": "按秒音频"
+			"pricingPerSecondFallback": "按秒音频",
+			"selectNone": "请至少选择一个尚未在 Gateway 中的预设。",
+			"finished": "已导入 {created} 个模型。",
+			"finishedWithSkip": "已导入 {created} 个模型。跳过 {skipped} 个已存在的。",
+			"finishedWithFail": "已导入 {created} 个模型。{failed} 个失败。",
+			"failed": "导入失败"
 		},
 		"modal": {
 			"editTitle": "编辑模型",
@@ -578,7 +590,8 @@
 			"descriptionPlaceholder": "可选，仅供内部备注",
 			"metadataJson": "元数据（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
-			"deleteModel": "删除模型"
+			"deleteModel": "删除模型",
+			"confirmDelete": "删除该模型及其全部路由？"
 		},
 		"metadata": {
 			"title": "元数据"
@@ -864,6 +877,7 @@
 			"customParams": "自定义参数",
 			"customParamsPlaceholder": "'{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}'",
 			"deleteRoute": "删除路由",
+			"confirmDelete": "删除该路由？",
 			"testInPlayground": "在调试台测试",
 			"protocolHintAudioOpenaiOnly": "语音转写模型要求 upstream_protocol=openai。",
 			"standardCatalogHintAudio": "该 ASR 或 TTS 模型的目录音频单价（只读）。",

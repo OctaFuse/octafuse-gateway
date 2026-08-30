@@ -30,6 +30,7 @@
 		"refreshing": "Refreshing…",
 		"sending": "Sending…",
 		"cancel": "Cancel",
+		"confirm": "Confirm",
 		"close": "Close",
 		"save": "Save",
 		"create": "Create",
@@ -376,7 +377,12 @@
 			"openaiBase": "OpenAI base: {url}",
 			"openaiChat": "OpenAI chat: {url}",
 			"openaiCaps": "· {caps}",
-			"importSelected": "Import selected ({count})"
+			"importSelected": "Import selected ({count})",
+			"selectNone": "Select at least one template.",
+			"finished": "Imported {created} provider(s).",
+			"finishedWithFail": "Imported {created} provider(s). {failed} failed.",
+			"failed": "Import failed",
+			"copyFailed": "Failed to copy API key"
 		},
 		"modal": {
 			"editTitle": "Edit Provider",
@@ -435,6 +441,7 @@
 			"descriptionHint": "Internal reference only; not sent to upstream.",
 			"descriptionPlaceholder": "Optional internal description",
 			"deleteProvider": "Delete provider",
+			"confirmDelete": "Delete this provider?",
 			"apiKeyRequired": "API Key *",
 			"apiKeyOptional": "API Key",
 			"apiKeyPlaceholder": "sk-…",
@@ -518,7 +525,12 @@
 			"catalogTiers": "{count} tier(s)",
 			"pricingPerImageFallback": "image token rates",
 			"importSelected": "Import selected ({count})",
-			"pricingPerSecondFallback": "Per-second audio"
+			"pricingPerSecondFallback": "Per-second audio",
+			"selectNone": "Select at least one preset that is not already in the gateway.",
+			"finished": "Imported {created} model(s).",
+			"finishedWithSkip": "Imported {created} model(s). Skipped {skipped} already in the gateway.",
+			"finishedWithFail": "Imported {created} model(s). {failed} failed.",
+			"failed": "Import failed"
 		},
 		"modal": {
 			"editTitle": "Edit Model",
@@ -578,7 +590,8 @@
 			"descriptionPlaceholder": "Optional, for internal notes",
 			"metadataJson": "Metadata (JSON)",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
-			"deleteModel": "Delete model"
+			"deleteModel": "Delete model",
+			"confirmDelete": "Delete this model and all of its routes?"
 		},
 		"metadata": {
 			"title": "Metadata"
@@ -864,6 +877,7 @@
 			"customParams": "Custom params",
 			"customParamsPlaceholder": "'{\"temperature\":0.7,\"provider_options\":{\"foo\":\"bar\"}}'",
 			"deleteRoute": "Delete route",
+			"confirmDelete": "Delete this route?",
 			"testInPlayground": "Test in Playground",
 			"protocolHintAudioOpenaiOnly": "Audio transcription models require upstream_protocol=openai.",
 			"standardCatalogHintAudio": "Catalog audio rates for this ASR or TTS model (read-only).",
