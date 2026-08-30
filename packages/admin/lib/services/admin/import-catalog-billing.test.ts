@@ -9,7 +9,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 	it('USD branch uses $ and usd tier amounts', () => {
 		const row = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-max');
 		assert.ok(row);
-		assert.equal(row!.pricing_label, '$2.5 / $7.5 /M');
+		assert.equal(row!.pricing_label, '$2 / $6 /M');
 		assert.match(row!.pricing_preview ?? '', /\$\/M/);
 	});
 
@@ -65,8 +65,8 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.display_name, 'Qwen3.8 Flash');
 		assert.equal(usd!.context_window, 1000000);
 		assert.equal(usd!.max_tokens, 128000);
-		assert.equal(usd!.pricing_label, '$0.16 / $0.47 /M');
-		assert.equal(cny!.pricing_label, '¥1 / ¥3 /M');
+		assert.equal(usd!.pricing_label, '$0.15 / $0.47 /M');
+		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
 	});
 });
 

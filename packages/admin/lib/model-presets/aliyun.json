@@ -15,10 +15,10 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 2.5,
-						"output_price": 7.5,
-						"cache_read_price": 0.3125,
-						"cache_write_price": 3.125
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.25,
+						"cache_write_price": 2.5
 					}
 				]
 			},
@@ -62,10 +62,10 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 2.5,
-						"output_price": 7.5,
-						"cache_read_price": 0.3125,
-						"cache_write_price": 3.125
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.25,
+						"cache_write_price": 2.5
 					}
 				]
 			},
@@ -109,10 +109,10 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 0.16,
+						"input_price": 0.15,
 						"output_price": 0.47,
-						"cache_read_price": 0.016,
-						"cache_write_price": 0.2
+						"cache_read_price": 0.01875,
+						"cache_write_price": 0.234375
 					}
 				]
 			},
@@ -120,8 +120,8 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 1,
-						"output_price": 3,
+						"input_price": 0.8,
+						"output_price": 2.7,
 						"cache_read_price": 0.1,
 						"cache_write_price": 1.25
 					}
@@ -263,24 +263,24 @@
 				"tiers": [
 					{
 						"upto": 32000,
-						"input_price": 0.04,
-						"output_price": 0.16,
-						"cache_read_price": 0.008,
-						"cache_write_price": 0.05
+						"input_price": 0.03,
+						"output_price": 0.13,
+						"cache_read_price": 0.006,
+						"cache_write_price": 0.0375
 					},
 					{
 						"upto": 256000,
-						"input_price": 0.12,
-						"output_price": 0.48,
-						"cache_read_price": 0.024,
-						"cache_write_price": 0.15
+						"input_price": 0.1,
+						"output_price": 0.4,
+						"cache_read_price": 0.02,
+						"cache_write_price": 0.125
 					},
 					{
 						"upto": null,
-						"input_price": 0.24,
-						"output_price": 0.96,
-						"cache_read_price": 0.048,
-						"cache_write_price": 0.3
+						"input_price": 0.2,
+						"output_price": 0.8,
+						"cache_read_price": 0.04,
+						"cache_write_price": 0.25
 					}
 				]
 			},
@@ -363,10 +363,10 @@
 					},
 					{
 						"upto": null,
-						"input_price": 4,
-						"output_price": 24,
-						"cache_read_price": 0.4,
-						"cache_write_price": 5
+						"input_price": 8,
+						"output_price": 48,
+						"cache_read_price": 0.8,
+						"cache_write_price": 10
 					}
 				]
 			}
@@ -418,17 +418,17 @@
 				"tiers": [
 					{
 						"upto": 128000,
-						"input_price": 3,
-						"output_price": 18,
-						"cache_read_price": 0.3,
-						"cache_write_price": 3
+						"input_price": 9,
+						"output_price": 54,
+						"cache_read_price": 0.9,
+						"cache_write_price": 11.25
 					},
 					{
 						"upto": null,
-						"input_price": 6,
-						"output_price": 36,
-						"cache_read_price": 0.6,
-						"cache_write_price": 6
+						"input_price": 15,
+						"output_price": 90,
+						"cache_read_price": 1.5,
+						"cache_write_price": 18.75
 					}
 				]
 			}
@@ -477,17 +477,17 @@
 				"tiers": [
 					{
 						"upto": 256000,
-						"input_price": 0.5,
-						"output_price": 1.5,
-						"cache_read_price": 0.05,
-						"cache_write_price": null
+						"input_price": 1.2,
+						"output_price": 7.2,
+						"cache_read_price": 0.12,
+						"cache_write_price": 1.5
 					},
 					{
 						"upto": null,
-						"input_price": 2,
-						"output_price": 8,
-						"cache_read_price": 0.2,
-						"cache_write_price": null
+						"input_price": 4.8,
+						"output_price": 28.8,
+						"cache_read_price": 0.48,
+						"cache_write_price": 6
 					}
 				]
 			}
@@ -537,6 +537,13 @@
 			},
 			"cny": {
 				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 0.8,
+						"output_price": 4.8,
+						"cache_read_price": 0.08,
+						"cache_write_price": 1
+					},
 					{
 						"upto": 256000,
 						"input_price": 2,
@@ -593,10 +600,24 @@
 			"cny": {
 				"tiers": [
 					{
+						"upto": 128000,
+						"input_price": 0.2,
+						"output_price": 2,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					},
+					{
+						"upto": 256000,
+						"input_price": 0.8,
+						"output_price": 8,
+						"cache_read_price": 0.08,
+						"cache_write_price": null
+					},
+					{
 						"upto": null,
-						"input_price": 0.7,
-						"output_price": 2.8,
-						"cache_read_price": 0.07,
+						"input_price": 1.2,
+						"output_price": 12,
+						"cache_read_price": 0.12,
 						"cache_write_price": null
 					}
 				]
@@ -632,21 +653,21 @@
 					{
 						"upto": 32000,
 						"input_price": 0.2,
-						"output_price": 2,
+						"output_price": 1.6,
 						"cache_read_price": null,
 						"cache_write_price": null
 					},
 					{
 						"upto": 128000,
 						"input_price": 0.3,
-						"output_price": 3,
+						"output_price": 2.4,
 						"cache_read_price": null,
 						"cache_write_price": null
 					},
 					{
 						"upto": null,
 						"input_price": 0.6,
-						"output_price": 6,
+						"output_price": 4.8,
 						"cache_read_price": null,
 						"cache_write_price": null
 					}
@@ -707,7 +728,7 @@
 					{
 						"upto": null,
 						"input_price": 1.4,
-						"output_price": 8,
+						"output_price": 8.3,
 						"cache_read_price": null,
 						"cache_write_price": null
 					}
@@ -755,8 +776,8 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 0.44,
-						"output_price": 2.66,
+						"input_price": 0.4,
+						"output_price": 2.2,
 						"cache_read_price": null,
 						"cache_write_price": null
 					}
@@ -801,7 +822,7 @@
 			"usd": {
 				"audio_billing_mode": "per_second",
 				"audio": {
-					"price_per_second": 0.000047142857,
+					"price_per_second": 0.00009,
 					"minimum_seconds": 1
 				}
 			},
@@ -831,7 +852,7 @@
 			"usd": {
 				"audio_billing_mode": "per_second",
 				"audio": {
-					"price_per_second": 0.000031428571,
+					"price_per_second": 0.000035,
 					"minimum_seconds": 1
 				}
 			},
@@ -861,7 +882,7 @@
 			"usd": {
 				"audio_billing_mode": "per_second",
 				"audio": {
-					"price_per_second": 0.000031428571,
+					"price_per_second": 0.000035,
 					"minimum_seconds": 1
 				}
 			},
@@ -891,7 +912,7 @@
 			"usd": {
 				"audio_billing_mode": "per_second",
 				"audio": {
-					"price_per_second": 0.000047142857,
+					"price_per_second": 0.00009,
 					"minimum_seconds": 1
 				}
 			},
@@ -921,7 +942,7 @@
 			"usd": {
 				"audio_billing_mode": "per_second",
 				"audio": {
-					"price_per_second": 0.000031428571,
+					"price_per_second": 0.000035,
 					"minimum_seconds": 1
 				}
 			},
@@ -951,7 +972,7 @@
 			"usd": {
 				"audio_billing_mode": "per_second",
 				"audio": {
-					"price_per_second": 0.000031428571,
+					"price_per_second": 0.000035,
 					"minimum_seconds": 1
 				}
 			},
@@ -981,7 +1002,7 @@
 			"usd": {
 				"audio_billing_mode": "per_second",
 				"audio": {
-					"price_per_second": 0.000047142857,
+					"price_per_second": 0.00009,
 					"minimum_seconds": 1
 				}
 			},
@@ -1011,7 +1032,7 @@
 			"usd": {
 				"audio_billing_mode": "per_second",
 				"audio": {
-					"price_per_second": 0.000031428571,
+					"price_per_second": 0.000035,
 					"minimum_seconds": 1
 				}
 			},
@@ -1071,7 +1092,7 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.0000142857143,
+					"price_per_character": 0.000015,
 					"minimum_characters": 0
 				}
 			},
@@ -1161,7 +1182,7 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.0000142857143,
+					"price_per_character": 0.000013,
 					"minimum_characters": 0
 				}
 			},
@@ -1191,7 +1212,7 @@
 			"usd": {
 				"audio_billing_mode": "per_character",
 				"audio": {
-					"price_per_character": 0.0000285714286,
+					"price_per_character": 0.000026,
 					"minimum_characters": 0
 				}
 			},
