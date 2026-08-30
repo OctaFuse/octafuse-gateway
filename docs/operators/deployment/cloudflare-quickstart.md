@@ -29,7 +29,7 @@ Operator
 
 ## 版本基线
 
-当前仓库版本为 **Octafuse Gateway 2.8.0**，D1 迁移共 **27 个**（截至 `0027_user_wallet_credit.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。升级到 2.8.0 必须应用 0027，并遵循“先部署同版本 Proxy / Admin、再迁移、最后切换门户加额接口”的顺序。
+当前仓库版本为 **Octafuse Gateway 2.8.0**，D1 迁移共 **27 个**（截至 `0027_user_wallet_credit.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。升级到 2.8.0 必须应用 0027，并在维护窗口内遵循“暂停写入 → 迁移 → 部署同版本 Proxy / Admin → 切换门户加额接口”的顺序。
 
 下列构建体积来自 2026-07-24 对 `1.10.2` 的历史实测，仅用于量级参考；当前部署应以本次终端输出为准：
 
@@ -557,11 +557,11 @@ npm run deploy:cloudflare -- production --admin-only
 
 默认顺序是**先迁移，后部署依赖新 schema 的 Worker**。D1 migration 不会因为 Worker 重新部署而自动执行；若目标版本的 Release 给出专用顺序，应以该版本说明为准。
 
-> **升级到 v2.8.0**：0027 会把原有剩余额度回填到永久额度。先部署同为 v2.8.0 的 Proxy 与 Admin，再单独执行远程迁移，最后让门户改用 `POST /api/admin/users/:id/wallet/credit`。不要使用带 `--migrate` 的单条命令颠倒这一顺序。
+> **升级到 v2.8.0**：0027 会把原有剩余额度回填到永久额度，而 v2.8.0 Worker 会直接读取新列。请先备份 D1 并暂停请求及额度写入，再执行远程迁移，随后立即部署同为 v2.8.0 的 Proxy 与 Admin；禁止新旧版本混跑。最后让门户改用 `POST /api/admin/users/:id/wallet/credit`。
 
 ```bash
-npm run deploy:cloudflare -- production
 npm run deploy:cloudflare -- production --migrate-only
+npm run deploy:cloudflare -- production
 ```
 
 迁移前建议先运行 [0027 只读审计脚本](../migrations/0027-user-wallet-credit-audit.d1.sql) 核对回填范围。迁移后检查用户的周期额度、永久额度以及请求日志中的 `charged_wallet_cost`。

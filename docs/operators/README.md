@@ -32,7 +32,7 @@
 
 升级到 **2.7.0** 时须确保迁移已执行到 **0026**。若当前为 2.3.0，需要依次执行 0022–0026；更早版本还应先完成上表中的前序迁移。随后统一部署 v2.7.0 的 Proxy、Admin 与 migrate 镜像。未配置 `charged_cost_factors` 的用户行为保持不变。
 
-升级到 **2.8.0** 时必须应用 **0027**。先部署同为 v2.8.0 的 Proxy 与 Admin，再执行迁移，最后让门户改用 `POST /api/admin/users/:id/wallet/credit`；不要再通过累加 `budget_max` 发放购买额度。上线前可运行 [0027 只读审计脚本](./migrations/0027-user-wallet-credit-audit.sql) 检查回填范围。
+升级到 **2.8.0** 时必须应用 **0027**。v2.8.0 服务会直接读取新列，请在维护窗口内备份并暂停请求及额度写入，先执行 0027，再立即部署同版本 Proxy / Admin；禁止新旧版本混跑。服务核验通过后，门户再改用 `POST /api/admin/users/:id/wallet/credit`，不要再通过累加 `budget_max` 发放购买额度。上线前请按数据库运行 [0027 迁移说明](./migrations/0027-user-wallet-credit.md) 中的只读审计脚本。
 
 ## 本地演练
 

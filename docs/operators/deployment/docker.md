@@ -314,17 +314,17 @@ gateway-admin.example.com {
 
 升级前阅读目标版本 [GitHub Release](https://github.com/OctaFuse/octafuse-gateway/releases) / `CHANGELOG.md` 中的 **升级说明**（破坏性变更、必做迁移、维护窗口）。默认顺序是**先 migrate，再滚动重启代理服务 / 管理后台**；或仅在一侧开启 `AUTO_MIGRATE=1`（见 §5）。若目标版本声明专用顺序，应以该版本说明为准。
 
-> **升级到 v2.8.0**：必须应用迁移 **0027**。请将 Proxy、Admin 与 migrate 镜像统一升级到 v2.8.0，先启动同版本 Proxy / Admin，再执行 migrate，最后让门户改用 `POST /api/admin/users/:id/wallet/credit`；不要再通过累加 `budget_max` 发放购买额度，也不要混用不同版本镜像。迁移前可使用 [0027 只读审计脚本](../migrations/0027-user-wallet-credit-audit.sql) 核对回填范围。
+> **升级到 v2.8.0**：必须应用迁移 **0027**。v2.8.0 服务会直接读取新列，请在维护窗口内备份并暂停请求及额度写入，使用 v2.8.0 migrate 镜像先执行迁移，再立即启动同版本 Proxy / Admin；禁止新旧版本混跑。服务核验通过后，门户再改用 `POST /api/admin/users/:id/wallet/credit`，不要再通过累加 `budget_max` 发放购买额度。迁移前可使用 [0027 只读审计脚本](../migrations/0027-user-wallet-credit-audit.sql) 核对回填范围。
 
 ### 8.1 预构建镜像（GHCR / 私有 registry）
 
 1. 编辑宿主机 env（通常在 `docker/deploy/`，由 `docker/examples/env.*.example` 复制）：将 `GATEWAY_PROXY_IMAGE`、`GATEWAY_ADMIN_IMAGE`、`GATEWAY_MIGRATE_IMAGE` 的 **tag** 改为目标版本（生产钉死 `vX.Y.Z`；需要可复现固定时从 GHCR 包页核对 **digest**）。
-2. 拉取镜像。升级到 v2.8.0 时，按“启动同版本代码 → 迁移”的顺序执行：
+2. 拉取镜像。升级到 v2.8.0 时，先暂停请求及额度写入，再按“迁移 → 启动同版本服务”的顺序执行：
 
 ```bash
 docker compose --env-file docker/deploy/.env.local -f docker/examples/gateway.compose.yml pull
-docker compose --env-file docker/deploy/.env.local -f docker/examples/gateway.compose.yml up -d gateway-proxy gateway-admin
 docker compose --env-file docker/deploy/.env.local -f docker/examples/gateway.compose.yml --profile migrate run --rm migrate
+docker compose --env-file docker/deploy/.env.local -f docker/examples/gateway.compose.yml up -d gateway-proxy gateway-admin
 ```
 
 其他版本未声明专用顺序时，沿用“迁移 → 重建”的默认流程：

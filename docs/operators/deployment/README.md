@@ -23,7 +23,7 @@
 | 2.2.0 → 2.3.0 数据迁移与维护窗口 | [迁移索引](../README.md#迁移与切换)（0020 → 0021） |
 | 2.3.0 → 2.4.0 数据迁移与认证切换 | [迁移索引](../README.md#迁移与切换)（0022 → 0025） |
 | 2.6.0 → 2.7.0 用户级模型计费倍率 | [2.7.0 发布说明](../../releases/2.7.0.md#升级说明)（0026） |
-| 2.7.0 → 2.8.0 周期额度与永久额度拆分 | [2.8.0 发布说明](../../releases/2.8.0.md#升级说明)（0027，先部署同版本代码再迁移） |
+| 2.7.0 → 2.8.0 周期额度与永久额度拆分 | [2.8.0 发布说明](../../releases/2.8.0.md#升级说明)（0027，维护窗口内先迁移再立即部署同版本服务） |
 | Zeabur 等容器平台 | [zeabur.md](./zeabur.md) |
 | D1 ↔ Postgres ETL / 对账 | [d1-postgres-cutover.md](../migrations/d1-postgres-cutover.md) |
 | 本地开发组合 | [local-development.md](../../developers/local-development.md) |
