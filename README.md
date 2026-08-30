@@ -18,7 +18,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 所以它具备以下这些核心能力：
 
 1. 供应商（Provider）接入：支持接入任意模型厂商或聚合平台的模型服务。同时，内置大量导入模板（含各种 Coding/Token Plan），无需复制黏贴各平台的接入端点，直接一键导入，然后复制对应的 API 密钥（ApiKey）即可完成接入。支持一键导入的完整列表见官网 [Providers Catalog](https://octafuse.dev/zh/catalog/providers/)，若有希望加入预置供应商的厂商，欢迎提交 PR。
-2. AI模型接入：需要提供哪些 AI 模型的接入，也可以通过预置的模型数据直接导入，无需配置各种模型参数、价格等基本信息。支持一键导入的模型列表见官网 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；若希望接入新的模型，欢迎提交 PR。
+2. AI 模型接入：可直接从预置目录导入模型，无需逐项填写常用参数和价格。支持一键导入的模型列表见官网 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；若希望接入新的模型，欢迎提交 PR。
 3. 多协议接入：AI 模型全协议接入，目前支持:
     - OpenAI 端点：
       - Chat Completions：`POST /v1/chat/completions`
@@ -30,28 +30,30 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
     - Google Gemini 端点：`POST /v1beta/models/{model}:generateContent`（含 `streamGenerateContent`）
     - DashScope 同步多模态 ASR：`POST /v1/dashscope/services/aigc/multimodal-generation/generation`
     - DashScope 实时音频：`GET /v1/dashscope/realtime`
-4. 智能体工具接入：通过 `/v1/tools/*` 统一接入各种供 Agent 使用的工具，并提供日志、计费、成本管控，以方便 Agent 同时从 Gateway 接入模型和工具。当前预置工具如下：
+4. 协议适配与转换：可在路由中选择客户端与上游的协议转换关系，让应用继续使用熟悉的调用方式接入不同供应商。例如，可直接用 OpenAI 图片接口调用阿里云百炼的千问 / 万相图像模型。
+5. 智能体工具接入：通过 `/v1/tools/*` 统一接入各种供 Agent 使用的工具，并提供日志、计费、成本管控，以方便 Agent 同时从 Gateway 接入模型和工具。当前预置工具如下：
     - 联网搜索（`POST /v1/tools/web-search`）：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA
     - 网页抓取（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
     - 深度搜索（`POST /v1/tools/web-deep-search`，搜+读一体）：Firecrawl Search、Jina Search
     - AI 率检测（`POST /v1/tools/ai-detection`）：当前已实现腾讯云 TMS，并预留多引擎扩展目录
     - 更多工具持续接入中，也欢迎 PR 继续丰富智能体常用工具。
-5. AI 能力统一出口：与所有网关一样，它是请求的中枢，即使能力汇总的地方，也是能力集中分发的地方。上面所有接入的 AI 能力都通过Octafuse Gateway 部署后的地址提供统一的接入 BaseUrl。换言之，上面你接入的各种平台、工具的 BaseUrl都不需要记了，只需要记住网关的即可。
-6. 多样的路由策略：当一个模型我们有多个资源的时候，为了更高效的使用资源，可以根据情况配置不同的路由策略。目前支持四种策略：
+6. AI 能力统一出口：所有接入的模型、平台和工具都通过 Octafuse Gateway 的 Base URL 对外提供服务。客户端只需配置一个网关地址，不必分别记住每个平台和工具的访问地址。
+7. 多样的路由策略：当一个模型我们有多个资源的时候，为了更高效的使用资源，可以根据情况配置不同的路由策略。目前支持四种策略：
     - hash_affinity：默认策略；同用户、模型、协议稳定首选上游，**缓存命中率高**，适合依赖 Prompt Cache、会话连续性的场景；短时流量不一定完全均匀
     - weighted_random：按权重加权随机分流，**负载均衡性高**，适合按比例分摊成本或 A/B；同一用户可能频繁切换供应商，缓存命中率较低
     - weight_priority：按权重从高到低固定排序，结果可预测，适合同层明确主备；首选供应商会承担大部分流量
     - weighted_round_robin：按权重轮转分摊，流量更均匀；计数器按运行实例维护，多实例间不保证全局同步
-7. 用户管理与记账一体化：有了统一接入点之后，剩下用户管理、额度管理、成本管理一堆下游的功能。Octafuse 提供了一套企业化的管理机制，包括：
-    - 支持系统（External system）、用户（User）、API 密钥三层维度：每个用户因为有一个External system字段，所以可以区分不同的系统或者团队。用户下面是 API 密钥，真正调用 Gateway 能力通过 API 密钥完成鉴权、扣费和审计。
+8. 用户管理与记账一体化：统一接入后，可继续在 Gateway 中完成用户、额度和成本管理，包括：
+    - 外部系统（External system）、用户（User）、API 密钥三层结构：通过 External system 区分不同系统或团队，再通过用户下的 API 密钥完成调用鉴权、扣费和审计
+    - 双额度体系：周期额度适合订阅套餐，永久额度适合加油包或人工加额，两种额度可以同时使用
     - 三账本设计：每一个调用对于计费涵盖三个费用计算，包括：目录价（模型/工具标准价）、成本价（实际采购价格）、用户价（用户扣除额度）
-    - 分时倍率：有的模型有峰谷计费的设计，利用分时倍率可以更精准的计算成本数据；也支持按星期区分工作日与周末；同时如果对外服务，也可以更配置灵活的计价方案来支持运营促销
+    - 峰谷计价：支持按模型和路由设置峰谷价格、区分工作日与周末，并预览不同时间段的实际价格
     - 用户级模型倍率：可为单个用户按目录模型设置折扣、加价或免单；只改变最终用户计费与预算累加，不影响目录价和供应成本
-8. 管理后台（Admin）与管理API：
+9. 管理后台（Admin）与管理 API：
     - 具备完善的管理后台和管理接口，可以手工维护也可以接入其他系统门户使用
     - 可观测性与数据分析：详细记录了请求细节和各类数据，可以方便查看、统计、分析
-    - 测试与联调：提供调试台（Playground）/ 模拟器（Simulator）页面功能，用户在接入新供应商和模型的时候，可以快速检验接口配置是否正确，服务商模型是否可靠
-9. 灵活的部署方式：
+    - 测试与联调：提供调试台（Playground）/ 模拟器（Simulator），可快速检查供应商、模型、路由和客户端配置，也支持调试实时语音识别
+10. 灵活的部署方式：
     - 支持 **Cloudflare Workers + D1 免费部署**
     - 支持 Docker + Postgres / MySQL 部署
 

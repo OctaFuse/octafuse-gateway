@@ -18,7 +18,7 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
 주요 기능은 다음과 같습니다.
 
 1. Provider 연결: 모델 벤더나 집계 플랫폼을 자유롭게 연결할 수 있습니다. Coding / Token Plan을 포함한 다양한 프리셋에서 엔드포인트를 원클릭으로 가져온 뒤 해당 API Key를 추가하면 됩니다. 전체 목록은 [Providers Catalog](https://octafuse.dev/en/catalog/providers/)를 참조하세요. 새로운 Provider 추가 PR도 환영합니다.
-2. AI 모델 연결: 내장 모델 데이터에서 가져올 수 있어 일반적인 모델 파라미터와 가격을 일일이 설정할 필요가 없습니다. 전체 목록은 [Models Catalog](https://octafuse.dev/en/catalog/models/)를 참조하세요. 새로운 모델 추가 PR도 환영합니다.
+2. AI 모델 연결: 내장 카탈로그에서 모델을 가져올 수 있어 일반적인 파라미터와 가격을 일일이 설정할 필요가 없습니다. 전체 목록은 [Models Catalog](https://octafuse.dev/en/catalog/models/)를 참조하세요. 새로운 모델 추가 PR도 환영합니다.
 3. 다중 프로토콜 지원:
     - OpenAI 엔드포인트:
       - Chat Completions: `POST /v1/chat/completions`
@@ -30,30 +30,40 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
     - Google Gemini 엔드포인트: `POST /v1beta/models/{model}:generateContent` (`streamGenerateContent` 포함)
     - DashScope 동기식 멀티모달 ASR: `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
     - DashScope 실시간 오디오: `GET /v1/dashscope/realtime`
-4. Agent 도구 연결: `/v1/tools/*`를 통해 Agent용 도구를 통합 제공하고 로그, 과금, 비용 관리를 중앙화합니다. 모델과 도구를 하나의 Gateway에서 사용할 수 있습니다.
+4. Protocol 어댑터와 변환: 클라이언트와 업스트림 사이의 Protocol 변환을 Route에서 선택해 익숙한 호출 방식으로 여러 Provider를 사용할 수 있습니다. 예를 들어 OpenAI Images 클라이언트에서 Alibaba Cloud Model Studio의 Qwen Image / Wan Image 모델을 호출할 수 있습니다.
+5. Agent 도구 연결: `/v1/tools/*`를 통해 Agent용 도구를 통합 제공하고 로그, 과금, 비용 관리를 중앙화합니다. 모델과 도구를 하나의 Gateway에서 사용할 수 있습니다.
     - 웹 검색(`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
     - 웹페이지 가져오기(`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader
     - 심층 검색(`POST /v1/tools/web-deep-search`, 검색 + 읽기): Firecrawl Search, Jina Search
     - AI 작성 콘텐츠 탐지(`POST /v1/tools/ai-detection`): Tencent Cloud TMS가 구현되어 있으며 다중 엔진 확장을 위한 카탈로그를 제공합니다
     - Agent 도구는 계속 추가할 예정이며 관련 PR도 환영합니다.
-5. 통합 AI 역량 진입점: 연결한 모델, 플랫폼, 도구는 배포된 Octafuse Gateway Base URL을 통해 제공됩니다. 클라이언트는 하나의 엔드포인트만 기억하면 됩니다.
-6. 다양한 라우팅 전략: 동일 모델에 여러 업스트림 리소스가 있는 경우 워크로드에 맞는 전략을 선택할 수 있습니다.
+6. 통합 AI 역량 진입점: 연결한 모델, 플랫폼, 도구는 배포된 Octafuse Gateway Base URL을 통해 제공됩니다. 클라이언트는 하나의 엔드포인트만 기억하면 됩니다.
+7. 다양한 라우팅 전략: 동일 모델에 여러 업스트림 리소스가 있는 경우 워크로드에 맞는 전략을 선택할 수 있습니다.
     - `hash_affinity`: 기본 전략. 동일 사용자, 모델, 프로토콜을 안정적으로 같은 업스트림에 배치해 **Prompt Cache 적중률을 높이며**, 캐시와 세션 연속성이 중요한 작업에 적합합니다. 단기 트래픽은 완전히 균등하지 않을 수 있습니다
     - `weighted_random`: 가중치 기반 무작위 분배로 **부하 분산성이 높아**, 비용 비율 배분이나 A/B 테스트에 적합합니다. 같은 사용자도 Provider가 자주 바뀔 수 있어 캐시 적중률은 낮아질 수 있습니다
     - `weight_priority`: 가중치가 높은 순서로 고정 시도하는 결정적 전략입니다. 같은 우선순위 안에서 명확한 주·백업 구성을 만들기 좋지만 첫 Provider가 대부분의 트래픽을 처리합니다
     - `weighted_round_robin`: 가중치 기반 순환으로 트래픽을 더 고르게 분배합니다. 카운터는 런타임 인스턴스별로 유지되며 여러 인스턴스 사이에서 전역 동기화되지 않습니다
-7. 사용자 관리와 회계 통합:
+8. 사용자 관리와 회계 통합:
     - External system, User, API Key의 3단계 구조: External system으로 시스템이나 팀을 구분하고 API Key로 인증, 과금, 감사를 수행합니다
+    - 이중 한도 체계: 주기 한도는 구독에, 영구 한도는 추가 충전에 사용할 수 있으며 두 한도를 함께 사용할 수 있습니다
     - 세 가지 원장: 각 호출의 카탈로그 가격, 실제 Provider 비용, 사용자 청구액을 별도로 기록합니다
-    - 시간대별 배율: 피크 / 비피크 가격과 평일·주말 배수를 이용해 비용 계산 정확도를 높이고 고객 가격과 프로모션을 유연하게 구성합니다
+    - 피크 / 비피크 과금: 모델과 Route의 가격을 시간대나 요일별로 설정하고 실제 가격을 미리 볼 수 있습니다
     - 모델별 사용자 배율: 사용자와 카탈로그 모델별로 할인, 할증 또는 무료 이용을 설정하며 카탈로그 가격과 Provider 비용은 변경하지 않습니다
-8. 관리 화면과 관리 API:
+9. 관리 화면과 관리 API:
     - 수동 운영과 외부 포털 연동을 모두 지원하는 관리 화면 및 API
     - 요청 상세, 통계, 운영 분석을 제공하는 관측성과 데이터 분석
-    - Provider, 모델, Route, 클라이언트 설정을 빠르게 검증하는 Playground / Simulator
-9. 유연한 배포 방식:
+    - Provider, 모델, Route, 클라이언트 설정을 빠르게 검증하는 Playground / Simulator. 실시간 음성 인식도 테스트할 수 있습니다
+10. 유연한 배포 방식:
     - **Cloudflare Workers + D1 무료 배포**
     - Docker + Postgres / MySQL 배포
+
+## 관리 화면 둘러보기
+
+| Provider 연결 | Request Surface → 전략 → Upstream Target Route 구성 |
+|---|---|
+| ![Provider: Key 상태, Protocol 기능, Route 수를 카드로 표시](./docs/assets/screenshots/providers.webp) | ![Route: Request Surface, Route Pool, 전략, 고정 연결, 장애 조치를 계층으로 표시](./docs/assets/screenshots/routes.webp) |
+
+Providers 페이지에서는 업스트림 계정과 Protocol Endpoint를 연결합니다. Routes 페이지에서는 클라이언트 Request Surface, Route 전략, Upstream Target을 하나의 흐름으로 확인할 수 있습니다. 전체 설정 순서는 [관리 화면 설정 가이드](./docs/users/configuration.md)를 참조하세요.
 
 ## 다른 오픈 소스 AI Gateway와의 차이
 
@@ -75,14 +85,16 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
 - **⚪ 없음**: 공식 공개 문서에 동급의 내장 기능이 명시되지 않음
 
 <details>
-<summary><strong>전체 기능 비교 펼치기(22개 항목)</strong></summary>
+<summary><strong>전체 기능 비교 펼치기(24개 항목)</strong></summary>
 
 ### 연결 및 Agent 역량
 
 | 세부 기능 | Octafuse | New API | LiteLLM | Sub2API | Bifrost |
 |---|:---:|:---:|:---:|:---:|:---:|
 | Provider / 모델 프리셋 및 원클릭 가져오기 | ✅ | 🟡 | 🟡 | 🟡 | 🟡 |
-| 네이티브 프로토콜 및 멀티모달 지원 | 🟡¹ | ✅ | ✅ | ✅ | ✅ |
+| OpenAI, Anthropic, Gemini 주요 Protocol Endpoint | ✅ | ✅ | ✅ | ✅ | ✅ |
+| DashScope 네이티브 동기 / 실시간 오디오 및 Protocol 변환 Route | ✅¹ | ⚪ | ⚪ | ⚪ | ⚪ |
+| 텍스트, 이미지, 음성, 비디오 등 멀티모달 지원 | 🟡² | ✅ | ✅ | 🟡 | ✅ |
 | 웹 검색, 가져오기, 심층 검색 내장 | ✅ | ⚪ | 🟠 | 🟠 | 🟠 |
 | 도구 Provider 설정, 호출 로그, 과금 | ✅ | ⚪ | 🟡 | 🟠 | 🟠 |
 
@@ -119,7 +131,9 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
 | Docker 셀프 호스팅 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cloudflare Workers 엣지 배포 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
-<sup>1</sup> Octafuse의 네이티브 프로토콜 및 멀티모달 지원은 계속 확장 중입니다.
+<sup>1</sup> Octafuse는 DashScope 네이티브 동기 ASR과 실시간 ASR / TTS를 지원하며 OpenAI 호환 ASR / TTS 요청을 DashScope로 Protocol 변환하여 Route할 수 있습니다.
+<br />
+<sup>2</sup> Octafuse는 현재 텍스트, 이미지, ASR, TTS, 실시간 음성을 지원합니다. 비디오는 아직 통합 Request Surface에 포함되지 않습니다.
 
 </details>
 
