@@ -29,6 +29,8 @@ import {
 	applyAdapterOptionToForm,
 	catalogScheduleWindowsFromModel,
 	compatibleAdaptersForRoute,
+	customHeaderRowsHaveValues,
+	emptyCustomHeaderRows,
 	formatRoutePriceOverridePreview,
 	listAdapterOptionsForModel,
 	requestOperationsForModel,
@@ -105,7 +107,9 @@ export function RouteModal(props: Props) {
 	const tCommon = useTranslations('common');
 	const adapterLabel = (adapter: string) =>
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
-	const hasCustomParams = formData.custom_params_json.trim().length > 0;
+	const hasCustomHeaders = customHeaderRowsHaveValues(formData.custom_headers);
+	const hasCustomBody = formData.custom_params_json.trim().length > 0;
+	const hasCustomParams = hasCustomHeaders || hasCustomBody;
 	const customParamsSessionKey = `${open ? '1' : '0'}:${editingRoute?.id ?? ''}:${duplicateSourceRouteId ?? ''}`;
 	const [customParamsSession, setCustomParamsSession] = useState(customParamsSessionKey);
 	const [customParamsOpen, setCustomParamsOpen] = useState(() => open && hasCustomParams);
@@ -506,13 +510,22 @@ export function RouteModal(props: Props) {
 										>
 											<span>{t('customParams')}</span>
 											<span className="flex shrink-0 items-center gap-1.5">
-												{hasCustomParams ? (
+												{hasCustomHeaders ? (
 													<span
 														className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
 															customParamsOpen ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'
 														}`}
 													>
-														JSON
+														{t('customHeadersBadge')}
+													</span>
+												) : null}
+												{hasCustomBody ? (
+													<span
+														className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+															customParamsOpen ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'
+														}`}
+													>
+														{t('customBodyBadge')}
 													</span>
 												) : null}
 												<ChevronDownIcon
@@ -699,23 +712,113 @@ export function RouteModal(props: Props) {
 										id="route-custom-params"
 										className="rounded-lg border border-amber-300 bg-amber-50/70 p-3"
 									>
-										<div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-											<h4 className="text-sm font-medium text-amber-900">{t('customParams')}</h4>
-											<p className="text-[11px] text-amber-800/80">{t('requestDefaultsHint')}</p>
+										<div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
+											<div className="flex min-h-0 min-w-0 flex-col rounded-md border border-amber-200/80 bg-white/70 p-2.5">
+												<div className="mb-2 flex items-start justify-between gap-2">
+													<div className="min-w-0">
+														<h4 className="text-sm font-medium text-amber-900">{t('customHeaders')}</h4>
+														<p className="mt-0.5 text-[11px] leading-4 text-amber-800/80">
+															{t('customHeadersHint')}
+														</p>
+													</div>
+													<button
+														type="button"
+														onClick={() =>
+															onFormChange({
+																...formData,
+																custom_headers: [...formData.custom_headers, { name: '', value: '' }],
+															})
+														}
+														className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-amber-400 bg-white text-amber-700 shadow-sm transition hover:border-amber-500 hover:bg-amber-50 hover:text-amber-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40"
+														aria-label={t('customHeadersAdd')}
+														title={t('customHeadersAdd')}
+													>
+														<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+													</button>
+												</div>
+												<div className="space-y-1.5">
+													{formData.custom_headers.map((row, index) => (
+														<div
+															key={index}
+															className="grid grid-cols-[minmax(7rem,10rem)_auto_minmax(0,1fr)_auto] items-center gap-1.5"
+														>
+															<input
+																type="text"
+																value={row.name}
+																onChange={(e) =>
+																	onFormChange({
+																		...formData,
+																		custom_headers: formData.custom_headers.map((item, i) =>
+																			i === index ? { ...item, name: e.target.value } : item
+																		),
+																	})
+																}
+																className="min-w-0 rounded-md border border-amber-200 bg-white px-2 py-1.5 font-mono text-xs text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+																placeholder={t('customHeadersNamePlaceholder')}
+																aria-label={t('customHeadersName')}
+																autoComplete="off"
+																spellCheck={false}
+															/>
+															<span className="select-none font-mono text-xs text-amber-700/70" aria-hidden>
+																:
+															</span>
+															<input
+																type="text"
+																value={row.value}
+																onChange={(e) =>
+																	onFormChange({
+																		...formData,
+																		custom_headers: formData.custom_headers.map((item, i) =>
+																			i === index ? { ...item, value: e.target.value } : item
+																		),
+																	})
+																}
+																className="min-w-0 rounded-md border border-amber-200 bg-white px-2 py-1.5 font-mono text-xs text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+																placeholder={t('customHeadersValuePlaceholder')}
+																aria-label={t('customHeadersValue')}
+																autoComplete="off"
+																spellCheck={false}
+															/>
+															<button
+																type="button"
+																onClick={() => {
+																	const next = formData.custom_headers.filter((_, i) => i !== index);
+																	onFormChange({
+																		...formData,
+																		custom_headers: next.length > 0 ? next : emptyCustomHeaderRows(),
+																	});
+																}}
+																className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+																aria-label={t('customHeadersRemove')}
+																title={t('customHeadersRemove')}
+															>
+																<TrashIcon className="h-4 w-4" aria-hidden />
+															</button>
+														</div>
+													))}
+												</div>
+											</div>
+											<div className="flex min-h-0 min-w-0 flex-col rounded-md border border-amber-200/80 bg-white/70 p-2.5">
+												<h4 className="text-sm font-medium text-amber-900">{t('customBody')}</h4>
+												<p className="mt-0.5 mb-2 text-[11px] leading-4 text-amber-800/80">
+													{t('customBodyHint')}
+												</p>
+												<textarea
+													rows={5}
+													value={formData.custom_params_json}
+													onChange={(e) =>
+														onFormChange({
+															...formData,
+															custom_params_json: e.target.value,
+														})
+													}
+													className="min-h-[120px] flex-1 resize-y rounded-md border border-amber-200 bg-white px-3 py-2 font-mono text-xs leading-relaxed focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+													placeholder={t('customParamsPlaceholder')}
+													spellCheck={false}
+													aria-label={t('customBody')}
+												/>
+											</div>
 										</div>
-										<textarea
-											rows={5}
-											value={formData.custom_params_json}
-											onChange={(e) =>
-												onFormChange({
-													...formData,
-													custom_params_json: e.target.value,
-												})
-											}
-											className="min-h-[120px] w-full resize-y rounded-md border border-amber-200 bg-white px-3 py-2 font-mono text-xs leading-relaxed focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-											placeholder={t('customParamsPlaceholder')}
-											spellCheck={false}
-										/>
 									</div>
 								</div>
 							) : null}

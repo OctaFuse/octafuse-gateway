@@ -4,7 +4,7 @@
  */
 import { createRequire } from 'node:module';
 import type { IncomingMessage } from 'node:http';
-import { resolveProviderUpstreamSecret } from '@octafuse/core';
+import { applyRouteExtraHeaders, resolveProviderUpstreamSecret } from '@octafuse/core';
 import type {
 	PlaygroundDashScopeRealtimeOperation,
 	PlaygroundRealtimeNodeDispatch,
@@ -89,11 +89,12 @@ async function connectUpstream(
 	providerApiKey: string,
 	signal: AbortSignal | undefined,
 	WebSocketCtor: NodeWebSocketConstructor,
-	handshakeTimeoutMs: number
+	handshakeTimeoutMs: number,
+	customParams: Record<string, unknown> | null
 ): Promise<{ socket: NodeWebSocket } | { response: Response }> {
 	const { secret } = await resolveProviderUpstreamSecret(providerApiKey);
 	const upstream = new WebSocketCtor(upstreamUrl, {
-		headers: { Authorization: `Bearer ${secret}` },
+		headers: applyRouteExtraHeaders({ Authorization: `Bearer ${secret}` }, customParams),
 		handshakeTimeout: handshakeTimeoutMs,
 	});
 	let settled = false;
@@ -251,7 +252,8 @@ export function createPlaygroundNodeRealtimeDispatch(
 				route.providerApiKey,
 				requestSignal,
 				WebSocketCtor,
-				handshakeTimeoutMs
+				handshakeTimeoutMs,
+				route.customParams
 			)
 				.then((opened) => {
 					if ('response' in opened) {

@@ -11,6 +11,8 @@ import {
 	playgroundLlmFamilyForRoute,
 	playgroundLlmSampleBody,
 	previewPlaygroundMergedBody,
+	previewPlaygroundRouteHeaders,
+	formatPlaygroundRouteHeadersPreview,
 	resolvePlaygroundLlmFamily,
 	routeMatchesSearch,
 	templateForRoute,
@@ -378,5 +380,45 @@ describe('playground-utils', () => {
 		assert.equal(body.model, undefined);
 		assert.ok(body.generationConfig);
 		assert.equal(previewPlaygroundMergedBody({ bodyText: '{not json' }).status, 'invalid');
+	});
+
+	it('previewPlaygroundMergedBody strips custom_params.headers from the body preview', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({ messages: [] }),
+			customParams: JSON.stringify({
+				temperature: 0.5,
+				headers: { 'HTTP-Referer': 'https://example.com' },
+			}),
+			upstreamProtocol: 'openai',
+			providerModelName: 'gpt-4o-mini',
+		});
+		assert.equal(result.status, 'preview');
+		const body = JSON.parse(result.json) as { temperature?: number; headers?: unknown; model?: string };
+		assert.equal(body.temperature, 0.5);
+		assert.equal(body.headers, undefined);
+		assert.equal(body.model, 'gpt-4o-mini');
+	});
+
+	it('previewPlaygroundRouteHeaders lists extra headers and skips protected names', () => {
+		assert.deepEqual(previewPlaygroundRouteHeaders(null), {});
+		assert.equal(formatPlaygroundRouteHeadersPreview({}), '');
+		const headers = previewPlaygroundRouteHeaders(
+			JSON.stringify({
+				temperature: 0.5,
+				headers: {
+					'HTTP-Referer': 'https://example.com',
+					'X-Title': 'My App',
+					Authorization: 'Bearer secret',
+				},
+			}),
+		);
+		assert.deepEqual(headers, {
+			'HTTP-Referer': 'https://example.com',
+			'X-Title': 'My App',
+		});
+		assert.equal(
+			formatPlaygroundRouteHeadersPreview(headers),
+			'HTTP-Referer: https://example.com\nX-Title: My App',
+		);
 	});
 });

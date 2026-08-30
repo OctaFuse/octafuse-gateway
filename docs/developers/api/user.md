@@ -66,7 +66,7 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 ### 5. 输出长度（`max_tokens` / `maxOutputTokens`）
 
 - Gateway **不会**根据 D1 **`models.max_tokens`** 改写或截断用户请求；该字段在 `GET /v1/models` 等处仅作**目录/展示参考**。
-- 实际上游请求体由 **`model_routes.custom_params`** 与客户端 JSON **深度合并**得到（实现见 `buildRouteRequestBody`）：**客户端显式提供的字段优先**于路由默认值。
+- 实际上游请求体由 **`model_routes.custom_params`** 与客户端 JSON **深度合并**得到（实现见 `buildRouteRequestBody`）：**客户端显式提供的字段优先**于路由默认值。保留键 **`headers`** 不进入请求体，见 [Route 默认参数合并](#route-默认参数合并)。
 - 若客户端不传 `max_tokens`（OpenAI Chat、Anthropic Messages）或不传 `generationConfig.maxOutputTokens`（Gemini），则由路由 JSON 中的默认值或**上游服务商的 API 默认**决定。
 - 运维若希望为某条路由提供默认最大输出，可在该路由的 **`custom_params`** 中配置，例如 OpenAI/Anthropic 顶层 `"max_tokens": 4096`，Gemini 使用嵌套 `"generationConfig": { "maxOutputTokens": 8192 }`。
 - **注意**：因合并规则为客户端优先，仅靠 `custom_params` **无法**在客户端已显式传入更大值时实现「硬封顶」；若需要运营侧强制上限，需另行设计（不在当前文档范围）。
@@ -1255,7 +1255,11 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 {
   "temperature": 0.7,
   "response_format": { "type": "json_object" },
-  "provider_options": { "foo": "bar" }
+  "provider_options": { "foo": "bar" },
+  "headers": {
+    "HTTP-Referer": "https://example.com",
+    "X-Title": "My App"
+  }
 }
 ```
 
@@ -1270,5 +1274,7 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 ```
 
 则最终上游请求中的 `temperature` 为 `0.2`（用户覆盖默认），`provider_options` 会保留。
+
+保留键 **`headers`** 是上游 **HTTP 头**，不是请求体字段：转发前会从 JSON 中剥离，并合并到出站请求头。客户端请求头不会覆盖这些值。网关写入的鉴权头（`Authorization` / `x-api-key` / `x-goog-api-key`）、`Content-Type` 与 hop-by-hop 头不可被 `headers` 覆盖；其余键（如 `HTTP-Referer`、`anthropic-version`）可以追加或覆盖驱动默认值。`headers` 缺省或为 `{}` 时行为与改造前相同。
 
 各厂商 `thinking` / `reasoning` / `reasoning_effort` 等字段的 JSON 形态见 **[渠道模型思考参数配置说明](../reference/provider-thinking-configs.md)**。在 Route 的 `custom_params` 中写入默认值后，客户端未传该字段时会合并进上游请求；客户端显式传入时以客户端为准。

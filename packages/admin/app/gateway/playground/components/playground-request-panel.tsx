@@ -15,10 +15,12 @@ import {
 	codeBlockClass,
 	inputClass,
 	labelClass,
+	formatPlaygroundRouteHeadersPreview,
 	matchPlaygroundLlmSample,
 	playgroundLlmFamilyForRoute,
 	playgroundModelHintFromRoute,
 	previewPlaygroundMergedBody,
+	previewPlaygroundRouteHeaders,
 	PLAYGROUND_LLM_SAMPLE_IDS,
 	type PlaygroundLlmSampleId,
 } from '../playground-utils';
@@ -116,6 +118,11 @@ export function PlaygroundRequestPanel({
 			}),
 		[bodyText, selected?.custom_params, selected?.upstream_protocol, selected?.provider_model_name],
 	);
+	const routeHeadersPreview = useMemo(
+		() => previewPlaygroundRouteHeaders(selected?.custom_params),
+		[selected?.custom_params],
+	);
+	const routeHeadersText = formatPlaygroundRouteHeadersPreview(routeHeadersPreview);
 	const actualBodyJson = lastSentWireBody ?? (mergedPreview.status === 'preview' ? mergedPreview.json : null);
 	const actualBodyHint = lastSentWireBody
 		? t('sentBodyHint')
@@ -414,15 +421,25 @@ export function PlaygroundRequestPanel({
 				</div>
 				<div className="flex min-h-0 min-w-0 flex-col">
 					<div className="mb-1 flex items-center justify-between gap-2">
-						<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('sentBody')}</label>
+						<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('sentRequest')}</label>
 						{lastSentWireBody ? (
 							<span className="text-[11px] font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
 						) : mergedPreview.status === 'preview' ? (
 							<span className="text-[11px] font-medium text-slate-500">{t('sentBodySourcePreview')}</span>
 						) : null}
 					</div>
+					<div className="mb-2">
+						<div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+							{t('sentHeaders')}
+						</div>
+						<p className="mb-1 text-[11px] text-gray-500">{t('sentHeadersHint')}</p>
+						<pre className={`${codeBlockClass} max-h-28 overflow-y-auto ${routeHeadersText ? '' : 'text-gray-400'}`}>
+							{routeHeadersText || t('sentHeadersEmpty')}
+						</pre>
+					</div>
+					<div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">{t('sentBody')}</div>
 					<p className="mb-1 text-[11px] text-gray-500">{actualBodyHint}</p>
-					<pre className={`${codeBlockClass} min-h-[180px] flex-1 overflow-y-auto`}>
+					<pre className={`${codeBlockClass} min-h-[140px] flex-1 overflow-y-auto`}>
 						{actualBodyJson ?? '—'}
 					</pre>
 				</div>

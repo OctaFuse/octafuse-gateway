@@ -7,6 +7,7 @@ import {
 	applyDashScopeImageRoutePreset,
 	applyDashScopeTtsRoutePreset,
 	alignRouteScheduleWindowsToCatalog,
+	composeCustomParamsJson,
 	buildFormDataFromRoute,
 	buildRouteSavePayload,
 	catalogScheduleWindowsFromModel,
@@ -22,6 +23,7 @@ import {
 	resolveRouteScheduleDisplay,
 	scheduleWindowShapeKey,
 	hasBasePricingInversion,
+	parseCustomParamsForm,
 	requestOperationsForModel,
 	requestLogProtocolPath,
 	requestSurfacePath,
@@ -974,5 +976,105 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 			{ start: '00:30', end: '08:30', days: [], charged_factor: '0.7', metered_factor: '0.6' },
 			{ start: '09:00', end: '12:00', days: [1, 2, 3, 4, 5], charged_factor: '1', metered_factor: '1' },
 		]);
+	});
+});
+
+describe('custom params headers / body form', () => {
+	it('splits stored custom_params into header rows and pretty-printed body', () => {
+		const parsed = parseCustomParamsForm(
+			JSON.stringify({
+				temperature: 0.7,
+				headers: { 'HTTP-Referer': 'https://example.com', 'X-Title': 'My App' },
+			}),
+		);
+		assert.equal(parsed.custom_params_json, JSON.stringify({ temperature: 0.7 }, null, 2));
+		assert.deepEqual(parsed.custom_headers, [
+			{ name: 'HTTP-Referer', value: 'https://example.com' },
+			{ name: 'X-Title', value: 'My App' },
+		]);
+	});
+
+	it('keeps invalid JSON in the body editor so the user can fix it', () => {
+		const parsed = parseCustomParamsForm('{not json');
+		assert.equal(parsed.custom_params_json, '{not json');
+		assert.deepEqual(parsed.custom_headers, [{ name: '', value: '' }]);
+	});
+
+	it('round-trips headers and body through the route form', () => {
+		const form = buildFormDataFromRoute(
+			route({
+				custom_params: JSON.stringify({
+					temperature: 0.7,
+					headers: { 'HTTP-Referer': 'https://example.com', 'X-Title': 'My App' },
+				}),
+			}),
+			[],
+		);
+		assert.equal(form.custom_params_json, JSON.stringify({ temperature: 0.7 }, null, 2));
+		assert.deepEqual(form.custom_headers, [
+			{ name: 'HTTP-Referer', value: 'https://example.com' },
+			{ name: 'X-Title', value: 'My App' },
+		]);
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				...form,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+			},
+			null,
+		);
+		assert.deepEqual(JSON.parse(String(payload.custom_params)), {
+			temperature: 0.7,
+			headers: { 'HTTP-Referer': 'https://example.com', 'X-Title': 'My App' },
+		});
+	});
+
+	it('saves headers-only custom_params without a body object', () => {
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+				custom_params_json: '',
+				custom_headers: [{ name: 'X-Title', value: 'My App' }],
+			},
+			null,
+		);
+		assert.deepEqual(JSON.parse(String(payload.custom_params)), {
+			headers: { 'X-Title': 'My App' },
+		});
+	});
+
+	it('omits empty headers and empty body', () => {
+		assert.equal(composeCustomParamsJson('', [{ name: '', value: '' }]), null);
+		assert.equal(composeCustomParamsJson('  ', [{ name: '  ', value: 'x' }]), null);
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+			},
+			null,
+		);
+		assert.equal(payload.custom_params, null);
+	});
+
+	it('strips a headers key pasted into the body editor', () => {
+		assert.deepEqual(
+			JSON.parse(
+				composeCustomParamsJson(
+					JSON.stringify({ temperature: 0.5, headers: { leftover: 'nope' } }),
+					[{ name: 'X-Title', value: 'My App' }],
+				) ?? '{}',
+			),
+			{
+				temperature: 0.5,
+				headers: { 'X-Title': 'My App' },
+			},
+		);
 	});
 });

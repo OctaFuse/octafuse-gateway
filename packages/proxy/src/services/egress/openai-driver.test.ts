@@ -238,4 +238,36 @@ describe('dispatchOpenAiRoute', () => {
 		assert.equal(usage.input_tokens, 0);
 		assert.equal(usage.raw_usage, null);
 	});
+
+	it('injects custom_params.headers without overriding Authorization or leaking into body', async () => {
+		let captured: { headers: Headers; body: string } | null = null;
+		mock.method(globalThis, 'fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
+			captured = {
+				headers: new Headers(init?.headers),
+				body: String(init?.body ?? ''),
+			};
+			return new Response(JSON.stringify({ id: 'chatcmpl-hdr', usage: { prompt_tokens: 1, completion_tokens: 1 } }), {
+				status: 200,
+				headers: { 'Content-Type': 'application/json' },
+			});
+		});
+		await dispatchOpenAiRoute(
+			openaiRoute({
+				customParams: {
+					temperature: 0.4,
+					headers: {
+						'HTTP-Referer': 'https://example.com',
+						Authorization: 'Bearer stolen',
+					},
+				},
+			}),
+			{ messages: [{ role: 'user', content: 'hi' }] }
+		);
+		assert.ok(captured);
+		assert.equal(captured.headers.get('HTTP-Referer'), 'https://example.com');
+		assert.equal(captured.headers.get('Authorization'), 'Bearer sk-test');
+		const sent = JSON.parse(captured.body) as { temperature?: number; headers?: unknown };
+		assert.equal(sent.temperature, 0.4);
+		assert.equal(sent.headers, undefined);
+	});
 });

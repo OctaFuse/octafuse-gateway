@@ -2,6 +2,7 @@
  * Gemini generateContent / streamGenerateContent 出站：按 `providers.endpoints.gemini` 解析 URL、解析 JSON 或 SSE 中的 usageMetadata。
  */
 import {
+  applyRouteExtraHeaders,
   GEMINI_GENERATE_OPERATION,
   prepareGeminiUpstreamFetch,
   resolveGeminiAuthForUpstreamSecret,
@@ -347,7 +348,7 @@ export async function dispatchGeminiRoute(
   const requestBody = buildRouteRequestBody(route, body);
   const response = await fetch(url.toString(), {
     method: 'POST',
-    headers,
+    headers: applyRouteExtraHeaders(headers, route.customParams),
     body: JSON.stringify(requestBody),
   });
   timing?.markAttemptHeaders(attempt, response.status);

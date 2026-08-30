@@ -30,6 +30,7 @@ export {
 } from './adapters/registry';
 export * from './route-topology';
 export * from './realtime-protocol';
+export * from './route-custom-params';
 
 export * from './storage/context';
 export * from './storage/database-client';

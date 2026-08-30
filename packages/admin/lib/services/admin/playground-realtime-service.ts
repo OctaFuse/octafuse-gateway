@@ -2,6 +2,7 @@
  * 调试台的 DashScope 原生 WebSocket 直连：使用管理员会话解析路由，
  * 供应商连接和事件转发都在 Worker 侧完成，因此不会把供应商 API Key 暴露给浏览器，也不写网关用量日志。
  */
+import { applyRouteExtraHeaders } from '@octafuse/core/route-custom-params';
 import { resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
 import { mergePlaygroundRequestBody, type PlaygroundResolvedRoute, resolvePlaygroundRoute } from './playground-service';
 import type { GatewayRepositories } from '@octafuse/core';
@@ -129,10 +130,13 @@ export async function connectPlaygroundDashScopeRealtime(
 
 	const url = outboundWebSocketFetchUrl(withSessionModel(endpoint, operation, route.providerModelName));
 	const upstreamResponse = await fetch(url.toString(), {
-		headers: {
-			Authorization: `Bearer ${route.providerApiKey}`,
-			Upgrade: 'websocket',
-		},
+		headers: applyRouteExtraHeaders(
+			{
+				Authorization: `Bearer ${route.providerApiKey}`,
+				Upgrade: 'websocket',
+			},
+			route.customParams,
+		),
 		signal: requestSignal,
 	});
 	const upstream = upstreamResponse.webSocket;

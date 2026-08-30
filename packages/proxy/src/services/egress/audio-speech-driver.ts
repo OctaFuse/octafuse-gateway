@@ -2,7 +2,7 @@
  * OpenAI `/audio/speech` 与 DashScope TTS 的协议驱动。
  * DashScope 统一使用 SSE 上游，以便边转发音频边读取最终真实 usage；不会用输入长度伪造最终用量。
  */
-import { resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
+import { applyRouteExtraHeaders, resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE, type UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -419,11 +419,14 @@ async function dispatchDashScopeTts(
 	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const response = await (options?.fetchImpl ?? fetch)(url, {
 		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${secret}`,
-			'Content-Type': 'application/json',
-			'X-DashScope-SSE': 'enable',
-		},
+		headers: applyRouteExtraHeaders(
+			{
+				Authorization: `Bearer ${secret}`,
+				'Content-Type': 'application/json',
+				'X-DashScope-SSE': 'enable',
+			},
+			route.customParams
+		),
 		body: JSON.stringify(buildDashScopeTtsBody(route, request, kind)),
 		signal: requestSignal,
 	});
@@ -545,10 +548,13 @@ export async function dispatchOpenAiAudioSpeech(
 	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const response = await (options?.fetchImpl ?? fetch)(url, {
 		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${secret}`,
-			'Content-Type': 'application/json',
-		},
+		headers: applyRouteExtraHeaders(
+			{
+				Authorization: `Bearer ${secret}`,
+				'Content-Type': 'application/json',
+			},
+			route.customParams
+		),
 		body: JSON.stringify(
 			buildRouteRequestBody(route, {
 				model: route.providerModelName,

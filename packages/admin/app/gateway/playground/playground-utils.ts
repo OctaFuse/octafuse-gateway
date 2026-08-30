@@ -6,6 +6,7 @@ import {
 	isAudioRouteModel,
 } from '@/lib/audio-transcriptions';
 import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
+import { extraHeadersFromCustomParams, routeCustomParamsBody } from '@octafuse/core/route-custom-params';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
@@ -122,6 +123,28 @@ function isPlainJsonObject(value: unknown): value is JsonObject {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function parseCustomParamsObject(raw?: string | null): JsonObject {
+	const text = raw?.trim() ?? '';
+	if (!text) return {};
+	try {
+		const parsed = JSON.parse(text) as unknown;
+		return isPlainJsonObject(parsed) ? parsed : {};
+	} catch {
+		return {};
+	}
+}
+
+/** 路由 `custom_params.headers` 预览（已跳过受保护头，与出站 merge 一致）。 */
+export function previewPlaygroundRouteHeaders(customParams?: string | null): Record<string, string> {
+	return extraHeadersFromCustomParams(parseCustomParamsObject(customParams));
+}
+
+export function formatPlaygroundRouteHeadersPreview(headers: Record<string, string>): string {
+	return Object.entries(headers)
+		.map(([name, value]) => `${name}: ${value}`)
+		.join('\n');
+}
+
 /** 与 Proxy / Playground 服务端相同：custom_params 与用户体深度合并，用户字段优先。 */
 export function deepMergePlaygroundDefaults(defaultValue: unknown, userValue: unknown): unknown {
 	if (userValue !== undefined) {
@@ -163,20 +186,8 @@ export function previewPlaygroundMergedBody(input: {
 		return { status: 'invalid' };
 	}
 
-	let customParams: JsonObject = {};
-	const rawCustom = input.customParams?.trim() ?? '';
-	if (rawCustom) {
-		try {
-			const parsed = JSON.parse(rawCustom) as unknown;
-			if (isPlainJsonObject(parsed)) {
-				customParams = parsed;
-			}
-		} catch {
-			// 无效 custom_params 在 Send 时会被服务端拒绝；预览仍展示用户体。
-		}
-	}
-
-	const merged = deepMergePlaygroundDefaults(customParams, userBody);
+	const customParams = parseCustomParamsObject(input.customParams);
+	const merged = deepMergePlaygroundDefaults(routeCustomParamsBody(customParams), userBody);
 	const body: JsonObject = isPlainJsonObject(merged) ? { ...merged } : { ...userBody };
 	const proto = normalizeProtocol(input.upstreamProtocol ?? 'openai');
 	const model = input.providerModelName?.trim() ?? '';

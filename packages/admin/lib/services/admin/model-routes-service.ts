@@ -9,6 +9,7 @@ import {
 	isRequestOperationForProtocol,
 	normalizeRouteOperation,
 	PASSTHROUGH_ROUTE_ADAPTER,
+	validateRouteCustomParamsHeaders,
 } from '@octafuse/core';
 import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
@@ -23,6 +24,21 @@ import {
 	coerceRoutePriceOverrideInput,
 } from './pricing-input';
 import { normalizeJsonObjectField, providerSupportsUpstreamProtocol } from './shared';
+
+function assertCustomParamsHeaders(serialized: string | null): void {
+	if (!serialized) return;
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(serialized) as unknown;
+	} catch {
+		throw badRequest('custom_params must be valid JSON');
+	}
+	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+		throw badRequest('custom_params must be a JSON object');
+	}
+	const result = validateRouteCustomParamsHeaders(parsed as Record<string, unknown>);
+	if (!result.ok) throw badRequest(result.message);
+}
 import { listAdminUsers, resolveAdminUserId } from './users-service';
 import type {
 	AdminCreatedIdOutput,
@@ -113,6 +129,7 @@ export async function createModelRouteService(
 
 	const customParamsNorm = normalizeJsonObjectField(body.custom_params, 'custom_params');
 	if (!customParamsNorm.ok) throw badRequest(customParamsNorm.message);
+	assertCustomParamsHeaders(customParamsNorm.value);
 
 	let proto: UpstreamProtocol;
 	try {
@@ -239,6 +256,7 @@ export async function updateModelRouteService(
 	if (patch.custom_params !== undefined) {
 		const normalized = normalizeJsonObjectField(patch.custom_params, 'custom_params');
 		if (!normalized.ok) throw badRequest(normalized.message);
+		assertCustomParamsHeaders(normalized.value);
 		patch.custom_params = normalized.value;
 	}
 	if (patch.route_group !== undefined) {
