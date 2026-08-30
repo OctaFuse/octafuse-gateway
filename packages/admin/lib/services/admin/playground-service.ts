@@ -29,6 +29,7 @@ import { modelKindFromFlags, resolveOpenaiUpstreamCapability } from '@/lib/invok
 import { AdminServiceError, badRequest, notFound } from './errors';
 import { buildPlaygroundDashScopeImageRequest } from './playground-dashscope-image';
 import { isPendingProviderImportApiKey } from '@octafuse/core/db/provider-key-utils';
+import { redactPlaygroundOutboundHeaders } from '@/lib/playground/outbound-headers';
 
 /** 与 Proxy `RouteResult` 对齐的最小子集，供合并默认参数与拼 URL。 */
 export type PlaygroundResolvedRoute = {
@@ -866,6 +867,8 @@ export type PlaygroundInvokeResult = {
 	latencyMs: number;
 	/** 与上游 `fetch` body 一致的 JSON 文本（合并 custom_params、写入 model 等之后） */
 	upstreamWireBodyJson: string;
+	/** 实际上游 fetch 请求头（密钥已脱敏） */
+	upstreamWireHeaders: Record<string, string>;
 };
 
 /**
@@ -1201,5 +1204,11 @@ export async function invokePlaygroundUpstream(
 		);
 	}
 
-	return { response, upstreamUrlForHeader, latencyMs, upstreamWireBodyJson };
+	return {
+		response,
+		upstreamUrlForHeader,
+		latencyMs,
+		upstreamWireBodyJson,
+		upstreamWireHeaders: redactPlaygroundOutboundHeaders(headers),
+	};
 }

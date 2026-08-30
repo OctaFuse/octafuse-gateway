@@ -15,6 +15,7 @@ import {
 	PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS,
 } from '@/lib/services/admin/playground-realtime-service';
 import { copyPlaygroundUpstreamHeaders } from '@/lib/playground/proxy-response-headers';
+import { encodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
 import { handleAdminRouteError } from './error-response';
 
 export const adminPlaygroundRoutes = new Hono<AdminEnv>();
@@ -143,7 +144,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 	}
 
 	try {
-		const { response, upstreamUrlForHeader, latencyMs, upstreamWireBodyJson } =
+		const { response, upstreamUrlForHeader, latencyMs, upstreamWireBodyJson, upstreamWireHeaders } =
 			await invokePlaygroundUpstream(
 				c.get('repositories'),
 				{
@@ -160,6 +161,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 		headers.set('x-playground-upstream-status', String(response.status));
 		headers.set('x-playground-upstream-url', upstreamUrlForHeader);
 		headers.set('x-playground-request-body', encodeURIComponent(upstreamWireBodyJson));
+		headers.set('x-playground-request-headers', encodePlaygroundRequestHeadersHeader(upstreamWireHeaders));
 		headers.set('x-playground-mode', 'route');
 
 		return new Response(response.body, {

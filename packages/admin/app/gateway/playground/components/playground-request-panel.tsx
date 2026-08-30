@@ -15,12 +15,11 @@ import {
 	codeBlockClass,
 	inputClass,
 	labelClass,
-	formatPlaygroundRouteHeadersPreview,
 	matchPlaygroundLlmSample,
 	playgroundLlmFamilyForRoute,
 	playgroundModelHintFromRoute,
 	previewPlaygroundMergedBody,
-	previewPlaygroundRouteHeaders,
+	previewPlaygroundOutboundHeaderRows,
 	PLAYGROUND_LLM_SAMPLE_IDS,
 	type PlaygroundLlmSampleId,
 } from '../playground-utils';
@@ -60,6 +59,7 @@ type Props = {
 	geminiAction: GeminiAction;
 	onGeminiActionChange: (action: GeminiAction) => void;
 	lastSentWireBody: string | null;
+	lastSentWireHeaders: Record<string, string> | null;
 };
 
 export function PlaygroundRequestPanel({
@@ -96,6 +96,7 @@ export function PlaygroundRequestPanel({
 	geminiAction,
 	onGeminiActionChange,
 	lastSentWireBody,
+	lastSentWireHeaders,
 }: Props) {
 	const t = useTranslations('playground');
 	const tCommon = useTranslations('common');
@@ -118,17 +119,22 @@ export function PlaygroundRequestPanel({
 			}),
 		[bodyText, selected?.custom_params, selected?.upstream_protocol, selected?.provider_model_name],
 	);
-	const routeHeadersPreview = useMemo(
-		() => previewPlaygroundRouteHeaders(selected?.custom_params),
-		[selected?.custom_params],
+	const routeHeaderRows = useMemo(
+		() =>
+			previewPlaygroundOutboundHeaderRows({
+				customParams: selected?.custom_params,
+				upstreamProtocol: selected?.upstream_protocol,
+				sentHeaders: lastSentWireHeaders,
+			}),
+		[selected?.custom_params, selected?.upstream_protocol, lastSentWireHeaders],
 	);
-	const routeHeadersText = formatPlaygroundRouteHeadersPreview(routeHeadersPreview);
 	const actualBodyJson = lastSentWireBody ?? (mergedPreview.status === 'preview' ? mergedPreview.json : null);
 	const actualBodyHint = lastSentWireBody
 		? t('sentBodyHint')
 		: mergedPreview.status === 'invalid'
 			? t('sentBodyInvalidJson')
 			: t('sentBodyPreviewHint');
+	const headerHint = lastSentWireHeaders ? t('sentHeadersHintSent') : t('sentHeadersHint');
 	const sampleLabel = (id: PlaygroundLlmSampleId) =>
 		id === 'connectivity' ? t('templateConnectivity') : id === 'tools' ? t('templateToolStream') : t('templateReasoning');
 	const llmSampleSwitcher = llmFamily ? (
@@ -405,43 +411,75 @@ export function PlaygroundRequestPanel({
 				</fieldset>
 			) : null}
 
-			<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
-				<div className="flex min-h-0 min-w-0 flex-col">
+			<div className="flex min-h-0 flex-1 flex-col gap-3">
+				<div className="shrink-0">
 					<div className="mb-1 flex items-center justify-between gap-2">
-						<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('inputBody')}</label>
-						{llmSampleSwitcher}
-					</div>
-					<textarea
-						value={bodyText}
-						onChange={(e) => onBodyTextChange(e.target.value)}
-						rows={12}
-						className={`${inputClass} min-h-[180px] flex-1 font-mono text-sm`}
-						spellCheck={false}
-					/>
-				</div>
-				<div className="flex min-h-0 min-w-0 flex-col">
-					<div className="mb-1 flex items-center justify-between gap-2">
-						<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('sentRequest')}</label>
+						<label className="text-xs font-medium uppercase tracking-wider text-gray-500" title={headerHint}>
+							{t('sentHeaders')}
+						</label>
 						{lastSentWireBody ? (
 							<span className="text-[11px] font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
 						) : mergedPreview.status === 'preview' ? (
 							<span className="text-[11px] font-medium text-slate-500">{t('sentBodySourcePreview')}</span>
 						) : null}
 					</div>
-					<div className="mb-2">
-						<div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
-							{t('sentHeaders')}
+					<div className={`${codeBlockClass} max-h-36 overflow-y-auto p-0`}>
+						{routeHeaderRows.length === 0 ? (
+							<p className="px-3 py-2 text-gray-400">{t('sentHeadersEmpty')}</p>
+						) : (
+							<ul className="divide-y divide-gray-100">
+								{routeHeaderRows.map((row) => {
+									const fromCustom = row.source === 'custom_params';
+									return (
+										<li
+											key={`${row.source}:${row.name}`}
+											className={`grid grid-cols-1 gap-0.5 px-3 py-1.5 sm:grid-cols-[minmax(8rem,16rem)_minmax(0,1fr)_auto] sm:items-baseline sm:gap-3 ${
+												fromCustom ? 'bg-amber-50' : ''
+											}`}
+										>
+											<span className="truncate font-mono text-xs font-semibold text-gray-800" title={row.name}>
+												{row.name}
+											</span>
+											<span className="min-w-0 break-all font-mono text-xs text-gray-700" title={row.value}>
+												{row.value}
+											</span>
+											<span
+												className={`w-fit shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+													fromCustom ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600'
+												}`}
+											>
+												{fromCustom ? t('sentHeadersSourceCustomParams') : t('sentHeadersSourceProvider')}
+											</span>
+										</li>
+									);
+								})}
+							</ul>
+						)}
+					</div>
+				</div>
+
+				<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
+					<div className="flex min-h-0 min-w-0 flex-col">
+						<div className="mb-1 flex items-center justify-between gap-2">
+							<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('inputBody')}</label>
+							{llmSampleSwitcher}
 						</div>
-						<p className="mb-1 text-[11px] text-gray-500">{t('sentHeadersHint')}</p>
-						<pre className={`${codeBlockClass} max-h-28 overflow-y-auto ${routeHeadersText ? '' : 'text-gray-400'}`}>
-							{routeHeadersText || t('sentHeadersEmpty')}
+						<textarea
+							value={bodyText}
+							onChange={(e) => onBodyTextChange(e.target.value)}
+							rows={12}
+							className={`${inputClass} min-h-[180px] flex-1 font-mono text-sm`}
+							spellCheck={false}
+						/>
+					</div>
+					<div className="flex min-h-0 min-w-0 flex-col">
+						<label className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-500" title={actualBodyHint}>
+							{t('sentBody')}
+						</label>
+						<pre className={`${codeBlockClass} min-h-[180px] flex-1 overflow-y-auto`}>
+							{actualBodyJson ?? '—'}
 						</pre>
 					</div>
-					<div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">{t('sentBody')}</div>
-					<p className="mb-1 text-[11px] text-gray-500">{actualBodyHint}</p>
-					<pre className={`${codeBlockClass} min-h-[140px] flex-1 overflow-y-auto`}>
-						{actualBodyJson ?? '—'}
-					</pre>
 				</div>
 			</div>
 

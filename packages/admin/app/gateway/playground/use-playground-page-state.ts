@@ -49,6 +49,7 @@ import {
 	templateForRoute,
 	type PlaygroundLlmSampleId,
 } from './playground-utils';
+import { decodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
 import type { FilterOption, GeminiAction, PlaygroundMode, ResponseMeta, ResponseTab, RouteListRow } from './types';
 
 function isAbortError(error: unknown): boolean {
@@ -105,6 +106,7 @@ export function usePlaygroundPageState() {
 	const [usageHint, setUsageHint] = useState<string | null>(null);
 	const [imagePreviews, setImagePreviews] = useState<ImagePreviewItem[]>([]);
 	const [lastSentWireBody, setLastSentWireBody] = useState<string | null>(null);
+	const [lastSentWireHeaders, setLastSentWireHeaders] = useState<Record<string, string> | null>(null);
 	const [lastSentInputSnapshot, setLastSentInputSnapshot] = useState<string | null>(null);
 	const streamEndRef = useRef<HTMLSpanElement>(null);
 	const mergedStreamEndRef = useRef<HTMLSpanElement>(null);
@@ -416,6 +418,7 @@ export function usePlaygroundPageState() {
 		setImagePreviews([]);
 		setResponseMeta(null);
 		setLastSentWireBody(null);
+		setLastSentWireHeaders(null);
 		setLastSentInputSnapshot(null);
 		setResponseText('');
 		setUsageHint(null);
@@ -572,6 +575,7 @@ export function usePlaygroundPageState() {
 		realtimeAudioChunksRef.current = [];
 		setResponseMeta(null);
 		setLastSentWireBody(null);
+		setLastSentWireHeaders(null);
 		setLastSentInputSnapshot(null);
 		setResponseTab('merged');
 
@@ -688,6 +692,7 @@ export function usePlaygroundPageState() {
 			const ct = res.headers.get('Content-Type') ?? '';
 
 			setLastSentWireBody(decodeWireRequestBodyHeader(res, t('decodeWireFailed')));
+			setLastSentWireHeaders(decodePlaygroundRequestHeadersHeader(res));
 			setLastSentInputSnapshot(bodyText);
 
 			setResponseMeta({
@@ -851,6 +856,7 @@ export function usePlaygroundPageState() {
 		usageHint,
 		imagePreviews,
 		lastSentWireBody: lastSentWireBody && lastSentInputSnapshot === bodyText ? lastSentWireBody : null,
+		lastSentWireHeaders: lastSentWireBody && lastSentInputSnapshot === bodyText ? lastSentWireHeaders : null,
 		requestTargetUrl,
 		selectedIsImage,
 		selectedIsAudio,

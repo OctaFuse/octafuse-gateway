@@ -11,6 +11,7 @@ import {
 	playgroundLlmFamilyForRoute,
 	playgroundLlmSampleBody,
 	previewPlaygroundMergedBody,
+	previewPlaygroundOutboundHeaderRows,
 	previewPlaygroundRouteHeaders,
 	formatPlaygroundRouteHeadersPreview,
 	resolvePlaygroundLlmFamily,
@@ -420,5 +421,40 @@ describe('playground-utils', () => {
 			formatPlaygroundRouteHeadersPreview(headers),
 			'HTTP-Referer: https://example.com\nX-Title: My App',
 		);
+	});
+
+	it('previewPlaygroundOutboundHeaderRows merges driver headers and tags custom_params', () => {
+		const rows = previewPlaygroundOutboundHeaderRows({
+			customParams: JSON.stringify({
+				headers: { x: '1', Authorization: 'Bearer secret' },
+			}),
+			upstreamProtocol: 'openai',
+		});
+		assert.deepEqual(
+			rows.map((row) => ({ name: row.name, source: row.source })),
+			[
+				{ name: 'Content-Type', source: 'provider' },
+				{ name: 'Authorization', source: 'provider' },
+				{ name: 'x', source: 'custom_params' },
+			],
+		);
+		const tagged = rows.find((row) => row.name === 'x');
+		assert.equal(tagged?.value, '1');
+	});
+
+	it('previewPlaygroundOutboundHeaderRows prefers sent headers and still tags extras', () => {
+		const rows = previewPlaygroundOutboundHeaderRows({
+			customParams: JSON.stringify({ headers: { x: '1' } }),
+			upstreamProtocol: 'openai',
+			sentHeaders: {
+				'Content-Type': 'application/json',
+				Authorization: 'Bearer sk-abcd…mnop',
+				'X-DashScope-Async': 'enable',
+				x: '1',
+			},
+		});
+		assert.equal(rows.find((row) => row.name === 'X-DashScope-Async')?.source, 'provider');
+		assert.equal(rows.find((row) => row.name === 'x')?.source, 'custom_params');
+		assert.equal(rows.find((row) => row.name === 'Authorization')?.value, 'Bearer sk-abcd…mnop');
 	});
 });
