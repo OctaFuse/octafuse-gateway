@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { listStaticModelPresets } from '@/lib/model-preset';
+import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
+import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
+import { coerceModelPricingProfileInput } from './pricing-input';
 import { listStaticModelPresetCatalogForAdmin } from './models-service';
 
 describe('import catalog pricing preview follows billing currency', () => {
@@ -89,5 +91,36 @@ describe('static model presets do not seed tags', () => {
 				`${preset.id}: presets must not include tags`
 			);
 		}
+	});
+});
+
+const DEEPSEEK_V4_PEAK_SCHEDULE = [
+	{ start: '09:00', end: '12:00', factor: 2, days: [1, 2, 3, 4, 5] },
+	{ start: '14:00', end: '18:00', factor: 2, days: [1, 2, 3, 4, 5] },
+];
+
+describe('static preset import writes catalog schedule', () => {
+	it('keeps DeepSeek V4 official peak windows on both currency branches', () => {
+		for (const id of ['deepseek-v4-pro', 'deepseek-v4-flash']) {
+			const preset = listStaticModelPresets().find((p) => p.id === id);
+			assert.ok(preset, id);
+			for (const billing of ['USD', 'CNY'] as const) {
+				const json = coerceModelPricingProfileInput(
+					pickPresetPricingRawForBillingCurrency(preset!, billing)
+				);
+				assert.ok(json, `${id} ${billing}`);
+				const profile = parsePricingProfile(json!);
+				assert.ok(profile, `${id} ${billing} parsed`);
+				assert.deepEqual(profile!.schedule, DEEPSEEK_V4_PEAK_SCHEDULE, `${id} ${billing}`);
+			}
+		}
+	});
+
+	it('does not invent a schedule for DeepSeek V3.2', () => {
+		const preset = listStaticModelPresets().find((p) => p.id === 'deepseek-v3.2');
+		assert.ok(preset);
+		const json = coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'));
+		assert.ok(json);
+		assert.deepEqual(parsePricingProfile(json!)?.schedule, []);
 	});
 });

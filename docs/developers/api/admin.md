@@ -691,7 +691,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 ### `POST /admin/models/import`
 
 - **请求体**：`{ "ids": ["glm-5", "gpt-5.2", ...] }`（**必填**；`ids` 须为非空字符串数组；重复 id 会去重；顺序保留）。
-- **行为**：仅处理 `ids` 中在静态目录存在的 id；根据当前 **`BILLING_CURRENCY`**（`USD` → `usd` 分支，`CNY` → `cny` 分支；库内为其他历史值时按 **`USD`** 分支取价）写入 `models.pricing_profile`；**已存在同 `id` 的不导入、不覆盖**，该 id 记入 **`skipped_existing`**；否则 **INSERT** 新建。标签由运营在导入后自行维护，导入**不**写入 `model_tags`。未知 id 或校验失败记入 **`failed`**，其余仍处理。
+- **行为**：仅处理 `ids` 中在静态目录存在的 id；根据当前 **`BILLING_CURRENCY`**（`USD` → `usd` 分支，`CNY` → `cny` 分支；库内为其他历史值时按 **`USD`** 分支取价）把该分支**整段**写入 `models.pricing_profile`（含 `tiers` / 图音频单价，以及可选官方时段 `schedule`）；**已存在同 `id` 的不导入、不覆盖**，该 id 记入 **`skipped_existing`**；否则 **INSERT** 新建。标签由运营在导入后自行维护，导入**不**写入 `model_tags`。未知 id 或校验失败记入 **`failed`**，其余仍处理。
 - **响应** `data`：`{ "billing_currency_used", "created", "updated"（恒为 0）, "skipped_existing": string[], "failed": [{ "id", "message" }] }`。
 
 ### 运维验收：文生图模型 `gpt-image-2`
