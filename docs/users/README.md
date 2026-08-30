@@ -8,7 +8,7 @@
 |------|------|
 | 本地 D1 → Cloudflare 上云（默认路径） | [quickstart.md](./quickstart.md) |
 | 先了解 Gateway 能解决什么问题（含图片生成、语音转写、智能体工具、Catalog） | [features.md](./features.md) |
-| 部署后配置供应商、模型路由、智能体工具、用户 Key | [configuration.md](./configuration.md) |
+| 部署后配置供应商、协议路由、峰谷价格、双额度和用户 Key | [configuration.md](./configuration.md) |
 | 将客户端或工具指向 Gateway（Chat / Images / Audio / Tools） | [connect-clients.md](./connect-clients.md) |
 
 ## 不在这里展开的内容

@@ -50,9 +50,10 @@ npm run bootstrap:cloudflare
 ## 3. 打开管理后台后配置
 
 1. 添加或导入供应商（Provider），并填入真实上游 API Key。
-2. 添加或导入模型（Model），并在路由（Routes）中创建或启用对应的请求入口（Request Surface）→ 路由池（Route Pool）→ 上游目标（Upstream Target）。
-3. 创建用户 API Key。
-4. 用用户 Key 调用代理服务。
+2. 添加或导入模型（Model），并在路由（Routes）中选择匹配的协议适配器，创建或启用对应的请求入口（Request Surface）→ 路由池（Route Pool）→ 上游目标（Upstream Target）。
+3. 先在调试台（Playground）验证单条上游路由，再在模拟器（Simulator）验证真实鉴权、路由、计费和日志。
+4. 创建用户及用户 API Key；需要订阅和加购并存时，分别配置周期额度与永久额度。
+5. 用用户 Key 调用代理服务。
 
 示例请求（本地把主机换成 `127.0.0.1:8787`；已上云则换成你的代理服务 URL）：
 
