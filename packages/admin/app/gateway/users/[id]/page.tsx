@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ClipboardDocumentIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
+import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
 import { parseGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
@@ -132,6 +133,7 @@ export default function GatewayUserDetailPage() {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
   const tOptions = useTranslations('options');
+  const { notify, confirm } = useFeedback();
   const params = useParams();
   const userIdRaw = typeof params.id === 'string' ? params.id : '';
   const userId = decodeURIComponent(userIdRaw);
@@ -502,18 +504,24 @@ export default function GatewayUserDetailPage() {
   };
 
   const deleteUser = async () => {
-    if (!window.confirm(t('confirm.deleteUser'))) return;
+    const ok = await confirm({
+      title: tCommon('delete'),
+      message: t('confirm.deleteUser'),
+      confirmLabel: tCommon('delete'),
+      danger: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
       const data = await readApiJson(res);
       if (data.success) {
         window.location.href = '/gateway/users';
       } else {
-        alert(data.message || t('errors.deleteFailed'));
+        notify('error', data.message || t('errors.deleteFailed'));
       }
     } catch (e) {
       console.error(e);
-      alert(t('errors.deleteFailed'));
+      notify('error', t('errors.deleteFailed'));
     }
   };
 
@@ -592,7 +600,13 @@ export default function GatewayUserDetailPage() {
   };
 
   const deleteKeyHard = async (keyId: string) => {
-    if (!window.confirm(t('confirm.deleteKey'))) return;
+    const ok = await confirm({
+      title: tCommon('delete'),
+      message: t('confirm.deleteKey'),
+      confirmLabel: tCommon('delete'),
+      danger: true,
+    });
+    if (!ok) return;
     try {
       const res = await fetch(
         `/api/admin/users/${encodeURIComponent(userId)}/keys/${encodeURIComponent(keyId)}`,
@@ -600,10 +614,10 @@ export default function GatewayUserDetailPage() {
       );
       const data = await readApiJson(res);
       if (data.success) loadKeys();
-      else alert(data.message || tCommon('failed'));
+      else notify('error', data.message || tCommon('failed'));
     } catch (e) {
       console.error(e);
-      alert(tCommon('failed'));
+      notify('error', tCommon('failed'));
     }
   };
 

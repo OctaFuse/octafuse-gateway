@@ -11,11 +11,12 @@ Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统�
 | 供应商（Provider） | 一个上游模型供应商或兼容端点；**一把**上游 API Key + `active` / `disabled`。 |
 | 模型 / 路由组（Model / Route group） | Gateway 暴露给客户端的模型 ID 与可选分组，例如 `model-id:default`、`model-id:free`。 |
 | 请求入口（Request Surface） | 客户端实际进入模型的协议与操作，例如 OpenAI `chat` / `responses`、Anthropic `messages`、OpenAI `images.generations`。 |
+| 协议适配器（Protocol Adapter） | 说明“客户端如何请求 Gateway”以及“Gateway 如何请求上游”。配置路由时选择匹配项，管理后台会自动填入两侧协议与操作。 |
 | 路由池（Route Pool） | 一个请求入口指向的故障转移池，包含一组可替换的上游目标，可覆盖路由策略并选择性启用供应商粘性。 |
 | 上游目标（Upstream Target） | 具体的供应商 + 上游模型，包含 `priority` / `weight`、上游 operation、计费倍率与默认参数。 |
 | 路由策略（Route strategy） | 同池、同 priority 层内如何排序候选供应商：`hash_affinity`（默认）、`weighted_random`、`weight_priority`、`weighted_round_robin`。 |
 | 智能体工具（Agent Tool） | 通过 `/v1/tools/*` 暴露给 Agent 的可扩展能力；当前包含 `web-search`、`web-fetch`、`web-deep-search`、`ai-detection`。 |
-| 用户 / API Key（User / API Key） | Gateway 发给实际使用方的身份与访问密钥；支持 External system → User → API Key 分层，并可绑定预算、状态、元数据和按模型设置的用户计费倍率。 |
+| 用户 / API Key（User / API Key） | Gateway 发给实际使用方的身份与访问密钥；支持 External system → User → API Key 分层，并可绑定周期额度、永久额度、状态、元数据和按模型设置的用户计费倍率。 |
 
 ## 主要能力
 
@@ -23,17 +24,18 @@ Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统�
 |------|------|
 | 统一入口 | 客户端只需要配置 Gateway Base URL 和用户 Key。 |
 | 多协议兼容 | 支持 OpenAI Chat Completions、OpenAI Responses、Anthropic Messages、Gemini `v1beta` 风格入口。 |
-| 图片生成 / 编辑（Images） | OpenAI 兼容 `/v1/images/*`；目录价支持 **token** 分项与 **per_image** 按张；默认 `GET /v1/models` 不含纯 image 模型，可用 `kind=image` / `kind=all` 或直接打 Images API。 |
-| 音频（Audio） | OpenAI 兼容 `/v1/audio/transcriptions` 与 `/v1/audio/speech`，DashScope 同步多模态 ASR，以及原生实时音频；ASR 支持按时长或 Token 计费，TTS 支持按字符计费；默认 `GET /v1/models` 不含纯音频模型，可用 `kind=audio` / `kind=all`。 |
+| 图片生成 / 编辑（Images） | 客户端统一调用 OpenAI 兼容 `/v1/images/*`；OpenAI 兼容上游可直接透传，阿里云百炼千问 / 万相可由显式适配器转换为 DashScope 原生生图请求。目录价支持 **token** 分项与 **per_image** 按张；默认 `GET /v1/models` 不含纯 image 模型，可用 `kind=image` / `kind=all` 或直接调用 Images API。 |
+| 音频（Audio） | OpenAI 兼容 `/v1/audio/transcriptions` 与 `/v1/audio/speech`，DashScope 同步多模态 ASR，以及原生实时音频；ASR 支持按时长或 Token 计费，TTS 支持按字符计费。调试台验证实时 ASR 时可直接使用浏览器麦克风；默认 `GET /v1/models` 不含纯音频模型，可用 `kind=audio` / `kind=all`。 |
 | 智能体工具（Agent Tools） | 面向 Agent 的可扩展产品 API（`/v1/tools/*`）：`web-search` 支持博查、Tavily、阿里云 CleverSee、腾讯云 WSA；`web-fetch` 支持 Firecrawl、Tavily Extract、Jina Reader；`web-deep-search` 支持 Firecrawl Search、Jina Search；`ai-detection` 多引擎 catalog（当前实现腾讯云 TMS）。在管理后台的智能体工具 → 工具配置（Tools → Configuration）中，为每种工具配置多个引擎并选择一个活跃引擎（Active）；联网类工具**按次**、AI 率检测按**计费字符单元**写入三账本（供应成本 / 目录标准价 / 用户计费），**仅用户计费（charged）扣预算**；**上游失败不扣费**。调用记入请求日志（`provider_id=octafuse-tools`）。定价只读见 `GET /v1/tools/pricing`（含 `metered` / `standard` / `charged`，`cost` = charged）。 |
-| 公开 Catalog | `GET /catalog/models` 无需用户 Key，聚合 active 路由的模型与协议能力，适合门户 discovery；与需鉴权的 `GET /v1/models`（默认 LLM、含 `default,free` route group）分工不同。 |
+| 公开 Catalog | `GET /catalog/models` 无需用户 Key，聚合可用模型、协议能力和各路由组当前及后续时段价格，适合门户展示；需鉴权的 `GET /v1/models` 默认返回 LLM 和 `default,free` 路由组。 |
 | 路由与故障转移 | 客户端请求先按协议 / operation 命中请求入口，再进入路由池：池内按 **priority** 分层，同层按 **策略 + weight** 排序；失败则换下一供应商（供应商级熔断）。默认策略 **hash_affinity** 提高上游 prompt cache 命中。详见 [路由拓扑](../developers/architecture/route-topology.md)与 [路由策略](../developers/reference/route-strategies.md)。 |
 | 供应商粘性（Provider sticky） | 路由池可选择记住用户上次成功的上游目标，在空闲 TTL 内跨请求、跨运行实例并可跨 priority 优先尝试；供应商可归因故障会解绑，配置变更可通过 epoch 整池失效。它与四种层内策略正交、默认关闭，适合提高 Prompt Cache 连续性。界面芯片为 `Sticky · Off` / `Sticky · {ttl}`。 |
-| 预算与计费 | 按用户 Key 记录请求、Token、成本与扣费，支持周期预算和用量查询。模型与智能体工具均区分 **供应成本（Metered）**、**官方当刻目录价（Standard）**、**用户计费（Charged）** 三笔账（工具在 catalog 直接配绝对单价，无 Route factor/schedule）；`budget_spent` 只累加 charged。模型可配官方分时时段；路由倍率叠在官方当刻价之上，并可在**分时时段（Schedule）**里按可选星期覆盖倍率；用户详情还可按目录模型设置用户倍率，在路由用户计费之后继续打折、加价或免单。 |
-| 预置供应商 / 模型 | 管理后台可从静态目录一键导入：除官方模型厂外，还覆盖聚合平台与各类 Coding / Token Plan；预填 Base URL 与模型目录价等信息，导入后补齐真实 API Key 并挂路由即可使用。完整清单见官网 [Providers Catalog](https://octafuse.dev/zh/catalog/providers/) 与 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；Coding / Token Plan 的专用 endpoint 不应与普通按量模板混用。 |
+| 额度与扣费 | 用户可同时拥有按日 / 周 / 月重置的**周期额度**和不会随周期重置的**永久额度**。每次请求先扣周期额度，不足部分再扣永久额度；用户详情还可按模型设置折扣、加价或免单。 |
+| 价格与峰谷时段 | 模型请求区分 **供应成本（Metered）**、**官方当刻目录价（Standard）**、**用户计费（Charged）**。先在模型中维护供应商官方时段，再在路由中设置用户计费和供应成本倍率；保存前可以直接预览各时段实际价格。智能体工具使用独立的绝对单价，不应用模型路由时段。 |
+| 预置供应商 / 模型 | 管理后台可从静态目录一键导入：除官方模型厂外，还覆盖聚合平台与各类 Coding / Token Plan；预填 Base URL 与模型目录价等信息，导入后补齐真实 API Key 并挂路由即可使用。当前预设还包括 `hy4-preview`、`qwen3.8-flash`、`glm-5.3-flash`。模型导入不会自动写入模型标签，标签由管理员在导入后维护。完整清单见官网 [Providers Catalog](https://octafuse.dev/zh/catalog/providers/) 与 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；Coding / Token Plan 的专用 endpoint 不应与普通按量模板混用。 |
 | 供应商管理 | 每个供应商维护单键、启用状态与 `endpoints`；明文 key 仅经 reveal 接口查看。多账号 = 多个供应商。 |
-| 日志与审计 | 请求日志（Request Logs）并列展示客户端入口与实际上游、功能标签、用量和费用（含 Images / Audio / Tools），展开后可核对路由、星期时段与用户模型倍率；审计日志记录预算扣减、用户与 Key 生命周期等事件。 |
-| 调试台 / 模拟器（Playground / Simulator） | **调试台**：Routes 模式支持 Chat / Responses / Images / Audio，直连单条 `model_routes` 上游（不计费、不写日志、无 failover）；Tools 模式读 `system_config` catalog **直连引擎**。**模拟器**：浏览器打真实代理服务（鉴权、路由、计费、日志），支持 LLM（含 Responses）/ Image / Audio / **Tools**。 |
+| 日志与审计 | 请求日志（Request Logs）并列展示客户端入口与实际上游、功能标签、用量和费用（含 Images / Audio / Tools），展开后可核对路由、星期时段与用户模型倍率；请求记录中的 `charged_wallet_cost` 表示本次从永久额度扣除的部分。审计日志会把周期额度与永久额度变化拆开显示，并记录加额、周期重置、用户与 Key 生命周期等事件。 |
+| 调试台 / 模拟器（Playground / Simulator） | **调试台**：Routes 模式支持 Chat / Responses / Images / Audio，直连单条 `model_routes` 上游（不计费、不写日志、无 failover）；DashScope 实时 ASR 默认可使用浏览器麦克风。Tools 模式读 `system_config` catalog **直连引擎**。**模拟器**：浏览器调用真实代理服务（鉴权、路由、计费、日志），支持 LLM（含 Responses）/ Image / Audio / **Tools**；百炼千问 / 万相生图仍从 OpenAI Images 入口进入。 |
 | 管理 API | 外部门户、后台或脚本可通过 `/api/admin/*` 自动创建用户、发 Key、同步预算和读取配置。 |
 | 部署与数据库 | 支持 **Cloudflare Workers + D1**，也支持 Docker / Node + **Postgres 或 MySQL**；同一实例只使用一种数据面。 |
 

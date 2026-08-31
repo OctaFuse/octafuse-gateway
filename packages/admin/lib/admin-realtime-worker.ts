@@ -7,14 +7,8 @@ import { authenticateAdminRequest } from './auth';
 import { handleGatewayApiError } from './api-error';
 import type { AdminBindings } from './admin-env';
 import { getAdminApp } from './admin-app';
+import { isSameOriginBrowserWrite, rewriteToInternalAdminPath } from './admin-request-rewrite';
 import { resolveAdminStorageContext } from './storage-context';
-
-function rewriteToInternalAdminPath(request: Request): Request {
-	const url = new URL(request.url);
-	const prefix = '/api/admin';
-	url.pathname = '/admin' + url.pathname.slice(prefix.length);
-	return new Request(url, request);
-}
 
 /** 处理调试台原生 DashScope WebSocket，保留 Cloudflare 的 `webSocket` 响应对象。 */
 export async function handleAdminRealtimeUpgrade(
@@ -35,6 +29,7 @@ export async function handleAdminRealtimeUpgrade(
 			...runtimeBindings,
 			STORAGE_CONTEXT: storage,
 			ADMIN_PRINCIPAL: principal,
+			ADMIN_CSRF_SAME_ORIGIN: isSameOriginBrowserWrite(request),
 		};
 		return getAdminApp().fetch(rewriteToInternalAdminPath(request), appBindings, ctx);
 	} catch (error) {

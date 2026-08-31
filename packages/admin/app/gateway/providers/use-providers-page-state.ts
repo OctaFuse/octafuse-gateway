@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useFeedback } from '@/components/feedback';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
 	deleteProvider,
@@ -47,6 +49,10 @@ function emptyFilterCounts(): Record<ProviderListFilter, number> {
 }
 
 export function useProvidersPageState() {
+	const tImport = useTranslations('providers.import');
+	const tModal = useTranslations('providers.modal');
+	const tCommon = useTranslations('common');
+	const { notify, confirm } = useFeedback();
 	const searchParams = useSearchParams();
 	const [providers, setProviders] = useState<GatewayProvider[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -155,10 +161,10 @@ export function useProvidersPageState() {
 				setTimeout(() => setCopiedId(null), 2000);
 			} catch (error) {
 				console.error('Copy provider API key error:', error);
-				alert(error instanceof Error ? error.message : 'Failed to copy API key');
+				notify('error', error instanceof Error ? error.message : tImport('copyFailed'));
 			}
 		},
-		[]
+		[notify, tImport]
 	);
 
 	const handleToggleStatus = useCallback(
@@ -170,16 +176,16 @@ export function useProvidersPageState() {
 				if (result.success) {
 					void refreshProviders();
 				} else {
-					alert(result.message);
+					notify('error', result.message || tCommon('updateFailed'));
 				}
 			} catch (error) {
 				console.error('Toggle provider status error:', error);
-				alert('Update failed');
+				notify('error', tCommon('updateFailed'));
 			} finally {
 				setStatusTogglingId(null);
 			}
 		},
-		[refreshProviders]
+		[notify, refreshProviders, tCommon]
 	);
 
 	const handleCreate = useCallback(() => {
@@ -231,7 +237,13 @@ export function useProvidersPageState() {
 
 	const handleDelete = useCallback(
 		async (id: string) => {
-			if (!confirm('Are you sure you want to delete this provider?')) return;
+			const ok = await confirm({
+				title: tModal('deleteProvider'),
+				message: tModal('confirmDelete'),
+				confirmLabel: tCommon('delete'),
+				danger: true,
+			});
+			if (!ok) return;
 
 			setIsDeleting(true);
 			try {
@@ -241,16 +253,16 @@ export function useProvidersPageState() {
 					setEditingProvider(null);
 					void refreshProviders();
 				} else {
-					alert(result.message);
+					notify('error', result.message || tCommon('failed'));
 				}
 			} catch (error) {
 				console.error('Delete error:', error);
-				alert('Delete failed');
+				notify('error', tCommon('failed'));
 			} finally {
 				setIsDeleting(false);
 			}
 		},
-		[refreshProviders]
+		[confirm, notify, refreshProviders, tCommon, tModal]
 	);
 
 	const loadImportCatalog = useCallback(async () => {
@@ -300,7 +312,7 @@ export function useProvidersPageState() {
 			.filter(([, v]) => v)
 			.map(([k]) => k);
 		if (ids.length === 0) {
-			alert('Select at least one template.');
+			notify('error', tImport('selectNone'));
 			return;
 		}
 		setImportSubmitting(true);
@@ -308,23 +320,27 @@ export function useProvidersPageState() {
 			const result = await importProviderPresets(ids);
 			if (result.success) {
 				const { created, failed } = result.data;
-				const failLines =
-					failed.length > 0
-						? `\nFailed:\n${failed.map((f) => `  ${f.id}: ${f.message}`).join('\n')}`
-						: '';
-				alert(`Import finished.\nCreated: ${created}${failLines}`);
+				const failN = failed.length;
+				const detail = failN > 0 ? failed.map((f) => `${f.id}: ${f.message}`).join('\n') : undefined;
+				notify(
+					failN > 0 ? 'error' : 'success',
+					failN > 0
+						? tImport('finishedWithFail', { created, failed: failN })
+						: tImport('finished', { created }),
+					detail
+				);
 				setShowImportModal(false);
 				void refreshProviders();
 			} else {
-				alert(result.message);
+				notify('error', result.message || tImport('failed'));
 			}
 		} catch (error) {
 			console.error('Import providers error:', error);
-			alert('Import failed');
+			notify('error', tImport('failed'));
 		} finally {
 			setImportSubmitting(false);
 		}
-	}, [importSelected, refreshProviders]);
+	}, [importSelected, notify, refreshProviders, tImport]);
 
 	const handleSave = useCallback(async () => {
 		if (!editingProvider && !formData.api_key.trim()) {

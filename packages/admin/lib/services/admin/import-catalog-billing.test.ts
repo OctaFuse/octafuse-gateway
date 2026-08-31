@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { listStaticModelPresets } from '@/lib/model-preset';
+import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
+import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
+import { coerceModelPricingProfileInput } from './pricing-input';
 import { listStaticModelPresetCatalogForAdmin } from './models-service';
 
 describe('import catalog pricing preview follows billing currency', () => {
 	it('USD branch uses $ and usd tier amounts', () => {
 		const row = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-max');
 		assert.ok(row);
-		assert.equal(row!.pricing_label, '$2.5 / $7.5 /M');
+		assert.equal(row!.pricing_label, '$2 / $6 /M');
 		assert.match(row!.pricing_preview ?? '', /\$\/M/);
 	});
 
@@ -63,8 +65,8 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.display_name, 'Qwen3.8 Flash');
 		assert.equal(usd!.context_window, 1000000);
 		assert.equal(usd!.max_tokens, 128000);
-		assert.equal(usd!.pricing_label, '$0.16 / $0.47 /M');
-		assert.equal(cny!.pricing_label, '¥1 / ¥3 /M');
+		assert.equal(usd!.pricing_label, '$0.15 / $0.47 /M');
+		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
 	});
 });
 
@@ -89,5 +91,36 @@ describe('static model presets do not seed tags', () => {
 				`${preset.id}: presets must not include tags`
 			);
 		}
+	});
+});
+
+const DEEPSEEK_V4_PEAK_SCHEDULE = [
+	{ start: '09:00', end: '12:00', factor: 2, days: [1, 2, 3, 4, 5] },
+	{ start: '14:00', end: '18:00', factor: 2, days: [1, 2, 3, 4, 5] },
+];
+
+describe('static preset import writes catalog schedule', () => {
+	it('keeps DeepSeek V4 official peak windows on both currency branches', () => {
+		for (const id of ['deepseek-v4-pro', 'deepseek-v4-flash']) {
+			const preset = listStaticModelPresets().find((p) => p.id === id);
+			assert.ok(preset, id);
+			for (const billing of ['USD', 'CNY'] as const) {
+				const json = coerceModelPricingProfileInput(
+					pickPresetPricingRawForBillingCurrency(preset!, billing)
+				);
+				assert.ok(json, `${id} ${billing}`);
+				const profile = parsePricingProfile(json!);
+				assert.ok(profile, `${id} ${billing} parsed`);
+				assert.deepEqual(profile!.schedule, DEEPSEEK_V4_PEAK_SCHEDULE, `${id} ${billing}`);
+			}
+		}
+	});
+
+	it('does not invent a schedule for DeepSeek V3.2', () => {
+		const preset = listStaticModelPresets().find((p) => p.id === 'deepseek-v3.2');
+		assert.ok(preset);
+		const json = coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'));
+		assert.ok(json);
+		assert.deepEqual(parsePricingProfile(json!)?.schedule, []);
 	});
 });

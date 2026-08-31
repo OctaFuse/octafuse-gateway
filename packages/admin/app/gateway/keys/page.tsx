@@ -19,6 +19,7 @@ import { readApiJson } from '@/lib/api-json';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
+import { useFeedback } from '@/components/feedback';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -100,6 +101,7 @@ export default function GatewayKeysPage() {
   const t = useTranslations('keysPage');
   const tCommon = useTranslations('common');
   const tOptions = useTranslations('options');
+  const { notify, confirm } = useFeedback();
   const [keys, setKeys] = useState<GatewayApiKey[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -245,11 +247,11 @@ export default function GatewayKeysPage() {
         );
         fetchKeys();
       } else {
-        alert(data.message || tCommon('updateFailed'));
+        notify('error', data.message || tCommon('updateFailed'));
       }
     } catch (error) {
       console.error('Status toggle error:', error);
-      alert(tCommon('updateFailed'));
+      notify('error', tCommon('updateFailed'));
     } finally {
       setStatusTogglingId(null);
     }
@@ -308,11 +310,13 @@ export default function GatewayKeysPage() {
 
   const handleEditDelete = async () => {
     if (!selectedKey) return;
-    if (
-      !window.confirm(
-        t('confirmDelete')
-      )
-    ) {
+    const ok = await confirm({
+      title: t('deleteKey'),
+      message: t('confirmDelete'),
+      confirmLabel: tCommon('delete'),
+      danger: true,
+    });
+    if (!ok) {
       return;
     }
     setSaveError('');

@@ -1,6 +1,8 @@
 /**
  * 合并路由级默认参数：`custom_params` 与用户请求体深度合并（用户优先）。
+ * 保留键 `headers` 不进入请求体。
  */
+import { routeCustomParamsBody } from '@octafuse/core';
 import type { RouteResult } from './model-router';
 
 type JsonObject = Record<string, unknown>;
@@ -29,13 +31,13 @@ function deepMergeDefaults(defaultValue: unknown, userValue: unknown): unknown {
 }
 
 /**
- * 构造发往上游的请求体。优先级：用户字段 > route `custom_params`。
+ * 构造发往上游的请求体。优先级：用户字段 > route `custom_params`（不含 `headers`）。
  * @param userBody 客户端 JSON 体（已解析为对象）
  */
 export function buildRouteRequestBody(
   route: RouteResult,
   userBody: JsonObject
 ): JsonObject {
-  const finalBody = deepMergeDefaults(route.customParams ?? {}, userBody);
+  const finalBody = deepMergeDefaults(routeCustomParamsBody(route.customParams), userBody);
   return isPlainObject(finalBody) ? finalBody : { ...userBody };
 }

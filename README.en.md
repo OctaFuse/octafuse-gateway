@@ -18,7 +18,7 @@ Octafuse Gateway is designed to serve as a **unified AI capability hub for one-p
 Its core capabilities include:
 
 1. Provider onboarding: Connect model vendors and aggregation platforms. A large preset catalog, including Coding / Token Plans, lets you import endpoints with one click and then add the corresponding API key. See the [Providers Catalog](https://octafuse.dev/en/catalog/providers/); PRs for additional preset Providers are welcome.
-2. AI model onboarding: Import models from built-in catalog data without manually configuring common parameters and pricing. See the [Models Catalog](https://octafuse.dev/en/catalog/models/); PRs for additional models are welcome.
+2. AI model onboarding: Import models from the built-in catalog without manually configuring common parameters and pricing. See the [Models Catalog](https://octafuse.dev/en/catalog/models/); PRs for additional models are welcome.
 3. Multi-protocol access:
     - OpenAI endpoints:
       - Chat Completions: `POST /v1/chat/completions`
@@ -30,30 +30,40 @@ Its core capabilities include:
     - Google Gemini endpoint: `POST /v1beta/models/{model}:generateContent` (including `streamGenerateContent`)
     - DashScope synchronous multimodal ASR: `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
     - DashScope realtime audio: `GET /v1/dashscope/realtime`
-4. Agent tool access: Use `/v1/tools/*` to expose tools to agents with centralized logging, billing, and cost control, so models and tools share one Gateway:
+4. Protocol adaptation and conversion: Choose how client requests map to upstream protocols, so applications can use familiar interfaces across different providers. For example, OpenAI Images clients can call Alibaba Cloud Model Studio Qwen Image / Wan Image models through the Gateway.
+5. Agent tool access: Use `/v1/tools/*` to expose tools to agents with centralized logging, billing, and cost control, so models and tools share one Gateway:
     - Web search (`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
     - Web fetch (`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader
     - Deep search (`POST /v1/tools/web-deep-search`, search + read): Firecrawl Search, Jina Search
     - AI-content detection (`POST /v1/tools/ai-detection`): Tencent Cloud TMS is implemented, with a multi-engine catalog ready for expansion
     - More Agent tools are planned, and contributions are welcome.
-5. Unified AI capability endpoint: All connected models, platforms, and tools are exposed through the deployed Octafuse Gateway Base URL, so clients only need to remember one endpoint.
-6. Multiple routing strategies: When a model has several upstream resources, choose the strategy that best matches the workload:
+6. Unified AI capability endpoint: All connected models, platforms, and tools are exposed through the deployed Octafuse Gateway Base URL, so clients only need to remember one endpoint.
+7. Multiple routing strategies: When a model has several upstream resources, choose the strategy that best matches the workload:
     - `hash_affinity`: Default; keeps the same user, model, and protocol on a stable upstream for a **high prompt-cache hit rate** and session continuity, though short-term traffic may be uneven
     - `weighted_random`: Weighted random distribution with **strong load balancing**, suitable for proportional cost allocation or A/B testing; users may switch Providers more often, reducing cache hits
     - `weight_priority`: Deterministic ordering from highest to lowest weight, suitable for explicit primary / backup behavior; the first Provider receives most traffic
     - `weighted_round_robin`: Weighted rotation for more even distribution; counters are maintained per runtime instance and are not globally synchronized across instances
-7. Integrated user management and accounting:
+8. Integrated user management and accounting:
     - Three-level External system, User, and API Key hierarchy: the external-system field separates systems or teams, while API Keys authenticate calls and drive charging and auditing
+    - Dual quota system: recurring quota supports subscriptions, while permanent quota supports top-ups; both can be used together
     - Three ledgers: every invocation records catalog price, actual provider cost, and user charge separately
-    - Time-of-day multipliers: peak / off-peak pricing, including weekday vs weekend rates, improves cost accuracy and enables flexible customer pricing and promotions
+    - Peak / off-peak pricing: configure model and route prices by time of day or weekday, with effective price previews
     - Per-model user factors: apply a discount, markup, or free access for one user and catalog model without changing catalog price or provider cost
-8. Admin console and management APIs:
+9. Admin console and management APIs:
     - Full Admin UI and APIs for manual operation or integration with other portals
     - Observability and analytics for request details, statistics, and operational analysis
-    - Playground / Simulator for quickly validating Provider, model, route, and client configurations
-9. Flexible deployment:
+    - Playground / Simulator for quickly validating Provider, model, route, and client configurations, including realtime speech recognition
+10. Flexible deployment:
     - Free deployment on **Cloudflare Workers + D1**
     - Docker deployment with Postgres / MySQL
+
+## Admin Console Overview
+
+| Provider onboarding | Request Surface → strategy → Upstream Target routing topology |
+|---|---|
+| ![Providers: card grid showing key status, protocol capabilities, and route counts](./docs/assets/screenshots/providers.webp) | ![Routes: request surfaces, route pools, policies, stickiness, and failover](./docs/assets/screenshots/routes.webp) |
+
+The Providers page connects upstream accounts and protocol endpoints. The Routes page presents client request surfaces, routing policies, and upstream targets as one visual chain. See the [Admin configuration guide](./docs/users/configuration.md) for the complete setup order.
 
 ## How It Differs from Other Open-Source AI Gateways
 
@@ -75,14 +85,16 @@ Its core capabilities include:
 - **⚪ None**: Official public documentation does not list a comparable built-in capability
 
 <details>
-<summary><strong>Expand the full capability comparison (22 items)</strong></summary>
+<summary><strong>Expand the full capability comparison (24 items)</strong></summary>
 
 ### Onboarding and Agent capabilities
 
 | Capability | Octafuse | New API | LiteLLM | Sub2API | Bifrost |
 |---|:---:|:---:|:---:|:---:|:---:|
 | Provider / model presets and one-click import | ✅ | 🟡 | 🟡 | 🟡 | 🟡 |
-| Native protocol and multimodal coverage | 🟡¹ | ✅ | ✅ | ✅ | ✅ |
+| OpenAI, Anthropic, and Gemini protocol endpoints | ✅ | ✅ | ✅ | ✅ | ✅ |
+| DashScope native synchronous / realtime audio and cross-protocol routing | ✅¹ | ⚪ | ⚪ | ⚪ | ⚪ |
+| Text, image, speech, and video multimodal coverage | 🟡² | ✅ | ✅ | 🟡 | ✅ |
 | Built-in web search, fetch, and deep search | ✅ | ⚪ | 🟠 | 🟠 | 🟠 |
 | Tool provider configuration, invocation logs, and billing | ✅ | ⚪ | 🟡 | 🟠 | 🟠 |
 
@@ -119,7 +131,9 @@ Its core capabilities include:
 | Docker self-hosting | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cloudflare Workers edge deployment | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
-<sup>1</sup> Octafuse's native protocol and multimodal coverage is still being expanded.
+<sup>1</sup> Octafuse supports DashScope native synchronous ASR and realtime ASR / TTS, and can route OpenAI-compatible ASR / TTS requests to DashScope across protocols.
+<br />
+<sup>2</sup> Octafuse currently covers text, images, ASR, TTS, and realtime speech. Video has not yet been added to the unified request surface.
 
 </details>
 

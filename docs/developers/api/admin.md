@@ -87,6 +87,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/analytics/models` | GET | `api_key_request_logs`，可选联 `model_tags` | Admin UI |
 | `/admin/analytics/providers` | GET | `api_key_request_logs`，按 Provider 聚合 | Admin UI |
 | `/admin/analytics/users` | GET | `api_key_request_logs`，左联 **`users`**（用户维度） | Admin UI |
+| `/admin/analytics/keys` | GET | `api_key_request_logs`，按 `api_key_id` 聚合（需 `user_id`） | 外部集成方、Admin UI |
 | `/admin/analytics/reliability` | GET | `api_key_request_logs` | Admin UI |
 
 说明：**GlobalLogs**（`/admin/request-logs`）与 **KeyScopedLogs**（`/admin/keys/:id/logs`）互补；**UserScopedLogs**（`/admin/users/:id/logs`）按 `user_id` 拉全量请求历史。**全局审计列表**（`/admin/budget-audit-logs`，表为 **`user_audit_logs`**）记录预算与用户/密钥生命周期事件，与请求日志正交。各类审计行何时产生（含高频 `usage_charge`）见 [`../reference/user-audit-logs.md`](../reference/user-audit-logs.md)。**数据模型总览**见 [`../architecture/user-keys-data-model.md`](../architecture/user-keys-data-model.md)。
@@ -201,7 +202,14 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 ### `GET /admin/users/:id/logs`
 
-分页返回该 **`user_id`** 的 `api_key_request_logs`（可选 `status`）。
+分页返回该 **`user_id`** 的 `api_key_request_logs`。
+
+| 查询参数 | 说明 |
+|----------|------|
+| `page` | 默认 `1` |
+| `page_size` | 默认 `20`，最大 `100` |
+| `status` | 可选，精确匹配 |
+| `api_key_id` | 可选；限定该用户下的一把 Key。不属于该用户则 `404` |
 
 ### `GET /admin/users/:id/audit-logs`
 
@@ -640,7 +648,8 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
   - **`POST`** 省略或空白 **`route_group`** → **`default`**；**`PATCH`** 若含 `route_group` 则不得为仅空白（否则 **400**）。
   - **`request_protocol` / `request_operation`**：公开请求入口，例如 `openai` + `chat` / `responses`；省略 operation 使用兼容值 `*`。
   - **`upstream_protocol` / `upstream_operation`**：Target 实际调用的协议 / capability；省略 operation 时跟随请求 operation。
-  - **`adapter`**：同协议、同 operation 使用 `passthrough`；OpenAI ASR / TTS 转 DashScope 使用白名单中的显式 adapter。未声明的跨协议或 operation 组合返回 **400**，见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
+  - **`adapter`**：同协议、同 operation 使用 `passthrough`；OpenAI Images / ASR / TTS 转 DashScope 使用注册表中的显式 adapter。未声明的跨协议或 operation 组合返回 **400**，见[适配器与驱动](../architecture/adapters-and-drivers.md)、[DashScope 生图](../architecture/dashscope-image.md)与[DashScope 音频](../architecture/dashscope-audio.md)。
+  - **`custom_params`**：JSON 对象。除请求体默认值外，可选保留键 **`headers`**（字符串键值）会在转发时注入上游 HTTP 头、**不**进入请求体。`Authorization` / `Content-Type` / hop-by-hop 等受保护头不可配置（**400**）。语义见用户 API [Route 默认参数合并](user.md#route-默认参数合并)。
   - **`GET` 响应**：除 Target 字段外包含 `route_pool_id` 与 `surfaces`（JSON 数组字符串），用于还原 Surface → Pool → Target 拓扑。
 - **`PATCH /admin/routes/pools/:poolId`**：设置当前 Pool 的策略与按层覆盖。body 示例：
 
@@ -691,7 +700,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 ### `POST /admin/models/import`
 
 - **请求体**：`{ "ids": ["glm-5", "gpt-5.2", ...] }`（**必填**；`ids` 须为非空字符串数组；重复 id 会去重；顺序保留）。
-- **行为**：仅处理 `ids` 中在静态目录存在的 id；根据当前 **`BILLING_CURRENCY`**（`USD` → `usd` 分支，`CNY` → `cny` 分支；库内为其他历史值时按 **`USD`** 分支取价）写入 `models.pricing_profile`；**已存在同 `id` 的不导入、不覆盖**，该 id 记入 **`skipped_existing`**；否则 **INSERT** 新建。标签由运营在导入后自行维护，导入**不**写入 `model_tags`。未知 id 或校验失败记入 **`failed`**，其余仍处理。
+- **行为**：仅处理 `ids` 中在静态目录存在的 id；根据当前 **`BILLING_CURRENCY`**（`USD` → `usd` 分支，`CNY` → `cny` 分支；库内为其他历史值时按 **`USD`** 分支取价）把该分支**整段**写入 `models.pricing_profile`（含 `tiers` / 图音频单价，以及可选官方时段 `schedule`）；**已存在同 `id` 的不导入、不覆盖**，该 id 记入 **`skipped_existing`**；否则 **INSERT** 新建。标签由运营在导入后自行维护，导入**不**写入 `model_tags`。未知 id 或校验失败记入 **`failed`**，其余仍处理。
 - **响应** `data`：`{ "billing_currency_used", "created", "updated"（恒为 0）, "skipped_existing": string[], "failed": [{ "id", "message" }] }`。
 
 ### 运维验收：文生图模型 `gpt-image-2`
@@ -951,6 +960,8 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 | `tag` | 可选；非空时只统计带该 `model_tags.tag` 的模型 |
 | `provider_id` | 可选；Provider 精确匹配 |
 | `user_email` | 可选；用户邮箱精确匹配 |
+| `user_id` | 可选；用户 UUID 或 `ext:` 路由（解析后过滤 `rl.user_id`） |
+| `api_key_id` | 可选；API Key UUID 精确匹配 |
 
 响应：`{ success, data: [...], tags: string[] }`（`tags` 为库内全部 distinct 标签，供筛选 UI）。
 
@@ -983,6 +994,17 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 |----------|------|
 | `start_date` / `end_date` | 同上 |
 | `email` | 可选，`user_email` **模糊**匹配（`LIKE %...%`） |
+
+### `GET /admin/analytics/keys`
+
+按用户下 **API Key** 聚合 `api_key_request_logs`（含当前 0 用量的 Key）。删除后 `api_key_id` 被置空的历史日志归入 `api_key_id = null` 行。`spend` 以 `charged_cost` 为准，**不是** `GET /admin/keys/:id` 上的用户级 `spend`。
+
+| 查询参数 | 说明 |
+|----------|------|
+| `start_date` / `end_date` | 同上 |
+| `user_id` | **必填**；用户 UUID 或 `ext:` 路由 |
+
+`data` 每行：`api_key_id`、`key_name`、`request_count`、`input_tokens`、`output_tokens`、`charged_cost`、`metered_cost`、`standard_cost`、`distinct_models`、`last_active_at`、`success_count`、`error_count`、`success_rate`。
 
 ### `GET /admin/analytics/reliability`
 

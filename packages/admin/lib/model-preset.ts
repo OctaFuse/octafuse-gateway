@@ -13,7 +13,8 @@
  *
  * 各预设内 **`pricing.usd`** 与 D1 导出 `data/remote/.../data-remote-table-models-*.sql` 中 `pricing_profile` 一致（美元口径）；
  * **`pricing.cny`**：国内厂商以中国区官方/Postgres 价为准；海外厂商（openai / anthropic / google / xai 等）按 **USD × 7** 换算占位。
- * 导入时按当前 `BILLING_CURRENCY` 选用 `usd` / `cny` 之一写入 `pricing_profile`。
+ * 导入时按当前 `BILLING_CURRENCY` 选用 `usd` / `cny` **整段**写入 `pricing_profile`（含可选 `schedule` 官方时段，不只 `tiers`）。
+ * DeepSeek V4 目录价为空闲价；`schedule` 为北京时间工作日高峰 09:00–12:00、14:00–18:00、`factor` 2。命中按 `BUSINESS_TIMEZONE` 墙钟，中国区请设 `Asia/Shanghai`。
  * 面向 Catalog 的英文摘要与中英文展示文案均与模型预设共同维护：
  * `description` 写入现有 `models.description`，`i18n` 仅供静态 Catalog 展示，不增加数据库字段。
  *
@@ -72,6 +73,7 @@ export type StaticModelPresetRow = {
 	/** Model release date `YYYY-MM-DD`. */
 	released?: string | null;
 	pricing: {
+		/** Catalog branch written as `pricing_profile` (tiers / image / audio plus optional `schedule`). */
 		usd: unknown;
 		cny: unknown;
 	};
@@ -112,6 +114,7 @@ export function listStaticModelPresets(): StaticModelPresetRow[] {
 	return [...STATIC_MODEL_PRESETS_BY_VENDOR.flat()] as StaticModelPresetRow[];
 }
 
+/** Returns the `usd` / `cny` object as-is, including optional catalog `schedule`. */
 export function pickPresetPricingRawForBillingCurrency(
 	preset: StaticModelPresetRow,
 	billing: GatewaySupportedBillingCurrency

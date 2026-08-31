@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useFeedback } from '@/components/feedback';
 import {
 	isAudioModel,
 	isImageGenerationModel,
@@ -64,6 +66,9 @@ import {
 } from './types';
 
 export function useRoutesPageState() {
+	const tModal = useTranslations('routes.modal');
+	const tCommon = useTranslations('common');
+	const { notify, confirm } = useFeedback();
 	const searchParams = useSearchParams();
 	const [routes, setRoutes] = useState<RouteListRow[]>([]);
 	const [models, setModels] = useState<GatewayModel[]>([]);
@@ -429,7 +434,13 @@ export function useRoutesPageState() {
 
 	const handleDelete = useCallback(
 		async (id: string) => {
-			if (!confirm('Are you sure you want to delete this route?')) return;
+			const ok = await confirm({
+				title: tModal('deleteRoute'),
+				message: tModal('confirmDelete'),
+				confirmLabel: tCommon('delete'),
+				danger: true,
+			});
+			if (!ok) return;
 
 			setIsDeleting(true);
 			try {
@@ -440,16 +451,16 @@ export function useRoutesPageState() {
 					setDuplicateSourceRouteId(null);
 					await refreshRoutesPage();
 				} else {
-					alert(result.message);
+					notify('error', result.message || tCommon('failed'));
 				}
 			} catch (error) {
 				console.error('Delete error:', error);
-				alert('Delete failed');
+				notify('error', tCommon('failed'));
 			} finally {
 				setIsDeleting(false);
 			}
 		},
-		[refreshRoutesPage]
+		[confirm, notify, refreshRoutesPage, tCommon, tModal]
 	);
 
 	const handleToggleStatus = useCallback(async (route: RouteListRow) => {
@@ -462,15 +473,15 @@ export function useRoutesPageState() {
 					prev.map((r) => (r.id === route.id ? { ...r, status: newStatus } : r))
 				);
 			} else {
-				alert(result.message);
+				notify('error', result.message || tCommon('updateFailed'));
 			}
 		} catch (error) {
 			console.error('Toggle status error:', error);
-			alert('Update failed, please try again');
+			notify('error', tCommon('updateFailed'));
 		} finally {
 			setTogglingId(null);
 		}
-	}, []);
+	}, [notify, tCommon]);
 
 	const copyModelId = useCallback(async (modelId: string) => {
 		try {

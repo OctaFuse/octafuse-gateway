@@ -173,7 +173,7 @@ sequenceDiagram
 | **`route_pool_sticky_bindings`** | 供应商粘性的共享绑定；按 affinity hash 记录上游目标、epoch、token、访问与过期时间，供 Worker isolate / Node 实例共同使用 |
 | **`model_routes.priority`** | 硬序优先级层（**DESC**，数字越大越先试） |
 | **`model_routes.weight`** | 同 priority 优先级层内权重（默认 `1`；策略用） |
-| **`model_routes.route_pool_id` / `upstream_operation` / `adapter`** | 上游目标所属路由池、上游 capability 与转换方式；同协议使用 `passthrough`，OpenAI ASR / TTS 转 DashScope 使用显式白名单 adapter |
+| **`model_routes.route_pool_id` / `upstream_operation` / `adapter`** | 上游目标所属路由池、上游 capability 与转换方式；同协议使用 `passthrough`，OpenAI Images / ASR / TTS 转 DashScope 使用注册表中的显式 adapter |
 | **`models.route_policy`** | 可选 TEXT JSON：`strategy` + `rules`；`NULL` = 回退全局 |
 | **`system_config.ROUTE_STRATEGY`** | 全局缺省策略（默认 `hash_affinity`；进程内缓存 30s） |
 | **`api_key_request_logs.audio_characters`** | TTS 上游返回的有效计费字符数；与 ASR 时长独立记录 |

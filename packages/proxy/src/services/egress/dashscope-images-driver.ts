@@ -3,7 +3,7 @@
  * OpenAI `/v1/images/generations` → `services/aigc/multimodal-generation/generation`。
  * Qwen Image 3.0 与 Wan 2.7 共用端点，请求参数族不同。
  */
-import { resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
+import { applyRouteExtraHeaders, resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE, type UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
@@ -392,10 +392,13 @@ export async function dispatchDashScopeImageGenerations(
 		const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 		const response = await fetchImpl(url, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${secret}`,
-			},
+			headers: applyRouteExtraHeaders(
+				{
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${secret}`,
+				},
+				route.customParams
+			),
 			body: JSON.stringify(requestBody),
 			signal,
 		});

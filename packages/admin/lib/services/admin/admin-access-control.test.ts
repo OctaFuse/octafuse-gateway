@@ -48,6 +48,9 @@ test('permission matrix protects console-only surfaces and defaults to deny', ()
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/keys/k1/logs'), {
 		kind: 'permission', permission: 'logs.read',
 	});
+	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/analytics/keys'), {
+		kind: 'permission', permission: 'analytics.read',
+	});
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/not-registered'), { kind: 'deny' });
 });
 

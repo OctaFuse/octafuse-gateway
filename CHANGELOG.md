@@ -4,40 +4,46 @@
 
 ### Minor Changes
 
-- [#137](https://github.com/OctaFuse/octafuse-gateway/pull/137) [`654d29a`](https://github.com/OctaFuse/octafuse-gateway/commit/654d29a3f4d43cd0d8911ec43572540e0296e774) Thanks [@dyc87112](https://github.com/dyc87112)! - OctaFuse Gateway v2.8.0 把周期额度与永久额度拆开记账，打通阿里云百炼千问 / 万相走 OpenAI Images 入口的转换路径，并让 Docker 管理后台支持实时语音 WebSocket。
+- [#137](https://github.com/OctaFuse/octafuse-gateway/pull/137) [`654d29a`](https://github.com/OctaFuse/octafuse-gateway/commit/654d29a3f4d43cd0d8911ec43572540e0296e774) Thanks [@dyc87112](https://github.com/dyc87112)! - OctaFuse Gateway v2.8.0 重点升级额度、协议转换和峰谷计价：周期额度与永久额度分开记账，可同时承载订阅与加购；协议适配统一由注册表描述；模型官方时段与路由倍率可组合计算，并通过模型列表接口向前台输出当前折扣。同时，本版本打通阿里云百炼千问 / 万相的 OpenAI Images 调用路径，并补齐 Node / Docker 环境的实时语音调试能力。
 
   ### Proxy
 
   - **永久额度扣费**：先扣周期额度，不够的差额扣永久额度；`budget_max` 非空时总剩余 = 周期剩余 + wallet 余额，总剩余 ≤ 0 才 403。周期上限为 0 但 wallet 仍有余额时可继续请求。请求日志增加 `charged_wallet_cost`。
   - **DashScope 生图转换**：客户端仍打 `POST /v1/images/generations`；适配器 `dashscope-image-qwen` / `dashscope-image-wan` 改写为 DashScope `images.generations.multimodal`。千问 / 万相按张计费；千问 Pro 从响应 usage 反推 1K/2K 档。默认返回 URL，`response_format=b64_json` 时下载 OSS 再转 base64。
   - **额度预检**：Images / Audio / Tools 预检与实扣使用同一套周期 + 永久总余额，不再把 `budget_max=0` 误判为超额。
+  - **模型列表价格信息**：`GET /v1/models` 与公开的 `GET /catalog/models` 按路由组返回 `discounts`，包含当前综合倍率、完整时段、业务时区和代表路由信息；`Discount.<group>:<factor>` 标签改为按当刻结果自动派生。
+  - **峰谷计价合成**：目录标准价先乘模型 `pricing_profile.schedule` 的官方时段倍率，再分别乘路由的用户计费 / 供应成本倍率。模型存在官方时段时，路由须沿用相同的时段形状，只配置本路由倍率，避免上下游峰谷窗口错位。
 
   ### Admin
 
   - **永久额度加额**：新增 `POST /api/admin/users/:id/wallet/credit`（`kind` + `external_ref` 幂等）。用户详情拆开展示周期额度与永久额度；加购不要再写入 `budget_max`。`PATCH` 仍可修正 wallet 绝对值。
   - **DashScope 生图联调**：Playground / Simulator 对千问 / 万相转换路由使用 OpenAI Images JSON；调试台改写成 multimodal，模拟器走 Proxy `/v1/images/generations`。
-  - **路由适配器**：下拉项标明 `request → upstream` 映射，避免透传与转换混淆。
+  - **路由适配器**：下拉项从统一注册表生成，直接标明客户端协议 / 端点到上游协议 / 端点的映射；选中后自动回填匹配字段，避免透传与转换混淆。
   - **实时语音**：DashScope realtime ASR 默认改用浏览器麦克风；Docker Admin 运行层带上 `ws`，Node 入口为 `node-server.mjs`，调试台实时 ASR 不再 501。
   - **模型预设**：新增 `hy4-preview`、`qwen3.8-flash`、`glm-5.3-flash`。目录导入不再写入 `model_tags`，标签由运营导入后自行维护。
-  - **模型 / 路由编辑**：模型弹窗可预览 pricing profile JSON；路由时段与倍率表格展示整理。
+  - **模型 / 路由编辑**：模型页可维护官方时段倍率；路由页继承模型时段形状，并分别配置用户计费与供应成本倍率，同时预览每个时段的实际价格。
 
   ### Core
 
+  - **统一协议适配注册表**：适配器 ID、客户端入口、上游协议 / 端点、模态、交互形态与计费口径集中到 `ADAPTER_REGISTRY`；配置层适配器与运行时 driver 分离，一个 driver 可服务多个稳定适配器 ID，便于后续扩展新模型协议。
+  - **定价与展示口径统一**：目录标准价、模型官方时段和路由时段使用同一套解析与命中逻辑；模型列表的 `discounts` 与真实计费共用倍率语义，但仅用于展示，不参与替代账单计算。
   - **迁移 0027**：`users` 增加 `wallet_granted` / `wallet_spent`；`user_audit_logs.dedup_key` 唯一约束；`api_key_request_logs.charged_wallet_cost`。回填把 `budget_max − max(spent, base)` 的剩余迁入 wallet；`budget_max IS NULL` 与到期清零行（`max=0 AND period=none`）不抬回 `budget_base`；超支欠账钳到 0。
 
   ### 文档
 
   - **永久额度**：用户接口、Admin API、数据模型与请求生命周期写明先周期后永久、加额幂等与 0027 回填。
+  - **协议与计价**：新增适配器 / driver 架构说明，补齐模型官方时段、路由倍率以及 `/v1/models` / `/catalog/models` 的 `discounts` 字段语义。
   - **DashScope 生图**：新增架构文档，标明 OpenAI Images 入口、转换适配器、按张计费与验收路径。
   - **Docker Admin**：standalone 入口、`ws` 拷贝与实时 WebSocket 约束写入部署与构建说明。
 
   ### 升级说明
 
-  - **数据库迁移**：必须应用 **0027**；三种数据库语义一致。上线前可用 `docs/operators/migrations/0027-user-wallet-credit-audit.sql` 只读核对。
-  - **发布顺序**：先部署同版本 proxy / admin 代码（新列默认 0）；再执行 migrate Job；门户再切到 `POST /api/admin/users/:id/wallet/credit`。不要把加购继续加进 `budget_max`。
-  - **配置变更**：阿里云千问 / 万相生图需路由适配器选 `dashscope-image-qwen` 或 `dashscope-image-wan`，请求协议保持 `openai` / `images.generations`。Token Plan 须显式覆盖 `images.generations.multimodal`。
-  - **兼容性影响**：Chat / Messages / Gemini / Audio / Responses 入口不变。额度判定改为总余额；周期用尽但 wallet 有余额的用户将从 403 变为可继续调用。已导入模型行不会被静态目录覆盖。
-  - **建议操作**：部署后核验 0027 回填、wallet 加额幂等与请求日志 `charged_wallet_cost`；用 Playground / Simulator 冒烟 DashScope 生图、实时 ASR（麦克风）与既有 chat / messages / gemini / images / audio；如需新模型目录再导入对应预设。
+  - **数据库迁移**：必须应用 **0027**；D1、Postgres 与 MySQL 语义一致。上线前分别使用 `0027-user-wallet-credit-audit.d1.sql`（D1）或 `0027-user-wallet-credit-audit.sql`（Postgres / MySQL）只读核对。
+  - **发布顺序**：v2.8.0 的 Proxy / Admin 会直接读取 0027 新列，不能先连接未迁移的数据库。请在维护窗口内备份并暂停请求及 Admin 写入，执行 0027 后立即部署同版本 Proxy / Admin；禁止新旧版本混跑。确认服务正常后，门户再切到 `POST /api/admin/users/:id/wallet/credit`，不要再通过累加 `budget_max` 发放购买额度。
+  - **配置变更**：阿里云千问 / 万相生图需路由适配器选 `dashscope-image-qwen` 或 `dashscope-image-wan`，请求协议保持 `openai` / `images.generations`。Token Plan 须显式覆盖 `images.generations.multimodal`。模型配置了官方时段后，既有路由时段必须调整为相同的窗口与星期形状。
+  - **接口影响**：`GET /v1/models` 与 `GET /catalog/models` 增加 `discounts`，现有字段保持兼容。Chat / Messages / Gemini / Audio / Responses 入口不变。
+  - **兼容性影响**：额度判定改为周期额度与永久额度的总余额；周期用尽但 wallet 有余额的用户将从 403 变为可继续调用。已导入模型行不会被静态目录覆盖。
+  - **建议操作**：部署后核验 0027 回填、wallet 加额幂等与请求日志 `charged_wallet_cost`；检查模型 / 路由时段的实际价格预览和模型列表 `discounts`；再用 Playground / Simulator 冒烟 DashScope 生图、实时 ASR（麦克风）及既有 chat / messages / gemini / images / audio。
 
 ## 2.7.0
 

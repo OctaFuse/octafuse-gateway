@@ -22,6 +22,7 @@ import { adminStatsRoutes } from '@/lib/routes/admin/stats';
 import { adminAccessKeysRoutes } from '@/lib/routes/admin/access-keys';
 import { getAdminAuthorizationDecision } from '@/lib/admin-permissions';
 import { hasAdminPermission } from '@/lib/admin-principal';
+import { isAccessKeysMutationSameOrigin } from '@/lib/admin-request-rewrite';
 
 export function createAdminApp(): Hono<AdminEnv> {
 	const app = new Hono<AdminEnv>();
@@ -53,8 +54,7 @@ export function createAdminApp(): Hono<AdminEnv> {
 				return c.json({ success: false, message: 'Forbidden', required_permission: 'console_session' }, 403);
 			}
 			if (c.req.path.startsWith('/admin/access-keys') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(c.req.method.toUpperCase())) {
-				const origin = c.req.header('origin');
-				if (!origin || origin !== new URL(c.req.url).origin) {
+				if (!isAccessKeysMutationSameOrigin(c.req.raw, c.env.ADMIN_CSRF_SAME_ORIGIN)) {
 					return c.json({ success: false, message: 'Forbidden: invalid Origin' }, 403);
 				}
 			}

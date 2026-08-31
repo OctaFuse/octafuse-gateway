@@ -28,6 +28,7 @@ import {
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
+import { useFeedback } from '@/components/feedback';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
@@ -61,6 +62,10 @@ import {
 
 export function useModelsPageState() {
 	const tCatalog = useTranslations('models.catalog');
+	const tImport = useTranslations('models.import');
+	const tModal = useTranslations('models.modal');
+	const tCommon = useTranslations('common');
+	const { notify, confirm } = useFeedback();
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -299,45 +304,41 @@ export function useModelsPageState() {
 			.filter((r) => importSelected[r.id] && !existingModelIds.has(r.id))
 			.map((r) => r.id);
 		if (ids.length === 0) {
-			alert('Select at least one preset that is not already in the gateway.');
-			return;
-		}
-		if (
-			!confirm(
-				`Import ${ids.length} new model(s)? Prices use the catalog’s ${billingCurrency} branch (USD/CNY tiers). Existing model IDs are never overwritten.`
-			)
-		) {
+			notify('error', tImport('selectNone'));
 			return;
 		}
 		setImportSubmitting(true);
 		try {
 			const result = await importModelPresets(ids);
 			if (result.success) {
-				const { created, failed, billing_currency_used, skipped_existing } = result.data;
+				const { created, failed, skipped_existing } = result.data;
 				const skipN = skipped_existing?.length ?? 0;
-				const failLines =
-					failed.length > 0
-						? `\n\nFailed (${failed.length}):\n${failed.map((f) => `${f.id}: ${f.message}`).join('\n')}`
-						: '';
-				const skipLines =
-					skipN > 0
-						? `\nSkipped (already in gateway): ${skipN}${skipN <= 5 ? ` — ${skipped_existing!.join(', ')}` : ''}`
-						: '';
-				alert(
-					`Import finished (billing: ${billing_currency_used}).\nCreated: ${created}${skipLines}${failLines}`
-				);
+				const failN = failed.length;
+				const detail = [
+					failN > 0 ? failed.map((f) => `${f.id}: ${f.message}`).join('\n') : '',
+					skipN > 0 && skipN <= 5 ? skipped_existing!.join(', ') : '',
+				]
+					.filter(Boolean)
+					.join('\n');
+				const message =
+					failN > 0
+						? tImport('finishedWithFail', { created, failed: failN })
+						: skipN > 0
+							? tImport('finishedWithSkip', { created, skipped: skipN })
+							: tImport('finished', { created });
+				notify(failN > 0 ? 'error' : 'success', message, detail || undefined);
 				setShowImportCatalogModal(false);
 				await refreshModels();
 			} else {
-				alert(result.message || 'Import failed');
+				notify('error', result.message || tImport('failed'));
 			}
 		} catch (e) {
 			console.error('Import models error:', e);
-			alert('Import failed');
+			notify('error', tImport('failed'));
 		} finally {
 			setImportSubmitting(false);
 		}
-	}, [billingCurrency, existingModelIds, importCatalogRows, importSelected, refreshModels]);
+	}, [existingModelIds, importCatalogRows, importSelected, notify, refreshModels, tImport]);
 
 	const applyImagePricingDraft = useCallback((draft: ImagePricingDraftState) => {
 		setImageBillingMode(draft.mode);
@@ -552,13 +553,13 @@ export function useModelsPageState() {
 
 	const handleDelete = useCallback(
 		async (id: string) => {
-			if (
-				!confirm(
-					'Are you sure you want to delete this model? This will also delete all associated routes.'
-				)
-			) {
-				return;
-			}
+			const ok = await confirm({
+				title: tModal('deleteModel'),
+				message: tModal('confirmDelete'),
+				confirmLabel: tCommon('delete'),
+				danger: true,
+			});
+			if (!ok) return;
 
 			setIsDeleting(true);
 			try {
@@ -568,16 +569,16 @@ export function useModelsPageState() {
 					setEditingModel(null);
 					void refreshModels();
 				} else {
-					alert(result.message || 'Delete failed');
+					notify('error', result.message || tCommon('failed'));
 				}
 			} catch (error) {
 				console.error('Delete error:', error);
-				alert('Delete failed');
+				notify('error', tCommon('failed'));
 			} finally {
 				setIsDeleting(false);
 			}
 		},
-		[refreshModels]
+		[confirm, notify, refreshModels, tCommon, tModal]
 	);
 
 	const handleAddTag = useCallback(() => {

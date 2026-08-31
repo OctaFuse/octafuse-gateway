@@ -35,30 +35,76 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 ![路由工作台：按请求入口、路由组与上游分层展示策略、粘滞与故障转移](../assets/screenshots/routes.webp)
 
-点击拓扑中的任一上游目标，即可在路由编辑页面集中配置客户端协议 / operation、路由组、上游映射、自定义参数，以及用户计费与供应成本倍率。
+点击拓扑中的任一上游目标，即可打开路由编辑器。第一次配置时，建议按下面的最短路径完成：
 
-![路由编辑页面：在一个弹窗内核对客户端入口、上游映射、目录标准价、默认计费倍率，以及带星期选择的分时时段](../assets/screenshots/route-editor.webp)
+1. 从目录导入或手动创建模型，使用一个稳定、便于客户端记忆的模型 ID。
+2. 选择实际提供服务的供应商，填写上游模型名称。
+3. 选择协议适配器，让管理后台自动匹配客户端入口和实际上游。
+4. 保持路由组为 `default`；只有明确需要免费组、套餐组时再增加其他分组。
+5. 保存后先用调试台验证单条上游路由，再用模拟器验证用户 Key、完整选路、计费和日志。
 
-截图中的窗口选择了“每天（Every day）”。如果供应商在工作日与周末采用不同价格，可直接选择“工作日（Weekdays）”“周末（Weekend）”或逐日选择。
+从模型目录导入 `hy4-preview`、`qwen3.8-flash`、`glm-5.3-flash` 等预设时，只会创建模型记录，不会自动维护模型标签。需要按供应商、套餐或用途分类时，请在导入后自行添加标签。
 
-常见做法：
+### 3.1 选择协议适配器
 
-- 对客户端暴露稳定的模型名，例如 `gpt-4.1`、`claude-sonnet` 或团队内部命名。
-- 同一模型下配置多个供应商路由：
-  - **请求协议 / operation**：客户端从哪个协议与操作进入，例如 `openai.chat`、`openai.responses`、`anthropic.messages`、`openai.images.generations`。同一模型可以同时挂 Chat 与 Responses，互不影响。
-  - **上游协议 / operation**：上游目标实际调用的供应商能力。同协议、同 operation 使用 `passthrough`；OpenAI ASR / TTS 转 DashScope 时必须选择对应的显式 adapter；`*` 仅用于迁移兼容。
-  - **`priority`（层）**：数字**越大**越先试（硬序）。
-  - **`weight`（同层）**：配合路由池 / 模型 / 全局路由策略（默认 **hash_affinity**）决定层内顺序。
-  - **`route_group`**：如 `default` / `free`，客户端用 `modelId:group` 选择。
-- 图片生成模型：导入或手建后确认 `output_modalities` 含 `image`、`pricing_profile` 的 `image_billing_mode`（`token` / `per_image`），并挂 **OpenAI 协议** active 路由；细节见 [developers/reference/image-models.md](../developers/reference/image-models.md)。
-- 音频模型：ASR 可按时长或 Token 计费，TTS 可按字符计费；可使用 OpenAI 兼容的 `/v1/audio/transcriptions`、`/v1/audio/speech`，DashScope 同步多模态 ASR `POST /v1/dashscope/services/aigc/multimodal-generation/generation`，或 DashScope 原生实时音频。跨协议路由与 adapter 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
-- **路由策略**：先按 priority 层读路由池 `tier_strategies[priority]`（若有）；否则路由池 `strategy` → 模型 `route_policy.rules` 的 `{protocol}.{capability}:{group}` → `{protocol}:{group}` → 模型顶层 `route_policy.strategy` → 管理后台 Config 全局 `ROUTE_STRATEGY` → 代码默认 `hash_affinity`。四种策略及完整键格式见 [developers/reference/route-strategies.md](../developers/reference/route-strategies.md)。
-- **供应商粘性（Provider sticky，可选）**：在拓扑视图（Topology）的路由组 / 路由池节点打开粘性配置（关闭时芯片为 `Sticky · Off`，启用后为 `Sticky · {ttl}`），按路由池启用并设置空闲 TTL（默认 3600 秒）。它不是第五种层内策略：`hash_affinity` 用无状态哈希稳定首选，粘性则记住上次成功的上游目标，并可在绑定有效时跨 priority 优先尝试。弹窗还可查看绑定分布与路由权重、按用户解绑，或通过 `sticky_epoch` 整池失效；默认关闭。完整语义见 [供应商粘性（route-strategies）](../developers/reference/route-strategies.md#provider-sticky-routingpool-前置规则非第五策略)。
-- 在路由的 **Custom params** 中配置思考参数、输出长度或供应商扩展字段等默认值；它们会与上游请求体深度合并，客户端显式传入的字段优先，因此不能用于强制覆盖客户端参数。
-- 设置价格口径：**先在模型（Models）维护目录标准价（Standard），并按需配置官方分时时段（Official time windows）**；官方时段表示供应商自己的闲时 / 高峰价。再打开路由（Model Routes）填写用户计费（Charged）/ 供应成本（Metered）两侧倍率。模型已配官方时段时，路由窗口会被锁定为同一套起止时间与星期，只能改两侧倍率；每个时段下方会预览该窗的明细价（目录价 × 官方时段 × 本行倍率）。保存模型时若官方窗口集合变化，已配置时段的路由会被重置为同一套窗口（窗口倍率恢复为 1）。模型未配官方时段时，路由仍可自由配置分时时段（Schedule）。时区见系统配置的业务时区。
-- 以低谷价作为目录价、且**不**在模型上配官方时段时，DeepSeek 可将路由默认倍率设为 `1`，并为周一至周五 `09:00–12:00`、`14:00–18:00` 设置 `2` 倍覆盖；工作日其他时段和周末全天自动使用低谷价。若官方本身已有分时价，应把官方窗口写在模型上，路由只填自家溢价或让利，避免把官方涨跌算进 `charged / standard`。
-- 前台折扣不再用手填 `Discount*` 标签。`GET /v1/models` 的 `discounts` 由官方时段 × 代表路由（该路由组里优先级最高、同层权重最高的活跃路由）的计费倍率自动算出；官方时段未覆盖的钟点会补目录价兜底窗（含只写工作日高峰的模型：工作日空隙与周末整日都会补谷档），因此 DeepSeek V4 这类「工作日两段 ×2」会保持 `kind: schedule`，门户才能画出峰/谷。旧客户端继续读派生的 `Discount.<group>:<composite>` 标签。模型编辑里的 `Discount*` 标签会被网关覆盖。
-- 在请求日志（Request Logs）中核对三笔账：供应成本、官方当刻目录价、用户计费是否符合业务预期。上线官方分时之前的历史日志仍是裸目录价，不会回补。
+协议适配器下拉项会直接标明“客户端请求 → 实际上游”。选择后，管理后台会自动填入客户端协议、客户端操作、上游协议和上游操作，不需要手工猜测四个字段的组合。
+
+![路由编辑器：选择协议适配器后自动匹配客户端入口和实际上游](../assets/screenshots/route-protocol-adapter.webp)
+
+常见选择：
+
+| 使用场景 | 适配器选择 |
+|----------|------------|
+| 客户端与上游使用相同协议和操作 | 选择对应的“透传（Passthrough）”项 |
+| OpenAI Images 调用百炼千问图片模型 | `dashscope-image-qwen` |
+| OpenAI Images 调用百炼万相图片模型 | `dashscope-image-wan` |
+| OpenAI 文件转写调用百炼 ASR | 选择与模型系列匹配的文件转写适配器 |
+
+图片模型还要确认输出模态包含 `image`，并根据供应商规则选择按 Token 或按张计费；音频模型则根据 ASR / TTS 能力选择按时长、Token 或字符计费。完整差异见[图片模型说明](../developers/reference/image-models.md)与 [DashScope 音频说明](../developers/architecture/dashscope-audio.md)。
+
+### 3.2 配置路由组、主备和默认参数
+
+| 配置 | 普通部署建议 |
+|------|--------------|
+| `route_group` | 首条路由使用 `default`；客户端可用 `modelId:group` 显式选择其他组。 |
+| `priority` | 数字越大越先尝试。主线路由用较高值，备用线路由用较低值。 |
+| `weight` | 同一 priority 层中控制候选顺序或流量比例。只有一条路由时保持 `1` 即可。 |
+| 路由策略 | 默认 `hash_affinity` 适合大多数部署；需要随机分流、固定权重主备或轮询时再更换。 |
+| 供应商粘性 | 默认关闭；希望同一用户持续使用上次成功的供应商、提高缓存连续性时再按路由池启用。 |
+
+在自定义参数（Custom params）中可以分开填写 HTTP 请求头和 JSON 请求体。请求头按 `Name: Value` 写入上游，不会进入 JSON；请求体则深度合并到上游 JSON，客户端明确传入的字段优先。因此这里适合提供默认配置，不适合强制覆盖客户端请求。路由策略和粘性的完整规则见[路由策略说明](../developers/reference/route-strategies.md)。
+
+### 3.3 配置目录价与峰谷时段
+
+供应商官方峰谷价与自己对用户的折扣或加价应分开维护：
+
+1. 在模型（Models）中填写目录标准价（Standard），并按需设置供应商官方时段。
+2. 在路由中设置默认的用户计费（Charged）和供应成本（Metered）倍率。
+3. 模型存在官方时段时，路由会沿用相同的起止时间和星期，只需要填写各时段的两侧倍率。
+4. 保存前查看每个时段下方的实际价格预览，确认用户价格和供应成本符合预期。
+
+价格关系可以简化理解为：
+
+> 目录标准价 × 模型官方时段倍率 × 路由倍率
+
+![路由计价：左侧展示模型官方时段，右侧配置路由倍率并预览实际价格](../assets/screenshots/route-schedule-prices.webp)
+
+模型未配置官方时段时，路由仍可独立增加分时时段。以低谷价为目录价的 DeepSeek 路由，可以将默认倍率设为 `1`，并为周一至周五 `09:00–12:00`、`14:00–18:00` 设置 `2` 倍；工作日其他时间和周末会自动使用低谷价。
+
+门户不需要手工解析这些配置。`GET /v1/models` 和 `GET /catalog/models` 会在 `discounts` 中返回各路由组当前生效倍率、后续窗口和业务时区；`Discount.<group>:<factor>` 标签也会由 Gateway 自动生成，不要手工维护 `Discount*` 标签。
+
+保存后在请求日志中核对供应成本、官方当刻目录价和用户计费。模型官方时段变更只影响后续请求，不会重算历史记录。
+
+### 3.4 百炼千问 / 万相生图
+
+千问图像 3.0 与万相 2.7 使用 DashScope 原生生图接口，但客户端无需改成百炼协议。配置路由时：
+
+1. 在供应商中配置可用的 DashScope 端点；千问 Token Plan 需显式提供 `images.generations.multimodal` 端点。
+2. 客户端请求入口保持 `openai` / `images.generations`。
+3. 千问选择 `dashscope-image-qwen`，万相选择 `dashscope-image-wan`。管理后台会自动填入上游 `dashscope` / `images.generations.multimodal`。
+4. 在调试台（Playground）验证单条上游路由，在模拟器（Simulator）通过 `/v1/images/generations` 验证真实鉴权、路由、计费和日志。
+
+千问一次可生成 1–6 张，万相可生成 1–4 张；Gateway 在未传 `n` 时会明确按 1 张请求，避免万相采用上游默认值一次生成 4 张。返回格式默认是图片 URL；客户端显式传入 `response_format=b64_json` 时，Gateway 会尝试下载结果并转成 Base64。完整参数和计费差异见 [DashScope 生图架构](../developers/architecture/dashscope-image.md)。
 
 路由默认参数合并规则见 [developers/api/user.md](../developers/api/user.md#route-默认参数合并)；时段调价契约见 [developers/api/admin.md](../developers/api/admin.md) 中的 `pricing_profile.schedule` 与 `price_override.schedule`；调度与熔断见 [developers/architecture/proxy-request-lifecycle.md](../developers/architecture/proxy-request-lifecycle.md)。
 
@@ -82,13 +128,21 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 用户 API Key 是客户端真正使用的凭证。对接外部门户时可用 `external_system` 区分产品或租户，并以 `(external_system, external_user_id)` 幂等创建 User；预算归属 User，API Key 负责鉴权、扣费归集和审计。
 
-![用户详情：集中维护预算、API 密钥、外部身份和按模型设置的用户计费倍率；用户与密钥等标识已脱敏](../assets/screenshots/user-charged-cost-factors.webp)
+用户详情把额度拆成两个独立部分：
+
+- **周期额度**：可按日、周、月重置，也可以不自动重置；到期后按套餐规则恢复或清零。
+- **永久额度**：来自加购、注册赠额、退款等场景，不随周期重置或订阅到期清零；当前余额 = 总额度 − 总消费。
+
+一次请求会先扣周期额度，周期剩余不足时才从永久额度扣除差额。因此周期额度上限为 `0`、但永久额度仍有余额的用户可以继续调用。用户详情中的永久额度总额和总消费字段用于运维修正绝对值；日常加购应调用 `POST /api/admin/users/:id/wallet/credit`，并为每笔业务传入唯一的 `external_ref`，避免订单重试导致重复加额。不要继续通过累加 `budget_max` 发放购买额度。
+
+![用户详情：周期额度与永久额度分开配置和查看](../assets/screenshots/user-dual-quota.webp)
 
 建议：
 
 - 为不同人、团队、客户或项目创建独立用户或独立 Key。
 - 给 Key 设置可识别名称和 metadata，方便后续审计。
 - 为用户设置预算与周期重置策略。
+- 在用户详情中核对永久额度的总额度、总消费和当前余额；需要追溯加购时查看下方加额流水。
 - 需要为特定用户提供模型折扣或免单时，在用户详情的 **Charged cost factors** 中选择目录模型并填写倍率：`0.8` 表示八折，`0.5` 表示五折，`0` 表示该模型不扣费；未配置的模型保持路由计算出的价格。
 - 停用不再需要的 Key，而不是长期共享一把 Key。
 
@@ -114,6 +168,16 @@ curl -sS http://localhost:8787/v1/me \
   -H "Authorization: Bearer sk-your-api-key"
 ```
 
+响应会分别返回周期额度、永久额度和总剩余额度；`budget_max` 为 `null` 时表示周期额度不限额，此时 `total_remaining` 也为 `null`。
+
+### 在调试台验证实时语音识别
+
+1. 打开推理 → 调试台（Inference → Playground），选择已配置的 DashScope 实时 ASR 路由。
+2. 输入来源选择浏览器麦克风，并允许浏览器使用麦克风。
+3. 开始录音后讲话，观察 WebSocket 连接状态和上游返回的识别事件；结束后主动停止会话。
+
+调试台直连所选上游，不扣用户额度，也不写请求日志。Cloudflare 与 Docker 管理后台都支持这条实时 WebSocket 链路；Docker 部署必须使用与 Gateway 相同版本的 Admin 镜像及其 `node-server.mjs` 入口。
+
 ## 7. 日常观察
 
 日常排障优先看：
@@ -123,6 +187,7 @@ curl -sS http://localhost:8787/v1/me \
 - 请求日志：先在列表中核对客户端入口（Inbound）、实际上游（Upstream）、模型、路由组、供应商、功能标签和用量；展开后重点查看 `request_operation`、`model_surface_id`、`route_pool_id`、`route_target_id`、`route_trace`。启用供应商粘性后查看 `route_trace.sticky.lookup`、`attempted_target` 与 `result`，结合 cache read token 和 failover 次数判断绑定收益及异常解绑。`provider_key_*` 现为 provider id / name / key 指纹；Tools 行为 `model_id` 形如 `tool:web-search`。
 - 错误状态：401 多半是认证问题；403 常见于预算或配额；502 多与路由或上游有关；全部上游熔断时可能为网关 **429**；智能体工具未配置活跃引擎 Key 时为 **503**。
 - 成本字段：列表中的 `C` 是最终用户计费（`charged_cost`），`M` 是供应成本（`metered_cost`）；官方当刻目录价为 `standard_cost`（含模型官方时段，不含路由倍率）。`pricing_audit` 还可记录 `user_charged_factor`、`local_weekday`、目录时段与路由分时时段；Images / Audio 另见 `billing_kind`（及 image count / `audio_duration_seconds` 等列）。
-- 审计日志（Audit Logs）：确认预算扣减、周期重置、Key 生命周期等事件。
+- 周期与永久额度：请求日志接口中的 `charged_wallet_cost` 表示本次从永久额度扣除的部分，周期额度扣除额为 `charged_cost − charged_wallet_cost`。管理后台的审计日志（Audit Logs）会把两部分变化拆开显示。
+- 审计日志（Audit Logs）：确认周期额度扣减、永久额度扣减与加额、周期重置、Key 生命周期等事件；用户详情下方的加额流水可快速查看当前用户的永久额度变动。
 
 更细的日志和计费语义见 [developers/reference/streaming-billing.md](../developers/reference/streaming-billing.md)、[developers/reference/image-models.md](../developers/reference/image-models.md)、[developers/api/user.md「语音转写」](../developers/api/user.md#语音转写audio-transcriptions) 与 [developers/reference/user-audit-logs.md](../developers/reference/user-audit-logs.md)。

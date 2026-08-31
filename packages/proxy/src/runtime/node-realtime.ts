@@ -4,7 +4,7 @@
  */
 import { createRequire } from 'node:module';
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http';
-import { resolveProviderUpstreamSecret } from '@octafuse/core';
+import { applyRouteExtraHeaders, resolveProviderUpstreamSecret } from '@octafuse/core';
 import { resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
 import { pickDashScopeRealtimeSubprotocol } from '@octafuse/core/realtime-protocol';
 import type { UsageFromStream } from '../services/proxy';
@@ -132,7 +132,7 @@ async function connectUpstream(
 
 	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const upstream = new WebSocketCtor(url.toString(), {
-		headers: { Authorization: `Bearer ${secret}` },
+		headers: applyRouteExtraHeaders({ Authorization: `Bearer ${secret}` }, route.customParams),
 	});
 	let requestId: string | null = null;
 	let settled = false;

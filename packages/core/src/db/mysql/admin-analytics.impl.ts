@@ -2,10 +2,12 @@
  * MySQL：管理后台分析聚合查询。
  */
 import { ANALYTICS_TTFT_SELECT_SQL } from '../../lib/analytics-ttft-sql';
+import { assembleKeyAnalytics } from '../../lib/key-analytics-assemble';
 import { sqlMoneyRound } from '../../lib/money-precision';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { AdminAnalyticsRepository } from '../../storage/gateway-repository-interfaces';
 import type {
+	KeyAnalyticsRow,
 	ModelAnalyticsRow,
 	ModelProviderReliabilityRow,
 	ProviderAnalyticsRow,
@@ -17,7 +19,15 @@ import { asMySqlPool } from './mysql2-compat';
 export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): AdminAnalyticsRepository {
 	const pool = asMySqlPool(db.raw);
 	return {
-		async queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string; userEmail?: string }): Promise<ModelAnalyticsRow[]> {
+		async queryModelAnalytics(options: {
+			start: string;
+			end: string;
+			tag?: string;
+			providerId?: string;
+			userEmail?: string;
+			userId?: string;
+			apiKeyId?: string;
+		}): Promise<ModelAnalyticsRow[]> {
 			const joins: string[] = [];
 			const conditions: string[] = ['rl.created_at >= ?', 'rl.created_at <= ?', 'rl.model_id IS NOT NULL'];
 			const bindValues: unknown[] = [];
@@ -33,6 +43,14 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 			if (options.userEmail) {
 				conditions.push('rl.user_email = ?');
 				bindValues.push(options.userEmail);
+			}
+			if (options.userId) {
+				conditions.push('rl.user_id = ?');
+				bindValues.push(options.userId);
+			}
+			if (options.apiKeyId) {
+				conditions.push('rl.api_key_id = ?');
+				bindValues.push(options.apiKeyId);
 			}
 			const [rows] = await pool.query<ModelAnalyticsRow[]>(
 				`SELECT
@@ -101,6 +119,34 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 				bindValues
 			);
 			return rows;
+		},
+
+		async queryKeyAnalytics(options: { start: string; end: string; userId: string }): Promise<KeyAnalyticsRow[]> {
+			const [keys] = await pool.query<Array<{ id: string; name: string | null }>>(
+				'SELECT id, name FROM api_keys WHERE user_id = ?',
+				[options.userId]
+			);
+			const [logRows] = await pool.query<KeyAnalyticsRow[]>(
+				`SELECT
+					rl.api_key_id as api_key_id,
+					MAX(k.name) as key_name,
+					COUNT(*) as request_count,
+					COALESCE(SUM(rl.input_tokens), 0) as input_tokens,
+					COALESCE(SUM(rl.output_tokens), 0) as output_tokens,
+					COALESCE(${sqlMoneyRound('SUM(rl.charged_cost)')}, 0) as charged_cost,
+					COALESCE(${sqlMoneyRound('SUM(rl.metered_cost)')}, 0) as metered_cost,
+					COALESCE(${sqlMoneyRound('SUM(rl.standard_cost)')}, 0) as standard_cost,
+					COUNT(DISTINCT rl.model_id) as distinct_models,
+					MAX(rl.created_at) as last_active_at,
+					SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
+					SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count
+				 FROM api_key_request_logs rl
+				 LEFT JOIN api_keys k ON k.id = rl.api_key_id
+				 WHERE rl.user_id = ? AND rl.created_at >= ? AND rl.created_at <= ?
+				 GROUP BY rl.api_key_id`,
+				[options.userId, options.start, options.end]
+			);
+			return assembleKeyAnalytics(keys, logRows);
 		},
 
 		async queryProviderAnalytics(options: { start: string; end: string; tag?: string; modelId?: string; routeGroup?: string }): Promise<ProviderAnalyticsRow[]> {

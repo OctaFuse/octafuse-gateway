@@ -7,6 +7,7 @@ import {
 } from '@octafuse/core/db/route-pool-sticky-types';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFeedback } from '@/components/feedback';
 import {
 	clearStickyBinding,
 	fetchStickyBindingsSummary,
@@ -40,6 +41,7 @@ export function ProviderStickyDialog(props: Props) {
 	const { dialog, form, error, saving, onClose, onFormChange, onSave, onBindingsChanged } = props;
 	const t = useTranslations('routes.providerSticky');
 	const tCommon = useTranslations('common');
+	const { confirm } = useFeedback();
 	const { invalidate } = useStickyRefreshControls();
 	const canSave = Boolean(dialog.poolId);
 	const ttlOutOfRange =
@@ -141,7 +143,12 @@ export function ProviderStickyDialog(props: Props) {
 
 	const handleClearLookup = async () => {
 		if (!dialog.poolId || !lookup?.affinity_hash) return;
-		if (!window.confirm(t('clearConfirm'))) return;
+		const ok = await confirm({
+			title: t('clearBinding'),
+			message: t('clearConfirm'),
+			danger: true,
+		});
+		if (!ok) return;
 		setActionBusy(true);
 		setActionMessage('');
 		try {
@@ -162,7 +169,12 @@ export function ProviderStickyDialog(props: Props) {
 
 	const handleResetPool = async () => {
 		if (!dialog.poolId) return;
-		if (!window.confirm(t('resetConfirm'))) return;
+		const ok = await confirm({
+			title: t('resetTitle'),
+			message: t('resetConfirm'),
+			danger: true,
+		});
+		if (!ok) return;
 		setActionBusy(true);
 		setActionMessage('');
 		try {

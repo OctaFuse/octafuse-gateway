@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useFeedback } from '@/components/feedback';
 import {
 	isAudioModel,
 	isImageGenerationModel,
@@ -62,6 +64,9 @@ function createInitialImagePricingDraft(mode: ImageBillingModeDraft = 'token'): 
  */
 export function useModelEditModal(options?: Options) {
 	const onChanged = options?.onChanged;
+	const tModal = useTranslations('models.modal');
+	const tCommon = useTranslations('common');
+	const { notify, confirm } = useFeedback();
 	const { currency: billingCurrency } = useBillingCurrency();
 	const [showModal, setShowModal] = useState(false);
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
@@ -269,21 +274,21 @@ export function useModelEditModal(options?: Options) {
 				setShowModal(true);
 			} catch (error) {
 				console.error('Fetch model details error:', error);
-				alert('Failed to load model');
+				notify('error', tCommon('failedToLoadModels'));
 			}
 		},
-		[fillFormFromModel]
+		[fillFormFromModel, notify, tCommon]
 	);
 
 	const handleDelete = useCallback(
 		async (id: string) => {
-			if (
-				!confirm(
-					'Are you sure you want to delete this model? This will also delete all associated routes.'
-				)
-			) {
-				return;
-			}
+			const ok = await confirm({
+				title: tModal('deleteModel'),
+				message: tModal('confirmDelete'),
+				confirmLabel: tCommon('delete'),
+				danger: true,
+			});
+			if (!ok) return;
 
 			setIsDeleting(true);
 			try {
@@ -293,16 +298,16 @@ export function useModelEditModal(options?: Options) {
 					setEditingModel(null);
 					await onChanged?.();
 				} else {
-					alert(result.message || 'Delete failed');
+					notify('error', result.message || tCommon('failed'));
 				}
 			} catch (error) {
 				console.error('Delete error:', error);
-				alert('Delete failed');
+				notify('error', tCommon('failed'));
 			} finally {
 				setIsDeleting(false);
 			}
 		},
-		[onChanged]
+		[confirm, notify, onChanged, tCommon, tModal]
 	);
 
 	const handleAddTag = useCallback(() => {

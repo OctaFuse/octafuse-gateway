@@ -165,6 +165,7 @@ export function normalizeMetadataInput(raw: unknown): { ok: true; value: string 
 
 /**
  * 路由 `custom_params`：接受 JSON 字符串或对象，存库前转为字符串；空为 null。
+ * 可选保留键 `headers` 由路由服务在保存时校验。
  */
 export function normalizeJsonObjectField(
 	value: unknown,

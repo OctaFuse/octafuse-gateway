@@ -31,6 +31,7 @@ import type {
 	RequestTimeseriesRow,
 	ThroughputSnapshot,
 	UserAnalyticsRow,
+	KeyAnalyticsRow,
 	UserTokenTimeseriesRow,
 } from './repository-dtos';
 import type { ResolvedModelSurfaceRow } from '../route-topology';
@@ -72,9 +73,18 @@ export interface AdminAccessRepository {
 
 /** 管理端分析聚合 */
 export interface AdminAnalyticsRepository {
-	queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string; userEmail?: string }): Promise<ModelAnalyticsRow[]>;
+	queryModelAnalytics(options: {
+		start: string;
+		end: string;
+		tag?: string;
+		providerId?: string;
+		userEmail?: string;
+		userId?: string;
+		apiKeyId?: string;
+	}): Promise<ModelAnalyticsRow[]>;
 	queryDistinctModelTags(): Promise<string[]>;
 	queryUserAnalytics(options: { start: string; end: string; email?: string }): Promise<UserAnalyticsRow[]>;
+	queryKeyAnalytics(options: { start: string; end: string; userId: string }): Promise<KeyAnalyticsRow[]>;
 	queryProviderAnalytics(options: { start: string; end: string; tag?: string; modelId?: string; routeGroup?: string }): Promise<ProviderAnalyticsRow[]>;
 	queryProviderReliability(options: { start: string; end: string }): Promise<ProviderReliabilityRow[]>;
 	queryModelProviderReliability(options: { start: string; end: string }): Promise<ModelProviderReliabilityRow[]>;

@@ -83,6 +83,7 @@ adminUsersRoutes.get('/:id/logs', async (c) => {
 			page: Math.max(1, parseInt(c.req.query('page') ?? '1', 10)),
 			page_size: Math.min(100, Math.max(1, parseInt(c.req.query('page_size') ?? '20', 10))),
 			status: c.req.query('status') ?? undefined,
+			api_key_id: c.req.query('api_key_id') ?? undefined,
 		});
 		return c.json(
 			normalizeApiTimeFields({

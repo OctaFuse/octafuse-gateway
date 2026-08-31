@@ -45,7 +45,7 @@ Authorization: Bearer sk-xxx...
 - 客户端传入 **`baseId:group`** 且 `group` 非空 → 有效组 = 该 `group`（trim，比较时 **忽略大小写**）。
 - 仅传入 **`baseId`**（整串命中 `models.id`）→ 有效组 = **`default`**。
 
-2.0 会根据 `model_id + route_group + request_protocol + request_operation` 解析 Request Surface：先查精确 operation，再回退迁移生成的 `*` Surface。Surface 指向一个 Route Pool，Proxy 仅在该 Pool 内选择 active Target，并跳过 **disabled / 无 api_key** 的 Provider。Pool 内按 **priority（DESC）分层** + **有效策略 + weight** 做 failover；Pool 策略优先于模型与全局策略。当前版本只支持 `adapter=passthrough`，因此 Target 的上游协议必须与请求协议一致。
+Gateway 会根据 `model_id + route_group + request_protocol + request_operation` 解析 Request Surface：先查精确 operation，再回退迁移生成的 `*` Surface。Surface 指向一个 Route Pool，Proxy 仅在该 Pool 内选择 active Target，并跳过 **disabled / 无 api_key** 的 Provider。Pool 内按 **priority（DESC）分层** + **有效策略 + weight** 做 failover；Pool 策略优先于模型与全局策略。每个 Target 还必须通过显式 adapter 拓扑校验：`passthrough` 仅允许协议与 operation 一致，跨协议的 Images / Audio 请求则必须命中注册表中的转换 adapter。
 
 没有匹配 Surface / active Target 或没有当前协议可用上游时，按入口返回 **400** 或 **502**。完整拓扑、operation 列表与迁移兼容路径见 [route-topology.md](../architecture/route-topology.md)。
 
@@ -55,9 +55,9 @@ Authorization: Bearer sk-xxx...
 
 ### 3. 预算校验
 
-`POST /v1/chat/completions`、`POST /v1/responses`、`POST /v1/messages` 与 Gemini `POST /v1beta/models/...` 在转发上游前，对 **用户 API Key** 校验 **周期额度 + 永久额度** 的总剩余：`budget_max` 为 `null` 表示周期不限额；否则总剩余 = `(budget_max − budget_spent) + (wallet_granted − wallet_spent)`。总剩余 ≤ 0 时返回 **403** `Budget exceeded`。因此 **周期上限为 0 但永久额度仍有余额** 的用户可以继续请求（例如 0027 把注册赠额迁入 wallet 后 `budget_max=0`、`wallet_granted=0.5`）。旧规则 `budget_spent >= budget_max` 会把 `0 >= 0` 误判为超额，已废弃。
+除 `GET /v1/me`、`GET /v1/models` 等只读入口外，需要消耗资源的模型与工具请求都会校验 **周期额度 + 永久额度** 的总剩余；Images / Audio / Tools 还会按各自计费模式执行请求前预估。`budget_max` 为 `null` 表示周期不限额；否则总剩余 = `(budget_max − budget_spent) + (wallet_granted − wallet_spent)`。总剩余 ≤ 0 时返回 **403** `Budget exceeded`。因此 **周期上限为 0 但永久额度仍有余额** 的用户可以继续请求（例如 0027 把注册赠额迁入 wallet 后 `budget_max=0`、`wallet_granted=0.5`）。旧规则 `budget_spent >= budget_max` 会把 `0 >= 0` 误判为超额，已废弃。
 
-路由组（`default`、`free` 等）仅影响 **选路与计费快照**（见下文用量日志），**不再**单独绕过预算或走按日免费次数表。一次性试用额度等场景请通过 **`budget_period = 'none'`** 与 `budget_max` / `budget_base` 在 **User** 上表达（经管理 API / 门户侧更新 `users`；API Key 仅用于鉴权与归集）。
+路由组（`default`、`free` 等）仅影响 **选路与计费快照**（见下文用量日志），**不再**单独绕过预算或走按日免费次数表。订阅或周期型额度使用 User 上的 `budget_max` / `budget_base` / `budget_period`；购买额度、注册赠额等永久加额使用 Admin `POST /api/admin/users/:id/wallet/credit`。`budget_period = 'none'` 只表示周期池不自动重置，不应代替 Wallet 累加购买额度。API Key 仅用于鉴权与归集。
 
 ### 4. 用量日志 `api_key_request_logs`
 
@@ -66,7 +66,7 @@ Authorization: Bearer sk-xxx...
 ### 5. 输出长度（`max_tokens` / `maxOutputTokens`）
 
 - Gateway **不会**根据 D1 **`models.max_tokens`** 改写或截断用户请求；该字段在 `GET /v1/models` 等处仅作**目录/展示参考**。
-- 实际上游请求体由 **`model_routes.custom_params`** 与客户端 JSON **深度合并**得到（实现见 `buildRouteRequestBody`）：**客户端显式提供的字段优先**于路由默认值。
+- 实际上游请求体由 **`model_routes.custom_params`** 与客户端 JSON **深度合并**得到（实现见 `buildRouteRequestBody`）：**客户端显式提供的字段优先**于路由默认值。保留键 **`headers`** 不进入请求体，见 [Route 默认参数合并](#route-默认参数合并)。
 - 若客户端不传 `max_tokens`（OpenAI Chat、Anthropic Messages）或不传 `generationConfig.maxOutputTokens`（Gemini），则由路由 JSON 中的默认值或**上游服务商的 API 默认**决定。
 - 运维若希望为某条路由提供默认最大输出，可在该路由的 **`custom_params`** 中配置，例如 OpenAI/Anthropic 顶层 `"max_tokens": 4096`，Gemini 使用嵌套 `"generationConfig": { "maxOutputTokens": 8192 }`。
 - **注意**：因合并规则为客户端优先，仅靠 `custom_params` **无法**在客户端已显式传入更大值时实现「硬封顶」；若需要运营侧强制上限，需另行设计（不在当前文档范围）。
@@ -581,7 +581,7 @@ Authorization: Bearer <USER_API_KEY>
 
 ### 行为
 
-1. 校验用户 API Key；`budget_max` 非空且额度不足 → **403** `{ "error": "Budget exceeded" }`
+1. 校验用户 API Key；周期额度与永久额度的总余额不足 → **403** `{ "error": "Budget exceeded" }`
 2. 从 Admin `system_config` 读取搜索配置（无环境变量回退）：
    - `WEB_SEARCH_ACTIVE`（白名单：`bocha` | `tavily` | `cleversee` | `tencent_wsa`；非法值 → **503**）
    - `WEB_SEARCH_CATALOG`（JSON：按引擎存 `{ "apiKey", "metered", "standard", "charged" }`；可带兼容键 `cost`（= charged）；Active 引擎必须有非空 `apiKey`，否则 **503**）
@@ -641,7 +641,7 @@ Authorization: Bearer <USER_API_KEY>
 
 ### 行为
 
-1. 校验用户 API Key；`budget_max` 非空且额度不足 → **403** `{ "error": "Budget exceeded" }`
+1. 校验用户 API Key；周期额度与永久额度的总余额不足 → **403** `{ "error": "Budget exceeded" }`
 2. 从 Admin `system_config` 读取抓取配置（无环境变量回退）：
    - `WEB_FETCH_ACTIVE`（白名单：`firecrawl` | `tavily` | `jina`；默认 `firecrawl`；非法值 → **503**）
    - `WEB_FETCH_CATALOG`（JSON：按引擎存 `{ "apiKey", "metered", "standard", "charged" }`；可带兼容键 `cost`；Active 引擎必须有非空 `apiKey`，否则 **503**）
@@ -1127,6 +1127,10 @@ GET /v1/me
 {
   "budget_max": 100.00,
   "budget_spent": 15.50,
+  "wallet_granted": 20.00,
+  "wallet_spent": 3.00,
+  "wallet_balance": 17.00,
+  "total_remaining": 101.50,
   "budget_period": "monthly",
   "budget_reset_at": "2024-02-01T00:00:00.000Z",
   "billing_currency": "USD",
@@ -1143,6 +1147,10 @@ GET /v1/me
 |------|------|------|
 | `budget_max` | number \| null | 预算上限；`null` 表示无限制 |
 | `budget_spent` | number | 当前周期已消费金额 |
+| `wallet_granted` | number | 累计发放的永久额度 |
+| `wallet_spent` | number | 已从永久额度扣除的累计金额 |
+| `wallet_balance` | number | 永久额度当前余额，即 `wallet_granted − wallet_spent` |
+| `total_remaining` | number \| null | 周期剩余与永久额度余额之和；周期额度不限时返回 `null` |
 | `budget_period` | string | 预算周期: `"none"` \| `"daily"` \| `"weekly"` \| `"monthly"` |
 | `budget_reset_at` | string \| null | 下次预算重置时间 (ISO 8601) |
 | `billing_currency` | string | 计费币种：来自 `system_config.BILLING_CURRENCY` 的 **ISO 4217** 三字码（如 `USD`、`CNY`）；与 `pricing_profile` 单价及本接口预算数值同币；未配置或非法时回退 `USD` |
@@ -1155,7 +1163,7 @@ curl http://localhost:8787/v1/me \
   -H "Authorization: Bearer sk-xxx..."
 ```
 
-> 即使预算已超限，此端点仍然可以访问。客户端可使用此端点显示用户的预算状态。
+> 即使额度已用完，此端点仍然可以访问。客户端可使用此端点分别显示周期额度、永久额度和总剩余额度。
 
 ---
 
@@ -1163,7 +1171,7 @@ curl http://localhost:8787/v1/me \
 
 ### 预算控制
 
-如果用户 Key 设置了预算限制（`budget_max`），当累计消费达到或超过预算时，请求将被拒绝并返回 **403** `Budget exceeded`。周期性套餐使用 `budget_period` 为 `daily` / `weekly` / `monthly` 等并由 `budget_reset_at` 驱动重置；**一次性额度**使用 `budget_period = 'none'`，不会在网关内按日历自动“补发”，由上游门户/管理 API 更新 `budget_max` / `budget_base`。
+当 `budget_max` 非空且“周期剩余 + 永久余额”小于等于 0 时，请求会被拒绝并返回 **403** `Budget exceeded`；周期额度用尽但永久余额仍为正时可以继续请求。周期性套餐使用 `budget_period` 为 `daily` / `weekly` / `monthly` 等并由 `budget_reset_at` 驱动重置；购买额度、注册赠额等永久余额通过 Admin `POST /api/admin/users/:id/wallet/credit` 增减。`budget_period = 'none'` 仅关闭周期池的自动重置，不会自动转为永久额度。
 
 ### 定价模型
 
@@ -1247,7 +1255,11 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 {
   "temperature": 0.7,
   "response_format": { "type": "json_object" },
-  "provider_options": { "foo": "bar" }
+  "provider_options": { "foo": "bar" },
+  "headers": {
+    "HTTP-Referer": "https://example.com",
+    "X-Title": "My App"
+  }
 }
 ```
 
@@ -1262,5 +1274,7 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 ```
 
 则最终上游请求中的 `temperature` 为 `0.2`（用户覆盖默认），`provider_options` 会保留。
+
+保留键 **`headers`** 是上游 **HTTP 头**，不是请求体字段：转发前会从 JSON 中剥离，并合并到出站请求头。客户端请求头不会覆盖这些值。网关写入的鉴权头（`Authorization` / `x-api-key` / `x-goog-api-key`）、`Content-Type` 与 hop-by-hop 头不可被 `headers` 覆盖；其余键（如 `HTTP-Referer`、`anthropic-version`）可以追加或覆盖驱动默认值。`headers` 缺省或为 `{}` 时行为与改造前相同。
 
 各厂商 `thinking` / `reasoning` / `reasoning_effort` 等字段的 JSON 形态见 **[渠道模型思考参数配置说明](../reference/provider-thinking-configs.md)**。在 Route 的 `custom_params` 中写入默认值后，客户端未传该字段时会合并进上游请求；客户端显式传入时以客户端为准。

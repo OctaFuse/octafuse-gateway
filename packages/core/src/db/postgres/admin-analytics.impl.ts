@@ -2,10 +2,12 @@
  * Postgres：管理后台分析聚合查询。
  */
 import { ANALYTICS_TTFT_SELECT_SQL } from '../../lib/analytics-ttft-sql';
+import { assembleKeyAnalytics } from '../../lib/key-analytics-assemble';
 import { sqlMoneyRound } from '../../lib/money-precision';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { AdminAnalyticsRepository } from '../../storage/gateway-repository-interfaces';
 import type {
+	KeyAnalyticsRow,
 	ModelAnalyticsRow,
 	ModelProviderReliabilityRow,
 	ProviderAnalyticsRow,
@@ -16,7 +18,15 @@ import type {
 export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClient): AdminAnalyticsRepository {
 	const pg = db.raw;
 	return {
-		async queryModelAnalytics(options: { start: string; end: string; tag?: string; providerId?: string; userEmail?: string }): Promise<ModelAnalyticsRow[]> {
+		async queryModelAnalytics(options: {
+			start: string;
+			end: string;
+			tag?: string;
+			providerId?: string;
+			userEmail?: string;
+			userId?: string;
+			apiKeyId?: string;
+		}): Promise<ModelAnalyticsRow[]> {
 			const baseSelect = `SELECT
 				rl.model_id as model_id,
 				rl.route_group as route_group,
@@ -58,6 +68,14 @@ export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClien
 			if (options.userEmail) {
 				values.push(options.userEmail);
 				conditions.push(`rl.user_email = $${values.length}`);
+			}
+			if (options.userId) {
+				values.push(options.userId);
+				conditions.push(`rl.user_id = $${values.length}`);
+			}
+			if (options.apiKeyId) {
+				values.push(options.apiKeyId);
+				conditions.push(`rl.api_key_id = $${values.length}`);
 			}
 			const q = `${baseSelect}
 		FROM api_key_request_logs rl
@@ -105,6 +123,32 @@ export function createPostgresAdminAnalyticsRepository(db: PostgresDatabaseClien
 			AND rl.user_email IS NOT NULL AND rl.user_email != ''
 		GROUP BY rl.user_email`;
 			return (await pg.unsafe(q, [options.start, options.end])) as UserAnalyticsRow[];
+		},
+
+		async queryKeyAnalytics(options: { start: string; end: string; userId: string }): Promise<KeyAnalyticsRow[]> {
+			const keys = (await pg.unsafe(
+				'SELECT id, name FROM api_keys WHERE user_id = $1',
+				[options.userId]
+			)) as Array<{ id: string; name: string | null }>;
+			const logQ = `SELECT
+				rl.api_key_id as api_key_id,
+				MAX(k.name) as key_name,
+				COUNT(*)::bigint as request_count,
+				COALESCE(SUM(rl.input_tokens), 0)::bigint as input_tokens,
+				COALESCE(SUM(rl.output_tokens), 0)::bigint as output_tokens,
+				COALESCE(${sqlMoneyRound('SUM(rl.charged_cost)')}, 0) as charged_cost,
+				COALESCE(${sqlMoneyRound('SUM(rl.metered_cost)')}, 0) as metered_cost,
+				COALESCE(${sqlMoneyRound('SUM(rl.standard_cost)')}, 0) as standard_cost,
+				COUNT(DISTINCT rl.model_id)::bigint as distinct_models,
+				MAX(rl.created_at) as last_active_at,
+				SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END)::bigint as success_count,
+				SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END)::bigint as error_count
+			FROM api_key_request_logs rl
+			LEFT JOIN api_keys k ON k.id = rl.api_key_id
+			WHERE rl.user_id = $1 AND rl.created_at >= $2 AND rl.created_at <= $3
+			GROUP BY rl.api_key_id`;
+			const logRows = (await pg.unsafe(logQ, [options.userId, options.start, options.end])) as KeyAnalyticsRow[];
+			return assembleKeyAnalytics(keys, logRows);
 		},
 
 		async queryProviderAnalytics(options: { start: string; end: string; tag?: string; modelId?: string; routeGroup?: string }): Promise<ProviderAnalyticsRow[]> {

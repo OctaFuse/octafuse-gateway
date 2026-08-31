@@ -141,7 +141,7 @@ export interface ModelRouteRow {
   /** 同 priority 层内权重；策略排序用，默认 1 */
   weight?: number;
   price_override: string | null;
-  /** 路由级默认请求体片段（JSON 对象字符串）；与用户请求体深度合并，用户字段优先 */
+  /** 路由级默认请求体片段（JSON 对象字符串）；与用户请求体深度合并，用户字段优先。保留键 `headers` 注入上游 HTTP 头，不进 body。 */
   custom_params: string | null;
   /** `openai` | `anthropic` | `gemini` */
   upstream_protocol: string;

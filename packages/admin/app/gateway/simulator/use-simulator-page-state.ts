@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useFeedback } from '@/components/feedback';
 import { flushSync } from 'react-dom';
 import { readApiJson } from '@/lib/api-json';
 import { isAudioRouteModel, validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
@@ -83,6 +84,7 @@ function resolveModelKind(m: AdminModelRow | null | undefined): ModelKindFilter 
 export function useSimulatorPageState() {
 	const t = useTranslations('simulator');
 	const tCommon = useTranslations('common');
+	const { confirm } = useFeedback();
 
 	const [proxyBaseUrl, setProxyBaseUrl] = useState('');
 	const [protocol, setProtocolState] = useState<SimulatorProtocol>('openai');
@@ -966,7 +968,7 @@ export function useSimulatorPageState() {
 	);
 
 	const requestProtocolChange = useCallback(
-		(next: SimulatorProtocol) => {
+		async (next: SimulatorProtocol) => {
 			if (next === protocol) return;
 			if (selectedModelIsAudio && next !== 'openai' && next !== 'dashscope') {
 				setInfoHint(t('protocolLockedAudio'));
@@ -989,7 +991,7 @@ export function useSimulatorPageState() {
 					openaiLlmOperation,
 				)
 			) {
-				const ok = window.confirm(t('protocolSwitchConfirm'));
+				const ok = await confirm({ title: t('protocolSwitchConfirm') });
 				if (!ok) return;
 			}
 			applyProtocolTemplate(next);
@@ -1006,11 +1008,12 @@ export function useSimulatorPageState() {
 			selectedDashScopeTtsProviderModelName,
 			imageOperation,
 			openaiLlmOperation,
+			confirm,
 		],
 	);
 
 	const requestOpenaiLlmOperationChange = useCallback(
-		(next: OpenaiLlmOperation) => {
+		async (next: OpenaiLlmOperation) => {
 			if (next === openaiLlmOperation) return;
 			if (
 				isBodyDirty(
@@ -1025,7 +1028,7 @@ export function useSimulatorPageState() {
 					openaiLlmOperation,
 				)
 			) {
-				const ok = window.confirm(t('openaiOperationSwitchConfirm'));
+				const ok = await confirm({ title: t('openaiOperationSwitchConfirm') });
 				if (!ok) return;
 			}
 			setOpenaiLlmOperationState(next);
@@ -1054,6 +1057,7 @@ export function useSimulatorPageState() {
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
 			t,
+			confirm,
 		],
 	);
 

@@ -402,7 +402,7 @@ export async function listStaticModelPresetCatalogForAdminService(
 }
 
 /**
- * 从 `lib/model-presets/*.json`（经 `listStaticModelPresets` 合并）按 **指定 id** 导入模型：按当前 `BILLING_CURRENCY`（仅 USD/CNY 合法；否则按 USD 分支取价）写入 `pricing_profile`；
+ * 从 `lib/model-presets/*.json`（经 `listStaticModelPresets` 合并）按 **指定 id** 导入模型：按当前 `BILLING_CURRENCY`（仅 USD/CNY 合法；否则按 USD 分支取价）写入完整 `pricing_profile`（含可选 `schedule`）；
  * **已存在同 id 的不导入、不覆盖**（记入 `skipped_existing`）。未知 id 或校验失败记入 `failed`。
  * 导入不写入 `model_tags`（标签由运营在导入后自行维护）。
  */

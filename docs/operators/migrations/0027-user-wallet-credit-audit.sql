@@ -1,4 +1,4 @@
--- 0027 迁移前审计（只读）。海外 D1 与境内 Postgres 各跑一遍，人工确认后再 apply 0027。
+-- 0027 迁移前审计（只读，Postgres / MySQL）。与 D1 环境分别执行对应脚本，人工确认后再 apply 0027。
 -- 异常行处理（已确认）：
 --   budget_max IS NULL          → 跳过（无限额）
 --   budget_spent > budget_max   → 超支欠账钳到 0（不追讨）；周期 spent 钳到 base

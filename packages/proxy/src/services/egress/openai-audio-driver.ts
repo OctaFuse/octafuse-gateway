@@ -5,6 +5,7 @@
  * 日志禁止写入音频二进制。
  */
 import {
+	applyRouteExtraHeaders,
 	parseOpenAiAudioTokenUsage,
 	resolveProviderUpstreamSecret,
 	resolveUpstreamEndpoint,
@@ -383,9 +384,12 @@ export async function dispatchOpenAiAudioTranscriptions(
 		const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 		const response = await fetch(url, {
 			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${secret}`,
-			},
+			headers: applyRouteExtraHeaders(
+				{
+					Authorization: `Bearer ${secret}`,
+				},
+				route.customParams
+			),
 			body: form,
 			signal,
 		});

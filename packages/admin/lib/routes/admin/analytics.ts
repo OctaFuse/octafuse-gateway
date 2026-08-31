@@ -5,6 +5,7 @@ import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
 import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import {
+	getKeyAnalyticsService,
 	getModelAnalyticsService,
 	getProviderAnalyticsService,
 	getReliabilityAnalyticsService,
@@ -16,7 +17,7 @@ export const adminAnalyticsRoutes = new Hono<AdminEnv>();
 
 adminAnalyticsRoutes.use('*', requireAdminPrincipal);
 
-/** 查询参数：start_date、end_date、tag（模型标签筛选）、provider_id（供应商筛选）、user_email（用户邮箱精确匹配）。 */
+/** 查询参数：start_date、end_date、tag（模型标签筛选）、provider_id（供应商筛选）、user_email（用户邮箱精确匹配）、user_id、api_key_id。 */
 adminAnalyticsRoutes.get('/models', async (c) => {
 	try {
 		const repos = c.get('repositories');
@@ -26,6 +27,8 @@ adminAnalyticsRoutes.get('/models', async (c) => {
 			tag: c.req.query('tag') ?? undefined,
 			provider_id: c.req.query('provider_id') ?? undefined,
 			user_email: c.req.query('user_email') ?? undefined,
+			user_id: c.req.query('user_id') ?? undefined,
+			api_key_id: c.req.query('api_key_id') ?? undefined,
 		});
 		return c.json(normalizeApiTimeFields({ success: true, data: result.data, tags: result.tags }));
 	} catch (error) {
@@ -62,6 +65,21 @@ adminAnalyticsRoutes.get('/users', async (c) => {
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to get user analytics');
+	}
+});
+
+/** 查询参数：start_date、end_date、user_id（必填，UUID 或 ext: 路由）。 */
+adminAnalyticsRoutes.get('/keys', async (c) => {
+	try {
+		const repos = c.get('repositories');
+		const data = await getKeyAnalyticsService(repos, {
+			start_date: c.req.query('start_date') ?? undefined,
+			end_date: c.req.query('end_date') ?? undefined,
+			user_id: c.req.query('user_id') ?? undefined,
+		});
+		return c.json(normalizeApiTimeFields({ success: true, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to get key analytics');
 	}
 });
 

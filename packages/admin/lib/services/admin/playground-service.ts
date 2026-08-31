@@ -3,9 +3,11 @@
  */
 import type { GatewayRepositories, ProviderEndpointsMap } from '@octafuse/core';
 import {
+	applyRouteExtraHeaders,
 	applyVertexOpenAiModelPrefix,
 	isGcpServiceAccountJson,
 	resolveProviderUpstreamSecret,
+	routeCustomParamsBody,
 } from '@octafuse/core';
 import { isAudioModel as isCatalogAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import {
@@ -27,6 +29,7 @@ import { modelKindFromFlags, resolveOpenaiUpstreamCapability } from '@/lib/invok
 import { AdminServiceError, badRequest, notFound } from './errors';
 import { buildPlaygroundDashScopeImageRequest } from './playground-dashscope-image';
 import { isPendingProviderImportApiKey } from '@octafuse/core/db/provider-key-utils';
+import { redactPlaygroundOutboundHeaders } from '@/lib/playground/outbound-headers';
 
 /** 与 Proxy `RouteResult` 对齐的最小子集，供合并默认参数与拼 URL。 */
 export type PlaygroundResolvedRoute = {
@@ -69,10 +72,10 @@ function deepMergeDefaults(defaultValue: unknown, userValue: unknown): unknown {
 }
 
 /**
- * 路由 `custom_params` 与用户体深度合并，用户字段优先（与 Proxy `buildRouteRequestBody` 一致）。
+ * 路由 `custom_params` 与用户体深度合并，用户字段优先（与 Proxy `buildRouteRequestBody` 一致；`headers` 不进入 body）。
  */
 export function mergePlaygroundRequestBody(route: PlaygroundResolvedRoute, userBody: JsonObject): JsonObject {
-	const finalBody = deepMergeDefaults(route.customParams ?? {}, userBody);
+	const finalBody = deepMergeDefaults(routeCustomParamsBody(route.customParams), userBody);
 	return isPlainObject(finalBody) ? finalBody : { ...userBody };
 }
 
@@ -512,8 +515,9 @@ export function buildPlaygroundDashScopeSpeechRequest(
 			? String((body.voice as Record<string, unknown>).id ?? '').trim()
 			: '';
 	if (!voice) throw badRequest('DashScope TTS voice is required');
+	const routeDefaults = routeCustomParamsBody(route.customParams);
 	const configuredInput =
-		route.customParams?.input != null && isPlainObject(route.customParams.input) ? route.customParams.input : {};
+		routeDefaults.input != null && isPlainObject(routeDefaults.input) ? routeDefaults.input : {};
 	const responseFormat =
 		typeof body.response_format === 'string'
 			? body.response_format
@@ -539,7 +543,7 @@ export function buildPlaygroundDashScopeSpeechRequest(
 		input.instruction = body.instructions;
 	}
 	const upstreamBody = {
-		...(route.customParams ?? {}),
+		...routeDefaults,
 		model: route.providerModelName,
 		input,
 	};
@@ -640,7 +644,7 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 			model: route.providerModelName,
 			input: { messages: [{ role: 'user', content }] },
 			parameters: {
-				...(route.customParams ?? {}),
+				...routeCustomParamsBody(route.customParams),
 				format: resolvePlaygroundFunAsrFormat(collected.file),
 				...(language ? { language_hints: [language] } : {}),
 			},
@@ -668,7 +672,7 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 				messages: [{ role: 'user', content: [{ audio: dataUrl }] }],
 			},
 			parameters: {
-				...(route.customParams ?? {}),
+				...routeCustomParamsBody(route.customParams),
 				format: resolvePlaygroundFunAsrFormat(collected.file),
 			},
 			resources: [],
@@ -682,7 +686,7 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 		// Fun-ASR 非流式调用只返回最终识别结果，便于调试台直接展示 JSON。
 		headers['X-DashScope-SSE'] = 'disable';
 	} else {
-		const configuredAsrOptions = route.customParams?.asr_options;
+		const configuredAsrOptions = routeCustomParamsBody(route.customParams).asr_options;
 		if (configuredAsrOptions != null && !isPlainObject(configuredAsrOptions)) {
 			throw badRequest('DashScope route custom_params.asr_options must be an object');
 		}
@@ -695,7 +699,7 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 			model: route.providerModelName,
 			input: { messages },
 			parameters: {
-				...(route.customParams ?? {}),
+				...routeCustomParamsBody(route.customParams),
 				asr_options: {
 					...(configuredAsrOptions ?? {}),
 					...(language ? { language } : {}),
@@ -742,7 +746,7 @@ export function buildPlaygroundDashScopeAsyncAsrRequest(
 	}
 	const language = typeof body.language === 'string' ? body.language.trim() : '';
 	const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
-	const parameters = { ...(route.customParams ?? {}) };
+	const parameters = { ...routeCustomParamsBody(route.customParams) };
 	delete parameters.asr_options;
 	const upstreamBody = {
 		model: route.providerModelName,
@@ -809,7 +813,7 @@ async function pollPlaygroundDashScopeAsyncAsr(
 		});
 		const queryResponse = await fetch(queryUrl, {
 			method: 'GET',
-			headers: { Authorization: `Bearer ${route.providerApiKey}` },
+			headers: applyRouteExtraHeaders({ Authorization: `Bearer ${route.providerApiKey}` }, route.customParams),
 			signal: requestSignal,
 		});
 		const queryBody = (await queryResponse.json()) as unknown;
@@ -863,6 +867,8 @@ export type PlaygroundInvokeResult = {
 	latencyMs: number;
 	/** 与上游 `fetch` body 一致的 JSON 文本（合并 custom_params、写入 model 等之后） */
 	upstreamWireBodyJson: string;
+	/** 实际上游 fetch 请求头（密钥已脱敏） */
+	upstreamWireHeaders: Record<string, string>;
 };
 
 /**
@@ -1127,6 +1133,8 @@ export async function invokePlaygroundUpstream(
 		}
 	}
 
+	headers = applyRouteExtraHeaders(headers, route.customParams);
+
 	let response: Response;
 	try {
 		response = await fetch(url, {
@@ -1196,5 +1204,11 @@ export async function invokePlaygroundUpstream(
 		);
 	}
 
-	return { response, upstreamUrlForHeader, latencyMs, upstreamWireBodyJson };
+	return {
+		response,
+		upstreamUrlForHeader,
+		latencyMs,
+		upstreamWireBodyJson,
+		upstreamWireHeaders: redactPlaygroundOutboundHeaders(headers),
+	};
 }

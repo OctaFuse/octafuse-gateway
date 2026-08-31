@@ -6,6 +6,7 @@ import {
 	isAudioRouteModel,
 } from '@/lib/audio-transcriptions';
 import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
+import { extraHeadersFromCustomParams, mergeUpstreamHeaders, routeCustomParamsBody } from '@octafuse/core/route-custom-params';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
@@ -122,6 +123,90 @@ function isPlainJsonObject(value: unknown): value is JsonObject {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function parseCustomParamsObject(raw?: string | null): JsonObject {
+	const text = raw?.trim() ?? '';
+	if (!text) return {};
+	try {
+		const parsed = JSON.parse(text) as unknown;
+		return isPlainJsonObject(parsed) ? parsed : {};
+	} catch {
+		return {};
+	}
+}
+
+/** 路由 `custom_params.headers` 预览（已跳过受保护头，与出站 merge 一致）。 */
+export function previewPlaygroundRouteHeaders(customParams?: string | null): Record<string, string> {
+	return extraHeadersFromCustomParams(parseCustomParamsObject(customParams));
+}
+
+export function formatPlaygroundRouteHeadersPreview(headers: Record<string, string>): string {
+	return Object.entries(headers)
+		.map(([name, value]) => `${name}: ${value}`)
+		.join('\n');
+}
+
+export type PlaygroundHeaderSource = 'provider' | 'custom_params';
+
+export type PlaygroundHeaderPreviewRow = {
+	name: string;
+	value: string;
+	source: PlaygroundHeaderSource;
+};
+
+/** 本地预览用的协议默认头（密钥占位）；发送后以服务端回传为准。 */
+export function typicalPlaygroundDriverHeaders(protocol?: string | null): Record<string, string> {
+	switch (normalizeProtocol(protocol ?? 'openai')) {
+		case 'anthropic':
+			return {
+				'Content-Type': 'application/json',
+				'x-api-key': '••••••••',
+				'anthropic-version': '2023-06-01',
+			};
+		case 'gemini':
+			return {
+				'Content-Type': 'application/json',
+				Authorization: 'Bearer ••••••••',
+			};
+		default:
+			return {
+				'Content-Type': 'application/json',
+				Authorization: 'Bearer ••••••••',
+			};
+	}
+}
+
+function extraHeaderNameSet(extra: Record<string, string>): Set<string> {
+	return new Set(Object.keys(extra).map((name) => name.toLowerCase()));
+}
+
+/**
+ * 出站请求头预览：驱动默认头 + 路由 `custom_params.headers`。
+ * 传入 `sentHeaders` 时用发送后的实际上游头（已脱敏），仍按 custom_params 标注来源。
+ */
+export function previewPlaygroundOutboundHeaderRows(input: {
+	customParams?: string | null;
+	upstreamProtocol?: string | null;
+	sentHeaders?: Record<string, string> | null;
+}): PlaygroundHeaderPreviewRow[] {
+	const extra = previewPlaygroundRouteHeaders(input.customParams);
+	const extraNames = extraHeaderNameSet(extra);
+	const sent = input.sentHeaders;
+	const display =
+		sent && Object.keys(sent).length > 0
+			? sent
+			: mergeUpstreamHeaders(typicalPlaygroundDriverHeaders(input.upstreamProtocol), extra);
+	return Object.entries(display)
+		.map(([name, value]) => ({
+			name,
+			value,
+			source: (extraNames.has(name.toLowerCase()) ? 'custom_params' : 'provider') as PlaygroundHeaderSource,
+		}))
+		.sort((a, b) => {
+			if (a.source === b.source) return 0;
+			return a.source === 'provider' ? -1 : 1;
+		});
+}
+
 /** 与 Proxy / Playground 服务端相同：custom_params 与用户体深度合并，用户字段优先。 */
 export function deepMergePlaygroundDefaults(defaultValue: unknown, userValue: unknown): unknown {
 	if (userValue !== undefined) {
@@ -163,20 +248,8 @@ export function previewPlaygroundMergedBody(input: {
 		return { status: 'invalid' };
 	}
 
-	let customParams: JsonObject = {};
-	const rawCustom = input.customParams?.trim() ?? '';
-	if (rawCustom) {
-		try {
-			const parsed = JSON.parse(rawCustom) as unknown;
-			if (isPlainJsonObject(parsed)) {
-				customParams = parsed;
-			}
-		} catch {
-			// 无效 custom_params 在 Send 时会被服务端拒绝；预览仍展示用户体。
-		}
-	}
-
-	const merged = deepMergePlaygroundDefaults(customParams, userBody);
+	const customParams = parseCustomParamsObject(input.customParams);
+	const merged = deepMergePlaygroundDefaults(routeCustomParamsBody(customParams), userBody);
 	const body: JsonObject = isPlainJsonObject(merged) ? { ...merged } : { ...userBody };
 	const proto = normalizeProtocol(input.upstreamProtocol ?? 'openai');
 	const model = input.providerModelName?.trim() ?? '';
