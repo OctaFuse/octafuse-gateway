@@ -68,8 +68,10 @@ import type {
 	AdminRequestLogsOutput,
 	AdminStatsOutput,
 	AdminUserAnalyticsRow,
+	AdminKeyAnalyticsRow,
 	AdminGlobalBudgetAuditLogsOutput,
 } from './types';
+import { resolveAdminUserId } from './users-service';
 
 function mapAnalyticsTtftFields(r: {
 	avg_first_reasoning_token_ms?: unknown;
@@ -570,7 +572,15 @@ export async function getAdminStatsService(
  */
 export async function getModelAnalyticsService(
 	repos: GatewayRepositories,
-	input: { start_date?: string; end_date?: string; tag?: string; provider_id?: string; user_email?: string }
+	input: {
+		start_date?: string;
+		end_date?: string;
+		tag?: string;
+		provider_id?: string;
+		user_email?: string;
+		user_id?: string;
+		api_key_id?: string;
+	}
 ): Promise<AdminModelAnalyticsOutput> {
 	const { start, end } = clampAnalyticsRange(input.start_date ?? undefined, input.end_date ?? undefined);
 	const tagRaw = input.tag;
@@ -580,12 +590,17 @@ export async function getModelAnalyticsService(
 	const hasProviderId = providerIdRaw != null && providerIdRaw.trim() !== '';
 	const userEmailRaw = input.user_email;
 	const hasUserEmail = userEmailRaw != null && userEmailRaw.trim() !== '';
+	const userIdRaw = input.user_id?.trim();
+	const apiKeyIdRaw = input.api_key_id?.trim();
+	const userId = userIdRaw ? await resolveAdminUserId(repos, userIdRaw) : undefined;
 	const rows = await repos.analytics.queryModelAnalytics({
 		start,
 		end,
 		tag: hasTag ? tagValue : undefined,
 		providerId: hasProviderId ? providerIdRaw.trim() : undefined,
 		userEmail: hasUserEmail ? userEmailRaw.trim() : undefined,
+		userId,
+		apiKeyId: apiKeyIdRaw || undefined,
 	});
 	const data = rows.map((r) => {
 		const reqCount = Number(r.request_count);
@@ -717,6 +732,39 @@ export async function getUserAnalyticsService(
 			error_count: Number(r.error_count),
 		};
 	}) as AdminUserAnalyticsRow[];
+}
+
+/**
+ * 用户下按 API Key 聚合用量；`user_id` 必填（UUID 或 `ext:` 路由）。
+ */
+export async function getKeyAnalyticsService(
+	repos: GatewayRepositories,
+	input: { start_date?: string; end_date?: string; user_id?: string }
+): Promise<AdminKeyAnalyticsRow[]> {
+	const userIdRaw = input.user_id?.trim();
+	if (!userIdRaw) throw badRequest('user_id is required');
+	const userId = await resolveAdminUserId(repos, userIdRaw);
+	const { start, end } = clampAnalyticsRange(input.start_date ?? undefined, input.end_date ?? undefined);
+	const rows = await repos.analytics.queryKeyAnalytics({ start, end, userId });
+	return rows.map((r) => {
+		const reqCount = Number(r.request_count);
+		const successCount = Number(r.success_count);
+		return {
+			api_key_id: r.api_key_id,
+			key_name: r.key_name,
+			request_count: reqCount,
+			input_tokens: Number(r.input_tokens),
+			output_tokens: Number(r.output_tokens),
+			charged_cost: Number(r.charged_cost),
+			metered_cost: Number(r.metered_cost),
+			standard_cost: Number(r.standard_cost),
+			distinct_models: Number(r.distinct_models),
+			last_active_at: r.last_active_at,
+			success_count: successCount,
+			error_count: Number(r.error_count),
+			success_rate: reqCount > 0 ? (successCount / reqCount) * 100 : 0,
+		};
+	});
 }
 
 /**

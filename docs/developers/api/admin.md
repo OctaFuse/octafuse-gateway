@@ -87,6 +87,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/analytics/models` | GET | `api_key_request_logs`，可选联 `model_tags` | Admin UI |
 | `/admin/analytics/providers` | GET | `api_key_request_logs`，按 Provider 聚合 | Admin UI |
 | `/admin/analytics/users` | GET | `api_key_request_logs`，左联 **`users`**（用户维度） | Admin UI |
+| `/admin/analytics/keys` | GET | `api_key_request_logs`，按 `api_key_id` 聚合（需 `user_id`） | 外部集成方、Admin UI |
 | `/admin/analytics/reliability` | GET | `api_key_request_logs` | Admin UI |
 
 说明：**GlobalLogs**（`/admin/request-logs`）与 **KeyScopedLogs**（`/admin/keys/:id/logs`）互补；**UserScopedLogs**（`/admin/users/:id/logs`）按 `user_id` 拉全量请求历史。**全局审计列表**（`/admin/budget-audit-logs`，表为 **`user_audit_logs`**）记录预算与用户/密钥生命周期事件，与请求日志正交。各类审计行何时产生（含高频 `usage_charge`）见 [`../reference/user-audit-logs.md`](../reference/user-audit-logs.md)。**数据模型总览**见 [`../architecture/user-keys-data-model.md`](../architecture/user-keys-data-model.md)。
@@ -201,7 +202,14 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 ### `GET /admin/users/:id/logs`
 
-分页返回该 **`user_id`** 的 `api_key_request_logs`（可选 `status`）。
+分页返回该 **`user_id`** 的 `api_key_request_logs`。
+
+| 查询参数 | 说明 |
+|----------|------|
+| `page` | 默认 `1` |
+| `page_size` | 默认 `20`，最大 `100` |
+| `status` | 可选，精确匹配 |
+| `api_key_id` | 可选；限定该用户下的一把 Key。不属于该用户则 `404` |
 
 ### `GET /admin/users/:id/audit-logs`
 
@@ -952,6 +960,8 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 | `tag` | 可选；非空时只统计带该 `model_tags.tag` 的模型 |
 | `provider_id` | 可选；Provider 精确匹配 |
 | `user_email` | 可选；用户邮箱精确匹配 |
+| `user_id` | 可选；用户 UUID 或 `ext:` 路由（解析后过滤 `rl.user_id`） |
+| `api_key_id` | 可选；API Key UUID 精确匹配 |
 
 响应：`{ success, data: [...], tags: string[] }`（`tags` 为库内全部 distinct 标签，供筛选 UI）。
 
@@ -984,6 +994,17 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 |----------|------|
 | `start_date` / `end_date` | 同上 |
 | `email` | 可选，`user_email` **模糊**匹配（`LIKE %...%`） |
+
+### `GET /admin/analytics/keys`
+
+按用户下 **API Key** 聚合 `api_key_request_logs`（含当前 0 用量的 Key）。删除后 `api_key_id` 被置空的历史日志归入 `api_key_id = null` 行。`spend` 以 `charged_cost` 为准，**不是** `GET /admin/keys/:id` 上的用户级 `spend`。
+
+| 查询参数 | 说明 |
+|----------|------|
+| `start_date` / `end_date` | 同上 |
+| `user_id` | **必填**；用户 UUID 或 `ext:` 路由 |
+
+`data` 每行：`api_key_id`、`key_name`、`request_count`、`input_tokens`、`output_tokens`、`charged_cost`、`metered_cost`、`standard_cost`、`distinct_models`、`last_active_at`、`success_count`、`error_count`、`success_rate`。
 
 ### `GET /admin/analytics/reliability`
 

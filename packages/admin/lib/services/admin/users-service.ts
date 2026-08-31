@@ -864,7 +864,7 @@ export async function patchAdminUserKey(
 export async function getAdminUserLogs(
 	repos: GatewayRepositories,
 	rawUser: string,
-	input: { page?: number; page_size?: number; status?: string }
+	input: { page?: number; page_size?: number; status?: string; api_key_id?: string }
 ) {
 	const userId = await resolveAdminUserId(repos, rawUser);
 	const page = Math.max(1, Number(input.page ?? 1));
@@ -873,12 +873,18 @@ export async function getAdminUserLogs(
 		input.status !== undefined && input.status !== null && String(input.status).trim() !== ''
 			? String(input.status).trim()
 			: undefined;
+	const apiKeyId = input.api_key_id?.trim() || undefined;
+	if (apiKeyId) {
+		const key = await repos.apiKeys.getApiKeyById(apiKeyId);
+		if (!key || key.user_id !== userId) throw notFound('Key not found');
+	}
 
 	const { logs, total } = await repos.requestLogs.getRequestLogs({
 		page,
 		pageSize: page_size,
 		userId,
 		status,
+		apiKeyId,
 	});
 	return { logs, total, page, page_size };
 }

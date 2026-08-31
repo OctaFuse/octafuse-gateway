@@ -147,6 +147,22 @@ export interface UserAnalyticsRow {
 	error_count: number;
 }
 
+/** 分析：按用户下 API Key 聚合（`api_key_id` 为空表示已删除 Key 的历史日志）。 */
+export interface KeyAnalyticsRow {
+	api_key_id: string | null;
+	key_name: string | null;
+	request_count: number;
+	input_tokens: number;
+	output_tokens: number;
+	charged_cost: number;
+	metered_cost: number;
+	standard_cost: number;
+	distinct_models: number;
+	last_active_at: string | null;
+	success_count: number;
+	error_count: number;
+}
+
 /** 分析：按 provider 聚合。 */
 export interface ProviderAnalyticsRow {
 	provider_id: string;

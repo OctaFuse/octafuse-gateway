@@ -567,6 +567,22 @@ export type AdminUserAnalyticsRow = {
 	error_count: number;
 };
 
+export type AdminKeyAnalyticsRow = {
+	api_key_id: string | null;
+	key_name: string | null;
+	request_count: number;
+	input_tokens: number;
+	output_tokens: number;
+	charged_cost: number;
+	metered_cost: number;
+	standard_cost: number;
+	distinct_models: number;
+	last_active_at: unknown;
+	success_count: number;
+	error_count: number;
+	success_rate: number;
+};
+
 export type AdminReliabilityProviderRow = {
 	provider_id: unknown;
 	provider_name: string | null;
