@@ -12,6 +12,7 @@
   { "key": "deepinfra", "label": "DeepInfra" },
   { "key": "deepseek", "label": "DeepSeek" },
   { "key": "fireworks", "label": "Fireworks AI" },
+  { "key": "flatkey", "label": "Flatkey" },
   { "key": "google", "label": "Google" },
   { "key": "groq", "label": "Groq" },
   { "key": "huggingface", "label": "Hugging Face" },

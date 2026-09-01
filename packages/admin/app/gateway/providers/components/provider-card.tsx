@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import type { GatewayProvider, ProviderKeyStatusKind } from '../types';
 import { getProviderKeyStatus, getProviderProtocolSummaries } from '../provider-utils';
+import { ProviderCatalogOutboundLink } from './provider-catalog-outbound-link';
 import { ProviderProtocolIcon } from './provider-protocol-icon';
 
 type ProviderCardProps = {
@@ -160,15 +161,24 @@ export function ProviderCard(props: ProviderCardProps) {
 			</div>
 
 			<div className="pointer-events-none relative z-10 flex items-center justify-between gap-2">
-				<span
-					className={`inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset ${STATUS_BADGE[keyStatus]}`}
-				>
+				<div className="flex min-w-0 items-center gap-2">
 					<span
-						className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[keyStatus]}`}
-						aria-hidden
-					/>
-					<span className="truncate">{statusLabel}</span>
-				</span>
+						className={`inline-flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset ${STATUS_BADGE[keyStatus]}`}
+					>
+						<span
+							className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[keyStatus]}`}
+							aria-hidden
+						/>
+						<span className="truncate">{statusLabel}</span>
+					</span>
+					{(keyStatus === 'no_key' || keyStatus === 'pending') && (
+						<ProviderCatalogOutboundLink
+							links={provider.catalog_links}
+							stopPropagation
+							className="pointer-events-auto inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-blue-700 hover:text-blue-800"
+						/>
+					)}
+				</div>
 				<button
 					type="button"
 					onClick={(event) => {

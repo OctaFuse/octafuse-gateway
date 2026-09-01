@@ -14,6 +14,7 @@ import {
 	inferStaticProviderIconKey,
 	inferStaticProviderVendorKey,
 	listStaticProviderImportPresets,
+	lookupStaticProviderCatalogLinks,
 } from '@/lib/provider-import-preset';
 import { badRequest, conflict, notFound } from './errors';
 import type {
@@ -46,10 +47,12 @@ function normalizeProviderStatus(raw: unknown): 'active' | 'disabled' {
 function enrichProviderRow(provider: AdminProviderRow): AdminProviderRow {
 	const plaintext = typeof provider.api_key === 'string' ? provider.api_key : '';
 	const vendorKey = inferStaticProviderVendorKey(provider);
+	const catalogLinks = lookupStaticProviderCatalogLinks(provider);
 	return {
 		...provider,
 		vendor_key: vendorKey,
 		icon_key: inferStaticProviderIconKey({ ...provider, vendor_key: vendorKey }),
+		catalog_links: catalogLinks ?? undefined,
 		api_key: maskProviderApiKeyForAdmin(plaintext),
 		status: provider.status === 'disabled' ? 'disabled' : 'active',
 		has_pending_key: isPendingProviderImportApiKey(plaintext),

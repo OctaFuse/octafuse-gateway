@@ -128,6 +128,12 @@ export type AdminProviderImportCatalogItem = {
 	/** 序列化后的 endpoints JSON（可 null） */
 	endpoints: string | null;
 	description: string | null;
+	/** 官网 / 密钥页 / 可选邀请链接；不写入 providers 表。 */
+	links?: {
+		platform?: string;
+		api_keys?: string;
+		referral?: string;
+	};
 };
 
 /** `POST /admin/providers/import` 请求体：导入选中的 catalog 键（`GET .../catalog` 返回的 `id`）。 */
@@ -250,6 +256,12 @@ export type AdminProviderRow = {
 	vendor_key?: string;
 	/** 由内置 Provider 预设动态推导的产品级图标，不持久化。 */
 	icon_key?: string;
+	/** 由内置预设叠加的官网 / 密钥 / 邀请链接，不持久化。 */
+	catalog_links?: {
+		platform?: string;
+		api_keys?: string;
+		referral?: string;
+	};
 	endpoints: string | null;
 	/** 列表/详情为脱敏预览；明文仅经 `GET /:id/api-key` */
 	api_key?: string;

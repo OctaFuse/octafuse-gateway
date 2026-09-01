@@ -4,6 +4,9 @@ import {
 	inferStaticProviderIconKey,
 	inferStaticProviderVendorKey,
 	listStaticProviderImportPresets,
+	lookupStaticProviderCatalogLinks,
+	providerCatalogOutboundRel,
+	resolveProviderCatalogOutbound,
 } from '@/lib/provider-import-preset';
 import type { ProviderEndpointsMap } from '@octafuse/core/provider-endpoints';
 
@@ -60,6 +63,9 @@ describe('provider import preset catalog metadata', () => {
 			assert.match(row.catalog?.links?.platform ?? '', /^https:\/\//, row.name);
 			if (row.catalog?.links?.api_keys) {
 				assert.match(row.catalog.links.api_keys, /^https:\/\//, row.name);
+			}
+			if (row.catalog?.links?.referral) {
+				assert.match(row.catalog.links.referral, /^https:\/\//, row.name);
 			}
 		}
 	});
@@ -206,6 +212,41 @@ describe('provider import preset catalog metadata', () => {
 		);
 		assert.equal(chatOf('SCNet'), 'https://api.scnet.cn/api/llm/v1/chat/completions');
 		assert.equal(anthropicBaseOf('SCNet'), 'https://api.scnet.cn/api/llm/anthropic');
+		assert.equal(chatOf('Flatkey'), 'https://router.flatkey.ai/v1/chat/completions');
+		assert.equal(
+			byName.get('Flatkey')?.endpoints.openai?.endpoints?.responses,
+			'https://router.flatkey.ai/v1/responses'
+		);
+		assert.equal(
+			byName.get('Flatkey')?.endpoints.openai?.endpoints?.['images.generations'],
+			'https://router.flatkey.ai/v1/images/generations'
+		);
+		assert.equal(
+			byName.get('Flatkey')?.endpoints.openai?.endpoints?.['images.edits'],
+			'https://router.flatkey.ai/v1/images/edits'
+		);
+		assert.equal(byName.get('Flatkey')?.endpoints.openai?.base, undefined);
+		assert.equal(anthropicBaseOf('Flatkey'), 'https://router.flatkey.ai');
+		assert.equal(
+			byName.get('Flatkey')?.endpoints.gemini?.base,
+			'https://router.flatkey.ai/v1beta/models'
+		);
+		assert.equal(byName.get('Flatkey')?.endpoints.gemini?.auth, 'bearer');
+		assert.equal(
+			byName.get('Flatkey')?.catalog?.links?.referral,
+			'https://console.flatkey.ai/sign-up?aff=Pu3g'
+		);
+		assert.equal(openaiBaseOf('SiliconFlow'), 'https://api.siliconflow.cn/v1');
+		assert.equal(
+			byName.get('SiliconFlow')?.catalog?.links?.referral,
+			'https://cloud.siliconflow.cn/i/rA30k5VJ'
+		);
+		assert.equal(openaiBaseOf('SiliconFlow (International)'), 'https://api.siliconflow.com/v1');
+		assert.equal(byName.get('SiliconFlow (International)')?.catalog?.links?.referral, undefined);
+		assert.equal(
+			byName.get('SiliconFlow (International)')?.catalog?.links?.platform,
+			'https://cloud.siliconflow.com/'
+		);
 	});
 
 	it('keeps Vertex Express on Gemini query-key and adds project-scoped OpenAI chat', () => {
@@ -247,5 +288,108 @@ describe('provider import preset catalog metadata', () => {
 
 		assert.equal(inferStaticProviderVendorKey(conflicting), 'other');
 		assert.equal(inferStaticProviderIconKey(conflicting), 'other');
+	});
+
+	it('overlays catalog links by template name or endpoint signature, preferring referral', () => {
+		const rows = listStaticProviderImportPresets();
+		const flatkey = rows.find((row) => row.name === 'Flatkey');
+		const zen = rows.find((row) => row.name === 'OpenCode Zen');
+		const go = rows.find((row) => row.name === 'OpenCode Go');
+		assert.ok(flatkey);
+		assert.ok(zen);
+		assert.ok(go);
+
+		assert.deepEqual(lookupStaticProviderCatalogLinks({ name: 'Flatkey (2)' }), {
+			platform: 'https://flatkey.ai/',
+			api_keys: 'https://console.flatkey.ai/keys',
+			referral: 'https://console.flatkey.ai/sign-up?aff=Pu3g',
+		});
+		assert.deepEqual(
+			lookupStaticProviderCatalogLinks({
+				name: 'Renamed production upstream',
+				endpoints: flatkey.endpoints,
+			}),
+			lookupStaticProviderCatalogLinks({ name: 'Flatkey' })
+		);
+		assert.equal(
+			lookupStaticProviderCatalogLinks({
+				name: 'Private upstream',
+				endpoints: {
+					openai: { endpoints: { chat: 'https://example.com/v1/chat/completions' } },
+				},
+			}),
+			null
+		);
+
+		assert.equal(
+			lookupStaticProviderCatalogLinks({ name: zen.name })?.platform,
+			'https://opencode.ai/zen'
+		);
+		assert.equal(
+			lookupStaticProviderCatalogLinks({ name: go.name })?.platform,
+			'https://opencode.ai/go'
+		);
+
+		const outbound = resolveProviderCatalogOutbound(
+			lookupStaticProviderCatalogLinks({ name: 'Flatkey' })
+		);
+		assert.deepEqual(outbound, {
+			href: 'https://console.flatkey.ai/sign-up?aff=Pu3g',
+			kind: 'referral',
+		});
+		assert.deepEqual(resolveProviderCatalogOutbound(lookupStaticProviderCatalogLinks({ name: 'ZenMux' })), {
+			href: 'https://zenmux.ai/invite/PNWNOJ',
+			kind: 'referral',
+		});
+		assert.deepEqual(lookupStaticProviderCatalogLinks({ name: 'SiliconFlow' }), {
+			platform: 'https://cloud.siliconflow.cn/',
+			api_keys: 'https://cloud.siliconflow.cn/account/ak',
+			referral: 'https://cloud.siliconflow.cn/i/rA30k5VJ',
+		});
+		assert.deepEqual(lookupStaticProviderCatalogLinks({ name: 'SiliconFlow (International)' }), {
+			platform: 'https://cloud.siliconflow.com/',
+			api_keys: 'https://cloud.siliconflow.com/account/ak',
+		});
+		const siliconflowChina = rows.find((row) => row.name === 'SiliconFlow');
+		const siliconflowIntl = rows.find((row) => row.name === 'SiliconFlow (International)');
+		assert.ok(siliconflowChina);
+		assert.ok(siliconflowIntl);
+		assert.deepEqual(
+			lookupStaticProviderCatalogLinks({
+				name: 'Renamed production upstream',
+				endpoints: siliconflowChina.endpoints,
+			}),
+			lookupStaticProviderCatalogLinks({ name: 'SiliconFlow' })
+		);
+		assert.deepEqual(
+			lookupStaticProviderCatalogLinks({
+				name: 'Renamed production upstream',
+				endpoints: siliconflowIntl.endpoints,
+			}),
+			lookupStaticProviderCatalogLinks({ name: 'SiliconFlow (International)' })
+		);
+		assert.deepEqual(
+			resolveProviderCatalogOutbound(lookupStaticProviderCatalogLinks({ name: 'SiliconFlow' })),
+			{
+				href: 'https://cloud.siliconflow.cn/i/rA30k5VJ',
+				kind: 'referral',
+			}
+		);
+		assert.equal(
+			resolveProviderCatalogOutbound(
+				lookupStaticProviderCatalogLinks({ name: 'SiliconFlow (International)' })
+			)?.kind,
+			'api_keys'
+		);
+		assert.equal(providerCatalogOutboundRel('referral'), 'sponsored noopener noreferrer');
+		assert.equal(
+			resolveProviderCatalogOutbound({
+				platform: 'https://flatkey.ai/',
+				api_keys: 'https://console.flatkey.ai/keys',
+			})?.kind,
+			'api_keys'
+		);
+		assert.equal(resolveProviderCatalogOutbound({ platform: 'https://flatkey.ai/' })?.kind, 'platform');
+		assert.equal(resolveProviderCatalogOutbound({ referral: 'http://insecure.example' }), null);
 	});
 });

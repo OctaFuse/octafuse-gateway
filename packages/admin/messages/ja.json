@@ -384,6 +384,9 @@
 			"failed": "インポートに失敗しました",
 			"copyFailed": "API Key のコピーに失敗しました"
 		},
+		"outbound": {
+			"go": "クリックして開く"
+		},
 		"modal": {
 			"editTitle": "Provider を編集",
 			"newTitle": "新しい Provider",

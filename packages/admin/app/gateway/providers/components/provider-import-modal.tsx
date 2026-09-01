@@ -6,6 +6,7 @@ import { VendorIcon } from '@/components/model-vendor-icon';
 import { summarizeOpenAiImportEndpoints } from '@/lib/provider-import-preset';
 import { useTranslations } from 'next-intl';
 import type { ProviderImportCatalogRow } from '../types';
+import { ProviderCatalogOutboundLink } from './provider-catalog-outbound-link';
 
 type ProviderImportModalProps = {
 	open: boolean;
@@ -197,7 +198,14 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 												className="mt-0.5"
 											/>
 											<div className="min-w-0 flex-1 select-none">
-												<p className="text-sm font-semibold text-gray-900">{row.name}</p>
+												<div className="flex items-start justify-between gap-2">
+													<p className="text-sm font-semibold text-gray-900">{row.name}</p>
+													<ProviderCatalogOutboundLink
+														links={row.links}
+														stopPropagation
+														className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
+													/>
+												</div>
 												<p className="text-xs text-gray-500">
 													{row.vendor_label} · {t('protocols')}: {row.protocols.join(', ') || '—'}
 												</p>

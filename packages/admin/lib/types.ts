@@ -136,6 +136,12 @@ export interface GatewayProvider {
   vendor_key?: string;
   /** Admin API 根据内置预设动态推导的产品级图标；不写入 providers 表。 */
   icon_key?: string;
+  /** Admin API 根据内置预设叠加的官网 / 密钥 / 邀请链接；不写入 providers 表。 */
+  catalog_links?: {
+    platform?: string;
+    api_keys?: string;
+    referral?: string;
+  };
   /** 协议端点 JSON；见 `providers.endpoints` */
   endpoints?: string | null;
   /** 脱敏预览；明文仅经 `GET /admin/providers/:id/api-key` */

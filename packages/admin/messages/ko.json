@@ -384,6 +384,9 @@
 			"failed": "가져오기에 실패했습니다",
 			"copyFailed": "API Key 복사에 실패했습니다"
 		},
+		"outbound": {
+			"go": "클릭하여 이동"
+		},
 		"modal": {
 			"editTitle": "Provider 편집",
 			"newTitle": "새 Provider",

@@ -384,6 +384,9 @@
 			"failed": "Import failed",
 			"copyFailed": "Failed to copy API key"
 		},
+		"outbound": {
+			"go": "Click to go"
+		},
 		"modal": {
 			"editTitle": "Edit Provider",
 			"newTitle": "New Provider",

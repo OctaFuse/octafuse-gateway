@@ -31,6 +31,7 @@ const VENDOR_VISUALS: Record<string, IconVisual> = {
 	deepinfra: { url: vendorIconAssets.deepinfra, accent: '#0ea5e9' },
 	deepseek: { url: vendorIconAssets.deepseek, accent: '#4d6bfe' },
 	fireworks: { url: vendorIconAssets.fireworks, accent: '#ff5f56' },
+	flatkey: { accent: '#2563eb' },
 	google: { url: vendorIconAssets.google, accent: '#4285f4' },
 	groq: { url: vendorIconAssets.groq, accent: '#f55036' },
 	huggingface: { url: vendorIconAssets.huggingface, accent: '#ff9d00' },

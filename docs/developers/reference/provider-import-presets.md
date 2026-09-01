@@ -26,7 +26,8 @@ Admin 在 **Providers** 页面提供「从模板导入」：预填各协议的 B
 1. **新增模板**：在 `provider-import-presets.json` 追加对象；保持 `name` 可读且尽量不与常见手工命名撞车（导入时会自动去重后缀）。
 2. **核对 endpoint**：以各云厂商**当前官方文档**为准；OpenAI 可分别配置 `chat`、`responses`、Images、Audio 等能力端点，DashScope 使用独立协议配置；Gemini Vertex 兼容聚合商写完整 `{model}` 前缀并设 `gemini.auth: "bearer"`（如七牛、ZenMux）；正式 Vertex 用项目级占位 URL（`YOUR_PROJECT_ID`），OpenAI 只配 Chat Completions（`.../endpoints/openapi/chat/completions`），原生 Gemini 配 `auth: "bearer"`，密钥栏贴 **GCP 服务账号 JSON**（不是 Vertex API Key）；`description` 中可提示「以控制台为准」。
 3. **占位密钥**：勿改为真实密钥写入仓库；占位串为 `PROVIDER_IMPORT_PENDING_API_KEY`（见 `provider-import-preset.ts`）。
-4. **扩展**：按同样 JSON 结构追加供应商模板即可；**勿**在 JSON 中写 provider id（与 catalog 键无关）。
+4. **Catalog 链接**：`catalog.links.platform` 为官网；`api_keys` 为密钥管理页（可省略）；`referral` 仅在有可确认的邀请/注册 URL 时填写，**不要**用邀请链接覆盖 `platform`。Admin 与 Website 的「点击前往」出站顺序为 `referral` → `api_keys` → `platform`。链接只存在静态预设中，导入后按模板名或 endpoint 签名叠加，不写入 `providers` 表。
+5. **扩展**：按同样 JSON 结构追加供应商模板即可；**勿**在 JSON 中写 provider id（与 catalog 键无关）。
 
 ## 与模型导入的关系
 

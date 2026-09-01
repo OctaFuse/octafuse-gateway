@@ -9,6 +9,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useState } from "react";
 import { protocolFormHasOverrides, protocolFormIsConfigured } from "../provider-utils";
+import { lookupStaticProviderCatalogLinks } from "@/lib/provider-import-preset";
 import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
 	GatewayProvider,
@@ -16,6 +17,7 @@ import type {
 	ProviderFormData,
 	ProviderProtocolSummary,
 } from "../types";
+import { ProviderCatalogOutboundLink } from "./provider-catalog-outbound-link";
 import { ProviderProtocolIcon } from "./provider-protocol-icon";
 
 type ProviderModalProps = {
@@ -509,9 +511,20 @@ export function ProviderModal(props: ProviderModalProps) {
 									/>
 								</div>
 								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{editingProvider ? t("apiKeyOptional") : t("apiKeyRequired")}
-									</label>
+									<div className="mb-1 flex items-center justify-between gap-2">
+										<label className="block text-sm font-medium text-gray-700">
+											{editingProvider ? t("apiKeyOptional") : t("apiKeyRequired")}
+										</label>
+										<ProviderCatalogOutboundLink
+											links={
+												lookupStaticProviderCatalogLinks({
+													name: formData.name,
+													endpoints: editingProvider?.endpoints,
+												}) ?? editingProvider?.catalog_links
+											}
+											className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
+										/>
+									</div>
 									<input
 										type="password"
 										value={formData.api_key}

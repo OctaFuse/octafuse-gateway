@@ -1348,6 +1348,45 @@
 		}
 	},
 	{
+		"name": "Flatkey",
+		"vendor_key": "flatkey",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://router.flatkey.ai/v1/chat/completions",
+					"responses": "https://router.flatkey.ai/v1/responses",
+					"images.generations": "https://router.flatkey.ai/v1/images/generations",
+					"images.edits": "https://router.flatkey.ai/v1/images/edits"
+				}
+			},
+			"anthropic": {
+				"base": "https://router.flatkey.ai"
+			},
+			"gemini": {
+				"base": "https://router.flatkey.ai/v1beta/models",
+				"auth": "bearer"
+			}
+		},
+		"description": "Flatkey router (router.flatkey.ai): OpenAI chat/completions + responses + images/generations + images/edits (capability URLs only—do not set openai.base or Gateway would derive undocumented audio paths); Anthropic Messages (root appends /v1/messages); Gemini native generateContent (/v1beta/models, Bearer). Video (/v1/videos) is not configured by this template. See docs.flatkey.ai.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Flatkey",
+					"description": "Flatkey 聚合网关，支持 OpenAI、Anthropic 与原生 Gemini，覆盖对话与图片。"
+				},
+				"en": {
+					"name": "Flatkey",
+					"description": "Flatkey aggregation gateway with OpenAI, Anthropic, and native Gemini for chat and images."
+				}
+			},
+			"links": {
+				"platform": "https://flatkey.ai/",
+				"api_keys": "https://console.flatkey.ai/keys",
+				"referral": "https://console.flatkey.ai/sign-up?aff=Pu3g"
+			}
+		}
+	},
+	{
 		"name": "OpenCode Zen",
 		"vendor_key": "opencode",
 		"endpoints": {
@@ -1529,7 +1568,8 @@
 			},
 			"links": {
 				"platform": "https://zenmux.ai/",
-				"api_keys": "https://zenmux.ai/platform"
+				"api_keys": "https://zenmux.ai/platform",
+				"referral": "https://zenmux.ai/invite/PNWNOJ"
 			}
 		}
 	},
@@ -1572,20 +1612,48 @@
 				"base": "https://api.siliconflow.cn/v1"
 			}
 		},
+		"description": "China SiliconFlow Model Cloud (api.siliconflow.cn). Do not mix with international api.siliconflow.com keys or cloud.siliconflow.com accounts.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "硅基流动",
-					"description": "硅基流动模型云的 OpenAI 兼容 API。"
+					"description": "硅基流动国内站的 OpenAI 兼容 API。"
 				},
 				"en": {
 					"name": "SiliconFlow",
-					"description": "SiliconFlow Model Cloud’s OpenAI-compatible API."
+					"description": "SiliconFlow China Model Cloud’s OpenAI-compatible API."
 				}
 			},
 			"links": {
 				"platform": "https://cloud.siliconflow.cn/",
-				"api_keys": "https://cloud.siliconflow.cn/account/ak"
+				"api_keys": "https://cloud.siliconflow.cn/account/ak",
+				"referral": "https://cloud.siliconflow.cn/i/rA30k5VJ"
+			}
+		}
+	},
+	{
+		"name": "SiliconFlow (International)",
+		"vendor_key": "siliconflow",
+		"endpoints": {
+			"openai": {
+				"base": "https://api.siliconflow.com/v1"
+			}
+		},
+		"description": "International SiliconFlow (api.siliconflow.com / cloud.siliconflow.com). Not for mainland China accounts; do not mix with api.siliconflow.cn keys.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "硅基流动（国际站）",
+					"description": "硅基流动国际站的 OpenAI 兼容 API。"
+				},
+				"en": {
+					"name": "SiliconFlow (International)",
+					"description": "SiliconFlow’s international Model Cloud OpenAI-compatible API."
+				}
+			},
+			"links": {
+				"platform": "https://cloud.siliconflow.com/",
+				"api_keys": "https://cloud.siliconflow.com/account/ak"
 			}
 		}
 	},
