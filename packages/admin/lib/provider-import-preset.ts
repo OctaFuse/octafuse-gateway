@@ -46,13 +46,25 @@ export type StaticProviderImportPresetRow = {
 			zh: { name: string; description: string };
 			en: { name: string; description: string };
 		};
-		links?: {
-			/** Provider 官方平台、控制台或本地产品下载页。 */
-			platform?: string;
-			/** 可确认稳定时填写的 API Key 管理直达页。 */
-			api_keys?: string;
-		};
+		links?: ProviderCatalogLinks;
 	};
+};
+
+/** 公开 Catalog / Admin 出站链接；不写入 providers 表。 */
+export type ProviderCatalogLinks = {
+	/** Provider 官方平台、控制台或本地产品下载页。 */
+	platform?: string;
+	/** 可确认稳定时填写的 API Key 管理直达页。 */
+	api_keys?: string;
+	/** 可选邀请/注册链接；出站 CTA 优先于 api_keys / platform。 */
+	referral?: string;
+};
+
+export type ProviderCatalogOutboundKind = 'referral' | 'api_keys' | 'platform';
+
+export type ProviderCatalogOutbound = {
+	href: string;
+	kind: ProviderCatalogOutboundKind;
 };
 
 /** 运行时 catalog 行键（JSON 数组下标字符串）；与入库 provider id 无关。 */
@@ -99,6 +111,44 @@ const STATIC_IDENTITY_BY_ENDPOINTS = new Map(
 	STATIC_ROWS.map((row) => [providerEndpointSignature(row.endpoints), identityForPreset(row)]).filter(
 		(entry): entry is [string, ProviderCatalogIdentity] => Boolean(entry[0])
 	)
+);
+
+function httpsHref(value: string | undefined | null): string | null {
+	const trimmed = String(value ?? '').trim();
+	if (!trimmed) return null;
+	try {
+		const url = new URL(trimmed);
+		return url.protocol === 'https:' ? trimmed : null;
+	} catch {
+		return null;
+	}
+}
+
+function catalogLinksFromRow(row: StaticProviderImportPresetRow): ProviderCatalogLinks | null {
+	const links = row.catalog?.links;
+	if (!links) return null;
+	const out: ProviderCatalogLinks = {};
+	const platform = httpsHref(links.platform);
+	const apiKeys = httpsHref(links.api_keys);
+	const referral = httpsHref(links.referral);
+	if (platform) out.platform = platform;
+	if (apiKeys) out.api_keys = apiKeys;
+	if (referral) out.referral = referral;
+	return platform || apiKeys || referral ? out : null;
+}
+
+const STATIC_LINKS_BY_NAME = new Map(
+	STATIC_ROWS.flatMap((row) => {
+		const links = catalogLinksFromRow(row);
+		return links ? ([[row.name.trim().toLowerCase(), links]] as const) : [];
+	})
+);
+const STATIC_LINKS_BY_ENDPOINTS = new Map(
+	STATIC_ROWS.flatMap((row) => {
+		const links = catalogLinksFromRow(row);
+		const signature = providerEndpointSignature(row.endpoints);
+		return links && signature ? ([[signature, links]] as const) : [];
+	})
 );
 
 function normalizedImportedProviderName(name: string | null | undefined): string {
@@ -158,6 +208,7 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 		['x.ai', identity('xai')],
 		['together.xyz', identity('together')],
 		['fireworks.ai', identity('fireworks')],
+		['flatkey.ai', identity('flatkey')],
 		['deepinfra.com', identity('deepinfra')],
 		['novita.ai', identity('novita')],
 		['huggingface.co', identity('huggingface')],
@@ -179,6 +230,7 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 		['zenmux.ai', identity('zenmux')],
 		['openrouter.ai', identity('openrouter')],
 		['siliconflow.cn', identity('siliconflow')],
+		['siliconflow.com', identity('siliconflow')],
 	];
 	for (const [domain, matchedIdentity] of domainRules) {
 		if (hostnameMatches(hostname, domain)) return matchedIdentity;
@@ -282,6 +334,7 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 		[['x.ai', 'xai', 'grok'], identity('xai')],
 		[['together'], identity('together')],
 		[['fireworks'], identity('fireworks')],
+		[['flatkey'], identity('flatkey')],
 		[['deepinfra', 'deep infra'], identity('deepinfra')],
 		[['novita'], identity('novita')],
 		[['huggingface', 'hugging face'], identity('huggingface')],
@@ -349,6 +402,38 @@ export function inferStaticProviderIconKey(provider: {
 	return inferStaticProviderIdentity(provider)?.iconKey ?? normalizeModelVendorInput(provider.vendor_key);
 }
 
+/**
+ * 按精确模板名（忽略导入去重后缀）或 endpoint 签名取 catalog 链接。
+ * 不按厂商域名回退，避免 OpenCode Zen / Go 等共用域名的模板串台。
+ */
+export function lookupStaticProviderCatalogLinks(provider: {
+	name?: string | null;
+	endpoints?: ProviderEndpointsSource['endpoints'];
+}): ProviderCatalogLinks | null {
+	const exactName = STATIC_LINKS_BY_NAME.get(normalizedImportedProviderName(provider.name));
+	if (exactName) return exactName;
+	const signature = providerEndpointSignature(provider.endpoints);
+	return (signature && STATIC_LINKS_BY_ENDPOINTS.get(signature)) || null;
+}
+
+/** 出站 CTA：邀请链接优先，其次密钥页，再次官网。 */
+export function resolveProviderCatalogOutbound(
+	links: ProviderCatalogLinks | null | undefined
+): ProviderCatalogOutbound | null {
+	if (!links) return null;
+	const referral = httpsHref(links.referral);
+	if (referral) return { href: referral, kind: 'referral' };
+	const apiKeys = httpsHref(links.api_keys);
+	if (apiKeys) return { href: apiKeys, kind: 'api_keys' };
+	const platform = httpsHref(links.platform);
+	if (platform) return { href: platform, kind: 'platform' };
+	return null;
+}
+
+export function providerCatalogOutboundRel(kind: ProviderCatalogOutboundKind): string {
+	return kind === 'referral' ? 'sponsored noopener noreferrer' : 'noopener noreferrer';
+}
+
 function protocolsForPreset(p: StaticProviderImportPresetRow): AdminProviderImportCatalogItem['protocols'] {
 	const map = parseProviderEndpoints({ endpoints: p.endpoints });
 	const out: AdminProviderImportCatalogItem['protocols'] = [];
@@ -399,6 +484,7 @@ export function listStaticProviderImportCatalogForAdmin(): AdminProviderImportCa
 			protocols: protocolsForPreset(p),
 			endpoints: serializeProviderEndpoints(map),
 			description: p.description != null && String(p.description).trim() ? String(p.description).trim() : null,
+			links: catalogLinksFromRow(p) ?? undefined,
 		};
 	});
 }

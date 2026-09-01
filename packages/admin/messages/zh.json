@@ -384,6 +384,9 @@
 			"failed": "导入失败",
 			"copyFailed": "复制 API Key 失败"
 		},
+		"outbound": {
+			"go": "点击前往"
+		},
 		"modal": {
 			"editTitle": "编辑供应商",
 			"newTitle": "新建供应商",
