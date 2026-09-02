@@ -4,6 +4,7 @@
  */
 import { Hono } from 'hono';
 import { requireApiKey } from '../../middleware/auth';
+import { describeChatOutcome } from '../../services/accounting';
 import type { RouteResult } from '../../services/model-router';
 import { proxyChatCompletions } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
@@ -59,10 +60,13 @@ chatRoutes.post('/', async (c) =>
 		noRouteMessage: (routeGroup) =>
 			`No OpenAI route in route group "${routeGroup}" for this model`,
 		parseRequest: parseJsonModelBody,
-		requestBodyForLog: openAiRequestBodyForLog,
-		upstreamWireBodyForLog: openAiUpstreamWireBodyForLog,
 		dispatch: ({ repos, routes, body, requestSignal, options }) =>
 			proxyChatCompletions(repos, routes, body, requestSignal, options),
+		accounting: {
+			requestBodyForLog: openAiRequestBodyForLog,
+			upstreamWireBodyForLog: openAiUpstreamWireBodyForLog,
+			describeOutcome: describeChatOutcome,
+		},
 		logForward: true,
 		logRouteResolutionError: true,
 		logEmptyRoutes: true,
