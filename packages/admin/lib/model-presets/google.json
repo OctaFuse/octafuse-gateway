@@ -1,5 +1,54 @@
 [
 	{
+		"id": "gemini-3.8-flash",
+		"display_name": "Gemini 3.8 Flash",
+		"description": "Our most intelligent Flash model, engineered for long-horizon software engineering, autonomous agents, and complex enterprise workflows. It improves software engineering, agentic tasks, and multi-step reasoning over Gemini 3.7 Flash.",
+		"i18n": {
+			"en": "Our most intelligent Flash model, engineered for long-horizon software engineering, autonomous agents, and complex enterprise workflows. It improves software engineering, agentic tasks, and multi-step reasoning over Gemini 3.7 Flash.",
+			"zh": "面向长周期软件工程、自主 Agent 与复杂企业工作流的最强 Gemini Flash 模型。相较 Gemini 3.7 Flash，提升软件工程、Agent 任务与多步推理能力。"
+		},
+		"vendor": "google",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.75,
+						"output_price": 3.75,
+						"cache_read_price": 0.075,
+						"cache_write_price": 0.08333
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5.25,
+						"output_price": 26.25,
+						"cache_read_price": 0.525,
+						"cache_write_price": 0.58331
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-02"
+	},
+	{
 		"id": "gemini-3.7-flash",
 		"display_name": "Gemini 3.7 Flash",
 		"description": "A high-efficiency Gemini workhorse for coding, agents, and knowledge work. It improves first-pass code accuracy, multi-step tool use, and production-ready application output over Gemini 3.6 Flash.",
