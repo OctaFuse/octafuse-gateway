@@ -82,20 +82,75 @@ export function formatDisplayDiscountFactor(n: number): string {
 	return x.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
 }
 
-/** `status=active` 时按 priority DESC、weight DESC 取第一条。 */
-export function pickRepresentativeRoute<T extends DisplayDiscountRouteInput>(routes: readonly T[]): T | null {
+export type PickRepresentativeRouteContext = {
+	pricingProfileJson?: string | null;
+	timezone: string;
+	now?: Date;
+};
+
+/**
+ * `status=active` 时按 priority DESC、同层 weight DESC 取代表路由。
+ * 两者仍并列且提供了计价上下文时，取当刻 `current.composite_factor` 最小的一条；倍率相同则保持原顺序。
+ */
+export function pickRepresentativeRoute<T extends DisplayDiscountRouteInput>(
+	routes: readonly T[],
+	context?: PickRepresentativeRouteContext
+): T | null {
 	const active = routes.filter((r) => r.status === 'active');
 	if (active.length === 0) {
 		return null;
 	}
-	const sorted = [...active].sort((a, b) => {
-		const byPriority = (b.priority ?? 0) - (a.priority ?? 0);
-		if (byPriority !== 0) {
-			return byPriority;
+
+	let bestPriority = Number.NEGATIVE_INFINITY;
+	for (const row of active) {
+		const priority = row.priority ?? 0;
+		if (priority > bestPriority) {
+			bestPriority = priority;
 		}
-		return (b.weight ?? 1) - (a.weight ?? 1);
-	});
-	return sorted[0] ?? null;
+	}
+	const atPriority = active.filter((row) => (row.priority ?? 0) === bestPriority);
+
+	let bestWeight = Number.NEGATIVE_INFINITY;
+	for (const row of atPriority) {
+		const weight = row.weight ?? 1;
+		if (weight > bestWeight) {
+			bestWeight = weight;
+		}
+	}
+	const tied = atPriority.filter((row) => (row.weight ?? 1) === bestWeight);
+	const first = tied[0];
+	if (!first) {
+		return null;
+	}
+	if (tied.length === 1 || !context) {
+		return first;
+	}
+
+	let best = first;
+	let bestFactor = currentCompositeFactor(first, context);
+	for (let i = 1; i < tied.length; i++) {
+		const row = tied[i]!;
+		const factor = currentCompositeFactor(row, context);
+		if (factor < bestFactor) {
+			best = row;
+			bestFactor = factor;
+		}
+	}
+	return best;
+}
+
+function currentCompositeFactor(
+	row: DisplayDiscountRouteInput,
+	context: PickRepresentativeRouteContext
+): number {
+	return buildDisplayDiscountForRoute({
+		pricingProfileJson: context.pricingProfileJson,
+		priceOverrideJson: row.price_override,
+		timezone: context.timezone,
+		priority: row.priority ?? 0,
+		weight: row.weight ?? 1,
+		now: context.now,
+	}).current.composite_factor;
 }
 
 function formatMinutesToHhMm(minutes: number): string {
@@ -470,7 +525,11 @@ export function buildDisplayDiscountsByRouteGroup(options: {
 		if (allowed && !allowed.has(group.toLowerCase())) {
 			continue;
 		}
-		const representative = pickRepresentativeRoute(rows);
+		const representative = pickRepresentativeRoute(rows, {
+			pricingProfileJson: options.pricingProfileJson,
+			timezone: options.timezone,
+			now: options.now,
+		});
 		if (!representative) {
 			continue;
 		}
