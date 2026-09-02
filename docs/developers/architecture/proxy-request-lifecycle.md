@@ -55,7 +55,7 @@ flowchart TB
   end
 
   subgraph post [响应后]
-    usage["usagePromise → recordUsage (异步)"]
+    usage["usagePromise → describeOutcome → buildAccountingEvent → sink"]
   end
 
   app --> auth --> route --> pipeline
@@ -71,7 +71,7 @@ flowchart TB
 |------|------|------|
 | App 装配 | `packages/proxy/src/app.ts` | Hono 应用、路由挂载、注入 `repositories` |
 | 鉴权 | `middleware/auth.ts` → `services/api-key-auth.ts` | 提取 sk、校验用户 API Key、懒重置预算周期 |
-| 文本入口流水线 | `services/proxy-pipeline.ts` | Chat / Messages / Responses / Gemini 共用：模型解析、预算、选路、策略、熔断、usage 兜底与 `recordUsage` |
+| 文本入口流水线 | `services/proxy-pipeline.ts` | Chat / Messages / Responses / Gemini 共用：模型解析、预算、选路、策略、熔断、usage 兜底；记账为 `describeOutcome` → `buildAccountingEvent` → `sink.flush` |
 | 模型与请求入口路由 | `resolve-model-route-group.ts`、`model-router.ts` | 解析 `model` / `:route_group`，按 request protocol / operation 查精确或通配请求入口（Request Surface），再读取路由池（Route Pool）的上游目标（Upstream Target）、JOIN 供应商（单键 `api_key`） |
 | 策略解析 | `route-strategies/index.ts` → `resolveRouteStrategyPlan` | 先解析路由池 → capability rule → protocol rule → model → global → `hash_affinity` 的 base，再叠加 `tier_strategies[priority]` |
 | 代理入口 | `services/proxy.ts` | 三协议（及 Images / Audio）统一调用 `failoverDispatch` |
@@ -81,7 +81,7 @@ flowchart TB
 | 失败分类 | `services/upstream-failure-classifier.ts` | 决定 retry（换供应商）vs fail_immediately |
 | User+model 熔断 | `services/user-model-circuit-*.ts` | 敏感 / 普通 400 共用短递增（user+model）；code 区分 |
 | 错误码 | `services/gateway-error-codes.ts` / `gateway-error-response.ts` | `gateway.*` / `circuit.*` / `upstream.*` + `X-OctaFuse-Error-Code` |
-| 用量记账 | `services/usage-tracker.ts` | 流结束后写 `api_key_request_logs`、累加 `budget_spent` |
+| 用量记账 | `services/accounting/*`、`services/usage-tracker.ts` | 纯函数合成可序列化 `AccountingEvent`（含稳定 `requestLogId`）；默认 sink 直接 `recordUsage` 写 `api_key_request_logs`、累加 `budget_spent` |
 
 > **客户端约定**：非 2xx 时以响应头 **`X-OctaFuse-Error-Code`**（及网关自造错误 body 顶层 / 嵌套 `code`）为**分类权威**；`error` / `error.message` 仍保留人类可读原文（上游透传或固定英文短句）。集成方应优先按该 code 分类，再回退英文文案。
 
@@ -151,7 +151,9 @@ Gateway 策略统一保护供应商；**退避不区分**敏感 / 普通 400，�
 
 1. **`materializeNonOkResponse`**：非 2xx 时物化 body 供日志与敏感内容检测。
 2. **`usagePromise`** 与 **5min 超时** race：流结束解析 token；超时记 `incomplete`。
-3. **`scheduleBackgroundWork` → `recordUsage`**：写 `api_key_request_logs`、累加 `budget_spent`；失败时可选 webhook 告警。
+3. **`describeOutcome`**：按协议解读 usage 是否完整、错误文案、上游 request id 与额外字段（如 Gemini `gemini_wire_action`）。
+4. **`buildAccountingEvent`**：纯函数合成可序列化记账事件，并在此生成 `requestLogId`（写库语义不变）。
+5. **`scheduleBackgroundWork` → `sink.flush`**：默认 sink 直接 `recordUsage`，写 `api_key_request_logs`、累加 `budget_spent`；失败时可选 webhook 告警。图 / 音频入口尚未走该接缝。
 
 ```mermaid
 sequenceDiagram
@@ -180,7 +182,7 @@ sequenceDiagram
       F-->>C: upstream 4xx / abort
     end
   end
-  R->>R: recordUsage (background)
+  R->>R: sink.flush / recordUsage (background)
 ```
 
 ---

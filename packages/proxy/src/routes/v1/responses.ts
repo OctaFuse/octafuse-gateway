@@ -4,6 +4,7 @@
  */
 import { Hono } from 'hono';
 import { requireApiKey } from '../../middleware/auth';
+import { describeResponsesOutcome } from '../../services/accounting';
 import type { RouteResult } from '../../services/model-router';
 import { proxyResponses } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
@@ -77,10 +78,13 @@ responsesRoutes.post('/', async (c) =>
 		noRouteMessage: (routeGroup) =>
 			`No OpenAI Responses route in route group "${routeGroup}" for this model`,
 		parseRequest: parseJsonModelBody,
-		requestBodyForLog: responsesRequestBodyForLog,
-		upstreamWireBodyForLog: responsesUpstreamWireBodyForLog,
 		dispatch: ({ repos, routes, body, requestSignal, options }) =>
 			proxyResponses(repos, routes, body, requestSignal, options),
+		accounting: {
+			requestBodyForLog: responsesRequestBodyForLog,
+			upstreamWireBodyForLog: responsesUpstreamWireBodyForLog,
+			describeOutcome: describeResponsesOutcome,
+		},
 		afterRoutesResolved: (ctx, { routes, body }) => {
 			const previousResponseId = readPreviousResponseId(body);
 			if (responsesStateRouteUnavailable(routes, previousResponseId)) {
@@ -97,10 +101,6 @@ responsesRoutes.post('/', async (c) =>
 		logRouteResolutionError: true,
 		logEmptyRoutes: true,
 		logRecordUsageError: true,
-		incompleteErrorMessage: (usage, timedOut) =>
-			timedOut
-				? 'Stream usage timeout (no usage within limit)'
-				: usage.stream_error || 'Stream ended before usage available',
-		httpErrorFallback: (usage, status) => usage.stream_error || `HTTP ${status}`,
 	})
 );
+

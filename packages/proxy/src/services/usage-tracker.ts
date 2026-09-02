@@ -6,7 +6,7 @@
  * - nested `price_override.metered` / `charged` tiers 忽略不计价。
  * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `users.budget_spent`。
  */
-import type { GatewayRepositories, UpstreamProtocol } from '@octafuse/core';
+import type { GatewayRepositories } from '@octafuse/core';
 import {
 	getBusinessTimezone,
 	getUserBudgetSnapshot,
@@ -36,10 +36,9 @@ import {
 	splitChargeFromBudgetSnapshot,
 	userRowToSnapshot,
 } from '@octafuse/core';
-import type { UsageFromStream } from './proxy';
+import type { RecordUsageParams } from './accounting/types';
 import { fireGatewayErrorWebhooks } from './alert-webhook';
-import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
-import type { RequestTimingSnapshot } from './request-timing';
+import type { UsageFromStream } from './proxy';
 
 const TOKENS_PER_MILLION = 1_000_000;
 
@@ -115,61 +114,7 @@ function applyRouteFactorsToSide(options: {
  */
 export async function recordUsage(
 	repos: GatewayRepositories,
-	params: {
-		api_key_id: string;
-		user_id: string;
-		user_email: string | null;
-		model_id: string;
-		provider_id: string;
-		provider_model_name?: string | null;
-		model_name?: string | null;
-		provider_name?: string | null;
-		request_body?: string | null;
-		upstream_request_body?: string | null;
-		request_protocol: 'openai' | 'anthropic' | 'gemini';
-		request_operation?: string | null;
-		upstream_protocol: UpstreamProtocol;
-		upstream_operation?: string | null;
-		model_surface_id?: string | null;
-		route_pool_id?: string | null;
-		route_target_id?: string | null;
-		adapter?: string | null;
-		/** Gemini wire action from URL (`generateContent` / `streamGenerateContent`); stored in route_trace. */
-		gemini_wire_action?: string | null;
-		/** Provider sticky routing observation (merged into route_trace.sticky). */
-		sticky_trace?: {
-			lookup: string;
-			attempted_target: string | null;
-			result: string;
-		} | null;
-		usage: UsageFromStream;
-		model_pricing_profile?: string | null;
-		route_price_override_json?: string | null;
-		/** `users.charged_cost_factors` JSON；按 `model_id` 精确匹配后再乘路由 charged */
-		user_charged_cost_factors_json?: string | null;
-		/** @deprecated Ignored; nested metered tiers are not used for billing. */
-		route_metered_profile_json?: string | null;
-		/** @deprecated Ignored; nested charged tiers are not used for billing. */
-		route_charged_profile_json?: string | null;
-		/** 请求进入 Gateway 的时间；分时时段倍率在该时刻锁定。 */
-		request_started_at_ms?: number;
-		route_group: string;
-		status: 'success' | 'error' | 'incomplete' | 'cancelled';
-		latency_ms?: number;
-		timing?: RequestTimingSnapshot | null;
-		error_message?: string;
-		provider_key_id?: string | null;
-		provider_key_label?: string | null;
-		provider_key_fingerprint?: string | null;
-		/** 上游响应头 request id（传输层追踪，见 `upstream-request-id.ts`） */
-		upstream_request_id?: string | null;
-		/** 上游响应 body message id（应用层生成结果 id：chatcmpl-* / msg_* / responseId） */
-		upstream_message_id?: string | null;
-		/** 本次错误关联的熔断事件（展示在 webhook 告警中） */
-		circuit_events?: GatewayCircuitAlertEvent[];
-		/** 已有熔断短路等场景：写日志但不发 webhook */
-		suppress_error_alert?: boolean;
-	}
+	params: RecordUsageParams
 ): Promise<void> {
 	const basis = params.usage.input_tokens;
 	const requestStartedAtMs = params.request_started_at_ms;
@@ -273,7 +218,7 @@ export async function recordUsage(
 	console.log(
 		`[Gateway Usage] recordUsage model_id=${params.model_id} request_protocol=${params.request_protocol} status=${params.status} route_group=${params.route_group} input_tokens=${params.usage.input_tokens} output_tokens=${params.usage.output_tokens} reasoning_tokens=${params.usage.reasoning_tokens} metered=${supplierCostR} standard=${standardCostR} charged=${chargedCost} charged_eff=${chargedResolved.audit.effective_factor} user_charged_factor=${userChargedFactor ?? 'none'} metered_eff=${supplierResolved.audit.effective_factor}`
 	);
-	const id = crypto.randomUUID();
+	const id = params.requestLogId;
 	const shouldChargeBudget = params.status !== 'error' && chargedCost > 0;
 	const userSnapshot = shouldChargeBudget ? await getUserBudgetSnapshot(repos, params.user_id) : null;
 	const beforeSpent = userSnapshot?.budgetSpent ?? 0;

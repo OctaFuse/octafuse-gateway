@@ -15,6 +15,7 @@ import {
 	recordUserModelCircuitTrigger,
 } from './user-model-circuit-breaker';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
+import { allocateRequestLogId } from './accounting';
 import { recordUsage } from './usage-tracker';
 import type { RequestTimingCollector } from './request-timing';
 
@@ -65,6 +66,7 @@ export function maybeBlockUserModelCircuit(
 	scheduleBackgroundWork(
 		c,
 		recordUsage(repos, {
+			requestLogId: allocateRequestLogId(),
 			api_key_id: apiKey.keyId,
 			user_id: apiKey.userId,
 			user_email: apiKey.userEmail,

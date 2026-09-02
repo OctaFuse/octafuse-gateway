@@ -3,6 +3,7 @@
  */
 import { Hono } from 'hono';
 import { requireApiKey } from '../../middleware/auth';
+import { describeMessagesOutcome } from '../../services/accounting';
 import type { RouteResult } from '../../services/model-router';
 import { proxyAnthropicMessages } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
@@ -58,9 +59,12 @@ messagesRoutes.post('/', async (c) =>
 		noRouteMessage: (routeGroup) =>
 			`No Anthropic route in route group "${routeGroup}" for this model`,
 		parseRequest: parseJsonModelBody,
-		requestBodyForLog: anthropicRequestBodyForLog,
-		upstreamWireBodyForLog: anthropicUpstreamWireBodyForLog,
 		dispatch: ({ repos, routes, body, requestSignal, options }) =>
 			proxyAnthropicMessages(repos, routes, body, requestSignal, options),
+		accounting: {
+			requestBodyForLog: anthropicRequestBodyForLog,
+			upstreamWireBodyForLog: anthropicUpstreamWireBodyForLog,
+			describeOutcome: describeMessagesOutcome,
+		},
 	})
 );

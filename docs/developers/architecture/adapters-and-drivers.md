@@ -47,8 +47,8 @@
 3. **分发表**：若该适配器走 OpenAI 音频 / 多模态入口，在 `dispatch-table.ts` 增加实现，并保证一致性测试通过。
 4. **驱动**：实现或扩展对应 `*-driver.ts`。一个文件可以挂多个适配器，但不要把无关协议塞进同一驱动。
 5. **入口流水线**：
-   - 文本类（Chat / Messages / Responses / Gemini）写一份 `ProxyEndpointSpec`，交给 `runProxyPipeline`。
-   - 图 / 音频类先复用 `loadProxyRouteSurface` 与 `buildProxyFailoverOptions`；完整记账迁入流水线要等统一 usage 契约（见下文 Layer 2）。
+   - 文本类（Chat / Messages / Responses / Gemini）写一份 `ProxyEndpointSpec`，交给 `runProxyPipeline`。计费口径与脱敏写在同一 `accounting` 对象上（`describeOutcome` + `requestBodyForLog` / `upstreamWireBodyForLog`）。
+   - 图 / 音频类先复用 `loadProxyRouteSurface` 与 `buildProxyFailoverOptions`；计费仍走 `recordImageUsage` / `recordAudioUsage`。把它们迁入同一 `AccountingEvent` + sink 是后续增量，本阶段不改口径。
 6. **管理后台文案**：在 `packages/admin/messages/*.json` 增加 `adapterNames.<id>`，以及如有需要的计费 / 能力损失提示。
 7. **文档**：更新 [route-topology.md](./route-topology.md) 的 operation 表，以及本页相关说明。
 
@@ -66,7 +66,7 @@
 
 `dashscope-asr-file-async` 已标为 `exchange: 'job'`，是将来抽出任务内核的第一个样本。
 
-`failover-dispatch.ts` 的 `ProxyDispatchMeta` 里多数字段目前仅用于图 / 音频记账。这是下一层统一 usage 契约的入口，本轮不改语义。
+`failover-dispatch.ts` 的 `ProxyDispatchMeta` 里多数字段目前仅用于图 / 音频记账。文本入口已抽出可序列化的 `AccountingEvent` 与直接 flush 的 sink 接缝（`dispatch → describeOutcome → buildAccountingEvent → sink.flush`）；图 / 音频尚未迁入该接缝，本轮不改它们的计费口径。
 
 ## Ingress 流水线
 
@@ -78,6 +78,8 @@
 4. 解析路由策略与供应商粘性（Provider sticky）
 5. 用户+模型熔断
 6. `failoverDispatch`
-7. 5 分钟 usage 兜底后 `recordUsage`
+7. 5 分钟 usage 兜底后：`describeOutcome` → `buildAccountingEvent` → `sink.flush`（默认直接 `recordUsage`）
 
-图与音频入口复用其中的选路与策略计算，计费段仍走各自的 `recordImageUsage` / `recordAudioUsage`。
+协议转发层（parse / dispatch、SSE 分帧、熔断分类）与记账层分离：各端点只提供协议相关 hook，记账事件由纯函数合成，sink 是唯一写库接缝。
+
+图与音频入口复用其中的选路与策略计算，计费段仍走各自的 `recordImageUsage` / `recordAudioUsage`，尚未进入上述 sink。

@@ -20,6 +20,8 @@ function profileWithSchedule(
 }
 
 describe('pickRepresentativeRoute', () => {
+	const discountContext = { timezone: 'UTC', pricingProfileJson: null as string | null };
+
 	it('picks highest priority then highest weight among active routes', () => {
 		const picked = pickRepresentativeRoute([
 			{ status: 'active', priority: 5, weight: 9, price_override: null },
@@ -29,6 +31,54 @@ describe('pickRepresentativeRoute', () => {
 		]);
 		assert.equal(picked?.weight, 5);
 		assert.equal(picked?.price_override, '{"charged_factor":0.7}');
+	});
+
+	it('breaks equal priority and weight by lowest current composite_factor', () => {
+		const cheaper = JSON.stringify({ charged_factor: 0.5 });
+		const picked = pickRepresentativeRoute(
+			[
+				{ status: 'active', priority: 10, weight: 1, price_override: JSON.stringify({ charged_factor: 0.8 }) },
+				{ status: 'active', priority: 10, weight: 1, price_override: cheaper },
+			],
+			discountContext
+		);
+		assert.equal(picked?.price_override, cheaper);
+	});
+
+	it('still prefers higher weight even when that route is more expensive', () => {
+		const expensive = JSON.stringify({ charged_factor: 0.9 });
+		const picked = pickRepresentativeRoute(
+			[
+				{ status: 'active', priority: 10, weight: 1, price_override: JSON.stringify({ charged_factor: 0.5 }) },
+				{ status: 'active', priority: 10, weight: 3, price_override: expensive },
+			],
+			discountContext
+		);
+		assert.equal(picked?.weight, 3);
+		assert.equal(picked?.price_override, expensive);
+	});
+
+	it('breaks equal priority and weight by current schedule composite', () => {
+		const cheaperNow = JSON.stringify({
+			charged_factor: 1,
+			schedule: {
+				mode: 'override',
+				charged: [{ start: '00:00', end: '12:00', factor: 0.4 }],
+			},
+		});
+		const later = JSON.stringify({ charged_factor: 0.8 });
+		const ctx = {
+			...discountContext,
+			now: new Date('2026-08-28T06:00:00.000Z'),
+		};
+		const picked = pickRepresentativeRoute(
+			[
+				{ status: 'active', priority: 1, weight: 1, price_override: later },
+				{ status: 'active', priority: 1, weight: 1, price_override: cheaperNow },
+			],
+			ctx
+		);
+		assert.equal(picked?.price_override, cheaperNow);
 	});
 });
 
@@ -228,6 +278,32 @@ describe('buildDisplayDiscountsByRouteGroup + tags', () => {
 		assert.equal(discounts.free?.current.composite_factor, 0.5);
 		const tags = mergeDerivedDiscountTags(['Hot', 'Discount:0.3', 'Discount.free:0.9'], discounts);
 		assert.deepEqual(tags, ['Hot', 'Discount.default:0.7', 'Discount.free:0.5']);
+	});
+
+	it('picks the cheapest current composite when priority and weight are tied', () => {
+		const discounts = buildDisplayDiscountsByRouteGroup({
+			routes: [
+				{
+					status: 'active',
+					priority: 10,
+					weight: 1,
+					route_group: 'default',
+					price_override: JSON.stringify({ charged_factor: 0.8 }),
+				},
+				{
+					status: 'active',
+					priority: 10,
+					weight: 1,
+					route_group: 'default',
+					price_override: JSON.stringify({ charged_factor: 0.5 }),
+				},
+			],
+			pricingProfileJson: null,
+			timezone: 'UTC',
+		});
+		assert.equal(discounts.default?.current.composite_factor, 0.5);
+		assert.equal(discounts.default?.route.priority, 10);
+		assert.equal(discounts.default?.route.weight, 1);
 	});
 
 	it('skips derived tags when composite is full price', () => {

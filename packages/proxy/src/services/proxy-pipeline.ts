@@ -1,12 +1,19 @@
 /**
  * Ingress 公共流水线：鉴权上下文之后的模型解析、预算、选路、策略、熔断、failover 与异步记账。
- * 各端点只提供协议相关的 parse / redact / dispatch hook。
+ * 各端点只提供协议相关的 parse / dispatch，以及 accounting.describeOutcome（解读口径 + 脱敏）。
+ * 记账路径：dispatch → outcome → buildAccountingEvent → sink.flush（默认直接 recordUsage）。
  */
 import type { Context } from 'hono';
 import { hasPositiveTotalBalance, type GatewayRepositories, type ModelRow, type ResolvedModelSurfaceRow, type UpstreamProtocol } from '@octafuse/core';
 import type { Env } from '../app';
 import type { ApiKeyContext } from '../middleware/auth';
 import { scheduleBackgroundWork } from '../runtime/schedule-background-work';
+import {
+	buildAccountingEvent,
+	createDirectFlushAccountingSink,
+	defaultHasUsage,
+	type ProxyEndpointAccounting,
+} from './accounting';
 import { GatewayErrorCode } from './gateway-error-codes';
 import { gatewayErrorJson } from './gateway-error-response';
 import { resolveModelRouting } from './resolve-model-route-group';
@@ -18,7 +25,6 @@ import {
 } from './route-strategies';
 import { stickyConfigFromSurface } from './provider-sticky-routing';
 import {
-	computeRequestLogStatus,
 	formatHttpErrorTextForRequestLog,
 	materializeNonOkResponse,
 } from './request-log-record-status';
@@ -27,8 +33,7 @@ import {
 	maybeTriggerUserModelCircuitFromUpstream,
 	markUserModelSuccess,
 } from './user-model-circuit-route';
-import { recordUsage } from './usage-tracker';
-import { EMPTY_USAGE, type ProxyResult, type UsageFromStream } from './proxy';
+import { EMPTY_USAGE, type ProxyResult } from './proxy';
 import type { FailoverDispatchOptions } from './failover-dispatch';
 import { RequestTimingCollector } from './request-timing';
 
@@ -57,10 +62,8 @@ export interface ProxyEndpointSpec<TBody> {
 	logTag: string;
 	noRouteMessage: (routeGroup: string) => string;
 	parseRequest: (c: Context<AuthedEnv>) => Promise<PipelineParseResult<TBody> | Response>;
-	requestBodyForLog: (body: TBody) => string | null;
-	upstreamWireBodyForLog: (route: RouteResult, body: TBody) => string | null;
 	dispatch: (ctx: PipelineDispatchContext<TBody>) => Promise<ProxyResult>;
-	hasUsage?: (usage: UsageFromStream) => boolean;
+	accounting: ProxyEndpointAccounting<TBody>;
 	afterRoutesResolved?: (
 		c: Context<AuthedEnv>,
 		input: { routes: RouteResult[]; body: TBody; rawModelId: string }
@@ -69,13 +72,6 @@ export interface ProxyEndpointSpec<TBody> {
 	logRouteResolutionError?: boolean;
 	logEmptyRoutes?: boolean;
 	logRecordUsageError?: boolean;
-	resolveLoggedRequestId?: (headerId: string | null, usage: UsageFromStream) => string | null;
-	extraRecordUsage?: (input: {
-		body: TBody;
-		usage: UsageFromStream;
-	}) => { gemini_wire_action?: string | null };
-	incompleteErrorMessage?: (usage: UsageFromStream, timedOut: boolean) => string;
-	httpErrorFallback?: (usage: UsageFromStream, status: number) => string;
 }
 
 export type LoadedProxyRoutes = {
@@ -219,9 +215,7 @@ export async function buildProxyFailoverOptions(input: {
 	};
 }
 
-export function defaultHasUsage(usage: UsageFromStream): boolean {
-	return usage.total_tokens > 0 || usage.input_tokens > 0 || usage.output_tokens > 0;
-}
+export { defaultHasUsage };
 
 export function modelDisplayName(model: Pick<ModelRow, 'display_name'>, baseModelId: string): string {
 	return model.display_name != null && String(model.display_name).trim() !== ''
@@ -313,7 +307,7 @@ export async function runProxyPipeline<TBody>(
 	}
 
 	const nameForLog = modelDisplayName(model, baseModelId);
-	const requestBodyForLog = spec.requestBodyForLog(body);
+	const requestBodyForLog = spec.accounting.requestBodyForLog(body);
 	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {
 		baseModelId,
 		modelNameForLog: nameForLog,
@@ -373,98 +367,61 @@ export async function runProxyPipeline<TBody>(
 	const alertCircuitEvents = userModelCircuitEvent
 		? [...proxyResult.circuitEvents, userModelCircuitEvent]
 		: proxyResult.circuitEvents;
-	const hasUsage = spec.hasUsage ?? defaultHasUsage;
 	const usageOrSafety = Promise.race([
 		proxyResult.usagePromise.then((usage) => ({
 			usage,
-			incomplete: !hasUsage(usage),
 			timedOut: false as const,
 		})),
-		new Promise<{ usage: typeof EMPTY_USAGE; incomplete: true; timedOut: true }>((resolve) =>
+		new Promise<{ usage: typeof EMPTY_USAGE; timedOut: true }>((resolve) =>
 			setTimeout(
-				() => resolve({ usage: EMPTY_USAGE, incomplete: true, timedOut: true }),
+				() => resolve({ usage: EMPTY_USAGE, timedOut: true }),
 				USAGE_SAFETY_TIMEOUT_MS
 			)
 		),
 	]);
+	const accountingSink = createDirectFlushAccountingSink(repos);
 
 	scheduleBackgroundWork(
 		c,
 		usageOrSafety
-			.then(async ({ usage: usageCollected, incomplete, timedOut }) => {
-				const latency = Date.now() - start;
+			.then(async ({ usage: usageCollected, timedOut }) => {
+				const latencyMs = Date.now() - start;
 				if (timedOut) timing.markStreamComplete();
-				const status = computeRequestLogStatus({
-					cancelled: Boolean(usageCollected.cancelled),
-					responseOk: response.ok,
-					incomplete,
-				});
-				let errorMessage: string | undefined;
-				if (status === 'success') {
-					errorMessage = undefined;
-				} else if (status === 'cancelled') {
-					errorMessage = 'Client disconnected (e.g. user cancelled)';
-				} else if (status === 'incomplete') {
-					errorMessage = spec.incompleteErrorMessage
-						? spec.incompleteErrorMessage(usageCollected, timedOut)
-						: timedOut
-							? 'Stream usage timeout (no usage within limit)'
-							: 'Stream ended before usage available';
-				} else if (errorBodyText != null) {
-					errorMessage = formatHttpErrorTextForRequestLog(
-						response.status,
-						response.headers.get('content-type'),
-						errorBodyText
-					);
-				} else {
-					errorMessage = spec.httpErrorFallback
-						? spec.httpErrorFallback(usageCollected, response.status)
-						: `HTTP ${response.status}`;
-				}
-				const loggedRequestId = spec.resolveLoggedRequestId
-					? spec.resolveLoggedRequestId(proxyResult.upstreamRequestId, usageCollected)
-					: proxyResult.upstreamRequestId;
-				return recordUsage(repos, {
-					api_key_id: apiKey.keyId,
-					user_id: apiKey.userId,
-					user_email: apiKey.userEmail,
-					model_id: baseModelId,
-					provider_id: proxyResult.chosenRoute.providerId,
-					provider_model_name: proxyResult.chosenRoute.providerModelName,
-					model_name: nameForLog,
-					provider_name: proxyResult.chosenRoute.providerName,
-					request_body: requestBodyForLog,
-					upstream_request_body: spec.upstreamWireBodyForLog(proxyResult.chosenRoute, body),
-					request_protocol: spec.requestProtocol,
-					request_operation: spec.requestOperation,
-					upstream_protocol: proxyResult.chosenRoute.upstreamProtocol,
-					upstream_operation: proxyResult.chosenRoute.upstreamOperation,
-					model_surface_id: proxyResult.chosenRoute.modelSurfaceId,
-					route_pool_id: proxyResult.chosenRoute.routePoolId,
-					route_target_id: proxyResult.chosenRoute.targetId,
-					adapter: proxyResult.chosenRoute.adapter,
-					sticky_trace: proxyResult.stickyTrace ? await proxyResult.stickyTrace() : null,
+				const described = spec.accounting.describeOutcome({
+					body,
 					usage: usageCollected,
-					model_pricing_profile: model.pricing_profile ?? null,
-					route_price_override_json: proxyResult.chosenRoute.priceOverrideRaw,
-					user_charged_cost_factors_json: apiKey.chargedCostFactors,
-					route_metered_profile_json: proxyResult.chosenRoute.routeMeteredProfileJson,
-					route_charged_profile_json: proxyResult.chosenRoute.routeChargedProfileJson,
-					request_started_at_ms: start,
-					route_group: proxyResult.chosenRoute.routeGroup,
-					status,
-					latency_ms: latency,
-					timing: timing.snapshot(),
-					error_message: errorMessage,
-					provider_key_id: proxyResult.chosenRoute.providerKeyId ?? null,
-					provider_key_label: proxyResult.chosenRoute.providerKeyLabel ?? null,
-					provider_key_fingerprint: proxyResult.chosenRoute.providerKeyFingerprint ?? null,
-					upstream_request_id: loggedRequestId,
-					upstream_message_id: usageCollected.upstreamMessageId ?? null,
-					circuit_events: alertCircuitEvents.length > 0 ? alertCircuitEvents : undefined,
-					suppress_error_alert: proxyResult.suppressErrorAlert || undefined,
-					...spec.extraRecordUsage?.({ body, usage: usageCollected }),
+					timedOut,
+					headerRequestId: proxyResult.upstreamRequestId,
+					httpStatus: response.status,
 				});
+				const stickyTrace = proxyResult.stickyTrace ? await proxyResult.stickyTrace() : null;
+				const event = buildAccountingEvent({
+					apiKey,
+					described,
+					usage: usageCollected,
+					responseOk: response.ok,
+					errorBodyText,
+					responseStatus: response.status,
+					responseContentType: response.headers.get('content-type'),
+					baseModelId,
+					modelName: nameForLog,
+					modelPricingProfile: model.pricing_profile ?? null,
+					requestProtocol: spec.requestProtocol,
+					requestOperation: spec.requestOperation,
+					requestBodyForLog,
+					upstreamRequestBody: spec.accounting.upstreamWireBodyForLog(
+						proxyResult.chosenRoute,
+						body
+					),
+					chosenRoute: proxyResult.chosenRoute,
+					stickyTrace,
+					requestStartedAtMs: start,
+					latencyMs,
+					timing: timing.snapshot(),
+					circuitEvents: alertCircuitEvents,
+					suppressErrorAlert: proxyResult.suppressErrorAlert,
+				});
+				await accountingSink.flush(event);
 			})
 			.catch((err) => {
 				if (spec.logRecordUsageError) {

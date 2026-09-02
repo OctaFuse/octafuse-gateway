@@ -4,12 +4,12 @@
 import { GEMINI_GENERATE_OPERATION } from '@octafuse/core';
 import { Hono } from 'hono';
 import { requireApiKey } from '../../middleware/auth';
+import { describeGeminiOutcome } from '../../services/accounting';
 import type { RouteResult } from '../../services/model-router';
-import { proxyGeminiContent, type UsageFromStream } from '../../services/proxy';
+import { proxyGeminiContent } from '../../services/proxy';
 import { buildRouteRequestBody } from '../../services/route-default-params';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
 import { summarizeGeminiToolsForLog } from '../../services/request-log-tools-summary';
-import { resolveGeminiLoggedRequestId } from '../../services/egress/upstream-request-id';
 import { GatewayErrorCode } from '../../services/gateway-error-codes';
 import { gatewayErrorJson } from '../../services/gateway-error-response';
 import { runProxyPipeline, type AuthedEnv } from '../../services/proxy-pipeline';
@@ -121,18 +121,13 @@ geminiRoutes.post('/models/:modelAction', async (c) =>
 				rawModelId: parsedAction.modelId,
 			};
 		},
-		requestBodyForLog: (body) => geminiRequestBodyForLog(body.payload, body.action),
-		upstreamWireBodyForLog: (route, body) =>
-			geminiUpstreamWireBodyForLog(route, body.payload, body.action),
 		dispatch: ({ repos, routes, body, requestSignal, options }) =>
 			proxyGeminiContent(repos, routes, body.action, body.payload, body.search, requestSignal, options),
-		hasUsage: (u: UsageFromStream) =>
-			u.total_tokens > 0 || u.input_tokens > 0 || u.output_tokens > 0 || u.reasoning_tokens > 0,
-		resolveLoggedRequestId: (headerId, usage) =>
-			resolveGeminiLoggedRequestId({
-				headerRequestId: headerId,
-				bodyRequestId: usage.upstreamBodyRequestId ?? null,
-			}),
-		extraRecordUsage: ({ body }) => ({ gemini_wire_action: body.action }),
+		accounting: {
+			requestBodyForLog: (body) => geminiRequestBodyForLog(body.payload, body.action),
+			upstreamWireBodyForLog: (route, body) =>
+				geminiUpstreamWireBodyForLog(route, body.payload, body.action),
+			describeOutcome: describeGeminiOutcome,
+		},
 	})
 );
