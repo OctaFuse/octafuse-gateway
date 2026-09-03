@@ -212,30 +212,6 @@ describe('provider import preset catalog metadata', () => {
 		);
 		assert.equal(chatOf('SCNet'), 'https://api.scnet.cn/api/llm/v1/chat/completions');
 		assert.equal(anthropicBaseOf('SCNet'), 'https://api.scnet.cn/api/llm/anthropic');
-		assert.equal(chatOf('Flatkey'), 'https://router.flatkey.ai/v1/chat/completions');
-		assert.equal(
-			byName.get('Flatkey')?.endpoints.openai?.endpoints?.responses,
-			'https://router.flatkey.ai/v1/responses'
-		);
-		assert.equal(
-			byName.get('Flatkey')?.endpoints.openai?.endpoints?.['images.generations'],
-			'https://router.flatkey.ai/v1/images/generations'
-		);
-		assert.equal(
-			byName.get('Flatkey')?.endpoints.openai?.endpoints?.['images.edits'],
-			'https://router.flatkey.ai/v1/images/edits'
-		);
-		assert.equal(byName.get('Flatkey')?.endpoints.openai?.base, undefined);
-		assert.equal(anthropicBaseOf('Flatkey'), 'https://router.flatkey.ai');
-		assert.equal(
-			byName.get('Flatkey')?.endpoints.gemini?.base,
-			'https://router.flatkey.ai/v1beta/models'
-		);
-		assert.equal(byName.get('Flatkey')?.endpoints.gemini?.auth, 'bearer');
-		assert.equal(
-			byName.get('Flatkey')?.catalog?.links?.referral,
-			'https://console.flatkey.ai/sign-up?aff=Pu3g'
-		);
 		assert.equal(openaiBaseOf('SiliconFlow'), 'https://api.siliconflow.cn/v1');
 		assert.equal(
 			byName.get('SiliconFlow')?.catalog?.links?.referral,
@@ -292,24 +268,24 @@ describe('provider import preset catalog metadata', () => {
 
 	it('overlays catalog links by template name or endpoint signature, preferring referral', () => {
 		const rows = listStaticProviderImportPresets();
-		const flatkey = rows.find((row) => row.name === 'Flatkey');
+		const siliconflowChina = rows.find((row) => row.name === 'SiliconFlow');
 		const zen = rows.find((row) => row.name === 'OpenCode Zen');
 		const go = rows.find((row) => row.name === 'OpenCode Go');
-		assert.ok(flatkey);
+		assert.ok(siliconflowChina);
 		assert.ok(zen);
 		assert.ok(go);
 
-		assert.deepEqual(lookupStaticProviderCatalogLinks({ name: 'Flatkey (2)' }), {
-			platform: 'https://flatkey.ai/',
-			api_keys: 'https://console.flatkey.ai/keys',
-			referral: 'https://console.flatkey.ai/sign-up?aff=Pu3g',
+		assert.deepEqual(lookupStaticProviderCatalogLinks({ name: 'SiliconFlow (2)' }), {
+			platform: 'https://cloud.siliconflow.cn/',
+			api_keys: 'https://cloud.siliconflow.cn/account/ak',
+			referral: 'https://cloud.siliconflow.cn/i/rA30k5VJ',
 		});
 		assert.deepEqual(
 			lookupStaticProviderCatalogLinks({
 				name: 'Renamed production upstream',
-				endpoints: flatkey.endpoints,
+				endpoints: siliconflowChina.endpoints,
 			}),
-			lookupStaticProviderCatalogLinks({ name: 'Flatkey' })
+			lookupStaticProviderCatalogLinks({ name: 'SiliconFlow' })
 		);
 		assert.equal(
 			lookupStaticProviderCatalogLinks({
@@ -331,10 +307,10 @@ describe('provider import preset catalog metadata', () => {
 		);
 
 		const outbound = resolveProviderCatalogOutbound(
-			lookupStaticProviderCatalogLinks({ name: 'Flatkey' })
+			lookupStaticProviderCatalogLinks({ name: 'SiliconFlow' })
 		);
 		assert.deepEqual(outbound, {
-			href: 'https://console.flatkey.ai/sign-up?aff=Pu3g',
+			href: 'https://cloud.siliconflow.cn/i/rA30k5VJ',
 			kind: 'referral',
 		});
 		assert.deepEqual(resolveProviderCatalogOutbound(lookupStaticProviderCatalogLinks({ name: 'ZenMux' })), {
@@ -350,9 +326,7 @@ describe('provider import preset catalog metadata', () => {
 			platform: 'https://cloud.siliconflow.com/',
 			api_keys: 'https://cloud.siliconflow.com/account/ak',
 		});
-		const siliconflowChina = rows.find((row) => row.name === 'SiliconFlow');
 		const siliconflowIntl = rows.find((row) => row.name === 'SiliconFlow (International)');
-		assert.ok(siliconflowChina);
 		assert.ok(siliconflowIntl);
 		assert.deepEqual(
 			lookupStaticProviderCatalogLinks({
@@ -384,12 +358,12 @@ describe('provider import preset catalog metadata', () => {
 		assert.equal(providerCatalogOutboundRel('referral'), 'sponsored noopener noreferrer');
 		assert.equal(
 			resolveProviderCatalogOutbound({
-				platform: 'https://flatkey.ai/',
-				api_keys: 'https://console.flatkey.ai/keys',
+				platform: 'https://example.com/',
+				api_keys: 'https://example.com/keys',
 			})?.kind,
 			'api_keys'
 		);
-		assert.equal(resolveProviderCatalogOutbound({ platform: 'https://flatkey.ai/' })?.kind, 'platform');
+		assert.equal(resolveProviderCatalogOutbound({ platform: 'https://example.com/' })?.kind, 'platform');
 		assert.equal(resolveProviderCatalogOutbound({ referral: 'http://insecure.example' }), null);
 	});
 });
