@@ -3,7 +3,7 @@
  * (including OpenAI/Anthropic `model` field) or Agent Tools (`/v1/tools/*`).
  */
 import { applyGeminiStreamQueryParams } from "@octafuse/core/gemini-upstream-url";
-import type { ImageOperation } from "@/lib/image-generations";
+import { openaiEditImageFormField, type ImageOperation } from "@/lib/image-generations";
 import {
 	parseGatewayToolId,
 	proxyToolPath,
@@ -240,8 +240,9 @@ export function buildSimulatorRequest(
 				appendOptionalFormField(fd, "quality", input.body.quality);
 				appendOptionalFormField(fd, "background", input.body.background);
 				const fileLines: string[] = [];
+				const imageField = openaiEditImageFormField(files.length);
 				for (const file of files) {
-					fd.append("image", file, file.name || "image.png");
+					fd.append(imageField, file, file.name || "image.png");
 					fileLines.push(`${file.name || "image.png"} (${file.size} bytes)`);
 				}
 				const fieldParts = ["model", "prompt"];

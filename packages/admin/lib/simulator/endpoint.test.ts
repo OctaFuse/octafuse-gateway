@@ -105,6 +105,24 @@ describe("buildSimulatorRequest openai", () => {
 		assert.equal(result.headers["Content-Type"], undefined);
 		assert.equal(result.headers.Authorization, "Bearer sk-test");
 		assert.match(result.multipartSummary ?? "", /ref\.png/);
+		assert.equal(result.formData?.getAll("image").length, 1);
+		assert.equal(result.formData?.getAll("image[]").length, 0);
+	});
+
+	it("uses image[] for multiple images/edits files", () => {
+		const a = new File([Uint8Array.from([137, 80, 78, 71])], "a.png", { type: "image/png" });
+		const b = new File([Uint8Array.from([137, 80, 78, 71])], "b.png", { type: "image/png" });
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			protocol: "openai",
+			modelForRouting: "gpt-image-2",
+			body: { prompt: "fuse these" },
+			apiKey: "sk-test",
+			imageOperation: "edits",
+			editImages: [a, b],
+		});
+		assert.equal(result.formData?.getAll("image").length, 0);
+		assert.equal(result.formData?.getAll("image[]").length, 2);
 	});
 
 	it("previews images/edits URL even when no reference files yet", () => {
