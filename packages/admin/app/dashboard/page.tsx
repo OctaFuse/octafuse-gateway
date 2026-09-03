@@ -178,7 +178,7 @@ export default function DashboardPage() {
 	};
 
 	return (
-		<div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 xl:p-8">
+		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
 			<header className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<div className="flex flex-wrap items-center gap-3">
