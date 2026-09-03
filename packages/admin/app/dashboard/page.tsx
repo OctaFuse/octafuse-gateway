@@ -1,12 +1,23 @@
 'use client';
 
 /**
- * 总览页：拉取 `/api/admin/stats`（`start_date`/`end_date` 或 `range`），展示 KPI、图表、近期日志与错误摘要。
+ * 网关总览：围绕「流量、稳定性、响应、费用」组织首屏，弱化配置数量与重复的今日口径。
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import {
+	ArrowPathIcon,
+	BanknotesIcon,
+	BoltIcon,
+	CheckCircleIcon,
+	ChevronRightIcon,
+	ClockIcon,
+	ExclamationTriangleIcon,
+	KeyIcon,
+	QueueListIcon,
+	UserGroupIcon,
+} from '@heroicons/react/24/outline';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { DashboardModelDistributionChart } from '@/components/dashboard/DashboardModelDistributionChart';
 import { DashboardTokenTrendChart } from '@/components/dashboard/DashboardTokenTrendChart';
@@ -20,7 +31,7 @@ import {
 import { readApiJson } from '@/lib/api-json';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
-import type { DashboardStats } from '@/lib/types';
+import type { DashboardStats, GatewayRequestLog } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
@@ -30,14 +41,73 @@ function formatLatency(ms: number | null | undefined): string {
 	return `${Math.round(ms)}ms`;
 }
 
+function MetricCard({
+	icon,
+	label,
+	value,
+	footer,
+	tone = 'blue',
+}: {
+	icon: ReactNode;
+	label: string;
+	value: string;
+	footer: ReactNode;
+	tone?: 'blue' | 'emerald' | 'amber' | 'violet';
+}) {
+	const toneClasses = {
+		blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+		emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+		amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+		violet: 'bg-violet-50 text-violet-700 ring-violet-100',
+	};
+
+	return (
+		<div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm">
+			<div className="flex items-start justify-between gap-4">
+				<div className="min-w-0">
+					<p className="text-sm font-medium text-gray-500">{label}</p>
+					<p className="mt-2 truncate text-3xl font-semibold tracking-tight text-gray-950 tabular-nums">{value}</p>
+				</div>
+				<div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${toneClasses[tone]}`}>
+					{icon}
+				</div>
+			</div>
+			<div className="mt-4 min-h-5 text-xs leading-5 text-gray-500">{footer}</div>
+		</div>
+	);
+}
+
+function RequestRow({ log, formatTime, unknown }: {
+	log: GatewayRequestLog;
+	formatTime: (value: string | null | undefined) => string;
+	unknown: string;
+}) {
+	const success = log.status === 'success';
+	return (
+		<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-gray-100 py-3 last:border-0">
+			<div className="min-w-0">
+				<div className="flex min-w-0 items-center gap-2">
+					<span className={`h-2 w-2 shrink-0 rounded-full ${success ? 'bg-emerald-500' : 'bg-red-500'}`} aria-hidden />
+					<span className="truncate text-sm font-medium text-gray-900">{log.model_id || unknown}</span>
+					<span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+						{log.status}
+					</span>
+				</div>
+				<p className="mt-1 truncate pl-4 text-xs text-gray-500">{log.provider_id || unknown}</p>
+			</div>
+			<time className="whitespace-nowrap text-xs text-gray-400">{formatTime(log.created_at)}</time>
+		</div>
+	);
+}
+
 export default function DashboardPage() {
 	const t = useTranslations('dashboard');
 	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
-	const tPricing = useTranslations('pricing');
 	const tTimeRange = useTranslations('timeRange');
 	const [stats, setStats] = useState<DashboardStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [loadError, setLoadError] = useState(false);
 	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
 	const { currency: billingCurrency } = useBillingCurrency();
 	const { businessTimezone, formatTime } = useGatewayDateTime();
@@ -53,208 +123,233 @@ export default function DashboardPage() {
 		[rangeValue, t, tTimeRange, businessTimezone]
 	);
 
-	useEffect(() => {
-		fetchStats();
-	}, [rangeValue.start_date, rangeValue.end_date]);
-
 	const fetchStats = async () => {
 		setIsLoading(true);
+		setLoadError(false);
 		try {
 			const params = new URLSearchParams();
 			if (rangeValue.start_date) params.set('start_date', rangeValue.start_date);
 			if (rangeValue.end_date) params.set('end_date', rangeValue.end_date);
-			// 仅滚动预设走 `range=`；日历快捷与自定义只传绝对起止，避免后端未知 preset 回落默认窗
 			if (isRollingPreset(rangeValue.preset)) params.set('range', rangeValue.preset);
 			const response = await fetch(`/api/admin/stats?${params.toString()}`);
 			const data = await readApiJson<DashboardStats>(response);
 			if (data.success && data.data != null) {
 				setStats(data.data);
+			} else {
+				setLoadError(true);
 			}
 		} catch (error) {
 			console.error('Fetch stats error:', error);
+			setLoadError(true);
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
+	useEffect(() => {
+		void fetchStats();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [rangeValue.start_date, rangeValue.end_date]);
+
 	if (isLoading && !stats) {
 		return (
-			<div className="flex items-center justify-center h-full">
-				<div className="text-gray-600">{tCommon('loading')}</div>
+			<div className="flex h-full items-center justify-center">
+				<div className="flex items-center gap-2 text-sm text-gray-500">
+					<ArrowPathIcon className="h-4 w-4 animate-spin" />
+					{tCommon('loading')}
+				</div>
 			</div>
 		);
 	}
 
 	const kpi = stats?.kpi;
 	const gateway = stats?.gateway;
+	const totalRequests = kpi?.totalRequests ?? 0;
+	const totalCost = kpi?.totalCost ?? 0;
+	const errorRate = kpi?.errorRate ?? 0;
+	const estimatedErrors = Math.round((totalRequests * errorRate) / 100);
+	const successRate = kpi?.successRate ?? 0;
+	const statusTone = totalRequests === 0 ? 'idle' : errorRate >= 5 ? 'critical' : errorRate >= 1 ? 'watch' : 'healthy';
+	const statusClasses = {
+		idle: 'bg-gray-100 text-gray-600 ring-gray-200',
+		healthy: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+		watch: 'bg-amber-50 text-amber-700 ring-amber-200',
+		critical: 'bg-red-50 text-red-700 ring-red-200',
+	};
 
 	return (
-		<div className="p-8">
-			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+		<div className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 xl:p-8">
+			<header className="flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-					<p className="text-sm text-gray-500 mt-1">{t('subtitle', { product: tBrand('product') })}</p>
+					<div className="flex flex-wrap items-center gap-3">
+						<h1 className="text-2xl font-semibold tracking-tight text-gray-950 sm:text-3xl">{t('title')}</h1>
+						<span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusClasses[statusTone]}`}>
+							<span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+							{t(`status.${statusTone}`)}
+						</span>
+					</div>
+					<p className="mt-1.5 text-sm text-gray-500">{t('subtitle', { product: tBrand('product') })}</p>
 				</div>
-				<button
-					type="button"
-					onClick={() => fetchStats()}
-					disabled={isLoading}
-					className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-				>
-					<ArrowPathIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-					{t('refresh')}
-				</button>
+				<div className="flex items-center gap-3">
+					<div className="hidden items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500 shadow-sm sm:flex">
+						<span className="inline-flex items-center gap-1.5 font-medium text-gray-700">
+							<BoltIcon className="h-4 w-4 text-amber-500" />
+							{t('live')}
+						</span>
+						<span><strong className="font-semibold text-gray-900 tabular-nums">{kpi?.rpm?.toLocaleString() ?? 0}</strong> RPM</span>
+						<span><strong className="font-semibold text-gray-900 tabular-nums">{formatCompactTokens(kpi?.tpm ?? 0)}</strong> TPM</span>
+					</div>
+					<button
+						type="button"
+						onClick={() => void fetchStats()}
+						disabled={isLoading}
+						aria-label={t('refresh')}
+						className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 disabled:opacity-60"
+					>
+						<ArrowPathIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+					</button>
+				</div>
+			</header>
+
+			<div className="mt-6 rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm">
+				<GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} label={t('analysisWindow')} />
 			</div>
 
-			<div className="mb-8 w-full min-w-0">
-				<GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} />
-			</div>
+			{loadError ? (
+				<div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+					<span>{t('loadError')}</span>
+					<button type="button" onClick={() => void fetchStats()} className="shrink-0 font-medium underline underline-offset-2">{t('retry')}</button>
+				</div>
+			) : null}
 
-			<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-				<div className="bg-white rounded-lg shadow-md p-5">
-					<div className="text-sm text-gray-500 mb-1">{t('apiKeys')}</div>
-					<div className="text-2xl font-bold text-gray-900">{gateway?.keysTotal ?? 0}</div>
-					<div className="text-xs text-gray-500 mt-1">{t('enabledCount', { count: gateway?.keysActive ?? 0 })}</div>
-					<Link href="/gateway/keys" className="text-sm text-blue-600 hover:underline mt-2 inline-block">{t('keysLink')}</Link>
-				</div>
-				<div className="bg-white rounded-lg shadow-md p-5">
-					<div className="text-sm text-gray-500 mb-1">{t('accounts')}</div>
-					<div className="text-2xl font-bold text-gray-900">{gateway?.accountsTotal ?? 0}</div>
-					<div className="text-xs text-gray-500 mt-1">{t('enabledCount', { count: gateway?.accountsActive ?? 0 })}</div>
-					<Link href="/gateway/users" className="text-sm text-blue-600 hover:underline mt-2 inline-block">{t('usersLink')}</Link>
-				</div>
-				<div className="bg-white rounded-lg shadow-md p-5">
-					<div className="text-sm text-gray-500 mb-1">{t('todayRequests')}</div>
-					<div className="text-2xl font-bold text-gray-900">{gateway?.todayRequestsCount?.toLocaleString() ?? 0}</div>
-					<div className="text-xs text-gray-500 mt-1">
-						{tPricing('cost', { amount: formatGatewayMoneyCode(gateway?.todayCost ?? 0, billingCurrency, 4) })}
+			<section className="mt-6" aria-labelledby="overview-heading">
+				<div className="mb-3 flex items-end justify-between gap-4">
+					<div>
+						<h2 id="overview-heading" className="text-sm font-semibold text-gray-900">{t('overview')}</h2>
+						<p className="mt-0.5 text-xs text-gray-500">{rangeLabel}</p>
+					</div>
+					<div className="flex items-center gap-3 text-xs text-gray-500 sm:hidden">
+						<span>{kpi?.rpm?.toLocaleString() ?? 0} RPM</span>
+						<span>{formatCompactTokens(kpi?.tpm ?? 0)} TPM</span>
 					</div>
 				</div>
-				<div className="bg-white rounded-lg shadow-md p-5">
-					<div className="text-sm text-gray-500 mb-1">{t('activeUsersRange', { range: rangeLabel })}</div>
-					<div className="text-2xl font-bold text-gray-900">{kpi?.activeUsers ?? 0}</div>
-					<div className="text-xs text-gray-500 mt-1">{t('accountsTotalHint', { count: gateway?.accountsTotal ?? 0 })}</div>
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+					<MetricCard
+						icon={<QueueListIcon className="h-5 w-5" />}
+						label={t('requests')}
+						value={totalRequests.toLocaleString()}
+						footer={<span>{t('requestContext', { users: kpi?.activeUsers ?? 0, tokens: formatCompactTokens(kpi?.totalTokens ?? 0) })}</span>}
+					/>
+					<MetricCard
+						icon={<CheckCircleIcon className="h-5 w-5" />}
+						label={t('successRate')}
+						value={`${successRate.toFixed(1)}%`}
+						footer={(
+							<Link href="/gateway/request-logs?status=error" className="inline-flex items-center gap-1 text-gray-500 transition hover:text-blue-700">
+								{t('errorContext', { count: estimatedErrors, rate: errorRate.toFixed(2) })}
+								<ChevronRightIcon className="h-3 w-3" />
+							</Link>
+						)}
+						tone="emerald"
+					/>
+					<MetricCard
+						icon={<ClockIcon className="h-5 w-5" />}
+						label={t('avgLatency')}
+						value={formatLatency(kpi?.avgLatencyMs)}
+						footer={<Link href="/gateway/analytics/reliability" className="inline-flex items-center gap-1 transition hover:text-blue-700">{t('inspectReliability')}<ChevronRightIcon className="h-3 w-3" /></Link>}
+						tone="amber"
+					/>
+					<MetricCard
+						icon={<BanknotesIcon className="h-5 w-5" />}
+						label={t('chargedCost')}
+						value={formatGatewayMoneyCode(totalCost, billingCurrency, 4)}
+						footer={<span>{t('avgRequestCost', { amount: formatGatewayMoneyCode(totalRequests > 0 ? totalCost / totalRequests : 0, billingCurrency, 6) })}</span>}
+						tone="violet"
+					/>
 				</div>
-				<div className="bg-white rounded-lg shadow-md p-5">
-					<div className="text-sm text-gray-500 mb-1">{t('todayTokens')}</div>
-					<div className="text-2xl font-bold text-gray-900">{formatCompactTokens(gateway?.todayTokens ?? 0)}</div>
-					<div className="text-xs text-gray-500 mt-1">
-						{t('rangeTokens', { range: rangeLabel, count: formatCompactTokens(kpi?.totalTokens ?? 0) })}
-					</div>
-				</div>
-				<div className="bg-white rounded-lg shadow-md p-5">
-					<div className="text-sm text-gray-500 mb-1">{t('rangeCost', { range: rangeLabel })}</div>
-					<div className="text-xl font-bold text-gray-900">
-						{formatGatewayMoneyCode(kpi?.totalCost ?? 0, billingCurrency, 4)}
-					</div>
-					<div className="text-xs text-gray-500 mt-1">
-						{tPricing('stdMetered', {
-							std: formatGatewayMoneyCode(kpi?.standardCost ?? 0, billingCurrency, 4),
-							metered: formatGatewayMoneyCode(kpi?.meteredCost ?? 0, billingCurrency, 4),
-						})}
-					</div>
-				</div>
-				<div className="bg-white rounded-lg shadow-md p-5">
-					<div className="text-sm text-gray-500 mb-1">{t('throughput')}</div>
-					<div className="text-2xl font-bold text-gray-900">{kpi?.rpm?.toLocaleString() ?? 0} RPM</div>
-					<div className="text-xs text-gray-500 mt-1">{t('tpmValue', { count: formatCompactTokens(kpi?.tpm ?? 0) })}</div>
-				</div>
-				<div className="bg-white rounded-lg shadow-md p-5">
-					<div className="text-sm text-gray-500 mb-1">{t('avgLatencyRange', { range: rangeLabel })}</div>
-					<div className="text-2xl font-bold text-gray-900">{formatLatency(kpi?.avgLatencyMs)}</div>
-					<div className="text-xs text-gray-500 mt-1">
-						{t('successRateValue', { rate: (kpi?.successRate ?? 0).toFixed(1) })}
-					</div>
-				</div>
-			</div>
+			</section>
 
-			<div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+			<section className="mt-6">
+				<DashboardTokenTrendChart
+					timeseries={stats?.timeseries ?? []}
+					granularity={stats?.granularity ?? 'hour'}
+					billingCurrency={billingCurrency}
+				/>
+			</section>
+
+			<div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.8fr)]">
 				<DashboardModelDistributionChart
 					modelDistribution={stats?.modelDistribution ?? []}
 					topUsers={stats?.topUsers ?? []}
 					billingCurrency={billingCurrency}
 				/>
-				<DashboardTokenTrendChart
-					timeseries={stats?.timeseries ?? []}
-					granularity={stats?.granularity ?? 'hour'}
-				/>
-			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-				<div className="bg-white rounded-lg shadow-md p-6">
-					<div className="flex items-center justify-between">
+				<div className="grid content-start gap-6">
+					<section className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm">
 						<div>
-							<div className="text-sm text-gray-500 mb-1">{t('errorRateRange', { range: rangeLabel })}</div>
-							<div className={`text-2xl font-bold ${(kpi?.errorRate ?? gateway?.errorRate ?? 0) > 5 ? 'text-red-600' : 'text-green-600'}`}>
-								{(kpi?.errorRate ?? gateway?.errorRate ?? 0).toFixed(2)}%
+							<h2 className="text-base font-semibold text-gray-950">{t('gatewayAccess')}</h2>
+							<p className="mt-1 text-xs text-gray-500">{t('gatewayAccessHint')}</p>
+						</div>
+						<div className="mt-4 grid grid-cols-2 gap-3">
+							<Link href="/gateway/keys" className="group rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-100 transition hover:bg-blue-50 hover:ring-blue-100">
+								<KeyIcon className="h-5 w-5 text-gray-400 transition group-hover:text-blue-600" />
+								<p className="mt-3 text-2xl font-semibold text-gray-950 tabular-nums">{gateway?.keysActive ?? 0}<span className="text-sm font-normal text-gray-400"> / {gateway?.keysTotal ?? 0}</span></p>
+								<p className="mt-1 text-xs text-gray-500">{t('activeKeys')}</p>
+							</Link>
+							<Link href="/gateway/users" className="group rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-100 transition hover:bg-blue-50 hover:ring-blue-100">
+								<UserGroupIcon className="h-5 w-5 text-gray-400 transition group-hover:text-blue-600" />
+								<p className="mt-3 text-2xl font-semibold text-gray-950 tabular-nums">{gateway?.accountsActive ?? 0}<span className="text-sm font-normal text-gray-400"> / {gateway?.accountsTotal ?? 0}</span></p>
+								<p className="mt-1 text-xs text-gray-500">{t('activeAccounts')}</p>
+							</Link>
+						</div>
+					</section>
+
+					<section className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm">
+						<div className="flex items-center justify-between gap-4">
+							<div className="flex items-center gap-2">
+								<ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
+								<h2 className="text-base font-semibold text-gray-950">{t('needsAttention')}</h2>
 							</div>
+							<Link href="/gateway/request-logs?status=error" className="text-xs font-medium text-blue-700 hover:underline">{tCommon('viewAll')}</Link>
 						</div>
-						<Link href="/gateway/request-logs?status=error" className="text-sm text-blue-600 hover:underline">{t('viewErrorLogs')}</Link>
-					</div>
-					<div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-						<Link href="/gateway/analytics/providers" className="text-sm text-blue-600 hover:underline">{t('providerUsageLink')}</Link>
-						<Link href="/gateway/analytics/reliability" className="text-sm text-blue-600 hover:underline">{t('reliabilityLink')}</Link>
-					</div>
-				</div>
-				<div className="bg-white rounded-lg shadow-md p-6">
-					<div className="text-sm text-gray-500 mb-1">{t('requestsRange', { range: rangeLabel })}</div>
-					<div className="text-2xl font-bold text-gray-900">{kpi?.totalRequests?.toLocaleString() ?? 0}</div>
-					<Link href="/gateway/analytics/models" className="text-sm text-blue-600 hover:underline mt-2 inline-block">{t('modelUsageLink')}</Link>
+						{stats?.recentErrors && stats.recentErrors.length > 0 ? (
+							<div className="mt-3">
+								{stats.recentErrors.slice(0, 3).map((log) => (
+									<div key={log.id} className="border-b border-gray-100 py-3 last:border-0">
+										<div className="flex items-start justify-between gap-3">
+											<p className="truncate text-sm font-medium text-gray-900">{log.model_id || tCommon('unknown')}</p>
+											<time className="shrink-0 text-[11px] text-gray-400">{formatTime(log.created_at)}</time>
+										</div>
+										<p className="mt-1 line-clamp-2 text-xs leading-5 text-red-600">{log.error_message || tCommon('unknownError')}</p>
+										{log.provider_id ? <p className="mt-1 text-[11px] text-gray-400">{log.provider_id}</p> : null}
+									</div>
+								))}
+							</div>
+						) : (
+							<div className="mt-4 rounded-xl bg-emerald-50 px-4 py-5 text-center text-sm text-emerald-700">{t('noRecentErrors')}</div>
+						)}
+					</section>
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-				<div className="bg-white rounded-lg shadow-md p-6">
-					<h2 className="text-lg font-semibold text-gray-900 mb-4">{t('recentRequests')}</h2>
-					{stats?.recentLogs && stats.recentLogs.length > 0 ? (
-						<div className="space-y-3">
-							{stats.recentLogs.map((log) => (
-								<div key={log.id} className="flex items-center justify-between text-sm border-b pb-2">
-									<div>
-										<div>
-											<span className="font-medium text-gray-900">{log.model_id || tCommon('unknown')}</span>
-											<span className={`ml-2 px-2 py-0.5 rounded text-xs ${log.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-												{log.status}
-											</span>
-										</div>
-										{log.provider_id && <div className="text-xs text-gray-500 mt-0.5">{tPricing('providerLabel', { id: log.provider_id })}</div>}
-									</div>
-									<div className="text-gray-500">
-										{formatTime(log.created_at)}
-									</div>
-								</div>
-							))}
-						</div>
-					) : (
-						<div className="text-gray-500 text-sm">{tCommon('noRecentRequests')}</div>
-					)}
-					<Link href="/gateway/request-logs" className="text-sm text-blue-600 hover:underline mt-4 inline-block">{tCommon('viewAll')}</Link>
+			<section className="mt-6 rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">
+				<div className="flex items-center justify-between gap-4">
+					<div>
+						<h2 className="text-base font-semibold text-gray-950">{t('recentRequests')}</h2>
+						<p className="mt-1 text-xs text-gray-500">{t('recentRequestsHint')}</p>
+					</div>
+					<Link href="/gateway/request-logs" className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline">
+						{tCommon('viewAll')}<ChevronRightIcon className="h-4 w-4" />
+					</Link>
 				</div>
-
-				<div className="bg-white rounded-lg shadow-md p-6">
-					<h2 className="text-lg font-semibold text-gray-900 mb-4">{t('recentErrors')}</h2>
-					{stats?.recentErrors && stats.recentErrors.length > 0 ? (
-						<div className="space-y-3">
-							{stats.recentErrors.map((log) => (
-								<div key={log.id} className="flex items-center justify-between text-sm border-b pb-2">
-									<div className="truncate flex-1">
-										<div>
-											<span className="font-medium text-gray-900">{log.model_id || tCommon('unknown')}</span>
-											<span className="ml-2 text-red-600 text-xs truncate">{log.error_message || tCommon('unknownError')}</span>
-										</div>
-										{log.provider_id && <div className="text-xs text-gray-500 mt-0.5">{tPricing('providerLabel', { id: log.provider_id })}</div>}
-									</div>
-									<div className="text-gray-500 ml-2">
-										{formatTime(log.created_at)}
-									</div>
-								</div>
-							))}
-						</div>
-					) : (
-						<div className="text-gray-500 text-sm">{tCommon('noRecentErrors')}</div>
-					)}
-				</div>
-			</div>
+				{stats?.recentLogs && stats.recentLogs.length > 0 ? (
+					<div className="mt-3">
+						{stats.recentLogs.map((log) => <RequestRow key={log.id} log={log} formatTime={formatTime} unknown={tCommon('unknown')} />)}
+					</div>
+				) : (
+					<div className="py-10 text-center text-sm text-gray-500">{tCommon('noRecentRequests')}</div>
+				)}
+			</section>
 		</div>
 	);
 }

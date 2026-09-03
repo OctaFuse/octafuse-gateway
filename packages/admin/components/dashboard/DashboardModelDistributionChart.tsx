@@ -1,13 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { DashboardModelDistributionRow, DashboardTopUserRow } from '@/lib/types';
-
-const CHART_COLORS = ['#2563eb', '#0ea5e9', '#14b8a6', '#22c55e', '#eab308', '#f97316', '#ef4444', '#a855f7', '#64748b', '#334155'];
 
 type ViewMode = 'models' | 'users';
 
@@ -25,100 +24,96 @@ export function DashboardModelDistributionChart({
 	const t = useTranslations('dashboard');
 	const [view, setView] = useState<ViewMode>('models');
 
-	const pieData = useMemo(() => {
+	const rows = useMemo(() => {
 		if (view === 'models') {
-			return modelDistribution.map((row) => ({
-				name: row.model_id,
-				value: row.total_tokens,
+			const max = Math.max(...modelDistribution.map((row) => row.request_count), 1);
+			return modelDistribution.slice(0, 8).map((row) => ({
+				key: row.model_id,
+				label: row.model_id,
+				requestCount: row.request_count,
+				tokens: row.total_tokens,
+				cost: row.charged_cost,
+				share: (row.request_count / max) * 100,
 			}));
 		}
-		return topUsers.map((row) => ({
-			name: row.user_email,
-			value: row.total_tokens,
+		const max = Math.max(...topUsers.map((row) => row.charged_cost), 0);
+		return topUsers.slice(0, 8).map((row) => ({
+			key: row.user_email,
+			label: row.user_email,
+			requestCount: row.request_count,
+			tokens: row.total_tokens,
+			cost: row.charged_cost,
+			share: max > 0 ? (row.charged_cost / max) * 100 : 0,
 		}));
 	}, [modelDistribution, topUsers, view]);
 
-	const tableRows = view === 'models' ? modelDistribution : topUsers;
-
 	return (
-		<div className="bg-white rounded-lg shadow-md p-6 h-full">
-			<div className="flex items-center justify-between gap-4 mb-4">
-				<h2 className="text-lg font-semibold text-gray-900">
-					{view === 'models' ? t('modelDistribution') : t('userLeaderboard')}
-				</h2>
-				<div className="inline-flex rounded-md border border-gray-200 text-sm">
+		<section className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">
+			<div className="flex flex-wrap items-start justify-between gap-4">
+				<div>
+					<h2 className="text-base font-semibold text-gray-950">{t('usageBreakdown')}</h2>
+					<p className="mt-1 text-xs text-gray-500">
+						{view === 'models' ? t('modelBreakdownHint') : t('userBreakdownHint')}
+					</p>
+				</div>
+				<div className="inline-flex rounded-xl bg-gray-100 p-1 text-xs">
 					<button
 						type="button"
 						onClick={() => setView('models')}
-						className={`px-3 py-1.5 rounded-l-md ${view === 'models' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+						className={`rounded-lg px-3 py-1.5 font-medium transition ${view === 'models' ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
 					>
 						{t('modelDistributionTab')}
 					</button>
 					<button
 						type="button"
 						onClick={() => setView('users')}
-						className={`px-3 py-1.5 rounded-r-md border-l border-gray-200 ${view === 'users' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+						className={`rounded-lg px-3 py-1.5 font-medium transition ${view === 'users' ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
 					>
 						{t('userLeaderboardTab')}
 					</button>
 				</div>
 			</div>
 
-			{tableRows.length === 0 ? (
-				<div className="text-sm text-gray-500 py-12 text-center">{t('noChartData')}</div>
+			{rows.length === 0 ? (
+				<div className="py-16 text-center text-sm text-gray-500">{t('noChartData')}</div>
 			) : (
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<div className="h-56">
-						<ResponsiveContainer width="100%" height="100%">
-							<PieChart>
-								<Pie
-									data={pieData}
-									dataKey="value"
-									nameKey="name"
-									innerRadius={52}
-									outerRadius={88}
-									paddingAngle={2}
-								>
-									{pieData.map((entry, index) => (
-										<Cell key={entry.name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-									))}
-								</Pie>
-								<Tooltip formatter={(value: number) => formatCompactTokens(value)} />
-							</PieChart>
-						</ResponsiveContainer>
-					</div>
-
-					<div className="overflow-auto max-h-56">
-						<table className="min-w-full text-sm">
-							<thead>
-								<tr className="text-left text-gray-500 border-b">
-									<th className="py-2 pr-3 font-medium">{view === 'models' ? t('modelColumn') : t('userColumn')}</th>
-									<th className="py-2 pr-3 font-medium">{t('requestsColumn')}</th>
-									<th className="py-2 pr-3 font-medium">{t('tokensColumn')}</th>
-									<th className="py-2 font-medium">{t('chargedColumn')}</th>
-								</tr>
-							</thead>
-							<tbody>
-								{tableRows.map((row) => {
-									const label = view === 'models'
-										? (row as DashboardModelDistributionRow).model_id
-										: (row as DashboardTopUserRow).user_email;
-									return (
-										<tr key={label} className="border-b border-gray-100">
-											<td className="py-2 pr-3 text-gray-900 truncate max-w-[10rem]" title={label}>{label}</td>
-											<td className="py-2 pr-3 tabular-nums text-gray-700">{row.request_count.toLocaleString()}</td>
-											<td className="py-2 pr-3 tabular-nums text-gray-700">{formatCompactTokens(row.total_tokens)}</td>
-											<td className="py-2 tabular-nums text-gray-700">
-												{formatGatewayMoneyCode(row.charged_cost, billingCurrency, 4)}
-											</td>
-										</tr>
-									);
-								})}
-							</tbody>
-						</table>
+				<div className="mt-5 overflow-x-auto">
+					<div className="min-w-[34rem]">
+						<div className="grid grid-cols-[minmax(12rem,1fr)_5rem_6rem_7rem] gap-3 border-b border-gray-100 pb-2 text-[11px] font-medium uppercase tracking-wide text-gray-400">
+							<span>{view === 'models' ? t('modelColumn') : t('userColumn')}</span>
+							<span className="text-right">{t('requestsColumn')}</span>
+							<span className="text-right">{t('tokensColumn')}</span>
+							<span className="text-right">{t('chargedColumn')}</span>
+						</div>
+						{rows.map((row, index) => (
+							<div key={row.key} className="grid grid-cols-[minmax(12rem,1fr)_5rem_6rem_7rem] items-center gap-3 border-b border-gray-100 py-3 last:border-0">
+								<div className="min-w-0">
+									<div className="flex items-center gap-2">
+										<span className="w-4 shrink-0 text-[11px] font-medium text-gray-400">{index + 1}</span>
+										<span className="truncate text-sm font-medium text-gray-900" title={row.label}>{row.label}</span>
+									</div>
+									<div className="ml-6 mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+										<div className={`h-full rounded-full ${view === 'models' ? 'bg-blue-500' : 'bg-violet-500'}`} style={{ width: `${Math.max(row.share, 2)}%` }} />
+									</div>
+								</div>
+								<span className="text-right text-sm tabular-nums text-gray-600">{row.requestCount.toLocaleString()}</span>
+								<span className="text-right text-sm tabular-nums text-gray-600">{formatCompactTokens(row.tokens)}</span>
+								<span className="text-right text-sm tabular-nums text-gray-900">{formatGatewayMoneyCode(row.cost, billingCurrency, 4)}</span>
+							</div>
+						))}
 					</div>
 				</div>
 			)}
-		</div>
+
+			<div className="mt-4 flex justify-end border-t border-gray-100 pt-4">
+				<Link
+					href={view === 'models' ? '/gateway/analytics/models' : '/gateway/analytics/users'}
+					className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:underline"
+				>
+					{view === 'models' ? t('modelUsageLink') : t('userUsageLink')}
+					<ChevronRightIcon className="h-3.5 w-3.5" />
+				</Link>
+			</div>
+		</section>
 	);
 }
