@@ -41,7 +41,7 @@ export default function UserUsagePage() {
   const [sortKey, setSortKey] = useState<SortKey>('request_count');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
-  const [expandedUserEmail, setExpandedUserEmail] = useState<string | null>(null);
+  const [expandedUserEmails, setExpandedUserEmails] = useState<Set<string>>(() => new Set());
   const [modelRowsByUser, setModelRowsByUser] = useState<Record<string, ModelUsageRow[]>>({});
   const [modelRowsLoading, setModelRowsLoading] = useState<Record<string, boolean>>({});
   const { currency: billingCurrency } = useBillingCurrency();
@@ -58,7 +58,7 @@ export default function UserUsagePage() {
         if (data.success) {
           setRows(data.data ?? []);
           setCommittedQuery(rangeValue);
-          setExpandedUserEmail(null);
+          setExpandedUserEmails(new Set());
           setModelRowsByUser({});
           setModelRowsLoading({});
         }
@@ -87,13 +87,14 @@ export default function UserUsagePage() {
   };
 
   const toggleUserModels = async (userEmail: string) => {
-    if (expandedUserEmail === userEmail) {
-      setExpandedUserEmail(null);
-      return;
-    }
-
-    setExpandedUserEmail(userEmail);
-    if (modelRowsByUser[userEmail] || modelRowsLoading[userEmail]) return;
+    const isCurrentlyExpanded = expandedUserEmails.has(userEmail);
+    setExpandedUserEmails((prev) => {
+      const next = new Set(prev);
+      if (next.has(userEmail)) next.delete(userEmail);
+      else next.add(userEmail);
+      return next;
+    });
+    if (isCurrentlyExpanded || modelRowsByUser[userEmail] || modelRowsLoading[userEmail]) return;
 
     setModelRowsLoading((prev) => ({ ...prev, [userEmail]: true }));
     try {
@@ -218,7 +219,7 @@ export default function UserUsagePage() {
                 logQuery.set('user_email', r.user_email);
                 logQuery.set('start_date', start_date);
                 logQuery.set('end_date', end_date);
-                const isExpanded = expandedUserEmail === r.user_email;
+                const isExpanded = expandedUserEmails.has(r.user_email);
                 const modelRows = modelRowsByUser[r.user_email] ?? [];
                 const isModelRowsLoading = modelRowsLoading[r.user_email] === true;
                 return (

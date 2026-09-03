@@ -45,7 +45,7 @@ export default function ModelUsagePage() {
   const [sortKey, setSortKey] = useState<SortKey>('model_id');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
-  const [expandedModelKey, setExpandedModelKey] = useState<string | null>(null);
+  const [expandedModelKeys, setExpandedModelKeys] = useState<Set<string>>(() => new Set());
   const [providerRowsByModel, setProviderRowsByModel] = useState<Record<string, ProviderUsageRow[]>>({});
   const [providerRowsLoading, setProviderRowsLoading] = useState<Record<string, boolean>>({});
   const { currency: billingCurrency } = useBillingCurrency();
@@ -61,7 +61,7 @@ export default function ModelUsagePage() {
         if (data.success) {
           setRows(data.data ?? []);
           setCommittedQuery(rangeValue);
-          setExpandedModelKey(null);
+          setExpandedModelKeys(new Set());
           setProviderRowsByModel({});
           setProviderRowsLoading({});
         }
@@ -93,13 +93,14 @@ export default function ModelUsagePage() {
 
   const toggleModelProviders = async (row: ModelUsageRow) => {
     const key = modelKey(row);
-    if (expandedModelKey === key) {
-      setExpandedModelKey(null);
-      return;
-    }
-
-    setExpandedModelKey(key);
-    if (providerRowsByModel[key] || providerRowsLoading[key]) return;
+    const isCurrentlyExpanded = expandedModelKeys.has(key);
+    setExpandedModelKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    if (isCurrentlyExpanded || providerRowsByModel[key] || providerRowsLoading[key]) return;
 
     setProviderRowsLoading((prev) => ({ ...prev, [key]: true }));
     try {
@@ -256,7 +257,7 @@ export default function ModelUsagePage() {
                 logQuery.set('start_date', start_date);
                 logQuery.set('end_date', end_date);
                 const key = modelKey(r);
-                const isExpanded = expandedModelKey === key;
+                const isExpanded = expandedModelKeys.has(key);
                 const providerRows = providerRowsByModel[key] ?? [];
                 const isProviderRowsLoading = providerRowsLoading[key] === true;
                 return (
