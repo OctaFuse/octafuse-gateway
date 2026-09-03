@@ -79,11 +79,30 @@ export type NormalizedImageEditRequest = {
 	size?: string;
 	quality?: string;
 	background?: string;
-	/** OpenAI edits 通常用 `image` / 多图 `image[]`；此处统一为数组 */
+	/** OpenAI edits：单图 `image`，多图 `image[]`；此处统一为数组 */
 	images: ImageEditUpload[];
 	/** 透传给上游的其余安全字段（不含 prompt / 文件） */
 	extra?: Record<string, unknown>;
 };
+
+/** OpenAI `/images/edits` 禁止重复标量 `image`；多图必须用 `image[]`。 */
+export type OpenaiEditImageFormField = 'image' | 'image[]';
+
+export function openaiEditImageFormField(count: number): OpenaiEditImageFormField {
+	return count > 1 ? 'image[]' : 'image';
+}
+
+export function isOpenaiEditImageFormKey(key: string): boolean {
+	return key === 'image' || key === 'images' || key === 'image[]';
+}
+
+export function appendOpenaiEditImages(form: FormData, images: readonly ImageEditUpload[]): void {
+	const field = openaiEditImageFormField(images.length);
+	for (const img of images) {
+		const blob = new Blob([img.bytes], { type: img.mimeType });
+		form.append(field, blob, img.filename || 'image.png');
+	}
+}
 
 type ImageAbortReason = 'none' | 'gateway_timeout' | 'client_abort';
 
@@ -423,16 +442,12 @@ export async function dispatchOpenAiImageEdits(
 	form.append('model', route.providerModelName);
 	for (const [k, v] of Object.entries(mergedExtras)) {
 		if (v == null) continue;
-		if (k === 'model' || k === 'image' || k === 'images') continue;
+		if (k === 'model' || isOpenaiEditImageFormKey(k)) continue;
 		if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
 			form.append(k, String(v));
 		}
 	}
-	for (const img of edit.images) {
-		// 直接用已有 Uint8Array 构造 Blob，避免再 copy 一份驻留内存
-		const blob = new Blob([img.bytes], { type: img.mimeType });
-		form.append('image', blob, img.filename || 'image.png');
-	}
+	appendOpenaiEditImages(form, edit.images);
 
 	const startedAt = Date.now();
 	const { signal, clear, getAbortReason } = withTimeoutSignal(

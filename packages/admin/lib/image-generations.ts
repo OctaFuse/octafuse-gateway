@@ -12,6 +12,13 @@ export const IMAGE_MAX_REFERENCE_COUNT = 5;
 export const IMAGE_MAX_BYTES_PER_FILE = 20 * 1024 * 1024;
 export const IMAGE_MAX_TOTAL_UPLOAD_BYTES = IMAGE_MAX_REFERENCE_COUNT * IMAGE_MAX_BYTES_PER_FILE;
 
+/** OpenAI `/images/edits`: one file uses `image`; two or more must use `image[]`. */
+export type OpenaiEditImageFormField = 'image' | 'image[]';
+
+export function openaiEditImageFormField(count: number): OpenaiEditImageFormField {
+	return count > 1 ? 'image[]' : 'image';
+}
+
 /** Default request body for `POST …/images/generations` (model field overwritten at send). */
 export const IMAGE_GENERATIONS_BODY_TEMPLATE = `{
   "model": "<auto>",

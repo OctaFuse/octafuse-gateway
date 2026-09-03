@@ -916,7 +916,12 @@ Authorization: Bearer <USER_API_KEY>
 Content-Type: multipart/form-data
 ```
 
-表单字段：`model`、`prompt`、`n=1`、可选 `size`/`quality`/`background`，以及最多 **5** 个 `image` 文件（`image/png` \| `image/jpeg` \| `image/webp`，单文件 ≤ 20MB）。
+表单字段：`model`、`prompt`、`n=1`、可选 `size`/`quality`/`background`，以及最多 **5** 个参考图文件（`image/png` \| `image/jpeg` \| `image/webp`，单文件 ≤ 20MB）。
+
+- **1 张**：字段名 `image`
+- **2 张及以上**：每张都用 `image[]`（不要重复标量 `image`，上游 OpenAI 会 400 `Duplicate parameter: 'image'`）
+
+Gateway 入站两种写法都接受（重复 `image` 会收成数组，`image[]` 亦可）。出站打 OpenAI 兼容上游时按上面规则改写。
 
 **必须**使用 `Content-Type: multipart/form-data`（含 boundary）。若客户端误发 `application/json` 或其它类型，Gateway 在读 body 前即返回 400 `Unsupported Content-Type for /v1/images/edits…`（不会再误报成 `Missing model`）。Seedream 图生图请走 generations + JSON `image`，不要用本端点。
 

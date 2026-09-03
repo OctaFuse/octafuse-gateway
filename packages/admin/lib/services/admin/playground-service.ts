@@ -23,6 +23,7 @@ import {
 	IMAGE_MAX_BYTES_PER_FILE,
 	IMAGE_MAX_REFERENCE_COUNT,
 	IMAGE_MAX_TOTAL_UPLOAD_BYTES,
+	openaiEditImageFormField,
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { modelKindFromFlags, resolveOpenaiUpstreamCapability } from '@/lib/invoke-kind';
@@ -1002,7 +1003,7 @@ export async function invokePlaygroundUpstream(
 						img.bytes.byteOffset + img.bytes.byteLength,
 					) as ArrayBuffer;
 					const file = new File([copy], img.filename, { type: img.mimeType });
-					fd.append('image', file, img.filename);
+					fd.append(openaiEditImageFormField(collected.images.length), file, img.filename);
 					fileSummaries.push(`${img.filename} (${img.bytes.byteLength} bytes, ${img.mimeType})`);
 				}
 				headers = {

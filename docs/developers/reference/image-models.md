@@ -31,7 +31,7 @@ Admin → Models → Import 勾选导入；**同 id 已存在不会覆盖**—�
 
 | Catalog id | 展示名 | Vendor | 典型区域 | 图生图 / 编辑 | 计费模式 |
 |------------|--------|--------|----------|---------------|----------|
-| `gpt-image-2` | GPT Image 2 | openai | 海外 | **`/v1/images/edits`**（multipart，最多 5 张） | **`token`**（官方 $/1M） |
+| `gpt-image-2` | GPT Image 2 | openai | 海外 | **`/v1/images/edits`**（multipart：1 张 `image`，多张 `image[]`，最多 5 张） | **`token`**（官方 $/1M） |
 | `doubao-seedream-5-0` | Doubao Seedream 5.0 | bytedance | 国内（火山方舟） | generations + JSON **`image`** | **`per_image`**（¥0.22/张一口价） |
 | `doubao-seedream-5-0-pro` | Doubao Seedream 5.0 Pro | bytedance | 国内（火山方舟） | 同上 | **`per_image`**（¥0.30/¥0.60 按像素档 + 参考图） |
 | `glm-image` | GLM Image | zhipu | 国内 / Z.AI 国际 | generations（按上游） | **`per_image`**（¥0.1/次） |
@@ -115,7 +115,7 @@ POST {dashscope.base}/services/aigc/multimodal-generation/generation
 | 维度 | `gpt-image-2` | Seedream 5（`doubao-seedream-5-0-*`） |
 |------|---------------|--------------------------------------|
 | 文生图 | `POST /v1/images/generations` | 同左 |
-| 参考图 / 编辑 | **`POST /v1/images/edits`** multipart `image` 文件 | **无 edits**；`generations` + JSON `image`（URL / data URL / 数组） |
+| 参考图 / 编辑 | **`POST /v1/images/edits`** multipart：1 张用 `image`，多张用 `image[]` | **无 edits**；`generations` + JSON `image`（URL / data URL / 数组） |
 | `size` | `auto` / `1024x1024` / `1024x1536` / `1536x1024` 等 | `2K` / `3K` / `4K` 或 `WxH` 像素 |
 | `quality` | `auto` / `low` / `medium` / `high` | 通常不用 |
 | `background` | 支持（如 `auto`） | 无 |

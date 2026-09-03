@@ -45,7 +45,7 @@ export default function ProviderUsagePage() {
   const [sortKey, setSortKey] = useState<SortKey>('provider_name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
-  const [expandedProviderId, setExpandedProviderId] = useState<string | null>(null);
+  const [expandedProviderIds, setExpandedProviderIds] = useState<Set<string>>(() => new Set());
   const [modelRowsByProvider, setModelRowsByProvider] = useState<Record<string, ModelUsageRow[]>>({});
   const [modelRowsLoading, setModelRowsLoading] = useState<Record<string, boolean>>({});
   const { currency: billingCurrency } = useBillingCurrency();
@@ -61,7 +61,7 @@ export default function ProviderUsagePage() {
         if (data.success) {
           setRows(data.data ?? []);
           setCommittedQuery(rangeValue);
-          setExpandedProviderId(null);
+          setExpandedProviderIds(new Set());
           setModelRowsByProvider({});
           setModelRowsLoading({});
         }
@@ -90,13 +90,14 @@ export default function ProviderUsagePage() {
   };
 
   const toggleProviderModels = async (providerId: string) => {
-    if (expandedProviderId === providerId) {
-      setExpandedProviderId(null);
-      return;
-    }
-
-    setExpandedProviderId(providerId);
-    if (modelRowsByProvider[providerId] || modelRowsLoading[providerId]) return;
+    const isCurrentlyExpanded = expandedProviderIds.has(providerId);
+    setExpandedProviderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(providerId)) next.delete(providerId);
+      else next.add(providerId);
+      return next;
+    });
+    if (isCurrentlyExpanded || modelRowsByProvider[providerId] || modelRowsLoading[providerId]) return;
 
     setModelRowsLoading((prev) => ({ ...prev, [providerId]: true }));
     try {
@@ -245,7 +246,7 @@ export default function ProviderUsagePage() {
                 logQuery.set('provider_id', r.provider_id);
                 logQuery.set('start_date', start_date);
                 logQuery.set('end_date', end_date);
-                const isExpanded = expandedProviderId === r.provider_id;
+                const isExpanded = expandedProviderIds.has(r.provider_id);
                 const modelRows = modelRowsByProvider[r.provider_id] ?? [];
                 const isModelRowsLoading = modelRowsLoading[r.provider_id] === true;
                 return (
