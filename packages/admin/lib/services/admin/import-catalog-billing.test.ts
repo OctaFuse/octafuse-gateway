@@ -57,7 +57,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥6 / ¥18 /M');
 	});
 
-	it('includes gemini-3.8-flash with current Gemini API introductory prices', () => {
+	it('includes gemini-3.8-flash with Gemini API Standard list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-3.8-flash');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-3.8-flash');
 		assert.ok(usd);
@@ -65,8 +65,8 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.display_name, 'Gemini 3.8 Flash');
 		assert.equal(usd!.context_window, 1000000);
 		assert.equal(usd!.max_tokens, 64000);
-		assert.equal(usd!.pricing_label, '$0.75 / $3.75 /M');
-		assert.equal(cny!.pricing_label, '¥5.25 / ¥26.25 /M');
+		assert.equal(usd!.pricing_label, '$1.5 / $7.5 /M');
+		assert.equal(cny!.pricing_label, '¥10.5 / ¥52.5 /M');
 	});
 
 	it('includes qwen3.8-flash with official Model Studio list prices', () => {
