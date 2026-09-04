@@ -70,7 +70,7 @@ dev 演示**仅 CLI 发版**（有新 SQL 时先 `db:migrate:remote`）；生产
 |------|------------------|----------|
 | 默认生产（示例） | `octafuse-gateway-proxy` / `-admin`，D1 `octafuse-gateway` | 常见为 Cloudflare Dashboard 绑定，wrangler 不写 `routes` |
 | dev 演示 | `*-dev`，D1 `octafuse-gateway-dev` | `test-api.octafuse.dev` 等（见 `example.env`） |
-| 自有 fork / 第二实例 | 自定 Worker 名与 D1 名，避免与同账号其它实例冲突 | 可选 `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` |
+| 自有 fork / 第二实例 | 自定 Worker 名与 D1 名，避免与同账号其它实例冲突 | 可选 `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN`（多个主机名逗号分隔） |
 
 本地 CLI：复制 [`example.env`](../../../cloudflare-worker/example.env) 为 gitignore 的 `cloudflare-worker/<name>.env`，填生产值后 `dotenv -e ... deploy:*`（与 Build variables 同名同值）。首次也可直接用 [cloudflare-quickstart.md](./cloudflare-quickstart.md)。
 
@@ -82,7 +82,7 @@ dev 演示**仅 CLI 发版**（有新 SQL 时先 `db:migrate:remote`）；生产
 | `D1_DATABASE_NAME` | D1 逻辑名 |
 | `D1_DATABASE_ID` | 远程 deploy / migrate **必填**。写入生成的 `wrangler.jsonc` 后，本机 `dev:proxy`/`dev:admin` 会连**另一套**本地 D1；继续本地开发前执行 `npm run gen:wrangler`（见 [local-development.md §1](../../developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
 | `D1_MIGRATIONS_WORKER_NAME` | 可选；仅 `wrangler d1 migrations` 配置名，**无需建 Worker** |
-| `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 |
+| `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选。多个主机名用逗号分隔，同一 Worker 挂多个入口 |
 
 ---
 
@@ -108,7 +108,7 @@ Cloudflare Dashboard → Worker → **设置（Settings）→ 构建（Builds）
 | `D1_DATABASE_NAME` | ✅ | D1 逻辑名 |
 | `D1_DATABASE_ID` | ✅ | `npx wrangler d1 list`；**只放 Cloudflare Dashboard** |
 | `D1_MIGRATIONS_WORKER_NAME` | 可选 | 仅迁移脚本配置名 |
-| `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 | 写入 wrangler `routes` |
+| `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 | 写入 wrangler `routes`。多个主机名用逗号分隔，同一 Worker 挂多个入口，例如 `api.example.com,relay.example.com`。各域名所在 zone 须在同一 Cloudflare 账号 |
 
 ### 构建 / 部署命令
 
@@ -219,6 +219,8 @@ Cloudflare Workers Free 的单 Worker gzip 上限为 **3 MiB**。管理后台依
 ### 回滚
 
 Workers Builds 部署历史 **Rollback**；或 Pause Builds 后回滚版本。
+
+自定义域：把 `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` 改回需要保留的主机名（例如从逗号列表改回单个），再重新 `deploy:proxy` / `deploy:admin`。未再列出的 Custom Domain 会从该 Worker 解绑。新域名若尚未对外公布，解绑无用户影响。
 
 ---
 

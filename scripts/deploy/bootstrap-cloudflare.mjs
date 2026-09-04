@@ -11,8 +11,8 @@
  * Options:
  *   --instance <name>           Env file basename (default: interactive / "default")
  *   --prefix <prefix>           Worker/D1 name prefix (default: octafuse-gateway)
- *   --proxy-domain <host>       Optional custom domain for Proxy
- *   --admin-domain <host>       Optional custom domain for Admin
+ *   --proxy-domain <hosts>      Optional Proxy custom domain(s), comma-separated
+ *   --admin-domain <hosts>      Optional Admin custom domain(s), comma-separated
  *   --admin-password-env <VAR>  Read ADMIN_PASSWORD from that env var (non-interactive)
  *   --reuse-d1                  Fail if D1 name missing (do not create)
  *   --d1-id <uuid>              Use this D1 id (skip create/list match by name)
@@ -36,6 +36,7 @@ import {
 	runNpmWithEnv,
 	writeInstanceEnvFile,
 } from "./cf-deploy-lib.mjs";
+import { parseCustomDomains, primaryCustomDomain } from "./gen-wrangler.mjs";
 
 function usage() {
 	console.log(`Usage: npm run bootstrap:cloudflare -- [options]
@@ -46,8 +47,8 @@ Options:
   --instance <name>           cloudflare-worker/<name>.env (default: default)
   --prefix <prefix>           Names: <prefix>-proxy / -admin / D1 <prefix>
                               (default: octafuse-gateway)
-  --proxy-domain <host>       Optional Proxy custom domain
-  --admin-domain <host>       Optional Admin custom domain
+  --proxy-domain <hosts>      Optional Proxy custom domain(s), comma-separated
+  --admin-domain <hosts>      Optional Admin custom domain(s), comma-separated
   --admin-password-env <VAR>  Password from process.env[VAR] (no prompt)
   --reuse-d1                  Require existing D1 with that name
   --d1-id <uuid>              Use existing D1 id directly
@@ -160,8 +161,14 @@ async function main() {
 			false,
 		);
 		if (wantDomain) {
-			proxyDomain = await promptLine("Proxy custom domain (empty to skip)", "");
-			adminDomain = await promptLine("Admin custom domain (empty to skip)", "");
+			proxyDomain = await promptLine(
+				"Proxy custom domain(s), comma-separated (empty to skip)",
+				"",
+			);
+			adminDomain = await promptLine(
+				"Admin custom domain(s), comma-separated (empty to skip)",
+				"",
+			);
 		}
 	}
 
@@ -257,12 +264,10 @@ async function main() {
 		}
 	}
 
-	const proxyUrl = names.proxyCustomDomain
-		? `https://${names.proxyCustomDomain}`
-		: undefined;
-	const adminUrl = names.adminCustomDomain
-		? `https://${names.adminCustomDomain}`
-		: undefined;
+	const proxyPrimary = primaryCustomDomain(names.proxyCustomDomain);
+	const adminPrimary = primaryCustomDomain(names.adminCustomDomain);
+	const proxyUrl = proxyPrimary ? `https://${proxyPrimary}` : undefined;
+	const adminUrl = adminPrimary ? `https://${adminPrimary}` : undefined;
 
 	printDownstreamHints({
 		proxyUrl,
@@ -270,6 +275,15 @@ async function main() {
 		proxyWorkerName: names.proxyWorkerName,
 		adminWorkerName: names.adminWorkerName,
 	});
+
+	const extraProxy = parseCustomDomains(names.proxyCustomDomain).slice(1);
+	const extraAdmin = parseCustomDomains(names.adminCustomDomain).slice(1);
+	if (extraProxy.length) {
+		log(`Additional Proxy custom domains: ${extraProxy.join(", ")}`);
+	}
+	if (extraAdmin.length) {
+		log(`Additional Admin custom domains: ${extraAdmin.join(", ")}`);
+	}
 
 	log(`Bootstrap complete. Instance env: cloudflare-worker/${instance}.env`);
 	log(`Later deploys: npm run deploy:cloudflare -- ${instance} --migrate`);
