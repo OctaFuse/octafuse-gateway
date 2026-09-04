@@ -13,7 +13,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "../..");
@@ -75,11 +75,53 @@ function applyD1Binding(binding, databaseName, databaseId) {
 	return next;
 }
 
-function customDomainRoutes(domain) {
-	if (!domain) {
+/**
+ * Split `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` into distinct hostnames.
+ * Comma-separated; whitespace around hosts is ignored; empty tokens dropped;
+ * duplicates are de-duped case-insensitively (first spelling kept).
+ *
+ * @param {string | undefined} raw
+ * @returns {string[]}
+ */
+export function parseCustomDomains(raw) {
+	if (typeof raw !== "string" || !raw.trim()) {
+		return [];
+	}
+	const seen = new Set();
+	const hosts = [];
+	for (const part of raw.split(",")) {
+		const host = part.trim();
+		if (!host) {
+			continue;
+		}
+		const key = host.toLowerCase();
+		if (seen.has(key)) {
+			continue;
+		}
+		seen.add(key);
+		hosts.push(host);
+	}
+	return hosts;
+}
+
+/** First hostname, for bootstrap URL hints (`https://a,b` is not a valid URL). */
+export function primaryCustomDomain(raw) {
+	return parseCustomDomains(raw)[0] ?? "";
+}
+
+/**
+ * Wrangler `routes` for Custom Domains. One Worker, N hostnames.
+ * Returns `undefined` when the env var is empty so callers can `delete config.routes`.
+ *
+ * @param {string | undefined} raw
+ * @returns {{ pattern: string, custom_domain: true }[] | undefined}
+ */
+export function customDomainRoutes(raw) {
+	const hosts = parseCustomDomains(raw);
+	if (hosts.length === 0) {
 		return undefined;
 	}
-	return [{ pattern: domain, custom_domain: true }];
+	return hosts.map((pattern) => ({ pattern, custom_domain: true }));
 }
 
 function generateProxy(names) {
@@ -169,9 +211,13 @@ function main() {
 	generateAdmin(names);
 	generateD1(names);
 
+	const proxyDomains = parseCustomDomains(names.proxyCustomDomain);
+	const adminDomains = parseCustomDomains(names.adminCustomDomain);
 	console.log(
 		`gen-wrangler: proxy=${names.proxyWorkerName} admin=${names.adminWorkerName} d1=${names.d1DatabaseName}` +
-			(names.d1DatabaseId ? ` id=${names.d1DatabaseId}` : " (local, no database_id)"),
+			(names.d1DatabaseId ? ` id=${names.d1DatabaseId}` : " (local, no database_id)") +
+			(proxyDomains.length ? ` proxyDomains=${proxyDomains.join(",")}` : "") +
+			(adminDomains.length ? ` adminDomains=${adminDomains.join(",")}` : ""),
 	);
 
 	if (REMOTE && names.d1DatabaseId) {
@@ -182,4 +228,14 @@ function main() {
 	}
 }
 
-main();
+function isDirectRun() {
+	const entry = process.argv[1];
+	if (!entry) {
+		return false;
+	}
+	return import.meta.url === pathToFileURL(entry).href;
+}
+
+if (isDirectRun()) {
+	main();
+}

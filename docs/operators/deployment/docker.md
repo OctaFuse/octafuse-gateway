@@ -302,13 +302,39 @@ server {
 }
 ```
 
+同一代理服务对外挂多个主机名时，在反代上列出全部 `server_name`（或为每个主机名写一个指向同一上游的站点块）。代理进程本身不解析主机名，也不读取 `PROXY_CUSTOM_DOMAIN`（该变量仅用于 Cloudflare `gen-wrangler`）：
+
+```nginx
+server {
+  listen 443 ssl;
+  server_name gateway.example.com relay.example.com;
+
+  ssl_certificate     /etc/nginx/certs/fullchain.pem;
+  ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+  location / {
+    proxy_pass http://127.0.0.1:8787;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
 Caddy（自动申请证书时）：
 
 ```caddy
 gateway-admin.example.com {
   reverse_proxy 127.0.0.1:8789
 }
+
+gateway.example.com, relay.example.com {
+  reverse_proxy 127.0.0.1:8787
+}
 ```
+
+回滚：从反代配置中去掉多余主机名并重载；DNS 记录可一并删除。
 
 ## 8. 如何更新版本
 

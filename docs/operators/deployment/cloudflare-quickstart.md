@@ -506,9 +506,12 @@ curl -sS "$GATEWAY_URL/v1/tools/web-search" \
 先确保域名所在 zone 已加入同一个 Cloudflare 账号。编辑被 gitignore 的实例文件：
 
 ```env
-PROXY_CUSTOM_DOMAIN=api.example.com
+# 单个主机名，或逗号分隔多个（同一 Worker 多个入口）
+PROXY_CUSTOM_DOMAIN=api.example.com,relay.example.com
 ADMIN_CUSTOM_DOMAIN=admin.example.com
 ```
+
+`gen-wrangler` 按逗号拆分，为每个主机名写入一条 `custom_domain: true` 的 `routes`。代理服务代码无需改动。各主机名的 zone 必须在同一 Cloudflare 账号；部署时 Wrangler 会创建 DNS 记录并签发证书。
 
 重新部署：
 
@@ -516,7 +519,7 @@ ADMIN_CUSTOM_DOMAIN=admin.example.com
 npm run deploy:cloudflare -- production
 ```
 
-脚本会把域名写入生成的 `routes`。验证证书和 DNS 状态后再把下游变量切换为：
+脚本会把域名写入生成的 `routes`。验证证书和 DNS 状态后再把下游变量切换为（下游 `GATEWAY_URL` 仍指向你选定的主入口，不必列出全部主机名）：
 
 ```env
 GATEWAY_URL=https://api.example.com
@@ -524,6 +527,8 @@ GATEWAY_MASTER_URL=https://admin.example.com
 ```
 
 管理后台必须通过 HTTPS 对公网提供；还可按需通过 Cloudflare Access 增加一层访问控制。
+
+回滚：把变量改回单个主机名（或去掉多余项）后重新 `deploy:proxy` / `deploy:admin`。未再列出的 Custom Domain 会从该 Worker 解绑。
 
 ---
 
@@ -641,7 +646,7 @@ npx wrangler secret put ADMIN_PASSWORD --name <admin-worker-name>
 
 ### 自定义域名部署失败
 
-先去掉 `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN`，用 `workers.dev` 验证。确认 zone 在同一账号、DNS 和证书可用后再绑定。
+先去掉 `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN`，用 `workers.dev` 验证。确认 **每一个** 主机名的 zone 都在同一账号、DNS 和证书可用后再绑定。逗号分隔列表里只要有一个 zone 不在本账号，整次 deploy 都会失败。
 
 ### 引导脚本中断后重试
 
