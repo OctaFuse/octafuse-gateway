@@ -1435,6 +1435,8 @@
 			"resetAt": "재설정 시각",
 			"keys": "키",
 			"keysActiveOfTotal": "활성 / 전체",
+			"rateLimit": "속도 제한",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "메타데이터",
 			"chargedCostFactors": "모델 할인",
 			"created": "생성일",
@@ -1464,7 +1466,11 @@
 			"externalSystem": "외부 시스템",
 			"externalUserId": "외부 사용자 ID",
 			"name": "이름",
-			"metadataJson": "Metadata JSON"
+			"metadataJson": "Metadata JSON",
+			"rateLimitRpm": "속도 제한 (RPM)"
+		},
+		"placeholders": {
+			"rateLimitRpm": "비우면 무제한"
 		},
 		"help": {
 			"createUser": "새 Gateway 사용자를 생성합니다. 이메일은 필수이고 다른 모든 필드는 선택 사항입니다. 이 사용자를 다른 시스템의 계정에 연결하려면 하단의 외부 ID 섹션을 사용하세요.",
@@ -1477,6 +1483,8 @@
 			"walletSpent": "월렛에서 이미 차감된 누적 금액입니다.",
 			"walletBalance": "현재 잔액 = 총 지급액 − 총 사용액이며 읽기 전용입니다. 주기 재설정이나 구독 만료 시에도 유지됩니다.",
 			"metadataReplace": "저장하면 metadata 객체 전체가 교체됩니다. 현재 값을 유지하려면 비워 두세요.",
+			"rateLimitRpm": "이 사용자의 모든 Key를 합산한 60초 롤링 창당 요청 수입니다. 비우면 무제한, 0이면 계측 대상 호출을 모두 거부합니다. GET /v1/me는 집계하지 않습니다. Key별 상한은 아래 Key 표에서 설정합니다.",
+			"rateLimitRpmInvalid": "속도 제한은 0 이상의 정수이거나, 무제한이면 비워 두세요.",
 			"chargedCostFactors": "카탈로그에서 모델을 선택한 뒤 배율을 설정합니다. 라우트 Charged cost 계산 후에 곱합니다. 없는 모델은 금액이 그대로입니다. 0이면 해당 모델은 과금하지 않습니다. LLM / Images / Audio만 적용되며 Agent Tools는 제외됩니다."
 		},
 		"chargedCostFactors": {
@@ -1501,12 +1509,16 @@
 		"keysTable": {
 			"noKeys": "Key 없음",
 			"details": "세부 정보",
+			"rateLimit": "속도 제한",
+			"rateLimitRpmValue": "{rpm} RPM",
+			"rateLimitHint": "이 Key의 60초 롤링 창당 허용 요청 수입니다. 비우면 무제한, 0이면 계측 대상 호출을 거부합니다. 사용자 합산 상한은 위 폼에서 설정합니다.",
 			"activeClickToRevoke": "활성: 클릭하여 폐기",
 			"inactiveClickToActivate": "비활성: 클릭하여 활성화"
 		},
 		"hints": {
 			"budgetTitle": "주기 예산 안내",
 			"walletTitle": "월렛 안내",
+			"rateLimitTitle": "사용자 속도 제한 안내",
 			"budgetVsWallet": "주기 예산은 구독 주기마다 재설정되며 만료 시 0이 됩니다. 월렛은 충전으로 지급되며 주기 재설정이나 만료 후에도 유지됩니다. 과금은 주기 예산을 먼저 쓰고, 부족분은 월렛에서 차감합니다."
 		},
 		"detailSections": {
@@ -1536,7 +1548,7 @@
 		}
 	},
 	"keysPage": {
-		"title": "API Keys",
+		"title": "API 키",
 		"subtitle": "Gateway 접근용 사용자 API Key를 관리합니다",
 		"newKey": "새 Key",
 		"createTitle": "API Key 생성",
@@ -1552,11 +1564,12 @@
 		"table": {
 			"status": "상태",
 			"user": "사용자",
-			"key": "Key",
-			"name": "이름",
+			"key": "키",
+			"rateLimit": "속도 제한",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"userBudget": "사용자 주기 예산",
 			"wallet": "월렛",
-			"apiKeyMetadata": "Metadata",
+			"apiKeyMetadata": "메타데이터",
 			"created": "생성일",
 			"links": "연결"
 		},
@@ -1587,7 +1600,10 @@
 			"budgetPeriodReset": "주기 예산 주기 / 재설정",
 			"walletReadonly": "월렛 (읽기 전용)",
 			"created": "생성일",
-			"updated": "업데이트일"
+			"updated": "업데이트일",
+			"lastUsedAt": "최근 사용",
+			"lastUsedNever": "없음",
+			"rateLimitRpm": "속도 제한 (RPM)"
 		},
 		"placeholders": {
 			"userId": "예: 사용자 페이지의 uuid",
@@ -1596,12 +1612,15 @@
 			"userEmail": "외부 ID로 생성할 때 users.email에 저장됨",
 			"keyName": "Admin / 클라이언트에 표시할 레이블",
 			"metadataJson": "선택 사항, 예: {\"plan_id\":\"pro\"}",
-			"optionalLabel": "선택적 레이블"
+			"optionalLabel": "선택적 레이블",
+			"rateLimitRpm": "비우면 무제한"
 		},
 		"help": {
 			"userEmail": "일치 또는 생성에 필요합니다. 외부 ID 쌍이 이미 있으면 저장된 이메일을 덮어쓰지 않습니다.",
 			"metadata": "Key에 저장되며 GET /v1/me에서 반환됩니다. 없으면 비워 두세요.",
-			"editMetadata": "이 Key에 저장되는 전체 JSON입니다. 비워 두면 삭제됩니다. 설정된 값은 GET /v1/me에 표시됩니다."
+			"editMetadata": "이 Key에 저장되는 전체 JSON입니다. 비워 두면 삭제됩니다. 설정된 값은 GET /v1/me에 표시됩니다.",
+			"rateLimitRpm": "이 Key의 60초 롤링 창당 요청 수입니다. 비우면 무제한, 0이면 계측 대상 호출을 모두 거부합니다. GET /v1/me는 집계하지 않습니다.",
+			"rateLimitRpmInvalid": "속도 제한은 0 이상의 정수이거나, 무제한이면 비워 두세요."
 		},
 		"links": {
 			"requestLogsForKey": "이 Key의 요청 로그 보기 →",
@@ -1697,6 +1716,7 @@
 			"unknown": "알 수 없음"
 		},
 		"detail": {
+			"ingressHost": "진입 Host",
 			"upstreamMessageId": "업스트림 message id",
 			"upstreamRequestId": "업스트림 request id",
 			"timing": "Timing",

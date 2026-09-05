@@ -44,6 +44,8 @@ export const usersTable = mysqlTable(
 		walletSpent: decimal('wallet_spent', { precision: 18, scale: 6 }).notNull().default('0'),
 		status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
 		metadata: text('metadata'),
+		/** JSON：`{ rpm?: number }`；NULL = 该用户所有 Key 合计不限 */
+		rateLimit: text('rate_limit'),
 		/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
 		chargedCostFactors: text('charged_cost_factors'),
 		/** 上游命名空间（产品/租户），与 external_user_id 成对做幂等；纯网关用户二者皆空。 */
@@ -83,6 +85,8 @@ export const apiKeysTable = mysqlTable('api_keys', {
 	status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
 	metadata: text('metadata'),
 	lastUsedAt: timestamp('last_used_at', { fsp: 6, mode: 'string' }),
+	/** JSON：`{ rpm?: number }`；NULL = 不限 */
+	rateLimit: text('rate_limit'),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 	updatedAt: timestamp('updated_at', { fsp: 6, mode: 'string' }).notNull(),
 });
@@ -234,6 +238,7 @@ export const apiKeyRequestLogsTable = mysqlTable('api_key_request_logs', {
 	outputImageCount: int('output_image_count').notNull().default(0),
 	audioDurationSeconds: double('audio_duration_seconds'),
 	audioCharacters: int('audio_characters'),
+	ingressHost: varchar('ingress_host', { length: 255 }),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 

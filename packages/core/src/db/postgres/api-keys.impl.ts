@@ -3,6 +3,7 @@
  */
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
 import type { ApiKeyRow, ResolvedGatewayKeyRow } from '../../types';
+import { parseApiKeyRateLimit } from '../../lib/api-key-rate-limit';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { ApiKeysRepository } from '../../storage/gateway-repository-interfaces';
@@ -37,6 +38,7 @@ function mapPgKeyRow(r: {
 	status: string;
 	metadata: string | null;
 	lastUsedAt: string | null;
+	rateLimit: string | null;
 	createdAt: string;
 	updatedAt: string;
 }): ApiKeyRow {
@@ -48,6 +50,7 @@ function mapPgKeyRow(r: {
 		status: r.status,
 		metadata: r.metadata,
 		last_used_at: r.lastUsedAt,
+		rate_limit: parseApiKeyRateLimit(r.rateLimit),
 		created_at: r.createdAt,
 		updated_at: r.updatedAt,
 	};
@@ -62,6 +65,7 @@ function mapPgResolvedRow(
 		status: string;
 		metadata: string | null;
 		lastUsedAt: string | null;
+		rateLimit: string | null;
 		createdAt: string;
 		updatedAt: string;
 		userEmail: string | null;
@@ -72,6 +76,7 @@ function mapPgResolvedRow(
 		budgetResetAt: string | null;
 		userMetadata: string | null;
 		userChargedCostFactors: string | null;
+		userRateLimit: string | null;
 		walletGranted: string;
 		walletSpent: string;
 	}
@@ -82,6 +87,7 @@ function mapPgResolvedRow(
 		user_email: r.userEmail,
 		user_metadata: r.userMetadata,
 		user_charged_cost_factors: r.userChargedCostFactors ?? null,
+		user_rate_limit: parseApiKeyRateLimit(r.userRateLimit),
 		budget_max: r.budgetMax == null ? null : parseMoney(r.budgetMax),
 		budget_base: parseMoney(r.budgetBase),
 		budget_spent: parseMoney(r.budgetSpent),
@@ -107,6 +113,8 @@ function mapPgAdminListRow(r: {
 	wallet_spent: string;
 	status: string;
 	metadata: string | null;
+	last_used_at: string | null;
+	rate_limit: string | null;
 	created_at: string;
 	updated_at: string;
 }): AdminApiKeyListItem {
@@ -125,6 +133,8 @@ function mapPgAdminListRow(r: {
 		wallet_spent: roundGatewayMoney(Number(r.wallet_spent ?? 0)),
 		status: r.status,
 		metadata: r.metadata,
+		last_used_at: r.last_used_at,
+		rate_limit: parseApiKeyRateLimit(r.rate_limit),
 		created_at: r.created_at,
 		updated_at: r.updated_at,
 	};
@@ -138,6 +148,7 @@ const resolvedCols = {
 	status: pgApiKeysTable.status,
 	metadata: pgApiKeysTable.metadata,
 	lastUsedAt: pgApiKeysTable.lastUsedAt,
+	rateLimit: pgApiKeysTable.rateLimit,
 	createdAt: pgApiKeysTable.createdAt,
 	updatedAt: pgApiKeysTable.updatedAt,
 	userEmail: pgUsersTable.email,
@@ -150,6 +161,7 @@ const resolvedCols = {
 	walletSpent: pgUsersTable.walletSpent,
 	userMetadata: pgUsersTable.metadata,
 	userChargedCostFactors: pgUsersTable.chargedCostFactors,
+	userRateLimit: pgUsersTable.rateLimit,
 } as const;
 
 export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): ApiKeysRepository {
@@ -263,6 +275,16 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 			return updated.length > 0;
 		},
 
+		async updateApiKeyRateLimit(id: string, rateLimitJson: string | null): Promise<boolean> {
+			const now = new Date().toISOString();
+			const updated = await drizzle
+				.update(pgApiKeysTable)
+				.set({ rateLimit: rateLimitJson, updatedAt: now })
+				.where(eq(pgApiKeysTable.id, id))
+				.returning({ id: pgApiKeysTable.id });
+			return updated.length > 0;
+		},
+
 		async getAllApiKeys(options?: {
 			email?: string;
 			userId?: string;
@@ -314,6 +336,8 @@ export function createPostgresApiKeysRepository(db: PostgresDatabaseClient): Api
 					wallet_spent: pgUsersTable.walletSpent,
 					status: pgApiKeysTable.status,
 					metadata: pgApiKeysTable.metadata,
+					last_used_at: pgApiKeysTable.lastUsedAt,
+					rate_limit: pgApiKeysTable.rateLimit,
 					created_at: pgApiKeysTable.createdAt,
 					updated_at: pgApiKeysTable.updatedAt,
 				})

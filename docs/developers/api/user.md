@@ -59,11 +59,17 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 
 路由组（`default`、`free` 等）仅影响 **选路与计费快照**（见下文用量日志），**不再**单独绕过预算或走按日免费次数表。订阅或周期型额度使用 User 上的 `budget_max` / `budget_base` / `budget_period`；购买额度、注册赠额等永久加额使用 Admin `POST /api/admin/users/:id/wallet/credit`。`budget_period = 'none'` 只表示周期池不自动重置，不应代替 Wallet 累加购买额度。API Key 仅用于鉴权与归集。
 
-### 4. 用量日志 `api_key_request_logs`
+### 4. 请求限流（Key / 用户 RPM）
+
+鉴权后对 **Key 窗口**与 **用户合计窗口**双重执行（先 Key 后 User；Key 已超限则不消耗用户窗口）。两层 JSON 形状相同，当前仅 `rpm`（每 60 秒滚动窗口请求上限）：`NULL` / 空对象该层不限，`rpm: 0` 拒绝该层计次请求。两层独立，不把用户配置复制到新建 Key。超限返回 **429** `gateway.rate_limited`（含 `Retry-After`），**不区分**是哪一层。计数在代理服务进程 / isolate 内存中，属软上限。
+
+`GET /v1/me` **两层都不计入**。`GET /v1/models` 与其它 `/v1/*` 会计入（若对应层配置了 `rpm`）。配置入口为管理后台用户详情的用户合计 RPM，以及密钥（Keys）页的单 Key RPM；API 见 [admin.md](./admin.md) 的 `PATCH /admin/users/:id` 与 `PATCH /admin/keys/:id`。
+
+### 5. 用量日志 `api_key_request_logs`
 
 写入的 **`model_id` 为库内基础模型 ID**（不带 `:group` 后缀）；实际选用的 **`route_group`**、`request_protocol` / `request_operation`、`model_surface_id`、`route_pool_id`、`route_target_id`、`upstream_protocol` / `upstream_operation`、`adapter` 与 `route_trace` 会随请求落库。`provider_key_id` / `provider_key_label` / `provider_key_fingerprint` 为历史兼容列名，现对应 **`providers.id` / `providers.name` / fingerprint(`providers.api_key`)**。相对目录标准价的倍率请见 Target 的 **`price_override`** 中的 **`charged_factor`** / **`metered_factor`**（及兼容字段 **`provider_factor`**）。
 
-### 5. 输出长度（`max_tokens` / `maxOutputTokens`）
+### 6. 输出长度（`max_tokens` / `maxOutputTokens`）
 
 - Gateway **不会**根据 D1 **`models.max_tokens`** 改写或截断用户请求；该字段在 `GET /v1/models` 等处仅作**目录/展示参考**。
 - 实际上游请求体由 **`model_routes.custom_params`** 与客户端 JSON **深度合并**得到（实现见 `buildRouteRequestBody`）：**客户端显式提供的字段优先**于路由默认值。保留键 **`headers`** 不进入请求体，见 [Route 默认参数合并](#route-默认参数合并)。
@@ -1168,7 +1174,7 @@ curl http://localhost:8787/v1/me \
   -H "Authorization: Bearer sk-xxx..."
 ```
 
-> 即使额度已用完，此端点仍然可以访问。客户端可使用此端点分别显示周期额度、永久额度和总剩余额度。
+> 即使额度已用完或 Key / 用户 RPM 已超限，此端点仍然可以访问（两层限流都不计入）。客户端可使用此端点分别显示周期额度、永久额度和总剩余额度。本接口**不返回** `rate_limit` 配置，限流由管理端设置。
 
 ---
 
@@ -1177,6 +1183,10 @@ curl http://localhost:8787/v1/me \
 ### 预算控制
 
 当 `budget_max` 非空且“周期剩余 + 永久余额”小于等于 0 时，请求会被拒绝并返回 **403** `Budget exceeded`；周期额度用尽但永久余额仍为正时可以继续请求。周期性套餐使用 `budget_period` 为 `daily` / `weekly` / `monthly` 等并由 `budget_reset_at` 驱动重置；购买额度、注册赠额等永久余额通过 Admin `POST /api/admin/users/:id/wallet/credit` 增减。`budget_period = 'none'` 仅关闭周期池的自动重置，不会自动转为永久额度。
+
+### 请求限流
+
+若 Key 或用户配置了 `rate_limit.rpm`，超限返回 **429** `gateway.rate_limited` 与 `Retry-After`。`GET /v1/me` 不计次；详见上文「请求限流」。
 
 ### 定价模型
 

@@ -53,6 +53,7 @@ type UserDetail = {
   status: string;
   metadata: Record<string, unknown> | null;
   charged_cost_factors?: Record<string, number> | null;
+  rate_limit?: { rpm?: number } | null;
   created_at: string;
   updated_at: string;
 };
@@ -87,6 +88,7 @@ type KeyRow = {
   status: string;
   metadata: string | null;
   last_used_at: string | null;
+  rate_limit?: { rpm?: number } | null;
   created_at: string;
   updated_at: string;
 };
@@ -113,6 +115,10 @@ function ReadonlyRow({ label, children }: { label: string; children: ReactNode }
 function maskKey(key: string) {
   if (!key || key.length < 10) return key;
   return `${key.substring(0, 7)}…${key.substring(key.length - 4)}`;
+}
+
+function keyRpm(key: { rate_limit?: { rpm?: number } | null }): number | null {
+  return key.rate_limit?.rpm ?? null;
 }
 
 function shortAuditId(id: string | null | undefined): string {
@@ -169,6 +175,7 @@ export default function GatewayUserDetailPage() {
     chargedCostFactorRows: [] as ChargedCostFactorRow[],
     external_system: '',
     external_user_id: '',
+    rateLimitRpm: '',
   });
   const [showNewKey, setShowNewKey] = useState(false);
   const [freshApiKey, setFreshApiKey] = useState<string | null>(null);
@@ -210,6 +217,7 @@ export default function GatewayUserDetailPage() {
         chargedCostFactorRows: factorsToRows(u.charged_cost_factors),
         external_system: u.external_system ?? '',
         external_user_id: u.external_user_id ?? '',
+        rateLimitRpm: u.rate_limit?.rpm == null ? '' : String(u.rate_limit.rpm),
       });
     } catch (e) {
       console.error(e);
@@ -427,6 +435,13 @@ export default function GatewayUserDetailPage() {
         setIsSavingPlan(false);
         return;
       }
+      const rpmRaw = planForm.rateLimitRpm.trim();
+      const rpmParsed = rpmRaw === '' ? null : Number(rpmRaw);
+      if (rpmRaw !== '' && (rpmParsed == null || !Number.isFinite(rpmParsed) || rpmParsed < 0 || !Number.isInteger(rpmParsed))) {
+        setPlanError(t('help.rateLimitRpmInvalid'));
+        setIsSavingPlan(false);
+        return;
+      }
       const payload: Record<string, unknown> = {
         email,
         status: planForm.status,
@@ -437,6 +452,7 @@ export default function GatewayUserDetailPage() {
         budget_reset_at: planForm.budget_reset_at ? new Date(planForm.budget_reset_at).toISOString() : null,
         wallet_granted: parseFloat(planForm.wallet_granted) || 0,
         wallet_spent: parseFloat(planForm.wallet_spent) || 0,
+        rate_limit: rpmParsed == null ? null : { rpm: rpmParsed },
         external_system: extS || null,
         external_user_id: extU || null,
         reason: 'gwui:user-plan',
@@ -833,20 +849,37 @@ export default function GatewayUserDetailPage() {
                 </div>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('fields.metadataJsonObject')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-              </label>
-              <textarea
-                value={planForm.metadata}
-                onChange={(e) => setPlanForm({ ...planForm, metadata: e.target.value })}
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
-                placeholder="{}"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                {t('help.metadataReplace')}
-              </p>
+            <div className="grid gap-3 sm:grid-cols-3 items-start">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('fields.rateLimitRpm')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={planForm.rateLimitRpm}
+                  onChange={(e) => setPlanForm({ ...planForm, rateLimitRpm: e.target.value })}
+                  placeholder={t('placeholders.rateLimitRpm')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                />
+                <p className="mt-1 text-xs text-gray-500">{t('help.rateLimitRpm')}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('fields.metadataJsonObject')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                </label>
+                <textarea
+                  value={planForm.metadata}
+                  onChange={(e) => setPlanForm({ ...planForm, metadata: e.target.value })}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+                  placeholder="{}"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  {t('help.metadataReplace')}
+                </p>
+              </div>
             </div>
             <div className="pt-4 border-t border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">
@@ -935,7 +968,7 @@ export default function GatewayUserDetailPage() {
               <thead>
                 <tr className="border-b text-xs text-gray-500 uppercase">
                   <th className="py-2 pr-4 text-left">{tCommon('key')}</th>
-                  <th className="py-2 pr-4 text-left">{tCommon('name')}</th>
+                  <th className="py-2 pr-4 text-left" title={t('keysTable.rateLimitHint')}>{t('keysTable.rateLimit')}</th>
                   <th className="py-2 pr-4 text-left">{tCommon('metadata')}</th>
                   <th className="py-2 pr-4 text-left">{tCommon('status')}</th>
                   <th className="py-2 pl-4 text-right whitespace-nowrap w-px">{tCommon('actions')}</th>
@@ -944,14 +977,34 @@ export default function GatewayUserDetailPage() {
               <tbody>
                 {keys.map((k) => (
                   <tr key={k.id} className="border-b border-gray-100">
-                    <td className="py-2 pr-4 font-mono text-xs align-top">
-                      <span title={k.key}>{maskKey(k.key)}</span>
-                      <button type="button" onClick={() => copy(k.key)} className="ml-1 text-gray-400 hover:text-gray-600 align-middle">
-                        <ClipboardDocumentIcon className="h-3.5 w-3.5 inline" />
-                      </button>
-                      <div className="text-gray-400">{shortId(k.id)}</div>
+                    <td className="py-2 pr-4 align-top">
+                      <div className="truncate text-sm font-medium text-gray-900" title={k.name || undefined}>
+                        {k.name?.trim() ? k.name : '—'}
+                      </div>
+                      <div className="mt-0.5 flex min-w-0 items-center gap-1 font-mono text-[11px] text-gray-400">
+                        <span className="min-w-0 truncate" title={k.key}>{maskKey(k.key)}</span>
+                        <button
+                          type="button"
+                          onClick={() => copy(k.key)}
+                          className="shrink-0 rounded p-0.5 text-gray-300 hover:bg-gray-100 hover:text-gray-600"
+                        >
+                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="mt-0.5 font-mono text-[11px] text-gray-400">{shortId(k.id)}</div>
                     </td>
-                    <td className="py-2 pr-4 align-top">{k.name || '—'}</td>
+                    <td className="py-2 pr-4 align-top" title={t('keysTable.rateLimitHint')}>
+                      {(() => {
+                        const rpm = keyRpm(k);
+                        return rpm == null ? (
+                          <span className="text-gray-400">{tCommon('noLimit')}</span>
+                        ) : (
+                          <span className={`tabular-nums ${rpm === 0 ? 'text-amber-700' : 'text-gray-900'}`}>
+                            {t('keysTable.rateLimitRpmValue', { rpm })}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="py-2 pr-4 align-top max-w-xs">
                       {(() => {
                         const m = summarizeMetadata(k.metadata);

@@ -34,7 +34,7 @@ Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统�
 | 价格与峰谷时段 | 模型请求区分 **供应成本（Metered）**、**官方当刻目录价（Standard）**、**用户计费（Charged）**。先在模型中维护供应商官方时段，再在路由中设置用户计费和供应成本倍率；保存前可以直接预览各时段实际价格。智能体工具使用独立的绝对单价，不应用模型路由时段。 |
 | 预置供应商 / 模型 | 管理后台可从静态目录一键导入：除官方模型厂外，还覆盖聚合平台与各类 Coding / Token Plan；预填 Base URL 与模型目录价等信息，导入后补齐真实 API Key 并挂路由即可使用。当前预设还包括 `hy4-preview`、`qwen3.8-flash`、`glm-5.3-flash`。模型导入不会自动写入模型标签，标签由管理员在导入后维护。完整清单见官网 [Providers Catalog](https://octafuse.dev/zh/catalog/providers/) 与 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；Coding / Token Plan 的专用 endpoint 不应与普通按量模板混用。 |
 | 供应商管理 | 每个供应商维护单键、启用状态与 `endpoints`；明文 key 仅经 reveal 接口查看。多账号 = 多个供应商。 |
-| 日志与审计 | 请求日志（Request Logs）并列展示客户端入口与实际上游、功能标签、用量和费用（含 Images / Audio / Tools），展开后可核对路由、星期时段与用户模型倍率；请求记录中的 `charged_wallet_cost` 表示本次从永久额度扣除的部分。审计日志会把周期额度与永久额度变化拆开显示，并记录加额、周期重置、用户与 Key 生命周期等事件。 |
+| 日志与审计 | 请求日志（Request Logs）并列展示客户端入口与实际上游、功能标签、用量和费用（含 Images / Audio / Tools），展开后可核对入口 Host、上游消息 / 请求 ID、路由、星期时段与用户模型倍率；请求记录中的 `charged_wallet_cost` 表示本次从永久额度扣除的部分。审计日志会把周期额度与永久额度变化拆开显示，并记录加额、周期重置、用户与 Key 生命周期等事件。 |
 | 调试台 / 模拟器（Playground / Simulator） | **调试台**：Routes 模式支持 Chat / Responses / Images / Audio，直连单条 `model_routes` 上游（不计费、不写日志、无 failover）；DashScope 实时 ASR 默认可使用浏览器麦克风。Tools 模式读 `system_config` catalog **直连引擎**。**模拟器**：浏览器调用真实代理服务（鉴权、路由、计费、日志），支持 LLM（含 Responses）/ Image / Audio / **Tools**；百炼千问 / 万相生图仍从 OpenAI Images 入口进入。 |
 | 管理 API | 外部门户、后台或脚本可通过 `/api/admin/*` 自动创建用户、发 Key、同步预算和读取配置。 |
 | 部署与数据库 | 支持 **Cloudflare Workers + D1**，也支持 Docker / Node + **Postgres 或 MySQL**；同一实例只使用一种数据面。 |

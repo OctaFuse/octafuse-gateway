@@ -101,6 +101,7 @@ function recordRealtimeUsage(params: {
 					apiKeyId: apiKey.keyId,
 					userId: apiKey.userId,
 					userEmail: apiKey.userEmail,
+					ingressHost: apiKey.ingressHost,
 					modelId: baseModelId,
 					providerId: route.providerId,
 					providerModelName: route.providerModelName,

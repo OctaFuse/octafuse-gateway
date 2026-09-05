@@ -95,7 +95,7 @@ flowchart TB
 
 ### 2.1 鉴权与解析
 
-1. **`requireApiKey`**：从 `Authorization: Bearer sk-...`、`x-api-key` 或 query `key` 提取密钥；`authenticateApiKey` 查库并注入 `c.set('apiKey')`（含 `userId`、`budgetMax`、`budgetSpent`、`walletGranted`、`walletSpent` 等）。
+1. **`requireApiKey`**：从 `Authorization: Bearer sk-...`、`x-api-key` 或 query `key` 提取密钥；`authenticateApiKey` 查库并注入 `c.set('apiKey')`（含 `userId`、`budgetMax`、`budgetSpent`、`walletGranted`、`walletSpent` 等）。若 Key 或用户配置了 `rate_limit.rpm`，先消耗 Key 窗口再消耗用户合计窗口；超限返回 **429** `gateway.rate_limited`。`GET /v1/me` 两层都不计入。
 2. **解析 JSON body**：非法 JSON → **400**；缺少 `model` → **400**。
 3. **`resolveModelRouting`**：支持 `baseModelId` 或 `baseModelId:route_group`；模型不存在 → **404**。
 4. **用户额度**：`hasPositiveTotalBalance(budgetMax, budgetSpent, walletGranted, walletSpent)` 为假 → **403**。`budgetMax == null` 表示周期不限额；否则看周期剩余 + 永久余额。**`budgetMax=0` 且 wallet 仍有余额时允许请求**（勿用旧式 `budgetSpent >= budgetMax`，`0 >= 0` 会误杀）。
@@ -219,7 +219,7 @@ sequenceDiagram
 
 - 默认策略 **`hash_affinity`**（加权 Rendezvous hash）在同用户 + 模型 + group + 协议下给出稳定首选供应商，以利于上游 prompt cache。
 - 可选 **供应商粘性**（路由池级）：成功后跨请求绑定上游目标（共享 DB）；有效时可跨 priority 优先尝试；见 [route-strategies.md](../reference/route-strategies.md)「供应商粘性」。
-- **无**网关侧 RPM/TPM/并发软限流；供应商限额由上游 429 与熔断间接体现（后续可能重设计）。
+- **无**网关侧 TPM/并发软限流；旧 `limit_config` 已移除。Key / 用户 `rate_limit.rpm` 为鉴权后进程内存窗口（见 [user-keys-data-model.md](./user-keys-data-model.md)）。供应商限额仍由上游 429 与熔断间接体现。
 
 > **调试台除外**：管理后台（Admin）的 **`playground-service`** 直连单条 route 打上游，**不经过** `failoverDispatch`，因此无故障转移 / 策略排序；生产代理服务（Proxy）路径才生效。
 
@@ -237,6 +237,7 @@ sequenceDiagram
 | Images edits multipart 非法 | 400 | `Invalid multipart body` | 否 |
 | 模型不存在 | 404 | `Model not found` | 否 |
 | 用户 budget 耗尽 | 403 | `Budget exceeded` | 否 |
+| Key / 用户 RPM 超限 | 429 | `gateway.rate_limited` + `Retry-After` | 否 |
 | 无匹配请求入口 / active 路由池上游目标 | 400 / 502 | `No active routes ...` / `No routes configured` 等 | 否 |
 | 无协议 / adapter 匹配上游目标或无可用供应商 | 502 | `No OpenAI route ...` / `No routes configured` 等 | 否 |
 | 敏感内容熔断中 | 429 | `circuit.sensitive_content` + `Retry-After`（退避档位与普通 400 相同） | 是（error） |
@@ -262,6 +263,7 @@ sequenceDiagram
 
 | 来源 | 含义 | Body 特征 |
 |------|------|-----------|
+| **网关生成** | Key / 用户 RPM 超限 | `code: gateway.rate_limited` + `Retry-After`，**未调用上游** |
 | **网关生成** | 调度阶段无任何可试供应商 | `code: circuit.upstream_capacity_exhausted`，**未调用上游** |
 | **上游返回** | 某供应商被上游限流 | 换供应商重试；全失败则**透传最后上游 429** |
 

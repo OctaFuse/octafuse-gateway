@@ -29,6 +29,7 @@ export function parseUserAuditSnapshotFromJson(raw: string | null | undefined): 
 		const wallet_spent = roundGatewayMoney(Number(o.wallet_spent ?? 0));
 		const status = typeof o.status === 'string' ? o.status : '';
 		const metadata = o.metadata === undefined || o.metadata === null ? null : String(o.metadata);
+		const rate_limit = o.rate_limit === undefined || o.rate_limit === null ? null : String(o.rate_limit);
 		const charged_cost_factors =
 			o.charged_cost_factors === undefined || o.charged_cost_factors === null
 				? null
@@ -49,6 +50,7 @@ export function parseUserAuditSnapshotFromJson(raw: string | null | undefined): 
 			wallet_spent,
 			status,
 			metadata,
+			rate_limit,
 			charged_cost_factors,
 			external_system,
 			external_user_id,

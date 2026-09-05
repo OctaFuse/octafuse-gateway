@@ -1,6 +1,7 @@
 /**
  * 永久额度加额：审计行构造与返回值。
  */
+import { parseApiKeyRateLimit } from '../lib/api-key-rate-limit';
 import { roundGatewayMoney } from '../lib/money-precision';
 import {
 	changedFieldsToJson,
@@ -36,6 +37,7 @@ export function mapStorageUserToRow(r: {
 	walletSpent: number | string | null;
 	status: string;
 	metadata: string | null;
+	rateLimit?: string | null;
 	chargedCostFactors?: string | null;
 	externalSystem: string | null;
 	externalUserId: string | null;
@@ -54,6 +56,7 @@ export function mapStorageUserToRow(r: {
 		wallet_spent: roundGatewayMoney(Number(r.walletSpent ?? 0)),
 		status: r.status,
 		metadata: r.metadata,
+		rate_limit: parseApiKeyRateLimit(r.rateLimit),
 		charged_cost_factors: r.chargedCostFactors ?? null,
 		external_system: r.externalSystem,
 		external_user_id: r.externalUserId,

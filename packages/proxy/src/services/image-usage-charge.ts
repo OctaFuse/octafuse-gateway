@@ -550,6 +550,8 @@ export type RecordImageUsageParams = {
 	timing?: RequestTimingSnapshot | null;
 	circuitEvents?: GatewayCircuitAlertEvent[];
 	suppressErrorAlert?: boolean;
+	/** Request Host (observe only) */
+	ingressHost?: string | null;
 };
 
 /**
@@ -776,6 +778,7 @@ export async function recordImageUsage(params: RecordImageUsageParams): Promise<
 			providerKeyFingerprint: params.providerKeyFingerprint ?? null,
 			upstreamRequestId: params.upstreamRequestId ?? null,
 			upstreamMessageId: null,
+			ingressHost: params.ingressHost ?? null,
 		},
 		shouldChargeBudget,
 		beforeSpent,

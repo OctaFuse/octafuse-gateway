@@ -420,6 +420,7 @@ export async function getUserInfo(repos: GatewayRepositories, userId: string) {
 		status: row.status,
 		metadata,
 		charged_cost_factors: parseUserChargedCostFactors(row.charged_cost_factors),
+		rate_limit: row.rate_limit ?? null,
 		created_at: row.created_at,
 		updated_at: row.updated_at,
 	};
@@ -467,6 +468,8 @@ export async function getKeyInfo(repos: GatewayRepositories, id: string) {
 		wallet_balance: computeWalletBalance(Number(row.wallet_granted ?? 0), Number(row.wallet_spent ?? 0)),
 		status: row.status,
 		metadata,
+		last_used_at: row.last_used_at ?? null,
+		rate_limit: row.rate_limit ?? null,
 		created_at: row.created_at,
 		updated_at: row.updated_at,
 	};

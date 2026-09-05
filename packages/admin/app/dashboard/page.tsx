@@ -41,6 +41,28 @@ function formatLatency(ms: number | null | undefined): string {
 	return `${Math.round(ms)}ms`;
 }
 
+function dashboardLogModelLabel(log: GatewayRequestLog, unknown: string): string {
+	return log.model_name?.trim() || log.model_id?.trim() || unknown;
+}
+
+function dashboardLogProviderLabel(log: GatewayRequestLog): string {
+	return log.provider_name?.trim() || log.provider_id?.trim() || '';
+}
+
+function dashboardLogModelTitle(log: GatewayRequestLog): string | undefined {
+	const name = log.model_name?.trim();
+	const id = log.model_id?.trim();
+	if (name && id && name !== id) return `${name} (${id})`;
+	return name || id || undefined;
+}
+
+function dashboardLogProviderTitle(log: GatewayRequestLog): string | undefined {
+	const name = log.provider_name?.trim();
+	const id = log.provider_id?.trim();
+	if (name && id && name !== id) return `${name} (${id})`;
+	return name || id || undefined;
+}
+
 function MetricCard({
 	icon,
 	label,
@@ -88,12 +110,16 @@ function RequestRow({ log, formatTime, unknown }: {
 			<div className="min-w-0">
 				<div className="flex min-w-0 items-center gap-2">
 					<span className={`h-2 w-2 shrink-0 rounded-full ${success ? 'bg-emerald-500' : 'bg-red-500'}`} aria-hidden />
-					<span className="truncate text-sm font-medium text-gray-900">{log.model_id || unknown}</span>
+					<span className="truncate text-sm font-medium text-gray-900" title={dashboardLogModelTitle(log)}>
+						{dashboardLogModelLabel(log, unknown)}
+					</span>
 					<span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
 						{log.status}
 					</span>
 				</div>
-				<p className="mt-1 truncate pl-4 text-xs text-gray-500">{log.provider_id || unknown}</p>
+				<p className="mt-1 truncate pl-4 text-xs text-gray-500" title={dashboardLogProviderTitle(log)}>
+					{dashboardLogProviderLabel(log) || unknown}
+				</p>
 			</div>
 			<time className="whitespace-nowrap text-xs text-gray-400">{formatTime(log.created_at)}</time>
 		</div>
@@ -314,16 +340,25 @@ export default function DashboardPage() {
 						</div>
 						{stats?.recentErrors && stats.recentErrors.length > 0 ? (
 							<div className="mt-3">
-								{stats.recentErrors.slice(0, 3).map((log) => (
+								{stats.recentErrors.slice(0, 3).map((log) => {
+									const providerLabel = dashboardLogProviderLabel(log);
+									return (
 									<div key={log.id} className="border-b border-gray-100 py-3 last:border-0">
 										<div className="flex items-start justify-between gap-3">
-											<p className="truncate text-sm font-medium text-gray-900">{log.model_id || tCommon('unknown')}</p>
+											<p className="truncate text-sm font-medium text-gray-900" title={dashboardLogModelTitle(log)}>
+												{dashboardLogModelLabel(log, tCommon('unknown'))}
+											</p>
 											<time className="shrink-0 text-[11px] text-gray-400">{formatTime(log.created_at)}</time>
 										</div>
 										<p className="mt-1 line-clamp-2 text-xs leading-5 text-red-600">{log.error_message || tCommon('unknownError')}</p>
-										{log.provider_id ? <p className="mt-1 text-[11px] text-gray-400">{log.provider_id}</p> : null}
+										{providerLabel ? (
+											<p className="mt-1 text-[11px] text-gray-400" title={dashboardLogProviderTitle(log)}>
+												{providerLabel}
+											</p>
+										) : null}
 									</div>
-								))}
+									);
+								})}
 							</div>
 						) : (
 							<div className="mt-4 rounded-xl bg-emerald-50 px-4 py-5 text-center text-sm text-emerald-700">{t('noRecentErrors')}</div>

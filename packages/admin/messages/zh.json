@@ -1435,6 +1435,8 @@
 			"resetAt": "重置时间",
 			"keys": "密钥",
 			"keysActiveOfTotal": "激活 / 总数",
+			"rateLimit": "限流规则",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "元数据",
 			"chargedCostFactors": "模型折扣",
 			"created": "创建时间",
@@ -1464,7 +1466,11 @@
 			"externalSystem": "外部系统",
 			"externalUserId": "外部用户 ID",
 			"name": "名称",
-			"metadataJson": "Metadata JSON"
+			"metadataJson": "Metadata JSON",
+			"rateLimitRpm": "限流（RPM）"
+		},
+		"placeholders": {
+			"rateLimitRpm": "留空表示不限"
 		},
 		"help": {
 			"createUser": "创建新的 Gateway 用户。Email 为必填项；其他字段均可选。若要将此用户关联到其他系统中的账号，请使用底部的“外部身份”区域。",
@@ -1477,6 +1483,8 @@
 			"walletSpent": "已从永久额度扣掉的累计金额。",
 			"walletBalance": "当前余额 = 总额度 − 总消费，只读。永久额度不随周期重置或订阅到期清零。",
 			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
+			"rateLimitRpm": "该用户所有 Key 合计的每 60 秒滚动窗口请求数。留空表示不限；0 拒绝所有计次请求。GET /v1/me 不计入。单把 Key 的额外上限在下方密钥表中设置。",
+			"rateLimitRpmInvalid": "限流必须是非负整数，或留空表示不限。",
 			"chargedCostFactors": "从目录中选择模型后设置倍率。在路由 Charged cost 算完后再乘。未配置的模型金额不变；0 表示该模型不扣费。仅 LLM / Images / Audio，不含 Agent Tools。"
 		},
 		"chargedCostFactors": {
@@ -1501,12 +1509,16 @@
 		"keysTable": {
 			"noKeys": "暂无 Key",
 			"details": "详情",
+			"rateLimit": "限流规则",
+			"rateLimitRpmValue": "{rpm} RPM",
+			"rateLimitHint": "该 Key 每 60 秒滚动窗口允许的请求数。空表示不限；0 拒绝计次请求。用户合计上限在上方表单中设置。",
 			"activeClickToRevoke": "活跃：点击吊销",
 			"inactiveClickToActivate": "未启用：点击激活"
 		},
 		"hints": {
 			"budgetTitle": "周期额度说明",
 			"walletTitle": "永久额度说明",
+			"rateLimitTitle": "用户限流说明",
 			"budgetVsWallet": "周期额度随订阅周期重置，到期清零。永久额度来自加购，不随周期或到期清零。扣费先周期、后永久。"
 		},
 		"detailSections": {
@@ -1536,7 +1548,7 @@
 		}
 	},
 	"keysPage": {
-		"title": "API Keys",
+		"title": "API 密钥",
 		"subtitle": "管理用于 Gateway 访问的用户 API Key",
 		"newKey": "新建 Key",
 		"createTitle": "创建 API Key",
@@ -1552,11 +1564,12 @@
 		"table": {
 			"status": "状态",
 			"user": "用户",
-			"key": "Key",
-			"name": "名称",
+			"key": "密钥",
+			"rateLimit": "限流规则",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"userBudget": "用户周期额度",
 			"wallet": "永久额度",
-			"apiKeyMetadata": "Metadata",
+			"apiKeyMetadata": "元数据",
 			"created": "创建时间",
 			"links": "关联"
 		},
@@ -1587,7 +1600,10 @@
 			"budgetPeriodReset": "周期额度周期 / 重置",
 			"walletReadonly": "永久额度（只读）",
 			"created": "创建时间",
-			"updated": "更新时间"
+			"updated": "更新时间",
+			"lastUsedAt": "最近使用",
+			"lastUsedNever": "从未",
+			"rateLimitRpm": "限流（RPM）"
 		},
 		"placeholders": {
 			"userId": "例如 Users 页面中的 UUID",
@@ -1596,12 +1612,15 @@
 			"userEmail": "通过外部身份创建时会存储到 users.email",
 			"keyName": "后台 / 客户端中显示的标签",
 			"metadataJson": "可选，例如 {\"plan_id\":\"pro\"}",
-			"optionalLabel": "可选标签"
+			"optionalLabel": "可选标签",
+			"rateLimitRpm": "留空表示不限"
 		},
 		"help": {
 			"userEmail": "用于匹配或创建。外部身份对已存在时，不会覆盖已存储 Email。",
 			"metadata": "保存在 Key 上，并由 GET /v1/me 返回。留空表示无。",
-			"editMetadata": "保存在此 Key 上的完整 JSON；留空则清除。GET /v1/me 会显示该值。"
+			"editMetadata": "保存在此 Key 上的完整 JSON；留空则清除。GET /v1/me 会显示该值。",
+			"rateLimitRpm": "该 Key 每 60 秒滚动窗口内允许的请求数。留空表示不限；0 拒绝所有计次请求。GET /v1/me 不计入。",
+			"rateLimitRpmInvalid": "限流必须是非负整数，或留空表示不限。"
 		},
 		"links": {
 			"requestLogsForKey": "查看此 Key 的请求日志 →",
@@ -1697,6 +1716,7 @@
 			"unknown": "未知"
 		},
 		"detail": {
+			"ingressHost": "入口 Host",
 			"upstreamMessageId": "上游消息 ID",
 			"upstreamRequestId": "上游请求 ID",
 			"timing": "Timing",

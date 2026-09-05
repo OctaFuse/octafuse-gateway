@@ -94,8 +94,8 @@
 
 | 前缀 | 含义 | 示例 |
 |------|------|------|
-| `gateway.*` | 请求未出网关 | `gateway.budget_exceeded`、`gateway.invalid_json`、`gateway.model_not_found`、`gateway.auth_failed`、`gateway.no_route`、`gateway.route_resolution_failed`、`gateway.invalid_request`、`gateway.upstream_request_failed` |
+| `gateway.*` | 请求未出网关 | `gateway.budget_exceeded`、`gateway.rate_limited`、`gateway.invalid_json`、`gateway.model_not_found`、`gateway.auth_failed`、`gateway.no_route`、`gateway.route_resolution_failed`、`gateway.invalid_request`、`gateway.upstream_request_failed` |
 | `circuit.*` | 熔断短路（未打上游） | `circuit.sensitive_content`、`circuit.client_error`、`circuit.upstream_capacity_exhausted` |
 | `upstream.*` | 已打上游，网关分类 | `upstream.content_filter`（敏感 400）、`upstream.invalid_request`（其他 400）、`upstream.rate_limited`、`upstream.auth_failed`、`upstream.not_found`、`upstream.server_error`、`upstream.timeout` |
 
-常见 HTTP 状态码：400 参数错误 / 上游客户端错误熔断（chat 等）；401 认证失败；403 预算/配额；404 资源不存在；429 敏感内容熔断或全部 provider 熔断；500 服务器错误；502 路由/上游错误。熔断策略细节见 [proxy-request-lifecycle.md](../architecture/proxy-request-lifecycle.md) §2.2 / §3.2。
+常见 HTTP 状态码：400 参数错误 / 上游客户端错误熔断（chat 等）；401 认证失败；403 预算/配额；404 资源不存在；429 Key / 用户 RPM 超限、敏感内容熔断或全部 provider 熔断；500 服务器错误；502 路由/上游错误。熔断策略细节见 [proxy-request-lifecycle.md](../architecture/proxy-request-lifecycle.md) §2.2 / §3.2。

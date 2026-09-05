@@ -25,6 +25,8 @@ export interface GatewayApiKey {
   status: string;
   /** JSON string; extensible key data (e.g. plan), surfaced on GET /v1/me */
   metadata: string | null;
+  last_used_at?: string | null;
+  rate_limit?: { rpm?: number } | null;
   created_at: string;
   updated_at: string;
 }
@@ -84,6 +86,8 @@ export interface GatewayUserListItem {
   metadata: string | null;
   /** 已解析的用户级 Charged cost factors；未配置时为 null */
   charged_cost_factors?: Record<string, number> | null;
+  /** 用户层限流；`null` 表示该层不限 */
+  rate_limit?: { rpm?: number } | null;
   created_at: string;
   updated_at: string;
   active_keys_count: number;
@@ -297,6 +301,8 @@ export interface GatewayRequestLog {
   /** 按秒计费：音频时长（秒） */
   audio_duration_seconds?: number | null;
   audio_characters?: number | null;
+  /** Request Host snapshot (observe only); null on legacy rows */
+  ingress_host?: string | null;
   created_at: string;
 }
 

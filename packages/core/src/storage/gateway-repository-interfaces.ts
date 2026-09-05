@@ -132,6 +132,7 @@ export interface ApiKeysRepository {
 	updateApiKeyStatusById(id: string, status: string): Promise<boolean>;
 	setApiKeyMetadataById(id: string, metadataJson: string | null): Promise<boolean>;
 	updateApiKeyName(id: string, name: string | null): Promise<boolean>;
+	updateApiKeyRateLimit(id: string, rateLimitJson: string | null): Promise<boolean>;
 	getAllApiKeys(options?: {
 		email?: string;
 		userId?: string;
@@ -174,6 +175,7 @@ export interface UsersRepository {
 		wallet_spent?: number | null
 	): Promise<boolean>;
 	updateUserStatus(id: string, status: string): Promise<boolean>;
+	updateUserRateLimit(id: string, rateLimitJson: string | null): Promise<boolean>;
 	setUserMetadataById(id: string, metadataJson: string | null): Promise<boolean>;
 	setUserChargedCostFactorsById(id: string, chargedCostFactorsJson: string | null): Promise<boolean>;
 	setUserEmailById(id: string, email: string): Promise<boolean>;

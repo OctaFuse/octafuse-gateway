@@ -17,6 +17,7 @@ export const GatewayErrorCode = {
 	missingModel: 'gateway.missing_model',
 	modelNotFound: 'gateway.model_not_found',
 	budgetExceeded: 'gateway.budget_exceeded',
+	rateLimited: 'gateway.rate_limited',
 	authFailed: 'gateway.auth_failed',
 	noRoute: 'gateway.no_route',
 	routeResolutionFailed: 'gateway.route_resolution_failed',

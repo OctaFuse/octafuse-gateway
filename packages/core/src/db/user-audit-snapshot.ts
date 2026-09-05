@@ -2,6 +2,7 @@
  * `users` 行审计快照：JSON 存 `user_audit_logs.before_user_snapshot` / `after_user_snapshot`。
  */
 import type { UserRow } from '../types';
+import { serializeApiKeyRateLimit } from '../lib/api-key-rate-limit';
 import { roundGatewayMoney } from '../lib/money-precision';
 
 /** 与 `users` 可对账字段对齐（不含 created_at/updated_at，避免噪声）。 */
@@ -17,6 +18,7 @@ export type UserAuditSnapshot = {
 	wallet_spent: number;
 	status: string;
 	metadata: string | null;
+	rate_limit: string | null;
 	charged_cost_factors: string | null;
 	external_system: string | null;
 	external_user_id: string | null;
@@ -35,6 +37,7 @@ export function userRowToSnapshot(row: UserRow): UserAuditSnapshot {
 		wallet_spent: roundGatewayMoney(Number(row.wallet_spent ?? 0)),
 		status: row.status,
 		metadata: row.metadata,
+		rate_limit: serializeApiKeyRateLimit(row.rate_limit),
 		charged_cost_factors: row.charged_cost_factors,
 		external_system: row.external_system,
 		external_user_id: row.external_user_id,
@@ -64,6 +67,7 @@ export function computeChangedFields(before: UserAuditSnapshot, after: UserAudit
 		'wallet_spent',
 		'status',
 		'metadata',
+		'rate_limit',
 		'charged_cost_factors',
 		'external_system',
 		'external_user_id',
@@ -101,6 +105,7 @@ export function snapshotWithOverrides(
 			| 'wallet_spent'
 			| 'status'
 			| 'metadata'
+			| 'rate_limit'
 			| 'charged_cost_factors'
 			| 'email'
 			| 'external_system'

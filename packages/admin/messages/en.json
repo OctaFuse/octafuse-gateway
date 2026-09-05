@@ -1435,6 +1435,8 @@
 			"resetAt": "Reset at",
 			"keys": "Keys",
 			"keysActiveOfTotal": "Active / total",
+			"rateLimit": "Rate limit",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "Metadata",
 			"chargedCostFactors": "Factors",
 			"created": "Created",
@@ -1464,7 +1466,11 @@
 			"externalSystem": "External system",
 			"externalUserId": "External user ID",
 			"name": "Name",
-			"metadataJson": "Metadata JSON"
+			"metadataJson": "Metadata JSON",
+			"rateLimitRpm": "Rate limit (RPM)"
+		},
+		"placeholders": {
+			"rateLimitRpm": "Empty = unlimited"
 		},
 		"help": {
 			"createUser": "Creates a new gateway user. Email is required; all other fields are optional. To link this user to an account in another system, use the External identity section at the bottom.",
@@ -1477,6 +1483,8 @@
 			"walletSpent": "Cumulative amount already consumed from Wallet.",
 			"walletBalance": "Current balance = total granted − total spent. Read-only; Wallet does not reset with the cycle or expire with the subscription.",
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
+			"rateLimitRpm": "Shared across all keys of this user per rolling 60-second window. Leave empty for unlimited. 0 rejects all metered calls. GET /v1/me is not counted. Per-key caps are set on each key.",
+			"rateLimitRpmInvalid": "Rate limit must be a non-negative integer, or empty for unlimited.",
 			"chargedCostFactors": "Pick catalog models, then set a factor. Applied after the route Charged cost. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools."
 		},
 		"chargedCostFactors": {
@@ -1501,12 +1509,16 @@
 		"keysTable": {
 			"noKeys": "No keys",
 			"details": "Details",
+			"rateLimit": "Rate limit",
+			"rateLimitRpmValue": "{rpm} RPM",
+			"rateLimitHint": "Per-key requests per rolling 60-second window. Empty = unlimited; 0 rejects metered calls. User-level RPM is set in the form above.",
 			"activeClickToRevoke": "Active: click to revoke",
 			"inactiveClickToActivate": "Inactive: click to activate"
 		},
 		"hints": {
 			"budgetTitle": "About Budget",
 			"walletTitle": "About Wallet",
+			"rateLimitTitle": "About user rate limit",
 			"budgetVsWallet": "Budget resets with the subscription cycle and is cleared on expiry. Wallet comes from top-ups and stays after cycle reset or expiry. Charges consume Budget first, then Wallet."
 		},
 		"detailSections": {
@@ -1553,7 +1565,8 @@
 			"status": "Status",
 			"user": "User",
 			"key": "Key",
-			"name": "Name",
+			"rateLimit": "Rate limit",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"userBudget": "User Budget",
 			"wallet": "Wallet",
 			"apiKeyMetadata": "Metadata",
@@ -1587,7 +1600,10 @@
 			"budgetPeriodReset": "Budget Period / Reset",
 			"walletReadonly": "Wallet (read-only)",
 			"created": "Created",
-			"updated": "Updated"
+			"updated": "Updated",
+			"lastUsedAt": "Last used",
+			"lastUsedNever": "Never",
+			"rateLimitRpm": "Rate limit (RPM)"
 		},
 		"placeholders": {
 			"userId": "e.g. uuid from Users page",
@@ -1596,12 +1612,15 @@
 			"userEmail": "Stored on users.email when creating via external identity",
 			"keyName": "Label shown in admin / clients",
 			"metadataJson": "Optional, e.g. {\"plan_id\":\"pro\"}",
-			"optionalLabel": "Optional label"
+			"optionalLabel": "Optional label",
+			"rateLimitRpm": "Empty = unlimited"
 		},
 		"help": {
 			"userEmail": "Required for match-or-create. Not used to overwrite email when the external pair already exists.",
 			"metadata": "Stored on the key and returned by GET /v1/me. Leave empty for none.",
-			"editMetadata": "Full JSON stored on this key; cleared if empty. Shown on GET /v1/me."
+			"editMetadata": "Full JSON stored on this key; cleared if empty. Shown on GET /v1/me.",
+			"rateLimitRpm": "Requests per rolling 60-second window for this key. Leave empty for unlimited. 0 rejects all metered calls. GET /v1/me is not counted.",
+			"rateLimitRpmInvalid": "Rate limit must be a non-negative integer, or empty for unlimited."
 		},
 		"links": {
 			"requestLogsForKey": "Request logs for this key →",
@@ -1697,6 +1716,7 @@
 			"unknown": "Unknown"
 		},
 		"detail": {
+			"ingressHost": "Ingress host",
 			"upstreamMessageId": "Upstream message id",
 			"upstreamRequestId": "Upstream request id",
 			"timing": "Timing",

@@ -3,6 +3,7 @@
  */
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
 import type { UserRow } from '../../types';
+import { parseApiKeyRateLimit } from '../../lib/api-key-rate-limit';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { UsersRepository } from '../../storage/gateway-repository-interfaces';
@@ -56,6 +57,7 @@ function mapMyUserRow(r: {
 	walletSpent: string;
 	status: string;
 	metadata: string | null;
+	rateLimit: string | null;
 	chargedCostFactors: string | null;
 	externalSystem: string | null;
 	externalUserId: string | null;
@@ -74,6 +76,7 @@ function mapMyUserRow(r: {
 		wallet_spent: parseMoney(r.walletSpent),
 		status: r.status,
 		metadata: r.metadata,
+		rate_limit: parseApiKeyRateLimit(r.rateLimit),
 		charged_cost_factors: r.chargedCostFactors ?? null,
 		external_system: r.externalSystem,
 		external_user_id: r.externalUserId,
@@ -236,6 +239,14 @@ export function createMySqlUsersRepository(db: MySqlDatabaseClient): UsersReposi
 			if (!existing[0]) return false;
 			const now = new Date().toISOString();
 			await drizzle.update(myUsersTable).set({ status, updatedAt: now }).where(eq(myUsersTable.id, id));
+			return true;
+		},
+
+		async updateUserRateLimit(id: string, rateLimitJson: string | null): Promise<boolean> {
+			const existing = await drizzle.select({ id: myUsersTable.id }).from(myUsersTable).where(eq(myUsersTable.id, id)).limit(1);
+			if (!existing[0]) return false;
+			const now = new Date().toISOString();
+			await drizzle.update(myUsersTable).set({ rateLimit: rateLimitJson, updatedAt: now }).where(eq(myUsersTable.id, id));
 			return true;
 		},
 

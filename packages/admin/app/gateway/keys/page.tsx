@@ -82,6 +82,10 @@ function displayMetadataSummary(summary: string): string {
   return plan ? plan[1] : summary;
 }
 
+function keyRpm(key: { rate_limit?: { rpm?: number } | null }): number | null {
+  return key.rate_limit?.rpm ?? null;
+}
+
 function ReadonlyRow({
   label,
   children,
@@ -128,6 +132,7 @@ export default function GatewayKeysPage() {
     id: '',
     name: '',
     metadata: '',
+    rateLimitRpm: '',
   });
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -184,7 +189,7 @@ export default function GatewayKeysPage() {
   };
 
   const SortableTh = ({ label, columnKey }: { label: string; columnKey: ApiKeyListSortKey }) => (
-    <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">
+    <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">
       <button
         type="button"
         onClick={(e) => {
@@ -263,6 +268,7 @@ export default function GatewayKeysPage() {
       id: key.id,
       name: key.name ?? '',
       metadata: formatApiKeyMetadataForEditor(key.metadata),
+      rateLimitRpm: keyRpm(key) == null ? '' : String(keyRpm(key)),
     });
     setShowEditModal(true);
     setSaveError('');
@@ -281,9 +287,18 @@ export default function GatewayKeysPage() {
         return;
       }
 
+      const rpmRaw = editFormData.rateLimitRpm.trim();
+      const rpmParsed = rpmRaw === '' ? null : Number(rpmRaw);
+      if (rpmRaw !== '' && (rpmParsed == null || !Number.isFinite(rpmParsed) || rpmParsed < 0)) {
+        setSaveError(t('help.rateLimitRpmInvalid'));
+        setIsSaving(false);
+        return;
+      }
+
       const payload: Record<string, unknown> = {
         name: editFormData.name.trim() === '' ? null : editFormData.name.trim(),
         metadata: meta.value,
+        rate_limit: rpmParsed == null ? null : { rpm: rpmParsed },
         reason: 'gwui:edit',
       };
 
@@ -521,25 +536,25 @@ export default function GatewayKeysPage() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
-        <table className="w-full min-w-[68rem] table-fixed">
+        <table className="w-full min-w-[64rem] table-fixed">
           <colgroup>
+            <col className="w-[18%]" />
             <col className="w-[22%]" />
-            <col className="w-[16%]" />
+            <col className="w-[12%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
             <col className="w-[10%]" />
-            <col className="w-[16%]" />
-            <col className="w-[12%]" />
-            <col className="w-[12%]" />
-            <col className="w-[12%]" />
+            <col className="w-[10%]" />
           </colgroup>
           <thead className="border-b border-gray-200 bg-gray-50/80">
             <tr>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.user')}</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.key')}</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.name')}</th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.userBudget')}</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.apiKeyMetadata')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.user')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.key')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap" title={t('help.rateLimitRpm')}>{t('table.rateLimit')}</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.userBudget')}</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.apiKeyMetadata')}</th>
               <SortableTh label={t('table.created')} columnKey="created_at" />
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">{t('table.links')}</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.links')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -547,7 +562,7 @@ export default function GatewayKeysPage() {
               Array.from({ length: 8 }).map((_, index) => (
                 <tr key={`skeleton-${index}`} className="animate-pulse">
                   <td className="px-4 py-4"><div className="h-4 w-40 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="h-4 w-28 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-8 w-36 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="ml-auto h-4 w-24 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-20 rounded bg-gray-100" /></td>
@@ -616,29 +631,48 @@ export default function GatewayKeysPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden">
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <span className="min-w-0 truncate font-mono text-sm text-gray-900" title={key.key}>
-                      {maskKey(key.key)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        copyToClipboard(key.key);
-                      }}
-                      className={`shrink-0 ${copiedKey === key.key ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
-                      title={t('copyKey')}
-                    >
-                      <ClipboardDocumentIcon className="h-4 w-4" />
-                    </button>
+                  <div className="min-w-0">
+                    {key.name?.trim() ? (
+                      <span
+                        className={`block truncate text-sm font-medium ${revoked ? 'text-gray-500' : 'text-gray-900'}`}
+                        title={key.name}
+                      >
+                        {key.name}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-300">{tCommon('noData')}</span>
+                    )}
+                    <div className="mt-0.5 flex min-w-0 items-center gap-1">
+                      <span className="min-w-0 truncate font-mono text-[11px] text-gray-400" title={key.key}>
+                        {maskKey(key.key)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          copyToClipboard(key.key);
+                        }}
+                        className={`shrink-0 rounded p-0.5 ${
+                          copiedKey === key.key ? 'text-emerald-600' : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'
+                        }`}
+                        title={t('copyKey')}
+                      >
+                        <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </td>
-                <td className="px-4 py-3.5 overflow-hidden">
-                  {key.name?.trim() ? (
-                    <span className="block truncate text-sm text-gray-900" title={key.name}>{key.name}</span>
-                  ) : (
-                    <span className="text-gray-300">{tCommon('noData')}</span>
-                  )}
+                <td className="px-4 py-3.5 overflow-hidden" title={t('help.rateLimitRpm')}>
+                  {(() => {
+                    const rpm = keyRpm(key);
+                    return rpm == null ? (
+                      <span className="text-sm text-gray-400">{tCommon('noLimit')}</span>
+                    ) : (
+                      <span className={`text-sm tabular-nums ${rpm === 0 ? 'text-amber-700' : 'text-gray-900'}`}>
+                        {t('table.rateLimitRpmValue', { rpm })}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden">
                   <Link
@@ -1038,6 +1072,11 @@ export default function GatewayKeysPage() {
                   <ReadonlyRow label={t('fields.updated')}>
                     {formatKeyTimestamp(selectedKey.updated_at, businessTimezone)}
                   </ReadonlyRow>
+                  <ReadonlyRow label={t('fields.lastUsedAt')}>
+                    {selectedKey.last_used_at
+                      ? formatKeyTimestamp(selectedKey.last_used_at, businessTimezone)
+                      : t('fields.lastUsedNever')}
+                  </ReadonlyRow>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                   <a
@@ -1065,6 +1104,19 @@ export default function GatewayKeysPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder={t('placeholders.optionalLabel')}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.rateLimitRpm')}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={editFormData.rateLimitRpm}
+                    onChange={(e) => setEditFormData({ ...editFormData, rateLimitRpm: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t('placeholders.rateLimitRpm')}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t('help.rateLimitRpm')}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.metadataJson')}</label>

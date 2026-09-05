@@ -2,7 +2,8 @@
  * 管理端 `/admin/users`：列表、按外部对幂等创建、详情（懒重置预算）、计划/资料 PATCH、
  * 物理删除、子资源 keys / request-logs / audit-logs。
  */
-import type { BudgetPeriod, GatewayRepositories } from '@octafuse/core';
+import type { ApiKeyRateLimit, BudgetPeriod, GatewayRepositories } from '@octafuse/core';
+import { coerceRateLimitInput, rateLimitEquals, serializeApiKeyRateLimit } from '@octafuse/core';
 import type { UserListSortField, UserListSortOrder } from '@octafuse/core/db/users-list-sort';
 import { createKey, revokeKey, updateKeyName } from '@octafuse/core/services/key-service';
 import {
@@ -284,6 +285,10 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 		nextChargedCostFactorsJson = await resolveAdminChargedCostFactorsInput(repos, input.charged_cost_factors);
 	}
 
+	const rateLimitIn = coerceRateLimitInput(input.rate_limit);
+	if (!rateLimitIn.ok) throw badRequest(rateLimitIn.message);
+	const hasRateLimit = !('omit' in rateLimitIn);
+
 	if (
 		!hasBudgetField &&
 		!hasWalletField &&
@@ -292,10 +297,11 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 		!hasStatus &&
 		!hasEmail &&
 		!hasExternalIdentity &&
-		!hasChargedCostFactors
+		!hasChargedCostFactors &&
+		!hasRateLimit
 	) {
 		throw badRequest(
-			'Provide at least one of email, budget_max, budget_base, budget_spent, budget_period, reset_budget, budget_reset_at, wallet_granted, wallet_spent, metadata, metadata_replace, status, external_system, external_user_id, charged_cost_factors'
+			'Provide at least one of email, budget_max, budget_base, budget_spent, budget_period, reset_budget, budget_reset_at, wallet_granted, wallet_spent, metadata, metadata_replace, status, external_system, external_user_id, charged_cost_factors, rate_limit'
 		);
 	}
 
@@ -323,6 +329,10 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 	}
 	if (hasChargedCostFactors && nextChargedCostFactorsJson !== undefined) {
 		const ok = await repos.users.setUserChargedCostFactorsById(userId, nextChargedCostFactorsJson);
+		if (!ok) throw new Error('Failed to update user');
+	}
+	if (!('omit' in rateLimitIn)) {
+		const ok = await repos.users.updateUserRateLimit(userId, serializeApiKeyRateLimit(rateLimitIn.value));
 		if (!ok) throw new Error('Failed to update user');
 	}
 
@@ -399,9 +409,10 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 	const externalChanged = externalSystemChanged || externalUserIdChanged;
 	const chargedCostFactorsChanged =
 		(row.charged_cost_factors ?? null) !== (rowAfter.charged_cost_factors ?? null);
+	const rateLimitChanged = !rateLimitEquals(row.rate_limit, rowAfter.rate_limit);
 
 	let profileAuditPayload: Record<string, unknown> | null = null;
-	if (metadataChanged || statusChanged || emailChanged || externalChanged || chargedCostFactorsChanged) {
+	if (metadataChanged || statusChanged || emailChanged || externalChanged || chargedCostFactorsChanged || rateLimitChanged) {
 		profileAuditPayload = {};
 		if (emailChanged) {
 			profileAuditPayload.email = { from: row.email ?? null, to: rowAfter.email ?? null };
@@ -437,6 +448,9 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				from: parseUserChargedCostFactors(row.charged_cost_factors),
 				to: parseUserChargedCostFactors(rowAfter.charged_cost_factors),
 			};
+		}
+		if (rateLimitChanged) {
+			profileAuditPayload.rate_limit = { from: row.rate_limit ?? null, to: rowAfter.rate_limit ?? null };
 		}
 	}
 
@@ -476,18 +490,20 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				correlationId: crypto.randomUUID(),
 			})
 		);
-	} else if (metadataChanged || statusChanged || emailChanged || externalChanged || chargedCostFactorsChanged) {
+	} else if (metadataChanged || statusChanged || emailChanged || externalChanged || chargedCostFactorsChanged || rateLimitChanged) {
 		let reasonCode = 'admin_patch_profile';
-		if (metadataChanged && !statusChanged && !emailChanged && !externalChanged && !chargedCostFactorsChanged) {
+		if (metadataChanged && !statusChanged && !emailChanged && !externalChanged && !chargedCostFactorsChanged && !rateLimitChanged) {
 			reasonCode = 'admin_patch_metadata';
-		} else if (statusChanged && !metadataChanged && !emailChanged && !externalChanged && !chargedCostFactorsChanged) {
+		} else if (statusChanged && !metadataChanged && !emailChanged && !externalChanged && !chargedCostFactorsChanged && !rateLimitChanged) {
 			reasonCode = 'admin_patch_status';
-		} else if (emailChanged && !metadataChanged && !statusChanged && !externalChanged && !chargedCostFactorsChanged) {
+		} else if (emailChanged && !metadataChanged && !statusChanged && !externalChanged && !chargedCostFactorsChanged && !rateLimitChanged) {
 			reasonCode = 'admin_patch_email';
-		} else if (externalChanged && !metadataChanged && !statusChanged && !emailChanged && !chargedCostFactorsChanged) {
+		} else if (externalChanged && !metadataChanged && !statusChanged && !emailChanged && !chargedCostFactorsChanged && !rateLimitChanged) {
 			reasonCode = 'admin_patch_external_identity';
-		} else if (chargedCostFactorsChanged && !metadataChanged && !statusChanged && !emailChanged && !externalChanged) {
+		} else if (chargedCostFactorsChanged && !metadataChanged && !statusChanged && !emailChanged && !externalChanged && !rateLimitChanged) {
 			reasonCode = 'admin_patch_charged_cost_factors';
+		} else if (rateLimitChanged && !metadataChanged && !statusChanged && !emailChanged && !externalChanged && !chargedCostFactorsChanged) {
+			reasonCode = 'admin_patch_rate_limit';
 		}
 		const spent = Number(rowAfter.budget_spent ?? 0);
 		const bmax = rowAfter.budget_max ?? null;
@@ -730,6 +746,7 @@ export type AdminUserKeyPatchInput = {
 	status?: string;
 	metadata?: unknown;
 	metadata_replace?: unknown;
+	rate_limit?: ApiKeyRateLimit | null;
 	reason?: string;
 };
 
@@ -774,6 +791,11 @@ export async function patchAdminUserKey(
 	if (input.name !== undefined) {
 		await updateKeyName(repos, keyId, input.name ?? null);
 	}
+	const rateLimitIn = coerceRateLimitInput(input.rate_limit);
+	if (!rateLimitIn.ok) throw badRequest(rateLimitIn.message);
+	if (!('omit' in rateLimitIn)) {
+		await repos.apiKeys.updateApiKeyRateLimit(keyId, serializeApiKeyRateLimit(rateLimitIn.value));
+	}
 	if (input.status !== undefined) {
 		const st = String(input.status);
 		if (st === 'revoked') await revokeKey(repos, keyId);
@@ -794,13 +816,17 @@ export async function patchAdminUserKey(
 	const metadataChanged = (row.metadata ?? '') !== (rowAfter.metadata ?? '');
 	const statusChanged = (row.status ?? '') !== (rowAfter.status ?? '');
 	const nameChanged = (row.name ?? null) !== (rowAfter.name ?? null);
+	const rateLimitChanged = !rateLimitEquals(row.rate_limit, rowAfter.rate_limit);
 
-	if (metadataChanged || statusChanged || nameChanged) {
+	if (metadataChanged || statusChanged || nameChanged || rateLimitChanged) {
 		const userAud = await repos.users.getById(userId);
 		const userSnapJson = userAud ? snapshotToJson(userRowToSnapshot(userAud)) : null;
 		let profileAuditPayload: Record<string, unknown> = {};
 		if (nameChanged) profileAuditPayload.name = { from: row.name ?? null, to: rowAfter.name ?? null };
 		if (statusChanged) profileAuditPayload.status = { from: row.status ?? null, to: rowAfter.status ?? null };
+		if (rateLimitChanged) {
+			profileAuditPayload.rate_limit = { from: row.rate_limit ?? null, to: rowAfter.rate_limit ?? null };
+		}
 		if (metadataChanged) {
 			let operation: 'merge' | 'replace' | 'update' = 'update';
 			let touchedKeys: string[] | undefined;
@@ -821,9 +847,10 @@ export async function patchAdminUserKey(
 		let reasonCode = 'admin_patch_key_profile';
 		if (isRevoked) {
 			reasonCode = 'admin_user_key_revoked';
-		} else if (metadataChanged && !statusChanged && !nameChanged) reasonCode = 'admin_patch_key_metadata';
-		else if (statusChanged && !metadataChanged && !nameChanged) reasonCode = 'admin_patch_key_status';
-		else if (nameChanged && !metadataChanged && !statusChanged) reasonCode = 'admin_patch_key_name';
+		} else if (metadataChanged && !statusChanged && !nameChanged && !rateLimitChanged) reasonCode = 'admin_patch_key_metadata';
+		else if (statusChanged && !metadataChanged && !nameChanged && !rateLimitChanged) reasonCode = 'admin_patch_key_status';
+		else if (nameChanged && !metadataChanged && !statusChanged && !rateLimitChanged) reasonCode = 'admin_patch_key_name';
+		else if (rateLimitChanged && !metadataChanged && !statusChanged && !nameChanged) reasonCode = 'admin_patch_key_rate_limit';
 		const eventType = isRevoked ? 'key_revoked' : 'admin_adjust';
 
 		await repos.userAuditLogs.insertUserAuditLog(

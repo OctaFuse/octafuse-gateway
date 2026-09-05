@@ -3,6 +3,7 @@
  * 详情、日志、密钥级 metadata/status/name 更新、物理删除。预算与邮箱在 `/admin/users`。
  */
 import type { GatewayRepositories, RequestLogsByKeyIdFilter } from '@octafuse/core';
+import { coerceRateLimitInput, rateLimitEquals, serializeApiKeyRateLimit } from '@octafuse/core';
 import { createKey, updateKeyName } from '@octafuse/core/services/key-service';
 import {
 	getKeyInfo,
@@ -181,7 +182,7 @@ export async function getAdminKeyLogs(
 }
 
 /**
- * 部分更新：`name`、`metadata`（合并或整体替换）、`status`。预算字段须走 `/admin/users`。
+ * 部分更新：`name`、`metadata`（合并或整体替换）、`status`、`rate_limit`。预算字段须走 `/admin/users`。
  */
 export async function updateAdminKey(
 	repos: GatewayRepositories,
@@ -220,9 +221,12 @@ export async function updateAdminKey(
 	const hasStatus = input.status !== undefined;
 	const hasMetaReplace = metadataReplaceStr !== undefined;
 	const hasName = input.name !== undefined;
+	const rateLimitIn = coerceRateLimitInput(input.rate_limit);
+	if (!rateLimitIn.ok) throw badRequest(rateLimitIn.message);
+	const hasRateLimit = !('omit' in rateLimitIn);
 
-	if (!hasMetaObjectMerge && !hasMetaReplace && !hasStatus && !hasName) {
-		throw badRequest('Provide at least one of name, metadata, metadata_replace, status');
+	if (!hasMetaObjectMerge && !hasMetaReplace && !hasStatus && !hasName && !hasRateLimit) {
+		throw badRequest('Provide at least one of name, metadata, metadata_replace, status, rate_limit');
 	}
 
 	if (hasMetaObjectMerge && hasMetaReplace) {
@@ -231,6 +235,9 @@ export async function updateAdminKey(
 
 	if (hasName) {
 		await updateKeyName(repos, row.id, input.name ?? null);
+	}
+	if ('value' in rateLimitIn) {
+		await repos.apiKeys.updateApiKeyRateLimit(row.id, serializeApiKeyRateLimit(rateLimitIn.value));
 	}
 	if (hasStatus) {
 		await updateKeyStatus(repos, row.id, String(input.status));
@@ -250,13 +257,17 @@ export async function updateAdminKey(
 	const metadataChanged = (row.metadata ?? '') !== (rowAfter.metadata ?? '');
 	const statusChanged = (row.status ?? '') !== (rowAfter.status ?? '');
 	const nameChanged = (row.name ?? null) !== (rowAfter.name ?? null);
+	const rateLimitChanged = !rateLimitEquals(row.rate_limit, rowAfter.rate_limit);
 
-	if (metadataChanged || statusChanged || nameChanged) {
+	if (metadataChanged || statusChanged || nameChanged || rateLimitChanged) {
 		const userAud = await repos.users.getById(row.user_id);
 		const userSnapJson = userAud ? snapshotToJson(userRowToSnapshot(userAud)) : null;
 		let profileAuditPayload: Record<string, unknown> = {};
 		if (nameChanged) profileAuditPayload.name = { from: row.name ?? null, to: rowAfter.name ?? null };
 		if (statusChanged) profileAuditPayload.status = { from: row.status ?? null, to: rowAfter.status ?? null };
+		if (rateLimitChanged) {
+			profileAuditPayload.rate_limit = { from: row.rate_limit ?? null, to: rowAfter.rate_limit ?? null };
+		}
 		if (metadataChanged) {
 			let operation: 'merge' | 'replace' | 'update' = 'update';
 			let touchedKeys: string[] | undefined;
@@ -282,9 +293,10 @@ export async function updateAdminKey(
 		let reasonCode = 'admin_patch_key_profile';
 		if (isRevoked) {
 			reasonCode = 'admin_key_revoked';
-		} else if (metadataChanged && !statusChanged && !nameChanged) reasonCode = 'admin_patch_key_metadata';
-		else if (statusChanged && !metadataChanged && !nameChanged) reasonCode = 'admin_patch_key_status';
-		else if (nameChanged && !metadataChanged && !statusChanged) reasonCode = 'admin_patch_key_name';
+		} else if (metadataChanged && !statusChanged && !nameChanged && !rateLimitChanged) reasonCode = 'admin_patch_key_metadata';
+		else if (statusChanged && !metadataChanged && !nameChanged && !rateLimitChanged) reasonCode = 'admin_patch_key_status';
+		else if (nameChanged && !metadataChanged && !statusChanged && !rateLimitChanged) reasonCode = 'admin_patch_key_name';
+		else if (rateLimitChanged && !metadataChanged && !statusChanged && !nameChanged) reasonCode = 'admin_patch_key_rate_limit';
 		const eventType = isRevoked ? 'key_revoked' : 'admin_adjust';
 
 		await repos.userAuditLogs.insertUserAuditLog(
@@ -336,6 +348,8 @@ export async function updateAdminKey(
 		wallet_spent: info.wallet_spent,
 		wallet_balance: info.wallet_balance,
 		metadata: info.metadata ?? undefined,
+		last_used_at: info.last_used_at ?? null,
+		rate_limit: info.rate_limit ?? null,
 	};
 }
 
@@ -365,6 +379,8 @@ export async function getAdminKeyById(repos: GatewayRepositories, idOrKey: strin
 		wallet_balance: info.wallet_balance,
 		status: info.status,
 		metadata: info.metadata ?? undefined,
+		last_used_at: info.last_used_at ?? null,
+		rate_limit: info.rate_limit ?? null,
 		created_at: info.created_at,
 		updated_at: info.updated_at,
 		spend: info.budget_spent,

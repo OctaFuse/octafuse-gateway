@@ -133,7 +133,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 `budget_reset_at` 排序时 NULL 规则：`asc` → `NULLS LAST`，`desc` → `NULLS FIRST`（与 Keys 列表一致）。
 
-响应：`{ success, data: [...], total, page, page_size }`；列表行含 **`active_keys_count`**（激活中的 API Key 数）、**`keys_count`**（该用户全部 API Key 数，含已吊销）等（与实现 `AdminUserListItem` 对齐）。
+响应：`{ success, data: [...], total, page, page_size }`；列表行含 **`active_keys_count`**（激活中的 API Key 数）、**`keys_count`**（该用户全部 API Key 数，含已吊销）、**`rate_limit`**（用户层 JSON，与 Key 同形状：`{"rpm": n}` 或 `null`）等（与实现 `AdminUserListItem` 对齐）。
 
 ### `POST /admin/users`
 
@@ -143,11 +143,13 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 ### `GET /admin/users/:id`
 
-用户详情（`getUserInfo`：含预算列、外部身份、`charged_cost_factors` 对象或 `null` 等；周期型预算可能触发懒重置）。**不含**密钥列表；枚举密钥请用 **`GET /admin/users/:id/keys`**。用户列表行（`GET /admin/users`）含 **`active_keys_count`**、**`keys_count`**，其中 `charged_cost_factors` 同样解析为对象或 `null`。
+用户详情（`getUserInfo`：含预算列、外部身份、`charged_cost_factors` 对象或 `null`、`rate_limit` 等；周期型预算可能触发懒重置）。**不含**密钥列表；枚举密钥请用 **`GET /admin/users/:id/keys`**。用户列表行（`GET /admin/users`）含 **`active_keys_count`**、**`keys_count`**，以及与详情相同的 **`rate_limit`** 与 `charged_cost_factors`（对象或 `null`）。
 
 ### `PATCH /admin/users/:id`
 
-更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对、`charged_cost_factors`（对象或 `null`，校验规则与创建相同）、`wallet_granted` / `wallet_spent`（永久额度绝对值，运维修正）等。仅改用户计费倍率时，审计 `reason_code` 为 `admin_patch_charged_cost_factors`。**密钥级字段不可在此修改**。加购增量请用下方 **`wallet/credit`**，不要把金额加进 `budget_max`。
+更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对、`charged_cost_factors`（对象或 `null`，校验规则与创建相同）、`wallet_granted` / `wallet_spent`（永久额度绝对值，运维修正）、`rate_limit`（用户层 JSON，与 Key 同形状；`null` 表示该层不限）等。仅改用户计费倍率时，审计 `reason_code` 为 `admin_patch_charged_cost_factors`；仅改用户限流时为 `admin_patch_rate_limit`。**密钥级字段不可在此修改**（密钥 `rate_limit` 走 `PATCH /admin/keys/:id`）。加购增量请用下方 **`wallet/credit`**，不要把金额加进 `budget_max`。
+
+`users.rate_limit` 是该用户**所有 Key 合计**的共享池，不会复制到新建 Key，也不要求 `key.rpm <= user.rpm`。只限制某一把钥匙时，只写该 Key 的 `rate_limit`，用户层保持 `null`。
 
 用于**绝对值**设置、运维修正、取消/到期回收等不依赖当前预算快照的变更。若需基于当前 `budget_max/budget_spent` 计算结转并原子写入，请使用下方 **`budget/transition`**。
 
@@ -368,7 +370,7 @@ POST /admin/users/:id/keys
 
 ---
 
-## 更新 API Key（名称 / 状态 / metadata）
+## 更新 API Key（名称 / 状态 / metadata / 限流）
 
 **不支持**在 `PATCH /admin/keys/:id` 上修改预算、`user_email` 等用户级字段；若传入 `budget_max`、`budget_base`、`budget_spent`、`budget_period`、`reset_budget`、`budget_reset_at`、`user_email` 等，服务端返回 **400**（提示改用 **`PATCH /admin/users/:id`**）。
 
@@ -394,6 +396,7 @@ PATCH /admin/keys/:id
   "status": "revoked",
   "metadata": { "plan": "pro" },
   "metadata_replace": "{\"plan\":\"pro\"}",
+  "rate_limit": { "rpm": 60 },
   "reason": "Admin update"
 }
 ```
@@ -404,11 +407,12 @@ PATCH /admin/keys/:id
 | `status` | 可选；如 `active`、`revoked` |
 | `metadata` | 可选；**对象**时与现有 key `metadata` **合并**；**字符串**时视为整段替换（与 `metadata_replace` 语义相同） |
 | `metadata_replace` | 可选；JSON 字符串，整段替换 metadata；勿与对象形式的 `metadata` 同时使用 |
+| `rate_limit` | 可选；JSON 对象。`null` 表示该 Key 不限。当前仅支持 `rpm`（非负整数，该 Key 每 60 秒窗口内允许的请求数；`0` 拒绝所有计次请求）。与用户层 `users.rate_limit` **双重执行**，两者都要通过；超限仍返回同一 `429` + `gateway.rate_limited`（不区分哪一层）。`GET /v1/me` 两层都不计入。计数在代理服务进程内存中（多 isolate / 多副本为软上限）。省略则不改 |
 | `reason` | 可选；写入用户审计等文案，缺省由服务端默认 |
 
 ### 响应
 
-`data` 为更新后的密钥关联信息摘要（含从用户 JOIN 的只读预算字段等），字段与实现 `updateAdminKey` 返回一致。
+`data` 为更新后的密钥关联信息摘要（含从用户 JOIN 的只读预算字段，以及 `last_used_at` / `rate_limit`），字段与实现 `updateAdminKey` 返回一致。
 
 ### 示例
 
@@ -457,6 +461,8 @@ GET /admin/keys/:id
     "budget_period": "monthly",
     "budget_reset_at": "2024-02-01T00:00:00.000Z",
     "status": "active",
+    "last_used_at": "2026-09-05T04:12:00.000Z",
+    "rate_limit": { "rpm": 60 },
     "created_at": "2024-01-15T10:30:00.000Z",
     "updated_at": "2024-01-20T14:22:00.000Z",
     "spend": 15.50,
@@ -465,7 +471,7 @@ GET /admin/keys/:id
 }
 ```
 
-> 注：`spend` 和 `max_budget` 字段用于兼容 LiteLLM 格式；`metadata` 在 `data` 内为解析后的对象（非法 JSON 时可能为 `null` / 省略）。
+> 注：`spend` 和 `max_budget` 字段用于兼容 LiteLLM 格式；`metadata` 在 `data` 内为解析后的对象（非法 JSON 时可能为 `null` / 省略）。`rate_limit` 为该 Key 的限流 JSON（`null` 表示该 Key 不限）；`last_used_at` 为最近一次写入请求日志的时间。
 
 ### 示例
 
