@@ -16,6 +16,7 @@ function baseInput(
 			userId: 'user-1',
 			userEmail: 'a@b.c',
 			chargedCostFactors: null,
+			ingressHost: 'gateway.example.com',
 		},
 		described: describeChatOutcome({
 			body: {},

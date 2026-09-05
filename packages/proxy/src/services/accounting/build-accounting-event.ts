@@ -18,7 +18,7 @@ import { allocateRequestLogId, type AccountingEvent } from './types';
 export type BuildAccountingEventInput = {
 	/** 省略则现生成；阶段二重放时传入 spool 中的稳定 id。 */
 	requestLogId?: string;
-	apiKey: Pick<ApiKeyContext, 'keyId' | 'userId' | 'userEmail' | 'chargedCostFactors'>;
+	apiKey: Pick<ApiKeyContext, 'keyId' | 'userId' | 'userEmail' | 'chargedCostFactors' | 'ingressHost'>;
 	described: DescribedOutcome;
 	usage: UsageFromStream;
 	responseOk: boolean;
@@ -134,6 +134,7 @@ export function buildAccountingEvent(input: BuildAccountingEventInput): Accounti
 		upstream_message_id: input.usage.upstreamMessageId ?? null,
 		circuit_events: input.circuitEvents.length > 0 ? input.circuitEvents : undefined,
 		suppress_error_alert: input.suppressErrorAlert || undefined,
+		ingress_host: input.apiKey.ingressHost ?? null,
 		...input.described.extraRecordUsage,
 	};
 }

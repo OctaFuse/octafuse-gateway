@@ -18,6 +18,12 @@ export type ApiKeyBudgetAuditEventType =
 
 export type ApiKeyBudgetAuditActorType = 'system' | 'admin' | 'service';
 
+/** `api_keys.rate_limit` / `users.rate_limit` JSON。NULL / 空对象 = 该层不限；后续可加 `rpd` 等维度。 */
+export type ApiKeyRateLimit = {
+	/** 每 60 秒滚动窗口请求数。`0` 拒绝计次请求；省略表示该维度不限。 */
+	rpm?: number;
+};
+
 /** `api_keys` 表行（密钥明文存库；预算在 `users`）。 */
 export interface ApiKeyRow {
 	id: string;
@@ -28,6 +34,8 @@ export interface ApiKeyRow {
 	/** JSON 字符串 */
 	metadata: string | null;
 	last_used_at: string | null;
+	/** JSON 对象；NULL = 不限 */
+	rate_limit: ApiKeyRateLimit | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -47,6 +55,8 @@ export interface UserRow {
 	wallet_spent: number;
 	status: string;
 	metadata: string | null;
+	/** JSON 对象；NULL = 该用户所有 Key 合计不限 */
+	rate_limit: ApiKeyRateLimit | null;
 	/** `{ "<models.id>": factor }` JSON；NULL 表示无用户级 Charged 折扣 */
 	charged_cost_factors: string | null;
 	external_system: string | null;
@@ -71,6 +81,8 @@ export interface ResolvedGatewayKeyRow extends ApiKeyRow {
 	budget_reset_at: string | null;
 	wallet_granted: number;
 	wallet_spent: number;
+	/** `users.rate_limit`；NULL = 用户层不限 */
+	user_rate_limit: ApiKeyRateLimit | null;
 }
 
 /** `providers.status` 枚举。 */
@@ -238,6 +250,8 @@ export interface RequestLogRow {
 	audio_duration_seconds: number | null;
 	/** TTS：上游返回的有效计费字符数 */
 	audio_characters: number | null;
+	/** 请求打到的入口 Host（只记录，不做准入） */
+	ingress_host: string | null;
   created_at: string;
 }
 

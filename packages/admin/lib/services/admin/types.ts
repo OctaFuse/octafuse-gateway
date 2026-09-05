@@ -4,6 +4,7 @@
  */
 import type {
 	ApiKeyBudgetAuditLogRow,
+	ApiKeyRateLimit,
 	GlobalApiKeyBudgetAuditLogRow,
 	RequestLogRow,
 } from '@octafuse/core';
@@ -53,6 +54,8 @@ export type AdminUserUpdateInput = {
 	wallet_granted?: number | null;
 	/** 永久额度累计消耗（绝对值运维修正） */
 	wallet_spent?: number | null;
+	/** 用户层限流 JSON；`null` 表示该层不限。形状与 Key `rate_limit` 相同。 */
+	rate_limit?: ApiKeyRateLimit | null;
 };
 
 /** ---------- `/admin/users/:id/budget/transition` 请求体 ---------- */
@@ -99,6 +102,8 @@ export type AdminKeyUpdateInput = {
 	metadata_replace?: unknown;
 	status?: string;
 	name?: string | null;
+	/** null = unlimited; omit = unchanged */
+	rate_limit?: ApiKeyRateLimit | null;
 	reason?: string;
 };
 
@@ -321,6 +326,8 @@ export type AdminKeyListItem = {
 	wallet_spent?: number;
 	status: string;
 	metadata: string | null;
+	last_used_at?: string | null;
+	rate_limit?: ApiKeyRateLimit | null;
 	created_at: string;
 	updated_at: string;
 	[key: string]: unknown;
@@ -381,6 +388,8 @@ export type AdminKeyUpdateOutput =
 			wallet_spent?: number;
 			wallet_balance?: number;
 			metadata?: JsonObject;
+			last_used_at?: string | null;
+			rate_limit?: ApiKeyRateLimit | null;
 	  };
 
 export type AdminKeyDetailOutput = {
@@ -400,6 +409,8 @@ export type AdminKeyDetailOutput = {
 	wallet_balance?: number;
 	status: string;
 	metadata?: JsonObject;
+	last_used_at?: string | null;
+	rate_limit?: ApiKeyRateLimit | null;
 	created_at: string;
 	updated_at: string;
 	spend: number;

@@ -256,8 +256,13 @@ export async function insertRequestUsageAndChargeTxPg(
 			outputImageCount: params.requestLog.outputImageCount ?? 0,
 			audioDurationSeconds: params.requestLog.audioDurationSeconds ?? null,
 			audioCharacters: params.requestLog.audioCharacters ?? null,
+			ingressHost: params.requestLog.ingressHost ?? null,
 			createdAt: now,
 		});
+		await tx
+			.update(pgApiKeysTable)
+			.set({ lastUsedAt: now })
+			.where(eq(pgApiKeysTable.id, params.requestLog.apiKeyId));
 		if (!params.shouldChargeBudget) {
 			return;
 		}

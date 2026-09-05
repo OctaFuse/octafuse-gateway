@@ -69,6 +69,8 @@ export type RecordUsageParams = {
 	circuit_events?: GatewayCircuitAlertEvent[];
 	/** 已有熔断短路等场景：写日志但不发 webhook */
 	suppress_error_alert?: boolean;
+	/** Request Host (observe only; not used for admission) */
+	ingress_host?: string | null;
 };
 
 export type AccountingEvent = RecordUsageParams;

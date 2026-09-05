@@ -47,6 +47,8 @@ export type ChargeToolUsageParams = {
 	responseBody?: string | null;
 	errorMessage?: string | null;
 	status: 'success' | 'error';
+	/** Request Host (observe only) */
+	ingressHost?: string | null;
 	/** pricing_audit 计费单位；默认 request */
 	pricingUnit?: 'request' | 'chars';
 	/** 计费单元数；默认 1 */
@@ -155,6 +157,7 @@ export async function chargeToolUsage(params: ChargeToolUsageParams): Promise<{ 
 			errorMessage: params.errorMessage ?? null,
 			rawUsage: params.responseBody ?? null,
 			pricingAudit: JSON.stringify(pricingAudit),
+			ingressHost: params.ingressHost ?? null,
 		},
 		shouldChargeBudget,
 		beforeSpent,

@@ -3,7 +3,7 @@
  * 数值列在 SQLite / PG 驱动下可能为 number 或 string，读侧统一为 `number | string` 的联合或经映射后的 number。
  */
 
-import type { ModelRouteRow } from '../types';
+import type { ApiKeyRateLimit, ModelRouteRow } from '../types';
 
 /** 管理端密钥列表行（`getAllApiKeys`，JOIN `users`）。 */
 export interface AdminApiKeyListItem {
@@ -22,6 +22,8 @@ export interface AdminApiKeyListItem {
 	wallet_spent: number;
 	status: string;
 	metadata: string | null;
+	last_used_at?: string | null;
+	rate_limit?: ApiKeyRateLimit | null;
 	created_at: string;
 	updated_at: string;
 }

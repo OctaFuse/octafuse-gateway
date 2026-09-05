@@ -3,6 +3,7 @@
  */
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, like, lte, sql } from 'drizzle-orm';
 import type { ApiKeyRow, ResolvedGatewayKeyRow } from '../../types';
+import { parseApiKeyRateLimit } from '../../lib/api-key-rate-limit';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { ApiKeysRepository } from '../../storage/gateway-repository-interfaces';
@@ -37,6 +38,7 @@ function mapMyKeyRow(r: {
 	status: string;
 	metadata: string | null;
 	lastUsedAt: string | null;
+	rateLimit: string | null;
 	createdAt: string;
 	updatedAt: string;
 }): ApiKeyRow {
@@ -48,6 +50,7 @@ function mapMyKeyRow(r: {
 		status: r.status,
 		metadata: r.metadata,
 		last_used_at: r.lastUsedAt,
+		rate_limit: parseApiKeyRateLimit(r.rateLimit),
 		created_at: r.createdAt,
 		updated_at: r.updatedAt,
 	};
@@ -62,6 +65,7 @@ function mapMyResolvedRow(
 		status: string;
 		metadata: string | null;
 		lastUsedAt: string | null;
+		rateLimit: string | null;
 		createdAt: string;
 		updatedAt: string;
 		userEmail: string | null;
@@ -72,6 +76,7 @@ function mapMyResolvedRow(
 		budgetResetAt: string | null;
 		userMetadata: string | null;
 		userChargedCostFactors: string | null;
+		userRateLimit: string | null;
 		walletGranted: string;
 		walletSpent: string;
 	}
@@ -82,6 +87,7 @@ function mapMyResolvedRow(
 		user_email: r.userEmail,
 		user_metadata: r.userMetadata,
 		user_charged_cost_factors: r.userChargedCostFactors ?? null,
+		user_rate_limit: parseApiKeyRateLimit(r.userRateLimit),
 		budget_max: r.budgetMax == null ? null : parseMoney(r.budgetMax),
 		budget_base: parseMoney(r.budgetBase),
 		budget_spent: parseMoney(r.budgetSpent),
@@ -107,6 +113,8 @@ function mapMyAdminListRow(r: {
 	wallet_spent: string;
 	status: string;
 	metadata: string | null;
+	last_used_at: string | null;
+	rate_limit: string | null;
 	created_at: string;
 	updated_at: string;
 }): AdminApiKeyListItem {
@@ -125,6 +133,8 @@ function mapMyAdminListRow(r: {
 		wallet_spent: roundGatewayMoney(Number(r.wallet_spent ?? 0)),
 		status: r.status,
 		metadata: r.metadata,
+		last_used_at: r.last_used_at,
+		rate_limit: parseApiKeyRateLimit(r.rate_limit),
 		created_at: r.created_at,
 		updated_at: r.updated_at,
 	};
@@ -138,6 +148,7 @@ const resolvedCols = {
 	status: myApiKeysTable.status,
 	metadata: myApiKeysTable.metadata,
 	lastUsedAt: myApiKeysTable.lastUsedAt,
+	rateLimit: myApiKeysTable.rateLimit,
 	createdAt: myApiKeysTable.createdAt,
 	updatedAt: myApiKeysTable.updatedAt,
 	userEmail: myUsersTable.email,
@@ -150,6 +161,7 @@ const resolvedCols = {
 	walletSpent: myUsersTable.walletSpent,
 	userMetadata: myUsersTable.metadata,
 	userChargedCostFactors: myUsersTable.chargedCostFactors,
+	userRateLimit: myUsersTable.rateLimit,
 } as const;
 
 export function createMySqlApiKeysRepository(db: MySqlDatabaseClient): ApiKeysRepository {
@@ -277,6 +289,18 @@ export function createMySqlApiKeysRepository(db: MySqlDatabaseClient): ApiKeysRe
 			return true;
 		},
 
+		async updateApiKeyRateLimit(id: string, rateLimitJson: string | null): Promise<boolean> {
+			const existing = await drizzle
+				.select({ id: myApiKeysTable.id })
+				.from(myApiKeysTable)
+				.where(eq(myApiKeysTable.id, id))
+				.limit(1);
+			if (!existing[0]) return false;
+			const now = new Date().toISOString();
+			await drizzle.update(myApiKeysTable).set({ rateLimit: rateLimitJson, updatedAt: now }).where(eq(myApiKeysTable.id, id));
+			return true;
+		},
+
 		async getAllApiKeys(options?: {
 			email?: string;
 			userId?: string;
@@ -328,6 +352,8 @@ export function createMySqlApiKeysRepository(db: MySqlDatabaseClient): ApiKeysRe
 					wallet_spent: myUsersTable.walletSpent,
 					status: myApiKeysTable.status,
 					metadata: myApiKeysTable.metadata,
+					last_used_at: myApiKeysTable.lastUsedAt,
+					rate_limit: myApiKeysTable.rateLimit,
 					created_at: myApiKeysTable.createdAt,
 					updated_at: myApiKeysTable.updatedAt,
 				})

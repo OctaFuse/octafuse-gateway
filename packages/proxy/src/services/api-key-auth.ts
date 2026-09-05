@@ -1,8 +1,8 @@
 /**
  * 用户密钥鉴权：校验 Bearer sk-，并在读库时触发与 `user-service.maybeResetBudget` 一致的预算周期重置写回。
  */
-import type { GatewayRepositories } from '@octafuse/core';
 import { persistLazyBudgetResetIfNeeded, resolveMeMetadata, roundGatewayMoney } from '@octafuse/core';
+import type { ApiKeyRateLimit, GatewayRepositories } from '@octafuse/core';
 
 /** 鉴权成功后注入上下文（与中间件 `ApiKeyContext` 字段对应）。 */
 export type AuthenticatedApiKey = {
@@ -23,6 +23,10 @@ export type AuthenticatedApiKey = {
 	metadata: Record<string, unknown> | null;
 	/** `users.charged_cost_factors` JSON；无折扣时为 null */
 	chargedCostFactors: string | null;
+	/** `api_keys.rate_limit`；null = unlimited */
+	rateLimit: ApiKeyRateLimit | null;
+	/** `users.rate_limit`；null = user layer unlimited */
+	userRateLimit: ApiKeyRateLimit | null;
 };
 
 /**
@@ -69,5 +73,7 @@ export async function authenticateApiKey(repos: GatewayRepositories, key: string
 		budgetResetAt,
 		metadata,
 		chargedCostFactors: row.user_charged_cost_factors ?? null,
+		rateLimit: row.rate_limit ?? null,
+		userRateLimit: row.user_rate_limit ?? null,
 	};
 }

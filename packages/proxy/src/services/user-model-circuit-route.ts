@@ -70,6 +70,7 @@ export function maybeBlockUserModelCircuit(
 			api_key_id: apiKey.keyId,
 			user_id: apiKey.userId,
 			user_email: apiKey.userEmail,
+			ingress_host: apiKey.ingressHost ?? null,
 			model_id: ctx.baseModelId,
 			provider_id: GATEWAY_PROVIDER_ID,
 			model_name: ctx.modelNameForLog,

@@ -15,6 +15,7 @@ const user: UserRow = {
 	wallet_spent: 0.5,
 	status: 'active',
 	metadata: null,
+	rate_limit: null,
 	charged_cost_factors: null,
 	external_system: 'soloent',
 	external_user_id: 'ext-1',

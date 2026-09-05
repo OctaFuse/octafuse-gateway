@@ -23,6 +23,7 @@ erDiagram
         numeric wallet_spent
         text status
         text metadata
+        text rate_limit "JSON; NULL=user pool unlimited; {rpm?: n}"
         text charged_cost_factors "JSON { models.id: factor }；空为 NULL"
         text external_system
         text external_user_id
@@ -38,6 +39,7 @@ erDiagram
         text status
         text metadata
         text last_used_at
+        text rate_limit "JSON; NULL=unlimited; {rpm?: n}"
         text created_at
         text updated_at
     }
@@ -76,6 +78,7 @@ erDiagram
    - 删除 **`users`**：`ON DELETE CASCADE` 删除其 **`api_keys`**；子表中若存在指向该用户的 FK，按迁移定义处理（`user_audit_logs.user_id` 为 **`ON DELETE SET NULL`**，审计行保留）。
    - 删除 **`api_keys`**：**不**级联删除请求日志；`api_key_request_logs.api_key_id` 为 **`ON DELETE SET NULL`**，`user_id` 保留以便按用户维度统计历史。
 6. **`charged_cost_factors`**：可选 JSON，键为目录 `models.id`，值为 ≥ 0 的用户计费倍率；`null` / `{}` 落库为 NULL。鉴权 JOIN 会带上该列。LLM / Images / Audio 在路由用户计费算完后再乘；智能体工具不应用。
+7. **`users.rate_limit` / `api_keys.rate_limit`**：形状相同的 JSON（当前仅 `rpm`）。用户层是该用户所有 Key 的合计窗口；Key 层是单把钥匙的额外帽子。两层独立：不把用户配置复制到新建 Key，不要求 `key.rpm <= user.rpm`。`NULL` / 空 = 该层不限；`rpm: 0` 拒绝该层计次请求。同时设置时，单把 Key 的有效上限约为 `min(keyRpm, 用户池剩余)`。
 
 ## 请求日志与审计
 
@@ -84,8 +87,8 @@ erDiagram
 
 ## 关键读写路径（与实现对齐）
 
-- **鉴权**：`getApiKeyWithUserByKey` 单次 JOIN 读取 key + user 预算字段与 `charged_cost_factors`；周期懒重置走 **`updateUserBudgetWithAuditTx`**（Postgres/MySQL 带 `budget_reset_at` 条件更新以避免并发重复审计）。
-- **扣费**：`insertRequestUsageAndChargeTx` 在同一事务内 **`INSERT api_key_request_logs`**（含 `charged_wallet_cost`）+ **`UPDATE users SET budget_spent += Δ1, wallet_spent += Δ2`**（SQL 侧原子累加）+ **`INSERT user_audit_logs`**（`usage_charge`）。周期剩余不够时差额进永久池。
+- **鉴权**：`getApiKeyWithUserByKey` 单次 JOIN 读取 key + user 预算字段、`charged_cost_factors` 与 `users.rate_limit`；周期懒重置走 **`updateUserBudgetWithAuditTx`**（Postgres/MySQL 带 `budget_reset_at` 条件更新以避免并发重复审计）。鉴权后对 Key 窗口与用户合计窗口**双重执行**（先 Key 后 User；Key 已超限则不消耗用户窗口）。超限返回 `429` + `gateway.rate_limited`（不暴露是哪一层）。`GET /v1/me` 两层都不计入。内存 store 的 subject 前缀为 `k:` / `u:`。计数与熔断一样是单 isolate / 单进程软状态。
+- **扣费**：`insertRequestUsageAndChargeTx` 在同一事务内 **`INSERT api_key_request_logs`**（含 `charged_wallet_cost`、`ingress_host`）+ **`UPDATE api_keys.last_used_at`** + **`UPDATE users SET budget_spent += Δ1, wallet_spent += Δ2`**（SQL 侧原子累加）+ **`INSERT user_audit_logs`**（`usage_charge`）。周期剩余不够时差额进永久池。
 - **加额**：`grantWalletCreditWithAuditTx` 在同一事务内插入 `event_type=wallet_credit` 审计（`dedup_key` 冲突则忽略），仅当新审计行真正落入时 `wallet_granted += amount`。
 
 ## 验证（三引擎 / Proxy）

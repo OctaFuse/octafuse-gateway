@@ -1464,7 +1464,11 @@
 			"externalSystem": "外部システム",
 			"externalUserId": "外部ユーザー ID",
 			"name": "名前",
-			"metadataJson": "Metadata JSON"
+			"metadataJson": "Metadata JSON",
+			"rateLimitRpm": "レート制限（RPM）"
+		},
+		"placeholders": {
+			"rateLimitRpm": "空欄 = 無制限"
 		},
 		"help": {
 			"createUser": "新しい Gateway ユーザーを作成します。メールアドレスは必須で、その他の項目は任意です。別システムのアカウントに関連付けるには、下部の「外部 ID」セクションを使用してください。",
@@ -1477,6 +1481,8 @@
 			"walletSpent": "ウォレットからすでに消費した累計額。",
 			"walletBalance": "現在残高 = 総付与額 − 総使用額（読み取り専用）。周期リセットや契約満了では消えません。",
 			"metadataReplace": "保存すると metadata オブジェクト全体が置き換わります。現在の値を維持する場合は空欄にしてください。",
+			"rateLimitRpm": "このユーザーの全 Key 合計で、60 秒ローリングウィンドウあたりのリクエスト数です。空欄は無制限、0 は計数対象の呼び出しをすべて拒否します。GET /v1/me はカウントしません。Key ごとの上限は下の Key 表で設定します。",
+			"rateLimitRpmInvalid": "レート制限は 0 以上の整数か、無制限の場合は空欄にしてください。",
 			"chargedCostFactors": "カタログからモデルを選んで倍率を設定します。ルート Charged cost の後に乗算されます。未設定のモデルは金額を変えません。0 はそのモデルを課金しません。LLM / Images / Audio のみ（Agent Tools は対象外）。"
 		},
 		"chargedCostFactors": {
@@ -1501,6 +1507,9 @@
 		"keysTable": {
 			"noKeys": "Key はありません",
 			"details": "詳細",
+			"rateLimit": "レート制限",
+			"rateLimitRpmValue": "{rpm} RPM",
+			"rateLimitHint": "この Key の 60 秒ローリングウィンドウあたりのリクエスト数。空欄は無制限、0 は計数対象の呼び出しを拒否します。ユーザー合計上限は上のフォームで設定します。",
 			"activeClickToRevoke": "有効：クリックして失効",
 			"inactiveClickToActivate": "無効：クリックして有効化"
 		},
@@ -1536,7 +1545,7 @@
 		}
 	},
 	"keysPage": {
-		"title": "API Keys",
+		"title": "API キー",
 		"subtitle": "Gateway へのアクセスに使用するユーザー API Key を管理",
 		"newKey": "新しい Key",
 		"createTitle": "API Key を作成",
@@ -1552,11 +1561,13 @@
 		"table": {
 			"status": "ステータス",
 			"user": "ユーザー",
-			"key": "Key",
+			"key": "キー",
 			"name": "名前",
+			"rateLimit": "レート制限",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"userBudget": "ユーザー周期予算",
 			"wallet": "ウォレット",
-			"apiKeyMetadata": "Metadata",
+			"apiKeyMetadata": "メタデータ",
 			"created": "作成日時",
 			"links": "リンク"
 		},
@@ -1587,7 +1598,10 @@
 			"budgetPeriodReset": "周期予算期間 / リセット",
 			"walletReadonly": "ウォレット（読み取り専用）",
 			"created": "作成日時",
-			"updated": "更新日時"
+			"updated": "更新日時",
+			"lastUsedAt": "最終使用",
+			"lastUsedNever": "未使用",
+			"rateLimitRpm": "レート制限（RPM）"
 		},
 		"placeholders": {
 			"userId": "例：ユーザーページの UUID",
@@ -1596,12 +1610,15 @@
 			"userEmail": "外部 ID から作成する場合は users.email に保存",
 			"keyName": "Admin / クライアントに表示するラベル",
 			"metadataJson": "任意、例：{\"plan_id\":\"pro\"}",
-			"optionalLabel": "任意のラベル"
+			"optionalLabel": "任意のラベル",
+			"rateLimitRpm": "空欄 = 無制限"
 		},
 		"help": {
 			"userEmail": "照合または作成に必要です。外部 ID の組み合わせがすでに存在する場合、保存済みのメールアドレスは上書きされません。",
 			"metadata": "Key に保存され、GET /v1/me で返されます。不要な場合は空欄にしてください。",
-			"editMetadata": "この Key に保存され、GET /v1/me で返される完全な JSON です。空欄にするとクリアされます。"
+			"editMetadata": "この Key に保存され、GET /v1/me で返される完全な JSON です。空欄にするとクリアされます。",
+			"rateLimitRpm": "この Key の 60 秒ローリングウィンドウあたりのリクエスト数。空欄は無制限、0 は計数対象の呼び出しをすべて拒否します。GET /v1/me はカウントしません。",
+			"rateLimitRpmInvalid": "レート制限は 0 以上の整数か、無制限の場合は空欄にしてください。"
 		},
 		"links": {
 			"requestLogsForKey": "この Key のリクエストログ →",
@@ -1697,6 +1714,7 @@
 			"unknown": "不明"
 		},
 		"detail": {
+			"ingressHost": "入口 Host",
 			"upstreamMessageId": "アップストリーム message id",
 			"upstreamRequestId": "アップストリーム request id",
 			"timing": "Timing",

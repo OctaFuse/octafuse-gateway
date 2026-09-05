@@ -255,8 +255,13 @@ export async function insertRequestUsageAndChargeTxMy(
 			outputImageCount: params.requestLog.outputImageCount ?? 0,
 			audioDurationSeconds: params.requestLog.audioDurationSeconds ?? null,
 			audioCharacters: params.requestLog.audioCharacters ?? null,
+			ingressHost: params.requestLog.ingressHost ?? null,
 			createdAt: now,
 		});
+		await tx
+			.update(myApiKeysTable)
+			.set({ lastUsedAt: now })
+			.where(eq(myApiKeysTable.id, params.requestLog.apiKeyId));
 		if (!params.shouldChargeBudget) {
 			return;
 		}

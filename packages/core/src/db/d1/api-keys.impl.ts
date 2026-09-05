@@ -3,6 +3,7 @@
  */
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
 import type { ApiKeyRow, ResolvedGatewayKeyRow } from '../../types';
+import { parseApiKeyRateLimit } from '../../lib/api-key-rate-limit';
 import { roundGatewayMoney } from '../../lib/money-precision';
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { ApiKeysRepository } from '../../storage/gateway-repository-interfaces';
@@ -25,6 +26,7 @@ type KeySqlRow = {
 	status: string;
 	metadata: string | null;
 	last_used_at: string | null;
+	rate_limit: string | null;
 	created_at: string;
 	updated_at: string;
 };
@@ -38,6 +40,7 @@ function mapKeyRow(r: KeySqlRow): ApiKeyRow {
 		status: r.status,
 		metadata: r.metadata,
 		last_used_at: r.last_used_at,
+		rate_limit: parseApiKeyRateLimit(r.rate_limit),
 		created_at: r.created_at,
 		updated_at: r.updated_at,
 	};
@@ -47,6 +50,7 @@ type ResolvedSqlRow = KeySqlRow & {
 	user_email: string | null;
 	user_metadata: string | null;
 	user_charged_cost_factors: string | null;
+	user_rate_limit: string | null;
 	budget_max: number | null;
 	budget_base: number;
 	budget_spent: number;
@@ -63,6 +67,7 @@ function mapResolvedRow(r: ResolvedSqlRow): ResolvedGatewayKeyRow {
 		user_email: r.user_email,
 		user_metadata: r.user_metadata,
 		user_charged_cost_factors: r.user_charged_cost_factors ?? null,
+		user_rate_limit: parseApiKeyRateLimit(r.user_rate_limit),
 		budget_max: r.budget_max == null ? null : roundGatewayMoney(Number(r.budget_max)),
 		budget_base: roundGatewayMoney(Number(r.budget_base ?? 0)),
 		budget_spent: roundGatewayMoney(Number(r.budget_spent)),
@@ -85,8 +90,8 @@ export function buildInsertApiKeyStatement(db: D1Database, params: InsertKeyPara
 
 export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysRepository & ApiKeysD1Statements {
 	const raw = db.raw;
-	const resolvedSelect = `SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.last_used_at, k.created_at, k.updated_at,
-    u.email AS user_email, u.metadata AS user_metadata, u.charged_cost_factors AS user_charged_cost_factors, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at, u.wallet_granted, u.wallet_spent
+	const resolvedSelect = `SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.last_used_at, k.rate_limit, k.created_at, k.updated_at,
+    u.email AS user_email, u.metadata AS user_metadata, u.charged_cost_factors AS user_charged_cost_factors, u.rate_limit AS user_rate_limit, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at, u.wallet_granted, u.wallet_spent
     FROM api_keys k INNER JOIN users u ON u.id = k.user_id`;
 
 	return {
@@ -179,6 +184,14 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 			return result.meta.changes > 0;
 		},
 
+		async updateApiKeyRateLimit(id: string, rateLimitJson: string | null): Promise<boolean> {
+			const result = await raw
+				.prepare('UPDATE api_keys SET rate_limit = ?, updated_at = datetime("now") WHERE id = ?')
+				.bind(rateLimitJson, id)
+				.run();
+			return result.meta.changes > 0;
+		},
+
 		async getAllApiKeys(options?: {
 			email?: string;
 			userId?: string;
@@ -215,7 +228,7 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 			const total = Number(countRow?.total ?? 0);
 			const rows = await raw
 				.prepare(
-					`SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.created_at, k.updated_at,
+					`SELECT k.id, k.key, k.user_id, k.name, k.status, k.metadata, k.last_used_at, k.rate_limit, k.created_at, k.updated_at,
             u.email AS user_email, u.budget_max, u.budget_base, u.budget_spent, u.budget_period, u.budget_reset_at, u.wallet_granted, u.wallet_spent
        FROM api_keys k INNER JOIN users u ON u.id = k.user_id ${whereClause} ${orderBy} LIMIT ? OFFSET ?`
 				)
@@ -227,6 +240,8 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 					name: string | null;
 					status: string;
 					metadata: string | null;
+					last_used_at: string | null;
+					rate_limit: string | null;
 					created_at: string;
 					updated_at: string;
 					user_email: string | null;
@@ -253,6 +268,8 @@ export function createD1ApiKeysRepository(db: D1DatabaseClient): ApiKeysReposito
 				wallet_spent: roundGatewayMoney(Number(r.wallet_spent ?? 0)),
 				status: r.status,
 				metadata: r.metadata,
+				last_used_at: r.last_used_at,
+				rate_limit: parseApiKeyRateLimit(r.rate_limit),
 				created_at: r.created_at,
 				updated_at: r.updated_at,
 			}));

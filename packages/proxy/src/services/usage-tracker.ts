@@ -299,6 +299,7 @@ export async function recordUsage(
 			providerKeyFingerprint: params.provider_key_fingerprint ?? null,
 			upstreamRequestId: params.upstream_request_id ?? null,
 			upstreamMessageId: params.upstream_message_id ?? null,
+			ingressHost: params.ingress_host ?? null,
 		},
 		shouldChargeBudget,
 		beforeSpent,

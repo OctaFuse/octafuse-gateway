@@ -323,6 +323,7 @@ async function finalizeMultimodalResponse(params: {
 				apiKeyId: apiKey.keyId,
 				userId: apiKey.userId,
 				userEmail: apiKey.userEmail,
+				ingressHost: apiKey.ingressHost,
 				modelId: baseModelId,
 				providerId: chosenRoute.providerId,
 				providerModelName: chosenRoute.providerModelName,

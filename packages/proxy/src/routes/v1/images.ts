@@ -633,6 +633,7 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 				apiKeyId: apiKey.keyId,
 				userId: apiKey.userId,
 				userEmail: apiKey.userEmail,
+				ingressHost: apiKey.ingressHost,
 				modelId: baseModelId,
 				providerId: chosenRoute.providerId,
 				providerModelName: chosenRoute.providerModelName,

@@ -7,8 +7,18 @@ import { authenticateApiKey } from '../services/api-key-auth';
 import type { Env } from '../app';
 import { GatewayErrorCode } from '../services/gateway-error-codes';
 import { gatewayErrorJson } from '../services/gateway-error-response';
+import type { ApiKeyRateLimit } from '@octafuse/core';
 import { parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
-import { hasPositiveTotalBalance } from '@octafuse/core';
+import {
+	consumeRateLimitLayers,
+	currentRateWindowStartedAt,
+	hasPositiveTotalBalance,
+	keyRateLimitSubject,
+	rateLimitRetryAfterSeconds,
+	rateLimitRpmOf,
+	resolveIngressHost,
+	userRateLimitSubject,
+} from '@octafuse/core';
 
 /** 与 `authenticateApiKey` 结果一致，供 `/v1/*` 处理器使用。 */
 export type ApiKeyContext = {
@@ -24,6 +34,12 @@ export type ApiKeyContext = {
   budgetResetAt: string | null;
   metadata: Record<string, unknown> | null;
   chargedCostFactors: string | null;
+  /** `api_keys.rate_limit`; null = unlimited */
+  rateLimit: ApiKeyRateLimit | null;
+  /** `users.rate_limit`; null = user layer unlimited */
+  userRateLimit: ApiKeyRateLimit | null;
+  /** Request Host (observe only) */
+  ingressHost: string | null;
 };
 
 /** 日志中脱敏展示密钥前缀。 */
@@ -107,8 +123,30 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
   }
   console.log(`[Gateway Auth] key valid keyId=${authResult.keyId} userId=${authResult.userId}`);
 
-  // Allow GET /v1/me (key info) even when budget is 0 or exceeded, so clients can show budget state
+  const ingressHost = resolveIngressHost(c.req.header('Host'), c.req.url);
+
+  // Allow GET /v1/me even when budget is 0 or rate-limited, so clients can show key / budget state
   const isKeyInfoRoute = c.req.method === 'GET' && c.req.path.endsWith('/me');
+  if (!isKeyInfoRoute) {
+    const windowStartedAt = currentRateWindowStartedAt();
+    const { exceeded } = await consumeRateLimitLayers(
+      [
+        { subject: keyRateLimitSubject(authResult.keyId), rpm: rateLimitRpmOf(authResult.rateLimit) },
+        { subject: userRateLimitSubject(authResult.userId), rpm: rateLimitRpmOf(authResult.userRateLimit) },
+      ],
+      windowStartedAt
+    );
+    if (exceeded) {
+      const retryAfter = String(rateLimitRetryAfterSeconds(windowStartedAt));
+      return gatewayErrorJson(c, {
+        status: 429,
+        code: GatewayErrorCode.rateLimited,
+        message: 'Rate limit exceeded',
+        headers: { 'Retry-After': retryAfter },
+      });
+    }
+  }
+
   // Allow GET /v1/models even when budget is exceeded (just lists available models, no resource consumption)
   const isModelsRoute = c.req.method === 'GET' && c.req.path.endsWith('/models');
   // Budget check for chat / images / audio is done in route after resolving model (and pre-estimate)
@@ -150,6 +188,9 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
     budgetResetAt: authResult.budgetResetAt,
     metadata: authResult.metadata,
     chargedCostFactors: authResult.chargedCostFactors,
+    rateLimit: authResult.rateLimit,
+    userRateLimit: authResult.userRateLimit,
+    ingressHost,
   });
   await next();
 });

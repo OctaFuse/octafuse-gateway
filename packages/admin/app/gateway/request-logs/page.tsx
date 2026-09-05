@@ -51,7 +51,15 @@ export default function GatewayRequestLogsPage() {
   const [detailLogId, setDetailLogId] = useState<string | null>(null);
   const [timingHelpLog, setTimingHelpLog] = useState<GatewayRequestLog | null>(null);
   const [copiedColumn, setCopiedColumn] = useState<
-    'audit' | 'entry' | 'upstream' | 'usage' | 'timing' | 'upstream_request_id' | 'upstream_message_id' | null
+    | 'audit'
+    | 'entry'
+    | 'upstream'
+    | 'usage'
+    | 'timing'
+    | 'ingress_host'
+    | 'upstream_request_id'
+    | 'upstream_message_id'
+    | null
   >(null);
   const pageSize = 50;
   const { currency: billingCurrency } = useBillingCurrency();
@@ -458,7 +466,7 @@ export default function GatewayRequestLogsPage() {
 
   const copyPlainText = async (
     raw: string | null | undefined,
-    col: 'upstream_request_id' | 'upstream_message_id'
+    col: 'ingress_host' | 'upstream_request_id' | 'upstream_message_id'
   ) => {
     const text = raw?.trim();
     if (!text) return;
@@ -979,6 +987,7 @@ export default function GatewayRequestLogsPage() {
                               [t('timing.ttftContent'), log.first_token_ms],
                               ['Stream', log.stream_duration_ms],
                             ] as const;
+                            const ingressHost = log.ingress_host?.trim() ?? '';
                             const upstreamRequestId = log.upstream_request_id?.trim() ?? '';
                             const upstreamMessageId = log.upstream_message_id?.trim() ?? '';
                             const providerKey = [
@@ -1045,9 +1054,15 @@ export default function GatewayRequestLogsPage() {
                                     </div>
                                   ) : null}
                                 </div>
-                                {upstreamMessageId || upstreamRequestId ? (
-                                  <div className="grid grid-cols-2 gap-3 border-b border-gray-200 bg-gray-50/70 p-3">
+                                {ingressHost || upstreamMessageId || upstreamRequestId ? (
+                                  <div className="grid grid-cols-3 gap-3 border-b border-gray-200 bg-gray-50/70 p-3">
                                     {[
+                                      {
+                                        id: 'ingress_host' as const,
+                                        label: t('detail.ingressHost'),
+                                        value: ingressHost,
+                                        tone: 'slate',
+                                      },
                                       {
                                         id: 'upstream_message_id' as const,
                                         label: t('detail.upstreamMessageId'),
@@ -1066,7 +1081,9 @@ export default function GatewayRequestLogsPage() {
                                         className={`min-w-0 rounded border px-3 py-2 ${
                                           tone === 'emerald'
                                             ? 'border-emerald-200 bg-emerald-50/70 text-emerald-950'
-                                            : 'border-sky-200 bg-sky-50/70 text-sky-950'
+                                            : tone === 'sky'
+                                              ? 'border-sky-200 bg-sky-50/70 text-sky-950'
+                                              : 'border-slate-200 bg-slate-50/80 text-slate-950'
                                         }`}
                                       >
                                         <div className="flex items-center justify-between gap-3">
@@ -1082,11 +1099,16 @@ export default function GatewayRequestLogsPage() {
                                           <button
                                             type="button"
                                             disabled={!value}
-                                            onClick={() => copyPlainText(value, id)}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              void copyPlainText(value, id);
+                                            }}
                                             className={`px-2 py-0.5 text-[10px] border rounded hover:bg-white/80 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                                               tone === 'emerald'
                                                 ? 'border-emerald-300 text-emerald-950'
-                                                : 'border-sky-300 text-sky-950'
+                                                : tone === 'sky'
+                                                  ? 'border-sky-300 text-sky-950'
+                                                  : 'border-slate-300 text-slate-950'
                                             }`}
                                           >
                                             {copiedColumn === id ? tCommon('copied') : tCommon('copy')}

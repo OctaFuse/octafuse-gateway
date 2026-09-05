@@ -638,6 +638,8 @@ export type RecordAudioUsageParams = {
 	timing?: RequestTimingSnapshot | null;
 	circuitEvents?: GatewayCircuitAlertEvent[];
 	suppressErrorAlert?: boolean;
+	/** Request Host (observe only) */
+	ingressHost?: string | null;
 };
 
 export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<{
@@ -795,6 +797,7 @@ export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<
 			providerKeyFingerprint: params.providerKeyFingerprint ?? null,
 			upstreamRequestId: params.upstreamRequestId ?? null,
 			upstreamMessageId: null,
+			ingressHost: params.ingressHost ?? null,
 		},
 		shouldChargeBudget,
 		beforeSpent,

@@ -101,6 +101,7 @@ flowchart TB
 - 迁移 **`0025_user_audit_actor_index`**：为 `user_audit_logs(actor_id, created_at)` 增加操作主体查询索引。
 - 迁移 **`0026_user_charged_cost_factors`**：`users` 增加 `charged_cost_factors`，按目录模型 ID 保存用户计费倍率。
 - 迁移 **`0027_user_wallet_credit`**：`users` 增加 `wallet_granted` / `wallet_spent`（永久额度）；`user_audit_logs.dedup_key` + `UNIQUE(user_id, dedup_key)`；`api_key_request_logs.charged_wallet_cost`。老数据把加购余额从 `budget_max` 拆出；`budget_max IS NULL` 与到期清零行（`max=0 AND period=none`）不抬回 `budget_base`。步骤见 [0027-user-wallet-credit.md](../../operators/migrations/0027-user-wallet-credit.md)。
+- 迁移 **`0028_key_rate_limit_and_ingress`**：`api_keys.rate_limit` 与 `users.rate_limit`（JSON，`NULL` = 该层不限；当前仅 `rpm`）；用户层为所有 Key 合计，Key 层为单把钥匙。`api_key_request_logs.ingress_host` 只记录入口 Host，不做准入。成功记账时回写 `api_keys.last_used_at`。RPM 窗口计数在代理服务进程 / isolate 内存中，不落库。
 
 #### Endpoint capability 维护规则
 
@@ -163,7 +164,7 @@ sequenceDiagram
 > **0022–0025（2.4.0）升级说明**：见 **[2.4.0 发布说明](../../releases/2.4.0.md#升级说明)**。
 > **0026（2.7.0）升级说明**：见 **[2.7.0 发布说明](../../releases/2.7.0.md#升级说明)**。
 
-### Schema（迁移 **0015–0026**，三库同语义）
+### Schema（迁移 **0015–0028**，三库同语义）
 
 | 对象 | 含义 |
 |------|------|
@@ -183,6 +184,9 @@ sequenceDiagram
 | **`users.wallet_granted` / `wallet_spent`** | 永久额度累计发放 / 累计消耗；余额派生，不随周期重置或到期清零 |
 | **`user_audit_logs.dedup_key`** | 加额幂等键（`UNIQUE(user_id, dedup_key)`）；`wallet_credit` 用 `external_ref` |
 | **`api_key_request_logs.charged_wallet_cost`** | 本次请求从永久池扣掉的部分；周期部分 = `charged_cost − charged_wallet_cost` |
+| **`api_keys.rate_limit`** | 每 Key 限流 JSON；`NULL` 不限。当前 `rpm` 为每分钟请求上限，`0` 拒绝计次请求 |
+| **`users.rate_limit`** | 用户层限流 JSON（与 Key 同形状）；`NULL` 不限。当前 `rpm` 为该用户所有 Key 合计的每分钟上限 |
+| **`api_key_request_logs.ingress_host`** | 请求打到的入口 Host（只记录，不做准入） |
 
 已移除：`provider_api_keys`、`limit_config`（网关 RPM/TPM/并发软限流）、`models.sticky_config`（旧粘性 key 绑定；由路由池级 **供应商粘性** + `route_pool_sticky_bindings` 替代）。
 
@@ -197,4 +201,4 @@ sequenceDiagram
 - **`user-model-circuit-breaker.ts`** — 按 **user + model**：敏感内容与普通上游 400 **共用**递增退避 **20s → 1min → 3min → 5min → 10min**（成功清零）；短路仅用 `circuit.sensitive_content` / `circuit.client_error` 区分。**Images / Audio** 不参与普通 400（`client_error`）熔断，仍参与敏感内容熔断（见 [proxy-request-lifecycle.md](./proxy-request-lifecycle.md) §2.2）。
 - **`failover-dispatch.ts`** — `attempts` 为空时 **429** + `Retry-After`（`circuit.upstream_capacity_exhausted`）；循环内复查已熔断供应商；否则按序打上游，全部失败返回最后一次上游响应。
 
-> **一致性注意**：熔断与 weighted round-robin 计数均为**单实例进程内存**。Cloudflare Workers 多 isolate 各自独立，属软状态；Node 单进程更接近精确。默认 **`hash_affinity`** 在协议粒度上稳定首选供应商，以利于上游 prompt cache（affinityKey **不含** capability）。**供应商粘性**绑定存共享 DB（D1/Postgres/MySQL），跨 isolate 一致；读写失败 fail-open 到常规路由。
+> **一致性注意**：熔断、加权轮询计数与 **按密钥 / 按用户 RPM 窗口**均为**单实例进程内存**。Cloudflare Workers 多 isolate 各自独立，属软状态；Node 单进程更接近精确。默认 **`hash_affinity`** 在协议粒度上稳定首选供应商，以利于上游 prompt cache（affinityKey **不含** capability）。**供应商粘性**绑定存共享 DB（D1/Postgres/MySQL），跨 isolate 一致；读写失败 fail-open 到常规路由。
