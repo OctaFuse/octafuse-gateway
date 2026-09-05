@@ -2,7 +2,7 @@
  * v1 代理路由共用的 user+model 熔断：请求前短路 + 上游触发写入 + 成功清零 + 短路请求记账。
  */
 import type { Context } from 'hono';
-import type { GatewayRepositories } from '@octafuse/core';
+import type { GatewayRepositories, UpstreamProtocol } from '@octafuse/core';
 import type { ApiKeyContext } from '../middleware/auth';
 import { scheduleBackgroundWork } from '../runtime/schedule-background-work';
 import { EMPTY_USAGE } from './proxy';
@@ -25,7 +25,7 @@ export type UserModelCircuitRouteContext = {
 	baseModelId: string;
 	modelNameForLog: string;
 	requestBodyForLog: string | null;
-	requestProtocol: 'openai' | 'anthropic' | 'gemini';
+	requestProtocol: UpstreamProtocol;
 	startMs: number;
 	timing?: RequestTimingCollector | null;
 	/**
