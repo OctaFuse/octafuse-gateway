@@ -86,6 +86,8 @@ export interface GatewayUserListItem {
   metadata: string | null;
   /** 已解析的用户级 Charged cost factors；未配置时为 null */
   charged_cost_factors?: Record<string, number> | null;
+  /** 用户层限流；`null` 表示该层不限 */
+  rate_limit?: { rpm?: number } | null;
   created_at: string;
   updated_at: string;
   active_keys_count: number;

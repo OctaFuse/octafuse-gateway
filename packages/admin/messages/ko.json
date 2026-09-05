@@ -1435,6 +1435,8 @@
 			"resetAt": "재설정 시각",
 			"keys": "키",
 			"keysActiveOfTotal": "활성 / 전체",
+			"rateLimit": "속도 제한",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "메타데이터",
 			"chargedCostFactors": "모델 할인",
 			"created": "생성일",
@@ -1516,6 +1518,7 @@
 		"hints": {
 			"budgetTitle": "주기 예산 안내",
 			"walletTitle": "월렛 안내",
+			"rateLimitTitle": "사용자 속도 제한 안내",
 			"budgetVsWallet": "주기 예산은 구독 주기마다 재설정되며 만료 시 0이 됩니다. 월렛은 충전으로 지급되며 주기 재설정이나 만료 후에도 유지됩니다. 과금은 주기 예산을 먼저 쓰고, 부족분은 월렛에서 차감합니다."
 		},
 		"detailSections": {

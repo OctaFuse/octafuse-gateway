@@ -1435,6 +1435,8 @@
 			"resetAt": "Reset at",
 			"keys": "Keys",
 			"keysActiveOfTotal": "Active / total",
+			"rateLimit": "Rate limit",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "Metadata",
 			"chargedCostFactors": "Factors",
 			"created": "Created",
@@ -1516,6 +1518,7 @@
 		"hints": {
 			"budgetTitle": "About Budget",
 			"walletTitle": "About Wallet",
+			"rateLimitTitle": "About user rate limit",
 			"budgetVsWallet": "Budget resets with the subscription cycle and is cleared on expiry. Wallet comes from top-ups and stays after cycle reset or expiry. Charges consume Budget first, then Wallet."
 		},
 		"detailSections": {

@@ -1435,6 +1435,8 @@
 			"resetAt": "リセット日時",
 			"keys": "キー",
 			"keysActiveOfTotal": "有効 / 合計",
+			"rateLimit": "レート制限",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "メタデータ",
 			"chargedCostFactors": "モデル割引",
 			"created": "作成日時",
@@ -1516,6 +1518,7 @@
 		"hints": {
 			"budgetTitle": "周期予算について",
 			"walletTitle": "ウォレットについて",
+			"rateLimitTitle": "ユーザーレート制限について",
 			"budgetVsWallet": "周期予算は契約周期でリセットされ、満了時にゼロになります。ウォレットはトップアップ由来で、周期リセットや満了では消えません。課金は周期予算を先に消費し、足りない分をウォレットから引きます。"
 		},
 		"detailSections": {

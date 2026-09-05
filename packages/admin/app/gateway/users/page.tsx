@@ -31,6 +31,30 @@ function budgetBarClass(ratio: number): string {
   return 'bg-blue-500';
 }
 
+function spentToneClass(ratio: number | null, idle: boolean): string {
+  if (idle) return 'text-gray-400';
+  if (ratio == null) return 'text-gray-900';
+  if (ratio >= 1) return 'text-red-600';
+  if (ratio >= 0.8) return 'text-amber-700';
+  return 'text-gray-900';
+}
+
+function userRpm(user: { rate_limit?: { rpm?: number } | null }): number | null {
+  return user.rate_limit?.rpm ?? null;
+}
+
+function QuotaUsageBar({ ratio }: { ratio: number | null }) {
+  if (ratio == null) return null;
+  return (
+    <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-gray-100">
+      <div
+        className={`h-full rounded-full ${budgetBarClass(ratio)}`}
+        style={{ width: `${Math.max(ratio * 100, ratio > 0 ? 4 : 0)}%` }}
+      />
+    </div>
+  );
+}
+
 function displayMetadataSummary(summary: string): string {
   const plan = /^plan_id:\s*(.+)$/.exec(summary);
   return plan ? plan[1] : summary;
@@ -397,45 +421,62 @@ export default function GatewayUsersPage() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
-        <table className="w-full min-w-[68rem] table-fixed">
+        <table className="w-full min-w-[64rem] table-fixed">
           <colgroup>
-            <col className="w-[20%]" />
             <col className="w-[22%]" />
-            <col className="w-[14%]" />
-            <col className="w-[8%]" />
+            <col className="w-[16%]" />
+            <col className="w-[11%]" />
+            <col className="w-[9%]" />
+            <col className="w-[6%]" />
+            <col className="w-[13%]" />
             <col className="w-[12%]" />
-            <col className="w-[12%]" />
-            <col className="w-[12%]" />
+            <col className="w-[11%]" />
           </colgroup>
           <thead className="border-b border-gray-200 bg-gray-50/80">
             <tr>
               <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">
                 {t('table.user')}
               </th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
-                <div className="inline-flex items-center justify-end gap-1.5">
-                  <span className="text-gray-400">{t('table.budget')}</span>
-                  <InfoHintPopover label={t('hints.budgetTitle')}>
-                    <p>{t('hints.budgetVsWallet')}</p>
-                  </InfoHintPopover>
-                  <SortButton label={t('table.spent')} columnKey="budget_spent" />
-                  <span className="text-gray-300">/</span>
-                  <SortButton label={t('table.max')} columnKey="budget_max" />
-                  <span className="text-gray-300">·</span>
-                  <SortButton label={t('table.base')} columnKey="budget_base" />
-                  <span className="text-gray-300">·</span>
-                  <SortButton label={t('table.cycle')} columnKey="budget_reset_at" />
+              <th className="px-4 py-2.5 text-right">
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                    <span>{t('table.budget')}</span>
+                    <InfoHintPopover label={t('hints.budgetTitle')}>
+                      <p>{t('hints.budgetVsWallet')}</p>
+                    </InfoHintPopover>
+                  </div>
+                  <div className="inline-flex items-center gap-1 text-[10px] font-medium normal-case tracking-normal whitespace-nowrap">
+                    <SortButton label={t('table.spent')} columnKey="budget_spent" />
+                    <span className="text-gray-300">/</span>
+                    <SortButton label={t('table.max')} columnKey="budget_max" />
+                    <span className="text-gray-300">·</span>
+                    <SortButton label={t('table.base')} columnKey="budget_base" />
+                    <span className="text-gray-300">·</span>
+                    <SortButton label={t('table.cycle')} columnKey="budget_reset_at" />
+                  </div>
                 </div>
               </th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
-                <div className="inline-flex items-center justify-end gap-1.5">
-                  <span className="text-gray-400">{t('table.wallet')}</span>
-                  <InfoHintPopover label={t('hints.walletTitle')}>
-                    <p>{t('hints.budgetVsWallet')}</p>
+              <th className="px-4 py-2.5 text-right">
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                    <span>{t('table.wallet')}</span>
+                    <InfoHintPopover label={t('hints.walletTitle')}>
+                      <p>{t('hints.budgetVsWallet')}</p>
+                    </InfoHintPopover>
+                  </div>
+                  <div className="inline-flex items-center gap-1 text-[10px] font-medium normal-case tracking-normal whitespace-nowrap">
+                    <SortButton label={t('table.walletBalance')} columnKey="wallet_granted" />
+                    <span className="text-gray-300">/</span>
+                    <SortButton label={t('table.walletSpent')} columnKey="wallet_spent" />
+                  </div>
+                </div>
+              </th>
+              <th className="px-4 py-2.5 text-right" title={t('help.rateLimitRpm')}>
+                <div className="inline-flex items-center justify-end gap-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                  <span>{t('table.rateLimit')}</span>
+                  <InfoHintPopover label={t('hints.rateLimitTitle')}>
+                    <p>{t('help.rateLimitRpm')}</p>
                   </InfoHintPopover>
-                  <SortButton label={t('table.walletBalance')} columnKey="wallet_granted" />
-                  <span className="text-gray-300">/</span>
-                  <SortButton label={t('table.walletSpent')} columnKey="wallet_spent" />
                 </div>
               </th>
               <th
@@ -461,12 +502,13 @@ export default function GatewayUsersPage() {
               Array.from({ length: 8 }).map((_, index) => (
                 <tr key={`skeleton-${index}`} className="animate-pulse">
                   <td className="px-4 py-4"><div className="h-4 w-48 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="ml-auto h-4 w-40 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="ml-auto h-4 w-24 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-28 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-16 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="ml-auto h-4 w-12 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="ml-auto h-4 w-8 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="h-4 w-24 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-20 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-gray-100" /></td>
                 </tr>
               ))}
             {users.map((u) => {
@@ -496,6 +538,11 @@ export default function GatewayUsersPage() {
                 ? t('table.resetTo', { amount: formatGatewayMoneyCode(u.budget_base, billingCurrency, 2) })
                 : null;
               const resetHint = [cycleText, resetToText].filter(Boolean).join(' ');
+              const budgetIdle = ratio == null && Number(u.budget_spent) === 0 && !resetHint;
+              const walletRemaining = Number(u.wallet_granted ?? 0) - Number(u.wallet_spent ?? 0);
+              const walletSpent = Number(u.wallet_spent ?? 0);
+              const walletIdle = walletRemaining === 0 && walletSpent === 0;
+              const walletDepleted = walletRemaining <= 0 && Number(u.wallet_granted ?? 0) > 0;
               const externalLabel = [u.external_system, u.external_user_id].filter(Boolean).join(' · ');
               return (
               <tr
@@ -547,45 +594,46 @@ export default function GatewayUsersPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden">
-                  <div className="w-full">
-                    <div className="flex items-baseline justify-end gap-2">
-                      {resetHint ? (
-                        <div
-                          className="min-w-0 flex-1 truncate text-left text-[11px] text-gray-500"
-                          title={u.budget_reset_at ? formatDateTime(u.budget_reset_at) : resetHint}
-                        >
-                          {resetHint}
-                        </div>
-                      ) : null}
-                      <div className="shrink-0 text-right text-sm tabular-nums text-gray-900">
-                        {spentLabel}
-                        <span className="text-gray-400"> / </span>
-                        <span className={u.budget_max == null ? 'text-gray-400' : 'text-gray-700'}>{maxLabel}</span>
-                      </div>
+                  <div className="w-full text-right">
+                    <div className={`text-sm tabular-nums ${spentToneClass(ratio, budgetIdle)}`}>
+                      {spentLabel}
+                      <span className="text-gray-400"> / </span>
+                      <span className={u.budget_max == null ? 'text-gray-400' : undefined}>{maxLabel}</span>
                     </div>
-                    {ratio != null ? (
-                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className={`h-full rounded-full ${budgetBarClass(ratio)}`}
-                          style={{ width: `${Math.max(ratio * 100, ratio > 0 ? 4 : 0)}%` }}
-                        />
+                    {resetHint ? (
+                      <div
+                        className="mt-0.5 truncate text-[11px] text-gray-400"
+                        title={u.budget_reset_at ? formatDateTime(u.budget_reset_at) : resetHint}
+                      >
+                        {resetHint}
                       </div>
-                    ) : (
-                      <div className="mt-1.5 h-1.5 rounded-full bg-gray-50" />
-                    )}
+                    ) : null}
+                    <QuotaUsageBar ratio={ratio} />
                   </div>
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden text-right">
-                  <div className="text-sm tabular-nums text-gray-900">
-                    {formatGatewayMoneyCode(
-                      Number(u.wallet_granted ?? 0) - Number(u.wallet_spent ?? 0),
-                      billingCurrency,
-                      2
-                    )}
+                  <div
+                    className={`text-sm tabular-nums ${
+                      walletIdle ? 'text-gray-400' : walletDepleted ? 'text-red-600' : 'font-medium text-gray-900'
+                    }`}
+                  >
+                    {formatGatewayMoneyCode(walletRemaining, billingCurrency, 2)}
                   </div>
                   <div className="mt-0.5 text-[11px] tabular-nums text-gray-400">
-                    {t('table.walletSpent')} {formatGatewayMoneyCode(Number(u.wallet_spent ?? 0), billingCurrency, 2)}
+                    {t('table.walletSpent')} {formatGatewayMoneyCode(walletSpent, billingCurrency, 2)}
                   </div>
+                </td>
+                <td className="px-4 py-3.5 overflow-hidden text-right" title={t('help.rateLimitRpm')}>
+                  {(() => {
+                    const rpm = userRpm(u);
+                    return rpm == null ? (
+                      <span className="text-sm text-gray-400">{tCommon('noLimit')}</span>
+                    ) : (
+                      <span className={`text-sm tabular-nums ${rpm === 0 ? 'text-amber-700' : 'text-gray-900'}`}>
+                        {t('table.rateLimitRpmValue', { rpm })}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden text-right">
                   <span

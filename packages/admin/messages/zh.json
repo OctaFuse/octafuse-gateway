@@ -1435,6 +1435,8 @@
 			"resetAt": "重置时间",
 			"keys": "密钥",
 			"keysActiveOfTotal": "激活 / 总数",
+			"rateLimit": "限流规则",
+			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "元数据",
 			"chargedCostFactors": "模型折扣",
 			"created": "创建时间",
@@ -1516,6 +1518,7 @@
 		"hints": {
 			"budgetTitle": "周期额度说明",
 			"walletTitle": "永久额度说明",
+			"rateLimitTitle": "用户限流说明",
 			"budgetVsWallet": "周期额度随订阅周期重置，到期清零。永久额度来自加购，不随周期或到期清零。扣费先周期、后永久。"
 		},
 		"detailSections": {
