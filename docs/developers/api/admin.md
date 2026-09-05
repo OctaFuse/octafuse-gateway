@@ -149,7 +149,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对、`charged_cost_factors`（对象或 `null`，校验规则与创建相同）、`wallet_granted` / `wallet_spent`（永久额度绝对值，运维修正）、`rate_limit`（用户层 JSON，与 Key 同形状；`null` 表示该层不限）等。仅改用户计费倍率时，审计 `reason_code` 为 `admin_patch_charged_cost_factors`；仅改用户限流时为 `admin_patch_rate_limit`。**密钥级字段不可在此修改**（密钥 `rate_limit` 走 `PATCH /admin/keys/:id`）。加购增量请用下方 **`wallet/credit`**，不要把金额加进 `budget_max`。
 
-`users.rate_limit` 是该用户**所有 Key 合计**的共享池，不会复制到新建 Key，也不要求 `key.rpm <= user.rpm`。只限制某一把钥匙时，只写该 Key 的 `rate_limit`，用户层保持 `null`。
+`users.rate_limit` 是该用户**所有 Key 合计**的共享池，不会复制到新建 Key，也不要求 `key.rpm <= user.rpm`。只限制某一把钥匙时，只写该 Key 的 `rate_limit`，用户层保持 `null`。Key 层与 User 层的 `rpm` 都是从当前时刻回溯 60 秒的滚动窗口，不是 UTC 自然分钟。
 
 用于**绝对值**设置、运维修正、取消/到期回收等不依赖当前预算快照的变更。若需基于当前 `budget_max/budget_spent` 计算结转并原子写入，请使用下方 **`budget/transition`**。
 
@@ -407,7 +407,7 @@ PATCH /admin/keys/:id
 | `status` | 可选；如 `active`、`revoked` |
 | `metadata` | 可选；**对象**时与现有 key `metadata` **合并**；**字符串**时视为整段替换（与 `metadata_replace` 语义相同） |
 | `metadata_replace` | 可选；JSON 字符串，整段替换 metadata；勿与对象形式的 `metadata` 同时使用 |
-| `rate_limit` | 可选；JSON 对象。`null` 表示该 Key 不限。当前仅支持 `rpm`（非负整数，该 Key 每 60 秒窗口内允许的请求数；`0` 拒绝所有计次请求）。与用户层 `users.rate_limit` **双重执行**，两者都要通过；超限仍返回同一 `429` + `gateway.rate_limited`（不区分哪一层）。`GET /v1/me` 两层都不计入。计数在代理服务进程内存中（多 isolate / 多副本为软上限）。省略则不改 |
+| `rate_limit` | 可选；JSON 对象。`null` 表示该 Key 不限。当前仅支持 `rpm`（非负整数，该 Key 从当前时刻回溯 60 秒的滚动窗口内允许的请求数；`0` 拒绝所有计次请求）。与用户层 `users.rate_limit` **双重执行**（两层都是回溯 60 秒，各自独立计数），两者都要通过；超限仍返回同一 `429` + `gateway.rate_limited`（不区分哪一层）。`GET /v1/me` 两层都不计入。计数在代理服务进程内存中（多 isolate / 多副本为软上限）。省略则不改 |
 | `reason` | 可选；写入用户审计等文案，缺省由服务端默认 |
 
 ### 响应

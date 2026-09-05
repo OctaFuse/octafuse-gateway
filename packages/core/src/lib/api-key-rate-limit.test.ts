@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+	API_KEY_RATE_WINDOW_MS,
 	coerceRateLimitInput,
 	consumeApiKeyRateWindow,
 	consumeRateLimitLayers,
 	createMemoryApiKeyRateLimitStore,
-	currentRateWindowStartedAt,
 	isRateLimitExceeded,
 	keyRateLimitSubject,
 	parseApiKeyRateLimit,
@@ -15,7 +15,25 @@ import {
 	resolveIngressHost,
 	serializeApiKeyRateLimit,
 	userRateLimitSubject,
+	type RateLimitLayer,
 } from './api-key-rate-limit.ts';
+
+const T0 = Date.parse('2026-09-05T02:31:42.123Z');
+const MINUTE_BOUNDARY_BEFORE = Date.parse('2026-09-05T02:31:59.500Z');
+const MINUTE_BOUNDARY_AFTER = Date.parse('2026-09-05T02:32:00.100Z');
+
+function layersFor(kind: 'key' | 'user', rpm: number | null): RateLimitLayer[] {
+	if (kind === 'key') {
+		return [
+			{ subject: keyRateLimitSubject('key-rolling'), rpm },
+			{ subject: userRateLimitSubject('user-unused'), rpm: null },
+		];
+	}
+	return [
+		{ subject: keyRateLimitSubject('key-unlimited'), rpm: null },
+		{ subject: userRateLimitSubject('user-rolling'), rpm },
+	];
+}
 
 describe('api-key-rate-limit', () => {
 	it('treats NULL rpm as unlimited', () => {
@@ -53,10 +71,10 @@ describe('api-key-rate-limit', () => {
 		assert.equal(isRateLimitExceeded(11, 10), true);
 	});
 
-	it('aligns window start to the minute', () => {
-		const t = Date.parse('2026-09-05T02:31:42.123Z');
-		assert.equal(currentRateWindowStartedAt(t), '2026-09-05T02:31:00.000Z');
-		assert.equal(rateLimitRetryAfterSeconds('2026-09-05T02:31:00.000Z', t), 18);
+	it('computes retry-after until the next consume can succeed', () => {
+		assert.equal(rateLimitRetryAfterSeconds([], 1, T0), 1);
+		assert.equal(rateLimitRetryAfterSeconds([T0], 0, T0), 60);
+		assert.equal(rateLimitRetryAfterSeconds([T0, T0 + 1_000], 1, T0 + 1_000), 60);
 	});
 
 	it('coerces PATCH rate_limit (omit / null / object)', () => {
@@ -78,29 +96,29 @@ describe('api-key-rate-limit', () => {
 		assert.equal(resolveIngressHost(null, 'not a url'), null);
 	});
 
-	it('counts in memory per key and resets when the window changes', async () => {
+	it('counts in memory per subject and drops timestamps outside the trailing 60s', async () => {
 		const store = createMemoryApiKeyRateLimitStore();
-		assert.equal(await consumeApiKeyRateWindow('k1', 'w1', store), 1);
-		assert.equal(await consumeApiKeyRateWindow('k1', 'w1', store), 2);
-		assert.equal(await consumeApiKeyRateWindow('k2', 'w1', store), 1);
-		assert.equal(await consumeApiKeyRateWindow('k1', 'w2', store), 1);
+		assert.equal((await consumeApiKeyRateWindow('k1', T0, 100, store)).count, 1);
+		assert.equal((await consumeApiKeyRateWindow('k1', T0 + 1, 100, store)).count, 2);
+		assert.equal((await consumeApiKeyRateWindow('k2', T0, 100, store)).count, 1);
+		assert.equal((await consumeApiKeyRateWindow('k1', T0 + 1 + API_KEY_RATE_WINDOW_MS, 100, store)).count, 1);
 	});
 
-	it('prunes stale windows when over capacity', async () => {
+	it('prunes stale subjects when over capacity', async () => {
 		const store = createMemoryApiKeyRateLimitStore(2);
-		assert.equal(await consumeApiKeyRateWindow('a', 'w1', store), 1);
-		assert.equal(await consumeApiKeyRateWindow('b', 'w1', store), 1);
-		assert.equal(await consumeApiKeyRateWindow('c', 'w2', store), 1);
-		assert.equal(await consumeApiKeyRateWindow('a', 'w2', store), 1);
+		assert.equal((await consumeApiKeyRateWindow('a', T0, 10, store)).count, 1);
+		assert.equal((await consumeApiKeyRateWindow('b', T0, 10, store)).count, 1);
+		assert.equal((await consumeApiKeyRateWindow('c', T0 + API_KEY_RATE_WINDOW_MS, 10, store)).count, 1);
+		assert.equal((await consumeApiKeyRateWindow('a', T0 + API_KEY_RATE_WINDOW_MS, 10, store)).count, 1);
 	});
 
 	it('does not consume the user window when the key layer is already exceeded', async () => {
 		const inner = createMemoryApiKeyRateLimitStore();
 		const subjects: string[] = [];
 		const store = {
-			consume(subject: string, windowStartedAt: string) {
+			consume(subject: string, nowMs: number, rpm: number) {
 				subjects.push(subject);
-				return inner.consume(subject, windowStartedAt);
+				return inner.consume(subject, nowMs, rpm);
 			},
 		};
 		const keyId = 'key-1';
@@ -109,8 +127,8 @@ describe('api-key-rate-limit', () => {
 			{ subject: keyRateLimitSubject(keyId), rpm: 1 },
 			{ subject: userRateLimitSubject(userId), rpm: 100 },
 		];
-		assert.equal((await consumeRateLimitLayers(layers, 'w1', store)).exceeded, false);
-		assert.equal((await consumeRateLimitLayers(layers, 'w1', store)).exceeded, true);
+		assert.equal((await consumeRateLimitLayers(layers, T0, store)).exceeded, false);
+		assert.equal((await consumeRateLimitLayers(layers, T0 + 1, store)).exceeded, true);
 		assert.deepEqual(subjects, [
 			keyRateLimitSubject(keyId),
 			userRateLimitSubject(userId),
@@ -126,7 +144,7 @@ describe('api-key-rate-limit', () => {
 				{ subject: keyRateLimitSubject('key-a'), rpm: null },
 				{ subject: userSubject, rpm: 2 },
 			],
-			'w1',
+			T0,
 			store
 		);
 		const second = await consumeRateLimitLayers(
@@ -134,7 +152,7 @@ describe('api-key-rate-limit', () => {
 				{ subject: keyRateLimitSubject('key-b'), rpm: null },
 				{ subject: userSubject, rpm: 2 },
 			],
-			'w1',
+			T0 + 1,
 			store
 		);
 		const third = await consumeRateLimitLayers(
@@ -142,11 +160,48 @@ describe('api-key-rate-limit', () => {
 				{ subject: keyRateLimitSubject('key-a'), rpm: null },
 				{ subject: userSubject, rpm: 2 },
 			],
-			'w1',
+			T0 + 2,
 			store
 		);
 		assert.equal(first.exceeded, false);
 		assert.equal(second.exceeded, false);
 		assert.equal(third.exceeded, true);
 	});
+
+	for (const kind of ['key', 'user'] as const) {
+		describe(`${kind} trailing 60s window`, () => {
+			it('exceeds on the rpm+1 request inside 60s', async () => {
+				const store = createMemoryApiKeyRateLimitStore();
+				const layers = layersFor(kind, 2);
+				assert.equal((await consumeRateLimitLayers(layers, T0, store)).exceeded, false);
+				assert.equal((await consumeRateLimitLayers(layers, T0 + 1, store)).exceeded, false);
+				assert.equal((await consumeRateLimitLayers(layers, T0 + 2, store)).exceeded, true);
+			});
+
+			it('allows the next request once the oldest timestamp is 60s old', async () => {
+				const store = createMemoryApiKeyRateLimitStore();
+				const layers = layersFor(kind, 1);
+				assert.equal((await consumeRateLimitLayers(layers, T0, store)).exceeded, false);
+				assert.equal((await consumeRateLimitLayers(layers, T0 + API_KEY_RATE_WINDOW_MS, store)).exceeded, false);
+			});
+
+			it('does not reset at the UTC minute boundary', async () => {
+				const store = createMemoryApiKeyRateLimitStore();
+				const layers = layersFor(kind, 1);
+				assert.equal((await consumeRateLimitLayers(layers, MINUTE_BOUNDARY_BEFORE, store)).exceeded, false);
+				assert.equal((await consumeRateLimitLayers(layers, MINUTE_BOUNDARY_AFTER, store)).exceeded, true);
+			});
+
+			it('returns retry-after until a new consume can succeed', async () => {
+				const store = createMemoryApiKeyRateLimitStore();
+				const layers = layersFor(kind, 1);
+				assert.equal((await consumeRateLimitLayers(layers, T0, store)).exceeded, false);
+				const exceeded = await consumeRateLimitLayers(layers, T0 + 1_000, store);
+				assert.equal(exceeded.exceeded, true);
+				assert.equal(exceeded.retryAfterSeconds, 60);
+				const retryAt = T0 + 1_000 + exceeded.retryAfterSeconds * 1000;
+				assert.equal((await consumeRateLimitLayers(layers, retryAt, store)).exceeded, false);
+			});
+		});
+	}
 });

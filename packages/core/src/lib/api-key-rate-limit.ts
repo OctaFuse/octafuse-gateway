@@ -1,6 +1,6 @@
 /**
  * Per-key / per-user rate limit JSON (`api_keys.rate_limit`, `users.rate_limit`).
- * NULL / empty object = that layer is unlimited. Current dimension: `rpm` (rolling 60s).
+ * NULL / empty object = that layer is unlimited. Current dimension: `rpm` (trailing 60s from now).
  * `rpm: 0` rejects metered calls. Layers are independent; Key is a per-key cap, User is a shared pool.
  */
 
@@ -112,9 +112,11 @@ export function rateLimitRpmOf(limit: ApiKeyRateLimit | null | undefined): numbe
 	return limit?.rpm ?? null;
 }
 
-export function currentRateWindowStartedAt(nowMs = Date.now()): string {
-	const start = Math.floor(nowMs / API_KEY_RATE_WINDOW_MS) * API_KEY_RATE_WINDOW_MS;
-	return new Date(start).toISOString();
+function dropExpiredTimestamps(times: number[], nowMs: number): number[] {
+	const cutoff = nowMs - API_KEY_RATE_WINDOW_MS;
+	let i = 0;
+	while (i < times.length && times[i] <= cutoff) i += 1;
+	return i === 0 ? times : times.slice(i);
 }
 
 /** After incrementing the window, `count > rpm` is exceeded. NULL rpm is never exceeded. */
@@ -123,10 +125,20 @@ export function isRateLimitExceeded(count: number, rpm: number | null | undefine
 	return count > rpm;
 }
 
-export function rateLimitRetryAfterSeconds(windowStartedAtIso: string, nowMs = Date.now()): number {
-	const start = Date.parse(windowStartedAtIso);
-	if (!Number.isFinite(start)) return 60;
-	return Math.max(1, Math.ceil((start + API_KEY_RATE_WINDOW_MS - nowMs) / 1000));
+/**
+ * Seconds until a *new* consume on this subject can succeed.
+ * `times` is the stored trailing-60s log (oldest first), including the request just counted.
+ */
+export function rateLimitRetryAfterSeconds(times: number[], rpm: number, nowMs: number): number {
+	if (times.length === 0) return 1;
+	if (rpm <= 0) {
+		return Math.max(1, Math.ceil((times[0] + API_KEY_RATE_WINDOW_MS - nowMs) / 1000));
+	}
+	const numberToExpire = times.length - rpm + 1;
+	if (numberToExpire <= 0) return 1;
+	const t = times[numberToExpire - 1];
+	if (t == null) return 1;
+	return Math.max(1, Math.ceil((t + API_KEY_RATE_WINDOW_MS - nowMs) / 1000));
 }
 
 export function keyRateLimitSubject(keyId: string): string {
@@ -142,13 +154,18 @@ export type RateLimitLayer = {
 	rpm: number | null | undefined;
 };
 
+export type RateLimitConsumeResult = {
+	count: number;
+	retryAfterSeconds: number;
+};
+
 /**
- * Per-subject RPM window counter. Default is process/isolate memory (same consistency as
+ * Per-subject trailing-60s RPM log. Default is process/isolate memory (same consistency as
  * circuit breakers). Swap in Redis later via `setApiKeyRateLimitStore`.
  * Subjects should be prefixed (`k:` / `u:`) so key and user UUIDs never collide.
  */
 export type ApiKeyRateLimitStore = {
-	consume(subject: string, windowStartedAt: string): number | Promise<number>;
+	consume(subject: string, nowMs: number, rpm: number): RateLimitConsumeResult | Promise<RateLimitConsumeResult>;
 };
 
 const MEMORY_RATE_LIMIT_MAX_ENTRIES = 50_000;
@@ -156,30 +173,35 @@ const MEMORY_RATE_LIMIT_MAX_ENTRIES = 50_000;
 export function createMemoryApiKeyRateLimitStore(
 	maxEntries = MEMORY_RATE_LIMIT_MAX_ENTRIES
 ): ApiKeyRateLimitStore {
-	const windows = new Map<string, { windowStartedAt: string; count: number }>();
+	const windows = new Map<string, number[]>();
 	return {
-		consume(subject, windowStartedAt) {
-			const prev = windows.get(subject);
-			if (!prev || prev.windowStartedAt !== windowStartedAt) {
-				windows.set(subject, { windowStartedAt, count: 1 });
-			} else {
-				prev.count += 1;
-			}
+		consume(subject, nowMs, rpm) {
+			const times = dropExpiredTimestamps(windows.get(subject) ?? [], nowMs);
+			const keepLimit = rpm + 1;
+			if (times.length < keepLimit) times.push(nowMs);
+			if (times.length === 0) windows.delete(subject);
+			else windows.set(subject, times);
 			if (windows.size > maxEntries) {
 				for (const [id, row] of windows) {
-					if (row.windowStartedAt !== windowStartedAt) windows.delete(id);
+					const pruned = dropExpiredTimestamps(row, nowMs);
+					if (pruned.length === 0) windows.delete(id);
+					else windows.set(id, pruned);
 				}
 				if (windows.size > maxEntries) {
 					const overflow = windows.size - maxEntries;
 					let dropped = 0;
 					for (const id of windows.keys()) {
 						if (dropped >= overflow) break;
+						if (id === subject) continue;
 						windows.delete(id);
 						dropped += 1;
 					}
 				}
 			}
-			return windows.get(subject)?.count ?? 1;
+			return {
+				count: times.length,
+				retryAfterSeconds: rateLimitRetryAfterSeconds(times, rpm, nowMs),
+			};
 		},
 	};
 }
@@ -196,27 +218,29 @@ export function setApiKeyRateLimitStore(store: ApiKeyRateLimitStore): void {
 
 export async function consumeApiKeyRateWindow(
 	subject: string,
-	windowStartedAt: string,
+	nowMs: number,
+	rpm: number,
 	store: ApiKeyRateLimitStore = getApiKeyRateLimitStore()
-): Promise<number> {
-	return store.consume(subject, windowStartedAt);
+): Promise<RateLimitConsumeResult> {
+	return store.consume(subject, nowMs, rpm);
 }
 
 /**
  * Consume layers in order (typically Key then User). A layer with NULL rpm is skipped.
  * If a layer is already exceeded, later layers are not consumed.
+ * `retryAfterSeconds` is from the layer that exceeded (1 when none did).
  */
 export async function consumeRateLimitLayers(
 	layers: RateLimitLayer[],
-	windowStartedAt: string,
+	nowMs = Date.now(),
 	store: ApiKeyRateLimitStore = getApiKeyRateLimitStore()
-): Promise<{ exceeded: boolean }> {
+): Promise<{ exceeded: boolean; retryAfterSeconds: number }> {
 	for (const layer of layers) {
 		if (layer.rpm == null) continue;
-		const count = await consumeApiKeyRateWindow(layer.subject, windowStartedAt, store);
-		if (isRateLimitExceeded(count, layer.rpm)) {
-			return { exceeded: true };
+		const consumed = await consumeApiKeyRateWindow(layer.subject, nowMs, layer.rpm, store);
+		if (isRateLimitExceeded(consumed.count, layer.rpm)) {
+			return { exceeded: true, retryAfterSeconds: consumed.retryAfterSeconds };
 		}
 	}
-	return { exceeded: false };
+	return { exceeded: false, retryAfterSeconds: 1 };
 }

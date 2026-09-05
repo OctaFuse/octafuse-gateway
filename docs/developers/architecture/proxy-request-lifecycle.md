@@ -95,7 +95,7 @@ flowchart TB
 
 ### 2.1 鉴权与解析
 
-1. **`requireApiKey`**：从 `Authorization: Bearer sk-...`、`x-api-key` 或 query `key` 提取密钥；`authenticateApiKey` 查库并注入 `c.set('apiKey')`（含 `userId`、`budgetMax`、`budgetSpent`、`walletGranted`、`walletSpent` 等）。若 Key 或用户配置了 `rate_limit.rpm`，先消耗 Key 窗口再消耗用户合计窗口；超限返回 **429** `gateway.rate_limited`。`GET /v1/me` 两层都不计入。
+1. **`requireApiKey`**：从 `Authorization: Bearer sk-...`、`x-api-key` 或 query `key` 提取密钥；`authenticateApiKey` 查库并注入 `c.set('apiKey')`（含 `userId`、`budgetMax`、`budgetSpent`、`walletGranted`、`walletSpent` 等）。若 Key 或用户配置了 `rate_limit.rpm`，先消耗 Key 窗口再消耗用户合计窗口（两层都是从当前时刻回溯 60 秒）；超限返回 **429** `gateway.rate_limited`。`GET /v1/me` 两层都不计入。
 2. **解析 JSON body**：非法 JSON → **400**；缺少 `model` → **400**。
 3. **`resolveModelRouting`**：支持 `baseModelId` 或 `baseModelId:route_group`；模型不存在 → **404**。
 4. **用户额度**：`hasPositiveTotalBalance(budgetMax, budgetSpent, walletGranted, walletSpent)` 为假 → **403**。`budgetMax == null` 表示周期不限额；否则看周期剩余 + 永久余额。**`budgetMax=0` 且 wallet 仍有余额时允许请求**（勿用旧式 `budgetSpent >= budgetMax`，`0 >= 0` 会误杀）。
