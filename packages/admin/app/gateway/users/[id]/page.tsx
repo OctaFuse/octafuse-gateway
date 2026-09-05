@@ -968,7 +968,6 @@ export default function GatewayUserDetailPage() {
               <thead>
                 <tr className="border-b text-xs text-gray-500 uppercase">
                   <th className="py-2 pr-4 text-left">{tCommon('key')}</th>
-                  <th className="py-2 pr-4 text-left">{tCommon('name')}</th>
                   <th className="py-2 pr-4 text-left" title={t('keysTable.rateLimitHint')}>{t('keysTable.rateLimit')}</th>
                   <th className="py-2 pr-4 text-left">{tCommon('metadata')}</th>
                   <th className="py-2 pr-4 text-left">{tCommon('status')}</th>
@@ -978,14 +977,22 @@ export default function GatewayUserDetailPage() {
               <tbody>
                 {keys.map((k) => (
                   <tr key={k.id} className="border-b border-gray-100">
-                    <td className="py-2 pr-4 font-mono text-xs align-top">
-                      <span title={k.key}>{maskKey(k.key)}</span>
-                      <button type="button" onClick={() => copy(k.key)} className="ml-1 text-gray-400 hover:text-gray-600 align-middle">
-                        <ClipboardDocumentIcon className="h-3.5 w-3.5 inline" />
-                      </button>
-                      <div className="text-gray-400">{shortId(k.id)}</div>
+                    <td className="py-2 pr-4 align-top">
+                      <div className="truncate text-sm font-medium text-gray-900" title={k.name || undefined}>
+                        {k.name?.trim() ? k.name : '—'}
+                      </div>
+                      <div className="mt-0.5 flex min-w-0 items-center gap-1 font-mono text-[11px] text-gray-400">
+                        <span className="min-w-0 truncate" title={k.key}>{maskKey(k.key)}</span>
+                        <button
+                          type="button"
+                          onClick={() => copy(k.key)}
+                          className="shrink-0 rounded p-0.5 text-gray-300 hover:bg-gray-100 hover:text-gray-600"
+                        >
+                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="mt-0.5 font-mono text-[11px] text-gray-400">{shortId(k.id)}</div>
                     </td>
-                    <td className="py-2 pr-4 align-top">{k.name || '—'}</td>
                     <td className="py-2 pr-4 align-top" title={t('keysTable.rateLimitHint')}>
                       {(() => {
                         const rpm = keyRpm(k);

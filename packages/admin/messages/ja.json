@@ -1562,7 +1562,6 @@
 			"status": "ステータス",
 			"user": "ユーザー",
 			"key": "キー",
-			"name": "名前",
 			"rateLimit": "レート制限",
 			"rateLimitRpmValue": "{rpm} RPM",
 			"userBudget": "ユーザー周期予算",

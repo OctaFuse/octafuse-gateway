@@ -536,14 +536,13 @@ export default function GatewayKeysPage() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
-        <table className="w-full min-w-[72rem] table-fixed">
+        <table className="w-full min-w-[64rem] table-fixed">
           <colgroup>
             <col className="w-[18%]" />
-            <col className="w-[14%]" />
-            <col className="w-[10%]" />
+            <col className="w-[22%]" />
             <col className="w-[12%]" />
             <col className="w-[14%]" />
-            <col className="w-[12%]" />
+            <col className="w-[14%]" />
             <col className="w-[10%]" />
             <col className="w-[10%]" />
           </colgroup>
@@ -551,7 +550,6 @@ export default function GatewayKeysPage() {
             <tr>
               <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.user')}</th>
               <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.key')}</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.name')}</th>
               <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap" title={t('help.rateLimitRpm')}>{t('table.rateLimit')}</th>
               <th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.userBudget')}</th>
               <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.apiKeyMetadata')}</th>
@@ -564,8 +562,7 @@ export default function GatewayKeysPage() {
               Array.from({ length: 8 }).map((_, index) => (
                 <tr key={`skeleton-${index}`} className="animate-pulse">
                   <td className="px-4 py-4"><div className="h-4 w-40 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="h-4 w-28 rounded bg-gray-100" /></td>
-                  <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-gray-100" /></td>
+                  <td className="px-4 py-4"><div className="h-8 w-36 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-16 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="ml-auto h-4 w-24 rounded bg-gray-100" /></td>
                   <td className="px-4 py-4"><div className="h-4 w-20 rounded bg-gray-100" /></td>
@@ -634,29 +631,36 @@ export default function GatewayKeysPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden">
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <span className="min-w-0 truncate font-mono text-sm text-gray-900" title={key.key}>
-                      {maskKey(key.key)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        copyToClipboard(key.key);
-                      }}
-                      className={`shrink-0 ${copiedKey === key.key ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
-                      title={t('copyKey')}
-                    >
-                      <ClipboardDocumentIcon className="h-4 w-4" />
-                    </button>
+                  <div className="min-w-0">
+                    {key.name?.trim() ? (
+                      <span
+                        className={`block truncate text-sm font-medium ${revoked ? 'text-gray-500' : 'text-gray-900'}`}
+                        title={key.name}
+                      >
+                        {key.name}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-300">{tCommon('noData')}</span>
+                    )}
+                    <div className="mt-0.5 flex min-w-0 items-center gap-1">
+                      <span className="min-w-0 truncate font-mono text-[11px] text-gray-400" title={key.key}>
+                        {maskKey(key.key)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          copyToClipboard(key.key);
+                        }}
+                        className={`shrink-0 rounded p-0.5 ${
+                          copiedKey === key.key ? 'text-emerald-600' : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'
+                        }`}
+                        title={t('copyKey')}
+                      >
+                        <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </td>
-                <td className="px-4 py-3.5 overflow-hidden">
-                  {key.name?.trim() ? (
-                    <span className="block truncate text-sm text-gray-900" title={key.name}>{key.name}</span>
-                  ) : (
-                    <span className="text-gray-300">{tCommon('noData')}</span>
-                  )}
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden" title={t('help.rateLimitRpm')}>
                   {(() => {

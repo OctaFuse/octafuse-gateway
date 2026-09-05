@@ -1562,7 +1562,6 @@
 			"status": "상태",
 			"user": "사용자",
 			"key": "키",
-			"name": "이름",
 			"rateLimit": "속도 제한",
 			"rateLimitRpmValue": "{rpm} RPM",
 			"userBudget": "사용자 주기 예산",

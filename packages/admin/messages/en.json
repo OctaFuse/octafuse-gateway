@@ -1562,7 +1562,6 @@
 			"status": "Status",
 			"user": "User",
 			"key": "Key",
-			"name": "Name",
 			"rateLimit": "Rate limit",
 			"rateLimitRpmValue": "{rpm} RPM",
 			"userBudget": "User Budget",

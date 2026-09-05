@@ -1562,7 +1562,6 @@
 			"status": "状态",
 			"user": "用户",
 			"key": "密钥",
-			"name": "名称",
 			"rateLimit": "限流规则",
 			"rateLimitRpmValue": "{rpm} RPM",
 			"userBudget": "用户周期额度",
