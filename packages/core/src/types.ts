@@ -20,7 +20,7 @@ export type ApiKeyBudgetAuditActorType = 'system' | 'admin' | 'service';
 
 /** `api_keys.rate_limit` / `users.rate_limit` JSON。NULL / 空对象 = 该层不限；后续可加 `rpd` 等维度。 */
 export type ApiKeyRateLimit = {
-	/** 每 60 秒滚动窗口请求数。`0` 拒绝计次请求；省略表示该维度不限。 */
+	/** 从当前时刻回溯 60 秒的滚动窗口请求数。`0` 拒绝计次请求；省略表示该维度不限。 */
 	rpm?: number;
 };
 

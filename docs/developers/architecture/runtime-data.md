@@ -184,8 +184,8 @@ sequenceDiagram
 | **`users.wallet_granted` / `wallet_spent`** | 永久额度累计发放 / 累计消耗；余额派生，不随周期重置或到期清零 |
 | **`user_audit_logs.dedup_key`** | 加额幂等键（`UNIQUE(user_id, dedup_key)`）；`wallet_credit` 用 `external_ref` |
 | **`api_key_request_logs.charged_wallet_cost`** | 本次请求从永久池扣掉的部分；周期部分 = `charged_cost − charged_wallet_cost` |
-| **`api_keys.rate_limit`** | 每 Key 限流 JSON；`NULL` 不限。当前 `rpm` 为每分钟请求上限，`0` 拒绝计次请求 |
-| **`users.rate_limit`** | 用户层限流 JSON（与 Key 同形状）；`NULL` 不限。当前 `rpm` 为该用户所有 Key 合计的每分钟上限 |
+| **`api_keys.rate_limit`** | 每 Key 限流 JSON；`NULL` 不限。当前 `rpm` 为从当前时刻回溯 60 秒的请求上限，`0` 拒绝计次请求 |
+| **`users.rate_limit`** | 用户层限流 JSON（与 Key 同形状）；`NULL` 不限。当前 `rpm` 为该用户所有 Key 合计、同样回溯 60 秒的上限 |
 | **`api_key_request_logs.ingress_host`** | 请求打到的入口 Host（只记录，不做准入） |
 
 已移除：`provider_api_keys`、`limit_config`（网关 RPM/TPM/并发软限流）、`models.sticky_config`（旧粘性 key 绑定；由路由池级 **供应商粘性** + `route_pool_sticky_bindings` 替代）。

@@ -61,7 +61,7 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 
 ### 4. 请求限流（Key / 用户 RPM）
 
-鉴权后对 **Key 窗口**与 **用户合计窗口**双重执行（先 Key 后 User；Key 已超限则不消耗用户窗口）。两层 JSON 形状相同，当前仅 `rpm`（每 60 秒滚动窗口请求上限）：`NULL` / 空对象该层不限，`rpm: 0` 拒绝该层计次请求。两层独立，不把用户配置复制到新建 Key。超限返回 **429** `gateway.rate_limited`（含 `Retry-After`），**不区分**是哪一层。计数在代理服务进程 / isolate 内存中，属软上限。
+鉴权后对 **Key 窗口**与 **用户合计窗口**双重执行（先 Key 后 User；Key 已超限则不消耗用户窗口）。两层 JSON 形状相同，当前仅 `rpm`（从当前时刻回溯 60 秒的滚动窗口请求上限，**不是** UTC 自然分钟）：`NULL` / 空对象该层不限，`rpm: 0` 拒绝该层计次请求。两层独立计数，不把用户配置复制到新建 Key。超限返回 **429** `gateway.rate_limited`（含 `Retry-After`，等到该层窗口内有空位），**不区分**是哪一层。计数在代理服务进程 / isolate 内存中，属软上限。
 
 `GET /v1/me` **两层都不计入**。`GET /v1/models` 与其它 `/v1/*` 会计入（若对应层配置了 `rpm`）。配置入口为管理后台用户详情的用户合计 RPM，以及密钥（Keys）页的单 Key RPM；API 见 [admin.md](./admin.md) 的 `PATCH /admin/users/:id` 与 `PATCH /admin/keys/:id`。
 

@@ -11,10 +11,8 @@ import type { ApiKeyRateLimit } from '@octafuse/core';
 import { parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
 import {
 	consumeRateLimitLayers,
-	currentRateWindowStartedAt,
 	hasPositiveTotalBalance,
 	keyRateLimitSubject,
-	rateLimitRetryAfterSeconds,
 	rateLimitRpmOf,
 	resolveIngressHost,
 	userRateLimitSubject,
@@ -128,21 +126,16 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
   // Allow GET /v1/me even when budget is 0 or rate-limited, so clients can show key / budget state
   const isKeyInfoRoute = c.req.method === 'GET' && c.req.path.endsWith('/me');
   if (!isKeyInfoRoute) {
-    const windowStartedAt = currentRateWindowStartedAt();
-    const { exceeded } = await consumeRateLimitLayers(
-      [
-        { subject: keyRateLimitSubject(authResult.keyId), rpm: rateLimitRpmOf(authResult.rateLimit) },
-        { subject: userRateLimitSubject(authResult.userId), rpm: rateLimitRpmOf(authResult.userRateLimit) },
-      ],
-      windowStartedAt
-    );
+    const { exceeded, retryAfterSeconds } = await consumeRateLimitLayers([
+      { subject: keyRateLimitSubject(authResult.keyId), rpm: rateLimitRpmOf(authResult.rateLimit) },
+      { subject: userRateLimitSubject(authResult.userId), rpm: rateLimitRpmOf(authResult.userRateLimit) },
+    ]);
     if (exceeded) {
-      const retryAfter = String(rateLimitRetryAfterSeconds(windowStartedAt));
       return gatewayErrorJson(c, {
         status: 429,
         code: GatewayErrorCode.rateLimited,
         message: 'Rate limit exceeded',
-        headers: { 'Retry-After': retryAfter },
+        headers: { 'Retry-After': String(retryAfterSeconds) },
       });
     }
   }
