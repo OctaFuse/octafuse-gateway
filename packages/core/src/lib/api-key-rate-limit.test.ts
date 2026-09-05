@@ -48,6 +48,7 @@ describe('api-key-rate-limit', () => {
 		assert.deepEqual(parseApiKeyRateLimit({ rpm: 0 }), { rpm: 0 });
 		assert.equal(parseApiKeyRateLimit('not-json'), null);
 		assert.equal(parseApiKeyRateLimit({ rpm: -1 }), null);
+		assert.equal(parseApiKeyRateLimit({ rpm: 1.5 }), null);
 		assert.deepEqual(parseApiKeyRateLimit({ rpm: 60, rpd: 10 }), { rpm: 60 });
 	});
 
@@ -84,7 +85,10 @@ describe('api-key-rate-limit', () => {
 		assert.deepEqual(coerceRateLimitInput({}), { ok: true, value: null });
 		assert.deepEqual(coerceRateLimitInput({ rpm: 60 }), { ok: true, value: { rpm: 60 } });
 		assert.deepEqual(coerceRateLimitInput('{"rpm":60}'), { ok: true, value: { rpm: 60 } });
+		assert.deepEqual(coerceRateLimitInput({ rpm: '60' }), { ok: true, value: { rpm: 60 } });
 		assert.equal(coerceRateLimitInput({ rpm: -1 }).ok, false);
+		assert.equal(coerceRateLimitInput({ rpm: 1.5 }).ok, false);
+		assert.equal(coerceRateLimitInput({ rpm: '1.5' }).ok, false);
 		assert.equal(coerceRateLimitInput({ rpd: 10 }).ok, false);
 		assert.equal(coerceRateLimitInput(60).ok, false);
 	});

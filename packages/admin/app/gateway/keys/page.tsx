@@ -289,7 +289,7 @@ export default function GatewayKeysPage() {
 
       const rpmRaw = editFormData.rateLimitRpm.trim();
       const rpmParsed = rpmRaw === '' ? null : Number(rpmRaw);
-      if (rpmRaw !== '' && (rpmParsed == null || !Number.isFinite(rpmParsed) || rpmParsed < 0)) {
+      if (rpmRaw !== '' && (rpmParsed == null || !Number.isFinite(rpmParsed) || rpmParsed < 0 || !Number.isInteger(rpmParsed))) {
         setSaveError(t('help.rateLimitRpmInvalid'));
         setIsSaving(false);
         return;

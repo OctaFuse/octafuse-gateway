@@ -30,8 +30,8 @@ function parseNonNegativeInt(raw: unknown): number | null {
 	if (raw == null || raw === '') return null;
 	if (typeof raw === 'boolean' || typeof raw === 'object') return null;
 	const n = typeof raw === 'number' ? raw : Number(raw);
-	if (!Number.isFinite(n) || n < 0) return null;
-	return Math.floor(n);
+	if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return null;
+	return n;
 }
 
 function extractKnownRateLimit(raw: Record<string, unknown>): ApiKeyRateLimit | null {

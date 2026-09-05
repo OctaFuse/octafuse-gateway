@@ -26,7 +26,7 @@ export type RecordUsageParams = {
 	provider_name?: string | null;
 	request_body?: string | null;
 	upstream_request_body?: string | null;
-	request_protocol: 'openai' | 'anthropic' | 'gemini';
+	request_protocol: UpstreamProtocol;
 	request_operation?: string | null;
 	upstream_protocol: UpstreamProtocol;
 	upstream_operation?: string | null;
