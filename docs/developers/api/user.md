@@ -382,6 +382,8 @@ OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路�
 
 面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（排除文生图与 ASR；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）请使用 `POST /v1/images/*` 或 `kind=image`；语音转写（如 `whisper-1`）请使用 `POST /v1/audio/transcriptions` 或 `kind=audio`；`kind=all` 不过滤。
 
+`model_info.inbound` 是**请求入口**（`protocol` + `operation`），列出当前可见的 Chat Completions、Responses、Anthropic Messages 或 Gemini generateContent。它们不是 `GET /catalog/models` 的上游 `protocols`。选哪条入口以及思考档位仍由客户端维护，本接口不返回 `thinking_config`。
+
 ### 请求
 
 ```
@@ -418,6 +420,7 @@ GET /v1/models
         "input_modalities": ["text", "image", "file"],
         "output_modalities": ["text"],
         "released_at": "2024-06-05",
+        "inbound": [{ "protocol": "openai", "operation": "chat" }],
         "discounts": {
           "default": {
             "timezone": "Asia/Shanghai",
@@ -454,6 +457,7 @@ GET /v1/models
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
 | `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
 | `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条；两者仍并列时取当刻 `composite_factor` 最小（折扣最大）的一条，倍率也相同则保持列表原顺序。官方或路由时段未覆盖的钟点会补 `catalog_factor=1` 的兜底窗（含带 `days` 的工作日高峰：工作日空隙与周末整日都会补），因此仅工作日高峰、倍率相同的官方窗不会被压成 `kind: flat`。不含用户级 `charged_cost_factors` |
+| `inbound` | object[] | **请求入口**（客户端可打的公开路径）：`{ protocol, operation }`。仅聚合当前可见 `route_groups` 下 active 请求入口中的 LLM 文本入口：`openai.chat`、`openai.responses`、`anthropic.messages`、`gemini.models.generate`。不含图 / 音频。`operation=*` 在同协议没有精确入口时展开为该协议默认文本 operation（OpenAI → `chat`）。列表按稳定顺序去重（`responses` 排在 `chat` 前），**不是**推荐入口；选哪条由客户端决定。与 `GET /catalog/models` 的 `protocols`（**上游协议**）不同：Chat 与 Responses 都是 `openai`，必须看 `operation` |
 | `metadata` | object \| undefined | 扩展元数据 |
 
 ### 示例
@@ -543,7 +547,7 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 | 认证 | 用户 API Key | **无** | Console Session 或具名 Admin API Key |
 | 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — |
 | 默认 `kind` | `llm`（排除文生图） | 不过滤 kind | — |
-| 协议能力 | 不返回 | `protocols` / `protocols_by_group` | 不返回 |
+| 协议能力 | `inbound`（请求入口 protocol + operation） | `protocols` / `protocols_by_group`（**上游** `upstream_protocol`） | 不返回 |
 | 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD |
 
 Admin 静态导入目录见 **`GET /admin/models/import/catalog`**（与上表无关，见 [管理接口](./admin.md#admin-vs-proxy-catalog)）。

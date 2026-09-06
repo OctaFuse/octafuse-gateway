@@ -1,5 +1,9 @@
 # @octafuse/proxy
 
+## Unreleased
+
+- `GET /v1/models` `model_info` 增加 `inbound`（LLM 请求入口）；选哪条入口由客户端决定。
+
 ## 2.9.0
 
 ### Patch Changes
