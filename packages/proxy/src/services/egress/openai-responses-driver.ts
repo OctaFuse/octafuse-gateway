@@ -9,7 +9,8 @@ import type { RequestTimingAttempt, RequestTimingCollector } from '../request-ti
  * OpenAI Responses API 透传：
  * - 非流式 JSON 从终态 `usage` 记账
  * - SSE 识别 typed events，usage 通常在 `response.completed` / `response.incomplete`
- * - 原样转发事件；上游静默 EOF 时补一条 `error`，避免客户端挂死
+ * - 转发事件；缺失顶层 `sequence_number` 时按连接注入递增序号，已有序号原样保留
+ * - 上游静默 EOF 时补一条带序号的 `error`，避免客户端挂死
  */
 
 const EMPTY_USAGE_LOCAL: UsageFromStream = {
