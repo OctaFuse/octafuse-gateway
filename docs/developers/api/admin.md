@@ -147,7 +147,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 ### `PATCH /admin/users/:id`
 
-更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对、`charged_cost_factors`（对象或 `null`，校验规则与创建相同）、`wallet_granted` / `wallet_spent`（永久额度绝对值，运维修正）、`rate_limit`（用户层 JSON，与 Key 同形状；`null` 表示该层不限）等。仅改用户计费倍率时，审计 `reason_code` 为 `admin_patch_charged_cost_factors`；仅改用户限流时为 `admin_patch_rate_limit`。**密钥级字段不可在此修改**（密钥 `rate_limit` 走 `PATCH /admin/keys/:id`）。加购增量请用下方 **`wallet/credit`**，不要把金额加进 `budget_max`。
+更新邮箱、预算计划、`status`、`metadata`（合并或 `metadata_replace`）、外部身份对、`charged_cost_factors`（对象或 `null`，校验规则与创建相同）、`wallet_granted` / `wallet_spent`（永久额度绝对值，运维修正）、`rate_limit`（用户层 JSON，与 Key 同形状；`null` 表示该层不限）等。仅改用户计费倍率时，审计 `reason_code` 为 `admin_patch_charged_cost_factors`；仅改用户限流时为 `admin_patch_rate_limit`；仅改永久额度绝对值时为 `admin_patch_wallet`（周期额度同时变化时仍为 `admin_patch_budget`）。**密钥级字段不可在此修改**（密钥 `rate_limit` 走 `PATCH /admin/keys/:id`）。加购增量请用下方 **`wallet/credit`**，不要把金额加进 `budget_max`。
 
 `users.rate_limit` 是该用户**所有 Key 合计**的共享池，不会复制到新建 Key，也不要求 `key.rpm <= user.rpm`。只限制某一把钥匙时，只写该 Key 的 `rate_limit`，用户层保持 `null`。Key 层与 User 层的 `rpm` 都是从当前时刻回溯 60 秒的滚动窗口，不是 UTC 自然分钟。
 
