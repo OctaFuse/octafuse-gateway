@@ -1,5 +1,65 @@
 [
 	{
+		"id": "gpt-6-astra",
+		"display_name": "GPT-6 Astra",
+		"description": "OpenAI's most capable model for demanding end-to-end work: reasoning, coding, computer use, research, and document creation. reasoning.effort supports low, medium, high, xhigh, and max (none is not supported). Tool calling should use the Responses API; Chat Completions remains available for text-only requests.",
+		"i18n": {
+			"en": "OpenAI's most capable model for demanding end-to-end work: reasoning, coding, computer use, research, and document creation. reasoning.effort supports low, medium, high, xhigh, and max (none is not supported). Tool calling should use the Responses API; Chat Completions remains available for text-only requests.",
+			"zh": "OpenAI 面向高难度端到端工作的旗舰模型，适合推理、编程、计算机使用、研究与文档创作。reasoning.effort 支持 low、medium、high、xhigh 和 max，不支持 none。带工具调用请走 Responses API；纯文本仍可用 Chat Completions。"
+		},
+		"vendor": "openai",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 10,
+						"output_price": 50,
+						"cache_read_price": 1,
+						"cache_write_price": 12.5
+					},
+					{
+						"upto": null,
+						"input_price": 20,
+						"output_price": 75,
+						"cache_read_price": 2,
+						"cache_write_price": 25
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 70,
+						"output_price": 350,
+						"cache_read_price": 7,
+						"cache_write_price": 87.5
+					},
+					{
+						"upto": null,
+						"input_price": 140,
+						"output_price": 525,
+						"cache_read_price": 14,
+						"cache_write_price": 175
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-04"
+	},
+	{
 		"id": "gpt-5.2",
 		"display_name": "GPT-5.2",
 		"description": "A frontier GPT model with adaptive reasoning for coding, agents, and long-context work. Adaptive reasoning allocates computation according to task difficulty for stronger agent and long-context performance.",

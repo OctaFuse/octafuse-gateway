@@ -80,6 +80,44 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.pricing_label, '$0.15 / $0.47 /M');
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
 	});
+
+	it('includes claude-fable-5-1 with cheaper cache-read list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-fable-5-1');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-fable-5-1');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Claude Fable 5.1');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$10 / $50 /M');
+		assert.equal(cny!.pricing_label, '¥70 / ¥350 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'claude-fable-5-1');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.25);
+		assert.equal(profile?.tiers[0]?.cache_write_price, 12.5);
+	});
+
+	it('includes gpt-6-astra with Standard short-context list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-6-astra');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-6-astra');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'GPT-6 Astra');
+		assert.equal(usd!.context_window, 1050000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$10 / $50 /M');
+		assert.equal(cny!.pricing_label, '¥70 / ¥350 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'gpt-6-astra');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.upto, 272000);
+		assert.equal(profile?.tiers[0]?.input_price, 10);
+		assert.equal(profile?.tiers[0]?.output_price, 50);
+		assert.equal(profile?.tiers[1]?.upto, null);
+		assert.equal(profile?.tiers[1]?.input_price, 20);
+		assert.equal(profile?.tiers[1]?.output_price, 75);
+	});
 });
 
 describe('import catalog localized model metadata', () => {

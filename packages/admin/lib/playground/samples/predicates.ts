@@ -57,7 +57,7 @@ function isGrokModel(haystack: string): boolean {
 
 function isOpenAiReasoningModel(haystack: string): boolean {
 	if (/(?:^|[^a-z0-9])o[1-4](?:[-_.]|$)/.test(haystack)) return true;
-	return /gpt[-_.]?5/.test(haystack);
+	return /gpt[-_.]?[56]/.test(haystack);
 }
 
 function openaiChatUsesReasoningEffort(haystack: string): boolean {
