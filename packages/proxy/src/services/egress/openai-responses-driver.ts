@@ -9,7 +9,8 @@ import type { RequestTimingAttempt, RequestTimingCollector } from '../request-ti
  * OpenAI Responses API 透传：
  * - 非流式 JSON 从终态 `usage` 记账
  * - SSE 识别 typed events，usage 通常在 `response.completed` / `response.incomplete`
- * - 原样转发事件；上游静默 EOF 时补一条 `error`，避免客户端挂死
+ * - 转发事件；缺失顶层 `sequence_number` 时按连接注入递增序号，已有序号原样保留
+ * - 上游静默 EOF 时补一条带序号的 `error`，避免客户端挂死
  */
 
 const EMPTY_USAGE_LOCAL: UsageFromStream = {
@@ -66,6 +67,8 @@ type ResponsesUsage = {
 type ResponsesEvent = {
 	type?: string;
 	id?: string;
+	/** OpenAI Responses 流式事件顶层必填序号；缺失时由网关兜底注入，见 `ensureResponsesSequenceNumber`。 */
+	sequence_number?: number;
 	delta?: unknown;
 	usage?: ResponsesUsage;
 	response?: {
@@ -75,6 +78,45 @@ type ResponsesEvent = {
 	};
 	error?: { message?: string; code?: string };
 };
+
+/**
+ * 为缺失 `sequence_number` 的 Responses SSE `data:` 行注入递增序号。
+ *
+ * OpenAI Responses 协议要求每个 typed event 顶层都带 `sequence_number`（整数序号）。
+ * 部分上游（如 DeepSeek / GLM 聚合层）返回的事件不含该字段，Grok CLI 等严格 serde
+ * 客户端在反序列化时会因 `missing field sequence_number` 而中断。
+ *
+ * 本函数仅在事件顶层缺失 `sequence_number` 时补一个递增整数；上游已带序号的事件
+ * 原样保留，并让内部计数器至少跟进到该值，避免后续注入序号与上游重复。
+ *
+ * - `data: [DONE]`、非 JSON 行、`event:` 行原样返回（不注入）。
+ * - 返回注入后的整行（含 `data: ` 前缀与换行由调用方处理）。
+ */
+export function ensureResponsesSequenceNumber(
+	line: string,
+	nextSeq: { value: number },
+): string {
+	if (!line.startsWith('data: ')) return line;
+	const payload = line.slice(6).trim();
+	if (!payload || payload === '[DONE]') return line;
+	try {
+		const parsed = JSON.parse(payload) as unknown;
+		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return line;
+		const event = parsed as ResponsesEvent;
+		if (typeof event.sequence_number === 'number') {
+			// 上游已带序号：不覆盖，但让计数器至少越过该值，避免后续注入重复。
+			if (event.sequence_number >= nextSeq.value) {
+				nextSeq.value = event.sequence_number + 1;
+			}
+			return line;
+		}
+		const injected = { ...event, sequence_number: nextSeq.value };
+		nextSeq.value += 1;
+		return `data: ${JSON.stringify(injected)}`;
+	} catch {
+		return line;
+	}
+}
 
 type SSEState = { lineBuffer: string };
 
@@ -168,11 +210,14 @@ export function processResponsesDataLine(
 	}
 }
 
-function syntheticMissingTerminalEvent(): string {
+/** 上游静默 EOF 时的兜底 error 事件；必须带 `sequence_number`（严格 serde 客户端必填）。 */
+export function syntheticMissingTerminalEvent(nextSeq: { value: number }): string {
 	return (
 		'event: error\n' +
 		`data: ${JSON.stringify({
 			type: 'error',
+			// 合成事件同样必须带序号；缺失会让严格客户端（serde）在兜底错误上报序列化失败。
+			sequence_number: nextSeq.value++,
 			error: {
 				message: 'Upstream stream ended without a terminal Responses event',
 				code: 'responses.incomplete_stream',
@@ -192,6 +237,8 @@ async function pumpResponsesWithUsageTracking(
 	const reader = upstream.getReader();
 	const writer = downstream.getWriter();
 	const state: SSEState = { lineBuffer: '' };
+	// 缺失 sequence_number 时的兜底注入计数器（从 0 递增，见 ensureResponsesSequenceNumber）。
+	const nextSeq = { value: 0 };
 	let clientDisconnected = false;
 	let disconnectTime = 0;
 	let sawTerminal = false;
@@ -226,12 +273,12 @@ async function pumpResponsesWithUsageTracking(
 					const line = state.lineBuffer.trim();
 					state.lineBuffer = '';
 					if (processResponsesDataLine(line, usage, timing)) sawTerminal = true;
-					await writeChunk(line + '\n');
+					await writeChunk(ensureResponsesSequenceNumber(line, nextSeq) + '\n');
 				}
 				if (!sawTerminal && !clientDisconnected) {
 					usage.stream_error =
 						usage.stream_error ?? 'Upstream stream ended without a terminal Responses event';
-					await writeChunk(syntheticMissingTerminalEvent());
+					await writeChunk(syntheticMissingTerminalEvent(nextSeq));
 				}
 				break;
 			}
@@ -244,7 +291,7 @@ async function pumpResponsesWithUsageTracking(
 			let forward = '';
 			for (const line of lines) {
 				if (processResponsesDataLine(line, usage, timing)) sawTerminal = true;
-				forward += line + '\n';
+				forward += ensureResponsesSequenceNumber(line, nextSeq) + '\n';
 			}
 			await writeChunk(forward);
 
@@ -263,7 +310,7 @@ async function pumpResponsesWithUsageTracking(
 		if (!sawTerminal && !clientDisconnected) {
 			usage.stream_error = usage.stream_error ?? (err instanceof Error ? err.message : String(err));
 			try {
-				await writeChunk(syntheticMissingTerminalEvent());
+				await writeChunk(syntheticMissingTerminalEvent(nextSeq));
 			} catch {
 				// already disconnected
 			}
