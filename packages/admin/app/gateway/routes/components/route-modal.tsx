@@ -30,7 +30,6 @@ import {
 	catalogScheduleWindowsFromModel,
 	compatibleAdaptersForRoute,
 	customHeaderRowsHaveValues,
-	emptyCustomHeaderRows,
 	formatRoutePriceOverridePreview,
 	listAdapterOptionsForModel,
 	requestOperationsForModel,
@@ -109,7 +108,11 @@ export function RouteModal(props: Props) {
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
 	const hasCustomHeaders = customHeaderRowsHaveValues(formData.custom_headers);
 	const hasCustomBody = formData.custom_params_json.trim().length > 0;
-	const hasCustomParams = hasCustomHeaders || hasCustomBody;
+	const hasCustomParams =
+		hasCustomHeaders ||
+		hasCustomBody ||
+		formData.custom_params_force_override_headers ||
+		formData.custom_params_force_override_body;
 	const customParamsSessionKey = `${open ? '1' : '0'}:${editingRoute?.id ?? ''}:${duplicateSourceRouteId ?? ''}`;
 	const [customParamsSession, setCustomParamsSession] = useState(customParamsSessionKey);
 	const [customParamsOpen, setCustomParamsOpen] = useState(() => open && hasCustomParams);
@@ -718,9 +721,89 @@ export function RouteModal(props: Props) {
 													<div className="min-w-0">
 														<h4 className="text-sm font-medium text-amber-900">{t('customHeaders')}</h4>
 														<p className="mt-0.5 text-[11px] leading-4 text-amber-800/80">
-															{t('customHeadersHint')}
+															{formData.custom_params_force_override_headers
+																? t('customHeadersHintForceOverride')
+																: t('customHeadersHint')}
 														</p>
 													</div>
+													<label className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-amber-900">
+														<input
+															type="checkbox"
+															checked={formData.custom_params_force_override_headers}
+															onChange={(e) =>
+																onFormChange({
+																	...formData,
+																	custom_params_force_override_headers: e.target.checked,
+																})
+															}
+															className="h-3.5 w-3.5 rounded border-amber-300 text-amber-700 focus:ring-amber-500"
+														/>
+														{t('customBodyForceOverride')}
+													</label>
+												</div>
+												<div className="flex min-h-0 flex-1 flex-col">
+													{formData.custom_headers.length > 0 ? (
+														<div className="mb-1.5 space-y-1.5">
+															{formData.custom_headers.map((row, index) => (
+																<div
+																	key={index}
+																	className="grid grid-cols-[minmax(7rem,10rem)_auto_minmax(0,1fr)_auto] items-center gap-1.5"
+																>
+																	<input
+																		type="text"
+																		value={row.name}
+																		onChange={(e) =>
+																			onFormChange({
+																				...formData,
+																				custom_headers: formData.custom_headers.map((item, i) =>
+																					i === index ? { ...item, name: e.target.value } : item
+																				),
+																			})
+																		}
+																		className="min-w-0 rounded-md border border-amber-200 bg-white px-2 py-1.5 font-mono text-xs text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+																		placeholder={t('customHeadersNamePlaceholder')}
+																		aria-label={t('customHeadersName')}
+																		autoComplete="off"
+																		spellCheck={false}
+																	/>
+																	<span className="select-none font-mono text-xs text-amber-700/70" aria-hidden>
+																		:
+																	</span>
+																	<input
+																		type="text"
+																		value={row.value}
+																		onChange={(e) =>
+																			onFormChange({
+																				...formData,
+																				custom_headers: formData.custom_headers.map((item, i) =>
+																					i === index ? { ...item, value: e.target.value } : item
+																				),
+																			})
+																		}
+																		className="min-w-0 rounded-md border border-amber-200 bg-white px-2 py-1.5 font-mono text-xs text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+																		placeholder={t('customHeadersValuePlaceholder')}
+																		aria-label={t('customHeadersValue')}
+																		autoComplete="off"
+																		spellCheck={false}
+																	/>
+																	<button
+																		type="button"
+																		onClick={() => {
+																			onFormChange({
+																				...formData,
+																				custom_headers: formData.custom_headers.filter((_, i) => i !== index),
+																			});
+																		}}
+																		className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+																		aria-label={t('customHeadersRemove')}
+																		title={t('customHeadersRemove')}
+																	>
+																		<TrashIcon className="h-4 w-4" aria-hidden />
+																	</button>
+																</div>
+															))}
+														</div>
+													) : null}
 													<button
 														type="button"
 														onClick={() =>
@@ -729,79 +812,35 @@ export function RouteModal(props: Props) {
 																custom_headers: [...formData.custom_headers, { name: '', value: '' }],
 															})
 														}
-														className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-amber-400 bg-white text-amber-700 shadow-sm transition hover:border-amber-500 hover:bg-amber-50 hover:text-amber-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40"
-														aria-label={t('customHeadersAdd')}
-														title={t('customHeadersAdd')}
+														className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-amber-400 bg-white px-3 py-1.5 text-[11px] font-medium text-amber-700 shadow-sm transition hover:border-amber-500 hover:bg-amber-50 hover:text-amber-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40"
 													>
 														<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+														{t('customHeadersAdd')}
 													</button>
-												</div>
-												<div className="space-y-1.5">
-													{formData.custom_headers.map((row, index) => (
-														<div
-															key={index}
-															className="grid grid-cols-[minmax(7rem,10rem)_auto_minmax(0,1fr)_auto] items-center gap-1.5"
-														>
-															<input
-																type="text"
-																value={row.name}
-																onChange={(e) =>
-																	onFormChange({
-																		...formData,
-																		custom_headers: formData.custom_headers.map((item, i) =>
-																			i === index ? { ...item, name: e.target.value } : item
-																		),
-																	})
-																}
-																className="min-w-0 rounded-md border border-amber-200 bg-white px-2 py-1.5 font-mono text-xs text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-																placeholder={t('customHeadersNamePlaceholder')}
-																aria-label={t('customHeadersName')}
-																autoComplete="off"
-																spellCheck={false}
-															/>
-															<span className="select-none font-mono text-xs text-amber-700/70" aria-hidden>
-																:
-															</span>
-															<input
-																type="text"
-																value={row.value}
-																onChange={(e) =>
-																	onFormChange({
-																		...formData,
-																		custom_headers: formData.custom_headers.map((item, i) =>
-																			i === index ? { ...item, value: e.target.value } : item
-																		),
-																	})
-																}
-																className="min-w-0 rounded-md border border-amber-200 bg-white px-2 py-1.5 font-mono text-xs text-gray-900 placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-																placeholder={t('customHeadersValuePlaceholder')}
-																aria-label={t('customHeadersValue')}
-																autoComplete="off"
-																spellCheck={false}
-															/>
-															<button
-																type="button"
-																onClick={() => {
-																	const next = formData.custom_headers.filter((_, i) => i !== index);
-																	onFormChange({
-																		...formData,
-																		custom_headers: next.length > 0 ? next : emptyCustomHeaderRows(),
-																	});
-																}}
-																className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
-																aria-label={t('customHeadersRemove')}
-																title={t('customHeadersRemove')}
-															>
-																<TrashIcon className="h-4 w-4" aria-hidden />
-															</button>
-														</div>
-													))}
 												</div>
 											</div>
 											<div className="flex min-h-0 min-w-0 flex-col rounded-md border border-amber-200/80 bg-white/70 p-2.5">
-												<h4 className="text-sm font-medium text-amber-900">{t('customBody')}</h4>
+												<div className="flex items-start justify-between gap-2">
+													<h4 className="text-sm font-medium text-amber-900">{t('customBody')}</h4>
+													<label className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-amber-900">
+														<input
+															type="checkbox"
+															checked={formData.custom_params_force_override_body}
+															onChange={(e) =>
+																onFormChange({
+																	...formData,
+																	custom_params_force_override_body: e.target.checked,
+																})
+															}
+															className="h-3.5 w-3.5 rounded border-amber-300 text-amber-700 focus:ring-amber-500"
+														/>
+														{t('customBodyForceOverride')}
+													</label>
+												</div>
 												<p className="mt-0.5 mb-2 text-[11px] leading-4 text-amber-800/80">
-													{t('customBodyHint')}
+													{formData.custom_params_force_override_body
+														? t('customBodyHintForceOverride')
+														: t('customBodyHint')}
 												</p>
 												<textarea
 													rows={5}

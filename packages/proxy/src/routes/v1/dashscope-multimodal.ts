@@ -237,6 +237,7 @@ dashScopeMultimodalRoutes.post('/', async (c) => {
 			tierStrategies: strategyPlan.tierOverrides,
 			timing,
 			sticky: stickyConfigFromSurface(stickySurface),
+			inboundHeaders: c.req.raw.headers,
 		},
 	);
 	return finalizeMultimodalResponse({

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- **模型列表请求入口**：`GET /v1/models` 的 `model_info` 增加 `inbound`（`protocol` + `operation`），列出当前可见的 Chat Completions、Responses、Anthropic Messages 或 Gemini generateContent 入口。这是请求入口，不是上游协议；选哪条入口以及思考档仍由客户端维护。
+
 ## 2.9.0
 
 ### Minor Changes

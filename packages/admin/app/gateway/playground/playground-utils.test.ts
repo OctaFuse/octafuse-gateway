@@ -400,6 +400,27 @@ describe('playground-utils', () => {
 		assert.equal(body.model, 'gpt-4o-mini');
 	});
 
+	it('previewPlaygroundMergedBody lets route fields win when force_override.body is on', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({ model: 'glm-5.3', max_tokens: 8000, messages: [] }),
+			customParams: JSON.stringify({
+				body: { max_tokens: 32000, thinking: { type: 'enabled' } },
+				force_override: { body: true },
+			}),
+			upstreamProtocol: 'openai',
+			providerModelName: 'glm-5.3-upstream',
+		});
+		assert.equal(result.status, 'preview');
+		const body = JSON.parse(result.json) as {
+			max_tokens?: number;
+			thinking?: { type?: string };
+			model?: string;
+		};
+		assert.equal(body.max_tokens, 32000);
+		assert.equal(body.thinking?.type, 'enabled');
+		assert.equal(body.model, 'glm-5.3-upstream');
+	});
+
 	it('previewPlaygroundRouteHeaders lists extra headers and skips protected names', () => {
 		assert.deepEqual(previewPlaygroundRouteHeaders(null), {});
 		assert.equal(formatPlaygroundRouteHeadersPreview({}), '');

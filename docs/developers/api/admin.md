@@ -655,7 +655,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
   - **`request_protocol` / `request_operation`**：公开请求入口，例如 `openai` + `chat` / `responses`；省略 operation 使用兼容值 `*`。
   - **`upstream_protocol` / `upstream_operation`**：Target 实际调用的协议 / capability；省略 operation 时跟随请求 operation。
   - **`adapter`**：同协议、同 operation 使用 `passthrough`；OpenAI Images / ASR / TTS 转 DashScope 使用注册表中的显式 adapter。未声明的跨协议或 operation 组合返回 **400**，见[适配器与驱动](../architecture/adapters-and-drivers.md)、[DashScope 生图](../architecture/dashscope-image.md)与[DashScope 音频](../architecture/dashscope-audio.md)。
-  - **`custom_params`**：JSON 对象。除请求体默认值外，可选保留键 **`headers`**（字符串键值）会在转发时注入上游 HTTP 头、**不**进入请求体。`Authorization` / `Content-Type` / hop-by-hop 等受保护头不可配置（**400**）。语义见用户 API [Route 默认参数合并](user.md#route-默认参数合并)。
+  - **`custom_params`**：JSON 对象，落库为信封 `{ headers, body, force_override }`。`headers`（字符串键值）注入上游 HTTP 头、**不**进入请求体；`body` 为请求体默认值；`force_override.headers` / `force_override.body` 仅在为 true 时写入，分别决定该侧是否路由覆盖客户端。`Authorization` / `Content-Type` / hop-by-hop 等受保护头不可配置（**400**）。仍接受旧扁平对象（顶层除 `headers` 外即请求体，两侧强制覆盖视为关），保存时规范成信封。语义见用户 API [Route 默认参数合并](user.md#route-默认参数合并)。
   - **`GET` 响应**：除 Target 字段外包含 `route_pool_id` 与 `surfaces`（JSON 数组字符串），用于还原 Surface → Pool → Target 拓扑。
 - **`PATCH /admin/routes/pools/:poolId`**：设置当前 Pool 的策略与按层覆盖。body 示例：
 

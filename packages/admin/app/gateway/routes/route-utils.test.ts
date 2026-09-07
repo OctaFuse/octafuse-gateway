@@ -997,7 +997,12 @@ describe('custom params headers / body form', () => {
 	it('keeps invalid JSON in the body editor so the user can fix it', () => {
 		const parsed = parseCustomParamsForm('{not json');
 		assert.equal(parsed.custom_params_json, '{not json');
-		assert.deepEqual(parsed.custom_headers, [{ name: '', value: '' }]);
+		assert.deepEqual(parsed.custom_headers, []);
+	});
+
+	it('starts with no header rows when custom_params has no headers', () => {
+		assert.deepEqual(parseCustomParamsForm(null).custom_headers, []);
+		assert.deepEqual(parseCustomParamsForm(JSON.stringify({ temperature: 0.2 })).custom_headers, []);
 	});
 
 	it('round-trips headers and body through the route form', () => {
@@ -1026,8 +1031,8 @@ describe('custom params headers / body form', () => {
 			null,
 		);
 		assert.deepEqual(JSON.parse(String(payload.custom_params)), {
-			temperature: 0.7,
 			headers: { 'HTTP-Referer': 'https://example.com', 'X-Title': 'My App' },
+			body: { temperature: 0.7 },
 		});
 	});
 
@@ -1049,8 +1054,12 @@ describe('custom params headers / body form', () => {
 	});
 
 	it('omits empty headers and empty body', () => {
+		assert.equal(composeCustomParamsJson('', []), null);
 		assert.equal(composeCustomParamsJson('', [{ name: '', value: '' }]), null);
 		assert.equal(composeCustomParamsJson('  ', [{ name: '  ', value: 'x' }]), null);
+		assert.deepEqual(JSON.parse(composeCustomParamsJson('', [], { body: true }) ?? '{}'), {
+			force_override: { body: true },
+		});
 		const payload = buildRouteSavePayload(
 			{
 				...EMPTY_ROUTE_FORM,
@@ -1063,6 +1072,81 @@ describe('custom params headers / body form', () => {
 		assert.equal(payload.custom_params, null);
 	});
 
+	it('round-trips independent force_override flags through the envelope', () => {
+		const form = buildFormDataFromRoute(
+			route({
+				custom_params: JSON.stringify({
+					headers: { 'X-Title': 'My App' },
+					body: { max_tokens: 32000 },
+					force_override: { body: true },
+				}),
+			}),
+			[],
+		);
+		assert.equal(form.custom_params_force_override_body, true);
+		assert.equal(form.custom_params_force_override_headers, false);
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				...form,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+				custom_params_force_override_headers: true,
+			},
+			null,
+		);
+		assert.equal(payload.custom_params_force_override, undefined);
+		assert.deepEqual(JSON.parse(String(payload.custom_params)), {
+			headers: { 'X-Title': 'My App' },
+			body: { max_tokens: 32000 },
+			force_override: { headers: true, body: true },
+		});
+	});
+
+	it('reads old flat custom_params with force override off', () => {
+		const form = buildFormDataFromRoute(
+			route({
+				custom_params: JSON.stringify({ temperature: 0.7, headers: { 'X-Title': 'A' } }),
+			}),
+			[],
+		);
+		assert.equal(form.custom_params_force_override_headers, false);
+		assert.equal(form.custom_params_force_override_body, false);
+		assert.equal(form.custom_params_json, JSON.stringify({ temperature: 0.7 }, null, 2));
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				...form,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+			},
+			null,
+		);
+		assert.deepEqual(JSON.parse(String(payload.custom_params)), {
+			headers: { 'X-Title': 'A' },
+			body: { temperature: 0.7 },
+		});
+	});
+
+	it('defaults force override flags to false', () => {
+		const form = buildFormDataFromRoute(route(), []);
+		assert.equal(form.custom_params_force_override_headers, false);
+		assert.equal(form.custom_params_force_override_body, false);
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+			},
+			null,
+		);
+		assert.equal(payload.custom_params, null);
+		assert.equal(payload.custom_params_force_override, undefined);
+	});
+
 	it('strips a headers key pasted into the body editor', () => {
 		assert.deepEqual(
 			JSON.parse(
@@ -1072,8 +1156,8 @@ describe('custom params headers / body form', () => {
 				) ?? '{}',
 			),
 			{
-				temperature: 0.5,
 				headers: { 'X-Title': 'My App' },
+				body: { temperature: 0.5 },
 			},
 		);
 	});

@@ -115,6 +115,8 @@ export type RouteFormData = {
 	/** Body JSON only; reserved `headers` is edited via `custom_headers`. */
 	custom_params_json: string;
 	custom_headers: RouteCustomHeaderRow[];
+	custom_params_force_override_headers: boolean;
+	custom_params_force_override_body: boolean;
 	route_group: string;
 	charged_factor: string;
 	metered_factor: string;
@@ -199,7 +201,9 @@ export const EMPTY_ROUTE_FORM: RouteFormData = {
 	priority: 0,
 	weight: 1,
 	custom_params_json: '',
-	custom_headers: [{ name: '', value: '' }],
+	custom_headers: [],
+	custom_params_force_override_headers: false,
+	custom_params_force_override_body: false,
 	route_group: 'default',
 	charged_factor: '1',
 	metered_factor: '1',

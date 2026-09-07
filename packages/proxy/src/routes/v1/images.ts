@@ -862,6 +862,7 @@ imageRoutes.post('/generations', async (c) => {
 		stickySurface: routed.stickySurface,
 		routes,
 		timing,
+		inboundHeaders: c.req.raw.headers,
 	});
 	timing.markGatewayComplete();
 
@@ -1021,6 +1022,7 @@ imageRoutes.post('/edits', async (c) => {
 		stickySurface: routed.stickySurface,
 		routes,
 		timing,
+		inboundHeaders: c.req.raw.headers,
 	});
 	timing.markGatewayComplete();
 

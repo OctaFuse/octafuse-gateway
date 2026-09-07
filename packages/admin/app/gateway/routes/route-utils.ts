@@ -14,7 +14,7 @@ import {
 } from '@octafuse/core/db/model-route-policy';
 import { parseRoutePoolTierStrategies } from '@octafuse/core/db/route-pool-tier-strategies';
 import { parseRoutePoolStickyConfig } from '@octafuse/core/db/route-pool-sticky-types';
-import { splitRouteCustomParams } from '@octafuse/core/route-custom-params';
+import { composeRouteCustomParamsEnvelope, splitRouteCustomParams } from '@octafuse/core/route-custom-params';
 import {
 	ANTHROPIC_ENDPOINT_CAPABILITIES,
 	DASHSCOPE_ENDPOINT_CAPABILITIES,
@@ -598,26 +598,32 @@ export function alignRouteScheduleWindowsToCatalog(
 }
 
 export function emptyCustomHeaderRows(): RouteCustomHeaderRow[] {
-	return [{ name: '', value: '' }];
+	return [];
 }
 
 export function customHeaderRowsHaveValues(rows: RouteCustomHeaderRow[]): boolean {
 	return rows.some((row) => row.name.trim().length > 0 || row.value.trim().length > 0);
 }
 
-/** 将 `custom_params` JSON 拆成请求体编辑区与 HTTP 头行。 */
+/** 将 `custom_params` JSON 拆成请求体编辑区、HTTP 头行与分侧强制覆盖。 */
 export function parseCustomParamsForm(raw: string | null | undefined): {
 	custom_params_json: string;
 	custom_headers: RouteCustomHeaderRow[];
+	custom_params_force_override_headers: boolean;
+	custom_params_force_override_body: boolean;
 } {
+	const empty = {
+		custom_params_json: '',
+		custom_headers: emptyCustomHeaderRows(),
+		custom_params_force_override_headers: false,
+		custom_params_force_override_body: false,
+	};
 	const text = raw?.trim() ?? '';
-	if (!text) {
-		return { custom_params_json: '', custom_headers: emptyCustomHeaderRows() };
-	}
+	if (!text) return empty;
 	try {
 		const parsed = JSON.parse(text) as unknown;
 		if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-			return { custom_params_json: text, custom_headers: emptyCustomHeaderRows() };
+			return { ...empty, custom_params_json: text };
 		}
 		const split = splitRouteCustomParams(parsed as Record<string, unknown>);
 		const bodyJson = Object.keys(split.body).length > 0 ? JSON.stringify(split.body, null, 2) : '';
@@ -625,16 +631,19 @@ export function parseCustomParamsForm(raw: string | null | undefined): {
 		return {
 			custom_params_json: bodyJson,
 			custom_headers: headerRows.length > 0 ? headerRows : emptyCustomHeaderRows(),
+			custom_params_force_override_headers: split.forceOverrideHeaders,
+			custom_params_force_override_body: split.forceOverrideBody,
 		};
 	} catch {
-		return { custom_params_json: text, custom_headers: emptyCustomHeaderRows() };
+		return { ...empty, custom_params_json: text };
 	}
 }
 
-/** 把表单的请求体 JSON 与头行合成保存用的 `custom_params`。空则返回 null。 */
+/** 把表单的请求体 JSON、头行与分侧强制覆盖合成信封。空则返回 null。 */
 export function composeCustomParamsJson(
 	bodyJson: string,
 	headers: RouteCustomHeaderRow[],
+	forceOverride?: { headers?: boolean; body?: boolean },
 ): string | null {
 	const extraHeaders: Record<string, string> = {};
 	for (const row of headers) {
@@ -651,14 +660,20 @@ export function composeCustomParamsJson(
 			throw new Error('custom_params must be a JSON object');
 		}
 		body = { ...(parsed as Record<string, unknown>) };
-		delete body.headers;
 	}
 
-	if (Object.keys(extraHeaders).length > 0) {
-		body.headers = extraHeaders;
-	}
-	if (Object.keys(body).length === 0) return null;
-	return JSON.stringify(body);
+	const envelope = composeRouteCustomParamsEnvelope({
+		body,
+		extraHeaders,
+		forceOverrideHeaders: forceOverride?.headers,
+		forceOverrideBody: forceOverride?.body,
+	});
+	return envelope ? JSON.stringify(envelope) : null;
+}
+
+export function routeHasCustomParamsForceOverride(raw: string | null | undefined): boolean {
+	const parsed = parseCustomParamsForm(raw);
+	return parsed.custom_params_force_override_headers || parsed.custom_params_force_override_body;
 }
 
 export function buildFormDataFromRoute(route: GatewayModelRoute, models: GatewayModel[]): RouteFormData {
@@ -718,7 +733,10 @@ export function buildRouteSavePayload(
 		weight: Math.max(1, Math.floor(Number(formData.weight) || 1)),
 		route_group: formData.route_group.trim() || 'default',
 		price_override: JSON.stringify(priceOverride),
-		custom_params: composeCustomParamsJson(formData.custom_params_json, formData.custom_headers),
+		custom_params: composeCustomParamsJson(formData.custom_params_json, formData.custom_headers, {
+			headers: formData.custom_params_force_override_headers,
+			body: formData.custom_params_force_override_body,
+		}),
 	};
 	if (!editingRoute) {
 		payload.status = 'inactive';
@@ -1327,6 +1345,8 @@ export function createInitialRouteForm(models: GatewayModel[], presetModelId?: s
 		weight: 1,
 		custom_params_json: '',
 		custom_headers: emptyCustomHeaderRows(),
+		custom_params_force_override_headers: false,
+		custom_params_force_override_body: false,
 		route_group: 'default',
 		charged_factor: '1',
 		metered_factor: '1',

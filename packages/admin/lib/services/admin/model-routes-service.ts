@@ -7,6 +7,7 @@ import {
 	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
 	isRequestOperationForProtocol,
+	normalizeRouteCustomParamsForStorage,
 	normalizeRouteOperation,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	validateRouteCustomParamsHeaders,
@@ -24,6 +25,12 @@ import {
 	coerceRoutePriceOverrideInput,
 } from './pricing-input';
 import { normalizeJsonObjectField, providerSupportsUpstreamProtocol } from './shared';
+import { listAdminUsers, resolveAdminUserId } from './users-service';
+import type {
+	AdminCreatedIdOutput,
+	AdminModelRouteMutationInput,
+	AdminModelRouteRow,
+} from './types';
 
 function assertCustomParamsHeaders(serialized: string | null): void {
 	if (!serialized) return;
@@ -39,12 +46,24 @@ function assertCustomParamsHeaders(serialized: string | null): void {
 	const result = validateRouteCustomParamsHeaders(parsed as Record<string, unknown>);
 	if (!result.ok) throw badRequest(result.message);
 }
-import { listAdminUsers, resolveAdminUserId } from './users-service';
-import type {
-	AdminCreatedIdOutput,
-	AdminModelRouteMutationInput,
-	AdminModelRouteRow,
-} from './types';
+
+function normalizeCustomParamsForStorage(raw: unknown): string | null {
+	const normalized = normalizeJsonObjectField(raw, 'custom_params');
+	if (!normalized.ok) throw badRequest(normalized.message);
+	if (!normalized.value) return null;
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(normalized.value) as unknown;
+	} catch {
+		throw badRequest('custom_params must be valid JSON');
+	}
+	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+		throw badRequest('custom_params must be a JSON object');
+	}
+	assertCustomParamsHeaders(normalized.value);
+	const envelope = normalizeRouteCustomParamsForStorage(parsed as Record<string, unknown>);
+	return envelope ? JSON.stringify(envelope) : null;
+}
 
 /** Image models keep an OpenAI public entry; upstream may be OpenAI passthrough or DashScope conversion. */
 async function assertImageModelUpstreamProtocol(
@@ -127,9 +146,7 @@ export async function createModelRouteService(
 		throw badRequest('model_id, provider_id, and provider_model_name are required');
 	}
 
-	const customParamsNorm = normalizeJsonObjectField(body.custom_params, 'custom_params');
-	if (!customParamsNorm.ok) throw badRequest(customParamsNorm.message);
-	assertCustomParamsHeaders(customParamsNorm.value);
+	const customParams = normalizeCustomParamsForStorage(body.custom_params);
 
 	let proto: UpstreamProtocol;
 	try {
@@ -223,7 +240,7 @@ export async function createModelRouteService(
 		status: String(body.status ?? 'active'),
 		routeGroup,
 		priceOverride,
-		customParams: customParamsNorm.value,
+		customParams,
 		upstreamProtocol: proto,
 		routePoolId: topology.poolId,
 		upstreamOperation,
@@ -253,11 +270,9 @@ export async function updateModelRouteService(
 	delete patch.id;
 	delete patch.request_protocol;
 	delete patch.request_operation;
+	delete patch.custom_params_force_override;
 	if (patch.custom_params !== undefined) {
-		const normalized = normalizeJsonObjectField(patch.custom_params, 'custom_params');
-		if (!normalized.ok) throw badRequest(normalized.message);
-		assertCustomParamsHeaders(normalized.value);
-		patch.custom_params = normalized.value;
+		patch.custom_params = normalizeCustomParamsForStorage(patch.custom_params);
 	}
 	if (patch.route_group !== undefined) {
 		const g = String(patch.route_group).trim();

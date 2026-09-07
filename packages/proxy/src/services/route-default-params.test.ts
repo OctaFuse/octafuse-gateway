@@ -39,4 +39,16 @@ describe('buildRouteRequestBody', () => {
 		assert.equal(body.headers, undefined);
 		assert.deepEqual(body.messages, []);
 	});
+
+	it('lets route fields win when force_override.body is on', () => {
+		const body = buildRouteRequestBody(
+			route({
+				body: { max_tokens: 32000 },
+				force_override: { body: true },
+			}),
+			{ messages: [], max_tokens: 8000 },
+		);
+		assert.equal(body.max_tokens, 32000);
+		assert.deepEqual(body.messages, []);
+	});
 });

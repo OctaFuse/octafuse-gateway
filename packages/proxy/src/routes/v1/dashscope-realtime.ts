@@ -248,6 +248,7 @@ dashScopeRealtimeRoutes.get('/', async (c) => {
 			strategy: strategyPlan.base,
 			tierStrategies: strategyPlan.tierOverrides,
 			timing,
+			inboundHeaders: c.req.raw.headers,
 		}
 	);
 	const nodeUpgrade =
