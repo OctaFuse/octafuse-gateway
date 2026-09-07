@@ -1,5 +1,52 @@
 [
 	{
+		"id": "claude-fable-5-1",
+		"display_name": "Claude Fable 5.1",
+		"description": "Anthropic's successor to Claude Fable 5 for long-running agentic coding, multistep research, and document work. Adaptive thinking is always on; input and output prices match Fable 5, with cheaper prompt-cache reads.",
+		"i18n": {
+			"en": "Anthropic's successor to Claude Fable 5 for long-running agentic coding, multistep research, and document work. Adaptive thinking is always on; input and output prices match Fable 5, with cheaper prompt-cache reads.",
+			"zh": "Claude Fable 5 的后继模型，面向长时间 Agent 编程、多步研究与文档工作。自适应思考始终开启；输入输出单价与 Fable 5 相同，提示缓存读取更便宜。"
+		},
+		"vendor": "anthropic",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10,
+						"output_price": 50,
+						"cache_read_price": 0.25,
+						"cache_write_price": 12.5
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 70,
+						"output_price": 350,
+						"cache_read_price": 1.75,
+						"cache_write_price": 87.5
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-01"
+	},
+	{
 		"id": "claude-fable-5",
 		"display_name": "Claude Fable 5",
 		"description": "An Anthropic model built for autonomous knowledge work, coding, and multimodal agents. It is positioned for autonomous knowledge work and coding with multimodal input, reasoning, and tool-oriented workflows.",

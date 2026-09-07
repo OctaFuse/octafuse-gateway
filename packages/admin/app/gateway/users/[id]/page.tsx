@@ -12,21 +12,25 @@ import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
 import { parseGatewayDateTime } from '@/lib/datetime';
-import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
+import { formatGatewayMoneyCode, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
-import type { GatewayApiKeyBudgetAuditLog, GatewayModel, GatewayRequestLog } from '@/lib/types';
-import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
+import {
+  API_KEY_BUDGET_AUDIT_EVENT_TYPES,
+  type GatewayApiKeyBudgetAuditLog,
+  type GatewayModel,
+  type GatewayRequestLog,
+} from '@/lib/types';
 import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
-import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
+import { AuditChangeDetailModal, AuditLogSharedCells } from '@/components/AuditLogSharedCells';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
 
-/** 与「Δ spend」「budget_max」列重复，不在「User snapshot Δ」再展示 */
-const OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS = ['budget_spent', 'budget_max'] as const;
+/** 用户详情近期审计与全站页默认一致：不含用量扣费 */
+const USER_DETAIL_AUDIT_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((type) => type !== 'usage_charge');
 
 type ChargedCostFactorRow = { modelId: string; factor: string };
 
@@ -121,12 +125,6 @@ function keyRpm(key: { rate_limit?: { rpm?: number } | null }): number | null {
   return key.rate_limit?.rpm ?? null;
 }
 
-function shortAuditId(id: string | null | undefined): string {
-  if (id == null || id === '') return '—';
-  if (id.length < 14) return id;
-  return `${id.slice(0, 8)}…${id.slice(-4)}`;
-}
-
 const USER_DETAIL_RECENT_LIMIT = 5;
 
 function formatLogProvider(log: GatewayRequestLog): string {
@@ -139,6 +137,7 @@ export default function GatewayUserDetailPage() {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
   const tOptions = useTranslations('options');
+  const tAudit = useTranslations('auditLogs');
   const { notify, confirm } = useFeedback();
   const params = useParams();
   const userIdRaw = typeof params.id === 'string' ? params.id : '';
@@ -149,7 +148,7 @@ export default function GatewayUserDetailPage() {
   const [keys, setKeys] = useState<KeyRow[]>([]);
   const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
   const [audits, setAudits] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
-  const [walletCredits, setWalletCredits] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
+  const [detailLog, setDetailLog] = useState<GatewayApiKeyBudgetAuditLog | null>(null);
   const [planError, setPlanError] = useState('');
   const [planSuccess, setPlanSuccess] = useState('');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
@@ -187,7 +186,7 @@ export default function GatewayUserDetailPage() {
   const [metaViewKey, setMetaViewKey] = useState<KeyRow | null>(null);
   const [isKeySaving, setIsKeySaving] = useState(false);
   const { currency: billingCurrency } = useBillingCurrency();
-  const { formatDateTime } = useGatewayDateTime();
+  const { formatDateTime, businessTimezone } = useGatewayDateTime();
   const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
 
   const loadUser = useCallback(async () => {
@@ -253,29 +252,18 @@ export default function GatewayUserDetailPage() {
   const loadAudits = useCallback(async () => {
     if (!userId) return;
     try {
-      const q = new URLSearchParams({ page: '1', page_size: String(USER_DETAIL_RECENT_LIMIT) });
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/audit-logs?${q}`);
-      const data = await readApiJson<GatewayApiKeyBudgetAuditLog[]>(res);
-      if (data.success) {
-        setAudits(data.data ?? []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [userId]);
-
-  const loadWalletCredits = useCallback(async () => {
-    if (!userId) return;
-    try {
       const q = new URLSearchParams({
         page: '1',
         page_size: String(USER_DETAIL_RECENT_LIMIT),
-        event_type: 'wallet_credit',
+        user_id: userId,
       });
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/audit-logs?${q}`);
+      for (const eventType of USER_DETAIL_AUDIT_EVENT_TYPES) {
+        q.append('event_type', eventType);
+      }
+      const res = await fetch(`/api/admin/budget-audit-logs?${q}`);
       const data = await readApiJson<GatewayApiKeyBudgetAuditLog[]>(res);
       if (data.success) {
-        setWalletCredits(data.data ?? []);
+        setAudits(data.data ?? []);
       }
     } catch (e) {
       console.error(e);
@@ -297,10 +285,6 @@ export default function GatewayUserDetailPage() {
   useEffect(() => {
     loadAudits();
   }, [loadAudits]);
-
-  useEffect(() => {
-    loadWalletCredits();
-  }, [loadWalletCredits]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1214,68 +1198,6 @@ export default function GatewayUserDetailPage() {
 
       <div className="mt-6 bg-white rounded-lg shadow-md p-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.walletCredits')}</h2>
-          <Link
-            href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}&event_type=wallet_credit`}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            {tCommon('more')}
-          </Link>
-        </div>
-        <div className="overflow-x-auto text-xs">
-          <table className="min-w-full">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="py-2 pr-2">{tCommon('time')}</th>
-                <th className="py-2 pr-2">{t('table.event')}</th>
-                <th className="py-2 pr-2">{t('table.sourceTrace')}</th>
-                <th className="py-2 pr-2">{t('table.userSnapshotDelta')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {walletCredits.map((a) => {
-                const snapLines = summarizeUserSnapshotDiffLines({
-                  before_user_snapshot: a.before_user_snapshot ?? null,
-                  after_user_snapshot: a.after_user_snapshot ?? null,
-                  changed_fields: a.changed_fields ?? null,
-                  omitSnapshotFields: OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS,
-                });
-                return (
-                  <tr key={a.id} className="border-b border-gray-50 align-top">
-                    <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(a.created_at)}</td>
-                    <td className="py-2 pr-2">
-                      <div className="font-medium">{a.event_type}</div>
-                      {(a.reason_code || a.reason_text) ? (
-                        <div className="text-gray-600 mt-0.5 max-w-[14rem] line-clamp-2" title={a.reason_text ?? a.reason_code ?? ''}>
-                          {a.reason_text || a.reason_code}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="py-2 pr-2 font-mono text-[11px] text-gray-700">
-                      {a.source ? <div className="text-violet-800">{a.source}</div> : <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="py-2 pr-2 text-gray-600">
-                      {snapLines.length === 0 ? (
-                        <span className="text-gray-400">—</span>
-                      ) : (
-                        snapLines.slice(0, 4).map((line, i) => (
-                          <div key={`${a.id}-w-${i}`} className="line-clamp-2 font-mono text-[11px]" title={line}>
-                            {line}
-                          </div>
-                        ))
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {walletCredits.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.walletCredits')}</p>}
-        </div>
-      </div>
-
-      <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-        <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.userAuditLogs')}</h2>
           <Link
             href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}`}
@@ -1284,78 +1206,51 @@ export default function GatewayUserDetailPage() {
             {tCommon('more')}
           </Link>
         </div>
-        <div className="overflow-x-auto text-xs">
-          <table className="min-w-full">
-            <thead>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
               <tr className="text-left text-gray-500 border-b">
-                <th className="py-2 pr-2">{tCommon('time')}</th>
-                <th className="py-2 pr-2">{t('table.event')}</th>
-                <th className="py-2 pr-2">{t('table.sourceTrace')}</th>
-                <th className="py-2 pr-2">{t('table.deltaSpend')}</th>
-                <th className="py-2 pr-2">{t('table.budgetMaxChange')}</th>
-                <th className="py-2 pr-2 min-w-[12rem]">{t('table.userSnapshotDelta')}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap">{tAudit('table.time')}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">{tAudit('table.event')}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">{tAudit('table.actor')}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase min-w-[14rem]">{tAudit('table.budget')}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase min-w-[12rem]">{tAudit('table.periodPlan')}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase min-w-[14rem]">{tAudit('table.wallet')}</th>
+                <th className="px-3 py-2 text-xs font-medium uppercase min-w-[16rem]">{tAudit('table.userChangeDetail')}</th>
               </tr>
             </thead>
-            <tbody>
-              {audits.map((a) => {
-                const snapLines = summarizeUserSnapshotDiffLines({
-                  before_user_snapshot: a.before_user_snapshot ?? null,
-                  after_user_snapshot: a.after_user_snapshot ?? null,
-                  changed_fields: a.changed_fields ?? null,
-                  omitSnapshotFields: OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS,
-                });
-                return (
-                <tr key={a.id} className="border-b border-gray-50 align-top">
-                  <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(a.created_at)}</td>
-                  <td className="py-2 pr-2">
-                    <div className="font-medium">{a.event_type}</div>
-                    <div className="text-gray-500 mt-0.5">{a.actor_type}</div>
-                    {(a.reason_code || a.reason_text) ? (
-                      <div className="text-gray-600 mt-0.5 max-w-[14rem] line-clamp-2" title={a.reason_text ?? a.reason_code ?? ''}>
-                        {a.reason_text || a.reason_code}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="py-2 pr-2 font-mono text-[11px] text-gray-700">
-                    {a.source ? <div className="text-violet-800">{a.source}</div> : <span className="text-gray-400">—</span>}
-                    {a.correlation_id ? (
-                      <div className="mt-0.5 text-gray-500" title={a.correlation_id}>corr {shortAuditId(a.correlation_id)}</div>
-                    ) : a.request_log_id ? (
-                      <div className="mt-0.5 text-gray-500" title={a.request_log_id}>req {shortAuditId(a.request_log_id)}</div>
-                    ) : null}
-                  </td>
-                  <td className="py-2 pr-2">{formatGatewayMoneyCodeSigned(a.delta_spent, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}</td>
-                  <td className="py-2 pr-2 font-mono">
-                    {a.before_budget_max != null ? formatGatewayMoneyCode(a.before_budget_max, billingCurrency, 2) : '—'}
-                    {' → '}
-                    {a.after_budget_max != null ? formatGatewayMoneyCode(a.after_budget_max, billingCurrency, 2) : '—'}
-                  </td>
-                  <td className="py-2 pr-2 text-gray-600">
-                    <div className="space-y-0.5">
-                      {snapLines.length === 0 ? (
-                        <span className="text-gray-400">—</span>
-                      ) : (
-                        <>
-                          {snapLines.slice(0, 5).map((line, i) => (
-                            <div key={`${a.id}-s-${i}`} className="line-clamp-2 font-mono text-[11px]" title={line}>
-                              {line}
-                            </div>
-                          ))}
-                          {snapLines.length > 5 ? (
-                            <div className="text-gray-400 text-[11px]">{t('detailSections.moreCount', { count: snapLines.length - 5 })}</div>
-                          ) : null}
-                        </>
-                      )}
-                    </div>
+            <tbody className="divide-y divide-gray-100">
+              {audits.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    {t('empty.auditLogs')}
                   </td>
                 </tr>
-                );
-              })}
+              ) : (
+                audits.map((a) => (
+                  <tr key={a.id} className="align-top hover:bg-gray-50">
+                    <AuditLogSharedCells
+                      item={a}
+                      currency={billingCurrency}
+                      timezone={businessTimezone}
+                      onViewDetail={setDetailLog}
+                      showIdentity={false}
+                    />
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-          {audits.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.auditLogs')}</p>}
         </div>
       </div>
+
+      {detailLog ? (
+        <AuditChangeDetailModal
+          item={detailLog}
+          timezone={businessTimezone}
+          onClose={() => setDetailLog(null)}
+        />
+      ) : null}
 
       {showModelPicker && (
         <div

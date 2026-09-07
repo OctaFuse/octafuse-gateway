@@ -28,6 +28,64 @@ function parseJsonObject(raw: string | null | undefined): Record<string, unknown
 	return null;
 }
 
+const WALLET_MONEY_DECIMAL_PLACES = 6;
+
+function moneyNumber(value: unknown): number {
+	const n = Number(value ?? 0);
+	return Number.isFinite(n) ? n : 0;
+}
+
+function moneyEqual(a: number, b: number): boolean {
+	return a.toFixed(WALLET_MONEY_DECIMAL_PLACES) === b.toFixed(WALLET_MONEY_DECIMAL_PLACES);
+}
+
+/** 已在「永久额度 / Wallet」列展示的快照字段，不在用户变更摘要中重复。 */
+export const WALLET_AUDIT_SNAPSHOT_FIELDS = ['wallet_granted', 'wallet_spent'] as const;
+
+export type AuditWalletSnapshotDiff = {
+	hasSnapshot: boolean;
+	beforeGranted: number;
+	afterGranted: number;
+	beforeSpent: number;
+	afterSpent: number;
+	beforeRemaining: number;
+	afterRemaining: number;
+	grantedChanged: boolean;
+	spentChanged: boolean;
+	remainingChanged: boolean;
+};
+
+/**
+ * 从 before/after 用户快照解析永久额度前后值。无快照时 `hasSnapshot` 为 false。
+ * 余额为 granted − spent，不落库。
+ */
+export function summarizeWalletSnapshotDiff(
+	beforeUserSnapshot?: string | null,
+	afterUserSnapshot?: string | null
+): AuditWalletSnapshotDiff {
+	const before = parseJsonObject(beforeUserSnapshot ?? null);
+	const after = parseJsonObject(afterUserSnapshot ?? null);
+	const hasSnapshot = before != null || after != null;
+	const beforeGranted = moneyNumber(before?.wallet_granted);
+	const afterGranted = moneyNumber(after?.wallet_granted);
+	const beforeSpent = moneyNumber(before?.wallet_spent);
+	const afterSpent = moneyNumber(after?.wallet_spent);
+	const beforeRemaining = beforeGranted - beforeSpent;
+	const afterRemaining = afterGranted - afterSpent;
+	return {
+		hasSnapshot,
+		beforeGranted,
+		afterGranted,
+		beforeSpent,
+		afterSpent,
+		beforeRemaining,
+		afterRemaining,
+		grantedChanged: hasSnapshot && !moneyEqual(beforeGranted, afterGranted),
+		spentChanged: hasSnapshot && !moneyEqual(beforeSpent, afterSpent),
+		remainingChanged: hasSnapshot && !moneyEqual(beforeRemaining, afterRemaining),
+	};
+}
+
 function parseChangedFields(raw: string | null | undefined): string[] | null {
 	const t = raw?.trim();
 	if (!t) return null;

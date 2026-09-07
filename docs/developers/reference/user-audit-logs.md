@@ -65,7 +65,7 @@
 ### 6. 管理端 PATCH 用户 / 密钥（`admin_adjust`）
 
 - `packages/admin/lib/services/admin/users-service.ts`、`keys-service.ts`。
-- **Cause**：`source=admin_users`；`reason_code` / `reason_text` 随 patch 场景（如门户订阅激活、过期回收）。
+- **Cause**：`source=admin_users`；`reason_code` / `reason_text` 随 patch 场景（如门户订阅激活、过期回收）。仅改永久额度绝对值（`wallet_granted` / `wallet_spent`）时 `reason_code=admin_patch_wallet`；周期额度变化时仍为 `admin_patch_budget`。
 
 ### 7. 管理端预算转换（`admin_adjust` + `budget/transition`）
 

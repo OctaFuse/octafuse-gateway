@@ -400,6 +400,9 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 		Number(rowAfter.budget_base ?? 0) !== Number(row.budget_base ?? 0) ||
 		(rowAfter.budget_period ?? null) !== (row.budget_period ?? null) ||
 		(rowAfter.budget_reset_at ?? null) !== (row.budget_reset_at ?? null);
+	const walletChanged =
+		Number(rowAfter.wallet_granted ?? 0) !== Number(row.wallet_granted ?? 0) ||
+		Number(rowAfter.wallet_spent ?? 0) !== Number(row.wallet_spent ?? 0);
 
 	const metadataChanged = (row.metadata ?? '') !== (rowAfter.metadata ?? '');
 	const statusChanged = (row.status ?? '') !== (rowAfter.status ?? '');
@@ -461,7 +464,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 	const afterUserSnap = snapshotToJson(userRowToSnapshot(rowAfter));
 	const userChangedFieldsJson = changedFieldsToJson(computeChangedFields(userRowToSnapshot(row), userRowToSnapshot(rowAfter)));
 
-	if (budgetChanged) {
+	if (budgetChanged || walletChanged) {
 		await repos.userAuditLogs.insertUserAuditLog(
 			userBudgetAuditToInsertRowFull(userId, {
 				id: crypto.randomUUID(),
@@ -469,7 +472,7 @@ export async function updateAdminUser(repos: GatewayRepositories, raw: string, i
 				eventType: 'admin_adjust',
 				actorType: 'admin',
 				actorId,
-				reasonCode: 'admin_patch_budget',
+				reasonCode: budgetChanged ? 'admin_patch_budget' : 'admin_patch_wallet',
 				reasonText: reasonText,
 				beforeSpent: Number(row.budget_spent ?? 0),
 				deltaSpent: Number(rowAfter.budget_spent ?? 0) - Number(row.budget_spent ?? 0),

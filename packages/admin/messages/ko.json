@@ -90,6 +90,7 @@
 		"key": "키",
 		"showing": "{filtered} / {total}개 표시",
 		"selected": "{count}개 선택됨",
+		"selectedOfTotal": "{selected} / {total}개 선택",
 		"masterKeyCannotBeEmpty": "Master key를 입력해야 합니다",
 		"businessTimezoneCannotBeEmpty": "업무 시간대를 입력해야 합니다",
 		"billingCurrencyMustBeUsdOrCny": "결제 통화는 USD 또는 CNY여야 합니다",
@@ -1446,12 +1447,7 @@
 			"chargedCostFactors": "모델 할인",
 			"created": "생성일",
 			"updated": "업데이트일",
-			"group": "그룹",
-			"event": "이벤트",
-			"sourceTrace": "소스 / trace",
-			"deltaSpend": "Δ 지출",
-			"budgetMaxChange": "budget_max →",
-			"userSnapshotDelta": "사용자 Snapshot Δ"
+			"group": "그룹"
 		},
 		"fields": {
 			"email": "이메일",
@@ -1529,15 +1525,13 @@
 		"detailSections": {
 			"recentRequestLogs": "최근 요청 로그",
 			"userAuditLogs": "사용자 감사 로그",
-			"walletCredits": "월렛 지급 내역",
 			"keyMetadata": "Key Metadata",
 			"newApiKey": "새 API Key",
 			"moreCount": "+{count}개 더 보기"
 		},
 		"empty": {
 			"requestLogs": "요청 로그가 없습니다",
-			"auditLogs": "감사 로그가 없습니다",
-			"walletCredits": "월렛 지급 이벤트가 없습니다"
+			"auditLogs": "감사 로그가 없습니다"
 		},
 		"confirm": {
 			"deleteUser": "이 사용자와 모든 Key를 영구 삭제하시겠습니까? 감사 기록은 유지되며 사용자 링크만 제거됩니다.",
@@ -1788,6 +1782,37 @@
 			"correlationPlaceholder": "request_log_id / 업무 참조",
 			"actorIdPlaceholder": "console:admin / admin_key:'<uuid>'"
 		},
+		"eventTypes": {
+			"usage_charge": "사용량 과금",
+			"period_reset": "주기 재설정",
+			"admin_adjust": "관리 조정",
+			"key_created": "키 생성",
+			"key_revoked": "키 취소",
+			"key_deleted": "키 삭제",
+			"user_created": "사용자 생성",
+			"user_deleted": "사용자 삭제",
+			"wallet_credit": "월렛 적립"
+		},
+		"sourceChannels": {
+			"gateway_usage": "게이트웨이 사용량",
+			"gateway_auth": "게이트웨이 인증",
+			"gateway_user_service": "사용자 서비스",
+			"gateway_key_service": "키 서비스",
+			"key_provision": "키 발급",
+			"gateway_user_provision": "사용자 발급",
+			"admin_users": "사용자 관리",
+			"admin_budget_transition": "예산 전환",
+			"admin_keys": "키 관리",
+			"admin_user_key": "사용자 키",
+			"admin_wallet": "월렛 적립",
+			"usage_charge": "레거시 사용량 과금",
+			"period_reset": "레거시 주기 재설정"
+		},
+		"actorTypes": {
+			"system": "시스템",
+			"admin": "관리",
+			"service": "내부 서비스"
+		},
 		"actorKinds": {
 			"console": "콘솔 세션",
 			"admin_key": "통합 키",
@@ -1801,8 +1826,9 @@
 			"event": "이벤트",
 			"actor": "작업자",
 			"identity": "이메일 / 사용자 / Key",
-			"spend": "지출",
-			"budgetPlan": "예산 플랜",
+			"budget": "주기 예산",
+			"periodPlan": "주기 플랜",
+			"wallet": "월렛",
 			"userChangeDetail": "사용자 변경 세부 정보"
 		},
 		"labels": {
@@ -1820,6 +1846,9 @@
 			"delta": "변화량",
 			"budgetPool": "주기",
 			"walletPool": "월렛",
+			"granted": "지급:",
+			"spent": "소모:",
+			"remaining": "잔액:",
 			"max": "최대:",
 			"base": "기준:",
 			"period": "주기:",

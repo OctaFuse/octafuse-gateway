@@ -90,6 +90,7 @@
 		"key": "キー",
 		"showing": "{filtered} / {total} 件を表示",
 		"selected": "{count} 件選択済み",
+		"selectedOfTotal": "{selected} / {total} 件選択",
 		"masterKeyCannotBeEmpty": "Master key は必須です",
 		"businessTimezoneCannotBeEmpty": "業務タイムゾーンは必須です",
 		"billingCurrencyMustBeUsdOrCny": "請求通貨は USD または CNY にしてください",
@@ -1446,12 +1447,7 @@
 			"chargedCostFactors": "モデル割引",
 			"created": "作成日時",
 			"updated": "更新日時",
-			"group": "グループ",
-			"event": "イベント",
-			"sourceTrace": "ソース / trace",
-			"deltaSpend": "Δ spend",
-			"budgetMaxChange": "budget_max →",
-			"userSnapshotDelta": "ユーザースナップショット Δ"
+			"group": "グループ"
 		},
 		"fields": {
 			"email": "メールアドレス",
@@ -1529,15 +1525,13 @@
 		"detailSections": {
 			"recentRequestLogs": "最近のリクエストログ",
 			"userAuditLogs": "ユーザー監査ログ",
-			"walletCredits": "ウォレット付与履歴",
 			"keyMetadata": "Key metadata",
 			"newApiKey": "新しい API Key",
 			"moreCount": "他 {count} 件"
 		},
 		"empty": {
 			"requestLogs": "リクエストログはありません",
-			"auditLogs": "監査ログはありません",
-			"walletCredits": "ウォレット付与イベントはありません"
+			"auditLogs": "監査ログはありません"
 		},
 		"confirm": {
 			"deleteUser": "このユーザーとすべての Key を完全に削除しますか？監査履歴は保持されます（ユーザーリンクは解除されます）。",
@@ -1788,6 +1782,37 @@
 			"correlationPlaceholder": "request_log_id / 業務参照",
 			"actorIdPlaceholder": "console:admin / admin_key:'<uuid>'"
 		},
+		"eventTypes": {
+			"usage_charge": "利用課金",
+			"period_reset": "周期リセット",
+			"admin_adjust": "管理調整",
+			"key_created": "キー作成",
+			"key_revoked": "キー失効",
+			"key_deleted": "キー削除",
+			"user_created": "ユーザー作成",
+			"user_deleted": "ユーザー削除",
+			"wallet_credit": "ウォレット加算"
+		},
+		"sourceChannels": {
+			"gateway_usage": "ゲートウェイ利用",
+			"gateway_auth": "ゲートウェイ認証",
+			"gateway_user_service": "ユーザーサービス",
+			"gateway_key_service": "キーサービス",
+			"key_provision": "キー発行",
+			"gateway_user_provision": "ユーザー発行",
+			"admin_users": "ユーザー管理",
+			"admin_budget_transition": "予算移行",
+			"admin_keys": "キー管理",
+			"admin_user_key": "ユーザーキー",
+			"admin_wallet": "ウォレット加算",
+			"usage_charge": "旧利用課金",
+			"period_reset": "旧周期リセット"
+		},
+		"actorTypes": {
+			"system": "システム",
+			"admin": "管理",
+			"service": "内部サービス"
+		},
 		"actorKinds": {
 			"console": "コンソールセッション",
 			"admin_key": "連携キー",
@@ -1801,8 +1826,9 @@
 			"event": "イベント",
 			"actor": "実行者",
 			"identity": "メール / ユーザー / Key",
-			"spend": "利用額",
-			"budgetPlan": "予算プラン",
+			"budget": "周期予算",
+			"periodPlan": "周期プラン",
+			"wallet": "ウォレット",
 			"userChangeDetail": "ユーザー変更詳細"
 		},
 		"labels": {
@@ -1820,6 +1846,9 @@
 			"delta": "差分",
 			"budgetPool": "周期",
 			"walletPool": "ウォレット",
+			"granted": "付与：",
+			"spent": "消費：",
+			"remaining": "残高：",
 			"max": "上限：",
 			"base": "基準：",
 			"period": "期間：",

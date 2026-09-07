@@ -201,6 +201,10 @@ describe('playground-utils', () => {
 		const fable5 = parse('claude-fable-5');
 		assert.equal(fable5.thinking?.type, 'adaptive');
 
+		const fable51 = parse('claude-fable-5-1');
+		assert.equal(fable51.thinking?.type, 'adaptive');
+		assert.equal(fable51.output_config?.effort, 'high');
+
 		const sonnet4 = parse('claude-sonnet-4', 'claude-sonnet-4-20250514');
 		assert.equal(sonnet4.thinking?.type, 'enabled');
 		assert.equal(sonnet4.output_config, undefined);
@@ -245,6 +249,12 @@ describe('playground-utils', () => {
 		assert.equal(gpt5.reasoning_effort, 'medium');
 		assert.equal(gpt5.max_completion_tokens, 4096);
 		assert.equal(gpt5.max_tokens, undefined);
+		const gpt6 = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-6-astra' }),
+		) as { reasoning_effort?: string; max_tokens?: number; max_completion_tokens?: number };
+		assert.equal(gpt6.reasoning_effort, 'medium');
+		assert.equal(gpt6.max_completion_tokens, 4096);
+		assert.equal(gpt6.max_tokens, undefined);
 	});
 
 	it('uses OpenAI-compat vendor thinking fields for DeepSeek, GLM, Qwen, MiniMax, and Kimi', () => {
@@ -297,6 +307,12 @@ describe('playground-utils', () => {
 		) as { max_completion_tokens?: number; max_tokens?: number };
 		assert.equal(gpt5.max_completion_tokens, 256);
 		assert.equal(gpt5.max_tokens, undefined);
+
+		const gpt6 = JSON.parse(
+			playgroundLlmSampleBody('openai_chat', 'connectivity', { modelId: 'gpt-6-astra' }),
+		) as { max_completion_tokens?: number; max_tokens?: number };
+		assert.equal(gpt6.max_completion_tokens, 256);
+		assert.equal(gpt6.max_tokens, undefined);
 
 		const gemini25 = JSON.parse(
 			playgroundLlmSampleBody('gemini', 'tools', { modelId: 'gemini-2.5-flash' }),
