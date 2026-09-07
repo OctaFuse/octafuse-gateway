@@ -25,16 +25,19 @@ import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/format-gateway-currency';
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
+import { summarizeWalletSnapshotDiff, WALLET_AUDIT_SNAPSHOT_FIELDS } from '@/lib/audit-user-snapshot-diff';
+import { AuditWalletPlanBlock } from '@/components/AuditWalletPlanBlock';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
-/** 已在 Spend / Budget plan 列展示的快照字段，不在「User change detail」重复 */
+/** 已在 Budget / Period plan / Wallet 列展示的快照字段，不在「User change detail」重复 */
 const OMIT_AUDIT_LOG_SNAPSHOT_FIELDS = [
 	'budget_spent',
 	'budget_max',
 	'budget_base',
 	'budget_period',
 	'budget_reset_at',
+	...WALLET_AUDIT_SNAPSHOT_FIELDS,
 ] as const;
 
 const DEFAULT_AUDIT_LOG_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((type) => type !== 'usage_charge');
@@ -144,7 +147,7 @@ function appendAuditReasonCodeParams(params: URLSearchParams, reasonCodes: strin
   reasonCodes.forEach((reasonCode) => params.append('reason_code', reasonCode));
 }
 
-/** change_payload 展开行：去掉已由 Budget plan / Time / Event 列展示的键 */
+/** change_payload 展开行：去掉已由 Budget / Period plan / Time / Event 列展示的键 */
 function shouldOmitChangePayloadDisplayLine(line: string): boolean {
 	const colon = line.indexOf(':');
 	const key = (colon === -1 ? line : line.slice(0, colon)).trim();
@@ -156,10 +159,6 @@ function shouldOmitChangePayloadDisplayLine(line: string): boolean {
 
 function formatSignedMoney(value: number, currency: string): string {
   return formatGatewayMoneyCodeSigned(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
-}
-
-function formatPlainMoney(value: number, currency: string): string {
-  return formatGatewayMoneyCode(value, currency, GATEWAY_MONEY_DECIMAL_PLACES);
 }
 
 function formatBudgetMax(value: number | null, currency: string, noLimitLabel = 'no limit'): string {
@@ -249,18 +248,33 @@ const budgetPlanHighlight = {
   after: 'rounded px-0.5 bg-sky-50 text-sky-900',
 } as const;
 
+function AuditChangedPair({
+  changed,
+  before,
+  after,
+}: {
+  changed: boolean;
+  before: string;
+  after: string;
+}) {
+  if (!changed) {
+    return <>{after}</>;
+  }
+  return (
+    <>
+      <span className={budgetPlanHighlight.before}>{before}</span>
+      <span className="text-gray-400"> → </span>
+      <span className={budgetPlanHighlight.after}>{after}</span>
+    </>
+  );
+}
+
 type AuditDiffRow = {
   group: 'snapshot' | 'payload';
   field: string;
   before: string;
   after: string;
 };
-
-function snapshotMoneyField(raw: string | null | undefined, key: string): number {
-  const parsed = parseAuditJsonObject(raw);
-  const n = Number(parsed?.[key] ?? 0);
-  return Number.isFinite(n) ? n : 0;
-}
 
 function parseAuditJsonObject(raw: string | null | undefined): Record<string, unknown> | null {
   const trimmed = raw?.trim();
@@ -967,8 +981,9 @@ export default function GatewayAuditLogsPage() {
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">{t('table.event')}</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">{t('table.actor')}</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[14rem]">{t('table.identity')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{t('table.spend')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">{t('table.budgetPlan')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">{t('table.budget')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[12rem]">{t('table.periodPlan')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">{t('table.wallet')}</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[16rem]">
                     {t('table.userChangeDetail')}
                   </th>
@@ -977,7 +992,7 @@ export default function GatewayAuditLogsPage() {
               <tbody className="divide-y divide-gray-100 bg-white">
                 {logs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                       {t('empty')}
                     </td>
                   </tr>
@@ -992,16 +1007,17 @@ export default function GatewayAuditLogsPage() {
                       item.before_budget_base,
                       item.after_budget_base
                     );
+                    const spentChanged = !budgetMoneySemanticallyEqual(item.before_spent, item.after_spent);
                     const periodChanged =
                       (ex.before_budget_period ?? '') !== (ex.after_budget_period ?? '');
                     const resetChanged = !budgetResetAtSemanticallyEqual(
                       ex.before_budget_reset_at,
                       ex.after_budget_reset_at
                     );
-                    const walletDelta =
-                      snapshotMoneyField(item.after_user_snapshot, 'wallet_spent') -
-                      snapshotMoneyField(item.before_user_snapshot, 'wallet_spent');
-                    const showSplitCharge = item.event_type === 'usage_charge' || walletDelta !== 0;
+                    const walletDiff = summarizeWalletSnapshotDiff(
+                      item.before_user_snapshot,
+                      item.after_user_snapshot
+                    );
                     const reasonDisplay = auditReasonOneLine(ex.reason_code, ex.reason_text);
                     const diffRows = auditDiffRows(item);
                     const summaryDiffRows = auditSummaryDiffRows(diffRows);
@@ -1096,89 +1112,83 @@ export default function GatewayAuditLogsPage() {
                           {t('labels.key')}{item.api_key_id ? shortId(item.api_key_id) : '—'}
                         </div>
                       </td>
-                      <td className="px-3 py-2 align-top text-xs text-gray-600">
-                        <div className="space-y-1 leading-snug">
-                          <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
-                            <span className="text-right font-medium text-gray-700">{t('labels.before')}</span>
-                            <span>{formatPlainMoney(item.before_spent, billingCurrency)}</span>
-                          </div>
-                          <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
-                            <span className="text-right font-medium text-gray-700">{t('labels.after')}</span>
-                            <span>{formatPlainMoney(item.after_spent, billingCurrency)}</span>
-                          </div>
-                          <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline">
-                            <span className="text-right font-medium text-gray-700">{t('labels.delta')}</span>
-                            <span
-                              className={
-                                item.delta_spent > 0
-                                  ? 'text-red-600'
-                                  : item.delta_spent < 0
-                                    ? 'text-green-600'
-                                    : 'text-gray-600'
-                              }
-                            >
-                              {formatSignedMoney(item.delta_spent, billingCurrency)}
-                            </span>
-                          </div>
-                          {showSplitCharge ? (
-                            <>
-                              <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline text-[11px] text-gray-500">
-                                <span className="text-right">{t('labels.budgetPool')}</span>
-                                <span>{formatSignedMoney(item.delta_spent, billingCurrency)}</span>
-                              </div>
-                              <div className="grid grid-cols-[3rem_1fr] gap-x-2 items-baseline text-[11px] text-gray-500">
-                                <span className="text-right">{t('labels.walletPool')}</span>
-                                <span>{formatSignedMoney(walletDelta, billingCurrency)}</span>
-                              </div>
-                            </>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 align-top text-xs text-gray-600">
+                      <td className="px-3 py-2 align-top text-xs text-gray-600 min-w-[14rem]">
                         <div className="space-y-1 leading-snug">
                           <div>
+                            <span className="font-medium text-gray-700">{t('labels.spent')}</span>{' '}
+                            {spentChanged ? (
+                              <span className="inline-block align-top">
+                                <AuditChangedPair
+                                  changed
+                                  before={formatGatewayMoneyCode(item.before_spent, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
+                                  after={formatGatewayMoneyCode(item.after_spent, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
+                                />
+                                <div
+                                  className={
+                                    item.delta_spent > 0
+                                      ? 'text-red-600'
+                                      : item.delta_spent < 0
+                                        ? 'text-green-600'
+                                        : 'text-gray-500'
+                                  }
+                                >
+                                  {formatSignedMoney(item.delta_spent, billingCurrency)}
+                                </div>
+                              </span>
+                            ) : (
+                              formatGatewayMoneyCode(item.after_spent, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)
+                            )}
+                          </div>
+                          <div>
                             <span className="font-medium text-gray-700">{t('labels.max')}</span>{' '}
-                            <span className={maxChanged ? budgetPlanHighlight.before : undefined}>
-                              {formatBudgetMax(item.before_budget_max, billingCurrency)}
-                            </span>
-                            <span className="text-gray-400"> → </span>
-                            <span className={maxChanged ? budgetPlanHighlight.after : undefined}>
-                              {formatBudgetMax(item.after_budget_max, billingCurrency)}
-                            </span>
+                            <AuditChangedPair
+                              changed={maxChanged}
+                              before={formatBudgetMax(item.before_budget_max, billingCurrency)}
+                              after={formatBudgetMax(item.after_budget_max, billingCurrency)}
+                            />
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">{t('labels.base')}</span>{' '}
-                            <span className={baseChanged ? budgetPlanHighlight.before : undefined}>
-                              {formatGatewayMoneyCode(item.before_budget_base, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
-                            </span>
-                            <span className="text-gray-400"> → </span>
-                            <span className={baseChanged ? budgetPlanHighlight.after : undefined}>
-                              {formatGatewayMoneyCode(item.after_budget_base, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
-                            </span>
+                            <AuditChangedPair
+                              changed={baseChanged}
+                              before={formatGatewayMoneyCode(item.before_budget_base, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
+                              after={formatGatewayMoneyCode(item.after_budget_base, billingCurrency, GATEWAY_MONEY_DECIMAL_PLACES)}
+                            />
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top text-xs text-gray-600 min-w-[12rem]">
+                        <div className="space-y-1 leading-snug">
                           <div>
                             <span className="font-medium text-gray-700">{t('labels.period')}</span>{' '}
-                            <span className={periodChanged ? budgetPlanHighlight.before : undefined}>
-                              {ex.before_budget_period ?? '—'}
-                            </span>
-                            <span className="text-gray-400"> → </span>
-                            <span className={periodChanged ? budgetPlanHighlight.after : undefined}>
-                              {ex.after_budget_period ?? '—'}
-                            </span>
+                            <AuditChangedPair
+                              changed={periodChanged}
+                              before={ex.before_budget_period ?? '—'}
+                              after={ex.after_budget_period ?? '—'}
+                            />
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">{t('labels.resetAt')}</span>{' '}
                             <span className="whitespace-nowrap">
-                              <span className={resetChanged ? budgetPlanHighlight.before : undefined}>
-                                {formatAuditTime(ex.before_budget_reset_at, businessTimezone)}
-                              </span>
-                              <span className="text-gray-400"> → </span>
-                              <span className={resetChanged ? budgetPlanHighlight.after : undefined}>
-                                {formatAuditTime(ex.after_budget_reset_at, businessTimezone)}
-                              </span>
+                              <AuditChangedPair
+                                changed={resetChanged}
+                                before={formatAuditTime(ex.before_budget_reset_at, businessTimezone)}
+                                after={formatAuditTime(ex.after_budget_reset_at, businessTimezone)}
+                              />
                             </span>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-3 py-2 align-top text-xs text-gray-600 min-w-[14rem]">
+                        <AuditWalletPlanBlock
+                          diff={walletDiff}
+                          currency={billingCurrency}
+                          labels={{
+                            granted: t('labels.granted'),
+                            spent: t('labels.spent'),
+                            remaining: t('labels.remaining'),
+                          }}
+                        />
                       </td>
                       <td className="px-3 py-2 text-gray-600 min-w-[14rem] max-w-lg align-top">
                         <div className="space-y-1 text-xs leading-snug">

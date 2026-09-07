@@ -21,12 +21,19 @@ import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
-import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
+import { summarizeUserSnapshotDiffLines, summarizeWalletSnapshotDiff, WALLET_AUDIT_SNAPSHOT_FIELDS } from '@/lib/audit-user-snapshot-diff';
+import { AuditWalletPlanBlock } from '@/components/AuditWalletPlanBlock';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
 
-/** 与「Δ spend」「budget_max」列重复，不在「User snapshot Δ」再展示 */
+/** 与「Δ spend」「budget_max」列重复；Wallet credits 表仍要展示 wallet 字段 */
 const OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS = ['budget_spent', 'budget_max'] as const;
+/** 用户审计精简表：周期与永久额度已有独立列 */
+const OMIT_USER_AUDIT_LOG_SNAPSHOT_FIELDS = [
+	'budget_spent',
+	'budget_max',
+	...WALLET_AUDIT_SNAPSHOT_FIELDS,
+] as const;
 
 type ChargedCostFactorRow = { modelId: string; factor: string };
 
@@ -139,6 +146,7 @@ export default function GatewayUserDetailPage() {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
   const tOptions = useTranslations('options');
+  const tAudit = useTranslations('auditLogs');
   const { notify, confirm } = useFeedback();
   const params = useParams();
   const userIdRaw = typeof params.id === 'string' ? params.id : '';
@@ -1293,6 +1301,7 @@ export default function GatewayUserDetailPage() {
                 <th className="py-2 pr-2">{t('table.sourceTrace')}</th>
                 <th className="py-2 pr-2">{t('table.deltaSpend')}</th>
                 <th className="py-2 pr-2">{t('table.budgetMaxChange')}</th>
+                <th className="py-2 pr-2 min-w-[12rem]">{t('table.wallet')}</th>
                 <th className="py-2 pr-2 min-w-[12rem]">{t('table.userSnapshotDelta')}</th>
               </tr>
             </thead>
@@ -1302,8 +1311,9 @@ export default function GatewayUserDetailPage() {
                   before_user_snapshot: a.before_user_snapshot ?? null,
                   after_user_snapshot: a.after_user_snapshot ?? null,
                   changed_fields: a.changed_fields ?? null,
-                  omitSnapshotFields: OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS,
+                  omitSnapshotFields: OMIT_USER_AUDIT_LOG_SNAPSHOT_FIELDS,
                 });
+                const walletDiff = summarizeWalletSnapshotDiff(a.before_user_snapshot, a.after_user_snapshot);
                 return (
                 <tr key={a.id} className="border-b border-gray-50 align-top">
                   <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(a.created_at)}</td>
@@ -1329,6 +1339,17 @@ export default function GatewayUserDetailPage() {
                     {a.before_budget_max != null ? formatGatewayMoneyCode(a.before_budget_max, billingCurrency, 2) : '—'}
                     {' → '}
                     {a.after_budget_max != null ? formatGatewayMoneyCode(a.after_budget_max, billingCurrency, 2) : '—'}
+                  </td>
+                  <td className="py-2 pr-2 text-xs text-gray-600">
+                    <AuditWalletPlanBlock
+                      diff={walletDiff}
+                      currency={billingCurrency}
+                      labels={{
+                        granted: tAudit('labels.granted'),
+                        spent: tAudit('labels.spent'),
+                        remaining: tAudit('labels.remaining'),
+                      }}
+                    />
                   </td>
                   <td className="py-2 pr-2 text-gray-600">
                     <div className="space-y-0.5">

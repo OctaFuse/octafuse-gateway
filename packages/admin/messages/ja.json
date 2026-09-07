@@ -1801,8 +1801,9 @@
 			"event": "イベント",
 			"actor": "実行者",
 			"identity": "メール / ユーザー / Key",
-			"spend": "利用額",
-			"budgetPlan": "予算プラン",
+			"budget": "周期予算",
+			"periodPlan": "周期プラン",
+			"wallet": "ウォレット",
 			"userChangeDetail": "ユーザー変更詳細"
 		},
 		"labels": {
@@ -1820,6 +1821,9 @@
 			"delta": "差分",
 			"budgetPool": "周期",
 			"walletPool": "ウォレット",
+			"granted": "付与：",
+			"spent": "消費：",
+			"remaining": "残高：",
 			"max": "上限：",
 			"base": "基準：",
 			"period": "期間：",

@@ -1801,8 +1801,9 @@
 			"event": "Event",
 			"actor": "Actor",
 			"identity": "Email / User / Key",
-			"spend": "Spend",
-			"budgetPlan": "Budget plan",
+			"budget": "Budget",
+			"periodPlan": "Period plan",
+			"wallet": "Wallet",
 			"userChangeDetail": "User change detail"
 		},
 		"labels": {
@@ -1820,6 +1821,9 @@
 			"delta": "delta",
 			"budgetPool": "budget",
 			"walletPool": "wallet",
+			"granted": "granted:",
+			"spent": "spent:",
+			"remaining": "remaining:",
 			"max": "max:",
 			"base": "base:",
 			"period": "period:",

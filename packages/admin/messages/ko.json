@@ -1801,8 +1801,9 @@
 			"event": "이벤트",
 			"actor": "작업자",
 			"identity": "이메일 / 사용자 / Key",
-			"spend": "지출",
-			"budgetPlan": "예산 플랜",
+			"budget": "주기 예산",
+			"periodPlan": "주기 플랜",
+			"wallet": "월렛",
 			"userChangeDetail": "사용자 변경 세부 정보"
 		},
 		"labels": {
@@ -1820,6 +1821,9 @@
 			"delta": "변화량",
 			"budgetPool": "주기",
 			"walletPool": "월렛",
+			"granted": "지급:",
+			"spent": "소모:",
+			"remaining": "잔액:",
 			"max": "최대:",
 			"base": "기준:",
 			"period": "주기:",
