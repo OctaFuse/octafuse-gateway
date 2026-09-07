@@ -90,6 +90,7 @@
 		"key": "키",
 		"showing": "{filtered} / {total}개 표시",
 		"selected": "{count}개 선택됨",
+		"selectedOfTotal": "{selected} / {total}개 선택",
 		"masterKeyCannotBeEmpty": "Master key를 입력해야 합니다",
 		"businessTimezoneCannotBeEmpty": "업무 시간대를 입력해야 합니다",
 		"billingCurrencyMustBeUsdOrCny": "결제 통화는 USD 또는 CNY여야 합니다",
@@ -1787,6 +1788,37 @@
 			"sourcePlaceholder": "usage_charge, period_reset…",
 			"correlationPlaceholder": "request_log_id / 업무 참조",
 			"actorIdPlaceholder": "console:admin / admin_key:'<uuid>'"
+		},
+		"eventTypes": {
+			"usage_charge": "사용량 과금",
+			"period_reset": "주기 재설정",
+			"admin_adjust": "관리 조정",
+			"key_created": "키 생성",
+			"key_revoked": "키 취소",
+			"key_deleted": "키 삭제",
+			"user_created": "사용자 생성",
+			"user_deleted": "사용자 삭제",
+			"wallet_credit": "월렛 적립"
+		},
+		"sourceChannels": {
+			"gateway_usage": "게이트웨이 사용량",
+			"gateway_auth": "게이트웨이 인증",
+			"gateway_user_service": "사용자 서비스",
+			"gateway_key_service": "키 서비스",
+			"key_provision": "키 발급",
+			"gateway_user_provision": "사용자 발급",
+			"admin_users": "사용자 관리",
+			"admin_budget_transition": "예산 전환",
+			"admin_keys": "키 관리",
+			"admin_user_key": "사용자 키",
+			"admin_wallet": "월렛 적립",
+			"usage_charge": "레거시 사용량 과금",
+			"period_reset": "레거시 주기 재설정"
+		},
+		"actorTypes": {
+			"system": "시스템",
+			"admin": "관리",
+			"service": "내부 서비스"
 		},
 		"actorKinds": {
 			"console": "콘솔 세션",

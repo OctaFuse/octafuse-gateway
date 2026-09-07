@@ -90,6 +90,7 @@
 		"key": "密钥",
 		"showing": "显示 {filtered} / {total}",
 		"selected": "已选 {count}",
+		"selectedOfTotal": "已选 {selected} / {total}",
 		"masterKeyCannotBeEmpty": "Master key 不能为空",
 		"businessTimezoneCannotBeEmpty": "业务时区不能为空",
 		"billingCurrencyMustBeUsdOrCny": "计费货币必须为 USD 或 CNY",
@@ -1787,6 +1788,37 @@
 			"sourcePlaceholder": "usage_charge、period_reset…",
 			"correlationPlaceholder": "request_log_id / 业务引用",
 			"actorIdPlaceholder": "console:admin / admin_key:'<uuid>'"
+		},
+		"eventTypes": {
+			"usage_charge": "用量扣费",
+			"period_reset": "周期重置",
+			"admin_adjust": "管理调整",
+			"key_created": "创建密钥",
+			"key_revoked": "吊销密钥",
+			"key_deleted": "删除密钥",
+			"user_created": "创建用户",
+			"user_deleted": "删除用户",
+			"wallet_credit": "永久额度加额"
+		},
+		"sourceChannels": {
+			"gateway_usage": "网关用量",
+			"gateway_auth": "网关鉴权",
+			"gateway_user_service": "用户服务",
+			"gateway_key_service": "密钥服务",
+			"key_provision": "密钥开通",
+			"gateway_user_provision": "用户开通",
+			"admin_users": "用户管理",
+			"admin_budget_transition": "预算结转",
+			"admin_keys": "密钥管理",
+			"admin_user_key": "用户密钥",
+			"admin_wallet": "永久额度加额",
+			"usage_charge": "历史用量扣费",
+			"period_reset": "历史周期重置"
+		},
+		"actorTypes": {
+			"system": "系统",
+			"admin": "管理端",
+			"service": "内部服务"
 		},
 		"actorKinds": {
 			"console": "控制台会话",

@@ -90,6 +90,7 @@
 		"key": "Key",
 		"showing": "Showing {filtered} / {total}",
 		"selected": "Selected {count}",
+		"selectedOfTotal": "Selected {selected} / {total}",
 		"masterKeyCannotBeEmpty": "Master key cannot be empty",
 		"businessTimezoneCannotBeEmpty": "Business timezone cannot be empty",
 		"billingCurrencyMustBeUsdOrCny": "Billing currency must be USD or CNY",
@@ -1787,6 +1788,37 @@
 			"sourcePlaceholder": "usage_charge, period_reset…",
 			"correlationPlaceholder": "request_log_id / business reference",
 			"actorIdPlaceholder": "console:admin / admin_key:'<uuid>'"
+		},
+		"eventTypes": {
+			"usage_charge": "Usage charge",
+			"period_reset": "Period reset",
+			"admin_adjust": "Admin adjust",
+			"key_created": "Key created",
+			"key_revoked": "Key revoked",
+			"key_deleted": "Key deleted",
+			"user_created": "User created",
+			"user_deleted": "User deleted",
+			"wallet_credit": "Wallet credit"
+		},
+		"sourceChannels": {
+			"gateway_usage": "Gateway usage",
+			"gateway_auth": "Gateway auth",
+			"gateway_user_service": "User service",
+			"gateway_key_service": "Key service",
+			"key_provision": "Key provision",
+			"gateway_user_provision": "User provision",
+			"admin_users": "Admin users",
+			"admin_budget_transition": "Budget transition",
+			"admin_keys": "Admin keys",
+			"admin_user_key": "Admin user key",
+			"admin_wallet": "Admin wallet",
+			"usage_charge": "Legacy usage charge",
+			"period_reset": "Legacy period reset"
+		},
+		"actorTypes": {
+			"system": "System",
+			"admin": "Admin",
+			"service": "Service"
 		},
 		"actorKinds": {
 			"console": "Console session",

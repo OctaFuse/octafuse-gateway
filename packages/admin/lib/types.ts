@@ -129,6 +129,7 @@ export const API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS = [
   'admin_budget_transition',
   'admin_keys',
   'admin_user_key',
+  'admin_wallet',
   'usage_charge',
   'period_reset',
 ] as const;

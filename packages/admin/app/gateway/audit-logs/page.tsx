@@ -27,6 +27,7 @@ import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned } from '@/lib/form
 import { GATEWAY_MONEY_DECIMAL_PLACES } from '@/lib/gateway-money';
 import { summarizeWalletSnapshotDiff, WALLET_AUDIT_SNAPSHOT_FIELDS } from '@/lib/audit-user-snapshot-diff';
 import { AuditWalletPlanBlock } from '@/components/AuditWalletPlanBlock';
+import { MultiSelectDropdown } from '@/components/MultiSelectDropdown';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
@@ -51,6 +52,16 @@ const AUDIT_LOG_ACTOR_KIND_SET = new Set<string>(USER_AUDIT_ACTOR_KINDS);
 /** 筛选 UI 不含历史 Master Key；全选时不传 `actor_kind`，默认列表仍含老 `admin:` 行。 */
 const AUDIT_LOG_ACTOR_KIND_FILTERS = ['console', 'admin_key', 'system', 'service'] as const;
 const AUDIT_LOG_ACTOR_KIND_FILTER_SET = new Set<string>(AUDIT_LOG_ACTOR_KIND_FILTERS);
+
+function auditEnumLabel(
+  t: ReturnType<typeof useTranslations>,
+  group: 'eventTypes' | 'sourceChannels' | 'actorTypes' | 'actorKinds',
+  value: string | null | undefined,
+): string {
+  if (value == null || value === '') return '—';
+  const key = `${group}.${value}`;
+  return t.has(key) ? t(key) : value;
+}
 
 type AuditLogFilterOptions = {
   reasonCodes: string[];
@@ -121,7 +132,14 @@ function normalizeAuditReasonCodes(values: string[]): string[] {
   return normalized;
 }
 
+function isSameStringSet(left: readonly string[], right: readonly string[]): boolean {
+  if (left.length !== right.length) return false;
+  const rightSet = new Set(right);
+  return left.every((value) => rightSet.has(value));
+}
+
 function appendAuditEventTypeParams(params: URLSearchParams, eventTypes: string[]): void {
+  if (isSameStringSet(eventTypes, DEFAULT_AUDIT_LOG_EVENT_TYPES)) return;
   eventTypes.forEach((eventType) => params.append('event_type', eventType));
 }
 
@@ -689,62 +707,52 @@ export default function GatewayAuditLogsPage() {
       </div>
 
       <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="min-w-0">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <label className="block text-sm font-medium text-gray-600">{t('filters.eventType')}</label>
-            <div className="flex shrink-0 items-center gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterEventTypes([...API_KEY_BUDGET_AUDIT_EVENT_TYPES]);
-                  setPage(1);
-                }}
-                className="text-blue-600 hover:underline"
-              >
-                {tCommon('selectAll')}
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
-                  setPage(1);
-                }}
-                className="text-blue-600 hover:underline"
-              >
-                {t('filters.defaultEventTypes')}
-              </button>
-              <span className="text-gray-500">{tCommon('selected', { count: filterEventTypes.length })}</span>
-            </div>
-          </div>
-          <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
-            {API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((eventType) => {
-              const checked = filterEventTypes.includes(eventType);
-              return (
-                <label
-                  key={eventType}
-                  className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
-                    checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
-                  }`}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <MultiSelectDropdown
+            label={t('filters.eventType')}
+            options={API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((eventType) => ({
+              value: eventType,
+              label: auditEnumLabel(t, 'eventTypes', eventType),
+              title: eventType,
+            }))}
+            selected={filterEventTypes}
+            onToggle={setEventTypeChecked}
+            headerActions={
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterEventTypes([...API_KEY_BUDGET_AUDIT_EVENT_TYPES]);
+                    setPage(1);
+                  }}
+                  className="text-blue-600 hover:underline"
                 >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={checked && filterEventTypes.length === 1}
-                    onChange={(e) => setEventTypeChecked(eventType, e.target.checked)}
-                    className="h-3.5 w-3.5"
-                  />
-                  <span className="font-mono">{eventType}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-4 min-w-0">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <label className="block text-sm font-medium text-gray-600">{t('filters.source')}</label>
-            <div className="flex shrink-0 items-center gap-2 text-xs">
+                  {tCommon('selectAll')}
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
+                    setPage(1);
+                  }}
+                  className="text-blue-600 hover:underline"
+                >
+                  {t('filters.defaultEventTypes')}
+                </button>
+              </div>
+            }
+          />
+          <MultiSelectDropdown
+            label={t('filters.source')}
+            options={API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS.map((source) => ({
+              value: source,
+              label: auditEnumLabel(t, 'sourceChannels', source),
+              title: source,
+            }))}
+            selected={filterSources}
+            onToggle={setSourceChecked}
+            headerActions={
               <button
                 type="button"
                 onClick={() => {
@@ -755,37 +763,19 @@ export default function GatewayAuditLogsPage() {
               >
                 {tCommon('selectAll')}
               </button>
-              <span className="text-gray-500">{tCommon('selected', { count: filterSources.length })}</span>
-            </div>
-          </div>
-          <div className="flex min-h-12 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
-            {API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS.map((source) => {
-              const checked = filterSources.includes(source);
-              return (
-                <label
-                  key={source}
-                  className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
-                    checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={checked && filterSources.length === 1}
-                    onChange={(e) => setSourceChecked(source, e.target.checked)}
-                    className="h-3.5 w-3.5"
-                  />
-                  <span className="font-mono">{source}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="mt-4 min-w-0">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <label className="block text-sm font-medium text-gray-600">{t('filters.reasonCode')}</label>
-            <div className="flex shrink-0 items-center gap-2 text-xs">
+            }
+          />
+          <MultiSelectDropdown
+            label={t('filters.reasonCode')}
+            options={reasonCodeOptions.map((reasonCode) => ({
+              value: reasonCode,
+              label: reasonCode,
+              mono: true,
+            }))}
+            selected={filterReasonCodes}
+            onToggle={setReasonCodeChecked}
+            emptyText={t('filters.noReasonCodes')}
+            headerActions={
               <button
                 type="button"
                 onClick={() => {
@@ -797,119 +787,57 @@ export default function GatewayAuditLogsPage() {
               >
                 {tCommon('selectAll')}
               </button>
-              <span className="text-gray-500">{tCommon('selected', { count: filterReasonCodes.length })}</span>
-            </div>
-          </div>
-          <div className="flex min-h-12 max-h-28 flex-wrap gap-2 overflow-y-auto rounded-md border border-gray-300 bg-gray-50/60 p-2">
-            {reasonCodeOptions.length > 0 ? (
-              reasonCodeOptions.map((reasonCode) => {
-                const checked = filterReasonCodes.includes(reasonCode);
-                return (
-                  <label
-                    key={reasonCode}
-                    className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
-                      checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={checked && filterReasonCodes.length === 1}
-                      onChange={(e) => setReasonCodeChecked(reasonCode, e.target.checked)}
-                      className="h-3.5 w-3.5"
-                    />
-                    <span className="font-mono">{reasonCode}</span>
-                  </label>
-                );
-              })
-            ) : (
-              <span className="px-1 py-1 text-xs text-gray-400">{t('filters.noReasonCodes')}</span>
-            )}
-          </div>
+            }
+          />
+          <MultiSelectDropdown
+            label={t('filters.actor')}
+            options={API_KEY_BUDGET_AUDIT_ACTOR_TYPES.map((actorType) => ({
+              value: actorType,
+              label: auditEnumLabel(t, 'actorTypes', actorType),
+              title: actorType,
+            }))}
+            selected={filterActorTypes}
+            onToggle={setActorTypeChecked}
+            align="end"
+            headerActions={
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
+                  setPage(1);
+                }}
+                className="text-blue-600 hover:underline"
+              >
+                {tCommon('selectAll')}
+              </button>
+            }
+          />
+          <MultiSelectDropdown
+            label={t('filters.actorKind')}
+            options={AUDIT_LOG_ACTOR_KIND_FILTERS.map((actorKind) => ({
+              value: actorKind,
+              label: auditEnumLabel(t, 'actorKinds', actorKind),
+              title: actorKind,
+            }))}
+            selected={filterActorKinds}
+            onToggle={setActorKindChecked}
+            align="end"
+            headerActions={
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterActorKinds([...AUDIT_LOG_ACTOR_KIND_FILTERS]);
+                  setPage(1);
+                }}
+                className="text-blue-600 hover:underline"
+              >
+                {tCommon('selectAll')}
+              </button>
+            }
+          />
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(16rem,1.2fr)_minmax(12rem,1fr)_minmax(14rem,1fr)]">
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <label className="block text-sm font-medium text-gray-600">{t('filters.actor')}</label>
-              <div className="flex shrink-0 items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
-                    setPage(1);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  {tCommon('selectAll')}
-                </button>
-                <span className="text-gray-500">{tCommon('selected', { count: filterActorTypes.length })}</span>
-              </div>
-            </div>
-            <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
-              {API_KEY_BUDGET_AUDIT_ACTOR_TYPES.map((actorType) => {
-                const checked = filterActorTypes.includes(actorType);
-                return (
-                  <label
-                    key={actorType}
-                    className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
-                      checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={checked && filterActorTypes.length === 1}
-                      onChange={(e) => setActorTypeChecked(actorType, e.target.checked)}
-                      className="h-3.5 w-3.5"
-                    />
-                    <span className="font-mono">{actorType}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <label className="block text-sm font-medium text-gray-600">{t('filters.actorKind')}</label>
-              <div className="flex shrink-0 items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterActorKinds([...AUDIT_LOG_ACTOR_KIND_FILTERS]);
-                    setPage(1);
-                  }}
-                  className="text-blue-600 hover:underline"
-                >
-                  {tCommon('selectAll')}
-                </button>
-                <span className="text-gray-500">{tCommon('selected', { count: filterActorKinds.length })}</span>
-              </div>
-            </div>
-            <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-gray-300 bg-gray-50/60 p-2">
-              {AUDIT_LOG_ACTOR_KIND_FILTERS.map((actorKind) => {
-                const checked = filterActorKinds.includes(actorKind);
-                return (
-                  <label
-                    key={actorKind}
-                    className={`inline-flex min-h-8 items-center gap-1.5 rounded border px-2 py-1 text-xs ${
-                      checked ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-gray-200 bg-white text-gray-600'
-                    }`}
-                    title={actorKind}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={checked && filterActorKinds.length === 1}
-                      onChange={(e) => setActorKindChecked(actorKind, e.target.checked)}
-                      className="h-3.5 w-3.5"
-                    />
-                    <span>{t(`actorKinds.${actorKind}`)}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_minmax(12rem,1fr)_minmax(14rem,1fr)_auto]">
           <div>
             <label className="block text-sm text-gray-500 mb-1">{t('filters.actorId')}</label>
             <input
@@ -1044,11 +972,13 @@ export default function GatewayAuditLogsPage() {
                         <div className="text-xs space-y-1.5 leading-snug">
                           <div className="min-w-0">
                             <span className="text-gray-500">{t('labels.type')}</span>
-                            <span className="font-mono text-sm font-medium text-gray-900">{item.event_type}</span>
+                            <span className="text-sm font-medium text-gray-900" title={item.event_type}>
+                              {auditEnumLabel(t, 'eventTypes', item.event_type)}
+                            </span>
                           </div>
-                          <div className="min-w-0 truncate font-mono text-[11px]" title={ex.source || undefined}>
-                            <span className="text-gray-500 font-sans">{t('labels.from')}</span>
-                            <span className="text-violet-800">{ex.source ?? '—'}</span>
+                          <div className="min-w-0 truncate text-[11px]" title={ex.source || undefined}>
+                            <span className="text-gray-500">{t('labels.from')}</span>
+                            <span className="text-violet-800">{auditEnumLabel(t, 'sourceChannels', ex.source)}</span>
                           </div>
                           <div className="min-w-0 line-clamp-3 text-gray-800" title={reasonDisplay.title || undefined}>
                             <span className="text-gray-500">{t('labels.reason')}</span>
@@ -1062,7 +992,9 @@ export default function GatewayAuditLogsPage() {
                         <div className="text-xs space-y-1.5 leading-snug">
                           <div>
                             <span className="text-gray-500">{t('labels.kind')}</span>
-                            <span className="text-sm text-gray-900">{item.actor_type}</span>
+                            <span className="text-sm text-gray-900" title={item.actor_type}>
+                              {auditEnumLabel(t, 'actorTypes', item.actor_type)}
+                            </span>
                           </div>
                           <div className="min-w-0">
                             <span className="text-gray-500">{t('labels.principal')}</span>
@@ -1072,8 +1004,8 @@ export default function GatewayAuditLogsPage() {
                                 return (
                                   <span className="inline-flex min-w-0 flex-wrap items-baseline gap-1" title={ex.actor_id}>
                                     {kind ? (
-                                      <span className="rounded bg-gray-100 px-1 text-[10px] text-gray-700">
-                                        {t(`actorKinds.${kind}`)}
+                                      <span className="rounded bg-gray-100 px-1 text-[10px] text-gray-700" title={kind}>
+                                        {auditEnumLabel(t, 'actorKinds', kind)}
                                       </span>
                                     ) : null}
                                     <span className="font-mono text-[11px] text-gray-700 break-all">
@@ -1255,7 +1187,7 @@ export default function GatewayAuditLogsPage() {
                   {t('labels.changeDetailTitle')}
                 </h2>
                 <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
-                  <span className="font-mono">{detailLog.event_type}</span>
+                  <span title={detailLog.event_type}>{auditEnumLabel(t, 'eventTypes', detailLog.event_type)}</span>
                   <span>{formatAuditTime(detailLog.created_at, businessTimezone)}</span>
                   <span className="truncate">{detailLog.user_email ?? '—'}</span>
                 </div>
