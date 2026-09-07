@@ -1447,12 +1447,7 @@
 			"chargedCostFactors": "模型折扣",
 			"created": "创建时间",
 			"updated": "更新时间",
-			"group": "分组",
-			"event": "事件",
-			"sourceTrace": "来源 / Trace",
-			"deltaSpend": "消费变化",
-			"budgetMaxChange": "budget_max →",
-			"userSnapshotDelta": "用户快照变化"
+			"group": "分组"
 		},
 		"fields": {
 			"email": "Email",
@@ -1530,15 +1525,13 @@
 		"detailSections": {
 			"recentRequestLogs": "近期请求日志",
 			"userAuditLogs": "用户审计日志",
-			"walletCredits": "加额流水",
 			"keyMetadata": "Key metadata",
 			"newApiKey": "新建 API Key",
 			"moreCount": "+{count} 更多"
 		},
 		"empty": {
 			"requestLogs": "暂无请求日志",
-			"auditLogs": "暂无审计日志",
-			"walletCredits": "暂无永久额度加额记录"
+			"auditLogs": "暂无审计日志"
 		},
 		"confirm": {
 			"deleteUser": "确定要永久删除该用户及其所有 Key 吗？审计历史会保留（用户链接会被清除）。",

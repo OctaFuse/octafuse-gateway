@@ -1447,12 +1447,7 @@
 			"chargedCostFactors": "Factors",
 			"created": "Created",
 			"updated": "Updated",
-			"group": "Group",
-			"event": "Event",
-			"sourceTrace": "Source / trace",
-			"deltaSpend": "Δ spend",
-			"budgetMaxChange": "budget_max →",
-			"userSnapshotDelta": "User snapshot Δ"
+			"group": "Group"
 		},
 		"fields": {
 			"email": "Email",
@@ -1530,15 +1525,13 @@
 		"detailSections": {
 			"recentRequestLogs": "Recent request logs",
 			"userAuditLogs": "User audit logs",
-			"walletCredits": "Wallet credits",
 			"keyMetadata": "Key metadata",
 			"newApiKey": "New API key",
 			"moreCount": "+{count} more"
 		},
 		"empty": {
 			"requestLogs": "No request logs",
-			"auditLogs": "No audit logs",
-			"walletCredits": "No Wallet credit events"
+			"auditLogs": "No audit logs"
 		},
 		"confirm": {
 			"deleteUser": "Permanently delete this user and all keys? Audit history will remain (user link cleared).",

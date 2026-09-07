@@ -15,18 +15,22 @@ import { parseGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
-import type { GatewayApiKeyBudgetAuditLog, GatewayModel, GatewayRequestLog } from '@/lib/types';
+import {
+  API_KEY_BUDGET_AUDIT_EVENT_TYPES,
+  type GatewayApiKeyBudgetAuditLog,
+  type GatewayModel,
+  type GatewayRequestLog,
+} from '@/lib/types';
 import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { normalizeMetadataClient } from '@/lib/normalize-metadata-client';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
-import { summarizeUserSnapshotDiffLines } from '@/lib/audit-user-snapshot-diff';
 import { AuditChangeDetailModal, AuditLogSharedCells } from '@/components/AuditLogSharedCells';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
 
-/** 与「Δ spend」「budget_max」列重复；Wallet credits 表仍要展示 wallet 字段 */
-const OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS = ['budget_spent', 'budget_max'] as const;
+/** 用户详情近期审计与全站页默认一致：不含用量扣费 */
+const USER_DETAIL_AUDIT_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((type) => type !== 'usage_charge');
 
 type ChargedCostFactorRow = { modelId: string; factor: string };
 
@@ -144,7 +148,6 @@ export default function GatewayUserDetailPage() {
   const [keys, setKeys] = useState<KeyRow[]>([]);
   const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
   const [audits, setAudits] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
-  const [walletCredits, setWalletCredits] = useState<GatewayApiKeyBudgetAuditLog[]>([]);
   const [detailLog, setDetailLog] = useState<GatewayApiKeyBudgetAuditLog | null>(null);
   const [planError, setPlanError] = useState('');
   const [planSuccess, setPlanSuccess] = useState('');
@@ -249,29 +252,18 @@ export default function GatewayUserDetailPage() {
   const loadAudits = useCallback(async () => {
     if (!userId) return;
     try {
-      const q = new URLSearchParams({ page: '1', page_size: String(USER_DETAIL_RECENT_LIMIT) });
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/audit-logs?${q}`);
-      const data = await readApiJson<GatewayApiKeyBudgetAuditLog[]>(res);
-      if (data.success) {
-        setAudits(data.data ?? []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, [userId]);
-
-  const loadWalletCredits = useCallback(async () => {
-    if (!userId) return;
-    try {
       const q = new URLSearchParams({
         page: '1',
         page_size: String(USER_DETAIL_RECENT_LIMIT),
-        event_type: 'wallet_credit',
+        user_id: userId,
       });
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/audit-logs?${q}`);
+      for (const eventType of USER_DETAIL_AUDIT_EVENT_TYPES) {
+        q.append('event_type', eventType);
+      }
+      const res = await fetch(`/api/admin/budget-audit-logs?${q}`);
       const data = await readApiJson<GatewayApiKeyBudgetAuditLog[]>(res);
       if (data.success) {
-        setWalletCredits(data.data ?? []);
+        setAudits(data.data ?? []);
       }
     } catch (e) {
       console.error(e);
@@ -293,10 +285,6 @@ export default function GatewayUserDetailPage() {
   useEffect(() => {
     loadAudits();
   }, [loadAudits]);
-
-  useEffect(() => {
-    loadWalletCredits();
-  }, [loadWalletCredits]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1205,68 +1193,6 @@ export default function GatewayUserDetailPage() {
             </tbody>
           </table>
           {logs.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.requestLogs')}</p>}
-        </div>
-      </div>
-
-      <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.walletCredits')}</h2>
-          <Link
-            href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}&event_type=wallet_credit`}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            {tCommon('more')}
-          </Link>
-        </div>
-        <div className="overflow-x-auto text-xs">
-          <table className="min-w-full">
-            <thead>
-              <tr className="text-left text-gray-500 border-b">
-                <th className="py-2 pr-2">{tCommon('time')}</th>
-                <th className="py-2 pr-2">{t('table.event')}</th>
-                <th className="py-2 pr-2">{t('table.sourceTrace')}</th>
-                <th className="py-2 pr-2">{t('table.userSnapshotDelta')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {walletCredits.map((a) => {
-                const snapLines = summarizeUserSnapshotDiffLines({
-                  before_user_snapshot: a.before_user_snapshot ?? null,
-                  after_user_snapshot: a.after_user_snapshot ?? null,
-                  changed_fields: a.changed_fields ?? null,
-                  omitSnapshotFields: OMIT_USER_AUDIT_SNAPSHOT_NEIGHBOR_FIELDS,
-                });
-                return (
-                  <tr key={a.id} className="border-b border-gray-50 align-top">
-                    <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(a.created_at)}</td>
-                    <td className="py-2 pr-2">
-                      <div className="font-medium">{a.event_type}</div>
-                      {(a.reason_code || a.reason_text) ? (
-                        <div className="text-gray-600 mt-0.5 max-w-[14rem] line-clamp-2" title={a.reason_text ?? a.reason_code ?? ''}>
-                          {a.reason_text || a.reason_code}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="py-2 pr-2 font-mono text-[11px] text-gray-700">
-                      {a.source ? <div className="text-violet-800">{a.source}</div> : <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="py-2 pr-2 text-gray-600">
-                      {snapLines.length === 0 ? (
-                        <span className="text-gray-400">—</span>
-                      ) : (
-                        snapLines.slice(0, 4).map((line, i) => (
-                          <div key={`${a.id}-w-${i}`} className="line-clamp-2 font-mono text-[11px]" title={line}>
-                            {line}
-                          </div>
-                        ))
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {walletCredits.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.walletCredits')}</p>}
         </div>
       </div>
 

@@ -1447,12 +1447,7 @@
 			"chargedCostFactors": "モデル割引",
 			"created": "作成日時",
 			"updated": "更新日時",
-			"group": "グループ",
-			"event": "イベント",
-			"sourceTrace": "ソース / trace",
-			"deltaSpend": "Δ spend",
-			"budgetMaxChange": "budget_max →",
-			"userSnapshotDelta": "ユーザースナップショット Δ"
+			"group": "グループ"
 		},
 		"fields": {
 			"email": "メールアドレス",
@@ -1530,15 +1525,13 @@
 		"detailSections": {
 			"recentRequestLogs": "最近のリクエストログ",
 			"userAuditLogs": "ユーザー監査ログ",
-			"walletCredits": "ウォレット付与履歴",
 			"keyMetadata": "Key metadata",
 			"newApiKey": "新しい API Key",
 			"moreCount": "他 {count} 件"
 		},
 		"empty": {
 			"requestLogs": "リクエストログはありません",
-			"auditLogs": "監査ログはありません",
-			"walletCredits": "ウォレット付与イベントはありません"
+			"auditLogs": "監査ログはありません"
 		},
 		"confirm": {
 			"deleteUser": "このユーザーとすべての Key を完全に削除しますか？監査履歴は保持されます（ユーザーリンクは解除されます）。",

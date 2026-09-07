@@ -1447,12 +1447,7 @@
 			"chargedCostFactors": "모델 할인",
 			"created": "생성일",
 			"updated": "업데이트일",
-			"group": "그룹",
-			"event": "이벤트",
-			"sourceTrace": "소스 / trace",
-			"deltaSpend": "Δ 지출",
-			"budgetMaxChange": "budget_max →",
-			"userSnapshotDelta": "사용자 Snapshot Δ"
+			"group": "그룹"
 		},
 		"fields": {
 			"email": "이메일",
@@ -1530,15 +1525,13 @@
 		"detailSections": {
 			"recentRequestLogs": "최근 요청 로그",
 			"userAuditLogs": "사용자 감사 로그",
-			"walletCredits": "월렛 지급 내역",
 			"keyMetadata": "Key Metadata",
 			"newApiKey": "새 API Key",
 			"moreCount": "+{count}개 더 보기"
 		},
 		"empty": {
 			"requestLogs": "요청 로그가 없습니다",
-			"auditLogs": "감사 로그가 없습니다",
-			"walletCredits": "월렛 지급 이벤트가 없습니다"
+			"auditLogs": "감사 로그가 없습니다"
 		},
 		"confirm": {
 			"deleteUser": "이 사용자와 모든 Key를 영구 삭제하시겠습니까? 감사 기록은 유지되며 사용자 링크만 제거됩니다.",
