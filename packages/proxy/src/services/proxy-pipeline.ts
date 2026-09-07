@@ -185,6 +185,7 @@ export async function buildProxyFailoverOptions(input: {
 	timing: RequestTimingCollector;
 	/** 默认启用；audio.speech 历史路径未挂 sticky，保持原行为。 */
 	includeSticky?: boolean;
+	inboundHeaders?: Headers;
 }): Promise<FailoverDispatchOptions> {
 	const strategyPlan = await resolveRouteStrategyPlan({
 		routePolicyRaw: input.model.route_policy ?? null,
@@ -206,6 +207,7 @@ export async function buildProxyFailoverOptions(input: {
 		strategy: strategyPlan.base,
 		tierStrategies: strategyPlan.tierOverrides,
 		timing: input.timing,
+		inboundHeaders: input.inboundHeaders,
 		...(input.includeSticky === false
 			? {}
 			: {
@@ -331,6 +333,7 @@ export async function runProxyPipeline<TBody>(
 		stickySurface,
 		routes,
 		timing,
+		inboundHeaders: c.req.raw.headers,
 	});
 	timing.markGatewayComplete();
 	const proxyResult = await spec.dispatch({

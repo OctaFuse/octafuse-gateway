@@ -9,6 +9,7 @@ import {
 	resolveProviderUpstreamSecret,
 	routeCustomParamsBody,
 } from '@octafuse/core';
+import { mergeRouteRequestBody } from '@octafuse/core/route-custom-params';
 import { isAudioModel as isCatalogAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import {
 	type GeminiContentAction,
@@ -54,30 +55,11 @@ function isPlainObject(value: unknown): value is JsonObject {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function deepMergeDefaults(defaultValue: unknown, userValue: unknown): unknown {
-	if (userValue !== undefined) {
-		if (Array.isArray(userValue)) {
-			return userValue;
-		}
-		if (isPlainObject(defaultValue) && isPlainObject(userValue)) {
-			const merged: JsonObject = {};
-			const keys = new Set([...Object.keys(defaultValue), ...Object.keys(userValue)]);
-			for (const key of keys) {
-				merged[key] = deepMergeDefaults(defaultValue[key], userValue[key]);
-			}
-			return merged;
-		}
-		return userValue;
-	}
-	return defaultValue;
-}
-
 /**
- * 路由 `custom_params` 与用户体深度合并，用户字段优先（与 Proxy `buildRouteRequestBody` 一致；`headers` 不进入 body）。
+ * 路由 `custom_params` 与用户体深度合并（与 Proxy `buildRouteRequestBody` 一致；`headers` 不进入 body）。
  */
 export function mergePlaygroundRequestBody(route: PlaygroundResolvedRoute, userBody: JsonObject): JsonObject {
-	const finalBody = deepMergeDefaults(routeCustomParamsBody(route.customParams), userBody);
-	return isPlainObject(finalBody) ? finalBody : { ...userBody };
+	return mergeRouteRequestBody(route.customParams, userBody);
 }
 
 function parseJsonObject(raw: string | null | undefined): Record<string, unknown> | null {

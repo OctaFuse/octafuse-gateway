@@ -367,6 +367,7 @@ audioRoutes.post('/transcriptions', async (c) => {
 		stickySurface: routed.stickySurface,
 		routes,
 		timing,
+		inboundHeaders: c.req.raw.headers,
 	});
 	timing.markGatewayComplete();
 
@@ -569,6 +570,7 @@ audioRoutes.post('/speech', async (c) => {
 		routes,
 		timing,
 		includeSticky: false,
+		inboundHeaders: c.req.raw.headers,
 	});
 	timing.markGatewayComplete();
 	const proxyResult = await proxyAudioSpeech(

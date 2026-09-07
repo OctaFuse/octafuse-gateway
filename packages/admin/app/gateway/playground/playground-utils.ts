@@ -6,7 +6,7 @@ import {
 	isAudioRouteModel,
 } from '@/lib/audio-transcriptions';
 import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
-import { extraHeadersFromCustomParams, mergeUpstreamHeaders, routeCustomParamsBody } from '@octafuse/core/route-custom-params';
+import { extraHeadersFromCustomParams, mergeRouteRequestBody, mergeUpstreamHeaders, splitRouteCustomParams } from '@octafuse/core/route-custom-params';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
@@ -134,6 +134,10 @@ function parseCustomParamsObject(raw?: string | null): JsonObject {
 	}
 }
 
+export function splitPlaygroundCustomParams(customParams?: string | null) {
+	return splitRouteCustomParams(parseCustomParamsObject(customParams));
+}
+
 /** 路由 `custom_params.headers` 预览（已跳过受保护头，与出站 merge 一致）。 */
 export function previewPlaygroundRouteHeaders(customParams?: string | null): Record<string, string> {
 	return extraHeadersFromCustomParams(parseCustomParamsObject(customParams));
@@ -207,31 +211,9 @@ export function previewPlaygroundOutboundHeaderRows(input: {
 		});
 }
 
-/** 与 Proxy / Playground 服务端相同：custom_params 与用户体深度合并，用户字段优先。 */
-export function deepMergePlaygroundDefaults(defaultValue: unknown, userValue: unknown): unknown {
-	if (userValue !== undefined) {
-		if (Array.isArray(userValue)) {
-			return userValue;
-		}
-		if (isPlainJsonObject(defaultValue) && isPlainJsonObject(userValue)) {
-			const merged: JsonObject = {};
-			const keys = new Set([...Object.keys(defaultValue), ...Object.keys(userValue)]);
-			for (const key of keys) {
-				merged[key] = deepMergePlaygroundDefaults(defaultValue[key], userValue[key]);
-			}
-			return merged;
-		}
-		return userValue;
-	}
-	return defaultValue;
-}
-
 export type PlaygroundMergedBodyPreview = { status: 'invalid' } | { status: 'preview'; json: string };
 
-/**
- * 客户端预览即将发往上游的 JSON：合并路由 `custom_params`，并在非 Gemini 协议写入 provider model。
- * 发送后仍以服务端 `x-playground-request-body` 为准（multipart / Vertex 前缀等无法在本地完整复现）。
- */
+/** 与 Proxy / Playground 服务端相同：custom_params 与用户体深度合并。 */
 export function previewPlaygroundMergedBody(input: {
 	bodyText: string;
 	customParams?: string | null;
@@ -249,8 +231,8 @@ export function previewPlaygroundMergedBody(input: {
 	}
 
 	const customParams = parseCustomParamsObject(input.customParams);
-	const merged = deepMergePlaygroundDefaults(routeCustomParamsBody(customParams), userBody);
-	const body: JsonObject = isPlainJsonObject(merged) ? { ...merged } : { ...userBody };
+	const merged = mergeRouteRequestBody(customParams, userBody);
+	const body: JsonObject = { ...merged };
 	const proto = normalizeProtocol(input.upstreamProtocol ?? 'openai');
 	const model = input.providerModelName?.trim() ?? '';
 	if (model && proto !== 'gemini') {

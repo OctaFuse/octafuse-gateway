@@ -45,6 +45,7 @@ import {
 	protocolBadgeClass,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
+	routeHasCustomParamsForceOverride,
 	splitRoutesByProtocolAndRouteGroup,
 } from '../route-utils';
 import {
@@ -296,8 +297,16 @@ function RouteTarget({
 					{route.custom_params ? (
 						<span
 							className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 ring-1 ring-inset ring-gray-200"
-							title={t('badgeParamsTooltip')}
-							aria-label={t('badgeParamsTooltip')}
+							title={
+								routeHasCustomParamsForceOverride(route.custom_params)
+									? t('badgeParamsForceOverrideTooltip')
+									: t('badgeParamsTooltip')
+							}
+							aria-label={
+								routeHasCustomParamsForceOverride(route.custom_params)
+									? t('badgeParamsForceOverrideTooltip')
+									: t('badgeParamsTooltip')
+							}
 						>
 							P
 						</span>

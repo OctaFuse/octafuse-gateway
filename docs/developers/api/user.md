@@ -72,10 +72,10 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 ### 6. 输出长度（`max_tokens` / `maxOutputTokens`）
 
 - Gateway **不会**根据 D1 **`models.max_tokens`** 改写或截断用户请求；该字段在 `GET /v1/models` 等处仅作**目录/展示参考**。
-- 实际上游请求体由 **`model_routes.custom_params`** 与客户端 JSON **深度合并**得到（实现见 `buildRouteRequestBody`）：**客户端显式提供的字段优先**于路由默认值。保留键 **`headers`** 不进入请求体，见 [Route 默认参数合并](#route-默认参数合并)。
+- 实际上游请求体由 **`model_routes.custom_params`** 与客户端 JSON **深度合并**得到（实现见 `buildRouteRequestBody`）。默认 **客户端显式提供的字段优先**；若该路由信封里 **`force_override.body`** 为 true（管理后台自定义参数请求体旁的「强制覆盖（Force override）」），则 **路由字段优先**。HTTP 头在 **`headers`** 中，由 **`force_override.headers`** 单独控制，见 [Route 默认参数合并](#route-默认参数合并)。
 - 若客户端不传 `max_tokens`（OpenAI Chat、Anthropic Messages）或不传 `generationConfig.maxOutputTokens`（Gemini），则由路由 JSON 中的默认值或**上游服务商的 API 默认**决定。
 - 运维若希望为某条路由提供默认最大输出，可在该路由的 **`custom_params`** 中配置，例如 OpenAI/Anthropic 顶层 `"max_tokens": 4096`，Gemini 使用嵌套 `"generationConfig": { "maxOutputTokens": 8192 }`。
-- **注意**：因合并规则为客户端优先，仅靠 `custom_params` **无法**在客户端已显式传入更大值时实现「硬封顶」；若需要运营侧强制上限，需另行设计（不在当前文档范围）。
+- 若需要在客户端已显式传入时仍强制使用路由值（例如硬封顶 `max_tokens`），在该路由开启强制覆盖。未开启时合并规则仍为客户端优先。
 
 ---
 
@@ -1254,30 +1254,56 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 
 <a id="route-默认参数合并"></a>
 
-`model_routes` 支持 route 级默认参数字段 **`custom_params`**（JSON 对象字符串）：可包含协议常规字段（如 `temperature`）与厂商/渠道专有字段（如 `provider_options`、`eca_thinking_config`）。
+`model_routes` 支持 route 级默认参数字段 **`custom_params`**（JSON 对象字符串）。落库形状为信封：
 
-网关在转发到上游前会进行两层合并（优先级从低到高）：
+```json
+{
+  "headers": {
+    "HTTP-Referer": "https://example.com",
+    "X-Title": "My App"
+  },
+  "body": {
+    "thinking": { "type": "enabled", "clear_thinking": false },
+    "stream": true
+  },
+  "force_override": {
+    "headers": true,
+    "body": true
+  }
+}
+```
 
-1. `custom_params`
+- 空配置为列值 `NULL`
+- 可只有 `headers`、只有 `body`，或带上 `force_override` 的一侧 / 两侧
+- **`force_override` 及其子键仅在为 true 时写入**；缺省 = 该侧客户端同名值优先
+- 历史扁平对象（顶层除 `headers` 外即请求体）运行时仍可读，两侧强制覆盖都视为关；下次在管理后台保存时会规范成信封
+
+网关在转发到上游前会进行两层合并。默认优先级从低到高：
+
+1. `custom_params.body`（旧扁平则去掉保留键 `headers` 后的其余键）
 2. 用户请求体
+
+信封 **`force_override.body`: true** 后，同名键改为路由覆盖客户端；只在一侧出现的键仍会保留（例如客户端的 `messages`）。**`force_override.headers`** 只作用于路由已配置的 HTTP 头，与请求体开关独立。
 
 合并规则：
 
 - 对象：递归深度合并
-- 数组：用户传入数组时整体替换默认数组
-- 标量：用户值优先
+- 数组：赢家一侧的数组整体替换
+- 标量 / `null`：以赢家为准
 - `model` 始终由 route 的 `provider_model_name` 强制覆盖
 
-示例（`model_routes.custom_params` 列中存放的 JSON 对象；OpenAI 风格）：
+示例（`model_routes.custom_params` 列中存放的 JSON 对象；OpenAI 风格信封）：
 
 ```json
 {
-  "temperature": 0.7,
-  "response_format": { "type": "json_object" },
-  "provider_options": { "foo": "bar" },
   "headers": {
     "HTTP-Referer": "https://example.com",
     "X-Title": "My App"
+  },
+  "body": {
+    "temperature": 0.7,
+    "response_format": { "type": "json_object" },
+    "provider_options": { "foo": "bar" }
   }
 }
 ```
@@ -1292,8 +1318,8 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 }
 ```
 
-则最终上游请求中的 `temperature` 为 `0.2`（用户覆盖默认），`provider_options` 会保留。
+则默认情况下最终上游请求中的 `temperature` 为 `0.2`（用户覆盖默认），`provider_options` 会保留。若该路由 `force_override.body` 为 true，则 `temperature` 为 `0.7`，`messages` 仍来自客户端。
 
-保留键 **`headers`** 是上游 **HTTP 头**，不是请求体字段：转发前会从 JSON 中剥离，并合并到出站请求头。客户端请求头不会覆盖这些值。网关写入的鉴权头（`Authorization` / `x-api-key` / `x-goog-api-key`）、`Content-Type` 与 hop-by-hop 头不可被 `headers` 覆盖；其余键（如 `HTTP-Referer`、`anthropic-version`）可以追加或覆盖驱动默认值。`headers` 缺省或为 `{}` 时行为与改造前相同。
+**`headers`** 是上游 **HTTP 头**，不是请求体字段：转发前会从 JSON 中剥离，并合并到出站请求头。仅处理路由里配置过的头名：默认客户端同名请求头优先；`force_override.headers` 为 true 后改为路由值优先。未在路由中配置的客户端头不会转发到上游。网关写入的鉴权头（`Authorization` / `x-api-key` / `x-goog-api-key`）、`Content-Type` 与 hop-by-hop 头不可被 `headers` 或客户端覆盖；其余键（如 `HTTP-Referer`、`anthropic-version`）可以追加或覆盖驱动默认值。`headers` 缺省或为 `{}` 时行为与改造前相同。
 
-各厂商 `thinking` / `reasoning` / `reasoning_effort` 等字段的 JSON 形态见 **[渠道模型思考参数配置说明](../reference/provider-thinking-configs.md)**。在 Route 的 `custom_params` 中写入默认值后，客户端未传该字段时会合并进上游请求；客户端显式传入时以客户端为准。
+各厂商 `thinking` / `reasoning` / `reasoning_effort` 等字段的 JSON 形态见 **[渠道模型思考参数配置说明](../reference/provider-thinking-configs.md)**。在 Route 的 `custom_params.body` 中写入默认值后，客户端未传该字段时会合并进上游请求；未开启该侧强制覆盖时，客户端显式传入以客户端为准。

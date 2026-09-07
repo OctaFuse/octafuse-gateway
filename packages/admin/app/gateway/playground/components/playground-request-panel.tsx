@@ -20,6 +20,7 @@ import {
 	playgroundModelHintFromRoute,
 	previewPlaygroundMergedBody,
 	previewPlaygroundOutboundHeaderRows,
+	splitPlaygroundCustomParams,
 	PLAYGROUND_LLM_SAMPLE_IDS,
 	type PlaygroundLlmSampleId,
 } from '../playground-utils';
@@ -133,7 +134,9 @@ export function PlaygroundRequestPanel({
 		? t('sentBodyHint')
 		: mergedPreview.status === 'invalid'
 			? t('sentBodyInvalidJson')
-			: t('sentBodyPreviewHint');
+			: splitPlaygroundCustomParams(selected?.custom_params).forceOverrideBody
+				? t('sentBodyPreviewHintForceOverride')
+				: t('sentBodyPreviewHint');
 	const headerHint = lastSentWireHeaders ? t('sentHeadersHintSent') : t('sentHeadersHint');
 	const sampleLabel = (id: PlaygroundLlmSampleId) =>
 		id === 'connectivity' ? t('templateConnectivity') : id === 'tools' ? t('templateToolStream') : t('templateReasoning');

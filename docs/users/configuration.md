@@ -72,7 +72,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 | 路由策略 | 默认 `hash_affinity` 适合大多数部署；需要随机分流、固定权重主备或轮询时再更换。 |
 | 供应商粘性 | 默认关闭；希望同一用户持续使用上次成功的供应商、提高缓存连续性时再按路由池启用。 |
 
-在自定义参数（Custom params）中可以分开填写 HTTP 请求头和 JSON 请求体。请求头按 `Name: Value` 写入上游，不会进入 JSON；请求体则深度合并到上游 JSON，客户端明确传入的字段优先。因此这里适合提供默认配置，不适合强制覆盖客户端请求。路由策略和粘性的完整规则见[路由策略说明](../developers/reference/route-strategies.md)。
+在自定义参数（Custom params）中可以分开填写 HTTP 请求头和 JSON 请求体。请求头按 `Name: Value` 写入上游，不会进入 JSON；请求体则深度合并到上游 JSON。默认客户端明确传入的同名字段和同名请求头优先，适合提供缺省配置。请求头与请求体旁各有一个强制覆盖（Force override）开关，只锁死该侧，避免锁死 `max_tokens` 时连 `HTTP-Referer` 一起锁死。未在路由中配置的客户端请求头不会转发。路由策略和粘性的完整规则见[路由策略说明](../developers/reference/route-strategies.md)。
 
 ### 3.3 配置目录价与峰谷时段
 

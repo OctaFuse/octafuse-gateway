@@ -202,7 +202,7 @@ export interface GatewayModelRoute {
   /** Route channel: e.g. default, free (gateway migration 0016) */
   route_group: string;
   price_override: string | null;
-  /** JSON object string: route-level request body defaults (merged with client body; client wins) */
+  /** JSON object string: envelope `{ headers, body, force_override }` or legacy flat object */
   custom_params: string | null;
   /** NOT NULL DEFAULT 'openai' after gateway migration 0011 */
   upstream_protocol: string;
