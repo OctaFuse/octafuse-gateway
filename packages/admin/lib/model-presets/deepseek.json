@@ -1,5 +1,78 @@
 [
 	{
+		"id": "deepseek-v4.1-flash",
+		"display_name": "DeepSeek V4.1 Flash",
+		"description": "The official DeepSeek V4.1 Flash model for fast long-context reasoning, coding, and agents. In internal and external evaluations, it comprehensively surpasses V4 Pro in performance, cost, speed, and total time.",
+		"i18n": {
+			"en": "The official DeepSeek V4.1 Flash model for fast long-context reasoning, coding, and agents. In internal and external evaluations, it comprehensively surpasses V4 Pro in performance, cost, speed, and total time.",
+			"zh": "DeepSeek V4.1 Flash 正式版，面向高速长上下文推理、编程与 Agent。经内部、外部多方测试，在性能、费用、速度、总用时等各项指标上已全面超越 V4 Pro。"
+		},
+		"vendor": "deepseek",
+		"context_window": 1000000,
+		"max_tokens": 384000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.15,
+						"output_price": 0.6,
+						"cache_read_price": 0.003,
+						"cache_write_price": null
+					}
+				],
+				"schedule": [
+					{
+						"start": "09:00",
+						"end": "12:00",
+						"factor": 2,
+						"days": [1, 2, 3, 4, 5]
+					},
+					{
+						"start": "14:00",
+						"end": "18:00",
+						"factor": 2,
+						"days": [1, 2, 3, 4, 5]
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 4,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					}
+				],
+				"schedule": [
+					{
+						"start": "09:00",
+						"end": "12:00",
+						"factor": 2,
+						"days": [1, 2, 3, 4, 5]
+					},
+					{
+						"start": "14:00",
+						"end": "18:00",
+						"factor": 2,
+						"days": [1, 2, 3, 4, 5]
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-10"
+	},
+	{
 		"id": "deepseek-v4-pro",
 		"display_name": "DeepSeek V4 Pro",
 		"description": "The official DeepSeek V4 Pro flagship for advanced reasoning, coding, and sustained agent workloads. The 0813 production checkpoint keeps 1M context and dual thinking modes under the same API name.",
@@ -88,9 +161,9 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 0.22,
-						"output_price": 0.66,
-						"cache_read_price": 0.007,
+						"input_price": 0.15,
+						"output_price": 0.6,
+						"cache_read_price": 0.003,
 						"cache_write_price": null
 					}
 				],
@@ -113,9 +186,9 @@
 				"tiers": [
 					{
 						"upto": null,
-						"input_price": 1.5,
-						"output_price": 4.5,
-						"cache_read_price": 0.05,
+						"input_price": 1,
+						"output_price": 4,
+						"cache_read_price": 0.02,
 						"cache_write_price": null
 					}
 				],

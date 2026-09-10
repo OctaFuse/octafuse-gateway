@@ -118,6 +118,22 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile?.tiers[1]?.input_price, 20);
 		assert.equal(profile?.tiers[1]?.output_price, 75);
 	});
+
+	it('includes deepseek-v4.1-flash and re-prices the Flash line at the 2026-09-10 off-peak list prices', () => {
+		const v41 = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'deepseek-v4.1-flash');
+		assert.ok(v41);
+		assert.equal(v41!.display_name, 'DeepSeek V4.1 Flash');
+		assert.equal(v41!.context_window, 1000000);
+		assert.equal(v41!.max_tokens, 384000);
+		for (const id of ['deepseek-v4-flash', 'deepseek-v4.1-flash']) {
+			const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === id);
+			const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === id);
+			assert.ok(usd, id);
+			assert.ok(cny, id);
+			assert.equal(usd!.pricing_label, '$0.15 / $0.6 /M', `${id} USD`);
+			assert.equal(cny!.pricing_label, '¥1 / ¥4 /M', `${id} CNY`);
+		}
+	});
 });
 
 describe('import catalog localized model metadata', () => {
@@ -151,7 +167,7 @@ const DEEPSEEK_V4_PEAK_SCHEDULE = [
 
 describe('static preset import writes catalog schedule', () => {
 	it('keeps DeepSeek V4 official peak windows on both currency branches', () => {
-		for (const id of ['deepseek-v4-pro', 'deepseek-v4-flash']) {
+		for (const id of ['deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-v4.1-flash']) {
 			const preset = listStaticModelPresets().find((p) => p.id === id);
 			assert.ok(preset, id);
 			for (const billing of ['USD', 'CNY'] as const) {
