@@ -1,5 +1,13 @@
 # @octafuse/proxy
 
+## 2.10.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @octafuse/core@2.10.0
+  - @octafuse/tool-engines@2.10.0
+
 ## Unreleased
 
 - `GET /v1/models` `model_info` 增加 `inbound`（LLM 请求入口）；选哪条入口由客户端决定。
