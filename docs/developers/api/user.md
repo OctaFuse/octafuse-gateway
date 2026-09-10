@@ -197,7 +197,7 @@ curl http://localhost:8787/v1/chat/completions \
 
 ## Responses
 
-OpenAI Responses 兼容入口，支持非流式 JSON 与 `stream=true` 的 typed SSE。上游必须配置 `openai.responses` 请求入口，并使用同协议 `passthrough`。
+OpenAI Responses 兼容入口，支持非流式 JSON 与 `stream=true` 的 typed SSE。上游必须配置 `openai.responses` 请求入口，并使用同协议 `passthrough`。流式 `data:` 事件若缺少顶层 `sequence_number`，网关会按本次连接注入递增整数（从 0 起）；上游已带该字段的事件原样转发。
 
 ### 请求
 

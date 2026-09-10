@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
 	applyResponsesUsage,
+	ensureResponsesSequenceNumber,
 	isResponsesTerminalEventType,
 	processResponsesDataLine,
+	syntheticMissingTerminalEvent,
 	usageFromResponses,
 } from './openai-responses-driver';
 import type { UsageFromStream } from '../proxy';
@@ -102,5 +104,74 @@ describe('openai-responses-driver SSE lines', () => {
 		assert.equal(usage.input_tokens, 9);
 		assert.equal(usage.output_tokens, 4);
 		assert.equal(usage.total_tokens, 13);
+	});
+});
+
+describe('ensureResponsesSequenceNumber', () => {
+	it('injects an incrementing sequence_number when the event is missing it', () => {
+		const seq = { value: 0 };
+		const a = ensureResponsesSequenceNumber(
+			`data: ${JSON.stringify({ type: 'response.created' })}`,
+			seq,
+		);
+		const b = ensureResponsesSequenceNumber(
+			`data: ${JSON.stringify({ type: 'response.output_text.delta', delta: 'hi' })}`,
+			seq,
+		);
+		assert.equal(JSON.parse(a.slice(6)).sequence_number, 0);
+		assert.equal(JSON.parse(b.slice(6)).sequence_number, 1);
+		assert.equal(seq.value, 2);
+	});
+
+	it('starts from 0 and preserves upstream sequence numbers without overwriting', () => {
+		const seq = { value: 0 };
+		// 上游已带 sequence_number=7，应原样保留且计数器越过去。
+		const out = ensureResponsesSequenceNumber(
+			`data: ${JSON.stringify({ type: 'response.output_text.done', sequence_number: 7 })}`,
+			seq,
+		);
+		assert.equal(out, `data: ${JSON.stringify({ type: 'response.output_text.done', sequence_number: 7 })}`);
+		assert.equal(JSON.parse(out.slice(6)).sequence_number, 7);
+		assert.equal(seq.value, 8);
+
+		// 下一个缺失事件应接着 8 注入，避免与上游重复。
+		const next = ensureResponsesSequenceNumber(`data: {"type":"response.completed"}`, seq);
+		assert.equal(JSON.parse(next.slice(6)).sequence_number, 8);
+	});
+
+	it('leaves non-data lines, [DONE], and non-object JSON untouched', () => {
+		const seq = { value: 0 };
+		assert.equal(ensureResponsesSequenceNumber('event: response.created', seq), 'event: response.created');
+		assert.equal(ensureResponsesSequenceNumber('data: [DONE]', seq), 'data: [DONE]');
+		assert.equal(ensureResponsesSequenceNumber('data: "just a string"', seq), 'data: "just a string"');
+		assert.equal(ensureResponsesSequenceNumber('data: [1,2]', seq), 'data: [1,2]');
+		assert.equal(seq.value, 0);
+	});
+
+	it('keeps the data: prefix and round-trips unknown fields', () => {
+		const seq = { value: 0 };
+		const input = `data: ${JSON.stringify({ type: 'response.output_text.delta', delta: 'OK', item_id: 'i_1' })}`;
+		const out = ensureResponsesSequenceNumber(input, seq);
+		const parsed = JSON.parse(out.slice(6));
+		assert.equal(parsed.type, 'response.output_text.delta');
+		assert.equal(parsed.delta, 'OK');
+		assert.equal(parsed.item_id, 'i_1');
+		assert.equal(parsed.sequence_number, 0);
+	});
+
+	it('synthetic terminal error event carries a sequence_number', () => {
+		// 场景：上游已发 3 个事件（0/1/2），随后静默 EOF，网关补发 error 事件。
+		const seq = { value: 0 };
+		ensureResponsesSequenceNumber(`data: {"type":"response.created"}`, seq);
+		ensureResponsesSequenceNumber(`data: {"type":"response.in_progress"}`, seq);
+		ensureResponsesSequenceNumber(`data: {"type":"response.output_item.added"}`, seq);
+		assert.equal(seq.value, 3);
+		const out = syntheticMissingTerminalEvent(seq);
+		const dataLine = out.split('\n').find((l) => l.startsWith('data: '));
+		assert.ok(dataLine, 'synthetic event contains a data: line');
+		const parsed = JSON.parse(dataLine!.slice(6));
+		assert.equal(parsed.type, 'error');
+		assert.equal(parsed.sequence_number, 3);
+		assert.equal(seq.value, 4);
 	});
 });
