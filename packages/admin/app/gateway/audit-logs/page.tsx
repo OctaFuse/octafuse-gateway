@@ -101,8 +101,15 @@ function isSameStringSet(left: readonly string[], right: readonly string[]): boo
   return left.every((value) => rightSet.has(value));
 }
 
-function appendAuditEventTypeParams(params: URLSearchParams, eventTypes: string[]): void {
+/** 浏览器 URL：Default（8 种，不含 usage_charge）省略参数，短链刷新仍还原为 Default UI。 */
+function appendAuditEventTypeUrlParams(params: URLSearchParams, eventTypes: string[]): void {
   if (isSameStringSet(eventTypes, DEFAULT_AUDIT_LOG_EVENT_TYPES)) return;
+  eventTypes.forEach((eventType) => params.append('event_type', eventType));
+}
+
+/** API 查询：仅全选 9 种时省略（不过滤）；Default 必须带上 8 个 event_type。 */
+function appendAuditEventTypeQueryParams(params: URLSearchParams, eventTypes: string[]): void {
+  if (isSameStringSet(eventTypes, API_KEY_BUDGET_AUDIT_EVENT_TYPES)) return;
   eventTypes.forEach((eventType) => params.append('event_type', eventType));
 }
 
@@ -232,7 +239,7 @@ export default function GatewayAuditLogsPage() {
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
       if (filterUserId) params.append('user_id', filterUserId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
-      appendAuditEventTypeParams(params, filterEventTypes);
+      appendAuditEventTypeUrlParams(params, filterEventTypes);
       appendAuditActorTypeParams(params, filterActorTypes);
       appendAuditActorKindParams(params, filterActorKinds);
       if (filterActorId) params.append('actor_id', filterActorId);
@@ -272,7 +279,7 @@ export default function GatewayAuditLogsPage() {
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
       if (filterUserId) params.append('user_id', filterUserId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
-      appendAuditEventTypeParams(params, filterEventTypes);
+      appendAuditEventTypeQueryParams(params, filterEventTypes);
       appendAuditActorTypeParams(params, filterActorTypes);
       appendAuditActorKindParams(params, filterActorKinds);
       if (filterActorId) params.append('actor_id', filterActorId);
