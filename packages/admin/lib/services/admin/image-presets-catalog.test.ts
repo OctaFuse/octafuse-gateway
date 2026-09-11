@@ -11,6 +11,8 @@ const EXPECTED_IMAGE_IDS = [
 	'gemini-3-pro-image-preview',
 	'glm-image',
 	'gpt-image-2',
+	'gpt-image-2.5-flare',
+	'gpt-image-2.5-sunburst',
 	'grok-imagine-image-2.0',
 	'grok-imagine-image-quality',
 	'qwen-image-3.0',
@@ -111,14 +113,20 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(grokUsd.image?.by_size?.['2k'], 0.07);
 		assert.equal(grokUsd.image?.input?.default, 0.01);
 
-		const gpt = byId.get('gpt-image-2')!;
-		const gptUsd = asPricing(gpt.pricing.usd);
-		const gptTier = gptUsd.tiers?.[0];
-		assert.ok(gptTier);
-		assert.equal(gptUsd.image_billing_mode, 'token');
-		assert.equal(gptTier.input_price, 5);
-		assert.equal(gptTier.image_input_price, 8);
-		assert.equal(gptTier.image_output_price, 30);
+		for (const gptId of ['gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst']) {
+			const gpt = byId.get(gptId)!;
+			const gptUsd = asPricing(gpt.pricing.usd);
+			const gptTier = gptUsd.tiers?.[0];
+			assert.ok(gptTier, gptId);
+			assert.equal(gptUsd.image_billing_mode, 'token', gptId);
+			assert.equal(gptTier.input_price, 5, gptId);
+			assert.equal(gptTier.cache_read_price, 1.25, gptId);
+			assert.equal(gptTier.output_price, 0, gptId);
+			assert.equal(gptTier.image_input_price, 8, gptId);
+			assert.equal(gptTier.image_input_cache_price, 2, gptId);
+			assert.equal(gptTier.image_output_price, 30, gptId);
+			assert.equal(asPricing(gpt.pricing.cny).tiers?.[0]?.image_output_price, 210, gptId);
+		}
 
 		const flash = byId.get('gemini-3.1-flash-image')!;
 		const flashTier = asPricing(flash.pricing.usd).tiers?.[0];
