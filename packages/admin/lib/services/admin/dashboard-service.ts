@@ -243,6 +243,25 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		}
 		value = normalized;
 	}
+	if (key === 'STREAM_FIRST_EVENT_TIMEOUT_MS') {
+		const trimmed = value.trim();
+		if (trimmed && !/^\d+$/.test(trimmed)) {
+			throw badRequest('STREAM_FIRST_EVENT_TIMEOUT_MS must be a positive integer millisecond value or empty');
+		}
+		value = trimmed;
+	}
+	if (key === 'STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS') {
+		const trimmed = value.trim();
+		if (trimmed && trimmed !== '*' && trimmed.toLowerCase() !== 'all') {
+			const groups = trimmed.split(',').map((part) => part.trim()).filter(Boolean);
+			if (groups.length === 0) {
+				throw badRequest(
+					'STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS must be empty, *, all, or a comma-separated list of route groups'
+				);
+			}
+		}
+		value = trimmed;
+	}
 	const legacyToolKeys = new Set([
 		WEB_SEARCH_PROVIDER_KEY,
 		WEB_SEARCH_API_KEY_KEY,

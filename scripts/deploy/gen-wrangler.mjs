@@ -124,6 +124,32 @@ export function customDomainRoutes(raw) {
 	return hosts.map((pattern) => ({ pattern, custom_domain: true }));
 }
 
+/** Optional Proxy runtime vars baked into wrangler `[vars]` at deploy time. */
+export const PROXY_RUNTIME_VAR_KEYS = [
+	"STREAM_FIRST_CHUNK_TIMEOUT_MS",
+	"STREAM_IDLE_TIMEOUT_MS",
+	"USAGE_SAFETY_TIMEOUT_MS",
+];
+
+/**
+ * Collect non-empty Proxy timeout overrides from env.
+ * Empty / unset keys are omitted so Worker code defaults apply.
+ *
+ * @param {NodeJS.ProcessEnv | Record<string, string | undefined>} [env]
+ * @returns {Record<string, string> | undefined}
+ */
+export function collectProxyRuntimeVars(env = process.env) {
+	const vars = {};
+	for (const key of PROXY_RUNTIME_VAR_KEYS) {
+		const raw = env[key];
+		const value = typeof raw === "string" ? raw.trim() : "";
+		if (value) {
+			vars[key] = value;
+		}
+	}
+	return Object.keys(vars).length > 0 ? vars : undefined;
+}
+
 function generateProxy(names) {
 	const base = readBase("packages/proxy/wrangler.base.jsonc");
 	const config = {
@@ -142,6 +168,11 @@ function generateProxy(names) {
 		config.routes = routes;
 	} else {
 		delete config.routes;
+	}
+
+	const runtimeVars = collectProxyRuntimeVars();
+	if (runtimeVars) {
+		config.vars = { ...base.vars, ...runtimeVars };
 	}
 
 	writeJson("packages/proxy/wrangler.jsonc", config);

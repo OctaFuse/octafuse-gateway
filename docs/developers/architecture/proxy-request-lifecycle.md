@@ -257,7 +257,7 @@ sequenceDiagram
 | 上游 404 等 | **fail_immediately**，不重试 | 直接透传该 4xx |
 | fetch 网络错误 / 524 | 同次换供应商，不跨请求熔断 | 全失败时最后 502 或上游响应 |
 | Images 客户端取消 / Gateway 超时 | 合成 504，**禁止**故障转移 | 504 |
-| 流式 usage 5min 未就绪 | **不**触发供应商熔断 | 2xx 仍返回；日志 `incomplete` |
+| 流式 usage 绝对兜底未就绪 | **不**触发供应商熔断 | 2xx 仍返回；日志 `incomplete`。持续吐 chunk 的长思考会等到流结束再记账；尚未吐包时最多等首包超时（默认 2 分钟），已吐 chunk 后按空闲超时收口（默认 30s，`error_message=Stream idle timeout`）。三档时长由代理服务环境变量覆盖，见 [streaming-billing.md](../reference/streaming-billing.md) |
 
 ### 4.3 两类 429 的区别
 

@@ -17,6 +17,9 @@
 |`DATABASE_DRIVER`|否|与 `DATABASE_URL` 命名对齐。省略默认 `postgres`；MySQL 须 `mysql`（或 `mysql2`）。|
 |`DATABASE_URL`|是|Postgres 或 **`mysql://`** 连接串（与所选驱动一致）|
 |`PORT`|否|默认 `8787`|
+|`STREAM_FIRST_CHUNK_TIMEOUT_MS`|否|文本流式：尚未收到非空 chunk 的等待上限，毫秒。空则代码默认 `120000`（2 分钟）。需要更宽时可覆盖为 `180000`。|
+|`STREAM_IDLE_TIMEOUT_MS`|否|文本流式：已吐 chunk 后的空闲上限，毫秒。空则代码默认 `30000`（30 秒）。需要更宽时可覆盖为 `45000`。|
+|`USAGE_SAFETY_TIMEOUT_MS`|否|文本流式：`usagePromise` 绝对兜底，毫秒。空则代码默认 `600000`（10 分钟）。需要更宽时可覆盖为 `900000`。|
 |`AUTO_MIGRATE`|否|设为 `1`/`true`/`yes`/`on` 时，容器启动前自动执行幂等迁移（见 §5）。默认关闭。|
 |迁移方式（备选）|—|未设 `AUTO_MIGRATE` 时，使用 **`Dockerfile.migrate`** 镜像，通过 `docker compose --profile migrate run --rm migrate` 执行。|
 

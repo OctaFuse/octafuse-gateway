@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { afterEach, describe, it, mock } from 'node:test';
+import type { RouteResult } from '../model-router';
 import {
 	applyResponsesUsage,
+	dispatchOpenAiResponsesRoute,
 	ensureResponsesSequenceNumber,
 	isResponsesTerminalEventType,
 	processResponsesDataLine,
@@ -173,5 +175,60 @@ describe('ensureResponsesSequenceNumber', () => {
 		assert.equal(parsed.type, 'error');
 		assert.equal(parsed.sequence_number, 3);
 		assert.equal(seq.value, 4);
+	});
+});
+
+describe('dispatchOpenAiResponsesRoute', () => {
+	afterEach(() => {
+		mock.reset();
+	});
+
+	function responsesRoute(): RouteResult {
+		return {
+			targetId: 't1',
+			modelSurfaceId: 's1',
+			routePoolId: 'p1',
+			providerId: 'prov1',
+			providerName: 'OpenAI',
+			providerModelName: 'gpt-5',
+			upstreamProtocol: 'openai',
+			upstreamOperation: 'responses',
+			adapter: 'passthrough',
+			providerEndpoints: {
+				openai: { base: 'https://api.openai.com/v1' },
+			},
+			providerApiKey: 'sk-test',
+			priceOverrideRaw: null,
+			routeMeteredProfileJson: null,
+			routeChargedProfileJson: null,
+			customParams: null,
+			routeGroup: 'default',
+			routePriority: 0,
+			routeWeight: 1,
+		};
+	}
+
+	it('returns 524 when the first SSE event exceeds firstEventTimeoutMs', async () => {
+		const hung = new ReadableStream<Uint8Array>({
+			start() {},
+			cancel() {},
+		});
+		mock.method(globalThis, 'fetch', async () =>
+			new Response(hung, {
+				status: 200,
+				headers: { 'Content-Type': 'text/event-stream' },
+			})
+		);
+		const result = await dispatchOpenAiResponsesRoute(
+			responsesRoute(),
+			{ stream: true },
+			undefined,
+			null,
+			undefined,
+			{ firstEventTimeoutMs: 20 }
+		);
+		assert.equal(result.response.status, 524);
+		const usage = await result.usagePromise;
+		assert.equal(usage.input_tokens, 0);
 	});
 });

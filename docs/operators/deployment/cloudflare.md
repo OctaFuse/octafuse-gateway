@@ -83,6 +83,7 @@ dev 演示**仅 CLI 发版**（有新 SQL 时先 `db:migrate:remote`）；生产
 | `D1_DATABASE_ID` | 远程 deploy / migrate **必填**。写入生成的 `wrangler.jsonc` 后，本机 `dev:proxy`/`dev:admin` 会连**另一套**本地 D1；继续本地开发前执行 `npm run gen:wrangler`（见 [local-development.md §1](../../developers/local-development.md#️-本地-d1-与-database_id远程-deploy-后必读)） |
 | `D1_MIGRATIONS_WORKER_NAME` | 可选；仅 `wrangler d1 migrations` 配置名，**无需建 Worker** |
 | `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选。多个主机名用逗号分隔，同一 Worker 挂多个入口 |
+| `STREAM_FIRST_CHUNK_TIMEOUT_MS` / `STREAM_IDLE_TIMEOUT_MS` / `USAGE_SAFETY_TIMEOUT_MS` | 可选。代理服务文本流式超时（毫秒）。写入 wrangler `vars`；空则代码默认 2 分钟 / 30 秒 / 10 分钟。也可事后在 Dashboard **Settings → Variables** 覆盖。 |
 
 ---
 
@@ -109,6 +110,7 @@ Cloudflare Dashboard → Worker → **设置（Settings）→ 构建（Builds）
 | `D1_DATABASE_ID` | ✅ | `npx wrangler d1 list`；**只放 Cloudflare Dashboard** |
 | `D1_MIGRATIONS_WORKER_NAME` | 可选 | 仅迁移脚本配置名 |
 | `PROXY_CUSTOM_DOMAIN` / `ADMIN_CUSTOM_DOMAIN` | 可选 | 写入 wrangler `routes`。多个主机名用逗号分隔，同一 Worker 挂多个入口，例如 `api.example.com,relay.example.com`。各域名所在 zone 须在同一 Cloudflare 账号 |
+| `STREAM_FIRST_CHUNK_TIMEOUT_MS` / `STREAM_IDLE_TIMEOUT_MS` / `USAGE_SAFETY_TIMEOUT_MS` | 可选 | 仅代理服务。文本流式超时（毫秒）；空则代码默认 2 分钟 / 30 秒 / 10 分钟 |
 
 ### 构建 / 部署命令
 

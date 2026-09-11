@@ -36,8 +36,13 @@ import {
 import { EMPTY_USAGE, type ProxyResult } from './proxy';
 import type { FailoverDispatchOptions } from './failover-dispatch';
 import { RequestTimingCollector } from './request-timing';
+import {
+	DEFAULT_USAGE_SAFETY_TIMEOUT_MS,
+	resolveStreamTimeouts,
+} from './stream-timeout-env';
 
-export const USAGE_SAFETY_TIMEOUT_MS = 5 * 60 * 1000;
+/** `usagePromise` 未 resolve 的绝对上限（代码默认）。部署可用 `USAGE_SAFETY_TIMEOUT_MS` 覆盖。 */
+export const USAGE_SAFETY_TIMEOUT_MS = DEFAULT_USAGE_SAFETY_TIMEOUT_MS;
 
 export type AuthedEnv = Env & { Variables: { apiKey: ApiKeyContext } };
 
@@ -320,21 +325,26 @@ export async function runProxyPipeline<TBody>(
 	});
 	if (circuitBlocked) return circuitBlocked;
 
-	const failoverOptions = await buildProxyFailoverOptions({
-		repos,
-		apiKey,
-		model,
-		baseModelId,
-		effectiveRouteGroup,
-		protocol: spec.requestProtocol,
-		capability: spec.strategyCapability,
-		poolStrategy,
-		poolTierStrategies,
-		stickySurface,
-		routes,
-		timing,
-		inboundHeaders: c.req.raw.headers,
-	});
+	const streamTimeouts = resolveStreamTimeouts(c.env);
+	const failoverOptions = {
+		...(await buildProxyFailoverOptions({
+			repos,
+			apiKey,
+			model,
+			baseModelId,
+			effectiveRouteGroup,
+			protocol: spec.requestProtocol,
+			capability: spec.strategyCapability,
+			poolStrategy,
+			poolTierStrategies,
+			stickySurface,
+			routes,
+			timing,
+			inboundHeaders: c.req.raw.headers,
+		})),
+		firstChunkTimeoutMs: streamTimeouts.firstChunkTimeoutMs,
+		idleTimeoutMs: streamTimeouts.idleTimeoutMs,
+	};
 	timing.markGatewayComplete();
 	const proxyResult = await spec.dispatch({
 		repos,
@@ -378,7 +388,7 @@ export async function runProxyPipeline<TBody>(
 		new Promise<{ usage: typeof EMPTY_USAGE; timedOut: true }>((resolve) =>
 			setTimeout(
 				() => resolve({ usage: EMPTY_USAGE, timedOut: true }),
-				USAGE_SAFETY_TIMEOUT_MS
+				streamTimeouts.usageSafetyTimeoutMs
 			)
 		),
 	]);

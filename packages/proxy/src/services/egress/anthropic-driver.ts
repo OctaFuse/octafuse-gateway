@@ -7,6 +7,16 @@ import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
 import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
+import {
+  peekResponseFirstEvent,
+  type FirstEventTimeoutOptions,
+} from '../stream-first-event-timeout';
+import {
+  applyStreamIdleTimeout,
+  createStreamIdleClock,
+  readWithIdleTimeout,
+  type StreamIdleClockOptions,
+} from './stream-idle-timeout';
 
 const EMPTY_USAGE_LOCAL: UsageFromStream = {
   input_tokens: 0,
@@ -144,13 +154,15 @@ async function pumpWithUsageTracking(
   usage: UsageFromStream,
   resolveUsage: (u: UsageFromStream) => void,
   requestSignal?: AbortSignal,
-  timing?: RequestTimingCollector | null
+  timing?: RequestTimingCollector | null,
+  idleOptions?: StreamIdleClockOptions
 ): Promise<void> {
   const reader = upstream.getReader();
   const writer = downstream.getWriter();
   const state: SSEState = { lineBuffer: '' };
   let clientDisconnected = false;
   let disconnectTime = 0;
+  const idleClock = createStreamIdleClock(idleOptions);
 
   const onAbort = (): void => {
     usage.cancelled = true;
@@ -160,8 +172,16 @@ async function pumpWithUsageTracking(
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
+      const chunk = await readWithIdleTimeout(reader, idleClock.timeoutMs());
+      if (chunk.idleTimedOut) {
+        applyStreamIdleTimeout(usage);
+        console.log('[Gateway Proxy] anthropic stream idle timeout, resolving with partial usage');
+        await reader.cancel();
+        break;
+      }
+      const { done, value } = chunk;
+      idleClock.noteChunk(value);
+      if (done || !value) {
         processRemainingLineBuffer(state, usage, timing);
         break;
       }
@@ -207,7 +227,8 @@ async function pumpWithUsageTracking(
 function streamResponseWithUsage(
   response: Response,
   requestSignal?: AbortSignal,
-  timing?: RequestTimingCollector | null
+  timing?: RequestTimingCollector | null,
+  idleOptions?: StreamIdleClockOptions
 ): { response: Response; usagePromise: Promise<UsageFromStream> } {
   let resolveUsage!: (u: UsageFromStream) => void;
   const usagePromise = new Promise<UsageFromStream>((resolve) => {
@@ -217,7 +238,7 @@ function streamResponseWithUsage(
   const usage: UsageFromStream = { ...EMPTY_USAGE_LOCAL };
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
 
-  pumpWithUsageTracking(response.body!, writable, usage, resolveUsage, requestSignal, timing).catch(() => {
+  pumpWithUsageTracking(response.body!, writable, usage, resolveUsage, requestSignal, timing, idleOptions).catch(() => {
     // resolveUsage in finally
   });
 
@@ -279,7 +300,8 @@ export async function dispatchAnthropicRoute(
   body: Record<string, unknown>,
   requestSignal?: AbortSignal,
   timing?: RequestTimingCollector | null,
-  attempt?: RequestTimingAttempt
+  attempt?: RequestTimingAttempt,
+  options?: FirstEventTimeoutOptions & StreamIdleClockOptions
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
   const url = resolveUpstreamEndpoint('anthropic', 'messages', route.providerEndpoints, {
     providerId: route.providerId,
@@ -310,7 +332,22 @@ export async function dispatchAnthropicRoute(
       const result = await nonStreamResponseWithUsage(response, timing);
       return { ...result, upstreamRequestId };
     }
-    const result = streamResponseWithUsage(response, requestSignal, timing);
+    const peeked = await peekResponseFirstEvent(
+      response,
+      options?.firstEventTimeoutMs ?? 0,
+      `protocol=anthropic providerId=${route.providerId}`
+    );
+    if (peeked.timedOut) {
+      return {
+        response: peeked.response,
+        usagePromise: Promise.resolve(EMPTY_USAGE_LOCAL),
+        upstreamRequestId,
+      };
+    }
+    const result = streamResponseWithUsage(peeked.response, requestSignal, timing, {
+      firstChunkTimeoutMs: options?.firstChunkTimeoutMs,
+      idleTimeoutMs: options?.idleTimeoutMs,
+    });
     return { ...result, upstreamRequestId };
   }
 

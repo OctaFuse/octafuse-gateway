@@ -23,6 +23,10 @@ services:
       DATABASE_DRIVER: ${DATABASE_DRIVER:-postgres}
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
       PORT: "8787"
+      # 可选：文本流式超时（毫秒）。空则代码默认 2min / 30s / 10min。
+      STREAM_FIRST_CHUNK_TIMEOUT_MS: ${STREAM_FIRST_CHUNK_TIMEOUT_MS:-}
+      STREAM_IDLE_TIMEOUT_MS: ${STREAM_IDLE_TIMEOUT_MS:-}
+      USAGE_SAFETY_TIMEOUT_MS: ${USAGE_SAFETY_TIMEOUT_MS:-}
     healthcheck:
       test:
         [

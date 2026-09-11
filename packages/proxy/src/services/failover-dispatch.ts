@@ -126,6 +126,10 @@ export type FailoverDispatchOptions = {
 	sticky?: RoutePoolStickyRoutingConfig | null;
 	/** Incoming user request headers; used to overlay route `custom_params.headers` when force override is off. */
 	inboundHeaders?: Headers;
+	/** 尚未收到非空 chunk 时的等待上限；未设则 driver 用代码默认。 */
+	firstChunkTimeoutMs?: number;
+	/** 已吐 chunk 后两次 chunk 之间的空闲上限；未设则 driver 用代码默认。 */
+	idleTimeoutMs?: number;
 };
 
 type DispatchFn = (

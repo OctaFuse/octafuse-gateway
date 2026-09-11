@@ -7,6 +7,12 @@ import type { RouteResult } from "./model-router";
 import { dispatchOpenAiRoute } from "./egress/openai-driver";
 import { dispatchOpenAiResponsesRoute } from "./egress/openai-responses-driver";
 import {
+	loadFirstEventTimeoutConfig,
+	resolveFirstEventTimeoutMs,
+	type FirstEventTimeoutOptions,
+} from "./stream-first-event-timeout";
+import type { StreamIdleClockOptions } from "./egress/stream-idle-timeout";
+import {
 	dispatchOpenAiImageEdits,
 	type NormalizedImageEditRequest,
 } from "./egress/openai-images-driver";
@@ -104,6 +110,25 @@ export const EMPTY_USAGE: UsageFromStream = {
 	raw_usage: null,
 };
 
+function firstEventTimeoutMsFor(
+	config: { timeoutMs: number; groups: string[] | "*" },
+	routeGroup: string
+): number {
+	return resolveFirstEventTimeoutMs(config.timeoutMs, config.groups, routeGroup);
+}
+
+function textStreamDispatchOptions(
+	firstEvent: { timeoutMs: number; groups: string[] | "*" },
+	routeGroup: string,
+	options?: FailoverDispatchOptions
+): FirstEventTimeoutOptions & StreamIdleClockOptions {
+	return {
+		firstEventTimeoutMs: firstEventTimeoutMsFor(firstEvent, routeGroup),
+		firstChunkTimeoutMs: options?.firstChunkTimeoutMs,
+		idleTimeoutMs: options?.idleTimeoutMs,
+	};
+}
+
 export type AudioTranscriptionProxyOptions = FailoverDispatchOptions & {
 	dashScope?: DashScopeAsrDispatchOptions;
 };
@@ -123,6 +148,7 @@ export async function proxyChatCompletions(
 	requestSignal?: AbortSignal,
 	options?: FailoverDispatchOptions
 ): Promise<ProxyResult> {
+	const firstEvent = await loadFirstEventTimeoutConfig(repos);
 	const result = await failoverDispatch(
 		repos,
 		routes,
@@ -132,7 +158,8 @@ export async function proxyChatCompletions(
 			signal,
 			timing?: RequestTimingCollector | null,
 			attempt?: RequestTimingAttempt
-		) => dispatchOpenAiRoute(route, body, signal, timing, attempt),
+		) =>
+			dispatchOpenAiRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
 		requestSignal,
 		options
 	);
@@ -149,6 +176,7 @@ export async function proxyResponses(
 	requestSignal?: AbortSignal,
 	options?: FailoverDispatchOptions
 ): Promise<ProxyResult> {
+	const firstEvent = await loadFirstEventTimeoutConfig(repos);
 	return failoverDispatch(
 		repos,
 		routes,
@@ -158,7 +186,8 @@ export async function proxyResponses(
 			signal,
 			timing?: RequestTimingCollector | null,
 			attempt?: RequestTimingAttempt
-		) => dispatchOpenAiResponsesRoute(route, body, signal, timing, attempt),
+		) =>
+			dispatchOpenAiResponsesRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
 		requestSignal,
 		options
 	);
@@ -174,6 +203,7 @@ export async function proxyAnthropicMessages(
 	requestSignal?: AbortSignal,
 	options?: FailoverDispatchOptions
 ): Promise<ProxyResult> {
+	const firstEvent = await loadFirstEventTimeoutConfig(repos);
 	return failoverDispatch(
 		repos,
 		routes,
@@ -183,7 +213,8 @@ export async function proxyAnthropicMessages(
 			signal,
 			timing?: RequestTimingCollector | null,
 			attempt?: RequestTimingAttempt
-		) => dispatchAnthropicRoute(route, body, signal, timing, attempt),
+		) =>
+			dispatchAnthropicRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
 		requestSignal,
 		options
 	);
@@ -370,6 +401,7 @@ export async function proxyGeminiContent(
 	requestSignal?: AbortSignal,
 	options?: FailoverDispatchOptions
 ): Promise<ProxyResult> {
+	const firstEvent = await loadFirstEventTimeoutConfig(repos);
 	return failoverDispatch(
 		repos,
 		routes,
@@ -380,7 +412,7 @@ export async function proxyGeminiContent(
 			timing?: RequestTimingCollector | null,
 			attempt?: RequestTimingAttempt
 		) =>
-			dispatchGeminiRoute(route, body, action, search, signal, timing, attempt),
+			dispatchGeminiRoute(route, body, action, search, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
 		requestSignal,
 		options
 	);

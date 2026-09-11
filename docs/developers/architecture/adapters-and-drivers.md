@@ -78,7 +78,7 @@
 4. 解析路由策略与供应商粘性（Provider sticky）
 5. 用户+模型熔断
 6. `failoverDispatch`
-7. 5 分钟 usage 兜底后：`describeOutcome` → `buildAccountingEvent` → `sink.flush`（默认直接 `recordUsage`）
+7. usage 兜底后：`describeOutcome` → `buildAccountingEvent` → `sink.flush`（默认直接 `recordUsage`）
 
 协议转发层（parse / dispatch、SSE 分帧、熔断分类）与记账层分离：各端点只提供协议相关 hook，记账事件由纯函数合成，sink 是唯一写库接缝。
 

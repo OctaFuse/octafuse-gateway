@@ -58,16 +58,17 @@ export function pickSummaryFromJsonBody(obj: unknown): string | null {
 }
 
 /**
- * 记账用状态：取消优先，其次明确 HTTP 失败，再其次用量不完整，其余成功。
+ * 记账用状态：取消优先，其次明确 HTTP 失败，再其次用量不完整或网关掐流，其余成功。
  */
 export function computeRequestLogStatus(params: {
   cancelled: boolean;
   responseOk: boolean;
   incomplete: boolean;
+  streamError?: boolean;
 }): RequestLogRecordedStatus {
   if (params.cancelled) return 'cancelled';
   if (!params.responseOk) return 'error';
-  if (params.incomplete) return 'incomplete';
+  if (params.incomplete || params.streamError) return 'incomplete';
   return 'success';
 }
 

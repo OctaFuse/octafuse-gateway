@@ -4,6 +4,16 @@ import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
 import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
+import {
+	peekResponseFirstEvent,
+	type FirstEventTimeoutOptions,
+} from '../stream-first-event-timeout';
+import {
+	applyStreamIdleTimeout,
+	createStreamIdleClock,
+	readWithIdleTimeout,
+	type StreamIdleClockOptions,
+} from './stream-idle-timeout';
 
 /**
  * OpenAI Responses API 透传：
@@ -233,6 +243,7 @@ async function pumpResponsesWithUsageTracking(
 	resolveUsage: (u: UsageFromStream) => void,
 	requestSignal?: AbortSignal,
 	timing?: RequestTimingCollector | null,
+	idleOptions?: StreamIdleClockOptions,
 ): Promise<void> {
 	const reader = upstream.getReader();
 	const writer = downstream.getWriter();
@@ -242,6 +253,7 @@ async function pumpResponsesWithUsageTracking(
 	let clientDisconnected = false;
 	let disconnectTime = 0;
 	let sawTerminal = false;
+	const idleClock = createStreamIdleClock(idleOptions);
 
 	const onAbort = (): void => {
 		usage.cancelled = true;
@@ -267,8 +279,16 @@ async function pumpResponsesWithUsageTracking(
 
 	try {
 		while (true) {
-			const { done, value } = await reader.read();
-			if (done) {
+			const chunk = await readWithIdleTimeout(reader, idleClock.timeoutMs());
+			if (chunk.idleTimedOut) {
+				applyStreamIdleTimeout(usage);
+				console.log('[Gateway Responses] stream idle timeout, resolving with partial usage');
+				await reader.cancel();
+				break;
+			}
+			const { done, value } = chunk;
+			idleClock.noteChunk(value);
+			if (done || !value) {
 				if (state.lineBuffer.trim()) {
 					const line = state.lineBuffer.trim();
 					state.lineBuffer = '';
@@ -335,6 +355,7 @@ function streamResponseWithUsage(
 	response: Response,
 	requestSignal?: AbortSignal,
 	timing?: RequestTimingCollector | null,
+	idleOptions?: StreamIdleClockOptions,
 ): { response: Response; usagePromise: Promise<UsageFromStream> } {
 	let resolveUsage!: (u: UsageFromStream) => void;
 	const usagePromise = new Promise<UsageFromStream>((resolve) => {
@@ -344,7 +365,7 @@ function streamResponseWithUsage(
 	const usage: UsageFromStream = { ...EMPTY_USAGE_LOCAL };
 	const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
 
-	pumpResponsesWithUsageTracking(response.body!, writable, usage, resolveUsage, requestSignal, timing).catch(
+	pumpResponsesWithUsageTracking(response.body!, writable, usage, resolveUsage, requestSignal, timing, idleOptions).catch(
 		() => {
 			// resolveUsage already called in finally
 		},
@@ -421,6 +442,7 @@ export async function dispatchOpenAiResponsesRoute(
 	requestSignal?: AbortSignal,
 	timing?: RequestTimingCollector | null,
 	attempt?: RequestTimingAttempt,
+	options?: FirstEventTimeoutOptions & StreamIdleClockOptions,
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
 	const url = resolveUpstreamEndpoint('openai', 'responses', route.providerEndpoints, {
 		providerId: route.providerId,
@@ -451,7 +473,22 @@ export async function dispatchOpenAiResponsesRoute(
 			const result = await nonStreamResponseWithUsage(response, timing);
 			return { ...result, upstreamRequestId };
 		}
-		const result = streamResponseWithUsage(response, requestSignal, timing);
+		const peeked = await peekResponseFirstEvent(
+			response,
+			options?.firstEventTimeoutMs ?? 0,
+			`protocol=openai-responses providerId=${route.providerId}`,
+		);
+		if (peeked.timedOut) {
+			return {
+				response: peeked.response,
+				usagePromise: Promise.resolve(EMPTY_USAGE_LOCAL),
+				upstreamRequestId,
+			};
+		}
+		const result = streamResponseWithUsage(peeked.response, requestSignal, timing, {
+			firstChunkTimeoutMs: options?.firstChunkTimeoutMs,
+			idleTimeoutMs: options?.idleTimeoutMs,
+		});
 		return { ...result, upstreamRequestId };
 	}
 

@@ -270,4 +270,127 @@ describe('dispatchOpenAiRoute', () => {
 		assert.equal(sent.temperature, 0.4);
 		assert.equal(sent.headers, undefined);
 	});
+
+	it('resolves usage on stream idle timeout instead of hanging', async () => {
+		const encoder = new TextEncoder();
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(
+					encoder.encode(
+						`data: ${JSON.stringify({
+							id: 'chatcmpl-idle',
+							choices: [{ delta: { content: 'hel' }, finish_reason: null }],
+							usage: { prompt_tokens: 4, completion_tokens: 1 },
+						})}\n`
+					)
+				);
+			},
+			cancel() {
+				// hanging source: cancel must resolve so the pump can finish
+			},
+		});
+		mock.method(globalThis, 'fetch', async () =>
+			new Response(stream, {
+				status: 200,
+				headers: { 'Content-Type': 'text/event-stream' },
+			})
+		);
+
+		const result = await dispatchOpenAiRoute(openaiRoute(), { stream: true }, undefined, null, undefined, {
+			idleTimeoutMs: 40,
+		});
+		const [usage] = await Promise.all([result.usagePromise, result.response.text()]);
+		assert.equal(usage.input_tokens, 4);
+		assert.equal(usage.output_tokens, 1);
+		assert.equal(usage.upstreamMessageId, 'chatcmpl-idle');
+		assert.equal(usage.stream_error, 'Stream idle timeout');
+	});
+
+	it('waits longer for the first SSE chunk than for later idle gaps', async () => {
+		const encoder = new TextEncoder();
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				setTimeout(() => {
+					controller.enqueue(
+						encoder.encode(
+							`data: ${JSON.stringify({
+								id: 'chatcmpl-slow-first',
+								choices: [{ finish_reason: 'stop' }],
+								usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+							})}\n`
+						)
+					);
+					controller.close();
+				}, 40);
+			},
+		});
+		mock.method(globalThis, 'fetch', async () =>
+			new Response(stream, {
+				status: 200,
+				headers: { 'Content-Type': 'text/event-stream' },
+			})
+		);
+		const result = await dispatchOpenAiRoute(openaiRoute(), { stream: true }, undefined, null, undefined, {
+			firstChunkTimeoutMs: 200,
+			idleTimeoutMs: 20,
+		});
+		const [usage] = await Promise.all([result.usagePromise, result.response.text()]);
+		assert.equal(usage.input_tokens, 1);
+		assert.equal(usage.output_tokens, 1);
+		assert.equal(usage.stream_error, undefined);
+	});
+
+	it('returns 524 when the first SSE event exceeds firstEventTimeoutMs', async () => {
+		const hung = new ReadableStream<Uint8Array>({
+			start() {
+				// never enqueue
+			},
+			cancel() {},
+		});
+		mock.method(globalThis, 'fetch', async () =>
+			new Response(hung, {
+				status: 200,
+				headers: { 'Content-Type': 'text/event-stream' },
+			})
+		);
+		const result = await dispatchOpenAiRoute(openaiRoute(), { stream: true }, undefined, null, undefined, {
+			firstEventTimeoutMs: 20,
+		});
+		assert.equal(result.response.status, 524);
+		const usage = await result.usagePromise;
+		assert.equal(usage.input_tokens, 0);
+	});
+
+	it('still forwards SSE when firstEventTimeoutMs is set and the first chunk arrives', async () => {
+		const encoder = new TextEncoder();
+		const delta = `data: ${JSON.stringify({
+			id: 'chatcmpl-peek',
+			choices: [{ delta: { content: 'ok' }, finish_reason: null }],
+		})}\n`;
+		const done = `data: ${JSON.stringify({
+			id: 'chatcmpl-peek',
+			choices: [{ finish_reason: 'stop' }],
+			usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+		})}\n`;
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(encoder.encode(delta));
+				controller.enqueue(encoder.encode(done));
+				controller.close();
+			},
+		});
+		mock.method(globalThis, 'fetch', async () =>
+			new Response(stream, {
+				status: 200,
+				headers: { 'Content-Type': 'text/event-stream' },
+			})
+		);
+		const result = await dispatchOpenAiRoute(openaiRoute(), { stream: true }, undefined, null, undefined, {
+			firstEventTimeoutMs: 200,
+		});
+		assert.equal(result.response.status, 200);
+		const [usage] = await Promise.all([result.usagePromise, result.response.text()]);
+		assert.equal(usage.input_tokens, 2);
+		assert.equal(usage.output_tokens, 1);
+	});
 });

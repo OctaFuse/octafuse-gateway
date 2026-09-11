@@ -35,10 +35,13 @@ export function defaultHasUsage(usage: UsageFromStream): boolean {
 	return usage.total_tokens > 0 || usage.input_tokens > 0 || usage.output_tokens > 0;
 }
 
-export function defaultIncompleteErrorMessage(timedOut: boolean): string {
-	return timedOut
-		? 'Stream usage timeout (no usage within limit)'
-		: 'Stream ended before usage available';
+export function defaultIncompleteErrorMessage(
+	timedOut: boolean,
+	streamError?: string
+): string {
+	if (timedOut) return 'Stream usage timeout (no usage within limit)';
+	if (streamError) return streamError;
+	return 'Stream ended before usage available';
 }
 
 export function defaultHttpErrorFallback(status: number): string {
@@ -51,7 +54,7 @@ export function defaultDescribeOutcome<TBody>(
 ): DescribedOutcome {
 	return {
 		hasUsage: defaultHasUsage(input.usage),
-		incompleteErrorMessage: defaultIncompleteErrorMessage(input.timedOut),
+		incompleteErrorMessage: defaultIncompleteErrorMessage(input.timedOut, input.usage.stream_error),
 		httpErrorFallback: defaultHttpErrorFallback(input.httpStatus),
 		loggedRequestId: input.headerRequestId,
 	};
@@ -88,7 +91,7 @@ export function describeGeminiOutcome(
 ): DescribedOutcome {
 	return {
 		hasUsage: geminiHasUsage(input.usage),
-		incompleteErrorMessage: defaultIncompleteErrorMessage(input.timedOut),
+		incompleteErrorMessage: defaultIncompleteErrorMessage(input.timedOut, input.usage.stream_error),
 		httpErrorFallback: defaultHttpErrorFallback(input.httpStatus),
 		loggedRequestId: resolveGeminiLoggedRequestId({
 			headerRequestId: input.headerRequestId,
