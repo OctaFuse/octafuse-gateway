@@ -31,7 +31,9 @@ Admin → Models → Import 勾选导入；**同 id 已存在不会覆盖**—�
 
 | Catalog id | 展示名 | Vendor | 典型区域 | 图生图 / 编辑 | 计费模式 |
 |------------|--------|--------|----------|---------------|----------|
-| `gpt-image-2` | GPT Image 2 | openai | 海外 | **`/v1/images/edits`**（multipart：1 张 `image`，多张 `image[]`，最多 5 张） | **`token`**（官方 $/1M） |
+| `gpt-image-2.5-flare` | GPT Image 2.5 Flare | openai | 海外 | **`/v1/images/edits`**（multipart：1 张 `image`，多张 `image[]`，最多 5 张） | **`token`**（官方 $/1M，与 GPT Image 2 同价） |
+| `gpt-image-2.5-sunburst` | GPT Image 2.5 Sunburst | openai | 海外 | 同上 | **`token`**（官方 $/1M，与 GPT Image 2 同价） |
+| `gpt-image-2` | GPT Image 2 | openai | 海外 | 同上 | **`token`**（官方 $/1M） |
 | `doubao-seedream-5-0` | Doubao Seedream 5.0 | bytedance | 国内（火山方舟） | generations + JSON **`image`** | **`per_image`**（¥0.22/张一口价） |
 | `doubao-seedream-5-0-pro` | Doubao Seedream 5.0 Pro | bytedance | 国内（火山方舟） | 同上 | **`per_image`**（¥0.30/¥0.60 按像素档 + 参考图） |
 | `glm-image` | GLM Image | zhipu | 国内 / Z.AI 国际 | generations（按上游） | **`per_image`**（¥0.1/次） |
@@ -53,7 +55,7 @@ Admin → Models → Import 勾选导入；**同 id 已存在不会覆盖**—�
 
 ## Provider 配置
 
-### OpenAI（`gpt-image-2`）
+### OpenAI（`gpt-image-2` / `gpt-image-2.5-*`）
 
 - Import / 手建 Provider：`endpoints.openai.base` = `https://api.openai.com/v1`（或显式写 `images.generations` / `images.edits` 完整 URL）。
 - `base` 会派生标准路径：`…/images/generations`、`…/images/edits`。
@@ -112,12 +114,12 @@ POST {dashscope.base}/services/aigc/multimodal-generation/generation
 
 ## 参数对照
 
-| 维度 | `gpt-image-2` | Seedream 5（`doubao-seedream-5-0-*`） |
+| 维度 | `gpt-image-2` / `gpt-image-2.5-*` | Seedream 5（`doubao-seedream-5-0-*`） |
 |------|---------------|--------------------------------------|
 | 文生图 | `POST /v1/images/generations` | 同左 |
 | 参考图 / 编辑 | **`POST /v1/images/edits`** multipart：1 张用 `image`，多张用 `image[]` | **无 edits**；`generations` + JSON `image`（URL / data URL / 数组） |
-| `size` | `auto` / `1024x1024` / `1024x1536` / `1536x1024` 等 | `2K` / `3K` / `4K` 或 `WxH` 像素 |
-| `quality` | `auto` / `low` / `medium` / `high` | 通常不用 |
+| `size` | `auto` / `1024x1024` / `1024x1536` / `1536x1024` 等；2.5 另常见 `2048x2048`、`2048x1152`、`3840x2160` / `2160x3840` | `2K` / `3K` / `4K` 或 `WxH` 像素 |
+| `quality` | `auto` / `low` / `medium` / `high`；2.5 另支持 `xhigh` / `max` | 通常不用 |
 | `background` | 支持（如 `auto`） | 无 |
 | `watermark` | — | 可选 boolean，**显式传入才透传** |
 | `sequential_image_generation` (+ `*_options`) | — | 可选，显式透传 |
@@ -183,7 +185,7 @@ Seedream 图生图（勿打 `/edits`）：
 
 | 模式 | 适用 | 扣费权威 | `pricing_audit.kind` |
 |------|------|----------|----------------------|
-| **`token`** | gpt-image-2、Gemini Nano Banana | 上游 `usage` 分项 × tier `image_*` / text 单价 | `image_tokens` |
+| **`token`** | gpt-image-2 / gpt-image-2.5-*、Gemini Nano Banana | 上游 `usage` 分项 × tier `image_*` / text 单价 | `image_tokens` |
 | **`per_image`** | Seedream / GLM / Grok / 阿里云百炼 | 确认输出张数 × `image.default`（+ 可选参考图 `image.input`）；**无需 / 不计价 `tiers`** | `image_per_image` |
 
 再乘路由 `charged_factor` / `metered_factor`。Request log 另有结构化列 `billing_kind`、`input_image_count`、`output_image_count`。
@@ -227,7 +229,7 @@ charged ≈
 
 ### 预设单价（摘要）
 
-**`gpt-image-2`**（`token`；USD / 1M；CNY = ×7）：
+**`gpt-image-2` / `gpt-image-2.5-flare` / `gpt-image-2.5-sunburst`**（`token`；USD / 1M；CNY = ×7；官方单价相同，2.5 的 token 消耗量不以 GPT Image 2 计算器估算）：
 
 | 分项 | USD | CNY |
 |------|-----|-----|

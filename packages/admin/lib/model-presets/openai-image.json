@@ -1,5 +1,113 @@
 [
 	{
+		"id": "gpt-image-2.5-flare",
+		"display_name": "GPT Image 2.5 Flare",
+		"description": "OpenAI's fastest model for high-quality, everyday image generation. It accepts text and image inputs and produces image outputs. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
+		"i18n": {
+			"en": "OpenAI's fastest model for high-quality, everyday image generation. It accepts text and image inputs and produces image outputs. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
+			"zh": "OpenAI 面向日常高质量出图的最快模型。接受文本与图片输入，输出图片。quality 支持 low、medium、high、xhigh、max 和 auto。可通过 Images API 或 Responses API 的 image generation 工具调用。"
+		},
+		"vendor": "openai",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 0,
+						"cache_read_price": 1.25,
+						"cache_write_price": null,
+						"image_input_price": 8,
+						"image_input_cache_price": 2,
+						"image_output_price": 30
+					}
+				]
+			},
+			"cny": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 35,
+						"output_price": 0,
+						"cache_read_price": 8.75,
+						"cache_write_price": null,
+						"image_input_price": 56,
+						"image_input_cache_price": 14,
+						"image_output_price": 210
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-09-08"
+	},
+	{
+		"id": "gpt-image-2.5-sunburst",
+		"display_name": "GPT Image 2.5 Sunburst",
+		"description": "OpenAI's GPT Image 2.5 Sunburst generates and edits images from text and image inputs. Use it for workflows where editing precision matters most. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
+		"i18n": {
+			"en": "OpenAI's GPT Image 2.5 Sunburst generates and edits images from text and image inputs. Use it for workflows where editing precision matters most. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
+			"zh": "OpenAI 面向精细编辑的图片生成与编辑模型。接受文本与图片输入，输出图片，适合对编辑精度要求更高的工作流。quality 支持 low、medium、high、xhigh、max 和 auto。可通过 Images API 或 Responses API 的 image generation 工具调用。"
+		},
+		"vendor": "openai",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 0,
+						"cache_read_price": 1.25,
+						"cache_write_price": null,
+						"image_input_price": 8,
+						"image_input_cache_price": 2,
+						"image_output_price": 30
+					}
+				]
+			},
+			"cny": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 35,
+						"output_price": 0,
+						"cache_read_price": 8.75,
+						"cache_write_price": null,
+						"image_input_price": 56,
+						"image_input_cache_price": 14,
+						"image_output_price": 210
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-09-08"
+	},
+	{
 		"id": "gpt-image-2",
 		"display_name": "GPT Image 2",
 		"description": "OpenAI's high-fidelity image generation and editing model for the dedicated Images API.",
