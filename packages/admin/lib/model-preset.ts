@@ -16,6 +16,7 @@
  * 导入时按当前 `BILLING_CURRENCY` 选用 `usd` / `cny` **整段**写入 `pricing_profile`（含可选 `schedule` 官方时段，不只 `tiers`）。
  * DeepSeek V4 / V4.1 目录价为空闲价；`schedule` 为北京时间工作日高峰 09:00–12:00、14:00–18:00、`factor` 2。命中按 `BUSINESS_TIMEZONE` 墙钟，中国区请设 `Asia/Shanghai`。
  * Google Gemini 目录价为 Standard 标准价，不含限时导入价、Batch、Flex。Flash 3.7 / 3.8 写入 $1.50 / $7.50，而不是 2026-12-31 前的 $0.75 / $3.75。
+ * Claude Sonnet 5 目录价为官方标准价 $2 / $10（2026-08-10 起入门价转正，不再使用原定 9 月 1 日的 $3 / $15）。
  * 面向 Catalog 的英文摘要与中英文展示文案均与模型预设共同维护：
  * `description` 写入现有 `models.description`，`i18n` 仅供静态 Catalog 展示，不增加数据库字段。
  *
