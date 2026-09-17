@@ -42,3 +42,6 @@ export const GatewayErrorCode = {
 } as const;
 
 export type GatewayErrorCodeValue = (typeof GatewayErrorCode)[keyof typeof GatewayErrorCode];
+
+/** 模型存在但当前入口没有可用上游目标时的统一 `error` 文案。 */
+export const NO_AVAILABLE_ROUTE_MESSAGE = 'No available route';

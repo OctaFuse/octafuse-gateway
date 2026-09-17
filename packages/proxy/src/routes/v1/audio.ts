@@ -48,7 +48,11 @@ import {
 	maybeTriggerUserModelCircuitFromUpstream,
 	markUserModelSuccess,
 } from '../../services/user-model-circuit-route';
-import { GatewayErrorCode } from '../../services/gateway-error-codes';
+import {
+	GatewayErrorCode,
+	NO_AVAILABLE_ROUTE_MESSAGE,
+	type GatewayErrorCodeValue,
+} from '../../services/gateway-error-codes';
 import { gatewayErrorJson } from '../../services/gateway-error-response';
 import { RequestTimingCollector } from '../../services/request-timing';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
@@ -75,13 +79,18 @@ async function resolveOpenAiAudioRoutes(
 			poolTierStrategies: string | null;
 			stickySurface: ResolvedModelSurfaceRow | null;
 	  }
-	| { ok: false; status: 400 | 404 | 502; error: string }
+	| { ok: false; status: 400 | 404 | 502; code: GatewayErrorCodeValue; error: string }
 > {
 	const resolved = await resolveModelRouting(repos, rawModelId);
 	if (!resolved) {
 		const modelForLog = truncateModelIdForLog(rawModelId);
 		console.warn(`[Gateway Audio] model not found clientModel=${modelForLog}`);
-		return { ok: false, status: 404, error: `Model not found: ${modelForLog}` };
+		return {
+			ok: false,
+			status: 404,
+			code: GatewayErrorCode.modelNotFound,
+			error: `Model not found: ${modelForLog}`,
+		};
 	}
 	const { model, baseModelId, explicitGroup } = resolved;
 	const effectiveRouteGroup = explicitGroup?.trim() || 'default';
@@ -92,13 +101,19 @@ async function resolveOpenAiAudioRoutes(
 		requestOperation,
 	});
 	if (!loaded.ok) {
-		return { ok: false, status: 502, error: loaded.message };
+		return {
+			ok: false,
+			status: 502,
+			code: GatewayErrorCode.routeResolutionFailed,
+			error: loaded.message,
+		};
 	}
 	if (loaded.loaded.routes.length === 0) {
 		return {
 			ok: false,
-			status: 502,
-			error: `No ${requestOperation === 'audio.speech' ? 'audio speech' : 'audio transcription'} route in route group "${effectiveRouteGroup}" for this model`,
+			status: 404,
+			code: GatewayErrorCode.noRoute,
+			error: NO_AVAILABLE_ROUTE_MESSAGE,
 		};
 	}
 	return {
@@ -279,19 +294,14 @@ audioRoutes.post('/transcriptions', async (c) => {
 
 	const routed = await resolveOpenAiAudioRoutes(repos, rawModelId, 'audio.transcriptions');
 	if (!routed.ok) {
-		if (routed.status !== 404) {
+		if (routed.code !== GatewayErrorCode.modelNotFound) {
 			console.warn(
 				`[Gateway Audio] transcriptions route resolve failed status=${routed.status} clientModel=${truncateModelIdForLog(rawModelId)} error=${routed.error}`
 			);
 		}
 		return gatewayErrorJson(c, {
 			status: routed.status as 400 | 403 | 404 | 502,
-			code:
-				routed.status === 404
-					? GatewayErrorCode.modelNotFound
-					: routed.status === 502
-						? GatewayErrorCode.routeResolutionFailed
-						: GatewayErrorCode.invalidRequest,
+			code: routed.code,
 			message: routed.error,
 		});
 	}
@@ -505,12 +515,7 @@ audioRoutes.post('/speech', async (c) => {
 	if (!routed.ok) {
 		return gatewayErrorJson(c, {
 			status: routed.status as 400 | 403 | 404 | 502,
-			code:
-				routed.status === 404
-					? GatewayErrorCode.modelNotFound
-					: routed.status === 502
-						? GatewayErrorCode.routeResolutionFailed
-						: GatewayErrorCode.invalidRequest,
+			code: routed.code,
 			message: routed.error,
 		});
 	}

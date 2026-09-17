@@ -117,10 +117,15 @@ describe('classifyGatewayErrorAlert', () => {
 	});
 
 	it('classifies route config messages as route_config_error', () => {
-		const meta = classifyGatewayErrorAlert(
-			baseCtx({ errorMessage: 'No routes configured', latencyMs: 10 })
-		);
-		expect(meta.category).toBe('route_config_error');
+		expect(
+			classifyGatewayErrorAlert(baseCtx({ errorMessage: 'No routes configured', latencyMs: 10 })).category
+		).toBe('route_config_error');
+		expect(
+			classifyGatewayErrorAlert(baseCtx({ errorMessage: 'No available route', latencyMs: 10 })).category
+		).toBe('route_config_error');
+		expect(
+			classifyGatewayErrorAlert(baseCtx({ errorMessage: 'HTTP 404: No available route', latencyMs: 10 })).category
+		).toBe('route_config_error');
 	});
 
 	it('falls back to unknown_error', () => {

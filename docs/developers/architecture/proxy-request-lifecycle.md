@@ -83,7 +83,7 @@ flowchart TB
 | 错误码 | `services/gateway-error-codes.ts` / `gateway-error-response.ts` | `gateway.*` / `circuit.*` / `upstream.*` + `X-OctaFuse-Error-Code` |
 | 用量记账 | `services/accounting/*`、`services/usage-tracker.ts` | 纯函数合成可序列化 `AccountingEvent`（含稳定 `requestLogId`）；默认 sink 直接 `recordUsage` 写 `api_key_request_logs`、累加 `budget_spent` |
 
-> **客户端约定**：非 2xx 时以响应头 **`X-OctaFuse-Error-Code`**（及网关自造错误 body 顶层 / 嵌套 `code`）为**分类权威**；`error` / `error.message` 仍保留人类可读原文（上游透传或固定英文短句）。集成方应优先按该 code 分类，再回退英文文案。
+> **客户端约定**：非 2xx 时以响应头 **`X-OctaFuse-Error-Code`**（及网关自造错误 body 顶层 / 嵌套 `code`）为**分类权威**；`error` / `error.message` 仍保留人类可读原文（上游透传或固定英文短句）。集成方应优先按该 code 分类，再回退英文文案。完整清单见 [error-codes.md](../api/error-codes.md)。
 
 > **已移除**：供应商 key pool、旧 `models.sticky_config`、网关侧 RPM/TPM/并发软限流（`limit_config`）。一个供应商 = 一把 `api_key` + `status`。跨请求供应商粘性（Provider sticky）见路由池配置与 `route_pool_sticky_bindings`。
 
@@ -103,8 +103,8 @@ flowchart TB
    - `resolveRoutesForSurface` 按 `modelId + routeGroup + requestProtocol + requestOperation` 查精确请求入口，未命中时回退 `request_operation='*'`
    - 请求入口命中后按 `route_pool_id` 读取 active 上游目标；滚动升级期间若 0016 尚不可用，临时回退旧的 model / group 路径
    - `resolveRouteResultsFromRows` → `RouteResult[]`（携带请求入口 / 路由池 / 上游目标、operation、`providerApiKey`、`routePriority`、`routeWeight`；**供应商 disabled / 无 api_key 的行会被跳过**）
-   - 无匹配请求入口、路由池或上游目标 → **400 / 502**
-6. **协议 / adapter 过滤**：`isRouteAdapterCompatible` 按注册表校验请求入口与上游目标。`passthrough` 仅允许同协议、同 operation；转换 adapter 必须精确匹配注册表声明的 request / upstream 映射。无匹配 → **502**。
+   - 无匹配请求入口、路由池或上游目标 → **404** `No available route`（`gateway.no_route`，没有可用路由）
+6. **协议 / adapter 过滤**：`isRouteAdapterCompatible` 按注册表校验请求入口与上游目标。`passthrough` 仅允许同协议、同 operation；转换 adapter 必须精确匹配注册表声明的 request / upstream 映射。无匹配 → **404** `No available route`。
 7. **`resolveRouteStrategyPlan`**：解析 base（`route_pools.strategy` → `models.route_policy` → `system_config.ROUTE_STRATEGY`）以及 `route_pools.tier_strategies`；编排时每层优先用 tier override（见 [route-strategies.md](../reference/route-strategies.md)）。
 8. **Adapter / Driver 出站**：文本透传入口使用对应协议 driver；Images / Audio 由 `dispatch-table.ts` 按 adapter 选择转换 driver。各 driver 再按 capability 调用 `resolveUpstreamEndpoint`；Gemini 鉴权与 `alt=sse` 仍由 `prepareGeminiUpstreamFetch` 处理。
 
@@ -134,7 +134,7 @@ Gateway 策略统一保护供应商；**退避不区分**敏感 / 普通 400，�
 **`proxyChatCompletions` → `failoverDispatch`**：
 
 1. 再次按 `expectedProtocol` 过滤 routes。
-2. 无可用 route → **502** `No routes configured`（`gateway.no_route`）。
+2. 无可用 route → **404** `No available route`（`gateway.no_route`，没有可用路由）。
 3. **`buildRouteAttemptPlan`**：按 priority 分层 → 层内策略排序 → 跳过熔断中的供应商（见 §3）。
 4. **`plan.attempts.length === 0`**（全部熔断）→ **429** `circuit.upstream_capacity_exhausted` + `Retry-After`（**零上游调用**）。
 5. **逐 attempt 执行**：
@@ -238,8 +238,8 @@ sequenceDiagram
 | 模型不存在 | 404 | `Model not found` | 否 |
 | 用户 budget 耗尽 | 403 | `Budget exceeded` | 否 |
 | Key / 用户 RPM 超限 | 429 | `gateway.rate_limited` + `Retry-After` | 否 |
-| 无匹配请求入口 / active 路由池上游目标 | 400 / 502 | `No active routes ...` / `No routes configured` 等 | 否 |
-| 无协议 / adapter 匹配上游目标或无可用供应商 | 502 | `No OpenAI route ...` / `No routes configured` 等 | 否 |
+| 无匹配请求入口 / 活跃路由池上游目标 | 404 | `No available route`（`gateway.no_route`） | 否 |
+| 无协议 / adapter 匹配上游目标或无可用供应商 | 404 | `No available route`（`gateway.no_route`） | 否 |
 | 敏感内容熔断中 | 429 | `circuit.sensitive_content` + `Retry-After`（退避档位与普通 400 相同） | 是（error） |
 | 上游 400 客户端错误熔断中 | 400 | `circuit.client_error`（回放原文）；**images / audio 不短路此 reason** | 是（error） |
 | 全部供应商熔断 | 429 | `circuit.upstream_capacity_exhausted` + `Retry-After` | 否 |

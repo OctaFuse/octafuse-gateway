@@ -13,7 +13,7 @@ import {
 	DASHSCOPE_REALTIME_OPERATIONS,
 	type DashScopeRealtimeOperation,
 } from '../../services/egress/dashscope-realtime-driver';
-import { GatewayErrorCode } from '../../services/gateway-error-codes';
+import { GatewayErrorCode, NO_AVAILABLE_ROUTE_MESSAGE } from '../../services/gateway-error-codes';
 import { gatewayErrorJson } from '../../services/gateway-error-response';
 import { resolveRoutesForSurface } from '../../services/model-router';
 import { proxyDashScopeRealtime, type UsageFromStream } from '../../services/proxy';
@@ -208,9 +208,9 @@ dashScopeRealtimeRoutes.get('/', async (c) => {
 	}
 	if (surface.routes.length === 0) {
 		return gatewayErrorJson(c, {
-			status: 502,
+			status: 404,
 			code: GatewayErrorCode.noRoute,
-			message: `No DashScope realtime route in route group "${effectiveRouteGroup}" for this model and operation`,
+			message: NO_AVAILABLE_ROUTE_MESSAGE,
 		});
 	}
 

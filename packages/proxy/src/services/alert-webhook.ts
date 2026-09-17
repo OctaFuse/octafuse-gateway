@@ -165,6 +165,7 @@ function hasTimeoutSignal(errorMessage: string | null | undefined, latencyMs: nu
 function hasRouteConfigSignal(errorMessage: string | null | undefined): boolean {
 	const lower = errorMessageLower(errorMessage);
 	return (
+		lower.includes('no available route') ||
 		lower.includes('no routes configured') ||
 		lower.includes('no supported upstream protocol route available') ||
 		lower.includes('no active keys for provider')

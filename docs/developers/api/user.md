@@ -47,7 +47,7 @@ Authorization: Bearer sk-xxx...
 
 Gateway 会根据 `model_id + route_group + request_protocol + request_operation` 解析 Request Surface：先查精确 operation，再回退迁移生成的 `*` Surface。Surface 指向一个 Route Pool，Proxy 仅在该 Pool 内选择 active Target，并跳过 **disabled / 无 api_key** 的 Provider。Pool 内按 **priority（DESC）分层** + **有效策略 + weight** 做 failover；Pool 策略优先于模型与全局策略。每个 Target 还必须通过显式 adapter 拓扑校验：`passthrough` 仅允许协议与 operation 一致，跨协议的 Images / Audio 请求则必须命中注册表中的转换 adapter。
 
-没有匹配 Surface / active Target 或没有当前协议可用上游时，按入口返回 **400** 或 **502**。完整拓扑、operation 列表与迁移兼容路径见 [route-topology.md](../architecture/route-topology.md)。
+没有匹配请求入口、活跃上游目标，或没有当前协议可用上游时，返回 **404** `No available route`（`gateway.no_route`，没有可用路由）。选路查询抛错仍为 **502**。完整拓扑、operation 列表与迁移兼容路径见 [route-topology.md](../architecture/route-topology.md)。
 
 模型 **`tags` 不参与**选组或计费。需要限定某一组时，请使用 **`baseId:your_group`**。
 
@@ -154,17 +154,18 @@ data: [DONE]
 
 ### 错误响应
 
+分类权威是响应头 `X-OctaFuse-Error-Code`，完整清单见 [代理服务错误码](./error-codes.md)。
+
 | 场景 | HTTP | 示例 `error` |
 |------|------|----------------|
 | 请求体非法 JSON | 400 | `Invalid JSON body` |
 | 缺少 `model` | 400 | `Missing model` |
 | `/v1/images/edits` Content-Type 非 `multipart/form-data` | 400 | `Unsupported Content-Type for /v1/images/edits: expected multipart/form-data, got "…"` |
 | `/v1/images/edits` multipart 解析失败 | 400 | `Invalid multipart body` |
-| 有效路由组下无活跃路由（含未写后缀时的 **`default`**） | 400 | `No active routes for route group "default" for this model` |
 | 预算超限 | 403 | `Budget exceeded` |
 | 模型不存在 | 404 | `Model not found` |
+| 没有可用路由（模型存在，但当前入口无匹配请求入口 / 活跃上游目标 / 协议可用上游） | 404 | `No available route`（`gateway.no_route`） |
 | 路由解析失败等 | 502 | 具体错误信息 |
-| 无 OpenAI 协议路由（有效组内无可用上游） | 502 | `No OpenAI route in route group "default" for this model`（组名随有效组变化） |
 
 Images 入参校验失败会打结构化 `console.warn('[Gateway Images] request rejected', …)`（含 `contentType` / `bodyKeys` / `hasModel` 等，**不含** prompt / 图片字节）。Proxy 另有通用 4xx 短错误体日志 `[Gateway] client error response`。
 

@@ -57,8 +57,6 @@ chatRoutes.post('/', async (c) =>
 		requestOperation: 'chat',
 		strategyCapability: 'chat',
 		logTag: 'Chat',
-		noRouteMessage: (routeGroup) =>
-			`No OpenAI route in route group "${routeGroup}" for this model`,
 		parseRequest: parseJsonModelBody,
 		dispatch: ({ repos, routes, body, requestSignal, options }) =>
 			proxyChatCompletions(repos, routes, body, requestSignal, options),

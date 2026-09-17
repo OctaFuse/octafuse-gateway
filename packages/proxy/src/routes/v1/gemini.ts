@@ -90,8 +90,6 @@ geminiRoutes.post('/models/:modelAction', async (c) =>
 		requestOperation: GEMINI_GENERATE_OPERATION,
 		strategyCapability: GEMINI_GENERATE_OPERATION,
 		logTag: 'Gemini',
-		noRouteMessage: (routeGroup) =>
-			`No Gemini route in route group "${routeGroup}" for this model`,
 		parseRequest: async (ctx) => {
 			const parsedAction = parseGeminiAction(ctx.req.param('modelAction') ?? '');
 			if (!parsedAction) {

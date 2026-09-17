@@ -14,7 +14,7 @@ import {
 	defaultHasUsage,
 	type ProxyEndpointAccounting,
 } from './accounting';
-import { GatewayErrorCode } from './gateway-error-codes';
+import { GatewayErrorCode, NO_AVAILABLE_ROUTE_MESSAGE } from './gateway-error-codes';
 import { gatewayErrorJson } from './gateway-error-response';
 import { resolveModelRouting } from './resolve-model-route-group';
 import { resolveRoutesForSurface, type RouteResult } from './model-router';
@@ -65,7 +65,6 @@ export interface ProxyEndpointSpec<TBody> {
 	requestOperation: string;
 	strategyCapability: string;
 	logTag: string;
-	noRouteMessage: (routeGroup: string) => string;
 	parseRequest: (c: Context<AuthedEnv>) => Promise<PipelineParseResult<TBody> | Response>;
 	dispatch: (ctx: PipelineDispatchContext<TBody>) => Promise<ProxyResult>;
 	accounting: ProxyEndpointAccounting<TBody>;
@@ -298,9 +297,9 @@ export async function runProxyPipeline<TBody>(
 			}
 		}
 		return gatewayErrorJson(c, {
-			status: 502,
+			status: 404,
 			code: GatewayErrorCode.noRoute,
-			message: spec.noRouteMessage(effectiveRouteGroup),
+			message: NO_AVAILABLE_ROUTE_MESSAGE,
 		});
 	}
 

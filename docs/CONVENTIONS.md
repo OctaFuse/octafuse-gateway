@@ -57,7 +57,7 @@
 
 | 文档 / 目录 | 层级 | 备注 |
 |-------------|------|------|
-| `docs/developers/api/{public,user,admin,README}.md` | L1 | 跟随路由与表结构演进 |
+| `docs/developers/api/{public,user,admin,error-codes,README}.md` | L1 | 跟随路由与表结构演进 |
 | `docs/developers/architecture/{runtime-data,admin-layered}.md` | L1 | 与 `packages/core` / 部署矩阵强相关 |
 | `docs/developers/reference/{streaming-billing,user-audit-logs,provider-thinking-configs,provider-import-presets}.md` | L1 | 行为与计费语义快照 |
 | `docs/operators/migrations/*.md` | L1 / L2 | 与历史兼容、数据迁移或运维切换相关；按内容是否绑定表结构判定 |
