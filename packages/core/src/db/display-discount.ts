@@ -1,7 +1,7 @@
 /**
  * 对外目录折扣：从模型官方时段 + 代表路由 `price_override` 派生前台展示用 factor。
  * 不参与计费；计费仍走 usage-tracker。
- * `GET /catalog/models` 只返回本结构；`GET /v1/models` 再按用户倍率叠一层（见 {@link applyUserChargedFactorToDisplayDiscounts}）。
+ * `GET /catalog/models` 只返回本结构；`GET /v1/models` 与 `GET /admin/users/:id/display-discounts` 再按用户倍率叠一层（见 {@link applyUserChargedFactorToDisplayDiscounts}）。
  */
 import { parsePricingProfile } from './pricing-profile';
 import {
@@ -596,6 +596,30 @@ export function applyUserChargedFactorToDisplayDiscounts(
 		out[group] = applyUserChargedFactorToDisplayDiscountGroup(value, userFactor, mode);
 	}
 	return out;
+}
+
+/** 官方时段 × 代表路由 Charged，再按用户倍率叠一层。 */
+export function buildModelDisplayDiscounts(options: {
+	pricingProfileJson: string | null | undefined;
+	routes: readonly DisplayDiscountRouteInput[];
+	timezone: string;
+	now?: Date;
+	allowedRouteGroups?: readonly string[] | null;
+	userChargedFactor?: number | null;
+	userChargedFactorMode?: UserChargedCostFactorMode;
+}): Record<string, DisplayDiscountGroup> {
+	const discounts = buildDisplayDiscountsByRouteGroup({
+		routes: options.routes,
+		pricingProfileJson: options.pricingProfileJson,
+		timezone: options.timezone,
+		now: options.now,
+		allowedRouteGroups: options.allowedRouteGroups,
+	});
+	return applyUserChargedFactorToDisplayDiscounts(
+		discounts,
+		options.userChargedFactor ?? null,
+		options.userChargedFactorMode
+	);
 }
 
 function derivedTagForGroup(group: string, composite: number): string | null {

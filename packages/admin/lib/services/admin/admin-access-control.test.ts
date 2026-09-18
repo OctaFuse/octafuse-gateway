@@ -42,6 +42,9 @@ test('permission matrix protects console-only surfaces and defaults to deny', ()
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/playground/realtime'), {
 		kind: 'permission', permission: 'playground.execute',
 	});
+	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/users/u1/display-discounts'), {
+		kind: 'permission', permission: 'users.read',
+	});
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/users/u1/audit-logs'), {
 		kind: 'permission', permission: 'logs.read',
 	});

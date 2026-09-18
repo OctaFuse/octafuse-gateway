@@ -2,10 +2,9 @@
  * 对外模型列表：`GET /v1/models` / `GET /catalog/models` 共用的只读视图。
  */
 import {
-	buildDisplayDiscountsByRouteGroup,
+	buildModelDisplayDiscounts as buildCoreModelDisplayDiscounts,
 	getBusinessTimezone,
 	mergeDerivedDiscountTags,
-	applyUserChargedFactorToDisplayDiscounts,
 	type DisplayDiscountGroup,
 	type GatewayRepositories,
 	type ModelRouteJoinRow,
@@ -62,17 +61,14 @@ export function buildModelDisplayDiscounts(options: {
 	userChargedFactor?: number | null;
 	userChargedFactorMode?: UserChargedCostFactorMode;
 }): Record<string, DisplayDiscountGroup> {
-	const discounts = buildDisplayDiscountsByRouteGroup({
-		routes: options.routes,
+	return buildCoreModelDisplayDiscounts({
 		pricingProfileJson: options.model.pricing_profile,
+		routes: options.routes,
 		timezone: options.timezone,
 		allowedRouteGroups: options.allowedRouteGroups,
+		userChargedFactor: options.userChargedFactor,
+		userChargedFactorMode: options.userChargedFactorMode,
 	});
-	return applyUserChargedFactorToDisplayDiscounts(
-		discounts,
-		options.userChargedFactor ?? null,
-		options.userChargedFactorMode
-	);
 }
 
 export function tagsWithDerivedDiscounts(

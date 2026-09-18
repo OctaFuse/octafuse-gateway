@@ -53,6 +53,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 |------|------|----------------|--------|
 | `/admin/users` | GET, POST | `users`（分页列表 / 按外部对幂等创建） | Admin UI、外部集成方 |
 | `/admin/users/:id` | GET, PATCH, DELETE | `users`（`:id` 为 uuid 或 `ext:…` 外部路由，见下节） | Admin UI、外部集成方 |
+| `/admin/users/:id/display-discounts` | GET | 该用户 `charged_cost_factors` 叠进公开目录 `discounts`（只返回已配置倍率的模型） | 外部集成方 |
 | `/admin/users/:id/keys` | GET, POST | `api_keys`（用户范围内） | Admin UI |
 | `/admin/users/:id/keys/:keyId` | PATCH, DELETE | `api_keys` | Admin UI |
 | `/admin/users/:id/logs` | GET | `api_key_request_logs`（按 `user_id`） | Admin UI |
@@ -103,7 +104,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | **`GET /admin/models`** | Admin `/api/admin/*` | Console Session 或 `models.read` | 库内 **全部**模型 CRUD 列表（含 tags、路由计数；**不**含按 route 的协议聚合） |
 | **`GET /admin/models/import/catalog`** | Admin | Console Session 或 `models.read` | 仓库内 **静态 preset** 摘要，供导入 UI 勾选，**非**运行时 route 真相 |
 
-门户 / 公开站应使用 Proxy **`GET /catalog/models`**，详见 [用户接口 · 公开模型目录](./user.md#公开模型目录catalog-discovery)。Agent 与兼容客户端默认仍用 **`GET /v1/models`**（需用户 Key，默认 `default,free` route group）。
+门户 / 公开站应使用 Proxy **`GET /catalog/models`**，详见 [用户接口 · 公开模型目录](./user.md#公开模型目录catalog-discovery)。用户个性化折扣用 **`GET /admin/users/:id/display-discounts`** overlay，不要用用户 API Key 调 **`GET /v1/models`**（会计入 Key / 用户 RPM）。Agent 与兼容客户端默认仍用 **`GET /v1/models`**（需用户 Key，默认 `default,free` route group）。
 
 ---
 
@@ -145,6 +146,16 @@ Authorization: Bearer sk-admin-<64 hex characters>
 ### `GET /admin/users/:id`
 
 用户详情（`getUserInfo`：含预算列、外部身份、`charged_cost_factors` 对象或 `null`、`rate_limit` 等；周期型预算可能触发懒重置）。**不含**密钥列表；枚举密钥请用 **`GET /admin/users/:id/keys`**。用户列表行（`GET /admin/users`）含 **`active_keys_count`**、**`keys_count`**，以及与详情相同的 **`rate_limit`** 与 `charged_cost_factors`（对象或 `null`）。
+
+### `GET /admin/users/:id/display-discounts`
+
+只读：把该用户 `charged_cost_factors` 按全局 `USER_CHARGED_COST_FACTOR_MODE` 叠进公开目录同款 `discounts`（官方时段 × 代表路由 Charged，再叠用户倍率）。需 **`users.read`**。**只返回配置了该模型倍率的条目**；未配置时 `data` 为空数组。不计入用户 API Key / 用户合计 RPM。
+
+可选 query：`route_groups`（CSV，大小写不敏感）。省略或空 → 全部 active 路由组（与 `GET /catalog/models` 相同，**不是** `/v1/models` 的 `default,free` 默认）。
+
+响应：`{ success, data: [{ id, discounts }] }`。`discounts` 形状与 `GET /catalog/models` / `GET /v1/models` 的 `discounts` 相同。不要用 **`GET /admin/models`**（运维 CRUD，无展示折扣）。
+
+公开目录用 `GET /catalog/models`，用户个性化折扣用本接口 overlay；Agent 仍用用户 Key 的 `GET /v1/models`。
 
 ### `PATCH /admin/users/:id`
 

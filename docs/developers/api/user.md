@@ -542,15 +542,16 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 
 ### 与 `GET /v1/models` / Admin 的差异
 
-| 维度 | `GET /v1/models` | `GET /catalog/models` | `GET /admin/models` |
-|------|------------------|------------------------|---------------------|
-| 部署 | Proxy | Proxy | Admin |
-| 认证 | 用户 API Key | **无** | Console Session 或具名 Admin API Key |
-| `discounts` | 官方时段 × 路由 Charged，再叠该用户模型倍率 | 仅官方时段 × 路由 Charged（公共折扣） | — |
-| 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — |
-| 默认 `kind` | `llm`（排除文生图） | 不过滤 kind | — |
-| 协议能力 | `inbound`（请求入口 protocol + operation） | `protocols` / `protocols_by_group`（**上游** `upstream_protocol`） | 不返回 |
-| 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD |
+| 维度 | `GET /v1/models` | `GET /catalog/models` | `GET /admin/models` | `GET /admin/users/:id/display-discounts` |
+|------|------------------|------------------------|---------------------|------------------------------------------|
+| 部署 | Proxy | Proxy | Admin | Admin |
+| 认证 | 用户 API Key | **无** | Console Session 或具名 Admin API Key | Console Session 或 `users.read` |
+| `discounts` | 官方时段 × 路由 Charged，再叠该用户模型倍率 | 仅官方时段 × 路由 Charged（公共折扣） | — | 与 `/v1/models` 相同合成；**只含已配置用户倍率的模型** |
+| 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — | 未传 → **全部** active group |
+| 默认 `kind` | `llm`（排除文生图） | 不过滤 kind | — | 不过滤 kind |
+| 协议能力 | `inbound`（请求入口 protocol + operation） | `protocols` / `protocols_by_group`（**上游** `upstream_protocol`） | 不返回 | 不返回（只 overlay `discounts`） |
+| 计入用户 RPM | 是 | 否 | 否 | 否 |
+| 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD | 用户个性化折扣 overlay |
 
 Admin 静态导入目录见 **`GET /admin/models/import/catalog`**（与上表无关，见 [管理接口](./admin.md#admin-vs-proxy-catalog)）。
 
