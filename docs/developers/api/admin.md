@@ -31,6 +31,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 - **计费币种**：`system_config.BILLING_CURRENCY` 仅允许 **`USD`** 或 **`CNY`**（各库的 **`0002_seed.sql`** 默认 `USD`），与 `pricing_profile` / Key 预算数值单位一致；`GET /v1/me` 返回 `billing_currency`（见用户接口文档）。**`PUT /admin/config`** 写入该键时由服务端白名单校验。
 - **全局路由策略**：`system_config.ROUTE_STRATEGY`（默认 `hash_affinity`；四选一，见 [route-strategies.md](../reference/route-strategies.md)）。**`PUT /admin/config`** 白名单校验；Route Pool / 模型级配置可覆盖。
+- **用户计费倍率合成**：`system_config.USER_CHARGED_COST_FACTOR_MODE`（默认 `multiply`；另允许 `min`）。控制 `users.charged_cost_factors` 如何与路由 Charged 有效倍率合成最终用户费用。**`PUT /admin/config`** 白名单校验；Proxy 进程内缓存约 30s。
 - **Proxy 错误告警（可选）**：`ALERT_WEBHOOK_WECOM_URL`、`ALERT_WEBHOOK_FEISHU_URL` 存**完整**群机器人 Webhook URL（含 query `key` / hook id）。**未配置或值为空则不告警**。Proxy 在 **`api_key_request_logs.status = error`** 且用量写入成功后，分别向已配置的 URL 发送一条**按错误类型归类**的文本摘要（企业微信 `msgtype=text`、飞书 `msg_type=text`）：首行含类别与优先级（如上游超时、供应商鉴权、限流、5xx、敏感内容拦截、请求/模型错误、路由配置），并分组展示影响用户、路由/协议、供应商、原始 `error_message`、处理建议与发生时间（UTC+8）；发送失败只打日志，不影响请求。键名常量见 `@octafuse/core` 导出 `ALERT_WEBHOOK_WECOM_URL_KEY` / `ALERT_WEBHOOK_FEISHU_URL_KEY`。
 
 ### `/admin/keys` 统一响应格式
@@ -79,7 +80,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/routes/pools/:poolId/sticky/reset` | POST | bump `sticky_epoch`，使本 pool 全部绑定失效 | Admin UI |
 | `/admin/playground` | POST | Routes：`routeId` 直连上游；Tools：`toolId`+`provider` 读 catalog 直连引擎（均可测、不计费、不写日志、无 failover） | Admin UI、运维联调 |
 | `/admin/stats` | GET | 多表聚合（含 `api_key_request_logs`、`api_keys` 等） | Admin UI |
-| `/admin/config` | GET, PUT | `system_config`（含 `ROUTE_STRATEGY`） | Admin UI |
+| `/admin/config` | GET, PUT | `system_config`（含 `ROUTE_STRATEGY`、`USER_CHARGED_COST_FACTOR_MODE`） | Admin UI |
 | `/admin/access-keys`、`/:id`、`/:id/secret`、`/:id/rotate`、`/:id/revoke` | GET, POST, PATCH | `admin_api_keys`；仅 Console Session，同源写请求 | Admin UI |
 | `/admin/business-timezone` | GET | `system_config.BUSINESS_TIMEZONE` | Admin UI（Provider 首屏加载） |
 | `/admin/request-logs` | GET | `api_key_request_logs`（**GlobalLogs**，多条件筛选分页） | Admin UI |
@@ -588,7 +589,7 @@ GET /admin/keys/:id/logs?page=1&page_size=20&exclude_status=incomplete
 }
 ```
 
-> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`standard_cost` = 阶梯目录价 × 模型官方时段倍率（官方当刻价，不乘路由倍率）；`metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）；若 `users.charged_cost_factors` 含该目录模型 ID，再对路由用户计费乘一次该倍率并六位四舍五入（只改最终 `charged_cost` 与预算累加）。**Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule，也不应用用户计费倍率或模型官方时段），成功后分别写入三列，仅 `charged_cost` 累加预算。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v5**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 仍为 `kind=fixed_tool_cost` + `unit_prices` / `totals`；v4 历史行仍可解析，v5 模型审计可带 `catalog_schedule` 与 `user_charged_factor`，未命中为 `null`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
+> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`standard_cost` = 阶梯目录价 × 模型官方时段倍率（官方当刻价，不乘路由倍率）；`metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）；若 `users.charged_cost_factors` 含该目录模型 ID，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE`（默认 `multiply` 叠乘，`min` 取较小倍率）合成最终用户费用并六位四舍五入（只改最终 `charged_cost` 与预算累加）。**Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule，也不应用用户计费倍率或模型官方时段），成功后分别写入三列，仅 `charged_cost` 累加预算。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v5**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 仍为 `kind=fixed_tool_cost` + `unit_prices` / `totals`；v4 历史行仍可解析，v5 模型审计可带 `catalog_schedule`、`user_charged_factor`、`user_charged_factor_mode` 与 `combined_charged_factor`，用户未命中时 factor 为 `null`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
 
 ### 示例
 
@@ -877,6 +878,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 
 - **`BILLING_CURRENCY`**：仅允许写入 **`USD`** 或 **`CNY`**（大写）；否则返回 `400` 与 `success: false`。
 - **`ROUTE_STRATEGY`**：仅允许 **`hash_affinity`** \| **`weighted_random`** \| **`weight_priority`** \| **`weighted_round_robin`**（小写）；非法 → `400`。这是全局同层路由策略缺省，模型 `route_policy` 与 `route_pools.strategy` 可覆盖。详见 [route-strategies.md](../reference/route-strategies.md)。Proxy 进程内缓存约 **30s**。
+- **`USER_CHARGED_COST_FACTOR_MODE`**：仅允许 **`multiply`** \| **`min`**（小写）；非法 → `400`。控制 `users.charged_cost_factors` 如何与路由 Charged 有效倍率合成最终用户费用：默认 **`multiply`** 为路由用户计费 × 用户倍率；**`min`** 取两者较小值。用户未配置该模型时两种模式都保持路由价。Proxy 进程内缓存约 **30s**。
 - **`STREAM_FIRST_EVENT_TIMEOUT_MS`**：空 / `0` 关闭；正整数毫秒开启文本流式首个 SSE 事件超时（超时返回 524 并 failover）。覆盖 Chat Completions、Responses、Anthropic Messages、Gemini `streamGenerateContent`。**不**作用于 Images / Audio / Realtime / Tools。未另设 `STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS` 时只作用于路由组 `default`。Proxy 进程内缓存约 **30s**。
 - **`STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS`**：空则在超时开启时只作用于 `default`；`*` / `all` 作用于全部路由组；否则为逗号分隔的路由组 id。非法空列表（例如只有逗号）→ `400`。
 

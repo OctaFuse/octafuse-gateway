@@ -1486,7 +1486,7 @@
 			"metadataReplace": "保存すると metadata オブジェクト全体が置き換わります。現在の値を維持する場合は空欄にしてください。",
 			"rateLimitRpm": "このユーザーの全 Key 合計で、60 秒ローリングウィンドウあたりのリクエスト数です。空欄は無制限、0 は計数対象の呼び出しをすべて拒否します。GET /v1/me はカウントしません。Key ごとの上限は下の Key 表で設定します。",
 			"rateLimitRpmInvalid": "レート制限は 0 以上の整数か、無制限の場合は空欄にしてください。",
-			"chargedCostFactors": "カタログからモデルを選んで倍率を設定します。ルート Charged cost の後に乗算されます。未設定のモデルは金額を変えません。0 はそのモデルを課金しません。LLM / Images / Audio のみ（Agent Tools は対象外）。"
+			"chargedCostFactors": "カタログからモデルを選んで倍率を設定します。ルート Charged 倍率との合成方法は Gateway Config で設定します。未設定のモデルは金額を変えません。0 はそのモデルを課金しません。LLM / Images / Audio のみ（Agent Tools は対象外）。"
 		},
 		"chargedCostFactors": {
 			"none": "Charged cost factors は未設定です。",
@@ -1966,6 +1966,7 @@
 		"subtitle": "{product} Proxy とこの Admin アプリで共有する Key-Value 設定（環境変数の重複不要）",
 		"saveTimezone": "タイムゾーンを保存",
 		"saveCurrency": "通貨を保存",
+		"saveUserChargedCostFactorMode": "ユーザー課金倍率モードを保存",
 		"saveErrorWebhooks": "エラー Webhook を保存",
 		"businessTimezone": {
 			"title": "業務タイムゾーン",
@@ -1979,6 +1980,14 @@
 			"title": "請求通貨",
 			"description": "USD または CNY のみ。pricing_profile の単価と api_keys の予算項目（100 万 Token 単位の料金）に適用されます。GET /v1/me では billing_currency として公開されます。",
 			"currency": "通貨"
+		},
+		"userChargedCostFactorMode": {
+			"title": "ユーザー課金倍率モード",
+			"description": "ユーザーのモデル別課金倍率がルート Charged 倍率とどう合成されるか（system_config.USER_CHARGED_COST_FACTOR_MODE）。Proxy は約 30 秒キャッシュします。",
+			"multiplyTitle": "乗算",
+			"multiplyHelp": "最終課金額 = 公式カタログ価格 × ルート Charged 倍率 × ユーザー倍率。これが既定です。",
+			"minTitle": "小さい倍率を採用",
+			"minHelp": "最終課金額 = 公式カタログ価格 × min(ルート Charged 倍率, ユーザー倍率)。割引は積み重ねません。"
 		},
 		"errorWebhooks": {
 			"title": "Proxy エラー Webhook",

@@ -51,7 +51,7 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 
 模型 **`tags` 不参与**选组或计费。需要限定某一组时，请使用 **`baseId:your_group`**。
 
-**免费 / 零扣费**：路由侧用户计费（Charged cost）= 官方当刻价（目录档 × 模型官方时段倍率）× 路由有效倍率。无 `schedule.mode` 时有效倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 含该目录模型 ID，再对路由用户计费乘一次该倍率（六位四舍五入）；缺键不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`，或该用户该模型的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率或模型官方时段。
+**免费 / 零扣费**：路由侧用户计费（Charged cost）= 官方当刻价（目录档 × 模型官方时段倍率）× 路由有效倍率。无 `schedule.mode` 时有效倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 含该目录模型 ID，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 合成最终用户费用（默认 `multiply` 再乘用户倍率；`min` 取路由有效倍率与用户倍率的较小值；六位四舍五入）；缺键不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`，或该用户该模型的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率或模型官方时段。
 
 ### 3. 预算校验
 
@@ -379,7 +379,7 @@ Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0
 
 ## 获取模型列表
 
-OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（全量可见，不按 API Key 区分）。
+OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（模型集合全量可见，不按 API Key 过滤）。`model_info.discounts` 会叠该 Key 所属用户的 `charged_cost_factors`；未配置该模型时与公开目录倍率一致。
 
 面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（排除文生图与 ASR；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）请使用 `POST /v1/images/*` 或 `kind=image`；语音转写（如 `whisper-1`）请使用 `POST /v1/audio/transcriptions` 或 `kind=audio`；`kind=all` 不过滤。
 
@@ -457,7 +457,7 @@ GET /v1/models
 | `input_modalities` | string[] \| null | 支持的输入模态（OpenRouter 风格）：`text`、`image`、`audio`、`video`、`file`；客户端可据此限制附件类型 |
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
 | `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
-| `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条；两者仍并列时取当刻 `composite_factor` 最小（折扣最大）的一条，倍率也相同则保持列表原顺序。官方或路由时段未覆盖的钟点会补 `catalog_factor=1` 的兜底窗（含带 `days` 的工作日高峰：工作日空隙与周末整日都会补），因此仅工作日高峰、倍率相同的官方窗不会被压成 `kind: flat`。不含用户级 `charged_cost_factors` |
+| `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条；两者仍并列时取当刻 `composite_factor` 最小（折扣最大）的一条，倍率也相同则保持列表原顺序。官方或路由时段未覆盖的钟点会补 `catalog_factor=1` 的兜底窗（含带 `days` 的工作日高峰：工作日空隙与周末整日都会补），因此仅工作日高峰、倍率相同的官方窗不会被压成 `kind: flat`。若该用户配置了该目录模型的 `charged_cost_factors`，再按 `USER_CHARGED_COST_FACTOR_MODE` 叠进 **`route_factor`** 后重算 `composite_factor`（`multiply` 为路由 × 用户；`min` 取较小 Charged；`catalog_factor` 不变）。未配置该模型时与 `GET /catalog/models` 倍率一致 |
 | `inbound` | object[] | **请求入口**（客户端可打的公开路径）：`{ protocol, operation }`。仅聚合当前可见 `route_groups` 下 active 请求入口中的 LLM 文本入口：`openai.chat`、`openai.responses`、`anthropic.messages`、`gemini.models.generate`。不含图 / 音频。`operation=*` 在同协议没有精确入口时展开为该协议默认文本 operation（OpenAI → `chat`）。列表按稳定顺序去重（`responses` 排在 `chat` 前），**不是**推荐入口；选哪条由客户端决定。与 `GET /catalog/models` 的 `protocols`（**上游协议**）不同：Chat 与 Responses 都是 `openai`，必须看 `operation` |
 | `metadata` | object \| undefined | 扩展元数据 |
 
@@ -538,7 +538,7 @@ GET /catalog/models
 }
 ```
 
-Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`、`discounts`（语义与 `model_info` 一致；`pricing_profile` 为解析后的对象，可含 `schedule`）。`discounts.*.timezone` 即 `system_config.BUSINESS_TIMEZONE`。
+Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`、`discounts`。`discounts` 形状与 `GET /v1/models` 的 `model_info.discounts` 相同，但 **只含官方时段 × 代表路由 Charged**（平台公共折扣），不含用户级 `charged_cost_factors`。`pricing_profile` 为解析后的对象，可含 `schedule`。`discounts.*.timezone` 即 `system_config.BUSINESS_TIMEZONE`。
 
 ### 与 `GET /v1/models` / Admin 的差异
 
@@ -546,6 +546,7 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 |------|------------------|------------------------|---------------------|
 | 部署 | Proxy | Proxy | Admin |
 | 认证 | 用户 API Key | **无** | Console Session 或具名 Admin API Key |
+| `discounts` | 官方时段 × 路由 Charged，再叠该用户模型倍率 | 仅官方时段 × 路由 Charged（公共折扣） | — |
 | 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — |
 | 默认 `kind` | `llm`（排除文生图） | 不过滤 kind | — |
 | 协议能力 | `inbound`（请求入口 protocol + operation） | `protocols` / `protocols_by_group`（**上游** `upstream_protocol`） | 不返回 |
@@ -1211,7 +1212,7 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 - 路由 **`price_override`** 以 **`charged_factor` / `metered_factor`**（及可选分时 **`schedule`**，窗口可带 ISO `days`）相对官方当刻价计费；嵌套 `metered`/`charged` tiers 忽略。
 - 路由级 **`route_group`** 会写入 `api_key_request_logs` 快照。
   - **`standard_cost`（官方当刻目录价）**：按当前计费模式从 `models.pricing_profile` 选档后再乘模型官方时段倍率，不乘路由倍率
-  - **`metered_cost`（供应成本）** / **`charged_cost`（用户扣费）**：官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。若用户对该目录模型配置了用户计费倍率，仅对路由算出的用户扣费再乘一次；供应成本与官方当刻价不变。详见 `docs/developers/reference/streaming-billing.md`
+  - **`metered_cost`（供应成本）** / **`charged_cost`（用户扣费）**：官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。若用户对该目录模型配置了用户计费倍率，再按 `USER_CHARGED_COST_FACTOR_MODE`（`multiply` / `min`）合成最终用户扣费；供应成本与官方当刻价不变。详见 `docs/developers/reference/streaming-billing.md`
 - `users.budget_spent` 仅按最终 `charged_cost` 累加
 
 ### 使用量追踪

@@ -27,6 +27,8 @@
  * - `snapshot.standard`：目录选档 × **官方时段倍率**（不含路由倍率）。v5 起 `schedule` 为目录时段。
  * - `snapshot.user_charge` / `supplier`：官方当刻价 × 路由 base_factor × 路由 schedule_factor。`catalog_schedule` 为目录时段，`schedule` 为路由时段。
  * - `snapshot.user_charge.user_charged_factor`（及顶层 `user_charged_factor`）：用户级 Charged 折扣；未命中为 `null`。
+ * - `user_charged_factor_mode`：`multiply` | `min`（`system_config.USER_CHARGED_COST_FACTOR_MODE`）。
+ * - `combined_charged_factor`：合成后落到官方当刻价上的倍率；用户未配置该模型时为 `null`。
  * - `basis_tokens`：选档依据（上游 usage 的 input 侧 token 数）。
  * - v4 历史日志：`standard` 无 `schedule`（裸目录价）；supplier / user_charge 仅有路由 `schedule`。
  *

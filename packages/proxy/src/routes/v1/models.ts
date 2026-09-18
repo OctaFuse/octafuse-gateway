@@ -4,11 +4,14 @@
  * 未传 `kind` 时默认仅返回 LLM（排除文生图，如 gpt-image-2）；文生图见 `POST /v1/images/*`。
  */
 import {
+	getUserChargedCostFactorMode,
 	isAudioTranscriptionModel,
 	isImageGenerationModel,
 	isTextLlmModel,
+	lookupUserChargedCostFactor,
 	parseModelModalitiesJson,
 	parsePricingProfile,
+	parseUserChargedCostFactors,
 	type DisplayDiscountGroup,
 } from '@octafuse/core';
 import { Hono } from 'hono';
@@ -71,7 +74,7 @@ interface ModelInfoResponse {
 	released_at: string | null;
 	/**
 	 * 按 route_group 派生的前台折扣（官方时段 × 代表路由 charged 有效倍率）。
-	 * `Discount:*` tags 由此自动注入，不再手填。
+	 * 已叠该用户的 `charged_cost_factors`（若已配置该模型）。`Discount:*` tags 由此自动注入。
 	 */
 	discounts?: Record<string, DisplayDiscountGroup>;
 	metadata?: Record<string, unknown>;
@@ -112,9 +115,12 @@ function displayCompatPricesFromProfile(pricingProfile: string | null): {
  */
 modelsRoutes.get('/', async (c) => {
 	const repos = c.get('repositories');
+	const apiKey = c.get('apiKey');
 	const { models, routesByModel, timezone } = await loadPublicModelListContext(repos);
 	const allowedRouteGroups = parseModelsRouteGroupsQuery(c.req.query('route_groups'));
 	const kind = parseModelsKindQuery(c.req.query('kind'));
+	const userChargedFactorMode = await getUserChargedCostFactorMode(repos);
+	const userFactors = parseUserChargedCostFactors(apiKey.chargedCostFactors);
 
 	const list: ModelResponse[] = [];
 	for (const m of models) {
@@ -145,6 +151,8 @@ modelsRoutes.get('/', async (c) => {
 			routes: routesByModel.get(m.id) ?? [],
 			timezone,
 			allowedRouteGroups: routeGroups,
+			userChargedFactor: lookupUserChargedCostFactor(userFactors, m.id),
+			userChargedFactorMode,
 		});
 		const inbound = collectLlmInboundSurfaces(routesByModel.get(m.id) ?? [], routeGroups);
 		list.push({

@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 import type { GatewayRepositories } from '@octafuse/core';
+import {
+	resetUserChargedCostFactorModeCacheForTests,
+	USER_CHARGED_COST_FACTOR_MODE_KEY,
+} from '@octafuse/core';
 import {
 	estimateAudioSpeechBudgetPrecheck,
 	estimateAudioSpeechCosts,
@@ -11,16 +15,22 @@ const PROFILE = JSON.stringify({
 	audio: { price_per_character: 0.001, minimum_characters: 2 },
 });
 
-function mockRepos(timezone?: string): GatewayRepositories {
+function mockRepos(timezone?: string, extra?: Record<string, string | null>): GatewayRepositories {
 	return {
 		systemConfig: {
-			getConfig: async (key: string) =>
-				key === 'BUSINESS_TIMEZONE' ? timezone ?? null : null,
+			getConfig: async (key: string) => {
+				if (key === 'BUSINESS_TIMEZONE') return timezone ?? null;
+				if (extra && Object.prototype.hasOwnProperty.call(extra, key)) return extra[key] ?? null;
+				return null;
+			},
 		},
 	} as unknown as GatewayRepositories;
 }
 
 describe('TTS per-character billing', () => {
+	beforeEach(() => {
+		resetUserChargedCostFactorModeCacheForTests();
+	});
 	it('uses upstream characters and applies the route factor', async () => {
 		const costs = await estimateAudioSpeechCosts(mockRepos(), {
 			modelPricingProfileJson: PROFILE,
@@ -63,6 +73,33 @@ describe('TTS per-character billing', () => {
 		assert.equal(discounted.meteredCost, route.meteredCost);
 		const audit = JSON.parse(discounted.pricingAuditJson) as { user_charged_factor: number };
 		assert.equal(audit.user_charged_factor, 0.5);
+	});
+
+	it('min mode takes the smaller of route and user charged factors', async () => {
+		const repos = mockRepos(undefined, { [USER_CHARGED_COST_FACTOR_MODE_KEY]: 'min' });
+		const route = await estimateAudioSpeechCosts(repos, {
+			modelPricingProfileJson: PROFILE,
+			routePriceOverrideJson: JSON.stringify({ metered_factor: 1, charged_factor: 2 }),
+			characters: 5,
+			catalogModelId: 'qwen-tts',
+		});
+		const discounted = await estimateAudioSpeechCosts(repos, {
+			modelPricingProfileJson: PROFILE,
+			routePriceOverrideJson: JSON.stringify({ metered_factor: 1, charged_factor: 2 }),
+			characters: 5,
+			catalogModelId: 'qwen-tts',
+			userChargedCostFactorsJson: JSON.stringify({ 'qwen-tts': 0.5 }),
+		});
+		assert.ok(Math.abs(discounted.chargedCost - route.chargedCost * (0.5 / 2)) < 1e-9);
+		assert.equal(discounted.meteredCost, route.meteredCost);
+		const audit = JSON.parse(discounted.pricingAuditJson) as {
+			user_charged_factor: number;
+			user_charged_factor_mode: string;
+			combined_charged_factor: number;
+		};
+		assert.equal(audit.user_charged_factor, 0.5);
+		assert.equal(audit.user_charged_factor_mode, 'min');
+		assert.equal(audit.combined_charged_factor, 0.5);
 	});
 
 	it('budget precheck uses the same user charged cost factor as the final charge', async () => {

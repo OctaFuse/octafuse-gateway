@@ -77,7 +77,7 @@ erDiagram
 5. **删除语义**：
    - 删除 **`users`**：`ON DELETE CASCADE` 删除其 **`api_keys`**；子表中若存在指向该用户的 FK，按迁移定义处理（`user_audit_logs.user_id` 为 **`ON DELETE SET NULL`**，审计行保留）。
    - 删除 **`api_keys`**：**不**级联删除请求日志；`api_key_request_logs.api_key_id` 为 **`ON DELETE SET NULL`**，`user_id` 保留以便按用户维度统计历史。
-6. **`charged_cost_factors`**：可选 JSON，键为目录 `models.id`，值为 ≥ 0 的用户计费倍率；`null` / `{}` 落库为 NULL。鉴权 JOIN 会带上该列。LLM / Images / Audio 在路由用户计费算完后再乘；智能体工具不应用。
+6. **`charged_cost_factors`**：可选 JSON，键为目录 `models.id`，值为 ≥ 0 的用户计费倍率；`null` / `{}` 落库为 NULL。鉴权 JOIN 会带上该列。LLM / Images / Audio 在路由 Charged 有效倍率之后，按全局 `system_config.USER_CHARGED_COST_FACTOR_MODE`（`multiply` 叠乘 / `min` 取较小）合成最终用户费用；智能体工具不应用。
 7. **`users.rate_limit` / `api_keys.rate_limit`**：形状相同的 JSON（当前仅 `rpm`）。用户层是该用户所有 Key 的合计窗口；Key 层是单把钥匙的额外帽子。两层都按**从当前时刻回溯 60 秒**独立计数（不是 UTC 自然分钟）。两层独立：不把用户配置复制到新建 Key，不要求 `key.rpm <= user.rpm`。`NULL` / 空 = 该层不限；`rpm: 0` 拒绝该层计次请求。同时设置时，单把 Key 的有效上限约为 `min(keyRpm, 用户池剩余)`。
 
 ## 请求日志与审计

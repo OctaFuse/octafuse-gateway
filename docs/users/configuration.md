@@ -91,7 +91,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 模型未配置官方时段时，路由仍可独立增加分时时段。以低谷价为目录价的 DeepSeek 路由，可以将默认倍率设为 `1`，并为周一至周五 `09:00–12:00`、`14:00–18:00` 设置 `2` 倍；工作日其他时间和周末会自动使用低谷价。
 
-门户不需要手工解析这些配置。`GET /v1/models` 和 `GET /catalog/models` 会在 `discounts` 中返回各路由组当前生效倍率、后续窗口和业务时区；`Discount.<group>:<factor>` 标签也会由 Gateway 自动生成，不要手工维护 `Discount*` 标签。
+门户不需要手工解析这些配置。`GET /catalog/models` 在 `discounts` 中返回各路由组的平台公共折扣（官方时段 × 代表路由 Charged）；鉴权后的 `GET /v1/models` 再叠该用户的模型计费倍率。未配置用户倍率时，两份倍率一致。`Discount.<group>:<factor>` 标签也会由 Gateway 按对应接口的当刻 `discounts` 自动生成，不要手工维护 `Discount*` 标签。
 
 保存后在请求日志中核对供应成本、官方当刻目录价和用户计费。模型官方时段变更只影响后续请求，不会重算历史记录。
 
@@ -146,7 +146,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 - 需要为特定用户提供模型折扣或免单时，在用户详情的 **Charged cost factors** 中选择目录模型并填写倍率：`0.8` 表示八折，`0.5` 表示五折，`0` 表示该模型不扣费；未配置的模型保持路由计算出的价格。
 - 停用不再需要的 Key，而不是长期共享一把 Key。
 
-最终用户费用为“官方当刻目录价（目录档 × 模型官方时段）× 路由用户计费倍率（含命中的路由分时时段）× 用户模型倍率”。用户模型倍率只改变最终 `charged_cost` 与预算累加，不改变官方当刻价或供应成本；适用于 LLM、Images 与 Audio，不适用于 Agent Tools。
+最终用户费用为“官方当刻目录价 × 合成后的 Charged 倍率”。合成方式由网关配置（Gateway Config）的 `USER_CHARGED_COST_FACTOR_MODE` 决定：默认 `multiply` 为路由用户计费倍率 × 用户模型倍率；`min` 则取两者中较小的一个。用户未配置该模型时保持路由价。用户模型倍率只改变最终 `charged_cost` 与预算累加，不改变官方当刻价或供应成本；适用于 LLM、Images 与 Audio，不适用于智能体工具。
 
 用户、Key、预算、用户模型倍率和审计的数据模型见 [developers/architecture/user-keys-data-model.md](../developers/architecture/user-keys-data-model.md)。
 

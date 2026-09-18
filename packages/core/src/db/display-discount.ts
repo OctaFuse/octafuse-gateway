@@ -1,6 +1,7 @@
 /**
  * 对外目录折扣：从模型官方时段 + 代表路由 `price_override` 派生前台展示用 factor。
- * 不参与计费；计费仍走 usage-tracker。用户级 `charged_cost_factors` 不进入本结构。
+ * 不参与计费；计费仍走 usage-tracker。
+ * `GET /catalog/models` 只返回本结构；`GET /v1/models` 再按用户倍率叠一层（见 {@link applyUserChargedFactorToDisplayDiscounts}）。
  */
 import { parsePricingProfile } from './pricing-profile';
 import {
@@ -18,6 +19,11 @@ import {
 	type DailyScheduleWindow,
 	type RoutePricingScheduleMode,
 } from './pricing-schedule';
+import {
+	DEFAULT_USER_CHARGED_COST_FACTOR_MODE,
+	type UserChargedCostFactorMode,
+} from '../lib/user-charged-cost-factor-mode';
+import { resolveCombinedChargedFactor } from './user-charged-cost-factors';
 
 export const DISPLAY_DISCOUNT_TAG_PREFIX = 'Discount:' as const;
 export const DISPLAY_DISCOUNT_GROUP_TAG_PREFIX = 'Discount.' as const;
@@ -541,6 +547,53 @@ export function buildDisplayDiscountsByRouteGroup(options: {
 			weight: representative.weight ?? 1,
 			now: options.now,
 		});
+	}
+	return out;
+}
+
+function applyUserChargedFactorToDisplayWindow(
+	window: DisplayDiscountWindow,
+	userFactor: number,
+	mode: UserChargedCostFactorMode
+): DisplayDiscountWindow {
+	const combined = resolveCombinedChargedFactor(window.route_factor, userFactor, mode);
+	const routeFactor = combined ?? window.route_factor;
+	return toDisplayWindow(window, window.catalog_factor, routeFactor);
+}
+
+function applyUserChargedFactorToDisplayDiscountGroup(
+	group: DisplayDiscountGroup,
+	userFactor: number,
+	mode: UserChargedCostFactorMode
+): DisplayDiscountGroup {
+	const mappedWindows = group.windows.map((window) =>
+		applyUserChargedFactorToDisplayWindow(window, userFactor, mode)
+	);
+	const { kind, windows } = flattenIfUniform(mappedWindows);
+	const mappedCurrent = applyUserChargedFactorToDisplayWindow(group.current, userFactor, mode);
+	return {
+		...group,
+		kind,
+		current: kind === 'flat' ? windows[0]! : mappedCurrent,
+		windows,
+	};
+}
+
+/**
+ * 把用户 Charged 倍率叠进已算好的目录折扣（只改 `route_factor` / `composite_factor`）。
+ * 未配置用户倍率时原样返回。`catalog_factor` 不变。
+ */
+export function applyUserChargedFactorToDisplayDiscounts(
+	discounts: Record<string, DisplayDiscountGroup>,
+	userFactor: number | null | undefined,
+	mode: UserChargedCostFactorMode = DEFAULT_USER_CHARGED_COST_FACTOR_MODE
+): Record<string, DisplayDiscountGroup> {
+	if (userFactor == null) {
+		return discounts;
+	}
+	const out: Record<string, DisplayDiscountGroup> = {};
+	for (const [group, value] of Object.entries(discounts)) {
+		out[group] = applyUserChargedFactorToDisplayDiscountGroup(value, userFactor, mode);
 	}
 	return out;
 }

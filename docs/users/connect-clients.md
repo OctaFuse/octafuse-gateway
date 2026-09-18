@@ -42,7 +42,7 @@ curl -sS http://localhost:8787/v1/models \
 curl -sS http://localhost:8787/catalog/models
 ```
 
-两个模型列表都会按路由组返回当前生效价格和后续时段窗口。门户需要展示“当前价格”和“下一次价格变化”时，可以直接读取响应中的 `discounts`，无需自行解析模型与路由配置。
+公开目录 `GET /catalog/models` 按路由组返回平台公共折扣和后续时段窗口。用户 Key 调用 `GET /v1/models` 时，同一结构会再叠该用户的模型计费倍率；未配置时与公开目录一致。门户展示“当前价格”和“下一次价格变化”时，可以直接读取响应中的 `discounts`，无需自行解析模型与路由配置。
 
 图片生成（Images；需用户 Key + 已配置 OpenAI 协议 image 路由）：
 

@@ -5,10 +5,12 @@ import {
 	buildDisplayDiscountsByRouteGroup,
 	getBusinessTimezone,
 	mergeDerivedDiscountTags,
+	applyUserChargedFactorToDisplayDiscounts,
 	type DisplayDiscountGroup,
 	type GatewayRepositories,
 	type ModelRouteJoinRow,
 	type ModelRow,
+	type UserChargedCostFactorMode,
 } from '@octafuse/core';
 import { parseTags } from '../lib/model-list-parse';
 
@@ -57,13 +59,20 @@ export function buildModelDisplayDiscounts(options: {
 	routes: readonly ModelRouteJoinRow[];
 	timezone: string;
 	allowedRouteGroups?: readonly string[] | null;
+	userChargedFactor?: number | null;
+	userChargedFactorMode?: UserChargedCostFactorMode;
 }): Record<string, DisplayDiscountGroup> {
-	return buildDisplayDiscountsByRouteGroup({
+	const discounts = buildDisplayDiscountsByRouteGroup({
 		routes: options.routes,
 		pricingProfileJson: options.model.pricing_profile,
 		timezone: options.timezone,
 		allowedRouteGroups: options.allowedRouteGroups,
 	});
+	return applyUserChargedFactorToDisplayDiscounts(
+		discounts,
+		options.userChargedFactor ?? null,
+		options.userChargedFactorMode
+	);
 }
 
 export function tagsWithDerivedDiscounts(
