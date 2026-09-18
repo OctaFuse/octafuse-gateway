@@ -21,6 +21,7 @@
 | 把已有 AI 客户端接到 Gateway | [users/connect-clients.md](./users/connect-clients.md) |
 | 用 Gateway 接入自己的门户、后台或 SaaS | [developers/integration.md](./developers/integration.md) |
 | 查代理服务（Proxy）/ 管理后台 API | [developers/api/README.md](./developers/api/README.md) |
+| 按标准化错误码处理用户侧失败 | [developers/api/error-codes.md](./developers/api/error-codes.md) |
 | 本地二开或贡献代码 | [developers/local-development.md](./developers/local-development.md) |
 | 部署到生产环境 | [operators/deployment/README.md](./operators/deployment/README.md) |
 | Cloudflare 外部一键上云 | [operators/deployment/cloudflare-quickstart.md](./operators/deployment/cloudflare-quickstart.md) |

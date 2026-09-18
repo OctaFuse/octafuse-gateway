@@ -15,6 +15,7 @@
 
 ## 扩展文档
 
+- [代理服务错误码](./error-codes.md)（`X-OctaFuse-Error-Code` 完整清单）
 - [运行时与数据存储架构](../architecture/runtime-data.md)（Cloudflare / Node，D1 / Postgres / MySQL）
 - [2.0 路由拓扑](../architecture/route-topology.md)（Request Surface → Route Pool → Upstream Target）
 - [渠道模型思考参数配置说明](../reference/provider-thinking-configs.md)
@@ -78,6 +79,8 @@
 
 ## 错误响应
 
+完整清单、HTTP 对照与调用方建议见 **[代理服务错误码](./error-codes.md)**。源码：`packages/proxy/src/services/gateway-error-codes.ts`。
+
 | 场景 | 响应体 |
 |------|--------|
 | **`/v1/*` 网关自造** | `{ "error": "...", "code": "gateway.*" }`（`error` **保持字符串**；另加响应头 `X-OctaFuse-Error-Code`） |
@@ -88,14 +91,15 @@
 | **管理接口**：未授权 | 多为 `{ "error": "Unauthorized" }`（401） |
 | **管理接口**：业务失败 | 多为 `{ "success": false, "message": "..." }` |
 
-### 固定错误 code（Agent 对接契约）
+### 固定错误 code（摘要）
 
-响应头 **`X-OctaFuse-Error-Code`** 覆盖所有非 2xx。网关自造错误另在 body 顶层（或嵌套 `error.code`）带同一值。
+响应头 **`X-OctaFuse-Error-Code`** 是分类权威。网关自造错误另在 body 顶层（或嵌套 `error.code`）带同一值。不要只按 HTTP 状态分支（404 可能是 `gateway.model_not_found`、`gateway.no_route` 或 `upstream.not_found`）。
 
-| 前缀 | 含义 | 示例 |
-|------|------|------|
-| `gateway.*` | 请求未出网关 | `gateway.budget_exceeded`、`gateway.rate_limited`、`gateway.invalid_json`、`gateway.model_not_found`、`gateway.auth_failed`、`gateway.no_route`、`gateway.route_resolution_failed`、`gateway.invalid_request`、`gateway.upstream_request_failed` |
-| `circuit.*` | 熔断短路（未打上游） | `circuit.sensitive_content`、`circuit.client_error`、`circuit.upstream_capacity_exhausted` |
-| `upstream.*` | 已打上游，网关分类 | `upstream.content_filter`（敏感 400）、`upstream.invalid_request`（其他 400）、`upstream.rate_limited`、`upstream.auth_failed`、`upstream.not_found`、`upstream.server_error`、`upstream.timeout` |
+| 前缀 | 含义 |
+|------|------|
+| `gateway.*` | 请求未出网关 |
+| `circuit.*` | 熔断短路（未打上游） |
+| `upstream.*` | 已打上游，网关分类 |
+| `responses.*` | Responses 会话约束 |
 
-常见 HTTP 状态码：400 参数错误 / 上游客户端错误熔断（chat 等）；401 认证失败；403 预算/配额；404 资源不存在；429 Key / 用户 RPM 超限、敏感内容熔断或全部 provider 熔断；500 服务器错误；502 路由/上游错误。熔断策略细节见 [proxy-request-lifecycle.md](../architecture/proxy-request-lifecycle.md) §2.2 / §3.2。
+熔断策略见 [proxy-request-lifecycle.md](../architecture/proxy-request-lifecycle.md) §2.2 / §3.2。

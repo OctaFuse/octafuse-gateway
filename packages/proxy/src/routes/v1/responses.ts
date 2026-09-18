@@ -75,8 +75,6 @@ responsesRoutes.post('/', async (c) =>
 		requestOperation: 'responses',
 		strategyCapability: 'responses',
 		logTag: 'Responses',
-		noRouteMessage: (routeGroup) =>
-			`No OpenAI Responses route in route group "${routeGroup}" for this model`,
 		parseRequest: parseJsonModelBody,
 		dispatch: ({ repos, routes, body, requestSignal, options }) =>
 			proxyResponses(repos, routes, body, requestSignal, options),

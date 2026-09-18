@@ -129,6 +129,30 @@ describe('buildAccountingEvent', () => {
 		assert.equal(event.error_message, 'Client disconnected (e.g. user cancelled)');
 	});
 
+	it('marks incomplete with stream idle timeout even when partial usage exists', () => {
+		const usage = {
+			...EMPTY_USAGE,
+			input_tokens: 10,
+			total_tokens: 10,
+			stream_error: 'Stream idle timeout',
+		};
+		const event = buildAccountingEvent(
+			baseInput({
+				described: describeChatOutcome({
+					body: {},
+					usage,
+					timedOut: false,
+					headerRequestId: null,
+					httpStatus: 200,
+				}),
+				usage,
+				responseOk: true,
+			})
+		);
+		assert.equal(event.status, 'incomplete');
+		assert.equal(event.error_message, 'Stream idle timeout');
+	});
+
 	it('formats HTTP error body for error status', () => {
 		const usage = EMPTY_USAGE;
 		const event = buildAccountingEvent(

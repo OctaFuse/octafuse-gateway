@@ -41,6 +41,7 @@
 ### Patch Changes
 
 - **模型列表请求入口**：`GET /v1/models` 的 `model_info` 增加 `inbound`（`protocol` + `operation`），列出当前可见的 Chat Completions、Responses、Anthropic Messages 或 Gemini generateContent 入口。这是请求入口，不是上游协议；选哪条入口以及思考档仍由客户端维护。
+- **模型预设**：新增 `glm-5.3-flashx`。USD 采用 Z.AI 刊例价 `$0.37 / $1.25`（缓存命中 `$0.075`），CNY 采用 BigModel 刊例价 `¥2 / ¥7`（缓存命中 `¥0.57`）；上下文 1M、最大输出 128K，输入模态为文本 / 图片 / 视频 / 文件。
 
 ## 2.9.0
 

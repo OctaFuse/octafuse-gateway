@@ -27,7 +27,11 @@ import {
 	maybeTriggerUserModelCircuitFromUpstream,
 	markUserModelSuccess,
 } from '../../services/user-model-circuit-route';
-import { GatewayErrorCode } from '../../services/gateway-error-codes';
+import {
+	GatewayErrorCode,
+	NO_AVAILABLE_ROUTE_MESSAGE,
+	type GatewayErrorCodeValue,
+} from '../../services/gateway-error-codes';
 import { gatewayErrorJson } from '../../services/gateway-error-response';
 import { RequestTimingCollector } from '../../services/request-timing';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
@@ -92,11 +96,16 @@ async function resolveDashScopeMultimodalRoutes(
 			poolTierStrategies: string | null;
 			stickySurface: ResolvedModelSurfaceRow | null;
 	  }
-	| { ok: false; status: 400 | 404 | 502; error: string }
+	| { ok: false; status: 400 | 404 | 502; code: GatewayErrorCodeValue; error: string }
 > {
 	const resolved = await resolveModelRouting(repos, rawModelId);
 	if (!resolved) {
-		return { ok: false, status: 404, error: `Model not found: ${rawModelId.trim().slice(0, 200)}` };
+		return {
+			ok: false,
+			status: 404,
+			code: GatewayErrorCode.modelNotFound,
+			error: `Model not found: ${rawModelId.trim().slice(0, 200)}`,
+		};
 	}
 	const { model, baseModelId, explicitGroup } = resolved;
 	const effectiveRouteGroup = explicitGroup?.trim() || 'default';
@@ -110,8 +119,9 @@ async function resolveDashScopeMultimodalRoutes(
 		if (resolvedSurface.routes.length === 0) {
 			return {
 				ok: false,
-				status: 502,
-				error: `No DashScope multimodal ASR route in route group "${effectiveRouteGroup}" for this model`,
+				status: 404,
+				code: GatewayErrorCode.noRoute,
+				error: NO_AVAILABLE_ROUTE_MESSAGE,
 			};
 		}
 		return {
@@ -126,7 +136,12 @@ async function resolveDashScopeMultimodalRoutes(
 		};
 	} catch (err) {
 		const message = err instanceof Error ? err.message : 'Model route resolution failed';
-		return { ok: false, status: 502, error: message };
+		return {
+			ok: false,
+			status: 502,
+			code: GatewayErrorCode.routeResolutionFailed,
+			error: message,
+		};
 	}
 }
 
@@ -166,12 +181,7 @@ dashScopeMultimodalRoutes.post('/', async (c) => {
 	if (!routed.ok) {
 		return gatewayErrorJson(c, {
 			status: routed.status,
-			code:
-				routed.status === 404
-					? GatewayErrorCode.modelNotFound
-					: routed.status === 502
-						? GatewayErrorCode.routeResolutionFailed
-						: GatewayErrorCode.invalidRequest,
+			code: routed.code,
 			message: routed.error,
 		});
 	}

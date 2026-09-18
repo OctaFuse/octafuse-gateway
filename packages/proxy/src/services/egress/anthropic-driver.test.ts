@@ -165,4 +165,28 @@ describe('dispatchAnthropicRoute', () => {
 		assert.equal(usage.input_tokens, 0);
 		assert.equal(usage.raw_usage, null);
 	});
+
+	it('returns 524 when the first SSE event exceeds firstEventTimeoutMs', async () => {
+		const hung = new ReadableStream<Uint8Array>({
+			start() {},
+			cancel() {},
+		});
+		mock.method(globalThis, 'fetch', async () =>
+			new Response(hung, {
+				status: 200,
+				headers: { 'Content-Type': 'text/event-stream' },
+			})
+		);
+		const result = await dispatchAnthropicRoute(
+			anthropicRoute(),
+			{ stream: true },
+			undefined,
+			null,
+			undefined,
+			{ firstEventTimeoutMs: 20 }
+		);
+		assert.equal(result.response.status, 524);
+		const usage = await result.usagePromise;
+		assert.equal(usage.input_tokens, 0);
+	});
 });

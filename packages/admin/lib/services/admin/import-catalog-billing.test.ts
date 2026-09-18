@@ -45,6 +45,18 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.8 /M');
 	});
 
+	it('includes glm-5.3-flashx with official Z.AI and BigModel list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'glm-5.3-flashx');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'glm-5.3-flashx');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'GLM-5.3-FlashX');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$0.37 / $1.25 /M');
+		assert.equal(cny!.pricing_label, '¥2 / ¥7 /M');
+	});
+
 	it('includes hy4-preview with official TokenHub list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'hy4-preview');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'hy4-preview');
@@ -81,6 +93,25 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
 	});
 
+	it('includes claude-sonnet-5 at the permanent $2 / $10 list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-sonnet-5');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-sonnet-5');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Claude Sonnet 5');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$2 / $10 /M');
+		assert.equal(cny!.pricing_label, '¥14 / ¥70 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'claude-sonnet-5');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.input_price, 2);
+		assert.equal(profile?.tiers[0]?.output_price, 10);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(profile?.tiers[0]?.cache_write_price, 2.5);
+	});
+
 	it('includes claude-fable-5-1 with cheaper cache-read list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-fable-5-1');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-fable-5-1');
@@ -96,6 +127,47 @@ describe('import catalog pricing preview follows billing currency', () => {
 		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
 		assert.equal(profile?.tiers[0]?.cache_read_price, 0.25);
 		assert.equal(profile?.tiers[0]?.cache_write_price, 12.5);
+	});
+
+	it('includes gpt-5.6 terra and luna at the 2026-07-30 list prices, not the Sol promo', () => {
+		const terraUsd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-5.6-terra');
+		const terraCny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-5.6-terra');
+		const lunaUsd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-5.6-luna');
+		const lunaCny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-5.6-luna');
+		assert.ok(terraUsd);
+		assert.ok(terraCny);
+		assert.ok(lunaUsd);
+		assert.ok(lunaCny);
+		assert.equal(terraUsd!.pricing_label, '$2 / $12 /M');
+		assert.equal(terraCny!.pricing_label, '¥14 / ¥84 /M');
+		assert.equal(lunaUsd!.pricing_label, '$0.2 / $1.2 /M');
+		assert.equal(lunaCny!.pricing_label, '¥1.4 / ¥8.4 /M');
+
+		const terra = listStaticModelPresets().find((p) => p.id === 'gpt-5.6-terra');
+		const luna = listStaticModelPresets().find((p) => p.id === 'gpt-5.6-luna');
+		assert.ok(terra);
+		assert.ok(luna);
+		const terraProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(terra!, 'USD'))!);
+		const lunaProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(luna!, 'USD'))!);
+		assert.equal(terraProfile?.tiers[0]?.upto, 272000);
+		assert.equal(terraProfile?.tiers[0]?.input_price, 2);
+		assert.equal(terraProfile?.tiers[0]?.output_price, 12);
+		assert.equal(terraProfile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(terraProfile?.tiers[0]?.cache_write_price, 2.5);
+		assert.equal(terraProfile?.tiers[1]?.input_price, 4);
+		assert.equal(terraProfile?.tiers[1]?.output_price, 18);
+		assert.equal(lunaProfile?.tiers[0]?.input_price, 0.2);
+		assert.equal(lunaProfile?.tiers[0]?.output_price, 1.2);
+		assert.equal(lunaProfile?.tiers[0]?.cache_read_price, 0.02);
+		assert.equal(lunaProfile?.tiers[0]?.cache_write_price, 0.25);
+		assert.equal(lunaProfile?.tiers[1]?.input_price, 0.4);
+		assert.equal(lunaProfile?.tiers[1]?.output_price, 1.8);
+
+		for (const id of ['gpt-5.6', 'gpt-5.6-sol']) {
+			const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === id);
+			assert.ok(usd, id);
+			assert.equal(usd!.pricing_label, '$5 / $30 /M', `${id} stays on list price, not the Sol promo`);
+		}
 	});
 
 	it('includes gpt-6-astra with Standard short-context list prices', () => {

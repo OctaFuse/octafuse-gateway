@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { defaultHasUsage, modelDisplayName } from './proxy-pipeline';
 import { EMPTY_USAGE, type UsageFromStream } from './proxy';
+import { GatewayErrorCode, NO_AVAILABLE_ROUTE_MESSAGE } from './gateway-error-codes';
 
 describe('proxy pipeline helpers', () => {
 	it('treats any token counter as usage for chat-family endpoints', () => {
@@ -20,5 +21,12 @@ describe('proxy pipeline helpers', () => {
 		assert.equal(modelDisplayName({ display_name: '  GPT  ' }, 'gpt-x'), 'GPT');
 		assert.equal(modelDisplayName({ display_name: '' }, 'gpt-x'), 'gpt-x');
 		assert.equal(modelDisplayName({ display_name: null }, 'gpt-x'), 'gpt-x');
+	});
+
+	it('keeps empty-route errors distinct from model not found', () => {
+		assert.equal(NO_AVAILABLE_ROUTE_MESSAGE, 'No available route');
+		assert.equal(GatewayErrorCode.noRoute, 'gateway.no_route');
+		assert.notEqual(GatewayErrorCode.noRoute, GatewayErrorCode.modelNotFound);
+		assert.notEqual(NO_AVAILABLE_ROUTE_MESSAGE, 'Model not found');
 	});
 });

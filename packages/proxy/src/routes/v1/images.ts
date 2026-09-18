@@ -46,7 +46,11 @@ import {
 	maybeTriggerUserModelCircuitFromUpstream,
 	markUserModelSuccess,
 } from '../../services/user-model-circuit-route';
-import { GatewayErrorCode } from '../../services/gateway-error-codes';
+import {
+	GatewayErrorCode,
+	NO_AVAILABLE_ROUTE_MESSAGE,
+	type GatewayErrorCodeValue,
+} from '../../services/gateway-error-codes';
 import { gatewayErrorJson } from '../../services/gateway-error-response';
 import { RequestTimingCollector } from '../../services/request-timing';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
@@ -73,13 +77,18 @@ async function resolveOpenAiImageRoutes(
 			poolTierStrategies: string | null;
 			stickySurface: ResolvedModelSurfaceRow | null;
 	  }
-	| { ok: false; status: 400 | 404 | 502; error: string }
+	| { ok: false; status: 400 | 404 | 502; code: GatewayErrorCodeValue; error: string }
 > {
 	const resolved = await resolveModelRouting(repos, rawModelId);
 	if (!resolved) {
 		const modelForLog = truncateModelIdForLog(rawModelId);
 		console.warn(`[Gateway Images] model not found clientModel=${modelForLog}`);
-		return { ok: false, status: 404, error: `Model not found: ${modelForLog}` };
+		return {
+			ok: false,
+			status: 404,
+			code: GatewayErrorCode.modelNotFound,
+			error: `Model not found: ${modelForLog}`,
+		};
 	}
 	const { model, baseModelId, explicitGroup } = resolved;
 	const effectiveRouteGroup = explicitGroup?.trim() || 'default';
@@ -90,13 +99,19 @@ async function resolveOpenAiImageRoutes(
 		requestOperation,
 	});
 	if (!loaded.ok) {
-		return { ok: false, status: 502, error: loaded.message };
+		return {
+			ok: false,
+			status: 502,
+			code: GatewayErrorCode.routeResolutionFailed,
+			error: loaded.message,
+		};
 	}
 	if (loaded.loaded.routes.length === 0) {
 		return {
 			ok: false,
-			status: 502,
-			error: `No OpenAI route in route group "${effectiveRouteGroup}" for this model`,
+			status: 404,
+			code: GatewayErrorCode.noRoute,
+			error: NO_AVAILABLE_ROUTE_MESSAGE,
 		};
 	}
 	return {
@@ -180,7 +195,8 @@ function rejectImageRequest(
 	c: ImagesContext,
 	status: 400 | 403 | 404 | 502,
 	error: string,
-	diag: ImageRejectDiag
+	diag: ImageRejectDiag,
+	code?: GatewayErrorCodeValue
 ): Response {
 	const apiKey = c.get('apiKey');
 	console.warn('[Gateway Images] request rejected', {
@@ -201,13 +217,14 @@ function rejectImageRequest(
 	return gatewayErrorJson(c, {
 		status,
 		code:
-			status === 403
+			code ??
+			(status === 403
 				? GatewayErrorCode.budgetExceeded
 				: status === 404
 					? GatewayErrorCode.modelNotFound
 					: status === 502
 						? GatewayErrorCode.routeResolutionFailed
-						: GatewayErrorCode.invalidRequest,
+						: GatewayErrorCode.invalidRequest),
 		message: error,
 	});
 }
@@ -737,7 +754,7 @@ imageRoutes.post('/generations', async (c) => {
 			hasModel: true,
 			clientModel: rawModelId,
 			promptChars: typeof body.prompt === 'string' ? body.prompt.length : 0,
-		});
+		}, routed.code);
 	}
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
 
@@ -936,7 +953,7 @@ imageRoutes.post('/edits', async (c) => {
 			promptChars: edit.prompt.length,
 			referenceCount: edit.images.length,
 			totalUploadBytes,
-		});
+		}, routed.code);
 	}
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
 	const modelNameForLog = modelDisplayName(model, baseModelId);

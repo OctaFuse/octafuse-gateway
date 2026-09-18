@@ -48,6 +48,10 @@ describe('describeOutcome billing口径', () => {
 		assert.equal(ended.incompleteErrorMessage, 'Stream ended before usage available');
 		assert.equal(ended.httpErrorFallback, 'HTTP 200');
 		assert.equal(ended.extraRecordUsage, undefined);
+		const idle = defaultDescribeOutcome(
+			outcomeInput({ usage: { ...EMPTY_USAGE, stream_error: 'Stream idle timeout' } })
+		);
+		assert.equal(idle.incompleteErrorMessage, 'Stream idle timeout');
 	});
 
 	it('responses: incomplete / HTTP fallback prefer usage.stream_error unless timed out', () => {

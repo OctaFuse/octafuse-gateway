@@ -26,7 +26,7 @@ import {
 	type UpstreamFailureClassification,
 } from './upstream-failure-classifier';
 import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
-import { GatewayErrorCode } from './gateway-error-codes';
+import { GatewayErrorCode, NO_AVAILABLE_ROUTE_MESSAGE } from './gateway-error-codes';
 import { gatewayErrorResponse, gatewayNestedErrorResponse } from './gateway-error-response';
 import {
 	clearStickyBindingSync,
@@ -126,6 +126,10 @@ export type FailoverDispatchOptions = {
 	sticky?: RoutePoolStickyRoutingConfig | null;
 	/** Incoming user request headers; used to overlay route `custom_params.headers` when force override is off. */
 	inboundHeaders?: Headers;
+	/** 尚未收到非空 chunk 时的等待上限；未设则 driver 用代码默认。 */
+	firstChunkTimeoutMs?: number;
+	/** 已吐 chunk 后两次 chunk 之间的空闲上限；未设则 driver 用代码默认。 */
+	idleTimeoutMs?: number;
 };
 
 type DispatchFn = (
@@ -230,9 +234,9 @@ export async function failoverDispatch(
 	if (protocolRoutes.length === 0) {
 		return {
 			response: gatewayErrorResponse({
-				status: 502,
+				status: 404,
 				code: GatewayErrorCode.noRoute,
-				message: 'No routes configured',
+				message: NO_AVAILABLE_ROUTE_MESSAGE,
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
@@ -445,9 +449,9 @@ export async function failoverDispatch(
 	if (!lastResponse) {
 		return finish({
 			response: gatewayErrorResponse({
-				status: 502,
+				status: 404,
 				code: GatewayErrorCode.noRoute,
-				message: 'No supported upstream protocol route available',
+				message: NO_AVAILABLE_ROUTE_MESSAGE,
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,

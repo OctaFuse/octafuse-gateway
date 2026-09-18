@@ -86,6 +86,7 @@ export function buildAccountingEvent(input: BuildAccountingEventInput): Accounti
 		cancelled: Boolean(input.usage.cancelled),
 		responseOk: input.responseOk,
 		incomplete,
+		streamError: Boolean(input.usage.stream_error),
 	});
 	const errorMessage = resolveAccountingErrorMessage({
 		status,

@@ -61,6 +61,10 @@ services:
       DATABASE_DRIVER: mysql
       DATABASE_URL: mysql://octafuse:octafuse@mysql:3306/octafuse
       PORT: "8787"
+      # 可选：文本流式超时（毫秒）。空则代码默认 2min / 30s / 10min。
+      STREAM_FIRST_CHUNK_TIMEOUT_MS: ${STREAM_FIRST_CHUNK_TIMEOUT_MS:-}
+      STREAM_IDLE_TIMEOUT_MS: ${STREAM_IDLE_TIMEOUT_MS:-}
+      USAGE_SAFETY_TIMEOUT_MS: ${USAGE_SAFETY_TIMEOUT_MS:-}
     depends_on:
       mysql:
         condition: service_healthy

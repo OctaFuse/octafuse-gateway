@@ -127,6 +127,38 @@ describe('failoverDispatch — all providers unavailable', () => {
 		assert.equal(dispatch.mock.callCount(), 1);
 		assert.equal(result.chosenRoute.upstreamProtocol, 'dashscope');
 	});
+
+	it('returns 404 gateway.no_route when no routes match the expected protocol', async () => {
+		const dispatch = mock.fn();
+		const routes = [
+			makeRoute('anthropic', {
+				upstreamProtocol: 'anthropic',
+				providerEndpoints: {
+					anthropic: { base: 'https://example.com' },
+				},
+			}),
+		];
+
+		const result = await failoverDispatch(emptyRepos, routes, 'openai', dispatch, undefined, defaultOptions);
+
+		assert.equal(dispatch.mock.callCount(), 0);
+		assert.equal(result.response.status, 404);
+		assert.equal(result.response.headers.get('X-OctaFuse-Error-Code'), 'gateway.no_route');
+		const body = (await result.response.json()) as { error: string; code: string };
+		assert.equal(body.error, 'No available route');
+		assert.equal(body.code, 'gateway.no_route');
+	});
+
+	it('returns 404 gateway.no_route when the candidate list is empty', async () => {
+		const dispatch = mock.fn();
+		const result = await failoverDispatch(emptyRepos, [], 'openai', dispatch, undefined, defaultOptions);
+
+		assert.equal(dispatch.mock.callCount(), 0);
+		assert.equal(result.response.status, 404);
+		const body = (await result.response.json()) as { error: string; code: string };
+		assert.equal(body.error, 'No available route');
+		assert.equal(body.code, 'gateway.no_route');
+	});
 });
 
 describe('failoverDispatch — image abort (no failover)', () => {

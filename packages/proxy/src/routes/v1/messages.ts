@@ -56,8 +56,6 @@ messagesRoutes.post('/', async (c) =>
 		requestOperation: 'messages',
 		strategyCapability: 'messages',
 		logTag: 'Messages',
-		noRouteMessage: (routeGroup) =>
-			`No Anthropic route in route group "${routeGroup}" for this model`,
 		parseRequest: parseJsonModelBody,
 		dispatch: ({ repos, routes, body, requestSignal, options }) =>
 			proxyAnthropicMessages(repos, routes, body, requestSignal, options),

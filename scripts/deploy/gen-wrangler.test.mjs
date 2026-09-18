@@ -4,6 +4,7 @@ import {
 	customDomainRoutes,
 	parseCustomDomains,
 	primaryCustomDomain,
+	collectProxyRuntimeVars,
 } from "./gen-wrangler.mjs";
 
 test("parseCustomDomains splits comma-separated hosts", () => {
@@ -56,4 +57,27 @@ test("customDomainRoutes still accepts a single hostname", () => {
 	assert.deepEqual(customDomainRoutes("api.example.com"), [
 		{ pattern: "api.example.com", custom_domain: true },
 	]);
+});
+
+test("collectProxyRuntimeVars omits empty keys", () => {
+	assert.equal(collectProxyRuntimeVars({}), undefined);
+	assert.equal(
+		collectProxyRuntimeVars({ STREAM_IDLE_TIMEOUT_MS: "  " }),
+		undefined,
+	);
+});
+
+test("collectProxyRuntimeVars keeps trimmed positive overrides", () => {
+	assert.deepEqual(
+		collectProxyRuntimeVars({
+			STREAM_FIRST_CHUNK_TIMEOUT_MS: " 180000 ",
+			STREAM_IDLE_TIMEOUT_MS: "80000",
+			USAGE_SAFETY_TIMEOUT_MS: "",
+			UNRELATED: "1",
+		}),
+		{
+			STREAM_FIRST_CHUNK_TIMEOUT_MS: "180000",
+			STREAM_IDLE_TIMEOUT_MS: "80000",
+		},
+	);
 });
