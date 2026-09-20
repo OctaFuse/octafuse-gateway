@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it, beforeEach } from 'node:test';
-import type { GatewayRepositories, ModelRow, ModelRouteJoinRow, UserRow } from '@octafuse/core';
+import type {
+	GatewayRepositories,
+	ListModelRoutesWithJoinsFilters,
+	ModelRow,
+	ModelRouteJoinRow,
+	UserRow,
+} from '@octafuse/core';
 import { resetUserChargedCostFactorModeCacheForTests } from '@octafuse/core';
 import { AdminServiceError } from './errors';
 import {
@@ -84,6 +90,7 @@ function mockRepos(options: {
 	models: ModelRow[];
 	routes: ModelRouteJoinRow[];
 	mode?: string | null;
+	onListRoutes?: (filters: ListModelRoutesWithJoinsFilters) => void;
 }): GatewayRepositories {
 	return {
 		users: {
@@ -94,7 +101,10 @@ function mockRepos(options: {
 			listModelsWithActiveRoutes: async () => options.models,
 		},
 		routes: {
-			listModelRoutesWithJoins: async () => options.routes,
+			listModelRoutesWithJoins: async (filters: ListModelRoutesWithJoinsFilters) => {
+				options.onListRoutes?.(filters);
+				return options.routes;
+			},
 		},
 		systemConfig: {
 			getConfig: async (key: string) => {
@@ -142,12 +152,15 @@ describe('getAdminUserDisplayDiscounts', () => {
 	});
 
 	it('returns only models with a user factor and stacks multiply onto route_factor', async () => {
+		const seenFilters: unknown[] = [];
 		const repos = mockRepos({
 			user: baseUser({ charged_cost_factors: JSON.stringify({ 'gpt-4o': 0.5 }) }),
 			models: [model('gpt-4o'), model('claude-sonnet-4')],
 			routes: [route('gpt-4o', 'default', 0.8), route('claude-sonnet-4', 'default', 0.7)],
+			onListRoutes: (filters) => seenFilters.push(filters),
 		});
 		const rows = await getAdminUserDisplayDiscounts(repos, USER_ID);
+		assert.deepEqual(seenFilters, [{ status: 'active' }]);
 		assert.equal(rows.length, 1);
 		assert.equal(rows[0]?.id, 'gpt-4o');
 		assert.equal(rows[0]?.discounts.default?.current.route_factor, 0.4);

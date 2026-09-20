@@ -228,8 +228,15 @@ export interface ModelRoutingRepository {
 	getModelRoutesByPoolId(poolId: string): Promise<ModelRouteRow[]>;
 }
 
+/** `listModelRoutesWithJoins` 过滤。公开列表传 `status: 'active'`；Admin CRUD 不传以拉全量。 */
+export type ListModelRoutesWithJoinsFilters = {
+	modelId?: string;
+	providerId?: string;
+	status?: 'active';
+};
+
 export interface ModelRoutesRepository {
-	listModelRoutesWithJoins(filters: { modelId?: string; providerId?: string }): Promise<ModelRouteJoinRow[]>;
+	listModelRoutesWithJoins(filters: ListModelRoutesWithJoinsFilters): Promise<ModelRouteJoinRow[]>;
 	insertModelRoute(params: {
 		id: string;
 		modelId: string;
