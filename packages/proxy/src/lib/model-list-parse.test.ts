@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
 	parseModelsKindQuery,
 	parseModelsRouteGroupsQuery,
+	normalizePublicModelVendor,
 	DEFAULT_MODELS_ROUTE_GROUPS,
 } from './model-list-parse';
 
@@ -29,5 +30,19 @@ describe('parseModelsKindQuery', () => {
 describe('parseModelsRouteGroupsQuery', () => {
 	it('defaults to default,free when missing', () => {
 		assert.deepEqual(parseModelsRouteGroupsQuery(undefined), [...DEFAULT_MODELS_ROUTE_GROUPS]);
+	});
+});
+
+describe('normalizePublicModelVendor', () => {
+	it('falls back to other for empty or whitespace vendors', () => {
+		assert.equal(normalizePublicModelVendor(undefined), 'other');
+		assert.equal(normalizePublicModelVendor(null), 'other');
+		assert.equal(normalizePublicModelVendor(''), 'other');
+		assert.equal(normalizePublicModelVendor('   '), 'other');
+	});
+
+	it('keeps non-empty vendor values', () => {
+		assert.equal(normalizePublicModelVendor('openai'), 'openai');
+		assert.equal(normalizePublicModelVendor(' zhipu '), ' zhipu ');
 	});
 });

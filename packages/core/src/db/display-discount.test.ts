@@ -5,8 +5,6 @@ import {
 	buildDisplayDiscountsByRouteGroup,
 	fillDailyScheduleGaps,
 	formatDisplayDiscountLabel,
-	isDisplayDiscountTag,
-	mergeDerivedDiscountTags,
 	pickRepresentativeRoute,
 	applyUserChargedFactorToDisplayDiscounts,
 } from './display-discount';
@@ -250,8 +248,8 @@ describe('buildDisplayDiscountForRoute', () => {
 	});
 });
 
-describe('buildDisplayDiscountsByRouteGroup + tags', () => {
-	it('groups by route_group and injects Discount.<group> from current composite', () => {
+describe('buildDisplayDiscountsByRouteGroup', () => {
+	it('groups by route_group from current composite', () => {
 		const discounts = buildDisplayDiscountsByRouteGroup({
 			routes: [
 				{
@@ -277,8 +275,6 @@ describe('buildDisplayDiscountsByRouteGroup + tags', () => {
 		});
 		assert.equal(discounts.default?.current.composite_factor, 0.7);
 		assert.equal(discounts.free?.current.composite_factor, 0.5);
-		const tags = mergeDerivedDiscountTags(['Hot', 'Discount:0.3', 'Discount.free:0.9'], discounts);
-		assert.deepEqual(tags, ['Hot', 'Discount.default:0.7', 'Discount.free:0.5']);
 	});
 
 	it('picks the cheapest current composite when priority and weight are tied', () => {
@@ -307,20 +303,13 @@ describe('buildDisplayDiscountsByRouteGroup + tags', () => {
 		assert.equal(discounts.default?.route.weight, 1);
 	});
 
-	it('skips derived tags when composite is full price', () => {
+	it('keeps full-price composite at 1', () => {
 		const discounts = buildDisplayDiscountsByRouteGroup({
 			routes: [{ status: 'active', priority: 0, weight: 1, route_group: 'default', price_override: null }],
 			pricingProfileJson: null,
 			timezone: 'UTC',
 		});
 		assert.equal(discounts.default?.current.composite_factor, 1);
-		assert.deepEqual(mergeDerivedDiscountTags(['pro'], discounts), ['pro']);
-	});
-
-	it('recognizes legacy discount tags', () => {
-		assert.equal(isDisplayDiscountTag('Discount:0.3'), true);
-		assert.equal(isDisplayDiscountTag('Discount.free:0.5'), true);
-		assert.equal(isDisplayDiscountTag('Hot'), false);
 	});
 });
 
@@ -358,13 +347,5 @@ describe('applyUserChargedFactorToDisplayDiscounts', () => {
 		const cheaperRoute = applyUserChargedFactorToDisplayDiscounts(catalog, 0.9, 'min');
 		assert.equal(cheaperRoute.default?.current.route_factor, 0.8);
 		assert.equal(cheaperRoute.default?.current.composite_factor, 1.28);
-	});
-
-	it('rewrites derived discount tags from the combined composite', () => {
-		const out = applyUserChargedFactorToDisplayDiscounts(catalog, 0.5, 'multiply');
-		assert.deepEqual(mergeDerivedDiscountTags(['pro', 'Discount.default:1.28'], out), [
-			'pro',
-			'Discount.default:0.64',
-		]);
 	});
 });

@@ -6,17 +6,21 @@
 
 ## 日常开发
 
-日常功能与外部贡献 PR 默认合入长期开发分支 **`develop`**。在包含用户可见变更的 PR 里添加一条 changeset：
+日常功能与外部贡献 PR 默认合入长期开发分支 **`develop`**。用户可见变更**不要**在功能 PR 里写 `.changeset/*.md`，只改根目录 **`CHANGELOG.md` 开头的 `## Unreleased`**：
 
-```bash
-npx changeset
+```markdown
+## Unreleased
+
+### Minor Changes
+
+- **能力名称**：用户可感知的变化。
 ```
 
-按提示选择 **major / minor / patch**，并写摘要。会生成 `.changeset/<随机名>.md`，随 PR 提交即可。
+已有 Unreleased 时往里追加条目，不要另开章节。纯文档、测试、CI 或无用户影响的内部维护通常不必记。
 
-`develop` 上的 changeset 不会触发发版，因为 Release workflow 只监听 `main`。若版本范围尚未确定，维护者可以允许 PR 暂不添加，但开发线合入 `main` 前必须补齐并审核。纯文档、测试、CI 或无用户影响的内部维护通常不需要 changeset。
+`.changeset/*.md` **只在发版准备时**根据 Unreleased 整理生成（`npx changeset` 或手写），并从 `CHANGELOG.md` 删掉 Unreleased。随后合入 `main`，由 Version Packages PR 写入 `## X.Y.Z`。
 
-文案建议：首段一句话摘要 + `### Proxy` / `### Admin` 等分区列表（见 [release-versioning.md](../docs/maintainers/release-versioning.md) §维护者日常操作）。GitHub Release 由 `npm run release:notes` 渲染，勿指望原始 `Patch Changes` 格式直接作为对外说明。
+文案建议：条目用 `**能力名称**：用户可感知的变化。`；发版前的 changeset 再补首段摘要 + `### Proxy` / `### Admin` 等分区（见 [release-versioning.md](../docs/maintainers/release-versioning.md) §维护者日常操作）。GitHub Release 由 `npm run release:notes` 渲染，勿指望原始 `Patch Changes` 格式直接作为对外说明。
 
 ## 发版流程（自动化）
 

@@ -839,7 +839,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
     - **缺省或 `"multiply"`**（存量）：`charged_cost` = 官方当刻价 × `charged_factor` × 命中窗 `factor`（未命中窗按 `1`）；`metered_cost` 同理。
     - **`"override"`**（Admin UI 新写入）：命中窗时窗口 `factor` 就是对官方当刻价的倍率；未命中用上方默认 `charged_factor` / `metered_factor`。两侧共享同一套 start/end（及可选 `days`），各写自己的 `factor`。
   - `standard_cost` = 官方当刻目录价（含模型时段，不含路由倍率）。嵌套 `metered`/`charged` tiers **写入时剥离、运行时忽略**。`pricing_audit` 新写入为 **v5**：`snapshot.standard.schedule` 记录目录时段；supplier / user_charge 侧用 `catalog_schedule` 区分目录时段与路由 `schedule`。`evaluated_at_utc` 记录本次选窗使用的请求开始时刻，并带 `local_weekday`（1–7）。非法 `mode` 或非法 `days` 在 Admin API 写入时拒绝。**历史日志不回补**：上线前写入的 `standard_cost` 仍是裸目录价。
-- **公开列表**：`GET /v1/models` 返回完整 `pricing_profile` 字符串（含 `schedule` 定义，若已配置）；`model_info.input_price` / `output_price` 为 **兼容展示**：取各档中 **最低 `input_price`** 所在档的 in/out，**不含**官方时段。外部自行计算当刻价时须另行约定 `BUSINESS_TIMEZONE`。详见 [user.md「获取模型列表」](user.md)。
+- **公开列表**：`GET /v1/models` 与 `GET /catalog/models` 均返回解析后的 `pricing_profile` 对象（含 `schedule` 定义，若已配置）；`model_info.input_price` / `output_price` 为 **兼容展示**：取各档中 **最低 `input_price`** 所在档的 in/out，**不含**官方时段。外部自行计算当刻价时须另行约定 `BUSINESS_TIMEZONE`。详见 [user.md「获取模型列表」](user.md)。
 
 #### Gateway Admin UI — Model Routes「Billing & Cost」
 

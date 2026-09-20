@@ -7,14 +7,12 @@
 import {
 	buildModelDisplayDiscounts as buildCoreModelDisplayDiscounts,
 	getBusinessTimezone,
-	mergeDerivedDiscountTags,
 	type DisplayDiscountGroup,
 	type GatewayRepositories,
 	type ModelRouteJoinRow,
 	type ModelRow,
 	type UserChargedCostFactorMode,
 } from '@octafuse/core';
-import { parseTags } from '../lib/model-list-parse';
 
 export type PublicModelListContext = {
 	models: ModelRow[];
@@ -106,11 +104,4 @@ export function buildModelDisplayDiscounts(options: {
 		userChargedFactor: options.userChargedFactor,
 		userChargedFactorMode: options.userChargedFactorMode,
 	});
-}
-
-export function tagsWithDerivedDiscounts(
-	model: ModelRow,
-	discounts: Record<string, DisplayDiscountGroup>
-): string[] {
-	return mergeDerivedDiscountTags(parseTags(model.tags), discounts);
 }

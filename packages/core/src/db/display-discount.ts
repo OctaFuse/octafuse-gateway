@@ -25,9 +25,6 @@ import {
 } from '../lib/user-charged-cost-factor-mode';
 import { resolveCombinedChargedFactor } from './user-charged-cost-factors';
 
-export const DISPLAY_DISCOUNT_TAG_PREFIX = 'Discount:' as const;
-export const DISPLAY_DISCOUNT_GROUP_TAG_PREFIX = 'Discount.' as const;
-
 export type DisplayDiscountKind = 'flat' | 'schedule';
 
 export type DisplayDiscountWindow = {
@@ -63,14 +60,6 @@ export function normalizeDisplayRouteGroup(routeGroup?: string | null): string {
 	return g && g.length > 0 ? g : 'default';
 }
 
-export function isDisplayDiscountTag(tag: string): boolean {
-	const lower = tag.trim().toLowerCase();
-	return (
-		lower.startsWith(DISPLAY_DISCOUNT_TAG_PREFIX.toLowerCase()) ||
-		lower.startsWith(DISPLAY_DISCOUNT_GROUP_TAG_PREFIX.toLowerCase())
-	);
-}
-
 export function formatDisplayDiscountLabel(composite: number): string {
 	if (!Number.isFinite(composite) || composite <= 0 || composite >= 1) {
 		return '';
@@ -78,14 +67,6 @@ export function formatDisplayDiscountLabel(composite: number): string {
 	const percent = (1 - composite) * 100;
 	const percentLabel = Number.isInteger(percent) ? percent.toString() : percent.toFixed(1).replace(/\.0$/, '');
 	return `-${percentLabel}%`;
-}
-
-export function formatDisplayDiscountFactor(n: number): string {
-	const x = normalizeScheduleFactor(n);
-	if (!Number.isFinite(x)) {
-		return '1';
-	}
-	return x.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
 }
 
 export type PickRepresentativeRouteContext = {
@@ -620,30 +601,4 @@ export function buildModelDisplayDiscounts(options: {
 		options.userChargedFactor ?? null,
 		options.userChargedFactorMode
 	);
-}
-
-function derivedTagForGroup(group: string, composite: number): string | null {
-	if (!Number.isFinite(composite) || composite <= 0 || composite >= 1) {
-		return null;
-	}
-	return `${DISPLAY_DISCOUNT_GROUP_TAG_PREFIX}${group}:${formatDisplayDiscountFactor(composite)}`;
-}
-
-/**
- * 去掉手填 `Discount:*` / `Discount.*`，再按当刻 composite 注入 `Discount.<group>:<factor>`。
- */
-export function mergeDerivedDiscountTags(
-	tags: readonly string[],
-	discounts: Record<string, DisplayDiscountGroup>
-): string[] {
-	const kept = tags.filter((tag) => typeof tag === 'string' && tag.trim() !== '' && !isDisplayDiscountTag(tag));
-	const derived: string[] = [];
-	const groups = Object.keys(discounts).sort((a, b) => a.localeCompare(b));
-	for (const group of groups) {
-		const tag = derivedTagForGroup(group, discounts[group]!.current.composite_factor);
-		if (tag) {
-			derived.push(tag);
-		}
-	}
-	return [...kept, ...derived];
 }

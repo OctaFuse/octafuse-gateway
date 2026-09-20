@@ -414,7 +414,18 @@ GET /v1/models
         "route_groups": ["default", "free"],
         "context_window": 128000,
         "max_tokens": 4096,
-        "pricing_profile": "{\"tiers\":[{\"upto\":null,\"label\":null,\"input_price\":0.01,\"output_price\":0.01,\"cache_read_price\":null,\"cache_write_price\":null}]}",
+        "pricing_profile": {
+          "tiers": [
+            {
+              "upto": null,
+              "label": null,
+              "input_price": 0.01,
+              "output_price": 0.01,
+              "cache_read_price": null,
+              "cache_write_price": null
+            }
+          ]
+        },
         "input_price": 0.01,
         "output_price": 0.01,
         "description": "智谱 GLM-4 通用模型",
@@ -445,12 +456,12 @@ GET /v1/models
 | 字段 | 类型 | 描述 |
 |------|------|------|
 | `display_name` | string \| null | 模型显示名称 |
-| `vendor` | string | 模型供应商标识，如 `openai`、`anthropic`、`google`。本接口原样返回库内值（列缺省为 `other`） |
-| `tags` | string[] | 模型标签数组，如 `["free", "general"]`（**仅展示/目录元数据**，不参与自动选组或计费公式） |
+| `vendor` | string | 模型供应商标识，如 `openai`、`anthropic`、`google`。为空或仅空白时返回 `other`（与 Catalog 对齐；列缺省为 `other`） |
+| `tags` | string[] | 运营维护的展示标签，如 `["pro", "general"]`（**仅展示/目录元数据**，不参与自动选组或计费公式）。不再注入 `Discount.*`；折扣以 `discounts` 为准 |
 | `route_groups` | string[] | 当前模型下 **活跃路由** 的去重 `route_group` 列表，供客户端构造请求中的 `baseId:group` |
 | `context_window` | number \| null | 上下文窗口大小（token 数） |
 | `max_tokens` | number \| null | 目录/展示用参考（常见最大输出能力）；**转发时不用于截断**，实际输出上限见上文「输出长度」 |
-| `pricing_profile` | string \| null | 模型主定价 JSON（canonical：`{ "tiers": [ { "upto", "label", "input_price", "output_price", … } ], "schedule"?: [ { "start", "end", "factor", "days"? } ] }`）；**末档 `upto` 为 `null` 表示开放上界**；完整阶梯与 cache 价以此为准。可选 `schedule` 为官方分时倍率（时区为 `BUSINESS_TIMEZONE`，不写入 JSON） |
+| `pricing_profile` | object \| null | 解析后的模型主定价（与 Catalog 同形：`{ "tiers": [ { "upto", "label", "input_price", "output_price", … } ], "schedule"?: [ { "start", "end", "factor", "days"? } ] }`）；非法 JSON 为 `null`。**末档 `upto` 为 `null` 表示开放上界**；完整阶梯与 cache 价以此为准。可选 `schedule` 为官方分时倍率（时区为 `BUSINESS_TIMEZONE`，不写入 JSON） |
 | `input_price` | number \| null | **兼容展示**：由 `pricing_profile` 派生（取各档中 **最低** `input_price` 所在档的输入价，**不含**官方时段）；无合法 profile 时为 `null` |
 | `output_price` | number \| null | **兼容展示**：与上档同行的输出价（$/1M），同样不含官方时段 |
 | `description` | string \| null | 模型描述 |
@@ -552,7 +563,7 @@ GET /catalog/models
 }
 ```
 
-Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`、`discounts`。`discounts` 形状与 `GET /v1/models` 的 `model_info.discounts` 相同，但 **只含官方时段 × 代表路由 Charged**（平台公共折扣），不含用户级 `charged_cost_factors`。`pricing_profile` 为解析后的对象，可含 `schedule`。`discounts.*.timezone` 即 `system_config.BUSINESS_TIMEZONE`。`vendor` 为空或仅空白时返回 `other`（`GET /v1/models` 原样返回库内值；列缺省为 `other`）。
+Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`、`discounts`。`discounts` 形状与 `GET /v1/models` 的 `model_info.discounts` 相同，但 **只含官方时段 × 代表路由 Charged**（平台公共折扣），不含用户级 `charged_cost_factors`。`pricing_profile` 为解析后的对象，可含 `schedule`。`discounts.*.timezone` 即 `system_config.BUSINESS_TIMEZONE`。`vendor` 为空或仅空白时返回 `other`。`tags` 为运营维护的展示标签，不含派生的 `Discount.*`。
 
 `recommended_protocol` 是门户展示用提示，**不是**强制入口：在当前可见 `protocols` 去重集合中，若同时存在多种协议，优先 `anthropic`，其次 `gemini`；否则取稳定排序后的第一项（顺序为 `openai` → `anthropic` → `gemini` → `dashscope`），空则 `openai`。
 

@@ -13,23 +13,22 @@ import {
 	parsePricingProfile,
 	parseUserChargedCostFactors,
 	type DisplayDiscountGroup,
+	type ParsedPricingProfile,
 } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../app';
 import { requireApiKey } from '../../middleware/auth';
 import {
 	filterRouteGroupsByAllowlist,
+	normalizePublicModelVendor,
 	parseMetadata,
 	parseModelsKindQuery,
 	parseModelsRouteGroupsQuery,
 	parseRouteGroupsJson,
+	parseTags,
 } from '../../lib/model-list-parse';
 import { collectInboundSurfaces, type InboundSurface } from '../../services/inbound-surfaces';
-import {
-	buildModelDisplayDiscounts,
-	loadPublicModelListContext,
-	tagsWithDerivedDiscounts,
-} from '../../services/public-models';
+import { buildModelDisplayDiscounts, loadPublicModelListContext } from '../../services/public-models';
 
 type ModelsEnv = Env & { Variables: { apiKey: import('../../middleware/auth').ApiKeyContext } };
 
@@ -50,15 +49,16 @@ export {
  */
 interface ModelInfoResponse {
 	display_name: string | null;
-	/** 厂商/品牌；缺省归为 other */
+	/** 厂商/品牌；空串回退 other */
 	vendor: string;
+	/** 运营维护的展示标签，不含派生 Discount.* */
 	tags: string[];
 	/** 来自 active `model_routes` 的去重 route_group（计费通道） */
 	route_groups: string[];
 	context_window: number | null;
 	max_tokens: number | null;
-	/** 网关主定价 JSON；完整阶梯等以此为准 */
-	pricing_profile: string | null;
+	/** 网关主定价对象（与 Catalog 同形）；完整阶梯等以此为准 */
+	pricing_profile: ParsedPricingProfile | null;
 	/**
 	 * 由 `pricing_profile` 派生的兼容展示价（$/1M）：取各档中 **最低 input_price** 所在档的 in/out；
 	 * 无合法 profile 时为 null。新客户端应解析完整 `pricing_profile`（`tiers`）。
@@ -90,16 +90,15 @@ interface ModelResponse {
 }
 
 /** 对外列表：从 `tiers` 取 input 最低价所在档作为 headline in/out；无 profile 返回 null。 */
-function displayCompatPricesFromProfile(pricingProfile: string | null): {
+function displayCompatPricesFromProfile(profile: ParsedPricingProfile | null): {
 	input_price: number | null;
 	output_price: number | null;
 } {
-	const p = parsePricingProfile(pricingProfile ?? undefined);
-	if (!p || p.tiers.length === 0) {
+	if (!profile || profile.tiers.length === 0) {
 		return { input_price: null, output_price: null };
 	}
-	let best = p.tiers[0]!;
-	for (const t of p.tiers) {
+	let best = profile.tiers[0]!;
+	for (const t of profile.tiers) {
 		if (t.input_price < best.input_price) {
 			best = t;
 		}
@@ -138,7 +137,8 @@ modelsRoutes.get('/', async (c) => {
 		if (kind === 'audio' && !isAudioModel(kindFields)) {
 			continue;
 		}
-		const { input_price, output_price } = displayCompatPricesFromProfile(m.pricing_profile);
+		const pricingProfile = parsePricingProfile(m.pricing_profile ?? undefined);
+		const { input_price, output_price } = displayCompatPricesFromProfile(pricingProfile);
 		const routeGroups = filterRouteGroupsByAllowlist(
 			parseRouteGroupsJson(m.route_groups ?? null),
 			allowedRouteGroups
@@ -161,13 +161,13 @@ modelsRoutes.get('/', async (c) => {
 			owned_by: 'octafuse',
 			model_info: {
 				display_name: m.display_name,
-				vendor: m.vendor,
-				tags: tagsWithDerivedDiscounts(m, discounts),
+				vendor: normalizePublicModelVendor(m.vendor),
+				tags: parseTags(m.tags),
 				route_groups: routeGroups,
 				discounts,
 				context_window: m.context_window,
 				max_tokens: m.max_tokens,
-				pricing_profile: m.pricing_profile,
+				pricing_profile: pricingProfile,
 				input_price,
 				output_price,
 				description: m.description,
