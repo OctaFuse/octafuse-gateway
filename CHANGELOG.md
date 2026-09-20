@@ -4,9 +4,11 @@
 
 ### Minor Changes
 
+- **模型列表 RPM 豁免**：`GET /v1/models` 与 `GET /v1/me` 一样，不再计入 API Key 与用户合计 RPM。周期额度或永久额度用尽时仍可拉取模型列表。
+- **音频筛选与请求入口**：`kind=audio` 同时返回语音转写与语音合成。`model_info.inbound` 在命中可见路由时补充文生图、ASR、TTS 操作（`images.generations`、`audio.transcriptions`、`audio.speech`）。
 - **模型列表契约**：`GET /v1/models` 与 `GET /catalog/models` 不再向 `tags` 注入 `Discount.<group>:<factor>`；权威折扣仍是 `discounts`。`model_info.pricing_profile` 改为解析后的对象（非法 JSON 为 `null`），`vendor` 为空或仅空白时返回 `other`。
 - **折扣标签兼容层**：删除 `mergeDerivedDiscountTags` 及 `Discount.*` 标签派生辅助函数；前台折扣结构不变。依赖 `pricing_profile` 字符串、或从 `tags` 解析 `Discount.*` 的客户端需要改读对象形态的 `pricing_profile` 与 `discounts`。
-- **接口说明**：同步 `GET /v1/models` / Catalog 的 `pricing_profile`、`vendor`、`tags` 契约。
+- **接口说明**：同步 `GET /v1/models` 的 RPM 豁免、`kind=audio`、`inbound`，以及 Catalog 的 `pricing_profile`、`vendor`、`tags` 契约。
 
 ## 2.11.0
 
