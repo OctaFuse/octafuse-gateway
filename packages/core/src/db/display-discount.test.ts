@@ -8,6 +8,7 @@ import {
 	isDisplayDiscountTag,
 	mergeDerivedDiscountTags,
 	pickRepresentativeRoute,
+	applyUserChargedFactorToDisplayDiscounts,
 } from './display-discount';
 
 function profileWithSchedule(
@@ -320,5 +321,50 @@ describe('buildDisplayDiscountsByRouteGroup + tags', () => {
 		assert.equal(isDisplayDiscountTag('Discount:0.3'), true);
 		assert.equal(isDisplayDiscountTag('Discount.free:0.5'), true);
 		assert.equal(isDisplayDiscountTag('Hot'), false);
+	});
+});
+
+describe('applyUserChargedFactorToDisplayDiscounts', () => {
+	const catalog = {
+		default: {
+			timezone: 'Asia/Shanghai',
+			kind: 'flat' as const,
+			schedule_mode: 'multiply' as const,
+			route: { priority: 10, weight: 1 },
+			current: { catalog_factor: 1.6, route_factor: 0.8, composite_factor: 1.28 },
+			windows: [{ catalog_factor: 1.6, route_factor: 0.8, composite_factor: 1.28 }],
+		},
+	};
+
+	it('leaves catalog discounts unchanged when the user factor is missing', () => {
+		assert.equal(applyUserChargedFactorToDisplayDiscounts(catalog, null, 'min'), catalog);
+		assert.equal(applyUserChargedFactorToDisplayDiscounts(catalog, undefined, 'multiply'), catalog);
+	});
+
+	it('multiplies the route factor and keeps the official catalog factor', () => {
+		const out = applyUserChargedFactorToDisplayDiscounts(catalog, 0.5, 'multiply');
+		assert.equal(out.default?.current.catalog_factor, 1.6);
+		assert.equal(out.default?.current.route_factor, 0.4);
+		assert.equal(out.default?.current.composite_factor, 0.64);
+		assert.equal(out.default?.windows[0]?.composite_factor, 0.64);
+	});
+
+	it('takes the smaller charged factor in min mode', () => {
+		const cheaperUser = applyUserChargedFactorToDisplayDiscounts(catalog, 0.5, 'min');
+		assert.equal(cheaperUser.default?.current.catalog_factor, 1.6);
+		assert.equal(cheaperUser.default?.current.route_factor, 0.5);
+		assert.equal(cheaperUser.default?.current.composite_factor, 0.8);
+
+		const cheaperRoute = applyUserChargedFactorToDisplayDiscounts(catalog, 0.9, 'min');
+		assert.equal(cheaperRoute.default?.current.route_factor, 0.8);
+		assert.equal(cheaperRoute.default?.current.composite_factor, 1.28);
+	});
+
+	it('rewrites derived discount tags from the combined composite', () => {
+		const out = applyUserChargedFactorToDisplayDiscounts(catalog, 0.5, 'multiply');
+		assert.deepEqual(mergeDerivedDiscountTags(['pro', 'Discount.default:1.28'], out), [
+			'pro',
+			'Discount.default:0.64',
+		]);
 	});
 });

@@ -51,6 +51,12 @@ import {
 	ROUTE_STRATEGY_NAMES,
 } from '@octafuse/core/db/model-route-policy';
 import { ROUTE_STRATEGY_KEY } from '@octafuse/core/lib/route-strategy-system-config';
+import {
+	DEFAULT_USER_CHARGED_COST_FACTOR_MODE,
+	USER_CHARGED_COST_FACTOR_MODE_KEY,
+	USER_CHARGED_COST_FACTOR_MODES,
+	isUserChargedCostFactorMode,
+} from '@octafuse/core/lib/user-charged-cost-factor-mode';
 import { badRequest } from './errors';
 import { clampAnalyticsRange, rangeToDates, resolveStatsDateRange } from './shared';
 import { getBusinessDayWindow, getBusinessTimezone } from '@octafuse/core/lib/business-timezone';
@@ -239,6 +245,15 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		if (!isRouteStrategyName(normalized)) {
 			throw badRequest(
 				`ROUTE_STRATEGY must be one of: ${ROUTE_STRATEGY_NAMES.join(', ')} (default ${DEFAULT_ROUTE_STRATEGY})`
+			);
+		}
+		value = normalized;
+	}
+	if (key === USER_CHARGED_COST_FACTOR_MODE_KEY) {
+		const normalized = value.trim().toLowerCase();
+		if (!isUserChargedCostFactorMode(normalized)) {
+			throw badRequest(
+				`USER_CHARGED_COST_FACTOR_MODE must be one of: ${USER_CHARGED_COST_FACTOR_MODES.join(', ')} (default ${DEFAULT_USER_CHARGED_COST_FACTOR_MODE})`
 			);
 		}
 		value = normalized;

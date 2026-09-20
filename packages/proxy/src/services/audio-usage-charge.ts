@@ -35,6 +35,7 @@ import {
 	scaleBillingPrices,
 	toScheduleAudit,
 	applyUserChargedCostToBreakdown,
+	getUserChargedCostFactorMode,
 	snapshotToJson,
 	snapshotWithOverrides,
 	splitChargeFromBudgetSnapshot,
@@ -44,6 +45,7 @@ import {
 	type AudioPerCharacterPricingConfig,
 	type ParsedPricingProfile,
 	type PriceResolutionAuditSide,
+	type UserChargedCostFactorMode,
 } from '@octafuse/core';
 import { canAffordToolCost } from './tool-usage-charge';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
@@ -67,6 +69,8 @@ export type AudioBillingParams = {
 	catalogModelId?: string;
 	/** `users.charged_cost_factors` JSON */
 	userChargedCostFactorsJson?: string | null;
+	/** 全局合成模式；入口函数会从 system_config 填入 */
+	userChargedCostFactorMode?: UserChargedCostFactorMode;
 };
 
 export type AudioCostBreakdown = {
@@ -97,8 +101,22 @@ function withUserAudioChargedFactor(
 	return applyUserChargedCostToBreakdown(
 		breakdown,
 		billing.userChargedCostFactorsJson,
-		billing.catalogModelId ?? ''
+		billing.catalogModelId ?? '',
+		{ mode: billing.userChargedCostFactorMode }
 	);
+}
+
+async function resolveAudioBillingParams(
+	repos: GatewayRepositories,
+	billing: AudioBillingParams
+): Promise<AudioBillingParams> {
+	if (billing.userChargedCostFactorMode) {
+		return billing;
+	}
+	return {
+		...billing,
+		userChargedCostFactorMode: await getUserChargedCostFactorMode(repos),
+	};
 }
 
 function pricingAtUtcFromParams(requestStartedAtMs?: number): Date {
@@ -482,10 +500,10 @@ export async function estimateAudioSpeechCosts(
 		routePriceOverrideJson?: string | null;
 	}
 ): Promise<AudioCostBreakdown> {
-	const params: AudioBillingParams = {
+	const params = await resolveAudioBillingParams(repos, {
 		...billing,
 		durationSeconds: 0,
-	};
+	});
 	return resolveAudioCostsForProfile(
 		params,
 		parsePricingProfile(billing.modelPricingProfileJson ?? null),
@@ -512,12 +530,12 @@ export async function estimateAudioSpeechBudgetPrecheck(
 	},
 	routePriceOverrides: Array<string | null | undefined>
 ): Promise<AudioCostBreakdown> {
-	const params: AudioBillingParams = {
+	const params = await resolveAudioBillingParams(repos, {
 		...billing,
 		durationSeconds: 0,
 		durationSource: 'precheck',
 		characters: billing.inputCharacters,
-	};
+	});
 	const profile = parsePricingProfile(billing.modelPricingProfileJson ?? null);
 	let best: AudioCostBreakdown | null = null;
 	for (const override of routePriceOverrides.length > 0 ? routePriceOverrides : [null]) {
@@ -561,11 +579,11 @@ export async function estimateAudioBudgetPrecheck(
 		clientSeconds: billing.clientDurationSeconds,
 	});
 	const durationSeconds = resolved.seconds;
-	const params: AudioBillingParams = {
+	const params = await resolveAudioBillingParams(repos, {
 		...billing,
 		durationSeconds,
 		durationSource: resolved.source === 'estimated' ? 'precheck' : resolved.source,
-	};
+	});
 	const profile = parsePricingProfile(billing.modelPricingProfileJson ?? null);
 	let maxCharged = 0;
 	let best: AudioCostBreakdown | null = null;
@@ -646,19 +664,20 @@ export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<
 	requestLogId: string;
 	chargedCost: number;
 }> {
-	const profile = parsePricingProfile(params.billing.modelPricingProfileJson ?? null);
+	const billing = await resolveAudioBillingParams(params.repos, params.billing);
+	const profile = parsePricingProfile(billing.modelPricingProfileJson ?? null);
 	const factors = await resolveRouteFactors(
 		params.repos,
-		params.billing.routePriceOverrideJson,
-		params.billing.requestStartedAtMs,
-		params.billing.modelPricingProfileJson
+		billing.routePriceOverrideJson,
+		billing.requestStartedAtMs,
+		billing.modelPricingProfileJson
 	);
 
 	let costs: AudioCostBreakdown;
 	if (params.status === 'error') {
 		const mode = resolveAudioBillingMode(profile);
 		costs = zeroAudioCostBreakdown(
-			params.billing,
+			billing,
 			factors,
 			mode === 'token'
 				? 'audio_tokens'
@@ -669,7 +688,7 @@ export async function recordAudioUsage(params: RecordAudioUsageParams): Promise<
 		);
 	} else {
 		// 最终扣费：token 模式只用上游 usage，禁止预检估算
-		costs = resolveAudioCostsForProfile(params.billing, profile, factors, {
+		costs = resolveAudioCostsForProfile(billing, profile, factors, {
 			allowTokenPrecheckEstimate: false,
 		});
 	}

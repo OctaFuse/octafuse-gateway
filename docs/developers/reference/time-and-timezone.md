@@ -131,7 +131,7 @@ Admin 前端格式化函数位于 `packages/admin/lib/datetime.ts`：
 计费是两层叠乘，不是二选一：
 
 1. **官方当刻价**：`models.pricing_profile` 选档后再乘模型 `schedule` 命中倍率（未命中为 1）→ 写入 `standard_cost`。
-2. **自家溢价 / 让利**：再乘路由 `charged_factor` / `metered_factor` 与路由 `schedule`（以及可选的用户计费倍率）→ `charged_cost` / `metered_cost`。
+2. **自家溢价 / 让利**：再乘路由 `charged_factor` / `metered_factor` 与路由 `schedule` 得到路由侧金额；若用户配置了该模型的计费倍率，再按 `USER_CHARGED_COST_FACTOR_MODE` 合成最终 `charged_cost`（`metered_cost` 不受用户倍率影响）。
 
 因此 `charged / standard` 只反映相对官方当刻价的折扣或溢价。模型未配置官方时段时，路由可自由配窗口；一旦模型配置了官方时段，路由两侧窗口集合必须与官方窗口完全一致。保存模型时若官方窗口集合变化，已配置时段的路由（含未激活）会被重置为同一套窗口（窗口倍率恢复为 1）；尚未配置时段的路由保持为空。
 

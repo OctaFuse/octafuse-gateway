@@ -1486,7 +1486,7 @@
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
 			"rateLimitRpm": "Shared across all keys of this user per rolling 60-second window. Leave empty for unlimited. 0 rejects all metered calls. GET /v1/me is not counted. Per-key caps are set on each key.",
 			"rateLimitRpmInvalid": "Rate limit must be a non-negative integer, or empty for unlimited.",
-			"chargedCostFactors": "Pick catalog models, then set a factor. Applied after the route Charged cost. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools."
+			"chargedCostFactors": "Pick catalog models, then set a factor. How this combines with the route Charged factor is set in Gateway Config. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools."
 		},
 		"chargedCostFactors": {
 			"none": "No charged cost factors.",
@@ -1966,6 +1966,7 @@
 		"subtitle": "Key-value settings shared by the {product} proxy and this admin app (no duplicate env vars)",
 		"saveTimezone": "Save timezone",
 		"saveCurrency": "Save currency",
+		"saveUserChargedCostFactorMode": "Save charged factor mode",
 		"saveErrorWebhooks": "Save error webhooks",
 		"businessTimezone": {
 			"title": "Business timezone",
@@ -1979,6 +1980,14 @@
 			"title": "Billing currency",
 			"description": "Only USD or CNY. Applies to pricing_profile unit prices and api_keys budget fields (per-million-token pricing). Exposed on GET /v1/me as billing_currency.",
 			"currency": "Currency"
+		},
+		"userChargedCostFactorMode": {
+			"title": "User charged cost factor mode",
+			"description": "How a user's per-model charged cost factors combine with the route Charged factor (system_config.USER_CHARGED_COST_FACTOR_MODE). Proxy caches this for about 30s.",
+			"multiplyTitle": "Multiply",
+			"multiplyHelp": "Final charged cost = official catalog price × route Charged factor × user factor. This is the default.",
+			"minTitle": "Take the smaller factor",
+			"minHelp": "Final charged cost = official catalog price × min(route Charged factor, user factor). Discounts do not stack."
 		},
 		"errorWebhooks": {
 			"title": "Proxy error webhooks",

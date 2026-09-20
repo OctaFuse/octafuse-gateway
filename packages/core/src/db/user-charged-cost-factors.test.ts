@@ -8,6 +8,7 @@ import {
 	lookupUserChargedCostFactor,
 	normalizeUserChargedCostFactorsInput,
 	parseUserChargedCostFactors,
+	resolveCombinedChargedFactor,
 } from './user-charged-cost-factors';
 
 describe('normalizeUserChargedCostFactorsInput', () => {
@@ -54,15 +55,45 @@ describe('lookupUserChargedCostFactor', () => {
 	});
 });
 
+describe('resolveCombinedChargedFactor', () => {
+	it('returns null when the user factor is missing', () => {
+		assert.equal(resolveCombinedChargedFactor(0.8, null, 'multiply'), null);
+		assert.equal(resolveCombinedChargedFactor(0.8, null, 'min'), null);
+	});
+
+	it('multiplies or takes min when both factors exist', () => {
+		assert.equal(resolveCombinedChargedFactor(0.8, 0.5, 'multiply'), 0.4);
+		assert.equal(resolveCombinedChargedFactor(0.8, 0.5, 'min'), 0.5);
+		assert.equal(resolveCombinedChargedFactor(0.3, 0.8, 'min'), 0.3);
+	});
+});
+
 describe('applyUserChargedCostFactor', () => {
 	it('leaves route charged unchanged when factor is missing', () => {
 		assert.equal(applyUserChargedCostFactor(0.0045, null), 0.0045);
+		assert.equal(applyUserChargedCostFactor(0.0045, null, { mode: 'min', routeEffectiveFactor: 0.8 }), 0.0045);
 	});
 
 	it('multiplies after route charged and rounds twice', () => {
 		const route = roundGatewayMoney(0.1 / 3);
 		assert.equal(applyUserChargedCostFactor(route, 0.5), roundGatewayMoney(route * 0.5));
 		assert.equal(applyUserChargedCostFactor(0.0045, 0), 0);
+	});
+
+	it('min mode keeps route charged when the route factor is smaller or equal', () => {
+		assert.equal(applyUserChargedCostFactor(0.8, 0.8, { mode: 'min', routeEffectiveFactor: 0.8 }), 0.8);
+		assert.equal(applyUserChargedCostFactor(0.3, 0.8, { mode: 'min', routeEffectiveFactor: 0.3 }), 0.3);
+	});
+
+	it('min mode scales from route charged when the user factor is smaller', () => {
+		assert.equal(
+			applyUserChargedCostFactor(0.8, 0.5, { mode: 'min', routeEffectiveFactor: 0.8 }),
+			roundGatewayMoney(0.8 * (0.5 / 0.8))
+		);
+	});
+
+	it('min mode charges 0 when the route factor is 0', () => {
+		assert.equal(applyUserChargedCostFactor(0, 0.5, { mode: 'min', routeEffectiveFactor: 0 }), 0);
 	});
 });
 
@@ -73,7 +104,7 @@ describe('applyUserChargedCostToBreakdown', () => {
 			snapshot: { user_charge: { source: 'model_x_factor', effective_factor: 1.2 } },
 		});
 		const out = applyUserChargedCostToBreakdown(
-			{ chargedCost: 0.01, pricingAuditJson: audit },
+			{ chargedCost: 0.01, chargedFactor: 1.2, pricingAuditJson: audit },
 			'{"gpt-4o":0.5}',
 			'gpt-4o',
 			{ warnInvalidJson: false }
@@ -81,10 +112,35 @@ describe('applyUserChargedCostToBreakdown', () => {
 		assert.equal(out.chargedCost, 0.005);
 		const parsed = JSON.parse(out.pricingAuditJson) as {
 			user_charged_factor: number;
-			snapshot: { user_charge: { user_charged_factor: number } };
+			user_charged_factor_mode: string;
+			combined_charged_factor: number;
+			snapshot: { user_charge: { user_charged_factor: number; combined_charged_factor: number } };
 		};
 		assert.equal(parsed.user_charged_factor, 0.5);
+		assert.equal(parsed.user_charged_factor_mode, 'multiply');
+		assert.equal(parsed.combined_charged_factor, 0.6);
 		assert.equal(parsed.snapshot.user_charge.user_charged_factor, 0.5);
+		assert.equal(parsed.snapshot.user_charge.combined_charged_factor, 0.6);
+	});
+
+	it('min mode writes combined_charged_factor as the smaller factor', () => {
+		const audit = JSON.stringify({
+			v: 5,
+			snapshot: { user_charge: { source: 'model_x_factor', effective_factor: 2 } },
+		});
+		const out = applyUserChargedCostToBreakdown(
+			{ chargedCost: 0.02, chargedFactor: 2, pricingAuditJson: audit },
+			'{"gpt-4o":0.5}',
+			'gpt-4o',
+			{ warnInvalidJson: false, mode: 'min' }
+		);
+		assert.equal(out.chargedCost, 0.005);
+		const parsed = JSON.parse(out.pricingAuditJson) as {
+			user_charged_factor_mode: string;
+			combined_charged_factor: number;
+		};
+		assert.equal(parsed.user_charged_factor_mode, 'min');
+		assert.equal(parsed.combined_charged_factor, 0.5);
 	});
 
 	it('attaches null factor when model is not listed', () => {
@@ -96,6 +152,7 @@ describe('applyUserChargedCostToBreakdown', () => {
 		);
 		assert.equal(out.chargedCost, 0.01);
 		assert.equal(JSON.parse(out.pricingAuditJson).user_charged_factor, null);
+		assert.equal(JSON.parse(out.pricingAuditJson).combined_charged_factor, null);
 	});
 });
 

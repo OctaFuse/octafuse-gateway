@@ -1,5 +1,5 @@
 /**
- * 管理路由：`/admin/users` — 用户 CRUD、子资源 keys / logs / audit-logs。
+ * 管理路由：`/admin/users` — 用户 CRUD、子资源 keys / logs / audit-logs / display-discounts。
  */
 import { Hono } from 'hono';
 import { parseUserListSortQuery } from '@octafuse/core/db/users-list-sort';
@@ -21,6 +21,10 @@ import {
 	previewAdminBudgetTransition,
 	applyAdminBudgetTransition,
 } from '@/lib/services/admin/users-service';
+import {
+	getAdminUserDisplayDiscounts,
+	parseDisplayDiscountRouteGroupsQuery,
+} from '@/lib/services/admin/user-display-discounts';
 import type { AdminUserCreateInput, AdminUserUpdateInput, AdminBudgetTransitionInput } from '@/lib/services/admin/types';
 import type { AdminUserKeyPatchInput } from '@/lib/services/admin/users-service';
 import { handleAdminRouteError, jsonErr } from './error-response';
@@ -120,6 +124,18 @@ adminUsersRoutes.get('/:id/audit-logs', async (c) => {
 		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to get user audit logs');
+	}
+});
+
+adminUsersRoutes.get('/:id/display-discounts', async (c) => {
+	try {
+		const repos = c.get('repositories');
+		const data = await getAdminUserDisplayDiscounts(repos, c.req.param('id'), {
+			routeGroups: parseDisplayDiscountRouteGroupsQuery(c.req.query('route_groups')),
+		});
+		return c.json({ success: true as const, data });
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to get user display discounts');
 	}
 });
 

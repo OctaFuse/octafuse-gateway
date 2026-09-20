@@ -11,6 +11,7 @@ import {
 	resolveSupplierBillingPrices,
 	scaleBillingPrices,
 	toScheduleAudit,
+	applyUserChargedCostFactor,
 } from '@octafuse/core';
 import { computeMeteredCost } from './usage-tracker';
 
@@ -136,5 +137,17 @@ describe('usage-tracker catalog schedule stacking', () => {
 		assert.equal(saturday.catalogSch.factor, 1);
 		assert.equal(saturday.standardCost, 4);
 		assert.equal(saturday.chargedCost, 4);
+	});
+
+	it('min mode uses the smaller of route effective factor and user factor', () => {
+		const hit = settleAt('2026-07-10T15:30:00.000Z');
+		assert.equal(hit.chargedCost / hit.standardCost, 0.8);
+		const charged = applyUserChargedCostFactor(hit.chargedCost, 0.5, {
+			mode: 'min',
+			routeEffectiveFactor: 0.8,
+		});
+		assert.equal(charged, hit.chargedCost * (0.5 / 0.8));
+		const stacked = applyUserChargedCostFactor(hit.chargedCost, 0.5, { mode: 'multiply' });
+		assert.equal(stacked, hit.chargedCost * 0.5);
 	});
 });

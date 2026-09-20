@@ -45,7 +45,7 @@ export type RecordUsageParams = {
 	usage: UsageFromStream;
 	model_pricing_profile?: string | null;
 	route_price_override_json?: string | null;
-	/** `users.charged_cost_factors` JSON；按 `model_id` 精确匹配后再乘路由 charged */
+	/** `users.charged_cost_factors` JSON；按 `model_id` 精确匹配后与路由 charged 按全局 mode 合成 */
 	user_charged_cost_factors_json?: string | null;
 	/** @deprecated Ignored; nested metered tiers are not used for billing. */
 	route_metered_profile_json?: string | null;

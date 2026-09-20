@@ -1,0 +1,27 @@
+---
+description: 向 Gateway 静态目录引入新模型时的调研、刊例价、导入与协议适配器建议
+globs:
+  packages/admin/lib/model-presets/**/*.json
+  packages/admin/lib/services/admin/import-catalog-billing.test.ts
+  docs/users/features.md
+  docs/users/configuration.md
+alwaysApply: false
+---
+
+# 引入新模型（Gateway）
+
+## 1. 只信官网
+
+先查厂商文档：上下文、最大输出、模态、刊例价、现价折扣、思考字段/枚举/默认值、能否关思考、官方协议入口、特殊参数。同族模型不能直接套（例如 FlashX 文本参数可同 GLM-5.3，模态不同）。数字不得编造。
+
+## 2. 静态目录写刊例价
+
+改 `packages/admin/lib/model-presets/`（LLM / 生图 / 音频分开），补 `import-catalog-billing` 测试。USD 与 CNY 分源（如 Z.AI vs BigModel），不要用汇率换算。折扣只记现状，preset 里写**刊例价**，不写限时活动价。
+
+## 3. 导入模板不是上线
+
+preset 只供管理后台导入。还要：导入模型、配真实供应商 Key、用协议适配器挂路由。导入不会自动打标签。octafuse-website 模型目录跟发版同步，不必每次加模型都改网站。
+
+## 4. 给出路由建议
+
+写清客户端入口（Chat / Responses / Anthropic Messages / Gemini）与实际上游协议；特殊参数放路由默认值还是客户端 extras。Agent 始终带 tools，若某协议+tools+思考会 400（如部分 GPT-5.4+ Chat），建议必须写明。

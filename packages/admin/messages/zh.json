@@ -1486,7 +1486,7 @@
 			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
 			"rateLimitRpm": "该用户所有 Key 合计的每 60 秒滚动窗口请求数。留空表示不限；0 拒绝所有计次请求。GET /v1/me 不计入。单把 Key 的额外上限在下方密钥表中设置。",
 			"rateLimitRpmInvalid": "限流必须是非负整数，或留空表示不限。",
-			"chargedCostFactors": "从目录中选择模型后设置倍率。在路由 Charged cost 算完后再乘。未配置的模型金额不变；0 表示该模型不扣费。仅 LLM / Images / Audio，不含 Agent Tools。"
+			"chargedCostFactors": "从目录中选择模型后设置倍率。与路由 Charged 倍率的合成方式在 Gateway Config 中配置。未配置的模型金额不变；0 表示该模型不扣费。仅 LLM / Images / Audio，不含 Agent Tools。"
 		},
 		"chargedCostFactors": {
 			"none": "未设置 Charged cost factors。",
@@ -1966,6 +1966,7 @@
 		"subtitle": "{product} Proxy 与本管理应用共享的键值设置（无需重复环境变量）",
 		"saveTimezone": "保存时区",
 		"saveCurrency": "保存货币",
+		"saveUserChargedCostFactorMode": "保存用户计费倍率模式",
 		"saveErrorWebhooks": "保存错误 Webhook",
 		"businessTimezone": {
 			"title": "业务时区",
@@ -1979,6 +1980,14 @@
 			"title": "计费货币",
 			"description": "仅支持 USD 或 CNY。适用于 pricing_profile 单价及 api_keys 额度字段（每百万 Token 定价）。在 GET /v1/me 中暴露为 billing_currency。",
 			"currency": "货币"
+		},
+		"userChargedCostFactorMode": {
+			"title": "用户计费倍率模式",
+			"description": "用户按模型设置的计费倍率如何与路由 Charged 倍率合成（system_config.USER_CHARGED_COST_FACTOR_MODE）。Proxy 约缓存 30 秒。",
+			"multiplyTitle": "叠乘",
+			"multiplyHelp": "最终用户费用 = 官方当刻目录价 × 路由 Charged 倍率 × 用户倍率。这是默认行为。",
+			"minTitle": "取较小倍率",
+			"minHelp": "最终用户费用 = 官方当刻目录价 × min(路由 Charged 倍率, 用户倍率)。折扣不叠乘。"
 		},
 		"errorWebhooks": {
 			"title": "Proxy 错误 Webhook",

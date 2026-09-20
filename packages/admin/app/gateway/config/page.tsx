@@ -2,7 +2,7 @@
 
 /**
  * `system_config`：`BUSINESS_TIMEZONE`、`BILLING_CURRENCY`、
- * `ROUTE_STRATEGY`、错误 Webhook 均为专用卡片；敏感字段支持 Show/Hide。
+ * `USER_CHARGED_COST_FACTOR_MODE`、`ROUTE_STRATEGY`、错误 Webhook 均为专用卡片；敏感字段支持 Show/Hide。
  * 产品工具配置见 `/gateway/tools`。
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -26,6 +26,13 @@ import {
 } from '@octafuse/core/db/model-route-policy';
 import { ROUTE_STRATEGY_KEY } from '@octafuse/core/lib/route-strategy-system-config';
 import {
+	DEFAULT_USER_CHARGED_COST_FACTOR_MODE,
+	USER_CHARGED_COST_FACTOR_MODE_KEY,
+	USER_CHARGED_COST_FACTOR_MODES,
+	isUserChargedCostFactorMode,
+	type UserChargedCostFactorMode,
+} from '@octafuse/core/lib/user-charged-cost-factor-mode';
+import {
 	ALERT_WEBHOOK_FEISHU_URL_KEY,
 	ALERT_WEBHOOK_WECOM_URL_KEY,
 } from '@octafuse/core/lib/alert-webhook-system-config';
@@ -46,6 +53,15 @@ function syncRouteStrategyUi(rows: SystemConfigRow[], setSelect: (v: string) => 
 	const row = rows.find((r) => r.key === ROUTE_STRATEGY_KEY);
 	const v = (row?.value ?? '').trim().toLowerCase();
 	setSelect(isRouteStrategyName(v) ? v : DEFAULT_ROUTE_STRATEGY);
+}
+
+function syncUserChargedCostFactorModeUi(
+	rows: SystemConfigRow[],
+	setSelect: (v: UserChargedCostFactorMode) => void
+) {
+	const row = rows.find((r) => r.key === USER_CHARGED_COST_FACTOR_MODE_KEY);
+	const v = (row?.value ?? '').trim().toLowerCase();
+	setSelect(isUserChargedCostFactorMode(v) ? v : DEFAULT_USER_CHARGED_COST_FACTOR_MODE);
 }
 
 
@@ -166,6 +182,10 @@ export default function GatewayConfigPage() {
   const [bizSaving, setBizSaving] = useState(false);
   const [billSelectValue, setBillSelectValue] = useState('USD');
   const [billSaving, setBillSaving] = useState(false);
+  const [userChargedModeValue, setUserChargedModeValue] = useState<UserChargedCostFactorMode>(
+    DEFAULT_USER_CHARGED_COST_FACTOR_MODE
+  );
+  const [userChargedModeSaving, setUserChargedModeSaving] = useState(false);
   const [routeStrategyValue, setRouteStrategyValue] = useState<string>(DEFAULT_ROUTE_STRATEGY);
   const [routeStrategySaving, setRouteStrategySaving] = useState(false);
   const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -184,6 +204,7 @@ export default function GatewayConfigPage() {
         setConfig(data.data);
         syncBusinessTimezoneUi(data.data, setBizSelectValue, setBizOtherValue);
         syncBillingCurrencyUi(data.data, setBillSelectValue);
+        syncUserChargedCostFactorModeUi(data.data, setUserChargedModeValue);
         syncRouteStrategyUi(data.data, setRouteStrategyValue);
         const wecomRow = data.data.find((r) => r.key === ALERT_WEBHOOK_WECOM_URL_KEY);
         const feishuRow = data.data.find((r) => r.key === ALERT_WEBHOOK_FEISHU_URL_KEY);
@@ -272,6 +293,56 @@ export default function GatewayConfigPage() {
       setSaveError(tCommon('requestFailed'));
     } finally {
       setBillSaving(false);
+    }
+  };
+
+  const handleSaveUserChargedCostFactorMode = async () => {
+    const raw = userChargedModeValue;
+    if (!isUserChargedCostFactorMode(raw)) {
+      clearSaveSuccess();
+      setSaveError(
+        `USER_CHARGED_COST_FACTOR_MODE must be one of: ${USER_CHARGED_COST_FACTOR_MODES.join(', ')}`
+      );
+      return;
+    }
+    setUserChargedModeSaving(true);
+    setSaveError('');
+    try {
+      const response = await fetch('/api/admin/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: USER_CHARGED_COST_FACTOR_MODE_KEY, value: raw }),
+      });
+      const data = await readApiJson(response);
+      if (data.success) {
+        flashSaveSuccess(data.message);
+        setConfig((prev) => {
+          const idx = prev.findIndex((r) => r.key === USER_CHARGED_COST_FACTOR_MODE_KEY);
+          const desc =
+            prev[idx]?.description ??
+            'How users.charged_cost_factors combine with the route charged factor: multiply (default) or min.';
+          const nextRow: SystemConfigRow = {
+            key: USER_CHARGED_COST_FACTOR_MODE_KEY,
+            value: raw,
+            description: desc,
+          };
+          if (idx >= 0) {
+            const copy = [...prev];
+            copy[idx] = nextRow;
+            return copy;
+          }
+          return [...prev, nextRow];
+        });
+        setUserChargedModeValue(raw);
+      } else {
+        clearSaveSuccess();
+        setSaveError(data.message || tCommon('saveFailed'));
+      }
+    } catch {
+      clearSaveSuccess();
+      setSaveError(tCommon('requestFailed'));
+    } finally {
+      setUserChargedModeSaving(false);
     }
   };
 
@@ -544,6 +615,46 @@ export default function GatewayConfigPage() {
             className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
           >
             {billSaving ? tCommon('saving') : t('saveCurrency')}
+          </button>
+        </div>
+      </ConfigCardShell>
+
+      <ConfigCardShell
+        title={t('userChargedCostFactorMode.title')}
+        description={t('userChargedCostFactorMode.description')}
+      >
+        <div className="flex flex-col gap-3">
+          {USER_CHARGED_COST_FACTOR_MODES.map((mode) => (
+            <label
+              key={mode}
+              className="flex cursor-pointer items-start gap-3 rounded-md border border-gray-200 bg-white px-3 py-2.5"
+            >
+              <input
+                type="radio"
+                name="user-charged-cost-factor-mode"
+                value={mode}
+                checked={userChargedModeValue === mode}
+                onChange={() => setUserChargedModeValue(mode)}
+                className="mt-1"
+              />
+              <span>
+                <span className="block text-sm font-medium text-gray-900">
+                  {t(`userChargedCostFactorMode.${mode}Title`)}
+                </span>
+                <span className="mt-0.5 block font-mono text-[10px] text-gray-400">{mode}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-gray-600">
+                  {t(`userChargedCostFactorMode.${mode}Help`)}
+                </span>
+              </span>
+            </label>
+          ))}
+          <button
+            type="button"
+            onClick={() => void handleSaveUserChargedCostFactorMode()}
+            disabled={userChargedModeSaving}
+            className="self-start rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            {userChargedModeSaving ? tCommon('saving') : t('saveUserChargedCostFactorMode')}
           </button>
         </div>
       </ConfigCardShell>

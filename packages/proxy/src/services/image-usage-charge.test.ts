@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 import type { GatewayRepositories } from '@octafuse/core';
-import { parsePricingProfile, resolveImageBillingMode } from '@octafuse/core';
+import {
+	parsePricingProfile,
+	resolveImageBillingMode,
+	resetUserChargedCostFactorModeCacheForTests,
+	USER_CHARGED_COST_FACTOR_MODE_KEY,
+} from '@octafuse/core';
 import {
 	estimateImageBudgetPrecheck,
 	estimateImageCosts,
@@ -51,16 +56,22 @@ const LLM_PROFILE = JSON.stringify({
 	tiers: [{ upto: null, input_price: 2, output_price: 12, cache_read_price: 0.2 }],
 });
 
-function mockRepos(timezone?: string): GatewayRepositories {
+function mockRepos(timezone?: string, extra?: Record<string, string | null>): GatewayRepositories {
 	return {
 		systemConfig: {
-			getConfig: async (key: string) =>
-				key === 'BUSINESS_TIMEZONE' ? timezone ?? null : null,
+			getConfig: async (key: string) => {
+				if (key === 'BUSINESS_TIMEZONE') return timezone ?? null;
+				if (extra && Object.prototype.hasOwnProperty.call(extra, key)) return extra[key] ?? null;
+				return null;
+			},
 		},
 	} as unknown as GatewayRepositories;
 }
 
 describe('estimateImageCosts', () => {
+	beforeEach(() => {
+		resetUserChargedCostFactorModeCacheForTests();
+	});
 	it('token path: actual usage dominates charged cost (not fixed per-image)', async () => {
 		const costs = await estimateImageCosts(
 			mockRepos(),
@@ -268,6 +279,37 @@ describe('estimateImageCosts', () => {
 		assert.equal(discounted.meteredCost, route.meteredCost);
 		const audit = JSON.parse(discounted.pricingAuditJson) as { user_charged_factor: number };
 		assert.equal(audit.user_charged_factor, 0.5);
+	});
+
+	it('min mode takes the smaller of route and user charged factors', async () => {
+		const repos = mockRepos(undefined, { [USER_CHARGED_COST_FACTOR_MODE_KEY]: 'min' });
+		const route = await estimateImageCosts(repos, {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: JSON.stringify({ charged_factor: 2, metered_factor: 1 }),
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+			catalogModelId: 'gpt-image-1',
+		});
+		const discounted = await estimateImageCosts(repos, {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: JSON.stringify({ charged_factor: 2, metered_factor: 1 }),
+			quality: 'auto',
+			size: 'auto',
+			imageCount: 1,
+			catalogModelId: 'gpt-image-1',
+			userChargedCostFactorsJson: JSON.stringify({ 'gpt-image-1': 0.5 }),
+		});
+		assert.ok(Math.abs(discounted.chargedCost - route.chargedCost * (0.5 / 2)) < 1e-9);
+		assert.equal(discounted.meteredCost, route.meteredCost);
+		const audit = JSON.parse(discounted.pricingAuditJson) as {
+			user_charged_factor: number;
+			user_charged_factor_mode: string;
+			combined_charged_factor: number;
+		};
+		assert.equal(audit.user_charged_factor, 0.5);
+		assert.equal(audit.user_charged_factor_mode, 'min');
+		assert.equal(audit.combined_charged_factor, 0.5);
 	});
 
 	it('per_image by_size 2k hits the catalog unit price', async () => {

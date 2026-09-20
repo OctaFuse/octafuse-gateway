@@ -2,13 +2,14 @@
  * 对外模型列表：`GET /v1/models` / `GET /catalog/models` 共用的只读视图。
  */
 import {
-	buildDisplayDiscountsByRouteGroup,
+	buildModelDisplayDiscounts as buildCoreModelDisplayDiscounts,
 	getBusinessTimezone,
 	mergeDerivedDiscountTags,
 	type DisplayDiscountGroup,
 	type GatewayRepositories,
 	type ModelRouteJoinRow,
 	type ModelRow,
+	type UserChargedCostFactorMode,
 } from '@octafuse/core';
 import { parseTags } from '../lib/model-list-parse';
 
@@ -57,12 +58,16 @@ export function buildModelDisplayDiscounts(options: {
 	routes: readonly ModelRouteJoinRow[];
 	timezone: string;
 	allowedRouteGroups?: readonly string[] | null;
+	userChargedFactor?: number | null;
+	userChargedFactorMode?: UserChargedCostFactorMode;
 }): Record<string, DisplayDiscountGroup> {
-	return buildDisplayDiscountsByRouteGroup({
-		routes: options.routes,
+	return buildCoreModelDisplayDiscounts({
 		pricingProfileJson: options.model.pricing_profile,
+		routes: options.routes,
 		timezone: options.timezone,
 		allowedRouteGroups: options.allowedRouteGroups,
+		userChargedFactor: options.userChargedFactor,
+		userChargedFactorMode: options.userChargedFactorMode,
 	});
 }
 
