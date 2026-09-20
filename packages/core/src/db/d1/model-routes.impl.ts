@@ -2,7 +2,10 @@
  * D1：`model_routes`。
  */
 import type { D1DatabaseClient } from '../../storage/database-client';
-import type { ModelRoutesRepository } from '../../storage/gateway-repository-interfaces';
+import type {
+	ListModelRoutesWithJoinsFilters,
+	ModelRoutesRepository,
+} from '../../storage/gateway-repository-interfaces';
 import type { ModelRouteDetailRow, ModelRouteJoinRow } from '../../storage/repository-dtos';
 import { MODEL_ROUTE_PATCH_COLS } from '../patch-allowlists';
 
@@ -28,7 +31,7 @@ const MODEL_ROUTE_LIST_JOIN_SQL = `SELECT mr.id, mr.model_id, mr.provider_id, mr
 export function createD1ModelRoutesRepository(db: D1DatabaseClient): ModelRoutesRepository {
 	const raw = db.raw;
 	return {
-		async listModelRoutesWithJoins(filters: { modelId?: string; providerId?: string }): Promise<ModelRouteJoinRow[]> {
+		async listModelRoutesWithJoins(filters: ListModelRoutesWithJoinsFilters): Promise<ModelRouteJoinRow[]> {
 			const conditions: string[] = [];
 			const bindValues: unknown[] = [];
 			if (filters.modelId) {
@@ -38,6 +41,9 @@ export function createD1ModelRoutesRepository(db: D1DatabaseClient): ModelRoutes
 			if (filters.providerId) {
 				conditions.push('mr.provider_id = ?');
 				bindValues.push(filters.providerId);
+			}
+			if (filters.status === 'active') {
+				conditions.push("mr.status = 'active'");
 			}
 			const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 			const sqlText = `${MODEL_ROUTE_LIST_JOIN_SQL} ${where} ORDER BY mr.model_id, mr.priority DESC`;

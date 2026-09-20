@@ -22,7 +22,7 @@
 
 - [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) (including the contribution license terms).
 - [ ] For user-visible behavior or API changes, I updated docs where appropriate.
-- [ ] I added a changeset for user-visible changes, or documented why it is deferred / unnecessary.
+- [ ] For user-visible changes, I updated `## Unreleased` in root `CHANGELOG.md` (do not add `.changeset/*.md` except when preparing a release).
 - [ ] I ran relevant tests or smoke scripts locally when applicable (e.g. `npm run test:gateway:postgres-smoke`).
 
 ## Related issues

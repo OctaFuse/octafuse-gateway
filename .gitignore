@@ -33,3 +33,6 @@ cloudflare-worker/*.env
 cloudflare-worker/_deploy-common.sh
 cloudflare-worker/deploy-soloent.sh
 cloudflare-worker/deploy-octarouter.sh
+
+# Recover release covers
+docs/assets/release-covers/*

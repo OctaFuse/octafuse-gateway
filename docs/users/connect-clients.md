@@ -28,12 +28,12 @@ curl -sS http://localhost:8787/v1/responses \
   -d '{"model":"your-route-model","input":[{"role":"user","content":"Hello"}],"stream":false}'
 ```
 
-模型列表（需用户 Key；默认仅 LLM，不含纯文生图与音频模型）：
+模型列表（需用户 Key；默认仅 LLM，不含纯文生图、ASR 与 TTS）：
 
 ```bash
 curl -sS http://localhost:8787/v1/models \
   -H "Authorization: Bearer sk-your-api-key"
-# 文生图：?kind=image ；音频：?kind=audio ；全部：?kind=all
+# 文生图：?kind=image ；ASR / TTS：?kind=audio ；全部：?kind=all
 ```
 
 公开 Catalog（**无需**用户 Key，适合门户 discovery）：
@@ -42,7 +42,7 @@ curl -sS http://localhost:8787/v1/models \
 curl -sS http://localhost:8787/catalog/models
 ```
 
-公开目录 `GET /catalog/models` 按路由组返回平台公共折扣和后续时段窗口。用户 Key 调用 `GET /v1/models` 时，同一结构会再叠该用户的模型计费倍率（会计入 RPM）；未配置时与公开目录一致。展示该用户价格时，应使用管理接口 `GET /admin/users/:id/display-discounts` overlay，不要用用户 Key 拉 `/v1/models`。可以直接读取响应中的 `discounts`，无需自行解析模型与路由配置。
+公开目录 `GET /catalog/models` 按路由组返回平台公共折扣和后续时段窗口。用户 Key 调用 `GET /v1/models` 时，同一结构会再叠该用户的模型计费倍率（不再计入 RPM）；未配置时与公开目录一致。展示该用户价格时，门户仍应使用管理接口 `GET /admin/users/:id/display-discounts` overlay，不要用用户 Key 拉 `/v1/models`。可以直接读取响应中的 `discounts`，无需自行解析模型与路由配置。
 
 图片生成（Images；需用户 Key + 已配置 OpenAI 协议 image 路由）：
 

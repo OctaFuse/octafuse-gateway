@@ -67,7 +67,8 @@ export async function getAdminUserDisplayDiscounts(
 
 	const [models, routes, timezone, mode] = await Promise.all([
 		repos.modelRouting.listModelsWithActiveRoutes(),
-		repos.routes.listModelRoutesWithJoins({}),
+		// 前台折扣只看 active 路由；用户倍率在下方按请求叠加。
+		repos.routes.listModelRoutesWithJoins({ status: 'active' }),
 		getBusinessTimezone(repos),
 		getUserChargedCostFactorMode(repos),
 	]);

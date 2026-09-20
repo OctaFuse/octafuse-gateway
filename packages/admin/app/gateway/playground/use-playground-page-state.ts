@@ -448,8 +448,13 @@ export function usePlaygroundPageState() {
 	};
 
 	const scrollStreamToBottom = useCallback(() => {
-		streamEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-		mergedStreamEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+		const scrollOverflowParent = (el: HTMLElement | null) => {
+			const container = el?.parentElement;
+			if (!container) return;
+			container.scrollTop = container.scrollHeight;
+		};
+		scrollOverflowParent(streamEndRef.current);
+		scrollOverflowParent(mergedStreamEndRef.current);
 	}, []);
 
 	const stop = useCallback(() => {

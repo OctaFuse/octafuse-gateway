@@ -91,7 +91,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 模型未配置官方时段时，路由仍可独立增加分时时段。以低谷价为目录价的 DeepSeek 路由，可以将默认倍率设为 `1`，并为周一至周五 `09:00–12:00`、`14:00–18:00` 设置 `2` 倍；工作日其他时间和周末会自动使用低谷价。
 
-不必手工解析这些配置。`GET /catalog/models` 在 `discounts` 中返回各路由组的平台公共折扣（官方时段 × 代表路由 Charged）。用户个性化折扣再用管理接口 `GET /admin/users/:id/display-discounts` overlay 该用户的模型计费倍率（不占用用户 API Key RPM）；Agent 仍用鉴权后的 `GET /v1/models`。未配置用户倍率时，公开目录与个性化 overlay 一致（后者为空）。`Discount.<group>:<factor>` 标签也会由 Gateway 按对应接口的当刻 `discounts` 自动生成，不要手工维护 `Discount*` 标签。
+不必手工解析这些配置。`GET /catalog/models` 在 `discounts` 中返回各路由组的平台公共折扣（官方时段 × 代表路由 Charged）。用户个性化折扣再用管理接口 `GET /admin/users/:id/display-discounts` overlay 该用户的模型计费倍率（不占用用户 API Key RPM）；Agent 仍用鉴权后的 `GET /v1/models`。未配置用户倍率时，公开目录与个性化 overlay 一致（后者为空）。可以直接读取响应中的 `discounts`，无需自行解析模型与路由配置。
 
 保存后在请求日志中核对供应成本、官方当刻目录价和用户计费。模型官方时段变更只影响后续请求，不会重算历史记录。
 

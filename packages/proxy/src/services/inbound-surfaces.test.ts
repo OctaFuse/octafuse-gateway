@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { ModelRouteJoinRow } from '@octafuse/core';
-import { collectLlmInboundSurfaces } from './inbound-surfaces';
+import { collectInboundSurfaces } from './inbound-surfaces';
 
 const route = (overrides: Partial<ModelRouteJoinRow> & { surfaces: string }): ModelRouteJoinRow => ({
 	id: 'r1',
@@ -28,9 +28,9 @@ const route = (overrides: Partial<ModelRouteJoinRow> & { surfaces: string }): Mo
 
 const surfaces = (...rows: Array<Record<string, string>>): string => JSON.stringify(rows);
 
-describe('collectLlmInboundSurfaces', () => {
+describe('collectInboundSurfaces', () => {
 	it('returns chat-only inbound', () => {
-		const catalog = collectLlmInboundSurfaces(
+		const catalog = collectInboundSurfaces(
 			[route({ surfaces: surfaces({ request_protocol: 'openai', request_operation: 'chat', status: 'active' }) })],
 			['default', 'free'],
 		);
@@ -38,7 +38,7 @@ describe('collectLlmInboundSurfaces', () => {
 	});
 
 	it('returns responses-only inbound', () => {
-		const catalog = collectLlmInboundSurfaces(
+		const catalog = collectInboundSurfaces(
 			[route({
 				surfaces: surfaces({ request_protocol: 'openai', request_operation: 'responses', status: 'active' }),
 			})],
@@ -48,7 +48,7 @@ describe('collectLlmInboundSurfaces', () => {
 	});
 
 	it('lists responses before chat when both exist', () => {
-		const catalog = collectLlmInboundSurfaces(
+		const catalog = collectInboundSurfaces(
 			[route({
 				surfaces: surfaces(
 					{ request_protocol: 'openai', request_operation: 'chat', status: 'active' },
@@ -64,7 +64,7 @@ describe('collectLlmInboundSurfaces', () => {
 	});
 
 	it('drops wildcard when the same protocol already has an exact operation', () => {
-		const catalog = collectLlmInboundSurfaces(
+		const catalog = collectInboundSurfaces(
 			[route({
 				surfaces: surfaces(
 					{ request_protocol: 'openai', request_operation: '*', status: 'active' },
@@ -77,7 +77,7 @@ describe('collectLlmInboundSurfaces', () => {
 	});
 
 	it('expands a lone openai wildcard to chat', () => {
-		const catalog = collectLlmInboundSurfaces(
+		const catalog = collectInboundSurfaces(
 			[route({ surfaces: surfaces({ request_protocol: 'openai', request_operation: '*', status: 'active' }) })],
 			['default'],
 		);
@@ -85,7 +85,7 @@ describe('collectLlmInboundSurfaces', () => {
 	});
 
 	it('maps Gemini generate-content family and legacy wire actions', () => {
-		const catalog = collectLlmInboundSurfaces(
+		const catalog = collectInboundSurfaces(
 			[route({
 				surfaces: surfaces({
 					request_protocol: 'gemini',
@@ -98,12 +98,48 @@ describe('collectLlmInboundSurfaces', () => {
 		assert.deepEqual(catalog, [{ protocol: 'gemini', operation: 'models.generate' }]);
 	});
 
-	it('ignores images and audio operations', () => {
-		const catalog = collectLlmInboundSurfaces(
+	it('lists image and audio operations after LLM text', () => {
+		const catalog = collectInboundSurfaces(
+			[route({
+				surfaces: surfaces(
+					{ request_protocol: 'openai', request_operation: 'chat', status: 'active' },
+					{ request_protocol: 'openai', request_operation: 'images.generations', status: 'active' },
+					{ request_protocol: 'openai', request_operation: 'audio.transcriptions', status: 'active' },
+					{ request_protocol: 'openai', request_operation: 'audio.speech', status: 'active' },
+				),
+			})],
+			['default'],
+		);
+		assert.deepEqual(catalog, [
+			{ protocol: 'openai', operation: 'chat' },
+			{ protocol: 'openai', operation: 'images.generations' },
+			{ protocol: 'openai', operation: 'audio.transcriptions' },
+			{ protocol: 'openai', operation: 'audio.speech' },
+		]);
+	});
+
+	it('lists image and audio operations without LLM text', () => {
+		const catalog = collectInboundSurfaces(
 			[route({
 				surfaces: surfaces(
 					{ request_protocol: 'openai', request_operation: 'images.generations', status: 'active' },
-					{ request_protocol: 'openai', request_operation: 'audio.transcriptions', status: 'active' },
+					{ request_protocol: 'openai', request_operation: 'audio.speech', status: 'active' },
+				),
+			})],
+			['default'],
+		);
+		assert.deepEqual(catalog, [
+			{ protocol: 'openai', operation: 'images.generations' },
+			{ protocol: 'openai', operation: 'audio.speech' },
+		]);
+	});
+
+	it('does not list images.edits or dashscope-only operations', () => {
+		const catalog = collectInboundSurfaces(
+			[route({
+				surfaces: surfaces(
+					{ request_protocol: 'openai', request_operation: 'images.edits', status: 'active' },
+					{ request_protocol: 'dashscope', request_operation: 'audio.transcriptions.multimodal', status: 'active' },
 				),
 			})],
 			['default'],
@@ -111,8 +147,21 @@ describe('collectLlmInboundSurfaces', () => {
 		assert.deepEqual(catalog, []);
 	});
 
+	it('does not expand wildcard to chat when the protocol already has image or audio', () => {
+		const catalog = collectInboundSurfaces(
+			[route({
+				surfaces: surfaces(
+					{ request_protocol: 'openai', request_operation: '*', status: 'active' },
+					{ request_protocol: 'openai', request_operation: 'images.generations', status: 'active' },
+				),
+			})],
+			['default'],
+		);
+		assert.deepEqual(catalog, [{ protocol: 'openai', operation: 'images.generations' }]);
+	});
+
 	it('skips disabled surfaces and routes outside the allowlist', () => {
-		const catalog = collectLlmInboundSurfaces(
+		const catalog = collectInboundSurfaces(
 			[
 				route({
 					surfaces: surfaces({ request_protocol: 'openai', request_operation: 'chat', status: 'disabled' }),
@@ -129,7 +178,7 @@ describe('collectLlmInboundSurfaces', () => {
 	});
 
 	it('returns empty inbound when there are no surfaces', () => {
-		const catalog = collectLlmInboundSurfaces(
+		const catalog = collectInboundSurfaces(
 			[route({ surfaces: '[]' }), route({ id: 'r2', surfaces: 'not-json' })],
 			['default'],
 		);

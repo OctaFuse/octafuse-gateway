@@ -2,6 +2,11 @@
  * Shared parsers for `GET /v1/models` and `GET /catalog/models`.
  */
 
+/** Public list vendor: empty / whitespace falls back to `other` (Catalog and `/v1/models`). */
+export function normalizePublicModelVendor(vendor: string | null | undefined): string {
+	return vendor?.trim() ? vendor : 'other';
+}
+
 /** D1 / service layer JSON string column → tag id list; parse failure returns []. */
 export function parseTags(tagsJson: string | null): string[] {
 	if (tagsJson == null || tagsJson === '') return [];
@@ -81,8 +86,8 @@ export type ModelsKindFilter = 'llm' | 'image' | 'audio' | 'all';
 
 /**
  * Parse `kind` for `GET /v1/models`.
- * Empty / missing / unknown → `llm`（默认排除文生图 / ASR，兼容 chat/agent 拉列表）。
- * `image` → 仅文生图；`audio` → 仅转写；`all` → 不按 kind 过滤。
+ * Empty / missing / unknown → `llm`（默认排除文生图 / ASR / TTS，兼容 chat/agent 拉列表）。
+ * `image` → 仅文生图；`audio` → ASR + TTS（与 Admin Kind 对齐）；`all` → 不按 kind 过滤。
  */
 export function parseModelsKindQuery(raw: string | undefined): ModelsKindFilter {
 	if (raw == null || raw.trim() === '') {

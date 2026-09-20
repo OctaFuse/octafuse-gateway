@@ -48,7 +48,7 @@
 |------|------|------|
 | `/` | GET | 服务名与版本 |
 | `/health` | GET | 健康检查 |
-| `/catalog/models` | GET | 运行时模型目录（协议 / route group；**无需** API Key） |
+| `/catalog/models` | GET | 运行时模型目录（协议 / route group；**无需** API Key；不过滤 kind） |
 
 ### [管理接口](./admin.md)（Admin：`/api/admin/*`）
 
@@ -73,7 +73,7 @@
 | `/v1/tools/pricing` | GET | Agent Tools：只读定价（不含密钥与 Active 引擎名） |
 | `/v1/messages` | POST | Anthropic Messages |
 | `/v1beta/models/:modelAction` | POST | Gemini `generateContent` / `streamGenerateContent` |
-| `/v1/models` | GET | 模型列表（需用户 Key；OpenAI 兼容形态；默认仅 LLM，可用 `kind=image` / `kind=audio` / `kind=all`） |
+| `/v1/models` | GET | 模型列表（需用户 Key；OpenAI 兼容形态；默认仅 LLM，排除文生图 / ASR / TTS；`kind=image` 文生图，`kind=audio` 为 ASR + TTS，`kind=all` 不过滤） |
 | `/catalog/models` | GET | 公开模型目录 discovery（无需 Key；含 `protocols_by_group`，见 [详细说明](./user.md#公开模型目录catalog-discovery)） |
 | `/v1/me` | GET | 预算与元数据 |
 

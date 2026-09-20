@@ -62,7 +62,7 @@ curl http://localhost:8787/health
 
 ## 模型目录（Catalog Discovery）
 
-Proxy 提供的 **运行时** 模型能力发现接口：仅含至少一条 **active** 路由的模型，并按 `route_group` 聚合支持的 **`upstream_protocol`**。无需 API Key，适合门户、文档站等公开展示。
+Proxy 提供的 **运行时** 模型能力发现接口：仅含至少一条 **active** 路由的模型，并按 `route_group` 聚合支持的 **`upstream_protocol`**。无需 API Key，适合门户、文档站等公开展示。不过滤 `kind`（含 LLM、文生图、ASR、TTS）；条目含平台公共 `discounts`。
 
 ```
 GET /catalog/models

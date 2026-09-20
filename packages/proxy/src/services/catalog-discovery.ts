@@ -13,12 +13,13 @@ import {
 	type ParsedPricingProfile,
 	type UpstreamProtocol,
 } from '@octafuse/core';
-import { filterRouteGroupsByAllowlist, parseMetadata } from '../lib/model-list-parse';
 import {
-	buildModelDisplayDiscounts,
-	loadPublicModelListContext,
-	tagsWithDerivedDiscounts,
-} from './public-models';
+	filterRouteGroupsByAllowlist,
+	normalizePublicModelVendor,
+	parseMetadata,
+	parseTags,
+} from '../lib/model-list-parse';
+import { buildModelDisplayDiscounts, loadPublicModelListContext } from './public-models';
 
 export type CatalogDiscoveryModel = {
 	id: string;
@@ -27,6 +28,7 @@ export type CatalogDiscoveryModel = {
 	context_window: number | null;
 	max_tokens: number | null;
 	pricing_profile: ParsedPricingProfile | null;
+	/** 运营维护的展示标签，不含派生 Discount.* */
 	tags: string[];
 	route_groups: string[];
 	protocols: UpstreamProtocol[];
@@ -126,11 +128,11 @@ export async function listCatalogDiscoveryModels(
 		list.push({
 			id: m.id,
 			display_name: m.display_name,
-			vendor: m.vendor?.trim() ? m.vendor : 'other',
+			vendor: normalizePublicModelVendor(m.vendor),
 			context_window: m.context_window,
 			max_tokens: m.max_tokens,
 			pricing_profile: parsePricingProfile(m.pricing_profile ?? undefined),
-			tags: tagsWithDerivedDiscounts(m, discounts),
+			tags: parseTags(m.tags),
 			route_groups: routeGroups,
 			discounts,
 			protocols,

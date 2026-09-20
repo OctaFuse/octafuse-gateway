@@ -3,7 +3,10 @@
  */
 import { and, desc, eq } from 'drizzle-orm';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
-import type { ModelRoutesRepository } from '../../storage/gateway-repository-interfaces';
+import type {
+	ListModelRoutesWithJoinsFilters,
+	ModelRoutesRepository,
+} from '../../storage/gateway-repository-interfaces';
 import type { ModelRouteDetailRow, ModelRouteJoinRow } from '../../storage/repository-dtos';
 import {
 	modelRoutesTable as pgMr,
@@ -20,10 +23,11 @@ export function createPostgresModelRoutesRepository(db: PostgresDatabaseClient):
 	const drizzle = db.drizzle;
 	const pg = db.raw;
 	return {
-		async listModelRoutesWithJoins(filters: { modelId?: string; providerId?: string }): Promise<ModelRouteJoinRow[]> {
+		async listModelRoutesWithJoins(filters: ListModelRoutesWithJoinsFilters): Promise<ModelRouteJoinRow[]> {
 			const conditions = [];
 			if (filters.modelId) conditions.push(eq(pgMr.modelId, filters.modelId));
 			if (filters.providerId) conditions.push(eq(pgMr.providerId, filters.providerId));
+			if (filters.status === 'active') conditions.push(eq(pgMr.status, 'active'));
 			const whereExpr = conditions.length > 0 ? and(...conditions) : undefined;
 			let q = drizzle
 				.select({

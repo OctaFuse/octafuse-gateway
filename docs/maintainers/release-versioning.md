@@ -13,7 +13,7 @@
 | **发布分支**       | 需要冻结和集中验收时，从 `develop` 创建临时 **`release/X.Y.Z`**；发布完成后删除                                                                         |
 | **热修分支**       | 当前稳定版 patch 从 `main` 创建临时 **`hotfix/X.Y.Z`**，完成后先合入 `main` 发版，再同步到 `develop`                                                    |
 | **对外制品**       | **proxy / admin / migrate** 三镜像 **同一 tag** 发布；生产可追溯 **digest**                                                                             |
-| **变更记录**       | [Changesets](https://github.com/changesets/changesets) → 合并入根目录 **`CHANGELOG.md`**                                                                |
+| **变更记录**       | 日常写入根目录 **`CHANGELOG.md`** 的 `## Unreleased`；发版前才生成 [Changesets](https://github.com/changesets/changesets)，由 Version Packages PR 合并为 `## X.Y.Z` |
 | **npm workspaces** | 根目录 `package.json` 含 **`"."`**，使 **`octafuse`** 与 **`packages/*`** 一并被工具识别，从而纳入 Changesets **fixed** 组（与 `@octafuse/*` 同版本）。 |
 
 详细操作入口见仓库 **[`.changeset/README.md`](../../.changeset/README.md)**。
@@ -41,7 +41,7 @@ flowchart LR
 1. **`main` 是发版入口，不是日常集成分支。** Release workflow 只监听 `main`，因此 `main` 上的全部代码都会进入下一次 tag；不要把仅供某个环境试用、尚未准备公开发版的功能合入 `main`。
 2. **`develop` 是唯一长期开发分支。** 功能分支保持短生命周期，通过 PR 合入 `develop`；外部贡献者也以 `develop` 为 base。`develop` 与 `main` 都应开启分支保护，禁止未经评审直接推送。
 3. **简单发布可直接用 `develop` → `main` PR。** 如果需要冻结版本、继续接收下一周期功能，才从 `develop` 创建 `release/X.Y.Z`；发布分支只接受发布阻断修复、版本说明和 changesets，修复同时同步回 `develop`。
-4. **当前稳定线热修使用 `hotfix/X.Y.Z`**，从 `main` 创建，添加 patch changeset 后 PR 回 `main`；正式发版完成后把实际修复同步到 `develop`。
+4. **当前稳定线热修使用 `hotfix/X.Y.Z`**，从 `main` 创建；修复先写入 `CHANGELOG.md` 的 Unreleased，发版前再补 patch changeset 并 PR 回 `main`；正式发版完成后把实际修复同步到 `develop`。
 5. **每次正式发布后把 `main` 同步回 `develop`**，使 Version Packages 产生的版本号和 changelog 进入开发线。优先使用 PR 或普通 merge，不改写共享分支历史。
 6. **旧版本并行维护不在当前自动化范围内。** `main` 升到 `v2.4.0` 后，如仍需单独发布 `v2.3.x`，不能直接套用本文流程；需先增加维护分支发版 workflow，避免从 `main` 错误打旧版本 tag。
 
@@ -146,15 +146,11 @@ flowchart LR
 
 ### 1. 普通功能与贡献 PR
 
-普通功能 PR 的 base 选择 **`develop`**，不要直接选择 `main`。用户可见的独立变更建议在 PR 中执行：
+普通功能 PR 的 base 选择 **`develop`**，不要直接选择 `main`。用户可见变更写入根目录 **`CHANGELOG.md` 开头的 `## Unreleased`**，**不要**在功能 PR 里新增 `.changeset/*.md`。
 
-```bash
-npx changeset
-```
+已有 Unreleased 时往里追加；纯文档、测试、CI 或不影响用户的内部维护通常不必记。
 
-选择 **patch / minor / major**，提交生成的 `.changeset/<id>.md`。Changesets 在 `develop` 上只作为待发布记录存在，不会自动发版。
-
-如果版本范围尚未确定，可以暂不写 changeset，但必须在发布 PR 合入 `main` 前由维护者补齐并统一审核；纯文档、测试、CI 或不影响用户的内部维护通常不需要 changeset。
+发版准备时，维护者根据 Unreleased 整理 **一条** changeset（`npx changeset` 或手写 `.changeset/*.md`），并从 `CHANGELOG.md` 删除 Unreleased，再走发布 PR。Changesets 在合入 `main` 前才作为发版输入存在。
 
 **changeset 文案（供 GitHub Release 渲染）**：
 
@@ -184,7 +180,7 @@ npm run release:notes -- --version X.Y.Z
 当前稳定版为 `v2.3.0` 时：
 
 1. 从 `main` 创建 **`hotfix/2.3.1`**；若必须从 tag 创建，使用 `git switch -c hotfix/2.3.1 v2.3.0`。
-2. 在该分支完成最小修复与验证，添加 **patch** changeset，然后 PR 到 `main`。
+2. 在该分支完成最小修复与验证，把用户可见修复写入 `CHANGELOG.md` 的 `## Unreleased`；准备合入 `main` 发版时再添加 **patch** changeset 并删掉 Unreleased。
 3. 重复第 2–3 节的 Version Packages PR 与 tag 流程，得到 **`v2.3.1`**。
 4. 将修复提交从 `main` 合入 `develop`；遇到较大冲突时可 cherry-pick 实际修复提交。正式发版结束后仍需把 Version Packages 产生的版本和 changelog 同步回 `develop`。
 

@@ -1,0 +1,12 @@
+---
+description: 日常开发只写 CHANGELOG Unreleased，发版前才新增 .changeset 文件
+alwaysApply: true
+---
+
+# Changelog 与 Changesets 时机
+
+平时开发**不要**新增 `.changeset/*.md`。用户可见变更写入根目录 `CHANGELOG.md` 开头的 `## Unreleased`。
+
+只有用户明确在做发版准备时，才根据 Unreleased 生成 `.changeset/*.md`，并从 `CHANGELOG.md` 删掉 Unreleased（Version Packages PR 会写入 `## X.Y.Z`）。
+
+不要执行 `npx changeset`，也不要为功能 PR 预写 changeset。纯文档、测试、CI、无用户影响的内部改动不必记 Unreleased。
