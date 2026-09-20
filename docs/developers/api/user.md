@@ -446,7 +446,7 @@ GET /v1/models
 |------|------|------|
 | `display_name` | string \| null | 模型显示名称 |
 | `vendor` | string | 模型供应商标识，如 `openai`、`anthropic`、`google`。本接口原样返回库内值（列缺省为 `other`） |
-| `tags` | string[] | 模型标签数组，如 `["free", "general"]`（**仅展示/目录元数据**，不参与自动选组或计费公式）。网关按当刻 `discounts.current.composite_factor` 自动注入 `Discount.<group>:<factor>`（仅 composite 落在 `(0, 1)` 时）；手写的 `Discount:*` / `Discount.*` 会被剥掉后重写。旧格式 `Discount:<factor>`（无 group）**不再生成** |
+| `tags` | string[] | 模型标签数组，如 `["free", "general"]`（**仅展示/目录元数据**，不参与自动选组或计费公式） |
 | `route_groups` | string[] | 当前模型下 **活跃路由** 的去重 `route_group` 列表，供客户端构造请求中的 `baseId:group` |
 | `context_window` | number \| null | 上下文窗口大小（token 数） |
 | `max_tokens` | number \| null | 目录/展示用参考（常见最大输出能力）；**转发时不用于截断**，实际输出上限见上文「输出长度」 |
@@ -552,7 +552,7 @@ GET /catalog/models
 }
 ```
 
-Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`、`discounts`。`discounts` 形状与 `GET /v1/models` 的 `model_info.discounts` 相同，但 **只含官方时段 × 代表路由 Charged**（平台公共折扣），不含用户级 `charged_cost_factors`。`pricing_profile` 为解析后的对象，可含 `schedule`。`discounts.*.timezone` 即 `system_config.BUSINESS_TIMEZONE`。`vendor` 为空或仅空白时返回 `other`（`GET /v1/models` 原样返回库内值；列缺省为 `other`）。`tags` 同样按当刻公共 `discounts` 注入 `Discount.<group>:<factor>`。
+Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_at`、`discounts`。`discounts` 形状与 `GET /v1/models` 的 `model_info.discounts` 相同，但 **只含官方时段 × 代表路由 Charged**（平台公共折扣），不含用户级 `charged_cost_factors`。`pricing_profile` 为解析后的对象，可含 `schedule`。`discounts.*.timezone` 即 `system_config.BUSINESS_TIMEZONE`。`vendor` 为空或仅空白时返回 `other`（`GET /v1/models` 原样返回库内值；列缺省为 `other`）。
 
 `recommended_protocol` 是门户展示用提示，**不是**强制入口：在当前可见 `protocols` 去重集合中，若同时存在多种协议，优先 `anthropic`，其次 `gemini`；否则取稳定排序后的第一项（顺序为 `openai` → `anthropic` → `gemini` → `dashscope`），空则 `openai`。
 

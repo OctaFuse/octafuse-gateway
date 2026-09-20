@@ -74,7 +74,7 @@ interface ModelInfoResponse {
 	released_at: string | null;
 	/**
 	 * 按 route_group 派生的前台折扣（官方时段 × 代表路由 charged 有效倍率）。
-	 * 已叠该用户的 `charged_cost_factors`（若已配置该模型）。`Discount:*` tags 由此自动注入。
+	 * 已叠该用户的 `charged_cost_factors`（若已配置该模型）。
 	 */
 	discounts?: Record<string, DisplayDiscountGroup>;
 	metadata?: Record<string, unknown>;
