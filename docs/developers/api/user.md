@@ -63,7 +63,7 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 
 鉴权后对 **Key 窗口**与 **用户合计窗口**双重执行（先 Key 后 User；Key 已超限则不消耗用户窗口）。两层 JSON 形状相同，当前仅 `rpm`（从当前时刻回溯 60 秒的滚动窗口请求上限，**不是** UTC 自然分钟）：`NULL` / 空对象该层不限，`rpm: 0` 拒绝该层计次请求。两层独立计数，不把用户配置复制到新建 Key。超限返回 **429** `gateway.rate_limited`（含 `Retry-After`，等到该层窗口内有空位），**不区分**是哪一层。计数在代理服务进程 / isolate 内存中，属软上限。
 
-`GET /v1/me` **两层都不计入**。`GET /v1/models` 与其它 `/v1/*` 会计入（若对应层配置了 `rpm`）。配置入口为管理后台用户详情的用户合计 RPM，以及密钥（Keys）页的单 Key RPM；API 见 [admin.md](./admin.md) 的 `PATCH /admin/users/:id` 与 `PATCH /admin/keys/:id`。
+`GET /v1/me` 与 `GET /v1/models` **两层都不计入**。其它 `/v1/*` 会计入（若对应层配置了 `rpm`）。配置入口为管理后台用户详情的用户合计 RPM，以及密钥（Keys）页的单 Key RPM；API 见 [admin.md](./admin.md) 的 `PATCH /admin/users/:id` 与 `PATCH /admin/keys/:id`。
 
 ### 5. 用量日志 `api_key_request_logs`
 
@@ -379,7 +379,7 @@ Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0
 
 ## 获取模型列表
 
-OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（模型集合全量可见，不按 API Key 过滤）。`model_info.discounts` 会叠该 Key 所属用户的 `charged_cost_factors`；未配置该模型时与公开目录倍率一致。
+OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（模型集合全量可见，不按 API Key 过滤）。`model_info.discounts` 会叠该 Key 所属用户的 `charged_cost_factors`；未配置该模型时与公开目录倍率一致。本接口与 `GET /v1/me` 一样不计入 Key / 用户 RPM，额度用尽时仍可访问。
 
 面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（排除文生图、ASR 与 TTS；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）请使用 `POST /v1/images/*` 或 `kind=image`；语音转写（如 `whisper-1`）请使用 `POST /v1/audio/transcriptions` 或 `kind=audio`；语音合成（TTS）**没有**单独 `kind`，`kind=audio` **不含** TTS，请用 `kind=all` 再按定价 / 模态筛选，或直接调用 `POST /v1/audio/speech`；`kind=all` 不过滤。
 
@@ -566,7 +566,7 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 | 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — | 未传 → **全部** active group |
 | 默认 `kind` | `llm`（排除文生图、ASR、TTS；`kind=audio` 仅 ASR） | 不过滤 kind | — | 不过滤 kind |
 | 协议能力 | `inbound`（请求入口 protocol + operation） | `protocols` / `protocols_by_group`（**上游** `upstream_protocol`） | 不返回 | 不返回（只 overlay `discounts`） |
-| 计入用户 RPM | 是 | 否 | 否 | 否 |
+| 计入用户 RPM | 否 | 否 | 否 | 否 |
 | 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD | 用户个性化折扣 overlay |
 
 Admin 静态导入目录见 **`GET /admin/models/import/catalog`**（与上表无关，见 [管理接口](./admin.md#admin-vs-proxy-catalog)）。
@@ -1211,7 +1211,7 @@ curl http://localhost:8787/v1/me \
 
 ### 请求限流
 
-若 Key 或用户配置了 `rate_limit.rpm`，超限返回 **429** `gateway.rate_limited` 与 `Retry-After`。`GET /v1/me` 不计次；详见上文「请求限流」。
+若 Key 或用户配置了 `rate_limit.rpm`，超限返回 **429** `gateway.rate_limited` 与 `Retry-After`。`GET /v1/me` 与 `GET /v1/models` 不计次；详见上文「请求限流」。
 
 ### 定价模型
 

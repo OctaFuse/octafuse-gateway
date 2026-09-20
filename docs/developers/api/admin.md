@@ -104,7 +104,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | **`GET /admin/models`** | Admin `/api/admin/*` | Console Session 或 `models.read` | 库内 **全部**模型 CRUD 列表（含 tags、路由计数；**不**含按 route 的协议聚合） |
 | **`GET /admin/models/import/catalog`** | Admin | Console Session 或 `models.read` | 仓库内 **静态 preset** 摘要，供导入 UI 勾选，**非**运行时 route 真相 |
 
-门户 / 公开站应使用 Proxy **`GET /catalog/models`**，详见 [用户接口 · 公开模型目录](./user.md#公开模型目录catalog-discovery)。用户个性化折扣用 **`GET /admin/users/:id/display-discounts`** overlay，不要用用户 API Key 调 **`GET /v1/models`**（会计入 Key / 用户 RPM）。Agent 与兼容客户端默认仍用 **`GET /v1/models`**（需用户 Key，默认 `default,free` route group）。
+门户 / 公开站应使用 Proxy **`GET /catalog/models`**，详见 [用户接口 · 公开模型目录](./user.md#公开模型目录catalog-discovery)。用户个性化折扣用 **`GET /admin/users/:id/display-discounts`** overlay。门户仍走 Catalog + display-discounts；Agent 拉列表不再计入 RPM。Agent 与兼容客户端默认仍用 **`GET /v1/models`**（需用户 Key，默认 `default,free` route group）。
 
 ---
 
@@ -419,7 +419,7 @@ PATCH /admin/keys/:id
 | `status` | 可选；如 `active`、`revoked` |
 | `metadata` | 可选；**对象**时与现有 key `metadata` **合并**；**字符串**时视为整段替换（与 `metadata_replace` 语义相同） |
 | `metadata_replace` | 可选；JSON 字符串，整段替换 metadata；勿与对象形式的 `metadata` 同时使用 |
-| `rate_limit` | 可选；JSON 对象。`null` 表示该 Key 不限。当前仅支持 `rpm`（非负整数，该 Key 从当前时刻回溯 60 秒的滚动窗口内允许的请求数；`0` 拒绝所有计次请求）。与用户层 `users.rate_limit` **双重执行**（两层都是回溯 60 秒，各自独立计数），两者都要通过；超限仍返回同一 `429` + `gateway.rate_limited`（不区分哪一层）。`GET /v1/me` 两层都不计入。计数在代理服务进程内存中（多 isolate / 多副本为软上限）。省略则不改 |
+| `rate_limit` | 可选；JSON 对象。`null` 表示该 Key 不限。当前仅支持 `rpm`（非负整数，该 Key 从当前时刻回溯 60 秒的滚动窗口内允许的请求数；`0` 拒绝所有计次请求）。与用户层 `users.rate_limit` **双重执行**（两层都是回溯 60 秒，各自独立计数），两者都要通过；超限仍返回同一 `429` + `gateway.rate_limited`（不区分哪一层）。`GET /v1/me` 与 `GET /v1/models` 两层都不计入。计数在代理服务进程内存中（多 isolate / 多副本为软上限）。省略则不改 |
 | `reason` | 可选；写入用户审计等文案，缺省由服务端默认 |
 
 ### 响应

@@ -1,7 +1,7 @@
 /**
  * 用户路由：`GET /v1/models` — OpenAI 兼容列表形态，附带 `model_info`（定价、tags、route_groups 等）。
  * 未传 `route_groups` 时默认仅返回 `default`/`free`，主要为兼容 agent 默认拉列表（FREE/VIP 分组）。
- * 未传 `kind` 时默认仅返回 LLM（排除文生图，如 gpt-image-2）；文生图见 `POST /v1/images/*`。
+ * 未传 `kind` 时默认仅返回 LLM（排除文生图 / ASR / TTS）；文生图见 `POST /v1/images/*`。
  */
 import {
 	getUserChargedCostFactorMode,

@@ -87,7 +87,7 @@ erDiagram
 
 ## 关键读写路径（与实现对齐）
 
-- **鉴权**：`getApiKeyWithUserByKey` 单次 JOIN 读取 key + user 预算字段、`charged_cost_factors` 与 `users.rate_limit`；周期懒重置走 **`updateUserBudgetWithAuditTx`**（Postgres/MySQL 带 `budget_reset_at` 条件更新以避免并发重复审计）。鉴权后对 Key 窗口与用户合计窗口**双重执行**（先 Key 后 User；Key 已超限则不消耗用户窗口）。两层都是从当前时刻回溯 60 秒的滚动窗口。超限返回 `429` + `gateway.rate_limited`（不暴露是哪一层；`Retry-After` 取实际超限那一层）。`GET /v1/me` 两层都不计入。内存 store 的 subject 前缀为 `k:` / `u:`。计数与熔断一样是单 isolate / 单进程软状态。
+- **鉴权**：`getApiKeyWithUserByKey` 单次 JOIN 读取 key + user 预算字段、`charged_cost_factors` 与 `users.rate_limit`；周期懒重置走 **`updateUserBudgetWithAuditTx`**（Postgres/MySQL 带 `budget_reset_at` 条件更新以避免并发重复审计）。鉴权后对 Key 窗口与用户合计窗口**双重执行**（先 Key 后 User；Key 已超限则不消耗用户窗口）。两层都是从当前时刻回溯 60 秒的滚动窗口。超限返回 `429` + `gateway.rate_limited`（不暴露是哪一层；`Retry-After` 取实际超限那一层）。`GET /v1/me` 与 `GET /v1/models` 两层都不计入。内存 store 的 subject 前缀为 `k:` / `u:`。计数与熔断一样是单 isolate / 单进程软状态。
 - **扣费**：`insertRequestUsageAndChargeTx` 在同一事务内 **`INSERT api_key_request_logs`**（含 `charged_wallet_cost`、`ingress_host`）+ **`UPDATE api_keys.last_used_at`** + **`UPDATE users SET budget_spent += Δ1, wallet_spent += Δ2`**（SQL 侧原子累加）+ **`INSERT user_audit_logs`**（`usage_charge`）。周期剩余不够时差额进永久池。
 - **加额**：`grantWalletCreditWithAuditTx` 在同一事务内插入 `event_type=wallet_credit` 审计（`dedup_key` 冲突则忽略），仅当新审计行真正落入时 `wallet_granted += amount`。
 
