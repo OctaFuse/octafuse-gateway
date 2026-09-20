@@ -28,12 +28,12 @@ curl -sS http://localhost:8787/v1/responses \
   -d '{"model":"your-route-model","input":[{"role":"user","content":"Hello"}],"stream":false}'
 ```
 
-模型列表（需用户 Key；默认仅 LLM，不含纯文生图与音频模型）：
+模型列表（需用户 Key；默认仅 LLM，不含纯文生图、ASR 与 TTS）：
 
 ```bash
 curl -sS http://localhost:8787/v1/models \
   -H "Authorization: Bearer sk-your-api-key"
-# 文生图：?kind=image ；音频：?kind=audio ；全部：?kind=all
+# 文生图：?kind=image ；ASR：?kind=audio ；TTS 与全部：?kind=all
 ```
 
 公开 Catalog（**无需**用户 Key，适合门户 discovery）：
