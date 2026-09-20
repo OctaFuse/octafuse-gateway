@@ -5,7 +5,7 @@
  */
 import {
 	getUserChargedCostFactorMode,
-	isAudioTranscriptionModel,
+	isAudioModel,
 	isImageGenerationModel,
 	isTextLlmModel,
 	lookupUserChargedCostFactor,
@@ -24,7 +24,7 @@ import {
 	parseModelsRouteGroupsQuery,
 	parseRouteGroupsJson,
 } from '../../lib/model-list-parse';
-import { collectLlmInboundSurfaces, type LlmInboundSurface } from '../../services/inbound-surfaces';
+import { collectInboundSurfaces, type InboundSurface } from '../../services/inbound-surfaces';
 import {
 	buildModelDisplayDiscounts,
 	loadPublicModelListContext,
@@ -78,8 +78,8 @@ interface ModelInfoResponse {
 	 */
 	discounts?: Record<string, DisplayDiscountGroup>;
 	metadata?: Record<string, unknown>;
-	/** LLM 请求入口（Chat / Responses / Messages / Gemini generate），不含图/音频。 */
-	inbound: LlmInboundSurface[];
+	/** 请求入口（LLM 文本 + 文生图 / ASR / TTS operation），按可见路由聚合。 */
+	inbound: InboundSurface[];
 }
 
 interface ModelResponse {
@@ -109,7 +109,7 @@ function displayCompatPricesFromProfile(pricingProfile: string | null): {
 
 /**
  * `GET /v1/models` — 可选 `route_groups`（CSV）过滤 `model_info.route_groups`；
- * 可选 `kind`：`llm`（默认）| `image` | `audio` | `all`。
+ * 可选 `kind`：`llm`（默认）| `image` | `audio`（ASR + TTS）| `all`。
  * 未传 `route_groups` 时默认 `default,free`，主要为兼容 agent 默认拉列表方式；
  * 业务需额外分组时可显式传 `route_groups=web` 或 `route_groups=default,free,web`。
  */
@@ -135,7 +135,7 @@ modelsRoutes.get('/', async (c) => {
 		if (kind === 'image' && !isImageGenerationModel(kindFields)) {
 			continue;
 		}
-		if (kind === 'audio' && !isAudioTranscriptionModel(kindFields)) {
+		if (kind === 'audio' && !isAudioModel(kindFields)) {
 			continue;
 		}
 		const { input_price, output_price } = displayCompatPricesFromProfile(m.pricing_profile);
@@ -154,7 +154,7 @@ modelsRoutes.get('/', async (c) => {
 			userChargedFactor: lookupUserChargedCostFactor(userFactors, m.id),
 			userChargedFactorMode,
 		});
-		const inbound = collectLlmInboundSurfaces(routesByModel.get(m.id) ?? [], routeGroups);
+		const inbound = collectInboundSurfaces(routesByModel.get(m.id) ?? [], routeGroups);
 		list.push({
 			id: m.id,
 			object: 'model',

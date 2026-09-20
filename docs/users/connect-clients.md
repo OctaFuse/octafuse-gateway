@@ -33,7 +33,7 @@ curl -sS http://localhost:8787/v1/responses \
 ```bash
 curl -sS http://localhost:8787/v1/models \
   -H "Authorization: Bearer sk-your-api-key"
-# 文生图：?kind=image ；ASR：?kind=audio ；TTS 与全部：?kind=all
+# 文生图：?kind=image ；ASR / TTS：?kind=audio ；全部：?kind=all
 ```
 
 公开 Catalog（**无需**用户 Key，适合门户 discovery）：

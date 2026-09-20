@@ -1,5 +1,5 @@
 /**
- * Aggregate LLM request surfaces for `GET /v1/models`.
+ * Aggregate request surfaces for `GET /v1/models`.
  * This is the client inbound entry (protocol + operation), not upstream_protocol.
  */
 import {
@@ -12,17 +12,25 @@ import {
 } from '@octafuse/core';
 import { filterRouteGroupsByAllowlist } from '../lib/model-list-parse';
 
-export type LlmInboundSurface = {
+export type InboundSurface = {
 	protocol: 'openai' | 'anthropic' | 'gemini';
 	operation: string;
 };
 
-const LLM_INBOUND_ORDER: readonly LlmInboundSurface[] = [
+const LLM_INBOUND_ORDER: readonly InboundSurface[] = [
 	{ protocol: 'openai', operation: 'responses' },
 	{ protocol: 'openai', operation: 'chat' },
 	{ protocol: 'anthropic', operation: 'messages' },
 	{ protocol: 'gemini', operation: GEMINI_GENERATE_OPERATION },
 ];
+
+const IMAGE_AUDIO_INBOUND_ORDER: readonly InboundSurface[] = [
+	{ protocol: 'openai', operation: 'images.generations' },
+	{ protocol: 'openai', operation: 'audio.transcriptions' },
+	{ protocol: 'openai', operation: 'audio.speech' },
+];
+
+const INBOUND_ORDER: readonly InboundSurface[] = [...LLM_INBOUND_ORDER, ...IMAGE_AUDIO_INBOUND_ORDER];
 
 const WILDCARD_DEFAULT_OPERATION: Record<'openai' | 'anthropic' | 'gemini', string> = {
 	openai: 'chat',
@@ -32,8 +40,8 @@ const WILDCARD_DEFAULT_OPERATION: Record<'openai' | 'anthropic' | 'gemini', stri
 
 const inboundKey = (protocol: string, operation: string): string => `${protocol}:${operation}`;
 
-const LLM_OPERATION_KEYS = new Set(
-	LLM_INBOUND_ORDER.map((surface) => inboundKey(surface.protocol, surface.operation)),
+const INBOUND_OPERATION_KEYS = new Set(
+	INBOUND_ORDER.map((surface) => inboundKey(surface.protocol, surface.operation)),
 );
 
 type SurfaceJson = {
@@ -71,24 +79,25 @@ const normalizeOperation = (protocol: UpstreamProtocol, raw: unknown): string | 
 	return operation;
 };
 
-const isLlmTextProtocol = (
+const isInboundProtocol = (
 	protocol: UpstreamProtocol,
 ): protocol is 'openai' | 'anthropic' | 'gemini' =>
 	protocol === 'openai' || protocol === 'anthropic' || protocol === 'gemini';
 
-const sortInbound = (inbound: Iterable<LlmInboundSurface>): LlmInboundSurface[] => {
+const sortInbound = (inbound: Iterable<InboundSurface>): InboundSurface[] => {
 	const keys = new Set(Array.from(inbound, (surface) => inboundKey(surface.protocol, surface.operation)));
-	return LLM_INBOUND_ORDER.filter((surface) => keys.has(inboundKey(surface.protocol, surface.operation)));
+	return INBOUND_ORDER.filter((surface) => keys.has(inboundKey(surface.protocol, surface.operation)));
 };
 
 /**
- * Collect LLM inbound surfaces from active route targets whose route_group is allowed.
- * Order is a stable listing (responses before chat), not a client recommendation.
+ * Collect inbound surfaces from active route targets whose route_group is allowed.
+ * LLM text entries keep a stable listing (responses before chat); image/audio follow.
+ * Order is not a client recommendation.
  */
-export const collectLlmInboundSurfaces = (
+export const collectInboundSurfaces = (
 	routes: readonly ModelRouteJoinRow[],
 	allowedRouteGroups: readonly string[],
-): LlmInboundSurface[] => {
+): InboundSurface[] => {
 	const exact = new Set<string>();
 	const wildcardProtocols = new Set<'openai' | 'anthropic' | 'gemini'>();
 
@@ -101,7 +110,7 @@ export const collectLlmInboundSurfaces = (
 			if (status === 'disabled') continue;
 
 			const protocol = tryProtocol(surface.request_protocol);
-			if (protocol === undefined || !isLlmTextProtocol(protocol)) continue;
+			if (protocol === undefined || !isInboundProtocol(protocol)) continue;
 
 			const operation = normalizeOperation(protocol, surface.request_operation);
 			if (operation === undefined) continue;
@@ -112,12 +121,12 @@ export const collectLlmInboundSurfaces = (
 			}
 
 			const key = inboundKey(protocol, operation);
-			if (LLM_OPERATION_KEYS.has(key)) exact.add(key);
+			if (INBOUND_OPERATION_KEYS.has(key)) exact.add(key);
 		}
 	}
 
 	for (const protocol of wildcardProtocols) {
-		const hasExactForProtocol = LLM_INBOUND_ORDER.some(
+		const hasExactForProtocol = INBOUND_ORDER.some(
 			(surface) => surface.protocol === protocol && exact.has(inboundKey(surface.protocol, surface.operation)),
 		);
 		if (hasExactForProtocol) continue;
@@ -125,6 +134,6 @@ export const collectLlmInboundSurfaces = (
 	}
 
 	return sortInbound(
-		LLM_INBOUND_ORDER.filter((surface) => exact.has(inboundKey(surface.protocol, surface.operation))),
+		INBOUND_ORDER.filter((surface) => exact.has(inboundKey(surface.protocol, surface.operation))),
 	);
 };

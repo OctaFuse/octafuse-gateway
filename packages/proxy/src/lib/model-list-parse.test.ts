@@ -13,9 +13,10 @@ describe('parseModelsKindQuery', () => {
 		assert.equal(parseModelsKindQuery('  '), 'llm');
 	});
 
-	it('accepts llm, image, all (case-insensitive)', () => {
+	it('accepts llm, image, audio, all (case-insensitive)', () => {
 		assert.equal(parseModelsKindQuery('llm'), 'llm');
 		assert.equal(parseModelsKindQuery('IMAGE'), 'image');
+		assert.equal(parseModelsKindQuery('Audio'), 'audio');
 		assert.equal(parseModelsKindQuery('All'), 'all');
 	});
 
