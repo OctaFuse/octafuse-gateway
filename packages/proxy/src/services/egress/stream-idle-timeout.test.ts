@@ -11,9 +11,9 @@ import {
 } from './stream-idle-timeout';
 
 describe('readWithIdleTimeout', () => {
-	it('exports 2min first-chunk and 30s between-chunk thresholds', () => {
+	it('exports 2min first-chunk and 90s between-chunk thresholds', () => {
 		assert.equal(STREAM_FIRST_CHUNK_TIMEOUT_MS, 120_000);
-		assert.equal(STREAM_IDLE_TIMEOUT_MS, 30_000);
+		assert.equal(STREAM_IDLE_TIMEOUT_MS, 90_000);
 	});
 
 	it('uses the first-chunk budget until a non-empty chunk arrives', () => {

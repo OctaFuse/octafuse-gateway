@@ -3,7 +3,7 @@
  *
  * 两段阈值不要混用：
  * - 尚未收到任何非空 chunk：用 {@link STREAM_FIRST_CHUNK_TIMEOUT_MS}（默认 2 分钟），避免静默思考被空闲阈值误杀。
- * - 已经吐过 chunk：用 {@link STREAM_IDLE_TIMEOUT_MS}（默认 30 秒）收口挂死的流。
+ * - 已经吐过 chunk：用 {@link STREAM_IDLE_TIMEOUT_MS}（默认 90 秒）收口挂死的流。
  *
  * 部署可用环境变量覆盖，见 `stream-timeout-env.ts`。
  * 计时按 TCP chunk 重置；SSE comment / ping 也会续命，心跳僵尸要靠绝对兜底。

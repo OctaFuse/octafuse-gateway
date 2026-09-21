@@ -34,7 +34,7 @@ export type GatewayBindings = {
 	NODE_REALTIME_DISPATCH?: DashScopeRealtimeNodeDispatch;
 	/** 可选；尚未收到非空 chunk 的等待上限（毫秒）。空则代码默认 2 分钟。 */
 	STREAM_FIRST_CHUNK_TIMEOUT_MS?: string;
-	/** 可选；已吐 chunk 后的空闲上限（毫秒）。空则代码默认 30 秒。 */
+	/** 可选；已吐 chunk 后的空闲上限（毫秒）。空则代码默认 90 秒。 */
 	STREAM_IDLE_TIMEOUT_MS?: string;
 	/** 可选；usagePromise 绝对兜底（毫秒）。空则代码默认 10 分钟。 */
 	USAGE_SAFETY_TIMEOUT_MS?: string;

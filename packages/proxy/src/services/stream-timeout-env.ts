@@ -14,8 +14,8 @@ export const USAGE_SAFETY_TIMEOUT_MS_ENV = 'USAGE_SAFETY_TIMEOUT_MS';
 /** 尚未收到非空 chunk 时的等待上限（默认 2 分钟，对齐 Worker）。 */
 export const DEFAULT_STREAM_FIRST_CHUNK_TIMEOUT_MS = 120_000;
 
-/** 已吐过 chunk 之后两次 chunk 之间的空闲上限（默认 30 秒）。 */
-export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 30_000;
+/** 已吐过 chunk 之后两次 chunk 之间的空闲上限（默认 90 秒）。 */
+export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 90_000;
 
 /** `usagePromise` 未 resolve 的绝对兜底（默认 10 分钟）。 */
 export const DEFAULT_USAGE_SAFETY_TIMEOUT_MS = 10 * 60 * 1000;
