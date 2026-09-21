@@ -67,8 +67,8 @@ flowchart LR
 | 常量 / 环境变量 | 默认 | 含义 |
 |------|--------|------|
 | `POST_DISCONNECT_DRAIN_MS` | 各 driver 内定义（如 90s） | 断连后继续从上游读取的上限（暂不可配） |
-| `STREAM_FIRST_CHUNK_TIMEOUT_MS` | 2 min | 尚未收到任何非空 chunk 时的等待上限，避免静默思考 / 超长上下文首包被 30s 空闲误杀 |
-| `STREAM_IDLE_TIMEOUT_MS` | 30s | **已吐过 chunk 之后**两次上游 chunk 之间的空闲上限；超时则 cancel 上游，写入 `usage.stream_error=Stream idle timeout`，请求日志 `incomplete` |
+| `STREAM_FIRST_CHUNK_TIMEOUT_MS` | 2 min | 尚未收到任何非空 chunk 时的等待上限，避免静默思考 / 超长上下文首包被 90s 空闲误杀 |
+| `STREAM_IDLE_TIMEOUT_MS` | 90s | **已吐过 chunk 之后**两次上游 chunk 之间的空闲上限；超时则 cancel 上游，写入 `usage.stream_error=Stream idle timeout`，请求日志 `incomplete` |
 | `USAGE_SAFETY_TIMEOUT_MS` | 10 min | `usagePromise` 未 resolve 的绝对兜底。正常长思考依赖空闲超时收口，不会把 Worker 拖满 10 分钟 |
 | `STREAM_FIRST_EVENT_TIMEOUT_MS` | `system_config`，默认关闭 | 收到 2xx 后等待首个 SSE 事件的上限；超时返回 524 并 failover。覆盖 Chat Completions、Responses、Anthropic Messages、Gemini 流式。Images / Audio / Realtime / Tools **不**走此开关。未设路由组时只作用于 `default` |
 
@@ -102,7 +102,7 @@ flowchart LR
 
 - 上游在 drain 窗口内仍可能不发含 usage 的 chunk → 取消后 token 仍可能为 0。
 - 部分请求仅出现 “Network connection lost” 而无 signal → 依赖写失败、空闲超时或安全超时。
-- **静默思考 vs 持续吐 token**：首包到达前最多等 2 分钟（可用 `STREAM_FIRST_CHUNK_TIMEOUT_MS` 覆盖）；一旦开始吐 chunk，间隔超过 30s 才掐流（`STREAM_IDLE_TIMEOUT_MS`）。持续吐 chunk 的长思考会等到流结束再记账，不再被空 usage 兜底记成 0 token。
+- **静默思考 vs 持续吐 token**：首包到达前最多等 2 分钟（可用 `STREAM_FIRST_CHUNK_TIMEOUT_MS` 覆盖）；一旦开始吐 chunk，间隔超过 90s 才掐流（`STREAM_IDLE_TIMEOUT_MS`）。持续吐 chunk 的长思考会等到流结束再记账，不再被空 usage 兜底记成 0 token。
 - **SSE 心跳会重置空闲计时**：计时按 TCP chunk，不区分 `data:` 与 comment / ping。上游若定期打心跳却永不给 usage，要等到绝对兜底（默认 10 分钟，`USAGE_SAFETY_TIMEOUT_MS`）才记 `incomplete`。
 - **首包 524 灰度覆盖四个文本流式入口**（Chat Completions、Responses、Anthropic Messages、Gemini `streamGenerateContent`）。Images / Audio / Realtime / Tools 假 2xx 不会走 `STREAM_FIRST_EVENT_TIMEOUT_MS`。
 

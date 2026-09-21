@@ -12,6 +12,7 @@
 
 ### Patch Changes
 
+- **流式空闲超时默认值**：`STREAM_IDLE_TIMEOUT_MS` 代码默认由 30 秒调整为 90 秒，减少推理模型在首个 thinking chunk 之后短暂停顿被误杀的情况。仍可用部署环境变量覆盖。
 - **Simulator / Playground 流式滚动**：流式输出只滚动 Response 内部区域，不再调用 `scrollIntoView`，避免整页（含侧栏）被顶上去。
 
 ## 2.11.0
