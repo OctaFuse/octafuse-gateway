@@ -18,6 +18,7 @@
  * Google Gemini 目录价为 Standard 标准价，不含限时导入价、Batch、Flex。Flash 3.7 / 3.8 写入 $1.50 / $7.50，而不是 2026-12-31 前的 $0.75 / $3.75。
  * Claude Sonnet 5 目录价为官方标准价 $2 / $10（2026-08-10 起入门价转正，不再使用原定 9 月 1 日的 $3 / $15）。
  * GPT-5.6 Terra / Luna 目录价为 2026-07-30 起的标准价 $2 / $12 与 $0.20 / $1.20；GPT-5.6 Sol 与 `gpt-5.6` 别名仍写刊例 $5 / $30，不含至少到 2026-11-21 的促销价。
+ * Xiaomi MiMo-V2.6 目录价为实时推理刊例（USD / CNY 分源）。Pro 与 Flash 的批量推理半价不写入 preset；UltraSpeed 无批量推理。缓存写入官网标明限时免费，`cache_write_price` 保持 null。
  * 面向 Catalog 的英文摘要与中英文展示文案均与模型预设共同维护：
  * `description` 写入现有 `models.description`，`i18n` 仅供静态 Catalog 展示，不增加数据库字段。
  *

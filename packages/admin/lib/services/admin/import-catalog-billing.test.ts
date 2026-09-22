@@ -191,6 +191,63 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile?.tiers[1]?.output_price, 75);
 	});
 
+	it('includes MiMo-V2.6 realtime list prices, not the batch half-price', () => {
+		const expected = [
+			{
+				id: 'mimo-v2.6-pro',
+				display_name: 'MiMo V2.6 Pro',
+				usdLabel: '$0.435 / $0.87 /M',
+				cnyLabel: '¥3 / ¥6 /M',
+				usd: { input_price: 0.435, output_price: 0.87, cache_read_price: 0.0036 },
+				cny: { input_price: 3, output_price: 6, cache_read_price: 0.025 },
+			},
+			{
+				id: 'mimo-v2.6-flash',
+				display_name: 'MiMo V2.6 Flash',
+				usdLabel: '$0.14 / $0.28 /M',
+				cnyLabel: '¥1 / ¥2 /M',
+				usd: { input_price: 0.14, output_price: 0.28, cache_read_price: 0.0028 },
+				cny: { input_price: 1, output_price: 2, cache_read_price: 0.02 },
+			},
+			{
+				id: 'mimo-v2.6-pro-ultraspeed',
+				display_name: 'MiMo V2.6 Pro UltraSpeed',
+				usdLabel: '$4.35 / $8.7 /M',
+				cnyLabel: '¥30 / ¥60 /M',
+				usd: { input_price: 4.35, output_price: 8.7, cache_read_price: 0.036 },
+				cny: { input_price: 30, output_price: 60, cache_read_price: 0.25 },
+			},
+		] as const;
+		for (const row of expected) {
+			const usd = listStaticModelPresetCatalogForAdmin('USD').find((item) => item.id === row.id);
+			const cny = listStaticModelPresetCatalogForAdmin('CNY').find((item) => item.id === row.id);
+			assert.ok(usd, row.id);
+			assert.ok(cny, row.id);
+			assert.equal(usd!.display_name, row.display_name);
+			assert.equal(usd!.kind, 'llm');
+			assert.equal(usd!.context_window, 1050000);
+			assert.equal(usd!.max_tokens, 128000);
+			assert.equal(usd!.pricing_label, row.usdLabel);
+			assert.equal(cny!.pricing_label, row.cnyLabel);
+			const preset = listStaticModelPresets().find((item) => item.id === row.id);
+			assert.ok(preset, row.id);
+			for (const billing of ['USD', 'CNY'] as const) {
+				const profile = parsePricingProfile(
+					coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, billing))!
+				);
+				assert.ok(profile, `${row.id} ${billing}`);
+				assert.equal(profile!.tiers.length, 1);
+				assert.equal(profile!.tiers[0]?.upto, null);
+				assert.equal(profile!.tiers[0]?.cache_write_price, null);
+				assert.deepEqual(profile!.schedule, []);
+				const prices = billing === 'USD' ? row.usd : row.cny;
+				assert.equal(profile!.tiers[0]?.input_price, prices.input_price);
+				assert.equal(profile!.tiers[0]?.output_price, prices.output_price);
+				assert.equal(profile!.tiers[0]?.cache_read_price, prices.cache_read_price);
+			}
+		}
+	});
+
 	it('includes deepseek-v4.1-flash and re-prices the Flash line at the 2026-09-10 off-peak list prices', () => {
 		const v41 = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'deepseek-v4.1-flash');
 		assert.ok(v41);
