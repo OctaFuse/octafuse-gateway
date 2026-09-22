@@ -208,5 +208,149 @@
 			]
 		},
 		"released": "2026-04-22"
+	},
+	{
+		"id": "mimo-v2.6-pro",
+		"display_name": "MiMo V2.6 Pro",
+		"description": "Xiaomi's flagship omni-modal MiMo model for professional, long-horizon, and complex workflows, including scientific research and cybersecurity.",
+		"i18n": {
+			"en": "Xiaomi's flagship omni-modal MiMo model for professional, long-horizon, and complex workflows, including scientific research and cybersecurity.",
+			"zh": "面向专业、长程与复杂工作流的小米 MiMo 全模态旗舰模型，兼顾科学研究与网络安全。"
+		},
+		"vendor": "xiaomi",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.435,
+						"output_price": 0.87,
+						"cache_read_price": 0.0036,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3,
+						"output_price": 6,
+						"cache_read_price": 0.025,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-22"
+	},
+	{
+		"id": "mimo-v2.6-flash",
+		"display_name": "MiMo V2.6 Flash",
+		"description": "A cost-efficient omni-modal MiMo model for high-frequency professional work and large-scale tasks.",
+		"i18n": {
+			"en": "A cost-efficient omni-modal MiMo model for high-frequency professional work and large-scale tasks.",
+			"zh": "面向高频办公与规模化任务的小米 MiMo 全模态高性价比模型。"
+		},
+		"vendor": "xiaomi",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.14,
+						"output_price": 0.28,
+						"cache_read_price": 0.0028,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 2,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-22"
+	},
+	{
+		"id": "mimo-v2.6-pro-ultraspeed",
+		"display_name": "MiMo V2.6 Pro UltraSpeed",
+		"description": "The high-speed serving mode of MiMo V2.6 Pro. It keeps flagship quality and offers up to 20× output speed for latency-sensitive workloads.",
+		"i18n": {
+			"en": "The high-speed serving mode of MiMo V2.6 Pro. It keeps flagship quality and offers up to 20× output speed for latency-sensitive workloads.",
+			"zh": "保留 MiMo V2.6 Pro 旗舰能力的超高速服务模式，输出速度最高约 20 倍，面向强实时与时延敏感场景。"
+		},
+		"vendor": "xiaomi",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 4.35,
+						"output_price": 8.7,
+						"cache_read_price": 0.036,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 30,
+						"output_price": 60,
+						"cache_read_price": 0.25,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-22"
 	}
 ]

@@ -9,6 +9,7 @@
 - **模型列表契约**：`GET /v1/models` 与 `GET /catalog/models` 不再向 `tags` 注入 `Discount.<group>:<factor>`；权威折扣仍是 `discounts`。`model_info.pricing_profile` 改为解析后的对象（非法 JSON 为 `null`），`vendor` 为空或仅空白时返回 `other`。
 - **折扣标签兼容层**：删除 `mergeDerivedDiscountTags` 及 `Discount.*` 标签派生辅助函数；前台折扣结构不变。依赖 `pricing_profile` 字符串、或从 `tags` 解析 `Discount.*` 的客户端需要改读对象形态的 `pricing_profile` 与 `discounts`。
 - **接口说明**：同步 `GET /v1/models` 的 RPM 豁免、`kind=audio`、`inbound`，以及 Catalog 的 `pricing_profile`、`vendor`、`tags` 契约。
+- **模型目录**：静态预设新增 `mimo-v2.6-pro`、`mimo-v2.6-flash`、`mimo-v2.6-pro-ultraspeed`。价格为官网实时推理刊例（USD 与 CNY 分源），不含批量推理半价；缓存写入仍为限时免费，不写入目录价。
 
 ### Patch Changes
 
