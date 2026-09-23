@@ -1,5 +1,65 @@
 [
 	{
+		"id": "grok-4.7",
+		"display_name": "Grok 4.7",
+		"description": "SpaceXAI's frontier model for coding, agentic tasks, and knowledge work. Reasoning effort supports low, medium, high (default), and xhigh. The Responses API always returns encrypted reasoning content, which later turns must send back unchanged.",
+		"i18n": {
+			"en": "SpaceXAI's frontier model for coding, agentic tasks, and knowledge work. Reasoning effort supports low, medium, high (default), and xhigh. The Responses API always returns encrypted reasoning content, which later turns must send back unchanged.",
+			"zh": "面向编程、Agent 与知识工作的前沿 Grok 模型。reasoning effort 支持 low、medium、high（默认）和 xhigh。Responses API 总会返回加密 reasoning，后续轮次须原样带回。"
+		},
+		"vendor": "xai",
+		"context_window": 500000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.5,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 12,
+						"cache_read_price": 1,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 14,
+						"output_price": 42,
+						"cache_read_price": 3.5,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 28,
+						"output_price": 84,
+						"cache_read_price": 7,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-21"
+	},
+	{
 		"id": "grok-4.6",
 		"display_name": "Grok 4.6",
 		"description": "A frontier Grok model for long-running agents, coding, and knowledge work. It focuses on multi-step agents, ambitious interactive and visual work, and sustained coding trajectories.",

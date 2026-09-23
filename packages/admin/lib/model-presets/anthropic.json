@@ -1,5 +1,52 @@
 [
 	{
+		"id": "claude-opus-5-5",
+		"display_name": "Claude Opus 5.5",
+		"description": "Anthropic's model for long-running agentic coding and knowledge work. Adaptive thinking is always on and cannot be disabled; the default effort is medium. Forced tool_choice values any and tool return an error.",
+		"i18n": {
+			"en": "Anthropic's model for long-running agentic coding and knowledge work. Adaptive thinking is always on and cannot be disabled; the default effort is medium. Forced tool_choice values any and tool return an error.",
+			"zh": "面向长时间 Agent 编程与知识工作的 Anthropic 模型。自适应思考始终开启且不能关闭，默认 effort 为 medium。tool_choice 的 any 与 tool 会返回错误，应使用 auto 或 none。"
+		},
+		"vendor": "anthropic",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 20,
+						"cache_read_price": 0.2,
+						"cache_write_price": 5
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 28,
+						"output_price": 140,
+						"cache_read_price": 1.4,
+						"cache_write_price": 35
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-22"
+	},
+	{
 		"id": "claude-fable-5-1",
 		"display_name": "Claude Fable 5.1",
 		"description": "Anthropic's successor to Claude Fable 5 for long-running agentic coding, multistep research, and document work. Adaptive thinking is always on; input and output prices match Fable 5, with cheaper prompt-cache reads.",

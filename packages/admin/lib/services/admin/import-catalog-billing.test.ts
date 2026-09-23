@@ -170,6 +170,92 @@ describe('import catalog pricing preview follows billing currency', () => {
 		}
 	});
 
+	it('includes gpt-6 sol and luna at Standard list prices, including the 272K tier', () => {
+		const solUsd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-6-sol');
+		const solCny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-6-sol');
+		const lunaUsd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-6-luna');
+		const lunaCny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-6-luna');
+		assert.ok(solUsd);
+		assert.ok(solCny);
+		assert.ok(lunaUsd);
+		assert.ok(lunaCny);
+		assert.equal(solUsd!.display_name, 'GPT-6 Sol');
+		assert.equal(lunaUsd!.display_name, 'GPT-6 Luna');
+		assert.equal(solUsd!.context_window, 1050000);
+		assert.equal(solUsd!.max_tokens, 128000);
+		assert.equal(solUsd!.pricing_label, '$2 / $10 /M');
+		assert.equal(solCny!.pricing_label, '¥14 / ¥70 /M');
+		assert.equal(lunaUsd!.pricing_label, '$0.1 / $0.5 /M');
+		assert.equal(lunaCny!.pricing_label, '¥0.7 / ¥3.5 /M');
+
+		const sol = listStaticModelPresets().find((p) => p.id === 'gpt-6-sol');
+		const luna = listStaticModelPresets().find((p) => p.id === 'gpt-6-luna');
+		assert.ok(sol);
+		assert.ok(luna);
+		const solProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(sol!, 'USD'))!);
+		const lunaProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(luna!, 'USD'))!);
+		assert.equal(solProfile?.tiers[0]?.upto, 272000);
+		assert.equal(solProfile?.tiers[0]?.input_price, 2);
+		assert.equal(solProfile?.tiers[0]?.output_price, 10);
+		assert.equal(solProfile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(solProfile?.tiers[0]?.cache_write_price, 2.5);
+		assert.equal(solProfile?.tiers[1]?.input_price, 4);
+		assert.equal(solProfile?.tiers[1]?.output_price, 15);
+		assert.equal(solProfile?.tiers[1]?.cache_read_price, 0.4);
+		assert.equal(solProfile?.tiers[1]?.cache_write_price, 5);
+		assert.equal(lunaProfile?.tiers[0]?.input_price, 0.1);
+		assert.equal(lunaProfile?.tiers[0]?.output_price, 0.5);
+		assert.equal(lunaProfile?.tiers[0]?.cache_read_price, 0.01);
+		assert.equal(lunaProfile?.tiers[0]?.cache_write_price, 0.125);
+		assert.equal(lunaProfile?.tiers[1]?.input_price, 0.2);
+		assert.equal(lunaProfile?.tiers[1]?.output_price, 0.75);
+		assert.equal(lunaProfile?.tiers[1]?.cache_read_price, 0.02);
+		assert.equal(lunaProfile?.tiers[1]?.cache_write_price, 0.25);
+	});
+
+	it('includes claude-opus-5-5 at the $4 / $20 list price with 5-minute cache writes', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-opus-5-5');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-opus-5-5');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Claude Opus 5.5');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$4 / $20 /M');
+		assert.equal(cny!.pricing_label, '¥28 / ¥140 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'claude-opus-5-5');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers.length, 1);
+		assert.equal(profile?.tiers[0]?.input_price, 4);
+		assert.equal(profile?.tiers[0]?.output_price, 20);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(profile?.tiers[0]?.cache_write_price, 5);
+	});
+
+	it('includes grok-4.7 at the same 200K list prices as grok-4.6', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'grok-4.7');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'grok-4.7');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Grok 4.7');
+		assert.equal(usd!.context_window, 500000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$2 / $6 /M');
+		assert.equal(cny!.pricing_label, '¥14 / ¥42 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'grok-4.7');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.upto, 200000);
+		assert.equal(profile?.tiers[0]?.input_price, 2);
+		assert.equal(profile?.tiers[0]?.output_price, 6);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.5);
+		assert.equal(profile?.tiers[0]?.cache_write_price, null);
+		assert.equal(profile?.tiers[1]?.input_price, 4);
+		assert.equal(profile?.tiers[1]?.output_price, 12);
+		assert.equal(profile?.tiers[1]?.cache_read_price, 1);
+	});
+
 	it('includes gpt-6-astra with Standard short-context list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-6-astra');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-6-astra');
