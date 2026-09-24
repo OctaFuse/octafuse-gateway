@@ -439,8 +439,6 @@
 			"editTitle": "Edit Provider",
 			"newTitle": "New Provider",
 			"prefilledFrom": "Pre-filled from {id}. Review fields before saving.",
-			"general": "General",
-			"generalHint": "Account alias and provider type. The ID is generated automatically.",
 			"nameRequired": "Name *",
 			"namePlaceholder": "e.g., production",
 			"kind": "Type",

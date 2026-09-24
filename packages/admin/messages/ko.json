@@ -439,8 +439,6 @@
 			"editTitle": "Provider 편집",
 			"newTitle": "새 Provider",
 			"prefilledFrom": "{id}에서 미리 채웠습니다. 저장하기 전에 필드를 확인하세요.",
-			"general": "일반",
-			"generalHint": "계정 이름과 공급자 유형입니다. ID는 자동으로 생성됩니다.",
 			"nameRequired": "이름 *",
 			"namePlaceholder": "예: production",
 			"kind": "유형",

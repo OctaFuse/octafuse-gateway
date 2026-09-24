@@ -482,14 +482,6 @@ export function ProviderModal(props: ProviderModalProps) {
 						<section className="grid items-stretch gap-6 md:grid-cols-2">
 							<div className="space-y-3">
 								<div>
-									<h3 className="text-sm font-semibold text-gray-900">
-										{t("general")}
-									</h3>
-									<p className="mt-0.5 text-xs text-gray-500">
-										{t("generalHint")}
-									</p>
-								</div>
-								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
 										{t("nameRequired")}
 									</label>
