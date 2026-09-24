@@ -34,6 +34,7 @@ type Props = {
 	onFilterProviderChange: (v: string) => void;
 	modelOptions: FilterOption[];
 	providerOptions: FilterOption[];
+	providerLabelFor: (route: { provider_id: string; provider_name?: string | null }) => string;
 	routesInKindTotal: number;
 	filteredRoutes: RouteListRow[];
 	selectedId: string;
@@ -53,6 +54,7 @@ export function PlaygroundSetupPanel({
 	onFilterProviderChange,
 	modelOptions,
 	providerOptions,
+	providerLabelFor,
 	routesInKindTotal,
 	filteredRoutes,
 	selectedId,
@@ -163,7 +165,7 @@ export function PlaygroundSetupPanel({
 							filteredRoutes.map((r) => {
 								const active = selectedId === r.id;
 								const modelLabel = r.model_name || r.model_id;
-								const providerLabel = r.provider_name || r.provider_id;
+								const providerLabel = providerLabelFor(r);
 								const operation = `${r.upstream_protocol}.${r.upstream_operation ?? '*'}`;
 								return (
 									<button
@@ -219,7 +221,7 @@ export function PlaygroundSetupPanel({
 								{selected.model_name ?? selected.model_id}
 							</ReadonlyField>
 							<ReadonlyField label={t('provider')}>
-								{selected.provider_name ?? selected.provider_id}
+								{providerLabelFor(selected)}
 							</ReadonlyField>
 							<ReadonlyField label={t('upstreamOperation')}>
 								{selected.upstream_protocol}.{selected.upstream_operation ?? '*'}

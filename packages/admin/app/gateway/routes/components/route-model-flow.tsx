@@ -19,7 +19,8 @@ import {
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import type { SharedScheduleWindow } from '@octafuse/core/db/pricing-schedule';
-import { useTranslations } from 'next-intl';
+import { routeProviderAccountLabel } from '@/lib/provider-kind';
+import { useLocale, useTranslations } from 'next-intl';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import {
@@ -73,7 +74,9 @@ type PriorityTierSummary = {
 
 function summarizePriorityTier(
 	routes: RouteListRow[],
-	providerMeta: Map<string, GatewayProvider>
+	providerMeta: Map<string, GatewayProvider>,
+	locale: string,
+	customLabel: string,
 ): PriorityTierSummary {
 	let activeCount = 0;
 	const previewItems: PriorityTierPreviewItem[] = [];
@@ -84,7 +87,7 @@ function summarizePriorityTier(
 		const provider = providerMeta.get(route.provider_id);
 		previewItems.push({
 			id: route.id,
-			name: route.provider_name || provider?.name || route.provider_id,
+			name: routeProviderAccountLabel(route, provider, locale, customLabel),
 			enabled,
 		});
 	}
@@ -210,6 +213,9 @@ function RouteTarget({
 }) {
 	const t = useTranslations('routes.flow');
 	const tList = useTranslations('routes.listItem');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
+	const providerLabel = routeProviderAccountLabel(route, provider, locale, tKind('custom'));
 	const charged = parseChargedFactorFromPriceOverride(route.price_override);
 	const metered = parseMeteredFactorFromPriceOverride(route.price_override);
 	const chargedValue = charged != null && Number.isFinite(charged) ? charged : 1;
@@ -259,7 +265,7 @@ function RouteTarget({
 							className="min-w-0 flex-1 truncate rounded text-left text-[11px] font-semibold text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 							title={t('editRoute')}
 						>
-							{route.provider_name || provider?.name || route.provider_id}
+							{providerLabel}
 						</button>
 						{stickyBindingCount > 0 ? (
 							<span
@@ -420,10 +426,15 @@ export function FlowConnectorAdd({
 	);
 }
 
-function stickyTargetsFromSection(section: RouteProtocolGroupSection<RouteListRow>) {
+function stickyTargetsFromSection(
+	section: RouteProtocolGroupSection<RouteListRow>,
+	providerMeta: Map<string, GatewayProvider>,
+	locale: string,
+	customLabel: string,
+) {
 	return section.routes.map((route) => ({
 		id: route.id,
-		providerName: route.provider_name || route.provider_id,
+		providerName: routeProviderAccountLabel(route, providerMeta.get(route.provider_id), locale, customLabel),
 		priority: route.priority,
 		weight: Number(route.weight ?? 1) || 1,
 	}));
@@ -433,6 +444,9 @@ export function openSectionStickyDialog(
 	onOpen: OpenProviderStickyDialog,
 	card: RouteModelGroup,
 	section: RouteProtocolGroupSection<RouteListRow>,
+	providerMeta: Map<string, GatewayProvider>,
+	locale: string,
+	customLabel: string,
 ) {
 	onOpen(
 		card.model_id,
@@ -444,7 +458,7 @@ export function openSectionStickyDialog(
 		section.poolId,
 		section.poolStickyEnabled,
 		section.poolStickyIdleTtlSeconds,
-		stickyTargetsFromSection(section),
+		stickyTargetsFromSection(section, providerMeta, locale, customLabel),
 	);
 }
 
@@ -671,8 +685,10 @@ function PriorityTierPanel({
 }) {
 	const t = useTranslations('routes.flow');
 	const tStrategy = useTranslations('routes.strategy');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 	const isSummary = density === 'summary';
-	const summary = summarizePriorityTier(routes, providerMeta);
+	const summary = summarizePriorityTier(routes, providerMeta, locale, tKind('custom'));
 	const strategy = resolveEffectiveRouteStrategy({
 		poolStrategy: section.poolStrategy,
 		poolTierStrategies: section.poolTierStrategies,
@@ -995,6 +1011,8 @@ function FlowBranch({
 	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
 	const t = useTranslations('routes.flow');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 	const isSummary = density === 'summary';
 	const isDefaultGroup = section.group === 'default';
 	const groupRail = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
@@ -1034,7 +1052,15 @@ function FlowBranch({
 							enabled: section.poolStickyEnabled,
 							idleTtlSeconds: section.poolStickyIdleTtlSeconds,
 							poolId: section.poolId,
-							onClick: () => openSectionStickyDialog(onOpenProviderStickyDialog, card, section),
+							onClick: () =>
+								openSectionStickyDialog(
+									onOpenProviderStickyDialog,
+									card,
+									section,
+									providerMeta,
+									locale,
+									tKind('custom'),
+								),
 						}}
 					/>
 					<FlowConnectorAdd

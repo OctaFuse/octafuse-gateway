@@ -17,6 +17,7 @@ function snakeToCamel(key: string): string {
 function mapPgProviderRow(r: {
 	id: string;
 	name: string;
+	kind: string;
 	endpoints: string | null;
 	apiKey: string;
 	status: string;
@@ -26,6 +27,7 @@ function mapPgProviderRow(r: {
 	return {
 		id: r.id,
 		name: r.name,
+		kind: r.kind,
 		endpoints: r.endpoints,
 		api_key: r.apiKey,
 		status: r.status,
@@ -43,6 +45,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 				Array<{
 					id: string;
 					name: string;
+					kind: string;
 					endpoints: string | null;
 					api_key: string;
 					status: string;
@@ -52,7 +55,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 					active_routes_count: number;
 				}>
 			>`
-		SELECT p.id, p.name, p.endpoints, p.api_key, p.status, p.description, p.created_at::text,
+		SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.description, p.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE provider_id = p.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 		FROM providers p ORDER BY p.created_at DESC
@@ -60,6 +63,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 			return rows.map((r) => ({
 				id: r.id,
 				name: r.name,
+				kind: r.kind,
 				endpoints: r.endpoints,
 				api_key: r.api_key,
 				status: r.status,
@@ -78,6 +82,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 		async insertProvider(params: {
 			id: string;
 			name: string;
+			kind?: string;
 			endpoints: string | null;
 			description: unknown;
 			apiKey?: string;
@@ -87,6 +92,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 			await drizzle.insert(pgProvidersTable).values({
 				id: params.id,
 				name: params.name,
+				kind: params.kind ?? '',
 				endpoints: params.endpoints,
 				apiKey: params.apiKey ?? '',
 				status: params.status ?? 'active',
@@ -127,6 +133,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 				Array<{
 					id: string;
 					name: string;
+					kind: string;
 					endpoints: string | null;
 					api_key: string;
 					status: string;
@@ -136,7 +143,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 					active_routes_count: number;
 				}>
 			>`
-		SELECT p.id, p.name, p.endpoints, p.api_key, p.status, p.description, p.created_at::text,
+		SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.description, p.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE provider_id = p.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 		FROM providers p WHERE p.id = ${id}
@@ -146,6 +153,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 			return {
 				id: r.id,
 				name: r.name,
+				kind: r.kind,
 				endpoints: r.endpoints,
 				api_key: r.api_key,
 				status: r.status,

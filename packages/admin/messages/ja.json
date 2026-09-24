@@ -428,20 +428,26 @@
 			"failed": "インポートに失敗しました",
 			"copyFailed": "API Key のコピーに失敗しました"
 		},
+		"kind": {
+			"custom": "カスタム",
+			"unclassified": "未分類"
+		},
 		"outbound": {
 			"go": "クリックして開く"
 		},
 		"modal": {
 			"editTitle": "Provider を編集",
 			"newTitle": "新しい Provider",
-			"prefilledFrom": "{id} から事前入力しました。新しい ID を設定し、保存前に各項目を確認してください。",
+			"prefilledFrom": "{id} から事前入力しました。保存前に各項目を確認してください。",
 			"general": "基本情報",
-			"generalHint": "表示名と任意のカスタム ID（新規 Provider のみ）。",
-			"id": "ID",
-			"idPlaceholder": "任意：カスタム ID（空欄の場合は自動生成）",
-			"idHint": "空欄の場合は UUID を自動生成します",
+			"generalHint": "アカウント名とプロバイダータイプ。ID は自動生成されます。",
 			"nameRequired": "名前 *",
-			"namePlaceholder": "例：OpenAI",
+			"namePlaceholder": "例：production",
+			"kind": "タイプ",
+			"kindRequired": "タイプ *",
+			"kindPlaceholder": "プロバイダータイプを選択",
+			"kindHint": "異なるタイプでは同じアカウント名を使えます。タイプはアイコンと表示だけを決め、エンドポイントは変えません。",
+			"kindRequiredError": "プロバイダータイプを選択してください",
 			"endpoints": "エンドポイント",
 			"endpointsHint": "プロトコルごとに Base URL を設定すると全機能を利用できます。標準外 URL は上書きを展開してください。機能を制限する場合は Base を空にし、対応する上書き URL のみ入力します。",
 			"endpointsTabsAria": "エンドポイントプロトコル",

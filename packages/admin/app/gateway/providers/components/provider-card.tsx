@@ -5,8 +5,9 @@ import {
 	ClipboardDocumentIcon,
 	PowerIcon,
 } from '@heroicons/react/24/outline';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
+import { formatProviderAccountLabel, providerKindDisplayLabel } from '@/lib/provider-kind';
 import type { GatewayProvider, ProviderKeyStatusKind } from '../types';
 import { getProviderKeyStatus, getProviderProtocolSummaries } from '../provider-utils';
 import { ProviderCatalogOutboundLink } from './provider-catalog-outbound-link';
@@ -62,7 +63,9 @@ export function ProviderCard(props: ProviderCardProps) {
 	} = props;
 
 	const t = useTranslations('providers.card');
+	const tKind = useTranslations('providers.kind');
 	const tCommon = useTranslations('common');
+	const locale = useLocale();
 
 	const protocols = getProviderProtocolSummaries(provider);
 	const keyStatus = getProviderKeyStatus(provider);
@@ -84,6 +87,11 @@ export function ProviderCard(props: ProviderCardProps) {
 					active: t('activeRoutes', { count: activeRoutesCount }),
 				});
 
+	const kindLabel = providerKindDisplayLabel(provider, locale, tKind('custom'));
+	const showKind = Boolean(
+		kindLabel && kindLabel.trim().toLowerCase() !== provider.name.trim().toLowerCase()
+	);
+	const accountTitle = formatProviderAccountLabel(provider.name, kindLabel);
 	const statusLabel =
 		keyStatus === 'key_set'
 			? t('keySet')
@@ -102,8 +110,8 @@ export function ProviderCard(props: ProviderCardProps) {
 				type="button"
 				onClick={() => onEdit(provider)}
 				className="absolute inset-0 z-0 cursor-pointer rounded-xl bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
-				title={t('editProvider', { name: provider.name })}
-				aria-label={t('editProvider', { name: provider.name })}
+				title={t('editProvider', { name: accountTitle })}
+				aria-label={t('editProvider', { name: accountTitle })}
 			/>
 
 			<div className="pointer-events-none relative z-10 flex items-center gap-2.5">
@@ -116,7 +124,7 @@ export function ProviderCard(props: ProviderCardProps) {
 				<div className="min-w-0 flex-1">
 					<h2
 						className={`truncate text-sm font-semibold leading-5 ${isActive ? 'text-gray-900' : 'text-slate-500'}`}
-						title={provider.name}
+						title={accountTitle}
 					>
 						{provider.name}
 					</h2>
@@ -124,8 +132,16 @@ export function ProviderCard(props: ProviderCardProps) {
 						className={`mt-0.5 truncate text-[11px] font-medium leading-4 ${
 							isActive ? routeUsageClass(routesCount, activeRoutesCount) : 'text-slate-400'
 						}`}
-						title={routeTitle}
+						title={showKind ? `${kindLabel} · ${routeTitle}` : routeTitle}
 					>
+						{showKind ? (
+							<>
+								<span className={isActive ? 'text-slate-500' : 'text-slate-400'}>{kindLabel}</span>
+								<span className="mx-1 opacity-40" aria-hidden>
+									·
+								</span>
+							</>
+						) : null}
 						{routesCount <= 0 ? (
 							t('noRoutes')
 						) : (

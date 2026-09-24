@@ -6,10 +6,12 @@ import {
 	DocumentDuplicateIcon,
 	TrashIcon,
 } from "@heroicons/react/24/outline";
-import { useTranslations } from "next-intl";
-import { useEffect, useId, useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { useEffect, useId, useMemo, useState } from "react";
 import { protocolFormHasOverrides, protocolFormIsConfigured } from "../provider-utils";
-import { lookupStaticProviderCatalogLinks } from "@/lib/provider-import-preset";
+import { listProviderKindChoices, resolveStoredProviderPresentation } from "@/lib/provider-import-preset";
+import { CUSTOM_PROVIDER_KIND } from "@/lib/provider-kind";
+import { VendorIcon } from "@/components/model-vendor-icon";
 import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
 	GatewayProvider,
@@ -385,9 +387,20 @@ export function ProviderModal(props: ProviderModalProps) {
 	} = props;
 
 	const t = useTranslations("providers.modal");
+	const tKind = useTranslations("providers.kind");
 	const tCommon = useTranslations("common");
+	const locale = useLocale();
 	const titleId = useId();
 	const [endpointTab, setEndpointTab] = useState<UpstreamProtocol>("openai");
+	const kindChoices = useMemo(() => {
+		const labelOf = (labels: { en: string; zh: string }) =>
+			locale.toLowerCase().startsWith("zh") ? labels.zh || labels.en : labels.en || labels.zh;
+		return listProviderKindChoices()
+			.map((choice) => ({ ...choice, label: labelOf(choice.labels) }))
+			.sort((a, b) => a.label.localeCompare(b.label, locale));
+	}, [locale]);
+	const selectedKind = kindChoices.find((choice) => choice.kind === formData.kind);
+	const showUnclassified = Boolean(editingProvider) && !String(editingProvider?.kind ?? "").trim();
 
 	useEffect(() => {
 		if (!open) return;
@@ -476,24 +489,6 @@ export function ProviderModal(props: ProviderModalProps) {
 										{t("generalHint")}
 									</p>
 								</div>
-								{!editingProvider && (
-									<div>
-										<label className="mb-1 block text-sm font-medium text-gray-700">
-											{t("id")}
-										</label>
-										<input
-											type="text"
-											value={formData.id}
-											onChange={(e) =>
-												onFormChange({ ...formData, id: e.target.value })
-											}
-											className={`${inputClass} font-mono`}
-											placeholder={t("idPlaceholder")}
-											autoComplete="off"
-										/>
-										<p className="mt-1 text-xs text-gray-500">{t("idHint")}</p>
-									</div>
-								)}
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
 										{t("nameRequired")}
@@ -511,16 +506,52 @@ export function ProviderModal(props: ProviderModalProps) {
 									/>
 								</div>
 								<div>
+									<label className="mb-1 block text-sm font-medium text-gray-700">
+										{editingProvider ? t("kind") : t("kindRequired")}
+									</label>
+									<div className="flex items-center gap-2">
+										{formData.kind === CUSTOM_PROVIDER_KIND ? (
+											<VendorIcon vendor="other" iconKey="other" size="compact" />
+										) : selectedKind ? (
+											<VendorIcon
+												vendor={selectedKind.vendorKey}
+												iconKey={selectedKind.iconKey}
+												size="compact"
+											/>
+										) : null}
+										<select
+											value={formData.kind}
+											onChange={(e) =>
+												onFormChange({ ...formData, kind: e.target.value })
+											}
+											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+											required={!editingProvider}
+										>
+											<option value="" disabled={!showUnclassified}>
+												{showUnclassified ? tKind("unclassified") : t("kindPlaceholder")}
+											</option>
+											<option value={CUSTOM_PROVIDER_KIND}>{tKind("custom")}</option>
+											{kindChoices.map((choice) => (
+												<option key={choice.kind} value={choice.kind}>
+													{choice.label}
+												</option>
+											))}
+										</select>
+									</div>
+									<p className="mt-1 text-xs text-gray-500">{t("kindHint")}</p>
+								</div>
+								<div>
 									<div className="mb-1 flex items-center justify-between gap-2">
 										<label className="block text-sm font-medium text-gray-700">
 											{editingProvider ? t("apiKeyOptional") : t("apiKeyRequired")}
 										</label>
 										<ProviderCatalogOutboundLink
 											links={
-												lookupStaticProviderCatalogLinks({
+												resolveStoredProviderPresentation({
+													kind: formData.kind,
 													name: formData.name,
 													endpoints: editingProvider?.endpoints,
-												}) ?? editingProvider?.catalog_links
+												}).catalogLinks
 											}
 											className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
 										/>

@@ -89,6 +89,8 @@ export type ModelRouteDetailRow = ModelRouteRow & { created_at?: string };
 export interface ProviderAdminRow {
 	id: string;
 	name: string;
+	/** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。与 `name` 联合唯一。 */
+	kind?: string | null;
 	/** 协议端点 JSON（权威） */
 	endpoints: string | null;
 	/** 上游 API Key（管理端稍后脱敏） */

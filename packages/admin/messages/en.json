@@ -428,20 +428,26 @@
 			"failed": "Import failed",
 			"copyFailed": "Failed to copy API key"
 		},
+		"kind": {
+			"custom": "Custom",
+			"unclassified": "Unclassified"
+		},
 		"outbound": {
 			"go": "Click to go"
 		},
 		"modal": {
 			"editTitle": "Edit Provider",
 			"newTitle": "New Provider",
-			"prefilledFrom": "Pre-filled from {id}. Set a new ID and review fields before saving.",
+			"prefilledFrom": "Pre-filled from {id}. Review fields before saving.",
 			"general": "General",
-			"generalHint": "Display name and optional custom ID (new providers only).",
-			"id": "ID",
-			"idPlaceholder": "Optional: custom ID (auto-generated if empty)",
-			"idHint": "Leave empty to auto-generate a UUID",
+			"generalHint": "Account alias and provider type. The ID is generated automatically.",
 			"nameRequired": "Name *",
-			"namePlaceholder": "e.g., OpenAI",
+			"namePlaceholder": "e.g., production",
+			"kind": "Type",
+			"kindRequired": "Type *",
+			"kindPlaceholder": "Select a provider type",
+			"kindHint": "The same account name can be used under different types. Choosing a type sets the icon and does not change endpoints.",
+			"kindRequiredError": "Select a provider type",
 			"endpoints": "Endpoints",
 			"endpointsHint": "One base URL per protocol for full capabilities. Expand overrides for non-standard URLs, or clear Base and fill only supported overrides to limit capabilities.",
 			"endpointsTabsAria": "Endpoint protocols",

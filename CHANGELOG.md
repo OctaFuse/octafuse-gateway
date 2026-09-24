@@ -11,6 +11,7 @@
 - **接口说明**：同步 `GET /v1/models` 的 RPM 豁免、`kind=audio`、`inbound`，以及 Catalog 的 `pricing_profile`、`vendor`、`tags` 契约。
 - **模型目录**：静态预设新增 `mimo-v2.6-pro`、`mimo-v2.6-flash`、`mimo-v2.6-pro-ultraspeed`。价格为官网实时推理刊例（USD 与 CNY 分源），不含批量推理半价；缓存写入仍为限时免费，不写入目录价。
 - **模型目录**：静态预设新增 `gpt-6-sol`、`gpt-6-luna`、`claude-opus-5-5`、`grok-4.7`。价格为官网 Standard 刊例；海外 CNY 按 USD × 7 占位。不含 Batch、Flex、Fast 或仅限 Cursor / Grok Build 的加价档。
+- **供应商类型**：Providers 新增落库的 Type。`name` 只作账号别名，同一别名可以属于不同类型；同一类型下同名仍然冲突。图标和出站链接按已保存的类型匹配，不再随 Endpoint 猜测。尚未分类的旧供应商在下次保存前仍按原来的名称和地址推断图标。新建供应商不再填写 ID，由服务端生成。Azure OpenAI 与项目级 Google Vertex AI 的类型名不再附带「请替换资源名 / 项目 ID」，资源名和项目 ID 写在账号别名里。已按旧类型名保存的供应商需在编辑时重新选择类型。需要先执行迁移 `0029_provider_kind`。
 
 ### Patch Changes
 

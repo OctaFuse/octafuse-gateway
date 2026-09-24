@@ -12,7 +12,7 @@ import {
 	PlusIcon,
 	TrashIcon,
 } from '@heroicons/react/24/outline';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
 import { type CatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
@@ -22,6 +22,7 @@ import {
 	type CatalogPricingTierDisplayRow,
 } from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
+import { liveProviderAccountLabel } from '@/lib/provider-kind';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
 	adapterOptionMappingSuffix,
@@ -104,6 +105,8 @@ export function RouteModal(props: Props) {
 	const t = useTranslations('routes.modal');
 	const tModels = useTranslations('models.modal');
 	const tCommon = useTranslations('common');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 	const adapterLabel = (adapter: string) =>
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
 	const hasCustomHeaders = customHeaderRowsHaveValues(formData.custom_headers);
@@ -598,7 +601,7 @@ export function RouteModal(props: Props) {
 												<option value="">{t('selectProvider')}</option>
 												{selectableProviders.map((p) => (
 													<option key={p.id} value={p.id}>
-														{p.name || p.id}
+														{liveProviderAccountLabel(p, locale, tKind('custom'), p.id)}
 													</option>
 												))}
 											</select>

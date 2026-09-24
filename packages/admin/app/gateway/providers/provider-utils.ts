@@ -123,6 +123,7 @@ export function providerToFormData(
 	const map = parseProviderEndpoints(provider);
 	return {
 		api_key: "",
+		kind: provider.kind?.trim() || "",
 		status: provider.status === "disabled" ? "disabled" : "active",
 		openai: protocolFormFromConfig(map.openai),
 		anthropic: protocolFormFromConfig(map.anthropic),
@@ -324,19 +325,6 @@ export function providerMatchesListFilter(
 		return !providerHasApiKey(provider) && !provider.has_pending_key;
 	}
 	return getProviderProtocolSummaries(provider).some((protocol) => protocol.key === filter);
-}
-
-export function suggestDuplicateProviderId(
-	sourceId: string,
-	existingIds: Set<string>
-): string {
-	const base = `${sourceId}-copy`;
-	if (!existingIds.has(base)) return base;
-	for (let n = 2; n < 1000; n++) {
-		const candidate = `${base}-${n}`;
-		if (!existingIds.has(candidate)) return candidate;
-	}
-	return "";
 }
 
 /** 某协议 Advanced 区是否有任意覆盖（用于默认展开）。 */

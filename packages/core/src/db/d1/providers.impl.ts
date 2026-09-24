@@ -14,7 +14,7 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		async listProviders(): Promise<ProviderAdminRow[]> {
 			const rows = await raw
 				.prepare(
-					`SELECT p.id, p.name, p.endpoints, p.api_key, p.status, p.description, p.created_at,
+					`SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.description, p.created_at,
 				(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
 				(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 			 FROM providers p ORDER BY p.created_at DESC`
@@ -31,6 +31,7 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		async insertProvider(params: {
 			id: string;
 			name: string;
+			kind?: string;
 			endpoints: string | null;
 			description: unknown;
 			apiKey?: string;
@@ -38,12 +39,13 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		}): Promise<void> {
 			await raw
 				.prepare(
-					`INSERT INTO providers (id, name, endpoints, api_key, status, description)
-			 VALUES (?, ?, ?, ?, ?, ?)`
+					`INSERT INTO providers (id, name, kind, endpoints, api_key, status, description)
+			 VALUES (?, ?, ?, ?, ?, ?, ?)`
 				)
 				.bind(
 					params.id,
 					params.name,
+					params.kind ?? '',
 					params.endpoints,
 					params.apiKey ?? '',
 					params.status ?? 'active',
@@ -78,7 +80,7 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		async getProviderRowById(id: string): Promise<ProviderAdminRow | null> {
 			const row = await raw
 				.prepare(
-					`SELECT p.id, p.name, p.endpoints, p.api_key, p.status, p.description, p.created_at,
+					`SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.description, p.created_at,
 				(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
 				(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 			 FROM providers p WHERE p.id = ?`

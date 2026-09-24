@@ -7,7 +7,9 @@ import {
 	lookupStaticProviderCatalogLinks,
 	providerCatalogOutboundRel,
 	resolveProviderCatalogOutbound,
+	resolveStoredProviderPresentation,
 } from '@/lib/provider-import-preset';
+import { CUSTOM_PROVIDER_KIND, suggestUniqueProviderImportName } from '@/lib/provider-kind';
 import type { ProviderEndpointsMap } from '@octafuse/core/provider-endpoints';
 
 function replaceEndpointPaths(endpoints: ProviderEndpointsMap): ProviderEndpointsMap {
@@ -228,7 +230,7 @@ describe('provider import preset catalog metadata', () => {
 	it('keeps Vertex Express on Gemini query-key and adds project-scoped OpenAI chat', () => {
 		const rows = listStaticProviderImportPresets();
 		const express = rows.find((row) => row.name === 'Google Vertex AI (Express Mode · API Key)');
-		const projectScoped = rows.find((row) => row.name === 'Google Vertex AI (replace project ID)');
+		const projectScoped = rows.find((row) => row.name === 'Google Vertex AI');
 
 		assert.ok(express);
 		assert.equal(
@@ -365,5 +367,61 @@ describe('provider import preset catalog metadata', () => {
 		);
 		assert.equal(resolveProviderCatalogOutbound({ platform: 'https://example.com/' })?.kind, 'platform');
 		assert.equal(resolveProviderCatalogOutbound({ referral: 'http://insecure.example' }), null);
+	});
+
+	it('uses the stored kind for the icon and catalog links instead of the endpoint URL', () => {
+		const openaiEndpoints = { openai: { base: 'https://api.openai.com/v1' } } satisfies ProviderEndpointsMap;
+		const stored = resolveStoredProviderPresentation({
+			kind: 'OpenCode Zen',
+			name: 'dyc',
+			endpoints: openaiEndpoints,
+		});
+		const preset = listStaticProviderImportPresets().find((row) => row.name === 'OpenCode Zen');
+
+		assert.ok(preset);
+		assert.equal(stored.iconKey, preset.icon_key?.trim() || preset.vendor_key);
+		assert.equal(stored.catalogLinks?.platform, 'https://opencode.ai/zen');
+		assert.notEqual(
+			stored.iconKey,
+			inferStaticProviderIconKey({ name: 'dyc', endpoints: openaiEndpoints })
+		);
+	});
+
+	it('keeps name and URL inference when kind is empty', () => {
+		const provider = {
+			name: 'Private upstream',
+			endpoints: { openai: { base: 'https://api.openai.com/v1' } } satisfies ProviderEndpointsMap,
+		};
+		const stored = resolveStoredProviderPresentation(provider);
+
+		assert.equal(stored.iconKey, inferStaticProviderIconKey(provider));
+		assert.equal(stored.kindLabels, null);
+		assert.deepEqual(stored.catalogLinks, lookupStaticProviderCatalogLinks(provider));
+	});
+
+	it('uses a generic icon for an explicit custom kind', () => {
+		const stored = resolveStoredProviderPresentation({
+			kind: CUSTOM_PROVIDER_KIND,
+			name: 'relay',
+			endpoints: { openai: { base: 'https://api.openai.com/v1' } },
+		});
+
+		assert.equal(stored.iconKey, 'other');
+		assert.equal(stored.vendorKey, 'other');
+		assert.equal(stored.catalogLinks, null);
+	});
+
+	it('suffixes import names only within the same kind', () => {
+		const existing = new Set(['opencode zen\0opencode zen', '谷云\0alibaba cloud bailian']);
+
+		assert.equal(suggestUniqueProviderImportName('OpenCode Zen', 'OpenCode Zen', existing), 'OpenCode Zen (2)');
+		assert.equal(
+			suggestUniqueProviderImportName('谷云', 'Volcengine Ark', existing),
+			'谷云'
+		);
+		assert.equal(
+			suggestUniqueProviderImportName('谷云', 'Alibaba Cloud Bailian', existing),
+			'谷云 (2)'
+		);
 	});
 });

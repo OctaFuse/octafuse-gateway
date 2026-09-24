@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
 import {
 	isAudioModel,
@@ -17,6 +17,7 @@ import { isImageRouteModel } from '@/lib/image-generations';
 import { getCatalogImagePricingDisplay, getCatalogPricingTierRows } from '@/lib/pricing-ui';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import { normalizeRouteGroup } from '@/lib/route-group-ui';
+import { routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
@@ -68,6 +69,8 @@ import {
 export function useRoutesPageState() {
 	const tModal = useTranslations('routes.modal');
 	const tCommon = useTranslations('common');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 	const { notify, confirm } = useFeedback();
 	const searchParams = useSearchParams();
 	const [routes, setRoutes] = useState<RouteListRow[]>([]);
@@ -281,8 +284,10 @@ export function useRoutesPageState() {
 				filterVendor,
 				filterProviderId,
 				providers,
+				locale,
+				customKindLabel: tKind('custom'),
 			}),
-		[filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers]
+		[filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers, locale, tKind]
 	);
 
 	const selectedProvider = useMemo(
@@ -558,8 +563,12 @@ export function useRoutesPageState() {
 				.map((route) => ({
 					id: route.id,
 					providerId: route.provider_id,
-					providerName:
-						route.provider_name || providerMeta.get(route.provider_id)?.name || route.provider_id,
+					providerName: routeProviderAccountLabel(
+						route,
+						providerMeta.get(route.provider_id),
+						locale,
+						tKind('custom')
+					),
 					providerModelName: route.provider_model_name,
 					priority: route.priority,
 					weight: route.weight ?? 1,
@@ -596,7 +605,7 @@ export function useRoutesPageState() {
 				targets: matchingTargets,
 			});
 		},
-		[globalRouteStrategy, modelMeta, providerMeta, routes]
+		[globalRouteStrategy, locale, modelMeta, providerMeta, routes, tKind]
 	);
 
 	const handleSaveStrategy = useCallback(async () => {

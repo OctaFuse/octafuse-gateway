@@ -18,7 +18,6 @@ import {
 	providerMatchesListFilter,
 	providerMatchesSearch,
 	providerToFormData,
-	suggestDuplicateProviderId,
 } from './provider-utils';
 import type {
 	GatewayProvider,
@@ -97,8 +96,6 @@ export function useProvidersPageState() {
 		}
 		return params;
 	}, [providerSearch, selectedFilter]);
-
-	const existingProviderIds = useMemo(() => new Set(providers.map((p) => p.id)), [providers]);
 
 	const searchMatchedProviders = useMemo(
 		() => providers.filter((provider) => providerMatchesSearch(provider, providerSearch)),
@@ -222,7 +219,7 @@ export function useProvidersPageState() {
 			setEditingProvider(null);
 			setDuplicateSourceId(provider.id);
 			setFormData({
-				id: suggestDuplicateProviderId(provider.id, existingProviderIds),
+				id: '',
 				name: `${provider.name} (copy)`,
 				...providerToFormData(provider),
 				api_key: '',
@@ -232,7 +229,7 @@ export function useProvidersPageState() {
 			setShowModal(true);
 			setSaveError('');
 		},
-		[existingProviderIds]
+		[]
 	);
 
 	const handleDelete = useCallback(
@@ -347,6 +344,10 @@ export function useProvidersPageState() {
 			setSaveError('API key is required');
 			return;
 		}
+		if (!editingProvider && !formData.kind.trim()) {
+			setSaveError(tModal('kindRequiredError'));
+			return;
+		}
 		setSaveError('');
 		setIsSaving(true);
 		try {
@@ -363,7 +364,7 @@ export function useProvidersPageState() {
 		} finally {
 			setIsSaving(false);
 		}
-	}, [editingProvider, formData, refreshProviders]);
+	}, [editingProvider, formData, refreshProviders, tModal]);
 
 	const closeProviderModal = useCallback(() => {
 		if (isSaving || isDeleting) return;

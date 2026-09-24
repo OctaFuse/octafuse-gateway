@@ -6,7 +6,7 @@ import {
 	PencilSquareIcon,
 	PlusIcon,
 } from '@heroicons/react/24/outline';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import {
 	buildRouteSurfaceCatalog,
@@ -255,6 +255,8 @@ function GroupToUpstreamBranch({
 	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
 	const t = useTranslations('routes.flow');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 	const isDefaultGroup = section.group === 'default';
 	const railColor = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
 
@@ -272,7 +274,15 @@ function GroupToUpstreamBranch({
 							enabled: section.poolStickyEnabled,
 							idleTtlSeconds: section.poolStickyIdleTtlSeconds,
 							poolId: section.poolId,
-							onClick: () => openSectionStickyDialog(onOpenProviderStickyDialog, card, section),
+							onClick: () =>
+								openSectionStickyDialog(
+									onOpenProviderStickyDialog,
+									card,
+									section,
+									providerMeta,
+									locale,
+									tKind('custom'),
+								),
 						}}
 					/>
 					<FlowConnectorAdd

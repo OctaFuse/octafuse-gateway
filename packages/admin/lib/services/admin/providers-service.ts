@@ -11,11 +11,11 @@ import {
 	PROVIDER_IMPORT_PENDING_API_KEY,
 } from '@octafuse/core/db/provider-key-utils';
 import {
-	inferStaticProviderIconKey,
-	inferStaticProviderVendorKey,
+	isKnownProviderKind,
+	resolveStoredProviderPresentation,
 	listStaticProviderImportPresets,
-	lookupStaticProviderCatalogLinks,
 } from '@/lib/provider-import-preset';
+import { providerNameKindKey, suggestUniqueProviderImportName } from '@/lib/provider-kind';
 import { badRequest, conflict, notFound } from './errors';
 import type {
 	AdminCreatedIdOutput,
@@ -43,16 +43,50 @@ function normalizeProviderStatus(raw: unknown): 'active' | 'disabled' {
 	throw badRequest('status must be active or disabled');
 }
 
-/** 列表/详情脱敏：明文 `api_key` → masked；附带 `has_pending_key` 与路由计数。 */
+function normalizeProviderKind(raw: unknown, required: boolean): string {
+	if (raw === undefined || raw === null || String(raw).trim() === '') {
+		if (required) throw badRequest('kind is required');
+		return '';
+	}
+	const kind = String(raw).trim();
+	if (!isKnownProviderKind(kind)) {
+		throw badRequest('kind must be a known provider template name or __custom__');
+	}
+	return kind;
+}
+
+function isProviderNameKindConflict(error: unknown): boolean {
+	const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+	return (
+		message.includes('uk_providers_name_kind') ||
+		message.includes('unique constraint failed: providers.name') ||
+		(message.includes('duplicate') && message.includes('uk_providers_name_kind')) ||
+		(message.includes('unique') && message.includes('providers') && message.includes('kind'))
+	);
+}
+
+async function writeProvider(write: () => Promise<void>): Promise<void> {
+	try {
+		await write();
+	} catch (error) {
+		if (isProviderNameKindConflict(error)) {
+			throw conflict('A provider with this name and type already exists');
+		}
+		throw error;
+	}
+}
+
+/** 列表/详情脱敏：明文 `api_key` → masked；图标按已保存的 kind 解析。 */
 function enrichProviderRow(provider: AdminProviderRow): AdminProviderRow {
 	const plaintext = typeof provider.api_key === 'string' ? provider.api_key : '';
-	const vendorKey = inferStaticProviderVendorKey(provider);
-	const catalogLinks = lookupStaticProviderCatalogLinks(provider);
+	const presentation = resolveStoredProviderPresentation(provider);
 	return {
 		...provider,
-		vendor_key: vendorKey,
-		icon_key: inferStaticProviderIconKey({ ...provider, vendor_key: vendorKey }),
-		catalog_links: catalogLinks ?? undefined,
+		kind: String(provider.kind ?? ''),
+		kind_labels: presentation.kindLabels ?? undefined,
+		vendor_key: presentation.vendorKey,
+		icon_key: presentation.iconKey,
+		catalog_links: presentation.catalogLinks ?? undefined,
 		api_key: maskProviderApiKeyForAdmin(plaintext),
 		status: provider.status === 'disabled' ? 'disabled' : 'active',
 		has_pending_key: isPendingProviderImportApiKey(plaintext),
@@ -86,20 +120,24 @@ export async function createProviderService(
 
 	const endpointsJson = resolveEndpointsFromMutation(body);
 	const status = normalizeProviderStatus(body.status);
+	const kind = normalizeProviderKind(body.kind, true);
 
 	const id = customId || crypto.randomUUID();
 	if (customId && (await repos.providers.providerIdExists(id))) {
 		throw conflict('Provider ID already exists');
 	}
 
-	await repos.providers.insertProvider({
-		id,
-		name,
-		endpoints: endpointsJson,
-		description: body.description,
-		apiKey,
-		status,
-	});
+	await writeProvider(() =>
+		repos.providers.insertProvider({
+			id,
+			name,
+			kind,
+			endpoints: endpointsJson,
+			description: body.description,
+			apiKey,
+			status,
+		})
+	);
 
 	return { id };
 }
@@ -141,6 +179,9 @@ export async function updateProviderService(
 		if (!name) throw badRequest('name cannot be empty');
 		patch.name = name;
 	}
+	if (body.kind !== undefined) {
+		patch.kind = normalizeProviderKind(body.kind, false);
+	}
 	if (body.description !== undefined) {
 		patch.description = body.description;
 	}
@@ -159,10 +200,12 @@ export async function updateProviderService(
 
 	if (Object.keys(patch).length === 0) return;
 
-	const changes = await repos.providers.updateProviderByPatch(id, patch);
-	if (changes === 0) {
-		throw notFound('Provider not found');
-	}
+	await writeProvider(async () => {
+		const updated = await repos.providers.updateProviderByPatch(id, patch);
+		if (updated === 0) {
+			throw notFound('Provider not found');
+		}
+	});
 }
 
 /**
@@ -181,24 +224,10 @@ export async function deleteProviderService(repos: GatewayRepositories, id: stri
 	if (!changes) throw notFound('Provider not found');
 }
 
-/** 在 `providers.name` UNIQUE 约束下为模板导入生成唯一显示名。 */
-function suggestUniqueProviderImportName(baseName: string, existingNameLower: Set<string>): string {
-	const trimmed = baseName.trim();
-	if (!existingNameLower.has(trimmed.toLowerCase())) {
-		return trimmed;
-	}
-	for (let n = 2; n < 1000; n++) {
-		const candidate = `${trimmed} (${n})`;
-		if (!existingNameLower.has(candidate.toLowerCase())) {
-			return candidate;
-		}
-	}
-	throw badRequest(`Unable to allocate unique provider name for: ${trimmed}`);
-}
-
 /**
  * 从 `lib/provider-import-presets.json` 按 **catalog 键**导入 Provider：
  * 写入占位 `PROVIDER_IMPORT_PENDING_API_KEY`，须在 Admin 中替换为真实密钥。
+ * `kind` 写成模板英文名；同一类型下同名才追加 `(2)` 后缀。
  */
 export async function importProvidersFromStaticPresetsService(
 	repos: GatewayRepositories,
@@ -215,7 +244,9 @@ export async function importProvidersFromStaticPresetsService(
 	const failed: Array<{ id: string; message: string }> = [];
 
 	const existingProviders = await listProvidersService(repos);
-	const existingNameLower = new Set(existingProviders.map((p) => p.name.trim().toLowerCase()));
+	const existingNameKindKeys = new Set(
+		existingProviders.map((provider) => providerNameKindKey(provider.name, String(provider.kind ?? '')))
+	);
 
 	for (const catalogKey of uniqueIds) {
 		const preset = presetByKey.get(catalogKey);
@@ -229,17 +260,23 @@ export async function importProvidersFromStaticPresetsService(
 				throw badRequest(`Static preset catalog key "${catalogKey}": missing name`);
 			}
 
-			const name = suggestUniqueProviderImportName(baseName, existingNameLower);
+			let name: string;
+			try {
+				name = suggestUniqueProviderImportName(baseName, baseName, existingNameKindKeys);
+			} catch (error) {
+				throw badRequest(error instanceof Error ? error.message : 'Unable to allocate unique provider name');
+			}
 
 			await createProviderService(repos, {
 				name,
+				kind: baseName,
 				endpoints: preset.endpoints,
 				description: preset.description ?? null,
 				api_key: PROVIDER_IMPORT_PENDING_API_KEY,
 				status: 'active',
 			});
 
-			existingNameLower.add(name.toLowerCase());
+			existingNameKindKeys.add(providerNameKindKey(name, baseName));
 			created++;
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e);

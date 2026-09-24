@@ -111,6 +111,8 @@ export type AdminKeyUpdateInput = {
 export type AdminProviderMutationInput = {
 	id?: unknown;
 	name?: unknown;
+	/** 导入模板英文 `name`，或 `__custom__`。创建必填；PATCH 省略 = 不改，空串 = 尚未分类。 */
+	kind?: unknown;
 	/** `{ openai?: { base?, endpoints? }, … }` 对象或 JSON 字符串 */
 	endpoints?: unknown;
 	/** 创建必填；PATCH 时空串/省略 = 不改 */
@@ -257,10 +259,17 @@ export type AdminModelsImportOutput = {
 export type AdminProviderRow = {
 	id: string;
 	name: string;
-	/** 由内置 Provider 预设名称 / Endpoint 动态推导，不持久化。 */
+	/** 由内置 Provider 预设名称 / Endpoint 动态推导，或在 `kind` 已设置时由模板决定。不单独落库。 */
 	vendor_key?: string;
-	/** 由内置 Provider 预设动态推导的产品级图标，不持久化。 */
+	/** 产品级图标。`kind` 已设置时来自对应模板，否则按 URL / 名称推断。不单独落库。 */
 	icon_key?: string;
+	/** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。 */
+	kind?: string;
+	/** 已保存类型的中英文展示名。自定义与未分类时省略。 */
+	kind_labels?: {
+		en: string;
+		zh: string;
+	};
 	/** 由内置预设叠加的官网 / 密钥 / 邀请链接，不持久化。 */
 	catalog_links?: {
 		platform?: string;

@@ -12,12 +12,12 @@ import type { ProviderAdminRow } from '../../storage/repository-dtos';
 import { PROVIDER_PATCH_COLS } from '../patch-allowlists';
 import { asMySqlPool } from './mysql2-compat';
 
-const PROVIDER_LIST_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.endpoints, p.api_key, p.status, p.description, p.created_at,
+const PROVIDER_LIST_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.description, p.created_at,
 		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
 		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 	FROM providers p ORDER BY p.created_at DESC`;
 
-const PROVIDER_DETAIL_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.endpoints, p.api_key, p.status, p.description, p.created_at,
+const PROVIDER_DETAIL_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.description, p.created_at,
 		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
 		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 	FROM providers p WHERE p.id = ?`;
@@ -25,6 +25,7 @@ const PROVIDER_DETAIL_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.endpoints,
 function mapMyProviderRow(r: {
 	id: string;
 	name: string;
+	kind: string;
 	endpoints: string | null;
 	apiKey: string;
 	status: string;
@@ -34,6 +35,7 @@ function mapMyProviderRow(r: {
 	return {
 		id: r.id,
 		name: r.name,
+		kind: r.kind,
 		endpoints: r.endpoints,
 		api_key: r.apiKey,
 		status: r.status,
@@ -52,6 +54,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 				Array<{
 					id: string;
 					name: string;
+					kind: string;
 					endpoints: string | null;
 					api_key: string;
 					status: string;
@@ -64,6 +67,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 			return rows.map((r) => ({
 				id: r.id,
 				name: r.name,
+				kind: r.kind,
 				endpoints: r.endpoints,
 				api_key: r.api_key,
 				status: r.status,
@@ -82,6 +86,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 		async insertProvider(params: {
 			id: string;
 			name: string;
+			kind?: string;
 			endpoints: string | null;
 			description: unknown;
 			apiKey?: string;
@@ -91,6 +96,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 			await drizzle.insert(myProvidersTable).values({
 				id: params.id,
 				name: params.name,
+				kind: params.kind ?? '',
 				endpoints: params.endpoints,
 				apiKey: params.apiKey ?? '',
 				status: params.status ?? 'active',
@@ -128,6 +134,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 				Array<{
 					id: string;
 					name: string;
+					kind: string;
 					endpoints: string | null;
 					api_key: string;
 					status: string;
@@ -142,6 +149,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 			return {
 				id: r.id,
 				name: r.name,
+				kind: r.kind,
 				endpoints: r.endpoints,
 				api_key: r.api_key,
 				status: r.status,

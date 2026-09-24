@@ -4,6 +4,8 @@
  * 权威列表见 [provider-import-presets.json](./provider-import-presets.json)。`vendor_key` 应对齐
  * [model-vendors.json](./model-vendors.json) 中的 `key`（展示名用 `getModelVendorLabel`）。
  *
+ * 每条模板的英文 `name` 是 `providers.kind` 的稳定键。改名必须同时迁移已入库的 `kind`，不能只改 JSON。
+ *
  * Endpoint 约定（与 `listConfiguredCapabilities` / Admin 卡片展示一致）：
  * - **全能力 OpenAI 上游**（含 Images）：写 `openai.base`
  * - **仅 LLM / Chat Completions**：写 `openai.endpoints.chat`（完整 URL），**不要**写 `base`
@@ -13,6 +15,7 @@
  *
  * 导入后不含 API Key，须在 Edit Provider 中手动添加。
  */
+import { CUSTOM_PROVIDER_KIND, type ProviderKindLabels } from './provider-kind';
 import rawPresets from './provider-import-presets.json';
 import { getModelVendorLabel, normalizeModelVendorInput } from './model-vendor';
 import type { AdminProviderImportCatalogItem } from '@/lib/services/admin/types';
@@ -31,7 +34,7 @@ export type StaticProviderImportPresetRow = {
 	/**
 	 * Provider 产品级图标。省略时回退 `vendor_key`。
 	 * 例如 Xiaomi MiMo 使用 `xiaomimimo`，而不是 Xiaomi 企业 Logo。
-	 * 仅用于静态目录与动态展示，不写入 providers 表。
+	 * 不单独写入 providers 表；入库类型用本行的英文 `name`（`providers.kind`）。
 	 */
 	icon_key?: string;
 	endpoints: ProviderEndpointsMap;
@@ -412,6 +415,87 @@ export function lookupStaticProviderCatalogLinks(provider: {
 	if (exactName) return exactName;
 	const signature = providerEndpointSignature(provider.endpoints);
 	return (signature && STATIC_LINKS_BY_ENDPOINTS.get(signature)) || null;
+}
+
+export type StoredProviderPresentation = {
+	vendorKey: string;
+	iconKey: string;
+	catalogLinks: ProviderCatalogLinks | null;
+	/** 未分类或自定义时为 null。自定义文案由 UI 翻译。 */
+	kindLabels: ProviderKindLabels | null;
+};
+
+const PRESET_BY_EXACT_NAME = new Map(STATIC_ROWS.map((row) => [row.name.trim(), row]));
+
+function providerKindLabelsForPreset(row: StaticProviderImportPresetRow): ProviderKindLabels {
+	return {
+		en: row.catalog?.i18n.en.name?.trim() || row.name,
+		zh: row.catalog?.i18n.zh.name?.trim() || row.name,
+	};
+}
+
+/** `kind` 已设置时只用模板身份；空 kind 才回退 URL / 名称推断。 */
+export function resolveStoredProviderPresentation(provider: {
+	kind?: string | null;
+	name?: string | null;
+	endpoints?: ProviderEndpointsSource['endpoints'];
+	vendor_key?: string | null;
+}): StoredProviderPresentation {
+	const kind = String(provider.kind ?? '').trim();
+	if (!kind) {
+		const vendorKey = inferStaticProviderVendorKey(provider);
+		return {
+			vendorKey,
+			iconKey: inferStaticProviderIconKey({ ...provider, vendor_key: vendorKey }),
+			catalogLinks: lookupStaticProviderCatalogLinks(provider),
+			kindLabels: null,
+		};
+	}
+	if (kind === CUSTOM_PROVIDER_KIND) {
+		return {
+			vendorKey: 'other',
+			iconKey: 'other',
+			catalogLinks: null,
+			kindLabels: null,
+		};
+	}
+	const preset = PRESET_BY_EXACT_NAME.get(kind);
+	if (!preset) {
+		return {
+			vendorKey: 'other',
+			iconKey: 'other',
+			catalogLinks: null,
+			kindLabels: { en: kind, zh: kind },
+		};
+	}
+	const identity = identityForPreset(preset);
+	return {
+		vendorKey: identity.vendorKey,
+		iconKey: identity.iconKey,
+		catalogLinks: catalogLinksFromRow(preset),
+		kindLabels: providerKindLabelsForPreset(preset),
+	};
+}
+
+export function isKnownProviderKind(kind: string): boolean {
+	return kind === CUSTOM_PROVIDER_KIND || PRESET_BY_EXACT_NAME.has(kind);
+}
+
+export function listProviderKindChoices(): Array<{
+	kind: string;
+	labels: ProviderKindLabels;
+	vendorKey: string;
+	iconKey: string;
+}> {
+	return STATIC_ROWS.filter((row) => row.name.trim().length > 0).map((row) => {
+		const identity = identityForPreset(row);
+		return {
+			kind: row.name.trim(),
+			labels: providerKindLabelsForPreset(row),
+			vendorKey: identity.vendorKey,
+			iconKey: identity.iconKey,
+		};
+	});
 }
 
 /** 出站 CTA：邀请链接优先，其次密钥页，再次官网。 */

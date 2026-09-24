@@ -92,6 +92,8 @@ export type ProtocolEndpointForm = {
 export type ProviderFormData = {
 	id: string;
 	name: string;
+	/** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。 */
+	kind: string;
 	/** 创建必填；编辑时空 = 不改 */
 	api_key: string;
 	/** `active` | `disabled` */
@@ -135,6 +137,7 @@ export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
 export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 	id: '',
 	name: '',
+	kind: '',
 	api_key: '',
 	status: 'disabled',
 	openai: { ...EMPTY_PROTOCOL_FORM },

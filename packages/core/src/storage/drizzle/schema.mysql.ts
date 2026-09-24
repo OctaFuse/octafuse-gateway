@@ -15,6 +15,7 @@ const COL = {
 	STATUS: 32,
 	PERIOD: 64,
 	PROVIDER_NAME: 512,
+	PROVIDER_KIND: 128,
 	MODEL_ID: 512,
 	PROVIDER_ID: 512,
 	ROUTE_GROUP: 64,
@@ -91,18 +92,24 @@ export const apiKeysTable = mysqlTable('api_keys', {
 	updatedAt: timestamp('updated_at', { fsp: 6, mode: 'string' }).notNull(),
 });
 
-export const providersTable = mysqlTable('providers', {
-	id: varchar('id', { length: COL.ID }).primaryKey(),
-	name: varchar('name', { length: COL.PROVIDER_NAME }).notNull(),
-	/** JSON: `{ openai?: { base?, endpoints? }, … }` */
-	endpoints: text('endpoints'),
-	/** 该上游账号唯一 API Key */
-	apiKey: text('api_key').notNull().default(''),
-	/** `active` | `disabled` */
-	status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
-	description: text('description'),
-	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
-});
+export const providersTable = mysqlTable(
+	'providers',
+	{
+		id: varchar('id', { length: COL.ID }).primaryKey(),
+		name: varchar('name', { length: COL.PROVIDER_NAME }).notNull(),
+		/** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。与 name 联合唯一。 */
+		kind: varchar('kind', { length: COL.PROVIDER_KIND }).notNull().default(''),
+		/** JSON: `{ openai?: { base?, endpoints? }, … }` */
+		endpoints: text('endpoints'),
+		/** 该上游账号唯一 API Key */
+		apiKey: text('api_key').notNull().default(''),
+		/** `active` | `disabled` */
+		status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
+		description: text('description'),
+		createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
+	},
+	(t) => [uniqueIndex('uk_providers_name_kind').on(t.name, t.kind)]
+);
 
 export const modelsTable = mysqlTable('models', {
 	id: varchar('id', { length: COL.ID }).primaryKey(),

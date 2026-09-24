@@ -428,20 +428,26 @@
 			"failed": "导入失败",
 			"copyFailed": "复制 API Key 失败"
 		},
+		"kind": {
+			"custom": "自定义",
+			"unclassified": "未分类"
+		},
 		"outbound": {
 			"go": "点击前往"
 		},
 		"modal": {
 			"editTitle": "编辑供应商",
 			"newTitle": "新建供应商",
-			"prefilledFrom": "已从 {id} 预填。设置新 ID 并在保存前检查各字段。",
+			"prefilledFrom": "已从 {id} 预填。保存前请检查各字段。",
 			"general": "基本信息",
-			"generalHint": "显示名称及可选自定义 ID（仅新建供应商）。",
-			"id": "ID",
-			"idPlaceholder": "可选：自定义 ID（留空则自动生成）",
-			"idHint": "留空将自动生成 UUID",
+			"generalHint": "账号别名与供应商类型。ID 由系统自动生成。",
 			"nameRequired": "名称 *",
-			"namePlaceholder": "例如 OpenAI",
+			"namePlaceholder": "例如 谷云",
+			"kind": "类型",
+			"kindRequired": "类型 *",
+			"kindPlaceholder": "选择供应商类型",
+			"kindHint": "不同类型下可以使用相同的账号别名。选择类型只决定图标和展示，不会改写端点。",
+			"kindRequiredError": "请选择供应商类型",
 			"endpoints": "端点",
 			"endpointsHint": "每个协议填 Base URL 表示具备全部能力。非标准路径可展开覆盖；若要限制能力范围，请清空 Base，只填写支持的覆盖 URL。",
 			"endpointsTabsAria": "端点协议",
