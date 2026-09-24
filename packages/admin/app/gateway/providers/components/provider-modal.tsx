@@ -3,9 +3,13 @@
 import {
 	ChevronDownIcon,
 	ChevronRightIcon,
+	ClipboardDocumentIcon,
 	DocumentDuplicateIcon,
+	EyeIcon,
+	EyeSlashIcon,
 	TrashIcon,
 } from "@heroicons/react/24/outline";
+import { CheckIcon } from "@heroicons/react/24/solid";
 import { useTranslations, useLocale } from "next-intl";
 import { useEffect, useId, useMemo, useState } from "react";
 import { protocolFormHasOverrides, protocolFormIsConfigured } from "../provider-utils";
@@ -392,6 +396,8 @@ export function ProviderModal(props: ProviderModalProps) {
 	const locale = useLocale();
 	const titleId = useId();
 	const [endpointTab, setEndpointTab] = useState<UpstreamProtocol>("openai");
+	const [showApiKey, setShowApiKey] = useState(false);
+	const [apiKeyCopied, setApiKeyCopied] = useState(false);
 	const kindChoices = useMemo(() => {
 		const labelOf = (labels: { en: string; zh: string }) =>
 			locale.toLowerCase().startsWith("zh") ? labels.zh || labels.en : labels.en || labels.zh;
@@ -401,6 +407,11 @@ export function ProviderModal(props: ProviderModalProps) {
 	}, [locale]);
 	const selectedKind = kindChoices.find((choice) => choice.kind === formData.kind);
 	const showUnclassified = Boolean(editingProvider) && !String(editingProvider?.kind ?? "").trim();
+
+	useEffect(() => {
+		setShowApiKey(false);
+		setApiKeyCopied(false);
+	}, [open, editingProvider?.id, duplicateSourceId]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -483,22 +494,6 @@ export function ProviderModal(props: ProviderModalProps) {
 							<div className="space-y-3">
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t("nameRequired")}
-									</label>
-									<input
-										type="text"
-										value={formData.name}
-										onChange={(e) =>
-											onFormChange({ ...formData, name: e.target.value })
-										}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-										placeholder={t("namePlaceholder")}
-										autoComplete="off"
-										required
-									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
 										{editingProvider ? t("kind") : t("kindRequired")}
 									</label>
 									<div className="flex items-center gap-2">
@@ -533,6 +528,22 @@ export function ProviderModal(props: ProviderModalProps) {
 									<p className="mt-1 text-xs text-gray-500">{t("kindHint")}</p>
 								</div>
 								<div>
+									<label className="mb-1 block text-sm font-medium text-gray-700">
+										{t("nameRequired")}
+									</label>
+									<input
+										type="text"
+										value={formData.name}
+										onChange={(e) =>
+											onFormChange({ ...formData, name: e.target.value })
+										}
+										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										placeholder={t("namePlaceholder")}
+										autoComplete="off"
+										required
+									/>
+								</div>
+								<div>
 									<div className="mb-1 flex items-center justify-between gap-2">
 										<label className="block text-sm font-medium text-gray-700">
 											{editingProvider ? t("apiKeyOptional") : t("apiKeyRequired")}
@@ -548,20 +559,60 @@ export function ProviderModal(props: ProviderModalProps) {
 											className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
 										/>
 									</div>
-									<input
-										type="password"
-										value={formData.api_key}
-										onChange={(e) =>
-											onFormChange({ ...formData, api_key: e.target.value })
-										}
-										className={`${inputClass} font-mono`}
-										placeholder={
-											editingProvider
-												? t("apiKeyEditPlaceholder")
-												: t("apiKeyPlaceholder")
-										}
-										autoComplete="new-password"
-									/>
+									<div className="relative">
+										<input
+											type={editingProvider && showApiKey ? "text" : "password"}
+											value={formData.api_key}
+											onChange={(e) =>
+												onFormChange({ ...formData, api_key: e.target.value })
+											}
+											className={`${inputClass} font-mono ${editingProvider && formData.api_key ? "pr-16" : ""}`}
+											placeholder={
+												editingProvider
+													? t("apiKeyEditPlaceholder")
+													: t("apiKeyPlaceholder")
+											}
+											autoComplete="new-password"
+										/>
+										{editingProvider && formData.api_key ? (
+											<div className="absolute inset-y-0 right-1 flex items-center">
+												<button
+													type="button"
+													onClick={() => setShowApiKey((current) => !current)}
+													className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700"
+													aria-pressed={showApiKey}
+													aria-label={showApiKey ? tCommon("hide") : tCommon("show")}
+													title={showApiKey ? tCommon("hide") : tCommon("show")}
+												>
+													{showApiKey ? (
+														<EyeSlashIcon className="h-4 w-4" aria-hidden />
+													) : (
+														<EyeIcon className="h-4 w-4" aria-hidden />
+													)}
+												</button>
+												<button
+													type="button"
+													onClick={() => {
+														const value = formData.api_key.trim();
+														if (!value || !navigator.clipboard?.writeText) return;
+														void navigator.clipboard.writeText(value).then(() => {
+															setApiKeyCopied(true);
+															window.setTimeout(() => setApiKeyCopied(false), 2000);
+														});
+													}}
+													className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700"
+													aria-label={apiKeyCopied ? tCommon("copied") : tCommon("copy")}
+													title={apiKeyCopied ? tCommon("copied") : tCommon("copy")}
+												>
+													{apiKeyCopied ? (
+														<CheckIcon className="h-4 w-4 text-emerald-600" aria-hidden />
+													) : (
+														<ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
+													)}
+												</button>
+											</div>
+										) : null}
+									</div>
 									<p className="mt-1 text-xs text-gray-500">
 										{editingProvider ? t("apiKeyEditHint") : t("apiKeyHint")}
 									</p>

@@ -498,7 +498,7 @@
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "留空则保持原密钥",
 			"apiKeyHint": "该供应商的上游凭证。项目级 Vertex 请粘贴 GCP 服务账号 JSON（不要填 Vertex API Key）。",
-			"apiKeyEditHint": "留空保持当前密钥；填写新值则替换。",
+			"apiKeyEditHint": "默认隐藏当前密钥。可查看或复制。修改后保存即替换；清空则保持原密钥。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 流式 + 非流式",
 			"legacyPerActionNotice": "该 Provider 仍保留无法安全合并的 generateContent / streamGenerateContent 覆盖项。保存时原样写回。复核后可改为单一 '{action}' 模板。"
 		}

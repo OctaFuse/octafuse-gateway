@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
@@ -75,6 +75,8 @@ export function useProvidersPageState() {
 	const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
 	const [importSubmitting, setImportSubmitting] = useState(false);
 	const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
+	const loadedApiKeyRef = useRef<string | null>(null);
+	const apiKeyLoadGenRef = useRef(0);
 
 	useEffect(() => {
 		const q = searchParams.get('q');
@@ -186,6 +188,8 @@ export function useProvidersPageState() {
 	);
 
 	const handleCreate = useCallback(() => {
+		loadedApiKeyRef.current = null;
+		apiKeyLoadGenRef.current += 1;
 		setEditingProvider(null);
 		setDuplicateSourceId(null);
 		setFormData({
@@ -202,6 +206,8 @@ export function useProvidersPageState() {
 	}, []);
 
 	const handleEdit = useCallback((provider: GatewayProvider) => {
+		const loadGen = ++apiKeyLoadGenRef.current;
+		loadedApiKeyRef.current = null;
 		setEditingProvider(provider);
 		setDuplicateSourceId(null);
 		setFormData({
@@ -212,10 +218,25 @@ export function useProvidersPageState() {
 		});
 		setShowModal(true);
 		setSaveError('');
+		void fetchProviderApiKeyPlaintext(provider.id)
+			.then((apiKey) => {
+				if (apiKeyLoadGenRef.current !== loadGen) return;
+				loadedApiKeyRef.current = apiKey;
+				setFormData((current) => {
+					if (current.id !== provider.id || current.api_key.trim()) return current;
+					return { ...current, api_key: apiKey };
+				});
+			})
+			.catch((error) => {
+				if (apiKeyLoadGenRef.current !== loadGen) return;
+				console.error('Load provider API key error:', error);
+			});
 	}, []);
 
 	const handleDuplicate = useCallback(
 		(provider: GatewayProvider) => {
+			loadedApiKeyRef.current = null;
+			apiKeyLoadGenRef.current += 1;
 			setEditingProvider(null);
 			setDuplicateSourceId(provider.id);
 			setFormData({
@@ -351,7 +372,14 @@ export function useProvidersPageState() {
 		setSaveError('');
 		setIsSaving(true);
 		try {
-			const result = await saveProvider(formData, editingProvider?.id ?? null);
+			const unchangedKey =
+				Boolean(editingProvider) &&
+				loadedApiKeyRef.current !== null &&
+				formData.api_key.trim() === loadedApiKeyRef.current;
+			const result = await saveProvider(
+				unchangedKey ? { ...formData, api_key: '' } : formData,
+				editingProvider?.id ?? null
+			);
 			if (result.success) {
 				setShowModal(false);
 				void refreshProviders();

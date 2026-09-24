@@ -498,7 +498,7 @@
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "空欄なら現行キーを維持",
 			"apiKeyHint": "このプロバイダーの上流認証情報。プロジェクト指定の Vertex では GCP サービスアカウント JSON を貼ってください（Vertex API Key ではありません）。",
-			"apiKeyEditHint": "空欄で現行キーを維持。新しい値を入力すると置換します。",
+			"apiKeyEditHint": "初期状態では非表示です。表示とコピーができます。変更して保存すると置換し、空にすると現行キーを維持します。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — ストリーム + 非ストリーム",
 			"legacyPerActionNotice": "このプロバイダーには安全に統合できない generateContent / streamGenerateContent の個別上書きが残っています。保存時はそのまま保持されます。確認後に単一の '{action}' テンプレートへ変更してください。"
 		}

@@ -498,7 +498,7 @@
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "비우면 현재 키 유지",
 			"apiKeyHint": "이 공급자의 업스트림 자격 증명. 프로젝트 범위 Vertex에는 GCP 서비스 계정 JSON을 붙여 넣으세요(Vertex API Key 아님).",
-			"apiKeyEditHint": "비우면 현재 키를 유지하고, 새 값을 입력하면 교체합니다.",
+			"apiKeyEditHint": "기본적으로 숨깁니다. 보거나 복사할 수 있습니다. 바꿔 저장하면 교체되고, 비우면 현재 키를 유지합니다.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 스트리밍 + 비스트리밍",
 			"legacyPerActionNotice": "이 Provider 에는 안전하게 병합할 수 없는 generateContent / streamGenerateContent 개별 오버라이드가 남아 있습니다. 저장 시 그대로 유지됩니다. 검토 후 단일 '{action}' 템플릿으로 변경하세요."
 		}

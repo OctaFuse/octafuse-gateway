@@ -498,7 +498,7 @@
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "Leave blank to keep current key",
 			"apiKeyHint": "Upstream credential for this provider. For project-scoped Vertex, paste a GCP service account JSON (not a Vertex API key).",
-			"apiKeyEditHint": "Leave blank to keep the current key. Enter a new value to replace it.",
+			"apiKeyEditHint": "Hidden by default. Show or copy the current key. Change it to replace on save; clear the field to keep the current key.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — stream + non-stream",
 			"legacyPerActionNotice": "This provider still has separate generateContent / streamGenerateContent overrides that cannot be safely merged. They are preserved as-is on save. Clear them in the database or set a single '{action}' template after review."
 		}
