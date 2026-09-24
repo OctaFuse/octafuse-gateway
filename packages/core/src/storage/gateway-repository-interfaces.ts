@@ -348,6 +348,8 @@ export interface ProvidersRepository {
 	insertProvider(params: {
 		id: string;
 		name: string;
+		/** 导入模板英文名、`__custom__`，或空字符串。 */
+		kind?: string;
 		/** `providers.endpoints` JSON 文本 */
 		endpoints: string | null;
 		description: unknown;

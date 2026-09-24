@@ -3,13 +3,19 @@
 import {
 	ChevronDownIcon,
 	ChevronRightIcon,
+	ClipboardDocumentIcon,
 	DocumentDuplicateIcon,
+	EyeIcon,
+	EyeSlashIcon,
 	TrashIcon,
 } from "@heroicons/react/24/outline";
-import { useTranslations } from "next-intl";
-import { useEffect, useId, useState } from "react";
+import { CheckIcon } from "@heroicons/react/24/solid";
+import { useTranslations, useLocale } from "next-intl";
+import { useEffect, useId, useMemo, useState } from "react";
 import { protocolFormHasOverrides, protocolFormIsConfigured } from "../provider-utils";
-import { lookupStaticProviderCatalogLinks } from "@/lib/provider-import-preset";
+import { listProviderKindChoices, resolveStoredProviderPresentation } from "@/lib/provider-import-preset";
+import { CUSTOM_PROVIDER_KIND } from "@/lib/provider-kind";
+import { VendorIcon } from "@/components/model-vendor-icon";
 import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
 	GatewayProvider,
@@ -385,9 +391,27 @@ export function ProviderModal(props: ProviderModalProps) {
 	} = props;
 
 	const t = useTranslations("providers.modal");
+	const tKind = useTranslations("providers.kind");
 	const tCommon = useTranslations("common");
+	const locale = useLocale();
 	const titleId = useId();
 	const [endpointTab, setEndpointTab] = useState<UpstreamProtocol>("openai");
+	const [showApiKey, setShowApiKey] = useState(false);
+	const [apiKeyCopied, setApiKeyCopied] = useState(false);
+	const kindChoices = useMemo(() => {
+		const labelOf = (labels: { en: string; zh: string }) =>
+			locale.toLowerCase().startsWith("zh") ? labels.zh || labels.en : labels.en || labels.zh;
+		return listProviderKindChoices()
+			.map((choice) => ({ ...choice, label: labelOf(choice.labels) }))
+			.sort((a, b) => a.label.localeCompare(b.label, locale));
+	}, [locale]);
+	const selectedKind = kindChoices.find((choice) => choice.kind === formData.kind);
+	const showUnclassified = Boolean(editingProvider) && !String(editingProvider?.kind ?? "").trim();
+
+	useEffect(() => {
+		setShowApiKey(false);
+		setApiKeyCopied(false);
+	}, [open, editingProvider?.id, duplicateSourceId]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -469,31 +493,40 @@ export function ProviderModal(props: ProviderModalProps) {
 						<section className="grid items-stretch gap-6 md:grid-cols-2">
 							<div className="space-y-3">
 								<div>
-									<h3 className="text-sm font-semibold text-gray-900">
-										{t("general")}
-									</h3>
-									<p className="mt-0.5 text-xs text-gray-500">
-										{t("generalHint")}
-									</p>
-								</div>
-								{!editingProvider && (
-									<div>
-										<label className="mb-1 block text-sm font-medium text-gray-700">
-											{t("id")}
-										</label>
-										<input
-											type="text"
-											value={formData.id}
+									<label className="mb-1 block text-sm font-medium text-gray-700">
+										{editingProvider ? t("kind") : t("kindRequired")}
+									</label>
+									<div className="flex items-center gap-2">
+										{formData.kind === CUSTOM_PROVIDER_KIND ? (
+											<VendorIcon vendor="other" iconKey="other" size="compact" />
+										) : selectedKind ? (
+											<VendorIcon
+												vendor={selectedKind.vendorKey}
+												iconKey={selectedKind.iconKey}
+												size="compact"
+											/>
+										) : null}
+										<select
+											value={formData.kind}
 											onChange={(e) =>
-												onFormChange({ ...formData, id: e.target.value })
+												onFormChange({ ...formData, kind: e.target.value })
 											}
-											className={`${inputClass} font-mono`}
-											placeholder={t("idPlaceholder")}
-											autoComplete="off"
-										/>
-										<p className="mt-1 text-xs text-gray-500">{t("idHint")}</p>
+											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+											required={!editingProvider}
+										>
+											<option value="" disabled={!showUnclassified}>
+												{showUnclassified ? tKind("unclassified") : t("kindPlaceholder")}
+											</option>
+											<option value={CUSTOM_PROVIDER_KIND}>{tKind("custom")}</option>
+											{kindChoices.map((choice) => (
+												<option key={choice.kind} value={choice.kind}>
+													{choice.label}
+												</option>
+											))}
+										</select>
 									</div>
-								)}
+									<p className="mt-1 text-xs text-gray-500">{t("kindHint")}</p>
+								</div>
 								<div>
 									<label className="mb-1 block text-sm font-medium text-gray-700">
 										{t("nameRequired")}
@@ -517,28 +550,69 @@ export function ProviderModal(props: ProviderModalProps) {
 										</label>
 										<ProviderCatalogOutboundLink
 											links={
-												lookupStaticProviderCatalogLinks({
+												resolveStoredProviderPresentation({
+													kind: formData.kind,
 													name: formData.name,
 													endpoints: editingProvider?.endpoints,
-												}) ?? editingProvider?.catalog_links
+												}).catalogLinks
 											}
 											className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
 										/>
 									</div>
-									<input
-										type="password"
-										value={formData.api_key}
-										onChange={(e) =>
-											onFormChange({ ...formData, api_key: e.target.value })
-										}
-										className={`${inputClass} font-mono`}
-										placeholder={
-											editingProvider
-												? t("apiKeyEditPlaceholder")
-												: t("apiKeyPlaceholder")
-										}
-										autoComplete="new-password"
-									/>
+									<div className="relative">
+										<input
+											type={editingProvider && showApiKey ? "text" : "password"}
+											value={formData.api_key}
+											onChange={(e) =>
+												onFormChange({ ...formData, api_key: e.target.value })
+											}
+											className={`${inputClass} font-mono ${editingProvider && formData.api_key ? "pr-16" : ""}`}
+											placeholder={
+												editingProvider
+													? t("apiKeyEditPlaceholder")
+													: t("apiKeyPlaceholder")
+											}
+											autoComplete="new-password"
+										/>
+										{editingProvider && formData.api_key ? (
+											<div className="absolute inset-y-0 right-1 flex items-center">
+												<button
+													type="button"
+													onClick={() => setShowApiKey((current) => !current)}
+													className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700"
+													aria-pressed={showApiKey}
+													aria-label={showApiKey ? tCommon("hide") : tCommon("show")}
+													title={showApiKey ? tCommon("hide") : tCommon("show")}
+												>
+													{showApiKey ? (
+														<EyeSlashIcon className="h-4 w-4" aria-hidden />
+													) : (
+														<EyeIcon className="h-4 w-4" aria-hidden />
+													)}
+												</button>
+												<button
+													type="button"
+													onClick={() => {
+														const value = formData.api_key.trim();
+														if (!value || !navigator.clipboard?.writeText) return;
+														void navigator.clipboard.writeText(value).then(() => {
+															setApiKeyCopied(true);
+															window.setTimeout(() => setApiKeyCopied(false), 2000);
+														});
+													}}
+													className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700"
+													aria-label={apiKeyCopied ? tCommon("copied") : tCommon("copy")}
+													title={apiKeyCopied ? tCommon("copied") : tCommon("copy")}
+												>
+													{apiKeyCopied ? (
+														<CheckIcon className="h-4 w-4 text-emerald-600" aria-hidden />
+													) : (
+														<ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
+													)}
+												</button>
+											</div>
+										) : null}
+									</div>
 									<p className="mt-1 text-xs text-gray-500">
 										{editingProvider ? t("apiKeyEditHint") : t("apiKeyHint")}
 									</p>

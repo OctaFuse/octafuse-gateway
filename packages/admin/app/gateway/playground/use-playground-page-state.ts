@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { flushSync } from 'react-dom';
 import { isAudioRouteModel, validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
 import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
@@ -50,6 +50,7 @@ import {
 	type PlaygroundLlmSampleId,
 } from './playground-utils';
 import { decodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
+import { liveProviderAccountLabel } from '@/lib/provider-kind';
 import type { FilterOption, GeminiAction, PlaygroundMode, ResponseMeta, ResponseTab, RouteListRow } from './types';
 
 function isAbortError(error: unknown): boolean {
@@ -61,6 +62,8 @@ function isAbortError(error: unknown): boolean {
 
 export function usePlaygroundPageState() {
 	const t = useTranslations('playground');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 	const tCommon = useTranslations('common');
 	const searchParams = useSearchParams();
 	const initialMode: PlaygroundMode =
@@ -271,14 +274,26 @@ export function usePlaygroundPageState() {
 		for (const r of routesInKind) {
 			if (filterModel && r.model_id !== filterModel) continue;
 			if (byId.has(r.provider_id)) continue;
-			const name = (r.provider_name ?? '').trim();
+			const provider = providersById.get(r.provider_id);
+			const name = provider
+				? liveProviderAccountLabel(provider, locale, tKind('custom'), r.provider_id)
+				: (r.provider_name ?? '').trim();
 			byId.set(r.provider_id, {
 				id: r.provider_id,
 				label: name && name !== r.provider_id ? `${name} (${r.provider_id})` : r.provider_id,
 			});
 		}
 		return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
-	}, [routesInKind, filterModel]);
+	}, [routesInKind, filterModel, providersById, locale, tKind]);
+
+	const providerLabelFor = useCallback(
+		(route: { provider_id: string; provider_name?: string | null }) => {
+			const provider = providersById.get(route.provider_id);
+			if (provider) return liveProviderAccountLabel(provider, locale, tKind('custom'), route.provider_id);
+			return (route.provider_name ?? '').trim() || route.provider_id;
+		},
+		[providersById, locale, tKind]
+	);
 
 	useEffect(() => {
 		if (filterModel && !modelOptions.some((o) => o.id === filterModel)) {
@@ -828,6 +843,7 @@ export function usePlaygroundPageState() {
 		setRouteSearch,
 		modelOptions,
 		providerOptions,
+		providerLabelFor,
 		routesInKind,
 		filteredRoutes,
 		selectedId,

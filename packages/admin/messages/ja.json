@@ -428,20 +428,24 @@
 			"failed": "インポートに失敗しました",
 			"copyFailed": "API Key のコピーに失敗しました"
 		},
+		"kind": {
+			"custom": "カスタム",
+			"unclassified": "未分類"
+		},
 		"outbound": {
 			"go": "クリックして開く"
 		},
 		"modal": {
 			"editTitle": "Provider を編集",
 			"newTitle": "新しい Provider",
-			"prefilledFrom": "{id} から事前入力しました。新しい ID を設定し、保存前に各項目を確認してください。",
-			"general": "基本情報",
-			"generalHint": "表示名と任意のカスタム ID（新規 Provider のみ）。",
-			"id": "ID",
-			"idPlaceholder": "任意：カスタム ID（空欄の場合は自動生成）",
-			"idHint": "空欄の場合は UUID を自動生成します",
+			"prefilledFrom": "{id} から事前入力しました。保存前に各項目を確認してください。",
 			"nameRequired": "名前 *",
-			"namePlaceholder": "例：OpenAI",
+			"namePlaceholder": "例：production",
+			"kind": "タイプ",
+			"kindRequired": "タイプ *",
+			"kindPlaceholder": "プロバイダータイプを選択",
+			"kindHint": "異なるタイプでは同じアカウント名を使えます。タイプはアイコンと表示だけを決め、エンドポイントは変えません。",
+			"kindRequiredError": "プロバイダータイプを選択してください",
 			"endpoints": "エンドポイント",
 			"endpointsHint": "プロトコルごとに Base URL を設定すると全機能を利用できます。標準外 URL は上書きを展開してください。機能を制限する場合は Base を空にし、対応する上書き URL のみ入力します。",
 			"endpointsTabsAria": "エンドポイントプロトコル",
@@ -494,7 +498,7 @@
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "空欄なら現行キーを維持",
 			"apiKeyHint": "このプロバイダーの上流認証情報。プロジェクト指定の Vertex では GCP サービスアカウント JSON を貼ってください（Vertex API Key ではありません）。",
-			"apiKeyEditHint": "空欄で現行キーを維持。新しい値を入力すると置換します。",
+			"apiKeyEditHint": "初期状態では非表示です。表示とコピーができます。変更して保存すると置換し、空にすると現行キーを維持します。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — ストリーム + 非ストリーム",
 			"legacyPerActionNotice": "このプロバイダーには安全に統合できない generateContent / streamGenerateContent の個別上書きが残っています。保存時はそのまま保持されます。確認後に単一の '{action}' テンプレートへ変更してください。"
 		}

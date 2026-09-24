@@ -428,20 +428,24 @@
 			"failed": "Import failed",
 			"copyFailed": "Failed to copy API key"
 		},
+		"kind": {
+			"custom": "Custom",
+			"unclassified": "Unclassified"
+		},
 		"outbound": {
 			"go": "Click to go"
 		},
 		"modal": {
 			"editTitle": "Edit Provider",
 			"newTitle": "New Provider",
-			"prefilledFrom": "Pre-filled from {id}. Set a new ID and review fields before saving.",
-			"general": "General",
-			"generalHint": "Display name and optional custom ID (new providers only).",
-			"id": "ID",
-			"idPlaceholder": "Optional: custom ID (auto-generated if empty)",
-			"idHint": "Leave empty to auto-generate a UUID",
+			"prefilledFrom": "Pre-filled from {id}. Review fields before saving.",
 			"nameRequired": "Name *",
-			"namePlaceholder": "e.g., OpenAI",
+			"namePlaceholder": "e.g., production",
+			"kind": "Type",
+			"kindRequired": "Type *",
+			"kindPlaceholder": "Select a provider type",
+			"kindHint": "The same account name can be used under different types. Choosing a type sets the icon and does not change endpoints.",
+			"kindRequiredError": "Select a provider type",
 			"endpoints": "Endpoints",
 			"endpointsHint": "One base URL per protocol for full capabilities. Expand overrides for non-standard URLs, or clear Base and fill only supported overrides to limit capabilities.",
 			"endpointsTabsAria": "Endpoint protocols",
@@ -494,7 +498,7 @@
 			"apiKeyPlaceholder": "sk-…",
 			"apiKeyEditPlaceholder": "Leave blank to keep current key",
 			"apiKeyHint": "Upstream credential for this provider. For project-scoped Vertex, paste a GCP service account JSON (not a Vertex API key).",
-			"apiKeyEditHint": "Leave blank to keep the current key. Enter a new value to replace it.",
+			"apiKeyEditHint": "Hidden by default. Show or copy the current key. Change it to replace on save; clear the field to keep the current key.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — stream + non-stream",
 			"legacyPerActionNotice": "This provider still has separate generateContent / streamGenerateContent overrides that cannot be safely merged. They are preserved as-is on save. Clear them in the database or set a single '{action}' template after review."
 		}

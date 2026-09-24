@@ -137,9 +137,16 @@ export const API_KEY_BUDGET_AUDIT_SOURCE_CHANNELS = [
 export interface GatewayProvider {
   id: string;
   name: string;
-  /** Admin API 根据内置预设动态推导；不写入 providers 表。 */
+  /** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。 */
+  kind?: string;
+  /** 已保存类型的中英文展示名。自定义与未分类时省略。 */
+  kind_labels?: {
+    en: string;
+    zh: string;
+  };
+  /** 未设置 kind 时按预设 / Endpoint 推导；已设置 kind 时由模板决定。不单独写入 providers 表。 */
   vendor_key?: string;
-  /** Admin API 根据内置预设动态推导的产品级图标；不写入 providers 表。 */
+  /** 未设置 kind 时按预设推导；已设置 kind 时由模板决定。不单独写入 providers 表。 */
   icon_key?: string;
   /** Admin API 根据内置预设叠加的官网 / 密钥 / 邀请链接；不写入 providers 表。 */
   catalog_links?: {

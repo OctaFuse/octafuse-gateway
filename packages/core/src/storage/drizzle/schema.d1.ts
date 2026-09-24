@@ -58,18 +58,24 @@ export const apiKeysTable = sqliteTable('api_keys', {
 	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const providersTable = sqliteTable('providers', {
-	id: text('id').primaryKey(),
-	name: text('name').notNull(),
-	/** JSON: `{ openai?: { base?, endpoints? }, … }` */
-	endpoints: text('endpoints'),
-	/** 该上游账号唯一 API Key */
-	apiKey: text('api_key').notNull().default(''),
-	/** `active` | `disabled` */
-	status: text('status').notNull().default('active'),
-	description: text('description'),
-	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+export const providersTable = sqliteTable(
+	'providers',
+	{
+		id: text('id').primaryKey(),
+		name: text('name').notNull(),
+		/** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。与 name 联合唯一。 */
+		kind: text('kind').notNull().default(''),
+		/** JSON: `{ openai?: { base?, endpoints? }, … }` */
+		endpoints: text('endpoints'),
+		/** 该上游账号唯一 API Key */
+		apiKey: text('api_key').notNull().default(''),
+		/** `active` | `disabled` */
+		status: text('status').notNull().default('active'),
+		description: text('description'),
+		createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+	},
+	(t) => [uniqueIndex('uk_providers_name_kind').on(t.name, t.kind)]
+);
 
 export const modelsTable = sqliteTable('models', {
 	id: text('id').primaryKey(),

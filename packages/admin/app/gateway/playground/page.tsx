@@ -91,6 +91,7 @@ function PlaygroundPageInner() {
 								onFilterProviderChange={s.setFilterProvider}
 								modelOptions={s.modelOptions}
 								providerOptions={s.providerOptions}
+								providerLabelFor={s.providerLabelFor}
 								routesInKindTotal={s.routesInKind.length}
 								filteredRoutes={s.filteredRoutes}
 								selectedId={s.selectedId}

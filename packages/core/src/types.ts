@@ -100,6 +100,11 @@ export interface ProviderRow {
   id: string;
   name: string;
   /**
+   * 供应商类型。导入模板的稳定英文 `name`，或显式自定义 `__custom__`。
+   * 空字符串表示尚未分类。与 `name` 联合唯一。
+   */
+  kind?: string | null;
+  /**
 	 * 协议端点 JSON（权威）：`{ openai?: { base?, endpoints? }, anthropic?, gemini?, dashscope? }`。
    * 见 `parseProviderEndpoints` / `resolveUpstreamEndpoint`。
    */

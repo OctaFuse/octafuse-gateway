@@ -59,6 +59,7 @@ import {
 } from '@octafuse/core/db/pricing-schedule';
 import { compareModelsByReleasedAtDesc } from '@/lib/model-catalog-sort';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
+import { liveProviderAccountLabel } from '@/lib/provider-kind';
 import { compareRouteGroupsForDisplay, normalizeRouteGroup } from '@/lib/route-group-ui';
 import { UPSTREAM_PROTOCOLS, isUpstreamProtocol, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
@@ -1309,15 +1310,17 @@ export function buildActiveFilterSummary(params: {
 	filterVendor: string;
 	filterProviderId: string;
 	providers: GatewayProvider[];
+	locale: string;
+	customKindLabel: string;
 }): string[] {
-	const { filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers } = params;
+	const { filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers, locale, customKindLabel } = params;
 	const parts: string[] = [];
 	if (filterStatus) parts.push(filterStatus === 'active' ? 'Active' : 'Inactive');
 	if (filterRouteGroup) parts.push(`Group: ${filterRouteGroup}`);
 	if (filterVendor) parts.push(getModelVendorLabel(filterVendor));
 	if (filterProviderId) {
 		const p = providers.find((x) => x.id === filterProviderId);
-		parts.push(p?.name || filterProviderId);
+		parts.push(p ? liveProviderAccountLabel(p, locale, customKindLabel, filterProviderId) : filterProviderId);
 	}
 	return parts;
 }

@@ -5,9 +5,11 @@
  */
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readApiJson } from '@/lib/api-json';
+import { liveProviderAccountLabel } from '@/lib/provider-kind';
+import type { GatewayProvider } from '@/lib/types';
 import {
   createRangeValue,
   DEFAULT_GATEWAY_TIME_RANGE_PRESET,
@@ -30,6 +32,9 @@ export default function ReliabilityPage() {
   const t = useTranslations('analytics.reliability');
   const tA = useTranslations('analytics');
   const tCommon = useTranslations('common');
+  const tKind = useTranslations('providers.kind');
+  const locale = useLocale();
+  const [liveProviders, setLiveProviders] = useState<Map<string, GatewayProvider>>(new Map());
   const [providers, setProviders] = useState<ProviderReliabilityRow[]>([]);
   const [modelProviders, setModelProviders] = useState<ModelProviderRow[]>([]);
   const [recentErrors, setRecentErrors] = useState<GatewayRequestLog[]>([]);
@@ -41,6 +46,29 @@ export default function ReliabilityPage() {
   useEffect(() => {
     fetchData();
   }, [rangeValue]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/admin/providers');
+        const data = await readApiJson<GatewayProvider[]>(response);
+        if (cancelled || !data.success || !Array.isArray(data.data)) return;
+        setLiveProviders(new Map(data.data.map((provider) => [provider.id, provider])));
+      } catch (e) {
+        console.error('Fetch providers error:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const providerLabel = (providerId: string, snapshotName: string | null | undefined) => {
+    const live = liveProviders.get(providerId);
+    if (live) return liveProviderAccountLabel(live, locale, tKind('custom'), providerId);
+    return snapshotName?.trim() || providerId;
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -106,7 +134,7 @@ export default function ReliabilityPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {providers.map((p) => (
                   <tr key={p.provider_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.provider_name ?? p.provider_id}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{providerLabel(p.provider_id, p.provider_name)}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.request_count.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={successRateClassName(p.success_rate)}>
@@ -162,7 +190,7 @@ export default function ReliabilityPage() {
                   list.map((r) => (
                     <tr key={`${r.model_id}-${r.provider_id}`} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{modelId}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.provider_name ?? r.provider_id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{providerLabel(r.provider_id, r.provider_name)}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.request_count.toLocaleString()}</td>
                       <td className="px-4 py-3 text-sm">
                         <span className={successRateClassName(r.success_rate)}>

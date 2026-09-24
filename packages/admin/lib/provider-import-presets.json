@@ -790,7 +790,7 @@
 		}
 	},
 	{
-		"name": "Google Vertex AI (replace project ID)",
+		"name": "Google Vertex AI",
 		"vendor_key": "google",
 		"icon_key": "vertexai",
 		"endpoints": {
@@ -808,11 +808,11 @@
 		"catalog": {
 			"i18n": {
 				"zh": {
-					"name": "Google Vertex AI（请替换项目 ID）",
+					"name": "Google Vertex AI",
 					"description": "正式 Vertex：OpenAI Chat Completions 与原生 Gemini；导入后替换项目 ID，API Key 栏粘贴 GCP 服务账号 JSON。"
 				},
 				"en": {
-					"name": "Google Vertex AI (replace project ID)",
+					"name": "Google Vertex AI",
 					"description": "Full Vertex: OpenAI Chat Completions plus native Gemini. Replace the project ID; paste a GCP service account JSON as the API key."
 				}
 			},
@@ -1147,7 +1147,7 @@
 		}
 	},
 	{
-		"name": "Azure OpenAI (replace resource name)",
+		"name": "Azure OpenAI",
 		"vendor_key": "azure",
 		"endpoints": {
 			"openai": {
@@ -1158,11 +1158,11 @@
 		"catalog": {
 			"i18n": {
 				"zh": {
-					"name": "Azure OpenAI（请替换资源名）",
+					"name": "Azure OpenAI",
 					"description": "Azure OpenAI 资源模板；导入后需替换为自己的资源名称。"
 				},
 				"en": {
-					"name": "Azure OpenAI (replace resource name)",
+					"name": "Azure OpenAI",
 					"description": "Azure OpenAI resource template; replace the placeholder with your resource name."
 				}
 			},

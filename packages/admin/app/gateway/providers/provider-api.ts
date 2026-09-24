@@ -18,6 +18,7 @@ export async function saveProvider(
 ): Promise<{ success: true } | { success: false; message: string }> {
 	const payload: Record<string, unknown> = {
 		name: formData.name,
+		kind: formData.kind,
 		description: formData.description,
 		endpoints: formDataToEndpointsMap(formData),
 		status: formData.status === 'disabled' ? 'disabled' : 'active',
@@ -40,9 +41,6 @@ export async function saveProvider(
 			return { success: false, message: 'api_key is required' };
 		}
 		payload.api_key = apiKey;
-		if (formData.id.trim()) {
-			payload.id = formData.id.trim();
-		}
 		response = await fetch('/api/admin/providers', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },

@@ -2,7 +2,8 @@
 
 import { FilterNavButton, FilterNavSection } from '../../components/filter-nav';
 import type { GatewayProvider } from '@/lib/types';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { liveProviderAccountLabel } from '@/lib/provider-kind';
 import type { ComponentProps } from 'react';
 import type { RouteKindFilter } from '../types';
 
@@ -67,6 +68,8 @@ export function RouteFilterSidebar(props: Props) {
 
 	const t = useTranslations('filter');
 	const tCommon = useTranslations('common');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 
 	return (
 		<section className="mb-5 sm:mb-6" aria-label={t('title')}>
@@ -185,7 +188,7 @@ export function RouteFilterSidebar(props: Props) {
 					{providers.map((p) => (
 						<HorizontalButton
 							key={p.id}
-							label={p.name || p.id}
+							label={liveProviderAccountLabel(p, locale, tKind('custom'), p.id)}
 							count={providerRouteCounts.get(p.id) ?? 0}
 							isActive={filterProviderId === p.id}
 							onClick={() => onFilterProviderIdChange(p.id)}

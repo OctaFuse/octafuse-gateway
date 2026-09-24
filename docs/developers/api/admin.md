@@ -69,7 +69,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/providers` | GET, POST, GET/PATCH/DELETE `/:id` | `providers`（单键 `api_key` + `status`；列表脱敏） | Admin UI |
 | `/admin/providers/:id/api-key` | GET | `providers.api_key` 明文揭示 | Admin UI |
 | `/admin/providers/import/catalog` | GET | 内置 Provider 模板摘要（无密钥） | Admin UI |
-| `/admin/providers/import` | POST | 请求体 `{"ids":["0","1",…]}`：catalog 键（非 provider id）；每次导入新增 `providers` 行（UUID id；同名自动后缀）；占位 API Key，须在 Admin 中替换 | Admin UI、运维脚本 |
+| `/admin/providers/import` | POST | 请求体 `{"ids":["0","1",…]}`：catalog 键（非 provider id）；每次导入新增 `providers` 行（UUID id；`kind` 为模板英文名；同一 `kind` 下同名自动后缀）；占位 API Key，须在 Admin 中替换 | Admin UI、运维脚本 |
 | `/admin/models` | GET, POST, GET/PATCH/DELETE `/:id` | `models`（含可选 `route_policy`），`model_tags` | Admin UI |
 | `/admin/models/import/catalog` | GET | 内置静态目录可选项摘要（不含完整 `pricing_profile`） | Admin UI |
 | `/admin/models/import` | POST | 请求体 `{"ids":["…"]}`：仅导入指定预设 → `models`（按 `BILLING_CURRENCY` 选用 USD/CNY 价；**同 id 不覆盖**，记入 `skipped_existing`；**不**写入 `model_tags`） | Admin UI、运维脚本 |
@@ -615,17 +615,19 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### Providers（`/admin/providers`）
 
-一个 Provider = **一把** `api_key` + **`status`**（`active` \| `disabled`）。**无** `/admin/providers/:id/keys*` 子资源（迁移 0015 已删除 `provider_api_keys`）。
+一个 Provider = **一把** `api_key` + **`status`**（`active` \| `disabled`）+ **`kind`**。**无** `/admin/providers/:id/keys*` 子资源（迁移 0015 已删除 `provider_api_keys`）。
+
+`name` 是账号别名。`kind` 取导入模板的稳定英文 `name`（如 `OpenCode Zen`），或显式自定义 `__custom__`。已有行默认 `''`，表示尚未分类。唯一约束是 `(name, kind)`：同一别名可以属于不同类型；同一类型下同名返回 **409**，正文为 `A provider with this name and type already exists`。列表与详情会附带运行时解析的 `kind_labels`、`vendor_key`、`icon_key`、`catalog_links`（不落库）。已设置 `kind` 时图标与链接只跟模板走；`__custom__` 使用通用图标；空 `kind` 仍按名称与 Endpoint 推断。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `endpoints`、`status`、`has_pending_key`、`routes_count`、`active_routes_count` |
-| POST | `/admin/providers` | 创建；**`name` + `api_key` 必填**；可选 `id`、`description`、`endpoints`、`status` |
+| GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `kind`、`endpoints`、`status`、`has_pending_key`、`routes_count`、`active_routes_count` |
+| POST | `/admin/providers` | 创建；**`name` + `api_key` + `kind` 必填**；`kind` 须为已知模板英文名或 `__custom__`；管理后台不提交 `id`，由服务端生成 UUID。API 仍可传可选 `id`。另可传 `description`、`endpoints`、`status` |
 | GET | `/admin/providers/:id` | 详情（脱敏 `api_key`） |
-| PATCH | `/admin/providers/:id` | 部分更新；`api_key` 空串/未传 = **不改密钥**；`status` 仅 `active` \| `disabled` |
+| PATCH | `/admin/providers/:id` | 部分更新；省略 `kind` = 不改类型；`kind: ""` = 标为尚未分类；`api_key` 空串/未传 = **不改密钥**；`status` 仅 `active` \| `disabled`。改 `kind` 不覆盖已有 `endpoints` |
 | DELETE | `/admin/providers/:id` | 删除；仍被 `model_routes` 引用时返回 **409**，须先删除或改绑对应 Target |
 | GET | `/admin/providers/:id/api-key` | **揭示明文** `api_key`（`{ success, data: { api_key } }`） |
-| GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换） |
+| GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换）。写入 `kind =` 模板英文名；仅同一 `kind` 下同名才追加 `(2)` 后缀 |
 
 `endpoints` JSON 权威形状：
 
