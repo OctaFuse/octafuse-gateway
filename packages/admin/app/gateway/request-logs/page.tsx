@@ -3,7 +3,7 @@
 /**
  * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
  */
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
 import { ChevronRightIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
@@ -15,6 +15,7 @@ import {
 } from '@/lib/route-group-ui';
 import { GATEWAY_TOOLS_PROVIDER_ID } from '@/lib/gateway-tools';
 import { proxyToolPath } from '@/lib/invoke-kind';
+import { liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
 import { UPSTREAM_PROTOCOLS } from '@/lib/upstream-protocol';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { requestLogProtocolPath, requestSurfacePath } from '../routes/route-utils';
@@ -43,6 +44,8 @@ export default function GatewayRequestLogsPage() {
   const t = useTranslations('requestLogs');
   const tCommon = useTranslations('common');
   const tOptions = useTranslations('options');
+  const tKind = useTranslations('providers.kind');
+  const locale = useLocale();
   const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -205,9 +208,10 @@ export default function GatewayRequestLogsPage() {
   }, [modelCatalog, filterModel]);
 
   const providerSelectOptions = useMemo(() => {
-    const rows = [...providerCatalog]
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
-      .map((p) => ({ id: p.id, label: p.name }));
+    const rows = sortProvidersByKindThenName(providerCatalog, locale, tKind('custom')).map((p) => ({
+      id: p.id,
+      label: liveProviderPickerLabel(p, locale, tKind('custom'), p.id),
+    }));
     const ids = new Set(rows.map((r) => r.id));
     if (filterProviderId && !ids.has(filterProviderId)) {
       rows.unshift({
@@ -216,7 +220,7 @@ export default function GatewayRequestLogsPage() {
       });
     }
     return rows;
-  }, [providerCatalog, filterProviderId]);
+  }, [providerCatalog, filterProviderId, locale, tKind]);
 
   /** option 的 value 与展示文案均为规范化后的 route_group（与目录一致） */
   const routeGroupSelectOptions = useMemo(() => {

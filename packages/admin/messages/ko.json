@@ -324,6 +324,8 @@
 		"vendorAria": "Vendor 필터",
 		"provider": "Provider",
 		"providerAria": "Provider 필터",
+		"providerType": "Provider 유형",
+		"providerTypeAria": "Provider 유형 필터",
 		"routeGroup": "Route 그룹",
 		"routeGroupAria": "Route 그룹 필터",
 		"modelsAndRoutes": "모델 {models}개 · Route {routes}개",

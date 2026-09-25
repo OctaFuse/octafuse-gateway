@@ -1,4 +1,5 @@
 import { readApiJson } from '@/lib/api-json';
+import { sortProvidersByKindThenName } from '@/lib/provider-kind';
 import type { GatewayProvider } from '@/lib/types';
 import { formDataToEndpointsMap } from './provider-utils';
 import type { ProviderFormData, ProviderImportCatalogRow, ProviderImportResult } from './types';
@@ -7,7 +8,7 @@ export async function fetchProvidersList(): Promise<GatewayProvider[]> {
 	const response = await fetch('/api/admin/providers');
 	const data = await readApiJson<GatewayProvider[]>(response);
 	if (data.success && data.data) {
-		return [...data.data].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+		return sortProvidersByKindThenName(data.data, 'en', 'Custom');
 	}
 	throw new Error(data.message || 'Failed to load providers');
 }

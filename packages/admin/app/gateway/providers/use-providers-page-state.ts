@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { sortProvidersByKindThenName } from '@/lib/provider-kind';
 import { useFeedback } from '@/components/feedback';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
@@ -48,6 +49,8 @@ function emptyFilterCounts(): Record<ProviderListFilter, number> {
 }
 
 export function useProvidersPageState() {
+	const locale = useLocale();
+	const tKind = useTranslations('providers.kind');
 	const tImport = useTranslations('providers.import');
 	const tModal = useTranslations('providers.modal');
 	const tCommon = useTranslations('common');
@@ -99,9 +102,14 @@ export function useProvidersPageState() {
 		return params;
 	}, [providerSearch, selectedFilter]);
 
+	const customKindLabel = tKind('custom');
+	const orderedProviders = useMemo(
+		() => sortProvidersByKindThenName(providers, locale, customKindLabel),
+		[providers, locale, customKindLabel],
+	);
 	const searchMatchedProviders = useMemo(
-		() => providers.filter((provider) => providerMatchesSearch(provider, providerSearch)),
-		[providerSearch, providers]
+		() => orderedProviders.filter((provider) => providerMatchesSearch(provider, providerSearch)),
+		[providerSearch, orderedProviders]
 	);
 
 	const filterCounts = useMemo(() => {

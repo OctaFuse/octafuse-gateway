@@ -59,7 +59,7 @@ import {
 } from '@octafuse/core/db/pricing-schedule';
 import { compareModelsByReleasedAtDesc } from '@/lib/model-catalog-sort';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
-import { liveProviderAccountLabel } from '@/lib/provider-kind';
+import { liveProviderAccountLabel, providerKindFilterKey } from '@/lib/provider-kind';
 import { compareRouteGroupsForDisplay, normalizeRouteGroup } from '@/lib/route-group-ui';
 import { UPSTREAM_PROTOCOLS, isUpstreamProtocol, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
@@ -1112,6 +1112,8 @@ export function buildRoutesByModel(params: {
 	modelMeta: Map<string, GatewayModel>;
 	filterVendor: string;
 	filterProviderId: string;
+	filterProviderKind?: string;
+	providers?: Array<Pick<GatewayProvider, 'id' | 'kind'>>;
 	filterRouteGroup: string;
 	filterStatus: string;
 	filterKind?: RouteKindFilter;
@@ -1122,10 +1124,13 @@ export function buildRoutesByModel(params: {
 		modelMeta,
 		filterVendor,
 		filterProviderId,
+		filterProviderKind = '',
+		providers = [],
 		filterRouteGroup,
 		filterStatus,
 		filterKind = DEFAULT_ROUTE_KIND_FILTER,
 	} = params;
+	const providerKindById = new Map(providers.map((provider) => [provider.id, provider.kind]));
 
 	const modelMatchesVendor = (modelId: string) => {
 		if (!filterVendor) return true;
@@ -1139,6 +1144,10 @@ export function buildRoutesByModel(params: {
 		if (!modelMatchesVendor(r.model_id)) continue;
 		if (!modelMatchesKind(r.model_id)) continue;
 		if (filterProviderId && r.provider_id !== filterProviderId) continue;
+		if (filterProviderKind) {
+			if (!providerKindById.has(r.provider_id)) continue;
+			if (providerKindFilterKey(providerKindById.get(r.provider_id)) !== filterProviderKind) continue;
+		}
 		if (filterStatus && r.status !== filterStatus) continue;
 		if (filterRouteGroup && normalizeRouteGroup(r.route_group) !== filterRouteGroup) continue;
 		const list = routeByModelId.get(r.model_id) ?? [];
@@ -1162,7 +1171,7 @@ export function buildRoutesByModel(params: {
 		candidateModelIds.add(route.model_id);
 	}
 
-	const hasRouteLevelFilter = Boolean(filterProviderId || filterStatus || filterRouteGroup);
+	const hasRouteLevelFilter = Boolean(filterProviderId || filterProviderKind || filterStatus || filterRouteGroup);
 	const entries = [...candidateModelIds].sort((idA, idB) => {
 		const nameA = modelMeta.get(idA)?.display_name || idA;
 		const nameB = modelMeta.get(idB)?.display_name || idB;
@@ -1309,15 +1318,26 @@ export function buildActiveFilterSummary(params: {
 	filterRouteGroup: string;
 	filterVendor: string;
 	filterProviderId: string;
+	filterProviderKindLabel?: string;
 	providers: GatewayProvider[];
 	locale: string;
 	customKindLabel: string;
 }): string[] {
-	const { filterStatus, filterRouteGroup, filterVendor, filterProviderId, providers, locale, customKindLabel } = params;
+	const {
+		filterStatus,
+		filterRouteGroup,
+		filterVendor,
+		filterProviderId,
+		filterProviderKindLabel,
+		providers,
+		locale,
+		customKindLabel,
+	} = params;
 	const parts: string[] = [];
 	if (filterStatus) parts.push(filterStatus === 'active' ? 'Active' : 'Inactive');
 	if (filterRouteGroup) parts.push(`Group: ${filterRouteGroup}`);
 	if (filterVendor) parts.push(getModelVendorLabel(filterVendor));
+	if (filterProviderKindLabel) parts.push(filterProviderKindLabel);
 	if (filterProviderId) {
 		const p = providers.find((x) => x.id === filterProviderId);
 		parts.push(p ? liveProviderAccountLabel(p, locale, customKindLabel, filterProviderId) : filterProviderId);

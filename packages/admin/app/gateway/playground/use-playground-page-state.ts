@@ -50,7 +50,7 @@ import {
 	type PlaygroundLlmSampleId,
 } from './playground-utils';
 import { decodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
-import { liveProviderAccountLabel } from '@/lib/provider-kind';
+import { liveProviderAccountLabel, liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
 import type { FilterOption, GeminiAction, PlaygroundMode, ResponseMeta, ResponseTab, RouteListRow } from './types';
 
 function isAbortError(error: unknown): boolean {
@@ -270,20 +270,23 @@ export function usePlaygroundPageState() {
 	}, [routesInKind, filterProvider]);
 
 	const providerOptions = useMemo(() => {
-		const byId = new Map<string, FilterOption>();
+		const byId = new Map<string, GatewayProvider | { id: string; name: string }>();
 		for (const r of routesInKind) {
 			if (filterModel && r.model_id !== filterModel) continue;
 			if (byId.has(r.provider_id)) continue;
 			const provider = providersById.get(r.provider_id);
-			const name = provider
-				? liveProviderAccountLabel(provider, locale, tKind('custom'), r.provider_id)
-				: (r.provider_name ?? '').trim();
-			byId.set(r.provider_id, {
-				id: r.provider_id,
-				label: name && name !== r.provider_id ? `${name} (${r.provider_id})` : r.provider_id,
-			});
+			byId.set(
+				r.provider_id,
+				provider ?? { id: r.provider_id, name: (r.provider_name ?? '').trim() || r.provider_id },
+			);
 		}
-		return [...byId.values()].sort((a, b) => a.label.localeCompare(b.label));
+		return sortProvidersByKindThenName([...byId.values()], locale, tKind('custom')).map((provider) => {
+			const label = liveProviderPickerLabel(provider, locale, tKind('custom'), provider.id ?? '');
+			return {
+				id: provider.id ?? '',
+				label: label || provider.id || '',
+			};
+		});
 	}, [routesInKind, filterModel, providersById, locale, tKind]);
 
 	const providerLabelFor = useCallback(
