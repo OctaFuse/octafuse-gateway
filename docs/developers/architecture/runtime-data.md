@@ -102,7 +102,7 @@ flowchart TB
 - 迁移 **`0026_user_charged_cost_factors`**：`users` 增加 `charged_cost_factors`，按目录模型 ID 保存用户计费倍率。
 - 迁移 **`0027_user_wallet_credit`**：`users` 增加 `wallet_granted` / `wallet_spent`（永久额度）；`user_audit_logs.dedup_key` + `UNIQUE(user_id, dedup_key)`；`api_key_request_logs.charged_wallet_cost`。老数据把加购余额从 `budget_max` 拆出；`budget_max IS NULL` 与到期清零行（`max=0 AND period=none`）不抬回 `budget_base`。步骤见 [0027-user-wallet-credit.md](../../operators/migrations/0027-user-wallet-credit.md)。
 - 迁移 **`0028_key_rate_limit_and_ingress`**：`api_keys.rate_limit` 与 `users.rate_limit`（JSON，`NULL` = 该层不限；当前仅 `rpm`）；用户层为所有 Key 合计，Key 层为单把钥匙。`api_key_request_logs.ingress_host` 只记录入口 Host，不做准入。成功记账时回写 `api_keys.last_used_at`。RPM 窗口计数在代理服务进程 / isolate 内存中，不落库。
-- 迁移 **`0029_provider_kind`**：`providers.kind`（`TEXT` / MySQL `VARCHAR(128)`，`NOT NULL DEFAULT ''`）。已有行保持空字符串，表示尚未分类。去掉 `providers.name` 的全局唯一，改为 `UNIQUE (name, kind)`（约束名 `uk_providers_name_kind`）。D1 需重建 `providers` 表。不回写已有账号别名，也不回写请求日志里的 `provider_name` 快照。模板英文名变更后，已保存的旧 `kind` 不自动改写，由管理员在编辑时重新选择。
+- 迁移 **`0029_provider_kind`**：`providers.kind`（`TEXT` / MySQL `VARCHAR(128)`，`NOT NULL DEFAULT ''`）。已有行保持空字符串，表示尚未分类。去掉 `providers.name` 的全局唯一，改为 `UNIQUE (name, kind)`（约束名 `uk_providers_name_kind`）。D1 不能直接删除仍被 `model_routes` 引用的 `providers`，因此先复制 `providers`、`model_routes`、`route_pool_sticky_bindings` 再替换。不回写已有账号别名，也不回写请求日志里的 `provider_name` 快照。模板英文名变更后，已保存的旧 `kind` 不自动改写，由管理员在编辑时重新选择。
 - **`USER_CHARGED_COST_FACTOR_MODE` 无 schema 迁移**：用户 `charged_cost_factors` 与路由 Charged 有效倍率的合成由 `system_config` 该键控制（`multiply` 叠乘，`min` 取较小倍率）。缺键或非法值运行时回退 `multiply`；首次在网关配置（Gateway Config）保存才写入，不必补进 `0002_seed`。
 
 #### Endpoint capability 维护规则
