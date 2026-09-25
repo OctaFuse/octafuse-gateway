@@ -45,8 +45,8 @@ export default function ModelUsagePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
   const [committedQuery, setCommittedQuery] = useState(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
-  const [sortKey, setSortKey] = useState<SortKey>('model_id');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortKey, setSortKey] = useState<SortKey>('request_count');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
   const [expandedModelKeys, setExpandedModelKeys] = useState<Set<string>>(() => new Set());
   const [providerRowsByModel, setProviderRowsByModel] = useState<Record<string, ProviderUsageRow[]>>({});
