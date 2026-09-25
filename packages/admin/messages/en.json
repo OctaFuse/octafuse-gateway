@@ -454,7 +454,10 @@
 			},
 			"window": {
 				"key_limit": "Key limit",
-				"spend_limit": "Spend limit"
+				"spend_limit": "Spend limit",
+				"5h": "5-hour",
+				"weekly": "Weekly",
+				"monthly": "Monthly"
 			}
 		},
 		"kind": {

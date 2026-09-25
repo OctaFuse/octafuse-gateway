@@ -454,7 +454,10 @@
 			},
 			"window": {
 				"key_limit": "Key 额度",
-				"spend_limit": "消费上限"
+				"spend_limit": "消费上限",
+				"5h": "5 小时",
+				"weekly": "每周",
+				"monthly": "每月"
 			}
 		},
 		"kind": {

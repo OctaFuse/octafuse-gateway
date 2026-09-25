@@ -454,7 +454,10 @@
 			},
 			"window": {
 				"key_limit": "키 한도",
-				"spend_limit": "사용 한도"
+				"spend_limit": "사용 한도",
+				"5h": "5시간",
+				"weekly": "주간",
+				"monthly": "월간"
 			}
 		},
 		"kind": {

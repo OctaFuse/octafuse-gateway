@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { deepinfraQuotaAdapter } from './adapters/deepinfra';
 import { deepseekQuotaAdapter } from './adapters/deepseek';
+import { zaiCodingPlanQuotaAdapter, zhipuCodingPlanQuotaAdapter } from './adapters/glm-coding-plan';
+import { minimaxQuotaAdapter } from './adapters/minimax';
 import { moonshotQuotaAdapter } from './adapters/moonshot';
 import { novitaQuotaAdapter } from './adapters/novita';
+import { opencodeGoQuotaAdapter } from './adapters/opencode-go';
 import { openrouterQuotaAdapter } from './adapters/openrouter';
 import { siliconflowInternationalQuotaAdapter, siliconflowQuotaAdapter } from './adapters/siliconflow';
 import { stepfunQuotaAdapter } from './adapters/stepfun';
@@ -271,6 +274,141 @@ describe('provider quota adapters', () => {
 		assert.deepEqual(snapshot.balances, [{ currency: 'CNY', total: 3.5 }]);
 	});
 
+	it('maps OpenCode Go rolling, weekly, and monthly percents, and treats rate-limited as exhausted', async () => {
+		const { fetchImpl, urls } = jsonFetch({
+			usage: {
+				rolling: { status: 'ok', percent: 4, resetsAt: '2026-08-13T16:27:38.287Z' },
+				weekly: { status: 'ok', percent: 3, resetsAt: '2026-08-17T00:00:00.287Z' },
+				monthly: { status: 'rate-limited', percent: 40, resetsAt: '2026-09-13T06:06:01.287Z' },
+			},
+		});
+		const snapshot = await opencodeGoQuotaAdapter.fetch(ctx(fetchImpl, 'https://opencode.ai'));
+		assert.equal(urls[0], 'https://opencode.ai/zen/go/v1/usage');
+		assert.equal(snapshot.state, 'exhausted');
+		assert.equal(snapshot.windows[0]?.id, '5h');
+		assert.equal(snapshot.windows[0]?.usedPercent, 4);
+		assert.equal(snapshot.windows[2]?.id, 'monthly');
+		assert.equal(snapshot.windows[2]?.usedPercent, 100);
+	});
+
+	it('reads MiniMax token-plan remains and treats usage counts as remaining', async () => {
+		const { fetchImpl, urls } = jsonFetch({
+			base_resp: { status_code: 0, status_msg: '' },
+			model_remains: [
+				{
+					model_name: 'image-01',
+					current_interval_total_count: 10,
+					current_interval_usage_count: 3,
+				},
+				{
+					model_name: 'general',
+					end_time: 1712955600000,
+					current_interval_total_count: 200,
+					current_interval_usage_count: 187,
+					current_weekly_total_count: 1000,
+					current_weekly_usage_count: 850,
+					weekly_end_time: 1713542400000,
+				},
+			],
+		});
+		const snapshot = await minimaxQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.minimaxi.com'));
+		assert.equal(urls[0], 'https://www.minimaxi.com/v1/token_plan/remains');
+		assert.equal(snapshot.windows[0]?.id, '5h');
+		assert.equal(snapshot.windows[0]?.used, 13);
+		assert.equal(snapshot.windows[0]?.limit, 200);
+		assert.equal(snapshot.windows[0]?.remaining, 187);
+		assert.equal(snapshot.windows[1]?.id, 'weekly');
+		assert.equal(snapshot.windows[1]?.used, 150);
+	});
+
+	it('falls back to MiniMax coding-plan remains when token-plan returns 404', async () => {
+		const urls: string[] = [];
+		const fetchImpl: typeof fetch = async (input, init) => {
+			urls.push(String(input));
+			assert.equal(init?.redirect, 'error');
+			if (urls.length === 1) return Response.json({ error: 'missing' }, { status: 404 });
+			return Response.json({
+				model_remains: [
+					{
+						model_name: 'general',
+						current_interval_total_count: 0,
+						current_interval_remaining_percent: 99,
+						current_weekly_remaining_percent: 0,
+					},
+				],
+			});
+		};
+		const snapshot = await minimaxQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.minimaxi.com'));
+		assert.deepEqual(urls, [
+			'https://www.minimaxi.com/v1/token_plan/remains',
+			'https://api.minimaxi.com/v1/api/openplatform/coding_plan/remains',
+		]);
+		assert.equal(snapshot.windows[0]?.usedPercent, 1);
+		assert.equal(snapshot.windows[1]?.usedPercent, 100);
+		assert.equal(snapshot.state, 'exhausted');
+	});
+
+	it('does not send the MiniMax key to another registrable domain', async () => {
+		const { fetchImpl, urls } = jsonFetch({});
+		await assert.rejects(
+			() => minimaxQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.example.com')),
+			ProviderQuotaUpstreamError,
+		);
+		assert.equal(urls.length, 0);
+	});
+
+	it('maps Zhipu and Z.AI coding-plan credit windows', async () => {
+		const body = {
+			code: 200,
+			success: true,
+			data: {
+				limits: [
+					{
+						type: 'TIME_LIMIT',
+						unit: 5,
+						number: 1,
+						usage: 100,
+						percentage: 0,
+					},
+					{
+						type: 'CREDIT_LIMIT',
+						unit: 3,
+						number: 5,
+						usage: 28000,
+						percentage: 26,
+						nextResetTime: 1786626122911,
+					},
+					{
+						type: 'TOKENS_LIMIT',
+						unit: 6,
+						number: 1,
+						usage: 140000,
+						currentValue: 51800,
+						remaining: 88200,
+						percentage: 37,
+						nextResetTime: 1787000000000,
+					},
+				],
+			},
+		};
+		const zhipu = jsonFetch(body);
+		const zhipuSnapshot = await zhipuCodingPlanQuotaAdapter.fetch(ctx(zhipu.fetchImpl, 'https://open.bigmodel.cn'));
+		assert.equal(zhipu.urls[0], 'https://open.bigmodel.cn/api/monitor/usage/quota/limit');
+		assert.equal(zhipuSnapshot.windows.length, 2);
+		assert.equal(zhipuSnapshot.windows[0]?.id, '5h');
+		assert.equal(zhipuSnapshot.windows[0]?.limit, 28000);
+		assert.equal(zhipuSnapshot.windows[0]?.usedPercent, 26);
+		assert.equal(zhipuSnapshot.windows[0]?.used, 7280);
+		assert.equal(zhipuSnapshot.windows[1]?.id, 'weekly');
+		assert.equal(zhipuSnapshot.windows[1]?.used, 51800);
+		assert.equal(zhipuSnapshot.windows[1]?.remaining, 88200);
+
+		const zai = jsonFetch(body);
+		const zaiSnapshot = await zaiCodingPlanQuotaAdapter.fetch(ctx(zai.fetchImpl, 'https://api.z.ai'));
+		assert.equal(zai.urls[0], 'https://api.z.ai/api/monitor/usage/quota/limit');
+		assert.equal(zaiSnapshot.adapter, 'zai-coding-plan');
+	});
+
 	it('reads the Vercel AI Gateway credit balance', async () => {
 		const { fetchImpl, urls } = jsonFetch({ balance: '95.50', total_used: '4.50' });
 		const snapshot = await vercelQuotaAdapter.fetch(ctx(fetchImpl, 'https://ai-gateway.vercel.sh'));
@@ -294,7 +432,8 @@ describe('provider quota registry', () => {
 		assert.equal(getProviderQuotaAdapter('SiliconFlow (International)')?.defaultOrigin, 'https://api.siliconflow.com');
 		assert.equal(getProviderQuotaAdapter(''), null);
 		assert.equal(getProviderQuotaAdapter('__custom__'), null);
-		assert.equal(getProviderQuotaAdapter('Zhipu GLM (Coding Plan)'), null);
+		assert.equal(getProviderQuotaAdapter('Zhipu GLM (Coding Plan)')?.defaultOrigin, 'https://open.bigmodel.cn');
+		assert.equal(getProviderQuotaAdapter('Z.AI GLM (Coding Plan)')?.defaultOrigin, 'https://api.z.ai');
 		assert.equal(getProviderQuotaAdapter('Kimi Code (Coding API)'), null);
 		assert.equal(getProviderQuotaAdapter('Novita AI')?.defaultOrigin, 'https://api.novita.ai');
 		assert.deepEqual(listProviderQuotaKinds(), [
@@ -307,6 +446,10 @@ describe('provider quota registry', () => {
 			'DeepInfra',
 			'StepFun',
 			'Vercel AI Gateway',
+			'OpenCode Go',
+			'MiniMax',
+			'Zhipu GLM (Coding Plan)',
+			'Z.AI GLM (Coding Plan)',
 		]);
 	});
 });

@@ -14,6 +14,9 @@ type ProviderQuotaButtonProps = {
 const WINDOW_LABEL_KEYS = {
 	key_limit: 'window.key_limit',
 	spend_limit: 'window.spend_limit',
+	'5h': 'window.5h',
+	weekly: 'window.weekly',
+	monthly: 'window.monthly',
 } as const;
 
 const STATE_BADGE: Record<ProviderQuotaState, string> = {
@@ -58,7 +61,7 @@ function windowCurrency(adapter: string): string | null {
 }
 
 function windowLabel(id: string, labelFor: (key: keyof typeof WINDOW_LABEL_KEYS) => string): string {
-	if (id === 'key_limit' || id === 'spend_limit') return labelFor(id);
+	if (id in WINDOW_LABEL_KEYS) return labelFor(id as keyof typeof WINDOW_LABEL_KEYS);
 	return id;
 }
 

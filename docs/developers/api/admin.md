@@ -659,8 +659,12 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 | `DeepInfra` | `GET /payment/checklist` | 负的 `stripe_balance` 转为可消费 USD；正的 `limit` 与 `recent` 组成消费上限窗口。`suspended: true` 视为已用尽 |
 | `StepFun` | `GET /v1/accounts` | `balance` 为可用余额（CNY）。累计充值与累计赠送不写入快照 |
 | `Vercel AI Gateway` | `GET /v1/credits` | `balance` 为剩余额度（USD） |
+| `OpenCode Go` | `GET /zen/go/v1/usage` | `rolling` / `weekly` / `monthly` 的已用百分比与重置时间。`rolling` 记为 `5h`。`status: rate-limited` 视为该窗口已用尽 |
+| `MiniMax` | `GET https://www.minimaxi.com/v1/token_plan/remains`，失败时再请求 `GET https://api.minimaxi.com/v1/api/openplatform/coding_plan/remains` | 优先取 `general` 模型的 5 小时与每周窗口。`*_usage_count` 是剩余次数；次数为 0 时改用剩余百分比。两台主机都在 `minimaxi.com` 上 |
+| `Zhipu GLM (Coding Plan)` | `GET /api/monitor/usage/quota/limit` | `CREDIT_LIMIT` / `TOKENS_LIMIT`。`unit=3,number=5` 为 5 小时，`unit=6,number=1` 为每周。`usage` 是上限，`percentage` 是已用百分比 |
+| `Z.AI GLM (Coding Plan)` | 同上，`api.z.ai` | 同上 |
 
-`Zhipu GLM (Coding Plan)`、`Z.AI GLM (Coding Plan)`、`Kimi Code (Coding API)` 的额度接口没有稳定公开契约，当前 `quota_supported` 为 false。MiniMax Token Plan 的用量接口没有公开响应字段。ZenMux、xAI、OpenAI、Anthropic 以及火山、百炼、腾讯的余额查询需要另一把管理密钥或 AK/SK，也不在这一接口里。
+`Kimi Code (Coding API)` 的额度接口没有稳定公开契约，当前 `quota_supported` 为 false。ZenMux、xAI、OpenAI、Anthropic 以及火山、百炼、腾讯的余额查询需要另一把管理密钥或 AK/SK，也不在这一接口里。
 
 `endpoints` JSON 权威形状：
 

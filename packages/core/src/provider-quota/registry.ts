@@ -2,14 +2,16 @@
  * `providers.kind` → 额度适配器。空 kind 与 `__custom__` 不在表内。
  *
  * 未接入：
- * - `Zhipu GLM (Coding Plan)` / `Z.AI GLM (Coding Plan)`、`Kimi Code (Coding API)`：没有稳定公开契约
- * - MiniMax Token Plan 的 `GET /v1/token_plan/remains` 官方只给了请求，没有响应字段
+ * - `Kimi Code (Coding API)` 的云端用量接口没有稳定公开契约
  * - ZenMux、xAI、OpenAI、Anthropic 的余额接口要另一把管理密钥
  */
 import { deepinfraQuotaAdapter } from './adapters/deepinfra';
 import { deepseekQuotaAdapter } from './adapters/deepseek';
+import { zaiCodingPlanQuotaAdapter, zhipuCodingPlanQuotaAdapter } from './adapters/glm-coding-plan';
+import { minimaxQuotaAdapter } from './adapters/minimax';
 import { moonshotQuotaAdapter } from './adapters/moonshot';
 import { novitaQuotaAdapter } from './adapters/novita';
+import { opencodeGoQuotaAdapter } from './adapters/opencode-go';
 import { openrouterQuotaAdapter } from './adapters/openrouter';
 import { siliconflowInternationalQuotaAdapter, siliconflowQuotaAdapter } from './adapters/siliconflow';
 import { stepfunQuotaAdapter } from './adapters/stepfun';
@@ -26,6 +28,10 @@ export const PROVIDER_QUOTA_ADAPTER_BY_KIND: Readonly<Record<string, ProviderQuo
 	DeepInfra: deepinfraQuotaAdapter,
 	StepFun: stepfunQuotaAdapter,
 	'Vercel AI Gateway': vercelQuotaAdapter,
+	'OpenCode Go': opencodeGoQuotaAdapter,
+	MiniMax: minimaxQuotaAdapter,
+	'Zhipu GLM (Coding Plan)': zhipuCodingPlanQuotaAdapter,
+	'Z.AI GLM (Coding Plan)': zaiCodingPlanQuotaAdapter,
 };
 
 export function getProviderQuotaAdapter(kind: string | null | undefined): ProviderQuotaAdapter | null {
