@@ -14,14 +14,14 @@ export function ProviderAddCard(props: ProviderAddCardProps) {
 	const tCommon = useTranslations('common');
 
 	return (
-		<article className="flex h-full min-h-[8.5rem] flex-col justify-between rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/50 p-4 shadow-sm">
+		<article className="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-dashed border-blue-200 bg-blue-50/40 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50/70">
 			<div className="flex items-center gap-2.5">
-				<span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
+				<span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
 					<PlusIcon className="h-5 w-5" aria-hidden />
 				</span>
 				<div className="min-w-0">
-					<h2 className="truncate text-sm font-semibold text-blue-900">{t('title')}</h2>
-					<p className="mt-0.5 truncate text-[11px] text-blue-800/70">{t('subtitle')}</p>
+					<h2 className="text-sm font-semibold text-blue-900">{t('title')}</h2>
+					<p className="mt-1 text-xs leading-5 text-blue-800/70">{t('subtitle')}</p>
 				</div>
 			</div>
 			<div className="mt-3 grid grid-cols-2 gap-2">
