@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
 	ArrowDownIcon,
+	ChevronDownIcon,
 	PencilSquareIcon,
 	PlusIcon,
 } from '@heroicons/react/24/outline';
@@ -10,10 +11,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import {
 	buildRouteSurfaceCatalog,
+	requestSurfacePath,
 	type RouteModelGroup,
 	type SurfaceCatalogGroup,
 } from '../route-utils';
-import type { RouteListRow, RouteProtocolGroupSection } from '../types';
+import type { RouteFlowDensity, RouteListRow, RouteProtocolGroupSection } from '../types';
 import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupNode, UpstreamPoolPanel, openSectionStickyDialog } from './route-model-flow';
 
 type Props = {
@@ -21,6 +23,7 @@ type Props = {
 	modelMeta: Map<string, GatewayModel>;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
+	density: RouteFlowDensity;
 	copiedModelId: string | null;
 	togglingId: string | null;
 	onCopyModelId: (modelId: string) => void;
@@ -144,17 +147,17 @@ export function UnroutedModelsPanel({
 	if (cards.length === 0) return null;
 
 	return (
-		<section
-			className="mt-3 rounded-xl border border-dashed border-amber-200/90 bg-amber-50/70 px-3 py-2"
+		<details
+			className="group mt-3 rounded-lg border border-amber-200/70 bg-amber-50/50 px-3 py-2"
 			title={t('unroutedHint')}
 		>
-			<div className="flex flex-wrap items-center gap-1.5">
-				<span className="mr-1 inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-amber-900">
-					{t('unroutedTitle')}
-					<span className="rounded-full bg-amber-100 px-1.5 py-px text-[10px] font-semibold tabular-nums text-amber-800 ring-1 ring-inset ring-amber-200">
-						{cards.length}
-					</span>
-				</span>
+			<summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 text-xs text-amber-900 [&::-webkit-details-marker]:hidden">
+				<ChevronDownIcon className="h-3.5 w-3.5 shrink-0 -rotate-90 transition-transform group-open:rotate-0" aria-hidden />
+				<span className="font-semibold">{t('unroutedTitle')}</span>
+				<span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold">{cards.length}</span>
+				<span className="text-amber-800/80">{t('unroutedHint')}</span>
+			</summary>
+			<div className="mt-3 flex flex-wrap items-center gap-2 border-t border-amber-200/60 pt-3">
 				{cards.map((card) => (
 					<span
 						key={card.model_id}
@@ -180,7 +183,7 @@ export function UnroutedModelsPanel({
 					</span>
 				))}
 			</div>
-		</section>
+		</details>
 	);
 }
 
@@ -190,6 +193,7 @@ function CatalogUpstream({
 	meta,
 	providerMeta,
 	globalRouteStrategy,
+	density,
 	togglingId,
 	onEdit,
 	onToggleStatus,
@@ -200,6 +204,7 @@ function CatalogUpstream({
 	meta: GatewayModel | undefined;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
+	density: RouteFlowDensity;
 	togglingId: string | null;
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
@@ -212,7 +217,7 @@ function CatalogUpstream({
 			meta={meta}
 			providerMeta={providerMeta}
 			globalRouteStrategy={globalRouteStrategy}
-			density="topology"
+			density={density}
 			togglingId={togglingId}
 			onEdit={onEdit}
 			onToggleStatus={onToggleStatus}
@@ -227,6 +232,7 @@ function GroupToUpstreamBranch({
 	meta,
 	providerMeta,
 	globalRouteStrategy,
+	density,
 	branchIndex,
 	branchCount,
 	togglingId,
@@ -243,6 +249,7 @@ function GroupToUpstreamBranch({
 	meta: GatewayModel | undefined;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
+	density: RouteFlowDensity;
 	branchIndex: number;
 	branchCount: number;
 	togglingId: string | null;
@@ -261,9 +268,9 @@ function GroupToUpstreamBranch({
 	const railColor = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
 
 	return (
-		<div className="relative py-3 xl:pl-4">
+		<div className="relative py-2 xl:pl-4">
 			<BranchConnectors index={branchIndex} count={branchCount} colorClass={railColor} />
-			<div className="grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(420px,1fr)] xl:items-center">
+			<div className="grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(260px,1fr)] xl:items-center">
 				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
 					<RouteGroupNode
 						modelId={card.model_id}
@@ -303,6 +310,7 @@ function GroupToUpstreamBranch({
 					meta={meta}
 					providerMeta={providerMeta}
 					globalRouteStrategy={globalRouteStrategy}
+					density={density}
 					togglingId={togglingId}
 					onEdit={onEdit}
 					onToggleStatus={onToggleStatus}
@@ -322,6 +330,7 @@ function ModelToGroupsBranch({
 	modelMeta,
 	providerMeta,
 	globalRouteStrategy,
+	density,
 	copiedModelId,
 	togglingId,
 	onCopyModelId,
@@ -340,6 +349,7 @@ function ModelToGroupsBranch({
 	modelMeta: Map<string, GatewayModel>;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
+	density: RouteFlowDensity;
 	copiedModelId: string | null;
 	togglingId: string | null;
 	onCopyModelId: Props['onCopyModelId'];
@@ -354,7 +364,7 @@ function ModelToGroupsBranch({
 	const { card, sections } = model;
 
 	return (
-		<div className="relative py-3 xl:pl-4">
+		<div className="relative py-2 xl:pl-4">
 			<BranchConnectors index={modelIndex} count={modelCount} colorClass="bg-blue-300" />
 			<div className="xl:grid xl:grid-cols-[minmax(160px,220px)_minmax(0,1fr)]">
 				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
@@ -383,6 +393,7 @@ function ModelToGroupsBranch({
 							meta={modelMeta.get(card.model_id)}
 							providerMeta={providerMeta}
 							globalRouteStrategy={globalRouteStrategy}
+							density={density}
 							branchIndex={branchIndex}
 							branchCount={sections.length}
 							togglingId={togglingId}
@@ -406,6 +417,7 @@ function SurfaceCatalogSection({
 	modelMeta,
 	providerMeta,
 	globalRouteStrategy,
+	density,
 	copiedModelId,
 	togglingId,
 	onCopyModelId,
@@ -420,6 +432,7 @@ function SurfaceCatalogSection({
 	modelMeta: Map<string, GatewayModel>;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
+	density: RouteFlowDensity;
 	copiedModelId: string | null;
 	togglingId: string | null;
 	onCopyModelId: Props['onCopyModelId'];
@@ -430,8 +443,22 @@ function SurfaceCatalogSection({
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
 	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
+	const t = useTranslations('routes.flow');
+	const tw = useTranslations('routes.workspace');
+	const [collapsed, setCollapsed] = useState(false);
+	const routeCount = surface.models.reduce((sum, model) => sum + model.sections.reduce((n, section) => n + section.routes.length, 0), 0);
 	return (
-		<article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+		<article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+			<button type="button" onClick={() => setCollapsed(value => !value)} aria-expanded={!collapsed} className="flex w-full flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-blue-500">
+				<ChevronDownIcon className={`h-4 w-4 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} aria-hidden />
+				<span className="text-xs font-semibold text-slate-800">{surface.protocolLabel}</span>
+				<span className="min-w-0 break-all font-mono text-[11px] text-slate-500">{requestSurfacePath(surface.protocol, surface.requestOperation)}</span>
+				<span className="ml-auto text-[11px] tabular-nums text-slate-500">{tw('surfaceCounts', {models: surface.models.length, routes: routeCount})}</span>
+			</button>
+			{!collapsed ? <>
+				<div className="hidden grid-cols-[210px_220px_200px_minmax(0,1fr)] gap-0 border-b border-slate-100 bg-slate-50/70 px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-slate-400 2xl:grid">
+					{['catalogColumnSurface', 'catalogColumnModel', 'catalogColumnGroup', 'catalogColumnProvider'].map(key => <span key={key}>{t(key)}</span>)}
+				</div>
 			<div className="bg-slate-50/70 px-3 sm:px-4">
 				<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
 					<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-4">
@@ -456,6 +483,7 @@ function SurfaceCatalogSection({
 								modelMeta={modelMeta}
 								providerMeta={providerMeta}
 								globalRouteStrategy={globalRouteStrategy}
+								density={density}
 								copiedModelId={copiedModelId}
 								togglingId={togglingId}
 								onCopyModelId={onCopyModelId}
@@ -470,6 +498,7 @@ function SurfaceCatalogSection({
 					</div>
 				</div>
 			</div>
+			</> : null}
 		</article>
 	);
 }
@@ -480,6 +509,7 @@ export function RouteSurfaceCatalog(props: Props) {
 		modelMeta,
 		providerMeta,
 		globalRouteStrategy,
+	density,
 		copiedModelId,
 		togglingId,
 		onCopyModelId,
@@ -493,7 +523,7 @@ export function RouteSurfaceCatalog(props: Props) {
 	const catalog = useMemo(() => buildRouteSurfaceCatalog(cards), [cards]);
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-4">
 			{catalog.surfaces.map((surface) => (
 				<SurfaceCatalogSection
 					key={surface.key}
@@ -501,6 +531,7 @@ export function RouteSurfaceCatalog(props: Props) {
 					modelMeta={modelMeta}
 					providerMeta={providerMeta}
 					globalRouteStrategy={globalRouteStrategy}
+					density={density}
 					copiedModelId={copiedModelId}
 					togglingId={togglingId}
 					onCopyModelId={onCopyModelId}

@@ -702,6 +702,12 @@
 		"empty": "モデルまたは Route が見つかりません",
 		"emptyFilteredPrefix": "フィルターを調整するか、",
 		"workspace": {
+			"searchPlaceholder": "モデル・上流モデル・プロバイダーを検索…",
+			"removeFilter": "フィルターを解除：{filter}",
+			"densityLabel": "ルートの表示密度",
+			"densityCompact": "コンパクト",
+			"densityDetailed": "詳細",
+			"surfaceCounts": "{models} モデル · {routes} ルート",
 			"title": "Route 設定",
 			"filteredBy": "フィルター：{summary}",
 			"allModelsRoutes": "すべてのモデルと Route",

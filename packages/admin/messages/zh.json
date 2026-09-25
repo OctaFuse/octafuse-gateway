@@ -702,6 +702,12 @@
 		"empty": "未找到模型或路由",
 		"emptyFilteredPrefix": "请尝试调整筛选或",
 		"workspace": {
+			"searchPlaceholder": "搜索模型、上游模型或供应商…",
+			"removeFilter": "移除筛选：{filter}",
+			"densityLabel": "路由详情展示",
+			"densityCompact": "精简",
+			"densityDetailed": "详细",
+			"surfaceCounts": "{models} 个模型 · {routes} 条路由",
 			"title": "路由配置",
 			"filteredBy": "筛选条件：{summary}",
 			"allModelsRoutes": "全部模型与路由",

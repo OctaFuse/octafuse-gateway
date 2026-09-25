@@ -297,8 +297,12 @@ function RouteTarget({
 								<span className="block text-[10px] leading-4 text-slate-500">{formatWeekdays(window.days)}</span>
 							) : null}
 						</span>
-						<span className="justify-self-end px-1.5 font-mono font-medium tabular-nums text-slate-700" title={factorTooltip(window.charged_factor, 'charged')}>{formatFactorMultiplierForChip(window.charged_factor)}</span>
-						<span className="justify-self-end px-1.5 font-mono font-medium tabular-nums text-slate-700" title={factorTooltip(window.metered_factor, 'metered')}>{formatFactorMultiplierForChip(window.metered_factor)}</span>
+						<span className="justify-self-end" title={factorTooltip(window.charged_factor, 'charged')} aria-label={factorTooltip(window.charged_factor, 'charged')}>
+							<span className={factorChipClassForValue(window.charged_factor, 'charged')}>{formatFactorMultiplierForChip(window.charged_factor)}</span>
+						</span>
+						<span className="justify-self-end" title={factorTooltip(window.metered_factor, 'metered')} aria-label={factorTooltip(window.metered_factor, 'metered')}>
+							<span className={factorChipClassForValue(window.metered_factor, 'metered')}>{formatFactorMultiplierForChip(window.metered_factor)}</span>
+						</span>
 					</span>
 				))}
 			</button>
@@ -838,8 +842,7 @@ export function UpstreamPoolPanel({
 				customKindLabel: tKind('custom'),
 			}))] as const
 		);
-	const highestPriority = priorityLayers[0]?.[0];
-	/** Explicit user overrides; missing keys mean "default" (highest priority expanded). */
+	/** Compact mode starts collapsed; keep per-tier expansion choices while switching views. */
 	const [tierExpandOverrides, setTierExpandOverrides] = useState<Record<number, boolean>>({});
 	const stickyPoolId = section.poolStickyEnabled ? section.poolId : null;
 	const stickySummary = useStickySummary(stickyPoolId);
@@ -855,7 +858,7 @@ export function UpstreamPoolPanel({
 		if (Object.prototype.hasOwnProperty.call(tierExpandOverrides, priority)) {
 			return tierExpandOverrides[priority] === true;
 		}
-		return priority === highestPriority;
+		return false;
 	};
 
 	const togglePriority = (priority: number) => {
@@ -863,7 +866,7 @@ export function UpstreamPoolPanel({
 			const currently =
 				Object.prototype.hasOwnProperty.call(prev, priority)
 					? prev[priority] === true
-					: priority === highestPriority;
+					: false;
 			return { ...prev, [priority]: !currently };
 		});
 	};

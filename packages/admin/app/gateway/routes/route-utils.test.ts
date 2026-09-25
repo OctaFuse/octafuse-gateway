@@ -13,6 +13,7 @@ import {
 	catalogScheduleWindowsFromModel,
 	formatRoutePriceOverridePreview,
 	buildRouteSurfaceCatalog,
+	buildRoutesByModel,
 	compareRoutesWithinPriorityLayer,
 	compatibleAdaptersForRoute,
 	factorChipClassForValue,
@@ -1199,5 +1200,35 @@ describe('compareRoutesWithinPriorityLayer', () => {
 			sorted.map((item) => item.id),
 			['heavy', 'studio', 'ark-a', 'ark-b', 'off'],
 		);
+	});
+});
+
+
+describe('route workspace search', () => {
+	const models = [model({ id: 'm1', display_name: 'DeepSeek Flash' }), model({ id: 'm2', display_name: 'Unrouted model' })];
+	const base = {
+		models,
+		modelMeta: new Map(models.map(m => [m.id, m])),
+		routes: [route({ id: 'r1', provider_model_name: 'upstream-flash' }), route({ id: 'r2', provider_id: 'p2', status: 'inactive' })],
+		providers: [{ ...provider({}), id: 'p1', name: '谷仓' }, { ...provider({}), id: 'p2', name: 'Backup' }],
+		filterVendor: '', filterProviderId: '', filterRouteGroup: '', filterStatus: '',
+	};
+	it('matches model names case-insensitively and keeps the complete failover topology', () => {
+		const result = buildRoutesByModel({ ...base, searchQuery: '  DEEPSEEK   flash ' });
+		assert.equal(result.length, 1);
+		assert.equal(result[0].groupRoutes.length, 2);
+	});
+	it('finds upstream model IDs and provider names without hiding sibling routes', () => {
+		for (const searchQuery of ['upstream-flash', '谷仓', 'Backup']) {
+			const result = buildRoutesByModel({ ...base, searchQuery });
+			assert.equal(result.length, 1);
+			assert.equal(result[0].groupRoutes.length, 2);
+		}
+	});
+	it('respects route filters and can find models without any routes', () => {
+		assert.equal(buildRoutesByModel({ ...base, filterStatus: 'active', searchQuery: 'Backup' }).length, 0);
+		assert.equal(buildRoutesByModel({ ...base, searchQuery: 'Unrouted' })[0].groupRoutes.length, 0);
+		assert.equal(buildRoutesByModel({ ...base, searchQuery: 'no-match' }).length, 0);
+		assert.equal(buildRoutesByModel({ ...base, searchQuery: ' ' }).length, 2);
 	});
 });

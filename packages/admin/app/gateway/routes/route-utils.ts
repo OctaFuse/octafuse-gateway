@@ -1157,6 +1157,7 @@ export function buildRoutesByModel(params: {
 	filterRouteGroup: string;
 	filterStatus: string;
 	filterKind?: RouteKindFilter;
+	searchQuery?: string;
 }): RouteModelGroup[] {
 	const {
 		routes,
@@ -1171,7 +1172,9 @@ export function buildRoutesByModel(params: {
 		filterRouteGroup,
 		filterStatus,
 		filterKind = DEFAULT_ROUTE_KIND_FILTER,
+		searchQuery = '',
 	} = params;
+	const searchTerms = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
 	const providerKindById = new Map(providers.map((provider) => [provider.id, provider.kind]));
 	const routeSortContext: RoutePrioritySortContext = {
 		providersById: new Map(providers.map((provider) => [provider.id, provider])),
@@ -1235,6 +1238,11 @@ export function buildRoutesByModel(params: {
 			const meta = modelMeta.get(model_id);
 			const title = meta?.display_name || groupRoutes[0]?.model_name || model_id;
 			const vendor = normalizeModelVendorInput(meta?.vendor);
+			const searchText = [model_id, title, ...groupRoutes.flatMap(route => [
+				route.provider_model_name, route.provider_name, route.model_name,
+				routeSortContext.providersById?.get(route.provider_id)?.name,
+			])].filter(Boolean).join(' ').toLowerCase();
+			if (!searchTerms.every(term => searchText.includes(term))) return null;
 			return { model_id, title, groupRoutes, activeCount: active, vendor };
 		})
 		.filter((group): group is RouteModelGroup => group !== null);

@@ -5,6 +5,7 @@
  * 模型卡片标题 / 铅笔图标可就地打开 ModelModal（改 Tag 等），无需跳转 Models 页。
  */
 import { Suspense, useCallback, useMemo, useSyncExternalStore } from 'react';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { ModelModal } from '../models/components/model-modal';
 import { useRoutesPageState } from './use-routes-page-state';
@@ -21,8 +22,9 @@ import {
 	subscribeStickyRefreshInterval,
 } from './sticky-refresh-preference';
 import { StickySummaryProvider, useStickyRefreshControls } from './sticky-summary-store';
-import { parseRouteWorkspaceView, type RouteWorkspaceView } from './types';
+import { parseRouteWorkspaceView, type RouteFlowDensity, type RouteWorkspaceView } from './types';
 
+const ROUTE_DETAIL_STORAGE_KEY = 'octafuse.admin.routes.detailLevel';
 const FLOW_DENSITY_STORAGE_KEY = 'octafuse.admin.routes.flowDensity';
 const FLOW_DENSITY_EVENT = 'octafuse-admin-routes-flow-density';
 
@@ -32,6 +34,14 @@ function readStoredWorkspaceView(): RouteWorkspaceView {
 		return parseRouteWorkspaceView(window.localStorage.getItem(FLOW_DENSITY_STORAGE_KEY));
 	} catch {
 		return 'byModel';
+	}
+}
+
+function readStoredRouteDensity(): RouteFlowDensity {
+	try {
+		return window.localStorage.getItem(ROUTE_DETAIL_STORAGE_KEY) === 'summary' ? 'summary' : 'topology';
+	} catch {
+		return 'topology';
 	}
 }
 
@@ -47,6 +57,16 @@ function subscribeFlowDensity(onStoreChange: () => void) {
 function RoutesContent() {
 	const t = useTranslations('routes');
 	const tCommon = useTranslations('common');
+	const tf = useTranslations('filter');
+	const density = useSyncExternalStore(subscribeFlowDensity, readStoredRouteDensity, () => 'topology' as const);
+	const setDensity = useCallback((next: RouteFlowDensity) => {
+		try {
+			window.localStorage.setItem(ROUTE_DETAIL_STORAGE_KEY, next);
+		} catch {
+			// Storage may be unavailable in private browsing.
+		}
+		window.dispatchEvent(new Event(FLOW_DENSITY_EVENT));
+	}, []);
 	const state = useRoutesPageState();
 	const { invalidate } = useStickyRefreshControls();
 	const workspaceView = useSyncExternalStore(
@@ -99,15 +119,22 @@ function RoutesContent() {
 
 	return (
 		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
-			<div className="mb-5 sm:mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
-				<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
+			<div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+				<div>
+					<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+					<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
+					<div className="mt-3 flex flex-wrap items-center gap-3 text-xs tabular-nums text-slate-500">
+						<span>{tf('modelsAndRoutes', {models: state.models.length, routes: state.routes.length})}</span>
+						<span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{tCommon('active')} {state.statusCounts.active}</span>
+						<span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />{tCommon('inactive')} {state.statusCounts.inactive}</span>
+					</div>
+				</div>
+				<button type="button" onClick={() => state.handleCreate()} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-blue-500"><PlusIcon className="h-4 w-4" aria-hidden />{t('flow.addRoute')}</button>
 			</div>
 
 			<RouteFilterSidebar
-				visibleModelCount={state.visibleModelCount}
-				visibleRouteCount={state.visibleRouteCount}
-				hasActiveFilters={state.hasActiveFilters}
+				searchQuery={state.searchQuery}
+				onSearchChange={state.setSearchQuery}
 				filterStatus={state.filterStatus}
 				filterKind={state.filterKind}
 				filterRouteGroup={state.filterRouteGroup}
@@ -117,7 +144,6 @@ function RoutesContent() {
 				providerKindFilterOptions={state.providerKindFilterOptions}
 				statusCounts={state.statusCounts}
 				kindCounts={state.kindCounts}
-				routesCount={state.routes.length}
 				routeGroupFilterOptions={state.routeGroupFilterOptions}
 				routeGroupCounts={state.routeGroupCounts}
 				vendorFilterOptions={state.vendorFilterOptions}
@@ -134,7 +160,10 @@ function RoutesContent() {
 
 			<section className="min-w-0">
 				<RouteWorkspaceHeader
-					activeFilterSummary={state.activeFilterSummary}
+					visibleModelCount={state.visibleModelCount}
+					visibleRouteCount={state.visibleRouteCount}
+					density={density}
+					onDensityChange={setDensity}
 					view={workspaceView}
 					onViewChange={handleWorkspaceViewChange}
 					stickyRefreshIntervalMs={stickyRefreshIntervalMs}
@@ -145,7 +174,7 @@ function RoutesContent() {
 					onCreate={state.handleCreate}
 				/>
 
-				<div className="pt-4 sm:pt-6">
+				<div className="pt-4">
 					{state.routesByModel.length === 0 ? (
 						<div className="rounded-xl border border-dashed border-gray-300 bg-white/80 py-16 text-center text-gray-500 shadow-sm">
 							<p className="text-sm font-medium text-gray-600">{t('empty')}</p>
@@ -164,6 +193,7 @@ function RoutesContent() {
 						</div>
 					) : workspaceView === 'overview' ? (
 						<RouteSurfaceCatalog
+							density={density}
 							cards={state.routeCards}
 							modelMeta={state.modelMeta}
 							providerMeta={state.providerMeta}
@@ -194,7 +224,7 @@ function RoutesContent() {
 											modelMeta={state.modelMeta}
 											providerMeta={state.providerMeta}
 											globalRouteStrategy={state.globalRouteStrategy}
-											density="topology"
+											density={density}
 											copiedModelId={state.copiedModelId}
 											togglingId={state.togglingId}
 											onCopyModelId={state.copyModelId}

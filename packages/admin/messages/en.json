@@ -702,6 +702,12 @@
 		"empty": "No models or routes found",
 		"emptyFilteredPrefix": "Try adjusting filters or",
 		"workspace": {
+			"searchPlaceholder": "Search model, upstream model or provider…",
+			"removeFilter": "Remove filter: {filter}",
+			"densityLabel": "Route detail level",
+			"densityCompact": "Compact",
+			"densityDetailed": "Detailed",
+			"surfaceCounts": "{models, plural, one {# model} other {# models}} · {routes, plural, one {# route} other {# routes}}",
 			"title": "Route Configurations",
 			"filteredBy": "Filtered by: {summary}",
 			"allModelsRoutes": "All models and routes",

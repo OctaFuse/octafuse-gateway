@@ -702,6 +702,12 @@
 		"empty": "모델 또는 Route가 없습니다",
 		"emptyFilteredPrefix": "필터를 조정하거나",
 		"workspace": {
+			"searchPlaceholder": "모델, 업스트림 모델 또는 공급자 검색…",
+			"removeFilter": "필터 제거: {filter}",
+			"densityLabel": "라우트 상세 수준",
+			"densityCompact": "간략히",
+			"densityDetailed": "자세히",
+			"surfaceCounts": "모델 {models}개 · 라우트 {routes}개",
 			"title": "Route 설정",
 			"filteredBy": "필터: {summary}",
 			"allModelsRoutes": "모든 모델 및 Routes",
