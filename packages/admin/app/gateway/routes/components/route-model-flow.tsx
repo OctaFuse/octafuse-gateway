@@ -891,6 +891,8 @@ export function UpstreamPoolPanel({
 	onOpenStrategyDialog,
 }: UpstreamPoolPanelProps) {
 	const t = useTranslations('routes.flow');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 	const [failoverOpen, setFailoverOpen] = useState(false);
 	const priorityLayers = [...section.routes.reduce((map, route) => {
 		const layer = map.get(route.priority) ?? [];
@@ -900,7 +902,11 @@ export function UpstreamPoolPanel({
 	}, new Map<number, RouteListRow[]>())]
 		.sort(([a], [b]) => b - a)
 		.map(([priority, routes]) =>
-			[priority, [...routes].sort(compareRoutesWithinPriorityLayer)] as const
+			[priority, [...routes].sort((a, b) => compareRoutesWithinPriorityLayer(a, b, {
+				providersById: providerMeta,
+				locale,
+				customKindLabel: tKind('custom'),
+			}))] as const
 		);
 	const highestPriority = priorityLayers[0]?.[0];
 	/** Explicit user overrides; missing keys mean "default" (highest priority expanded). */

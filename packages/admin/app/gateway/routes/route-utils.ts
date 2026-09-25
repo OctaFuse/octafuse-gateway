@@ -59,7 +59,12 @@ import {
 } from '@octafuse/core/db/pricing-schedule';
 import { compareModelsByReleasedAtDesc } from '@/lib/model-catalog-sort';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
-import { liveProviderAccountLabel, providerKindFilterKey } from '@/lib/provider-kind';
+import {
+	compareProvidersByKindThenName,
+	liveProviderAccountLabel,
+	providerKindFilterKey,
+	type ProviderKindSortable,
+} from '@/lib/provider-kind';
 import { compareRouteGroupsForDisplay, normalizeRouteGroup } from '@/lib/route-group-ui';
 import { UPSTREAM_PROTOCOLS, isUpstreamProtocol, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
@@ -324,26 +329,59 @@ export function groupSectionsByRequestSurface<T>(
 	});
 }
 
-/** Same-priority layer: active first, then weight DESC, then name / id. */
+export type RoutePrioritySortContext = {
+	providersById: ReadonlyMap<string, ProviderKindSortable>;
+	locale: string;
+	customKindLabel: string;
+};
+
+type PriorityLayerRoute = Pick<GatewayModelRoute, 'status' | 'weight' | 'provider_id' | 'id'> & {
+	provider_name?: string | null;
+};
+
+function providerForPrioritySort(
+	route: PriorityLayerRoute,
+	providersById: ReadonlyMap<string, ProviderKindSortable>,
+): ProviderKindSortable {
+	const provider = providersById.get(route.provider_id);
+	const snapshotName = route.provider_name?.trim() || route.provider_id;
+	if (!provider) return { name: snapshotName, kind: '' };
+	return {
+		name: provider.name?.trim() || snapshotName,
+		kind: provider.kind,
+		kind_labels: provider.kind_labels,
+	};
+}
+
+/** Same-priority layer: active first, weight DESC, then provider kind and account name. */
 export function compareRoutesWithinPriorityLayer(
-	a: Pick<GatewayModelRoute, 'status' | 'weight' | 'provider_model_name' | 'id'>,
-	b: Pick<GatewayModelRoute, 'status' | 'weight' | 'provider_model_name' | 'id'>,
+	a: PriorityLayerRoute,
+	b: PriorityLayerRoute,
+	context: RoutePrioritySortContext,
 ): number {
 	const enabledA = a.status === 'active' ? 1 : 0;
 	const enabledB = b.status === 'active' ? 1 : 0;
 	if (enabledB !== enabledA) return enabledB - enabledA;
 	const dw = (b.weight ?? 1) - (a.weight ?? 1);
 	if (dw !== 0) return dw;
-	const nameCmp = a.provider_model_name.localeCompare(b.provider_model_name, undefined, {
-		sensitivity: 'base',
-	});
-	if (nameCmp !== 0) return nameCmp;
-	return a.id.localeCompare(b.id, undefined, { sensitivity: 'base' });
+	const byProvider = compareProvidersByKindThenName(
+		providerForPrioritySort(a, context.providersById),
+		providerForPrioritySort(b, context.providersById),
+		context.locale,
+		context.customKindLabel,
+	);
+	if (byProvider !== 0) return byProvider;
+	return a.id.localeCompare(b.id, context.locale, { sensitivity: 'base' });
 }
 
 export function compareModelRoutesForCardDisplay(
-	a: Pick<GatewayModelRoute, 'upstream_protocol' | 'priority' | 'status' | 'weight' | 'provider_model_name' | 'id'>,
-	b: Pick<GatewayModelRoute, 'upstream_protocol' | 'priority' | 'status' | 'weight' | 'provider_model_name' | 'id'>,
+	a: Pick<GatewayModelRoute, 'upstream_protocol' | 'priority' | 'status' | 'weight' | 'provider_id' | 'id'> & {
+		provider_name?: string | null;
+	},
+	b: Pick<GatewayModelRoute, 'upstream_protocol' | 'priority' | 'status' | 'weight' | 'provider_id' | 'id'> & {
+		provider_name?: string | null;
+	},
+	context: RoutePrioritySortContext,
 ): number {
 	const knownA = isUpstreamProtocol(a.upstream_protocol);
 	const knownB = isUpstreamProtocol(b.upstream_protocol);
@@ -361,7 +399,7 @@ export function compareModelRoutesForCardDisplay(
 	}
 	const dp = b.priority - a.priority;
 	if (dp !== 0) return dp;
-	return compareRoutesWithinPriorityLayer(a, b);
+	return compareRoutesWithinPriorityLayer(a, b, context);
 }
 
 export function compareModelVendorsForDisplay(a: string, b: string): number {
@@ -1113,7 +1151,9 @@ export function buildRoutesByModel(params: {
 	filterVendor: string;
 	filterProviderId: string;
 	filterProviderKind?: string;
-	providers?: Array<Pick<GatewayProvider, 'id' | 'kind'>>;
+	providers?: Array<Pick<GatewayProvider, 'id' | 'name' | 'kind' | 'kind_labels'>>;
+	locale?: string;
+	customKindLabel?: string;
 	filterRouteGroup: string;
 	filterStatus: string;
 	filterKind?: RouteKindFilter;
@@ -1126,11 +1166,18 @@ export function buildRoutesByModel(params: {
 		filterProviderId,
 		filterProviderKind = '',
 		providers = [],
+		locale = 'en',
+		customKindLabel = 'Custom',
 		filterRouteGroup,
 		filterStatus,
 		filterKind = DEFAULT_ROUTE_KIND_FILTER,
 	} = params;
 	const providerKindById = new Map(providers.map((provider) => [provider.id, provider.kind]));
+	const routeSortContext: RoutePrioritySortContext = {
+		providersById: new Map(providers.map((provider) => [provider.id, provider])),
+		locale,
+		customKindLabel,
+	};
 
 	const modelMatchesVendor = (modelId: string) => {
 		if (!filterVendor) return true;
@@ -1156,7 +1203,7 @@ export function buildRoutesByModel(params: {
 	}
 
 	for (const list of routeByModelId.values()) {
-		list.sort(compareModelRoutesForCardDisplay);
+		list.sort((a, b) => compareModelRoutesForCardDisplay(a, b, routeSortContext));
 	}
 
 	const candidateModelIds = new Set<string>();
