@@ -10,6 +10,7 @@ import {
 	maskProviderApiKeyForAdmin,
 	PROVIDER_IMPORT_PENDING_API_KEY,
 } from '@octafuse/core/db/provider-key-utils';
+import { getProviderQuotaAdapter } from '@octafuse/core/provider-quota';
 import {
 	isKnownProviderKind,
 	resolveStoredProviderPresentation,
@@ -92,6 +93,7 @@ function enrichProviderRow(provider: AdminProviderRow): AdminProviderRow {
 		has_pending_key: isPendingProviderImportApiKey(plaintext),
 		routes_count: Number(provider.routes_count ?? 0),
 		active_routes_count: Number(provider.active_routes_count ?? 0),
+		quota_supported: getProviderQuotaAdapter(provider.kind) != null,
 	};
 }
 

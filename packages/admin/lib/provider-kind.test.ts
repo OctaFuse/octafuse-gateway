@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { listProviderQuotaKinds } from '@octafuse/core/provider-quota';
+import { isKnownProviderKind } from './provider-import-preset';
 import {
 	CUSTOM_PROVIDER_KIND,
 	UNCLASSIFIED_PROVIDER_KIND_FILTER,
@@ -88,5 +90,15 @@ describe('buildProviderKindFilterOptions', () => {
 			selectedKey: 'gone',
 		});
 		assert.deepEqual(options, [{ key: 'gone', label: 'gone', count: 0 }]);
+	});
+});
+
+describe('provider quota kinds', () => {
+	it('only registers quota adapters for known provider templates', () => {
+		const kinds = listProviderQuotaKinds();
+		assert.ok(kinds.length > 0);
+		for (const kind of kinds) {
+			assert.equal(isKnownProviderKind(kind), true, kind);
+		}
 	});
 });

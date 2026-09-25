@@ -1,4 +1,8 @@
 {
+	"responsive": {
+		"filters": "Filters",
+		"activeFilters": "{count} active"
+	},
 	"locale": {
 		"label": "Language",
 		"en": "English",
@@ -114,6 +118,8 @@
 		"logout": "Logout"
 	},
 	"sidebar": {
+		"openMenu": "Open navigation menu",
+		"navigation": "Main navigation",
 		"groups": {
 			"overview": "Overview",
 			"inference": "Inference",
@@ -430,6 +436,36 @@
 			"failed": "Import failed",
 			"copyFailed": "Failed to copy API key"
 		},
+		"quota": {
+			"action": "Quota",
+			"title": "Provider quota",
+			"close": "Close",
+			"loading": "Checking…",
+			"retry": "Check again",
+			"checkedAt": "Checked {time}",
+			"balance": "Balance",
+			"granted": "Granted",
+			"paid": "Topped up",
+			"windows": "Quota windows",
+			"remaining": "Remaining {value}",
+			"usedOfLimit": "{used} / {limit}",
+			"resetsAt": "Resets {time}",
+			"empty": "No balance or quota was returned",
+			"failed": "Could not check quota",
+			"state": {
+				"ok": "Available",
+				"low": "Running low",
+				"exhausted": "Exhausted",
+				"unknown": "Unknown"
+			},
+			"window": {
+				"key_limit": "Key limit",
+				"spend_limit": "Spend limit",
+				"5h": "5-hour",
+				"weekly": "Weekly",
+				"monthly": "Monthly"
+			}
+		},
 		"kind": {
 			"custom": "Custom",
 			"unclassified": "Unclassified"
@@ -460,7 +496,7 @@
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
 			"geminiPlaceholder": "https://generativelanguage.googleapis.com/v1beta/models",
-			"geminiHint": "Full path prefix before '{model}'. Developer: …/v1beta/models; Vertex Express: …/v1/publishers/google/models; Vertex (project): …/v1/projects/{project}/locations/{location}/publishers/google/models.",
+			"geminiHint": "Full path prefix before '{model}'. Developer: …/v1beta/models; Vertex Express: …/v1/publishers/google/models; Vertex (project): …/v1/projects/'{project}'/locations/'{location}'/publishers/google/models.",
 			"geminiAuth": "Upstream auth",
 			"geminiAuthAuto": "Default (?key=)",
 			"geminiAuthQueryKey": "Query key (?key=)",
@@ -672,6 +708,12 @@
 		"empty": "No models or routes found",
 		"emptyFilteredPrefix": "Try adjusting filters or",
 		"workspace": {
+			"searchPlaceholder": "Search model, upstream model or provider…",
+			"removeFilter": "Remove filter: {filter}",
+			"densityLabel": "Route detail level",
+			"densityCompact": "Compact",
+			"densityDetailed": "Detailed",
+			"surfaceCounts": "{models, plural, one {# model} other {# models}} · {routes, plural, one {# route} other {# routes}}",
 			"title": "Route Configurations",
 			"filteredBy": "Filtered by: {summary}",
 			"allModelsRoutes": "All models and routes",
@@ -745,6 +787,12 @@
 			"scheduled": "Schedule",
 			"customParams": "Params",
 			"customParamsTooltip": "Custom request params: body is deep-merged and configured headers are sent as HTTP. Client same-name JSON fields and headers win unless Force override is on.",
+			"pricingPeriod": "Period",
+			"pricingCharged": "Charged",
+			"pricingMetered": "Metered",
+			"basePricing": "Base",
+			"targetParams": "Params",
+			"targetWeight": "Weight {value}",
 			"badgeWeightTooltip": "Weight: {value}",
 			"badgeParamsTooltip": "Custom params (body deep-merge and HTTP headers; client same-name values win unless Force override is on)",
 			"badgeParamsForceOverrideTooltip": "Custom params with Force override (route body fields and headers win)",

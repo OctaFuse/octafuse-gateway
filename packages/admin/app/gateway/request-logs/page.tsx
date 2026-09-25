@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开行为四栏（pricing audit + 三份 JSON）；数据来自 `/api/admin/request-logs`。
+ * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开详情按可用宽度重排（耗时、计费审计与三份 JSON）；数据来自 `/api/admin/request-logs`。
  */
+import { FilterDisclosure } from '@/components/FilterDisclosure';
 import { useLocale, useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
 import { ChevronRightIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
@@ -707,7 +708,7 @@ export default function GatewayRequestLogsPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
@@ -724,110 +725,112 @@ export default function GatewayRequestLogsPage() {
         />
       </div>
 
-      <div className="mb-4 flex gap-4 flex-wrap">
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{tCommon('status')}</label>
-          <select
-            value={filterStatus}
-            onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          >
-            <option value="">{tCommon('all')}</option>
-            <option value="success">{tOptions('requestStatus.success')}</option>
-            <option value="error">{tOptions('requestStatus.error')}</option>
-            <option value="incomplete">{tOptions('requestStatus.incomplete')}</option>
-            <option value="cancelled">{tOptions('requestStatus.cancelled')}</option>
-          </select>
+      <FilterDisclosure className="mb-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4" activeCount={[filterStatus, filterModel, filterProviderId, filterProtocol, filterRouteGroup, filterUserEmail, filterApiKeyId].filter(Boolean).length}>
+        <div className="admin-filter-grid [&_select]:w-full [&_select]:min-w-0 [&_select]:max-w-none [&_input]:w-full [&_input]:min-w-0">
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{tCommon('status')}</label>
+            <select
+              value={filterStatus}
+              onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              <option value="">{tCommon('all')}</option>
+              <option value="success">{tOptions('requestStatus.success')}</option>
+              <option value="error">{tOptions('requestStatus.error')}</option>
+              <option value="incomplete">{tOptions('requestStatus.incomplete')}</option>
+              <option value="cancelled">{tOptions('requestStatus.cancelled')}</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{tCommon('model')}</label>
+            <select
+              value={filterModel}
+              onChange={(e) => { setFilterModel(e.target.value); setPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[12rem] max-w-xs"
+            >
+              <option value="">{tCommon('all')}</option>
+              {modelSelectOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{tCommon('provider')}</label>
+            <select
+              value={filterProviderId}
+              onChange={(e) => { setFilterProviderId(e.target.value); setPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[12rem] max-w-xs"
+            >
+              <option value="">{tCommon('all')}</option>
+              {providerSelectOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.protocol')}</label>
+            <select
+              value={filterProtocol}
+              onChange={(e) => { setFilterProtocol(e.target.value); setPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[9rem]"
+            >
+              <option value="">{tCommon('all')}</option>
+              {UPSTREAM_PROTOCOLS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.routeGroup')}</label>
+            <select
+              value={filterRouteGroup}
+              onChange={(e) => { setFilterRouteGroup(e.target.value); setPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[10rem] max-w-xs"
+            >
+              <option value="">{tCommon('all')}</option>
+              {routeGroupSelectOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
+            <input
+              type="text"
+              value={filterUserEmail}
+              onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
+              placeholder={t('filters.emailPlaceholder')}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.apiKeyId')}</label>
+            <input
+              type="text"
+              value={filterApiKeyId}
+              onChange={(e) => { setFilterApiKeyId(e.target.value); setPage(1); }}
+              placeholder={t('filters.apiKeyPlaceholder')}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+            >
+              {tCommon('clearFilters')}
+            </button>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{tCommon('model')}</label>
-          <select
-            value={filterModel}
-            onChange={(e) => { setFilterModel(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[12rem] max-w-xs"
-          >
-            <option value="">{tCommon('all')}</option>
-            {modelSelectOptions.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{tCommon('provider')}</label>
-          <select
-            value={filterProviderId}
-            onChange={(e) => { setFilterProviderId(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[12rem] max-w-xs"
-          >
-            <option value="">{tCommon('all')}</option>
-            {providerSelectOptions.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.protocol')}</label>
-          <select
-            value={filterProtocol}
-            onChange={(e) => { setFilterProtocol(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[9rem]"
-          >
-            <option value="">{tCommon('all')}</option>
-            {UPSTREAM_PROTOCOLS.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.routeGroup')}</label>
-          <select
-            value={filterRouteGroup}
-            onChange={(e) => { setFilterRouteGroup(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[10rem] max-w-xs"
-          >
-            <option value="">{tCommon('all')}</option>
-            {routeGroupSelectOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
-          <input
-            type="text"
-            value={filterUserEmail}
-            onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
-            placeholder={t('filters.emailPlaceholder')}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-500 mb-1">{t('filters.apiKeyId')}</label>
-          <input
-            type="text"
-            value={filterApiKeyId}
-            onChange={(e) => { setFilterApiKeyId(e.target.value); setPage(1); }}
-            placeholder={t('filters.apiKeyPlaceholder')}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-          />
-        </div>
-        <div className="flex items-end">
-          <button
-            onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-          >
-            {tCommon('clearFilters')}
-          </button>
-        </div>
-      </div>
+      </FilterDisclosure>
 
       {/* Stats + status swatch legend */}
       <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
@@ -858,7 +861,7 @@ export default function GatewayRequestLogsPage() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="admin-log-table bg-white rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -995,7 +998,7 @@ export default function GatewayRequestLogsPage() {
                   {detailLogId === log.id && (
                     <tr className="bg-gray-50">
                       <td colSpan={7} className="px-3 py-2">
-                        <div className="rounded-md border border-gray-200 bg-white overflow-x-auto">
+                        <div className="admin-log-detail rounded-md border border-gray-200 bg-white">
                           {(() => {
                             const auditLine = summarizePricingAuditJson(log.pricing_audit ?? null);
                             const auditRaw = log.pricing_audit?.trim();
@@ -1049,16 +1052,16 @@ export default function GatewayRequestLogsPage() {
                               { label: t('detail.routeTarget'), value: routeTarget },
                             ];
                             return (
-                              <div className="min-w-[110rem]">
+                              <div className="min-w-0">
                                 <div className="border-b border-gray-200 bg-slate-50/70 p-3">
-                                  <div className="grid grid-cols-4 gap-x-4 gap-y-2">
+                                  <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-x-4 gap-y-2">
                                     {summaryFields.map(({ label, value }) => (
                                       <div key={label} className="min-w-0">
                                         <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                                           {label}
                                         </div>
                                         <div
-                                          className="mt-0.5 truncate font-mono text-[11px] text-slate-700"
+                                          className="mt-0.5 break-all font-mono text-[11px] text-slate-700"
                                           title={value || undefined}
                                         >
                                           {value || '-'}
@@ -1078,7 +1081,7 @@ export default function GatewayRequestLogsPage() {
                                   ) : null}
                                 </div>
                                 {ingressHost || upstreamMessageId || upstreamRequestId ? (
-                                  <div className="grid grid-cols-3 gap-3 border-b border-gray-200 bg-gray-50/70 p-3">
+                                  <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-3 border-b border-gray-200 bg-gray-50/70 p-3">
                                     {[
                                       {
                                         id: 'ingress_host' as const,
@@ -1141,8 +1144,8 @@ export default function GatewayRequestLogsPage() {
                                     ))}
                                   </div>
                                 ) : null}
-                              <div className="grid min-w-[110rem] grid-cols-5 items-start gap-3 p-3">
-                                <div className="min-w-0 flex h-[28rem] flex-col overflow-hidden rounded-md border border-sky-200 bg-sky-50/50">
+                              <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] items-start gap-3 p-3">
+                                <div className="min-w-0 flex h-72 flex-col md:h-[28rem] overflow-hidden rounded-md border border-sky-200 bg-sky-50/50">
                                   <div className="px-2 py-1.5 border-b border-sky-200 bg-sky-100/50 flex items-center justify-between gap-2 shrink-0">
                                     <span className="text-xs font-medium text-sky-950">{t('detail.timing')}</span>
                                     <div className="flex items-center gap-1.5">
@@ -1183,7 +1186,7 @@ export default function GatewayRequestLogsPage() {
                                     {timingDisplay || tCommon('noDataFound')}
                                   </pre>
                                 </div>
-                                <div className="min-w-0 flex h-[28rem] flex-col overflow-hidden rounded-md border border-violet-200 bg-violet-50/50">
+                                <div className="min-w-0 flex h-72 flex-col md:h-[28rem] overflow-hidden rounded-md border border-violet-200 bg-violet-50/50">
                                   <div className="px-2 py-1.5 border-b border-violet-200 bg-violet-100/40 flex items-center justify-between gap-2 shrink-0">
                                     <span className="text-xs font-medium text-violet-950">{t('detail.pricingAudit')}</span>
                                     <button
@@ -1228,7 +1231,7 @@ export default function GatewayRequestLogsPage() {
                                   return (
                                     <div
                                       key={col}
-                                      className="min-w-0 flex h-[28rem] flex-col overflow-hidden rounded-md border border-gray-200"
+                                      className="min-w-0 flex h-72 flex-col md:h-[28rem] overflow-hidden rounded-md border border-gray-200"
                                     >
                                       <div className="px-2 py-1.5 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-2 shrink-0">
                                         <span className="text-xs font-medium text-gray-700">{title}</span>
@@ -1315,7 +1318,7 @@ export default function GatewayRequestLogsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex justify-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}

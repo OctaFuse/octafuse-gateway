@@ -272,8 +272,8 @@ export default function AdminApiKeysPage() {
 	};
 
 	return (
-		<div className="p-8">
-			<div className="mb-6 flex items-start justify-between gap-4">
+		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
 					<p className="mt-1 max-w-3xl text-sm text-gray-500">{t('subtitle')}</p>
@@ -296,7 +296,7 @@ export default function AdminApiKeysPage() {
 			)}
 
 			<div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
-				<table className="min-w-full divide-y">
+				<table className="admin-data-table min-w-full divide-y">
 					<thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
 						<tr>
 							<th className="px-4 py-3">{t('name')}</th>

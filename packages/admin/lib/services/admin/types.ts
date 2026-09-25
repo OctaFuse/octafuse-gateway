@@ -288,6 +288,8 @@ export type AdminProviderRow = {
 	routes_count?: number;
 	/** 其中 status=active 的数量 */
 	active_routes_count?: number;
+	/** 当前 `kind` 是否有额度适配器。不落库。 */
+	quota_supported?: boolean;
 	[key: string]: unknown;
 };
 

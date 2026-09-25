@@ -1,4 +1,8 @@
 {
+	"responsive": {
+		"filters": "筛选条件",
+		"activeFilters": "已选 {count} 项"
+	},
 	"locale": {
 		"label": "语言",
 		"en": "English",
@@ -114,6 +118,8 @@
 		"logout": "退出登录"
 	},
 	"sidebar": {
+		"openMenu": "打开导航菜单",
+		"navigation": "主导航",
 		"groups": {
 			"overview": "概览",
 			"inference": "推理",
@@ -430,6 +436,36 @@
 			"failed": "导入失败",
 			"copyFailed": "复制 API Key 失败"
 		},
+		"quota": {
+			"action": "查询额度",
+			"title": "供应商额度",
+			"close": "关闭",
+			"loading": "正在查询…",
+			"retry": "再次查询",
+			"checkedAt": "查询时间 {time}",
+			"balance": "余额",
+			"granted": "赠送",
+			"paid": "充值",
+			"windows": "周期额度",
+			"remaining": "剩余 {value}",
+			"usedOfLimit": "{used} / {limit}",
+			"resetsAt": "重置于 {time}",
+			"empty": "没有返回余额或额度",
+			"failed": "查询失败",
+			"state": {
+				"ok": "可用",
+				"low": "偏低",
+				"exhausted": "已用尽",
+				"unknown": "未知"
+			},
+			"window": {
+				"key_limit": "Key 额度",
+				"spend_limit": "消费上限",
+				"5h": "5 小时",
+				"weekly": "每周",
+				"monthly": "每月"
+			}
+		},
 		"kind": {
 			"custom": "自定义",
 			"unclassified": "未分类"
@@ -460,7 +496,7 @@
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
 			"geminiPlaceholder": "https://generativelanguage.googleapis.com/v1beta/models",
-			"geminiHint": "'{model}' 之前的完整路径前缀。Developer：…/v1beta/models；Vertex Express：…/v1/publishers/google/models；正式 Vertex：…/v1/projects/{project}/locations/{location}/publishers/google/models。",
+			"geminiHint": "'{model}' 之前的完整路径前缀。Developer：…/v1beta/models；Vertex Express：…/v1/publishers/google/models；正式 Vertex：…/v1/projects/'{project}'/locations/'{location}'/publishers/google/models。",
 			"geminiAuth": "上游鉴权",
 			"geminiAuthAuto": "默认（?key=）",
 			"geminiAuthQueryKey": "Query key（?key=）",
@@ -672,6 +708,12 @@
 		"empty": "未找到模型或路由",
 		"emptyFilteredPrefix": "请尝试调整筛选或",
 		"workspace": {
+			"searchPlaceholder": "搜索模型、上游模型或供应商…",
+			"removeFilter": "移除筛选：{filter}",
+			"densityLabel": "路由详情展示",
+			"densityCompact": "精简",
+			"densityDetailed": "详细",
+			"surfaceCounts": "{models} 个模型 · {routes} 条路由",
 			"title": "路由配置",
 			"filteredBy": "筛选条件：{summary}",
 			"allModelsRoutes": "全部模型与路由",
@@ -745,6 +787,12 @@
 			"scheduled": "Schedule",
 			"customParams": "P",
 			"customParamsTooltip": "自定义请求参数：请求体深度合并，已配置的请求头作为 HTTP 头发送。默认客户端同名字段与同名头优先，开启强制覆盖后路由值优先。",
+			"pricingPeriod": "时段",
+			"pricingCharged": "计费倍率",
+			"pricingMetered": "成本倍率",
+			"basePricing": "基础倍率",
+			"targetParams": "参数",
+			"targetWeight": "权重 {value}",
 			"badgeWeightTooltip": "权重：{value}",
 			"badgeParamsTooltip": "自定义参数（请求体深度合并与 HTTP 头；默认客户端同名值优先）",
 			"badgeParamsForceOverrideTooltip": "自定义参数已开启强制覆盖（路由请求体字段与请求头优先）",

@@ -1,4 +1,8 @@
 {
+	"responsive": {
+		"filters": "絞り込み",
+		"activeFilters": "{count} 件適用中"
+	},
 	"locale": {
 		"label": "言語",
 		"en": "English",
@@ -114,6 +118,8 @@
 		"logout": "ログアウト"
 	},
 	"sidebar": {
+		"openMenu": "ナビゲーションメニューを開く",
+		"navigation": "メインナビゲーション",
 		"groups": {
 			"overview": "概要",
 			"inference": "推論",
@@ -430,6 +436,36 @@
 			"failed": "インポートに失敗しました",
 			"copyFailed": "API Key のコピーに失敗しました"
 		},
+		"quota": {
+			"action": "残高",
+			"title": "プロバイダー残高",
+			"close": "閉じる",
+			"loading": "確認中…",
+			"retry": "再確認",
+			"checkedAt": "確認時刻 {time}",
+			"balance": "残高",
+			"granted": "付与分",
+			"paid": "チャージ分",
+			"windows": "期間クォータ",
+			"remaining": "残り {value}",
+			"usedOfLimit": "{used} / {limit}",
+			"resetsAt": "リセット {time}",
+			"empty": "残高またはクォータが返されませんでした",
+			"failed": "確認に失敗しました",
+			"state": {
+				"ok": "利用可能",
+				"low": "残りわずか",
+				"exhausted": "使い切り",
+				"unknown": "不明"
+			},
+			"window": {
+				"key_limit": "キー上限",
+				"spend_limit": "利用上限",
+				"5h": "5時間",
+				"weekly": "週間",
+				"monthly": "月間"
+			}
+		},
 		"kind": {
 			"custom": "カスタム",
 			"unclassified": "未分類"
@@ -460,7 +496,7 @@
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
 			"geminiPlaceholder": "https://generativelanguage.googleapis.com/v1beta/models",
-			"geminiHint": "'{model}' より前の完全なパスプレフィックス。Developer：…/v1beta/models、Vertex Express：…/v1/publishers/google/models、Vertex（プロジェクト）：…/v1/projects/{project}/locations/{location}/publishers/google/models。",
+			"geminiHint": "'{model}' より前の完全なパスプレフィックス。Developer：…/v1beta/models、Vertex Express：…/v1/publishers/google/models、Vertex（プロジェクト）：…/v1/projects/'{project}'/locations/'{location}'/publishers/google/models。",
 			"geminiAuth": "上流認証",
 			"geminiAuthAuto": "デフォルト（?key=）",
 			"geminiAuthQueryKey": "Query key（?key=）",
@@ -672,6 +708,12 @@
 		"empty": "モデルまたは Route が見つかりません",
 		"emptyFilteredPrefix": "フィルターを調整するか、",
 		"workspace": {
+			"searchPlaceholder": "モデル・上流モデル・プロバイダーを検索…",
+			"removeFilter": "フィルターを解除：{filter}",
+			"densityLabel": "ルートの表示密度",
+			"densityCompact": "コンパクト",
+			"densityDetailed": "詳細",
+			"surfaceCounts": "{models} モデル · {routes} ルート",
 			"title": "Route 設定",
 			"filteredBy": "フィルター：{summary}",
 			"allModelsRoutes": "すべてのモデルと Route",
@@ -745,6 +787,12 @@
 			"scheduled": "Schedule",
 			"customParams": "P",
 			"customParamsTooltip": "カスタムリクエストパラメーター：Body はディープマージ、設定した headers は HTTP として送信。同名のクライアント項目／ヘッダーが優先され、Force override オン時はルート側が優先。",
+			"pricingPeriod": "時間帯",
+			"pricingCharged": "請求倍率",
+			"pricingMetered": "原価倍率",
+			"basePricing": "基本倍率",
+			"targetParams": "パラメータ",
+			"targetWeight": "重み {value}",
 			"badgeWeightTooltip": "重み：{value}",
 			"badgeParamsTooltip": "カスタムパラメーター（Body のディープマージと HTTP ヘッダー；既定では同名のクライアント値が優先）",
 			"badgeParamsForceOverrideTooltip": "Force override 有効のカスタムパラメーター（ルートの Body とヘッダーが優先）",

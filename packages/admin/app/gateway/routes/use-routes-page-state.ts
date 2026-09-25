@@ -88,6 +88,7 @@ export function useRoutesPageState() {
 	const [duplicateSourceRouteId, setDuplicateSourceRouteId] = useState<string | null>(null);
 	const [formData, setFormData] = useState<RouteFormData>(EMPTY_ROUTE_FORM);
 	const [filterVendor, setFilterVendor] = useState('');
+	const [searchQuery, setSearchQuery] = useState('');
 	const [filterProviderId, setFilterProviderId] = useState('');
 	const [filterProviderKind, setFilterProviderKind] = useState('');
 	const [filterRouteGroup, setFilterRouteGroup] = useState('');
@@ -129,10 +130,12 @@ export function useRoutesPageState() {
 		setFilterStatus(status ?? '');
 		setFilterRouteGroup(routeGroup ?? '');
 		setFilterKind(parseRouteKindFilterParam(kind));
+		setSearchQuery(searchParams.get('q') ?? '');
 	}, [searchParams]);
 
 	useReplaceListPageQuery(() => {
 		const params = new URLSearchParams();
+		if (searchQuery) params.set('q', searchQuery);
 		if (filterVendor) params.set('vendor', filterVendor);
 		if (filterProviderKind) params.set('provider_kind', filterProviderKind);
 		if (filterProviderId) params.set('provider_id', filterProviderId);
@@ -140,7 +143,7 @@ export function useRoutesPageState() {
 		if (filterStatus) params.set('status', filterStatus);
 		params.set('kind', filterKind);
 		return params;
-	}, [filterVendor, filterProviderKind, filterProviderId, filterRouteGroup, filterStatus, filterKind]);
+	}, [filterVendor, filterProviderKind, filterProviderId, filterRouteGroup, filterStatus, filterKind, searchQuery]);
 
 	const refreshRoutesPage = useCallback(async () => {
 		try {
@@ -277,9 +280,12 @@ export function useRoutesPageState() {
 				filterProviderId,
 				filterProviderKind,
 				providers,
+				locale,
+				customKindLabel: tKind('custom'),
 				filterRouteGroup,
 				filterStatus,
 				filterKind,
+				searchQuery,
 			}),
 		[
 			routes,
@@ -289,9 +295,12 @@ export function useRoutesPageState() {
 			filterProviderId,
 			filterProviderKind,
 			providers,
+			locale,
+			tKind,
 			filterRouteGroup,
 			filterStatus,
 			filterKind,
+			searchQuery,
 		]
 	);
 
@@ -313,6 +322,7 @@ export function useRoutesPageState() {
 	);
 
 	const hasActiveFilters = Boolean(
+		searchQuery ||
 		filterVendor ||
 		filterProviderId ||
 		filterProviderKind ||
@@ -439,6 +449,7 @@ export function useRoutesPageState() {
 	]);
 
 	const clearAllFilters = useCallback(() => {
+		setSearchQuery('');
 		setFilterKind(DEFAULT_ROUTE_KIND_FILTER);
 		setFilterVendor('');
 		setFilterProviderKind('');
@@ -805,6 +816,8 @@ export function useRoutesPageState() {
 		billingCurrency,
 		filterVendor,
 		setFilterVendor,
+		searchQuery,
+		setSearchQuery,
 		filterProviderId,
 		setFilterProviderId,
 		filterProviderKind,

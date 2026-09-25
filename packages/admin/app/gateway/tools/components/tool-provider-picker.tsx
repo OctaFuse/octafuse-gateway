@@ -29,7 +29,7 @@ const BADGE_CLASS: Record<CompactStatusBadgeKind, string> = {
 
 function cardClassName(status: ProviderCardStatusFlags): string {
 	const base =
-		'flex h-[4.5rem] flex-col justify-between rounded-md border px-2.5 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+		'flex min-h-[4.5rem] min-w-0 flex-col justify-between gap-2 rounded-md border px-2.5 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
 	if (status.isSelected) {
 		return `${base} border-blue-400 bg-blue-50/60 ring-1 ring-blue-200`;
 	}
@@ -92,7 +92,7 @@ export function ToolOverviewSection({
 							</span>
 						)}
 					</div>
-					<p className="mt-0.5 line-clamp-1 text-xs text-gray-500" title={description}>
+					<p className="mt-0.5 text-xs text-gray-500" title={description}>
 						{description}
 					</p>
 				</div>
@@ -153,7 +153,7 @@ export function ToolProviderPicker({
 
 	return (
 		<div
-			className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4"
+			className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,13rem),1fr))] gap-2"
 			role="group"
 			aria-label={t('selectHint')}
 		>

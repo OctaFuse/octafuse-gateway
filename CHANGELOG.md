@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- **路由搜索与展示密度**：Routes 可按模型、上游模型或供应商搜索，多个词需同时命中，关键词写入地址栏 `q`。工作区可在「精简」和「详细」之间切换：精简默认收起各优先级，详细展开路由。选择记在本机，刷新后保留；未选择时为详细。
+- **供应商额度**：Providers 卡片对已配置密钥、且类型支持额度查询的账号提供「查询额度」。按 `providers.kind` 用现有 API Key 实时请求 DeepSeek、Moonshot、SiliconFlow（含国际站）、OpenRouter、Novita、DeepInfra、阶跃星辰、Vercel AI Gateway 的余额，以及 OpenCode Go、MiniMax Token Plan、智谱 GLM Coding Plan、Z.AI GLM Coding Plan 的周期额度，结果不落库。Kimi Code 暂无稳定公开的额度契约；需要另一把管理密钥的渠道不提供查询。
 - **模型列表 RPM 豁免**：`GET /v1/models` 与 `GET /v1/me` 一样，不再计入 API Key 与用户合计 RPM。周期额度或永久额度用尽时仍可拉取模型列表。
 - **音频筛选与请求入口**：`kind=audio` 同时返回语音转写与语音合成。`model_info.inbound` 在命中可见路由时补充文生图、ASR、TTS 操作（`images.generations`、`audio.transcriptions`、`audio.speech`）。
 - **模型列表契约**：`GET /v1/models` 与 `GET /catalog/models` 不再向 `tags` 注入 `Discount.<group>:<factor>`；权威折扣仍是 `discounts`。`model_info.pricing_profile` 改为解析后的对象（非法 JSON 为 `null`），`vendor` 为空或仅空白时返回 `other`。
@@ -11,7 +13,7 @@
 - **接口说明**：同步 `GET /v1/models` 的 RPM 豁免、`kind=audio`、`inbound`，以及 Catalog 的 `pricing_profile`、`vendor`、`tags` 契约。
 - **模型目录**：静态预设新增 `mimo-v2.6-pro`、`mimo-v2.6-flash`、`mimo-v2.6-pro-ultraspeed`。价格为官网实时推理刊例（USD 与 CNY 分源），不含批量推理半价；缓存写入仍为限时免费，不写入目录价。
 - **模型目录**：静态预设新增 `gpt-6-sol`、`gpt-6-luna`、`claude-opus-5-5`、`grok-4.7`。价格为官网 Standard 刊例；海外 CNY 按 USD × 7 占位。不含 Batch、Flex、Fast 或仅限 Cursor / Grok Build 的加价档。
-- **供应商类型筛选**：Routes 增加 Provider Type 筛选。选中某一类型后，只保留该类型的路由，Provider 芯片也只留下该类型的账号。配置路由、Playground、Request Logs 里选择供应商，以及 Playground 路由行和 Simulator 匹配路由，都显示「类型 · 别名」，同一类型排在一起。Request Logs 的路由列和展开详情按当前供应商目录补上类型，目录里已经没有的账号仍显示日志里的名称。Providers 卡片按类型再按别名排列。路由卡片、拓扑和可靠性页仍显示「别名 · 类型」。
+- **供应商类型筛选**：Routes 增加 Provider Type 筛选。选中某一类型后，只保留该类型的路由，Provider 芯片也只留下该类型的账号。配置路由、Playground、Request Logs 里选择供应商，以及 Playground 路由行和 Simulator 匹配路由，都显示「类型 · 别名」，同一类型排在一起。Request Logs 的路由列和展开详情按当前供应商目录补上类型，目录里已经没有的账号仍显示日志里的名称。Providers 卡片按类型再按别名排列。拓扑和可靠性页仍显示「别名 · 类型」。
 - **调试台路由列表**：每条路由分成三行。第一行是状态和模型，第二行只放供应商，第三行是协议和路由组。
 - **模型用量展开**：按供应商 id 汇总不变。展开后的供应商列显示「类型 · 别名」，不再回退显示 id。目录里已经没有的账号仍显示统计里的名称。打开页面时按请求数从高到低排列。
 - **供应商用量**：第一列改为「供应商」，内容显示「类型 · 别名」。统计仍按供应商 id 汇总，不再把 id 显示在这一列。打开页面时按请求数从高到低排列。
@@ -19,6 +21,11 @@
 
 ### Patch Changes
 
+- **窄屏导航**：宽度小于 1024px 时，侧栏改为顶栏菜单。点开后以抽屉显示导航，顶栏带语言切换。进入新页面或拉宽到桌面宽度后关闭抽屉。桌面端仍是固定侧栏。
+- **窄屏筛选**：Request Logs、Users、Audit Logs 与 Routes 在宽度小于 768px 时把筛选收进「筛选条件」，并显示已选数量。桌面端筛选仍直接展开。
+- **路由配置卡片**：账号别名单独一行，类型用浅色标签放在下一行，模型名在标签下方。类型与别名相同，或账号尚未分类时，不显示类型标签。
+- **供应商 Gemini 端点说明**：编辑供应商并打开 Gemini 端点时，路径示例里的 `{project}`、`{location}` 按字面量显示，不再被当成缺失的文案变量导致弹窗报错。
+- **路由卡片排序**：同一优先级内先排启用路由，再按权重从高到低，然后按当前语言的供应商类型名和账号别名升序。尚未分类的账号排在已分类之后。类型和别名都相同的多条路由按路由 id 稳定排列。
 - **流式空闲超时默认值**：`STREAM_IDLE_TIMEOUT_MS` 代码默认由 30 秒调整为 90 秒，减少推理模型在首个 thinking chunk 之后短暂停顿被误杀的情况。仍可用部署环境变量覆盖。
 - **Simulator / Playground 流式滚动**：流式输出只滚动 Response 内部区域，不再调用 `scrollIntoView`，避免整页（含侧栏）被顶上去。
 
