@@ -3,7 +3,7 @@
 import { FilterNavButton, FilterNavSection } from '../../components/filter-nav';
 import type { GatewayProvider } from '@/lib/types';
 import { useLocale, useTranslations } from 'next-intl';
-import { liveProviderAccountLabel } from '@/lib/provider-kind';
+import { liveProviderPickerLabel, type ProviderKindFilterOption } from '@/lib/provider-kind';
 import type { ComponentProps } from 'react';
 import type { RouteKindFilter } from '../types';
 
@@ -16,6 +16,8 @@ type Props = {
 	filterRouteGroup: string;
 	filterVendor: string;
 	filterProviderId: string;
+	filterProviderKind: string;
+	providerKindFilterOptions: ProviderKindFilterOption[];
 	statusCounts: { all: number; active: number; inactive: number };
 	kindCounts: { all: number; llm: number; image: number; audio: number };
 	routesCount: number;
@@ -29,6 +31,7 @@ type Props = {
 	onFilterRouteGroupChange: (group: string) => void;
 	onFilterVendorChange: (vendor: string) => void;
 	onFilterProviderIdChange: (providerId: string) => void;
+	onFilterProviderKindChange: (providerKind: string) => void;
 	onClearAllFilters: () => void;
 };
 
@@ -50,6 +53,8 @@ export function RouteFilterSidebar(props: Props) {
 		filterRouteGroup,
 		filterVendor,
 		filterProviderId,
+		filterProviderKind,
+		providerKindFilterOptions,
 		statusCounts,
 		kindCounts,
 		routesCount,
@@ -63,6 +68,7 @@ export function RouteFilterSidebar(props: Props) {
 		onFilterRouteGroupChange,
 		onFilterVendorChange,
 		onFilterProviderIdChange,
+		onFilterProviderKindChange,
 		onClearAllFilters,
 	} = props;
 
@@ -70,6 +76,9 @@ export function RouteFilterSidebar(props: Props) {
 	const tCommon = useTranslations('common');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
+	const providerAllCount = filterProviderKind
+		? (providerKindFilterOptions.find((option) => option.key === filterProviderKind)?.count ?? 0)
+		: routesCount;
 
 	return (
 		<section className="mb-5 sm:mb-6" aria-label={t('title')}>
@@ -178,17 +187,35 @@ export function RouteFilterSidebar(props: Props) {
 					))}
 				</HorizontalSection>
 
-				<HorizontalSection title={t('provider')} ariaLabel={t('providerAria')}>
+				<HorizontalSection title={t('providerType')} ariaLabel={t('providerTypeAria')}>
 					<HorizontalButton
 						label={t('all')}
 						count={routesCount}
+						isActive={!filterProviderKind}
+						onClick={() => onFilterProviderKindChange('')}
+					/>
+					{providerKindFilterOptions.map((option) => (
+						<HorizontalButton
+							key={option.key}
+							label={option.label}
+							count={option.count}
+							isActive={filterProviderKind === option.key}
+							onClick={() => onFilterProviderKindChange(option.key)}
+						/>
+					))}
+				</HorizontalSection>
+
+				<HorizontalSection title={t('provider')} ariaLabel={t('providerAria')}>
+					<HorizontalButton
+						label={t('all')}
+						count={providerAllCount}
 						isActive={!filterProviderId}
 						onClick={() => onFilterProviderIdChange('')}
 					/>
 					{providers.map((p) => (
 						<HorizontalButton
 							key={p.id}
-							label={liveProviderAccountLabel(p, locale, tKind('custom'), p.id)}
+							label={liveProviderPickerLabel(p, locale, tKind('custom'), p.id)}
 							count={providerRouteCounts.get(p.id) ?? 0}
 							isActive={filterProviderId === p.id}
 							onClick={() => onFilterProviderIdChange(p.id)}

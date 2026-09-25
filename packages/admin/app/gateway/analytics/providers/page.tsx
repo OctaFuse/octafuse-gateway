@@ -5,7 +5,7 @@
  */
 import { Fragment, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
 import { AnalyticsTtftCell } from '@/components/AnalyticsTtftCell';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
@@ -23,7 +23,8 @@ import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
 import { cacheHitRateClassName, successRateClassName } from '@/lib/analytics-rate-style';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
-import type { ApiResponse, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
+import { liveProviderPickerLabel } from '@/lib/provider-kind';
+import type { ApiResponse, GatewayProvider, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 
@@ -38,12 +39,15 @@ export default function ProviderUsagePage() {
   const t = useTranslations('analytics.providerUsage');
   const tA = useTranslations('analytics');
   const tCommon = useTranslations('common');
+  const tKind = useTranslations('providers.kind');
+  const locale = useLocale();
   const [rows, setRows] = useState<ProviderUsageRow[]>([]);
+  const [providerCatalog, setProviderCatalog] = useState<GatewayProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
   const [committedQuery, setCommittedQuery] = useState(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
-  const [sortKey, setSortKey] = useState<SortKey>('provider_name');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortKey, setSortKey] = useState<SortKey>('request_count');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
   const [expandedProviderIds, setExpandedProviderIds] = useState<Set<string>>(() => new Set());
   const [modelRowsByProvider, setModelRowsByProvider] = useState<Record<string, ModelUsageRow[]>>({});
@@ -73,6 +77,43 @@ export default function ProviderUsagePage() {
     };
     run();
   }, [rangeValue]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/admin/providers');
+        const data = await readJson<ApiResponse<GatewayProvider[]>>(response);
+        if (!cancelled && data.success) setProviderCatalog(data.data ?? []);
+      } catch (e) {
+        console.error('Fetch providers for usage labels:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const providerById = useMemo(() => {
+    const map = new Map<string, GatewayProvider>();
+    for (const provider of providerCatalog) map.set(provider.id, provider);
+    return map;
+  }, [providerCatalog]);
+
+  /** 统计仍按 provider id。第一列只显示「类型 · 别名」，不回退成 id。 */
+  const providerUsageLabel = (row: ProviderUsageRow): string => {
+    const provider = providerById.get(row.provider_id);
+    if (provider) {
+      const label = liveProviderPickerLabel(
+        provider,
+        locale,
+        tKind('custom'),
+        provider.name?.trim() || row.provider_name?.trim() || '',
+      );
+      if (label) return label;
+    }
+    return row.provider_name?.trim() || '—';
+  };
 
   const rangeTotals = useMemo(() => sumAnalyticsCosts(rows), [rows]);
 
@@ -221,7 +262,7 @@ export default function ProviderUsagePage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <Th label={tA('columns.providerName')} columnKey="provider_name" />
+                <Th label={tA('columns.provider')} columnKey="provider_name" />
                 <Th label={tA('columns.requests')} columnKey="request_count" />
                 <Th label={tA('columns.inputTokens')} columnKey="input_tokens" />
                 <Th label={tA('columns.outputTokens')} columnKey="output_tokens" />
@@ -262,7 +303,7 @@ export default function ProviderUsagePage() {
                           aria-expanded={isExpanded}
                         >
                           <span className="w-4 text-gray-400">{isExpanded ? '▾' : '▸'}</span>
-                          <span>{r.provider_name ?? r.provider_id}</span>
+                          <span title={providerUsageLabel(r)}>{providerUsageLabel(r)}</span>
                         </button>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>

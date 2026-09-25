@@ -1,6 +1,9 @@
 /** 显式「自定义」类型。空字符串表示尚未分类，图标仍按 URL / 名称推断。 */
 export const CUSTOM_PROVIDER_KIND = '__custom__';
 
+/** 筛选里表示「尚未分类」。不是入库的 kind，避免和「全部」的空查询参数冲突。 */
+export const UNCLASSIFIED_PROVIDER_KIND_FILTER = '__unclassified__';
+
 export type ProviderKindLabels = {
 	en: string;
 	zh: string;
@@ -39,13 +42,114 @@ export function providerKindDisplayLabel(
 	return locale.toLowerCase().startsWith('zh') ? labels.zh || labels.en : labels.en || labels.zh;
 }
 
-/** 类型名与账号别名相同时不重复。 */
+/** 类型名与账号别名相同时不重复。账号在前，用于已经选定某一账号的展示。 */
 export function formatProviderAccountLabel(name: string, kindLabel: string | null | undefined): string {
 	const account = name.trim();
 	const typeLabel = (kindLabel ?? '').trim();
 	if (!account) return typeLabel;
 	if (!typeLabel || typeLabel.toLowerCase() === account.toLowerCase()) return account;
 	return `${account} · ${typeLabel}`;
+}
+
+/** 选择列表：类型在前，别名在后。尚未分类或类型与别名相同时只显示别名。 */
+export function formatProviderPickerLabel(name: string, kindLabel: string | null | undefined): string {
+	const account = name.trim();
+	const typeLabel = (kindLabel ?? '').trim();
+	if (!typeLabel) return account;
+	if (!account) return typeLabel;
+	if (typeLabel.toLowerCase() === account.toLowerCase()) return account;
+	return `${typeLabel} · ${account}`;
+}
+
+export type ProviderKindSortable = {
+	name?: string | null;
+	kind?: string | null;
+	kind_labels?: ProviderKindLabels | null;
+};
+
+/** 空 kind 在筛选里用独立键，已保存的 kind 原样作为键。 */
+export function providerKindFilterKey(kind: string | null | undefined): string {
+	const trimmed = String(kind ?? '').trim();
+	return trimmed || UNCLASSIFIED_PROVIDER_KIND_FILTER;
+}
+
+/** 先按本地化类型名，再按 kind 键，最后按别名。尚未分类排在最后。 */
+export function compareProvidersByKindThenName(
+	a: ProviderKindSortable,
+	b: ProviderKindSortable,
+	locale: string,
+	customLabel: string,
+): number {
+	const aKindLabel = providerKindDisplayLabel(a, locale, customLabel);
+	const bKindLabel = providerKindDisplayLabel(b, locale, customLabel);
+	if (!aKindLabel !== !bKindLabel) return aKindLabel ? -1 : 1;
+	if (aKindLabel && bKindLabel) {
+		const byLabel = aKindLabel.localeCompare(bKindLabel, locale, { sensitivity: 'base' });
+		if (byLabel !== 0) return byLabel;
+	}
+	const aKind = String(a.kind ?? '').trim();
+	const bKind = String(b.kind ?? '').trim();
+	if (aKind !== bKind) {
+		const byKey = aKind.localeCompare(bKind, locale, { sensitivity: 'base' });
+		if (byKey !== 0) return byKey;
+	}
+	return (a.name ?? '').trim().localeCompare((b.name ?? '').trim(), locale, { sensitivity: 'base' });
+}
+
+export function sortProvidersByKindThenName<T extends ProviderKindSortable>(
+	providers: readonly T[],
+	locale: string,
+	customLabel: string,
+): T[] {
+	return [...providers].sort((a, b) => compareProvidersByKindThenName(a, b, locale, customLabel));
+}
+
+export type ProviderKindFilterOption = {
+	key: string;
+	label: string;
+	count: number;
+};
+
+/** 按供应商类型聚合。计数是传入的路由供应商 id 命中次数；没有供应商的类型不出现。 */
+export function buildProviderKindFilterOptions(params: {
+	providers: ReadonlyArray<ProviderKindSortable & { id: string }>;
+	routeProviderIds: Iterable<string>;
+	locale: string;
+	customLabel: string;
+	unclassifiedLabel: string;
+	selectedKey?: string;
+}): ProviderKindFilterOption[] {
+	const byKey = new Map<string, ProviderKindSortable>();
+	const idToKey = new Map<string, string>();
+	for (const provider of params.providers) {
+		const key = providerKindFilterKey(provider.kind);
+		idToKey.set(provider.id, key);
+		if (!byKey.has(key)) byKey.set(key, provider);
+	}
+	const counts = new Map<string, number>();
+	for (const providerId of params.routeProviderIds) {
+		const key = idToKey.get(providerId);
+		if (!key) continue;
+		counts.set(key, (counts.get(key) ?? 0) + 1);
+	}
+	if (params.selectedKey && !byKey.has(params.selectedKey)) {
+		byKey.set(params.selectedKey, { kind: params.selectedKey === UNCLASSIFIED_PROVIDER_KIND_FILTER ? '' : params.selectedKey });
+	}
+	const options = [...byKey.entries()].map(([key, sample]) => ({
+		key,
+		label:
+			key === UNCLASSIFIED_PROVIDER_KIND_FILTER
+				? params.unclassifiedLabel
+				: providerKindDisplayLabel(sample, params.locale, params.customLabel) || key,
+		count: counts.get(key) ?? 0,
+	}));
+	options.sort((a, b) => {
+		const aUnclassified = a.key === UNCLASSIFIED_PROVIDER_KIND_FILTER;
+		const bUnclassified = b.key === UNCLASSIFIED_PROVIDER_KIND_FILTER;
+		if (aUnclassified !== bUnclassified) return aUnclassified ? 1 : -1;
+		return a.label.localeCompare(b.label, params.locale, { sensitivity: 'base' });
+	});
+	return options;
 }
 
 export function liveProviderAccountLabel(
@@ -57,6 +161,17 @@ export function liveProviderAccountLabel(
 	if (!provider) return fallback;
 	const name = provider.name?.trim() || fallback;
 	return formatProviderAccountLabel(name, providerKindDisplayLabel(provider, locale, customLabel)) || fallback;
+}
+
+export function liveProviderPickerLabel(
+	provider: { name?: string | null; kind?: string | null; kind_labels?: ProviderKindLabels | null } | null | undefined,
+	locale: string,
+	customLabel: string,
+	fallback = ''
+): string {
+	if (!provider) return fallback;
+	const name = provider.name?.trim() || fallback;
+	return formatProviderPickerLabel(name, providerKindDisplayLabel(provider, locale, customLabel)) || fallback;
 }
 
 export function routeProviderAccountLabel(

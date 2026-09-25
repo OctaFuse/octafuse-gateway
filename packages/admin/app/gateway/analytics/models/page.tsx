@@ -5,7 +5,7 @@
  */
 import { Fragment, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
 import { AnalyticsTtftCell } from '@/components/AnalyticsTtftCell';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
@@ -23,7 +23,8 @@ import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
 import { cacheHitRateClassName, successRateClassName } from '@/lib/analytics-rate-style';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
-import type { ApiResponse, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
+import { liveProviderPickerLabel } from '@/lib/provider-kind';
+import type { ApiResponse, GatewayProvider, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 
@@ -38,16 +39,19 @@ export default function ModelUsagePage() {
   const t = useTranslations('analytics.modelUsage');
   const tA = useTranslations('analytics');
   const tCommon = useTranslations('common');
+  const tKind = useTranslations('providers.kind');
+  const locale = useLocale();
   const [rows, setRows] = useState<ModelUsageRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
   const [committedQuery, setCommittedQuery] = useState(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
-  const [sortKey, setSortKey] = useState<SortKey>('model_id');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortKey, setSortKey] = useState<SortKey>('request_count');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
   const [expandedModelKeys, setExpandedModelKeys] = useState<Set<string>>(() => new Set());
   const [providerRowsByModel, setProviderRowsByModel] = useState<Record<string, ProviderUsageRow[]>>({});
   const [providerRowsLoading, setProviderRowsLoading] = useState<Record<string, boolean>>({});
+  const [providerCatalog, setProviderCatalog] = useState<GatewayProvider[]>([]);
   const { currency: billingCurrency } = useBillingCurrency();
 
   useEffect(() => {
@@ -73,6 +77,43 @@ export default function ModelUsagePage() {
     };
     run();
   }, [rangeValue]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/admin/providers');
+        const data = await readJson<ApiResponse<GatewayProvider[]>>(response);
+        if (!cancelled && data.success) setProviderCatalog(data.data ?? []);
+      } catch (e) {
+        console.error('Fetch providers for model usage labels:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const providerById = useMemo(() => {
+    const map = new Map<string, GatewayProvider>();
+    for (const provider of providerCatalog) map.set(provider.id, provider);
+    return map;
+  }, [providerCatalog]);
+
+  /** 统计仍按 provider id。格子里只显示「类型 · 别名」，不回退成 id。 */
+  const providerUsageLabel = (row: ProviderUsageRow): string => {
+    const provider = providerById.get(row.provider_id);
+    if (provider) {
+      const label = liveProviderPickerLabel(
+        provider,
+        locale,
+        tKind('custom'),
+        provider.name?.trim() || row.provider_name?.trim() || '',
+      );
+      if (label) return label;
+    }
+    return row.provider_name?.trim() || '—';
+  };
 
   const rangeTotals = useMemo(() => sumAnalyticsCosts(rows), [rows]);
 
@@ -347,9 +388,10 @@ export default function ModelUsagePage() {
                                           <Link
                                             href={`/gateway/request-logs?${providerLogQuery.toString()}`}
                                             className="text-blue-600 hover:underline"
+                                            title={providerUsageLabel(providerRow)}
                                             onClick={(event) => event.stopPropagation()}
                                           >
-                                            {providerRow.provider_name ?? providerRow.provider_id}
+                                            {providerUsageLabel(providerRow)}
                                           </Link>
                                         </td>
                                         <td className="px-3 py-2 text-sm text-gray-900">{providerRow.request_count.toLocaleString()}</td>

@@ -324,6 +324,8 @@
 		"vendorAria": "Vendor filter",
 		"provider": "Provider",
 		"providerAria": "Provider filter",
+		"providerType": "Provider Type",
+		"providerTypeAria": "Provider type filter",
 		"routeGroup": "Route Group",
 		"routeGroupAria": "Route group filter",
 		"modelsAndRoutes": "{models} models · {routes} routes",

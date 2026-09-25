@@ -32,6 +32,7 @@ type Props = {
 	selectedModelIsAudio?: boolean;
 	modelRoutingString: string;
 	matchingRoutes: RouteListRow[];
+	providerLabelFor: (route: { provider_id: string; provider_name?: string | null }) => string;
 };
 
 export function SimulatorRoutingPanel({
@@ -58,6 +59,7 @@ export function SimulatorRoutingPanel({
 	selectedModelIsAudio = false,
 	modelRoutingString,
 	matchingRoutes,
+	providerLabelFor,
 }: Props) {
 	const t = useTranslations('simulator');
 	const tTools = useTranslations('tools.catalog');
@@ -234,7 +236,7 @@ export function SimulatorRoutingPanel({
 										{matchingRoutes.map((r) => (
 											<li key={r.id} className="px-2.5 py-1.5 font-mono text-gray-800">
 												<span className="font-semibold text-gray-900">
-													{r.provider_name || r.provider_id || '—'}
+													{providerLabelFor(r) || '—'}
 												</span>
 												<span className="text-gray-500">
 													{' '}

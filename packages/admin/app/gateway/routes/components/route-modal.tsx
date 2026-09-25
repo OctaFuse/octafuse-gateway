@@ -22,7 +22,7 @@ import {
 	type CatalogPricingTierDisplayRow,
 } from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
-import { liveProviderAccountLabel } from '@/lib/provider-kind';
+import { liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
 	adapterOptionMappingSuffix,
@@ -179,18 +179,22 @@ export function RouteModal(props: Props) {
 		!compatibleAdapters.includes(formData.adapter) &&
 		Boolean(formData.adapter);
 	const lockTopology = Boolean(selectedAdapterOption) && !showCurrentAdapter;
-	const selectableProviders = providers.filter(
-		(provider) =>
-			(Boolean(editingRoute || duplicateSourceRouteId) && provider.id === formData.provider_id) ||
-			UPSTREAM_PROTOCOLS.some(
-				(protocol) =>
-					upstreamOperationsForProviderModel(
-						provider,
-						selectedModel,
-						protocol,
-						formData.provider_model_name,
-					).length > 0,
-			),
+	const selectableProviders = sortProvidersByKindThenName(
+		providers.filter(
+			(provider) =>
+				(Boolean(editingRoute || duplicateSourceRouteId) && provider.id === formData.provider_id) ||
+				UPSTREAM_PROTOCOLS.some(
+					(protocol) =>
+						upstreamOperationsForProviderModel(
+							provider,
+							selectedModel,
+							protocol,
+							formData.provider_model_name,
+						).length > 0,
+				),
+		),
+		locale,
+		tKind('custom'),
 	);
 	const showCurrentUpstreamOperation =
 		Boolean(editingRoute) &&
@@ -601,7 +605,7 @@ export function RouteModal(props: Props) {
 												<option value="">{t('selectProvider')}</option>
 												{selectableProviders.map((p) => (
 													<option key={p.id} value={p.id}>
-														{liveProviderAccountLabel(p, locale, tKind('custom'), p.id)}
+														{liveProviderPickerLabel(p, locale, tKind('custom'), p.id)}
 													</option>
 												))}
 											</select>
