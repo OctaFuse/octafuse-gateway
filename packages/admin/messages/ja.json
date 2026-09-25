@@ -1,4 +1,8 @@
 {
+	"responsive": {
+		"filters": "絞り込み",
+		"activeFilters": "{count} 件適用中"
+	},
 	"locale": {
 		"label": "言語",
 		"en": "English",

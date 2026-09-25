@@ -86,7 +86,7 @@ export function MultiSelectDropdown({
 					role="listbox"
 					aria-multiselectable
 					aria-label={label}
-					className={`absolute top-full z-40 mt-1 w-full min-w-[16rem] rounded-md border border-gray-200 bg-white py-1 shadow-lg ${
+					className={`relative z-40 mt-1 w-full min-w-0 md:absolute md:top-full md:min-w-[16rem] rounded-md border border-gray-200 bg-white py-1 shadow-lg ${
 						align === 'end' ? 'right-0' : 'left-0'
 					}`}
 				>
@@ -102,7 +102,7 @@ export function MultiSelectDropdown({
 								return (
 									<label
 										key={option.value}
-										className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-50 ${
+										className={`flex min-h-10 cursor-pointer items-center gap-2 px-3 py-2 md:min-h-0 md:py-1.5 text-xs hover:bg-gray-50 ${
 											checked ? 'bg-blue-50/70 text-blue-900' : 'text-gray-700'
 										}`}
 										title={option.title ?? option.value}
@@ -114,7 +114,7 @@ export function MultiSelectDropdown({
 											onChange={(event) => onToggle(option.value, event.target.checked)}
 											className="h-3.5 w-3.5 shrink-0"
 										/>
-										<span className={option.mono ? 'font-mono' : undefined}>{option.label}</span>
+										<span className={option.mono ? 'min-w-0 break-all font-mono' : 'min-w-0 break-words'}>{option.label}</span>
 									</label>
 								);
 							})

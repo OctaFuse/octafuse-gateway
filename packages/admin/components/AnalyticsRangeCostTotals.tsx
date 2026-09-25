@@ -21,16 +21,16 @@ export function AnalyticsRangeCostTotals(props: {
 			<span className="tabular-nums text-gray-900">{formatGatewayMoneyCode(n, billingCurrency, 4)}</span>
 		);
 	return (
-		<div className="flex flex-wrap justify-end items-baseline gap-x-6 gap-y-1 ml-auto">
-			<span className="text-gray-500">
-				{t('rangeTotal')} <span className="text-gray-700 font-medium">{t('standard')}</span>: {val(totals.standard)}
-			</span>
-			<span className="text-gray-500">
-				<span className="text-gray-700 font-medium">{t('charged')}</span>: {val(totals.charged)}
-			</span>
-			<span className="text-gray-500">
-				<span className="text-gray-700 font-medium">{t('metered')}</span>: {val(totals.metered)}
-			</span>
+		<div className="w-full min-w-0 md:ml-auto md:w-auto">
+			<p className="mb-2 text-xs text-gray-500">{t('rangeTotal')}</p>
+			<dl className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2 md:flex md:flex-wrap md:gap-4">
+				{(['standard', 'charged', 'metered'] as const).map((key) => (
+					<div key={key} className="min-w-0 rounded-md bg-gray-50 px-3 py-2">
+						<dt className="text-xs text-gray-500">{t(key)}</dt>
+						<dd className="mt-1 text-sm font-medium [overflow-wrap:anywhere]">{val(totals[key])}</dd>
+					</div>
+				))}
+			</dl>
 		</div>
 	);
 }

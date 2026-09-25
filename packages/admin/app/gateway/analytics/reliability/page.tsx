@@ -106,7 +106,7 @@ export default function ReliabilityPage() {
         <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
-      <div className="mb-4 w-full min-w-0">
+      <div className="mb-4 w-full min-w-0 rounded-xl border border-gray-200 bg-white p-3 sm:p-4">
         <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} />
       </div>
 
@@ -115,7 +115,7 @@ export default function ReliabilityPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('providerQuality')}</h2>
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="admin-data-table min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.provider')}</th>
@@ -169,7 +169,7 @@ export default function ReliabilityPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('perModelComparison')}</h2>
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="admin-data-table min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.model')}</th>
@@ -222,13 +222,13 @@ export default function ReliabilityPage() {
 
       {/* {t('recentErrors')} */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex flex-wrap items-center justify-between gap-2">
           {t('recentErrors')}
           <Link href="/gateway/request-logs?status=error" className="text-sm text-blue-600 hover:underline">{t('viewAllErrors')}</Link>
         </h2>
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="admin-data-table min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tCommon('time')}</th>

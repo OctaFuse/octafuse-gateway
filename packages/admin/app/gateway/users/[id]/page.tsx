@@ -659,8 +659,8 @@ export default function GatewayUserDetailPage() {
         <p className="text-sm text-gray-500 font-mono mt-1 break-all">{user.id}</p>
       </div>
 
-      <div className="grid items-stretch gap-6 lg:grid-cols-2">
-        <div className="bg-white rounded-lg shadow-md p-6 space-y-4 h-full">
+      <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 2xl:grid-cols-2">
+        <div className="min-w-0 bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-4 h-full">
           <h2 className="text-lg font-semibold text-gray-900">{t('userDetail')}</h2>
           {planError && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{planError}</div>}
           {planSuccess && (
@@ -669,7 +669,7 @@ export default function GatewayUserDetailPage() {
             </div>
           )}
           <div className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="admin-filter-grid">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('fields.email')} <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
@@ -704,7 +704,7 @@ export default function GatewayUserDetailPage() {
                   <p>{t('hints.budgetVsWallet')}</p>
                 </InfoHintPopover>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="admin-filter-grid">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('fields.budgetMax')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
@@ -751,7 +751,7 @@ export default function GatewayUserDetailPage() {
                   </p>
                 </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="admin-filter-grid">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('fields.budgetPeriod')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
@@ -794,7 +794,7 @@ export default function GatewayUserDetailPage() {
                   <p>{t('hints.budgetVsWallet')}</p>
                 </InfoHintPopover>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="admin-filter-grid">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.walletGranted')}</label>
                   <input
@@ -833,7 +833,7 @@ export default function GatewayUserDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3 items-start">
+            <div className="admin-filter-grid items-start">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('fields.rateLimitRpm')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>

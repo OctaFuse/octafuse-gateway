@@ -3,6 +3,7 @@
 /**
  * 网关用户列表：预算在 `users`；筛选与分页；跳转详情。
  */
+import { FilterDisclosure } from '@/components/FilterDisclosure';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -337,7 +338,7 @@ export default function GatewayUsersPage() {
 
       <div className="mb-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid min-w-0 flex-1 gap-3 xl:grid-cols-[minmax(13rem,1fr)_minmax(0,3fr)]">
             <div className="min-w-0">
               <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.email')}</label>
               <div className="relative">
@@ -355,50 +356,54 @@ export default function GatewayUsersPage() {
                 />
               </div>
             </div>
-            <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.externalSystem')}</label>
-              <input
-                type="text"
-                value={filterExternalSystem}
-                onChange={(e) => { setFilterExternalSystem(e.target.value); setPage(1); }}
-                className={inputClass}
-                placeholder={t('filters.externalSystemPlaceholder')}
-                autoComplete="off"
-              />
-            </div>
-            <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.externalUserId')}</label>
-              <input
-                type="text"
-                value={filterExternalUserId}
-                onChange={(e) => { setFilterExternalUserId(e.target.value); setPage(1); }}
-                className={inputClass}
-                placeholder={t('filters.externalUserIdPlaceholder')}
-                autoComplete="off"
-              />
-            </div>
-            <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.status')}</label>
-              <div className="inline-flex w-full rounded-lg bg-gray-100 p-0.5">
-                {statusFilterOptions.map((option) => {
-                  const selected = filterStatus === option.value;
-                  return (
-                    <button
-                      key={option.value || 'all'}
-                      type="button"
-                      onClick={() => { setFilterStatus(option.value); setPage(1); }}
-                      className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium capitalize transition-colors ${
-                        selected
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-800'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
+            <FilterDisclosure activeCount={[filterExternalSystem, filterExternalUserId, filterStatus].filter(Boolean).length}>
+              <div className="admin-filter-grid">
+                <div className="min-w-0">
+                  <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.externalSystem')}</label>
+                  <input
+                    type="text"
+                    value={filterExternalSystem}
+                    onChange={(e) => { setFilterExternalSystem(e.target.value); setPage(1); }}
+                    className={inputClass}
+                    placeholder={t('filters.externalSystemPlaceholder')}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.externalUserId')}</label>
+                  <input
+                    type="text"
+                    value={filterExternalUserId}
+                    onChange={(e) => { setFilterExternalUserId(e.target.value); setPage(1); }}
+                    className={inputClass}
+                    placeholder={t('filters.externalUserIdPlaceholder')}
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.status')}</label>
+                  <div className="inline-flex w-full rounded-lg bg-gray-100 p-0.5">
+                    {statusFilterOptions.map((option) => {
+                      const selected = filterStatus === option.value;
+                      return (
+                        <button
+                          key={option.value || 'all'}
+                          type="button"
+                          onClick={() => { setFilterStatus(option.value); setPage(1); }}
+                          className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium capitalize transition-colors ${
+                            selected
+                              ? 'bg-white text-gray-900 shadow-sm'
+                              : 'text-gray-500 hover:text-gray-800'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
+            </FilterDisclosure>
           </div>
           {hasFilters && (
             <div className="flex shrink-0 items-end pb-0.5">
@@ -421,7 +426,7 @@ export default function GatewayUsersPage() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
-        <table className="w-full min-w-[64rem] table-fixed">
+        <table className="admin-data-table w-full min-w-[64rem] table-fixed">
           <colgroup>
             <col className="w-[22%]" />
             <col className="w-[16%]" />

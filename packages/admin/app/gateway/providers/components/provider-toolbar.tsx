@@ -56,7 +56,7 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 	return (
 		<div className="mb-5 space-y-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
 			<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-				<div className="relative min-w-0 flex-1">
+				<div className="relative min-w-0 flex-1 md:max-w-xl">
 					<MagnifyingGlassIcon
 						className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
 						aria-hidden
@@ -86,8 +86,18 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 				</div>
 			</div>
 
+			<select
+				aria-label={t('filters.aria')}
+				value={selectedFilter}
+				onChange={(event) => onFilterChange(event.target.value as ProviderListFilter)}
+				className="min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm md:hidden"
+			>
+				{PROVIDER_LIST_FILTERS.map((filter) => (
+					<option key={filter} value={filter}>{filterLabel(filter)} ({filterCounts[filter]})</option>
+				))}
+			</select>
 			<div
-				className="flex flex-wrap gap-1.5"
+				className="hidden flex-wrap gap-1.5 md:flex"
 				role="toolbar"
 				aria-label={t('filters.aria')}
 			>
@@ -101,7 +111,7 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 							type="button"
 							onClick={() => onFilterChange(filter)}
 							aria-pressed={selected}
-							className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+							className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
 								selected
 									? 'bg-blue-50 text-blue-800 ring-blue-200'
 									: 'bg-slate-50 text-slate-600 ring-slate-200 hover:bg-slate-100'

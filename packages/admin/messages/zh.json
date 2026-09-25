@@ -1,4 +1,8 @@
 {
+	"responsive": {
+		"filters": "筛选条件",
+		"activeFilters": "已选 {count} 项"
+	},
 	"locale": {
 		"label": "语言",
 		"en": "English",

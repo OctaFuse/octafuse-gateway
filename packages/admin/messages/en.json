@@ -1,4 +1,8 @@
 {
+	"responsive": {
+		"filters": "Filters",
+		"activeFilters": "{count} active"
+	},
 	"locale": {
 		"label": "Language",
 		"en": "English",

@@ -1114,7 +1114,7 @@ export default function GatewayToolsConfigPage() {
 
 			<ToolProviderOverviewHints />
 
-			<div className="flex flex-col gap-4">
+			<div className="grid items-start gap-4 2xl:grid-cols-2">
 				<ToolOverviewSection
 					id="web-search"
 					title={t('webSearch.title')}

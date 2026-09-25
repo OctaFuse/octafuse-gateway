@@ -20,7 +20,7 @@ import {
 } from '@/lib/analytics-range';
 
 const btnBase =
-	'px-2 py-1 text-xs font-medium rounded border transition-colors shrink-0';
+	'min-h-9 px-2 py-1 text-xs font-medium rounded border transition-colors shrink-0';
 const btnIdle = 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100';
 const btnOn = 'border-gray-300 bg-white text-gray-900 shadow-sm';
 
@@ -71,6 +71,7 @@ export function GatewayTimeRangePicker({
 	const resolvedLabel = label ?? t('label', { timezone: timezoneLabel });
 	const [draftStart, setDraftStart] = useState(() => utcApiToZonedInput(value.start_date, timeZone));
 	const [draftEnd, setDraftEnd] = useState(() => utcApiToZonedInput(value.end_date, timeZone));
+	const [customOpen, setCustomOpen] = useState(false);
 
 	useEffect(() => {
 		setDraftStart(utcApiToZonedInput(value.start_date, timeZone));
@@ -78,10 +79,12 @@ export function GatewayTimeRangePicker({
 	}, [value.start_date, value.end_date, timeZone]);
 
 	const selectRolling = (p: Exclude<GatewayRollingPreset, '90d'>) => {
+		setCustomOpen(false);
 		onChange({ preset: p, ...rangeToParams(p) });
 	};
 
 	const selectCalendar = (p: GatewayCalendarPreset) => {
+		setCustomOpen(false);
 		onChange({ preset: p, ...calendarRangeToParams(p, timeZone) });
 	};
 
@@ -91,21 +94,38 @@ export function GatewayTimeRangePicker({
 	};
 
 	const end = align === 'end';
+	const showCustom = customOpen || value.preset === 'custom';
 
 	return (
 		<div className={`w-full min-w-0 ${className}`}>
 			{resolvedLabel ? (
 				<label className={`block text-sm text-gray-500 mb-1 ${end ? 'text-right' : ''}`}>{resolvedLabel}</label>
 			) : null}
+			<select
+				aria-label={resolvedLabel || t('custom')}
+				value={showCustom ? 'custom' : value.preset}
+				onChange={(event) => {
+					const preset = event.target.value;
+					if (preset === 'custom') setCustomOpen(true);
+					else if (presets.includes(preset as GatewayDashboardStatsRange)) selectRolling(preset as GatewayDashboardStatsRange);
+					else selectCalendar(preset as GatewayCalendarPreset);
+				}}
+				className="mb-2 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm md:hidden"
+			>
+				{presets.map((p) => <option key={p} value={p}>{t(`presets.${p}`)}</option>)}
+				{calendarPresets.map((p) => <option key={p} value={p}>{t(`calendar.${p}`)}</option>)}
+				<option value="custom">{t('custom')}</option>
+			</select>
 			<div
 				className={`flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-2 ${end ? 'justify-end' : ''}`}
 			>
-				<div className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+				<div className="hidden max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5 md:inline-flex">
 					{presets.map((p) => (
 						<button
 							key={p}
 							type="button"
 							onClick={() => selectRolling(p)}
+							aria-pressed={value.preset === p}
 							className={`${btnBase} ${value.preset === p ? btnOn : btnIdle}`}
 						>
 							{t(`presets.${p}`)}
@@ -113,12 +133,13 @@ export function GatewayTimeRangePicker({
 					))}
 				</div>
 				{calendarPresets.length > 0 ? (
-					<div className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+					<div className="hidden max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5 md:inline-flex">
 						{calendarPresets.map((p) => (
 							<button
 								key={p}
 								type="button"
 								onClick={() => selectCalendar(p)}
+								aria-pressed={value.preset === p}
 								className={`${btnBase} ${value.preset === p ? btnOn : btnIdle}`}
 							>
 								{t(`calendar.${p}`)}
@@ -126,28 +147,34 @@ export function GatewayTimeRangePicker({
 						))}
 					</div>
 				) : null}
-				<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+				<div className={`${showCustom ? 'grid' : 'hidden'} w-full min-w-0 gap-2 md:flex md:w-auto md:max-w-full md:flex-wrap md:items-center`}>
+					<label className="min-w-0">
+						<span className="mb-1 block text-xs text-gray-500 md:sr-only">{t('start')}</span>
 					<input
 						type="datetime-local"
 						value={draftStart}
 						onChange={(e) => setDraftStart(e.target.value)}
 						aria-label={t('start')}
-						className="min-w-0 max-w-full px-2 py-1 border border-gray-300 rounded-md text-xs w-[11.5rem]"
+						className="min-h-11 w-full min-w-0 max-w-full px-2 py-1 border border-gray-300 rounded-md text-sm md:min-h-9 md:w-[11.5rem] md:text-xs"
 					/>
-					<span aria-hidden="true" className="shrink-0 text-sm text-gray-400">
+					</label>
+					<span aria-hidden="true" className="hidden shrink-0 text-sm text-gray-400 md:inline">
 						→
 					</span>
+					<label className="min-w-0">
+						<span className="mb-1 block text-xs text-gray-500 md:sr-only">{t('end')}</span>
 					<input
 						type="datetime-local"
 						value={draftEnd}
 						onChange={(e) => setDraftEnd(e.target.value)}
 						aria-label={t('end')}
-						className="min-w-0 max-w-full px-2 py-1 border border-gray-300 rounded-md text-xs w-[11.5rem]"
+						className="min-h-11 w-full min-w-0 max-w-full px-2 py-1 border border-gray-300 rounded-md text-sm md:min-h-9 md:w-[11.5rem] md:text-xs"
 					/>
+					</label>
 					<button
 						type="button"
 						onClick={applyCustom}
-						className="px-3 py-1 bg-gray-900 text-white text-xs rounded-md hover:bg-gray-800"
+						className="min-h-11 px-3 py-1 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 md:min-h-9 md:text-xs"
 					>
 						{tCommon('apply')}
 					</button>

@@ -62,7 +62,7 @@ export default function SimulatorPage() {
 					revealError={s.revealError}
 				/>
 				<div className="flex min-h-0 min-w-0 flex-1 flex-col xl:flex-row xl:items-stretch">
-					<aside className="flex w-full shrink-0 flex-col border-b border-gray-200/80 bg-slate-50/80 p-4 xl:min-h-0 xl:w-[380px] xl:overflow-hidden xl:border-b-0 xl:border-r">
+					<aside className="flex w-full shrink-0 flex-col border-b border-gray-200/80 bg-slate-50/80 p-4 xl:min-h-0 xl:w-[300px] 2xl:w-[340px] xl:overflow-hidden xl:border-b-0 xl:border-r">
 						<SimulatorRoutingPanel
 							filterKind={s.filterKind}
 							protocol={s.protocol}

@@ -1,5 +1,7 @@
 'use client';
 
+import { FilterDisclosure } from '@/components/FilterDisclosure';
+
 import { MagnifyingGlassIcon, XMarkIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import type { GatewayProvider } from '@/lib/types';
 import { useLocale, useTranslations } from 'next-intl';
@@ -70,30 +72,32 @@ export function RouteFilterSidebar(props: Props) {
 					<input type="search" value={props.searchQuery} onChange={e => props.onSearchChange(e.target.value)} placeholder={tw('searchPlaceholder')} aria-label={tw('searchPlaceholder')} className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
 				</div>
 			</div>
-			<div className="space-y-3 px-4 py-3">
-				<div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-					{segments.map(segment => (
-						<div key={segment.key} className="flex flex-wrap items-center gap-2" role="group" aria-label={segment.label}>
-							<span className="text-xs text-slate-500">{segment.label}</span>
-							<div className="inline-flex flex-wrap gap-1 rounded-lg bg-slate-100/80 p-1">
-								{segment.options.map(option => <button key={option.value} type="button" aria-pressed={segment.value === option.value} onClick={() => segment.onChange(option.value)} className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs transition focus-visible:outline-blue-500 ${segment.value === option.value ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
-									{option.label}<span className="text-[10px] tabular-nums opacity-70">{option.count}</span>
-								</button>)}
+			<FilterDisclosure className="px-4 py-3" activeCount={active.length - Number(Boolean(props.searchQuery))}>
+				<div className="space-y-3">
+					<div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+						{segments.map(segment => (
+							<div key={segment.key} className="flex flex-wrap items-center gap-2" role="group" aria-label={segment.label}>
+								<span className="text-xs text-slate-500">{segment.label}</span>
+								<div className="inline-flex flex-wrap gap-1 rounded-lg bg-slate-100/80 p-1">
+									{segment.options.map(option => <button key={option.value} type="button" aria-pressed={segment.value === option.value} onClick={() => segment.onChange(option.value)} className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs transition focus-visible:outline-blue-500 ${segment.value === option.value ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
+										{option.label}<span className="text-[10px] tabular-nums opacity-70">{option.count}</span>
+									</button>)}
+								</div>
 							</div>
-						</div>
-					))}
+						))}
+					</div>
+					<div className="admin-filter-grid">
+						{filters.map(filter => <label key={filter.key} className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
+							<span className="shrink-0 text-[11px] text-slate-500">{filter.label}</span>
+							<select value={filter.value} onChange={e => filter.onChange(e.target.value)} className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+								<option value="">{t('all')}</option>
+								{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
+								{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
+							</select>
+						</label>)}
+					</div>
 				</div>
-				<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-					{filters.map(filter => <label key={filter.key} className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
-						<span className="shrink-0 text-[11px] text-slate-500">{filter.label}</span>
-						<select value={filter.value} onChange={e => filter.onChange(e.target.value)} className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-							<option value="">{t('all')}</option>
-							{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
-							{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
-						</select>
-					</label>)}
-				</div>
-			</div>
+			</FilterDisclosure>
 			{active.length > 0 ? <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2">
 				{active.map(item => <button key={item.key} type="button" onClick={item.clear} aria-label={tw('removeFilter', {filter: item.label})} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-100 focus-visible:outline-blue-500"><span className="truncate">{item.label}</span><XMarkIcon className="h-3 w-3 shrink-0" aria-hidden /></button>)}
 				<button type="button" onClick={props.onClearAllFilters} className="ml-auto text-xs font-medium text-slate-500 hover:text-blue-700">{tc('clearAllFilters')}</button>

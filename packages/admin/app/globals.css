@@ -2,6 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Fit columns to the content area, which also accounts for the desktop sidebar. */
+  .admin-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: 0.75rem;
+    align-items: end;
+  }
+
+  .admin-filter-grid > * {
+    min-width: 0;
+  }
+
+  .admin-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: 1.25rem;
+  }
+
+  /* Keep row identity visible while comparing wide analytics and account tables. */
+  .admin-data-table > thead > tr > th:first-child,
+  .admin-data-table > tbody > tr > td:first-child:not([colspan]) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: #fff;
+    box-shadow: 1px 0 #e5e7eb;
+    max-width: 14rem;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-data-table > thead > tr > th:first-child {
+    z-index: 2;
+    background-color: #f9fafb;
+  }
+
+  .admin-log-table {
+    container-type: inline-size;
+  }
+
+  /* Expanded details follow the visible table area, not the full scrollable row. */
+  .admin-log-detail {
+    position: sticky;
+    left: 0;
+    width: calc(100cqw - 1.5rem);
+  }
+}
+
 /* Admin dashboard - Light theme */
 @layer base {
   body {

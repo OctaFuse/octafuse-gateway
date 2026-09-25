@@ -155,7 +155,7 @@ export function PlaygroundSetupPanel({
 				<div className="flex min-h-0 flex-1 flex-col">
 					<label className={labelClass}>{t('selectRoute')}</label>
 					<div
-						className="min-h-[16rem] flex-1 overflow-y-auto rounded-md border border-gray-200 bg-white xl:min-h-0"
+						className="h-48 min-h-0 flex-none overflow-y-auto xl:h-auto xl:flex-1 rounded-md border border-gray-200 bg-white xl:min-h-0"
 						role="listbox"
 						aria-label={t('selectRoute')}
 					>

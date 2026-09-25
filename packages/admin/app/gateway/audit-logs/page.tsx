@@ -3,6 +3,7 @@
 /**
  * 全站用户审计日志（`user_audit_logs`）：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
  */
+import { FilterDisclosure } from '@/components/FilterDisclosure';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { readApiJson } from '@/lib/api-json';
@@ -381,8 +382,15 @@ export default function GatewayAuditLogsPage() {
         />
       </div>
 
-      <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <FilterDisclosure className="mb-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4 shadow-sm" activeCount={
+        [filterActorId, filterUserEmail, filterCorrelationId, filterUserId, filterApiKeyId].filter(Boolean).length +
+        Number(!isSameStringSet(filterEventTypes, DEFAULT_AUDIT_LOG_EVENT_TYPES)) +
+        Number(!isSameStringSet(filterSources, DEFAULT_AUDIT_LOG_SOURCE_CHANNELS)) +
+        Number(!isSameStringSet(filterReasonCodes, reasonCodeOptions)) +
+        Number(!isSameStringSet(filterActorTypes, DEFAULT_AUDIT_LOG_ACTOR_TYPES)) +
+        Number(!isSameStringSet(filterActorKinds, AUDIT_LOG_ACTOR_KIND_FILTERS))
+      }>
+        <div className="admin-filter-grid">
           <MultiSelectDropdown
             label={t('filters.eventType')}
             options={API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((eventType) => ({
@@ -512,7 +520,7 @@ export default function GatewayAuditLogsPage() {
           />
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_minmax(12rem,1fr)_minmax(14rem,1fr)_auto]">
+        <div className="admin-filter-grid mt-4">
           <div>
             <label className="block text-sm text-gray-500 mb-1">{t('filters.actorId')}</label>
             <input
@@ -566,7 +574,7 @@ export default function GatewayAuditLogsPage() {
             </button>
           </div>
         </div>
-      </div>
+      </FilterDisclosure>
 
       <div className="mb-3 text-sm text-gray-500">
         {t('totalRecords', { count: total })}

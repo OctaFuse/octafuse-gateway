@@ -50,7 +50,26 @@ export function ModelFilterSidebar(props: Props) {
 
 	return (
 		<section className="mb-5 sm:mb-6" aria-label={t('title')}>
-			<div className="flex flex-col items-stretch gap-y-2">
+			<div className="grid grid-cols-2 gap-3 rounded-lg border border-gray-200 bg-white p-3 md:hidden">
+				<label className="min-w-0 text-xs text-gray-500">
+					{t('kind')}
+					<select value={selectedKind} onChange={(event) => onSelectKind(event.target.value as ModelListKindFilter)} className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900">
+						<option value="all">{tFilter('all')} ({modelCount})</option>
+						<option value="llm">{t('kindLlm')} ({kindCounts.llm})</option>
+						<option value="image">{t('kindImage')} ({kindCounts.image})</option>
+						<option value="audio">{t('kindAudio')} ({kindCounts.audio})</option>
+					</select>
+				</label>
+				<label className="min-w-0 text-xs text-gray-500">
+					{tFilter('vendor')}
+					<select value={selectedVendor} onChange={(event) => onSelectVendor(event.target.value)} className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900">
+						<option value={ALL_VENDORS_KEY}>{tFilter('all')} ({vendorTotal})</option>
+						{modelsByVendor.map(([key, items]) => <option key={key} value={key}>{getModelVendorLabel(key)} ({items.length})</option>)}
+					</select>
+				</label>
+				{hasActiveFilter && <button type="button" onClick={onClearFilter} className="col-span-2 min-h-9 text-left text-xs font-medium text-blue-600">{tFilter('clear')}</button>}
+			</div>
+			<div className="hidden flex-col items-stretch gap-y-2 md:flex">
 				<div className="flex min-w-0 items-center justify-between gap-3">
 					<HorizontalSection title={t('kind')} ariaLabel={t('kindAria')}>
 						<HorizontalButton

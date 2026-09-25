@@ -477,7 +477,7 @@ export default function GatewayKeysPage() {
 
       <div className="mb-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:max-w-3xl">
             <div className="min-w-0">
               <label className="mb-1 block text-xs font-medium text-gray-500">{tCommon('email')}</label>
               <div className="relative">
@@ -536,7 +536,7 @@ export default function GatewayKeysPage() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
-        <table className="w-full min-w-[64rem] table-fixed">
+        <table className="admin-data-table w-full min-w-[64rem] table-fixed">
           <colgroup>
             <col className="w-[18%]" />
             <col className="w-[22%]" />

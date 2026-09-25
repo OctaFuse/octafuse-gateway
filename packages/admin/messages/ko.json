@@ -1,4 +1,8 @@
 {
+	"responsive": {
+		"filters": "필터",
+		"activeFilters": "{count}개 적용 중"
+	},
 	"locale": {
 		"label": "언어",
 		"en": "English",

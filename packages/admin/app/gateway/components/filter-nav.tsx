@@ -16,8 +16,8 @@ export function FilterNavSection({
 }) {
 	if (orientation === 'horizontal') {
 		return (
-			<nav className="flex w-full min-w-0 items-center gap-3" aria-label={ariaLabel}>
-				<div className="w-28 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+			<nav className="flex w-full min-w-0 flex-col items-start gap-2 md:flex-row md:items-center md:gap-3" aria-label={ariaLabel}>
+				<div className="md:w-20 shrink-0 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
 					{title}
 				</div>
 				<ul className="flex min-w-0 flex-1 flex-wrap gap-1">{children}</ul>
@@ -64,7 +64,7 @@ export function FilterNavButton({
 						? 'bg-blue-100/80 text-blue-800 ring-1 ring-blue-200/80 '
 						: 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 ') +
 					(isHorizontal
-						? 'inline-flex max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs transition-colors '
+						? 'inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs transition-colors '
 						: 'flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors ')
 				}
 			>

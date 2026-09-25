@@ -173,7 +173,7 @@ export default function GatewayToolInvocationsPage() {
 				</div>
 			</div>
 
-			<div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+			<div className="mb-4 grid grid-cols-1 gap-3 rounded-lg sm:grid-cols-2 border border-gray-200 bg-white p-4 shadow-sm">
 				<div>
 					<label className="mb-1 block text-xs font-medium text-gray-600">{t('invocations.toolFilter')}</label>
 					<select
@@ -182,7 +182,7 @@ export default function GatewayToolInvocationsPage() {
 							setToolFilter(e.target.value);
 							setPage(1);
 						}}
-						className="min-w-[14rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm"
+						className="w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm"
 					>
 						<option value="">{t('invocations.allTools')}</option>
 						{GATEWAY_TOOLS.map((tool) => (
@@ -200,14 +200,14 @@ export default function GatewayToolInvocationsPage() {
 							setFilterStatus(e.target.value);
 							setPage(1);
 						}}
-						className="min-w-[10rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm"
+						className="w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm"
 					>
 						<option value="">{tCommon('all')}</option>
 						<option value="success">success</option>
 						<option value="error">error</option>
 					</select>
 				</div>
-				<div className="w-full min-w-0 sm:min-w-[16rem] flex-1">
+				<div className="min-w-0 sm:col-span-2 sm:border-t sm:border-gray-100 sm:pt-3">
 					<GatewayTimeRangePicker
 						value={rangeValue}
 						onChange={(next) => {

@@ -54,7 +54,7 @@ function ModelsContent() {
 				onClearFilter={state.clearFilters}
 			/>
 
-			<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 2xl:grid-cols-4">
+			<div className="admin-catalog-grid">
 				<ModelAddCard
 					importSubmitting={state.importSubmitting}
 					createTitle={createTitle}

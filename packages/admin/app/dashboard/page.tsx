@@ -106,7 +106,7 @@ function RequestRow({ log, formatTime, unknown }: {
 }) {
 	const success = log.status === 'success';
 	return (
-		<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-gray-100 py-3 last:border-0">
+		<div className="grid grid-cols-1 items-center gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-4 border-b border-gray-100 py-3 last:border-0">
 			<div className="min-w-0">
 				<div className="flex min-w-0 items-center gap-2">
 					<span className={`h-2 w-2 shrink-0 rounded-full ${success ? 'bg-emerald-500' : 'bg-red-500'}`} aria-hidden />
@@ -259,7 +259,7 @@ export default function DashboardPage() {
 						<span>{formatCompactTokens(kpi?.tpm ?? 0)} TPM</span>
 					</div>
 				</div>
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4">
 					<MetricCard
 						icon={<QueueListIcon className="h-5 w-5" />}
 						label={t('requests')}
