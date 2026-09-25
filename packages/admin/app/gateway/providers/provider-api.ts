@@ -1,3 +1,4 @@
+import type { ProviderQuotaSnapshot } from '@octafuse/core/provider-quota';
 import { readApiJson } from '@/lib/api-json';
 import { sortProvidersByKindThenName } from '@/lib/provider-kind';
 import type { GatewayProvider } from '@/lib/types';
@@ -104,4 +105,13 @@ export async function toggleProviderStatus(
 	const data = await readApiJson(response);
 	if (data.success) return { success: true };
 	return { success: false, message: data.message || 'Update failed' };
+}
+
+export async function fetchProviderQuota(
+	providerId: string,
+): Promise<{ success: true; data: ProviderQuotaSnapshot } | { success: false; message: string }> {
+	const response = await fetch(`/api/admin/providers/${encodeURIComponent(providerId)}/quota`);
+	const data = await readApiJson<ProviderQuotaSnapshot>(response);
+	if (data.success && data.data) return { success: true, data: data.data };
+	return { success: false, message: data.message || 'Failed to query provider quota' };
 }

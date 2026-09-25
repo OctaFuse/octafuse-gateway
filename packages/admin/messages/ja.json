@@ -430,6 +430,33 @@
 			"failed": "インポートに失敗しました",
 			"copyFailed": "API Key のコピーに失敗しました"
 		},
+		"quota": {
+			"action": "残高",
+			"title": "プロバイダー残高",
+			"close": "閉じる",
+			"loading": "確認中…",
+			"retry": "再確認",
+			"checkedAt": "確認時刻 {time}",
+			"balance": "残高",
+			"granted": "付与分",
+			"paid": "チャージ分",
+			"windows": "期間クォータ",
+			"remaining": "残り {value}",
+			"usedOfLimit": "{used} / {limit}",
+			"resetsAt": "リセット {time}",
+			"empty": "残高またはクォータが返されませんでした",
+			"failed": "確認に失敗しました",
+			"state": {
+				"ok": "利用可能",
+				"low": "残りわずか",
+				"exhausted": "使い切り",
+				"unknown": "不明"
+			},
+			"window": {
+				"key_limit": "キー上限",
+				"spend_limit": "利用上限"
+			}
+		},
 		"kind": {
 			"custom": "カスタム",
 			"unclassified": "未分類"

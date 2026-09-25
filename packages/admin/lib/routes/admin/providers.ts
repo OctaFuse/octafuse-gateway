@@ -14,6 +14,7 @@ import {
 	revealProviderApiKeyService,
 	updateProviderService,
 } from "@/lib/services/admin/providers-service";
+import { getProviderQuotaService } from "@/lib/services/admin/provider-quota-service";
 import {
 	proxyDashScopeAudioResourceService,
 	type DashScopeAudioResource,
@@ -110,6 +111,18 @@ adminProvidersRoutes.post("/import", async (c) => {
 		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to import providers");
+	}
+});
+
+/** 实时查询供应商额度。不回显密钥。须注册在 `/:id` 之前。 */
+adminProvidersRoutes.get("/:id/quota", async (c) => {
+	const providerId = c.req.param("id");
+	try {
+		const repos = c.get("repositories");
+		const data = await getProviderQuotaService(repos, providerId);
+		return c.json(normalizeApiTimeFields({ success: true, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, "Failed to query provider quota");
 	}
 });
 

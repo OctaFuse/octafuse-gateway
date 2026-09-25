@@ -430,6 +430,33 @@
 			"failed": "Import failed",
 			"copyFailed": "Failed to copy API key"
 		},
+		"quota": {
+			"action": "Quota",
+			"title": "Provider quota",
+			"close": "Close",
+			"loading": "Checking…",
+			"retry": "Check again",
+			"checkedAt": "Checked {time}",
+			"balance": "Balance",
+			"granted": "Granted",
+			"paid": "Topped up",
+			"windows": "Quota windows",
+			"remaining": "Remaining {value}",
+			"usedOfLimit": "{used} / {limit}",
+			"resetsAt": "Resets {time}",
+			"empty": "No balance or quota was returned",
+			"failed": "Could not check quota",
+			"state": {
+				"ok": "Available",
+				"low": "Running low",
+				"exhausted": "Exhausted",
+				"unknown": "Unknown"
+			},
+			"window": {
+				"key_limit": "Key limit",
+				"spend_limit": "Spend limit"
+			}
+		},
 		"kind": {
 			"custom": "Custom",
 			"unclassified": "Unclassified"

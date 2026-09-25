@@ -430,6 +430,33 @@
 			"failed": "导入失败",
 			"copyFailed": "复制 API Key 失败"
 		},
+		"quota": {
+			"action": "查询额度",
+			"title": "供应商额度",
+			"close": "关闭",
+			"loading": "正在查询…",
+			"retry": "再次查询",
+			"checkedAt": "查询时间 {time}",
+			"balance": "余额",
+			"granted": "赠送",
+			"paid": "充值",
+			"windows": "周期额度",
+			"remaining": "剩余 {value}",
+			"usedOfLimit": "{used} / {limit}",
+			"resetsAt": "重置于 {time}",
+			"empty": "没有返回余额或额度",
+			"failed": "查询失败",
+			"state": {
+				"ok": "可用",
+				"low": "偏低",
+				"exhausted": "已用尽",
+				"unknown": "未知"
+			},
+			"window": {
+				"key_limit": "Key 额度",
+				"spend_limit": "消费上限"
+			}
+		},
 		"kind": {
 			"custom": "自定义",
 			"unclassified": "未分类"

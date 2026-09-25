@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- **供应商额度**：Providers 卡片对已配置密钥、且类型支持额度查询的账号提供「查询额度」。按 `providers.kind` 用现有 API Key 实时请求 DeepSeek、Moonshot、SiliconFlow（含国际站）、OpenRouter、Novita、DeepInfra、阶跃星辰和 Vercel AI Gateway 的余额或额度窗口，结果不落库。智谱 / Z.AI Coding Plan、Kimi Code 与 MiniMax Token Plan 暂无稳定公开的额度契约；需要另一把管理密钥的渠道不提供查询。
 - **模型列表 RPM 豁免**：`GET /v1/models` 与 `GET /v1/me` 一样，不再计入 API Key 与用户合计 RPM。周期额度或永久额度用尽时仍可拉取模型列表。
 - **音频筛选与请求入口**：`kind=audio` 同时返回语音转写与语音合成。`model_info.inbound` 在命中可见路由时补充文生图、ASR、TTS 操作（`images.generations`、`audio.transcriptions`、`audio.speech`）。
 - **模型列表契约**：`GET /v1/models` 与 `GET /catalog/models` 不再向 `tags` 注入 `Discount.<group>:<factor>`；权威折扣仍是 `discounts`。`model_info.pricing_profile` 改为解析后的对象（非法 JSON 为 `null`），`vendor` 为空或仅空白时返回 `other`。

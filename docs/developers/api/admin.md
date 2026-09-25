@@ -68,6 +68,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/keys/:id/logs` | GET | `api_key_request_logs`（Key 范围，分页） | 外部集成方、Admin UI |
 | `/admin/providers` | GET, POST, GET/PATCH/DELETE `/:id` | `providers`（单键 `api_key` + `status`；列表脱敏） | Admin UI |
 | `/admin/providers/:id/api-key` | GET | `providers.api_key` 明文揭示 | Admin UI |
+| `/admin/providers/:id/quota` | GET | 按 `kind` 实时查询上游余额 / 周期额度；不落库、不回显密钥 | Admin UI |
 | `/admin/providers/import/catalog` | GET | 内置 Provider 模板摘要（无密钥） | Admin UI |
 | `/admin/providers/import` | POST | 请求体 `{"ids":["0","1",…]}`：catalog 键（非 provider id）；每次导入新增 `providers` 行（UUID id；`kind` 为模板英文名；同一 `kind` 下同名自动后缀）；占位 API Key，须在 Admin 中替换 | Admin UI、运维脚本 |
 | `/admin/models` | GET, POST, GET/PATCH/DELETE `/:id` | `models`（含可选 `route_policy`），`model_tags` | Admin UI |
@@ -621,13 +622,45 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `kind`、`endpoints`、`status`、`has_pending_key`、`routes_count`、`active_routes_count` |
+| GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `kind`、`endpoints`、`status`、`has_pending_key`、`quota_supported`、`routes_count`、`active_routes_count` |
 | POST | `/admin/providers` | 创建；**`name` + `api_key` + `kind` 必填**；`kind` 须为已知模板英文名或 `__custom__`；管理后台不提交 `id`，由服务端生成 UUID。API 仍可传可选 `id`。另可传 `description`、`endpoints`、`status` |
 | GET | `/admin/providers/:id` | 详情（脱敏 `api_key`） |
 | PATCH | `/admin/providers/:id` | 部分更新；省略 `kind` = 不改类型；`kind: ""` = 标为尚未分类；`api_key` 空串/未传 = **不改密钥**；`status` 仅 `active` \| `disabled`。改 `kind` 不覆盖已有 `endpoints` |
 | DELETE | `/admin/providers/:id` | 删除；仍被 `model_routes` 引用时返回 **409**，须先删除或改绑对应 Target |
 | GET | `/admin/providers/:id/api-key` | **揭示明文** `api_key`（`{ success, data: { api_key } }`） |
+| GET | `/admin/providers/:id/quota` | 用该账号现有 `api_key` 实时查询额度。权限是 `providers.read`，响应不含密钥。不支持的 `kind`、空密钥或导入占位密钥返回 **400**。上游非 2xx 或响应无法解析返回 **502**（`message` 只有状态码，没有响应体）。超时返回 **504** |
 | GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换）。写入 `kind =` 模板英文名；仅同一 `kind` 下同名才追加 `(2)` 后缀 |
+
+`GET /admin/providers/:id/quota` 的 `data` 是归一化快照，不保存。请求发往与该 `kind` 默认域名同一注册域的 https origin；保存的 Endpoint 若换了注册域，则回退默认 origin。
+
+```json
+{
+  "success": true,
+  "data": {
+    "adapter": "deepseek",
+    "checkedAt": "2026-09-25T05:00:00.000Z",
+    "state": "ok",
+    "balances": [{ "currency": "CNY", "total": 9.99, "granted": 0, "paid": 9.99 }],
+    "windows": []
+  }
+}
+```
+
+`state` 为 `ok`、`low`（任一窗口已用 ≥ 90%）、`exhausted`（返回的余额全部 ≤ 0、厂商标记不可用，或任一窗口已用 ≥ 100%）或 `unknown`。
+
+| `kind` | 上游 | 映射 |
+|--------|------|------|
+| `DeepSeek` | `GET /user/balance` | 余额（含币种、赠送、充值） |
+| `Moonshot AI` | `GET /v1/users/me/balance` | 可用余额、代金券、现金。`api.moonshot.cn` 为 CNY，`api.moonshot.ai` 为 USD |
+| `SiliconFlow` | `GET /v1/user/info` | `totalBalance` / `balance` / `chargeBalance`，币种 CNY |
+| `SiliconFlow (International)` | 同上，`api.siliconflow.com` | 同上，币种 USD |
+| `OpenRouter` | `GET /api/v1/key` | Key 消费上限窗口 `key_limit`（USD）。未设上限时没有 `usedPercent` |
+| `Novita AI` | `GET /openapi/v1/billing/balance/detail` | `availableBalance` / `cashBalance`，单位是 1/10000 USD |
+| `DeepInfra` | `GET /payment/checklist` | 负的 `stripe_balance` 转为可消费 USD；正的 `limit` 与 `recent` 组成消费上限窗口。`suspended: true` 视为已用尽 |
+| `StepFun` | `GET /v1/accounts` | `balance` 为可用余额（CNY）。累计充值与累计赠送不写入快照 |
+| `Vercel AI Gateway` | `GET /v1/credits` | `balance` 为剩余额度（USD） |
+
+`Zhipu GLM (Coding Plan)`、`Z.AI GLM (Coding Plan)`、`Kimi Code (Coding API)` 的额度接口没有稳定公开契约，当前 `quota_supported` 为 false。MiniMax Token Plan 的用量接口没有公开响应字段。ZenMux、xAI、OpenAI、Anthropic 以及火山、百炼、腾讯的余额查询需要另一把管理密钥或 AK/SK，也不在这一接口里。
 
 `endpoints` JSON 权威形状：
 

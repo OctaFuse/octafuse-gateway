@@ -430,6 +430,33 @@
 			"failed": "가져오기에 실패했습니다",
 			"copyFailed": "API Key 복사에 실패했습니다"
 		},
+		"quota": {
+			"action": "한도",
+			"title": "공급자 한도",
+			"close": "닫기",
+			"loading": "확인 중…",
+			"retry": "다시 확인",
+			"checkedAt": "확인 시각 {time}",
+			"balance": "잔액",
+			"granted": "지급분",
+			"paid": "충전분",
+			"windows": "기간 한도",
+			"remaining": "남은 {value}",
+			"usedOfLimit": "{used} / {limit}",
+			"resetsAt": "재설정 {time}",
+			"empty": "잔액이나 한도가 반환되지 않았습니다",
+			"failed": "확인에 실패했습니다",
+			"state": {
+				"ok": "사용 가능",
+				"low": "부족",
+				"exhausted": "소진",
+				"unknown": "알 수 없음"
+			},
+			"window": {
+				"key_limit": "키 한도",
+				"spend_limit": "사용 한도"
+			}
+		},
 		"kind": {
 			"custom": "사용자 지정",
 			"unclassified": "미분류"

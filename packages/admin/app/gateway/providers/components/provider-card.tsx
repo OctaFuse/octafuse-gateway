@@ -12,6 +12,7 @@ import type { GatewayProvider, ProviderKeyStatusKind } from '../types';
 import { getProviderKeyStatus, getProviderProtocolSummaries } from '../provider-utils';
 import { ProviderCatalogOutboundLink } from './provider-catalog-outbound-link';
 import { ProviderProtocolIcon } from './provider-protocol-icon';
+import { ProviderQuotaButton } from './provider-quota-popover';
 
 type ProviderCardProps = {
 	provider: GatewayProvider;
@@ -187,6 +188,24 @@ export function ProviderCard(props: ProviderCardProps) {
 						/>
 						<span className="truncate">{statusLabel}</span>
 					</span>
+					{canCopyKey ? (
+						<button
+							type="button"
+							onClick={(event) => {
+								event.stopPropagation();
+								void onCopyApiKey(provider);
+							}}
+							className="pointer-events-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							title={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
+							aria-label={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
+						>
+							{copiedId === apiKeyFeedbackId ? (
+								<CheckIcon className="h-4 w-4 text-emerald-600" aria-hidden />
+							) : (
+								<ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
+							)}
+						</button>
+					) : null}
 					{(keyStatus === 'no_key' || keyStatus === 'pending') && (
 						<ProviderCatalogOutboundLink
 							links={provider.catalog_links}
@@ -195,23 +214,9 @@ export function ProviderCard(props: ProviderCardProps) {
 						/>
 					)}
 				</div>
-				<button
-					type="button"
-					onClick={(event) => {
-						event.stopPropagation();
-						void onCopyApiKey(provider);
-					}}
-					disabled={!canCopyKey}
-					className="pointer-events-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-35"
-					title={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
-					aria-label={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
-				>
-					{copiedId === apiKeyFeedbackId ? (
-						<CheckIcon className="h-4 w-4 text-emerald-600" aria-hidden />
-					) : (
-						<ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
-					)}
-				</button>
+				{provider.quota_supported && !provider.has_pending_key ? (
+					<ProviderQuotaButton providerId={provider.id} />
+				) : null}
 			</div>
 
 			<div className="pointer-events-none relative z-10 min-w-0">
