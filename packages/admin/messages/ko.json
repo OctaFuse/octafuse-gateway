@@ -487,7 +487,7 @@
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
 			"geminiPlaceholder": "https://generativelanguage.googleapis.com/v1beta/models",
-			"geminiHint": "'{model}' 앞에 오는 전체 경로 접두사입니다. Developer: …/v1beta/models, Vertex Express: …/v1/publishers/google/models, Vertex(프로젝트): …/v1/projects/{project}/locations/{location}/publishers/google/models.",
+			"geminiHint": "'{model}' 앞에 오는 전체 경로 접두사입니다. Developer: …/v1beta/models, Vertex Express: …/v1/publishers/google/models, Vertex(프로젝트): …/v1/projects/'{project}'/locations/'{location}'/publishers/google/models.",
 			"geminiAuth": "업스트림 인증",
 			"geminiAuthAuto": "기본값(?key=)",
 			"geminiAuthQueryKey": "Query key(?key=)",
