@@ -114,6 +114,8 @@
 		"logout": "로그아웃"
 	},
 	"sidebar": {
+		"openMenu": "탐색 메뉴 열기",
+		"navigation": "기본 탐색",
 		"groups": {
 			"overview": "개요",
 			"inference": "추론",

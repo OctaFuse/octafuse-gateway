@@ -114,6 +114,8 @@
 		"logout": "Logout"
 	},
 	"sidebar": {
+		"openMenu": "Open navigation menu",
+		"navigation": "Main navigation",
 		"groups": {
 			"overview": "Overview",
 			"inference": "Inference",

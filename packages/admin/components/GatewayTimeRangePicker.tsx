@@ -126,13 +126,13 @@ export function GatewayTimeRangePicker({
 						))}
 					</div>
 				) : null}
-				<div className="flex shrink-0 flex-wrap items-center gap-2">
+				<div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
 					<input
 						type="datetime-local"
 						value={draftStart}
 						onChange={(e) => setDraftStart(e.target.value)}
 						aria-label={t('start')}
-						className="px-2 py-1 border border-gray-300 rounded-md text-xs w-[11.5rem]"
+						className="min-w-0 max-w-full px-2 py-1 border border-gray-300 rounded-md text-xs w-[11.5rem]"
 					/>
 					<span aria-hidden="true" className="shrink-0 text-sm text-gray-400">
 						→
@@ -142,7 +142,7 @@ export function GatewayTimeRangePicker({
 						value={draftEnd}
 						onChange={(e) => setDraftEnd(e.target.value)}
 						aria-label={t('end')}
-						className="px-2 py-1 border border-gray-300 rounded-md text-xs w-[11.5rem]"
+						className="min-w-0 max-w-full px-2 py-1 border border-gray-300 rounded-md text-xs w-[11.5rem]"
 					/>
 					<button
 						type="button"

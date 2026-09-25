@@ -154,7 +154,7 @@ export default function GatewayToolInvocationsPage() {
 	};
 
 	return (
-		<div className="p-8">
+		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<h1 className="text-3xl font-bold text-gray-900">{t('invocations.title')}</h1>
@@ -207,7 +207,7 @@ export default function GatewayToolInvocationsPage() {
 						<option value="error">error</option>
 					</select>
 				</div>
-				<div className="min-w-[16rem] flex-1">
+				<div className="w-full min-w-0 sm:min-w-[16rem] flex-1">
 					<GatewayTimeRangePicker
 						value={rangeValue}
 						onChange={(next) => {
@@ -226,6 +226,7 @@ export default function GatewayToolInvocationsPage() {
 				</div>
 			) : (
 				<div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+					<div className="overflow-x-auto">
 					<table className="min-w-full divide-y divide-gray-200 text-sm">
 						<thead className="bg-gray-50">
 							<tr>
@@ -455,7 +456,8 @@ export default function GatewayToolInvocationsPage() {
 							})}
 						</tbody>
 					</table>
-					<div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm text-gray-600">
+					</div>
+					<div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 px-4 py-3 text-sm text-gray-600">
 						<span>{tCommon('pageOf', { page, totalPages })} · {total}</span>
 						<div className="flex gap-2">
 							<button

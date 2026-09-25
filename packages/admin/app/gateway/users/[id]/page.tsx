@@ -635,7 +635,7 @@ export default function GatewayUserDetailPage() {
 
   if (loadError) {
     return (
-      <div className="p-8">
+      <div className="min-w-0 p-4 sm:p-6 lg:p-8">
         <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
         <p className="mt-4 text-red-600">{loadError}</p>
       </div>
@@ -644,7 +644,7 @@ export default function GatewayUserDetailPage() {
 
   if (!user) {
     return (
-      <div className="p-8">
+      <div className="min-w-0 p-4 sm:p-6 lg:p-8">
         <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
         <div className="mt-8 text-gray-600">{tCommon('loadingEllipsis')}</div>
       </div>
@@ -652,7 +652,7 @@ export default function GatewayUserDetailPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
         <h1 className="text-2xl font-bold text-gray-900 mt-2">{t('detailTitle')}</h1>

@@ -521,7 +521,7 @@ export default function GatewayConfigPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -543,7 +543,7 @@ export default function GatewayConfigPage() {
         title={t('businessTimezone.title')}
         description={t('businessTimezone.description')}
       >
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3 [&>div]:max-w-full">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">{t('businessTimezone.timezone')}</label>
             <select
@@ -554,7 +554,7 @@ export default function GatewayConfigPage() {
                   setBizOtherValue('');
                 }
               }}
-              className="min-w-[16rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm"
+              className="w-full min-w-0 sm:w-auto sm:min-w-[16rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm"
             >
               {businessTimezoneOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -591,7 +591,7 @@ export default function GatewayConfigPage() {
         title={t('billingCurrency.title')}
         description={t('billingCurrency.description')}
       >
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3 [&>div]:max-w-full">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">{t('billingCurrency.currency')}</label>
             <select
@@ -599,7 +599,7 @@ export default function GatewayConfigPage() {
               onChange={(e) => {
                 setBillSelectValue(e.target.value);
               }}
-              className="min-w-[16rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm"
+              className="w-full min-w-0 sm:w-auto sm:min-w-[16rem] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm"
             >
               {billingCurrencyOptions.map((o) => (
                 <option key={o.value} value={o.value}>

@@ -114,6 +114,8 @@
 		"logout": "ログアウト"
 	},
 	"sidebar": {
+		"openMenu": "ナビゲーションメニューを開く",
+		"navigation": "メインナビゲーション",
 		"groups": {
 			"overview": "概要",
 			"inference": "推論",

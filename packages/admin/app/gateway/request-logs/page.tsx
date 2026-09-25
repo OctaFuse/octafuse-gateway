@@ -707,7 +707,7 @@ export default function GatewayRequestLogsPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
@@ -724,7 +724,7 @@ export default function GatewayRequestLogsPage() {
         />
       </div>
 
-      <div className="mb-4 flex gap-4 flex-wrap">
+      <div className="mb-4 flex gap-4 flex-wrap [&>div]:min-w-0 [&>div]:max-w-full [&_select]:max-w-full [&_input]:max-w-full">
         <div>
           <label className="block text-sm text-gray-500 mb-1">{tCommon('status')}</label>
           <select

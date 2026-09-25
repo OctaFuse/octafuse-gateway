@@ -11,7 +11,7 @@ import LocaleSwitcher from '@/components/layout/LocaleSwitcher';
 import { BusinessTimezoneProvider } from '@/components/BusinessTimezoneProvider';
 import { ADMIN_SESSION_EXPIRED_EVENT_NAME } from '@/lib/admin-session-events';
 import { readApiJson, readJson } from '@/lib/api-json';
-import Sidebar from './Sidebar';
+import AdminShell from './AdminShell';
 
 interface Props {
   children: ReactNode;
@@ -96,7 +96,7 @@ export default function AuthWrapper({ children }: Props) {
   // Loading state - full screen
   if (isLoading && !isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex h-dvh items-center justify-center bg-gray-50">
         <div className="text-gray-600">{tCommon('loading')}</div>
       </div>
     );
@@ -105,8 +105,8 @@ export default function AuthWrapper({ children }: Props) {
   // Not authenticated - show login page (no sidebar)
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
+      <div className="flex h-dvh items-start justify-center overflow-y-auto bg-gray-50 p-4">
+        <div className="my-auto w-full max-w-md rounded-lg bg-white p-5 shadow-md sm:p-8">
           <div className="mb-6 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-2xl font-bold text-gray-800">{tBrand('loginHeading')}</h1>
@@ -167,12 +167,7 @@ export default function AuthWrapper({ children }: Props) {
   // Authenticated - show dashboard layout with sidebar
   return (
     <BusinessTimezoneProvider>
-      <div className="flex h-dvh overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 min-h-0 overflow-y-auto bg-gray-50">
-          {children}
-        </main>
-      </div>
+      <AdminShell>{children}</AdminShell>
     </BusinessTimezoneProvider>
   );
 }

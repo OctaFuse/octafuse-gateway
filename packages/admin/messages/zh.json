@@ -114,6 +114,8 @@
 		"logout": "退出登录"
 	},
 	"sidebar": {
+		"openMenu": "打开导航菜单",
+		"navigation": "主导航",
 		"groups": {
 			"overview": "概览",
 			"inference": "推理",
