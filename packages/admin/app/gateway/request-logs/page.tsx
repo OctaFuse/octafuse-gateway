@@ -189,6 +189,32 @@ export default function GatewayRequestLogsPage() {
     return map;
   }, [modelCatalog]);
 
+  const providerById = useMemo(() => {
+    const map = new Map<string, GatewayProvider>();
+    for (const provider of providerCatalog) {
+      map.set(provider.id, provider);
+    }
+    return map;
+  }, [providerCatalog]);
+
+  /** 日志只存账号名快照。类型从当前目录补上，显示「类型 · 别名」；目录里没有的账号仍用快照名。 */
+  const providerRouteLabel = useCallback((log: GatewayRequestLog): string => {
+    const snapshot = log.provider_name?.trim() || '';
+    const providerId = log.provider_id?.trim() || '';
+    const provider = providerId && providerId !== GATEWAY_TOOLS_PROVIDER_ID
+      ? providerById.get(providerId)
+      : undefined;
+    if (provider) {
+      return liveProviderPickerLabel(
+        { ...provider, name: snapshot || provider.name },
+        locale,
+        tKind('custom'),
+        snapshot || providerId,
+      );
+    }
+    return snapshot || providerId;
+  }, [providerById, locale, tKind]);
+
   const modelSelectOptions = useMemo(() => {
     const rows = [...modelCatalog]
       .sort((a, b) =>
@@ -593,14 +619,7 @@ export default function GatewayRequestLogsPage() {
     ]
       .filter(Boolean)
       .join('\n');
-    const catalogProviderName = log.provider_id
-      ? providerCatalog.find((p) => p.id === log.provider_id)?.name.trim()
-      : undefined;
-    const upstreamProvider =
-      log.provider_name?.trim()
-      || catalogProviderName
-      || log.provider_id?.trim()
-      || '';
+    const upstreamProvider = providerRouteLabel(log);
     const upstreamTitle = isAgentTool
       ? (upstreamModelId ? `Tool engine: ${upstreamModelId}` : undefined)
       : (upstreamModelId ? `Upstream model: ${upstreamModelId}` : undefined);
@@ -1021,7 +1040,7 @@ export default function GatewayRequestLogsPage() {
                               },
                               {
                                 label: t('detail.providerRoute'),
-                                value: [log.provider_name || log.provider_id, log.provider_model_name]
+                                value: [providerRouteLabel(log), log.provider_model_name]
                                   .filter(Boolean)
                                   .join(' · '),
                               },

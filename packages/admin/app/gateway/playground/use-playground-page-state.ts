@@ -50,7 +50,7 @@ import {
 	type PlaygroundLlmSampleId,
 } from './playground-utils';
 import { decodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
-import { liveProviderAccountLabel, liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
+import { liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
 import type { FilterOption, GeminiAction, PlaygroundMode, ResponseMeta, ResponseTab, RouteListRow } from './types';
 
 function isAbortError(error: unknown): boolean {
@@ -292,7 +292,7 @@ export function usePlaygroundPageState() {
 	const providerLabelFor = useCallback(
 		(route: { provider_id: string; provider_name?: string | null }) => {
 			const provider = providersById.get(route.provider_id);
-			if (provider) return liveProviderAccountLabel(provider, locale, tKind('custom'), route.provider_id);
+			if (provider) return liveProviderPickerLabel(provider, locale, tKind('custom'), route.provider_id);
 			return (route.provider_name ?? '').trim() || route.provider_id;
 		},
 		[providersById, locale, tKind]

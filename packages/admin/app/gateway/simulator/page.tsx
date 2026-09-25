@@ -86,7 +86,8 @@ export default function SimulatorPage() {
 							onRealtimeOperationChange={s.setDashScopeRealtimeOperation}
 							selectedModelIsAudio={s.selectedModelIsAudio}
 							modelRoutingString={s.modelRoutingString}
-							matchingRoutes={s.matchingRoutes}
+							matchingRoutes={s.matchingRoutesForDisplay}
+							providerLabelFor={s.providerLabelFor}
 						/>
 					</aside>
 

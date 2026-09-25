@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { compareProvidersByKindThenName, liveProviderPickerLabel } from '@/lib/provider-kind';
+import type { GatewayProvider } from '@/lib/types';
 import { useFeedback } from '@/components/feedback';
 import { flushSync } from 'react-dom';
 import { readApiJson } from '@/lib/api-json';
@@ -84,6 +86,8 @@ function resolveModelKind(m: AdminModelRow | null | undefined): ModelKindFilter 
 export function useSimulatorPageState() {
 	const t = useTranslations('simulator');
 	const tCommon = useTranslations('common');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
 	const { confirm } = useFeedback();
 
 	const [proxyBaseUrl, setProxyBaseUrl] = useState('');
@@ -97,6 +101,7 @@ export function useSimulatorPageState() {
 
 	const [models, setModels] = useState<AdminModelRow[]>([]);
 	const [routes, setRoutes] = useState<RouteListRow[]>([]);
+	const [providersById, setProvidersById] = useState<Map<string, GatewayProvider>>(new Map());
 	const [loadingCatalog, setLoadingCatalog] = useState(true);
 	const [catalogError, setCatalogError] = useState<string | null>(null);
 
@@ -324,6 +329,27 @@ export function useSimulatorPageState() {
 				? []
 				: filterMatchingActiveRoutes(routes, selectedModelId, routeGroup, protocol, requestOperation ?? undefined),
 		[routes, selectedModelId, routeGroup, protocol, requestOperation, isToolKind],
+	);
+	const customKindLabel = tKind('custom');
+	const providerLabelFor = useCallback(
+		(route: { provider_id: string; provider_name?: string | null }) => {
+			const provider = providersById.get(route.provider_id);
+			if (provider) return liveProviderPickerLabel(provider, locale, customKindLabel, route.provider_id);
+			return (route.provider_name ?? '').trim() || route.provider_id;
+		},
+		[providersById, locale, customKindLabel],
+	);
+	const matchingRoutesForDisplay = useMemo(
+		() =>
+			[...matchingRoutes].sort((a, b) =>
+				compareProvidersByKindThenName(
+					providersById.get(a.provider_id) ?? { name: a.provider_name ?? a.provider_id },
+					providersById.get(b.provider_id) ?? { name: b.provider_name ?? b.provider_id },
+					locale,
+					customKindLabel,
+				),
+			),
+		[matchingRoutes, providersById, locale, customKindLabel],
 	);
 	const supportedSurfaces = useMemo(
 		() => (isToolKind ? listSupportedClientSurfaces([], '', '') : listSupportedClientSurfaces(routes, selectedModelId, routeGroup)),
@@ -681,9 +707,14 @@ export function useSimulatorPageState() {
 			setLoadingCatalog(true);
 			setCatalogError(null);
 			try {
-				const [mRes, rRes] = await Promise.all([fetch('/api/admin/models'), fetch('/api/admin/routes')]);
+				const [mRes, rRes, pRes] = await Promise.all([
+					fetch('/api/admin/models'),
+					fetch('/api/admin/routes'),
+					fetch('/api/admin/providers'),
+				]);
 				const mData = await readApiJson<AdminModelRow[]>(mRes);
 				const rData = await readApiJson<RouteListRow[]>(rRes);
+				const pData = await readApiJson<GatewayProvider[]>(pRes);
 				if (cancelled) return;
 				if (mData.success && Array.isArray(mData.data)) {
 					setModels(mData.data);
@@ -694,6 +725,9 @@ export function useSimulatorPageState() {
 					setRoutes(rData.data);
 				} else if (!cancelled) {
 					setCatalogError((prev) => prev ?? rData.message ?? tCommon('failedToLoadRoutes'));
+				}
+				if (pData.success && Array.isArray(pData.data)) {
+					setProvidersById(new Map(pData.data.map((provider) => [provider.id, provider])));
 				}
 			} catch (e) {
 				if (!cancelled) setCatalogError(e instanceof Error ? e.message : tCommon('failedToLoadModels'));
@@ -1525,6 +1559,8 @@ export function useSimulatorPageState() {
 		selectedDashScopeRealtimeOperation,
 		modelRoutingString,
 		matchingRoutes,
+		matchingRoutesForDisplay,
+		providerLabelFor,
 		imagePreviews,
 		audioPreviewUrl,
 		keys,

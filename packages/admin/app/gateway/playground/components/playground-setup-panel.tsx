@@ -167,6 +167,7 @@ export function PlaygroundSetupPanel({
 								const modelLabel = r.model_name || r.model_id;
 								const providerLabel = providerLabelFor(r);
 								const operation = `${r.upstream_protocol}.${r.upstream_operation ?? '*'}`;
+								const routeMeta = [operation, r.route_group].filter(Boolean).join(' · ');
 								return (
 									<button
 										key={r.id}
@@ -192,8 +193,11 @@ export function PlaygroundSetupPanel({
 											</span>
 											<span className="truncate text-sm font-medium text-gray-900">{modelLabel}</span>
 										</div>
-										<div className="w-full truncate text-[11px] text-gray-500">
-											{providerLabel} · {operation} · {r.route_group}
+										<div className="w-full truncate text-[11px] leading-4 text-gray-600" title={providerLabel}>
+											{providerLabel}
+										</div>
+										<div className="w-full truncate text-[11px] leading-4 text-gray-400" title={routeMeta}>
+											{routeMeta}
 										</div>
 									</button>
 								);
