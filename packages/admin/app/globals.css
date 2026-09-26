@@ -38,6 +38,15 @@
     background-color: #f9fafb;
   }
 
+  .admin-data-table > tbody > tr:hover > td:first-child:not([colspan]) {
+    background-color: #f9fafb;
+  }
+
+  .admin-data-table > tbody > tr.admin-data-row-open > td:first-child:not([colspan]),
+  .admin-data-table > tbody > tr.admin-data-row-open:hover > td:first-child:not([colspan]) {
+    background-color: #eff6ff;
+  }
+
   .admin-log-table {
     container-type: inline-size;
   }

@@ -23,7 +23,7 @@ import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
 import { cacheHitRateClassName, successRateClassName } from '@/lib/analytics-rate-style';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
-import { liveProviderPickerLabel } from '@/lib/provider-kind';
+import { formatProviderAccountLabel, providerKindDisplayLabel } from '@/lib/provider-kind';
 import type { ApiResponse, GatewayProvider, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -100,19 +100,15 @@ export default function ProviderUsagePage() {
     return map;
   }, [providerCatalog]);
 
-  /** 统计仍按 provider id。第一列只显示「类型 · 别名」，不回退成 id。 */
-  const providerUsageLabel = (row: ProviderUsageRow): string => {
+  /** 统计仍按 provider id。第一列别名在上、类型在下，不回退成 id。 */
+  const providerUsageIdentity = (row: ProviderUsageRow): { name: string; kind: string | null; title: string } => {
+    const fallbackName = row.provider_name?.trim() || '—';
     const provider = providerById.get(row.provider_id);
-    if (provider) {
-      const label = liveProviderPickerLabel(
-        provider,
-        locale,
-        tKind('custom'),
-        provider.name?.trim() || row.provider_name?.trim() || '',
-      );
-      if (label) return label;
-    }
-    return row.provider_name?.trim() || '—';
+    const name = provider?.name?.trim() || fallbackName;
+    const kindLabel = provider ? providerKindDisplayLabel(provider, locale, tKind('custom')) : null;
+    const kind =
+      kindLabel && kindLabel.trim().toLowerCase() !== name.trim().toLowerCase() ? kindLabel : null;
+    return { name, kind, title: formatProviderAccountLabel(name, kindLabel) || name };
   };
 
   const rangeTotals = useMemo(() => sumAnalyticsCosts(rows), [rows]);
@@ -290,20 +286,29 @@ export default function ProviderUsagePage() {
                 const isExpanded = expandedProviderIds.has(r.provider_id);
                 const modelRows = modelRowsByProvider[r.provider_id] ?? [];
                 const isModelRowsLoading = modelRowsLoading[r.provider_id] === true;
+                const identity = providerUsageIdentity(r);
                 return (
                   <Fragment key={r.provider_id}>
                     <tr
-                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'bg-blue-50/40' : ''}`}
+                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'admin-data-row-open bg-blue-50/40' : ''}`}
                       onClick={() => void toggleProviderModels(r.provider_id)}
                     >
                       <td className="px-4 py-3 text-sm">
                         <button
                           type="button"
-                          className="inline-flex items-center gap-2 text-left font-medium text-blue-600 hover:text-blue-800"
+                          className="flex w-full min-w-0 items-start gap-2 text-left"
                           aria-expanded={isExpanded}
+                          title={identity.title}
                         >
-                          <span className="w-4 text-gray-400">{isExpanded ? '▾' : '▸'}</span>
-                          <span title={providerUsageLabel(r)}>{providerUsageLabel(r)}</span>
+                          <span className="mt-0.5 w-4 shrink-0 text-gray-400">{isExpanded ? '▾' : '▸'}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium text-blue-600">{identity.name}</span>
+                            {identity.kind ? (
+                              <span className="mt-0.5 block truncate text-xs font-normal leading-4 text-slate-500">
+                                {identity.kind}
+                              </span>
+                            ) : null}
+                          </span>
                         </button>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
