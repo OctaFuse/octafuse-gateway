@@ -134,13 +134,30 @@ describe('collectInboundSurfaces', () => {
 		]);
 	});
 
-	it('does not list images.edits or dashscope-only operations', () => {
+	it('lists images.generations and images.edits separately', () => {
 		const catalog = collectInboundSurfaces(
 			[route({
 				surfaces: surfaces(
 					{ request_protocol: 'openai', request_operation: 'images.edits', status: 'active' },
-					{ request_protocol: 'dashscope', request_operation: 'audio.transcriptions.multimodal', status: 'active' },
+					{ request_protocol: 'openai', request_operation: 'images.generations', status: 'active' },
 				),
+			})],
+			['default'],
+		);
+		assert.deepEqual(catalog, [
+			{ protocol: 'openai', operation: 'images.generations' },
+			{ protocol: 'openai', operation: 'images.edits' },
+		]);
+	});
+
+	it('does not list dashscope-only operations', () => {
+		const catalog = collectInboundSurfaces(
+			[route({
+				surfaces: surfaces({
+					request_protocol: 'dashscope',
+					request_operation: 'audio.transcriptions.multimodal',
+					status: 'active',
+				}),
 			})],
 			['default'],
 		);

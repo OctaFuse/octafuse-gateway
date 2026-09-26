@@ -26,6 +26,7 @@ const LLM_INBOUND_ORDER: readonly InboundSurface[] = [
 
 const IMAGE_AUDIO_INBOUND_ORDER: readonly InboundSurface[] = [
 	{ protocol: 'openai', operation: 'images.generations' },
+	{ protocol: 'openai', operation: 'images.edits' },
 	{ protocol: 'openai', operation: 'audio.transcriptions' },
 	{ protocol: 'openai', operation: 'audio.speech' },
 ];
