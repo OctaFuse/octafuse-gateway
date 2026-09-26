@@ -9,6 +9,7 @@ import {
 	compareProvidersByKindThenName,
 	formatProviderAccountLabel,
 	formatProviderPickerLabel,
+	providerAccountIdentity,
 	providerKindFilterKey,
 	sortProvidersByKindThenName,
 } from './provider-kind';
@@ -28,6 +29,31 @@ describe('formatProviderPickerLabel', () => {
 	it('omits a missing type and a type that repeats the alias', () => {
 		assert.equal(formatProviderPickerLabel('七牛云', null), '七牛云');
 		assert.equal(formatProviderPickerLabel('Moonshot AI', 'moonshot ai'), 'Moonshot AI');
+	});
+});
+
+describe('providerAccountIdentity', () => {
+	it('keeps the alias and type on separate lines', () => {
+		assert.deepEqual(
+			providerAccountIdentity({ name: '1084', kind: 'ark', kind_labels: ark }, 'en', 'Custom'),
+			{ name: '1084', kind: 'Volcengine Ark', title: '1084 · Volcengine Ark' },
+		);
+	});
+
+	it('hides a type that repeats the alias and falls back when the account is missing', () => {
+		assert.deepEqual(
+			providerAccountIdentity(
+				{ name: 'Moonshot AI', kind: 'x', kind_labels: { en: 'moonshot ai', zh: '月之暗面' } },
+				'en',
+				'Custom',
+			),
+			{ name: 'Moonshot AI', kind: null, title: 'Moonshot AI' },
+		);
+		assert.deepEqual(providerAccountIdentity(undefined, 'en', 'Custom', 'snapshot'), {
+			name: 'snapshot',
+			kind: null,
+			title: 'snapshot',
+		});
 	});
 });
 

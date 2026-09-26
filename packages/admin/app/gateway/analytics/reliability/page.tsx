@@ -7,8 +7,9 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
+import { ProviderAccountLines } from '@/components/ProviderAccountLines';
 import { readApiJson } from '@/lib/api-json';
-import { liveProviderAccountLabel } from '@/lib/provider-kind';
+import { providerAccountIdentity } from '@/lib/provider-kind';
 import type { GatewayProvider } from '@/lib/types';
 import {
   createRangeValue,
@@ -64,10 +65,10 @@ export default function ReliabilityPage() {
     };
   }, []);
 
-  const providerLabel = (providerId: string, snapshotName: string | null | undefined) => {
-    const live = liveProviders.get(providerId);
-    if (live) return liveProviderAccountLabel(live, locale, tKind('custom'), providerId);
-    return snapshotName?.trim() || providerId;
+  const providerIdentity = (providerId: string | null | undefined, snapshotName: string | null | undefined) => {
+    const id = providerId?.trim() ?? '';
+    const live = id ? liveProviders.get(id) : undefined;
+    return providerAccountIdentity(live, locale, tKind('custom'), snapshotName?.trim() || id || '—');
   };
 
   const fetchData = async () => {
@@ -134,7 +135,9 @@ export default function ReliabilityPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {providers.map((p) => (
                   <tr key={p.provider_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{providerLabel(p.provider_id, p.provider_name)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      <ProviderAccountLines identity={providerIdentity(p.provider_id, p.provider_name)} />
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.request_count.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={successRateClassName(p.success_rate)}>
@@ -190,7 +193,9 @@ export default function ReliabilityPage() {
                   list.map((r) => (
                     <tr key={`${r.model_id}-${r.provider_id}`} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{modelId}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{providerLabel(r.provider_id, r.provider_name)}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <ProviderAccountLines identity={providerIdentity(r.provider_id, r.provider_name)} nameClassName="font-normal text-gray-700" />
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.request_count.toLocaleString()}</td>
                       <td className="px-4 py-3 text-sm">
                         <span className={successRateClassName(r.success_rate)}>
@@ -241,8 +246,11 @@ export default function ReliabilityPage() {
                   <tr key={log.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{formatDate(log.created_at)}</td>
                     <td className="px-4 py-3 text-sm">
-                      <div className="text-gray-900">{log.model_id ?? '—'}</div>
-                      <div className="text-xs text-gray-500">{log.provider_name ?? log.provider_id ?? '—'}</div>
+                      <div className="truncate text-gray-900">{log.model_id ?? '—'}</div>
+                      <ProviderAccountLines
+                        identity={providerIdentity(log.provider_id, log.provider_name)}
+                        nameClassName="text-xs font-normal text-gray-500"
+                      />
                     </td>
                     <td className="px-4 py-3 text-sm text-red-600 truncate max-w-xs" title={log.error_message ?? ''}>
                       {log.error_message || tCommon('unknownError')}
