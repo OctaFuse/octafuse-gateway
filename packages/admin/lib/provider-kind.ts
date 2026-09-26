@@ -51,6 +51,25 @@ export function formatProviderAccountLabel(name: string, kindLabel: string | nul
 	return `${account} · ${typeLabel}`;
 }
 
+export type ProviderAccountIdentity = {
+	name: string;
+	kind: string | null;
+	title: string;
+};
+
+/** 表格里的账号：别名在上，类型在下。类型与别名相同或尚未分类时不显示类型。 */
+export function providerAccountIdentity(
+	provider: { name?: string | null; kind?: string | null; kind_labels?: ProviderKindLabels | null } | null | undefined,
+	locale: string,
+	customLabel: string,
+	fallbackName = '',
+): ProviderAccountIdentity {
+	const name = provider?.name?.trim() || fallbackName.trim() || '—';
+	const kindLabel = provider ? providerKindDisplayLabel(provider, locale, customLabel) : null;
+	const kind = kindLabel && kindLabel.trim().toLowerCase() !== name.trim().toLowerCase() ? kindLabel : null;
+	return { name, kind, title: formatProviderAccountLabel(name === '—' ? '' : name, kindLabel) || name };
+}
+
 /** 选择列表：类型在前，别名在后。尚未分类或类型与别名相同时只显示别名。 */
 export function formatProviderPickerLabel(name: string, kindLabel: string | null | undefined): string {
 	const account = name.trim();

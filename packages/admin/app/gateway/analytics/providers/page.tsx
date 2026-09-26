@@ -7,6 +7,7 @@ import { Fragment, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
+import { ProviderAccountLines } from '@/components/ProviderAccountLines';
 import { AnalyticsTtftCell } from '@/components/AnalyticsTtftCell';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
@@ -23,7 +24,7 @@ import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
 import { cacheHitRateClassName, successRateClassName } from '@/lib/analytics-rate-style';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
-import { formatProviderAccountLabel, providerKindDisplayLabel } from '@/lib/provider-kind';
+import { providerAccountIdentity } from '@/lib/provider-kind';
 import type { ApiResponse, GatewayProvider, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
@@ -101,14 +102,9 @@ export default function ProviderUsagePage() {
   }, [providerCatalog]);
 
   /** 统计仍按 provider id。第一列别名在上、类型在下，不回退成 id。 */
-  const providerUsageIdentity = (row: ProviderUsageRow): { name: string; kind: string | null; title: string } => {
-    const fallbackName = row.provider_name?.trim() || '—';
+  const providerUsageIdentity = (row: ProviderUsageRow) => {
     const provider = providerById.get(row.provider_id);
-    const name = provider?.name?.trim() || fallbackName;
-    const kindLabel = provider ? providerKindDisplayLabel(provider, locale, tKind('custom')) : null;
-    const kind =
-      kindLabel && kindLabel.trim().toLowerCase() !== name.trim().toLowerCase() ? kindLabel : null;
-    return { name, kind, title: formatProviderAccountLabel(name, kindLabel) || name };
+    return providerAccountIdentity(provider, locale, tKind('custom'), row.provider_name?.trim() || '—');
   };
 
   const rangeTotals = useMemo(() => sumAnalyticsCosts(rows), [rows]);
@@ -301,14 +297,7 @@ export default function ProviderUsagePage() {
                           title={identity.title}
                         >
                           <span className="mt-0.5 w-4 shrink-0 text-gray-400">{isExpanded ? '▾' : '▸'}</span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium text-blue-600">{identity.name}</span>
-                            {identity.kind ? (
-                              <span className="mt-0.5 block truncate text-xs font-normal leading-4 text-slate-500">
-                                {identity.kind}
-                              </span>
-                            ) : null}
-                          </span>
+                          <ProviderAccountLines identity={identity} nameClassName="font-medium text-blue-600" />
                         </button>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
