@@ -1,5 +1,6 @@
 /**
- * Public model catalog discovery: active routes → supported protocols per route group.
+ * Public model catalog discovery: active routes → upstream protocols per route group,
+ * plus client inbound surfaces (protocol + operation).
  * Used by `GET /catalog/models` (no API key; sanitized, no provider secrets).
  */
 import {
@@ -19,6 +20,7 @@ import {
 	parseMetadata,
 	parseTags,
 } from '../lib/model-list-parse';
+import { collectInboundSurfaces, type InboundSurface } from './inbound-surfaces';
 import { buildModelDisplayDiscounts, loadPublicModelListContext } from './public-models';
 
 export type CatalogDiscoveryModel = {
@@ -33,6 +35,8 @@ export type CatalogDiscoveryModel = {
 	route_groups: string[];
 	protocols: UpstreamProtocol[];
 	protocols_by_group: Record<string, UpstreamProtocol[]>;
+	/** Client request entries (protocol + operation), same shape as `GET /v1/models` `inbound`. */
+	inbound: InboundSurface[];
 	recommended_protocol: UpstreamProtocol;
 	description: string | null;
 	input_modalities: string[] | null;
@@ -117,6 +121,7 @@ export async function listCatalogDiscoveryModels(
 		if (protocols.length === 0) {
 			continue;
 		}
+		const inbound = collectInboundSurfaces(routes, routeGroups);
 
 		const discounts = buildModelDisplayDiscounts({
 			model: m,
@@ -137,6 +142,7 @@ export async function listCatalogDiscoveryModels(
 			discounts,
 			protocols,
 			protocols_by_group: protocolsByGroup,
+			inbound,
 			recommended_protocol: resolveRecommendedProtocol(protocols),
 			description: m.description,
 			input_modalities: parseModelModalitiesJson(m.input_modalities),

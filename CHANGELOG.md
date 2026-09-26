@@ -4,6 +4,8 @@
 
 ### Minor Changes
 
+- **公开模型目录请求入口**：`GET /catalog/models` 增加 `inbound`，形状与 `GET /v1/models` 的 `model_info.inbound` 相同，按可见路由聚合客户端可调用的协议和 operation。`protocols` 仍是上游协议。
+- **图像编辑请求入口**：`inbound` 在命中可见路由时包含 `images.edits`（`POST /v1/images/edits`），与 `images.generations` 分开列出。`GET /v1/models` 与 `GET /catalog/models` 使用同一份聚合。
 - **路由搜索与展示密度**：Routes 可按模型、上游模型或供应商搜索，多个词需同时命中，关键词写入地址栏 `q`。工作区可在「精简」和「详细」之间切换：精简默认收起各优先级，详细展开路由。选择记在本机，刷新后保留；未选择时为详细。
 - **供应商额度**：Providers 卡片对已配置密钥、且类型支持额度查询的账号提供「查询额度」。按 `providers.kind` 用现有 API Key 实时请求 DeepSeek、Moonshot、SiliconFlow（含国际站）、OpenRouter、Novita、DeepInfra、阶跃星辰、Vercel AI Gateway 的余额，以及 OpenCode Go、MiniMax Token Plan、智谱 GLM Coding Plan、Z.AI GLM Coding Plan 的周期额度，结果不落库。Kimi Code 暂无稳定公开的额度契约；需要另一把管理密钥的渠道不提供查询。
 - **模型列表 RPM 豁免**：`GET /v1/models` 与 `GET /v1/me` 一样，不再计入 API Key 与用户合计 RPM。周期额度或永久额度用尽时仍可拉取模型列表。
