@@ -802,7 +802,18 @@
 			"badgeScheduleBothTooltip": "청구 시간대: {charged} · 비용 시간대: {metered}",
 			"providerDisabled": "공급자 중지",
 			"editRoute": "이 라우트 편집",
-			"stickyBoundUsersTooltip": "이 공급자의 Sticky 유효 사용자 수: {count}"
+			"stickyBoundUsersTooltip": "이 공급자의 Sticky 유효 사용자 수: {count}",
+			"stickyUsage": {
+				"label": "Sticky 바인딩 사용자",
+				"share": "풀 내 {percent}",
+				"shareLabel": "이 풀의 Sticky 바인딩 비율",
+				"empty": "바인딩 없음",
+				"unavailable": "데이터 미확인",
+				"retained": "비활성화 후 바인딩 유지",
+				"off": "Sticky 꺼짐",
+				"offTooltip": "이 풀은 Sticky가 꺼져 있어 바인딩 사용자를 집계하지 않습니다.",
+				"tooltip": "이 라우트 풀의 만료되지 않은 Sticky 사용자 수입니다. 막대는 풀 내 비율이며 실시간 동시 접속 수나 요청량이 아닙니다."
+			}
 		},
 		"vendor": {
 			"label": "Vendor",

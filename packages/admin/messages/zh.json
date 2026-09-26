@@ -802,7 +802,18 @@
 			"badgeScheduleBothTooltip": "计费时段：{charged} · 成本时段：{metered}",
 			"providerDisabled": "供应商停用",
 			"editRoute": "编辑此路由",
-			"stickyBoundUsersTooltip": "此供应商当前 Sticky 有效用户数：{count}"
+			"stickyBoundUsersTooltip": "此供应商当前 Sticky 有效用户数：{count}",
+			"stickyUsage": {
+				"label": "粘性绑定用户",
+				"share": "组内占比 {percent}",
+				"shareLabel": "本路由组内的粘性绑定占比",
+				"empty": "暂无绑定",
+				"unavailable": "数据未就绪",
+				"retained": "停用后仍有绑定",
+				"off": "粘性未开启",
+				"offTooltip": "此路由组未开启粘性，不统计绑定用户。",
+				"tooltip": "统计本路由组内未过期的粘性绑定用户；横条表示组内占比。绑定人数不代表实时并发或请求量。"
+			}
 		},
 		"vendor": {
 			"label": "模型厂商",

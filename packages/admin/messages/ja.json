@@ -802,7 +802,18 @@
 			"badgeScheduleBothTooltip": "課金時間帯：{charged} · 原価時間帯：{metered}",
 			"providerDisabled": "プロバイダー停止中",
 			"editRoute": "このルートを編集",
-			"stickyBoundUsersTooltip": "このプロバイダーの Sticky 有効ユーザー数：{count}"
+			"stickyBoundUsersTooltip": "このプロバイダーの Sticky 有効ユーザー数：{count}",
+			"stickyUsage": {
+				"label": "Sticky 紐付けユーザー",
+				"share": "プール内 {percent}",
+				"shareLabel": "このプール内の Sticky 紐付け割合",
+				"empty": "紐付けなし",
+				"unavailable": "データ未取得",
+				"retained": "無効化後も紐付けあり",
+				"off": "Sticky 無効",
+				"offTooltip": "このプールでは Sticky が無効のため、紐付け数を集計しません。",
+				"tooltip": "このルートプール内の有効期限内の Sticky ユーザー数。バーはプール内の割合を示し、同時接続数やリクエスト数ではありません。"
+			}
 		},
 		"vendor": {
 			"label": "ベンダー",
