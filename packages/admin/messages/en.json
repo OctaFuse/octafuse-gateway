@@ -802,7 +802,18 @@
 			"badgeScheduleBothTooltip": "Charged schedule: {charged} · Metered schedule: {metered}",
 			"providerDisabled": "Provider off",
 			"editRoute": "Edit this route",
-			"stickyBoundUsersTooltip": "Active sticky users on this provider: {count}"
+			"stickyBoundUsersTooltip": "Active sticky users on this provider: {count}",
+			"stickyUsage": {
+				"label": "Sticky users",
+				"share": "{percent} of pool",
+				"shareLabel": "Share of sticky users in this pool",
+				"empty": "No bindings",
+				"unavailable": "Data unavailable",
+				"retained": "Bindings retained while disabled",
+				"off": "Sticky routing off",
+				"offTooltip": "Sticky routing is off for this pool; binding counts are not tracked.",
+				"tooltip": "Unexpired sticky users in this route pool. The bar shows the share of pool bindings, not live concurrency or request volume."
+			}
 		},
 		"vendor": {
 			"label": "Vendor",

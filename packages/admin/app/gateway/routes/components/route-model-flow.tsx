@@ -4,13 +4,11 @@ import { useMemo, useState, type KeyboardEvent } from 'react';
 import {
 	ArrowDownIcon,
 	ArrowLongRightIcon,
-	CheckIcon,
 	ChevronDownIcon,
 	ClipboardDocumentIcon,
 	ClockIcon,
 	ExclamationTriangleIcon,
 	PencilSquareIcon,
-	PauseIcon,
 	PlusIcon,
 	PowerIcon,
 	UsersIcon,
@@ -57,6 +55,7 @@ import {
 } from '../types';
 import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
+import { RouteStickyUsage } from './route-sticky-usage';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
 
@@ -145,13 +144,17 @@ function RouteTarget({
 	route,
 	provider,
 	stickyBindingCount,
+	stickyEnabled,
+	stickyTotal,
 	togglingId,
 	onEdit,
 	onToggleStatus,
 }: {
 	route: RouteListRow;
 	provider: GatewayProvider | undefined;
-	stickyBindingCount: number;
+	stickyBindingCount: number | null;
+	stickyEnabled: boolean;
+	stickyTotal: number | null;
 	togglingId: string | null;
 	onEdit: (route: RouteListRow) => void;
 	onToggleStatus: (route: RouteListRow) => void;
@@ -225,19 +228,12 @@ function RouteTarget({
 							{showKind ? kindLabel : null}
 						</span>
 					</button>
-					<button
-						type="button"
-						onClick={() => onToggleStatus(route)}
-						disabled={togglingId === route.id}
-						aria-pressed={enabled}
-						className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${
-							enabled ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-						}`}
-						title={enabled ? tList('routeEnabled') : tList('routeDisabled')}
-						aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
-					>
-						<PowerIcon className="h-3.5 w-3.5" aria-hidden />
-					</button>
+					<RouteStickyUsage
+						enabled={stickyEnabled}
+						count={stickyBindingCount}
+						total={stickyTotal}
+						routeAvailable={enabled && !providerDisabled}
+					/>
 				</div>
 				<button
 					type="button"
@@ -249,21 +245,24 @@ function RouteTarget({
 					{route.provider_model_name}
 				</button>
 				<div className="mt-2.5 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4">
-					<span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold ${enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-600 text-white'}`}>
-						{enabled ? <CheckIcon className="h-3 w-3" aria-hidden /> : <PauseIcon className="h-3 w-3" aria-hidden />}
+					<button
+						type="button"
+						onClick={() => onToggleStatus(route)}
+						disabled={togglingId === route.id}
+						aria-pressed={enabled}
+						className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${enabled ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
+						title={enabled ? tList('routeEnabled') : tList('routeDisabled')}
+						aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
+					>
+						<PowerIcon className="h-3 w-3" aria-hidden />
 						{enabled ? t('enabledShort') : t('disabledShort')}
-					</span>
+					</button>
 					<span className="tabular-nums text-slate-600" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
 						{t('targetWeight', { value: route.weight ?? 1 })}
 					</span>
 					{route.custom_params ? (
 						<span className="rounded bg-slate-100 px-1.5 text-slate-500" title={routeHasCustomParamsForceOverride(route.custom_params) ? t('badgeParamsForceOverrideTooltip') : t('badgeParamsTooltip')}>
 							{t('targetParams')}
-						</span>
-					) : null}
-					{stickyBindingCount > 0 ? (
-						<span className="ml-auto inline-flex items-center gap-1 tabular-nums text-orange-700" title={t('stickyBoundUsersTooltip', { count: stickyBindingCount })} aria-label={t('stickyBoundUsersTooltip', { count: stickyBindingCount })}>
-							<UsersIcon className="h-3 w-3" aria-hidden />{stickyBindingCount}
 						</span>
 					) : null}
 				</div>
@@ -594,6 +593,7 @@ function PriorityTierPanel({
 	providerMeta,
 	globalRouteStrategy,
 	stickyCountsByTarget,
+	stickyTotal,
 	togglingId,
 	onEdit,
 	onToggleStatus,
@@ -611,6 +611,7 @@ function PriorityTierPanel({
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
 	stickyCountsByTarget: Map<string, number>;
+	stickyTotal: number | null;
 	togglingId: string | null;
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
@@ -769,6 +770,12 @@ function PriorityTierPanel({
 								aria-hidden
 							/>
 							<span className="min-w-0 truncate">{item.name}</span>
+							{section.poolStickyEnabled ? (
+								<span className={`inline-flex shrink-0 items-center gap-1 border-l pl-1.5 tabular-nums ${(stickyCountsByTarget.get(item.id) ?? 0) > 0 ? 'border-indigo-200 text-indigo-700' : 'border-slate-300 text-slate-500'}`} title={stickyTotal == null ? t('stickyUsage.unavailable') : t('stickyBoundUsersTooltip', { count: stickyCountsByTarget.get(item.id) ?? 0 })}>
+									<UsersIcon className="h-3 w-3" aria-hidden />
+									{stickyTotal == null ? '—' : (stickyCountsByTarget.get(item.id) ?? 0).toLocaleString(locale)}
+								</span>
+							) : null}
 						</span>
 					))}
 					{summary.previewItems.length === 0 ? (
@@ -784,7 +791,9 @@ function PriorityTierPanel({
 							key={route.id}
 							route={route}
 							provider={providerMeta.get(route.provider_id)}
-							stickyBindingCount={stickyCountsByTarget.get(route.id) ?? 0}
+							stickyBindingCount={stickyTotal == null ? null : stickyCountsByTarget.get(route.id) ?? 0}
+							stickyEnabled={section.poolStickyEnabled}
+							stickyTotal={stickyTotal}
 							togglingId={togglingId}
 							onEdit={onEdit}
 							onToggleStatus={onToggleStatus}
@@ -911,6 +920,7 @@ export function UpstreamPoolPanel({
 							providerMeta={providerMeta}
 							globalRouteStrategy={globalRouteStrategy}
 							stickyCountsByTarget={stickyCountsByTarget}
+							stickyTotal={stickySummary?.total_active ?? null}
 							togglingId={togglingId}
 							onEdit={onEdit}
 							onToggleStatus={onToggleStatus}
