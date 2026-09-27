@@ -444,7 +444,12 @@ export interface ModelUsageRow extends AnalyticsRowCosts {
   content_ttft_rate: number;
   avg_upstream_response_ms: number | null;
   tokens_per_second: number | null;
+  stream_tokens_per_second?: number | null;
+  stream_sample_count?: number;
   failover_rate: number;
+  /** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
+  failover_request_count?: number;
+  failover_request_rate?: number;
   avg_attempts: number | null;
   avg_charged_per_request: number;
 }
@@ -472,7 +477,12 @@ export interface ProviderUsageRow extends AnalyticsRowCosts {
   content_ttft_rate: number;
   avg_upstream_response_ms: number | null;
   tokens_per_second: number | null;
+  stream_tokens_per_second?: number | null;
+  stream_sample_count?: number;
   failover_rate: number;
+  /** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
+  failover_request_count?: number;
+  failover_request_rate?: number;
   avg_attempts: number | null;
   avg_charged_per_request: number;
 }
@@ -490,6 +500,7 @@ export interface UserUsageRow extends AnalyticsRowCosts {
   wallet_granted?: number | null;
   wallet_spent?: number | null;
   budget_usage_rate: number | null;
+  success_count?: number;
   success_rate: number;
   error_count: number;
 }
@@ -505,6 +516,9 @@ export interface ProviderReliabilityRow extends AnalyticsRowCosts {
   avg_latency_ms: number | null;
   avg_upstream_response_ms: number | null;
   failover_rate: number;
+  /** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
+  failover_request_count?: number;
+  failover_request_rate?: number;
   avg_attempts: number | null;
 }
 
@@ -518,6 +532,9 @@ export interface ModelProviderRow extends AnalyticsRowCosts {
   avg_latency_ms: number | null;
   avg_upstream_response_ms: number | null;
   failover_rate: number;
+  /** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
+  failover_request_count?: number;
+  failover_request_rate?: number;
   avg_attempts: number | null;
 }
 

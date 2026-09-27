@@ -11,7 +11,7 @@ const START = '2026-09-01 00:00:00';
 const END = '2026-09-02 00:00:00';
 const AT = '2026-09-01 12:00:00';
 
-function createAnalyticsDb() {
+function createAnalyticsDb(setup?: (sqlite: DatabaseSync) => void) {
 	const sqlite = new DatabaseSync(':memory:');
 	sqlite.exec(`
 		CREATE TABLE providers (id TEXT PRIMARY KEY, name TEXT);
@@ -20,6 +20,7 @@ function createAnalyticsDb() {
 			provider_id TEXT,
 			provider_name TEXT,
 			model_id TEXT,
+            route_group TEXT DEFAULT 'default',
 			created_at TEXT,
 			charged_cost REAL DEFAULT 0,
 			metered_cost REAL DEFAULT 0,
@@ -48,6 +49,7 @@ function createAnalyticsDb() {
 	insert.run('blank-name-log', 'gone-noname', '', 'model-a', AT);
 	insert.run('tools-log', 'octafuse-tools', 'OctaFuse Tools', 'tool:web-search', AT);
 	insert.run('empty-provider-log', '', '', 'model-a', AT);
+	setup?.(sqlite);
 	const raw = {
 		prepare(sql: string) {
 			return {
@@ -90,4 +92,48 @@ describe('provider analytics name fallback', () => {
 		assert.equal(models.find((row) => row.provider_id === 'gone')?.provider_name, 'Deleted Snapshot');
 		assert.equal(models.some((row) => row.provider_id === ''), false);
 	});
+});
+
+
+describe('analytics sampled quality metrics', () => {
+  it('keeps legacy fields while bounding request failover share and excluding non-stream/error tokens', async () => {
+    const analytics = createAnalyticsDb(sqlite => {
+      sqlite.exec(`DELETE FROM api_key_request_logs;
+        INSERT INTO api_key_request_logs
+          (id, provider_id, model_id, created_at, status, output_tokens, stream_duration_ms, upstream_failover_count)
+        VALUES
+          ('stream', 'live', 'model-a', '${AT}', 'success', 100, 2000, 4),
+          ('nonstream', 'live', 'model-a', '${AT}', 'success', 9000, NULL, 0),
+          ('failed', 'live', 'model-a', '${AT}', 'error', 800, 1000, 0);`);
+    });
+    for (const rows of [
+      await analytics.queryModelAnalytics({ start: START, end: END }),
+      await analytics.queryProviderAnalytics({ start: START, end: END }),
+    ]) {
+      const row = rows[0];
+      assert.equal(row.request_count, 3);
+      assert.equal(row.output_tokens, 9900);
+      assert.equal(row.tokens_per_second, 3300); // legacy contract
+      assert.equal(row.stream_tokens_per_second, 50);
+      assert.equal(row.stream_sample_count, 1);
+      assert.equal(row.failover_request_count, 1);
+      assert.equal(row.failover_request_rate, 100 / 3);
+      assert.equal(row.failover_rate, 400 / 3); // legacy event rate retained
+    }
+    for (const rows of [
+      await analytics.queryProviderReliability({ start: START, end: END }),
+      await analytics.queryModelProviderReliability({ start: START, end: END }),
+    ]) {
+      assert.equal(rows[0].failover_request_count, 1);
+      assert.equal(rows[0].failover_request_rate, 100 / 3);
+    }
+  });
+
+  it('returns null speed without positive measured successful stream durations', async () => {
+    const analytics = createAnalyticsDb();
+    const rows = await analytics.queryProviderAnalytics({ start: START, end: END });
+    assert.ok(rows.every(r => r.stream_tokens_per_second === null && r.stream_sample_count === 0));
+    assert.ok(rows.every(r => r.failover_request_rate === 0));
+    assert.deepEqual(await analytics.queryModelAnalytics({ start: END, end: END }), []);
+  });
 });

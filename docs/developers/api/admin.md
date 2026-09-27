@@ -1027,7 +1027,7 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 
 响应：`{ success, data: [...], tags: string[] }`（`tags` 为库内全部 distinct 标签，供筛选 UI）。
 
-`data` 每行除用量/成本/可靠性字段外，含 TTFT 聚合（来自 `api_key_request_logs.first_reasoning_token_ms` / `first_token_ms`）：
+`data` 每行除用量、成本与可靠性字段外，含缓存、TTFT 与质量聚合。TTFT 来自 `api_key_request_logs.first_reasoning_token_ms` / `first_token_ms`：
 
 | 字段 | 说明 |
 |------|------|
@@ -1039,6 +1039,12 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 | `avg_reasoning_phase_ms` | reasoning → content 过渡阶段平均时长（两者均非空时） |
 | `reasoning_ttft_rate` | 含 reasoning TTFT 的请求占比（%） |
 | `content_ttft_rate` | 含 content TTFT 的请求占比（%） |
+| `failover_request_count` | `upstream_failover_count > 0` 的请求数 |
+| `failover_request_rate` | 上述请求数 / 总请求数 × 100，范围 0–100% |
+| `stream_sample_count` | `status = success` 且 `stream_duration_ms > 0` 的样本数 |
+| `stream_tokens_per_second` | 仅在上述样本上计算 `SUM(output_tokens) * 1000 / SUM(stream_duration_ms)`；无样本为 `null` |
+
+`failover_rate` 仍是转移事件数 / 请求数 × 100，可能超过 100%。`tokens_per_second` 仍按全部有流式时长的请求聚合。新接入方应使用上表中的请求占比和流式样本字段。D1、Postgres 与 MySQL 口径一致。
 
 ### `GET /admin/analytics/providers`
 
@@ -1048,7 +1054,7 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 | `tag` | 可选；非空时只统计带该 `model_tags.tag` 的模型 |
 | `model_id` / `route_group` | 可选；钻取过滤 |
 
-响应：`{ success, data: [...], tags: string[] }`；`data` 行字段与 **models** 分析相同（含上表 TTFT 聚合列），按 `provider_id` 分组。
+响应：`{ success, data: [...], tags: string[] }`；`data` 行字段与 **models** 分析相同（含上表 TTFT 与质量字段），按最终 `provider_id` 分组。未归属供应商的请求不计入；重试链中的前序失败也不拆成独立样本，因此这里的成功率不是上游逐次尝试可用率。
 
 ### `GET /admin/analytics/users`
 
@@ -1056,6 +1062,8 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 |----------|------|
 | `start_date` / `end_date` | 同上 |
 | `email` | 可选，`user_email` **模糊**匹配（`LIKE %...%`） |
+
+`data` 另含 `success_count`（`status = success` 的请求数）。`budget_*` 与 `wallet_*` 是账户当前值，不是所选区间的历史余额。用户按日志中的 `user_email` 聚合。
 
 ### `GET /admin/analytics/keys`
 
@@ -1075,3 +1083,7 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 | `start_date` / `end_date` | 同上 |
 
 响应 `data`：`providers`（按 `provider_id`）、`modelProviders`（按 `model_id` + `provider_id`）、`recentErrors`。
+
+`providers` 与 `modelProviders` 另含 `failover_request_count`、`failover_request_rate`；`failover_rate` 含义不变。归属规则与供应商用量相同：按日志最终 `provider_id` 统计，不代表上游逐次尝试可用率。
+
+`recentErrors` 为所选区间（仍受 180 天上限约束）内最近 10 条 `status = error` 日志，字段与全局请求日志相同。

@@ -1943,7 +1943,7 @@
 		"deletedProvider": "삭제됨",
 		"userUsage": {
 			"title": "사용자 사용량",
-			"subtitle": "요청 로그 이메일별 사용량과 비용입니다. 예산 열은 users에서 가져옵니다(user_id로 JOIN)."
+			"subtitle": "선택 기간의 이메일별 사용량과 비용 및 현재 계정 예산입니다."
 		},
 		"reliability": {
 			"title": "안정성",
@@ -1985,7 +1985,9 @@
 			"budgetUsage": "주기 예산 사용량",
 			"wallet": "월렛",
 			"errors": "오류",
-			"modelProvider": "모델 / Provider"
+			"modelProvider": "모델 / Provider",
+			"providerKind": "공급자 유형",
+			"providerAccount": "공급자 계정"
 		},
 		"loadingProviderUsage": "Provider 사용량 불러오는 중...",
 		"noProviderUsageForModel": "선택한 기간에 이 모델의 Provider 사용량이 없습니다.",
@@ -2003,6 +2005,50 @@
 			"label": "Token 표시",
 			"compact": "간략히 (K/M/B)",
 			"numeric": "숫자"
+		},
+		"insights": {
+			"summary": "필터 범위 요약",
+			"requests": "요청 수",
+			"successRate": "전체 성공률",
+			"errors": "실패 요청",
+			"charged": "청구액",
+			"metered": "측정 비용",
+			"margin": "청구액 − 비용",
+			"definitions": "집계 범위 및 지표 정의",
+			"costNote": "표준 가격 합계: {standard}. 차액은 기록된 청구와 비용의 차이이며 인프라 비용과 세금 등은 제외합니다.",
+			"qualityNote": "성공률은 요청 수로 가중합니다. 장애 조치 비율은 한 번 이상 전환된 요청의 비율(0–100%)입니다. 생성 속도는 성공하고 유효한 스트림 시간이 있는 샘플만 사용하며 미측정 값은 — 로 표시합니다. 캐시 적중률은 캐시 읽기 토큰 / 입력 토큰입니다. 평균 지연 시간에는 실패와 취소를 포함한 모든 측정 요청이 포함됩니다.",
+			"budgetNote": "예산과 지갑은 현재 상태이며 선택한 기간의 과거 잔액이 아닙니다. 사용자는 로그 이메일로 집계합니다.",
+			"search": "모델, 공급자 또는 이메일 검색",
+			"view": "분석 보기",
+			"matching": "{count}개 행 · 요약 및 CSV에 필터 적용",
+			"loadError": "분석을 불러오지 못했습니다. 다시 시도하세요.",
+			"retry": "재시도",
+			"detailError": "상세 정보를 불러오지 못했습니다. 행을 접었다가 다시 펼치세요.",
+			"scope": {
+				"models": "선택한 기간의 모델 및 라우트 그룹별 집계입니다. 모델이 없는 요청은 제외합니다.",
+				"providers": "로그의 최종 공급자에 귀속됩니다. 앞선 실패 시도는 개별 샘플이 아니며 상위 시도의 가용성을 나타내지 않습니다. 공급자가 없는 요청은 제외합니다.",
+				"users": "선택한 기간의 로그 이메일별 집계입니다. 이메일이 없는 요청은 제외합니다.",
+				"reliability": "각 상위 시도가 아닌 최종 요청 결과입니다. 실패 수, 요청 수 순으로 정렬합니다. 적은 샘플에는 추가 관찰이 필요합니다."
+			},
+			"views": {
+				"overview": "개요",
+				"cost": "비용 및 사용량",
+				"performance": "성능 및 품질",
+				"budget": "현재 예산",
+				"all": "모든 지표"
+			},
+			"lowSample": "적은 샘플 (<20)",
+			"rangeErrors": "선택한 기간의 최근 오류",
+			"failoverShare": "전환 요청 비율",
+			"streamSpeed": "스트림 Token/초",
+			"outcomes": "성공 {success} · 실패 {errors} · 미완료 / 취소 {other}",
+			"streamSamples": "측정 스트림 {count}개"
+		},
+		"providerDimensions": {
+			"all": "모든 유형",
+			"unknown": "알 수 없는 유형",
+			"gatewayTools": "게이트웨이 도구",
+			"noMatchingKind": "선택한 유형의 데이터 없음"
 		}
 	},
 	"adminApiKeys": {
@@ -2025,7 +2071,10 @@
 		"activate": "활성화",
 		"deactivate": "폐기",
 		"empty": "통합 키가 없습니다",
-		"status": { "active": "활성", "revoked": "폐기됨" }
+		"status": {
+			"active": "활성",
+			"revoked": "폐기됨"
+		}
 	},
 	"config": {
 		"title": "시스템 설정",

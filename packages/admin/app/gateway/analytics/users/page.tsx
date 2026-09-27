@@ -3,21 +3,17 @@
 /**
  * 用户（邮箱）用量分析：预算占用、成功率等；支持 CSV 导出。
  */
-import { Fragment, useState, useEffect, useMemo } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { AnalyticsRangeCostTotals } from '@/components/AnalyticsRangeCostTotals';
+import { AnalyticsInsights, AnalyticsControls, AnalyticsLoadError } from '@/components/AnalyticsInsights';
+import { analyticsColumnVisible, type AnalyticsView } from '@/lib/analytics-insights';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
+import { useAnalyticsRange } from '@/lib/use-analytics-range';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { readApiJson, readJson } from '@/lib/api-json';
-import {
-  compareAnalyticsTableRows,
-  createRangeValue,
-  DEFAULT_GATEWAY_TIME_RANGE_PRESET,
-  sumAnalyticsCosts,
-  type GatewayTimeRangeValue,
-} from '@/lib/analytics-range';
+import { compareAnalyticsTableRows } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
 import { successRateClassName } from '@/lib/analytics-rate-style';
@@ -35,9 +31,15 @@ export default function UserUsagePage() {
   const tA = useTranslations('analytics');
   const tCommon = useTranslations('common');
   const [rows, setRows] = useState<UserUsageRow[]>([]);
+  const [search, setSearch] = useState('');
+  const [view, setView] = useState<AnalyticsView>('overview');
+  const [detailError, setDetailError] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [refresh, setRefresh] = useState(0);
+  const queryGeneration = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
-  const [committedQuery, setCommittedQuery] = useState(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
+  const [rangeValue, setRangeValue] = useAnalyticsRange();
+  const [committedQuery, setCommittedQuery] = useState(rangeValue);
   const [sortKey, setSortKey] = useState<SortKey>('request_count');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
@@ -48,13 +50,20 @@ export default function UserUsagePage() {
   const { formatDateTime } = useGatewayDateTime();
 
   useEffect(() => {
+    const controller = new AbortController();
+    queryGeneration.current += 1;
     const run = async () => {
       setIsLoading(true);
+      setLoadError(false);
+      setDetailError(false);
+      setRows([]);
       try {
         const { start_date, end_date } = rangeValue;
         const params = new URLSearchParams({ start_date, end_date });
-        const response = await fetch(`/api/admin/analytics/users?${params.toString()}`);
+        const response = await fetch(`/api/admin/analytics/users?${params.toString()}`, { signal: controller.signal });
         const data = await readApiJson<UserUsageRow[]>(response);
+        if (controller.signal.aborted) return;
+        if (!response.ok || !data.success) throw new Error(data.message);
         if (data.success) {
           setRows(data.data ?? []);
           setCommittedQuery(rangeValue);
@@ -63,20 +72,20 @@ export default function UserUsagePage() {
           setModelRowsLoading({});
         }
       } catch (e) {
+        if (controller.signal.aborted) return;
+        setLoadError(true);
         console.error('Fetch user usage error:', e);
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     };
-    run();
-  }, [rangeValue]);
+    void run();
+    return () => { controller.abort(); queryGeneration.current += 1; };
+  }, [rangeValue, refresh]);
 
-  const rangeTotals = useMemo(() => sumAnalyticsCosts(rows), [rows]);
+  const filteredRows = rows.filter(r => [r.user_email].some(value => value?.toLowerCase().includes(search.trim().toLowerCase())));
 
-  const sorted = useMemo(() => {
-    if (!sortKey) return rows;
-    return [...rows].sort((a, b) => compareAnalyticsTableRows(a, b, sortKey, sortDir));
-  }, [rows, sortKey, sortDir]);
+  const sorted = [...filteredRows].sort((a, b) => compareAnalyticsTableRows(a, b, sortKey, sortDir));
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -97,24 +106,28 @@ export default function UserUsagePage() {
     if (isCurrentlyExpanded || modelRowsByUser[userEmail] || modelRowsLoading[userEmail]) return;
 
     setModelRowsLoading((prev) => ({ ...prev, [userEmail]: true }));
+    setDetailError(false);
+    const generation = queryGeneration.current;
     try {
       const { start_date, end_date } = committedQuery;
       const params = new URLSearchParams({ start_date, end_date, user_email: userEmail });
       const response = await fetch(`/api/admin/analytics/models?${params.toString()}`);
       const data = await readJson<ApiResponse<ModelUsageRow[]>>(response);
+      if (generation !== queryGeneration.current) return;
+      if (!response.ok || !data.success) throw new Error(data.message);
       if (data.success) {
         setModelRowsByUser((prev) => ({ ...prev, [userEmail]: data.data ?? [] }));
       }
     } catch (e) {
       console.error('Fetch user model usage error:', e);
-      setModelRowsByUser((prev) => ({ ...prev, [userEmail]: [] }));
+      if (generation === queryGeneration.current) setDetailError(true);
     } finally {
-      setModelRowsLoading((prev) => ({ ...prev, [userEmail]: false }));
+      if (generation === queryGeneration.current) setModelRowsLoading((prev) => ({ ...prev, [userEmail]: false }));
     }
   };
 
   const Th = ({ label, columnKey }: { label: string; columnKey: SortKey }) => (
-    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+    <th hidden={!analyticsColumnVisible(columnKey, view)} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
       <button type="button" onClick={() => toggleSort(columnKey)} className="hover:text-gray-700">
         {label} {sortKey === columnKey && (sortDir === 'asc' ? '↑' : '↓')}
       </button>
@@ -180,17 +193,20 @@ export default function UserUsagePage() {
         <AnalyticsTokenDisplayPicker value={tokenDisplayMode} onChange={setTokenDisplayMode} />
       </div>
 
+      {loadError && <AnalyticsLoadError onRetry={() => setRefresh(n => n + 1)} />}
+      {detailError && <p role="alert" className="mb-3 text-sm text-red-600">{tA('insights.detailError')}</p>}
+      {!isLoading && !loadError && <AnalyticsInsights rows={filteredRows} currency={billingCurrency} scope="users" />}
+      <AnalyticsControls search={search} onSearch={setSearch} view={view} onView={setView} count={filteredRows.length} users={true} />
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 flex flex-wrap justify-between items-center gap-x-4 gap-y-2 text-sm">
           <button
             type="button"
             onClick={exportCsv}
-            disabled={isLoading}
+            disabled={isLoading || loadError || sorted.length === 0}
             className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {tCommon('exportCsv')}
           </button>
-          <AnalyticsRangeCostTotals isLoading={isLoading} totals={rangeTotals} billingCurrency={billingCurrency} />
         </div>
         <div className="overflow-x-auto">
           <table className="admin-data-table min-w-full divide-y divide-gray-200">
@@ -228,7 +244,7 @@ export default function UserUsagePage() {
                       className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'bg-blue-50/40' : budgetCritical ? 'bg-red-50' : budgetHigh ? 'bg-yellow-50' : ''}`}
                       onClick={() => void toggleUserModels(r.user_email)}
                     >
-                      <td className="px-4 py-3 text-sm">
+                      <td hidden={!analyticsColumnVisible("user_email", view)} className="px-4 py-3 text-sm">
                         <button
                           type="button"
                           className="inline-flex items-center gap-2 text-left font-medium text-blue-600 hover:text-blue-800"
@@ -244,21 +260,21 @@ export default function UserUsagePage() {
                           </Link>
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
-                      <td className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                      <td hidden={!analyticsColumnVisible("request_count", view)} className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}{r.request_count < 20 && <span className="mt-1 block whitespace-nowrap text-xs text-amber-700">{tA('insights.lowSample')}</span>}</td>
+                      <td hidden={!analyticsColumnVisible("input_tokens", view)} className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
+                      <td hidden={!analyticsColumnVisible("output_tokens", view)} className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
+                      <td hidden={!analyticsColumnVisible("standard_cost", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                         {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                      <td hidden={!analyticsColumnVisible("charged_cost", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                         {formatGatewayMoneyCode(r.charged_cost, billingCurrency, 4)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">
+                      <td hidden={!analyticsColumnVisible("metered_cost", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">
                         {formatGatewayMoneyCode(r.metered_cost, billingCurrency, 4)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.distinct_models}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{formatDate(r.last_active_at)}</td>
-                      <td className="px-4 py-3 text-sm">
+                      <td hidden={!analyticsColumnVisible("distinct_models", view)} className="px-4 py-3 text-sm text-gray-600">{r.distinct_models}</td>
+                      <td hidden={!analyticsColumnVisible("last_active_at", view)} className="px-4 py-3 text-sm text-gray-600">{formatDate(r.last_active_at)}</td>
+                      <td hidden={!analyticsColumnVisible("budget_usage_rate", view)} className="px-4 py-3 text-sm">
                         {r.budget_usage_rate != null ? (
                           <span className={budgetCritical ? 'text-red-600 font-medium' : budgetHigh ? 'text-yellow-600' : 'text-gray-600'}>
                             {r.budget_usage_rate.toFixed(1)}%
@@ -267,10 +283,10 @@ export default function UserUsagePage() {
                           tCommon('noData')
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm tabular-nums text-gray-600">
+                      <td hidden={!analyticsColumnVisible("wallet_granted", view)} className="px-4 py-3 text-sm tabular-nums text-gray-600">
                         {formatGatewayMoneyCode(Number(r.wallet_granted ?? 0) - Number(r.wallet_spent ?? 0), billingCurrency, 2)}
                       </td>
-                      <td className="px-4 py-3 text-sm">
+                      <td hidden={!analyticsColumnVisible("success_rate", view)} className="px-4 py-3 text-sm">
                         <span className={successRateClassName(r.success_rate)}>
                           {r.success_rate.toFixed(1)}%
                         </span>
@@ -278,7 +294,7 @@ export default function UserUsagePage() {
                     </tr>
                     {isExpanded ? (
                       <tr key={`${r.user_email}:models`} className="bg-blue-50/60">
-                        <td colSpan={12} className="border-l-4 border-blue-300 px-5 py-4">
+                        <td colSpan={["user_email", "request_count", "input_tokens", "output_tokens", "standard_cost", "charged_cost", "metered_cost", "distinct_models", "last_active_at", "budget_usage_rate", "wallet_granted", "success_rate"].filter(key => analyticsColumnVisible(key, view)).length} className="border-l-4 border-blue-300 px-5 py-4">
                           {isModelRowsLoading ? (
                             <div className="py-4 text-sm text-gray-500">{tA('loadingModelUsage')}</div>
                           ) : modelRows.length === 0 ? (
@@ -357,7 +373,7 @@ export default function UserUsagePage() {
             </tbody>
           </table>
         </div>
-        {sorted.length === 0 && !isLoading && <div className="text-center py-12 text-gray-500">{tA('noData')}</div>}
+        {sorted.length === 0 && !isLoading && !loadError && <div className="text-center py-12 text-gray-500">{tA('noData')}</div>}
         {isLoading && <div className="text-center py-12 text-gray-500">{tCommon('loading')}</div>}
       </div>
     </div>

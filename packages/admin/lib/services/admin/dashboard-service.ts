@@ -662,7 +662,11 @@ export async function getModelAnalyticsService(
 			...mapAnalyticsTtftFields(r),
 			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
 			tokens_per_second: r.tokens_per_second != null ? Number(r.tokens_per_second) : null,
+			stream_tokens_per_second: r.stream_tokens_per_second != null ? Number(r.stream_tokens_per_second) : null,
+			stream_sample_count: Number(r.stream_sample_count ?? 0),
 			failover_rate: Number(r.failover_rate ?? 0),
+			failover_request_count: Number(r.failover_request_count ?? 0),
+			failover_request_rate: Number(r.failover_request_rate ?? 0),
 			avg_attempts: r.avg_attempts != null ? Number(r.avg_attempts) : null,
 			avg_charged_per_request: reqCount > 0 ? chargedCost / reqCount : 0,
 		};
@@ -722,7 +726,11 @@ export async function getProviderAnalyticsService(
 			...mapAnalyticsTtftFields(r),
 			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
 			tokens_per_second: r.tokens_per_second != null ? Number(r.tokens_per_second) : null,
+			stream_tokens_per_second: r.stream_tokens_per_second != null ? Number(r.stream_tokens_per_second) : null,
+			stream_sample_count: Number(r.stream_sample_count ?? 0),
 			failover_rate: Number(r.failover_rate ?? 0),
+			failover_request_count: Number(r.failover_request_count ?? 0),
+			failover_request_rate: Number(r.failover_request_rate ?? 0),
 			avg_attempts: r.avg_attempts != null ? Number(r.avg_attempts) : null,
 			avg_charged_per_request: reqCount > 0 ? chargedCost / reqCount : 0,
 		};
@@ -761,6 +769,7 @@ export async function getUserAnalyticsService(
 			budget_spent: budgetSpent,
 			wallet_granted: walletGranted,
 			wallet_spent: walletSpent,
+			success_count: successCount,
 			budget_usage_rate: budgetMax != null && budgetMax > 0 ? (budgetSpent / budgetMax) * 100 : null,
 			success_rate: reqCount > 0 ? (successCount / reqCount) * 100 : 0,
 			error_count: Number(r.error_count),
@@ -812,7 +821,7 @@ export async function getReliabilityAnalyticsService(
 	const [providers, modelProviders, recentErrors] = await Promise.all([
 		repos.analytics.queryProviderReliability({ start, end }),
 		repos.analytics.queryModelProviderReliability({ start, end }),
-		repos.requestLogs.getRecentErrors(10),
+		repos.requestLogs.getRequestLogs({ page: 1, pageSize: 10, status: 'error', startDate: start, endDate: end }).then((result) => result.logs),
 	]);
 
 	const providerRows = providers.map((r) => {
@@ -827,6 +836,8 @@ export async function getReliabilityAnalyticsService(
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,
 			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
 			failover_rate: Number(r.failover_rate ?? 0),
+			failover_request_count: Number(r.failover_request_count ?? 0),
+			failover_request_rate: Number(r.failover_request_rate ?? 0),
 			avg_attempts: r.avg_attempts != null ? Number(r.avg_attempts) : null,
 			charged_cost: Number(r.charged_cost),
 			metered_cost: Number(r.metered_cost),
@@ -844,6 +855,8 @@ export async function getReliabilityAnalyticsService(
 			avg_latency_ms: r.avg_latency_ms != null ? Number(r.avg_latency_ms) : null,
 			avg_upstream_response_ms: r.avg_upstream_response_ms != null ? Number(r.avg_upstream_response_ms) : null,
 			failover_rate: Number(r.failover_rate ?? 0),
+			failover_request_count: Number(r.failover_request_count ?? 0),
+			failover_request_rate: Number(r.failover_request_rate ?? 0),
 			avg_attempts: r.avg_attempts != null ? Number(r.avg_attempts) : null,
 			charged_cost: Number(r.charged_cost),
 			metered_cost: Number(r.metered_cost),

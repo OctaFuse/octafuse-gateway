@@ -537,7 +537,12 @@ export type AdminModelAnalyticsRow = {
 	content_ttft_rate: number;
 	avg_upstream_response_ms: number | null;
 	tokens_per_second: number | null;
+	stream_tokens_per_second?: number | null;
+	stream_sample_count?: number;
 	failover_rate: number;
+	/** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
+	failover_request_count?: number;
+	failover_request_rate?: number;
 	avg_attempts: number | null;
 	avg_charged_per_request: number;
 };
@@ -572,7 +577,12 @@ export type AdminProviderAnalyticsRow = {
 	content_ttft_rate: number;
 	avg_upstream_response_ms: number | null;
 	tokens_per_second: number | null;
+	stream_tokens_per_second?: number | null;
+	stream_sample_count?: number;
 	failover_rate: number;
+	/** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
+	failover_request_count?: number;
+	failover_request_rate?: number;
 	avg_attempts: number | null;
 	avg_charged_per_request: number;
 };
@@ -597,6 +607,7 @@ export type AdminUserAnalyticsRow = {
 	wallet_granted?: number | null;
 	wallet_spent?: number | null;
 	budget_usage_rate: number | null;
+	success_count?: number;
 	success_rate: number;
 	error_count: number;
 };
@@ -627,6 +638,9 @@ export type AdminReliabilityProviderRow = {
 	avg_latency_ms: number | null;
 	avg_upstream_response_ms: number | null;
 	failover_rate: number;
+	/** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
+	failover_request_count?: number;
+	failover_request_rate?: number;
 	avg_attempts: number | null;
 	charged_cost: number;
 	metered_cost: number;
@@ -642,6 +656,9 @@ export type AdminReliabilityModelProviderRow = {
 	avg_latency_ms: number | null;
 	avg_upstream_response_ms: number | null;
 	failover_rate: number;
+	/** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
+	failover_request_count?: number;
+	failover_request_rate?: number;
 	avg_attempts: number | null;
 	charged_cost: number;
 	metered_cost: number;
