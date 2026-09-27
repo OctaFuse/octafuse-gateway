@@ -240,7 +240,16 @@ curl http://localhost:8787/v1/responses \
 
 ## Anthropic Messages 兼容接口
 
-Anthropic 兼容入口，支持 `messages` 与流式。
+Anthropic 兼容入口，支持 `messages` 与流式。正式路径只有 `POST /v1/messages`。
+
+另外两条路径是给 SoloEnt Agent 历史版本用的临时别名，不是公开接口，后续要删：
+
+| 路径 | 只服务 |
+|------|--------|
+| `POST /messages` | SoloEnt Agent 0.18.0–0.18.5，且登录态里的 Anthropic 地址不带 `/v1` |
+| `POST /v1/v1/messages` | SoloEnt Agent 0.17.x，且 2026-09-17 之后签发的登录态把 Anthropic 地址写成了 `{root}/v1` |
+
+0.18.6 起 SoloEnt Agent 用网关根地址自己拼 `/v1`，只请求 `POST /v1/messages`。等 0.17.x 与 0.18.0–0.18.5 退出、这些版本的插件 JWT（30 天）过期后，删除上述两条路径，以及 `isAnthropicMessagesPath` 里对应的别名判断。
 
 ### 请求
 
