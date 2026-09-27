@@ -1940,9 +1940,10 @@
 			"title": "Provider 使用量",
 			"subtitle": "アップストリーム Provider 別の使用量とコスト"
 		},
+		"deletedProvider": "削除済み",
 		"userUsage": {
 			"title": "ユーザー使用量",
-			"subtitle": "リクエストログのメールアドレス別の使用量とコスト。予算列は users から取得します（user_id で JOIN）。"
+			"subtitle": "選択期間のメール別使用量・費用と現在のアカウント予算。"
 		},
 		"reliability": {
 			"title": "信頼性",
@@ -1984,7 +1985,9 @@
 			"budgetUsage": "周期予算使用量",
 			"wallet": "ウォレット",
 			"errors": "エラー",
-			"modelProvider": "モデル / Provider"
+			"modelProvider": "モデル / Provider",
+			"providerKind": "プロバイダー種別",
+			"providerAccount": "プロバイダーアカウント"
 		},
 		"loadingProviderUsage": "Provider 使用量を読み込み中...",
 		"noProviderUsageForModel": "選択期間にこのモデルの Provider 使用量はありません。",
@@ -2002,6 +2005,50 @@
 			"label": "Token 表示",
 			"compact": "短縮（K/M/B）",
 			"numeric": "数値"
+		},
+		"insights": {
+			"summary": "絞り込み範囲の集計",
+			"requests": "リクエスト数",
+			"successRate": "全体の成功率",
+			"errors": "失敗リクエスト",
+			"charged": "請求額",
+			"metered": "計測コスト",
+			"margin": "請求額 − コスト",
+			"definitions": "集計範囲と指標の定義",
+			"costNote": "標準価格合計：{standard}。差額は記録された請求とコストの差であり、インフラ費用や税金などは含みません。",
+			"qualityNote": "成功率はリクエスト数で加重します。フェイルオーバー率は1回以上切り替えたリクエストの割合（0–100%）です。生成速度は成功かつ有効なストリーム時間のサンプルのみを使用し、未計測は — と表示します。キャッシュ率は読み取りトークン / 入力トークンです。 平均レイテンシーは失敗やキャンセルを含む計測済みリクエスト全体です。",
+			"budgetNote": "予算とウォレットは現在の状態であり、選択期間の過去残高ではありません。ユーザーはログのメールで集計します。",
+			"search": "モデル、プロバイダー、メールを検索",
+			"view": "分析ビュー",
+			"matching": "{count} 行 · 集計と CSV にフィルターを適用",
+			"loadError": "分析を読み込めませんでした。再試行してください。",
+			"retry": "再試行",
+			"detailError": "内訳を読み込めませんでした。行を閉じて再度開いてください。",
+			"scope": {
+				"models": "モデルとルートグループ別の期間集計。モデル不明のリクエストは除外します。",
+				"providers": "ログの最終プロバイダーへの帰属です。途中の失敗は個別サンプルではなく、上流試行の可用性ではありません。プロバイダー不明は除外します。",
+				"users": "ログのメール別の期間集計。メール不明は除外します。",
+				"reliability": "上流の各試行ではなく最終リクエスト結果です。失敗数、リクエスト数順です。少数サンプルには追加観測が必要です。"
+			},
+			"views": {
+				"overview": "概要",
+				"cost": "費用と使用量",
+				"performance": "性能と品質",
+				"budget": "現在の予算",
+				"all": "全指標"
+			},
+			"lowSample": "少数サンプル（<20）",
+			"rangeErrors": "選択期間の最近のエラー",
+			"failoverShare": "切り替えリクエスト率",
+			"streamSpeed": "ストリーム Token/秒",
+			"outcomes": "成功 {success} · 失敗 {errors} · 未完了 / キャンセル {other}",
+			"streamSamples": "計測ストリーム {count} 件"
+		},
+		"providerDimensions": {
+			"all": "すべての種別",
+			"unknown": "種別不明",
+			"gatewayTools": "ゲートウェイツール",
+			"noMatchingKind": "選択した種別のデータなし"
 		}
 	},
 	"adminApiKeys": {
@@ -2024,7 +2071,10 @@
 		"activate": "有効化",
 		"deactivate": "失効",
 		"empty": "連携キーはありません",
-		"status": { "active": "有効", "revoked": "失効済み" }
+		"status": {
+			"active": "有効",
+			"revoked": "失効済み"
+		}
 	},
 	"config": {
 		"title": "システム設定",

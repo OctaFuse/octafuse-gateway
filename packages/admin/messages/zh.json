@@ -1940,9 +1940,10 @@
 			"title": "供应商用量",
 			"subtitle": "按上游供应商统计用量与成本"
 		},
+		"deletedProvider": "已删除",
 		"userUsage": {
 			"title": "用户用量",
-			"subtitle": "按请求日志 email 的用量与成本；额度列来自 users（通过 user_id JOIN）。"
+			"subtitle": "按邮箱查看区间用量与成本，以及账户当前预算。"
 		},
 		"reliability": {
 			"title": "可靠性",
@@ -1984,7 +1985,9 @@
 			"budgetUsage": "周期额度使用",
 			"wallet": "永久额度",
 			"errors": "错误",
-			"modelProvider": "模型 / 供应商"
+			"modelProvider": "模型 / 供应商",
+			"providerKind": "供应商类型",
+			"providerAccount": "供应商账号"
 		},
 		"loadingProviderUsage": "加载供应商用量中...",
 		"noProviderUsageForModel": "所选时间范围内该模型无供应商用量。",
@@ -2002,6 +2005,50 @@
 			"label": "Token 显示",
 			"compact": "紧凑（K/M/B）",
 			"numeric": "数字"
+		},
+		"insights": {
+			"summary": "筛选范围汇总",
+			"requests": "请求数",
+			"successRate": "整体成功率",
+			"errors": "失败请求",
+			"charged": "用户扣费",
+			"metered": "计量成本",
+			"margin": "扣费 − 成本",
+			"definitions": "统计范围与指标口径",
+			"costNote": "标准价合计：{standard}。扣费与成本的差额仅反映已记录的计费价差，未扣除基础设施、税费及未记录成本。",
+			"qualityNote": "整体成功率按请求数加权。转移请求占比按“至少发生一次转移”的请求计算（0–100%）。生成速度仅统计成功且流式时长有效的样本；缺少测量显示 —。缓存命中率为缓存读取 Token / 输入 Token。 平均延迟沿用日志中所有有测量值的请求，包含失败或取消。",
+			"budgetNote": "预算与钱包显示账户当前状态，并非所选历史区间的余额；用户按日志中的邮箱聚合。",
+			"search": "搜索模型、供应商或邮箱",
+			"view": "分析视图",
+			"matching": "匹配 {count} 行 · 汇总和 CSV 随筛选变化",
+			"loadError": "分析数据加载失败，请重试以获取当前范围的数据。",
+			"retry": "重试",
+			"detailError": "明细加载失败，请收起后重新展开重试。",
+			"scope": {
+				"models": "所选区间按模型与路由组聚合；不包含未记录模型的请求。",
+				"providers": "按请求日志最终归属的供应商统计；前序失败尝试不作为独立样本，不能直接代表上游尝试可用率。不包含未归属供应商的请求。",
+				"users": "所选区间按日志邮箱聚合；不包含未记录邮箱的请求。",
+				"reliability": "统计供应商最终请求结果，不是每次上游尝试。按失败量、请求量排序；小样本结论需要更多观察。"
+			},
+			"views": {
+				"overview": "概览",
+				"cost": "费用与用量",
+				"performance": "性能与质量",
+				"budget": "当前预算",
+				"all": "全部指标"
+			},
+			"lowSample": "小样本（<20）",
+			"rangeErrors": "所选区间近期错误",
+			"failoverShare": "转移请求占比",
+			"streamSpeed": "流式 Token/秒",
+			"outcomes": "成功 {success} · 失败 {errors} · 未完成 / 取消 {other}",
+			"streamSamples": "{count} 个流式样本"
+		},
+		"providerDimensions": {
+			"all": "全部类型",
+			"unknown": "类型未知",
+			"gatewayTools": "网关工具",
+			"noMatchingKind": "该类型暂无数据"
 		}
 	},
 	"adminApiKeys": {
@@ -2024,7 +2071,10 @@
 		"activate": "激活",
 		"deactivate": "吊销",
 		"empty": "暂无集成密钥",
-		"status": { "active": "有效", "revoked": "已吊销" }
+		"status": {
+			"active": "有效",
+			"revoked": "已吊销"
+		}
 	},
 	"config": {
 		"title": "系统配置",

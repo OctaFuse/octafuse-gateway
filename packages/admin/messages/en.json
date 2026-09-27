@@ -1940,9 +1940,10 @@
 			"title": "Provider Usage",
 			"subtitle": "Usage and cost by upstream provider"
 		},
+		"deletedProvider": "Deleted",
 		"userUsage": {
 			"title": "User Usage",
-			"subtitle": "Usage and cost by request log email; budget columns come from users (JOIN on user_id)."
+			"subtitle": "Usage and cost by email for the selected range, with current account budgets."
 		},
 		"reliability": {
 			"title": "Reliability",
@@ -1984,7 +1985,9 @@
 			"budgetUsage": "Budget usage",
 			"wallet": "Wallet",
 			"errors": "Errors",
-			"modelProvider": "Model / Provider"
+			"modelProvider": "Model / Provider",
+			"providerKind": "Provider type",
+			"providerAccount": "Provider account"
 		},
 		"loadingProviderUsage": "Loading provider usage...",
 		"noProviderUsageForModel": "No provider usage for this model in the selected range.",
@@ -2002,6 +2005,50 @@
 			"label": "Token display",
 			"compact": "Compact (K/M/B)",
 			"numeric": "Number"
+		},
+		"insights": {
+			"summary": "Filtered range summary",
+			"requests": "Requests",
+			"successRate": "Success rate",
+			"errors": "Failed requests",
+			"charged": "Charged",
+			"metered": "Metered cost",
+			"margin": "Charge − cost",
+			"definitions": "Scope and metric definitions",
+			"costNote": "Standard price total: {standard}. Charge − cost is the recorded billing spread, excluding infrastructure, taxes and unrecorded costs.",
+			"qualityNote": "Success rate is weighted by requests. Failover share counts requests with at least one failover (0–100%). Output speed uses only successful streams with a positive measured duration; missing measurements show —. Cache hit rate uses cache-read tokens / input tokens. Average latency includes all measured requests, including failures and cancellations.",
+			"budgetNote": "Budget and wallet values reflect the current account state, not a historical balance for the selected range. Users are grouped by logged email.",
+			"search": "Search model, provider or email",
+			"view": "Analysis view",
+			"matching": "{count} matching rows · summary and CSV follow this filter",
+			"loadError": "Analysis could not be loaded. Retry to see data for this range.",
+			"retry": "Retry",
+			"detailError": "Breakdown could not be loaded. Collapse and reopen the row to retry.",
+			"scope": {
+				"models": "Selected range, grouped by model and route group. Requests without a model are excluded.",
+				"providers": "Selected range, attributed to the final provider in each request log. Earlier failed attempts are not separate provider samples; this is not upstream attempt availability. Requests without a provider are excluded.",
+				"users": "Selected range, grouped by logged email. Requests without an email are excluded.",
+				"reliability": "Final request outcomes by provider, not individual upstream attempts. Rows are ordered by failed requests, then traffic. Low sample counts need more observation."
+			},
+			"views": {
+				"overview": "Overview",
+				"cost": "Cost & tokens",
+				"performance": "Performance",
+				"budget": "Current budget",
+				"all": "All columns"
+			},
+			"lowSample": "Small sample (<20)",
+			"rangeErrors": "Recent errors in selected range",
+			"failoverShare": "Failover request share",
+			"streamSpeed": "Stream tokens/s",
+			"outcomes": "{success} successful · {errors} failed · {other} incomplete / cancelled",
+			"streamSamples": "{count} measured streams"
+		},
+		"providerDimensions": {
+			"all": "All types",
+			"unknown": "Unknown type",
+			"gatewayTools": "Gateway tools",
+			"noMatchingKind": "No data for selected type"
 		}
 	},
 	"adminApiKeys": {
@@ -2024,7 +2071,10 @@
 		"activate": "Activate",
 		"deactivate": "Revoke",
 		"empty": "No integration keys",
-		"status": { "active": "Active", "revoked": "Revoked" }
+		"status": {
+			"active": "Active",
+			"revoked": "Revoked"
+		}
 	},
 	"config": {
 		"title": "System config",
