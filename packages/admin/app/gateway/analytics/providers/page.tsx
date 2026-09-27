@@ -24,6 +24,7 @@ import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
 import { cacheHitRateClassName, successRateClassName } from '@/lib/analytics-rate-style';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
+import { GATEWAY_TOOLS_PROVIDER_ID } from '@/lib/gateway-tools';
 import { providerAccountIdentity } from '@/lib/provider-kind';
 import type { ApiResponse, GatewayProvider, ModelUsageRow, ProviderUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
@@ -101,10 +102,16 @@ export default function ProviderUsagePage() {
     return map;
   }, [providerCatalog]);
 
-  /** 统计仍按 provider id。第一列别名在上、类型在下，不回退成 id。 */
+  /** 统计仍按 provider id。别名优先用账号目录，其次日志快照名，最后 provider id。 */
   const providerUsageIdentity = (row: ProviderUsageRow) => {
     const provider = providerById.get(row.provider_id);
-    return providerAccountIdentity(provider, locale, tKind('custom'), row.provider_name?.trim() || '—');
+    return providerAccountIdentity(provider, locale, tKind('custom'), row.provider_name?.trim() || row.provider_id);
+  };
+
+  const deletedProviderBadge = (providerId: string) => {
+    const id = providerId.trim();
+    if (!id || id === GATEWAY_TOOLS_PROVIDER_ID || providerById.has(id)) return null;
+    return tA('deletedProvider');
   };
 
   const rangeTotals = useMemo(() => sumAnalyticsCosts(rows), [rows]);
@@ -297,7 +304,11 @@ export default function ProviderUsagePage() {
                           title={identity.title}
                         >
                           <span className="mt-0.5 w-4 shrink-0 text-gray-400">{isExpanded ? '▾' : '▸'}</span>
-                          <ProviderAccountLines identity={identity} nameClassName="font-medium text-blue-600" />
+                          <ProviderAccountLines
+                            identity={identity}
+                            nameClassName="font-medium text-blue-600"
+                            badge={deletedProviderBadge(r.provider_id)}
+                          />
                         </button>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>

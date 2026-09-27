@@ -151,7 +151,7 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 
 		async queryProviderAnalytics(options: { start: string; end: string; tag?: string; modelId?: string; routeGroup?: string }): Promise<ProviderAnalyticsRow[]> {
 			const joins: string[] = ['LEFT JOIN providers p ON p.id = rl.provider_id'];
-			const conditions: string[] = ['rl.created_at >= ?', 'rl.created_at <= ?', 'rl.provider_id IS NOT NULL'];
+			const conditions: string[] = ['rl.created_at >= ?', 'rl.created_at <= ?', "rl.provider_id IS NOT NULL AND rl.provider_id <> ''"];
 			const bindValues: unknown[] = [];
 			if (options.tag) {
 				joins.push('INNER JOIN model_tags mt ON mt.model_id = rl.model_id AND mt.tag = ?');
@@ -169,7 +169,7 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 			const [rows] = await pool.query<ProviderAnalyticsRow[]>(
 				`SELECT
 					rl.provider_id as provider_id,
-					MAX(p.name) as provider_name,
+					COALESCE(MAX(p.name), MAX(rl.provider_name)) as provider_name,
 					COUNT(*) as request_count,
 					COALESCE(${sqlMoneyRound('SUM(rl.charged_cost)')}, 0) as charged_cost,
 					COALESCE(${sqlMoneyRound('SUM(rl.metered_cost)')}, 0) as metered_cost,
@@ -202,7 +202,7 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 			const [rows] = await pool.query<ProviderReliabilityRow[]>(
 				`SELECT
 					rl.provider_id as provider_id,
-					MAX(p.name) as provider_name,
+					COALESCE(MAX(p.name), MAX(rl.provider_name)) as provider_name,
 					COUNT(*) as request_count,
 					SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
 					SUM(CASE WHEN rl.status = 'error' THEN 1 ELSE 0 END) as error_count,
@@ -215,7 +215,7 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 					COALESCE(${sqlMoneyRound('SUM(rl.standard_cost)')}, 0) as standard_cost
 				 FROM api_key_request_logs rl
 				 LEFT JOIN providers p ON p.id = rl.provider_id
-				 WHERE rl.created_at >= ? AND rl.created_at <= ? AND rl.provider_id IS NOT NULL
+				 WHERE rl.created_at >= ? AND rl.created_at <= ? AND rl.provider_id IS NOT NULL AND rl.provider_id <> ''
 				 GROUP BY rl.provider_id`,
 				[options.start, options.end]
 			);
@@ -227,7 +227,7 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 				`SELECT
 					rl.model_id as model_id,
 					rl.provider_id as provider_id,
-					MAX(p.name) as provider_name,
+					COALESCE(MAX(p.name), MAX(rl.provider_name)) as provider_name,
 					COUNT(*) as request_count,
 					SUM(CASE WHEN rl.status = 'success' THEN 1 ELSE 0 END) as success_count,
 					AVG(rl.latency_ms) as avg_latency_ms,
@@ -239,7 +239,7 @@ export function createMySqlAdminAnalyticsRepository(db: MySqlDatabaseClient): Ad
 					COALESCE(${sqlMoneyRound('SUM(rl.standard_cost)')}, 0) as standard_cost
 				 FROM api_key_request_logs rl
 				 LEFT JOIN providers p ON p.id = rl.provider_id
-				 WHERE rl.created_at >= ? AND rl.created_at <= ? AND rl.model_id IS NOT NULL AND rl.provider_id IS NOT NULL
+				 WHERE rl.created_at >= ? AND rl.created_at <= ? AND rl.model_id IS NOT NULL AND rl.provider_id IS NOT NULL AND rl.provider_id <> ''
 				 GROUP BY rl.model_id, rl.provider_id`,
 				[options.start, options.end]
 			);

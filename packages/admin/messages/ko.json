@@ -1940,6 +1940,7 @@
 			"title": "Provider 사용량",
 			"subtitle": "업스트림 Provider별 사용량과 비용"
 		},
+		"deletedProvider": "삭제됨",
 		"userUsage": {
 			"title": "사용자 사용량",
 			"subtitle": "요청 로그 이메일별 사용량과 비용입니다. 예산 열은 users에서 가져옵니다(user_id로 JOIN)."

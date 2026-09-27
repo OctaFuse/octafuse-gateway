@@ -1940,6 +1940,7 @@
 			"title": "供应商用量",
 			"subtitle": "按上游供应商统计用量与成本"
 		},
+		"deletedProvider": "已删除",
 		"userUsage": {
 			"title": "用户用量",
 			"subtitle": "按请求日志 email 的用量与成本；额度列来自 users（通过 user_id JOIN）。"

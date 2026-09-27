@@ -1940,6 +1940,7 @@
 			"title": "Provider Usage",
 			"subtitle": "Usage and cost by upstream provider"
 		},
+		"deletedProvider": "Deleted",
 		"userUsage": {
 			"title": "User Usage",
 			"subtitle": "Usage and cost by request log email; budget columns come from users (JOIN on user_id)."

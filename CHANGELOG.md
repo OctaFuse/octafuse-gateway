@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Admin
+
+- **供应商用量名称**：供应商已从目录删除时，用量和可靠性统计改用请求日志里保存的名称；没有名称时显示 provider id，并标记为已删除。未匹配到路由、provider id 为空的请求不再计入供应商统计。
+
 ## 2.12.0
 
 ### Minor Changes

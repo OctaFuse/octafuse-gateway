@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { ProviderAccountLines } from '@/components/ProviderAccountLines';
 import { readApiJson } from '@/lib/api-json';
+import { GATEWAY_TOOLS_PROVIDER_ID } from '@/lib/gateway-tools';
 import { providerAccountIdentity } from '@/lib/provider-kind';
 import type { GatewayProvider } from '@/lib/types';
 import {
@@ -69,6 +70,12 @@ export default function ReliabilityPage() {
     const id = providerId?.trim() ?? '';
     const live = id ? liveProviders.get(id) : undefined;
     return providerAccountIdentity(live, locale, tKind('custom'), snapshotName?.trim() || id || '—');
+  };
+
+  const deletedProviderBadge = (providerId: string | null | undefined) => {
+    const id = providerId?.trim() ?? '';
+    if (!id || id === GATEWAY_TOOLS_PROVIDER_ID || liveProviders.has(id)) return null;
+    return tA('deletedProvider');
   };
 
   const fetchData = async () => {
@@ -136,7 +143,10 @@ export default function ReliabilityPage() {
                 {providers.map((p) => (
                   <tr key={p.provider_id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm">
-                      <ProviderAccountLines identity={providerIdentity(p.provider_id, p.provider_name)} />
+                      <ProviderAccountLines
+                        identity={providerIdentity(p.provider_id, p.provider_name)}
+                        badge={deletedProviderBadge(p.provider_id)}
+                      />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.request_count.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm">
@@ -194,7 +204,11 @@ export default function ReliabilityPage() {
                     <tr key={`${r.model_id}-${r.provider_id}`} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">{modelId}</td>
                       <td className="px-4 py-3 text-sm">
-                        <ProviderAccountLines identity={providerIdentity(r.provider_id, r.provider_name)} nameClassName="font-normal text-gray-700" />
+                        <ProviderAccountLines
+                          identity={providerIdentity(r.provider_id, r.provider_name)}
+                          nameClassName="font-normal text-gray-700"
+                          badge={deletedProviderBadge(r.provider_id)}
+                        />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.request_count.toLocaleString()}</td>
                       <td className="px-4 py-3 text-sm">
@@ -250,6 +264,7 @@ export default function ReliabilityPage() {
                       <ProviderAccountLines
                         identity={providerIdentity(log.provider_id, log.provider_name)}
                         nameClassName="text-xs font-normal text-gray-500"
+                        badge={deletedProviderBadge(log.provider_id)}
                       />
                     </td>
                     <td className="px-4 py-3 text-sm text-red-600 truncate max-w-xs" title={log.error_message ?? ''}>

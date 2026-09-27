@@ -1940,6 +1940,7 @@
 			"title": "Provider 使用量",
 			"subtitle": "アップストリーム Provider 別の使用量とコスト"
 		},
+		"deletedProvider": "削除済み",
 		"userUsage": {
 			"title": "ユーザー使用量",
 			"subtitle": "リクエストログのメールアドレス別の使用量とコスト。予算列は users から取得します（user_id で JOIN）。"
