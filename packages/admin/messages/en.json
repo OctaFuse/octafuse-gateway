@@ -2037,7 +2037,6 @@
 				"budget": "Current budget",
 				"all": "All columns"
 			},
-			"lowSample": "Small sample (<20)",
 			"rangeErrors": "Recent errors in selected range",
 			"failoverShare": "Failover request share",
 			"streamSpeed": "Stream tokens/s",

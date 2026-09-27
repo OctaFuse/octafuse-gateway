@@ -247,10 +247,9 @@ export default function UserUsagePage() {
                       <td hidden={!analyticsColumnVisible("user_email", view)} className="px-4 py-3 text-sm">
                         <button
                           type="button"
-                          className="inline-flex items-center gap-2 text-left font-medium text-blue-600 hover:text-blue-800"
+                          className="text-left font-medium text-blue-600 hover:text-blue-800"
                           aria-expanded={isExpanded}
                         >
-                          <span className="w-4 text-gray-400">{isExpanded ? '▾' : '▸'}</span>
                           <Link
                             href={`/gateway/request-logs?${logQuery.toString()}`}
                             className="hover:underline"
@@ -260,7 +259,7 @@ export default function UserUsagePage() {
                           </Link>
                         </button>
                       </td>
-                      <td hidden={!analyticsColumnVisible("request_count", view)} className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}{r.request_count < 20 && <span className="mt-1 block whitespace-nowrap text-xs text-amber-700">{tA('insights.lowSample')}</span>}</td>
+                      <td hidden={!analyticsColumnVisible("request_count", view)} className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
                       <td hidden={!analyticsColumnVisible("input_tokens", view)} className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
                       <td hidden={!analyticsColumnVisible("output_tokens", view)} className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
                       <td hidden={!analyticsColumnVisible("standard_cost", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">

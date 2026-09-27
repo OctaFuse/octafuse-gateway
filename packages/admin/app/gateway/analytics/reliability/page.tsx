@@ -163,7 +163,7 @@ export default function ReliabilityPage() {
                         badge={deletedProviderBadge(p.provider_id)}
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{p.request_count.toLocaleString()}{p.request_count < 20 && <span className="mt-1 block text-xs text-amber-700">{tA('insights.lowSample')}</span>}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{p.request_count.toLocaleString()}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={successRateClassName(p.success_rate)}>
                         {p.success_rate.toFixed(1)}%
@@ -215,7 +215,7 @@ export default function ReliabilityPage() {
                           badge={deletedProviderBadge(r.provider_id)}
                         />
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{r.request_count.toLocaleString()}{r.request_count < 20 && <span className="mt-1 block text-xs text-amber-700">{tA('insights.lowSample')}</span>}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{r.request_count.toLocaleString()}</td>
                       <td className="px-4 py-3 text-sm">
                         <span className={successRateClassName(r.success_rate)}>
                           {r.success_rate.toFixed(1)}%

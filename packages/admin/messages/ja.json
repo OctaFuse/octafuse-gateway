@@ -2037,7 +2037,6 @@
 				"budget": "現在の予算",
 				"all": "全指標"
 			},
-			"lowSample": "少数サンプル（<20）",
 			"rangeErrors": "選択期間の最近のエラー",
 			"failoverShare": "切り替えリクエスト率",
 			"streamSpeed": "ストリーム Token/秒",
