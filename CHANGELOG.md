@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Proxy
+
+- **Anthropic 历史路径（临时，仅 SoloEnt）**：`POST /messages` 与 `POST /v1/v1/messages` 与 `POST /v1/messages` 走同一处理，并接受 `x-api-key`。这不是公开接口。`/messages` 兼容 SoloEnt Agent 0.18.0–0.18.5 的旧登录态；`/v1/v1/messages` 兼容 0.17.x 在 2026-09-17 之后拿到带 `/v1` 的 Anthropic 地址。0.18.6 起客户端只请求 `/v1/messages`。待 0.17.x 与 0.18.0–0.18.5 退出、且这些版本的插件 JWT（30 天）过期后删除这两条路径、`isAnthropicMessagesPath` 的别名分支和 `messages-legacy-paths.test.ts`。
+
 ### Admin
 
 - **供应商用量名称**：供应商已从目录删除时，用量和可靠性统计改用请求日志里保存的名称；没有名称时显示 provider id，并标记为已删除。未匹配到路由、provider id 为空的请求不再计入供应商统计。

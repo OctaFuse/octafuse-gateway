@@ -40,6 +40,24 @@ export type ApiKeyContext = {
   ingressHost: string | null;
 };
 
+/**
+ * Canonical `/v1/messages`, plus temporary SoloEnt Agent aliases.
+ *
+ * TEMP(soloent): `/messages` and `/v1/v1/messages` exist only so old SoloEnt
+ * clients can authenticate with `x-api-key`. Remove those two branches together
+ * with the alias routes in `app.ts` once SoloEnt Agent 0.17.x and 0.18.0–0.18.5
+ * are gone and their plugin JWTs (30 days) have expired. Keep `/v1/messages`.
+ */
+export function isAnthropicMessagesPath(path: string): boolean {
+  return (
+    path.startsWith('/v1/messages') ||
+    path === '/messages' ||
+    path.startsWith('/messages/') ||
+    path === '/v1/v1/messages' ||
+    path.startsWith('/v1/v1/messages/')
+  );
+}
+
 /** 日志中脱敏展示密钥前缀。 */
 function maskKey(key: string): string {
   if (key.length <= 12) return '***';
@@ -67,8 +85,8 @@ function extractApiKey(c: { req: { header: (name: string) => string | undefined;
 
   const path = c.req.path;
 
-  // Anthropic SDK commonly sends x-api-key.
-  if (path.startsWith('/v1/messages')) {
+  // Anthropic SDK commonly sends x-api-key. Also cover legacy SoloEnt Agent paths.
+  if (isAnthropicMessagesPath(path)) {
     const anthropicKey = c.req.header('x-api-key')?.trim() ?? '';
     if (anthropicKey) {
       return anthropicKey;
