@@ -2037,7 +2037,6 @@
 				"budget": "当前预算",
 				"all": "全部指标"
 			},
-			"lowSample": "小样本（<20）",
 			"rangeErrors": "所选区间近期错误",
 			"failoverShare": "转移请求占比",
 			"streamSpeed": "流式 Token/秒",

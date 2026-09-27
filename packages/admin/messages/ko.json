@@ -2037,7 +2037,6 @@
 				"budget": "현재 예산",
 				"all": "모든 지표"
 			},
-			"lowSample": "적은 샘플 (<20)",
 			"rangeErrors": "선택한 기간의 최근 오류",
 			"failoverShare": "전환 요청 비율",
 			"streamSpeed": "스트림 Token/초",
