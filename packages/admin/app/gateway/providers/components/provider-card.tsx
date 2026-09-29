@@ -4,7 +4,6 @@ import {
 	CheckIcon,
 	ClipboardDocumentIcon,
 	PowerIcon,
-	PencilSquareIcon,
 	ShareIcon,
 } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
@@ -188,6 +187,11 @@ export function ProviderCard(props: ProviderCardProps) {
 									? badgeLabels.join(' · ')
 									: t('endpointCount', { count: protocol.endpoints.length });
 
+							const protocolSummary = t('capabilitiesSr', {
+								label: protocol.label,
+								caps: capabilitySummary,
+							});
+
 							return (
 								<span
 									key={protocol.key}
@@ -196,14 +200,14 @@ export function ProviderCard(props: ProviderCardProps) {
 											? 'border-slate-200 bg-slate-50 text-slate-600'
 											: 'border-slate-200 bg-slate-100/60 text-slate-500 grayscale'
 									}`}
-									title={`${protocol.label} · ${capabilitySummary}`}
+									title={protocolSummary}
+									aria-label={protocolSummary}
 								>
-									<span className="h-3.5 w-3.5 shrink-0">
+									<span className="h-3.5 w-3.5 shrink-0" aria-hidden>
 										<ProviderProtocolIcon protocol={protocol.key} />
 									</span>
-									<span className="shrink-0 font-medium">{protocol.label}</span>
 									{badgeLabels.length > 0 ? (
-										<span className="min-w-0 truncate border-l border-slate-200 pl-1.5 text-slate-500">
+										<span className="min-w-0 truncate text-slate-500">
 											{badgeLabels.slice(0, 2).join(' · ')}
 											{badgeLabels.length > 2 ? ` +${badgeLabels.length - 2}` : ''}
 										</span>
@@ -262,20 +266,11 @@ export function ProviderCard(props: ProviderCardProps) {
 						/>
 					)}
 				</div>
-				<div className="pointer-events-auto ml-auto flex items-center gap-1">
-					{provider.quota_supported && !provider.has_pending_key ? (
+				{provider.quota_supported && !provider.has_pending_key ? (
+					<div className="pointer-events-auto ml-auto flex items-center gap-1">
 						<ProviderQuotaButton providerId={provider.id} />
-					) : null}
-					<button
-						type="button"
-						onClick={() => onEdit(provider)}
-						className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-						title={t('editProvider', { name: accountTitle })}
-						aria-label={t('editProvider', { name: accountTitle })}
-					>
-						<PencilSquareIcon className="h-4 w-4" aria-hidden />
-					</button>
-				</div>
+					</div>
+				) : null}
 			</div>
 		</article>
 	);

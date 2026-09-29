@@ -198,6 +198,12 @@ describe('playground-utils', () => {
 		assert.equal(opus5.thinking?.type, 'adaptive');
 		assert.equal(opus5.thinking?.display, 'summarized');
 
+		const sonnet55 = parse('claude-sonnet-5-5');
+		assert.equal(sonnet55.thinking?.type, 'adaptive');
+		assert.equal(sonnet55.thinking?.display, 'summarized');
+		assert.equal(sonnet55.output_config?.effort, 'high');
+		assert.equal(sonnet55.thinking?.budget_tokens, undefined);
+
 		const fable5 = parse('claude-fable-5');
 		assert.equal(fable5.thinking?.type, 'adaptive');
 
