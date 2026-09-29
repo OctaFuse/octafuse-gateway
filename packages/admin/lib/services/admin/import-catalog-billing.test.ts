@@ -93,6 +93,27 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
 	});
 
+	it('includes claude-sonnet-5-5 at the same $2 / $10 list prices as Sonnet 5', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-sonnet-5-5');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-sonnet-5-5');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Claude Sonnet 5.5');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$2 / $10 /M');
+		assert.equal(cny!.pricing_label, '¥14 / ¥70 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'claude-sonnet-5-5');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-09-28');
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers.length, 1);
+		assert.equal(profile?.tiers[0]?.input_price, 2);
+		assert.equal(profile?.tiers[0]?.output_price, 10);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(profile?.tiers[0]?.cache_write_price, 2.5);
+	});
+
 	it('includes claude-sonnet-5 at the permanent $2 / $10 list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-sonnet-5');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-sonnet-5');
