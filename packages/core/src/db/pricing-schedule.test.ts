@@ -27,7 +27,7 @@ describe('parseHhMmToMinutes', () => {
 });
 
 describe('parseRouteBaseFactors', () => {
-	it('defaults to 1 and falls back provider_factor for metered', () => {
+	it('defaults to 1 and ignores a leftover provider_factor key', () => {
 		assert.deepEqual(parseRouteBaseFactors(null), { chargedFactor: 1, meteredFactor: 1 });
 		assert.deepEqual(parseRouteBaseFactors('{"charged_factor":1.2,"metered_factor":0.8}'), {
 			chargedFactor: 1.2,
@@ -35,7 +35,7 @@ describe('parseRouteBaseFactors', () => {
 		});
 		assert.deepEqual(parseRouteBaseFactors('{"provider_factor":0.5}'), {
 			chargedFactor: 1,
-			meteredFactor: 0.5,
+			meteredFactor: 1,
 		});
 	});
 });

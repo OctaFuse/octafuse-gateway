@@ -308,7 +308,7 @@ function readRootFactor(obj: Record<string, unknown>, key: string): number | nul
 }
 
 /**
- * 读取路由基础倍率；缺省 1。`metered_factor` 缺失时回退 `provider_factor`。
+ * 读取路由基础倍率；缺省 1。
  */
 export function parseRouteBaseFactors(priceOverrideJson: string | null | undefined): {
 	chargedFactor: number;
@@ -321,10 +321,7 @@ export function parseRouteBaseFactors(priceOverrideJson: string | null | undefin
 	try {
 		const o = JSON.parse(priceOverrideJson) as Record<string, unknown>;
 		const charged = readRootFactor(o, 'charged_factor');
-		let metered = readRootFactor(o, 'metered_factor');
-		if (metered == null) {
-			metered = readRootFactor(o, 'provider_factor');
-		}
+		const metered = readRootFactor(o, 'metered_factor');
 		return {
 			chargedFactor: charged ?? 1,
 			meteredFactor: metered ?? 1,

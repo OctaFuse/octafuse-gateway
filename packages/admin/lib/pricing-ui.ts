@@ -31,7 +31,6 @@ export type PricingLabels = {
 	invalidPriceOverrideJson: string;
 	invalidPriceOverrideRoot: string;
 	noMeteredOverride: string;
-	providerFactorOnly: string;
 	meteredOverrideSingle: string;
 	meteredOverrideMulti: string;
 	chargedOverrideSingle: string;
@@ -51,8 +50,6 @@ const DEFAULT_PRICING_LABELS: PricingLabels = {
 	invalidPriceOverrideRoot: 'Invalid price_override root',
 	noMeteredOverride:
 		'Inherits catalog · price_override has no metered override (uses model profile)',
-	providerFactorOnly:
-		'Inherits catalog · stored provider_factor ×{factor} (not used for metered until tiers exist)',
 	meteredOverrideSingle: 'Metered override · 1 tier · in {price} {unit}',
 	meteredOverrideMulti: 'Metered override · {count} tiers · from {minIn} {unit} in',
 	chargedOverrideSingle: 'Charged override · 1 tier · in {price} {unit}',
@@ -471,17 +468,11 @@ export function parseChargedFactorFromPriceOverride(
 	return readNumericFromPriceOverrideRoot(priceOverrideJson, 'charged_factor');
 }
 
-/**
- * 路由卡片：`price_override.metered_factor`；旧数据可能仅有 `provider_factor`，作回退。
- */
+/** 路由卡片：`price_override.metered_factor`。 */
 export function parseMeteredFactorFromPriceOverride(
 	priceOverrideJson: string | null | undefined
 ): number | null {
-	const m = readNumericFromPriceOverrideRoot(priceOverrideJson, 'metered_factor');
-	if (m != null) {
-		return m;
-	}
-	return readNumericFromPriceOverrideRoot(priceOverrideJson, 'provider_factor');
+	return readNumericFromPriceOverrideRoot(priceOverrideJson, 'metered_factor');
 }
 
 /** 路由卡片上 `price_override` 一行摘要（仅含合法嵌套 `metered` tiers 时非空；兼容旧调用方） */

@@ -871,7 +871,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 }
 ```
 
-  - `charged_factor` / `metered_factor`：相对**官方当刻价**（阶梯目录价 × 模型 `pricing_profile.schedule` 命中倍率，未命中为 1）的默认倍率（缺省 `1`；`metered_factor` 缺失时可回退读历史 `provider_factor`）；未命中路由分时时段时使用。
+  - `charged_factor` / `metered_factor`：相对**官方当刻价**（阶梯目录价 × 模型 `pricing_profile.schedule` 命中倍率，未命中为 1）的默认倍率（缺省 `1`）；未命中路由分时时段时使用。
   - `schedule`（可选）：分时窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜。可选 `days` 为 ISO 星期数组（`1`=周一 … `7`=周日）；省略表示每天。跨午夜时 `days` 锚定窗口**开始日**（例如周五 `22:00–06:00` 覆盖周五 22:00 至周六 06:00）。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。同侧窗口在一周循环上禁止重叠。
   - **与模型官方时段严格一致**：模型 `pricing_profile.schedule` **为空**时，路由可自由配置时段。模型官方时段**非空**时，路由 `schedule.charged[]` 与 `schedule.metered[]` 的窗口集合必须**各自**与官方窗口逐一相同（`start` / `end` / `days`；空 `days` 与全 7 天等价）。`POST`/`PATCH /admin/routes` 在校验 `price_override` 后按最终 `model_id` 检查。`PATCH /admin/models` 若官方窗口集合变化且新官方时段非空，会把该模型下**所有**（含未激活）且**已配置分时窗口**的路由 `schedule` 重置为同一套窗口（两侧 `factor` 恢复为 `1`），未配置时段的路由保持为空（运行时按 1）。管理后台在模型时段倍率区展示固定说明。
   - `schedule.mode`：

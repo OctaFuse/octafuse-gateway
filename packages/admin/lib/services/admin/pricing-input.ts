@@ -203,7 +203,7 @@ export function coerceModelPricingProfileInput(raw: unknown): string | null {
 
 function normalizeOptionalNonNegativeFactor(
 	obj: Record<string, unknown>,
-	key: 'charged_factor' | 'metered_factor' | 'provider_factor'
+	key: 'charged_factor' | 'metered_factor'
 ): void {
 	const v = obj[key];
 	if (v === undefined || v === null) {
@@ -270,7 +270,6 @@ export function coerceRoutePriceOverrideInput(raw: unknown): string | null {
 		delete obj[k];
 	}
 
-	normalizeOptionalNonNegativeFactor(obj, 'provider_factor');
 	normalizeOptionalNonNegativeFactor(obj, 'charged_factor');
 	normalizeOptionalNonNegativeFactor(obj, 'metered_factor');
 
