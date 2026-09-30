@@ -810,7 +810,16 @@
 				"chargedFormula": "実効課金倍率：プロバイダー {provider} × 課金 {configured} = {effective}",
 				"meteredFormula": "実効原価倍率：プロバイダー {provider} × 原価 {configured} = {effective}",
 				"inactiveProvider": "プロバイダー倍率は現在無効のため、×1 で計算します。",
-				"invalidValidity": "有効期間が不正です"
+				"invalidValidity": "有効期間が不正です",
+				"breakdown": {
+					"applied": "プロバイダー倍率を合成済み",
+					"notApplied": "プロバイダー倍率は無効 · ×1 で計算",
+					"standard": "プロバイダー倍率は ×1",
+					"validity": "プロバイダー倍率の有効期間",
+					"unlimited": "期間制限なし",
+					"basis": "この時間帯のカタログ価格が基準です。ユーザー固有倍率は含みません。各行は現在日時でのプレビューです。",
+					"marker": "紫の点は ×1 以外のプロバイダー倍率が合成済みであることを示します。点がない場合は ×1 です。"
+				}
 			},
 			"pricingCharged": "請求倍率",
 			"pricingMetered": "原価倍率",

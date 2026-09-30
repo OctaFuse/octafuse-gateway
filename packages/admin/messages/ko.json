@@ -810,7 +810,16 @@
 				"chargedFormula": "실효 청구 배율: 공급자 {provider} × 청구 {configured} = {effective}",
 				"meteredFormula": "실효 원가 배율: 공급자 {provider} × 원가 {configured} = {effective}",
 				"inactiveProvider": "공급자 배율이 현재 적용되지 않아 ×1로 계산합니다.",
-				"invalidValidity": "유효 기간 오류"
+				"invalidValidity": "유효 기간 오류",
+				"breakdown": {
+					"applied": "공급자 배율 반영됨",
+					"notApplied": "공급자 배율 미적용 · ×1로 계산",
+					"standard": "공급자 배율은 ×1",
+					"validity": "공급자 배율 유효 기간",
+					"unlimited": "기간 제한 없음",
+					"basis": "해당 시간대 카탈로그 가격 기준이며 사용자별 배율은 포함하지 않습니다. 모든 행은 현재 날짜 기준 미리 보기입니다.",
+					"marker": "보라색 점은 ×1이 아닌 공급자 배율이 반영되었음을 나타냅니다. 점이 없으면 ×1로 계산합니다."
+				}
 			},
 			"pricingCharged": "청구 배율",
 			"pricingMetered": "원가 배율",

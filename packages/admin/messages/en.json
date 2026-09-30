@@ -810,7 +810,16 @@
 				"chargedFormula": "Effective billing multiplier: provider {provider} × billing {configured} = {effective}",
 				"meteredFormula": "Effective cost multiplier: provider {provider} × cost {configured} = {effective}",
 				"inactiveProvider": "The provider multiplier is inactive; ×1 is used in this calculation.",
-				"invalidValidity": "Invalid validity period"
+				"invalidValidity": "Invalid validity period",
+				"breakdown": {
+					"applied": "Provider multiplier included",
+					"notApplied": "Provider multiplier inactive · using ×1",
+					"standard": "Provider multiplier is ×1",
+					"validity": "Provider multiplier validity",
+					"unlimited": "No time limit",
+					"basis": "Relative to this period’s catalog price; excludes user-specific multipliers. All rows are previewed as of now.",
+					"marker": "A purple dot means a non-×1 provider multiplier is included. Without a dot, ×1 applies."
+				}
 			},
 			"pricingCharged": "Charged",
 			"pricingMetered": "Metered",
