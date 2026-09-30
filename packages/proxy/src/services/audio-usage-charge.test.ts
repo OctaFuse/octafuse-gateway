@@ -160,3 +160,36 @@ describe('TTS per-character billing', () => {
 		assert.equal(costs.chargedCost, 0.015);
 	});
 });
+
+describe('provider_factor on audio routes', () => {
+	const override = JSON.stringify({
+		provider_factor: 0.5,
+		provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+		charged_factor: 1,
+		metered_factor: 0.68,
+	});
+
+	it('multiplies both sides and leaves standard cost unchanged', async () => {
+		const costs = await estimateAudioSpeechCosts(mockRepos(), {
+			modelPricingProfileJson: PROFILE,
+			routePriceOverrideJson: override,
+			characters: 5,
+			requestStartedAtMs: Date.parse('2026-10-15T00:00:00.000Z'),
+		});
+		assert.equal(costs.standardCost, 0.005);
+		assert.ok(Math.abs(costs.chargedCost - 0.0025) < 1e-9);
+		assert.ok(Math.abs(costs.meteredCost - 0.0017) < 1e-9);
+	});
+
+	it('returns to the route factors after the official factor expires', async () => {
+		const costs = await estimateAudioSpeechCosts(mockRepos(), {
+			modelPricingProfileJson: PROFILE,
+			routePriceOverrideJson: override,
+			characters: 5,
+			requestStartedAtMs: Date.parse('2026-11-01T00:00:00.000Z'),
+		});
+		assert.equal(costs.standardCost, 0.005);
+		assert.equal(costs.chargedCost, 0.005);
+		assert.ok(Math.abs(costs.meteredCost - 0.0034) < 1e-9);
+	});
+});

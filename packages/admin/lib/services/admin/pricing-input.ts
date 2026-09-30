@@ -132,7 +132,7 @@ export function routePriceOverrideHasScheduleWindows(
 	priceOverrideJson: string | null | undefined
 ): boolean {
 	const schedule = parseRoutePricingSchedule(priceOverrideJson ?? null);
-	return schedule.charged.length > 0 || schedule.metered.length > 0;
+	return schedule.charged.length > 0 || schedule.metered.length > 0 || schedule.provider.length > 0;
 }
 
 function catalogWindowToResetRouteRow(window: DailyScheduleWindow): Record<string, unknown> {
@@ -170,11 +170,22 @@ export function resetRoutePriceOverrideScheduleToCatalog(
 		delete obj.schedule;
 	} else {
 		const windows = catalog.map(catalogWindowToResetRouteRow);
-		obj.schedule = {
+		const nextSchedule: Record<string, unknown> = {
 			mode: 'override',
 			charged: windows,
 			metered: windows,
 		};
+		const previousProvider = obj.schedule;
+		const hadProviderWindows =
+			previousProvider != null &&
+			typeof previousProvider === 'object' &&
+			!Array.isArray(previousProvider) &&
+			Array.isArray((previousProvider as { provider?: unknown }).provider) &&
+			((previousProvider as { provider: unknown[] }).provider.length > 0);
+		if (hadProviderWindows) {
+			nextSchedule.provider = windows;
+		}
+		obj.schedule = nextSchedule;
 	}
 	return coerceRoutePriceOverrideInput(obj);
 }
@@ -199,6 +210,21 @@ export function coerceModelPricingProfileInput(raw: unknown): string | null {
 		return validatePricingProfileJson(t);
 	}
 	throw badRequest('pricing_profile must be a JSON string, object, null, or omitted');
+}
+
+function normalizeOptionalIsoInstant(
+	obj: Record<string, unknown>,
+	key: 'provider_factor_starts_at' | 'provider_factor_expires_at'
+): void {
+	const v = obj[key];
+	if (v === undefined || v === null || v === '') {
+		delete obj[key];
+		return;
+	}
+	if (typeof v !== 'string' || Number.isNaN(new Date(v.trim()).getTime())) {
+		throw badRequest(`price_override.${key} must be an ISO-8601 timestamp`);
+	}
+	obj[key] = new Date(v.trim()).toISOString();
 }
 
 function normalizeOptionalNonNegativeFactor(
@@ -231,7 +257,7 @@ function normalizeOptionalNonNegativeFactor(
 
 /**
  * 规范化 `model_routes.price_override`：整段 JSON 字符串。
- * Canonical：`charged_factor` / `metered_factor` / 可选 `schedule`。
+ * Canonical：`charged_factor` / `metered_factor` / 可选 `provider_factor` 与有效期 / 可选 `schedule`。
  * 剥离 nested `metered` / `charged` tiers 与扁平单价键（不计价）。
  * @throws `badRequest`
  */
@@ -270,23 +296,35 @@ export function coerceRoutePriceOverrideInput(raw: unknown): string | null {
 		delete obj[k];
 	}
 
-	normalizeOptionalNonNegativeFactor(obj, 'provider_factor');
 	normalizeOptionalNonNegativeFactor(obj, 'charged_factor');
 	normalizeOptionalNonNegativeFactor(obj, 'metered_factor');
+	normalizeOptionalNonNegativeFactor(obj, 'provider_factor');
+	normalizeOptionalIsoInstant(obj, 'provider_factor_starts_at');
+	normalizeOptionalIsoInstant(obj, 'provider_factor_expires_at');
+	if (
+		typeof obj.provider_factor_starts_at === 'string' &&
+		typeof obj.provider_factor_expires_at === 'string' &&
+		obj.provider_factor_starts_at >= obj.provider_factor_expires_at
+	) {
+		throw badRequest(
+			'price_override.provider_factor_starts_at must be earlier than provider_factor_expires_at'
+		);
+	}
 
 	if (obj.schedule !== undefined) {
 		const coerced = coerceRoutePricingScheduleInput(obj.schedule);
 		if (!coerced.ok) {
 			throw badRequest(coerced.message);
 		}
-		const { charged, metered, mode } = coerced.schedule;
-		if (charged.length === 0 && metered.length === 0) {
+		const { charged, metered, provider, mode } = coerced.schedule;
+		if (charged.length === 0 && metered.length === 0 && provider.length === 0) {
 			delete obj.schedule;
 		} else {
 			obj.schedule = {
 				...(coerced.persistMode ? { mode } : {}),
 				...(charged.length > 0 ? { charged } : {}),
 				...(metered.length > 0 ? { metered } : {}),
+				...(provider.length > 0 ? { provider } : {}),
 			};
 		}
 	}
@@ -313,7 +351,7 @@ export function assertRoutePriceOverrideFactors(normalizedJson: string | null): 
 	} catch {
 		throw badRequest('price_override must be valid JSON');
 	}
-	for (const key of ['charged_factor', 'metered_factor'] as const) {
+	for (const key of ['charged_factor', 'metered_factor', 'provider_factor'] as const) {
 		const v = obj[key];
 		if (v === undefined || v === null) {
 			continue;

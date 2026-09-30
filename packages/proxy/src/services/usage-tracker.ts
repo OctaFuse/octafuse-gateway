@@ -2,7 +2,7 @@
  * 用量与计费：按百万 token 单价计算 `metered_cost`（供应成本）、`standard_cost`（官方当刻目录成本）、`charged_cost`（用户预算）。
  * - 基数始终来自 `models.pricing_profile`（按 input_tokens 选档）。
  * - `standard_cost` = 目录价 × 官方时段倍率（不含路由倍率）。
- * - `metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。
+ * - `metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 路由官方倍率 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。官方倍率不在有效期内时按 1。`standard_cost` 不含官方倍率。
  * - 若用户对该模型配置了 `charged_cost_factors`，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 与路由有效倍率合成最终 `charged_cost`（`multiply` 叠乘，`min` 取较小倍率）。
  * - nested `price_override.metered` / `charged` tiers 忽略不计价。
  * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `users.budget_spent`。
@@ -13,16 +13,16 @@ import {
 	getUserBudgetSnapshot,
 	insertRequestUsageAndChargeTx,
 	parsePricingProfile,
-	parseRouteBaseFactors,
-	parseRoutePricingSchedule,
+	normalizeScheduleFactor,
 	PRICING_AUDIT_JSON_SCHEMA_VERSION,
 	resolveChargedBillingPrices,
 	resolveDailyScheduleFactor,
-	resolveEffectiveRouteFactor,
+	resolveRouteEffectiveFactors,
 	resolveStandardBillingPrices,
 	resolveSupplierBillingPrices,
 	roundGatewayMoney,
 	scaleBillingPrices,
+	toProviderFactorAudit,
 	toScheduleAudit,
 	applyUserChargedCostFactor,
 	attachUserChargedFactorToPricingAudit,
@@ -88,25 +88,20 @@ function buildRequestPricingAuditJson(options: {
 
 function applyRouteFactorsToSide(options: {
 	catalog: { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide };
-	baseFactor: number;
-	scheduleFactor: ReturnType<typeof resolveDailyScheduleFactor>;
-	mode: ReturnType<typeof parseRoutePricingSchedule>['mode'];
+	side: ReturnType<typeof resolveRouteEffectiveFactors>['charged'];
+	provider: ReturnType<typeof resolveRouteEffectiveFactors>['provider'];
 }): { prices: BillingPriceSnapshot; audit: PriceResolutionAuditSide } {
-	const effective = resolveEffectiveRouteFactor(
-		options.baseFactor,
-		options.scheduleFactor,
-		options.mode
-	);
+	const effective = normalizeScheduleFactor(options.provider.effective * options.side.effective);
 	const prices = scaleBillingPrices(options.catalog.prices, effective);
-	const sch = options.scheduleFactor;
 	return {
 		prices,
 		audit: {
 			...options.catalog.audit,
 			source: 'model_x_factor',
-			base_factor: options.baseFactor,
-			schedule: toScheduleAudit(sch),
+			base_factor: options.side.base,
+			schedule: toScheduleAudit(options.side.schedule),
 			effective_factor: effective,
+			provider_factor: toProviderFactorAudit(options.provider),
 			prices,
 		},
 	};
@@ -129,10 +124,11 @@ export async function recordUsage(
 		? new Date()
 		: requestedPricingAtUtc;
 	const businessTimezone = await getBusinessTimezone(repos);
-	const baseFactors = parseRouteBaseFactors(params.route_price_override_json ?? null);
-	const schedule = parseRoutePricingSchedule(params.route_price_override_json ?? null);
-	const chargedSch = resolveDailyScheduleFactor(schedule.charged, pricingAtUtc, businessTimezone);
-	const meteredSch = resolveDailyScheduleFactor(schedule.metered, pricingAtUtc, businessTimezone);
+	const routeFactors = resolveRouteEffectiveFactors({
+		priceOverrideJson: params.route_price_override_json ?? null,
+		nowUtc: pricingAtUtc,
+		timezone: businessTimezone,
+	});
 	const catalogProfile = parsePricingProfile(params.model_pricing_profile ?? null);
 	const catalogSch = resolveDailyScheduleFactor(
 		catalogProfile?.schedule ?? [],
@@ -162,15 +158,13 @@ export async function recordUsage(
 
 	const supplierResolved = applyRouteFactorsToSide({
 		catalog: catalogSupplier,
-		baseFactor: baseFactors.meteredFactor,
-		scheduleFactor: meteredSch,
-		mode: schedule.mode,
+		side: routeFactors.metered,
+		provider: routeFactors.provider,
 	});
 	const chargedResolved = applyRouteFactorsToSide({
 		catalog: catalogCharged,
-		baseFactor: baseFactors.chargedFactor,
-		scheduleFactor: chargedSch,
-		mode: schedule.mode,
+		side: routeFactors.charged,
+		provider: routeFactors.provider,
 	});
 
 	const supplierCost = computeMeteredCost(
@@ -206,7 +200,7 @@ export async function recordUsage(
 		params.model_id
 	);
 	const userChargedFactorMode = await getUserChargedCostFactorMode(repos);
-	const routeEffectiveFactor = chargedResolved.audit.effective_factor ?? 1;
+	const routeEffectiveFactor = routeFactors.chargedTotal;
 	const combinedChargedFactor = resolveCombinedChargedFactor(
 		routeEffectiveFactor,
 		userChargedFactor,
@@ -232,7 +226,7 @@ export async function recordUsage(
 		{ mode: userChargedFactorMode, combinedChargedFactor }
 	);
 	console.log(
-		`[Gateway Usage] recordUsage model_id=${params.model_id} request_protocol=${params.request_protocol} status=${params.status} route_group=${params.route_group} input_tokens=${params.usage.input_tokens} output_tokens=${params.usage.output_tokens} reasoning_tokens=${params.usage.reasoning_tokens} metered=${supplierCostR} standard=${standardCostR} charged=${chargedCost} charged_eff=${chargedResolved.audit.effective_factor} user_charged_factor=${userChargedFactor ?? 'none'} user_charged_factor_mode=${userChargedFactorMode} combined_charged_factor=${combinedChargedFactor ?? 'none'} metered_eff=${supplierResolved.audit.effective_factor}`
+		`[Gateway Usage] recordUsage model_id=${params.model_id} request_protocol=${params.request_protocol} status=${params.status} route_group=${params.route_group} input_tokens=${params.usage.input_tokens} output_tokens=${params.usage.output_tokens} reasoning_tokens=${params.usage.reasoning_tokens} metered=${supplierCostR} standard=${standardCostR} charged=${chargedCost} charged_eff=${chargedResolved.audit.effective_factor} provider_eff=${routeFactors.provider.effective} user_charged_factor=${userChargedFactor ?? 'none'} user_charged_factor_mode=${userChargedFactorMode} combined_charged_factor=${combinedChargedFactor ?? 'none'} metered_eff=${supplierResolved.audit.effective_factor}`
 	);
 	const id = params.requestLogId;
 	const shouldChargeBudget = params.status !== 'error' && chargedCost > 0;

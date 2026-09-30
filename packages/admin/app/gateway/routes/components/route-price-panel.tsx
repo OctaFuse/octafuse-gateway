@@ -14,7 +14,7 @@ export function RoutePricePanel({
 }: {
 	title?: string;
 	subtitle?: string;
-	variant: 'neutral' | 'charged' | 'metered';
+	variant: 'neutral' | 'charged' | 'metered' | 'provider';
 	children?: ReactNode;
 	fillHeight?: boolean;
 	/** Optional control aligned to the top-right of the header (e.g. factor input). */

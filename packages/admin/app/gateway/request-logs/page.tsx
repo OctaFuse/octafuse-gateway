@@ -3,6 +3,7 @@
 /**
  * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开详情按可用宽度重排（耗时、计费审计与三份 JSON）；数据来自 `/api/admin/request-logs`。
  */
+import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { FilterDisclosure } from '@/components/FilterDisclosure';
 import { useLocale, useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
@@ -469,7 +470,7 @@ export default function GatewayRequestLogsPage() {
     const meteredMultiplier = formatCostMultiplier(meteredCost, standardCost);
     const costLine = (label: 'C' | 'M', amount: number, multiplier: string | null) => (
       <div className="inline-flex items-baseline gap-1 tabular-nums">
-        <span className="w-3 text-[10px] font-semibold text-gray-400">{label}</span>
+        <span className="text-[10px] font-medium text-gray-500">{t(label === 'C' ? 'titles.chargedUserBudget' : 'titles.meteredSupplierCost')}</span>
         <span>{formatGatewayMoneyCode(amount, billingCurrency, 6)}</span>
         {multiplier ? <span className="text-[10px] text-gray-400">{multiplier}</span> : null}
       </div>
@@ -891,13 +892,13 @@ export default function GatewayRequestLogsPage() {
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
                   title={t('titles.cost')}
                 >
-                  {t('headers.cost', { currency: billingCurrencySym })}
+                  <span className="inline-flex items-center gap-1">{t('headers.cost', { currency: billingCurrencySym })}<PricingInfoHint kind="amounts" /></span>
                 </th>
                 <th
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
                   title={t('titles.profit')}
                 >
-                  {t('headers.profit', { currency: billingCurrencySym })}
+                  <span className="inline-flex items-center gap-1">{t('headers.profit', { currency: billingCurrencySym })}<PricingInfoHint kind="profit" /></span>
                 </th>
               </tr>
             </thead>

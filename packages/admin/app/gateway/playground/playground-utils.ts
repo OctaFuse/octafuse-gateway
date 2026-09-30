@@ -5,7 +5,7 @@ import {
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 	isAudioRouteModel,
 } from '@/lib/audio-transcriptions';
-import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
+import { isAudioTranscriptionModel, type ModelKindFields } from '@octafuse/core/db/model-modalities';
 import { extraHeadersFromCustomParams, mergeRouteRequestBody, mergeUpstreamHeaders, splitRouteCustomParams } from '@octafuse/core/route-custom-params';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
@@ -266,7 +266,7 @@ export function routeMatchesSearch(route: RouteListRow, query: string): boolean 
 
 export function templateForRoute(
 	route: RouteListRow,
-	model: AdminModelRow | undefined,
+	model: ModelKindFields | undefined,
 	imageOperation: ImageOperation = 'generations',
 ): string {
 	const proto = normalizeProtocol(route.upstream_protocol);

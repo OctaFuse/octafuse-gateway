@@ -1,0 +1,32 @@
+import type { CatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
+import type { CatalogImagePricingDisplay, CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
+import type { GatewayModel, GatewayProvider } from '@/lib/types';
+import type { UpstreamProtocol } from '@/lib/upstream-protocol';
+import type { RouteFormData, RouteListRow } from '../types';
+
+export type RouteModalProps = {
+	open: boolean;
+	editingRoute: RouteListRow | null;
+	duplicateSourceRouteId: string | null;
+	formData: RouteFormData;
+	saveError: string;
+	isSaving: boolean;
+	isDeleting: boolean;
+	billingCurrency: string;
+	models: GatewayModel[];
+	providers: GatewayProvider[];
+	selectedModel: GatewayModel | undefined;
+	selectedProvider: GatewayProvider | undefined;
+	catalogStandardTierRows: CatalogPricingTierDisplayRow[];
+	catalogImagePricingDisplay: CatalogImagePricingDisplay | null;
+	catalogAudioPricingDisplay: CatalogAudioPricingDisplay | null;
+	selectedModelIsImage: boolean;
+	selectedModelIsAudio: boolean;
+	allowedProtocolsForProvider: UpstreamProtocol[];
+	businessTimezone: string;
+	onClose: () => void;
+	onFormChange: (form: RouteFormData) => void;
+	onSave: () => void;
+	onDelete: () => void;
+	onDuplicate: () => void;
+};

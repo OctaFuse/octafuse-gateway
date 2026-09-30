@@ -89,6 +89,9 @@ export type RouteScheduleFormWindow = {
 	end: string;
 	charged_factor: string;
 	metered_factor: string;
+	/** 省略时保存按基础供应商倍率处理，不写 `schedule.provider`。 */
+	provider_factor?: string;
+	provider_validity?: import('@octafuse/core/db/pricing-schedule').ProviderFactorValidity;
 	/** ISO 1–7；空数组表示每天。 */
 	days: number[];
 };
@@ -120,6 +123,10 @@ export type RouteFormData = {
 	route_group: string;
 	charged_factor: string;
 	metered_factor: string;
+	provider_factor: string;
+	/** UTC ISO；空字符串表示不限制。 */
+	provider_factor_starts_at: string;
+	provider_factor_expires_at: string;
 	schedule_windows: RouteScheduleFormSide;
 };
 
@@ -207,6 +214,9 @@ export const EMPTY_ROUTE_FORM: RouteFormData = {
 	route_group: 'default',
 	charged_factor: '1',
 	metered_factor: '1',
+	provider_factor: '1',
+	provider_factor_starts_at: '',
+	provider_factor_expires_at: '',
 	schedule_windows: [],
 };
 
@@ -221,17 +231,20 @@ export const ROUTE_GROUP_CARD_BADGE_CLASS = 'bg-slate-100 text-slate-700 ring-1 
 export const FACTOR_CHIP_BASE =
 	'inline-flex w-auto shrink-0 whitespace-nowrap rounded-md px-1.5 py-0 text-[10px] font-semibold font-mono tabular-nums leading-4 ring-1 ring-inset';
 
-export const routePricePanelShell: Record<'neutral' | 'charged' | 'metered', string> = {
+export const routePricePanelShell: Record<'neutral' | 'charged' | 'metered' | 'provider', string> = {
 	neutral:
 		'rounded-lg border border-gray-300/90 bg-gray-50/90 p-4 shadow-sm ring-1 ring-gray-200/50',
 	charged:
 		'rounded-lg border border-blue-200/90 bg-blue-50/45 p-4 shadow-sm ring-1 ring-blue-100/60',
 	metered:
 		'rounded-lg border border-emerald-200/90 bg-emerald-50/40 p-4 shadow-sm ring-1 ring-emerald-100/60',
+	provider:
+		'rounded-lg border border-violet-200/90 bg-violet-50/40 p-4 shadow-sm ring-1 ring-violet-100/60',
 };
 
-export const routePricePanelHeaderBorder: Record<'neutral' | 'charged' | 'metered', string> = {
+export const routePricePanelHeaderBorder: Record<'neutral' | 'charged' | 'metered' | 'provider', string> = {
 	neutral: 'border-b border-gray-200/90',
 	charged: 'border-b border-blue-200/80',
 	metered: 'border-b border-emerald-200/80',
+	provider: 'border-b border-violet-200/80',
 };

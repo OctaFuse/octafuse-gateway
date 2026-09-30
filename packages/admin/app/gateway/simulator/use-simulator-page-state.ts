@@ -17,12 +17,13 @@ import {
 	type ImageOperation,
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
+import { inferPlaygroundParseMode, type PlaygroundProtocol } from '@/lib/playground/merge-assistant-text';
+import { previewPlaygroundResponse, readPlaygroundTextStream } from '@/lib/playground/response-preview';
 import {
-	inferPlaygroundParseMode,
-	mergeAssistantTextParts,
-	type PlaygroundProtocol,
-} from '@/lib/playground/merge-assistant-text';
-import { normalizeProtocol, parseLastStreamUsage, tryParseUsageSummary } from '@/lib/playground/usage-parsing';
+	normalizeProtocol,
+	parseLastStreamUsage,
+	tryParseUsageSummary,
+} from '@/lib/playground/usage-parsing';
 import {
 	buildSimulatorRequest,
 	buildSimulatorDashScopeRealtimeUrl,
@@ -136,6 +137,7 @@ export function useSimulatorPageState() {
 	}, []);
 
 	const [sending, setSending] = useState(false);
+	const [interrupted, setInterrupted] = useState(false);
 	const abortRef = useRef<AbortController | null>(null);
 	const realtimeRef = useRef<WebSocket | null>(null);
 	const [responseMeta, setResponseMeta] = useState<ResponseMeta | null>(null);
@@ -143,6 +145,7 @@ export function useSimulatorPageState() {
 	const [responseProtocol, setResponseProtocol] = useState<PlaygroundProtocol>('openai');
 	const [usageHint, setUsageHint] = useState<string | null>(null);
 	const [wirePreview, setWirePreview] = useState<WirePreview | null>(null);
+	const [sentWireSnapshot, setSentWireSnapshot] = useState('');
 	const [wireOpen, setWireOpen] = useState(false);
 	const [responseTab, setResponseTab] = useState<ResponseTab>('merged');
 	const [imagePreviews, setImagePreviews] = useState<ImagePreviewItem[]>([]);
@@ -177,7 +180,8 @@ export function useSimulatorPageState() {
 	}, [routedModels]);
 
 	const modelsInKind = useMemo(
-		() => (isToolKind ? [] : routedModels.filter((m) => resolveModelKind(m) === (filterKind as ModelKindFilter))),
+		() =>
+			isToolKind ? [] : routedModels.filter((m) => resolveModelKind(m) === (filterKind as ModelKindFilter)),
 		[routedModels, filterKind, isToolKind],
 	);
 
@@ -240,7 +244,10 @@ export function useSimulatorPageState() {
 		return Array.from(set).sort((a, b) => a.localeCompare(b));
 	}, [routes, selectedModelId]);
 
-	const selectedModel = useMemo(() => models.find((m) => m.id === selectedModelId) ?? null, [models, selectedModelId]);
+	const selectedModel = useMemo(
+		() => models.find((m) => m.id === selectedModelId) ?? null,
+		[models, selectedModelId],
+	);
 
 	const selectedModelIsImage = useMemo(
 		() => (selectedModel ? isImageRouteModel(selectedModel) : false),
@@ -302,7 +309,8 @@ export function useSimulatorPageState() {
 		},
 		[protocol, selectedAudioOperation, realtimeOperationOptions, routes, selectedModelId, routeGroup],
 	);
-	const selectedUsesDashScopeHttpAsr = selectedDashScopeRealtimeOperation === 'audio.transcriptions.multimodal';
+	const selectedUsesDashScopeHttpAsr =
+		selectedDashScopeRealtimeOperation === 'audio.transcriptions.multimodal';
 	/** DashScope 实时 ASR 的麦克风模式不需要上传文件；发送和按钮校验共用这个判定。 */
 	const usesDashScopeMicrophone = selectedCanUseMicrophone && audioInputMode === 'microphone';
 
@@ -327,7 +335,13 @@ export function useSimulatorPageState() {
 		() =>
 			isToolKind
 				? []
-				: filterMatchingActiveRoutes(routes, selectedModelId, routeGroup, protocol, requestOperation ?? undefined),
+				: filterMatchingActiveRoutes(
+						routes,
+						selectedModelId,
+						routeGroup,
+						protocol,
+						requestOperation ?? undefined,
+				  ),
 		[routes, selectedModelId, routeGroup, protocol, requestOperation, isToolKind],
 	);
 	const customKindLabel = tKind('custom');
@@ -352,7 +366,10 @@ export function useSimulatorPageState() {
 		[matchingRoutes, providersById, locale, customKindLabel],
 	);
 	const supportedSurfaces = useMemo(
-		() => (isToolKind ? listSupportedClientSurfaces([], '', '') : listSupportedClientSurfaces(routes, selectedModelId, routeGroup)),
+		() =>
+			isToolKind
+				? listSupportedClientSurfaces([], '', '')
+				: listSupportedClientSurfaces(routes, selectedModelId, routeGroup),
 		[isToolKind, routes, selectedModelId, routeGroup],
 	);
 	const selectedDashScopeTtsProviderModelName = useMemo(() => {
@@ -373,7 +390,10 @@ export function useSimulatorPageState() {
 				return 'imageProtocol';
 			}
 			if (matchingRoutes.length === 0) return 'route';
-			if (selectedAudioOperation === 'transcriptions' && (protocol === 'openai' || protocol === 'dashscope')) {
+			if (
+				selectedAudioOperation === 'transcriptions' &&
+				(protocol === 'openai' || protocol === 'dashscope')
+			) {
 				const fileUrl = (() => {
 					try {
 						const parsed = JSON.parse(bodyText) as { file_url?: unknown };
@@ -387,7 +407,12 @@ export function useSimulatorPageState() {
 					if (!validated.ok) return 'audioFile';
 				}
 			}
-			if (selectedModelIsImage && !selectedModelIsAudio && protocol === 'openai' && imageOperation === 'edits') {
+			if (
+				selectedModelIsImage &&
+				!selectedModelIsAudio &&
+				protocol === 'openai' &&
+				imageOperation === 'edits'
+			) {
 				const validated = validateEditImageFiles(editFiles);
 				if (!validated.ok) return 'editImages';
 			}
@@ -537,23 +562,30 @@ export function useSimulatorPageState() {
 		imageOperation,
 		editFiles,
 		audioFile,
+		selectedUsesDashScopeHttpAsr,
 	]);
 
-	const displayWire = wirePreview ?? liveWirePreview;
+	const wireSent = Boolean(wirePreview && sentWireSnapshot === JSON.stringify(liveWirePreview));
+	const displayWire = wireSent ? wirePreview : liveWirePreview;
 
-	const mergedAssistantParts = useMemo(() => {
-		const mode = inferPlaygroundParseMode(responseMeta?.contentType ?? null);
-		if (!responseText.trim() || !mode) {
-			return { reasoning: '', body: '' };
-		}
-		return mergeAssistantTextParts(responseText, responseProtocol, mode);
-	}, [responseText, responseProtocol, responseMeta?.contentType]);
+	const mergedAssistantParts = useMemo(
+		() =>
+			previewPlaygroundResponse(
+				responseText,
+				responseProtocol,
+				responseMeta?.contentType ?? null,
+				!sending && !interrupted,
+			),
+		[responseText, responseProtocol, responseMeta?.contentType, sending, interrupted],
+	);
 
 	const { mergedReasoningDisplay, mergedBodyDisplay } = useMemo(() => {
 		const hasRaw = responseText.trim().length > 0;
 		const p = mergedAssistantParts;
 		const reasoningDisplay =
-			p.reasoning || (sending && hasRaw ? t('receiving') : '') || (!sending && hasRaw && !p.reasoning ? '—' : '');
+			p.reasoning ||
+			(sending && hasRaw ? t('receiving') : '') ||
+			(!sending && hasRaw && !p.reasoning ? '—' : '');
 		const bodyDisplay =
 			p.body ||
 			(sending && hasRaw ? t('receiving') : '') ||
@@ -595,12 +627,30 @@ export function useSimulatorPageState() {
 				setProtocolState(p);
 				setBodyText(
 					p === 'openai'
-						? bodyTemplateForSelection('openai', false, 'generations', null, undefined, undefined, undefined, llmOp)
+						? bodyTemplateForSelection(
+								'openai',
+								false,
+								'generations',
+								null,
+								undefined,
+								undefined,
+								undefined,
+								llmOp,
+						  )
 						: BODY_TEMPLATES[p],
 				);
 			} else if (llmOp === 'responses') {
 				setBodyText(
-					bodyTemplateForSelection('openai', false, 'generations', null, undefined, undefined, undefined, llmOp),
+					bodyTemplateForSelection(
+						'openai',
+						false,
+						'generations',
+						null,
+						undefined,
+						undefined,
+						undefined,
+						llmOp,
+					),
 				);
 			}
 			const kindRaw = localStorage.getItem(LS_INVOKE_KIND);
@@ -813,7 +863,18 @@ export function useSimulatorPageState() {
 			setImageOperationState('generations');
 			setEditFiles([]);
 			setAudioFile(null);
-			setBodyText(bodyTemplateForSelection(protocol, false, 'generations', null, undefined, undefined, undefined, openaiLlmOperation));
+			setBodyText(
+				bodyTemplateForSelection(
+					protocol,
+					false,
+					'generations',
+					null,
+					undefined,
+					undefined,
+					undefined,
+					openaiLlmOperation,
+				),
+			);
 			setBodyError(null);
 			setImagePreviews([]);
 			setAudioPreviewUrl(null);
@@ -977,7 +1038,8 @@ export function useSimulatorPageState() {
 				next,
 				nextRequestOperation ?? undefined,
 			).find((candidate) => candidate.upstream_protocol === 'dashscope');
-			const providerModelName = selectedAudioOperation === 'speech' ? nextRoute?.provider_model_name : undefined;
+			const providerModelName =
+				selectedAudioOperation === 'speech' ? nextRoute?.provider_model_name : undefined;
 			setBodyText(
 				bodyTemplateForSelection(
 					next,
@@ -1130,8 +1192,8 @@ export function useSimulatorPageState() {
 	]);
 
 	const stop = useCallback(() => {
+		setInterrupted(true);
 		abortRef.current?.abort();
-		abortRef.current = null;
 		if (realtimeRef.current) {
 			stopDashScopeRealtimeClient(realtimeRef.current);
 			realtimeRef.current = null;
@@ -1221,6 +1283,7 @@ export function useSimulatorPageState() {
 				operation,
 			});
 			setBodyError(null);
+			setInterrupted(false);
 			setSending(true);
 			setResponseText('');
 			setUsageHint(null);
@@ -1229,6 +1292,7 @@ export function useSimulatorPageState() {
 			realtimeAudioChunksRef.current = [];
 			setResponseMeta(null);
 			setResponseTab('raw');
+			setSentWireSnapshot(JSON.stringify(liveWirePreview));
 			setWirePreview({
 				method: 'WebSocket',
 				url,
@@ -1257,7 +1321,8 @@ export function useSimulatorPageState() {
 						});
 					},
 					onMessage: (message) => {
-						const text = typeof message === 'string' ? message : `[binary frame: ${message.byteLength} bytes]`;
+						const text =
+							typeof message === 'string' ? message : `[binary frame: ${message.byteLength} bytes]`;
 						setResponseText((previous) => (previous ? `${previous}\n${text}` : text));
 					},
 					onAudioChunk: (chunk) => {
@@ -1328,6 +1393,7 @@ export function useSimulatorPageState() {
 		}
 
 		setBodyError(null);
+		setInterrupted(false);
 		setSending(true);
 		setResponseText('');
 		setUsageHint(null);
@@ -1335,6 +1401,7 @@ export function useSimulatorPageState() {
 		setAudioPreviewUrl(null);
 		setResponseMeta(null);
 		setResponseTab('merged');
+		setSentWireSnapshot(JSON.stringify(liveWirePreview));
 		setWirePreview({
 			method: 'POST',
 			url: built.url,
@@ -1356,6 +1423,7 @@ export function useSimulatorPageState() {
 				signal: ac.signal,
 			});
 
+			if (abortRef.current !== ac) return;
 			const latencyMs = String(Math.round(performance.now() - t0));
 			const ct = res.headers.get('Content-Type') ?? '';
 
@@ -1403,7 +1471,10 @@ export function useSimulatorPageState() {
 					if (nestedUrl) msg = `${msg}\nupstream: ${nestedUrl}`;
 					setBodyError(msg);
 				} else if (useImages) {
-					const parsedImg = parseImagesGenerationsResponse(JSON.stringify(j), imageRequestMetaFromBody(bodyObj));
+					const parsedImg = parseImagesGenerationsResponse(
+						JSON.stringify(j),
+						imageRequestMetaFromBody(bodyObj),
+					);
 					setImagePreviews(parsedImg.images);
 					setUsageHint(parsedImg.usageHint);
 				} else {
@@ -1413,25 +1484,14 @@ export function useSimulatorPageState() {
 				return;
 			}
 
-			if (ct.includes('text/event-stream') && res.body) {
-				const reader = res.body.getReader();
-				const dec = new TextDecoder();
-				let acc = '';
-				while (true) {
-					const { done, value } = await reader.read();
-					if (done) break;
-					acc += dec.decode(value, { stream: true });
-					flushSync(() => {
-						setResponseText(acc);
-					});
+			const streamMode = inferPlaygroundParseMode(ct);
+			if ((streamMode === 'sse' || streamMode === 'ndjson') && res.body) {
+				const acc = await readPlaygroundTextStream(res, (text) => {
+					if (abortRef.current !== ac || ac.signal.aborted) return;
+					flushSync(() => setResponseText(text));
 					scrollStreamToBottom();
-				}
-				acc += dec.decode();
-				flushSync(() => {
-					setResponseText(acc);
 				});
-				setUsageHint(parseLastStreamUsage(acc, protoNorm));
-				setSending(false);
+				if (!ac.signal.aborted && abortRef.current === ac) setUsageHint(parseLastStreamUsage(acc, protoNorm));
 				return;
 			}
 
@@ -1454,16 +1514,19 @@ export function useSimulatorPageState() {
 				setBodyError(text.slice(0, 500) || `HTTP ${res.status}`);
 			}
 		} catch (e) {
-			if (e instanceof DOMException && e.name === 'AbortError') {
+			if (abortRef.current !== ac) return;
+			if (ac.signal.aborted || (e instanceof Error && e.name === 'AbortError')) {
 				setBodyError(tCommon('requestCancelled'));
-				setResponseText('');
+				setInterrupted(true);
 			} else {
-				setResponseText('');
+				setInterrupted(true);
 				setBodyError(e instanceof Error ? e.message : tCommon('requestFailed'));
 			}
 		} finally {
-			setSending(false);
-			abortRef.current = null;
+			if (abortRef.current === ac) {
+				setSending(false);
+				abortRef.current = null;
+			}
 		}
 	}, [
 		proxyBaseUrl,
@@ -1492,6 +1555,8 @@ export function useSimulatorPageState() {
 		t,
 		tCommon,
 		scrollStreamToBottom,
+		liveWirePreview,
+		selectedUsesDashScopeHttpAsr,
 	]);
 
 	const selectModel = useCallback((id: string) => {
@@ -1587,10 +1652,21 @@ export function useSimulatorPageState() {
 		canSend: sendBlockReason === null && !sending,
 		responseMeta,
 		responseText,
-		usageHint,
+		usageHint:
+			isToolKind || selectedModelIsImage || selectedModelIsAudio
+				? usageHint
+				: tryParseUsageSummary(
+						JSON.stringify({
+							[responseProtocol === 'gemini' ? 'usageMetadata' : 'usage']: mergedAssistantParts.usage,
+						}),
+						responseProtocol,
+				  ) ?? usageHint,
+		wireSent,
 		displayWire,
 		wireOpen,
 		setWireOpen,
+		responsePreview: mergedAssistantParts,
+		interrupted,
 		responseTab,
 		setResponseTab,
 		mergedReasoningDisplay,

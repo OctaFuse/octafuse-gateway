@@ -1,5 +1,6 @@
 'use client';
 
+import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useMemo, useState } from 'react';
 import { CodeBracketIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
@@ -770,7 +771,7 @@ export function ModelModal(props: Props) {
 								<div className="min-w-0 rounded-md border border-slate-200/80 bg-white p-3">
 									<div className="mb-3">
 										<div className="flex items-start justify-between gap-2">
-											<h4 className="text-sm font-medium text-gray-800">{t('catalogSchedule')}</h4>
+											<h4 className="flex items-center gap-2 text-sm font-medium text-gray-800">{t('catalogSchedule')}<PricingInfoHint kind="catalog" align="start" /></h4>
 											<button
 												type="button"
 												onClick={() =>

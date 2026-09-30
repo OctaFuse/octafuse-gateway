@@ -212,6 +212,43 @@ describe('coerceRoutePriceOverrideInput', () => {
 		);
 	});
 
+	it('keeps provider_factor and a validity window', () => {
+		const json = coerceRoutePriceOverrideInput({
+			provider_factor: '0.5',
+			provider_factor_starts_at: '2026-10-01T00:00:00.000Z',
+			provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+			charged_factor: 1,
+			schedule: {
+				mode: 'override',
+				provider: [{ start: '00:00', end: '08:00', factor: 0.4 }],
+			},
+		});
+		assert.ok(json);
+		const obj = JSON.parse(json!) as {
+			provider_factor: number;
+			provider_factor_starts_at: string;
+			schedule: { provider: Array<{ factor: number }> };
+		};
+		assert.equal(obj.provider_factor, 0.5);
+		assert.equal(obj.provider_factor_starts_at, '2026-10-01T00:00:00.000Z');
+		assert.equal(obj.schedule.provider[0]?.factor, 0.4);
+	});
+
+	it('rejects a validity window that ends before it starts', () => {
+		assert.throws(
+			() =>
+				coerceRoutePriceOverrideInput({
+					provider_factor: 0.5,
+					provider_factor_starts_at: '2026-11-01T00:00:00.000Z',
+					provider_factor_expires_at: '2026-10-01T00:00:00.000Z',
+				}),
+			(error: unknown) =>
+				error instanceof Error &&
+				'status' in error &&
+				(error as { status: unknown }).status === 400
+		);
+	});
+
 	it('rejects negative, malformed, and non-numeric factor values', () => {
 		for (const value of [-1, '0abc', '1foo', true]) {
 			assert.throws(
@@ -314,5 +351,48 @@ describe('coerceRoutePriceOverrideInput', () => {
 				'status' in error &&
 				(error as { status: unknown }).status === 400
 		);
+	});
+});
+
+describe('provider schedule validity API input', () => {
+	it('stores normalized validity and explicit unlimited', () => {
+		const window = { start: '09:00', end: '12:00', factor: 0.5, days: [1, 2, 3, 4, 5] };
+		for (const validity of [
+			{},
+			{ starts_at: '2026-10-01T08:00:00+08:00', expires_at: '2026-11-01T08:00:00+08:00' },
+		]) {
+			const saved = coerceRoutePriceOverrideInput({
+				schedule: {
+					mode: 'override',
+					charged: [window],
+					metered: [window],
+					provider: [{ ...window, validity }],
+				},
+			});
+			assert.ok(saved);
+			const result = JSON.parse(saved);
+			assert.deepEqual(
+				result.schedule.provider[0].validity,
+				'starts_at' in validity
+					? { starts_at: '2026-10-01T00:00:00.000Z', expires_at: '2026-11-01T00:00:00.000Z' }
+					: {}
+			);
+		}
+	});
+	it('rejects invalid or reversed validity instead of dropping it', () => {
+		for (const validity of [
+			null,
+			'invalid',
+			{ starts_at: 'bad' },
+			{ starts_at: '2026-11-01', expires_at: '2026-10-01' },
+		]) {
+			assert.throws(
+				() =>
+					coerceRoutePriceOverrideInput({
+						schedule: { provider: [{ start: '09:00', end: '12:00', factor: 0.5, validity }] },
+					}),
+				/validity/
+			);
+		}
 	});
 });

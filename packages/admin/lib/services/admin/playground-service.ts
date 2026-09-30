@@ -31,6 +31,9 @@ import { modelKindFromFlags, resolveOpenaiUpstreamCapability } from '@/lib/invok
 import { AdminServiceError, badRequest, notFound } from './errors';
 import { buildPlaygroundDashScopeImageRequest } from './playground-dashscope-image';
 import { isPendingProviderImportApiKey } from '@octafuse/core/db/provider-key-utils';
+import type { PlaygroundRouteDraft } from '@/lib/playground/route-draft';
+import { parsePlaygroundRouteDraft } from './playground-route-draft';
+import { providerSupportsUpstreamProtocol } from './shared';
 import { redactPlaygroundOutboundHeaders } from '@/lib/playground/outbound-headers';
 
 /** 与 Proxy `RouteResult` 对齐的最小子集，供合并默认参数与拼 URL。 */
@@ -93,6 +96,17 @@ export async function resolvePlaygroundRoute(
 		throw notFound('Route not found');
 	}
 
+	return resolvePlaygroundRouteFields(repos, row);
+}
+
+async function resolvePlaygroundRouteFields(
+	repos: GatewayRepositories,
+	row: Pick<
+		PlaygroundRouteDraft,
+		'model_id' | 'provider_id' | 'provider_model_name' | 'upstream_protocol' | 'custom_params'
+	> & { upstream_operation?: string; adapter?: string },
+	isDraft = false,
+): Promise<PlaygroundResolvedRoute> {
 	const provider = await repos.providers.getProviderById(row.provider_id);
 	if (!provider) {
 		throw badRequest('Provider not found for this route');
@@ -114,6 +128,9 @@ export async function resolvePlaygroundRoute(
 		throw badRequest(e instanceof Error ? e.message : 'Invalid upstream_protocol');
 	}
 
+	if (isDraft && !providerSupportsUpstreamProtocol(protocol, provider)) {
+		throw badRequest(`Provider has no base URL for upstream protocol "${protocol}".`);
+	}
 	const providerEndpoints = parseProviderEndpoints(provider);
 
 	const customParams = parseJsonObject(row.custom_params);
@@ -122,6 +139,7 @@ export async function resolvePlaygroundRoute(
 	}
 
 	const model = await repos.models.getModelDetailWithRouteCounts(row.model_id);
+	if (isDraft && !model) throw badRequest('Model not found');
 	const isImageModel = model
 		? isImageGenerationModel({
 				output_modalities: model.output_modalities as string | null | undefined,
@@ -204,8 +222,10 @@ export function buildPlaygroundGeminiUpstreamRequest(
 	return { url: url.toString(), headers };
 }
 
-export type PlaygroundInvokeInput = {
-	routeId: string;
+export type PlaygroundInvokeInput = (
+	| { routeId: string; routeDraft?: never }
+	| { routeId?: never; routeDraft: unknown }
+) & {
 	body: Record<string, unknown>;
 	/** 仅 `upstream_protocol === gemini` 时使用；缺省为 `generateContent`。 */
 	geminiAction?: GeminiContentAction;
@@ -862,7 +882,11 @@ export async function invokePlaygroundUpstream(
 	input: PlaygroundInvokeInput,
 	requestSignal?: AbortSignal,
 ): Promise<PlaygroundInvokeResult> {
-	const route = await applyPlaygroundUpstreamCredential(await resolvePlaygroundRoute(repos, input.routeId));
+	const resolved =
+		input.routeDraft !== undefined
+			? await resolvePlaygroundRouteFields(repos, parsePlaygroundRouteDraft(input.routeDraft), true)
+			: await resolvePlaygroundRoute(repos, input.routeId ?? '');
+	const route = await applyPlaygroundUpstreamCredential(resolved);
 	const userBody = input.body;
 	if (!isPlainObject(userBody)) {
 		throw badRequest('body must be a JSON object');

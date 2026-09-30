@@ -1,8 +1,15 @@
 'use client';
 
+import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
+import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useTranslations } from 'next-intl';
 import { getUserChargedCatalogTierRows, type CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
 import type { GatewayModel } from '@/lib/types';
+import {
+	isProviderFactorActive,
+	resolveProviderFactorValidity,
+	type ProviderFactorValidity,
+} from '@octafuse/core/db/pricing-schedule';
 
 function parseNonNegativeFactor(text: string): number | null {
 	const n = Number(text.trim());
@@ -85,12 +92,16 @@ export function ScheduleWindowEffectivePrices({
 	catalogFactor,
 	chargedFactorText,
 	meteredFactorText,
+	providerFactorText,
+	providerValidity,
 	billingCurrency,
 }: {
 	model: GatewayModel;
 	catalogFactor: number;
 	chargedFactorText: string;
 	meteredFactorText: string;
+	providerFactorText?: string;
+	providerValidity?: ProviderFactorValidity;
 	billingCurrency: string;
 }) {
 	const t = useTranslations('routes.modal');
@@ -100,27 +111,37 @@ export function ScheduleWindowEffectivePrices({
 	const official = Number.isFinite(catalogFactor) && catalogFactor > 0 ? catalogFactor : 1;
 	const charged = parseNonNegativeFactor(chargedFactorText);
 	const metered = parseNonNegativeFactor(meteredFactorText);
+	const validity = resolveProviderFactorValidity(
+		{ providerStartsAt: null, providerExpiresAt: null, providerWindowInvalid: false },
+		{ start: '00:00', end: '24:00', factor: 1, validity: providerValidity ?? {} }
+	);
+	const provider = isProviderFactorActive(validity, new Date())
+		? parseNonNegativeFactor(providerFactorText ?? '') ?? 1
+		: 1;
 	const chargedRows = getUserChargedCatalogTierRows(
 		model,
-		charged == null ? null : official * charged,
-		billingCurrency,
+		charged == null ? null : official * charged * provider,
+		billingCurrency
 	);
 	const meteredRows = getUserChargedCatalogTierRows(
 		model,
-		metered == null ? null : official * metered,
-		billingCurrency,
+		metered == null ? null : official * metered * provider,
+		billingCurrency
 	);
 	const showRange = chargedRows.length > 1 || meteredRows.length > 1;
 
 	return (
-		<div className="overflow-hidden rounded border border-gray-200 bg-white">
+		<div className="overflow-x-auto rounded border border-gray-200 bg-white">
 			<table className="min-w-full text-left text-[10px]">
 				<thead className="bg-gray-50 text-[10px] font-semibold tracking-wide text-gray-500">
 					<tr>
-						<th className="whitespace-nowrap px-2 py-1">{t('scheduleWindowPricesSide')}</th>
-						{showRange ? (
-							<th className="whitespace-nowrap px-2 py-1">{tTable('inputRange')}</th>
-						) : null}
+						<th className="whitespace-nowrap px-2 py-1">
+							<span className="inline-flex items-center gap-1">
+								{t('scheduleWindowPricesSide')}
+								<PricingInfoHint kind="unitPrices" align="start" />
+							</span>
+						</th>
+						{showRange ? <th className="whitespace-nowrap px-2 py-1">{tTable('inputRange')}</th> : null}
 						<th className="whitespace-nowrap px-2 py-1 text-right">{tTable('input')}</th>
 						<th className="whitespace-nowrap px-2 py-1 text-right">{tTable('output')}</th>
 						<th className="whitespace-nowrap px-2 py-1 text-right">{tTable('cacheRead')}</th>
@@ -145,6 +166,10 @@ export function ScheduleWindowEffectivePrices({
 				</tbody>
 			</table>
 			<p className="border-t border-gray-100 bg-gray-50/90 px-2 py-1 text-[10px] leading-snug text-gray-500">
+				{tTable('unitFooter', {
+					unit: tTable('unitPerMillion', { symbol: getGatewayCurrencySymbol(billingCurrency) }),
+				})}
+				<br />
 				{t('scheduleWindowPricesHint')}
 			</p>
 		</div>

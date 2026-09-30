@@ -1,6 +1,6 @@
 /**
  * 管理路由：`/admin/playground` — 管理员试调用。
- * - routeId 分支：直连单条 model_routes 上游（不计费、不写 logs、无 failover）
+ * - routeId / routeDraft 分支：直连单条路由（已保存或草稿）的上游（不计费、不写 logs、无 failover）
  * - toolId 分支：读 system_config catalog 直连工具引擎（可测非 Active；不计费、不写 logs）
  */
 import { Hono } from 'hono';
@@ -55,6 +55,7 @@ adminPlaygroundRoutes.get('/realtime', async (c) => {
 
 type PlaygroundPostBody = {
 	routeId?: unknown;
+	routeDraft?: unknown;
 	toolId?: unknown;
 	provider?: unknown;
 	body?: unknown;
@@ -70,6 +71,9 @@ adminPlaygroundRoutes.post('/', async (c) => {
 		return c.json({ success: false as const, message: 'Invalid JSON body' }, 400);
 	}
 
+	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+		return c.json({ success: false as const, message: 'Expected a JSON object' }, 400);
+	}
 	const rawBody = parsed.body;
 	if (rawBody == null || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
 		return c.json({ success: false as const, message: 'body must be a JSON object' }, 400);
@@ -78,9 +82,10 @@ adminPlaygroundRoutes.post('/', async (c) => {
 	const toolId = typeof parsed.toolId === 'string' ? parsed.toolId.trim() : '';
 	const routeId = typeof parsed.routeId === 'string' ? parsed.routeId.trim() : '';
 
-	if (toolId && routeId) {
+	const hasDraft = parsed.routeDraft !== undefined;
+	if ([Boolean(toolId), Boolean(routeId), hasDraft].filter(Boolean).length > 1) {
 		return c.json(
-			{ success: false as const, message: 'Provide either routeId or toolId, not both' },
+			{ success: false as const, message: 'Provide exactly one of routeId, routeDraft, or toolId' },
 			400
 		);
 	}
@@ -116,9 +121,9 @@ adminPlaygroundRoutes.post('/', async (c) => {
 		}
 	}
 
-	if (!routeId) {
+	if (!routeId && !hasDraft) {
 		return c.json(
-			{ success: false as const, message: 'routeId or toolId is required' },
+			{ success: false as const, message: 'routeId, routeDraft, or toolId is required' },
 			400
 		);
 	}
@@ -148,7 +153,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 			await invokePlaygroundUpstream(
 				c.get('repositories'),
 				{
-					routeId,
+					...(hasDraft ? { routeDraft: parsed.routeDraft } : { routeId }),
 					body: rawBody as Record<string, unknown>,
 					geminiAction,
 					imageOperation,

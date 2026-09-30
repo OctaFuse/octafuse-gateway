@@ -6,7 +6,6 @@ import {
 	ArrowLongRightIcon,
 	ChevronDownIcon,
 	ClipboardDocumentIcon,
-	ClockIcon,
 	ExclamationTriangleIcon,
 	PencilSquareIcon,
 	PlusIcon,
@@ -20,27 +19,16 @@ import {
 } from '@octafuse/core/db/model-modalities';
 import { providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
-import {
-	parseChargedFactorFromPriceOverride,
-	parseMeteredFactorFromPriceOverride,
-} from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { tagBadgeClass } from '../../models/model-utils';
 import { useStickySummary } from '../sticky-summary-store';
 import type { RouteModelGroup, RequestSurfaceGroup } from '../route-utils';
 import {
 	compareRoutesWithinPriorityLayer,
-	factorChipClassForValue,
-	factorLevelForValue,
-	formatFactorMultiplier,
-	formatFactorMultiplierForChip,
-	formatScheduleRange,
-	formatSharedScheduleWindowsHint,
-	resolveRouteScheduleDisplay,
 	groupSectionsByRequestSurface,
-	hasBasePricingInversion,
 	parseModelTagsList,
 	protocolBadgeClass,
 	requestSurfacePath,
@@ -56,6 +44,7 @@ import {
 import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
+import { RouteTargetPricing } from './route-target-pricing';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
 
@@ -171,49 +160,35 @@ function RouteTarget({
 	const showKind = Boolean(
 		kindLabel && kindLabel.trim().toLowerCase() !== providerName.trim().toLowerCase()
 	);
-	const charged = parseChargedFactorFromPriceOverride(route.price_override);
-	const metered = parseMeteredFactorFromPriceOverride(route.price_override);
-	const chargedValue = charged != null && Number.isFinite(charged) ? charged : 1;
-	const meteredValue = metered != null && Number.isFinite(metered) ? metered : 1;
-	const scheduleWindows = resolveRouteScheduleDisplay(route.price_override);
-	const scheduleHint = formatSharedScheduleWindowsHint(scheduleWindows);
-	const hasSchedule = Boolean(scheduleHint);
-	const scheduleTooltip = t('badgeScheduleTooltip', {
-		windows: scheduleHint || '',
-	});
-	const hasPricingInversion = hasBasePricingInversion(chargedValue, meteredValue);
 	const enabled = route.status === 'active';
 	const providerDisabled = provider?.status === 'disabled';
+	const available = enabled && !providerDisabled;
 
-	const factorTooltip = (factor: number, side: 'charged' | 'metered') =>
-		t(side === 'charged' ? 'badgeChargedTooltip' : 'badgeMeteredTooltip', {
-			value: formatFactorMultiplier(factor),
-			status: tList(`factorStatus.${side}.${factorLevelForValue(factor)}`),
-		});
-	const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
-	const formatWeekdays = (days: number[]) => {
-		const sorted = [...new Set(days)].sort((a, b) => a - b);
-		const ranges: number[][] = [];
-		for (const day of sorted) {
-			const last = ranges[ranges.length - 1];
-			if (last && day === last[last.length - 1] + 1) last.push(day);
-			else ranges.push([day]);
-		}
-		const label = (day: number) => weekdayFormatter.format(new Date(Date.UTC(2026, 0, 4 + day)));
-		return ranges.map(range => range.length > 1 ? `${label(range[0])}–${label(range[range.length - 1])}` : label(range[0])).join(' / ');
-	};
-	const pricingColumns = 'grid grid-cols-[minmax(0,1fr)_3.75rem_3.75rem] items-center gap-x-1';
 
 	return (
 		<div
-			className={`flex w-full min-w-[15rem] flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-64 sm:max-w-full ${
-				enabled
+			className={`flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-[18.5rem] sm:max-w-full ${
+				available
 					? 'border-emerald-200 border-l-emerald-500 bg-white shadow-sm hover:border-emerald-400 hover:shadow-md'
 					: 'border-dashed border-slate-300 border-l-slate-400 bg-slate-100/80 hover:border-slate-400'
 			}`}
 		>
-			<div className="p-3">
+			<div className="p-2.5">
 				<div className="flex items-start gap-2">
+					{providerDisabled && (
+						<span className="inline-flex shrink-0 pt-0.5">
+							<InfoHintPopover
+								label={t('providerDisabled')}
+								openOnHover
+								portal
+								align="start"
+								panelClassName="max-w-40"
+								icon={<ExclamationTriangleIcon className="h-3.5 w-3.5 text-amber-600" aria-hidden />}
+							>
+								{t('providerDisabled')}
+							</InfoHintPopover>
+						</span>
+					)}
 					<button
 						type="button"
 						onClick={() => onEdit(route)}
@@ -221,7 +196,7 @@ function RouteTarget({
 						title={t('editRoute')}
 					>
 						<span className="flex items-center gap-1.5">
-							<span className={`min-w-0 truncate text-xs font-semibold ${enabled ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
+							<span className={`min-w-0 truncate text-xs font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
 							<PencilSquareIcon className="h-3 w-3 shrink-0 text-slate-400 group-hover:text-blue-600" aria-hidden />
 						</span>
 						<span className="mt-1 block min-h-4 truncate text-[10px] leading-4 text-slate-500" title={kindLabel ?? undefined}>
@@ -232,25 +207,25 @@ function RouteTarget({
 						enabled={stickyEnabled}
 						count={stickyBindingCount}
 						total={stickyTotal}
-						routeAvailable={enabled && !providerDisabled}
+						routeAvailable={available}
 					/>
 				</div>
 				<button
 					type="button"
 					onClick={() => onEdit(route)}
-					className={`mt-2 block w-full truncate rounded-md px-2 py-1.5 text-left font-mono text-[10px] leading-4 text-slate-600 hover:bg-slate-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${enabled ? 'bg-slate-50' : 'bg-white/80'}`}
+					className={`mt-1.5 block w-full truncate rounded-md px-2 py-1 text-left font-mono text-[10px] leading-4 text-slate-600 hover:bg-slate-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${available ? 'bg-slate-50' : 'bg-white/80'}`}
 					title={route.provider_model_name}
 					aria-label={`${t('editRoute')}: ${route.provider_model_name}`}
 				>
 					{route.provider_model_name}
 				</button>
-				<div className="mt-2.5 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4">
+				<div className="mt-2 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4">
 					<button
 						type="button"
 						onClick={() => onToggleStatus(route)}
 						disabled={togglingId === route.id}
 						aria-pressed={enabled}
-						className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${enabled ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
+						className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${enabled ? (providerDisabled ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200') : 'bg-slate-600 text-white hover:bg-slate-700'}`}
 						title={enabled ? tList('routeEnabled') : tList('routeDisabled')}
 						aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
 					>
@@ -267,50 +242,7 @@ function RouteTarget({
 					) : null}
 				</div>
 			</div>
-			<button
-				type="button"
-				onClick={() => onEdit(route)}
-				className="w-full border-t border-slate-100 px-3 py-2 text-left transition hover:bg-slate-50/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
-				title={hasSchedule ? scheduleTooltip : t('editRoute')}
-				aria-label={`${t('editRoute')} · ${tList('factorsAria')}${hasSchedule ? ` · ${scheduleTooltip}` : ''}`}
-			>
-				<span className={`${pricingColumns} pb-1.5 text-[10px] leading-4 text-slate-500`}>
-					<span className="inline-flex items-center gap-1"><ClockIcon className="h-3 w-3" aria-hidden />{t('pricingPeriod')}</span>
-					<span className="text-right">{t('pricingCharged')}</span>
-					<span className="text-right">{t('pricingMetered')}</span>
-				</span>
-				<span className={`${pricingColumns} min-h-7`}>
-					<span className="text-[11px] text-slate-600">{t('basePricing')}</span>
-					<span className="justify-self-end" title={factorTooltip(chargedValue, 'charged')} aria-label={factorTooltip(chargedValue, 'charged')}>
-						<span className={factorChipClassForValue(chargedValue, 'charged')}>{formatFactorMultiplierForChip(chargedValue)}</span>
-					</span>
-					<span className="justify-self-end" title={factorTooltip(meteredValue, 'metered')} aria-label={factorTooltip(meteredValue, 'metered')}>
-						<span className={factorChipClassForValue(meteredValue, 'metered')}>{formatFactorMultiplierForChip(meteredValue)}</span>
-					</span>
-				</span>
-				{scheduleWindows.map((window, index) => (
-					<span key={`${window.start}-${window.end}-${index}`} className={`${pricingColumns} min-h-7 border-t border-dashed border-slate-100 py-1 text-[11px]`}>
-						<span className="min-w-0 text-slate-600">
-							<span className="block whitespace-nowrap tabular-nums">{formatScheduleRange(window.start, window.end)}</span>
-							{window.days && window.days.length < 7 ? (
-								<span className="block text-[10px] leading-4 text-slate-500">{formatWeekdays(window.days)}</span>
-							) : null}
-						</span>
-						<span className="justify-self-end" title={factorTooltip(window.charged_factor, 'charged')} aria-label={factorTooltip(window.charged_factor, 'charged')}>
-							<span className={factorChipClassForValue(window.charged_factor, 'charged')}>{formatFactorMultiplierForChip(window.charged_factor)}</span>
-						</span>
-						<span className="justify-self-end" title={factorTooltip(window.metered_factor, 'metered')} aria-label={factorTooltip(window.metered_factor, 'metered')}>
-							<span className={factorChipClassForValue(window.metered_factor, 'metered')}>{formatFactorMultiplierForChip(window.metered_factor)}</span>
-						</span>
-					</span>
-				))}
-			</button>
-			{providerDisabled || hasPricingInversion ? (
-				<div className="mt-auto space-y-1 border-t border-amber-100 bg-amber-50/70 px-3 py-1.5 text-[10px] leading-4 text-amber-800">
-					{providerDisabled ? <span className="flex items-center gap-1.5"><ExclamationTriangleIcon className="h-3 w-3 shrink-0" aria-hidden />{t('providerDisabled')}</span> : null}
-					{hasPricingInversion ? <span className="flex items-center gap-1.5" title={tList('baseInversionTooltip')}><ExclamationTriangleIcon className="h-3 w-3 shrink-0" aria-hidden />{tList('baseInversionBadge')}</span> : null}
-				</div>
-			) : null}
+			<RouteTargetPricing priceOverride={route.price_override} onEdit={() => onEdit(route)} />
 		</div>
 	);
 }
@@ -888,8 +820,10 @@ export function UpstreamPoolPanel({
 				className={
 					isSummary
 						? 'flex min-w-0 flex-col items-stretch gap-1'
-						: 'flex min-w-0 flex-col items-stretch gap-3 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto'
+						: 'route-flow-scroll flex min-w-0 flex-col items-stretch gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto md:pb-3'
 				}
+				role="region"
+				tabIndex={isSummary ? undefined : 0}
 				aria-label={t('priorityLadderAria')}
 			>
 				{priorityLayers.map(([priority, routes], layerIndex) => (

@@ -143,6 +143,33 @@ describe('summarizePricingAuditJson', () => {
 		assert.ok(line!.includes('user ×0.8'));
 	});
 
+	it('includes an official provider factor from the charge snapshot or a flat audit', () => {
+		const fromSnapshot = summarizePricingAuditJson(
+			JSON.stringify({
+				v: 6,
+				kind: 'chat',
+				snapshot: {
+					user_charge: {
+						source: 'model_x_factor',
+						effective_factor: 0.5,
+						provider_factor: { effective: 0.5, active: true },
+					},
+				},
+			})
+		);
+		assert.ok(fromSnapshot?.includes('provider ×0.5'));
+
+		const flat = summarizePricingAuditJson(
+			JSON.stringify({
+				v: 6,
+				kind: 'image_per_image',
+				output_image_count: 1,
+				provider_factor: { effective: 0.5, active: true },
+			})
+		);
+		assert.ok(flat?.includes('provider ×0.5'));
+	});
+
 	it('summarizes audio_tokens audit', () => {
 		const line = summarizePricingAuditJson(
 			JSON.stringify({

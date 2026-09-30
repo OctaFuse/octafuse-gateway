@@ -26,7 +26,11 @@ import {
 } from '../playground-utils';
 import type { GeminiAction, RouteListRow } from '../types';
 
+import { LlmRequestEditor } from '@/components/model-test/llm-request-editor';
+
 type Props = {
+	llm: boolean;
+	onApplyLlmBody: (text: string) => void;
 	bodyText: string;
 	onBodyTextChange: (v: string) => void;
 	bodyDirtyHint: boolean;
@@ -64,6 +68,8 @@ type Props = {
 };
 
 export function PlaygroundRequestPanel({
+	llm,
+	onApplyLlmBody,
 	bodyText,
 	onBodyTextChange,
 	bodyDirtyHint,
@@ -102,7 +108,9 @@ export function PlaygroundRequestPanel({
 	const t = useTranslations('playground');
 	const tCommon = useTranslations('common');
 	const showGemini =
-		normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' && !selectedIsImage && !selectedIsAudio;
+		normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' &&
+		!selectedIsImage &&
+		!selectedIsAudio;
 	const llmFamily = playgroundLlmFamilyForRoute(selected, {
 		isImage: selectedIsImage,
 		isAudio: selectedIsAudio,
@@ -118,7 +126,7 @@ export function PlaygroundRequestPanel({
 				upstreamProtocol: selected?.upstream_protocol,
 				providerModelName: selected?.provider_model_name,
 			}),
-		[bodyText, selected?.custom_params, selected?.upstream_protocol, selected?.provider_model_name],
+		[bodyText, selected?.custom_params, selected?.upstream_protocol, selected?.provider_model_name]
 	);
 	const routeHeaderRows = useMemo(
 		() =>
@@ -127,19 +135,23 @@ export function PlaygroundRequestPanel({
 				upstreamProtocol: selected?.upstream_protocol,
 				sentHeaders: lastSentWireHeaders,
 			}),
-		[selected?.custom_params, selected?.upstream_protocol, lastSentWireHeaders],
+		[selected?.custom_params, selected?.upstream_protocol, lastSentWireHeaders]
 	);
 	const actualBodyJson = lastSentWireBody ?? (mergedPreview.status === 'preview' ? mergedPreview.json : null);
 	const actualBodyHint = lastSentWireBody
 		? t('sentBodyHint')
 		: mergedPreview.status === 'invalid'
-			? t('sentBodyInvalidJson')
-			: splitPlaygroundCustomParams(selected?.custom_params).forceOverrideBody
-				? t('sentBodyPreviewHintForceOverride')
-				: t('sentBodyPreviewHint');
+		? t('sentBodyInvalidJson')
+		: splitPlaygroundCustomParams(selected?.custom_params).forceOverrideBody
+		? t('sentBodyPreviewHintForceOverride')
+		: t('sentBodyPreviewHint');
 	const headerHint = lastSentWireHeaders ? t('sentHeadersHintSent') : t('sentHeadersHint');
 	const sampleLabel = (id: PlaygroundLlmSampleId) =>
-		id === 'connectivity' ? t('templateConnectivity') : id === 'tools' ? t('templateToolStream') : t('templateReasoning');
+		id === 'connectivity'
+			? t('templateConnectivity')
+			: id === 'tools'
+			? t('templateToolStream')
+			: t('templateReasoning');
 	const llmSampleSwitcher = llmFamily ? (
 		<div
 			className="inline-flex rounded-md border border-slate-300 bg-slate-100 p-0.5"
@@ -169,6 +181,43 @@ export function PlaygroundRequestPanel({
 			})}
 		</div>
 	) : null;
+
+	if (llm)
+		return (
+			<LlmRequestEditor
+				family={llmFamily}
+				modelHint={`${selected?.model_id ?? ''} ${selected?.provider_model_name ?? ''}`.toLowerCase()}
+				bodyText={bodyText}
+				onChange={onBodyTextChange}
+				onApplySample={onApplyLlmBody}
+				geminiStreaming={geminiAction === 'streamGenerateContent'}
+				onGeminiStreamingChange={(stream) =>
+					onGeminiActionChange(stream ? 'streamGenerateContent' : 'generateContent')
+				}
+				sending={sending}
+				canSend={canSend}
+				onSend={onSend}
+				onStop={onStop}
+				blockedHint={sendBlockedHint}
+				error={bodyError}
+				notice={bodyDirtyHint ? t('bodyDirtyHintLlm') : null}
+				url={requestTargetUrl}
+				actualBody={selected ? actualBodyJson : tCommon('selectRouteFirst')}
+				sent={Boolean(lastSentWireBody)}
+				headers={selected ? (
+					<div className="space-y-1 font-mono text-xs">
+						{routeHeaderRows.map((row) => (
+							<p
+								key={row.name}
+								className={row.source === 'custom_params' ? 'break-all text-amber-800' : 'break-all'}
+							>
+								{row.name}: {row.value}
+							</p>
+						))}
+					</div>
+				) : null}
+			/>
+		);
 
 	return (
 		<section className="flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
@@ -200,9 +249,7 @@ export function PlaygroundRequestPanel({
 			</div>
 
 			{bodyDirtyHint ? (
-				<p className="text-xs text-amber-800">
-					{t(llmFamily ? 'bodyDirtyHintLlm' : 'bodyDirtyHint')}
-				</p>
+				<p className="text-xs text-amber-800">{t(llmFamily ? 'bodyDirtyHintLlm' : 'bodyDirtyHint')}</p>
 			) : null}
 			{imageSendBlocked ? (
 				<div className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-sm text-amber-900">
@@ -236,12 +283,12 @@ export function PlaygroundRequestPanel({
 							selectedUsesDashScopeRealtime
 								? 'audioRealtimeDashScopeHint'
 								: selectedAudioUsesDashScope
-									? selectedIsAudioTranscription
-										? 'audioTranscriptionsDashScopeHint'
-										: 'audioSpeechHint'
-									: selectedIsAudioTranscription
-										? 'audioTranscriptionsHint'
-										: 'audioSpeechHint',
+								? selectedIsAudioTranscription
+									? 'audioTranscriptionsDashScopeHint'
+									: 'audioSpeechHint'
+								: selectedIsAudioTranscription
+								? 'audioTranscriptionsHint'
+								: 'audioSpeechHint'
 						)}
 					</p>
 					{selectedCanUseMicrophone ? (
@@ -287,8 +334,8 @@ export function PlaygroundRequestPanel({
 									selectedUsesDashScopeRealtime
 										? 'audioRealtimeFileDashScopeHint'
 										: selectedAudioUsesDashScope
-											? 'audioFileDashScopeHint'
-											: 'audioFileHint',
+										? 'audioFileDashScopeHint'
+										: 'audioFileHint'
 								)}
 							</p>
 							{!audioFile ? (
@@ -362,7 +409,9 @@ export function PlaygroundRequestPanel({
 							/>
 							<p className="mt-1 text-[11px] text-gray-400">
 								{t('referenceImagesHint', { max: IMAGE_MAX_REFERENCE_COUNT })}
-								{editFiles.length > 0 ? ` · ${t('referenceImagesSelected', { count: editFiles.length })}` : ''}
+								{editFiles.length > 0
+									? ` · ${t('referenceImagesSelected', { count: editFiles.length })}`
+									: ''}
 							</p>
 							{editFiles.length === 0 ? (
 								<p className="mt-1 text-xs text-amber-700">{t('referenceImagesRequired')}</p>
@@ -440,7 +489,10 @@ export function PlaygroundRequestPanel({
 												fromCustom ? 'bg-amber-50' : ''
 											}`}
 										>
-											<span className="truncate font-mono text-xs font-semibold text-gray-800" title={row.name}>
+											<span
+												className="truncate font-mono text-xs font-semibold text-gray-800"
+												title={row.name}
+											>
 												{row.name}
 											</span>
 											<span className="min-w-0 break-all font-mono text-xs text-gray-700" title={row.value}>
@@ -464,7 +516,9 @@ export function PlaygroundRequestPanel({
 				<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
 					<div className="flex min-h-0 min-w-0 flex-col">
 						<div className="mb-1 flex items-center justify-between gap-2">
-							<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('inputBody')}</label>
+							<label className="text-xs font-medium uppercase tracking-wider text-gray-500">
+								{t('inputBody')}
+							</label>
 							{llmSampleSwitcher}
 						</div>
 						<textarea
@@ -476,7 +530,10 @@ export function PlaygroundRequestPanel({
 						/>
 					</div>
 					<div className="flex min-h-0 min-w-0 flex-col">
-						<label className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-500" title={actualBodyHint}>
+						<label
+							className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-500"
+							title={actualBodyHint}
+						>
 							{t('sentBody')}
 						</label>
 						<pre className={`${codeBlockClass} min-h-[180px] flex-1 overflow-y-auto`}>
@@ -487,7 +544,9 @@ export function PlaygroundRequestPanel({
 			</div>
 
 			{bodyError ? (
-				<div className="rounded-md border border-red-200 bg-red-50 p-2.5 text-sm text-red-600">{bodyError}</div>
+				<div className="rounded-md border border-red-200 bg-red-50 p-2.5 text-sm text-red-600">
+					{bodyError}
+				</div>
 			) : null}
 		</section>
 	);
