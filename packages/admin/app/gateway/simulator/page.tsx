@@ -4,6 +4,7 @@
  * Browser-side simulator: calls the Proxy directly (user-provided Base URL) with a real API key,
  * exercising auth, routing, billing, and request logs (unlike Playground upstream tests).
  */
+import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useTranslations } from 'next-intl';
 import { SimulatorRequestPanel } from './components/simulator-request-panel';
 import { SimulatorResponsePanel } from './components/simulator-response-panel';
@@ -44,7 +45,7 @@ export default function SimulatorPage() {
 				<p className="mt-1 max-w-3xl text-sm text-gray-500">
 					{t('subtitle', { product: tBrand('product') })}
 					<span className="text-gray-400"> · </span>
-					{t('usageNote')}
+					{t('usageNote')} <PricingInfoHint kind="simulator" align="start" />
 				</p>
 			</div>
 

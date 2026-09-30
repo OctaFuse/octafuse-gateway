@@ -1,5 +1,7 @@
 'use client';
 
+import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
+import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useTranslations } from 'next-intl';
 import { getUserChargedCatalogTierRows, type CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
 import type { GatewayModel } from '@/lib/types';
@@ -129,11 +131,16 @@ export function ScheduleWindowEffectivePrices({
 	const showRange = chargedRows.length > 1 || meteredRows.length > 1;
 
 	return (
-		<div className="overflow-hidden rounded border border-gray-200 bg-white">
+		<div className="overflow-x-auto rounded border border-gray-200 bg-white">
 			<table className="min-w-full text-left text-[10px]">
 				<thead className="bg-gray-50 text-[10px] font-semibold tracking-wide text-gray-500">
 					<tr>
-						<th className="whitespace-nowrap px-2 py-1">{t('scheduleWindowPricesSide')}</th>
+						<th className="whitespace-nowrap px-2 py-1">
+							<span className="inline-flex items-center gap-1">
+								{t('scheduleWindowPricesSide')}
+								<PricingInfoHint kind="unitPrices" align="start" />
+							</span>
+						</th>
 						{showRange ? <th className="whitespace-nowrap px-2 py-1">{tTable('inputRange')}</th> : null}
 						<th className="whitespace-nowrap px-2 py-1 text-right">{tTable('input')}</th>
 						<th className="whitespace-nowrap px-2 py-1 text-right">{tTable('output')}</th>
@@ -159,6 +166,10 @@ export function ScheduleWindowEffectivePrices({
 				</tbody>
 			</table>
 			<p className="border-t border-gray-100 bg-gray-50/90 px-2 py-1 text-[10px] leading-snug text-gray-500">
+				{tTable('unitFooter', {
+					unit: tTable('unitPerMillion', { symbol: getGatewayCurrencySymbol(billingCurrency) }),
+				})}
+				<br />
 				{t('scheduleWindowPricesHint')}
 			</p>
 		</div>

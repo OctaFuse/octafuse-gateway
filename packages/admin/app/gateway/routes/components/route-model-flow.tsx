@@ -163,6 +163,7 @@ function RouteTarget({
 }) {
 	const t = useTranslations('routes.flow');
 	const tList = useTranslations('routes.listItem');
+	const tModal = useTranslations('routes.modal');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
 	const providerName =
@@ -284,7 +285,7 @@ function RouteTarget({
 					<span className="text-right">{t('pricingMetered')}</span>
 				</span>
 				<span className={`${pricingColumns} min-h-7`}>
-					<span className="text-[11px] text-slate-600">{t('basePricing')}</span>
+					<span className="text-[11px] text-slate-600">{tModal(hasSchedule ? 'editor.otherPeriods' : 'editor.allPeriods')}</span>
 					<span className="justify-self-end" title={factorTooltip(chargedValue, 'charged')} aria-label={factorTooltip(chargedValue, 'charged')}>
 						<span className={factorChipClassForValue(chargedValue, 'charged')}>{formatFactorMultiplierForChip(chargedValue)}</span>
 					</span>

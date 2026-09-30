@@ -652,12 +652,12 @@
 			"pricingProfile": "요금 프로필",
 			"viewPricingProfileJson": "pricing_profile JSON 보기",
 			"hidePricingProfileJson": "JSON 숨기기",
-			"standardPricing": "표준 가격",
-			"catalogSchedule": "일정",
+			"standardPricing": "정가 / 카탈로그 가격",
+			"catalogSchedule": "카탈로그 시간대 배율",
 			"catalogScheduleHint": "시간대가 바뀌면 연결 라우트의 일정 배수가 재설정됩니다.",
 			"catalogScheduleEmpty": "아직 일정 설정이 없습니다.",
 			"addCatalogScheduleWindow": "구간 추가",
-			"catalogScheduleFactor": "배수",
+			"catalogScheduleFactor": "카탈로그 배율",
 			"imageTokenPricing": "Image token 요금",
 			"audioPricing": "오디오 요금",
 			"audioBillingMode": "과금 모드",
@@ -796,8 +796,8 @@
 			"badgeWeightTooltip": "가중치: {value}",
 			"badgeParamsTooltip": "사용자 지정 파라미터(본문 Deep merge와 HTTP 헤더; 기본은 같은 이름 클라이언트 값 우선)",
 			"badgeParamsForceOverrideTooltip": "Force override가 켜진 사용자 지정 파라미터(라우트 본문 필드와 헤더 우선)",
-			"badgeChargedTooltip": "청구: {value} · {status}",
-			"badgeMeteredTooltip": "비용: {value} · {status}",
+			"badgeChargedTooltip": "청구 배율: {value} · {status} (공급자 배율 적용 전)",
+			"badgeMeteredTooltip": "원가 배율: {value} · {status} (공급자 배율 적용 전)",
 			"badgeScheduleTooltip": "시간대: {windows}",
 			"badgeScheduleBothTooltip": "청구 시간대: {charged} · 비용 시간대: {metered}",
 			"providerDisabled": "공급자 중지",
@@ -814,7 +814,7 @@
 				"offTooltip": "이 풀은 Sticky가 꺼져 있어 바인딩 사용자를 집계하지 않습니다.",
 				"tooltip": "이 라우트 풀의 만료되지 않은 Sticky 사용자 수입니다. 막대는 풀 내 비율이며 실시간 동시 접속 수나 요청량이 아닙니다."
 			},
-			"providerFactorBadge": "공급자 {value} · {status}",
+			"providerFactorBadge": "공급자 배율 {value} · {status}",
 			"providerFactorTiming": {
 				"scheduled": "시작 전",
 				"active": "적용 중",
@@ -856,15 +856,15 @@
 			"routeEnabled": "Route 활성화됨 (체크 해제하여 비활성화)",
 			"routeDisabled": "Route 비활성화됨 (체크하여 활성화)",
 			"priorityTitle": "우선순위 (Failover 순서)",
-			"factorsAria": "청구 및 계측 카탈로그 배수",
-			"chargedFactorAria": "청구 배수 {value}: {status}",
-			"meteredFactorAria": "계측 배수 {value}: {status}",
+			"factorsAria": "설정된 라우트 배율(공급자 배율 적용 전)",
+			"chargedFactorAria": "청구 배율 {value}: {status}",
+			"meteredFactorAria": "원가 배율 {value}: {status}",
 			"scheduleBadge": "시간대",
 			"scheduleAria": "일정: {windows}",
-			"chargedTooltip": "청구 배수: {value} · {status} · 공식 현재가 대비 고객 청구 배수",
-			"meteredTooltip": "계측 배수: {value} · {status} · 공식 현재가 대비 Provider 비용 배수",
+			"chargedTooltip": "청구 배율: {value} · {status}. 공급자 및 사용자별 배율 적용 전 설정값입니다.",
+			"meteredTooltip": "원가 배율: {value} · {status}. 공급자 배율 적용 전 설정값입니다.",
 			"baseInversionBadge": "역마진",
-			"baseInversionTooltip": "기본 청구 계수가 기본 비용 계수보다 낮아 역마진이 발생할 수 있습니다. 시간대 계수는 이 판단에 포함되지 않습니다.",
+			"baseInversionTooltip": "기본 청구 배율이 기본 원가 배율보다 낮습니다. 설정 배율 비교이며 공급자 유효 기간, 다른 시간대, 사용자별 배율은 반영하지 않습니다.",
 			"factorStatus": {
 				"charged": {
 					"invalid": "잘못된 설정",
@@ -898,7 +898,7 @@
 				"configured": "설정됨",
 				"headerCount": "헤더 {count}개",
 				"requestDefault": "원래 클라이언트 요청 사용",
-				"pricingSummary": "청구 ×{charged} · 비용 ×{metered} · 시간대 {count}개",
+				"pricingSummary": "청구 배율 ×{charged} · 원가 배율 ×{metered} · {count}개 시간대",
 				"requestHint": "필요에 따라 이 라우트의 헤더와 본문 매개변수를 추가합니다. 강제 덮어쓰기를 활성화하지 않으면 클라이언트 값이 우선합니다.",
 				"adapterManaged": "어댑터가 자동으로 설정",
 				"effectivePrices": "이 시간대의 요금 상세 보기",
@@ -916,7 +916,7 @@
 				"meteredFactorLabel": "원가 배율",
 				"factorHelpLabel": "{name} 설명",
 				"providerFactorHelp": "공급자의 할인 또는 할증을 사용자 청구와 공급 원가 모두에 적용합니다.\n예: 0.8은 양쪽 모두 80%로 조정하며, 1은 조정하지 않습니다. 유효 기간 외에는 ×1을 적용합니다.",
-				"chargedFactorHelp": "사용자에게 청구할 금액을 조정하며 공급 원가에는 영향을 주지 않습니다.\n실제 청구 배율 = 공급자 배율 × 청구 배율.\n예: 0.8 × 0.5 = 0.4로 해당 시간대 카탈로그 가격의 40%를 청구합니다.",
+				"chargedFactorHelp": "사용자에게 청구할 금액을 조정하며 공급 원가에는 영향을 주지 않습니다.\n실제 청구 배율 = 공급자 배율 × 청구 배율.\n예: 0.8 × 0.5 = 0.4로 해당 시간대 카탈로그 가격의 40%를 청구합니다.\n이 라우트 미리보기에는 사용자별 배율이 포함되지 않습니다.",
 				"meteredFactorHelp": "공급자 원가를 조정하며 사용자 청구 금액에는 영향을 주지 않습니다.\n실제 원가 배율 = 공급자 배율 × 원가 배율.\n예: 0.8 × 0.3 = 0.24이며, 0을 입력하면 원가를 0으로 기록합니다.",
 				"effectiveFactor": "실제",
 				"effectiveFactorHint": "실제 배율 = 현재 유효한 공급자 배율 × 이 항목의 배율. 카탈로그 시간대 배율은 제외됩니다.",
@@ -1007,20 +1007,20 @@
 			"imageTokenResolveHint": "청구 기준: 업스트림 Images usage × 구간별 token 요금.",
 			"imageTokenRates": "Image token 요금",
 			"protocolHintImageOpenaiOnly": "이미지 모델의 공개 프로토콜은 openai입니다. 업스트림은 openai 패스스루 또는 DashScope 변환일 수 있습니다.",
-			"chargedCost": "청구 비용",
-			"chargedCostHint": "공식 현재가(카탈로그 × 공식 창) 대비 배수.",
+			"chargedCost": "청구 단가",
+			"chargedCostHint": "시간대 카탈로그 단가 × 실제 청구 배율. 사용자별 배율 적용 전입니다.",
 			"factor": "배수",
-			"chargedFactorTitle": "charged_cost에 적용되는 공식 현재가 대비 배수입니다. 기본값은 1입니다.",
-			"meteredCost": "계측 비용",
-			"meteredCostHint": "공식 현재가(카탈로그 × 공식 창) 대비 배수.",
-			"meteredFactorTitle": "metered_cost에 적용되는 공식 현재가 대비 배수입니다. 기본값은 1입니다.",
+			"chargedFactorTitle": "청구 배율. 기본값은 1이며 유효한 공급자 배율을 곱합니다.",
+			"meteredCost": "원가 단가",
+			"meteredCostHint": "시간대 카탈로그 단가 × 실제 원가 배율.",
+			"meteredFactorTitle": "원가 배율. 기본값은 1이며 유효한 공급자 배율을 곱합니다.",
 			"pricingFormulaHint": "시간 구간 안의 요청은 위 기본 배수를 덮어씁니다. 요일을 지정하면 평일과 주말 배수를 나눌 수 있습니다.",
 			"dailySchedule": "일정",
-			"catalogOfficialSchedule": "표준 시간대 배수",
+			"catalogOfficialSchedule": "카탈로그 시간대 배율",
 			"catalogScheduleLockedHint": "모델 벤더에서 가져온 읽기 전용 값입니다. 오른쪽에서 라우트 배수만 수정하세요.",
 			"catalogEffectiveNow": "현재 일정 배수: ×{factor}",
 			"catalogScheduleNow": "현재",
-			"catalogWindowPricesHint": "카탈로그 × 이 공식 시간대",
+			"catalogWindowPricesHint": "카탈로그 단가 × 카탈로그 시간대 배율",
 			"billingTimezoneHint": "일정 구간은 업무 시간대 {timezone}을 사용합니다(반개구간 [start, end), end는 24:00 가능). 요일을 지정하면 선택한 요일에만 적용됩니다.",
 			"addScheduleWindow": "구간 추가",
 			"scheduleEmpty": "아직 일정 설정이 없습니다.",
@@ -1039,9 +1039,9 @@
 			"weekdaySun": "일",
 			"scheduleFactor": "일정 배수",
 			"scheduleChargedFactor": "청구 배수",
-			"scheduleMeteredFactor": "계측 배수",
-			"scheduleWindowPricesSide": "구분",
-			"scheduleWindowPricesHint": "카탈로그 × 공식 시간대 × 이 행의 배율 × 공급자 배율.",
+			"scheduleMeteredFactor": "원가 배율",
+			"scheduleWindowPricesSide": "단가 유형",
+			"scheduleWindowPricesHint": "시간대 카탈로그 단가 × 실제 청구/원가 배율. 사용자별 배율은 미적용입니다.",
 			"requestDefaults": "요청 기본값 (JSON)",
 			"requestDefaultsHint": "업스트림 본문에 Deep merge되며 클라이언트 필드가 우선합니다. 선택적 headers 객체는 HTTP 헤더로 전송됩니다.",
 			"customParams": "사용자 지정 파라미터",
@@ -1075,7 +1075,7 @@
 			"weightHint": "동일 priority 층 가중치(≥ 1). 가중 전략에서 클수록 트래픽이 많습니다.",
 			"operationModelsGenerate": "models.generate · Generate Content (스트리밍 + 비스트리밍)",
 			"providerFactor": "공급자 배율",
-			"providerFactorHint": "공급자 할인입니다. 유효 기간에는 청구 배율과 원가 배율에 함께 곱해 차액이 유지됩니다. 표준가는 곱하지 않습니다. 시각은 {timezone} 기준입니다.",
+			"providerFactorHint": "유효 기간 내 공급자 배율은 청구 금액과 원가 금액 모두를 조정하며 카탈로그 가격은 유지됩니다. 시간대: {timezone}.",
 			"providerFactorTitle": "공급자 배율. 기본값 1. 유효 기간 밖에서는 1로 계산합니다.",
 			"providerFactorStarts": "시작",
 			"providerFactorExpires": "종료",
@@ -1448,7 +1448,7 @@
 		"routingPool": "Routing pool",
 		"publicSurfaces": "공개 서피스",
 		"customParams": "custom_params",
-		"priceOverride": "price_override",
+		"priceOverride": "라우트 요금 설정(JSON)",
 		"selectedDetails": "ID, 풀, JSON 필드",
 		"receiving": "수신 중…",
 		"cannotExtractBody": "페이로드에서 본문을 추출할 수 없습니다.",
@@ -1629,7 +1629,7 @@
 			"rateLimit": "속도 제한",
 			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "메타데이터",
-			"chargedCostFactors": "모델 할인",
+			"chargedCostFactors": "사용자별 배율",
 			"created": "생성일",
 			"updated": "업데이트일",
 			"group": "그룹"
@@ -1646,7 +1646,7 @@
 			"walletSpent": "총 사용액",
 			"walletBalance": "현재 잔액",
 			"metadataJsonObject": "메타데이터 (JSON 객체)",
-			"chargedCostFactors": "모델 할인",
+			"chargedCostFactors": "사용자별 배율",
 			"chargedCostFactorModelId": "모델 ID",
 			"chargedCostFactorValue": "배율",
 			"externalSystem": "외부 시스템",
@@ -1671,11 +1671,11 @@
 			"metadataReplace": "저장하면 metadata 객체 전체가 교체됩니다. 현재 값을 유지하려면 비워 두세요.",
 			"rateLimitRpm": "이 사용자의 모든 Key를 합산한 60초 롤링 창당 요청 수입니다. 비우면 무제한, 0이면 계측 대상 호출을 모두 거부합니다. GET /v1/me는 집계하지 않습니다. Key별 상한은 아래 Key 표에서 설정합니다.",
 			"rateLimitRpmInvalid": "속도 제한은 0 이상의 정수이거나, 무제한이면 비워 두세요.",
-			"chargedCostFactors": "카탈로그에서 모델을 선택한 뒤 배율을 설정합니다. 라우트 Charged 배율과의 합성 방식은 Gateway Config에서 설정합니다. 없는 모델은 금액이 그대로입니다. 0이면 해당 모델은 과금하지 않습니다. LLM / Images / Audio만 적용되며 Agent Tools는 제외됩니다."
+			"chargedCostFactors": "사용자별 배율은 전역 모드(곱하기 또는 최솟값)에 따라 실제 라우트 청구 배율과 합성되며 원가 금액에는 영향을 주지 않습니다. 미설정 시 라우트 요금을 사용하고 0은 무료입니다. LLM, 이미지, 오디오에 적용되며 Agent Tools는 제외됩니다."
 		},
 		"chargedCostFactors": {
 			"none": "Charged cost factors가 없습니다.",
-			"empty": "모델별 배율이 없습니다. 카탈로그와 라우트 Charged cost가 그대로 적용됩니다.",
+			"empty": "사용자별 배율이 없어 실제 라우트 청구 배율로 청구합니다.",
 			"pickTitle": "카탈로그 모델 추가",
 			"pickSearch": "모델 검색…",
 			"pickEmpty": "일치하는 모델이 없습니다.",
@@ -1840,7 +1840,7 @@
 			"route": "Route",
 			"tags": "태그",
 			"usage": "사용량",
-			"cost": "비용 ({currency})",
+			"cost": "청구 / 원가 ({currency})",
 			"profit": "이익 ({currency})"
 		},
 		"identity": {
@@ -1886,17 +1886,17 @@
 				"reasoning": "추론 토큰 또는 추론 단계 TTFT",
 				"failover": "업스트림 실패 후 전환이 발생함"
 			},
-			"cost": "청구(C) 및 공급자 비용(M); 표준 카탈로그 가격은 상세 정보에서 확인",
-			"profit": "청구액 − 계측 비용 (요청당)",
+			"cost": "요청의 청구 금액과 원가 금액. 옆의 배율은 금액 ÷ 카탈로그 금액입니다.",
+			"profit": "청구 금액 − 원가 금액. 인프라, 세금 등 기타 지출은 제외됩니다.",
 			"rowDetail": "클릭하여 요금 감사와 요청 / 사용량 본문 표시 또는 숨기기",
 			"inputOutputTokens": "입력 / 출력 Tokens",
 			"imagePerImageUsage": "입력 이미지 수 × 출력 이미지 수 (이미지당 청구)",
 			"audioPerSecondUsage": "과금 오디오 길이(초당 과금)",
 			"audioPerCharacterUsage": "음성 합성 과금 문자 수",
 			"cacheTokens": "Cache read / cache write Tokens",
-			"standardCatalogPrice": "표준 (공식 현재가)",
-			"chargedUserBudget": "청구 (사용자 예산)",
-			"meteredSupplierCost": "계측 (공급자 비용)",
+			"standardCatalogPrice": "카탈로그 금액(사용량 × 요청 시점의 카탈로그 단가)",
+			"chargedUserBudget": "청구 금액",
+			"meteredSupplierCost": "원가 금액",
 			"unknown": "알 수 없음"
 		},
 		"detail": {
@@ -2117,9 +2117,9 @@
 		"noData": "데이터 없음",
 		"rangeTotals": {
 			"rangeTotal": "기간 합계",
-			"standard": "표준",
-			"charged": "청구",
-			"metered": "계측"
+			"standard": "카탈로그 금액",
+			"charged": "청구 금액",
+			"metered": "원가 금액"
 		},
 		"tokenDisplay": {
 			"label": "Token 표시",
@@ -2131,11 +2131,11 @@
 			"requests": "요청 수",
 			"successRate": "전체 성공률",
 			"errors": "실패 요청",
-			"charged": "청구액",
-			"metered": "측정 비용",
+			"charged": "청구 금액",
+			"metered": "원가 금액",
 			"margin": "청구액 − 비용",
 			"definitions": "집계 범위 및 지표 정의",
-			"costNote": "표준 가격 합계: {standard}. 차액은 기록된 청구와 비용의 차이이며 인프라 비용과 세금 등은 제외합니다.",
+			"costNote": "카탈로그 금액 합계: {standard}. 청구 금액과 원가 금액의 차이는 기록된 요금 차액만 반영하며 인프라, 세금, 미기록 원가는 차감하지 않습니다.",
 			"qualityNote": "성공률은 요청 수로 가중합니다. 장애 조치 비율은 한 번 이상 전환된 요청의 비율(0–100%)입니다. 생성 속도는 성공하고 유효한 스트림 시간이 있는 샘플만 사용하며 미측정 값은 — 로 표시합니다. 캐시 적중률은 캐시 읽기 토큰 / 입력 토큰입니다. 평균 지연 시간에는 실패와 취소를 포함한 모든 측정 요청이 포함됩니다.",
 			"budgetNote": "예산과 지갑은 현재 상태이며 선택한 기간의 과거 잔액이 아닙니다. 사용자는 로그 이메일로 집계합니다.",
 			"search": "모델, 공급자 또는 이메일 검색",
@@ -2216,12 +2216,12 @@
 			"currency": "통화"
 		},
 		"userChargedCostFactorMode": {
-			"title": "사용자 과금 배율 모드",
-			"description": "사용자 모델별 과금 배율이 라우트 Charged 배율과 어떻게 합성되는지 설정합니다(system_config.USER_CHARGED_COST_FACTOR_MODE). Proxy는 약 30초 캐시합니다.",
+			"title": "사용자별 배율 합성 모드",
+			"description": "공급자 배율이 포함된 실제 라우트 청구 배율과 사용자별 배율의 합성 방식을 선택합니다. 약 30초 내에 적용됩니다.",
 			"multiplyTitle": "곱셈",
-			"multiplyHelp": "최종 과금액 = 공식 카탈로그 가격 × 라우트 Charged 배율 × 사용자 배율입니다. 기본값입니다.",
+			"multiplyHelp": "최종 청구 금액 = 카탈로그 금액 × 실제 라우트 청구 배율 × 사용자별 배율. 카탈로그 금액은 요청 사용량과 당시 단가로 계산합니다. 기본 모드입니다.",
 			"minTitle": "더 작은 배율 사용",
-			"minHelp": "최종 과금액 = 공식 카탈로그 가격 × min(라우트 Charged 배율, 사용자 배율)입니다. 할인은 중첩되지 않습니다."
+			"minHelp": "최종 청구 금액 = 카탈로그 금액 × min(실제 라우트 청구 배율, 사용자별 배율). 두 배율을 곱하지 않습니다. 카탈로그 금액은 요청 사용량과 당시 단가로 계산합니다."
 		},
 		"errorWebhooks": {
 			"title": "Proxy 오류 Webhooks",
@@ -2520,7 +2520,37 @@
 		},
 		"cost": "비용: {amount}",
 		"providerLabel": "Provider: {id}",
-		"stdMetered": "표준 {std} · 계측 {metered}"
+		"stdMetered": "표준 {std} · 계측 {metered}",
+		"help": {
+			"routeFactors": {
+				"title": "라우트 배율 설명",
+				"body": "목록은 공급자 배율 적용 전의 청구/원가 설정 배율입니다.\n실제 청구 배율 = 유효한 공급자 배율 × 청구 배율이며 원가도 동일합니다. 공급자 유효 기간 외에는 ×1입니다.\n라우트 미리보기에는 사용자별 배율이 포함되지 않으며 최종 청구 시 전역 모드로 합성됩니다."
+			},
+			"unitPrices": {
+				"title": "라우트 단가 설명",
+				"body": "청구 단가 = 시간대 카탈로그 단가 × 실제 청구 배율.\n원가 단가 = 시간대 카탈로그 단가 × 실제 원가 배율.\n요청 금액이 아닌 사용량 단위당 가격이며 사용자별 배율은 제외됩니다."
+			},
+			"catalog": {
+				"title": "카탈로그 가격 설명",
+				"body": "카탈로그 가격은 모델의 기준 단가입니다. 시간대 카탈로그 단가 = 기준 단가 × 카탈로그 시간대 배율.\n공급자, 청구, 원가, 사용자별 배율은 포함하지 않습니다."
+			},
+			"amounts": {
+				"title": "요금 금액 설명",
+				"body": "카탈로그 금액은 요청 사용량과 요청 시점의 단가로 계산하며 시간대 배율을 포함합니다.\n청구 금액에는 당시 유효한 라우트 규칙과 사용자별 배율이 적용됩니다. 원가 금액에는 라우트 원가 규칙을 적용하며 사용자별 배율은 영향을 주지 않습니다.\n로그 금액 옆 배율은 금액 ÷ 카탈로그 금액으로, 설정값이 아닌 결과 비율입니다. 카탈로그 금액이 0이면 표시하지 않습니다."
+			},
+			"profit": {
+				"title": "매출총이익 설명",
+				"body": "매출총이익 = 청구 금액 − 원가 금액.\n기록된 요금 차액으로 인프라, 세금, 미기록 지출은 차감하지 않습니다."
+			},
+			"playground": {
+				"title": "디버깅 과금 설명",
+				"body": "디버깅은 선택한 공급자를 직접 호출하며 게이트웨이 과금을 거치지 않습니다. 사용량과 요금 설정은 확인용이며 사용자 청구를 의미하지 않습니다. 상위 공급자는 호출 요금을 부과할 수 있습니다."
+			},
+			"simulator": {
+				"title": "시뮬레이터 과금 설명",
+				"body": "시뮬레이터는 선택한 API Key로 실제 게이트웨이 요청을 보내며 과금과 로그 기록이 적용됩니다.\n응답의 사용량은 사용량 정보일 뿐입니다. 청구/원가 금액은 요청 로그에서, Agent Tools는 Tools 호출 기록에서 확인하세요."
+			}
+		}
 	},
 	"modelTest": {
 		"request": "테스트 요청",

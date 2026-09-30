@@ -1,5 +1,6 @@
 'use client';
 
+import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useTranslations } from 'next-intl';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 
@@ -22,7 +23,7 @@ export function AnalyticsRangeCostTotals(props: {
 		);
 	return (
 		<div className="w-full min-w-0 md:ml-auto md:w-auto">
-			<p className="mb-2 text-xs text-gray-500">{t('rangeTotal')}</p>
+			<p className="mb-2 flex items-center gap-1 text-xs text-gray-500">{t('rangeTotal')}<PricingInfoHint kind="amounts" align="start" /></p>
 			<dl className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2 md:flex md:flex-wrap md:gap-4">
 				{(['standard', 'charged', 'metered'] as const).map((key) => (
 					<div key={key} className="min-w-0 rounded-md bg-gray-50 px-3 py-2">

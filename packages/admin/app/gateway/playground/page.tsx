@@ -3,6 +3,7 @@
 /**
  * Playground：选定单条 model_route，编辑 JSON 请求体，直连上游验证连通性（不计费、不入库）。
  */
+import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { PlaygroundRequestPanel } from './components/playground-request-panel';
@@ -40,7 +41,7 @@ function PlaygroundPageInner() {
 						? t('toolsSubtitle', { product: tBrand('product') })
 						: t('subtitle', { product: tBrand('product') })}
 					<span className="text-gray-400"> · </span>
-					{t('usageNote')}
+					{t('usageNote')} <PricingInfoHint kind="playground" align="start" />
 				</p>
 				<div
 					className="mt-4 inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"

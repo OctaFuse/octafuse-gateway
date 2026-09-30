@@ -652,12 +652,12 @@
 			"pricingProfile": "Pricing Profile",
 			"viewPricingProfileJson": "View pricing_profile JSON",
 			"hidePricingProfileJson": "Hide JSON",
-			"standardPricing": "Standard price",
-			"catalogSchedule": "Schedule",
+			"standardPricing": "List / catalog prices",
+			"catalogSchedule": "Catalog time multipliers",
 			"catalogScheduleHint": "Changing the time windows resets schedule factors on related routes.",
 			"catalogScheduleEmpty": "No schedule windows",
 			"addCatalogScheduleWindow": "Add window",
-			"catalogScheduleFactor": "Factor",
+			"catalogScheduleFactor": "Catalog multiplier",
 			"imageTokenPricing": "Image token rates",
 			"audioPricing": "Audio pricing",
 			"audioBillingMode": "Billing mode",
@@ -796,8 +796,8 @@
 			"badgeWeightTooltip": "Weight: {value}",
 			"badgeParamsTooltip": "Custom params (body deep-merge and HTTP headers; client same-name values win unless Force override is on)",
 			"badgeParamsForceOverrideTooltip": "Custom params with Force override (route body fields and headers win)",
-			"badgeChargedTooltip": "Charged: {value} · {status}",
-			"badgeMeteredTooltip": "Metered: {value} · {status}",
+			"badgeChargedTooltip": "Billing multiplier: {value} · {status} (before provider multiplier)",
+			"badgeMeteredTooltip": "Cost multiplier: {value} · {status} (before provider multiplier)",
 			"badgeScheduleTooltip": "Schedule: {windows}",
 			"badgeScheduleBothTooltip": "Charged schedule: {charged} · Metered schedule: {metered}",
 			"providerDisabled": "Provider off",
@@ -814,7 +814,7 @@
 				"offTooltip": "Sticky routing is off for this pool; binding counts are not tracked.",
 				"tooltip": "Unexpired sticky users in this route pool. The bar shows the share of pool bindings, not live concurrency or request volume."
 			},
-			"providerFactorBadge": "Provider {value} · {status}",
+			"providerFactorBadge": "Provider multiplier {value} · {status}",
 			"providerFactorTiming": {
 				"scheduled": "Scheduled",
 				"active": "Active",
@@ -856,15 +856,15 @@
 			"routeEnabled": "Route enabled (uncheck to disable)",
 			"routeDisabled": "Route disabled (check to enable)",
 			"priorityTitle": "Priority (failover order)",
-			"factorsAria": "Charged and metered catalog factors",
-			"chargedFactorAria": "Charged factor {value}: {status}",
-			"meteredFactorAria": "Metered factor {value}: {status}",
+			"factorsAria": "Configured route multipliers (before the provider multiplier)",
+			"chargedFactorAria": "Billing multiplier {value}: {status}",
+			"meteredFactorAria": "Cost multiplier {value}: {status}",
 			"scheduleBadge": "Sched",
 			"scheduleAria": "Schedule: {windows}",
-			"chargedTooltip": "Charged factor: {value} · {status} · customer billing multiplier vs official now-price",
-			"meteredTooltip": "Metered factor: {value} · {status} · provider cost multiplier vs official now-price",
+			"chargedTooltip": "Billing multiplier: {value} · {status}. Configured value, before provider and user-specific multipliers.",
+			"meteredTooltip": "Cost multiplier: {value} · {status}. Configured value, before the provider multiplier.",
 			"baseInversionBadge": "Margin",
-			"baseInversionTooltip": "Base charged factor is below base metered factor; margin may be inverted. Schedule factors are not included in this check.",
+			"baseInversionTooltip": "Default billing multiplier is below default cost multiplier. This compares configuration only, excluding provider validity, other periods and user-specific multipliers.",
 			"factorStatus": {
 				"charged": {
 					"invalid": "Invalid configuration",
@@ -898,7 +898,7 @@
 				"configured": "Configured",
 				"headerCount": "{count, plural, one {# header} other {# headers}}",
 				"requestDefault": "Use the original client request",
-				"pricingSummary": "Billing ×{charged} · Cost ×{metered} · {count, plural, one {# window} other {# windows}}",
+				"pricingSummary": "Billing ×{charged} · Cost ×{metered} · {count} periods",
 				"requestHint": "Add headers and body parameters for this route as needed. Client values take precedence unless force override is enabled.",
 				"adapterManaged": "Matched automatically by the adapter",
 				"effectivePrices": "View prices for this window",
@@ -916,7 +916,7 @@
 				"meteredFactorLabel": "Cost multiplier",
 				"factorHelpLabel": "About {name}",
 				"providerFactorHelp": "A provider discount or markup applied to both user billing and provider cost.\nFor example, 0.8 applies 80% on both sides; 1 makes no adjustment. Outside its validity period, ×1 applies.",
-				"chargedFactorHelp": "Adjusts the amount charged to the user without changing provider cost.\nEffective billing multiplier = provider multiplier × billing multiplier.\nFor example, 0.8 × 0.5 = 0.4: charge 40% of the catalog price for that period.",
+				"chargedFactorHelp": "Adjusts the amount charged to the user without changing provider cost.\nEffective billing multiplier = provider multiplier × billing multiplier.\nFor example, 0.8 × 0.5 = 0.4: charge 40% of the catalog price for that period.\nThis route preview excludes user-specific multipliers.",
 				"meteredFactorHelp": "Adjusts provider cost without changing the amount charged to the user.\nEffective cost multiplier = provider multiplier × cost multiplier.\nFor example, 0.8 × 0.3 = 0.24; enter 0 to record zero cost.",
 				"effectiveFactor": "Effective",
 				"effectiveFactorHint": "Effective multiplier = currently active provider multiplier × this multiplier; excludes the catalog time multiplier.",
@@ -1007,20 +1007,20 @@
 			"imageTokenResolveHint": "Charge authority: upstream Images usage × tier token rates.",
 			"imageTokenRates": "Image token rates",
 			"protocolHintImageOpenaiOnly": "Image models keep the public protocol as openai. Upstream may be openai passthrough or DashScope conversion.",
-			"chargedCost": "Charged cost",
-			"chargedCostHint": "Multiplier vs official now-price (catalog × official window).",
+			"chargedCost": "Billing unit price",
+			"chargedCostHint": "Period catalog unit price × effective billing multiplier, before user-specific multipliers.",
 			"factor": "Factor",
-			"chargedFactorTitle": "Multiplier vs official now-price for charged_cost. Default 1.",
-			"meteredCost": "Metered cost",
-			"meteredCostHint": "Multiplier vs official now-price (catalog × official window).",
-			"meteredFactorTitle": "Multiplier vs official now-price for metered_cost. Default 1.",
+			"chargedFactorTitle": "Billing multiplier, default 1; multiplied by the active provider multiplier.",
+			"meteredCost": "Cost unit price",
+			"meteredCostHint": "Period catalog unit price × effective cost multiplier.",
+			"meteredFactorTitle": "Cost multiplier, default 1; multiplied by the active provider multiplier.",
 			"pricingFormulaHint": "Requests in a time window override the default above. Optional weekdays can split weekday and weekend rates.",
 			"dailySchedule": "Schedule",
-			"catalogOfficialSchedule": "Standard window factors",
+			"catalogOfficialSchedule": "Catalog time multipliers",
 			"catalogScheduleLockedHint": "From the model vendor, read-only; edit route factors on the right.",
 			"catalogEffectiveNow": "Current schedule factor: ×{factor}",
 			"catalogScheduleNow": "Now",
-			"catalogWindowPricesHint": "Catalog × this official window",
+			"catalogWindowPricesHint": "Catalog unit price × catalog time multiplier",
 			"billingTimezoneHint": "Schedule windows use business timezone {timezone} (half-open [start, end); end may be 24:00). Optional weekdays restrict a window to selected days.",
 			"addScheduleWindow": "Add window",
 			"scheduleEmpty": "No schedule yet.",
@@ -1039,9 +1039,9 @@
 			"weekdaySun": "Sun",
 			"scheduleFactor": "Schedule factor",
 			"scheduleChargedFactor": "Charged factor",
-			"scheduleMeteredFactor": "Metered factor",
-			"scheduleWindowPricesSide": "Side",
-			"scheduleWindowPricesHint": "Catalog × official window × this row’s factor × provider factor.",
+			"scheduleMeteredFactor": "Cost multiplier",
+			"scheduleWindowPricesSide": "Unit price type",
+			"scheduleWindowPricesHint": "Period catalog unit price × effective billing/cost multiplier; excludes user-specific multipliers.",
 			"requestDefaults": "Request defaults (JSON)",
 			"requestDefaultsHint": "Deep-merged into upstream body; client fields win. Optional \"headers\" object is sent as HTTP headers.",
 			"customParams": "Custom params",
@@ -1075,7 +1075,7 @@
 			"weightHint": "Same-priority layer weight (≥ 1). Higher = more traffic for weighted strategies.",
 			"operationModelsGenerate": "models.generate · Generate Content (stream + non-stream)",
 			"providerFactor": "Provider factor",
-			"providerFactorHint": "Supplier discount. While active it multiplies both charged and metered factors, so the margin stays the same. Standard price is unchanged. Times use {timezone}.",
+			"providerFactorHint": "While valid, the provider multiplier adjusts both billing and cost amounts; catalog prices stay unchanged. Timezone: {timezone}.",
 			"providerFactorTitle": "Provider multiplier. Default 1. Outside the validity window it is treated as 1.",
 			"providerFactorStarts": "Starts",
 			"providerFactorExpires": "Ends",
@@ -1448,7 +1448,7 @@
 		"routingPool": "Routing pool",
 		"publicSurfaces": "Public surfaces",
 		"customParams": "custom_params",
-		"priceOverride": "price_override",
+		"priceOverride": "Route pricing configuration (JSON)",
 		"selectedDetails": "IDs, pool, and JSON fields",
 		"receiving": "Receiving…",
 		"cannotExtractBody": "Could not extract a body from the payload.",
@@ -1629,7 +1629,7 @@
 			"rateLimit": "Rate limit",
 			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "Metadata",
-			"chargedCostFactors": "Factors",
+			"chargedCostFactors": "User-specific multipliers",
 			"created": "Created",
 			"updated": "Updated",
 			"group": "Group"
@@ -1646,7 +1646,7 @@
 			"walletSpent": "Total spent",
 			"walletBalance": "Current balance",
 			"metadataJsonObject": "Metadata (JSON object)",
-			"chargedCostFactors": "Charged cost factors",
+			"chargedCostFactors": "User-specific multipliers",
 			"chargedCostFactorModelId": "Model ID",
 			"chargedCostFactorValue": "Factor",
 			"externalSystem": "External system",
@@ -1671,11 +1671,11 @@
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
 			"rateLimitRpm": "Shared across all keys of this user per rolling 60-second window. Leave empty for unlimited. 0 rejects all metered calls. GET /v1/me is not counted. Per-key caps are set on each key.",
 			"rateLimitRpmInvalid": "Rate limit must be a non-negative integer, or empty for unlimited.",
-			"chargedCostFactors": "Pick catalog models, then set a factor. How this combines with the route Charged factor is set in Gateway Config. Missing models are unchanged. 0 means no charge for that model. LLM, Images, and Audio only — not Agent Tools."
+			"chargedCostFactors": "User-specific multipliers combine with the effective route billing multiplier using the global mode (multiply or minimum), without changing cost amounts. Unset uses route billing; 0 means no charge for this model. Applies to LLM, image and audio models, not Agent Tools."
 		},
 		"chargedCostFactors": {
 			"none": "No charged cost factors.",
-			"empty": "No per-model factors. Catalog and route Charged cost apply as-is.",
+			"empty": "No user-specific multipliers; billing uses the effective route billing multiplier.",
 			"pickTitle": "Add catalog model",
 			"pickSearch": "Search models…",
 			"pickEmpty": "No models match this search.",
@@ -1840,7 +1840,7 @@
 			"route": "Route",
 			"tags": "Tags",
 			"usage": "Usage",
-			"cost": "Cost ({currency})",
+			"cost": "Billing / cost ({currency})",
 			"profit": "Profit ({currency})"
 		},
 		"identity": {
@@ -1886,17 +1886,17 @@
 				"reasoning": "Reasoning tokens or reasoning-phase TTFT",
 				"failover": "Upstream switched after a failed attempt"
 			},
-			"cost": "Charged (C) and metered supplier cost (M); standard catalog price remains available in details",
-			"profit": "Charged − metered (per request)",
+			"cost": "Billing and cost amounts for this request; the adjacent ratio is amount ÷ catalog amount.",
+			"profit": "Billing amount − cost amount; excludes infrastructure, taxes and other expenses.",
 			"rowDetail": "Click to show or hide pricing audit and request / usage bodies",
 			"inputOutputTokens": "Input / output tokens",
 			"imagePerImageUsage": "Input × output image count (per-image billing)",
 			"audioPerSecondUsage": "Billable audio duration (per-second billing)",
 			"audioPerCharacterUsage": "Billable speech synthesis characters",
 			"cacheTokens": "Cache read / cache write tokens",
-			"standardCatalogPrice": "Standard (official now-price)",
-			"chargedUserBudget": "Charged (user budget)",
-			"meteredSupplierCost": "Metered (supplier cost)",
+			"standardCatalogPrice": "Catalog amount (usage × catalog unit prices at request time)",
+			"chargedUserBudget": "Billing amount",
+			"meteredSupplierCost": "Cost amount",
 			"unknown": "Unknown"
 		},
 		"detail": {
@@ -2117,9 +2117,9 @@
 		"noData": "No data",
 		"rangeTotals": {
 			"rangeTotal": "Range total",
-			"standard": "Standard",
-			"charged": "Charged",
-			"metered": "Metered"
+			"standard": "Catalog amount",
+			"charged": "Billing amount",
+			"metered": "Cost amount"
 		},
 		"tokenDisplay": {
 			"label": "Token display",
@@ -2131,11 +2131,11 @@
 			"requests": "Requests",
 			"successRate": "Success rate",
 			"errors": "Failed requests",
-			"charged": "Charged",
-			"metered": "Metered cost",
+			"charged": "Billing amount",
+			"metered": "Cost amount",
 			"margin": "Charge − cost",
 			"definitions": "Scope and metric definitions",
-			"costNote": "Standard price total: {standard}. Charge − cost is the recorded billing spread, excluding infrastructure, taxes and unrecorded costs.",
+			"costNote": "Catalog amount total: {standard}. Billing minus cost reflects only the recorded pricing difference, before infrastructure, taxes and unrecorded costs.",
 			"qualityNote": "Success rate is weighted by requests. Failover share counts requests with at least one failover (0–100%). Output speed uses only successful streams with a positive measured duration; missing measurements show —. Cache hit rate uses cache-read tokens / input tokens. Average latency includes all measured requests, including failures and cancellations.",
 			"budgetNote": "Budget and wallet values reflect the current account state, not a historical balance for the selected range. Users are grouped by logged email.",
 			"search": "Search model, provider or email",
@@ -2216,12 +2216,12 @@
 			"currency": "Currency"
 		},
 		"userChargedCostFactorMode": {
-			"title": "User charged cost factor mode",
-			"description": "How a user's per-model charged cost factors combine with the route Charged factor (system_config.USER_CHARGED_COST_FACTOR_MODE). Proxy caches this for about 30s.",
+			"title": "User-specific multiplier combination",
+			"description": "Choose how user-specific multipliers combine with the effective route billing multiplier, which already includes the provider multiplier. Changes take effect in about 30 seconds.",
 			"multiplyTitle": "Multiply",
-			"multiplyHelp": "Final charged cost = official catalog price × route Charged factor × user factor. This is the default.",
+			"multiplyHelp": "Final billing amount = catalog amount × effective route billing multiplier × user-specific multiplier. Catalog amount uses this request’s usage and catalog prices at the time. This is the default mode.",
 			"minTitle": "Take the smaller factor",
-			"minHelp": "Final charged cost = official catalog price × min(route Charged factor, user factor). Discounts do not stack."
+			"minHelp": "Final billing amount = catalog amount × min(effective route billing multiplier, user-specific multiplier). The two multipliers are not multiplied together. Catalog amount uses request usage and catalog prices at the time."
 		},
 		"errorWebhooks": {
 			"title": "Proxy error webhooks",
@@ -2520,7 +2520,37 @@
 		},
 		"cost": "Cost: {amount}",
 		"providerLabel": "Provider: {id}",
-		"stdMetered": "Standard {std} · Metered {metered}"
+		"stdMetered": "Standard {std} · Metered {metered}",
+		"help": {
+			"routeFactors": {
+				"title": "Route multipliers",
+				"body": "The list shows configured billing and cost multipliers, before the provider multiplier.\nEffective billing multiplier = active provider multiplier × billing multiplier; cost works the same way. Outside provider validity, ×1 applies.\nRoute previews exclude user-specific multipliers, which are combined using the global mode for final billing."
+			},
+			"unitPrices": {
+				"title": "Route unit prices",
+				"body": "Billing unit price = period catalog unit price × effective billing multiplier.\nCost unit price = period catalog unit price × effective cost multiplier.\nThese are prices per unit of usage, not request amounts; user-specific multipliers are excluded."
+			},
+			"catalog": {
+				"title": "Catalog prices",
+				"body": "Catalog prices are the model’s base unit prices. Period catalog unit price = base catalog unit price × catalog time multiplier.\nProvider, billing, cost and user-specific multipliers are excluded."
+			},
+			"amounts": {
+				"title": "Billing and cost amounts",
+				"body": "Catalog amount uses request usage and catalog unit prices at request time, including catalog time multipliers.\nBilling amount applies the active route rules and user-specific multipliers. Cost amount applies active route cost rules and is unaffected by user-specific multipliers.\nA ratio next to a logged amount is amount ÷ catalog amount: a result ratio, not a configured multiplier. It is omitted when catalog amount is zero."
+			},
+			"profit": {
+				"title": "Gross profit",
+				"body": "Gross profit = billing amount − cost amount.\nThis is the recorded pricing difference, before infrastructure, taxes and other unrecorded expenses."
+			},
+			"playground": {
+				"title": "Playground billing",
+				"body": "Playground calls the selected provider directly without gateway billing. Usage and route pricing configuration are shown for inspection, not as user charges. The upstream provider may still charge for the call."
+			},
+			"simulator": {
+				"title": "Simulator billing",
+				"body": "Simulator sends real gateway requests with the selected API key; billing and logging apply.\nResponse usage is usage information only. Verify billing and cost amounts in request logs, or Tools invocation records for Agent Tools."
+			}
+		}
 	},
 	"modelTest": {
 		"request": "Request",

@@ -1,5 +1,6 @@
 'use client';
 
+import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useMemo, useState } from 'react';
 import { CodeBracketIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
@@ -171,6 +172,7 @@ export function RoutePricingFields({
 				<RouteEditorSection
 					className="lg:sticky lg:top-0"
 					title={t('standardCatalog')}
+					action={<PricingInfoHint kind="catalog" />}
 					description={
 						selectedModelIsAudio
 							? t('standardCatalogHintAudio')

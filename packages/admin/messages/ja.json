@@ -652,12 +652,12 @@
 			"pricingProfile": "Pricing Profile",
 			"viewPricingProfileJson": "pricing_profile JSON を表示",
 			"hidePricingProfileJson": "JSON を隠す",
-			"standardPricing": "標準価格",
-			"catalogSchedule": "スケジュール",
+			"standardPricing": "定価 / カタログ価格",
+			"catalogSchedule": "カタログ時間帯倍率",
 			"catalogScheduleHint": "時間帯を変えると、関連ルートのスケジュール倍率がリセットされます。",
 			"catalogScheduleEmpty": "時間帯の設定はありません。",
 			"addCatalogScheduleWindow": "時間帯を追加",
-			"catalogScheduleFactor": "倍率",
+			"catalogScheduleFactor": "カタログ倍率",
 			"imageTokenPricing": "Image token 料金",
 			"audioPricing": "音声料金",
 			"audioBillingMode": "課金モード",
@@ -796,8 +796,8 @@
 			"badgeWeightTooltip": "重み：{value}",
 			"badgeParamsTooltip": "カスタムパラメーター（Body のディープマージと HTTP ヘッダー；既定では同名のクライアント値が優先）",
 			"badgeParamsForceOverrideTooltip": "Force override 有効のカスタムパラメーター（ルートの Body とヘッダーが優先）",
-			"badgeChargedTooltip": "課金：{value} · {status}",
-			"badgeMeteredTooltip": "原価：{value} · {status}",
+			"badgeChargedTooltip": "請求倍率：{value} · {status}（プロバイダー倍率の適用前）",
+			"badgeMeteredTooltip": "原価倍率：{value} · {status}（プロバイダー倍率の適用前）",
 			"badgeScheduleTooltip": "時間帯：{windows}",
 			"badgeScheduleBothTooltip": "課金時間帯：{charged} · 原価時間帯：{metered}",
 			"providerDisabled": "プロバイダー停止中",
@@ -814,7 +814,7 @@
 				"offTooltip": "このプールでは Sticky が無効のため、紐付け数を集計しません。",
 				"tooltip": "このルートプール内の有効期限内の Sticky ユーザー数。バーはプール内の割合を示し、同時接続数やリクエスト数ではありません。"
 			},
-			"providerFactorBadge": "プロバイダ {value} · {status}",
+			"providerFactorBadge": "プロバイダー倍率 {value} · {status}",
 			"providerFactorTiming": {
 				"scheduled": "開始前",
 				"active": "有効",
@@ -856,15 +856,15 @@
 			"routeEnabled": "Route は有効です（チェックを外すと無効化）",
 			"routeDisabled": "Route は無効です（チェックすると有効化）",
 			"priorityTitle": "優先度（failover 順序）",
-			"factorsAria": "請求・計量カタログ係数",
-			"chargedFactorAria": "請求係数 {value}：{status}",
-			"meteredFactorAria": "計量係数 {value}：{status}",
+			"factorsAria": "ルート設定倍率（プロバイダー倍率の適用前）",
+			"chargedFactorAria": "請求倍率 {value}：{status}",
+			"meteredFactorAria": "原価倍率 {value}：{status}",
 			"scheduleBadge": "時間帯",
 			"scheduleAria": "スケジュール：{windows}",
-			"chargedTooltip": "請求係数：{value} · {status} · 公式その時点価格に対する顧客請求倍率",
-			"meteredTooltip": "計量係数：{value} · {status} · 公式その時点価格に対する Provider コスト倍率",
+			"chargedTooltip": "請求倍率：{value} · {status}。設定値であり、プロバイダー倍率・ユーザー別倍率は未適用です。",
+			"meteredTooltip": "原価倍率：{value} · {status}。設定値であり、プロバイダー倍率は未適用です。",
 			"baseInversionBadge": "逆ざや",
-			"baseInversionTooltip": "基本請求係数が基本コスト係数を下回っており、逆ざやの可能性があります。時間帯係数はこの判定に含まれません。",
+			"baseInversionTooltip": "標準の請求倍率が原価倍率を下回っています。設定倍率の比較のみで、プロバイダー有効期間・他の時間帯・ユーザー別倍率は考慮していません。",
 			"factorStatus": {
 				"charged": {
 					"invalid": "無効な設定",
@@ -898,7 +898,7 @@
 				"configured": "設定済み",
 				"headerCount": "ヘッダー {count} 件",
 				"requestDefault": "元のクライアントリクエストを使用",
-				"pricingSummary": "課金 ×{charged} · コスト ×{metered} · {count} 時間帯",
+				"pricingSummary": "請求倍率 ×{charged} · 原価倍率 ×{metered} · {count} 時間帯",
 				"requestHint": "必要に応じて、このルートのヘッダーと本文パラメーターを追加します。強制上書きを有効にしない限り、クライアントの値が優先されます。",
 				"adapterManaged": "アダプターにより自動設定",
 				"effectivePrices": "この時間帯の料金明細を表示",
@@ -916,7 +916,7 @@
 				"meteredFactorLabel": "原価倍率",
 				"factorHelpLabel": "{name}の説明",
 				"providerFactorHelp": "プロバイダーの割引・割増を、ユーザーへの請求とプロバイダー原価の両方に適用します。\n例：0.8 は両方を80%に調整し、1 は調整しません。有効期間外は ×1 です。",
-				"chargedFactorHelp": "ユーザーへの請求額を調整します。プロバイダー原価には影響しません。\n実効請求倍率 = プロバイダー倍率 × 請求倍率。\n例：0.8 × 0.5 = 0.4。その時間帯のカタログ価格の40%を請求します。",
+				"chargedFactorHelp": "ユーザーへの請求額を調整します。プロバイダー原価には影響しません。\n実効請求倍率 = プロバイダー倍率 × 請求倍率。\n例：0.8 × 0.5 = 0.4。その時間帯のカタログ価格の40%を請求します。\nこのルートプレビューにはユーザー別倍率を含みません。",
 				"meteredFactorHelp": "プロバイダー原価を調整します。ユーザーへの請求額には影響しません。\n実効原価倍率 = プロバイダー倍率 × 原価倍率。\n例：0.8 × 0.3 = 0.24。0 を入力すると原価をゼロとして記録します。",
 				"effectiveFactor": "実効",
 				"effectiveFactorHint": "実効倍率 = 現在有効なプロバイダー倍率 × この倍率。カタログ時間帯倍率は含みません。",
@@ -1007,20 +1007,20 @@
 			"imageTokenResolveHint": "請求の基準：アップストリーム Images usage × tier token 料金。",
 			"imageTokenRates": "Image token 料金",
 			"protocolHintImageOpenaiOnly": "画像モデルの公開プロトコルは openai のままです。アップストリームは openai パススルーまたは DashScope 変換が可能です。",
-			"chargedCost": "請求コスト",
-			"chargedCostHint": "公式その時点価格（カタログ × 公式ウィンドウ）に対する倍率。",
+			"chargedCost": "請求単価",
+			"chargedCostHint": "時間帯のカタログ単価 × 実効請求倍率。ユーザー別倍率は未適用です。",
 			"factor": "係数",
-			"chargedFactorTitle": "charged_cost に使用する公式その時点価格に対する倍率。デフォルトは 1。",
-			"meteredCost": "計量コスト",
-			"meteredCostHint": "公式その時点価格（カタログ × 公式ウィンドウ）に対する倍率。",
-			"meteredFactorTitle": "metered_cost に使用する公式その時点価格に対する倍率。デフォルトは 1。",
+			"chargedFactorTitle": "請求倍率。初期値は1で、有効なプロバイダー倍率を掛けます。",
+			"meteredCost": "原価単価",
+			"meteredCostHint": "時間帯のカタログ単価 × 実効原価倍率。",
+			"meteredFactorTitle": "原価倍率。初期値は1で、有効なプロバイダー倍率を掛けます。",
 			"pricingFormulaHint": "時間帯内のリクエストは上の既定係数を上書きします。曜日を指定すると平日と週末で別の係数を設定できます。",
 			"dailySchedule": "スケジュール",
-			"catalogOfficialSchedule": "標準時間帯倍率",
+			"catalogOfficialSchedule": "カタログ時間帯倍率",
 			"catalogScheduleLockedHint": "モデルベンダー由来（読み取り専用）。右側でルート倍率のみ編集できます。",
 			"catalogEffectiveNow": "現在のスケジュール倍率：×{factor}",
 			"catalogScheduleNow": "現在",
-			"catalogWindowPricesHint": "カタログ × この公式時間帯",
+			"catalogWindowPricesHint": "カタログ単価 × カタログ時間帯倍率",
 			"billingTimezoneHint": "時間帯には業務タイムゾーン {timezone} を使用します（半開区間 [start, end)、end は 24:00 も可）。曜日を指定すると、その曜日にだけ適用されます。",
 			"addScheduleWindow": "時間帯を追加",
 			"scheduleEmpty": "時間帯の設定はありません。",
@@ -1039,9 +1039,9 @@
 			"weekdaySun": "日",
 			"scheduleFactor": "時間帯係数",
 			"scheduleChargedFactor": "請求倍率",
-			"scheduleMeteredFactor": "計量倍率",
-			"scheduleWindowPricesSide": "区分",
-			"scheduleWindowPricesHint": "カタログ × 公式時間帯 × この行の倍率 × プロバイダ倍率。",
+			"scheduleMeteredFactor": "原価倍率",
+			"scheduleWindowPricesSide": "単価の種類",
+			"scheduleWindowPricesHint": "時間帯のカタログ単価 × 実効請求／原価倍率。ユーザー別倍率は未適用です。",
 			"requestDefaults": "リクエストのデフォルト（JSON）",
 			"requestDefaultsHint": "アップストリーム Body にディープマージされ、クライアント側の項目が優先されます。任意の headers オブジェクトは HTTP ヘッダーとして送信されます。",
 			"customParams": "カスタムパラメーター",
@@ -1075,7 +1075,7 @@
 			"weightHint": "同一 priority 層の重み（≥ 1）。加重戦略では大きいほど流量が増えます。",
 			"operationModelsGenerate": "models.generate · Generate Content（ストリーム + 非ストリーム）",
 			"providerFactor": "プロバイダ倍率",
-			"providerFactorHint": "プロバイダ割引。有効期間中は請求倍率と原価倍率の両方に掛け、差額は変わりません。標準価格には掛けません。時刻は {timezone} です。",
+			"providerFactorHint": "有効期間内のプロバイダー倍率は請求額と原価額の両方を調整します。カタログ価格は変わりません。タイムゾーン：{timezone}。",
 			"providerFactorTitle": "プロバイダ倍率。既定は 1。有効期間外は 1 として扱います。",
 			"providerFactorStarts": "開始",
 			"providerFactorExpires": "終了",
@@ -1448,7 +1448,7 @@
 		"routingPool": "Routing pool",
 		"publicSurfaces": "公開サーフェス",
 		"customParams": "custom_params",
-		"priceOverride": "price_override",
+		"priceOverride": "ルート料金設定（JSON）",
 		"selectedDetails": "ID、プール、JSON フィールド",
 		"receiving": "受信中…",
 		"cannotExtractBody": "ペイロードから本文を抽出できませんでした。",
@@ -1629,7 +1629,7 @@
 			"rateLimit": "レート制限",
 			"rateLimitRpmValue": "{rpm} RPM",
 			"metadata": "メタデータ",
-			"chargedCostFactors": "モデル割引",
+			"chargedCostFactors": "ユーザー別倍率",
 			"created": "作成日時",
 			"updated": "更新日時",
 			"group": "グループ"
@@ -1646,7 +1646,7 @@
 			"walletSpent": "総使用額",
 			"walletBalance": "現在残高",
 			"metadataJsonObject": "メタデータ（JSON オブジェクト）",
-			"chargedCostFactors": "モデル割引",
+			"chargedCostFactors": "ユーザー別倍率",
 			"chargedCostFactorModelId": "モデル ID",
 			"chargedCostFactorValue": "倍率",
 			"externalSystem": "外部システム",
@@ -1671,11 +1671,11 @@
 			"metadataReplace": "保存すると metadata オブジェクト全体が置き換わります。現在の値を維持する場合は空欄にしてください。",
 			"rateLimitRpm": "このユーザーの全 Key 合計で、60 秒ローリングウィンドウあたりのリクエスト数です。空欄は無制限、0 は計数対象の呼び出しをすべて拒否します。GET /v1/me はカウントしません。Key ごとの上限は下の Key 表で設定します。",
 			"rateLimitRpmInvalid": "レート制限は 0 以上の整数か、無制限の場合は空欄にしてください。",
-			"chargedCostFactors": "カタログからモデルを選んで倍率を設定します。ルート Charged 倍率との合成方法は Gateway Config で設定します。未設定のモデルは金額を変えません。0 はそのモデルを課金しません。LLM / Images / Audio のみ（Agent Tools は対象外）。"
+			"chargedCostFactors": "ユーザー別倍率は実効ルート請求倍率とグローバル設定（乗算または小さい方）で合成され、原価額には影響しません。未設定はルート請求を使用し、0 は無料です。LLM・画像・音声に適用し、Agent Tools は対象外です。"
 		},
 		"chargedCostFactors": {
 			"none": "Charged cost factors は未設定です。",
-			"empty": "モデル別倍率は未設定です。カタログとルートの Charged cost がそのまま適用されます。",
+			"empty": "ユーザー別倍率は未設定です。実効ルート請求倍率で請求します。",
 			"pickTitle": "カタログモデルを追加",
 			"pickSearch": "モデルを検索…",
 			"pickEmpty": "一致するモデルがありません。",
@@ -1840,7 +1840,7 @@
 			"route": "Route",
 			"tags": "タグ",
 			"usage": "使用量",
-			"cost": "コスト（{currency}）",
+			"cost": "請求 / 原価（{currency}）",
 			"profit": "利益（{currency}）"
 		},
 		"identity": {
@@ -1886,17 +1886,17 @@
 				"reasoning": "推論 Token または推論段階の TTFT",
 				"failover": "上流の失敗後に切り替えが発生した"
 			},
-			"cost": "請求（C）と仕入コスト（M）；標準カタログ価格は詳細で確認できます",
-			"profit": "請求額 − 計量額（リクエスト単位）",
+			"cost": "本リクエストの請求額と原価額。横の倍率は金額 ÷ カタログ金額です。",
+			"profit": "請求額 − 原価額。インフラ費用・税金などは含みません。",
 			"rowDetail": "クリックして料金監査とリクエスト / usage Body の表示を切り替え",
 			"inputOutputTokens": "Input / output tokens",
 			"imagePerImageUsage": "入力 × 出力画像数（画像単位課金）",
 			"audioPerSecondUsage": "課金対象の音声時間（秒単位課金）",
 			"audioPerCharacterUsage": "音声合成の課金文字数",
 			"cacheTokens": "Cache read / cache write tokens",
-			"standardCatalogPrice": "標準（公式その時点価格）",
-			"chargedUserBudget": "請求（ユーザー予算）",
-			"meteredSupplierCost": "計量（仕入コスト）",
+			"standardCatalogPrice": "カタログ金額（使用量 × リクエスト時点のカタログ単価）",
+			"chargedUserBudget": "請求額",
+			"meteredSupplierCost": "原価額",
 			"unknown": "不明"
 		},
 		"detail": {
@@ -2117,9 +2117,9 @@
 		"noData": "データなし",
 		"rangeTotals": {
 			"rangeTotal": "期間合計",
-			"standard": "標準",
-			"charged": "請求",
-			"metered": "計量"
+			"standard": "カタログ金額",
+			"charged": "請求額",
+			"metered": "原価額"
 		},
 		"tokenDisplay": {
 			"label": "Token 表示",
@@ -2132,10 +2132,10 @@
 			"successRate": "全体の成功率",
 			"errors": "失敗リクエスト",
 			"charged": "請求額",
-			"metered": "計測コスト",
+			"metered": "原価額",
 			"margin": "請求額 − コスト",
 			"definitions": "集計範囲と指標の定義",
-			"costNote": "標準価格合計：{standard}。差額は記録された請求とコストの差であり、インフラ費用や税金などは含みません。",
+			"costNote": "カタログ金額合計：{standard}。請求額と原価額の差は記録された料金差額のみで、インフラ費用・税金・未記録の原価は差し引いていません。",
 			"qualityNote": "成功率はリクエスト数で加重します。フェイルオーバー率は1回以上切り替えたリクエストの割合（0–100%）です。生成速度は成功かつ有効なストリーム時間のサンプルのみを使用し、未計測は — と表示します。キャッシュ率は読み取りトークン / 入力トークンです。 平均レイテンシーは失敗やキャンセルを含む計測済みリクエスト全体です。",
 			"budgetNote": "予算とウォレットは現在の状態であり、選択期間の過去残高ではありません。ユーザーはログのメールで集計します。",
 			"search": "モデル、プロバイダー、メールを検索",
@@ -2216,12 +2216,12 @@
 			"currency": "通貨"
 		},
 		"userChargedCostFactorMode": {
-			"title": "ユーザー課金倍率モード",
-			"description": "ユーザーのモデル別課金倍率がルート Charged 倍率とどう合成されるか（system_config.USER_CHARGED_COST_FACTOR_MODE）。Proxy は約 30 秒キャッシュします。",
+			"title": "ユーザー別倍率の合成方式",
+			"description": "プロバイダー倍率を含む実効ルート請求倍率と、ユーザー別倍率の合成方法を選択します。設定は約30秒以内に反映されます。",
 			"multiplyTitle": "乗算",
-			"multiplyHelp": "最終課金額 = 公式カタログ価格 × ルート Charged 倍率 × ユーザー倍率。これが既定です。",
+			"multiplyHelp": "最終請求額 = カタログ金額 × 実効ルート請求倍率 × ユーザー別倍率。カタログ金額は使用量とリクエスト時点のカタログ単価から計算します。標準の方式です。",
 			"minTitle": "小さい倍率を採用",
-			"minHelp": "最終課金額 = 公式カタログ価格 × min(ルート Charged 倍率, ユーザー倍率)。割引は積み重ねません。"
+			"minHelp": "最終請求額 = カタログ金額 × min(実効ルート請求倍率, ユーザー別倍率)。倍率は乗算しません。カタログ金額は使用量とリクエスト時点の単価から計算します。"
 		},
 		"errorWebhooks": {
 			"title": "Proxy エラー Webhook",
@@ -2520,7 +2520,37 @@
 		},
 		"cost": "コスト：{amount}",
 		"providerLabel": "Provider：{id}",
-		"stdMetered": "標準 {std} · 計量 {metered}"
+		"stdMetered": "標準 {std} · 計量 {metered}",
+		"help": {
+			"routeFactors": {
+				"title": "ルート倍率の説明",
+				"body": "一覧は設定済みの請求倍率と原価倍率で、プロバイダー倍率は未適用です。\n実効請求倍率 = 有効なプロバイダー倍率 × 請求倍率。原価も同様です。有効期間外は ×1 です。\nルートのプレビューにはユーザー別倍率を含みません。最終請求時にグローバル設定で合成します。"
+			},
+			"unitPrices": {
+				"title": "ルート単価の説明",
+				"body": "請求単価 = 時間帯のカタログ単価 × 実効請求倍率。\n原価単価 = 時間帯のカタログ単価 × 実効原価倍率。\n使用量の単位当たりの価格であり、リクエストの金額ではありません。ユーザー別倍率は未適用です。"
+			},
+			"catalog": {
+				"title": "カタログ価格の説明",
+				"body": "カタログ価格はモデルの基準単価です。時間帯のカタログ単価 = 基準単価 × カタログ時間帯倍率。\nプロバイダー・請求・原価・ユーザー別倍率は含みません。"
+			},
+			"amounts": {
+				"title": "料金額の説明",
+				"body": "カタログ金額はリクエストの使用量と当時のカタログ単価から計算し、時間帯倍率を含みます。\n請求額には当時有効なルート設定とユーザー別倍率を適用します。原価額にはルート原価設定を適用し、ユーザー別倍率は影響しません。\nログの金額横の倍率は金額 ÷ カタログ金額で、設定倍率ではなく結果の比率です。カタログ金額が0の場合は表示しません。"
+			},
+			"profit": {
+				"title": "粗利益の説明",
+				"body": "粗利益 = 請求額 − 原価額。\n記録された料金差額であり、インフラ費用・税金・未記録の支出は差し引いていません。"
+			},
+			"playground": {
+				"title": "テスト時の課金",
+				"body": "調試台は選択したプロバイダーへ直接接続し、ゲートウェイでは課金しません。使用量や料金設定は確認用で、ユーザーへの請求を示しません。上流プロバイダーの利用料は発生する場合があります。"
+			},
+			"simulator": {
+				"title": "シミュレーターの課金",
+				"body": "シミュレーターは選択したAPI Keyで実際のゲートウェイリクエストを送信し、課金とログ記録を行います。\n応答内の使用量は使用量の表示のみです。請求額と原価額はリクエストログで、Agent ToolsはTools呼び出し記録で確認してください。"
+			}
+		}
 	},
 	"modelTest": {
 		"request": "テストリクエスト",

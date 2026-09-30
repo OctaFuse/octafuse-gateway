@@ -1050,7 +1050,7 @@ export default function GatewayUserDetailPage() {
         <div className="bg-white rounded-lg shadow-md p-6 flex min-h-0 flex-1 flex-col gap-3">
           <div className="flex items-center justify-between gap-3 shrink-0">
             <h2 className="text-lg font-semibold text-gray-900">
-              {t('fields.chargedCostFactors')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+              {t('fields.chargedCostFactors')} <InfoHintPopover label={t('fields.chargedCostFactors')} openOnHover align="start"><p className="leading-6">{t('help.chargedCostFactors')}</p></InfoHintPopover> <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
             </h2>
             <button
               type="button"
