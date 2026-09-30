@@ -813,6 +813,12 @@
 				"off": "Sticky 꺼짐",
 				"offTooltip": "이 풀은 Sticky가 꺼져 있어 바인딩 사용자를 집계하지 않습니다.",
 				"tooltip": "이 라우트 풀의 만료되지 않은 Sticky 사용자 수입니다. 막대는 풀 내 비율이며 실시간 동시 접속 수나 요청량이 아닙니다."
+			},
+			"providerFactorBadge": "공급자 {value} · {status}",
+			"providerFactorTiming": {
+				"scheduled": "시작 전",
+				"active": "적용 중",
+				"expired": "만료"
 			}
 		},
 		"vendor": {
@@ -984,7 +990,7 @@
 			"scheduleChargedFactor": "청구 배수",
 			"scheduleMeteredFactor": "계측 배수",
 			"scheduleWindowPricesSide": "구분",
-			"scheduleWindowPricesHint": "카탈로그 × 공식 시간대 × 이 행의 배수.",
+			"scheduleWindowPricesHint": "카탈로그 × 공식 시간대 × 이 행의 배율 × 공급자 배율.",
 			"requestDefaults": "요청 기본값 (JSON)",
 			"requestDefaultsHint": "업스트림 본문에 Deep merge되며 클라이언트 필드가 우선합니다. 선택적 headers 객체는 HTTP 헤더로 전송됩니다.",
 			"customParams": "사용자 지정 파라미터",
@@ -1016,7 +1022,13 @@
 			"audioMinimumCharacters": "최소 문자 수",
 			"weight": "가중치",
 			"weightHint": "동일 priority 층 가중치(≥ 1). 가중 전략에서 클수록 트래픽이 많습니다.",
-			"operationModelsGenerate": "models.generate · Generate Content (스트리밍 + 비스트리밍)"
+			"operationModelsGenerate": "models.generate · Generate Content (스트리밍 + 비스트리밍)",
+			"providerFactor": "공급자 배율",
+			"providerFactorHint": "공급자 할인입니다. 유효 기간에는 청구 배율과 원가 배율에 함께 곱해 차액이 유지됩니다. 표준가는 곱하지 않습니다. 시각은 {timezone} 기준입니다.",
+			"providerFactorTitle": "공급자 배율. 기본값 1. 유효 기간 밖에서는 1로 계산합니다.",
+			"providerFactorStarts": "시작",
+			"providerFactorExpires": "종료",
+			"scheduleProviderFactor": "공급자 배율"
 		},
 		"kindAudio": "오디오",
 		"strategy": {

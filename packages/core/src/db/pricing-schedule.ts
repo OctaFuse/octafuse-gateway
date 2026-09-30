@@ -29,6 +29,8 @@ export type RoutePricingSchedule = {
 	mode: RoutePricingScheduleMode;
 	charged: DailyScheduleWindow[];
 	metered: DailyScheduleWindow[];
+	/** 官方倍率分时；空数组表示全天用 `provider_factor`（有效期内）。 */
+	provider: DailyScheduleWindow[];
 };
 
 /** Admin 合并编辑用：共享 start/end（及可选 days），两侧各一列倍率（均为对标准价的有效倍率）。 */
@@ -37,6 +39,8 @@ export type SharedScheduleWindow = {
 	end: string;
 	charged_factor: number;
 	metered_factor: number;
+	/** 该切片上 bake 后的官方倍率；缺省按 1。 */
+	provider_factor: number;
 	days?: number[];
 };
 
@@ -251,7 +255,7 @@ export function parseRoutePricingScheduleMode(raw: unknown): RoutePricingSchedul
 	return raw === 'override' ? 'override' : 'multiply';
 }
 
-const EMPTY_SCHEDULE: RoutePricingSchedule = { mode: 'multiply', charged: [], metered: [] };
+const EMPTY_SCHEDULE: RoutePricingSchedule = { mode: 'multiply', charged: [], metered: [], provider: [] };
 
 /**
  * 从 `price_override` JSON 解析 `schedule`；缺省或非法侧返回空数组（运行时倍率 1）。
@@ -272,6 +276,7 @@ export function parseRoutePricingSchedule(priceOverrideJson: string | null | und
 			mode: parseRoutePricingScheduleMode(s.mode),
 			charged: parseWindowArray(s.charged),
 			metered: parseWindowArray(s.metered),
+			provider: parseWindowArray(s.provider),
 		};
 	} catch {
 		return { ...EMPTY_SCHEDULE };
@@ -307,28 +312,186 @@ function readRootFactor(obj: Record<string, unknown>, key: string): number | nul
 	return asNonNegativeFactor(obj[key]);
 }
 
-/**
- * 读取路由基础倍率；缺省 1。
- */
-export function parseRouteBaseFactors(priceOverrideJson: string | null | undefined): {
+export type RouteBaseFactors = {
 	chargedFactor: number;
 	meteredFactor: number;
-} {
-	const defaults = { chargedFactor: 1, meteredFactor: 1 };
+	/** 官方倍率；缺省 1。不在有效期内时运行时按 1，此处仍返回配置值。 */
+	providerFactor: number;
+	/** 规范化后的 UTC ISO；未配置为 null。 */
+	providerStartsAt: string | null;
+	providerExpiresAt: string | null;
+	/** 配置了无法解析的起止时间时为 true，运行时官方倍率不生效。 */
+	providerWindowInvalid: boolean;
+};
+
+const DEFAULT_ROUTE_BASE_FACTORS: RouteBaseFactors = {
+	chargedFactor: 1,
+	meteredFactor: 1,
+	providerFactor: 1,
+	providerStartsAt: null,
+	providerExpiresAt: null,
+	providerWindowInvalid: false,
+};
+
+function readOptionalIsoInstant(v: unknown): { iso: string | null; invalid: boolean } {
+	if (v === undefined || v === null || v === '') {
+		return { iso: null, invalid: false };
+	}
+	if (typeof v !== 'string' || v.trim() === '') {
+		return { iso: null, invalid: true };
+	}
+	const parsed = new Date(v.trim());
+	if (Number.isNaN(parsed.getTime())) {
+		return { iso: null, invalid: true };
+	}
+	return { iso: parsed.toISOString(), invalid: false };
+}
+
+/**
+ * 读取路由基础倍率；缺省 1。
+ * `provider_factor` 是官方倍率，不参与成本倍率。
+ */
+export function parseRouteBaseFactors(priceOverrideJson: string | null | undefined): RouteBaseFactors {
 	if (priceOverrideJson == null || String(priceOverrideJson).trim() === '') {
-		return defaults;
+		return { ...DEFAULT_ROUTE_BASE_FACTORS };
 	}
 	try {
 		const o = JSON.parse(priceOverrideJson) as Record<string, unknown>;
 		const charged = readRootFactor(o, 'charged_factor');
 		const metered = readRootFactor(o, 'metered_factor');
+		const provider = readRootFactor(o, 'provider_factor');
+		const starts = readOptionalIsoInstant(o.provider_factor_starts_at);
+		const expires = readOptionalIsoInstant(o.provider_factor_expires_at);
 		return {
 			chargedFactor: charged ?? 1,
 			meteredFactor: metered ?? 1,
+			providerFactor: provider ?? 1,
+			providerStartsAt: starts.iso,
+			providerExpiresAt: expires.iso,
+			providerWindowInvalid: starts.invalid || expires.invalid,
 		};
 	} catch {
-		return defaults;
+		return { ...DEFAULT_ROUTE_BASE_FACTORS };
 	}
+}
+
+/**
+ * 官方倍率是否处于有效期。`starts_at` 含、`expires_at` 不含。
+ * 任一端无法解析时视为未生效。
+ */
+export function isProviderFactorActive(
+	factors: Pick<RouteBaseFactors, 'providerStartsAt' | 'providerExpiresAt' | 'providerWindowInvalid'>,
+	nowUtc: Date
+): boolean {
+	if (factors.providerWindowInvalid) {
+		return false;
+	}
+	const t = nowUtc.getTime();
+	if (Number.isNaN(t)) {
+		return false;
+	}
+	if (factors.providerStartsAt != null) {
+		const start = Date.parse(factors.providerStartsAt);
+		if (!Number.isFinite(start) || t < start) {
+			return false;
+		}
+	}
+	if (factors.providerExpiresAt != null) {
+		const end = Date.parse(factors.providerExpiresAt);
+		if (!Number.isFinite(end) || t >= end) {
+			return false;
+		}
+	}
+	return true;
+}
+
+export type RouteSideFactorResolution = {
+	base: number;
+	schedule: ScheduleFactorResolution;
+	effective: number;
+};
+
+export type ProviderFactorResolution = RouteSideFactorResolution & {
+	active: boolean;
+	startsAt: string | null;
+	expiresAt: string | null;
+};
+
+export type RouteEffectiveFactors = {
+	mode: RoutePricingScheduleMode;
+	provider: ProviderFactorResolution;
+	charged: RouteSideFactorResolution;
+	metered: RouteSideFactorResolution;
+	/** `provider.effective × charged.effective` */
+	chargedTotal: number;
+	/** `provider.effective × metered.effective` */
+	meteredTotal: number;
+};
+
+export type ProviderFactorAudit = {
+	base: number;
+	active: boolean;
+	starts_at: string | null;
+	expires_at: string | null;
+	schedule: ScheduleAuditSnapshot;
+	effective: number;
+};
+
+export function toProviderFactorAudit(provider: ProviderFactorResolution): ProviderFactorAudit {
+	return {
+		base: provider.base,
+		active: provider.active,
+		starts_at: provider.startsAt,
+		expires_at: provider.expiresAt,
+		schedule: toScheduleAudit(provider.schedule),
+		effective: provider.effective,
+	};
+}
+
+/**
+ * 一次解析路由三侧有效倍率。官方倍率不在有效期内时 `provider.effective` 为 1，
+ * 分时窗口也不生效；`charged` / `metered` 仍按各自 base 与窗口计算，不含官方倍率。
+ * `chargedTotal` / `meteredTotal` 已乘上官方倍率，供扣费与成本直接使用。
+ */
+export function resolveRouteEffectiveFactors(options: {
+	priceOverrideJson: string | null | undefined;
+	nowUtc: Date;
+	timezone: string;
+}): RouteEffectiveFactors {
+	const bases = parseRouteBaseFactors(options.priceOverrideJson);
+	const schedule = parseRoutePricingSchedule(options.priceOverrideJson);
+	const chargedSch = resolveDailyScheduleFactor(schedule.charged, options.nowUtc, options.timezone);
+	const meteredSch = resolveDailyScheduleFactor(schedule.metered, options.nowUtc, options.timezone);
+	const providerSch = resolveDailyScheduleFactor(schedule.provider, options.nowUtc, options.timezone);
+	const active = isProviderFactorActive(bases, options.nowUtc);
+	const chargedEffective = resolveEffectiveRouteFactor(bases.chargedFactor, chargedSch, schedule.mode);
+	const meteredEffective = resolveEffectiveRouteFactor(bases.meteredFactor, meteredSch, schedule.mode);
+	const providerEffective = active
+		? resolveEffectiveRouteFactor(bases.providerFactor, providerSch, schedule.mode)
+		: 1;
+	return {
+		mode: schedule.mode,
+		provider: {
+			base: bases.providerFactor,
+			schedule: providerSch,
+			effective: providerEffective,
+			active,
+			startsAt: bases.providerStartsAt,
+			expiresAt: bases.providerExpiresAt,
+		},
+		charged: {
+			base: bases.chargedFactor,
+			schedule: chargedSch,
+			effective: chargedEffective,
+		},
+		metered: {
+			base: bases.meteredFactor,
+			schedule: meteredSch,
+			effective: meteredEffective,
+		},
+		chargedTotal: normalizeScheduleFactor(providerEffective * chargedEffective),
+		meteredTotal: normalizeScheduleFactor(providerEffective * meteredEffective),
+	};
 }
 
 /** 在给定时区取本地 `HH:mm`（24h）。 */
@@ -496,7 +659,7 @@ export function coerceRoutePricingScheduleInput(
 			return { ok: false, message: 'price_override.schedule.mode must be "override" or "multiply"' };
 		}
 	}
-	const coerceSide = (side: 'charged' | 'metered'): DailyScheduleWindow[] | { error: string } => {
+	const coerceSide = (side: 'charged' | 'metered' | 'provider'): DailyScheduleWindow[] | { error: string } => {
 		const arr = o[side];
 		if (arr === undefined || arr === null) {
 			return [];
@@ -540,7 +703,11 @@ export function coerceRoutePricingScheduleInput(
 	if ('error' in metered) {
 		return { ok: false, message: metered.error };
 	}
-	return { ok: true, schedule: { mode, charged, metered }, persistMode };
+	const provider = coerceSide('provider');
+	if ('error' in provider) {
+		return { ok: false, message: provider.error };
+	}
+	return { ok: true, schedule: { mode, charged, metered, provider }, persistMode };
 }
 
 function hitWindowAt(
@@ -620,12 +787,14 @@ type DayPiece = {
 	isoWeekday: number;
 	charged_factor: number;
 	metered_factor: number;
+	provider_factor: number;
 };
 
 /**
- * 将两侧独立窗口并成共享 start/end 行，并把旧叠乘 bake 成对标准价的有效倍率。
+ * 将三侧独立窗口并成共享 start/end 行，并把旧叠乘 bake 成对标准价的有效倍率。
  * 仅输出至少一侧命中窗口的区间；缺侧按「未命中」处理（override=base，multiply=base×1）。
  * 按 days 集合拆行，避免工作日窗与周末窗被拼成一行。
+ * `provider` 省略时不拆窗，行上 `provider_factor` 为 bake 后的基础官方倍率（缺省 1）。
  */
 export function mergeScheduleSidesToSharedWindows(
 	charged: DailyScheduleWindow[],
@@ -634,9 +803,13 @@ export function mergeScheduleSidesToSharedWindows(
 		mode: RoutePricingScheduleMode;
 		chargedBase: number;
 		meteredBase: number;
+		provider?: DailyScheduleWindow[];
+		providerBase?: number;
 	}
 ): SharedScheduleWindow[] {
-	if (charged.length === 0 && metered.length === 0) {
+	const provider = options.provider ?? [];
+	const providerBase = options.providerBase ?? 1;
+	if (charged.length === 0 && metered.length === 0 && provider.length === 0) {
 		return [];
 	}
 	const bounds = new Set<number>();
@@ -644,6 +817,9 @@ export function mergeScheduleSidesToSharedWindows(
 		addWindowBounds(bounds, w);
 	}
 	for (const w of metered) {
+		addWindowBounds(bounds, w);
+	}
+	for (const w of provider) {
 		addWindowBounds(bounds, w);
 	}
 	const sorted = [...bounds].sort((a, b) => a - b);
@@ -659,7 +835,11 @@ export function mergeScheduleSidesToSharedWindows(
 			continue;
 		}
 		const { minutes, isoWeekday } = weekMinuteToLocal(mid);
-		if (!hitWindowAt(charged, minutes, isoWeekday) && !hitWindowAt(metered, minutes, isoWeekday)) {
+		if (
+			!hitWindowAt(charged, minutes, isoWeekday) &&
+			!hitWindowAt(metered, minutes, isoWeekday) &&
+			!hitWindowAt(provider, minutes, isoWeekday)
+		) {
 			continue;
 		}
 		const chargedFactor = effectiveSideFactorAt(
@@ -675,6 +855,13 @@ export function mergeScheduleSidesToSharedWindows(
 			isoWeekday,
 			options.mode,
 			options.meteredBase
+		);
+		const providerFactor = effectiveSideFactorAt(
+			provider,
+			minutes,
+			isoWeekday,
+			options.mode,
+			providerBase
 		);
 		let t = a;
 		while (t < b) {
@@ -694,6 +881,7 @@ export function mergeScheduleSidesToSharedWindows(
 					isoWeekday: dayIndex + 1,
 					charged_factor: chargedFactor,
 					metered_factor: meteredFactor,
+					provider_factor: providerFactor,
 				});
 			}
 			t = pieceEnd;
@@ -708,7 +896,8 @@ export function mergeScheduleSidesToSharedWindows(
 			last.isoWeekday === row.isoWeekday &&
 			last.end === row.start &&
 			last.charged_factor === row.charged_factor &&
-			last.metered_factor === row.metered_factor
+			last.metered_factor === row.metered_factor &&
+			last.provider_factor === row.provider_factor
 		) {
 			last.end = row.end;
 		} else {
@@ -723,7 +912,8 @@ export function mergeScheduleSidesToSharedWindows(
 		evening.start !== '00:00' &&
 		morning.end !== '24:00' &&
 		evening.charged_factor === morning.charged_factor &&
-		evening.metered_factor === morning.metered_factor;
+		evening.metered_factor === morning.metered_factor &&
+		evening.provider_factor === morning.provider_factor;
 
 	const rejoined: DayPiece[] = [];
 	for (const row of mergedSameDay) {
@@ -751,7 +941,8 @@ export function mergeScheduleSidesToSharedWindows(
 				g.start === row.start &&
 				g.end === row.end &&
 				g.charged_factor === row.charged_factor &&
-				g.metered_factor === row.metered_factor
+				g.metered_factor === row.metered_factor &&
+				g.provider_factor === row.provider_factor
 		);
 		if (existing) {
 			if (!existing.daysAcc.includes(row.isoWeekday)) {
@@ -763,6 +954,7 @@ export function mergeScheduleSidesToSharedWindows(
 				end: row.end,
 				charged_factor: row.charged_factor,
 				metered_factor: row.metered_factor,
+				provider_factor: row.provider_factor,
 				daysAcc: [row.isoWeekday],
 			});
 		}
@@ -775,6 +967,7 @@ export function mergeScheduleSidesToSharedWindows(
 			end: g.end,
 			charged_factor: g.charged_factor,
 			metered_factor: g.metered_factor,
+			provider_factor: g.provider_factor,
 		};
 		if (days.length < 7) {
 			out.days = days;
@@ -855,6 +1048,7 @@ export type CatalogScheduleMatchResult =
  * model 目录时段与 route 时段的严格一致校验。
  * - catalog 为空：route 可自由配置。
  * - catalog 非空：`schedule.charged[]` 与 `schedule.metered[]` 的窗口集合必须各自与 catalog 逐一相同。
+ * - `schedule.provider[]` 为空时放行；非空时同样必须与 catalog 逐一相同。
  */
 export function assertRouteScheduleMatchesCatalog(
 	catalogWindows: DailyScheduleWindow[],
@@ -866,7 +1060,11 @@ export function assertRouteScheduleMatchesCatalog(
 	const problems: string[] = [];
 	let missing: string[] = [];
 	let extra: string[] = [];
-	for (const side of ['charged', 'metered'] as const) {
+	const sides: Array<'charged' | 'metered' | 'provider'> = ['charged', 'metered'];
+	if ((routeSchedule.provider ?? []).length > 0) {
+		sides.push('provider');
+	}
+	for (const side of sides) {
 		const diff = diffScheduleWindowSets(catalogWindows, routeSchedule[side]);
 		if (diff.missing.length > 0 || diff.extra.length > 0) {
 			const parts: string[] = [];

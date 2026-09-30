@@ -22,6 +22,7 @@ export type DualScheduleFormWindow = {
 	end: string;
 	charged_factor: string;
 	metered_factor: string;
+	provider_factor?: string;
 	days: number[];
 };
 
@@ -38,6 +39,7 @@ type DualProps = {
 	onChange: (windows: DualScheduleFormWindow[]) => void;
 	chargedFactorLabel: string;
 	meteredFactorLabel: string;
+	providerFactorLabel: string;
 	factorLabel?: never;
 };
 
@@ -86,12 +88,15 @@ function toggleDay(days: number[], day: number): number[] {
 	return next.length === 7 ? [] : next;
 }
 
-function factorInputClass(tone: 'blue' | 'emerald' | 'slate'): string {
+function factorInputClass(tone: 'blue' | 'emerald' | 'violet' | 'slate'): string {
 	if (tone === 'blue') {
 		return 'w-full min-w-0 rounded border border-blue-200 bg-blue-50/40 px-1.5 py-1 font-mono text-xs tabular-nums';
 	}
 	if (tone === 'emerald') {
 		return 'w-full min-w-0 rounded border border-emerald-200 bg-emerald-50/40 px-1.5 py-1 font-mono text-xs tabular-nums';
+	}
+	if (tone === 'violet') {
+		return 'w-full min-w-0 rounded border border-violet-200 bg-violet-50/40 px-1.5 py-1 font-mono text-xs tabular-nums';
 	}
 	return 'w-full min-w-0 rounded border border-slate-200 bg-slate-50/60 px-1.5 py-1 font-mono text-xs tabular-nums';
 }
@@ -197,7 +202,7 @@ export function DailyScheduleEditor(props: Props) {
 										);
 									})}
 								</div>
-								<div className={inline ? 'flex w-full shrink-0 items-end gap-1.5 sm:w-auto sm:min-w-[17rem]' : 'flex items-end gap-1.5'}>
+								<div className={inline ? 'flex w-full shrink-0 items-end gap-1.5 sm:w-auto sm:min-w-[22rem]' : 'flex items-end gap-1.5'}>
 									<div className="min-w-0 flex-1">
 										<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
 											{startLabel}
@@ -266,6 +271,19 @@ export function DailyScheduleEditor(props: Props) {
 													value={(w as DualScheduleFormWindow).metered_factor}
 													onChange={(e) => updateRow(i, { metered_factor: e.target.value })}
 													className={factorInputClass('emerald')}
+												/>
+											</div>
+											<div className="min-w-0 flex-[0.85]">
+												<label className="mb-0.5 block text-[10px] font-medium text-violet-700/80">
+													{props.providerFactorLabel}
+												</label>
+												<input
+													type="text"
+													inputMode="decimal"
+													placeholder="1"
+													value={(w as DualScheduleFormWindow).provider_factor ?? ''}
+													onChange={(e) => updateRow(i, { provider_factor: e.target.value })}
+													className={factorInputClass('violet')}
 												/>
 											</div>
 										</>

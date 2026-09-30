@@ -813,6 +813,12 @@
 				"off": "粘性未开启",
 				"offTooltip": "此路由组未开启粘性，不统计绑定用户。",
 				"tooltip": "统计本路由组内未过期的粘性绑定用户；横条表示组内占比。绑定人数不代表实时并发或请求量。"
+			},
+			"providerFactorBadge": "供应商 {value} · {status}",
+			"providerFactorTiming": {
+				"scheduled": "未开始",
+				"active": "生效中",
+				"expired": "已过期"
 			}
 		},
 		"vendor": {
@@ -984,7 +990,7 @@
 			"scheduleChargedFactor": "计费倍率",
 			"scheduleMeteredFactor": "供应倍率",
 			"scheduleWindowPricesSide": "口径",
-			"scheduleWindowPricesHint": "目录价 × 官方时段 × 本行倍率。",
+			"scheduleWindowPricesHint": "目录价 × 官方时段 × 本行倍率 × 供应商倍率。",
 			"requestDefaults": "请求默认值（JSON）",
 			"requestDefaultsHint": "深度合并到上游请求体；客户端字段优先。可选 headers 对象作为 HTTP 头发送。",
 			"customParams": "自定义参数",
@@ -1016,7 +1022,13 @@
 			"audioMinimumCharacters": "最低字符数",
 			"weight": "权重",
 			"weightHint": "同 priority 层内权重（≥ 1）。加权策略下数值越大流量越多。",
-			"operationModelsGenerate": "models.generate · Generate Content（流式 + 非流式）"
+			"operationModelsGenerate": "models.generate · Generate Content（流式 + 非流式）",
+			"providerFactor": "供应商倍率",
+			"providerFactorHint": "供应商折扣。有效期内同时乘到用户倍率和成本倍率，两者差额不变。标准价不乘。时间按 {timezone}。",
+			"providerFactorTitle": "供应商倍率，默认 1。不在有效期内按 1 计。",
+			"providerFactorStarts": "开始",
+			"providerFactorExpires": "结束",
+			"scheduleProviderFactor": "供应商倍率"
 		},
 		"kindAudio": "音频",
 		"strategy": {

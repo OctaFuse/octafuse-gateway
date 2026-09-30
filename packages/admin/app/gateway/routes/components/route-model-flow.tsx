@@ -13,6 +13,7 @@ import {
 	PowerIcon,
 	UsersIcon,
 } from '@heroicons/react/24/outline';
+import { parseRouteBaseFactors } from '@octafuse/core/db/pricing-schedule';
 import {
 	isAudioModel,
 	isAudioSpeechModel,
@@ -38,6 +39,7 @@ import {
 	formatFactorMultiplierForChip,
 	formatScheduleRange,
 	formatSharedScheduleWindowsHint,
+	providerFactorTiming,
 	resolveRouteScheduleDisplay,
 	groupSectionsByRequestSurface,
 	hasBasePricingInversion,
@@ -175,6 +177,8 @@ function RouteTarget({
 	const metered = parseMeteredFactorFromPriceOverride(route.price_override);
 	const chargedValue = charged != null && Number.isFinite(charged) ? charged : 1;
 	const meteredValue = metered != null && Number.isFinite(metered) ? metered : 1;
+	const providerTiming = providerFactorTiming(route.price_override);
+	const providerValue = parseRouteBaseFactors(route.price_override ?? null).providerFactor;
 	const scheduleWindows = resolveRouteScheduleDisplay(route.price_override);
 	const scheduleHint = formatSharedScheduleWindowsHint(scheduleWindows);
 	const hasSchedule = Boolean(scheduleHint);
@@ -288,12 +292,25 @@ function RouteTarget({
 						<span className={factorChipClassForValue(meteredValue, 'metered')}>{formatFactorMultiplierForChip(meteredValue)}</span>
 					</span>
 				</span>
+				{providerTiming ? (
+					<span className="col-span-3 pt-1 text-[10px] leading-4 text-violet-800">
+						{t('providerFactorBadge', {
+							value: formatFactorMultiplier(providerValue),
+							status: t(`providerFactorTiming.${providerTiming}`),
+						})}
+					</span>
+				) : null}
 				{scheduleWindows.map((window, index) => (
 					<span key={`${window.start}-${window.end}-${index}`} className={`${pricingColumns} min-h-7 border-t border-dashed border-slate-100 py-1 text-[11px]`}>
 						<span className="min-w-0 text-slate-600">
 							<span className="block whitespace-nowrap tabular-nums">{formatScheduleRange(window.start, window.end)}</span>
 							{window.days && window.days.length < 7 ? (
 								<span className="block text-[10px] leading-4 text-slate-500">{formatWeekdays(window.days)}</span>
+							) : null}
+							{window.provider_factor !== 1 ? (
+								<span className="block text-[10px] leading-4 text-violet-700">
+									P {formatFactorMultiplierForChip(window.provider_factor)}
+								</span>
 							) : null}
 						</span>
 						<span className="justify-self-end" title={factorTooltip(window.charged_factor, 'charged')} aria-label={factorTooltip(window.charged_factor, 'charged')}>

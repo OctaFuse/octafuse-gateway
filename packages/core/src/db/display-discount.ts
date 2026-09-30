@@ -10,6 +10,7 @@ import {
 	isEveryIsoWeekday,
 	nextIsoWeekday,
 	normalizeScheduleFactor,
+	isProviderFactorActive,
 	parseHhMmToMinutes,
 	parseRouteBaseFactors,
 	parseRoutePricingSchedule,
@@ -36,6 +37,15 @@ export type DisplayDiscountWindow = {
 	composite_factor: number;
 };
 
+export type DisplayDiscountProviderFactor = {
+	base: number;
+	/** 当刻官方倍率（含分时；不在有效期内为 1）。 */
+	effective: number;
+	active: boolean;
+	starts_at: string | null;
+	expires_at: string | null;
+};
+
 export type DisplayDiscountGroup = {
 	timezone: string;
 	kind: DisplayDiscountKind;
@@ -43,6 +53,11 @@ export type DisplayDiscountGroup = {
 	route: { priority: number; weight: number };
 	current: DisplayDiscountWindow;
 	windows: DisplayDiscountWindow[];
+	/**
+	 * 路由配置了官方倍率（基数不是 1、有有效期或有分时）时返回。
+	 * `route_factor` 已乘上当刻 `effective`。
+	 */
+	provider_factor: DisplayDiscountProviderFactor | null;
 };
 
 export type DisplayDiscountRouteInput = {
@@ -307,16 +322,16 @@ function hitWindowAt(
 	return null;
 }
 
-function resolveRouteFactorAt(
-	chargedWindows: DailyScheduleWindow[],
+function resolveSideFactorAt(
+	windows: DailyScheduleWindow[],
 	mode: RoutePricingScheduleMode,
-	baseCharged: number,
+	base: number,
 	minutes: number,
 	isoWeekday: number
 ): number {
-	const hit = hitWindowAt(chargedWindows, minutes, isoWeekday);
+	const hit = hitWindowAt(windows, minutes, isoWeekday);
 	return resolveEffectiveRouteFactor(
-		baseCharged,
+		base,
 		{
 			factor: hit?.factor ?? 1,
 			localTime: formatMinutesToHhMm(minutes),
@@ -327,6 +342,35 @@ function resolveRouteFactorAt(
 		},
 		mode
 	);
+}
+
+function resolveChargedRouteFactorAt(options: {
+	chargedWindows: DailyScheduleWindow[];
+	providerWindows: DailyScheduleWindow[];
+	mode: RoutePricingScheduleMode;
+	baseCharged: number;
+	baseProvider: number;
+	providerActive: boolean;
+	minutes: number;
+	isoWeekday: number;
+}): number {
+	const charged = resolveSideFactorAt(
+		options.chargedWindows,
+		options.mode,
+		options.baseCharged,
+		options.minutes,
+		options.isoWeekday
+	);
+	const provider = options.providerActive
+		? resolveSideFactorAt(
+				options.providerWindows,
+				options.mode,
+				options.baseProvider,
+				options.minutes,
+				options.isoWeekday
+			)
+		: 1;
+	return normalizeScheduleFactor(provider * charged);
 }
 
 function toDisplayWindow(
@@ -419,6 +463,13 @@ export function buildDisplayDiscountForRoute(options: {
 	const schedule = parseRoutePricingSchedule(options.priceOverrideJson);
 	const bases = parseRouteBaseFactors(options.priceOverrideJson);
 	const mode = schedule.mode;
+	const providerActive = isProviderFactorActive(bases, now);
+	const providerConfigured =
+		bases.providerFactor !== 1 ||
+		bases.providerStartsAt != null ||
+		bases.providerExpiresAt != null ||
+		bases.providerWindowInvalid ||
+		schedule.provider.length > 0;
 
 	let sourceWindows: DailyScheduleWindow[];
 	let catalogLookup: DailyScheduleWindow[];
@@ -428,26 +479,42 @@ export function buildDisplayDiscountForRoute(options: {
 	} else if (schedule.charged.length > 0) {
 		sourceWindows = fillDailyScheduleGaps(schedule.charged);
 		catalogLookup = [];
+	} else if (providerActive && schedule.provider.length > 0) {
+		sourceWindows = fillDailyScheduleGaps(schedule.provider);
+		catalogLookup = [];
 	} else {
 		sourceWindows = [];
 		catalogLookup = [];
 	}
 
+	const routeFactorAt = (minutes: number, isoWeekday: number) =>
+		resolveChargedRouteFactorAt({
+			chargedWindows: schedule.charged,
+			providerWindows: schedule.provider,
+			mode,
+			baseCharged: bases.chargedFactor,
+			baseProvider: bases.providerFactor,
+			providerActive,
+			minutes,
+			isoWeekday,
+		});
+
 	const priced: DisplayDiscountWindow[] =
 		sourceWindows.length === 0
-			? [toDisplayWindow({}, 1, bases.chargedFactor)]
+			? [
+					toDisplayWindow(
+						{},
+						1,
+						providerActive
+							? normalizeScheduleFactor(bases.providerFactor * bases.chargedFactor)
+							: bases.chargedFactor
+					),
+				]
 			: sourceWindows.map((w) => {
 					const mid = windowMidpoint(w);
 					const catalogHit = hitWindowAt(catalogLookup, mid.minutes, mid.isoWeekday);
 					const catalogFactor = catalogHit?.factor ?? 1;
-					const routeFactor = resolveRouteFactorAt(
-						schedule.charged,
-						mode,
-						bases.chargedFactor,
-						mid.minutes,
-						mid.isoWeekday
-					);
-					return toDisplayWindow(w, catalogFactor, routeFactor);
+					return toDisplayWindow(w, catalogFactor, routeFactorAt(mid.minutes, mid.isoWeekday));
 				});
 
 	const { kind, windows } = flattenIfUniform(priced);
@@ -455,10 +522,26 @@ export function buildDisplayDiscountForRoute(options: {
 	const liveWeekday = formatLocalIsoWeekday(now, options.timezone);
 	const liveCatalog =
 		liveMinutes == null ? 1 : (hitWindowAt(catalogLookup, liveMinutes, liveWeekday)?.factor ?? 1);
+	const liveProvider = providerActive
+		? liveMinutes == null
+			? bases.providerFactor
+			: resolveSideFactorAt(schedule.provider, mode, bases.providerFactor, liveMinutes, liveWeekday)
+		: 1;
+	const providerFactor: DisplayDiscountProviderFactor | null = providerConfigured
+		? {
+				base: bases.providerFactor,
+				effective: normalizeScheduleFactor(liveProvider),
+				active: providerActive,
+				starts_at: bases.providerStartsAt,
+				expires_at: bases.providerExpiresAt,
+			}
+		: null;
 	const liveRoute =
 		liveMinutes == null
-			? bases.chargedFactor
-			: resolveRouteFactorAt(schedule.charged, mode, bases.chargedFactor, liveMinutes, liveWeekday);
+			? providerActive
+				? normalizeScheduleFactor(bases.providerFactor * bases.chargedFactor)
+				: bases.chargedFactor
+			: routeFactorAt(liveMinutes, liveWeekday);
 	const liveCurrent = toDisplayWindow(
 		resolveDisplayDiscountAt(windows, now, options.timezone) ?? {},
 		liveCatalog,
@@ -478,6 +561,7 @@ export function buildDisplayDiscountForRoute(options: {
 		route: { priority: options.priority, weight: options.weight },
 		current,
 		windows,
+		provider_factor: providerFactor,
 	};
 }
 

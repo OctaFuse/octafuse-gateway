@@ -8,8 +8,10 @@ import {
 	formatLocalIsoWeekday,
 	mergeScheduleSidesToSharedWindows,
 	parseHhMmToMinutes,
+	isProviderFactorActive,
 	parseRouteBaseFactors,
 	parseRoutePricingSchedule,
+	resolveRouteEffectiveFactors,
 	resolveDailyScheduleFactor,
 	resolveEffectiveRouteFactor,
 	scaleBillingPrices,
@@ -27,26 +29,41 @@ describe('parseHhMmToMinutes', () => {
 });
 
 describe('parseRouteBaseFactors', () => {
-	it('defaults to 1 and ignores a leftover provider_factor key', () => {
-		assert.deepEqual(parseRouteBaseFactors(null), { chargedFactor: 1, meteredFactor: 1 });
+	it('defaults to 1 and reads provider_factor separately from metered', () => {
+		const empty = {
+			chargedFactor: 1,
+			meteredFactor: 1,
+			providerFactor: 1,
+			providerStartsAt: null,
+			providerExpiresAt: null,
+			providerWindowInvalid: false,
+		};
+		assert.deepEqual(parseRouteBaseFactors(null), empty);
 		assert.deepEqual(parseRouteBaseFactors('{"charged_factor":1.2,"metered_factor":0.8}'), {
+			...empty,
 			chargedFactor: 1.2,
 			meteredFactor: 0.8,
 		});
 		assert.deepEqual(parseRouteBaseFactors('{"provider_factor":0.5}'), {
-			chargedFactor: 1,
-			meteredFactor: 1,
+			...empty,
+			providerFactor: 0.5,
 		});
 	});
 });
 
 describe('parseRoutePricingSchedule', () => {
 	it('returns empty sides when missing', () => {
-		assert.deepEqual(parseRoutePricingSchedule('{}'), { mode: 'multiply', charged: [], metered: [] });
+		assert.deepEqual(parseRoutePricingSchedule('{}'), {
+			mode: 'multiply',
+			charged: [],
+			metered: [],
+			provider: [],
+		});
 		assert.deepEqual(parseRoutePricingSchedule('{"metered":{"tiers":[]}}'), {
 			mode: 'multiply',
 			charged: [],
 			metered: [],
+			provider: [],
 		});
 	});
 
@@ -414,7 +431,7 @@ describe('mergeScheduleSidesToSharedWindows', () => {
 			{ mode: 'multiply', chargedBase: 1.2, meteredBase: 1 }
 		);
 		assert.deepEqual(rows, [
-			{ start: '09:00', end: '12:00', charged_factor: 0.6, metered_factor: 0.5 },
+			{ start: '09:00', end: '12:00', charged_factor: 0.6, metered_factor: 0.5, provider_factor: 1},
 		]);
 	});
 
@@ -425,7 +442,7 @@ describe('mergeScheduleSidesToSharedWindows', () => {
 			{ mode: 'override', chargedBase: 1, meteredBase: 1 }
 		);
 		assert.deepEqual(rows, [
-			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 2 },
+			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 2, provider_factor: 1},
 		]);
 	});
 
@@ -436,8 +453,8 @@ describe('mergeScheduleSidesToSharedWindows', () => {
 			{ mode: 'multiply', chargedBase: 1, meteredBase: 1 }
 		);
 		assert.deepEqual(rows, [
-			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 1.5 },
-			{ start: '12:00', end: '18:00', charged_factor: 1, metered_factor: 1.5 },
+			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 1.5, provider_factor: 1},
+			{ start: '12:00', end: '18:00', charged_factor: 1, metered_factor: 1.5, provider_factor: 1},
 		]);
 	});
 
@@ -448,7 +465,7 @@ describe('mergeScheduleSidesToSharedWindows', () => {
 			{ mode: 'override', chargedBase: 1, meteredBase: 1 }
 		);
 		assert.deepEqual(rows, [
-			{ start: '22:00', end: '06:00', charged_factor: 0.5, metered_factor: 0.5 },
+			{ start: '22:00', end: '06:00', charged_factor: 0.5, metered_factor: 0.5, provider_factor: 1},
 		]);
 	});
 
@@ -465,8 +482,8 @@ describe('mergeScheduleSidesToSharedWindows', () => {
 			{ mode: 'override', chargedBase: 1, meteredBase: 1 }
 		);
 		assert.deepEqual(rows, [
-			{ start: '00:00', end: '24:00', charged_factor: 1.2, metered_factor: 1.2, days: [1, 2, 3, 4, 5] },
-			{ start: '00:00', end: '24:00', charged_factor: 0.8, metered_factor: 0.8, days: [6, 7] },
+			{ start: '00:00', end: '24:00', charged_factor: 1.2, metered_factor: 1.2, days: [1, 2, 3, 4, 5], provider_factor: 1},
+			{ start: '00:00', end: '24:00', charged_factor: 0.8, metered_factor: 0.8, days: [6, 7], provider_factor: 1},
 		]);
 	});
 
@@ -477,8 +494,8 @@ describe('mergeScheduleSidesToSharedWindows', () => {
 			{ mode: 'override', chargedBase: 1, meteredBase: 1 }
 		);
 		assert.deepEqual(rows, [
-			{ start: '09:00', end: '18:00', charged_factor: 2, metered_factor: 1, days: [1, 2, 3, 4, 5] },
-			{ start: '09:00', end: '18:00', charged_factor: 1, metered_factor: 1.5, days: [6, 7] },
+			{ start: '09:00', end: '18:00', charged_factor: 2, metered_factor: 1, days: [1, 2, 3, 4, 5], provider_factor: 1},
+			{ start: '09:00', end: '18:00', charged_factor: 1, metered_factor: 1.5, days: [6, 7], provider_factor: 1},
 		]);
 	});
 });
@@ -548,5 +565,81 @@ describe('assertRouteScheduleMatchesCatalog', () => {
 		if (!extra.ok) {
 			assert.match(extra.message, /schedule\.metered extra/);
 		}
+	});
+
+	it('allows an empty provider side and rejects a provider side that does not match the catalog', () => {
+		const emptyProvider = assertRouteScheduleMatchesCatalog(catalog, {
+			mode: 'override',
+			charged: catalog,
+			metered: catalog,
+			provider: [],
+		});
+		assert.equal(emptyProvider.ok, true);
+		const mismatch = assertRouteScheduleMatchesCatalog(catalog, {
+			mode: 'override',
+			charged: catalog,
+			metered: catalog,
+			provider: [{ start: '01:00', end: '02:00', factor: 0.5 }],
+		});
+		assert.equal(mismatch.ok, false);
+		if (!mismatch.ok) {
+			assert.match(mismatch.message, /schedule\.provider/);
+		}
+	});
+});
+
+describe('resolveRouteEffectiveFactors', () => {
+	const tz = 'UTC';
+	const during = new Date('2026-10-15T12:00:00.000Z');
+	const before = new Date('2026-09-01T00:00:00.000Z');
+	const after = new Date('2026-11-01T00:00:00.000Z');
+	const json = JSON.stringify({
+		provider_factor: 0.5,
+		provider_factor_starts_at: '2026-10-01T00:00:00.000Z',
+		provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+		charged_factor: 1,
+		metered_factor: 0.68,
+		schedule: {
+			mode: 'override',
+			provider: [{ start: '00:00', end: '08:00', factor: 0.4 }],
+		},
+	});
+
+	it('multiplies provider into charged and metered totals while the window is active', () => {
+		const day = resolveRouteEffectiveFactors({ priceOverrideJson: json, nowUtc: during, timezone: tz });
+		assert.equal(day.provider.active, true);
+		assert.equal(day.provider.effective, 0.5);
+		assert.equal(day.charged.effective, 1);
+		assert.equal(day.metered.effective, 0.68);
+		assert.equal(day.chargedTotal, 0.5);
+		assert.equal(day.meteredTotal, 0.34);
+		const night = resolveRouteEffectiveFactors({
+			priceOverrideJson: json,
+			nowUtc: new Date('2026-10-15T02:00:00.000Z'),
+			timezone: tz,
+		});
+		assert.equal(night.provider.effective, 0.4);
+		assert.equal(night.chargedTotal, 0.4);
+		assert.equal(night.meteredTotal, 0.272);
+	});
+
+	it('treats the official factor as 1 outside the validity window', () => {
+		for (const now of [before, after]) {
+			const factors = resolveRouteEffectiveFactors({ priceOverrideJson: json, nowUtc: now, timezone: tz });
+			assert.equal(factors.provider.active, false);
+			assert.equal(factors.provider.effective, 1);
+			assert.equal(factors.chargedTotal, 1);
+			assert.equal(factors.meteredTotal, 0.68);
+		}
+		assert.equal(
+			isProviderFactorActive(parseRouteBaseFactors(json), new Date('2026-11-01T00:00:00.000Z')),
+			false
+		);
+	});
+
+	it('rejects an unparseable validity bound', () => {
+		const factors = parseRouteBaseFactors('{"provider_factor":0.5,"provider_factor_expires_at":"soon"}');
+		assert.equal(factors.providerWindowInvalid, true);
+		assert.equal(isProviderFactorActive(factors, during), false);
 	});
 });

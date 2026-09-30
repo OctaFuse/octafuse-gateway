@@ -555,3 +555,48 @@ describe('shouldChargeUncertainImageResult', () => {
 		);
 	});
 });
+
+describe('provider_factor on image routes', () => {
+	const override = JSON.stringify({
+		provider_factor: 0.5,
+		provider_factor_starts_at: '2026-10-01T00:00:00.000Z',
+		provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+		charged_factor: 1,
+		metered_factor: 0.68,
+	});
+
+	it('multiplies charged and metered while standard stays at catalog price', async () => {
+		const costs = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: override,
+			quality: 'high',
+			size: '1536x1024',
+			imageCount: 1,
+			operation: 'generations',
+			requestStartedAtMs: Date.parse('2026-10-15T00:00:00.000Z'),
+		});
+		assert.ok(Math.abs(costs.standardCost - 0.165) < 1e-9);
+		assert.ok(Math.abs(costs.chargedCost - 0.165 * 0.5) < 1e-9);
+		assert.ok(Math.abs(costs.meteredCost - 0.165 * 0.5 * 0.68) < 1e-9);
+		const audit = JSON.parse(costs.pricingAuditJson) as {
+			provider_factor: { effective: number; active: boolean };
+		};
+		assert.equal(audit.provider_factor.active, true);
+		assert.equal(audit.provider_factor.effective, 0.5);
+	});
+
+	it('drops the official factor after it expires', async () => {
+		const costs = await estimateImageCosts(mockRepos(), {
+			modelPricingProfileJson: PER_IMAGE_PROFILE,
+			routePriceOverrideJson: override,
+			quality: 'high',
+			size: '1536x1024',
+			imageCount: 1,
+			operation: 'generations',
+			requestStartedAtMs: Date.parse('2026-11-01T00:00:00.000Z'),
+		});
+		assert.ok(Math.abs(costs.standardCost - 0.165) < 1e-9);
+		assert.ok(Math.abs(costs.chargedCost - 0.165) < 1e-9);
+		assert.ok(Math.abs(costs.meteredCost - 0.165 * 0.68) < 1e-9);
+	});
+});

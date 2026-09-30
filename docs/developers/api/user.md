@@ -51,7 +51,7 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 
 模型 **`tags` 不参与**选组或计费。需要限定某一组时，请使用 **`baseId:your_group`**。
 
-**免费 / 零扣费**：路由侧用户计费（Charged cost）= 官方当刻价（目录档 × 模型官方时段倍率）× 路由有效倍率。无 `schedule.mode` 时有效倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 含该目录模型 ID，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 合成最终用户费用（默认 `multiply` 再乘用户倍率；`min` 取路由有效倍率与用户倍率的较小值；六位四舍五入）；缺键不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`，或该用户该模型的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率或模型官方时段。
+**免费 / 零扣费**：路由侧用户计费（Charged cost）= 官方当刻价（目录档 × 模型官方时段倍率）× 路由有效倍率。路由有效倍率 = 有效期内的 `provider_factor`（供应商倍率，缺省及有效期外为 `1`）× 用户侧倍率。无 `schedule.mode` 时用户侧倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 含该目录模型 ID，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 合成最终用户费用（默认 `multiply` 再乘用户倍率；`min` 取路由有效倍率与用户倍率的较小值；六位四舍五入）；缺键不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`、有效期内的 **Provider factor**，或该用户该模型的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率、供应商倍率或模型官方时段。
 
 ### 3. 预算校验
 
@@ -67,7 +67,7 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 
 ### 5. 用量日志 `api_key_request_logs`
 
-写入的 **`model_id` 为库内基础模型 ID**（不带 `:group` 后缀）；实际选用的 **`route_group`**、`request_protocol` / `request_operation`、`model_surface_id`、`route_pool_id`、`route_target_id`、`upstream_protocol` / `upstream_operation`、`adapter` 与 `route_trace` 会随请求落库。`provider_key_id` / `provider_key_label` / `provider_key_fingerprint` 为历史兼容列名，现对应 **`providers.id` / `providers.name` / fingerprint(`providers.api_key`)**。相对目录标准价的倍率请见 Target 的 **`price_override`** 中的 **`charged_factor`** / **`metered_factor`**。
+写入的 **`model_id` 为库内基础模型 ID**（不带 `:group` 后缀）；实际选用的 **`route_group`**、`request_protocol` / `request_operation`、`model_surface_id`、`route_pool_id`、`route_target_id`、`upstream_protocol` / `upstream_operation`、`adapter` 与 `route_trace` 会随请求落库。`provider_key_id` / `provider_key_label` / `provider_key_fingerprint` 为历史兼容列名，现对应 **`providers.id` / `providers.name` / fingerprint(`providers.api_key`)**。相对目录标准价的倍率请见 Target 的 **`price_override`**：有效期内的 **`provider_factor`**（供应商倍率，标准价不乘）再乘 **`charged_factor`** / **`metered_factor`**。
 
 ### 6. 输出长度（`max_tokens` / `maxOutputTokens`）
 
@@ -1251,7 +1251,7 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 
 - `cache_read_price` 和 `cache_write_price` 默认等于 `input_price`
 - Images 还支持 `per_image` 按张计价，Audio 支持 `per_second` 按时长或 `token` 计价，Agent Tools 使用固定按次单价；分别见上文对应章节。
-- 路由 **`price_override`** 以 **`charged_factor` / `metered_factor`**（及可选分时 **`schedule`**，窗口可带 ISO `days`）相对官方当刻价计费；嵌套 `metered`/`charged` tiers 忽略。
+- 路由 **`price_override`** 以有效期内的 **`provider_factor`** × **`charged_factor` / `metered_factor`**（及可选分时 **`schedule`**，窗口可带 ISO `days`；`schedule.provider` 与另外两侧共用 `mode`）相对官方当刻价计费。`standard_cost` 不乘 `provider_factor`。嵌套 `metered`/`charged` tiers 忽略。
 - 路由级 **`route_group`** 会写入 `api_key_request_logs` 快照。
   - **`standard_cost`（官方当刻目录价）**：按当前计费模式从 `models.pricing_profile` 选档后再乘模型官方时段倍率，不乘路由倍率
   - **`metered_cost`（供应成本）** / **`charged_cost`（用户扣费）**：官方当刻价 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。若用户对该目录模型配置了用户计费倍率，再按 `USER_CHARGED_COST_FACTOR_MODE`（`multiply` / `min`）合成最终用户扣费；供应成本与官方当刻价不变。详见 `docs/developers/reference/streaming-billing.md`

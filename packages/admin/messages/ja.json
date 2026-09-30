@@ -813,6 +813,12 @@
 				"off": "Sticky 無効",
 				"offTooltip": "このプールでは Sticky が無効のため、紐付け数を集計しません。",
 				"tooltip": "このルートプール内の有効期限内の Sticky ユーザー数。バーはプール内の割合を示し、同時接続数やリクエスト数ではありません。"
+			},
+			"providerFactorBadge": "プロバイダ {value} · {status}",
+			"providerFactorTiming": {
+				"scheduled": "開始前",
+				"active": "有効",
+				"expired": "期限切れ"
 			}
 		},
 		"vendor": {
@@ -984,7 +990,7 @@
 			"scheduleChargedFactor": "請求倍率",
 			"scheduleMeteredFactor": "計量倍率",
 			"scheduleWindowPricesSide": "区分",
-			"scheduleWindowPricesHint": "カタログ × 公式時間帯 × この行の倍率。",
+			"scheduleWindowPricesHint": "カタログ × 公式時間帯 × この行の倍率 × プロバイダ倍率。",
 			"requestDefaults": "リクエストのデフォルト（JSON）",
 			"requestDefaultsHint": "アップストリーム Body にディープマージされ、クライアント側の項目が優先されます。任意の headers オブジェクトは HTTP ヘッダーとして送信されます。",
 			"customParams": "カスタムパラメーター",
@@ -1016,7 +1022,13 @@
 			"audioMinimumCharacters": "最低文字数",
 			"weight": "重み",
 			"weightHint": "同一 priority 層の重み（≥ 1）。加重戦略では大きいほど流量が増えます。",
-			"operationModelsGenerate": "models.generate · Generate Content（ストリーム + 非ストリーム）"
+			"operationModelsGenerate": "models.generate · Generate Content（ストリーム + 非ストリーム）",
+			"providerFactor": "プロバイダ倍率",
+			"providerFactorHint": "プロバイダ割引。有効期間中は請求倍率と原価倍率の両方に掛け、差額は変わりません。標準価格には掛けません。時刻は {timezone} です。",
+			"providerFactorTitle": "プロバイダ倍率。既定は 1。有効期間外は 1 として扱います。",
+			"providerFactorStarts": "開始",
+			"providerFactorExpires": "終了",
+			"scheduleProviderFactor": "プロバイダ倍率"
 		},
 		"kindAudio": "音声",
 		"strategy": {

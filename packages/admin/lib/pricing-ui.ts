@@ -486,6 +486,15 @@ export function formatRoutePriceOverrideSummary(
 }
 
 /** `api_key_request_logs.pricing_audit` 展示用短文案 */
+function appendProviderFactorSummary(parts: string[], value: unknown): void {
+	if (!value || typeof value !== 'object') return;
+	const effective = (value as Record<string, unknown>).effective;
+	if (typeof effective !== 'number' || effective === 1) return;
+	const label = `provider ×${effective}`;
+	if (parts.includes(label)) return;
+	parts.push(label);
+}
+
 export function summarizePricingAuditJson(raw: string | null | undefined): string | null {
 	if (!raw?.trim()) {
 		return null;
@@ -596,7 +605,7 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 		}
 		if (
 			typeof o.v === 'number' &&
-			(o.v === 3 || o.v === 4 || o.v === 5) &&
+			(o.v === 3 || o.v === 4 || o.v === 5 || o.v === 6) &&
 			o.snapshot &&
 			typeof o.snapshot === 'object'
 		) {
@@ -608,7 +617,8 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 			if (uc && typeof uc.effective_factor === 'number') {
 				parts.push(`×${uc.effective_factor}`);
 			}
-			if (o.v === 5) {
+			appendProviderFactorSummary(parts, uc?.provider_factor);
+			if (o.v === 5 || o.v === 6) {
 				const std = snap.standard as Record<string, unknown> | undefined;
 				const catSch =
 					std && typeof std.schedule === 'object' && std.schedule
@@ -633,6 +643,7 @@ export function summarizePricingAuditJson(raw: string | null | undefined): strin
 				: ucForUser && typeof ucForUser.user_charged_factor === 'number'
 					? ucForUser.user_charged_factor
 					: null;
+		appendProviderFactorSummary(parts, o.provider_factor);
 		if (userFactor != null) {
 			parts.push(`user ×${userFactor}`);
 		}

@@ -85,12 +85,14 @@ export function ScheduleWindowEffectivePrices({
 	catalogFactor,
 	chargedFactorText,
 	meteredFactorText,
+	providerFactorText,
 	billingCurrency,
 }: {
 	model: GatewayModel;
 	catalogFactor: number;
 	chargedFactorText: string;
 	meteredFactorText: string;
+	providerFactorText?: string;
 	billingCurrency: string;
 }) {
 	const t = useTranslations('routes.modal');
@@ -100,14 +102,15 @@ export function ScheduleWindowEffectivePrices({
 	const official = Number.isFinite(catalogFactor) && catalogFactor > 0 ? catalogFactor : 1;
 	const charged = parseNonNegativeFactor(chargedFactorText);
 	const metered = parseNonNegativeFactor(meteredFactorText);
+	const provider = parseNonNegativeFactor(providerFactorText ?? '') ?? 1;
 	const chargedRows = getUserChargedCatalogTierRows(
 		model,
-		charged == null ? null : official * charged,
+		charged == null ? null : official * charged * provider,
 		billingCurrency,
 	);
 	const meteredRows = getUserChargedCatalogTierRows(
 		model,
-		metered == null ? null : official * metered,
+		metered == null ? null : official * metered * provider,
 		billingCurrency,
 	);
 	const showRange = chargedRows.length > 1 || meteredRows.length > 1;

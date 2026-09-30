@@ -13,6 +13,10 @@ import {
 	TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations, useLocale } from 'next-intl';
+import {
+	instantToZonedDatetimeLocalInput,
+	zonedDatetimeLocalInputToInstant,
+} from '@/lib/business-timezone-client';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
 import { type CatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
@@ -1110,6 +1114,65 @@ export function RouteModal(props: Props) {
 										</div>
 									) : null}
 									<div className="flex min-h-0 flex-1 flex-col gap-3">
+										<RoutePricePanel
+											variant="provider"
+											title={t('providerFactor')}
+											subtitle={t('providerFactorHint', { timezone: businessTimezone })}
+										>
+											<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+												<div>
+													<label htmlFor="gateway-route-provider-factor" className="mb-1 block text-[11px] font-medium text-gray-600">
+														{t('factor')}
+													</label>
+													<input
+														id="gateway-route-provider-factor"
+														type="text"
+														inputMode="decimal"
+														value={formData.provider_factor}
+														title={t('providerFactorTitle')}
+														onChange={(e) =>
+															onFormChange({ ...formData, provider_factor: e.target.value })
+														}
+														className="w-full rounded border border-gray-300 bg-white px-2 py-1 font-mono text-xs tabular-nums focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+														placeholder="1"
+													/>
+												</div>
+												<div>
+													<label htmlFor="gateway-route-provider-starts" className="mb-1 block text-[11px] font-medium text-gray-600">
+														{t('providerFactorStarts')}
+													</label>
+													<input
+														id="gateway-route-provider-starts"
+														type="datetime-local"
+														value={zonedIsoInput(formData.provider_factor_starts_at, businessTimezone)}
+														onChange={(e) =>
+															onFormChange({
+																...formData,
+																provider_factor_starts_at: isoFromZonedInput(e.target.value, businessTimezone),
+															})
+														}
+														className="w-full rounded border border-gray-300 bg-white px-2 py-1 font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+													/>
+												</div>
+												<div>
+													<label htmlFor="gateway-route-provider-expires" className="mb-1 block text-[11px] font-medium text-gray-600">
+														{t('providerFactorExpires')}
+													</label>
+													<input
+														id="gateway-route-provider-expires"
+														type="datetime-local"
+														value={zonedIsoInput(formData.provider_factor_expires_at, businessTimezone)}
+														onChange={(e) =>
+															onFormChange({
+																...formData,
+																provider_factor_expires_at: isoFromZonedInput(e.target.value, businessTimezone),
+															})
+														}
+														className="w-full rounded border border-gray-300 bg-white px-2 py-1 font-mono text-xs focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
+													/>
+												</div>
+											</div>
+										</RoutePricePanel>
 										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 											<RoutePricePanel
 												variant="charged"
@@ -1191,6 +1254,7 @@ export function RouteModal(props: Props) {
 																	end: '08:00',
 																	charged_factor: '1',
 																	metered_factor: '1',
+																	provider_factor: formData.provider_factor.trim() || '1',
 																	days: [],
 																},
 															],
@@ -1214,6 +1278,7 @@ export function RouteModal(props: Props) {
 												endLabel={t('scheduleEnd')}
 												chargedFactorLabel={t('scheduleChargedFactor')}
 												meteredFactorLabel={t('scheduleMeteredFactor')}
+												providerFactorLabel={t('scheduleProviderFactor')}
 												removeLabel={tCommon('delete')}
 												renderWindowExtra={
 													catalogScheduleLocked &&
@@ -1227,6 +1292,9 @@ export function RouteModal(props: Props) {
 																	catalogFactor={catalogScheduleWindows[i]?.factor ?? 1}
 																	chargedFactorText={editorScheduleWindows[i]?.charged_factor ?? ''}
 																	meteredFactorText={editorScheduleWindows[i]?.metered_factor ?? ''}
+																	providerFactorText={
+																		editorScheduleWindows[i]?.provider_factor ?? formData.provider_factor
+																	}
 																	model={selectedModel}
 																/>
 															)
@@ -1313,3 +1381,22 @@ export function RouteModal(props: Props) {
 		</div>
 	);
 }
+
+function zonedIsoInput(iso: string, timeZone: string): string {
+	if (!iso.trim()) {
+		return '';
+	}
+	const instant = new Date(iso);
+	if (Number.isNaN(instant.getTime())) {
+		return '';
+	}
+	return instantToZonedDatetimeLocalInput(instant, timeZone);
+}
+
+function isoFromZonedInput(local: string, timeZone: string): string {
+	if (!local.trim()) {
+		return '';
+	}
+	return zonedDatetimeLocalInputToInstant(local, timeZone)?.toISOString() ?? '';
+}
+

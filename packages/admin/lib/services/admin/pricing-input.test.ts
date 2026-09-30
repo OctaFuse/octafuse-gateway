@@ -212,6 +212,43 @@ describe('coerceRoutePriceOverrideInput', () => {
 		);
 	});
 
+	it('keeps provider_factor and a validity window', () => {
+		const json = coerceRoutePriceOverrideInput({
+			provider_factor: '0.5',
+			provider_factor_starts_at: '2026-10-01T00:00:00.000Z',
+			provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+			charged_factor: 1,
+			schedule: {
+				mode: 'override',
+				provider: [{ start: '00:00', end: '08:00', factor: 0.4 }],
+			},
+		});
+		assert.ok(json);
+		const obj = JSON.parse(json!) as {
+			provider_factor: number;
+			provider_factor_starts_at: string;
+			schedule: { provider: Array<{ factor: number }> };
+		};
+		assert.equal(obj.provider_factor, 0.5);
+		assert.equal(obj.provider_factor_starts_at, '2026-10-01T00:00:00.000Z');
+		assert.equal(obj.schedule.provider[0]?.factor, 0.4);
+	});
+
+	it('rejects a validity window that ends before it starts', () => {
+		assert.throws(
+			() =>
+				coerceRoutePriceOverrideInput({
+					provider_factor: 0.5,
+					provider_factor_starts_at: '2026-11-01T00:00:00.000Z',
+					provider_factor_expires_at: '2026-10-01T00:00:00.000Z',
+				}),
+			(error: unknown) =>
+				error instanceof Error &&
+				'status' in error &&
+				(error as { status: unknown }).status === 400
+		);
+	});
+
 	it('rejects negative, malformed, and non-numeric factor values', () => {
 		for (const value of [-1, '0abc', '1foo', true]) {
 			assert.throws(

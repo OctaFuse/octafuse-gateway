@@ -26,6 +26,7 @@ import {
 	parseCatalogScheduleWindows,
 	scaleBillingPrices,
 	type DailyScheduleWindow,
+	type ProviderFactorAudit,
 	type ScheduleAuditSnapshot,
 } from './pricing-schedule';
 
@@ -148,6 +149,11 @@ export type PriceResolutionAuditSide = {
 	user_charged_factor_mode?: 'multiply' | 'min';
 	/** 合成后落到官方当刻价上的倍率；用户未配置该模型时为 null */
 	combined_charged_factor?: number | null;
+	/**
+	 * 路由官方倍率。`effective_factor` 已含 `provider_factor.effective`。
+	 * 不在有效期内时 `active=false` 且 `effective=1`。
+	 */
+	provider_factor?: ProviderFactorAudit;
 	/** 目录价官方时段（v5+；standard 侧写在 `schedule`，supplier/user_charge 写在此键以免与路由时段混淆）。 */
 	catalog_schedule?: {
 		timezone: string;

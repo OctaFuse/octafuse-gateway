@@ -21,6 +21,7 @@ import {
 	formatFactorMultiplierForChip,
 	formatScheduleWindowsHint,
 	formatSharedScheduleWindowsHint,
+	providerFactorTiming,
 	groupScheduleWindows,
 	resolveRouteScheduleDisplay,
 	scheduleWindowShapeKey,
@@ -778,8 +779,8 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 			[],
 		);
 		assert.deepEqual(form.schedule_windows, [
-			{ start: '09:00', end: '12:00', charged_factor: '0.6', metered_factor: '2', days: [] },
-			{ start: '12:00', end: '18:00', charged_factor: '1.2', metered_factor: '2', days: [] },
+			{ start: '09:00', end: '12:00', charged_factor: '0.6', metered_factor: '2', provider_factor: '1', days: [] },
+			{ start: '12:00', end: '18:00', charged_factor: '1.2', metered_factor: '2', provider_factor: '1', days: [] },
 		]);
 	});
 
@@ -801,8 +802,8 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 			}),
 		);
 		assert.deepEqual(windows, [
-			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 1 },
-			{ start: '14:00', end: '18:00', charged_factor: 2, metered_factor: 1 },
+			{ start: '09:00', end: '12:00', charged_factor: 2, metered_factor: 1, provider_factor: 1 },
+			{ start: '14:00', end: '18:00', charged_factor: 2, metered_factor: 1, provider_factor: 1 },
 		]);
 		assert.equal(
 			formatSharedScheduleWindowsHint(windows),
@@ -919,13 +920,55 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 			[],
 		);
 		assert.deepEqual(form.schedule_windows, [
-			{ start: '00:00', end: '24:00', charged_factor: '1.2', metered_factor: '1.2', days: [1, 2, 3, 4, 5] },
-			{ start: '00:00', end: '24:00', charged_factor: '0.8', metered_factor: '0.8', days: [6, 7] },
+			{ start: '00:00', end: '24:00', charged_factor: '1.2', metered_factor: '1.2', provider_factor: '1', days: [1, 2, 3, 4, 5] },
+			{ start: '00:00', end: '24:00', charged_factor: '0.8', metered_factor: '0.8', provider_factor: '1', days: [6, 7] },
 		]);
 		assert.equal(
 			formatSharedScheduleWindowsHint(resolveRouteScheduleDisplay(String(payload.price_override))),
 			'Mon–Fri 0:00-24:00 ×1.2 · Sat–Sun 0:00-24:00 ×0.8',
 		);
+	});
+
+	it('round-trips an official factor and reports its timing', () => {
+		const payload = buildRouteSavePayload(
+			{
+				...EMPTY_ROUTE_FORM,
+				model_id: 'm1',
+				provider_id: 'p1',
+				provider_model_name: 'gpt',
+				charged_factor: '1',
+				metered_factor: '0.68',
+				provider_factor: '0.5',
+				provider_factor_starts_at: '2026-10-01T00:00:00.000Z',
+				provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+			},
+			null,
+		);
+		const saved = JSON.parse(String(payload.price_override)) as {
+			provider_factor: number;
+			provider_factor_starts_at: string;
+			schedule?: { provider?: unknown[] };
+		};
+		assert.equal(saved.provider_factor, 0.5);
+		assert.equal(saved.provider_factor_starts_at, '2026-10-01T00:00:00.000Z');
+		assert.equal(saved.schedule, undefined);
+
+		const form = buildFormDataFromRoute(route({ price_override: String(payload.price_override) }), []);
+		assert.equal(form.provider_factor, '0.5');
+		assert.equal(form.provider_factor_expires_at, '2026-11-01T00:00:00.000Z');
+		assert.equal(
+			providerFactorTiming(String(payload.price_override), new Date('2026-10-15T00:00:00.000Z')),
+			'active',
+		);
+		assert.equal(
+			providerFactorTiming(String(payload.price_override), new Date('2026-09-01T00:00:00.000Z')),
+			'scheduled',
+		);
+		assert.equal(
+			providerFactorTiming(String(payload.price_override), new Date('2026-11-01T00:00:00.000Z')),
+			'expired',
+		);
+		assert.equal(providerFactorTiming(JSON.stringify({ charged_factor: 1 })), null);
 	});
 
 	it('rebuilds route windows from catalog and keeps existing factors', () => {
@@ -949,13 +992,14 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 				{ start: '13:00', end: '14:00', charged_factor: '3', metered_factor: '3', days: [] },
 			]),
 			[
-				{ start: '00:30', end: '08:30', days: [], charged_factor: '0.8', metered_factor: '0.9' },
+				{ start: '00:30', end: '08:30', days: [], charged_factor: '0.8', metered_factor: '0.9', provider_factor: '1' },
 				{
 					start: '09:00',
 					end: '12:00',
 					days: [1, 2, 3, 4, 5],
 					charged_factor: '1',
 					metered_factor: '1',
+					provider_factor: '1',
 				},
 			],
 		);
@@ -975,8 +1019,8 @@ describe('buildFormDataFromRoute / buildRouteSavePayload schedule', () => {
 			[catalogModel],
 		);
 		assert.deepEqual(form.schedule_windows, [
-			{ start: '00:30', end: '08:30', days: [], charged_factor: '0.7', metered_factor: '0.6' },
-			{ start: '09:00', end: '12:00', days: [1, 2, 3, 4, 5], charged_factor: '1', metered_factor: '1' },
+			{ start: '00:30', end: '08:30', days: [], charged_factor: '0.7', metered_factor: '0.6', provider_factor: '1' },
+			{ start: '09:00', end: '12:00', days: [1, 2, 3, 4, 5], charged_factor: '1', metered_factor: '1', provider_factor: '1' },
 		]);
 	});
 });

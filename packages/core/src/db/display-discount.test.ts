@@ -322,6 +322,7 @@ describe('applyUserChargedFactorToDisplayDiscounts', () => {
 			route: { priority: 10, weight: 1 },
 			current: { catalog_factor: 1.6, route_factor: 0.8, composite_factor: 1.28 },
 			windows: [{ catalog_factor: 1.6, route_factor: 0.8, composite_factor: 1.28 }],
+			provider_factor: null,
 		},
 	};
 
@@ -347,5 +348,44 @@ describe('applyUserChargedFactorToDisplayDiscounts', () => {
 		const cheaperRoute = applyUserChargedFactorToDisplayDiscounts(catalog, 0.9, 'min');
 		assert.equal(cheaperRoute.default?.current.route_factor, 0.8);
 		assert.equal(cheaperRoute.default?.current.composite_factor, 1.28);
+	});
+});
+
+describe('provider_factor display', () => {
+	it('folds the active official factor into the displayed route factor', () => {
+		const discount = buildDisplayDiscountForRoute({
+			pricingProfileJson: null,
+			priceOverrideJson: JSON.stringify({
+				provider_factor: 0.5,
+				charged_factor: 1,
+				provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+			}),
+			timezone: 'UTC',
+			priority: 1,
+			weight: 1,
+			now: new Date('2026-10-15T00:00:00.000Z'),
+		});
+		assert.equal(discount.current.route_factor, 0.5);
+		assert.equal(discount.current.composite_factor, 0.5);
+		assert.equal(discount.provider_factor?.active, true);
+		assert.equal(discount.provider_factor?.expires_at, '2026-11-01T00:00:00.000Z');
+	});
+
+	it('shows full route price after the official factor expires', () => {
+		const discount = buildDisplayDiscountForRoute({
+			pricingProfileJson: null,
+			priceOverrideJson: JSON.stringify({
+				provider_factor: 0.5,
+				charged_factor: 1,
+				provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+			}),
+			timezone: 'UTC',
+			priority: 1,
+			weight: 1,
+			now: new Date('2026-11-01T00:00:00.000Z'),
+		});
+		assert.equal(discount.current.route_factor, 1);
+		assert.equal(discount.provider_factor?.active, false);
+		assert.equal(discount.provider_factor?.effective, 1);
 	});
 });

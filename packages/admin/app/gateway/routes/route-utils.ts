@@ -46,6 +46,7 @@ import {
 } from '@octafuse/core/adapters/registry';
 import {
 	findDailyWindowOverlap,
+	isProviderFactorActive,
 	formatIsoWeekdaysHint,
 	mergeScheduleSidesToSharedWindows,
 	normalizeIsoWeekdays,
@@ -509,19 +510,50 @@ function parseSharedWindowFactor(text: string, fieldLabel: string, index: number
 	return factor;
 }
 
+function parseOptionalIsoTimestamp(text: string | undefined, fieldLabel: string): string | undefined {
+	const trimmed = text?.trim() ?? '';
+	if (trimmed === '') {
+		return undefined;
+	}
+	const parsed = new Date(trimmed);
+	if (Number.isNaN(parsed.getTime())) {
+		throw new Error(`${fieldLabel} must be an ISO-8601 timestamp`);
+	}
+	return parsed.toISOString();
+}
+
 export function buildRoutePriceOverride(formData: RouteFormData): Record<string, unknown> {
 	const chargedFactor = parseNonNegativeFactorText(formData.charged_factor, 'Charged factor');
 	const meteredFactor = parseNonNegativeFactorText(formData.metered_factor, 'Metered factor');
-	const scheduleWindows = validateSharedScheduleWindows(formData.schedule_windows);
+	const providerFactor = parseNonNegativeFactorText(formData.provider_factor, 'Provider factor');
+	const startsAt = parseOptionalIsoTimestamp(formData.provider_factor_starts_at, 'Provider factor start');
+	const expiresAt = parseOptionalIsoTimestamp(formData.provider_factor_expires_at, 'Provider factor end');
+	if (startsAt && expiresAt && startsAt >= expiresAt) {
+		throw new Error('Provider factor start must be earlier than end');
+	}
+	const scheduleWindows = validateSharedScheduleWindows(formData.schedule_windows, providerFactor);
 	const priceOverride: Record<string, unknown> = {
 		charged_factor: chargedFactor,
 		metered_factor: meteredFactor,
 	};
+	if (providerFactor !== 1 || startsAt || expiresAt) {
+		priceOverride.provider_factor = providerFactor;
+	}
+	if (startsAt) {
+		priceOverride.provider_factor_starts_at = startsAt;
+	}
+	if (expiresAt) {
+		priceOverride.provider_factor_expires_at = expiresAt;
+	}
 	if (scheduleWindows.length > 0) {
+		const providerSide = scheduleWindows.some((w) => w.provider_factor !== providerFactor);
 		priceOverride.schedule = {
 			mode: 'override',
 			charged: scheduleWindows.map((w) => persistScheduleSideWindow(w, w.charged_factor)),
 			metered: scheduleWindows.map((w) => persistScheduleSideWindow(w, w.metered_factor)),
+			...(providerSide
+				? { provider: scheduleWindows.map((w) => persistScheduleSideWindow(w, w.provider_factor)) }
+				: {}),
 		};
 	}
 	return priceOverride;
@@ -571,7 +603,10 @@ function parseFormScheduleDays(days: number[] | undefined, index: number): numbe
 	return normalized;
 }
 
-function validateSharedScheduleWindows(windows: RouteScheduleFormSide): SharedScheduleWindow[] {
+function validateSharedScheduleWindows(
+	windows: RouteScheduleFormSide,
+	providerFallback: number,
+): SharedScheduleWindow[] {
 	const cleaned: SharedScheduleWindow[] = [];
 	for (let i = 0; i < windows.length; i++) {
 		const w = windows[i]!;
@@ -593,6 +628,10 @@ function validateSharedScheduleWindows(windows: RouteScheduleFormSide): SharedSc
 			end,
 			charged_factor: parseSharedWindowFactor(w.charged_factor, 'Charged factor', i),
 			metered_factor: parseSharedWindowFactor(w.metered_factor, 'Metered factor', i),
+			provider_factor:
+				w.provider_factor == null || w.provider_factor.trim() === ''
+					? providerFallback
+					: parseSharedWindowFactor(w.provider_factor, 'Provider factor', i),
 			...(days ? { days } : {}),
 		});
 	}
@@ -618,7 +657,8 @@ export function catalogScheduleWindowsFromModel(
 export function alignRouteScheduleWindowsToCatalog(
 	catalog: DailyScheduleWindow[],
 	existing: RouteScheduleFormWindow[],
-	defaultFactor = '1'
+	defaultFactor = '1',
+	defaultProviderFactor = defaultFactor,
 ): RouteScheduleFormWindow[] {
 	if (catalog.length === 0) {
 		return existing;
@@ -632,6 +672,7 @@ export function alignRouteScheduleWindowsToCatalog(
 			days: w.days ? [...w.days] : [],
 			charged_factor: prev?.charged_factor ?? defaultFactor,
 			metered_factor: prev?.metered_factor ?? defaultFactor,
+			provider_factor: prev?.provider_factor ?? defaultProviderFactor,
 		};
 	});
 }
@@ -722,6 +763,7 @@ export function buildFormDataFromRoute(route: GatewayModelRoute, models: Gateway
 		end: w.end,
 		charged_factor: formatScheduleFactorText(w.charged_factor),
 		metered_factor: formatScheduleFactorText(w.metered_factor),
+		provider_factor: formatScheduleFactorText(w.provider_factor),
 		days: w.days ?? [],
 	}));
 	const catalog = catalogScheduleWindowsFromModel(models.find((m) => m.id === route.model_id));
@@ -749,7 +791,15 @@ export function buildFormDataFromRoute(route: GatewayModelRoute, models: Gateway
 		route_group: route.route_group ?? 'default',
 		charged_factor: String(factors.chargedFactor),
 		metered_factor: String(factors.meteredFactor),
-		schedule_windows: alignRouteScheduleWindowsToCatalog(catalog, existingWindows),
+		provider_factor: String(factors.providerFactor),
+		provider_factor_starts_at: factors.providerStartsAt ?? '',
+		provider_factor_expires_at: factors.providerExpiresAt ?? '',
+		schedule_windows: alignRouteScheduleWindowsToCatalog(
+			catalog,
+			existingWindows,
+			'1',
+			String(factors.providerFactor),
+		),
 	};
 }
 
@@ -1428,6 +1478,9 @@ export function createInitialRouteForm(models: GatewayModel[], presetModelId?: s
 		route_group: 'default',
 		charged_factor: '1',
 		metered_factor: '1',
+		provider_factor: '1',
+		provider_factor_starts_at: '',
+		provider_factor_expires_at: '',
 		schedule_windows: alignRouteScheduleWindowsToCatalog(
 			catalogScheduleWindowsFromModel(presetModel),
 			[]
@@ -1497,7 +1550,39 @@ export function resolveRouteScheduleDisplay(
 		mode: schedule.mode,
 		chargedBase: factors.chargedFactor,
 		meteredBase: factors.meteredFactor,
+		provider: schedule.provider,
+		providerBase: factors.providerFactor,
 	});
+}
+
+export type ProviderFactorTiming = 'scheduled' | 'active' | 'expired';
+
+/** 列表用：未配置供应商倍率时返回 null。 */
+export function providerFactorTiming(
+	priceOverride: string | null | undefined,
+	now: Date = new Date(),
+): ProviderFactorTiming | null {
+	const factors = parseRouteBaseFactors(priceOverride ?? null);
+	const schedule = parseRoutePricingSchedule(priceOverride ?? null);
+	const configured =
+		factors.providerFactor !== 1 ||
+		factors.providerStartsAt != null ||
+		factors.providerExpiresAt != null ||
+		factors.providerWindowInvalid ||
+		schedule.provider.length > 0;
+	if (!configured) {
+		return null;
+	}
+	if (factors.providerWindowInvalid) {
+		return 'expired';
+	}
+	if (isProviderFactorActive(factors, now)) {
+		return 'active';
+	}
+	if (factors.providerStartsAt != null && Date.parse(factors.providerStartsAt) > now.getTime()) {
+		return 'scheduled';
+	}
+	return 'expired';
 }
 
 export function formatSharedScheduleWindowsHint(windows: SharedScheduleWindow[]): string | null {
@@ -1505,11 +1590,13 @@ export function formatSharedScheduleWindowsHint(windows: SharedScheduleWindow[])
 	return windows
 		.map((w) => {
 			const range = formatScheduleRangeWithDays(w.start, w.end, w.days);
-			const same = w.charged_factor === w.metered_factor;
+			const same = w.charged_factor === w.metered_factor && w.provider_factor === 1;
 			if (same) {
 				return `${range} ${formatFactorMultiplier(w.charged_factor)}`;
 			}
-			return `${range} C ${formatFactorMultiplier(w.charged_factor)} · M ${formatFactorMultiplier(w.metered_factor)}`;
+			const provider =
+				w.provider_factor === 1 ? '' : ` · P ${formatFactorMultiplier(w.provider_factor)}`;
+			return `${range} C ${formatFactorMultiplier(w.charged_factor)} · M ${formatFactorMultiplier(w.metered_factor)}${provider}`;
 		})
 		.join(' · ');
 }

@@ -7,6 +7,7 @@ import {
 	resolveChargedBillingPrices,
 	resolveDailyScheduleFactor,
 	resolveEffectiveRouteFactor,
+	resolveRouteEffectiveFactors,
 	resolveStandardBillingPrices,
 	resolveSupplierBillingPrices,
 	scaleBillingPrices,
@@ -149,5 +150,52 @@ describe('usage-tracker catalog schedule stacking', () => {
 		assert.equal(charged, hit.chargedCost * (0.5 / 0.8));
 		const stacked = applyUserChargedCostFactor(hit.chargedCost, 0.5, { mode: 'multiply' });
 		assert.equal(stacked, hit.chargedCost * 0.5);
+	});
+});
+
+describe('usage-tracker provider_factor', () => {
+	const profile = JSON.stringify({
+		tiers: [{ upto: null, input_price: 1, output_price: 0 }],
+	});
+	const route = JSON.stringify({
+		provider_factor: 0.5,
+		provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+		charged_factor: 1,
+		metered_factor: 0.68,
+	});
+
+	function costsAt(utcIso: string) {
+		const now = new Date(utcIso);
+		const factors = resolveRouteEffectiveFactors({
+			priceOverrideJson: route,
+			nowUtc: now,
+			timezone: 'UTC',
+		});
+		const catalog = resolveStandardBillingPrices({
+			basisInputTokens: 1_000_000,
+			modelPricingProfileJson: profile,
+		});
+		const standardCost = computeMeteredCost(USAGE, catalog.prices.input_price, 0, null, null);
+		const chargedPrices = scaleBillingPrices(catalog.prices, factors.chargedTotal);
+		const meteredPrices = scaleBillingPrices(catalog.prices, factors.meteredTotal);
+		return {
+			standardCost,
+			chargedCost: computeMeteredCost(USAGE, chargedPrices.input_price, 0, null, null),
+			meteredCost: computeMeteredCost(USAGE, meteredPrices.input_price, 0, null, null),
+		};
+	}
+
+	it('keeps standard cost at the catalog price and scales both route sides', () => {
+		const hit = costsAt('2026-10-15T00:00:00.000Z');
+		assert.equal(hit.standardCost, 1);
+		assert.equal(hit.chargedCost, 0.5);
+		assert.equal(hit.meteredCost, 0.34);
+	});
+
+	it('stops applying the official factor once it expires', () => {
+		const expired = costsAt('2026-11-01T00:00:00.000Z');
+		assert.equal(expired.standardCost, 1);
+		assert.equal(expired.chargedCost, 1);
+		assert.equal(expired.meteredCost, 0.68);
 	});
 });
