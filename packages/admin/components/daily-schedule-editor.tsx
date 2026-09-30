@@ -60,6 +60,8 @@ type SharedProps = {
 	dayLabels: ScheduleDayLabels;
 	/** 锁定时间与星期（仅允许改倍率）；用于 route 继承 model 官方时段。 */
 	lockWindows?: boolean;
+	/** Show inherited days and times as a summary, keeping only factors editable. */
+	compactLockedWindows?: boolean;
 	/** `inline`：星期与起止/倍率同一行，适合更宽的弹窗。 */
 	layout?: 'stacked' | 'inline';
 	/** 每行倍率下方的只读预览（如官方时段锁定时的明细价）。 */
@@ -111,11 +113,13 @@ export function DailyScheduleEditor(props: Props) {
 		removeLabel,
 		dayLabels,
 		lockWindows = false,
+		compactLockedWindows = false,
 		layout = 'stacked',
 		renderWindowExtra,
 	} = props;
 	const inline = layout === 'inline';
 	const isSingle = props.variant === 'single';
+	const summarizeWindow = lockWindows && compactLockedWindows;
 
 	const updateRow = (index: number, patch: Record<string, unknown>) => {
 		onChange(windows.map((w, i) => (i === index ? { ...w, ...patch } : w)) as never);
@@ -141,96 +145,117 @@ export function DailyScheduleEditor(props: Props) {
 										: 'space-y-1.5 rounded-md border border-gray-200 bg-white/80 p-2'
 								}
 							>
-								<div className={inline ? 'flex min-w-0 flex-1 flex-wrap items-center gap-1' : 'flex flex-wrap items-center gap-1'}>
-									<span className="mr-0.5 text-[10px] font-medium text-gray-500">
-										{dayLabels.days}
-									</span>
-									<button
-										type="button"
-										disabled={lockWindows}
-										onClick={() => updateRow(i, { days: [] })}
-										className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-											everyday
-												? 'bg-gray-800 text-white'
-												: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-										} disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-gray-100`}
-									>
-										{dayLabels.everyday}
-									</button>
-									<button
-										type="button"
-										disabled={lockWindows}
-										onClick={() => updateRow(i, { days: [...ISO_WEEKDAYS_MON_FRI] })}
-										className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-											weekdays
-												? 'bg-gray-800 text-white'
-												: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-										} disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-gray-100`}
-									>
-										{dayLabels.weekdays}
-									</button>
-									<button
-										type="button"
-										disabled={lockWindows}
-										onClick={() => updateRow(i, { days: [...ISO_WEEKDAYS_SAT_SUN] })}
-										className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-											weekend
-												? 'bg-gray-800 text-white'
-												: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-										} disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-gray-100`}
-									>
-										{dayLabels.weekend}
-									</button>
-									<span className="mx-0.5 h-3 w-px bg-gray-200" aria-hidden />
-									{ISO_WEEKDAYS.map((day) => {
-										const on = selected.includes(day);
-										return (
-											<button
-												key={day}
-												type="button"
-												disabled={lockWindows}
-												onClick={() => updateRow(i, { days: toggleDay(w.days, day) })}
-												aria-pressed={on}
-												className={`min-w-6 rounded px-1 py-0.5 text-[10px] font-medium tabular-nums ${
-													on
-														? 'bg-blue-600 text-white'
-														: 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-												} disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-gray-100`}
-											>
-												{dayLabels.weekdayShort[day - 1]}
-											</button>
-										);
-									})}
-								</div>
+								{summarizeWindow ? (
+									<div className="flex flex-wrap items-center gap-2 text-xs">
+										<span className="font-mono font-medium tabular-nums text-gray-800">{w.start}–{w.end}</span>
+										<span className="rounded bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500">
+											{everyday
+												? dayLabels.everyday
+												: weekdays
+													? dayLabels.weekdays
+													: weekend
+														? dayLabels.weekend
+														: selected.map((day) => dayLabels.weekdayShort[day - 1]).join(' · ')}
+										</span>
+									</div>
+								) : (
+									<div className={inline ? 'flex min-w-0 flex-1 flex-wrap items-center gap-1' : 'flex flex-wrap items-center gap-1'}>
+										<span className="mr-0.5 text-[10px] font-medium text-gray-500">
+											{dayLabels.days}
+										</span>
+										<button
+											type="button"
+											disabled={lockWindows}
+											onClick={() => updateRow(i, { days: [] })}
+											className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+												everyday
+													? 'bg-gray-800 text-white'
+													: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+											} disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-gray-100`}
+										>
+											{dayLabels.everyday}
+										</button>
+										<button
+											type="button"
+											disabled={lockWindows}
+											onClick={() => updateRow(i, { days: [...ISO_WEEKDAYS_MON_FRI] })}
+											className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+												weekdays
+													? 'bg-gray-800 text-white'
+													: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+											} disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-gray-100`}
+										>
+											{dayLabels.weekdays}
+										</button>
+										<button
+											type="button"
+											disabled={lockWindows}
+											onClick={() => updateRow(i, { days: [...ISO_WEEKDAYS_SAT_SUN] })}
+											className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+												weekend
+													? 'bg-gray-800 text-white'
+													: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+											} disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-gray-100`}
+										>
+											{dayLabels.weekend}
+										</button>
+										<span className="mx-0.5 h-3 w-px bg-gray-200" aria-hidden />
+										{ISO_WEEKDAYS.map((day) => {
+											const on = selected.includes(day);
+											return (
+												<button
+													key={day}
+													type="button"
+													disabled={lockWindows}
+													onClick={() => updateRow(i, { days: toggleDay(w.days, day) })}
+													aria-pressed={on}
+													className={`min-w-6 rounded px-1 py-0.5 text-[10px] font-medium tabular-nums ${
+														on
+															? 'bg-blue-600 text-white'
+															: 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+													} disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-gray-100`}
+												>
+													{dayLabels.weekdayShort[day - 1]}
+												</button>
+											);
+										})}
+									</div>
+								)}
 								<div className={inline ? 'flex w-full shrink-0 items-end gap-1.5 sm:w-auto sm:min-w-[22rem]' : 'flex items-end gap-1.5'}>
-									<div className="min-w-0 flex-1">
-										<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
-											{startLabel}
-										</label>
-										<input
-											type="text"
-											inputMode="numeric"
-											placeholder="00:00"
-											value={w.start}
-											readOnly={lockWindows}
-											onChange={(e) => updateRow(i, { start: e.target.value })}
-											className="w-full min-w-0 rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums read-only:bg-gray-50 read-only:text-gray-600"
-										/>
-									</div>
-									<div className="min-w-0 flex-1">
-										<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
-											{endLabel}
-										</label>
-										<input
-											type="text"
-											inputMode="numeric"
-											placeholder="08:00"
-											value={w.end}
-											readOnly={lockWindows}
-											onChange={(e) => updateRow(i, { end: e.target.value })}
-											className="w-full min-w-0 rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums read-only:bg-gray-50 read-only:text-gray-600"
-										/>
-									</div>
+									{!summarizeWindow && (
+										<>
+											<div className="min-w-0 flex-1">
+												<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
+													{startLabel}
+												</label>
+												<input
+													type="text"
+													aria-label={startLabel}
+													inputMode="numeric"
+													placeholder="00:00"
+													value={w.start}
+													readOnly={lockWindows}
+													onChange={(e) => updateRow(i, { start: e.target.value })}
+													className="w-full min-w-0 rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums read-only:bg-gray-50 read-only:text-gray-600"
+												/>
+											</div>
+											<div className="min-w-0 flex-1">
+												<label className="mb-0.5 block text-[10px] font-medium text-gray-500">
+													{endLabel}
+												</label>
+												<input
+													type="text"
+													aria-label={endLabel}
+													inputMode="numeric"
+													placeholder="08:00"
+													value={w.end}
+													readOnly={lockWindows}
+													onChange={(e) => updateRow(i, { end: e.target.value })}
+													className="w-full min-w-0 rounded border border-gray-300 px-1.5 py-1 font-mono text-xs tabular-nums read-only:bg-gray-50 read-only:text-gray-600"
+												/>
+											</div>
+										</>
+									)}
 									{isSingle ? (
 										<div className="min-w-0 flex-[0.85]">
 											<label className="mb-0.5 block text-[10px] font-medium text-slate-700/80">
@@ -238,6 +263,7 @@ export function DailyScheduleEditor(props: Props) {
 											</label>
 											<input
 												type="text"
+												aria-label={props.factorLabel}
 												inputMode="decimal"
 												placeholder="1"
 												value={(w as SingleScheduleFormWindow).factor}
@@ -253,6 +279,7 @@ export function DailyScheduleEditor(props: Props) {
 												</label>
 												<input
 													type="text"
+													aria-label={props.chargedFactorLabel}
 													inputMode="decimal"
 													placeholder="1"
 													value={(w as DualScheduleFormWindow).charged_factor}
@@ -266,6 +293,7 @@ export function DailyScheduleEditor(props: Props) {
 												</label>
 												<input
 													type="text"
+													aria-label={props.meteredFactorLabel}
 													inputMode="decimal"
 													placeholder="1"
 													value={(w as DualScheduleFormWindow).metered_factor}
@@ -279,6 +307,7 @@ export function DailyScheduleEditor(props: Props) {
 												</label>
 												<input
 													type="text"
+													aria-label={props.providerFactorLabel}
 													inputMode="decimal"
 													placeholder="1"
 													value={(w as DualScheduleFormWindow).provider_factor ?? ''}

@@ -887,6 +887,24 @@
 			}
 		},
 		"modal": {
+			"editor": {
+				"sections": "ルート設定のセクション",
+				"tabs": {
+					"mapping": "基本ルート",
+					"request": "リクエスト設定",
+					"pricing": "料金ルール"
+				},
+				"configured": "設定済み",
+				"headerCount": "ヘッダー {count} 件",
+				"requestDefault": "元のクライアントリクエストを使用",
+				"pricingSummary": "課金 ×{charged} · コスト ×{metered} · {count} 時間帯",
+				"requestHint": "必要に応じて、このルートのヘッダーと本文パラメーターを追加します。強制上書きを有効にしない限り、クライアントの値が優先されます。",
+				"adapterManaged": "アダプターにより自動設定",
+				"effectivePrices": "この時間帯の料金明細を表示",
+				"scheduleInherited": "時間帯と曜日はモデル設定を継承します。各時間帯の倍率のみ変更できます。",
+				"requiredFields": "モデルとプロバイダーを選択し、プロバイダーのモデル名を入力してください。",
+				"adapterHint": "アダプターにより、両側のプロトコルとエンドポイントが自動設定されます。"
+			},
 			"editTitle": "Route を編集",
 			"newTitle": "新しい Route",
 			"prefilledFrom": "Route {id} から事前入力しました。保存前に各項目を確認してください。",

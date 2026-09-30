@@ -887,6 +887,24 @@
 			}
 		},
 		"modal": {
+			"editor": {
+				"sections": "路由配置分区",
+				"tabs": {
+					"mapping": "基础路由",
+					"request": "请求参数",
+					"pricing": "计费规则"
+				},
+				"configured": "已配置",
+				"headerCount": "{count} 个请求头",
+				"requestDefault": "使用客户端原始请求",
+				"pricingSummary": "计费 ×{charged} · 成本 ×{metered} · {count} 个时段",
+				"requestHint": "按需为此路由补充请求头和请求体参数。默认保留客户端传入的值；开启强制覆盖后，以这里的配置为准。",
+				"adapterManaged": "由协议适配器自动匹配",
+				"effectivePrices": "查看本时段价格明细",
+				"scheduleInherited": "时段与星期继承模型设置，只需调整各时段倍率。",
+				"requiredFields": "请选择模型、供应商，并填写供应商模型名称。",
+				"adapterHint": "选择适配器后，将自动匹配两端协议与端点。"
+			},
 			"editTitle": "编辑路由",
 			"newTitle": "新建路由",
 			"prefilledFrom": "已从路由 {id} 预填。保存前请检查各字段。",

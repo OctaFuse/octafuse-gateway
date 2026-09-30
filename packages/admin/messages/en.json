@@ -887,6 +887,24 @@
 			}
 		},
 		"modal": {
+			"editor": {
+				"sections": "Route configuration sections",
+				"tabs": {
+					"mapping": "Routing",
+					"request": "Request parameters",
+					"pricing": "Pricing"
+				},
+				"configured": "Configured",
+				"headerCount": "{count, plural, one {# header} other {# headers}}",
+				"requestDefault": "Use the original client request",
+				"pricingSummary": "Billing ×{charged} · Cost ×{metered} · {count, plural, one {# window} other {# windows}}",
+				"requestHint": "Add headers and body parameters for this route as needed. Client values take precedence unless force override is enabled.",
+				"adapterManaged": "Matched automatically by the adapter",
+				"effectivePrices": "View prices for this window",
+				"scheduleInherited": "Times and weekdays follow the model settings. Only the factors are editable.",
+				"requiredFields": "Select a model and provider, and enter the provider model name.",
+				"adapterHint": "The adapter automatically matches the client and upstream protocols and endpoints."
+			},
 			"editTitle": "Edit Route",
 			"newTitle": "New Route",
 			"prefilledFrom": "Pre-filled from route {id}. Review fields before saving.",
