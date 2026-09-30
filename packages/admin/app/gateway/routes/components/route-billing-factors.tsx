@@ -163,7 +163,7 @@ export function RouteBillingFactors({
 						<fieldset key={position} className="min-w-0 py-4 last:pb-1">
 							<legend className="sr-only">{title}</legend>
 							<div className={columns}>
-								<div className="col-span-3 min-w-0 pt-2 sm:col-span-1">
+								<div className="col-span-3 min-w-0 pt-1 sm:col-span-1">
 									{row && !locked ? (
 										<button
 											type="button"

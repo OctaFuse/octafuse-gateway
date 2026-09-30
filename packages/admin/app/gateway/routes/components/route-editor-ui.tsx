@@ -84,7 +84,7 @@ export function RouteMultiplierInput({
 				aria-label={label}
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
-				className={`${editorInputClass} pl-7 font-mono tabular-nums`}
+				className={`${editorInputClass.replace('h-10', 'h-8')} pl-7 font-mono tabular-nums`}
 				placeholder={placeholder}
 			/>
 		</div>

@@ -132,7 +132,7 @@ export function RoutePricingFields({
 					/>
 				</div>
 			) : null}
-			<div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+			<div className="grid items-start gap-4 lg:grid-cols-2">
 				<RouteBillingFactors
 					formData={formData}
 					windows={editorScheduleWindows}

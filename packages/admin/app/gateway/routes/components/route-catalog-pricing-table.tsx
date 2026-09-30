@@ -72,9 +72,6 @@ export function RouteCatalogPricingTable({
 										{prices(key)}
 									</th>
 								))}
-							<th scope="col" className="whitespace-nowrap pl-3 pb-3 text-right font-medium">
-								{t('editor.catalogFactor')}
-							</th>
 						</tr>
 					</thead>
 					{periods.map(({ window, rows, active }, periodIndex) => {
@@ -107,6 +104,14 @@ export function RouteCatalogPricingTable({
 														</p>
 														<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-slate-500">
 															{window && <span>{daySummary(window.days)}</span>}
+															{window && window.factor !== 1 && (
+																<span
+																	className="inline-flex items-center rounded bg-violet-50 px-1.5 font-mono tabular-nums text-violet-700"
+																	title={`${t('editor.catalogFactor')} ×${window.factor}`}
+																>
+																	×{window.factor}
+																</span>
+															)}
 															{active && hasSchedule && (
 																<span className="inline-flex items-center gap-1 text-blue-600">
 																	<span className="h-1 w-1 rounded-full bg-blue-500" aria-hidden />
@@ -133,14 +138,6 @@ export function RouteCatalogPricingTable({
 														{value}
 													</td>
 												))}
-											{index === 0 && (
-												<td
-													rowSpan={entries.length}
-													className="pl-3 py-4 text-right align-top font-mono tabular-nums text-slate-700"
-												>
-													×{window?.factor ?? 1}
-												</td>
-											)}
 										</tr>
 									);
 								})}
