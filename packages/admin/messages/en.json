@@ -788,6 +788,15 @@
 			"customParams": "Params",
 			"customParamsTooltip": "Custom request params: body is deep-merged and configured headers are sent as HTTP. Client same-name JSON fields and headers win unless Force override is on.",
 			"pricingPeriod": "Period",
+			"effectivePricing": {
+				"charged": "Actual bill",
+				"metered": "Actual cost",
+				"help": "Effective multipliers relative to each period’s catalog prices.\nEffective multiplier = active provider multiplier × configured billing or cost multiplier. Outside its validity period, the provider multiplier is ×1.\nAll rows use provider validity as of now; only the Current row applies now. Time zone: {timezone}.\nExcludes catalog schedule and user-specific multipliers. Hover over a value for its calculation and validity dates.",
+				"chargedFormula": "Effective billing multiplier: provider {provider} × billing {configured} = {effective}",
+				"meteredFormula": "Effective cost multiplier: provider {provider} × cost {configured} = {effective}",
+				"inactiveProvider": "The provider multiplier is inactive; ×1 is used in this calculation.",
+				"invalidValidity": "Invalid validity period"
+			},
 			"pricingCharged": "Charged",
 			"pricingMetered": "Metered",
 			"basePricing": "Base",
@@ -2524,7 +2533,7 @@
 		"help": {
 			"routeFactors": {
 				"title": "Route multipliers",
-				"body": "The list shows configured billing and cost multipliers, before the provider multiplier.\nEffective billing multiplier = active provider multiplier × billing multiplier; cost works the same way. Outside provider validity, ×1 applies.\nRoute previews exclude user-specific multipliers, which are combined using the global mode for final billing."
+				"body": "Route cards show effective billing and cost multipliers relative to each period’s catalog prices.\nEffective billing multiplier = active provider multiplier × billing multiplier; cost is calculated the same way. Outside provider validity, ×1 applies. Hover over a multiplier for its calculation and validity dates.\nPeriods are previewed as of now; only the Current row applies now. User-specific multipliers are excluded from the preview and are combined at billing time according to the global mode."
 			},
 			"unitPrices": {
 				"title": "Route unit prices",

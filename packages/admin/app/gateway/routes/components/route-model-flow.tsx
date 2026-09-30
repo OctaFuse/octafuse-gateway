@@ -6,14 +6,12 @@ import {
 	ArrowLongRightIcon,
 	ChevronDownIcon,
 	ClipboardDocumentIcon,
-	ClockIcon,
 	ExclamationTriangleIcon,
 	PencilSquareIcon,
 	PlusIcon,
 	PowerIcon,
 	UsersIcon,
 } from '@heroicons/react/24/outline';
-import { parseRouteBaseFactors } from '@octafuse/core/db/pricing-schedule';
 import {
 	isAudioModel,
 	isAudioSpeechModel,
@@ -23,26 +21,13 @@ import { providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provi
 import { useLocale, useTranslations } from 'next-intl';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
-import {
-	parseChargedFactorFromPriceOverride,
-	parseMeteredFactorFromPriceOverride,
-} from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import { tagBadgeClass } from '../../models/model-utils';
 import { useStickySummary } from '../sticky-summary-store';
 import type { RouteModelGroup, RequestSurfaceGroup } from '../route-utils';
 import {
 	compareRoutesWithinPriorityLayer,
-	factorChipClassForValue,
-	factorLevelForValue,
-	formatFactorMultiplier,
-	formatFactorMultiplierForChip,
-	formatScheduleRange,
-	formatSharedScheduleWindowsHint,
-	providerFactorTiming,
-	resolveRouteScheduleDisplay,
 	groupSectionsByRequestSurface,
-	hasBasePricingInversion,
 	parseModelTagsList,
 	protocolBadgeClass,
 	requestSurfacePath,
@@ -58,6 +43,7 @@ import {
 import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
+import { RouteTargetPricing } from './route-target-pricing';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
 
@@ -163,7 +149,6 @@ function RouteTarget({
 }) {
 	const t = useTranslations('routes.flow');
 	const tList = useTranslations('routes.listItem');
-	const tModal = useTranslations('routes.modal');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
 	const providerName =
@@ -174,44 +159,13 @@ function RouteTarget({
 	const showKind = Boolean(
 		kindLabel && kindLabel.trim().toLowerCase() !== providerName.trim().toLowerCase()
 	);
-	const charged = parseChargedFactorFromPriceOverride(route.price_override);
-	const metered = parseMeteredFactorFromPriceOverride(route.price_override);
-	const chargedValue = charged != null && Number.isFinite(charged) ? charged : 1;
-	const meteredValue = metered != null && Number.isFinite(metered) ? metered : 1;
-	const providerTiming = providerFactorTiming(route.price_override);
-	const providerValue = parseRouteBaseFactors(route.price_override ?? null).providerFactor;
-	const scheduleWindows = resolveRouteScheduleDisplay(route.price_override);
-	const scheduleHint = formatSharedScheduleWindowsHint(scheduleWindows);
-	const hasSchedule = Boolean(scheduleHint);
-	const scheduleTooltip = t('badgeScheduleTooltip', {
-		windows: scheduleHint || '',
-	});
-	const hasPricingInversion = hasBasePricingInversion(chargedValue, meteredValue);
 	const enabled = route.status === 'active';
 	const providerDisabled = provider?.status === 'disabled';
 
-	const factorTooltip = (factor: number, side: 'charged' | 'metered') =>
-		t(side === 'charged' ? 'badgeChargedTooltip' : 'badgeMeteredTooltip', {
-			value: formatFactorMultiplier(factor),
-			status: tList(`factorStatus.${side}.${factorLevelForValue(factor)}`),
-		});
-	const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
-	const formatWeekdays = (days: number[]) => {
-		const sorted = [...new Set(days)].sort((a, b) => a - b);
-		const ranges: number[][] = [];
-		for (const day of sorted) {
-			const last = ranges[ranges.length - 1];
-			if (last && day === last[last.length - 1] + 1) last.push(day);
-			else ranges.push([day]);
-		}
-		const label = (day: number) => weekdayFormatter.format(new Date(Date.UTC(2026, 0, 4 + day)));
-		return ranges.map(range => range.length > 1 ? `${label(range[0])}–${label(range[range.length - 1])}` : label(range[0])).join(' / ');
-	};
-	const pricingColumns = 'grid grid-cols-[minmax(0,1fr)_3.75rem_3.75rem] items-center gap-x-1';
 
 	return (
 		<div
-			className={`flex w-full min-w-[15rem] flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-64 sm:max-w-full ${
+			className={`flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-[21rem] sm:max-w-full ${
 				enabled
 					? 'border-emerald-200 border-l-emerald-500 bg-white shadow-sm hover:border-emerald-400 hover:shadow-md'
 					: 'border-dashed border-slate-300 border-l-slate-400 bg-slate-100/80 hover:border-slate-400'
@@ -272,64 +226,10 @@ function RouteTarget({
 					) : null}
 				</div>
 			</div>
-			<button
-				type="button"
-				onClick={() => onEdit(route)}
-				className="w-full border-t border-slate-100 px-3 py-2 text-left transition hover:bg-slate-50/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
-				title={hasSchedule ? scheduleTooltip : t('editRoute')}
-				aria-label={`${t('editRoute')} · ${tList('factorsAria')}${hasSchedule ? ` · ${scheduleTooltip}` : ''}`}
-			>
-				<span className={`${pricingColumns} pb-1.5 text-[10px] leading-4 text-slate-500`}>
-					<span className="inline-flex items-center gap-1"><ClockIcon className="h-3 w-3" aria-hidden />{t('pricingPeriod')}</span>
-					<span className="text-right">{t('pricingCharged')}</span>
-					<span className="text-right">{t('pricingMetered')}</span>
-				</span>
-				<span className={`${pricingColumns} min-h-7`}>
-					<span className="text-[11px] text-slate-600">{tModal(hasSchedule ? 'editor.otherPeriods' : 'editor.allPeriods')}</span>
-					<span className="justify-self-end" title={factorTooltip(chargedValue, 'charged')} aria-label={factorTooltip(chargedValue, 'charged')}>
-						<span className={factorChipClassForValue(chargedValue, 'charged')}>{formatFactorMultiplierForChip(chargedValue)}</span>
-					</span>
-					<span className="justify-self-end" title={factorTooltip(meteredValue, 'metered')} aria-label={factorTooltip(meteredValue, 'metered')}>
-						<span className={factorChipClassForValue(meteredValue, 'metered')}>{formatFactorMultiplierForChip(meteredValue)}</span>
-					</span>
-				</span>
-				{providerTiming ? (
-					<span className="col-span-3 pt-1 text-[10px] leading-4 text-violet-800">
-						{t('providerFactorBadge', {
-							value: formatFactorMultiplier(providerValue),
-							status: t(`providerFactorTiming.${providerTiming}`),
-						})}
-					</span>
-				) : null}
-				{scheduleWindows.map((window, index) => (
-					<span key={`${window.start}-${window.end}-${index}`} className={`${pricingColumns} min-h-7 border-t border-dashed border-slate-100 py-1 text-[11px]`}>
-						<span className="min-w-0 text-slate-600">
-							<span className="block whitespace-nowrap tabular-nums">{formatScheduleRange(window.start, window.end)}</span>
-							{window.days && window.days.length < 7 ? (
-								<span className="block text-[10px] leading-4 text-slate-500">{formatWeekdays(window.days)}</span>
-							) : null}
-							{providerFactorTiming(route.price_override, new Date(), window) ? (
-								<span className="block text-[10px] leading-4 text-violet-700">
-									{t('providerFactorBadge', {
-										value: formatFactorMultiplier(window.provider_factor),
-										status: t(`providerFactorTiming.${providerFactorTiming(route.price_override, new Date(), window)}`),
-									})}
-								</span>
-							) : null}
-						</span>
-						<span className="justify-self-end" title={factorTooltip(window.charged_factor, 'charged')} aria-label={factorTooltip(window.charged_factor, 'charged')}>
-							<span className={factorChipClassForValue(window.charged_factor, 'charged')}>{formatFactorMultiplierForChip(window.charged_factor)}</span>
-						</span>
-						<span className="justify-self-end" title={factorTooltip(window.metered_factor, 'metered')} aria-label={factorTooltip(window.metered_factor, 'metered')}>
-							<span className={factorChipClassForValue(window.metered_factor, 'metered')}>{formatFactorMultiplierForChip(window.metered_factor)}</span>
-						</span>
-					</span>
-				))}
-			</button>
-			{providerDisabled || hasPricingInversion ? (
+			<RouteTargetPricing priceOverride={route.price_override} onEdit={() => onEdit(route)} />
+			{providerDisabled ? (
 				<div className="mt-auto space-y-1 border-t border-amber-100 bg-amber-50/70 px-3 py-1.5 text-[10px] leading-4 text-amber-800">
 					{providerDisabled ? <span className="flex items-center gap-1.5"><ExclamationTriangleIcon className="h-3 w-3 shrink-0" aria-hidden />{t('providerDisabled')}</span> : null}
-					{hasPricingInversion ? <span className="flex items-center gap-1.5" title={tList('baseInversionTooltip')}><ExclamationTriangleIcon className="h-3 w-3 shrink-0" aria-hidden />{tList('baseInversionBadge')}</span> : null}
 				</div>
 			) : null}
 		</div>
