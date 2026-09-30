@@ -624,6 +624,8 @@
 		"modal": {
 			"editTitle": "モデルを編集",
 			"newTitle": "新しいモデル",
+			"prefilledFrom": "{id} から事前入力しました。Model ID には -copy が付いています。保存前に確認してください。",
+			"copyDisplayName": "{name}（コピー）",
 			"kind": "種類",
 			"kindLlm": "LLM",
 			"kindImage": "画像",

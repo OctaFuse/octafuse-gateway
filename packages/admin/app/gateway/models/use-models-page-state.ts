@@ -39,6 +39,7 @@ import {
 	importModelPresets,
 	saveModel,
 } from './model-api';
+import { modelFormForDuplicate } from './model-duplicate';
 import {
 	formatMetadataForEditor,
 	groupModelsByVendor,
@@ -70,12 +71,14 @@ export function useModelsPageState() {
 	const router = useRouter();
 	const pathname = usePathname();
 	const editDeepLinkHandledRef = useRef<string | null>(null);
+	const editLoadGenRef = useRef(0);
 	const [models, setModels] = useState<ModelListItem[]>([]);
 	const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
 	const [selectedKind, setSelectedKind] = useState<ModelListKindFilter>(DEFAULT_MODEL_LIST_KIND_FILTER);
 	const [isLoading, setIsLoading] = useState(true);
 	const [showModal, setShowModal] = useState(false);
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
+	const [duplicateSourceModelId, setDuplicateSourceModelId] = useState<string | null>(null);
 	const [formData, setFormData] = useState<ModelFormData>(EMPTY_MODEL_FORM);
 	const [formKind, setFormKind] = useState<ModelFormKind>('llm');
 	const [pricingTierRows, setPricingTierRows] = useState<PricingTierDraftRow[]>([]);
@@ -396,7 +399,9 @@ export function useModelsPageState() {
 
 	const handleCreate = useCallback(
 		(presetVendorKey?: string, kind: ModelFormKind = 'llm') => {
+			editLoadGenRef.current += 1;
 			setEditingModel(null);
+			setDuplicateSourceModelId(null);
 			setFormKind(kind);
 			const vendor =
 				presetVendorKey !== undefined ? presetVendorKey : EMPTY_MODEL_FORM.vendor;
@@ -501,20 +506,42 @@ export function useModelsPageState() {
 
 	const handleEdit = useCallback(
 		async (model: ModelListItem) => {
+			const loadGen = ++editLoadGenRef.current;
+			setDuplicateSourceModelId(null);
 			setEditingModel(model);
 			fillFormFromModel(model);
 			try {
 				const fullModel = await fetchModelDetail(model.id);
+				if (editLoadGenRef.current !== loadGen) return;
 				setEditingModel(fullModel);
 				fillFormFromModel(fullModel);
 			} catch (error) {
+				if (editLoadGenRef.current !== loadGen) return;
 				console.error('Fetch model details error:', error);
 			}
+			if (editLoadGenRef.current !== loadGen) return;
 			setShowModal(true);
 			setSaveError('');
 		},
 		[fillFormFromModel]
 	);
+
+	const handleDuplicate = useCallback(() => {
+		if (!editingModel) return;
+		editLoadGenRef.current += 1;
+		const sourceId = editingModel.id;
+		setDuplicateSourceModelId(sourceId);
+		setEditingModel(null);
+		setFormData((current) =>
+			modelFormForDuplicate(current, (name) => tModal('copyDisplayName', { name }))
+		);
+		setPricingTierRows((rows) => structuredClone(rows));
+		setCatalogScheduleWindows((windows) => structuredClone(windows));
+		setImagePerImageDraft((draft) => structuredClone(draft));
+		setAudioPricingDraft((draft) => structuredClone(draft));
+		setTagInput('');
+		setSaveError('');
+	}, [editingModel, tModal]);
 
 	/** Routes 等入口可通过 `?edit=<model_id>` 直接打开编辑弹窗。 */
 	useEffect(() => {
@@ -567,6 +594,7 @@ export function useModelsPageState() {
 				if (result.success) {
 					setShowModal(false);
 					setEditingModel(null);
+					setDuplicateSourceModelId(null);
 					void refreshModels();
 				} else {
 					notify('error', result.message || tCommon('failed'));
@@ -668,6 +696,8 @@ export function useModelsPageState() {
 			);
 			if (result.success) {
 				setShowModal(false);
+				setEditingModel(null);
+				setDuplicateSourceModelId(null);
 				void refreshModels();
 			} else {
 				setSaveError(result.message);
@@ -725,6 +755,7 @@ export function useModelsPageState() {
 		billingCurrency,
 		showModal,
 		editingModel,
+		duplicateSourceModelId,
 		formData,
 		setFormData,
 		formKind,
@@ -768,6 +799,7 @@ export function useModelsPageState() {
 		handleCreate,
 		applyFormKind,
 		handleEdit,
+		handleDuplicate,
 		handleDelete,
 		handleAddTag,
 		handleRemoveTag,

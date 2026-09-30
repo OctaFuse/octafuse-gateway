@@ -624,6 +624,8 @@
 		"modal": {
 			"editTitle": "编辑模型",
 			"newTitle": "新建模型",
+			"prefilledFrom": "已从 {id} 预填。Model ID 已加上 -copy 后缀，保存前请确认。",
+			"copyDisplayName": "{name}（副本）",
 			"kind": "类型",
 			"kindLlm": "大语言模型",
 			"kindImage": "文生图",

@@ -624,6 +624,8 @@
 		"modal": {
 			"editTitle": "모델 편집",
 			"newTitle": "새 모델",
+			"prefilledFrom": "{id}에서 미리 채웠습니다. Model ID에 -copy 접미사가 붙어 있습니다. 저장하기 전에 확인하세요.",
+			"copyDisplayName": "{name} (사본)",
 			"kind": "유형",
 			"kindLlm": "LLM",
 			"kindImage": "이미지",
