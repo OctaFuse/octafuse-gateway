@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowDownIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, ComputerDesktopIcon, ServerIcon } from '@heroicons/react/24/outline';
+import { editorInputClass, editorLabelClass, RouteEditorSection } from './route-editor-ui';
 import { useTranslations, useLocale } from 'next-intl';
 import { liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
@@ -110,19 +111,16 @@ export function RouteMappingFields({
 		Boolean(formData.upstream_operation);
 
 	return (
-		<section>
-			<h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
-				{t('basicMapping')}
-			</h3>
-			<div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-start lg:gap-x-5">
-				<div className="flex h-full min-w-0 flex-col rounded-lg border border-blue-200 bg-blue-50/40 p-4">
-					<p className="mb-2.5 text-xs font-semibold text-blue-700">{t('clientColumn')}</p>
-					<div className="space-y-3">
+		<div className="space-y-4">
+			<RouteEditorSection title={t('editor.mappingTitle')} description={t('editor.mappingDescription')}>
+				<div className="relative grid gap-5 md:grid-cols-2 md:gap-12">
+					<div className="min-w-0 space-y-4">
+						<p className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+							<ComputerDesktopIcon className="h-4 w-4 text-slate-500" aria-hidden />
+							{t('clientColumn')}
+						</p>
 						<div>
-							<label
-								htmlFor="route-field-modelRequired"
-								className="mb-1 block text-sm font-medium text-gray-700"
-							>
+							<label htmlFor="route-field-modelRequired" className={editorLabelClass}>
 								{t('modelRequired')}
 							</label>
 							<select
@@ -182,7 +180,7 @@ export function RouteMappingFields({
 										),
 									});
 								}}
-								className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+								className={editorInputClass}
 								required
 							>
 								<option value="">{t('selectModel')}</option>
@@ -193,34 +191,28 @@ export function RouteMappingFields({
 								))}
 							</select>
 						</div>
-						<p className="break-all font-mono text-xs text-gray-500" title={t('modelId')}>
-							{formData.model_id || '—'}
-						</p>
-						{lockTopology ? (
-							<div className="space-y-2 border-t border-gray-200/70 pt-3">
-								<p className="text-[11px] text-gray-500">{t('editor.adapterManaged')}</p>
-								<dl className="space-y-1.5 text-xs">
-									<div className="flex items-baseline justify-between gap-3">
-										<dt className="shrink-0 text-gray-500">{t('requestProtocol')}</dt>
-										<dd className="font-mono text-gray-800">{formData.request_protocol}</dd>
-									</div>
-									<div className="flex items-baseline justify-between gap-3">
-										<dt className="shrink-0 text-gray-500">{t('requestOperation')}</dt>
-										<dd className="break-all text-right font-mono text-gray-800">
-											{formData.request_operation === 'models.generate'
-												? t('operationModelsGenerate')
-												: formData.request_operation}
-										</dd>
-									</div>
-								</dl>
+						<div>
+							<p className={editorLabelClass}>{t('modelId')}</p>
+							<div className="flex h-10 items-center overflow-hidden rounded-lg bg-slate-50 px-3">
+								<code className="truncate text-sm text-gray-500" title={formData.model_id}>
+									{formData.model_id || '—'}
+								</code>
 							</div>
+						</div>
+						{lockTopology ? (
+							<ProtocolSummary
+								label={t('requestProtocol')}
+								protocol={formData.request_protocol}
+								operation={
+									formData.request_operation === 'models.generate'
+										? t('operationModelsGenerate')
+										: formData.request_operation
+								}
+							/>
 						) : (
-							<>
+							<div className="grid gap-4 sm:grid-cols-2">
 								<div>
-									<label
-										htmlFor="route-field-requestProtocol"
-										className="mb-1 block text-sm font-medium text-gray-700"
-									>
+									<label htmlFor="route-field-requestProtocol" className={editorLabelClass}>
 										{t('requestProtocol')}
 									</label>
 									<select
@@ -241,7 +233,7 @@ export function RouteMappingFields({
 											});
 										}}
 										disabled={lockOpenaiProtocol || lockTopology}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100"
+										className={editorInputClass}
 									>
 										{requestProtocols.map((p) => (
 											<option key={p} value={p}>
@@ -251,10 +243,7 @@ export function RouteMappingFields({
 									</select>
 								</div>
 								<div>
-									<label
-										htmlFor="route-field-requestOperation"
-										className="mb-1 block text-sm font-medium text-gray-700"
-									>
+									<label htmlFor="route-field-requestOperation" className={editorLabelClass}>
 										{t('requestOperation')}
 									</label>
 									<select
@@ -267,7 +256,7 @@ export function RouteMappingFields({
 											})
 										}
 										disabled={lockTopology}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100"
+										className={editorInputClass}
 									>
 										{requestOperations.map((operation) => (
 											<option key={operation} value={operation}>
@@ -277,136 +266,24 @@ export function RouteMappingFields({
 										{formData.request_operation === '*' ? <option value="*">*</option> : null}
 									</select>
 									{selectedModelIsAudio ? (
-										<p className="mt-1 text-[11px] text-gray-500">{t('audioPublicOperationHint')}</p>
+										<p className="mt-2 text-xs text-gray-500">{t('audioPublicOperationHint')}</p>
 									) : null}
 								</div>
-							</>
+							</div>
 						)}
 					</div>
-				</div>
-
-				<div className="flex min-w-0 flex-col justify-center gap-3 lg:w-[15rem]">
-					<div className="flex items-center justify-center py-1" aria-hidden>
-						<ArrowDownIcon className="h-8 w-8 text-blue-500 lg:hidden" />
-						<span className="hidden w-full items-center lg:flex">
-							<span className="h-[3px] min-w-0 flex-1 rounded-full bg-blue-400" />
-							<span className="h-0 w-0 shrink-0 border-y-[7px] border-l-[12px] border-y-transparent border-l-blue-500" />
+					<span aria-hidden className="absolute bottom-0 left-1/2 top-0 hidden w-px bg-slate-200 md:block">
+						<span className="absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center bg-white">
+							<ArrowRightIcon className="h-3.5 w-3.5 text-gray-400" />
 						</span>
-					</div>
-					<p className="text-center text-xs font-semibold text-blue-600">{t('routeColumn')}</p>
-					<div>
-						<label className="mb-1 block text-sm font-medium text-gray-700" title={t('routeGroupHint')}>
-							{t('routeGroup')}
-						</label>
-						<input
-							type="text"
-							value={formData.route_group}
-							onChange={(e) => onFormChange({ ...formData, route_group: e.target.value })}
-							className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-							placeholder={t('routeGroupPlaceholder')}
-							title={t('routeGroupHint')}
-						/>
-					</div>
-					<div className="grid grid-cols-2 gap-2">
-						<div>
-							<label className="mb-1 block text-sm font-medium text-gray-700" title={t('priorityHint')}>
-								{t('priority')}
-							</label>
-							<input
-								type="number"
-								value={formData.priority}
-								onChange={(e) =>
-									onFormChange({
-										...formData,
-										priority: parseInt(e.target.value, 10) || 0,
-									})
-								}
-								title={t('priorityHint')}
-								className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-							/>
-						</div>
-						<div>
-							<label className="mb-1 block text-sm font-medium text-gray-700" title={t('weightHint')}>
-								{t('weight')}
-							</label>
-							<input
-								type="number"
-								min={1}
-								value={formData.weight}
-								onChange={(e) =>
-									onFormChange({
-										...formData,
-										weight: Math.max(1, parseInt(e.target.value, 10) || 1),
-									})
-								}
-								title={t('weightHint')}
-								className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-							/>
-						</div>
-					</div>
-					<div>
-						<label htmlFor="route-field-adapter" className="mb-1 block text-sm font-medium text-gray-700">
-							{t('adapter')}
-						</label>
-						<select
-							id="route-field-adapter"
-							value={selectedAdapterOptionKey ?? formData.adapter}
-							onChange={(e) => onFormChange(applyAdapterOptionToForm(formData, e.target.value))}
-							title={formData.adapter}
-							disabled={!selectedProvider}
-							className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
-						>
-							{!selectedProvider ? (
-								<option value={formData.adapter}>{t('protocolHintSelectProvider')}</option>
-							) : visibleAdapterOptions.length === 0 ? (
-								<option value={formData.adapter}>{t('noCompatibleAdapter')}</option>
-							) : null}
-							{visibleAdapterOptions.map((option) => (
-								<option
-									key={option.descriptor.optionKey}
-									value={option.descriptor.optionKey}
-									title={option.descriptor.id}
-									disabled={!option.available && option.descriptor.optionKey !== selectedAdapterOptionKey}
-								>
-									{adapterLabel(option.descriptor.id)}
-									{adapterOptionMappingSuffix(option.descriptor)}
-									{!option.available ? ` · ${t('adapterUnavailable')}` : ''}
-								</option>
-							))}
-							{showCurrentAdapter ? (
-								<option value={formData.adapter} title={formData.adapter}>
-									{adapterLabel(formData.adapter)} · {t('currentLegacyValue')}
-								</option>
-							) : null}
-						</select>
-						<p className="mt-1 text-[11px] text-gray-500">
-							{selectedProvider ? t('editor.adapterHint') : t('protocolHintSelectProvider')}
+					</span>
+					<div className="min-w-0 space-y-4 border-t border-slate-200 pt-5 md:border-0 md:pt-0">
+						<p className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+							<ServerIcon className="h-4 w-4 text-slate-500" aria-hidden />
+							{t('upstreamColumn')}
 						</p>
-						{selectedAdapterOption && selectedAdapterOption.missingCapabilities.length > 0 ? (
-							<p className="mt-1 text-[11px] text-amber-700">
-								{t('adapterMissingCapabilities', {
-									capabilities: selectedAdapterOption.missingCapabilities.join(', '),
-								})}
-							</p>
-						) : null}
-						{selectedAdapterOption?.descriptor.lossyFeatures?.length ? (
-							<p className="mt-1 text-[11px] text-amber-700">
-								{t('adapterLossyFeatures', {
-									features: selectedAdapterOption.descriptor.lossyFeatures.join(', '),
-								})}
-							</p>
-						) : null}
-					</div>
-				</div>
-
-				<div className="flex h-full min-w-0 flex-col rounded-lg border border-violet-200 bg-violet-50/40 p-4">
-					<p className="mb-2.5 text-xs font-semibold text-violet-700">{t('upstreamColumn')}</p>
-					<div className="space-y-3">
 						<div>
-							<label
-								htmlFor="route-field-providerRequired"
-								className="mb-1 block text-sm font-medium text-gray-700"
-							>
+							<label htmlFor="route-field-providerRequired" className={editorLabelClass}>
 								{t('providerRequired')}
 							</label>
 							<select
@@ -447,7 +324,7 @@ export function RouteMappingFields({
 										upstream_operation: nextOperation,
 									});
 								}}
-								className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+								className={editorInputClass}
 								required
 							>
 								<option value="">{t('selectProvider')}</option>
@@ -459,10 +336,7 @@ export function RouteMappingFields({
 							</select>
 						</div>
 						<div>
-							<label
-								htmlFor="route-field-providerModelName"
-								className="mb-1 block text-sm font-medium text-gray-700"
-							>
+							<label htmlFor="route-field-providerModelName" className={editorLabelClass}>
 								{t('providerModelName')}
 							</label>
 							<input
@@ -494,36 +368,25 @@ export function RouteMappingFields({
 											: nextUpstreamOperations[0] ?? formData.upstream_operation,
 									});
 								}}
-								className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+								className={editorInputClass}
 								placeholder={t('providerModelPlaceholder')}
 								required
 							/>
 						</div>
 						{lockTopology ? (
-							<div className="space-y-2 border-t border-gray-200/70 pt-3">
-								<p className="text-[11px] text-gray-500">{t('editor.adapterManaged')}</p>
-								<dl className="space-y-1.5 text-xs">
-									<div className="flex items-baseline justify-between gap-3">
-										<dt className="shrink-0 text-gray-500">{t('upstreamProtocol')}</dt>
-										<dd className="font-mono text-gray-800">{formData.upstream_protocol}</dd>
-									</div>
-									<div className="flex items-baseline justify-between gap-3">
-										<dt className="shrink-0 text-gray-500">{t('upstreamOperation')}</dt>
-										<dd className="break-all text-right font-mono text-gray-800">
-											{formData.upstream_operation === 'models.generate'
-												? t('operationModelsGenerate')
-												: formData.upstream_operation}
-										</dd>
-									</div>
-								</dl>
-							</div>
+							<ProtocolSummary
+								label={t('upstreamProtocol')}
+								protocol={formData.upstream_protocol}
+								operation={
+									formData.upstream_operation === 'models.generate'
+										? t('operationModelsGenerate')
+										: formData.upstream_operation
+								}
+							/>
 						) : (
-							<>
+							<div className="grid gap-4 sm:grid-cols-2">
 								<div>
-									<label
-										htmlFor="route-field-upstreamProtocol"
-										className="mb-1 block text-sm font-medium text-gray-700"
-									>
+									<label htmlFor="route-field-upstreamProtocol" className={editorLabelClass}>
 										{t('upstreamProtocol')}
 									</label>
 									<select
@@ -545,7 +408,7 @@ export function RouteMappingFields({
 										}}
 										disabled={!selectedProvider || lockTopology}
 										title={selectedProvider ? t('protocolHintConfigured') : t('protocolHintSelectProvider')}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
+										className={editorInputClass}
 									>
 										{allowedProtocolsForProvider.map((p) => (
 											<option key={p} value={p}>
@@ -555,10 +418,7 @@ export function RouteMappingFields({
 									</select>
 								</div>
 								<div>
-									<label
-										htmlFor="route-field-upstreamOperation"
-										className="mb-1 block text-sm font-medium text-gray-700"
-									>
+									<label htmlFor="route-field-upstreamOperation" className={editorLabelClass}>
 										{t('upstreamOperation')}
 									</label>
 									<select
@@ -571,7 +431,7 @@ export function RouteMappingFields({
 											})
 										}
 										disabled={!selectedProvider || upstreamOperations.length === 0 || lockTopology}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600"
+										className={editorInputClass}
 									>
 										{upstreamOperations.map((operation) => (
 											<option key={operation} value={operation}>
@@ -584,17 +444,150 @@ export function RouteMappingFields({
 											</option>
 										) : null}
 									</select>
-									<p className="mt-1 text-[11px] text-gray-500">
+									<p className="mt-2 text-xs text-gray-500">
 										{selectedProvider
 											? t('upstreamOperationHintConfigured')
 											: t('protocolHintSelectProvider')}
 									</p>
 								</div>
-							</>
+							</div>
 						)}
 					</div>
 				</div>
-			</div>{' '}
-		</section>
+			</RouteEditorSection>
+			<RouteEditorSection title={t('editor.routingTitle')}>
+				<div className="grid items-start gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.55fr)_minmax(0,0.55fr)]">
+					<div>
+						<label htmlFor="route-field-adapter" className={editorLabelClass}>
+							{t('adapter')}
+						</label>
+						<select
+							id="route-field-adapter"
+							value={selectedAdapterOptionKey ?? formData.adapter}
+							onChange={(e) => onFormChange(applyAdapterOptionToForm(formData, e.target.value))}
+							title={formData.adapter}
+							disabled={!selectedProvider}
+							className={editorInputClass}
+						>
+							{!selectedProvider ? (
+								<option value={formData.adapter}>{t('protocolHintSelectProvider')}</option>
+							) : visibleAdapterOptions.length === 0 ? (
+								<option value={formData.adapter}>{t('noCompatibleAdapter')}</option>
+							) : null}
+							{visibleAdapterOptions.map((option) => (
+								<option
+									key={option.descriptor.optionKey}
+									value={option.descriptor.optionKey}
+									title={option.descriptor.id}
+									disabled={!option.available && option.descriptor.optionKey !== selectedAdapterOptionKey}
+								>
+									{adapterLabel(option.descriptor.id)}
+									{adapterOptionMappingSuffix(option.descriptor)}
+									{!option.available ? ` · ${t('adapterUnavailable')}` : ''}
+								</option>
+							))}
+							{showCurrentAdapter ? (
+								<option value={formData.adapter} title={formData.adapter}>
+									{adapterLabel(formData.adapter)} · {t('currentLegacyValue')}
+								</option>
+							) : null}
+						</select>
+						<p className="mt-2 text-xs text-gray-500">
+							{selectedProvider ? t('editor.adapterHint') : t('protocolHintSelectProvider')}
+						</p>
+						{selectedProvider &&
+						selectedAdapterOption &&
+						selectedAdapterOption.missingCapabilities.length > 0 ? (
+							<p className="mt-2 text-xs text-amber-700">
+								{t('adapterMissingCapabilities', {
+									capabilities: selectedAdapterOption.missingCapabilities.join(', '),
+								})}
+							</p>
+						) : null}
+						{selectedProvider && selectedAdapterOption?.descriptor.lossyFeatures?.length ? (
+							<p className="mt-2 text-xs text-amber-700">
+								{t('adapterLossyFeatures', {
+									features: selectedAdapterOption.descriptor.lossyFeatures.join(', '),
+								})}
+							</p>
+						) : null}
+					</div>
+					<div>
+						<label htmlFor="route-field-group" className={editorLabelClass} title={t('routeGroupHint')}>
+							{t('routeGroup')}
+						</label>
+						<input
+							id="route-field-group"
+							type="text"
+							value={formData.route_group}
+							onChange={(e) => onFormChange({ ...formData, route_group: e.target.value })}
+							className={editorInputClass}
+							placeholder={t('routeGroupPlaceholder')}
+							title={t('routeGroupHint')}
+						/>
+					</div>
+					<div className="grid grid-cols-2 gap-4 md:contents">
+						<div>
+							<label htmlFor="route-field-priority" className={editorLabelClass} title={t('priorityHint')}>
+								{t('priority')}
+							</label>
+							<input
+								id="route-field-priority"
+								type="number"
+								value={formData.priority}
+								onChange={(e) =>
+									onFormChange({
+										...formData,
+										priority: parseInt(e.target.value, 10) || 0,
+									})
+								}
+								title={t('priorityHint')}
+								className={editorInputClass}
+							/>
+						</div>
+						<div>
+							<label htmlFor="route-field-weight" className={editorLabelClass} title={t('weightHint')}>
+								{t('weight')}
+							</label>
+							<input
+								id="route-field-weight"
+								type="number"
+								min={1}
+								value={formData.weight}
+								onChange={(e) =>
+									onFormChange({
+										...formData,
+										weight: Math.max(1, parseInt(e.target.value, 10) || 1),
+									})
+								}
+								title={t('weightHint')}
+								className={editorInputClass}
+							/>
+						</div>
+					</div>
+				</div>
+			</RouteEditorSection>
+		</div>
+	);
+}
+
+function ProtocolSummary({
+	label,
+	protocol,
+	operation,
+}: {
+	label: string;
+	protocol: string;
+	operation: string;
+}) {
+	return (
+		<div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+			<span className="text-gray-400">{label}</span>
+			<span className="font-medium text-gray-600">{protocol}</span>
+			<span aria-hidden className="text-gray-300">
+				/
+			</span>
+			<code className="break-all text-gray-600">{operation}</code>
+		</div>
 	);
 }

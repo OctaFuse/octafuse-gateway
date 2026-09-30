@@ -80,7 +80,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/routes/pools/:poolId/sticky/bindings/lookup` | GET | 按 `user_id` / `email` + surface 上下文反查单用户绑定 | Admin UI |
 | `/admin/routes/pools/:poolId/sticky/bindings/:affinityHash` | DELETE | 强制解绑（不校验 `binding_token`） | Admin UI |
 | `/admin/routes/pools/:poolId/sticky/reset` | POST | bump `sticky_epoch`，使本 pool 全部绑定失效 | Admin UI |
-| `/admin/playground` | POST | Routes：`routeId` 直连上游；Tools：`toolId`+`provider` 读 catalog 直连引擎（均可测、不计费、不写日志、无 failover） | Admin UI、运维联调 |
+| `/admin/playground` | POST | Routes：`routeId` 或 `routeDraft` 直连上游；Tools：`toolId`+`provider` 读 catalog 直连引擎（均可测、不计费、不写日志、无 failover） | Admin UI、运维联调 |
 | `/admin/stats` | GET | 多表聚合（含 `api_key_request_logs`、`api_keys` 等） | Admin UI |
 | `/admin/config` | GET, PUT | `system_config`（含 `ROUTE_STRATEGY`、`USER_CHARGED_COST_FACTOR_MODE`） | Admin UI |
 | `/admin/access-keys`、`/:id`、`/:id/secret`、`/:id/rotate`、`/:id/revoke` | GET, POST, PATCH | `admin_api_keys`；仅 Console Session，同源写请求 | Admin UI |
@@ -92,6 +92,8 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/analytics/users` | GET | `api_key_request_logs`，左联 **`users`**（用户维度） | Admin UI |
 | `/admin/analytics/keys` | GET | `api_key_request_logs`，按 `api_key_id` 聚合（需 `user_id`） | 外部集成方、Admin UI |
 | `/admin/analytics/reliability` | GET | `api_key_request_logs` | Admin UI |
+
+`POST /admin/playground` 的 `routeId`、`routeDraft`、`toolId` 三选一。路由编辑器「快速测试」使用 `routeDraft`，包含 `model_id`、`provider_id`、`provider_model_name`、`request_protocol`、`request_operation`、`upstream_protocol`、`upstream_operation`、`adapter` 与可选的 `custom_params`（JSON 对象或字符串）；`body` 为测试请求对象。草稿只在本次请求中生效，不创建或更新路由，供应商端点与密钥仍从服务端读取。响应、流式输出及 `x-playground-*` 调试头与 `routeId` 模式一致；实时 WebSocket 仍使用已保存的 `routeId`。
 
 说明：**GlobalLogs**（`/admin/request-logs`）与 **KeyScopedLogs**（`/admin/keys/:id/logs`）互补；**UserScopedLogs**（`/admin/users/:id/logs`）按 `user_id` 拉全量请求历史。**全局审计列表**（`/admin/budget-audit-logs`，表为 **`user_audit_logs`**）记录预算与用户/密钥生命周期事件，与请求日志正交。各类审计行何时产生（含高频 `usage_charge`）见 [`../reference/user-audit-logs.md`](../reference/user-audit-logs.md)。**数据模型总览**见 [`../architecture/user-keys-data-model.md`](../architecture/user-keys-data-model.md)。
 

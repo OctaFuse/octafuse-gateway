@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import {
-	ArrowRightIcon,
 	ArrowsRightLeftIcon,
 	BanknotesIcon,
 	BeakerIcon,
@@ -24,14 +22,16 @@ import {
 } from '../route-utils';
 import { RouteMappingFields } from './route-mapping-fields';
 import { RouteRequestFields } from './route-request-fields';
+import { RouteQuickTest } from './route-quick-test';
 import { RoutePricingFields } from './route-pricing-fields';
 import type { RouteModalProps } from './route-modal-types';
 
-type EditorTab = 'mapping' | 'request' | 'pricing';
+type EditorTab = 'mapping' | 'request' | 'pricing' | 'test';
 const TABS = [
 	{ id: 'mapping', icon: ArrowsRightLeftIcon },
 	{ id: 'request', icon: CodeBracketIcon },
 	{ id: 'pricing', icon: BanknotesIcon },
+	{ id: 'test', icon: BeakerIcon },
 ] as const;
 
 export function RouteModal(props: RouteModalProps) {
@@ -87,6 +87,8 @@ function RouteModalContent(props: RouteModalProps) {
 	const providerLabel = selectedProvider
 		? liveProviderPickerLabel(selectedProvider, locale, tKind('custom'), selectedProvider.id)
 		: t('selectProvider');
+	const modelLabel = selectedModel?.display_name || formData.model_id;
+	const routeContext = `${providerLabel}\n${t('routeGroup')}: ${formData.route_group.trim() || 'default'}`;
 	const requestSummary = hasCustomParams
 		? [
 				headerCount ? t('editor.headerCount', { count: headerCount }) : '',
@@ -162,7 +164,8 @@ function RouteModalContent(props: RouteModalProps) {
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="route-modal-title"
-				className="flex h-[min(760px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
+				aria-describedby={modelLabel ? 'route-modal-context' : undefined}
+				className="flex h-[min(840px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
 				onKeyDown={(event) => {
 					if (event.key === 'Escape' && !busy) {
 						event.stopPropagation();
@@ -188,12 +191,28 @@ function RouteModalContent(props: RouteModalProps) {
 			>
 				<header className="shrink-0 px-5 pt-5 sm:px-6">
 					<div className="flex items-start justify-between gap-3">
-						<div className="min-w-0">
-							<h2 id="route-modal-title" className="text-lg font-semibold text-gray-900">
-								{editingRoute ? t('editTitle') : t('newTitle')}
+						<div className="min-w-0 flex-1">
+							<h2
+								id="route-modal-title"
+								className="flex min-w-0 items-baseline gap-3 text-lg font-semibold text-gray-900"
+							>
+								<span className="shrink-0">{editingRoute ? t('editTitle') : t('newTitle')}</span>
+								{modelLabel ? (
+									<span
+										className="min-w-0 truncate border-l border-gray-200 pl-3 text-sm font-normal text-gray-500"
+										title={`${modelLabel}\n${routeContext}`}
+									>
+										{modelLabel}
+									</span>
+								) : null}
 							</h2>
+							{modelLabel ? (
+								<p id="route-modal-context" className="sr-only">
+									{routeContext}
+								</p>
+							) : null}
 							{!editingRoute && duplicateSourceRouteId ? (
-								<p className="mt-1 truncate text-xs text-gray-500">
+								<p className="truncate text-xs text-gray-400">
 									{t('prefilledFrom', { id: duplicateSourceRouteId })}
 								</p>
 							) : null}
@@ -208,17 +227,11 @@ function RouteModalContent(props: RouteModalProps) {
 							<XMarkIcon className="h-5 w-5" aria-hidden />
 						</button>
 					</div>
-					<div className="my-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-gray-500">
-						<span className="max-w-full truncate font-medium text-gray-800">
-							{selectedModel?.display_name || formData.model_id || t('selectModel')}
-						</span>
-						<ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden />
-						<span className="max-w-full truncate">{providerLabel}</span>
-						<span className="rounded bg-gray-100 px-2 py-0.5 font-mono text-[11px] text-gray-600">
-							{formData.route_group.trim() || 'default'}
-						</span>
-					</div>
-					<div role="tablist" aria-label={t('editor.sections')} className="flex gap-4 sm:gap-7">
+					<div
+						role="tablist"
+						aria-label={t('editor.sections')}
+						className="mt-4 flex gap-4 overflow-x-auto sm:gap-7"
+					>
 						{TABS.map(({ id, icon: Icon }, index) => (
 							<button
 								key={id}
@@ -275,7 +288,7 @@ function RouteModalContent(props: RouteModalProps) {
 				) : null}
 				<div
 					ref={scrollRef}
-					className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-gray-200 px-5 py-5 sm:px-6"
+					className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-gray-200 bg-slate-100/80 px-5 py-4 sm:px-6"
 				>
 					<fieldset disabled={busy} className="min-w-0">
 						<div
@@ -287,17 +300,17 @@ function RouteModalContent(props: RouteModalProps) {
 							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 						>
 							<RouteMappingFields {...editorProps} />
-							<div className="mt-5 grid gap-3 sm:grid-cols-2">
+							<div className="mt-4 grid gap-x-6 gap-y-1 sm:grid-cols-2">
 								{(['request', 'pricing'] as const).map((id) => (
 									<button
 										key={id}
 										type="button"
 										onClick={() => selectTab(id, true)}
-										className="group flex min-w-0 items-center justify-between gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:border-blue-300 hover:bg-blue-50/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+										className="group flex min-w-0 items-center justify-between gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 									>
-										<div className="min-w-0">
-											<p className="text-xs font-semibold text-gray-700">{t(`editor.tabs.${id}`)}</p>
-											<p className="mt-1 truncate text-xs text-gray-500">
+										<div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+											<p className="text-xs font-medium text-gray-600">{t(`editor.tabs.${id}`)}</p>
+											<p className="truncate text-xs text-gray-400">
 												{id === 'request'
 													? requestSummary
 													: t('editor.pricingSummary', {
@@ -323,7 +336,6 @@ function RouteModalContent(props: RouteModalProps) {
 							tabIndex={0}
 							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 						>
-							<p className="mb-4 text-xs leading-5 text-gray-500">{t('editor.requestHint')}</p>
 							<RouteRequestFields {...editorProps} />
 						</div>
 						<div
@@ -336,10 +348,20 @@ function RouteModalContent(props: RouteModalProps) {
 						>
 							<RoutePricingFields {...editorProps} />
 						</div>
+						<div
+							role="tabpanel"
+							id="route-panel-test"
+							aria-labelledby="route-tab-test"
+							hidden={activeTab !== 'test'}
+							tabIndex={0}
+							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+						>
+							<RouteQuickTest {...editorProps} />
+						</div>
 					</fieldset>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/50 px-5 py-4">
+				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-white px-5 py-4 sm:px-6">
 					<div className="flex flex-wrap items-center gap-2">
 						{editingRoute && (
 							<>
@@ -352,13 +374,6 @@ function RouteModalContent(props: RouteModalProps) {
 									<TrashIcon className="h-4 w-4" aria-hidden />
 									{isDeleting ? tCommon('deleting') : t('deleteRoute')}
 								</button>
-								<Link
-									href={`/gateway/playground?routeId=${encodeURIComponent(editingRoute.id)}`}
-									className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-								>
-									<BeakerIcon className="h-4 w-4" aria-hidden />
-									{t('testInPlayground')}
-								</Link>
 							</>
 						)}
 					</div>
@@ -366,7 +381,7 @@ function RouteModalContent(props: RouteModalProps) {
 						<button
 							type="button"
 							onClick={onClose}
-							className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+							className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 							disabled={isSaving || isDeleting}
 						>
 							{tCommon('cancel')}
@@ -376,7 +391,7 @@ function RouteModalContent(props: RouteModalProps) {
 								type="button"
 								onClick={onDuplicate}
 								disabled={isSaving || isDeleting}
-								className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+								className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
 								{tCommon('duplicate')}
@@ -386,7 +401,7 @@ function RouteModalContent(props: RouteModalProps) {
 							type="button"
 							onClick={handleSave}
 							disabled={isSaving || isDeleting}
-							className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+							className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{isSaving ? tCommon('savingDots') : tCommon('save')}
 						</button>
