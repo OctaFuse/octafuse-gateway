@@ -57,6 +57,7 @@ function QuickTestContent({
 	const family = quickTestLlmFamily(form, isImage || isAudio);
 	const [sampleId, setSampleId] = useState<PlaygroundLlmSampleId>('connectivity');
 	const [geminiStream, setGeminiStream] = useState(true);
+	const [mobilePane, setMobilePane] = useState<'request' | 'response'>('request');
 	const imageOperation =
 		form.request_operation === 'images.edits' || form.upstream_operation === 'images.edits'
 			? 'edits'
@@ -301,19 +302,62 @@ function QuickTestContent({
 	}
 
 	return (
-		<div className="space-y-4">
-			<p className="text-xs leading-5 text-gray-500">{t('hint')}</p>
+		<div className="flex h-full min-h-0 flex-col gap-3">
+			<div className="flex shrink-0 items-center justify-between gap-3">
+				<p className="min-w-0 truncate text-xs text-gray-500" title={t('hint')}>
+					{t('hint')}
+				</p>
+				{sending ? (
+					<button
+						type="button"
+						onClick={() => controllerRef.current?.abort()}
+						className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+					>
+						<StopIcon className="h-4 w-4" />
+						{t('stop')}
+					</button>
+				) : (
+					<button
+						type="button"
+						onClick={send}
+						disabled={Boolean(configError) || realtime}
+						className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						<PlayIcon className="h-4 w-4" />
+						{t('send')}
+					</button>
+				)}
+			</div>
 			{configError || realtime ? (
-				<p role="status" className="text-sm text-amber-700">
+				<p role="status" className="max-h-16 shrink-0 overflow-y-auto text-xs text-amber-700">
 					{realtime ? t('realtimeHint') : configError}
 				</p>
 			) : null}
-			<div className="grid items-stretch gap-4 lg:grid-cols-2">
+			<div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/60 p-1 md:hidden">
+				{(['request', 'response'] as const).map((pane) => (
+					<button
+						key={pane}
+						type="button"
+						aria-pressed={mobilePane === pane}
+						onClick={() => setMobilePane(pane)}
+						className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium ${
+							mobilePane === pane ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'
+						}`}
+					>
+						{t(pane)}
+					</button>
+				))}
+			</div>
+			<div className="grid min-h-0 flex-1 grid-rows-[minmax(0,2fr)_minmax(0,1fr)] gap-3 md:grid-cols-2">
 				<div className="contents">
-					<section className={`${editorPanelClass} order-1`}>
+					<section
+						className={`${editorPanelClass} min-h-0 flex-col overflow-hidden md:col-start-1 ${
+							mobilePane === 'request' ? 'flex' : 'hidden md:flex'
+						}`}
+					>
 						<RouteEditorSectionHeader
 							title={t('request')}
-							description={t('requestHint')}
+							className="shrink-0"
 							action={
 								<button
 									type="button"
@@ -329,9 +373,9 @@ function QuickTestContent({
 								</button>
 							}
 						/>
-						<div className="px-5 py-3">
+						<div className="flex min-h-0 flex-1 flex-col px-4 py-3">
 							{family ? (
-								<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+								<div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2">
 									<label className="flex min-w-0 items-center gap-2 text-xs text-gray-500">
 										<span className="shrink-0">{t('template')}</span>
 										<select
@@ -368,7 +412,7 @@ function QuickTestContent({
 							) : null}
 
 							<div
-								className="mb-3 truncate font-mono text-xs text-gray-500"
+								className="mb-2 shrink-0 truncate font-mono text-[11px] text-gray-500"
 								title={`${form.upstream_protocol} / ${form.upstream_operation} · ${form.provider_model_name}`}
 							>
 								{form.upstream_protocol} / {form.upstream_operation} <span className="text-gray-300">·</span>{' '}
@@ -383,10 +427,10 @@ function QuickTestContent({
 								}}
 								disabled={sending}
 								spellCheck={false}
-								className="block h-52 min-h-[160px] w-full resize-y rounded-lg border border-gray-200 bg-slate-50/60 p-3 font-mono text-xs leading-6 text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:opacity-60"
+								className="block min-h-0 w-full flex-1 resize-none overflow-auto overscroll-contain rounded-lg border border-gray-200 bg-slate-50/60 p-3 font-mono text-xs leading-6 text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:opacity-60"
 							/>
 							{needsAudioFile || needsImageFiles ? (
-								<label className="mt-3 block text-xs text-gray-600">
+								<label className="mt-2 block shrink-0 text-xs text-gray-600">
 									{needsAudioFile ? t('audioFile') : t('imageFiles')}
 									<input
 										type="file"
@@ -399,48 +443,40 @@ function QuickTestContent({
 								</label>
 							) : null}
 							{error ? (
-								<p role="alert" className="mt-3 break-words text-xs text-red-700">
+								<p
+									role="alert"
+									className="mt-2 max-h-16 shrink-0 overflow-y-auto break-words text-xs text-red-700"
+								>
 									{error}
 								</p>
 							) : null}
-							<div className="mt-3 flex items-center justify-between gap-3 border-t border-gray-100 pt-3">
-								<span className="text-xs text-gray-400">{t('draft')}</span>
-								{sending ? (
-									<button
-										type="button"
-										onClick={() => controllerRef.current?.abort()}
-										className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-									>
-										<StopIcon className="h-4 w-4" />
-										{t('stop')}
-									</button>
-								) : (
-									<button
-										type="button"
-										onClick={send}
-										disabled={Boolean(configError) || realtime}
-										className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-									>
-										<PlayIcon className="h-4 w-4" />
-										{t('send')}
-									</button>
-								)}
-							</div>
 						</div>
 					</section>
-					<section className={`${editorPanelClass} order-3`}>
+					<section
+						className={`${editorPanelClass} row-start-2 min-h-0 flex-col overflow-hidden md:col-start-1 ${
+							mobilePane === 'request' ? 'flex' : 'hidden md:flex'
+						}`}
+					>
 						<RouteEditorSectionHeader
 							title={t('actualRequest')}
-							description={
-								wireBody ? (stale ? t('lastRequestHint') : t('sentRequestHint')) : t('requestPreviewHint')
-							}
+							className="shrink-0"
 							action={
-								<span className="whitespace-nowrap text-xs text-gray-400">
+								<span
+									className="whitespace-nowrap text-xs text-gray-400"
+									title={
+										wireBody ? (stale ? t('lastRequestHint') : t('sentRequestHint')) : t('requestPreviewHint')
+									}
+								>
 									{wireBody ? t('sentRequest') : t('requestPreview')}
 								</span>
 							}
 						/>
-						<div className="px-5 py-3 text-xs text-gray-500">
+						<div
+							tabIndex={0}
+							aria-label={t('actualRequest')}
+							className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-3 text-xs text-gray-500 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+						>
+							{wireBody && stale ? <p className="mb-2 text-amber-700">{t('lastRequestHint')}</p> : null}
 							{(wireBody ? meta?.upstreamUrl : targetUrl) ? (
 								<p className="mb-3 break-all font-mono text-[11px]">
 									<span className="mr-2 font-semibold">POST</span>
@@ -450,7 +486,7 @@ function QuickTestContent({
 							{wireHeaders ? (
 								<details className="mb-3 border-b border-gray-100 pb-3">
 									<summary className="cursor-pointer">{t('requestHeaders')}</summary>
-									<pre className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono leading-5">
+									<pre className="mt-2 whitespace-pre-wrap break-words font-mono leading-5">
 										{Object.entries(wireHeaders)
 											.map(([name, value]) => `${name}: ${value}`)
 											.join('\n')}
@@ -458,11 +494,7 @@ function QuickTestContent({
 								</details>
 							) : null}
 							{actualBody ? (
-								<pre
-									aria-label={t('actualRequest')}
-									tabIndex={0}
-									className="max-h-44 overflow-auto whitespace-pre-wrap break-words font-mono leading-6 text-gray-700"
-								>
+								<pre className="whitespace-pre-wrap break-words font-mono leading-6 text-gray-700">
 									{actualBody}
 								</pre>
 							) : (
@@ -472,6 +504,7 @@ function QuickTestContent({
 					</section>
 				</div>
 				<RouteTestOutput
+					visibleOnMobile={mobilePane === 'response'}
 					meta={meta}
 					sending={sending}
 					stopped={stopped}

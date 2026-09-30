@@ -288,9 +288,11 @@ function RouteModalContent(props: RouteModalProps) {
 				) : null}
 				<div
 					ref={scrollRef}
-					className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-gray-200 bg-slate-100/80 px-5 py-4 sm:px-6"
+					className={`min-h-0 flex-1 overscroll-contain border-t border-gray-200 bg-slate-100/80 px-5 py-4 sm:px-6 ${
+						activeTab === 'test' ? 'overflow-hidden' : 'overflow-y-auto'
+					}`}
 				>
-					<fieldset disabled={busy} className="min-w-0">
+					<fieldset disabled={busy} className={`min-w-0 ${activeTab === 'test' ? 'h-full min-h-0' : ''}`}>
 						<div
 							role="tabpanel"
 							id="route-panel-mapping"
@@ -354,7 +356,7 @@ function RouteModalContent(props: RouteModalProps) {
 							aria-labelledby="route-tab-test"
 							hidden={activeTab !== 'test'}
 							tabIndex={0}
-							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="h-full min-h-0 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 						>
 							<RouteQuickTest {...editorProps} />
 						</div>
