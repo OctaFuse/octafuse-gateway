@@ -12,6 +12,7 @@ import {
 	instantToZonedDatetimeLocalInput,
 	zonedDatetimeLocalInputToInstant,
 } from '@/lib/business-timezone-client';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { independentProviderWindows, previewRouteBillingFactors } from '../route-utils';
 import type { RouteFormData, RouteScheduleFormWindow } from '../types';
 import {
@@ -54,7 +55,22 @@ export function RouteBillingFactors({
 		t('weekdaySat'),
 		t('weekdaySun'),
 	];
-	const labels = [t('providerFactor'), t('chargedCost'), t('meteredCost')];
+	const labels = [t('providerFactor'), t('editor.chargedFactorLabel'), t('editor.meteredFactorLabel')];
+	const hints = [
+		t('editor.providerFactorHelp'),
+		t('editor.chargedFactorHelp'),
+		t('editor.meteredFactorHelp'),
+	];
+	const help = (index: number) => (
+		<InfoHintPopover
+			openOnHover
+			label={t('editor.factorHelpLabel', { name: labels[index] })}
+			align={index === 0 ? 'start' : 'end'}
+			panelClassName="max-sm:fixed max-sm:inset-x-6 max-sm:top-1/2 max-sm:w-auto max-sm:-translate-y-1/2"
+		>
+			<p className="whitespace-pre-line leading-6">{hints[index]}</p>
+		</InfoHintPopover>
+	);
 	const update = (patch: Partial<RouteFormData>) =>
 		onChange({ ...formData, schedule_windows: rows, ...patch });
 	const updateRow = (index: number, patch: Partial<RouteScheduleFormWindow>) =>
@@ -111,11 +127,13 @@ export function RouteBillingFactors({
 		>
 			<div
 				className={`${columns} hidden border-b border-slate-200 pb-3 text-xs font-medium text-slate-500 sm:grid`}
-				aria-hidden
 			>
 				<span>{t('editor.period')}</span>
-				{labels.map((label) => (
-					<span key={label}>{label}</span>
+				{labels.map((label, index) => (
+					<span key={label} className="flex items-center gap-1">
+						{label}
+						{help(index)}
+					</span>
 				))}
 			</div>
 			<div className="divide-y divide-slate-200">
@@ -179,12 +197,10 @@ export function RouteBillingFactors({
 								</div>
 								{(['provider_factor', 'charged_factor', 'metered_factor'] as const).map((key, i) => (
 									<div key={key} className="min-w-0">
-										<label
-											className="mb-2 block text-xs text-slate-500 sm:hidden"
-											htmlFor={`route-${position}-${key}`}
-										>
-											{labels[i]}
-										</label>
+										<div className="mb-2 flex items-center gap-1 text-xs text-slate-500 sm:hidden">
+											<label htmlFor={`route-${position}-${key}`}>{labels[i]}</label>
+											{help(i)}
+										</div>
 										<RouteMultiplierInput
 											id={`route-${position}-${key}`}
 											label={`${title} · ${labels[i]}`}
