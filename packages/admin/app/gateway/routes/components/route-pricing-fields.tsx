@@ -1,32 +1,20 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CodeBracketIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { CodeBracketIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import {
-	instantToZonedDatetimeLocalInput,
-	zonedDatetimeLocalInputToInstant,
-} from '@/lib/business-timezone-client';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
-import { ReadOnlyPricingTiersTable } from '@/components/read-only-pricing-tiers-table';
 import { getUserChargedCatalogTierRows } from '@/lib/pricing-ui';
-import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
-import {
-	formatIsoWeekdaysHint,
-	resolveDailyScheduleFactor,
-	scheduleWindowKey,
-} from '@octafuse/core/db/pricing-schedule';
+import { resolveDailyScheduleFactor, scheduleWindowKey } from '@octafuse/core/db/pricing-schedule';
 import {
 	alignRouteScheduleWindowsToCatalog,
+	independentProviderWindows,
 	catalogScheduleWindowsFromModel,
 	formatRoutePriceOverridePreview,
 } from '../route-utils';
-import {
-	editorInputClass,
-	editorLabelClass,
-	RouteEditorSection,
-	RouteMultiplierInput,
-} from './route-editor-ui';
+import { RouteEditorSection } from './route-editor-ui';
+import { RouteBillingFactors } from './route-billing-factors';
+import { RouteCatalogPricingTable } from './route-catalog-pricing-table';
 import { ScheduleWindowEffectivePrices } from './schedule-window-effective-prices';
 import type { RouteModalProps } from './route-modal-types';
 
@@ -68,7 +56,12 @@ export function RoutePricingFields({
 	);
 	const catalogScheduleLocked = catalogScheduleWindows.length > 0;
 	const editorScheduleWindows = catalogScheduleLocked
-		? alignRouteScheduleWindowsToCatalog(catalogScheduleWindows, formData.schedule_windows)
+		? alignRouteScheduleWindowsToCatalog(
+				catalogScheduleWindows,
+				formData.schedule_windows,
+				'1',
+				formData.provider_factor
+		  )
 		: formData.schedule_windows;
 	const catalogNowSchedule = useMemo(
 		() => resolveDailyScheduleFactor(catalogScheduleWindows, new Date(), businessTimezone),
@@ -138,188 +131,43 @@ export function RoutePricingFields({
 					/>
 				</div>
 			) : null}
-			<div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.65fr)]">
-				<div className="min-w-0 space-y-4">
-					<RouteEditorSection title={t('editor.defaultFactors')} description={t('editor.defaultFactorsHint')}>
-						<div className="grid grid-cols-3 items-end gap-3 sm:gap-4">
-							<div className="min-w-0">
-								<label htmlFor="user-cost-charged-factor" className={editorLabelClass}>
-									{t('chargedCost')}
-								</label>
-								<RouteMultiplierInput
-									id="user-cost-charged-factor"
-									label={t('chargedCost')}
-									value={formData.charged_factor}
-									onChange={(value) => onFormChange({ ...formData, charged_factor: value })}
-								/>
-							</div>
-							<div className="min-w-0">
-								<label htmlFor="gateway-route-metered-factor" className={editorLabelClass}>
-									{t('meteredCost')}
-								</label>
-								<RouteMultiplierInput
-									id="gateway-route-metered-factor"
-									label={t('meteredCost')}
-									value={formData.metered_factor}
-									onChange={(value) => onFormChange({ ...formData, metered_factor: value })}
-								/>
-							</div>
-							<div className="min-w-0">
-								<label htmlFor="gateway-route-provider-factor" className={editorLabelClass}>
-									{t('providerFactor')}
-								</label>
-								<RouteMultiplierInput
-									id="gateway-route-provider-factor"
-									label={t('providerFactor')}
-									value={formData.provider_factor}
-									onChange={(value) => onFormChange({ ...formData, provider_factor: value })}
-								/>
-							</div>
-						</div>
-						<details
-							className="mt-4 border-t border-slate-200 pt-3"
-							open={
-								formData.provider_factor_starts_at || formData.provider_factor_expires_at ? true : undefined
-							}
-						>
-							<summary className="cursor-pointer text-xs text-gray-600 marker:text-gray-400">
-								{t('editor.providerValidity')}
-								<span className="ml-2 text-gray-400">
-									{formData.provider_factor_starts_at || formData.provider_factor_expires_at
-										? t('editor.configured')
-										: t('editor.unlimited')}
-								</span>
-							</summary>
-							<p className="mt-3 text-xs leading-5 text-gray-500">
-								{t('providerFactorHint', { timezone: businessTimezone })}
-							</p>
-							<div className="mt-3 grid gap-4 sm:grid-cols-2">
-								<div>
-									<label htmlFor="gateway-route-provider-starts" className={editorLabelClass}>
-										{t('providerFactorStarts')}
-									</label>
-									<input
-										id="gateway-route-provider-starts"
-										type="datetime-local"
-										value={zonedIsoInput(formData.provider_factor_starts_at, businessTimezone)}
-										onChange={(e) =>
-											onFormChange({
-												...formData,
-												provider_factor_starts_at: isoFromZonedInput(e.target.value, businessTimezone),
-											})
-										}
-										className={`${editorInputClass} px-2.5 text-xs`}
-									/>
-								</div>
-								<div>
-									<label htmlFor="gateway-route-provider-expires" className={editorLabelClass}>
-										{t('providerFactorExpires')}
-									</label>
-									<input
-										id="gateway-route-provider-expires"
-										type="datetime-local"
-										value={zonedIsoInput(formData.provider_factor_expires_at, businessTimezone)}
-										onChange={(e) =>
-											onFormChange({
-												...formData,
-												provider_factor_expires_at: isoFromZonedInput(e.target.value, businessTimezone),
-											})
-										}
-										className={`${editorInputClass} px-2.5 text-xs`}
-									/>
-								</div>
-							</div>
-						</details>
-					</RouteEditorSection>
-					<RouteEditorSection
-						title={t('dailySchedule')}
-						description={catalogScheduleLocked ? t('editor.scheduleInherited') : t('pricingFormulaHint')}
-						action={
-							catalogScheduleLocked ? undefined : (
-								<button
-									type="button"
-									onClick={() =>
-										onFormChange({
-											...formData,
-											schedule_windows: [
-												...formData.schedule_windows,
-												{
-													start: '00:00',
-													end: '08:00',
-													charged_factor: '1',
-													metered_factor: '1',
-													provider_factor: formData.provider_factor.trim() || '1',
-													days: [],
-												},
-											],
-										})
-									}
-									className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-									aria-label={t('addScheduleWindow')}
-									title={t('addScheduleWindow')}
-								>
-									<PlusIcon className="h-3.5 w-3.5" aria-hidden />
-									{t('addScheduleWindow')}
-								</button>
-							)
-						}
-					>
-						<DailyScheduleEditor
-							windows={editorScheduleWindows}
-							onChange={(schedule_windows) => onFormChange({ ...formData, schedule_windows })}
-							lockWindows={catalogScheduleLocked}
-							compactLockedWindows
-							comfortable
-							emptyLabel={t('scheduleEmpty')}
-							startLabel={t('scheduleStart')}
-							endLabel={t('scheduleEnd')}
-							chargedFactorLabel={t('chargedCost')}
-							meteredFactorLabel={t('meteredCost')}
-							providerFactorLabel={t('scheduleProviderFactor')}
-							removeLabel={tCommon('delete')}
-							renderWindowExtra={
-								catalogScheduleLocked &&
-								selectedModel &&
-								!selectedModelIsImage &&
-								!selectedModelIsAudio &&
-								catalogStandardTierRows.length > 0
-									? (i) => (
-											<details className="group">
-												<summary className="cursor-pointer py-1 text-xs font-medium text-blue-600 hover:text-blue-800">
-													{t('editor.effectivePrices')}
-												</summary>
-												<ScheduleWindowEffectivePrices
-													billingCurrency={billingCurrency}
-													catalogFactor={catalogScheduleWindows[i]?.factor ?? 1}
-													chargedFactorText={editorScheduleWindows[i]?.charged_factor ?? ''}
-													meteredFactorText={editorScheduleWindows[i]?.metered_factor ?? ''}
-													providerFactorText={
-														editorScheduleWindows[i]?.provider_factor ?? formData.provider_factor
-													}
-													model={selectedModel}
-												/>
-											</details>
-									  )
-									: undefined
-							}
-							dayLabels={{
-								days: t('scheduleDays'),
-								everyday: t('scheduleEveryday'),
-								weekdays: t('scheduleWeekdays'),
-								weekend: t('scheduleWeekend'),
-								weekdayShort: [
-									t('weekdayMon'),
-									t('weekdayTue'),
-									t('weekdayWed'),
-									t('weekdayThu'),
-									t('weekdayFri'),
-									t('weekdaySat'),
-									t('weekdaySun'),
-								],
-							}}
-						/>
-					</RouteEditorSection>
-				</div>
+			<div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+				<RouteBillingFactors
+					formData={formData}
+					windows={editorScheduleWindows}
+					locked={catalogScheduleLocked}
+					timezone={businessTimezone}
+					onChange={onFormChange}
+					renderPrices={
+						catalogScheduleLocked &&
+						selectedModel &&
+						!selectedModelIsImage &&
+						!selectedModelIsAudio &&
+						catalogStandardTierRows.length > 0
+							? (i) => (
+									<details>
+										<summary className="cursor-pointer py-1 text-xs font-medium text-blue-600 hover:text-blue-800">
+											{t('editor.effectivePrices')}
+										</summary>
+										<p className="mb-2 text-xs leading-5 text-slate-500">{t('editor.pricesAtCurrentDate')}</p>
+										<ScheduleWindowEffectivePrices
+											billingCurrency={billingCurrency}
+											catalogFactor={catalogScheduleWindows[i]?.factor ?? 1}
+											chargedFactorText={editorScheduleWindows[i]?.charged_factor ?? ''}
+											meteredFactorText={editorScheduleWindows[i]?.metered_factor ?? ''}
+											providerFactorText={
+												editorScheduleWindows[i]?.provider_factor ?? formData.provider_factor
+											}
+											providerValidity={
+												independentProviderWindows(formData, editorScheduleWindows)[i]?.provider_validity
+											}
+											model={selectedModel}
+										/>
+									</details>
+							  )
+							: undefined
+					}
+				/>
 				<RouteEditorSection
 					className="lg:sticky lg:top-0"
 					title={t('standardCatalog')}
@@ -406,108 +254,41 @@ export function RoutePricingFields({
 								tokenRatesTitle={t('imageTokenRates')}
 							/>
 						) : (
-							<ReadOnlyPricingTiersTable
-								fillHeight={!catalogScheduleLocked}
-								rows={catalogStandardTierRows}
+							<RouteCatalogPricingTable
+								periods={[
+									{ window: null, rows: catalogStandardTierRows, active: catalogNowWindowKey === null },
+									...catalogScheduleWindows.map((window) => ({
+										window,
+										rows: selectedModel
+											? getUserChargedCatalogTierRows(selectedModel, window.factor, billingCurrency)
+											: [],
+										active: catalogNowWindowKey === scheduleWindowKey(window),
+									})),
+								]}
+								billingCurrency={billingCurrency}
 								emptyLabel={formData.model_id ? t('noCatalogPricing') : t('selectModelForTiers')}
-								tableTitle={t('readOnlyCatalogRates')}
-								billingCurrencyCode={billingCurrency}
 							/>
 						)}
-						{catalogScheduleLocked ? (
-							<details className="mt-3 border-t border-gray-200/90 pt-3">
-								<summary className="cursor-pointer text-xs font-semibold text-gray-700">
-									{t('catalogOfficialSchedule')} · {catalogScheduleWindows.length}
-								</summary>
-								<p className="my-2 text-xs text-gray-500">{t('editor.scheduleInherited')}</p>
-								<ul className="divide-y divide-slate-200">
-									{catalogScheduleWindows.map((w, i) => {
-										const daysHint = formatIsoWeekdaysHint(w.days);
-										const daysLabel =
-											daysHint === 'Mon–Fri'
-												? t('scheduleWeekdays')
-												: daysHint === 'Sat–Sun'
-												? t('scheduleWeekend')
-												: daysHint ?? t('scheduleEveryday');
-										const active = catalogNowWindowKey === scheduleWindowKey(w);
-										const officialRows =
-											selectedModel &&
-											!selectedModelIsImage &&
-											!selectedModelIsAudio &&
-											catalogStandardTierRows.length > 0
-												? getUserChargedCatalogTierRows(selectedModel, w.factor, billingCurrency)
-												: [];
-										return (
-											<li key={`${w.start}-${w.end}-${i}`} className="space-y-2 py-3 first:pt-0 last:pb-0">
-												<div className="flex items-center justify-between gap-3 text-xs">
-													<div className="min-w-0">
-														<p
-															className={`font-mono tabular-nums ${
-																active ? 'text-amber-950' : 'text-gray-800'
-															}`}
-														>
-															{w.start}–{w.end}
-															<span
-																className={`ml-1.5 font-sans text-[11px] ${
-																	active ? 'text-amber-800/80' : 'text-gray-500'
-																}`}
-															>
-																{daysLabel}
-															</span>
-														</p>
-													</div>
-													<div className="flex shrink-0 items-center gap-2">
-														{active ? (
-															<span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
-																{t('catalogScheduleNow')}
-															</span>
-														) : null}
-														<span
-															className={`font-mono text-xs tabular-nums ${
-																active ? 'text-amber-950' : 'text-gray-800'
-															}`}
-														>
-															×{w.factor}
-														</span>
-													</div>
-												</div>
-												{officialRows.length > 0 ? (
-													<ReadOnlyPricingTiersTable
-														dense
-														hideUnitFooter
-														rows={officialRows}
-														emptyLabel={t('noCatalogPricing')}
-														tableTitle={t('catalogWindowPricesHint')}
-														billingCurrencyCode={billingCurrency}
-													/>
-												) : null}
-											</li>
-										);
-									})}
-								</ul>
-							</details>
+						{catalogScheduleLocked && (selectedModelIsAudio || selectedModelIsImage) ? (
+							<div className="mt-3 border-t border-slate-200 pt-3">
+								<RouteCatalogPricingTable
+									showPrices={false}
+									periods={[
+										{ window: null, rows: [], active: catalogNowWindowKey === null },
+										...catalogScheduleWindows.map((window) => ({
+											window,
+											rows: [],
+											active: catalogNowWindowKey === scheduleWindowKey(window),
+										})),
+									]}
+									billingCurrency={billingCurrency}
+									emptyLabel={t('noCatalogPricing')}
+								/>
+							</div>
 						) : null}
 					</div>
 				</RouteEditorSection>
 			</div>
 		</section>
 	);
-}
-
-function zonedIsoInput(iso: string, timeZone: string): string {
-	if (!iso.trim()) {
-		return '';
-	}
-	const instant = new Date(iso);
-	if (Number.isNaN(instant.getTime())) {
-		return '';
-	}
-	return instantToZonedDatetimeLocalInput(instant, timeZone);
-}
-
-function isoFromZonedInput(local: string, timeZone: string): string {
-	if (!local.trim()) {
-		return '';
-	}
-	return zonedDatetimeLocalInputToInstant(local, timeZone)?.toISOString() ?? '';
 }

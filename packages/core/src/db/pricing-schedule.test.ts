@@ -643,3 +643,72 @@ describe('resolveRouteEffectiveFactors', () => {
 		assert.equal(isProviderFactorActive(factors, during), false);
 	});
 });
+
+describe('independent provider validity', () => {
+	const base = {
+		charged_factor: 2, metered_factor: 0.8, provider_factor: 0.5,
+		provider_factor_starts_at: '2026-01-01T00:00:00Z',
+		provider_factor_expires_at: '2026-02-01T00:00:00Z',
+	};
+	const resolve = (schedule: unknown, time: string) => resolveRouteEffectiveFactors({
+		priceOverrideJson: JSON.stringify({ ...base, schedule }), nowUtc: new Date(time), timezone: 'Asia/Shanghai',
+	});
+
+	it('uses each matched row validity, with inclusive start and exclusive end, for both totals', () => {
+		const validity = { starts_at: '2026-10-01T01:00:00Z', expires_at: '2026-10-02T02:00:00Z' };
+		const schedule = {
+			mode: 'override', charged: [{ start: '09:00', end: '12:00', factor: 1.5 }],
+			metered: [{ start: '09:00', end: '12:00', factor: 0.4 }],
+			provider: [
+				{ start: '09:00', end: '12:00', factor: 0.2, validity },
+				{ start: '14:00', end: '18:00', factor: 0.3, validity: { starts_at: '2026-11-01T00:00:00Z' } },
+			],
+		};
+		const atStart = resolve(schedule, validity.starts_at);
+		assert.equal(atStart.chargedTotal, 0.3);
+		assert.equal(atStart.meteredTotal, 0.08);
+		assert.equal(atStart.provider.startsAt, '2026-10-01T01:00:00.000Z');
+		const atEnd = resolve(schedule, validity.expires_at);
+		assert.equal(atEnd.provider.active, false);
+		assert.equal(atEnd.provider.effective, 1);
+		assert.equal(atEnd.chargedTotal, 1.5);
+		assert.equal(atEnd.meteredTotal, 0.4);
+		assert.equal(resolve(schedule, '2026-10-01T06:00:00Z').provider.effective, 1);
+		assert.equal(resolve(schedule, '2026-11-01T06:00:00Z').provider.effective, 0.3);
+		assert.equal(resolve(schedule, '2026-10-01T12:00:00Z').provider.effective, 1);
+		assert.equal(resolve(schedule, '2026-01-01T12:00:00Z').provider.effective, 0.5);
+	});
+
+	it('preserves legacy inheritance, while {} means unlimited even with an expired root period', () => {
+		for (const mode of ['override', 'multiply']) {
+			const row = { start: '09:00', end: '12:00', factor: 0.2 };
+			assert.equal(resolve({ mode, provider: [row] }, '2026-10-01T02:00:00Z').provider.effective, 1);
+			assert.equal(resolve({ mode, provider: [{ ...row, validity: {} }] }, '2026-10-01T02:00:00Z').provider.effective, mode === 'override' ? 0.2 : 0.1);
+		}
+	});
+
+	it('applies weekday overnight rows and disables malformed validity without falling back to root', () => {
+		const row = { start: '22:00', end: '06:00', days: [5], factor: 0.2 };
+		assert.equal(resolve({ mode: 'override', provider: [{ ...row, validity: {} }] }, '2026-10-02T18:00:00Z').provider.effective, 0.2);
+		for (const validity of [null, [], 'bad', { starts_at: 'bad' }, { starts_at: '2026-12-01', expires_at: '2026-01-01' }]) {
+			const result = resolve({ mode: 'override', provider: [{ ...row, validity }] }, '2026-01-02T18:00:00Z');
+			assert.equal(result.provider.active, false);
+			assert.equal(result.provider.effective, 1);
+			assert.equal(coerceRoutePricingScheduleInput({ provider: [{ ...row, validity }] }).ok, false);
+		}
+	});
+
+	it('normalizes row dates and preserves independent boundaries when merging equal multipliers', () => {
+		const input = coerceRoutePricingScheduleInput({ mode: 'override', provider: [
+			{ start: '09:00', end: '12:00', factor: 0.5, validity: { starts_at: '2026-10-01T08:00:00+08:00' } },
+			{ start: '12:00', end: '18:00', factor: 0.5, validity: {} },
+		] });
+		assert.equal(input.ok, true);
+		if (!input.ok) return;
+		assert.equal(input.schedule.provider[0]?.validity?.starts_at, '2026-10-01T00:00:00.000Z');
+		const merged = mergeScheduleSidesToSharedWindows([], [], { mode: 'override', chargedBase: 1, meteredBase: 1, provider: input.schedule.provider });
+		assert.equal(merged.length, 2);
+		assert.deepEqual(merged.map(w => w.provider_validity), [{ starts_at: '2026-10-01T00:00:00.000Z' }, {}]);
+		assert.equal(coerceRoutePricingScheduleInput({ charged: [{ start: '09:00', end: '12:00', factor: 1, validity: {} }] }).ok, false);
+	});
+});

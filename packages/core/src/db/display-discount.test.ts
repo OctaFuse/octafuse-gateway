@@ -389,3 +389,39 @@ describe('provider_factor display', () => {
 		assert.equal(discount.provider_factor?.effective, 1);
 	});
 });
+
+describe('display discount with per-period provider validity', () => {
+	it('matches runtime factors when root is expired but one provider period is active', () => {
+		const priceOverrideJson = JSON.stringify({
+			charged_factor: 2,
+			provider_factor: 0.5,
+			provider_factor_expires_at: '2026-01-01T00:00:00Z',
+			schedule: {
+				mode: 'override',
+				charged: [{ start: '09:00', end: '18:00', factor: 1.5 }],
+				provider: [
+					{ start: '09:00', end: '12:00', factor: 0.2, validity: { starts_at: '2026-10-01T00:00:00Z' } },
+					{ start: '12:00', end: '18:00', factor: 0.3, validity: { starts_at: '2026-11-01T00:00:00Z' } },
+				],
+			},
+		});
+		for (const [time, expected, active] of [
+			['10:00', 0.3, true],
+			['14:00', 1.5, false],
+			['20:00', 2, false],
+		] as const) {
+			const group = buildDisplayDiscountForRoute({
+				priceOverrideJson,
+				pricingProfileJson: null,
+				timezone: 'UTC',
+				priority: 1,
+				weight: 1,
+				now: new Date(`2026-10-02T${time}:00Z`),
+			});
+			assert.equal(group.current.composite_factor, expected);
+			assert.equal(group.provider_factor?.active, active);
+			assert.equal(group.windows.find((w) => w.start === '09:00')?.composite_factor, 0.3);
+			assert.equal(group.windows.find((w) => w.start === '12:00')?.composite_factor, 1.5);
+		}
+	});
+});

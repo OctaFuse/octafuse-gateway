@@ -307,9 +307,12 @@ function RouteTarget({
 							{window.days && window.days.length < 7 ? (
 								<span className="block text-[10px] leading-4 text-slate-500">{formatWeekdays(window.days)}</span>
 							) : null}
-							{window.provider_factor !== 1 ? (
+							{providerFactorTiming(route.price_override, new Date(), window) ? (
 								<span className="block text-[10px] leading-4 text-violet-700">
-									P {formatFactorMultiplierForChip(window.provider_factor)}
+									{t('providerFactorBadge', {
+										value: formatFactorMultiplier(window.provider_factor),
+										status: t(`providerFactorTiming.${providerFactorTiming(route.price_override, new Date(), window)}`),
+									})}
 								</span>
 							) : null}
 						</span>

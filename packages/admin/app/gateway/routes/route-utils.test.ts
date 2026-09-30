@@ -10,6 +10,9 @@ import {
 	composeCustomParamsJson,
 	buildFormDataFromRoute,
 	buildRouteSavePayload,
+	buildRoutePriceOverride,
+	independentProviderWindows,
+	previewRouteBillingFactors,
 	catalogScheduleWindowsFromModel,
 	formatRoutePriceOverridePreview,
 	buildRouteSurfaceCatalog,
@@ -38,6 +41,7 @@ import {
 } from './route-utils';
 import { getAdapterByOptionKey } from '@octafuse/core/adapters/registry';
 import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
+import { resolveRouteEffectiveFactors } from '@octafuse/core/db/pricing-schedule';
 import { EMPTY_ROUTE_FORM } from './types';
 
 function model(overrides: Partial<GatewayModel> = {}): GatewayModel {
@@ -1274,5 +1278,197 @@ describe('route workspace search', () => {
 		assert.equal(buildRoutesByModel({ ...base, searchQuery: 'Unrouted' })[0].groupRoutes.length, 0);
 		assert.equal(buildRoutesByModel({ ...base, searchQuery: 'no-match' }).length, 0);
 		assert.equal(buildRoutesByModel({ ...base, searchQuery: ' ' }).length, 2);
+	});
+});
+
+describe('provider validity form round trip', () => {
+	it('preserves legacy billed amounts through editing and saving, including multiply mode', () => {
+		const legacy = JSON.stringify({
+			charged_factor: 2,
+			metered_factor: 0.8,
+			provider_factor: 0.5,
+			provider_factor_starts_at: '2026-10-01T00:00:00.000Z',
+			provider_factor_expires_at: '2026-11-01T00:00:00.000Z',
+			schedule: {
+				charged: [{ start: '09:00', end: '12:00', factor: 0.5, days: [1, 2, 3, 4, 5] }],
+				provider: [{ start: '09:00', end: '12:00', factor: 0.4, days: [1, 2, 3, 4, 5] }],
+			},
+		});
+		const loaded = buildFormDataFromRoute(route({ price_override: legacy }), []);
+		const rows = independentProviderWindows(loaded, loaded.schedule_windows);
+		const saved = buildRoutePriceOverride({ ...loaded, schedule_windows: rows });
+		for (const time of [
+			'2026-09-30T02:00:00Z',
+			'2026-10-01T02:00:00Z',
+			'2026-10-01T12:00:00Z',
+			'2026-11-02T02:00:00Z',
+		]) {
+			const options = { nowUtc: new Date(time), timezone: 'Asia/Shanghai' };
+			const before = resolveRouteEffectiveFactors({ ...options, priceOverrideJson: legacy });
+			const after = resolveRouteEffectiveFactors({ ...options, priceOverrideJson: JSON.stringify(saved) });
+			assert.equal(after.chargedTotal, before.chargedTotal);
+			assert.equal(after.meteredTotal, before.meteredTotal);
+		}
+		const changedBase = buildRoutePriceOverride({
+			...loaded,
+			schedule_windows: rows,
+			provider_factor_starts_at: '2027-01-01T00:00:00Z',
+			provider_factor_expires_at: '',
+		});
+		assert.equal(
+			resolveRouteEffectiveFactors({
+				priceOverrideJson: JSON.stringify(changedBase),
+				nowUtc: new Date('2026-10-01T02:00:00Z'),
+				timezone: 'Asia/Shanghai',
+			}).provider.effective,
+			0.2
+		);
+	});
+	it('retains unlimited and dated rows even with the same factor as the base', () => {
+		const form = {
+			...EMPTY_ROUTE_FORM,
+			provider_factor: '0.5',
+			provider_factor_expires_at: '2026-01-01T00:00:00.000Z',
+			schedule_windows: [
+				{
+					start: '09:00',
+					end: '12:00',
+					days: [1, 2, 3, 4, 5],
+					charged_factor: '1',
+					metered_factor: '0.5',
+					provider_factor: '0.5',
+					provider_validity: {},
+				},
+				{
+					start: '12:00',
+					end: '18:00',
+					days: [1, 2, 3, 4, 5],
+					charged_factor: '1',
+					metered_factor: '0.5',
+					provider_factor: '0.5',
+					provider_validity: { starts_at: '2026-10-01T00:00:00.000Z' },
+				},
+			],
+		};
+		const saved = buildRoutePriceOverride(form);
+		const loaded = buildFormDataFromRoute(route({ price_override: JSON.stringify(saved) }), []);
+		assert.deepEqual(loaded.schedule_windows, form.schedule_windows);
+		assert.deepEqual(buildRoutePriceOverride(loaded), saved);
+		const catalog = form.schedule_windows.map((w) => ({
+			start: w.start,
+			end: w.end,
+			days: w.days,
+			factor: 2,
+		}));
+		assert.deepEqual(
+			alignRouteScheduleWindowsToCatalog(catalog, loaded.schedule_windows),
+			form.schedule_windows
+		);
+	});
+	it('freezes unlimited inherited rows before changing base validity and rejects reversed row dates', () => {
+		const window = {
+			start: '09:00',
+			end: '12:00',
+			days: [],
+			charged_factor: '1',
+			metered_factor: '1',
+			provider_factor: '0.5',
+		};
+		assert.deepEqual(independentProviderWindows(EMPTY_ROUTE_FORM, [window])[0]?.provider_validity, {});
+		assert.throws(
+			() =>
+				buildRoutePriceOverride({
+					...EMPTY_ROUTE_FORM,
+					schedule_windows: [
+						{ ...window, provider_validity: { starts_at: '2026-11-01', expires_at: '2026-10-01' } },
+					],
+				}),
+			/earlier than end/
+		);
+	});
+});
+
+describe('catalog rows with independent validity', () => {
+	it('does not lose dates or factors when adjacent equal rows were merged for display', () => {
+		const catalog = [
+			{ start: '09:00', end: '12:00', days: [1, 2, 3, 4, 5], factor: 2 },
+			{ start: '12:00', end: '18:00', days: [1, 2, 3, 4, 5], factor: 2 },
+		];
+		const validity = { starts_at: '2026-10-01T00:00:00.000Z' };
+		const original = {
+			charged_factor: 1,
+			metered_factor: 1,
+			schedule: {
+				mode: 'override',
+				charged: catalog.map((w) => ({ ...w, factor: 0.8 })),
+				metered: catalog.map((w) => ({ ...w, factor: 0.4 })),
+				provider: catalog.map((w) => ({ ...w, factor: 0.5, validity })),
+			},
+		};
+		const loaded = buildFormDataFromRoute(route({ price_override: JSON.stringify(original) }), [
+			model({
+				id: 'm1',
+				pricing_profile: JSON.stringify({
+					tiers: [{ upto: null, input_price: 1, output_price: 4 }],
+					schedule: catalog,
+				}),
+			}),
+		]);
+		assert.equal(loaded.schedule_windows.length, 2);
+		assert.deepEqual(buildRoutePriceOverride(loaded), original);
+	});
+	it('shows each row timing independently of the default row', () => {
+		const now = new Date('2026-10-02T00:00:00Z');
+		const json = JSON.stringify({ provider_factor: 0.5, provider_factor_expires_at: '2026-01-01T00:00:00Z' });
+		const row = { start: '09:00', end: '12:00', charged_factor: 1, metered_factor: 1, provider_factor: 0.3 };
+		assert.equal(providerFactorTiming(json, now), 'expired');
+		assert.equal(providerFactorTiming(json, now, { ...row, provider_validity: {} }), 'active');
+		assert.equal(
+			providerFactorTiming(json, now, { ...row, provider_validity: { starts_at: '2026-11-01T00:00:00Z' } }),
+			'scheduled'
+		);
+	});
+});
+
+
+describe('previewRouteBillingFactors', () => {
+	const now = new Date('2026-09-30T06:00:00Z');
+	it('multiplies both sides independently and preserves zero without floating-point noise', () => {
+		assert.deepEqual(
+			previewRouteBillingFactors(
+				{ provider_factor: '0.1', charged_factor: '0.2', metered_factor: '0' },
+				{},
+				now
+			),
+			{ charged: 0.02, metered: 0, provider: 0.1, providerInactive: false }
+		);
+	});
+	it('uses a provider factor of one outside the row validity, including its exclusive end', () => {
+		const factors = { provider_factor: '0.5', charged_factor: '0.8', metered_factor: '0.4' };
+		const validity = { starts_at: '2026-09-30T06:00:00Z', expires_at: '2026-09-30T07:00:00Z' };
+		assert.equal(previewRouteBillingFactors(factors, validity, now).charged, 0.4);
+		for (const instant of ['2026-09-30T05:59:59Z', '2026-09-30T07:00:00Z']) {
+			assert.deepEqual(previewRouteBillingFactors(factors, validity, new Date(instant)), {
+				charged: 0.8,
+				metered: 0.4,
+				provider: 1,
+				providerInactive: true,
+			});
+		}
+	});
+	it('matches save defaults while leaving an incomplete scheduled factor unknown', () => {
+		const blank = { provider_factor: '', charged_factor: '', metered_factor: '' };
+		assert.equal(previewRouteBillingFactors(blank, {}, now).charged, 1);
+		assert.equal(previewRouteBillingFactors(blank, {}, now, true).charged, null);
+	});
+	it('does not display a valid multiplier for invalid input, dates, or overflow', () => {
+		const factors = { provider_factor: '2', charged_factor: 'bad', metered_factor: '-1' };
+		assert.equal(previewRouteBillingFactors(factors, {}, now).charged, null);
+		assert.equal(previewRouteBillingFactors(factors, {}, now).metered, null);
+		assert.equal(previewRouteBillingFactors({ ...factors, charged_factor: '1e308' }, {}, now).charged, null);
+		assert.equal(
+			previewRouteBillingFactors({ ...factors, charged_factor: '1' }, { starts_at: 'invalid' }, now).charged,
+			null
+		);
 	});
 });

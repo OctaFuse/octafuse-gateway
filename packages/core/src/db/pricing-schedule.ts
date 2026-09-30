@@ -22,6 +22,13 @@ export type DailyScheduleWindow = {
 	days?: number[];
 };
 
+export type ProviderFactorValidity = { starts_at?: string; expires_at?: string };
+
+export type ProviderScheduleWindow = DailyScheduleWindow & {
+	/** Omitted inherits legacy route validity; {} explicitly means unlimited. */
+	validity?: ProviderFactorValidity;
+};
+
 /** `multiply` = 旧叠乘；`override` = 窗口 factor 即对标准价的倍率。 */
 export type RoutePricingScheduleMode = 'multiply' | 'override';
 
@@ -30,7 +37,7 @@ export type RoutePricingSchedule = {
 	charged: DailyScheduleWindow[];
 	metered: DailyScheduleWindow[];
 	/** 官方倍率分时；空数组表示全天用 `provider_factor`（有效期内）。 */
-	provider: DailyScheduleWindow[];
+	provider: ProviderScheduleWindow[];
 };
 
 /** Admin 合并编辑用：共享 start/end（及可选 days），两侧各一列倍率（均为对标准价的有效倍率）。 */
@@ -41,6 +48,7 @@ export type SharedScheduleWindow = {
 	metered_factor: number;
 	/** 该切片上 bake 后的官方倍率；缺省按 1。 */
 	provider_factor: number;
+	provider_validity?: ProviderFactorValidity;
 	days?: number[];
 };
 
@@ -237,14 +245,18 @@ function parseWindowRow(row: unknown): DailyScheduleWindow | null {
 	return attachParsedDays(base, row as Record<string, unknown>);
 }
 
-function parseWindowArray(raw: unknown): DailyScheduleWindow[] {
+function parseWindowArray(raw: unknown, provider = false): ProviderScheduleWindow[] {
 	if (!Array.isArray(raw)) {
 		return [];
 	}
-	const out: DailyScheduleWindow[] = [];
+	const out: ProviderScheduleWindow[] = [];
 	for (const item of raw) {
 		const w = parseWindowRow(item);
 		if (w) {
+			if (provider && Object.prototype.hasOwnProperty.call(item, 'validity')) {
+				// Keep invalid data attached: runtime must disable this multiplier, not inherit another validity.
+				(w as ProviderScheduleWindow).validity = item.validity;
+			}
 			out.push(w);
 		}
 	}
@@ -276,7 +288,7 @@ export function parseRoutePricingSchedule(priceOverrideJson: string | null | und
 			mode: parseRoutePricingScheduleMode(s.mode),
 			charged: parseWindowArray(s.charged),
 			metered: parseWindowArray(s.metered),
-			provider: parseWindowArray(s.provider),
+			provider: parseWindowArray(s.provider, true),
 		};
 	} catch {
 		return { ...EMPTY_SCHEDULE };
@@ -345,6 +357,55 @@ function readOptionalIsoInstant(v: unknown): { iso: string | null; invalid: bool
 		return { iso: null, invalid: true };
 	}
 	return { iso: parsed.toISOString(), invalid: false };
+}
+
+type ProviderValidityResolution = Pick<
+	RouteBaseFactors,
+	'providerStartsAt' | 'providerExpiresAt' | 'providerWindowInvalid'
+>;
+
+/** A matched row can override the legacy route-wide validity, including with an unlimited {}. */
+export function resolveProviderFactorValidity(
+	bases: ProviderValidityResolution,
+	window: ProviderScheduleWindow | null
+): ProviderValidityResolution {
+	if (!window || !Object.prototype.hasOwnProperty.call(window, 'validity')) return bases;
+	return parseProviderFactorValidity(window.validity);
+}
+
+function parseProviderFactorValidity(raw: unknown): ProviderValidityResolution {
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+		return { providerStartsAt: null, providerExpiresAt: null, providerWindowInvalid: true };
+	}
+	const value = raw as Record<string, unknown>;
+	const start = readOptionalIsoInstant(value.starts_at);
+	const end = readOptionalIsoInstant(value.expires_at);
+	return {
+		providerStartsAt: start.iso,
+		providerExpiresAt: end.iso,
+		providerWindowInvalid:
+			start.invalid || end.invalid || Boolean(start.iso && end.iso && start.iso >= end.iso),
+	};
+}
+
+export function coerceProviderFactorValidity(
+	raw: unknown
+): { ok: true; validity: ProviderFactorValidity } | { ok: false; message: string } {
+	const resolved = parseProviderFactorValidity(raw);
+	if (resolved.providerWindowInvalid) {
+		return {
+			ok: false,
+			message:
+				'validity must be an object with optional valid starts_at / expires_at timestamps; start must be earlier than end',
+		};
+	}
+	return {
+		ok: true,
+		validity: {
+			...(resolved.providerStartsAt ? { starts_at: resolved.providerStartsAt } : {}),
+			...(resolved.providerExpiresAt ? { expires_at: resolved.providerExpiresAt } : {}),
+		},
+	};
 }
 
 /**
@@ -449,8 +510,8 @@ export function toProviderFactorAudit(provider: ProviderFactorResolution): Provi
 }
 
 /**
- * 一次解析路由三侧有效倍率。官方倍率不在有效期内时 `provider.effective` 为 1，
- * 分时窗口也不生效；`charged` / `metered` 仍按各自 base 与窗口计算，不含官方倍率。
+ * 一次解析路由三侧有效倍率。先选中供应商时段，再判定该行有效期；
+ * 有效期外 `provider.effective` 为 1，`charged` / `metered` 仍按各自 base 与窗口计算。
  * `chargedTotal` / `meteredTotal` 已乘上官方倍率，供扣费与成本直接使用。
  */
 export function resolveRouteEffectiveFactors(options: {
@@ -463,7 +524,8 @@ export function resolveRouteEffectiveFactors(options: {
 	const chargedSch = resolveDailyScheduleFactor(schedule.charged, options.nowUtc, options.timezone);
 	const meteredSch = resolveDailyScheduleFactor(schedule.metered, options.nowUtc, options.timezone);
 	const providerSch = resolveDailyScheduleFactor(schedule.provider, options.nowUtc, options.timezone);
-	const active = isProviderFactorActive(bases, options.nowUtc);
+	const validity = resolveProviderFactorValidity(bases, providerSch.window);
+	const active = isProviderFactorActive(validity, options.nowUtc);
 	const chargedEffective = resolveEffectiveRouteFactor(bases.chargedFactor, chargedSch, schedule.mode);
 	const meteredEffective = resolveEffectiveRouteFactor(bases.meteredFactor, meteredSch, schedule.mode);
 	const providerEffective = active
@@ -476,8 +538,8 @@ export function resolveRouteEffectiveFactors(options: {
 			schedule: providerSch,
 			effective: providerEffective,
 			active,
-			startsAt: bases.providerStartsAt,
-			expiresAt: bases.providerExpiresAt,
+			startsAt: validity.providerStartsAt,
+			expiresAt: validity.providerExpiresAt,
 		},
 		charged: {
 			base: bases.chargedFactor,
@@ -637,9 +699,7 @@ const WINDOW_SHAPE_HINT =
  */
 export function coerceRoutePricingScheduleInput(
 	raw: unknown
-):
-	| { ok: true; schedule: RoutePricingSchedule; persistMode: boolean }
-	| { ok: false; message: string } {
+): { ok: true; schedule: RoutePricingSchedule; persistMode: boolean } | { ok: false; message: string } {
 	if (raw === undefined || raw === null) {
 		return { ok: true, schedule: { ...EMPTY_SCHEDULE }, persistMode: false };
 	}
@@ -659,7 +719,9 @@ export function coerceRoutePricingScheduleInput(
 			return { ok: false, message: 'price_override.schedule.mode must be "override" or "multiply"' };
 		}
 	}
-	const coerceSide = (side: 'charged' | 'metered' | 'provider'): DailyScheduleWindow[] | { error: string } => {
+	const coerceSide = (
+		side: 'charged' | 'metered' | 'provider'
+	): ProviderScheduleWindow[] | { error: string } => {
 		const arr = o[side];
 		if (arr === undefined || arr === null) {
 			return [];
@@ -667,7 +729,7 @@ export function coerceRoutePricingScheduleInput(
 		if (!Array.isArray(arr)) {
 			return { error: `price_override.schedule.${side} must be an array` };
 		}
-		const windows: DailyScheduleWindow[] = [];
+		const windows: ProviderScheduleWindow[] = [];
 		for (let i = 0; i < arr.length; i++) {
 			const item = arr[i];
 			const base = parseWindowTimeAndFactor(item);
@@ -687,6 +749,15 @@ export function coerceRoutePricingScheduleInput(
 				windows.push(days ? { ...base, days } : base);
 			} else {
 				windows.push(base);
+			}
+			if (Object.prototype.hasOwnProperty.call(rec, 'validity')) {
+				if (side !== 'provider')
+					return {
+						error: `price_override.schedule.${side}[${i}]: validity is only supported on provider windows`,
+					};
+				const parsed = coerceProviderFactorValidity(rec.validity);
+				if (!parsed.ok) return { error: `price_override.schedule.provider[${i}]: ${parsed.message}` };
+				windows[windows.length - 1]!.validity = parsed.validity;
 			}
 		}
 		const overlapErr = findDailyWindowOverlap(windows);
@@ -788,6 +859,7 @@ type DayPiece = {
 	charged_factor: number;
 	metered_factor: number;
 	provider_factor: number;
+	provider_validity?: ProviderFactorValidity;
 };
 
 /**
@@ -803,7 +875,7 @@ export function mergeScheduleSidesToSharedWindows(
 		mode: RoutePricingScheduleMode;
 		chargedBase: number;
 		meteredBase: number;
-		provider?: DailyScheduleWindow[];
+		provider?: ProviderScheduleWindow[];
 		providerBase?: number;
 	}
 ): SharedScheduleWindow[] {
@@ -863,6 +935,7 @@ export function mergeScheduleSidesToSharedWindows(
 			options.mode,
 			providerBase
 		);
+		const validity = (hitWindowAt(provider, minutes, isoWeekday) as ProviderScheduleWindow | null)?.validity;
 		let t = a;
 		while (t < b) {
 			const dayStart = Math.floor(t / MINUTES_PER_DAY) * MINUTES_PER_DAY;
@@ -882,6 +955,7 @@ export function mergeScheduleSidesToSharedWindows(
 					charged_factor: chargedFactor,
 					metered_factor: meteredFactor,
 					provider_factor: providerFactor,
+					...(validity !== undefined ? { provider_validity: validity } : {}),
 				});
 			}
 			t = pieceEnd;
@@ -897,7 +971,8 @@ export function mergeScheduleSidesToSharedWindows(
 			last.end === row.start &&
 			last.charged_factor === row.charged_factor &&
 			last.metered_factor === row.metered_factor &&
-			last.provider_factor === row.provider_factor
+			last.provider_factor === row.provider_factor &&
+			providerValidityKey(last.provider_validity) === providerValidityKey(row.provider_validity)
 		) {
 			last.end = row.end;
 		} else {
@@ -913,7 +988,8 @@ export function mergeScheduleSidesToSharedWindows(
 		morning.end !== '24:00' &&
 		evening.charged_factor === morning.charged_factor &&
 		evening.metered_factor === morning.metered_factor &&
-		evening.provider_factor === morning.provider_factor;
+		evening.provider_factor === morning.provider_factor &&
+		providerValidityKey(evening.provider_validity) === providerValidityKey(morning.provider_validity);
 
 	const rejoined: DayPiece[] = [];
 	for (const row of mergedSameDay) {
@@ -942,7 +1018,8 @@ export function mergeScheduleSidesToSharedWindows(
 				g.end === row.end &&
 				g.charged_factor === row.charged_factor &&
 				g.metered_factor === row.metered_factor &&
-				g.provider_factor === row.provider_factor
+				g.provider_factor === row.provider_factor &&
+				providerValidityKey(g.provider_validity) === providerValidityKey(row.provider_validity)
 		);
 		if (existing) {
 			if (!existing.daysAcc.includes(row.isoWeekday)) {
@@ -955,6 +1032,7 @@ export function mergeScheduleSidesToSharedWindows(
 				charged_factor: row.charged_factor,
 				metered_factor: row.metered_factor,
 				provider_factor: row.provider_factor,
+				...(row.provider_validity !== undefined ? { provider_validity: row.provider_validity } : {}),
 				daysAcc: [row.isoWeekday],
 			});
 		}
@@ -968,12 +1046,19 @@ export function mergeScheduleSidesToSharedWindows(
 			charged_factor: g.charged_factor,
 			metered_factor: g.metered_factor,
 			provider_factor: g.provider_factor,
+			...(g.provider_validity !== undefined ? { provider_validity: g.provider_validity } : {}),
 		};
 		if (days.length < 7) {
 			out.days = days;
 		}
 		return out;
 	});
+}
+
+function providerValidityKey(validity: ProviderFactorValidity | undefined): string {
+	return validity === undefined
+		? 'inherit'
+		: JSON.stringify([validity?.starts_at ?? null, validity?.expires_at ?? null]);
 }
 
 function windowOverlapLabel(w: DailyScheduleWindow): string {

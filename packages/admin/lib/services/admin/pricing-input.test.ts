@@ -353,3 +353,46 @@ describe('coerceRoutePriceOverrideInput', () => {
 		);
 	});
 });
+
+describe('provider schedule validity API input', () => {
+	it('stores normalized validity and explicit unlimited', () => {
+		const window = { start: '09:00', end: '12:00', factor: 0.5, days: [1, 2, 3, 4, 5] };
+		for (const validity of [
+			{},
+			{ starts_at: '2026-10-01T08:00:00+08:00', expires_at: '2026-11-01T08:00:00+08:00' },
+		]) {
+			const saved = coerceRoutePriceOverrideInput({
+				schedule: {
+					mode: 'override',
+					charged: [window],
+					metered: [window],
+					provider: [{ ...window, validity }],
+				},
+			});
+			assert.ok(saved);
+			const result = JSON.parse(saved);
+			assert.deepEqual(
+				result.schedule.provider[0].validity,
+				'starts_at' in validity
+					? { starts_at: '2026-10-01T00:00:00.000Z', expires_at: '2026-11-01T00:00:00.000Z' }
+					: {}
+			);
+		}
+	});
+	it('rejects invalid or reversed validity instead of dropping it', () => {
+		for (const validity of [
+			null,
+			'invalid',
+			{ starts_at: 'bad' },
+			{ starts_at: '2026-11-01', expires_at: '2026-10-01' },
+		]) {
+			assert.throws(
+				() =>
+					coerceRoutePriceOverrideInput({
+						schedule: { provider: [{ start: '09:00', end: '12:00', factor: 0.5, validity }] },
+					}),
+				/validity/
+			);
+		}
+	});
+});

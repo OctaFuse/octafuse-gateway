@@ -91,6 +91,7 @@ export type RouteScheduleFormWindow = {
 	metered_factor: string;
 	/** 省略时保存按基础供应商倍率处理，不写 `schedule.provider`。 */
 	provider_factor?: string;
+	provider_validity?: import('@octafuse/core/db/pricing-schedule').ProviderFactorValidity;
 	/** ISO 1–7；空数组表示每天。 */
 	days: number[];
 };

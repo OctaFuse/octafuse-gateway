@@ -15,6 +15,9 @@ import {
 	parseRouteBaseFactors,
 	parseRoutePricingSchedule,
 	resolveEffectiveRouteFactor,
+	resolveProviderFactorValidity,
+	resolveRouteEffectiveFactors,
+	mergeScheduleSidesToSharedWindows,
 	windowCoversLocal,
 	effectiveIsoWeekdays,
 	type DailyScheduleWindow,
@@ -479,12 +482,19 @@ export function buildDisplayDiscountForRoute(options: {
 	} else if (schedule.charged.length > 0) {
 		sourceWindows = fillDailyScheduleGaps(schedule.charged);
 		catalogLookup = [];
-	} else if (providerActive && schedule.provider.length > 0) {
+	} else if (schedule.provider.length > 0) {
 		sourceWindows = fillDailyScheduleGaps(schedule.provider);
 		catalogLookup = [];
 	} else {
 		sourceWindows = [];
 		catalogLookup = [];
+	}
+	// Keep every pricing boundary, including independent provider periods within a catalog window.
+	if (schedule.provider.length > 0) {
+		sourceWindows = fillDailyScheduleGaps(mergeScheduleSidesToSharedWindows(catalogWindows, schedule.charged, {
+			mode: 'override', chargedBase: 1, meteredBase: mode === 'multiply' ? 1 : bases.chargedFactor,
+			provider: schedule.provider, providerBase: mode === 'multiply' ? 1 : bases.providerFactor,
+		}).map((w) => ({ start: w.start, end: w.end, days: w.days, factor: 1 })));
 	}
 
 	const routeFactorAt = (minutes: number, isoWeekday: number) =>
@@ -494,7 +504,9 @@ export function buildDisplayDiscountForRoute(options: {
 			mode,
 			baseCharged: bases.chargedFactor,
 			baseProvider: bases.providerFactor,
-			providerActive,
+			providerActive: isProviderFactorActive(resolveProviderFactorValidity(
+				bases, hitWindowAt(schedule.provider, minutes, isoWeekday),
+			), now),
 			minutes,
 			isoWeekday,
 		});
@@ -522,18 +534,16 @@ export function buildDisplayDiscountForRoute(options: {
 	const liveWeekday = formatLocalIsoWeekday(now, options.timezone);
 	const liveCatalog =
 		liveMinutes == null ? 1 : (hitWindowAt(catalogLookup, liveMinutes, liveWeekday)?.factor ?? 1);
-	const liveProvider = providerActive
-		? liveMinutes == null
-			? bases.providerFactor
-			: resolveSideFactorAt(schedule.provider, mode, bases.providerFactor, liveMinutes, liveWeekday)
-		: 1;
+	const liveProvider = resolveRouteEffectiveFactors({
+		priceOverrideJson: options.priceOverrideJson, nowUtc: now, timezone: options.timezone,
+	}).provider;
 	const providerFactor: DisplayDiscountProviderFactor | null = providerConfigured
 		? {
 				base: bases.providerFactor,
-				effective: normalizeScheduleFactor(liveProvider),
-				active: providerActive,
-				starts_at: bases.providerStartsAt,
-				expires_at: bases.providerExpiresAt,
+				effective: liveProvider.effective,
+				active: liveProvider.active,
+				starts_at: liveProvider.startsAt,
+				expires_at: liveProvider.expiresAt,
 			}
 		: null;
 	const liveRoute =

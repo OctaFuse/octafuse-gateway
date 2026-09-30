@@ -3,6 +3,11 @@
 import { useTranslations } from 'next-intl';
 import { getUserChargedCatalogTierRows, type CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
 import type { GatewayModel } from '@/lib/types';
+import {
+	isProviderFactorActive,
+	resolveProviderFactorValidity,
+	type ProviderFactorValidity,
+} from '@octafuse/core/db/pricing-schedule';
 
 function parseNonNegativeFactor(text: string): number | null {
 	const n = Number(text.trim());
@@ -86,6 +91,7 @@ export function ScheduleWindowEffectivePrices({
 	chargedFactorText,
 	meteredFactorText,
 	providerFactorText,
+	providerValidity,
 	billingCurrency,
 }: {
 	model: GatewayModel;
@@ -93,6 +99,7 @@ export function ScheduleWindowEffectivePrices({
 	chargedFactorText: string;
 	meteredFactorText: string;
 	providerFactorText?: string;
+	providerValidity?: ProviderFactorValidity;
 	billingCurrency: string;
 }) {
 	const t = useTranslations('routes.modal');
@@ -102,16 +109,22 @@ export function ScheduleWindowEffectivePrices({
 	const official = Number.isFinite(catalogFactor) && catalogFactor > 0 ? catalogFactor : 1;
 	const charged = parseNonNegativeFactor(chargedFactorText);
 	const metered = parseNonNegativeFactor(meteredFactorText);
-	const provider = parseNonNegativeFactor(providerFactorText ?? '') ?? 1;
+	const validity = resolveProviderFactorValidity(
+		{ providerStartsAt: null, providerExpiresAt: null, providerWindowInvalid: false },
+		{ start: '00:00', end: '24:00', factor: 1, validity: providerValidity ?? {} }
+	);
+	const provider = isProviderFactorActive(validity, new Date())
+		? parseNonNegativeFactor(providerFactorText ?? '') ?? 1
+		: 1;
 	const chargedRows = getUserChargedCatalogTierRows(
 		model,
 		charged == null ? null : official * charged * provider,
-		billingCurrency,
+		billingCurrency
 	);
 	const meteredRows = getUserChargedCatalogTierRows(
 		model,
 		metered == null ? null : official * metered * provider,
-		billingCurrency,
+		billingCurrency
 	);
 	const showRange = chargedRows.length > 1 || meteredRows.length > 1;
 
@@ -121,9 +134,7 @@ export function ScheduleWindowEffectivePrices({
 				<thead className="bg-gray-50 text-[10px] font-semibold tracking-wide text-gray-500">
 					<tr>
 						<th className="whitespace-nowrap px-2 py-1">{t('scheduleWindowPricesSide')}</th>
-						{showRange ? (
-							<th className="whitespace-nowrap px-2 py-1">{tTable('inputRange')}</th>
-						) : null}
+						{showRange ? <th className="whitespace-nowrap px-2 py-1">{tTable('inputRange')}</th> : null}
 						<th className="whitespace-nowrap px-2 py-1 text-right">{tTable('input')}</th>
 						<th className="whitespace-nowrap px-2 py-1 text-right">{tTable('output')}</th>
 						<th className="whitespace-nowrap px-2 py-1 text-right">{tTable('cacheRead')}</th>

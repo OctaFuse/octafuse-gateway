@@ -46,6 +46,7 @@ import {
 } from '@octafuse/core/adapters/registry';
 import {
 	findDailyWindowOverlap,
+	coerceProviderFactorValidity,
 	isProviderFactorActive,
 	formatIsoWeekdaysHint,
 	mergeScheduleSidesToSharedWindows,
@@ -54,7 +55,9 @@ import {
 	parseHhMmToMinutes,
 	parseRouteBaseFactors,
 	parseRoutePricingSchedule,
+	resolveProviderFactorValidity,
 	scheduleWindowKey,
+	type ProviderFactorValidity,
 	type DailyScheduleWindow,
 	type SharedScheduleWindow,
 } from '@octafuse/core/db/pricing-schedule';
@@ -502,6 +505,45 @@ function parseNonNegativeFactorText(text: string, fieldLabel: string): number {
 	return n;
 }
 
+/** Preview each row's factors at the current date, before the catalog multiplier. */
+export function previewRouteBillingFactors(
+	factors: Pick<RouteFormData, 'charged_factor' | 'metered_factor' | 'provider_factor'>,
+	validity: ProviderFactorValidity,
+	now: Date,
+	scheduled = false
+): { charged: number | null; metered: number | null; provider: number | null; providerInactive: boolean } {
+	const resolved = resolveProviderFactorValidity(
+		{ providerStartsAt: null, providerExpiresAt: null, providerWindowInvalid: false },
+		{ start: '00:00', end: '24:00', factor: 1, validity }
+	);
+	const parse = (value: string, requireValue: boolean) => {
+		if (requireValue && !value.trim()) return null;
+		try {
+			return parseNonNegativeFactorText(value, 'Factor');
+		} catch {
+			return null;
+		}
+	};
+	const providerInactive = !isProviderFactorActive(resolved, now);
+	const provider = resolved.providerWindowInvalid
+		? null
+		: providerInactive
+		? 1
+		: parse(factors.provider_factor, false);
+	const combine = (value: string) => {
+		const factor = parse(value, scheduled);
+		if (provider == null || factor == null) return null;
+		const product = provider * factor;
+		return Number.isFinite(product) ? Number(product.toPrecision(12)) : null;
+	};
+	return {
+		charged: combine(factors.charged_factor),
+		metered: combine(factors.metered_factor),
+		provider,
+		providerInactive,
+	};
+}
+
 function parseSharedWindowFactor(text: string, fieldLabel: string, index: number): number {
 	const factor = text.trim() === '' ? Number.NaN : Number(text.trim());
 	if (!Number.isFinite(factor) || factor < 0) {
@@ -520,6 +562,14 @@ function parseOptionalIsoTimestamp(text: string | undefined, fieldLabel: string)
 		throw new Error(`${fieldLabel} must be an ISO-8601 timestamp`);
 	}
 	return parsed.toISOString();
+}
+
+/** Materialize legacy inherited dates before editing, so each visible row is independent. */
+export function independentProviderWindows(form: RouteFormData, windows: RouteScheduleFormWindow[]) {
+	return windows.map((w) => ({ ...w, provider_validity: w.provider_validity ?? {
+		...(form.provider_factor_starts_at ? { starts_at: form.provider_factor_starts_at } : {}),
+		...(form.provider_factor_expires_at ? { expires_at: form.provider_factor_expires_at } : {}),
+	} }));
 }
 
 export function buildRoutePriceOverride(formData: RouteFormData): Record<string, unknown> {
@@ -546,13 +596,20 @@ export function buildRoutePriceOverride(formData: RouteFormData): Record<string,
 		priceOverride.provider_factor_expires_at = expiresAt;
 	}
 	if (scheduleWindows.length > 0) {
-		const providerSide = scheduleWindows.some((w) => w.provider_factor !== providerFactor);
+		const providerSide = scheduleWindows.some(
+			(w) => w.provider_factor !== providerFactor || w.provider_validity !== undefined
+		);
 		priceOverride.schedule = {
 			mode: 'override',
 			charged: scheduleWindows.map((w) => persistScheduleSideWindow(w, w.charged_factor)),
 			metered: scheduleWindows.map((w) => persistScheduleSideWindow(w, w.metered_factor)),
 			...(providerSide
-				? { provider: scheduleWindows.map((w) => persistScheduleSideWindow(w, w.provider_factor)) }
+				? {
+						provider: scheduleWindows.map((w) => ({
+							...persistScheduleSideWindow(w, w.provider_factor),
+							...(w.provider_validity !== undefined ? { validity: w.provider_validity } : {}),
+						})),
+				  }
 				: {}),
 		};
 	}
@@ -623,6 +680,9 @@ function validateSharedScheduleWindows(
 			);
 		}
 		const days = parseFormScheduleDays(w.days, i);
+		const validity =
+			w.provider_validity === undefined ? undefined : coerceProviderFactorValidity(w.provider_validity);
+		if (validity && !validity.ok) throw new Error(`Schedule window ${i + 1}: ${validity.message}`);
 		cleaned.push({
 			start,
 			end,
@@ -633,6 +693,7 @@ function validateSharedScheduleWindows(
 					? providerFallback
 					: parseSharedWindowFactor(w.provider_factor, 'Provider factor', i),
 			...(days ? { days } : {}),
+			...(validity?.ok ? { provider_validity: validity.validity } : {}),
 		});
 	}
 	const overlap = findDailyWindowOverlap(
@@ -673,6 +734,7 @@ export function alignRouteScheduleWindowsToCatalog(
 			charged_factor: prev?.charged_factor ?? defaultFactor,
 			metered_factor: prev?.metered_factor ?? defaultFactor,
 			provider_factor: prev?.provider_factor ?? defaultProviderFactor,
+			...(prev?.provider_validity !== undefined ? { provider_validity: { ...prev.provider_validity } } : {}),
 		};
 	});
 }
@@ -758,15 +820,52 @@ export function routeHasCustomParamsForceOverride(raw: string | null | undefined
 
 export function buildFormDataFromRoute(route: GatewayModelRoute, models: GatewayModel[]): RouteFormData {
 	const factors = parseRouteBaseFactors(route.price_override ?? null);
+	const schedule = parseRoutePricingSchedule(route.price_override);
 	const existingWindows = resolveRouteScheduleDisplay(route.price_override).map((w) => ({
 		start: w.start,
 		end: w.end,
 		charged_factor: formatScheduleFactorText(w.charged_factor),
 		metered_factor: formatScheduleFactorText(w.metered_factor),
 		provider_factor: formatScheduleFactorText(w.provider_factor),
+		...(w.provider_validity !== undefined
+			? { provider_validity: { ...w.provider_validity } }
+			: factors.providerStartsAt || factors.providerExpiresAt
+			? {
+					provider_validity: {
+						...(factors.providerStartsAt ? { starts_at: factors.providerStartsAt } : {}),
+						...(factors.providerExpiresAt ? { expires_at: factors.providerExpiresAt } : {}),
+					},
+			  }
+			: {}),
 		days: w.days ?? [],
 	}));
 	const catalog = catalogScheduleWindowsFromModel(models.find((m) => m.id === route.model_id));
+	const alignedWindows = alignRouteScheduleWindowsToCatalog(
+		catalog,
+		existingWindows,
+		'1',
+		String(factors.providerFactor)
+	);
+	// Display merging may combine adjacent equal-rate rows. Restore exact catalog rows when editing,
+	// including their independent validity, instead of replacing them with default multipliers.
+	if (catalog.length > 0) {
+		for (const window of alignedWindows) {
+			const key = scheduleWindowKey(window);
+			for (const [side, base] of [
+				['charged', factors.chargedFactor],
+				['metered', factors.meteredFactor],
+				['provider', factors.providerFactor],
+			] as const) {
+				const match = schedule[side].find((w) => scheduleWindowKey(w) === key);
+				if (match)
+					window[`${side}_factor`] = formatScheduleFactorText(
+						match.factor * (schedule.mode === 'multiply' ? base : 1)
+					);
+			}
+			const provider = schedule.provider.find((w) => scheduleWindowKey(w) === key);
+			if (provider?.validity !== undefined) window.provider_validity = { ...provider.validity };
+		}
+	}
 	return {
 		model_id: route.model_id,
 		provider_id: route.provider_id,
@@ -794,12 +893,7 @@ export function buildFormDataFromRoute(route: GatewayModelRoute, models: Gateway
 		provider_factor: String(factors.providerFactor),
 		provider_factor_starts_at: factors.providerStartsAt ?? '',
 		provider_factor_expires_at: factors.providerExpiresAt ?? '',
-		schedule_windows: alignRouteScheduleWindowsToCatalog(
-			catalog,
-			existingWindows,
-			'1',
-			String(factors.providerFactor),
-		),
+		schedule_windows: alignedWindows,
 	};
 }
 
@@ -1561,25 +1655,35 @@ export type ProviderFactorTiming = 'scheduled' | 'active' | 'expired';
 export function providerFactorTiming(
 	priceOverride: string | null | undefined,
 	now: Date = new Date(),
+	window?: SharedScheduleWindow
 ): ProviderFactorTiming | null {
 	const factors = parseRouteBaseFactors(priceOverride ?? null);
-	const schedule = parseRoutePricingSchedule(priceOverride ?? null);
+	const validity = resolveProviderFactorValidity(
+		factors,
+		window
+			? {
+					start: window.start,
+					end: window.end,
+					factor: window.provider_factor,
+					...(window.provider_validity !== undefined ? { validity: window.provider_validity } : {}),
+			  }
+			: null
+	);
 	const configured =
-		factors.providerFactor !== 1 ||
-		factors.providerStartsAt != null ||
-		factors.providerExpiresAt != null ||
-		factors.providerWindowInvalid ||
-		schedule.provider.length > 0;
+		(window?.provider_factor ?? factors.providerFactor) !== 1 ||
+		validity.providerStartsAt != null ||
+		validity.providerExpiresAt != null ||
+		validity.providerWindowInvalid;
 	if (!configured) {
 		return null;
 	}
-	if (factors.providerWindowInvalid) {
+	if (validity.providerWindowInvalid) {
 		return 'expired';
 	}
-	if (isProviderFactorActive(factors, now)) {
+	if (isProviderFactorActive(validity, now)) {
 		return 'active';
 	}
-	if (factors.providerStartsAt != null && Date.parse(factors.providerStartsAt) > now.getTime()) {
+	if (validity.providerStartsAt != null && Date.parse(validity.providerStartsAt) > now.getTime()) {
 		return 'scheduled';
 	}
 	return 'expired';
