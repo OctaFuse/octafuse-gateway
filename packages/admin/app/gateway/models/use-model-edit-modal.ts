@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
 import {
@@ -29,6 +29,7 @@ import {
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { deleteModel, fetchModelDetail, saveModel } from './model-api';
+import { modelFormForDuplicate } from './model-duplicate';
 import { formatMetadataForEditor } from './model-utils';
 import {
 	EMPTY_AUDIO_MODEL_FORM,
@@ -68,8 +69,10 @@ export function useModelEditModal(options?: Options) {
 	const tCommon = useTranslations('common');
 	const { notify, confirm } = useFeedback();
 	const { currency: billingCurrency } = useBillingCurrency();
+	const editLoadGenRef = useRef(0);
 	const [showModal, setShowModal] = useState(false);
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
+	const [duplicateSourceModelId, setDuplicateSourceModelId] = useState<string | null>(null);
 	const [formData, setFormData] = useState<ModelFormData>(EMPTY_MODEL_FORM);
 	const [formKind, setFormKind] = useState<ModelFormKind>('llm');
 	const [pricingTierRows, setPricingTierRows] = useState<PricingTierDraftRow[]>([]);
@@ -133,7 +136,9 @@ export function useModelEditModal(options?: Options) {
 
 	const handleCreate = useCallback(
 		(presetVendorKey?: string, kind: ModelFormKind = 'llm') => {
+			editLoadGenRef.current += 1;
 			setEditingModel(null);
+			setDuplicateSourceModelId(null);
 			setFormKind(kind);
 			const vendor = presetVendorKey !== undefined ? presetVendorKey : EMPTY_MODEL_FORM.vendor;
 			if (kind === 'image') {
@@ -248,31 +253,57 @@ export function useModelEditModal(options?: Options) {
 
 	const handleEdit = useCallback(
 		async (model: ModelListItem) => {
+			const loadGen = ++editLoadGenRef.current;
+			setDuplicateSourceModelId(null);
 			setEditingModel(model);
 			fillFormFromModel(model);
 			try {
 				const fullModel = await fetchModelDetail(model.id);
+				if (editLoadGenRef.current !== loadGen) return;
 				setEditingModel(fullModel);
 				fillFormFromModel(fullModel);
 			} catch (error) {
+				if (editLoadGenRef.current !== loadGen) return;
 				console.error('Fetch model details error:', error);
 			}
+			if (editLoadGenRef.current !== loadGen) return;
 			setShowModal(true);
 			setSaveError('');
 		},
 		[fillFormFromModel]
 	);
 
+	const handleDuplicate = useCallback(() => {
+		if (!editingModel) return;
+		editLoadGenRef.current += 1;
+		const sourceId = editingModel.id;
+		setDuplicateSourceModelId(sourceId);
+		setEditingModel(null);
+		setFormData((current) =>
+			modelFormForDuplicate(current, (name) => tModal('copyDisplayName', { name }))
+		);
+		setPricingTierRows((rows) => structuredClone(rows));
+		setCatalogScheduleWindows((windows) => structuredClone(windows));
+		setImagePerImageDraft((draft) => structuredClone(draft));
+		setAudioPricingDraft((draft) => structuredClone(draft));
+		setTagInput('');
+		setSaveError('');
+	}, [editingModel, tModal]);
+
 	/** Routes 等场景：仅有 model id 时拉取详情并打开弹窗。 */
 	const openEditById = useCallback(
 		async (modelId: string) => {
+			const loadGen = ++editLoadGenRef.current;
+			setDuplicateSourceModelId(null);
 			setSaveError('');
 			try {
 				const fullModel = await fetchModelDetail(modelId);
+				if (editLoadGenRef.current !== loadGen) return;
 				setEditingModel(fullModel);
 				fillFormFromModel(fullModel);
 				setShowModal(true);
 			} catch (error) {
+				if (editLoadGenRef.current !== loadGen) return;
 				console.error('Fetch model details error:', error);
 				notify('error', tCommon('failedToLoadModels'));
 			}
@@ -296,6 +327,7 @@ export function useModelEditModal(options?: Options) {
 				if (result.success) {
 					setShowModal(false);
 					setEditingModel(null);
+					setDuplicateSourceModelId(null);
 					await onChanged?.();
 				} else {
 					notify('error', result.message || tCommon('failed'));
@@ -399,6 +431,8 @@ export function useModelEditModal(options?: Options) {
 			);
 			if (result.success) {
 				setShowModal(false);
+				setEditingModel(null);
+				setDuplicateSourceModelId(null);
 				await onChanged?.();
 			} else {
 				setSaveError(result.message);
@@ -430,6 +464,7 @@ export function useModelEditModal(options?: Options) {
 		billingCurrency,
 		showModal,
 		editingModel,
+		duplicateSourceModelId,
 		formData,
 		setFormData,
 		formKind,
@@ -451,6 +486,7 @@ export function useModelEditModal(options?: Options) {
 		handleCreate,
 		applyFormKind,
 		handleEdit,
+		handleDuplicate,
 		openEditById,
 		handleDelete,
 		handleAddTag,

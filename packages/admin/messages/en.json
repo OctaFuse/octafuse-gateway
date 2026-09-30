@@ -624,6 +624,8 @@
 		"modal": {
 			"editTitle": "Edit Model",
 			"newTitle": "New Model",
+			"prefilledFrom": "Pre-filled from {id}. Model ID has a -copy suffix; review it before saving.",
+			"copyDisplayName": "{name} (copy)",
 			"kind": "Kind",
 			"kindLlm": "LLM",
 			"kindImage": "Image",

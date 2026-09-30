@@ -275,6 +275,7 @@ function RoutesContent() {
 			<ModelModal
 				open={state.modelEdit.showModal}
 				editingModel={state.modelEdit.editingModel}
+				duplicateSourceModelId={state.modelEdit.duplicateSourceModelId}
 				formData={state.modelEdit.formData}
 				formKind={state.modelEdit.formKind}
 				pricingTierRows={state.modelEdit.pricingTierRows}
@@ -301,6 +302,7 @@ function RoutesContent() {
 				onKindChange={state.modelEdit.applyFormKind}
 				onSave={() => void state.modelEdit.handleSave()}
 				onDelete={(id) => void state.modelEdit.handleDelete(id)}
+				onDuplicate={state.modelEdit.handleDuplicate}
 			/>
 
 			{state.strategyDialog && (

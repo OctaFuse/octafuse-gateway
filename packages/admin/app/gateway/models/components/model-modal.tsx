@@ -2,7 +2,7 @@
 
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useMemo, useState } from 'react';
-import { CodeBracketIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { CodeBracketIcon, DocumentDuplicateIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
 import {
@@ -31,6 +31,7 @@ import type { ModelFormData, ModelFormKind, ModelListItem } from '../types';
 type Props = {
 	open: boolean;
 	editingModel: ModelListItem | null;
+	duplicateSourceModelId: string | null;
 	formData: ModelFormData;
 	/** 当前 Kind（含 audio；由父级 formKind 驱动，避免仅靠 modalities 误判） */
 	formKind: ModelFormKind;
@@ -59,12 +60,14 @@ type Props = {
 	onKindChange: (kind: ModelFormKind) => void;
 	onSave: () => void;
 	onDelete: (id: string) => void;
+	onDuplicate: () => void;
 };
 
 export function ModelModal(props: Props) {
 	const {
 		open,
 		editingModel,
+		duplicateSourceModelId,
 		formData,
 		formKind,
 		pricingTierRows,
@@ -91,6 +94,7 @@ export function ModelModal(props: Props) {
 		onKindChange,
 		onSave,
 		onDelete,
+		onDuplicate,
 	} = props;
 
 	const t = useTranslations('models.modal');
@@ -182,9 +186,16 @@ export function ModelModal(props: Props) {
 		>
 			<div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5">
 				<div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4">
-					<h2 className="text-lg font-semibold text-gray-900">
-						{editingModel ? t('editTitle') : t('newTitle')}
-					</h2>
+					<div>
+						<h2 className="text-lg font-semibold text-gray-900">
+							{editingModel ? t('editTitle') : t('newTitle')}
+						</h2>
+						{!editingModel && duplicateSourceModelId ? (
+							<p className="mt-1 text-xs text-gray-500">
+								{t('prefilledFrom', { id: duplicateSourceModelId })}
+							</p>
+						) : null}
+					</div>
 					<button
 						type="button"
 						onClick={onClose}
@@ -287,6 +298,7 @@ export function ModelModal(props: Props) {
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">{t('modelIdRequired')}</label>
 							<input
+								key={duplicateSourceModelId ?? 'model-id'}
 								type="text"
 								value={formData.id}
 								onChange={(e) => onFormChange({ ...formData, id: e.target.value })}
@@ -294,6 +306,7 @@ export function ModelModal(props: Props) {
 								placeholder={t('modelIdPlaceholder')}
 								required
 								disabled={!!editingModel}
+								autoFocus={Boolean(duplicateSourceModelId) && !editingModel}
 							/>
 						</div>
 						<div>
@@ -911,6 +924,17 @@ export function ModelModal(props: Props) {
 						>
 							{tCommon('cancel')}
 						</button>
+						{editingModel ? (
+							<button
+								type="button"
+								onClick={onDuplicate}
+								disabled={isSaving || isDeleting}
+								className="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								<DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
+								{tCommon('duplicate')}
+							</button>
+						) : null}
 						<button
 							type="button"
 							onClick={onSave}

@@ -89,6 +89,7 @@ function ModelsContent() {
 			<ModelModal
 				open={state.showModal}
 				editingModel={state.editingModel}
+				duplicateSourceModelId={state.duplicateSourceModelId}
 				formData={state.formData}
 				formKind={state.formKind}
 				pricingTierRows={state.pricingTierRows}
@@ -115,6 +116,7 @@ function ModelsContent() {
 				onKindChange={state.applyFormKind}
 				onSave={state.handleSave}
 				onDelete={state.handleDelete}
+				onDuplicate={state.handleDuplicate}
 			/>
 
 			<ModelImportModal
