@@ -2500,5 +2500,27 @@
 		"cost": "Cost: {amount}",
 		"providerLabel": "Provider: {id}",
 		"stdMetered": "Standard {std} · Metered {metered}"
+	},
+	"modelTest": {
+		"request": "Request",
+		"requestBody": "JSON request body",
+		"template": "Test template",
+		"custom": "Custom request",
+		"streaming": "Streaming",
+		"actualRequest": "Actual request",
+		"preview": "Preview",
+		"sent": "Sent",
+		"headers": "Headers",
+		"result": "Result preview",
+		"tools": "Tool calls",
+		"toolHint": "Displays model-generated calls and arguments; tools are not executed.",
+		"upstreamError": "Upstream error",
+		"receiving": "Receiving response…",
+		"interrupted": "Request interrupted; received content is retained.",
+		"finished": "Response complete",
+		"noParts": "No readable content; inspect the stream data below.",
+		"streamData": "Stream data",
+		"events": "{count} data events",
+		"followHint": "Updates with the preview. Scroll up to pause following."
 	}
 }

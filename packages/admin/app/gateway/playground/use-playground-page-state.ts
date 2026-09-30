@@ -17,14 +17,15 @@ import {
 	type ImageOperation,
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
-import {
-	inferPlaygroundParseMode,
-	mergeAssistantTextParts,
-	type PlaygroundProtocol,
-} from '@/lib/playground/merge-assistant-text';
+import { inferPlaygroundParseMode, type PlaygroundProtocol } from '@/lib/playground/merge-assistant-text';
 import { previewPlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
 import { observePlaygroundResponse } from '@/lib/playground/response-observations';
-import { normalizeProtocol, parseLastStreamUsage, tryParseUsageSummary } from '@/lib/playground/usage-parsing';
+import { previewPlaygroundResponse, readPlaygroundTextStream } from '@/lib/playground/response-preview';
+import {
+	normalizeProtocol,
+	parseLastStreamUsage,
+	tryParseUsageSummary,
+} from '@/lib/playground/usage-parsing';
 import {
 	dashScopeRealtimeAudioContentType,
 	defaultAudioInputModeForDashScopeOperation,
@@ -51,7 +52,14 @@ import {
 } from './playground-utils';
 import { decodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
 import { liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
-import type { FilterOption, GeminiAction, PlaygroundMode, ResponseMeta, ResponseTab, RouteListRow } from './types';
+import type {
+	FilterOption,
+	GeminiAction,
+	PlaygroundMode,
+	ResponseMeta,
+	ResponseTab,
+	RouteListRow,
+} from './types';
 
 function isAbortError(error: unknown): boolean {
 	return (
@@ -102,6 +110,7 @@ export function usePlaygroundPageState() {
 	const appliedDeepLinkRef = useRef(false);
 
 	const [sending, setSending] = useState(false);
+	const [interrupted, setInterrupted] = useState(false);
 	const [responseMeta, setResponseMeta] = useState<ResponseMeta | null>(null);
 	const [responseText, setResponseText] = useState('');
 	const [responseProtocol, setResponseProtocol] = useState<PlaygroundProtocol>('openai');
@@ -147,11 +156,15 @@ export function usePlaygroundPageState() {
 
 	const selectedImageUpstreamProtocol = normalizeProtocol(selected?.upstream_protocol ?? 'openai');
 	const imageSendBlocked =
-		selectedIsImage && selectedImageUpstreamProtocol !== 'openai' && selectedImageUpstreamProtocol !== 'dashscope';
+		selectedIsImage &&
+		selectedImageUpstreamProtocol !== 'openai' &&
+		selectedImageUpstreamProtocol !== 'dashscope';
 	const selectedImageUsesDashScope = selectedIsImage && selectedImageUpstreamProtocol === 'dashscope';
 	const selectedAudioUpstreamProtocol = (selected?.upstream_protocol ?? 'openai').trim().toLowerCase();
 	const audioSendBlocked =
-		selectedIsAudio && selectedAudioUpstreamProtocol !== 'openai' && selectedAudioUpstreamProtocol !== 'dashscope';
+		selectedIsAudio &&
+		selectedAudioUpstreamProtocol !== 'openai' &&
+		selectedAudioUpstreamProtocol !== 'dashscope';
 	const selectedAudioUsesDashScope = selectedIsAudio && selectedAudioUpstreamProtocol === 'dashscope';
 	const selectedUsesDashScopeRealtime = selectedDashScopeRealtimeOperation != null;
 	const selectedCanUseMicrophone =
@@ -159,7 +172,10 @@ export function usePlaygroundPageState() {
 	const selectedNeedsAudioFile =
 		selectedIsAudioTranscription &&
 		selected?.adapter !== 'dashscope-asr-file-async' &&
-		!(selected?.adapter === 'passthrough' && selected?.upstream_operation === 'audio.transcriptions.multimodal') &&
+		!(
+			selected?.adapter === 'passthrough' &&
+			selected?.upstream_operation === 'audio.transcriptions.multimodal'
+		) &&
 		(!selectedCanUseMicrophone || audioInputMode === 'file');
 
 	const previewUpstreamUrl = useMemo(() => {
@@ -176,15 +192,22 @@ export function usePlaygroundPageState() {
 		});
 	}, [selected, providersById, selectedIsImage, selectedIsAudio, imageOperation, geminiAction]);
 
-	const requestTargetUrl = responseMeta?.upstreamUrl ?? previewUpstreamUrl;
+	const requestFingerprint = JSON.stringify([selectedId, bodyText, geminiAction, imageOperation]);
+	const requestTargetUrl =
+		lastSentInputSnapshot === requestFingerprint
+			? responseMeta?.upstreamUrl ?? previewUpstreamUrl
+			: previewUpstreamUrl;
 
-	const mergedAssistantParts = useMemo(() => {
-		const mode = inferPlaygroundParseMode(responseMeta?.contentType ?? null);
-		if (!responseText.trim() || !mode) {
-			return { reasoning: '', body: '' };
-		}
-		return mergeAssistantTextParts(responseText, responseProtocol, mode);
-	}, [responseText, responseProtocol, responseMeta?.contentType]);
+	const mergedAssistantParts = useMemo(
+		() =>
+			previewPlaygroundResponse(
+				responseText,
+				responseProtocol,
+				responseMeta?.contentType ?? null,
+				!sending && !interrupted,
+			),
+		[responseText, responseProtocol, responseMeta?.contentType, sending, interrupted],
+	);
 
 	const observationTags = useMemo(() => {
 		if (selectedIsImage || selectedIsAudio) return [];
@@ -295,7 +318,7 @@ export function usePlaygroundPageState() {
 			if (provider) return liveProviderPickerLabel(provider, locale, tKind('custom'), route.provider_id);
 			return (route.provider_name ?? '').trim() || route.provider_id;
 		},
-		[providersById, locale, tKind]
+		[providersById, locale, tKind],
 	);
 
 	useEffect(() => {
@@ -330,6 +353,7 @@ export function usePlaygroundPageState() {
 
 	const setBodyText = useCallback((value: string) => {
 		setBodyTextState(value);
+		setBodyError(null);
 		setBodyDirtyHint(false);
 	}, []);
 
@@ -476,30 +500,30 @@ export function usePlaygroundPageState() {
 	}, []);
 
 	const stop = useCallback(() => {
+		setInterrupted(true);
 		abortRef.current?.abort();
-		abortRef.current = null;
 		if (realtimeRef.current) {
 			stopDashScopeRealtimeClient(realtimeRef.current);
 			realtimeRef.current = null;
 		}
-		setSending(false);
+		if (!abortRef.current) setSending(false);
 	}, []);
 
 	const sendBlockedHint = !selected
 		? tCommon('selectRouteFirst')
 		: imageSendBlocked
-			? t('imageOpenaiOnly')
-			: audioSendBlocked
-				? t('audioOpenaiOnly')
-				: selectedNeedsAudioFile && !validateAudioTranscriptionFile(audioFile).ok
-					? t('audioFileRequired')
-					: selectedIsImage &&
-						  !selectedIsAudio &&
-						  !selectedImageUsesDashScope &&
-						  imageOperation === 'edits' &&
-						  !validateEditImageFiles(editFiles).ok
-						? t('referenceImagesRequired')
-						: null;
+		? t('imageOpenaiOnly')
+		: audioSendBlocked
+		? t('audioOpenaiOnly')
+		: selectedNeedsAudioFile && !validateAudioTranscriptionFile(audioFile).ok
+		? t('audioFileRequired')
+		: selectedIsImage &&
+		  !selectedIsAudio &&
+		  !selectedImageUsesDashScope &&
+		  imageOperation === 'edits' &&
+		  !validateEditImageFiles(editFiles).ok
+		? t('referenceImagesRequired')
+		: null;
 
 	const canSend = !sending && sendBlockedHint == null;
 
@@ -534,8 +558,7 @@ export function usePlaygroundPageState() {
 			selectedIsAudio &&
 			!isRealtime &&
 			(selectedAudioUpstreamProtocol === 'openai' || selectedAudioUpstreamProtocol === 'dashscope');
-		const useImages =
-			selectedIsImage && !selectedIsAudio && (proto === 'openai' || proto === 'dashscope');
+		const useImages = selectedIsImage && !selectedIsAudio && (proto === 'openai' || proto === 'dashscope');
 		const effectiveImageOp: ImageOperation | undefined = useImages
 			? proto === 'dashscope'
 				? 'generations'
@@ -590,6 +613,7 @@ export function usePlaygroundPageState() {
 		}
 
 		setBodyError(null);
+		setInterrupted(false);
 		setSending(true);
 		setResponseText('');
 		setUsageHint(null);
@@ -619,7 +643,7 @@ export function usePlaygroundPageState() {
 			setLastSentWireBody(
 				realtimePreview.status === 'preview' ? realtimePreview.json : JSON.stringify(bodyObj, null, 2),
 			);
-			setLastSentInputSnapshot(bodyText);
+			setLastSentInputSnapshot(requestFingerprint);
 			const waitingText = t('realtimeWaitingTaskStarted');
 			setResponseText(waitingText);
 			try {
@@ -639,7 +663,8 @@ export function usePlaygroundPageState() {
 						setResponseText(waitingText);
 					},
 					onMessage: (message) => {
-						const text = typeof message === 'string' ? message : `[binary frame: ${message.byteLength} bytes]`;
+						const text =
+							typeof message === 'string' ? message : `[binary frame: ${message.byteLength} bytes]`;
 						setResponseText((previous) =>
 							!previous || previous === waitingText ? text : `${previous}\n${text}`,
 						);
@@ -710,13 +735,14 @@ export function usePlaygroundPageState() {
 				signal: ac.signal,
 			});
 
+			if (abortRef.current !== ac) return;
 			const latencyMs = res.headers.get('x-playground-latency-ms');
 			const upstreamUrl = res.headers.get('x-playground-upstream-url');
 			const ct = res.headers.get('Content-Type') ?? '';
 
 			setLastSentWireBody(decodeWireRequestBodyHeader(res, t('decodeWireFailed')));
 			setLastSentWireHeaders(decodePlaygroundRequestHeadersHeader(res));
-			setLastSentInputSnapshot(bodyText);
+			setLastSentInputSnapshot(requestFingerprint);
 
 			setResponseMeta({
 				status: res.status,
@@ -758,7 +784,10 @@ export function usePlaygroundPageState() {
 					if (!msg) msg = tCommon('requestFailed');
 					setBodyError(msg);
 				} else if (useImages) {
-					const parsedImg = parseImagesGenerationsResponse(JSON.stringify(j), imageRequestMetaFromBody(bodyObj));
+					const parsedImg = parseImagesGenerationsResponse(
+						JSON.stringify(j),
+						imageRequestMetaFromBody(bodyObj),
+					);
 					setImagePreviews(parsedImg.images);
 					setUsageHint(parsedImg.usageHint);
 				} else {
@@ -769,31 +798,14 @@ export function usePlaygroundPageState() {
 				return;
 			}
 
-			if (ct.includes('text/event-stream') && res.body) {
-				const reader = res.body.getReader();
-				const dec = new TextDecoder();
-				let acc = '';
-				while (true) {
-					if (ac.signal.aborted) {
-						await reader.cancel();
-						break;
-					}
-					const { done, value } = await reader.read();
-					if (done) break;
-					acc += dec.decode(value, { stream: true });
-					flushSync(() => {
-						setResponseText(acc);
-					});
+			const streamMode = inferPlaygroundParseMode(ct);
+			if ((streamMode === 'sse' || streamMode === 'ndjson') && res.body) {
+				const acc = await readPlaygroundTextStream(res, (text) => {
+					if (abortRef.current !== ac || ac.signal.aborted) return;
+					flushSync(() => setResponseText(text));
 					scrollStreamToBottom();
-				}
-				acc += dec.decode();
-				flushSync(() => {
-					setResponseText(acc);
 				});
-				if (!ac.signal.aborted) {
-					setUsageHint(parseLastStreamUsage(acc, proto));
-				}
-				setSending(false);
+				if (!ac.signal.aborted && abortRef.current === ac) setUsageHint(parseLastStreamUsage(acc, proto));
 				return;
 			}
 
@@ -813,7 +825,9 @@ export function usePlaygroundPageState() {
 				setUsageHint(summary);
 			}
 		} catch (e) {
-			if (isAbortError(e)) {
+			if (abortRef.current !== ac) return;
+			setInterrupted(true);
+			if (ac.signal.aborted || isAbortError(e)) {
 				return;
 			}
 			const raw = e instanceof Error ? e.message : tCommon('requestFailed');
@@ -823,8 +837,10 @@ export function usePlaygroundPageState() {
 					: raw,
 			);
 		} finally {
-			if (abortRef.current === ac) abortRef.current = null;
-			setSending(false);
+			if (abortRef.current === ac) {
+				abortRef.current = null;
+				setSending(false);
+			}
 		}
 	};
 
@@ -856,6 +872,12 @@ export function usePlaygroundPageState() {
 		setBodyText,
 		bodyDirtyHint,
 		applyLlmSample,
+		applyLlmBody: (body: string) => {
+			setBodyTextState(body);
+			setTemplateBody(body);
+			setBodyError(null);
+			setBodyDirtyHint(false);
+		},
 		bodyError,
 		geminiAction,
 		setGeminiAction,
@@ -875,12 +897,24 @@ export function usePlaygroundPageState() {
 		stop,
 		responseMeta,
 		responseText,
+		responsePreview: mergedAssistantParts,
+		interrupted,
 		responseTab,
 		setResponseTab,
-		usageHint,
+		usageHint:
+			selectedIsImage || selectedIsAudio
+				? usageHint
+				: tryParseUsageSummary(
+						JSON.stringify({
+							[responseProtocol === 'gemini' ? 'usageMetadata' : 'usage']: mergedAssistantParts.usage,
+						}),
+						responseProtocol,
+				  ) ?? usageHint,
 		imagePreviews,
-		lastSentWireBody: lastSentWireBody && lastSentInputSnapshot === bodyText ? lastSentWireBody : null,
-		lastSentWireHeaders: lastSentWireBody && lastSentInputSnapshot === bodyText ? lastSentWireHeaders : null,
+		lastSentWireBody:
+			lastSentWireBody && lastSentInputSnapshot === requestFingerprint ? lastSentWireBody : null,
+		lastSentWireHeaders:
+			lastSentWireBody && lastSentInputSnapshot === requestFingerprint ? lastSentWireHeaders : null,
 		requestTargetUrl,
 		selectedIsImage,
 		selectedIsAudio,

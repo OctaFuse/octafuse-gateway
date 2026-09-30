@@ -62,7 +62,7 @@ export function previewPlaygroundResponse(
 	raw: string,
 	protocol: PlaygroundProtocol,
 	contentType: string | null,
-	finished = false
+	finished = false,
 ): ResponsePreview {
 	const mode = inferPlaygroundParseMode(contentType) ?? 'text';
 	const streaming = mode === 'sse' || mode === 'ndjson';
@@ -75,28 +75,28 @@ export function previewPlaygroundResponse(
 			events = [];
 		}
 	}
-	const canonical =
-		mode === 'sse'
-			? events
-					.map((e) => {
-						const block = object(e.content_block);
-						if (protocol === 'anthropic' && e.type === 'content_block_start') {
-							if (block.type === 'text')
-								return `data: ${JSON.stringify({
-									type: 'content_block_delta',
-									delta: { type: 'text_delta', text: block.text },
-								})}\n\n`;
-							if (block.type === 'thinking')
-								return `data: ${JSON.stringify({
-									type: 'content_block_delta',
-									delta: { type: 'thinking_delta', thinking: block.thinking },
-								})}\n\n`;
-						}
-						return `data: ${JSON.stringify(e)}\n\n`;
-					})
-					.join('')
-			: raw;
-	const parts = mergeAssistantTextParts(canonical, protocol, mode);
+	const canonicalStream = streaming && protocol !== 'dashscope';
+	const canonical = canonicalStream
+		? events
+				.map((e) => {
+					const block = object(e.content_block);
+					if (protocol === 'anthropic' && e.type === 'content_block_start') {
+						if (block.type === 'text')
+							return `data: ${JSON.stringify({
+								type: 'content_block_delta',
+								delta: { type: 'text_delta', text: block.text },
+							})}\n\n`;
+						if (block.type === 'thinking')
+							return `data: ${JSON.stringify({
+								type: 'content_block_delta',
+								delta: { type: 'thinking_delta', thinking: block.thinking },
+							})}\n\n`;
+					}
+					return `data: ${JSON.stringify(e)}\n\n`;
+				})
+				.join('')
+		: raw;
+	const parts = mergeAssistantTextParts(canonical, protocol, canonicalStream ? 'sse' : mode);
 	const result: ResponsePreview = {
 		...parts,
 		tools: [],
@@ -232,7 +232,7 @@ export function previewPlaygroundResponse(
 /** Decode UTF-8 across transport chunks and publish raw text before the stream ends. */
 export async function readPlaygroundTextStream(
 	response: Response,
-	onText: (text: string) => void
+	onText: (text: string) => void,
 ): Promise<string> {
 	const reader = response.body?.getReader();
 	if (!reader) return '';

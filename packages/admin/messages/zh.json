@@ -2500,5 +2500,27 @@
 		"cost": "成本：{amount}",
 		"providerLabel": "供应商：{id}",
 		"stdMetered": "标准 {std} · 成本 {metered}"
+	},
+	"modelTest": {
+		"request": "测试请求",
+		"requestBody": "JSON 请求体",
+		"template": "测试模板",
+		"custom": "自定义请求",
+		"streaming": "流式响应",
+		"actualRequest": "实际请求",
+		"preview": "发送前预览",
+		"sent": "已发送",
+		"headers": "请求头",
+		"result": "结果预览",
+		"tools": "工具调用",
+		"toolHint": "仅展示模型生成的调用与参数，不执行工具。",
+		"upstreamError": "上游错误",
+		"receiving": "正在接收响应…",
+		"interrupted": "请求已中断，已接收内容保留。",
+		"finished": "响应结束",
+		"noParts": "暂无可读内容，请查看下方流式 data。",
+		"streamData": "流式 data",
+		"events": "{count} 个数据事件",
+		"followHint": "与预览同步更新，向上滚动可暂停跟随。"
 	}
 }

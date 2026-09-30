@@ -2500,5 +2500,27 @@
 		"cost": "비용: {amount}",
 		"providerLabel": "Provider: {id}",
 		"stdMetered": "표준 {std} · 계측 {metered}"
+	},
+	"modelTest": {
+		"request": "테스트 요청",
+		"requestBody": "JSON 요청 본문",
+		"template": "테스트 템플릿",
+		"custom": "사용자 지정 요청",
+		"streaming": "스트리밍 응답",
+		"actualRequest": "실제 요청",
+		"preview": "전송 전 미리보기",
+		"sent": "전송됨",
+		"headers": "요청 헤더",
+		"result": "결과 미리보기",
+		"tools": "도구 호출",
+		"toolHint": "모델이 생성한 호출과 인수만 표시하며 도구를 실행하지 않습니다.",
+		"upstreamError": "업스트림 오류",
+		"receiving": "응답 수신 중…",
+		"interrupted": "요청이 중단되었습니다. 수신한 내용은 유지됩니다.",
+		"finished": "응답 완료",
+		"noParts": "표시할 내용이 없습니다. 아래 스트림 데이터를 확인하세요.",
+		"streamData": "스트림 데이터",
+		"events": "데이터 이벤트 {count}개",
+		"followHint": "미리보기와 동시에 갱신됩니다. 위로 스크롤하면 자동 스크롤을 일시 중지합니다."
 	}
 }

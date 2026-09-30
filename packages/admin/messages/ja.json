@@ -2500,5 +2500,27 @@
 		"cost": "コスト：{amount}",
 		"providerLabel": "Provider：{id}",
 		"stdMetered": "標準 {std} · 計量 {metered}"
+	},
+	"modelTest": {
+		"request": "テストリクエスト",
+		"requestBody": "JSON リクエスト本文",
+		"template": "テストテンプレート",
+		"custom": "カスタムリクエスト",
+		"streaming": "ストリーミング",
+		"actualRequest": "実際のリクエスト",
+		"preview": "送信前プレビュー",
+		"sent": "送信済み",
+		"headers": "リクエストヘッダー",
+		"result": "結果プレビュー",
+		"tools": "ツール呼び出し",
+		"toolHint": "モデルが生成した呼び出しと引数を表示します。ツールは実行しません。",
+		"upstreamError": "上流エラー",
+		"receiving": "応答を受信中…",
+		"interrupted": "リクエストが中断されました。受信済みの内容は保持されます。",
+		"finished": "応答完了",
+		"noParts": "読み取り可能な内容がありません。下のストリームデータを確認してください。",
+		"streamData": "ストリームデータ",
+		"events": "{count} 件のデータイベント",
+		"followHint": "プレビューと同時に更新します。上にスクロールすると追従を一時停止します。"
 	}
 }

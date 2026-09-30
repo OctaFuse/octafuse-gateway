@@ -7,6 +7,9 @@ import { ImageGenerationsPreview } from '@/components/image-generations-preview'
 import type { ImagePreviewItem } from '@/lib/image-generations';
 import type { ObservationTag } from '@/lib/playground/response-observations';
 import type { ResponseMeta, ResponseTab } from '../types';
+import { LlmResponseContent } from '@/components/model-test/llm-response-content';
+import type { ResponsePreview } from '@/lib/playground/response-preview';
+
 
 type ObservationHelpTone = ObservationTag['tone'];
 
@@ -64,6 +67,10 @@ function observationChipClass(tone: ObservationHelpTone): string {
 }
 
 type Props = {
+	llm: boolean;
+	responsePreview: ResponsePreview;
+	sending: boolean;
+	interrupted: boolean;
 	responseMeta: ResponseMeta | null;
 	responseText: string;
 	usageHint: string | null;
@@ -79,6 +86,10 @@ type Props = {
 };
 
 export function PlaygroundResponsePanel({
+	llm,
+	responsePreview,
+	sending,
+	interrupted,
 	responseMeta,
 	responseText,
 	usageHint,
@@ -94,12 +105,14 @@ export function PlaygroundResponsePanel({
 }: Props) {
 	const t = useTranslations('playground');
 	const [obsHelpOpen, setObsHelpOpen] = useState(false);
-	const hasContent = Boolean(responseMeta || responseText || imagePreviews.length > 0 || audioPreviewUrl);
+	const hasContent = Boolean(
+		sending || responseMeta || responseText || imagePreviews.length > 0 || audioPreviewUrl
+	);
 	const isImageResponse = imagePreviews.length > 0;
 	const isAudioResponse = Boolean(audioPreviewUrl);
 
 	return (
-		<section className="flex min-h-0 flex-1 flex-col space-y-3 overflow-hidden rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
+		<section className="flex min-h-0 flex-1 flex-col space-y-2 overflow-hidden rounded-xl border border-gray-200/80 bg-white p-3 shadow-sm">
 			<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
 				<h2 className="shrink-0 text-sm font-semibold text-gray-900">{t('response')}</h2>
 				{responseMeta ? (
@@ -125,9 +138,9 @@ export function PlaygroundResponsePanel({
 			</div>
 
 			{hasContent ? (
-				<div className="flex min-h-0 flex-1 flex-col gap-3">
+				<div className="flex min-h-0 flex-1 flex-col gap-2">
 					{responseMeta?.upstreamUrl ? (
-						<div className="shrink-0 break-all text-xs text-gray-500">
+						<div className="shrink-0 truncate text-xs text-gray-500" title={responseMeta.upstreamUrl}>
 							<span className="font-medium text-gray-600">{t('upstream')}</span>
 							{responseMeta.upstreamUrl}
 						</div>
@@ -145,7 +158,9 @@ export function PlaygroundResponsePanel({
 								type="button"
 								onClick={() => onResponseTabChange(id)}
 								className={`rounded-md px-3 py-1 text-xs font-medium ${
-									responseTab === id ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+									responseTab === id
+										? 'bg-slate-800 text-white'
+										: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
 								}`}
 							>
 								{label}
@@ -161,12 +176,14 @@ export function PlaygroundResponsePanel({
 										tag.id === 'finish'
 											? t(tag.messageKey, { reason: tag.finishReason ?? '' })
 											: tag.count != null
-												? t(tag.messageKey, { count: tag.count })
-												: t(tag.messageKey);
+											? t(tag.messageKey, { count: tag.count })
+											: t(tag.messageKey);
 									return (
 										<span
 											key={tag.id}
-											className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${observationChipClass(tag.tone)}`}
+											className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${observationChipClass(
+												tag.tone
+											)}`}
 										>
 											{label}
 										</span>
@@ -190,7 +207,9 @@ export function PlaygroundResponsePanel({
 										{OBSERVATION_HELP_GROUPS.map((group) => (
 											<section
 												key={group.titleKey}
-												className={`rounded-lg border border-slate-200 bg-slate-50/80 p-2.5 ${group.wide ? 'sm:col-span-2' : ''}`}
+												className={`rounded-lg border border-slate-200 bg-slate-50/80 p-2.5 ${
+													group.wide ? 'sm:col-span-2' : ''
+												}`}
 											>
 												<div className="mb-2 flex items-baseline justify-between gap-2">
 													<h3 className="font-semibold text-slate-800">{t(group.titleKey)}</h3>
@@ -200,7 +219,9 @@ export function PlaygroundResponsePanel({
 													{group.rows.map((row) => (
 														<li key={row.helpKey} className="flex items-start gap-2">
 															<span
-																className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${observationChipClass(row.tone)}`}
+																className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${observationChipClass(
+																	row.tone
+																)}`}
 															>
 																{row.labelKey === 'obsBodyDeltas'
 																	? t(row.labelKey, { count: 'N' })
@@ -219,13 +240,21 @@ export function PlaygroundResponsePanel({
 					) : null}
 
 					{usageHint ? (
-						<div className="shrink-0 rounded-md border border-green-200 bg-green-50 p-2.5 text-sm text-green-900">
+						<div className="shrink-0 text-xs leading-5 text-green-800">
 							<span className="font-semibold">{t('usageDisplayOnly')}</span>
 							{usageHint}
 						</div>
 					) : null}
 
-					{responseTab === 'merged' ? (
+					{llm ? (
+						<LlmResponseContent
+							preview={responsePreview}
+							text={responseText}
+							view={responseTab}
+							sending={sending}
+							interrupted={interrupted}
+						/>
+					) : responseTab === 'merged' ? (
 						isImageResponse ? (
 							<div className="min-h-0 flex-1 overflow-auto">
 								<ImageGenerationsPreview images={imagePreviews} label={t('imagePreview')} />
@@ -254,7 +283,11 @@ export function PlaygroundResponsePanel({
 										</pre>
 									</div>
 								) : null}
-								<div className={`flex min-h-0 flex-1 flex-col ${mergedReasoningDisplay ? 'border-t border-slate-200' : ''}`}>
+								<div
+									className={`flex min-h-0 flex-1 flex-col ${
+										mergedReasoningDisplay ? 'border-t border-slate-200' : ''
+									}`}
+								>
 									<div className="shrink-0 border-b border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
 										{t('body')}
 									</div>

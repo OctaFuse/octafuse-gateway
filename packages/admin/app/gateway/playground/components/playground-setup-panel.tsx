@@ -213,8 +213,11 @@ export function PlaygroundSetupPanel({
 				</div>
 			</section>
 
-			<section className={`${panelClass} shrink-0 xl:max-h-[40%] xl:overflow-y-auto`}>
-				<h2 className="text-sm font-semibold text-gray-900">{t('selectedRoute')}</h2>
+			<details className={`${panelClass} shrink-0 xl:max-h-[40%] xl:overflow-y-auto`}>
+				<summary className="cursor-pointer text-sm font-semibold text-gray-900">
+					{t('selectedRoute')}
+					{selected ? <span className="mt-1 block truncate text-xs font-normal text-gray-500">{selected.model_name ?? selected.model_id}</span> : null}
+				</summary>
 				{selected ? (
 					<div className="space-y-3">
 						{!isRouteActive(selected.status) ? (
@@ -263,7 +266,7 @@ export function PlaygroundSetupPanel({
 				) : (
 					<p className="text-sm text-gray-500">{t('chooseRouteHint')}</p>
 				)}
-			</section>
+			</details>
 		</div>
 	);
 }

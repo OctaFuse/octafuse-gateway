@@ -8,7 +8,11 @@ import { useTranslations } from 'next-intl';
 import { PlaygroundRequestPanel } from './components/playground-request-panel';
 import { PlaygroundResponsePanel } from './components/playground-response-panel';
 import { PlaygroundSetupPanel } from './components/playground-setup-panel';
-import { PlaygroundToolsSetup, PlaygroundToolsWorkspace, usePlaygroundToolsState } from './playground-tools-panel';
+import {
+	PlaygroundToolsSetup,
+	PlaygroundToolsWorkspace,
+	usePlaygroundToolsState,
+} from './playground-tools-panel';
 import { usePlaygroundPageState } from './use-playground-page-state';
 
 function PlaygroundPageInner() {
@@ -17,6 +21,7 @@ function PlaygroundPageInner() {
 	const tCommon = useTranslations('common');
 	const s = usePlaygroundPageState();
 	const tools = usePlaygroundToolsState(s.initialToolId, s.initialProvider);
+	const llm = s.selected ? !s.selectedIsImage && !s.selectedIsAudio : s.filterKind === 'llm';
 
 	if (s.loadingRoutes && s.playgroundMode === 'routes') {
 		return (
@@ -105,8 +110,16 @@ function PlaygroundPageInner() {
 						{s.playgroundMode === 'tools' ? (
 							<PlaygroundToolsWorkspace state={tools} />
 						) : (
-							<div className="flex min-h-0 flex-1 flex-col gap-4">
+							<div
+								className={
+									llm
+										? 'grid min-h-0 flex-1 auto-rows-[650px] grid-cols-1 gap-4 xl:grid-cols-2 xl:grid-rows-[minmax(0,1fr)]'
+										: 'flex min-h-0 flex-1 flex-col gap-4'
+								}
+							>
 								<PlaygroundRequestPanel
+									llm={llm}
+									onApplyLlmBody={s.applyLlmBody}
 									bodyText={s.bodyText}
 									onBodyTextChange={s.setBodyText}
 									bodyDirtyHint={s.bodyDirtyHint}
@@ -143,6 +156,10 @@ function PlaygroundPageInner() {
 									lastSentWireHeaders={s.lastSentWireHeaders}
 								/>
 								<PlaygroundResponsePanel
+									llm={llm}
+									responsePreview={s.responsePreview}
+									sending={s.sending}
+									interrupted={s.interrupted}
 									responseMeta={s.responseMeta}
 									responseText={s.responseText}
 									usageHint={s.usageHint}

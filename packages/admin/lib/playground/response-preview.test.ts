@@ -37,7 +37,7 @@ describe('Quick test response projection', () => {
 					},
 				],
 				usage: { prompt_tokens: 12, completion_tokens: 7 },
-			}
+			},
 		);
 		const out = preview(raw);
 		assert.equal(out.body, 'Calling');
@@ -47,7 +47,7 @@ describe('Quick test response projection', () => {
 			[
 				['a', 'weather', '{"city":"北京"}'],
 				['b', 'clock', '{}'],
-			]
+			],
 		);
 		assert.equal(out.finishReason, 'tool_calls');
 		assert.equal(out.usage.prompt_tokens, 12);
@@ -56,7 +56,7 @@ describe('Quick test response projection', () => {
 		const item = { id: 'fc_1', call_id: 'call_1', type: 'function_call', name: 'weather', arguments: '' };
 		let raw = sse(
 			{ type: 'response.output_item.added', output_index: 1, item },
-			{ type: 'response.function_call_arguments.delta', item_id: 'fc_1', delta: '{"city":' }
+			{ type: 'response.function_call_arguments.delta', item_id: 'fc_1', delta: '{"city":' },
 		);
 		assert.equal(preview(raw).tools[0].arguments, '{"city":');
 		raw += sse(
@@ -71,7 +71,7 @@ describe('Quick test response projection', () => {
 					output: [{ ...item, arguments: '{"city":"Paris"}' }],
 					usage: { total_tokens: 20 },
 				},
-			}
+			},
 		);
 		const out = preview(raw);
 		assert.equal(out.tools.length, 1);
@@ -100,9 +100,9 @@ describe('Quick test response projection', () => {
 					index: 1,
 					delta: { type: 'input_json_delta', partial_json: '"Tokyo"}' },
 				},
-				{ type: 'message_delta', delta: { stop_reason: 'tool_use' }, usage: { output_tokens: 9 } }
+				{ type: 'message_delta', delta: { stop_reason: 'tool_use' }, usage: { output_tokens: 9 } },
 			),
-			'anthropic'
+			'anthropic',
 		);
 		assert.equal(out.reasoning, 'Plan');
 		assert.equal(out.body, '');
@@ -117,9 +117,9 @@ describe('Quick test response projection', () => {
 				event([{ functionCall: { id: 'call1', name: 'write_note', willContinue: true } }]),
 				event([{ functionCall: { partialArgs: [{ jsonPath: '$.text', stringValue: 'Hello' }] } }]),
 				event([{ functionCall: { partialArgs: [{ jsonPath: '$.text', stringValue: ' world' }] } }]),
-				{ candidates: [{ finishReason: 'STOP' }], usageMetadata: { totalTokenCount: 9 } }
+				{ candidates: [{ finishReason: 'STOP' }], usageMetadata: { totalTokenCount: 9 } },
 			),
-			'gemini'
+			'gemini',
 		);
 		assert.equal(out.reasoning, 'Plan');
 		assert.equal(out.body, 'Hi');
@@ -138,6 +138,23 @@ describe('Quick test response projection', () => {
 		const out = preview(sse({ type: 'error', error: { message: 'overloaded' } }));
 		assert.match(out.error, /overloaded/);
 		assert.equal(out.body, '');
+	});
+	it('projects complete NDJSON deltas while leaving unfinished records in raw data', () => {
+		const line = (value: unknown) => JSON.stringify(value) + '\n';
+		const raw =
+			line({ choices: [{ delta: { reasoning_content: 'Plan' } }] }) +
+			line({ choices: [{ delta: { content: 'Hello' } }] });
+		const partial = JSON.stringify({
+			choices: [{ delta: { content: ' world' } }],
+			usage: { total_tokens: 8 },
+		});
+		const ongoing = previewPlaygroundResponse(raw + partial, 'openai', 'application/x-ndjson');
+		assert.equal(ongoing.reasoning, 'Plan');
+		assert.equal(ongoing.body, 'Hello');
+		assert.equal(ongoing.eventCount, 2);
+		const ended = previewPlaygroundResponse(raw + partial, 'openai', 'application/x-ndjson', true);
+		assert.equal(ended.body, 'Hello world');
+		assert.equal(ended.usage.total_tokens, 8);
 	});
 	it('handles nonstream tool-only responses for all protocol families', () => {
 		const cases = [

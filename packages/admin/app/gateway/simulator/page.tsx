@@ -1,26 +1,38 @@
-"use client";
+'use client';
 
 /**
  * Browser-side simulator: calls the Proxy directly (user-provided Base URL) with a real API key,
  * exercising auth, routing, billing, and request logs (unlike Playground upstream tests).
  */
-import { useTranslations } from "next-intl";
-import { SimulatorRequestPanel } from "./components/simulator-request-panel";
-import { SimulatorResponsePanel } from "./components/simulator-response-panel";
-import { SimulatorRoutingPanel } from "./components/simulator-routing-panel";
-import { SimulatorSetupPanel } from "./components/simulator-setup-panel";
-import { useSimulatorPageState } from "./use-simulator-page-state";
+import { useTranslations } from 'next-intl';
+import { SimulatorRequestPanel } from './components/simulator-request-panel';
+import { SimulatorResponsePanel } from './components/simulator-response-panel';
+import { SimulatorRoutingPanel } from './components/simulator-routing-panel';
+import { SimulatorSetupPanel } from './components/simulator-setup-panel';
+import { useSimulatorPageState } from './use-simulator-page-state';
 
 export default function SimulatorPage() {
-	const t = useTranslations("simulator");
-	const tBrand = useTranslations("brand");
-	const tCommon = useTranslations("common");
+	const t = useTranslations('simulator');
+	const tBrand = useTranslations('brand');
+	const tCommon = useTranslations('common');
 	const s = useSimulatorPageState();
+	const llm = !s.isToolKind && !s.selectedModelIsImage && !s.selectedModelIsAudio;
+	const llmFamily = llm
+		? s.protocol === 'openai'
+			? s.openaiLlmOperation === 'responses'
+				? 'openai_responses'
+				: 'openai_chat'
+			: s.protocol === 'anthropic'
+			? 'anthropic'
+			: s.protocol === 'gemini'
+			? 'gemini'
+			: null
+		: null;
 
 	if (s.loadingCatalog) {
 		return (
 			<div className="flex h-full min-h-[240px] items-center justify-center">
-				<div className="text-gray-600">{tCommon("loading")}</div>
+				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
@@ -28,13 +40,11 @@ export default function SimulatorPage() {
 	return (
 		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-100/90 p-4 sm:p-6 lg:p-8 xl:h-dvh xl:overflow-hidden">
 			<div className="mb-4 shrink-0 sm:mb-5">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
-					{t("title")}
-				</h1>
+				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
 				<p className="mt-1 max-w-3xl text-sm text-gray-500">
-					{t("subtitle", { product: tBrand("product") })}
+					{t('subtitle', { product: tBrand('product') })}
 					<span className="text-gray-400"> · </span>
-					{t("usageNote")}
+					{t('usageNote')}
 				</p>
 			</div>
 
@@ -91,9 +101,18 @@ export default function SimulatorPage() {
 						/>
 					</aside>
 
-					<section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden bg-slate-100/70 p-4 sm:p-5">
-						<div className="min-h-0 flex-[3] overflow-y-auto">
+					<section
+						className={
+							llm
+								? 'grid min-h-0 min-w-0 flex-1 auto-rows-[650px] grid-cols-1 gap-4 bg-slate-100/70 p-4 sm:p-5 xl:grid-cols-2 xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden'
+								: 'flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden bg-slate-100/70 p-4 sm:p-5'
+						}
+					>
+						<div className={llm ? 'flex min-h-0 min-w-0 flex-col' : 'min-h-0 flex-[3] overflow-y-auto'}>
 							<SimulatorRequestPanel
+								llmFamily={llmFamily}
+								modelHint={s.selectedModelId}
+								wireSent={s.wireSent}
 								protocol={s.protocol}
 								onProtocolChange={s.requestProtocolChange}
 								supportedSurfaces={s.supportedSurfaces}
@@ -118,34 +137,34 @@ export default function SimulatorPage() {
 								onSend={() => void s.send()}
 								onStop={() => s.stop()}
 								showImageOperation={
-									s.selectedModelIsImage &&
-									!s.selectedModelIsAudio &&
-									s.protocol === "openai"
+									s.selectedModelIsImage && !s.selectedModelIsAudio && s.protocol === 'openai'
 								}
 								imageOperation={s.imageOperation}
 								onImageOperationChange={s.setImageOperation}
 								editFiles={s.editFiles}
 								onEditFilesChange={s.setEditFiles}
 								showAudioTranscriptions={
-									s.selectedAudioOperation === "transcriptions" &&
-									(s.protocol === "openai" || s.protocol === "dashscope")
+									s.selectedAudioOperation === 'transcriptions' &&
+									(s.protocol === 'openai' || s.protocol === 'dashscope')
 								}
 								showAudioRealtimeMicrophone={s.selectedCanUseMicrophone}
 								audioInputMode={s.audioInputMode}
 								onAudioInputModeChange={s.setAudioInputMode}
 								showAudioSpeech={
-									s.selectedAudioOperation === "speech" &&
-									(s.protocol === "openai" || s.protocol === "dashscope")
+									s.selectedAudioOperation === 'speech' &&
+									(s.protocol === 'openai' || s.protocol === 'dashscope')
 								}
-								showAudioRealtime={
-									s.protocol === "dashscope" && s.selectedAudioOperation != null
-								}
+								showAudioRealtime={s.protocol === 'dashscope' && s.selectedAudioOperation != null}
 								audioFile={s.audioFile}
 								onAudioFileChange={s.setAudioFile}
 							/>
 						</div>
-						<div className="min-h-0 flex-[2] overflow-y-auto">
+						<div className={llm ? 'flex min-h-0 min-w-0 flex-col' : 'min-h-0 flex-[2] overflow-y-auto'}>
 							<SimulatorResponsePanel
+								llm={llm}
+								responsePreview={s.responsePreview}
+								sending={s.sending}
+								interrupted={s.interrupted}
 								responseMeta={s.responseMeta}
 								responseText={s.responseText}
 								usageHint={s.usageHint}
