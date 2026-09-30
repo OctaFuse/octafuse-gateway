@@ -64,7 +64,6 @@ export function RouteTargetPricing({
 		return groups.map(group => group.length > 1 ? `${label(group[0])}–${label(group[group.length - 1])}` : label(group[0])).join('/');
 	};
 	const columns = 'col-span-3 grid grid-cols-subgrid items-center';
-	const help = t('effectivePricing.help', { timezone });
 	const baseProvider = isProviderFactorActive(bases, now) ? bases.providerFactor : 1;
 	const baseInversion = hasBasePricingInversion(
 		normalizeScheduleFactor(baseProvider * bases.chargedFactor),
@@ -72,16 +71,45 @@ export function RouteTargetPricing({
 	);
 
 	return (
-		<div className="overflow-x-auto border-t border-slate-100 px-3 py-2">
-			<div className="grid min-w-0 grid-cols-[minmax(max-content,1fr)_minmax(max-content,4.25rem)_minmax(max-content,4.25rem)] gap-x-1">
+		<div className="overflow-x-auto border-t border-slate-100 px-2.5 py-1.5">
+			<div className="grid min-w-0 grid-cols-[minmax(max-content,1fr)_minmax(max-content,3.25rem)_minmax(max-content,3.25rem)] gap-x-1">
 				<div className={`${columns} pb-1.5 text-[10px] leading-4 text-slate-500`}>
-					<span className="inline-flex items-center gap-1"><ClockIcon className="h-3 w-3" aria-hidden />{t('pricingPeriod')}</span>
+					<span className="inline-flex items-center gap-1">
+						<ClockIcon className="h-3 w-3" aria-hidden />{t('pricingPeriod')}
+						<InfoHintPopover label={t('effectivePricing.guide.title')} openOnHover portal align="start">
+							<h4 className="mb-3 text-sm font-semibold text-slate-900">{t('effectivePricing.guide.title')}</h4>
+							<dl className="space-y-3 text-xs leading-5">
+								<div>
+									<dt className="font-semibold text-slate-800">{t('effectivePricing.guide.periodTitle')}</dt>
+									<dd className="mt-1 space-y-1">
+										<p>{t('effectivePricing.guide.periodBody')}</p>
+										<p>{t('effectivePricing.guide.currentBody')}</p>
+										<p className="text-[11px] text-slate-500">{t('effectivePricing.guide.timezone', { timezone })}</p>
+									</dd>
+								</div>
+								<div className="border-t border-slate-100 pt-3">
+									<dt className="font-semibold text-slate-800">{t('effectivePricing.guide.factorTitle')}</dt>
+									<dd className="mt-1 space-y-1">
+										<p>{t('effectivePricing.guide.factorBody')}</p>
+										<p className="text-blue-700">{t('effectivePricing.guide.chargedFormula')}</p>
+										<p className="text-emerald-700">{t('effectivePricing.guide.meteredFormula')}</p>
+									</dd>
+								</div>
+								<div className="border-t border-slate-100 pt-3">
+									<dt className="font-semibold text-slate-800">{t('effectivePricing.guide.validityTitle')}</dt>
+									<dd className="mt-1">{t('effectivePricing.guide.validityBody')}</dd>
+								</div>
+								<div className="border-t border-slate-100 pt-3">
+									<dt className="font-semibold text-slate-800">{t('effectivePricing.guide.scopeTitle')}</dt>
+									<dd className="mt-1">{t('effectivePricing.guide.scopeBody')}</dd>
+								</div>
+							</dl>
+							<p className="mt-3 border-t border-slate-100 pt-2 text-[11px] leading-5 text-slate-500">{t('effectivePricing.guide.hint')}</p>
+						</InfoHintPopover>
+					</span>
 					{(['charged', 'metered'] as const).map(side => (
 						<span key={side} className="inline-flex items-center justify-end gap-1 whitespace-nowrap">
 							{t(`effectivePricing.${side}`)}
-							<InfoHintPopover label={t(`effectivePricing.${side}`)} openOnHover portal>
-								<p className="whitespace-pre-line leading-6">{help}</p>
-							</InfoHintPopover>
 						</span>
 					))}
 				</div>

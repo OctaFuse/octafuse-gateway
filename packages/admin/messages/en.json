@@ -791,7 +791,22 @@
 			"effectivePricing": {
 				"charged": "Actual bill",
 				"metered": "Actual cost",
-				"help": "Effective multipliers relative to each period’s catalog prices.\nEffective multiplier = active provider multiplier × configured billing or cost multiplier. Outside its validity period, the provider multiplier is ×1.\nAll rows use provider validity as of now; only the Current row applies now. Time zone: {timezone}.\nExcludes catalog schedule and user-specific multipliers. Hover over a value for its calculation and validity dates.",
+				"guide": {
+					"title": "Periods and effective multipliers",
+					"periodTitle": "Reading the periods",
+					"periodBody": "Match by time and weekday. Other periods applies outside the listed windows; All periods applies when no windows are configured.",
+					"currentBody": "Current marks the matching period only. It does not mean the route or provider is enabled.",
+					"timezone": "Business time zone: {timezone}",
+					"factorTitle": "What the two values mean",
+					"factorBody": "These are combined multipliers including the provider multiplier, not monetary amounts.",
+					"chargedFormula": "Effective billing = active provider multiplier × billing multiplier",
+					"meteredFormula": "Effective cost = active provider multiplier × cost multiplier",
+					"validityTitle": "Provider validity",
+					"validityBody": "Every row is previewed as of now. Before the provider multiplier starts or after it expires, ×1 applies. A clock icon indicates that it is currently inactive.",
+					"scopeTitle": "The price used as the baseline",
+					"scopeBody": "Each multiplier is relative to that period’s catalog price, which already includes the catalog schedule multiplier. Do not apply it again. User-specific multipliers and final billed amounts are not included.",
+					"hint": "Hover over a multiplier for its calculation and validity dates."
+				},
 				"chargedFormula": "Effective billing multiplier: provider {provider} × billing {configured} = {effective}",
 				"meteredFormula": "Effective cost multiplier: provider {provider} × cost {configured} = {effective}",
 				"inactiveProvider": "The provider multiplier is inactive; ×1 is used in this calculation.",

@@ -14,6 +14,7 @@ export function InfoHintPopover({
 	openOnHover = false,
 	panelClassName = '',
 	portal = false,
+	icon,
 }: {
 	label: string;
 	children: ReactNode;
@@ -22,6 +23,7 @@ export function InfoHintPopover({
 	panelClassName?: string;
 	/** Escape clipped tables and avoid inserting a block panel inside a text label. */
 	portal?: boolean;
+	icon?: ReactNode;
 }) {
 	const [open, setOpen] = useState(false);
 	const [hovered, setHovered] = useState(false);
@@ -161,7 +163,7 @@ export function InfoHintPopover({
 					setOpen((prev) => !prev);
 				}}
 			>
-				<InformationCircleIcon className="h-3.5 w-3.5" aria-hidden />
+				{icon ?? <InformationCircleIcon className="h-3.5 w-3.5" aria-hidden />}
 			</button>
 			{visible && (portal ? createPortal(panel, document.body) : panel)}
 		</span>

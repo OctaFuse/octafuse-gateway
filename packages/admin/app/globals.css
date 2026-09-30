@@ -90,6 +90,36 @@
   @apply bg-gray-400;
 }
 
+/* Route topology: a quiet scroll track with room below the cards. */
+.route-flow-scroll {
+  --route-scroll-thumb: #cbd5e1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--route-scroll-thumb) transparent;
+  scroll-padding-inline: 8px;
+}
+
+.route-flow-scroll:hover,
+.route-flow-scroll:focus-within {
+  --route-scroll-thumb: #94a3b8;
+}
+
+.route-flow-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.route-flow-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.route-flow-scroll::-webkit-scrollbar-thumb {
+  background: var(--route-scroll-thumb);
+  border-radius: 999px;
+}
+
+.route-flow-scroll::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 /* Form inputs */
 input,
 textarea,

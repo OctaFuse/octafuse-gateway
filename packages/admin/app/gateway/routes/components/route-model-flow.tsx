@@ -19,6 +19,7 @@ import {
 } from '@octafuse/core/db/model-modalities';
 import { providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
@@ -161,18 +162,33 @@ function RouteTarget({
 	);
 	const enabled = route.status === 'active';
 	const providerDisabled = provider?.status === 'disabled';
+	const available = enabled && !providerDisabled;
 
 
 	return (
 		<div
-			className={`flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-[21rem] sm:max-w-full ${
-				enabled
+			className={`flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-[18.5rem] sm:max-w-full ${
+				available
 					? 'border-emerald-200 border-l-emerald-500 bg-white shadow-sm hover:border-emerald-400 hover:shadow-md'
 					: 'border-dashed border-slate-300 border-l-slate-400 bg-slate-100/80 hover:border-slate-400'
 			}`}
 		>
-			<div className="p-3">
+			<div className="p-2.5">
 				<div className="flex items-start gap-2">
+					{providerDisabled && (
+						<span className="inline-flex shrink-0 pt-0.5">
+							<InfoHintPopover
+								label={t('providerDisabled')}
+								openOnHover
+								portal
+								align="start"
+								panelClassName="max-w-40"
+								icon={<ExclamationTriangleIcon className="h-3.5 w-3.5 text-amber-600" aria-hidden />}
+							>
+								{t('providerDisabled')}
+							</InfoHintPopover>
+						</span>
+					)}
 					<button
 						type="button"
 						onClick={() => onEdit(route)}
@@ -180,7 +196,7 @@ function RouteTarget({
 						title={t('editRoute')}
 					>
 						<span className="flex items-center gap-1.5">
-							<span className={`min-w-0 truncate text-xs font-semibold ${enabled ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
+							<span className={`min-w-0 truncate text-xs font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
 							<PencilSquareIcon className="h-3 w-3 shrink-0 text-slate-400 group-hover:text-blue-600" aria-hidden />
 						</span>
 						<span className="mt-1 block min-h-4 truncate text-[10px] leading-4 text-slate-500" title={kindLabel ?? undefined}>
@@ -191,25 +207,25 @@ function RouteTarget({
 						enabled={stickyEnabled}
 						count={stickyBindingCount}
 						total={stickyTotal}
-						routeAvailable={enabled && !providerDisabled}
+						routeAvailable={available}
 					/>
 				</div>
 				<button
 					type="button"
 					onClick={() => onEdit(route)}
-					className={`mt-2 block w-full truncate rounded-md px-2 py-1.5 text-left font-mono text-[10px] leading-4 text-slate-600 hover:bg-slate-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${enabled ? 'bg-slate-50' : 'bg-white/80'}`}
+					className={`mt-1.5 block w-full truncate rounded-md px-2 py-1 text-left font-mono text-[10px] leading-4 text-slate-600 hover:bg-slate-200/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${available ? 'bg-slate-50' : 'bg-white/80'}`}
 					title={route.provider_model_name}
 					aria-label={`${t('editRoute')}: ${route.provider_model_name}`}
 				>
 					{route.provider_model_name}
 				</button>
-				<div className="mt-2.5 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4">
+				<div className="mt-2 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4">
 					<button
 						type="button"
 						onClick={() => onToggleStatus(route)}
 						disabled={togglingId === route.id}
 						aria-pressed={enabled}
-						className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${enabled ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
+						className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${enabled ? (providerDisabled ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200') : 'bg-slate-600 text-white hover:bg-slate-700'}`}
 						title={enabled ? tList('routeEnabled') : tList('routeDisabled')}
 						aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
 					>
@@ -227,11 +243,6 @@ function RouteTarget({
 				</div>
 			</div>
 			<RouteTargetPricing priceOverride={route.price_override} onEdit={() => onEdit(route)} />
-			{providerDisabled ? (
-				<div className="mt-auto space-y-1 border-t border-amber-100 bg-amber-50/70 px-3 py-1.5 text-[10px] leading-4 text-amber-800">
-					{providerDisabled ? <span className="flex items-center gap-1.5"><ExclamationTriangleIcon className="h-3 w-3 shrink-0" aria-hidden />{t('providerDisabled')}</span> : null}
-				</div>
-			) : null}
 		</div>
 	);
 }
@@ -809,8 +820,10 @@ export function UpstreamPoolPanel({
 				className={
 					isSummary
 						? 'flex min-w-0 flex-col items-stretch gap-1'
-						: 'flex min-w-0 flex-col items-stretch gap-3 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto'
+						: 'route-flow-scroll flex min-w-0 flex-col items-stretch gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto md:pb-3'
 				}
+				role="region"
+				tabIndex={isSummary ? undefined : 0}
 				aria-label={t('priorityLadderAria')}
 			>
 				{priorityLayers.map(([priority, routes], layerIndex) => (

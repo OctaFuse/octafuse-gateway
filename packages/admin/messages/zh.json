@@ -791,7 +791,22 @@
 			"effectivePricing": {
 				"charged": "实际计费",
 				"metered": "实际成本",
-				"help": "展示相对于该时段刊例价的实际倍率。\n实际倍率 = 生效的供应商倍率 × 对应配置倍率；供应商有效期外按 ×1。\n各时段按当前日期的供应商有效期预览，仅「当前」行正在生效。时区：{timezone}。\n不含目录时段倍率和用户专属倍率。悬浮数值可查看计算过程与有效期。",
+				"guide": {
+					"title": "时段与实际倍率",
+					"periodTitle": "时段怎么读",
+					"periodBody": "按时间和星期匹配；未命中指定时段时使用「其他时段」，未配置时段时使用「全部时段」。",
+					"currentBody": "「当前」仅表示此刻命中的时段，不代表路由或供应商已启用。",
+					"timezone": "业务时区：{timezone}",
+					"factorTitle": "两列数字是什么",
+					"factorBody": "展示已合成供应商倍率的结果，不是金额。",
+					"chargedFormula": "实际计费倍率 = 生效的供应商倍率 × 计费倍率",
+					"meteredFormula": "实际成本倍率 = 生效的供应商倍率 × 成本倍率",
+					"validityTitle": "供应商有效期怎么算",
+					"validityBody": "各行均按当前日期预览。供应商倍率未开始或已到期时按 ×1 计算；时钟图标提示该倍率当前未生效。",
+					"scopeTitle": "倍率相对于什么价格",
+					"scopeBody": "以该时段刊例价为基准；刊例价已含目录时段倍率，无需重复乘入。这里不含用户专属倍率，也不是最终账单金额。",
+					"hint": "悬浮具体倍率，可查看计算过程与有效期。"
+				},
 				"chargedFormula": "实际计费倍率：供应商 {provider} × 计费 {configured} = {effective}",
 				"meteredFormula": "实际成本倍率：供应商 {provider} × 成本 {configured} = {effective}",
 				"inactiveProvider": "供应商倍率当前不生效，计算时按 ×1。",
