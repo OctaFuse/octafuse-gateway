@@ -9,6 +9,7 @@
 
 ### Admin
 
+- **模型目录**：新增 xAI Grok Build 0.1（`grok-build-0.1`）、Grok 4.20 Reasoning/Non-Reasoning、MiniMax M2.7 Highspeed、Kimi K2.7 Code Highspeed、Qwen3.8 Max Prime、Qwen3.8 2.4T-A95B、Qwen3.8 27B、Qwen3.8 Omni Flash 预设，官方刊例价来自 xAI、MiniMax、Moonshot 和阿里云百炼文档。
 - **模型复制**：模型编辑弹窗可以把当前配置复制成一条新模型。定价、模态、标签、说明、元数据和分时窗口会一起带过去；Model ID 会带上 `-copy` 后缀，保存前可以再改。复制不会带上路由，变体在单独配置路由前不会对外提供。
 - **路由供应商倍率**：路由编辑可填写供应商倍率、有效期和分时窗口，并预览最终用户倍率、成本倍率和毛利率。列表显示生效中、未开始或已过期；请求日志的计价审计带上供应商倍率快照。
 - **模型目录**：新增 Claude Sonnet 5.5（`claude-sonnet-5-5`）预设。刊例价与 Sonnet 5 相同：输入 $2 / ¥14、输出 $10 / ¥70（每百万 Token），5 分钟缓存写入 $2.50 / ¥17.5，缓存读取 $0.20 / ¥1.4。上下文 1M，最大输出 128K。
