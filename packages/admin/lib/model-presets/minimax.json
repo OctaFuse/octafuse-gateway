@@ -90,6 +90,50 @@
 		"released": "2026-03-18"
 	},
 	{
+		"id": "minimax-m2.7-highspeed",
+		"display_name": "MiniMax M2.7 Highspeed",
+		"description": "A high-speed variant of MiniMax M2.7 for faster inference at the same capability level. Optimized for latency-sensitive productivity and agent workflows.",
+		"i18n": {
+			"en": "A high-speed variant of MiniMax M2.7 for faster inference at the same capability level. Optimized for latency-sensitive productivity and agent workflows.",
+			"zh": "MiniMax M2.7 高速版，相同能力下推理速度更快。针对延迟敏感的生产力任务与 Agent 工作流优化。"
+		},
+		"vendor": "minimax",
+		"context_window": 204800,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.6,
+						"output_price": 2.4,
+						"cache_read_price": 0.06,
+						"cache_write_price": 0.375
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 4.2,
+						"output_price": 16.8,
+						"cache_read_price": 0.42,
+						"cache_write_price": 2.625
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
 		"id": "minimax-m3",
 		"display_name": "MiniMax M3",
 		"description": "A long-context multimodal MiniMax model for coding, knowledge work, and agents. The multimodal foundation is designed for long-horizon agents, coding, and knowledge work over extended context.",
