@@ -47,6 +47,190 @@
 		"released": "2026-08-01"
 	},
 	{
+		"id": "qwen3.8-max-prime",
+		"display_name": "Qwen3.8 Max Prime",
+		"description": "A high-throughput variant of Qwen3.8 Max optimized for faster inference. Supports both reasoning and non-reasoning modes with the same 1M context window.",
+		"i18n": {
+			"en": "A high-throughput variant of Qwen3.8 Max optimized for faster inference. Supports both reasoning and non-reasoning modes with the same 1M context window.",
+			"zh": "Qwen3.8 Max 优速版，推理速度更快。支持思考与非思考双模式，同样具备 1M 上下文窗口。"
+		},
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 12,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 24,
+						"output_price": 72,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
+		"id": "qwen3.8-2.4t-a95b",
+		"display_name": "Qwen3.8 2.4T-A95B",
+		"description": "A 2.4T-parameter open-source flagship for complex reasoning, coding, and knowledge work. Supports both reasoning and non-reasoning modes with a 1M context window.",
+		"i18n": {
+			"en": "A 2.4T-parameter open-source flagship for complex reasoning, coding, and knowledge work. Supports both reasoning and non-reasoning modes with a 1M context window.",
+			"zh": "2.4 万亿参数开源旗舰模型，面向复杂推理、编程与知识工作。支持思考与非思考双模式，具备 1M 上下文窗口。"
+		},
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 131072,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.25,
+						"cache_write_price": 2.5
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 12,
+						"output_price": 36,
+						"cache_read_price": 1.5,
+						"cache_write_price": 15
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-08-01"
+	},
+	{
+		"id": "qwen3.8-27b",
+		"display_name": "Qwen3.8 27B",
+		"description": "A 27B-parameter multimodal Qwen model for efficient reasoning, coding, and visual understanding. Supports both reasoning and non-reasoning modes with image and video input.",
+		"i18n": {
+			"en": "A 27B-parameter multimodal Qwen model for efficient reasoning, coding, and visual understanding. Supports both reasoning and non-reasoning modes with image and video input.",
+			"zh": "270 亿参数 Qwen 多模态模型，面向高效推理、编程与视觉理解。支持思考与非思考双模式，接受图像与视频输入。"
+		},
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 131072,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 2,
+						"cache_read_price": 0.1,
+						"cache_write_price": 0.625
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3,
+						"output_price": 12,
+						"cache_read_price": 0.6,
+						"cache_write_price": 3.75
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
+		"id": "qwen3.8-omni-flash",
+		"display_name": "Qwen3.8 Omni Flash",
+		"description": "A multimodal Qwen model for text, image, audio, and video understanding. Supports deep thinking with adjustable reasoning intensity for complex tasks.",
+		"i18n": {
+			"en": "A multimodal Qwen model for text, image, audio, and video understanding. Supports deep thinking with adjustable reasoning intensity for complex tasks.",
+			"zh": "Qwen 全模态模型，支持文本、图像、音频与视频理解。默认开启深度思考，可调节思考强度以适应复杂任务。"
+		},
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 131072,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.13,
+						"output_price": 0.45,
+						"cache_read_price": 0.017,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.8,
+						"output_price": 2.7,
+						"cache_read_price": 0.1,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
 		"id": "qwen3.8-max-preview",
 		"display_name": "Qwen3.8 Max Preview",
 		"description": "A flagship Qwen preview for complex reasoning, coding, vision, and long-horizon agentic workloads. Preview channel for early access; production traffic should prefer qwen3.8-max.",
