@@ -6,6 +6,7 @@ import { listStaticModelPresetCatalogForAdmin } from './models-service';
 
 const EXPECTED_IMAGE_IDS = [
 	'doubao-seedream-5-0',
+	'doubao-seedream-5-0-flash',
 	'doubao-seedream-5-0-pro',
 	'gemini-3.1-flash-image',
 	'gemini-3-pro-image-preview',
@@ -15,6 +16,7 @@ const EXPECTED_IMAGE_IDS = [
 	'gpt-image-2.5-sunburst',
 	'grok-imagine-image-2.0',
 	'grok-imagine-image-quality',
+	'qwen-image-2.1-pro',
 	'qwen-image-3.0',
 	'qwen-image-3.0-pro',
 	'wan2.7-image',
@@ -63,6 +65,13 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(seedreamUsd.image?.default, 0.035);
 		assert.equal(seedreamCny.image?.by_quality_size?.['flat:4k'], undefined);
 
+		const seedreamFlash = byId.get('doubao-seedream-5-0-flash')!;
+		const seedreamFlashCny = asPricing(seedreamFlash.pricing.cny);
+		const seedreamFlashUsd = asPricing(seedreamFlash.pricing.usd);
+		assert.equal(seedreamFlashCny.image_billing_mode, 'per_image');
+		assert.equal(seedreamFlashCny.image?.default, 0.12);
+		assert.equal(seedreamFlashUsd.image?.default, 0.018);
+
 		const seedreamPro = byId.get('doubao-seedream-5-0-pro')!;
 		const seedreamProCny = asPricing(seedreamPro.pricing.cny);
 		const seedreamProUsd = asPricing(seedreamPro.pricing.usd);
@@ -84,22 +93,29 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(qwenProCny.image?.default, 0.25);
 		assert.equal(qwenProCny.image?.by_size?.['2k'], 0.5);
 		assert.equal(qwenProCny.image?.input?.default, 0.02);
-		assert.equal(qwenProUsd.image?.default, 0.036);
-		assert.equal(qwenProUsd.image?.by_size?.['2k'], 0.071);
+		assert.equal(qwenProUsd.image?.default, 0.04);
+		assert.equal(qwenProUsd.image?.by_size?.['2k'], 0.075);
 
 		const qwen = byId.get('qwen-image-3.0')!;
 		assert.equal(asPricing(qwen.pricing.cny).image?.default, 0.18);
-		assert.equal(asPricing(qwen.pricing.usd).image?.default, 0.026);
+		assert.equal(asPricing(qwen.pricing.usd).image?.default, 0.03);
 		assert.equal(asPricing(qwen.pricing.cny).image?.input?.default, 0.02);
+
+		const qwen21Pro = byId.get('qwen-image-2.1-pro')!;
+		const qwen21ProCny = asPricing(qwen21Pro.pricing.cny);
+		const qwen21ProUsd = asPricing(qwen21Pro.pricing.usd);
+		assert.equal(qwen21ProCny.image_billing_mode, 'per_image');
+		assert.equal(qwen21ProCny.image?.default, 0.25);
+		assert.equal(qwen21ProUsd.image?.default, 0.04);
 
 		const wanPro = byId.get('wan2.7-image-pro')!;
 		assert.equal(asPricing(wanPro.pricing.cny).image?.default, 0.5);
-		assert.equal(asPricing(wanPro.pricing.usd).image?.default, 0.071);
+		assert.equal(asPricing(wanPro.pricing.usd).image?.default, 0.075);
 		assert.equal(asPricing(wanPro.pricing.cny).image?.input, undefined);
 
 		const wan = byId.get('wan2.7-image')!;
 		assert.equal(asPricing(wan.pricing.cny).image?.default, 0.2);
-		assert.equal(asPricing(wan.pricing.usd).image?.default, 0.029);
+		assert.equal(asPricing(wan.pricing.usd).image?.default, 0.03);
 
 		const grok2 = byId.get('grok-imagine-image-2.0')!;
 		const grok2Usd = asPricing(grok2.pricing.usd);

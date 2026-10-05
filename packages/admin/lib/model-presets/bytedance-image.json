@@ -1,5 +1,47 @@
 [
 	{
+		"id": "doubao-seedream-5-0-flash",
+		"display_name": "Doubao Seedream 5.0 Flash",
+		"description": "A fast, cost-efficient Seedream model for high-volume image generation, editing, transparent backgrounds, and layer decomposition.",
+		"i18n": {
+			"en": "A fast, cost-efficient Seedream model for high-volume image generation, editing, transparent backgrounds, and layer decomposition.",
+			"zh": "面向高频生图场景的 Seedream 极速模型，支持文生图、图生图、透明背景编辑与图层拆分。"
+		},
+		"vendor": "bytedance",
+		"context_window": null,
+		"max_tokens": null,
+		"suggested_provider_model_name": {
+			"volcengine-ark": "doubao-seedream-5-0-flash-260915",
+			"byteplus": "dola-seedream-5-0-flash-260915"
+		},
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.018,
+					"uncertain_result_policy": "requested"
+				}
+			},
+			"cny": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.12,
+					"uncertain_result_policy": "requested"
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-09-15"
+	},
+	{
 		"id": "doubao-seedream-5-0-pro",
 		"display_name": "Doubao Seedream 5.0 Pro",
 		"description": "A premium Seedream model for high-fidelity image generation and professional visual creation.",
