@@ -78,8 +78,8 @@ export function utcApiStringToInstant(sqlUtc: string): Date {
 	return new Date(trimmed.includes('T') ? trimmed : `${trimmed.replace(' ', 'T')}Z`);
 }
 
-/** UTC instant → 指定 IANA 时区的 `datetime-local` 值（`YYYY-MM-DDTHH:mm`）。 */
-export function instantToZonedDatetimeLocalInput(instant: Date, timeZone: string): string {
+/** UTC instant → 指定 IANA 时区的 `datetime-local` 值（`YYYY-MM-DDTHH:mm`，`includeSeconds` 时带到秒）。 */
+export function instantToZonedDatetimeLocalInput(instant: Date, timeZone: string, includeSeconds = false): string {
 	const parts = new Intl.DateTimeFormat('en-US', {
 		timeZone,
 		year: 'numeric',
@@ -87,6 +87,7 @@ export function instantToZonedDatetimeLocalInput(instant: Date, timeZone: string
 		day: '2-digit',
 		hour: '2-digit',
 		minute: '2-digit',
+		second: '2-digit',
 		hour12: false,
 	}).formatToParts(instant);
 	const year = parts.find((part) => part.type === 'year')?.value ?? '1970';
@@ -94,22 +95,24 @@ export function instantToZonedDatetimeLocalInput(instant: Date, timeZone: string
 	const day = parts.find((part) => part.type === 'day')?.value ?? '01';
 	let hour = parts.find((part) => part.type === 'hour')?.value ?? '00';
 	const minute = parts.find((part) => part.type === 'minute')?.value ?? '00';
+	const second = parts.find((part) => part.type === 'second')?.value ?? '00';
 	if (hour === '24') hour = '00';
-	return `${year}-${month}-${day}T${hour}:${minute}`;
+	const clock = includeSeconds ? `${hour}:${minute}:${second}` : `${hour}:${minute}`;
+	return `${year}-${month}-${day}T${clock}`;
 }
 
-/** 指定 IANA 时区墙钟 `datetime-local` → UTC instant。 */
+/** 指定 IANA 时区墙钟 `datetime-local` → UTC instant。秒可选。 */
 export function zonedDatetimeLocalInputToInstant(localStr: string, timeZone: string): Date | null {
-	const match = localStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+	const match = localStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/);
 	if (!match) return null;
-	const [, yearRaw, monthRaw, dayRaw, hourRaw, minuteRaw] = match;
+	const [, yearRaw, monthRaw, dayRaw, hourRaw, minuteRaw, secondRaw] = match;
 	const wallUtcMillis = Date.UTC(
 		Number(yearRaw),
 		Number(monthRaw) - 1,
 		Number(dayRaw),
 		Number(hourRaw),
 		Number(minuteRaw),
-		0
+		Number(secondRaw ?? '0')
 	);
 	const probe = new Date(wallUtcMillis);
 	const offsetMinutes = getTimezoneOffsetMinutesAtUtcInstant(probe, timeZone);

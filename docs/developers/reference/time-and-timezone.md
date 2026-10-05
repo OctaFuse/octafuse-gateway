@@ -122,6 +122,8 @@ Admin 前端格式化函数位于 `packages/admin/lib/datetime.ts`：
 - Admin 仪表盘「今日」卡片：`dashboard-service.ts` → `getAdminStatsService`
 - Admin 仪表盘趋势（Trend analysis）：`queryRequestTimeseries` 按 `BUSINESS_TIMEZONE` 把 `created_at` 截成小时或日，bucket 是该时区墙钟（`YYYY-MM-DD` / `YYYY-MM-DD HH:MM:SS`）。横轴用 `formatDashboardBucketLabel` 按同一时区格式化，不把数字再当成 UTC。Postgres 使用 `AT TIME ZONE`（含夏令时）。D1 / MySQL 按查询窗结束时刻的偏移平移 UTC 朴素时间；无夏令时的时区（如 `Asia/Shanghai`）与日界一致，跨夏令时切换的那一小时可能落在相邻桶。Dashboard 日历快捷（今天 / 本周 / 本月）经 `useAnalyticsRange` 在业务时区加载后重算。
 - Admin 全站时间列与自定义时间窗（见上一节）
+- 用户详情「周期额度重置时间」：`datetime-local` 按业务时区墙钟回显，保存时转回 UTC
+- 集成密钥「最近使用」、供应商额度弹层的检查时间与窗口重置时间：`formatGatewayDateTime` + `BUSINESS_TIMEZONE`
 - 模型官方分时时段（`models.pricing_profile.schedule`）与路由分时时段（`price_override.schedule`）：`formatLocalHhMm` 与 `formatLocalIsoWeekday` 都按业务时区取墙钟时刻与 ISO 星期（1=周一 … 7=周日），不用 UTC weekday；评估时刻为请求进入 Gateway 的 `request_started_at_ms`。两层共用同一时区与同一锁定时刻。
 
 ### 分时时段的星期
