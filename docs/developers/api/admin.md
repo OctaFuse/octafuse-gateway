@@ -927,7 +927,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 - **`kpi`**：时间窗内总请求、成功率、三档成本、`activeUsers`、错误率、Token 汇总（input/output/cache）、`avgLatencyMs`、近 60 秒近似 **`rpm`** / **`tpm`**
 - **`modelDistribution`**：按 `model_id` 聚合 Top 10（请求、Token、三档成本）
 - **`topUsers`**：按 `charged_cost` 排序 Top 12
-- **`timeseries`**：按 `granularity`（`1h`/`1d`/`24h`→`hour`，更长→`day`）的 Token/请求/成本趋势；含 `cache_hit_rate`
+- **`timeseries`**：按 `granularity`（仅 `range` 时 `1h`/`1d`/`24h`→`hour`，更长→`day`；显式起止时不超过 48 小时为 `hour`）的 Token/请求/成本趋势；含 `cache_hit_rate`。`bucket` 是 `BUSINESS_TIMEZONE` 墙钟（日：`YYYY-MM-DD`，小时：`YYYY-MM-DD HH:MM:SS`），不是 UTC
 - **`granularity`**：`hour` | `day`
 - **`recentLogs`**、**`recentErrors`**
 

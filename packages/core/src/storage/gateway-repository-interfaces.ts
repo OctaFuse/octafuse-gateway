@@ -401,6 +401,8 @@ export interface RequestLogsRepository {
 		startDate: string;
 		endDate: string;
 		granularity: 'hour' | 'day';
+		/** IANA 业务时区；桶键为该时区墙钟，不是 UTC。 */
+		timeZone: string;
 	}): Promise<RequestTimeseriesRow[]>;
 	queryUserTokenTimeseries(options: {
 		startDate: string;

@@ -492,7 +492,7 @@ export async function getAdminStatsService(
 		repos.requestLogs.getThroughputLastMinute(),
 		repos.analytics.queryModelAnalytics({ start: startDate, end: endDate }),
 		repos.analytics.queryUserAnalytics({ start: startDate, end: endDate }),
-		repos.requestLogs.queryRequestTimeseries({ startDate, endDate, granularity }),
+		repos.requestLogs.queryRequestTimeseries({ startDate, endDate, granularity, timeZone: businessTimeZone }),
 	]);
 
 	const modelDistributionMap = new Map<

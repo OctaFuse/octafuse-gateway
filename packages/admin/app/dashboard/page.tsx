@@ -22,17 +22,15 @@ import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { DashboardModelDistributionChart } from '@/components/dashboard/DashboardModelDistributionChart';
 import { DashboardTokenTrendChart } from '@/components/dashboard/DashboardTokenTrendChart';
 import {
-	createRangeValue,
-	DEFAULT_GATEWAY_TIME_RANGE_PRESET,
 	formatGatewayRangeSummary,
 	isRollingPreset,
-	type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
 import { readApiJson } from '@/lib/api-json';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { DashboardStats, GatewayRequestLog } from '@/lib/types';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { useAnalyticsRange } from '@/lib/use-analytics-range';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 function formatLatency(ms: number | null | undefined): string {
@@ -134,7 +132,7 @@ export default function DashboardPage() {
 	const [stats, setStats] = useState<DashboardStats | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [loadError, setLoadError] = useState(false);
-	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
+	const [rangeValue, setRangeValue] = useAnalyticsRange();
 	const { currency: billingCurrency } = useBillingCurrency();
 	const { businessTimezone, formatTime } = useGatewayDateTime();
 
@@ -300,6 +298,7 @@ export default function DashboardPage() {
 					timeseries={stats?.timeseries ?? []}
 					granularity={stats?.granularity ?? 'hour'}
 					billingCurrency={billingCurrency}
+					businessTimezone={businessTimezone}
 				/>
 			</section>
 
