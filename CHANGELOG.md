@@ -9,6 +9,7 @@
 
 ### Admin
 
+- **模型目录**：新增 ByteDance Seedream 5.0 Flash（`doubao-seedream-5-0-flash`）与阿里云 `qwen-image-2.1-pro` 图像生成预设；修正阿里云 `qwen-image-3.0-pro` / `qwen-image-3.0` / `wan2.7-image-pro` / `wan2.7-image` 的 USD 价格为官方 Singapore (international) 刊例价；为 `doubao-seed-2-0-mini` / `lite` / `pro` CNY 补齐官方 [0, 32K] 输入定价档位。
 - **模型目录**：新增 xAI Grok Build 0.1（`grok-build-0.1`）、Grok 4.20 Reasoning/Non-Reasoning、MiniMax M2.7 Highspeed、Kimi K2.7 Code Highspeed、Qwen3.8 Max Prime、Qwen3.8 2.4T-A95B、Qwen3.8 27B、Qwen3.8 Omni Flash 预设，官方刊例价来自 xAI、MiniMax、Moonshot 和阿里云百炼文档。
 - **模型复制**：模型编辑弹窗可以把当前配置复制成一条新模型。定价、模态、标签、说明、元数据和分时窗口会一起带过去；Model ID 会带上 `-copy` 后缀，保存前可以再改。复制不会带上路由，变体在单独配置路由前不会对外提供。
 - **路由供应商倍率**：路由编辑可填写供应商倍率、有效期和分时窗口，并预览最终用户倍率、成本倍率和毛利率。列表显示生效中、未开始或已过期；请求日志的计价审计带上供应商倍率快照。
