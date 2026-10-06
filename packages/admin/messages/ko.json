@@ -2306,7 +2306,7 @@
 		"errorWebhooks": {
 			"title": "Proxy 오류 Webhooks",
 			"description": "Proxy가 api_key_request_logs.status = error인 행을 저장하면(청구 기록 성공 후), 설정된 봇 URL에 선택적으로 POST합니다. 채널을 사용하지 않으려면 해당 필드를 비워 두세요.",
-			"urlsNote": "URL에는 Webhook Secret이 포함됩니다. 화면을 공유하기 전에 필요한 경우 숨기기를 사용하세요.",
+			"urlsNote": "Webhook URL은 기본적으로 숨겨집니다. 표시를 눌러 확인하세요.",
 			"wecomLabel": "WeCom 봇 Webhook URL",
 			"feishuLabel": "Feishu 봇 Webhook URL",
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
@@ -2322,7 +2322,22 @@
 			"change": "변경",
 			"dialogHint": "모델 또는 풀에 덮어쓰기가 없을 때 사용할 기본 전략을 선택하세요."
 		},
-		"saveRouteStrategy": "라우트 전략 저장"
+		"saveRouteStrategy": "라우트 전략 저장",
+		"ux": {
+			"subtitle": "시간대, 과금, 라우팅, 오류 알림을 관리하세요. 각 카드는 따로 저장됩니다.",
+			"timezoneHint": "일일 할당량과 사용 보고서의 날짜를 구분하는 시간대입니다.",
+			"currencyHint": "모델 가격, 예산, 과금액에 사용하는 통화입니다.",
+			"billingModeHint": "라우트와 사용자 배수를 결합하는 방식을 선택하세요. 변경은 약 30초 후 적용됩니다.",
+			"routeHint": "모델이나 풀에 별도 설정이 없을 때 사용하는 기본 전략입니다.",
+			"webhookHint": "요청 실패 알림을 WeCom 또는 Feishu로 보냅니다. URL을 비워 두면 해당 채널이 비활성화됩니다.",
+			"multiplySummary": "라우트 배수와 사용자 배수를 곱합니다.",
+			"minSummary": "라우트 배수와 사용자 배수 중 더 작은 값을 사용합니다.",
+			"saved": "저장됨",
+			"unsaved": "저장하지 않은 변경 사항",
+			"discard": "되돌리기",
+			"discardSection": "{section} 변경 사항 되돌리기",
+			"loadFailed": "시스템 설정을 불러올 수 없습니다."
+		}
 	},
 	"tools": {
 		"catalog": {

@@ -2306,7 +2306,7 @@
 		"errorWebhooks": {
 			"title": "Proxy error webhooks",
 			"description": "When the Proxy persists a row with api_key_request_logs.status = error (after billing write succeeds), it optionally POSTs to the configured robot URLs. Leave a field empty to disable that channel.",
-			"urlsNote": "URLs contain webhook secrets; use Hide before screen sharing if needed.",
+			"urlsNote": "Webhook URLs are hidden by default. Use Show to inspect them.",
 			"wecomLabel": "WeCom robot webhook URL",
 			"feishuLabel": "Feishu bot webhook URL",
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
@@ -2322,7 +2322,22 @@
 			"change": "Change",
 			"dialogHint": "Choose the default strategy used when a model or pool has no override."
 		},
-		"saveRouteStrategy": "Save route strategy"
+		"saveRouteStrategy": "Save route strategy",
+		"ux": {
+			"subtitle": "Manage timezone, billing, routing and error notifications. Each card saves independently.",
+			"timezoneHint": "Sets the calendar day used by daily quotas and usage reports.",
+			"currencyHint": "The currency used for model prices, budgets and charges.",
+			"billingModeHint": "Choose how route and user multipliers combine. Updates take effect in about 30 seconds.",
+			"routeHint": "The default strategy for models and pools without an override.",
+			"webhookHint": "Send failed-request alerts to WeCom or Feishu. Leave a URL empty to disable that channel.",
+			"multiplySummary": "Multiply the route factor by the user factor.",
+			"minSummary": "Use the smaller of the route and user factors.",
+			"saved": "Saved",
+			"unsaved": "Unsaved changes",
+			"discard": "Discard",
+			"discardSection": "Discard changes to {section}",
+			"loadFailed": "Could not load system settings."
+		}
 	},
 	"tools": {
 		"catalog": {

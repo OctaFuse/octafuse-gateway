@@ -2306,7 +2306,7 @@
 		"errorWebhooks": {
 			"title": "Proxy 错误 Webhook",
 			"description": "当 Proxy 持久化 api_key_request_logs.status = error 的行时（计费写入成功后），可选 POST 到配置的机器人 URL。留空字段以禁用该渠道。",
-			"urlsNote": "URL 包含 Webhook 密钥；投屏前如需可先「隐藏」。",
+			"urlsNote": "Webhook 地址默认隐藏，点击「显示」可查看完整地址。",
 			"wecomLabel": "WeCom 机器人 Webhook URL",
 			"feishuLabel": "Feishu 机器人 Webhook URL",
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
@@ -2322,7 +2322,22 @@
 			"change": "修改",
 			"dialogHint": "选择模型或路由池未覆盖时使用的默认策略。"
 		},
-		"saveRouteStrategy": "保存路由策略"
+		"saveRouteStrategy": "保存路由策略",
+		"ux": {
+			"subtitle": "管理时区、计费、路由和错误通知。每个配置卡片独立保存。",
+			"timezoneHint": "决定每日额度与用量报表按哪个时区划分日期。",
+			"currencyHint": "模型价格、预算和计费金额统一使用的币种。",
+			"billingModeHint": "选择路由倍率与用户倍率的组合方式，修改后约 30 秒生效。",
+			"routeHint": "模型或路由池未单独配置时使用的默认策略。",
+			"webhookHint": "将请求失败通知发送到企业微信或飞书；留空即可关闭对应渠道。",
+			"multiplySummary": "路由倍率与用户倍率相乘。",
+			"minSummary": "取路由倍率和用户倍率中较小的值。",
+			"saved": "已保存",
+			"unsaved": "有未保存的修改",
+			"discard": "撤销",
+			"discardSection": "撤销「{section}」的修改",
+			"loadFailed": "无法加载系统配置。"
+		}
 	},
 	"tools": {
 		"catalog": {

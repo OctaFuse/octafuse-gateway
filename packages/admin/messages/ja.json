@@ -2306,7 +2306,7 @@
 		"errorWebhooks": {
 			"title": "Proxy エラー Webhook",
 			"description": "Proxy が api_key_request_logs.status = error の行を保存した際（課金書き込み成功後）、設定された Bot URL に任意で POST します。チャネルを無効にするには項目を空欄にしてください。",
-			"urlsNote": "URL には Webhook Secret が含まれます。画面共有前に必要に応じて「非表示」にしてください。",
+			"urlsNote": "Webhook URL は初期状態で非表示です。「表示」で確認できます。",
 			"wecomLabel": "WeCom Bot Webhook URL",
 			"feishuLabel": "Feishu Bot Webhook URL",
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
@@ -2322,7 +2322,22 @@
 			"change": "変更",
 			"dialogHint": "モデルやプールに上書きがない場合に使う既定戦略を選択します。"
 		},
-		"saveRouteStrategy": "ルート戦略を保存"
+		"saveRouteStrategy": "ルート戦略を保存",
+		"ux": {
+			"subtitle": "タイムゾーン、課金、ルーティング、エラー通知を管理します。各カードは個別に保存されます。",
+			"timezoneHint": "日次クォータと利用レポートの日付を区切るタイムゾーンです。",
+			"currencyHint": "モデル価格、予算、請求額に使用する通貨です。",
+			"billingModeHint": "ルートとユーザーの倍率の組み合わせを選択します。変更は約 30 秒で反映されます。",
+			"routeHint": "モデルやプールに個別設定がない場合の既定戦略です。",
+			"webhookHint": "リクエスト失敗の通知を WeCom または Feishu に送信します。URL を空欄にするとその通知先が無効になります。",
+			"multiplySummary": "ルート倍率とユーザー倍率を掛け合わせます。",
+			"minSummary": "ルート倍率とユーザー倍率の小さい方を使用します。",
+			"saved": "保存済み",
+			"unsaved": "未保存の変更",
+			"discard": "元に戻す",
+			"discardSection": "{section} の変更を元に戻す",
+			"loadFailed": "システム設定を読み込めませんでした。"
+		}
 	},
 	"tools": {
 		"catalog": {

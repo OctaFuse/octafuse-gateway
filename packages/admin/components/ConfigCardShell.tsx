@@ -1,28 +1,46 @@
-import type { ReactNode } from 'react';
+'use client';
 
-/** 左栏标题与说明，右栏控件与操作（大屏横向，小屏纵向堆叠）。 */
+import { useId, type ReactNode } from 'react';
+import { InfoHintPopover } from './InfoHintPopover';
+
+/** Compact settings card with an optional explanation and independent save footer. */
 export function ConfigCardShell({
-	title,
-	description,
-	children,
-	id,
+  title,
+  description,
+  hint,
+  children,
+  footer,
+  id,
 }: {
-	title: string;
-	description: ReactNode;
-	children: ReactNode;
-	id?: string;
+  title: string;
+  description: ReactNode;
+  hint?: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+  id?: string;
 }) {
-	return (
-		<div id={id} className="mb-6 scroll-mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-			<div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-10">
-				<div className="min-w-0 xl:w-80 2xl:w-96 shrink-0">
-					<h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-					<div className="mt-2 text-sm text-gray-500 leading-relaxed [overflow-wrap:anywhere]">{description}</div>
-				</div>
-				<div className="min-w-0 flex-1 border-t border-gray-100 pt-6 xl:border-t-0 xl:border-l xl:border-gray-200 xl:pl-8 xl:pt-0">
-					{children}
-				</div>
-			</div>
-		</div>
-	);
+  const titleId = useId();
+  return (
+    <section
+      id={id}
+      aria-labelledby={titleId}
+      className="flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-4 sm:p-6"
+    >
+      <div className="mb-5">
+        <div className="flex items-center gap-2">
+          <h2 id={titleId} className="text-base font-semibold text-gray-900">
+            {title}
+          </h2>
+          {hint && (
+            <InfoHintPopover label={title} portal openOnHover align="start">
+              {hint}
+            </InfoHintPopover>
+          )}
+        </div>
+        <div className="mt-1 text-sm leading-relaxed text-gray-500">{description}</div>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+      {footer && <div className="mt-5 border-t border-gray-100 pt-4">{footer}</div>}
+    </section>
+  );
 }
