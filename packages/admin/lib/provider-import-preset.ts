@@ -173,6 +173,7 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 	});
 
 	// Product-specific hosts must be checked before their parent cloud/vendor domains.
+	if (hostnameMatches(hostname, 'qianwenaiapi.com')) return identity('aliyun', 'qwen');
 	if (hostnameMatches(hostname, 'maas.aliyuncs.com')) return identity('aliyun', 'qwen');
 	if (
 		hostnameMatches(hostname, 'dashscope.aliyuncs.com') ||

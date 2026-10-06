@@ -38,18 +38,26 @@ describe('provider import preset catalog metadata', () => {
 			(row) => row.name === 'Qwen AI Platform (Token Plan)'
 		);
 		assert.ok(qwenTokenPlan);
+		assert.equal(qwenTokenPlan.endpoints.openai?.base, undefined);
+		assert.deepEqual(qwenTokenPlan.endpoints.openai?.endpoints, {
+			chat: 'https://token-plan.maas.qianwenaiapi.com/compatible-mode/v1/chat/completions',
+			responses: 'https://token-plan.maas.qianwenaiapi.com/compatible-mode/v1/responses',
+		});
+		assert.equal(
+			qwenTokenPlan.endpoints.anthropic?.base,
+			'https://token-plan.maas.qianwenaiapi.com/apps/anthropic'
+		);
 		assert.equal(qwenTokenPlan.endpoints.dashscope?.base, undefined);
 		assert.deepEqual(qwenTokenPlan.endpoints.dashscope?.endpoints, {
 			'audio.transcriptions.multimodal':
-				'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+				'https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation',
 			'images.generations.multimodal':
-				'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+				'https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation',
 			'audio.speech':
-				'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer',
+				'https://token-plan.maas.qianwenaiapi.com/api/v1/services/audio/tts/SpeechSynthesizer',
 			'audio.realtime.inference':
-				'wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference',
-			'audio.realtime.session':
-				'wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime',
+				'wss://token-plan.maas.qianwenaiapi.com/api-ws/v1/inference',
+			'audio.realtime.session': 'wss://token-plan.maas.qianwenaiapi.com/api-ws/v1/realtime',
 		});
 	});
 
@@ -158,6 +166,11 @@ describe('provider import preset catalog metadata', () => {
 		);
 		assert.ok(bailian);
 		assert.equal(bailian.endpoints.dashscope?.base, 'https://dashscope.aliyuncs.com/api/v1');
+		assert.equal(bailian.endpoints.openai?.base, undefined);
+		assert.equal(
+			bailian.endpoints.anthropic?.base,
+			'https://dashscope.aliyuncs.com/apps/anthropic'
+		);
 	});
 
 	it('includes official OpenAI/Anthropic endpoints for newly added import presets', () => {
@@ -196,6 +209,24 @@ describe('provider import preset catalog metadata', () => {
 			byName.get('Alibaba Cloud Bailian (International)')?.endpoints.dashscope?.base,
 			'https://dashscope-intl.aliyuncs.com/api/v1'
 		);
+		assert.equal(
+			anthropicBaseOf('Alibaba Cloud Bailian (International)'),
+			'https://dashscope-intl.aliyuncs.com/apps/anthropic'
+		);
+		assert.equal(
+			chatOf('Qwen AI Platform'),
+			'https://maas.qianwenaiapi.com/compatible-mode/v1/chat/completions'
+		);
+		assert.equal(
+			byName.get('Qwen AI Platform')?.endpoints.openai?.endpoints?.responses,
+			'https://maas.qianwenaiapi.com/compatible-mode/v1/responses'
+		);
+		assert.equal(byName.get('Qwen AI Platform')?.endpoints.openai?.base, undefined);
+		assert.equal(
+			byName.get('Qwen AI Platform')?.endpoints.dashscope?.base,
+			'https://maas.qianwenaiapi.com/api/v1'
+		);
+		assert.equal(anthropicBaseOf('Qwen AI Platform'), 'https://maas.qianwenaiapi.com/apps/anthropic');
 		assert.equal(
 			chatOf('Alibaba Cloud Bailian (Coding Plan International)'),
 			'https://coding-intl.dashscope.aliyuncs.com/v1/chat/completions'

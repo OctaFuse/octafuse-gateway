@@ -115,7 +115,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 					dashscope: {
 						endpoints: {
 							"images.generations.multimodal":
-								"https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+								"https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation",
 						},
 					},
 				}),
@@ -127,7 +127,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 		});
 		assert.equal(
 			url,
-			"https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+			"https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation"
 		);
 	});
 });

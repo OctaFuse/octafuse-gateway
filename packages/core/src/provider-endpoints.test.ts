@@ -189,13 +189,13 @@ describe('resolveUpstreamEndpoint', () => {
 			dashscope: {
 				endpoints: {
 					'audio.transcriptions.multimodal':
-						'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
+						'https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation',
 				},
 			},
 		};
 		assert.equal(
 			resolveUpstreamEndpoint('dashscope', 'audio.transcriptions.multimodal', endpoints),
-			'https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
+			'https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation'
 		);
 		assert.deepEqual(listConfiguredCapabilities(endpoints, 'dashscope'), [
 			'audio.transcriptions.multimodal',

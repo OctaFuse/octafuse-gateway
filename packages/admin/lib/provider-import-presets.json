@@ -186,17 +186,21 @@
 			},
 			"dashscope": {
 				"base": "https://dashscope.aliyuncs.com/api/v1"
+			},
+			"anthropic": {
+				"base": "https://dashscope.aliyuncs.com/apps/anthropic"
 			}
 		},
+		"description": "China-region Model Studio pay-as-you-go on dashscope.aliyuncs.com: OpenAI chat, Anthropic Messages, and DashScope base. Workspace-dedicated hosts ({WorkspaceId}.cn-beijing.maas.aliyuncs.com) are not a preset. Do not mix with Qwen AI Platform maas.qianwenaiapi.com or Coding Plan coding.dashscope.aliyuncs.com.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "阿里云百炼",
-					"description": "阿里云百炼标准模型服务，提供 OpenAI 兼容的对话 API，以及 DashScope 原生 ASR/TTS 接口。"
+					"description": "阿里云百炼按量端点，提供 OpenAI 兼容对话、Anthropic Messages，以及 DashScope 原生 ASR/TTS。"
 				},
 				"en": {
 					"name": "Alibaba Cloud Model Studio",
-					"description": "Alibaba Cloud Model Studio’s standard OpenAI-compatible chat API plus native DashScope ASR/TTS endpoints."
+					"description": "China-region pay-as-you-go endpoints for OpenAI-compatible chat, Anthropic Messages, and native DashScope ASR/TTS."
 				}
 			},
 			"links": {
@@ -249,18 +253,21 @@
 			},
 			"dashscope": {
 				"base": "https://dashscope-intl.aliyuncs.com/api/v1"
+			},
+			"anthropic": {
+				"base": "https://dashscope-intl.aliyuncs.com/apps/anthropic"
 			}
 		},
-		"description": "Singapore / international Model Studio pay-as-you-go. Do not mix with China-region dashscope.aliyuncs.com or Coding Plan coding-intl.dashscope.aliyuncs.com keys.",
+		"description": "Singapore / international Model Studio pay-as-you-go on dashscope-intl.aliyuncs.com: OpenAI chat, Anthropic Messages, and DashScope base. Do not mix with China-region dashscope.aliyuncs.com or Coding Plan coding-intl.dashscope.aliyuncs.com keys.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "阿里云百炼（国际站）",
-					"description": "阿里云百炼国际站按量端点，提供 OpenAI 兼容对话与 DashScope 原生音频接口。"
+					"description": "阿里云百炼国际站按量端点，提供 OpenAI 兼容对话、Anthropic Messages，以及 DashScope 原生音频接口。"
 				},
 				"en": {
 					"name": "Alibaba Cloud Model Studio (International)",
-					"description": "International pay-as-you-go Model Studio endpoints for OpenAI-compatible chat plus native DashScope audio."
+					"description": "International pay-as-you-go endpoints for OpenAI-compatible chat, Anthropic Messages, and native DashScope audio."
 				}
 			},
 			"links": {
@@ -300,38 +307,74 @@
 		}
 	},
 	{
+		"name": "Qwen AI Platform",
+		"vendor_key": "aliyun",
+		"icon_key": "qwen",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://maas.qianwenaiapi.com/compatible-mode/v1/chat/completions",
+					"responses": "https://maas.qianwenaiapi.com/compatible-mode/v1/responses"
+				}
+			},
+			"dashscope": {
+				"base": "https://maas.qianwenaiapi.com/api/v1"
+			},
+			"anthropic": {
+				"base": "https://maas.qianwenaiapi.com/apps/anthropic"
+			}
+		},
+		"description": "Qwen AI Platform pay-as-you-go on maas.qianwenaiapi.com: OpenAI chat + responses, Anthropic base, and DashScope base (ASR/TTS/realtime/image/filetrans). Keys are sk- or sk-ws-. Do not mix with Token Plan sk-sp-* on token-plan.maas.qianwenaiapi.com or Bailian dashscope.aliyuncs.com. See platform.qianwenai.com.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "千问 AI 平台",
+					"description": "千问按量端点（maas.qianwenaiapi.com），支持 OpenAI Chat / Responses、Anthropic，以及 DashScope 语音、生图与 filetrans。使用 sk- 或 sk-ws- Key。"
+				},
+				"en": {
+					"name": "Qwen AI Platform",
+					"description": "Pay-as-you-go endpoints on maas.qianwenaiapi.com for OpenAI Chat/Responses, Anthropic, and DashScope audio, image, and file transcription. Uses sk- or sk-ws- keys."
+				}
+			},
+			"links": {
+				"platform": "https://platform.qianwenai.com/"
+			}
+		}
+	},
+	{
 		"name": "Qwen AI Platform (Token Plan)",
 		"vendor_key": "aliyun",
 		"icon_key": "qwen",
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions"
+					"chat": "https://token-plan.maas.qianwenaiapi.com/compatible-mode/v1/chat/completions",
+					"responses": "https://token-plan.maas.qianwenaiapi.com/compatible-mode/v1/responses"
 				}
 			},
 			"dashscope": {
 				"endpoints": {
-					"audio.transcriptions.multimodal": "https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-					"images.generations.multimodal": "https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-					"audio.speech": "https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer",
-					"audio.realtime.inference": "wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference",
-					"audio.realtime.session": "wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime"
+					"audio.transcriptions.multimodal": "https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation",
+					"images.generations.multimodal": "https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation",
+					"audio.speech": "https://token-plan.maas.qianwenaiapi.com/api/v1/services/audio/tts/SpeechSynthesizer",
+					"audio.realtime.inference": "wss://token-plan.maas.qianwenaiapi.com/api-ws/v1/inference",
+					"audio.realtime.session": "wss://token-plan.maas.qianwenaiapi.com/api-ws/v1/realtime"
 				}
 			},
 			"anthropic": {
-				"base": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"
+				"base": "https://token-plan.maas.qianwenaiapi.com/apps/anthropic"
 			}
 		},
-		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + DashScope TTS/realtime/image + Anthropic base; includes qwen-audio-3.0-asr-flash sync HTTP and DashScope image generation via multimodal-generation. Does not include filetrans HTTP. Plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. See platform.qianwenai.com Token Plan docs.",
+		"description": "Qwen AI Platform Token Plan (personal/team) on token-plan.maas.qianwenaiapi.com: OpenAI chat + responses, Anthropic base, and explicit DashScope TTS/realtime/image/ASR overrides. Includes qwen-audio-3.0-asr-flash sync HTTP and DashScope image generation via multimodal-generation. Does not include filetrans HTTP or video synthesis. Plan keys (sk-sp-*). Do not mix with pay-as-you-go maas.qianwenaiapi.com or Coding Plan. See platform.qianwenai.com Token Plan docs.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "千问 AI 平台（Token Plan）",
-					"description": "千问 Token Plan 个人版与团队版端点，支持 OpenAI、DashScope TTS / 实时语音 / 生图与 Anthropic 协议，以及 qwen-audio-3.0-asr-flash 同步 HTTP；不含 filetrans 异步转写。"
+					"description": "千问 Token Plan 个人版与团队版端点（token-plan.maas.qianwenaiapi.com），支持 OpenAI Chat / Responses、Anthropic，以及 DashScope TTS / 实时语音 / 生图与 qwen-audio-3.0-asr-flash 同步 HTTP；不含 filetrans 异步转写与视频生成。"
 				},
 				"en": {
 					"name": "Qwen AI Platform (Token Plan)",
-					"description": "Personal and team Token Plan endpoints for OpenAI, DashScope TTS/realtime/image, and Anthropic protocols. Includes qwen-audio-3.0-asr-flash sync HTTP and DashScope image generation. Does not include filetrans HTTP."
+					"description": "Personal and team Token Plan endpoints on token-plan.maas.qianwenaiapi.com for OpenAI Chat/Responses, Anthropic, and DashScope TTS/realtime/image. Includes qwen-audio-3.0-asr-flash sync HTTP. Does not include filetrans or video synthesis."
 				}
 			},
 			"links": {
