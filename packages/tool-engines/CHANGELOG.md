@@ -1,5 +1,12 @@
 # @octafuse/tool-engines
 
+## 2.13.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @octafuse/core@2.13.0
+
 ## 2.12.0
 
 ### Patch Changes
