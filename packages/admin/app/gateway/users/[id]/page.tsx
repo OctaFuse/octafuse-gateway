@@ -28,13 +28,19 @@ import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { AuditChangeDetailModal, AuditLogSharedCells } from '@/components/AuditLogSharedCells';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
-import { normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
+import { compareRouteGroupsForDisplay, normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
 import { pickChangedUserFields } from '../user-detail-form';
+import { UserFactorEditor } from '../user-factor-editor';
 
 /** 用户详情近期审计与全站页默认一致：不含用量扣费 */
 const USER_DETAIL_AUDIT_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((type) => type !== 'usage_charge');
 
-type ChargedCostFactorRow = { modelId: string; factor: string };
+/** `*` 表示该模型全部分组；具体值为 route group。 */
+const ALL_ROUTE_GROUPS = '*';
+
+type ChargedCostFactorValue = number | Record<string, number>;
+
+type ChargedCostFactorRow = { modelId: string; routeGroup: string; factor: string };
 
 type CatalogModelOption = Pick<GatewayModel, 'id' | 'display_name' | 'vendor'>;
 
@@ -58,21 +64,39 @@ type UserDetail = {
   wallet_balance?: number;
   status: string;
   metadata: Record<string, unknown> | null;
-  charged_cost_factors?: Record<string, number> | null;
+  charged_cost_factors?: Record<string, ChargedCostFactorValue> | null;
   rate_limit?: { rpm?: number } | null;
   created_at: string;
   updated_at: string;
 };
 
-function factorsToRows(factors: Record<string, number> | null | undefined): ChargedCostFactorRow[] {
+function factorsToRows(factors: Record<string, ChargedCostFactorValue> | null | undefined): ChargedCostFactorRow[] {
   if (!factors) return [];
-  return Object.entries(factors).map(([modelId, factor]) => ({ modelId, factor: String(factor) }));
+  const rows: ChargedCostFactorRow[] = [];
+  for (const [modelId, value] of Object.entries(factors)) {
+    if (typeof value === 'number') {
+      rows.push({ modelId, routeGroup: ALL_ROUTE_GROUPS, factor: String(value) });
+      continue;
+    }
+    const groups = Object.entries(value).sort(([a], [b]) => {
+      if (a === ALL_ROUTE_GROUPS) return -1;
+      if (b === ALL_ROUTE_GROUPS) return 1;
+      return a.localeCompare(b, undefined, { sensitivity: 'base' });
+    });
+    for (const [routeGroup, factor] of groups) {
+      if (typeof factor !== 'number') continue;
+      rows.push({ modelId, routeGroup, factor: String(factor) });
+    }
+  }
+  return rows;
 }
 
 function rowsToFactors(
   rows: ChargedCostFactorRow[]
-): { ok: true; value: Record<string, number> | null } | { ok: false; code: 'modelRequired' | 'valueInvalid' | 'duplicate' } {
-  const out: Record<string, number> = {};
+):
+  | { ok: true; value: Record<string, ChargedCostFactorValue> | null }
+  | { ok: false; code: 'modelRequired' | 'valueInvalid' | 'duplicate' } {
+  const byModel = new Map<string, Map<string, number>>();
   for (const row of rows) {
     const modelId = row.modelId.trim();
     const factorRaw = row.factor.trim();
@@ -80,8 +104,22 @@ function rowsToFactors(
     if (!modelId) return { ok: false, code: 'modelRequired' };
     const n = Number(factorRaw);
     if (!Number.isFinite(n) || n < 0) return { ok: false, code: 'valueInvalid' };
-    if (Object.prototype.hasOwnProperty.call(out, modelId)) return { ok: false, code: 'duplicate' };
-    out[modelId] = n;
+    const routeGroup =
+      row.routeGroup.trim() === ALL_ROUTE_GROUPS || row.routeGroup.trim() === ''
+        ? ALL_ROUTE_GROUPS
+        : row.routeGroup.trim().toLowerCase();
+    const groups = byModel.get(modelId) ?? new Map<string, number>();
+    if (groups.has(routeGroup)) return { ok: false, code: 'duplicate' };
+    groups.set(routeGroup, n);
+    byModel.set(modelId, groups);
+  }
+  const out: Record<string, ChargedCostFactorValue> = {};
+  for (const [modelId, groups] of byModel) {
+    if (groups.size === 1 && groups.has(ALL_ROUTE_GROUPS)) {
+      out[modelId] = groups.get(ALL_ROUTE_GROUPS)!;
+      continue;
+    }
+    out[modelId] = Object.fromEntries(groups);
   }
   return { ok: true, value: Object.keys(out).length > 0 ? out : null };
 }
@@ -177,6 +215,8 @@ export default function GatewayUserDetailPage() {
   const [activeSection, setActiveSection] = useState<'overview' | 'billing' | 'keys' | 'activity'>('overview');
   const planSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [catalogModels, setCatalogModels] = useState<CatalogModelOption[]>([]);
+  const [routeGroupsByModel, setRouteGroupsByModel] = useState<Map<string, string[]>>(new Map());
+  const [routeGroupsLoaded, setRouteGroupsLoaded] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [modelPickerSearch, setModelPickerSearch] = useState('');
   const [planForm, setPlanForm] = useState({
@@ -361,6 +401,39 @@ export default function GatewayUserDetailPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/routes');
+        const data = await readApiJson<Array<{ model_id: string; route_group?: string | null }>>(res);
+        if (!cancelled && data.success && data.data) {
+          const grouped = new Map<string, Set<string>>();
+          for (const route of data.data) {
+            const modelId = route.model_id?.trim();
+            if (!modelId) continue;
+            const group = normalizeRouteGroup(route.route_group).toLowerCase();
+            const set = grouped.get(modelId) ?? new Set<string>();
+            set.add(group);
+            grouped.set(modelId, set);
+          }
+          const next = new Map<string, string[]>();
+          for (const [modelId, groups] of grouped) {
+            next.set(modelId, [...groups].sort(compareRouteGroupsForDisplay));
+          }
+          setRouteGroupsByModel(next);
+        }
+        if (!cancelled) setRouteGroupsLoaded(true);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setRouteGroupsLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const catalogById = useMemo(() => {
     const map = new Map<string, CatalogModelOption>();
     for (const model of catalogModels) map.set(model.id, model);
@@ -441,12 +514,84 @@ export default function GatewayUserDetailPage() {
     };
   }, []);
 
+  const factorCards = useMemo(() => {
+    const order: string[] = [];
+    const grouped = new Map<string, { row: ChargedCostFactorRow; index: number }[]>();
+    planForm.chargedCostFactorRows.forEach((row, index) => {
+      const list = grouped.get(row.modelId);
+      if (list) list.push({ row, index });
+      else {
+        order.push(row.modelId);
+        grouped.set(row.modelId, [{ row, index }]);
+      }
+    });
+    return order.map((modelId) => ({
+      modelId,
+      rows: (grouped.get(modelId) ?? []).slice().sort((a, b) => {
+        if (a.row.routeGroup === ALL_ROUTE_GROUPS) return -1;
+        if (b.row.routeGroup === ALL_ROUTE_GROUPS) return 1;
+        return compareRouteGroupsForDisplay(a.row.routeGroup, b.row.routeGroup);
+      }),
+    }));
+  }, [planForm.chargedCostFactorRows]);
+
+  const factorJsonResult = rowsToFactors(planForm.chargedCostFactorRows);
+  const factorJsonPreview = {
+    json: factorJsonResult.ok ? JSON.stringify(factorJsonResult.value, null, 2) : null,
+    error: factorJsonResult.ok
+      ? null
+      : t({
+          modelRequired: 'errors.chargedCostFactorModelRequired',
+          valueInvalid: 'errors.chargedCostFactorValueInvalid',
+          duplicate: 'errors.chargedCostFactorDuplicate',
+        }[factorJsonResult.code]),
+    dirty: savedFormRef.current != null &&
+      JSON.stringify(planForm.chargedCostFactorRows) !== JSON.stringify(savedFormRef.current.chargedCostFactorRows),
+  };
+
+  const updateChargedCostFactorRow = (index: number, patch: Partial<ChargedCostFactorRow>) => {
+    setPlanForm((prev) => {
+      const next = [...prev.chargedCostFactorRows];
+      const current = next[index];
+      if (!current) return prev;
+      next[index] = { ...current, ...patch };
+      return { ...prev, chargedCostFactorRows: next };
+    });
+  };
+
   const addChargedCostFactorModel = (modelId: string) => {
     if (!modelId || selectedFactorModelIds.has(modelId)) return;
     setPlanForm((prev) => ({
       ...prev,
-      chargedCostFactorRows: [...prev.chargedCostFactorRows, { modelId, factor: '1' }],
+      chargedCostFactorRows: [
+        ...prev.chargedCostFactorRows,
+        { modelId, routeGroup: ALL_ROUTE_GROUPS, factor: '1' },
+      ],
     }));
+    setPlanError('');
+  };
+
+  const addChargedCostFactorGroup = (modelId: string, routeGroup: string) => {
+    if (!modelId || !routeGroup) return;
+    setPlanForm((prev) => {
+      if (prev.chargedCostFactorRows.some((row) => row.modelId === modelId && row.routeGroup === routeGroup)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        chargedCostFactorRows: [
+          ...prev.chargedCostFactorRows,
+          {
+            modelId,
+            routeGroup,
+            factor:
+              prev.chargedCostFactorRows.find(
+                (row) => row.modelId === modelId && row.routeGroup === ALL_ROUTE_GROUPS,
+              )?.factor ?? '1',
+          },
+        ],
+      };
+    });
     setPlanError('');
   };
 
@@ -1211,79 +1356,31 @@ export default function GatewayUserDetailPage() {
                 <p className="text-xs text-gray-500">{t('help.walletBalance')}</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex min-w-0 flex-col gap-4">
-              <div className="flex items-center justify-between gap-3 shrink-0">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {t('fields.chargedCostFactors')}{' '}
-                  <InfoHintPopover label={t('fields.chargedCostFactors')} portal openOnHover align="start">
-                    <p className="leading-6">{t('help.chargedCostFactors')}</p>
-                  </InfoHintPopover>{' '}
-                  <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModelPickerSearch('');
-                    setShowModelPicker(true);
-                  }}
-                  className="inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800"
-                >
-                  <PlusIcon className="h-3.5 w-3.5" />
-                  {tCommon('add')}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500">{t('detailUx.multiplierHint')}</p>
-              {planForm.chargedCostFactorRows.length === 0 ? (
-                <p className="text-xs text-gray-400 flex-1">{t('chargedCostFactors.empty')}</p>
-              ) : (
-                <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
-                  {planForm.chargedCostFactorRows.map((row, index) => {
-                    const model = catalogById.get(row.modelId);
-                    return (
-                      <div
-                        key={row.modelId}
-                        className="grid min-w-0 grid-cols-[minmax(0,1fr)_6rem_auto] items-center gap-3 rounded-lg border border-gray-200 p-3"
-                      >
-                        <div className="min-w-0">
-                          <div className="truncate text-sm text-gray-900">{catalogModelLabel(model, row.modelId)}</div>
-                          <div className="truncate font-mono text-[11px] text-gray-500" title={row.modelId}>
-                            {row.modelId}
-                            {!model ? ` · ${t('chargedCostFactors.unknownModel')}` : ''}
-                          </div>
-                        </div>
-                        <input
-                          type="number"
-                          min={0}
-                          step="any"
-                          aria-label={`${catalogModelLabel(model, row.modelId)} · ${t('fields.chargedCostFactorValue')}`}
-                          value={row.factor}
-                          onChange={(e) => {
-                            const next = [...planForm.chargedCostFactorRows];
-                            next[index] = { ...next[index], factor: e.target.value };
-                            setPlanForm({ ...planForm, chargedCostFactorRows: next });
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
-                          placeholder={t('fields.chargedCostFactorValue')}
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPlanForm({
-                              ...planForm,
-                              chargedCostFactorRows: planForm.chargedCostFactorRows.filter((_, i) => i !== index),
-                            })
-                          }
-                          className="px-2 text-red-600 hover:text-red-800"
-                          aria-label={tCommon('delete')}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <UserFactorEditor
+              cards={factorCards}
+              models={catalogById}
+              groupsByModel={routeGroupsByModel}
+              groupsLoaded={routeGroupsLoaded}
+              configPreview={factorJsonPreview}
+              onAddModel={() => {
+                setModelPickerSearch('');
+                setShowModelPicker(true);
+              }}
+              onAddGroup={addChargedCostFactorGroup}
+              onUpdateRow={updateChargedCostFactorRow}
+              onRemoveRow={(index) =>
+                setPlanForm((prev) => ({
+                  ...prev,
+                  chargedCostFactorRows: prev.chargedCostFactorRows.filter((_, i) => i !== index),
+                }))
+              }
+              onRemoveModel={(modelId) =>
+                setPlanForm((prev) => ({
+                  ...prev,
+                  chargedCostFactorRows: prev.chargedCostFactorRows.filter((row) => row.modelId !== modelId),
+                }))
+              }
+            />
           </div>
         </section>
       </fieldset>
@@ -1617,10 +1714,15 @@ export default function GatewayUserDetailPage() {
         >
           <div
             className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-factor-model-picker-title"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-6 py-4 border-b flex justify-between items-center gap-3">
-              <h3 className="text-lg font-bold text-gray-900">{t('chargedCostFactors.pickTitle')}</h3>
+              <h3 id="user-factor-model-picker-title" className="text-lg font-bold text-gray-900">
+                {t('chargedCostFactors.pickTitle')}
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowModelPicker(false)}
@@ -1655,7 +1757,7 @@ export default function GatewayUserDetailPage() {
                         <h4 className="text-sm font-semibold text-gray-900">{getModelVendorLabel(vendorKey)}</h4>
                         <span className="text-xs text-gray-400">{models.length}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                         {models.map((model) => {
                           const added = selectedFactorModelIds.has(model.id);
                           return (

@@ -1623,7 +1623,7 @@
 		"detailUx": {
 			"billingOrder": "Charges use Budget first, then Wallet.",
 			"noAutoReset": "No automatic reset",
-			"multiplierHint": "Model-specific billing rules apply to charges from both Budget and Wallet.",
+			"multiplierHint": "Model and route-group billing rules apply to charges from both Budget and Wallet.",
 			"manageKeys": "Manage keys →",
 			"overview": "Overview",
 			"billing": "Budget & billing",
@@ -1751,7 +1751,7 @@
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
 			"rateLimitRpm": "Shared across all keys of this user per rolling 60-second window. Leave empty for unlimited. 0 rejects all metered calls. GET /v1/me is not counted. Per-key caps are set on each key.",
 			"rateLimitRpmInvalid": "Rate limit must be a non-negative integer, or empty for unlimited.",
-			"chargedCostFactors": "User-specific multipliers combine with the effective route billing multiplier using the global mode (multiply or minimum), without changing cost amounts. Unset uses route billing; 0 means no charge for this model. Applies to LLM, image and audio models, not Agent Tools."
+			"chargedCostFactors": "User-specific multipliers combine with the effective route billing multiplier using the global mode (multiply or minimum), without changing cost amounts. A route group match wins, then *, then a model-wide number. Unset uses route billing; 0 means no charge. Applies to LLM, image and audio models, not Agent Tools."
 		},
 		"chargedCostFactors": {
 			"none": "No charged cost factors.",
@@ -1761,7 +1761,44 @@
 			"pickEmpty": "No models match this search.",
 			"alreadyAdded": "Added",
 			"unknownModel": "not in catalog",
-			"saveSuccess": "Charged cost factors saved."
+			"allGroups": "All groups",
+			"addGroup": "Add group",
+			"noMoreGroups": "Every route group for this model is already listed.",
+			"unknownGroup": "Unknown route group",
+			"groupLabel": "Route group",
+			"saveSuccess": "Charged cost factors saved.",
+			"editor": {
+				"addModel": "Add model",
+				"modelCount": "{count, plural, one {# model} other {# models}}",
+				"defaultFactor": "Default multiplier",
+				"defaultHint": "Used for route groups without a specific override.",
+				"inherited": "No default multiplier. Other groups use route billing.",
+				"setDefault": "Set default multiplier",
+				"removeDefault": "Remove the default multiplier for {model}",
+				"removeModel": "Remove {model} and all its multipliers",
+				"overrides": "Group overrides",
+				"priorityHint": "A group override takes priority over the default. Without either, route billing applies.",
+				"factorHint": "Decimal multipliers are supported. 0 means no charge.",
+				"groupColumn": "Route group",
+				"factorColumn": "Multiplier",
+				"chooseGroup": "Choose a group to add…",
+				"chooseGroupFor": "Add a group override for {model}",
+				"noRouteGroups": "No active route groups are available for this model.",
+				"removeOverride": "Remove the {group} override for {model}",
+				"emptyOverrides": "No group overrides.",
+				"defaultInput": "{model} · Default multiplier",
+				"searchModels": "Filter models…",
+				"modelColumn": "Model",
+				"actionsColumn": "Actions",
+				"routeBilling": "Route billing",
+				"addGroup": "+ Group override",
+				"noMatchingModels": "No matching models.",
+				"setDefaultFor": "Set default multiplier for {model}",
+				"viewJson": "View JSON",
+				"hideJson": "Hide JSON",
+				"jsonTitle": "Current multiplier configuration in JSON",
+				"jsonHint": "Read-only preview of the current form, including unsaved changes and models hidden by the filter."
+			}
 		},
 		"externalIdentity": {
 			"title": "External identity",
@@ -1808,7 +1845,7 @@
 			"createFailed": "Create failed",
 			"chargedCostFactorModelRequired": "Each Charged cost factor row needs a model ID.",
 			"chargedCostFactorValueInvalid": "Each Charged cost factor must be a number ≥ 0.",
-			"chargedCostFactorDuplicate": "Duplicate model IDs in Charged cost factors."
+			"chargedCostFactorDuplicate": "Duplicate model and route group in Charged cost factors."
 		}
 	},
 	"keysPage": {

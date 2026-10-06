@@ -25,8 +25,11 @@ export type AdminUserCreateInput = {
 	budget_base?: number | null;
 	budget_period?: BudgetPeriod;
 	metadata?: unknown;
-	/** `{ "<models.id>": factor }`；null / {} 清空 */
-	charged_cost_factors?: Record<string, number> | null;
+	/**
+	 * `{ "<models.id>": factor | { "<route_group>" | "*": factor } }`。
+	 * 数字覆盖该模型全部分组；`null` / `{}` 清空。
+	 */
+	charged_cost_factors?: Record<string, number | Record<string, number>> | null;
 };
 
 export type AdminUserUpdateInput = {
@@ -48,8 +51,11 @@ export type AdminUserUpdateInput = {
 	 */
 	external_system?: string | null;
 	external_user_id?: string | null;
-	/** `{ "<models.id>": factor }`；null / {} 清空 */
-	charged_cost_factors?: Record<string, number> | null;
+	/**
+	 * `{ "<models.id>": factor | { "<route_group>" | "*": factor } }`。
+	 * 数字覆盖该模型全部分组；`null` / `{}` 清空。
+	 */
+	charged_cost_factors?: Record<string, number | Record<string, number>> | null;
 	/** 永久额度累计发放（绝对值运维修正） */
 	wallet_granted?: number | null;
 	/** 永久额度累计消耗（绝对值运维修正） */

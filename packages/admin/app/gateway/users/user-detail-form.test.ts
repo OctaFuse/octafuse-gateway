@@ -32,7 +32,11 @@ test('cycle edits preserve usage unless the spent field was explicitly edited', 
 });
 
 test('clearing limits and removing all model multipliers sends explicit null', () => {
-  const saved = { budget_max: '10', rateLimitRpm: '20', chargedCostFactorRows: [{ modelId: 'model', factor: '0.5' }] };
+  const saved = {
+    budget_max: '10',
+    rateLimitRpm: '20',
+    chargedCostFactorRows: [{ modelId: 'model', routeGroup: '*', factor: '0.5' }],
+  };
   const current = { budget_max: '', rateLimitRpm: '', chargedCostFactorRows: [] };
   assert.deepEqual(
     pickChangedUserFields({ budget_max: null, rate_limit: null, charged_cost_factors: null }, current, saved),
@@ -54,8 +58,8 @@ test('zero RPM and metadata replacement survive alongside a wallet correction', 
 });
 
 test('blank metadata remains unchanged and equal multiplier drafts are omitted', () => {
-  const saved = { metadata: '{}', chargedCostFactorRows: [{ modelId: 'model', factor: '0.5' }] };
-  const current = { metadata: '', chargedCostFactorRows: [{ modelId: 'model', factor: '0.5' }] };
+  const saved = { metadata: '{}', chargedCostFactorRows: [{ modelId: 'model', routeGroup: '*', factor: '0.5' }] };
+  const current = { metadata: '', chargedCostFactorRows: [{ modelId: 'model', routeGroup: '*', factor: '0.5' }] };
   assert.deepEqual(pickChangedUserFields({ charged_cost_factors: { model: 0.5 }, reason: 'edit' }, current, saved), {
     reason: 'edit',
   });

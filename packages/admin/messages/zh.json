@@ -1623,7 +1623,7 @@
 		"detailUx": {
 			"billingOrder": "扣费顺序：先使用预算额度，再使用钱包余额。",
 			"noAutoReset": "不自动重置",
-			"multiplierHint": "按模型设置的计费倍率，同时作用于预算和钱包扣费。",
+			"multiplierHint": "按模型和路由组设置的计费倍率，同时作用于预算和钱包扣费。",
 			"manageKeys": "管理密钥 →",
 			"overview": "概览",
 			"billing": "额度与计费",
@@ -1751,7 +1751,7 @@
 			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
 			"rateLimitRpm": "该用户所有 Key 合计的每 60 秒滚动窗口请求数。留空表示不限；0 拒绝所有计次请求。GET /v1/me 不计入。单把 Key 的额外上限在下方密钥表中设置。",
 			"rateLimitRpmInvalid": "限流必须是非负整数，或留空表示不限。",
-			"chargedCostFactors": "用户专属倍率与路由实际计费倍率按全局模式合成（相乘或取较小值），不影响成本金额。未配置时沿用路由计费；0 表示该模型不收费。适用于 LLM、图像和音频，不含 Agent Tools。"
+			"chargedCostFactors": "用户专属倍率与路由实际计费倍率按全局模式合成（相乘或取较小值），不影响成本金额。匹配顺序为具体路由组、*、模型级数字。未配置时沿用路由计费；0 表示不收费。适用于 LLM、图像和音频，不含 Agent Tools。"
 		},
 		"chargedCostFactors": {
 			"none": "未设置 Charged cost factors。",
@@ -1761,7 +1761,44 @@
 			"pickEmpty": "没有匹配的模型。",
 			"alreadyAdded": "已添加",
 			"unknownModel": "不在目录中",
-			"saveSuccess": "Charged cost factors 已保存。"
+			"allGroups": "所有分组",
+			"addGroup": "添加分组",
+			"noMoreGroups": "该模型的路由组都已添加。",
+			"unknownGroup": "未知路由组",
+			"groupLabel": "路由组",
+			"saveSuccess": "Charged cost factors 已保存。",
+			"editor": {
+				"addModel": "添加模型",
+				"modelCount": "{count} 个模型",
+				"defaultFactor": "默认倍率",
+				"defaultHint": "未单独设置倍率的路由组使用此值。",
+				"inherited": "未设置默认倍率，其他分组沿用路由计费。",
+				"setDefault": "设置默认倍率",
+				"removeDefault": "移除 {model} 的默认倍率",
+				"removeModel": "移除 {model} 及其所有倍率",
+				"overrides": "分组覆盖",
+				"priorityHint": "具体分组倍率优先于默认倍率；两者均未设置时沿用路由计费。",
+				"factorHint": "倍率支持小数，0 表示不收费。",
+				"groupColumn": "路由组",
+				"factorColumn": "倍率",
+				"chooseGroup": "选择要添加的分组…",
+				"chooseGroupFor": "为 {model} 添加分组覆盖",
+				"noRouteGroups": "该模型暂无可用路由组。",
+				"removeOverride": "移除 {model} 的 {group} 分组倍率",
+				"emptyOverrides": "暂未设置分组覆盖。",
+				"defaultInput": "{model} · 默认倍率",
+				"searchModels": "搜索模型…",
+				"modelColumn": "模型",
+				"actionsColumn": "操作",
+				"routeBilling": "沿用路由计费",
+				"addGroup": "+ 分组覆盖",
+				"noMatchingModels": "没有匹配的模型。",
+				"setDefaultFor": "设置 {model} 的默认倍率",
+				"viewJson": "查看 JSON",
+				"hideJson": "收起 JSON",
+				"jsonTitle": "当前倍率配置 JSON",
+				"jsonHint": "只读预览，包含当前表单中尚未保存的修改及被搜索隐藏的模型。"
+			}
 		},
 		"externalIdentity": {
 			"title": "外部身份",
@@ -1808,7 +1845,7 @@
 			"createFailed": "创建失败",
 			"chargedCostFactorModelRequired": "每一行 Charged cost factor 都需要填写模型 ID。",
 			"chargedCostFactorValueInvalid": "Charged cost factor 必须是 ≥ 0 的数字。",
-			"chargedCostFactorDuplicate": "Charged cost factors 中存在重复的模型 ID。"
+			"chargedCostFactorDuplicate": "Charged cost factors 中存在重复的模型与路由组。"
 		}
 	},
 	"keysPage": {

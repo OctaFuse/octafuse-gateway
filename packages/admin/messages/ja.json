@@ -1623,7 +1623,7 @@
 		"detailUx": {
 			"billingOrder": "料金は予算から先に差し引かれ、次にウォレットを使用します。",
 			"noAutoReset": "自動リセットなし",
-			"multiplierHint": "モデル別の課金倍率は予算とウォレットの両方に適用されます。",
+			"multiplierHint": "モデルとルートグループの課金倍率は、予算とウォレットの両方に適用されます。",
 			"manageKeys": "キーを管理 →",
 			"overview": "概要",
 			"billing": "予算・課金",
@@ -1751,7 +1751,7 @@
 			"metadataReplace": "保存すると metadata オブジェクト全体が置き換わります。現在の値を維持する場合は空欄にしてください。",
 			"rateLimitRpm": "このユーザーの全 Key 合計で、60 秒ローリングウィンドウあたりのリクエスト数です。空欄は無制限、0 は計数対象の呼び出しをすべて拒否します。GET /v1/me はカウントしません。Key ごとの上限は下の Key 表で設定します。",
 			"rateLimitRpmInvalid": "レート制限は 0 以上の整数か、無制限の場合は空欄にしてください。",
-			"chargedCostFactors": "ユーザー別倍率は実効ルート請求倍率とグローバル設定（乗算または小さい方）で合成され、原価額には影響しません。未設定はルート請求を使用し、0 は無料です。LLM・画像・音声に適用し、Agent Tools は対象外です。"
+			"chargedCostFactors": "ユーザー別倍率は実効ルート請求倍率とグローバル設定（乗算または小さい方）で合成され、原価額には影響しません。照合順はルートグループ、*、モデル全体の数値です。未設定はルート請求を使用し、0 は無料です。LLM・画像・音声に適用し、Agent Tools は対象外です。"
 		},
 		"chargedCostFactors": {
 			"none": "Charged cost factors は未設定です。",
@@ -1761,7 +1761,44 @@
 			"pickEmpty": "一致するモデルがありません。",
 			"alreadyAdded": "追加済み",
 			"unknownModel": "カタログにありません",
-			"saveSuccess": "Charged cost factors を保存しました。"
+			"allGroups": "すべてのグループ",
+			"addGroup": "グループを追加",
+			"noMoreGroups": "このモデルのルートグループはすべて追加済みです。",
+			"unknownGroup": "不明なルートグループ",
+			"groupLabel": "ルートグループ",
+			"saveSuccess": "Charged cost factors を保存しました。",
+			"editor": {
+				"addModel": "モデルを追加",
+				"modelCount": "{count} モデル",
+				"defaultFactor": "既定の倍率",
+				"defaultHint": "個別の倍率がないルートグループに適用されます。",
+				"inherited": "既定の倍率は未設定です。その他のグループにはルート課金が適用されます。",
+				"setDefault": "既定の倍率を設定",
+				"removeDefault": "{model} の既定の倍率を削除",
+				"removeModel": "{model} とすべての倍率を削除",
+				"overrides": "グループ別の倍率",
+				"priorityHint": "グループ別の倍率は既定の倍率より優先されます。どちらも未設定の場合はルート課金が適用されます。",
+				"factorHint": "小数の倍率も指定できます。0 は無料を意味します。",
+				"groupColumn": "ルートグループ",
+				"factorColumn": "倍率",
+				"chooseGroup": "追加するグループを選択…",
+				"chooseGroupFor": "{model} にグループ別の倍率を追加",
+				"noRouteGroups": "このモデルには有効なルートグループがありません。",
+				"removeOverride": "{model} の {group} グループの倍率を削除",
+				"emptyOverrides": "グループ別の倍率は未設定です。",
+				"defaultInput": "{model} · 既定の倍率",
+				"searchModels": "モデルを検索…",
+				"modelColumn": "モデル",
+				"actionsColumn": "操作",
+				"routeBilling": "ルートの課金を適用",
+				"addGroup": "+ グループ設定",
+				"noMatchingModels": "一致するモデルがありません。",
+				"setDefaultFor": "{model} のデフォルト倍率を設定",
+				"viewJson": "JSON を表示",
+				"hideJson": "JSON を閉じる",
+				"jsonTitle": "現在の倍率設定の JSON",
+				"jsonHint": "現在のフォームの読み取り専用プレビューです。未保存の変更や検索で非表示のモデルも含まれます。"
+			}
 		},
 		"externalIdentity": {
 			"title": "外部 ID",
@@ -1808,7 +1845,7 @@
 			"createFailed": "作成に失敗しました",
 			"chargedCostFactorModelRequired": "Charged cost factor の各行にはモデル ID が必要です。",
 			"chargedCostFactorValueInvalid": "Charged cost factor は 0 以上の数値である必要があります。",
-			"chargedCostFactorDuplicate": "Charged cost factors に重複したモデル ID があります。"
+			"chargedCostFactorDuplicate": "Charged cost factors に重複したモデルとルートグループがあります。"
 		}
 	},
 	"keysPage": {

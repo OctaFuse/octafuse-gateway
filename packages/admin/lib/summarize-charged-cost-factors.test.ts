@@ -29,4 +29,13 @@ describe('summarizeChargedCostFactors', () => {
 		assert.equal(fromJson.summary, 'gemini-2.5-flash ×0.8');
 		assert.equal(summarizeChargedCostFactors('{').empty, true);
 	});
+
+	it('expands route-group factors and counts each group', () => {
+		const grouped = summarizeChargedCostFactors({
+			'gpt-5': { web: 0.5, '*': 0.9, free: 0 },
+		});
+		assert.equal(grouped.summary, 'gpt-5 * ×0.9 · +2');
+		assert.equal(grouped.count, 3);
+		assert.match(grouped.full, /"web": 0.5/);
+	});
 });

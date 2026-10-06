@@ -167,6 +167,20 @@ describe('getAdminUserDisplayDiscounts', () => {
 		assert.equal(rows[0]?.discounts.default?.current.composite_factor, 0.4);
 	});
 
+	it('overlays only the configured route group and keeps the others at the catalog factor', async () => {
+		const repos = mockRepos({
+			user: baseUser({
+				charged_cost_factors: JSON.stringify({ 'gpt-4o': { '*': 0.5, web: 0.25 } }),
+			}),
+			models: [model('gpt-4o')],
+			routes: [route('gpt-4o', 'default', 0.8), route('gpt-4o', 'web', 0.8)],
+		});
+		const rows = await getAdminUserDisplayDiscounts(repos, USER_ID);
+		assert.equal(rows.length, 1);
+		assert.equal(rows[0]?.discounts.default?.current.route_factor, 0.4);
+		assert.equal(rows[0]?.discounts.web?.current.route_factor, 0.2);
+	});
+
 	it('omits a personalized model when route_groups filters out every group', async () => {
 		const repos = mockRepos({
 			user: baseUser({ charged_cost_factors: JSON.stringify({ 'gpt-4o': 0.5 }) }),

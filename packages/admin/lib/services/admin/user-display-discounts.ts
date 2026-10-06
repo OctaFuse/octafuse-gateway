@@ -7,6 +7,7 @@ import {
 	getBusinessTimezone,
 	getUserChargedCostFactorMode,
 	lookupUserChargedCostFactor,
+	modelHasUserChargedCostFactor,
 	parseUserChargedCostFactors,
 	type DisplayDiscountGroup,
 	type GatewayRepositories,
@@ -77,14 +78,13 @@ export async function getAdminUserDisplayDiscounts(
 	const data: AdminUserDisplayDiscountRow[] = [];
 
 	for (const model of models) {
-		const userFactor = lookupUserChargedCostFactor(factors, model.id);
-		if (userFactor == null) continue;
+		if (!modelHasUserChargedCostFactor(factors, model.id)) continue;
 		const discounts = buildModelDisplayDiscounts({
 			pricingProfileJson: model.pricing_profile,
 			routes: routesByModel.get(model.id) ?? [],
 			timezone,
 			allowedRouteGroups,
-			userChargedFactor: userFactor,
+			resolveUserChargedFactor: (group) => lookupUserChargedCostFactor(factors, model.id, group),
 			userChargedFactorMode: mode,
 		});
 		if (Object.keys(discounts).length === 0) continue;

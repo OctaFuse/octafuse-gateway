@@ -3,7 +3,7 @@
  * - 基数始终来自 `models.pricing_profile`（按 input_tokens 选档）。
  * - `standard_cost` = 目录价 × 官方时段倍率（不含路由倍率）。
  * - `metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 供应商倍率 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。供应商倍率不在有效期内时按 1。`standard_cost` 不含供应商倍率。
- * - 若用户对该模型配置了 `charged_cost_factors`，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 与路由有效倍率合成最终 `charged_cost`（`multiply` 叠乘，`min` 取较小倍率）。
+ * - 若用户对该模型（及本次 route group）配置了 `charged_cost_factors`，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 与路由有效倍率合成最终 `charged_cost`（`multiply` 叠乘，`min` 取较小倍率）。分组对象先匹配本次分组，其次 `*`；数字覆盖全部分组。
  * - nested `price_override.metered` / `charged` tiers 忽略不计价。
  * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `users.budget_spent`。
  */
@@ -27,9 +27,9 @@ import {
 	applyUserChargedCostFactor,
 	attachUserChargedFactorToPricingAudit,
 	getUserChargedCostFactorMode,
-	lookupUserChargedCostFactor,
 	parseUserChargedCostFactors,
 	resolveCombinedChargedFactor,
+	resolveUserChargedCostFactorMatch,
 	type BillingPriceSnapshot,
 	type PriceResolutionAuditSide,
 	changedFieldsToJson,
@@ -195,10 +195,12 @@ export async function recordUsage(
 			`[Gateway Billing] invalid users.charged_cost_factors ignored model_id=${params.model_id}`
 		);
 	}
-	const userChargedFactor = lookupUserChargedCostFactor(
+	const userChargedMatch = resolveUserChargedCostFactorMatch(
 		parseUserChargedCostFactors(factorsJson),
-		params.model_id
+		params.model_id,
+		params.route_group
 	);
+	const userChargedFactor = userChargedMatch?.factor ?? null;
 	const userChargedFactorMode = await getUserChargedCostFactorMode(repos);
 	const routeEffectiveFactor = routeFactors.chargedTotal;
 	const combinedChargedFactor = resolveCombinedChargedFactor(
@@ -211,6 +213,7 @@ export async function recordUsage(
 		routeEffectiveFactor,
 	});
 	chargedResolved.audit.user_charged_factor = userChargedFactor;
+	chargedResolved.audit.user_charged_factor_route_group = userChargedMatch?.routeGroup ?? null;
 	chargedResolved.audit.user_charged_factor_mode = userChargedFactorMode;
 	chargedResolved.audit.combined_charged_factor = combinedChargedFactor;
 	const supplierCostR = roundGatewayMoney(supplierCost);
@@ -223,7 +226,11 @@ export async function recordUsage(
 			chargedAudit: chargedResolved.audit,
 		}),
 		userChargedFactor,
-		{ mode: userChargedFactorMode, combinedChargedFactor }
+		{
+			mode: userChargedFactorMode,
+			combinedChargedFactor,
+			matchedRouteGroup: userChargedMatch?.routeGroup ?? null,
+		}
 	);
 	console.log(
 		`[Gateway Usage] recordUsage model_id=${params.model_id} request_protocol=${params.request_protocol} status=${params.status} route_group=${params.route_group} input_tokens=${params.usage.input_tokens} output_tokens=${params.usage.output_tokens} reasoning_tokens=${params.usage.reasoning_tokens} metered=${supplierCostR} standard=${standardCostR} charged=${chargedCost} charged_eff=${chargedResolved.audit.effective_factor} provider_eff=${routeFactors.provider.effective} user_charged_factor=${userChargedFactor ?? 'none'} user_charged_factor_mode=${userChargedFactorMode} combined_charged_factor=${combinedChargedFactor ?? 'none'} metered_eff=${supplierResolved.audit.effective_factor}`
