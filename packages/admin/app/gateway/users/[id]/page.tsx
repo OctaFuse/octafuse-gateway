@@ -11,6 +11,7 @@ import { ClipboardDocumentIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon, XMarkI
 import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
+import { instantToZonedDatetimeLocalInput, zonedDatetimeLocalInputToInstant } from '@/lib/business-timezone-client';
 import { parseGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
@@ -97,14 +98,10 @@ type KeyRow = {
   updated_at: string;
 };
 
-function formatLocalDateTimeInput(raw: string | null | undefined): string {
+function formatBudgetResetInput(raw: string | null | undefined, timeZone: string): string {
   const date = parseGatewayDateTime(raw);
   if (!date) return '';
-  const pad = (value: number) => value.toString().padStart(2, '0');
-  return [
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`,
-  ].join('T');
+  return instantToZonedDatetimeLocalInput(date, timeZone, true);
 }
 
 function ReadonlyRow({ label, children }: { label: string; children: ReactNode }) {
@@ -187,6 +184,9 @@ export default function GatewayUserDetailPage() {
   const [isKeySaving, setIsKeySaving] = useState(false);
   const { currency: billingCurrency } = useBillingCurrency();
   const { formatDateTime, businessTimezone } = useGatewayDateTime();
+  const businessTimezoneRef = useRef(businessTimezone);
+  businessTimezoneRef.current = businessTimezone;
+  const budgetResetDirtyRef = useRef(false);
   const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
 
   const loadUser = useCallback(async () => {
@@ -201,6 +201,7 @@ export default function GatewayUserDetailPage() {
         return;
       }
       const u = data.data;
+      budgetResetDirtyRef.current = false;
       setUser(u);
       setPlanForm({
         email: u.email ?? '',
@@ -209,7 +210,7 @@ export default function GatewayUserDetailPage() {
         budget_base: String(u.budget_base ?? 0),
         budget_spent: String(u.budget_spent ?? 0),
         budget_period: u.budget_period || 'none',
-        budget_reset_at: formatLocalDateTimeInput(u.budget_reset_at),
+        budget_reset_at: formatBudgetResetInput(u.budget_reset_at, businessTimezoneRef.current),
         wallet_granted: String(u.wallet_granted ?? 0),
         wallet_spent: String(u.wallet_spent ?? 0),
         metadata: u.metadata ? JSON.stringify(u.metadata, null, 2) : '',
@@ -223,6 +224,14 @@ export default function GatewayUserDetailPage() {
       setLoadError('Failed to load user');
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (!user || budgetResetDirtyRef.current) return;
+    setPlanForm((current) => ({
+      ...current,
+      budget_reset_at: formatBudgetResetInput(user.budget_reset_at, businessTimezone),
+    }));
+  }, [user, businessTimezone]);
 
   const loadKeys = useCallback(async () => {
     if (!userId) return;
@@ -426,6 +435,16 @@ export default function GatewayUserDetailPage() {
         setIsSavingPlan(false);
         return;
       }
+      let budgetResetAt: string | null = null;
+      if (planForm.budget_reset_at) {
+        const instant = zonedDatetimeLocalInputToInstant(planForm.budget_reset_at, businessTimezone);
+        if (!instant) {
+          setPlanError(t('help.budgetResetAtInvalid'));
+          setIsSavingPlan(false);
+          return;
+        }
+        budgetResetAt = instant.toISOString();
+      }
       const payload: Record<string, unknown> = {
         email,
         status: planForm.status,
@@ -433,7 +452,7 @@ export default function GatewayUserDetailPage() {
         budget_base: planForm.budget_base.trim() === '' ? null : parseFloat(planForm.budget_base),
         budget_spent: parseFloat(planForm.budget_spent) || 0,
         budget_period: planForm.budget_period,
-        budget_reset_at: planForm.budget_reset_at ? new Date(planForm.budget_reset_at).toISOString() : null,
+        budget_reset_at: budgetResetAt,
         wallet_granted: parseFloat(planForm.wallet_granted) || 0,
         wallet_spent: parseFloat(planForm.wallet_spent) || 0,
         rate_limit: rpmParsed == null ? null : { rpm: rpmParsed },
@@ -778,11 +797,14 @@ export default function GatewayUserDetailPage() {
                     type="datetime-local"
                     step={1}
                     value={planForm.budget_reset_at}
-                    onChange={(e) => setPlanForm({ ...planForm, budget_reset_at: e.target.value })}
+                    onChange={(e) => {
+                      budgetResetDirtyRef.current = true;
+                      setPlanForm({ ...planForm, budget_reset_at: e.target.value });
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetResetAt')}
+                    {t('help.budgetResetAt', { timezone: businessTimezone })}
                   </p>
                 </div>
               </div>

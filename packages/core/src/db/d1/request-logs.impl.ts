@@ -17,6 +17,11 @@ import type { RequestLogsRepository } from '../../storage/gateway-repository-int
 import type { RequestLogsD1Statements } from './d1-repository-extras';
 import type { InsertRequestLogParams } from '../request-logs-types';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
+import {
+	sqliteBusinessTimezoneModifier,
+	sqliteTimeseriesBucketExpr,
+	timeseriesOffsetAnchor,
+} from '../request-timeseries-bucket';
 
 export function buildInsertRequestLogStatement(db: D1Database, params: InsertRequestLogParams): D1PreparedStatement {
 	return db
@@ -258,11 +263,10 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 			startDate: string;
 			endDate: string;
 			granularity: 'hour' | 'day';
+			timeZone: string;
 		}) {
-			const bucketExpr =
-				options.granularity === 'hour'
-					? "strftime('%Y-%m-%d %H:00:00', created_at)"
-					: "strftime('%Y-%m-%d', created_at)";
+			const bucketExpr = sqliteTimeseriesBucketExpr(options.granularity);
+			const shift = sqliteBusinessTimezoneModifier(options.timeZone, timeseriesOffsetAnchor(options.endDate));
 			const rows = await raw
 				.prepare(
 					`SELECT
@@ -274,7 +278,7 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 			 GROUP BY bucket
 			 ORDER BY bucket ASC`
 				)
-				.bind(options.startDate, options.endDate)
+				.bind(shift, options.startDate, options.endDate)
 				.all();
 			return mapRequestTimeseriesRows(rows.results ?? []);
 		},

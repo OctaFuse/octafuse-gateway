@@ -18,6 +18,7 @@ import {
 import { ADMIN_PERMISSIONS, type AdminPermission } from '@/lib/admin-principal';
 import { generateAdminApiKey } from '@/lib/auth';
 import { readApiJson } from '@/lib/api-json';
+import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 type AccessKey = {
 	id: string;
@@ -41,6 +42,7 @@ const DEFAULT_PERMISSIONS: AdminPermission[] = ['routes.read', 'routes.write', '
 export default function AdminApiKeysPage() {
 	const t = useTranslations('adminApiKeys');
 	const tCommon = useTranslations('common');
+	const { formatDateTime } = useGatewayDateTime();
 	const [keys, setKeys] = useState<AccessKey[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [busy, setBusy] = useState(false);
@@ -375,7 +377,7 @@ export default function AdminApiKeysPage() {
 										</button>
 									</td>
 									<td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500">
-										{key.last_used_at ? new Date(key.last_used_at).toLocaleString() : '—'}
+										{formatDateTime(key.last_used_at)}
 									</td>
 								</tr>
 							);

@@ -38,6 +38,7 @@ flowchart LR
 | Admin 逐条时间戳显示 | **`BUSINESS_TIMEZONE`** | `useGatewayDateTime()` → `formatGatewayDateTime(raw, tz)` |
 | Admin 时间范围自定义输入 | **`BUSINESS_TIMEZONE` 墙钟** | `GatewayTimeRangePicker` 在 UI 按业务时区输入/回显，Apply 后转 UTC 查询 |
 | 「今日 / 日界」统计 | **`BUSINESS_TIMEZONE`** | `getBusinessDayWindow` |
+| 仪表盘趋势分桶 | **`BUSINESS_TIMEZONE` 墙钟** | `queryRequestTimeseries` 按业务时区截断小时/日；横轴显示该墙钟，不把 bucket 当 UTC |
 
 Admin 登录后通过 `GET /admin/business-timezone` 加载当前业务时区（`BusinessTimezoneProvider`）；Config 页保存 `BUSINESS_TIMEZONE` 后会刷新 Provider。
 
@@ -119,7 +120,10 @@ Admin 前端格式化函数位于 `packages/admin/lib/datetime.ts`：
 主要调用点：
 
 - Admin 仪表盘「今日」卡片：`dashboard-service.ts` → `getAdminStatsService`
+- Admin 仪表盘趋势（Trend analysis）：`queryRequestTimeseries` 按 `BUSINESS_TIMEZONE` 把 `created_at` 截成小时或日，bucket 是该时区墙钟（`YYYY-MM-DD` / `YYYY-MM-DD HH:MM:SS`）。横轴用 `formatDashboardBucketLabel` 按同一时区格式化，不把数字再当成 UTC。Postgres 使用 `AT TIME ZONE`（含夏令时）。D1 / MySQL 按查询窗结束时刻的偏移平移 UTC 朴素时间；无夏令时的时区（如 `Asia/Shanghai`）与日界一致，跨夏令时切换的那一小时可能落在相邻桶。Dashboard 日历快捷（今天 / 本周 / 本月）经 `useAnalyticsRange` 在业务时区加载后重算。
 - Admin 全站时间列与自定义时间窗（见上一节）
+- 用户详情「周期额度重置时间」：`datetime-local` 按业务时区墙钟回显，保存时转回 UTC
+- 集成密钥「最近使用」、供应商额度弹层的检查时间与窗口重置时间：`formatGatewayDateTime` + `BUSINESS_TIMEZONE`
 - 模型官方分时时段（`models.pricing_profile.schedule`）与路由分时时段（`price_override.schedule`）：`formatLocalHhMm` 与 `formatLocalIsoWeekday` 都按业务时区取墙钟时刻与 ISO 星期（1=周一 … 7=周日），不用 UTC weekday；评估时刻为请求进入 Gateway 的 `request_started_at_ms`。两层共用同一时区与同一锁定时刻。
 
 ### 分时时段的星期
@@ -145,6 +149,7 @@ API 文档中的相关说明见 [`docs/developers/api/admin.md`](../api/admin.md
 | 「时间范围标签写 UTC 就是按 UTC 输入」 | 旧版自定义输入曾误用浏览器本地；现按 **业务时区墙钟** |
 | 「D1 存的是本地时间」 | D1 `datetime('now')` 与代码约定均视为 **UTC** |
 | 「API 返回本地时间」 | API 统一 **ISO 8601 UTC（Z）**；查询参数 `start_date`/`end_date` 亦为 **UTC** |
+| 「趋势横轴是 UTC」 | 桶与横轴为 **`BUSINESS_TIMEZONE` 墙钟**；存储与查询边界仍是 UTC |
 
 ## 相关代码索引
 
@@ -160,4 +165,6 @@ API 文档中的相关说明见 [`docs/developers/api/admin.md`](../api/admin.md
 | 时间范围 Picker | `packages/admin/components/GatewayTimeRangePicker.tsx` |
 | 业务时区 API | `packages/admin/lib/routes/admin/business-timezone.ts` |
 | 仪表盘今日统计 | `packages/admin/lib/services/admin/dashboard-service.ts` |
+| 趋势分桶 SQL | `packages/core/src/db/request-timeseries-bucket.ts` |
+| 趋势横轴 | `packages/admin/components/dashboard/format-dashboard-bucket.ts` |
 | Config UI | `packages/admin/app/gateway/config/page.tsx` |

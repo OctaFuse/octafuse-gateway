@@ -13,6 +13,7 @@ import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
 import { sqlitePlaceholdersToPg } from '../shared/sql-placeholders';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
+import { postgresTimeseriesBucketExpr } from '../request-timeseries-bucket';
 
 export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient): RequestLogsRepository {
 	const pg = db.raw;
@@ -175,11 +176,9 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 			startDate: string;
 			endDate: string;
 			granularity: 'hour' | 'day';
+			timeZone: string;
 		}) {
-			const bucketExpr =
-				options.granularity === 'hour'
-					? "to_char(date_trunc('hour', created_at::timestamp), 'YYYY-MM-DD HH24:MI:SS')"
-					: "to_char(date_trunc('day', created_at::timestamp), 'YYYY-MM-DD')";
+			const bucketExpr = postgresTimeseriesBucketExpr(options.granularity, '$3');
 			const q = `SELECT
 				${bucketExpr} as bucket,
 				COUNT(*)::bigint as request_count,
@@ -194,7 +193,7 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 			 WHERE created_at >= $1 AND created_at <= $2
 			 GROUP BY 1
 			 ORDER BY 1 ASC`;
-			const rows = (await pg.unsafe(q, [options.startDate, options.endDate])) as Record<string, unknown>[];
+			const rows = (await pg.unsafe(q, [options.startDate, options.endDate, options.timeZone])) as Record<string, unknown>[];
 			return mapRequestTimeseriesRows(rows);
 		},
 

@@ -23,16 +23,17 @@ export type DashboardTokenTrendChartProps = {
 	timeseries: DashboardTimeseriesRow[];
 	granularity: 'hour' | 'day';
 	billingCurrency: string;
+	businessTimezone: string;
 };
 
-export function DashboardTokenTrendChart({ timeseries, granularity, billingCurrency }: DashboardTokenTrendChartProps) {
+export function DashboardTokenTrendChart({ timeseries, granularity, billingCurrency, businessTimezone }: DashboardTokenTrendChartProps) {
 	const t = useTranslations('dashboard');
 	const [view, setView] = useState<TrendView>('requests');
 
 	const chartData = useMemo(
 		() =>
 			timeseries.map((row) => ({
-				bucket: formatDashboardBucketLabel(row.bucket, granularity),
+				bucket: formatDashboardBucketLabel(row.bucket, granularity, businessTimezone),
 				requests: row.request_count,
 				input_tokens: row.input_tokens,
 				output_tokens: row.output_tokens,
@@ -40,7 +41,7 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 				cost: row.charged_cost,
 				latency: row.avg_latency_ms,
 			})),
-		[timeseries, granularity]
+		[timeseries, granularity, businessTimezone]
 	);
 
 	const valueFormatter = (value: number) => {

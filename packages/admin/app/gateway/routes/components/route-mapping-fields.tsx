@@ -47,6 +47,7 @@ export function RouteMappingFields({
 	onFormChange,
 }: Props) {
 	const t = useTranslations('routes.modal');
+	const tFlow = useTranslations('routes.flow');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
 	const adapterLabel = (adapter: string) =>
@@ -89,9 +90,13 @@ export function RouteMappingFields({
 		Boolean(formData.adapter);
 	const lockTopology = Boolean(selectedAdapterOption) && !showCurrentAdapter;
 	const selectableProviders = sortProvidersByKindThenName(
-		providers.filter(
-			(provider) =>
-				(Boolean(editingRoute || duplicateSourceRouteId) && provider.id === formData.provider_id) ||
+		providers.filter((provider) => {
+			const isCurrentBinding =
+				Boolean(editingRoute || duplicateSourceRouteId) && provider.id === formData.provider_id;
+			// 停用供应商接不到流量。新建时不列出；编辑或复制时只保留当前绑定，避免 select 对不上值。
+			if (provider.status === 'disabled' && !isCurrentBinding) return false;
+			return (
+				isCurrentBinding ||
 				UPSTREAM_PROTOCOLS.some(
 					(protocol) =>
 						upstreamOperationsForProviderModel(
@@ -101,7 +106,8 @@ export function RouteMappingFields({
 							formData.provider_model_name
 						).length > 0
 				)
-		),
+			);
+		}),
 		locale,
 		tKind('custom')
 	);
@@ -331,6 +337,7 @@ export function RouteMappingFields({
 								{selectableProviders.map((p) => (
 									<option key={p.id} value={p.id}>
 										{liveProviderPickerLabel(p, locale, tKind('custom'), p.id)}
+										{p.status === 'disabled' ? ` · ${tFlow('providerDisabled')}` : ''}
 									</option>
 								))}
 							</select>
