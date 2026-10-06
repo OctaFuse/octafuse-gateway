@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Admin 供应商的 DashScope 端点覆盖逐项说明适用模型和对应的路由适配器，并说明「只填 Base 即派生」与「套餐只填部分端点」两种用法。路由编辑器按所选适配器显示用途、适用模型和格式限制，已知不支持的功能改为可读名称。适配器显示名改为「CosyVoice / Qwen-Audio-3.0 语音合成」和「Qwen-TTS 语音合成（多模态）」，已保存的路由不受影响。
+
 - 千问 AI 平台按量导入预设使用 `maas.qianwenaiapi.com`：OpenAI Chat 与 Responses、Anthropic，以及 DashScope base（可派生语音、生图和 filetrans）。百炼国内与国际按量预设补上 Anthropic Messages，主机仍是 `dashscope.aliyuncs.com` 与 `dashscope-intl.aliyuncs.com`。已导入的供应商不会自动更新。
 
 - 千问 AI 平台 Token Plan 导入预设改用官方主机 `token-plan.maas.qianwenaiapi.com`，并补上 OpenAI Responses。DashScope 仍只覆盖同步 ASR、生图、HTTP TTS 与实时语音，不含 filetrans 与视频生成。已导入的供应商不会自动更新，需要在供应商里改端点或重新导入。

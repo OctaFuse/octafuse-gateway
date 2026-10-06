@@ -52,6 +52,10 @@ export function RouteMappingFields({
 	const locale = useLocale();
 	const adapterLabel = (adapter: string) =>
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
+	const adapterDescription = (adapter: string) =>
+		t.has(`adapterDescriptions.${adapter}`) ? t(`adapterDescriptions.${adapter}`) : null;
+	const lossyFeatureLabel = (feature: string) =>
+		t.has(`lossyFeatureNames.${feature}`) ? t(`lossyFeatureNames.${feature}`) : feature;
 	// Image models keep the public request protocol as OpenAI; upstream may be openai or dashscope.
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
@@ -500,7 +504,10 @@ export function RouteMappingFields({
 							) : null}
 						</select>
 						<p className="mt-2 text-xs text-gray-500">
-							{selectedProvider ? t('editor.adapterHint') : t('protocolHintSelectProvider')}
+							{!selectedProvider
+								? t('protocolHintSelectProvider')
+								: (adapterDescription(selectedAdapterOption?.descriptor.id ?? formData.adapter) ??
+									t('editor.adapterHint'))}
 						</p>
 						{selectedProvider &&
 						selectedAdapterOption &&
@@ -514,7 +521,9 @@ export function RouteMappingFields({
 						{selectedProvider && selectedAdapterOption?.descriptor.lossyFeatures?.length ? (
 							<p className="mt-2 text-xs text-amber-700">
 								{t('adapterLossyFeatures', {
-									features: selectedAdapterOption.descriptor.lossyFeatures.join(', '),
+									features: selectedAdapterOption.descriptor.lossyFeatures
+										.map(lossyFeatureLabel)
+										.join(', '),
 								})}
 							</p>
 						) : null}

@@ -54,6 +54,18 @@ const PROTOCOL_TABS: Array<{
 	{ key: "dashscope", labelKey: "dashscopeOptional" },
 ];
 
+type DashScopeOverrideField =
+	| "images_generations_multimodal"
+	| "audio_transcriptions"
+	| "audio_transcriptions_multimodal"
+	| "audio_transcriptions_tasks"
+	| "audio_speech"
+	| "audio_speech_multimodal"
+	| "audio_realtime_inference"
+	| "audio_realtime_session"
+	| "audio_hotwords"
+	| "audio_voices";
+
 function ProtocolFields(props: {
 	baseUrlLabel: string;
 	basePlaceholder: string;
@@ -81,6 +93,7 @@ function ProtocolFields(props: {
 		modelsGenerate: string;
 		legacyPerActionNotice: string;
 	};
+	dashscopeCapHints?: Record<DashScopeOverrideField, string>;
 	authLabels?: {
 		label: string;
 		auto: string;
@@ -99,6 +112,7 @@ function ProtocolFields(props: {
 		advancedToggle,
 		advancedHint,
 		capLabels,
+		dashscopeCapHints,
 		authLabels,
 		onChange,
 	} = props;
@@ -363,6 +377,11 @@ function ProtocolFields(props: {
 											className={inputClass}
 											autoComplete="off"
 										/>
+										{dashscopeCapHints?.[field] ? (
+											<p className="mt-1 text-xs text-gray-500">
+												{dashscopeCapHints[field]}
+											</p>
+										) : null}
 									</div>
 								))}
 							</>
@@ -443,6 +462,18 @@ export function ProviderModal(props: ProviderModalProps) {
 		messages: t('capMessages'),
 		modelsGenerate: t('capModelsGenerate'),
 		legacyPerActionNotice: t('legacyPerActionNotice'),
+	};
+	const dashscopeCapHints: Record<DashScopeOverrideField, string> = {
+		images_generations_multimodal: t('capHintImagesGenerationsMultimodal'),
+		audio_transcriptions: t('capHintAudioTranscriptions'),
+		audio_transcriptions_multimodal: t('capHintAudioTranscriptionsMultimodal'),
+		audio_transcriptions_tasks: t('capHintAudioTranscriptionsTasks'),
+		audio_speech: t('capHintAudioSpeech'),
+		audio_speech_multimodal: t('capHintAudioSpeechMultimodal'),
+		audio_realtime_inference: t('capHintAudioRealtimeInference'),
+		audio_realtime_session: t('capHintAudioRealtimeSession'),
+		audio_hotwords: t('capHintAudioHotwords'),
+		audio_voices: t('capHintAudioVoices'),
 	};
 
 	return (
@@ -754,8 +785,9 @@ export function ProviderModal(props: ProviderModalProps) {
 										form={formData.dashscope}
 										protocol="dashscope"
 										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHint")}
+										advancedHint={t("advancedHintDashscope")}
 										capLabels={capLabels}
+										dashscopeCapHints={dashscopeCapHints}
 										onChange={(dashscope) =>
 											onFormChange({ ...formData, dashscope })
 										}
