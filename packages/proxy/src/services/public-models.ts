@@ -93,7 +93,8 @@ export function buildModelDisplayDiscounts(options: {
 	routes: readonly ModelRouteJoinRow[];
 	timezone: string;
 	allowedRouteGroups?: readonly string[] | null;
-	userChargedFactor?: number | null;
+	/** 按 route group 取用户倍率；缺省时保持目录折扣。 */
+	resolveUserChargedFactor?: (group: string) => number | null;
 	userChargedFactorMode?: UserChargedCostFactorMode;
 }): Record<string, DisplayDiscountGroup> {
 	return buildCoreModelDisplayDiscounts({
@@ -101,7 +102,7 @@ export function buildModelDisplayDiscounts(options: {
 		routes: options.routes,
 		timezone: options.timezone,
 		allowedRouteGroups: options.allowedRouteGroups,
-		userChargedFactor: options.userChargedFactor,
+		resolveUserChargedFactor: options.resolveUserChargedFactor,
 		userChargedFactorMode: options.userChargedFactorMode,
 	});
 }

@@ -84,8 +84,11 @@ export interface GatewayUserListItem {
   wallet_spent?: number;
   status: string;
   metadata: string | null;
-  /** 已解析的用户级 Charged cost factors；未配置时为 null */
-  charged_cost_factors?: Record<string, number> | null;
+  /**
+   * 已解析的用户专属倍率。数字覆盖该模型全部分组；
+   * 对象按 route group，`*` 为未单独配置分组的兜底。未配置时为 null。
+   */
+  charged_cost_factors?: Record<string, number | Record<string, number>> | null;
   /** 用户层限流；`null` 表示该层不限 */
   rate_limit?: { rpm?: number } | null;
   created_at: string;

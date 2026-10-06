@@ -564,7 +564,7 @@ function parseOptionalIsoTimestamp(text: string | undefined, fieldLabel: string)
 	return parsed.toISOString();
 }
 
-/** Materialize legacy inherited dates before editing, so each visible row is independent. */
+/** Materialize inherited route-level default dates before editing, so each visible row is independent. */
 export function independentProviderWindows(form: RouteFormData, windows: RouteScheduleFormWindow[]) {
 	return windows.map((w) => ({ ...w, provider_validity: w.provider_validity ?? {
 		...(form.provider_factor_starts_at ? { starts_at: form.provider_factor_starts_at } : {}),

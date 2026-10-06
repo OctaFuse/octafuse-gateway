@@ -54,6 +54,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/users` | GET, POST | `users`（分页列表 / 按外部对幂等创建） | Admin UI、外部集成方 |
 | `/admin/users/:id` | GET, PATCH, DELETE | `users`（`:id` 为 uuid 或 `ext:…` 外部路由，见下节） | Admin UI、外部集成方 |
 | `/admin/users/:id/display-discounts` | GET | 该用户 `charged_cost_factors` 叠进公开目录 `discounts`（只返回已配置倍率的模型） | 外部集成方 |
+| `/admin/users/:id/models` | GET | 按已保存倍率模拟 `GET /v1/models`（默认 `default,free` 文本模型，最多 40 条） | 管理后台 |
 | `/admin/users/:id/keys` | GET, POST | `api_keys`（用户范围内） | Admin UI |
 | `/admin/users/:id/keys/:keyId` | PATCH, DELETE | `api_keys` | Admin UI |
 | `/admin/users/:id/logs` | GET | `api_key_request_logs`（按 `user_id`） | Admin UI |
@@ -144,7 +145,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 按 **`(external_system, external_user_id)`** 幂等创建（若已存在则返回已有用户）；无外部对时每次新建随机 uuid 用户。请求体至少含 **`email`**；可选 `budget_max`、`budget_base`、`budget_period`、`metadata`、`charged_cost_factors` 等（与 `AdminUserCreateInput` 对齐）。外部对须同空或同非空。
 
-`charged_cost_factors` 为 `{ "<models.id>": number }`（倍率 ≥ 0）。`null` 或 `{}` 表示清空。未知目录模型 ID、负数或非对象会返回 **400**。创建后可在管理后台用户详情的 Charged cost factors 中维护。
+`charged_cost_factors` 为 `{ "<models.id>": number | { "<route_group>" | "*": number } }`（倍率 ≥ 0）。数字覆盖该模型全部分组；对象先按本次 route group 匹配（trim 后小写），未命中再用 `"*"`。仅含 `"*"` 的对象写入时折叠成数字。`null` 或 `{}` 表示清空。未知目录模型 ID、未知 route group（`"*"` 除外，且须是该模型已有路由的分组）、负数或非对象会返回 **400**。创建后可在管理后台用户详情的用户专属倍率中按模型和路由组维护。
 
 ### `GET /admin/users/:id`
 
@@ -152,13 +153,27 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 ### `GET /admin/users/:id/display-discounts`
 
-只读：把该用户 `charged_cost_factors` 按全局 `USER_CHARGED_COST_FACTOR_MODE` 叠进公开目录同款 `discounts`（官方时段 × 代表路由 Charged，再叠用户倍率）。需 **`users.read`**。**只返回配置了该模型倍率的条目**；未配置时 `data` 为空数组。不计入用户 API Key / 用户合计 RPM。
+只读：把该用户 `charged_cost_factors` 按全局 `USER_CHARGED_COST_FACTOR_MODE` 叠进公开目录同款 `discounts`（官方时段 × 代表路由 Charged，再按 route group 叠用户倍率）。每个分组的查找顺序是具体分组、`"*"`、模型级数字；没有命中的分组保持目录折扣。需 **`users.read`**。**只返回至少有一个分组配置了倍率的模型**；未配置时 `data` 为空数组。不计入用户 API Key / 用户合计 RPM。
 
 可选 query：`route_groups`（CSV，大小写不敏感）。省略或空 → 全部 active 路由组（与 `GET /catalog/models` 相同，**不是** `/v1/models` 的 `default,free` 默认）。
 
 响应：`{ success, data: [{ id, discounts }] }`。`discounts` 形状与 `GET /catalog/models` / `GET /v1/models` 的 `discounts` 相同。不要用 **`GET /admin/models`**（运维 CRUD，无展示折扣）。
 
 公开目录用 `GET /catalog/models`，用户个性化折扣用本接口 overlay；Agent 仍用用户 Key 的 `GET /v1/models`。
+
+### `GET /admin/users/:id/models`
+
+只读预览：按该用户**已保存**的 `charged_cost_factors` 组装与 Proxy `GET /v1/models` 相同的列表折扣。不调用 Proxy，不使用用户 API Key，不计入 RPM。需 **`users.read`**。未配置用户倍率时仍返回目录折扣，便于对照 Agent 看到的 `catalog_factor`、`route_factor`、`composite_factor`。
+
+Query 与 `/v1/models` 对齐：
+
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `route_groups` | `default,free` | CSV，大小写不敏感 |
+| `kind` | `llm` | `llm` \| `image` \| `audio` \| `all` |
+| `model` | 空 | 按模型 ID 或展示名包含匹配；空则按目录顺序返回 |
+
+单次最多 40 条。响应 `{ success, data: { object: "list", data, preview } }`。`data.data[]` 的 `model_info.discounts` 与 `/v1/models` 相同；`preview` 含 `user_charged_factor_mode`、实际采用的 `route_groups` / `kind`，以及是否 `truncated`。不含 `inbound`。
 
 ### `PATCH /admin/users/:id`
 
@@ -603,7 +618,7 @@ GET /admin/keys/:id/logs?page=1&page_size=20&exclude_status=incomplete
 }
 ```
 
-> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`standard_cost` = 阶梯目录价 × 模型官方时段倍率（官方当刻价，不乘路由倍率，也不乘 `provider_factor`）；`metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 有效期内的 `provider_factor` × 该侧路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor；有效期外供应商倍率为 `1`）；若 `users.charged_cost_factors` 含该目录模型 ID，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE`（默认 `multiply` 叠乘，`min` 取较小倍率）合成最终用户费用并六位四舍五入（只改最终 `charged_cost` 与预算累加）。**Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule，也不应用用户计费倍率或模型官方时段），成功后分别写入三列，仅 `charged_cost` 累加预算。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v6**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 仍为 `kind=fixed_tool_cost` + `unit_prices` / `totals`；v4 / v5 历史行仍可解析，v6 模型审计可带 `provider_factor`、`catalog_schedule`、`user_charged_factor`、`user_charged_factor_mode` 与 `combined_charged_factor`，用户未命中时 factor 为 `null`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
+> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`standard_cost` = 阶梯目录价 × 模型官方时段倍率（官方当刻价，不乘路由倍率，也不乘 `provider_factor`）；`metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 有效期内的 `provider_factor` × 该侧路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor；有效期外供应商倍率为 `1`）；若 `users.charged_cost_factors` 命中该目录模型与本次 route group（具体分组，其次 `"*"`，数字覆盖全部分组），再按 `system_config.USER_CHARGED_COST_FACTOR_MODE`（默认 `multiply` 叠乘，`min` 取较小倍率）合成最终用户费用并六位四舍五入（只改最终 `charged_cost` 与预算累加）。**Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule，也不应用用户计费倍率或模型官方时段），成功后分别写入三列，仅 `charged_cost` 累加预算。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v6**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 仍为 `kind=fixed_tool_cost` + `unit_prices` / `totals`；v4 / v5 历史行仍可解析，v6 模型审计可带 `provider_factor`、`catalog_schedule`、`user_charged_factor`、`user_charged_factor_route_group`、`user_charged_factor_mode` 与 `combined_charged_factor`，用户未命中时 factor 为 `null`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
 
 ### 示例
 
@@ -879,10 +894,10 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 }
 ```
 
-  - `provider_factor`：供应商倍率（缺省 `1`，`≥ 0`）。可选 `provider_factor_starts_at` / `provider_factor_expires_at`（UTC ISO；Admin 按 `BUSINESS_TIMEZONE` 编辑）。`starts_at` 含、`expires_at` 不含；两端都可省略。未命中供应商时段时使用这组起止时间。不在有效期内，或任一端无法解析时，供应商倍率为 `1`。旧的 `schedule.provider` 窗口未声明 `validity` 时也沿用这组日期，保持原有行为。过期配置留在 JSON 里，不自动删除。计费时刻仍是请求开始时间。
+  - `provider_factor`：供应商倍率（缺省 `1`，`≥ 0`）。可选 `provider_factor_starts_at` / `provider_factor_expires_at`（UTC ISO；Admin 按 `BUSINESS_TIMEZONE` 编辑）是默认有效期。`starts_at` 含、`expires_at` 不含；两端都可省略。未命中供应商时段，或 `schedule.provider` 窗口省略 `validity` 时，沿用这组默认有效期。不在有效期内，或任一端无法解析时，供应商倍率为 `1`。过期配置留在 JSON 里，不自动删除。计费时刻仍是请求开始时间。v2.12.0 及更早版本中，同名字段只是 `metered_factor` 缺失时的回退值，2.13.0 起改为供应商倍率，两者语义不同。
   - `charged_factor` / `metered_factor`：相对**官方当刻价**（阶梯目录价 × 模型 `pricing_profile.schedule` 命中倍率，未命中为 1）的默认倍率（缺省 `1`）；未命中路由分时时段时使用。有效期内再乘 `provider_factor` 的有效值。
   - `schedule`（可选）：分时窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜。可选 `days` 为 ISO 星期数组（`1`=周一 … `7`=周日）；省略表示每天。跨午夜时 `days` 锚定窗口**开始日**（例如周五 `22:00–06:00` 覆盖周五 22:00 至周六 06:00）。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。同侧窗口在一周循环上禁止重叠。`schedule.provider` 与 charged / metered 共用 `schedule.mode`。
-  - `schedule.provider[].validity`（可选）：`{ "starts_at"?: UTC ISO, "expires_at"?: UTC ISO }`，独立配置该时段供应商倍率的有效期。`{}` 表示不限制日期；省略整个字段则继承根级起止时间以兼容旧配置。先按业务时区选中每日时段，再判定该行有效期。未开始或过期时供应商倍率按 `1`，不会回退到基础供应商倍率；该行用户计费与供应成本倍率继续生效。审计中的 `provider_factor.starts_at` / `expires_at` 记录实际选中行的日期。
+  - `schedule.provider[].validity`（可选）：`{ "starts_at"?: UTC ISO, "expires_at"?: UTC ISO }`，独立配置该时段供应商倍率的有效期。`{}` 表示不限制日期；省略整个字段则继承根级默认有效期。先按业务时区选中每日时段，再判定该行有效期。未开始或过期时供应商倍率按 `1`，不会回退到基础供应商倍率；该行用户计费与供应成本倍率继续生效。审计中的 `provider_factor.starts_at` / `expires_at` 记录实际选中行的日期。
   - **与模型官方时段严格一致**：模型 `pricing_profile.schedule` **为空**时，路由可自由配置时段。模型官方时段**非空**时，路由 `schedule.charged[]` 与 `schedule.metered[]` 的窗口集合必须**各自**与官方窗口逐一相同（`start` / `end` / `days`；空 `days` 与全 7 天等价）。`schedule.provider[]` 为空时放行；非空时也必须与官方窗口逐一相同。`POST`/`PATCH /admin/routes` 在校验 `price_override` 后按最终 `model_id` 检查。`PATCH /admin/models` 若官方窗口集合变化且新官方时段非空，会把该模型下**所有**（含未激活）且**已配置分时窗口**的路由 `schedule` 重置为同一套窗口（charged / metered 的 `factor` 恢复为 `1`；仅当原先已有 `schedule.provider` 时才写入 factor 为 `1` 的 provider 窗口），未配置时段的路由保持为空（运行时按 1）。管理后台在模型时段倍率区展示固定说明。
   - `schedule.mode`：
     - **缺省或 `"multiply"`**（存量）：用户侧有效倍率 = 有效期内的供应商倍率 × `charged_factor` × 命中窗 `factor`（未命中窗按 `1`；有效期外供应商倍率为 `1`）；`metered_cost` 同理。
@@ -941,7 +956,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 
 - **`BILLING_CURRENCY`**：仅允许写入 **`USD`** 或 **`CNY`**（大写）；否则返回 `400` 与 `success: false`。
 - **`ROUTE_STRATEGY`**：仅允许 **`hash_affinity`** \| **`weighted_random`** \| **`weight_priority`** \| **`weighted_round_robin`**（小写）；非法 → `400`。这是全局同层路由策略缺省，模型 `route_policy` 与 `route_pools.strategy` 可覆盖。详见 [route-strategies.md](../reference/route-strategies.md)。Proxy 进程内缓存约 **30s**。
-- **`USER_CHARGED_COST_FACTOR_MODE`**：仅允许 **`multiply`** \| **`min`**（小写）；非法 → `400`。控制 `users.charged_cost_factors` 如何与路由 Charged 有效倍率合成最终用户费用：默认 **`multiply`** 为路由用户计费 × 用户倍率；**`min`** 取两者较小值。用户未配置该模型时两种模式都保持路由价。Proxy 进程内缓存约 **30s**。
+- **`USER_CHARGED_COST_FACTOR_MODE`**：仅允许 **`multiply`** \| **`min`**（小写）；非法 → `400`。控制 `users.charged_cost_factors` 如何与路由 Charged 有效倍率合成最终用户费用：默认 **`multiply`** 为路由用户计费 × 用户倍率；**`min`** 取两者较小值。用户倍率按本次 route group 查找（具体分组，其次 `"*"`，数字覆盖全部分组）。该模型与分组都未配置时两种模式都保持路由价。Proxy 进程内缓存约 **30s**。
 - **`STREAM_FIRST_EVENT_TIMEOUT_MS`**：空 / `0` 关闭；正整数毫秒开启文本流式首个 SSE 事件超时（超时返回 524 并 failover）。覆盖 Chat Completions、Responses、Anthropic Messages、Gemini `streamGenerateContent`。**不**作用于 Images / Audio / Realtime / Tools。未另设 `STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS` 时只作用于路由组 `default`。Proxy 进程内缓存约 **30s**。
 - **`STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS`**：空则在超时开启时只作用于 `default`；`*` / `all` 作用于全部路由组；否则为逗号分隔的路由组 id。非法空列表（例如只有逗号）→ `400`。
 

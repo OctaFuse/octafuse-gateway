@@ -74,7 +74,7 @@ interface ModelInfoResponse {
 	released_at: string | null;
 	/**
 	 * 按 route_group 派生的前台折扣（官方时段 × 代表路由 charged 有效倍率）。
-	 * 已叠该用户的 `charged_cost_factors`（若已配置该模型）。
+	 * 已按 route group 叠该用户的 `charged_cost_factors`（分组键优先，其次 `*`，数字覆盖全部分组）。
 	 */
 	discounts?: Record<string, DisplayDiscountGroup>;
 	metadata?: Record<string, unknown>;
@@ -151,7 +151,9 @@ modelsRoutes.get('/', async (c) => {
 			routes: routesByModel.get(m.id) ?? [],
 			timezone,
 			allowedRouteGroups: routeGroups,
-			userChargedFactor: lookupUserChargedCostFactor(userFactors, m.id),
+			resolveUserChargedFactor: userFactors
+				? (group) => lookupUserChargedCostFactor(userFactors, m.id, group)
+				: undefined,
 			userChargedFactorMode,
 		});
 		const inbound = collectInboundSurfaces(routesByModel.get(m.id) ?? [], routeGroups);

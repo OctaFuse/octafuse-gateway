@@ -145,12 +145,17 @@ export type PriceResolutionAuditSide = {
 	effective_factor?: number;
 	/** 路由 charged 之后的用户级折扣；未命中为 null */
 	user_charged_factor?: number | null;
+	/**
+	 * 命中的用户倍率分组键。具体分组名或 `*`；
+	 * 模型级数字（全部分组）或未命中为 null。
+	 */
+	user_charged_factor_route_group?: string | null;
 	/** `system_config.USER_CHARGED_COST_FACTOR_MODE` */
 	user_charged_factor_mode?: 'multiply' | 'min';
 	/** 合成后落到官方当刻价上的倍率；用户未配置该模型时为 null */
 	combined_charged_factor?: number | null;
 	/**
-	 * 路由官方倍率。`effective_factor` 已含 `provider_factor.effective`。
+	 * 供应商倍率。`effective_factor` 已含 `provider_factor.effective`。
 	 * 不在有效期内时 `active=false` 且 `effective=1`。
 	 */
 	provider_factor?: ProviderFactorAudit;

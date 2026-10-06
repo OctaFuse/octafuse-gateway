@@ -1620,6 +1620,51 @@
 		"supportedSurfacesEmpty": "当前模型和路由组没有可用的公开入口。"
 	},
 	"users": {
+		"detailUx": {
+			"billingOrder": "扣费顺序：先使用预算额度，再使用钱包余额。",
+			"noAutoReset": "不自动重置",
+			"multiplierHint": "按模型和路由组设置的计费倍率，同时作用于预算和钱包扣费。",
+			"manageKeys": "管理密钥 →",
+			"overview": "概览",
+			"billing": "额度与计费",
+			"models": "模型列表",
+			"activity": "活动记录",
+			"overviewHint": "管理账户资料，以及该用户所有密钥共用的请求限流。",
+			"walletHint": "跨预算周期保留",
+			"budgetRemaining": "预算剩余额度",
+			"budgetSpent": "本周期已用：{amount}",
+			"activeKeys": "有效 API 密钥",
+			"totalKeys": "共 {count} 个密钥",
+			"rateLimitHint": "该用户的所有 API 密钥共用",
+			"unsaved": "有未保存的修改",
+			"saved": "暂无未保存的修改",
+			"discard": "放弃修改",
+			"saveChanges": "保存修改",
+			"copyUserId": "复制用户 ID",
+			"emailRequired": "邮箱不能为空。",
+			"externalIdentityRequired": "外部系统与外部用户 ID 必须同时填写或同时留空。",
+			"standardCost": "标准金额",
+			"chargedCost": "计费金额",
+			"meteredCost": "成本金额",
+			"fieldHints": {
+				"budgetMax": "本周期可使用的预算总额度。留空表示不限额；填 0 表示没有预算额度。",
+				"budgetSpent": "本周期已经从预算中消费的金额。修改它可修正累计消费，并重新计算剩余额度。",
+				"budgetBase": "每次自动重置后恢复的预算额度。重置时，当前额度上限变为此值，已消费金额归零。",
+				"budgetPeriod": "选择每天、每周或每月重置。不自动重置时，当前额度会一直保留，直到手动修改。",
+				"budgetResetAt": "下一次自动重置的时间，按 {timezone} 显示。仅在启用自动重置时生效。",
+				"walletGranted": "钱包至今累计发放的总金额。填写修改后的总额，而非本次增加金额；保存会替换原有总额。",
+				"walletSpent": "钱包至今累计消费的总金额。修改它可修正累计消费金额。钱包余额等于累计发放减去累计消费。"
+			},
+			"fieldLabels": {
+				"budgetMax": "Budget 上限",
+				"budgetSpent": "Budget 已消费",
+				"budgetBase": "Budget 基准额度",
+				"budgetPeriod": "Budget 周期",
+				"budgetResetAt": "Budget 重置时间",
+				"walletGranted": "Wallet 累计发放",
+				"walletSpent": "Wallet 累计消费"
+			}
+		},
 		"title": "用户",
 		"subtitle": "额度、API Key 与外部身份",
 		"createTitle": "创建用户",
@@ -1701,13 +1746,13 @@
 			"budgetPeriod": "重置周期类型，none 表示不自动重置。",
 			"budgetResetAt": "按业务时区（{timezone}）填写下一次重置时间。",
 			"budgetResetAtInvalid": "重置时间无效。",
-			"walletGranted": "累计发放的永久额度。此处保存为绝对值修正；日常加购请用下方加额流水。",
+			"walletGranted": "累计发放的钱包额度。保存会覆盖累计总值，用于运营修正。",
 			"walletSpent": "已从永久额度扣掉的累计金额。",
 			"walletBalance": "当前余额 = 总额度 − 总消费，只读。永久额度不随周期重置或订阅到期清零。",
 			"metadataReplace": "保存会替换整个 metadata 对象。留空则保持当前值不变。",
 			"rateLimitRpm": "该用户所有 Key 合计的每 60 秒滚动窗口请求数。留空表示不限；0 拒绝所有计次请求。GET /v1/me 不计入。单把 Key 的额外上限在下方密钥表中设置。",
 			"rateLimitRpmInvalid": "限流必须是非负整数，或留空表示不限。",
-			"chargedCostFactors": "用户专属倍率与路由实际计费倍率按全局模式合成（相乘或取较小值），不影响成本金额。未配置时沿用路由计费；0 表示该模型不收费。适用于 LLM、图像和音频，不含 Agent Tools。"
+			"chargedCostFactors": "用户专属倍率与路由实际计费倍率按全局模式合成（相乘或取较小值），不影响成本金额。匹配顺序为具体路由组、*、模型级数字。未配置时沿用路由计费；0 表示不收费。适用于 LLM、图像和音频，不含 Agent Tools。"
 		},
 		"chargedCostFactors": {
 			"none": "未设置 Charged cost factors。",
@@ -1717,7 +1762,62 @@
 			"pickEmpty": "没有匹配的模型。",
 			"alreadyAdded": "已添加",
 			"unknownModel": "不在目录中",
-			"saveSuccess": "Charged cost factors 已保存。"
+			"allGroups": "所有分组",
+			"addGroup": "添加分组",
+			"noMoreGroups": "该模型的路由组都已添加。",
+			"unknownGroup": "未知路由组",
+			"groupLabel": "路由组",
+			"saveSuccess": "Charged cost factors 已保存。",
+			"editor": {
+				"addModel": "添加模型",
+				"modelCount": "{count} 个模型",
+				"defaultFactor": "默认倍率",
+				"defaultHint": "未单独设置倍率的路由组使用此值。",
+				"inherited": "未设置默认倍率，其他分组沿用路由计费。",
+				"setDefault": "设置默认倍率",
+				"removeDefault": "移除 {model} 的默认倍率",
+				"removeModel": "移除 {model} 及其所有倍率",
+				"overrides": "分组覆盖",
+				"priorityHint": "具体分组倍率优先于默认倍率；两者均未设置时沿用路由计费。",
+				"factorHint": "倍率支持小数，0 表示不收费。",
+				"groupColumn": "路由组",
+				"factorColumn": "倍率",
+				"chooseGroup": "选择要添加的分组…",
+				"chooseGroupFor": "为 {model} 添加分组覆盖",
+				"noRouteGroups": "该模型暂无可用路由组。",
+				"removeOverride": "移除 {model} 的 {group} 分组倍率",
+				"emptyOverrides": "暂未设置分组覆盖。",
+				"defaultInput": "{model} · 默认倍率",
+				"searchModels": "搜索模型…",
+				"modelColumn": "模型",
+				"actionsColumn": "操作",
+				"routeBilling": "沿用路由计费",
+				"addGroup": "+ 分组覆盖",
+				"noMatchingModels": "没有匹配的模型。",
+				"setDefaultFor": "设置 {model} 的默认倍率",
+				"viewJson": "查看 JSON",
+				"hideJson": "收起 JSON",
+				"jsonTitle": "当前倍率配置 JSON",
+				"jsonHint": "只读预览，包含当前表单中尚未保存的修改及被搜索隐藏的模型。"
+			}
+		},
+		"modelsPreview": {
+			"title": "模拟 GET /v1/models",
+			"hint": "用已保存的用户专属倍率组装与 Agent 相同的列表。默认只含 default、free 分组的文本模型。未保存的表单修改不会进入这次结果。",
+			"dirty": "倍率表单有未保存修改，这次结果仍使用已保存的配置。",
+			"model": "模型",
+			"modelPlaceholder": "模型 ID 或名称，留空返回前 40 条",
+			"routeGroups": "路由组",
+			"kind": "类型",
+			"group": "分组",
+			"request": "请求",
+			"requesting": "请求中…",
+			"failed": "请求失败",
+			"empty": "没有匹配的模型。",
+			"truncated": "结果已截断，只返回前 {count} 条。缩小模型筛选后再请求。",
+			"mode": "合成模式 {mode}",
+			"summary": "当前窗口",
+			"response": "响应"
 		},
 		"externalIdentity": {
 			"title": "外部身份",
@@ -1733,7 +1833,7 @@
 			"details": "详情",
 			"rateLimit": "限流规则",
 			"rateLimitRpmValue": "{rpm} RPM",
-			"rateLimitHint": "该 Key 每 60 秒滚动窗口允许的请求数。空表示不限；0 拒绝计次请求。用户合计上限在上方表单中设置。",
+			"rateLimitHint": "单个密钥在滚动 60 秒窗口内的请求数。留空表示不限；0 拒绝计量请求。用户共享限流在「概览」中设置。",
 			"activeClickToRevoke": "活跃：点击吊销",
 			"inactiveClickToActivate": "未启用：点击激活"
 		},
@@ -1764,7 +1864,7 @@
 			"createFailed": "创建失败",
 			"chargedCostFactorModelRequired": "每一行 Charged cost factor 都需要填写模型 ID。",
 			"chargedCostFactorValueInvalid": "Charged cost factor 必须是 ≥ 0 的数字。",
-			"chargedCostFactorDuplicate": "Charged cost factors 中存在重复的模型 ID。"
+			"chargedCostFactorDuplicate": "Charged cost factors 中存在重复的模型与路由组。"
 		}
 	},
 	"keysPage": {
@@ -2262,7 +2362,7 @@
 		"errorWebhooks": {
 			"title": "Proxy 错误 Webhook",
 			"description": "当 Proxy 持久化 api_key_request_logs.status = error 的行时（计费写入成功后），可选 POST 到配置的机器人 URL。留空字段以禁用该渠道。",
-			"urlsNote": "URL 包含 Webhook 密钥；投屏前如需可先「隐藏」。",
+			"urlsNote": "Webhook 地址默认隐藏，点击「显示」可查看完整地址。",
 			"wecomLabel": "WeCom 机器人 Webhook URL",
 			"feishuLabel": "Feishu 机器人 Webhook URL",
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
@@ -2278,7 +2378,22 @@
 			"change": "修改",
 			"dialogHint": "选择模型或路由池未覆盖时使用的默认策略。"
 		},
-		"saveRouteStrategy": "保存路由策略"
+		"saveRouteStrategy": "保存路由策略",
+		"ux": {
+			"subtitle": "管理时区、计费、路由和错误通知。每个配置卡片独立保存。",
+			"timezoneHint": "决定每日额度与用量报表按哪个时区划分日期。",
+			"currencyHint": "模型价格、预算和计费金额统一使用的币种。",
+			"billingModeHint": "选择路由倍率与用户倍率的组合方式，修改后约 30 秒生效。",
+			"routeHint": "模型或路由池未单独配置时使用的默认策略。",
+			"webhookHint": "将请求失败通知发送到企业微信或飞书；留空即可关闭对应渠道。",
+			"multiplySummary": "路由倍率与用户倍率相乘。",
+			"minSummary": "取路由倍率和用户倍率中较小的值。",
+			"saved": "已保存",
+			"unsaved": "有未保存的修改",
+			"discard": "撤销",
+			"discardSection": "撤销「{section}」的修改",
+			"loadFailed": "无法加载系统配置。"
+		}
 	},
 	"tools": {
 		"catalog": {

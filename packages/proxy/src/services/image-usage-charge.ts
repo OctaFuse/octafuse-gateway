@@ -61,6 +61,8 @@ export type ImageBillingParams = {
 	catalogModelId?: string;
 	/** `users.charged_cost_factors` JSON */
 	userChargedCostFactorsJson?: string | null;
+	/** 本次请求的 route group；缺省按 `default` 查找用户倍率 */
+	routeGroup?: string | null;
 	/** 全局合成模式；入口函数会从 system_config 填入 */
 	userChargedCostFactorMode?: UserChargedCostFactorMode;
 };
@@ -94,7 +96,7 @@ function withUserImageChargedFactor(
 		breakdown,
 		params.userChargedCostFactorsJson,
 		params.catalogModelId ?? '',
-		{ mode: params.userChargedCostFactorMode }
+		{ mode: params.userChargedCostFactorMode, routeGroup: params.routeGroup }
 	);
 }
 

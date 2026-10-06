@@ -1620,6 +1620,51 @@
 		"supportedSurfacesEmpty": "No active public surface for this model and route group."
 	},
 	"users": {
+		"detailUx": {
+			"billingOrder": "Charges use Budget first, then Wallet.",
+			"noAutoReset": "No automatic reset",
+			"multiplierHint": "Model and route-group billing rules apply to charges from both Budget and Wallet.",
+			"manageKeys": "Manage keys →",
+			"overview": "Overview",
+			"billing": "Budget & billing",
+			"models": "Models",
+			"activity": "Activity",
+			"overviewHint": "Manage account details and the request limit shared by all keys.",
+			"walletHint": "Retained across budget cycles",
+			"budgetRemaining": "Budget remaining",
+			"budgetSpent": "Spent this cycle: {amount}",
+			"activeKeys": "Active API keys",
+			"totalKeys": "{count, plural, one {# key in total} other {# keys in total}}",
+			"rateLimitHint": "Shared across all API keys",
+			"unsaved": "Unsaved changes",
+			"saved": "No unsaved changes",
+			"discard": "Discard changes",
+			"saveChanges": "Save changes",
+			"copyUserId": "Copy user ID",
+			"emailRequired": "Email is required.",
+			"externalIdentityRequired": "External system and external user ID must both be set or both empty.",
+			"standardCost": "Standard",
+			"chargedCost": "Charged",
+			"meteredCost": "Metered",
+			"fieldHints": {
+				"budgetMax": "The total Budget allowance available in this cycle. Leave empty for unlimited; 0 means no Budget allowance.",
+				"budgetSpent": "The amount already used from Budget this cycle. Changing it corrects the usage total and recalculates the remaining allowance.",
+				"budgetBase": "The allowance restored at each automatic reset. On reset, the current limit becomes this amount and Budget spent returns to 0.",
+				"budgetPeriod": "Choose a daily, weekly, or monthly reset. No automatic reset keeps the current allowance until you change it.",
+				"budgetResetAt": "The next automatic reset time, shown in {timezone}. It takes effect only when automatic reset is enabled.",
+				"walletGranted": "The total amount credited to Wallet so far. Enter the new total, rather than an amount to add; saving replaces the existing total.",
+				"walletSpent": "The total amount already used from Wallet. Changing it corrects the usage total. Balance is total granted minus total spent."
+			},
+			"fieldLabels": {
+				"budgetMax": "Budget Max",
+				"budgetSpent": "Budget Spent",
+				"budgetBase": "Budget Base",
+				"budgetPeriod": "Budget Period",
+				"budgetResetAt": "Budget Reset At",
+				"walletGranted": "Wallet Granted",
+				"walletSpent": "Wallet Spent"
+			}
+		},
 		"title": "Users",
 		"subtitle": "Budgets, API keys, and external identity",
 		"createTitle": "Create user",
@@ -1701,13 +1746,13 @@
 			"budgetPeriod": "Reset cycle type. none disables auto-reset.",
 			"budgetResetAt": "Next reset time in the business timezone ({timezone}).",
 			"budgetResetAtInvalid": "Enter a valid reset time.",
-			"walletGranted": "Cumulative Wallet credits issued. Saving writes the absolute value (ops correction). Use Wallet credits below for top-ups.",
+			"walletGranted": "Cumulative Wallet credits issued. Saving replaces the absolute total; use this for operational corrections.",
 			"walletSpent": "Cumulative amount already consumed from Wallet.",
 			"walletBalance": "Current balance = total granted − total spent. Read-only; Wallet does not reset with the cycle or expire with the subscription.",
 			"metadataReplace": "Saving replaces the entire metadata object. Leave empty to keep current value unchanged.",
 			"rateLimitRpm": "Shared across all keys of this user per rolling 60-second window. Leave empty for unlimited. 0 rejects all metered calls. GET /v1/me is not counted. Per-key caps are set on each key.",
 			"rateLimitRpmInvalid": "Rate limit must be a non-negative integer, or empty for unlimited.",
-			"chargedCostFactors": "User-specific multipliers combine with the effective route billing multiplier using the global mode (multiply or minimum), without changing cost amounts. Unset uses route billing; 0 means no charge for this model. Applies to LLM, image and audio models, not Agent Tools."
+			"chargedCostFactors": "User-specific multipliers combine with the effective route billing multiplier using the global mode (multiply or minimum), without changing cost amounts. A route group match wins, then *, then a model-wide number. Unset uses route billing; 0 means no charge. Applies to LLM, image and audio models, not Agent Tools."
 		},
 		"chargedCostFactors": {
 			"none": "No charged cost factors.",
@@ -1717,7 +1762,62 @@
 			"pickEmpty": "No models match this search.",
 			"alreadyAdded": "Added",
 			"unknownModel": "not in catalog",
-			"saveSuccess": "Charged cost factors saved."
+			"allGroups": "All groups",
+			"addGroup": "Add group",
+			"noMoreGroups": "Every route group for this model is already listed.",
+			"unknownGroup": "Unknown route group",
+			"groupLabel": "Route group",
+			"saveSuccess": "Charged cost factors saved.",
+			"editor": {
+				"addModel": "Add model",
+				"modelCount": "{count, plural, one {# model} other {# models}}",
+				"defaultFactor": "Default multiplier",
+				"defaultHint": "Used for route groups without a specific override.",
+				"inherited": "No default multiplier. Other groups use route billing.",
+				"setDefault": "Set default multiplier",
+				"removeDefault": "Remove the default multiplier for {model}",
+				"removeModel": "Remove {model} and all its multipliers",
+				"overrides": "Group overrides",
+				"priorityHint": "A group override takes priority over the default. Without either, route billing applies.",
+				"factorHint": "Decimal multipliers are supported. 0 means no charge.",
+				"groupColumn": "Route group",
+				"factorColumn": "Multiplier",
+				"chooseGroup": "Choose a group to add…",
+				"chooseGroupFor": "Add a group override for {model}",
+				"noRouteGroups": "No active route groups are available for this model.",
+				"removeOverride": "Remove the {group} override for {model}",
+				"emptyOverrides": "No group overrides.",
+				"defaultInput": "{model} · Default multiplier",
+				"searchModels": "Filter models…",
+				"modelColumn": "Model",
+				"actionsColumn": "Actions",
+				"routeBilling": "Route billing",
+				"addGroup": "+ Group override",
+				"noMatchingModels": "No matching models.",
+				"setDefaultFor": "Set default multiplier for {model}",
+				"viewJson": "View JSON",
+				"hideJson": "Hide JSON",
+				"jsonTitle": "Current multiplier configuration in JSON",
+				"jsonHint": "Read-only preview of the current form, including unsaved changes and models hidden by the filter."
+			}
+		},
+		"modelsPreview": {
+			"title": "Simulate GET /v1/models",
+			"hint": "Builds the same list the agent receives, using this user's saved multipliers. Defaults to text models in the default and free groups. Unsaved form edits are not included.",
+			"dirty": "The multiplier form has unsaved edits. This request still uses the saved configuration.",
+			"model": "Model",
+			"modelPlaceholder": "Model ID or name; leave empty for the first 40",
+			"routeGroups": "Route groups",
+			"kind": "Kind",
+			"group": "Group",
+			"request": "Request",
+			"requesting": "Requesting…",
+			"failed": "Request failed",
+			"empty": "No models match.",
+			"truncated": "Truncated to the first {count} models. Narrow the model filter and request again.",
+			"mode": "Combination mode {mode}",
+			"summary": "Current window",
+			"response": "Response"
 		},
 		"externalIdentity": {
 			"title": "External identity",
@@ -1733,7 +1833,7 @@
 			"details": "Details",
 			"rateLimit": "Rate limit",
 			"rateLimitRpmValue": "{rpm} RPM",
-			"rateLimitHint": "Per-key requests per rolling 60-second window. Empty = unlimited; 0 rejects metered calls. User-level RPM is set in the form above.",
+			"rateLimitHint": "Per-key requests per rolling 60-second window. Empty = unlimited; 0 rejects metered calls. The shared user limit is set in Overview.",
 			"activeClickToRevoke": "Active: click to revoke",
 			"inactiveClickToActivate": "Inactive: click to activate"
 		},
@@ -1764,7 +1864,7 @@
 			"createFailed": "Create failed",
 			"chargedCostFactorModelRequired": "Each Charged cost factor row needs a model ID.",
 			"chargedCostFactorValueInvalid": "Each Charged cost factor must be a number ≥ 0.",
-			"chargedCostFactorDuplicate": "Duplicate model IDs in Charged cost factors."
+			"chargedCostFactorDuplicate": "Duplicate model and route group in Charged cost factors."
 		}
 	},
 	"keysPage": {
@@ -2262,7 +2362,7 @@
 		"errorWebhooks": {
 			"title": "Proxy error webhooks",
 			"description": "When the Proxy persists a row with api_key_request_logs.status = error (after billing write succeeds), it optionally POSTs to the configured robot URLs. Leave a field empty to disable that channel.",
-			"urlsNote": "URLs contain webhook secrets; use Hide before screen sharing if needed.",
+			"urlsNote": "Webhook URLs are hidden by default. Use Show to inspect them.",
 			"wecomLabel": "WeCom robot webhook URL",
 			"feishuLabel": "Feishu bot webhook URL",
 			"wecomPlaceholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
@@ -2278,7 +2378,22 @@
 			"change": "Change",
 			"dialogHint": "Choose the default strategy used when a model or pool has no override."
 		},
-		"saveRouteStrategy": "Save route strategy"
+		"saveRouteStrategy": "Save route strategy",
+		"ux": {
+			"subtitle": "Manage timezone, billing, routing and error notifications. Each card saves independently.",
+			"timezoneHint": "Sets the calendar day used by daily quotas and usage reports.",
+			"currencyHint": "The currency used for model prices, budgets and charges.",
+			"billingModeHint": "Choose how route and user multipliers combine. Updates take effect in about 30 seconds.",
+			"routeHint": "The default strategy for models and pools without an override.",
+			"webhookHint": "Send failed-request alerts to WeCom or Feishu. Leave a URL empty to disable that channel.",
+			"multiplySummary": "Multiply the route factor by the user factor.",
+			"minSummary": "Use the smaller of the route and user factors.",
+			"saved": "Saved",
+			"unsaved": "Unsaved changes",
+			"discard": "Discard",
+			"discardSection": "Discard changes to {section}",
+			"loadFailed": "Could not load system settings."
+		}
 	},
 	"tools": {
 		"catalog": {

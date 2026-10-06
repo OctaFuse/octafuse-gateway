@@ -99,7 +99,7 @@ flowchart TB
 - 迁移 **`0023_admin_access_identity`**：新增 `admin_api_keys` / `admin_sessions`，并把历史 `system_config.MASTER_KEY` 复制为全权限 `legacy-master`。
 - 迁移 **`0024_drop_legacy_master_key_config`**：删除历史 `system_config.MASTER_KEY` 配置行；新版管理认证只读取具名 Admin API Key 与控制台会话。
 - 迁移 **`0025_user_audit_actor_index`**：为 `user_audit_logs(actor_id, created_at)` 增加操作主体查询索引。
-- 迁移 **`0026_user_charged_cost_factors`**：`users` 增加 `charged_cost_factors`，按目录模型 ID 保存用户计费倍率。
+- 迁移 **`0026_user_charged_cost_factors`**：`users` 增加 `charged_cost_factors`，按目录模型 ID 保存用户计费倍率。同一列的值后来也可写成按路由组细分的对象（具体分组或 `"*"`），不另增迁移；原有数字仍表示该模型全部分组。
 - 迁移 **`0027_user_wallet_credit`**：`users` 增加 `wallet_granted` / `wallet_spent`（永久额度）；`user_audit_logs.dedup_key` + `UNIQUE(user_id, dedup_key)`；`api_key_request_logs.charged_wallet_cost`。老数据把加购余额从 `budget_max` 拆出；`budget_max IS NULL` 与到期清零行（`max=0 AND period=none`）不抬回 `budget_base`。步骤见 [0027-user-wallet-credit.md](../../operators/migrations/0027-user-wallet-credit.md)。
 - 迁移 **`0028_key_rate_limit_and_ingress`**：`api_keys.rate_limit` 与 `users.rate_limit`（JSON，`NULL` = 该层不限；当前仅 `rpm`）；用户层为所有 Key 合计，Key 层为单把钥匙。`api_key_request_logs.ingress_host` 只记录入口 Host，不做准入。成功记账时回写 `api_keys.last_used_at`。RPM 窗口计数在代理服务进程 / isolate 内存中，不落库。
 - 迁移 **`0029_provider_kind`**：`providers.kind`（`TEXT` / MySQL `VARCHAR(128)`，`NOT NULL DEFAULT ''`）。已有行保持空字符串，表示尚未分类。去掉 `providers.name` 的全局唯一，改为 `UNIQUE (name, kind)`（约束名 `uk_providers_name_kind`）。D1 不能直接删除仍被 `model_routes` 引用的 `providers`，因此先复制 `providers`、`model_routes`、`route_pool_sticky_bindings` 再替换。不回写已有账号别名，也不回写请求日志里的 `provider_name` 快照。模板英文名变更后，已保存的旧 `kind` 不自动改写，由管理员在编辑时重新选择。
@@ -183,7 +183,7 @@ sequenceDiagram
 | **`api_key_request_logs.audio_characters`** | TTS 上游返回的有效计费字符数；与 ASR 时长独立记录 |
 | **`admin_api_keys` / `admin_sessions`** | 具名管理 API Key 与持久化控制台会话；不再从 `system_config.MASTER_KEY` 鉴权 |
 | **`user_audit_logs(actor_id, created_at)`** | 按操作主体与时间检索用户审计的联合索引 |
-| **`users.charged_cost_factors`** | 可选 JSON：目录模型 ID → 非负用户计费倍率；只改变最终用户费用与预算累加 |
+| **`users.charged_cost_factors`** | 可选 JSON：目录模型 ID → 非负用户计费倍率，或 → `{ 路由组或 "*": 倍率 }`。数字覆盖该模型全部分组；对象先匹配本次路由组，再匹配 `"*"`。只改变最终用户费用与预算累加 |
 | **`system_config.USER_CHARGED_COST_FACTOR_MODE`** | 用户倍率与路由 Charged 有效倍率的合成：`multiply`（默认叠乘）或 `min`（取较小）；无 schema 迁移，缺键运行时回退 `multiply`，首次在网关配置保存才写入；进程内缓存 30s |
 | **`users.wallet_granted` / `wallet_spent`** | 永久额度累计发放 / 累计消耗；余额派生，不随周期重置或到期清零 |
 | **`user_audit_logs.dedup_key`** | 加额幂等键（`UNIQUE(user_id, dedup_key)`）；`wallet_credit` 用 `external_ref` |

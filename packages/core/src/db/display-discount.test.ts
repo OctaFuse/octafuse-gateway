@@ -329,10 +329,11 @@ describe('applyUserChargedFactorToDisplayDiscounts', () => {
 	it('leaves catalog discounts unchanged when the user factor is missing', () => {
 		assert.equal(applyUserChargedFactorToDisplayDiscounts(catalog, null, 'min'), catalog);
 		assert.equal(applyUserChargedFactorToDisplayDiscounts(catalog, undefined, 'multiply'), catalog);
+		assert.equal(applyUserChargedFactorToDisplayDiscounts(catalog, () => null, 'multiply'), catalog);
 	});
 
 	it('multiplies the route factor and keeps the official catalog factor', () => {
-		const out = applyUserChargedFactorToDisplayDiscounts(catalog, 0.5, 'multiply');
+		const out = applyUserChargedFactorToDisplayDiscounts(catalog, () => 0.5, 'multiply');
 		assert.equal(out.default?.current.catalog_factor, 1.6);
 		assert.equal(out.default?.current.route_factor, 0.4);
 		assert.equal(out.default?.current.composite_factor, 0.64);
@@ -340,14 +341,28 @@ describe('applyUserChargedFactorToDisplayDiscounts', () => {
 	});
 
 	it('takes the smaller charged factor in min mode', () => {
-		const cheaperUser = applyUserChargedFactorToDisplayDiscounts(catalog, 0.5, 'min');
+		const cheaperUser = applyUserChargedFactorToDisplayDiscounts(catalog, () => 0.5, 'min');
 		assert.equal(cheaperUser.default?.current.catalog_factor, 1.6);
 		assert.equal(cheaperUser.default?.current.route_factor, 0.5);
 		assert.equal(cheaperUser.default?.current.composite_factor, 0.8);
 
-		const cheaperRoute = applyUserChargedFactorToDisplayDiscounts(catalog, 0.9, 'min');
+		const cheaperRoute = applyUserChargedFactorToDisplayDiscounts(catalog, () => 0.9, 'min');
 		assert.equal(cheaperRoute.default?.current.route_factor, 0.8);
 		assert.equal(cheaperRoute.default?.current.composite_factor, 1.28);
+	});
+
+	it('applies a different user factor per route group', () => {
+		const mixed = {
+			...catalog,
+			web: { ...catalog.default },
+		};
+		const out = applyUserChargedFactorToDisplayDiscounts(
+			mixed,
+			(group) => (group === 'web' ? 0.5 : null),
+			'multiply'
+		);
+		assert.equal(out.default?.current.route_factor, 0.8);
+		assert.equal(out.web?.current.route_factor, 0.4);
 	});
 });
 

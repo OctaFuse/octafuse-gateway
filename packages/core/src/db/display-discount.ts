@@ -42,7 +42,7 @@ export type DisplayDiscountWindow = {
 
 export type DisplayDiscountProviderFactor = {
 	base: number;
-	/** 当刻官方倍率（含分时；不在有效期内为 1）。 */
+	/** 当刻供应商倍率（含分时；不在有效期内为 1）。 */
 	effective: number;
 	active: boolean;
 	starts_at: string | null;
@@ -57,7 +57,7 @@ export type DisplayDiscountGroup = {
 	current: DisplayDiscountWindow;
 	windows: DisplayDiscountWindow[];
 	/**
-	 * 路由配置了官方倍率（基数不是 1、有有效期或有分时）时返回。
+	 * 路由配置了供应商倍率（基数不是 1、有有效期或有分时）时返回。
 	 * `route_factor` 已乘上当刻 `effective`。
 	 */
 	provider_factor: DisplayDiscountProviderFactor | null;
@@ -656,31 +656,39 @@ function applyUserChargedFactorToDisplayDiscountGroup(
 
 /**
  * 把用户 Charged 倍率叠进已算好的目录折扣（只改 `route_factor` / `composite_factor`）。
- * 未配置用户倍率时原样返回。`catalog_factor` 不变。
+ * `resolveUserChargedFactor` 按分组返回倍率；返回 `null` 的分组保持目录折扣。`catalog_factor` 不变。
  */
 export function applyUserChargedFactorToDisplayDiscounts(
 	discounts: Record<string, DisplayDiscountGroup>,
-	userFactor: number | null | undefined,
+	resolveUserChargedFactor: ((group: string) => number | null) | null | undefined,
 	mode: UserChargedCostFactorMode = DEFAULT_USER_CHARGED_COST_FACTOR_MODE
 ): Record<string, DisplayDiscountGroup> {
-	if (userFactor == null) {
+	if (!resolveUserChargedFactor) {
 		return discounts;
 	}
+	let changed = false;
 	const out: Record<string, DisplayDiscountGroup> = {};
 	for (const [group, value] of Object.entries(discounts)) {
+		const userFactor = resolveUserChargedFactor(group);
+		if (userFactor == null) {
+			out[group] = value;
+			continue;
+		}
+		changed = true;
 		out[group] = applyUserChargedFactorToDisplayDiscountGroup(value, userFactor, mode);
 	}
-	return out;
+	return changed ? out : discounts;
 }
 
-/** 官方时段 × 代表路由 Charged，再按用户倍率叠一层。 */
+/** 官方时段 × 代表路由 Charged，再按分组叠用户倍率。 */
 export function buildModelDisplayDiscounts(options: {
 	pricingProfileJson: string | null | undefined;
 	routes: readonly DisplayDiscountRouteInput[];
 	timezone: string;
 	now?: Date;
 	allowedRouteGroups?: readonly string[] | null;
-	userChargedFactor?: number | null;
+	/** 按 route group 取用户倍率；缺省或返回 null 时该分组保持目录折扣。 */
+	resolveUserChargedFactor?: (group: string) => number | null;
 	userChargedFactorMode?: UserChargedCostFactorMode;
 }): Record<string, DisplayDiscountGroup> {
 	const discounts = buildDisplayDiscountsByRouteGroup({
@@ -692,7 +700,7 @@ export function buildModelDisplayDiscounts(options: {
 	});
 	return applyUserChargedFactorToDisplayDiscounts(
 		discounts,
-		options.userChargedFactor ?? null,
+		options.resolveUserChargedFactor,
 		options.userChargedFactorMode
 	);
 }

@@ -124,6 +124,7 @@ function recordRealtimeUsage(params: {
 						modelPricingProfileJson: model.pricing_profile ?? null,
 						catalogModelId: baseModelId,
 						userChargedCostFactorsJson: apiKey.chargedCostFactors,
+						routeGroup: effectiveRouteGroup,
 						routePriceOverrideJson: route.priceOverrideRaw,
 						durationSeconds: isSpeechOperation(operation)
 							? 0

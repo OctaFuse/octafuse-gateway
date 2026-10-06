@@ -1,5 +1,5 @@
 /**
- * 管理路由：`/admin/users` — 用户 CRUD、子资源 keys / logs / audit-logs / display-discounts。
+ * 管理路由：`/admin/users` — 用户 CRUD、子资源 keys / logs / audit-logs / display-discounts / models。
  */
 import { Hono } from 'hono';
 import { parseUserListSortQuery } from '@octafuse/core/db/users-list-sort';
@@ -25,6 +25,7 @@ import {
 	getAdminUserDisplayDiscounts,
 	parseDisplayDiscountRouteGroupsQuery,
 } from '@/lib/services/admin/user-display-discounts';
+import { getAdminUserModelsPreview } from '@/lib/services/admin/user-models-preview';
 import type { AdminUserCreateInput, AdminUserUpdateInput, AdminBudgetTransitionInput } from '@/lib/services/admin/types';
 import type { AdminUserKeyPatchInput } from '@/lib/services/admin/users-service';
 import { handleAdminRouteError, jsonErr } from './error-response';
@@ -124,6 +125,20 @@ adminUsersRoutes.get('/:id/audit-logs', async (c) => {
 		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to get user audit logs');
+	}
+});
+
+adminUsersRoutes.get('/:id/models', async (c) => {
+	try {
+		const repos = c.get('repositories');
+		const data = await getAdminUserModelsPreview(repos, c.req.param('id'), {
+			routeGroupsRaw: c.req.query('route_groups'),
+			kindRaw: c.req.query('kind'),
+			modelRaw: c.req.query('model'),
+		});
+		return c.json({ success: true as const, data });
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to preview user models');
 	}
 });
 

@@ -51,7 +51,7 @@ Gateway 会根据 `model_id + route_group + request_protocol + request_operation
 
 模型 **`tags` 不参与**选组或计费。需要限定某一组时，请使用 **`baseId:your_group`**。
 
-**免费 / 零扣费**：路由侧用户计费（Charged cost）= 官方当刻价（目录档 × 模型官方时段倍率）× 路由有效倍率。路由有效倍率 = 有效期内的 `provider_factor`（供应商倍率，缺省及有效期外为 `1`）× 用户侧倍率。无 `schedule.mode` 时用户侧倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 含该目录模型 ID，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 合成最终用户费用（默认 `multiply` 再乘用户倍率；`min` 取路由有效倍率与用户倍率的较小值；六位四舍五入）；缺键不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`、有效期内的 **Provider factor**，或该用户该模型的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率、供应商倍率或模型官方时段。
+**免费 / 零扣费**：路由侧用户计费（Charged cost）= 官方当刻价（目录档 × 模型官方时段倍率）× 路由有效倍率。路由有效倍率 = 有效期内的 `provider_factor`（供应商倍率，缺省及有效期外为 `1`）× 用户侧倍率。无 `schedule.mode` 时用户侧倍率 = `charged_factor` × 命中窗 `factor`（未命中为 1）；`mode: "override"` 时命中窗用窗口 `factor`，未命中用 `charged_factor`。若 `users.charged_cost_factors` 命中该目录模型与本次 route group（具体分组，其次 `"*"`，数字覆盖全部分组），再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 合成最终用户费用（默认 `multiply` 再乘用户倍率；`min` 取路由有效倍率与用户倍率的较小值；六位四舍五入）；该分组未命中不改金额。若要用户侧不扣费，将路由 **Charged factor**、对应窗口 `factor`、有效期内的 **Provider factor**，或该用户该模型（或该分组）的用户计费倍率设为 `0`。智能体工具不应用用户计费倍率、供应商倍率或模型官方时段。
 
 ### 3. 预算校验
 
@@ -388,7 +388,7 @@ Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0
 
 ## 获取模型列表
 
-OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（模型集合全量可见，不按 API Key 过滤）。`model_info.discounts` 会叠该 Key 所属用户的 `charged_cost_factors`；未配置该模型时与公开目录倍率一致。本接口与 `GET /v1/me` 一样不计入 Key / 用户 RPM，额度用尽时仍可访问。
+OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（模型集合全量可见，不按 API Key 过滤）。`model_info.discounts` 会按 route group 叠该 Key 所属用户的 `charged_cost_factors`（具体分组，其次 `"*"`，数字覆盖全部分组）；某个分组未命中时与公开目录倍率一致。本接口与 `GET /v1/me` 一样不计入 Key / 用户 RPM，额度用尽时仍可访问。
 
 面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（排除文生图、ASR 与 TTS；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）请使用 `POST /v1/images/*` 或 `kind=image`；语音转写与语音合成请使用 `POST /v1/audio/transcriptions`、`POST /v1/audio/speech` 或 `kind=audio`（与管理后台 Kind 一致，同时包含 ASR 与 TTS）；`kind=all` 不过滤。没有单独的 `kind=tts` / `kind=speech`。
 
@@ -477,7 +477,7 @@ GET /v1/models
 | `input_modalities` | string[] \| null | 支持的输入模态（OpenRouter 风格）：`text`、`image`、`audio`、`video`、`file`；客户端可据此限制附件类型 |
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
 | `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
-| `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条；两者仍并列时取当刻 `composite_factor` 最小（折扣最大）的一条，倍率也相同则保持列表原顺序。官方或路由时段未覆盖的钟点会补 `catalog_factor=1` 的兜底窗（含带 `days` 的工作日高峰：工作日空隙与周末整日都会补），因此仅工作日高峰、倍率相同的官方窗不会被压成 `kind: flat`。若该用户配置了该目录模型的 `charged_cost_factors`，再按 `USER_CHARGED_COST_FACTOR_MODE` 叠进 **`route_factor`** 后重算 `composite_factor`（`multiply` 为路由 × 用户；`min` 取较小 Charged；`catalog_factor` 不变）。未配置该模型时与 `GET /catalog/models` 倍率一致 |
+| `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条；两者仍并列时取当刻 `composite_factor` 最小（折扣最大）的一条，倍率也相同则保持列表原顺序。官方或路由时段未覆盖的钟点会补 `catalog_factor=1` 的兜底窗（含带 `days` 的工作日高峰：工作日空隙与周末整日都会补），因此仅工作日高峰、倍率相同的官方窗不会被压成 `kind: flat`。若该用户配置了该目录模型的 `charged_cost_factors`，再按 route group 查找（具体分组，其次 `"*"`，数字覆盖全部分组）并按 `USER_CHARGED_COST_FACTOR_MODE` 叠进 **`route_factor`** 后重算 `composite_factor`（`multiply` 为路由 × 用户；`min` 取较小 Charged；`catalog_factor` 不变）。该分组未命中时与 `GET /catalog/models` 倍率一致 |
 | `inbound` | object[] | **请求入口**（客户端可打的公开路径）：`{ protocol, operation }`。聚合当前可见 `route_groups` 下 active 请求入口：LLM 文本为 `openai.chat`、`openai.responses`、`anthropic.messages`、`gemini.models.generate`；图 / 音频为 `openai.images.generations`、`openai.images.edits`、`openai.audio.transcriptions`、`openai.audio.speech`。不含 DashScope 原生 operation。`operation=*` 在同协议没有精确入口时展开为该协议默认文本 operation（OpenAI → `chat`，Anthropic → `messages`，Gemini → `models.generate`）；同协议已有精确入口（含图 / 音频）时不再展开。列表按稳定顺序去重（LLM 文本在前，`responses` 排在 `chat` 前，随后为图 / 音频），**不是**推荐入口；选哪条由客户端决定。与 `GET /catalog/models` 的 `protocols`（**上游协议**）不同：Chat 与 Responses 都是 `openai`，必须看 `operation` |
 | `metadata` | object \| undefined | 扩展元数据 |
 
