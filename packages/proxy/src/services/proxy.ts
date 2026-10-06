@@ -283,7 +283,7 @@ export async function proxyAudioTranscriptions(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope"],
+		["openai", "dashscope", "minimax"],
 		(
 			route,
 			signal,

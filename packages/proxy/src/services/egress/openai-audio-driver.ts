@@ -151,7 +151,7 @@ export type AudioTranscriptionResult = {
 
 type AudioAbortReason = 'none' | 'client_abort' | 'gateway_timeout';
 
-function withTimeoutSignal(
+export function withTimeoutSignal(
 	requestSignal: AbortSignal | undefined,
 	timeoutMs: number
 ): { signal: AbortSignal; clear: () => void; getAbortReason: () => AudioAbortReason } {

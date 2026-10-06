@@ -125,6 +125,16 @@ export function previewPlaygroundUpstreamUrl(input: {
 				});
 				return stripApiKeyFromUrl(url.toString());
 			}
+			case "minimax": {
+				const operation = input.upstreamOperation?.trim() || "audio.transcriptions";
+				if (operation !== "audio.transcriptions" && operation !== "*") return null;
+				return resolveUpstreamEndpoint(
+					protocol,
+					"audio.transcriptions",
+					providerEndpoints,
+					{ providerId: provider.id }
+				);
+			}
 			case "dashscope": {
 				const rawOperation = input.upstreamOperation?.trim() ?? "";
 				const operation = rawOperation.endsWith(".realtime.inference")

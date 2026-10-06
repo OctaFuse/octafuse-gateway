@@ -370,6 +370,31 @@ describe('listConfiguredCapabilities', () => {
 		);
 	});
 
+	it('derives MiniMax speech_to_text from the API base', () => {
+		const endpoints = {
+			minimax: { base: 'https://api.minimaxi.com/v1' },
+		};
+		assert.equal(
+			resolveUpstreamEndpoint('minimax', 'audio.transcriptions', endpoints),
+			'https://api.minimaxi.com/v1/speech_to_text'
+		);
+		assert.deepEqual(listConfiguredCapabilities(endpoints, 'minimax'), ['audio.transcriptions']);
+	});
+
+	it('prefers an explicit MiniMax transcription URL over the derived path', () => {
+		assert.equal(
+			resolveUpstreamEndpoint('minimax', 'audio.transcriptions', {
+				minimax: {
+					base: 'https://api.minimaxi.com/v1',
+					endpoints: {
+						'audio.transcriptions': 'https://api.minimax.io/v1/speech_to_text',
+					},
+				},
+			}),
+			'https://api.minimax.io/v1/speech_to_text'
+		);
+	});
+
 	it('lists every DashScope capability when its API base is configured', () => {
 		assert.deepEqual(
 			listConfiguredCapabilities(

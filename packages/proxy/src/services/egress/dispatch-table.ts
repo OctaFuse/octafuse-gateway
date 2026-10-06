@@ -12,6 +12,7 @@ import {
 	dispatchDashScopeSyncAsr,
 	type DashScopeAsrDispatchOptions,
 } from './dashscope-audio-driver';
+import { dispatchMiniMaxAudioTranscriptions } from './minimax-audio-driver';
 import {
 	dispatchOpenAiAudioTranscriptions,
 	type NormalizedAudioTranscriptionRequest,
@@ -38,6 +39,7 @@ const AUDIO_TRANSCRIPTION_ADAPTERS = [
 	'dashscope-asr-qwen-audio-file',
 	'dashscope-asr-fun-file',
 	'dashscope-asr-file-async',
+	'minimax-asr-file',
 ] as const satisfies readonly RouteAdapter[];
 
 const AUDIO_SPEECH_ADAPTERS = [
@@ -86,6 +88,9 @@ export function dispatchAudioTranscriptions(
 	}
 	if (route.adapter === 'dashscope-asr-file-async') {
 		return dispatchDashScopeAsyncAsr(route, req, ctx.signal, ctx.timing, ctx.attempt, options);
+	}
+	if (route.adapter === 'minimax-asr-file') {
+		return dispatchMiniMaxAudioTranscriptions(route, req, ctx.signal, ctx.timing, ctx.attempt);
 	}
 	throw new Error(`Unsupported audio transcription adapter: ${route.adapter}`);
 }

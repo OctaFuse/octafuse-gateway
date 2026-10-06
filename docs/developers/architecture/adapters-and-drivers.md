@@ -8,6 +8,7 @@
 - 请求生命周期：[proxy-request-lifecycle.md](./proxy-request-lifecycle.md)
 - DashScope 音频：[dashscope-audio.md](./dashscope-audio.md)
 - DashScope 生图：[dashscope-image.md](./dashscope-image.md)
+- MiniMax 音频：[minimax-audio.md](./minimax-audio.md)
 
 ## 术语
 

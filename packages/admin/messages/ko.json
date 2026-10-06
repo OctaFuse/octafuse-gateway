@@ -352,6 +352,7 @@
 		"anthropic": "Anthropic",
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
+		"minimax": "MiniMax",
 		"protocolUnknown": "프로토콜: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (클릭하여 복사)"
 	},
@@ -492,6 +493,7 @@
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
+			"minimaxOptional": "MiniMax",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -502,12 +504,16 @@
 			"geminiAuthQueryKey": "Query key(?key=)",
 			"geminiAuthBearer": "Bearer(Authorization)",
 			"geminiAuthHint": "Developer API와 Vertex Express는 ?key=를 사용합니다. 프로젝트 범위 Vertex에 서비스 계정 JSON을 붙여 넣으면 자동으로 Bearer를 사용합니다. Vertex 호환 애그리게이터(ZenMux, Qiniu 등)는 Bearer를 선택해야 합니다.",
+			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
+			"minimaxHint": "Base만 있으면 음성 인식은 '{base}'/speech_to_text 로 파생됩니다. 국제 호스트는 api.minimax.io 입니다. 지금은 음성 인식만 있으며, 음성 합성·이미지·동영상·음악 엔드포인트는 아직 없습니다.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "Base만 입력하면 아래의 DashScope HTTP·WSS 엔드포인트(filetrans, 핫워드, 음성 포함)를 모두 생성합니다. 일부 기능만 제공하는 플랜(예: Qwen Token Plan)은 Base를 비우고 URL 재정의에서 지원하는 엔드포인트만 입력하세요. 워크스페이스 엔드포인트는 해당 DashScope 호스트를 입력하세요.",
 			"advancedToggle": "URL 재정의",
 			"advancedHint": "전체 URL을 입력하세요.",
 			"advancedHintGemini": "전체 URL을 입력하고 '{model}'과 '{action}'을 포함하세요.",
 			"advancedHintDashscope": "전체 URL을 입력하세요. 엔드포인트는 기능별로 나뉘며 한 모델은 그중 하나만 사용합니다. 여러 항목이 같은 업스트림 URL(예: multimodal-generation)을 가리킬 수 있지만 각각 켜고 끌 수 있도록 분리되어 있습니다. Base가 있으면 빈 항목은 생성된 URL을 사용하고, Base가 없으면 빈 항목은 지원하지 않음을 뜻합니다.",
+			"advancedHintMinimax": "speech_to_text 의 전체 URL을 입력합니다. Base가 있으면 비워 두세요. 게이트웨이가 URL을 만듭니다.",
+			"capHintMiniMaxAudioTranscriptions": "MiniMax 파일 전사 POST /v1/speech_to_text. 라우트 어댑터는 MiniMax 파일 전사를 고르세요. language 는 폼이 아니라 요청 헤더로 보냅니다.",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -1020,7 +1026,8 @@
 				"dashscope-tts-qwen": "Qwen-TTS(멀티모달)",
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
-				"dashscope-image-wan": "Wan 2.7 Image"
+				"dashscope-image-wan": "Wan 2.7 Image",
+				"minimax-asr-file": "MiniMax 파일 전사"
 			},
 			"adapterDescriptions": {
 				"passthrough": "요청과 응답을 그대로 전달합니다. 클라이언트와 업스트림의 프로토콜·작업이 같아야 합니다.",
@@ -1032,7 +1039,8 @@
 				"dashscope-tts-qwen": "OpenAI /v1/audio/speech → Qwen-TTS 멀티모달 API. qwen3-tts-flash 등용. wav만 반환하며 속도 조절을 지원하지 않습니다. Qwen-Audio-3.0-TTS는 CosyVoice / Qwen-Audio-3.0 TTS를 선택하세요.",
 				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax 멀티모달 API. mp3·pcm·flac·wav를 지원하며 instructions는 지원하지 않습니다.",
 				"dashscope-image-qwen": "OpenAI Images → Qwen Image multimodal-generation. size는 픽셀 단위(예: 1024x1024)로 입력해야 합니다.",
-				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation."
+				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation.",
+				"minimax-asr-file": "OpenAI 전사(multipart) → MiniMax speech_to_text. 공급자 모델 이름은 asr-1.0 입니다. language 는 요청 헤더로 가고, srt 와 vtt 는 타임스탬프 결과로 게이트웨이가 만듭니다."
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "타임스탬프 단위(timestamp_granularities)",
@@ -1040,7 +1048,9 @@
 				"inline_file_upload": "오디오 파일 직접 업로드(공개 file_url 필요)",
 				"voice_instructions": "말투 지시(instructions)",
 				"size_abbreviation": "1K/2K/4K 크기 약어",
-				"background": "투명 배경(background)"
+				"background": "투명 배경(background)",
+				"prompt": "프롬프트(prompt)",
+				"temperature": "샘플링 온도(temperature)"
 			},
 			"noCompatibleAdapter": "호환되는 어댑터 없음",
 			"adapterFirstHint": "현재 Provider와 호환되는 어댑터를 선택하세요. 공개/업스트림 프로토콜 필드는 레지스트리에서 채워집니다.",
@@ -1425,7 +1435,7 @@
 			"allProtocols": "모든 프로토콜",
 			"allRouteGroups": "모든 Route 그룹"
 		},
-		"audioOpenaiOnly": "음성 전사 테스트는 OpenAI multipart 또는 동기 Adapter가 구현된 DashScope 라우트를 지원합니다.",
+		"audioOpenaiOnly": "음성 전사 테스트는 OpenAI multipart, MiniMax 파일 전사, 또는 동기 Adapter가 구현된 DashScope 라우트를 지원합니다.",
 		"audioTranscriptionsHint": "오디오 모델: JSON 필드(language, response_format)와 아래 오디오 파일. 파일은 multipart로 transcriptions에 전송됩니다. 과금/요청 로그 없음.",
 		"audioTranscriptionsDashScopeHint": "DashScope 동기 ASR: Playground Adapter가 오디오를 Data URL로 인코딩하여 JSON으로 업스트림에 전송합니다. 과금 및 요청 로그 없음.",
 		"audioRealtimeDashScopeHint": "DashScope 실시간 ASR/TTS: 브라우저가 WebSocket을 열고 관리 콘솔이 업스트림 WSS와 프레임을 중계합니다. 과금 및 요청 로그 없음.",

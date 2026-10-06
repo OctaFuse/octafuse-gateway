@@ -129,6 +129,7 @@ export function providerToFormData(
 		anthropic: protocolFormFromConfig(map.anthropic),
 		gemini: protocolFormFromConfig(map.gemini),
 		dashscope: protocolFormFromConfig(map.dashscope),
+		minimax: protocolFormFromConfig(map.minimax),
 	};
 }
 
@@ -160,6 +161,10 @@ function configFromProtocolForm(
 			if (stream) endpoints.streamGenerateContent = stream;
 		} else if (form.modelsGenerate.trim()) {
 			endpoints[GEMINI_GENERATE_OPERATION] = form.modelsGenerate.trim();
+		}
+	} else if (protocol === "minimax") {
+		if (form.audio_transcriptions.trim()) {
+			endpoints["audio.transcriptions"] = form.audio_transcriptions.trim();
 		}
 	} else {
 		if (form.images_generations_multimodal.trim()) {
@@ -213,10 +218,12 @@ export function formDataToEndpointsMap(
 	const anthropic = configFromProtocolForm("anthropic", form.anthropic);
 	const gemini = configFromProtocolForm("gemini", form.gemini);
 	const dashscope = configFromProtocolForm("dashscope", form.dashscope);
+	const minimax = configFromProtocolForm("minimax", form.minimax);
 	if (openai) map.openai = openai;
 	if (anthropic) map.anthropic = anthropic;
 	if (gemini) map.gemini = gemini;
 	if (dashscope) map.dashscope = dashscope;
+	if (minimax) map.minimax = minimax;
 	return map;
 }
 
@@ -281,6 +288,7 @@ export function getProviderProtocolSummaries(
 	appendProtocol("anthropic", "Anthropic");
 	appendProtocol("gemini", "Gemini");
 	appendProtocol("dashscope", "DashScope");
+	appendProtocol("minimax", "MiniMax");
 	return rows;
 }
 
@@ -351,6 +359,7 @@ export function protocolFormHasOverrides(
 			form.streamGenerateContent.trim()
 		);
 	}
+	if (protocol === "minimax") return !!form.audio_transcriptions.trim();
 	return !!(
 		form.images_generations_multimodal.trim() ||
 		form.audio_transcriptions.trim() ||

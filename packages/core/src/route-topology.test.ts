@@ -7,6 +7,7 @@ import {
 	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
 	isRequestOperationForProtocol,
+	isUpstreamOperationForProtocol,
 	normalizeRouteOperation,
 	requestOperationAliasRank,
 } from './route-topology';
@@ -25,6 +26,9 @@ describe('route topology operations', () => {
 			isRequestOperationForProtocol('dashscope', 'audio.transcriptions.async'),
 			true
 		);
+		assert.equal(isRequestOperationForProtocol('minimax', 'audio.transcriptions'), false);
+		assert.equal(isUpstreamOperationForProtocol('minimax', 'audio.transcriptions'), true);
+		assert.equal(isUpstreamOperationForProtocol('minimax', 'chat'), false);
 	});
 
 	it('canonicalizes legacy Gemini operations to models.generate', () => {

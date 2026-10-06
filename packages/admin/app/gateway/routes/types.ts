@@ -224,6 +224,8 @@ export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
 	openai: 'OpenAI',
 	anthropic: 'Anthropic',
 	gemini: 'Gemini',
+	dashscope: 'DashScope',
+	minimax: 'MiniMax',
 };
 
 export const ROUTE_GROUP_CARD_BADGE_CLASS = 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200';

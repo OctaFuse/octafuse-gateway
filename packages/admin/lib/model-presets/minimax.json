@@ -193,5 +193,35 @@
 			]
 		},
 		"released": "2026-06-01"
+	},
+	{
+		"id": "minimax-asr-1.0",
+		"display_name": "MiniMax ASR 1.0",
+		"description": "MiniMax file speech recognition (asr-1.0) via POST /v1/speech_to_text. Set the route provider model name to asr-1.0 and the adapter to minimax-asr-file. Billed per second of upstream duration, with no minimum.",
+		"i18n": {
+			"en": "MiniMax file speech recognition (asr-1.0) via POST /v1/speech_to_text. Set the route provider model name to asr-1.0 and the adapter to minimax-asr-file. Billed per second of upstream duration, with no minimum.",
+			"zh": "MiniMax 文件语音识别（asr-1.0），走 POST /v1/speech_to_text。路由的供应商模型名填 asr-1.0，适配器选 MiniMax 文件转写。按上游时长按秒计费，没有最低时长。"
+		},
+		"vendor": "minimax",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000105556,
+					"minimum_seconds": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000694444,
+					"minimum_seconds": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
 	}
 ]

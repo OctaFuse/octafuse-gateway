@@ -7,6 +7,7 @@ import {
 	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
 	isRequestOperationForProtocol,
+	isUpstreamOperationForProtocol,
 	normalizeRouteCustomParamsForStorage,
 	normalizeRouteOperation,
 	PASSTHROUGH_ROUTE_ADAPTER,
@@ -185,7 +186,7 @@ export async function createModelRouteService(
 		proto,
 		normalizeRouteOperation(body.upstream_operation)
 	);
-	if (!isRequestOperationForProtocol(proto, upstreamOperation)) {
+	if (!isUpstreamOperationForProtocol(proto, upstreamOperation)) {
 		throw badRequest(
 			`upstream_operation "${upstreamOperation}" is not valid for upstream_protocol "${proto}"`
 		);
@@ -336,7 +337,7 @@ export async function updateModelRouteService(
 		effectiveProto,
 		normalizeRouteOperation(body.upstream_operation ?? existing.upstream_operation),
 	);
-	if (!isRequestOperationForProtocol(effectiveProto, effectiveUpstreamOperation)) {
+	if (!isUpstreamOperationForProtocol(effectiveProto, effectiveUpstreamOperation)) {
 		throw badRequest(
 			`upstream_operation "${effectiveUpstreamOperation}" is not valid for upstream_protocol "${effectiveProto}"`,
 		);

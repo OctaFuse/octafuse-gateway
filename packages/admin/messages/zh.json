@@ -352,6 +352,7 @@
 		"anthropic": "Anthropic",
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
+		"minimax": "MiniMax",
 		"protocolUnknown": "协议：{protocol}",
 		"endpointCopyTitle": "{label} — {url}（点击复制）"
 	},
@@ -492,6 +493,7 @@
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
+			"minimaxOptional": "MiniMax",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -502,12 +504,16 @@
 			"geminiAuthQueryKey": "Query key（?key=）",
 			"geminiAuthBearer": "Bearer（Authorization）",
 			"geminiAuthHint": "Developer API 与 Vertex Express 使用 ?key=。项目级 Vertex 粘贴服务账号 JSON 时会自动走 Bearer。Vertex 兼容聚合商（ZenMux、七牛等）必须选 Bearer。",
+			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
+			"minimaxHint": "只填 Base 时，语音识别派生为 '{base}'/speech_to_text。国际站把主机换成 api.minimax.io。目前只有语音识别；语音合成、生图、视频和音乐还没有端点。",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "只填 Base 时，网关会派生下方全部 DashScope HTTP 与 WSS 端点（含 filetrans、热词、音色）。只开放部分能力的套餐（如千问 Token Plan）不要填 Base，展开 URL 覆盖后只填支持的端点。工作空间端点请填写对应的 DashScope 主机。",
 			"advancedToggle": "URL 覆盖",
 			"advancedHint": "填写完整 URL。",
 			"advancedHintGemini": "填写完整 URL，且必须包含 '{model}' 和 '{action}'。",
 			"advancedHintDashscope": "填写完整 URL。端点按能力区分，一个模型只会用到其中一项；几项可能指向同一个上游地址（如 multimodal-generation），分开填写是为了单独开关。已填 Base 时空白项使用派生地址，未填 Base 时空白项表示不支持。",
+			"advancedHintMinimax": "填写完整的 speech_to_text URL。已填 Base 时留空即可，网关会用派生地址。",
+			"capHintMiniMaxAudioTranscriptions": "MiniMax 文件转写 POST /v1/speech_to_text。路由适配器选「MiniMax 文件转写」。language 由网关放到请求头，不写进表单。",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -1020,7 +1026,8 @@
 				"dashscope-tts-qwen": "Qwen-TTS 语音合成（多模态）",
 				"dashscope-tts-minimax": "MiniMax 语音合成",
 				"dashscope-image-qwen": "千问图像 3.0",
-				"dashscope-image-wan": "万相 2.7"
+				"dashscope-image-wan": "万相 2.7",
+				"minimax-asr-file": "MiniMax 文件转写"
 			},
 			"adapterDescriptions": {
 				"passthrough": "原样转发，不改写请求和响应。对外与上游的协议、端点保持一致。",
@@ -1032,7 +1039,8 @@
 				"dashscope-tts-qwen": "OpenAI /v1/audio/speech → Qwen-TTS 多模态接口。适用 qwen3-tts-flash 等，只返回 wav，不支持调语速。Qwen-Audio-3.0-TTS 请选「CosyVoice / Qwen-Audio-3.0 语音合成」。",
 				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax 多模态接口。支持 mp3、pcm、flac、wav，不支持 instructions。",
 				"dashscope-image-qwen": "OpenAI Images → 千问图像 multimodal-generation。size 需写像素尺寸（如 1024x1024）。",
-				"dashscope-image-wan": "OpenAI Images → 万相 2.7 multimodal-generation。"
+				"dashscope-image-wan": "OpenAI Images → 万相 2.7 multimodal-generation。",
+				"minimax-asr-file": "OpenAI 转写（multipart）→ MiniMax speech_to_text。供应商模型名填 asr-1.0。language 放到请求头；srt 和 vtt 由网关根据带时间戳的结果生成。"
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "时间戳粒度（timestamp_granularities）",
@@ -1040,7 +1048,9 @@
 				"inline_file_upload": "直接上传音频文件（需提供公网 file_url）",
 				"voice_instructions": "语气指令（instructions）",
 				"size_abbreviation": "1K/2K/4K 尺寸简写",
-				"background": "透明背景（background）"
+				"background": "透明背景（background）",
+				"prompt": "提示词（prompt）",
+				"temperature": "采样温度（temperature）"
 			},
 			"noCompatibleAdapter": "没有兼容的适配器",
 			"adapterFirstHint": "选择与当前供应商兼容的适配器。对外协议与上游协议字段会由注册表自动填入。",
@@ -1425,7 +1435,7 @@
 			"allProtocols": "全部协议",
 			"allRouteGroups": "全部路由组"
 		},
-		"audioOpenaiOnly": "语音转写调试仅支持 OpenAI multipart 或已实现同步 Adapter 的 DashScope 路由。",
+		"audioOpenaiOnly": "语音转写调试仅支持 OpenAI multipart、MiniMax 文件转写，或已实现同步 Adapter 的 DashScope 路由。",
 		"audioTranscriptionsHint": "音频模型：JSON 字段（language、response_format）加上方音频文件。文件以 multipart 发往上游 transcriptions。不计费、不写请求日志。",
 		"audioTranscriptionsDashScopeHint": "DashScope 同步 ASR：调试台按路由 Adapter 将音频编码为 Data URL，并以 JSON 发送到上游；不计费、不写请求日志。",
 		"audioRealtimeDashScopeHint": "DashScope 实时 ASR/TTS：浏览器建立 WebSocket，由管理后台在浏览器与上游 WSS 之间转发帧；不计费、不写请求日志。",

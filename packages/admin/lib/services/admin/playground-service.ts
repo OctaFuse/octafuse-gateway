@@ -17,6 +17,11 @@ import {
 	resolveGeminiAuthForUpstreamSecret,
 } from '@octafuse/core/gemini-upstream-url';
 import { parseProviderEndpoints, resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
+import {
+	buildMiniMaxAsrHeaders,
+	MINIMAX_ASR_DROPPED_FORM_KEYS,
+	resolveMiniMaxAsrUpstreamFormat,
+} from '@octafuse/core/minimax-asr';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { AUDIO_MAX_BYTES_PER_FILE } from '@/lib/audio-transcriptions';
@@ -905,8 +910,13 @@ export async function invokePlaygroundUpstream(
 			'Image-generation models require upstream_protocol=openai or dashscope (Playground Images calls /images/generations, /images/edits, or DashScope multimodal-generation).',
 		);
 	}
-	if (route.isAudioModel && route.upstreamProtocol !== 'openai' && route.upstreamProtocol !== 'dashscope') {
-		throw badRequest('Audio transcription models require upstream_protocol=openai or dashscope.');
+	if (
+		route.isAudioModel &&
+		route.upstreamProtocol !== 'openai' &&
+		route.upstreamProtocol !== 'dashscope' &&
+		route.upstreamProtocol !== 'minimax'
+	) {
+		throw badRequest('Audio models require upstream_protocol=openai, dashscope, or minimax.');
 	}
 
 	const imageOperation: ImageOperation | null =
@@ -1132,6 +1142,65 @@ export async function invokePlaygroundUpstream(
 			headers = request.headers;
 			fetchBody = request.bodyText;
 			upstreamWireBodyJson = request.wireBodyJson;
+			break;
+		}
+		case 'minimax': {
+			if (!route.isAudioModel || route.upstreamOperation !== 'audio.transcriptions') {
+				throw badRequest('MiniMax Playground routes currently support audio.transcriptions only');
+			}
+			const collected = collectAudioFileFromBody(merged);
+			if (!collected.ok) throw badRequest(collected.error);
+			try {
+				url = resolveUpstreamEndpoint('minimax', 'audio.transcriptions', route.providerEndpoints, {
+					providerId: route.providerId,
+				});
+			} catch (e) {
+				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve MiniMax transcription URL');
+			}
+			const mapped = resolveMiniMaxAsrUpstreamFormat(
+				typeof merged.response_format === 'string' ? merged.response_format : undefined,
+			);
+			const fd = new FormData();
+			fd.append('model', route.providerModelName);
+			fd.append('response_format', mapped.upstreamFormat);
+			const skipped = new Set<string>([
+				'model',
+				'file',
+				'audio',
+				'file_name',
+				'filename',
+				'response_format',
+				...MINIMAX_ASR_DROPPED_FORM_KEYS,
+			]);
+			for (const [key, value] of Object.entries(merged)) {
+				if (skipped.has(key)) continue;
+				if (typeof value === 'string' && value.startsWith('data:')) continue;
+				appendOptionalFormString(fd, key, value);
+			}
+			const copy = collected.file.bytes.buffer.slice(
+				collected.file.bytes.byteOffset,
+				collected.file.bytes.byteOffset + collected.file.bytes.byteLength,
+			) as ArrayBuffer;
+			const file = new File([copy], collected.file.filename, { type: collected.file.mimeType });
+			fd.append('file', file, collected.file.filename);
+			const language = typeof merged.language === 'string' ? merged.language : undefined;
+			headers = {
+				Authorization: `Bearer ${route.providerApiKey}`,
+				...buildMiniMaxAsrHeaders({ language }),
+			};
+			fetchBody = fd;
+			upstreamWireBodyJson = JSON.stringify(
+				{
+					__playground_multipart: true,
+					operation: 'audio.transcriptions',
+					model: route.providerModelName,
+					response_format: mapped.upstreamFormat,
+					language,
+					file: `${collected.file.filename} (${collected.file.bytes.byteLength} bytes, ${collected.file.mimeType})`,
+				},
+				null,
+				2,
+			);
 			break;
 		}
 		default: {

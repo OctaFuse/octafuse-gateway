@@ -29,6 +29,7 @@ const CHIP_DOT: Partial<Record<ProviderListFilter, string>> = {
 	anthropic: 'bg-orange-500',
 	gemini: 'bg-blue-500',
 	dashscope: 'bg-violet-500',
+	minimax: 'bg-rose-500',
 };
 
 export function ProviderToolbar(props: ProviderToolbarProps) {
@@ -47,7 +48,13 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 	const tUpstream = useTranslations('upstream');
 
 	const filterLabel = (filter: ProviderListFilter): string => {
-		if (filter === 'openai' || filter === 'anthropic' || filter === 'gemini' || filter === 'dashscope') {
+		if (
+			filter === 'openai' ||
+			filter === 'anthropic' ||
+			filter === 'gemini' ||
+			filter === 'dashscope' ||
+			filter === 'minimax'
+		) {
 			return tUpstream(filter);
 		}
 		return t(`filters.${filter}`);

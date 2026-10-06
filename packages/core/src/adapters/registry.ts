@@ -199,6 +199,22 @@ const CONVERSION_ADAPTERS = [
 		presetIntent: 'dashscope-image-wan',
 		lossyFeatures: ['background'],
 	},
+	{
+		id: 'minimax-asr-file',
+		optionKey: 'minimax-asr-file',
+		request: { protocol: 'openai', operation: 'audio.transcriptions' },
+		upstream: { protocol: 'minimax', operations: ['audio.transcriptions'] },
+		modality: 'audio',
+		modelKind: 'audio.transcription',
+		exchange: 'unary',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['audio.transcriptions'],
+		publicPath: '/v1/audio/transcriptions',
+		roles: ['upstream'],
+		lossyFeatures: ['prompt', 'temperature'],
+	},
 ] as const satisfies readonly AdapterDescriptor[];
 
 function passthroughDescriptor(input: {

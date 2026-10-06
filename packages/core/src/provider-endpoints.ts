@@ -75,11 +75,17 @@ export const DASHSCOPE_ENDPOINT_CAPABILITIES = [
 	'images.generations.multimodal',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
+/** MiniMax 原生能力。目前只有文件转写；TTS、生图等在对应 driver 落地后再加。 */
+export const MINIMAX_ENDPOINT_CAPABILITIES = [
+	'audio.transcriptions',
+] as const satisfies readonly ProviderEndpointCapability[];
+
 const CAPABILITIES_BY_PROTOCOL: Record<UpstreamProtocol, readonly ProviderEndpointCapability[]> = {
 	openai: OPENAI_ENDPOINT_CAPABILITIES,
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: GEMINI_ENDPOINT_CAPABILITIES,
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
+	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
 };
 
 /** Write-side whitelist: gemini accepts canonical + legacy keys. */
@@ -91,6 +97,7 @@ export const WRITABLE_CAPABILITIES_BY_PROTOCOL: Record<
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: [...GEMINI_ENDPOINT_CAPABILITIES, ...GEMINI_LEGACY_ENDPOINT_CAPABILITIES],
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
+	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
 };
 
 const ALL_CAPABILITIES = new Set<string>([
@@ -99,6 +106,7 @@ const ALL_CAPABILITIES = new Set<string>([
 	...GEMINI_ENDPOINT_CAPABILITIES,
 	...GEMINI_LEGACY_ENDPOINT_CAPABILITIES,
 	...DASHSCOPE_ENDPOINT_CAPABILITIES,
+	...MINIMAX_ENDPOINT_CAPABILITIES,
 ]);
 
 /** 单协议配置：`base` 与/或按 capability 的完整 URL 模板。 */
@@ -489,9 +497,13 @@ export function resolveUpstreamEndpoint(
 			case 'images.edits':
 				return buildOpenAiCompatibleImagesUrl(root, 'edits');
 			case 'audio.transcriptions':
-				return protocol === 'dashscope'
-					? `${root}/services/audio/asr/transcription`
-					: `${root}/audio/transcriptions`;
+				if (protocol === 'dashscope') {
+					return `${root}/services/audio/asr/transcription`;
+				}
+				if (protocol === 'minimax') {
+					return `${root}/speech_to_text`;
+				}
+				return `${root}/audio/transcriptions`;
 			case 'audio.transcriptions.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
 			case 'audio.transcriptions.tasks':

@@ -677,17 +677,20 @@
 			},
 			"anthropic": {
 				"base": "https://api.minimaxi.com/anthropic"
+			},
+			"minimax": {
+				"base": "https://api.minimaxi.com/v1"
 			}
 		},
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "MiniMax",
-					"description": "MiniMax 开放平台，支持 OpenAI 与 Anthropic 兼容协议。"
+					"description": "MiniMax 开放平台，支持 OpenAI、Anthropic，以及原生语音识别（speech_to_text）。"
 				},
 				"en": {
 					"name": "MiniMax",
-					"description": "MiniMax platform endpoints compatible with OpenAI and Anthropic protocols."
+					"description": "MiniMax platform endpoints for OpenAI, Anthropic, and native speech recognition (speech_to_text)."
 				}
 			},
 			"links": {

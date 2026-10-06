@@ -164,7 +164,8 @@ export function usePlaygroundPageState() {
 	const audioSendBlocked =
 		selectedIsAudio &&
 		selectedAudioUpstreamProtocol !== 'openai' &&
-		selectedAudioUpstreamProtocol !== 'dashscope';
+		selectedAudioUpstreamProtocol !== 'dashscope' &&
+		selectedAudioUpstreamProtocol !== 'minimax';
 	const selectedAudioUsesDashScope = selectedIsAudio && selectedAudioUpstreamProtocol === 'dashscope';
 	const selectedUsesDashScopeRealtime = selectedDashScopeRealtimeOperation != null;
 	const selectedCanUseMicrophone =
@@ -557,7 +558,9 @@ export function usePlaygroundPageState() {
 		const useAudio =
 			selectedIsAudio &&
 			!isRealtime &&
-			(selectedAudioUpstreamProtocol === 'openai' || selectedAudioUpstreamProtocol === 'dashscope');
+			(selectedAudioUpstreamProtocol === 'openai' ||
+				selectedAudioUpstreamProtocol === 'dashscope' ||
+				selectedAudioUpstreamProtocol === 'minimax');
 		const useImages = selectedIsImage && !selectedIsAudio && (proto === 'openai' || proto === 'dashscope');
 		const effectiveImageOp: ImageOperation | undefined = useImages
 			? proto === 'dashscope'

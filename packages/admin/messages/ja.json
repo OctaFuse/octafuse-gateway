@@ -352,6 +352,7 @@
 		"anthropic": "Anthropic",
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
+		"minimax": "MiniMax",
 		"protocolUnknown": "プロトコル：{protocol}",
 		"endpointCopyTitle": "{label} — {url}（クリックしてコピー）"
 	},
@@ -492,6 +493,7 @@
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
+			"minimaxOptional": "MiniMax",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -502,12 +504,16 @@
 			"geminiAuthQueryKey": "Query key（?key=）",
 			"geminiAuthBearer": "Bearer（Authorization）",
 			"geminiAuthHint": "Developer API と Vertex Express は ?key= です。プロジェクト指定の Vertex にサービスアカウント JSON を貼ると自動で Bearer になります。Vertex 互換の集約（ZenMux、Qiniu など）は Bearer を選んでください。",
+			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
+			"minimaxHint": "Base のみの場合、音声認識は '{base}'/speech_to_text になります。国際向けホストは api.minimax.io です。現在あるのは音声認識だけで、音声合成・画像・動画・音楽のエンドポイントはまだありません。",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "Base だけを入力すると、下の DashScope HTTP / WSS エンドポイント（filetrans、ホットワード、音声を含む）をすべて生成します。一部の機能だけを提供するプラン（Qwen Token Plan など）では Base を空にし、URL 上書きで対応するエンドポイントだけを入力してください。ワークスペース用エンドポイントでは対応する DashScope ホストを指定してください。",
 			"advancedToggle": "URL の上書き",
 			"advancedHint": "完全な URL を入力してください。",
 			"advancedHintGemini": "完全な URL を入力し、'{model}' と '{action}' を含めてください。",
 			"advancedHintDashscope": "完全な URL を入力してください。エンドポイントは機能ごとに分かれており、1 つのモデルが使うのはそのうち 1 つです。複数の項目が同じ上流 URL（multimodal-generation など）を指すことがありますが、個別に有効化するために分けています。Base がある場合、空欄は生成された URL を使います。Base がない場合、空欄は未対応を意味します。",
+			"advancedHintMinimax": "speech_to_text の完全な URL を入力します。Base がある場合は空欄のままで、ゲートウェイが URL を生成します。",
+			"capHintMiniMaxAudioTranscriptions": "MiniMax ファイル文字起こし POST /v1/speech_to_text。ルートのアダプターは「MiniMax ファイル文字起こし」を選びます。language はフォームではなくリクエストヘッダーに入ります。",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -1020,7 +1026,8 @@
 				"dashscope-tts-qwen": "Qwen-TTS（マルチモーダル）",
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
-				"dashscope-image-wan": "Wan 2.7 Image"
+				"dashscope-image-wan": "Wan 2.7 Image",
+				"minimax-asr-file": "MiniMax ファイル文字起こし"
 			},
 			"adapterDescriptions": {
 				"passthrough": "リクエストとレスポンスをそのまま転送します。クライアントと上流のプロトコル・オペレーションは一致させます。",
@@ -1032,7 +1039,8 @@
 				"dashscope-tts-qwen": "OpenAI /v1/audio/speech → Qwen-TTS マルチモーダル API。qwen3-tts-flash など用。wav のみで速度は指定できません。Qwen-Audio-3.0-TTS には CosyVoice / Qwen-Audio-3.0 TTS を選んでください。",
 				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax マルチモーダル API。mp3・pcm・flac・wav に対応し、instructions は未対応です。",
 				"dashscope-image-qwen": "OpenAI Images → Qwen Image multimodal-generation。size はピクセル指定（1024x1024 など）が必要です。",
-				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation。"
+				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation。",
+				"minimax-asr-file": "OpenAI 文字起こし（multipart）→ MiniMax speech_to_text。プロバイダーモデル名は asr-1.0 です。language はリクエストヘッダーに入り、srt と vtt はタイムスタンプ付き結果からゲートウェイが生成します。"
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "タイムスタンプ粒度（timestamp_granularities）",
@@ -1040,7 +1048,9 @@
 				"inline_file_upload": "音声ファイルの直接アップロード（公開 file_url が必要）",
 				"voice_instructions": "話し方の指示（instructions）",
 				"size_abbreviation": "1K/2K/4K のサイズ省略表記",
-				"background": "透過背景（background）"
+				"background": "透過背景（background）",
+				"prompt": "プロンプト（prompt）",
+				"temperature": "サンプリング温度（temperature）"
 			},
 			"noCompatibleAdapter": "互換性のあるアダプターがありません",
 			"adapterFirstHint": "現在の Provider と互換のアダプターを選択します。公開プロトコルと上流プロトコルはレジストリから自動入力されます。",
@@ -1425,7 +1435,7 @@
 			"allProtocols": "すべてのプロトコル",
 			"allRouteGroups": "すべての Route Group"
 		},
-		"audioOpenaiOnly": "音声文字起こしのテストは OpenAI multipart、または同期 Adapter を実装済みの DashScope ルートに対応しています。",
+		"audioOpenaiOnly": "音声文字起こしのテストは OpenAI multipart、MiniMax ファイル文字起こし、または同期 Adapter を実装済みの DashScope ルートに対応しています。",
 		"audioTranscriptionsHint": "音声モデル：JSON フィールド（language、response_format）と下の音声ファイル。ファイルは multipart で transcriptions に送信されます。課金・リクエストログなし。",
 		"audioTranscriptionsDashScopeHint": "DashScope 同期 ASR：Playground Adapter が音声を Data URL にエンコードし、JSON でアップストリームへ送信します。課金・リクエストログなし。",
 		"audioRealtimeDashScopeHint": "DashScope リアルタイム ASR/TTS：ブラウザが WebSocket を開き、管理コンソールが上流 WSS との間でフレームを中継します。課金・リクエストログなし。",

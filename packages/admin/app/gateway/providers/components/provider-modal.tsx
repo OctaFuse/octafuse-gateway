@@ -46,12 +46,18 @@ const inputClass =
 
 const PROTOCOL_TABS: Array<{
 	key: UpstreamProtocol;
-	labelKey: "openaiOptional" | "anthropicOptional" | "geminiOptional" | "dashscopeOptional";
+	labelKey:
+		| "openaiOptional"
+		| "anthropicOptional"
+		| "geminiOptional"
+		| "dashscopeOptional"
+		| "minimaxOptional";
 }> = [
 	{ key: "openai", labelKey: "openaiOptional" },
 	{ key: "anthropic", labelKey: "anthropicOptional" },
 	{ key: "gemini", labelKey: "geminiOptional" },
 	{ key: "dashscope", labelKey: "dashscopeOptional" },
+	{ key: "minimax", labelKey: "minimaxOptional" },
 ];
 
 type DashScopeOverrideField =
@@ -94,6 +100,7 @@ function ProtocolFields(props: {
 		legacyPerActionNotice: string;
 	};
 	dashscopeCapHints?: Record<DashScopeOverrideField, string>;
+	minimaxCapHint?: string;
 	authLabels?: {
 		label: string;
 		auto: string;
@@ -113,6 +120,7 @@ function ProtocolFields(props: {
 		advancedHint,
 		capLabels,
 		dashscopeCapHints,
+		minimaxCapHint,
 		authLabels,
 		onChange,
 	} = props;
@@ -333,6 +341,25 @@ function ProtocolFields(props: {
 								)}
 							</>
 						) : null}
+						{protocol === "minimax" ? (
+							<div>
+								<label className="mb-1 block text-xs text-gray-600">
+									{capLabels.audioTranscriptions}
+								</label>
+								<input
+									type="url"
+									value={form.audio_transcriptions}
+									onChange={(e) =>
+										onChange({ ...form, audio_transcriptions: e.target.value })
+									}
+									className={inputClass}
+									autoComplete="off"
+								/>
+								{minimaxCapHint ? (
+									<p className="mt-1 text-xs text-gray-500">{minimaxCapHint}</p>
+								) : null}
+							</div>
+						) : null}
 						{protocol === "dashscope" ? (
 							<>
 								{(
@@ -463,6 +490,7 @@ export function ProviderModal(props: ProviderModalProps) {
 		modelsGenerate: t('capModelsGenerate'),
 		legacyPerActionNotice: t('legacyPerActionNotice'),
 	};
+	const minimaxCapHint = t("capHintMiniMaxAudioTranscriptions");
 	const dashscopeCapHints: Record<DashScopeOverrideField, string> = {
 		images_generations_multimodal: t('capHintImagesGenerationsMultimodal'),
 		audio_transcriptions: t('capHintAudioTranscriptions'),
@@ -791,6 +819,20 @@ export function ProviderModal(props: ProviderModalProps) {
 										onChange={(dashscope) =>
 											onFormChange({ ...formData, dashscope })
 										}
+									/>
+								) : null}
+								{endpointTab === "minimax" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("minimaxPlaceholder")}
+										baseHint={t("minimaxHint")}
+										form={formData.minimax}
+										protocol="minimax"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHintMinimax")}
+										capLabels={capLabels}
+										minimaxCapHint={minimaxCapHint}
+										onChange={(minimax) => onFormChange({ ...formData, minimax })}
 									/>
 								) : null}
 							</div>

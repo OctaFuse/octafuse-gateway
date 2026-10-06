@@ -1,6 +1,7 @@
 import {
 	canonicalizeRequestOperation,
 	isRequestOperationForProtocol,
+	isUpstreamOperationForProtocol,
 	isRouteAdapterCompatible,
 	normalizeRouteCustomParamsForStorage,
 	validateRouteCustomParamsHeaders,
@@ -36,7 +37,7 @@ export function parsePlaygroundRouteDraft(value: unknown): PlaygroundRouteDraft 
 	const adapter = required('adapter');
 	if (
 		!isRequestOperationForProtocol(requestProtocol, requestOperation) ||
-		!isRequestOperationForProtocol(upstreamProtocol, upstreamOperation) ||
+		!isUpstreamOperationForProtocol(upstreamProtocol, upstreamOperation) ||
 		!isRouteAdapterCompatible({
 			adapter,
 			requestProtocol,

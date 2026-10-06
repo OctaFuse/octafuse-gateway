@@ -19,6 +19,7 @@ import {
 	templateForRoute,
 	type PlaygroundLlmFamily,
 } from './playground-utils';
+import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
 import { IMAGE_GENERATIONS_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { RouteListRow } from './types';
 
@@ -64,6 +65,27 @@ describe('playground-utils', () => {
 				'edits',
 			),
 			IMAGE_GENERATIONS_BODY_TEMPLATE,
+		);
+	});
+
+	it('templateForRoute uses the transcription JSON for MiniMax ASR routes', () => {
+		assert.equal(
+			templateForRoute(
+				route({
+					model_id: 'minimax-asr-1.0',
+					upstream_protocol: 'minimax',
+					upstream_operation: 'audio.transcriptions',
+					adapter: 'minimax-asr-file',
+					provider_model_name: 'asr-1.0',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_second',
+						audio: { price_per_second: 0.000694444 },
+					}),
+				} as never,
+			),
+			AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
 		);
 	});
 

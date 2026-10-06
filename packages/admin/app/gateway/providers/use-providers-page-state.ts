@@ -45,6 +45,7 @@ function emptyFilterCounts(): Record<ProviderListFilter, number> {
 		anthropic: 0,
 		gemini: 0,
 		dashscope: 0,
+		minimax: 0,
 	};
 }
 

@@ -432,6 +432,15 @@ describe('route form capability filters', () => {
 		assert.deepEqual(
 			compatibleAdaptersForRoute({
 				request_protocol: 'openai',
+				request_operation: 'audio.transcriptions',
+				upstream_protocol: 'minimax',
+				upstream_operation: 'audio.transcriptions',
+			}),
+			['minimax-asr-file'],
+		);
+		assert.deepEqual(
+			compatibleAdaptersForRoute({
+				request_protocol: 'openai',
 				request_operation: 'images.generations',
 				upstream_protocol: 'dashscope',
 				upstream_operation: 'images.generations.multimodal',

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 新增上游协议 `minimax`，首个能力是文件转写。客户端仍调用 OpenAI `POST /v1/audio/transcriptions`，适配器 `minimax-asr-file` 转到 MiniMax `POST /v1/speech_to_text`（模型 `asr-1.0`），按上游 `duration` 按秒计费。`language` 放在请求头；`srt` / `vtt` 由网关根据带时间戳的结果生成。调试台可直接向 MiniMax 转写端点发请求。供应商导入预设补上 `minimax.base`，已导入的供应商需要手工填写。语音合成、生图、视频和音乐还没有端点。
+
 - Admin 供应商的 DashScope 端点覆盖逐项说明适用模型和对应的路由适配器，并说明「只填 Base 即派生」与「套餐只填部分端点」两种用法。路由编辑器按所选适配器显示用途、适用模型和格式限制，已知不支持的功能改为可读名称。适配器显示名改为「CosyVoice / Qwen-Audio-3.0 语音合成」和「Qwen-TTS 语音合成（多模态）」，已保存的路由不受影响。
 
 - 千问 AI 平台按量导入预设使用 `maas.qianwenaiapi.com`：OpenAI Chat 与 Responses、Anthropic，以及 DashScope base（可派生语音、生图和 filetrans）。百炼国内与国际按量预设补上 Anthropic Messages，主机仍是 `dashscope.aliyuncs.com` 与 `dashscope-intl.aliyuncs.com`。已导入的供应商不会自动更新。

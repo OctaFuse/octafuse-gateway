@@ -352,6 +352,7 @@
 		"anthropic": "Anthropic",
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
+		"minimax": "MiniMax",
 		"protocolUnknown": "Protocol: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (click to copy)"
 	},
@@ -492,6 +493,7 @@
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
+			"minimaxOptional": "MiniMax",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -502,12 +504,16 @@
 			"geminiAuthQueryKey": "Query key (?key=)",
 			"geminiAuthBearer": "Bearer (Authorization)",
 			"geminiAuthHint": "Developer API and Vertex Express use ?key=. Project-scoped Vertex with a service account JSON uses Bearer automatically. Vertex-compatible aggregators (ZenMux, Qiniu, …) must select Bearer.",
+			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
+			"minimaxHint": "A base derives speech recognition as '{base}'/speech_to_text. Use api.minimax.io for the international host. Only speech recognition is available; speech, images, video, and music do not have endpoints yet.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "With only a base, the gateway derives every DashScope HTTP and WSS endpoint below, including filetrans, hotwords, and voices. For plans that expose only some capabilities (such as Qwen Token Plan), leave the base empty and fill in only the supported URL overrides. For a workspace endpoint, use the corresponding DashScope host.",
 			"advancedToggle": "URL overrides",
 			"advancedHint": "Enter a complete URL.",
 			"advancedHintGemini": "Enter a complete URL that includes '{model}' and '{action}'.",
 			"advancedHintDashscope": "Enter full URLs. Endpoints are split by capability and a model uses only one of them. Several may point to the same upstream URL (such as multimodal-generation); they are separate so each can be enabled on its own. With a base, empty fields use the derived URL. Without a base, an empty field means unsupported.",
+			"advancedHintMinimax": "Enter the full speech_to_text URL. Leave it empty when a base is set; the gateway derives the URL.",
+			"capHintMiniMaxAudioTranscriptions": "MiniMax file transcription, POST /v1/speech_to_text. Choose the MiniMax file transcription adapter. The gateway sends language as a request header, not a form field.",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -1020,7 +1026,8 @@
 				"dashscope-tts-qwen": "Qwen-TTS (multimodal)",
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
-				"dashscope-image-wan": "Wan 2.7 Image"
+				"dashscope-image-wan": "Wan 2.7 Image",
+				"minimax-asr-file": "MiniMax file transcription"
 			},
 			"adapterDescriptions": {
 				"passthrough": "Forwards the request and response unchanged. Client and upstream protocol and operation must match.",
@@ -1032,7 +1039,8 @@
 				"dashscope-tts-qwen": "OpenAI /v1/audio/speech → Qwen-TTS multimodal API. For qwen3-tts-flash and similar; returns wav only and does not support speed. For Qwen-Audio-3.0-TTS, choose CosyVoice / Qwen-Audio-3.0 TTS.",
 				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax multimodal API. Supports mp3, pcm, flac, wav; does not support instructions.",
 				"dashscope-image-qwen": "OpenAI Images → Qwen Image multimodal-generation. size must be in pixels (such as 1024x1024).",
-				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation."
+				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation.",
+				"minimax-asr-file": "OpenAI transcription (multipart) → MiniMax speech_to_text. Set the provider model name to asr-1.0. language is sent as a request header; the gateway renders srt and vtt from timestamped segments."
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "timestamp_granularities",
@@ -1040,7 +1048,9 @@
 				"inline_file_upload": "direct audio upload (a public file_url is required)",
 				"voice_instructions": "instructions",
 				"size_abbreviation": "1K/2K/4K size shorthand",
-				"background": "background"
+				"background": "background",
+				"prompt": "prompt",
+				"temperature": "temperature"
 			},
 			"noCompatibleAdapter": "No compatible adapter",
 			"adapterFirstHint": "Choose a compatible adapter for this provider. Public and upstream protocol fields are filled from the registry.",
@@ -1425,7 +1435,7 @@
 			"allProtocols": "All protocols",
 			"allRouteGroups": "All route groups"
 		},
-		"audioOpenaiOnly": "Audio transcription testing supports OpenAI multipart or DashScope routes with an implemented synchronous adapter.",
+		"audioOpenaiOnly": "Audio transcription testing supports OpenAI multipart, MiniMax file transcription, or DashScope routes with an implemented synchronous adapter.",
 		"audioTranscriptionsHint": "Audio model: JSON fields (language, response_format) plus an audio file below. File is sent as multipart to the upstream transcriptions endpoint. No billing or request logs.",
 		"audioTranscriptionsDashScopeHint": "DashScope synchronous ASR: the Playground adapter encodes the audio as a Data URL and sends JSON upstream. No billing or request logs.",
 		"audioRealtimeDashScopeHint": "DashScope realtime ASR/TTS: the browser opens a WebSocket and Admin bridges frames to the upstream WSS. No billing or request logs.",

@@ -52,6 +52,11 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 		"audio.speech.realtime.session",
 		"images.generations.multimodal",
 	],
+	/**
+	 * MiniMax 没有公开请求入口。上游 operation 由适配器声明，
+	 * 校验走 `isUpstreamOperationForProtocol`，不进对外协议下拉。
+	 */
+	minimax: [],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =
@@ -100,6 +105,21 @@ export function isRequestOperationForProtocol(
 		(REQUEST_OPERATIONS_BY_PROTOCOL[protocol] as readonly string[]).includes(
 			operation
 		)
+	);
+}
+
+/**
+ * 上游 operation 可以是公开请求 operation，也可以只出现在转换适配器的上游侧。
+ * MiniMax 没有公开入口，`audio.transcriptions` 仍是合法上游端点。
+ */
+export function isUpstreamOperationForProtocol(
+	protocol: UpstreamProtocol,
+	operation: string
+): boolean {
+	if (isRequestOperationForProtocol(protocol, operation)) return true;
+	return Object.values(ROUTE_ADAPTER_MAPPINGS).some(
+		(mapping) =>
+			mapping.upstreamProtocol === protocol && mapping.upstreamOperation === operation
 	);
 }
 

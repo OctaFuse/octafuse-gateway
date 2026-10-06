@@ -130,4 +130,21 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			"https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation"
 		);
 	});
+
+	it("derives the MiniMax speech_to_text URL from the API base", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					minimax: { base: "https://api.minimaxi.com/v1" },
+				}),
+			},
+			upstreamProtocol: "minimax",
+			upstreamOperation: "audio.transcriptions",
+			providerModelName: "asr-1.0",
+			isImageModel: false,
+			isAudioModel: true,
+		});
+		assert.equal(url, "https://api.minimaxi.com/v1/speech_to_text");
+	});
 });

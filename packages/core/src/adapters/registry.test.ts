@@ -25,6 +25,7 @@ describe('adapter registry', () => {
 			'dashscope-tts-minimax',
 			'dashscope-image-qwen',
 			'dashscope-image-wan',
+			'minimax-asr-file',
 		]);
 	});
 
@@ -47,7 +48,13 @@ describe('adapter registry', () => {
 			upstreamProtocol: 'dashscope',
 			upstreamOperation: 'audio.speech.multimodal',
 		});
-		assert.equal(listConversionAdapters().length, 9);
+		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['minimax-asr-file'], {
+			requestProtocol: 'openai',
+			requestOperation: 'audio.transcriptions',
+			upstreamProtocol: 'minimax',
+			upstreamOperation: 'audio.transcriptions',
+		});
+		assert.equal(listConversionAdapters().length, 10);
 	});
 
 	it('every conversion adapter is compatible with its own mapping', () => {
@@ -88,6 +95,10 @@ describe('adapter registry', () => {
 		]);
 		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'image'), [
 			'images.generations.multimodal',
+		]);
+		assert.deepEqual(requestOperationsFromRegistry('minimax', 'audio.transcription'), []);
+		assert.deepEqual(upstreamOperationsFromRegistry('minimax', 'audio.transcription'), [
+			'audio.transcriptions',
 		]);
 	});
 
