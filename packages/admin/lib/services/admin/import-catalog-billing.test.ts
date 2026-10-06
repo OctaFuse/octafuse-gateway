@@ -481,6 +481,30 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile?.tiers[0]?.cache_read_price, 0.38);
 	});
 
+	it('includes kimi-k3 with platform.kimi list prices including 5min cache_write_price', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'kimi-k3');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'kimi-k3');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Kimi K3');
+		assert.equal(usd!.context_window, 1048576);
+		assert.equal(usd!.max_tokens, 1048576);
+		assert.equal(usd!.pricing_label, '$3 / $15 /M');
+		assert.equal(cny!.pricing_label, '¥20 / ¥100 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'kimi-k3');
+		assert.ok(preset);
+		const usdProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(usdProfile?.tiers[0]?.input_price, 3);
+		assert.equal(usdProfile?.tiers[0]?.output_price, 15);
+		assert.equal(usdProfile?.tiers[0]?.cache_read_price, 0.3);
+		assert.equal(usdProfile?.tiers[0]?.cache_write_price, 3);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 20);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 100);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 2);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 20);
+	});
+
 	it('includes qwen3.8-2.4t-a95b open-source flagship with DashScope CNY list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-2.4t-a95b');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen3.8-2.4t-a95b');

@@ -55,7 +55,7 @@
 			"zh": "面向长周期编程、UI 生成与 Agent 编排的多模态 Kimi 模型。面向长周期编程、代码驱动的 UI 生成，以及复杂项目中的多 Agent 协同执行。"
 		},
 		"vendor": "moonshot",
-		"context_window": 256000,
+		"context_window": 262144,
 		"max_tokens": 256000,
 		"pricing": {
 			"usd": {
@@ -102,7 +102,7 @@
 			"zh": "面向长上下文端到端编程任务、强调可靠性的 Kimi Code 模型。以编程为中心，旨在长上下文中可靠完成端到端开发任务。"
 		},
 		"vendor": "moonshot",
-		"context_window": 256000,
+		"context_window": 262144,
 		"max_tokens": 256000,
 		"pricing": {
 			"usd": {
@@ -195,8 +195,8 @@
 			"zh": "面向复杂编程、推理与 Agent 工作的开放权重 Kimi 多模态模型。这款开放权重多模态推理模型面向复杂编程、知识工作和长时间运行的 Agent。"
 		},
 		"vendor": "moonshot",
-		"context_window": 1000000,
-		"max_tokens": 1000000,
+		"context_window": 1048576,
+		"max_tokens": 1048576,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -205,7 +205,7 @@
 						"input_price": 3,
 						"output_price": 15,
 						"cache_read_price": 0.3,
-						"cache_write_price": null
+						"cache_write_price": 3
 					}
 				]
 			},
@@ -216,7 +216,7 @@
 						"input_price": 20,
 						"output_price": 100,
 						"cache_read_price": 2,
-						"cache_write_price": null
+						"cache_write_price": 20
 					}
 				]
 			}
