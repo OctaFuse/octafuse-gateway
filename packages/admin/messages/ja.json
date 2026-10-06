@@ -1627,6 +1627,7 @@
 			"manageKeys": "キーを管理 →",
 			"overview": "概要",
 			"billing": "予算・課金",
+			"models": "モデル一覧",
 			"activity": "アクティビティ",
 			"overviewHint": "アカウント情報と全キー共通のリクエスト制限を管理します。",
 			"walletHint": "予算サイクルを超えて保持",
@@ -1799,6 +1800,24 @@
 				"jsonTitle": "現在の倍率設定の JSON",
 				"jsonHint": "現在のフォームの読み取り専用プレビューです。未保存の変更や検索で非表示のモデルも含まれます。"
 			}
+		},
+		"modelsPreview": {
+			"title": "GET /v1/models を模擬",
+			"hint": "保存済みのユーザー専用倍率で、Agent と同じ一覧を組み立てます。既定は default と free のテキストモデルです。未保存のフォーム変更は結果に含まれません。",
+			"dirty": "倍率フォームに未保存の変更があります。このリクエストは保存済みの設定を使います。",
+			"model": "モデル",
+			"modelPlaceholder": "モデル ID または名前。空欄なら先頭 40 件",
+			"routeGroups": "ルートグループ",
+			"kind": "種類",
+			"group": "グループ",
+			"request": "リクエスト",
+			"requesting": "リクエスト中…",
+			"failed": "リクエストに失敗しました",
+			"empty": "一致するモデルがありません。",
+			"truncated": "先頭 {count} 件で打ち切られました。モデルの絞り込みを狭めて再リクエストしてください。",
+			"mode": "合成モード {mode}",
+			"summary": "現在の時間帯",
+			"response": "レスポンス"
 		},
 		"externalIdentity": {
 			"title": "外部 ID",

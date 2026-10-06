@@ -1627,6 +1627,7 @@
 			"manageKeys": "키 관리 →",
 			"overview": "개요",
 			"billing": "예산 및 과금",
+			"models": "모델 목록",
 			"activity": "활동 기록",
 			"overviewHint": "계정 정보와 모든 키가 공유하는 요청 제한을 관리합니다.",
 			"walletHint": "예산 주기가 바뀌어도 유지",
@@ -1799,6 +1800,24 @@
 				"jsonTitle": "현재 배율 설정 JSON",
 				"jsonHint": "현재 양식의 읽기 전용 미리보기입니다. 저장하지 않은 변경 사항과 검색으로 숨겨진 모델도 포함됩니다."
 			}
+		},
+		"modelsPreview": {
+			"title": "GET /v1/models 시뮬레이션",
+			"hint": "저장된 사용자 전용 배율로 Agent와 같은 목록을 만듭니다. 기본값은 default와 free 그룹의 텍스트 모델입니다. 저장하지 않은 폼 변경은 결과에 포함되지 않습니다.",
+			"dirty": "배율 폼에 저장하지 않은 변경이 있습니다. 이 요청은 저장된 설정을 사용합니다.",
+			"model": "모델",
+			"modelPlaceholder": "모델 ID 또는 이름. 비우면 처음 40개",
+			"routeGroups": "라우트 그룹",
+			"kind": "종류",
+			"group": "그룹",
+			"request": "요청",
+			"requesting": "요청 중…",
+			"failed": "요청에 실패했습니다",
+			"empty": "일치하는 모델이 없습니다.",
+			"truncated": "처음 {count}개에서 잘렸습니다. 모델 필터를 좁혀 다시 요청하세요.",
+			"mode": "합성 모드 {mode}",
+			"summary": "현재 시간대",
+			"response": "응답"
 		},
 		"externalIdentity": {
 			"title": "외부 ID",

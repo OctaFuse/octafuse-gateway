@@ -1627,6 +1627,7 @@
 			"manageKeys": "管理密钥 →",
 			"overview": "概览",
 			"billing": "额度与计费",
+			"models": "模型列表",
 			"activity": "活动记录",
 			"overviewHint": "管理账户资料，以及该用户所有密钥共用的请求限流。",
 			"walletHint": "跨预算周期保留",
@@ -1799,6 +1800,24 @@
 				"jsonTitle": "当前倍率配置 JSON",
 				"jsonHint": "只读预览，包含当前表单中尚未保存的修改及被搜索隐藏的模型。"
 			}
+		},
+		"modelsPreview": {
+			"title": "模拟 GET /v1/models",
+			"hint": "用已保存的用户专属倍率组装与 Agent 相同的列表。默认只含 default、free 分组的文本模型。未保存的表单修改不会进入这次结果。",
+			"dirty": "倍率表单有未保存修改，这次结果仍使用已保存的配置。",
+			"model": "模型",
+			"modelPlaceholder": "模型 ID 或名称，留空返回前 40 条",
+			"routeGroups": "路由组",
+			"kind": "类型",
+			"group": "分组",
+			"request": "请求",
+			"requesting": "请求中…",
+			"failed": "请求失败",
+			"empty": "没有匹配的模型。",
+			"truncated": "结果已截断，只返回前 {count} 条。缩小模型筛选后再请求。",
+			"mode": "合成模式 {mode}",
+			"summary": "当前窗口",
+			"response": "响应"
 		},
 		"externalIdentity": {
 			"title": "外部身份",

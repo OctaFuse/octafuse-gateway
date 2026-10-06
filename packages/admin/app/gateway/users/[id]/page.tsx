@@ -31,6 +31,7 @@ import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { compareRouteGroupsForDisplay, normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
 import { pickChangedUserFields } from '../user-detail-form';
 import { UserFactorEditor } from '../user-factor-editor';
+import { UserModelsPreviewPanel } from '../user-models-preview';
 
 /** 用户详情近期审计与全站页默认一致：不含用量扣费 */
 const USER_DETAIL_AUDIT_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((type) => type !== 'usage_charge');
@@ -212,7 +213,7 @@ export default function GatewayUserDetailPage() {
   const [planError, setPlanError] = useState('');
   const [planSuccess, setPlanSuccess] = useState('');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
-  const [activeSection, setActiveSection] = useState<'overview' | 'billing' | 'keys' | 'activity'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'billing' | 'models' | 'keys' | 'activity'>('overview');
   const planSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [catalogModels, setCatalogModels] = useState<CatalogModelOption[]>([]);
   const [routeGroupsByModel, setRouteGroupsByModel] = useState<Map<string, string[]>>(new Map());
@@ -878,7 +879,7 @@ export default function GatewayUserDetailPage() {
         aria-label={t('detailTitle')}
         className="mb-6 flex gap-1 overflow-x-auto border-b border-gray-200"
       >
-        {(['overview', 'billing', 'keys', 'activity'] as const).map((section, index, sections) => (
+        {(['overview', 'billing', 'keys', 'activity', 'models'] as const).map((section, index, sections) => (
           <button
             key={section}
             id={`user-tab-${section}`}
@@ -1384,6 +1385,15 @@ export default function GatewayUserDetailPage() {
           </div>
         </section>
       </fieldset>
+      <section
+        id="user-panel-models"
+        role="tabpanel"
+        aria-labelledby="user-tab-models"
+        hidden={activeSection !== 'models'}
+        tabIndex={0}
+      >
+        <UserModelsPreviewPanel userId={userId} factorsDirty={factorJsonPreview.dirty} />
+      </section>
       <section
         id="user-panel-keys"
         role="tabpanel"

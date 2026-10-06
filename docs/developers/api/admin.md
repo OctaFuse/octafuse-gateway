@@ -54,6 +54,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/users` | GET, POST | `users`（分页列表 / 按外部对幂等创建） | Admin UI、外部集成方 |
 | `/admin/users/:id` | GET, PATCH, DELETE | `users`（`:id` 为 uuid 或 `ext:…` 外部路由，见下节） | Admin UI、外部集成方 |
 | `/admin/users/:id/display-discounts` | GET | 该用户 `charged_cost_factors` 叠进公开目录 `discounts`（只返回已配置倍率的模型） | 外部集成方 |
+| `/admin/users/:id/models` | GET | 按已保存倍率模拟 `GET /v1/models`（默认 `default,free` 文本模型，最多 40 条） | 管理后台 |
 | `/admin/users/:id/keys` | GET, POST | `api_keys`（用户范围内） | Admin UI |
 | `/admin/users/:id/keys/:keyId` | PATCH, DELETE | `api_keys` | Admin UI |
 | `/admin/users/:id/logs` | GET | `api_key_request_logs`（按 `user_id`） | Admin UI |
@@ -159,6 +160,20 @@ Authorization: Bearer sk-admin-<64 hex characters>
 响应：`{ success, data: [{ id, discounts }] }`。`discounts` 形状与 `GET /catalog/models` / `GET /v1/models` 的 `discounts` 相同。不要用 **`GET /admin/models`**（运维 CRUD，无展示折扣）。
 
 公开目录用 `GET /catalog/models`，用户个性化折扣用本接口 overlay；Agent 仍用用户 Key 的 `GET /v1/models`。
+
+### `GET /admin/users/:id/models`
+
+只读预览：按该用户**已保存**的 `charged_cost_factors` 组装与 Proxy `GET /v1/models` 相同的列表折扣。不调用 Proxy，不使用用户 API Key，不计入 RPM。需 **`users.read`**。未配置用户倍率时仍返回目录折扣，便于对照 Agent 看到的 `catalog_factor`、`route_factor`、`composite_factor`。
+
+Query 与 `/v1/models` 对齐：
+
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `route_groups` | `default,free` | CSV，大小写不敏感 |
+| `kind` | `llm` | `llm` \| `image` \| `audio` \| `all` |
+| `model` | 空 | 按模型 ID 或展示名包含匹配；空则按目录顺序返回 |
+
+单次最多 40 条。响应 `{ success, data: { object: "list", data, preview } }`。`data.data[]` 的 `model_info.discounts` 与 `/v1/models` 相同；`preview` 含 `user_charged_factor_mode`、实际采用的 `route_groups` / `kind`，以及是否 `truncated`。不含 `inbound`。
 
 ### `PATCH /admin/users/:id`
 

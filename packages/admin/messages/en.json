@@ -1627,6 +1627,7 @@
 			"manageKeys": "Manage keys →",
 			"overview": "Overview",
 			"billing": "Budget & billing",
+			"models": "Models",
 			"activity": "Activity",
 			"overviewHint": "Manage account details and the request limit shared by all keys.",
 			"walletHint": "Retained across budget cycles",
@@ -1799,6 +1800,24 @@
 				"jsonTitle": "Current multiplier configuration in JSON",
 				"jsonHint": "Read-only preview of the current form, including unsaved changes and models hidden by the filter."
 			}
+		},
+		"modelsPreview": {
+			"title": "Simulate GET /v1/models",
+			"hint": "Builds the same list the agent receives, using this user's saved multipliers. Defaults to text models in the default and free groups. Unsaved form edits are not included.",
+			"dirty": "The multiplier form has unsaved edits. This request still uses the saved configuration.",
+			"model": "Model",
+			"modelPlaceholder": "Model ID or name; leave empty for the first 40",
+			"routeGroups": "Route groups",
+			"kind": "Kind",
+			"group": "Group",
+			"request": "Request",
+			"requesting": "Requesting…",
+			"failed": "Request failed",
+			"empty": "No models match.",
+			"truncated": "Truncated to the first {count} models. Narrow the model filter and request again.",
+			"mode": "Combination mode {mode}",
+			"summary": "Current window",
+			"response": "Response"
 		},
 		"externalIdentity": {
 			"title": "External identity",
