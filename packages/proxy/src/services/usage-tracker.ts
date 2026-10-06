@@ -2,7 +2,7 @@
  * 用量与计费：按百万 token 单价计算 `metered_cost`（供应成本）、`standard_cost`（官方当刻目录成本）、`charged_cost`（用户预算）。
  * - 基数始终来自 `models.pricing_profile`（按 input_tokens 选档）。
  * - `standard_cost` = 目录价 × 官方时段倍率（不含路由倍率）。
- * - `metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 路由官方倍率 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。官方倍率不在有效期内时按 1。`standard_cost` 不含官方倍率。
+ * - `metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 供应商倍率 × 路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor）。供应商倍率不在有效期内时按 1。`standard_cost` 不含供应商倍率。
  * - 若用户对该模型配置了 `charged_cost_factors`，再按 `system_config.USER_CHARGED_COST_FACTOR_MODE` 与路由有效倍率合成最终 `charged_cost`（`multiply` 叠乘，`min` 取较小倍率）。
  * - nested `price_override.metered` / `charged` tiers 忽略不计价。
  * 写入 `api_key_request_logs`（含 `pricing_audit` JSON，见 `PRICING_AUDIT_JSON_SCHEMA_VERSION`）并在非 error 且 charged>0 时累加 `users.budget_spent`。

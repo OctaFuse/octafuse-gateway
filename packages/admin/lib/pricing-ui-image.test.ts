@@ -143,7 +143,7 @@ describe('summarizePricingAuditJson', () => {
 		assert.ok(line!.includes('user ×0.8'));
 	});
 
-	it('includes an official provider factor from the charge snapshot or a flat audit', () => {
+	it('includes a provider factor from the charge snapshot or a flat audit', () => {
 		const fromSnapshot = summarizePricingAuditJson(
 			JSON.stringify({
 				v: 6,

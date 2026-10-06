@@ -42,7 +42,7 @@ export type DisplayDiscountWindow = {
 
 export type DisplayDiscountProviderFactor = {
 	base: number;
-	/** 当刻官方倍率（含分时；不在有效期内为 1）。 */
+	/** 当刻供应商倍率（含分时；不在有效期内为 1）。 */
 	effective: number;
 	active: boolean;
 	starts_at: string | null;
@@ -57,7 +57,7 @@ export type DisplayDiscountGroup = {
 	current: DisplayDiscountWindow;
 	windows: DisplayDiscountWindow[];
 	/**
-	 * 路由配置了官方倍率（基数不是 1、有有效期或有分时）时返回。
+	 * 路由配置了供应商倍率（基数不是 1、有有效期或有分时）时返回。
 	 * `route_factor` 已乘上当刻 `effective`。
 	 */
 	provider_factor: DisplayDiscountProviderFactor | null;

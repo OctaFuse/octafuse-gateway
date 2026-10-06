@@ -25,7 +25,7 @@ export type DailyScheduleWindow = {
 export type ProviderFactorValidity = { starts_at?: string; expires_at?: string };
 
 export type ProviderScheduleWindow = DailyScheduleWindow & {
-	/** Omitted inherits legacy route validity; {} explicitly means unlimited. */
+	/** Omitted inherits the route-level default validity; {} explicitly means unlimited. */
 	validity?: ProviderFactorValidity;
 };
 
@@ -36,7 +36,7 @@ export type RoutePricingSchedule = {
 	mode: RoutePricingScheduleMode;
 	charged: DailyScheduleWindow[];
 	metered: DailyScheduleWindow[];
-	/** 官方倍率分时；空数组表示全天用 `provider_factor`（有效期内）。 */
+	/** 供应商倍率分时；空数组表示全天用 `provider_factor`（有效期内）。 */
 	provider: ProviderScheduleWindow[];
 };
 
@@ -46,7 +46,7 @@ export type SharedScheduleWindow = {
 	end: string;
 	charged_factor: number;
 	metered_factor: number;
-	/** 该切片上 bake 后的官方倍率；缺省按 1。 */
+	/** 该切片上 bake 后的供应商倍率；缺省按 1。 */
 	provider_factor: number;
 	provider_validity?: ProviderFactorValidity;
 	days?: number[];
@@ -327,12 +327,12 @@ function readRootFactor(obj: Record<string, unknown>, key: string): number | nul
 export type RouteBaseFactors = {
 	chargedFactor: number;
 	meteredFactor: number;
-	/** 官方倍率；缺省 1。不在有效期内时运行时按 1，此处仍返回配置值。 */
+	/** 供应商倍率；缺省 1。不在有效期内时运行时按 1，此处仍返回配置值。 */
 	providerFactor: number;
 	/** 规范化后的 UTC ISO；未配置为 null。 */
 	providerStartsAt: string | null;
 	providerExpiresAt: string | null;
-	/** 配置了无法解析的起止时间时为 true，运行时官方倍率不生效。 */
+	/** 配置了无法解析的起止时间时为 true，运行时供应商倍率不生效。 */
 	providerWindowInvalid: boolean;
 };
 
@@ -364,7 +364,7 @@ type ProviderValidityResolution = Pick<
 	'providerStartsAt' | 'providerExpiresAt' | 'providerWindowInvalid'
 >;
 
-/** A matched row can override the legacy route-wide validity, including with an unlimited {}. */
+/** A matched row can override the route-level default validity, including with an unlimited {}. */
 export function resolveProviderFactorValidity(
 	bases: ProviderValidityResolution,
 	window: ProviderScheduleWindow | null
@@ -409,8 +409,9 @@ export function coerceProviderFactorValidity(
 }
 
 /**
- * 读取路由基础倍率；缺省 1。
- * `provider_factor` 是官方倍率，不参与成本倍率。
+ * 读取路由基础倍率。`charged_factor`、`metered_factor`、`provider_factor` 缺省均为 1。
+ * `provider_factor` 是供应商倍率：有效期内同时乘到用户计费（charged）和供应成本（metered）上，标准价不乘；有效期外按 1。
+ * 它不是 `metered_factor` 的回退值。v2.12.0 及更早版本中，同名字段只是 `metered_factor` 缺失时的回退值，2.13.0 起改为供应商倍率，两者语义不同。
  */
 export function parseRouteBaseFactors(priceOverrideJson: string | null | undefined): RouteBaseFactors {
 	if (priceOverrideJson == null || String(priceOverrideJson).trim() === '') {
@@ -437,7 +438,7 @@ export function parseRouteBaseFactors(priceOverrideJson: string | null | undefin
 }
 
 /**
- * 官方倍率是否处于有效期。`starts_at` 含、`expires_at` 不含。
+ * 供应商倍率是否处于有效期。`starts_at` 含、`expires_at` 不含。
  * 任一端无法解析时视为未生效。
  */
 export function isProviderFactorActive(
@@ -512,7 +513,7 @@ export function toProviderFactorAudit(provider: ProviderFactorResolution): Provi
 /**
  * 一次解析路由三侧有效倍率。先选中供应商时段，再判定该行有效期；
  * 有效期外 `provider.effective` 为 1，`charged` / `metered` 仍按各自 base 与窗口计算。
- * `chargedTotal` / `meteredTotal` 已乘上官方倍率，供扣费与成本直接使用。
+ * `chargedTotal` / `meteredTotal` 已乘上供应商倍率，供扣费与成本直接使用。
  */
 export function resolveRouteEffectiveFactors(options: {
 	priceOverrideJson: string | null | undefined;
@@ -866,7 +867,7 @@ type DayPiece = {
  * 将三侧独立窗口并成共享 start/end 行，并把旧叠乘 bake 成对标准价的有效倍率。
  * 仅输出至少一侧命中窗口的区间；缺侧按「未命中」处理（override=base，multiply=base×1）。
  * 按 days 集合拆行，避免工作日窗与周末窗被拼成一行。
- * `provider` 省略时不拆窗，行上 `provider_factor` 为 bake 后的基础官方倍率（缺省 1）。
+ * `provider` 省略时不拆窗，行上 `provider_factor` 为 bake 后的基础供应商倍率（缺省 1）。
  */
 export function mergeScheduleSidesToSharedWindows(
 	charged: DailyScheduleWindow[],

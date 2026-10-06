@@ -150,7 +150,7 @@ export type PriceResolutionAuditSide = {
 	/** 合成后落到官方当刻价上的倍率；用户未配置该模型时为 null */
 	combined_charged_factor?: number | null;
 	/**
-	 * 路由官方倍率。`effective_factor` 已含 `provider_factor.effective`。
+	 * 供应商倍率。`effective_factor` 已含 `provider_factor.effective`。
 	 * 不在有效期内时 `active=false` 且 `effective=1`。
 	 */
 	provider_factor?: ProviderFactorAudit;

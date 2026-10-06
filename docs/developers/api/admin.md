@@ -879,10 +879,10 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 }
 ```
 
-  - `provider_factor`：供应商倍率（缺省 `1`，`≥ 0`）。可选 `provider_factor_starts_at` / `provider_factor_expires_at`（UTC ISO；Admin 按 `BUSINESS_TIMEZONE` 编辑）。`starts_at` 含、`expires_at` 不含；两端都可省略。未命中供应商时段时使用这组起止时间。不在有效期内，或任一端无法解析时，供应商倍率为 `1`。旧的 `schedule.provider` 窗口未声明 `validity` 时也沿用这组日期，保持原有行为。过期配置留在 JSON 里，不自动删除。计费时刻仍是请求开始时间。
+  - `provider_factor`：供应商倍率（缺省 `1`，`≥ 0`）。可选 `provider_factor_starts_at` / `provider_factor_expires_at`（UTC ISO；Admin 按 `BUSINESS_TIMEZONE` 编辑）是默认有效期。`starts_at` 含、`expires_at` 不含；两端都可省略。未命中供应商时段，或 `schedule.provider` 窗口省略 `validity` 时，沿用这组默认有效期。不在有效期内，或任一端无法解析时，供应商倍率为 `1`。过期配置留在 JSON 里，不自动删除。计费时刻仍是请求开始时间。v2.12.0 及更早版本中，同名字段只是 `metered_factor` 缺失时的回退值，2.13.0 起改为供应商倍率，两者语义不同。
   - `charged_factor` / `metered_factor`：相对**官方当刻价**（阶梯目录价 × 模型 `pricing_profile.schedule` 命中倍率，未命中为 1）的默认倍率（缺省 `1`）；未命中路由分时时段时使用。有效期内再乘 `provider_factor` 的有效值。
   - `schedule`（可选）：分时窗口，时区为 `system_config.BUSINESS_TIMEZONE`；半开区间 `[start, end)`，仅 `end` 可为 `24:00`；允许跨午夜。可选 `days` 为 ISO 星期数组（`1`=周一 … `7`=周日）；省略表示每天。跨午夜时 `days` 锚定窗口**开始日**（例如周五 `22:00–06:00` 覆盖周五 22:00 至周六 06:00）。窗口在请求进入 Gateway 时锁定，长流式请求跨越边界不会切换倍率。同侧窗口在一周循环上禁止重叠。`schedule.provider` 与 charged / metered 共用 `schedule.mode`。
-  - `schedule.provider[].validity`（可选）：`{ "starts_at"?: UTC ISO, "expires_at"?: UTC ISO }`，独立配置该时段供应商倍率的有效期。`{}` 表示不限制日期；省略整个字段则继承根级起止时间以兼容旧配置。先按业务时区选中每日时段，再判定该行有效期。未开始或过期时供应商倍率按 `1`，不会回退到基础供应商倍率；该行用户计费与供应成本倍率继续生效。审计中的 `provider_factor.starts_at` / `expires_at` 记录实际选中行的日期。
+  - `schedule.provider[].validity`（可选）：`{ "starts_at"?: UTC ISO, "expires_at"?: UTC ISO }`，独立配置该时段供应商倍率的有效期。`{}` 表示不限制日期；省略整个字段则继承根级默认有效期。先按业务时区选中每日时段，再判定该行有效期。未开始或过期时供应商倍率按 `1`，不会回退到基础供应商倍率；该行用户计费与供应成本倍率继续生效。审计中的 `provider_factor.starts_at` / `expires_at` 记录实际选中行的日期。
   - **与模型官方时段严格一致**：模型 `pricing_profile.schedule` **为空**时，路由可自由配置时段。模型官方时段**非空**时，路由 `schedule.charged[]` 与 `schedule.metered[]` 的窗口集合必须**各自**与官方窗口逐一相同（`start` / `end` / `days`；空 `days` 与全 7 天等价）。`schedule.provider[]` 为空时放行；非空时也必须与官方窗口逐一相同。`POST`/`PATCH /admin/routes` 在校验 `price_override` 后按最终 `model_id` 检查。`PATCH /admin/models` 若官方窗口集合变化且新官方时段非空，会把该模型下**所有**（含未激活）且**已配置分时窗口**的路由 `schedule` 重置为同一套窗口（charged / metered 的 `factor` 恢复为 `1`；仅当原先已有 `schedule.provider` 时才写入 factor 为 `1` 的 provider 窗口），未配置时段的路由保持为空（运行时按 1）。管理后台在模型时段倍率区展示固定说明。
   - `schedule.mode`：
     - **缺省或 `"multiply"`**（存量）：用户侧有效倍率 = 有效期内的供应商倍率 × `charged_factor` × 命中窗 `factor`（未命中窗按 `1`；有效期外供应商倍率为 `1`）；`metered_cost` 同理。
