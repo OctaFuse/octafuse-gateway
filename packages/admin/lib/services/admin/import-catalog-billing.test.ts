@@ -302,6 +302,50 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile?.tiers[1]?.cache_read_price, 1);
 	});
 
+	it('includes grok-build-0.1 with 256K context and 200K tiered USD pricing', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'grok-build-0.1');
+		assert.ok(usd);
+		assert.equal(usd!.display_name, 'Grok Build 0.1');
+		assert.equal(usd!.context_window, 256000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$1 / $2 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'grok-build-0.1');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.upto, 200000);
+		assert.equal(profile?.tiers[0]?.input_price, 1);
+		assert.equal(profile?.tiers[0]?.output_price, 2);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(profile?.tiers[1]?.input_price, 2);
+		assert.equal(profile?.tiers[1]?.output_price, 4);
+	});
+
+	it('includes grok-4.20-0309-reasoning with 1M context at $1.25 / $2.50 list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'grok-4.20-0309-reasoning');
+		assert.ok(usd);
+		assert.equal(usd!.display_name, 'Grok 4.20 Reasoning');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$1.25 / $2.5 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'grok-4.20-0309-reasoning');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-03-09');
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.upto, 200000);
+		assert.equal(profile?.tiers[0]?.input_price, 1.25);
+		assert.equal(profile?.tiers[0]?.output_price, 2.5);
+		assert.equal(profile?.tiers[1]?.input_price, 2.5);
+		assert.equal(profile?.tiers[1]?.output_price, 5);
+	});
+
+	it('includes grok-4.20-0309-non-reasoning at the same prices as reasoning variant', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'grok-4.20-0309-non-reasoning');
+		assert.ok(usd);
+		assert.equal(usd!.display_name, 'Grok 4.20 Non-Reasoning');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.pricing_label, '$1.25 / $2.5 /M');
+	});
+
 	it('includes gpt-6-astra with Standard short-context list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-6-astra');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-6-astra');
@@ -394,6 +438,101 @@ describe('import catalog pricing preview follows billing currency', () => {
 			assert.equal(usd!.pricing_label, '$0.15 / $0.6 /M', `${id} USD`);
 			assert.equal(cny!.pricing_label, '¥1 / ¥4 /M', `${id} CNY`);
 		}
+	});
+
+	it('includes minimax-m2.7-highspeed with dual-currency official list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'minimax-m2.7-highspeed');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'minimax-m2.7-highspeed');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'MiniMax M2.7 Highspeed');
+		assert.equal(usd!.context_window, 204800);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$0.6 / $2.4 /M');
+		assert.equal(cny!.pricing_label, '¥4.2 / ¥16.8 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'minimax-m2.7-highspeed');
+		assert.ok(preset);
+		const usdProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(usdProfile?.tiers[0]?.input_price, 0.6);
+		assert.equal(usdProfile?.tiers[0]?.output_price, 2.4);
+		assert.equal(usdProfile?.tiers[0]?.cache_read_price, 0.06);
+		assert.equal(usdProfile?.tiers[0]?.cache_write_price, 0.375);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 4.2);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 16.8);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 0.42);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 2.625);
+	});
+
+	it('includes kimi-k2.7-code-highspeed with platform.kimi.ai USD and CNY list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'kimi-k2.7-code-highspeed');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'kimi-k2.7-code-highspeed');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Kimi K2.7 Code Highspeed');
+		assert.equal(usd!.context_window, 262144);
+		assert.equal(usd!.pricing_label, '$1.9 / $8 /M');
+		assert.equal(cny!.pricing_label, '¥13 / ¥54 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'kimi-k2.7-code-highspeed');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.input_price, 1.9);
+		assert.equal(profile?.tiers[0]?.output_price, 8);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.38);
+	});
+
+	it('includes qwen3.8-2.4t-a95b open-source flagship with DashScope CNY list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-2.4t-a95b');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen3.8-2.4t-a95b');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Qwen3.8 2.4T-A95B');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 131072);
+		assert.equal(cny!.pricing_label, '¥12 / ¥36 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'qwen3.8-2.4t-a95b');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-08-01');
+	});
+
+	it('includes qwen3.8-27b multimodal Dense with DashScope list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-27b');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen3.8-27b');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Qwen3.8 27B');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(cny!.pricing_label, '¥3 / ¥12 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'qwen3.8-27b');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(profile?.tiers[0]?.input_price, 3);
+		assert.equal(profile?.tiers[0]?.output_price, 12);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.6);
+		assert.equal(profile?.tiers[0]?.cache_write_price, 3.75);
+	});
+
+	it('includes qwen3.8-omni-flash multimodal model with DashScope list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-omni-flash');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen3.8-omni-flash');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Qwen3.8 Omni Flash');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'qwen3.8-omni-flash');
+		assert.ok(preset);
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image', 'audio', 'video']);
+	});
+
+	it('includes qwen3.8-max-prime high-throughput variant with DashScope list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-max-prime');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen3.8-max-prime');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Qwen3.8 Max Prime');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(cny!.pricing_label, '¥24 / ¥72 /M');
 	});
 });
 

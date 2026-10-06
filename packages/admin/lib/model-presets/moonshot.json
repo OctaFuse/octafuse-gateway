@@ -141,6 +141,52 @@
 		"released": "2026-06-12"
 	},
 	{
+		"id": "kimi-k2.7-code-highspeed",
+		"display_name": "Kimi K2.7 Code Highspeed",
+		"description": "A high-speed variant of Kimi K2.7 Code for faster inference on coding tasks. Optimized for latency-sensitive coding workflows and agent applications.",
+		"i18n": {
+			"en": "A high-speed variant of Kimi K2.7 Code for faster inference on coding tasks. Optimized for latency-sensitive coding workflows and agent applications.",
+			"zh": "Kimi K2.7 Code 高速版，面向编程任务的更快推理。针对延迟敏感的编程工作流与 Agent 应用优化。"
+		},
+		"vendor": "moonshot",
+		"context_window": 262144,
+		"max_tokens": 256000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.9,
+						"output_price": 8,
+						"cache_read_price": 0.38,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 13,
+						"output_price": 54,
+						"cache_read_price": 2.6,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
 		"id": "kimi-k3",
 		"display_name": "Kimi K3",
 		"description": "An open-weight multimodal Kimi model for complex coding, reasoning, and agentic work. The open-weight multimodal reasoning model is positioned for complex coding, knowledge work, and long-running agents.",

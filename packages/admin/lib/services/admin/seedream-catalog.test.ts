@@ -17,6 +17,7 @@ describe('Seedream catalog + Volcengine Ark provider preset', () => {
 				'doubao-seed-2-1-turbo-260628',
 				'doubao-seed-evolving',
 				'doubao-seedream-5-0',
+				'doubao-seedream-5-0-flash',
 				'doubao-seedream-5-0-pro',
 			].sort()
 		);

@@ -14,10 +14,10 @@
 			"usd": {
 				"image_billing_mode": "per_image",
 				"image": {
-					"default": 0.036,
+					"default": 0.04,
 					"by_size": {
-						"1k": 0.036,
-						"2k": 0.071
+						"1k": 0.04,
+						"2k": 0.075
 					},
 					"input": {
 						"default": 0.003
@@ -66,7 +66,7 @@
 			"usd": {
 				"image_billing_mode": "per_image",
 				"image": {
-					"default": 0.026,
+					"default": 0.03,
 					"input": {
 						"default": 0.003
 					},
@@ -96,6 +96,44 @@
 		"released": "2026-07-21"
 	},
 	{
+		"id": "qwen-image-2.1-pro",
+		"display_name": "Qwen Image 2.1 Pro",
+		"description": "A unified text-to-image and image editing model with 7B visual generation parameters. Supports up to 10 reference images, transparent RGBA output, local editing, and subject preservation.",
+		"i18n": {
+			"en": "A unified text-to-image and image editing model with 7B visual generation parameters. Supports up to 10 reference images, transparent RGBA output, local editing, and subject preservation.",
+			"zh": "千问图像 2.1 Pro，70 亿参数视觉生成组件，支持最多 10 张参考图、透明 RGBA 输出、局部编辑与主体保留。"
+		},
+		"vendor": "aliyun",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.04,
+					"uncertain_result_policy": "requested"
+				}
+			},
+			"cny": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.25,
+					"uncertain_result_policy": "requested"
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-10-02"
+	},
+	{
 		"id": "wan2.7-image-pro",
 		"display_name": "Wan 2.7 Image Pro",
 		"description": "Alibaba Wan 2.7 flagship for text-to-image, sequential sets, multi-reference editing, brand color control, and up to 4K generation.",
@@ -110,7 +148,7 @@
 			"usd": {
 				"image_billing_mode": "per_image",
 				"image": {
-					"default": 0.071,
+					"default": 0.075,
 					"uncertain_result_policy": "requested"
 				}
 			},
@@ -148,7 +186,7 @@
 			"usd": {
 				"image_billing_mode": "per_image",
 				"image": {
-					"default": 0.029,
+					"default": 0.03,
 					"uncertain_result_policy": "requested"
 				}
 			},

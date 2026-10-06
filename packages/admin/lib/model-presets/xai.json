@@ -1,5 +1,129 @@
 [
 	{
+		"id": "grok-build-0.1",
+		"display_name": "Grok Build 0.1",
+		"description": "An xAI coding-specialty model for agentic software development. Supports reasoning at configurable effort levels. Optimized for sustained coding trajectories and tool-driven workflows.",
+		"i18n": {
+			"en": "An xAI coding-specialty model for agentic software development. Supports reasoning at configurable effort levels. Optimized for sustained coding trajectories and tool-driven workflows.",
+			"zh": "面向 Agent 软件开发的 xAI 编程专用模型。支持可配置推理强度。针对持续编程轨迹与工具驱动工作流优化。"
+		},
+		"vendor": "xai",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 1,
+						"output_price": 2,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 4,
+						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
+		"id": "grok-4.20-0309-reasoning",
+		"display_name": "Grok 4.20 Reasoning",
+		"description": "A 1M-context xAI reasoning model for complex coding, agents, and knowledge work. Supports reasoning at configurable effort levels. Batch API available at 20% off standard pricing.",
+		"i18n": {
+			"en": "A 1M-context xAI reasoning model for complex coding, agents, and knowledge work. Supports reasoning at configurable effort levels. Batch API available at 20% off standard pricing.",
+			"zh": "1M 上下文 xAI 推理模型，面向复杂编程、Agent 与知识工作。支持可配置推理强度。Batch API 享标准价八折。"
+		},
+		"vendor": "xai",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 1.25,
+						"output_price": 2.5,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2.5,
+						"output_price": 5,
+						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-09"
+	},
+	{
+		"id": "grok-4.20-0309-non-reasoning",
+		"display_name": "Grok 4.20 Non-Reasoning",
+		"description": "A 1M-context xAI model for coding, agents, and knowledge work without extended reasoning. Same pricing as the reasoning variant. Batch API available at 20% off standard pricing.",
+		"i18n": {
+			"en": "A 1M-context xAI model for coding, agents, and knowledge work without extended reasoning. Same pricing as the reasoning variant. Batch API available at 20% off standard pricing.",
+			"zh": "1M 上下文 xAI 模型，面向编程、Agent 与知识工作，无扩展推理。定价与推理变体相同。Batch API 享标准价八折。"
+		},
+		"vendor": "xai",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 1.25,
+						"output_price": 2.5,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2.5,
+						"output_price": 5,
+						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
 		"id": "grok-4.7",
 		"display_name": "Grok 4.7",
 		"description": "SpaceXAI's frontier model for coding, agentic tasks, and knowledge work. Reasoning effort supports low, medium, high (default), and xhigh. The Responses API always returns encrypted reasoning content, which later turns must send back unchanged.",

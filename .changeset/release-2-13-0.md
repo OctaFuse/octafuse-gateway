@@ -23,6 +23,8 @@ OctaFuse Gateway v2.13.0 重点升级供应商折扣计价、路由配置与调�
 - **业务时区统一**：用量与可靠性页面的日历快捷范围、仪表盘趋势分桶和横轴按业务时区展示，默认“今天”在时区加载后重新计算。用户周期额度重置时间也按业务时区输入和回显；集成密钥最近使用时间、供应商额度检查时间与窗口重置时间采用相同显示口径。
 - **供应商卡片简化**：协议与能力标记更加紧凑，卡片保留必要的提示信息，移除与整卡点击重复的编辑入口。
 - **模型目录更新**：新增 GPT-6.1 Sol（`gpt-6.1-sol`）和 Claude Sonnet 5.5（`claude-sonnet-5-5`）预设，补齐对应的模型能力、USD / CNY 目录价格与导入校验。
+- **更多文本与多模态预设**：补充 Grok Build 0.1、Grok 4.20 Reasoning / Non-Reasoning、MiniMax M2.7 Highspeed、Kimi K2.7 Code Highspeed，以及 Qwen3.8 Max Prime、Qwen3.8 2.4T-A95B、Qwen3.8 27B 和 Qwen3.8 Omni Flash 预设，扩展可按需导入的模型目录。
+- **图像预设与目录价格修正**：新增 ByteDance Seedream 5.0 Flash（`doubao-seedream-5-0-flash`）和 Qwen Image 2.1 Pro（`qwen-image-2.1-pro`）预设；修正 Qwen Image 3.0 / Pro、Wan 2.7 Image / Pro 的 USD 预设价格，并为豆包 Seed 2.0 Mini / Lite / Pro 的 CNY 预设补齐 32K 及以内的输入定价档位。
 
 ### Core / 接口
 
