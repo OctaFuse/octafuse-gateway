@@ -29,6 +29,7 @@ import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { AuditChangeDetailModal, AuditLogSharedCells } from '@/components/AuditLogSharedCells';
 import { summarizeMetadata } from '@/lib/summarize-metadata';
 import { normalizeRouteGroup, routeGroupBadgeClass } from '@/lib/route-group-ui';
+import { pickChangedUserFields } from '../user-detail-form';
 
 /** 用户详情近期审计与全站页默认一致：不含用量扣费 */
 const USER_DETAIL_AUDIT_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((type) => type !== 'usage_charge');
@@ -113,6 +114,30 @@ function ReadonlyRow({ label, children }: { label: string; children: ReactNode }
   );
 }
 
+function BillingFieldLabel({
+  htmlFor,
+  label,
+  hint,
+  optionalLabel,
+}: {
+  htmlFor: string;
+  label: string;
+  hint: string;
+  optionalLabel?: string;
+}) {
+  return (
+    <div className="mb-1 flex flex-wrap items-center gap-1.5">
+      <label htmlFor={htmlFor} className="text-sm font-medium text-gray-700">
+        {label}
+        {optionalLabel && <span className="ml-1 text-xs font-normal text-gray-400">{optionalLabel}</span>}
+      </label>
+      <InfoHintPopover label={label} portal openOnHover align="start">
+        <p>{hint}</p>
+      </InfoHintPopover>
+    </div>
+  );
+}
+
 function maskKey(key: string) {
   if (!key || key.length < 10) return key;
   return `${key.substring(0, 7)}…${key.substring(key.length - 4)}`;
@@ -149,11 +174,8 @@ export default function GatewayUserDetailPage() {
   const [planError, setPlanError] = useState('');
   const [planSuccess, setPlanSuccess] = useState('');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
-  const [factorsError, setFactorsError] = useState('');
-  const [factorsSuccess, setFactorsSuccess] = useState('');
-  const [isSavingFactors, setIsSavingFactors] = useState(false);
+  const [activeSection, setActiveSection] = useState<'overview' | 'billing' | 'keys' | 'activity'>('overview');
   const planSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const factorsSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [catalogModels, setCatalogModels] = useState<CatalogModelOption[]>([]);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [modelPickerSearch, setModelPickerSearch] = useState('');
@@ -173,6 +195,25 @@ export default function GatewayUserDetailPage() {
     external_user_id: '',
     rateLimitRpm: '',
   });
+  const savedFormRef = useRef<typeof planForm | null>(null);
+  const hasChanges = savedFormRef.current != null && JSON.stringify(planForm) !== JSON.stringify(savedFormRef.current);
+  const overviewFields = ['email', 'status', 'rateLimitRpm', 'metadata', 'external_system', 'external_user_id'] as const;
+  const overviewHasChanges = savedFormRef.current != null && overviewFields.some((field) => planForm[field] !== savedFormRef.current?.[field]);
+  const billingHasChanges = savedFormRef.current != null && Object.keys(planForm).some((field) => {
+    const key = field as keyof typeof planForm;
+    return !overviewFields.some((overviewKey) => overviewKey === key) && JSON.stringify(planForm[key]) !== JSON.stringify(savedFormRef.current?.[key]);
+  });
+
+  useEffect(() => {
+    if (!hasChanges) return;
+    const warnBeforeLeave = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeave);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeave);
+  }, [hasChanges]);
+
   const [showNewKey, setShowNewKey] = useState(false);
   const [freshApiKey, setFreshApiKey] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState('');
@@ -203,7 +244,7 @@ export default function GatewayUserDetailPage() {
       const u = data.data;
       budgetResetDirtyRef.current = false;
       setUser(u);
-      setPlanForm({
+      const nextForm = {
         email: u.email ?? '',
         status: u.status,
         budget_max: u.budget_max != null ? String(u.budget_max) : '',
@@ -218,7 +259,9 @@ export default function GatewayUserDetailPage() {
         external_system: u.external_system ?? '',
         external_user_id: u.external_user_id ?? '',
         rateLimitRpm: u.rate_limit?.rpm == null ? '' : String(u.rate_limit.rpm),
-      });
+      };
+      savedFormRef.current = nextForm;
+      setPlanForm(nextForm);
     } catch (e) {
       console.error(e);
       setLoadError('Failed to load user');
@@ -227,10 +270,9 @@ export default function GatewayUserDetailPage() {
 
   useEffect(() => {
     if (!user || budgetResetDirtyRef.current) return;
-    setPlanForm((current) => ({
-      ...current,
-      budget_reset_at: formatBudgetResetInput(user.budget_reset_at, businessTimezone),
-    }));
+    const resetAt = formatBudgetResetInput(user.budget_reset_at, businessTimezone);
+    if (savedFormRef.current) savedFormRef.current = { ...savedFormRef.current, budget_reset_at: resetAt };
+    setPlanForm((current) => ({ ...current, budget_reset_at: resetAt }));
   }, [user, businessTimezone]);
 
   const loadKeys = useCallback(async () => {
@@ -338,6 +380,10 @@ export default function GatewayUserDetailPage() {
     return g - s;
   }, [planForm.wallet_granted, planForm.wallet_spent]);
 
+  const budgetPreviewMax = planForm.budget_max.trim() === '' ? null : Number(planForm.budget_max);
+  const budgetPreviewSpent = Number(planForm.budget_spent) || 0;
+  const budgetPreviewRemaining = budgetPreviewMax == null ? null : Math.max(0, budgetPreviewMax - budgetPreviewSpent);
+
   const pickerModelsByVendor = useMemo(() => {
     const q = modelPickerSearch.trim().toLowerCase();
     const filtered = catalogModels.filter((model) => {
@@ -389,9 +435,9 @@ export default function GatewayUserDetailPage() {
   };
 
   useEffect(() => {
+    const timerRef = planSuccessTimerRef;
     return () => {
-      if (planSuccessTimerRef.current != null) clearTimeout(planSuccessTimerRef.current);
-      if (factorsSuccessTimerRef.current != null) clearTimeout(factorsSuccessTimerRef.current);
+      if (timerRef.current != null) clearTimeout(timerRef.current);
     };
   }, []);
 
@@ -401,36 +447,44 @@ export default function GatewayUserDetailPage() {
       ...prev,
       chargedCostFactorRows: [...prev.chargedCostFactorRows, { modelId, factor: '1' }],
     }));
-    setFactorsError('');
+    setPlanError('');
   };
 
   const savePlan = async () => {
+    if (!savedFormRef.current || !hasChanges || isSavingPlan) return;
     setPlanError('');
     setPlanSuccess('');
     setIsSavingPlan(true);
     try {
       const meta = normalizeMetadataClient(planForm.metadata);
       if (!meta.ok) {
+        setActiveSection('overview');
         setPlanError(meta.message);
         setIsSavingPlan(false);
         return;
       }
       const email = planForm.email.trim();
       if (!email) {
-        setPlanError('Email is required');
+        setActiveSection('overview');
+        setPlanError(t('detailUx.emailRequired'));
         setIsSavingPlan(false);
         return;
       }
       const extS = planForm.external_system.trim();
       const extU = planForm.external_user_id.trim();
       if ((extS && !extU) || (!extS && extU)) {
-        setPlanError('External system and external user ID must both be set or both empty');
+        setActiveSection('overview');
+        setPlanError(t('detailUx.externalIdentityRequired'));
         setIsSavingPlan(false);
         return;
       }
       const rpmRaw = planForm.rateLimitRpm.trim();
       const rpmParsed = rpmRaw === '' ? null : Number(rpmRaw);
-      if (rpmRaw !== '' && (rpmParsed == null || !Number.isFinite(rpmParsed) || rpmParsed < 0 || !Number.isInteger(rpmParsed))) {
+      if (
+        rpmRaw !== '' &&
+        (rpmParsed == null || !Number.isFinite(rpmParsed) || rpmParsed < 0 || !Number.isInteger(rpmParsed))
+      ) {
+        setActiveSection('overview');
         setPlanError(t('help.rateLimitRpmInvalid'));
         setIsSavingPlan(false);
         return;
@@ -439,11 +493,23 @@ export default function GatewayUserDetailPage() {
       if (planForm.budget_reset_at) {
         const instant = zonedDatetimeLocalInputToInstant(planForm.budget_reset_at, businessTimezone);
         if (!instant) {
+          setActiveSection('billing');
           setPlanError(t('help.budgetResetAtInvalid'));
           setIsSavingPlan(false);
           return;
         }
         budgetResetAt = instant.toISOString();
+      }
+      const factors = rowsToFactors(planForm.chargedCostFactorRows);
+      if (!factors.ok) {
+        const factorErrors = {
+          modelRequired: t('errors.chargedCostFactorModelRequired'),
+          valueInvalid: t('errors.chargedCostFactorValueInvalid'),
+          duplicate: t('errors.chargedCostFactorDuplicate'),
+        };
+        setActiveSection('billing');
+        setPlanError(factorErrors[factors.code]);
+        return;
       }
       const payload: Record<string, unknown> = {
         email,
@@ -458,6 +524,7 @@ export default function GatewayUserDetailPage() {
         rate_limit: rpmParsed == null ? null : { rpm: rpmParsed },
         external_system: extS || null,
         external_user_id: extU || null,
+        charged_cost_factors: factors.value,
         reason: 'gwui:user-plan',
       };
       if (meta.value != null) {
@@ -467,11 +534,12 @@ export default function GatewayUserDetailPage() {
       const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(pickChangedUserFields(payload, planForm, savedFormRef.current)),
       });
       const data = await readApiJson(res);
       if (data.success) {
         await loadUser();
+        void loadAudits();
         flashMessage(setPlanSuccess, planSuccessTimerRef, t('saveSuccess'));
       } else {
         setPlanError(data.message || t('errors.updateFailed'));
@@ -481,44 +549,6 @@ export default function GatewayUserDetailPage() {
       setPlanError(t('errors.updateFailed'));
     } finally {
       setIsSavingPlan(false);
-    }
-  };
-
-  const saveChargedCostFactors = async () => {
-    setFactorsError('');
-    setFactorsSuccess('');
-    const factors = rowsToFactors(planForm.chargedCostFactorRows);
-    if (!factors.ok) {
-      const factorErrors = {
-        modelRequired: t('errors.chargedCostFactorModelRequired'),
-        valueInvalid: t('errors.chargedCostFactorValueInvalid'),
-        duplicate: t('errors.chargedCostFactorDuplicate'),
-      };
-      setFactorsError(factorErrors[factors.code]);
-      return;
-    }
-    setIsSavingFactors(true);
-    try {
-      const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          charged_cost_factors: factors.value,
-          reason: 'gwui:charged-cost-factors',
-        }),
-      });
-      const data = await readApiJson(res);
-      if (data.success) {
-        await loadUser();
-        flashMessage(setFactorsSuccess, factorsSuccessTimerRef, t('chargedCostFactors.saveSuccess'));
-      } else {
-        setFactorsError(data.message || t('errors.updateFailed'));
-      }
-    } catch (e) {
-      console.error(e);
-      setFactorsError(t('errors.updateFailed'));
-    } finally {
-      setIsSavingFactors(false);
     }
   };
 
@@ -654,7 +684,7 @@ export default function GatewayUserDetailPage() {
 
   if (loadError) {
     return (
-      <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+      <div className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
         <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
         <p className="mt-4 text-red-600">{loadError}</p>
       </div>
@@ -663,7 +693,7 @@ export default function GatewayUserDetailPage() {
 
   if (!user) {
     return (
-      <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+      <div className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
         <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
         <div className="mt-8 text-gray-600">{tCommon('loadingEllipsis')}</div>
       </div>
@@ -671,282 +701,600 @@ export default function GatewayUserDetailPage() {
   }
 
   return (
-    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+    <div className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
-        <h1 className="text-2xl font-bold text-gray-900 mt-2">{t('detailTitle')}</h1>
-        <p className="text-sm text-gray-500 font-mono mt-1 break-all">{user.id}</p>
+        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">
+          {t('backUsers')}
+        </Link>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <h1 className="min-w-0 break-all text-2xl font-bold text-gray-900">{user.email}</h1>
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+              user.status === 'active' ? 'bg-green-50 text-green-700 ring-1 ring-green-200' : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            {user.status === 'active' ? tOptions('userStatus.active') : tOptions('userStatus.disabled')}
+          </span>
+        </div>
+        <div className="mt-2 flex min-w-0 items-center gap-2 text-xs text-gray-500">
+          <span className="break-all font-mono">{user.id}</span>
+          <button
+            type="button"
+            onClick={() => copy(user.id)}
+            aria-label={t('detailUx.copyUserId')}
+            className="shrink-0 rounded p-1 hover:bg-gray-100"
+          >
+            <ClipboardDocumentIcon className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div
+        role="tablist"
+        aria-label={t('detailTitle')}
+        className="mb-6 flex gap-1 overflow-x-auto border-b border-gray-200"
+      >
+        {(['overview', 'billing', 'keys', 'activity'] as const).map((section, index, sections) => (
+          <button
+            key={section}
+            id={`user-tab-${section}`}
+            role="tab"
+            type="button"
+            aria-selected={activeSection === section}
+            aria-controls={`user-panel-${section}`}
+            tabIndex={activeSection === section ? 0 : -1}
+            onClick={() => setActiveSection(section)}
+            onKeyDown={(event) => {
+              const nextIndex =
+                event.key === 'ArrowRight'
+                  ? (index + 1) % sections.length
+                  : event.key === 'ArrowLeft'
+                  ? (index + sections.length - 1) % sections.length
+                  : event.key === 'Home'
+                  ? 0
+                  : event.key === 'End'
+                  ? sections.length - 1
+                  : null;
+              if (nextIndex == null) return;
+              event.preventDefault();
+              setActiveSection(sections[nextIndex]);
+              document.getElementById(`user-tab-${sections[nextIndex]}`)?.focus();
+            }}
+            className={`shrink-0 border-b-2 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+              activeSection === section
+                ? 'border-blue-600 text-blue-700'
+                : 'border-transparent text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            {section === 'keys' ? t('apiKeys') : t(`detailUx.${section}`)}
+            {((section === 'overview' && overviewHasChanges) || (section === 'billing' && billingHasChanges)) && (
+              <span
+                aria-label={t('detailUx.unsaved')}
+                className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
+              />
+            )}
+          </button>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 2xl:grid-cols-2">
-        <div className="min-w-0 bg-white rounded-lg shadow-md p-4 sm:p-6 space-y-4 h-full">
-          <h2 className="text-lg font-semibold text-gray-900">{t('userDetail')}</h2>
-          {planError && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{planError}</div>}
-          {planSuccess && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700" role="status">
-              {planSuccess}
-            </div>
-          )}
-          <div className="space-y-3">
-            <div className="admin-filter-grid">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('fields.email')} <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  aria-required="true"
-                  autoComplete="email"
-                  value={planForm.email}
-                  onChange={(e) => setPlanForm({ ...planForm, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  placeholder="user@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.status')}</label>
-                <select
-                  value={planForm.status}
-                  onChange={(e) => setPlanForm({ ...planForm, status: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  <option value="active">{tOptions('userStatus.active')}</option>
-                  <option value="disabled">{tOptions('userStatus.disabled')}</option>
-                </select>
-              </div>
-            </div>
-            <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-4 space-y-3">
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-sm font-semibold text-sky-950">{t('table.budget')}</h3>
-                <InfoHintPopover label={t('hints.budgetTitle')}>
-                  <p>{t('hints.budgetVsWallet')}</p>
-                </InfoHintPopover>
-              </div>
-              <div className="admin-filter-grid">
+      {activeSection !== 'billing' && (
+        <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {[
+            {
+              label: t('fields.walletBalance'),
+              value: formatGatewayMoneyCode(
+                user.wallet_balance ?? (user.wallet_granted ?? 0) - (user.wallet_spent ?? 0),
+                billingCurrency,
+                2
+              ),
+              hint: t('detailUx.walletHint'),
+              section: 'billing' as const,
+            },
+            {
+              label: t('detailUx.budgetRemaining'),
+              value:
+                user.budget_max == null
+                  ? tCommon('noLimit')
+                  : formatGatewayMoneyCode(Math.max(0, user.budget_max - user.budget_spent), billingCurrency, 2),
+              hint: t('detailUx.budgetSpent', { amount: formatGatewayMoneyCode(user.budget_spent, billingCurrency, 2) }),
+              section: 'billing' as const,
+            },
+            {
+              label: t('detailUx.activeKeys'),
+              value: String(keys.filter((key) => key.status === 'active').length),
+              hint: t('detailUx.totalKeys', { count: keys.length }),
+              section: 'keys' as const,
+            },
+            {
+              label: t('table.rateLimit'),
+              value:
+                user.rate_limit?.rpm == null
+                  ? tCommon('noLimit')
+                  : t('table.rateLimitRpmValue', { rpm: user.rate_limit.rpm }),
+              hint: t('detailUx.rateLimitHint'),
+              section: 'overview' as const,
+            },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => setActiveSection(item.section)}
+              className="flex min-w-0 flex-col items-start rounded-xl border border-gray-200 bg-white p-3 sm:p-4 text-left transition-colors hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <span className="block text-xs font-medium text-gray-500">{item.label}</span>
+              <span className="mt-2 block break-words text-xl sm:text-2xl font-semibold tabular-nums text-gray-900">
+                {item.value}
+              </span>
+              <span className="mt-1 block text-xs text-gray-500">{item.hint}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {planError && (
+        <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {planError}
+        </div>
+      )}
+      {planSuccess && (
+        <div role="status" className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+          {planSuccess}
+        </div>
+      )}
+      <fieldset disabled={isSavingPlan} className="min-w-0">
+        <section
+          id="user-panel-overview"
+          role="tabpanel"
+          aria-labelledby="user-tab-overview"
+          hidden={activeSection !== 'overview'}
+          tabIndex={0}
+        >
+          <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-2">
+            <div className="min-w-0 space-y-4 sm:space-y-6">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.budgetMax')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={planForm.budget_max}
-                    onChange={(e) => setPlanForm({ ...planForm, budget_max: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-                    placeholder={tCommon('noLimit')}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetMax')}
-                  </p>
+                  <h2 className="text-lg font-semibold text-gray-900">{t('userDetail')}</h2>
+                  <p className="mt-1 text-sm text-gray-500">{t('detailUx.overviewHint')}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.budgetBase')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={planForm.budget_base}
-                    onChange={(e) => setPlanForm({ ...planForm, budget_base: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-                    placeholder={tCommon('optional')}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetBase')}
-                  </p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="user-email" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('fields.email')}{' '}
+                      <span aria-hidden="true" className="ml-0.5 text-red-500">
+                        *
+                      </span>
+                    </label>
+                    <input
+                      id="user-email"
+                      type="email"
+                      required
+                      aria-required="true"
+                      autoComplete="email"
+                      value={planForm.email}
+                      onChange={(e) => setPlanForm({ ...planForm, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      placeholder="user@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="user-status" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('fields.status')}
+                    </label>
+                    <select
+                      id="user-status"
+                      value={planForm.status}
+                      onChange={(e) => setPlanForm({ ...planForm, status: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value="active">{tOptions('userStatus.active')}</option>
+                      <option value="disabled">{tOptions('userStatus.disabled')}</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label htmlFor="user-rateLimitRpm" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('fields.rateLimitRpm')}{' '}
+                      <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                    </label>
+                    <input
+                      id="user-rateLimitRpm"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={planForm.rateLimitRpm}
+                      onChange={(e) => setPlanForm({ ...planForm, rateLimitRpm: e.target.value })}
+                      placeholder={t('placeholders.rateLimitRpm')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      {t('detailUx.rateLimitHint')}{' '}
+                      <InfoHintPopover label={t('hints.rateLimitTitle')} portal>
+                        <p>{t('help.rateLimitRpm')}</p>
+                      </InfoHintPopover>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.budgetSpent')}</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={planForm.budget_spent}
-                    onChange={(e) => setPlanForm({ ...planForm, budget_spent: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetSpent')}
-                  </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ReadonlyRow label={t('table.created')}>{formatDateTime(user.created_at)}</ReadonlyRow>
+                  <ReadonlyRow label={t('table.updated')}>{formatDateTime(user.updated_at)}</ReadonlyRow>
                 </div>
-              </div>
-              <div className="admin-filter-grid">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.budgetPeriod')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                  </label>
-                  <select
-                    value={planForm.budget_period}
-                    onChange={(e) => setPlanForm({ ...planForm, budget_period: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+
+                <div className="flex justify-end border-t border-gray-100 pt-3">
+                  <button
+                    type="button"
+                    onClick={deleteUser}
+                    className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800"
                   >
-                    <option value="none">{tOptions('budgetPeriod.none')}</option>
-                    <option value="daily">{tOptions('budgetPeriod.daily')}</option>
-                    <option value="weekly">{tOptions('budgetPeriod.weekly')}</option>
-                    <option value="monthly">{tOptions('budgetPeriod.monthly')}</option>
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetPeriod')}
-                  </p>
+                    <TrashIcon className="h-3.5 w-3.5" />
+                    {t('deleteUser')}
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.budgetResetAt')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-lg font-semibold text-gray-900">{t('apiKeys')}</h2>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSection('keys')}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    {t('detailUx.manageKeys')}
+                  </button>
+                </div>
+                {keys.length === 0 ? (
+                  <p className="text-sm text-gray-500">{t('keysTable.noKeys')}</p>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {keys.slice(0, 3).map((key) => (
+                      <li key={key.id} className="flex min-w-0 flex-wrap items-center justify-between gap-2 py-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-gray-900">
+                            {key.name?.trim() || maskKey(key.key)}
+                          </p>
+                          {key.name?.trim() && (
+                            <p className="mt-0.5 font-mono text-xs text-gray-500">{maskKey(key.key)}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500">
+                            {keyRpm(key) == null
+                              ? tCommon('noLimit')
+                              : t('keysTable.rateLimitRpmValue', { rpm: keyRpm(key) ?? 0 })}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              key.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {key.status === 'active'
+                              ? tOptions('keyStatus.active')
+                              : key.status === 'revoked'
+                              ? tOptions('keyStatus.revoked')
+                              : key.status}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {keys.length > 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveSection('keys')}
+                    className="mt-2 text-xs text-blue-600 hover:underline"
+                  >
+                    {t('detailSections.moreCount', { count: keys.length - 3 })}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="min-w-0 space-y-4 sm:space-y-6">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {t('externalIdentity.title')}{' '}
+                  <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                </h2>
+                <p className="mt-1 text-xs text-gray-500">{t('externalIdentity.hint')}</p>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="user-externalSystem" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('fields.externalSystem')}{' '}
+                      <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                    </label>
+                    <input
+                      id="user-externalSystem"
+                      type="text"
+                      value={planForm.external_system}
+                      onChange={(e) => setPlanForm({ ...planForm, external_system: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      placeholder="my-app"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="user-externalUserId" className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('fields.externalUserId')}{' '}
+                      <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                    </label>
+                    <input
+                      id="user-externalUserId"
+                      type="text"
+                      value={planForm.external_user_id}
+                      onChange={(e) => setPlanForm({ ...planForm, external_user_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      placeholder={t('fields.externalUserId')}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+                <div className="min-w-0">
+                  <label htmlFor="user-metadataJsonObject" className="block text-lg font-semibold text-gray-900 mb-3">
+                    {t('fields.metadataJsonObject')}{' '}
+                    <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                   </label>
-                  <input
-                    type="datetime-local"
-                    step={1}
-                    value={planForm.budget_reset_at}
-                    onChange={(e) => {
-                      budgetResetDirtyRef.current = true;
-                      setPlanForm({ ...planForm, budget_reset_at: e.target.value });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                  <textarea
+                    id="user-metadataJsonObject"
+                    value={planForm.metadata}
+                    onChange={(e) => setPlanForm({ ...planForm, metadata: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+                    placeholder="{}"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    {t('help.budgetResetAt', { timezone: businessTimezone })}
-                  </p>
+                  <p className="mt-1 text-xs text-gray-500">{t('help.metadataReplace')}</p>
                 </div>
               </div>
-            </div>
-            <div className="rounded-lg border border-violet-200 bg-violet-50/70 p-4 space-y-3">
-              <div className="flex items-center gap-1.5">
-                <h3 className="text-sm font-semibold text-violet-950">{t('table.wallet')}</h3>
-                <InfoHintPopover label={t('hints.walletTitle')}>
-                  <p>{t('hints.budgetVsWallet')}</p>
-                </InfoHintPopover>
-              </div>
-              <div className="admin-filter-grid">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.walletGranted')}</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={planForm.wallet_granted}
-                    onChange={(e) => setPlanForm({ ...planForm, wallet_granted: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">{t('help.walletGranted')}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.walletSpent')}</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={planForm.wallet_spent}
-                    onChange={(e) => setPlanForm({ ...planForm, wallet_spent: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">{t('help.walletSpent')}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('fields.walletBalance')}</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={formatGatewayMoneyCode(walletPreviewBalance, billingCurrency, 2)}
-                    className={`w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm ${
-                      walletPreviewBalance < 0 ? 'text-red-600' : 'text-gray-700'
-                    }`}
-                  />
-                  <p className="mt-1 text-xs text-gray-500">{t('help.walletBalance')}</p>
-                </div>
-              </div>
-            </div>
-            <div className="admin-filter-grid items-start">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('fields.rateLimitRpm')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={planForm.rateLimitRpm}
-                  onChange={(e) => setPlanForm({ ...planForm, rateLimitRpm: e.target.value })}
-                  placeholder={t('placeholders.rateLimitRpm')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
-                />
-                <p className="mt-1 text-xs text-gray-500">{t('help.rateLimitRpm')}</p>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('fields.metadataJsonObject')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                </label>
-                <textarea
-                  value={planForm.metadata}
-                  onChange={(e) => setPlanForm({ ...planForm, metadata: e.target.value })}
-                  rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
-                  placeholder="{}"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  {t('help.metadataReplace')}
-                </p>
-              </div>
-            </div>
-            <div className="pt-4 border-t border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900">
-                {t('externalIdentity.title')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-              </h3>
-              <p className="mt-1 text-xs text-gray-500">
-                {t('externalIdentity.hint')}
-              </p>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.externalSystem')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={planForm.external_system}
-                    onChange={(e) => setPlanForm({ ...planForm, external_system: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder="my-app"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('fields.externalUserId')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={planForm.external_user_id}
-                    onChange={(e) => setPlanForm({ ...planForm, external_user_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    placeholder={t('fields.externalUserId')}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <ReadonlyRow label={t('table.created')}>{formatDateTime(user.created_at)}</ReadonlyRow>
-              <ReadonlyRow label={t('table.updated')}>{formatDateTime(user.updated_at)}</ReadonlyRow>
-            </div>
-            <div className="flex items-center justify-between gap-3 pt-2">
-              <button
-                type="button"
-                onClick={deleteUser}
-                className="px-4 py-2 border border-red-300 text-red-700 rounded-md text-sm hover:bg-red-50"
-              >
-                {t('deleteUser')}
-              </button>
-              <button
-                type="button"
-                onClick={savePlan}
-                disabled={isSavingPlan}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-              >
-                {isSavingPlan ? tCommon('saving') : t('saveUser')}
-              </button>
             </div>
           </div>
-        </div>
-
-        <div className="flex h-full min-h-0 flex-col gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6 flex min-h-0 flex-1 flex-col">
+        </section>
+        <section
+          id="user-panel-billing"
+          role="tabpanel"
+          aria-labelledby="user-tab-billing"
+          hidden={activeSection !== 'billing'}
+          tabIndex={0}
+        >
+          <p className="mb-4 text-sm text-gray-500">{t('detailUx.billingOrder')}</p>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-6 xl:grid-cols-2">
+              <div className="flex flex-col gap-4 rounded-xl border border-sky-200 bg-sky-50/70 p-4 sm:p-6">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-sm font-semibold text-sky-950">{t('table.budget')}</h2>
+                  <InfoHintPopover label={t('hints.budgetTitle')} portal openOnHover align="start">
+                    <p>{t('hints.budgetVsWallet')}</p>
+                  </InfoHintPopover>
+                </div>
+                <ReadonlyRow label={t('detailUx.budgetRemaining')}>
+                  <span className="text-xl sm:text-2xl font-semibold tabular-nums text-gray-900">
+                    {budgetPreviewRemaining == null
+                      ? tCommon('noLimit')
+                      : formatGatewayMoneyCode(budgetPreviewRemaining, billingCurrency, 2)}
+                  </span>
+                </ReadonlyRow>
+                <div className="grid grid-cols-1 items-start gap-4 border-t border-sky-200 pt-4 sm:grid-cols-2 2xl:grid-cols-3">
+                  <div>
+                    <BillingFieldLabel
+                      htmlFor="user-budgetMax"
+                      label={t('detailUx.fieldLabels.budgetMax')}
+                      hint={t('detailUx.fieldHints.budgetMax')}
+                      optionalLabel={tCommon('optional')}
+                    />
+                    <input
+                      id="user-budgetMax"
+                      type="number"
+                      step="0.01"
+                      value={planForm.budget_max}
+                      onChange={(e) => setPlanForm({ ...planForm, budget_max: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      placeholder={tCommon('noLimit')}
+                    />
+                  </div>
+                  <div>
+                    <BillingFieldLabel
+                      htmlFor="user-budgetSpent"
+                      label={t('detailUx.fieldLabels.budgetSpent')}
+                      hint={t('detailUx.fieldHints.budgetSpent')}
+                    />
+                    <input
+                      id="user-budgetSpent"
+                      type="number"
+                      step="0.01"
+                      value={planForm.budget_spent}
+                      onChange={(e) => setPlanForm({ ...planForm, budget_spent: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <BillingFieldLabel
+                      htmlFor="user-budgetBase"
+                      label={t('detailUx.fieldLabels.budgetBase')}
+                      hint={t('detailUx.fieldHints.budgetBase')}
+                      optionalLabel={tCommon('optional')}
+                    />
+                    <input
+                      id="user-budgetBase"
+                      type="number"
+                      step="0.01"
+                      value={planForm.budget_base}
+                      onChange={(e) => setPlanForm({ ...planForm, budget_base: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      placeholder={tCommon('optional')}
+                    />
+                  </div>
+                  <div>
+                    <BillingFieldLabel
+                      htmlFor="user-budgetPeriod"
+                      label={t('detailUx.fieldLabels.budgetPeriod')}
+                      hint={t('detailUx.fieldHints.budgetPeriod')}
+                      optionalLabel={tCommon('optional')}
+                    />
+                    <select
+                      id="user-budgetPeriod"
+                      value={planForm.budget_period}
+                      onChange={(e) => setPlanForm({ ...planForm, budget_period: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                    >
+                      <option value="none">{t('detailUx.noAutoReset')}</option>
+                      <option value="daily">{tOptions('budgetPeriod.daily')}</option>
+                      <option value="weekly">{tOptions('budgetPeriod.weekly')}</option>
+                      <option value="monthly">{tOptions('budgetPeriod.monthly')}</option>
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <BillingFieldLabel
+                      htmlFor="user-budgetResetAt"
+                      label={t('detailUx.fieldLabels.budgetResetAt')}
+                      hint={t('detailUx.fieldHints.budgetResetAt', { timezone: businessTimezone })}
+                      optionalLabel={tCommon('optional')}
+                    />
+                    <input
+                      id="user-budgetResetAt"
+                      type="datetime-local"
+                      step={1}
+                      value={planForm.budget_reset_at}
+                      onChange={(e) => {
+                        budgetResetDirtyRef.current = true;
+                        setPlanForm({ ...planForm, budget_reset_at: e.target.value });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-4 rounded-xl border border-violet-200 bg-violet-50/50 p-4 sm:p-6">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-sm font-semibold text-violet-950">{t('table.wallet')}</h2>
+                  <InfoHintPopover label={t('hints.walletTitle')} portal openOnHover align="start">
+                    <p>{t('hints.budgetVsWallet')}</p>
+                  </InfoHintPopover>
+                </div>
+                <ReadonlyRow label={t('fields.walletBalance')}>
+                  <span
+                    className={`text-xl sm:text-2xl font-semibold tabular-nums ${
+                      walletPreviewBalance < 0 ? 'text-red-600' : 'text-gray-900'
+                    }`}
+                  >
+                    {formatGatewayMoneyCode(walletPreviewBalance, billingCurrency, 2)}
+                  </span>
+                </ReadonlyRow>
+                <div className="grid grid-cols-1 items-start gap-4 border-t border-violet-200 pt-4">
+                  <div>
+                    <BillingFieldLabel
+                      htmlFor="user-walletGranted"
+                      label={t('detailUx.fieldLabels.walletGranted')}
+                      hint={t('detailUx.fieldHints.walletGranted')}
+                    />
+                    <input
+                      id="user-walletGranted"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={planForm.wallet_granted}
+                      onChange={(e) => setPlanForm({ ...planForm, wallet_granted: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <BillingFieldLabel
+                      htmlFor="user-walletSpent"
+                      label={t('detailUx.fieldLabels.walletSpent')}
+                      hint={t('detailUx.fieldHints.walletSpent')}
+                    />
+                    <input
+                      id="user-walletSpent"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={planForm.wallet_spent}
+                      onChange={(e) => setPlanForm({ ...planForm, wallet_spent: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">{t('help.walletBalance')}</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex min-w-0 flex-col gap-4">
+              <div className="flex items-center justify-between gap-3 shrink-0">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {t('fields.chargedCostFactors')}{' '}
+                  <InfoHintPopover label={t('fields.chargedCostFactors')} portal openOnHover align="start">
+                    <p className="leading-6">{t('help.chargedCostFactors')}</p>
+                  </InfoHintPopover>{' '}
+                  <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModelPickerSearch('');
+                    setShowModelPicker(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800"
+                >
+                  <PlusIcon className="h-3.5 w-3.5" />
+                  {tCommon('add')}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">{t('detailUx.multiplierHint')}</p>
+              {planForm.chargedCostFactorRows.length === 0 ? (
+                <p className="text-xs text-gray-400 flex-1">{t('chargedCostFactors.empty')}</p>
+              ) : (
+                <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                  {planForm.chargedCostFactorRows.map((row, index) => {
+                    const model = catalogById.get(row.modelId);
+                    return (
+                      <div
+                        key={row.modelId}
+                        className="grid min-w-0 grid-cols-[minmax(0,1fr)_6rem_auto] items-center gap-3 rounded-lg border border-gray-200 p-3"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm text-gray-900">{catalogModelLabel(model, row.modelId)}</div>
+                          <div className="truncate font-mono text-[11px] text-gray-500" title={row.modelId}>
+                            {row.modelId}
+                            {!model ? ` · ${t('chargedCostFactors.unknownModel')}` : ''}
+                          </div>
+                        </div>
+                        <input
+                          type="number"
+                          min={0}
+                          step="any"
+                          aria-label={`${catalogModelLabel(model, row.modelId)} · ${t('fields.chargedCostFactorValue')}`}
+                          value={row.factor}
+                          onChange={(e) => {
+                            const next = [...planForm.chargedCostFactorRows];
+                            next[index] = { ...next[index], factor: e.target.value };
+                            setPlanForm({ ...planForm, chargedCostFactorRows: next });
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+                          placeholder={t('fields.chargedCostFactorValue')}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPlanForm({
+                              ...planForm,
+                              chargedCostFactorRows: planForm.chargedCostFactorRows.filter((_, i) => i !== index),
+                            })
+                          }
+                          className="px-2 text-red-600 hover:text-red-800"
+                          aria-label={tCommon('delete')}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </fieldset>
+      <section
+        id="user-panel-keys"
+        role="tabpanel"
+        aria-labelledby="user-tab-keys"
+        hidden={activeSection !== 'keys'}
+        tabIndex={0}
+      >
+        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex min-w-0 flex-col">
           <div className="flex justify-between items-center mb-4 shrink-0">
             <h2 className="text-lg font-semibold text-gray-900">{t('apiKeys')}</h2>
             <button
@@ -964,17 +1312,19 @@ export default function GatewayUserDetailPage() {
             </button>
           </div>
           {keysInlineError && (
-            <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{keysInlineError}</div>
+            <div className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {keysInlineError}
+            </div>
           )}
-          {freshApiKey && (
-            <NewApiKeySecretBanner secret={freshApiKey} onDismiss={() => setFreshApiKey(null)} />
-          )}
+          {freshApiKey && <NewApiKeySecretBanner secret={freshApiKey} onDismiss={() => setFreshApiKey(null)} />}
           <div className="min-h-0 flex-1 overflow-auto">
             <table className="min-w-full text-sm table-auto">
               <thead>
                 <tr className="border-b text-xs text-gray-500 uppercase">
                   <th className="py-2 pr-4 text-left">{tCommon('key')}</th>
-                  <th className="py-2 pr-4 text-left" title={t('keysTable.rateLimitHint')}>{t('keysTable.rateLimit')}</th>
+                  <th className="py-2 pr-4 text-left" title={t('keysTable.rateLimitHint')}>
+                    {t('keysTable.rateLimit')}
+                  </th>
                   <th className="py-2 pr-4 text-left">{tCommon('metadata')}</th>
                   <th className="py-2 pr-4 text-left">{tCommon('status')}</th>
                   <th className="py-2 pl-4 text-right whitespace-nowrap w-px">{tCommon('actions')}</th>
@@ -988,10 +1338,13 @@ export default function GatewayUserDetailPage() {
                         {k.name?.trim() ? k.name : '—'}
                       </div>
                       <div className="mt-0.5 flex min-w-0 items-center gap-1 font-mono text-[11px] text-gray-400">
-                        <span className="min-w-0 truncate" title={k.key}>{maskKey(k.key)}</span>
+                        <span className="min-w-0 truncate" title={k.key}>
+                          {maskKey(k.key)}
+                        </span>
                         <button
                           type="button"
                           onClick={() => copy(k.key)}
+                          aria-label={tCommon('copy')}
                           className="shrink-0 rounded p-0.5 text-gray-300 hover:bg-gray-100 hover:text-gray-600"
                         >
                           <ClipboardDocumentIcon className="h-3.5 w-3.5" />
@@ -1041,7 +1394,11 @@ export default function GatewayUserDetailPage() {
                         type="button"
                         role="switch"
                         aria-checked={k.status === 'active'}
-                        aria-label={k.status === 'active' ? t('keysTable.activeClickToRevoke') : t('keysTable.inactiveClickToActivate')}
+                        aria-label={
+                          k.status === 'active'
+                            ? t('keysTable.activeClickToRevoke')
+                            : t('keysTable.inactiveClickToActivate')
+                        }
                         title={k.status}
                         disabled={keyStatusTogglingId === k.id}
                         onClick={() => toggleKeyStatus(k)}
@@ -1057,7 +1414,11 @@ export default function GatewayUserDetailPage() {
                       </button>
                     </td>
                     <td className="py-2 pl-4 text-right whitespace-nowrap align-top">
-                      <button type="button" onClick={() => deleteKeyHard(k.id)} className="text-xs text-red-600 hover:underline inline-flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => deleteKeyHard(k.id)}
+                        className="text-xs text-red-600 hover:underline inline-flex items-center gap-0.5"
+                      >
                         <TrashIcon className="h-3.5 w-3.5" />
                         {tCommon('delete')}
                       </button>
@@ -1069,202 +1430,177 @@ export default function GatewayUserDetailPage() {
             {keys.length === 0 && <p className="text-sm text-gray-500 py-4">{t('keysTable.noKeys')}</p>}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-6 flex min-h-0 flex-1 flex-col gap-3">
-          <div className="flex items-center justify-between gap-3 shrink-0">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t('fields.chargedCostFactors')} <InfoHintPopover label={t('fields.chargedCostFactors')} openOnHover align="start"><p className="leading-6">{t('help.chargedCostFactors')}</p></InfoHintPopover> <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
-            </h2>
-            <button
-              type="button"
-              onClick={() => {
-                setModelPickerSearch('');
-                setShowModelPicker(true);
-              }}
-              className="inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800"
+      </section>
+      <section
+        id="user-panel-activity"
+        role="tabpanel"
+        aria-labelledby="user-tab-activity"
+        hidden={activeSection !== 'activity'}
+        tabIndex={0}
+      >
+        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.recentRequestLogs')}</h2>
+            <Link
+              href={`/gateway/request-logs?user_email=${encodeURIComponent(user.email)}`}
+              className="text-sm text-blue-600 hover:underline"
             >
-              <PlusIcon className="h-3.5 w-3.5" />
-              {tCommon('add')}
-            </button>
+              {tCommon('more')}
+            </Link>
           </div>
-          <p className="text-xs text-gray-500">
-            {t('help.chargedCostFactors')}
-          </p>
-          {factorsError && <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">{factorsError}</div>}
-          {factorsSuccess && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700" role="status">
-              {factorsSuccess}
-            </div>
-          )}
-          {planForm.chargedCostFactorRows.length === 0 ? (
-            <p className="text-xs text-gray-400 flex-1">{t('chargedCostFactors.empty')}</p>
-          ) : (
-            <div className="min-h-0 flex-1 space-y-2 overflow-auto">
-              {planForm.chargedCostFactorRows.map((row, index) => {
-                const model = catalogById.get(row.modelId);
-                return (
-                  <div key={row.modelId} className="grid grid-cols-[1fr_7rem_auto] gap-2 items-center">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm text-gray-900">{catalogModelLabel(model, row.modelId)}</div>
-                      <div className="truncate font-mono text-[11px] text-gray-500" title={row.modelId}>
-                        {row.modelId}
-                        {!model ? ` · ${t('chargedCostFactors.unknownModel')}` : ''}
-                      </div>
-                    </div>
-                    <input
-                      type="number"
-                      min={0}
-                      step="any"
-                      value={row.factor}
-                      onChange={(e) => {
-                        const next = [...planForm.chargedCostFactorRows];
-                        next[index] = { ...next[index], factor: e.target.value };
-                        setPlanForm({ ...planForm, chargedCostFactorRows: next });
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
-                      placeholder={t('fields.chargedCostFactorValue')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPlanForm({
-                          ...planForm,
-                          chargedCostFactorRows: planForm.chargedCostFactorRows.filter((_, i) => i !== index),
-                        })
-                      }
-                      className="px-2 text-red-600 hover:text-red-800"
-                      aria-label={tCommon('delete')}
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <div className="flex justify-end pt-1 mt-auto shrink-0">
-            <button
-              type="button"
-              onClick={saveChargedCostFactors}
-              disabled={isSavingFactors}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isSavingFactors ? tCommon('saving') : tCommon('save')}
-            </button>
+          <div className="overflow-x-auto text-sm">
+            <table className="min-w-full">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 border-b">
+                  <th className="py-2 pr-2">{tCommon('time')}</th>
+                  <th className="py-2 pr-2">{tCommon('model')}</th>
+                  <th className="py-2 pr-2">{t('table.group')}</th>
+                  <th className="py-2 pr-2">{tCommon('provider')}</th>
+                  <th className="py-2 pr-2">{tCommon('status')}</th>
+                  <th className="py-2 pr-2 whitespace-nowrap">
+                    {t('detailUx.standardCost')} ({billingCurrencySym})
+                  </th>
+                  <th className="py-2 pr-2 whitespace-nowrap">
+                    {t('detailUx.chargedCost')} ({billingCurrencySym})
+                  </th>
+                  <th className="py-2 pr-2 whitespace-nowrap">
+                    {t('detailUx.meteredCost')} ({billingCurrencySym})
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log) => {
+                  const routeGroup = normalizeRouteGroup(log.route_group);
+                  return (
+                    <tr key={log.id} className="border-b border-gray-50">
+                      <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(log.created_at)}</td>
+                      <td
+                        className="py-2 pr-2 font-mono text-xs max-w-[10rem] truncate"
+                        title={log.model_name || log.model_id || undefined}
+                      >
+                        {log.model_name || log.model_id || '—'}
+                      </td>
+                      <td className="py-2 pr-2">
+                        <span
+                          className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(
+                            routeGroup
+                          )}`}
+                          title={`route_group: ${routeGroup}`}
+                        >
+                          @{routeGroup}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-2 text-xs max-w-[10rem] truncate" title={formatLogProvider(log)}>
+                        {formatLogProvider(log)}
+                      </td>
+                      <td className="py-2 pr-2">{log.status}</td>
+                      <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
+                        {formatGatewayMoneyCode(Number(log.standard_cost ?? 0), billingCurrency, 4)}
+                      </td>
+                      <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
+                        {formatGatewayMoneyCode(Number(log.charged_cost ?? 0), billingCurrency, 4)}
+                      </td>
+                      <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
+                        {formatGatewayMoneyCode(Number(log.metered_cost ?? 0), billingCurrency, 4)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {logs.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.requestLogs')}</p>}
           </div>
         </div>
-        </div>
-      </div>
 
-      <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.recentRequestLogs')}</h2>
-          <Link
-            href={`/gateway/request-logs?user_email=${encodeURIComponent(user.email)}`}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            {tCommon('more')}
-          </Link>
-        </div>
-        <div className="overflow-x-auto text-sm">
-          <table className="min-w-full">
-            <thead>
-              <tr className="text-left text-xs text-gray-500 border-b">
-                <th className="py-2 pr-2">{tCommon('time')}</th>
-                <th className="py-2 pr-2">{tCommon('model')}</th>
-                <th className="py-2 pr-2">{t('table.group')}</th>
-                <th className="py-2 pr-2">{tCommon('provider')}</th>
-                <th className="py-2 pr-2">{tCommon('status')}</th>
-                <th className="py-2 pr-2 whitespace-nowrap">Standard ({billingCurrencySym})</th>
-                <th className="py-2 pr-2 whitespace-nowrap">Charged ({billingCurrencySym})</th>
-                <th className="py-2 pr-2 whitespace-nowrap">Metered ({billingCurrencySym})</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => {
-                const routeGroup = normalizeRouteGroup(log.route_group);
-                return (
-                <tr key={log.id} className="border-b border-gray-50">
-                  <td className="py-2 pr-2 whitespace-nowrap">{formatDateTime(log.created_at)}</td>
-                  <td className="py-2 pr-2 font-mono text-xs max-w-[10rem] truncate" title={log.model_name || log.model_id || undefined}>
-                    {log.model_name || log.model_id || '—'}
-                  </td>
-                  <td className="py-2 pr-2">
-                    <span
-                      className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(routeGroup)}`}
-                      title={`route_group: ${routeGroup}`}
-                    >
-                      @{routeGroup}
-                    </span>
-                  </td>
-                  <td className="py-2 pr-2 text-xs max-w-[10rem] truncate" title={formatLogProvider(log)}>
-                    {formatLogProvider(log)}
-                  </td>
-                  <td className="py-2 pr-2">{log.status}</td>
-                  <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
-                    {formatGatewayMoneyCode(Number(log.standard_cost ?? 0), billingCurrency, 4)}
-                  </td>
-                  <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
-                    {formatGatewayMoneyCode(Number(log.charged_cost ?? 0), billingCurrency, 4)}
-                  </td>
-                  <td className="py-2 pr-2 tabular-nums whitespace-nowrap">
-                    {formatGatewayMoneyCode(Number(log.metered_cost ?? 0), billingCurrency, 4)}
-                  </td>
+        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.userAuditLogs')}</h2>
+            <Link
+              href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}`}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              {tCommon('more')}
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap">{tAudit('table.time')}</th>
+                  <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">
+                    {tAudit('table.event')}
+                  </th>
+                  <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">
+                    {tAudit('table.actor')}
+                  </th>
+                  <th className="px-3 py-2 text-xs font-medium uppercase min-w-[14rem]">{tAudit('table.budget')}</th>
+                  <th className="px-3 py-2 text-xs font-medium uppercase min-w-[12rem]">{tAudit('table.periodPlan')}</th>
+                  <th className="px-3 py-2 text-xs font-medium uppercase min-w-[14rem]">{tAudit('table.wallet')}</th>
+                  <th className="px-3 py-2 text-xs font-medium uppercase min-w-[16rem]">
+                    {tAudit('table.userChangeDetail')}
+                  </th>
                 </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {logs.length === 0 && <p className="text-sm text-gray-500 py-4">{t('empty.requestLogs')}</p>}
-        </div>
-      </div>
-
-      <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.userAuditLogs')}</h2>
-          <Link
-            href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}`}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            {tCommon('more')}
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-gray-500 border-b">
-                <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap">{tAudit('table.time')}</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">{tAudit('table.event')}</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">{tAudit('table.actor')}</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase min-w-[14rem]">{tAudit('table.budget')}</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase min-w-[12rem]">{tAudit('table.periodPlan')}</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase min-w-[14rem]">{tAudit('table.wallet')}</th>
-                <th className="px-3 py-2 text-xs font-medium uppercase min-w-[16rem]">{tAudit('table.userChangeDetail')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {audits.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    {t('empty.auditLogs')}
-                  </td>
-                </tr>
-              ) : (
-                audits.map((a) => (
-                  <tr key={a.id} className="align-top hover:bg-gray-50">
-                    <AuditLogSharedCells
-                      item={a}
-                      currency={billingCurrency}
-                      timezone={businessTimezone}
-                      onViewDetail={setDetailLog}
-                      showIdentity={false}
-                    />
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {audits.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      {t('empty.auditLogs')}
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  audits.map((a) => (
+                    <tr key={a.id} className="align-top hover:bg-gray-50">
+                      <AuditLogSharedCells
+                        item={a}
+                        currency={billingCurrency}
+                        timezone={businessTimezone}
+                        onViewDetail={setDetailLog}
+                        showIdentity={false}
+                      />
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      </section>
+      {(activeSection === 'overview' || activeSection === 'billing' || hasChanges) && (
+        <div
+          className={`${
+            hasChanges ? 'sticky bottom-4 z-20' : ''
+          } mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur`}
+        >
+          <p className={`text-sm ${hasChanges ? 'text-amber-700' : 'text-gray-500'}`} role="status">
+            {hasChanges ? t('detailUx.unsaved') : t('detailUx.saved')}
+          </p>
+          <div className="flex items-center gap-2">
+            {hasChanges && (
+              <button
+                type="button"
+                disabled={isSavingPlan}
+                onClick={() => {
+                  if (savedFormRef.current) setPlanForm(savedFormRef.current);
+                  budgetResetDirtyRef.current = false;
+                  setPlanError('');
+                }}
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {t('detailUx.discard')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={savePlan}
+              disabled={isSavingPlan || !hasChanges}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSavingPlan ? tCommon('saving') : t('detailUx.saveChanges')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {detailLog ? (
         <AuditChangeDetailModal
@@ -1426,12 +1762,14 @@ export default function GatewayUserDetailPage() {
             {keyError && <div className="mb-3 p-2 bg-red-50 text-red-700 text-sm rounded">{keyError}</div>}
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-gray-700 mb-1">{t('fields.name')}</label>
-                <input value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" />
+                <label htmlFor="new-key-name" className="block text-sm text-gray-700 mb-1">
+                  {t('fields.name')}</label>
+                <input id="new-key-name" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-sm text-gray-700 mb-1">{t('fields.metadataJson')}</label>
-                <textarea value={newKeyMeta} onChange={(e) => setNewKeyMeta(e.target.value)} rows={4} className="w-full border rounded px-3 py-2 font-mono text-xs" />
+                <label htmlFor="new-key-metadata" className="block text-sm text-gray-700 mb-1">
+                  {t('fields.metadataJson')}</label>
+                <textarea id="new-key-metadata" value={newKeyMeta} onChange={(e) => setNewKeyMeta(e.target.value)} rows={4} className="w-full border rounded px-3 py-2 font-mono text-xs" />
               </div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
