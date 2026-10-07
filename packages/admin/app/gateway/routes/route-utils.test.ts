@@ -1725,21 +1725,35 @@ describe('buildOpenAiAdapterCallSample', () => {
 		const wan = getAdapterByOptionKey('dashscope-image-wan');
 		const wanSample = buildOpenAiAdapterCallSample(wan!);
 		assert.match(wanSample ?? '', /client\.images\.generate\(/);
-		assert.match(wanSample ?? '', /extra_body=\{parameters: \{negative_prompt: "blurry", seed: 42\}\}/);
+		assert.match(wanSample ?? '', /extra_body=\{"parameters": \{"negative_prompt": "blurry", "seed": 42\}\}/);
 
 		const image = getAdapterByOptionKey('minimax-image');
 		const imageSample = buildOpenAiAdapterCallSample(image!);
-		assert.match(imageSample ?? '', /prompt_optimizer: True/);
-		assert.match(imageSample ?? '', /aigc_watermark: False/);
+		assert.match(imageSample ?? '', /"prompt_optimizer": True/);
+		assert.match(imageSample ?? '', /"aigc_watermark": False/);
 
 		const speech = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-tts-qwen')!);
 		assert.match(speech ?? '', /client\.audio\.speech\.create\(/);
 		assert.equal(speech?.includes('extra_body'), false);
+		assert.match(speech ?? '', /response_format="wav"/);
+		assert.match(speech ?? '', /voice="YOUR_VOICE_ID"/);
 
 		const asr = buildOpenAiAdapterCallSample(getAdapterByOptionKey('minimax-asr-file')!);
 		assert.match(asr ?? '', /client\.audio\.transcriptions\.create\(/);
-		assert.match(asr ?? '', /timestamp_level: "sentence"/);
+		assert.match(asr ?? '', /"timestamp_level": "sentence"/);
 
 		assert.equal(buildOpenAiAdapterCallSample(getAdapterByOptionKey('passthrough:openai:images.generations')!), null);
+	});
+	it('uses the client model and group, escaping user-supplied text', () => {
+		const sample = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-image-qwen')!, 'my"model:free');
+		assert.ok(sample?.includes(`model=${JSON.stringify('my"model:free')},`));
+		assert.equal(sample?.includes('your-model'), false);
+	});
+	it('submits a public URL as multipart for asynchronous transcription', () => {
+		const sample = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-asr-file-async')!, 'asr:free');
+		assert.match(sample ?? '', /httpx\.post\(/);
+		assert.match(sample ?? '', /"model": \(None, "asr:free"\)/);
+		assert.match(sample ?? '', /"file_url": \(None, "https:\/\/example\.com\/audio\.mp3"\)/);
+		assert.equal(sample?.includes('file=open'), false);
 	});
 });

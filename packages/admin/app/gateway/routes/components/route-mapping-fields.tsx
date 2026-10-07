@@ -588,7 +588,10 @@ export function RouteMappingFields({
 				</div>
 				{selectedProvider && selectedAdapterOption ? (
 					<RouteAdapterGuide
+						key={selectedAdapterOption.descriptor.optionKey}
 						descriptor={selectedAdapterOption.descriptor}
+						modelId={formData.model_id}
+						routeGroup={formData.route_group}
 						onOpenRequestTab={onOpenRequestTab}
 					/>
 				) : null}

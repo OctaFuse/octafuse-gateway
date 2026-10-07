@@ -1162,7 +1162,21 @@
 					"per_second": "초당",
 					"per_character": "문자당",
 					"per_call": "호출당"
-				}
+				},
+				"showDetails": "자세히 보기",
+				"hideDetails": "접기",
+				"requestLabel": "요청",
+				"responseLabel": "응답",
+				"billingLabel": "과금",
+				"copyPath": "호출 경로 복사",
+				"copyExtra": "모델 매개변수 예제 복사",
+				"copySample": "Python 예제 복사",
+				"copyFailed": "복사에 실패했습니다. 직접 선택하여 복사하세요.",
+				"protectedTitle": "게이트웨이가 관리하는 필드",
+				"protectedHint": "아래 필드는 게이트웨이가 생성하거나 관리합니다. 클라이언트 값으로 덮어쓸 수 없습니다.",
+				"sampleHint": "OpenAI client의 base_url에 게이트웨이 프록시 URL(/v1로 끝남), api_key에 게이트웨이 API 키를 설정하세요. 예제는 현재 모델과 라우트 그룹을 사용합니다.",
+				"sampleHintAsync": "httpx로 multipart 요청을 보냅니다. OCTAFUSE_BASE_URL에 게이트웨이 프록시 URL(/v1로 끝남), OCTAFUSE_API_KEY에 게이트웨이 API 키를 설정하고 file_url을 접근 가능한 오디오 URL로 바꾸세요.",
+				"voiceHint": "YOUR_VOICE_ID를 업스트림 모델이 지원하는 음성 ID로 바꾸세요."
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "타임스탬프 단위(timestamp_granularities)",
@@ -1180,8 +1194,8 @@
 			"adapterUnavailable": "사용 불가",
 			"adapterMissingCapabilities": "공급자에 필요한 엔드포인트가 없습니다: {capabilities}",
 			"adapterLossyFeatures": "업스트림 API에서 제공하지 않음: {features}",
-			"extraBodyHint": "클라이언트는 OpenAI SDK의 extra_body 또는 요청 본문 최상위 필드로, 업스트림 원본 구조의 모델별 파라미터를 전달할 수 있습니다. 게이트웨이가 깊이 병합한 뒤 업스트림으로 보냅니다. 지원 파라미터는 모델 문서를 따르세요.",
-			"extraBodyMultipartHint": "받아쓰기와 이미지 편집은 multipart입니다. 추가 파라미터는 폼 필드로 전달하고, 객체는 JSON 문자열로 넣으세요. 게이트웨이가 깊이 병합한 뒤 업스트림으로 보냅니다. 지원 파라미터는 모델 문서를 따르세요.",
+			"extraBodyHint": "OpenAI SDK의 extra_body 또는 요청의 최상위 필드로 업스트림 기본 매개변수를 전달합니다. 게이트웨이가 깊게 병합합니다. 지원 매개변수는 모델 문서를 확인하세요.",
+			"extraBodyMultipartHint": "추가 매개변수는 multipart 폼 필드로 전달하고 객체는 JSON 문자열로 인코딩하세요. 게이트웨이가 깊게 병합합니다. 지원 매개변수는 모델 문서를 확인하세요.",
 			"extraBodyProtected": "게이트웨이 예약: {fields}",
 			"extraBodyInputLimit": "DashScope 음성 합성의 input은 객체이고 OpenAI의 input은 텍스트라, 추가 필드로 input.* 를 설정할 수 없습니다. 이런 파라미터는 라우트 요청 파라미터에 넣으세요.",
 			"adapterModelUnrecognized": "공급자 모델 이름을 인식하지 못해 모든 어댑터를 표시합니다.",

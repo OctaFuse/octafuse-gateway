@@ -1162,7 +1162,21 @@
 					"per_second": "按秒",
 					"per_character": "按字符",
 					"per_call": "按次"
-				}
+				},
+				"showDetails": "查看详情",
+				"hideDetails": "收起详情",
+				"requestLabel": "请求",
+				"responseLabel": "响应",
+				"billingLabel": "计费",
+				"copyPath": "复制调用路径",
+				"copyExtra": "复制模型参数示例",
+				"copySample": "复制 Python 调用示例",
+				"copyFailed": "复制失败，请手动选择复制",
+				"protectedTitle": "网关管理的字段",
+				"protectedHint": "以下字段由网关生成或管理，客户端传入的同名值不会覆盖它们。",
+				"sampleHint": "先初始化 OpenAI client：base_url 使用网关代理地址（以 /v1 结尾），api_key 使用网关 API Key。示例已带入当前模型及路由组。",
+				"sampleHintAsync": "使用 httpx 发送 multipart 请求。OCTAFUSE_BASE_URL 为网关代理地址（以 /v1 结尾），OCTAFUSE_API_KEY 为网关 API Key；将 file_url 替换为可访问的音频地址。",
+				"voiceHint": "将 YOUR_VOICE_ID 替换为上游模型支持的音色 ID。"
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "时间戳粒度（timestamp_granularities）",
@@ -1180,8 +1194,8 @@
 			"adapterUnavailable": "不可用",
 			"adapterMissingCapabilities": "供应商缺少所需端点：{capabilities}",
 			"adapterLossyFeatures": "上游接口不提供：{features}",
-			"extraBodyHint": "客户端可以用 OpenAI SDK 的 extra_body（或直接写在请求体顶层）按上游原生结构传入模型特有参数。网关会深度合并后发往上游，具体支持哪些参数以模型文档为准。",
-			"extraBodyMultipartHint": "转写和图片编辑使用 multipart。额外参数作为表单字段传入；对象请写成 JSON 字符串。网关会深度合并后发往上游，具体支持哪些参数以模型文档为准。",
+			"extraBodyHint": "通过 OpenAI SDK 的 extra_body（或请求体顶层字段）传入上游原生参数，网关会深度合并。可用参数以模型文档为准。",
+			"extraBodyMultipartHint": "额外参数通过 multipart 表单字段传入，对象需编码为 JSON 字符串。网关会深度合并，可用参数以模型文档为准。",
 			"extraBodyProtected": "网关保留：{fields}",
 			"extraBodyInputLimit": "DashScope 语音合成的 input 在上游是对象，OpenAI 的 input 是文本，客户端无法通过额外字段设置 input.*。这类参数请写在路由请求参数里。",
 			"adapterModelUnrecognized": "未识别该供应商模型名，已显示全部适配器。",

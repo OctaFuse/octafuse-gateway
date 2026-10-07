@@ -1162,7 +1162,21 @@
 					"per_second": "per second",
 					"per_character": "per character",
 					"per_call": "per call"
-				}
+				},
+				"showDetails": "View details",
+				"hideDetails": "Hide details",
+				"requestLabel": "Request",
+				"responseLabel": "Response",
+				"billingLabel": "Billing",
+				"copyPath": "Copy request path",
+				"copyExtra": "Copy model parameter example",
+				"copySample": "Copy Python example",
+				"copyFailed": "Copy failed. Select and copy manually.",
+				"protectedTitle": "Gateway-managed fields",
+				"protectedHint": "The gateway generates or manages these fields. Client values cannot override them.",
+				"sampleHint": "Initialize an OpenAI client with the gateway proxy URL (ending in /v1) as base_url and a gateway API key as api_key. The example uses the current model and route group.",
+				"sampleHintAsync": "Send a multipart request with httpx. Set OCTAFUSE_BASE_URL to the gateway proxy URL (ending in /v1) and OCTAFUSE_API_KEY to a gateway API key. Replace file_url with an accessible audio URL.",
+				"voiceHint": "Replace YOUR_VOICE_ID with a voice ID supported by the upstream model."
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "timestamp_granularities",
@@ -1180,8 +1194,8 @@
 			"adapterUnavailable": "unavailable",
 			"adapterMissingCapabilities": "Provider is missing required endpoints: {capabilities}",
 			"adapterLossyFeatures": "Not provided by the upstream API: {features}",
-			"extraBodyHint": "Clients can pass model-specific parameters with the OpenAI SDK extra_body parameter, or as top-level JSON fields. The gateway deep-merges them into the upstream body. Supported parameters follow the model documentation.",
-			"extraBodyMultipartHint": "Transcriptions and image edits use multipart. Pass extra parameters as form fields, and JSON-encode objects. The gateway deep-merges them into the upstream body. Supported parameters follow the model documentation.",
+			"extraBodyHint": "Pass native upstream parameters through OpenAI SDK extra_body or top-level request fields. The gateway deep-merges them. See the model documentation for supported parameters.",
+			"extraBodyMultipartHint": "Pass extra parameters as multipart form fields; encode objects as JSON strings. The gateway deep-merges them. See the model documentation for supported parameters.",
 			"extraBodyProtected": "Reserved by the gateway: {fields}",
 			"extraBodyInputLimit": "DashScope speech uses an object for input, while OpenAI input is text, so clients cannot set input.* through extra fields. Put those parameters in the route request parameters.",
 			"adapterModelUnrecognized": "Provider model name is not recognized; showing every adapter.",

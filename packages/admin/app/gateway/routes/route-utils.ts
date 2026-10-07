@@ -1152,7 +1152,7 @@ function formatPythonLiteral(value: unknown): string {
 	if (Array.isArray(value)) return `[${value.map((item) => formatPythonLiteral(item)).join(', ')}]`;
 	if (value != null && typeof value === 'object') {
 		const entries = Object.entries(value as Record<string, unknown>).map(([key, item]) => {
-			const renderedKey = /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? key : JSON.stringify(key);
+			const renderedKey = JSON.stringify(key);
 			return `${renderedKey}: ${formatPythonLiteral(item)}`;
 		});
 		return `{${entries.join(', ')}}`;
@@ -1160,21 +1160,39 @@ function formatPythonLiteral(value: unknown): string {
 	return 'None';
 }
 
-/** OpenAI 转换适配器的 Python SDK 调用示例。透传和非 OpenAI 入口返回 null。 */
+/** OpenAI 转换适配器的 Python 调用示例。透传和非 OpenAI 入口返回 null。 */
 export function buildOpenAiAdapterCallSample(
 	descriptor: Pick<AdapterDescriptor, 'id' | 'request' | 'extraBodyExample'>,
+	modelId = 'your-model',
 ): string | null {
 	if (descriptor.id === PASSTHROUGH_ROUTE_ADAPTER || descriptor.request.protocol !== 'openai') return null;
+	const model = JSON.stringify(modelId);
 	const extra = descriptor.extraBodyExample ? formatPythonLiteral(descriptor.extraBodyExample) : null;
 	const extraLine = extra ? `,\n    extra_body=${extra}` : '';
+	if (descriptor.id === 'dashscope-asr-file-async') {
+		return `import os
+import httpx
+
+response = httpx.post(
+    os.environ["OCTAFUSE_BASE_URL"].rstrip("/") + "/audio/transcriptions",
+    headers={"Authorization": "Bearer " + os.environ["OCTAFUSE_API_KEY"]},
+    files={
+        "model": (None, ${model}),
+        "file_url": (None, "https://example.com/audio.mp3"),
+    },
+    timeout=300,
+)
+response.raise_for_status()
+print(response.json())`;
+	}
 	if (descriptor.request.operation === 'images.generations') {
-		return `client.images.generate(\n    model="your-model",\n    prompt="a red apple"${extraLine},\n)`;
+		return `client.images.generate(\n    model=${model},\n    prompt="a red apple"${extraLine},\n)`;
 	}
 	if (descriptor.request.operation === 'audio.speech') {
-		return `client.audio.speech.create(\n    model="your-model",\n    input="Hello",\n    voice="alloy"${extraLine},\n)`;
+		return `client.audio.speech.create(\n    model=${model},\n    input="Hello",\n    voice="YOUR_VOICE_ID"${descriptor.id === 'dashscope-tts-qwen' ? ',\n    response_format="wav"' : ''}${extraLine},\n)`;
 	}
 	if (descriptor.request.operation === 'audio.transcriptions') {
-		return `client.audio.transcriptions.create(\n    model="your-model",\n    file=open("audio.mp3", "rb")${extraLine},\n)`;
+		return `client.audio.transcriptions.create(\n    model=${model},\n    file=open("audio.mp3", "rb")${extraLine},\n)`;
 	}
 	return null;
 }

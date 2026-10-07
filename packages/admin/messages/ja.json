@@ -1162,7 +1162,21 @@
 					"per_second": "秒課金",
 					"per_character": "文字課金",
 					"per_call": "コール課金"
-				}
+				},
+				"showDetails": "詳細を表示",
+				"hideDetails": "詳細を閉じる",
+				"requestLabel": "リクエスト",
+				"responseLabel": "レスポンス",
+				"billingLabel": "課金",
+				"copyPath": "呼び出しパスをコピー",
+				"copyExtra": "モデルパラメータの例をコピー",
+				"copySample": "Python の例をコピー",
+				"copyFailed": "コピーできません。選択して手動でコピーしてください。",
+				"protectedTitle": "ゲートウェイが管理するフィールド",
+				"protectedHint": "以下のフィールドはゲートウェイが生成・管理します。クライアントの値では上書きできません。",
+				"sampleHint": "OpenAI client の base_url にゲートウェイのプロキシ URL（末尾は /v1）、api_key にゲートウェイの API キーを設定してください。現在のモデルとルートグループを使用した例です。",
+				"sampleHintAsync": "httpx で multipart リクエストを送信します。OCTAFUSE_BASE_URL にゲートウェイのプロキシ URL（末尾は /v1）、OCTAFUSE_API_KEY にゲートウェイの API キーを設定し、file_url をアクセス可能な音声 URL に置き換えてください。",
+				"voiceHint": "YOUR_VOICE_ID を上流モデルが対応する音声 ID に置き換えてください。"
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "タイムスタンプ粒度（timestamp_granularities）",
@@ -1180,8 +1194,8 @@
 			"adapterUnavailable": "利用不可",
 			"adapterMissingCapabilities": "プロバイダーに必要なエンドポイントがありません: {capabilities}",
 			"adapterLossyFeatures": "上流 API では提供されません: {features}",
-			"extraBodyHint": "クライアントは OpenAI SDK の extra_body、またはリクエスト本体のトップレベル項目で、上流のネイティブ構造のままモデル固有パラメータを渡せます。ゲートウェイは深いマージ後に上流へ送ります。対応パラメータはモデルのドキュメントに従ってください。",
-			"extraBodyMultipartHint": "文字起こしと画像編集は multipart です。追加パラメータはフォーム項目として渡し、オブジェクトは JSON 文字列にしてください。ゲートウェイは深いマージ後に上流へ送ります。対応パラメータはモデルのドキュメントに従ってください。",
+			"extraBodyHint": "OpenAI SDK の extra_body またはリクエストのトップレベルフィールドで上流のネイティブパラメータを渡します。ゲートウェイが深くマージします。対応パラメータはモデルのドキュメントを参照してください。",
+			"extraBodyMultipartHint": "追加パラメータは multipart のフォームフィールドで渡し、オブジェクトは JSON 文字列にします。ゲートウェイが深くマージします。対応パラメータはモデルのドキュメントを参照してください。",
 			"extraBodyProtected": "ゲートウェイが保持: {fields}",
 			"extraBodyInputLimit": "DashScope の音声合成では input がオブジェクト、OpenAI の input はテキストです。追加項目から input.* は設定できません。これらのパラメータはルートのリクエストパラメータに書いてください。",
 			"adapterModelUnrecognized": "プロバイダーのモデル名を認識できないため、すべてのアダプターを表示しています。",
