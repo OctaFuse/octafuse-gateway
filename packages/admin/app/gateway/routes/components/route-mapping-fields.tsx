@@ -475,7 +475,7 @@ export function RouteMappingFields({
 				</div>
 			</RouteEditorSection>
 			<RouteEditorSection title={t('editor.routingTitle')}>
-				<div className="grid items-start gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.55fr)_minmax(0,0.55fr)]">
+				<div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,120px)_minmax(0,95px)_minmax(0,95px)]">
 					<div>
 						<label htmlFor="route-field-adapter" className={editorLabelClass}>
 							{t('adapter')}
