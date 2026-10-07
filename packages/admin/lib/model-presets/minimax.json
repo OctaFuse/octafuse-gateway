@@ -227,10 +227,10 @@
 	{
 		"id": "minimax-speech-2.8-hd",
 		"display_name": "MiniMax Speech 2.8 HD",
-		"description": "MiniMax sync speech synthesis (speech-2.8-hd) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-hd and the adapter to MiniMax audio.speech passthrough. Billed per upstream usage_characters.",
+		"description": "MiniMax sync speech synthesis (speech-2.8-hd) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-hd. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
 		"i18n": {
-			"en": "MiniMax sync speech synthesis (speech-2.8-hd) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-hd and the adapter to MiniMax audio.speech passthrough. Billed per upstream usage_characters.",
-			"zh": "MiniMax 同步语音合成（speech-2.8-hd），走 POST /v1/t2a_v2。路由的供应商模型名填 speech-2.8-hd，适配器选 MiniMax audio.speech 透传。按上游 usage_characters 计费。"
+			"en": "MiniMax sync speech synthesis (speech-2.8-hd) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-hd. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
+			"zh": "MiniMax 同步语音合成（speech-2.8-hd），走 POST /v1/t2a_v2。供应商模型名填 speech-2.8-hd。OpenAI /v1/audio/speech 用适配器 minimax-tts，原生端点用 audio.speech 透传。按上游 usage_characters 计费。"
 		},
 		"vendor": "minimax",
 		"pricing": {
@@ -257,10 +257,10 @@
 	{
 		"id": "minimax-speech-2.8-turbo",
 		"display_name": "MiniMax Speech 2.8 Turbo",
-		"description": "MiniMax low-latency sync speech synthesis (speech-2.8-turbo) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-turbo and the adapter to MiniMax audio.speech passthrough. Billed per upstream usage_characters.",
+		"description": "MiniMax low-latency sync speech synthesis (speech-2.8-turbo) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-turbo. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
 		"i18n": {
-			"en": "MiniMax low-latency sync speech synthesis (speech-2.8-turbo) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-turbo and the adapter to MiniMax audio.speech passthrough. Billed per upstream usage_characters.",
-			"zh": "MiniMax 低延迟同步语音合成（speech-2.8-turbo），走 POST /v1/t2a_v2。路由的供应商模型名填 speech-2.8-turbo，适配器选 MiniMax audio.speech 透传。按上游 usage_characters 计费。"
+			"en": "MiniMax low-latency sync speech synthesis (speech-2.8-turbo) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-turbo. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
+			"zh": "MiniMax 低延迟同步语音合成（speech-2.8-turbo），走 POST /v1/t2a_v2。供应商模型名填 speech-2.8-turbo。OpenAI /v1/audio/speech 用适配器 minimax-tts，原生端点用 audio.speech 透传。按上游 usage_characters 计费。"
 		},
 		"vendor": "minimax",
 		"pricing": {
@@ -287,10 +287,10 @@
 	{
 		"id": "minimax-image-01",
 		"display_name": "MiniMax Image 01",
-		"description": "MiniMax text-to-image and subject-reference image generation (image-01) via POST /v1/image_generation. Set the route provider model name to image-01 and the adapter to MiniMax images.generations passthrough. Billed per successful image.",
+		"description": "MiniMax text-to-image and subject-reference image generation (image-01) via POST /v1/image_generation. Set the route provider model name to image-01. Use minimax-image for OpenAI /v1/images/generations, or MiniMax images.generations passthrough for the native endpoint. Billed per successful image.",
 		"i18n": {
-			"en": "MiniMax text-to-image and subject-reference image generation (image-01) via POST /v1/image_generation. Set the route provider model name to image-01 and the adapter to MiniMax images.generations passthrough. Billed per successful image.",
-			"zh": "MiniMax 文生图与主体参考图生图（image-01），走 POST /v1/image_generation。路由的供应商模型名填 image-01，适配器选 MiniMax images.generations 透传。按成功张数计费。"
+			"en": "MiniMax text-to-image and subject-reference image generation (image-01) via POST /v1/image_generation. Set the route provider model name to image-01. Use minimax-image for OpenAI /v1/images/generations, or MiniMax images.generations passthrough for the native endpoint. Billed per successful image.",
+			"zh": "MiniMax 文生图与主体参考图生图（image-01），走 POST /v1/image_generation。供应商模型名填 image-01。OpenAI /v1/images/generations 用适配器 minimax-image，原生端点用 images.generations 透传。按成功张数计费。"
 		},
 		"vendor": "minimax",
 		"pricing": {
@@ -317,10 +317,10 @@
 	{
 		"id": "minimax-image-01-live",
 		"display_name": "MiniMax Image 01 Live",
-		"description": "MiniMax image-01-live generation via POST /v1/image_generation, including the live style. Set the route provider model name to image-01-live and the adapter to MiniMax images.generations passthrough. Billed per successful image.",
+		"description": "MiniMax image-01-live generation via POST /v1/image_generation, including the live style. Set the route provider model name to image-01-live. Use minimax-image for OpenAI /v1/images/generations, or MiniMax images.generations passthrough for the native endpoint. Billed per successful image.",
 		"i18n": {
-			"en": "MiniMax image-01-live generation via POST /v1/image_generation, including the live style. Set the route provider model name to image-01-live and the adapter to MiniMax images.generations passthrough. Billed per successful image.",
-			"zh": "MiniMax image-01-live 生图，走 POST /v1/image_generation，支持 live 风格。路由的供应商模型名填 image-01-live，适配器选 MiniMax images.generations 透传。按成功张数计费。"
+			"en": "MiniMax image-01-live generation via POST /v1/image_generation, including the live style. Set the route provider model name to image-01-live. Use minimax-image for OpenAI /v1/images/generations, or MiniMax images.generations passthrough for the native endpoint. Billed per successful image.",
+			"zh": "MiniMax image-01-live 生图，走 POST /v1/image_generation，支持 live 风格。供应商模型名填 image-01-live。OpenAI /v1/images/generations 用适配器 minimax-image，原生端点用 images.generations 透传。按成功张数计费。"
 		},
 		"vendor": "minimax",
 		"pricing": {

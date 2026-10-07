@@ -623,7 +623,10 @@ describe('route form capability filters', () => {
 		});
 		const listed = listAdapterOptionsForModel(speech, provider(minimax.endpoints), 'speech-2.8-turbo');
 		assert.equal(listed.modelUnrecognized, false);
-		assert.deepEqual(visibleAdapterKeys(listed), ['passthrough:minimax:audio.speech']);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'minimax-tts',
+			'passthrough:minimax:audio.speech',
+		]);
 		assert.deepEqual(
 			upstreamOperationsForProviderModel(provider(minimax.endpoints), speech, 'minimax', 'speech-2.8-turbo'),
 			['audio.speech'],
@@ -643,7 +646,10 @@ describe('route form capability filters', () => {
 		});
 		const listed = listAdapterOptionsForModel(image, provider(minimax.endpoints), 'image-01');
 		assert.equal(listed.modelUnrecognized, false);
-		assert.deepEqual(visibleAdapterKeys(listed), ['passthrough:minimax:images.generations']);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'minimax-image',
+			'passthrough:minimax:images.generations',
+		]);
 	});
 
 	it('shows every available adapter when the provider model name matches no rule', () => {

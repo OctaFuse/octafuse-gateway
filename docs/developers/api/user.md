@@ -1037,6 +1037,8 @@ Content-Type: application/json
 
 请求与上游都是 `minimax` + `images.generations`，adapter 必须是 `passthrough`。网关只把 `model` 换成路由上的供应商模型名，返回 MiniMax 原文（`data.image_urls` 或 `data.image_base64`）。文生图和 `subject_reference` 图生图共用这一路径。按成功张数计费。`base_resp.status_code` 非 0 时 body 不变，HTTP 状态按业务码改写。详见 [MiniMax 生图](../architecture/minimax-image.md)。
 
+OpenAI 入口使用适配器 `minimax-image`，仍调用 `POST /v1/images/generations`。`size` 如 `1024x1024` 会映射到最接近的 `aspect_ratio`。`response_format=url` 返回 `data[].url`，`b64_json` 返回 `data[].b64_json`。`quality` 和 `background` 不转发。`n` 为 1–9。
+
 ---
 
 ## 语音合成（Audio Speech / TTS）
@@ -1059,7 +1061,7 @@ Content-Type: application/json
 | `stream_format` | 可选；`audio`（默认）或 `sse` |
 | `instructions` | 可选；风格指令，最多 4096 个字符 |
 
-同协议 OpenAI 上游使用 `passthrough`；转到 DashScope SpeechSynthesizer、Qwen-TTS 或 MiniMax 时，必须选择对应的显式 adapter。TTS 目录价使用 `audio_billing_mode=per_character`，最终费用只采用上游返回的真实 `usage.characters`；缺失时不会用输入长度补算。
+同协议 OpenAI 上游使用 `passthrough`；转到 DashScope SpeechSynthesizer、Qwen-TTS、DashScope 上的 MiniMax，或 MiniMax 官方 `t2a_v2` 时，必须选择对应的显式 adapter。MiniMax 官方适配器是 `minimax-tts`：`voice` 用 MiniMax `voice_id`，格式限 `mp3` / `pcm` / `flac` / `wav`，语速限 `0.5`–`2`，不支持 `instructions`。非流式返回音频字节；`stream_format=sse` 返回 OpenAI speech SSE。最终字符数采用上游 `extra_info.usage_characters`，缺失时不会用输入长度补算。DashScope TTS 则采用上游 `usage.characters`。
 
 默认 `GET /v1/models` **不含** TTS；列出 TTS 请用 `kind=audio`（同时含 ASR）或 `kind=all`。命中可见 `audio.speech` 路由时，`model_info.inbound` 会包含 `{ "protocol": "openai", "operation": "audio.speech" }`。
 
@@ -1103,6 +1105,8 @@ Content-Type: application/json
 ```
 
 请求与上游都是 `minimax` + `audio.speech`，adapter 必须是 `passthrough`。非流式 JSON 与 `stream: true` 的 SSE 共用这一路径。网关只替换 `model`。非流式成功响应仍是上游 JSON，音频在 `data.audio`（hex）。计费使用 `extra_info.usage_characters`。`base_resp.status_code` 非 0 时 body 不变，HTTP 状态按业务码改写；SSE 业务错误记入 `stream_error` 且不计费。详见 [MiniMax 音频](../architecture/minimax-audio.md)。
+
+OpenAI 入口使用适配器 `minimax-tts`，仍调用上面的 `POST /v1/audio/speech`。`voice` 填 MiniMax `voice_id`（例如 `male-qn-qingse`）。非流式响应是音频字节；`stream_format=sse` 是 OpenAI speech 事件。
 
 文件转写透传仍是 `POST /v1/minimax/speech_to_text`。
 

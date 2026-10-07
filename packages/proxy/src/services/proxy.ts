@@ -245,7 +245,7 @@ export async function proxyImageGenerations(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope"],
+		["openai", "dashscope", "minimax"],
 		(
 			route,
 			signal,
@@ -315,7 +315,7 @@ export async function proxyAudioTranscriptions(
 	);
 }
 
-/** 代理 OpenAI Audio Speech，并按显式 adapter 转为三类 DashScope TTS 请求。 */
+/** 代理 OpenAI Audio Speech，并按显式 adapter 转到 DashScope 或 MiniMax 官方语音合成。 */
 export async function proxyAudioSpeech(
 	repos: GatewayRepositories,
 	routes: RouteResult[],
@@ -326,7 +326,7 @@ export async function proxyAudioSpeech(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope"],
+		["openai", "dashscope", "minimax"],
 		(
 			route,
 			signal,

@@ -282,6 +282,8 @@ export function PlaygroundRequestPanel({
 						{t(
 							selectedUsesDashScopeRealtime
 								? 'audioRealtimeDashScopeHint'
+								: selected?.adapter === 'minimax-tts'
+								? 'audioSpeechMiniMaxOpenAiHint'
 								: selected?.upstream_protocol === 'minimax' && !selectedIsAudioTranscription
 								? 'audioSpeechMiniMaxHint'
 								: selected?.adapter === 'passthrough' && selectedAudioUsesDashScope && !selectedIsAudioTranscription
@@ -362,7 +364,9 @@ export function PlaygroundRequestPanel({
 
 			{selectedIsImage && !selectedIsAudio && !imageSendBlocked ? (
 				<>
-					{selected?.upstream_protocol === 'minimax' ? (
+					{selected?.adapter === 'minimax-image' ? (
+						<p className="text-xs text-gray-500">{t('imageMiniMaxOpenAiHint')}</p>
+					) : selected?.upstream_protocol === 'minimax' ? (
 						<p className="text-xs text-gray-500">{t('imageMiniMaxPassthroughHint')}</p>
 					) : selectedImageUsesDashScope ? (
 						<p className="text-xs text-gray-500">

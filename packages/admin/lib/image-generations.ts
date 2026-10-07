@@ -28,6 +28,15 @@ export const IMAGE_GENERATIONS_BODY_TEMPLATE = `{
   "quality": "low"
 }`;
 
+/** OpenAI `/v1/images/generations` → MiniMax 官方 image_generation。size 会换成最接近的 aspect_ratio。 */
+export const MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "prompt": "A red paper lantern over a quiet canal at dusk, cinematic lighting",
+  "n": 1,
+  "size": "1024x1024",
+  "response_format": "url"
+}`;
+
 /**
  * Default JSON fields for images/edits (reference images are uploaded separately as multipart files).
  * model field overwritten at send.

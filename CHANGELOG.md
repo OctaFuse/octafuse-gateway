@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- MiniMax 官方语音合成和生图增加 OpenAI 入口。`minimax-tts` 把 `POST /v1/audio/speech` 转到 `t2a_v2`：非流式返回音频字节，`stream_format=sse` 返回 OpenAI speech 事件；`voice` 使用 MiniMax voice_id，格式限 mp3/pcm/flac/wav，语速限 0.5–2。`minimax-image` 把 `POST /v1/images/generations` 转到 `image_generation`，`size` 映射为最接近的宽高比，响应改写成 OpenAI `data[]`。计费仍按 `usage_characters` 和成功张数。原有透传路径不变。
+
 - MiniMax 增加同步语音合成和生图透传。语音合成公开路径是 `POST /v1/minimax/t2a_v2`（非流式 JSON 与 `stream: true` 的 SSE 共用 `audio.speech`），生图是 `POST /v1/minimax/image_generation`。网关只替换 `model`。上游 HTTP 200 但 `base_resp.status_code` 非 0 时，body 原样返回，并按业务码改写 HTTP 状态，以便故障转移、熔断和不计费生效。语音按 `extra_info.usage_characters` 计费，生图按成功张数计费。目录预设为 `minimax-speech-2.8-hd`、`minimax-speech-2.8-turbo`、`minimax-image-01`、`minimax-image-01-live`。Playground 与 Simulator 可直接发这些请求；非流式语音会把 hex 音频解码后播放。视频和音乐仍没有端点。原有文件转写不变。
 
 - 路由编辑器的适配器下拉按供应商协议和供应商模型名过滤。能力只跟本协议的端点配置比较；模型名命中规则时只保留该家族的适配器，识别不了则仍显示全部可用适配器。已保存的路由不受影响。

@@ -62,6 +62,7 @@ export function imageFamilyForAdapter(adapter: string): DashScopeImageFamily | n
 export function maxNForImageAdapter(adapter: string): number {
 	if (adapter === 'dashscope-image-wan') return 4;
 	if (adapter === 'dashscope-image-qwen') return 6;
+	if (adapter === 'minimax-image') return 9;
 	return 1;
 }
 

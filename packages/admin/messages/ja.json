@@ -1029,7 +1029,9 @@
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
 				"dashscope-image-wan": "Wan 2.7 Image",
-				"minimax-asr-file": "MiniMax ファイル文字起こし"
+				"minimax-asr-file": "MiniMax ファイル文字起こし",
+				"minimax-tts": "MiniMax 公式音声合成",
+				"minimax-image": "MiniMax 公式画像生成"
 			},
 			"adapterDescriptions": {
 				"passthrough": "リクエストとレスポンスをそのまま転送します。クライアントと上流のプロトコル・オペレーションは一致させます。",
@@ -1042,7 +1044,9 @@
 				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax マルチモーダル API。mp3・pcm・flac・wav に対応し、instructions は未対応です。",
 				"dashscope-image-qwen": "OpenAI Images → Qwen Image multimodal-generation。size はピクセル指定（1024x1024 など）が必要です。",
 				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation。",
-				"minimax-asr-file": "OpenAI 文字起こし（multipart）→ MiniMax speech_to_text。プロバイダーモデル名は asr-1.0 です。language はリクエストヘッダーに入り、srt と vtt はタイムスタンプ付き結果からゲートウェイが生成します。"
+				"minimax-asr-file": "OpenAI 文字起こし（multipart）→ MiniMax speech_to_text。プロバイダーモデル名は asr-1.0 です。language はリクエストヘッダーに入り、srt と vtt はタイムスタンプ付き結果からゲートウェイが生成します。",
+				"minimax-tts": "OpenAI /v1/audio/speech → MiniMax t2a_v2。プロバイダーモデル名は speech-2.8-hd または speech-2.8-turbo。voice は MiniMax の voice_id。mp3・pcm・flac・wav、速度 0.5–2。stream_format=sse は OpenAI speech イベントになります。",
+				"minimax-image": "OpenAI /v1/images/generations → MiniMax image_generation。プロバイダーモデル名は image-01 または image-01-live。1024x1024 などの size は最も近い aspect_ratio に変換します。"
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "タイムスタンプ粒度（timestamp_granularities）",
@@ -1052,7 +1056,10 @@
 				"size_abbreviation": "1K/2K/4K のサイズ省略表記",
 				"background": "透過背景（background）",
 				"prompt": "プロンプト（prompt）",
-				"temperature": "サンプリング温度（temperature）"
+				"temperature": "サンプリング温度（temperature）",
+				"response_format_opus_aac": "opus と aac",
+				"openai_speed_range": "0.5–2 の範囲外の速度",
+				"quality": "品質（quality）"
 			},
 			"noCompatibleAdapter": "互換性のあるアダプターがありません",
 			"adapterFirstHint": "現在の Provider と互換のアダプターを選択します。公開プロトコルと上流プロトコルはレジストリから自動入力されます。",
@@ -1426,6 +1433,7 @@
 		"imageDashScopeHint": "DashScope 変換：OpenAI Images の JSON（prompt、n、size）を編集します。Playground が multimodal-generation に書き換え、n は常に送信します（既定 1）。図生図は JSON image を使い、edits は非対応です。課金もリクエストログもありません。",
 		"imageDashScopePassthroughHint": "ネイティブ透過：JSON は multimodal-generation へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換えます。課金もリクエストログもありません。",
 		"imageMiniMaxPassthroughHint": "ネイティブ透過：JSON は image_generation へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換え、data.image_urls または data.image_base64 をプレビューします。課金もリクエストログもありません。",
+		"imageMiniMaxOpenAiHint": "OpenAI 画像 JSON は MiniMax image_generation に変換されます。size は最も近い aspect_ratio に揃えます。Playground は返された画像をプレビューします。課金もリクエストログもありません。",
 		"imageOperation": "画像操作",
 		"imageGenerationsHint": "画像モデル：リクエスト Body は images/generations の項目（prompt、n、size、quality）を使用します。課金もリクエストログもありません。",
 		"imageEditsHint": "画像編集：JSON 項目（prompt、n、size、quality）と以下の参照画像を使用します。ファイルは multipart でアップストリームの edits エンドポイントに送信されます。課金もリクエストログもありません。",
@@ -1447,6 +1455,7 @@
 		"audioSpeechHint": "音声合成：JSON の input、voice、response_format、speed を編集します。非リアルタイムの DashScope リクエストは上流の input オブジェクトに変換されます。",
 		"audioSpeechPassthroughHint": "ネイティブ透過：JSON は SpeechSynthesizer へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換えます。ストリームは X-DashScope-SSE で決まります。課金もリクエストログもありません。",
 		"audioSpeechMiniMaxHint": "ネイティブ透過：JSON は t2a_v2 へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換えます。stream:false は hex を復号して再生し、stream:true は SSE を表示します。課金もリクエストログもありません。",
+		"audioSpeechMiniMaxOpenAiHint": "OpenAI 音声 JSON は MiniMax t2a_v2 に変換されます。voice には MiniMax の voice_id を指定します。Playground は model をルートのプロバイダーモデル名に置き換え、復号した音声を再生します。課金もリクエストログもありません。",
 		"audioFile": "音声ファイル",
 		"audioFileHint": "音声ファイルを 1 つ選択（mp3、wav、m4a、webm…）。multipart で送信（JSON エディタには入りません）。",
 		"audioFileDashScopeHint": "音声ファイルを 1 つ選択します。Admin へのアップロード後、サーバーが DashScope Data URL にエンコードします（JSON エディタには入りません）。",

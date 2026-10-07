@@ -19,8 +19,8 @@ import {
 	templateForRoute,
 	type PlaygroundLlmFamily,
 } from './playground-utils';
-import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE, MINIMAX_SPEECH_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
-import { IMAGE_GENERATIONS_BODY_TEMPLATE, MINIMAX_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
+import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE, MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE, MINIMAX_SPEECH_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
+import { IMAGE_GENERATIONS_BODY_TEMPLATE, MINIMAX_IMAGE_BODY_TEMPLATE, MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { RouteListRow } from './types';
 
 function route(overrides: Partial<RouteListRow> = {}): RouteListRow {
@@ -125,6 +125,45 @@ describe('playground-utils', () => {
 				} as never,
 			),
 			MINIMAX_IMAGE_BODY_TEMPLATE,
+		);
+	});
+
+	it('templateForRoute uses OpenAI bodies for MiniMax conversion routes', () => {
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'minimax',
+					upstream_operation: 'audio.speech',
+					adapter: 'minimax-tts',
+					provider_model_name: 'speech-2.8-turbo',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_character',
+						audio: { price_per_character: 0.0002 },
+					}),
+					modalities: JSON.stringify({ input: ['text'], output: ['audio'] }),
+				} as never,
+			),
+			MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
+		);
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'minimax',
+					upstream_operation: 'images.generations',
+					adapter: 'minimax-image',
+					provider_model_name: 'image-01',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.025 },
+					}),
+					modalities: JSON.stringify({ input: ['text'], output: ['image'] }),
+				} as never,
+			),
+			MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
 		);
 	});
 

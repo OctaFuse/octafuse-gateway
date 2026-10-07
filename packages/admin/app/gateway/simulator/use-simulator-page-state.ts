@@ -378,10 +378,14 @@ export function useSimulatorPageState() {
 		[isToolKind, routes, selectedModelId, routeGroup],
 	);
 	const selectedDashScopeTtsProviderModelName = useMemo(() => {
-		if (selectedAudioOperation !== 'speech') return undefined;
-		const route = matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope');
-		return route?.provider_model_name ?? undefined;
-	}, [matchingRoutes, selectedAudioOperation]);
+		if (selectedAudioOperation === 'speech' || (selectedModelIsImage && !selectedModelIsAudio)) {
+			return (
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name
+			);
+		}
+		return undefined;
+	}, [matchingRoutes, selectedAudioOperation, selectedModelIsAudio, selectedModelIsImage]);
 
 	const sendBlockReason = useMemo((): SendBlockReason => {
 		const parsed = tryParseProxyBaseUrl(proxyBaseUrl);
@@ -871,7 +875,17 @@ export function useSimulatorPageState() {
 			const imageProtocol =
 				protocol === 'dashscope' ? 'dashscope' : protocol === 'minimax' ? 'minimax' : 'openai';
 			if (protocol !== imageProtocol) setProtocolState(imageProtocol);
-			setBodyText(bodyTemplateForSelection(imageProtocol, true, imageOperation, null));
+			setBodyText(
+				bodyTemplateForSelection(
+					imageProtocol,
+					true,
+					imageOperation,
+					null,
+					undefined,
+					undefined,
+					selectedDashScopeTtsProviderModelName,
+				),
+			);
 			setBodyError(null);
 			setImagePreviews([]);
 			setAudioPreviewUrl(null);
@@ -967,14 +981,24 @@ export function useSimulatorPageState() {
 			if (next === imageOperation) return;
 			setImageOperationState(next);
 			if (selectedModelIsImage && protocol === 'openai') {
-				setBodyText(bodyTemplateForSelection('openai', true, next));
+				setBodyText(
+					bodyTemplateForSelection(
+						'openai',
+						true,
+						next,
+						null,
+						undefined,
+						undefined,
+						selectedDashScopeTtsProviderModelName,
+					),
+				);
 				setBodyError(null);
 			}
 			if (next === 'generations') {
 				setEditFiles([]);
 			}
 		},
-		[imageOperation, selectedModelIsImage, protocol],
+		[imageOperation, selectedModelIsImage, protocol, selectedDashScopeTtsProviderModelName],
 	);
 
 	const loadKeys = useCallback(async () => {
@@ -1051,15 +1075,16 @@ export function useSimulatorPageState() {
 							geminiAction,
 							llmOperation: next === 'openai' ? openaiLlmOperation : undefined,
 					  });
-			const nextRoute = filterMatchingActiveRoutes(
+			const matched = filterMatchingActiveRoutes(
 				routes,
 				selectedModelId,
 				routeGroup,
 				next,
 				nextRequestOperation ?? undefined,
-			).find((candidate) => candidate.upstream_protocol === 'dashscope');
+			);
 			const providerModelName =
-				selectedAudioOperation === 'speech' ? nextRoute?.provider_model_name : undefined;
+				matched.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
+				matched.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name;
 			setBodyText(
 				bodyTemplateForSelection(
 					next,

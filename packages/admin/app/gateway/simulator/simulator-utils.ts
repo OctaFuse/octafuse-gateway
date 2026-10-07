@@ -3,6 +3,7 @@ import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
 	MINIMAX_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
@@ -11,6 +12,7 @@ import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
 	MINIMAX_IMAGE_BODY_TEMPLATE,
+	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
@@ -118,6 +120,7 @@ export function bodyTemplateForSelection(
 	}
 	if (audioOperation && protocol === 'openai') {
 		if (audioOperation === 'speech' && providerModelName) {
+			if (/^speech-/i.test(providerModelName.trim())) return MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE;
 			// OpenAI surface 可能映射到 DashScope；模板音色必须匹配实际供应商模型。
 			return buildDashScopeSpeechBodyTemplate(providerModelName);
 		}
@@ -150,6 +153,9 @@ export function bodyTemplateForSelection(
 	if (isImageModel && protocol === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'dashscope') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'openai') {
+		if (providerModelName && /^image-01/i.test(providerModelName.trim())) {
+			return MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE;
+		}
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
 	}
 	if (protocol === 'openai' && llmOperation === 'responses') {

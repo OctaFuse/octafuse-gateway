@@ -1029,7 +1029,9 @@
 				"dashscope-tts-minimax": "MiniMax 语音合成",
 				"dashscope-image-qwen": "千问图像 3.0",
 				"dashscope-image-wan": "万相 2.7",
-				"minimax-asr-file": "MiniMax 文件转写"
+				"minimax-asr-file": "MiniMax 文件转写",
+				"minimax-tts": "MiniMax 官方语音合成",
+				"minimax-image": "MiniMax 官方生图"
 			},
 			"adapterDescriptions": {
 				"passthrough": "原样转发，不改写请求和响应。对外与上游的协议、端点保持一致。",
@@ -1042,7 +1044,9 @@
 				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax 多模态接口。支持 mp3、pcm、flac、wav，不支持 instructions。",
 				"dashscope-image-qwen": "OpenAI Images → 千问图像 multimodal-generation。size 需写像素尺寸（如 1024x1024）。",
 				"dashscope-image-wan": "OpenAI Images → 万相 2.7 multimodal-generation。",
-				"minimax-asr-file": "OpenAI 转写（multipart）→ MiniMax speech_to_text。供应商模型名填 asr-1.0。language 放到请求头；srt 和 vtt 由网关根据带时间戳的结果生成。"
+				"minimax-asr-file": "OpenAI 转写（multipart）→ MiniMax speech_to_text。供应商模型名填 asr-1.0。language 放到请求头；srt 和 vtt 由网关根据带时间戳的结果生成。",
+				"minimax-tts": "OpenAI /v1/audio/speech → MiniMax t2a_v2。供应商模型名填 speech-2.8-hd 或 speech-2.8-turbo。voice 必须是 MiniMax voice_id。支持 mp3、pcm、flac、wav，语速 0.5–2。stream_format=sse 会转成 OpenAI speech 事件。",
+				"minimax-image": "OpenAI /v1/images/generations → MiniMax image_generation。供应商模型名填 image-01 或 image-01-live。1024x1024 这类 size 会映射到最接近的 aspect_ratio。url 与 b64_json 都改写成 OpenAI data[]。"
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "时间戳粒度（timestamp_granularities）",
@@ -1052,7 +1056,10 @@
 				"size_abbreviation": "1K/2K/4K 尺寸简写",
 				"background": "透明背景（background）",
 				"prompt": "提示词（prompt）",
-				"temperature": "采样温度（temperature）"
+				"temperature": "采样温度（temperature）",
+				"response_format_opus_aac": "opus 与 aac",
+				"openai_speed_range": "0.5–2 以外的语速",
+				"quality": "质量档位（quality）"
 			},
 			"noCompatibleAdapter": "没有兼容的适配器",
 			"adapterFirstHint": "选择与当前供应商兼容的适配器。对外协议与上游协议字段会由注册表自动填入。",
@@ -1426,6 +1433,7 @@
 		"imageDashScopeHint": "DashScope 转换：请求体仍用 OpenAI Images 字段（prompt、n、size）。调试台会改写成 multimodal-generation，并始终发送 n（默认 1）。图生图用 JSON image，不支持 edits。不计费、不写请求日志。",
 		"imageDashScopePassthroughHint": "原生透传：JSON 按 multimodal-generation 原样转发。调试台会把 model 换成路由上的供应商模型名。不计费、不写请求日志。",
 		"imageMiniMaxPassthroughHint": "原生透传：JSON 按 image_generation 原样转发。调试台会把 model 换成路由上的供应商模型名，并预览 data.image_urls 或 data.image_base64。不计费、不写请求日志。",
+		"imageMiniMaxOpenAiHint": "OpenAI 生图 JSON 会转换成 MiniMax image_generation。size 会就近映射为 aspect_ratio。调试台预览返回的图片。不计费、不写请求日志。",
 		"imageOperation": "图像操作",
 		"imageGenerationsHint": "文生图模型：请求体使用 images/generations 字段（prompt、n、size、quality）。不计费、不写请求日志。",
 		"imageEditsHint": "图像编辑：JSON 字段（prompt、n、size、quality）加下方参考图。文件以 multipart 发往上游 edits 接口。不计费、不写请求日志。",
@@ -1447,6 +1455,7 @@
 		"audioSpeechHint": "语音合成：在 JSON 请求体中编辑 input、voice、response_format 和 speed；DashScope 非实时请求会转换为上游 input 对象。",
 		"audioSpeechPassthroughHint": "原生透传：JSON 按 SpeechSynthesizer 原样转发。调试台会把 model 换成路由上的供应商模型名。流式由 X-DashScope-SSE 决定。不计费、不写请求日志。",
 		"audioSpeechMiniMaxHint": "原生透传：JSON 按 t2a_v2 原样转发。调试台会把 model 换成路由上的供应商模型名。stream 为 false 时把 hex 音频解码后播放；stream 为 true 时展示 SSE。不计费、不写请求日志。",
+		"audioSpeechMiniMaxOpenAiHint": "OpenAI 语音 JSON 会转换成 MiniMax t2a_v2。voice 填写 MiniMax voice_id。调试台会把 model 换成路由上的供应商模型名，并播放解码后的音频。不计费、不写请求日志。",
 		"audioFile": "音频文件",
 		"audioFileHint": "选择一个音频文件（mp3、wav、m4a、webm…）。以 multipart 发送（不写入 JSON 编辑器）。",
 		"audioFileDashScopeHint": "选择一个音频文件；浏览器上传给 Admin 后，由服务端编码为 DashScope Data URL（不写入 JSON 编辑器）。",

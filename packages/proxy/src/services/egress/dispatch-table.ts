@@ -40,6 +40,7 @@ import {
 	type NormalizedAudioSpeechRequest,
 } from './audio-speech-driver';
 import { dispatchDashScopeImageGenerations } from './dashscope-images-driver';
+import { dispatchMiniMaxOpenAiImage, dispatchMiniMaxOpenAiSpeech } from './minimax-openai-driver';
 import { dispatchOpenAiImageGenerations } from './openai-images-driver';
 
 type Timing = {
@@ -60,11 +61,13 @@ const AUDIO_SPEECH_ADAPTERS = [
 	'dashscope-tts-speech',
 	'dashscope-tts-qwen',
 	'dashscope-tts-minimax',
+	'minimax-tts',
 ] as const satisfies readonly RouteAdapter[];
 
 const IMAGE_GENERATION_ADAPTERS = [
 	'dashscope-image-qwen',
 	'dashscope-image-wan',
+	'minimax-image',
 ] as const satisfies readonly RouteAdapter[];
 
 export const IMPLEMENTED_CONVERSION_ADAPTERS: readonly RouteAdapter[] = [
@@ -113,6 +116,7 @@ const SPEECH_DISPATCH = {
 	'dashscope-tts-speech': dispatchDashScopeSpeechSynthesizer,
 	'dashscope-tts-qwen': dispatchDashScopeQwenTts,
 	'dashscope-tts-minimax': dispatchDashScopeMiniMaxTts,
+	'minimax-tts': dispatchMiniMaxOpenAiSpeech,
 } as const;
 
 export function dispatchAudioSpeech(
@@ -145,6 +149,9 @@ export function dispatchImageGenerations(
 	}
 	if (route.adapter === 'dashscope-image-qwen' || route.adapter === 'dashscope-image-wan') {
 		return dispatchDashScopeImageGenerations(route, body, signal, timing, attempt);
+	}
+	if (route.adapter === 'minimax-image') {
+		return dispatchMiniMaxOpenAiImage(route, body, signal, timing, attempt);
 	}
 	throw new Error(`Unsupported image generation adapter: ${route.adapter}`);
 }

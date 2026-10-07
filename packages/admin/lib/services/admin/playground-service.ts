@@ -29,6 +29,11 @@ import {
 	miniMaxBaseRespHttpStatus,
 	readMiniMaxBaseResp,
 } from '@octafuse/core/minimax-native';
+import {
+	MiniMaxOpenAiClientError,
+	buildMiniMaxImageBodyFromOpenAi,
+	buildMiniMaxT2aBodyFromOpenAi,
+} from '@octafuse/core/minimax-openai';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { AUDIO_MAX_BYTES_PER_FILE } from '@/lib/audio-transcriptions';
@@ -1206,6 +1211,46 @@ export async function invokePlaygroundUpstream(
 		}
 		case 'minimax': {
 			const passthrough = route.adapter === 'passthrough';
+			if (route.adapter === 'minimax-tts' || route.adapter === 'minimax-image') {
+				let upstreamBody: Record<string, unknown>;
+				try {
+					upstreamBody =
+						route.adapter === 'minimax-tts'
+							? buildMiniMaxT2aBodyFromOpenAi({
+									model: route.providerModelName,
+									text: typeof merged.input === 'string' ? merged.input : '',
+									voiceId:
+										typeof merged.voice === 'string'
+											? merged.voice.trim()
+											: merged.voice != null && typeof merged.voice === 'object' && !Array.isArray(merged.voice)
+												? String((merged.voice as Record<string, unknown>).id ?? '').trim()
+												: '',
+									responseFormat: typeof merged.response_format === 'string' ? merged.response_format : 'mp3',
+									speed: merged.speed == null ? 1 : Number(merged.speed),
+									stream: merged.stream_format === 'sse' || merged.stream === true,
+									instructions: typeof merged.instructions === 'string' ? merged.instructions : undefined,
+								})
+							: buildMiniMaxImageBodyFromOpenAi(route.providerModelName, merged);
+				} catch (error) {
+					if (error instanceof MiniMaxOpenAiClientError) throw badRequest(error.message);
+					throw error;
+				}
+				const capability = route.adapter === 'minimax-tts' ? 'audio.speech' : 'images.generations';
+				try {
+					url = resolveUpstreamEndpoint('minimax', capability, route.providerEndpoints, {
+						providerId: route.providerId,
+					});
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve MiniMax upstream URL');
+				}
+				headers = {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${route.providerApiKey}`,
+				};
+				fetchBody = JSON.stringify(upstreamBody);
+				upstreamWireBodyJson = fetchBody;
+				break;
+			}
 			if (
 				passthrough &&
 				((route.isAudioModel && route.upstreamOperation === 'audio.speech') ||
@@ -1231,7 +1276,7 @@ export async function invokePlaygroundUpstream(
 			}
 			if (!route.isAudioModel || route.upstreamOperation !== 'audio.transcriptions') {
 				throw badRequest(
-					'MiniMax Playground routes support audio.transcriptions, passthrough audio.speech, or passthrough images.generations',
+					'MiniMax Playground routes support audio.transcriptions, audio.speech, or images.generations',
 				);
 			}
 			if (!passthrough && route.adapter !== 'minimax-asr-file') {

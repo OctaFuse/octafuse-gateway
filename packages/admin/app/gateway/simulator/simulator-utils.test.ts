@@ -3,10 +3,12 @@ import { describe, it } from "node:test";
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
 } from "../../../lib/audio-transcriptions";
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
 } from "../../../lib/image-generations";
 import {
 	OPENAI_RESPONSES_BODY_TEMPLATE,
@@ -523,6 +525,30 @@ describe("simulator-utils", () => {
 		assert.equal(
 			JSON.parse(AUDIO_SPEECH_BODY_TEMPLATE).response_format,
 			"wav"
+		);
+		assert.equal(
+			bodyTemplateForSelection(
+				"openai",
+				false,
+				"generations",
+				"speech",
+				undefined,
+				undefined,
+				"speech-2.8-turbo"
+			),
+			MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE
+		);
+		assert.equal(
+			bodyTemplateForSelection(
+				"openai",
+				true,
+				"generations",
+				null,
+				undefined,
+				undefined,
+				"image-01"
+			),
+			MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE
 		);
 		const sessionTemplate = JSON.parse(
 			bodyTemplateForSelection(

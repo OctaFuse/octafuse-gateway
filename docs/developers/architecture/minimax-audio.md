@@ -19,11 +19,14 @@
 |--------|------|
 | `minimax-asr-file` | OpenAI multipart 转写 → MiniMax `POST /v1/speech_to_text`。`srt` / `vtt` 由网关生成 |
 | `passthrough` · `minimax/audio.transcriptions` | 公开 `POST /v1/minimax/speech_to_text`，表单和响应原样转发，只把 `model` 换成供应商模型名 |
+| `minimax-tts` | OpenAI `POST /v1/audio/speech` → MiniMax `POST /v1/t2a_v2`。响应改成音频字节或 OpenAI speech SSE |
 | `passthrough` · `minimax/audio.speech` | 公开 `POST /v1/minimax/t2a_v2`，JSON 与 SSE 原样转发，只把 `model` 换成供应商模型名 |
 
 文件转写的供应商模型名填 `asr-1.0`。转换路由的对外协议保持 OpenAI `audio.transcriptions`，上游协议选 `minimax`。透传路由的对外协议和上游协议都是 `minimax` / `audio.transcriptions`。
 
-语音合成没有 OpenAI 转换适配器。透传路由的对外协议和上游协议都是 `minimax` / `audio.speech`，供应商模型名填 `speech-2.8-hd` 或 `speech-2.8-turbo`。
+语音合成的供应商模型名填 `speech-2.8-hd` 或 `speech-2.8-turbo`。转换路由用适配器 `minimax-tts`：对外协议是 OpenAI `audio.speech`（`POST /v1/audio/speech`），上游是 `minimax` / `audio.speech`。`voice` 填 MiniMax `voice_id`。支持 `mp3`、`pcm`、`flac`、`wav`，语速 `0.5`–`2`。非流式把 hex 解码成音频字节；`stream_format=sse` 转成 OpenAI `speech.audio.delta` / `speech.audio.done`，并设置 `stream_options.exclude_aggregated_audio`，避免尾帧重复整段音频。`instructions`、`opus`、`aac` 以及范围外的语速会直接 400。计费仍用 `extra_info.usage_characters`。
+
+透传路由的对外协议和上游协议都是 `minimax` / `audio.speech`。
 
 ## 请求与回包
 

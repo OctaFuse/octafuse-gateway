@@ -1029,7 +1029,9 @@
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
 				"dashscope-image-wan": "Wan 2.7 Image",
-				"minimax-asr-file": "MiniMax file transcription"
+				"minimax-asr-file": "MiniMax file transcription",
+				"minimax-tts": "MiniMax official speech",
+				"minimax-image": "MiniMax official images"
 			},
 			"adapterDescriptions": {
 				"passthrough": "Forwards the request and response unchanged. Client and upstream protocol and operation must match.",
@@ -1042,7 +1044,9 @@
 				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax multimodal API. Supports mp3, pcm, flac, wav; does not support instructions.",
 				"dashscope-image-qwen": "OpenAI Images → Qwen Image multimodal-generation. size must be in pixels (such as 1024x1024).",
 				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation.",
-				"minimax-asr-file": "OpenAI transcription (multipart) → MiniMax speech_to_text. Set the provider model name to asr-1.0. language is sent as a request header; the gateway renders srt and vtt from timestamped segments."
+				"minimax-asr-file": "OpenAI transcription (multipart) → MiniMax speech_to_text. Set the provider model name to asr-1.0. language is sent as a request header; the gateway renders srt and vtt from timestamped segments.",
+				"minimax-tts": "OpenAI /v1/audio/speech → MiniMax t2a_v2. Provider model names are speech-2.8-hd or speech-2.8-turbo. voice is a MiniMax voice_id. Supports mp3, pcm, flac, and wav. speed is 0.5–2. stream_format=sse becomes OpenAI speech events.",
+				"minimax-image": "OpenAI /v1/images/generations → MiniMax image_generation. Provider model names are image-01 or image-01-live. size such as 1024x1024 is mapped to the nearest aspect_ratio. response_format url or b64_json is returned as OpenAI data[]."
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "timestamp_granularities",
@@ -1052,7 +1056,10 @@
 				"size_abbreviation": "1K/2K/4K size shorthand",
 				"background": "background",
 				"prompt": "prompt",
-				"temperature": "temperature"
+				"temperature": "temperature",
+				"response_format_opus_aac": "opus and aac",
+				"openai_speed_range": "speed outside 0.5–2",
+				"quality": "quality"
 			},
 			"noCompatibleAdapter": "No compatible adapter",
 			"adapterFirstHint": "Choose a compatible adapter for this provider. Public and upstream protocol fields are filled from the registry.",
@@ -1426,6 +1433,7 @@
 		"imageDashScopeHint": "DashScope conversion: edit OpenAI Images JSON (prompt, n, size). Playground rewrites it to multimodal-generation and always sends n (default 1). Use JSON image for image-to-image; edits is not supported. No billing or request logs.",
 		"imageDashScopePassthroughHint": "Native passthrough: the JSON is forwarded to multimodal-generation as written. Playground replaces model with the route provider model name. No billing or request logs.",
 		"imageMiniMaxPassthroughHint": "Native passthrough: the JSON is forwarded to image_generation as written. Playground replaces model with the route provider model name and previews data.image_urls or data.image_base64. No billing or request logs.",
+		"imageMiniMaxOpenAiHint": "OpenAI image JSON is converted to MiniMax image_generation. size snaps to the nearest aspect_ratio. Playground previews the returned images. No billing or request logs.",
 		"imageOperation": "Image operation",
 		"imageGenerationsHint": "Image model: request body uses images/generations fields (prompt, n, size, quality). No billing or request logs.",
 		"imageEditsHint": "Image edits: JSON fields (prompt, n, size, quality) plus reference image files below. Files are sent as multipart to the upstream edits endpoint. No billing or request logs.",
@@ -1447,6 +1455,7 @@
 		"audioSpeechHint": "Speech synthesis: edit input, voice, response_format, and speed in JSON; non-realtime DashScope requests are converted to the upstream input object.",
 		"audioSpeechPassthroughHint": "Native passthrough: the JSON is forwarded to SpeechSynthesizer as written. Playground replaces model with the route provider model name. Streaming uses X-DashScope-SSE. No billing or request logs.",
 		"audioSpeechMiniMaxHint": "Native passthrough: JSON is forwarded to t2a_v2 as written. Playground replaces model with the route provider model name. stream:false is decoded from hex and played; stream:true shows the SSE events. No billing or request logs.",
+		"audioSpeechMiniMaxOpenAiHint": "OpenAI speech JSON is converted to MiniMax t2a_v2. voice must be a MiniMax voice_id. Playground replaces model with the route provider model name and plays the decoded audio. No billing or request logs.",
 		"audioFile": "Audio file",
 		"audioFileHint": "Select one audio file (mp3, wav, m4a, webm, …). Sent as multipart (not in the JSON editor).",
 		"audioFileDashScopeHint": "Select one audio file. After upload to Admin, the server encodes it as a DashScope Data URL (not in the JSON editor).",
