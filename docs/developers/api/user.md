@@ -1027,6 +1027,16 @@ Image 模型支持两种 `pricing_profile.image_billing_mode`（再乘路由 `ch
 
 Admin 中为图片模型配置 `output_modalities: ["image"]` 及对应 mode 价目即可。
 
+### MiniMax 生图透传
+
+```text
+POST /v1/minimax/image_generation
+Authorization: Bearer <USER_API_KEY>
+Content-Type: application/json
+```
+
+请求与上游都是 `minimax` + `images.generations`，adapter 必须是 `passthrough`。网关只把 `model` 换成路由上的供应商模型名，返回 MiniMax 原文（`data.image_urls` 或 `data.image_base64`）。文生图和 `subject_reference` 图生图共用这一路径。按成功张数计费。`base_resp.status_code` 非 0 时 body 不变，HTTP 状态按业务码改写。详见 [MiniMax 生图](../architecture/minimax-image.md)。
+
 ---
 
 ## 语音合成（Audio Speech / TTS）
@@ -1083,6 +1093,18 @@ Authorization: Bearer <USER_API_KEY>
 ```
 
 请求与上游都使用 `dashscope` 协议及同名 operation，事件和二进制音频帧保持原生语义。可用 operation、浏览器子协议鉴权、Node / Workers 运行时差异、Close 码约束与计费见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
+
+### MiniMax 同步语音合成透传
+
+```text
+POST /v1/minimax/t2a_v2
+Authorization: Bearer <USER_API_KEY>
+Content-Type: application/json
+```
+
+请求与上游都是 `minimax` + `audio.speech`，adapter 必须是 `passthrough`。非流式 JSON 与 `stream: true` 的 SSE 共用这一路径。网关只替换 `model`。非流式成功响应仍是上游 JSON，音频在 `data.audio`（hex）。计费使用 `extra_info.usage_characters`。`base_resp.status_code` 非 0 时 body 不变，HTTP 状态按业务码改写；SSE 业务错误记入 `stream_error` 且不计费。详见 [MiniMax 音频](../architecture/minimax-audio.md)。
+
+文件转写透传仍是 `POST /v1/minimax/speech_to_text`。
 
 ---
 

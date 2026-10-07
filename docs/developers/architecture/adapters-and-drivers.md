@@ -9,6 +9,7 @@
 - DashScope 音频：[dashscope-audio.md](./dashscope-audio.md)
 - DashScope 生图：[dashscope-image.md](./dashscope-image.md)
 - MiniMax 音频：[minimax-audio.md](./minimax-audio.md)
+- MiniMax 生图：[minimax-image.md](./minimax-image.md)
 
 ## 术语
 

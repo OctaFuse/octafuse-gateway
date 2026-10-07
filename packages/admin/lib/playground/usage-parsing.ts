@@ -5,7 +5,7 @@ import type { PlaygroundProtocol } from "@/lib/playground/merge-assistant-text";
 
 export function normalizeProtocol(p: string): PlaygroundProtocol {
 	const v = (p || "openai").trim().toLowerCase();
-	if (v === "anthropic" || v === "gemini" || v === "openai" || v === "dashscope") return v;
+	if (v === "anthropic" || v === "gemini" || v === "openai" || v === "dashscope" || v === "minimax") return v;
 	return "openai";
 }
 

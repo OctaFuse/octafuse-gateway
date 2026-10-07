@@ -147,4 +147,35 @@ describe("previewPlaygroundUpstreamUrl", () => {
 		});
 		assert.equal(url, "https://api.minimaxi.com/v1/speech_to_text");
 	});
+
+	it("derives MiniMax t2a_v2 and image_generation URLs from the API base", () => {
+		const provider = {
+			id: "p1",
+			endpoints: JSON.stringify({
+				minimax: { base: "https://api.minimaxi.com/v1" },
+			}),
+		};
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider,
+				upstreamProtocol: "minimax",
+				upstreamOperation: "audio.speech",
+				providerModelName: "speech-2.8-turbo",
+				isImageModel: false,
+				isAudioModel: true,
+			}),
+			"https://api.minimaxi.com/v1/t2a_v2",
+		);
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider,
+				upstreamProtocol: "minimax",
+				upstreamOperation: "images.generations",
+				providerModelName: "image-01",
+				isImageModel: true,
+				isAudioModel: false,
+			}),
+			"https://api.minimaxi.com/v1/image_generation",
+		);
+	});
 });

@@ -610,6 +610,42 @@ describe('route form capability filters', () => {
 		]);
 	});
 
+	it('offers MiniMax speech passthrough for native speech models', () => {
+		const minimax = listStaticProviderImportPresets().find((row) => row.name === 'MiniMax');
+		assert.ok(minimax);
+		const speech = model({
+			id: 'minimax-speech-2.8-turbo',
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_character',
+				audio: { price_per_character: 0.0002 },
+			}),
+			output_modalities: JSON.stringify(['audio']),
+		});
+		const listed = listAdapterOptionsForModel(speech, provider(minimax.endpoints), 'speech-2.8-turbo');
+		assert.equal(listed.modelUnrecognized, false);
+		assert.deepEqual(visibleAdapterKeys(listed), ['passthrough:minimax:audio.speech']);
+		assert.deepEqual(
+			upstreamOperationsForProviderModel(provider(minimax.endpoints), speech, 'minimax', 'speech-2.8-turbo'),
+			['audio.speech'],
+		);
+	});
+
+	it('offers MiniMax image passthrough for image-01 models', () => {
+		const minimax = listStaticProviderImportPresets().find((row) => row.name === 'MiniMax');
+		assert.ok(minimax);
+		const image = model({
+			id: 'minimax-image-01',
+			pricing_profile: JSON.stringify({
+				image_billing_mode: 'per_image',
+				image: { default: 0.025 },
+			}),
+			output_modalities: JSON.stringify(['image']),
+		});
+		const listed = listAdapterOptionsForModel(image, provider(minimax.endpoints), 'image-01');
+		assert.equal(listed.modelUnrecognized, false);
+		assert.deepEqual(visibleAdapterKeys(listed), ['passthrough:minimax:images.generations']);
+	});
+
 	it('shows every available adapter when the provider model name matches no rule', () => {
 		const dashscope = provider({
 			dashscope: { base: 'https://dashscope.aliyuncs.com/api/v1' },

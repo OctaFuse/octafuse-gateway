@@ -121,6 +121,8 @@ describe('adapter registry', () => {
 		assert.deepEqual(upstreamOperationsFromRegistry('minimax', 'audio.transcription'), [
 			'audio.transcriptions',
 		]);
+		assert.deepEqual(requestOperationsFromRegistry('minimax', 'audio.speech'), ['audio.speech']);
+		assert.deepEqual(requestOperationsFromRegistry('minimax', 'image'), ['images.generations']);
 	});
 
 	it('resolves DashScope presets from registry intents', () => {
@@ -142,6 +144,11 @@ describe('adapter registry', () => {
 		assert.equal(
 			requestSurfacePath('minimax', 'audio.transcriptions'),
 			'/v1/minimax/speech_to_text',
+		);
+		assert.equal(requestSurfacePath('minimax', 'audio.speech'), '/v1/minimax/t2a_v2');
+		assert.equal(
+			requestSurfacePath('minimax', 'images.generations'),
+			'/v1/minimax/image_generation',
 		);
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference', 'my fun/asr'),

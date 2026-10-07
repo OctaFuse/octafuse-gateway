@@ -22,6 +22,12 @@ export const DASHSCOPE_TASKS_PATH = '/v1/dashscope/tasks';
 /** MiniMax 原生文件转写透传：`POST /v1/minimax/speech_to_text`。 */
 export const MINIMAX_SPEECH_TO_TEXT_PATH = '/v1/minimax/speech_to_text';
 
+/** MiniMax 同步语音合成透传：`POST /v1/minimax/t2a_v2`。非流式与 SSE 共用这条路径。 */
+export const MINIMAX_T2A_PATH = '/v1/minimax/t2a_v2';
+
+/** MiniMax 文生图 / 图生图透传：`POST /v1/minimax/image_generation`。 */
+export const MINIMAX_IMAGE_GENERATION_PATH = '/v1/minimax/image_generation';
+
 export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
 
 export type AdapterModality = 'text' | 'image' | 'audio' | 'video' | 'embedding';
@@ -101,6 +107,8 @@ const QWEN_TTS_HTTP_MODELS = {
 	exclude: ['*realtime*'],
 } as const;
 const MINIMAX_TTS_MODELS = ['minimax/speech-*'] as const;
+const MINIMAX_NATIVE_TTS_MODELS = ['speech-*'] as const;
+const MINIMAX_IMAGE_MODELS = ['image-01*'] as const;
 const QWEN_TTS_REALTIME_SESSION_MODELS = ['qwen3-tts-*realtime*', 'qwen-tts-realtime*'] as const;
 const COSYVOICE_REALTIME_MODELS = ['cosyvoice-*'] as const;
 const QWEN_IMAGE_MODELS = ['qwen-image*'] as const;
@@ -425,6 +433,28 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requestPayload: 'multipart',
 		requiredUpstreamCapabilities: ['audio.transcriptions'],
 		publicPath: MINIMAX_SPEECH_TO_TEXT_PATH,
+	}),
+	passthroughDescriptor({
+		protocol: 'minimax',
+		operation: 'audio.speech',
+		modelKind: 'audio.speech',
+		modality: 'audio',
+		exchange: 'sse',
+		billing: 'per_character',
+		responsePayload: 'sse',
+		requiredUpstreamCapabilities: ['audio.speech'],
+		publicPath: MINIMAX_T2A_PATH,
+		upstreamModels: { include: MINIMAX_NATIVE_TTS_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'minimax',
+		operation: 'images.generations',
+		modelKind: 'image',
+		modality: 'image',
+		billing: 'per_image',
+		requiredUpstreamCapabilities: ['images.generations'],
+		publicPath: MINIMAX_IMAGE_GENERATION_PATH,
+		upstreamModels: { include: MINIMAX_IMAGE_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',

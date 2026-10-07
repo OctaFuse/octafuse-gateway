@@ -22,6 +22,13 @@ import {
 	MINIMAX_ASR_DROPPED_FORM_KEYS,
 	resolveMiniMaxAsrUpstreamFormat,
 } from '@octafuse/core/minimax-asr';
+import {
+	decodeMiniMaxHexAudio,
+	extractMiniMaxSpeechAudio,
+	miniMaxAudioContentType,
+	miniMaxBaseRespHttpStatus,
+	readMiniMaxBaseResp,
+} from '@octafuse/core/minimax-native';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { AUDIO_MAX_BYTES_PER_FILE } from '@/lib/audio-transcriptions';
@@ -945,9 +952,14 @@ export async function invokePlaygroundUpstream(
 
 	const start = Date.now();
 
-	if (route.isImageModel && route.upstreamProtocol !== 'openai' && route.upstreamProtocol !== 'dashscope') {
+	if (
+		route.isImageModel &&
+		route.upstreamProtocol !== 'openai' &&
+		route.upstreamProtocol !== 'dashscope' &&
+		route.upstreamProtocol !== 'minimax'
+	) {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai or dashscope (Playground Images calls /images/generations, /images/edits, or DashScope multimodal-generation).',
+			'Image-generation models require upstream_protocol=openai, dashscope, or minimax (Playground Images calls /images/generations, /images/edits, DashScope multimodal-generation, or MiniMax image_generation).',
 		);
 	}
 	if (
@@ -1193,10 +1205,35 @@ export async function invokePlaygroundUpstream(
 			break;
 		}
 		case 'minimax': {
-			if (!route.isAudioModel || route.upstreamOperation !== 'audio.transcriptions') {
-				throw badRequest('MiniMax Playground routes currently support audio.transcriptions only');
-			}
 			const passthrough = route.adapter === 'passthrough';
+			if (
+				passthrough &&
+				((route.isAudioModel && route.upstreamOperation === 'audio.speech') ||
+					(route.isImageModel && route.upstreamOperation === 'images.generations'))
+			) {
+				const capability =
+					route.upstreamOperation === 'audio.speech' ? 'audio.speech' : 'images.generations';
+				try {
+					url = resolveUpstreamEndpoint('minimax', capability, route.providerEndpoints, {
+						providerId: route.providerId,
+					});
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve MiniMax upstream URL');
+				}
+				headers = {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${route.providerApiKey}`,
+				};
+				const requestBody = { ...merged, model: route.providerModelName };
+				fetchBody = JSON.stringify(requestBody);
+				upstreamWireBodyJson = fetchBody;
+				break;
+			}
+			if (!route.isAudioModel || route.upstreamOperation !== 'audio.transcriptions') {
+				throw badRequest(
+					'MiniMax Playground routes support audio.transcriptions, passthrough audio.speech, or passthrough images.generations',
+				);
+			}
 			if (!passthrough && route.adapter !== 'minimax-asr-file') {
 				throw badRequest(`Playground does not support MiniMax audio adapter ${JSON.stringify(route.adapter)}`);
 			}
@@ -1314,6 +1351,50 @@ export async function invokePlaygroundUpstream(
 				502,
 				`DashScope TTS audio download failed: ${error instanceof Error ? error.message : String(error)}`,
 			);
+		}
+	}
+	if (
+		route.upstreamProtocol === 'minimax' &&
+		route.upstreamOperation === 'audio.speech' &&
+		response.ok &&
+		!(response.headers.get('content-type') ?? '').toLowerCase().includes('text/event-stream')
+	) {
+		const text = await response.text();
+		let parsed: unknown = null;
+		try {
+			parsed = JSON.parse(text) as unknown;
+		} catch {
+			parsed = null;
+		}
+		const base = readMiniMaxBaseResp(parsed);
+		if (base && base.statusCode !== 0) {
+			response = new Response(text, {
+				status: miniMaxBaseRespHttpStatus(base.statusCode),
+				headers: { 'Content-Type': 'application/json' },
+			});
+		} else {
+			const extracted = extractMiniMaxSpeechAudio(text);
+			if (extracted) {
+				try {
+					const bytes = decodeMiniMaxHexAudio(extracted.hex);
+					const copy = new Uint8Array(bytes.byteLength);
+					copy.set(bytes);
+					response = new Response(copy, {
+						status: 200,
+						headers: { 'Content-Type': miniMaxAudioContentType(extracted.format) },
+					});
+				} catch (error) {
+					throw new AdminServiceError(
+						502,
+						error instanceof Error ? error.message : 'MiniMax returned invalid hex audio data',
+					);
+				}
+			} else {
+				response = new Response(text, {
+					status: response.status,
+					headers: { 'Content-Type': response.headers.get('content-type') ?? 'application/json' },
+				});
+			}
 		}
 	}
 	if (

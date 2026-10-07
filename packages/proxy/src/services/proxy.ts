@@ -23,6 +23,7 @@ import {
 	dispatchAudioTranscriptions,
 	dispatchImageGenerations,
 	dispatchDashScopeJsonPassthroughRoute,
+	dispatchMiniMaxJsonPassthroughRoute,
 	dispatchMiniMaxSpeechPassthrough,
 	dispatchMultimodalPassthrough,
 } from "./egress/dispatch-table";
@@ -31,6 +32,10 @@ import type {
 	DashScopePassthroughSurface,
 } from "./egress/dashscope-json-passthrough";
 import type { MiniMaxAsrPassthroughRequest } from "./egress/minimax-audio-driver";
+import type {
+	MiniMaxJsonPassthroughOperation,
+	MiniMaxJsonPassthroughOptions,
+} from "./egress/minimax-json-passthrough";
 import type {
 	AudioSpeechDispatchOptions,
 	NormalizedAudioSpeechRequest,
@@ -392,6 +397,39 @@ export async function proxyDashScopeJsonPassthrough(
 				timing,
 				attempt,
 				options?.dashScopeJson
+			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 MiniMax 原生 JSON / SSE 透传（语音合成、生图）。 */
+export async function proxyMiniMaxJsonPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	operation: MiniMaxJsonPassthroughOperation,
+	body: Record<string, unknown>,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { miniMaxJson?: MiniMaxJsonPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"minimax",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchMiniMaxJsonPassthroughRoute(
+				route,
+				operation,
+				body,
+				signal,
+				timing,
+				attempt,
+				options?.miniMaxJson
 			),
 		requestSignal,
 		options

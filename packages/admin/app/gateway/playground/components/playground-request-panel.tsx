@@ -282,6 +282,8 @@ export function PlaygroundRequestPanel({
 						{t(
 							selectedUsesDashScopeRealtime
 								? 'audioRealtimeDashScopeHint'
+								: selected?.upstream_protocol === 'minimax' && !selectedIsAudioTranscription
+								? 'audioSpeechMiniMaxHint'
 								: selected?.adapter === 'passthrough' && selectedAudioUsesDashScope && !selectedIsAudioTranscription
 								? 'audioSpeechPassthroughHint'
 								: selectedAudioUsesDashScope
@@ -360,7 +362,9 @@ export function PlaygroundRequestPanel({
 
 			{selectedIsImage && !selectedIsAudio && !imageSendBlocked ? (
 				<>
-					{selectedImageUsesDashScope ? (
+					{selected?.upstream_protocol === 'minimax' ? (
+						<p className="text-xs text-gray-500">{t('imageMiniMaxPassthroughHint')}</p>
+					) : selectedImageUsesDashScope ? (
 						<p className="text-xs text-gray-500">
 							{t(selected?.adapter === 'passthrough' ? 'imageDashScopePassthroughHint' : 'imageDashScopeHint')}
 						</p>
@@ -397,7 +401,9 @@ export function PlaygroundRequestPanel({
 							</p>
 						</>
 					)}
-					{imageOperation === 'edits' && !selectedImageUsesDashScope ? (
+					{imageOperation === 'edits' &&
+					!selectedImageUsesDashScope &&
+					selected?.upstream_protocol !== 'minimax' ? (
 						<div>
 							<label className={labelClass}>{t('referenceImages')}</label>
 							<input

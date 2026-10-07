@@ -138,7 +138,9 @@ export default function SimulatorPage() {
 								onSend={() => void s.send()}
 								onStop={() => s.stop()}
 								showImageOperation={
-									s.selectedModelIsImage && !s.selectedModelIsAudio && s.protocol === 'openai'
+									s.selectedModelIsImage &&
+									!s.selectedModelIsAudio &&
+									(s.protocol === 'openai' || s.protocol === 'minimax')
 								}
 								imageOperation={s.imageOperation}
 								onImageOperationChange={s.setImageOperation}
@@ -153,7 +155,7 @@ export default function SimulatorPage() {
 								onAudioInputModeChange={s.setAudioInputMode}
 								showAudioSpeech={
 									s.selectedAudioOperation === 'speech' &&
-									(s.protocol === 'openai' || s.protocol === 'dashscope')
+									(s.protocol === 'openai' || s.protocol === 'dashscope' || s.protocol === 'minimax')
 								}
 								showAudioRealtime={
 									s.protocol === 'dashscope' &&

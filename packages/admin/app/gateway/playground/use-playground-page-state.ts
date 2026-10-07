@@ -33,6 +33,7 @@ import {
 	openDashScopeRealtimeClient,
 	stopDashScopeRealtimeClient,
 } from '@/lib/dashscope-realtime-client';
+import { miniMaxSpeechObjectUrl } from '@/lib/minimax-speech-preview';
 import { readApiJson } from '@/lib/api-json';
 import type { AdminModelRow } from '@/lib/services/admin/types';
 import type { ApiResponse, GatewayProvider } from '@/lib/types';
@@ -158,7 +159,8 @@ export function usePlaygroundPageState() {
 	const imageSendBlocked =
 		selectedIsImage &&
 		selectedImageUpstreamProtocol !== 'openai' &&
-		selectedImageUpstreamProtocol !== 'dashscope';
+		selectedImageUpstreamProtocol !== 'dashscope' &&
+		selectedImageUpstreamProtocol !== 'minimax';
 	const selectedImageUsesDashScope = selectedIsImage && selectedImageUpstreamProtocol === 'dashscope';
 	const selectedAudioUpstreamProtocol = (selected?.upstream_protocol ?? 'openai').trim().toLowerCase();
 	const audioSendBlocked =
@@ -561,11 +563,14 @@ export function usePlaygroundPageState() {
 			(selectedAudioUpstreamProtocol === 'openai' ||
 				selectedAudioUpstreamProtocol === 'dashscope' ||
 				selectedAudioUpstreamProtocol === 'minimax');
-		const useImages = selectedIsImage && !selectedIsAudio && (proto === 'openai' || proto === 'dashscope');
+		const useImages =
+			selectedIsImage &&
+			!selectedIsAudio &&
+			(proto === 'openai' || proto === 'dashscope' || proto === 'minimax');
 		const effectiveImageOp: ImageOperation | undefined = useImages
-			? proto === 'dashscope'
-				? 'generations'
-				: imageOperation
+			? proto === 'openai'
+				? imageOperation
+				: 'generations'
 			: undefined;
 
 		if (isRealtime) {
@@ -808,7 +813,13 @@ export function usePlaygroundPageState() {
 					flushSync(() => setResponseText(text));
 					scrollStreamToBottom();
 				});
-				if (!ac.signal.aborted && abortRef.current === ac) setUsageHint(parseLastStreamUsage(acc, proto));
+				if (!ac.signal.aborted && abortRef.current === ac) {
+					setUsageHint(parseLastStreamUsage(acc, proto));
+					if (proto === 'minimax' && selected?.upstream_operation === 'audio.speech') {
+						const audioUrl = miniMaxSpeechObjectUrl(acc);
+						if (audioUrl) setAudioPreviewUrl(audioUrl);
+					}
+				}
 				return;
 			}
 

@@ -378,7 +378,19 @@ describe('listConfiguredCapabilities', () => {
 			resolveUpstreamEndpoint('minimax', 'audio.transcriptions', endpoints),
 			'https://api.minimaxi.com/v1/speech_to_text'
 		);
-		assert.deepEqual(listConfiguredCapabilities(endpoints, 'minimax'), ['audio.transcriptions']);
+		assert.equal(
+			resolveUpstreamEndpoint('minimax', 'audio.speech', endpoints),
+			'https://api.minimaxi.com/v1/t2a_v2'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('minimax', 'images.generations', endpoints),
+			'https://api.minimaxi.com/v1/image_generation'
+		);
+		assert.deepEqual(listConfiguredCapabilities(endpoints, 'minimax'), [
+			'audio.transcriptions',
+			'audio.speech',
+			'images.generations',
+		]);
 	});
 
 	it('prefers an explicit MiniMax transcription URL over the derived path', () => {

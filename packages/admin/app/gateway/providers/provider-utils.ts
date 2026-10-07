@@ -166,6 +166,10 @@ function configFromProtocolForm(
 		if (form.audio_transcriptions.trim()) {
 			endpoints["audio.transcriptions"] = form.audio_transcriptions.trim();
 		}
+		if (form.audio_speech.trim()) endpoints["audio.speech"] = form.audio_speech.trim();
+		if (form.images_generations.trim()) {
+			endpoints["images.generations"] = form.images_generations.trim();
+		}
 	} else {
 		if (form.images_generations_multimodal.trim()) {
 			endpoints["images.generations.multimodal"] =
@@ -359,7 +363,13 @@ export function protocolFormHasOverrides(
 			form.streamGenerateContent.trim()
 		);
 	}
-	if (protocol === "minimax") return !!form.audio_transcriptions.trim();
+	if (protocol === "minimax") {
+		return !!(
+			form.audio_transcriptions.trim() ||
+			form.audio_speech.trim() ||
+			form.images_generations.trim()
+		);
+	}
 	return !!(
 		form.images_generations_multimodal.trim() ||
 		form.audio_transcriptions.trim() ||

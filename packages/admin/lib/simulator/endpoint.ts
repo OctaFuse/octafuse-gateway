@@ -330,8 +330,25 @@ export function buildSimulatorRequest(
 			};
 		}
 		case "minimax": {
-			if (kind !== "audio" || (input.audioOperation ?? "transcriptions") === "speech") {
-				throw new Error("MiniMax simulator currently supports file transcriptions only");
+			if (kind === "image" || (kind === "audio" && (input.audioOperation ?? "transcriptions") === "speech")) {
+				const path = resolveProxyPathForModelInvoke({
+					kind: kind === "image" ? "image" : "audio",
+					protocol: "minimax",
+					audioOperation: kind === "audio" ? "speech" : undefined,
+					imageOperation: kind === "image" ? "generations" : undefined,
+				});
+				const merged = { ...input.body, model: input.modelForRouting };
+				return {
+					url: `${base}${path}`,
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: auth,
+					},
+					bodyText: JSON.stringify(merged),
+				};
+			}
+			if (kind !== "audio") {
+				throw new Error("MiniMax simulator supports file transcriptions, speech, and image generation");
 			}
 			const file = input.audioFile ?? null;
 			const fd = new FormData();

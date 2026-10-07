@@ -127,13 +127,18 @@ export function previewPlaygroundUpstreamUrl(input: {
 			}
 			case "minimax": {
 				const operation = input.upstreamOperation?.trim() || "audio.transcriptions";
-				if (operation !== "audio.transcriptions" && operation !== "*") return null;
-				return resolveUpstreamEndpoint(
-					protocol,
-					"audio.transcriptions",
-					providerEndpoints,
-					{ providerId: provider.id }
-				);
+				const capability =
+					operation === "audio.speech"
+						? "audio.speech"
+						: operation === "images.generations"
+							? "images.generations"
+							: operation === "audio.transcriptions" || operation === "*"
+								? "audio.transcriptions"
+								: null;
+				if (!capability) return null;
+				return resolveUpstreamEndpoint(protocol, capability, providerEndpoints, {
+					providerId: provider.id,
+				});
 			}
 			case "dashscope": {
 				const rawOperation = input.upstreamOperation?.trim() ?? "";

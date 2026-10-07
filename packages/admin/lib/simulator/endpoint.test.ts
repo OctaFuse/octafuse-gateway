@@ -208,6 +208,41 @@ describe("buildSimulatorRequest openai", () => {
 		assert.equal(result.formData?.get("response_format"), "verbose_json");
 	});
 
+	it("builds MiniMax speech JSON for /v1/minimax/t2a_v2", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			kind: "audio",
+			protocol: "minimax",
+			modelForRouting: "minimax-speech-2.8-turbo",
+			body: { text: "你好", stream: false },
+			apiKey: "sk-test",
+			audioOperation: "speech",
+		});
+		assert.equal(result.url, "https://gateway.example.com/v1/minimax/t2a_v2");
+		assert.equal(result.headers["Content-Type"], "application/json");
+		assert.equal(result.formData, undefined);
+		assert.deepEqual(JSON.parse(result.bodyText), {
+			model: "minimax-speech-2.8-turbo",
+			text: "你好",
+			stream: false,
+		});
+	});
+
+	it("builds MiniMax image JSON for /v1/minimax/image_generation", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			kind: "image",
+			protocol: "minimax",
+			modelForRouting: "minimax-image-01",
+			body: { prompt: "a lantern", n: 1 },
+			apiKey: "sk-test",
+			imageOperation: "generations",
+		});
+		assert.equal(result.url, "https://gateway.example.com/v1/minimax/image_generation");
+		assert.equal(JSON.parse(result.bodyText).model, "minimax-image-01");
+		assert.equal(JSON.parse(result.bodyText).prompt, "a lantern");
+	});
+
 	it("builds DashScope multimodal HTTP transcriptions", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",

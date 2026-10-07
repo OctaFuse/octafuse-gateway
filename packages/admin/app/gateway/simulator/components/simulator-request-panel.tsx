@@ -355,6 +355,8 @@ export function SimulatorRequestPanel({
 						? t('audioRealtimeSpeechHint')
 						: protocol === 'dashscope'
 						? t('audioSpeechDashScopeHint')
+						: protocol === 'minimax'
+						? t('audioSpeechMiniMaxHint')
 						: t('audioSpeechHint')}
 				</p>
 			) : null}
@@ -380,7 +382,9 @@ export function SimulatorRequestPanel({
 						</fieldset>
 					) : null}
 					{imageOperation === 'generations' ? (
-						<p className="text-xs text-gray-500">{t('imageGenerationsHint')}</p>
+						<p className="text-xs text-gray-500">
+							{t(protocol === 'minimax' ? 'imageMiniMaxHint' : 'imageGenerationsHint')}
+						</p>
 					) : (
 						<p className="text-xs text-gray-500">{t('imageEditsHint')}</p>
 					)}

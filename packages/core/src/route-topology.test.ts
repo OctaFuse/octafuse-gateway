@@ -27,7 +27,10 @@ describe('route topology operations', () => {
 			true
 		);
 		assert.equal(isRequestOperationForProtocol('minimax', 'audio.transcriptions'), true);
+		assert.equal(isRequestOperationForProtocol('minimax', 'audio.speech'), true);
+		assert.equal(isRequestOperationForProtocol('minimax', 'images.generations'), true);
 		assert.equal(isUpstreamOperationForProtocol('minimax', 'audio.transcriptions'), true);
+		assert.equal(isUpstreamOperationForProtocol('minimax', 'audio.speech'), true);
 		assert.equal(isUpstreamOperationForProtocol('minimax', 'chat'), false);
 	});
 

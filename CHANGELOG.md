@@ -2,13 +2,15 @@
 
 ## Unreleased
 
+- MiniMax 增加同步语音合成和生图透传。语音合成公开路径是 `POST /v1/minimax/t2a_v2`（非流式 JSON 与 `stream: true` 的 SSE 共用 `audio.speech`），生图是 `POST /v1/minimax/image_generation`。网关只替换 `model`。上游 HTTP 200 但 `base_resp.status_code` 非 0 时，body 原样返回，并按业务码改写 HTTP 状态，以便故障转移、熔断和不计费生效。语音按 `extra_info.usage_characters` 计费，生图按成功张数计费。目录预设为 `minimax-speech-2.8-hd`、`minimax-speech-2.8-turbo`、`minimax-image-01`、`minimax-image-01-live`。Playground 与 Simulator 可直接发这些请求；非流式语音会把 hex 音频解码后播放。视频和音乐仍没有端点。原有文件转写不变。
+
 - 路由编辑器的适配器下拉按供应商协议和供应商模型名过滤。能力只跟本协议的端点配置比较；模型名命中规则时只保留该家族的适配器，识别不了则仍显示全部可用适配器。已保存的路由不受影响。
 
 - DashScope 补齐尚未公开的原生透传。语音合成走 `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`（`X-DashScope-SSE: enable` 为流式），多模态语音和生图走已有的多模态生成路径并按模型类型分流，异步文件转写提交 `POST /v1/dashscope/services/audio/asr/transcription`、查询 `GET /v1/dashscope/tasks/{taskId}?model=`。网关只替换 `model`，响应保持上游原文；语音按字符、生图按张数、转写任务成功后按时长计费。Qwen-TTS-Realtime 的 session 也可以选为透传。原有 OpenAI 转换路由不变。Playground 与 Simulator 可以直接发这些原生请求；透传路由的说明不再提示会改写成 OpenAI 字段。
 
 - MiniMax 文件转写增加透传适配器。客户端调用 `POST /v1/minimax/speech_to_text`，网关把 `model` 换成路由上的供应商模型名后原样转发，响应不改写，仍按上游 `duration` 按秒计费。`language` 可以放在请求头，也可以放在表单里由网关转到请求头。Simulator 可切换到 `minimax` 协议并走这条公开路径。原有 OpenAI `POST /v1/audio/transcriptions` 与适配器 `minimax-asr-file` 保持不变。
 
-- 新增上游协议 `minimax`，首个能力是文件转写。客户端仍调用 OpenAI `POST /v1/audio/transcriptions`，适配器 `minimax-asr-file` 转到 MiniMax `POST /v1/speech_to_text`（模型 `asr-1.0`），按上游 `duration` 按秒计费。`language` 放在请求头；`srt` / `vtt` 由网关根据带时间戳的结果生成。调试台可直接向 MiniMax 转写端点发请求。供应商导入预设补上 `minimax.base`，已导入的供应商需要手工填写。语音合成、生图、视频和音乐还没有端点。
+- 新增上游协议 `minimax`，首个能力是文件转写。客户端仍调用 OpenAI `POST /v1/audio/transcriptions`，适配器 `minimax-asr-file` 转到 MiniMax `POST /v1/speech_to_text`（模型 `asr-1.0`），按上游 `duration` 按秒计费。`language` 放在请求头；`srt` / `vtt` 由网关根据带时间戳的结果生成。调试台可直接向 MiniMax 转写端点发请求。供应商导入预设补上 `minimax.base`，已导入的供应商需要手工填写。视频和音乐还没有端点。
 
 - Admin 供应商的 DashScope 端点覆盖逐项说明适用模型和对应的路由适配器，并说明「只填 Base 即派生」与「套餐只填部分端点」两种用法。路由编辑器按所选适配器显示用途、适用模型和格式限制，已知不支持的功能改为可读名称。适配器显示名改为「CosyVoice / Qwen-Audio-3.0 语音合成」和「Qwen-TTS 语音合成（多模态）」，已保存的路由不受影响。
 

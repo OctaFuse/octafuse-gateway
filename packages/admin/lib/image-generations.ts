@@ -40,6 +40,15 @@ export const IMAGE_EDITS_BODY_TEMPLATE = `{
   "quality": "low"
 }`;
 
+/** MiniMax 文生图 / 图生图共用 POST /v1/image_generation。 */
+export const MINIMAX_IMAGE_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "prompt": "A red paper lantern over a quiet canal at dusk, cinematic lighting",
+  "aspect_ratio": "1:1",
+  "response_format": "url",
+  "n": 1
+}`;
+
 export function isImageRouteModel(m: ModelKindFields): boolean {
 	return isImageGenerationModel(m);
 }
@@ -135,6 +144,28 @@ function collectDashScopeImagePreviews(parsed: Record<string, unknown>): ImagePr
 	return images;
 }
 
+/** MiniMax image_generation：`data.image_urls` 或 `data.image_base64`。 */
+export function collectMiniMaxImagePreviews(parsed: Record<string, unknown>): ImagePreviewItem[] {
+	const data = asPreviewObject(parsed.data);
+	if (!data) return [];
+	const images: ImagePreviewItem[] = [];
+	const urls = Array.isArray(data.image_urls) ? data.image_urls : [];
+	for (const url of urls) {
+		if (typeof url !== 'string' || !url.trim()) continue;
+		images.push({ kind: 'url', src: url.trim() });
+	}
+	const encoded = Array.isArray(data.image_base64) ? data.image_base64 : [];
+	for (const raw of encoded) {
+		if (typeof raw !== 'string' || !raw.trim()) continue;
+		const value = raw.trim();
+		images.push({
+			kind: 'b64',
+			src: value.startsWith('data:') ? value : `data:image/jpeg;base64,${value}`,
+		});
+	}
+	return images;
+}
+
 export type ParsedImagesGenerationsResponse = {
 	images: ImagePreviewItem[];
 	count: number;
@@ -160,9 +191,13 @@ export function parseImagesGenerationsResponse(
 	}
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return empty;
 	const data = (parsed as { data?: unknown }).data;
+	const record = parsed as Record<string, unknown>;
 	const images: ImagePreviewItem[] = Array.isArray(data)
 		? collectOpenAiImagePreviews(data)
-		: collectDashScopeImagePreviews(parsed as Record<string, unknown>);
+		: (() => {
+				const miniMax = collectMiniMaxImagePreviews(record);
+				return miniMax.length > 0 ? miniMax : collectDashScopeImagePreviews(record);
+			})();
 
 	const count = images.length;
 	if (count === 0) return empty;

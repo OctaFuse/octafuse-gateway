@@ -66,7 +66,7 @@ function normalizeCustomParamsForStorage(raw: unknown): string | null {
 	return envelope ? JSON.stringify(envelope) : null;
 }
 
-/** Image models keep an OpenAI public entry; upstream may be OpenAI passthrough or DashScope conversion. */
+/** Image models may use OpenAI passthrough, DashScope conversion, or MiniMax image_generation passthrough. */
 async function assertImageModelUpstreamProtocol(
 	repos: GatewayRepositories,
 	modelId: string,
@@ -80,10 +80,11 @@ async function assertImageModelUpstreamProtocol(
 			pricing_profile: model.pricing_profile as string | null | undefined,
 		}) &&
 		proto !== 'openai' &&
-		proto !== 'dashscope'
+		proto !== 'dashscope' &&
+		proto !== 'minimax'
 	) {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai or dashscope (OpenAI Images passthrough or DashScope conversion).'
+			'Image-generation models require upstream_protocol=openai, dashscope, or minimax.'
 		);
 	}
 }

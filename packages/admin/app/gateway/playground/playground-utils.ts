@@ -1,6 +1,7 @@
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	MINIMAX_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 	isAudioRouteModel,
@@ -10,6 +11,7 @@ import { extraHeadersFromCustomParams, mergeRouteRequestBody, mergeUpstreamHeade
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	MINIMAX_IMAGE_BODY_TEMPLATE,
 	isImageRouteModel,
 	type ImageOperation,
 } from '@/lib/image-generations';
@@ -277,7 +279,7 @@ export function templateForRoute(
 	const isImage = model ? isImageRouteModel(model) : false;
 	const isAudio = model ? isAudioRouteModel(model) : false;
 	const isAudioTranscription = isAudioTranscriptionModel(model ?? {});
-	const isAudioHttp = proto === 'openai' || proto === 'dashscope';
+	const isAudioHttp = proto === 'openai' || proto === 'dashscope' || proto === 'minimax';
 	const realtime = isAudio && proto === 'dashscope' && isDashScopeRealtimeOperation(route.upstream_operation ?? '');
 	if (realtime) {
 		return route.upstream_operation?.startsWith('audio.speech.')
@@ -310,9 +312,11 @@ export function templateForRoute(
 		if (proto === 'dashscope' && route.upstream_operation === 'audio.speech') {
 			return buildDashScopeSpeechBodyTemplate(route.provider_model_name);
 		}
+		if (proto === 'minimax') return MINIMAX_SPEECH_BODY_TEMPLATE;
 		return AUDIO_SPEECH_BODY_TEMPLATE;
 	}
-	if (isImage && (proto === 'openai' || proto === 'dashscope')) {
+	if (isImage && (proto === 'openai' || proto === 'dashscope' || proto === 'minimax')) {
+		if (proto === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
 		if (proto === 'dashscope' && route.adapter === 'passthrough') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
 		if (proto === 'dashscope' || imageOperation !== 'edits') {
 			return IMAGE_GENERATIONS_BODY_TEMPLATE;

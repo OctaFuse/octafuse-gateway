@@ -75,9 +75,11 @@ export const DASHSCOPE_ENDPOINT_CAPABILITIES = [
 	'images.generations.multimodal',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
-/** MiniMax 原生能力。目前只有文件转写；TTS、生图等在对应 driver 落地后再加。 */
+/** MiniMax 原生能力：文件转写、同步语音合成、文生图。 */
 export const MINIMAX_ENDPOINT_CAPABILITIES = [
 	'audio.transcriptions',
+	'audio.speech',
+	'images.generations',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
 const CAPABILITIES_BY_PROTOCOL: Record<UpstreamProtocol, readonly ProviderEndpointCapability[]> = {
@@ -493,7 +495,9 @@ export function resolveUpstreamEndpoint(
 			case 'responses':
 				return `${root}/responses`;
 			case 'images.generations':
-				return buildOpenAiCompatibleImagesUrl(root, 'generations');
+				return protocol === 'minimax'
+					? `${root}/image_generation`
+					: buildOpenAiCompatibleImagesUrl(root, 'generations');
 			case 'images.edits':
 				return buildOpenAiCompatibleImagesUrl(root, 'edits');
 			case 'audio.transcriptions':
@@ -512,9 +516,13 @@ export function resolveUpstreamEndpoint(
 				}
 				return `${root}/tasks/${encodeURIComponent(options.taskId)}`;
 			case 'audio.speech':
-				return protocol === 'dashscope'
-					? `${root}/services/audio/tts/SpeechSynthesizer`
-					: `${root}/audio/speech`;
+				if (protocol === 'dashscope') {
+					return `${root}/services/audio/tts/SpeechSynthesizer`;
+				}
+				if (protocol === 'minimax') {
+					return `${root}/t2a_v2`;
+				}
+				return `${root}/audio/speech`;
 			case 'audio.speech.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
 			case 'images.generations.multimodal':

@@ -23,6 +23,11 @@ import {
 	type MiniMaxAsrPassthroughRequest,
 } from './minimax-audio-driver';
 import {
+	dispatchMiniMaxJsonPassthrough,
+	type MiniMaxJsonPassthroughOperation,
+	type MiniMaxJsonPassthroughOptions,
+} from './minimax-json-passthrough';
+import {
 	dispatchOpenAiAudioTranscriptions,
 	type NormalizedAudioTranscriptionRequest,
 } from './openai-audio-driver';
@@ -175,6 +180,18 @@ export function dispatchMultimodalPassthrough(
 		throw new Error(`Unsupported DashScope multimodal adapter: ${route.adapter}`);
 	}
 	return dispatchDashScopeMultimodalPassthrough(route, body, signal, timing, attempt, options);
+}
+
+export function dispatchMiniMaxJsonPassthroughRoute(
+	route: RouteResult,
+	operation: MiniMaxJsonPassthroughOperation,
+	body: Record<string, unknown>,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: MiniMaxJsonPassthroughOptions,
+): Promise<ProxyDispatchResult> {
+	return dispatchMiniMaxJsonPassthrough(route, operation, body, signal, timing, attempt, options);
 }
 
 export function dispatchMiniMaxSpeechPassthrough(

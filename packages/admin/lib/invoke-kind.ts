@@ -6,7 +6,9 @@ import type { ImageOperation } from '@/lib/image-generations';
 import type { ProviderEndpointCapability } from '@octafuse/core/provider-endpoints';
 import {
 	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	MINIMAX_IMAGE_GENERATION_PATH,
 	MINIMAX_SPEECH_TO_TEXT_PATH,
+	MINIMAX_T2A_PATH,
 } from '@octafuse/core/route-topology';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
@@ -164,12 +166,16 @@ export function resolveProxyPathForModelInvoke(input: {
 		if (protocol === 'dashscope' && input.audioOperation !== 'speech') {
 			return DASHSCOPE_MULTIMODAL_GENERATION_PATH;
 		}
-		if (protocol === 'minimax' && input.audioOperation !== 'speech') {
+		if (protocol === 'minimax' && input.audioOperation === 'speech') {
+			return MINIMAX_T2A_PATH;
+		}
+		if (protocol === 'minimax') {
 			return MINIMAX_SPEECH_TO_TEXT_PATH;
 		}
 		return input.audioOperation === 'speech' ? '/v1/audio/speech' : '/v1/audio/transcriptions';
 	}
 	if (input.kind === 'image') {
+		if (protocol === 'minimax') return MINIMAX_IMAGE_GENERATION_PATH;
 		return input.imageOperation === 'edits' ? '/v1/images/edits' : '/v1/images/generations';
 	}
 	// llm

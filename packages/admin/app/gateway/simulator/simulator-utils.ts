@@ -3,12 +3,14 @@ import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	MINIMAX_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 } from '@/lib/audio-transcriptions';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	MINIMAX_IMAGE_BODY_TEMPLATE,
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
@@ -124,6 +126,9 @@ export function bodyTemplateForSelection(
 		}
 		return audioOperation === 'speech' ? AUDIO_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
+	if (audioOperation && protocol === 'minimax') {
+		return audioOperation === 'speech' ? MINIMAX_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+	}
 	if (audioOperation && protocol === 'dashscope') {
 		if (realtimeOperation === 'audio.speech' || realtimeOperation === 'audio.speech.stream') {
 			return buildDashScopeNativeSpeechBodyTemplate(providerModelName);
@@ -142,6 +147,7 @@ export function bodyTemplateForSelection(
 				: undefined,
 		);
 	}
+	if (isImageModel && protocol === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'dashscope') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'openai') {
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;

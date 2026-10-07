@@ -30,6 +30,20 @@ describe('image-generations helpers', () => {
 		assert.match(parsed.usageHint ?? '', /quality=low/);
 	});
 
+	it('parseImagesGenerationsResponse extracts MiniMax urls and base64', () => {
+		const json = JSON.stringify({
+			data: {
+				image_urls: [' https://cdn.example/a.jpg '],
+				image_base64: ['abc', ' '],
+			},
+		});
+		const parsed = parseImagesGenerationsResponse(json);
+		assert.equal(parsed.count, 2);
+		assert.equal(parsed.images[0]?.kind, 'url');
+		assert.equal(parsed.images[0]?.src, 'https://cdn.example/a.jpg');
+		assert.equal(parsed.images[1]?.src, 'data:image/jpeg;base64,abc');
+	});
+
 	it('parseImagesGenerationsResponse extracts DashScope multimodal image URLs', () => {
 		const json = JSON.stringify({
 			output: {

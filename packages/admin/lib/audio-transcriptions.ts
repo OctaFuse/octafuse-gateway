@@ -68,6 +68,25 @@ export const AUDIO_SPEECH_BODY_TEMPLATE = `{
   "speed": 1
 }`;
 
+/** MiniMax 同步语音合成 POST /v1/t2a_v2。stream 为 false 时返回 hex，调试台再解码播放。 */
+export const MINIMAX_SPEECH_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "text": "你好，欢迎使用 OctaFuse Gateway。",
+  "stream": false,
+  "voice_setting": {
+    "voice_id": "male-qn-qingse",
+    "speed": 1,
+    "vol": 1,
+    "pitch": 0
+  },
+  "audio_setting": {
+    "sample_rate": 32000,
+    "bitrate": 128000,
+    "format": "mp3",
+    "channel": 1
+  }
+}`;
+
 export function isAudioRouteModel(m: ModelKindFields): boolean {
 	return isAudioModel(m);
 }

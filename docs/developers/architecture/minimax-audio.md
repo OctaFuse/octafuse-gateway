@@ -2,15 +2,16 @@
 
 `minimax` 是上游协议族，和 OpenAI、Anthropic、Gemini、DashScope 并列，不是供应商名称。国内与国际 MiniMax 原生接口共用一套路径：Bearer 鉴权，Base 分别为 `https://api.minimaxi.com/v1` 与 `https://api.minimax.io/v1`。
 
-客户端可以继续调用 OpenAI `POST /v1/audio/transcriptions`，由适配器 `minimax-asr-file` 转到 MiniMax。也可以直接调用原生透传 `POST /v1/minimax/speech_to_text`。
+客户端可以继续调用 OpenAI `POST /v1/audio/transcriptions`，由适配器 `minimax-asr-file` 转到 MiniMax。也可以直接调用原生透传 `POST /v1/minimax/speech_to_text`。同步语音合成走 `POST /v1/minimax/t2a_v2`。生图见 [MiniMax 生图](./minimax-image.md)。
 
 ## 当前能力
 
-只配置 Base 时，网关派生下表中的地址。语音合成、生图、视频和音乐等原生接口还没有能力项，供应商表单里也不会出现对应字段。
+只配置 Base 时，网关派生下表中的地址。视频和音乐还没有能力项。
 
 | 能力 | 派生路径 | 说明 |
 |------|----------|------|
 | `audio.transcriptions` | `{base}/speech_to_text` | 文件转写，模型 `asr-1.0` |
+| `audio.speech` | `{base}/t2a_v2` | 同步语音合成。非流式 JSON 与 `stream: true` 的 SSE 共用这一项 |
 
 ## 适配器
 
@@ -18,8 +19,11 @@
 |--------|------|
 | `minimax-asr-file` | OpenAI multipart 转写 → MiniMax `POST /v1/speech_to_text`。`srt` / `vtt` 由网关生成 |
 | `passthrough` · `minimax/audio.transcriptions` | 公开 `POST /v1/minimax/speech_to_text`，表单和响应原样转发，只把 `model` 换成供应商模型名 |
+| `passthrough` · `minimax/audio.speech` | 公开 `POST /v1/minimax/t2a_v2`，JSON 与 SSE 原样转发，只把 `model` 换成供应商模型名 |
 
-路由的供应商模型名填 `asr-1.0`。转换路由的对外协议保持 OpenAI `audio.transcriptions`，上游协议选 `minimax`。透传路由的对外协议和上游协议都是 `minimax` / `audio.transcriptions`。
+文件转写的供应商模型名填 `asr-1.0`。转换路由的对外协议保持 OpenAI `audio.transcriptions`，上游协议选 `minimax`。透传路由的对外协议和上游协议都是 `minimax` / `audio.transcriptions`。
+
+语音合成没有 OpenAI 转换适配器。透传路由的对外协议和上游协议都是 `minimax` / `audio.speech`，供应商模型名填 `speech-2.8-hd` 或 `speech-2.8-turbo`。
 
 ## 请求与回包
 
@@ -42,3 +46,27 @@
 导入预设「MiniMax」会写入 `minimax.base = https://api.minimaxi.com/v1`，原有 OpenAI Chat 与 Anthropic Messages 不变。已经导入的供应商不会自动补上这个 Base，需要在供应商里手工填写。
 
 调试台按所选适配器组装 multipart，并把 `language` 放进请求头。转换路由在模拟器里走 `POST /v1/audio/transcriptions`。透传路由走 `POST /v1/minimax/speech_to_text`：表单里的 `language` 由网关转到请求头，响应保持上游原文。
+
+## 同步语音合成透传
+
+公开路径 `POST /v1/minimax/t2a_v2`，上游 `{base}/t2a_v2`。网关只替换 `model`，加上 Bearer，并应用路由额外请求头。非流式和 `stream: true` 共用 operation `audio.speech`，用请求体里的 `stream` 区分，不另拆 `.stream`。不做异步 `t2a_async_v2`。超时 120 秒。
+
+请求体沿用 MiniMax 官方字段：`text`、`voice_setting.voice_id`、`audio_setting`、`stream`、`output_format`（非流式默认 `hex`）。目录模型预设是 `minimax-speech-2.8-hd`（人民币 ¥0.00035/字符，美元 $0.0001/字符）和 `minimax-speech-2.8-turbo`（人民币 ¥0.0002/字符，美元 $0.00006/字符）。一个汉字在上游按 2 个字符计，网关直接使用 `extra_info.usage_characters`，不再自行换算。
+
+非流式成功时响应仍是上游 JSON。SSE 原样转发，并扫描最后一帧 `data.status = 2` 里的 `usage_characters`。若某一帧 `base_resp.status_code` 非 0，usage 记 `stream_error`，不计费；流已经开始，HTTP 状态保持 200。
+
+上游 HTTP 已是 2xx，但 JSON 里 `base_resp.status_code` 非 0 时，body 原样返回，HTTP 状态按业务码改写，故障转移、熔断、请求日志和不计费沿用现有非 2xx 逻辑：
+
+| `status_code` | HTTP |
+|---------------|------|
+| 0 | 200 |
+| 1002、1039 | 429 |
+| 1004、2049 | 401 |
+| 1008 | 402 |
+| 1026、1042、2013 | 400 |
+| 1001 | 504 |
+| 其它非 0 | 502 |
+
+上游本身已是非 2xx 时，不改写状态码。
+
+调试台对非流式成功响应会在服务端把 `data.audio` 的 hex 解码成音频字节再播放，Content-Type 取 `extra_info.audio_format`。`stream: true` 时展示 SSE。模拟器打公开路径，在浏览器里解码 hex 或最后一帧完整音频。

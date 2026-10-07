@@ -11,7 +11,9 @@ export {
 	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 	DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
 	DASHSCOPE_TASKS_PATH,
+	MINIMAX_IMAGE_GENERATION_PATH,
 	MINIMAX_SPEECH_TO_TEXT_PATH,
+	MINIMAX_T2A_PATH,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	ROUTE_ADAPTERS,
@@ -56,8 +58,12 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 		"audio.speech.realtime.session",
 		"images.generations.multimodal",
 	],
-	/** 公开入口 `POST /v1/minimax/speech_to_text`，adapter 为 passthrough。 */
-	minimax: ['audio.transcriptions'],
+	/**
+	 * 公开入口：`POST /v1/minimax/speech_to_text`、`POST /v1/minimax/t2a_v2`、
+	 * `POST /v1/minimax/image_generation`。adapter 都是 passthrough。
+	 * `audio.speech` 同时覆盖非流式 JSON 和 `stream: true` 的 SSE。
+	 */
+	minimax: ['audio.transcriptions', 'audio.speech', 'images.generations'],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =

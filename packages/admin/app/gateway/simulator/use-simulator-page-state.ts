@@ -6,6 +6,7 @@ import { compareProvidersByKindThenName, liveProviderPickerLabel } from '@/lib/p
 import type { GatewayProvider } from '@/lib/types';
 import { useFeedback } from '@/components/feedback';
 import { flushSync } from 'react-dom';
+import { miniMaxSpeechObjectUrl } from '@/lib/minimax-speech-preview';
 import { readApiJson } from '@/lib/api-json';
 import { isAudioRouteModel, validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
 import { isAudioSpeechModel, isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
@@ -392,7 +393,13 @@ export function useSimulatorPageState() {
 			if (selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope' && protocol !== 'minimax') {
 				return 'audioProtocol';
 			}
-			if (selectedModelIsImage && !selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope') {
+			if (
+				selectedModelIsImage &&
+				!selectedModelIsAudio &&
+				protocol !== 'openai' &&
+				protocol !== 'dashscope' &&
+				protocol !== 'minimax'
+			) {
 				return 'imageProtocol';
 			}
 			if (matchingRoutes.length === 0) return 'route';
@@ -522,7 +529,11 @@ export function useSimulatorPageState() {
 					bodyText: JSON.stringify(bodyObj, null, 2),
 				};
 			}
-			const useImages = !isToolKind && selectedModelIsImage && !selectedModelIsAudio && protocol === 'openai';
+			const useImages =
+				!isToolKind &&
+				selectedModelIsImage &&
+				!selectedModelIsAudio &&
+				(protocol === 'openai' || protocol === 'minimax');
 			const built = buildSimulatorRequest({
 				baseUrl: parsed.base,
 				kind: filterKind,
@@ -857,7 +868,8 @@ export function useSimulatorPageState() {
 			return;
 		}
 		if (selectedModelIsImage) {
-			const imageProtocol = protocol === 'dashscope' ? 'dashscope' : 'openai';
+			const imageProtocol =
+				protocol === 'dashscope' ? 'dashscope' : protocol === 'minimax' ? 'minimax' : 'openai';
 			if (protocol !== imageProtocol) setProtocolState(imageProtocol);
 			setBodyText(bodyTemplateForSelection(imageProtocol, true, imageOperation, null));
 			setBodyError(null);
@@ -1051,9 +1063,11 @@ export function useSimulatorPageState() {
 			setBodyText(
 				bodyTemplateForSelection(
 					next,
-					selectedModelIsImage && selectedAudioOperation == null && (next === 'openai' || next === 'dashscope'),
+					selectedModelIsImage &&
+						selectedAudioOperation == null &&
+						(next === 'openai' || next === 'dashscope' || next === 'minimax'),
 					imageOperation,
-					next === 'openai' || next === 'dashscope' ? selectedAudioOperation : null,
+					next === 'openai' || next === 'dashscope' || next === 'minimax' ? selectedAudioOperation : null,
 					undefined,
 					next === 'dashscope' ? selectedDashScopeRealtimeOperation : null,
 					providerModelName,
@@ -1083,7 +1097,13 @@ export function useSimulatorPageState() {
 				setInfoHint(t('protocolLockedAudio'));
 				return;
 			}
-			if (selectedModelIsImage && !selectedModelIsAudio && next !== 'openai' && next !== 'dashscope') {
+			if (
+				selectedModelIsImage &&
+				!selectedModelIsAudio &&
+				next !== 'openai' &&
+				next !== 'dashscope' &&
+				next !== 'minimax'
+			) {
 				setInfoHint(t('readyNeedOpenaiForImage'));
 				return;
 			}
@@ -1267,7 +1287,11 @@ export function useSimulatorPageState() {
 			!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
 				? selectedAudioOperation
 				: null;
-		const useImages = !isToolKind && selectedModelIsImage && !selectedModelIsAudio && protocol === 'openai';
+		const useImages =
+			!isToolKind &&
+			selectedModelIsImage &&
+			!selectedModelIsAudio &&
+			(protocol === 'openai' || protocol === 'minimax');
 		if (audioOperation === 'transcriptions') {
 			const fileUrl = typeof bodyObj.file_url === 'string' ? bodyObj.file_url.trim() : '';
 			if (!usesDashScopeMicrophone && !selectedUsesDashScopeHttpAsr && !fileUrl) {
@@ -1488,6 +1512,10 @@ export function useSimulatorPageState() {
 					setImagePreviews(parsedImg.images);
 					setUsageHint(parsedImg.usageHint);
 				} else {
+					if (protocol === 'minimax' && audioOperation === 'speech') {
+						const audioUrl = miniMaxSpeechObjectUrl(JSON.stringify(j));
+						if (audioUrl) setAudioPreviewUrl(audioUrl);
+					}
 					setUsageHint(tryParseUsageSummary(JSON.stringify(j), protoNorm));
 				}
 				setSending(false);
@@ -1501,7 +1529,13 @@ export function useSimulatorPageState() {
 					flushSync(() => setResponseText(text));
 					scrollStreamToBottom();
 				});
-				if (!ac.signal.aborted && abortRef.current === ac) setUsageHint(parseLastStreamUsage(acc, protoNorm));
+				if (!ac.signal.aborted && abortRef.current === ac) {
+					setUsageHint(parseLastStreamUsage(acc, protoNorm));
+					if (protocol === 'minimax' && audioOperation === 'speech') {
+						const audioUrl = miniMaxSpeechObjectUrl(acc);
+						if (audioUrl) setAudioPreviewUrl(audioUrl);
+					}
+				}
 				return;
 			}
 
