@@ -3,9 +3,12 @@
  * DashScope 统一使用 SSE 上游，以便边转发音频边读取最终真实 usage；不会用输入长度伪造最终用量。
  */
 import { applyRouteExtraHeaders, resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
+import {
+	applyUpstreamExtraFields,
+	protectedUpstreamPathsForRoute,
+} from '@octafuse/core/upstream-extra-fields';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE, type UsageFromStream } from '../proxy';
-import { buildRouteRequestBody } from '../route-default-params';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 import { extractUpstreamRequestId } from './upstream-request-id';
 
@@ -20,12 +23,15 @@ export type NormalizedAudioSpeechRequest = {
 	speed: number;
 	streamFormat: AudioSpeechStreamFormat;
 	instructions?: string;
+	/** OpenAI 请求体里入口未消费的顶层字段，按上游结构合并。 */
+	extraFields?: Record<string, unknown>;
 };
 
 type SpeechDispatchResult = {
 	response: Response;
 	usagePromise: Promise<UsageFromStream>;
 	upstreamRequestId: string | null;
+	meta?: { restoredUpstreamPaths?: string[] };
 };
 
 export type AudioSpeechDispatchOptions = {
@@ -352,44 +358,57 @@ function validateDashScopeRequest(
 }
 
 /** 显式 adapter 决定请求形状，避免按模型名称猜测 MiniMax 与 Qwen 协议。 */
+export function composeDashScopeTtsBody(
+	route: RouteResult,
+	request: NormalizedAudioSpeechRequest,
+	kind: DashScopeTtsKind,
+): { body: Record<string, unknown>; restoredPaths: string[] } {
+	const voice = voiceId(request.voice);
+	const built =
+		kind === 'speech'
+			? {
+					model: route.providerModelName,
+					input: {
+						text: request.input,
+						voice,
+						format: request.responseFormat,
+						rate: request.speed,
+						...(request.instructions ? { instruction: request.instructions } : {}),
+					},
+				}
+			: kind === 'qwen'
+				? {
+						model: route.providerModelName,
+						input: {
+							text: request.input,
+							voice,
+							...(request.instructions ? { instructions: request.instructions } : {}),
+						},
+					}
+				: {
+						model: route.providerModelName,
+						input: {
+							text: request.input,
+							voice_setting: { voice_id: voice, speed: request.speed },
+							audio_setting: { format: request.responseFormat },
+							// MiniMax 尾帧默认重复完整 hex；关闭聚合避免客户端收到重复音频。
+							stream_options: { exclude_aggregated_audio: true },
+						},
+					};
+	return applyUpstreamExtraFields({
+		built,
+		customParams: route.customParams,
+		extras: request.extraFields,
+		protectedPaths: protectedUpstreamPathsForRoute(route),
+	});
+}
+
 export function buildDashScopeTtsBody(
 	route: RouteResult,
 	request: NormalizedAudioSpeechRequest,
 	kind: DashScopeTtsKind
 ): Record<string, unknown> {
-	const voice = voiceId(request.voice);
-	if (kind === 'speech') {
-		return buildRouteRequestBody(route, {
-			model: route.providerModelName,
-			input: {
-				text: request.input,
-				voice,
-				format: request.responseFormat,
-				rate: request.speed,
-				...(request.instructions ? { instruction: request.instructions } : {}),
-			},
-		});
-	}
-	if (kind === 'qwen') {
-		return buildRouteRequestBody(route, {
-			model: route.providerModelName,
-			input: {
-				text: request.input,
-				voice,
-				...(request.instructions ? { instructions: request.instructions } : {}),
-			},
-		});
-	}
-	return buildRouteRequestBody(route, {
-		model: route.providerModelName,
-		input: {
-			text: request.input,
-			voice_setting: { voice_id: voice, speed: request.speed },
-			audio_setting: { format: request.responseFormat },
-			// MiniMax 尾帧默认重复完整 hex；关闭聚合避免客户端收到重复音频。
-			stream_options: { exclude_aggregated_audio: true },
-		},
-	});
+	return composeDashScopeTtsBody(route, request, kind).body;
 }
 
 async function dispatchDashScopeTts(
@@ -402,9 +421,36 @@ async function dispatchDashScopeTts(
 	options?: AudioSpeechDispatchOptions
 ): Promise<SpeechDispatchResult> {
 	const validationError = validateDashScopeRequest(kind, request);
+	let composed: { body: Record<string, unknown>; restoredPaths: string[] } | null = null;
+	if (!validationError) {
+		try {
+			composed = composeDashScopeTtsBody(route, request, kind);
+		} catch (error) {
+			return {
+				response: new Response(
+					JSON.stringify({
+						error: { message: error instanceof Error ? error.message : 'Invalid extra fields' },
+					}),
+					{ status: 400, headers: { 'Content-Type': 'application/json' } },
+				),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			};
+		}
+	}
 	if (validationError) {
 		return {
 			response: new Response(JSON.stringify({ error: { message: validationError } }), {
+				status: 400,
+				headers: { 'Content-Type': 'application/json' },
+			}),
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
+		};
+	}
+	if (!composed) {
+		return {
+			response: new Response(JSON.stringify({ error: { message: 'Invalid extra fields' } }), {
 				status: 400,
 				headers: { 'Content-Type': 'application/json' },
 			}),
@@ -427,7 +473,7 @@ async function dispatchDashScopeTts(
 			},
 			route.customParams
 		),
-		body: JSON.stringify(buildDashScopeTtsBody(route, request, kind)),
+		body: JSON.stringify(composed.body),
 		signal: requestSignal,
 	});
 	timing?.markAttemptHeaders(attempt, response.status);
@@ -463,6 +509,7 @@ async function dispatchDashScopeTts(
 	return {
 		...streamed,
 		upstreamRequestId: first.requestId ?? headerRequestId,
+		meta: { restoredUpstreamPaths: composed.restoredPaths },
 	};
 }
 
@@ -546,6 +593,20 @@ export async function dispatchOpenAiAudioSpeech(
 		providerId: route.providerId,
 	});
 	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
+	const applied = applyUpstreamExtraFields({
+		built: {
+			model: route.providerModelName,
+			input: request.input,
+			voice: request.voice,
+			response_format: request.responseFormat,
+			speed: request.speed,
+			stream_format: request.streamFormat,
+			...(request.instructions ? { instructions: request.instructions } : {}),
+		},
+		customParams: route.customParams,
+		extras: request.extraFields,
+		protectedPaths: protectedUpstreamPathsForRoute(route),
+	});
 	const response = await (options?.fetchImpl ?? fetch)(url, {
 		method: 'POST',
 		headers: applyRouteExtraHeaders(
@@ -555,23 +616,18 @@ export async function dispatchOpenAiAudioSpeech(
 			},
 			route.customParams
 		),
-		body: JSON.stringify(
-			buildRouteRequestBody(route, {
-				model: route.providerModelName,
-				input: request.input,
-				voice: request.voice,
-				response_format: request.responseFormat,
-				speed: request.speed,
-				stream_format: request.streamFormat,
-				...(request.instructions ? { instructions: request.instructions } : {}),
-			})
-		),
+		body: JSON.stringify(applied.body),
 		signal: requestSignal,
 	});
 	timing?.markAttemptHeaders(attempt, response.status);
 	const upstreamRequestId = extractUpstreamRequestId(response.headers);
 	if (!response.ok || !response.body) {
-		return { response, usagePromise: Promise.resolve(EMPTY_USAGE), upstreamRequestId };
+		return {
+			response,
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId,
+			meta: { restoredUpstreamPaths: applied.restoredPaths },
+		};
 	}
 	const wrapped = wrapOpenAiSpeechBody(response.body, request.streamFormat, timing);
 	return {
@@ -582,6 +638,7 @@ export async function dispatchOpenAiAudioSpeech(
 		}),
 		usagePromise: wrapped.usagePromise,
 		upstreamRequestId,
+		meta: { restoredUpstreamPaths: applied.restoredPaths },
 	};
 }
 

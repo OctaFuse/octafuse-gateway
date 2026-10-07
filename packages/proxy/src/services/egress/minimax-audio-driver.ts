@@ -9,6 +9,7 @@ import {
 	resolveProviderUpstreamSecret,
 	resolveUpstreamEndpoint,
 } from '@octafuse/core';
+import { formExtraFieldText } from '@octafuse/core/upstream-extra-fields';
 import {
 	buildMiniMaxAsrHeaders,
 	MINIMAX_ASR_DROPPED_FORM_KEYS,
@@ -101,9 +102,8 @@ export async function dispatchMiniMaxAudioTranscriptions(
 	form.append('response_format', mapped.upstreamFormat);
 	for (const [key, value] of Object.entries(mergedExtras)) {
 		if (value == null || FORM_SKIP_KEYS.has(key)) continue;
-		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-			form.append(key, String(value));
-		}
+		const text = formExtraFieldText(value);
+		if (text != null) form.append(key, text);
 	}
 	const blob = new Blob([new Uint8Array(file.bytes)], {
 		type: file.mimeType || 'application/octet-stream',

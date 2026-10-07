@@ -76,6 +76,15 @@ export interface AdapterDescriptor {
 	presetIntent?: AdapterPresetIntent;
 	lossyFeatures?: readonly string[];
 	/**
+	 * 合并客户端额外字段后必须恢复的上游路径。`model` 由网关统一恢复，不必写入。
+	 * 这些路径影响计费或响应解析，不能交给客户端。
+	 */
+	protectedUpstreamPaths?: readonly string[];
+	/** 路由编辑器展示的 `extra_body` 示例，按上游原生结构填写。 */
+	extraBodyExample?: { readonly [key: string]: unknown };
+	/** 路由编辑器额外说明。`dashscope_tts_input`：OpenAI `input` 是文本，写不进上游 `input.*`。 */
+	extraBodyNote?: 'dashscope_tts_input';
+	/**
 	 * 适用的供应商模型名。大小写不敏感，`*` 通配。
 	 * 不填表示通用，Admin 下拉不按模型名隐藏。
 	 */
@@ -151,6 +160,7 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/transcriptions',
 		roles: [],
 		lossyFeatures: ['timestamp_granularities', 'diarization'],
+		protectedUpstreamPaths: ['parameters.asr_options.language'],
 	},
 	{
 		id: 'dashscope-asr-qwen-audio-file',
@@ -169,6 +179,7 @@ const CONVERSION_ADAPTERS = [
 		roles: [],
 		presetIntent: 'dashscope-asr-flash-convert',
 		lossyFeatures: ['timestamp_granularities', 'diarization'],
+		protectedUpstreamPaths: ['parameters.format', 'parameters.language_hints'],
 	},
 	{
 		id: 'dashscope-asr-fun-file',
@@ -186,6 +197,7 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/transcriptions',
 		roles: [],
 		lossyFeatures: ['timestamp_granularities'],
+		protectedUpstreamPaths: ['parameters.format'],
 	},
 	{
 		id: 'dashscope-asr-file-async',
@@ -204,6 +216,7 @@ const CONVERSION_ADAPTERS = [
 		roles: ['upstream'],
 		presetIntent: 'dashscope-asr-filetrans',
 		lossyFeatures: ['inline_file_upload'],
+		protectedUpstreamPaths: ['input.file_urls'],
 	},
 	{
 		id: 'dashscope-tts-speech',
@@ -221,6 +234,8 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/speech',
 		roles: ['upstream'],
 		presetIntent: 'dashscope-tts-nonrealtime',
+		protectedUpstreamPaths: ['input.format'],
+		extraBodyNote: 'dashscope_tts_input',
 	},
 	{
 		id: 'dashscope-tts-qwen',
@@ -237,7 +252,8 @@ const CONVERSION_ADAPTERS = [
 		requiredUpstreamCapabilities: ['audio.speech.multimodal'],
 		publicPath: '/v1/audio/speech',
 		roles: [],
-		lossyFeatures: ['voice_instructions'],
+		protectedUpstreamPaths: [],
+		extraBodyNote: 'dashscope_tts_input',
 	},
 	{
 		id: 'dashscope-tts-minimax',
@@ -255,6 +271,8 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/speech',
 		roles: [],
 		lossyFeatures: ['voice_instructions'],
+		protectedUpstreamPaths: ['input.audio_setting.format', 'input.stream_options'],
+		extraBodyNote: 'dashscope_tts_input',
 	},
 	{
 		id: 'dashscope-image-qwen',
@@ -273,6 +291,8 @@ const CONVERSION_ADAPTERS = [
 		roles: ['upstream'],
 		presetIntent: 'dashscope-image-qwen',
 		lossyFeatures: ['size_abbreviation', 'background'],
+		protectedUpstreamPaths: ['parameters.n'],
+		extraBodyExample: { parameters: { negative_prompt: 'blurry', seed: 42 } },
 	},
 	{
 		id: 'dashscope-image-wan',
@@ -291,6 +311,8 @@ const CONVERSION_ADAPTERS = [
 		roles: ['upstream'],
 		presetIntent: 'dashscope-image-wan',
 		lossyFeatures: ['background'],
+		protectedUpstreamPaths: ['parameters.n'],
+		extraBodyExample: { parameters: { negative_prompt: 'blurry', seed: 42 } },
 	},
 	{
 		id: 'minimax-asr-file',
@@ -307,6 +329,8 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/transcriptions',
 		roles: ['upstream'],
 		lossyFeatures: ['prompt', 'temperature'],
+		protectedUpstreamPaths: ['response_format'],
+		extraBodyExample: { timestamp_level: 'sentence' },
 	},
 	{
 		id: 'minimax-tts',
@@ -324,6 +348,8 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/speech',
 		roles: ['upstream'],
 		lossyFeatures: ['voice_instructions', 'response_format_opus_aac', 'openai_speed_range'],
+		protectedUpstreamPaths: ['stream', 'stream_options', 'output_format', 'audio_setting.format'],
+		extraBodyExample: { voice_setting: { emotion: 'happy' }, language_boost: 'Chinese' },
 	},
 	{
 		id: 'minimax-image',
@@ -341,6 +367,8 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/images/generations',
 		roles: ['upstream'],
 		lossyFeatures: ['background', 'quality'],
+		protectedUpstreamPaths: ['n', 'response_format'],
+		extraBodyExample: { prompt_optimizer: true, aigc_watermark: false },
 	},
 ] as const satisfies readonly AdapterDescriptor[];
 
@@ -358,6 +386,9 @@ function passthroughDescriptor(input: {
 	roles?: readonly AdapterSurfaceRole[];
 	presetIntent?: AdapterPresetIntent;
 	upstreamModels?: AdapterUpstreamModels;
+	protectedUpstreamPaths?: readonly string[];
+	extraBodyExample?: { readonly [key: string]: unknown };
+	extraBodyNote?: 'dashscope_tts_input';
 }): AdapterDescriptor {
 	return {
 		id: PASSTHROUGH_ROUTE_ADAPTER,
@@ -375,6 +406,9 @@ function passthroughDescriptor(input: {
 		roles: input.roles ?? ['request', 'upstream'],
 		presetIntent: input.presetIntent,
 		...(input.upstreamModels ? { upstreamModels: input.upstreamModels } : {}),
+		...(input.protectedUpstreamPaths ? { protectedUpstreamPaths: input.protectedUpstreamPaths } : {}),
+		...(input.extraBodyExample ? { extraBodyExample: input.extraBodyExample } : {}),
+		...(input.extraBodyNote ? { extraBodyNote: input.extraBodyNote } : {}),
 	};
 }
 
@@ -427,6 +461,8 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'per_image',
 		requiredUpstreamCapabilities: ['images.generations'],
 		publicPath: '/v1/images/generations',
+		protectedUpstreamPaths: ['n', 'stream'],
+		extraBodyExample: { seed: 42 },
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',
@@ -437,6 +473,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requestPayload: 'multipart',
 		requiredUpstreamCapabilities: ['images.edits'],
 		publicPath: '/v1/images/edits',
+		protectedUpstreamPaths: ['n'],
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',
@@ -447,6 +484,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requestPayload: 'multipart',
 		requiredUpstreamCapabilities: ['audio.transcriptions'],
 		publicPath: '/v1/audio/transcriptions',
+		protectedUpstreamPaths: ['response_format'],
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',
@@ -457,6 +495,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'binary',
 		requiredUpstreamCapabilities: ['audio.speech'],
 		publicPath: '/v1/audio/speech',
+		protectedUpstreamPaths: ['stream'],
 	}),
 	passthroughDescriptor({
 		protocol: 'minimax',

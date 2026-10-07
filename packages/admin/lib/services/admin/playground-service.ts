@@ -10,6 +10,15 @@ import {
 	routeCustomParamsBody,
 } from '@octafuse/core';
 import { mergeRouteRequestBody } from '@octafuse/core/route-custom-params';
+import {
+	AUDIO_SPEECH_KNOWN_KEYS,
+	AUDIO_TRANSCRIPTION_KNOWN_KEYS,
+	IMAGE_GENERATION_KNOWN_KEYS,
+	UpstreamExtraFieldsError,
+	applyUpstreamExtraFields,
+	pickExtraFields,
+	protectedUpstreamPathsForRoute,
+} from '@octafuse/core/upstream-extra-fields';
 import { isAudioModel as isCatalogAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import {
 	type GeminiContentAction,
@@ -33,6 +42,7 @@ import {
 	MiniMaxOpenAiClientError,
 	buildMiniMaxImageBodyFromOpenAi,
 	buildMiniMaxT2aBodyFromOpenAi,
+	fillMiniMaxSpeechDefaults,
 } from '@octafuse/core/minimax-openai';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
@@ -80,6 +90,31 @@ function isPlainObject(value: unknown): value is JsonObject {
  */
 export function mergePlaygroundRequestBody(route: PlaygroundResolvedRoute, userBody: JsonObject): JsonObject {
 	return mergeRouteRequestBody(route.customParams, userBody);
+}
+
+function playgroundExtraFields(body: JsonObject, knownKeys: readonly string[]): JsonObject {
+	try {
+		return pickExtraFields(body, knownKeys);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) throw badRequest(error.message);
+		throw error;
+	}
+}
+
+/** 转换适配器：在上游体上合并路由参数和客户端额外字段，再恢复受保护路径。 */
+export function applyPlaygroundUpstreamBody(input: {
+	route: PlaygroundResolvedRoute;
+	built: JsonObject;
+	extras?: JsonObject;
+	/** 传 null 表示路由参数已经写进 built，避免再合并一次。 */
+	customParams?: Record<string, unknown> | null;
+}): JsonObject {
+	return applyUpstreamExtraFields({
+		built: input.built,
+		customParams: input.customParams === undefined ? input.route.customParams : input.customParams,
+		extras: input.extras,
+		protectedPaths: protectedUpstreamPathsForRoute(input.route),
+	}).body;
 }
 
 function parseJsonObject(raw: string | null | undefined): Record<string, unknown> | null {
@@ -500,10 +535,19 @@ export function buildPlaygroundOpenAiSpeechRequest(
 	if (route.upstreamOperation !== 'audio.speech') {
 		throw badRequest(`Playground does not support OpenAI TTS operation ${JSON.stringify(route.upstreamOperation)}`);
 	}
-	const upstreamBody = {
-		...body,
-		model: route.providerModelName,
-	};
+	const upstreamBody = applyPlaygroundUpstreamBody({
+		route,
+		built: {
+			model: route.providerModelName,
+			input: body.input,
+			voice: body.voice,
+			response_format: body.response_format,
+			speed: body.speed,
+			stream_format: body.stream_format,
+			...(typeof body.instructions === 'string' ? { instructions: body.instructions } : {}),
+		},
+		extras: playgroundExtraFields(body, AUDIO_SPEECH_KNOWN_KEYS),
+	});
 	const url = resolveUpstreamEndpoint('openai', 'audio.speech', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -575,25 +619,15 @@ export function buildPlaygroundDashScopeSpeechRequest(
 			? String((body.voice as Record<string, unknown>).id ?? '').trim()
 			: '';
 	if (!voice) throw badRequest('DashScope TTS voice is required');
-	const routeDefaults = routeCustomParamsBody(route.customParams);
-	const configuredInput =
-		routeDefaults.input != null && isPlainObject(routeDefaults.input) ? routeDefaults.input : {};
-	const responseFormat =
-		typeof body.response_format === 'string'
-			? body.response_format
-			: typeof configuredInput.format === 'string'
-			? configuredInput.format
-			: 'mp3';
+	const responseFormat = typeof body.response_format === 'string' ? body.response_format : 'mp3';
 	if (!['mp3', 'opus', 'wav', 'pcm'].includes(responseFormat)) {
 		throw badRequest(`DashScope SpeechSynthesizer does not support response_format=${responseFormat}`);
 	}
-	const configuredRate = configuredInput.rate == null ? 1 : Number(configuredInput.rate);
-	const rate = body.speed == null ? configuredRate : Number(body.speed);
+	const rate = body.speed == null ? 1 : Number(body.speed);
 	if (!Number.isFinite(rate) || rate < 0.5 || rate > 2) {
 		throw badRequest('DashScope SpeechSynthesizer speed must be between 0.5 and 2.0');
 	}
 	const input: Record<string, unknown> = {
-		...configuredInput,
 		text,
 		voice,
 		format: responseFormat,
@@ -602,11 +636,22 @@ export function buildPlaygroundDashScopeSpeechRequest(
 	if (typeof body.instructions === 'string' && body.instructions.trim()) {
 		input.instruction = body.instructions;
 	}
-	const upstreamBody = {
-		...routeDefaults,
-		model: route.providerModelName,
-		input,
-	};
+	const upstreamBody = applyPlaygroundUpstreamBody({
+		route,
+		built: {
+			model: route.providerModelName,
+			input,
+		},
+		extras: playgroundExtraFields(body, AUDIO_SPEECH_KNOWN_KEYS),
+	});
+	const appliedInput = upstreamBody.input;
+	const appliedRate =
+		appliedInput != null && typeof appliedInput === 'object' && !Array.isArray(appliedInput)
+			? Number((appliedInput as Record<string, unknown>).rate)
+			: Number.NaN;
+	if (!Number.isFinite(appliedRate) || appliedRate < 0.5 || appliedRate > 2) {
+		throw badRequest('DashScope SpeechSynthesizer speed must be between 0.5 and 2.0');
+	}
 	const url = resolveUpstreamEndpoint('dashscope', 'audio.speech', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -776,6 +821,21 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 		};
 	}
 
+	const { file_name: _playgroundFileName, audio: _playgroundAudio, ...transcriptionFields } = body;
+	const extras = playgroundExtraFields(transcriptionFields, AUDIO_TRANSCRIPTION_KNOWN_KEYS);
+	upstreamBody = applyPlaygroundUpstreamBody({
+		route,
+		built: upstreamBody,
+		extras,
+		customParams: null,
+	});
+	wireBody = applyPlaygroundUpstreamBody({
+		route,
+		built: wireBody,
+		extras,
+		customParams: null,
+	});
+
 	return {
 		url,
 		headers,
@@ -808,7 +868,9 @@ export function buildPlaygroundDashScopeAsyncAsrRequest(
 	const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 	const parameters = { ...routeCustomParamsBody(route.customParams) };
 	delete parameters.asr_options;
-	const upstreamBody = {
+	const upstreamBody = applyPlaygroundUpstreamBody({
+		route,
+		built: {
 		model: route.providerModelName,
 		input: {
 			file_urls: [fileUrl],
@@ -827,7 +889,13 @@ export function buildPlaygroundDashScopeAsyncAsrRequest(
 			...parameters,
 			...(language ? { language_hints: [language] } : {}),
 		},
-	};
+		},
+		extras: playgroundExtraFields(
+			(({ file_name: _playgroundFileName, audio: _playgroundAudio, ...fields }) => fields)(body),
+			AUDIO_TRANSCRIPTION_KNOWN_KEYS,
+		),
+		customParams: null,
+	});
 	const url = resolveUpstreamEndpoint('dashscope', 'audio.transcriptions', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -985,7 +1053,7 @@ export async function invokePlaygroundUpstream(
 		case 'openai': {
 			if (route.isAudioModel) {
 				if (route.upstreamOperation === 'audio.speech') {
-					const request = buildPlaygroundOpenAiSpeechRequest(route, merged);
+					const request = buildPlaygroundOpenAiSpeechRequest(route, userBody);
 					url = request.url;
 					headers = request.headers;
 					fetchBody = request.bodyText;
@@ -1117,10 +1185,19 @@ export async function invokePlaygroundUpstream(
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${route.providerApiKey}`,
 			};
-			const requestBody: Record<string, unknown> = {
-				...merged,
-				model: applyVertexOpenAiModelPrefix(url, route.providerModelName),
-			};
+			const modelName = applyVertexOpenAiModelPrefix(url, route.providerModelName);
+			const requestBody: Record<string, unknown> =
+				invokeKind === 'image'
+					? applyPlaygroundUpstreamBody({
+							route,
+							built: { ...userBody, model: modelName },
+							extras: playgroundExtraFields(userBody, IMAGE_GENERATION_KNOWN_KEYS),
+						})
+					: {
+							...merged,
+							model: modelName,
+						};
+			requestBody.model = modelName;
 			// Strip accidental data-URL image fields from generations JSON
 			delete requestBody.image;
 			delete requestBody.images;
@@ -1176,7 +1253,7 @@ export async function invokePlaygroundUpstream(
 						'DashScope image routes only support generations (use JSON image for image-to-image).',
 					);
 				}
-				const request = buildPlaygroundDashScopeImageRequest(route, merged);
+				const request = buildPlaygroundDashScopeImageRequest(route, userBody);
 				url = request.url;
 				headers = request.headers;
 				fetchBody = request.bodyText;
@@ -1187,7 +1264,7 @@ export async function invokePlaygroundUpstream(
 				throw badRequest('DashScope Playground routes must use an image or audio catalog model');
 			}
 			if (route.upstreamOperation === 'audio.speech') {
-				const request = buildPlaygroundDashScopeSpeechRequest(route, merged);
+				const request = buildPlaygroundDashScopeSpeechRequest(route, userBody);
 				url = request.url;
 				headers = request.headers;
 				fetchBody = request.bodyText;
@@ -1195,14 +1272,14 @@ export async function invokePlaygroundUpstream(
 				break;
 			}
 			if (route.upstreamOperation === 'audio.transcriptions.async') {
-				const request = buildPlaygroundDashScopeAsyncAsrRequest(route, merged);
+				const request = buildPlaygroundDashScopeAsyncAsrRequest(route, userBody);
 				url = request.url;
 				headers = request.headers;
 				fetchBody = request.bodyText;
 				upstreamWireBodyJson = request.wireBodyJson;
 				break;
 			}
-			const request = buildPlaygroundDashScopeSyncAsrRequest(route, merged);
+			const request = buildPlaygroundDashScopeSyncAsrRequest(route, userBody);
 			url = request.url;
 			headers = request.headers;
 			fetchBody = request.bodyText;
@@ -1214,23 +1291,35 @@ export async function invokePlaygroundUpstream(
 			if (route.adapter === 'minimax-tts' || route.adapter === 'minimax-image') {
 				let upstreamBody: Record<string, unknown>;
 				try {
-					upstreamBody =
+					const built =
 						route.adapter === 'minimax-tts'
 							? buildMiniMaxT2aBodyFromOpenAi({
 									model: route.providerModelName,
-									text: typeof merged.input === 'string' ? merged.input : '',
+									text: typeof userBody.input === 'string' ? userBody.input : '',
 									voiceId:
-										typeof merged.voice === 'string'
-											? merged.voice.trim()
-											: merged.voice != null && typeof merged.voice === 'object' && !Array.isArray(merged.voice)
-												? String((merged.voice as Record<string, unknown>).id ?? '').trim()
+										typeof userBody.voice === 'string'
+											? userBody.voice.trim()
+											: userBody.voice != null && typeof userBody.voice === 'object' && !Array.isArray(userBody.voice)
+												? String((userBody.voice as Record<string, unknown>).id ?? '').trim()
 												: '',
-									responseFormat: typeof merged.response_format === 'string' ? merged.response_format : 'mp3',
-									speed: merged.speed == null ? 1 : Number(merged.speed),
-									stream: merged.stream_format === 'sse' || merged.stream === true,
-									instructions: typeof merged.instructions === 'string' ? merged.instructions : undefined,
+									responseFormat: typeof userBody.response_format === 'string' ? userBody.response_format : 'mp3',
+									speed: userBody.speed == null ? 1 : Number(userBody.speed),
+									stream: userBody.stream_format === 'sse' || userBody.stream === true,
+									instructions: typeof userBody.instructions === 'string' ? userBody.instructions : undefined,
 								})
-							: buildMiniMaxImageBodyFromOpenAi(route.providerModelName, merged);
+							: buildMiniMaxImageBodyFromOpenAi(route.providerModelName, userBody);
+					upstreamBody = applyPlaygroundUpstreamBody({
+						route,
+						built,
+						extras: playgroundExtraFields(
+							userBody,
+							route.adapter === 'minimax-tts' ? AUDIO_SPEECH_KNOWN_KEYS : IMAGE_GENERATION_KNOWN_KEYS,
+						),
+					});
+					if (route.adapter === 'minimax-tts') {
+						upstreamBody = fillMiniMaxSpeechDefaults(upstreamBody);
+					}
+					upstreamBody.model = route.providerModelName;
 				} catch (error) {
 					if (error instanceof MiniMaxOpenAiClientError) throw badRequest(error.message);
 					throw error;

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { attachUpstreamExtraFields } from '@octafuse/core/upstream-extra-fields';
 import type { RouteResult } from '../model-router';
 import {
 	buildDashScopeImageBody,
@@ -83,6 +84,27 @@ describe('DashScope image request mapping', () => {
 			size: '1024X1024',
 		});
 		assert.equal((wan.parameters as Record<string, unknown>).size, '1024*1024');
+	});
+
+	it('merges client parameters and keeps billed n', () => {
+		const body = buildDashScopeImageBody(
+			'wan',
+			route({
+				adapter: 'dashscope-image-wan',
+				providerModelName: 'wan2.7-image',
+				customParams: { parameters: { seed: 1, prompt_extend: true } },
+			}),
+			attachUpstreamExtraFields(
+				{ prompt: 'a red apple', n: 1, user: 'sdk' },
+				{ parameters: { negative_prompt: 'blurry', n: 9, seed: 7 } },
+			),
+		);
+		const parameters = body.parameters as Record<string, unknown>;
+		assert.equal(parameters.negative_prompt, 'blurry');
+		assert.equal(parameters.seed, 7);
+		assert.equal(parameters.prompt_extend, true);
+		assert.equal(parameters.n, 1);
+		assert.equal(body.user, undefined);
 	});
 
 	it('rejects qwen size abbreviations and allows wan 2K', () => {

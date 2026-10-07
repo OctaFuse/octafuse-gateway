@@ -11,6 +11,7 @@ import { isAudioTranscriptionModel, type ModelKindFields } from '@octafuse/core/
 import { extraHeadersFromCustomParams, mergeRouteRequestBody, mergeUpstreamHeaders, splitRouteCustomParams } from '@octafuse/core/route-custom-params';
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
+	DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
 	MINIMAX_IMAGE_BODY_TEMPLATE,
 	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
@@ -322,6 +323,9 @@ export function templateForRoute(
 		if (proto === 'minimax' && route.adapter === 'minimax-image') return MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE;
 		if (proto === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
 		if (proto === 'dashscope' && route.adapter === 'passthrough') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
+		if (proto === 'dashscope' && (route.adapter === 'dashscope-image-qwen' || route.adapter === 'dashscope-image-wan')) {
+			return DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE;
+		}
 		if (proto === 'dashscope' || imageOperation !== 'edits') {
 			return IMAGE_GENERATIONS_BODY_TEMPLATE;
 		}

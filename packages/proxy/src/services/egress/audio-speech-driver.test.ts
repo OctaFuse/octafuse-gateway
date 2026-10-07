@@ -75,6 +75,25 @@ describe('DashScope TTS request mapping', () => {
 		);
 	});
 
+	it('merges extra voice settings without replacing the billed format', () => {
+		const body = buildDashScopeTtsBody(
+			route({ adapter: 'dashscope-tts-minimax', providerModelName: 'speech-02-hd' }),
+			request({
+				extraFields: {
+					input: { voice_setting: { emotion: 'happy' }, audio_setting: { format: 'wav' } },
+					language_boost: 'Chinese',
+				},
+			}),
+			'minimax',
+		);
+		const input = body.input as Record<string, unknown>;
+		const voiceSetting = input.voice_setting as Record<string, unknown>;
+		const audioSetting = input.audio_setting as Record<string, unknown>;
+		assert.equal(voiceSetting.emotion, 'happy');
+		assert.equal(audioSetting.format, 'mp3');
+		assert.equal(body.language_boost, 'Chinese');
+	});
+
 	it('uses distinct Qwen and MiniMax body shapes', () => {
 		assert.deepEqual(
 			buildDashScopeTtsBody(

@@ -21,6 +21,17 @@ POST {minimax.base}/image_generation
 
 请求字段沿用官方：`prompt`、`aspect_ratio`、`width` / `height`、`response_format`（`url` 或 `base64`）、`n`（1–9）、`seed`、`prompt_optimizer`、`aigc_watermark`，以及 `image-01-live` 的 `style`、图生图的 `subject_reference`。透传返回 `data.image_urls` 或 `data.image_base64`，`metadata.success_count` 可能是字符串。转换入口把它们改成 OpenAI `data[]`。URL 约 24 小时有效。
 
+转换入口未单独映射的官方字段，按 MiniMax 结构写在请求体顶层（OpenAI SDK 用 `extra_body`）。网关深度合并后发往上游。`model`、`n` 和映射后的 `response_format` 由网关保留。
+
+```python
+client.images.generate(
+    model="image-01",
+    prompt="A red paper lantern over a quiet canal at dusk",
+    size="1024x1024",
+    extra_body={"prompt_optimizer": True, "aigc_watermark": False, "seed": 42},
+)
+```
+
 ## 状态码与计费
 
 上游 HTTP 已是 2xx，但 `base_resp.status_code` 非 0 时，body 原样返回，HTTP 状态按 [MiniMax 音频](./minimax-audio.md#同步语音合成透传) 的同一张表改写。上游本身已是非 2xx 时不改写。

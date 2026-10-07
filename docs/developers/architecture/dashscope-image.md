@@ -44,6 +44,17 @@ POST {dashscope.base}/services/aigc/multimodal-generation/generation
 
 万相官方默认 `n=4`。驱动永远显式写入 `parameters.n`，缺省为 1，避免一次出 4 张并按 4 张扣费。
 
+转换入口未单独映射的官方参数，按 DashScope 结构放在 `parameters` 里（OpenAI SDK 用 `extra_body`）。网关深度合并后发往上游。`model` 和 `parameters.n` 由网关保留。路由 `custom_params` 里的扁平参数名（如 `seed`、`negative_prompt`）仍会先写入 `parameters`，便于旧配置继续生效；新配置优先写嵌套的 `parameters`。
+
+```python
+client.images.generate(
+    model="wan2.7-image",
+    prompt="a red apple on a white background",
+    size="1024x1024",
+    extra_body={"parameters": {"negative_prompt": "blurry", "seed": 42, "prompt_extend": False}},
+)
+```
+
 ## 供应商端点
 
 `providers.endpoints.dashscope` 保存 DashScope HTTP / WSS 端点。只配置 `dashscope.base` 时，网关会派生 `images.generations.multimodal`。

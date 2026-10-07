@@ -4,6 +4,7 @@ import {
 	MiniMaxOpenAiClientError,
 	buildMiniMaxImageBodyFromOpenAi,
 	buildMiniMaxT2aBodyFromOpenAi,
+	fillMiniMaxSpeechDefaults,
 	miniMaxAspectRatioFromOpenAiSize,
 	miniMaxImageResponseToOpenAi,
 } from './minimax-openai';
@@ -24,10 +25,37 @@ describe('MiniMax OpenAI speech mapping', () => {
 				text: '你好',
 				stream: false,
 				output_format: 'hex',
-				voice_setting: { voice_id: 'male-qn-qingse', speed: 1, vol: 1, pitch: 0 },
-				audio_setting: { format: 'mp3', sample_rate: 32000, channel: 1, bitrate: 128000 },
+				voice_setting: { voice_id: 'male-qn-qingse', speed: 1 },
+				audio_setting: { format: 'mp3', channel: 1 },
 			},
 		);
+	});
+
+	it('fills vol, pitch, sample rate, and mp3 bitrate only when missing', () => {
+		const filled = fillMiniMaxSpeechDefaults(
+			buildMiniMaxT2aBodyFromOpenAi({
+				model: 'speech-2.8-turbo',
+				text: '你好',
+				voiceId: 'male-qn-qingse',
+				responseFormat: 'mp3',
+				speed: 1,
+				stream: false,
+			}),
+		);
+		assert.deepEqual(filled.voice_setting, { voice_id: 'male-qn-qingse', speed: 1, vol: 1, pitch: 0 });
+		assert.deepEqual(filled.audio_setting, {
+			format: 'mp3',
+			channel: 1,
+			sample_rate: 32000,
+			bitrate: 128000,
+		});
+		const kept = fillMiniMaxSpeechDefaults({
+			voice_setting: { voice_id: 'male-qn-qingse', speed: 1, vol: 2, pitch: 3 },
+			audio_setting: { format: 'mp3', sample_rate: 16000, bitrate: 64000, channel: 1 },
+		});
+		assert.equal((kept.voice_setting as { vol: number }).vol, 2);
+		assert.equal((kept.audio_setting as { sample_rate: number }).sample_rate, 16000);
+		assert.equal((kept.audio_setting as { bitrate: number }).bitrate, 64000);
 	});
 
 	it('asks MiniMax not to repeat the full audio on the last SSE frame', () => {

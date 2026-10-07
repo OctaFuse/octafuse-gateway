@@ -83,6 +83,8 @@ export type ProxyDispatchMeta = {
 	audioFileBytes?: number;
 	/** 仅 Audio token 计费：上游 `usage.type=tokens` */
 	audioTokenUsage?: import('@octafuse/core').AudioTokenUsage | null;
+	/** 客户端额外字段命中受保护路径后被改回的点路径。 */
+	restoredUpstreamPaths?: string[];
 };
 
 /** Images abort 的 504 不得换 provider / 换路由（避免客户端取消或超时后二次打 OpenAI）。 */

@@ -3,10 +3,14 @@
  * OpenAI `/v1/images/generations` → `services/aigc/multimodal-generation/generation`。
  * Qwen Image 3.0 与 Wan 2.7 共用端点，请求参数族不同。
  */
-import { applyRouteExtraHeaders, resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
+import { applyRouteExtraHeaders, resolveProviderUpstreamSecret, resolveUpstreamEndpoint, routeCustomParamsBody } from '@octafuse/core';
+import {
+	applyUpstreamExtraFields,
+	detachUpstreamExtraFields,
+	protectedUpstreamPathsForRoute,
+} from '@octafuse/core/upstream-extra-fields';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE, type UsageFromStream } from '../proxy';
-import { buildRouteRequestBody } from '../route-default-params';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 import {
@@ -118,18 +122,20 @@ function pickParameters(source: Record<string, unknown>): Record<string, unknown
 	return parameters;
 }
 
-export function buildDashScopeImageBody(
+export function composeDashScopeImageBody(
 	family: DashScopeImageFamily,
 	route: RouteResult,
-	body: Record<string, unknown>
-): Record<string, unknown> {
-	const merged = buildRouteRequestBody(route, body);
-	const prompt = asOptString(merged.prompt);
+	body: Record<string, unknown>,
+): { body: Record<string, unknown>; restoredPaths: string[] } {
+	const detached = detachUpstreamExtraFields(body);
+	const source = detached.body;
+	const routeBody = routeCustomParamsBody(route.customParams);
+	const prompt = asOptString(source.prompt);
 	if (!prompt) {
 		throw new DashScopeImageClientError('prompt is required');
 	}
-	const n = resolveImageCount(merged.n);
-	const rawSize = asOptString(merged.size);
+	const n = resolveImageCount(source.n);
+	const rawSize = asOptString(source.size);
 	if (family === 'qwen' && rawSize && QWEN_SIZE_ABBREVIATION.test(rawSize)) {
 		throw new DashScopeImageClientError(
 			'qwen-image size must be a pixel string like 1024*1024, not 1K/2K/4K'
@@ -138,22 +144,36 @@ export function buildDashScopeImageBody(
 	const size = rawSize ? normalizeDashScopeSize(rawSize) : undefined;
 
 	const content: Array<Record<string, string>> = [
-		...collectReferenceImages(merged.image).map((image) => ({ image })),
+		...collectReferenceImages(source.image).map((image) => ({ image })),
 		{ text: prompt },
 	];
 	const parameters: Record<string, unknown> = {
-		...pickParameters(merged),
+		...pickParameters(routeBody),
+		...pickParameters(source),
 		n,
 	};
 	if (size) parameters.size = size;
 
-	return {
-		model: route.providerModelName,
-		input: {
-			messages: [{ role: 'user', content }],
+	return applyUpstreamExtraFields({
+		built: {
+			model: route.providerModelName,
+			input: {
+				messages: [{ role: 'user', content }],
+			},
+			parameters,
 		},
-		parameters,
-	};
+		customParams: route.customParams,
+		extras: detached.extras,
+		protectedPaths: protectedUpstreamPathsForRoute(route),
+	});
+}
+
+export function buildDashScopeImageBody(
+	family: DashScopeImageFamily,
+	route: RouteResult,
+	body: Record<string, unknown>
+): Record<string, unknown> {
+	return composeDashScopeImageBody(family, route, body).body;
 }
 
 function collectDashScopeImageUrls(payload: unknown): string[] {
@@ -359,6 +379,7 @@ export async function dispatchDashScopeImageGenerations(
 		parsedBody: unknown;
 		imageBillingSize: string | null;
 		imageAbortReason?: ImageDispatchAbortReason;
+		restoredUpstreamPaths?: string[];
 	};
 }> {
 	const family = imageFamilyForAdapter(route.adapter);
@@ -367,8 +388,11 @@ export async function dispatchDashScopeImageGenerations(
 	}
 
 	let requestBody: Record<string, unknown>;
+	let restoredUpstreamPaths: string[] = [];
 	try {
-		requestBody = buildDashScopeImageBody(family, route, body);
+		const composed = composeDashScopeImageBody(family, route, body);
+		requestBody = composed.body;
+		restoredUpstreamPaths = composed.restoredPaths;
 	} catch (err) {
 		if (err instanceof DashScopeImageClientError) {
 			return imageDispatchResult(400, { error: { message: err.message } }, null, null);
@@ -465,7 +489,11 @@ export async function dispatchDashScopeImageGenerations(
 		console.log(
 			`[Gateway Images] DashScope ${family} done status=${response.status} elapsedMs=${Date.now() - startedAt} url=${url}`
 		);
-		return imageDispatchResult(200, clientBody, upstreamRequestId, imageBillingSize);
+		const result = imageDispatchResult(200, clientBody, upstreamRequestId, imageBillingSize);
+		return {
+			...result,
+			meta: { ...result.meta, restoredUpstreamPaths },
+		};
 	} catch (err) {
 		timing?.markStreamComplete();
 		const abortReason = getAbortReason();

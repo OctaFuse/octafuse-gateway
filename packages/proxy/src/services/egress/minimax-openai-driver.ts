@@ -10,8 +10,15 @@ import {
 	MiniMaxOpenAiClientError,
 	buildMiniMaxImageBodyFromOpenAi,
 	buildMiniMaxT2aBodyFromOpenAi,
+	fillMiniMaxSpeechDefaults,
 	miniMaxImageResponseToOpenAi,
 } from '@octafuse/core/minimax-openai';
+import {
+	applyUpstreamExtraFields,
+	detachUpstreamExtraFields,
+	protectedUpstreamPathsForRoute,
+	type ApplyUpstreamExtraFieldsResult,
+} from '@octafuse/core/upstream-extra-fields';
 import {
 	decodeMiniMaxHexAudio,
 	miniMaxBaseRespHttpStatus,
@@ -20,7 +27,6 @@ import {
 } from '@octafuse/core/minimax-native';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE, type UsageFromStream } from '../proxy';
-import { buildRouteRequestBody } from '../route-default-params';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 import { countValidImageResults, type ImageDispatchAbortReason } from './openai-images-driver';
 import { SpeechSseParser, type AudioSpeechDispatchOptions, type NormalizedAudioSpeechRequest } from './audio-speech-driver';
@@ -277,24 +283,34 @@ export async function dispatchMiniMaxOpenAiSpeech(
 	response: Response;
 	usagePromise: Promise<UsageFromStream>;
 	upstreamRequestId: string | null;
+	meta?: { restoredUpstreamPaths?: string[] };
 }> {
 	let upstreamBody: Record<string, unknown>;
+	let restoredUpstreamPaths: string[] = [];
 	try {
-		upstreamBody = buildRouteRequestBody(
-			route,
-			buildMiniMaxT2aBodyFromOpenAi({
-				model: route.providerModelName,
-				text: request.input,
-				voiceId: voiceId(request.voice),
-				responseFormat: request.responseFormat,
-				speed: request.speed,
-				stream: request.streamFormat === 'sse',
-				instructions: request.instructions,
-			}),
-		);
+		const built = buildMiniMaxT2aBodyFromOpenAi({
+			model: route.providerModelName,
+			text: request.input,
+			voiceId: voiceId(request.voice),
+			responseFormat: request.responseFormat,
+			speed: request.speed,
+			stream: request.streamFormat === 'sse',
+			instructions: request.instructions,
+		});
+		const applied = applyUpstreamExtraFields({
+			built,
+			customParams: route.customParams,
+			extras: request.extraFields,
+			protectedPaths: protectedUpstreamPathsForRoute(route),
+		});
+		upstreamBody = fillMiniMaxSpeechDefaults(applied.body);
 		upstreamBody.model = route.providerModelName;
+		restoredUpstreamPaths = applied.restoredPaths;
 	} catch (error) {
 		if (error instanceof MiniMaxOpenAiClientError) return errorResult(400, error.message);
+		if (error instanceof Error && error.name === 'UpstreamExtraFieldsError') {
+			return errorResult(400, error.message);
+		}
 		throw error;
 	}
 
@@ -340,6 +356,7 @@ export async function dispatchMiniMaxOpenAiSpeech(
 		return {
 			...streamed,
 			upstreamRequestId: streamed.upstreamRequestId ?? first.traceId ?? posted.upstreamRequestId,
+			meta: { restoredUpstreamPaths },
 		};
 	}
 
@@ -388,6 +405,7 @@ export async function dispatchMiniMaxOpenAiSpeech(
 			}),
 			usagePromise: Promise.resolve(usage),
 			upstreamRequestId,
+			meta: { restoredUpstreamPaths },
 		};
 	} finally {
 		posted.clear();
@@ -410,6 +428,7 @@ export async function dispatchMiniMaxOpenAiImage(
 		parsedBody: unknown;
 		imageBillingSize: null;
 		imageAbortReason?: ImageDispatchAbortReason;
+		restoredUpstreamPaths?: string[];
 	};
 }> {
 	const fail = (status: number, message: string, code?: string, abort?: ImageDispatchAbortReason) => {
@@ -425,11 +444,22 @@ export async function dispatchMiniMaxOpenAiImage(
 		};
 	};
 	let upstreamBody: Record<string, unknown>;
+	let restoredUpstreamPaths: string[] = [];
 	try {
-		upstreamBody = buildRouteRequestBody(route, buildMiniMaxImageBodyFromOpenAi(route.providerModelName, body));
+		const detached = detachUpstreamExtraFields(body);
+		const built = buildMiniMaxImageBodyFromOpenAi(route.providerModelName, detached.body);
+		const applied: ApplyUpstreamExtraFieldsResult = applyUpstreamExtraFields({
+			built,
+			customParams: route.customParams,
+			extras: detached.extras,
+			protectedPaths: protectedUpstreamPathsForRoute(route),
+		});
+		upstreamBody = applied.body;
 		upstreamBody.model = route.providerModelName;
+		restoredUpstreamPaths = applied.restoredPaths;
 	} catch (error) {
 		if (error instanceof MiniMaxOpenAiClientError) return fail(400, error.message);
+		if (error instanceof Error && error.name === 'UpstreamExtraFieldsError') return fail(400, error.message);
 		throw error;
 	}
 	const responseFormat = upstreamBody.response_format === 'base64' ? 'b64_json' : 'url';
@@ -501,7 +531,12 @@ export async function dispatchMiniMaxOpenAiImage(
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId,
-			meta: { imageUsage: null, parsedBody: clientBody, imageBillingSize: null },
+			meta: {
+				imageUsage: null,
+				parsedBody: clientBody,
+				imageBillingSize: null,
+				restoredUpstreamPaths,
+			},
 		};
 	} finally {
 		posted.clear();

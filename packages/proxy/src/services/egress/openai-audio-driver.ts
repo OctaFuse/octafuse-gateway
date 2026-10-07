@@ -11,6 +11,7 @@ import {
 	resolveUpstreamEndpoint,
 	type AudioTokenUsage,
 } from '@octafuse/core';
+import { formExtraFieldText } from '@octafuse/core/upstream-extra-fields';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { EMPTY_USAGE } from '../proxy';
@@ -112,7 +113,7 @@ export type NormalizedAudioTranscriptionRequest = {
 	 */
 	clientDurationSeconds?: number;
 	/** 透传额外表单字段（不含 file/model/response_format/duration_seconds） */
-	extra?: Record<string, string>;
+	extra?: Record<string, unknown>;
 };
 
 /**
@@ -361,9 +362,8 @@ export async function dispatchOpenAiAudioTranscriptions(
 	for (const [k, v] of Object.entries(mergedExtras)) {
 		if (v == null) continue;
 		if (k === 'model' || k === 'file' || k === 'response_format') continue;
-		if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-			form.append(k, String(v));
-		}
+		const text = formExtraFieldText(v);
+		if (text != null) form.append(k, text);
 	}
 	// Copy into a fresh Uint8Array — `BlobPart` typing rejects some ArrayBufferView brands under Workers TS.
 	const blob = new Blob([new Uint8Array(file.bytes)], {

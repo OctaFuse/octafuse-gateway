@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- 路由编辑器不再把 Qwen-TTS 的 OpenAI `instructions` 标成已知不支持。该字段已经写入上游 `input.instructions`，仅 Instruct-Flash 系列生效。百炼 MiniMax 语音合成的情感仍写在路由请求参数 `input.voice_setting.emotion`，不能通过额外字段设置。
+
+- OpenAI 生图和音频入口会把客户端额外传入的顶层字段发往上游。这些字段以前会被静默丢掉；现在按上游原生结构深度合并进适配器构建的请求体。OpenAI SDK 的 `extra_body` 发到线上就是这些平铺字段。入口已经解析过的 OpenAI 字段不会再转发。`model` 以及各适配器声明的计费和响应解析字段会在合并后恢复。额外字段超过 32KB 时返回 400。DashScope 语音合成的 `input.*` 仍不能通过额外字段设置，请写在路由请求参数里。混合协议路由池会把同一份额外字段发给每一条路由。
+
 - MiniMax 官方语音合成和生图增加 OpenAI 入口。`minimax-tts` 把 `POST /v1/audio/speech` 转到 `t2a_v2`：非流式返回音频字节，`stream_format=sse` 返回 OpenAI speech 事件；`voice` 使用 MiniMax voice_id，格式限 mp3/pcm/flac/wav，语速限 0.5–2。`minimax-image` 把 `POST /v1/images/generations` 转到 `image_generation`，`size` 映射为最接近的宽高比，响应改写成 OpenAI `data[]`。计费仍按 `usage_characters` 和成功张数。原有透传路径不变。
 
 - MiniMax 增加同步语音合成和生图透传。语音合成公开路径是 `POST /v1/minimax/t2a_v2`（非流式 JSON 与 `stream: true` 的 SSE 共用 `audio.speech`），生图是 `POST /v1/minimax/image_generation`。网关只替换 `model`。上游 HTTP 200 但 `base_resp.status_code` 非 0 时，body 原样返回，并按业务码改写 HTTP 状态，以便故障转移、熔断和不计费生效。语音按 `extra_info.usage_characters` 计费，生图按成功张数计费。目录预设为 `minimax-speech-2.8-hd`、`minimax-speech-2.8-turbo`、`minimax-image-01`、`minimax-image-01-live`。Playground 与 Simulator 可直接发这些请求；非流式语音会把 hex 音频解码后播放。视频和音乐仍没有端点。原有文件转写不变。

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { attachUpstreamExtraFields } from '@octafuse/core/upstream-extra-fields';
 import type { RouteResult } from '../model-router';
 import type { NormalizedAudioSpeechRequest } from './audio-speech-driver';
 import { dispatchMiniMaxOpenAiImage, dispatchMiniMaxOpenAiSpeech } from './minimax-openai-driver';
@@ -59,6 +60,9 @@ describe('MiniMax OpenAI speech driver', () => {
 		assert.equal(posted?.body.model, 'speech-2.8-turbo');
 		assert.equal(posted?.body.text, '你好');
 		assert.equal(posted?.body.stream, false);
+		const voiceSetting = posted?.body.voice_setting as Record<string, unknown>;
+		assert.equal(voiceSetting.vol, 1);
+		assert.equal(voiceSetting.pitch, 0);
 		assert.equal(result.response.status, 200);
 		assert.equal(result.response.headers.get('content-type'), 'audio/mpeg');
 		assert.deepEqual(Array.from(new Uint8Array(await result.response.arrayBuffer())), [0x68, 0x69]);
@@ -152,6 +156,41 @@ describe('MiniMax OpenAI speech driver', () => {
 		assert.equal(called, false);
 		assert.equal(result.response.status, 400);
 	});
+
+	it('forwards voice_setting extras and restores stream', async () => {
+		let posted: Record<string, unknown> | null = null;
+		await dispatchMiniMaxOpenAiSpeech(
+			route('minimax-tts', 'speech-2.8-hd'),
+			speech({
+				extraFields: {
+					voice_setting: { emotion: 'happy', pitch: 2 },
+					language_boost: 'Chinese',
+					stream: true,
+				},
+			}),
+			undefined,
+			null,
+			undefined,
+			{
+				fetchImpl: async (_input, init) => {
+					posted = JSON.parse(String(init?.body)) as Record<string, unknown>;
+					return new Response(
+						JSON.stringify({
+							data: { audio: '6869', status: 2 },
+							extra_info: { usage_characters: 2 },
+							base_resp: { status_code: 0 },
+						}),
+						{ status: 200, headers: { 'Content-Type': 'application/json' } },
+					);
+				},
+			},
+		);
+		const voiceSetting = posted?.voice_setting as Record<string, unknown>;
+		assert.equal(voiceSetting.emotion, 'happy');
+		assert.equal(voiceSetting.pitch, 2);
+		assert.equal(posted?.language_boost, 'Chinese');
+		assert.equal(posted?.stream, false);
+	});
 });
 
 describe('MiniMax OpenAI image driver', () => {
@@ -159,7 +198,10 @@ describe('MiniMax OpenAI image driver', () => {
 		let posted: Record<string, unknown> | null = null;
 		const result = await dispatchMiniMaxOpenAiImage(
 			route('minimax-image', 'image-01'),
-			{ prompt: 'a red lantern', n: 1, size: '1024x1024', quality: 'low', response_format: 'url' },
+			attachUpstreamExtraFields(
+				{ prompt: 'a red lantern', n: 1, size: '1024x1024', quality: 'low', response_format: 'url', user: 'sdk' },
+				{ prompt_optimizer: true, aigc_watermark: false, n: 4 },
+			),
 			undefined,
 			null,
 			undefined,
@@ -182,6 +224,10 @@ describe('MiniMax OpenAI image driver', () => {
 		assert.equal(posted?.model, 'image-01');
 		assert.equal(posted?.aspect_ratio, '1:1');
 		assert.equal(posted?.quality, undefined);
+		assert.equal(posted?.n, 1);
+		assert.equal(posted?.prompt_optimizer, true);
+		assert.equal(posted?.aigc_watermark, false);
+		assert.equal(posted?.user, undefined);
 		assert.equal(result.response.status, 200);
 		const body = (await result.response.json()) as { data: Array<{ url: string }> };
 		assert.deepEqual(body.data, [{ url: 'https://cdn.example/lantern.jpg' }]);

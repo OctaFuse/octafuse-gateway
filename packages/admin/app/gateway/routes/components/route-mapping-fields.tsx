@@ -4,6 +4,7 @@ import { ArrowRightIcon, ComputerDesktopIcon, ServerIcon } from '@heroicons/reac
 import { editorInputClass, editorLabelClass, RouteEditorSection } from './route-editor-ui';
 import { useTranslations, useLocale } from 'next-intl';
 import { liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
+import { displayedProtectedUpstreamPaths } from '@octafuse/core/upstream-extra-fields';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
 	adapterOptionMappingSuffix,
@@ -81,6 +82,22 @@ export function RouteMappingFields({
 	const selectedAdapterOption = adapterOptions.find(
 		(option) => option.descriptor.optionKey === selectedAdapterOptionKey
 	);
+	const extraBodyDescriptor = selectedAdapterOption?.descriptor;
+	const showExtraBodyHint = Boolean(
+		selectedProvider &&
+			extraBodyDescriptor &&
+			extraBodyDescriptor.request.protocol === 'openai' &&
+			(extraBodyDescriptor.modality === 'image' || extraBodyDescriptor.modality === 'audio'),
+	);
+	const extraBodyMultipart =
+		extraBodyDescriptor?.request.operation === 'audio.transcriptions' ||
+		extraBodyDescriptor?.request.operation === 'images.edits';
+	const extraBodyExample = extraBodyDescriptor?.extraBodyExample
+		? JSON.stringify(extraBodyDescriptor.extraBodyExample, null, 2)
+		: null;
+	const extraBodyProtected = displayedProtectedUpstreamPaths(
+		extraBodyDescriptor?.protectedUpstreamPaths,
+	).join(', ');
 	const providerModelNamed = formData.provider_model_name.trim().length > 0;
 	const visibleAdapterOptions = selectedProvider
 		? adapterOptions.filter((option) => {
@@ -537,6 +554,20 @@ export function RouteMappingFields({
 										.join(', '),
 								})}
 							</p>
+						) : null}
+						{showExtraBodyHint ? (
+							<div className="mt-2 rounded-md bg-gray-50 p-2 text-xs text-gray-600">
+								<p>{extraBodyMultipart ? t('extraBodyMultipartHint') : t('extraBodyHint')}</p>
+								{extraBodyExample ? (
+									<pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-gray-700">
+										{extraBodyExample}
+									</pre>
+								) : null}
+								<p className="mt-2">{t('extraBodyProtected', { fields: extraBodyProtected })}</p>
+								{extraBodyDescriptor?.extraBodyNote === 'dashscope_tts_input' ? (
+									<p className="mt-2">{t('extraBodyInputLimit')}</p>
+								) : null}
+							</div>
 						) : null}
 					</div>
 					<div>

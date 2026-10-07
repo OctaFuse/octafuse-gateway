@@ -28,6 +28,17 @@
 
 透传路由的对外协议和上游协议都是 `minimax` / `audio.speech`。
 
+转换入口未单独映射的官方字段，按 MiniMax 结构写在请求体顶层（OpenAI SDK 用 `extra_body`）。`vol`、`pitch`、`sample_rate` 和 mp3 的 `bitrate` 只在缺省时填入，因此路由 `custom_params` 和额外字段都能覆盖。`model`、`stream`、`stream_options`、`output_format` 和 `audio_setting.format` 由网关保留。转写的额外表单字段同样转发；`response_format` 仍由网关按客户端格式映射。
+
+```python
+client.audio.speech.create(
+    model="speech-2.8-hd",
+    input="你好，欢迎使用 OctaFuse Gateway。",
+    voice="male-qn-qingse",
+    extra_body={"voice_setting": {"emotion": "happy", "pitch": 2}, "language_boost": "Chinese"},
+)
+```
+
 ## 请求与回包
 
 - 表单字段是 `model`、`file`、`response_format`，以及路由请求参数（例如 `timestamp_level`）。

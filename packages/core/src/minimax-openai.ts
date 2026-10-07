@@ -92,12 +92,6 @@ export function buildMiniMaxT2aBodyFromOpenAi(input: {
 	if (!Number.isFinite(input.speed) || input.speed < 0.5 || input.speed > 2) {
 		throw new MiniMaxOpenAiClientError('MiniMax speech speed must be between 0.5 and 2.0');
 	}
-	const audioSetting: Record<string, unknown> = {
-		format: responseFormat,
-		sample_rate: 32000,
-		channel: 1,
-	};
-	if (responseFormat === 'mp3') audioSetting.bitrate = 128000;
 	return {
 		model: input.model,
 		text,
@@ -106,12 +100,30 @@ export function buildMiniMaxT2aBodyFromOpenAi(input: {
 		voice_setting: {
 			voice_id: voiceId,
 			speed: input.speed,
-			vol: 1,
-			pitch: 0,
 		},
-		audio_setting: audioSetting,
+		audio_setting: {
+			format: responseFormat,
+			channel: 1,
+		},
 		...(input.stream ? { stream_options: { exclude_aggregated_audio: true } } : {}),
 	};
+}
+
+/**
+ * `vol` / `pitch` / `sample_rate` / `bitrate` 只在合并路由参数和客户端额外字段之后仍缺省时填入。
+ * 这样路由 `custom_params` 和 `extra_body` 可以覆盖它们。
+ */
+export function fillMiniMaxSpeechDefaults(body: Record<string, unknown>): Record<string, unknown> {
+	const voice = asObject(body.voice_setting) ?? {};
+	if (voice.vol == null) voice.vol = 1;
+	if (voice.pitch == null) voice.pitch = 0;
+	body.voice_setting = voice;
+	const audio = asObject(body.audio_setting) ?? {};
+	if (audio.sample_rate == null) audio.sample_rate = 32000;
+	if (audio.channel == null) audio.channel = 1;
+	if (audio.format === 'mp3' && audio.bitrate == null) audio.bitrate = 128000;
+	body.audio_setting = audio;
+	return body;
 }
 
 function positiveInt(value: unknown, fallback: number): number {

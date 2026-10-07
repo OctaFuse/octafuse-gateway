@@ -34,7 +34,21 @@ export const MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE = `{
   "prompt": "A red paper lantern over a quiet canal at dusk, cinematic lighting",
   "n": 1,
   "size": "1024x1024",
-  "response_format": "url"
+  "response_format": "url",
+  "prompt_optimizer": true,
+  "aigc_watermark": false
+}`;
+
+/** OpenAI Images → DashScope multimodal-generation。`parameters` 按模型文档填写。 */
+export const DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "prompt": "a red apple on a white background",
+  "n": 1,
+  "size": "1024x1024",
+  "parameters": {
+    "negative_prompt": "blurry",
+    "seed": 42
+  }
 }`;
 
 /**

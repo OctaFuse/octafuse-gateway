@@ -20,7 +20,7 @@ import {
 	type PlaygroundLlmFamily,
 } from './playground-utils';
 import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE, MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE, MINIMAX_SPEECH_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
-import { IMAGE_GENERATIONS_BODY_TEMPLATE, MINIMAX_IMAGE_BODY_TEMPLATE, MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
+import { DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE, IMAGE_GENERATIONS_BODY_TEMPLATE, MINIMAX_IMAGE_BODY_TEMPLATE, MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { RouteListRow } from './types';
 
 function route(overrides: Partial<RouteListRow> = {}): RouteListRow {
@@ -64,7 +64,7 @@ describe('playground-utils', () => {
 				{ output_modalities: '["image"]' } as never,
 				'edits',
 			),
-			IMAGE_GENERATIONS_BODY_TEMPLATE,
+			DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE,
 		);
 	});
 

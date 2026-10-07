@@ -74,7 +74,11 @@ export const MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE = `{
   "input": "你好，欢迎使用 OctaFuse Gateway。",
   "voice": "male-qn-qingse",
   "response_format": "mp3",
-  "speed": 1
+  "speed": 1,
+  "voice_setting": {
+    "emotion": "happy"
+  },
+  "language_boost": "Chinese"
 }`;
 
 /** MiniMax 同步语音合成 POST /v1/t2a_v2。stream 为 false 时返回 hex，调试台再解码播放。 */

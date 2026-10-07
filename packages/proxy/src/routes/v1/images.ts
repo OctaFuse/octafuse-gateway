@@ -15,7 +15,15 @@ import type { RouteResult } from '../../services/model-router';
 import { resolveModelRouting } from '../../services/resolve-model-route-group';
 import { buildProxyFailoverOptions, loadProxyRouteSurface } from '../../services/proxy-pipeline';
 import { proxyImageEdits, proxyImageGenerations, type ProxyResult } from '../../services/proxy';
-import { finalizeRequestLogJson } from '../../services/request-log-shared';
+import { annotateRequestLogWithExtraFields, finalizeRequestLogJson } from '../../services/request-log-shared';
+import {
+	IMAGE_EDIT_KNOWN_KEYS,
+	IMAGE_GENERATION_KNOWN_KEYS,
+	UpstreamExtraFieldsError,
+	attachUpstreamExtraFields,
+	pickExtraFields,
+	pickFormExtraFields,
+} from '@octafuse/core/upstream-extra-fields';
 import {
 	canAffordImageCost,
 	estimateImageBudgetPrecheck,
@@ -480,6 +488,28 @@ async function parseMultipartEdits(c: ImagesContext): Promise<MultipartEditsPars
 		}
 	}
 
+	let extra: Record<string, unknown> = {};
+	try {
+		extra = pickFormExtraFields(body, IMAGE_EDIT_KNOWN_KEYS);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) {
+			return {
+				ok: false,
+				error: error.message,
+				diag: {
+					...baseDiag,
+					bodyKeys,
+					hasModel: true,
+					clientModel: model,
+					promptChars: common.prompt.length,
+					referenceCount: images.length,
+					totalUploadBytes: totalBytes,
+				},
+			};
+		}
+		throw error;
+	}
+
 	return {
 		ok: true,
 		model,
@@ -490,6 +520,7 @@ async function parseMultipartEdits(c: ImagesContext): Promise<MultipartEditsPars
 			quality: common.quality,
 			background: common.background,
 			images,
+			...(Object.keys(extra).length > 0 ? { extra } : {}),
 		},
 		totalUploadBytes: totalBytes,
 	};
@@ -656,7 +687,11 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 				providerModelName: chosenRoute.providerModelName,
 				modelName: modelNameForLog,
 				providerName: chosenRoute.providerName,
-				requestBody: requestBodyForLog,
+				requestBody: annotateRequestLogWithExtraFields(
+					requestBodyForLog,
+					undefined,
+					proxyResult.meta?.restoredUpstreamPaths,
+				),
 				upstreamRequestBody: upstreamRequestBodyForLog,
 				requestProtocol: 'openai',
 				requestOperation: operation === 'generations' ? 'images.generations' : 'images.edits',
@@ -825,16 +860,38 @@ imageRoutes.post('/generations', async (c) => {
 		});
 	}
 
-	const requestBodyForLog = finalizeRequestLogJson(
-		redactImageRequestForLog({
-			operation: 'generations',
-			model: rawModelId,
-			n: common.n,
-			size: common.size,
-			quality: common.quality,
-			background: common.background,
-			prompt: common.prompt,
-		})
+	let extraFields: Record<string, unknown> = {};
+	try {
+		extraFields = pickExtraFields(body, IMAGE_GENERATION_KNOWN_KEYS);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) {
+			return rejectImageRequest(c, 400, error.message, {
+				operation: 'generations',
+				contentType,
+				contentLength,
+				bodyKeys,
+				hasModel: true,
+				clientModel: rawModelId,
+				promptChars: common.prompt.length,
+			});
+		}
+		throw error;
+	}
+
+	const requestBodyForLog = annotateRequestLogWithExtraFields(
+		finalizeRequestLogJson(
+			redactImageRequestForLog({
+				operation: 'generations',
+				model: rawModelId,
+				n: common.n,
+				size: common.size,
+				quality: common.quality,
+				background: common.background,
+				prompt: common.prompt,
+			})
+		),
+		extraFields,
+		undefined,
 	);
 
 	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {
@@ -866,6 +923,10 @@ imageRoutes.post('/generations', async (c) => {
 	}
 	// Seedream 等兼容扩展：用户显式传入时透传；亦可由 route `custom_params` 注入默认值
 	applyOpenAiImageGenerationExtras(upstreamBody, body);
+	if (typeof body.style === 'string' && body.style.trim() !== '') {
+		upstreamBody.style = body.style.trim();
+	}
+	const upstreamBodyWithExtras = attachUpstreamExtraFields(upstreamBody, extraFields);
 
 	const failoverOptions = await buildProxyFailoverOptions({
 		repos,
@@ -891,7 +952,7 @@ imageRoutes.post('/generations', async (c) => {
 	const proxyResult = await proxyImageGenerations(
 		repos,
 		routes,
-		upstreamBody,
+		upstreamBodyWithExtras,
 		c.req.raw.signal,
 		failoverOptions
 	);
@@ -1003,17 +1064,21 @@ imageRoutes.post('/edits', async (c) => {
 		});
 	}
 
-	const requestBodyForLog = finalizeRequestLogJson(
-		redactImageRequestForLog({
-			operation: 'edits',
-			model: rawModelId,
-			n: edit.n,
-			size: edit.size,
-			quality: edit.quality,
-			background: edit.background,
-			prompt: edit.prompt,
-			referenceCount: edit.images.length,
-		})
+	const requestBodyForLog = annotateRequestLogWithExtraFields(
+		finalizeRequestLogJson(
+			redactImageRequestForLog({
+				operation: 'edits',
+				model: rawModelId,
+				n: edit.n,
+				size: edit.size,
+				quality: edit.quality,
+				background: edit.background,
+				prompt: edit.prompt,
+				referenceCount: edit.images.length,
+			})
+		),
+		edit.extra,
+		undefined,
 	);
 
 	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {

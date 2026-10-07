@@ -9,6 +9,7 @@ import {
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 } from '@/lib/audio-transcriptions';
 import {
+	DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE,
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
 	MINIMAX_IMAGE_BODY_TEMPLATE,
@@ -114,6 +115,7 @@ export function bodyTemplateForSelection(
 	realtimeOperation?: string | null,
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
+	adapter?: string | null,
 ): string {
 	if (toolId) {
 		return bodyTemplateForTool(toolId);
@@ -153,6 +155,9 @@ export function bodyTemplateForSelection(
 	if (isImageModel && protocol === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'dashscope') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'openai') {
+		if (adapter === 'dashscope-image-qwen' || adapter === 'dashscope-image-wan') {
+			return DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE;
+		}
 		if (providerModelName && /^image-01/i.test(providerModelName.trim())) {
 			return MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE;
 		}
@@ -306,6 +311,7 @@ export function isBodyDirty(
 	realtimeOperation?: string | null,
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
+	adapter?: string | null,
 ): boolean {
 	return (
 		normalizeBodyWhitespace(bodyText) !==
@@ -319,6 +325,7 @@ export function isBodyDirty(
 				realtimeOperation,
 				providerModelName,
 				llmOperation,
+				adapter,
 			),
 		)
 	);

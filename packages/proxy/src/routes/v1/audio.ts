@@ -17,7 +17,14 @@ import {
 	type ProxyResult,
 	type UsageFromStream,
 } from '../../services/proxy';
-import { finalizeRequestLogJson } from '../../services/request-log-shared';
+import { annotateRequestLogWithExtraFields, finalizeRequestLogJson } from '../../services/request-log-shared';
+import {
+	AUDIO_SPEECH_KNOWN_KEYS,
+	AUDIO_TRANSCRIPTION_KNOWN_KEYS,
+	UpstreamExtraFieldsError,
+	pickExtraFields,
+	pickFormExtraFields,
+} from '@octafuse/core/upstream-extra-fields';
 import { apiKeyHasBalance } from '../../services/tool-usage-charge';
 import {
 	canAffordAudioCost,
@@ -260,6 +267,16 @@ async function parseMultipartTranscription(c: {
 		return { ok: false, error: 'Missing audio file or file_url' };
 	}
 
+	let extra: Record<string, unknown> = {};
+	try {
+		extra = pickFormExtraFields(body, AUDIO_TRANSCRIPTION_KNOWN_KEYS);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) {
+			return { ok: false, error: error.message };
+		}
+		throw error;
+	}
+
 	return {
 		ok: true,
 		model,
@@ -269,9 +286,10 @@ async function parseMultipartTranscription(c: {
 			language,
 			prompt,
 			temperature,
-				clientDurationSeconds,
-				fileSourceUrl,
-			},
+			clientDurationSeconds,
+			fileSourceUrl,
+			...(Object.keys(extra).length > 0 ? { extra } : {}),
+		},
 	};
 }
 
@@ -339,17 +357,21 @@ audioRoutes.post('/transcriptions', async (c) => {
 		});
 	}
 
-	const requestBodyForLog = finalizeRequestLogJson(
-		redactAudioRequestForLog({
-			model: rawModelId,
-			filename: transcription.file?.filename ?? '',
-			mimeType: transcription.file?.mimeType ?? '',
-			byteLength: transcription.file?.bytes.byteLength ?? 0,
-			language: transcription.language,
-			responseFormat: transcription.clientResponseFormat,
+	const requestBodyForLog = annotateRequestLogWithExtraFields(
+		finalizeRequestLogJson(
+			redactAudioRequestForLog({
+				model: rawModelId,
+				filename: transcription.file?.filename ?? '',
+				mimeType: transcription.file?.mimeType ?? '',
+				byteLength: transcription.file?.bytes.byteLength ?? 0,
+				language: transcription.language,
+				responseFormat: transcription.clientResponseFormat,
 				clientDurationSeconds: transcription.clientDurationSeconds,
 				fileSourceUrl: transcription.fileSourceUrl,
 			})
+		),
+		transcription.extra,
+		undefined,
 	);
 
 	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {
@@ -474,6 +496,16 @@ function parseSpeechRequest(body: unknown):
 		if (value.instructions !== '') instructions = value.instructions;
 	}
 
+	let extraFields: Record<string, unknown> = {};
+	try {
+		extraFields = pickExtraFields(value, AUDIO_SPEECH_KNOWN_KEYS);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) {
+			return { ok: false, error: error.message };
+		}
+		throw error;
+	}
+
 	return {
 		ok: true,
 		model,
@@ -484,6 +516,7 @@ function parseSpeechRequest(body: unknown):
 			speed,
 			streamFormat: streamFormatRaw,
 			instructions,
+			...(Object.keys(extraFields).length > 0 ? { extraFields } : {}),
 		},
 	};
 }
@@ -549,8 +582,10 @@ audioRoutes.post('/speech', async (c) => {
 		});
 	}
 
-	const requestBodyForLog = finalizeRequestLogJson(
-		redactAudioSpeechRequestForLog(rawModelId, speech)
+	const requestBodyForLog = annotateRequestLogWithExtraFields(
+		finalizeRequestLogJson(redactAudioSpeechRequestForLog(rawModelId, speech)),
+		speech.extraFields,
+		undefined,
 	);
 	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {
 		baseModelId,
@@ -703,7 +738,11 @@ async function finalizeSpeechResponse(params: {
 					providerModelName: chosenRoute.providerModelName,
 					modelName: modelNameForLog,
 					providerName: chosenRoute.providerName,
-					requestBody: requestBodyForLog,
+					requestBody: annotateRequestLogWithExtraFields(
+						requestBodyForLog,
+						undefined,
+						proxyResult.meta?.restoredUpstreamPaths,
+					),
 					requestProtocol: 'openai',
 					requestOperation: 'audio.speech',
 					upstreamProtocol: chosenRoute.upstreamProtocol,
@@ -846,7 +885,11 @@ async function finalizeAudioResponse(params: {
 				providerModelName: chosenRoute.providerModelName,
 				modelName: modelNameForLog,
 				providerName: chosenRoute.providerName,
-				requestBody: requestBodyForLog,
+				requestBody: annotateRequestLogWithExtraFields(
+					requestBodyForLog,
+					undefined,
+					proxyResult.meta?.restoredUpstreamPaths,
+				),
 				requestProtocol: 'openai',
 				requestOperation: 'audio.transcriptions',
 				upstreamProtocol: chosenRoute.upstreamProtocol,

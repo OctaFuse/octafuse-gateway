@@ -170,6 +170,18 @@ describe('adapter registry', () => {
 		);
 	});
 
+	it('declares protected upstream paths for OpenAI image and audio conversion adapters', () => {
+		for (const adapter of listConversionAdapters()) {
+			if (adapter.request.protocol !== 'openai') continue;
+			if (adapter.modality !== 'image' && adapter.modality !== 'audio') continue;
+			assert.notEqual(
+				adapter.protectedUpstreamPaths,
+				undefined,
+				`${adapter.id} must declare protectedUpstreamPaths`,
+			);
+		}
+	});
+
 	it('keeps option keys unique', () => {
 		const keys = ADAPTER_REGISTRY.map((adapter) => adapter.optionKey);
 		assert.equal(new Set(keys).size, keys.length);
