@@ -1057,6 +1057,7 @@
 			"adapterUnavailable": "不可用",
 			"adapterMissingCapabilities": "供应商缺少所需端点：{capabilities}",
 			"adapterLossyFeatures": "已知不支持：{features}",
+			"adapterModelUnrecognized": "未识别该供应商模型名，已显示全部适配器。",
 			"passthroughHint": "当前版本仅支持透传，对外协议与上游协议需保持一致。",
 			"protocolHintConfigured": "仅显示该供应商已配置且适用于当前模型的协议。",
 			"protocolHintSelectProvider": "请先选择供应商。",

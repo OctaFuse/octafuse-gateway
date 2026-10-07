@@ -72,7 +72,7 @@ export function RouteMappingFields({
 		formData.upstream_protocol,
 		formData.provider_model_name
 	);
-	const adapterOptions = listAdapterOptionsForModel(
+	const { options: adapterOptions, modelUnrecognized } = listAdapterOptionsForModel(
 		selectedModel,
 		selectedProvider,
 		formData.provider_model_name
@@ -81,10 +81,18 @@ export function RouteMappingFields({
 	const selectedAdapterOption = adapterOptions.find(
 		(option) => option.descriptor.optionKey === selectedAdapterOptionKey
 	);
+	const providerModelNamed = formData.provider_model_name.trim().length > 0;
 	const visibleAdapterOptions = selectedProvider
-		? adapterOptions.filter(
-				(option) => option.available || option.descriptor.optionKey === selectedAdapterOptionKey
-		  )
+		? adapterOptions.filter((option) => {
+				const kept =
+					option.available || option.descriptor.optionKey === selectedAdapterOptionKey;
+				if (!kept) return false;
+				if (!providerModelNamed || modelUnrecognized) return true;
+				return (
+					option.modelMatch !== 'mismatch' ||
+					option.descriptor.optionKey === selectedAdapterOptionKey
+				);
+		  })
 		: [];
 	const compatibleAdapters = compatibleAdaptersForRoute(formData);
 	const showCurrentAdapter =
@@ -509,6 +517,9 @@ export function RouteMappingFields({
 								: (adapterDescription(selectedAdapterOption?.descriptor.id ?? formData.adapter) ??
 									t('editor.adapterHint'))}
 						</p>
+						{selectedProvider && modelUnrecognized ? (
+							<p className="mt-2 text-xs text-amber-700">{t('adapterModelUnrecognized')}</p>
+						) : null}
 						{selectedProvider &&
 						selectedAdapterOption &&
 						selectedAdapterOption.missingCapabilities.length > 0 ? (

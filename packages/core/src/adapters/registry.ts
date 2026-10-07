@@ -32,6 +32,14 @@ export type AdapterRequestPayload = 'json' | 'multipart';
 export type AdapterResponsePayload = 'json' | 'sse' | 'binary' | 'websocket';
 export type AdapterSurfaceRole = 'request' | 'upstream';
 
+export type AdapterUpstreamModels = {
+	include: readonly string[];
+	exclude?: readonly string[];
+};
+
+/** Admin 下拉用：`match` 命中规则，`mismatch` 排除，`generic` 不按模型名过滤。 */
+export type AdapterModelMatch = 'match' | 'mismatch' | 'generic';
+
 export type AdapterPresetIntent =
 	| 'dashscope-asr-flash-convert'
 	| 'dashscope-asr-flash-passthrough'
@@ -61,12 +69,68 @@ export interface AdapterDescriptor {
 	roles: readonly AdapterSurfaceRole[];
 	presetIntent?: AdapterPresetIntent;
 	lossyFeatures?: readonly string[];
+	/**
+	 * 适用的供应商模型名。大小写不敏感，`*` 通配。
+	 * 不填表示通用，Admin 下拉不按模型名隐藏。
+	 */
+	upstreamModels?: AdapterUpstreamModels;
+}
+
+/**
+ * 供应商模型名规则是 Admin 适配器下拉的唯一来源。
+ * 新增模型家族时在这里补 pattern，不要在 Admin 里再写一份。
+ */
+const QWEN3_ASR_SYNC_MODELS = ['qwen3-asr-flash', 'qwen3-asr-flash-2*'] as const;
+const QWEN_AUDIO_ASR_SYNC_MODELS = ['qwen-audio-3.0-asr-flash', 'qwen-audio-3.0-asr-flash-2*'] as const;
+const FUN_ASR_SYNC_MODELS = ['fun-asr-realtime*'] as const;
+const DASHSCOPE_SYNC_ASR_MODELS = [
+	...QWEN3_ASR_SYNC_MODELS,
+	...QWEN_AUDIO_ASR_SYNC_MODELS,
+	...FUN_ASR_SYNC_MODELS,
+] as const;
+const DASHSCOPE_ASYNC_ASR_MODELS = ['*-filetrans*', 'fun-asr', 'fun-asr-2*', 'paraformer-v*'] as const;
+const DASHSCOPE_ASR_SESSION_MODELS = ['qwen3-asr-flash-realtime*'] as const;
+const DASHSCOPE_ASR_INFERENCE_MODELS = [
+	'fun-asr-realtime*',
+	'paraformer-realtime*',
+	'qwen-audio-3.0-asr-flash-streaming*',
+] as const;
+const COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS = ['cosyvoice-*', 'qwen-audio-3.0-tts-*'] as const;
+const QWEN_TTS_HTTP_MODELS = {
+	include: ['qwen3-tts-*', 'qwen-tts*'],
+	exclude: ['*realtime*'],
+} as const;
+const MINIMAX_TTS_MODELS = ['minimax/speech-*'] as const;
+const QWEN_TTS_REALTIME_SESSION_MODELS = ['qwen3-tts-*realtime*', 'qwen-tts-realtime*'] as const;
+const COSYVOICE_REALTIME_MODELS = ['cosyvoice-*'] as const;
+const QWEN_IMAGE_MODELS = ['qwen-image*'] as const;
+const WAN_IMAGE_MODELS = ['wan*'] as const;
+
+function matchesUpstreamModelPattern(pattern: string, modelName: string): boolean {
+	const source = pattern.trim().toLowerCase();
+	const escaped = source.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*');
+	return new RegExp(`^${escaped}$`).test(modelName);
+}
+
+/** 供应商模型名是否适用该适配器。空名称与未声明规则都视为通用。 */
+export function matchAdapterUpstreamModel(
+	descriptor: Pick<AdapterDescriptor, 'upstreamModels'>,
+	providerModelName: string,
+): AdapterModelMatch {
+	const rule = descriptor.upstreamModels;
+	if (!rule || rule.include.length === 0) return 'generic';
+	const name = providerModelName.trim().toLowerCase();
+	if (!name) return 'generic';
+	if (rule.exclude?.some((pattern) => matchesUpstreamModelPattern(pattern, name))) return 'mismatch';
+	if (rule.include.some((pattern) => matchesUpstreamModelPattern(pattern, name))) return 'match';
+	return 'mismatch';
 }
 
 const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-asr-qwen-file',
 		optionKey: 'dashscope-asr-qwen-file',
+		upstreamModels: { include: QWEN3_ASR_SYNC_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
@@ -83,6 +147,7 @@ const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-asr-qwen-audio-file',
 		optionKey: 'dashscope-asr-qwen-audio-file',
+		upstreamModels: { include: QWEN_AUDIO_ASR_SYNC_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
@@ -100,6 +165,7 @@ const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-asr-fun-file',
 		optionKey: 'dashscope-asr-fun-file',
+		upstreamModels: { include: FUN_ASR_SYNC_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
@@ -116,6 +182,7 @@ const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-asr-file-async',
 		optionKey: 'dashscope-asr-file-async',
+		upstreamModels: { include: DASHSCOPE_ASYNC_ASR_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.async'] },
 		modality: 'audio',
@@ -133,6 +200,7 @@ const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-tts-speech',
 		optionKey: 'dashscope-tts-speech',
+		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech'] },
 		modality: 'audio',
@@ -149,6 +217,7 @@ const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-tts-qwen',
 		optionKey: 'dashscope-tts-qwen',
+		upstreamModels: QWEN_TTS_HTTP_MODELS,
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech.multimodal'] },
 		modality: 'audio',
@@ -165,6 +234,7 @@ const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-tts-minimax',
 		optionKey: 'dashscope-tts-minimax',
+		upstreamModels: { include: MINIMAX_TTS_MODELS },
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech.multimodal'] },
 		modality: 'audio',
@@ -181,6 +251,7 @@ const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-image-qwen',
 		optionKey: 'dashscope-image-qwen',
+		upstreamModels: { include: QWEN_IMAGE_MODELS },
 		request: { protocol: 'openai', operation: 'images.generations' },
 		upstream: { protocol: 'dashscope', operations: ['images.generations.multimodal'] },
 		modality: 'image',
@@ -198,6 +269,7 @@ const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-image-wan',
 		optionKey: 'dashscope-image-wan',
+		upstreamModels: { include: WAN_IMAGE_MODELS },
 		request: { protocol: 'openai', operation: 'images.generations' },
 		upstream: { protocol: 'dashscope', operations: ['images.generations.multimodal'] },
 		modality: 'image',
@@ -243,6 +315,7 @@ function passthroughDescriptor(input: {
 	publicPath: string;
 	roles?: readonly AdapterSurfaceRole[];
 	presetIntent?: AdapterPresetIntent;
+	upstreamModels?: AdapterUpstreamModels;
 }): AdapterDescriptor {
 	return {
 		id: PASSTHROUGH_ROUTE_ADAPTER,
@@ -259,6 +332,7 @@ function passthroughDescriptor(input: {
 		publicPath: input.publicPath,
 		roles: input.roles ?? ['request', 'upstream'],
 		presetIntent: input.presetIntent,
+		...(input.upstreamModels ? { upstreamModels: input.upstreamModels } : {}),
 	};
 }
 
@@ -361,6 +435,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requiredUpstreamCapabilities: ['audio.transcriptions.multimodal'],
 		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 		presetIntent: 'dashscope-asr-flash-passthrough',
+		upstreamModels: { include: DASHSCOPE_SYNC_ASR_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -372,6 +447,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.inference'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		upstreamModels: { include: DASHSCOPE_ASR_INFERENCE_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -383,6 +459,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.session'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		upstreamModels: { include: DASHSCOPE_ASR_SESSION_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -395,6 +472,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requiredUpstreamCapabilities: ['audio.realtime.inference'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
 		presetIntent: 'dashscope-tts-realtime',
+		upstreamModels: { include: COSYVOICE_REALTIME_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -405,6 +483,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'binary',
 		requiredUpstreamCapabilities: ['audio.speech'],
 		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -416,6 +495,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'sse',
 		requiredUpstreamCapabilities: ['audio.speech'],
 		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -425,6 +505,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'per_character',
 		requiredUpstreamCapabilities: ['audio.speech.multimodal'],
 		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+		upstreamModels: QWEN_TTS_HTTP_MODELS,
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -436,6 +517,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.session'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		upstreamModels: { include: QWEN_TTS_REALTIME_SESSION_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -455,6 +537,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'per_second',
 		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
 		publicPath: DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+		upstreamModels: { include: DASHSCOPE_ASYNC_ASR_MODELS },
 	}),
 ];
 

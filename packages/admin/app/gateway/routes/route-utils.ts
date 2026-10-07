@@ -36,6 +36,8 @@ import {
 	getAdapterByOptionKey,
 	getAdapterByPresetIntent,
 	listSelectableAdapters,
+	matchAdapterUpstreamModel,
+	type AdapterModelMatch,
 	requestOperationsFromRegistry,
 	requestSurfacePath as requestSurfacePathFromRegistry,
 	requiredCapabilitiesForUpstreamOperation,
@@ -1079,42 +1081,48 @@ export type AdapterOptionAvailability = {
 	descriptor: AdapterDescriptor;
 	available: boolean;
 	missingCapabilities: readonly string[];
+	modelMatch: AdapterModelMatch;
+};
+
+export type AdapterOptionList = {
+	options: AdapterOptionAvailability[];
+	/** 供应商模型名没有命中任何带规则的可用适配器，下拉已回退为全部可用项。 */
+	modelUnrecognized: boolean;
 };
 
 export function listAdapterOptionsForModel(
 	model: GatewayModel | undefined,
 	provider: GatewayProvider | undefined,
 	providerModelName = '',
-): AdapterOptionAvailability[] {
+): AdapterOptionList {
 	const kind = modelKindForModel(model);
-	const capabilities = new Set<string>();
+	const capabilitiesByProtocol = new Map<string, ReadonlySet<string>>();
 	if (provider) {
-		const map = parseProviderEndpoints(provider);
+		const endpoints = parseProviderEndpoints(provider);
 		for (const protocol of UPSTREAM_PROTOCOLS) {
-			if (!map[protocol]) continue;
-			for (const capability of listConfiguredCapabilities(map, protocol)) {
-				capabilities.add(capability);
-			}
+			if (!endpoints[protocol]) continue;
+			capabilitiesByProtocol.set(protocol, new Set(listConfiguredCapabilities(endpoints, protocol)));
 		}
 	}
-	return adaptersForModelKind(kind)
-		.filter((descriptor) => {
-			if (kind !== 'audio.transcription') return true;
-			return isDashScopeRealtimeAsrModelOperationCompatible(
-				providerModelName,
-				descriptor.request.operation,
-			);
-		})
-		.map((descriptor) => {
-			const missingCapabilities = provider
-				? descriptor.requiredUpstreamCapabilities.filter((capability) => !capabilities.has(capability))
-				: descriptor.requiredUpstreamCapabilities;
-			return {
-				descriptor,
-				available: missingCapabilities.length === 0 && Boolean(provider),
-				missingCapabilities,
-			};
-		});
+	const options = adaptersForModelKind(kind).map((descriptor) => {
+		const capabilities = capabilitiesByProtocol.get(descriptor.upstream.protocol);
+		const missingCapabilities = provider
+			? descriptor.requiredUpstreamCapabilities.filter((capability) => !capabilities?.has(capability))
+			: descriptor.requiredUpstreamCapabilities;
+		return {
+			descriptor,
+			available: missingCapabilities.length === 0 && Boolean(provider),
+			missingCapabilities,
+			modelMatch: matchAdapterUpstreamModel(descriptor, providerModelName),
+		};
+	});
+	const available = options.filter((option) => option.available);
+	const recognized = available.some((option) => option.modelMatch === 'match');
+	const hasModelRules = available.some((option) => option.modelMatch !== 'generic');
+	return {
+		options,
+		modelUnrecognized: providerModelName.trim().length > 0 && !recognized && hasModelRules,
+	};
 }
 
 export function resolveAdapterOptionKey(formData: Pick<RouteFormData, 'adapter' | 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>): string | null {

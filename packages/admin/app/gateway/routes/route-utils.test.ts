@@ -19,6 +19,7 @@ import {
 	buildRoutesByModel,
 	compareRoutesWithinPriorityLayer,
 	compatibleAdaptersForRoute,
+	listAdapterOptionsForModel,
 	factorChipClassForValue,
 	factorLevelForValue,
 	formatFactorMultiplierForChip,
@@ -513,6 +514,128 @@ describe('route form capability filters', () => {
 			adapterOptionMappingSuffix(tts),
 			' · openai/audio.speech → dashscope/audio.speech.multimodal',
 		);
+	});
+
+	function visibleAdapterKeys(
+		listed: ReturnType<typeof listAdapterOptionsForModel>,
+		providerModelName = 'named',
+	): string[] {
+		return listed.options
+			.filter((option) => {
+				if (!option.available) return false;
+				if (!providerModelName.trim() || listed.modelUnrecognized) return true;
+				return option.modelMatch !== 'mismatch';
+			})
+			.map((option) => option.descriptor.optionKey)
+			.sort();
+	}
+
+	it('does not treat another protocol capability as satisfying this adapter', () => {
+		const dashscopeOnly = provider({
+			dashscope: { base: 'https://dashscope.aliyuncs.com/api/v1' },
+		});
+		const asr = model({
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_second',
+				audio: { price_per_second: 0.0001 },
+			}),
+		});
+		const listed = listAdapterOptionsForModel(asr, dashscopeOnly, 'qwen3-asr-flash');
+		assert.equal(
+			listed.options.find((option) => option.descriptor.optionKey === 'passthrough:openai:audio.transcriptions')
+				?.available,
+			false,
+		);
+		assert.equal(
+			listed.options.find((option) => option.descriptor.optionKey === 'passthrough:minimax:audio.transcriptions')
+				?.available,
+			false,
+		);
+		assert.equal(listed.modelUnrecognized, false);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'dashscope-asr-qwen-file',
+			'passthrough:dashscope:audio.transcriptions.multimodal',
+		]);
+	});
+
+	it('filters Token Plan TTS adapters to CosyVoice and Qwen-Audio families', () => {
+		const qwenTokenPlan = listStaticProviderImportPresets().find(
+			(row) => row.name === 'Qwen AI Platform (Token Plan)',
+		);
+		assert.ok(qwenTokenPlan);
+		const tts = model({
+			id: 'qwen-audio-3.0-tts-plus',
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_character',
+				audio: { price_per_character: 0.0001 },
+			}),
+		});
+		const listed = listAdapterOptionsForModel(
+			tts,
+			provider(qwenTokenPlan.endpoints),
+			'qwen-audio-3.0-tts-plus',
+		);
+		assert.equal(listed.modelUnrecognized, false);
+		assert.equal(
+			listed.options.find((option) => option.descriptor.optionKey === 'passthrough:openai:audio.speech')
+				?.available,
+			false,
+		);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'dashscope-tts-speech',
+			'passthrough:dashscope:audio.speech',
+			'passthrough:dashscope:audio.speech.stream',
+		]);
+	});
+
+	it('keeps MiniMax file transcription adapters and hides other protocols', () => {
+		const minimax = listStaticProviderImportPresets().find((row) => row.name === 'MiniMax');
+		assert.ok(minimax);
+		const asr = model({
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_second',
+				audio: { price_per_second: 0.0001 },
+			}),
+		});
+		const listed = listAdapterOptionsForModel(asr, provider(minimax.endpoints), 'asr-1.0');
+		assert.equal(listed.modelUnrecognized, false);
+		assert.equal(
+			listed.options.find((option) => option.descriptor.optionKey === 'passthrough:openai:audio.transcriptions')
+				?.available,
+			false,
+		);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'minimax-asr-file',
+			'passthrough:minimax:audio.transcriptions',
+		]);
+	});
+
+	it('shows every available adapter when the provider model name matches no rule', () => {
+		const dashscope = provider({
+			dashscope: { base: 'https://dashscope.aliyuncs.com/api/v1' },
+		});
+		const asr = model({
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_second',
+				audio: { price_per_second: 0.0001 },
+			}),
+		});
+		const listed = listAdapterOptionsForModel(asr, dashscope, 'brand-new-asr');
+		assert.equal(listed.modelUnrecognized, true);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'dashscope-asr-file-async',
+			'dashscope-asr-fun-file',
+			'dashscope-asr-qwen-audio-file',
+			'dashscope-asr-qwen-file',
+			'passthrough:dashscope:audio.transcriptions.async',
+			'passthrough:dashscope:audio.transcriptions.multimodal',
+			'passthrough:dashscope:audio.transcriptions.realtime.inference',
+			'passthrough:dashscope:audio.transcriptions.realtime.session',
+		]);
+
+		const unnamed = listAdapterOptionsForModel(asr, dashscope, '  ');
+		assert.equal(unnamed.modelUnrecognized, false);
+		assert.ok(unnamed.options.every((option) => option.modelMatch === 'generic'));
 	});
 });
 

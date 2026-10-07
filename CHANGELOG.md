@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 路由编辑器的适配器下拉按供应商协议和供应商模型名过滤。能力只跟本协议的端点配置比较；模型名命中规则时只保留该家族的适配器，识别不了则仍显示全部可用适配器。已保存的路由不受影响。
+
 - DashScope 补齐尚未公开的原生透传。语音合成走 `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`（`X-DashScope-SSE: enable` 为流式），多模态语音和生图走已有的多模态生成路径并按模型类型分流，异步文件转写提交 `POST /v1/dashscope/services/audio/asr/transcription`、查询 `GET /v1/dashscope/tasks/{taskId}?model=`。网关只替换 `model`，响应保持上游原文；语音按字符、生图按张数、转写任务成功后按时长计费。Qwen-TTS-Realtime 的 session 也可以选为透传。原有 OpenAI 转换路由不变。Playground 与 Simulator 可以直接发这些原生请求；透传路由的说明不再提示会改写成 OpenAI 字段。
 
 - MiniMax 文件转写增加透传适配器。客户端调用 `POST /v1/minimax/speech_to_text`，网关把 `model` 换成路由上的供应商模型名后原样转发，响应不改写，仍按上游 `duration` 按秒计费。`language` 可以放在请求头，也可以放在表单里由网关转到请求头。Simulator 可切换到 `minimax` 协议并走这条公开路径。原有 OpenAI `POST /v1/audio/transcriptions` 与适配器 `minimax-asr-file` 保持不变。

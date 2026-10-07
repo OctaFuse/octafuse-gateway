@@ -1,11 +1,16 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { isRouteAdapterCompatible, ROUTE_ADAPTERS } from '../route-topology';
 import {
 	ADAPTER_REGISTRY,
+	getAdapterByOptionKey,
 	getAdapterByPresetIntent,
 	isConversionRouteAdapter,
 	listConversionAdapters,
+	matchAdapterUpstreamModel,
 	requestOperationsFromRegistry,
 	requestSurfacePath,
 	ROUTE_ADAPTER_MAPPINGS,
@@ -147,5 +152,61 @@ describe('adapter registry', () => {
 	it('keeps option keys unique', () => {
 		const keys = ADAPTER_REGISTRY.map((adapter) => adapter.optionKey);
 		assert.equal(new Set(keys).size, keys.length);
+	});
+
+	it('matches provider model names with wildcards, case, and exclusions', () => {
+		const speech = getAdapterByOptionKey('dashscope-tts-speech');
+		const qwenTts = getAdapterByOptionKey('dashscope-tts-qwen');
+		const qwenTtsSession = getAdapterByOptionKey('passthrough:dashscope:audio.speech.realtime.session');
+		const qwenAsr = getAdapterByOptionKey('dashscope-asr-qwen-file');
+		const asyncAsr = getAdapterByOptionKey('dashscope-asr-file-async');
+		const openaiAsr = getAdapterByOptionKey('passthrough:openai:audio.transcriptions');
+		assert.ok(speech && qwenTts && qwenTtsSession && qwenAsr && asyncAsr && openaiAsr);
+
+		assert.equal(matchAdapterUpstreamModel(speech, 'Qwen-Audio-3.0-TTS-Plus'), 'match');
+		assert.equal(matchAdapterUpstreamModel(speech, 'cosyvoice-v3.5-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(speech, 'qwen3-tts-flash'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(speech, ''), 'generic');
+		assert.equal(matchAdapterUpstreamModel(speech, '   '), 'generic');
+
+		assert.equal(matchAdapterUpstreamModel(qwenTts, 'qwen3-tts-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenTts, 'qwen-tts-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenTts, 'qwen3-tts-flash-realtime'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(qwenTtsSession, 'qwen3-tts-flash-realtime'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenTtsSession, 'qwen-tts-realtime'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenTtsSession, 'qwen3-tts-flash'), 'mismatch');
+
+		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash-2025-09-08'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash-realtime'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash-filetrans'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'qwen3-asr-flash-filetrans'), 'match');
+		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'fun-asr'), 'match');
+		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'fun-asr-realtime'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(openaiAsr, 'qwen3-asr-flash'), 'generic');
+	});
+
+	it('every Aliyun ASR, TTS, and image preset matches at least one adapter', () => {
+		const presetDir = join(dirname(fileURLToPath(import.meta.url)), '../../../admin/lib/model-presets');
+		const rows = (file: string) =>
+			JSON.parse(readFileSync(join(presetDir, file), 'utf8')) as Array<{
+				id: string;
+				pricing?: { usd?: { audio_billing_mode?: string } };
+			}>;
+		const audioIds = rows('aliyun.json')
+			.filter((row) => {
+				const mode = row.pricing?.usd?.audio_billing_mode;
+				return mode === 'per_second' || mode === 'per_character';
+			})
+			.map((row) => row.id);
+		const imageIds = rows('aliyun-image.json').map((row) => row.id);
+		assert.ok(audioIds.length > 0);
+		assert.ok(imageIds.length > 0);
+		for (const id of [...audioIds, ...imageIds]) {
+			const matched = ADAPTER_REGISTRY.filter(
+				(adapter) => matchAdapterUpstreamModel(adapter, id) === 'match',
+			).map((adapter) => adapter.optionKey);
+			assert.ok(matched.length > 0, `${id} matched no adapter`);
+		}
 	});
 });
