@@ -380,12 +380,14 @@ export function useSimulatorPageState() {
 	const selectedDashScopeTtsProviderModelName = useMemo(() => {
 		if (selectedAudioOperation === 'speech' || (selectedModelIsImage && !selectedModelIsAudio)) {
 			return (
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === protocol)?.provider_model_name ??
 				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
-				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name ??
+				matchingRoutes[0]?.provider_model_name
 			);
 		}
 		return undefined;
-	}, [matchingRoutes, selectedAudioOperation, selectedModelIsAudio, selectedModelIsImage]);
+	}, [matchingRoutes, protocol, selectedAudioOperation, selectedModelIsAudio, selectedModelIsImage]);
 
 	const sendBlockReason = useMemo((): SendBlockReason => {
 		const parsed = tryParseProxyBaseUrl(proxyBaseUrl);
@@ -402,7 +404,8 @@ export function useSimulatorPageState() {
 				!selectedModelIsAudio &&
 				protocol !== 'openai' &&
 				protocol !== 'dashscope' &&
-				protocol !== 'minimax'
+				protocol !== 'minimax' &&
+				protocol !== 'volcengine'
 			) {
 				return 'imageProtocol';
 			}
@@ -537,7 +540,7 @@ export function useSimulatorPageState() {
 				!isToolKind &&
 				selectedModelIsImage &&
 				!selectedModelIsAudio &&
-				(protocol === 'openai' || protocol === 'minimax');
+				(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine');
 			const built = buildSimulatorRequest({
 				baseUrl: parsed.base,
 				kind: filterKind,
@@ -873,7 +876,9 @@ export function useSimulatorPageState() {
 		}
 		if (selectedModelIsImage) {
 			const imageProtocol =
-				protocol === 'dashscope' ? 'dashscope' : protocol === 'minimax' ? 'minimax' : 'openai';
+				protocol === 'dashscope' || protocol === 'minimax' || protocol === 'volcengine'
+					? protocol
+					: 'openai';
 			if (protocol !== imageProtocol) setProtocolState(imageProtocol);
 			setBodyText(
 				bodyTemplateForSelection(
@@ -1083,14 +1088,16 @@ export function useSimulatorPageState() {
 				nextRequestOperation ?? undefined,
 			);
 			const providerModelName =
+				matched.find((candidate) => candidate.upstream_protocol === next)?.provider_model_name ??
 				matched.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
-				matched.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name;
+				matched.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name ??
+				matched[0]?.provider_model_name;
 			setBodyText(
 				bodyTemplateForSelection(
 					next,
 					selectedModelIsImage &&
 						selectedAudioOperation == null &&
-						(next === 'openai' || next === 'dashscope' || next === 'minimax'),
+						(next === 'openai' || next === 'dashscope' || next === 'minimax' || next === 'volcengine'),
 					imageOperation,
 					next === 'openai' || next === 'dashscope' || next === 'minimax' ? selectedAudioOperation : null,
 					undefined,
@@ -1127,7 +1134,8 @@ export function useSimulatorPageState() {
 				!selectedModelIsAudio &&
 				next !== 'openai' &&
 				next !== 'dashscope' &&
-				next !== 'minimax'
+				next !== 'minimax' &&
+				next !== 'volcengine'
 			) {
 				setInfoHint(t('readyNeedOpenaiForImage'));
 				return;
@@ -1316,7 +1324,7 @@ export function useSimulatorPageState() {
 			!isToolKind &&
 			selectedModelIsImage &&
 			!selectedModelIsAudio &&
-			(protocol === 'openai' || protocol === 'minimax');
+			(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine');
 		if (audioOperation === 'transcriptions') {
 			const fileUrl = typeof bodyObj.file_url === 'string' ? bodyObj.file_url.trim() : '';
 			if (!usesDashScopeMicrophone && !selectedUsesDashScopeHttpAsr && !fileUrl) {

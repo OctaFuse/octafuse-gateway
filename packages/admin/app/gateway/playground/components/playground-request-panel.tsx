@@ -368,6 +368,10 @@ export function PlaygroundRequestPanel({
 						<p className="text-xs text-gray-500">{t('imageMiniMaxOpenAiHint')}</p>
 					) : selected?.upstream_protocol === 'minimax' ? (
 						<p className="text-xs text-gray-500">{t('imageMiniMaxPassthroughHint')}</p>
+					) : selected?.adapter === 'volcengine-image' ? (
+						<p className="text-xs text-gray-500">{t('imageVolcengineOpenAiHint')}</p>
+					) : selected?.upstream_protocol === 'volcengine' ? (
+						<p className="text-xs text-gray-500">{t('imageVolcenginePassthroughHint')}</p>
 					) : selectedImageUsesDashScope ? (
 						<p className="text-xs text-gray-500">
 							{t(selected?.adapter === 'passthrough' ? 'imageDashScopePassthroughHint' : 'imageDashScopeHint')}

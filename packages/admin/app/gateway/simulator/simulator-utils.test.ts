@@ -8,6 +8,8 @@ import {
 import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
+	VOLCENGINE_IMAGE_BODY_TEMPLATE,
 	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
 } from "../../../lib/image-generations";
 import {
@@ -460,6 +462,22 @@ describe("simulator-utils", () => {
 		assert.notEqual(
 			bodyTemplateForSelection("openai", false),
 			IMAGE_GENERATIONS_BODY_TEMPLATE
+		);
+		assert.equal(
+			bodyTemplateForSelection(
+				"openai",
+				true,
+				"generations",
+				null,
+				null,
+				null,
+				"doubao-seedream-5-0-260128",
+			),
+			SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
+		);
+		assert.equal(
+			bodyTemplateForSelection("volcengine", true),
+			VOLCENGINE_IMAGE_BODY_TEMPLATE,
 		);
 	});
 

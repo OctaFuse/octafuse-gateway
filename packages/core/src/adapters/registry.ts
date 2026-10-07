@@ -28,6 +28,9 @@ export const MINIMAX_T2A_PATH = '/v1/minimax/t2a_v2';
 /** MiniMax 文生图 / 图生图透传：`POST /v1/minimax/image_generation`。 */
 export const MINIMAX_IMAGE_GENERATION_PATH = '/v1/minimax/image_generation';
 
+/** 火山方舟 / BytePlus Seedream 生图透传：`POST /v1/volcengine/images/generations`。非流式与 SSE 共用。 */
+export const VOLCENGINE_IMAGE_GENERATIONS_PATH = '/v1/volcengine/images/generations';
+
 export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
 
 export type AdapterModality = 'text' | 'image' | 'audio' | 'video' | 'embedding';
@@ -122,6 +125,7 @@ const QWEN_TTS_HTTP_MODELS = {
 const MINIMAX_TTS_MODELS = ['minimax/speech-*'] as const;
 const MINIMAX_NATIVE_TTS_MODELS = ['speech-*'] as const;
 const MINIMAX_IMAGE_MODELS = ['image-01*'] as const;
+const VOLCENGINE_IMAGE_MODELS = ['doubao-seedream-*', 'dola-seedream-*', 'seedream-*'] as const;
 const QWEN_TTS_REALTIME_SESSION_MODELS = ['qwen3-tts-*realtime*', 'qwen-tts-realtime*'] as const;
 const COSYVOICE_REALTIME_MODELS = ['cosyvoice-*'] as const;
 const QWEN_IMAGE_MODELS = ['qwen-image*'] as const;
@@ -372,6 +376,31 @@ const CONVERSION_ADAPTERS = [
 		protectedUpstreamPaths: ['n', 'response_format'],
 		extraBodyExample: { prompt_optimizer: true, aigc_watermark: false },
 	},
+	{
+		id: 'volcengine-image',
+		optionKey: 'volcengine-image',
+		upstreamModels: { include: VOLCENGINE_IMAGE_MODELS },
+		request: { protocol: 'openai', operation: 'images.generations' },
+		upstream: { protocol: 'volcengine', operations: ['images.generations'] },
+		modality: 'image',
+		modelKind: 'image',
+		exchange: 'unary',
+		billing: 'per_image',
+		requestPayload: 'json',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['images.generations'],
+		publicPath: '/v1/images/generations',
+		roles: ['upstream'],
+		lossyFeatures: ['background', 'quality'],
+		protectedUpstreamPaths: [
+			'stream',
+			'sequential_image_generation',
+			'sequential_image_generation_options',
+			'sequential_image_generation_options.max_images',
+			'response_format',
+		],
+		extraBodyExample: { watermark: false, image: 'https://example.com/ref.png' },
+	},
 ] as const satisfies readonly AdapterDescriptor[];
 
 function passthroughDescriptor(input: {
@@ -530,6 +559,18 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requiredUpstreamCapabilities: ['images.generations'],
 		publicPath: MINIMAX_IMAGE_GENERATION_PATH,
 		upstreamModels: { include: MINIMAX_IMAGE_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'volcengine',
+		operation: 'images.generations',
+		modelKind: 'image',
+		modality: 'image',
+		exchange: 'sse',
+		billing: 'per_image',
+		responsePayload: 'sse',
+		requiredUpstreamCapabilities: ['images.generations'],
+		publicPath: VOLCENGINE_IMAGE_GENERATIONS_PATH,
+		upstreamModels: { include: VOLCENGINE_IMAGE_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -809,7 +850,7 @@ export function requestSurfacePath(
 		}
 		return `/v1beta/models/${modelSegment}:${operation}`;
 	}
-	if (protocol === 'minimax') {
+	if (protocol === 'minimax' || protocol === 'volcengine') {
 		if (operation === '*') return '/*';
 		return lookupPublicPath(protocol, operation) ?? `/${operation}`;
 	}

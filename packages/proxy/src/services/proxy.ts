@@ -24,6 +24,7 @@ import {
 	dispatchImageGenerations,
 	dispatchDashScopeJsonPassthroughRoute,
 	dispatchMiniMaxJsonPassthroughRoute,
+	dispatchVolcengineJsonPassthroughRoute,
 	dispatchMiniMaxSpeechPassthrough,
 	dispatchMultimodalPassthrough,
 } from "./egress/dispatch-table";
@@ -36,6 +37,7 @@ import type {
 	MiniMaxJsonPassthroughOperation,
 	MiniMaxJsonPassthroughOptions,
 } from "./egress/minimax-json-passthrough";
+import type { VolcengineJsonPassthroughOptions } from "./egress/volcengine-json-passthrough";
 import type {
 	AudioSpeechDispatchOptions,
 	NormalizedAudioSpeechRequest,
@@ -397,6 +399,37 @@ export async function proxyDashScopeJsonPassthrough(
 				timing,
 				attempt,
 				options?.dashScopeJson
+			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理火山方舟 / BytePlus Seedream 生图透传（JSON 或 SSE）。 */
+export async function proxyVolcengineJsonPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	body: Record<string, unknown>,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { volcengineJson?: VolcengineJsonPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"volcengine",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchVolcengineJsonPassthroughRoute(
+				route,
+				body,
+				signal,
+				timing,
+				attempt,
+				options?.volcengineJson
 			),
 		requestSignal,
 		options

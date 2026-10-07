@@ -10,7 +10,7 @@
 - DashScope 生图：[dashscope-image.md](./dashscope-image.md)
 - MiniMax 音频：[minimax-audio.md](./minimax-audio.md)
 - MiniMax 生图：[minimax-image.md](./minimax-image.md)
-- DashScope / MiniMax 官方能力覆盖与缺口：[native-provider-coverage.md](../reference/native-provider-coverage.md)
+- DashScope、MiniMax 与火山方舟官方能力覆盖与缺口：[native-provider-coverage.md](../reference/native-provider-coverage.md)
 
 ## 术语
 
@@ -54,7 +54,7 @@
    - 文本类（Chat / Messages / Responses / Gemini）写一份 `ProxyEndpointSpec`，交给 `runProxyPipeline`。计费口径与脱敏写在同一 `accounting` 对象上（`describeOutcome` + `requestBodyForLog` / `upstreamWireBodyForLog`）。
    - 图 / 音频类先复用 `loadProxyRouteSurface` 与 `buildProxyFailoverOptions`；计费仍走 `recordImageUsage` / `recordAudioUsage`。把它们迁入同一 `AccountingEvent` + sink 是后续增量，本阶段不改口径。
 6. **管理后台文案**：在 `packages/admin/messages/*.json` 增加 `adapterNames.<id>`，以及 `routes.modal.adapterGuides.<id>` 的 `purpose` 与 `mapping`。上游没有的能力用 `lossyFeatureNames`。
-7. **文档**：更新 [route-topology.md](./route-topology.md) 的 operation 表，以及本页相关说明。DashScope / MiniMax 的适配器同时更新 [能力覆盖表](../reference/native-provider-coverage.md)。
+7. **文档**：更新 [route-topology.md](./route-topology.md) 的 operation 表，以及本页相关说明。DashScope、MiniMax 与火山方舟的适配器同时更新 [能力覆盖表](../reference/native-provider-coverage.md)。
 
 不要同时改路由匹配语义、SSE 分帧、usage 计费口径与熔断分类。
 
@@ -76,7 +76,7 @@
 
 DashScope 语音合成的上游 `input` 是对象，OpenAI 的 `input` 是文本，客户端无法通过额外字段设置 `input.*`。这类参数写在路由 `custom_params`，或改走原生透传路由。
 
-原生透传路由（`/v1/minimax/*`、`/v1/dashscope/*`）、实时 WebSocket 和异步任务入口不走这套合并。文本 Chat / Messages / Responses 本来就转发整个请求体。
+原生透传路由（`/v1/minimax/*`、`/v1/dashscope/*`、`/v1/volcengine/*`）、实时 WebSocket 和异步任务入口不走这套合并。文本 Chat / Messages / Responses 本来就转发整个请求体。火山方舟生图透传由 `volcengine-json-passthrough` 驱动，只替换 `model`。OpenAI 入口的 `volcengine-image` 由 `volcengine-openai-driver` 转换后再发到同一个方舟端点。
 
 ## 为后续模态预留
 

@@ -130,6 +130,7 @@ export function providerToFormData(
 		gemini: protocolFormFromConfig(map.gemini),
 		dashscope: protocolFormFromConfig(map.dashscope),
 		minimax: protocolFormFromConfig(map.minimax),
+		volcengine: protocolFormFromConfig(map.volcengine),
 	};
 }
 
@@ -167,6 +168,10 @@ function configFromProtocolForm(
 			endpoints["audio.transcriptions"] = form.audio_transcriptions.trim();
 		}
 		if (form.audio_speech.trim()) endpoints["audio.speech"] = form.audio_speech.trim();
+		if (form.images_generations.trim()) {
+			endpoints["images.generations"] = form.images_generations.trim();
+		}
+	} else if (protocol === "volcengine") {
 		if (form.images_generations.trim()) {
 			endpoints["images.generations"] = form.images_generations.trim();
 		}
@@ -223,11 +228,13 @@ export function formDataToEndpointsMap(
 	const gemini = configFromProtocolForm("gemini", form.gemini);
 	const dashscope = configFromProtocolForm("dashscope", form.dashscope);
 	const minimax = configFromProtocolForm("minimax", form.minimax);
+	const volcengine = configFromProtocolForm("volcengine", form.volcengine);
 	if (openai) map.openai = openai;
 	if (anthropic) map.anthropic = anthropic;
 	if (gemini) map.gemini = gemini;
 	if (dashscope) map.dashscope = dashscope;
 	if (minimax) map.minimax = minimax;
+	if (volcengine) map.volcengine = volcengine;
 	return map;
 }
 
@@ -293,6 +300,7 @@ export function getProviderProtocolSummaries(
 	appendProtocol("gemini", "Gemini");
 	appendProtocol("dashscope", "DashScope");
 	appendProtocol("minimax", "MiniMax");
+	appendProtocol("volcengine", "Volcengine");
 	return rows;
 }
 
@@ -370,6 +378,7 @@ export function protocolFormHasOverrides(
 			form.images_generations.trim()
 		);
 	}
+	if (protocol === "volcengine") return !!form.images_generations.trim();
 	return !!(
 		form.images_generations_multimodal.trim() ||
 		form.audio_transcriptions.trim() ||

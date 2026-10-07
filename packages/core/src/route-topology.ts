@@ -14,6 +14,7 @@ export {
 	MINIMAX_IMAGE_GENERATION_PATH,
 	MINIMAX_SPEECH_TO_TEXT_PATH,
 	MINIMAX_T2A_PATH,
+	VOLCENGINE_IMAGE_GENERATIONS_PATH,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	ROUTE_ADAPTERS,
@@ -64,6 +65,11 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 	 * `audio.speech` 同时覆盖非流式 JSON 和 `stream: true` 的 SSE。
 	 */
 	minimax: ['audio.transcriptions', 'audio.speech', 'images.generations'],
+	/**
+	 * 公开入口：`POST /v1/volcengine/images/generations`。
+	 * 非流式 JSON 与 `stream: true` 的 SSE 共用这条路径，adapter 是 passthrough。
+	 */
+	volcengine: ['images.generations'],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =

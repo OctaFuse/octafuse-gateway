@@ -393,6 +393,31 @@ describe('listConfiguredCapabilities', () => {
 		]);
 	});
 
+	it('derives Volcengine images/generations from the Ark API base', () => {
+		const endpoints = {
+			volcengine: { base: 'https://ark.cn-beijing.volces.com/api/v3' },
+		};
+		assert.equal(
+			resolveUpstreamEndpoint('volcengine', 'images.generations', endpoints),
+			'https://ark.cn-beijing.volces.com/api/v3/images/generations'
+		);
+		assert.deepEqual(listConfiguredCapabilities(endpoints, 'volcengine'), ['images.generations']);
+	});
+
+	it('prefers an explicit Volcengine generations URL over the derived path', () => {
+		assert.equal(
+			resolveUpstreamEndpoint('volcengine', 'images.generations', {
+				volcengine: {
+					base: 'https://ark.cn-beijing.volces.com/api/v3',
+					endpoints: {
+						'images.generations': 'https://ark.ap-southeast.bytepluses.com/api/v3/images/generations',
+					},
+				},
+			}),
+			'https://ark.ap-southeast.bytepluses.com/api/v3/images/generations'
+		);
+	});
+
 	it('prefers an explicit MiniMax transcription URL over the derived path', () => {
 		assert.equal(
 			resolveUpstreamEndpoint('minimax', 'audio.transcriptions', {

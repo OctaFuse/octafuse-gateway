@@ -243,6 +243,26 @@ describe("buildSimulatorRequest openai", () => {
 		assert.equal(JSON.parse(result.bodyText).prompt, "a lantern");
 	});
 
+	it("builds Volcengine image JSON for /v1/volcengine/images/generations", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			kind: "image",
+			protocol: "volcengine",
+			modelForRouting: "doubao-seedream-5-0",
+			body: { prompt: "a cat", size: "2K", stream: false },
+			apiKey: "sk-test",
+			imageOperation: "generations",
+		});
+		assert.equal(result.url, "https://gateway.example.com/v1/volcengine/images/generations");
+		assert.equal(result.headers["Content-Type"], "application/json");
+		assert.deepEqual(JSON.parse(result.bodyText), {
+			model: "doubao-seedream-5-0",
+			prompt: "a cat",
+			size: "2K",
+			stream: false,
+		});
+	});
+
 	it("builds DashScope multimodal HTTP transcriptions", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",

@@ -103,6 +103,7 @@ export type ProviderFormData = {
 	gemini: ProtocolEndpointForm;
 	dashscope: ProtocolEndpointForm;
 	minimax: ProtocolEndpointForm;
+	volcengine: ProtocolEndpointForm;
 	description: string;
 };
 
@@ -146,6 +147,7 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 	gemini: { ...EMPTY_PROTOCOL_FORM },
 	dashscope: { ...EMPTY_PROTOCOL_FORM },
 	minimax: { ...EMPTY_PROTOCOL_FORM },
+	volcengine: { ...EMPTY_PROTOCOL_FORM },
 	description: '',
 };
 
@@ -162,7 +164,8 @@ export type ProviderListFilter =
 	| 'anthropic'
 	| 'gemini'
 	| 'dashscope'
-	| 'minimax';
+	| 'minimax'
+	| 'volcengine';
 
 export const DEFAULT_PROVIDER_LIST_FILTER: ProviderListFilter = 'all';
 
@@ -177,6 +180,7 @@ export const PROVIDER_LIST_FILTERS: readonly ProviderListFilter[] = [
 	'gemini',
 	'dashscope',
 	'minimax',
+	'volcengine',
 ] as const;
 
 export function parseProviderListFilterParam(raw: string | null): ProviderListFilter {

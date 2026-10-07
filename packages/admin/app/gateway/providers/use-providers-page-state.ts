@@ -46,6 +46,7 @@ function emptyFilterCounts(): Record<ProviderListFilter, number> {
 		gemini: 0,
 		dashscope: 0,
 		minimax: 0,
+		volcengine: 0,
 	};
 }
 

@@ -13,8 +13,10 @@ import {
 	IMAGE_EDITS_BODY_TEMPLATE,
 	DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
 	MINIMAX_IMAGE_BODY_TEMPLATE,
 	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
+	VOLCENGINE_IMAGE_BODY_TEMPLATE,
 	isImageRouteModel,
 	type ImageOperation,
 } from '@/lib/image-generations';
@@ -319,12 +321,17 @@ export function templateForRoute(
 		if (proto === 'minimax') return MINIMAX_SPEECH_BODY_TEMPLATE;
 		return AUDIO_SPEECH_BODY_TEMPLATE;
 	}
-	if (isImage && (proto === 'openai' || proto === 'dashscope' || proto === 'minimax')) {
+	if (isImage && (proto === 'openai' || proto === 'dashscope' || proto === 'minimax' || proto === 'volcengine')) {
+		if (proto === 'volcengine' && route.adapter === 'volcengine-image') return SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE;
+		if (proto === 'volcengine') return VOLCENGINE_IMAGE_BODY_TEMPLATE;
 		if (proto === 'minimax' && route.adapter === 'minimax-image') return MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE;
 		if (proto === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
 		if (proto === 'dashscope' && route.adapter === 'passthrough') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
 		if (proto === 'dashscope' && (route.adapter === 'dashscope-image-qwen' || route.adapter === 'dashscope-image-wan')) {
 			return DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE;
+		}
+		if (proto === 'openai' && imageOperation !== 'edits' && /seedream/i.test(`${route.model_id} ${route.provider_model_name}`)) {
+			return SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE;
 		}
 		if (proto === 'dashscope' || imageOperation !== 'edits') {
 			return IMAGE_GENERATIONS_BODY_TEMPLATE;

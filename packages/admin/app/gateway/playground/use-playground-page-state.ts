@@ -160,7 +160,8 @@ export function usePlaygroundPageState() {
 		selectedIsImage &&
 		selectedImageUpstreamProtocol !== 'openai' &&
 		selectedImageUpstreamProtocol !== 'dashscope' &&
-		selectedImageUpstreamProtocol !== 'minimax';
+		selectedImageUpstreamProtocol !== 'minimax' &&
+		selectedImageUpstreamProtocol !== 'volcengine';
 	const selectedImageUsesDashScope = selectedIsImage && selectedImageUpstreamProtocol === 'dashscope';
 	const selectedAudioUpstreamProtocol = (selected?.upstream_protocol ?? 'openai').trim().toLowerCase();
 	const audioSendBlocked =
@@ -566,7 +567,7 @@ export function usePlaygroundPageState() {
 		const useImages =
 			selectedIsImage &&
 			!selectedIsAudio &&
-			(proto === 'openai' || proto === 'dashscope' || proto === 'minimax');
+			(proto === 'openai' || proto === 'dashscope' || proto === 'minimax' || proto === 'volcengine');
 		const effectiveImageOp: ImageOperation | undefined = useImages
 			? proto === 'openai'
 				? imageOperation

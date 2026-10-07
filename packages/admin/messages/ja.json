@@ -353,6 +353,7 @@
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
 		"minimax": "MiniMax",
+		"volcengine": "Volcengine",
 		"protocolUnknown": "プロトコル：{protocol}",
 		"endpointCopyTitle": "{label} — {url}（クリックしてコピー）"
 	},
@@ -494,6 +495,7 @@
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
 			"minimaxOptional": "MiniMax",
+			"volcengineOptional": "Volcengine",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -506,6 +508,8 @@
 			"geminiAuthHint": "Developer API と Vertex Express は ?key= です。プロジェクト指定の Vertex にサービスアカウント JSON を貼ると自動で Bearer になります。Vertex 互換の集約（ZenMux、Qiniu など）は Bearer を選んでください。",
 			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
 			"minimaxHint": "Base のみの場合、音声認識は '{base}'/speech_to_text、音声合成は '{base}'/t2a_v2、画像生成は '{base}'/image_generation になります。国際向けホストは api.minimax.io です。動画と音楽のエンドポイントはまだありません。",
+			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
+			"volcengineHint": "Base のみの場合、Seedream 画像生成は '{base}'/images/generations になります。中国 Ark は ark.cn-beijing.volces.com、BytePlus ModelArk は ark.ap-southeast.bytepluses.com です。チャットは OpenAI のエンドポイント設定のままです。",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "Base だけを入力すると、下の DashScope HTTP / WSS エンドポイント（filetrans、ホットワード、音声を含む）をすべて生成します。一部の機能だけを提供するプラン（Qwen Token Plan など）では Base を空にし、URL 上書きで対応するエンドポイントだけを入力してください。ワークスペース用エンドポイントでは対応する DashScope ホストを指定してください。",
 			"advancedToggle": "URL の上書き",
@@ -513,9 +517,11 @@
 			"advancedHintGemini": "完全な URL を入力し、'{model}' と '{action}' を含めてください。",
 			"advancedHintDashscope": "完全な URL を入力してください。エンドポイントは機能ごとに分かれており、1 つのモデルが使うのはそのうち 1 つです。複数の項目が同じ上流 URL（multimodal-generation など）を指すことがありますが、個別に有効化するために分けています。Base がある場合、空欄は生成された URL を使います。Base がない場合、空欄は未対応を意味します。",
 			"advancedHintMinimax": "完全な URL を入力します。Base がある項目は空欄のままで、ゲートウェイが speech_to_text、t2a_v2、image_generation を導出します。",
+			"advancedHintVolcengine": "完全な URL を入力します。Base がある場合は空欄のままで、ゲートウェイが images/generations を導出します。",
 			"capHintMiniMaxAudioTranscriptions": "MiniMax ファイル文字起こし POST /v1/speech_to_text。ルートのアダプターは「MiniMax ファイル文字起こし」を選びます。language はフォームではなくリクエストヘッダーに入ります。",
 			"capHintMiniMaxAudioSpeech": "MiniMax 同期音声合成 POST /v1/t2a_v2。アダプターは MiniMax audio.speech パススルーです。非ストリームと stream:true は同じエンドポイントです。",
 			"capHintMiniMaxImagesGenerations": "MiniMax 画像生成 POST /v1/image_generation。アダプターは MiniMax images.generations パススルーです。テキスト生成と参照画像は同じエンドポイントです。",
+			"capHintVolcengineImagesGenerations": "Volcengine Seedream。ネイティブ透過と OpenAI 変換アダプター volcengine-image はどちらも Ark の POST /images/generations を呼びます。ストリームはネイティブ透過のみです。",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -1031,7 +1037,8 @@
 				"dashscope-image-wan": "Wan 2.7 Image",
 				"minimax-asr-file": "MiniMax ファイル文字起こし",
 				"minimax-tts": "MiniMax 公式音声合成",
-				"minimax-image": "MiniMax 公式画像生成"
+				"minimax-image": "MiniMax 公式画像生成",
+				"volcengine-image": "Volcengine Seedream 画像生成"
 			},
 			"adapterGuides": {
 				"passthrough": {
@@ -1134,6 +1141,16 @@
 						"size（1024x1024 など）は最も近い aspect_ratio に変換されます。",
 						"n は 1–9 です。",
 						"url と b64_json はどちらも OpenAI の data[] に書き換えられます。"
+					]
+				},
+				"volcengine-image": {
+					"purpose": "OpenAI SDK の POST /v1/images/generations を火山方舟の画像生成に変換します。プロバイダーモデル名は doubao-seedream、dola-seedream、seedream です。",
+					"mapping": [
+						"n=1 は組図を無効にします。n が 2–15 のときは組図を有効にし、max_images を n にします。実際の枚数は少なくなることがあり、成功枚数で課金します。",
+						"size はそのまま転送します。1024x1024 と 2K の両方が使えます。",
+						"response_format は url と b64_json のみです。",
+						"参照画像は image に置きます。quality と background は転送しません。",
+						"JSON のみです。ストリームは火山方舟のネイティブ透過を使います。"
 					]
 				}
 			},
@@ -1565,6 +1582,8 @@
 		"imageDashScopeHint": "DashScope 変換：OpenAI Images の JSON（prompt、n、size）を編集します。Playground が multimodal-generation に書き換え、n は常に送信します（既定 1）。図生図は JSON image を使い、edits は非対応です。課金もリクエストログもありません。",
 		"imageDashScopePassthroughHint": "ネイティブ透過：JSON は multimodal-generation へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換えます。課金もリクエストログもありません。",
 		"imageMiniMaxPassthroughHint": "ネイティブ透過：JSON は image_generation へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換え、data.image_urls または data.image_base64 をプレビューします。課金もリクエストログもありません。",
+		"imageVolcenginePassthroughHint": "ネイティブ透過：JSON は Ark の POST /images/generations へそのまま転送されます。stream を true にすると SSE になります。Playground は model をルートのプロバイダーモデル名に置き換えます。課金もリクエストログもありません。",
+		"imageVolcengineOpenAiHint": "OpenAI の画像 JSON を方舟の画像生成に変換します。n が 2–15 のときは組図として送ります。JSON のみです。ストリームはネイティブ透過を使います。Playground は返ってきた画像をプレビューします。課金もリクエストログもありません。",
 		"imageMiniMaxOpenAiHint": "OpenAI 画像 JSON は MiniMax image_generation に変換されます。size は最も近い aspect_ratio に揃えます。Playground は返された画像をプレビューします。課金もリクエストログもありません。",
 		"imageOperation": "画像操作",
 		"imageGenerationsHint": "画像モデル：リクエスト Body は images/generations の項目（prompt、n、size、quality）を使用します。課金もリクエストログもありません。",
@@ -1750,6 +1769,7 @@
 		"imageOperation": "画像操作",
 		"imageGenerationsHint": "Generations：POST /v1/images/generations 用の JSON Body（prompt、n、size、quality）。",
 		"imageMiniMaxHint": "画像生成：POST /v1/minimax/image_generation 用の JSON（prompt、aspect_ratio、n、response_format）。Proxy は成功した枚数で課金します。",
+		"imageVolcengineHint": "画像生成：POST /v1/volcengine/images/generations 用の JSON。stream が true のときは SSE です。Proxy は usage.generated_images で課金します。",
 		"imageEditsHint": "Edits：JSON 項目と参照画像ファイル → multipart POST /v1/images/edits。",
 		"referenceImages": "参照画像",
 		"referenceImagesHint": "multipart アップロード用に 1–{max} 個の画像ファイルを選択してください。",

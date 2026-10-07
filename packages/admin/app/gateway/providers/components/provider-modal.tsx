@@ -51,13 +51,15 @@ const PROTOCOL_TABS: Array<{
 		| "anthropicOptional"
 		| "geminiOptional"
 		| "dashscopeOptional"
-		| "minimaxOptional";
+		| "minimaxOptional"
+		| "volcengineOptional";
 }> = [
 	{ key: "openai", labelKey: "openaiOptional" },
 	{ key: "anthropic", labelKey: "anthropicOptional" },
 	{ key: "gemini", labelKey: "geminiOptional" },
 	{ key: "dashscope", labelKey: "dashscopeOptional" },
 	{ key: "minimax", labelKey: "minimaxOptional" },
+	{ key: "volcengine", labelKey: "volcengineOptional" },
 ];
 
 type DashScopeOverrideField =
@@ -103,6 +105,7 @@ function ProtocolFields(props: {
 	minimaxCapHint?: string;
 	minimaxSpeechHint?: string;
 	minimaxImageHint?: string;
+	volcengineImageHint?: string;
 	authLabels?: {
 		label: string;
 		auto: string;
@@ -125,6 +128,7 @@ function ProtocolFields(props: {
 		minimaxCapHint,
 		minimaxSpeechHint,
 		minimaxImageHint,
+		volcengineImageHint,
 		authLabels,
 		onChange,
 	} = props;
@@ -398,6 +402,25 @@ function ProtocolFields(props: {
 								</div>
 							</>
 						) : null}
+						{protocol === "volcengine" ? (
+							<div>
+								<label className="mb-1 block text-xs text-gray-600">
+									{capLabels.imagesGenerations}
+								</label>
+								<input
+									type="url"
+									value={form.images_generations}
+									onChange={(e) =>
+										onChange({ ...form, images_generations: e.target.value })
+									}
+									className={inputClass}
+									autoComplete="off"
+								/>
+								{volcengineImageHint ? (
+									<p className="mt-1 text-xs text-gray-500">{volcengineImageHint}</p>
+								) : null}
+							</div>
+						) : null}
 						{protocol === "dashscope" ? (
 							<>
 								{(
@@ -531,6 +554,7 @@ export function ProviderModal(props: ProviderModalProps) {
 	const minimaxCapHint = t("capHintMiniMaxAudioTranscriptions");
 	const minimaxSpeechHint = t("capHintMiniMaxAudioSpeech");
 	const minimaxImageHint = t("capHintMiniMaxImagesGenerations");
+	const volcengineImageHint = t("capHintVolcengineImagesGenerations");
 	const dashscopeCapHints: Record<DashScopeOverrideField, string> = {
 		images_generations_multimodal: t('capHintImagesGenerationsMultimodal'),
 		audio_transcriptions: t('capHintAudioTranscriptions'),
@@ -875,6 +899,20 @@ export function ProviderModal(props: ProviderModalProps) {
 										minimaxSpeechHint={minimaxSpeechHint}
 										minimaxImageHint={minimaxImageHint}
 										onChange={(minimax) => onFormChange({ ...formData, minimax })}
+									/>
+								) : null}
+								{endpointTab === "volcengine" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("volcenginePlaceholder")}
+										baseHint={t("volcengineHint")}
+										form={formData.volcengine}
+										protocol="volcengine"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHintVolcengine")}
+										capLabels={capLabels}
+										volcengineImageHint={volcengineImageHint}
+										onChange={(volcengine) => onFormChange({ ...formData, volcengine })}
 									/>
 								) : null}
 							</div>

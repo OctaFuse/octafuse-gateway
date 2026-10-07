@@ -353,6 +353,7 @@
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
 		"minimax": "MiniMax",
+		"volcengine": "Volcengine",
 		"protocolUnknown": "Protocol: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (click to copy)"
 	},
@@ -494,6 +495,7 @@
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
 			"minimaxOptional": "MiniMax",
+			"volcengineOptional": "Volcengine",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -506,6 +508,8 @@
 			"geminiAuthHint": "Developer API and Vertex Express use ?key=. Project-scoped Vertex with a service account JSON uses Bearer automatically. Vertex-compatible aggregators (ZenMux, Qiniu, …) must select Bearer.",
 			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
 			"minimaxHint": "A base derives speech recognition as '{base}'/speech_to_text, speech synthesis as '{base}'/t2a_v2, and image generation as '{base}'/image_generation. Use api.minimax.io for the international host. Video and music do not have endpoints yet.",
+			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
+			"volcengineHint": "A base derives Seedream image generation as '{base}'/images/generations. China Ark uses ark.cn-beijing.volces.com; BytePlus ModelArk uses ark.ap-southeast.bytepluses.com. Chat stays on the OpenAI endpoint config.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "With only a base, the gateway derives every DashScope HTTP and WSS endpoint below, including filetrans, hotwords, and voices. For plans that expose only some capabilities (such as Qwen Token Plan), leave the base empty and fill in only the supported URL overrides. For a workspace endpoint, use the corresponding DashScope host.",
 			"advancedToggle": "URL overrides",
@@ -513,9 +517,11 @@
 			"advancedHintGemini": "Enter a complete URL that includes '{model}' and '{action}'.",
 			"advancedHintDashscope": "Enter full URLs. Endpoints are split by capability and a model uses only one of them. Several may point to the same upstream URL (such as multimodal-generation); they are separate so each can be enabled on its own. With a base, empty fields use the derived URL. Without a base, an empty field means unsupported.",
 			"advancedHintMinimax": "Enter a full URL. Leave a field empty when a base is set; the gateway derives speech_to_text, t2a_v2, or image_generation.",
+			"advancedHintVolcengine": "Enter a full URL. Leave the field empty when a base is set; the gateway derives images/generations.",
 			"capHintMiniMaxAudioTranscriptions": "MiniMax file transcription, POST /v1/speech_to_text. Choose the MiniMax file transcription adapter. The gateway sends language as a request header, not a form field.",
 			"capHintMiniMaxAudioSpeech": "MiniMax sync speech synthesis, POST /v1/t2a_v2. Choose the MiniMax audio.speech passthrough. Non-stream and stream:true share this endpoint.",
 			"capHintMiniMaxImagesGenerations": "MiniMax image generation, POST /v1/image_generation. Choose the MiniMax images.generations passthrough. Text-to-image and subject reference share this endpoint.",
+			"capHintVolcengineImagesGenerations": "Volcengine Seedream. Native passthrough and the OpenAI adapter volcengine-image both call Ark POST /images/generations. Streaming is native passthrough only.",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -1031,7 +1037,8 @@
 				"dashscope-image-wan": "Wan 2.7 Image",
 				"minimax-asr-file": "MiniMax file transcription",
 				"minimax-tts": "MiniMax official speech",
-				"minimax-image": "MiniMax official images"
+				"minimax-image": "MiniMax official images",
+				"volcengine-image": "Volcengine Seedream images"
 			},
 			"adapterGuides": {
 				"passthrough": {
@@ -1134,6 +1141,16 @@
 						"size (such as 1024x1024) maps to the nearest aspect_ratio.",
 						"n is 1–9.",
 						"url and b64_json are both rewritten as OpenAI data[]."
+					]
+				},
+				"volcengine-image": {
+					"purpose": "OpenAI SDK calls POST /v1/images/generations. The gateway converts that to Ark image generation. Provider model names are doubao-seedream, dola-seedream, or seedream.",
+					"mapping": [
+						"n=1 disables sequential images. n from 2 to 15 enables them with max_images equal to n. Ark may return fewer images; billing uses the successful count.",
+						"size is forwarded as written, including 1024x1024 and 2K.",
+						"response_format accepts only url and b64_json.",
+						"Reference images go in image. quality and background are not forwarded.",
+						"JSON only. Use the Volcengine native passthrough for streaming."
 					]
 				}
 			},
@@ -1565,6 +1582,8 @@
 		"imageDashScopeHint": "DashScope conversion: edit OpenAI Images JSON (prompt, n, size). Playground rewrites it to multimodal-generation and always sends n (default 1). Use JSON image for image-to-image; edits is not supported. No billing or request logs.",
 		"imageDashScopePassthroughHint": "Native passthrough: the JSON is forwarded to multimodal-generation as written. Playground replaces model with the route provider model name. No billing or request logs.",
 		"imageMiniMaxPassthroughHint": "Native passthrough: the JSON is forwarded to image_generation as written. Playground replaces model with the route provider model name and previews data.image_urls or data.image_base64. No billing or request logs.",
+		"imageVolcenginePassthroughHint": "Native passthrough: the JSON is forwarded to Ark POST /images/generations. Set stream to true for SSE. Playground replaces model with the route provider model name. No billing or request logs.",
+		"imageVolcengineOpenAiHint": "OpenAI image JSON is converted to Ark image generation. n from 2 to 15 is sent as sequential images. JSON only; use native passthrough for streaming. Playground previews the returned images. No billing or request logs.",
 		"imageMiniMaxOpenAiHint": "OpenAI image JSON is converted to MiniMax image_generation. size snaps to the nearest aspect_ratio. Playground previews the returned images. No billing or request logs.",
 		"imageOperation": "Image operation",
 		"imageGenerationsHint": "Image model: request body uses images/generations fields (prompt, n, size, quality). No billing or request logs.",
@@ -1750,6 +1769,7 @@
 		"imageOperation": "Image operation",
 		"imageGenerationsHint": "Generations: JSON body for POST /v1/images/generations (prompt, n, size, quality).",
 		"imageMiniMaxHint": "Image generation: JSON body for POST /v1/minimax/image_generation (prompt, aspect_ratio, n, response_format). The Proxy bills successful images.",
+		"imageVolcengineHint": "Image generation: JSON body for POST /v1/volcengine/images/generations. stream true returns SSE. The Proxy bills usage.generated_images.",
 		"imageEditsHint": "Edits: JSON fields plus reference image files → multipart POST /v1/images/edits.",
 		"referenceImages": "Reference images",
 		"referenceImagesHint": "Select 1–{max} image file(s) for multipart upload.",

@@ -28,6 +28,19 @@ export const IMAGE_GENERATIONS_BODY_TEMPLATE = `{
   "quality": "low"
 }`;
 
+/**
+ * OpenAI `/v1/images/generations` → 火山方舟 Seedream。
+ * Seedream 5.0 要求至少 3,686,400 像素，`1024x1024` 会被上游拒绝；`2K` 由方舟按比例展开。
+ */
+export const SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "prompt": "一只戴着墨镜的橘猫，坐在海边，日落，超写实。",
+  "n": 1,
+  "size": "2K",
+  "response_format": "url",
+  "watermark": false
+}`;
+
 /** OpenAI `/v1/images/generations` → MiniMax 官方 image_generation。size 会换成最接近的 aspect_ratio。 */
 export const MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE = `{
   "model": "<auto>",
@@ -61,6 +74,17 @@ export const IMAGE_EDITS_BODY_TEMPLATE = `{
   "n": 1,
   "size": "1024x1024",
   "quality": "low"
+}`;
+
+/** 火山方舟 / BytePlus Seedream 原生生图。非流式与 `stream: true` 共用。 */
+export const VOLCENGINE_IMAGE_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "prompt": "一只戴着墨镜的橘猫，坐在海边，日落，超写实。",
+  "size": "2K",
+  "response_format": "url",
+  "watermark": false,
+  "stream": false,
+  "sequential_image_generation": "disabled"
 }`;
 
 /** MiniMax 文生图 / 图生图共用 POST /v1/image_generation。 */

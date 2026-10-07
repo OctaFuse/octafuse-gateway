@@ -329,6 +329,25 @@ export function buildSimulatorRequest(
 				bodyText: JSON.stringify(input.body),
 			};
 		}
+		case "volcengine": {
+			if (kind !== "image") {
+				throw new Error("Volcengine simulator currently supports image generation only");
+			}
+			const path = resolveProxyPathForModelInvoke({
+				kind: "image",
+				protocol: "volcengine",
+				imageOperation: "generations",
+			});
+			const merged = { ...input.body, model: input.modelForRouting };
+			return {
+				url: `${base}${path}`,
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: auth,
+				},
+				bodyText: JSON.stringify(merged),
+			};
+		}
 		case "minimax": {
 			if (kind === "image" || (kind === "audio" && (input.audioOperation ?? "transcriptions") === "speech")) {
 				const path = resolveProxyPathForModelInvoke({

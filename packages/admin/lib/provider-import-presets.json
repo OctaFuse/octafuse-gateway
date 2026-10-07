@@ -32,12 +32,14 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
-					"images.generations": "https://ark.cn-beijing.volces.com/api/v3/images/generations"
+					"chat": "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
 				}
+			},
+			"volcengine": {
+				"base": "https://ark.cn-beijing.volces.com/api/v3"
 			}
 		},
-		"description": "Capability URLs only (no openai.base): chat/completions + images/generations. Seedream has no /images/edits — i2i uses generations + JSON `image`. Do not set base or Gateway would derive a dead edits URL. Coding/Agent Plan templates use separate paths—do not mix.",
+		"description": "OpenAI chat stays on openai.endpoints.chat (no openai.base, so images/edits is not derived). Seedream uses volcengine.base: native passthrough and the volcengine-image adapter both call /images/generations. Coding/Agent Plan templates use separate paths—do not mix.",
 		"catalog": {
 			"i18n": {
 				"zh": {
@@ -123,12 +125,14 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
-					"images.generations": "https://ark.ap-southeast.bytepluses.com/api/v3/images/generations"
+					"chat": "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions"
 				}
+			},
+			"volcengine": {
+				"base": "https://ark.ap-southeast.bytepluses.com/api/v3"
 			}
 		},
-		"description": "BytePlus ModelArk (Volcengine international, ap-southeast). Capability URLs only: chat/completions + images/generations. Do not mix with China-region ark.cn-beijing.volces.com.",
+		"description": "BytePlus ModelArk (Volcengine international, ap-southeast). OpenAI chat stays on openai.endpoints.chat. Seedream uses volcengine.base for native passthrough and the volcengine-image adapter. Do not mix with China-region ark.cn-beijing.volces.com.",
 		"catalog": {
 			"i18n": {
 				"zh": {

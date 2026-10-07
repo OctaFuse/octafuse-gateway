@@ -1,6 +1,6 @@
-# DashScope 与 MiniMax 能力覆盖
+# DashScope、MiniMax 与火山方舟能力覆盖
 
-本文对照阿里云百炼 DashScope 与 MiniMax 官方开放的接口，记录网关当前的透传与协议转换支持情况，以及已知缺口。已支持能力的行为细节见各自的架构文档，本文只回答「有没有、缺什么」。
+本文对照阿里云百炼 DashScope、MiniMax，以及火山方舟 / BytePlus ModelArk 官方开放的接口，记录网关当前的透传与协议转换支持情况，以及已知缺口。已支持能力的行为细节见各自的架构文档，本文只回答「有没有、缺什么」。
 
 **核对日期**：2026-10-07。官方接口或网关能力变化后，更新对应行并刷新日期。
 
@@ -9,6 +9,7 @@
 - [适配器与驱动](../architecture/adapters-and-drivers.md)
 - [DashScope 音频](../architecture/dashscope-audio.md)、[DashScope 生图](../architecture/dashscope-image.md)
 - [MiniMax 音频](../architecture/minimax-audio.md)、[MiniMax 生图](../architecture/minimax-image.md)
+- [文生图模型](./image-models.md)（含火山方舟 OpenAI 转换与原生透传）
 - [供应商导入预设](./provider-import-presets.md)
 
 ## 判定口径
@@ -24,7 +25,7 @@
 | ❌ | 未实现 |
 | — | 不适用 |
 
-对话类接口没有跨协议转换适配器。两家上游都同时提供 OpenAI 与 Anthropic 协议，直接透传即可，因此对话行的「协议转换」记为 —。
+对话类接口没有跨协议转换适配器。DashScope 与 MiniMax 同时提供 OpenAI 与 Anthropic 协议，直接透传即可，因此对话行的「协议转换」记为 —。火山方舟的对话和 Responses 继续放在供应商的 `openai` 端点里，不在 `volcengine` 协议中重复。
 
 ## DashScope
 
@@ -74,6 +75,20 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 | 音乐、歌词、翻唱 | `music_generation` 等 | ❌ | ❌ | 官方自 2026-08-20 起不再面向新用户开放，可暂不做 |
 | 文件管理 | 上传、列出、检索、下载、删除 | ❌ | — | 异步语音、音色复刻、视频下载的前置能力 |
 
+## 火山方舟
+
+`volcengine` 是火山方舟与 BytePlus ModelArk 共用的上游协议，只承载方舟原生能力。原生路径相对 `providers.endpoints.volcengine.base`：国内 `https://ark.cn-beijing.volces.com/api/v3`，国际 `https://ark.ap-southeast.bytepluses.com/api/v3`。也可以显式填写 capability URL 覆盖派生结果。
+
+| 能力 | 官方端点 | 透传 | 协议转换 | 备注 |
+|------|----------|------|----------|------|
+| 对话 | `/chat/completions` | — | — | 用供应商的 `openai` 端点，不进 `volcengine` |
+| Responses | `/responses` | — | — | 同上；预设未配 `responses`，需要时手工补 OpenAI capability URL |
+| 生图 | `/images/generations` | ✅ | ✅ | 原生透传 `POST /v1/volcengine/images/generations`（含 SSE）。OpenAI 入口用 `volcengine-image`，只出 JSON，`n` 为 1–15 |
+| 视频任务 | `/contents/generations/tasks` | ❌ | ❌ | Seedance 等；网关没有视频模态 |
+| 豆包语音 | 语音合成 / 识别 | ❌ | ❌ | |
+
+两条生图入口的差别见 [文生图模型](./image-models.md#火山方舟-volcengine-arkseedream)。
+
 ## 已知缺陷
 
 - **MiniMax 文件转写透传会整段缓冲**。官方已支持 `stream=true`（SSE）与原生 `srt` / `vtt`，但 `dispatchMiniMaxAsrPassthrough` 用 `response.text()` 读完再返回。流式结果不会实时下发，也解析不到 `duration`，计费回退为按文件估算。
@@ -93,6 +108,7 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 
 - MiniMax：[接口概览](https://platform.minimaxi.com/docs/api-reference/api-overview.md)、[文档索引](https://platform.minimaxi.com/docs/llms.txt)
 - 百炼：[模型列表](https://help.aliyun.com/zh/model-studio/getting-started/models)、[Responses 兼容](https://www.alibabacloud.com/help/en/model-studio/compatibility-with-openai-responses-api)
+- 火山方舟：[图片生成 API](https://docs.volcengine.com/docs/ark/image-generation-api)
 
 ## 更新方式
 

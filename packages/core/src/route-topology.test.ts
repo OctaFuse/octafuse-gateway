@@ -32,6 +32,9 @@ describe('route topology operations', () => {
 		assert.equal(isUpstreamOperationForProtocol('minimax', 'audio.transcriptions'), true);
 		assert.equal(isUpstreamOperationForProtocol('minimax', 'audio.speech'), true);
 		assert.equal(isUpstreamOperationForProtocol('minimax', 'chat'), false);
+		assert.equal(isRequestOperationForProtocol('volcengine', 'images.generations'), true);
+		assert.equal(isUpstreamOperationForProtocol('volcengine', 'images.generations'), true);
+		assert.equal(isRequestOperationForProtocol('volcengine', 'chat'), false);
 	});
 
 	it('canonicalizes legacy Gemini operations to models.generate', () => {

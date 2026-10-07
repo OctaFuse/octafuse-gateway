@@ -82,12 +82,18 @@ export const MINIMAX_ENDPOINT_CAPABILITIES = [
 	'images.generations',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
+/** 火山方舟 / BytePlus ModelArk 原生能力。当前只有 Seedream 生图。 */
+export const VOLCENGINE_ENDPOINT_CAPABILITIES = [
+	'images.generations',
+] as const satisfies readonly ProviderEndpointCapability[];
+
 const CAPABILITIES_BY_PROTOCOL: Record<UpstreamProtocol, readonly ProviderEndpointCapability[]> = {
 	openai: OPENAI_ENDPOINT_CAPABILITIES,
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: GEMINI_ENDPOINT_CAPABILITIES,
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
+	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
 };
 
 /** Write-side whitelist: gemini accepts canonical + legacy keys. */
@@ -100,6 +106,7 @@ export const WRITABLE_CAPABILITIES_BY_PROTOCOL: Record<
 	gemini: [...GEMINI_ENDPOINT_CAPABILITIES, ...GEMINI_LEGACY_ENDPOINT_CAPABILITIES],
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
+	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
 };
 
 const ALL_CAPABILITIES = new Set<string>([
@@ -109,6 +116,7 @@ const ALL_CAPABILITIES = new Set<string>([
 	...GEMINI_LEGACY_ENDPOINT_CAPABILITIES,
 	...DASHSCOPE_ENDPOINT_CAPABILITIES,
 	...MINIMAX_ENDPOINT_CAPABILITIES,
+	...VOLCENGINE_ENDPOINT_CAPABILITIES,
 ]);
 
 /** 单协议配置：`base` 与/或按 capability 的完整 URL 模板。 */
@@ -495,9 +503,9 @@ export function resolveUpstreamEndpoint(
 			case 'responses':
 				return `${root}/responses`;
 			case 'images.generations':
-				return protocol === 'minimax'
-					? `${root}/image_generation`
-					: buildOpenAiCompatibleImagesUrl(root, 'generations');
+				if (protocol === 'minimax') return `${root}/image_generation`;
+				// volcengine 与 OpenAI 一样：`{base}/images/generations`（base 形如 `…/api/v3`）。
+				return buildOpenAiCompatibleImagesUrl(root, 'generations');
 			case 'images.edits':
 				return buildOpenAiCompatibleImagesUrl(root, 'edits');
 			case 'audio.transcriptions':

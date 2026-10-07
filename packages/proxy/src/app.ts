@@ -27,6 +27,7 @@ import { dashScopeFileTranscriptionRoutes, dashScopeTaskRoutes } from './routes/
 import { miniMaxSpeechToTextRoutes } from './routes/v1/minimax-speech-to-text';
 import { miniMaxT2aRoutes } from './routes/v1/minimax-t2a';
 import { miniMaxImageGenerationRoutes } from './routes/v1/minimax-image-generation';
+import { volcengineImageGenerationRoutes } from './routes/v1/volcengine-image-generation';
 import {
 	DASHSCOPE_FILE_TRANSCRIPTION_PATH,
 	DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
@@ -34,6 +35,7 @@ import {
 	MINIMAX_IMAGE_GENERATION_PATH,
 	MINIMAX_SPEECH_TO_TEXT_PATH,
 	MINIMAX_T2A_PATH,
+	VOLCENGINE_IMAGE_GENERATIONS_PATH,
 } from '@octafuse/core/route-topology';
 import { proxyAppVersion } from './app-version';
 import type { DashScopeRealtimeNodeDispatch } from './services/egress/dashscope-realtime-driver';
@@ -134,6 +136,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route(MINIMAX_SPEECH_TO_TEXT_PATH, miniMaxSpeechToTextRoutes);
 	app.route(MINIMAX_T2A_PATH, miniMaxT2aRoutes);
 	app.route(MINIMAX_IMAGE_GENERATION_PATH, miniMaxImageGenerationRoutes);
+	app.route(VOLCENGINE_IMAGE_GENERATIONS_PATH, volcengineImageGenerationRoutes);
 	app.route('/v1/messages', messagesRoutes);
 	// TEMP(soloent): 只为兼容 SoloEnt Agent 的历史拼路径，不是公开 API。
 	// 0.18.0–0.18.5 + 旧 token → POST /messages

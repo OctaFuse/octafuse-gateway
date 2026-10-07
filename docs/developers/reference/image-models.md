@@ -1,6 +1,6 @@
 # 文生图模型（Image Models）
 
-本文整理 Gateway 当前支持的文生图模型：预设 catalog、供应商配置、参数差异、计费与预检、运营验收。客户端入口统一为 OpenAI Images；阿里云百炼千问 / 万相走 DashScope 协议转换，见 [DashScope 生图架构](../architecture/dashscope-image.md)。
+本文整理 Gateway 当前支持的文生图模型：预设 catalog、供应商配置、参数差异、计费与预检、运营验收。默认客户端入口是 OpenAI Images；阿里云百炼千问 / 万相走 DashScope 协议转换，见 [DashScope 生图架构](../architecture/dashscope-image.md)。火山方舟 Seedream 的 OpenAI 入口用转换适配器 `volcengine-image`，原生和流式用 `POST /v1/volcengine/images/generations`。
 
 API 字段细节见 [用户接口 · Images](../api/user.md#images图片生成--编辑)；逐步验收清单见 [Admin API · 运维验收](../api/admin.md#运维验收文生图模型-gpt-image-2)。
 
@@ -8,10 +8,10 @@ API 字段细节见 [用户接口 · Images](../api/user.md#images图片生成--
 
 | 项 | 说明 |
 |----|------|
-| 入口 | **`POST /v1/images/generations`**；OpenAI 另有 **`POST /v1/images/edits`**（multipart） |
+| 入口 | **`POST /v1/images/generations`**；OpenAI 另有 **`POST /v1/images/edits`**（multipart）；火山方舟原生 **`POST /v1/volcengine/images/generations`** |
 | 不走 Chat | 文生图 **不** 走 `/v1/chat/completions` |
-| 驱动 | OpenAI 透传走 `openai-images-driver`；DashScope 转换走 `dashscope-images-driver`；failover 复用 `failoverDispatch` |
-| 路由协议 | 对外请求协议锁定 `openai`；上游可以是 `openai` 透传，也可以是 `dashscope` + `images.generations.multimodal` |
+| 驱动 | OpenAI 透传走 `openai-images-driver`；DashScope 转换走 `dashscope-images-driver`；火山方舟 OpenAI 转换走 `volcengine-openai-driver`；火山方舟原生透传走 `volcengine-json-passthrough`；failover 复用 `failoverDispatch` |
+| 路由协议 | OpenAI 入口的请求协议是 `openai`；上游可以是 `openai` 透传、`dashscope` + `images.generations.multimodal`，或 `volcengine` + `images.generations`（适配器 `volcengine-image`）。火山方舟原生入口的请求与上游都是 `volcengine` + `images.generations` |
 | Kind 判定 | `output_modalities` 含 **`image`**（勿用 input 含 image——多模态 LLM 也会有） |
 | Catalog 列表 | 默认 `/v1/models` **不含** 纯 image 模型；需 `kind=image` / `kind=all`，或直接打 Images API |
 | 计费权威 | **双模式**：`pricing_profile.image_billing_mode` = `token`（usage 分项 × `image_*`）或 `per_image`（确认输出张数 × `image.default`，可选参考图 `image.input`） |
@@ -63,20 +63,25 @@ Admin → Models → Import 勾选导入；**同 id 已存在不会覆盖**—�
 
 ### 火山方舟 Volcengine Ark（Seedream）
 
-Import 模板名：**Volcengine Ark**（`packages/admin/lib/provider-import-presets.json`）。
+Import 模板名：**Volcengine Ark**（`packages/admin/lib/provider-import-presets.json`）。国际站模板 **BytePlus ModelArk** 结构相同，主机换成 `https://ark.ap-southeast.bytepluses.com/api/v3`。
 
-| 必须 | 禁止 |
-|------|------|
-| `endpoints.chat` + **`endpoints.images.generations`** 完整 URL | **不要** 设 `openai.base` |
+对话继续走 OpenAI 兼容端点。**不要**设 `openai.base`：Seedream 没有 OpenAI 形态的 `/images/edits`，设了 `base` 会派生死链。图生图走 generations + JSON `image`。
 
-原因：Seedream **没有** OpenAI 形态的 `/images/edits`；若配置 `base`，Gateway 会派生死链 edits URL。图生图走 generations + JSON `image`。
+生图只配一个 `volcengine.base`。两条客户端入口都发到这个端点：
+
+| 客户端路径 | 路由 | 行为 |
+|------------|------|------|
+| `POST /v1/images/generations` | 请求 `openai` / `images.generations`，上游 `volcengine` / `images.generations`，适配器 `volcengine-image` | OpenAI SDK 入口。`n=1` 关闭组图；`n` 为 2–15 时打开组图并把 `max_images` 设为 `n`。预检按 `n`，最终按成功张数计费。只返回 OpenAI JSON。`quality`、`background` 不转发 |
+| `POST /v1/volcengine/images/generations` | 请求与上游都是 `volcengine` / `images.generations`，适配器 `passthrough` | 原生透传。只替换 `model`。非流式 JSON 与 `stream: true` 的 SSE 原样返回，组图字段和单张失败（`data[].error`）都保留。按 `usage.generated_images` 计费 |
 
 ```text
-chat:                 https://ark.cn-beijing.volces.com/api/v3/chat/completions
-images.generations:   https://ark.cn-beijing.volces.com/api/v3/images/generations
+openai.chat:       https://ark.cn-beijing.volces.com/api/v3/chat/completions
+volcengine.base:   https://ark.cn-beijing.volces.com/api/v3
 ```
 
-Coding Plan / Agent Plan 模板路径不同，**勿与标准 `/api/v3` 混用**（额度不生效）。
+`volcengine.base` 派生 `{base}/images/generations`，也可以显式覆盖 `images.generations`。导入预设不再给 `openai` 配生图 URL。Coding Plan / Agent Plan 模板路径不同，**勿与标准 `/api/v3` 混用**（额度不生效）。
+
+已经用 `openai` 透传跑 Seedream 的路由可以继续用。切到新适配器：给供应商补上 `volcengine.base`，把路由上游协议改成 `volcengine`、上游能力改成 `images.generations`，适配器选 `volcengine-image`。已保存的 `openai` 透传路由不会被预设改动删掉。
 
 ### 智谱 / Z.AI（`glm-image`）
 
@@ -121,11 +126,12 @@ POST {dashscope.base}/services/aigc/multimodal-generation/generation
 | `size` | `auto` / `1024x1024` / `1024x1536` / `1536x1024` 等；2.5 另常见 `2048x2048`、`2048x1152`、`3840x2160` / `2160x3840` | `2K` / `3K` / `4K` 或 `WxH` 像素 |
 | `quality` | `auto` / `low` / `medium` / `high`；2.5 另支持 `xhigh` / `max` | 通常不用 |
 | `background` | 支持（如 `auto`） | 无 |
-| `watermark` | — | 可选 boolean，**显式传入才透传** |
-| `sequential_image_generation` (+ `*_options`) | — | 可选，显式透传 |
-| `optimize_prompt_options` | — | 可选，显式透传 |
-| `response_format` | GPT Image 系列常直接 `b64_json` 且可能拒收该字段；**仅显式传入时透传** | 按上游 |
-| `n` | OpenAI 透传仅 **1**；DashScope 千问 1–6、万相 1–4 | 同左（透传仍为 1） |
+| `watermark` | — | `volcengine-image` 原样转发 boolean。原生透传按客户端原文转发 |
+| `sequential_image_generation` (+ `*_options`) | — | 原生透传原样转发。`volcengine-image` 由 `n` 决定，客户端不能覆盖 |
+| `optimize_prompt_options` | — | 可选，显式传入才转发 |
+| `response_format` | GPT Image 系列常直接 `b64_json` 且可能拒收该字段；**仅显式传入时透传** | `volcengine-image` 只认 `url` 和 `b64_json`。原生透传按上游 |
+| `n` | OpenAI 透传仅 **1**；DashScope 千问 1–6、万相 1–4 | `volcengine-image` 为 1–15，映射成组图。原生入口不使用 `n` |
+| `stream` | OpenAI 生图入口不转发 | `volcengine-image` 只出 JSON。原生入口 `stream: true` 原样转发 SSE |
 | `prompt` | 必填，最长 4000 | 同左 |
 
 透传实现：`packages/proxy/src/services/image-generation-extras.ts`（`applyOpenAiImageGenerationExtras`）。Route `custom_params` 与用户体合并规则见 [Route 默认参数合并](../api/user.md#route-默认参数合并)。
@@ -141,13 +147,22 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
   -d '{"model":"gpt-image-2","prompt":"a red apple","size":"1024x1024","quality":"low","n":1}'
 ```
 
-国内 Seedream：
+国内 Seedream（OpenAI SDK，适配器 `volcengine-image`；`n` 为 2–15 时按组图发送，只返回 JSON）：
 
 ```bash
 curl -sS "$GATEWAY_URL/v1/images/generations" \
   -H "Authorization: Bearer $USER_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model":"doubao-seedream-5-0","prompt":"海边灯塔水彩封面","size":"2K","n":1,"watermark":false}'
+  -d '{"model":"doubao-seedream-5-0","prompt":"海边灯塔水彩封面","size":"2K","n":2,"watermark":false}'
+```
+
+国内 Seedream 原生透传（流式和方舟原文字段走这条）：
+
+```bash
+curl -sS "$GATEWAY_URL/v1/volcengine/images/generations" \
+  -H "Authorization: Bearer $USER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"doubao-seedream-5-0","prompt":"海边灯塔水彩封面","size":"2K","watermark":false,"stream":false}'
 ```
 
 阿里云百炼千问（像素串；Pro 的 2K 档由响应 usage 反推）：
@@ -272,7 +287,7 @@ Admin Routes / Models 只展示目录权威价：token 模式为 `/1M` 分项；
 ## Route 配置清单
 
 1. `model_id` = 上表 catalog id  
-2. `upstream_protocol` = `openai`  
+2. OpenAI 入口：请求协议 `openai`。火山方舟 Seedream 选适配器 `volcengine-image`（上游协议 `volcengine`）。流式选火山方舟原生入口：请求与上游都是 `volcengine` / `images.generations`，适配器 `passthrough`  
 3. `provider_model_name` = 与 catalog 同名（或火山 `ep-…`）  
 4. Provider 指向正确 Key + Images generations（及 OpenAI 时的 edits）  
 5. 可选 `custom_params`：如默认 `watermark: false`（用户显式传覆盖）  
@@ -283,7 +298,7 @@ Admin Routes / Models 只展示目录权威价：token 模式为 `/1M` 分项；
 Admin 闭环：**Routes → Playground → Simulator → Request Logs**（无独立 Images 管理页）。
 
 1. Import Provider + Image 模型预设  
-2. 建 openai 路由；Billing：token 模型显示 `/M`，per_image 显示 `/image`  
+2. 建路由（OpenAI 入口或火山方舟原生入口）；Billing：token 模型显示 `/M`，per_image 显示 `/image`  
 3. Playground 出图（不计费）  
 4. Simulator / curl 打 Proxy，核对：
    - GPT：`pricing_audit.kind=image_tokens`，`charged_cost` 随 usage 分项变化  
@@ -303,3 +318,4 @@ Admin 闭环：**Routes → Playground → Simulator → Request Logs**（无独
 | Image extras 透传 | `packages/proxy/src/services/image-generation-extras.ts` |
 | Token 预检 / Seedream 常量 | `packages/core/src/db/image-token-usage.ts` |
 | OpenAI Images 驱动 | `packages/proxy/src/services/egress/openai-images-driver.ts` |
+| 火山方舟生图 | `packages/proxy/src/services/egress/volcengine-openai-driver.ts`、`packages/proxy/src/services/egress/volcengine-json-passthrough.ts`、`packages/core/src/volcengine-openai.ts`、`packages/core/src/volcengine-native.ts` |

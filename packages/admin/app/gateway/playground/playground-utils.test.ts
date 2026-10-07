@@ -20,7 +20,7 @@ import {
 	type PlaygroundLlmFamily,
 } from './playground-utils';
 import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE, MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE, MINIMAX_SPEECH_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
-import { DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE, IMAGE_GENERATIONS_BODY_TEMPLATE, MINIMAX_IMAGE_BODY_TEMPLATE, MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
+import { DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE, IMAGE_GENERATIONS_BODY_TEMPLATE, MINIMAX_IMAGE_BODY_TEMPLATE, MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE, SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE, VOLCENGINE_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { RouteListRow } from './types';
 
 function route(overrides: Partial<RouteListRow> = {}): RouteListRow {
@@ -126,6 +126,24 @@ describe('playground-utils', () => {
 			),
 			MINIMAX_IMAGE_BODY_TEMPLATE,
 		);
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'volcengine',
+					upstream_operation: 'images.generations',
+					adapter: 'passthrough',
+					provider_model_name: 'doubao-seedream-5-0-260128',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.22 },
+					}),
+					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
+				} as never,
+			),
+			VOLCENGINE_IMAGE_BODY_TEMPLATE,
+		);
 	});
 
 	it('templateForRoute uses OpenAI bodies for MiniMax conversion routes', () => {
@@ -164,6 +182,43 @@ describe('playground-utils', () => {
 				} as never,
 			),
 			MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
+		);
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'volcengine',
+					upstream_operation: 'images.generations',
+					adapter: 'volcengine-image',
+					provider_model_name: 'doubao-seedream-5-0-260128',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.22 },
+					}),
+					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
+				} as never,
+			),
+			SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
+		);
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'openai',
+					upstream_operation: 'images.generations',
+					adapter: 'passthrough',
+					model_id: 'doubao-seedream-5-0',
+					provider_model_name: 'doubao-seedream-5-0-260128',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.22 },
+					}),
+					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
+				} as never,
+			),
+			SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
 		);
 	});
 

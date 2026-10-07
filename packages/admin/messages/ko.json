@@ -353,6 +353,7 @@
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
 		"minimax": "MiniMax",
+		"volcengine": "Volcengine",
 		"protocolUnknown": "프로토콜: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (클릭하여 복사)"
 	},
@@ -494,6 +495,7 @@
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
 			"minimaxOptional": "MiniMax",
+			"volcengineOptional": "Volcengine",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -506,6 +508,8 @@
 			"geminiAuthHint": "Developer API와 Vertex Express는 ?key=를 사용합니다. 프로젝트 범위 Vertex에 서비스 계정 JSON을 붙여 넣으면 자동으로 Bearer를 사용합니다. Vertex 호환 애그리게이터(ZenMux, Qiniu 등)는 Bearer를 선택해야 합니다.",
 			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
 			"minimaxHint": "Base만 있으면 음성 인식은 '{base}'/speech_to_text, 음성 합성은 '{base}'/t2a_v2, 이미지 생성은 '{base}'/image_generation 으로 파생됩니다. 국제 호스트는 api.minimax.io 입니다. 동영상과 음악 엔드포인트는 아직 없습니다.",
+			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
+			"volcengineHint": "Base만 있으면 Seedream 이미지 생성은 '{base}'/images/generations 이 됩니다. 중국 Ark는 ark.cn-beijing.volces.com, BytePlus ModelArk는 ark.ap-southeast.bytepluses.com 입니다. 채팅은 OpenAI 엔드포인트 설정을 그대로 씁니다.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "Base만 입력하면 아래의 DashScope HTTP·WSS 엔드포인트(filetrans, 핫워드, 음성 포함)를 모두 생성합니다. 일부 기능만 제공하는 플랜(예: Qwen Token Plan)은 Base를 비우고 URL 재정의에서 지원하는 엔드포인트만 입력하세요. 워크스페이스 엔드포인트는 해당 DashScope 호스트를 입력하세요.",
 			"advancedToggle": "URL 재정의",
@@ -513,9 +517,11 @@
 			"advancedHintGemini": "전체 URL을 입력하고 '{model}'과 '{action}'을 포함하세요.",
 			"advancedHintDashscope": "전체 URL을 입력하세요. 엔드포인트는 기능별로 나뉘며 한 모델은 그중 하나만 사용합니다. 여러 항목이 같은 업스트림 URL(예: multimodal-generation)을 가리킬 수 있지만 각각 켜고 끌 수 있도록 분리되어 있습니다. Base가 있으면 빈 항목은 생성된 URL을 사용하고, Base가 없으면 빈 항목은 지원하지 않음을 뜻합니다.",
 			"advancedHintMinimax": "전체 URL을 입력합니다. Base가 있는 항목은 비워 두면 게이트웨이가 speech_to_text, t2a_v2, image_generation 을 만듭니다.",
+			"advancedHintVolcengine": "전체 URL을 입력합니다. Base가 있으면 비워 두고, 게이트웨이가 images/generations 를 만듭니다.",
 			"capHintMiniMaxAudioTranscriptions": "MiniMax 파일 전사 POST /v1/speech_to_text. 라우트 어댑터는 MiniMax 파일 전사를 고르세요. language 는 폼이 아니라 요청 헤더로 보냅니다.",
 			"capHintMiniMaxAudioSpeech": "MiniMax 동기 음성 합성 POST /v1/t2a_v2. 어댑터는 MiniMax audio.speech 패스스루입니다. 비스트리밍과 stream:true 가 같은 엔드포인트를 씁니다.",
 			"capHintMiniMaxImagesGenerations": "MiniMax 이미지 생성 POST /v1/image_generation. 어댑터는 MiniMax images.generations 패스스루입니다. 텍스트 생성과 참조 이미지가 같은 엔드포인트입니다.",
+			"capHintVolcengineImagesGenerations": "Volcengine Seedream. 네이티브 패스스루와 OpenAI 변환 어댑터 volcengine-image 가 모두 Ark POST /images/generations 를 호출합니다. 스트리밍은 네이티브 패스스루만 지원합니다.",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -1031,7 +1037,8 @@
 				"dashscope-image-wan": "Wan 2.7 Image",
 				"minimax-asr-file": "MiniMax 파일 전사",
 				"minimax-tts": "MiniMax 공식 음성 합성",
-				"minimax-image": "MiniMax 공식 이미지 생성"
+				"minimax-image": "MiniMax 공식 이미지 생성",
+				"volcengine-image": "Volcengine Seedream 이미지 생성"
 			},
 			"adapterGuides": {
 				"passthrough": {
@@ -1134,6 +1141,16 @@
 						"size(예: 1024x1024)는 가장 가까운 aspect_ratio로 바뀝니다.",
 						"n은 1–9입니다.",
 						"url과 b64_json은 모두 OpenAI data[]로 다시 씁니다."
+					]
+				},
+				"volcengine-image": {
+					"purpose": "OpenAI SDK의 POST /v1/images/generations를 화산 방주 이미지 생성으로 바꿉니다. 공급자 모델 이름은 doubao-seedream, dola-seedream, seedream입니다.",
+					"mapping": [
+						"n=1은 연속 생성을 끕니다. n이 2–15이면 연속 생성을 켜고 max_images를 n으로 둡니다. 실제 장수는 더 적을 수 있으며 성공한 장수로 과금합니다.",
+						"size는 그대로 전달합니다. 1024x1024와 2K를 모두 쓸 수 있습니다.",
+						"response_format은 url과 b64_json만 지원합니다.",
+						"참조 이미지는 image에 둡니다. quality와 background는 전달하지 않습니다.",
+						"JSON만 반환합니다. 스트리밍은 Volcengine 네이티브 패스스루를 사용하세요."
 					]
 				}
 			},
@@ -1565,6 +1582,8 @@
 		"imageDashScopeHint": "DashScope 변환: OpenAI Images JSON(prompt, n, size)을 편집하세요. Playground가 multimodal-generation으로 다시 쓰고 n은 항상 보냅니다(기본값 1). 이미지 투 이미지는 JSON image를 사용하며 edits는 지원하지 않습니다. 청구 및 요청 로그는 없습니다.",
 		"imageDashScopePassthroughHint": "네이티브 패스스루: JSON은 multimodal-generation으로 그대로 전달됩니다. Playground가 model을 라우트의 공급자 모델 이름으로 바꿉니다. 청구 및 요청 로그는 없습니다.",
 		"imageMiniMaxPassthroughHint": "네이티브 패스스루: JSON은 image_generation으로 그대로 전달됩니다. Playground가 model을 라우트의 공급자 모델 이름으로 바꾸고 data.image_urls 또는 data.image_base64를 미리 봅니다. 청구 및 요청 로그는 없습니다.",
+		"imageVolcenginePassthroughHint": "네이티브 패스스루: JSON은 Ark POST /images/generations 로 그대로 전달됩니다. stream 을 true 로 두면 SSE 입니다. Playground가 model 을 라우트의 공급자 모델 이름으로 바꿉니다. 청구 및 요청 로그는 없습니다.",
+		"imageVolcengineOpenAiHint": "OpenAI 이미지 JSON을 Ark 이미지 생성으로 바꿉니다. n이 2–15이면 연속 생성으로 보냅니다. JSON만 반환하며, 스트리밍은 네이티브 패스스루를 사용하세요. Playground가 반환된 이미지를 미리 봅니다. 청구 및 요청 로그는 없습니다.",
 		"imageMiniMaxOpenAiHint": "OpenAI 이미지 JSON은 MiniMax image_generation으로 변환됩니다. size는 가장 가까운 aspect_ratio로 맞춥니다. Playground가 반환된 이미지를 미리 봅니다. 청구 및 요청 로그는 없습니다.",
 		"imageOperation": "이미지 작업",
 		"imageGenerationsHint": "이미지 모델: 요청 본문은 images/generations 필드(prompt, n, size, quality)를 사용합니다. 청구 및 요청 로그는 없습니다.",
@@ -1750,6 +1769,7 @@
 		"imageOperation": "이미지 작업",
 		"imageGenerationsHint": "Generations: POST /v1/images/generations용 JSON 본문(prompt, n, size, quality).",
 		"imageMiniMaxHint": "이미지 생성: POST /v1/minimax/image_generation용 JSON(prompt, aspect_ratio, n, response_format). Proxy는 성공한 이미지 수로 과금합니다.",
+		"imageVolcengineHint": "이미지 생성: POST /v1/volcengine/images/generations 용 JSON. stream 이 true 이면 SSE 입니다. Proxy는 usage.generated_images 로 과금합니다.",
 		"imageEditsHint": "Edits: JSON 필드와 참조 이미지 파일 → multipart POST /v1/images/edits.",
 		"referenceImages": "참조 이미지",
 		"referenceImagesHint": "multipart 업로드용 이미지 파일 1–{max}개를 선택하세요.",

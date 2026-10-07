@@ -44,6 +44,10 @@ import {
 	buildMiniMaxT2aBodyFromOpenAi,
 	fillMiniMaxSpeechDefaults,
 } from '@octafuse/core/minimax-openai';
+import {
+	VolcengineOpenAiClientError,
+	buildVolcengineImageBodyFromOpenAi,
+} from '@octafuse/core/volcengine-openai';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { AUDIO_MAX_BYTES_PER_FILE } from '@/lib/audio-transcriptions';
@@ -1029,10 +1033,11 @@ export async function invokePlaygroundUpstream(
 		route.isImageModel &&
 		route.upstreamProtocol !== 'openai' &&
 		route.upstreamProtocol !== 'dashscope' &&
-		route.upstreamProtocol !== 'minimax'
+		route.upstreamProtocol !== 'minimax' &&
+		route.upstreamProtocol !== 'volcengine'
 	) {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai, dashscope, or minimax (Playground Images calls /images/generations, /images/edits, DashScope multimodal-generation, or MiniMax image_generation).',
+			'Image-generation models require upstream_protocol=openai, dashscope, minimax, or volcengine (Playground Images calls /images/generations, /images/edits, DashScope multimodal-generation, MiniMax image_generation, or Volcengine images/generations).',
 		);
 	}
 	if (
@@ -1284,6 +1289,54 @@ export async function invokePlaygroundUpstream(
 			headers = request.headers;
 			fetchBody = request.bodyText;
 			upstreamWireBodyJson = request.wireBodyJson;
+			break;
+		}
+		case 'volcengine': {
+			if (route.adapter === 'volcengine-image') {
+				let upstreamBody: Record<string, unknown>;
+				try {
+					upstreamBody = applyPlaygroundUpstreamBody({
+						route,
+						built: buildVolcengineImageBodyFromOpenAi(route.providerModelName, userBody),
+						extras: playgroundExtraFields(userBody, IMAGE_GENERATION_KNOWN_KEYS),
+					});
+					upstreamBody.model = route.providerModelName;
+				} catch (error) {
+					if (error instanceof VolcengineOpenAiClientError) throw badRequest(error.message);
+					throw error;
+				}
+				try {
+					url = resolveUpstreamEndpoint('volcengine', 'images.generations', route.providerEndpoints, {
+						providerId: route.providerId,
+					});
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve Volcengine upstream URL');
+				}
+				headers = {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${route.providerApiKey}`,
+				};
+				fetchBody = JSON.stringify(upstreamBody);
+				upstreamWireBodyJson = fetchBody;
+				break;
+			}
+			if (!route.isImageModel || route.upstreamOperation !== 'images.generations' || route.adapter !== 'passthrough') {
+				throw badRequest('Volcengine Playground routes only support passthrough images.generations');
+			}
+			try {
+				url = resolveUpstreamEndpoint('volcengine', 'images.generations', route.providerEndpoints, {
+					providerId: route.providerId,
+				});
+			} catch (e) {
+				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve Volcengine upstream URL');
+			}
+			headers = {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${route.providerApiKey}`,
+			};
+			const requestBody = { ...merged, model: route.providerModelName };
+			fetchBody = JSON.stringify(requestBody);
+			upstreamWireBodyJson = fetchBody;
 			break;
 		}
 		case 'minimax': {

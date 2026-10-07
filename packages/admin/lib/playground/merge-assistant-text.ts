@@ -3,7 +3,7 @@
  * 并将推理类字段与正文分列，便于区分。
  */
 
-export type PlaygroundProtocol = "openai" | "anthropic" | "gemini" | "dashscope" | "minimax";
+export type PlaygroundProtocol = "openai" | "anthropic" | "gemini" | "dashscope" | "minimax" | "volcengine";
 
 export type PlaygroundResponseParseMode = "sse" | "json" | "ndjson" | "text";
 

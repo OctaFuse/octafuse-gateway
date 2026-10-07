@@ -81,10 +81,11 @@ async function assertImageModelUpstreamProtocol(
 		}) &&
 		proto !== 'openai' &&
 		proto !== 'dashscope' &&
-		proto !== 'minimax'
+		proto !== 'minimax' &&
+		proto !== 'volcengine'
 	) {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai, dashscope, or minimax.'
+			'Image-generation models require upstream_protocol=openai, dashscope, minimax, or volcengine.'
 		);
 	}
 }

@@ -125,6 +125,14 @@ export function previewPlaygroundUpstreamUrl(input: {
 				});
 				return stripApiKeyFromUrl(url.toString());
 			}
+			case "volcengine": {
+				if (input.upstreamOperation?.trim() && input.upstreamOperation.trim() !== "images.generations" && input.upstreamOperation.trim() !== "*") {
+					return null;
+				}
+				return resolveUpstreamEndpoint(protocol, "images.generations", providerEndpoints, {
+					providerId: provider.id,
+				});
+			}
 			case "minimax": {
 				const operation = input.upstreamOperation?.trim() || "audio.transcriptions";
 				const capability =

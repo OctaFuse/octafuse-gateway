@@ -177,5 +177,21 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			}),
 			"https://api.minimaxi.com/v1/image_generation",
 		);
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider: {
+					id: "p1",
+					endpoints: JSON.stringify({
+						volcengine: { base: "https://ark.cn-beijing.volces.com/api/v3" },
+					}),
+				},
+				upstreamProtocol: "volcengine",
+				upstreamOperation: "images.generations",
+				providerModelName: "doubao-seedream-5-0-260128",
+				isImageModel: true,
+				isAudioModel: false,
+			}),
+			"https://ark.cn-beijing.volces.com/api/v3/images/generations",
+		);
 	});
 });

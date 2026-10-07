@@ -7,6 +7,7 @@ import type { ProviderEndpointCapability } from '@octafuse/core/provider-endpoin
 import {
 	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 	MINIMAX_IMAGE_GENERATION_PATH,
+	VOLCENGINE_IMAGE_GENERATIONS_PATH,
 	MINIMAX_SPEECH_TO_TEXT_PATH,
 	MINIMAX_T2A_PATH,
 } from '@octafuse/core/route-topology';
@@ -24,7 +25,7 @@ export type ModelKindFilter = (typeof MODEL_KIND_FILTERS)[number];
 export const DEFAULT_KIND_FILTER: ModelKindFilter = 'llm';
 export const DEFAULT_INVOKE_KIND: InvokeKind = 'llm';
 
-export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope' | 'minimax';
+export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope' | 'minimax' | 'volcengine';
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
 export type AudioOperation = 'transcriptions' | 'speech';
 /** OpenAI LLM 公开入口：Chat Completions 或 Responses。 */
@@ -176,6 +177,7 @@ export function resolveProxyPathForModelInvoke(input: {
 	}
 	if (input.kind === 'image') {
 		if (protocol === 'minimax') return MINIMAX_IMAGE_GENERATION_PATH;
+		if (protocol === 'volcengine') return VOLCENGINE_IMAGE_GENERATIONS_PATH;
 		return input.imageOperation === 'edits' ? '/v1/images/edits' : '/v1/images/generations';
 	}
 	// llm

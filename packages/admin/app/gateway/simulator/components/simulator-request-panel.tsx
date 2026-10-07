@@ -383,7 +383,13 @@ export function SimulatorRequestPanel({
 					) : null}
 					{imageOperation === 'generations' ? (
 						<p className="text-xs text-gray-500">
-							{t(protocol === 'minimax' ? 'imageMiniMaxHint' : 'imageGenerationsHint')}
+							{t(
+								protocol === 'volcengine'
+									? 'imageVolcengineHint'
+									: protocol === 'minimax'
+										? 'imageMiniMaxHint'
+										: 'imageGenerationsHint',
+							)}
 						</p>
 					) : (
 						<p className="text-xs text-gray-500">{t('imageEditsHint')}</p>

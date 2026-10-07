@@ -155,6 +155,7 @@ describe('DashScope image result and billing size', () => {
 		assert.equal(maxNForImageAdapter('dashscope-image-wan'), 4);
 		assert.equal(maxNForImageAdapter('dashscope-image-qwen'), 6);
 		assert.equal(maxNForImageAdapter('passthrough'), 1);
+		assert.equal(maxNForImageAdapter('volcengine-image'), 15);
 		assert.equal(
 			maxNForImageRoutes([{ adapter: 'dashscope-image-qwen' }, { adapter: 'dashscope-image-wan' }]),
 			4

@@ -28,6 +28,10 @@ import {
 	type MiniMaxJsonPassthroughOptions,
 } from './minimax-json-passthrough';
 import {
+	dispatchVolcengineJsonPassthrough,
+	type VolcengineJsonPassthroughOptions,
+} from './volcengine-json-passthrough';
+import {
 	dispatchOpenAiAudioTranscriptions,
 	type NormalizedAudioTranscriptionRequest,
 } from './openai-audio-driver';
@@ -42,6 +46,7 @@ import {
 import { dispatchDashScopeImageGenerations } from './dashscope-images-driver';
 import { dispatchMiniMaxOpenAiImage, dispatchMiniMaxOpenAiSpeech } from './minimax-openai-driver';
 import { dispatchOpenAiImageGenerations } from './openai-images-driver';
+import { dispatchVolcengineOpenAiImage } from './volcengine-openai-driver';
 
 type Timing = {
 	signal?: AbortSignal;
@@ -68,6 +73,7 @@ const IMAGE_GENERATION_ADAPTERS = [
 	'dashscope-image-qwen',
 	'dashscope-image-wan',
 	'minimax-image',
+	'volcengine-image',
 ] as const satisfies readonly RouteAdapter[];
 
 export const IMPLEMENTED_CONVERSION_ADAPTERS: readonly RouteAdapter[] = [
@@ -153,6 +159,9 @@ export function dispatchImageGenerations(
 	if (route.adapter === 'minimax-image') {
 		return dispatchMiniMaxOpenAiImage(route, body, signal, timing, attempt);
 	}
+	if (route.adapter === 'volcengine-image') {
+		return dispatchVolcengineOpenAiImage(route, body, signal, timing, attempt);
+	}
 	throw new Error(`Unsupported image generation adapter: ${route.adapter}`);
 }
 
@@ -187,6 +196,17 @@ export function dispatchMultimodalPassthrough(
 		throw new Error(`Unsupported DashScope multimodal adapter: ${route.adapter}`);
 	}
 	return dispatchDashScopeMultimodalPassthrough(route, body, signal, timing, attempt, options);
+}
+
+export function dispatchVolcengineJsonPassthroughRoute(
+	route: RouteResult,
+	body: Record<string, unknown>,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: VolcengineJsonPassthroughOptions,
+): Promise<ProxyDispatchResult> {
+	return dispatchVolcengineJsonPassthrough(route, body, signal, timing, attempt, options);
 }
 
 export function dispatchMiniMaxJsonPassthroughRoute(

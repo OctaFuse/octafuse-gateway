@@ -12,8 +12,10 @@ import {
 	DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE,
 	IMAGE_EDITS_BODY_TEMPLATE,
 	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
 	MINIMAX_IMAGE_BODY_TEMPLATE,
 	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
+	VOLCENGINE_IMAGE_BODY_TEMPLATE,
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
@@ -70,6 +72,7 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
 }`,
 	dashscope: '{}',
 	minimax: AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	volcengine: VOLCENGINE_IMAGE_BODY_TEMPLATE,
 };
 
 /** OpenAI Responses：`input` + `store: false`，与调试台默认体对齐。 */
@@ -152,6 +155,9 @@ export function bodyTemplateForSelection(
 				: undefined,
 		);
 	}
+	if (isImageModel && protocol === 'volcengine') {
+		return adapter === 'volcengine-image' ? SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE : VOLCENGINE_IMAGE_BODY_TEMPLATE;
+	}
 	if (isImageModel && protocol === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'dashscope') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'openai') {
@@ -160,6 +166,12 @@ export function bodyTemplateForSelection(
 		}
 		if (providerModelName && /^image-01/i.test(providerModelName.trim())) {
 			return MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE;
+		}
+		if (
+			imageOperation !== 'edits' &&
+			(adapter === 'volcengine-image' || (providerModelName != null && /seedream/i.test(providerModelName)))
+		) {
+			return SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE;
 		}
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
 	}
@@ -347,6 +359,7 @@ export const SIMULATOR_PROTOCOL_ORDER: readonly SimulatorProtocol[] = [
 	'gemini',
 	'dashscope',
 	'minimax',
+	'volcengine',
 ];
 
 export type SimulatorClientSurfaceOptions = {

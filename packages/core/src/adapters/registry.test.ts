@@ -33,6 +33,7 @@ describe('adapter registry', () => {
 			'minimax-asr-file',
 			'minimax-tts',
 			'minimax-image',
+			'volcengine-image',
 		]);
 	});
 
@@ -61,7 +62,7 @@ describe('adapter registry', () => {
 			upstreamProtocol: 'minimax',
 			upstreamOperation: 'audio.transcriptions',
 		});
-		assert.equal(listConversionAdapters().length, 12);
+		assert.equal(listConversionAdapters().length, 13);
 		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['minimax-tts'], {
 			requestProtocol: 'openai',
 			requestOperation: 'audio.speech',
@@ -72,6 +73,12 @@ describe('adapter registry', () => {
 			requestProtocol: 'openai',
 			requestOperation: 'images.generations',
 			upstreamProtocol: 'minimax',
+			upstreamOperation: 'images.generations',
+		});
+		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['volcengine-image'], {
+			requestProtocol: 'openai',
+			requestOperation: 'images.generations',
+			upstreamProtocol: 'volcengine',
 			upstreamOperation: 'images.generations',
 		});
 	});
@@ -165,8 +172,49 @@ describe('adapter registry', () => {
 			'/v1/minimax/image_generation',
 		);
 		assert.equal(
+			requestSurfacePath('volcengine', 'images.generations'),
+			'/v1/volcengine/images/generations',
+		);
+		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference', 'my fun/asr'),
 			'/v1/dashscope/realtime?model=my%20fun%2Fasr&operation=audio.transcriptions.realtime.inference',
+		);
+	});
+
+	it('matches Seedream provider model names to the volcengine image passthrough', () => {
+		const adapter = ADAPTER_REGISTRY.find(
+			(item) => item.optionKey === 'passthrough:volcengine:images.generations',
+		);
+		assert.ok(adapter);
+		assert.equal(matchAdapterUpstreamModel(adapter, 'doubao-seedream-5-0-flash-260915'), 'match');
+		assert.equal(matchAdapterUpstreamModel(adapter, 'dola-seedream-5-0-flash-260915'), 'match');
+		assert.equal(matchAdapterUpstreamModel(adapter, 'seedream-4-0-250828'), 'match');
+		assert.equal(matchAdapterUpstreamModel(adapter, 'doubao-seedance-1-0'), 'mismatch');
+		assert.equal(adapter.protectedUpstreamPaths, undefined);
+		const conversion = getAdapterByOptionKey('volcengine-image');
+		assert.ok(conversion);
+		assert.equal(matchAdapterUpstreamModel(conversion, 'doubao-seedream-5-0-260128'), 'match');
+		assert.equal(matchAdapterUpstreamModel(conversion, 'seedream-4-0-250828'), 'match');
+		assert.equal(matchAdapterUpstreamModel(conversion, 'doubao-seedance-1-0'), 'mismatch');
+		assert.equal(
+			isRouteAdapterCompatible({
+				adapter: 'volcengine-image',
+				requestProtocol: 'openai',
+				requestOperation: 'images.generations',
+				upstreamProtocol: 'volcengine',
+				upstreamOperation: 'images.generations',
+			}),
+			true,
+		);
+		assert.equal(
+			isRouteAdapterCompatible({
+				adapter: 'volcengine-image',
+				requestProtocol: 'volcengine',
+				requestOperation: 'images.generations',
+				upstreamProtocol: 'volcengine',
+				upstreamOperation: 'images.generations',
+			}),
+			false,
 		);
 	});
 

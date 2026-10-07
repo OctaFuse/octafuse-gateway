@@ -67,6 +67,7 @@ export function maxNForImageAdapter(adapter: string): number {
 	if (adapter === 'dashscope-image-wan') return 4;
 	if (adapter === 'dashscope-image-qwen') return 6;
 	if (adapter === 'minimax-image') return 9;
+	if (adapter === 'volcengine-image') return 15;
 	return 1;
 }
 

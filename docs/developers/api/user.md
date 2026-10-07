@@ -1039,6 +1039,20 @@ Content-Type: application/json
 
 OpenAI 入口使用适配器 `minimax-image`，仍调用 `POST /v1/images/generations`。`size` 如 `1024x1024` 会映射到最接近的 `aspect_ratio`。`response_format=url` 返回 `data[].url`，`b64_json` 返回 `data[].b64_json`。`quality` 和 `background` 不转发。`n` 为 1–9。
 
+### 火山方舟生图
+
+OpenAI SDK 使用适配器 `volcengine-image`，仍调用 `POST /v1/images/generations`。`n=1` 关闭组图；`n` 为 2–15 时打开组图，`max_images` 等于 `n`。方舟可能返回更少的图片，预检按 `n`，最终按成功张数计费。`size` 原样转发（`1024x1024` 或 `2K`）。`response_format` 只支持 `url` 和 `b64_json`。参考图放在 `image`。`quality` 和 `background` 不转发。全部失败时返回上游错误，HTTP 502。这条入口只出 JSON。
+
+原生和流式走透传：
+
+```text
+POST /v1/volcengine/images/generations
+Authorization: Bearer <USER_API_KEY>
+Content-Type: application/json
+```
+
+请求与上游都是 `volcengine` + `images.generations`，adapter 必须是 `passthrough`。网关只把 `model` 换成路由上的供应商模型名，返回方舟原文。非流式 JSON 与 `stream: true` 的 SSE 共用这一路径。按 `usage.generated_images` 计费（失败张数不计入）；没有 usage 时按带 `url` 或 `b64_json` 的 `data[]` 计数。组图使用 `sequential_image_generation` 与 `sequential_image_generation_options.max_images`。详见 [文生图模型](../reference/image-models.md#火山方舟-volcengine-arkseedream)。
+
 ---
 
 ## 语音合成（Audio Speech / TTS）

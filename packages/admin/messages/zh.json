@@ -353,6 +353,7 @@
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
 		"minimax": "MiniMax",
+		"volcengine": "火山方舟",
 		"protocolUnknown": "协议：{protocol}",
 		"endpointCopyTitle": "{label} — {url}（点击复制）"
 	},
@@ -494,6 +495,7 @@
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
 			"minimaxOptional": "MiniMax",
+			"volcengineOptional": "火山方舟",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -506,6 +508,8 @@
 			"geminiAuthHint": "Developer API 与 Vertex Express 使用 ?key=。项目级 Vertex 粘贴服务账号 JSON 时会自动走 Bearer。Vertex 兼容聚合商（ZenMux、七牛等）必须选 Bearer。",
 			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
 			"minimaxHint": "只填 Base 时，语音识别派生为 '{base}'/speech_to_text，语音合成为 '{base}'/t2a_v2，生图为 '{base}'/image_generation。国际站把主机换成 api.minimax.io。视频和音乐还没有端点。",
+			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
+			"volcengineHint": "只填 Base 时，Seedream 生图派生为 '{base}'/images/generations。国内火山方舟用 ark.cn-beijing.volces.com，BytePlus ModelArk 用 ark.ap-southeast.bytepluses.com。对话仍走 OpenAI 端点配置。",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "只填 Base 时，网关会派生下方全部 DashScope HTTP 与 WSS 端点（含 filetrans、热词、音色）。只开放部分能力的套餐（如千问 Token Plan）不要填 Base，展开 URL 覆盖后只填支持的端点。工作空间端点请填写对应的 DashScope 主机。",
 			"advancedToggle": "URL 覆盖",
@@ -513,9 +517,11 @@
 			"advancedHintGemini": "填写完整 URL，且必须包含 '{model}' 和 '{action}'。",
 			"advancedHintDashscope": "填写完整 URL。端点按能力区分，一个模型只会用到其中一项；几项可能指向同一个上游地址（如 multimodal-generation），分开填写是为了单独开关。已填 Base 时空白项使用派生地址，未填 Base 时空白项表示不支持。",
 			"advancedHintMinimax": "填写完整 URL。已填 Base 时留空即可，网关会按能力派生 speech_to_text、t2a_v2 或 image_generation。",
+			"advancedHintVolcengine": "填写完整 URL。已填 Base 时留空即可，网关会派生 images/generations。",
 			"capHintMiniMaxAudioTranscriptions": "MiniMax 文件转写 POST /v1/speech_to_text。路由适配器选「MiniMax 文件转写」。language 由网关放到请求头，不写进表单。",
 			"capHintMiniMaxAudioSpeech": "MiniMax 同步语音合成 POST /v1/t2a_v2。路由适配器选 MiniMax 透传 audio.speech。非流式和 stream:true 共用这一项。",
 			"capHintMiniMaxImagesGenerations": "MiniMax 生图 POST /v1/image_generation。路由适配器选 MiniMax 透传 images.generations。文生图和图生图走同一个端点。",
+			"capHintVolcengineImagesGenerations": "火山方舟 Seedream。原生透传和 OpenAI 转换适配器 volcengine-image 都发到方舟 POST /images/generations。流式只用原生透传。",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -1031,7 +1037,8 @@
 				"dashscope-image-wan": "万相 2.7",
 				"minimax-asr-file": "MiniMax 文件转写",
 				"minimax-tts": "MiniMax 官方语音合成",
-				"minimax-image": "MiniMax 官方生图"
+				"minimax-image": "MiniMax 官方生图",
+				"volcengine-image": "火山方舟 Seedream 生图"
 			},
 			"adapterGuides": {
 				"passthrough": {
@@ -1134,6 +1141,16 @@
 						"size（如 1024x1024）映射到最接近的 aspect_ratio。",
 						"n 取值 1–9。",
 						"url 与 b64_json 都改写成 OpenAI data[]。"
+					]
+				},
+				"volcengine-image": {
+					"purpose": "OpenAI SDK 调 POST /v1/images/generations，网关转到火山方舟生图。供应商模型名填 doubao-seedream、dola-seedream 或 seedream。",
+					"mapping": [
+						"n=1 关闭组图；n 为 2–15 时打开组图，max_images 等于 n。实际张数可能少于 n，按成功张数计费。",
+						"size 原样转发，1024x1024 和 2K 都可以。",
+						"response_format 只支持 url 和 b64_json。",
+						"参考图放在 image。quality 和 background 不转发。",
+						"只返回 JSON。要流式请改走火山方舟原生透传。"
 					]
 				}
 			},
@@ -1565,6 +1582,8 @@
 		"imageDashScopeHint": "DashScope 转换：请求体仍用 OpenAI Images 字段（prompt、n、size）。调试台会改写成 multimodal-generation，并始终发送 n（默认 1）。图生图用 JSON image，不支持 edits。不计费、不写请求日志。",
 		"imageDashScopePassthroughHint": "原生透传：JSON 按 multimodal-generation 原样转发。调试台会把 model 换成路由上的供应商模型名。不计费、不写请求日志。",
 		"imageMiniMaxPassthroughHint": "原生透传：JSON 按 image_generation 原样转发。调试台会把 model 换成路由上的供应商模型名，并预览 data.image_urls 或 data.image_base64。不计费、不写请求日志。",
+		"imageVolcenginePassthroughHint": "原生透传：JSON 按方舟 POST /images/generations 原样转发。stream 设为 true 时返回 SSE。调试台会把 model 换成路由上的供应商模型名。不计费、不写请求日志。",
+		"imageVolcengineOpenAiHint": "OpenAI 生图 JSON 会转换成方舟生图。n 为 2–15 时按组图发送。只返回 JSON；要流式请用原生透传。调试台预览返回的图片。不计费、不写请求日志。",
 		"imageMiniMaxOpenAiHint": "OpenAI 生图 JSON 会转换成 MiniMax image_generation。size 会就近映射为 aspect_ratio。调试台预览返回的图片。不计费、不写请求日志。",
 		"imageOperation": "图像操作",
 		"imageGenerationsHint": "文生图模型：请求体使用 images/generations 字段（prompt、n、size、quality）。不计费、不写请求日志。",
@@ -1750,6 +1769,7 @@
 		"imageOperation": "图像操作",
 		"imageGenerationsHint": "文生图：JSON 请求体对应 POST /v1/images/generations（prompt、n、size、quality）。",
 		"imageMiniMaxHint": "生图：JSON 发往 POST /v1/minimax/image_generation（prompt、aspect_ratio、n、response_format）。Proxy 按成功张数计费。",
+		"imageVolcengineHint": "生图：JSON 发往 POST /v1/volcengine/images/generations。stream 为 true 时返回 SSE。Proxy 按 usage.generated_images 计费。",
 		"imageEditsHint": "图像编辑：JSON 字段加参考图 → multipart POST /v1/images/edits。",
 		"referenceImages": "参考图",
 		"referenceImagesHint": "选择 1–{max} 张图片用于 multipart 上传。",
