@@ -2,7 +2,7 @@
 
 本文对照阿里云百炼 DashScope、MiniMax，以及火山方舟 / BytePlus ModelArk 官方开放的接口，记录网关当前的透传与协议转换支持情况，以及已知缺口。已支持能力的行为细节见各自的架构文档，本文只回答「有没有、缺什么」。
 
-**核对日期**：2026-10-07。官方接口或网关能力变化后，更新对应行并刷新日期。
+**核对日期**：2026-10-08。官方接口或网关能力变化后，更新对应行并刷新日期。
 
 **相关文档**：
 
@@ -36,7 +36,7 @@ DashScope 原生路径相对 `providers.endpoints.dashscope.base`（如 `https:/
 |------|----------|------|----------|------|
 | 对话 | `/compatible-mode/v1/chat/completions` | ✅ | — | |
 | Anthropic Messages | `/apps/anthropic/v1/messages` | ✅ | — | |
-| Responses | `/compatible-mode/v1/responses` | ⚠️ | — | 百炼国内 / 国际预设只配了 `chat`，需手工补 `responses`；千问 AI 平台预设已有 |
+| Responses | `/compatible-mode/v1/responses` | ✅ | — | 百炼国内 / 国际与千问 AI 平台（含 Token Plan）预设已写入；Coding Plan 官方只提供 Chat 与 Anthropic |
 | 原生文本生成 | `services/aigc/text-generation/generation` | ❌ | ❌ | 兼容模式已覆盖，优先级低 |
 | 同步 ASR | `services/aigc/multimodal-generation/generation` | ✅ | ✅ | Qwen3 / Qwen-Audio-3.0 / Fun-ASR 三个适配器 |
 | 异步文件转写 | `services/audio/asr/transcription` + `tasks/{task_id}` | ✅ | ✅ | 转换只接受公网 `file_url` |
@@ -62,7 +62,7 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 |------|----------|------|----------|------|
 | 对话 | `/v1/chat/completions` | ✅ | — | |
 | Anthropic Messages | `/anthropic/v1/messages` | ✅ | — | |
-| Responses | `/v1/responses` | ⚠️ | — | 预设只配了 `chat`，需手工补 `responses` |
+| Responses | `/v1/responses` | ✅ | — | 国内与国际站预设均已写入 `openai.endpoints.responses` |
 | Token 估算 | `/v1/responses/input_tokens` | ❌ | — | 网关只注册了 `POST /v1/responses` |
 | 原生对话 | `/v1/text/chatcompletion_v2` | ❌ | ❌ | M2-her 等，优先级低 |
 | 文件转写 | `/v1/speech_to_text` | ⚠️ | ✅ | 见下文「已知缺陷」；网关单文件上限 25MB，上游 50MB；转换不支持流式 |
@@ -83,7 +83,8 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 | 能力 | 官方端点 | 透传 | 协议转换 | 备注 |
 |------|----------|------|----------|------|
 | 对话 | `/chat/completions` | — | — | 用供应商的 `openai` 端点，不进 `volcengine` |
-| Responses | `/responses` | — | — | 同上；预设未配 `responses`，需要时手工补 OpenAI capability URL |
+| Responses | `/responses` | — | — | 同上；按量、Coding Plan、Agent Plan 预设已写入 `openai.endpoints.responses` |
+| Anthropic Messages | `/api/compatible/v1/messages`（套餐为 `/api/coding` 或 `/api/plan`） | — | — | 用供应商的 `anthropic` 端点；按量与套餐预设已写入 |
 | 生图 | `/images/generations` | ✅ | ✅ | 原生透传 `POST /v1/volcengine/images/generations`（含 SSE）。OpenAI 入口用 `volcengine-image`，只出 JSON，`n` 为 2–15 时出组图 |
 | 视频任务 | `/contents/generations/tasks` | ❌ | ❌ | Seedance 等；网关没有视频模态 |
 | 豆包语音 | 语音合成 / 识别 | ❌ | ❌ | |
@@ -101,7 +102,6 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 
 | 类型 | 缺失项 |
 |------|--------|
-| 供应商端点 | 百炼国内 / 国际与 MiniMax 的 `openai.responses`；MiniMax 国际站（`api.minimax.io`） |
 | DashScope 模型 | `qwen3-tts-*` / `qwen-tts*`、`qwen-tts-realtime*`、`MiniMax/speech-2.8-hd`、`paraformer-*`、`qwen-audio-3.1-asr-flash-*`、`qwen-image-edit*` |
 | MiniMax 模型 | `MiniMax-M2.5-highspeed`、`MiniMax-M2.1`、`MiniMax-M2.1-highspeed`、`MiniMax-M2`、`MiniMax-M3.1-Flash-Preview`（仅 M Plan）、`speech-2.6-hd` / `speech-2.6-turbo`、`speech-02-hd` / `speech-02-turbo` |
 

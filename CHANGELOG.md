@@ -13,7 +13,7 @@
   - OpenAI 入口：`volcengine-image` 把 `POST /v1/images/generations` 转到方舟 `images/generations`，只返回 JSON。`n=1` 不带组图字段；`n` 为 2–15 时打开组图，`max_images` 取 `n`；5.0 pro / flash 的 `n>1` 返回 400。`size` 原样转发（含 `auto`）。`background` 只转发 `transparent` / `opaque`，`output_format` 只接受 `png` / `jpeg`，`quality` 不转发。响应 `data[]` 保留方舟的 `size` 与图层字段，`usage` 原样返回。
   - 原生透传：`POST /v1/volcengine/images/generations`，非流式 JSON 与 `stream: true` 的 SSE 共用，只替换 `model`。
   - 两条入口都按成功张数计费（优先 `usage.generated_images`），并把 `宽x高` 按像素换算成档位再查价。
-  - 对话和 Responses 继续用供应商的 `openai` 端点，视频和语音还没有端点。火山方舟与 BytePlus 导入预设只保留 `openai` 对话端点和 `volcengine.base`，不预填 OpenAI 生图 URL。已经用 OpenAI 透传跑 Seedream 的路由可以继续用；切到新适配器时给供应商补上 `volcengine.base`，把路由上游协议改成 `volcengine` 并选择 `volcengine-image`。
+  - 对话、Responses 和 Anthropic Messages 继续用供应商的 `openai` / `anthropic` 端点，不进 `volcengine` 协议。视频和语音还没有端点。生图不预填 OpenAI URL，只走 `volcengine.base`。已经用 OpenAI 透传跑 Seedream 的路由可以继续用；切到新适配器时给供应商补上 `volcengine.base`，把路由上游协议改成 `volcengine` 并选择 `volcengine-image`。
 
 - DashScope 补齐原生透传。语音合成走 `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`（`X-DashScope-SSE: enable` 为流式）；多模态语音和生图走已有的多模态生成路径，按模型类型分流；异步文件转写提交 `POST /v1/dashscope/services/audio/asr/transcription`，查询 `GET /v1/dashscope/tasks/{taskId}?model=`。网关只替换 `model`，响应保持上游原文；语音按字符、生图按张数、转写任务成功后按时长计费。Qwen-TTS-Realtime 的 session 也可以选为透传。原有 OpenAI 转换路由不变。Proxy 的 CORS 放行 `language`、`X-DashScope-SSE` 和 `X-DashScope-Async` 请求头，浏览器可以直接调用这些入口。
 
@@ -38,7 +38,10 @@
 - 供应商导入预设：
   - 新增按量计费的「千问 AI 平台」，主机 `maas.qianwenaiapi.com`，含 OpenAI Chat 与 Responses、Anthropic，以及 DashScope base（可派生语音、生图和 filetrans）。
   - 「千问 AI 平台（Token Plan）」改用官方主机 `token-plan.maas.qianwenaiapi.com`，并补上 OpenAI Responses。DashScope 只覆盖同步 ASR、生图、HTTP TTS 与实时语音，不含 filetrans 与视频生成。
-  - 百炼国内与国际按量预设补上 Anthropic Messages。
+  - 补齐火山方舟、百炼和 MiniMax 已经支持的大语言模型端点。OpenAI 只写 `chat` 与 `responses`，不写 `openai.base`，避免把生图和音频派生到 OpenAI 协议。
+  - 火山方舟与 BytePlus 按量端点增加 OpenAI Responses 和 Anthropic Messages；Coding Plan、Agent Plan 以及 BytePlus Coding Plan 增加 Responses，BytePlus Coding Plan 同时补上 Anthropic。Seedream 仍只走 `volcengine.base`。
+  - 阿里云百炼国内与国际按量端点增加 OpenAI Responses（此前已有 Anthropic）。语音和生图仍走 `dashscope.base`。Coding Plan 官方只提供 Chat 与 Anthropic，预设不写 Responses。
+  - MiniMax 国内预设增加 OpenAI Responses，并新增国际站 `api.minimax.io`（Chat、Responses、Anthropic，以及 `minimax.base`）。文件转写、语音合成和生图仍走 `minimax` 协议。
   - 已导入的供应商不会自动更新，需要在供应商里改端点或重新导入。
 
 - Playground 与 Simulator 可以直接请求上述 MiniMax、火山方舟和 DashScope 原生入口，非流式 MiniMax 语音会把 hex 音频解码后播放。生图请求样例按模型族使用官方最低档尺寸。

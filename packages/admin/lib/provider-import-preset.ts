@@ -201,6 +201,7 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 		['bigmodel.cn', identity('zhipu')],
 		['moonshot.cn', identity('moonshot')],
 		['minimaxi.com', identity('minimax')],
+		['minimax.io', identity('minimax')],
 		['openai.com', identity('openai')],
 		['anthropic.com', identity('anthropic')],
 		['generativelanguage.googleapis.com', identity('google')],

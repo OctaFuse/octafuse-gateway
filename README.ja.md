@@ -28,9 +28,17 @@ Octafuse Gateway の中核的な目標は、**一人会社（OPC）や企業向�
       - Models：`GET /v1/models`
     - Anthropic エンドポイント：`POST /v1/messages`
     - Google Gemini エンドポイント：`POST /v1beta/models/{model}:generateContent`（`streamGenerateContent` を含む）
-    - DashScope 同期マルチモーダル ASR：`POST /v1/dashscope/services/aigc/multimodal-generation/generation`
-    - DashScope リアルタイム音声：`GET /v1/dashscope/realtime`
-4. Protocol の適合と変換：クライアントとアップストリームの Protocol 変換を Route で選択でき、使い慣れた呼び出し方式のまま異なる Provider を利用できます。たとえば、OpenAI Images クライアントから Alibaba Cloud Model Studio の Qwen Image / Wan Image モデルを呼び出せます。
+    - DashScope ネイティブエンドポイント：
+      - 同期マルチモーダル（ASR、Qwen-TTS、画像生成）：`POST /v1/dashscope/services/aigc/multimodal-generation/generation`
+      - 音声合成：`POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`
+      - 非同期ファイル文字起こし：`POST /v1/dashscope/services/audio/asr/transcription`、`GET /v1/dashscope/tasks/{taskId}`
+      - リアルタイム音声：`GET /v1/dashscope/realtime`
+    - MiniMax ネイティブエンドポイント：
+      - ファイル文字起こし：`POST /v1/minimax/speech_to_text`
+      - 音声合成：`POST /v1/minimax/t2a_v2`
+      - 画像生成：`POST /v1/minimax/image_generation`
+    - Volcengine Ark ネイティブエンドポイント（Seedream 画像生成）：`POST /v1/volcengine/images/generations`
+4. Protocol の適合と変換：クライアントとアップストリームの Protocol 変換を Route で選択でき、使い慣れた呼び出し方式のまま異なる Provider を利用できます。たとえば、OpenAI Images クライアントから Alibaba Cloud Model Studio の Qwen Image / Wan Image、Volcengine Ark の Seedream、MiniMax の画像モデルを呼び出せます。OpenAI Audio クライアントからは Model Studio と MiniMax の音声認識・音声合成を利用できます。
 5. Agent ツールの接続：`/v1/tools/*` で Agent 向けツールを統一的に提供し、ログ、課金、コスト管理を一元化します。モデルとツールを同じ Gateway から利用できます。
     - Web 検索（`POST /v1/tools/web-search`）：Bocha、Tavily、Alibaba Cloud CleverSee、Tencent Cloud WSA
     - Web ページ取得（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
@@ -131,7 +139,7 @@ Providers ページではアップストリームアカウントと Protocol End
 | Docker セルフホスト | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cloudflare Workers エッジデプロイ | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
-<sup>1</sup> Octafuse は DashScope ネイティブ同期 ASR、リアルタイム ASR / TTS に対応し、OpenAI 互換の ASR / TTS リクエストを DashScope へ Protocol 変換して Route できます。
+<sup>1</sup> Octafuse は DashScope ネイティブの同期 / 非同期 ASR、音声合成、リアルタイム ASR / TTS、画像生成に対応し、OpenAI 互換の画像、ASR、TTS リクエストを DashScope へ Protocol 変換して Route できます。MiniMax と Volcengine Ark のネイティブエンドポイントも同じ方式で接続します。
 <br />
 <sup>2</sup> Octafuse は現在、テキスト、画像、ASR、TTS、リアルタイム音声に対応しています。動画はまだ統一 Request Surface に含まれていません。
 

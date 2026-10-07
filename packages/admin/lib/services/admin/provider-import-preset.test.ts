@@ -206,6 +206,15 @@ describe('provider import preset catalog metadata', () => {
 			'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions'
 		);
 		assert.equal(
+			byName.get('Alibaba Cloud Bailian')?.endpoints.openai?.endpoints?.responses,
+			'https://dashscope.aliyuncs.com/compatible-mode/v1/responses'
+		);
+		assert.equal(
+			byName.get('Alibaba Cloud Bailian (International)')?.endpoints.openai?.endpoints?.responses,
+			'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/responses'
+		);
+		assert.equal(byName.get('Alibaba Cloud Bailian')?.endpoints.openai?.base, undefined);
+		assert.equal(
 			byName.get('Alibaba Cloud Bailian (International)')?.endpoints.dashscope?.base,
 			'https://dashscope-intl.aliyuncs.com/api/v1'
 		);
@@ -445,9 +454,27 @@ describe('provider import preset catalog metadata', () => {
 	it('adds a MiniMax native base for speech_to_text without replacing chat or Anthropic', () => {
 		const minimax = listStaticProviderImportPresets().find((row) => row.name === 'MiniMax');
 		assert.ok(minimax);
+		assert.equal(minimax.endpoints.openai?.base, undefined);
 		assert.equal(minimax.endpoints.openai?.endpoints?.chat, 'https://api.minimaxi.com/v1/chat/completions');
+		assert.equal(minimax.endpoints.openai?.endpoints?.responses, 'https://api.minimaxi.com/v1/responses');
 		assert.equal(minimax.endpoints.anthropic?.base, 'https://api.minimaxi.com/anthropic');
 		assert.equal(minimax.endpoints.minimax?.base, 'https://api.minimaxi.com/v1');
+
+		const international = listStaticProviderImportPresets().find(
+			(row) => row.name === 'MiniMax (International)'
+		);
+		assert.ok(international);
+		assert.equal(international.endpoints.openai?.base, undefined);
+		assert.equal(
+			international.endpoints.openai?.endpoints?.chat,
+			'https://api.minimax.io/v1/chat/completions'
+		);
+		assert.equal(
+			international.endpoints.openai?.endpoints?.responses,
+			'https://api.minimax.io/v1/responses'
+		);
+		assert.equal(international.endpoints.anthropic?.base, 'https://api.minimax.io/anthropic');
+		assert.equal(international.endpoints.minimax?.base, 'https://api.minimax.io/v1');
 	});
 
 	it('suffixes import names only within the same kind', () => {

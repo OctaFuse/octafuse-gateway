@@ -35,12 +35,25 @@ describe('Seedream catalog + Volcengine Ark provider preset', () => {
 			ark!.endpoints.openai?.endpoints?.chat,
 			'https://ark.cn-beijing.volces.com/api/v3/chat/completions'
 		);
+		assert.equal(
+			ark!.endpoints.openai?.endpoints?.responses,
+			'https://ark.cn-beijing.volces.com/api/v3/responses'
+		);
+		assert.equal(ark!.endpoints.anthropic?.base, 'https://ark.cn-beijing.volces.com/api/compatible');
 		assert.equal(ark!.endpoints.openai?.endpoints?.['images.generations'], undefined);
 		assert.equal(ark!.endpoints.openai?.endpoints?.['images.edits'], undefined);
 		assert.equal(ark!.endpoints.volcengine?.base, 'https://ark.cn-beijing.volces.com/api/v3');
 		const byteplus = listStaticProviderImportPresets().find((p) => p.name === 'BytePlus ModelArk');
 		assert.ok(byteplus);
 		assert.equal(byteplus!.endpoints.openai?.base, undefined);
+		assert.equal(
+			byteplus!.endpoints.openai?.endpoints?.responses,
+			'https://ark.ap-southeast.bytepluses.com/api/v3/responses'
+		);
+		assert.equal(
+			byteplus!.endpoints.anthropic?.base,
+			'https://ark.ap-southeast.bytepluses.com/api/compatible'
+		);
 		assert.equal(byteplus!.endpoints.openai?.endpoints?.['images.generations'], undefined);
 		assert.equal(byteplus!.endpoints.volcengine?.base, 'https://ark.ap-southeast.bytepluses.com/api/v3');
 	});

@@ -28,9 +28,17 @@ Its core capabilities include:
       - Models: `GET /v1/models`
     - Anthropic endpoint: `POST /v1/messages`
     - Google Gemini endpoint: `POST /v1beta/models/{model}:generateContent` (including `streamGenerateContent`)
-    - DashScope synchronous multimodal ASR: `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
-    - DashScope realtime audio: `GET /v1/dashscope/realtime`
-4. Protocol adaptation and conversion: Choose how client requests map to upstream protocols, so applications can use familiar interfaces across different providers. For example, OpenAI Images clients can call Alibaba Cloud Model Studio Qwen Image / Wan Image models through the Gateway.
+    - DashScope native endpoints:
+      - Synchronous multimodal (ASR, Qwen-TTS, image generation): `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
+      - Speech synthesis: `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`
+      - Async file transcription: `POST /v1/dashscope/services/audio/asr/transcription`, `GET /v1/dashscope/tasks/{taskId}`
+      - Realtime audio: `GET /v1/dashscope/realtime`
+    - MiniMax native endpoints:
+      - File transcription: `POST /v1/minimax/speech_to_text`
+      - Speech synthesis: `POST /v1/minimax/t2a_v2`
+      - Image generation: `POST /v1/minimax/image_generation`
+    - Volcengine Ark native endpoint (Seedream image generation): `POST /v1/volcengine/images/generations`
+4. Protocol adaptation and conversion: Choose how client requests map to upstream protocols, so applications can use familiar interfaces across different providers. For example, OpenAI Images clients can call Alibaba Cloud Model Studio Qwen Image / Wan Image, Volcengine Ark Seedream, and MiniMax image models, and OpenAI Audio clients can call Model Studio and MiniMax speech recognition and synthesis.
 5. Agent tool access: Use `/v1/tools/*` to expose tools to agents with centralized logging, billing, and cost control, so models and tools share one Gateway:
     - Web search (`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
     - Web fetch (`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader
@@ -131,7 +139,7 @@ The Providers page connects upstream accounts and protocol endpoints. The Routes
 | Docker self-hosting | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cloudflare Workers edge deployment | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
-<sup>1</sup> Octafuse supports DashScope native synchronous ASR and realtime ASR / TTS, and can route OpenAI-compatible ASR / TTS requests to DashScope across protocols.
+<sup>1</sup> Octafuse supports DashScope native synchronous / async ASR, speech synthesis, realtime ASR / TTS, and image generation, and can route OpenAI-compatible image, ASR, and TTS requests to DashScope across protocols. MiniMax and Volcengine Ark native endpoints are integrated the same way.
 <br />
 <sup>2</sup> Octafuse currently covers text, images, ASR, TTS, and realtime speech. Video has not yet been added to the unified request surface.
 
