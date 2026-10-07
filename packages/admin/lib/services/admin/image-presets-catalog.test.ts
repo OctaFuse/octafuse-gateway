@@ -10,6 +10,7 @@ const EXPECTED_IMAGE_IDS = [
 	'doubao-seedream-5-0-pro',
 	'gemini-3.1-flash-image',
 	'gemini-3-pro-image-preview',
+	'gemini-nano-banana-2.1',
 	'glm-image',
 	'gpt-image-2',
 	'gpt-image-2.5-flare',
@@ -157,6 +158,16 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(proTier.input_price, 2);
 		assert.equal(proTier.output_price, 12);
 		assert.equal(proTier.image_output_price, 120);
+
+		const nanoBanana21 = byId.get('gemini-nano-banana-2.1')!;
+		const nanoBanana21Tier = asPricing(nanoBanana21.pricing.usd).tiers?.[0];
+		assert.ok(nanoBanana21Tier);
+		assert.equal(nanoBanana21Tier.input_price, 1.5);
+		assert.equal(nanoBanana21Tier.output_price, 7.5);
+		assert.equal(nanoBanana21Tier.image_input_price, 1.5);
+		assert.equal(nanoBanana21Tier.image_output_price, 30);
+		assert.equal(nanoBanana21Tier.cache_read_price, null);
+		assert.equal(nanoBanana21Tier.cache_write_price, null);
 	});
 });
 

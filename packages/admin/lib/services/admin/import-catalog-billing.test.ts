@@ -534,6 +534,31 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.context_window, 1000000);
 		assert.equal(cny!.pricing_label, '¥24 / ¥72 /M');
 	});
+
+	it('includes gemini-nano-banana-2.1 with Gemini API Standard list prices (USD only, no official CNY)', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-nano-banana-2.1');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-nano-banana-2.1');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Gemini Nano Banana 2.1');
+		assert.equal(usd!.kind, 'image');
+		assert.equal(usd!.context_window, null);
+		assert.equal(usd!.max_tokens, null);
+		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-nano-banana-2.1');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-10-06');
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['image']);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.ok(profile);
+		assert.equal(profile!.tiers.length, 1);
+		assert.equal(profile!.tiers[0]?.input_price, 1.5);
+		assert.equal(profile!.tiers[0]?.output_price, 7.5);
+		assert.equal(profile!.tiers[0]?.cache_read_price, null);
+		assert.equal(profile!.tiers[0]?.cache_write_price, null);
+		assert.equal(profile!.tiers[0]?.image_input_price, 1.5);
+		assert.equal(profile!.tiers[0]?.image_output_price, 30);
+	});
 });
 
 describe('import catalog localized model metadata', () => {
