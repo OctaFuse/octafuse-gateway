@@ -10,6 +10,7 @@
 - DashScope 生图：[dashscope-image.md](./dashscope-image.md)
 - MiniMax 音频：[minimax-audio.md](./minimax-audio.md)
 - MiniMax 生图：[minimax-image.md](./minimax-image.md)
+- DashScope / MiniMax 官方能力覆盖与缺口：[native-provider-coverage.md](../reference/native-provider-coverage.md)
 
 ## 术语
 
@@ -53,7 +54,7 @@
    - 文本类（Chat / Messages / Responses / Gemini）写一份 `ProxyEndpointSpec`，交给 `runProxyPipeline`。计费口径与脱敏写在同一 `accounting` 对象上（`describeOutcome` + `requestBodyForLog` / `upstreamWireBodyForLog`）。
    - 图 / 音频类先复用 `loadProxyRouteSurface` 与 `buildProxyFailoverOptions`；计费仍走 `recordImageUsage` / `recordAudioUsage`。把它们迁入同一 `AccountingEvent` + sink 是后续增量，本阶段不改口径。
 6. **管理后台文案**：在 `packages/admin/messages/*.json` 增加 `adapterNames.<id>`，以及 `routes.modal.adapterGuides.<id>` 的 `purpose` 与 `mapping`。上游没有的能力用 `lossyFeatureNames`。
-7. **文档**：更新 [route-topology.md](./route-topology.md) 的 operation 表，以及本页相关说明。
+7. **文档**：更新 [route-topology.md](./route-topology.md) 的 operation 表，以及本页相关说明。DashScope / MiniMax 的适配器同时更新 [能力覆盖表](../reference/native-provider-coverage.md)。
 
 不要同时改路由匹配语义、SSE 分帧、usage 计费口径与熔断分类。
 
