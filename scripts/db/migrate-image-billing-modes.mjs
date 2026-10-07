@@ -55,9 +55,31 @@ const TARGETS = {
 		aliases: [],
 		cny: {
 			default: 0.28,
+			by_quality: { low: 0.28, medium: 0.42 },
+			by_size: { '1k': 0.28, '1.5k': 0.35, '2k': 0.42 },
+			by_quality_size: {
+				'low:1k': 0.28,
+				'low:1.5k': 0.35,
+				'low:2k': 0.42,
+				'medium:1k': 0.42,
+				'medium:1.5k': 0.49,
+				'medium:2k': 0.56,
+			},
+			input: { default: 0.07 },
 		},
 		usd: {
 			default: 0.04,
+			by_quality: { low: 0.04, medium: 0.06 },
+			by_size: { '1k': 0.04, '1.5k': 0.05, '2k': 0.06 },
+			by_quality_size: {
+				'low:1k': 0.04,
+				'low:1.5k': 0.05,
+				'low:2k': 0.06,
+				'medium:1k': 0.06,
+				'medium:1.5k': 0.07,
+				'medium:2k': 0.08,
+			},
+			input: { default: 0.01 },
 		},
 	},
 	'grok-imagine-image-quality': {
@@ -180,6 +202,7 @@ function buildPerImageProfile(side) {
 		image_billing_mode: 'per_image',
 		image: {
 			default: side.default,
+			...(side.by_quality ? { by_quality: side.by_quality } : {}),
 			...(side.by_size ? { by_size: side.by_size } : {}),
 			...(side.by_quality_size ? { by_quality_size: side.by_quality_size } : {}),
 			...(side.input ? { input: side.input } : {}),

@@ -224,6 +224,19 @@ describe('resolveImageCatalogUnitPrice', () => {
 		assert.equal(resolveImageCatalogUnitPrice(cfg, '  High ', '1536X1024'), 0.165);
 	});
 
+	it('Grok Imagine 2.0 shape: auto quality bills at low, missing resolution at 1k', () => {
+		const grok = {
+			default: 0.04,
+			by_quality: { low: 0.04, medium: 0.06 },
+			by_size: { '1k': 0.04, '1.5k': 0.05, '2k': 0.06 },
+			by_quality_size: { 'low:2k': 0.06, 'medium:1k': 0.06, 'medium:2k': 0.08 },
+		};
+		assert.equal(resolveImageCatalogUnitPrice(grok, 'medium', '2k'), 0.08);
+		assert.equal(resolveImageCatalogUnitPrice(grok, 'auto', '2k'), 0.06);
+		assert.equal(resolveImageCatalogUnitPrice(grok, 'medium', 'auto'), 0.06);
+		assert.equal(resolveImageCatalogUnitPrice(grok, 'auto', 'auto'), 0.04);
+	});
+
 	it('input side uses image.input; missing input → 0', () => {
 		assert.equal(resolveImageCatalogUnitPrice(cfg, 'high', '1024x1024', 'input'), 0.02);
 		assert.equal(

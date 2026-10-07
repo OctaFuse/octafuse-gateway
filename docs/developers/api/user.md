@@ -915,9 +915,9 @@ Authorization: Bearer <USER_API_KEY>
 
 ## Images（图片生成 / 编辑）
 
-> 模型清单、Provider、参数对照、计费折算与验收清单见权威整理：[文生图模型（Image Models）](../reference/image-models.md)。
+> 入口与路由、模型目录与单价、计费与验收见总入口；各厂商的参数规则见其中链接的厂商文档：[文生图模型（Image Models）](../reference/image-models.md)。
 
-OpenAI 兼容 Images API，供桌面 Agent 的 `generate_image` 等工具调用。鉴权与 Chat 相同（用户 API Key）；模型须在目录中配置 **OpenAI 协议**路由及有效的 `image_billing_mode`：`token` 模式需在 `pricing_profile.tiers` 配置 Image token 单价，`per_image` 模式需配置 `pricing_profile.image` 按张单价（见 Admin 模型页与 [文生图模型说明](../reference/image-models.md)）。
+OpenAI 兼容 Images API，供桌面 Agent 的 `generate_image` 等工具调用。鉴权与 Chat 相同（用户 API Key）；模型须配置请求协议为 OpenAI 的路由（上游可以是 OpenAI 透传，也可以经 `volcengine-image`、`dashscope-image-*`、`minimax-image` 适配器转换）及有效的 `image_billing_mode`：`token` 模式需在 `pricing_profile.tiers` 配置 Image token 单价，`per_image` 模式需配置 `pricing_profile.image` 按张单价（见 Admin 模型页与 [文生图模型说明](../reference/image-models.md)）。
 
 ### 生成
 
@@ -1055,7 +1055,7 @@ Authorization: Bearer <USER_API_KEY>
 Content-Type: application/json
 ```
 
-请求与上游都是 `volcengine` + `images.generations`，adapter 必须是 `passthrough`。网关只把 `model` 换成路由上的供应商模型名，返回方舟原文。非流式 JSON 与 `stream: true` 的 SSE 共用这一路径。按 `usage.generated_images` 计费（失败张数不计入）；没有 usage 时按带 `url` 或 `b64_json` 的 `data[]` 计数。组图使用 `sequential_image_generation` 与 `sequential_image_generation_options.max_images`。详见 [文生图模型](../reference/image-models.md#火山方舟-volcengine-arkseedream)。
+请求与上游都是 `volcengine` + `images.generations`，adapter 必须是 `passthrough`。网关只把 `model` 换成路由上的供应商模型名，返回方舟原文。非流式 JSON 与 `stream: true` 的 SSE 共用这一路径。按 `usage.generated_images` 计费（失败张数不计入）；没有 usage 时按带 `url` 或 `b64_json` 的 `data[]` 计数。组图使用 `sequential_image_generation` 与 `sequential_image_generation_options.max_images`。详见 [火山方舟 Seedream 生图](../architecture/volcengine-image.md)。
 
 ---
 

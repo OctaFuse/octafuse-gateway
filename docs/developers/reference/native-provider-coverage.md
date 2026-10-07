@@ -9,7 +9,8 @@
 - [适配器与驱动](../architecture/adapters-and-drivers.md)
 - [DashScope 音频](../architecture/dashscope-audio.md)、[DashScope 生图](../architecture/dashscope-image.md)
 - [MiniMax 音频](../architecture/minimax-audio.md)、[MiniMax 生图](../architecture/minimax-image.md)
-- [文生图模型](./image-models.md)（含火山方舟 OpenAI 转换与原生透传）
+- [火山方舟 Seedream 生图](../architecture/volcengine-image.md)
+- [文生图模型](./image-models.md)（入口、目录与计费）
 - [供应商导入预设](./provider-import-presets.md)
 
 ## 判定口径
@@ -87,7 +88,7 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 | 视频任务 | `/contents/generations/tasks` | ❌ | ❌ | Seedance 等；网关没有视频模态 |
 | 豆包语音 | 语音合成 / 识别 | ❌ | ❌ | |
 
-两条生图入口的差别见 [文生图模型](./image-models.md#火山方舟-volcengine-arkseedream)。
+两条生图入口的差别见 [火山方舟 Seedream 生图](../architecture/volcengine-image.md)。
 
 ## 已知缺陷
 

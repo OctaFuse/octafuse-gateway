@@ -42,6 +42,7 @@ type Props = {
 	onSend: () => void;
 	onStop: () => void;
 	requestTargetUrl: string | null;
+	requestTargetMissing: string | null;
 	selected: RouteListRow | null;
 	selectedUsesDashScopeRealtime: boolean;
 	imageSendBlocked: boolean;
@@ -81,6 +82,7 @@ export function PlaygroundRequestPanel({
 	onSend,
 	onStop,
 	requestTargetUrl,
+	requestTargetMissing,
 	selected,
 	selectedUsesDashScopeRealtime,
 	imageSendBlocked,
@@ -267,7 +269,11 @@ export function PlaygroundRequestPanel({
 					label={t('requestTargetUrl')}
 					method={selectedUsesDashScopeRealtime ? 'WebSocket' : undefined}
 					url={requestTargetUrl}
-					emptyHint={t('requestTargetUrlEmpty')}
+					emptyHint={
+						requestTargetMissing
+							? t('requestTargetUrlMissing', { target: requestTargetMissing })
+							: t('requestTargetUrlEmpty')
+					}
 				/>
 				{selected ? (
 					<p className="text-[11px] text-gray-400">

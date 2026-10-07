@@ -14,7 +14,7 @@
 | 查 Proxy / Admin API 契约 | [api/README.md](./api/) |
 | 按标准化错误码处理用户侧失败 | [代理服务错误码](./api/error-codes.md) |
 | 接入订阅额度、永久加额与用户审计 | [Admin Users API](./api/admin.md)；[用户与密钥数据模型](./architecture/user-keys-data-model.md) |
-| 新增协议适配器或理解百炼图片转换 | [适配器与驱动](./architecture/adapters-and-drivers.md)；[DashScope 生图](./architecture/dashscope-image.md) |
+| 新增协议适配器或理解百炼图片转换 | [适配器与驱动](./architecture/adapters-and-drivers.md)；[DashScope 生图](./architecture/dashscope-image.md)；其它厂商见 [文生图模型](./reference/image-models.md) 开头的厂商文档表 |
 | 查 DashScope / MiniMax 哪些官方接口已支持、哪些还没做 | [能力覆盖](./reference/native-provider-coverage.md) |
 | 读取模型目录的峰谷价格与后续时段 | [用户模型接口](./api/user.md)；[时间与时区](./reference/time-and-timezone.md) |
 | 调试 Node / Docker 下的实时 ASR | [DashScope 音频](./architecture/dashscope-audio.md)；[本地开发](./local-development.md) |

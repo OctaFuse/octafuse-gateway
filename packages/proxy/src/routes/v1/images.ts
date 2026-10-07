@@ -32,7 +32,11 @@ import {
 	type ImageCostBreakdown,
 } from '../../services/image-usage-charge';
 import { apiKeyHasBalance } from '../../services/tool-usage-charge';
-import { applyOpenAiImageGenerationExtras, countOpenAiGenerationReferenceImages } from '../../services/image-generation-extras';
+import {
+	applyOpenAiImageGenerationExtras,
+	countOpenAiGenerationReferenceImages,
+	openAiImageBillingSize,
+} from '../../services/image-generation-extras';
 import {
 	countValidImageResults,
 	IMAGE_MAX_BYTES_PER_FILE,
@@ -829,6 +833,7 @@ imageRoutes.post('/generations', async (c) => {
 	}
 
 	const referenceCount = countOpenAiGenerationReferenceImages(body);
+	const billingSize = openAiImageBillingSize(common.size, body);
 
 	const estimate = await estimateImageBudgetPrecheck(
 		repos,
@@ -838,7 +843,7 @@ imageRoutes.post('/generations', async (c) => {
 			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			routeGroup: effectiveRouteGroup,
 			quality: common.quality ?? 'auto',
-			size: common.size ?? 'auto',
+			size: billingSize,
 			imageCount: common.n,
 			isEdit: false,
 			referenceCount,
@@ -974,7 +979,7 @@ imageRoutes.post('/generations', async (c) => {
 			routeGroup: effectiveRouteGroup,
 			routePriceOverrideJson: proxyResult.chosenRoute.priceOverrideRaw,
 			quality: common.quality ?? 'auto',
-			size: common.size ?? 'auto',
+			size: billingSize,
 			imageCount: common.n,
 			isEdit: false,
 			referenceCount,
@@ -1020,6 +1025,7 @@ imageRoutes.post('/edits', async (c) => {
 	}
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
 	const modelNameForLog = modelDisplayName(model, baseModelId);
+	const billingSize = openAiImageBillingSize(edit.size, edit.extra);
 
 	if (!apiKeyHasBalance(apiKey)) {
 		return rejectImageRequest(c, 403, 'Budget exceeded', {
@@ -1042,7 +1048,7 @@ imageRoutes.post('/edits', async (c) => {
 			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			routeGroup: effectiveRouteGroup,
 			quality: edit.quality ?? 'auto',
-			size: edit.size ?? 'auto',
+			size: billingSize,
 			imageCount: edit.n,
 			isEdit: true,
 			referenceCount: edit.images.length,
@@ -1134,7 +1140,7 @@ imageRoutes.post('/edits', async (c) => {
 			routeGroup: effectiveRouteGroup,
 			routePriceOverrideJson: proxyResult.chosenRoute.priceOverrideRaw,
 			quality: edit.quality ?? 'auto',
-			size: edit.size ?? 'auto',
+			size: billingSize,
 			imageCount: edit.n,
 			isEdit: true,
 			referenceCount: edit.images.length,

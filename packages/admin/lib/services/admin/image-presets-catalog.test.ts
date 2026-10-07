@@ -124,7 +124,13 @@ describe('static image model presets (*-image.json)', () => {
 		const grok2Usd = asPricing(grok2.pricing.usd);
 		assert.equal(grok2Usd.image_billing_mode, 'per_image');
 		assert.equal(grok2Usd.image?.default, 0.04);
-		assert.equal(asPricing(grok2.pricing.cny).image?.default, 0.28);
+		assert.equal(grok2Usd.image?.by_size?.['2k'], 0.06);
+		assert.equal(grok2Usd.image?.by_quality?.medium, 0.06);
+		assert.equal(grok2Usd.image?.by_quality_size?.['medium:2k'], 0.08);
+		assert.equal(grok2Usd.image?.input?.default, 0.01);
+		const grok2Cny = asPricing(grok2.pricing.cny);
+		assert.equal(grok2Cny.image?.default, 0.28);
+		assert.equal(grok2Cny.image?.by_quality_size?.['medium:2k'], 0.56);
 
 		const grok = byId.get('grok-imagine-image-quality')!;
 		const grokUsd = asPricing(grok.pricing.usd);

@@ -13,6 +13,10 @@ import {
 	type ProviderEndpointsSource,
 } from "@octafuse/core/provider-endpoints";
 import {
+	getAdapterById,
+	isConversionRouteAdapter,
+} from "@octafuse/core/adapters/registry";
+import {
 	normalizeUpstreamProtocol,
 	type UpstreamProtocol,
 } from "@octafuse/core/upstream-protocol";
@@ -37,12 +41,21 @@ function stripApiKeyFromUrl(urlString: string): string {
 	}
 }
 
+export type PlaygroundUpstreamUrlPreview = {
+	url: string | null;
+	/** `协议/能力`。供应商没配这个端点时 url 为空，调用方用它说明缺的是目标协议而不是客户端协议。 */
+	target: string | null;
+};
+
 /**
- * @returns 完整上游 URL；缺 Provider / endpoints / 非法协议时返回 null
+ * 完整上游 URL。转换适配器一律解析其声明的目标协议，不读客户端协议上的端点。
+ * 缺 Provider、协议非法或供应商没配目标端点时 url 为 null。
  */
-export function previewPlaygroundUpstreamUrl(input: {
+export function describePlaygroundUpstreamUrl(input: {
 	provider: PlaygroundProviderBaseUrls | null | undefined;
 	upstreamProtocol: string;
+	/** 转换适配器（如 volcengine-image）决定目标协议；透传沿用 upstreamProtocol。 */
+	adapter?: string | null;
 	providerModelName: string;
 	isImageModel: boolean;
 	/** When image model: generations (default) or edits. */
@@ -52,18 +65,31 @@ export function previewPlaygroundUpstreamUrl(input: {
 	/** Route target operation; required to resolve DashScope's concrete audio endpoint. */
 	upstreamOperation?: string | null;
 	geminiAction?: GeminiContentAction;
-}): string | null {
+}): PlaygroundUpstreamUrlPreview {
 	const provider = input.provider;
-	if (!provider) return null;
+	if (!provider) return { url: null, target: null };
 
 	let protocol: UpstreamProtocol;
+	let upstreamOperation = input.upstreamOperation;
 	try {
 		protocol = normalizeUpstreamProtocol(input.upstreamProtocol);
 	} catch {
-		return null;
+		return { url: null, target: null };
+	}
+	const adapter = input.adapter?.trim() ?? "";
+	if (adapter && isConversionRouteAdapter(adapter)) {
+		const descriptor = getAdapterById(adapter);
+		if (descriptor) {
+			protocol = descriptor.upstream.protocol;
+			const requested = input.upstreamOperation?.trim() ?? "";
+			upstreamOperation = descriptor.upstream.operations.includes(requested)
+				? requested
+				: descriptor.upstream.operations[0] ?? "";
+		}
 	}
 
 	const providerEndpoints = parseProviderEndpoints(provider);
+	let target: string | null = null;
 
 	try {
 		switch (protocol) {
@@ -76,39 +102,38 @@ export function previewPlaygroundUpstreamUrl(input: {
 					kind,
 					imageOperation: input.imageOperation,
 					audioOperation:
-						kind === "audio" && input.upstreamOperation === "audio.speech"
+						kind === "audio" && upstreamOperation === "audio.speech"
 							? "speech"
 							: kind === "audio"
 								? "transcriptions"
 								: undefined,
-					llmOperation: input.upstreamOperation === "responses" ? "responses" : "chat",
+					llmOperation: upstreamOperation === "responses" ? "responses" : "chat",
 				});
-				return resolveUpstreamEndpoint(
-					protocol,
-					capability,
-					providerEndpoints,
-					{
+				target = `${protocol}/${capability}`;
+				return {
+					url: resolveUpstreamEndpoint(protocol, capability, providerEndpoints, {
 						providerId: provider.id,
-					}
-				);
+					}),
+					target,
+				};
 			}
 			case "anthropic":
-				return resolveUpstreamEndpoint(
-					protocol,
-					"messages",
-					providerEndpoints,
-					{
+				target = `${protocol}/messages`;
+				return {
+					url: resolveUpstreamEndpoint(protocol, "messages", providerEndpoints, {
 						providerId: provider.id,
-					}
-				);
+					}),
+					target,
+				};
 			case "gemini": {
 				const action: GeminiContentAction =
 					input.geminiAction === "streamGenerateContent"
 						? "streamGenerateContent"
 						: "generateContent";
+				target = `${protocol}/models.generate`;
 				const resolvedUrl = resolveUpstreamEndpoint(
 					protocol,
-					'models.generate',
+					"models.generate",
 					providerEndpoints,
 					{
 						model: input.providerModelName || "model",
@@ -123,18 +148,23 @@ export function previewPlaygroundUpstreamUrl(input: {
 					apiKey: "preview",
 					auth: providerEndpoints.gemini?.auth,
 				});
-				return stripApiKeyFromUrl(url.toString());
+				return { url: stripApiKeyFromUrl(url.toString()), target };
 			}
 			case "volcengine": {
-				if (input.upstreamOperation?.trim() && input.upstreamOperation.trim() !== "images.generations" && input.upstreamOperation.trim() !== "*") {
-					return null;
+				target = `${protocol}/images.generations`;
+				const operation = upstreamOperation?.trim() ?? "";
+				if (operation && operation !== "images.generations" && operation !== "*") {
+					return { url: null, target };
 				}
-				return resolveUpstreamEndpoint(protocol, "images.generations", providerEndpoints, {
-					providerId: provider.id,
-				});
+				return {
+					url: resolveUpstreamEndpoint(protocol, "images.generations", providerEndpoints, {
+						providerId: provider.id,
+					}),
+					target,
+				};
 			}
 			case "minimax": {
-				const operation = input.upstreamOperation?.trim() || "audio.transcriptions";
+				const operation = upstreamOperation?.trim() || "audio.transcriptions";
 				const capability =
 					operation === "audio.speech"
 						? "audio.speech"
@@ -143,36 +173,50 @@ export function previewPlaygroundUpstreamUrl(input: {
 							: operation === "audio.transcriptions" || operation === "*"
 								? "audio.transcriptions"
 								: null;
-				if (!capability) return null;
-				return resolveUpstreamEndpoint(protocol, capability, providerEndpoints, {
-					providerId: provider.id,
-				});
+				target = capability ? `${protocol}/${capability}` : null;
+				if (!capability) return { url: null, target };
+				return {
+					url: resolveUpstreamEndpoint(protocol, capability, providerEndpoints, {
+						providerId: provider.id,
+					}),
+					target,
+				};
 			}
 			case "dashscope": {
-				const rawOperation = input.upstreamOperation?.trim() ?? "";
+				const rawOperation = upstreamOperation?.trim() ?? "";
 				const operation = rawOperation.endsWith(".realtime.inference")
 					? "audio.realtime.inference"
 					: rawOperation.endsWith(".realtime.session")
 						? "audio.realtime.session"
 						: rawOperation;
+				target = operation ? `${protocol}/${operation}` : null;
 				if (
 					!(DASHSCOPE_ENDPOINT_CAPABILITIES as readonly string[]).includes(
 						operation
 					)
 				) {
-					return null;
+					return { url: null, target };
 				}
-				return resolveUpstreamEndpoint(
-					protocol,
-					operation as ProviderEndpointCapability,
-					providerEndpoints,
-					{ providerId: provider.id }
-				);
+				return {
+					url: resolveUpstreamEndpoint(
+						protocol,
+						operation as ProviderEndpointCapability,
+						providerEndpoints,
+						{ providerId: provider.id }
+					),
+					target,
+				};
 			}
 			default:
-				return null;
+				return { url: null, target };
 		}
 	} catch {
-		return null;
+		return { url: null, target };
 	}
+}
+
+export function previewPlaygroundUpstreamUrl(
+	input: Parameters<typeof describePlaygroundUpstreamUrl>[0]
+): string | null {
+	return describePlaygroundUpstreamUrl(input).url;
 }

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Grok Imagine Image 2.0 按官方的分辨率与 quality 分档计价：1K / 1.5K / 2K 的 low 为 $0.04 / $0.05 / $0.06，medium 为 $0.06 / $0.07 / $0.08，每张参考图另收 $0.01（CNY 按 7 倍）。原先一律按 $0.04，2K 或 medium 会少收。OpenAI 生图与编辑入口在客户端没传 `size` 时，用扩展字段 `resolution` 选计费档位。`quality` 不传或为 `auto` 时按 low 计，与 xAI 生成请求的默认档一致。已导入的模型不会自动更新，需要改价或运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。`grok-imagine-image-quality` 于 2026-11-02 退役，之后由 2.0 以 low 档出图，届时请把该模型的单价改成 2.0 的 low 档。
+
 - 新增上游协议 `volcengine`（火山方舟与 BytePlus ModelArk 共用）。Seedream 生图有两条入口：原生透传 `POST /v1/volcengine/images/generations`（非流式 JSON 与 `stream: true` 的 SSE 共用，只替换 `model`，按 `usage.generated_images` 计费），以及 OpenAI 转换适配器 `volcengine-image`（`POST /v1/images/generations` 转到方舟生图，`n` 为 1–15 时映射组图，只返回 JSON）。对话和 Responses 继续用供应商的 `openai` 端点。视频和语音还没有端点。火山方舟与 BytePlus 导入预设只保留 `openai` 对话和 `volcengine.base`，不再预填 OpenAI 生图 URL。已经用 OpenAI 透传跑 Seedream 的路由可以继续用；切到新适配器时把上游协议改成 `volcengine` 并选择 `volcengine-image`。`volcengine-image` 按方舟文档处理字段：`n=1` 不带组图字段，5.0 pro / flash 的 `n>1` 直接返回 400；`size=auto` 交给方舟默认值；`background` 转发 `transparent` / `opaque`，`output_format` 只接受 `png` / `jpeg`；响应 `data[]` 保留方舟的 `size`、图层字段，`usage` 原样返回。调试台和模拟器里，Seedream 的 OpenAI 示例请求使用 `size: 2K`（5.0 lite / 4.5 至少 369 万像素，`1024x1024` 会被拒绝）。
 
 - 修正 Seedream 5.0 Pro 目录价档位：官方按 261 万像素（1.5K）分档，`1k` / `1.5k` 为 ¥0.30 / $0.045，`2k` 和缺省（方舟默认 2K）为 ¥0.60 / $0.09。原先 2K 按低档计费，少收一半。Seedream 两条入口都把 `宽x高` 按像素换算成档位再查价。已导入的模型不会自动更新，需要改价或运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。

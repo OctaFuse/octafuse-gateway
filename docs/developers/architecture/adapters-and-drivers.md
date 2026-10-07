@@ -10,6 +10,8 @@
 - DashScope 生图：[dashscope-image.md](./dashscope-image.md)
 - MiniMax 音频：[minimax-audio.md](./minimax-audio.md)
 - MiniMax 生图：[minimax-image.md](./minimax-image.md)
+- 火山方舟 Seedream 生图：[volcengine-image.md](./volcengine-image.md)
+- OpenAI 兼容生图透传：[openai-compatible-image.md](./openai-compatible-image.md)
 - DashScope、MiniMax 与火山方舟官方能力覆盖与缺口：[native-provider-coverage.md](../reference/native-provider-coverage.md)
 
 ## 术语

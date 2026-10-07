@@ -18,7 +18,7 @@ import {
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
 import { inferPlaygroundParseMode, type PlaygroundProtocol } from '@/lib/playground/merge-assistant-text';
-import { previewPlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
+import { describePlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
 import { observePlaygroundResponse } from '@/lib/playground/response-observations';
 import { previewPlaygroundResponse, readPlaygroundTextStream } from '@/lib/playground/response-preview';
 import {
@@ -182,10 +182,11 @@ export function usePlaygroundPageState() {
 		) &&
 		(!selectedCanUseMicrophone || audioInputMode === 'file');
 
-	const previewUpstreamUrl = useMemo(() => {
-		if (!selected) return null;
-		return previewPlaygroundUpstreamUrl({
+	const previewUpstream = useMemo(() => {
+		if (!selected) return { url: null, target: null };
+		return describePlaygroundUpstreamUrl({
 			provider: providersById.get(selected.provider_id),
+			adapter: selected.adapter,
 			upstreamProtocol: selected.upstream_protocol,
 			upstreamOperation: selected.upstream_operation,
 			providerModelName: selected.provider_model_name,
@@ -195,6 +196,7 @@ export function usePlaygroundPageState() {
 			geminiAction,
 		});
 	}, [selected, providersById, selectedIsImage, selectedIsAudio, imageOperation, geminiAction]);
+	const previewUpstreamUrl = previewUpstream.url;
 
 	const requestFingerprint = JSON.stringify([selectedId, bodyText, geminiAction, imageOperation]);
 	const requestTargetUrl =
@@ -931,6 +933,7 @@ export function usePlaygroundPageState() {
 		lastSentWireHeaders:
 			lastSentWireBody && lastSentInputSnapshot === requestFingerprint ? lastSentWireHeaders : null,
 		requestTargetUrl,
+		requestTargetMissing: requestTargetUrl ? null : previewUpstream.target,
 		selectedIsImage,
 		selectedIsAudio,
 		selectedIsAudioTranscription,

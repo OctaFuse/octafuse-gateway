@@ -16,6 +16,23 @@ export function countOpenAiGenerationReferenceImages(body: Record<string, unknow
 }
 
 /**
+ * 按张计费用的尺寸档：优先 OpenAI `size`；未传时取扩展字段 `resolution`（xAI Grok Imagine 用它选 1k/2k）；都没有则 `auto`。
+ */
+export function openAiImageBillingSize(
+	size: string | undefined,
+	extra: Record<string, unknown> | undefined
+): string {
+	if (size) {
+		return size;
+	}
+	const resolution = extra?.resolution;
+	if (typeof resolution === 'string' && resolution.trim() !== '') {
+		return resolution.trim().toLowerCase();
+	}
+	return 'auto';
+}
+
+/**
  * 将 OpenAI Images generations 的兼容扩展字段写入上游体。
  * 覆盖：`watermark` / `sequential_image_generation*` / `image` / `optimize_prompt_options`。
  */

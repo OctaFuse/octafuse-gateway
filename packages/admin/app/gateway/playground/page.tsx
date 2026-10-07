@@ -132,6 +132,7 @@ function PlaygroundPageInner() {
 									onSend={() => void s.send()}
 									onStop={s.stop}
 									requestTargetUrl={s.requestTargetUrl}
+									requestTargetMissing={s.requestTargetMissing}
 									selected={s.selected}
 									selectedUsesDashScopeRealtime={s.selectedUsesDashScopeRealtime}
 									imageSendBlocked={s.imageSendBlocked}

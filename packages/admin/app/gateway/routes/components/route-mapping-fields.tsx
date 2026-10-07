@@ -58,7 +58,7 @@ export function RouteMappingFields({
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
 	const adapterPurpose = (adapter: string) =>
 		t.has(`adapterGuides.${adapter}.purpose`) ? t(`adapterGuides.${adapter}.purpose`) : null;
-	// Image models keep the public request protocol as OpenAI; upstream may be openai or dashscope.
+	// Image models keep the public request protocol as OpenAI; the adapter picks the upstream protocol.
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
 		(protocol) => requestOperationsForModel(selectedModel, protocol, formData.provider_model_name).length > 0
