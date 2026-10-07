@@ -690,11 +690,11 @@
 			"i18n": {
 				"zh": {
 					"name": "MiniMax",
-					"description": "MiniMax 开放平台，支持 OpenAI、Anthropic，以及原生语音识别（speech_to_text）。"
+					"description": "MiniMax 开放平台，支持 OpenAI、Anthropic，以及原生文件转写、同步语音合成与生图。"
 				},
 				"en": {
 					"name": "MiniMax",
-					"description": "MiniMax platform endpoints for OpenAI, Anthropic, and native speech recognition (speech_to_text)."
+					"description": "MiniMax platform endpoints for OpenAI, Anthropic, and native file transcription, speech synthesis, and image generation."
 				}
 			},
 			"links": {

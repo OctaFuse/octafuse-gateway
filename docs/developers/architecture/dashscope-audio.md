@@ -59,7 +59,7 @@ Adapter 是 route target 的必选、可校验能力，不使用字符串兜底�
 
 转换入口未单独映射的官方字段，按 DashScope 结构写在请求体顶层；转写则作为额外表单字段，对象写成 JSON 字符串。网关深度合并后发往上游。语音合成会保留驱动依赖的格式字段，例如 `input.format`。DashScope 语音合成的上游 `input` 是对象，OpenAI 的 `input` 是文本，客户端无法通过额外字段设置 `input.*`。采样率、音量等写在路由请求参数里，或改走原生透传。
 
-Qwen-TTS 的 OpenAI `instructions` 会写入 `input.instructions`，仅 Instruct-Flash 系列生效，因此路由编辑器不再把它标成已知不支持。百炼 MiniMax 语音合成没有对应的自由文本指令；官方情感字段是 `input.voice_setting.emotion`，同样落在 `input` 里，写在路由请求参数中，不能靠 `extra_body`。
+Qwen-TTS 的 OpenAI `instructions` 会写入 `input.instructions`，仅 Instruct-Flash 系列生效，路由编辑器不把它列为已知不支持。百炼 MiniMax 语音合成没有对应的自由文本指令；官方情感字段是 `input.voice_setting.emotion`，同样落在 `input` 里，写在路由请求参数中，不能靠 `extra_body`。
 
 ```json
 { "input": { "sample_rate": 24000, "volume": 60 } }

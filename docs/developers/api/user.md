@@ -478,7 +478,7 @@ GET /v1/models
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
 | `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
 | `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条；两者仍并列时取当刻 `composite_factor` 最小（折扣最大）的一条，倍率也相同则保持列表原顺序。官方或路由时段未覆盖的钟点会补 `catalog_factor=1` 的兜底窗（含带 `days` 的工作日高峰：工作日空隙与周末整日都会补），因此仅工作日高峰、倍率相同的官方窗不会被压成 `kind: flat`。若该用户配置了该目录模型的 `charged_cost_factors`，再按 route group 查找（具体分组，其次 `"*"`，数字覆盖全部分组）并按 `USER_CHARGED_COST_FACTOR_MODE` 叠进 **`route_factor`** 后重算 `composite_factor`（`multiply` 为路由 × 用户；`min` 取较小 Charged；`catalog_factor` 不变）。该分组未命中时与 `GET /catalog/models` 倍率一致 |
-| `inbound` | object[] | **请求入口**（客户端可打的公开路径）：`{ protocol, operation }`。聚合当前可见 `route_groups` 下 active 请求入口：LLM 文本为 `openai.chat`、`openai.responses`、`anthropic.messages`、`gemini.models.generate`；图 / 音频为 `openai.images.generations`、`openai.images.edits`、`openai.audio.transcriptions`、`openai.audio.speech`。不含 DashScope 原生 operation。`operation=*` 在同协议没有精确入口时展开为该协议默认文本 operation（OpenAI → `chat`，Anthropic → `messages`，Gemini → `models.generate`）；同协议已有精确入口（含图 / 音频）时不再展开。列表按稳定顺序去重（LLM 文本在前，`responses` 排在 `chat` 前，随后为图 / 音频），**不是**推荐入口；选哪条由客户端决定。与 `GET /catalog/models` 的 `protocols`（**上游协议**）不同：Chat 与 Responses 都是 `openai`，必须看 `operation` |
+| `inbound` | object[] | **请求入口**（客户端可打的公开路径）：`{ protocol, operation }`。聚合当前可见 `route_groups` 下 active 请求入口：LLM 文本为 `openai.chat`、`openai.responses`、`anthropic.messages`、`gemini.models.generate`；图 / 音频为 `openai.images.generations`、`openai.images.edits`、`openai.audio.transcriptions`、`openai.audio.speech`。不含 DashScope、MiniMax、火山方舟的原生透传入口。`operation=*` 在同协议没有精确入口时展开为该协议默认文本 operation（OpenAI → `chat`，Anthropic → `messages`，Gemini → `models.generate`）；同协议已有精确入口（含图 / 音频）时不再展开。列表按稳定顺序去重（LLM 文本在前，`responses` 排在 `chat` 前，随后为图 / 音频），**不是**推荐入口；选哪条由客户端决定。与 `GET /catalog/models` 的 `protocols`（**上游协议**）不同：Chat 与 Responses 都是 `openai`，必须看 `operation` |
 | `metadata` | object \| undefined | 扩展元数据 |
 
 ### 示例
@@ -954,8 +954,8 @@ Content-Type: application/json
 |------|------|
 | `model` | 必填；支持 `id:route_group` 后缀 |
 | `prompt` | 必填；最长 4000 字符 |
-| `n` | OpenAI 透传仅允许 **1**。DashScope 转换按适配器放宽：千问 1–6、万相 1–4。万相官方默认 4，缺省时网关仍显式下发 1 |
-| `size` / `quality` / `background` | 可选；GPT Image 常用 `auto` / `1024x…`；Seedream 常用 `2K` / `4K`；千问只接受像素串（如 `1024*1024`），万相允许 `1K`/`2K`/`4K` |
+| `n` | OpenAI 透传仅允许 **1**。转换适配器按上游放宽：`volcengine-image` 为 1–15（2 及以上打开组图，5.0 pro / flash 只能为 1），`minimax-image` 为 1–9，千问 1–6、万相 1–4。万相官方默认 4，缺省时网关显式下发 1 |
+| `size` / `quality` / `background` | 可选；`size` 一律原样转发，取值由上游校验。GPT Image 常用 `auto` / `1024x…`；Seedream 常用 `2K` / `4K`；千问只接受像素串（如 `1024*1024`），万相允许 `1K`/`2K`/`4K`。`minimax-image` 不转发这三个字段，画幅用额外字段 `aspect_ratio`，或同时传 `width` 与 `height` |
 | `response_format` | 可选。OpenAI 透传仅当调用方显式传入时转发（GPT Image 系列通常直接返回 `b64_json`，且可能不接受该参数）。DashScope 转换默认返回 `data[].url`；显式 `b64_json` 时网关下载 OSS 链接并转 base64，失败降级回 `url` |
 | `watermark` / `sequential_image_generation` / `optimize_prompt_options` | 可选；Seedream 等兼容扩展，**显式传入时透传**；也可由路由 `custom_params` 注入默认值 |
 | `image` | 可选；Seedream **图生图 / 多图融合**用 JSON 字符串或字符串数组（URL / data URL），走本 generations 端点，**不是** multipart `/edits` |
@@ -975,7 +975,7 @@ Content-Type: multipart/form-data
 
 Gateway 入站两种写法都接受（重复 `image` 会收成数组，`image[]` 亦可）。出站打 OpenAI 兼容上游时按上面规则改写。
 
-**必须**使用 `Content-Type: multipart/form-data`（含 boundary）。若客户端误发 `application/json` 或其它类型，Gateway 在读 body 前即返回 400 `Unsupported Content-Type for /v1/images/edits…`（不会再误报成 `Missing model`）。Seedream 图生图请走 generations + JSON `image`，不要用本端点。
+**必须**使用 `Content-Type: multipart/form-data`（含 boundary）。若客户端误发 `application/json` 或其它类型，Gateway 在读 body 前即返回 400 `Unsupported Content-Type for /v1/images/edits…`。Seedream 图生图请走 generations + JSON `image`，不要用本端点。
 
 ### 计费与审计
 
@@ -984,7 +984,7 @@ Image 模型支持两种 `pricing_profile.image_billing_mode`（再乘路由 `ch
 | 模式 | 最终费用 | `pricing_audit.kind` |
 |------|----------|----------------------|
 | **`token`**（GPT Image / Gemini） | usage 分项 × `$/1M`（对齐 [OpenAI Image Cost](https://platform.openai.com/docs/guides/image-generation)） | `image_tokens` |
-| **`per_image`**（Seedream / GLM / Grok / 阿里云百炼） | `output_unit × 确认输出张数 + input_unit × 参考图数` | `image_per_image` |
+| **`per_image`**（Seedream / GLM / Grok / 阿里云百炼 / MiniMax） | `output_unit × 确认输出张数 + input_unit × 参考图数` | `image_per_image` |
 
 1. **预检额度**：token 模式用 quality×size **估算** tokens；per_image 模式用请求张数 × 单价；均取全候选路由最高 `charged_factor`。预检只决定能不能打上游，**不**等于最终扣费
 2. **成功出图**：token 按 **`usage` 真实分项**；per_image 按 **有效返回图片数**（忽略 usage tokens）
@@ -1023,7 +1023,7 @@ Image 模型支持两种 `pricing_profile.image_billing_mode`（再乘路由 `ch
 }
 ```
 
-`uncertain_result_policy` 仍可写入 profile，但取消 / 超时不再按它扣费。
+`uncertain_result_policy` 可以写入 profile，但不影响取消 / 超时的计费，两者都不扣费。
 
 Admin 中为图片模型配置 `output_modalities: ["image"]` 及对应 mode 价目即可。
 
@@ -1037,11 +1037,11 @@ Content-Type: application/json
 
 请求与上游都是 `minimax` + `images.generations`，adapter 必须是 `passthrough`。网关只把 `model` 换成路由上的供应商模型名，返回 MiniMax 原文（`data.image_urls` 或 `data.image_base64`）。文生图和 `subject_reference` 图生图共用这一路径。按成功张数计费。`base_resp.status_code` 非 0 时 body 不变，HTTP 状态按业务码改写。详见 [MiniMax 生图](../architecture/minimax-image.md)。
 
-OpenAI 入口使用适配器 `minimax-image`，仍调用 `POST /v1/images/generations`。不转发 `size`；`aspect_ratio`、`width`、`height` 有值才原样转发。`response_format=url` 返回 `data[].url`，`b64_json` 返回 `data[].b64_json`。`quality` 和 `background` 不转发。`n` 为 1–9。
+OpenAI 入口使用适配器 `minimax-image`，调用 `POST /v1/images/generations`。不转发 `size`；`aspect_ratio`、`width`、`height` 有值才原样转发。`response_format=url` 返回 `data[].url`，`b64_json` 返回 `data[].b64_json`。`quality` 和 `background` 不转发。`n` 为 1–9。
 
 ### 火山方舟生图
 
-OpenAI SDK 使用适配器 `volcengine-image`，仍调用 `POST /v1/images/generations`。`n=1` 生成单图；`n` 为 2–15 时打开组图，`max_images` 等于 `n`。方舟可能返回更少的图片，预检按 `n`，最终按成功张数计费。Seedream 5.0 pro / flash 不支持组图，`n` 只能为 1。
+OpenAI SDK 使用适配器 `volcengine-image`，调用 `POST /v1/images/generations`。`n=1` 生成单图；`n` 为 2–15 时打开组图，`max_images` 等于 `n`。方舟可能返回更少的图片，预检按 `n`，最终按成功张数计费。Seedream 5.0 pro / flash 不支持组图，`n` 只能为 1。
 
 `size` 原样转发，`auto` 交给方舟按模型默认值处理。可用档位和像素范围按模型不同：5.0 pro / flash 为 `1K` / `1.5K` / `2K` 或 92 万–462 万像素；5.0 lite / 4.5 至少 369 万像素（如 `2560x1440`），`1024x1024` 会被拒绝。不确定时用 `2K`，所有型号都支持。
 
@@ -1114,6 +1114,17 @@ Authorization: Bearer <USER_API_KEY>
 
 请求与上游都使用 `dashscope` 协议及同名 operation，事件和二进制音频帧保持原生语义。可用 operation、浏览器子协议鉴权、Node / Workers 运行时差异、Close 码约束与计费见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
 
+### DashScope 语音合成与文件转写透传
+
+| 公开路径 | operation | 说明 |
+|----------|-----------|------|
+| `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer` | `audio.speech` / `audio.speech.stream` | CosyVoice 等 SpeechSynthesizer 模型。`X-DashScope-SSE: enable` 为流式，响应保持 DashScope 原文，按 `usage.characters` 计费 |
+| `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | `audio.speech.multimodal` | Qwen-TTS 与百炼上的 MiniMax 语音，与同步 ASR、生图共用路径，网关按模型类型分流 |
+| `POST /v1/dashscope/services/audio/asr/transcription` | `audio.transcriptions.async` | 提交异步 filetrans 任务，立即返回任务 JSON，不计费 |
+| `GET /v1/dashscope/tasks/{taskId}?model=<gateway-model>` | `audio.transcriptions.async` | 查询任务，响应是任务 JSON；任务成功时按结果时长计费 |
+
+请求与上游都是 `dashscope` 和表中的 operation，adapter 必须是 `passthrough`。网关只替换 `model`。OpenAI 客户端改用 `POST /v1/audio/speech` 或 `POST /v1/audio/transcriptions`，并在路由上选择对应的 DashScope 转换适配器。
+
 ### MiniMax 同步语音合成透传
 
 ```text
@@ -1124,15 +1135,15 @@ Content-Type: application/json
 
 请求与上游都是 `minimax` + `audio.speech`，adapter 必须是 `passthrough`。非流式 JSON 与 `stream: true` 的 SSE 共用这一路径。网关只替换 `model`。非流式成功响应仍是上游 JSON，音频在 `data.audio`（hex）。计费使用 `extra_info.usage_characters`。`base_resp.status_code` 非 0 时 body 不变，HTTP 状态按业务码改写；SSE 业务错误记入 `stream_error` 且不计费。详见 [MiniMax 音频](../architecture/minimax-audio.md)。
 
-OpenAI 入口使用适配器 `minimax-tts`，仍调用上面的 `POST /v1/audio/speech`。`voice` 填 MiniMax `voice_id`（例如 `male-qn-qingse`）。非流式响应是音频字节；`stream_format=sse` 是 OpenAI speech 事件。
+OpenAI 入口使用适配器 `minimax-tts`，调用上面的 `POST /v1/audio/speech`。`voice` 填 MiniMax `voice_id`（例如 `male-qn-qingse`）。非流式响应是音频字节；`stream_format=sse` 是 OpenAI speech 事件。
 
-文件转写透传仍是 `POST /v1/minimax/speech_to_text`。
+文件转写透传见下文「MiniMax 文件转写透传」。
 
 ---
 
 ## 语音转写（Audio Transcriptions）
 
-OpenAI 兼容 Audio Transcriptions API，供桌面 Agent 语音输入等场景调用。鉴权与 Chat 相同（用户 API Key）；模型须配置 **OpenAI 协议**路由，且 `pricing_profile` 含有效的 Audio 计费配置（见下方双模式）。
+OpenAI 兼容 Audio Transcriptions API，供桌面 Agent 语音输入等场景调用。鉴权与 Chat 相同（用户 API Key）；模型须配置请求协议为 **OpenAI** 的路由（上游可以是 OpenAI 透传，也可以经 `dashscope-asr-*`、`minimax-asr-file` 等适配器转换），且 `pricing_profile` 含有效的 Audio 计费配置（见下方双模式）。
 
 ```
 POST /v1/audio/transcriptions
@@ -1149,7 +1160,7 @@ Content-Type: multipart/form-data
 | `file_url` | 异步 filetrans（`dashscope-asr-file-async`）必填；公网 HTTP(S)/OSS URL。有 `file_url` 时可不传 `file` |
 | `language` | 可选；ISO-639-1（如 `zh`、`en`） |
 | `response_format` | 可选；`json`（默认）/ `text` / `srt` / `verbose_json` / `vtt` / `diarized_json`（说话人分离模型） |
-| `prompt` / `temperature` | 可选；透传上游 |
+| `prompt` / `temperature` | 可选；OpenAI 透传原样转发，`minimax-asr-file` 不转发 |
 
 ### 计费与审计（双模式）
 
@@ -1212,6 +1223,17 @@ curl -sS "$GATEWAY_URL/v1/audio/transcriptions" \
 ```
 
 默认 `GET /v1/models` **不含** ASR / TTS；列表可用 `kind=audio`（ASR + TTS，与管理后台 Kind 对齐）或 `kind=all`。命中可见 `audio.transcriptions` 路由时，`model_info.inbound` 会包含 `{ "protocol": "openai", "operation": "audio.transcriptions" }`。Admin 侧 Kind 判定依据为有效的 `audio_billing_mode`（ASR：`per_second` + `audio` 块，或 `token` + `tiers`；TTS：`per_character` + `audio`），见 [admin.md「pricing_profile」](./admin.md#pricing_profile--price_override-契约adminmodelsadminroutes)。
+
+### MiniMax 文件转写透传
+
+```text
+POST /v1/minimax/speech_to_text
+Authorization: Bearer <USER_API_KEY>
+Content-Type: multipart/form-data
+```
+
+请求与上游都是 `minimax` + `audio.transcriptions`，adapter 必须是 `passthrough`。表单沿用 MiniMax 官方字段，网关只把 `model` 换成路由上的供应商模型名；`language` 可以放在请求头，也可以放在表单里由网关转到请求头。响应保持上游原文，按上游 `duration` 按秒计费。OpenAI 客户端改用 `POST /v1/audio/transcriptions` 和适配器 `minimax-asr-file`。详见 [MiniMax 音频](../architecture/minimax-audio.md)。
+
 ---
 
 ## 获取当前用户预算状态
@@ -1379,6 +1401,8 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 - 数组：赢家一侧的数组整体替换
 - 标量 / `null`：以赢家为准
 - `model` 始终由 route 的 `provider_model_name` 强制覆盖
+
+OpenAI 生图、语音合成和转写入口走转换适配器时，用户请求体先由适配器改写成上游结构，客户端未被入口解析的字段再作为额外字段合并；完整顺序和受保护路径见 [OpenAI 入口的额外字段](../architecture/adapters-and-drivers.md#openai-入口的额外字段)。
 
 示例（`model_routes.custom_params` 列中存放的 JSON 对象；OpenAI 风格信封）：
 

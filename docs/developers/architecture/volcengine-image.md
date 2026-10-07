@@ -58,7 +58,7 @@ volcengine.base:   https://ark.cn-beijing.volces.com/api/v3
 
 | 字段 | `volcengine-image` | 原生透传 |
 | ---- | ------------------ | -------- |
-| `n` | 1–15，映射成组图（参考图张数 + 生成张数 ≤ 15）；5.0 pro / flash 只能为 1 | 不使用，组图写 `sequential_image_generation` 与 `sequential_image_generation_options.max_images` |
+| `n` | 1 为单图，不带组图字段；2–15 映射成组图（参考图张数 + 生成张数 ≤ 15）；5.0 pro / flash 只能为 1 | 不使用，组图写 `sequential_image_generation` 与 `sequential_image_generation_options.max_images` |
 | `background` | 只转发 `transparent` / `opaque`，`auto` 不转发。官方仅 5.0 pro / flash 支持，且只用于输入 1 张带透明通道的图 | 原样 |
 | `output_format` | 只接受 `png` / `jpeg`（`jpg` 视为 `jpeg`），拒收 `webp` | 原样 |
 | `quality` | 不转发 | 官方无此字段 |

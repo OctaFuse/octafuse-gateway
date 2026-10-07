@@ -37,7 +37,7 @@
 | 路由 | 尺寸字段 | `n` | 参考图 |
 | ---- | -------- | --- | ------ |
 | OpenAI 兼容透传 | 顶层字段原样转发，不校验、不改名 | 只能为 1 | GPT Image 走 `/v1/images/edits`；其它厂商经网关只能文生图 |
-| `volcengine-image` | `size` 原样转发，包括 `auto` | 1–15，映射成组图；5.0 pro / flash 只能为 1 | generations 的 JSON `image` |
+| `volcengine-image` | `size` 原样转发，包括 `auto` | 1 为单图，2–15 映射成组图；5.0 pro / flash 只能为 1 | generations 的 JSON `image` |
 | `dashscope-image-qwen` | 顶层 `size` 原样写入 `parameters.size`。千问用 `宽*高` 或 `auto` | 1–6 | generations 的 JSON `image` |
 | `dashscope-image-wan` | 同上。万相用 `1K` / `2K` / `4K` 或 `宽*高` | 1–4 | generations 的 JSON `image` |
 | `minimax-image` | 不转发 `size`。`aspect_ratio`、`width`、`height` 有值才原样转发，不填默认比例 | 1–9 | 走原生透传的 `subject_reference` |
@@ -167,7 +167,7 @@ charged ≈
 | 情况 | 行为 |
 | ---- | ---- |
 | 成功出图 | token 按响应 `usage` 分项；per_image 按有效图片数与参考图数，忽略 usage |
-| 客户端取消、网关超时（合成 504，请求已发出）、结果不明 | 零费用。`uncertain_result_policy` 不再作为取消扣费的开关 |
+| 客户端取消、网关超时（合成 504，请求已发出）、结果不明 | 零费用，与 `uncertain_result_policy` 无关 |
 | 明确的上游错误、网络 502、空结果 | 零费用 |
 | 没有 `image_billing_mode`，且 tier 里没有正的 `image_*` | 不计费 |
 | 只有旧的 `image` 块、没有显式 `per_image` | 不计费，避免旧数据突然扣款 |

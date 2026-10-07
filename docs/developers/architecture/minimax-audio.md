@@ -65,7 +65,7 @@ client.audio.speech.create(
 
 公开路径 `POST /v1/minimax/t2a_v2`，上游 `{base}/t2a_v2`。网关只替换 `model`，加上 Bearer，并应用路由额外请求头。非流式和 `stream: true` 共用 operation `audio.speech`，用请求体里的 `stream` 区分，不另拆 `.stream`。不做异步 `t2a_async_v2`。超时 120 秒。
 
-请求体沿用 MiniMax 官方字段：`text`、`voice_setting.voice_id`、`audio_setting`、`stream`、`output_format`（非流式默认 `hex`）。目录模型预设是 `minimax-speech-2.8-hd`（人民币 ¥0.00035/字符，美元 $0.0001/字符）和 `minimax-speech-2.8-turbo`（人民币 ¥0.0002/字符，美元 $0.00006/字符）。一个汉字在上游按 2 个字符计，网关直接使用 `extra_info.usage_characters`，不再自行换算。
+请求体沿用 MiniMax 官方字段：`text`、`voice_setting.voice_id`、`audio_setting`、`stream`、`output_format`（非流式默认 `hex`）。目录模型预设是 `minimax-speech-2.8-hd`（人民币 ¥0.00035/字符，美元 $0.0001/字符）和 `minimax-speech-2.8-turbo`（人民币 ¥0.0002/字符，美元 $0.00006/字符）。一个汉字在上游按 2 个字符计，网关直接使用 `extra_info.usage_characters`，不自行换算。
 
 非流式成功时响应仍是上游 JSON。SSE 原样转发，并扫描最后一帧 `data.status = 2` 里的 `usage_characters`。若某一帧 `base_resp.status_code` 非 0，usage 记 `stream_error`，不计费；流已经开始，HTTP 状态保持 200。
 

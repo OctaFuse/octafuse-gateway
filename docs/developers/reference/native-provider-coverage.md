@@ -84,7 +84,7 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 |------|----------|------|----------|------|
 | 对话 | `/chat/completions` | — | — | 用供应商的 `openai` 端点，不进 `volcengine` |
 | Responses | `/responses` | — | — | 同上；预设未配 `responses`，需要时手工补 OpenAI capability URL |
-| 生图 | `/images/generations` | ✅ | ✅ | 原生透传 `POST /v1/volcengine/images/generations`（含 SSE）。OpenAI 入口用 `volcengine-image`，只出 JSON，`n` 为 1–15 |
+| 生图 | `/images/generations` | ✅ | ✅ | 原生透传 `POST /v1/volcengine/images/generations`（含 SSE）。OpenAI 入口用 `volcengine-image`，只出 JSON，`n` 为 2–15 时出组图 |
 | 视频任务 | `/contents/generations/tasks` | ❌ | ❌ | Seedance 等；网关没有视频模态 |
 | 豆包语音 | 语音合成 / 识别 | ❌ | ❌ | |
 

@@ -77,7 +77,8 @@ client.images.generate(
 | 预设 | 是否改动 |
 | ---- | -------- |
 | 百炼标准版 / 国际版 | 已有 `dashscope.base`，自动派生，无需改 |
-| 千问 Token Plan | 没有 base，须显式覆盖 `images.generations.multimodal` |
+| 千问 AI 平台（按量） | 已有 `dashscope.base`（`maas.qianwenaiapi.com`），自动派生，无需改 |
+| 千问 Token Plan | 没有 base，预设已显式覆盖 `images.generations.multimodal` |
 | Coding Plan | chat-only，不加生图 |
 
 业务空间专属域名（`{WorkspaceId}.cn-beijing.maas.aliyuncs.com`）不做成预设。现有共享域名仍可用；运维可自行把 `dashscope.base` 换成专属主机。
