@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- OpenAI 生图入口 `POST /v1/images/generations` 会调度 `volcengine-image` 路由。此前调度只接受 openai、dashscope、minimax 上游，Seedream 转换路由会被跳过并返回 `gateway.no_route`，请求日志里的上游路径显示为 `/v1/*`。
+
 - 生图尺寸字段不再做兼容转换。DashScope 把顶层 `size` 原样写入 `parameters.size`（千问需要 `宽*高`，不再把 `1024x1024` 改成 `1024*1024`，也不再拒收 `1K` / `2K`）。MiniMax 不再把 `size` 映射成 `aspect_ratio`，也不再默认填 `1:1`；请传 `aspect_ratio`，或同时传 `width` 与 `height`。火山方舟 `size=auto` 也会原样转发。调试台和模拟器的请求样例按模型族使用官方最低档。
 
 - Grok Imagine Image 2.0 按官方的分辨率与 quality 分档计价：1K / 1.5K / 2K 的 low 为 $0.04 / $0.05 / $0.06，medium 为 $0.06 / $0.07 / $0.08，每张参考图另收 $0.01（CNY 按 7 倍）。原先一律按 $0.04，2K 或 medium 会少收。OpenAI 生图与编辑入口在客户端没传 `size` 时，用扩展字段 `resolution` 选计费档位。`quality` 不传或为 `auto` 时按 low 计，与 xAI 生成请求的默认档一致。已导入的模型不会自动更新，需要改价或运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。`grok-imagine-image-quality` 于 2026-11-02 退役，之后由 2.0 以 low 档出图，届时请把该模型的单价改成 2.0 的 low 档。
