@@ -9,6 +9,9 @@ export const PASSTHROUGH_ROUTE_ADAPTER = 'passthrough';
 export const DASHSCOPE_MULTIMODAL_GENERATION_PATH =
 	'/v1/dashscope/services/aigc/multimodal-generation/generation';
 
+/** MiniMax 原生文件转写透传：`POST /v1/minimax/speech_to_text`。 */
+export const MINIMAX_SPEECH_TO_TEXT_PATH = '/v1/minimax/speech_to_text';
+
 export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
 
 export type AdapterModality = 'text' | 'image' | 'audio' | 'video' | 'embedding';
@@ -330,6 +333,16 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		publicPath: '/v1/audio/speech',
 	}),
 	passthroughDescriptor({
+		protocol: 'minimax',
+		operation: 'audio.transcriptions',
+		modelKind: 'audio.transcription',
+		modality: 'audio',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		requiredUpstreamCapabilities: ['audio.transcriptions'],
+		publicPath: MINIMAX_SPEECH_TO_TEXT_PATH,
+	}),
+	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions.multimodal',
 		modelKind: 'audio.transcription',
@@ -592,6 +605,10 @@ export function requestSurfacePath(
 			return `/v1beta/models/${modelSegment}:{generateContent|streamGenerateContent}`;
 		}
 		return `/v1beta/models/${modelSegment}:${operation}`;
+	}
+	if (protocol === 'minimax') {
+		if (operation === '*') return '/*';
+		return lookupPublicPath(protocol, operation) ?? `/${operation}`;
 	}
 	if (protocol === 'dashscope') {
 		if (operation.includes('.realtime.')) {

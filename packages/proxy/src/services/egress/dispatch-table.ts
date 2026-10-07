@@ -12,7 +12,11 @@ import {
 	dispatchDashScopeSyncAsr,
 	type DashScopeAsrDispatchOptions,
 } from './dashscope-audio-driver';
-import { dispatchMiniMaxAudioTranscriptions } from './minimax-audio-driver';
+import {
+	dispatchMiniMaxAsrPassthrough,
+	dispatchMiniMaxAudioTranscriptions,
+	type MiniMaxAsrPassthroughRequest,
+} from './minimax-audio-driver';
 import {
 	dispatchOpenAiAudioTranscriptions,
 	type NormalizedAudioTranscriptionRequest,
@@ -147,4 +151,21 @@ export function dispatchMultimodalPassthrough(
 		throw new Error(`Unsupported DashScope multimodal adapter: ${route.adapter}`);
 	}
 	return dispatchDashScopeMultimodalPassthrough(route, body, signal, timing, attempt, options);
+}
+
+export function dispatchMiniMaxSpeechPassthrough(
+	route: RouteResult,
+	request: MiniMaxAsrPassthroughRequest,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt
+): Promise<ProxyDispatchResult> {
+	if (
+		route.adapter !== 'passthrough' ||
+		route.upstreamProtocol !== 'minimax' ||
+		route.upstreamOperation !== 'audio.transcriptions'
+	) {
+		throw new Error(`Unsupported MiniMax ASR passthrough adapter: ${route.adapter}`);
+	}
+	return dispatchMiniMaxAsrPassthrough(route, request, signal, timing, attempt);
 }

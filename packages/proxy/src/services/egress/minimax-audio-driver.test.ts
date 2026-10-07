@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 import type { RouteResult } from '../model-router';
-import { dispatchMiniMaxAudioTranscriptions } from './minimax-audio-driver';
+import {
+	dispatchMiniMaxAsrPassthrough,
+	dispatchMiniMaxAudioTranscriptions,
+} from './minimax-audio-driver';
 import type { NormalizedAudioTranscriptionRequest } from './openai-audio-driver';
 
 const originalFetch = globalThis.fetch;
@@ -125,5 +128,53 @@ describe('dispatchMiniMaxAudioTranscriptions', () => {
 		assert.equal(result.meta.audioDurationSeconds, null);
 		const body = JSON.parse(await result.response.text()) as { error: { message: string } };
 		assert.equal(body.error.message, 'bad audio');
+	});
+});
+
+describe('dispatchMiniMaxAsrPassthrough', () => {
+	it('forwards the native form and returns the upstream body unchanged', async () => {
+		let capturedLanguage: string | null = null;
+		let form: FormData | null = null;
+		const upstream = {
+			text: '你好',
+			duration: 3.5,
+			segments: [{ start: 0, end: 3.5, text: '你好', speaker: '1' }],
+		};
+		globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+			const headers = new Headers(init?.headers);
+			capturedLanguage = headers.get('language');
+			form = init?.body instanceof FormData ? init.body : null;
+			return new Response(JSON.stringify(upstream), {
+				status: 200,
+				headers: { 'Content-Type': 'application/json' },
+			});
+		}) as typeof fetch;
+
+		const result = await dispatchMiniMaxAsrPassthrough(
+			{ ...route(), adapter: 'passthrough' },
+			{
+				file: {
+					filename: 'clip.wav',
+					mimeType: 'audio/wav',
+					bytes: new Uint8Array([1, 2, 3, 4]),
+				},
+				fields: {
+					response_format: 'verbose_json',
+					timestamp_level: 'word',
+					language: 'en',
+				},
+				languageHeader: 'zh',
+			}
+		);
+		assert.equal(capturedLanguage, 'zh');
+		assert.ok(form);
+		const sent = form as FormData;
+		assert.equal(sent.get('model'), 'asr-1.0');
+		assert.equal(sent.get('response_format'), 'verbose_json');
+		assert.equal(sent.get('timestamp_level'), 'word');
+		assert.equal(sent.get('language'), null);
+		assert.equal(result.meta.audioDurationSeconds, 3.5);
+		assert.equal(result.meta.audioDurationSource, 'upstream');
+		assert.deepEqual(JSON.parse(await result.response.text()), upstream);
 	});
 });

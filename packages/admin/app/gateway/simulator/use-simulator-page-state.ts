@@ -385,14 +385,16 @@ export function useSimulatorPageState() {
 			if (!selectedToolId) return 'tool';
 		} else {
 			if (!selectedModelId) return 'model';
-			if (selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope') return 'audioProtocol';
+			if (selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope' && protocol !== 'minimax') {
+				return 'audioProtocol';
+			}
 			if (selectedModelIsImage && !selectedModelIsAudio && protocol !== 'openai') {
 				return 'imageProtocol';
 			}
 			if (matchingRoutes.length === 0) return 'route';
 			if (
 				selectedAudioOperation === 'transcriptions' &&
-				(protocol === 'openai' || protocol === 'dashscope')
+				(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
 			) {
 				const fileUrl = (() => {
 					try {
@@ -496,7 +498,9 @@ export function useSimulatorPageState() {
 		}
 		try {
 			const audioOperation =
-				!isToolKind && (protocol === 'openai' || protocol === 'dashscope') ? selectedAudioOperation : null;
+				!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
+					? selectedAudioOperation
+					: null;
 			if (protocol === 'dashscope' && audioOperation) {
 				const operation = selectedDashScopeRealtimeOperation;
 				if (!operation) return null;
@@ -825,7 +829,8 @@ export function useSimulatorPageState() {
 	/** Image / Audio models: force openai + kind template; leaving restores chat template. */
 	useEffect(() => {
 		if (selectedAudioOperation) {
-			const audioProtocol = protocol === 'dashscope' ? 'dashscope' : ('openai' as const);
+			const audioProtocol =
+				protocol === 'dashscope' || protocol === 'minimax' ? protocol : ('openai' as const);
 			if (protocol !== audioProtocol) setProtocolState(audioProtocol);
 			setBodyText(
 				bodyTemplateForSelection(
@@ -1071,7 +1076,7 @@ export function useSimulatorPageState() {
 	const requestProtocolChange = useCallback(
 		async (next: SimulatorProtocol) => {
 			if (next === protocol) return;
-			if (selectedModelIsAudio && next !== 'openai' && next !== 'dashscope') {
+			if (selectedModelIsAudio && next !== 'openai' && next !== 'dashscope' && next !== 'minimax') {
 				setInfoHint(t('protocolLockedAudio'));
 				return;
 			}
@@ -1256,7 +1261,9 @@ export function useSimulatorPageState() {
 		}
 
 		const audioOperation =
-			!isToolKind && (protocol === 'openai' || protocol === 'dashscope') ? selectedAudioOperation : null;
+			!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
+				? selectedAudioOperation
+				: null;
 		const useImages = !isToolKind && selectedModelIsImage && !selectedModelIsAudio && protocol === 'openai';
 		if (audioOperation === 'transcriptions') {
 			const fileUrl = typeof bodyObj.file_url === 'string' ? bodyObj.file_url.trim() : '';

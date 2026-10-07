@@ -26,7 +26,7 @@ describe('route topology operations', () => {
 			isRequestOperationForProtocol('dashscope', 'audio.transcriptions.async'),
 			true
 		);
-		assert.equal(isRequestOperationForProtocol('minimax', 'audio.transcriptions'), false);
+		assert.equal(isRequestOperationForProtocol('minimax', 'audio.transcriptions'), true);
 		assert.equal(isUpstreamOperationForProtocol('minimax', 'audio.transcriptions'), true);
 		assert.equal(isUpstreamOperationForProtocol('minimax', 'chat'), false);
 	});

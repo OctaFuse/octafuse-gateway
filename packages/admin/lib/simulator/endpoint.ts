@@ -328,6 +328,47 @@ export function buildSimulatorRequest(
 				bodyText: JSON.stringify(input.body),
 			};
 		}
+		case "minimax": {
+			if (kind !== "audio" || (input.audioOperation ?? "transcriptions") === "speech") {
+				throw new Error("MiniMax simulator currently supports file transcriptions only");
+			}
+			const file = input.audioFile ?? null;
+			const fd = new FormData();
+			fd.append("model", input.modelForRouting);
+			const skip = new Set(["model", "file", "audio", "file_name", "filename"]);
+			const fieldParts = ["model", "file"];
+			for (const [key, value] of Object.entries(input.body)) {
+				if (skip.has(key)) continue;
+				appendOptionalFormField(fd, key, value);
+				if (value != null && String(value).trim() !== "") fieldParts.push(key);
+			}
+			const fileLines: string[] = [];
+			if (file) {
+				fd.append("file", file, file.name || "audio.wav");
+				fileLines.push(`${file.name || "audio.wav"} (${file.size} bytes)`);
+			}
+			const fileSummary = !file
+				? "file: (none selected yet — required before Send)"
+				: [`file:`, ...fileLines.map((line) => `  - ${line}`)].join("\n");
+			const path = resolveProxyPathForModelInvoke({
+				kind: "audio",
+				protocol: "minimax",
+				audioOperation: "transcriptions",
+			});
+			return {
+				url: `${base}${path}`,
+				headers: {
+					Authorization: auth,
+				},
+				bodyText: "",
+				formData: fd,
+				multipartSummary: [
+					`multipart/form-data fields: ${fieldParts.join(", ")}`,
+					fileSummary,
+					"language is forwarded as the MiniMax language header",
+				].join("\n"),
+			};
+		}
 		case "dashscope": {
 			if (input.dashscopeRequestOperation === "audio.transcriptions.multimodal") {
 				const path = resolveProxyPathForModelInvoke({

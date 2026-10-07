@@ -8,6 +8,7 @@ import {
 
 export {
 	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	MINIMAX_SPEECH_TO_TEXT_PATH,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	ROUTE_ADAPTERS,
@@ -52,11 +53,8 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 		"audio.speech.realtime.session",
 		"images.generations.multimodal",
 	],
-	/**
-	 * MiniMax 没有公开请求入口。上游 operation 由适配器声明，
-	 * 校验走 `isUpstreamOperationForProtocol`，不进对外协议下拉。
-	 */
-	minimax: [],
+	/** 公开入口 `POST /v1/minimax/speech_to_text`，adapter 为 passthrough。 */
+	minimax: ['audio.transcriptions'],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =
@@ -110,7 +108,7 @@ export function isRequestOperationForProtocol(
 
 /**
  * 上游 operation 可以是公开请求 operation，也可以只出现在转换适配器的上游侧。
- * MiniMax 没有公开入口，`audio.transcriptions` 仍是合法上游端点。
+ * MiniMax `audio.transcriptions` 同时是公开透传入口和 `minimax-asr-file` 的上游端点。
  */
 export function isUpstreamOperationForProtocol(
 	protocol: UpstreamProtocol,

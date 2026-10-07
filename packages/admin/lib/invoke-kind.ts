@@ -4,7 +4,10 @@
  */
 import type { ImageOperation } from '@/lib/image-generations';
 import type { ProviderEndpointCapability } from '@octafuse/core/provider-endpoints';
-import { DASHSCOPE_MULTIMODAL_GENERATION_PATH } from '@octafuse/core/route-topology';
+import {
+	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	MINIMAX_SPEECH_TO_TEXT_PATH,
+} from '@octafuse/core/route-topology';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
 
@@ -19,7 +22,7 @@ export type ModelKindFilter = (typeof MODEL_KIND_FILTERS)[number];
 export const DEFAULT_KIND_FILTER: ModelKindFilter = 'llm';
 export const DEFAULT_INVOKE_KIND: InvokeKind = 'llm';
 
-export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope';
+export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope' | 'minimax';
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
 export type AudioOperation = 'transcriptions' | 'speech';
 /** OpenAI LLM 公开入口：Chat Completions 或 Responses。 */
@@ -159,6 +162,9 @@ export function resolveProxyPathForModelInvoke(input: {
 	if (input.kind === 'audio') {
 		if (protocol === 'dashscope' && input.audioOperation !== 'speech') {
 			return DASHSCOPE_MULTIMODAL_GENERATION_PATH;
+		}
+		if (protocol === 'minimax' && input.audioOperation !== 'speech') {
+			return MINIMAX_SPEECH_TO_TEXT_PATH;
 		}
 		return input.audioOperation === 'speech' ? '/v1/audio/speech' : '/v1/audio/transcriptions';
 	}

@@ -96,7 +96,9 @@ describe('adapter registry', () => {
 		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'image'), [
 			'images.generations.multimodal',
 		]);
-		assert.deepEqual(requestOperationsFromRegistry('minimax', 'audio.transcription'), []);
+		assert.deepEqual(requestOperationsFromRegistry('minimax', 'audio.transcription'), [
+			'audio.transcriptions',
+		]);
 		assert.deepEqual(upstreamOperationsFromRegistry('minimax', 'audio.transcription'), [
 			'audio.transcriptions',
 		]);
@@ -117,6 +119,10 @@ describe('adapter registry', () => {
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.multimodal'),
 			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+		);
+		assert.equal(
+			requestSurfacePath('minimax', 'audio.transcriptions'),
+			'/v1/minimax/speech_to_text',
 		);
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference', 'my fun/asr'),

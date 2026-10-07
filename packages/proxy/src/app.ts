@@ -22,6 +22,8 @@ import { imageRoutes } from './routes/v1/images';
 import { audioRoutes } from './routes/v1/audio';
 import { dashScopeRealtimeRoutes } from './routes/v1/dashscope-realtime';
 import { dashScopeMultimodalRoutes } from './routes/v1/dashscope-multimodal';
+import { miniMaxSpeechToTextRoutes } from './routes/v1/minimax-speech-to-text';
+import { MINIMAX_SPEECH_TO_TEXT_PATH } from '@octafuse/core/route-topology';
 import { proxyAppVersion } from './app-version';
 import type { DashScopeRealtimeNodeDispatch } from './services/egress/dashscope-realtime-driver';
 
@@ -71,7 +73,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 		cors({
 			origin: '*',
 			allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-			allowHeaders: ['Content-Type', 'Authorization'],
+			allowHeaders: ['Content-Type', 'Authorization', 'language'],
 		}),
 	);
 
@@ -115,6 +117,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/v1/audio', audioRoutes);
 	app.route('/v1/dashscope/realtime', dashScopeRealtimeRoutes);
 	app.route('/v1/dashscope/services/aigc/multimodal-generation/generation', dashScopeMultimodalRoutes);
+	app.route(MINIMAX_SPEECH_TO_TEXT_PATH, miniMaxSpeechToTextRoutes);
 	app.route('/v1/messages', messagesRoutes);
 	// TEMP(soloent): 只为兼容 SoloEnt Agent 的历史拼路径，不是公开 API。
 	// 0.18.0–0.18.5 + 旧 token → POST /messages

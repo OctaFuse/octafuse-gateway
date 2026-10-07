@@ -60,6 +60,7 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
   "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }]
 }`,
 	dashscope: '{}',
+	minimax: AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
 };
 
 /** OpenAI Responses：`input` + `store: false`，与调试台默认体对齐。 */
@@ -312,6 +313,7 @@ export const SIMULATOR_PROTOCOL_ORDER: readonly SimulatorProtocol[] = [
 	'anthropic',
 	'gemini',
 	'dashscope',
+	'minimax',
 ];
 
 export type SimulatorClientSurfaceOptions = {

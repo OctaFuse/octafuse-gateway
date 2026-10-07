@@ -1,6 +1,8 @@
 /**
- * MiniMax 文件转写：OpenAI `POST /v1/audio/transcriptions` → `POST {minimax.base}/speech_to_text`。
- * language 放请求头；srt/vtt 由网关根据 verbose_json 的 segments 生成，以便按上游 duration 计费。
+ * MiniMax 文件转写。
+ * `minimax-asr-file`：OpenAI `POST /v1/audio/transcriptions` → `POST {minimax.base}/speech_to_text`，并改写 srt/vtt。
+ * passthrough：公开 `POST /v1/minimax/speech_to_text` 原样转发，只替换 model，响应不改写。
+ * language 放请求头。
  */
 import {
 	applyRouteExtraHeaders,
@@ -169,6 +171,173 @@ export async function dispatchMiniMaxAudioTranscriptions(
 
 		return {
 			response: clientResponse,
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId,
+			meta: {
+				parsedBody: upstreamBody,
+				audioDurationSeconds,
+				audioDurationSource,
+				audioFileBytes: file.bytes.byteLength,
+				audioTokenUsage: null,
+			},
+		};
+	} catch (err) {
+		timing?.markStreamComplete();
+		const abortReason = getAbortReason();
+		const aborted =
+			abortReason !== 'none' ||
+			requestSignal?.aborted ||
+			(err instanceof Error && err.name === 'AbortError');
+		const resolvedAbort =
+			abortReason === 'none' && requestSignal?.aborted ? 'client_abort' : abortReason;
+		const message = aborted
+			? resolvedAbort === 'gateway_timeout'
+				? `Audio transcription timed out waiting for upstream after ${AUDIO_TRANSCRIPTION_TIMEOUT_MS}ms`
+				: 'Audio transcription was cancelled by the client'
+			: 'Audio transcription upstream failed';
+		const errorBody = {
+			error: {
+				message,
+				upstream_url: url,
+				detail: aborted ? undefined : err instanceof Error ? err.message : String(err),
+			},
+		};
+		return {
+			response: new Response(JSON.stringify(errorBody), {
+				status: aborted && resolvedAbort === 'gateway_timeout' ? 504 : aborted ? 499 : 502,
+				headers: { 'Content-Type': 'application/json' },
+			}),
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
+			meta: {
+				parsedBody: errorBody,
+				audioDurationSeconds: null,
+				audioDurationSource: null,
+				audioFileBytes: file.bytes.byteLength,
+				audioTokenUsage: null,
+			},
+		};
+	} finally {
+		clear();
+	}
+}
+
+export type MiniMaxAsrPassthroughRequest = {
+	file: {
+		filename: string;
+		mimeType: string;
+		bytes: Uint8Array;
+	};
+	/** 除 model / file 以外的文本字段。`language` 会提升到请求头，不进表单。 */
+	fields: Record<string, string>;
+	languageHeader?: string;
+};
+
+const PASSTHROUGH_FORM_SKIP_KEYS = new Set<string>(['model', 'file', 'language']);
+
+/** 原生 MiniMax ASR 透传：替换 model，其余表单字段与响应体保持原样。 */
+export async function dispatchMiniMaxAsrPassthrough(
+	route: RouteResult,
+	req: MiniMaxAsrPassthroughRequest,
+	requestSignal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt
+): Promise<{
+	response: Response;
+	usagePromise: Promise<typeof EMPTY_USAGE>;
+	upstreamRequestId: string | null;
+	meta: {
+		parsedBody: unknown;
+		audioDurationSeconds: number | null;
+		audioDurationSource: ReturnType<typeof resolveAudioBillingDuration>['source'] | null;
+		audioFileBytes: number;
+		audioTokenUsage: null;
+	};
+}> {
+	if (
+		route.adapter !== 'passthrough' ||
+		route.upstreamProtocol !== 'minimax' ||
+		route.upstreamOperation !== 'audio.transcriptions'
+	) {
+		throw new Error(`Unsupported MiniMax ASR passthrough adapter: ${route.adapter}`);
+	}
+	const file = req.file;
+	const uploadError = validateAudioUpload(file);
+	if (uploadError) {
+		throw new Error(uploadError);
+	}
+	const url = resolveUpstreamEndpoint('minimax', 'audio.transcriptions', route.providerEndpoints, {
+		providerId: route.providerId,
+	});
+	const merged = buildRouteRequestBody(route, { ...req.fields });
+	const languageFromBody = typeof merged.language === 'string' ? merged.language : undefined;
+	const language = req.languageHeader?.trim() || languageFromBody;
+
+	const form = new FormData();
+	form.append('model', route.providerModelName);
+	for (const [key, value] of Object.entries(merged)) {
+		if (value == null || PASSTHROUGH_FORM_SKIP_KEYS.has(key)) continue;
+		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+			const text = String(value).trim();
+			if (text === '') continue;
+			form.append(key, text);
+		}
+	}
+	const blob = new Blob([new Uint8Array(file.bytes)], {
+		type: file.mimeType || 'application/octet-stream',
+	});
+	form.append('file', blob, resolveAudioUploadFilename(file.filename || '', file.mimeType || ''));
+
+	const { signal, clear, getAbortReason } = withTimeoutSignal(
+		requestSignal,
+		AUDIO_TRANSCRIPTION_TIMEOUT_MS
+	);
+	try {
+		const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: applyRouteExtraHeaders(
+				{
+					Authorization: `Bearer ${secret}`,
+					...buildMiniMaxAsrHeaders({ language }),
+				},
+				route.customParams
+			),
+			body: form,
+			signal,
+		});
+		timing?.markAttemptHeaders(attempt, response.status);
+		const upstreamRequestId = extractUpstreamRequestId(response.headers);
+		const text = await response.text();
+		timing?.markStreamComplete();
+		let upstreamBody: unknown = text;
+		try {
+			upstreamBody = text ? JSON.parse(text) : null;
+		} catch {
+			upstreamBody = text;
+		}
+
+		let audioDurationSeconds: number | null = null;
+		let audioDurationSource: ReturnType<typeof resolveAudioBillingDuration>['source'] | null = null;
+		if (response.ok) {
+			const resolved = resolveAudioBillingDuration({
+				upstreamSeconds: parseAudioDurationFromUpstreamBody(upstreamBody),
+				fileBytes: file.bytes.byteLength,
+				mimeType: file.mimeType,
+				fileBytesForParse: file.bytes,
+			});
+			audioDurationSeconds = resolved.seconds;
+			audioDurationSource = resolved.source;
+		}
+
+		return {
+			response: new Response(text, {
+				status: response.status,
+				statusText: response.statusText,
+				headers: {
+					'Content-Type': response.headers.get('content-type') || 'application/json',
+				},
+			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId,
 			meta: {

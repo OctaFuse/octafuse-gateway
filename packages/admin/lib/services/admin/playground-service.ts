@@ -1148,6 +1148,10 @@ export async function invokePlaygroundUpstream(
 			if (!route.isAudioModel || route.upstreamOperation !== 'audio.transcriptions') {
 				throw badRequest('MiniMax Playground routes currently support audio.transcriptions only');
 			}
+			const passthrough = route.adapter === 'passthrough';
+			if (!passthrough && route.adapter !== 'minimax-asr-file') {
+				throw badRequest(`Playground does not support MiniMax audio adapter ${JSON.stringify(route.adapter)}`);
+			}
 			const collected = collectAudioFileFromBody(merged);
 			if (!collected.ok) throw badRequest(collected.error);
 			try {
@@ -1157,12 +1161,19 @@ export async function invokePlaygroundUpstream(
 			} catch (e) {
 				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve MiniMax transcription URL');
 			}
-			const mapped = resolveMiniMaxAsrUpstreamFormat(
-				typeof merged.response_format === 'string' ? merged.response_format : undefined,
-			);
+			const mapped = passthrough
+				? null
+				: resolveMiniMaxAsrUpstreamFormat(
+						typeof merged.response_format === 'string' ? merged.response_format : undefined,
+					);
+			const responseFormat = passthrough
+				? typeof merged.response_format === 'string'
+					? merged.response_format.trim()
+					: ''
+				: mapped!.upstreamFormat;
 			const fd = new FormData();
 			fd.append('model', route.providerModelName);
-			fd.append('response_format', mapped.upstreamFormat);
+			if (responseFormat) fd.append('response_format', responseFormat);
 			const skipped = new Set<string>([
 				'model',
 				'file',
@@ -1170,7 +1181,8 @@ export async function invokePlaygroundUpstream(
 				'file_name',
 				'filename',
 				'response_format',
-				...MINIMAX_ASR_DROPPED_FORM_KEYS,
+				'language',
+				...(passthrough ? [] : MINIMAX_ASR_DROPPED_FORM_KEYS),
 			]);
 			for (const [key, value] of Object.entries(merged)) {
 				if (skipped.has(key)) continue;
@@ -1194,7 +1206,8 @@ export async function invokePlaygroundUpstream(
 					__playground_multipart: true,
 					operation: 'audio.transcriptions',
 					model: route.providerModelName,
-					response_format: mapped.upstreamFormat,
+					adapter: route.adapter,
+					response_format: responseFormat || undefined,
 					language,
 					file: `${collected.file.filename} (${collected.file.bytes.byteLength} bytes, ${collected.file.mimeType})`,
 				},

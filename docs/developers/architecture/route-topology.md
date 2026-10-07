@@ -38,7 +38,7 @@ model + route_group + request protocol + operation
 | Anthropic | `messages` |
 | Gemini | **`models.generate`**（generate-content 家族，覆盖流式与非流式） |
 | DashScope | `audio.transcriptions.*`、`audio.speech.*`（见 [DashScope 音频架构](./dashscope-audio.md)）、`images.generations.multimodal`（见 [DashScope 生图架构](./dashscope-image.md)） |
-| MiniMax | 无公开请求入口。上游端点 `audio.transcriptions` 由适配器 `minimax-asr-file` 声明（见 [MiniMax 音频](./minimax-audio.md)） |
+| MiniMax | `audio.transcriptions`（公开 `POST /v1/minimax/speech_to_text`，adapter 为 passthrough；转换适配器 `minimax-asr-file` 仍从 OpenAI 转写入口进入，见 [MiniMax 音频](./minimax-audio.md)） |
 
 `*` 是迁移兼容值。运行时先查精确 operation 的请求入口，查不到时再回退同协议的 `*` 请求入口。
 

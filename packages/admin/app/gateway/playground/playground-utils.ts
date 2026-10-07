@@ -273,7 +273,7 @@ export function templateForRoute(
 	const isImage = model ? isImageRouteModel(model) : false;
 	const isAudio = model ? isAudioRouteModel(model) : false;
 	const isAudioTranscription = isAudioTranscriptionModel(model ?? {});
-	const isAudioHttp = proto === 'openai' || proto === 'dashscope' || proto === 'minimax';
+	const isAudioHttp = proto === 'openai' || proto === 'dashscope';
 	const realtime = isAudio && proto === 'dashscope' && isDashScopeRealtimeOperation(route.upstream_operation ?? '');
 	if (realtime) {
 		return route.upstream_operation?.startsWith('audio.speech.')

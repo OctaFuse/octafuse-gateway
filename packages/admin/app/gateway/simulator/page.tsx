@@ -146,7 +146,7 @@ export default function SimulatorPage() {
 								onEditFilesChange={s.setEditFiles}
 								showAudioTranscriptions={
 									s.selectedAudioOperation === 'transcriptions' &&
-									(s.protocol === 'openai' || s.protocol === 'dashscope')
+									(s.protocol === 'openai' || s.protocol === 'dashscope' || s.protocol === 'minimax')
 								}
 								showAudioRealtimeMicrophone={s.selectedCanUseMicrophone}
 								audioInputMode={s.audioInputMode}

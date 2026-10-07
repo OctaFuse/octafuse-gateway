@@ -191,6 +191,23 @@ describe("buildSimulatorRequest openai", () => {
 		assert.match(result.multipartSummary ?? "", /file_url: https:\/\/audio.example\/sample.wav/);
 	});
 
+	it("builds MiniMax speech_to_text passthrough multipart", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			kind: "audio",
+			protocol: "minimax",
+			modelForRouting: "minimax-asr-1.0",
+			body: { language: "zh", response_format: "verbose_json" },
+			apiKey: "sk-test",
+			audioOperation: "transcriptions",
+			audioFile: null,
+		});
+		assert.equal(result.url, "https://gateway.example.com/v1/minimax/speech_to_text");
+		assert.equal(result.formData?.get("model"), "minimax-asr-1.0");
+		assert.equal(result.formData?.get("language"), "zh");
+		assert.equal(result.formData?.get("response_format"), "verbose_json");
+	});
+
 	it("builds DashScope multimodal HTTP transcriptions", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",

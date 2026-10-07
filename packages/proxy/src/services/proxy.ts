@@ -22,8 +22,10 @@ import {
 	dispatchAudioSpeech,
 	dispatchAudioTranscriptions,
 	dispatchImageGenerations,
+	dispatchMiniMaxSpeechPassthrough,
 	dispatchMultimodalPassthrough,
 } from "./egress/dispatch-table";
+import type { MiniMaxAsrPassthroughRequest } from "./egress/minimax-audio-driver";
 import type {
 	AudioSpeechDispatchOptions,
 	NormalizedAudioSpeechRequest,
@@ -353,6 +355,30 @@ export async function proxyDashScopeMultimodalPassthrough(
 				attempt,
 				options?.dashScope
 			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 MiniMax 原生 ASR 透传（multipart，不转 OpenAI transcriptions）。 */
+export async function proxyMiniMaxAsrPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	request: MiniMaxAsrPassthroughRequest,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"minimax",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchMiniMaxSpeechPassthrough(route, request, signal, timing, attempt),
 		requestSignal,
 		options
 	);
