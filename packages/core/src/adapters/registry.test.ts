@@ -182,6 +182,15 @@ describe('adapter registry', () => {
 		}
 	});
 
+	it('reserves lossyFeatures for capabilities the upstream API does not provide', () => {
+		const features = Object.fromEntries(
+			listConversionAdapters().map((adapter) => [adapter.id, adapter.lossyFeatures ?? []]),
+		);
+		assert.deepEqual(features['dashscope-asr-file-async'], []);
+		assert.deepEqual(features['dashscope-tts-minimax'], []);
+		assert.deepEqual(features['minimax-tts'], ['response_format_aac', 'openai_speed_range']);
+	});
+
 	it('keeps option keys unique', () => {
 		const keys = ADAPTER_REGISTRY.map((adapter) => adapter.optionKey);
 		assert.equal(new Set(keys).size, keys.length);

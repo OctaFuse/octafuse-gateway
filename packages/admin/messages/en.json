@@ -1033,31 +1033,145 @@
 				"minimax-tts": "MiniMax official speech",
 				"minimax-image": "MiniMax official images"
 			},
-			"adapterDescriptions": {
-				"passthrough": "Forwards the request and response unchanged. Client and upstream protocol and operation must match.",
-				"dashscope-asr-qwen-file": "OpenAI transcription (multipart) → Qwen3-ASR sync API. For qwen3-asr-flash and similar; do not use for Qwen-Audio-3.0.",
-				"dashscope-asr-qwen-audio-file": "OpenAI transcription (multipart) → Qwen-Audio-3.0 sync API; language maps to language_hints. For qwen-audio-3.0-asr-flash.",
-				"dashscope-asr-fun-file": "OpenAI transcription (multipart) → Fun-ASR sync API.",
-				"dashscope-asr-file-async": "OpenAI transcription + public file_url → filetrans async submit and poll. The provider needs both the submit and task query endpoints.",
-				"dashscope-tts-speech": "OpenAI /v1/audio/speech → SpeechSynthesizer. For CosyVoice and Qwen-Audio-3.0-TTS; supports mp3, opus, wav, pcm and speed 0.5–2.0.",
-				"dashscope-tts-qwen": "OpenAI /v1/audio/speech → Qwen-TTS multimodal API. For qwen3-tts-flash and similar; returns wav only and does not support speed. OpenAI instructions is written to input.instructions and applies only to the Instruct-Flash series. For Qwen-Audio-3.0-TTS, choose CosyVoice / Qwen-Audio-3.0 TTS.",
-				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax multimodal API. Supports mp3, pcm, flac, and wav. OpenAI instructions is not mapped; set emotion in the route request parameters at input.voice_setting.emotion.",
-				"dashscope-image-qwen": "OpenAI Images → Qwen Image multimodal-generation. size must be in pixels (such as 1024x1024).",
-				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation.",
-				"minimax-asr-file": "OpenAI transcription (multipart) → MiniMax speech_to_text. Set the provider model name to asr-1.0. language is sent as a request header; the gateway renders srt and vtt from timestamped segments.",
-				"minimax-tts": "OpenAI /v1/audio/speech → MiniMax t2a_v2. Provider model names are speech-2.8-hd or speech-2.8-turbo. voice is a MiniMax voice_id. Supports mp3, pcm, flac, and wav. speed is 0.5–2. stream_format=sse becomes OpenAI speech events.",
-				"minimax-image": "OpenAI /v1/images/generations → MiniMax image_generation. Provider model names are image-01 or image-01-live. size such as 1024x1024 is mapped to the nearest aspect_ratio. response_format url or b64_json is returned as OpenAI data[]."
+			"adapterGuides": {
+				"passthrough": {
+					"purpose": "Forwards the request and response in the upstream format. The gateway only replaces model.",
+					"mapping": []
+				},
+				"dashscope-asr-qwen-file": {
+					"purpose": "For the qwen3-asr-flash family. Do not use it for Qwen-Audio-3.0.",
+					"mapping": [
+						"language is written to parameters.asr_options.language.",
+						"prompt is sent as a system message.",
+						"Audio is converted to a data URL. The synchronous API accepts a data URL of at most 10MB."
+					]
+				},
+				"dashscope-asr-qwen-audio-file": {
+					"purpose": "For qwen-audio-3.0-asr-flash.",
+					"mapping": [
+						"language is written to parameters.language_hints.",
+						"prompt is sent as input_text.",
+						"format is inferred from the MIME type or filename extension."
+					]
+				},
+				"dashscope-asr-fun-file": {
+					"purpose": "For the non-realtime file API of the fun-asr-realtime family.",
+					"mapping": [
+						"language and prompt return 400.",
+						"format is inferred from the MIME type or filename extension."
+					]
+				},
+				"dashscope-asr-file-async": {
+					"purpose": "For filetrans, fun-asr, and paraformer async transcription. The provider needs both the submit and task query endpoints.",
+					"mapping": [
+						"A public file_url form field is required (http, https, or oss).",
+						"prompt is written to input.context.",
+						"language is written to parameters.language_hints.",
+						"The gateway submits the task and polls for the result."
+					]
+				},
+				"dashscope-tts-speech": {
+					"purpose": "For CosyVoice and Qwen-Audio-3.0-TTS.",
+					"mapping": [
+						"response_format accepts mp3, opus, wav, and pcm.",
+						"speed is 0.5–2 and is written to input.rate.",
+						"instructions is written to input.instruction."
+					]
+				},
+				"dashscope-tts-qwen": {
+					"purpose": "For non-realtime models such as qwen3-tts-flash. For Qwen-Audio-3.0-TTS, choose CosyVoice / Qwen-Audio-3.0 TTS.",
+					"mapping": [
+						"Only wav is returned, so response_format must be wav.",
+						"speed must be 1.",
+						"instructions is written to input.instructions and applies only to the Instruct-Flash series."
+					]
+				},
+				"dashscope-tts-minimax": {
+					"purpose": "For minimax/speech-* on Alibaba Cloud Model Studio.",
+					"mapping": [
+						"response_format accepts mp3, pcm, flac, and wav.",
+						"speed is written to input.voice_setting.speed.",
+						"instructions returns 400. Set emotion in the route request parameters at input.voice_setting.emotion."
+					]
+				},
+				"dashscope-image-qwen": {
+					"purpose": "For the qwen-image family.",
+					"mapping": [
+						"size accepts pixels only. 1024x1024 is rewritten to 1024*1024.",
+						"n is 1–6.",
+						"image is a reference image.",
+						"When response_format is b64_json, the gateway downloads the image and converts it to base64."
+					]
+				},
+				"dashscope-image-wan": {
+					"purpose": "For the Wan image family.",
+					"mapping": [
+						"size accepts pixels or 1K, 2K, and 4K.",
+						"n is 1–4. When omitted, the gateway sends 1."
+					]
+				},
+				"minimax-asr-file": {
+					"purpose": "Set the provider model name to asr-1.0.",
+					"mapping": [
+						"language is sent as a request header.",
+						"The gateway renders srt and vtt from timestamped segments.",
+						"prompt and temperature are dropped."
+					]
+				},
+				"minimax-tts": {
+					"purpose": "Set the provider model name to speech-2.8-hd or speech-2.8-turbo.",
+					"mapping": [
+						"voice is a MiniMax voice_id.",
+						"response_format accepts mp3, pcm, flac, and wav. The upstream supports opus, which this entry does not map yet.",
+						"speed is 0.5–2.",
+						"stream_format=sse becomes OpenAI speech events.",
+						"Pass emotion with extra_body as voice_setting.emotion."
+					]
+				},
+				"minimax-image": {
+					"purpose": "Set the provider model name to image-01 or image-01-live.",
+					"mapping": [
+						"size (such as 1024x1024) maps to the nearest aspect_ratio.",
+						"n is 1–9.",
+						"url and b64_json are both rewritten as OpenAI data[]."
+					]
+				}
+			},
+			"guide": {
+				"title": "Call guide",
+				"call": "Client call",
+				"mapping": "Field mapping",
+				"extra": "Model-specific parameters",
+				"sample": "Example",
+				"openRequest": "Edit in request parameters",
+				"passthrough": "Send the request in the upstream format. The gateway only replaces model.",
+				"payload": {
+					"json": "JSON",
+					"multipart": "multipart"
+				},
+				"response": {
+					"json": "JSON",
+					"binary": "audio bytes",
+					"sse": "SSE",
+					"job": "async job",
+					"websocket": "WebSocket"
+				},
+				"billing": {
+					"tokens": "per token",
+					"per_image": "per image",
+					"per_second": "per second",
+					"per_character": "per character",
+					"per_call": "per call"
+				}
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "timestamp_granularities",
 				"diarization": "speaker diarization",
-				"inline_file_upload": "direct audio upload (a public file_url is required)",
-				"voice_instructions": "instructions",
 				"size_abbreviation": "1K/2K/4K size shorthand",
 				"background": "background",
 				"prompt": "prompt",
 				"temperature": "temperature",
-				"response_format_opus_aac": "opus and aac",
+				"response_format_aac": "AAC audio (response_format)",
 				"openai_speed_range": "speed outside 0.5–2",
 				"quality": "quality"
 			},
@@ -1065,7 +1179,7 @@
 			"adapterFirstHint": "Choose a compatible adapter for this provider. Public and upstream protocol fields are filled from the registry.",
 			"adapterUnavailable": "unavailable",
 			"adapterMissingCapabilities": "Provider is missing required endpoints: {capabilities}",
-			"adapterLossyFeatures": "Known unsupported features: {features}",
+			"adapterLossyFeatures": "Not provided by the upstream API: {features}",
 			"extraBodyHint": "Clients can pass model-specific parameters with the OpenAI SDK extra_body parameter, or as top-level JSON fields. The gateway deep-merges them into the upstream body. Supported parameters follow the model documentation.",
 			"extraBodyMultipartHint": "Transcriptions and image edits use multipart. Pass extra parameters as form fields, and JSON-encode objects. The gateway deep-merges them into the upstream body. Supported parameters follow the model documentation.",
 			"extraBodyProtected": "Reserved by the gateway: {fields}",

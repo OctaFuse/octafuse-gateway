@@ -44,7 +44,7 @@
    - `requiredUpstreamCapabilities`
    - `publicPath`
    - `roles`（是否参与请求入口 / 上游 operation 下拉）
-   - 如有能力损失，写 `lossyFeatures`
+   - `lossyFeatures` 只登记上游接口没有的能力。OpenAI 字段未映射、但上游有别的字段可传时，写 Admin 的 `adapterGuides`，不要放这里
    - OpenAI 入口的生图 / 音频转换适配器必须声明 `protectedUpstreamPaths`（可以是空数组）。`model` 由网关统一保留，不必再写。需要给路由页示例时填写 `extraBodyExample`；DashScope 语音合成若客户端无法设置 `input.*`，写 `extraBodyNote: 'dashscope_tts_input'`
 2. **拓扑派生**：确认 `ROUTE_ADAPTERS` 顺序与 `isRouteAdapterCompatible` 仍符合预期；跑 `packages/core` 的 `registry.test.ts` 与 `route-topology.test.ts`。
 3. **分发表**：若该适配器走 OpenAI 音频 / 多模态入口，在 `dispatch-table.ts` 增加实现，并保证一致性测试通过。
@@ -52,7 +52,7 @@
 5. **入口流水线**：
    - 文本类（Chat / Messages / Responses / Gemini）写一份 `ProxyEndpointSpec`，交给 `runProxyPipeline`。计费口径与脱敏写在同一 `accounting` 对象上（`describeOutcome` + `requestBodyForLog` / `upstreamWireBodyForLog`）。
    - 图 / 音频类先复用 `loadProxyRouteSurface` 与 `buildProxyFailoverOptions`；计费仍走 `recordImageUsage` / `recordAudioUsage`。把它们迁入同一 `AccountingEvent` + sink 是后续增量，本阶段不改口径。
-6. **管理后台文案**：在 `packages/admin/messages/*.json` 增加 `adapterNames.<id>`，以及如有需要的计费 / 能力损失提示。
+6. **管理后台文案**：在 `packages/admin/messages/*.json` 增加 `adapterNames.<id>`，以及 `routes.modal.adapterGuides.<id>` 的 `purpose` 与 `mapping`。上游没有的能力用 `lossyFeatureNames`。
 7. **文档**：更新 [route-topology.md](./route-topology.md) 的 operation 表，以及本页相关说明。
 
 不要同时改路由匹配语义、SSE 分帧、usage 计费口径与熔断分类。

@@ -1033,31 +1033,145 @@
 				"minimax-tts": "MiniMax 官方语音合成",
 				"minimax-image": "MiniMax 官方生图"
 			},
-			"adapterDescriptions": {
-				"passthrough": "原样转发，不改写请求和响应。对外与上游的协议、端点保持一致。",
-				"dashscope-asr-qwen-file": "OpenAI 转写（multipart）→ Qwen3-ASR 同步接口。适用 qwen3-asr-flash 等，不要用于 Qwen-Audio-3.0。",
-				"dashscope-asr-qwen-audio-file": "OpenAI 转写（multipart）→ Qwen-Audio-3.0 同步接口，language 会映射为 language_hints。适用 qwen-audio-3.0-asr-flash。",
-				"dashscope-asr-fun-file": "OpenAI 转写（multipart）→ Fun-ASR 同步接口。",
-				"dashscope-asr-file-async": "OpenAI 转写 + 公网 file_url → filetrans 异步提交并轮询结果。供应商需配置转写提交与任务查询两个端点。",
-				"dashscope-tts-speech": "OpenAI /v1/audio/speech → SpeechSynthesizer。适用 CosyVoice 与 Qwen-Audio-3.0-TTS；支持 mp3、opus、wav、pcm，语速 0.5–2.0。",
-				"dashscope-tts-qwen": "OpenAI /v1/audio/speech → Qwen-TTS 多模态接口。适用 qwen3-tts-flash 等，只返回 wav，不支持调语速。OpenAI instructions 会写入 input.instructions，仅 Instruct-Flash 系列生效。Qwen-Audio-3.0-TTS 请选「CosyVoice / Qwen-Audio-3.0 语音合成」。",
-				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax 多模态接口。支持 mp3、pcm、flac、wav。OpenAI instructions 不映射；情感写在路由请求参数 input.voice_setting.emotion。",
-				"dashscope-image-qwen": "OpenAI Images → 千问图像 multimodal-generation。size 需写像素尺寸（如 1024x1024）。",
-				"dashscope-image-wan": "OpenAI Images → 万相 2.7 multimodal-generation。",
-				"minimax-asr-file": "OpenAI 转写（multipart）→ MiniMax speech_to_text。供应商模型名填 asr-1.0。language 放到请求头；srt 和 vtt 由网关根据带时间戳的结果生成。",
-				"minimax-tts": "OpenAI /v1/audio/speech → MiniMax t2a_v2。供应商模型名填 speech-2.8-hd 或 speech-2.8-turbo。voice 必须是 MiniMax voice_id。支持 mp3、pcm、flac、wav，语速 0.5–2。stream_format=sse 会转成 OpenAI speech 事件。",
-				"minimax-image": "OpenAI /v1/images/generations → MiniMax image_generation。供应商模型名填 image-01 或 image-01-live。1024x1024 这类 size 会映射到最接近的 aspect_ratio。url 与 b64_json 都改写成 OpenAI data[]。"
+			"adapterGuides": {
+				"passthrough": {
+					"purpose": "请求和响应按上游原生格式转发，网关只替换 model。",
+					"mapping": []
+				},
+				"dashscope-asr-qwen-file": {
+					"purpose": "适用 qwen3-asr-flash 系列。不要用于 Qwen-Audio-3.0。",
+					"mapping": [
+						"language 写入 parameters.asr_options.language。",
+						"prompt 作为 system 消息。",
+						"音频转成 data URL，同步接口的 data URL 不超过 10MB。"
+					]
+				},
+				"dashscope-asr-qwen-audio-file": {
+					"purpose": "适用 qwen-audio-3.0-asr-flash。",
+					"mapping": [
+						"language 写入 parameters.language_hints。",
+						"prompt 作为 input_text。",
+						"format 从 MIME 或文件扩展名推断。"
+					]
+				},
+				"dashscope-asr-fun-file": {
+					"purpose": "适用 fun-asr-realtime 系列的非实时文件接口。",
+					"mapping": [
+						"language 和 prompt 会返回 400。",
+						"format 从 MIME 或文件扩展名推断。"
+					]
+				},
+				"dashscope-asr-file-async": {
+					"purpose": "适用 filetrans、fun-asr 与 paraformer 异步转写。供应商需配置提交和任务查询两个端点。",
+					"mapping": [
+						"必须传公网 file_url 表单字段（http、https 或 oss）。",
+						"prompt 写入 input.context。",
+						"language 写入 parameters.language_hints。",
+						"网关提交任务并轮询结果。"
+					]
+				},
+				"dashscope-tts-speech": {
+					"purpose": "适用 CosyVoice 与 Qwen-Audio-3.0-TTS。",
+					"mapping": [
+						"response_format 支持 mp3、opus、wav、pcm。",
+						"speed 取值 0.5–2，写入 input.rate。",
+						"instructions 写入 input.instruction。"
+					]
+				},
+				"dashscope-tts-qwen": {
+					"purpose": "适用 qwen3-tts-flash 等非实时模型。Qwen-Audio-3.0-TTS 请选 CosyVoice / Qwen-Audio-3.0 语音合成。",
+					"mapping": [
+						"只返回 wav，response_format 必须是 wav。",
+						"speed 必须为 1。",
+						"instructions 写入 input.instructions，仅 Instruct-Flash 系列生效。"
+					]
+				},
+				"dashscope-tts-minimax": {
+					"purpose": "适用百炼上的 minimax/speech-*。",
+					"mapping": [
+						"response_format 支持 mp3、pcm、flac、wav。",
+						"speed 写入 input.voice_setting.speed。",
+						"instructions 会返回 400。情感写在路由请求参数 input.voice_setting.emotion。"
+					]
+				},
+				"dashscope-image-qwen": {
+					"purpose": "适用 qwen-image 系列。",
+					"mapping": [
+						"size 只接受像素，1024x1024 会改写成 1024*1024。",
+						"n 取值 1–6。",
+						"image 作为参考图。",
+						"response_format=b64_json 时，网关下载图片并转成 base64。"
+					]
+				},
+				"dashscope-image-wan": {
+					"purpose": "适用 wan 图像系列。",
+					"mapping": [
+						"size 接受像素或 1K、2K、4K。",
+						"n 取值 1–4；缺省时网关显式写 1。"
+					]
+				},
+				"minimax-asr-file": {
+					"purpose": "供应商模型名填 asr-1.0。",
+					"mapping": [
+						"language 放到请求头。",
+						"srt 和 vtt 由网关根据带时间戳的结果生成。",
+						"prompt 和 temperature 会被丢弃。"
+					]
+				},
+				"minimax-tts": {
+					"purpose": "供应商模型名填 speech-2.8-hd 或 speech-2.8-turbo。",
+					"mapping": [
+						"voice 填写 MiniMax voice_id。",
+						"response_format 支持 mp3、pcm、flac、wav。opus 上游支持，当前入口还没有映射。",
+						"speed 取值 0.5–2。",
+						"stream_format=sse 转成 OpenAI speech 事件。",
+						"情感用 extra_body 传 voice_setting.emotion。"
+					]
+				},
+				"minimax-image": {
+					"purpose": "供应商模型名填 image-01 或 image-01-live。",
+					"mapping": [
+						"size（如 1024x1024）映射到最接近的 aspect_ratio。",
+						"n 取值 1–9。",
+						"url 与 b64_json 都改写成 OpenAI data[]。"
+					]
+				}
+			},
+			"guide": {
+				"title": "调用指南",
+				"call": "客户端调用",
+				"mapping": "字段映射",
+				"extra": "模型特有参数",
+				"sample": "调用示例",
+				"openRequest": "在请求参数里填写",
+				"passthrough": "请求按上游原生格式发送，网关只替换 model。",
+				"payload": {
+					"json": "JSON",
+					"multipart": "multipart"
+				},
+				"response": {
+					"json": "JSON",
+					"binary": "音频字节",
+					"sse": "SSE",
+					"job": "异步任务",
+					"websocket": "WebSocket"
+				},
+				"billing": {
+					"tokens": "按 token",
+					"per_image": "按张",
+					"per_second": "按秒",
+					"per_character": "按字符",
+					"per_call": "按次"
+				}
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "时间戳粒度（timestamp_granularities）",
 				"diarization": "说话人分离",
-				"inline_file_upload": "直接上传音频文件（需提供公网 file_url）",
-				"voice_instructions": "语气指令（instructions）",
 				"size_abbreviation": "1K/2K/4K 尺寸简写",
 				"background": "透明背景（background）",
 				"prompt": "提示词（prompt）",
 				"temperature": "采样温度（temperature）",
-				"response_format_opus_aac": "opus 与 aac",
+				"response_format_aac": "AAC 音频（response_format）",
 				"openai_speed_range": "0.5–2 以外的语速",
 				"quality": "质量档位（quality）"
 			},
@@ -1065,7 +1179,7 @@
 			"adapterFirstHint": "选择与当前供应商兼容的适配器。对外协议与上游协议字段会由注册表自动填入。",
 			"adapterUnavailable": "不可用",
 			"adapterMissingCapabilities": "供应商缺少所需端点：{capabilities}",
-			"adapterLossyFeatures": "已知不支持：{features}",
+			"adapterLossyFeatures": "上游接口不提供：{features}",
 			"extraBodyHint": "客户端可以用 OpenAI SDK 的 extra_body（或直接写在请求体顶层）按上游原生结构传入模型特有参数。网关会深度合并后发往上游，具体支持哪些参数以模型文档为准。",
 			"extraBodyMultipartHint": "转写和图片编辑使用 multipart。额外参数作为表单字段传入；对象请写成 JSON 字符串。网关会深度合并后发往上游，具体支持哪些参数以模型文档为准。",
 			"extraBodyProtected": "网关保留：{fields}",

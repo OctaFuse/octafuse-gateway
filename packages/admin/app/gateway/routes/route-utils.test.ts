@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import {
 	adapterOptionMappingSuffix,
+	buildOpenAiAdapterCallSample,
 	applyDashScopeAsrRoutePreset,
 	applyDashScopeImageRoutePreset,
 	applyDashScopeTtsRoutePreset,
@@ -40,7 +43,7 @@ import {
 	upstreamOperationsForProviderModel,
 	type RouteModelGroup,
 } from './route-utils';
-import { getAdapterByOptionKey } from '@octafuse/core/adapters/registry';
+import { getAdapterByOptionKey, listConversionAdapters } from '@octafuse/core/adapters/registry';
 import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
 import { resolveRouteEffectiveFactors } from '@octafuse/core/db/pricing-schedule';
 import { EMPTY_ROUTE_FORM } from './types';
@@ -1683,5 +1686,60 @@ describe('previewRouteBillingFactors', () => {
 			previewRouteBillingFactors({ ...factors, charged_factor: '1' }, { starts_at: 'invalid' }, now).charged,
 			null
 		);
+	});
+});
+
+describe('adapter call guide copy', () => {
+	for (const locale of ['zh', 'en', 'ja', 'ko']) {
+		it(`${locale} documents every OpenAI conversion adapter`, () => {
+			const messages = JSON.parse(
+				readFileSync(fileURLToPath(new URL(`../../../messages/${locale}.json`, import.meta.url)), 'utf8'),
+			) as {
+				routes: {
+					modal: {
+						adapterGuides: Record<string, { purpose?: string; mapping?: unknown }>;
+						lossyFeatureNames: Record<string, string>;
+					};
+				};
+			};
+			const guides = messages.routes.modal.adapterGuides;
+			assert.equal(typeof guides.passthrough?.purpose, 'string');
+			assert.ok(guides.passthrough.purpose);
+			for (const adapter of listConversionAdapters()) {
+				if (adapter.request.protocol !== 'openai') continue;
+				const guide = guides[adapter.id];
+				assert.ok(guide, `${locale} ${adapter.id}`);
+				assert.equal(typeof guide.purpose, 'string');
+				assert.ok(guide.purpose && guide.purpose.length > 0);
+				assert.ok(Array.isArray(guide.mapping) && guide.mapping.length > 0, adapter.id);
+				for (const feature of adapter.lossyFeatures ?? []) {
+					assert.equal(typeof messages.routes.modal.lossyFeatureNames[feature], 'string', feature);
+				}
+			}
+		});
+	}
+});
+
+describe('buildOpenAiAdapterCallSample', () => {
+	it('renders OpenAI SDK calls and skips passthrough', () => {
+		const wan = getAdapterByOptionKey('dashscope-image-wan');
+		const wanSample = buildOpenAiAdapterCallSample(wan!);
+		assert.match(wanSample ?? '', /client\.images\.generate\(/);
+		assert.match(wanSample ?? '', /extra_body=\{parameters: \{negative_prompt: "blurry", seed: 42\}\}/);
+
+		const image = getAdapterByOptionKey('minimax-image');
+		const imageSample = buildOpenAiAdapterCallSample(image!);
+		assert.match(imageSample ?? '', /prompt_optimizer: True/);
+		assert.match(imageSample ?? '', /aigc_watermark: False/);
+
+		const speech = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-tts-qwen')!);
+		assert.match(speech ?? '', /client\.audio\.speech\.create\(/);
+		assert.equal(speech?.includes('extra_body'), false);
+
+		const asr = buildOpenAiAdapterCallSample(getAdapterByOptionKey('minimax-asr-file')!);
+		assert.match(asr ?? '', /client\.audio\.transcriptions\.create\(/);
+		assert.match(asr ?? '', /timestamp_level: "sentence"/);
+
+		assert.equal(buildOpenAiAdapterCallSample(getAdapterByOptionKey('passthrough:openai:images.generations')!), null);
 	});
 });

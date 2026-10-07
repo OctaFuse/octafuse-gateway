@@ -2,9 +2,9 @@
 
 import { ArrowRightIcon, ComputerDesktopIcon, ServerIcon } from '@heroicons/react/24/outline';
 import { editorInputClass, editorLabelClass, RouteEditorSection } from './route-editor-ui';
+import { RouteAdapterGuide } from './route-adapter-guide';
 import { useTranslations, useLocale } from 'next-intl';
 import { liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
-import { displayedProtectedUpstreamPaths } from '@octafuse/core/upstream-extra-fields';
 import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@/lib/upstream-protocol';
 import {
 	adapterOptionMappingSuffix,
@@ -32,7 +32,9 @@ type Props = Pick<
 	| 'selectedModelIsAudio'
 	| 'allowedProtocolsForProvider'
 	| 'onFormChange'
->;
+> & {
+	onOpenRequestTab: () => void;
+};
 
 export function RouteMappingFields({
 	editingRoute,
@@ -46,6 +48,7 @@ export function RouteMappingFields({
 	selectedModelIsAudio,
 	allowedProtocolsForProvider,
 	onFormChange,
+	onOpenRequestTab,
 }: Props) {
 	const t = useTranslations('routes.modal');
 	const tFlow = useTranslations('routes.flow');
@@ -53,10 +56,8 @@ export function RouteMappingFields({
 	const locale = useLocale();
 	const adapterLabel = (adapter: string) =>
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
-	const adapterDescription = (adapter: string) =>
-		t.has(`adapterDescriptions.${adapter}`) ? t(`adapterDescriptions.${adapter}`) : null;
-	const lossyFeatureLabel = (feature: string) =>
-		t.has(`lossyFeatureNames.${feature}`) ? t(`lossyFeatureNames.${feature}`) : feature;
+	const adapterPurpose = (adapter: string) =>
+		t.has(`adapterGuides.${adapter}.purpose`) ? t(`adapterGuides.${adapter}.purpose`) : null;
 	// Image models keep the public request protocol as OpenAI; upstream may be openai or dashscope.
 	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
@@ -82,22 +83,6 @@ export function RouteMappingFields({
 	const selectedAdapterOption = adapterOptions.find(
 		(option) => option.descriptor.optionKey === selectedAdapterOptionKey
 	);
-	const extraBodyDescriptor = selectedAdapterOption?.descriptor;
-	const showExtraBodyHint = Boolean(
-		selectedProvider &&
-			extraBodyDescriptor &&
-			extraBodyDescriptor.request.protocol === 'openai' &&
-			(extraBodyDescriptor.modality === 'image' || extraBodyDescriptor.modality === 'audio'),
-	);
-	const extraBodyMultipart =
-		extraBodyDescriptor?.request.operation === 'audio.transcriptions' ||
-		extraBodyDescriptor?.request.operation === 'images.edits';
-	const extraBodyExample = extraBodyDescriptor?.extraBodyExample
-		? JSON.stringify(extraBodyDescriptor.extraBodyExample, null, 2)
-		: null;
-	const extraBodyProtected = displayedProtectedUpstreamPaths(
-		extraBodyDescriptor?.protectedUpstreamPaths,
-	).join(', ');
 	const providerModelNamed = formData.provider_model_name.trim().length > 0;
 	const visibleAdapterOptions = selectedProvider
 		? adapterOptions.filter((option) => {
@@ -531,7 +516,7 @@ export function RouteMappingFields({
 						<p className="mt-2 text-xs text-gray-500">
 							{!selectedProvider
 								? t('protocolHintSelectProvider')
-								: (adapterDescription(selectedAdapterOption?.descriptor.id ?? formData.adapter) ??
+								: (adapterPurpose(selectedAdapterOption?.descriptor.id ?? formData.adapter) ??
 									t('editor.adapterHint'))}
 						</p>
 						{selectedProvider && modelUnrecognized ? (
@@ -545,29 +530,6 @@ export function RouteMappingFields({
 									capabilities: selectedAdapterOption.missingCapabilities.join(', '),
 								})}
 							</p>
-						) : null}
-						{selectedProvider && selectedAdapterOption?.descriptor.lossyFeatures?.length ? (
-							<p className="mt-2 text-xs text-amber-700">
-								{t('adapterLossyFeatures', {
-									features: selectedAdapterOption.descriptor.lossyFeatures
-										.map(lossyFeatureLabel)
-										.join(', '),
-								})}
-							</p>
-						) : null}
-						{showExtraBodyHint ? (
-							<div className="mt-2 rounded-md bg-gray-50 p-2 text-xs text-gray-600">
-								<p>{extraBodyMultipart ? t('extraBodyMultipartHint') : t('extraBodyHint')}</p>
-								{extraBodyExample ? (
-									<pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-[11px] text-gray-700">
-										{extraBodyExample}
-									</pre>
-								) : null}
-								<p className="mt-2">{t('extraBodyProtected', { fields: extraBodyProtected })}</p>
-								{extraBodyDescriptor?.extraBodyNote === 'dashscope_tts_input' ? (
-									<p className="mt-2">{t('extraBodyInputLimit')}</p>
-								) : null}
-							</div>
 						) : null}
 					</div>
 					<div>
@@ -624,6 +586,12 @@ export function RouteMappingFields({
 						</div>
 					</div>
 				</div>
+				{selectedProvider && selectedAdapterOption ? (
+					<RouteAdapterGuide
+						descriptor={selectedAdapterOption.descriptor}
+						onOpenRequestTab={onOpenRequestTab}
+					/>
+				) : null}
 			</RouteEditorSection>
 		</div>
 	);

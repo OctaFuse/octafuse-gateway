@@ -74,6 +74,10 @@ export interface AdapterDescriptor {
 	/** 参与 Admin 的 request / upstream operation 下拉推导。 */
 	roles: readonly AdapterSurfaceRole[];
 	presetIntent?: AdapterPresetIntent;
+	/**
+	 * 上游接口没有的能力。只登记模型官方文档确认不存在的项。
+	 * OpenAI 字段未映射、但上游有别的字段可传的，写进 Admin 的 adapterGuides，不要放这里。
+	 */
 	lossyFeatures?: readonly string[];
 	/**
 	 * 合并客户端额外字段后必须恢复的上游路径。`model` 由网关统一恢复，不必写入。
@@ -215,7 +219,6 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/transcriptions',
 		roles: ['upstream'],
 		presetIntent: 'dashscope-asr-filetrans',
-		lossyFeatures: ['inline_file_upload'],
 		protectedUpstreamPaths: ['input.file_urls'],
 	},
 	{
@@ -270,7 +273,6 @@ const CONVERSION_ADAPTERS = [
 		requiredUpstreamCapabilities: ['audio.speech.multimodal'],
 		publicPath: '/v1/audio/speech',
 		roles: [],
-		lossyFeatures: ['voice_instructions'],
 		protectedUpstreamPaths: ['input.audio_setting.format', 'input.stream_options'],
 		extraBodyNote: 'dashscope_tts_input',
 	},
@@ -347,7 +349,7 @@ const CONVERSION_ADAPTERS = [
 		requiredUpstreamCapabilities: ['audio.speech'],
 		publicPath: '/v1/audio/speech',
 		roles: ['upstream'],
-		lossyFeatures: ['voice_instructions', 'response_format_opus_aac', 'openai_speed_range'],
+		lossyFeatures: ['response_format_aac', 'openai_speed_range'],
 		protectedUpstreamPaths: ['stream', 'stream_options', 'output_format', 'audio_setting.format'],
 		extraBodyExample: { voice_setting: { emotion: 'happy' }, language_boost: 'Chinese' },
 	},

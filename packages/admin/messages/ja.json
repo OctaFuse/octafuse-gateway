@@ -1033,31 +1033,145 @@
 				"minimax-tts": "MiniMax 公式音声合成",
 				"minimax-image": "MiniMax 公式画像生成"
 			},
-			"adapterDescriptions": {
-				"passthrough": "リクエストとレスポンスをそのまま転送します。クライアントと上流のプロトコル・オペレーションは一致させます。",
-				"dashscope-asr-qwen-file": "OpenAI 文字起こし（multipart）→ Qwen3-ASR 同期 API。qwen3-asr-flash などで使用し、Qwen-Audio-3.0 には使いません。",
-				"dashscope-asr-qwen-audio-file": "OpenAI 文字起こし（multipart）→ Qwen-Audio-3.0 同期 API。language は language_hints に変換されます。qwen-audio-3.0-asr-flash 用。",
-				"dashscope-asr-fun-file": "OpenAI 文字起こし（multipart）→ Fun-ASR 同期 API。",
-				"dashscope-asr-file-async": "OpenAI 文字起こし + 公開 file_url → filetrans 非同期送信とポーリング。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
-				"dashscope-tts-speech": "OpenAI /v1/audio/speech → SpeechSynthesizer。CosyVoice と Qwen-Audio-3.0-TTS 用。mp3・opus・wav・pcm、速度 0.5–2.0 に対応。",
-				"dashscope-tts-qwen": "OpenAI /v1/audio/speech → Qwen-TTS マルチモーダル API。qwen3-tts-flash など用。wav のみで速度は指定できません。OpenAI instructions は input.instructions に書き込まれ、Instruct-Flash 系列でのみ有効です。Qwen-Audio-3.0-TTS には CosyVoice / Qwen-Audio-3.0 TTS を選んでください。",
-				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax マルチモーダル API。mp3・pcm・flac・wav に対応。OpenAI instructions は変換しません。感情はルートのリクエストパラメータ input.voice_setting.emotion に書いてください。",
-				"dashscope-image-qwen": "OpenAI Images → Qwen Image multimodal-generation。size はピクセル指定（1024x1024 など）が必要です。",
-				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation。",
-				"minimax-asr-file": "OpenAI 文字起こし（multipart）→ MiniMax speech_to_text。プロバイダーモデル名は asr-1.0 です。language はリクエストヘッダーに入り、srt と vtt はタイムスタンプ付き結果からゲートウェイが生成します。",
-				"minimax-tts": "OpenAI /v1/audio/speech → MiniMax t2a_v2。プロバイダーモデル名は speech-2.8-hd または speech-2.8-turbo。voice は MiniMax の voice_id。mp3・pcm・flac・wav、速度 0.5–2。stream_format=sse は OpenAI speech イベントになります。",
-				"minimax-image": "OpenAI /v1/images/generations → MiniMax image_generation。プロバイダーモデル名は image-01 または image-01-live。1024x1024 などの size は最も近い aspect_ratio に変換します。"
+			"adapterGuides": {
+				"passthrough": {
+					"purpose": "リクエストとレスポンスは上流の形式のまま転送し、ゲートウェイは model だけを置き換えます。",
+					"mapping": []
+				},
+				"dashscope-asr-qwen-file": {
+					"purpose": "qwen3-asr-flash 系列用。Qwen-Audio-3.0 には使いません。",
+					"mapping": [
+						"language は parameters.asr_options.language に書き込まれます。",
+						"prompt は system メッセージになります。",
+						"音声は data URL に変換されます。同期 API の data URL は 10MB までです。"
+					]
+				},
+				"dashscope-asr-qwen-audio-file": {
+					"purpose": "qwen-audio-3.0-asr-flash 用。",
+					"mapping": [
+						"language は parameters.language_hints に書き込まれます。",
+						"prompt は input_text になります。",
+						"format は MIME または拡張子から推定します。"
+					]
+				},
+				"dashscope-asr-fun-file": {
+					"purpose": "fun-asr-realtime 系列の非リアルタイムファイル API 用。",
+					"mapping": [
+						"language と prompt は 400 を返します。",
+						"format は MIME または拡張子から推定します。"
+					]
+				},
+				"dashscope-asr-file-async": {
+					"purpose": "filetrans、fun-asr、paraformer の非同期文字起こし用。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
+					"mapping": [
+						"公開 file_url フォーム項目が必須です（http、https、oss）。",
+						"prompt は input.context に書き込まれます。",
+						"language は parameters.language_hints に書き込まれます。",
+						"ゲートウェイがタスクを送信し、結果をポーリングします。"
+					]
+				},
+				"dashscope-tts-speech": {
+					"purpose": "CosyVoice と Qwen-Audio-3.0-TTS 用。",
+					"mapping": [
+						"response_format は mp3、opus、wav、pcm に対応します。",
+						"speed は 0.5–2 で、input.rate に書き込まれます。",
+						"instructions は input.instruction に書き込まれます。"
+					]
+				},
+				"dashscope-tts-qwen": {
+					"purpose": "qwen3-tts-flash などの非リアルタイムモデル用。Qwen-Audio-3.0-TTS には CosyVoice / Qwen-Audio-3.0 TTS を選んでください。",
+					"mapping": [
+						"wav のみを返すため、response_format は wav である必要があります。",
+						"speed は 1 である必要があります。",
+						"instructions は input.instructions に書き込まれ、Instruct-Flash 系列でのみ有効です。"
+					]
+				},
+				"dashscope-tts-minimax": {
+					"purpose": "百煉上の minimax/speech-* 用。",
+					"mapping": [
+						"response_format は mp3、pcm、flac、wav に対応します。",
+						"speed は input.voice_setting.speed に書き込まれます。",
+						"instructions は 400 を返します。感情はルートのリクエストパラメータ input.voice_setting.emotion に書いてください。"
+					]
+				},
+				"dashscope-image-qwen": {
+					"purpose": "qwen-image 系列用。",
+					"mapping": [
+						"size はピクセルのみです。1024x1024 は 1024*1024 に書き換えられます。",
+						"n は 1–6 です。",
+						"image は参照画像です。",
+						"response_format=b64_json のとき、ゲートウェイが画像をダウンロードして base64 に変換します。"
+					]
+				},
+				"dashscope-image-wan": {
+					"purpose": "Wan 画像系列用。",
+					"mapping": [
+						"size はピクセル、または 1K、2K、4K を受け付けます。",
+						"n は 1–4 です。省略時はゲートウェイが 1 を明示的に送ります。"
+					]
+				},
+				"minimax-asr-file": {
+					"purpose": "プロバイダーモデル名は asr-1.0 です。",
+					"mapping": [
+						"language はリクエストヘッダーに入ります。",
+						"srt と vtt はタイムスタンプ付き結果からゲートウェイが生成します。",
+						"prompt と temperature は破棄されます。"
+					]
+				},
+				"minimax-tts": {
+					"purpose": "プロバイダーモデル名は speech-2.8-hd または speech-2.8-turbo です。",
+					"mapping": [
+						"voice は MiniMax の voice_id です。",
+						"response_format は mp3、pcm、flac、wav に対応します。上流は opus に対応していますが、この入口はまだ変換しません。",
+						"speed は 0.5–2 です。",
+						"stream_format=sse は OpenAI speech イベントになります。",
+						"感情は extra_body の voice_setting.emotion で渡します。"
+					]
+				},
+				"minimax-image": {
+					"purpose": "プロバイダーモデル名は image-01 または image-01-live です。",
+					"mapping": [
+						"size（1024x1024 など）は最も近い aspect_ratio に変換されます。",
+						"n は 1–9 です。",
+						"url と b64_json はどちらも OpenAI の data[] に書き換えられます。"
+					]
+				}
+			},
+			"guide": {
+				"title": "呼び出しガイド",
+				"call": "クライアント呼び出し",
+				"mapping": "フィールド変換",
+				"extra": "モデル固有パラメータ",
+				"sample": "呼び出し例",
+				"openRequest": "リクエストパラメータで記入",
+				"passthrough": "リクエストは上流のネイティブ形式で送ります。ゲートウェイは model だけを置き換えます。",
+				"payload": {
+					"json": "JSON",
+					"multipart": "multipart"
+				},
+				"response": {
+					"json": "JSON",
+					"binary": "音声バイト",
+					"sse": "SSE",
+					"job": "非同期タスク",
+					"websocket": "WebSocket"
+				},
+				"billing": {
+					"tokens": "トークン課金",
+					"per_image": "枚数課金",
+					"per_second": "秒課金",
+					"per_character": "文字課金",
+					"per_call": "コール課金"
+				}
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "タイムスタンプ粒度（timestamp_granularities）",
 				"diarization": "話者分離",
-				"inline_file_upload": "音声ファイルの直接アップロード（公開 file_url が必要）",
-				"voice_instructions": "話し方の指示（instructions）",
 				"size_abbreviation": "1K/2K/4K のサイズ省略表記",
 				"background": "透過背景（background）",
 				"prompt": "プロンプト（prompt）",
 				"temperature": "サンプリング温度（temperature）",
-				"response_format_opus_aac": "opus と aac",
+				"response_format_aac": "AAC 音声（response_format）",
 				"openai_speed_range": "0.5–2 の範囲外の速度",
 				"quality": "品質（quality）"
 			},
@@ -1065,7 +1179,7 @@
 			"adapterFirstHint": "現在の Provider と互換のアダプターを選択します。公開プロトコルと上流プロトコルはレジストリから自動入力されます。",
 			"adapterUnavailable": "利用不可",
 			"adapterMissingCapabilities": "プロバイダーに必要なエンドポイントがありません: {capabilities}",
-			"adapterLossyFeatures": "未対応の機能: {features}",
+			"adapterLossyFeatures": "上流 API では提供されません: {features}",
 			"extraBodyHint": "クライアントは OpenAI SDK の extra_body、またはリクエスト本体のトップレベル項目で、上流のネイティブ構造のままモデル固有パラメータを渡せます。ゲートウェイは深いマージ後に上流へ送ります。対応パラメータはモデルのドキュメントに従ってください。",
 			"extraBodyMultipartHint": "文字起こしと画像編集は multipart です。追加パラメータはフォーム項目として渡し、オブジェクトは JSON 文字列にしてください。ゲートウェイは深いマージ後に上流へ送ります。対応パラメータはモデルのドキュメントに従ってください。",
 			"extraBodyProtected": "ゲートウェイが保持: {fields}",

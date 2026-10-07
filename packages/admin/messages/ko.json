@@ -1033,31 +1033,145 @@
 				"minimax-tts": "MiniMax 공식 음성 합성",
 				"minimax-image": "MiniMax 공식 이미지 생성"
 			},
-			"adapterDescriptions": {
-				"passthrough": "요청과 응답을 그대로 전달합니다. 클라이언트와 업스트림의 프로토콜·작업이 같아야 합니다.",
-				"dashscope-asr-qwen-file": "OpenAI 전사(multipart) → Qwen3-ASR 동기 API. qwen3-asr-flash 등에 사용하며 Qwen-Audio-3.0에는 사용하지 마세요.",
-				"dashscope-asr-qwen-audio-file": "OpenAI 전사(multipart) → Qwen-Audio-3.0 동기 API. language는 language_hints로 변환됩니다. qwen-audio-3.0-asr-flash용.",
-				"dashscope-asr-fun-file": "OpenAI 전사(multipart) → Fun-ASR 동기 API.",
-				"dashscope-asr-file-async": "OpenAI 전사 + 공개 file_url → filetrans 비동기 제출 및 폴링. 공급자에 제출과 작업 조회 엔드포인트가 모두 필요합니다.",
-				"dashscope-tts-speech": "OpenAI /v1/audio/speech → SpeechSynthesizer. CosyVoice와 Qwen-Audio-3.0-TTS용. mp3·opus·wav·pcm, 속도 0.5–2.0 지원.",
-				"dashscope-tts-qwen": "OpenAI /v1/audio/speech → Qwen-TTS 멀티모달 API. qwen3-tts-flash 등용. wav만 반환하며 속도 조절을 지원하지 않습니다. OpenAI instructions는 input.instructions로 전달되며 Instruct-Flash 시리즈에서만 적용됩니다. Qwen-Audio-3.0-TTS는 CosyVoice / Qwen-Audio-3.0 TTS를 선택하세요.",
-				"dashscope-tts-minimax": "OpenAI /v1/audio/speech → MiniMax 멀티모달 API. mp3·pcm·flac·wav를 지원합니다. OpenAI instructions는 매핑하지 않습니다. 감정은 라우트 요청 매개변수의 input.voice_setting.emotion에 넣으세요.",
-				"dashscope-image-qwen": "OpenAI Images → Qwen Image multimodal-generation. size는 픽셀 단위(예: 1024x1024)로 입력해야 합니다.",
-				"dashscope-image-wan": "OpenAI Images → Wan 2.7 multimodal-generation.",
-				"minimax-asr-file": "OpenAI 전사(multipart) → MiniMax speech_to_text. 공급자 모델 이름은 asr-1.0 입니다. language 는 요청 헤더로 가고, srt 와 vtt 는 타임스탬프 결과로 게이트웨이가 만듭니다.",
-				"minimax-tts": "OpenAI /v1/audio/speech → MiniMax t2a_v2. 공급자 모델 이름은 speech-2.8-hd 또는 speech-2.8-turbo 입니다. voice 는 MiniMax voice_id 여야 합니다. mp3·pcm·flac·wav, 속도 0.5–2. stream_format=sse 는 OpenAI speech 이벤트로 바뀝니다.",
-				"minimax-image": "OpenAI /v1/images/generations → MiniMax image_generation. 공급자 모델 이름은 image-01 또는 image-01-live 입니다. 1024x1024 같은 size 는 가장 가까운 aspect_ratio 로 바뀝니다."
+			"adapterGuides": {
+				"passthrough": {
+					"purpose": "요청과 응답은 업스트림 형식으로 전달하고, 게이트웨이는 model만 바꿉니다.",
+					"mapping": []
+				},
+				"dashscope-asr-qwen-file": {
+					"purpose": "qwen3-asr-flash 계열용입니다. Qwen-Audio-3.0에는 사용하지 마세요.",
+					"mapping": [
+						"language는 parameters.asr_options.language에 씁니다.",
+						"prompt는 system 메시지로 보냅니다.",
+						"오디오는 data URL로 바꿉니다. 동기 API의 data URL은 10MB까지입니다."
+					]
+				},
+				"dashscope-asr-qwen-audio-file": {
+					"purpose": "qwen-audio-3.0-asr-flash용입니다.",
+					"mapping": [
+						"language는 parameters.language_hints에 씁니다.",
+						"prompt는 input_text로 보냅니다.",
+						"format은 MIME 또는 파일 확장자에서 추론합니다."
+					]
+				},
+				"dashscope-asr-fun-file": {
+					"purpose": "fun-asr-realtime 계열의 비실시간 파일 API용입니다.",
+					"mapping": [
+						"language와 prompt는 400을 반환합니다.",
+						"format은 MIME 또는 파일 확장자에서 추론합니다."
+					]
+				},
+				"dashscope-asr-file-async": {
+					"purpose": "filetrans, fun-asr, paraformer 비동기 전사용입니다. 공급자에 제출과 작업 조회 엔드포인트가 모두 필요합니다.",
+					"mapping": [
+						"공개 file_url 폼 필드가 필요합니다(http, https 또는 oss).",
+						"prompt는 input.context에 씁니다.",
+						"language는 parameters.language_hints에 씁니다.",
+						"게이트웨이가 작업을 제출하고 결과를 폴링합니다."
+					]
+				},
+				"dashscope-tts-speech": {
+					"purpose": "CosyVoice와 Qwen-Audio-3.0-TTS용입니다.",
+					"mapping": [
+						"response_format은 mp3, opus, wav, pcm을 지원합니다.",
+						"speed는 0.5–2이며 input.rate에 씁니다.",
+						"instructions는 input.instruction에 씁니다."
+					]
+				},
+				"dashscope-tts-qwen": {
+					"purpose": "qwen3-tts-flash 같은 비실시간 모델용입니다. Qwen-Audio-3.0-TTS는 CosyVoice / Qwen-Audio-3.0 TTS를 선택하세요.",
+					"mapping": [
+						"wav만 반환하므로 response_format은 wav여야 합니다.",
+						"speed는 1이어야 합니다.",
+						"instructions는 input.instructions에 쓰이며 Instruct-Flash 시리즈에서만 적용됩니다."
+					]
+				},
+				"dashscope-tts-minimax": {
+					"purpose": "알리바바 클라우드의 minimax/speech-*용입니다.",
+					"mapping": [
+						"response_format은 mp3, pcm, flac, wav를 지원합니다.",
+						"speed는 input.voice_setting.speed에 씁니다.",
+						"instructions는 400을 반환합니다. 감정은 라우트 요청 매개변수의 input.voice_setting.emotion에 넣으세요."
+					]
+				},
+				"dashscope-image-qwen": {
+					"purpose": "qwen-image 계열용입니다.",
+					"mapping": [
+						"size는 픽셀만 받습니다. 1024x1024는 1024*1024로 바뀝니다.",
+						"n은 1–6입니다.",
+						"image는 참조 이미지입니다.",
+						"response_format=b64_json이면 게이트웨이가 이미지를 내려받아 base64로 바꿉니다."
+					]
+				},
+				"dashscope-image-wan": {
+					"purpose": "Wan 이미지 계열용입니다.",
+					"mapping": [
+						"size는 픽셀 또는 1K, 2K, 4K를 받습니다.",
+						"n은 1–4입니다. 생략하면 게이트웨이가 1을 명시적으로 보냅니다."
+					]
+				},
+				"minimax-asr-file": {
+					"purpose": "공급자 모델 이름은 asr-1.0입니다.",
+					"mapping": [
+						"language는 요청 헤더로 보냅니다.",
+						"srt와 vtt는 타임스탬프 결과로 게이트웨이가 만듭니다.",
+						"prompt와 temperature는 버려집니다."
+					]
+				},
+				"minimax-tts": {
+					"purpose": "공급자 모델 이름은 speech-2.8-hd 또는 speech-2.8-turbo입니다.",
+					"mapping": [
+						"voice는 MiniMax voice_id입니다.",
+						"response_format은 mp3, pcm, flac, wav를 지원합니다. 업스트림은 opus를 지원하지만 이 입구는 아직 매핑하지 않습니다.",
+						"speed는 0.5–2입니다.",
+						"stream_format=sse는 OpenAI speech 이벤트로 바뀝니다.",
+						"감정은 extra_body의 voice_setting.emotion으로 전달합니다."
+					]
+				},
+				"minimax-image": {
+					"purpose": "공급자 모델 이름은 image-01 또는 image-01-live입니다.",
+					"mapping": [
+						"size(예: 1024x1024)는 가장 가까운 aspect_ratio로 바뀝니다.",
+						"n은 1–9입니다.",
+						"url과 b64_json은 모두 OpenAI data[]로 다시 씁니다."
+					]
+				}
+			},
+			"guide": {
+				"title": "호출 안내",
+				"call": "클라이언트 호출",
+				"mapping": "필드 매핑",
+				"extra": "모델별 매개변수",
+				"sample": "호출 예시",
+				"openRequest": "요청 매개변수에서 작성",
+				"passthrough": "요청은 업스트림 원본 형식으로 보냅니다. 게이트웨이는 model만 바꿉니다.",
+				"payload": {
+					"json": "JSON",
+					"multipart": "multipart"
+				},
+				"response": {
+					"json": "JSON",
+					"binary": "오디오 바이트",
+					"sse": "SSE",
+					"job": "비동기 작업",
+					"websocket": "WebSocket"
+				},
+				"billing": {
+					"tokens": "토큰당",
+					"per_image": "장당",
+					"per_second": "초당",
+					"per_character": "문자당",
+					"per_call": "호출당"
+				}
 			},
 			"lossyFeatureNames": {
 				"timestamp_granularities": "타임스탬프 단위(timestamp_granularities)",
 				"diarization": "화자 분리",
-				"inline_file_upload": "오디오 파일 직접 업로드(공개 file_url 필요)",
-				"voice_instructions": "말투 지시(instructions)",
 				"size_abbreviation": "1K/2K/4K 크기 약어",
 				"background": "투명 배경(background)",
 				"prompt": "프롬프트(prompt)",
 				"temperature": "샘플링 온도(temperature)",
-				"response_format_opus_aac": "opus 와 aac",
+				"response_format_aac": "AAC 오디오 (response_format)",
 				"openai_speed_range": "0.5–2 밖의 속도",
 				"quality": "품질(quality)"
 			},
@@ -1065,7 +1179,7 @@
 			"adapterFirstHint": "현재 Provider와 호환되는 어댑터를 선택하세요. 공개/업스트림 프로토콜 필드는 레지스트리에서 채워집니다.",
 			"adapterUnavailable": "사용 불가",
 			"adapterMissingCapabilities": "공급자에 필요한 엔드포인트가 없습니다: {capabilities}",
-			"adapterLossyFeatures": "지원하지 않는 기능: {features}",
+			"adapterLossyFeatures": "업스트림 API에서 제공하지 않음: {features}",
 			"extraBodyHint": "클라이언트는 OpenAI SDK의 extra_body 또는 요청 본문 최상위 필드로, 업스트림 원본 구조의 모델별 파라미터를 전달할 수 있습니다. 게이트웨이가 깊이 병합한 뒤 업스트림으로 보냅니다. 지원 파라미터는 모델 문서를 따르세요.",
 			"extraBodyMultipartHint": "받아쓰기와 이미지 편집은 multipart입니다. 추가 파라미터는 폼 필드로 전달하고, 객체는 JSON 문자열로 넣으세요. 게이트웨이가 깊이 병합한 뒤 업스트림으로 보냅니다. 지원 파라미터는 모델 문서를 따르세요.",
 			"extraBodyProtected": "게이트웨이 예약: {fields}",

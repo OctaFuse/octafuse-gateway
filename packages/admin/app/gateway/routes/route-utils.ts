@@ -32,6 +32,7 @@ import {
 	ROUTE_ADAPTERS,
 } from '@octafuse/core/route-topology';
 import {
+	PASSTHROUGH_ROUTE_ADAPTER,
 	adaptersForModelKind,
 	getAdapterByOptionKey,
 	getAdapterByPresetIntent,
@@ -1141,6 +1142,41 @@ export function applyAdapterOptionToForm(formData: RouteFormData, optionKey: str
 	const descriptor = getAdapterByOptionKey(optionKey);
 	if (!descriptor) return formData;
 	return applyAdapterDescriptorToForm(formData, descriptor);
+}
+
+function formatPythonLiteral(value: unknown): string {
+	if (value === null) return 'None';
+	if (typeof value === 'boolean') return value ? 'True' : 'False';
+	if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'None';
+	if (typeof value === 'string') return JSON.stringify(value);
+	if (Array.isArray(value)) return `[${value.map((item) => formatPythonLiteral(item)).join(', ')}]`;
+	if (value != null && typeof value === 'object') {
+		const entries = Object.entries(value as Record<string, unknown>).map(([key, item]) => {
+			const renderedKey = /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? key : JSON.stringify(key);
+			return `${renderedKey}: ${formatPythonLiteral(item)}`;
+		});
+		return `{${entries.join(', ')}}`;
+	}
+	return 'None';
+}
+
+/** OpenAI 转换适配器的 Python SDK 调用示例。透传和非 OpenAI 入口返回 null。 */
+export function buildOpenAiAdapterCallSample(
+	descriptor: Pick<AdapterDescriptor, 'id' | 'request' | 'extraBodyExample'>,
+): string | null {
+	if (descriptor.id === PASSTHROUGH_ROUTE_ADAPTER || descriptor.request.protocol !== 'openai') return null;
+	const extra = descriptor.extraBodyExample ? formatPythonLiteral(descriptor.extraBodyExample) : null;
+	const extraLine = extra ? `,\n    extra_body=${extra}` : '';
+	if (descriptor.request.operation === 'images.generations') {
+		return `client.images.generate(\n    model="your-model",\n    prompt="a red apple"${extraLine},\n)`;
+	}
+	if (descriptor.request.operation === 'audio.speech') {
+		return `client.audio.speech.create(\n    model="your-model",\n    input="Hello",\n    voice="alloy"${extraLine},\n)`;
+	}
+	if (descriptor.request.operation === 'audio.transcriptions') {
+		return `client.audio.transcriptions.create(\n    model="your-model",\n    file=open("audio.mp3", "rb")${extraLine},\n)`;
+	}
+	return null;
 }
 
 /** 下拉项后缀：透传只标 request；转换标 request → upstream。 */

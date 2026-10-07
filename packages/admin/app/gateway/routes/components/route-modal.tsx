@@ -301,7 +301,7 @@ function RouteModalContent(props: RouteModalProps) {
 							tabIndex={0}
 							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 						>
-							<RouteMappingFields {...editorProps} />
+							<RouteMappingFields {...editorProps} onOpenRequestTab={() => selectTab('request', true)} />
 							<div className="mt-4 grid gap-x-6 gap-y-1 sm:grid-cols-2">
 								{(['request', 'pricing'] as const).map((id) => (
 									<button
