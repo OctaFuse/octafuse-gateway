@@ -1104,7 +1104,7 @@
 				"dashscope-image-qwen": {
 					"purpose": "qwen-image 系列用。",
 					"mapping": [
-						"size はピクセルのみです。1024x1024 は 1024*1024 に書き換えられます。",
+						"size はそのまま parameters.size に入ります。Qwen は 幅*高さ または auto です。",
 						"n は 1–6 です。",
 						"image は参照画像です。",
 						"response_format=b64_json のとき、ゲートウェイが画像をダウンロードして base64 に変換します。"
@@ -1113,7 +1113,7 @@
 				"dashscope-image-wan": {
 					"purpose": "Wan 画像系列用。",
 					"mapping": [
-						"size はピクセル、または 1K、2K、4K を受け付けます。",
+						"size はそのまま parameters.size に入ります。Wan は 1K、2K、4K、または 幅*高さ です。",
 						"n は 1–4 です。省略時はゲートウェイが 1 を明示的に送ります。"
 					]
 				},
@@ -1138,7 +1138,7 @@
 				"minimax-image": {
 					"purpose": "プロバイダーモデル名は image-01 または image-01-live です。",
 					"mapping": [
-						"size（1024x1024 など）は最も近い aspect_ratio に変換されます。",
+						"size は転送しません。aspect_ratio、または width と height を送ってください。",
 						"n は 1–9 です。",
 						"url と b64_json はどちらも OpenAI の data[] に書き換えられます。"
 					]
@@ -1147,7 +1147,7 @@
 					"purpose": "OpenAI SDK の POST /v1/images/generations を火山方舟の画像生成に変換します。プロバイダーモデル名は doubao-seedream、dola-seedream、seedream です。",
 					"mapping": [
 						"n=1 は単一画像を生成します。n が 2–15 のときは組図を有効にし、max_images を n にします。実際の枚数は少なくなることがあり、成功枚数で課金します。5.0 pro / flash は組図非対応のため n は 1 のみです。",
-						"size はそのまま転送し、auto は Ark の既定値に任せます。5.0 pro / flash は 1K / 1.5K / 2K、5.0 lite / 4.5 は 369 万ピクセル以上が必要で 1024x1024 は拒否されます。迷ったら 2K を使います。",
+						"size は auto を含めてそのまま転送します。5.0 pro / flash は 1K / 1.5K / 2K、5.0 lite / 4.5 は 369 万ピクセル以上が必要で 1024x1024 は拒否されます。",
 						"background は transparent / opaque のみ転送し、5.0 pro / flash の画像入力生成でのみ使えます。output_format は png / jpeg、response_format は url と b64_json のみです。",
 						"参照画像は image に置きます。Ark は既定で透かしを入れるため、不要なら watermark: false を送ります。quality は転送しません。",
 						"JSON のみで、data[] には Ark の size とレイヤー項目が残ります。ストリームは火山方舟のネイティブ透過を使います。"
@@ -1586,7 +1586,7 @@
 		"imageMiniMaxPassthroughHint": "ネイティブ透過：JSON は image_generation へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換え、data.image_urls または data.image_base64 をプレビューします。課金もリクエストログもありません。",
 		"imageVolcenginePassthroughHint": "ネイティブ透過：JSON は Ark の POST /images/generations へそのまま転送されます。stream を true にすると SSE になります。Playground は model をルートのプロバイダーモデル名に置き換えます。課金もリクエストログもありません。",
 		"imageVolcengineOpenAiHint": "OpenAI の画像 JSON を方舟の画像生成に変換します。n が 2–15 のときは組図として送ります。JSON のみです。ストリームはネイティブ透過を使います。Playground は返ってきた画像をプレビューします。課金もリクエストログもありません。",
-		"imageMiniMaxOpenAiHint": "OpenAI 画像 JSON は MiniMax image_generation に変換されます。size は最も近い aspect_ratio に揃えます。Playground は返された画像をプレビューします。課金もリクエストログもありません。",
+		"imageMiniMaxOpenAiHint": "OpenAI 画像 JSON は MiniMax image_generation に変換されます。aspect_ratio を送ってください。size は転送しません。Playground は返された画像をプレビューします。課金もリクエストログもありません。",
 		"imageOperation": "画像操作",
 		"imageGenerationsHint": "画像モデル：リクエスト Body は images/generations の項目（prompt、n、size、quality）を使用します。課金もリクエストログもありません。",
 		"imageEditsHint": "画像編集：JSON 項目（prompt、n、size、quality）と以下の参照画像を使用します。ファイルは multipart でアップストリームの edits エンドポイントに送信されます。課金もリクエストログもありません。",

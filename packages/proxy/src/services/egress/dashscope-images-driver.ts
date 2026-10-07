@@ -30,8 +30,6 @@ export type DashScopeImagesDispatchOptions = {
 
 export type DashScopeImageFamily = 'qwen' | 'wan';
 
-const QWEN_SIZE_ABBREVIATION = /^(1k|2k|4k)$/i;
-const PIXEL_SIZE = /^(\d+)[xX*](\d+)$/;
 const QWEN_OUTPUT_2K_PIXELS = 2_250_000;
 
 const PARAMETER_KEYS = [
@@ -107,12 +105,6 @@ function collectReferenceImages(image: unknown): string[] {
 		.map((item) => item.trim());
 }
 
-/** OpenAI Images uses `1024x1024`; DashScope multimodal requires `1024*1024`. */
-function normalizeDashScopeSize(size: string): string {
-	const pixel = PIXEL_SIZE.exec(size);
-	return pixel ? `${pixel[1]}*${pixel[2]}` : size;
-}
-
 function pickParameters(source: Record<string, unknown>): Record<string, unknown> {
 	const parameters: Record<string, unknown> = {};
 	for (const key of PARAMETER_KEYS) {
@@ -124,7 +116,7 @@ function pickParameters(source: Record<string, unknown>): Record<string, unknown
 }
 
 export function composeDashScopeImageBody(
-	family: DashScopeImageFamily,
+	_family: DashScopeImageFamily,
 	route: RouteResult,
 	body: Record<string, unknown>,
 ): { body: Record<string, unknown>; restoredPaths: string[] } {
@@ -136,13 +128,7 @@ export function composeDashScopeImageBody(
 		throw new DashScopeImageClientError('prompt is required');
 	}
 	const n = resolveImageCount(source.n);
-	const rawSize = asOptString(source.size);
-	if (family === 'qwen' && rawSize && QWEN_SIZE_ABBREVIATION.test(rawSize)) {
-		throw new DashScopeImageClientError(
-			'qwen-image size must be a pixel string like 1024*1024, not 1K/2K/4K'
-		);
-	}
-	const size = rawSize ? normalizeDashScopeSize(rawSize) : undefined;
+	const size = asOptString(source.size);
 
 	const content: Array<Record<string, string>> = [
 		...collectReferenceImages(source.image).map((image) => ({ image })),

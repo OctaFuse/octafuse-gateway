@@ -7,8 +7,6 @@ import { flushSync } from 'react-dom';
 import { isAudioRouteModel, validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
 import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
 import {
-	IMAGE_EDITS_BODY_TEMPLATE,
-	IMAGE_GENERATIONS_BODY_TEMPLATE,
 	imageRequestMetaFromBody,
 	isImageRouteModel,
 	parseImagesGenerationsResponse,
@@ -480,8 +478,8 @@ export function usePlaygroundPageState() {
 
 	const onImageOperationChange = (next: ImageOperation) => {
 		setImageOperation(next);
-		if (selectedIsImage && normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'openai') {
-			const nextTemplate = next === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
+		if (selectedIsImage && selected && normalizeProtocol(selected.upstream_protocol ?? 'openai') === 'openai') {
+			const nextTemplate = templateForRoute(selected, modelsById.get(selected.model_id), next);
 			if (!bodyDirtyRef.current) {
 				setBodyTextState(nextTemplate);
 			} else {

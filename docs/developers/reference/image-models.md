@@ -34,13 +34,13 @@
 
 下表只列网关自己的处理。各型号的官方取值范围以厂商文档为准。
 
-| 路由 | `size` | `n` | 参考图 |
-| ---- | ------ | --- | ------ |
-| OpenAI 兼容透传 | 原样转发，不校验 | 只能为 1 | GPT Image 走 `/v1/images/edits`；其它厂商经网关只能文生图 |
-| `volcengine-image` | 原样转发；`auto` 省略 | 1–15，映射成组图；5.0 pro / flash 只能为 1 | generations 的 JSON `image` |
-| `dashscope-image-qwen` | `宽x高` 改写为 `宽*高`；拒收 `1K` / `2K` / `4K` | 1–6 | generations 的 JSON `image` |
-| `dashscope-image-wan` | 同上，另允许 `1K` / `2K` / `4K` | 1–4 | generations 的 JSON `image` |
-| `minimax-image` | `宽x高` 映射到最接近的 `aspect_ratio`；拒收 `1K` / `2K` | 1–9 | 走原生透传的 `subject_reference` |
+| 路由 | 尺寸字段 | `n` | 参考图 |
+| ---- | -------- | --- | ------ |
+| OpenAI 兼容透传 | 顶层字段原样转发，不校验、不改名 | 只能为 1 | GPT Image 走 `/v1/images/edits`；其它厂商经网关只能文生图 |
+| `volcengine-image` | `size` 原样转发，包括 `auto` | 1–15，映射成组图；5.0 pro / flash 只能为 1 | generations 的 JSON `image` |
+| `dashscope-image-qwen` | 顶层 `size` 原样写入 `parameters.size`。千问用 `宽*高` 或 `auto` | 1–6 | generations 的 JSON `image` |
+| `dashscope-image-wan` | 同上。万相用 `1K` / `2K` / `4K` 或 `宽*高` | 1–4 | generations 的 JSON `image` |
+| `minimax-image` | 不转发 `size`。`aspect_ratio`、`width`、`height` 有值才原样转发，不填默认比例 | 1–9 | 走原生透传的 `subject_reference` |
 
 ## 模型目录
 

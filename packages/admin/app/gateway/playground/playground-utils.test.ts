@@ -20,7 +20,7 @@ import {
 	type PlaygroundLlmFamily,
 } from './playground-utils';
 import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE, MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE, MINIMAX_SPEECH_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
-import { DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE, IMAGE_GENERATIONS_BODY_TEMPLATE, MINIMAX_IMAGE_BODY_TEMPLATE, MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE, SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE, VOLCENGINE_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
+import { MINIMAX_IMAGE_BODY_TEMPLATE, VOLCENGINE_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { RouteListRow } from './types';
 
 function route(overrides: Partial<RouteListRow> = {}): RouteListRow {
@@ -53,8 +53,8 @@ describe('playground-utils', () => {
 		assert.equal(routeMatchesSearch(r, 'anthropic'), false);
 	});
 
-	it('templateForRoute uses Images JSON for DashScope image routes', () => {
-		assert.equal(
+	it('templateForRoute uses the Qwen official size for DashScope image routes', () => {
+		const parsed = JSON.parse(
 			templateForRoute(
 				route({
 					upstream_protocol: 'dashscope',
@@ -64,8 +64,10 @@ describe('playground-utils', () => {
 				{ output_modalities: '["image"]' } as never,
 				'edits',
 			),
-			DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE,
-		);
+		) as { size?: string; quality?: string; parameters?: { negative_prompt?: string } };
+		assert.equal(parsed.size, '1024*1024');
+		assert.equal(parsed.quality, undefined);
+		assert.equal(parsed.parameters?.negative_prompt, 'blurry');
 	});
 
 	it('templateForRoute uses the transcription JSON for MiniMax ASR routes', () => {
@@ -165,7 +167,7 @@ describe('playground-utils', () => {
 			),
 			MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
 		);
-		assert.equal(
+		const minimaxOpenAi = JSON.parse(
 			templateForRoute(
 				route({
 					upstream_protocol: 'minimax',
@@ -181,9 +183,10 @@ describe('playground-utils', () => {
 					modalities: JSON.stringify({ input: ['text'], output: ['image'] }),
 				} as never,
 			),
-			MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
-		);
-		assert.equal(
+		) as { aspect_ratio?: string; size?: string };
+		assert.equal(minimaxOpenAi.aspect_ratio, '1:1');
+		assert.equal(minimaxOpenAi.size, undefined);
+		const seedreamLite = JSON.parse(
 			templateForRoute(
 				route({
 					upstream_protocol: 'volcengine',
@@ -199,16 +202,18 @@ describe('playground-utils', () => {
 					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
 				} as never,
 			),
-			SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
-		);
-		assert.equal(
+		) as { size?: string; watermark?: boolean; quality?: string };
+		assert.equal(seedreamLite.size, '2K');
+		assert.equal(seedreamLite.watermark, false);
+		assert.equal(seedreamLite.quality, undefined);
+		const seedreamPro = JSON.parse(
 			templateForRoute(
 				route({
 					upstream_protocol: 'openai',
 					upstream_operation: 'images.generations',
 					adapter: 'passthrough',
-					model_id: 'doubao-seedream-5-0',
-					provider_model_name: 'doubao-seedream-5-0-260128',
+					model_id: 'doubao-seedream-5-0-pro',
+					provider_model_name: 'doubao-seedream-5-0-pro',
 				}),
 				{
 					pricing_profile: JSON.stringify({
@@ -218,8 +223,27 @@ describe('playground-utils', () => {
 					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
 				} as never,
 			),
-			SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
-		);
+		) as { size?: string };
+		assert.equal(seedreamPro.size, '1K');
+		const seedreamFlash = JSON.parse(
+			templateForRoute(
+				route({
+					upstream_protocol: 'openai',
+					upstream_operation: 'images.generations',
+					adapter: 'passthrough',
+					model_id: 'doubao-seedream-5-0-flash',
+					provider_model_name: 'doubao-seedream-5-0-flash',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.12 },
+					}),
+					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
+				} as never,
+			),
+		) as { size?: string };
+		assert.equal(seedreamFlash.size, '1K');
 	});
 
 	it('templateForRoute picks Responses vs Chat from upstream_operation', () => {

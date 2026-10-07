@@ -1104,7 +1104,7 @@
 				"dashscope-image-qwen": {
 					"purpose": "For the qwen-image family.",
 					"mapping": [
-						"size accepts pixels only. 1024x1024 is rewritten to 1024*1024.",
+						"size is forwarded unchanged into parameters.size. Qwen expects WIDTH*HEIGHT or auto.",
 						"n is 1–6.",
 						"image is a reference image.",
 						"When response_format is b64_json, the gateway downloads the image and converts it to base64."
@@ -1113,7 +1113,7 @@
 				"dashscope-image-wan": {
 					"purpose": "For the Wan image family.",
 					"mapping": [
-						"size accepts pixels or 1K, 2K, and 4K.",
+						"size is forwarded unchanged into parameters.size. Wan expects 1K, 2K, 4K, or WIDTH*HEIGHT.",
 						"n is 1–4. When omitted, the gateway sends 1."
 					]
 				},
@@ -1138,7 +1138,7 @@
 				"minimax-image": {
 					"purpose": "Set the provider model name to image-01 or image-01-live.",
 					"mapping": [
-						"size (such as 1024x1024) maps to the nearest aspect_ratio.",
+						"size is not forwarded. Send aspect_ratio, or width and height. The gateway does not fill a default ratio.",
 						"n is 1–9.",
 						"url and b64_json are both rewritten as OpenAI data[]."
 					]
@@ -1147,7 +1147,7 @@
 					"purpose": "OpenAI SDK calls POST /v1/images/generations. The gateway converts that to Ark image generation. Provider model names are doubao-seedream, dola-seedream, or seedream.",
 					"mapping": [
 						"n=1 generates one image. n from 2 to 15 enables sequential images with max_images equal to n. Ark may return fewer images; billing uses the successful count. 5.0 pro / flash do not support sequential images, so n must be 1.",
-						"size is forwarded as written; auto uses the Ark default. 5.0 pro / flash take 1K / 1.5K / 2K. 5.0 lite / 4.5 need at least 3.69 million pixels and reject 1024x1024. Use 2K if unsure.",
+						"size is forwarded as written, including auto. 5.0 pro / flash take 1K / 1.5K / 2K. 5.0 lite / 4.5 need at least 3.69 million pixels and reject 1024x1024. Samples use 1K for pro / flash and 2K for lite.",
 						"background forwards only transparent / opaque, and only 5.0 pro / flash support it for image-to-image. output_format accepts png / jpeg. response_format accepts url and b64_json.",
 						"Reference images go in image. Ark adds a watermark by default; send watermark: false to turn it off. quality is not forwarded.",
 						"JSON only; data[] keeps Ark's size and layer fields. Use the Volcengine native passthrough for streaming."
@@ -1586,7 +1586,7 @@
 		"imageMiniMaxPassthroughHint": "Native passthrough: the JSON is forwarded to image_generation as written. Playground replaces model with the route provider model name and previews data.image_urls or data.image_base64. No billing or request logs.",
 		"imageVolcenginePassthroughHint": "Native passthrough: the JSON is forwarded to Ark POST /images/generations. Set stream to true for SSE. Playground replaces model with the route provider model name. No billing or request logs.",
 		"imageVolcengineOpenAiHint": "OpenAI image JSON is converted to Ark image generation. n from 2 to 15 is sent as sequential images. JSON only; use native passthrough for streaming. Playground previews the returned images. No billing or request logs.",
-		"imageMiniMaxOpenAiHint": "OpenAI image JSON is converted to MiniMax image_generation. size snaps to the nearest aspect_ratio. Playground previews the returned images. No billing or request logs.",
+		"imageMiniMaxOpenAiHint": "OpenAI image JSON is converted to MiniMax image_generation. Send aspect_ratio; size is not forwarded. Playground previews the returned images. No billing or request logs.",
 		"imageOperation": "Image operation",
 		"imageGenerationsHint": "Image model: request body uses images/generations fields (prompt, n, size, quality). No billing or request logs.",
 		"imageEditsHint": "Image edits: JSON fields (prompt, n, size, quality) plus reference image files below. Files are sent as multipart to the upstream edits endpoint. No billing or request logs.",

@@ -154,18 +154,6 @@ export const DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE = JSON.stringify(
 	2,
 );
 
-export const DASHSCOPE_IMAGE_BODY_TEMPLATE = JSON.stringify(
-	{
-		model: '<auto>',
-		input: {
-			messages: [{ role: 'user', content: [{ text: '一只橙色的猫坐在窗边' }] }],
-		},
-		parameters: { size: '1024*1024', n: 1 },
-	},
-	null,
-	2,
-);
-
 export const DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE = JSON.stringify(
 	{
 		model: '<auto>',

@@ -4,7 +4,6 @@ import { attachUpstreamExtraFields } from '@octafuse/core/upstream-extra-fields'
 import type { RouteResult } from '../model-router';
 import {
 	buildDashScopeImageBody,
-	DashScopeImageClientError,
 	dispatchDashScopeImageGenerations,
 	maxNForImageAdapter,
 	maxNForImageRoutes,
@@ -73,17 +72,17 @@ describe('DashScope image request mapping', () => {
 		assert.deepEqual(body.parameters, { watermark: false, n: 2, size: '1024*1024' });
 	});
 
-	it('rewrites OpenAI 1024x1024 size to DashScope 1024*1024', () => {
+	it('forwards size unchanged for qwen and wan', () => {
 		const qwen = buildDashScopeImageBody('qwen', route(), {
 			prompt: 'a red apple',
 			size: '1024x1024',
 		});
-		assert.equal((qwen.parameters as Record<string, unknown>).size, '1024*1024');
+		assert.equal((qwen.parameters as Record<string, unknown>).size, '1024x1024');
 		const wan = buildDashScopeImageBody('wan', route({ providerModelName: 'wan2.7-image' }), {
 			prompt: 'a red apple',
-			size: '1024X1024',
+			size: '1K',
 		});
-		assert.equal((wan.parameters as Record<string, unknown>).size, '1024*1024');
+		assert.equal((wan.parameters as Record<string, unknown>).size, '1K');
 	});
 
 	it('merges client parameters and keeps billed n', () => {
@@ -107,11 +106,9 @@ describe('DashScope image request mapping', () => {
 		assert.equal(body.user, undefined);
 	});
 
-	it('rejects qwen size abbreviations and allows wan 2K', () => {
-		assert.throws(
-			() => buildDashScopeImageBody('qwen', route(), { prompt: 'hi', size: '2K' }),
-			(err: unknown) => err instanceof DashScopeImageClientError
-		);
+	it('forwards qwen size abbreviations instead of rejecting them', () => {
+		const qwen = buildDashScopeImageBody('qwen', route(), { prompt: 'hi', size: '2K' });
+		assert.equal((qwen.parameters as Record<string, unknown>).size, '2K');
 		const wan = buildDashScopeImageBody('wan', route({ providerModelName: 'wan2.7-image' }), {
 			prompt: 'hi',
 			size: '2K',
@@ -260,16 +257,31 @@ describe('DashScope image dispatch', () => {
 		assert.equal(body.data[0]?.url, 'https://oss.example/out.png');
 	});
 
-	it('returns 400 when qwen receives a size abbreviation', async () => {
+	it('posts qwen size abbreviations upstream', async () => {
+		const calls: Array<{ init?: RequestInit }> = [];
 		const result = await dispatchDashScopeImageGenerations(
 			route(),
 			{ prompt: 'a cat', size: '2K' },
 			undefined,
 			null,
 			undefined,
-			{ fetchImpl: async () => new Response('unused') }
+			{
+				fetchImpl: async (_input, init) => {
+					calls.push({ init });
+					return new Response(
+						JSON.stringify({
+							output: {
+								choices: [{ message: { content: [{ image: 'https://oss.example/out.png' }] } }],
+							},
+						}),
+						{ status: 200, headers: { 'Content-Type': 'application/json' } }
+					);
+				},
+			}
 		);
-		assert.equal(result.response.status, 400);
+		const posted = JSON.parse(String(calls[0]?.init?.body)) as { parameters: { size: string } };
+		assert.equal(posted.parameters.size, '2K');
+		assert.equal(result.response.status, 200);
 	});
 
 	it('maps client abort to 504', async () => {

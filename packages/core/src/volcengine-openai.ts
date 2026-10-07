@@ -51,12 +51,11 @@ function optionalString(value: unknown, field: string): string | undefined {
 	return trimmed || undefined;
 }
 
-/** OpenAI `auto` 交给方舟按模型默认值处理；方舟只在图层拆分里接受 `auto`。 */
+/** 尺寸原样转发，包括 `auto`。空值不发送。 */
 function imageSize(value: unknown): string | undefined {
 	if (typeof value !== 'string') return undefined;
 	const trimmed = value.trim();
-	if (!trimmed || trimmed.toLowerCase() === 'auto') return undefined;
-	return trimmed;
+	return trimmed || undefined;
 }
 
 /** 方舟只有 5.0 pro / flash 支持透明背景，且只用于图生图。 */

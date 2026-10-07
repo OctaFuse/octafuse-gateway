@@ -5,7 +5,6 @@ import {
 	buildMiniMaxImageBodyFromOpenAi,
 	buildMiniMaxT2aBodyFromOpenAi,
 	fillMiniMaxSpeechDefaults,
-	miniMaxAspectRatioFromOpenAiSize,
 	miniMaxImageResponseToOpenAi,
 } from './minimax-openai';
 
@@ -114,10 +113,7 @@ describe('MiniMax OpenAI speech mapping', () => {
 });
 
 describe('MiniMax OpenAI image mapping', () => {
-	it('maps pixel size to the nearest official aspect ratio and drops OpenAI-only fields', () => {
-		assert.equal(miniMaxAspectRatioFromOpenAiSize('1024x1024'), '1:1');
-		assert.equal(miniMaxAspectRatioFromOpenAiSize('1792x1024'), '16:9');
-		assert.equal(miniMaxAspectRatioFromOpenAiSize('1024x1792'), '9:16');
+	it('forwards aspect_ratio and drops OpenAI size', () => {
 		assert.deepEqual(
 			buildMiniMaxImageBodyFromOpenAi('image-01', {
 				prompt: 'a red lantern',
@@ -127,25 +123,30 @@ describe('MiniMax OpenAI image mapping', () => {
 				background: 'transparent',
 				style: 'vivid',
 				response_format: 'b64_json',
+				aspect_ratio: '16:9',
+				width: 1024,
+				height: 576,
 			}),
 			{
 				model: 'image-01',
 				prompt: 'a red lantern',
-				aspect_ratio: '1:1',
+				aspect_ratio: '16:9',
+				width: 1024,
+				height: 576,
 				response_format: 'base64',
 				n: 1,
 			},
 		);
 	});
 
-	it('keeps an explicit aspect ratio and live style', () => {
+	it('omits aspect_ratio when the client does not send one', () => {
 		const body = buildMiniMaxImageBodyFromOpenAi('image-01-live', {
 			prompt: 'a cat',
-			aspect_ratio: '3:4',
 			size: '1024x1024',
 			style: '吉卜力',
 		});
-		assert.equal(body.aspect_ratio, '3:4');
+		assert.equal(body.aspect_ratio, undefined);
+		assert.equal(body.size, undefined);
 		assert.equal(body.style, '吉卜力');
 		assert.equal(body.response_format, 'url');
 	});

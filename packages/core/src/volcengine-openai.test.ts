@@ -34,14 +34,14 @@ describe('Volcengine OpenAI image mapping', () => {
 		);
 	});
 
-	it('leaves size and background auto to Ark defaults and maps jpg to jpeg', () => {
+	it('forwards size auto and leaves background auto to Ark defaults', () => {
 		const body = buildVolcengineImageBodyFromOpenAi('doubao-seedream-5-0-260128', {
 			prompt: 'a cat',
 			size: 'auto',
 			background: 'auto',
 			output_format: 'jpg',
 		});
-		assert.equal(body.size, undefined);
+		assert.equal(body.size, 'auto');
 		assert.equal(body.background, undefined);
 		assert.equal(body.output_format, 'jpeg');
 		assert.equal(body.sequential_image_generation, undefined);

@@ -194,12 +194,12 @@ describe('MiniMax OpenAI speech driver', () => {
 });
 
 describe('MiniMax OpenAI image driver', () => {
-	it('maps size to aspect_ratio and rewrites image_urls into OpenAI data', async () => {
+	it('forwards aspect_ratio and rewrites image_urls into OpenAI data', async () => {
 		let posted: Record<string, unknown> | null = null;
 		const result = await dispatchMiniMaxOpenAiImage(
 			route('minimax-image', 'image-01'),
 			attachUpstreamExtraFields(
-				{ prompt: 'a red lantern', n: 1, size: '1024x1024', quality: 'low', response_format: 'url', user: 'sdk' },
+				{ prompt: 'a red lantern', n: 1, size: '1024x1024', aspect_ratio: '1:1', quality: 'low', response_format: 'url', user: 'sdk' },
 				{ prompt_optimizer: true, aigc_watermark: false, n: 4 },
 			),
 			undefined,
@@ -223,6 +223,7 @@ describe('MiniMax OpenAI image driver', () => {
 		);
 		assert.equal(posted?.model, 'image-01');
 		assert.equal(posted?.aspect_ratio, '1:1');
+		assert.equal(posted?.size, undefined);
 		assert.equal(posted?.quality, undefined);
 		assert.equal(posted?.n, 1);
 		assert.equal(posted?.prompt_optimizer, true);

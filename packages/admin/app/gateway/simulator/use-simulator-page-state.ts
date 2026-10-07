@@ -889,6 +889,9 @@ export function useSimulatorPageState() {
 					undefined,
 					undefined,
 					selectedDashScopeTtsProviderModelName,
+					'chat',
+					undefined,
+					selectedModelId,
 				),
 			);
 			setBodyError(null);
@@ -995,6 +998,9 @@ export function useSimulatorPageState() {
 						undefined,
 						undefined,
 						selectedDashScopeTtsProviderModelName,
+						'chat',
+						undefined,
+						selectedModelId,
 					),
 				);
 				setBodyError(null);
@@ -1003,7 +1009,7 @@ export function useSimulatorPageState() {
 				setEditFiles([]);
 			}
 		},
-		[imageOperation, selectedModelIsImage, protocol, selectedDashScopeTtsProviderModelName],
+		[imageOperation, selectedModelIsImage, protocol, selectedDashScopeTtsProviderModelName, selectedModelId],
 	);
 
 	const loadKeys = useCallback(async () => {
@@ -1104,6 +1110,8 @@ export function useSimulatorPageState() {
 					next === 'dashscope' ? selectedDashScopeRealtimeOperation : null,
 					providerModelName,
 					next === 'openai' ? openaiLlmOperation : 'chat',
+					undefined,
+					selectedModelId,
 				),
 			);
 			setBodyError(null);
@@ -1151,6 +1159,8 @@ export function useSimulatorPageState() {
 					selectedDashScopeRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					openaiLlmOperation,
+					undefined,
+					selectedModelId,
 				)
 			) {
 				const ok = await confirm({ title: t('protocolSwitchConfirm') });
@@ -1170,6 +1180,7 @@ export function useSimulatorPageState() {
 			selectedDashScopeTtsProviderModelName,
 			imageOperation,
 			openaiLlmOperation,
+			selectedModelId,
 			confirm,
 		],
 	);
@@ -1188,6 +1199,8 @@ export function useSimulatorPageState() {
 					selectedDashScopeRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					openaiLlmOperation,
+					undefined,
+					selectedModelId,
 				)
 			) {
 				const ok = await confirm({ title: t('openaiOperationSwitchConfirm') });
@@ -1204,6 +1217,8 @@ export function useSimulatorPageState() {
 					selectedDashScopeRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					next,
+					undefined,
+					selectedModelId,
 				),
 			);
 			setBodyError(null);
@@ -1218,6 +1233,7 @@ export function useSimulatorPageState() {
 			selectedAudioOperation,
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
+			selectedModelId,
 			t,
 			confirm,
 		],
@@ -1236,6 +1252,8 @@ export function useSimulatorPageState() {
 						selectedDashScopeRealtimeOperation,
 						selectedDashScopeTtsProviderModelName,
 						openaiLlmOperation,
+						undefined,
+						selectedModelId,
 				  ),
 		);
 		setBodyError(null);
@@ -1250,6 +1268,7 @@ export function useSimulatorPageState() {
 		selectedDashScopeTtsProviderModelName,
 		imageOperation,
 		openaiLlmOperation,
+		selectedModelId,
 	]);
 
 	const stop = useCallback(() => {
@@ -1660,6 +1679,8 @@ export function useSimulatorPageState() {
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
 			openaiLlmOperation,
+			undefined,
+			selectedModelId,
 		),
 		geminiAction,
 		setGeminiAction,

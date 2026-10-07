@@ -39,8 +39,8 @@ POST {dashscope.base}/services/aigc/multimodal-generation/generation
 
 | adapter | request → upstream | `n` 上限 | 备注 |
 | ------- | ------------------ | -------- | ---- |
-| `dashscope-image-qwen` | OpenAI Images → DashScope multimodal | 1–6 | `size` 只接受像素串；`1024x1024` 会改写成 `1024*1024`；拒收 `1K`/`2K`/`4K` |
-| `dashscope-image-wan` | 同上 | 1–4 | 同样改写 `WxH`；另允许 `1K`/`2K`/`4K` |
+| `dashscope-image-qwen` | OpenAI Images → DashScope multimodal | 1–6 | 顶层 `size` 原样写入 `parameters.size`，不改写、不校验 |
+| `dashscope-image-wan` | 同上 | 1–4 | 同上 |
 
 驱动永远显式写入 `parameters.n`，缺省为 1，不依赖上游默认值，避免按意外的张数扣费。
 
@@ -50,7 +50,7 @@ POST {dashscope.base}/services/aigc/multimodal-generation/generation
 client.images.generate(
     model="wan2.7-image",
     prompt="a red apple on a white background",
-    size="1024x1024",
+    size="1024*1024",
     extra_body={"parameters": {"negative_prompt": "blurry", "seed": 42, "prompt_extend": False}},
 )
 ```
@@ -66,7 +66,7 @@ client.images.generate(
 
 网关处理：
 
-- 两个适配器都把 OpenAI 的 `1024x1024` 改写成 `1024*1024`。千问适配器拒收 `1K` / `2K` / `4K`，万相适配器原样转发档位。
+- 两个适配器都把 OpenAI 顶层 `size` 原样写入 `parameters.size`，不把 `x` 换成 `*`，也不拒收档位写法。取值是否合法由上游判断。
 - 转换入口的 `n` 上限：千问 6，万相 4。万相开组图时 `n` 是最大张数（官方 1–12），转换入口仍限 4；要更多张请走原生透传。
 - `quality`、`background` 不转发。其它官方参数的写法见上文“适配器”一节。
 

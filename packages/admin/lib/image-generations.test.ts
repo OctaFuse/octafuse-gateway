@@ -1,17 +1,52 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
-	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	imageBodyTemplateFor,
 	imageRequestMetaFromBody,
 	openaiEditImageFormField,
 	parseImagesGenerationsResponse,
 } from './image-generations';
 
 describe('image-generations helpers', () => {
-	it('IMAGE_GENERATIONS_BODY_TEMPLATE is valid JSON with prompt', () => {
-		const parsed = JSON.parse(IMAGE_GENERATIONS_BODY_TEMPLATE) as { prompt: string; n: number };
-		assert.equal(typeof parsed.prompt, 'string');
-		assert.equal(parsed.n, 1);
+	it('imageBodyTemplateFor uses each family official lowest size', () => {
+		const body = (providerModelName: string, protocol = 'openai', adapter?: string) =>
+			JSON.parse(
+				imageBodyTemplateFor({ protocol, adapter, providerModelName, operation: 'generations' }),
+			) as Record<string, unknown>;
+		const gpt = body('gpt-image-2');
+		assert.equal(gpt.size, '1024x1024');
+		assert.equal(gpt.quality, 'low');
+		assert.equal(body('doubao-seedream-5-0').size, '2K');
+		assert.equal(body('doubao-seedream-5-0-pro').size, '1K');
+		assert.equal(body('doubao-seedream-5-0-flash').size, '1K');
+		assert.equal(body('qwen-image-3.0-pro', 'openai', 'dashscope-image-qwen').size, '1024*1024');
+		assert.equal(body('wan2.7-image', 'openai', 'dashscope-image-wan').size, '1K');
+		assert.equal(body('glm-image').size, '1280x1280');
+		assert.equal(body('glm-image').quality, undefined);
+		const grok = body('grok-imagine-image-2.0');
+		assert.equal(grok.resolution, '1k');
+		assert.equal(grok.aspect_ratio, '1:1');
+		assert.equal(grok.quality, 'low');
+		assert.equal(grok.size, undefined);
+		const grokQuality = body('grok-imagine-image-quality');
+		assert.equal(grokQuality.resolution, '1k');
+		assert.equal(grokQuality.quality, undefined);
+		assert.equal(grokQuality.size, undefined);
+		const gemini = body('gemini-3.1-flash-image');
+		assert.equal(gemini.aspect_ratio, '1:1');
+		assert.equal(gemini.response_format, 'b64_json');
+		assert.equal(gemini.size, undefined);
+		assert.equal(gemini.quality, undefined);
+		const minimax = body('image-01', 'openai', 'minimax-image');
+		assert.equal(minimax.aspect_ratio, '1:1');
+		assert.equal(minimax.size, undefined);
+		assert.equal(body('new-image-model').size, undefined);
+		const nativeWan = body('wan2.7-image-pro', 'dashscope', 'passthrough');
+		assert.equal((nativeWan.parameters as { size?: string }).size, '1K');
+		const nativeQwen = body('qwen-image-3.0', 'dashscope', 'passthrough');
+		assert.equal((nativeQwen.parameters as { size?: string }).size, '1024*1024');
+		assert.equal(body('doubao-seedream-5-0-flash', 'volcengine', 'passthrough').size, '1K');
+		assert.equal(body('doubao-seedream-5-0', 'volcengine', 'passthrough').size, '2K');
 	});
 
 	it('parseImagesGenerationsResponse extracts b64 and url', () => {

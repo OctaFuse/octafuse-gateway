@@ -1037,7 +1037,7 @@ Content-Type: application/json
 
 请求与上游都是 `minimax` + `images.generations`，adapter 必须是 `passthrough`。网关只把 `model` 换成路由上的供应商模型名，返回 MiniMax 原文（`data.image_urls` 或 `data.image_base64`）。文生图和 `subject_reference` 图生图共用这一路径。按成功张数计费。`base_resp.status_code` 非 0 时 body 不变，HTTP 状态按业务码改写。详见 [MiniMax 生图](../architecture/minimax-image.md)。
 
-OpenAI 入口使用适配器 `minimax-image`，仍调用 `POST /v1/images/generations`。`size` 如 `1024x1024` 会映射到最接近的 `aspect_ratio`。`response_format=url` 返回 `data[].url`，`b64_json` 返回 `data[].b64_json`。`quality` 和 `background` 不转发。`n` 为 1–9。
+OpenAI 入口使用适配器 `minimax-image`，仍调用 `POST /v1/images/generations`。不转发 `size`；`aspect_ratio`、`width`、`height` 有值才原样转发。`response_format=url` 返回 `data[].url`，`b64_json` 返回 `data[].b64_json`。`quality` 和 `background` 不转发。`n` 为 1–9。
 
 ### 火山方舟生图
 

@@ -9,13 +9,8 @@ import {
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 } from '@/lib/audio-transcriptions';
 import {
-	DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE,
-	IMAGE_EDITS_BODY_TEMPLATE,
-	IMAGE_GENERATIONS_BODY_TEMPLATE,
-	SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
-	MINIMAX_IMAGE_BODY_TEMPLATE,
-	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
 	VOLCENGINE_IMAGE_BODY_TEMPLATE,
+	imageBodyTemplateFor,
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
@@ -23,7 +18,6 @@ import type { AudioOperation, GatewayToolId, OpenaiLlmOperation, SimulatorProtoc
 import type { SimulatorGeminiAction } from '@/lib/simulator/endpoint';
 import {
 	DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE,
-	DASHSCOPE_IMAGE_BODY_TEMPLATE,
 	DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE,
 	DASHSCOPE_REALTIME_OPERATIONS,
 	buildDashScopeNativeSpeechBodyTemplate,
@@ -119,6 +113,7 @@ export function bodyTemplateForSelection(
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
 	adapter?: string | null,
+	modelId?: string | null,
 ): string {
 	if (toolId) {
 		return bodyTemplateForTool(toolId);
@@ -155,25 +150,17 @@ export function bodyTemplateForSelection(
 				: undefined,
 		);
 	}
-	if (isImageModel && protocol === 'volcengine') {
-		return adapter === 'volcengine-image' ? SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE : VOLCENGINE_IMAGE_BODY_TEMPLATE;
-	}
-	if (isImageModel && protocol === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
-	if (isImageModel && protocol === 'dashscope') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
-	if (isImageModel && protocol === 'openai') {
-		if (adapter === 'dashscope-image-qwen' || adapter === 'dashscope-image-wan') {
-			return DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE;
-		}
-		if (providerModelName && /^image-01/i.test(providerModelName.trim())) {
-			return MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE;
-		}
-		if (
-			imageOperation !== 'edits' &&
-			(adapter === 'volcengine-image' || (providerModelName != null && /seedream/i.test(providerModelName)))
-		) {
-			return SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE;
-		}
-		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
+	if (
+		isImageModel &&
+		(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'volcengine')
+	) {
+		return imageBodyTemplateFor({
+			protocol,
+			adapter,
+			modelId,
+			providerModelName,
+			operation: imageOperation,
+		});
 	}
 	if (protocol === 'openai' && llmOperation === 'responses') {
 		return OPENAI_RESPONSES_BODY_TEMPLATE;
@@ -324,6 +311,7 @@ export function isBodyDirty(
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
 	adapter?: string | null,
+	modelId?: string | null,
 ): boolean {
 	return (
 		normalizeBodyWhitespace(bodyText) !==
@@ -338,6 +326,7 @@ export function isBodyDirty(
 				providerModelName,
 				llmOperation,
 				adapter,
+				modelId,
 			),
 		)
 	);

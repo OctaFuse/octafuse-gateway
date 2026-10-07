@@ -6,11 +6,8 @@ import {
 	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
 } from "../../../lib/audio-transcriptions";
 import {
-	IMAGE_EDITS_BODY_TEMPLATE,
-	IMAGE_GENERATIONS_BODY_TEMPLATE,
-	SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
 	VOLCENGINE_IMAGE_BODY_TEMPLATE,
-	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
+	imageBodyTemplateFor,
 } from "../../../lib/image-generations";
 import {
 	OPENAI_RESPONSES_BODY_TEMPLATE,
@@ -396,14 +393,24 @@ describe("simulator-utils", () => {
 			false
 		);
 		assert.equal(isBodyDirty('{ "messages": [] }', "openai"), true);
+		const gptTemplate = imageBodyTemplateFor({
+			protocol: "openai",
+			providerModelName: "gpt-image-2",
+		});
 		assert.equal(
-			isBodyDirty(IMAGE_GENERATIONS_BODY_TEMPLATE, "openai", true),
+			isBodyDirty(
+				gptTemplate,
+				"openai",
+				true,
+				"generations",
+				null,
+				null,
+				null,
+				"gpt-image-2",
+			),
 			false
 		);
-		assert.equal(
-			isBodyDirty(IMAGE_GENERATIONS_BODY_TEMPLATE, "openai", false),
-			true
-		);
+		assert.equal(isBodyDirty(gptTemplate, "openai", false), true);
 	});
 
 	it("bodyTemplateForSelection uses OpenAI Responses template", () => {
@@ -451,19 +458,17 @@ describe("simulator-utils", () => {
 	});
 
 	it("bodyTemplateForSelection switches image generations/edits templates", () => {
-		assert.equal(
-			bodyTemplateForSelection("openai", true),
-			IMAGE_GENERATIONS_BODY_TEMPLATE
-		);
-		assert.equal(
-			bodyTemplateForSelection("openai", true, "edits"),
-			IMAGE_EDITS_BODY_TEMPLATE
-		);
-		assert.notEqual(
-			bodyTemplateForSelection("openai", false),
-			IMAGE_GENERATIONS_BODY_TEMPLATE
-		);
-		assert.equal(
+		const unknown = JSON.parse(bodyTemplateForSelection("openai", true)) as { size?: string; n?: number };
+		assert.equal(unknown.size, undefined);
+		assert.equal(unknown.n, 1);
+		const gptEdits = JSON.parse(
+			bodyTemplateForSelection("openai", true, "edits", null, null, null, "gpt-image-2"),
+		) as { prompt?: string; size?: string; quality?: string };
+		assert.equal(gptEdits.prompt, "make the apple green");
+		assert.equal(gptEdits.size, "1024x1024");
+		assert.equal(gptEdits.quality, "low");
+		assert.notEqual(bodyTemplateForSelection("openai", false), bodyTemplateForSelection("openai", true));
+		const seedreamLite = JSON.parse(
 			bodyTemplateForSelection(
 				"openai",
 				true,
@@ -473,11 +478,42 @@ describe("simulator-utils", () => {
 				null,
 				"doubao-seedream-5-0-260128",
 			),
-			SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
-		);
+		) as { size?: string; quality?: string };
+		assert.equal(seedreamLite.size, "2K");
+		assert.equal(seedreamLite.quality, undefined);
+		const seedreamPro = JSON.parse(
+			bodyTemplateForSelection("openai", true, "generations", null, null, null, "doubao-seedream-5-0-pro"),
+		) as { size?: string };
+		assert.equal(seedreamPro.size, "1K");
+		const seedreamFlash = JSON.parse(
+			bodyTemplateForSelection("openai", true, "generations", null, null, null, "doubao-seedream-5-0-flash"),
+		) as { size?: string };
+		assert.equal(seedreamFlash.size, "1K");
+		const nativePro = JSON.parse(
+			bodyTemplateForSelection(
+				"volcengine",
+				true,
+				"generations",
+				null,
+				null,
+				null,
+				"doubao-seedream-5-0-pro",
+			),
+		) as { size?: string };
+		assert.equal(nativePro.size, "1K");
+		assert.equal(bodyTemplateForSelection("volcengine", true), VOLCENGINE_IMAGE_BODY_TEMPLATE);
 		assert.equal(
-			bodyTemplateForSelection("volcengine", true),
-			VOLCENGINE_IMAGE_BODY_TEMPLATE,
+			isBodyDirty(
+				bodyTemplateForSelection("openai", true, "generations", null, null, null, "gpt-image-2"),
+				"openai",
+				true,
+				"generations",
+				null,
+				null,
+				null,
+				"gpt-image-2",
+			),
+			false,
 		);
 	});
 
@@ -556,7 +592,7 @@ describe("simulator-utils", () => {
 			),
 			MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE
 		);
-		assert.equal(
+		const minimax = JSON.parse(
 			bodyTemplateForSelection(
 				"openai",
 				true,
@@ -566,8 +602,9 @@ describe("simulator-utils", () => {
 				undefined,
 				"image-01"
 			),
-			MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE
-		);
+		) as { aspect_ratio?: string; size?: string };
+		assert.equal(minimax.aspect_ratio, "1:1");
+		assert.equal(minimax.size, undefined);
 		const sessionTemplate = JSON.parse(
 			bodyTemplateForSelection(
 				"dashscope",

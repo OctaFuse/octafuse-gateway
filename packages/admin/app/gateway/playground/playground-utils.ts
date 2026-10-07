@@ -10,19 +10,12 @@ import {
 import { isAudioTranscriptionModel, type ModelKindFields } from '@octafuse/core/db/model-modalities';
 import { extraHeadersFromCustomParams, mergeRouteRequestBody, mergeUpstreamHeaders, splitRouteCustomParams } from '@octafuse/core/route-custom-params';
 import {
-	IMAGE_EDITS_BODY_TEMPLATE,
-	DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE,
-	IMAGE_GENERATIONS_BODY_TEMPLATE,
-	SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE,
-	MINIMAX_IMAGE_BODY_TEMPLATE,
-	MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE,
-	VOLCENGINE_IMAGE_BODY_TEMPLATE,
+	imageBodyTemplateFor,
 	isImageRouteModel,
 	type ImageOperation,
 } from '@/lib/image-generations';
 import {
 	DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE,
-	DASHSCOPE_IMAGE_BODY_TEMPLATE,
 	DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE,
 	buildDashScopeNativeSpeechBodyTemplate,
 	buildDashScopeRealtimeAsrTemplate,
@@ -322,21 +315,13 @@ export function templateForRoute(
 		return AUDIO_SPEECH_BODY_TEMPLATE;
 	}
 	if (isImage && (proto === 'openai' || proto === 'dashscope' || proto === 'minimax' || proto === 'volcengine')) {
-		if (proto === 'volcengine' && route.adapter === 'volcengine-image') return SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE;
-		if (proto === 'volcengine') return VOLCENGINE_IMAGE_BODY_TEMPLATE;
-		if (proto === 'minimax' && route.adapter === 'minimax-image') return MINIMAX_OPENAI_IMAGE_BODY_TEMPLATE;
-		if (proto === 'minimax') return MINIMAX_IMAGE_BODY_TEMPLATE;
-		if (proto === 'dashscope' && route.adapter === 'passthrough') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
-		if (proto === 'dashscope' && (route.adapter === 'dashscope-image-qwen' || route.adapter === 'dashscope-image-wan')) {
-			return DASHSCOPE_OPENAI_IMAGE_BODY_TEMPLATE;
-		}
-		if (proto === 'openai' && imageOperation !== 'edits' && /seedream/i.test(`${route.model_id} ${route.provider_model_name}`)) {
-			return SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE;
-		}
-		if (proto === 'dashscope' || imageOperation !== 'edits') {
-			return IMAGE_GENERATIONS_BODY_TEMPLATE;
-		}
-		return IMAGE_EDITS_BODY_TEMPLATE;
+		return imageBodyTemplateFor({
+			protocol: proto,
+			adapter: route.adapter,
+			modelId: route.model_id,
+			providerModelName: route.provider_model_name,
+			operation: imageOperation,
+		});
 	}
 	const family = resolvePlaygroundLlmFamily(route);
 	if (family) {

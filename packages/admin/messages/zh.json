@@ -1104,7 +1104,7 @@
 				"dashscope-image-qwen": {
 					"purpose": "适用 qwen-image 系列。",
 					"mapping": [
-						"size 只接受像素，1024x1024 会改写成 1024*1024。",
+						"size 原样写入 parameters.size。千问使用 宽*高 或 auto。",
 						"n 取值 1–6。",
 						"image 作为参考图。",
 						"response_format=b64_json 时，网关下载图片并转成 base64。"
@@ -1113,7 +1113,7 @@
 				"dashscope-image-wan": {
 					"purpose": "适用 wan 图像系列。",
 					"mapping": [
-						"size 接受像素或 1K、2K、4K。",
+						"size 原样写入 parameters.size。万相使用 1K、2K、4K 或 宽*高。",
 						"n 取值 1–4；缺省时网关显式写 1。"
 					]
 				},
@@ -1138,7 +1138,7 @@
 				"minimax-image": {
 					"purpose": "供应商模型名填 image-01 或 image-01-live。",
 					"mapping": [
-						"size（如 1024x1024）映射到最接近的 aspect_ratio。",
+						"不转发 size。请传 aspect_ratio，或同时传 width 与 height。网关不填默认比例。",
 						"n 取值 1–9。",
 						"url 与 b64_json 都改写成 OpenAI data[]。"
 					]
@@ -1147,7 +1147,7 @@
 					"purpose": "OpenAI SDK 调 POST /v1/images/generations，网关转到火山方舟生图。供应商模型名填 doubao-seedream、dola-seedream 或 seedream。",
 					"mapping": [
 						"n=1 生成单图；n 为 2–15 时打开组图，max_images 等于 n。实际张数可能少于 n，按成功张数计费。5.0 pro / flash 不支持组图，n 只能为 1。",
-						"size 原样转发，auto 交给方舟默认值。5.0 pro / flash 用 1K / 1.5K / 2K；5.0 lite / 4.5 至少 369 万像素，1024x1024 会被拒绝。不确定就用 2K。",
+						"size 原样转发，包括 auto。5.0 pro / flash 用 1K / 1.5K / 2K；5.0 lite / 4.5 至少 369 万像素，1024x1024 会被拒绝。",
 						"background 只转发 transparent / opaque，仅 5.0 pro / flash 图生图可用。output_format 只接受 png / jpeg。response_format 只支持 url 和 b64_json。",
 						"参考图放在 image。方舟默认加水印，不要时传 watermark: false。quality 不转发。",
 						"只返回 JSON，data[] 保留方舟的 size 和图层字段。要流式请改走火山方舟原生透传。"
@@ -1586,7 +1586,7 @@
 		"imageMiniMaxPassthroughHint": "原生透传：JSON 按 image_generation 原样转发。调试台会把 model 换成路由上的供应商模型名，并预览 data.image_urls 或 data.image_base64。不计费、不写请求日志。",
 		"imageVolcenginePassthroughHint": "原生透传：JSON 按方舟 POST /images/generations 原样转发。stream 设为 true 时返回 SSE。调试台会把 model 换成路由上的供应商模型名。不计费、不写请求日志。",
 		"imageVolcengineOpenAiHint": "OpenAI 生图 JSON 会转换成方舟生图。n 为 2–15 时按组图发送。只返回 JSON；要流式请用原生透传。调试台预览返回的图片。不计费、不写请求日志。",
-		"imageMiniMaxOpenAiHint": "OpenAI 生图 JSON 会转换成 MiniMax image_generation。size 会就近映射为 aspect_ratio。调试台预览返回的图片。不计费、不写请求日志。",
+		"imageMiniMaxOpenAiHint": "OpenAI 生图 JSON 会转换成 MiniMax image_generation。请传 aspect_ratio，size 不会转发。调试台预览返回的图片。不计费、不写请求日志。",
 		"imageOperation": "图像操作",
 		"imageGenerationsHint": "文生图模型：请求体使用 images/generations 字段（prompt、n、size、quality）。不计费、不写请求日志。",
 		"imageEditsHint": "图像编辑：JSON 字段（prompt、n、size、quality）加下方参考图。文件以 multipart 发往上游 edits 接口。不计费、不写请求日志。",
