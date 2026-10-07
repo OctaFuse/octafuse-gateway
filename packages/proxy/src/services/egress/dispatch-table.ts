@@ -13,6 +13,11 @@ import {
 	type DashScopeAsrDispatchOptions,
 } from './dashscope-audio-driver';
 import {
+	dispatchDashScopeJsonPassthrough,
+	type DashScopeJsonPassthroughOptions,
+	type DashScopePassthroughSurface,
+} from './dashscope-json-passthrough';
+import {
 	dispatchMiniMaxAsrPassthrough,
 	dispatchMiniMaxAudioTranscriptions,
 	type MiniMaxAsrPassthroughRequest,
@@ -137,6 +142,25 @@ export function dispatchImageGenerations(
 		return dispatchDashScopeImageGenerations(route, body, signal, timing, attempt);
 	}
 	throw new Error(`Unsupported image generation adapter: ${route.adapter}`);
+}
+
+export function dispatchDashScopeJsonPassthroughRoute(
+	route: RouteResult,
+	surface: DashScopePassthroughSurface,
+	body: Record<string, unknown> | null,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: DashScopeJsonPassthroughOptions,
+): Promise<ProxyDispatchResult> {
+	if (
+		route.adapter !== 'passthrough' ||
+		route.upstreamProtocol !== 'dashscope' ||
+		route.upstreamOperation !== surface
+	) {
+		throw new Error(`Unsupported DashScope passthrough adapter: ${route.adapter}`);
+	}
+	return dispatchDashScopeJsonPassthrough(route, surface, body, signal, timing, attempt, options);
 }
 
 export function dispatchMultimodalPassthrough(

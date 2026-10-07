@@ -82,6 +82,17 @@ describe('adapter registry', () => {
 			'audio.transcriptions.multimodal',
 			'audio.transcriptions.realtime.inference',
 			'audio.transcriptions.realtime.session',
+			'audio.transcriptions.async',
+		]);
+		assert.deepEqual(requestOperationsFromRegistry('dashscope', 'audio.speech'), [
+			'audio.speech.realtime.inference',
+			'audio.speech',
+			'audio.speech.stream',
+			'audio.speech.multimodal',
+			'audio.speech.realtime.session',
+		]);
+		assert.deepEqual(requestOperationsFromRegistry('dashscope', 'image'), [
+			'images.generations.multimodal',
 		]);
 		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'audio.transcription'), [
 			'audio.transcriptions.multimodal',
@@ -92,6 +103,9 @@ describe('adapter registry', () => {
 		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'audio.speech'), [
 			'audio.speech.realtime.inference',
 			'audio.speech',
+			'audio.speech.stream',
+			'audio.speech.multimodal',
+			'audio.speech.realtime.session',
 		]);
 		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'image'), [
 			'images.generations.multimodal',

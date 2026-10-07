@@ -14,6 +14,10 @@ import {
 	type ImageOperation,
 } from '@/lib/image-generations';
 import {
+	DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE,
+	DASHSCOPE_IMAGE_BODY_TEMPLATE,
+	DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE,
+	buildDashScopeNativeSpeechBodyTemplate,
 	buildDashScopeRealtimeAsrTemplate,
 	buildDashScopeRealtimeTtsTemplate,
 	buildDashScopeSpeechBodyTemplate,
@@ -286,6 +290,9 @@ export function templateForRoute(
 	}
 	if (isAudio && isAudioHttp) {
 		if (isAudioTranscription) {
+			if (proto === 'dashscope' && route.adapter === 'passthrough' && route.upstream_operation === 'audio.transcriptions.async') {
+				return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
+			}
 			if (route.adapter === 'dashscope-asr-file-async' || route.upstream_operation === 'audio.transcriptions.async') {
 				return AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE;
 			}
@@ -294,12 +301,19 @@ export function templateForRoute(
 			}
 			return AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
 		}
+		if (proto === 'dashscope' && route.adapter === 'passthrough') {
+			if (route.upstream_operation === 'audio.speech.multimodal') return DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE;
+			if (route.upstream_operation === 'audio.speech' || route.upstream_operation === 'audio.speech.stream') {
+				return buildDashScopeNativeSpeechBodyTemplate(route.provider_model_name);
+			}
+		}
 		if (proto === 'dashscope' && route.upstream_operation === 'audio.speech') {
 			return buildDashScopeSpeechBodyTemplate(route.provider_model_name);
 		}
 		return AUDIO_SPEECH_BODY_TEMPLATE;
 	}
 	if (isImage && (proto === 'openai' || proto === 'dashscope')) {
+		if (proto === 'dashscope' && route.adapter === 'passthrough') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
 		if (proto === 'dashscope' || imageOperation !== 'edits') {
 			return IMAGE_GENERATIONS_BODY_TEMPLATE;
 		}

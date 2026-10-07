@@ -22,9 +22,14 @@ import {
 	dispatchAudioSpeech,
 	dispatchAudioTranscriptions,
 	dispatchImageGenerations,
+	dispatchDashScopeJsonPassthroughRoute,
 	dispatchMiniMaxSpeechPassthrough,
 	dispatchMultimodalPassthrough,
 } from "./egress/dispatch-table";
+import type {
+	DashScopeJsonPassthroughOptions,
+	DashScopePassthroughSurface,
+} from "./egress/dashscope-json-passthrough";
 import type { MiniMaxAsrPassthroughRequest } from "./egress/minimax-audio-driver";
 import type {
 	AudioSpeechDispatchOptions,
@@ -354,6 +359,39 @@ export async function proxyDashScopeMultimodalPassthrough(
 				timing,
 				attempt,
 				options?.dashScope
+			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 DashScope 原生 JSON / SSE 透传（语音合成、生图、异步转写）。 */
+export async function proxyDashScopeJsonPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	surface: DashScopePassthroughSurface,
+	body: Record<string, unknown> | null,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { dashScopeJson?: DashScopeJsonPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"dashscope",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchDashScopeJsonPassthroughRoute(
+				route,
+				surface,
+				body,
+				signal,
+				timing,
+				attempt,
+				options?.dashScopeJson
 			),
 		requestSignal,
 		options

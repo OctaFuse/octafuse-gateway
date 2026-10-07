@@ -163,6 +163,57 @@ describe("simulator-utils", () => {
 		);
 	});
 
+	it("filterMatchingActiveRoutes matches DashScope image passthrough on the native surface", () => {
+		const matched = filterMatchingActiveRoutes(
+			[
+				{
+					id: "conversion",
+					model_id: "qwen-image-3.0-pro",
+					provider_id: "aliyun",
+					priority: 1,
+					status: "active",
+					route_group: "default",
+					adapter: "dashscope-image-qwen",
+					upstream_protocol: "dashscope",
+					upstream_operation: "images.generations.multimodal",
+					surfaces: JSON.stringify([
+						{
+							request_protocol: "openai",
+							request_operation: "images.generations",
+							status: "active",
+						},
+					]),
+				},
+				{
+					id: "passthrough",
+					model_id: "qwen-image-3.0-pro",
+					provider_id: "aliyun",
+					priority: 0,
+					status: "active",
+					route_group: "default",
+					adapter: "passthrough",
+					upstream_protocol: "dashscope",
+					upstream_operation: "images.generations.multimodal",
+					surfaces: JSON.stringify([
+						{
+							request_protocol: "dashscope",
+							request_operation: "images.generations.multimodal",
+							status: "active",
+						},
+					]),
+				},
+			],
+			"qwen-image-3.0-pro",
+			"default",
+			"dashscope",
+			"images.generations.multimodal"
+		);
+		assert.deepEqual(
+			matched.map((route) => route.id),
+			["passthrough"]
+		);
+	});
+
 	it("listSupportedClientSurfaces keeps only public protocols and endpoints", () => {
 		const routes: RouteListRow[] = [
 			{

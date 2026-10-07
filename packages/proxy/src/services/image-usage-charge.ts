@@ -536,7 +536,7 @@ export type RecordImageUsageParams = {
 	providerName?: string | null;
 	requestBody?: string | null;
 	upstreamRequestBody?: string | null;
-	requestProtocol: 'openai';
+	requestProtocol: UpstreamProtocol;
 	requestOperation?: string | null;
 	upstreamProtocol: UpstreamProtocol;
 	upstreamOperation?: string | null;

@@ -155,7 +155,11 @@ export default function SimulatorPage() {
 									s.selectedAudioOperation === 'speech' &&
 									(s.protocol === 'openai' || s.protocol === 'dashscope')
 								}
-								showAudioRealtime={s.protocol === 'dashscope' && s.selectedAudioOperation != null}
+								showAudioRealtime={
+									s.protocol === 'dashscope' &&
+									s.selectedAudioOperation != null &&
+									(s.selectedDashScopeRealtimeOperation?.includes('.realtime.') ?? false)
+								}
 								audioFile={s.audioFile}
 								onAudioFileChange={s.setAudioFile}
 							/>

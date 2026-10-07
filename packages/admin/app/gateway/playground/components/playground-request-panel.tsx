@@ -282,6 +282,8 @@ export function PlaygroundRequestPanel({
 						{t(
 							selectedUsesDashScopeRealtime
 								? 'audioRealtimeDashScopeHint'
+								: selected?.adapter === 'passthrough' && selectedAudioUsesDashScope && !selectedIsAudioTranscription
+								? 'audioSpeechPassthroughHint'
 								: selectedAudioUsesDashScope
 								? selectedIsAudioTranscription
 									? 'audioTranscriptionsDashScopeHint'
@@ -359,7 +361,9 @@ export function PlaygroundRequestPanel({
 			{selectedIsImage && !selectedIsAudio && !imageSendBlocked ? (
 				<>
 					{selectedImageUsesDashScope ? (
-						<p className="text-xs text-gray-500">{t('imageDashScopeHint')}</p>
+						<p className="text-xs text-gray-500">
+							{t(selected?.adapter === 'passthrough' ? 'imageDashScopePassthroughHint' : 'imageDashScopeHint')}
+						</p>
 					) : (
 						<>
 							<fieldset className="flex flex-wrap items-center gap-4 rounded-md border border-gray-200 px-3 py-2 text-sm">

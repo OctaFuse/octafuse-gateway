@@ -3,6 +3,7 @@
  * (including OpenAI/Anthropic `model` field) or Agent Tools (`/v1/tools/*`).
  */
 import { applyGeminiStreamQueryParams } from "@octafuse/core/gemini-upstream-url";
+import { requestSurfacePath } from "@octafuse/core/adapters/registry";
 import { openaiEditImageFormField, type ImageOperation } from "@/lib/image-generations";
 import {
 	parseGatewayToolId,
@@ -370,25 +371,28 @@ export function buildSimulatorRequest(
 			};
 		}
 		case "dashscope": {
-			if (input.dashscopeRequestOperation === "audio.transcriptions.multimodal") {
-				const path = resolveProxyPathForModelInvoke({
-					kind: "audio",
-					protocol: "dashscope",
-					audioOperation: "transcriptions",
-				});
-				const merged = { ...input.body, model: input.modelForRouting };
-				return {
-					url: `${base}${path}`,
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: auth,
-					},
-					bodyText: JSON.stringify(merged),
-				};
+			const operation =
+				input.kind === "image"
+					? "images.generations.multimodal"
+					: input.dashscopeRequestOperation;
+			if (!operation || operation.includes(".realtime.")) {
+				throw new Error(
+					"DashScope realtime requests must use the WebSocket simulator path"
+				);
 			}
-			throw new Error(
-				"DashScope realtime requests must use the WebSocket simulator path"
-			);
+			const path = requestSurfacePath("dashscope", operation);
+			const headers: Record<string, string> = {
+				"Content-Type": "application/json",
+				Authorization: auth,
+			};
+			if (operation === "audio.speech.stream") headers["X-DashScope-SSE"] = "enable";
+			if (operation === "audio.transcriptions.async") headers["X-DashScope-Async"] = "enable";
+			const merged = { ...input.body, model: input.modelForRouting };
+			return {
+				url: `${base}${path}`,
+				headers,
+				bodyText: JSON.stringify(merged),
+			};
 		}
 		default: {
 			const _exhaustive: never = input.protocol;

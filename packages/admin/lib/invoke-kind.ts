@@ -99,6 +99,7 @@ export function resolveRequestOperation(input: {
 			}
 			return input.audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
 		case 'image':
+			if (input.protocol === 'dashscope') return 'images.generations.multimodal';
 			return `images.${input.imageOperation === 'edits' ? 'edits' : 'generations'}`;
 		case 'llm':
 			if (input.protocol === 'openai') return input.llmOperation === 'responses' ? 'responses' : 'chat';

@@ -4,6 +4,7 @@ export const DASHSCOPE_REALTIME_OPERATIONS = [
 	'audio.transcriptions.realtime.inference',
 	'audio.transcriptions.realtime.session',
 	'audio.speech.realtime.inference',
+	'audio.speech.realtime.session',
 ] as const;
 
 export type DashScopeRealtimeOperation = (typeof DASHSCOPE_REALTIME_OPERATIONS)[number];
@@ -126,6 +127,55 @@ export function buildDashScopeRealtimeTtsTemplate(providerModelName?: string | n
 }
 
 /** 生成 DashScope 非实时 TTS 的 OpenAI 兼容请求模板，供调试台直接填写。 */
+export function buildDashScopeNativeSpeechBodyTemplate(providerModelName?: string | null): string {
+	return JSON.stringify(
+		{
+			model: '<auto>',
+			input: {
+				text: '你好，欢迎使用 OctaFuse Gateway。',
+				voice: dashScopeTtsVoiceForModel(providerModelName),
+				format: 'mp3',
+			},
+		},
+		null,
+		2,
+	);
+}
+
+export const DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE = JSON.stringify(
+	{
+		model: '<auto>',
+		input: {
+			text: '你好，欢迎使用 OctaFuse Gateway。',
+			voice: 'Cherry',
+		},
+	},
+	null,
+	2,
+);
+
+export const DASHSCOPE_IMAGE_BODY_TEMPLATE = JSON.stringify(
+	{
+		model: '<auto>',
+		input: {
+			messages: [{ role: 'user', content: [{ text: '一只橙色的猫坐在窗边' }] }],
+		},
+		parameters: { size: '1024*1024', n: 1 },
+	},
+	null,
+	2,
+);
+
+export const DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE = JSON.stringify(
+	{
+		model: '<auto>',
+		input: { file_urls: ['https://example.com/audio.wav'] },
+		parameters: { language_hints: ['zh'] },
+	},
+	null,
+	2,
+);
+
 export function buildDashScopeSpeechBodyTemplate(providerModelName?: string | null): string {
 	return JSON.stringify(
 		{

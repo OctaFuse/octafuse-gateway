@@ -9,6 +9,16 @@ export const PASSTHROUGH_ROUTE_ADAPTER = 'passthrough';
 export const DASHSCOPE_MULTIMODAL_GENERATION_PATH =
 	'/v1/dashscope/services/aigc/multimodal-generation/generation';
 
+/** DashScope SpeechSynthesizer 透传：非流式与 SSE 共用这条路径，用 `X-DashScope-SSE` 区分。 */
+export const DASHSCOPE_SPEECH_SYNTHESIZER_PATH =
+	'/v1/dashscope/services/audio/tts/SpeechSynthesizer';
+
+/** DashScope 异步文件转写提交。任务查询是 `GET /v1/dashscope/tasks/:taskId`。 */
+export const DASHSCOPE_FILE_TRANSCRIPTION_PATH =
+	'/v1/dashscope/services/audio/asr/transcription';
+
+export const DASHSCOPE_TASKS_PATH = '/v1/dashscope/tasks';
+
 /** MiniMax 原生文件转写透传：`POST /v1/minimax/speech_to_text`。 */
 export const MINIMAX_SPEECH_TO_TEXT_PATH = '/v1/minimax/speech_to_text';
 
@@ -386,10 +396,6 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
 		presetIntent: 'dashscope-tts-realtime',
 	}),
-];
-
-/** Display-only surfaces that are not selectable request operations. */
-const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech',
@@ -398,8 +404,7 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 		billing: 'per_character',
 		responsePayload: 'binary',
 		requiredUpstreamCapabilities: ['audio.speech'],
-		publicPath: '/v1/audio/speech',
-		roles: [],
+		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -410,8 +415,7 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 		billing: 'per_character',
 		responsePayload: 'sse',
 		requiredUpstreamCapabilities: ['audio.speech'],
-		publicPath: '/v1/audio/speech',
-		roles: [],
+		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -420,30 +424,7 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 		modality: 'audio',
 		billing: 'per_character',
 		requiredUpstreamCapabilities: ['audio.speech.multimodal'],
-		publicPath: '/v1/audio/speech',
-		roles: [],
-	}),
-	passthroughDescriptor({
-		protocol: 'dashscope',
-		operation: 'audio.transcriptions',
-		modelKind: 'audio.transcription',
-		modality: 'audio',
-		billing: 'per_second',
-		requestPayload: 'multipart',
-		requiredUpstreamCapabilities: ['audio.transcriptions'],
-		publicPath: '/v1/audio/transcriptions',
-		roles: [],
-	}),
-	passthroughDescriptor({
-		protocol: 'dashscope',
-		operation: 'audio.transcriptions.async',
-		modelKind: 'audio.transcription',
-		modality: 'audio',
-		exchange: 'job',
-		billing: 'per_second',
-		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
-		publicPath: '/v1/audio/transcriptions',
-		roles: [],
+		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -455,6 +436,40 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.session'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'images.generations.multimodal',
+		modelKind: 'image',
+		modality: 'image',
+		billing: 'per_image',
+		requiredUpstreamCapabilities: ['images.generations.multimodal'],
+		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.async',
+		modelKind: 'audio.transcription',
+		modality: 'audio',
+		exchange: 'job',
+		billing: 'per_second',
+		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
+		publicPath: DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+	}),
+];
+
+/** Display-only surfaces that are not selectable request operations. */
+/** 仅用于展示上游路径，不能选作请求入口。 */
+const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions',
+		modelKind: 'audio.transcription',
+		modality: 'audio',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		requiredUpstreamCapabilities: ['audio.transcriptions'],
+		publicPath: '/v1/audio/transcriptions',
 		roles: [],
 	}),
 ];

@@ -310,7 +310,11 @@ export function useSimulatorPageState() {
 		[protocol, selectedAudioOperation, realtimeOperationOptions, routes, selectedModelId, routeGroup],
 	);
 	const selectedUsesDashScopeHttpAsr =
-		selectedDashScopeRealtimeOperation === 'audio.transcriptions.multimodal';
+		selectedDashScopeRealtimeOperation === 'audio.transcriptions.multimodal' ||
+		selectedDashScopeRealtimeOperation === 'audio.transcriptions.async' ||
+		selectedDashScopeRealtimeOperation === 'audio.speech' ||
+		selectedDashScopeRealtimeOperation === 'audio.speech.stream' ||
+		selectedDashScopeRealtimeOperation === 'audio.speech.multimodal';
 	/** DashScope 实时 ASR 的麦克风模式不需要上传文件；发送和按钮校验共用这个判定。 */
 	const usesDashScopeMicrophone = selectedCanUseMicrophone && audioInputMode === 'microphone';
 
@@ -388,7 +392,7 @@ export function useSimulatorPageState() {
 			if (selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope' && protocol !== 'minimax') {
 				return 'audioProtocol';
 			}
-			if (selectedModelIsImage && !selectedModelIsAudio && protocol !== 'openai') {
+			if (selectedModelIsImage && !selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope') {
 				return 'imageProtocol';
 			}
 			if (matchingRoutes.length === 0) return 'route';
@@ -501,7 +505,7 @@ export function useSimulatorPageState() {
 				!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
 					? selectedAudioOperation
 					: null;
-			if (protocol === 'dashscope' && audioOperation) {
+			if (protocol === 'dashscope' && audioOperation && !selectedUsesDashScopeHttpAsr) {
 				const operation = selectedDashScopeRealtimeOperation;
 				if (!operation) return null;
 				const url = buildSimulatorDashScopeRealtimeUrl({
@@ -532,7 +536,7 @@ export function useSimulatorPageState() {
 				audioOperation: audioOperation ?? undefined,
 				audioFile: audioOperation === 'transcriptions' ? audioFile : undefined,
 				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr
-					? 'audio.transcriptions.multimodal'
+					? selectedDashScopeRealtimeOperation ?? undefined
 					: undefined,
 				imageOperation: useImages ? imageOperation : undefined,
 				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
@@ -853,10 +857,9 @@ export function useSimulatorPageState() {
 			return;
 		}
 		if (selectedModelIsImage) {
-			if (protocol !== 'openai') {
-				setProtocolState('openai');
-			}
-			setBodyText(bodyTemplateForSelection('openai', true, imageOperation, null));
+			const imageProtocol = protocol === 'dashscope' ? 'dashscope' : 'openai';
+			if (protocol !== imageProtocol) setProtocolState(imageProtocol);
+			setBodyText(bodyTemplateForSelection(imageProtocol, true, imageOperation, null));
 			setBodyError(null);
 			setImagePreviews([]);
 			setAudioPreviewUrl(null);
@@ -1048,7 +1051,7 @@ export function useSimulatorPageState() {
 			setBodyText(
 				bodyTemplateForSelection(
 					next,
-					selectedModelIsImage && selectedAudioOperation == null && next === 'openai',
+					selectedModelIsImage && selectedAudioOperation == null && (next === 'openai' || next === 'dashscope'),
 					imageOperation,
 					next === 'openai' || next === 'dashscope' ? selectedAudioOperation : null,
 					undefined,
@@ -1080,7 +1083,7 @@ export function useSimulatorPageState() {
 				setInfoHint(t('protocolLockedAudio'));
 				return;
 			}
-			if (selectedModelIsImage && !selectedModelIsAudio && next !== 'openai') {
+			if (selectedModelIsImage && !selectedModelIsAudio && next !== 'openai' && next !== 'dashscope') {
 				setInfoHint(t('readyNeedOpenaiForImage'));
 				return;
 			}
@@ -1389,7 +1392,7 @@ export function useSimulatorPageState() {
 				audioOperation: audioOperation ?? undefined,
 				audioFile: audioOperation === 'transcriptions' ? audioFile : undefined,
 				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr
-					? 'audio.transcriptions.multimodal'
+					? selectedDashScopeRealtimeOperation ?? undefined
 					: undefined,
 				imageOperation: useImages ? imageOperation : undefined,
 				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,

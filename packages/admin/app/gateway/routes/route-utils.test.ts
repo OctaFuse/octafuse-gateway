@@ -93,12 +93,26 @@ describe('request surface path', () => {
 		);
 	});
 
-	it('maps DashScope HTTP audio operations to their OpenAI-compatible endpoints', () => {
-		assert.equal(requestSurfacePath('dashscope', 'audio.speech', 'cosyvoice-v2'), '/v1/audio/speech');
-		assert.equal(requestSurfacePath('dashscope', 'audio.speech.multimodal'), '/v1/audio/speech');
+	it('maps DashScope HTTP audio operations to native passthrough endpoints', () => {
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.speech', 'cosyvoice-v2'),
+			'/v1/dashscope/services/audio/tts/SpeechSynthesizer',
+		);
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.speech.multimodal'),
+			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+		);
 		assert.equal(requestSurfacePath('dashscope', 'audio.transcriptions'), '/v1/audio/transcriptions');
 		assert.equal(
+			requestSurfacePath('dashscope', 'audio.transcriptions.async'),
+			'/v1/dashscope/services/audio/asr/transcription',
+		);
+		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.multimodal'),
+			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+		);
+		assert.equal(
+			requestSurfacePath('dashscope', 'images.generations.multimodal'),
 			'/v1/dashscope/services/aigc/multimodal-generation/generation',
 		);
 	});
@@ -107,7 +121,10 @@ describe('request surface path', () => {
 		assert.equal(requestLogProtocolPath('gemini', 'models.generate'), '/v1beta/models');
 		assert.equal(requestLogProtocolPath('gemini', 'streamGenerateContent'), '/v1beta/models');
 		assert.equal(requestLogProtocolPath('openai', 'chat'), '/v1/chat/completions');
-		assert.equal(requestLogProtocolPath('dashscope', 'audio.speech'), '/v1/audio/speech');
+		assert.equal(
+			requestLogProtocolPath('dashscope', 'audio.speech'),
+			'/v1/dashscope/services/audio/tts/SpeechSynthesizer',
+		);
 	});
 });
 
@@ -264,7 +281,12 @@ describe('route form capability filters', () => {
 				}),
 				'dashscope',
 			),
-			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.inference', 'audio.transcriptions.realtime.session'],
+			[
+				'audio.transcriptions.multimodal',
+				'audio.transcriptions.realtime.inference',
+				'audio.transcriptions.realtime.session',
+				'audio.transcriptions.async',
+			],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -277,7 +299,11 @@ describe('route form capability filters', () => {
 				'dashscope',
 				'fun-asr-realtime',
 			),
-			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.inference'],
+			[
+				'audio.transcriptions.multimodal',
+				'audio.transcriptions.realtime.inference',
+				'audio.transcriptions.async',
+			],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -290,7 +316,11 @@ describe('route form capability filters', () => {
 				'dashscope',
 				'qwen3-asr-flash-realtime',
 			),
-			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.session'],
+			[
+				'audio.transcriptions.multimodal',
+				'audio.transcriptions.realtime.session',
+				'audio.transcriptions.async',
+			],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -316,7 +346,13 @@ describe('route form capability filters', () => {
 				}),
 				'dashscope',
 			),
-			['audio.speech.realtime.inference'],
+			[
+				'audio.speech.realtime.inference',
+				'audio.speech',
+				'audio.speech.stream',
+				'audio.speech.multimodal',
+				'audio.speech.realtime.session',
+			],
 		);
 	});
 
@@ -389,7 +425,10 @@ describe('route form capability filters', () => {
 		});
 		assert.deepEqual(upstreamOperationsForProviderModel(dashScope, tts, 'dashscope'), [
 			'audio.speech',
+			'audio.speech.stream',
+			'audio.speech.multimodal',
 			'audio.speech.realtime.inference',
+			'audio.speech.realtime.session',
 		]);
 
 		const image = model({

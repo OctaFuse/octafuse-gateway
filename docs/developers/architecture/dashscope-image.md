@@ -6,7 +6,7 @@
 
 1. 供应商（Provider）的 `OpenAI` 与 `DashScope` 表示上游协议族，不表示供应商名称。一个阿里云供应商可以同时配置 OpenAI 兼容 Chat 与 DashScope 原生生图。
 2. 请求入口（Request Surface）表示客户端调用方式，上游目标（Upstream Target）表示实际上游协议。跨协议调用必须选择显式适配器，不能由 `passthrough` 隐式猜测。
-3. 千问图像 3.0 与万相 2.7 **都不支持** OpenAI 兼容（compatible-mode）Images。客户端仍打 `POST /v1/images/generations`，由转换适配器改写成 DashScope 同步多模态生成。
+3. 千问图像 3.0 与万相 2.7 **都不支持** OpenAI 兼容（compatible-mode）Images。OpenAI 客户端仍打 `POST /v1/images/generations`，由转换适配器改写成 DashScope 同步多模态生成。原生客户端走 `dashscope` + `images.generations.multimodal` 透传。
 4. `images.generations.multimodal` 与 OpenAI 的 `images.generations` 不是同一 capability。后者走 OpenAI 兼容路径派生，不能用来保存 DashScope 原生 URL。
 5. 异步 `image-generation/generation` 不在本范围；该 capability 名留给未来异步任务。
 
@@ -17,8 +17,9 @@
 | request protocol | operation | 入口 | 说明 |
 | ---------------- | --------- | ---- | ---- |
 | `openai` | `images.generations` | `POST /v1/images/generations` | 文生图与 JSON `image` 图生图；与 Seedream 约定一致 |
+| `dashscope` | `images.generations.multimodal` | `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | 原生生图透传。返回 DashScope JSON，不下载图片、不改写成 OpenAI `{data:[{url}]}` |
 
-本阶段不做 `POST /v1/images/edits`。
+本阶段不做 `POST /v1/images/edits`。生图透传按返回里的图片张数计费，不从模型名猜测尺寸档。
 
 ### DashScope 上游目标
 

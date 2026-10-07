@@ -15,7 +15,11 @@ import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '
 import type { AudioOperation, GatewayToolId, OpenaiLlmOperation, SimulatorProtocol } from '@/lib/invoke-kind';
 import type { SimulatorGeminiAction } from '@/lib/simulator/endpoint';
 import {
+	DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE,
+	DASHSCOPE_IMAGE_BODY_TEMPLATE,
+	DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE,
 	DASHSCOPE_REALTIME_OPERATIONS,
+	buildDashScopeNativeSpeechBodyTemplate,
 	buildDashScopeRealtimeAsrTemplate,
 	buildDashScopeRealtimeTtsTemplate,
 	buildDashScopeSpeechBodyTemplate,
@@ -121,6 +125,11 @@ export function bodyTemplateForSelection(
 		return audioOperation === 'speech' ? AUDIO_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
 	if (audioOperation && protocol === 'dashscope') {
+		if (realtimeOperation === 'audio.speech' || realtimeOperation === 'audio.speech.stream') {
+			return buildDashScopeNativeSpeechBodyTemplate(providerModelName);
+		}
+		if (realtimeOperation === 'audio.speech.multimodal') return DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE;
+		if (realtimeOperation === 'audio.transcriptions.async') return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
 		if (audioOperation === 'speech') {
 			return buildDashScopeRealtimeTtsTemplate(providerModelName);
 		}
@@ -133,6 +142,7 @@ export function bodyTemplateForSelection(
 				: undefined,
 		);
 	}
+	if (isImageModel && protocol === 'dashscope') return DASHSCOPE_IMAGE_BODY_TEMPLATE;
 	if (isImageModel && protocol === 'openai') {
 		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
 	}
@@ -196,7 +206,15 @@ export function listDashScopeRealtimeOperations(
 
 export const DASHSCOPE_HTTP_ASR_OPERATION = 'audio.transcriptions.multimodal';
 
-/** 模拟器可选的 DashScope ASR 请求入口：同步 HTTP 透传 + 实时 WSS。 */
+const DASHSCOPE_HTTP_AUDIO_OPERATIONS = [
+	'audio.transcriptions.multimodal',
+	'audio.transcriptions.async',
+	'audio.speech',
+	'audio.speech.stream',
+	'audio.speech.multimodal',
+] as const;
+
+/** 模拟器可选的 DashScope 音频入口：HTTP 透传 + 实时 WSS。 */
 export function listDashScopeAudioClientOperations(
 	routes: RouteListRow[],
 	modelId: string,
@@ -204,8 +222,8 @@ export function listDashScopeAudioClientOperations(
 	audioOperation: AudioOperation,
 ): readonly string[] {
 	const realtime = listDashScopeRealtimeOperations(routes, modelId, routeGroup, audioOperation);
-	if (audioOperation !== 'transcriptions') return realtime;
-	let hasMultimodal = false;
+	const prefix = audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
+	const found = new Set<string>();
 	for (const route of routes) {
 		if (
 			route.model_id !== modelId ||
@@ -214,6 +232,10 @@ export function listDashScopeAudioClientOperations(
 		) {
 			continue;
 		}
+		const consider = (operation: string | undefined) => {
+			if (!operation || !operation.startsWith(prefix)) return;
+			if ((DASHSCOPE_HTTP_AUDIO_OPERATIONS as readonly string[]).includes(operation)) found.add(operation);
+		};
 		if (route.surfaces) {
 			try {
 				const surfaces = JSON.parse(route.surfaces) as Array<{
@@ -222,27 +244,19 @@ export function listDashScopeAudioClientOperations(
 					status?: string;
 				}>;
 				for (const surface of surfaces) {
-					if (surface.status === 'disabled') continue;
-					if (
-						surface.request_protocol === 'dashscope' &&
-						surface.request_operation === DASHSCOPE_HTTP_ASR_OPERATION
-					) {
-						hasMultimodal = true;
-					}
+					if (surface.status === 'disabled' || surface.request_protocol !== 'dashscope') continue;
+					consider(surface.request_operation);
 				}
 			} catch {
 				// ignore unreadable surfaces
 			}
 		}
-		if (
-			route.upstream_protocol === 'dashscope' &&
-			route.upstream_operation === DASHSCOPE_HTTP_ASR_OPERATION &&
-			route.adapter === 'passthrough'
-		) {
-			hasMultimodal = true;
+		if (route.upstream_protocol === 'dashscope' && route.adapter === 'passthrough') {
+			consider(route.upstream_operation ?? undefined);
 		}
 	}
-	return hasMultimodal ? [DASHSCOPE_HTTP_ASR_OPERATION, ...realtime] : realtime;
+	const http = DASHSCOPE_HTTP_AUDIO_OPERATIONS.filter((operation) => found.has(operation));
+	return [...http, ...realtime];
 }
 
 /** Matches Proxy `resolveModelRouting`: default group sends model id only, else `id:group`. */

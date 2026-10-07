@@ -506,6 +506,46 @@ export function buildPlaygroundOpenAiSpeechRequest(
 	};
 }
 
+/** 透传调试台：原样转发编辑器 JSON，只替换 model。 */
+export function buildPlaygroundDashScopeNativePassthrough(
+	route: PlaygroundResolvedRoute,
+	body: Record<string, unknown>,
+): PlaygroundDashScopeSpeechRequest {
+	const operation = route.upstreamOperation;
+	const capability =
+		operation === 'audio.speech' || operation === 'audio.speech.stream'
+			? 'audio.speech'
+			: operation === 'audio.transcriptions.async'
+				? 'audio.transcriptions'
+				: operation === 'images.generations.multimodal'
+					? 'images.generations.multimodal'
+					: operation === 'audio.speech.multimodal'
+						? 'audio.speech.multimodal'
+						: operation === 'audio.transcriptions.multimodal'
+							? 'audio.transcriptions.multimodal'
+							: null;
+	if (!capability) {
+		throw badRequest(`Playground does not support DashScope passthrough operation ${JSON.stringify(operation)}`);
+	}
+	const url = resolveUpstreamEndpoint('dashscope', capability, route.providerEndpoints, {
+		providerId: route.providerId,
+	});
+	const upstreamBody = { ...body, model: route.providerModelName };
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+		Authorization: `Bearer ${route.providerApiKey}`,
+	};
+	if (operation === 'audio.speech.stream') headers['X-DashScope-SSE'] = 'enable';
+	if (operation === 'audio.transcriptions.async') headers['X-DashScope-Async'] = 'enable';
+	if (operation === 'audio.transcriptions.multimodal') headers['X-DashScope-SSE'] = 'disable';
+	return {
+		url,
+		headers,
+		bodyText: JSON.stringify(upstreamBody),
+		wireBodyJson: JSON.stringify(redactPlaygroundAudioDataUrls(upstreamBody), null, 2),
+	};
+}
+
 /** 调试台按 DashScope SpeechSynthesizer 的非流式 HTTP 契约构造 TTS 请求。 */
 export function buildPlaygroundDashScopeSpeechRequest(
 	route: PlaygroundResolvedRoute,
@@ -1105,6 +1145,14 @@ export async function invokePlaygroundUpstream(
 			break;
 		}
 		case 'dashscope': {
+			if (route.adapter === 'passthrough') {
+				const request = buildPlaygroundDashScopeNativePassthrough(route, merged);
+				url = request.url;
+				headers = request.headers;
+				fetchBody = request.bodyText;
+				upstreamWireBodyJson = request.wireBodyJson;
+				break;
+			}
 			if (route.isImageModel) {
 				if (imageOperation === 'edits') {
 					throw badRequest(

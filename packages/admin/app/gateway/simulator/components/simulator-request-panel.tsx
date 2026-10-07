@@ -351,7 +351,11 @@ export function SimulatorRequestPanel({
 			) : null}
 			{showAudioSpeech ? (
 				<p className="text-xs text-gray-500">
-					{showAudioRealtime ? t('audioRealtimeSpeechHint') : t('audioSpeechHint')}
+					{showAudioRealtime
+						? t('audioRealtimeSpeechHint')
+						: protocol === 'dashscope'
+						? t('audioSpeechDashScopeHint')
+						: t('audioSpeechHint')}
 				</p>
 			) : null}
 			{showImageOperation ? (
