@@ -391,7 +391,7 @@ const CONVERSION_ADAPTERS = [
 		requiredUpstreamCapabilities: ['images.generations'],
 		publicPath: '/v1/images/generations',
 		roles: ['upstream'],
-		lossyFeatures: ['background', 'quality'],
+		lossyFeatures: ['quality'],
 		protectedUpstreamPaths: [
 			'stream',
 			'sequential_image_generation',

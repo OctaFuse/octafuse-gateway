@@ -8,27 +8,62 @@ import {
 } from './volcengine-openai';
 
 describe('Volcengine OpenAI image mapping', () => {
-	it('disables sequential generation when n is 1 and forwards size, watermark, and image', () => {
+	it('omits sequential fields when n is 1 and forwards size, background, output_format, watermark, and image', () => {
 		assert.deepEqual(
-			buildVolcengineImageBodyFromOpenAi('doubao-seedream-5-0-260128', {
+			buildVolcengineImageBodyFromOpenAi('doubao-seedream-5-0-pro-260708', {
 				prompt: ' a cat ',
 				n: 1,
 				size: '2K',
 				quality: 'high',
-				background: 'transparent',
+				background: 'Transparent',
+				output_format: 'PNG',
 				watermark: false,
 				response_format: 'url',
 				image: ' https://example.com/ref.png ',
 			}),
 			{
-				model: 'doubao-seedream-5-0-260128',
+				model: 'doubao-seedream-5-0-pro-260708',
 				prompt: 'a cat',
 				response_format: 'url',
-				sequential_image_generation: 'disabled',
 				size: '2K',
+				background: 'transparent',
+				output_format: 'png',
 				watermark: false,
 				image: 'https://example.com/ref.png',
 			},
+		);
+	});
+
+	it('leaves size and background auto to Ark defaults and maps jpg to jpeg', () => {
+		const body = buildVolcengineImageBodyFromOpenAi('doubao-seedream-5-0-260128', {
+			prompt: 'a cat',
+			size: 'auto',
+			background: 'auto',
+			output_format: 'jpg',
+		});
+		assert.equal(body.size, undefined);
+		assert.equal(body.background, undefined);
+		assert.equal(body.output_format, 'jpeg');
+		assert.equal(body.sequential_image_generation, undefined);
+	});
+
+	it('rejects group generation on Seedream 5.0 pro and flash', () => {
+		for (const model of ['doubao-seedream-5-0-pro-260708', 'dola-seedream-5-0-flash-260915']) {
+			assert.throws(
+				() => buildVolcengineImageBodyFromOpenAi(model, { prompt: 'a cat', n: 2 }),
+				/do not support group generation/,
+			);
+		}
+	});
+
+	it('rejects background and output_format values Ark does not have', () => {
+		assert.throws(
+			() => buildVolcengineImageBodyFromOpenAi('doubao-seedream-5-0-260128', { prompt: 'a', background: 'blur' }),
+			VolcengineOpenAiClientError,
+		);
+		assert.throws(
+			() => buildVolcengineImageBodyFromOpenAi('doubao-seedream-5-0-260128', { prompt: 'a', output_format: 'webp' }),
+			/output_format must be png or jpeg/,
 		);
 	});
 
@@ -68,19 +103,19 @@ describe('Volcengine OpenAI image mapping', () => {
 		);
 	});
 
-	it('keeps successful images and drops failed items', () => {
+	it('keeps successful images with Ark fields, drops failed items, and passes usage through', () => {
 		const converted = volcengineImageResponseToOpenAi({
 			created: 1700000000,
 			data: [
-				{ url: 'https://cdn.example/a.png', size: '2048x2048' },
+				{ url: ' https://cdn.example/a.png ', size: '2048x2048', output_format: 'png', z_index: 1 },
 				{ error: { code: 'x', message: 'failed one' } },
 			],
-			usage: { generated_images: 1, output_tokens: 16384 },
+			usage: { generated_images: 1, output_tokens: 16384, total_tokens: 16384 },
 		});
 		assert.deepEqual(converted, {
 			created: 1700000000,
-			data: [{ url: 'https://cdn.example/a.png' }],
-			usage: { generated_images: 1 },
+			data: [{ url: 'https://cdn.example/a.png', size: '2048x2048', output_format: 'png', z_index: 1 }],
+			usage: { generated_images: 1, output_tokens: 16384, total_tokens: 16384 },
 		});
 		assert.equal(
 			firstVolcengineImageFailureMessage({

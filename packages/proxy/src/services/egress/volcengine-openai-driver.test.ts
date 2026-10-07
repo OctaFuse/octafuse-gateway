@@ -67,13 +67,43 @@ describe('Volcengine OpenAI image driver', () => {
 		assert.equal(posted?.sequential_image_generation, 'auto');
 		assert.deepEqual(posted?.sequential_image_generation_options, { max_images: 3 });
 		assert.equal(posted?.quality, undefined);
-		assert.equal(posted?.background, undefined);
+		assert.equal(posted?.background, 'transparent');
 		assert.equal(posted?.watermark, false);
 		assert.equal(result.response.status, 200);
 		assert.equal(result.upstreamRequestId, 'ark-1');
 		const body = (await result.response.json()) as { data: Array<{ url: string }> };
 		assert.deepEqual(body.data, [{ url: 'https://cdn.example/a.png' }]);
 		assert.equal(result.meta?.imageCount, 1);
+		assert.equal(result.meta?.imageBillingSize, '2k');
+	});
+
+	it('bills explicit pixel sizes by tier and rejects groups on Seedream 5.0 pro', async () => {
+		const pro = { ...route(), providerModelName: 'doubao-seedream-5-0-pro-260708' };
+		const tiered = await dispatchVolcengineOpenAiImage(
+			pro,
+			{ prompt: 'a cat', size: '2048x1024' },
+			undefined,
+			null,
+			undefined,
+			{
+				fetchImpl: async () =>
+					new Response(JSON.stringify({ data: [{ url: 'https://cdn.example/a.png', size: '2048x1024' }] }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json' },
+					}),
+			},
+		);
+		assert.equal(tiered.meta?.imageBillingSize, '1.5k');
+
+		let called = false;
+		const rejected = await dispatchVolcengineOpenAiImage(pro, { prompt: 'a cat', n: 2 }, undefined, null, undefined, {
+			fetchImpl: async () => {
+				called = true;
+				return new Response('{}', { status: 200 });
+			},
+		});
+		assert.equal(called, false);
+		assert.equal(rejected.response.status, 400);
 	});
 
 	it('returns 502 with the first image error when every image fails', async () => {
@@ -151,7 +181,7 @@ describe('Volcengine OpenAI image driver', () => {
 			},
 		);
 		assert.equal(posted?.stream, undefined);
-		assert.equal(posted?.sequential_image_generation, 'disabled');
+		assert.equal(posted?.sequential_image_generation, undefined);
 		assert.equal(posted?.sequential_image_generation_options, undefined);
 		assert.equal(posted?.response_format, 'url');
 		assert.equal(posted?.seed, 7);

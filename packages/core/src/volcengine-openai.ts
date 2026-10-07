@@ -2,7 +2,7 @@
  * OpenAI Images → 火山方舟 / BytePlus `POST /images/generations` 的请求与响应映射。
  * Proxy 驱动和 Admin 调试台共用。流式只走原生透传，这里固定非流式 JSON。
  */
-import { VOLCENGINE_MAX_SEQUENTIAL_IMAGES } from './volcengine-native';
+import { VOLCENGINE_MAX_SEQUENTIAL_IMAGES, isVolcengineSingleImageModel } from './volcengine-native';
 
 export class VolcengineOpenAiClientError extends Error {
 	readonly status = 400;
@@ -44,6 +44,38 @@ function responseFormat(value: unknown): 'url' | 'b64_json' {
 	throw new VolcengineOpenAiClientError('response_format must be url or b64_json');
 }
 
+function optionalString(value: unknown, field: string): string | undefined {
+	if (value == null || value === '') return undefined;
+	if (typeof value !== 'string') throw new VolcengineOpenAiClientError(`${field} must be a string`);
+	const trimmed = value.trim().toLowerCase();
+	return trimmed || undefined;
+}
+
+/** OpenAI `auto` 交给方舟按模型默认值处理；方舟只在图层拆分里接受 `auto`。 */
+function imageSize(value: unknown): string | undefined {
+	if (typeof value !== 'string') return undefined;
+	const trimmed = value.trim();
+	if (!trimmed || trimmed.toLowerCase() === 'auto') return undefined;
+	return trimmed;
+}
+
+/** 方舟只有 5.0 pro / flash 支持透明背景，且只用于图生图。 */
+function background(value: unknown): 'transparent' | 'opaque' | undefined {
+	const v = optionalString(value, 'background');
+	if (v === undefined || v === 'auto') return undefined;
+	if (v === 'transparent' || v === 'opaque') return v;
+	throw new VolcengineOpenAiClientError('background must be transparent, opaque, or auto');
+}
+
+/** 方舟只出 png / jpeg；OpenAI 的 webp 没有对应项。 */
+function outputFormat(value: unknown): 'png' | 'jpeg' | undefined {
+	const v = optionalString(value, 'output_format');
+	if (v === undefined) return undefined;
+	if (v === 'png') return 'png';
+	if (v === 'jpeg' || v === 'jpg') return 'jpeg';
+	throw new VolcengineOpenAiClientError('output_format must be png or jpeg');
+}
+
 function referenceImage(value: unknown): string | string[] | undefined {
 	if (typeof value === 'string') {
 		const trimmed = value.trim();
@@ -59,8 +91,9 @@ function referenceImage(value: unknown): string | string[] | undefined {
 
 /**
  * OpenAI Images generations → 方舟生图。
- * `n=1` 关闭组图；`n` 为 2–15 时打开组图并把 `max_images` 设为 `n`。
- * `quality`、`background`、`stream` 不转发。`image` 原样作为参考图。
+ * `n=1` 不带组图字段（方舟默认单图，5.0 pro / flash 也不接受该字段）；
+ * `n` 为 2–15 时打开组图并把 `max_images` 设为 `n`，5.0 pro / flash 不支持组图。
+ * `quality`、`stream` 不转发；`size=auto` 与 `background=auto` 交给方舟默认值。`image` 原样作为参考图。
  */
 export function buildVolcengineImageBodyFromOpenAi(
 	model: string,
@@ -69,18 +102,26 @@ export function buildVolcengineImageBodyFromOpenAi(
 	const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 	if (!prompt) throw new VolcengineOpenAiClientError('prompt is required');
 	const n = imageCount(body.n);
+	if (n > 1 && isVolcengineSingleImageModel(model)) {
+		throw new VolcengineOpenAiClientError(
+			`n must be 1 for ${model}: Seedream 5.0 pro / flash do not support group generation`,
+		);
+	}
 	const upstream: Record<string, unknown> = {
 		model,
 		prompt,
 		response_format: responseFormat(body.response_format),
-		sequential_image_generation: n === 1 ? 'disabled' : 'auto',
 	};
 	if (n > 1) {
+		upstream.sequential_image_generation = 'auto';
 		upstream.sequential_image_generation_options = { max_images: n };
 	}
-	if (typeof body.size === 'string' && body.size.trim() !== '') {
-		upstream.size = body.size.trim();
-	}
+	const size = imageSize(body.size);
+	if (size) upstream.size = size;
+	const bg = background(body.background);
+	if (bg) upstream.background = bg;
+	const format = outputFormat(body.output_format);
+	if (format) upstream.output_format = format;
 	if (typeof body.watermark === 'boolean') upstream.watermark = body.watermark;
 	const image = referenceImage(body.image);
 	if (image !== undefined) upstream.image = image;
@@ -94,21 +135,28 @@ export function buildVolcengineImageBodyFromOpenAi(
 	return upstream;
 }
 
-function succeededImage(item: unknown): { url: string } | { b64_json: string } | null {
+export type VolcengineOpenAiImageItem = ({ url: string } | { b64_json: string }) & Record<string, unknown>;
+
+/**
+ * 成功项保留方舟原字段（`size`、`output_format`，图层拆分的 `z_index`、`bounding_box` 等），
+ * 只把 `url` / `b64_json` 去掉首尾空白。失败项返回 null。
+ */
+function succeededImage(item: unknown): VolcengineOpenAiImageItem | null {
 	const row = asObject(item);
 	if (!row) return null;
-	const url = typeof row.url === 'string' ? row.url.trim() : '';
-	if (url) return { url };
-	const b64 = typeof row.b64_json === 'string' ? row.b64_json.trim() : '';
-	if (b64) return { b64_json: b64 };
+	const { error: _error, url: rawUrl, b64_json: rawB64, ...rest } = row;
+	const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+	if (url) return { ...rest, url };
+	const b64 = typeof rawB64 === 'string' ? rawB64.trim() : '';
+	if (b64) return { ...rest, b64_json: b64 };
 	return null;
 }
 
-/** 方舟生图 JSON → OpenAI `{ created, data, usage }`。失败项从 `data` 去掉。 */
+/** 方舟生图 JSON → OpenAI `{ created, data, usage }`。失败项从 `data` 去掉，`usage` 保持方舟原样。 */
 export function volcengineImageResponseToOpenAi(payload: unknown): {
 	created: number;
-	data: Array<{ url: string } | { b64_json: string }>;
-	usage?: { generated_images: number };
+	data: VolcengineOpenAiImageItem[];
+	usage?: Record<string, unknown>;
 } {
 	const root = asObject(payload);
 	const createdRaw = root?.created;
@@ -117,14 +165,10 @@ export function volcengineImageResponseToOpenAi(payload: unknown): {
 			? Math.floor(createdRaw)
 			: Math.floor(Date.now() / 1000);
 	const data = Array.isArray(root?.data)
-		? root.data.map(succeededImage).filter((item): item is { url: string } | { b64_json: string } => item != null)
+		? root.data.map(succeededImage).filter((item): item is VolcengineOpenAiImageItem => item != null)
 		: [];
-	const generated = asObject(root?.usage)?.generated_images;
-	const usage =
-		typeof generated === 'number' && Number.isFinite(generated) && generated >= 0
-			? { generated_images: Math.floor(generated) }
-			: undefined;
-	return usage ? { created, data, usage } : { created, data };
+	const usage = asObject(root?.usage);
+	return usage ? { created, data, usage: { ...usage } } : { created, data };
 }
 
 /** 全部失败时给客户端的说明。优先 `data[].error.message`，再看顶层 `error.message`。 */

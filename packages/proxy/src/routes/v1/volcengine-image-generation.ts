@@ -5,7 +5,7 @@
  * 按 `usage.generated_images`（或 SSE 成功事件）计 per_image。
  */
 import { isImageGenerationModel, type GatewayRepositories } from '@octafuse/core';
-import { requestedVolcengineImageCount } from '@octafuse/core/volcengine-native';
+import { requestedVolcengineImageCount, volcengineImageBillingSize } from '@octafuse/core/volcengine-native';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Env } from '../../app';
@@ -56,10 +56,6 @@ function redactVolcengineImageBody(body: Record<string, unknown>): Record<string
 	const clone = structuredClone(body);
 	if ('image' in clone) clone.image = redactImageValue(clone.image);
 	return clone;
-}
-
-function billingSize(body: Record<string, unknown>): string {
-	return typeof body.size === 'string' && body.size.trim() !== '' ? body.size.trim() : 'auto';
 }
 
 volcengineImageGenerationRoutes.post('/', async (c) => {
@@ -138,7 +134,7 @@ async function forwardVolcengineImage(
 	}
 	const referenceCount = countOpenAiGenerationReferenceImages(requestBody);
 	const requestedCount = requestedVolcengineImageCount(requestBody);
-	const size = billingSize(requestBody);
+	const size = volcengineImageBillingSize(requestBody.size);
 	const estimate = await estimateImageBudgetPrecheck(
 		repos,
 		{

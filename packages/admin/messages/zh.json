@@ -1146,11 +1146,11 @@
 				"volcengine-image": {
 					"purpose": "OpenAI SDK 调 POST /v1/images/generations，网关转到火山方舟生图。供应商模型名填 doubao-seedream、dola-seedream 或 seedream。",
 					"mapping": [
-						"n=1 关闭组图；n 为 2–15 时打开组图，max_images 等于 n。实际张数可能少于 n，按成功张数计费。",
-						"size 原样转发，1024x1024 和 2K 都可以。",
-						"response_format 只支持 url 和 b64_json。",
-						"参考图放在 image。quality 和 background 不转发。",
-						"只返回 JSON。要流式请改走火山方舟原生透传。"
+						"n=1 生成单图；n 为 2–15 时打开组图，max_images 等于 n。实际张数可能少于 n，按成功张数计费。5.0 pro / flash 不支持组图，n 只能为 1。",
+						"size 原样转发，auto 交给方舟默认值。5.0 pro / flash 用 1K / 1.5K / 2K；5.0 lite / 4.5 至少 369 万像素，1024x1024 会被拒绝。不确定就用 2K。",
+						"background 只转发 transparent / opaque，仅 5.0 pro / flash 图生图可用。output_format 只接受 png / jpeg。response_format 只支持 url 和 b64_json。",
+						"参考图放在 image。方舟默认加水印，不要时传 watermark: false。quality 不转发。",
+						"只返回 JSON，data[] 保留方舟的 size 和图层字段。要流式请改走火山方舟原生透传。"
 					]
 				}
 			},

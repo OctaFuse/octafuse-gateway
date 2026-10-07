@@ -1146,11 +1146,11 @@
 				"volcengine-image": {
 					"purpose": "OpenAI SDK calls POST /v1/images/generations. The gateway converts that to Ark image generation. Provider model names are doubao-seedream, dola-seedream, or seedream.",
 					"mapping": [
-						"n=1 disables sequential images. n from 2 to 15 enables them with max_images equal to n. Ark may return fewer images; billing uses the successful count.",
-						"size is forwarded as written, including 1024x1024 and 2K.",
-						"response_format accepts only url and b64_json.",
-						"Reference images go in image. quality and background are not forwarded.",
-						"JSON only. Use the Volcengine native passthrough for streaming."
+						"n=1 generates one image. n from 2 to 15 enables sequential images with max_images equal to n. Ark may return fewer images; billing uses the successful count. 5.0 pro / flash do not support sequential images, so n must be 1.",
+						"size is forwarded as written; auto uses the Ark default. 5.0 pro / flash take 1K / 1.5K / 2K. 5.0 lite / 4.5 need at least 3.69 million pixels and reject 1024x1024. Use 2K if unsure.",
+						"background forwards only transparent / opaque, and only 5.0 pro / flash support it for image-to-image. output_format accepts png / jpeg. response_format accepts url and b64_json.",
+						"Reference images go in image. Ark adds a watermark by default; send watermark: false to turn it off. quality is not forwarded.",
+						"JSON only; data[] keeps Ark's size and layer fields. Use the Volcengine native passthrough for streaming."
 					]
 				}
 			},

@@ -71,7 +71,7 @@ Import 模板名：**Volcengine Ark**（`packages/admin/lib/provider-import-pres
 
 | 客户端路径 | 路由 | 行为 |
 |------------|------|------|
-| `POST /v1/images/generations` | 请求 `openai` / `images.generations`，上游 `volcengine` / `images.generations`，适配器 `volcengine-image` | OpenAI SDK 入口。`n=1` 关闭组图；`n` 为 2–15 时打开组图并把 `max_images` 设为 `n`。预检按 `n`，最终按成功张数计费。只返回 OpenAI JSON。`quality`、`background` 不转发 |
+| `POST /v1/images/generations` | 请求 `openai` / `images.generations`，上游 `volcengine` / `images.generations`，适配器 `volcengine-image` | OpenAI SDK 入口。`n=1` 不带组图字段；`n` 为 2–15 时打开组图并把 `max_images` 设为 `n`（5.0 pro / flash 不支持组图，`n>1` 直接 400）。预检按 `n`，最终按成功张数计费。`size=auto` 交给方舟默认值；`background` 只转发 `transparent` / `opaque`；`output_format` 只接受 `png` / `jpeg`；`quality` 不转发。`data[]` 保留方舟的 `size`、`output_format` 和图层字段，`usage` 原样返回。只返回 JSON |
 | `POST /v1/volcengine/images/generations` | 请求与上游都是 `volcengine` / `images.generations`，适配器 `passthrough` | 原生透传。只替换 `model`。非流式 JSON 与 `stream: true` 的 SSE 原样返回，组图字段和单张失败（`data[].error`）都保留。按 `usage.generated_images` 计费 |
 
 ```text
@@ -123,14 +123,15 @@ POST {dashscope.base}/services/aigc/multimodal-generation/generation
 |------|---------------|--------------------------------------|
 | 文生图 | `POST /v1/images/generations` | 同左 |
 | 参考图 / 编辑 | **`POST /v1/images/edits`** multipart：1 张用 `image`，多张用 `image[]` | **无 edits**；`generations` + JSON `image`（URL / data URL / 数组） |
-| `size` | `auto` / `1024x1024` / `1024x1536` / `1536x1024` 等；2.5 另常见 `2048x2048`、`2048x1152`、`3840x2160` / `2160x3840` | `2K` / `3K` / `4K` 或 `WxH` 像素 |
+| `size` | `auto` / `1024x1024` / `1024x1536` / `1536x1024` 等；2.5 另常见 `2048x2048`、`2048x1152`、`3840x2160` / `2160x3840` | 按模型不同：5.0 pro / flash 为 `1K` / `1.5K` / `2K` 或 92 万–462 万像素；5.0 lite / 4.5 为 `2K` / `3K`（仅 lite）/ `4K` 或 369 万–1678 万像素，`1024x1024` 会被拒；4.0 为 `1K` / `2K` / `4K` 或 92 万–1678 万像素 |
 | `quality` | `auto` / `low` / `medium` / `high`；2.5 另支持 `xhigh` / `max` | 通常不用 |
-| `background` | 支持（如 `auto`） | 无 |
-| `watermark` | — | `volcengine-image` 原样转发 boolean。原生透传按客户端原文转发 |
+| `background` | 支持（如 `auto`） | 仅 5.0 pro / flash，且只用于图生图（输入 1 张带透明通道的图）。`volcengine-image` 转发 `transparent` / `opaque`，`auto` 不转发 |
+| `output_format` | `png` / `jpeg` / `webp` | 5.0 pro / flash / lite 支持 `png` / `jpeg`（默认 `jpeg`）；`volcengine-image` 拒收 `webp` |
+| `watermark` | — | 方舟默认 `true`（右下角「AI 生成」）。`volcengine-image` 原样转发 boolean。原生透传按客户端原文转发 |
 | `sequential_image_generation` (+ `*_options`) | — | 原生透传原样转发。`volcengine-image` 由 `n` 决定，客户端不能覆盖 |
 | `optimize_prompt_options` | — | 可选，显式传入才转发 |
 | `response_format` | GPT Image 系列常直接 `b64_json` 且可能拒收该字段；**仅显式传入时透传** | `volcengine-image` 只认 `url` 和 `b64_json`。原生透传按上游 |
-| `n` | OpenAI 透传仅 **1**；DashScope 千问 1–6、万相 1–4 | `volcengine-image` 为 1–15，映射成组图。原生入口不使用 `n` |
+| `n` | OpenAI 透传仅 **1**；DashScope 千问 1–6、万相 1–4 | `volcengine-image` 为 1–15，映射成组图（参考图张数 + 生成张数 ≤ 15）；5.0 pro / flash 只能为 1。原生入口不使用 `n` |
 | `stream` | OpenAI 生图入口不转发 | `volcengine-image` 只出 JSON。原生入口 `stream: true` 原样转发 SSE |
 | `prompt` | 必填，最长 4000 | 同左 |
 
@@ -259,7 +260,7 @@ charged ≈
 | Catalog id | CNY / 张 | USD / 张 | 备注 |
 |------------|----------|----------|------|
 | `doubao-seedream-5-0` | **0.22** | **0.035** | 火山方舟一口价；BytePlus $0.035；**不按 4K 翻倍** |
-| `doubao-seedream-5-0-pro` | **0.30**（≤2.36MP）/ **0.60**（>2.36MP） | **0.045** / **0.09** | `by_size`：`2k`→低档，`3k`/`4k`→高档；`image.input` CNY **0.02** / USD **0.003**（官方首张免费网关暂按全量计） |
+| `doubao-seedream-5-0-pro` | **0.30**（≤261 万像素，1.5K 及以下）/ **0.60**（2K） | **0.045** / **0.09** | `by_size`：`1k` / `1.5k` 低档，`2k` 高档，缺省按高档（方舟默认 2K）；`宽x高` 按像素换算档位。`image.input` CNY **0.02** / USD **0.003**（官方首张免费网关暂按全量计） |
 | `glm-image` | **0.1** | **0.014** | 智谱官方 ¥0.1/次；USD ≈ ×7.14（国内权威 CNY） |
 | `qwen-image-3.0-pro` | **0.25**（1K）/ **0.50**（2K） | **0.036** / **0.071** | 百炼华北2 原价；`image.input` CNY **0.02** / USD **0.003**；USD = CNY ÷ 7 |
 | `qwen-image-3.0` | **0.18** | **0.026** | 1K/2K 同价；`image.input` 同上 |

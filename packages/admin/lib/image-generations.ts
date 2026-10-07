@@ -30,7 +30,7 @@ export const IMAGE_GENERATIONS_BODY_TEMPLATE = `{
 
 /**
  * OpenAI `/v1/images/generations` → 火山方舟 Seedream。
- * Seedream 5.0 要求至少 3,686,400 像素，`1024x1024` 会被上游拒绝；`2K` 由方舟按比例展开。
+ * 5.0 lite / 4.5 至少 3,686,400 像素，`1024x1024` 会被拒；`2K` 所有 Seedream 型号都支持。
  */
 export const SEEDREAM_OPENAI_IMAGE_BODY_TEMPLATE = `{
   "model": "<auto>",

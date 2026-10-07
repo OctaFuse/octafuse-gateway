@@ -1146,11 +1146,11 @@
 				"volcengine-image": {
 					"purpose": "OpenAI SDK の POST /v1/images/generations を火山方舟の画像生成に変換します。プロバイダーモデル名は doubao-seedream、dola-seedream、seedream です。",
 					"mapping": [
-						"n=1 は組図を無効にします。n が 2–15 のときは組図を有効にし、max_images を n にします。実際の枚数は少なくなることがあり、成功枚数で課金します。",
-						"size はそのまま転送します。1024x1024 と 2K の両方が使えます。",
-						"response_format は url と b64_json のみです。",
-						"参照画像は image に置きます。quality と background は転送しません。",
-						"JSON のみです。ストリームは火山方舟のネイティブ透過を使います。"
+						"n=1 は単一画像を生成します。n が 2–15 のときは組図を有効にし、max_images を n にします。実際の枚数は少なくなることがあり、成功枚数で課金します。5.0 pro / flash は組図非対応のため n は 1 のみです。",
+						"size はそのまま転送し、auto は Ark の既定値に任せます。5.0 pro / flash は 1K / 1.5K / 2K、5.0 lite / 4.5 は 369 万ピクセル以上が必要で 1024x1024 は拒否されます。迷ったら 2K を使います。",
+						"background は transparent / opaque のみ転送し、5.0 pro / flash の画像入力生成でのみ使えます。output_format は png / jpeg、response_format は url と b64_json のみです。",
+						"参照画像は image に置きます。Ark は既定で透かしを入れるため、不要なら watermark: false を送ります。quality は転送しません。",
+						"JSON のみで、data[] には Ark の size とレイヤー項目が残ります。ストリームは火山方舟のネイティブ透過を使います。"
 					]
 				}
 			},

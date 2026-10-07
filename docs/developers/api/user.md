@@ -1041,7 +1041,11 @@ OpenAI 入口使用适配器 `minimax-image`，仍调用 `POST /v1/images/genera
 
 ### 火山方舟生图
 
-OpenAI SDK 使用适配器 `volcengine-image`，仍调用 `POST /v1/images/generations`。`n=1` 关闭组图；`n` 为 2–15 时打开组图，`max_images` 等于 `n`。方舟可能返回更少的图片，预检按 `n`，最终按成功张数计费。`size` 原样转发（`1024x1024` 或 `2K`）。`response_format` 只支持 `url` 和 `b64_json`。参考图放在 `image`。`quality` 和 `background` 不转发。全部失败时返回上游错误，HTTP 502。这条入口只出 JSON。
+OpenAI SDK 使用适配器 `volcengine-image`，仍调用 `POST /v1/images/generations`。`n=1` 生成单图；`n` 为 2–15 时打开组图，`max_images` 等于 `n`。方舟可能返回更少的图片，预检按 `n`，最终按成功张数计费。Seedream 5.0 pro / flash 不支持组图，`n` 只能为 1。
+
+`size` 原样转发，`auto` 交给方舟按模型默认值处理。可用档位和像素范围按模型不同：5.0 pro / flash 为 `1K` / `1.5K` / `2K` 或 92 万–462 万像素；5.0 lite / 4.5 至少 369 万像素（如 `2560x1440`），`1024x1024` 会被拒绝。不确定时用 `2K`，所有型号都支持。
+
+`background` 只转发 `transparent` / `opaque`，仅 5.0 pro / flash 的图生图可用。`output_format` 只接受 `png` / `jpeg`。`response_format` 只支持 `url` 和 `b64_json`。参考图放在 `image`。方舟默认加「AI 生成」水印，不需要时传 `watermark: false`。`quality` 不转发。响应 `data[]` 保留方舟的 `size`、`output_format`（图层拆分还有 `z_index`、`bounding_box` 等），`usage` 原样返回。全部失败时返回上游错误，HTTP 502。这条入口只出 JSON。
 
 原生和流式走透传：
 

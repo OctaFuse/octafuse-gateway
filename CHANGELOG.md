@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- 新增上游协议 `volcengine`（火山方舟与 BytePlus ModelArk 共用）。Seedream 生图有两条入口：原生透传 `POST /v1/volcengine/images/generations`（非流式 JSON 与 `stream: true` 的 SSE 共用，只替换 `model`，按 `usage.generated_images` 计费），以及 OpenAI 转换适配器 `volcengine-image`（`POST /v1/images/generations` 转到方舟生图，`n` 为 1–15 时映射组图，只返回 JSON）。对话和 Responses 继续用供应商的 `openai` 端点。视频和语音还没有端点。火山方舟与 BytePlus 导入预设只保留 `openai` 对话和 `volcengine.base`，不再预填 OpenAI 生图 URL。已经用 OpenAI 透传跑 Seedream 的路由可以继续用；切到新适配器时把上游协议改成 `volcengine` 并选择 `volcengine-image`。调试台和模拟器里，Seedream 的 OpenAI 示例请求使用 `size: 2K`（方舟要求至少 368 万像素，`1024x1024` 会被拒绝）。
+- 新增上游协议 `volcengine`（火山方舟与 BytePlus ModelArk 共用）。Seedream 生图有两条入口：原生透传 `POST /v1/volcengine/images/generations`（非流式 JSON 与 `stream: true` 的 SSE 共用，只替换 `model`，按 `usage.generated_images` 计费），以及 OpenAI 转换适配器 `volcengine-image`（`POST /v1/images/generations` 转到方舟生图，`n` 为 1–15 时映射组图，只返回 JSON）。对话和 Responses 继续用供应商的 `openai` 端点。视频和语音还没有端点。火山方舟与 BytePlus 导入预设只保留 `openai` 对话和 `volcengine.base`，不再预填 OpenAI 生图 URL。已经用 OpenAI 透传跑 Seedream 的路由可以继续用；切到新适配器时把上游协议改成 `volcengine` 并选择 `volcengine-image`。`volcengine-image` 按方舟文档处理字段：`n=1` 不带组图字段，5.0 pro / flash 的 `n>1` 直接返回 400；`size=auto` 交给方舟默认值；`background` 转发 `transparent` / `opaque`，`output_format` 只接受 `png` / `jpeg`；响应 `data[]` 保留方舟的 `size`、图层字段，`usage` 原样返回。调试台和模拟器里，Seedream 的 OpenAI 示例请求使用 `size: 2K`（5.0 lite / 4.5 至少 369 万像素，`1024x1024` 会被拒绝）。
+
+- 修正 Seedream 5.0 Pro 目录价档位：官方按 261 万像素（1.5K）分档，`1k` / `1.5k` 为 ¥0.30 / $0.045，`2k` 和缺省（方舟默认 2K）为 ¥0.60 / $0.09。原先 2K 按低档计费，少收一半。Seedream 两条入口都把 `宽x高` 按像素换算成档位再查价。已导入的模型不会自动更新，需要改价或运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。
 
 - 路由编辑器在选中协议适配器后展示调用指南：客户端路径、请求与响应形态、计费单位、字段映射、上游接口不提供的能力、模型特有参数，以及 OpenAI SDK 示例。透传只说明按上游原生格式发送。DashScope 语音合成可从指南跳到请求参数。
 

@@ -76,11 +76,13 @@ describe('static image model presets (*-image.json)', () => {
 		const seedreamPro = byId.get('doubao-seedream-5-0-pro')!;
 		const seedreamProCny = asPricing(seedreamPro.pricing.cny);
 		const seedreamProUsd = asPricing(seedreamPro.pricing.usd);
-		assert.equal(seedreamProCny.image?.default, 0.3);
-		assert.equal(seedreamProCny.image?.by_size?.['3k'], 0.6);
+		assert.equal(seedreamProCny.image?.default, 0.6);
+		assert.equal(seedreamProCny.image?.by_size?.['1.5k'], 0.3);
+		assert.equal(seedreamProCny.image?.by_size?.['2k'], 0.6);
+		assert.equal(seedreamProCny.image?.by_size?.['3k'], undefined);
 		assert.equal(seedreamProCny.image?.input?.default, 0.02);
-		assert.equal(seedreamProUsd.image?.default, 0.045);
-		assert.equal(seedreamProUsd.image?.by_size?.['3k'], 0.09);
+		assert.equal(seedreamProUsd.image?.default, 0.09);
+		assert.equal(seedreamProUsd.image?.by_size?.['1.5k'], 0.045);
 		assert.equal(seedreamProUsd.image?.input?.default, 0.003);
 
 		const glm = byId.get('glm-image')!;

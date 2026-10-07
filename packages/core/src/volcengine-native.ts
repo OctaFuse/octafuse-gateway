@@ -11,6 +11,31 @@
 /** 官方组图上限。参考图张数 + 生成张数 ≤ 15。 */
 export const VOLCENGINE_MAX_SEQUENTIAL_IMAGES = 15;
 
+/** Seedream 5.0 pro / flash 只出单图：不支持组图、流式和 `sequential_image_generation` 字段。 */
+export function isVolcengineSingleImageModel(providerModelName: string): boolean {
+	return /seedream-5-0-(pro|flash)\b/i.test(providerModelName.trim());
+}
+
+const SIZE_ALIASES = new Set(['1k', '1.5k', '2k', '3k', '4k']);
+
+/**
+ * 计费用尺寸档位。档位写法（`2K`）原样小写；`宽x高` 按像素换算成档位，
+ * 边界取自官方价格：5.0 pro 以 261 万像素（1.5K）为高低档分界。缺省为 `auto`。
+ */
+export function volcengineImageBillingSize(size: unknown): string {
+	if (typeof size !== 'string' || size.trim() === '') return 'auto';
+	const raw = size.trim().toLowerCase();
+	if (SIZE_ALIASES.has(raw)) return raw;
+	const m = /^(\d{2,5})\s*[x*×]\s*(\d{2,5})$/.exec(raw);
+	if (!m) return raw;
+	const pixels = Number(m[1]) * Number(m[2]);
+	if (pixels <= 1_638_400) return '1k';
+	if (pixels <= 2_611_200) return '1.5k';
+	if (pixels <= 4_624_220) return '2k';
+	if (pixels <= 11_000_000) return '3k';
+	return '4k';
+}
+
 function asObject(value: unknown): Record<string, unknown> | null {
 	return value != null && typeof value === 'object' && !Array.isArray(value)
 		? (value as Record<string, unknown>)

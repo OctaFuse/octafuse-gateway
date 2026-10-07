@@ -1146,11 +1146,11 @@
 				"volcengine-image": {
 					"purpose": "OpenAI SDK의 POST /v1/images/generations를 화산 방주 이미지 생성으로 바꿉니다. 공급자 모델 이름은 doubao-seedream, dola-seedream, seedream입니다.",
 					"mapping": [
-						"n=1은 연속 생성을 끕니다. n이 2–15이면 연속 생성을 켜고 max_images를 n으로 둡니다. 실제 장수는 더 적을 수 있으며 성공한 장수로 과금합니다.",
-						"size는 그대로 전달합니다. 1024x1024와 2K를 모두 쓸 수 있습니다.",
-						"response_format은 url과 b64_json만 지원합니다.",
-						"참조 이미지는 image에 둡니다. quality와 background는 전달하지 않습니다.",
-						"JSON만 반환합니다. 스트리밍은 Volcengine 네이티브 패스스루를 사용하세요."
+						"n=1은 단일 이미지를 생성합니다. n이 2–15이면 연속 생성을 켜고 max_images를 n으로 둡니다. 실제 장수는 더 적을 수 있으며 성공한 장수로 과금합니다. 5.0 pro / flash는 연속 생성을 지원하지 않으므로 n은 1만 됩니다.",
+						"size는 그대로 전달하며 auto는 Ark 기본값을 씁니다. 5.0 pro / flash는 1K / 1.5K / 2K, 5.0 lite / 4.5는 최소 369만 픽셀이 필요해 1024x1024는 거부됩니다. 잘 모르면 2K를 쓰세요.",
+						"background는 transparent / opaque만 전달하며 5.0 pro / flash의 이미지 입력 생성에서만 쓸 수 있습니다. output_format은 png / jpeg, response_format은 url과 b64_json만 지원합니다.",
+						"참조 이미지는 image에 둡니다. Ark는 기본으로 워터마크를 넣으므로 원하지 않으면 watermark: false를 보내세요. quality는 전달하지 않습니다.",
+						"JSON만 반환하며 data[]에 Ark의 size와 레이어 필드가 남습니다. 스트리밍은 Volcengine 네이티브 패스스루를 사용하세요."
 					]
 				}
 			},

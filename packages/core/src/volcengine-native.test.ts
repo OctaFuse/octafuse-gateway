@@ -3,12 +3,34 @@ import { describe, it } from 'node:test';
 import {
 	VOLCENGINE_MAX_SEQUENTIAL_IMAGES,
 	countVolcengineImages,
+	isVolcengineSingleImageModel,
 	requestedVolcengineImageCount,
 	scanVolcengineImageSse,
+	volcengineImageBillingSize,
 	volcengineSseImageCount,
 } from './volcengine-native';
 
 describe('volcengine native image parsing', () => {
+	it('maps size to the billing tier used by Seedream pricing', () => {
+		assert.equal(volcengineImageBillingSize(undefined), 'auto');
+		assert.equal(volcengineImageBillingSize(' 2K '), '2k');
+		assert.equal(volcengineImageBillingSize('1.5K'), '1.5k');
+		assert.equal(volcengineImageBillingSize('1024x1024'), '1k');
+		assert.equal(volcengineImageBillingSize('2048x1024'), '1.5k');
+		assert.equal(volcengineImageBillingSize('1536x1536'), '1.5k');
+		assert.equal(volcengineImageBillingSize('2048x2048'), '2k');
+		assert.equal(volcengineImageBillingSize('2848x1600'), '2k');
+		assert.equal(volcengineImageBillingSize('3072x3072'), '3k');
+		assert.equal(volcengineImageBillingSize('4096x4096'), '4k');
+	});
+
+	it('recognizes the single-image Seedream 5.0 pro and flash models', () => {
+		assert.equal(isVolcengineSingleImageModel('doubao-seedream-5-0-pro-260708'), true);
+		assert.equal(isVolcengineSingleImageModel('dola-seedream-5-0-flash-260915'), true);
+		assert.equal(isVolcengineSingleImageModel('doubao-seedream-5-0-260128'), false);
+		assert.equal(isVolcengineSingleImageModel('doubao-seedream-4-5-251128'), false);
+	});
+
 	it('prefers usage.generated_images over data length', () => {
 		assert.equal(
 			countVolcengineImages({

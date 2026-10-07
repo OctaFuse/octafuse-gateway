@@ -14,6 +14,7 @@ import {
 	firstVolcengineImageFailureMessage,
 	volcengineImageResponseToOpenAi,
 } from '@octafuse/core/volcengine-openai';
+import { volcengineImageBillingSize } from '@octafuse/core/volcengine-native';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE } from '../proxy';
 import type { ProxyDispatchMeta, ProxyDispatchResult } from '../failover-dispatch';
@@ -135,6 +136,7 @@ export async function dispatchVolcengineOpenAiImage(
 	}
 	meta.parsedBody = clientBody;
 	meta.imageCount = clientBody.data.length;
+	meta.imageBillingSize = volcengineImageBillingSize(upstreamBody.size);
 	meta.restoredUpstreamPaths = restoredUpstreamPaths;
 	return {
 		response: jsonResponse(200, clientBody),

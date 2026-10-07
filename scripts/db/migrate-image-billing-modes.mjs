@@ -36,29 +36,13 @@ const TARGETS = {
 	'doubao-seedream-5-0-pro': {
 		aliases: [],
 		cny: {
-			default: 0.3,
-			by_size: { '2k': 0.3, '3k': 0.6, '4k': 0.6 },
-			by_quality_size: {
-				'flat:2k': 0.3,
-				'flat:3k': 0.6,
-				'flat:4k': 0.6,
-				'auto:2k': 0.3,
-				'auto:3k': 0.6,
-				'auto:4k': 0.6,
-			},
+			default: 0.6,
+			by_size: { '1k': 0.3, '1.5k': 0.3, '2k': 0.6 },
 			input: { default: 0.02 },
 		},
 		usd: {
-			default: 0.045,
-			by_size: { '2k': 0.045, '3k': 0.09, '4k': 0.09 },
-			by_quality_size: {
-				'flat:2k': 0.045,
-				'flat:3k': 0.09,
-				'flat:4k': 0.09,
-				'auto:2k': 0.045,
-				'auto:3k': 0.09,
-				'auto:4k': 0.09,
-			},
+			default: 0.09,
+			by_size: { '1k': 0.045, '1.5k': 0.045, '2k': 0.09 },
 			input: { default: 0.003 },
 		},
 	},
