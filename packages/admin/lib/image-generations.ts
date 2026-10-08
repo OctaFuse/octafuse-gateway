@@ -63,6 +63,7 @@ export function imageSampleFamily(input: ImageBodyTemplateInput): ImageSampleFam
 	if (adapter === 'dashscope-image-wan') return 'wan';
 	if (adapter === 'minimax-image') return 'minimax';
 	if (adapter === 'volcengine-image') return 'seedream-lite';
+	if (adapter === 'gemini-image') return 'gemini';
 	return 'unknown';
 }
 
@@ -107,7 +108,7 @@ function openaiImageSample(family: ImageSampleFamily, operation: ImageOperation)
 				model: '<auto>',
 				prompt: IMAGE_SAMPLE_PROMPT,
 				n: 1,
-				aspect_ratio: '1:1',
+				size: '1024x1024',
 				response_format: 'b64_json',
 			};
 		case 'minimax':
@@ -174,7 +175,7 @@ export function imageBodyTemplateFor(input: ImageBodyTemplateInput): string {
 	const adapter = input.adapter?.trim() ?? '';
 	const operation = input.operation ?? 'generations';
 	const family = imageSampleFamily(input);
-	if (protocol === 'gemini') {
+	if (protocol === 'gemini' && adapter !== 'gemini-image') {
 		return prettyJson(geminiNativeImageSample());
 	}
 	if (protocol === 'volcengine' && adapter !== 'volcengine-image') {

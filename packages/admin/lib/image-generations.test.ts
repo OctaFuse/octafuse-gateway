@@ -33,10 +33,14 @@ describe('image-generations helpers', () => {
 		assert.equal(grokQuality.quality, undefined);
 		assert.equal(grokQuality.size, undefined);
 		const gemini = body('gemini-3.1-flash-image');
-		assert.equal(gemini.aspect_ratio, '1:1');
+		assert.equal(gemini.size, '1024x1024');
 		assert.equal(gemini.response_format, 'b64_json');
-		assert.equal(gemini.size, undefined);
+		assert.equal(gemini.aspect_ratio, undefined);
 		assert.equal(gemini.quality, undefined);
+		const geminiAdapter = body('gemini-3.1-flash-image', 'gemini', 'gemini-image');
+		assert.equal(geminiAdapter.prompt, 'a red apple on a white background');
+		assert.equal(geminiAdapter.size, '1024x1024');
+		assert.equal(geminiAdapter.contents, undefined);
 		const minimax = body('image-01', 'openai', 'minimax-image');
 		assert.equal(minimax.aspect_ratio, '1:1');
 		assert.equal(minimax.size, undefined);

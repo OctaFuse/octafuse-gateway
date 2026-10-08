@@ -276,6 +276,27 @@ describe("previewPlaygroundUpstreamUrl", () => {
 		assert.equal(url?.includes("alt=sse"), false);
 	});
 
+	it("previews the gemini-image adapter on the Gemini endpoint", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					openai: { base: "https://wrong.example/v1" },
+					gemini: { base: "https://generativelanguage.googleapis.com/v1beta" },
+				}),
+			},
+			adapter: "gemini-image",
+			upstreamProtocol: "openai",
+			upstreamOperation: "images.generations",
+			providerModelName: "gemini-3.1-flash-image",
+			isImageModel: true,
+		});
+		assert.match(
+			url ?? "",
+			/^https:\/\/generativelanguage\.googleapis\.com\/v1beta\/.*gemini-3\.1-flash-image:generateContent\?key=/,
+		);
+	});
+
 	it("names the missing target endpoint instead of falling back to another protocol", () => {
 		const preview = describePlaygroundUpstreamUrl({
 			provider: {

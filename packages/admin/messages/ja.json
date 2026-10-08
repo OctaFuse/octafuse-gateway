@@ -1038,7 +1038,8 @@
 				"minimax-asr-file": "MiniMax ファイル文字起こし",
 				"minimax-tts": "MiniMax 公式音声合成",
 				"minimax-image": "MiniMax 公式画像生成",
-				"volcengine-image": "Volcengine Seedream 画像生成"
+				"volcengine-image": "Volcengine Seedream 画像生成",
+				"gemini-image": "Gemini 公式画像生成"
 			},
 			"adapterGuides": {
 				"passthrough": {
@@ -1151,6 +1152,15 @@
 						"background は transparent / opaque のみ転送し、5.0 pro / flash の画像入力生成でのみ使えます。output_format は png / jpeg、response_format は url と b64_json のみです。",
 						"参照画像は image に置きます。Ark は既定で透かしを入れるため、不要なら watermark: false を送ります。quality は転送しません。",
 						"JSON のみで、data[] には Ark の size とレイヤー項目が残ります。ストリームは火山方舟のネイティブ透過を使います。"
+					]
+				},
+				"gemini-image": {
+					"purpose": "OpenAI SDK の POST /v1/images/generations を Gemini generateContent に変換します。Gemini API と Vertex AI で使えます。プロバイダーモデル名は gemini-*-image または gemini-nano-banana* です。",
+					"mapping": [
+						"prompt は contents のテキストになり、responseModalities は TEXT と IMAGE に固定されます。n は 1 のみです。",
+						"WxH の size は最も近い imageConfig.aspectRatio に換算し、長辺から 1K / 2K / 4K を選びます。512 / 1K / 2K / 4K のみ、または auto も指定できます。",
+						"response_format は b64_json のみです。参照画像は image に data URL で置き、inlineData として送ります。quality と background は転送しません。",
+						"その他の Gemini パラメーターは generationConfig（imageConfig、thinkingConfig など）に書くと深くマージされます。画像出力とテキスト出力のトークンで課金します。JSON のみです。ストリームは Gemini のネイティブ透過を使います。"
 					]
 				}
 			},
@@ -1587,6 +1597,7 @@
 		"imageVolcenginePassthroughHint": "ネイティブ透過：JSON は Ark の POST /images/generations へそのまま転送されます。stream を true にすると SSE になります。Playground は model をルートのプロバイダーモデル名に置き換えます。課金もリクエストログもありません。",
 		"imageGeminiHint": "ネイティブ透過：JSON は Gemini generateContent として送信されます。responseModalities を TEXT と IMAGE にし、imageConfig.aspectRatio / imageSize を設定してください。画像は inlineData で返ります。Playground は課金もリクエストログもありません。",
 		"imageVolcengineOpenAiHint": "OpenAI の画像 JSON を方舟の画像生成に変換します。n が 2–15 のときは組図として送ります。JSON のみです。ストリームはネイティブ透過を使います。Playground は返ってきた画像をプレビューします。課金もリクエストログもありません。",
+		"imageGeminiOpenAiHint": "OpenAI の画像 JSON を Gemini generateContent に変換します。size は imageConfig のアスペクト比と解像度に換算され、n は 1 のみ、参照画像は image に data URL で渡します。Playground は上流を直接呼び、Gemini の生レスポンスを表示して inlineData の画像をプレビューします。課金もリクエストログもありません。",
 		"imageMiniMaxOpenAiHint": "OpenAI 画像 JSON は MiniMax image_generation に変換されます。aspect_ratio を送ってください。size は転送しません。Playground は返された画像をプレビューします。課金もリクエストログもありません。",
 		"imageOperation": "画像操作",
 		"imageGenerationsHint": "画像モデル：リクエスト Body は images/generations の項目（prompt、n、size、quality）を使用します。課金もリクエストログもありません。",

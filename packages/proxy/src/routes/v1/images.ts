@@ -6,7 +6,15 @@
  * 流程：鉴权 → 解析 model → 预算预检 → openai 路由故障转移 → 成功后按 Images usage token 分项扣费。
  * 日志禁止写入 prompt 原文、参考图与 Base64。
  */
-import type { GatewayRepositories, ModelRow, ResolvedModelSurfaceRow } from '@octafuse/core';
+import {
+	buildImagePrecheckUsage,
+	estimateGeminiImageOutputTokens,
+	GEMINI_IMAGE_PRECHECK_TEXT_OUTPUT_HEADROOM,
+	type GatewayRepositories,
+	type ModelRow,
+	type ResolvedModelSurfaceRow,
+} from '@octafuse/core';
+import { geminiOpenAiImageBillingSize } from '@octafuse/core/gemini-image-openai';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Env } from '../../app';
@@ -832,39 +840,6 @@ imageRoutes.post('/generations', async (c) => {
 		});
 	}
 
-	const referenceCount = countOpenAiGenerationReferenceImages(body);
-	const billingSize = openAiImageBillingSize(common.size, body);
-
-	const estimate = await estimateImageBudgetPrecheck(
-		repos,
-		{
-			modelPricingProfileJson: model.pricing_profile ?? null,
-			catalogModelId: baseModelId,
-			userChargedCostFactorsJson: apiKey.chargedCostFactors,
-			routeGroup: effectiveRouteGroup,
-			quality: common.quality ?? 'auto',
-			size: billingSize,
-			imageCount: common.n,
-			isEdit: false,
-			referenceCount,
-			operation: 'generations',
-			requestStartedAtMs: start,
-		},
-		routes.map((route) => route.priceOverrideRaw)
-	);
-	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
-		return rejectImageRequest(c, 403, 'Budget exceeded', {
-			operation: 'generations',
-			contentType,
-			contentLength,
-			bodyKeys,
-			hasModel: true,
-			clientModel: rawModelId,
-			promptChars: common.prompt.length,
-			referenceCount,
-		});
-	}
-
 	let extraFields: Record<string, unknown> = {};
 	try {
 		extraFields = pickExtraFields(body, IMAGE_GENERATION_KNOWN_KEYS);
@@ -881,6 +856,53 @@ imageRoutes.post('/generations', async (c) => {
 			});
 		}
 		throw error;
+	}
+
+	const referenceCount = countOpenAiGenerationReferenceImages(body);
+	const geminiOnly = routes.every((route) => route.adapter === 'gemini-image');
+	const billingSize = geminiOnly
+		? geminiOpenAiImageBillingSize(common.size, extraFields)
+		: openAiImageBillingSize(common.size, body);
+	const precheckUsage = geminiOnly
+		? buildImagePrecheckUsage({
+				size: billingSize,
+				imageCount: common.n,
+				isEdit: referenceCount > 0,
+				referenceCount,
+				outputTokensPerImage: estimateGeminiImageOutputTokens(billingSize),
+				textOutputTokens: GEMINI_IMAGE_PRECHECK_TEXT_OUTPUT_HEADROOM,
+			})
+		: null;
+
+	const estimate = await estimateImageBudgetPrecheck(
+		repos,
+		{
+			modelPricingProfileJson: model.pricing_profile ?? null,
+			catalogModelId: baseModelId,
+			userChargedCostFactorsJson: apiKey.chargedCostFactors,
+			routeGroup: effectiveRouteGroup,
+			quality: common.quality ?? 'auto',
+			size: billingSize,
+			imageCount: common.n,
+			isEdit: false,
+			referenceCount,
+			operation: 'generations',
+			requestStartedAtMs: start,
+		},
+		routes.map((route) => route.priceOverrideRaw),
+		precheckUsage ? { usage: precheckUsage } : undefined
+	);
+	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
+		return rejectImageRequest(c, 403, 'Budget exceeded', {
+			operation: 'generations',
+			contentType,
+			contentLength,
+			bodyKeys,
+			hasModel: true,
+			clientModel: rawModelId,
+			promptChars: common.prompt.length,
+			referenceCount,
+		});
 	}
 
 	const requestBodyForLog = annotateRequestLogWithExtraFields(

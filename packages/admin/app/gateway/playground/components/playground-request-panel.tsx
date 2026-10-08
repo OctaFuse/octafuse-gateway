@@ -378,6 +378,8 @@ export function PlaygroundRequestPanel({
 						<p className="text-xs text-gray-500">{t('imageVolcengineOpenAiHint')}</p>
 					) : selected?.upstream_protocol === 'volcengine' ? (
 						<p className="text-xs text-gray-500">{t('imageVolcenginePassthroughHint')}</p>
+					) : selected?.adapter === 'gemini-image' ? (
+						<p className="text-xs text-gray-500">{t('imageGeminiOpenAiHint')}</p>
 					) : selected?.upstream_protocol === 'gemini' ? (
 						<p className="text-xs text-gray-500">{t('imageGeminiHint')}</p>
 					) : selectedImageUsesDashScope ? (

@@ -60,7 +60,7 @@ function jsonResponse(status: number, text: string, contentType: string): Respon
 	});
 }
 
-function withTimeoutSignal(
+export function withTimeoutSignal(
 	requestSignal: AbortSignal | undefined,
 	timeoutMs: number,
 ): { signal: AbortSignal; clear: () => void; getAbortReason: () => ImageAbortReason } {

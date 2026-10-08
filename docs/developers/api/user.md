@@ -935,7 +935,7 @@ Authorization: Bearer <USER_API_KEY>
 
 > 入口与路由、模型目录与单价、计费与验收见总入口；各厂商的参数规则见其中链接的厂商文档：[文生图模型（Image Models）](../reference/image-models.md)。
 
-OpenAI 兼容 Images API，供桌面 Agent 的 `generate_image` 等工具调用。鉴权与 Chat 相同（用户 API Key）；模型须配置请求协议为 OpenAI 的路由（上游可以是 OpenAI 透传，也可以经 `volcengine-image`、`dashscope-image-*`、`minimax-image` 适配器转换）及有效的 `image_billing_mode`：`token` 模式需在 `pricing_profile.tiers` 配置 Image token 单价，`per_image` 模式需配置 `pricing_profile.image` 按张单价（见 Admin 模型页与 [文生图模型说明](../reference/image-models.md)）。
+OpenAI 兼容 Images API，供桌面 Agent 的 `generate_image` 等工具调用。鉴权与 Chat 相同（用户 API Key）；模型须配置请求协议为 OpenAI 的路由（上游可以是 OpenAI 透传，也可以经 `volcengine-image`、`dashscope-image-*`、`minimax-image`、`gemini-image` 适配器转换）及有效的 `image_billing_mode`：`token` 模式需在 `pricing_profile.tiers` 配置 Image token 单价，`per_image` 模式需配置 `pricing_profile.image` 按张单价（见 Admin 模型页与 [文生图模型说明](../reference/image-models.md)）。
 
 ### 生成
 
@@ -972,8 +972,8 @@ Content-Type: application/json
 |------|------|
 | `model` | 必填；支持 `id:route_group` 后缀 |
 | `prompt` | 必填；最长 4000 字符 |
-| `n` | OpenAI 透传仅允许 **1**。转换适配器按上游放宽：`volcengine-image` 为 1–15（2 及以上打开组图，5.0 pro / flash 只能为 1），`minimax-image` 为 1–9，千问 1–6、万相 1–4。万相官方默认 4，缺省时网关显式下发 1 |
-| `size` / `quality` / `background` | 可选；`size` 一律原样转发，取值由上游校验。GPT Image 常用 `auto` / `1024x…`；Seedream 常用 `2K` / `4K`；千问只接受像素串（如 `1024*1024`），万相允许 `1K`/`2K`/`4K`。`minimax-image` 不转发这三个字段，画幅用额外字段 `aspect_ratio`，或同时传 `width` 与 `height` |
+| `n` | OpenAI 透传仅允许 **1**。转换适配器按上游放宽：`volcengine-image` 为 1–15（2 及以上打开组图，5.0 pro / flash 只能为 1），`minimax-image` 为 1–9，千问 1–6、万相 1–4。万相官方默认 4，缺省时网关显式下发 1。`gemini-image` 只能为 1 |
+| `size` / `quality` / `background` | 可选；`size` 一般原样转发，取值由上游校验。GPT Image 常用 `auto` / `1024x…`；Seedream 常用 `2K` / `4K`；千问只接受像素串（如 `1024*1024`），万相允许 `1K`/`2K`/`4K`。`minimax-image` 不转发这三个字段，画幅用额外字段 `aspect_ratio`，或同时传 `width` 与 `height`。`gemini-image` 把 `size` 换算成 `imageConfig` 的比例与 `1K`/`2K`/`4K`，不转发 `quality` 与 `background` |
 | `response_format` | 可选。OpenAI 透传仅当调用方显式传入时转发（GPT Image 系列通常直接返回 `b64_json`，且可能不接受该参数）。DashScope 转换默认返回 `data[].url`；显式 `b64_json` 时网关下载 OSS 链接并转 base64，失败降级回 `url` |
 | `watermark` / `sequential_image_generation` / `optimize_prompt_options` | 可选；Seedream 等兼容扩展，**显式传入时透传**；也可由路由 `custom_params` 注入默认值 |
 | `image` | 可选；Seedream **图生图 / 多图融合**用 JSON 字符串或字符串数组（URL / data URL），走本 generations 端点，**不是** multipart `/edits` |
@@ -1056,6 +1056,10 @@ Content-Type: application/json
 请求与上游都是 `minimax` + `images.generations`，adapter 必须是 `passthrough`。网关只把 `model` 换成路由上的供应商模型名，返回 MiniMax 原文（`data.image_urls` 或 `data.image_base64`）。文生图和 `subject_reference` 图生图共用这一路径。按成功张数计费。`base_resp.status_code` 非 0 时 body 不变，HTTP 状态按业务码改写。详见 [MiniMax 生图](../architecture/minimax-image.md)。
 
 OpenAI 入口使用适配器 `minimax-image`，调用 `POST /v1/images/generations`。不转发 `size`；`aspect_ratio`、`width`、`height` 有值才原样转发。`response_format=url` 返回 `data[].url`，`b64_json` 返回 `data[].b64_json`。`quality` 和 `background` 不转发。`n` 为 1–9。
+
+### Gemini 生图（OpenAI 入口）
+
+OpenAI SDK 使用适配器 `gemini-image`，调用 `POST /v1/images/generations`，网关转成 Gemini `generateContent`（Gemini API 或 Vertex AI）。`n` 只能为 1，`response_format` 只支持 `b64_json`。`size` 填 `宽x高` 时换算成最接近的 `imageConfig.aspectRatio`，长边决定 `1K` / `2K` / `4K`；也可只填 `512` / `1K` / `2K` / `4K` 或 `auto`。参考图放在 `image`，必须是 base64 data URL。其它 Gemini 参数写成额外字段 `generationConfig`（如 `imageConfig`），网关深度合并。响应是 OpenAI `data[].b64_json`，`usage` 按图片与文本分项给出，计费为 `token` 模式。上游 200 但没有图片时返回 502。要流式或 Gemini 原文，请走 `POST /v1beta/models/{model}:generateContent` / `streamGenerateContent`。详见 [Gemini 原生生图](../architecture/gemini-image.md#openai-入口gemini-image)。
 
 ### 火山方舟生图
 

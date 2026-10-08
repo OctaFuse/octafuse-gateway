@@ -1038,7 +1038,8 @@
 				"minimax-asr-file": "MiniMax 文件转写",
 				"minimax-tts": "MiniMax 官方语音合成",
 				"minimax-image": "MiniMax 官方生图",
-				"volcengine-image": "火山方舟 Seedream 生图"
+				"volcengine-image": "火山方舟 Seedream 生图",
+				"gemini-image": "Gemini 官方生图"
 			},
 			"adapterGuides": {
 				"passthrough": {
@@ -1151,6 +1152,15 @@
 						"background 只转发 transparent / opaque，仅 5.0 pro / flash 图生图可用。output_format 只接受 png / jpeg。response_format 只支持 url 和 b64_json。",
 						"参考图放在 image。方舟默认加水印，不要时传 watermark: false。quality 不转发。",
 						"只返回 JSON，data[] 保留方舟的 size 和图层字段。要流式请改走火山方舟原生透传。"
+					]
+				},
+				"gemini-image": {
+					"purpose": "OpenAI SDK 调 POST /v1/images/generations，网关转成 Gemini generateContent，适用 Gemini API 与 Vertex AI。供应商模型名填 gemini-*-image 或 gemini-nano-banana*。",
+					"mapping": [
+						"prompt 成为 contents 里的文本，responseModalities 固定为 TEXT 与 IMAGE。n 只能为 1。",
+						"size 填 WxH 时换算成最接近的 imageConfig.aspectRatio，并按长边取 1K / 2K / 4K；也可只填 512 / 1K / 2K / 4K 或 auto。",
+						"response_format 只支持 b64_json。参考图放在 image，需为 data URL，会转成 inlineData。quality 与 background 不转发。",
+						"其它 Gemini 参数写在 generationConfig（如 imageConfig、thinkingConfig），网关会深度合并。按图片输出与文本输出 token 计费。只返回 JSON，要流式请改走 Gemini 原生透传。"
 					]
 				}
 			},
@@ -1587,6 +1597,7 @@
 		"imageVolcenginePassthroughHint": "原生透传：JSON 按方舟 POST /images/generations 原样转发。stream 设为 true 时返回 SSE。调试台会把 model 换成路由上的供应商模型名。不计费、不写请求日志。",
 		"imageGeminiHint": "原生透传：JSON 按 Gemini generateContent 发送。请设置 responseModalities 为 TEXT 与 IMAGE，以及 imageConfig.aspectRatio / imageSize。图片在 inlineData 中返回。调试台不计费、不写请求日志。",
 		"imageVolcengineOpenAiHint": "OpenAI 生图 JSON 会转换成方舟生图。n 为 2–15 时按组图发送。只返回 JSON；要流式请用原生透传。调试台预览返回的图片。不计费、不写请求日志。",
+		"imageGeminiOpenAiHint": "OpenAI 生图 JSON 会转换成 Gemini generateContent。size 换算为 imageConfig 的比例与分辨率，n 只能为 1，参考图放在 image（data URL）。调试台直连上游，显示 Gemini 原始响应并预览 inlineData 图片。不计费、不写请求日志。",
 		"imageMiniMaxOpenAiHint": "OpenAI 生图 JSON 会转换成 MiniMax image_generation。请传 aspect_ratio，size 不会转发。调试台预览返回的图片。不计费、不写请求日志。",
 		"imageOperation": "图像操作",
 		"imageGenerationsHint": "文生图模型：请求体使用 images/generations 字段（prompt、n、size、quality）。不计费、不写请求日志。",

@@ -252,7 +252,7 @@ export async function proxyImageGenerations(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope", "minimax", "volcengine"],
+		["openai", "dashscope", "minimax", "volcengine", "gemini"],
 		(
 			route,
 			signal,

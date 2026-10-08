@@ -22,6 +22,7 @@
 | 同上 | 同上 | `volcengine` / `images.generations` | `volcengine-image` | [火山方舟](../architecture/volcengine-image.md) |
 | 同上 | 同上 | `dashscope` / `images.generations.multimodal` | `dashscope-image-qwen`、`dashscope-image-wan` | [DashScope](../architecture/dashscope-image.md) |
 | 同上 | 同上 | `minimax` / `images.generations` | `minimax-image` | [MiniMax](../architecture/minimax-image.md) |
+| 同上 | 同上 | `gemini` / `models.generate` | `gemini-image` | [Gemini](../architecture/gemini-image.md#openai-入口gemini-image) |
 | `POST /v1/images/edits`（multipart） | `openai` / `images.edits` | `openai` / `images.edits` | `passthrough` | 只有 OpenAI GPT Image 可用 |
 | `POST /v1/volcengine/images/generations` | `volcengine` / `images.generations` | 同左 | `passthrough` | [火山方舟](../architecture/volcengine-image.md) |
 | `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | `dashscope` / `images.generations.multimodal` | 同左 | `passthrough` | [DashScope](../architecture/dashscope-image.md) |
@@ -43,6 +44,7 @@
 | `dashscope-image-qwen` | 顶层 `size` 原样写入 `parameters.size`。千问用 `宽*高` 或 `auto` | 1–6 | generations 的 JSON `image` |
 | `dashscope-image-wan` | 同上。万相用 `1K` / `2K` / `4K` 或 `宽*高` | 1–4 | generations 的 JSON `image` |
 | `minimax-image` | 不转发 `size`。`aspect_ratio`、`width`、`height` 有值才原样转发，不填默认比例 | 1–9 | 走原生透传的 `subject_reference` |
+| `gemini-image` | `宽x高` 换算成最接近的 `imageConfig.aspectRatio`，长边决定 `1K` / `2K` / `4K`；也可只传 `512` / `1K` / `2K` / `4K` 或 `auto` | 只能为 1 | generations 的 JSON `image`（data URL） |
 
 ## 模型目录
 
@@ -179,7 +181,7 @@ charged ≈
 
 | 模式 | 预检 | 最终扣费 |
 | ---- | ---- | -------- |
-| `token` | 按 `quality` × `size` 估算输出 token（偏保守）× 单价 × 最高 `charged_factor` | 成功响应的 `usage` |
+| `token` | 按 `quality` × `size` 估算输出 token（偏保守）× 单价 × 最高 `charged_factor`。路由池全是 `gemini-image` 时改按 Gemini 的 `imageSize` 估算，见 [Gemini](../architecture/gemini-image.md#计费) | 成功响应的 `usage` |
 | `per_image` | 出图单价 × 请求张数 + 参考图单价 × 参考图数，再 × 最高 factor | 成功响应的有效图片数 |
 
 预检只拦额度，不落成实扣。管理后台的路由与模型页只展示目录价：token 模式显示 `/1M` 分项，per_image 显示 `/image` 单价。
@@ -224,6 +226,7 @@ charged ≈
 | 供应商导入预设 | [provider-import-presets.md](./provider-import-presets.md) |
 | 流式计费与取消（Chat；生图的取消语义并列） | [streaming-billing.md](./streaming-billing.md) |
 | OpenAI 入口与扩展字段 | `packages/proxy/src/routes/v1/images.ts`、`packages/proxy/src/services/image-generation-extras.ts` |
+| Gemini OpenAI 入口转换 | `packages/core/src/gemini-image-openai.ts`、`packages/proxy/src/services/egress/gemini-openai-image-driver.ts` |
 | 按张查价与计费 | `packages/core/src/db/pricing-profile.ts`、`packages/proxy/src/services/image-usage-charge.ts` |
 | token 预检估算 | `packages/core/src/db/image-token-usage.ts` |
 | 目录表生成 | `scripts/docs/gen-image-models.mjs` |

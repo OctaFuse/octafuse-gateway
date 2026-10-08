@@ -403,6 +403,27 @@ const CONVERSION_ADAPTERS = [
 		],
 		extraBodyExample: { watermark: false, image: 'https://example.com/ref.png' },
 	},
+	{
+		id: 'gemini-image',
+		optionKey: 'gemini-image',
+		upstreamModels: { include: GEMINI_IMAGE_MODELS },
+		request: { protocol: 'openai', operation: 'images.generations' },
+		upstream: { protocol: 'gemini', operations: ['models.generate'] },
+		modality: 'image',
+		modelKind: 'image',
+		exchange: 'unary',
+		billing: 'tokens',
+		requestPayload: 'json',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['models.generate'],
+		publicPath: '/v1/images/generations',
+		roles: ['upstream'],
+		lossyFeatures: ['background', 'quality'],
+		protectedUpstreamPaths: ['contents', 'generationConfig.candidateCount'],
+		extraBodyExample: {
+			generationConfig: { imageConfig: { aspectRatio: '16:9', imageSize: '2K' } },
+		},
+	},
 ] as const satisfies readonly AdapterDescriptor[];
 
 function passthroughDescriptor(input: {

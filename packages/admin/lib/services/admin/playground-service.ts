@@ -48,6 +48,10 @@ import {
 	VolcengineOpenAiClientError,
 	buildVolcengineImageBodyFromOpenAi,
 } from '@octafuse/core/volcengine-openai';
+import {
+	GeminiOpenAiImageClientError,
+	buildGeminiImageBodyFromOpenAi,
+} from '@octafuse/core/gemini-image-openai';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { AUDIO_MAX_BYTES_PER_FILE } from '@/lib/audio-transcriptions';
@@ -1243,7 +1247,22 @@ export async function invokePlaygroundUpstream(
 			}
 			url = geminiRequest.url;
 			headers = geminiRequest.headers;
-			fetchBody = JSON.stringify(merged);
+			if (route.adapter === 'gemini-image') {
+				try {
+					fetchBody = JSON.stringify(
+						applyPlaygroundUpstreamBody({
+							route,
+							built: buildGeminiImageBodyFromOpenAi(userBody),
+							extras: playgroundExtraFields(userBody, IMAGE_GENERATION_KNOWN_KEYS),
+						}),
+					);
+				} catch (error) {
+					if (error instanceof GeminiOpenAiImageClientError) throw badRequest(error.message);
+					throw error;
+				}
+			} else {
+				fetchBody = JSON.stringify(merged);
+			}
 			upstreamWireBodyJson = fetchBody;
 			break;
 		}

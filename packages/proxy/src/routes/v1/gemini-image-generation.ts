@@ -116,6 +116,7 @@ async function forwardGeminiImage(
 	const referenceCount = countGeminiReferenceImages(requestBody);
 	const requestedCount = requestedGeminiImageCount(requestBody);
 	const size = geminiImageBillingSize(requestBody);
+	const imageOperation = referenceCount > 0 ? 'edits' : 'generations';
 	const search = c.req.url.includes('?') ? c.req.url.slice(c.req.url.indexOf('?')) : '';
 	const precheckUsage = buildImagePrecheckUsage({
 		size,
@@ -137,7 +138,7 @@ async function forwardGeminiImage(
 			imageCount: requestedCount,
 			isEdit: referenceCount > 0,
 			referenceCount,
-			operation: action,
+			operation: imageOperation,
 			requestStartedAtMs: start,
 		},
 		routes.map((route) => route.priceOverrideRaw),
@@ -267,7 +268,7 @@ async function forwardGeminiImage(
 					imageCount: requestedCount,
 					isEdit: referenceCount > 0,
 					referenceCount,
-					operation: action,
+					operation: imageOperation,
 					requestStartedAtMs: start,
 				},
 				effectiveImageCount: imageCount,

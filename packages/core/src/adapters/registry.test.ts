@@ -34,6 +34,7 @@ describe('adapter registry', () => {
 			'minimax-tts',
 			'minimax-image',
 			'volcengine-image',
+			'gemini-image',
 		]);
 	});
 
@@ -62,7 +63,7 @@ describe('adapter registry', () => {
 			upstreamProtocol: 'minimax',
 			upstreamOperation: 'audio.transcriptions',
 		});
-		assert.equal(listConversionAdapters().length, 13);
+		assert.equal(listConversionAdapters().length, 14);
 		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['minimax-tts'], {
 			requestProtocol: 'openai',
 			requestOperation: 'audio.speech',
@@ -80,6 +81,12 @@ describe('adapter registry', () => {
 			requestOperation: 'images.generations',
 			upstreamProtocol: 'volcengine',
 			upstreamOperation: 'images.generations',
+		});
+		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['gemini-image'], {
+			requestProtocol: 'openai',
+			requestOperation: 'images.generations',
+			upstreamProtocol: 'gemini',
+			upstreamOperation: 'models.generate',
 		});
 	});
 
@@ -241,6 +248,11 @@ describe('adapter registry', () => {
 		}
 		assert.equal(matchAdapterUpstreamModel(image, 'gemini-2.5-pro'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(llm, 'gemini-3.1-flash-image'), 'generic');
+		const conversion = getAdapterByOptionKey('gemini-image');
+		assert.ok(conversion);
+		assert.equal(conversion.billing, 'tokens');
+		assert.equal(matchAdapterUpstreamModel(conversion, 'gemini-nano-banana-2.1'), 'match');
+		assert.equal(matchAdapterUpstreamModel(conversion, 'gemini-2.5-pro'), 'mismatch');
 		const presetDir = join(dirname(fileURLToPath(import.meta.url)), '../../../admin/lib/model-presets');
 		const rows = JSON.parse(readFileSync(join(presetDir, 'google-image.json'), 'utf8')) as Array<{ id: string }>;
 		assert.ok(rows.length > 0);

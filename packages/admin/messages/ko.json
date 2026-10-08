@@ -1038,7 +1038,8 @@
 				"minimax-asr-file": "MiniMax 파일 전사",
 				"minimax-tts": "MiniMax 공식 음성 합성",
 				"minimax-image": "MiniMax 공식 이미지 생성",
-				"volcengine-image": "Volcengine Seedream 이미지 생성"
+				"volcengine-image": "Volcengine Seedream 이미지 생성",
+				"gemini-image": "Gemini 공식 이미지 생성"
 			},
 			"adapterGuides": {
 				"passthrough": {
@@ -1151,6 +1152,15 @@
 						"background는 transparent / opaque만 전달하며 5.0 pro / flash의 이미지 입력 생성에서만 쓸 수 있습니다. output_format은 png / jpeg, response_format은 url과 b64_json만 지원합니다.",
 						"참조 이미지는 image에 둡니다. Ark는 기본으로 워터마크를 넣으므로 원하지 않으면 watermark: false를 보내세요. quality는 전달하지 않습니다.",
 						"JSON만 반환하며 data[]에 Ark의 size와 레이어 필드가 남습니다. 스트리밍은 Volcengine 네이티브 패스스루를 사용하세요."
+					]
+				},
+				"gemini-image": {
+					"purpose": "OpenAI SDK의 POST /v1/images/generations를 Gemini generateContent로 바꿉니다. Gemini API와 Vertex AI에서 쓸 수 있습니다. 공급자 모델 이름은 gemini-*-image 또는 gemini-nano-banana*입니다.",
+					"mapping": [
+						"prompt는 contents의 텍스트가 되고 responseModalities는 TEXT와 IMAGE로 고정됩니다. n은 1만 가능합니다.",
+						"WxH 형식의 size는 가장 가까운 imageConfig.aspectRatio로 환산하고 긴 변으로 1K / 2K / 4K를 고릅니다. 512 / 1K / 2K / 4K만 보내거나 auto도 쓸 수 있습니다.",
+						"response_format은 b64_json만 지원합니다. 참조 이미지는 image에 data URL로 넣으며 inlineData로 보냅니다. quality와 background는 전달하지 않습니다.",
+						"그 밖의 Gemini 파라미터는 generationConfig(imageConfig, thinkingConfig 등)에 넣으면 깊게 병합됩니다. 이미지 출력과 텍스트 출력 토큰으로 과금합니다. JSON만 반환하며 스트리밍은 Gemini 네이티브 패스스루를 사용하세요."
 					]
 				}
 			},
@@ -1587,6 +1597,7 @@
 		"imageVolcenginePassthroughHint": "네이티브 패스스루: JSON은 Ark POST /images/generations 로 그대로 전달됩니다. stream 을 true 로 두면 SSE 입니다. Playground가 model 을 라우트의 공급자 모델 이름으로 바꿉니다. 청구 및 요청 로그는 없습니다.",
 		"imageGeminiHint": "네이티브 패스스루: JSON은 Gemini generateContent 로 전송됩니다. responseModalities 를 TEXT 와 IMAGE 로 두고 imageConfig.aspectRatio / imageSize 를 설정하세요. 이미지는 inlineData 로 돌아옵니다. Playground 는 청구하거나 요청 로그를 쓰지 않습니다.",
 		"imageVolcengineOpenAiHint": "OpenAI 이미지 JSON을 Ark 이미지 생성으로 바꿉니다. n이 2–15이면 연속 생성으로 보냅니다. JSON만 반환하며, 스트리밍은 네이티브 패스스루를 사용하세요. Playground가 반환된 이미지를 미리 봅니다. 청구 및 요청 로그는 없습니다.",
+		"imageGeminiOpenAiHint": "OpenAI 이미지 JSON을 Gemini generateContent로 바꿉니다. size는 imageConfig의 비율과 해상도로 환산되고, n은 1만 가능하며, 참조 이미지는 image에 data URL로 넣습니다. Playground는 업스트림을 직접 호출해 Gemini 원본 응답을 보여 주고 inlineData 이미지를 미리 봅니다. 청구 및 요청 로그는 없습니다.",
 		"imageMiniMaxOpenAiHint": "OpenAI 이미지 JSON은 MiniMax image_generation으로 변환됩니다. aspect_ratio를 보내세요. size는 전달하지 않습니다. Playground가 반환된 이미지를 미리 봅니다. 청구 및 요청 로그는 없습니다.",
 		"imageOperation": "이미지 작업",
 		"imageGenerationsHint": "이미지 모델: 요청 본문은 images/generations 필드(prompt, n, size, quality)를 사용합니다. 청구 및 요청 로그는 없습니다.",

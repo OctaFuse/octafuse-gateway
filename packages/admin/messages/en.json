@@ -1038,7 +1038,8 @@
 				"minimax-asr-file": "MiniMax file transcription",
 				"minimax-tts": "MiniMax official speech",
 				"minimax-image": "MiniMax official images",
-				"volcengine-image": "Volcengine Seedream images"
+				"volcengine-image": "Volcengine Seedream images",
+				"gemini-image": "Gemini official images"
 			},
 			"adapterGuides": {
 				"passthrough": {
@@ -1151,6 +1152,15 @@
 						"background forwards only transparent / opaque, and only 5.0 pro / flash support it for image-to-image. output_format accepts png / jpeg. response_format accepts url and b64_json.",
 						"Reference images go in image. Ark adds a watermark by default; send watermark: false to turn it off. quality is not forwarded.",
 						"JSON only; data[] keeps Ark's size and layer fields. Use the Volcengine native passthrough for streaming."
+					]
+				},
+				"gemini-image": {
+					"purpose": "OpenAI SDK calls POST /v1/images/generations. The gateway converts that to Gemini generateContent on the Gemini API or Vertex AI. Provider model names are gemini-*-image or gemini-nano-banana*.",
+					"mapping": [
+						"prompt becomes the text in contents, and responseModalities is set to TEXT and IMAGE. n must be 1.",
+						"A WxH size maps to the nearest imageConfig.aspectRatio, and the long side picks 1K / 2K / 4K. You can also send only 512 / 1K / 2K / 4K, or auto.",
+						"response_format accepts only b64_json. Reference images go in image as data URLs and are sent as inlineData. quality and background are not forwarded.",
+						"Other Gemini parameters go in generationConfig (for example imageConfig or thinkingConfig) and are deep-merged. Billing uses image and text output tokens. JSON only; use the Gemini native passthrough for streaming."
 					]
 				}
 			},
@@ -1587,6 +1597,7 @@
 		"imageVolcenginePassthroughHint": "Native passthrough: the JSON is forwarded to Ark POST /images/generations. Set stream to true for SSE. Playground replaces model with the route provider model name. No billing or request logs.",
 		"imageGeminiHint": "Native passthrough: the JSON is sent as Gemini generateContent. Set responseModalities to TEXT and IMAGE, and imageConfig.aspectRatio / imageSize. Images come back in inlineData. Playground does not bill or write request logs.",
 		"imageVolcengineOpenAiHint": "OpenAI image JSON is converted to Ark image generation. n from 2 to 15 is sent as sequential images. JSON only; use native passthrough for streaming. Playground previews the returned images. No billing or request logs.",
+		"imageGeminiOpenAiHint": "OpenAI image JSON is converted to Gemini generateContent. size becomes the imageConfig aspect ratio and resolution, n must be 1, and reference images go in image as data URLs. Playground calls the upstream directly, shows the raw Gemini response, and previews inlineData images. No billing or request logs.",
 		"imageMiniMaxOpenAiHint": "OpenAI image JSON is converted to MiniMax image_generation. Send aspect_ratio; size is not forwarded. Playground previews the returned images. No billing or request logs.",
 		"imageOperation": "Image operation",
 		"imageGenerationsHint": "Image model: request body uses images/generations fields (prompt, n, size, quality). No billing or request logs.",

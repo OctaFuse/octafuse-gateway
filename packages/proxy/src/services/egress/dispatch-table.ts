@@ -49,6 +49,7 @@ import {
 	type NormalizedAudioSpeechRequest,
 } from './audio-speech-driver';
 import { dispatchDashScopeImageGenerations } from './dashscope-images-driver';
+import { dispatchGeminiOpenAiImage } from './gemini-openai-image-driver';
 import { dispatchMiniMaxOpenAiImage, dispatchMiniMaxOpenAiSpeech } from './minimax-openai-driver';
 import { dispatchOpenAiImageGenerations } from './openai-images-driver';
 import { dispatchVolcengineOpenAiImage } from './volcengine-openai-driver';
@@ -79,6 +80,7 @@ const IMAGE_GENERATION_ADAPTERS = [
 	'dashscope-image-wan',
 	'minimax-image',
 	'volcengine-image',
+	'gemini-image',
 ] as const satisfies readonly RouteAdapter[];
 
 export const IMPLEMENTED_CONVERSION_ADAPTERS: readonly RouteAdapter[] = [
@@ -166,6 +168,9 @@ export function dispatchImageGenerations(
 	}
 	if (route.adapter === 'volcengine-image') {
 		return dispatchVolcengineOpenAiImage(route, body, signal, timing, attempt);
+	}
+	if (route.adapter === 'gemini-image') {
+		return dispatchGeminiOpenAiImage(route, body, signal, timing, attempt);
 	}
 	throw new Error(`Unsupported image generation adapter: ${route.adapter}`);
 }
