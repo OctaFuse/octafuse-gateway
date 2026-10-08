@@ -10,12 +10,15 @@ const EXPECTED_IMAGE_IDS = [
 	'doubao-seedream-5-0-pro',
 	'gemini-3.1-flash-image',
 	'gemini-3-pro-image-preview',
+	'gemini-nano-banana-2.1',
 	'glm-image',
 	'gpt-image-2',
 	'gpt-image-2.5-flare',
 	'gpt-image-2.5-sunburst',
 	'grok-imagine-image-2.0',
 	'grok-imagine-image-quality',
+	'minimax-image-01',
+	'minimax-image-01-live',
 	'qwen-image-2.1-pro',
 	'qwen-image-3.0',
 	'qwen-image-3.0-pro',
@@ -75,11 +78,13 @@ describe('static image model presets (*-image.json)', () => {
 		const seedreamPro = byId.get('doubao-seedream-5-0-pro')!;
 		const seedreamProCny = asPricing(seedreamPro.pricing.cny);
 		const seedreamProUsd = asPricing(seedreamPro.pricing.usd);
-		assert.equal(seedreamProCny.image?.default, 0.3);
-		assert.equal(seedreamProCny.image?.by_size?.['3k'], 0.6);
+		assert.equal(seedreamProCny.image?.default, 0.6);
+		assert.equal(seedreamProCny.image?.by_size?.['1.5k'], 0.3);
+		assert.equal(seedreamProCny.image?.by_size?.['2k'], 0.6);
+		assert.equal(seedreamProCny.image?.by_size?.['3k'], undefined);
 		assert.equal(seedreamProCny.image?.input?.default, 0.02);
-		assert.equal(seedreamProUsd.image?.default, 0.045);
-		assert.equal(seedreamProUsd.image?.by_size?.['3k'], 0.09);
+		assert.equal(seedreamProUsd.image?.default, 0.09);
+		assert.equal(seedreamProUsd.image?.by_size?.['1.5k'], 0.045);
 		assert.equal(seedreamProUsd.image?.input?.default, 0.003);
 
 		const glm = byId.get('glm-image')!;
@@ -121,7 +126,13 @@ describe('static image model presets (*-image.json)', () => {
 		const grok2Usd = asPricing(grok2.pricing.usd);
 		assert.equal(grok2Usd.image_billing_mode, 'per_image');
 		assert.equal(grok2Usd.image?.default, 0.04);
-		assert.equal(asPricing(grok2.pricing.cny).image?.default, 0.28);
+		assert.equal(grok2Usd.image?.by_size?.['2k'], 0.06);
+		assert.equal(grok2Usd.image?.by_quality?.medium, 0.06);
+		assert.equal(grok2Usd.image?.by_quality_size?.['medium:2k'], 0.08);
+		assert.equal(grok2Usd.image?.input?.default, 0.01);
+		const grok2Cny = asPricing(grok2.pricing.cny);
+		assert.equal(grok2Cny.image?.default, 0.28);
+		assert.equal(grok2Cny.image?.by_quality_size?.['medium:2k'], 0.56);
 
 		const grok = byId.get('grok-imagine-image-quality')!;
 		const grokUsd = asPricing(grok.pricing.usd);
@@ -157,6 +168,17 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(proTier.input_price, 2);
 		assert.equal(proTier.output_price, 12);
 		assert.equal(proTier.image_output_price, 120);
+
+		const nanoBanana21 = byId.get('gemini-nano-banana-2.1')!;
+		const nanoBanana21Tier = asPricing(nanoBanana21.pricing.usd).tiers?.[0];
+		assert.ok(nanoBanana21Tier);
+		assert.equal(nanoBanana21Tier.input_price, 1.5);
+		assert.equal(nanoBanana21Tier.output_price, 7.5);
+		assert.equal(nanoBanana21Tier.image_input_price, 1.5);
+		assert.equal(nanoBanana21Tier.image_output_price, 30);
+		assert.equal(nanoBanana21Tier.cache_read_price, null);
+		assert.equal(nanoBanana21Tier.cache_write_price, null);
+		assert.equal(asPricing(nanoBanana21.pricing.cny).tiers?.[0]?.image_output_price, 210);
 	});
 });
 

@@ -36,7 +36,7 @@
 | CF 运维 / Workers Builds | [operators/deployment/cloudflare.md](./operators/deployment/cloudflare.md) |
 | Docker / PG / MySQL 自托管 | [operators/deployment/docker.md](./operators/deployment/docker.md) |
 | 下游集成 env | [developers/integration.md](./developers/integration.md) |
-| 文生图模型（gpt-image-2 / Seedream） | [developers/reference/image-models.md](./developers/reference/image-models.md) |
+| 文生图模型（入口、目录与计费） | [developers/reference/image-models.md](./developers/reference/image-models.md) |
 | 2.0 路由拓扑：请求入口（Request Surface）→ 路由池（Route Pool）→ 上游目标（Upstream Target） | [developers/architecture/route-topology.md](./developers/architecture/route-topology.md) |
 | 路由策略（hash_affinity / weighted_random / …） | [developers/reference/route-strategies.md](./developers/reference/route-strategies.md) |
 | 2.0 升级（单键供应商 + 路由拓扑，0015 / 0016） | [operators/migrations/single-provider-key-cutover.md](./operators/migrations/single-provider-key-cutover.md) |

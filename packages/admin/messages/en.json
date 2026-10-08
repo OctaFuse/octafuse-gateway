@@ -352,6 +352,8 @@
 		"anthropic": "Anthropic",
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
+		"minimax": "MiniMax",
+		"volcengine": "Volcengine",
 		"protocolUnknown": "Protocol: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (click to copy)"
 	},
@@ -492,6 +494,8 @@
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
+			"minimaxOptional": "MiniMax",
+			"volcengineOptional": "Volcengine",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -502,11 +506,22 @@
 			"geminiAuthQueryKey": "Query key (?key=)",
 			"geminiAuthBearer": "Bearer (Authorization)",
 			"geminiAuthHint": "Developer API and Vertex Express use ?key=. Project-scoped Vertex with a service account JSON uses Bearer automatically. Vertex-compatible aggregators (ZenMux, Qiniu, …) must select Bearer.",
+			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
+			"minimaxHint": "A base derives speech recognition as '{base}'/speech_to_text, speech synthesis as '{base}'/t2a_v2, and image generation as '{base}'/image_generation. Use api.minimax.io for the international host. Video and music do not have endpoints yet.",
+			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
+			"volcengineHint": "A base derives Seedream image generation as '{base}'/images/generations. China Ark uses ark.cn-beijing.volces.com; BytePlus ModelArk uses ark.ap-southeast.bytepluses.com. Chat stays on the OpenAI endpoint config.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
-			"dashscopeHint": "The gateway derives DashScope HTTP and WSS paths from this base. For a workspace endpoint, use the corresponding DashScope host.",
+			"dashscopeHint": "With only a base, the gateway derives every DashScope HTTP and WSS endpoint below, including filetrans, hotwords, and voices. For plans that expose only some capabilities (such as Qwen Token Plan), leave the base empty and fill in only the supported URL overrides. For a workspace endpoint, use the corresponding DashScope host.",
 			"advancedToggle": "URL overrides",
 			"advancedHint": "Enter a complete URL.",
 			"advancedHintGemini": "Enter a complete URL that includes '{model}' and '{action}'.",
+			"advancedHintDashscope": "Enter full URLs. Endpoints are split by capability and a model uses only one of them. Several may point to the same upstream URL (such as multimodal-generation); they are separate so each can be enabled on its own. With a base, empty fields use the derived URL. Without a base, an empty field means unsupported.",
+			"advancedHintMinimax": "Enter a full URL. Leave a field empty when a base is set; the gateway derives speech_to_text, t2a_v2, or image_generation.",
+			"advancedHintVolcengine": "Enter a full URL. Leave the field empty when a base is set; the gateway derives images/generations.",
+			"capHintMiniMaxAudioTranscriptions": "MiniMax file transcription, POST /v1/speech_to_text. Choose the MiniMax file transcription adapter. The gateway sends language as a request header, not a form field.",
+			"capHintMiniMaxAudioSpeech": "MiniMax sync speech synthesis, POST /v1/t2a_v2. Choose the MiniMax audio.speech passthrough. Non-stream and stream:true share this endpoint.",
+			"capHintMiniMaxImagesGenerations": "MiniMax image generation, POST /v1/image_generation. Choose the MiniMax images.generations passthrough. Text-to-image and subject reference share this endpoint.",
+			"capHintVolcengineImagesGenerations": "Volcengine Seedream. Native passthrough and the OpenAI adapter volcengine-image both call Ark POST /images/generations. Streaming is native passthrough only.",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -523,6 +538,16 @@
 			"capAudioRealtimeSession": "audio.realtime.session (native session WSS)",
 			"capAudioHotwords": "audio.hotwords (custom hotword HTTP)",
 			"capAudioVoices": "audio.voices (voice customization HTTP)",
+			"capHintImagesGenerationsMultimodal": "Qwen Image and Wan synchronous image generation. Route adapter: Qwen Image 3.0 or Wan 2.7 Image.",
+			"capHintAudioTranscriptions": "Submit URL for filetrans async transcription (Fun-ASR, Paraformer, Qwen filetrans). Also configure the task query URL. Route adapter: Async file ASR.",
+			"capHintAudioTranscriptionsMultimodal": "Synchronous file ASR for Qwen3-ASR, Qwen-Audio-3.0, and Fun-ASR. Pick the matching file ASR adapter for the model, or use DashScope passthrough.",
+			"capHintAudioTranscriptionsTasks": "Async task result query, used together with the filetrans submit URL above.",
+			"capHintAudioSpeech": "SpeechSynthesizer API for CosyVoice and Qwen-Audio-3.0-TTS. Route adapter: CosyVoice / Qwen-Audio-3.0 TTS.",
+			"capHintAudioSpeechMultimodal": "multimodal-generation TTS for Qwen-TTS (such as qwen3-tts-flash) and MiniMax. This is a different API from the one above; choose by model. Route adapter: Qwen-TTS (multimodal) or MiniMax TTS.",
+			"capHintAudioRealtimeInference": "WebSocket task protocol (run-task / continue-task): CosyVoice and Qwen-Audio-TTS realtime synthesis, Fun-ASR and Paraformer realtime recognition. Routes use DashScope passthrough.",
+			"capHintAudioRealtimeSession": "WebSocket session protocol (session.update). The gateway currently supports only Qwen3-ASR-Flash-Realtime recognition.",
+			"capHintAudioHotwords": "ASR custom hotword management. A provider account resource; not used for model routing.",
+			"capHintAudioVoices": "TTS voice cloning and design (CosyVoice / Qwen). A provider account resource; not used for model routing.",
 			"capMessages": "messages (/v1/messages)",
 			"capGenerateContent": "generateContent (/v1beta/models/'{model}':generateContent)",
 			"capStreamGenerateContent": "streamGenerateContent (/v1beta/models/'{model}':streamGenerateContent)",
@@ -1005,17 +1030,202 @@
 				"dashscope-asr-qwen-audio-file": "Qwen-Audio-3.0 file ASR",
 				"dashscope-asr-fun-file": "Fun-ASR file",
 				"dashscope-asr-file-async": "Async file ASR",
-				"dashscope-tts-speech": "CosyVoice TTS",
-				"dashscope-tts-qwen": "Qwen TTS",
+				"dashscope-tts-speech": "CosyVoice / Qwen-Audio-3.0 TTS",
+				"dashscope-tts-qwen": "Qwen-TTS (multimodal)",
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
-				"dashscope-image-wan": "Wan 2.7 Image"
+				"dashscope-image-wan": "Wan 2.7 Image",
+				"minimax-asr-file": "MiniMax file transcription",
+				"minimax-tts": "MiniMax official speech",
+				"minimax-image": "MiniMax official images",
+				"volcengine-image": "Volcengine Seedream images",
+				"gemini-image": "Gemini official images"
+			},
+			"adapterGuides": {
+				"passthrough": {
+					"purpose": "Forwards the request and response in the upstream format. The gateway only replaces model.",
+					"mapping": []
+				},
+				"dashscope-asr-qwen-file": {
+					"purpose": "For the qwen3-asr-flash family. Do not use it for Qwen-Audio-3.0.",
+					"mapping": [
+						"language is written to parameters.asr_options.language.",
+						"prompt is sent as a system message.",
+						"Audio is converted to a data URL. The synchronous API accepts a data URL of at most 10MB."
+					]
+				},
+				"dashscope-asr-qwen-audio-file": {
+					"purpose": "For qwen-audio-3.0-asr-flash.",
+					"mapping": [
+						"language is written to parameters.language_hints.",
+						"prompt is sent as input_text.",
+						"format is inferred from the MIME type or filename extension."
+					]
+				},
+				"dashscope-asr-fun-file": {
+					"purpose": "For the non-realtime file API of the fun-asr-realtime family.",
+					"mapping": [
+						"language and prompt return 400.",
+						"format is inferred from the MIME type or filename extension."
+					]
+				},
+				"dashscope-asr-file-async": {
+					"purpose": "For filetrans, fun-asr, and paraformer async transcription. The provider needs both the submit and task query endpoints.",
+					"mapping": [
+						"A public file_url form field is required (http, https, or oss).",
+						"prompt is written to input.context.",
+						"language is written to parameters.language_hints.",
+						"The gateway submits the task and polls for the result."
+					]
+				},
+				"dashscope-tts-speech": {
+					"purpose": "For CosyVoice and Qwen-Audio-3.0-TTS.",
+					"mapping": [
+						"response_format accepts mp3, opus, wav, and pcm.",
+						"speed is 0.5–2 and is written to input.rate.",
+						"instructions is written to input.instruction."
+					]
+				},
+				"dashscope-tts-qwen": {
+					"purpose": "For non-realtime models such as qwen3-tts-flash. For Qwen-Audio-3.0-TTS, choose CosyVoice / Qwen-Audio-3.0 TTS.",
+					"mapping": [
+						"Only wav is returned, so response_format must be wav.",
+						"speed must be 1.",
+						"instructions is written to input.instructions and applies only to the Instruct-Flash series."
+					]
+				},
+				"dashscope-tts-minimax": {
+					"purpose": "For minimax/speech-* on Alibaba Cloud Model Studio.",
+					"mapping": [
+						"response_format accepts mp3, pcm, flac, and wav.",
+						"speed is written to input.voice_setting.speed.",
+						"instructions returns 400. Set emotion in the route request parameters at input.voice_setting.emotion."
+					]
+				},
+				"dashscope-image-qwen": {
+					"purpose": "For the qwen-image family.",
+					"mapping": [
+						"size is forwarded unchanged into parameters.size. Qwen expects WIDTH*HEIGHT or auto.",
+						"n is 1–6.",
+						"image is a reference image.",
+						"When response_format is b64_json, the gateway downloads the image and converts it to base64."
+					]
+				},
+				"dashscope-image-wan": {
+					"purpose": "For the Wan image family.",
+					"mapping": [
+						"size is forwarded unchanged into parameters.size. Wan expects 1K, 2K, 4K, or WIDTH*HEIGHT.",
+						"n is 1–4. When omitted, the gateway sends 1."
+					]
+				},
+				"minimax-asr-file": {
+					"purpose": "Set the provider model name to asr-1.0.",
+					"mapping": [
+						"language is sent as a request header.",
+						"The gateway renders srt and vtt from timestamped segments.",
+						"prompt and temperature are dropped."
+					]
+				},
+				"minimax-tts": {
+					"purpose": "Set the provider model name to speech-2.8-hd or speech-2.8-turbo.",
+					"mapping": [
+						"voice is a MiniMax voice_id.",
+						"response_format accepts mp3, pcm, flac, and wav. The upstream supports opus, which this entry does not map yet.",
+						"speed is 0.5–2.",
+						"stream_format=sse becomes OpenAI speech events.",
+						"Pass emotion with extra_body as voice_setting.emotion."
+					]
+				},
+				"minimax-image": {
+					"purpose": "Set the provider model name to image-01 or image-01-live.",
+					"mapping": [
+						"size is not forwarded. Send aspect_ratio, or width and height. The gateway does not fill a default ratio.",
+						"n is 1–9.",
+						"url and b64_json are both rewritten as OpenAI data[]."
+					]
+				},
+				"volcengine-image": {
+					"purpose": "OpenAI SDK calls POST /v1/images/generations. The gateway converts that to Ark image generation. Provider model names are doubao-seedream, dola-seedream, or seedream.",
+					"mapping": [
+						"n=1 generates one image. n from 2 to 15 enables sequential images with max_images equal to n. Ark may return fewer images; billing uses the successful count. 5.0 pro / flash do not support sequential images, so n must be 1.",
+						"size is forwarded as written, including auto. 5.0 pro / flash take 1K / 1.5K / 2K. 5.0 lite / 4.5 need at least 3.69 million pixels and reject 1024x1024. Samples use 1K for pro / flash and 2K for lite.",
+						"background forwards only transparent / opaque, and only 5.0 pro / flash support it for image-to-image. output_format accepts png / jpeg. response_format accepts url and b64_json.",
+						"Reference images go in image. Ark adds a watermark by default; send watermark: false to turn it off. quality is not forwarded.",
+						"JSON only; data[] keeps Ark's size and layer fields. Use the Volcengine native passthrough for streaming."
+					]
+				},
+				"gemini-image": {
+					"purpose": "OpenAI SDK calls POST /v1/images/generations. The gateway converts that to Gemini generateContent on the Gemini API or Vertex AI. Provider model names are gemini-*-image or gemini-nano-banana*.",
+					"mapping": [
+						"prompt becomes the text in contents, and responseModalities is set to TEXT and IMAGE. n must be 1.",
+						"A WxH size maps to the nearest imageConfig.aspectRatio, and the long side picks 1K / 2K / 4K. You can also send only 512 / 1K / 2K / 4K, or auto.",
+						"response_format accepts only b64_json. Reference images go in image as data URLs and are sent as inlineData. quality and background are not forwarded.",
+						"Other Gemini parameters go in generationConfig (for example imageConfig or thinkingConfig) and are deep-merged. Billing uses image and text output tokens. JSON only; use the Gemini native passthrough for streaming."
+					]
+				}
+			},
+			"guide": {
+				"title": "Call guide",
+				"call": "Client call",
+				"mapping": "Field mapping",
+				"extra": "Model-specific parameters",
+				"sample": "Example",
+				"openRequest": "Edit in request parameters",
+				"passthrough": "Send the request in the upstream format. The gateway only replaces model.",
+				"payload": {
+					"json": "JSON",
+					"multipart": "multipart"
+				},
+				"response": {
+					"json": "JSON",
+					"binary": "audio bytes",
+					"sse": "SSE",
+					"job": "async job",
+					"websocket": "WebSocket"
+				},
+				"billing": {
+					"tokens": "per token",
+					"per_image": "per image",
+					"per_second": "per second",
+					"per_character": "per character",
+					"per_call": "per call"
+				},
+				"showDetails": "View details",
+				"hideDetails": "Hide details",
+				"requestLabel": "Request",
+				"responseLabel": "Response",
+				"billingLabel": "Billing",
+				"copyPath": "Copy request path",
+				"copyExtra": "Copy model parameter example",
+				"copySample": "Copy Python example",
+				"copyFailed": "Copy failed. Select and copy manually.",
+				"protectedTitle": "Gateway-managed fields",
+				"protectedHint": "The gateway generates or manages these fields. Client values cannot override them.",
+				"sampleHint": "Initialize an OpenAI client with the gateway proxy URL (ending in /v1) as base_url and a gateway API key as api_key. The example uses the current model and route group.",
+				"sampleHintAsync": "Send a multipart request with httpx. Set OCTAFUSE_BASE_URL to the gateway proxy URL (ending in /v1) and OCTAFUSE_API_KEY to a gateway API key. Replace file_url with an accessible audio URL.",
+				"voiceHint": "Replace YOUR_VOICE_ID with a voice ID supported by the upstream model."
+			},
+			"lossyFeatureNames": {
+				"timestamp_granularities": "timestamp_granularities",
+				"diarization": "speaker diarization",
+				"size_abbreviation": "1K/2K/4K size shorthand",
+				"background": "background",
+				"prompt": "prompt",
+				"temperature": "temperature",
+				"response_format_aac": "AAC audio (response_format)",
+				"openai_speed_range": "speed outside 0.5–2",
+				"quality": "quality"
 			},
 			"noCompatibleAdapter": "No compatible adapter",
 			"adapterFirstHint": "Choose a compatible adapter for this provider. Public and upstream protocol fields are filled from the registry.",
 			"adapterUnavailable": "unavailable",
 			"adapterMissingCapabilities": "Provider is missing required endpoints: {capabilities}",
-			"adapterLossyFeatures": "Known unsupported features: {features}",
+			"adapterLossyFeatures": "Not provided by the upstream API: {features}",
+			"extraBodyHint": "Pass native upstream parameters through OpenAI SDK extra_body or top-level request fields. The gateway deep-merges them. See the model documentation for supported parameters.",
+			"extraBodyMultipartHint": "Pass extra parameters as multipart form fields; encode objects as JSON strings. The gateway deep-merges them. See the model documentation for supported parameters.",
+			"extraBodyProtected": "Reserved by the gateway: {fields}",
+			"extraBodyInputLimit": "DashScope speech uses an object for input, while OpenAI input is text, so clients cannot set input.* through extra fields. Put those parameters in the route request parameters.",
+			"adapterModelUnrecognized": "Provider model name is not recognized; showing every adapter.",
 			"passthroughHint": "Passthrough only in this release; public and upstream protocols must match.",
 			"protocolHintConfigured": "Only configured provider protocols compatible with this model are shown.",
 			"protocolHintSelectProvider": "Select a provider first.",
@@ -1167,6 +1377,7 @@
 				"requestPreview": "Preview",
 				"sentRequest": "Sent",
 				"requestPreviewHint": "Preview of the merged body. The server’s actual request is authoritative.",
+				"upstreamUrlMissing": "This provider has no endpoint for {target}. Conversion adapters use only the target protocol.",
 				"sentRequestHint": "The actual upstream request, including merged route parameters.",
 				"lastRequestHint": "Configuration changed. This is the previous request as sent.",
 				"requestHeaders": "Headers",
@@ -1369,6 +1580,7 @@
 		"sentBodySourcePreview": "Preview",
 		"requestTargetUrl": "Upstream request URL",
 		"requestTargetUrlEmpty": "Select a route to preview the full upstream URL.",
+		"requestTargetUrlMissing": "This provider has no endpoint for {target}, so the upstream URL cannot be previewed. Conversion adapters use the target protocol, not an endpoint configured on the client protocol.",
 		"requestTargetUrlHint": "Preview from provider base_url (same join rules as Send). After Send, shows the URL actually used.",
 		"requestTargetUrlRealtimeHint": "WebSocket address. The underlying handshake uses HTTP GET + Upgrade; audio frames are sent after the task starts.",
 		"upstream": "Upstream: ",
@@ -1378,8 +1590,15 @@
 		"body": "Body",
 		"rawPayload": "Raw payload",
 		"emptyResponseHint": "Run Send to see upstream status, headers, and body or stream output here.",
-		"imageOpenaiOnly": "Image-generation models only work with upstream_protocol=openai or dashscope. Edit the route or pick an openai / dashscope route.",
+		"imageOpenaiOnly": "Image-generation models only work with upstream_protocol=openai, dashscope, minimax, volcengine, or gemini. Edit the route or pick a route on one of those protocols.",
 		"imageDashScopeHint": "DashScope conversion: edit OpenAI Images JSON (prompt, n, size). Playground rewrites it to multimodal-generation and always sends n (default 1). Use JSON image for image-to-image; edits is not supported. No billing or request logs.",
+		"imageDashScopePassthroughHint": "Native passthrough: the JSON is forwarded to multimodal-generation as written. Playground replaces model with the route provider model name. No billing or request logs.",
+		"imageMiniMaxPassthroughHint": "Native passthrough: the JSON is forwarded to image_generation as written. Playground replaces model with the route provider model name and previews data.image_urls or data.image_base64. No billing or request logs.",
+		"imageVolcenginePassthroughHint": "Native passthrough: the JSON is forwarded to Ark POST /images/generations. Set stream to true for SSE. Playground replaces model with the route provider model name. No billing or request logs.",
+		"imageGeminiHint": "Native passthrough: the JSON is sent as Gemini generateContent. Set responseModalities to TEXT and IMAGE, and imageConfig.aspectRatio / imageSize. Images come back in inlineData. Playground does not bill or write request logs.",
+		"imageVolcengineOpenAiHint": "OpenAI image JSON is converted to Ark image generation. n from 2 to 15 is sent as sequential images. JSON only; use native passthrough for streaming. Playground previews the returned images. No billing or request logs.",
+		"imageGeminiOpenAiHint": "OpenAI image JSON is converted to Gemini generateContent. size becomes the imageConfig aspect ratio and resolution, n must be 1, and reference images go in image as data URLs. Playground calls the upstream directly, shows the raw Gemini response, and previews inlineData images. No billing or request logs.",
+		"imageMiniMaxOpenAiHint": "OpenAI image JSON is converted to MiniMax image_generation. Send aspect_ratio; size is not forwarded. Playground previews the returned images. No billing or request logs.",
 		"imageOperation": "Image operation",
 		"imageGenerationsHint": "Image model: request body uses images/generations fields (prompt, n, size, quality). No billing or request logs.",
 		"imageEditsHint": "Image edits: JSON fields (prompt, n, size, quality) plus reference image files below. Files are sent as multipart to the upstream edits endpoint. No billing or request logs.",
@@ -1394,11 +1613,14 @@
 			"allProtocols": "All protocols",
 			"allRouteGroups": "All route groups"
 		},
-		"audioOpenaiOnly": "Audio transcription testing supports OpenAI multipart or DashScope routes with an implemented synchronous adapter.",
+		"audioOpenaiOnly": "Audio transcription testing supports OpenAI multipart, MiniMax file transcription, or DashScope routes with an implemented synchronous adapter.",
 		"audioTranscriptionsHint": "Audio model: JSON fields (language, response_format) plus an audio file below. File is sent as multipart to the upstream transcriptions endpoint. No billing or request logs.",
 		"audioTranscriptionsDashScopeHint": "DashScope synchronous ASR: the Playground adapter encodes the audio as a Data URL and sends JSON upstream. No billing or request logs.",
 		"audioRealtimeDashScopeHint": "DashScope realtime ASR/TTS: the browser opens a WebSocket and Admin bridges frames to the upstream WSS. No billing or request logs.",
 		"audioSpeechHint": "Speech synthesis: edit input, voice, response_format, and speed in JSON; non-realtime DashScope requests are converted to the upstream input object.",
+		"audioSpeechPassthroughHint": "Native passthrough: the JSON is forwarded to SpeechSynthesizer as written. Playground replaces model with the route provider model name. Streaming uses X-DashScope-SSE. No billing or request logs.",
+		"audioSpeechMiniMaxHint": "Native passthrough: JSON is forwarded to t2a_v2 as written. Playground replaces model with the route provider model name. stream:false is decoded from hex and played; stream:true shows the SSE events. No billing or request logs.",
+		"audioSpeechMiniMaxOpenAiHint": "OpenAI speech JSON is converted to MiniMax t2a_v2. voice must be a MiniMax voice_id. Playground replaces model with the route provider model name and plays the decoded audio. No billing or request logs.",
 		"audioFile": "Audio file",
 		"audioFileHint": "Select one audio file (mp3, wav, m4a, webm, …). Sent as multipart (not in the JSON editor).",
 		"audioFileDashScopeHint": "Select one audio file. After upload to Admin, the server encodes it as a DashScope Data URL (not in the JSON editor).",
@@ -1554,12 +1776,15 @@
 		"emptyResponseHint": "After you click Send, status, body, or streamed output appears here.",
 		"readyNeedProxyUrl": "Enter a valid Proxy Base URL (http/https).",
 		"readyNeedModel": "Select a model.",
-		"readyNeedOpenaiForImage": "Image-generation models require protocol openai (Proxy /v1/images/generations or /v1/images/edits).",
+		"readyNeedOpenaiForImage": "Image-generation models require protocol openai (Proxy /v1/images/generations or /v1/images/edits), dashscope (native multimodal-generation), minimax (POST /v1/minimax/image_generation), volcengine (POST /v1/volcengine/images/generations), or gemini (POST /v1beta/models/{model}:generateContent).",
 		"readyNeedKeyLoading": "API key is still loading…",
 		"readyNeedKey": "Select an API key and wait until it loads (sk-…).",
 		"protocolLockedImage": "Image models are locked to openai → POST /v1/images/generations or /v1/images/edits.",
 		"imageOperation": "Image operation",
 		"imageGenerationsHint": "Generations: JSON body for POST /v1/images/generations (prompt, n, size, quality).",
+		"imageMiniMaxHint": "Image generation: JSON body for POST /v1/minimax/image_generation (prompt, aspect_ratio, n, response_format). The Proxy bills successful images.",
+		"imageVolcengineHint": "Image generation: JSON body for POST /v1/volcengine/images/generations. stream true returns SSE. The Proxy bills usage.generated_images.",
+		"imageGeminiHint": "Image generation: JSON for POST /v1beta/models/'{'model'}':generateContent. Use responseModalities TEXT and IMAGE plus imageConfig. The Proxy bills image and text output tokens.",
 		"imageEditsHint": "Edits: JSON fields plus reference image files → multipart POST /v1/images/edits.",
 		"referenceImages": "Reference images",
 		"referenceImagesHint": "Select 1–{max} image file(s) for multipart upload.",
@@ -1585,11 +1810,13 @@
 		"errSelectKey": "Select an API key and wait until it finishes loading (sk-…)",
 		"errBodyMustBeObject": "Request body must be a JSON object",
 		"infoModelOverwritten": "Set request body model to \"{model}\" (matches selected model and route group).",
-		"protocolLockedAudio": "Audio routes support OpenAI HTTP (POST /v1/audio/transcriptions for ASR or /v1/audio/speech for TTS) or DashScope realtime WSS.",
-		"audioTranscriptionsHint": "Transcriptions: JSON fields (language, response_format) plus an audio file → multipart POST /v1/audio/transcriptions.",
+		"protocolLockedAudio": "Audio routes support OpenAI HTTP (POST /v1/audio/transcriptions for ASR or /v1/audio/speech for TTS), MiniMax passthrough (POST /v1/minimax/speech_to_text or /v1/minimax/t2a_v2), or DashScope realtime WSS.",
+		"audioTranscriptionsHint": "Transcriptions: JSON fields (language, response_format) plus an audio file. OpenAI uses multipart POST /v1/audio/transcriptions; MiniMax passthrough uses POST /v1/minimax/speech_to_text.",
 		"audioRealtimeDashScopeHint": "DashScope realtime ASR: the browser opens a WebSocket; task mode sends binary PCM and session mode sends Base64 audio events.",
 		"audioRealtimeSpeechHint": "DashScope realtime speech: the browser opens a WebSocket, sends run-task followed by continue-task text, and receives audio chunks.",
 		"audioSpeechHint": "Speech synthesis: edit input, voice, response_format, and speed in the JSON body → POST /v1/audio/speech.",
+		"audioSpeechDashScopeHint": "Native passthrough: JSON is sent to SpeechSynthesizer. Streaming sets X-DashScope-SSE: enable. The Proxy bills characters from upstream usage.",
+		"audioSpeechMiniMaxHint": "Native passthrough: JSON is sent to POST /v1/minimax/t2a_v2. A non-stream hex payload is decoded in the browser; stream:true shows the SSE events, then plays the last complete audio frame. The Proxy bills extra_info.usage_characters.",
 		"audioFile": "Audio file",
 		"audioFileHint": "Select one audio file for multipart upload.",
 		"audioRealtimeFileDashScopeHint": "Realtime ASR sends audio in the selected WSS mode. File input replays a clip (wav/mp3/ogg are decoded to 16 kHz PCM in the browser; raw .pcm is sent as-is).",

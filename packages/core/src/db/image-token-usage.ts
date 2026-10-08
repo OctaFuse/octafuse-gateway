@@ -13,6 +13,8 @@ export type ImageTokenUsage = {
 	cached_text_tokens: number;
 	image_input_tokens: number;
 	cached_image_input_tokens: number;
+	/** 文本输出（Gemini thinking 与候选文本）。OpenAI Images 解析恒为 0。 */
+	text_output_tokens: number;
 	image_output_tokens: number;
 	total_tokens: number;
 	/** 原始 usage JSON 字符串 */
@@ -24,6 +26,7 @@ export const EMPTY_IMAGE_TOKEN_USAGE: ImageTokenUsage = {
 	cached_text_tokens: 0,
 	image_input_tokens: 0,
 	cached_image_input_tokens: 0,
+	text_output_tokens: 0,
 	image_output_tokens: 0,
 	total_tokens: 0,
 	raw_usage: null,
@@ -111,6 +114,115 @@ export function parseOpenAiImageUsage(body: unknown): ImageTokenUsage | null {
 		cached_text_tokens,
 		image_input_tokens,
 		cached_image_input_tokens,
+		text_output_tokens: 0,
+		image_output_tokens,
+		total_tokens,
+		raw_usage,
+	};
+}
+
+type GeminiModalityCounts = { text: number; image: number; other: number };
+
+function geminiField(record: Record<string, unknown>, camel: string, snake: string): unknown {
+	return record[camel] ?? record[snake];
+}
+
+/** `promptTokensDetails` / `candidatesTokensDetails` / `cacheTokensDetails`。没有数组时返回 null。 */
+function geminiModalityCounts(details: unknown): GeminiModalityCounts | null {
+	if (!Array.isArray(details)) return null;
+	const counts: GeminiModalityCounts = { text: 0, image: 0, other: 0 };
+	let saw = false;
+	for (const row of details) {
+		if (row == null || typeof row !== 'object' || Array.isArray(row)) continue;
+		const item = row as Record<string, unknown>;
+		const modality = String(item.modality ?? '')
+			.trim()
+			.toUpperCase();
+		const count = asNonNegInt(item.tokenCount ?? item.token_count);
+		if (modality === '' && count === 0) continue;
+		saw = true;
+		if (modality === 'TEXT') counts.text += count;
+		else if (modality === 'IMAGE') counts.image += count;
+		else counts.other += count;
+	}
+	return saw ? counts : null;
+}
+
+/**
+ * 解析 Gemini `usageMetadata`（generateContent / streamGenerateContent）。
+ * 接受 camelCase 与 snake_case。
+ * 文本输入 / 图片输入来自 `promptTokensDetails`；图片输出来自 `candidatesTokensDetails` 的 IMAGE；
+ * 候选文本与 `thoughtsTokenCount` 计入文本输出（官方 thoughts 不在 candidates 合计里）。
+ * 缺少分项时：输入合计记为文本，候选合计记为图片输出，缓存合计记为文本缓存。
+ */
+export function parseGeminiImageUsage(usageMetadata: unknown): ImageTokenUsage | null {
+	if (usageMetadata == null || typeof usageMetadata !== 'object' || Array.isArray(usageMetadata)) {
+		return null;
+	}
+	const usage = usageMetadata as Record<string, unknown>;
+	const promptDetails = geminiModalityCounts(
+		geminiField(usage, 'promptTokensDetails', 'prompt_tokens_details')
+	);
+	const candidateDetails = geminiModalityCounts(
+		geminiField(usage, 'candidatesTokensDetails', 'candidates_tokens_details')
+	);
+	const cacheDetails = geminiModalityCounts(geminiField(usage, 'cacheTokensDetails', 'cache_tokens_details'));
+	const thoughts = asNonNegInt(geminiField(usage, 'thoughtsTokenCount', 'thoughts_token_count'));
+	const promptTotal = asNonNegInt(geminiField(usage, 'promptTokenCount', 'prompt_token_count'));
+	const candidatesTotal = asNonNegInt(geminiField(usage, 'candidatesTokenCount', 'candidates_token_count'));
+	const cacheTotal = asNonNegInt(geminiField(usage, 'cachedContentTokenCount', 'cached_content_token_count'));
+
+	let text_tokens = 0;
+	let image_input_tokens = 0;
+	if (promptDetails) {
+		text_tokens = promptDetails.text + promptDetails.other;
+		image_input_tokens = promptDetails.image;
+	} else if (promptTotal > 0) {
+		text_tokens = promptTotal;
+	}
+
+	let image_output_tokens = 0;
+	let text_output_tokens = thoughts;
+	if (candidateDetails) {
+		image_output_tokens = candidateDetails.image;
+		text_output_tokens += candidateDetails.text + candidateDetails.other;
+	} else if (candidatesTotal > 0) {
+		image_output_tokens = candidatesTotal;
+	}
+
+	let cached_text_tokens = 0;
+	let cached_image_input_tokens = 0;
+	if (cacheDetails) {
+		cached_text_tokens = Math.min(text_tokens, cacheDetails.text + cacheDetails.other);
+		cached_image_input_tokens = Math.min(image_input_tokens, cacheDetails.image);
+	} else if (cacheTotal > 0) {
+		cached_text_tokens = Math.min(text_tokens, cacheTotal);
+	}
+
+	const explicitSum = text_tokens + image_input_tokens + text_output_tokens + image_output_tokens;
+	const reportedTotal = asNonNegInt(geminiField(usage, 'totalTokenCount', 'total_token_count'));
+	const total_tokens = reportedTotal > 0 ? Math.max(reportedTotal, explicitSum) : explicitSum;
+	let raw_usage: string | null = null;
+	try {
+		raw_usage = JSON.stringify(usage);
+	} catch {
+		raw_usage = null;
+	}
+	if (
+		text_tokens === 0 &&
+		image_input_tokens === 0 &&
+		text_output_tokens === 0 &&
+		image_output_tokens === 0 &&
+		total_tokens === 0
+	) {
+		return { ...EMPTY_IMAGE_TOKEN_USAGE, raw_usage };
+	}
+	return {
+		text_tokens,
+		cached_text_tokens,
+		image_input_tokens,
+		cached_image_input_tokens,
+		text_output_tokens,
 		image_output_tokens,
 		total_tokens,
 		raw_usage,
@@ -127,6 +239,7 @@ export function computeImageTokenMeteredCost(
 	const imageInPrice = prices.image_input_price ?? 0;
 	const cachedImageInPrice = prices.image_input_cache_price ?? imageInPrice;
 	const imageOutPrice = prices.image_output_price ?? 0;
+	const textOutPrice = prices.output_price ?? 0;
 
 	const uncachedText = Math.max(0, usage.text_tokens - usage.cached_text_tokens);
 	const uncachedImageIn = Math.max(0, usage.image_input_tokens - usage.cached_image_input_tokens);
@@ -136,6 +249,7 @@ export function computeImageTokenMeteredCost(
 			usage.cached_text_tokens * cachedTextPrice +
 			uncachedImageIn * imageInPrice +
 			usage.cached_image_input_tokens * cachedImageInPrice +
+			usage.text_output_tokens * textOutPrice +
 			usage.image_output_tokens * imageOutPrice) /
 		TOKENS_PER_MILLION
 	);
@@ -189,6 +303,33 @@ export const SEEDREAM_ESTIMATED_OUTPUT_TOKENS: Record<string, number> = {
 const KNOWN_QUALITIES = ['low', 'medium', 'high'] as const;
 const KNOWN_SIZES = ['1024x1024', '1024x1536', '1536x1024'] as const;
 const SEEDREAM_SIZE_ALIASES = new Set(['2k', '3k', '4k']);
+
+/**
+ * Gemini 生图预检：各分辨率在现有型号里的图片输出 token 上界。
+ * 核对于 2026-10-08 https://ai.google.dev/gemini-api/docs/pricing
+ * - 512：仅 3.1 Flash Image，747
+ * - 1K：3.x 为 1120；已退役的 2.5 Flash Image 为 1290，取上界
+ * - 2K：Nano Banana 2.1 / 3.1 Flash Image 为 1680（3 Pro Image 为 1120）
+ * - 4K：Nano Banana 2.1 为 3780（3.1 Flash Image 2520，3 Pro Image 2000）
+ */
+export const GEMINI_IMAGE_ESTIMATED_OUTPUT_TOKENS: Record<string, number> = {
+	'512': 747,
+	'0.5k': 747,
+	'1k': 1290,
+	'2k': 1680,
+	'4k': 3780,
+};
+
+/** 预检：Gemini 生图 thinking / 文本输出余量。最终按响应 usage 实扣。 */
+export const GEMINI_IMAGE_PRECHECK_TEXT_OUTPUT_HEADROOM = 2_000;
+
+/** 未知或 `auto` 分辨率按 4K 上界，避免预检低估。 */
+export function estimateGeminiImageOutputTokens(imageSize?: string | null): number {
+	const raw = (imageSize?.trim().toLowerCase() || 'auto') || 'auto';
+	const known = GEMINI_IMAGE_ESTIMATED_OUTPUT_TOKENS[raw];
+	if (known != null) return known;
+	return GEMINI_IMAGE_ESTIMATED_OUTPUT_TOKENS['4k'] ?? 3780;
+}
 
 /** 预检：短 prompt 文本余量 */
 export const IMAGE_PRECHECK_TEXT_TOKEN_HEADROOM = 2_000;
@@ -284,9 +425,20 @@ export function buildImagePrecheckUsage(options: {
 	imageCount?: number;
 	/** edits 参考图张数；缺省按上限 5 保守估算 */
 	referenceCount?: number;
+	/** 覆盖 quality×size 估算的单张图片输出 token（Gemini 按 imageSize 查表）。 */
+	outputTokensPerImage?: number;
+	/** 文本输出余量（Gemini thinking）。缺省 0。 */
+	textOutputTokens?: number;
 }): ImageTokenUsage {
 	const n = Math.max(1, Math.floor(options.imageCount ?? 1));
-	const perImageOut = estimateImageOutputTokensForPrecheck(options.quality, options.size);
+	const perImageOut =
+		options.outputTokensPerImage != null && Number.isFinite(options.outputTokensPerImage)
+			? Math.max(0, Math.floor(options.outputTokensPerImage))
+			: estimateImageOutputTokensForPrecheck(options.quality, options.size);
+	const textOut =
+		options.textOutputTokens != null && Number.isFinite(options.textOutputTokens)
+			? Math.max(0, Math.floor(options.textOutputTokens))
+			: 0;
 	const refs = options.isEdit
 		? Math.min(
 				IMAGE_PRECHECK_MAX_REFERENCE_COUNT,
@@ -306,8 +458,9 @@ export function buildImagePrecheckUsage(options: {
 		cached_text_tokens: 0,
 		image_input_tokens: imageIn,
 		cached_image_input_tokens: 0,
+		text_output_tokens: textOut,
 		image_output_tokens: perImageOut * n,
-		total_tokens: IMAGE_PRECHECK_TEXT_TOKEN_HEADROOM + imageIn + perImageOut * n,
+		total_tokens: IMAGE_PRECHECK_TEXT_TOKEN_HEADROOM + imageIn + textOut + perImageOut * n,
 		raw_usage: null,
 	};
 }

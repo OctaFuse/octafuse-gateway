@@ -46,6 +46,7 @@ import {
 	toggleRouteStatus,
 } from './route-api';
 import {
+	alignRouteFormAdapter,
 	alignRouteScheduleWindowsToCatalog,
 	buildActiveFilterSummary,
 	buildFormDataFromRoute,
@@ -409,19 +410,32 @@ export function useRoutesPageState() {
 	useEffect(() => {
 		if (!showModal || !selectedProvider || allowedProtocolsForProvider.length === 0) return;
 		setFormData((fd) => {
-			if (allowedProtocolsForProvider.includes(fd.upstream_protocol)) return fd;
-			const upstreamProtocol = allowedProtocolsForProvider[0]!;
-			const upstreamOperations = upstreamOperationsForProviderModel(
-				selectedProvider,
-				selectedModel,
-				upstreamProtocol,
-				fd.provider_model_name,
-			);
-			return {
-				...fd,
-				upstream_protocol: upstreamProtocol,
-				upstream_operation: upstreamOperations[0] ?? fd.upstream_operation,
-			};
+			let next = fd;
+			if (!allowedProtocolsForProvider.includes(fd.upstream_protocol)) {
+				const upstreamProtocol = allowedProtocolsForProvider[0]!;
+				const upstreamOperations = upstreamOperationsForProviderModel(
+					selectedProvider,
+					selectedModel,
+					upstreamProtocol,
+					fd.provider_model_name,
+				);
+				next = {
+					...fd,
+					upstream_protocol: upstreamProtocol,
+					upstream_operation: upstreamOperations[0] ?? fd.upstream_operation,
+				};
+			}
+			const aligned = alignRouteFormAdapter(next, selectedModel, selectedProvider);
+			if (
+				aligned.request_protocol === fd.request_protocol &&
+				aligned.request_operation === fd.request_operation &&
+				aligned.upstream_protocol === fd.upstream_protocol &&
+				aligned.upstream_operation === fd.upstream_operation &&
+				aligned.adapter === fd.adapter
+			) {
+				return fd;
+			}
+			return aligned;
 		});
 	}, [
 		showModal,

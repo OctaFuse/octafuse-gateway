@@ -352,6 +352,8 @@
 		"anthropic": "Anthropic",
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
+		"minimax": "MiniMax",
+		"volcengine": "火山方舟",
 		"protocolUnknown": "协议：{protocol}",
 		"endpointCopyTitle": "{label} — {url}（点击复制）"
 	},
@@ -492,6 +494,8 @@
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
+			"minimaxOptional": "MiniMax",
+			"volcengineOptional": "火山方舟",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -502,11 +506,22 @@
 			"geminiAuthQueryKey": "Query key（?key=）",
 			"geminiAuthBearer": "Bearer（Authorization）",
 			"geminiAuthHint": "Developer API 与 Vertex Express 使用 ?key=。项目级 Vertex 粘贴服务账号 JSON 时会自动走 Bearer。Vertex 兼容聚合商（ZenMux、七牛等）必须选 Bearer。",
+			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
+			"minimaxHint": "只填 Base 时，语音识别派生为 '{base}'/speech_to_text，语音合成为 '{base}'/t2a_v2，生图为 '{base}'/image_generation。国际站把主机换成 api.minimax.io。视频和音乐还没有端点。",
+			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
+			"volcengineHint": "只填 Base 时，Seedream 生图派生为 '{base}'/images/generations。国内火山方舟用 ark.cn-beijing.volces.com，BytePlus ModelArk 用 ark.ap-southeast.bytepluses.com。对话仍走 OpenAI 端点配置。",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
-			"dashscopeHint": "网关会从该 Base 派生 DashScope 的 HTTP 与 WSS 路径。使用工作空间端点时，请填写对应的 DashScope 主机。",
+			"dashscopeHint": "只填 Base 时，网关会派生下方全部 DashScope HTTP 与 WSS 端点（含 filetrans、热词、音色）。只开放部分能力的套餐（如千问 Token Plan）不要填 Base，展开 URL 覆盖后只填支持的端点。工作空间端点请填写对应的 DashScope 主机。",
 			"advancedToggle": "URL 覆盖",
 			"advancedHint": "填写完整 URL。",
 			"advancedHintGemini": "填写完整 URL，且必须包含 '{model}' 和 '{action}'。",
+			"advancedHintDashscope": "填写完整 URL。端点按能力区分，一个模型只会用到其中一项；几项可能指向同一个上游地址（如 multimodal-generation），分开填写是为了单独开关。已填 Base 时空白项使用派生地址，未填 Base 时空白项表示不支持。",
+			"advancedHintMinimax": "填写完整 URL。已填 Base 时留空即可，网关会按能力派生 speech_to_text、t2a_v2 或 image_generation。",
+			"advancedHintVolcengine": "填写完整 URL。已填 Base 时留空即可，网关会派生 images/generations。",
+			"capHintMiniMaxAudioTranscriptions": "MiniMax 文件转写 POST /v1/speech_to_text。路由适配器选「MiniMax 文件转写」。language 由网关放到请求头，不写进表单。",
+			"capHintMiniMaxAudioSpeech": "MiniMax 同步语音合成 POST /v1/t2a_v2。路由适配器选 MiniMax 透传 audio.speech。非流式和 stream:true 共用这一项。",
+			"capHintMiniMaxImagesGenerations": "MiniMax 生图 POST /v1/image_generation。路由适配器选 MiniMax 透传 images.generations。文生图和图生图走同一个端点。",
+			"capHintVolcengineImagesGenerations": "火山方舟 Seedream。原生透传和 OpenAI 转换适配器 volcengine-image 都发到方舟 POST /images/generations。流式只用原生透传。",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -523,6 +538,16 @@
 			"capAudioRealtimeSession": "audio.realtime.session（原生会话 WSS）",
 			"capAudioHotwords": "audio.hotwords（自定义热词 HTTP）",
 			"capAudioVoices": "audio.voices（声音复刻 HTTP）",
+			"capHintImagesGenerationsMultimodal": "千问图像、万相同步生图。路由适配器选「千问图像 3.0」或「万相 2.7」。",
+			"capHintAudioTranscriptions": "filetrans 异步转写的提交地址，用于 Fun-ASR、Paraformer、Qwen filetrans 文件转写，需同时配置任务查询。路由适配器选「异步文件转写」。",
+			"capHintAudioTranscriptionsMultimodal": "同步文件 ASR：Qwen3-ASR、Qwen-Audio-3.0、Fun-ASR。路由适配器按模型选对应的文件转写，或用 DashScope 透传。",
+			"capHintAudioTranscriptionsTasks": "异步任务结果查询，与上方 filetrans 提交配套使用。",
+			"capHintAudioSpeech": "SpeechSynthesizer 接口：CosyVoice 与 Qwen-Audio-3.0-TTS。路由适配器选「CosyVoice / Qwen-Audio-3.0 语音合成」。",
+			"capHintAudioSpeechMultimodal": "multimodal-generation 语音合成：Qwen-TTS（如 qwen3-tts-flash）与 MiniMax。和上一项是不同接口，按模型选择。路由适配器选「Qwen-TTS 语音合成（多模态）」或「MiniMax 语音合成」。",
+			"capHintAudioRealtimeInference": "WebSocket 任务协议（run-task / continue-task）：CosyVoice、Qwen-Audio-TTS 实时合成，Fun-ASR、Paraformer 实时识别。路由使用 DashScope 透传。",
+			"capHintAudioRealtimeSession": "WebSocket 会话协议（session.update）。网关目前只支持 Qwen3-ASR-Flash-Realtime 实时识别。",
+			"capHintAudioHotwords": "ASR 自定义热词管理。属于供应商账号资源，不参与模型路由。",
+			"capHintAudioVoices": "TTS 声音复刻与设计（CosyVoice / Qwen）。属于供应商账号资源，不参与模型路由。",
 			"capMessages": "messages (/v1/messages)",
 			"capGenerateContent": "generateContent (/v1beta/models/'{model}':generateContent)",
 			"capStreamGenerateContent": "streamGenerateContent (/v1beta/models/'{model}':streamGenerateContent)",
@@ -1005,17 +1030,202 @@
 				"dashscope-asr-qwen-audio-file": "Qwen-Audio-3.0 文件转写",
 				"dashscope-asr-fun-file": "Fun-ASR 文件转写",
 				"dashscope-asr-file-async": "异步文件转写",
-				"dashscope-tts-speech": "CosyVoice 语音合成",
-				"dashscope-tts-qwen": "Qwen 语音合成",
+				"dashscope-tts-speech": "CosyVoice / Qwen-Audio-3.0 语音合成",
+				"dashscope-tts-qwen": "Qwen-TTS 语音合成（多模态）",
 				"dashscope-tts-minimax": "MiniMax 语音合成",
 				"dashscope-image-qwen": "千问图像 3.0",
-				"dashscope-image-wan": "万相 2.7"
+				"dashscope-image-wan": "万相 2.7",
+				"minimax-asr-file": "MiniMax 文件转写",
+				"minimax-tts": "MiniMax 官方语音合成",
+				"minimax-image": "MiniMax 官方生图",
+				"volcengine-image": "火山方舟 Seedream 生图",
+				"gemini-image": "Gemini 官方生图"
+			},
+			"adapterGuides": {
+				"passthrough": {
+					"purpose": "请求和响应按上游原生格式转发，网关只替换 model。",
+					"mapping": []
+				},
+				"dashscope-asr-qwen-file": {
+					"purpose": "适用 qwen3-asr-flash 系列。不要用于 Qwen-Audio-3.0。",
+					"mapping": [
+						"language 写入 parameters.asr_options.language。",
+						"prompt 作为 system 消息。",
+						"音频转成 data URL，同步接口的 data URL 不超过 10MB。"
+					]
+				},
+				"dashscope-asr-qwen-audio-file": {
+					"purpose": "适用 qwen-audio-3.0-asr-flash。",
+					"mapping": [
+						"language 写入 parameters.language_hints。",
+						"prompt 作为 input_text。",
+						"format 从 MIME 或文件扩展名推断。"
+					]
+				},
+				"dashscope-asr-fun-file": {
+					"purpose": "适用 fun-asr-realtime 系列的非实时文件接口。",
+					"mapping": [
+						"language 和 prompt 会返回 400。",
+						"format 从 MIME 或文件扩展名推断。"
+					]
+				},
+				"dashscope-asr-file-async": {
+					"purpose": "适用 filetrans、fun-asr 与 paraformer 异步转写。供应商需配置提交和任务查询两个端点。",
+					"mapping": [
+						"必须传公网 file_url 表单字段（http、https 或 oss）。",
+						"prompt 写入 input.context。",
+						"language 写入 parameters.language_hints。",
+						"网关提交任务并轮询结果。"
+					]
+				},
+				"dashscope-tts-speech": {
+					"purpose": "适用 CosyVoice 与 Qwen-Audio-3.0-TTS。",
+					"mapping": [
+						"response_format 支持 mp3、opus、wav、pcm。",
+						"speed 取值 0.5–2，写入 input.rate。",
+						"instructions 写入 input.instruction。"
+					]
+				},
+				"dashscope-tts-qwen": {
+					"purpose": "适用 qwen3-tts-flash 等非实时模型。Qwen-Audio-3.0-TTS 请选 CosyVoice / Qwen-Audio-3.0 语音合成。",
+					"mapping": [
+						"只返回 wav，response_format 必须是 wav。",
+						"speed 必须为 1。",
+						"instructions 写入 input.instructions，仅 Instruct-Flash 系列生效。"
+					]
+				},
+				"dashscope-tts-minimax": {
+					"purpose": "适用百炼上的 minimax/speech-*。",
+					"mapping": [
+						"response_format 支持 mp3、pcm、flac、wav。",
+						"speed 写入 input.voice_setting.speed。",
+						"instructions 会返回 400。情感写在路由请求参数 input.voice_setting.emotion。"
+					]
+				},
+				"dashscope-image-qwen": {
+					"purpose": "适用 qwen-image 系列。",
+					"mapping": [
+						"size 原样写入 parameters.size。千问使用 宽*高 或 auto。",
+						"n 取值 1–6。",
+						"image 作为参考图。",
+						"response_format=b64_json 时，网关下载图片并转成 base64。"
+					]
+				},
+				"dashscope-image-wan": {
+					"purpose": "适用 wan 图像系列。",
+					"mapping": [
+						"size 原样写入 parameters.size。万相使用 1K、2K、4K 或 宽*高。",
+						"n 取值 1–4；缺省时网关显式写 1。"
+					]
+				},
+				"minimax-asr-file": {
+					"purpose": "供应商模型名填 asr-1.0。",
+					"mapping": [
+						"language 放到请求头。",
+						"srt 和 vtt 由网关根据带时间戳的结果生成。",
+						"prompt 和 temperature 会被丢弃。"
+					]
+				},
+				"minimax-tts": {
+					"purpose": "供应商模型名填 speech-2.8-hd 或 speech-2.8-turbo。",
+					"mapping": [
+						"voice 填写 MiniMax voice_id。",
+						"response_format 支持 mp3、pcm、flac、wav。opus 上游支持，当前入口还没有映射。",
+						"speed 取值 0.5–2。",
+						"stream_format=sse 转成 OpenAI speech 事件。",
+						"情感用 extra_body 传 voice_setting.emotion。"
+					]
+				},
+				"minimax-image": {
+					"purpose": "供应商模型名填 image-01 或 image-01-live。",
+					"mapping": [
+						"不转发 size。请传 aspect_ratio，或同时传 width 与 height。网关不填默认比例。",
+						"n 取值 1–9。",
+						"url 与 b64_json 都改写成 OpenAI data[]。"
+					]
+				},
+				"volcengine-image": {
+					"purpose": "OpenAI SDK 调 POST /v1/images/generations，网关转到火山方舟生图。供应商模型名填 doubao-seedream、dola-seedream 或 seedream。",
+					"mapping": [
+						"n=1 生成单图；n 为 2–15 时打开组图，max_images 等于 n。实际张数可能少于 n，按成功张数计费。5.0 pro / flash 不支持组图，n 只能为 1。",
+						"size 原样转发，包括 auto。5.0 pro / flash 用 1K / 1.5K / 2K；5.0 lite / 4.5 至少 369 万像素，1024x1024 会被拒绝。",
+						"background 只转发 transparent / opaque，仅 5.0 pro / flash 图生图可用。output_format 只接受 png / jpeg。response_format 只支持 url 和 b64_json。",
+						"参考图放在 image。方舟默认加水印，不要时传 watermark: false。quality 不转发。",
+						"只返回 JSON，data[] 保留方舟的 size 和图层字段。要流式请改走火山方舟原生透传。"
+					]
+				},
+				"gemini-image": {
+					"purpose": "OpenAI SDK 调 POST /v1/images/generations，网关转成 Gemini generateContent，适用 Gemini API 与 Vertex AI。供应商模型名填 gemini-*-image 或 gemini-nano-banana*。",
+					"mapping": [
+						"prompt 成为 contents 里的文本，responseModalities 固定为 TEXT 与 IMAGE。n 只能为 1。",
+						"size 填 WxH 时换算成最接近的 imageConfig.aspectRatio，并按长边取 1K / 2K / 4K；也可只填 512 / 1K / 2K / 4K 或 auto。",
+						"response_format 只支持 b64_json。参考图放在 image，需为 data URL，会转成 inlineData。quality 与 background 不转发。",
+						"其它 Gemini 参数写在 generationConfig（如 imageConfig、thinkingConfig），网关会深度合并。按图片输出与文本输出 token 计费。只返回 JSON，要流式请改走 Gemini 原生透传。"
+					]
+				}
+			},
+			"guide": {
+				"title": "调用指南",
+				"call": "客户端调用",
+				"mapping": "字段映射",
+				"extra": "模型特有参数",
+				"sample": "调用示例",
+				"openRequest": "在请求参数里填写",
+				"passthrough": "请求按上游原生格式发送，网关只替换 model。",
+				"payload": {
+					"json": "JSON",
+					"multipart": "multipart"
+				},
+				"response": {
+					"json": "JSON",
+					"binary": "音频字节",
+					"sse": "SSE",
+					"job": "异步任务",
+					"websocket": "WebSocket"
+				},
+				"billing": {
+					"tokens": "按 token",
+					"per_image": "按张",
+					"per_second": "按秒",
+					"per_character": "按字符",
+					"per_call": "按次"
+				},
+				"showDetails": "查看详情",
+				"hideDetails": "收起详情",
+				"requestLabel": "请求",
+				"responseLabel": "响应",
+				"billingLabel": "计费",
+				"copyPath": "复制调用路径",
+				"copyExtra": "复制模型参数示例",
+				"copySample": "复制 Python 调用示例",
+				"copyFailed": "复制失败，请手动选择复制",
+				"protectedTitle": "网关管理的字段",
+				"protectedHint": "以下字段由网关生成或管理，客户端传入的同名值不会覆盖它们。",
+				"sampleHint": "先初始化 OpenAI client：base_url 使用网关代理地址（以 /v1 结尾），api_key 使用网关 API Key。示例已带入当前模型及路由组。",
+				"sampleHintAsync": "使用 httpx 发送 multipart 请求。OCTAFUSE_BASE_URL 为网关代理地址（以 /v1 结尾），OCTAFUSE_API_KEY 为网关 API Key；将 file_url 替换为可访问的音频地址。",
+				"voiceHint": "将 YOUR_VOICE_ID 替换为上游模型支持的音色 ID。"
+			},
+			"lossyFeatureNames": {
+				"timestamp_granularities": "时间戳粒度（timestamp_granularities）",
+				"diarization": "说话人分离",
+				"size_abbreviation": "1K/2K/4K 尺寸简写",
+				"background": "透明背景（background）",
+				"prompt": "提示词（prompt）",
+				"temperature": "采样温度（temperature）",
+				"response_format_aac": "AAC 音频（response_format）",
+				"openai_speed_range": "0.5–2 以外的语速",
+				"quality": "质量档位（quality）"
 			},
 			"noCompatibleAdapter": "没有兼容的适配器",
 			"adapterFirstHint": "选择与当前供应商兼容的适配器。对外协议与上游协议字段会由注册表自动填入。",
 			"adapterUnavailable": "不可用",
 			"adapterMissingCapabilities": "供应商缺少所需端点：{capabilities}",
-			"adapterLossyFeatures": "已知不支持：{features}",
+			"adapterLossyFeatures": "上游接口不提供：{features}",
+			"extraBodyHint": "通过 OpenAI SDK 的 extra_body（或请求体顶层字段）传入上游原生参数，网关会深度合并。可用参数以模型文档为准。",
+			"extraBodyMultipartHint": "额外参数通过 multipart 表单字段传入，对象需编码为 JSON 字符串。网关会深度合并，可用参数以模型文档为准。",
+			"extraBodyProtected": "网关保留：{fields}",
+			"extraBodyInputLimit": "DashScope 语音合成的 input 在上游是对象，OpenAI 的 input 是文本，客户端无法通过额外字段设置 input.*。这类参数请写在路由请求参数里。",
+			"adapterModelUnrecognized": "未识别该供应商模型名，已显示全部适配器。",
 			"passthroughHint": "当前版本仅支持透传，对外协议与上游协议需保持一致。",
 			"protocolHintConfigured": "仅显示该供应商已配置且适用于当前模型的协议。",
 			"protocolHintSelectProvider": "请先选择供应商。",
@@ -1167,6 +1377,7 @@
 				"requestPreview": "发送前预览",
 				"sentRequest": "已发送",
 				"requestPreviewHint": "预览合并后的请求体，最终以服务端发出的内容为准。",
+				"upstreamUrlMissing": "供应商未配置 {target}。转换适配器只使用目标协议的端点。",
 				"sentRequestHint": "本次上游请求的真实内容，已合并路由参数。",
 				"lastRequestHint": "配置已修改，以下保留上一次实际发出的请求。",
 				"requestHeaders": "请求头",
@@ -1369,6 +1580,7 @@
 		"sentBodySourcePreview": "预览",
 		"requestTargetUrl": "上游请求 URL",
 		"requestTargetUrlEmpty": "选择路由后可预览完整上游 URL。",
+		"requestTargetUrlMissing": "供应商未配置 {target}，无法预览上游 URL。转换适配器使用目标协议的端点，不使用客户端协议上的地址。",
 		"requestTargetUrlHint": "按 Provider base_url 与 Send 相同规则预览；发送后显示实际上游 URL。",
 		"requestTargetUrlRealtimeHint": "WebSocket 地址；底层握手使用 HTTP GET + Upgrade，任务开始后持续发送音频帧。",
 		"upstream": "上游：",
@@ -1378,8 +1590,15 @@
 		"body": "正文",
 		"rawPayload": "原始报文",
 		"emptyResponseHint": "点击发送后，这里会显示上游状态、响应头、响应体或流式输出。",
-		"imageOpenaiOnly": "文生图模型仅支持 upstream_protocol=openai 或 dashscope。请修改路由或选择 openai / dashscope 路由。",
+		"imageOpenaiOnly": "文生图模型仅支持 upstream_protocol=openai、dashscope、minimax、volcengine 或 gemini。请修改路由或选择对应协议的路由。",
 		"imageDashScopeHint": "DashScope 转换：请求体仍用 OpenAI Images 字段（prompt、n、size）。调试台会改写成 multimodal-generation，并始终发送 n（默认 1）。图生图用 JSON image，不支持 edits。不计费、不写请求日志。",
+		"imageDashScopePassthroughHint": "原生透传：JSON 按 multimodal-generation 原样转发。调试台会把 model 换成路由上的供应商模型名。不计费、不写请求日志。",
+		"imageMiniMaxPassthroughHint": "原生透传：JSON 按 image_generation 原样转发。调试台会把 model 换成路由上的供应商模型名，并预览 data.image_urls 或 data.image_base64。不计费、不写请求日志。",
+		"imageVolcenginePassthroughHint": "原生透传：JSON 按方舟 POST /images/generations 原样转发。stream 设为 true 时返回 SSE。调试台会把 model 换成路由上的供应商模型名。不计费、不写请求日志。",
+		"imageGeminiHint": "原生透传：JSON 按 Gemini generateContent 发送。请设置 responseModalities 为 TEXT 与 IMAGE，以及 imageConfig.aspectRatio / imageSize。图片在 inlineData 中返回。调试台不计费、不写请求日志。",
+		"imageVolcengineOpenAiHint": "OpenAI 生图 JSON 会转换成方舟生图。n 为 2–15 时按组图发送。只返回 JSON；要流式请用原生透传。调试台预览返回的图片。不计费、不写请求日志。",
+		"imageGeminiOpenAiHint": "OpenAI 生图 JSON 会转换成 Gemini generateContent。size 换算为 imageConfig 的比例与分辨率，n 只能为 1，参考图放在 image（data URL）。调试台直连上游，显示 Gemini 原始响应并预览 inlineData 图片。不计费、不写请求日志。",
+		"imageMiniMaxOpenAiHint": "OpenAI 生图 JSON 会转换成 MiniMax image_generation。请传 aspect_ratio，size 不会转发。调试台预览返回的图片。不计费、不写请求日志。",
 		"imageOperation": "图像操作",
 		"imageGenerationsHint": "文生图模型：请求体使用 images/generations 字段（prompt、n、size、quality）。不计费、不写请求日志。",
 		"imageEditsHint": "图像编辑：JSON 字段（prompt、n、size、quality）加下方参考图。文件以 multipart 发往上游 edits 接口。不计费、不写请求日志。",
@@ -1394,11 +1613,14 @@
 			"allProtocols": "全部协议",
 			"allRouteGroups": "全部路由组"
 		},
-		"audioOpenaiOnly": "语音转写调试仅支持 OpenAI multipart 或已实现同步 Adapter 的 DashScope 路由。",
+		"audioOpenaiOnly": "语音转写调试仅支持 OpenAI multipart、MiniMax 文件转写，或已实现同步 Adapter 的 DashScope 路由。",
 		"audioTranscriptionsHint": "音频模型：JSON 字段（language、response_format）加上方音频文件。文件以 multipart 发往上游 transcriptions。不计费、不写请求日志。",
 		"audioTranscriptionsDashScopeHint": "DashScope 同步 ASR：调试台按路由 Adapter 将音频编码为 Data URL，并以 JSON 发送到上游；不计费、不写请求日志。",
 		"audioRealtimeDashScopeHint": "DashScope 实时 ASR/TTS：浏览器建立 WebSocket，由管理后台在浏览器与上游 WSS 之间转发帧；不计费、不写请求日志。",
 		"audioSpeechHint": "语音合成：在 JSON 请求体中编辑 input、voice、response_format 和 speed；DashScope 非实时请求会转换为上游 input 对象。",
+		"audioSpeechPassthroughHint": "原生透传：JSON 按 SpeechSynthesizer 原样转发。调试台会把 model 换成路由上的供应商模型名。流式由 X-DashScope-SSE 决定。不计费、不写请求日志。",
+		"audioSpeechMiniMaxHint": "原生透传：JSON 按 t2a_v2 原样转发。调试台会把 model 换成路由上的供应商模型名。stream 为 false 时把 hex 音频解码后播放；stream 为 true 时展示 SSE。不计费、不写请求日志。",
+		"audioSpeechMiniMaxOpenAiHint": "OpenAI 语音 JSON 会转换成 MiniMax t2a_v2。voice 填写 MiniMax voice_id。调试台会把 model 换成路由上的供应商模型名，并播放解码后的音频。不计费、不写请求日志。",
 		"audioFile": "音频文件",
 		"audioFileHint": "选择一个音频文件（mp3、wav、m4a、webm…）。以 multipart 发送（不写入 JSON 编辑器）。",
 		"audioFileDashScopeHint": "选择一个音频文件；浏览器上传给 Admin 后，由服务端编码为 DashScope Data URL（不写入 JSON 编辑器）。",
@@ -1554,12 +1776,15 @@
 		"emptyResponseHint": "点击发送后，这里会显示状态、响应体或流式输出。",
 		"readyNeedProxyUrl": "请填写有效的 Proxy Base URL（http/https）。",
 		"readyNeedModel": "请选择模型。",
-		"readyNeedOpenaiForImage": "文生图模型须使用 openai 协议（Proxy /v1/images/generations 或 /v1/images/edits）。",
+		"readyNeedOpenaiForImage": "文生图模型须使用 openai（Proxy /v1/images/generations 或 /v1/images/edits）、dashscope（原生 multimodal-generation）、minimax（POST /v1/minimax/image_generation）、volcengine（POST /v1/volcengine/images/generations）或 gemini（POST /v1beta/models/{model}:generateContent）。",
 		"readyNeedKeyLoading": "API Key 仍在加载…",
 		"readyNeedKey": "请选择 API Key 并等待加载完成（sk-…）。",
 		"protocolLockedImage": "文生图模型已锁定为 openai → POST /v1/images/generations 或 /v1/images/edits。",
 		"imageOperation": "图像操作",
 		"imageGenerationsHint": "文生图：JSON 请求体对应 POST /v1/images/generations（prompt、n、size、quality）。",
+		"imageMiniMaxHint": "生图：JSON 发往 POST /v1/minimax/image_generation（prompt、aspect_ratio、n、response_format）。Proxy 按成功张数计费。",
+		"imageVolcengineHint": "生图：JSON 发往 POST /v1/volcengine/images/generations。stream 为 true 时返回 SSE。Proxy 按 usage.generated_images 计费。",
+		"imageGeminiHint": "生图：JSON 发往 POST /v1beta/models/'{'model'}':generateContent。请设置 responseModalities 为 TEXT 与 IMAGE，以及 imageConfig。Proxy 按图片输出与文本输出 token 计费。",
 		"imageEditsHint": "图像编辑：JSON 字段加参考图 → multipart POST /v1/images/edits。",
 		"referenceImages": "参考图",
 		"referenceImagesHint": "选择 1–{max} 张图片用于 multipart 上传。",
@@ -1585,11 +1810,13 @@
 		"errSelectKey": "请选择 API Key 并等待加载完成（sk-…）",
 		"errBodyMustBeObject": "请求体必须是 JSON 对象",
 		"infoModelOverwritten": "已将请求体 model 设为 \"{model}\"（与所选模型及路由组一致）。",
-		"protocolLockedAudio": "音频路由支持 OpenAI HTTP（ASR：POST /v1/audio/transcriptions，TTS：/v1/audio/speech）或 DashScope 实时 WSS。",
-		"audioTranscriptionsHint": "转写：JSON 字段（language、response_format）加上音频文件 → multipart POST /v1/audio/transcriptions。",
+		"protocolLockedAudio": "音频路由支持 OpenAI HTTP（ASR：POST /v1/audio/transcriptions，TTS：/v1/audio/speech）、MiniMax 透传（POST /v1/minimax/speech_to_text 或 /v1/minimax/t2a_v2）或 DashScope 实时 WSS。",
+		"audioTranscriptionsHint": "转写：JSON 字段（language、response_format）加上音频文件。OpenAI 走 multipart POST /v1/audio/transcriptions；MiniMax 透传走 POST /v1/minimax/speech_to_text。",
 		"audioRealtimeDashScopeHint": "DashScope 实时 ASR：浏览器建立 WebSocket；任务模式发送二进制 PCM，会话模式发送 Base64 音频事件。",
 		"audioRealtimeSpeechHint": "DashScope 实时语音合成：浏览器建立 WebSocket；先发送 run-task，再发送文本 continue-task，返回音频分片。",
 		"audioSpeechHint": "语音合成：在 JSON 请求体中编辑 input、voice、response_format 和 speed → POST /v1/audio/speech。",
+		"audioSpeechDashScopeHint": "原生透传：JSON 发往 SpeechSynthesizer。流式会带上 X-DashScope-SSE: enable。Proxy 按上游 usage.characters 计费。",
+		"audioSpeechMiniMaxHint": "原生透传：JSON 发往 POST /v1/minimax/t2a_v2。非流式响应里的 hex 音频会在浏览器解码播放；stream:true 先展示 SSE，结束后用最后一帧完整音频播放。Proxy 按 extra_info.usage_characters 计费。",
 		"audioFile": "音频文件",
 		"audioFileHint": "选择一个音频文件用于 multipart 上传。",
 		"audioRealtimeFileDashScopeHint": "实时 ASR 按所选 WSS 模式发送音频。文件为预录回放（wav/mp3/ogg 会在浏览器解码为 16 kHz PCM，裸 .pcm 直传）。",

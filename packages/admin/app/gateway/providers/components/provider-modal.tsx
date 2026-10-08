@@ -46,13 +46,33 @@ const inputClass =
 
 const PROTOCOL_TABS: Array<{
 	key: UpstreamProtocol;
-	labelKey: "openaiOptional" | "anthropicOptional" | "geminiOptional" | "dashscopeOptional";
+	labelKey:
+		| "openaiOptional"
+		| "anthropicOptional"
+		| "geminiOptional"
+		| "dashscopeOptional"
+		| "minimaxOptional"
+		| "volcengineOptional";
 }> = [
 	{ key: "openai", labelKey: "openaiOptional" },
 	{ key: "anthropic", labelKey: "anthropicOptional" },
 	{ key: "gemini", labelKey: "geminiOptional" },
 	{ key: "dashscope", labelKey: "dashscopeOptional" },
+	{ key: "minimax", labelKey: "minimaxOptional" },
+	{ key: "volcengine", labelKey: "volcengineOptional" },
 ];
+
+type DashScopeOverrideField =
+	| "images_generations_multimodal"
+	| "audio_transcriptions"
+	| "audio_transcriptions_multimodal"
+	| "audio_transcriptions_tasks"
+	| "audio_speech"
+	| "audio_speech_multimodal"
+	| "audio_realtime_inference"
+	| "audio_realtime_session"
+	| "audio_hotwords"
+	| "audio_voices";
 
 function ProtocolFields(props: {
 	baseUrlLabel: string;
@@ -81,6 +101,11 @@ function ProtocolFields(props: {
 		modelsGenerate: string;
 		legacyPerActionNotice: string;
 	};
+	dashscopeCapHints?: Record<DashScopeOverrideField, string>;
+	minimaxCapHint?: string;
+	minimaxSpeechHint?: string;
+	minimaxImageHint?: string;
+	volcengineImageHint?: string;
 	authLabels?: {
 		label: string;
 		auto: string;
@@ -99,6 +124,11 @@ function ProtocolFields(props: {
 		advancedToggle,
 		advancedHint,
 		capLabels,
+		dashscopeCapHints,
+		minimaxCapHint,
+		minimaxSpeechHint,
+		minimaxImageHint,
+		volcengineImageHint,
 		authLabels,
 		onChange,
 	} = props;
@@ -319,6 +349,78 @@ function ProtocolFields(props: {
 								)}
 							</>
 						) : null}
+						{protocol === "minimax" ? (
+							<>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.audioTranscriptions}
+									</label>
+									<input
+										type="url"
+										value={form.audio_transcriptions}
+										onChange={(e) =>
+											onChange({ ...form, audio_transcriptions: e.target.value })
+										}
+										className={inputClass}
+										autoComplete="off"
+									/>
+									{minimaxCapHint ? (
+										<p className="mt-1 text-xs text-gray-500">{minimaxCapHint}</p>
+									) : null}
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.audioSpeech}
+									</label>
+									<input
+										type="url"
+										value={form.audio_speech}
+										onChange={(e) => onChange({ ...form, audio_speech: e.target.value })}
+										className={inputClass}
+										autoComplete="off"
+									/>
+									{minimaxSpeechHint ? (
+										<p className="mt-1 text-xs text-gray-500">{minimaxSpeechHint}</p>
+									) : null}
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.imagesGenerations}
+									</label>
+									<input
+										type="url"
+										value={form.images_generations}
+										onChange={(e) =>
+											onChange({ ...form, images_generations: e.target.value })
+										}
+										className={inputClass}
+										autoComplete="off"
+									/>
+									{minimaxImageHint ? (
+										<p className="mt-1 text-xs text-gray-500">{minimaxImageHint}</p>
+									) : null}
+								</div>
+							</>
+						) : null}
+						{protocol === "volcengine" ? (
+							<div>
+								<label className="mb-1 block text-xs text-gray-600">
+									{capLabels.imagesGenerations}
+								</label>
+								<input
+									type="url"
+									value={form.images_generations}
+									onChange={(e) =>
+										onChange({ ...form, images_generations: e.target.value })
+									}
+									className={inputClass}
+									autoComplete="off"
+								/>
+								{volcengineImageHint ? (
+									<p className="mt-1 text-xs text-gray-500">{volcengineImageHint}</p>
+								) : null}
+							</div>
+						) : null}
 						{protocol === "dashscope" ? (
 							<>
 								{(
@@ -363,6 +465,11 @@ function ProtocolFields(props: {
 											className={inputClass}
 											autoComplete="off"
 										/>
+										{dashscopeCapHints?.[field] ? (
+											<p className="mt-1 text-xs text-gray-500">
+												{dashscopeCapHints[field]}
+											</p>
+										) : null}
 									</div>
 								))}
 							</>
@@ -443,6 +550,22 @@ export function ProviderModal(props: ProviderModalProps) {
 		messages: t('capMessages'),
 		modelsGenerate: t('capModelsGenerate'),
 		legacyPerActionNotice: t('legacyPerActionNotice'),
+	};
+	const minimaxCapHint = t("capHintMiniMaxAudioTranscriptions");
+	const minimaxSpeechHint = t("capHintMiniMaxAudioSpeech");
+	const minimaxImageHint = t("capHintMiniMaxImagesGenerations");
+	const volcengineImageHint = t("capHintVolcengineImagesGenerations");
+	const dashscopeCapHints: Record<DashScopeOverrideField, string> = {
+		images_generations_multimodal: t('capHintImagesGenerationsMultimodal'),
+		audio_transcriptions: t('capHintAudioTranscriptions'),
+		audio_transcriptions_multimodal: t('capHintAudioTranscriptionsMultimodal'),
+		audio_transcriptions_tasks: t('capHintAudioTranscriptionsTasks'),
+		audio_speech: t('capHintAudioSpeech'),
+		audio_speech_multimodal: t('capHintAudioSpeechMultimodal'),
+		audio_realtime_inference: t('capHintAudioRealtimeInference'),
+		audio_realtime_session: t('capHintAudioRealtimeSession'),
+		audio_hotwords: t('capHintAudioHotwords'),
+		audio_voices: t('capHintAudioVoices'),
 	};
 
 	return (
@@ -754,11 +877,42 @@ export function ProviderModal(props: ProviderModalProps) {
 										form={formData.dashscope}
 										protocol="dashscope"
 										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHint")}
+										advancedHint={t("advancedHintDashscope")}
 										capLabels={capLabels}
+										dashscopeCapHints={dashscopeCapHints}
 										onChange={(dashscope) =>
 											onFormChange({ ...formData, dashscope })
 										}
+									/>
+								) : null}
+								{endpointTab === "minimax" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("minimaxPlaceholder")}
+										baseHint={t("minimaxHint")}
+										form={formData.minimax}
+										protocol="minimax"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHintMinimax")}
+										capLabels={capLabels}
+										minimaxCapHint={minimaxCapHint}
+										minimaxSpeechHint={minimaxSpeechHint}
+										minimaxImageHint={minimaxImageHint}
+										onChange={(minimax) => onFormChange({ ...formData, minimax })}
+									/>
+								) : null}
+								{endpointTab === "volcengine" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("volcenginePlaceholder")}
+										baseHint={t("volcengineHint")}
+										form={formData.volcengine}
+										protocol="volcengine"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHintVolcengine")}
+										capLabels={capLabels}
+										volcengineImageHint={volcengineImageHint}
+										onChange={(volcengine) => onFormChange({ ...formData, volcengine })}
 									/>
 								) : null}
 							</div>

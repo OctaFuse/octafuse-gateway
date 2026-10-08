@@ -73,12 +73,18 @@ export type ProxyDispatchMeta = {
 	imageBillingSize?: string | null;
 	/** 仅 Audio transcriptions：计费时长（秒） */
 	audioDurationSeconds?: number | null;
+	/** TTS 透传：上游 `usage.characters`；缺失时不按输入长度补算。 */
+	audioCharacters?: number | null;
+	/** 生图透传：从原生 `output.choices` 数出的图片张数。 */
+	imageCount?: number | null;
 	/** 仅 Audio：duration 来源 */
 	audioDurationSource?: 'upstream' | 'media' | 'client' | 'estimated' | null;
 	/** 仅 Audio：上传文件字节数 */
 	audioFileBytes?: number;
 	/** 仅 Audio token 计费：上游 `usage.type=tokens` */
 	audioTokenUsage?: import('@octafuse/core').AudioTokenUsage | null;
+	/** 客户端额外字段命中受保护路径后被改回的点路径。 */
+	restoredUpstreamPaths?: string[];
 };
 
 /** Images abort 的 504 不得换 provider / 换路由（避免客户端取消或超时后二次打 OpenAI）。 */

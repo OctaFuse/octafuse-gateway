@@ -828,14 +828,14 @@ curl -sS "$GATEWAY_URL/v1/audio/transcriptions" \
 
 与 `gpt-image-2` 共用同一套 OpenAI Images 驱动；Seedream 目录价为 **`image_billing_mode: per_image`**（按张），不再用 16384 token 折算。
 
-1. **Provider**：Admin → Providers → Import → **Volcengine Ark**（**不要**写 `openai.base`；只配 `endpoints.chat` + `endpoints.images.generations`，避免派生出不存在的 `/images/edits`）。填入火山 API Key。
+1. **Provider**：Admin → Providers → Import → **Volcengine Ark**（`openai` 只配 `endpoints.chat`，生图走 `volcengine.base`；**不要**写 `openai.base`，否则会派生出不存在的 `/images/edits`）。填入火山 API Key。
 2. **Import**：Models → Import → 勾选：**`doubao-seedream-5-0`** / **`doubao-seedream-5-0-pro`**。**已存在同 id 不会覆盖**——改价需删后 re-import、PATCH，或跑 `node scripts/db/migrate-image-billing-modes.mjs --dry-run` / `--apply`。
 3. **目录价口径**（**`per_image`**；权威单价 `image.default`；与火山方舟 / BytePlus 公开价对齐）：
    | catalog / `provider_model_name` | 官方约价 | `image.default` CNY | USD |
    |---|---|---|---|
    | `doubao-seedream-5-0` | ¥0.22 / 张（一口价，不按分辨率翻倍） | **0.22** | **0.035** |
-   | `doubao-seedream-5-0-pro` | ≤2.36MP ¥0.30 / >2.36MP ¥0.60；参考图首张免费、之后 ¥0.02 | **0.30**（`2k`）；高档 **0.60**（`3k`/`4k`）；`image.input.default=0.02` | **0.045** / **0.09**；input **0.003** |
-4. **Routes**：`upstream_protocol=openai`（锁定）；`provider_model_name` 与 catalog id 同名即可。`watermark` / `sequential_image_generation` 等由客户端请求或 route `custom_params` 按需传入，**不**写在模型预设里。
+   | `doubao-seedream-5-0-pro` | 单图生成 ≤261 万像素（1.5K 及以下）¥0.30 / 以上 ¥0.60；参考图首张免费、之后 ¥0.02 | `by_size`：`1k` / `1.5k` **0.30**，`2k` **0.60**；缺省 **0.60**（方舟默认 2K）；`image.input.default=0.02` | **0.045** / **0.09**；input **0.003** |
+4. **Routes**：OpenAI SDK 入口选适配器 `volcengine-image`（上游 `volcengine` / `images.generations`）；流式与方舟原文走原生透传 `POST /v1/volcengine/images/generations`。`provider_model_name` 填方舟 Model ID。`watermark` 等由客户端请求或 route `custom_params` 按需传入，**不**写在模型预设里。
 5. **Playground / Simulator**：选该路由 → generations；Seedream **图生图**走 `POST /v1/images/generations` + JSON `image`（勿用 multipart `/v1/images/edits`，火山无 OpenAI edits 形态）。
 6. **Request Logs**：核对 `pricing_audit.kind=image_per_image`、`billing_kind`、`output_image_count=1`、`charged_cost≈官方单价×charged_factor`。
 7. **curl**（用户 API Key）：
@@ -855,7 +855,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
     - **`token`**：`{ "image_billing_mode": "token", "tiers": [ { image_* $/1M ... } ] }`。扣费权威 = 上游 `usage`；`pricing_audit.kind=image_tokens`。缺省无 mode 且 tier 含正 `image_*` 时运行时推断为 `token`。
     - **`per_image`**：`{ "image_billing_mode": "per_image", "image": { "default", "input"?, "uncertain_result_policy"? } }`（**无 `tiers`**；写入时会剥离历史占位零档）。扣费权威 = 确认输出张数 × `image.default`（+ 可选参考图 `image.input`）；`pricing_audit.kind=image_per_image`。日志列 `billing_kind` / `input_image_count` / `output_image_count`。
     - 无 mode 且仅有 legacy `image` 块：**不计费**（避免旧数据突然扣款）；须显式设 `per_image` 或跑迁移脚本。
-    - `gpt-image-2` / Gemini：token 预设；Seedream / GLM / Grok：per_image 预设（见 [image-models.md](../reference/image-models.md)）。
+    - GPT Image / Gemini：token 预设；Seedream / 千问 / 万相 / MiniMax / GLM / Grok：per_image 预设（见 [image-models.md](../reference/image-models.md)）。
   - **Audio 双模式**（显式 `audio_billing_mode`；Admin 保存禁止与 Image 计费字段混配）：
     - **`per_second`**：`{ "audio_billing_mode": "per_second", "audio": { "price_per_second", "minimum_seconds"? } }`（**无 `tiers`**）。扣费权威 = 计费秒数 × `price_per_second`；`pricing_audit.kind=audio_per_second`。日志列 `billing_kind=audio_per_second`、`audio_duration_seconds`。
     - **`token`**：`{ "audio_billing_mode": "token", "tiers": [ { "input_price", "output_price", "upto": null } ] }`（$/1M）。扣费权威 = 上游 transcription `usage`（`type=tokens`）；`pricing_audit.kind=audio_tokens`。日志列 `billing_kind=audio_tokens`，并写入 input/output token。

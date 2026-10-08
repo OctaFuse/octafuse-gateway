@@ -6,7 +6,15 @@
  * 流程：鉴权 → 解析 model → 预算预检 → openai 路由故障转移 → 成功后按 Images usage token 分项扣费。
  * 日志禁止写入 prompt 原文、参考图与 Base64。
  */
-import type { GatewayRepositories, ModelRow, ResolvedModelSurfaceRow } from '@octafuse/core';
+import {
+	buildImagePrecheckUsage,
+	estimateGeminiImageOutputTokens,
+	GEMINI_IMAGE_PRECHECK_TEXT_OUTPUT_HEADROOM,
+	type GatewayRepositories,
+	type ModelRow,
+	type ResolvedModelSurfaceRow,
+} from '@octafuse/core';
+import { geminiOpenAiImageBillingSize } from '@octafuse/core/gemini-image-openai';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Env } from '../../app';
@@ -15,7 +23,15 @@ import type { RouteResult } from '../../services/model-router';
 import { resolveModelRouting } from '../../services/resolve-model-route-group';
 import { buildProxyFailoverOptions, loadProxyRouteSurface } from '../../services/proxy-pipeline';
 import { proxyImageEdits, proxyImageGenerations, type ProxyResult } from '../../services/proxy';
-import { finalizeRequestLogJson } from '../../services/request-log-shared';
+import { annotateRequestLogWithExtraFields, finalizeRequestLogJson } from '../../services/request-log-shared';
+import {
+	IMAGE_EDIT_KNOWN_KEYS,
+	IMAGE_GENERATION_KNOWN_KEYS,
+	UpstreamExtraFieldsError,
+	attachUpstreamExtraFields,
+	pickExtraFields,
+	pickFormExtraFields,
+} from '@octafuse/core/upstream-extra-fields';
 import {
 	canAffordImageCost,
 	estimateImageBudgetPrecheck,
@@ -24,7 +40,11 @@ import {
 	type ImageCostBreakdown,
 } from '../../services/image-usage-charge';
 import { apiKeyHasBalance } from '../../services/tool-usage-charge';
-import { applyOpenAiImageGenerationExtras, countOpenAiGenerationReferenceImages } from '../../services/image-generation-extras';
+import {
+	applyOpenAiImageGenerationExtras,
+	countOpenAiGenerationReferenceImages,
+	openAiImageBillingSize,
+} from '../../services/image-generation-extras';
 import {
 	countValidImageResults,
 	IMAGE_MAX_BYTES_PER_FILE,
@@ -480,6 +500,28 @@ async function parseMultipartEdits(c: ImagesContext): Promise<MultipartEditsPars
 		}
 	}
 
+	let extra: Record<string, unknown> = {};
+	try {
+		extra = pickFormExtraFields(body, IMAGE_EDIT_KNOWN_KEYS);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) {
+			return {
+				ok: false,
+				error: error.message,
+				diag: {
+					...baseDiag,
+					bodyKeys,
+					hasModel: true,
+					clientModel: model,
+					promptChars: common.prompt.length,
+					referenceCount: images.length,
+					totalUploadBytes: totalBytes,
+				},
+			};
+		}
+		throw error;
+	}
+
 	return {
 		ok: true,
 		model,
@@ -490,6 +532,7 @@ async function parseMultipartEdits(c: ImagesContext): Promise<MultipartEditsPars
 			quality: common.quality,
 			background: common.background,
 			images,
+			...(Object.keys(extra).length > 0 ? { extra } : {}),
 		},
 		totalUploadBytes: totalBytes,
 	};
@@ -656,7 +699,11 @@ async function finalizeImageResponse(params: FinalizeImageParams): Promise<Respo
 				providerModelName: chosenRoute.providerModelName,
 				modelName: modelNameForLog,
 				providerName: chosenRoute.providerName,
-				requestBody: requestBodyForLog,
+				requestBody: annotateRequestLogWithExtraFields(
+					requestBodyForLog,
+					undefined,
+					proxyResult.meta?.restoredUpstreamPaths,
+				),
 				upstreamRequestBody: upstreamRequestBodyForLog,
 				requestProtocol: 'openai',
 				requestOperation: operation === 'generations' ? 'images.generations' : 'images.edits',
@@ -793,7 +840,39 @@ imageRoutes.post('/generations', async (c) => {
 		});
 	}
 
+	let extraFields: Record<string, unknown> = {};
+	try {
+		extraFields = pickExtraFields(body, IMAGE_GENERATION_KNOWN_KEYS);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) {
+			return rejectImageRequest(c, 400, error.message, {
+				operation: 'generations',
+				contentType,
+				contentLength,
+				bodyKeys,
+				hasModel: true,
+				clientModel: rawModelId,
+				promptChars: common.prompt.length,
+			});
+		}
+		throw error;
+	}
+
 	const referenceCount = countOpenAiGenerationReferenceImages(body);
+	const geminiOnly = routes.every((route) => route.adapter === 'gemini-image');
+	const billingSize = geminiOnly
+		? geminiOpenAiImageBillingSize(common.size, extraFields)
+		: openAiImageBillingSize(common.size, body);
+	const precheckUsage = geminiOnly
+		? buildImagePrecheckUsage({
+				size: billingSize,
+				imageCount: common.n,
+				isEdit: referenceCount > 0,
+				referenceCount,
+				outputTokensPerImage: estimateGeminiImageOutputTokens(billingSize),
+				textOutputTokens: GEMINI_IMAGE_PRECHECK_TEXT_OUTPUT_HEADROOM,
+			})
+		: null;
 
 	const estimate = await estimateImageBudgetPrecheck(
 		repos,
@@ -803,14 +882,15 @@ imageRoutes.post('/generations', async (c) => {
 			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			routeGroup: effectiveRouteGroup,
 			quality: common.quality ?? 'auto',
-			size: common.size ?? 'auto',
+			size: billingSize,
 			imageCount: common.n,
 			isEdit: false,
 			referenceCount,
 			operation: 'generations',
 			requestStartedAtMs: start,
 		},
-		routes.map((route) => route.priceOverrideRaw)
+		routes.map((route) => route.priceOverrideRaw),
+		precheckUsage ? { usage: precheckUsage } : undefined
 	);
 	if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
 		return rejectImageRequest(c, 403, 'Budget exceeded', {
@@ -825,16 +905,20 @@ imageRoutes.post('/generations', async (c) => {
 		});
 	}
 
-	const requestBodyForLog = finalizeRequestLogJson(
-		redactImageRequestForLog({
-			operation: 'generations',
-			model: rawModelId,
-			n: common.n,
-			size: common.size,
-			quality: common.quality,
-			background: common.background,
-			prompt: common.prompt,
-		})
+	const requestBodyForLog = annotateRequestLogWithExtraFields(
+		finalizeRequestLogJson(
+			redactImageRequestForLog({
+				operation: 'generations',
+				model: rawModelId,
+				n: common.n,
+				size: common.size,
+				quality: common.quality,
+				background: common.background,
+				prompt: common.prompt,
+			})
+		),
+		extraFields,
+		undefined,
 	);
 
 	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {
@@ -866,6 +950,10 @@ imageRoutes.post('/generations', async (c) => {
 	}
 	// Seedream 等兼容扩展：用户显式传入时透传；亦可由 route `custom_params` 注入默认值
 	applyOpenAiImageGenerationExtras(upstreamBody, body);
+	if (typeof body.style === 'string' && body.style.trim() !== '') {
+		upstreamBody.style = body.style.trim();
+	}
+	const upstreamBodyWithExtras = attachUpstreamExtraFields(upstreamBody, extraFields);
 
 	const failoverOptions = await buildProxyFailoverOptions({
 		repos,
@@ -891,7 +979,7 @@ imageRoutes.post('/generations', async (c) => {
 	const proxyResult = await proxyImageGenerations(
 		repos,
 		routes,
-		upstreamBody,
+		upstreamBodyWithExtras,
 		c.req.raw.signal,
 		failoverOptions
 	);
@@ -913,7 +1001,7 @@ imageRoutes.post('/generations', async (c) => {
 			routeGroup: effectiveRouteGroup,
 			routePriceOverrideJson: proxyResult.chosenRoute.priceOverrideRaw,
 			quality: common.quality ?? 'auto',
-			size: common.size ?? 'auto',
+			size: billingSize,
 			imageCount: common.n,
 			isEdit: false,
 			referenceCount,
@@ -959,6 +1047,7 @@ imageRoutes.post('/edits', async (c) => {
 	}
 	const { model, baseModelId, effectiveRouteGroup, routes } = routed;
 	const modelNameForLog = modelDisplayName(model, baseModelId);
+	const billingSize = openAiImageBillingSize(edit.size, edit.extra);
 
 	if (!apiKeyHasBalance(apiKey)) {
 		return rejectImageRequest(c, 403, 'Budget exceeded', {
@@ -981,7 +1070,7 @@ imageRoutes.post('/edits', async (c) => {
 			userChargedCostFactorsJson: apiKey.chargedCostFactors,
 			routeGroup: effectiveRouteGroup,
 			quality: edit.quality ?? 'auto',
-			size: edit.size ?? 'auto',
+			size: billingSize,
 			imageCount: edit.n,
 			isEdit: true,
 			referenceCount: edit.images.length,
@@ -1003,17 +1092,21 @@ imageRoutes.post('/edits', async (c) => {
 		});
 	}
 
-	const requestBodyForLog = finalizeRequestLogJson(
-		redactImageRequestForLog({
-			operation: 'edits',
-			model: rawModelId,
-			n: edit.n,
-			size: edit.size,
-			quality: edit.quality,
-			background: edit.background,
-			prompt: edit.prompt,
-			referenceCount: edit.images.length,
-		})
+	const requestBodyForLog = annotateRequestLogWithExtraFields(
+		finalizeRequestLogJson(
+			redactImageRequestForLog({
+				operation: 'edits',
+				model: rawModelId,
+				n: edit.n,
+				size: edit.size,
+				quality: edit.quality,
+				background: edit.background,
+				prompt: edit.prompt,
+				referenceCount: edit.images.length,
+			})
+		),
+		edit.extra,
+		undefined,
 	);
 
 	const circuitBlocked = maybeBlockUserModelCircuit(c, repos, apiKey, {
@@ -1069,7 +1162,7 @@ imageRoutes.post('/edits', async (c) => {
 			routeGroup: effectiveRouteGroup,
 			routePriceOverrideJson: proxyResult.chosenRoute.priceOverrideRaw,
 			quality: edit.quality ?? 'auto',
-			size: edit.size ?? 'auto',
+			size: billingSize,
 			imageCount: edit.n,
 			isEdit: true,
 			referenceCount: edit.images.length,

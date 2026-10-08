@@ -5,7 +5,13 @@
  * 请求/上游都是 dashscope + audio.transcriptions.multimodal，adapter 必须是 passthrough。
  * 返回原生 JSON，按 usage.duration / usage.seconds 计 audio_per_second。
  */
-import type { GatewayRepositories, ModelRow, ResolvedModelSurfaceRow } from '@octafuse/core';
+import {
+	isAudioSpeechModel,
+	isImageGenerationModel,
+	type GatewayRepositories,
+	type ModelRow,
+	type ResolvedModelSurfaceRow,
+} from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Env } from '../../app';
@@ -17,9 +23,11 @@ import {
 	buildTierKeyPrefix,
 	resolveRouteStrategyPlan,
 } from '../../services/route-strategies';
-import { proxyDashScopeMultimodalPassthrough, type ProxyResult } from '../../services/proxy';
+import { proxyDashScopeJsonPassthrough, proxyDashScopeMultimodalPassthrough, type ProxyResult } from '../../services/proxy';
+import type { DashScopePassthroughSurface } from '../../services/egress/dashscope-json-passthrough';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
 import { canAffordAudioCost, estimateAudioBudgetPrecheck, recordAudioUsage } from '../../services/audio-usage-charge';
+import { canAffordImageCost, estimateImageBudgetPrecheck, recordImageUsage } from '../../services/image-usage-charge';
 import { apiKeyHasBalance } from '../../services/tool-usage-charge';
 import { formatHttpErrorTextForRequestLog, materializeNonOkResponse } from '../../services/request-log-record-status';
 import {
@@ -76,6 +84,13 @@ function redactDashScopeMultimodalBody(body: Record<string, unknown>): Record<st
 	return clone;
 }
 
+/** 同一条多模态路径按模型类型选择透传 operation，转写模型保持原来的 ASR 入口。 */
+export function dashScopeMultimodalOperation(model: ModelRow): DashScopePassthroughSurface | 'audio.transcriptions.multimodal' {
+	if (isImageGenerationModel(model)) return 'images.generations.multimodal';
+	if (isAudioSpeechModel(model)) return 'audio.speech.multimodal';
+	return 'audio.transcriptions.multimodal';
+}
+
 function modelDisplayName(model: { display_name?: string | null }, baseModelId: string): string {
 	return model.display_name != null && String(model.display_name).trim() !== ''
 		? String(model.display_name).trim()
@@ -85,6 +100,7 @@ function modelDisplayName(model: { display_name?: string | null }, baseModelId: 
 async function resolveDashScopeMultimodalRoutes(
 	repos: GatewayRepositories,
 	rawModelId: string,
+	requestOperation: string,
 ): Promise<
 	| {
 			ok: true;
@@ -114,7 +130,7 @@ async function resolveDashScopeMultimodalRoutes(
 			modelId: baseModelId,
 			routeGroup: effectiveRouteGroup,
 			requestProtocol: 'dashscope',
-			requestOperation: 'audio.transcriptions.multimodal',
+			requestOperation,
 		});
 		if (resolvedSurface.routes.length === 0) {
 			return {
@@ -177,7 +193,16 @@ dashScopeMultimodalRoutes.post('/', async (c) => {
 		});
 	}
 
-	const routed = await resolveDashScopeMultimodalRoutes(repos, rawModelId);
+	const preview = await resolveModelRouting(repos, rawModelId);
+	if (!preview) {
+		return gatewayErrorJson(c, {
+			status: 404,
+			code: GatewayErrorCode.modelNotFound,
+			message: `Model not found: ${rawModelId.trim().slice(0, 200)}`,
+		});
+	}
+	const requestOperation = dashScopeMultimodalOperation(preview.model);
+	const routed = await resolveDashScopeMultimodalRoutes(repos, rawModelId, requestOperation);
 	if (!routed.ok) {
 		return gatewayErrorJson(c, {
 			status: routed.status,
@@ -194,24 +219,50 @@ dashScopeMultimodalRoutes.post('/', async (c) => {
 			message: 'Budget exceeded',
 		});
 	}
-	const estimate = await estimateAudioBudgetPrecheck(
-		repos,
-		{
-			modelPricingProfileJson: model.pricing_profile ?? null,
-			catalogModelId: baseModelId,
-			userChargedCostFactorsJson: apiKey.chargedCostFactors,
-			routeGroup: effectiveRouteGroup,
-			fileBytes: 0,
-			requestStartedAtMs: start,
-		},
-		routes.map((route) => route.priceOverrideRaw),
-	);
-	if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
-		return gatewayErrorJson(c, {
-			status: 403,
-			code: GatewayErrorCode.budgetExceeded,
-			message: 'Budget exceeded',
-		});
+	if (requestOperation === 'images.generations.multimodal') {
+		const requested = requestBody.parameters;
+		const n =
+			requested != null && typeof requested === 'object' && !Array.isArray(requested)
+				? Number((requested as Record<string, unknown>).n ?? 1)
+				: 1;
+		const estimate = await estimateImageBudgetPrecheck(
+			repos,
+			{
+				modelPricingProfileJson: model.pricing_profile ?? null,
+				catalogModelId: baseModelId,
+				userChargedCostFactorsJson: apiKey.chargedCostFactors,
+				routeGroup: effectiveRouteGroup,
+				imageCount: Number.isFinite(n) && n > 0 ? Math.floor(n) : 1,
+			},
+			routes.map((route) => route.priceOverrideRaw),
+		);
+		if (!canAffordImageCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
+			return gatewayErrorJson(c, {
+				status: 403,
+				code: GatewayErrorCode.budgetExceeded,
+				message: 'Budget exceeded',
+			});
+		}
+	} else {
+		const estimate = await estimateAudioBudgetPrecheck(
+			repos,
+			{
+				modelPricingProfileJson: model.pricing_profile ?? null,
+				catalogModelId: baseModelId,
+				userChargedCostFactorsJson: apiKey.chargedCostFactors,
+				routeGroup: effectiveRouteGroup,
+				fileBytes: 0,
+				requestStartedAtMs: start,
+			},
+			routes.map((route) => route.priceOverrideRaw),
+		);
+		if (!canAffordAudioCost(apiKey.budgetMax, apiKey.budgetSpent, estimate.chargedCost, apiKey.walletGranted, apiKey.walletSpent)) {
+			return gatewayErrorJson(c, {
+				status: 403,
+				code: GatewayErrorCode.budgetExceeded,
+				message: 'Budget exceeded',
+			});
+		}
 	}
 
 	const requestBodyForLog = finalizeRequestLogJson(redactDashScopeMultimodalBody(requestBody));
@@ -231,26 +282,34 @@ dashScopeMultimodalRoutes.post('/', async (c) => {
 		poolStrategy: routed.poolStrategy,
 		poolTierStrategies: routed.poolTierStrategies,
 		protocol: 'dashscope',
-		capability: 'audio.transcriptions.multimodal',
+		capability: requestOperation,
 		routeGroup: effectiveRouteGroup,
 		repos,
 	});
 	timing.markGatewayComplete();
-	const proxyResult = await proxyDashScopeMultimodalPassthrough(
-		repos,
-		routes,
-		requestBody,
-		c.req.raw.signal,
-		{
-			affinityKey: buildAffinityKey(apiKey.userId, baseModelId, effectiveRouteGroup, 'dashscope'),
-			tierKeyPrefix: buildTierKeyPrefix(baseModelId, effectiveRouteGroup, 'dashscope'),
-			strategy: strategyPlan.base,
-			tierStrategies: strategyPlan.tierOverrides,
-			timing,
-			sticky: stickyConfigFromSurface(stickySurface),
-			inboundHeaders: c.req.raw.headers,
-		},
-	);
+	const proxyOptions = {
+		affinityKey: buildAffinityKey(apiKey.userId, baseModelId, effectiveRouteGroup, 'dashscope'),
+		tierKeyPrefix: buildTierKeyPrefix(baseModelId, effectiveRouteGroup, 'dashscope'),
+		strategy: strategyPlan.base,
+		tierStrategies: strategyPlan.tierOverrides,
+		timing,
+		sticky: stickyConfigFromSurface(stickySurface),
+		inboundHeaders: c.req.raw.headers,
+	};
+	const proxyResult =
+		requestOperation === 'audio.transcriptions.multimodal'
+			? await proxyDashScopeMultimodalPassthrough(repos, routes, requestBody, c.req.raw.signal, proxyOptions)
+			: await proxyDashScopeJsonPassthrough(
+					repos,
+					routes,
+					requestOperation,
+					requestBody,
+					c.req.raw.signal,
+					{
+						...proxyOptions,
+						dashScopeJson: { sse: c.req.header('X-DashScope-SSE') },
+					},
+				);
 	return finalizeMultimodalResponse({
 		c,
 		proxyResult,
@@ -263,6 +322,7 @@ dashScopeMultimodalRoutes.post('/', async (c) => {
 		modelPricingProfileJson: model.pricing_profile ?? null,
 		start,
 		timing,
+		requestOperation,
 	});
 });
 
@@ -278,6 +338,7 @@ async function finalizeMultimodalResponse(params: {
 	modelPricingProfileJson: string | null;
 	start: number;
 	timing: RequestTimingCollector;
+	requestOperation: string;
 }): Promise<Response> {
 	const {
 		c,
@@ -291,6 +352,7 @@ async function finalizeMultimodalResponse(params: {
 		modelPricingProfileJson,
 		start,
 		timing,
+		requestOperation,
 	} = params;
 	const { chosenRoute, upstreamRequestId, circuitEvents, suppressErrorAlert, stickyTrace, stickyMutationPromise } =
 		proxyResult;
@@ -330,6 +392,53 @@ async function finalizeMultimodalResponse(params: {
 		c,
 		(async () => {
 			const stickyTraceSnapshot = stickyTrace ? await stickyTrace() : null;
+			if (requestOperation === 'images.generations.multimodal') {
+				await recordImageUsage({
+					repos,
+					apiKeyId: apiKey.keyId,
+					userId: apiKey.userId,
+					userEmail: apiKey.userEmail,
+					ingressHost: apiKey.ingressHost,
+					modelId: baseModelId,
+					providerId: chosenRoute.providerId,
+					providerModelName: chosenRoute.providerModelName,
+					modelName: modelNameForLog,
+					providerName: chosenRoute.providerName,
+					requestBody: requestBodyForLog,
+					requestProtocol: 'dashscope',
+					requestOperation,
+					upstreamProtocol: chosenRoute.upstreamProtocol,
+					upstreamOperation: chosenRoute.upstreamOperation,
+					modelSurfaceId: chosenRoute.modelSurfaceId,
+					routePoolId: chosenRoute.routePoolId,
+					routeTargetId: chosenRoute.targetId,
+					adapter: chosenRoute.adapter,
+					stickyTrace: stickyTraceSnapshot,
+					routeGroup: effectiveRouteGroup,
+					status,
+					latencyMs: Date.now() - start,
+					errorMessage,
+					billing: {
+						modelPricingProfileJson,
+						catalogModelId: baseModelId,
+						userChargedCostFactorsJson: apiKey.chargedCostFactors,
+						routeGroup: effectiveRouteGroup,
+						routePriceOverrideJson: chosenRoute.priceOverrideRaw,
+						imageCount: response.ok ? (meta?.imageCount ?? 0) : 0,
+					},
+					effectiveImageCount: response.ok ? (meta?.imageCount ?? 0) : 0,
+					resultConfirmed: response.ok && (meta?.imageCount ?? 0) > 0,
+					providerKeyId: chosenRoute.providerKeyId ?? null,
+					providerKeyLabel: chosenRoute.providerKeyLabel ?? null,
+					providerKeyFingerprint: chosenRoute.providerKeyFingerprint ?? null,
+					upstreamRequestId,
+					timing: timing.snapshot(),
+					circuitEvents: alertCircuitEvents.length > 0 ? alertCircuitEvents : undefined,
+					suppressErrorAlert: suppressErrorAlert || undefined,
+				});
+				return;
+			}
+			const usage = await proxyResult.usagePromise.catch(() => null);
 			await recordAudioUsage({
 				repos,
 				apiKeyId: apiKey.keyId,
@@ -343,7 +452,7 @@ async function finalizeMultimodalResponse(params: {
 				providerName: chosenRoute.providerName,
 				requestBody: requestBodyForLog,
 				requestProtocol: 'dashscope',
-				requestOperation: 'audio.transcriptions.multimodal',
+				requestOperation,
 				upstreamProtocol: chosenRoute.upstreamProtocol,
 				upstreamOperation: chosenRoute.upstreamOperation,
 				modelSurfaceId: chosenRoute.modelSurfaceId,
@@ -364,6 +473,7 @@ async function finalizeMultimodalResponse(params: {
 					durationSeconds,
 					durationSource,
 					fileBytes: 0,
+					characters: response.ok ? (meta?.audioCharacters ?? usage?.audio_characters ?? null) : null,
 					requestStartedAtMs: start,
 				},
 				providerKeyId: chosenRoute.providerKeyId ?? null,

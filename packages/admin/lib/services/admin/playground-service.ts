@@ -10,6 +10,15 @@ import {
 	routeCustomParamsBody,
 } from '@octafuse/core';
 import { mergeRouteRequestBody } from '@octafuse/core/route-custom-params';
+import {
+	AUDIO_SPEECH_KNOWN_KEYS,
+	AUDIO_TRANSCRIPTION_KNOWN_KEYS,
+	IMAGE_GENERATION_KNOWN_KEYS,
+	UpstreamExtraFieldsError,
+	applyUpstreamExtraFields,
+	pickExtraFields,
+	protectedUpstreamPathsForRoute,
+} from '@octafuse/core/upstream-extra-fields';
 import { isAudioModel as isCatalogAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import {
 	type GeminiContentAction,
@@ -17,6 +26,32 @@ import {
 	resolveGeminiAuthForUpstreamSecret,
 } from '@octafuse/core/gemini-upstream-url';
 import { parseProviderEndpoints, resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
+import {
+	buildMiniMaxAsrHeaders,
+	MINIMAX_ASR_DROPPED_FORM_KEYS,
+	resolveMiniMaxAsrUpstreamFormat,
+} from '@octafuse/core/minimax-asr';
+import {
+	decodeMiniMaxHexAudio,
+	extractMiniMaxSpeechAudio,
+	miniMaxAudioContentType,
+	miniMaxBaseRespHttpStatus,
+	readMiniMaxBaseResp,
+} from '@octafuse/core/minimax-native';
+import {
+	MiniMaxOpenAiClientError,
+	buildMiniMaxImageBodyFromOpenAi,
+	buildMiniMaxT2aBodyFromOpenAi,
+	fillMiniMaxSpeechDefaults,
+} from '@octafuse/core/minimax-openai';
+import {
+	VolcengineOpenAiClientError,
+	buildVolcengineImageBodyFromOpenAi,
+} from '@octafuse/core/volcengine-openai';
+import {
+	GeminiOpenAiImageClientError,
+	buildGeminiImageBodyFromOpenAi,
+} from '@octafuse/core/gemini-image-openai';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { AUDIO_MAX_BYTES_PER_FILE } from '@/lib/audio-transcriptions';
@@ -63,6 +98,31 @@ function isPlainObject(value: unknown): value is JsonObject {
  */
 export function mergePlaygroundRequestBody(route: PlaygroundResolvedRoute, userBody: JsonObject): JsonObject {
 	return mergeRouteRequestBody(route.customParams, userBody);
+}
+
+function playgroundExtraFields(body: JsonObject, knownKeys: readonly string[]): JsonObject {
+	try {
+		return pickExtraFields(body, knownKeys);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) throw badRequest(error.message);
+		throw error;
+	}
+}
+
+/** 转换适配器：在上游体上合并路由参数和客户端额外字段，再恢复受保护路径。 */
+export function applyPlaygroundUpstreamBody(input: {
+	route: PlaygroundResolvedRoute;
+	built: JsonObject;
+	extras?: JsonObject;
+	/** 传 null 表示路由参数已经写进 built，避免再合并一次。 */
+	customParams?: Record<string, unknown> | null;
+}): JsonObject {
+	return applyUpstreamExtraFields({
+		built: input.built,
+		customParams: input.customParams === undefined ? input.route.customParams : input.customParams,
+		extras: input.extras,
+		protectedPaths: protectedUpstreamPathsForRoute(input.route),
+	}).body;
 }
 
 function parseJsonObject(raw: string | null | undefined): Record<string, unknown> | null {
@@ -483,10 +543,19 @@ export function buildPlaygroundOpenAiSpeechRequest(
 	if (route.upstreamOperation !== 'audio.speech') {
 		throw badRequest(`Playground does not support OpenAI TTS operation ${JSON.stringify(route.upstreamOperation)}`);
 	}
-	const upstreamBody = {
-		...body,
-		model: route.providerModelName,
-	};
+	const upstreamBody = applyPlaygroundUpstreamBody({
+		route,
+		built: {
+			model: route.providerModelName,
+			input: body.input,
+			voice: body.voice,
+			response_format: body.response_format,
+			speed: body.speed,
+			stream_format: body.stream_format,
+			...(typeof body.instructions === 'string' ? { instructions: body.instructions } : {}),
+		},
+		extras: playgroundExtraFields(body, AUDIO_SPEECH_KNOWN_KEYS),
+	});
 	const url = resolveUpstreamEndpoint('openai', 'audio.speech', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -498,6 +567,46 @@ export function buildPlaygroundOpenAiSpeechRequest(
 		},
 		bodyText: JSON.stringify(upstreamBody),
 		wireBodyJson: JSON.stringify(upstreamBody, null, 2),
+	};
+}
+
+/** 透传调试台：原样转发编辑器 JSON，只替换 model。 */
+export function buildPlaygroundDashScopeNativePassthrough(
+	route: PlaygroundResolvedRoute,
+	body: Record<string, unknown>,
+): PlaygroundDashScopeSpeechRequest {
+	const operation = route.upstreamOperation;
+	const capability =
+		operation === 'audio.speech' || operation === 'audio.speech.stream'
+			? 'audio.speech'
+			: operation === 'audio.transcriptions.async'
+				? 'audio.transcriptions'
+				: operation === 'images.generations.multimodal'
+					? 'images.generations.multimodal'
+					: operation === 'audio.speech.multimodal'
+						? 'audio.speech.multimodal'
+						: operation === 'audio.transcriptions.multimodal'
+							? 'audio.transcriptions.multimodal'
+							: null;
+	if (!capability) {
+		throw badRequest(`Playground does not support DashScope passthrough operation ${JSON.stringify(operation)}`);
+	}
+	const url = resolveUpstreamEndpoint('dashscope', capability, route.providerEndpoints, {
+		providerId: route.providerId,
+	});
+	const upstreamBody = { ...body, model: route.providerModelName };
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+		Authorization: `Bearer ${route.providerApiKey}`,
+	};
+	if (operation === 'audio.speech.stream') headers['X-DashScope-SSE'] = 'enable';
+	if (operation === 'audio.transcriptions.async') headers['X-DashScope-Async'] = 'enable';
+	if (operation === 'audio.transcriptions.multimodal') headers['X-DashScope-SSE'] = 'disable';
+	return {
+		url,
+		headers,
+		bodyText: JSON.stringify(upstreamBody),
+		wireBodyJson: JSON.stringify(redactPlaygroundAudioDataUrls(upstreamBody), null, 2),
 	};
 }
 
@@ -518,25 +627,15 @@ export function buildPlaygroundDashScopeSpeechRequest(
 			? String((body.voice as Record<string, unknown>).id ?? '').trim()
 			: '';
 	if (!voice) throw badRequest('DashScope TTS voice is required');
-	const routeDefaults = routeCustomParamsBody(route.customParams);
-	const configuredInput =
-		routeDefaults.input != null && isPlainObject(routeDefaults.input) ? routeDefaults.input : {};
-	const responseFormat =
-		typeof body.response_format === 'string'
-			? body.response_format
-			: typeof configuredInput.format === 'string'
-			? configuredInput.format
-			: 'mp3';
+	const responseFormat = typeof body.response_format === 'string' ? body.response_format : 'mp3';
 	if (!['mp3', 'opus', 'wav', 'pcm'].includes(responseFormat)) {
 		throw badRequest(`DashScope SpeechSynthesizer does not support response_format=${responseFormat}`);
 	}
-	const configuredRate = configuredInput.rate == null ? 1 : Number(configuredInput.rate);
-	const rate = body.speed == null ? configuredRate : Number(body.speed);
+	const rate = body.speed == null ? 1 : Number(body.speed);
 	if (!Number.isFinite(rate) || rate < 0.5 || rate > 2) {
 		throw badRequest('DashScope SpeechSynthesizer speed must be between 0.5 and 2.0');
 	}
 	const input: Record<string, unknown> = {
-		...configuredInput,
 		text,
 		voice,
 		format: responseFormat,
@@ -545,11 +644,22 @@ export function buildPlaygroundDashScopeSpeechRequest(
 	if (typeof body.instructions === 'string' && body.instructions.trim()) {
 		input.instruction = body.instructions;
 	}
-	const upstreamBody = {
-		...routeDefaults,
-		model: route.providerModelName,
-		input,
-	};
+	const upstreamBody = applyPlaygroundUpstreamBody({
+		route,
+		built: {
+			model: route.providerModelName,
+			input,
+		},
+		extras: playgroundExtraFields(body, AUDIO_SPEECH_KNOWN_KEYS),
+	});
+	const appliedInput = upstreamBody.input;
+	const appliedRate =
+		appliedInput != null && typeof appliedInput === 'object' && !Array.isArray(appliedInput)
+			? Number((appliedInput as Record<string, unknown>).rate)
+			: Number.NaN;
+	if (!Number.isFinite(appliedRate) || appliedRate < 0.5 || appliedRate > 2) {
+		throw badRequest('DashScope SpeechSynthesizer speed must be between 0.5 and 2.0');
+	}
 	const url = resolveUpstreamEndpoint('dashscope', 'audio.speech', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -719,6 +829,21 @@ export function buildPlaygroundDashScopeSyncAsrRequest(
 		};
 	}
 
+	const { file_name: _playgroundFileName, audio: _playgroundAudio, ...transcriptionFields } = body;
+	const extras = playgroundExtraFields(transcriptionFields, AUDIO_TRANSCRIPTION_KNOWN_KEYS);
+	upstreamBody = applyPlaygroundUpstreamBody({
+		route,
+		built: upstreamBody,
+		extras,
+		customParams: null,
+	});
+	wireBody = applyPlaygroundUpstreamBody({
+		route,
+		built: wireBody,
+		extras,
+		customParams: null,
+	});
+
 	return {
 		url,
 		headers,
@@ -751,7 +876,9 @@ export function buildPlaygroundDashScopeAsyncAsrRequest(
 	const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 	const parameters = { ...routeCustomParamsBody(route.customParams) };
 	delete parameters.asr_options;
-	const upstreamBody = {
+	const upstreamBody = applyPlaygroundUpstreamBody({
+		route,
+		built: {
 		model: route.providerModelName,
 		input: {
 			file_urls: [fileUrl],
@@ -770,7 +897,13 @@ export function buildPlaygroundDashScopeAsyncAsrRequest(
 			...parameters,
 			...(language ? { language_hints: [language] } : {}),
 		},
-	};
+		},
+		extras: playgroundExtraFields(
+			(({ file_name: _playgroundFileName, audio: _playgroundAudio, ...fields }) => fields)(body),
+			AUDIO_TRANSCRIPTION_KNOWN_KEYS,
+		),
+		customParams: null,
+	});
 	const url = resolveUpstreamEndpoint('dashscope', 'audio.transcriptions', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -900,13 +1033,25 @@ export async function invokePlaygroundUpstream(
 
 	const start = Date.now();
 
-	if (route.isImageModel && route.upstreamProtocol !== 'openai' && route.upstreamProtocol !== 'dashscope') {
+	if (
+		route.isImageModel &&
+		route.upstreamProtocol !== 'openai' &&
+		route.upstreamProtocol !== 'dashscope' &&
+		route.upstreamProtocol !== 'minimax' &&
+		route.upstreamProtocol !== 'volcengine' &&
+		route.upstreamProtocol !== 'gemini'
+	) {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai or dashscope (Playground Images calls /images/generations, /images/edits, or DashScope multimodal-generation).',
+			'Image-generation models require upstream_protocol=openai, dashscope, minimax, volcengine, or gemini (Playground Images calls /images/generations, /images/edits, DashScope multimodal-generation, MiniMax image_generation, Volcengine images/generations, or Gemini generateContent).',
 		);
 	}
-	if (route.isAudioModel && route.upstreamProtocol !== 'openai' && route.upstreamProtocol !== 'dashscope') {
-		throw badRequest('Audio transcription models require upstream_protocol=openai or dashscope.');
+	if (
+		route.isAudioModel &&
+		route.upstreamProtocol !== 'openai' &&
+		route.upstreamProtocol !== 'dashscope' &&
+		route.upstreamProtocol !== 'minimax'
+	) {
+		throw badRequest('Audio models require upstream_protocol=openai, dashscope, or minimax.');
 	}
 
 	const imageOperation: ImageOperation | null =
@@ -918,7 +1063,7 @@ export async function invokePlaygroundUpstream(
 		case 'openai': {
 			if (route.isAudioModel) {
 				if (route.upstreamOperation === 'audio.speech') {
-					const request = buildPlaygroundOpenAiSpeechRequest(route, merged);
+					const request = buildPlaygroundOpenAiSpeechRequest(route, userBody);
 					url = request.url;
 					headers = request.headers;
 					fetchBody = request.bodyText;
@@ -1050,10 +1195,19 @@ export async function invokePlaygroundUpstream(
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${route.providerApiKey}`,
 			};
-			const requestBody: Record<string, unknown> = {
-				...merged,
-				model: applyVertexOpenAiModelPrefix(url, route.providerModelName),
-			};
+			const modelName = applyVertexOpenAiModelPrefix(url, route.providerModelName);
+			const requestBody: Record<string, unknown> =
+				invokeKind === 'image'
+					? applyPlaygroundUpstreamBody({
+							route,
+							built: { ...userBody, model: modelName },
+							extras: playgroundExtraFields(userBody, IMAGE_GENERATION_KNOWN_KEYS),
+						})
+					: {
+							...merged,
+							model: modelName,
+						};
+			requestBody.model = modelName;
 			// Strip accidental data-URL image fields from generations JSON
 			delete requestBody.image;
 			delete requestBody.images;
@@ -1080,8 +1234,11 @@ export async function invokePlaygroundUpstream(
 			break;
 		}
 		case 'gemini': {
-			const action: GeminiContentAction =
-				input.geminiAction === 'streamGenerateContent' ? 'streamGenerateContent' : 'generateContent';
+			const action: GeminiContentAction = route.isImageModel
+				? 'generateContent'
+				: input.geminiAction === 'streamGenerateContent'
+					? 'streamGenerateContent'
+					: 'generateContent';
 			let geminiRequest: { url: string; headers: Record<string, string> };
 			try {
 				geminiRequest = buildPlaygroundGeminiUpstreamRequest(route, action);
@@ -1090,18 +1247,41 @@ export async function invokePlaygroundUpstream(
 			}
 			url = geminiRequest.url;
 			headers = geminiRequest.headers;
-			fetchBody = JSON.stringify(merged);
+			if (route.adapter === 'gemini-image') {
+				try {
+					fetchBody = JSON.stringify(
+						applyPlaygroundUpstreamBody({
+							route,
+							built: buildGeminiImageBodyFromOpenAi(userBody),
+							extras: playgroundExtraFields(userBody, IMAGE_GENERATION_KNOWN_KEYS),
+						}),
+					);
+				} catch (error) {
+					if (error instanceof GeminiOpenAiImageClientError) throw badRequest(error.message);
+					throw error;
+				}
+			} else {
+				fetchBody = JSON.stringify(merged);
+			}
 			upstreamWireBodyJson = fetchBody;
 			break;
 		}
 		case 'dashscope': {
+			if (route.adapter === 'passthrough') {
+				const request = buildPlaygroundDashScopeNativePassthrough(route, merged);
+				url = request.url;
+				headers = request.headers;
+				fetchBody = request.bodyText;
+				upstreamWireBodyJson = request.wireBodyJson;
+				break;
+			}
 			if (route.isImageModel) {
 				if (imageOperation === 'edits') {
 					throw badRequest(
 						'DashScope image routes only support generations (use JSON image for image-to-image).',
 					);
 				}
-				const request = buildPlaygroundDashScopeImageRequest(route, merged);
+				const request = buildPlaygroundDashScopeImageRequest(route, userBody);
 				url = request.url;
 				headers = request.headers;
 				fetchBody = request.bodyText;
@@ -1112,7 +1292,7 @@ export async function invokePlaygroundUpstream(
 				throw badRequest('DashScope Playground routes must use an image or audio catalog model');
 			}
 			if (route.upstreamOperation === 'audio.speech') {
-				const request = buildPlaygroundDashScopeSpeechRequest(route, merged);
+				const request = buildPlaygroundDashScopeSpeechRequest(route, userBody);
 				url = request.url;
 				headers = request.headers;
 				fetchBody = request.bodyText;
@@ -1120,18 +1300,215 @@ export async function invokePlaygroundUpstream(
 				break;
 			}
 			if (route.upstreamOperation === 'audio.transcriptions.async') {
-				const request = buildPlaygroundDashScopeAsyncAsrRequest(route, merged);
+				const request = buildPlaygroundDashScopeAsyncAsrRequest(route, userBody);
 				url = request.url;
 				headers = request.headers;
 				fetchBody = request.bodyText;
 				upstreamWireBodyJson = request.wireBodyJson;
 				break;
 			}
-			const request = buildPlaygroundDashScopeSyncAsrRequest(route, merged);
+			const request = buildPlaygroundDashScopeSyncAsrRequest(route, userBody);
 			url = request.url;
 			headers = request.headers;
 			fetchBody = request.bodyText;
 			upstreamWireBodyJson = request.wireBodyJson;
+			break;
+		}
+		case 'volcengine': {
+			if (route.adapter === 'volcengine-image') {
+				let upstreamBody: Record<string, unknown>;
+				try {
+					upstreamBody = applyPlaygroundUpstreamBody({
+						route,
+						built: buildVolcengineImageBodyFromOpenAi(route.providerModelName, userBody),
+						extras: playgroundExtraFields(userBody, IMAGE_GENERATION_KNOWN_KEYS),
+					});
+					upstreamBody.model = route.providerModelName;
+				} catch (error) {
+					if (error instanceof VolcengineOpenAiClientError) throw badRequest(error.message);
+					throw error;
+				}
+				try {
+					url = resolveUpstreamEndpoint('volcengine', 'images.generations', route.providerEndpoints, {
+						providerId: route.providerId,
+					});
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve Volcengine upstream URL');
+				}
+				headers = {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${route.providerApiKey}`,
+				};
+				fetchBody = JSON.stringify(upstreamBody);
+				upstreamWireBodyJson = fetchBody;
+				break;
+			}
+			if (!route.isImageModel || route.upstreamOperation !== 'images.generations' || route.adapter !== 'passthrough') {
+				throw badRequest('Volcengine Playground routes only support passthrough images.generations');
+			}
+			try {
+				url = resolveUpstreamEndpoint('volcengine', 'images.generations', route.providerEndpoints, {
+					providerId: route.providerId,
+				});
+			} catch (e) {
+				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve Volcengine upstream URL');
+			}
+			headers = {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${route.providerApiKey}`,
+			};
+			const requestBody = { ...merged, model: route.providerModelName };
+			fetchBody = JSON.stringify(requestBody);
+			upstreamWireBodyJson = fetchBody;
+			break;
+		}
+		case 'minimax': {
+			const passthrough = route.adapter === 'passthrough';
+			if (route.adapter === 'minimax-tts' || route.adapter === 'minimax-image') {
+				let upstreamBody: Record<string, unknown>;
+				try {
+					const built =
+						route.adapter === 'minimax-tts'
+							? buildMiniMaxT2aBodyFromOpenAi({
+									model: route.providerModelName,
+									text: typeof userBody.input === 'string' ? userBody.input : '',
+									voiceId:
+										typeof userBody.voice === 'string'
+											? userBody.voice.trim()
+											: userBody.voice != null && typeof userBody.voice === 'object' && !Array.isArray(userBody.voice)
+												? String((userBody.voice as Record<string, unknown>).id ?? '').trim()
+												: '',
+									responseFormat: typeof userBody.response_format === 'string' ? userBody.response_format : 'mp3',
+									speed: userBody.speed == null ? 1 : Number(userBody.speed),
+									stream: userBody.stream_format === 'sse' || userBody.stream === true,
+									instructions: typeof userBody.instructions === 'string' ? userBody.instructions : undefined,
+								})
+							: buildMiniMaxImageBodyFromOpenAi(route.providerModelName, userBody);
+					upstreamBody = applyPlaygroundUpstreamBody({
+						route,
+						built,
+						extras: playgroundExtraFields(
+							userBody,
+							route.adapter === 'minimax-tts' ? AUDIO_SPEECH_KNOWN_KEYS : IMAGE_GENERATION_KNOWN_KEYS,
+						),
+					});
+					if (route.adapter === 'minimax-tts') {
+						upstreamBody = fillMiniMaxSpeechDefaults(upstreamBody);
+					}
+					upstreamBody.model = route.providerModelName;
+				} catch (error) {
+					if (error instanceof MiniMaxOpenAiClientError) throw badRequest(error.message);
+					throw error;
+				}
+				const capability = route.adapter === 'minimax-tts' ? 'audio.speech' : 'images.generations';
+				try {
+					url = resolveUpstreamEndpoint('minimax', capability, route.providerEndpoints, {
+						providerId: route.providerId,
+					});
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve MiniMax upstream URL');
+				}
+				headers = {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${route.providerApiKey}`,
+				};
+				fetchBody = JSON.stringify(upstreamBody);
+				upstreamWireBodyJson = fetchBody;
+				break;
+			}
+			if (
+				passthrough &&
+				((route.isAudioModel && route.upstreamOperation === 'audio.speech') ||
+					(route.isImageModel && route.upstreamOperation === 'images.generations'))
+			) {
+				const capability =
+					route.upstreamOperation === 'audio.speech' ? 'audio.speech' : 'images.generations';
+				try {
+					url = resolveUpstreamEndpoint('minimax', capability, route.providerEndpoints, {
+						providerId: route.providerId,
+					});
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve MiniMax upstream URL');
+				}
+				headers = {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${route.providerApiKey}`,
+				};
+				const requestBody = { ...merged, model: route.providerModelName };
+				fetchBody = JSON.stringify(requestBody);
+				upstreamWireBodyJson = fetchBody;
+				break;
+			}
+			if (!route.isAudioModel || route.upstreamOperation !== 'audio.transcriptions') {
+				throw badRequest(
+					'MiniMax Playground routes support audio.transcriptions, audio.speech, or images.generations',
+				);
+			}
+			if (!passthrough && route.adapter !== 'minimax-asr-file') {
+				throw badRequest(`Playground does not support MiniMax audio adapter ${JSON.stringify(route.adapter)}`);
+			}
+			const collected = collectAudioFileFromBody(merged);
+			if (!collected.ok) throw badRequest(collected.error);
+			try {
+				url = resolveUpstreamEndpoint('minimax', 'audio.transcriptions', route.providerEndpoints, {
+					providerId: route.providerId,
+				});
+			} catch (e) {
+				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve MiniMax transcription URL');
+			}
+			const mapped = passthrough
+				? null
+				: resolveMiniMaxAsrUpstreamFormat(
+						typeof merged.response_format === 'string' ? merged.response_format : undefined,
+					);
+			const responseFormat = passthrough
+				? typeof merged.response_format === 'string'
+					? merged.response_format.trim()
+					: ''
+				: mapped!.upstreamFormat;
+			const fd = new FormData();
+			fd.append('model', route.providerModelName);
+			if (responseFormat) fd.append('response_format', responseFormat);
+			const skipped = new Set<string>([
+				'model',
+				'file',
+				'audio',
+				'file_name',
+				'filename',
+				'response_format',
+				'language',
+				...(passthrough ? [] : MINIMAX_ASR_DROPPED_FORM_KEYS),
+			]);
+			for (const [key, value] of Object.entries(merged)) {
+				if (skipped.has(key)) continue;
+				if (typeof value === 'string' && value.startsWith('data:')) continue;
+				appendOptionalFormString(fd, key, value);
+			}
+			const copy = collected.file.bytes.buffer.slice(
+				collected.file.bytes.byteOffset,
+				collected.file.bytes.byteOffset + collected.file.bytes.byteLength,
+			) as ArrayBuffer;
+			const file = new File([copy], collected.file.filename, { type: collected.file.mimeType });
+			fd.append('file', file, collected.file.filename);
+			const language = typeof merged.language === 'string' ? merged.language : undefined;
+			headers = {
+				Authorization: `Bearer ${route.providerApiKey}`,
+				...buildMiniMaxAsrHeaders({ language }),
+			};
+			fetchBody = fd;
+			upstreamWireBodyJson = JSON.stringify(
+				{
+					__playground_multipart: true,
+					operation: 'audio.transcriptions',
+					model: route.providerModelName,
+					adapter: route.adapter,
+					response_format: responseFormat || undefined,
+					language,
+					file: `${collected.file.filename} (${collected.file.bytes.byteLength} bytes, ${collected.file.mimeType})`,
+				},
+				null,
+				2,
+			);
 			break;
 		}
 		default: {
@@ -1184,6 +1561,50 @@ export async function invokePlaygroundUpstream(
 				502,
 				`DashScope TTS audio download failed: ${error instanceof Error ? error.message : String(error)}`,
 			);
+		}
+	}
+	if (
+		route.upstreamProtocol === 'minimax' &&
+		route.upstreamOperation === 'audio.speech' &&
+		response.ok &&
+		!(response.headers.get('content-type') ?? '').toLowerCase().includes('text/event-stream')
+	) {
+		const text = await response.text();
+		let parsed: unknown = null;
+		try {
+			parsed = JSON.parse(text) as unknown;
+		} catch {
+			parsed = null;
+		}
+		const base = readMiniMaxBaseResp(parsed);
+		if (base && base.statusCode !== 0) {
+			response = new Response(text, {
+				status: miniMaxBaseRespHttpStatus(base.statusCode),
+				headers: { 'Content-Type': 'application/json' },
+			});
+		} else {
+			const extracted = extractMiniMaxSpeechAudio(text);
+			if (extracted) {
+				try {
+					const bytes = decodeMiniMaxHexAudio(extracted.hex);
+					const copy = new Uint8Array(bytes.byteLength);
+					copy.set(bytes);
+					response = new Response(copy, {
+						status: 200,
+						headers: { 'Content-Type': miniMaxAudioContentType(extracted.format) },
+					});
+				} catch (error) {
+					throw new AdminServiceError(
+						502,
+						error instanceof Error ? error.message : 'MiniMax returned invalid hex audio data',
+					);
+				}
+			} else {
+				response = new Response(text, {
+					status: response.status,
+					headers: { 'Content-Type': response.headers.get('content-type') ?? 'application/json' },
+				});
+			}
 		}
 	}
 	if (

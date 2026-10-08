@@ -1,6 +1,22 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { applyOpenAiImageGenerationExtras } from './image-generation-extras';
+import { applyOpenAiImageGenerationExtras, openAiImageBillingSize } from './image-generation-extras';
+
+describe('openAiImageBillingSize', () => {
+	it('prefers OpenAI size', () => {
+		assert.equal(openAiImageBillingSize('1024x1024', { resolution: '2k' }), '1024x1024');
+	});
+
+	it('falls back to xAI resolution', () => {
+		assert.equal(openAiImageBillingSize(undefined, { resolution: ' 2K ' }), '2k');
+	});
+
+	it('defaults to auto', () => {
+		assert.equal(openAiImageBillingSize(undefined, {}), 'auto');
+		assert.equal(openAiImageBillingSize(undefined, undefined), 'auto');
+		assert.equal(openAiImageBillingSize(undefined, { resolution: 2 }), 'auto');
+	});
+});
 
 describe('applyOpenAiImageGenerationExtras', () => {
 	it('passes Seedream watermark / sequential / image fields', () => {

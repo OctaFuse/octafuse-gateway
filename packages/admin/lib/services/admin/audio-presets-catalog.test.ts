@@ -17,6 +17,9 @@ const EXPECTED_AUDIO_IDS = [
 	'gpt-4o-mini-transcribe',
 	'gpt-4o-transcribe',
 	'gpt-4o-transcribe-diarize',
+	'minimax-asr-1.0',
+	'minimax-speech-2.8-hd',
+	'minimax-speech-2.8-turbo',
 	'qwen-audio-3.0-asr-flash',
 	'qwen-audio-3.0-asr-flash-filetrans',
 	'qwen-audio-3.0-asr-flash-streaming',
@@ -114,6 +117,13 @@ describe('static audio model presets (*-audio.json)', () => {
 		assert.equal(asPricing(tts.pricing.cny).audio_billing_mode, 'per_character');
 		assert.equal(asPricing(tts.pricing.cny).audio?.price_per_character, 0.00014);
 		assert.equal(asPricing(tts.pricing.usd).audio?.price_per_character, 0.00002);
+
+		const minimaxAsr = byId.get('minimax-asr-1.0')!;
+		assert.equal(asPricing(minimaxAsr.pricing.usd).audio_billing_mode, 'per_second');
+		assert.equal(asPricing(minimaxAsr.pricing.usd).audio?.price_per_second, 0.000105556);
+		assert.equal(asPricing(minimaxAsr.pricing.usd).audio?.minimum_seconds, 0);
+		assert.equal(asPricing(minimaxAsr.pricing.cny).audio?.price_per_second, 0.000694444);
+		assert.equal(asPricing(minimaxAsr.pricing.cny).audio?.minimum_seconds, 0);
 
 		const cosy35 = byId.get('cosyvoice-v3.5-plus')!;
 		assert.equal(asPricing(cosy35.pricing.cny).audio?.price_per_character, 0.00015);

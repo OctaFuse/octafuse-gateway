@@ -19,6 +19,8 @@ import {
 	ANTHROPIC_ENDPOINT_CAPABILITIES,
 	DASHSCOPE_ENDPOINT_CAPABILITIES,
 	GEMINI_ENDPOINT_CAPABILITIES,
+	MINIMAX_ENDPOINT_CAPABILITIES,
+	VOLCENGINE_ENDPOINT_CAPABILITIES,
 	OPENAI_ENDPOINT_CAPABILITIES,
 	listConfiguredCapabilities,
 	parseProviderEndpoints,
@@ -31,10 +33,13 @@ import {
 	ROUTE_ADAPTERS,
 } from '@octafuse/core/route-topology';
 import {
+	PASSTHROUGH_ROUTE_ADAPTER,
 	adaptersForModelKind,
 	getAdapterByOptionKey,
 	getAdapterByPresetIntent,
 	listSelectableAdapters,
+	matchAdapterUpstreamModel,
+	type AdapterModelMatch,
 	requestOperationsFromRegistry,
 	requestSurfacePath as requestSurfacePathFromRegistry,
 	requiredCapabilitiesForUpstreamOperation,
@@ -932,6 +937,8 @@ export const CAPABILITIES_BY_PROTOCOL: Record<string, readonly ProviderEndpointC
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: GEMINI_ENDPOINT_CAPABILITIES,
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
+	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
+	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
 };
 
 export function modelKindForModel(model: GatewayModel | undefined): AdapterModelKind {
@@ -1077,46 +1084,55 @@ export type AdapterOptionAvailability = {
 	descriptor: AdapterDescriptor;
 	available: boolean;
 	missingCapabilities: readonly string[];
+	modelMatch: AdapterModelMatch;
+};
+
+export type AdapterOptionList = {
+	options: AdapterOptionAvailability[];
+	/** 供应商模型名没有命中任何带规则的可用适配器，下拉已回退为全部可用项。 */
+	modelUnrecognized: boolean;
 };
 
 export function listAdapterOptionsForModel(
 	model: GatewayModel | undefined,
 	provider: GatewayProvider | undefined,
 	providerModelName = '',
-): AdapterOptionAvailability[] {
+): AdapterOptionList {
 	const kind = modelKindForModel(model);
-	const capabilities = new Set<string>();
+	const capabilitiesByProtocol = new Map<string, ReadonlySet<string>>();
 	if (provider) {
-		const map = parseProviderEndpoints(provider);
+		const endpoints = parseProviderEndpoints(provider);
 		for (const protocol of UPSTREAM_PROTOCOLS) {
-			if (!map[protocol]) continue;
-			for (const capability of listConfiguredCapabilities(map, protocol)) {
-				capabilities.add(capability);
-			}
+			if (!endpoints[protocol]) continue;
+			capabilitiesByProtocol.set(protocol, new Set(listConfiguredCapabilities(endpoints, protocol)));
 		}
 	}
-	return adaptersForModelKind(kind)
-		.filter((descriptor) => {
-			if (kind !== 'audio.transcription') return true;
-			return isDashScopeRealtimeAsrModelOperationCompatible(
-				providerModelName,
-				descriptor.request.operation,
-			);
-		})
-		.map((descriptor) => {
-			const missingCapabilities = provider
-				? descriptor.requiredUpstreamCapabilities.filter((capability) => !capabilities.has(capability))
-				: descriptor.requiredUpstreamCapabilities;
-			return {
-				descriptor,
-				available: missingCapabilities.length === 0 && Boolean(provider),
-				missingCapabilities,
-			};
-		});
+	const options = adaptersForModelKind(kind).map((descriptor) => {
+		const capabilities = capabilitiesByProtocol.get(descriptor.upstream.protocol);
+		const missingCapabilities = provider
+			? descriptor.requiredUpstreamCapabilities.filter((capability) => !capabilities?.has(capability))
+			: descriptor.requiredUpstreamCapabilities;
+		return {
+			descriptor,
+			available: missingCapabilities.length === 0 && Boolean(provider),
+			missingCapabilities,
+			modelMatch: matchAdapterUpstreamModel(descriptor, providerModelName),
+		};
+	});
+	const available = options.filter((option) => option.available);
+	const recognized = available.some((option) => option.modelMatch === 'match');
+	const hasModelRules = available.some((option) => option.modelMatch !== 'generic');
+	return {
+		options,
+		modelUnrecognized: providerModelName.trim().length > 0 && !recognized && hasModelRules,
+	};
 }
 
-export function resolveAdapterOptionKey(formData: Pick<RouteFormData, 'adapter' | 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>): string | null {
-	const match = listSelectableAdapters().find(
+export function resolveAdapterOptionKey(
+	formData: Pick<RouteFormData, 'adapter' | 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>,
+	modelKind?: AdapterModelKind,
+): string | null {
+	const matches = listSelectableAdapters().filter(
 		(descriptor) =>
 			descriptor.id === formData.adapter &&
 			descriptor.request.protocol === formData.request_protocol &&
@@ -1124,13 +1140,99 @@ export function resolveAdapterOptionKey(formData: Pick<RouteFormData, 'adapter' 
 			descriptor.upstream.protocol === formData.upstream_protocol &&
 			descriptor.upstream.operations.includes(formData.upstream_operation),
 	);
-	return match?.optionKey ?? null;
+	const preferred = modelKind ? matches.find((descriptor) => descriptor.modelKind === modelKind) : undefined;
+	return preferred?.optionKey ?? matches[0]?.optionKey ?? null;
 }
 
 export function applyAdapterOptionToForm(formData: RouteFormData, optionKey: string): RouteFormData {
 	const descriptor = getAdapterByOptionKey(optionKey);
 	if (!descriptor) return formData;
 	return applyAdapterDescriptorToForm(formData, descriptor);
+}
+
+/**
+ * 当前对外协议与上游对不上任何可用适配器时，套用最匹配的适配器。
+ * 透传会把两边写成同一协议；转换适配器则保留它声明的对外入口。
+ */
+export function alignRouteFormAdapter(
+	formData: RouteFormData,
+	model: GatewayModel | undefined,
+	provider: GatewayProvider | undefined,
+): RouteFormData {
+	if (!model || !provider) return formData;
+	const { options, modelUnrecognized } = listAdapterOptionsForModel(
+		model,
+		provider,
+		formData.provider_model_name,
+	);
+	const currentKey = resolveAdapterOptionKey(formData, modelKindForModel(model));
+	const current = options.find((option) => option.descriptor.optionKey === currentKey);
+	const providerModelNamed = formData.provider_model_name.trim().length > 0;
+	const currentFits =
+		current?.available === true &&
+		(!providerModelNamed || modelUnrecognized || current.modelMatch !== 'mismatch');
+	if (currentFits) return formData;
+	const candidates = options.filter((option) => {
+		if (!option.available) return false;
+		if (!providerModelNamed || modelUnrecognized) return true;
+		return option.modelMatch !== 'mismatch';
+	});
+	const preferred = candidates.find((option) => option.modelMatch === 'match') ?? candidates[0];
+	if (!preferred) return formData;
+	return applyAdapterDescriptorToForm(formData, preferred.descriptor);
+}
+
+function formatPythonLiteral(value: unknown): string {
+	if (value === null) return 'None';
+	if (typeof value === 'boolean') return value ? 'True' : 'False';
+	if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'None';
+	if (typeof value === 'string') return JSON.stringify(value);
+	if (Array.isArray(value)) return `[${value.map((item) => formatPythonLiteral(item)).join(', ')}]`;
+	if (value != null && typeof value === 'object') {
+		const entries = Object.entries(value as Record<string, unknown>).map(([key, item]) => {
+			const renderedKey = JSON.stringify(key);
+			return `${renderedKey}: ${formatPythonLiteral(item)}`;
+		});
+		return `{${entries.join(', ')}}`;
+	}
+	return 'None';
+}
+
+/** OpenAI 转换适配器的 Python 调用示例。透传和非 OpenAI 入口返回 null。 */
+export function buildOpenAiAdapterCallSample(
+	descriptor: Pick<AdapterDescriptor, 'id' | 'request' | 'extraBodyExample'>,
+	modelId = 'your-model',
+): string | null {
+	if (descriptor.id === PASSTHROUGH_ROUTE_ADAPTER || descriptor.request.protocol !== 'openai') return null;
+	const model = JSON.stringify(modelId);
+	const extra = descriptor.extraBodyExample ? formatPythonLiteral(descriptor.extraBodyExample) : null;
+	const extraLine = extra ? `,\n    extra_body=${extra}` : '';
+	if (descriptor.id === 'dashscope-asr-file-async') {
+		return `import os
+import httpx
+
+response = httpx.post(
+    os.environ["OCTAFUSE_BASE_URL"].rstrip("/") + "/audio/transcriptions",
+    headers={"Authorization": "Bearer " + os.environ["OCTAFUSE_API_KEY"]},
+    files={
+        "model": (None, ${model}),
+        "file_url": (None, "https://example.com/audio.mp3"),
+    },
+    timeout=300,
+)
+response.raise_for_status()
+print(response.json())`;
+	}
+	if (descriptor.request.operation === 'images.generations') {
+		return `client.images.generate(\n    model=${model},\n    prompt="a red apple"${extraLine},\n)`;
+	}
+	if (descriptor.request.operation === 'audio.speech') {
+		return `client.audio.speech.create(\n    model=${model},\n    input="Hello",\n    voice="YOUR_VOICE_ID"${descriptor.id === 'dashscope-tts-qwen' ? ',\n    response_format="wav"' : ''}${extraLine},\n)`;
+	}
+	if (descriptor.request.operation === 'audio.transcriptions') {
+		return `client.audio.transcriptions.create(\n    model=${model},\n    file=open("audio.mp3", "rb")${extraLine},\n)`;
+	}
+	return null;
 }
 
 /** 下拉项后缀：透传只标 request；转换标 request → upstream。 */

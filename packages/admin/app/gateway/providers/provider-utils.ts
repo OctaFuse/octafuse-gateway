@@ -129,6 +129,8 @@ export function providerToFormData(
 		anthropic: protocolFormFromConfig(map.anthropic),
 		gemini: protocolFormFromConfig(map.gemini),
 		dashscope: protocolFormFromConfig(map.dashscope),
+		minimax: protocolFormFromConfig(map.minimax),
+		volcengine: protocolFormFromConfig(map.volcengine),
 	};
 }
 
@@ -160,6 +162,18 @@ function configFromProtocolForm(
 			if (stream) endpoints.streamGenerateContent = stream;
 		} else if (form.modelsGenerate.trim()) {
 			endpoints[GEMINI_GENERATE_OPERATION] = form.modelsGenerate.trim();
+		}
+	} else if (protocol === "minimax") {
+		if (form.audio_transcriptions.trim()) {
+			endpoints["audio.transcriptions"] = form.audio_transcriptions.trim();
+		}
+		if (form.audio_speech.trim()) endpoints["audio.speech"] = form.audio_speech.trim();
+		if (form.images_generations.trim()) {
+			endpoints["images.generations"] = form.images_generations.trim();
+		}
+	} else if (protocol === "volcengine") {
+		if (form.images_generations.trim()) {
+			endpoints["images.generations"] = form.images_generations.trim();
 		}
 	} else {
 		if (form.images_generations_multimodal.trim()) {
@@ -213,10 +227,14 @@ export function formDataToEndpointsMap(
 	const anthropic = configFromProtocolForm("anthropic", form.anthropic);
 	const gemini = configFromProtocolForm("gemini", form.gemini);
 	const dashscope = configFromProtocolForm("dashscope", form.dashscope);
+	const minimax = configFromProtocolForm("minimax", form.minimax);
+	const volcengine = configFromProtocolForm("volcengine", form.volcengine);
 	if (openai) map.openai = openai;
 	if (anthropic) map.anthropic = anthropic;
 	if (gemini) map.gemini = gemini;
 	if (dashscope) map.dashscope = dashscope;
+	if (minimax) map.minimax = minimax;
+	if (volcengine) map.volcengine = volcengine;
 	return map;
 }
 
@@ -281,6 +299,8 @@ export function getProviderProtocolSummaries(
 	appendProtocol("anthropic", "Anthropic");
 	appendProtocol("gemini", "Gemini");
 	appendProtocol("dashscope", "DashScope");
+	appendProtocol("minimax", "MiniMax");
+	appendProtocol("volcengine", "Volcengine");
 	return rows;
 }
 
@@ -351,6 +371,14 @@ export function protocolFormHasOverrides(
 			form.streamGenerateContent.trim()
 		);
 	}
+	if (protocol === "minimax") {
+		return !!(
+			form.audio_transcriptions.trim() ||
+			form.audio_speech.trim() ||
+			form.images_generations.trim()
+		);
+	}
+	if (protocol === "volcengine") return !!form.images_generations.trim();
 	return !!(
 		form.images_generations_multimodal.trim() ||
 		form.audio_transcriptions.trim() ||

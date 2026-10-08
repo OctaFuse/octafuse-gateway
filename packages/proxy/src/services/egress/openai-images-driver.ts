@@ -3,10 +3,15 @@
  * 首期面向 GPT Image；Gateway 对外保持 OpenAI 形状，日志禁止写入 prompt 原文与 Base64。
  */
 import { applyRouteExtraHeaders, parseOpenAiImageUsage, resolveProviderUpstreamSecret, resolveUpstreamEndpoint, type ImageTokenUsage } from '@octafuse/core';
+import {
+	applyUpstreamExtraFields,
+	detachUpstreamExtraFields,
+	formExtraFieldText,
+	protectedUpstreamPathsForRoute,
+} from '@octafuse/core/upstream-extra-fields';
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { EMPTY_USAGE } from '../proxy';
-import { buildRouteRequestBody } from '../route-default-params';
 import { extractUpstreamRequestId } from './upstream-request-id';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 
@@ -323,16 +328,22 @@ export async function dispatchOpenAiImageGenerations(
 	response: Response;
 	usagePromise: Promise<UsageFromStream>;
 	upstreamRequestId: string | null;
-	meta: { imageUsage: ImageTokenUsage | null; parsedBody: unknown };
+	meta: { imageUsage: ImageTokenUsage | null; parsedBody: unknown; restoredUpstreamPaths?: string[] };
 }> {
 	const url = resolveUpstreamEndpoint('openai', 'images.generations', route.providerEndpoints, {
 		providerId: route.providerId,
 	});
-	// 与 chat/messages 一致：每条 failover 路由合并各自 custom_params，用户字段优先
-	const requestBody = {
-		...buildRouteRequestBody(route, body),
-		model: route.providerModelName,
-	};
+	const detached = detachUpstreamExtraFields(body);
+	const applied = applyUpstreamExtraFields({
+		built: {
+			...detached.body,
+			model: route.providerModelName,
+		},
+		customParams: route.customParams,
+		extras: detached.extras,
+		protectedPaths: protectedUpstreamPathsForRoute(route),
+	});
+	const requestBody = applied.body;
 	console.log(
 		`[Gateway Images] upstream generations POST ${url} providerModel=${route.providerModelName} providerId=${route.providerId}`
 	);
@@ -366,7 +377,10 @@ export async function dispatchOpenAiImageGenerations(
 			response: material.response,
 			usagePromise,
 			upstreamRequestId,
-			meta: imageDispatchMeta(material.body, imageUsage),
+			meta: {
+				...imageDispatchMeta(material.body, imageUsage),
+				restoredUpstreamPaths: applied.restoredPaths,
+			},
 		};
 	} catch (err) {
 		timing?.markStreamComplete();
@@ -397,11 +411,14 @@ export async function dispatchOpenAiImageGenerations(
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
-			meta: imageDispatchMeta(
-				errorBody,
-				null,
-				aborted ? resolveImageAbortReasonForMeta(resolvedAbort, requestSignal) : undefined
-			),
+			meta: {
+				...imageDispatchMeta(
+					errorBody,
+					null,
+					aborted ? resolveImageAbortReasonForMeta(resolvedAbort, requestSignal) : undefined
+				),
+				restoredUpstreamPaths: applied.restoredPaths,
+			},
 		};
 	} finally {
 		clear();
@@ -421,7 +438,7 @@ export async function dispatchOpenAiImageEdits(
 	response: Response;
 	usagePromise: Promise<UsageFromStream>;
 	upstreamRequestId: string | null;
-	meta: { imageUsage: ImageTokenUsage | null; parsedBody: unknown };
+	meta: { imageUsage: ImageTokenUsage | null; parsedBody: unknown; restoredUpstreamPaths?: string[] };
 }> {
 	const url = resolveUpstreamEndpoint('openai', 'images.edits', route.providerEndpoints, {
 		providerId: route.providerId,
@@ -430,22 +447,25 @@ export async function dispatchOpenAiImageEdits(
 		`[Gateway Images] upstream edits POST ${url} providerModel=${route.providerModelName} providerId=${route.providerId}`
 	);
 	const form = new FormData();
-	// custom_params 作为额外表单字段；用户/规范化字段优先覆盖
-	const mergedExtras = buildRouteRequestBody(route, {
-		...(edit.extra ?? {}),
-		prompt: edit.prompt,
-		n: edit.n,
-		...(edit.size ? { size: edit.size } : {}),
-		...(edit.quality ? { quality: edit.quality } : {}),
-		...(edit.background ? { background: edit.background } : {}),
+	const applied = applyUpstreamExtraFields({
+		built: {
+			model: route.providerModelName,
+			prompt: edit.prompt,
+			n: edit.n,
+			...(edit.size ? { size: edit.size } : {}),
+			...(edit.quality ? { quality: edit.quality } : {}),
+			...(edit.background ? { background: edit.background } : {}),
+		},
+		customParams: route.customParams,
+		extras: edit.extra,
+		protectedPaths: protectedUpstreamPathsForRoute(route),
 	});
 	form.append('model', route.providerModelName);
-	for (const [k, v] of Object.entries(mergedExtras)) {
+	for (const [k, v] of Object.entries(applied.body)) {
 		if (v == null) continue;
 		if (k === 'model' || isOpenaiEditImageFormKey(k)) continue;
-		if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-			form.append(k, String(v));
-		}
+		const text = formExtraFieldText(v);
+		if (text != null) form.append(k, text);
 	}
 	appendOpenaiEditImages(form, edit.images);
 
@@ -478,7 +498,10 @@ export async function dispatchOpenAiImageEdits(
 			response: material.response,
 			usagePromise,
 			upstreamRequestId,
-			meta: imageDispatchMeta(material.body, imageUsage),
+			meta: {
+				...imageDispatchMeta(material.body, imageUsage),
+				restoredUpstreamPaths: applied.restoredPaths,
+			},
 		};
 	} catch (err) {
 		timing?.markStreamComplete();
@@ -509,11 +532,14 @@ export async function dispatchOpenAiImageEdits(
 			}),
 			usagePromise: Promise.resolve(EMPTY_USAGE),
 			upstreamRequestId: null,
-			meta: imageDispatchMeta(
-				errorBody,
-				null,
-				aborted ? resolveImageAbortReasonForMeta(resolvedAbort, requestSignal) : undefined
-			),
+			meta: {
+				...imageDispatchMeta(
+					errorBody,
+					null,
+					aborted ? resolveImageAbortReasonForMeta(resolvedAbort, requestSignal) : undefined
+				),
+				restoredUpstreamPaths: applied.restoredPaths,
+			},
 		};
 	} finally {
 		clear();

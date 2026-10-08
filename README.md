@@ -28,9 +28,17 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
       - Models：`GET /v1/models`
     - Anthropic 端点：`POST /v1/messages`
     - Google Gemini 端点：`POST /v1beta/models/{model}:generateContent`（含 `streamGenerateContent`）
-    - DashScope 同步多模态 ASR：`POST /v1/dashscope/services/aigc/multimodal-generation/generation`
-    - DashScope 实时音频：`GET /v1/dashscope/realtime`
-4. 协议适配与转换：可在路由中选择客户端与上游的协议转换关系，让应用继续使用熟悉的调用方式接入不同供应商。例如，可直接用 OpenAI 图片接口调用阿里云百炼的千问 / 万相图像模型。
+    - DashScope 原生端点：
+      - 同步多模态（ASR、Qwen-TTS、生图）：`POST /v1/dashscope/services/aigc/multimodal-generation/generation`
+      - 语音合成：`POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`
+      - 异步文件转写：`POST /v1/dashscope/services/audio/asr/transcription`、`GET /v1/dashscope/tasks/{taskId}`
+      - 实时音频：`GET /v1/dashscope/realtime`
+    - MiniMax 原生端点：
+      - 文件转写：`POST /v1/minimax/speech_to_text`
+      - 语音合成：`POST /v1/minimax/t2a_v2`
+      - 生图：`POST /v1/minimax/image_generation`
+    - 火山方舟原生端点（Seedream 生图）：`POST /v1/volcengine/images/generations`
+4. 协议适配与转换：可在路由中选择客户端与上游的协议转换关系，让应用继续使用熟悉的调用方式接入不同供应商。例如，可直接用 OpenAI 图片接口调用阿里云百炼的千问 / 万相、火山方舟的 Seedream 和 MiniMax 图像模型，或用 OpenAI 语音接口调用百炼与 MiniMax 的语音识别和语音合成。
 5. 智能体工具接入：通过 `/v1/tools/*` 统一接入各种供 Agent 使用的工具，并提供日志、计费、成本管控，以方便 Agent 同时从 Gateway 接入模型和工具。当前预置工具如下：
     - 联网搜索（`POST /v1/tools/web-search`）：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA
     - 网页抓取（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
@@ -131,7 +139,7 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 | Docker 自托管部署 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cloudflare Workers 边缘部署 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
-<sup>1</sup> Octafuse 支持 DashScope 原生同步 ASR、实时 ASR / TTS，并可将 OpenAI 兼容的 ASR / TTS 请求跨协议路由至 DashScope。
+<sup>1</sup> Octafuse 支持 DashScope 原生同步 / 异步 ASR、语音合成、实时 ASR / TTS 与生图，并可将 OpenAI 兼容的图像、ASR、TTS 请求跨协议路由至 DashScope。MiniMax 与火山方舟的原生接口按同样方式接入。
 <br />
 <sup>2</sup> Octafuse 当前已覆盖文本、图像、ASR、TTS 与实时语音；视频等能力尚未纳入统一请求入口。
 

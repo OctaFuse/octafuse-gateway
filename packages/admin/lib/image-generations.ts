@@ -19,26 +19,183 @@ export function openaiEditImageFormField(count: number): OpenaiEditImageFormFiel
 	return count > 1 ? 'image[]' : 'image';
 }
 
-/** Default request body for `POST …/images/generations` (model field overwritten at send). */
-export const IMAGE_GENERATIONS_BODY_TEMPLATE = `{
+const IMAGE_SAMPLE_PROMPT = 'a red apple on a white background';
+const IMAGE_EDIT_PROMPT = 'make the apple green';
+const SEEDREAM_SAMPLE_PROMPT = '一只戴着墨镜的橘猫，坐在海边，日落，超写实。';
+const MINIMAX_SAMPLE_PROMPT = 'A red paper lantern over a quiet canal at dusk, cinematic lighting';
+const DASHSCOPE_NATIVE_PROMPT = '一只橙色的猫坐在窗边';
+
+export type ImageSampleFamily =
+	| 'gpt'
+	| 'seedream-lite'
+	| 'seedream-pro'
+	| 'qwen'
+	| 'wan'
+	| 'glm'
+	| 'grok'
+	| 'grok-quality'
+	| 'gemini'
+	| 'minimax'
+	| 'unknown';
+
+export type ImageBodyTemplateInput = {
+	protocol: string;
+	adapter?: string | null;
+	modelId?: string | null;
+	providerModelName?: string | null;
+	operation?: ImageOperation;
+};
+
+/** 用供应商模型名识别族；没有供应商模型名时回退到目录模型 ID。`pro|flash` 归入 Seedream pro。 */
+export function imageSampleFamily(input: ImageBodyTemplateInput): ImageSampleFamily {
+	const provider = input.providerModelName?.trim() ?? '';
+	const name = provider || input.modelId?.trim() || '';
+	if (/seedream/i.test(name)) return /pro|flash/i.test(name) ? 'seedream-pro' : 'seedream-lite';
+	if (/minimax-image|^image-01/i.test(name)) return 'minimax';
+	if (/qwen/i.test(name)) return 'qwen';
+	if (/wan2|wanx/i.test(name)) return 'wan';
+	if (/grok/i.test(name)) return /quality/i.test(name) ? 'grok-quality' : 'grok';
+	if (/gemini|imagen/i.test(name)) return 'gemini';
+	if (/glm/i.test(name)) return 'glm';
+	if (/gpt-image/i.test(name)) return 'gpt';
+	const adapter = input.adapter?.trim() ?? '';
+	if (adapter === 'dashscope-image-qwen') return 'qwen';
+	if (adapter === 'dashscope-image-wan') return 'wan';
+	if (adapter === 'minimax-image') return 'minimax';
+	if (adapter === 'volcengine-image') return 'seedream-lite';
+	if (adapter === 'gemini-image') return 'gemini';
+	return 'unknown';
+}
+
+function prettyJson(value: unknown): string {
+	return JSON.stringify(value, null, 2);
+}
+
+function openaiImageSample(family: ImageSampleFamily, operation: ImageOperation): Record<string, unknown> {
+	const prompt = operation === 'edits' ? IMAGE_EDIT_PROMPT : IMAGE_SAMPLE_PROMPT;
+	switch (family) {
+		case 'gpt':
+			return { model: '<auto>', prompt, n: 1, size: '1024x1024', quality: 'low' };
+		case 'seedream-lite':
+			return { model: '<auto>', prompt: SEEDREAM_SAMPLE_PROMPT, n: 1, size: '2K', watermark: false };
+		case 'seedream-pro':
+			return { model: '<auto>', prompt: SEEDREAM_SAMPLE_PROMPT, n: 1, size: '1K', watermark: false };
+		case 'qwen':
+			return {
+				model: '<auto>',
+				prompt: IMAGE_SAMPLE_PROMPT,
+				n: 1,
+				size: '1024*1024',
+				parameters: { negative_prompt: 'blurry', seed: 42 },
+			};
+		case 'wan':
+			return { model: '<auto>', prompt: IMAGE_SAMPLE_PROMPT, n: 1, size: '1K' };
+		case 'glm':
+			return { model: '<auto>', prompt: IMAGE_SAMPLE_PROMPT, n: 1, size: '1280x1280' };
+		case 'grok':
+			return {
+				model: '<auto>',
+				prompt: IMAGE_SAMPLE_PROMPT,
+				n: 1,
+				resolution: '1k',
+				aspect_ratio: '1:1',
+				quality: 'low',
+			};
+		case 'grok-quality':
+			return { model: '<auto>', prompt: IMAGE_SAMPLE_PROMPT, n: 1, resolution: '1k', aspect_ratio: '1:1' };
+		case 'gemini':
+			return {
+				model: '<auto>',
+				prompt: IMAGE_SAMPLE_PROMPT,
+				n: 1,
+				size: '1024x1024',
+				response_format: 'b64_json',
+			};
+		case 'minimax':
+			return {
+				model: '<auto>',
+				prompt: MINIMAX_SAMPLE_PROMPT,
+				n: 1,
+				aspect_ratio: '1:1',
+				response_format: 'url',
+				prompt_optimizer: true,
+				aigc_watermark: false,
+			};
+		default:
+			return { model: '<auto>', prompt: IMAGE_SAMPLE_PROMPT, n: 1 };
+	}
+}
+
+function dashscopeNativeSample(family: ImageSampleFamily): Record<string, unknown> {
+	const size = family === 'wan' ? '1K' : family === 'qwen' ? '1024*1024' : undefined;
+	return {
+		model: '<auto>',
+		input: { messages: [{ role: 'user', content: [{ text: DASHSCOPE_NATIVE_PROMPT }] }] },
+		parameters: size ? { size, n: 1 } : { n: 1 },
+	};
+}
+
+function geminiNativeImageSample(): Record<string, unknown> {
+	return {
+		contents: [{ role: 'user', parts: [{ text: IMAGE_SAMPLE_PROMPT }] }],
+		generationConfig: {
+			responseModalities: ['TEXT', 'IMAGE'],
+			imageConfig: { aspectRatio: '1:1', imageSize: '1K' },
+		},
+	};
+}
+
+function volcengineNativeSample(family: ImageSampleFamily): Record<string, unknown> {
+	return {
+		model: '<auto>',
+		prompt: SEEDREAM_SAMPLE_PROMPT,
+		size: family === 'seedream-pro' ? '1K' : '2K',
+		response_format: 'url',
+		watermark: false,
+		stream: false,
+		sequential_image_generation: 'disabled',
+	};
+}
+
+/** MiniMax 文生图 / 图生图共用 POST /v1/image_generation。 */
+export const MINIMAX_IMAGE_BODY_TEMPLATE = `{
   "model": "<auto>",
-  "prompt": "a red apple on a white background",
-  "n": 1,
-  "size": "1024x1024",
-  "quality": "low"
+  "prompt": "A red paper lantern over a quiet canal at dusk, cinematic lighting",
+  "aspect_ratio": "1:1",
+  "response_format": "url",
+  "n": 1
 }`;
 
 /**
- * Default JSON fields for images/edits (reference images are uploaded separately as multipart files).
- * model field overwritten at send.
+ * 按模型族生成生图请求样例。尺寸取该型号官方支持的最低档。
+ * OpenAI 入口只放该族的官方字段；原生透传按同一族选尺寸。
  */
-export const IMAGE_EDITS_BODY_TEMPLATE = `{
-  "model": "<auto>",
-  "prompt": "make the apple green",
-  "n": 1,
-  "size": "1024x1024",
-  "quality": "low"
-}`;
+export function imageBodyTemplateFor(input: ImageBodyTemplateInput): string {
+	const protocol = input.protocol.trim().toLowerCase();
+	const adapter = input.adapter?.trim() ?? '';
+	const operation = input.operation ?? 'generations';
+	const family = imageSampleFamily(input);
+	if (protocol === 'gemini' && adapter !== 'gemini-image') {
+		return prettyJson(geminiNativeImageSample());
+	}
+	if (protocol === 'volcengine' && adapter !== 'volcengine-image') {
+		return prettyJson(volcengineNativeSample(family));
+	}
+	if (protocol === 'minimax' && adapter !== 'minimax-image') {
+		return MINIMAX_IMAGE_BODY_TEMPLATE;
+	}
+	if (
+		protocol === 'dashscope' &&
+		adapter !== 'dashscope-image-qwen' &&
+		adapter !== 'dashscope-image-wan'
+	) {
+		return prettyJson(dashscopeNativeSample(family));
+	}
+	return prettyJson(openaiImageSample(family, operation));
+}
+
+/** 火山方舟 / BytePlus Seedream 原生生图默认样例（未识别型号时用 lite 最低档 `2K`）。 */
+export const VOLCENGINE_IMAGE_BODY_TEMPLATE = imageBodyTemplateFor({ protocol: 'volcengine' });
 
 export function isImageRouteModel(m: ModelKindFields): boolean {
 	return isImageGenerationModel(m);
@@ -135,6 +292,63 @@ function collectDashScopeImagePreviews(parsed: Record<string, unknown>): ImagePr
 	return images;
 }
 
+/** MiniMax image_generation：`data.image_urls` 或 `data.image_base64`。 */
+export function collectMiniMaxImagePreviews(parsed: Record<string, unknown>): ImagePreviewItem[] {
+	const data = asPreviewObject(parsed.data);
+	if (!data) return [];
+	const images: ImagePreviewItem[] = [];
+	const urls = Array.isArray(data.image_urls) ? data.image_urls : [];
+	for (const url of urls) {
+		if (typeof url !== 'string' || !url.trim()) continue;
+		images.push({ kind: 'url', src: url.trim() });
+	}
+	const encoded = Array.isArray(data.image_base64) ? data.image_base64 : [];
+	for (const raw of encoded) {
+		if (typeof raw !== 'string' || !raw.trim()) continue;
+		const value = raw.trim();
+		images.push({
+			kind: 'b64',
+			src: value.startsWith('data:') ? value : `data:image/jpeg;base64,${value}`,
+		});
+	}
+	return images;
+}
+
+/** Gemini generateContent：非 thought 的 `inlineData` 转成 data URL，并带出文本 part。 */
+export function collectGeminiInlineDataPreviews(parsed: Record<string, unknown>): {
+	images: ImagePreviewItem[];
+	texts: string[];
+} {
+	const candidates = Array.isArray(parsed.candidates) ? parsed.candidates : [];
+	const images: ImagePreviewItem[] = [];
+	const texts: string[] = [];
+	for (const candidate of candidates) {
+		const content = asPreviewObject(asPreviewObject(candidate)?.content);
+		const parts = Array.isArray(content?.parts) ? content.parts : [];
+		for (const part of parts) {
+			const row = asPreviewObject(part);
+			if (!row || row.thought === true) continue;
+			if (typeof row.text === 'string' && row.text.trim()) texts.push(row.text.trim());
+			const inline = asPreviewObject(row.inlineData) ?? asPreviewObject(row.inline_data);
+			if (!inline) continue;
+			const data = typeof inline.data === 'string' ? inline.data.trim() : '';
+			if (!data) continue;
+			const mime =
+				typeof inline.mimeType === 'string'
+					? inline.mimeType
+					: typeof inline.mime_type === 'string'
+						? inline.mime_type
+						: 'image/png';
+			if (!mime.startsWith('image/')) continue;
+			images.push({
+				kind: 'b64',
+				src: data.startsWith('data:') ? data : `data:${mime};base64,${data}`,
+			});
+		}
+	}
+	return { images, texts };
+}
+
 export type ParsedImagesGenerationsResponse = {
 	images: ImagePreviewItem[];
 	count: number;
@@ -160,14 +374,24 @@ export function parseImagesGenerationsResponse(
 	}
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return empty;
 	const data = (parsed as { data?: unknown }).data;
+	const record = parsed as Record<string, unknown>;
+	const gemini = collectGeminiInlineDataPreviews(record);
+	const usedGemini = !Array.isArray(data) && gemini.images.length > 0;
 	const images: ImagePreviewItem[] = Array.isArray(data)
 		? collectOpenAiImagePreviews(data)
-		: collectDashScopeImagePreviews(parsed as Record<string, unknown>);
+		: usedGemini
+			? gemini.images
+			: (() => {
+					const miniMax = collectMiniMaxImagePreviews(record);
+					return miniMax.length > 0 ? miniMax : collectDashScopeImagePreviews(record);
+				})();
 
 	const count = images.length;
 	if (count === 0) return empty;
 
 	const parts = [`${count} image${count === 1 ? '' : 's'}`];
+	const caption = usedGemini ? gemini.texts[0] : undefined;
+	if (caption) parts.push(caption.length > 80 ? `${caption.slice(0, 80)}…` : caption);
 	if (requestMeta?.quality) parts.push(`quality=${requestMeta.quality}`);
 	if (requestMeta?.size) parts.push(`size=${requestMeta.size}`);
 	if (requestMeta?.n != null && Number.isFinite(requestMeta.n)) {
@@ -187,9 +411,16 @@ export function imageRequestMetaFromBody(body: Record<string, unknown>): {
 	size?: string;
 	n?: number;
 } {
+	const generationConfig = asPreviewObject(body.generationConfig);
+	const imageConfig = asPreviewObject(generationConfig?.imageConfig);
 	const quality = typeof body.quality === 'string' ? body.quality : undefined;
-	const size = typeof body.size === 'string' ? body.size : undefined;
-	const nRaw = body.n;
+	const size =
+		typeof body.size === 'string'
+			? body.size
+			: typeof imageConfig?.imageSize === 'string'
+				? imageConfig.imageSize
+				: undefined;
+	const nRaw = body.n ?? generationConfig?.candidateCount;
 	const n =
 		typeof nRaw === 'number' && Number.isFinite(nRaw)
 			? nRaw

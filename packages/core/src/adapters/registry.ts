@@ -9,6 +9,28 @@ export const PASSTHROUGH_ROUTE_ADAPTER = 'passthrough';
 export const DASHSCOPE_MULTIMODAL_GENERATION_PATH =
 	'/v1/dashscope/services/aigc/multimodal-generation/generation';
 
+/** DashScope SpeechSynthesizer 透传：非流式与 SSE 共用这条路径，用 `X-DashScope-SSE` 区分。 */
+export const DASHSCOPE_SPEECH_SYNTHESIZER_PATH =
+	'/v1/dashscope/services/audio/tts/SpeechSynthesizer';
+
+/** DashScope 异步文件转写提交。任务查询是 `GET /v1/dashscope/tasks/:taskId`。 */
+export const DASHSCOPE_FILE_TRANSCRIPTION_PATH =
+	'/v1/dashscope/services/audio/asr/transcription';
+
+export const DASHSCOPE_TASKS_PATH = '/v1/dashscope/tasks';
+
+/** MiniMax 原生文件转写透传：`POST /v1/minimax/speech_to_text`。 */
+export const MINIMAX_SPEECH_TO_TEXT_PATH = '/v1/minimax/speech_to_text';
+
+/** MiniMax 同步语音合成透传：`POST /v1/minimax/t2a_v2`。非流式与 SSE 共用这条路径。 */
+export const MINIMAX_T2A_PATH = '/v1/minimax/t2a_v2';
+
+/** MiniMax 文生图 / 图生图透传：`POST /v1/minimax/image_generation`。 */
+export const MINIMAX_IMAGE_GENERATION_PATH = '/v1/minimax/image_generation';
+
+/** 火山方舟 / BytePlus Seedream 生图透传：`POST /v1/volcengine/images/generations`。非流式与 SSE 共用。 */
+export const VOLCENGINE_IMAGE_GENERATIONS_PATH = '/v1/volcengine/images/generations';
+
 export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
 
 export type AdapterModality = 'text' | 'image' | 'audio' | 'video' | 'embedding';
@@ -18,6 +40,14 @@ export type AdapterBilling = 'tokens' | 'per_image' | 'per_second' | 'per_charac
 export type AdapterRequestPayload = 'json' | 'multipart';
 export type AdapterResponsePayload = 'json' | 'sse' | 'binary' | 'websocket';
 export type AdapterSurfaceRole = 'request' | 'upstream';
+
+export type AdapterUpstreamModels = {
+	include: readonly string[];
+	exclude?: readonly string[];
+};
+
+/** Admin 下拉用：`match` 命中规则，`mismatch` 排除，`generic` 不按模型名过滤。 */
+export type AdapterModelMatch = 'match' | 'mismatch' | 'generic';
 
 export type AdapterPresetIntent =
 	| 'dashscope-asr-flash-convert'
@@ -31,7 +61,7 @@ export type AdapterPresetIntent =
 export interface AdapterDescriptor {
 	/** 写入 `model_routes.adapter` 的稳定 ID；语义变化时发新 ID，永不复用。 */
 	id: string;
-	/** Admin 选项唯一键。转换 adapter 等于 id；passthrough 变体为 `passthrough:{protocol}:{operation}`。 */
+	/** Admin 选项唯一键。转换 adapter 等于 id；passthrough 变体为 `passthrough:{protocol}:{operation}`，同一 operation 的第二种模型种类再加后缀。 */
 	optionKey: string;
 	request: { protocol: UpstreamProtocol; operation: string };
 	upstream: { protocol: UpstreamProtocol; operations: readonly string[] };
@@ -47,13 +77,87 @@ export interface AdapterDescriptor {
 	/** 参与 Admin 的 request / upstream operation 下拉推导。 */
 	roles: readonly AdapterSurfaceRole[];
 	presetIntent?: AdapterPresetIntent;
+	/**
+	 * 上游接口没有的能力。只登记模型官方文档确认不存在的项。
+	 * OpenAI 字段未映射、但上游有别的字段可传的，写进 Admin 的 adapterGuides，不要放这里。
+	 */
 	lossyFeatures?: readonly string[];
+	/**
+	 * 合并客户端额外字段后必须恢复的上游路径。`model` 由网关统一恢复，不必写入。
+	 * 这些路径影响计费或响应解析，不能交给客户端。
+	 */
+	protectedUpstreamPaths?: readonly string[];
+	/** 路由编辑器展示的 `extra_body` 示例，按上游原生结构填写。 */
+	extraBodyExample?: { readonly [key: string]: unknown };
+	/** 路由编辑器额外说明。`dashscope_tts_input`：OpenAI `input` 是文本，写不进上游 `input.*`。 */
+	extraBodyNote?: 'dashscope_tts_input';
+	/**
+	 * 适用的供应商模型名。大小写不敏感，`*` 通配。
+	 * 不填表示通用，Admin 下拉不按模型名隐藏。
+	 */
+	upstreamModels?: AdapterUpstreamModels;
+}
+
+/**
+ * 供应商模型名规则是 Admin 适配器下拉的唯一来源。
+ * 新增模型家族时在这里补 pattern，不要在 Admin 里再写一份。
+ */
+const QWEN3_ASR_SYNC_MODELS = ['qwen3-asr-flash', 'qwen3-asr-flash-2*'] as const;
+const QWEN_AUDIO_ASR_SYNC_MODELS = ['qwen-audio-3.0-asr-flash', 'qwen-audio-3.0-asr-flash-2*'] as const;
+const FUN_ASR_SYNC_MODELS = ['fun-asr-realtime*'] as const;
+const DASHSCOPE_SYNC_ASR_MODELS = [
+	...QWEN3_ASR_SYNC_MODELS,
+	...QWEN_AUDIO_ASR_SYNC_MODELS,
+	...FUN_ASR_SYNC_MODELS,
+] as const;
+const DASHSCOPE_ASYNC_ASR_MODELS = ['*-filetrans*', 'fun-asr', 'fun-asr-2*', 'paraformer-v*'] as const;
+const DASHSCOPE_ASR_SESSION_MODELS = ['qwen3-asr-flash-realtime*'] as const;
+const DASHSCOPE_ASR_INFERENCE_MODELS = [
+	'fun-asr-realtime*',
+	'paraformer-realtime*',
+	'qwen-audio-3.0-asr-flash-streaming*',
+] as const;
+const COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS = ['cosyvoice-*', 'qwen-audio-3.0-tts-*'] as const;
+const QWEN_TTS_HTTP_MODELS = {
+	include: ['qwen3-tts-*', 'qwen-tts*'],
+	exclude: ['*realtime*'],
+} as const;
+const MINIMAX_TTS_MODELS = ['minimax/speech-*'] as const;
+const MINIMAX_NATIVE_TTS_MODELS = ['speech-*'] as const;
+const MINIMAX_IMAGE_MODELS = ['image-01*'] as const;
+const VOLCENGINE_IMAGE_MODELS = ['doubao-seedream-*', 'dola-seedream-*', 'seedream-*'] as const;
+const QWEN_TTS_REALTIME_SESSION_MODELS = ['qwen3-tts-*realtime*', 'qwen-tts-realtime*'] as const;
+const COSYVOICE_REALTIME_MODELS = ['cosyvoice-*'] as const;
+const QWEN_IMAGE_MODELS = ['qwen-image*'] as const;
+const WAN_IMAGE_MODELS = ['wan*'] as const;
+/** Gemini 原生 generateContent 生图。目录 ID 与供应商模型名同一套写法。 */
+const GEMINI_IMAGE_MODELS = ['gemini-*image*', 'gemini-nano-banana*'] as const;
+
+function matchesUpstreamModelPattern(pattern: string, modelName: string): boolean {
+	const source = pattern.trim().toLowerCase();
+	const escaped = source.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '.*');
+	return new RegExp(`^${escaped}$`).test(modelName);
+}
+
+/** 供应商模型名是否适用该适配器。空名称与未声明规则都视为通用。 */
+export function matchAdapterUpstreamModel(
+	descriptor: Pick<AdapterDescriptor, 'upstreamModels'>,
+	providerModelName: string,
+): AdapterModelMatch {
+	const rule = descriptor.upstreamModels;
+	if (!rule || rule.include.length === 0) return 'generic';
+	const name = providerModelName.trim().toLowerCase();
+	if (!name) return 'generic';
+	if (rule.exclude?.some((pattern) => matchesUpstreamModelPattern(pattern, name))) return 'mismatch';
+	if (rule.include.some((pattern) => matchesUpstreamModelPattern(pattern, name))) return 'match';
+	return 'mismatch';
 }
 
 const CONVERSION_ADAPTERS = [
 	{
 		id: 'dashscope-asr-qwen-file',
 		optionKey: 'dashscope-asr-qwen-file',
+		upstreamModels: { include: QWEN3_ASR_SYNC_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
@@ -66,10 +170,12 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/transcriptions',
 		roles: [],
 		lossyFeatures: ['timestamp_granularities', 'diarization'],
+		protectedUpstreamPaths: ['parameters.asr_options.language'],
 	},
 	{
 		id: 'dashscope-asr-qwen-audio-file',
 		optionKey: 'dashscope-asr-qwen-audio-file',
+		upstreamModels: { include: QWEN_AUDIO_ASR_SYNC_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
@@ -83,10 +189,12 @@ const CONVERSION_ADAPTERS = [
 		roles: [],
 		presetIntent: 'dashscope-asr-flash-convert',
 		lossyFeatures: ['timestamp_granularities', 'diarization'],
+		protectedUpstreamPaths: ['parameters.format', 'parameters.language_hints'],
 	},
 	{
 		id: 'dashscope-asr-fun-file',
 		optionKey: 'dashscope-asr-fun-file',
+		upstreamModels: { include: FUN_ASR_SYNC_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
@@ -99,10 +207,12 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/transcriptions',
 		roles: [],
 		lossyFeatures: ['timestamp_granularities'],
+		protectedUpstreamPaths: ['parameters.format'],
 	},
 	{
 		id: 'dashscope-asr-file-async',
 		optionKey: 'dashscope-asr-file-async',
+		upstreamModels: { include: DASHSCOPE_ASYNC_ASR_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.async'] },
 		modality: 'audio',
@@ -115,11 +225,12 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/transcriptions',
 		roles: ['upstream'],
 		presetIntent: 'dashscope-asr-filetrans',
-		lossyFeatures: ['inline_file_upload'],
+		protectedUpstreamPaths: ['input.file_urls'],
 	},
 	{
 		id: 'dashscope-tts-speech',
 		optionKey: 'dashscope-tts-speech',
+		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech'] },
 		modality: 'audio',
@@ -132,10 +243,13 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/speech',
 		roles: ['upstream'],
 		presetIntent: 'dashscope-tts-nonrealtime',
+		protectedUpstreamPaths: ['input.format'],
+		extraBodyNote: 'dashscope_tts_input',
 	},
 	{
 		id: 'dashscope-tts-qwen',
 		optionKey: 'dashscope-tts-qwen',
+		upstreamModels: QWEN_TTS_HTTP_MODELS,
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech.multimodal'] },
 		modality: 'audio',
@@ -147,11 +261,13 @@ const CONVERSION_ADAPTERS = [
 		requiredUpstreamCapabilities: ['audio.speech.multimodal'],
 		publicPath: '/v1/audio/speech',
 		roles: [],
-		lossyFeatures: ['voice_instructions'],
+		protectedUpstreamPaths: [],
+		extraBodyNote: 'dashscope_tts_input',
 	},
 	{
 		id: 'dashscope-tts-minimax',
 		optionKey: 'dashscope-tts-minimax',
+		upstreamModels: { include: MINIMAX_TTS_MODELS },
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech.multimodal'] },
 		modality: 'audio',
@@ -163,11 +279,13 @@ const CONVERSION_ADAPTERS = [
 		requiredUpstreamCapabilities: ['audio.speech.multimodal'],
 		publicPath: '/v1/audio/speech',
 		roles: [],
-		lossyFeatures: ['voice_instructions'],
+		protectedUpstreamPaths: ['input.audio_setting.format', 'input.stream_options'],
+		extraBodyNote: 'dashscope_tts_input',
 	},
 	{
 		id: 'dashscope-image-qwen',
 		optionKey: 'dashscope-image-qwen',
+		upstreamModels: { include: QWEN_IMAGE_MODELS },
 		request: { protocol: 'openai', operation: 'images.generations' },
 		upstream: { protocol: 'dashscope', operations: ['images.generations.multimodal'] },
 		modality: 'image',
@@ -181,10 +299,13 @@ const CONVERSION_ADAPTERS = [
 		roles: ['upstream'],
 		presetIntent: 'dashscope-image-qwen',
 		lossyFeatures: ['size_abbreviation', 'background'],
+		protectedUpstreamPaths: ['parameters.n'],
+		extraBodyExample: { parameters: { negative_prompt: 'blurry', seed: 42 } },
 	},
 	{
 		id: 'dashscope-image-wan',
 		optionKey: 'dashscope-image-wan',
+		upstreamModels: { include: WAN_IMAGE_MODELS },
 		request: { protocol: 'openai', operation: 'images.generations' },
 		upstream: { protocol: 'dashscope', operations: ['images.generations.multimodal'] },
 		modality: 'image',
@@ -198,6 +319,110 @@ const CONVERSION_ADAPTERS = [
 		roles: ['upstream'],
 		presetIntent: 'dashscope-image-wan',
 		lossyFeatures: ['background'],
+		protectedUpstreamPaths: ['parameters.n'],
+		extraBodyExample: { parameters: { negative_prompt: 'blurry', seed: 42 } },
+	},
+	{
+		id: 'minimax-asr-file',
+		optionKey: 'minimax-asr-file',
+		request: { protocol: 'openai', operation: 'audio.transcriptions' },
+		upstream: { protocol: 'minimax', operations: ['audio.transcriptions'] },
+		modality: 'audio',
+		modelKind: 'audio.transcription',
+		exchange: 'unary',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['audio.transcriptions'],
+		publicPath: '/v1/audio/transcriptions',
+		roles: ['upstream'],
+		lossyFeatures: ['prompt', 'temperature'],
+		protectedUpstreamPaths: ['response_format'],
+		extraBodyExample: { timestamp_level: 'sentence' },
+	},
+	{
+		id: 'minimax-tts',
+		optionKey: 'minimax-tts',
+		upstreamModels: { include: MINIMAX_NATIVE_TTS_MODELS },
+		request: { protocol: 'openai', operation: 'audio.speech' },
+		upstream: { protocol: 'minimax', operations: ['audio.speech'] },
+		modality: 'audio',
+		modelKind: 'audio.speech',
+		exchange: 'unary',
+		billing: 'per_character',
+		requestPayload: 'json',
+		responsePayload: 'binary',
+		requiredUpstreamCapabilities: ['audio.speech'],
+		publicPath: '/v1/audio/speech',
+		roles: ['upstream'],
+		lossyFeatures: ['response_format_aac', 'openai_speed_range'],
+		protectedUpstreamPaths: ['stream', 'stream_options', 'output_format', 'audio_setting.format'],
+		extraBodyExample: { voice_setting: { emotion: 'happy' }, language_boost: 'Chinese' },
+	},
+	{
+		id: 'minimax-image',
+		optionKey: 'minimax-image',
+		upstreamModels: { include: MINIMAX_IMAGE_MODELS },
+		request: { protocol: 'openai', operation: 'images.generations' },
+		upstream: { protocol: 'minimax', operations: ['images.generations'] },
+		modality: 'image',
+		modelKind: 'image',
+		exchange: 'unary',
+		billing: 'per_image',
+		requestPayload: 'json',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['images.generations'],
+		publicPath: '/v1/images/generations',
+		roles: ['upstream'],
+		lossyFeatures: ['background', 'quality'],
+		protectedUpstreamPaths: ['n', 'response_format'],
+		extraBodyExample: { prompt_optimizer: true, aigc_watermark: false },
+	},
+	{
+		id: 'volcengine-image',
+		optionKey: 'volcengine-image',
+		upstreamModels: { include: VOLCENGINE_IMAGE_MODELS },
+		request: { protocol: 'openai', operation: 'images.generations' },
+		upstream: { protocol: 'volcengine', operations: ['images.generations'] },
+		modality: 'image',
+		modelKind: 'image',
+		exchange: 'unary',
+		billing: 'per_image',
+		requestPayload: 'json',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['images.generations'],
+		publicPath: '/v1/images/generations',
+		roles: ['upstream'],
+		lossyFeatures: ['quality'],
+		protectedUpstreamPaths: [
+			'stream',
+			'sequential_image_generation',
+			'sequential_image_generation_options',
+			'sequential_image_generation_options.max_images',
+			'response_format',
+		],
+		extraBodyExample: { watermark: false, image: 'https://example.com/ref.png' },
+	},
+	{
+		id: 'gemini-image',
+		optionKey: 'gemini-image',
+		upstreamModels: { include: GEMINI_IMAGE_MODELS },
+		request: { protocol: 'openai', operation: 'images.generations' },
+		upstream: { protocol: 'gemini', operations: ['models.generate'] },
+		modality: 'image',
+		modelKind: 'image',
+		exchange: 'unary',
+		billing: 'tokens',
+		requestPayload: 'json',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['models.generate'],
+		publicPath: '/v1/images/generations',
+		roles: ['upstream'],
+		lossyFeatures: ['background', 'quality'],
+		protectedUpstreamPaths: ['contents', 'generationConfig.candidateCount'],
+		extraBodyExample: {
+			generationConfig: { imageConfig: { aspectRatio: '16:9', imageSize: '2K' } },
+		},
 	},
 ] as const satisfies readonly AdapterDescriptor[];
 
@@ -214,10 +439,16 @@ function passthroughDescriptor(input: {
 	publicPath: string;
 	roles?: readonly AdapterSurfaceRole[];
 	presetIntent?: AdapterPresetIntent;
+	upstreamModels?: AdapterUpstreamModels;
+	/** 同一协议 + operation 有多种模型种类时，用来避开默认 optionKey。 */
+	optionKey?: string;
+	protectedUpstreamPaths?: readonly string[];
+	extraBodyExample?: { readonly [key: string]: unknown };
+	extraBodyNote?: 'dashscope_tts_input';
 }): AdapterDescriptor {
 	return {
 		id: PASSTHROUGH_ROUTE_ADAPTER,
-		optionKey: `${PASSTHROUGH_ROUTE_ADAPTER}:${input.protocol}:${input.operation}`,
+		optionKey: input.optionKey ?? `${PASSTHROUGH_ROUTE_ADAPTER}:${input.protocol}:${input.operation}`,
 		request: { protocol: input.protocol, operation: input.operation },
 		upstream: { protocol: input.protocol, operations: [input.operation] },
 		modality: input.modality,
@@ -230,6 +461,10 @@ function passthroughDescriptor(input: {
 		publicPath: input.publicPath,
 		roles: input.roles ?? ['request', 'upstream'],
 		presetIntent: input.presetIntent,
+		...(input.upstreamModels ? { upstreamModels: input.upstreamModels } : {}),
+		...(input.protectedUpstreamPaths ? { protectedUpstreamPaths: input.protectedUpstreamPaths } : {}),
+		...(input.extraBodyExample ? { extraBodyExample: input.extraBodyExample } : {}),
+		...(input.extraBodyNote ? { extraBodyNote: input.extraBodyNote } : {}),
 	};
 }
 
@@ -275,6 +510,18 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		publicPath: `/v1beta/models/${SURFACE_PATH_MODEL_PLACEHOLDER}:{generateContent|streamGenerateContent}`,
 	}),
 	passthroughDescriptor({
+		protocol: 'gemini',
+		operation: 'models.generate',
+		optionKey: 'passthrough:gemini:models.generate:image',
+		modelKind: 'image',
+		modality: 'image',
+		exchange: 'sse',
+		billing: 'tokens',
+		requiredUpstreamCapabilities: ['models.generate'],
+		publicPath: `/v1beta/models/${SURFACE_PATH_MODEL_PLACEHOLDER}:{generateContent|streamGenerateContent}`,
+		upstreamModels: { include: GEMINI_IMAGE_MODELS },
+	}),
+	passthroughDescriptor({
 		protocol: 'openai',
 		operation: 'images.generations',
 		modelKind: 'image',
@@ -282,6 +529,8 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'per_image',
 		requiredUpstreamCapabilities: ['images.generations'],
 		publicPath: '/v1/images/generations',
+		protectedUpstreamPaths: ['n', 'stream'],
+		extraBodyExample: { seed: 42 },
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',
@@ -292,6 +541,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requestPayload: 'multipart',
 		requiredUpstreamCapabilities: ['images.edits'],
 		publicPath: '/v1/images/edits',
+		protectedUpstreamPaths: ['n'],
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',
@@ -302,6 +552,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requestPayload: 'multipart',
 		requiredUpstreamCapabilities: ['audio.transcriptions'],
 		publicPath: '/v1/audio/transcriptions',
+		protectedUpstreamPaths: ['response_format'],
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',
@@ -312,6 +563,51 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'binary',
 		requiredUpstreamCapabilities: ['audio.speech'],
 		publicPath: '/v1/audio/speech',
+		protectedUpstreamPaths: ['stream'],
+	}),
+	passthroughDescriptor({
+		protocol: 'minimax',
+		operation: 'audio.transcriptions',
+		modelKind: 'audio.transcription',
+		modality: 'audio',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		requiredUpstreamCapabilities: ['audio.transcriptions'],
+		publicPath: MINIMAX_SPEECH_TO_TEXT_PATH,
+	}),
+	passthroughDescriptor({
+		protocol: 'minimax',
+		operation: 'audio.speech',
+		modelKind: 'audio.speech',
+		modality: 'audio',
+		exchange: 'sse',
+		billing: 'per_character',
+		responsePayload: 'sse',
+		requiredUpstreamCapabilities: ['audio.speech'],
+		publicPath: MINIMAX_T2A_PATH,
+		upstreamModels: { include: MINIMAX_NATIVE_TTS_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'minimax',
+		operation: 'images.generations',
+		modelKind: 'image',
+		modality: 'image',
+		billing: 'per_image',
+		requiredUpstreamCapabilities: ['images.generations'],
+		publicPath: MINIMAX_IMAGE_GENERATION_PATH,
+		upstreamModels: { include: MINIMAX_IMAGE_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'volcengine',
+		operation: 'images.generations',
+		modelKind: 'image',
+		modality: 'image',
+		exchange: 'sse',
+		billing: 'per_image',
+		responsePayload: 'sse',
+		requiredUpstreamCapabilities: ['images.generations'],
+		publicPath: VOLCENGINE_IMAGE_GENERATIONS_PATH,
+		upstreamModels: { include: VOLCENGINE_IMAGE_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -322,6 +618,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requiredUpstreamCapabilities: ['audio.transcriptions.multimodal'],
 		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 		presetIntent: 'dashscope-asr-flash-passthrough',
+		upstreamModels: { include: DASHSCOPE_SYNC_ASR_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -333,6 +630,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.inference'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		upstreamModels: { include: DASHSCOPE_ASR_INFERENCE_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -344,6 +642,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.session'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		upstreamModels: { include: DASHSCOPE_ASR_SESSION_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -356,11 +655,8 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requiredUpstreamCapabilities: ['audio.realtime.inference'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
 		presetIntent: 'dashscope-tts-realtime',
+		upstreamModels: { include: COSYVOICE_REALTIME_MODELS },
 	}),
-];
-
-/** Display-only surfaces that are not selectable request operations. */
-const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech',
@@ -369,8 +665,8 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 		billing: 'per_character',
 		responsePayload: 'binary',
 		requiredUpstreamCapabilities: ['audio.speech'],
-		publicPath: '/v1/audio/speech',
-		roles: [],
+		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -381,8 +677,8 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 		billing: 'per_character',
 		responsePayload: 'sse',
 		requiredUpstreamCapabilities: ['audio.speech'],
-		publicPath: '/v1/audio/speech',
-		roles: [],
+		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -391,30 +687,8 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 		modality: 'audio',
 		billing: 'per_character',
 		requiredUpstreamCapabilities: ['audio.speech.multimodal'],
-		publicPath: '/v1/audio/speech',
-		roles: [],
-	}),
-	passthroughDescriptor({
-		protocol: 'dashscope',
-		operation: 'audio.transcriptions',
-		modelKind: 'audio.transcription',
-		modality: 'audio',
-		billing: 'per_second',
-		requestPayload: 'multipart',
-		requiredUpstreamCapabilities: ['audio.transcriptions'],
-		publicPath: '/v1/audio/transcriptions',
-		roles: [],
-	}),
-	passthroughDescriptor({
-		protocol: 'dashscope',
-		operation: 'audio.transcriptions.async',
-		modelKind: 'audio.transcription',
-		modality: 'audio',
-		exchange: 'job',
-		billing: 'per_second',
-		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
-		publicPath: '/v1/audio/transcriptions',
-		roles: [],
+		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+		upstreamModels: QWEN_TTS_HTTP_MODELS,
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -426,6 +700,42 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.session'],
 		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		upstreamModels: { include: QWEN_TTS_REALTIME_SESSION_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'images.generations.multimodal',
+		modelKind: 'image',
+		modality: 'image',
+		billing: 'per_image',
+		requiredUpstreamCapabilities: ['images.generations.multimodal'],
+		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.async',
+		modelKind: 'audio.transcription',
+		modality: 'audio',
+		exchange: 'job',
+		billing: 'per_second',
+		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
+		publicPath: DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+		upstreamModels: { include: DASHSCOPE_ASYNC_ASR_MODELS },
+	}),
+];
+
+/** Display-only surfaces that are not selectable request operations. */
+/** 仅用于展示上游路径，不能选作请求入口。 */
+const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions',
+		modelKind: 'audio.transcription',
+		modality: 'audio',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		requiredUpstreamCapabilities: ['audio.transcriptions'],
+		publicPath: '/v1/audio/transcriptions',
 		roles: [],
 	}),
 ];
@@ -576,6 +886,10 @@ export function requestSurfacePath(
 			return `/v1beta/models/${modelSegment}:{generateContent|streamGenerateContent}`;
 		}
 		return `/v1beta/models/${modelSegment}:${operation}`;
+	}
+	if (protocol === 'minimax' || protocol === 'volcengine') {
+		if (operation === '*') return '/*';
+		return lookupPublicPath(protocol, operation) ?? `/${operation}`;
 	}
 	if (protocol === 'dashscope') {
 		if (operation.includes('.realtime.')) {

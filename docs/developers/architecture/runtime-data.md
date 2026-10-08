@@ -87,7 +87,7 @@ flowchart TB
 
 - 迁移 **`0011_provider_endpoints`**（d1 / postgres / mysql）：`providers` 新增 **`endpoints` TEXT**，并从当时的 `base_url_*` 回填 `{ protocol: { base } }`。
 - 迁移 **`0012_drop_provider_base_url_columns`**：删除 `base_url_openai` / `base_url_anthropic` / `base_url_gemini`；读写仅以 **`endpoints`** 为准（`parseProviderEndpoints` / 管理后台写入）。
-- 形状：`{ "openai"?: { "base"?: string, "endpoints"?: { "chat"|"images.generations"|"images.edits"|"audio.transcriptions": url } }, "anthropic"?: …, "gemini"?: { "base"?: string, "auth"?: "query-key"|"bearer", "endpoints"?: … } }`。`base` 走标准路径派生；capability 完整 URL 模板存在则不再追加后缀。`gemini.auth` 省略时为 `query-key`。
+- 形状：`{ "<protocol>"?: { "base"?: string, "endpoints"?: { "<capability>": url }, "auth"?: "query-key"|"bearer" } }`，协议为 `openai` / `anthropic` / `gemini` / `dashscope` / `minimax` / `volcengine`。各协议可写的 capability 由 `packages/core/src/provider-endpoints.ts` 的 `WRITABLE_CAPABILITIES_BY_PROTOCOL` 决定，例如 `openai` 为 `chat`、`responses`、`images.generations`、`images.edits`、`audio.transcriptions`、`audio.speech`，`minimax` 为 `audio.transcriptions`、`audio.speech`、`images.generations`，`volcengine` 只有 `images.generations`。`base` 走标准路径派生；配置了 capability 完整 URL 模板时直接使用，不追加后缀。`auth` 只对 `gemini` 生效，省略时为 `query-key`。
 - 迁移 **`0015_single_provider_key`**：`providers` 恢复单列 **`api_key`** + **`status`**；删除 **`provider_api_keys`**；`model_routes.weight`；`models.route_policy` 替换 `sticky_config`；种子 **`ROUTE_STRATEGY`**。切换步骤见 [single-provider-key-cutover.md](../../operators/migrations/single-provider-key-cutover.md)。
 - 迁移 **`0016_route_surfaces_pools`**：新增 `model_surfaces` / `route_pools`；`model_routes` 增加 `route_pool_id`、`upstream_operation`、`adapter`；请求日志增加请求入口 / 路由池 / 上游目标与路由追踪字段。完整模型见 [route-topology.md](./route-topology.md)。
 - 迁移 **`0017_gemini_models_generate`**：将 Gemini `generateContent` / `streamGenerateContent` 请求入口合并为家族 operation **`models.generate`**；规范化 `model_routes.upstream_operation`；冲突路由池降级为 `inactive` 并加 `[v220-conflict]` 名字前缀。切换步骤见 [gemini-models-generate-cutover.md](../../operators/migrations/gemini-models-generate-cutover.md)。
@@ -99,7 +99,7 @@ flowchart TB
 - 迁移 **`0023_admin_access_identity`**：新增 `admin_api_keys` / `admin_sessions`，并把历史 `system_config.MASTER_KEY` 复制为全权限 `legacy-master`。
 - 迁移 **`0024_drop_legacy_master_key_config`**：删除历史 `system_config.MASTER_KEY` 配置行；新版管理认证只读取具名 Admin API Key 与控制台会话。
 - 迁移 **`0025_user_audit_actor_index`**：为 `user_audit_logs(actor_id, created_at)` 增加操作主体查询索引。
-- 迁移 **`0026_user_charged_cost_factors`**：`users` 增加 `charged_cost_factors`，按目录模型 ID 保存用户计费倍率。同一列的值后来也可写成按路由组细分的对象（具体分组或 `"*"`），不另增迁移；原有数字仍表示该模型全部分组。
+- 迁移 **`0026_user_charged_cost_factors`**：`users` 增加 `charged_cost_factors`，按目录模型 ID 保存用户计费倍率。值可以是数字（覆盖该模型全部分组），也可以是按路由组细分的对象（具体分组或 `"*"`），两种形态共用这一列。
 - 迁移 **`0027_user_wallet_credit`**：`users` 增加 `wallet_granted` / `wallet_spent`（永久额度）；`user_audit_logs.dedup_key` + `UNIQUE(user_id, dedup_key)`；`api_key_request_logs.charged_wallet_cost`。老数据把加购余额从 `budget_max` 拆出；`budget_max IS NULL` 与到期清零行（`max=0 AND period=none`）不抬回 `budget_base`。步骤见 [0027-user-wallet-credit.md](../../operators/migrations/0027-user-wallet-credit.md)。
 - 迁移 **`0028_key_rate_limit_and_ingress`**：`api_keys.rate_limit` 与 `users.rate_limit`（JSON，`NULL` = 该层不限；当前仅 `rpm`）；用户层为所有 Key 合计，Key 层为单把钥匙。`api_key_request_logs.ingress_host` 只记录入口 Host，不做准入。成功记账时回写 `api_keys.last_used_at`。RPM 窗口计数在代理服务进程 / isolate 内存中，不落库。
 - 迁移 **`0029_provider_kind`**：`providers.kind`（`TEXT` / MySQL `VARCHAR(128)`，`NOT NULL DEFAULT ''`）。已有行保持空字符串，表示尚未分类。去掉 `providers.name` 的全局唯一，改为 `UNIQUE (name, kind)`（约束名 `uk_providers_name_kind`）。D1 不能直接删除仍被 `model_routes` 引用的 `providers`，因此先复制 `providers`、`model_routes`、`route_pool_sticky_bindings` 再替换。不回写已有账号别名，也不回写请求日志里的 `provider_name` 快照。模板英文名变更后，已保存的旧 `kind` 不自动改写，由管理员在编辑时重新选择。
@@ -121,7 +121,7 @@ flowchart TB
 - **部分能力上游**（例如仅 chat 的中转）：**清空 Base**，只填写支持的 URL overrides。
 - **不要**用「填了 Base 但留空某些 override」表达「不支持该能力」——运行时仍会从 Base 派生并可能打到错误路径。
 
-管理后台静态导入模板（`packages/admin/lib/provider-import-presets.json`）遵循同一约定：默认 LLM 供应商写入 `openai.endpoints.chat`；具备完整 OpenAI 兼容 Images（含 generations **与** edits）的模板写 `openai.base`（如 OpenAI、Azure OpenAI、SiliconFlow、Zhipu/Z.AI、xAI、Together、Gemini OpenAI 兼容层等）。**Volcengine Ark** 无 edits，故只写 `endpoints.chat` + `endpoints.images.generations`，**不**写 `base`（避免派生死链 `/images/edits`）。OpenRouter Images 路径为 `/api/v1/images`，在 `openai.base` 之外用 `endpoints.images.generations` 覆盖。
+管理后台静态导入模板（`packages/admin/lib/provider-import-presets.json`）遵循同一约定：只支持部分 OpenAI 能力时不写 `openai.base`，只填确认过的完整 URL。官方 OpenAI 与 Azure OpenAI 覆盖 chat、responses、生图、编辑、转写和语音合成，因此保留 `openai.base`。硅基流动、智谱、Z.AI、xAI、Together、Gemini OpenAI 兼容层、OpenRouter 和 Vercel AI Gateway 只列出实际支持的地址。**Volcengine Ark** 的 OpenAI 侧只有 chat 与 responses，生图走 `volcengine.base`。OpenRouter 的生图地址是 `POST /api/v1/images`。
 
 ---
 

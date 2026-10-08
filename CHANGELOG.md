@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- 用户详情新增「模型列表」标签页，可模拟该用户的 `GET /v1/models`。结果使用已保存的用户专属倍率，默认只含 `default` 与 `free` 分组的文本模型，并列出每个分组当前的 `catalog_factor`、`route_factor` 和 `composite_factor`。
-
-- 用户专属倍率可以按模型和路由组分别配置。`users.charged_cost_factors` 的值仍可以是数字（覆盖该模型全部分组），也可以是 `{ "<route_group>": number, "*": number }`。文本、图像和音频计费，以及 `GET /v1/models` 与用户展示折扣，都按本次路由组查找：先具体分组，再 `*`，数字则覆盖全部分组。未命中的分组仍按路由计费。与路由实际计费倍率的合成仍由 `USER_CHARGED_COST_FACTOR_MODE`（相乘或取较小值）决定。不需要数据库迁移；已有的数字配置行为不变。
-
 ## 2.13.0
 
 ### Minor Changes

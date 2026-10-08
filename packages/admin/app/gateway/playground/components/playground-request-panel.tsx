@@ -42,6 +42,7 @@ type Props = {
 	onSend: () => void;
 	onStop: () => void;
 	requestTargetUrl: string | null;
+	requestTargetMissing: string | null;
 	selected: RouteListRow | null;
 	selectedUsesDashScopeRealtime: boolean;
 	imageSendBlocked: boolean;
@@ -81,6 +82,7 @@ export function PlaygroundRequestPanel({
 	onSend,
 	onStop,
 	requestTargetUrl,
+	requestTargetMissing,
 	selected,
 	selectedUsesDashScopeRealtime,
 	imageSendBlocked,
@@ -267,7 +269,11 @@ export function PlaygroundRequestPanel({
 					label={t('requestTargetUrl')}
 					method={selectedUsesDashScopeRealtime ? 'WebSocket' : undefined}
 					url={requestTargetUrl}
-					emptyHint={t('requestTargetUrlEmpty')}
+					emptyHint={
+						requestTargetMissing
+							? t('requestTargetUrlMissing', { target: requestTargetMissing })
+							: t('requestTargetUrlEmpty')
+					}
 				/>
 				{selected ? (
 					<p className="text-[11px] text-gray-400">
@@ -282,6 +288,12 @@ export function PlaygroundRequestPanel({
 						{t(
 							selectedUsesDashScopeRealtime
 								? 'audioRealtimeDashScopeHint'
+								: selected?.adapter === 'minimax-tts'
+								? 'audioSpeechMiniMaxOpenAiHint'
+								: selected?.upstream_protocol === 'minimax' && !selectedIsAudioTranscription
+								? 'audioSpeechMiniMaxHint'
+								: selected?.adapter === 'passthrough' && selectedAudioUsesDashScope && !selectedIsAudioTranscription
+								? 'audioSpeechPassthroughHint'
 								: selectedAudioUsesDashScope
 								? selectedIsAudioTranscription
 									? 'audioTranscriptionsDashScopeHint'
@@ -358,8 +370,22 @@ export function PlaygroundRequestPanel({
 
 			{selectedIsImage && !selectedIsAudio && !imageSendBlocked ? (
 				<>
-					{selectedImageUsesDashScope ? (
-						<p className="text-xs text-gray-500">{t('imageDashScopeHint')}</p>
+					{selected?.adapter === 'minimax-image' ? (
+						<p className="text-xs text-gray-500">{t('imageMiniMaxOpenAiHint')}</p>
+					) : selected?.upstream_protocol === 'minimax' ? (
+						<p className="text-xs text-gray-500">{t('imageMiniMaxPassthroughHint')}</p>
+					) : selected?.adapter === 'volcengine-image' ? (
+						<p className="text-xs text-gray-500">{t('imageVolcengineOpenAiHint')}</p>
+					) : selected?.upstream_protocol === 'volcengine' ? (
+						<p className="text-xs text-gray-500">{t('imageVolcenginePassthroughHint')}</p>
+					) : selected?.adapter === 'gemini-image' ? (
+						<p className="text-xs text-gray-500">{t('imageGeminiOpenAiHint')}</p>
+					) : selected?.upstream_protocol === 'gemini' ? (
+						<p className="text-xs text-gray-500">{t('imageGeminiHint')}</p>
+					) : selectedImageUsesDashScope ? (
+						<p className="text-xs text-gray-500">
+							{t(selected?.adapter === 'passthrough' ? 'imageDashScopePassthroughHint' : 'imageDashScopeHint')}
+						</p>
 					) : (
 						<>
 							<fieldset className="flex flex-wrap items-center gap-4 rounded-md border border-gray-200 px-3 py-2 text-sm">
@@ -393,7 +419,9 @@ export function PlaygroundRequestPanel({
 							</p>
 						</>
 					)}
-					{imageOperation === 'edits' && !selectedImageUsesDashScope ? (
+					{imageOperation === 'edits' &&
+					!selectedImageUsesDashScope &&
+					selected?.upstream_protocol !== 'minimax' ? (
 						<div>
 							<label className={labelClass}>{t('referenceImages')}</label>
 							<input

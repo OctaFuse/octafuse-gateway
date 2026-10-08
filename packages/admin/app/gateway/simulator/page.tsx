@@ -73,7 +73,7 @@ export default function SimulatorPage() {
 					revealError={s.revealError}
 				/>
 				<div className="flex min-h-0 min-w-0 flex-1 flex-col xl:flex-row xl:items-stretch">
-					<aside className="flex w-full shrink-0 flex-col border-b border-gray-200/80 bg-slate-50/80 p-4 xl:min-h-0 xl:w-[300px] 2xl:w-[340px] xl:overflow-hidden xl:border-b-0 xl:border-r">
+					<aside className="flex w-full min-w-0 shrink-0 flex-col border-b border-gray-200/80 bg-slate-50/80 p-4 xl:min-h-0 xl:w-[360px] 2xl:w-[380px] xl:overflow-hidden xl:border-b-0 xl:border-r">
 						<SimulatorRoutingPanel
 							filterKind={s.filterKind}
 							protocol={s.protocol}
@@ -138,7 +138,12 @@ export default function SimulatorPage() {
 								onSend={() => void s.send()}
 								onStop={() => s.stop()}
 								showImageOperation={
-									s.selectedModelIsImage && !s.selectedModelIsAudio && s.protocol === 'openai'
+									s.selectedModelIsImage &&
+									!s.selectedModelIsAudio &&
+									(s.protocol === 'openai' ||
+										s.protocol === 'minimax' ||
+										s.protocol === 'volcengine' ||
+										s.protocol === 'gemini')
 								}
 								imageOperation={s.imageOperation}
 								onImageOperationChange={s.setImageOperation}
@@ -146,16 +151,20 @@ export default function SimulatorPage() {
 								onEditFilesChange={s.setEditFiles}
 								showAudioTranscriptions={
 									s.selectedAudioOperation === 'transcriptions' &&
-									(s.protocol === 'openai' || s.protocol === 'dashscope')
+									(s.protocol === 'openai' || s.protocol === 'dashscope' || s.protocol === 'minimax')
 								}
 								showAudioRealtimeMicrophone={s.selectedCanUseMicrophone}
 								audioInputMode={s.audioInputMode}
 								onAudioInputModeChange={s.setAudioInputMode}
 								showAudioSpeech={
 									s.selectedAudioOperation === 'speech' &&
-									(s.protocol === 'openai' || s.protocol === 'dashscope')
+									(s.protocol === 'openai' || s.protocol === 'dashscope' || s.protocol === 'minimax')
 								}
-								showAudioRealtime={s.protocol === 'dashscope' && s.selectedAudioOperation != null}
+								showAudioRealtime={
+									s.protocol === 'dashscope' &&
+									s.selectedAudioOperation != null &&
+									(s.selectedDashScopeRealtimeOperation?.includes('.realtime.') ?? false)
+								}
 								audioFile={s.audioFile}
 								onAudioFileChange={s.setAudioFile}
 							/>

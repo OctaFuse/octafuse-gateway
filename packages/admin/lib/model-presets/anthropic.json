@@ -17,7 +17,7 @@
 						"upto": null,
 						"input_price": 2,
 						"output_price": 10,
-						"cache_read_price": 0.2,
+						"cache_read_price": 0.1,
 						"cache_write_price": 2.5
 					}
 				]
@@ -28,7 +28,7 @@
 						"upto": null,
 						"input_price": 14,
 						"output_price": 70,
-						"cache_read_price": 1.4,
+						"cache_read_price": 0.7,
 						"cache_write_price": 17.5
 					}
 				]
@@ -45,6 +45,66 @@
 			]
 		},
 		"released": "2026-09-28"
+	},
+	{
+		"id": "claude-haiku-5-5",
+		"display_name": "Claude Haiku 5.5",
+		"description": "Anthropic's fastest Claude 5 model for latency-sensitive tasks. Adaptive thinking is on by default with medium effort and supports low through max; thinking can be disabled at high effort or below. Prompts over 100K tokens are billed at a higher tier. Manual budget_tokens returns 400, as do non-default temperature, top_p, and top_k.",
+		"i18n": {
+			"en": "Anthropic's fastest Claude 5 model for latency-sensitive tasks. Adaptive thinking is on by default with medium effort and supports low through max; thinking can be disabled at high effort or below. Prompts over 100K tokens are billed at a higher tier. Manual budget_tokens returns 400, as do non-default temperature, top_p, and top_k.",
+			"zh": "Anthropic 最快的 Claude 5 模型，适合延迟敏感任务。自适应思考默认开启，effort 默认 medium，支持 low 到 max；high 及以下可关闭思考。超过 100K tokens 的提示按更高层级计费。手动设置 budget_tokens 会返回 400，非默认的 temperature、top_p、top_k 也会返回错误。"
+		},
+		"vendor": "anthropic",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 100000,
+						"input_price": 0.1,
+						"output_price": 0.5,
+						"cache_read_price": 0.01,
+						"cache_write_price": 0.125
+					},
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 2.5,
+						"cache_read_price": 0.05,
+						"cache_write_price": 0.625
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 100000,
+						"input_price": 0.7,
+						"output_price": 3.5,
+						"cache_read_price": 0.07,
+						"cache_write_price": 0.875
+					},
+					{
+						"upto": null,
+						"input_price": 3.5,
+						"output_price": 17.5,
+						"cache_read_price": 0.35,
+						"cache_write_price": 4.375
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-10-07"
 	},
 	{
 		"id": "claude-opus-5-5",

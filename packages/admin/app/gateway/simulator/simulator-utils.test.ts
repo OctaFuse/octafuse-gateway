@@ -3,10 +3,11 @@ import { describe, it } from "node:test";
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
 } from "../../../lib/audio-transcriptions";
 import {
-	IMAGE_EDITS_BODY_TEMPLATE,
-	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	VOLCENGINE_IMAGE_BODY_TEMPLATE,
+	imageBodyTemplateFor,
 } from "../../../lib/image-generations";
 import {
 	OPENAI_RESPONSES_BODY_TEMPLATE,
@@ -160,6 +161,57 @@ describe("simulator-utils", () => {
 		assert.deepEqual(
 			matched.map((route) => route.id),
 			["wan"]
+		);
+	});
+
+	it("filterMatchingActiveRoutes matches DashScope image passthrough on the native surface", () => {
+		const matched = filterMatchingActiveRoutes(
+			[
+				{
+					id: "conversion",
+					model_id: "qwen-image-3.0-pro",
+					provider_id: "aliyun",
+					priority: 1,
+					status: "active",
+					route_group: "default",
+					adapter: "dashscope-image-qwen",
+					upstream_protocol: "dashscope",
+					upstream_operation: "images.generations.multimodal",
+					surfaces: JSON.stringify([
+						{
+							request_protocol: "openai",
+							request_operation: "images.generations",
+							status: "active",
+						},
+					]),
+				},
+				{
+					id: "passthrough",
+					model_id: "qwen-image-3.0-pro",
+					provider_id: "aliyun",
+					priority: 0,
+					status: "active",
+					route_group: "default",
+					adapter: "passthrough",
+					upstream_protocol: "dashscope",
+					upstream_operation: "images.generations.multimodal",
+					surfaces: JSON.stringify([
+						{
+							request_protocol: "dashscope",
+							request_operation: "images.generations.multimodal",
+							status: "active",
+						},
+					]),
+				},
+			],
+			"qwen-image-3.0-pro",
+			"default",
+			"dashscope",
+			"images.generations.multimodal"
+		);
+		assert.deepEqual(
+			matched.map((route) => route.id),
+			["passthrough"]
 		);
 	});
 
@@ -341,14 +393,24 @@ describe("simulator-utils", () => {
 			false
 		);
 		assert.equal(isBodyDirty('{ "messages": [] }', "openai"), true);
+		const gptTemplate = imageBodyTemplateFor({
+			protocol: "openai",
+			providerModelName: "gpt-image-2",
+		});
 		assert.equal(
-			isBodyDirty(IMAGE_GENERATIONS_BODY_TEMPLATE, "openai", true),
+			isBodyDirty(
+				gptTemplate,
+				"openai",
+				true,
+				"generations",
+				null,
+				null,
+				null,
+				"gpt-image-2",
+			),
 			false
 		);
-		assert.equal(
-			isBodyDirty(IMAGE_GENERATIONS_BODY_TEMPLATE, "openai", false),
-			true
-		);
+		assert.equal(isBodyDirty(gptTemplate, "openai", false), true);
 	});
 
 	it("bodyTemplateForSelection uses OpenAI Responses template", () => {
@@ -396,17 +458,66 @@ describe("simulator-utils", () => {
 	});
 
 	it("bodyTemplateForSelection switches image generations/edits templates", () => {
+		const unknown = JSON.parse(bodyTemplateForSelection("openai", true)) as { size?: string; n?: number };
+		assert.equal(unknown.size, undefined);
+		assert.equal(unknown.n, 1);
+		const gptEdits = JSON.parse(
+			bodyTemplateForSelection("openai", true, "edits", null, null, null, "gpt-image-2"),
+		) as { prompt?: string; size?: string; quality?: string };
+		assert.equal(gptEdits.prompt, "make the apple green");
+		assert.equal(gptEdits.size, "1024x1024");
+		assert.equal(gptEdits.quality, "low");
+		assert.notEqual(bodyTemplateForSelection("openai", false), bodyTemplateForSelection("openai", true));
+		const seedreamLite = JSON.parse(
+			bodyTemplateForSelection(
+				"openai",
+				true,
+				"generations",
+				null,
+				null,
+				null,
+				"doubao-seedream-5-0-260128",
+			),
+		) as { size?: string; quality?: string };
+		assert.equal(seedreamLite.size, "2K");
+		assert.equal(seedreamLite.quality, undefined);
+		const seedreamPro = JSON.parse(
+			bodyTemplateForSelection("openai", true, "generations", null, null, null, "doubao-seedream-5-0-pro"),
+		) as { size?: string };
+		assert.equal(seedreamPro.size, "1K");
+		const seedreamFlash = JSON.parse(
+			bodyTemplateForSelection("openai", true, "generations", null, null, null, "doubao-seedream-5-0-flash"),
+		) as { size?: string };
+		assert.equal(seedreamFlash.size, "1K");
+		const nativePro = JSON.parse(
+			bodyTemplateForSelection(
+				"volcengine",
+				true,
+				"generations",
+				null,
+				null,
+				null,
+				"doubao-seedream-5-0-pro",
+			),
+		) as { size?: string };
+		assert.equal(nativePro.size, "1K");
+		assert.equal(bodyTemplateForSelection("volcengine", true), VOLCENGINE_IMAGE_BODY_TEMPLATE);
+		const geminiImage = JSON.parse(bodyTemplateForSelection("gemini", true)) as {
+			generationConfig?: { responseModalities?: string[] };
+		};
+		assert.deepEqual(geminiImage.generationConfig?.responseModalities, ["TEXT", "IMAGE"]);
 		assert.equal(
-			bodyTemplateForSelection("openai", true),
-			IMAGE_GENERATIONS_BODY_TEMPLATE
-		);
-		assert.equal(
-			bodyTemplateForSelection("openai", true, "edits"),
-			IMAGE_EDITS_BODY_TEMPLATE
-		);
-		assert.notEqual(
-			bodyTemplateForSelection("openai", false),
-			IMAGE_GENERATIONS_BODY_TEMPLATE
+			isBodyDirty(
+				bodyTemplateForSelection("openai", true, "generations", null, null, null, "gpt-image-2"),
+				"openai",
+				true,
+				"generations",
+				null,
+				null,
+				null,
+				"gpt-image-2",
+			),
+			false,
 		);
 	});
 
@@ -473,6 +584,31 @@ describe("simulator-utils", () => {
 			JSON.parse(AUDIO_SPEECH_BODY_TEMPLATE).response_format,
 			"wav"
 		);
+		assert.equal(
+			bodyTemplateForSelection(
+				"openai",
+				false,
+				"generations",
+				"speech",
+				undefined,
+				undefined,
+				"speech-2.8-turbo"
+			),
+			MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE
+		);
+		const minimax = JSON.parse(
+			bodyTemplateForSelection(
+				"openai",
+				true,
+				"generations",
+				null,
+				undefined,
+				undefined,
+				"image-01"
+			),
+		) as { aspect_ratio?: string; size?: string };
+		assert.equal(minimax.aspect_ratio, "1:1");
+		assert.equal(minimax.size, undefined);
 		const sessionTemplate = JSON.parse(
 			bodyTemplateForSelection(
 				"dashscope",

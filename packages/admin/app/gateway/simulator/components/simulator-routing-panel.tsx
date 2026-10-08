@@ -73,7 +73,7 @@ export function SimulatorRoutingPanel({
 				</span>
 			</div>
 			<div
-				className="inline-flex w-full rounded-md border border-gray-200 bg-gray-50 p-0.5"
+				className="flex w-full min-w-0 overflow-x-auto rounded-md border border-gray-200 bg-gray-50 p-0.5"
 				role="group"
 				aria-label={t('kind')}
 			>
@@ -93,12 +93,12 @@ export function SimulatorRoutingPanel({
 							onClick={() => onFilterKindChange(opt.id)}
 							className={
 								active
-									? 'flex-1 rounded px-1.5 py-1.5 text-[11px] font-medium bg-white text-gray-900 shadow-sm sm:text-xs'
-									: 'flex-1 rounded px-1.5 py-1.5 text-[11px] font-medium text-gray-600 hover:text-gray-900 sm:text-xs'
+									? 'flex flex-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded px-1.5 py-1.5 text-[11px] font-medium bg-white text-gray-900 shadow-sm sm:text-xs'
+									: 'flex flex-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded px-1.5 py-1.5 text-[11px] font-medium text-gray-600 hover:text-gray-900 sm:text-xs'
 							}
 						>
 							{opt.label}
-							<span className="ml-0.5 text-[10px] tabular-nums text-gray-400">{opt.count}</span>
+							<span className="shrink-0 text-[10px] tabular-nums text-gray-400">{opt.count}</span>
 						</button>
 					);
 				})}

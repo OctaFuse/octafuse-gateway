@@ -20,7 +20,11 @@
 | `openai`         | `audio.speech`                                    | `POST /v1/audio/speech`         | 一次性或 HTTP 流式 TTS                           |
 | `dashscope`      | `audio.transcriptions.multimodal`                 | `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | DashScope 同步 ASR HTTP 透传，返回原生 JSON |
 | `dashscope`      | `audio.transcriptions.realtime.inference/session` | `GET /v1/dashscope/realtime`    | DashScope 原生实时 ASR；客户端事件保持原协议     |
+| `dashscope`      | `audio.speech` / `audio.speech.stream`            | `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer` | SpeechSynthesizer 透传。`X-DashScope-SSE: enable` 为流式，响应不改写成 OpenAI 语音事件 |
+| `dashscope`      | `audio.speech.multimodal`                         | `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | Qwen-TTS / MiniMax 多模态语音透传，按模型类型与同步 ASR、生图共用路径 |
+| `dashscope`      | `audio.transcriptions.async`                      | `POST /v1/dashscope/services/audio/asr/transcription`，`GET /v1/dashscope/tasks/{taskId}?model=` | 异步 filetrans 透传。提交立即返回任务 JSON；查询成功时按结果时长计费，响应仍是任务 JSON |
 | `dashscope`      | `audio.speech.realtime.inference`                 | `GET /v1/dashscope/realtime`    | Qwen-Audio-TTS/CosyVoice 原生实时增量 TTS；客户端事件保持原协议 |
+| `dashscope`      | `audio.speech.realtime.session`                   | `GET /v1/dashscope/realtime`    | Qwen-TTS-Realtime session 透传 |
 
 ### DashScope Upstream Target
 
@@ -34,7 +38,7 @@
 | `audio.speech.stream`                     | HTTP SSE               | SpeechSynthesizer 流式 TTS                                                |
 | `audio.speech.multimodal`                 | HTTP/SSE               | Qwen-TTS、MiniMax 多模态生成接口                                          |
 | `audio.speech.realtime.inference`         | WebSocket `/inference` | Qwen-Audio-TTS、CosyVoice、Sambert task 事件协议                          |
-| `audio.speech.realtime.session`           | —                     | 当前范围不支持 Qwen-TTS-Realtime session 模式                            |
+| `audio.speech.realtime.session`           | WebSocket `/realtime` | Qwen-TTS-Realtime 的 session 事件协议                                    |
 
 ## Adapter
 
@@ -52,6 +56,16 @@ Adapter 是 route target 的必选、可校验能力，不使用字符串兜底�
 | `dashscope-tts-qwen`       | OpenAI speech → DashScope Qwen-TTS 多模态 TTS                        |
 | `dashscope-tts-minimax`    | OpenAI speech → DashScope MiniMax 多模态 TTS                         |
 | `passthrough`              | DashScope 原生实时 TTS 事件 → DashScope 同名 task/session WebSocket  |
+
+转换入口未单独映射的官方字段，按 DashScope 结构写在请求体顶层；转写则作为额外表单字段，对象写成 JSON 字符串。网关深度合并后发往上游。语音合成会保留驱动依赖的格式字段，例如 `input.format`。DashScope 语音合成的上游 `input` 是对象，OpenAI 的 `input` 是文本，客户端无法通过额外字段设置 `input.*`。采样率、音量等写在路由请求参数里，或改走原生透传。
+
+Qwen-TTS 的 OpenAI `instructions` 会写入 `input.instructions`，仅 Instruct-Flash 系列生效，路由编辑器不把它列为已知不支持。百炼 MiniMax 语音合成没有对应的自由文本指令；官方情感字段是 `input.voice_setting.emotion`，同样落在 `input` 里，写在路由请求参数中，不能靠 `extra_body`。
+
+```json
+{ "input": { "sample_rate": 24000, "volume": 60 } }
+```
+
+转写可以把模型文档中的额外参数作为表单字段传入。对象写成 JSON 字符串。
 
 ## Provider 端点
 
@@ -77,7 +91,7 @@ API Key 继续使用现有 Provider key 存储；Workspace ID 不是密钥，可
 2. 新建网关模型。`Model ID` 是客户端使用的公开名称；模型分类选择 `Audio`，再选择 `Speech to text` 或 `Text to speech`。
 3. 在路由中创建对应 Request Surface 和 Target。`Provider model` 必须填写 DashScope 的真实模型名，它与网关 `Model ID` 是两个独立字段。
 4. HTTP 文件 ASR 按模型接口选择 adapter：Qwen3 用 `dashscope-asr-qwen-file`，Qwen-Audio-3.0 flash 用 `dashscope-asr-qwen-audio-file`，Fun-ASR 用 `dashscope-asr-fun-file`，filetrans 用 `dashscope-asr-file-async`。Admin 路由弹窗提供 ASR 快捷预设。不要把 Audio 3.0 接到 Qwen3 adapter。
-5. 同步 HTTP 透传：request/upstream 都选 `dashscope` + `audio.transcriptions.multimodal`，adapter 选 `passthrough`。原生实时 ASR/TTS 仍走 `/v1/dashscope/realtime`。HTTP TTS 按模型接口选择 `dashscope-tts-speech`、`dashscope-tts-qwen` 或 `dashscope-tts-minimax`。
+5. 原生透传：request/upstream 都选 `dashscope` 和同一个 operation，adapter 选 `passthrough`。同步 ASR、多模态语音和生图共用多模态生成路径；SpeechSynthesizer、异步 filetrans 和实时 WebSocket 使用各自的公开路径。OpenAI 客户端仍用转换适配器 `dashscope-tts-speech`、`dashscope-tts-qwen`、`dashscope-tts-minimax` 或 `dashscope-asr-file-async`。
 
 这里不根据模型名前缀自动猜 adapter。选错接口族时应直接暴露 DashScope 的错误，避免把配置错误伪装成故障转移。
 
@@ -99,11 +113,12 @@ Authorization: Bearer <gateway-api-key>
 
 - OpenAI `audio.transcriptions` 转换：Qwen-Audio-3.0 flash / Qwen3 / Fun-ASR 同步，以及 filetrans 异步（`file_url`）
 - DashScope `audio.transcriptions.multimodal` HTTP 透传
+- DashScope `audio.speech`、`audio.speech.stream`、`audio.speech.multimodal` HTTP 透传
+- DashScope `audio.transcriptions.async` 提交与任务查询透传
 - `audio.transcriptions.realtime.inference`
 - `audio.transcriptions.realtime.session`
 - `audio.speech.realtime.inference`
-
-TTS 不支持 `audio.speech.realtime.session`（Qwen-TTS-Realtime 会话模式不在本期范围内）。
+- `audio.speech.realtime.session`
 
 Cloudflare Worker 使用 `WebSocketPair`，Node 代理服务与 Node 管理后台运行时使用 `ws` 的 HTTP upgrade 适配器。代理服务路径共用路由、鉴权、初始连接 failover、事件转发和用量记录逻辑；调试台路径不计费、不写请求日志、无 failover。
 

@@ -12,6 +12,7 @@ export const PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS = [
 	'audio.transcriptions.realtime.inference',
 	'audio.transcriptions.realtime.session',
 	'audio.speech.realtime.inference',
+	'audio.speech.realtime.session',
 ] as const;
 
 export type PlaygroundDashScopeRealtimeOperation = (typeof PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS)[number];

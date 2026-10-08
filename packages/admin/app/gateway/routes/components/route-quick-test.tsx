@@ -19,7 +19,7 @@ import {
 	setQuickTestStreaming,
 } from '@/lib/playground/quick-test-samples';
 import { PLAYGROUND_LLM_SAMPLE_IDS, type PlaygroundLlmSampleId } from '@/lib/playground/samples';
-import { previewPlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
+import { describePlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
 import { normalizeProtocol } from '@/lib/playground/usage-parsing';
 import { decodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
 import type { PlaygroundRouteDraft } from '@/lib/playground/route-draft';
@@ -196,8 +196,9 @@ function QuickTestContent({
 			? geminiStream
 			: mergedRequest.status === 'preview' && JSON.parse(mergedRequest.json).stream === true;
 	const showStream = meta ? preview.streaming : Boolean(family && plannedStreaming);
-	const targetUrl = previewPlaygroundUpstreamUrl({
+	const upstreamPreview = describePlaygroundUpstreamUrl({
 		provider: selectedProvider,
+		adapter: form.adapter,
 		upstreamProtocol: form.upstream_protocol,
 		upstreamOperation: form.upstream_operation,
 		providerModelName: form.provider_model_name,
@@ -206,6 +207,7 @@ function QuickTestContent({
 		imageOperation,
 		geminiAction: geminiStream ? 'streamGenerateContent' : 'generateContent',
 	});
+	const targetUrl = upstreamPreview.url;
 	const actualBody =
 		wireBody ?? (family && !configError && mergedRequest.status === 'preview' ? mergedRequest.json : null);
 
@@ -481,6 +483,10 @@ function QuickTestContent({
 								<p className="mb-3 break-all font-mono text-[11px]">
 									<span className="mr-2 font-semibold">POST</span>
 									{wireBody ? meta?.upstreamUrl : targetUrl}
+								</p>
+							) : !wireBody && upstreamPreview.target ? (
+								<p className="mb-3 text-[11px] text-amber-700">
+									{t('upstreamUrlMissing', { target: upstreamPreview.target })}
 								</p>
 							) : null}
 							{wireHeaders ? (

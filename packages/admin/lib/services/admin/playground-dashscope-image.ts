@@ -2,7 +2,15 @@
  * Playground DashScope 生图：直连上游，不经过 Proxy。
  * 请求体仍按 OpenAI `/v1/images/generations` 编辑，发送时改写成 multimodal-generation。
  */
+import { routeCustomParamsBody } from '@octafuse/core';
 import { resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
+import {
+	IMAGE_GENERATION_KNOWN_KEYS,
+	UpstreamExtraFieldsError,
+	applyUpstreamExtraFields,
+	pickExtraFields,
+	protectedUpstreamPathsForRoute,
+} from '@octafuse/core/upstream-extra-fields';
 import { badRequest } from './errors';
 import type { PlaygroundResolvedRoute } from './playground-service';
 
@@ -15,9 +23,6 @@ export type PlaygroundDashScopeImageRequest = {
 	/** 仅供调试台展示；参考图 data URL 必须摘要化。 */
 	wireBodyJson: string;
 };
-
-const QWEN_SIZE_ABBREVIATION = /^(1k|2k|4k)$/i;
-const PIXEL_SIZE = /^(\d+)[xX*](\d+)$/;
 
 const PARAMETER_KEYS = [
 	'watermark',
@@ -85,11 +90,6 @@ function pickParameters(source: Record<string, unknown>): Record<string, unknown
 	return parameters;
 }
 
-function normalizeDashScopeSize(size: string): string {
-	const pixel = PIXEL_SIZE.exec(size);
-	return pixel ? `${pixel[1]}*${pixel[2]}` : size;
-}
-
 function redactPlaygroundImageDataUrls(value: unknown): unknown {
 	if (typeof value === 'string' && value.startsWith('data:') && value.includes(';base64,')) {
 		return `[redacted data-url ${value.length} chars]`;
@@ -116,11 +116,7 @@ export function buildPlaygroundDashScopeImageBody(
 		throw badRequest('prompt is required');
 	}
 	const n = resolveImageCount(body.n, playgroundDashScopeImageMaxN(family));
-	const rawSize = asOptString(body.size);
-	if (family === 'qwen' && rawSize && QWEN_SIZE_ABBREVIATION.test(rawSize)) {
-		throw badRequest('qwen-image size must be a pixel string like 1024*1024, not 1K/2K/4K');
-	}
-	const size = rawSize ? normalizeDashScopeSize(rawSize) : undefined;
+	const size = asOptString(body.size);
 
 	const content: Array<Record<string, string>> = [
 		...collectReferenceImages(body.image).map((image) => ({ image })),
@@ -159,7 +155,31 @@ export function buildPlaygroundDashScopeImageRequest(
 		);
 	}
 
-	const upstreamBody = buildPlaygroundDashScopeImageBody(family, route.providerModelName, body);
+	let extras: Record<string, unknown> = {};
+	try {
+		extras = pickExtraFields(body, IMAGE_GENERATION_KNOWN_KEYS);
+	} catch (error) {
+		if (error instanceof UpstreamExtraFieldsError) throw badRequest(error.message);
+		throw error;
+	}
+	const source = { ...body };
+	for (const key of Object.keys(extras)) delete source[key];
+	const built = buildPlaygroundDashScopeImageBody(family, route.providerModelName, source);
+	const builtParameters =
+		built.parameters != null && typeof built.parameters === 'object' && !Array.isArray(built.parameters)
+			? (built.parameters as Record<string, unknown>)
+			: {};
+	built.parameters = {
+		...pickParameters(routeCustomParamsBody(route.customParams)),
+		...builtParameters,
+	};
+	const applied = applyUpstreamExtraFields({
+		built,
+		customParams: route.customParams,
+		extras,
+		protectedPaths: protectedUpstreamPathsForRoute(route),
+	});
+	const upstreamBody = applied.body;
 	const url = resolveUpstreamEndpoint('dashscope', 'images.generations.multimodal', route.providerEndpoints, {
 		providerId: route.providerId,
 	});

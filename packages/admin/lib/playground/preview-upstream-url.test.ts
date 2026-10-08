@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { previewPlaygroundUpstreamUrl } from "./preview-upstream-url";
+import { describePlaygroundUpstreamUrl, previewPlaygroundUpstreamUrl } from "./preview-upstream-url";
 
 describe("previewPlaygroundUpstreamUrl", () => {
 	it("builds wangsu-style image URL without appending /images/generations", () => {
@@ -115,7 +115,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 					dashscope: {
 						endpoints: {
 							"images.generations.multimodal":
-								"https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+								"https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation",
 						},
 					},
 				}),
@@ -127,7 +127,194 @@ describe("previewPlaygroundUpstreamUrl", () => {
 		});
 		assert.equal(
 			url,
-			"https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+			"https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation"
 		);
+	});
+
+	it("derives the MiniMax speech_to_text URL from the API base", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					minimax: { base: "https://api.minimaxi.com/v1" },
+				}),
+			},
+			upstreamProtocol: "minimax",
+			upstreamOperation: "audio.transcriptions",
+			providerModelName: "asr-1.0",
+			isImageModel: false,
+			isAudioModel: true,
+		});
+		assert.equal(url, "https://api.minimaxi.com/v1/speech_to_text");
+	});
+
+	it("derives MiniMax t2a_v2 and image_generation URLs from the API base", () => {
+		const provider = {
+			id: "p1",
+			endpoints: JSON.stringify({
+				minimax: { base: "https://api.minimaxi.com/v1" },
+			}),
+		};
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider,
+				upstreamProtocol: "minimax",
+				upstreamOperation: "audio.speech",
+				providerModelName: "speech-2.8-turbo",
+				isImageModel: false,
+				isAudioModel: true,
+			}),
+			"https://api.minimaxi.com/v1/t2a_v2",
+		);
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider,
+				upstreamProtocol: "minimax",
+				upstreamOperation: "images.generations",
+				providerModelName: "image-01",
+				isImageModel: true,
+				isAudioModel: false,
+			}),
+			"https://api.minimaxi.com/v1/image_generation",
+		);
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider: {
+					id: "p1",
+					endpoints: JSON.stringify({
+						volcengine: { base: "https://ark.cn-beijing.volces.com/api/v3" },
+					}),
+				},
+				upstreamProtocol: "volcengine",
+				upstreamOperation: "images.generations",
+				providerModelName: "doubao-seedream-5-0-260128",
+				isImageModel: true,
+				isAudioModel: false,
+			}),
+			"https://ark.cn-beijing.volces.com/api/v3/images/generations",
+		);
+	});
+
+	it("resolves conversion adapters from the target protocol, ignoring client-protocol endpoints", () => {
+		const provider = {
+			id: "p1",
+			endpoints: JSON.stringify({
+				openai: {
+					endpoints: {
+						chat: "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
+						"images.generations": "https://wrong.example/v1/images/generations",
+					},
+				},
+				volcengine: { base: "https://ark.cn-beijing.volces.com/api/v3" },
+				dashscope: { base: "https://dashscope.aliyuncs.com/api/v1" },
+				minimax: { base: "https://api.minimaxi.com/v1" },
+			}),
+		};
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider,
+				adapter: "volcengine-image",
+				upstreamProtocol: "openai",
+				upstreamOperation: "images.generations",
+				providerModelName: "doubao-seedream-5-0-260128",
+				isImageModel: true,
+			}),
+			"https://ark.cn-beijing.volces.com/api/v3/images/generations",
+		);
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider,
+				adapter: "dashscope-image-qwen",
+				upstreamProtocol: "openai",
+				upstreamOperation: "images.generations",
+				providerModelName: "qwen-image-3.0",
+				isImageModel: true,
+			}),
+			"https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+		);
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider,
+				adapter: "minimax-image",
+				upstreamProtocol: "openai",
+				upstreamOperation: "images.generations",
+				providerModelName: "image-01",
+				isImageModel: true,
+			}),
+			"https://api.minimaxi.com/v1/image_generation",
+		);
+		assert.equal(
+			previewPlaygroundUpstreamUrl({
+				provider,
+				adapter: "passthrough",
+				upstreamProtocol: "openai",
+				upstreamOperation: "images.generations",
+				providerModelName: "gpt-image-2",
+				isImageModel: true,
+			}),
+			"https://wrong.example/v1/images/generations",
+		);
+	});
+
+	it("previews Gemini image models as generateContent", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					gemini: { base: "https://generativelanguage.googleapis.com/v1beta" },
+				}),
+			},
+			adapter: "passthrough",
+			upstreamProtocol: "gemini",
+			upstreamOperation: "models.generate",
+			providerModelName: "gemini-3.1-flash-image",
+			isImageModel: true,
+			geminiAction: "streamGenerateContent",
+		});
+		assert.match(url ?? "", /\/gemini-3\.1-flash-image:generateContent\?key=/);
+		assert.equal(url?.includes("streamGenerateContent"), false);
+		assert.equal(url?.includes("alt=sse"), false);
+	});
+
+	it("previews the gemini-image adapter on the Gemini endpoint", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					openai: { base: "https://wrong.example/v1" },
+					gemini: { base: "https://generativelanguage.googleapis.com/v1beta" },
+				}),
+			},
+			adapter: "gemini-image",
+			upstreamProtocol: "openai",
+			upstreamOperation: "images.generations",
+			providerModelName: "gemini-3.1-flash-image",
+			isImageModel: true,
+		});
+		assert.match(
+			url ?? "",
+			/^https:\/\/generativelanguage\.googleapis\.com\/v1beta\/.*gemini-3\.1-flash-image:generateContent\?key=/,
+		);
+	});
+
+	it("names the missing target endpoint instead of falling back to another protocol", () => {
+		const preview = describePlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					openai: {
+						endpoints: { chat: "https://ark.cn-beijing.volces.com/api/v3/chat/completions" },
+					},
+					volcengine: { base: "https://ark.cn-beijing.volces.com/api/v3" },
+				}),
+			},
+			adapter: "passthrough",
+			upstreamProtocol: "openai",
+			upstreamOperation: "images.generations",
+			providerModelName: "doubao-seedream-5-0-260128",
+			isImageModel: true,
+		});
+		assert.equal(preview.url, null);
+		assert.equal(preview.target, "openai/images.generations");
 	});
 });

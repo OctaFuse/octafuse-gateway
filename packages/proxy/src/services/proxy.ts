@@ -22,8 +22,27 @@ import {
 	dispatchAudioSpeech,
 	dispatchAudioTranscriptions,
 	dispatchImageGenerations,
+	dispatchDashScopeJsonPassthroughRoute,
+	dispatchMiniMaxJsonPassthroughRoute,
+	dispatchGeminiImagePassthroughRoute,
+	dispatchVolcengineJsonPassthroughRoute,
+	dispatchMiniMaxSpeechPassthrough,
 	dispatchMultimodalPassthrough,
 } from "./egress/dispatch-table";
+import type {
+	DashScopeJsonPassthroughOptions,
+	DashScopePassthroughSurface,
+} from "./egress/dashscope-json-passthrough";
+import type { MiniMaxAsrPassthroughRequest } from "./egress/minimax-audio-driver";
+import type {
+	MiniMaxJsonPassthroughOperation,
+	MiniMaxJsonPassthroughOptions,
+} from "./egress/minimax-json-passthrough";
+import type { VolcengineJsonPassthroughOptions } from "./egress/volcengine-json-passthrough";
+import type {
+	GeminiImageAction,
+	GeminiImagePassthroughOptions,
+} from "./egress/gemini-image-passthrough";
 import type {
 	AudioSpeechDispatchOptions,
 	NormalizedAudioSpeechRequest,
@@ -233,7 +252,7 @@ export async function proxyImageGenerations(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope"],
+		["openai", "dashscope", "minimax", "volcengine", "gemini"],
 		(
 			route,
 			signal,
@@ -283,7 +302,7 @@ export async function proxyAudioTranscriptions(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope"],
+		["openai", "dashscope", "minimax"],
 		(
 			route,
 			signal,
@@ -303,7 +322,7 @@ export async function proxyAudioTranscriptions(
 	);
 }
 
-/** 代理 OpenAI Audio Speech，并按显式 adapter 转为三类 DashScope TTS 请求。 */
+/** 代理 OpenAI Audio Speech，并按显式 adapter 转到 DashScope 或 MiniMax 官方语音合成。 */
 export async function proxyAudioSpeech(
 	repos: GatewayRepositories,
 	routes: RouteResult[],
@@ -314,7 +333,7 @@ export async function proxyAudioSpeech(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope"],
+		["openai", "dashscope", "minimax"],
 		(
 			route,
 			signal,
@@ -353,6 +372,162 @@ export async function proxyDashScopeMultimodalPassthrough(
 				attempt,
 				options?.dashScope
 			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 DashScope 原生 JSON / SSE 透传（语音合成、生图、异步转写）。 */
+export async function proxyDashScopeJsonPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	surface: DashScopePassthroughSurface,
+	body: Record<string, unknown> | null,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { dashScopeJson?: DashScopeJsonPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"dashscope",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchDashScopeJsonPassthroughRoute(
+				route,
+				surface,
+				body,
+				signal,
+				timing,
+				attempt,
+				options?.dashScopeJson
+			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 Gemini 原生图片模型（generateContent / streamGenerateContent）。 */
+export async function proxyGeminiImagePassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	action: GeminiImageAction,
+	body: Record<string, unknown>,
+	search: string,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions & { geminiImage?: GeminiImagePassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"gemini",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchGeminiImagePassthroughRoute(
+				route,
+				action,
+				body,
+				search,
+				signal,
+				timing,
+				attempt,
+				options?.geminiImage
+			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理火山方舟 / BytePlus Seedream 生图透传（JSON 或 SSE）。 */
+export async function proxyVolcengineJsonPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	body: Record<string, unknown>,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { volcengineJson?: VolcengineJsonPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"volcengine",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchVolcengineJsonPassthroughRoute(
+				route,
+				body,
+				signal,
+				timing,
+				attempt,
+				options?.volcengineJson
+			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 MiniMax 原生 JSON / SSE 透传（语音合成、生图）。 */
+export async function proxyMiniMaxJsonPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	operation: MiniMaxJsonPassthroughOperation,
+	body: Record<string, unknown>,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { miniMaxJson?: MiniMaxJsonPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"minimax",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchMiniMaxJsonPassthroughRoute(
+				route,
+				operation,
+				body,
+				signal,
+				timing,
+				attempt,
+				options?.miniMaxJson
+			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 MiniMax 原生 ASR 透传（multipart，不转 OpenAI transcriptions）。 */
+export async function proxyMiniMaxAsrPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	request: MiniMaxAsrPassthroughRequest,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"minimax",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchMiniMaxSpeechPassthrough(route, request, signal, timing, attempt),
 		requestSignal,
 		options
 	);

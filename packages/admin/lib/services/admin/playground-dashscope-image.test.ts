@@ -28,10 +28,10 @@ function route(
 }
 
 describe('buildPlaygroundDashScopeImageRequest', () => {
-	it('rewrites OpenAI Images JSON to DashScope multimodal and always sends n', () => {
+	it('places OpenAI Images JSON onto DashScope multimodal and always sends n', () => {
 		const request = buildPlaygroundDashScopeImageRequest(route('dashscope-image-qwen'), {
 			prompt: 'a red apple',
-			size: '1024x1024',
+			size: '1024*1024',
 			quality: 'low',
 		});
 		assert.equal(
@@ -71,15 +71,13 @@ describe('buildPlaygroundDashScopeImageRequest', () => {
 		});
 	});
 
-	it('rejects Qwen 1K/2K/4K size aliases', () => {
-		assert.throws(
-			() =>
-				buildPlaygroundDashScopeImageRequest(route('dashscope-image-qwen'), {
-					prompt: 'hi',
-					size: '2K',
-				}),
-			/1024\*1024/,
-		);
+	it('forwards Qwen size aliases unchanged', () => {
+		const request = buildPlaygroundDashScopeImageRequest(route('dashscope-image-qwen'), {
+			prompt: 'hi',
+			size: '2K',
+		});
+		const body = JSON.parse(request.bodyText) as { parameters: { size: string } };
+		assert.equal(body.parameters.size, '2K');
 	});
 
 	it('rejects passthrough and unknown adapters', () => {

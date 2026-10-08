@@ -6,6 +6,7 @@ import { compareProvidersByKindThenName, liveProviderPickerLabel } from '@/lib/p
 import type { GatewayProvider } from '@/lib/types';
 import { useFeedback } from '@/components/feedback';
 import { flushSync } from 'react-dom';
+import { miniMaxSpeechObjectUrl } from '@/lib/minimax-speech-preview';
 import { readApiJson } from '@/lib/api-json';
 import { isAudioRouteModel, validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
 import { isAudioSpeechModel, isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
@@ -310,7 +311,11 @@ export function useSimulatorPageState() {
 		[protocol, selectedAudioOperation, realtimeOperationOptions, routes, selectedModelId, routeGroup],
 	);
 	const selectedUsesDashScopeHttpAsr =
-		selectedDashScopeRealtimeOperation === 'audio.transcriptions.multimodal';
+		selectedDashScopeRealtimeOperation === 'audio.transcriptions.multimodal' ||
+		selectedDashScopeRealtimeOperation === 'audio.transcriptions.async' ||
+		selectedDashScopeRealtimeOperation === 'audio.speech' ||
+		selectedDashScopeRealtimeOperation === 'audio.speech.stream' ||
+		selectedDashScopeRealtimeOperation === 'audio.speech.multimodal';
 	/** DashScope 实时 ASR 的麦克风模式不需要上传文件；发送和按钮校验共用这个判定。 */
 	const usesDashScopeMicrophone = selectedCanUseMicrophone && audioInputMode === 'microphone';
 
@@ -373,10 +378,16 @@ export function useSimulatorPageState() {
 		[isToolKind, routes, selectedModelId, routeGroup],
 	);
 	const selectedDashScopeTtsProviderModelName = useMemo(() => {
-		if (selectedAudioOperation !== 'speech') return undefined;
-		const route = matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope');
-		return route?.provider_model_name ?? undefined;
-	}, [matchingRoutes, selectedAudioOperation]);
+		if (selectedAudioOperation === 'speech' || (selectedModelIsImage && !selectedModelIsAudio)) {
+			return (
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === protocol)?.provider_model_name ??
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name ??
+				matchingRoutes[0]?.provider_model_name
+			);
+		}
+		return undefined;
+	}, [matchingRoutes, protocol, selectedAudioOperation, selectedModelIsAudio, selectedModelIsImage]);
 
 	const sendBlockReason = useMemo((): SendBlockReason => {
 		const parsed = tryParseProxyBaseUrl(proxyBaseUrl);
@@ -385,14 +396,24 @@ export function useSimulatorPageState() {
 			if (!selectedToolId) return 'tool';
 		} else {
 			if (!selectedModelId) return 'model';
-			if (selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope') return 'audioProtocol';
-			if (selectedModelIsImage && !selectedModelIsAudio && protocol !== 'openai') {
+			if (selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope' && protocol !== 'minimax') {
+				return 'audioProtocol';
+			}
+			if (
+				selectedModelIsImage &&
+				!selectedModelIsAudio &&
+				protocol !== 'openai' &&
+				protocol !== 'dashscope' &&
+				protocol !== 'minimax' &&
+				protocol !== 'volcengine' &&
+				protocol !== 'gemini'
+			) {
 				return 'imageProtocol';
 			}
 			if (matchingRoutes.length === 0) return 'route';
 			if (
 				selectedAudioOperation === 'transcriptions' &&
-				(protocol === 'openai' || protocol === 'dashscope')
+				(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
 			) {
 				const fileUrl = (() => {
 					try {
@@ -496,8 +517,10 @@ export function useSimulatorPageState() {
 		}
 		try {
 			const audioOperation =
-				!isToolKind && (protocol === 'openai' || protocol === 'dashscope') ? selectedAudioOperation : null;
-			if (protocol === 'dashscope' && audioOperation) {
+				!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
+					? selectedAudioOperation
+					: null;
+			if (protocol === 'dashscope' && audioOperation && !selectedUsesDashScopeHttpAsr) {
 				const operation = selectedDashScopeRealtimeOperation;
 				if (!operation) return null;
 				const url = buildSimulatorDashScopeRealtimeUrl({
@@ -514,7 +537,11 @@ export function useSimulatorPageState() {
 					bodyText: JSON.stringify(bodyObj, null, 2),
 				};
 			}
-			const useImages = !isToolKind && selectedModelIsImage && !selectedModelIsAudio && protocol === 'openai';
+			const useImages =
+				!isToolKind &&
+				selectedModelIsImage &&
+				!selectedModelIsAudio &&
+				(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine' || protocol === 'gemini');
 			const built = buildSimulatorRequest({
 				baseUrl: parsed.base,
 				kind: filterKind,
@@ -528,7 +555,7 @@ export function useSimulatorPageState() {
 				audioOperation: audioOperation ?? undefined,
 				audioFile: audioOperation === 'transcriptions' ? audioFile : undefined,
 				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr
-					? 'audio.transcriptions.multimodal'
+					? selectedDashScopeRealtimeOperation ?? undefined
 					: undefined,
 				imageOperation: useImages ? imageOperation : undefined,
 				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
@@ -825,7 +852,8 @@ export function useSimulatorPageState() {
 	/** Image / Audio models: force openai + kind template; leaving restores chat template. */
 	useEffect(() => {
 		if (selectedAudioOperation) {
-			const audioProtocol = protocol === 'dashscope' ? 'dashscope' : ('openai' as const);
+			const audioProtocol =
+				protocol === 'dashscope' || protocol === 'minimax' ? protocol : ('openai' as const);
 			if (protocol !== audioProtocol) setProtocolState(audioProtocol);
 			setBodyText(
 				bodyTemplateForSelection(
@@ -848,10 +876,25 @@ export function useSimulatorPageState() {
 			return;
 		}
 		if (selectedModelIsImage) {
-			if (protocol !== 'openai') {
-				setProtocolState('openai');
-			}
-			setBodyText(bodyTemplateForSelection('openai', true, imageOperation, null));
+			const imageProtocol =
+				protocol === 'dashscope' || protocol === 'minimax' || protocol === 'volcengine' || protocol === 'gemini'
+					? protocol
+					: 'openai';
+			if (protocol !== imageProtocol) setProtocolState(imageProtocol);
+			setBodyText(
+				bodyTemplateForSelection(
+					imageProtocol,
+					true,
+					imageOperation,
+					null,
+					undefined,
+					undefined,
+					selectedDashScopeTtsProviderModelName,
+					'chat',
+					undefined,
+					selectedModelId,
+				),
+			);
 			setBodyError(null);
 			setImagePreviews([]);
 			setAudioPreviewUrl(null);
@@ -947,14 +990,27 @@ export function useSimulatorPageState() {
 			if (next === imageOperation) return;
 			setImageOperationState(next);
 			if (selectedModelIsImage && protocol === 'openai') {
-				setBodyText(bodyTemplateForSelection('openai', true, next));
+				setBodyText(
+					bodyTemplateForSelection(
+						'openai',
+						true,
+						next,
+						null,
+						undefined,
+						undefined,
+						selectedDashScopeTtsProviderModelName,
+						'chat',
+						undefined,
+						selectedModelId,
+					),
+				);
 				setBodyError(null);
 			}
 			if (next === 'generations') {
 				setEditFiles([]);
 			}
 		},
-		[imageOperation, selectedModelIsImage, protocol],
+		[imageOperation, selectedModelIsImage, protocol, selectedDashScopeTtsProviderModelName, selectedModelId],
 	);
 
 	const loadKeys = useCallback(async () => {
@@ -1031,25 +1087,36 @@ export function useSimulatorPageState() {
 							geminiAction,
 							llmOperation: next === 'openai' ? openaiLlmOperation : undefined,
 					  });
-			const nextRoute = filterMatchingActiveRoutes(
+			const matched = filterMatchingActiveRoutes(
 				routes,
 				selectedModelId,
 				routeGroup,
 				next,
 				nextRequestOperation ?? undefined,
-			).find((candidate) => candidate.upstream_protocol === 'dashscope');
+			);
 			const providerModelName =
-				selectedAudioOperation === 'speech' ? nextRoute?.provider_model_name : undefined;
+				matched.find((candidate) => candidate.upstream_protocol === next)?.provider_model_name ??
+				matched.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
+				matched.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name ??
+				matched[0]?.provider_model_name;
 			setBodyText(
 				bodyTemplateForSelection(
 					next,
-					selectedModelIsImage && selectedAudioOperation == null && next === 'openai',
+					selectedModelIsImage &&
+						selectedAudioOperation == null &&
+						(next === 'openai' ||
+							next === 'dashscope' ||
+							next === 'minimax' ||
+							next === 'volcengine' ||
+							next === 'gemini'),
 					imageOperation,
-					next === 'openai' || next === 'dashscope' ? selectedAudioOperation : null,
+					next === 'openai' || next === 'dashscope' || next === 'minimax' ? selectedAudioOperation : null,
 					undefined,
 					next === 'dashscope' ? selectedDashScopeRealtimeOperation : null,
 					providerModelName,
 					next === 'openai' ? openaiLlmOperation : 'chat',
+					undefined,
+					selectedModelId,
 				),
 			);
 			setBodyError(null);
@@ -1071,11 +1138,19 @@ export function useSimulatorPageState() {
 	const requestProtocolChange = useCallback(
 		async (next: SimulatorProtocol) => {
 			if (next === protocol) return;
-			if (selectedModelIsAudio && next !== 'openai' && next !== 'dashscope') {
+			if (selectedModelIsAudio && next !== 'openai' && next !== 'dashscope' && next !== 'minimax') {
 				setInfoHint(t('protocolLockedAudio'));
 				return;
 			}
-			if (selectedModelIsImage && !selectedModelIsAudio && next !== 'openai') {
+			if (
+				selectedModelIsImage &&
+				!selectedModelIsAudio &&
+				next !== 'openai' &&
+				next !== 'dashscope' &&
+				next !== 'minimax' &&
+				next !== 'volcengine' &&
+				next !== 'gemini'
+			) {
 				setInfoHint(t('readyNeedOpenaiForImage'));
 				return;
 			}
@@ -1090,6 +1165,8 @@ export function useSimulatorPageState() {
 					selectedDashScopeRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					openaiLlmOperation,
+					undefined,
+					selectedModelId,
 				)
 			) {
 				const ok = await confirm({ title: t('protocolSwitchConfirm') });
@@ -1109,6 +1186,7 @@ export function useSimulatorPageState() {
 			selectedDashScopeTtsProviderModelName,
 			imageOperation,
 			openaiLlmOperation,
+			selectedModelId,
 			confirm,
 		],
 	);
@@ -1127,6 +1205,8 @@ export function useSimulatorPageState() {
 					selectedDashScopeRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					openaiLlmOperation,
+					undefined,
+					selectedModelId,
 				)
 			) {
 				const ok = await confirm({ title: t('openaiOperationSwitchConfirm') });
@@ -1143,6 +1223,8 @@ export function useSimulatorPageState() {
 					selectedDashScopeRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					next,
+					undefined,
+					selectedModelId,
 				),
 			);
 			setBodyError(null);
@@ -1157,6 +1239,7 @@ export function useSimulatorPageState() {
 			selectedAudioOperation,
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
+			selectedModelId,
 			t,
 			confirm,
 		],
@@ -1175,6 +1258,8 @@ export function useSimulatorPageState() {
 						selectedDashScopeRealtimeOperation,
 						selectedDashScopeTtsProviderModelName,
 						openaiLlmOperation,
+						undefined,
+						selectedModelId,
 				  ),
 		);
 		setBodyError(null);
@@ -1189,6 +1274,7 @@ export function useSimulatorPageState() {
 		selectedDashScopeTtsProviderModelName,
 		imageOperation,
 		openaiLlmOperation,
+		selectedModelId,
 	]);
 
 	const stop = useCallback(() => {
@@ -1256,8 +1342,14 @@ export function useSimulatorPageState() {
 		}
 
 		const audioOperation =
-			!isToolKind && (protocol === 'openai' || protocol === 'dashscope') ? selectedAudioOperation : null;
-		const useImages = !isToolKind && selectedModelIsImage && !selectedModelIsAudio && protocol === 'openai';
+			!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
+				? selectedAudioOperation
+				: null;
+		const useImages =
+			!isToolKind &&
+			selectedModelIsImage &&
+			!selectedModelIsAudio &&
+			(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine' || protocol === 'gemini');
 		if (audioOperation === 'transcriptions') {
 			const fileUrl = typeof bodyObj.file_url === 'string' ? bodyObj.file_url.trim() : '';
 			if (!usesDashScopeMicrophone && !selectedUsesDashScopeHttpAsr && !fileUrl) {
@@ -1382,7 +1474,7 @@ export function useSimulatorPageState() {
 				audioOperation: audioOperation ?? undefined,
 				audioFile: audioOperation === 'transcriptions' ? audioFile : undefined,
 				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr
-					? 'audio.transcriptions.multimodal'
+					? selectedDashScopeRealtimeOperation ?? undefined
 					: undefined,
 				imageOperation: useImages ? imageOperation : undefined,
 				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
@@ -1478,6 +1570,10 @@ export function useSimulatorPageState() {
 					setImagePreviews(parsedImg.images);
 					setUsageHint(parsedImg.usageHint);
 				} else {
+					if (protocol === 'minimax' && audioOperation === 'speech') {
+						const audioUrl = miniMaxSpeechObjectUrl(JSON.stringify(j));
+						if (audioUrl) setAudioPreviewUrl(audioUrl);
+					}
 					setUsageHint(tryParseUsageSummary(JSON.stringify(j), protoNorm));
 				}
 				setSending(false);
@@ -1491,7 +1587,13 @@ export function useSimulatorPageState() {
 					flushSync(() => setResponseText(text));
 					scrollStreamToBottom();
 				});
-				if (!ac.signal.aborted && abortRef.current === ac) setUsageHint(parseLastStreamUsage(acc, protoNorm));
+				if (!ac.signal.aborted && abortRef.current === ac) {
+					setUsageHint(parseLastStreamUsage(acc, protoNorm));
+					if (protocol === 'minimax' && audioOperation === 'speech') {
+						const audioUrl = miniMaxSpeechObjectUrl(acc);
+						if (audioUrl) setAudioPreviewUrl(audioUrl);
+					}
+				}
 				return;
 			}
 
@@ -1583,6 +1685,8 @@ export function useSimulatorPageState() {
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
 			openaiLlmOperation,
+			undefined,
+			selectedModelId,
 		),
 		geminiAction,
 		setGeminiAction,

@@ -1,5 +1,59 @@
 [
 	{
+		"id": "gemini-nano-banana-2.1",
+		"display_name": "Gemini Nano Banana 2.1",
+		"description": "An update to Nano Banana 2, built for high-efficiency image generation and conversational editing with improved visual quality, multi-turn character consistency, accurate text rendering, and search-grounded generation across 1K, 2K, and 4K resolutions.",
+		"i18n": {
+			"en": "An update to Nano Banana 2, built for high-efficiency image generation and conversational editing with improved visual quality, multi-turn character consistency, accurate text rendering, and search-grounded generation across 1K, 2K, and 4K resolutions.",
+			"zh": "Nano Banana 2 的升级版本，专为高效图片生成与对话式编辑打造，提升了视觉质量、多轮角色一致性、精准文字渲染，并支持 1K、2K、4K 分辨率的搜索增强生成。"
+		},
+		"vendor": "google",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.5,
+						"output_price": 7.5,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 1.5,
+						"image_input_cache_price": null,
+						"image_output_price": 30
+					}
+				]
+			},
+			"cny": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10.5,
+						"output_price": 52.5,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 10.5,
+						"image_input_cache_price": null,
+						"image_output_price": 210
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-10-06"
+	},
+	{
 		"id": "gemini-3.1-flash-image",
 		"display_name": "Gemini 3.1 Flash Image",
 		"description": "A fast Google model for high-quality image generation and editing with multimodal reasoning. Also known as Nano Banana 2, it combines fast generation with advanced editing and multimodal visual reasoning.",

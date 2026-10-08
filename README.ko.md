@@ -28,9 +28,17 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
       - Models: `GET /v1/models`
     - Anthropic 엔드포인트: `POST /v1/messages`
     - Google Gemini 엔드포인트: `POST /v1beta/models/{model}:generateContent` (`streamGenerateContent` 포함)
-    - DashScope 동기식 멀티모달 ASR: `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
-    - DashScope 실시간 오디오: `GET /v1/dashscope/realtime`
-4. Protocol 어댑터와 변환: 클라이언트와 업스트림 사이의 Protocol 변환을 Route에서 선택해 익숙한 호출 방식으로 여러 Provider를 사용할 수 있습니다. 예를 들어 OpenAI Images 클라이언트에서 Alibaba Cloud Model Studio의 Qwen Image / Wan Image 모델을 호출할 수 있습니다.
+    - DashScope 네이티브 엔드포인트:
+      - 동기식 멀티모달(ASR, Qwen-TTS, 이미지 생성): `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
+      - 음성 합성: `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`
+      - 비동기 파일 전사: `POST /v1/dashscope/services/audio/asr/transcription`, `GET /v1/dashscope/tasks/{taskId}`
+      - 실시간 오디오: `GET /v1/dashscope/realtime`
+    - MiniMax 네이티브 엔드포인트:
+      - 파일 전사: `POST /v1/minimax/speech_to_text`
+      - 음성 합성: `POST /v1/minimax/t2a_v2`
+      - 이미지 생성: `POST /v1/minimax/image_generation`
+    - Volcengine Ark 네이티브 엔드포인트(Seedream 이미지 생성): `POST /v1/volcengine/images/generations`
+4. Protocol 어댑터와 변환: 클라이언트와 업스트림 사이의 Protocol 변환을 Route에서 선택해 익숙한 호출 방식으로 여러 Provider를 사용할 수 있습니다. 예를 들어 OpenAI Images 클라이언트에서 Alibaba Cloud Model Studio의 Qwen Image / Wan Image, Volcengine Ark의 Seedream, MiniMax 이미지 모델을 호출할 수 있고, OpenAI Audio 클라이언트에서 Model Studio와 MiniMax의 음성 인식과 음성 합성을 사용할 수 있습니다.
 5. Agent 도구 연결: `/v1/tools/*`를 통해 Agent용 도구를 통합 제공하고 로그, 과금, 비용 관리를 중앙화합니다. 모델과 도구를 하나의 Gateway에서 사용할 수 있습니다.
     - 웹 검색(`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
     - 웹페이지 가져오기(`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader
@@ -131,7 +139,7 @@ Providers 페이지에서는 업스트림 계정과 Protocol Endpoint를 연결�
 | Docker 셀프 호스팅 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cloudflare Workers 엣지 배포 | ✅ | ⚪ | ⚪ | ⚪ | ⚪ |
 
-<sup>1</sup> Octafuse는 DashScope 네이티브 동기 ASR과 실시간 ASR / TTS를 지원하며 OpenAI 호환 ASR / TTS 요청을 DashScope로 Protocol 변환하여 Route할 수 있습니다.
+<sup>1</sup> Octafuse는 DashScope 네이티브 동기 / 비동기 ASR, 음성 합성, 실시간 ASR / TTS, 이미지 생성을 지원하며 OpenAI 호환 이미지, ASR, TTS 요청을 DashScope로 Protocol 변환하여 Route할 수 있습니다. MiniMax와 Volcengine Ark 네이티브 엔드포인트도 같은 방식으로 연결합니다.
 <br />
 <sup>2</sup> Octafuse는 현재 텍스트, 이미지, ASR, TTS, 실시간 음성을 지원합니다. 비디오는 아직 통합 Request Surface에 포함되지 않습니다.
 

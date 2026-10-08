@@ -110,8 +110,47 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile?.tiers.length, 1);
 		assert.equal(profile?.tiers[0]?.input_price, 2);
 		assert.equal(profile?.tiers[0]?.output_price, 10);
-		assert.equal(profile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.1);
 		assert.equal(profile?.tiers[0]?.cache_write_price, 2.5);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 0.7);
+	});
+
+	it('includes claude-haiku-5-5 with two-tier pricing based on prompt length', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-haiku-5-5');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-haiku-5-5');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Claude Haiku 5.5');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$0.1 / $0.5 /M');
+		assert.equal(cny!.pricing_label, '¥0.7 / ¥3.5 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'claude-haiku-5-5');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-10-07');
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers.length, 2);
+		assert.equal(profile?.tiers[0]?.upto, 100000);
+		assert.equal(profile?.tiers[0]?.input_price, 0.1);
+		assert.equal(profile?.tiers[0]?.output_price, 0.5);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.01);
+		assert.equal(profile?.tiers[0]?.cache_write_price, 0.125);
+		assert.equal(profile?.tiers[1]?.upto, null);
+		assert.equal(profile?.tiers[1]?.input_price, 0.5);
+		assert.equal(profile?.tiers[1]?.output_price, 2.5);
+		assert.equal(profile?.tiers[1]?.cache_read_price, 0.05);
+		assert.equal(profile?.tiers[1]?.cache_write_price, 0.625);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(cnyProfile?.tiers[0]?.upto, 100000);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 0.7);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 3.5);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 0.07);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 0.875);
+		assert.equal(cnyProfile?.tiers[1]?.input_price, 3.5);
+		assert.equal(cnyProfile?.tiers[1]?.output_price, 17.5);
+		assert.equal(cnyProfile?.tiers[1]?.cache_read_price, 0.35);
+		assert.equal(cnyProfile?.tiers[1]?.cache_write_price, 4.375);
 	});
 
 	it('includes claude-sonnet-5 at the permanent $2 / $10 list prices', () => {
@@ -533,6 +572,39 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.display_name, 'Qwen3.8 Max Prime');
 		assert.equal(usd!.context_window, 1000000);
 		assert.equal(cny!.pricing_label, '¥24 / ¥72 /M');
+	});
+
+	it('includes gemini-nano-banana-2.1 with Gemini API Standard list prices (CNY is USD × 7)', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-nano-banana-2.1');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-nano-banana-2.1');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Gemini Nano Banana 2.1');
+		assert.equal(usd!.kind, 'image');
+		assert.equal(usd!.context_window, null);
+		assert.equal(usd!.max_tokens, null);
+		assert.equal(usd!.pricing_label, '$1.5 / $1.5 / $30 /M');
+		assert.equal(cny!.pricing_label, '¥10.5 / ¥10.5 / ¥210 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-nano-banana-2.1');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-10-06');
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['image']);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.ok(profile);
+		assert.equal(profile!.tiers.length, 1);
+		assert.equal(profile!.tiers[0]?.input_price, 1.5);
+		assert.equal(profile!.tiers[0]?.output_price, 7.5);
+		assert.equal(profile!.tiers[0]?.cache_read_price, null);
+		assert.equal(profile!.tiers[0]?.cache_write_price, null);
+		assert.equal(profile!.tiers[0]?.image_input_price, 1.5);
+		assert.equal(profile!.tiers[0]?.image_output_price, 30);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.ok(cnyProfile);
+		assert.equal(cnyProfile!.tiers[0]?.input_price, 10.5);
+		assert.equal(cnyProfile!.tiers[0]?.output_price, 52.5);
+		assert.equal(cnyProfile!.tiers[0]?.image_input_price, 10.5);
+		assert.equal(cnyProfile!.tiers[0]?.image_output_price, 210);
 	});
 });
 

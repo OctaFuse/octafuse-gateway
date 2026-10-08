@@ -10,11 +10,13 @@ import { proxyGeminiContent } from '../../services/proxy';
 import { buildRouteRequestBody } from '../../services/route-default-params';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
 import { summarizeGeminiToolsForLog } from '../../services/request-log-tools-summary';
+import { resolveModelRouting } from '../../services/resolve-model-route-group';
 import { GatewayErrorCode } from '../../services/gateway-error-codes';
 import { gatewayErrorJson } from '../../services/gateway-error-response';
 import { runProxyPipeline, type AuthedEnv } from '../../services/proxy-pipeline';
+import { forwardGeminiImageGeneration, geminiPathUsesImagePassthrough } from './gemini-image-generation';
 
-type GeminiAction = 'generateContent' | 'streamGenerateContent';
+export type GeminiAction = 'generateContent' | 'streamGenerateContent';
 
 type GeminiPipelineBody = {
 	payload: Record<string, unknown>;
@@ -23,7 +25,7 @@ type GeminiPipelineBody = {
 };
 
 /** Gemini generateContent：去掉 contents / systemInstruction；tools 仅保留名称摘要；并记录 action。 */
-function geminiBodyRedactedForLog(
+export function geminiBodyRedactedForLog(
 	body: Record<string, unknown>,
 	action?: GeminiAction
 ): Record<string, unknown> {
@@ -84,8 +86,15 @@ export const geminiRoutes = new Hono<AuthedEnv>();
 geminiRoutes.use('*', requireApiKey);
 
 /** `modelAction` 形如 `{modelId}:{generateContent|streamGenerateContent}`（见 `parseGeminiAction`）。 */
-geminiRoutes.post('/models/:modelAction', async (c) =>
-	runProxyPipeline<GeminiPipelineBody>(c, {
+geminiRoutes.post('/models/:modelAction', async (c) => {
+	const parsedAction = parseGeminiAction(c.req.param('modelAction') ?? '');
+	if (parsedAction) {
+		const preview = await resolveModelRouting(c.get('repositories'), parsedAction.modelId);
+		if (preview && geminiPathUsesImagePassthrough(preview.model)) {
+			return forwardGeminiImageGeneration(c, preview, parsedAction.action);
+		}
+	}
+	return runProxyPipeline<GeminiPipelineBody>(c, {
 		requestProtocol: 'gemini',
 		requestOperation: GEMINI_GENERATE_OPERATION,
 		strategyCapability: GEMINI_GENERATE_OPERATION,
@@ -127,5 +136,5 @@ geminiRoutes.post('/models/:modelAction', async (c) =>
 				geminiUpstreamWireBodyForLog(route, body.payload, body.action),
 			describeOutcome: describeGeminiOutcome,
 		},
-	})
-);
+	});
+});

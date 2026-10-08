@@ -75,11 +75,25 @@ export const DASHSCOPE_ENDPOINT_CAPABILITIES = [
 	'images.generations.multimodal',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
+/** MiniMax 原生能力：文件转写、同步语音合成、文生图。 */
+export const MINIMAX_ENDPOINT_CAPABILITIES = [
+	'audio.transcriptions',
+	'audio.speech',
+	'images.generations',
+] as const satisfies readonly ProviderEndpointCapability[];
+
+/** 火山方舟 / BytePlus ModelArk 原生能力。当前只有 Seedream 生图。 */
+export const VOLCENGINE_ENDPOINT_CAPABILITIES = [
+	'images.generations',
+] as const satisfies readonly ProviderEndpointCapability[];
+
 const CAPABILITIES_BY_PROTOCOL: Record<UpstreamProtocol, readonly ProviderEndpointCapability[]> = {
 	openai: OPENAI_ENDPOINT_CAPABILITIES,
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: GEMINI_ENDPOINT_CAPABILITIES,
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
+	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
+	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
 };
 
 /** Write-side whitelist: gemini accepts canonical + legacy keys. */
@@ -91,6 +105,8 @@ export const WRITABLE_CAPABILITIES_BY_PROTOCOL: Record<
 	anthropic: ANTHROPIC_ENDPOINT_CAPABILITIES,
 	gemini: [...GEMINI_ENDPOINT_CAPABILITIES, ...GEMINI_LEGACY_ENDPOINT_CAPABILITIES],
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
+	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
+	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
 };
 
 const ALL_CAPABILITIES = new Set<string>([
@@ -99,6 +115,8 @@ const ALL_CAPABILITIES = new Set<string>([
 	...GEMINI_ENDPOINT_CAPABILITIES,
 	...GEMINI_LEGACY_ENDPOINT_CAPABILITIES,
 	...DASHSCOPE_ENDPOINT_CAPABILITIES,
+	...MINIMAX_ENDPOINT_CAPABILITIES,
+	...VOLCENGINE_ENDPOINT_CAPABILITIES,
 ]);
 
 /** 单协议配置：`base` 与/或按 capability 的完整 URL 模板。 */
@@ -485,13 +503,19 @@ export function resolveUpstreamEndpoint(
 			case 'responses':
 				return `${root}/responses`;
 			case 'images.generations':
+				if (protocol === 'minimax') return `${root}/image_generation`;
+				// volcengine 与 OpenAI 一样：`{base}/images/generations`（base 形如 `…/api/v3`）。
 				return buildOpenAiCompatibleImagesUrl(root, 'generations');
 			case 'images.edits':
 				return buildOpenAiCompatibleImagesUrl(root, 'edits');
 			case 'audio.transcriptions':
-				return protocol === 'dashscope'
-					? `${root}/services/audio/asr/transcription`
-					: `${root}/audio/transcriptions`;
+				if (protocol === 'dashscope') {
+					return `${root}/services/audio/asr/transcription`;
+				}
+				if (protocol === 'minimax') {
+					return `${root}/speech_to_text`;
+				}
+				return `${root}/audio/transcriptions`;
 			case 'audio.transcriptions.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
 			case 'audio.transcriptions.tasks':
@@ -500,9 +524,13 @@ export function resolveUpstreamEndpoint(
 				}
 				return `${root}/tasks/${encodeURIComponent(options.taskId)}`;
 			case 'audio.speech':
-				return protocol === 'dashscope'
-					? `${root}/services/audio/tts/SpeechSynthesizer`
-					: `${root}/audio/speech`;
+				if (protocol === 'dashscope') {
+					return `${root}/services/audio/tts/SpeechSynthesizer`;
+				}
+				if (protocol === 'minimax') {
+					return `${root}/t2a_v2`;
+				}
+				return `${root}/audio/speech`;
 			case 'audio.speech.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
 			case 'images.generations.multimodal':

@@ -11,6 +11,10 @@ import {
 	resolveUpstreamEndpoint,
 	routeCustomParamsBody,
 } from '@octafuse/core';
+import {
+	applyUpstreamExtraFields,
+	protectedUpstreamPathsForRoute,
+} from '@octafuse/core/upstream-extra-fields';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE, type UsageFromStream } from '../proxy';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
@@ -47,8 +51,35 @@ type DashScopeAudioDispatchResult = {
 		audioDurationSource: AudioDurationSource | null;
 		audioFileBytes: number;
 		audioTokenUsage: null;
+		restoredUpstreamPaths?: string[];
 	};
 };
+
+const restoredUpstreamPathsKey = Symbol.for('octafuse.restoredUpstreamPaths');
+
+function mergeAsrExtras(
+	route: RouteResult,
+	req: NormalizedAudioTranscriptionRequest,
+	built: Record<string, unknown>,
+): Record<string, unknown> {
+	const applied = applyUpstreamExtraFields({
+		built,
+		customParams: null,
+		extras: req.extra,
+		protectedPaths: protectedUpstreamPathsForRoute(route),
+	});
+	Object.defineProperty(req, restoredUpstreamPathsKey, {
+		value: applied.restoredPaths,
+		enumerable: false,
+		configurable: true,
+	});
+	return applied.body;
+}
+
+function readRestoredUpstreamPaths(req: NormalizedAudioTranscriptionRequest): string[] | undefined {
+	const value = (req as object as Record<symbol, unknown>)[restoredUpstreamPathsKey];
+	return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : undefined;
+}
 
 function asObject(value: unknown): Record<string, unknown> | null {
 	return value != null && typeof value === 'object' && !Array.isArray(value)
@@ -103,14 +134,14 @@ export function buildDashScopeSyncAsrBody(
 		role: 'user',
 		content: [{ audio: audioUploadToDataUrl(req.file) }],
 	});
-	return {
+	return mergeAsrExtras(route, req, {
 		model: route.providerModelName,
 		input: { messages },
 		parameters: {
 			...routeCustomParamsBody(route.customParams),
 			asr_options: normalizedAsrOptions(route, req),
 		},
-	};
+	});
 }
 
 const QWEN_AUDIO_ASR_FILE_FORMATS = new Set([
@@ -176,13 +207,13 @@ export function buildDashScopeQwenAudioAsrBody(
 	};
 	const languageHints = normalizedLanguageHints(req.language);
 	if (languageHints) parameters.language_hints = languageHints;
-	return {
+	return mergeAsrExtras(route, req, {
 		model: route.providerModelName,
 		input: {
 			messages: [{ role: 'user', content }],
 		},
 		parameters,
-	};
+	});
 }
 
 const FUN_ASR_FILE_FORMATS = new Set([
@@ -222,7 +253,7 @@ export function buildDashScopeFunAsrBody(
 	if (req.prompt) {
 		throw new Error('DashScope Fun-ASR file API does not support the OpenAI prompt field');
 	}
-	return {
+	return mergeAsrExtras(route, req, {
 		model: route.providerModelName,
 		input: {
 			messages: [
@@ -237,7 +268,7 @@ export function buildDashScopeFunAsrBody(
 			format: resolveDashScopeFunAsrFormat(req.file),
 		},
 		resources: [],
-	};
+	});
 }
 
 /**
@@ -251,7 +282,7 @@ export function buildDashScopeAsyncAsrBody(
 ): Record<string, unknown> {
 	const parameters = { ...routeCustomParamsBody(route.customParams) };
 	delete parameters.asr_options;
-	return {
+	return mergeAsrExtras(route, req, {
 		model: route.providerModelName,
 		input: {
 			file_urls: [fileUrl],
@@ -270,7 +301,7 @@ export function buildDashScopeAsyncAsrBody(
 			...parameters,
 			...(req.language ? { language_hints: [req.language] } : {}),
 		},
-	};
+	});
 }
 
 function firstArrayObject(value: unknown): Record<string, unknown> | null {
@@ -422,6 +453,7 @@ function clientResult(
 			audioDurationSource: duration?.source ?? null,
 			audioFileBytes: fileBytes,
 			audioTokenUsage: null,
+			restoredUpstreamPaths: readRestoredUpstreamPaths(req),
 		},
 	};
 }

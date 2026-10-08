@@ -9,6 +9,7 @@
 import type { SimpleIcon } from "simple-icons";
 import { siAnthropic, siGooglegemini } from "simple-icons";
 import { useTranslations } from "next-intl";
+import { vendorIconAssets } from "./vendor-icon-assets";
 
 const DASHSCOPE_ICON_URL =
 	"https://img.alicdn.com/imgextra/i4/O1CN01YDrZSq1jY4mWMcVoy_!!6000000004559-2-tps-56-56.png";
@@ -98,6 +99,10 @@ export function UpstreamProtocolBrandIcon({
 			? t("gemini")
 			: p === "dashscope"
 			? t("dashscope")
+			: p === "minimax"
+			? t("minimax")
+			: p === "volcengine"
+			? t("volcengine")
 			: t("protocolUnknown", { protocol });
 	const iconCls = size === "compact" ? "h-3.5 w-3.5" : "h-4 w-4";
 
@@ -134,6 +139,36 @@ export function UpstreamProtocolBrandIcon({
 					alt=""
 					width={56}
 					height={56}
+					className={`${iconCls} shrink-0 block max-w-none`}
+					draggable={false}
+				/>
+				<span className="sr-only">{label}</span>
+			</span>
+		);
+	}
+	if (p === "minimax") {
+		return (
+			<span className="inline-flex" title={label}>
+				<img
+					src={vendorIconAssets.minimax}
+					alt=""
+					width={24}
+					height={24}
+					className={`${iconCls} shrink-0 block max-w-none`}
+					draggable={false}
+				/>
+				<span className="sr-only">{label}</span>
+			</span>
+		);
+	}
+	if (p === "volcengine") {
+		return (
+			<span className="inline-flex" title={label}>
+				<img
+					src={vendorIconAssets.volcengine}
+					alt=""
+					width={24}
+					height={24}
 					className={`${iconCls} shrink-0 block max-w-none`}
 					draggable={false}
 				/>

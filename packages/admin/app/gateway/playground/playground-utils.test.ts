@@ -19,7 +19,8 @@ import {
 	templateForRoute,
 	type PlaygroundLlmFamily,
 } from './playground-utils';
-import { IMAGE_GENERATIONS_BODY_TEMPLATE } from '@/lib/image-generations';
+import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE, MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE, MINIMAX_SPEECH_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
+import { MINIMAX_IMAGE_BODY_TEMPLATE, VOLCENGINE_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { RouteListRow } from './types';
 
 function route(overrides: Partial<RouteListRow> = {}): RouteListRow {
@@ -52,8 +53,8 @@ describe('playground-utils', () => {
 		assert.equal(routeMatchesSearch(r, 'anthropic'), false);
 	});
 
-	it('templateForRoute uses Images JSON for DashScope image routes', () => {
-		assert.equal(
+	it('templateForRoute uses the Qwen official size for DashScope image routes', () => {
+		const parsed = JSON.parse(
 			templateForRoute(
 				route({
 					upstream_protocol: 'dashscope',
@@ -63,8 +64,206 @@ describe('playground-utils', () => {
 				{ output_modalities: '["image"]' } as never,
 				'edits',
 			),
-			IMAGE_GENERATIONS_BODY_TEMPLATE,
+		) as { size?: string; quality?: string; parameters?: { negative_prompt?: string } };
+		assert.equal(parsed.size, '1024*1024');
+		assert.equal(parsed.quality, undefined);
+		assert.equal(parsed.parameters?.negative_prompt, 'blurry');
+	});
+
+	it('templateForRoute uses the transcription JSON for MiniMax ASR routes', () => {
+		assert.equal(
+			templateForRoute(
+				route({
+					model_id: 'minimax-asr-1.0',
+					upstream_protocol: 'minimax',
+					upstream_operation: 'audio.transcriptions',
+					adapter: 'minimax-asr-file',
+					provider_model_name: 'asr-1.0',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_second',
+						audio: { price_per_second: 0.000694444 },
+					}),
+				} as never,
+			),
+			AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
 		);
+	});
+
+	it('templateForRoute uses MiniMax speech and image passthrough JSON', () => {
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'minimax',
+					upstream_operation: 'audio.speech',
+					adapter: 'passthrough',
+					provider_model_name: 'speech-2.8-turbo',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_character',
+						audio: { price_per_character: 0.0002 },
+					}),
+					modalities: JSON.stringify({ input: ['text'], output: ['audio'] }),
+				} as never,
+			),
+			MINIMAX_SPEECH_BODY_TEMPLATE,
+		);
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'minimax',
+					upstream_operation: 'images.generations',
+					adapter: 'passthrough',
+					provider_model_name: 'image-01',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.025 },
+					}),
+					modalities: JSON.stringify({ input: ['text'], output: ['image'] }),
+				} as never,
+			),
+			MINIMAX_IMAGE_BODY_TEMPLATE,
+		);
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'volcengine',
+					upstream_operation: 'images.generations',
+					adapter: 'passthrough',
+					provider_model_name: 'doubao-seedream-5-0-260128',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.22 },
+					}),
+					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
+				} as never,
+			),
+			VOLCENGINE_IMAGE_BODY_TEMPLATE,
+		);
+		const gemini = JSON.parse(
+			templateForRoute(
+				route({
+					upstream_protocol: 'gemini',
+					upstream_operation: 'models.generate',
+					adapter: 'passthrough',
+					provider_model_name: 'gemini-3.1-flash-image',
+					model_id: 'gemini-3.1-flash-image',
+				}),
+				{
+					output_modalities: '["image"]',
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'token',
+						image: { default: 0 },
+					}),
+				} as never,
+			),
+		) as { generationConfig?: { responseModalities?: string[]; imageConfig?: { imageSize?: string } } };
+		assert.deepEqual(gemini.generationConfig?.responseModalities, ['TEXT', 'IMAGE']);
+		assert.equal(gemini.generationConfig?.imageConfig?.imageSize, '1K');
+	});
+
+	it('templateForRoute uses OpenAI bodies for MiniMax conversion routes', () => {
+		assert.equal(
+			templateForRoute(
+				route({
+					upstream_protocol: 'minimax',
+					upstream_operation: 'audio.speech',
+					adapter: 'minimax-tts',
+					provider_model_name: 'speech-2.8-turbo',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						audio_billing_mode: 'per_character',
+						audio: { price_per_character: 0.0002 },
+					}),
+					modalities: JSON.stringify({ input: ['text'], output: ['audio'] }),
+				} as never,
+			),
+			MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
+		);
+		const minimaxOpenAi = JSON.parse(
+			templateForRoute(
+				route({
+					upstream_protocol: 'minimax',
+					upstream_operation: 'images.generations',
+					adapter: 'minimax-image',
+					provider_model_name: 'image-01',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.025 },
+					}),
+					modalities: JSON.stringify({ input: ['text'], output: ['image'] }),
+				} as never,
+			),
+		) as { aspect_ratio?: string; size?: string };
+		assert.equal(minimaxOpenAi.aspect_ratio, '1:1');
+		assert.equal(minimaxOpenAi.size, undefined);
+		const seedreamLite = JSON.parse(
+			templateForRoute(
+				route({
+					upstream_protocol: 'volcengine',
+					upstream_operation: 'images.generations',
+					adapter: 'volcengine-image',
+					provider_model_name: 'doubao-seedream-5-0-260128',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.22 },
+					}),
+					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
+				} as never,
+			),
+		) as { size?: string; watermark?: boolean; quality?: string };
+		assert.equal(seedreamLite.size, '2K');
+		assert.equal(seedreamLite.watermark, false);
+		assert.equal(seedreamLite.quality, undefined);
+		const seedreamPro = JSON.parse(
+			templateForRoute(
+				route({
+					upstream_protocol: 'openai',
+					upstream_operation: 'images.generations',
+					adapter: 'passthrough',
+					model_id: 'doubao-seedream-5-0-pro',
+					provider_model_name: 'doubao-seedream-5-0-pro',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.22 },
+					}),
+					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
+				} as never,
+			),
+		) as { size?: string };
+		assert.equal(seedreamPro.size, '1K');
+		const seedreamFlash = JSON.parse(
+			templateForRoute(
+				route({
+					upstream_protocol: 'openai',
+					upstream_operation: 'images.generations',
+					adapter: 'passthrough',
+					model_id: 'doubao-seedream-5-0-flash',
+					provider_model_name: 'doubao-seedream-5-0-flash',
+				}),
+				{
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'per_image',
+						image: { default: 0.12 },
+					}),
+					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
+				} as never,
+			),
+		) as { size?: string };
+		assert.equal(seedreamFlash.size, '1K');
 	});
 
 	it('templateForRoute picks Responses vs Chat from upstream_operation', () => {

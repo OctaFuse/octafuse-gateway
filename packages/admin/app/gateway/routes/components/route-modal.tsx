@@ -5,7 +5,6 @@ import {
 	ArrowsRightLeftIcon,
 	BanknotesIcon,
 	BeakerIcon,
-	ChevronRightIcon,
 	CodeBracketIcon,
 	DocumentDuplicateIcon,
 	TrashIcon,
@@ -81,7 +80,6 @@ function RouteModalContent(props: RouteModalProps) {
 		Boolean(formData.custom_params_json.trim()) ||
 		formData.custom_params_force_override_headers ||
 		formData.custom_params_force_override_body;
-	const headerCount = formData.custom_headers.filter((row) => row.name.trim()).length;
 	const scheduleCount =
 		catalogScheduleWindowsFromModel(selectedModel).length || formData.schedule_windows.length;
 	const providerLabel = selectedProvider
@@ -89,17 +87,6 @@ function RouteModalContent(props: RouteModalProps) {
 		: t('selectProvider');
 	const modelLabel = selectedModel?.display_name || formData.model_id;
 	const routeContext = `${providerLabel}\n${t('routeGroup')}: ${formData.route_group.trim() || 'default'}`;
-	const requestSummary = hasCustomParams
-		? [
-				headerCount ? t('editor.headerCount', { count: headerCount }) : '',
-				formData.custom_params_json.trim() ? t('customBody') : '',
-				formData.custom_params_force_override_headers || formData.custom_params_force_override_body
-					? t('customBodyForceOverride')
-					: '',
-		  ]
-				.filter(Boolean)
-				.join(' · ')
-		: t('editor.requestDefault');
 
 	useEffect(() => {
 		const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -165,7 +152,7 @@ function RouteModalContent(props: RouteModalProps) {
 				aria-modal="true"
 				aria-labelledby="route-modal-title"
 				aria-describedby={modelLabel ? 'route-modal-context' : undefined}
-				className="flex h-[min(840px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
+				className="flex h-[min(920px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
 				onKeyDown={(event) => {
 					if (event.key === 'Escape' && !busy) {
 						event.stopPropagation();
@@ -301,34 +288,7 @@ function RouteModalContent(props: RouteModalProps) {
 							tabIndex={0}
 							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 						>
-							<RouteMappingFields {...editorProps} />
-							<div className="mt-4 grid gap-x-6 gap-y-1 sm:grid-cols-2">
-								{(['request', 'pricing'] as const).map((id) => (
-									<button
-										key={id}
-										type="button"
-										onClick={() => selectTab(id, true)}
-										className="group flex min-w-0 items-center justify-between gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-									>
-										<div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-											<p className="text-xs font-medium text-gray-600">{t(`editor.tabs.${id}`)}</p>
-											<p className="truncate text-xs text-gray-400">
-												{id === 'request'
-													? requestSummary
-													: t('editor.pricingSummary', {
-															charged: formData.charged_factor.trim() || '1',
-															metered: formData.metered_factor.trim() || '1',
-															count: scheduleCount,
-													  })}
-											</p>
-										</div>
-										<ChevronRightIcon
-											className="h-4 w-4 shrink-0 text-gray-400 group-hover:text-blue-500"
-											aria-hidden
-										/>
-									</button>
-								))}
-							</div>
+							<RouteMappingFields {...editorProps} onOpenRequestTab={() => selectTab('request', true)} />
 						</div>
 						<div
 							role="tabpanel"

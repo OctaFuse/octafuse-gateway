@@ -3,19 +3,24 @@ import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
+	MINIMAX_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 } from '@/lib/audio-transcriptions';
 import {
-	IMAGE_EDITS_BODY_TEMPLATE,
-	IMAGE_GENERATIONS_BODY_TEMPLATE,
+	VOLCENGINE_IMAGE_BODY_TEMPLATE,
+	imageBodyTemplateFor,
 	type ImageOperation,
 } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
 import type { AudioOperation, GatewayToolId, OpenaiLlmOperation, SimulatorProtocol } from '@/lib/invoke-kind';
 import type { SimulatorGeminiAction } from '@/lib/simulator/endpoint';
 import {
+	DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE,
+	DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE,
 	DASHSCOPE_REALTIME_OPERATIONS,
+	buildDashScopeNativeSpeechBodyTemplate,
 	buildDashScopeRealtimeAsrTemplate,
 	buildDashScopeRealtimeTtsTemplate,
 	buildDashScopeSpeechBodyTemplate,
@@ -60,6 +65,8 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
   "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }]
 }`,
 	dashscope: '{}',
+	minimax: AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	volcengine: VOLCENGINE_IMAGE_BODY_TEMPLATE,
 };
 
 /** OpenAI Responses：`input` + `store: false`，与调试台默认体对齐。 */
@@ -105,12 +112,15 @@ export function bodyTemplateForSelection(
 	realtimeOperation?: string | null,
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
+	adapter?: string | null,
+	modelId?: string | null,
 ): string {
 	if (toolId) {
 		return bodyTemplateForTool(toolId);
 	}
 	if (audioOperation && protocol === 'openai') {
 		if (audioOperation === 'speech' && providerModelName) {
+			if (/^speech-/i.test(providerModelName.trim())) return MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE;
 			// OpenAI surface 可能映射到 DashScope；模板音色必须匹配实际供应商模型。
 			return buildDashScopeSpeechBodyTemplate(providerModelName);
 		}
@@ -119,7 +129,15 @@ export function bodyTemplateForSelection(
 		}
 		return audioOperation === 'speech' ? AUDIO_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
+	if (audioOperation && protocol === 'minimax') {
+		return audioOperation === 'speech' ? MINIMAX_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+	}
 	if (audioOperation && protocol === 'dashscope') {
+		if (realtimeOperation === 'audio.speech' || realtimeOperation === 'audio.speech.stream') {
+			return buildDashScopeNativeSpeechBodyTemplate(providerModelName);
+		}
+		if (realtimeOperation === 'audio.speech.multimodal') return DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE;
+		if (realtimeOperation === 'audio.transcriptions.async') return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
 		if (audioOperation === 'speech') {
 			return buildDashScopeRealtimeTtsTemplate(providerModelName);
 		}
@@ -132,8 +150,21 @@ export function bodyTemplateForSelection(
 				: undefined,
 		);
 	}
-	if (isImageModel && protocol === 'openai') {
-		return imageOperation === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
+	if (
+		isImageModel &&
+		(protocol === 'openai' ||
+			protocol === 'dashscope' ||
+			protocol === 'minimax' ||
+			protocol === 'volcengine' ||
+			protocol === 'gemini')
+	) {
+		return imageBodyTemplateFor({
+			protocol,
+			adapter,
+			modelId,
+			providerModelName,
+			operation: imageOperation,
+		});
 	}
 	if (protocol === 'openai' && llmOperation === 'responses') {
 		return OPENAI_RESPONSES_BODY_TEMPLATE;
@@ -195,7 +226,15 @@ export function listDashScopeRealtimeOperations(
 
 export const DASHSCOPE_HTTP_ASR_OPERATION = 'audio.transcriptions.multimodal';
 
-/** 模拟器可选的 DashScope ASR 请求入口：同步 HTTP 透传 + 实时 WSS。 */
+const DASHSCOPE_HTTP_AUDIO_OPERATIONS = [
+	'audio.transcriptions.multimodal',
+	'audio.transcriptions.async',
+	'audio.speech',
+	'audio.speech.stream',
+	'audio.speech.multimodal',
+] as const;
+
+/** 模拟器可选的 DashScope 音频入口：HTTP 透传 + 实时 WSS。 */
 export function listDashScopeAudioClientOperations(
 	routes: RouteListRow[],
 	modelId: string,
@@ -203,8 +242,8 @@ export function listDashScopeAudioClientOperations(
 	audioOperation: AudioOperation,
 ): readonly string[] {
 	const realtime = listDashScopeRealtimeOperations(routes, modelId, routeGroup, audioOperation);
-	if (audioOperation !== 'transcriptions') return realtime;
-	let hasMultimodal = false;
+	const prefix = audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
+	const found = new Set<string>();
 	for (const route of routes) {
 		if (
 			route.model_id !== modelId ||
@@ -213,6 +252,10 @@ export function listDashScopeAudioClientOperations(
 		) {
 			continue;
 		}
+		const consider = (operation: string | undefined) => {
+			if (!operation || !operation.startsWith(prefix)) return;
+			if ((DASHSCOPE_HTTP_AUDIO_OPERATIONS as readonly string[]).includes(operation)) found.add(operation);
+		};
 		if (route.surfaces) {
 			try {
 				const surfaces = JSON.parse(route.surfaces) as Array<{
@@ -221,27 +264,19 @@ export function listDashScopeAudioClientOperations(
 					status?: string;
 				}>;
 				for (const surface of surfaces) {
-					if (surface.status === 'disabled') continue;
-					if (
-						surface.request_protocol === 'dashscope' &&
-						surface.request_operation === DASHSCOPE_HTTP_ASR_OPERATION
-					) {
-						hasMultimodal = true;
-					}
+					if (surface.status === 'disabled' || surface.request_protocol !== 'dashscope') continue;
+					consider(surface.request_operation);
 				}
 			} catch {
 				// ignore unreadable surfaces
 			}
 		}
-		if (
-			route.upstream_protocol === 'dashscope' &&
-			route.upstream_operation === DASHSCOPE_HTTP_ASR_OPERATION &&
-			route.adapter === 'passthrough'
-		) {
-			hasMultimodal = true;
+		if (route.upstream_protocol === 'dashscope' && route.adapter === 'passthrough') {
+			consider(route.upstream_operation ?? undefined);
 		}
 	}
-	return hasMultimodal ? [DASHSCOPE_HTTP_ASR_OPERATION, ...realtime] : realtime;
+	const http = DASHSCOPE_HTTP_AUDIO_OPERATIONS.filter((operation) => found.has(operation));
+	return [...http, ...realtime];
 }
 
 /** Matches Proxy `resolveModelRouting`: default group sends model id only, else `id:group`. */
@@ -279,6 +314,8 @@ export function isBodyDirty(
 	realtimeOperation?: string | null,
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
+	adapter?: string | null,
+	modelId?: string | null,
 ): boolean {
 	return (
 		normalizeBodyWhitespace(bodyText) !==
@@ -292,6 +329,8 @@ export function isBodyDirty(
 				realtimeOperation,
 				providerModelName,
 				llmOperation,
+				adapter,
+				modelId,
 			),
 		)
 	);
@@ -312,6 +351,8 @@ export const SIMULATOR_PROTOCOL_ORDER: readonly SimulatorProtocol[] = [
 	'anthropic',
 	'gemini',
 	'dashscope',
+	'minimax',
+	'volcengine',
 ];
 
 export type SimulatorClientSurfaceOptions = {

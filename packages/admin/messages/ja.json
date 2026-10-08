@@ -352,6 +352,8 @@
 		"anthropic": "Anthropic",
 		"gemini": "Gemini",
 		"dashscope": "DashScope",
+		"minimax": "MiniMax",
+		"volcengine": "Volcengine",
 		"protocolUnknown": "プロトコル：{protocol}",
 		"endpointCopyTitle": "{label} — {url}（クリックしてコピー）"
 	},
@@ -492,6 +494,8 @@
 			"anthropicOptional": "Anthropic",
 			"geminiOptional": "Gemini",
 			"dashscopeOptional": "DashScope",
+			"minimaxOptional": "MiniMax",
+			"volcengineOptional": "Volcengine",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -502,11 +506,22 @@
 			"geminiAuthQueryKey": "Query key（?key=）",
 			"geminiAuthBearer": "Bearer（Authorization）",
 			"geminiAuthHint": "Developer API と Vertex Express は ?key= です。プロジェクト指定の Vertex にサービスアカウント JSON を貼ると自動で Bearer になります。Vertex 互換の集約（ZenMux、Qiniu など）は Bearer を選んでください。",
+			"minimaxPlaceholder": "https://api.minimaxi.com/v1",
+			"minimaxHint": "Base のみの場合、音声認識は '{base}'/speech_to_text、音声合成は '{base}'/t2a_v2、画像生成は '{base}'/image_generation になります。国際向けホストは api.minimax.io です。動画と音楽のエンドポイントはまだありません。",
+			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
+			"volcengineHint": "Base のみの場合、Seedream 画像生成は '{base}'/images/generations になります。中国 Ark は ark.cn-beijing.volces.com、BytePlus ModelArk は ark.ap-southeast.bytepluses.com です。チャットは OpenAI のエンドポイント設定のままです。",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
-			"dashscopeHint": "この Base から DashScope の HTTP と WSS パスを生成します。ワークスペース用エンドポイントでは対応する DashScope ホストを指定してください。",
+			"dashscopeHint": "Base だけを入力すると、下の DashScope HTTP / WSS エンドポイント（filetrans、ホットワード、音声を含む）をすべて生成します。一部の機能だけを提供するプラン（Qwen Token Plan など）では Base を空にし、URL 上書きで対応するエンドポイントだけを入力してください。ワークスペース用エンドポイントでは対応する DashScope ホストを指定してください。",
 			"advancedToggle": "URL の上書き",
 			"advancedHint": "完全な URL を入力してください。",
 			"advancedHintGemini": "完全な URL を入力し、'{model}' と '{action}' を含めてください。",
+			"advancedHintDashscope": "完全な URL を入力してください。エンドポイントは機能ごとに分かれており、1 つのモデルが使うのはそのうち 1 つです。複数の項目が同じ上流 URL（multimodal-generation など）を指すことがありますが、個別に有効化するために分けています。Base がある場合、空欄は生成された URL を使います。Base がない場合、空欄は未対応を意味します。",
+			"advancedHintMinimax": "完全な URL を入力します。Base がある項目は空欄のままで、ゲートウェイが speech_to_text、t2a_v2、image_generation を導出します。",
+			"advancedHintVolcengine": "完全な URL を入力します。Base がある場合は空欄のままで、ゲートウェイが images/generations を導出します。",
+			"capHintMiniMaxAudioTranscriptions": "MiniMax ファイル文字起こし POST /v1/speech_to_text。ルートのアダプターは「MiniMax ファイル文字起こし」を選びます。language はフォームではなくリクエストヘッダーに入ります。",
+			"capHintMiniMaxAudioSpeech": "MiniMax 同期音声合成 POST /v1/t2a_v2。アダプターは MiniMax audio.speech パススルーです。非ストリームと stream:true は同じエンドポイントです。",
+			"capHintMiniMaxImagesGenerations": "MiniMax 画像生成 POST /v1/image_generation。アダプターは MiniMax images.generations パススルーです。テキスト生成と参照画像は同じエンドポイントです。",
+			"capHintVolcengineImagesGenerations": "Volcengine Seedream。ネイティブ透過と OpenAI 変換アダプター volcengine-image はどちらも Ark の POST /images/generations を呼びます。ストリームはネイティブ透過のみです。",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
 			"capImagesGenerations": "images.generations (/v1/images/generations)",
@@ -523,6 +538,16 @@
 			"capAudioRealtimeSession": "audio.realtime.session（ネイティブセッション WSS）",
 			"capAudioHotwords": "audio.hotwords（カスタムホットワード HTTP）",
 			"capAudioVoices": "audio.voices（音声カスタマイズ HTTP）",
+			"capHintImagesGenerationsMultimodal": "Qwen Image と Wan の同期画像生成。ルートのアダプターは Qwen Image 3.0 または Wan 2.7 Image。",
+			"capHintAudioTranscriptions": "filetrans 非同期文字起こしの送信 URL（Fun-ASR、Paraformer、Qwen filetrans）。タスク照会 URL も設定してください。ルートのアダプターは非同期ファイル音声認識。",
+			"capHintAudioTranscriptionsMultimodal": "Qwen3-ASR、Qwen-Audio-3.0、Fun-ASR の同期ファイル音声認識。モデルに合うファイル音声認識アダプター、または DashScope パススルーを選びます。",
+			"capHintAudioTranscriptionsTasks": "非同期タスクの結果照会。上の filetrans 送信 URL と組み合わせて使います。",
+			"capHintAudioSpeech": "CosyVoice と Qwen-Audio-3.0-TTS 用の SpeechSynthesizer API。ルートのアダプターは CosyVoice / Qwen-Audio-3.0 TTS。",
+			"capHintAudioSpeechMultimodal": "Qwen-TTS（qwen3-tts-flash など）と MiniMax 用の multimodal-generation TTS。上の項目とは別の API なので、モデルに合わせて選びます。ルートのアダプターは Qwen-TTS（マルチモーダル）または MiniMax TTS。",
+			"capHintAudioRealtimeInference": "WebSocket タスクプロトコル（run-task / continue-task）：CosyVoice・Qwen-Audio-TTS のリアルタイム合成、Fun-ASR・Paraformer のリアルタイム認識。ルートは DashScope パススルー。",
+			"capHintAudioRealtimeSession": "WebSocket セッションプロトコル（session.update）。現在ゲートウェイが対応するのは Qwen3-ASR-Flash-Realtime 認識のみです。",
+			"capHintAudioHotwords": "ASR カスタムホットワード管理。プロバイダーアカウントのリソースで、モデルルーティングには使いません。",
+			"capHintAudioVoices": "TTS 音声クローンとデザイン（CosyVoice / Qwen）。プロバイダーアカウントのリソースで、モデルルーティングには使いません。",
 			"capMessages": "messages (/v1/messages)",
 			"capGenerateContent": "generateContent (/v1beta/models/'{model}':generateContent)",
 			"capStreamGenerateContent": "streamGenerateContent (/v1beta/models/'{model}':streamGenerateContent)",
@@ -1005,17 +1030,202 @@
 				"dashscope-asr-qwen-audio-file": "Qwen-Audio-3.0 ファイル音声認識",
 				"dashscope-asr-fun-file": "Fun-ASR ファイル音声認識",
 				"dashscope-asr-file-async": "非同期ファイル音声認識",
-				"dashscope-tts-speech": "CosyVoice TTS",
-				"dashscope-tts-qwen": "Qwen TTS",
+				"dashscope-tts-speech": "CosyVoice / Qwen-Audio-3.0 TTS",
+				"dashscope-tts-qwen": "Qwen-TTS（マルチモーダル）",
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
-				"dashscope-image-wan": "Wan 2.7 Image"
+				"dashscope-image-wan": "Wan 2.7 Image",
+				"minimax-asr-file": "MiniMax ファイル文字起こし",
+				"minimax-tts": "MiniMax 公式音声合成",
+				"minimax-image": "MiniMax 公式画像生成",
+				"volcengine-image": "Volcengine Seedream 画像生成",
+				"gemini-image": "Gemini 公式画像生成"
+			},
+			"adapterGuides": {
+				"passthrough": {
+					"purpose": "リクエストとレスポンスは上流の形式のまま転送し、ゲートウェイは model だけを置き換えます。",
+					"mapping": []
+				},
+				"dashscope-asr-qwen-file": {
+					"purpose": "qwen3-asr-flash 系列用。Qwen-Audio-3.0 には使いません。",
+					"mapping": [
+						"language は parameters.asr_options.language に書き込まれます。",
+						"prompt は system メッセージになります。",
+						"音声は data URL に変換されます。同期 API の data URL は 10MB までです。"
+					]
+				},
+				"dashscope-asr-qwen-audio-file": {
+					"purpose": "qwen-audio-3.0-asr-flash 用。",
+					"mapping": [
+						"language は parameters.language_hints に書き込まれます。",
+						"prompt は input_text になります。",
+						"format は MIME または拡張子から推定します。"
+					]
+				},
+				"dashscope-asr-fun-file": {
+					"purpose": "fun-asr-realtime 系列の非リアルタイムファイル API 用。",
+					"mapping": [
+						"language と prompt は 400 を返します。",
+						"format は MIME または拡張子から推定します。"
+					]
+				},
+				"dashscope-asr-file-async": {
+					"purpose": "filetrans、fun-asr、paraformer の非同期文字起こし用。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
+					"mapping": [
+						"公開 file_url フォーム項目が必須です（http、https、oss）。",
+						"prompt は input.context に書き込まれます。",
+						"language は parameters.language_hints に書き込まれます。",
+						"ゲートウェイがタスクを送信し、結果をポーリングします。"
+					]
+				},
+				"dashscope-tts-speech": {
+					"purpose": "CosyVoice と Qwen-Audio-3.0-TTS 用。",
+					"mapping": [
+						"response_format は mp3、opus、wav、pcm に対応します。",
+						"speed は 0.5–2 で、input.rate に書き込まれます。",
+						"instructions は input.instruction に書き込まれます。"
+					]
+				},
+				"dashscope-tts-qwen": {
+					"purpose": "qwen3-tts-flash などの非リアルタイムモデル用。Qwen-Audio-3.0-TTS には CosyVoice / Qwen-Audio-3.0 TTS を選んでください。",
+					"mapping": [
+						"wav のみを返すため、response_format は wav である必要があります。",
+						"speed は 1 である必要があります。",
+						"instructions は input.instructions に書き込まれ、Instruct-Flash 系列でのみ有効です。"
+					]
+				},
+				"dashscope-tts-minimax": {
+					"purpose": "百煉上の minimax/speech-* 用。",
+					"mapping": [
+						"response_format は mp3、pcm、flac、wav に対応します。",
+						"speed は input.voice_setting.speed に書き込まれます。",
+						"instructions は 400 を返します。感情はルートのリクエストパラメータ input.voice_setting.emotion に書いてください。"
+					]
+				},
+				"dashscope-image-qwen": {
+					"purpose": "qwen-image 系列用。",
+					"mapping": [
+						"size はそのまま parameters.size に入ります。Qwen は 幅*高さ または auto です。",
+						"n は 1–6 です。",
+						"image は参照画像です。",
+						"response_format=b64_json のとき、ゲートウェイが画像をダウンロードして base64 に変換します。"
+					]
+				},
+				"dashscope-image-wan": {
+					"purpose": "Wan 画像系列用。",
+					"mapping": [
+						"size はそのまま parameters.size に入ります。Wan は 1K、2K、4K、または 幅*高さ です。",
+						"n は 1–4 です。省略時はゲートウェイが 1 を明示的に送ります。"
+					]
+				},
+				"minimax-asr-file": {
+					"purpose": "プロバイダーモデル名は asr-1.0 です。",
+					"mapping": [
+						"language はリクエストヘッダーに入ります。",
+						"srt と vtt はタイムスタンプ付き結果からゲートウェイが生成します。",
+						"prompt と temperature は破棄されます。"
+					]
+				},
+				"minimax-tts": {
+					"purpose": "プロバイダーモデル名は speech-2.8-hd または speech-2.8-turbo です。",
+					"mapping": [
+						"voice は MiniMax の voice_id です。",
+						"response_format は mp3、pcm、flac、wav に対応します。上流は opus に対応していますが、この入口はまだ変換しません。",
+						"speed は 0.5–2 です。",
+						"stream_format=sse は OpenAI speech イベントになります。",
+						"感情は extra_body の voice_setting.emotion で渡します。"
+					]
+				},
+				"minimax-image": {
+					"purpose": "プロバイダーモデル名は image-01 または image-01-live です。",
+					"mapping": [
+						"size は転送しません。aspect_ratio、または width と height を送ってください。",
+						"n は 1–9 です。",
+						"url と b64_json はどちらも OpenAI の data[] に書き換えられます。"
+					]
+				},
+				"volcengine-image": {
+					"purpose": "OpenAI SDK の POST /v1/images/generations を火山方舟の画像生成に変換します。プロバイダーモデル名は doubao-seedream、dola-seedream、seedream です。",
+					"mapping": [
+						"n=1 は単一画像を生成します。n が 2–15 のときは組図を有効にし、max_images を n にします。実際の枚数は少なくなることがあり、成功枚数で課金します。5.0 pro / flash は組図非対応のため n は 1 のみです。",
+						"size は auto を含めてそのまま転送します。5.0 pro / flash は 1K / 1.5K / 2K、5.0 lite / 4.5 は 369 万ピクセル以上が必要で 1024x1024 は拒否されます。",
+						"background は transparent / opaque のみ転送し、5.0 pro / flash の画像入力生成でのみ使えます。output_format は png / jpeg、response_format は url と b64_json のみです。",
+						"参照画像は image に置きます。Ark は既定で透かしを入れるため、不要なら watermark: false を送ります。quality は転送しません。",
+						"JSON のみで、data[] には Ark の size とレイヤー項目が残ります。ストリームは火山方舟のネイティブ透過を使います。"
+					]
+				},
+				"gemini-image": {
+					"purpose": "OpenAI SDK の POST /v1/images/generations を Gemini generateContent に変換します。Gemini API と Vertex AI で使えます。プロバイダーモデル名は gemini-*-image または gemini-nano-banana* です。",
+					"mapping": [
+						"prompt は contents のテキストになり、responseModalities は TEXT と IMAGE に固定されます。n は 1 のみです。",
+						"WxH の size は最も近い imageConfig.aspectRatio に換算し、長辺から 1K / 2K / 4K を選びます。512 / 1K / 2K / 4K のみ、または auto も指定できます。",
+						"response_format は b64_json のみです。参照画像は image に data URL で置き、inlineData として送ります。quality と background は転送しません。",
+						"その他の Gemini パラメーターは generationConfig（imageConfig、thinkingConfig など）に書くと深くマージされます。画像出力とテキスト出力のトークンで課金します。JSON のみです。ストリームは Gemini のネイティブ透過を使います。"
+					]
+				}
+			},
+			"guide": {
+				"title": "呼び出しガイド",
+				"call": "クライアント呼び出し",
+				"mapping": "フィールド変換",
+				"extra": "モデル固有パラメータ",
+				"sample": "呼び出し例",
+				"openRequest": "リクエストパラメータで記入",
+				"passthrough": "リクエストは上流のネイティブ形式で送ります。ゲートウェイは model だけを置き換えます。",
+				"payload": {
+					"json": "JSON",
+					"multipart": "multipart"
+				},
+				"response": {
+					"json": "JSON",
+					"binary": "音声バイト",
+					"sse": "SSE",
+					"job": "非同期タスク",
+					"websocket": "WebSocket"
+				},
+				"billing": {
+					"tokens": "トークン課金",
+					"per_image": "枚数課金",
+					"per_second": "秒課金",
+					"per_character": "文字課金",
+					"per_call": "コール課金"
+				},
+				"showDetails": "詳細を表示",
+				"hideDetails": "詳細を閉じる",
+				"requestLabel": "リクエスト",
+				"responseLabel": "レスポンス",
+				"billingLabel": "課金",
+				"copyPath": "呼び出しパスをコピー",
+				"copyExtra": "モデルパラメータの例をコピー",
+				"copySample": "Python の例をコピー",
+				"copyFailed": "コピーできません。選択して手動でコピーしてください。",
+				"protectedTitle": "ゲートウェイが管理するフィールド",
+				"protectedHint": "以下のフィールドはゲートウェイが生成・管理します。クライアントの値では上書きできません。",
+				"sampleHint": "OpenAI client の base_url にゲートウェイのプロキシ URL（末尾は /v1）、api_key にゲートウェイの API キーを設定してください。現在のモデルとルートグループを使用した例です。",
+				"sampleHintAsync": "httpx で multipart リクエストを送信します。OCTAFUSE_BASE_URL にゲートウェイのプロキシ URL（末尾は /v1）、OCTAFUSE_API_KEY にゲートウェイの API キーを設定し、file_url をアクセス可能な音声 URL に置き換えてください。",
+				"voiceHint": "YOUR_VOICE_ID を上流モデルが対応する音声 ID に置き換えてください。"
+			},
+			"lossyFeatureNames": {
+				"timestamp_granularities": "タイムスタンプ粒度（timestamp_granularities）",
+				"diarization": "話者分離",
+				"size_abbreviation": "1K/2K/4K のサイズ省略表記",
+				"background": "透過背景（background）",
+				"prompt": "プロンプト（prompt）",
+				"temperature": "サンプリング温度（temperature）",
+				"response_format_aac": "AAC 音声（response_format）",
+				"openai_speed_range": "0.5–2 の範囲外の速度",
+				"quality": "品質（quality）"
 			},
 			"noCompatibleAdapter": "互換性のあるアダプターがありません",
 			"adapterFirstHint": "現在の Provider と互換のアダプターを選択します。公開プロトコルと上流プロトコルはレジストリから自動入力されます。",
 			"adapterUnavailable": "利用不可",
 			"adapterMissingCapabilities": "プロバイダーに必要なエンドポイントがありません: {capabilities}",
-			"adapterLossyFeatures": "未対応の機能: {features}",
+			"adapterLossyFeatures": "上流 API では提供されません: {features}",
+			"extraBodyHint": "OpenAI SDK の extra_body またはリクエストのトップレベルフィールドで上流のネイティブパラメータを渡します。ゲートウェイが深くマージします。対応パラメータはモデルのドキュメントを参照してください。",
+			"extraBodyMultipartHint": "追加パラメータは multipart のフォームフィールドで渡し、オブジェクトは JSON 文字列にします。ゲートウェイが深くマージします。対応パラメータはモデルのドキュメントを参照してください。",
+			"extraBodyProtected": "ゲートウェイが保持: {fields}",
+			"extraBodyInputLimit": "DashScope の音声合成では input がオブジェクト、OpenAI の input はテキストです。追加項目から input.* は設定できません。これらのパラメータはルートのリクエストパラメータに書いてください。",
+			"adapterModelUnrecognized": "プロバイダーのモデル名を認識できないため、すべてのアダプターを表示しています。",
 			"passthroughHint": "このリリースはパススルーのみで、公開・アップストリームのプロトコルは一致する必要があります。",
 			"protocolHintConfigured": "このモデルに対応し、Provider に設定済みのプロトコルのみ表示します。",
 			"protocolHintSelectProvider": "先に Provider を選択してください。",
@@ -1167,6 +1377,7 @@
 				"requestPreview": "送信前プレビュー",
 				"sentRequest": "送信済み",
 				"requestPreviewHint": "パラメータ適用後の本文を表示します。最終的にはサーバーの実際のリクエストに従います。",
+				"upstreamUrlMissing": "プロバイダーに {target} のエンドポイントがありません。変換アダプターはターゲットプロトコルのエンドポイントだけを使います。",
 				"sentRequestHint": "ルートパラメータを適用した実際の上流リクエストです。",
 				"lastRequestHint": "設定が変更されました。前回送信したリクエストを表示しています。",
 				"requestHeaders": "ヘッダー",
@@ -1369,6 +1580,7 @@
 		"sentBodySourcePreview": "プレビュー",
 		"requestTargetUrl": "アップストリームリクエスト URL",
 		"requestTargetUrlEmpty": "Route を選択すると完全なアップストリーム URL をプレビューできます。",
+		"requestTargetUrlMissing": "プロバイダーに {target} のエンドポイントがないため、アップストリーム URL をプレビューできません。変換アダプターはターゲットプロトコルのエンドポイントを使い、クライアントプロトコル側のアドレスは使いません。",
 		"requestTargetUrlHint": "Provider の base_url から Send と同じ結合規則でプレビューします。送信後は実際に使用された URL を表示します。",
 		"requestTargetUrlRealtimeHint": "WebSocket アドレスです。基盤のハンドシェイクは HTTP GET + Upgrade で、タスク開始後に音声フレームを送信します。",
 		"upstream": "アップストリーム：",
@@ -1378,8 +1590,15 @@
 		"body": "Body",
 		"rawPayload": "Raw payload",
 		"emptyResponseHint": "Send を実行すると、アップストリームのステータス、Headers、Body、またはストリーム出力がここに表示されます。",
-		"imageOpenaiOnly": "画像生成モデルは upstream_protocol=openai または dashscope のみ対応します。Route を編集するか、openai / dashscope Route を選択してください。",
+		"imageOpenaiOnly": "画像生成モデルは upstream_protocol=openai、dashscope、minimax、volcengine、gemini のみ対応します。Route を編集するか、対応するプロトコルの Route を選択してください。",
 		"imageDashScopeHint": "DashScope 変換：OpenAI Images の JSON（prompt、n、size）を編集します。Playground が multimodal-generation に書き換え、n は常に送信します（既定 1）。図生図は JSON image を使い、edits は非対応です。課金もリクエストログもありません。",
+		"imageDashScopePassthroughHint": "ネイティブ透過：JSON は multimodal-generation へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換えます。課金もリクエストログもありません。",
+		"imageMiniMaxPassthroughHint": "ネイティブ透過：JSON は image_generation へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換え、data.image_urls または data.image_base64 をプレビューします。課金もリクエストログもありません。",
+		"imageVolcenginePassthroughHint": "ネイティブ透過：JSON は Ark の POST /images/generations へそのまま転送されます。stream を true にすると SSE になります。Playground は model をルートのプロバイダーモデル名に置き換えます。課金もリクエストログもありません。",
+		"imageGeminiHint": "ネイティブ透過：JSON は Gemini generateContent として送信されます。responseModalities を TEXT と IMAGE にし、imageConfig.aspectRatio / imageSize を設定してください。画像は inlineData で返ります。Playground は課金もリクエストログもありません。",
+		"imageVolcengineOpenAiHint": "OpenAI の画像 JSON を方舟の画像生成に変換します。n が 2–15 のときは組図として送ります。JSON のみです。ストリームはネイティブ透過を使います。Playground は返ってきた画像をプレビューします。課金もリクエストログもありません。",
+		"imageGeminiOpenAiHint": "OpenAI の画像 JSON を Gemini generateContent に変換します。size は imageConfig のアスペクト比と解像度に換算され、n は 1 のみ、参照画像は image に data URL で渡します。Playground は上流を直接呼び、Gemini の生レスポンスを表示して inlineData の画像をプレビューします。課金もリクエストログもありません。",
+		"imageMiniMaxOpenAiHint": "OpenAI 画像 JSON は MiniMax image_generation に変換されます。aspect_ratio を送ってください。size は転送しません。Playground は返された画像をプレビューします。課金もリクエストログもありません。",
 		"imageOperation": "画像操作",
 		"imageGenerationsHint": "画像モデル：リクエスト Body は images/generations の項目（prompt、n、size、quality）を使用します。課金もリクエストログもありません。",
 		"imageEditsHint": "画像編集：JSON 項目（prompt、n、size、quality）と以下の参照画像を使用します。ファイルは multipart でアップストリームの edits エンドポイントに送信されます。課金もリクエストログもありません。",
@@ -1394,11 +1613,14 @@
 			"allProtocols": "すべてのプロトコル",
 			"allRouteGroups": "すべての Route Group"
 		},
-		"audioOpenaiOnly": "音声文字起こしのテストは OpenAI multipart、または同期 Adapter を実装済みの DashScope ルートに対応しています。",
+		"audioOpenaiOnly": "音声文字起こしのテストは OpenAI multipart、MiniMax ファイル文字起こし、または同期 Adapter を実装済みの DashScope ルートに対応しています。",
 		"audioTranscriptionsHint": "音声モデル：JSON フィールド（language、response_format）と下の音声ファイル。ファイルは multipart で transcriptions に送信されます。課金・リクエストログなし。",
 		"audioTranscriptionsDashScopeHint": "DashScope 同期 ASR：Playground Adapter が音声を Data URL にエンコードし、JSON でアップストリームへ送信します。課金・リクエストログなし。",
 		"audioRealtimeDashScopeHint": "DashScope リアルタイム ASR/TTS：ブラウザが WebSocket を開き、管理コンソールが上流 WSS との間でフレームを中継します。課金・リクエストログなし。",
 		"audioSpeechHint": "音声合成：JSON の input、voice、response_format、speed を編集します。非リアルタイムの DashScope リクエストは上流の input オブジェクトに変換されます。",
+		"audioSpeechPassthroughHint": "ネイティブ透過：JSON は SpeechSynthesizer へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換えます。ストリームは X-DashScope-SSE で決まります。課金もリクエストログもありません。",
+		"audioSpeechMiniMaxHint": "ネイティブ透過：JSON は t2a_v2 へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換えます。stream:false は hex を復号して再生し、stream:true は SSE を表示します。課金もリクエストログもありません。",
+		"audioSpeechMiniMaxOpenAiHint": "OpenAI 音声 JSON は MiniMax t2a_v2 に変換されます。voice には MiniMax の voice_id を指定します。Playground は model をルートのプロバイダーモデル名に置き換え、復号した音声を再生します。課金もリクエストログもありません。",
 		"audioFile": "音声ファイル",
 		"audioFileHint": "音声ファイルを 1 つ選択（mp3、wav、m4a、webm…）。multipart で送信（JSON エディタには入りません）。",
 		"audioFileDashScopeHint": "音声ファイルを 1 つ選択します。Admin へのアップロード後、サーバーが DashScope Data URL にエンコードします（JSON エディタには入りません）。",
@@ -1554,12 +1776,15 @@
 		"emptyResponseHint": "Send をクリックすると、ステータス、Body、またはストリーム出力がここに表示されます。",
 		"readyNeedProxyUrl": "有効な Proxy Base URL（http/https）を入力してください。",
 		"readyNeedModel": "モデルを選択してください。",
-		"readyNeedOpenaiForImage": "画像生成モデルにはプロトコル openai が必要です（Proxy /v1/images/generations または /v1/images/edits）。",
+		"readyNeedOpenaiForImage": "画像生成モデルには openai（Proxy /v1/images/generations または /v1/images/edits）、dashscope（ネイティブ multimodal-generation）、minimax（POST /v1/minimax/image_generation）、volcengine（POST /v1/volcengine/images/generations）、または gemini（POST /v1beta/models/{model}:generateContent）が必要です。",
 		"readyNeedKeyLoading": "API Key を読み込み中です…",
 		"readyNeedKey": "API Key を選択し、読み込み（sk-…）が完了するまでお待ちください。",
 		"protocolLockedImage": "画像モデルは openai → POST /v1/images/generations または /v1/images/edits に固定されます。",
 		"imageOperation": "画像操作",
 		"imageGenerationsHint": "Generations：POST /v1/images/generations 用の JSON Body（prompt、n、size、quality）。",
+		"imageMiniMaxHint": "画像生成：POST /v1/minimax/image_generation 用の JSON（prompt、aspect_ratio、n、response_format）。Proxy は成功した枚数で課金します。",
+		"imageVolcengineHint": "画像生成：POST /v1/volcengine/images/generations 用の JSON。stream が true のときは SSE です。Proxy は usage.generated_images で課金します。",
+		"imageGeminiHint": "画像生成：POST /v1beta/models/'{'model'}':generateContent 用の JSON。responseModalities を TEXT と IMAGE にし、imageConfig を設定します。Proxy は画像出力とテキスト出力のトークンで課金します。",
 		"imageEditsHint": "Edits：JSON 項目と参照画像ファイル → multipart POST /v1/images/edits。",
 		"referenceImages": "参照画像",
 		"referenceImagesHint": "multipart アップロード用に 1–{max} 個の画像ファイルを選択してください。",
@@ -1585,11 +1810,13 @@
 		"errSelectKey": "API Key を選択し、読み込み（sk-…）が完了するまでお待ちください",
 		"errBodyMustBeObject": "リクエスト Body は JSON オブジェクトである必要があります",
 		"infoModelOverwritten": "リクエスト Body の model を \"{model}\" に設定しました（選択したモデルと Route Group に一致）。",
-		"protocolLockedAudio": "音声ルートは OpenAI HTTP（ASR: POST /v1/audio/transcriptions、TTS: /v1/audio/speech）または DashScope リアルタイム WSS に対応します。",
-		"audioTranscriptionsHint": "文字起こし：JSON フィールド（language、response_format）と音声ファイル → multipart POST /v1/audio/transcriptions。",
+		"protocolLockedAudio": "音声ルートは OpenAI HTTP（ASR: POST /v1/audio/transcriptions、TTS: /v1/audio/speech）、MiniMax パススルー（POST /v1/minimax/speech_to_text または /v1/minimax/t2a_v2）、または DashScope リアルタイム WSS に対応します。",
+		"audioTranscriptionsHint": "文字起こし：JSON フィールド（language、response_format）と音声ファイル。OpenAI は multipart POST /v1/audio/transcriptions、MiniMax 透過は POST /v1/minimax/speech_to_text。",
 		"audioRealtimeDashScopeHint": "DashScope リアルタイム ASR：ブラウザが WebSocket を開き、タスクモードはバイナリ PCM、セッションモードは Base64 音声イベントを送信します。",
 		"audioRealtimeSpeechHint": "DashScope リアルタイム音声合成：ブラウザが WebSocket を開き、run-task の後に continue-task でテキストを送り、音声チャンクを受信します。",
 		"audioSpeechHint": "音声合成：JSON Body の input、voice、response_format、speed を編集 → POST /v1/audio/speech。",
+		"audioSpeechDashScopeHint": "ネイティブ透過：JSON は SpeechSynthesizer に送信されます。ストリームでは X-DashScope-SSE: enable を付けます。Proxy は上流の usage.characters で課金します。",
+		"audioSpeechMiniMaxHint": "ネイティブ透過：JSON は POST /v1/minimax/t2a_v2 に送信されます。非ストリームの hex はブラウザで復号して再生し、stream:true は SSE を表示したあと最後の完全な音声を再生します。Proxy は extra_info.usage_characters で課金します。",
 		"audioFile": "音声ファイル",
 		"audioFileHint": "multipart アップロード用の音声ファイルを 1 つ選択。",
 		"audioRealtimeFileDashScopeHint": "リアルタイム ASR は選択した WSS モードで音声を送ります。ファイルは再生です（wav/mp3/ogg はブラウザで 16 kHz PCM にデコードし、生の .pcm はそのまま送ります）。",

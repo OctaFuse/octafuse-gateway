@@ -22,6 +22,21 @@ import { imageRoutes } from './routes/v1/images';
 import { audioRoutes } from './routes/v1/audio';
 import { dashScopeRealtimeRoutes } from './routes/v1/dashscope-realtime';
 import { dashScopeMultimodalRoutes } from './routes/v1/dashscope-multimodal';
+import { dashScopeSpeechRoutes } from './routes/v1/dashscope-speech';
+import { dashScopeFileTranscriptionRoutes, dashScopeTaskRoutes } from './routes/v1/dashscope-file-transcription';
+import { miniMaxSpeechToTextRoutes } from './routes/v1/minimax-speech-to-text';
+import { miniMaxT2aRoutes } from './routes/v1/minimax-t2a';
+import { miniMaxImageGenerationRoutes } from './routes/v1/minimax-image-generation';
+import { volcengineImageGenerationRoutes } from './routes/v1/volcengine-image-generation';
+import {
+	DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+	DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+	DASHSCOPE_TASKS_PATH,
+	MINIMAX_IMAGE_GENERATION_PATH,
+	MINIMAX_SPEECH_TO_TEXT_PATH,
+	MINIMAX_T2A_PATH,
+	VOLCENGINE_IMAGE_GENERATIONS_PATH,
+} from '@octafuse/core/route-topology';
 import { proxyAppVersion } from './app-version';
 import type { DashScopeRealtimeNodeDispatch } from './services/egress/dashscope-realtime-driver';
 
@@ -71,7 +86,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 		cors({
 			origin: '*',
 			allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-			allowHeaders: ['Content-Type', 'Authorization'],
+			allowHeaders: ['Content-Type', 'Authorization', 'language', 'X-DashScope-SSE', 'X-DashScope-Async'],
 		}),
 	);
 
@@ -115,6 +130,13 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/v1/audio', audioRoutes);
 	app.route('/v1/dashscope/realtime', dashScopeRealtimeRoutes);
 	app.route('/v1/dashscope/services/aigc/multimodal-generation/generation', dashScopeMultimodalRoutes);
+	app.route(DASHSCOPE_SPEECH_SYNTHESIZER_PATH, dashScopeSpeechRoutes);
+	app.route(DASHSCOPE_FILE_TRANSCRIPTION_PATH, dashScopeFileTranscriptionRoutes);
+	app.route(DASHSCOPE_TASKS_PATH, dashScopeTaskRoutes);
+	app.route(MINIMAX_SPEECH_TO_TEXT_PATH, miniMaxSpeechToTextRoutes);
+	app.route(MINIMAX_T2A_PATH, miniMaxT2aRoutes);
+	app.route(MINIMAX_IMAGE_GENERATION_PATH, miniMaxImageGenerationRoutes);
+	app.route(VOLCENGINE_IMAGE_GENERATIONS_PATH, volcengineImageGenerationRoutes);
 	app.route('/v1/messages', messagesRoutes);
 	// TEMP(soloent): 只为兼容 SoloEnt Agent 的历史拼路径，不是公开 API。
 	// 0.18.0–0.18.5 + 旧 token → POST /messages

@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import {
 	adapterOptionMappingSuffix,
+	buildOpenAiAdapterCallSample,
 	applyDashScopeAsrRoutePreset,
 	applyDashScopeImageRoutePreset,
 	applyDashScopeTtsRoutePreset,
@@ -19,6 +22,8 @@ import {
 	buildRoutesByModel,
 	compareRoutesWithinPriorityLayer,
 	compatibleAdaptersForRoute,
+	alignRouteFormAdapter,
+	listAdapterOptionsForModel,
 	factorChipClassForValue,
 	factorLevelForValue,
 	formatFactorMultiplierForChip,
@@ -31,6 +36,7 @@ import {
 	hasBasePricingInversion,
 	parseCustomParamsForm,
 	requestOperationsForModel,
+	resolveAdapterOptionKey,
 	requestLogProtocolPath,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
@@ -39,7 +45,7 @@ import {
 	upstreamOperationsForProviderModel,
 	type RouteModelGroup,
 } from './route-utils';
-import { getAdapterByOptionKey } from '@octafuse/core/adapters/registry';
+import { getAdapterByOptionKey, listConversionAdapters } from '@octafuse/core/adapters/registry';
 import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
 import { resolveRouteEffectiveFactors } from '@octafuse/core/db/pricing-schedule';
 import { EMPTY_ROUTE_FORM } from './types';
@@ -93,12 +99,26 @@ describe('request surface path', () => {
 		);
 	});
 
-	it('maps DashScope HTTP audio operations to their OpenAI-compatible endpoints', () => {
-		assert.equal(requestSurfacePath('dashscope', 'audio.speech', 'cosyvoice-v2'), '/v1/audio/speech');
-		assert.equal(requestSurfacePath('dashscope', 'audio.speech.multimodal'), '/v1/audio/speech');
+	it('maps DashScope HTTP audio operations to native passthrough endpoints', () => {
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.speech', 'cosyvoice-v2'),
+			'/v1/dashscope/services/audio/tts/SpeechSynthesizer',
+		);
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.speech.multimodal'),
+			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+		);
 		assert.equal(requestSurfacePath('dashscope', 'audio.transcriptions'), '/v1/audio/transcriptions');
 		assert.equal(
+			requestSurfacePath('dashscope', 'audio.transcriptions.async'),
+			'/v1/dashscope/services/audio/asr/transcription',
+		);
+		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.multimodal'),
+			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+		);
+		assert.equal(
+			requestSurfacePath('dashscope', 'images.generations.multimodal'),
 			'/v1/dashscope/services/aigc/multimodal-generation/generation',
 		);
 	});
@@ -107,7 +127,10 @@ describe('request surface path', () => {
 		assert.equal(requestLogProtocolPath('gemini', 'models.generate'), '/v1beta/models');
 		assert.equal(requestLogProtocolPath('gemini', 'streamGenerateContent'), '/v1beta/models');
 		assert.equal(requestLogProtocolPath('openai', 'chat'), '/v1/chat/completions');
-		assert.equal(requestLogProtocolPath('dashscope', 'audio.speech'), '/v1/audio/speech');
+		assert.equal(
+			requestLogProtocolPath('dashscope', 'audio.speech'),
+			'/v1/dashscope/services/audio/tts/SpeechSynthesizer',
+		);
 	});
 });
 
@@ -230,16 +253,105 @@ describe('route form capability filters', () => {
 
 	it('limits public operations by model modality', () => {
 		assert.deepEqual(requestOperationsForModel(model(), 'openai'), ['chat', 'responses']);
-		assert.deepEqual(
-			requestOperationsForModel(
-				model({
-					input_modalities: '["text","image"]',
-					output_modalities: '["image"]',
-				}),
-				'openai',
+		const imageModel = model({
+			input_modalities: '["text","image"]',
+			output_modalities: '["image"]',
+		});
+		assert.deepEqual(requestOperationsForModel(imageModel, 'openai'), ['images.generations', 'images.edits']);
+		assert.deepEqual(requestOperationsForModel(imageModel, 'gemini', 'gemini-3.1-flash-image'), [
+			'models.generate',
+		]);
+		assert.equal(
+			resolveAdapterOptionKey(
+				{
+					...EMPTY_ROUTE_FORM,
+					adapter: 'passthrough',
+					request_protocol: 'gemini',
+					request_operation: 'models.generate',
+					upstream_protocol: 'gemini',
+					upstream_operation: 'models.generate',
+				},
+				'image',
 			),
-			['images.generations', 'images.edits'],
+			'passthrough:gemini:models.generate:image',
 		);
+		assert.equal(
+			resolveAdapterOptionKey(
+				{
+					...EMPTY_ROUTE_FORM,
+					adapter: 'passthrough',
+					request_protocol: 'gemini',
+					request_operation: 'models.generate',
+					upstream_protocol: 'gemini',
+					upstream_operation: 'models.generate',
+				},
+				'llm',
+			),
+			'passthrough:gemini:models.generate',
+		);
+		const geminiOptions = listAdapterOptionsForModel(
+			imageModel,
+			provider({ gemini: { base: 'https://generativelanguage.googleapis.com/v1beta/models' } }),
+			'gemini-3.1-flash-image',
+		);
+		assert.equal(
+			geminiOptions.options.some(
+				(option) =>
+					option.descriptor.optionKey === 'passthrough:gemini:models.generate:image' &&
+					option.modelMatch === 'match',
+			),
+			true,
+		);
+		const geminiOnly = provider({
+			gemini: { base: 'https://generativelanguage.googleapis.com/v1beta/models' },
+		});
+		const misaligned = alignRouteFormAdapter(
+			{
+				...EMPTY_ROUTE_FORM,
+				adapter: 'passthrough',
+				request_protocol: 'openai',
+				request_operation: 'images.generations',
+				upstream_protocol: 'gemini',
+				upstream_operation: 'models.generate',
+				provider_model_name: 'gemini-nano-banana-2.1',
+			},
+			imageModel,
+			geminiOnly,
+		);
+		assert.equal(misaligned.request_protocol, 'gemini');
+		assert.equal(misaligned.request_operation, 'models.generate');
+		assert.equal(misaligned.upstream_protocol, 'gemini');
+		assert.equal(misaligned.upstream_operation, 'models.generate');
+		assert.equal(misaligned.adapter, 'passthrough');
+		assert.equal(
+			resolveAdapterOptionKey(misaligned, 'image'),
+			'passthrough:gemini:models.generate:image',
+		);
+		const openaiPassthrough = {
+			...EMPTY_ROUTE_FORM,
+			adapter: 'passthrough',
+			request_protocol: 'openai' as const,
+			request_operation: 'images.generations',
+			upstream_protocol: 'openai' as const,
+			upstream_operation: 'images.generations',
+			provider_model_name: 'gpt-image-2',
+		};
+		const kept = alignRouteFormAdapter(
+			openaiPassthrough,
+			imageModel,
+			provider({ openai: { base: 'https://api.openai.com/v1' } }),
+		);
+		assert.equal(kept, openaiPassthrough);
+		const alreadyGemini = {
+			...EMPTY_ROUTE_FORM,
+			adapter: 'passthrough',
+			request_protocol: 'gemini' as const,
+			request_operation: 'models.generate',
+			upstream_protocol: 'gemini' as const,
+			upstream_operation: 'models.generate',
+			provider_model_name: 'gemini-nano-banana-2.1',
+		};
+		assert.equal(alignRouteFormAdapter(alreadyGemini, imageModel, geminiOnly), alreadyGemini);
 		assert.deepEqual(
 			requestOperationsForModel(
 				model({
@@ -264,7 +376,12 @@ describe('route form capability filters', () => {
 				}),
 				'dashscope',
 			),
-			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.inference', 'audio.transcriptions.realtime.session'],
+			[
+				'audio.transcriptions.multimodal',
+				'audio.transcriptions.realtime.inference',
+				'audio.transcriptions.realtime.session',
+				'audio.transcriptions.async',
+			],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -277,7 +394,11 @@ describe('route form capability filters', () => {
 				'dashscope',
 				'fun-asr-realtime',
 			),
-			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.inference'],
+			[
+				'audio.transcriptions.multimodal',
+				'audio.transcriptions.realtime.inference',
+				'audio.transcriptions.async',
+			],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -290,7 +411,11 @@ describe('route form capability filters', () => {
 				'dashscope',
 				'qwen3-asr-flash-realtime',
 			),
-			['audio.transcriptions.multimodal', 'audio.transcriptions.realtime.session'],
+			[
+				'audio.transcriptions.multimodal',
+				'audio.transcriptions.realtime.session',
+				'audio.transcriptions.async',
+			],
 		);
 		assert.deepEqual(
 			requestOperationsForModel(
@@ -316,7 +441,13 @@ describe('route form capability filters', () => {
 				}),
 				'dashscope',
 			),
-			['audio.speech.realtime.inference'],
+			[
+				'audio.speech.realtime.inference',
+				'audio.speech',
+				'audio.speech.stream',
+				'audio.speech.multimodal',
+				'audio.speech.realtime.session',
+			],
 		);
 	});
 
@@ -389,7 +520,10 @@ describe('route form capability filters', () => {
 		});
 		assert.deepEqual(upstreamOperationsForProviderModel(dashScope, tts, 'dashscope'), [
 			'audio.speech',
+			'audio.speech.stream',
+			'audio.speech.multimodal',
 			'audio.speech.realtime.inference',
+			'audio.speech.realtime.session',
 		]);
 
 		const image = model({
@@ -432,6 +566,15 @@ describe('route form capability filters', () => {
 		assert.deepEqual(
 			compatibleAdaptersForRoute({
 				request_protocol: 'openai',
+				request_operation: 'audio.transcriptions',
+				upstream_protocol: 'minimax',
+				upstream_operation: 'audio.transcriptions',
+			}),
+			['minimax-asr-file'],
+		);
+		assert.deepEqual(
+			compatibleAdaptersForRoute({
+				request_protocol: 'openai',
 				request_operation: 'images.generations',
 				upstream_protocol: 'dashscope',
 				upstream_operation: 'images.generations.multimodal',
@@ -465,6 +608,170 @@ describe('route form capability filters', () => {
 			adapterOptionMappingSuffix(tts),
 			' · openai/audio.speech → dashscope/audio.speech.multimodal',
 		);
+	});
+
+	function visibleAdapterKeys(
+		listed: ReturnType<typeof listAdapterOptionsForModel>,
+		providerModelName = 'named',
+	): string[] {
+		return listed.options
+			.filter((option) => {
+				if (!option.available) return false;
+				if (!providerModelName.trim() || listed.modelUnrecognized) return true;
+				return option.modelMatch !== 'mismatch';
+			})
+			.map((option) => option.descriptor.optionKey)
+			.sort();
+	}
+
+	it('does not treat another protocol capability as satisfying this adapter', () => {
+		const dashscopeOnly = provider({
+			dashscope: { base: 'https://dashscope.aliyuncs.com/api/v1' },
+		});
+		const asr = model({
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_second',
+				audio: { price_per_second: 0.0001 },
+			}),
+		});
+		const listed = listAdapterOptionsForModel(asr, dashscopeOnly, 'qwen3-asr-flash');
+		assert.equal(
+			listed.options.find((option) => option.descriptor.optionKey === 'passthrough:openai:audio.transcriptions')
+				?.available,
+			false,
+		);
+		assert.equal(
+			listed.options.find((option) => option.descriptor.optionKey === 'passthrough:minimax:audio.transcriptions')
+				?.available,
+			false,
+		);
+		assert.equal(listed.modelUnrecognized, false);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'dashscope-asr-qwen-file',
+			'passthrough:dashscope:audio.transcriptions.multimodal',
+		]);
+	});
+
+	it('filters Token Plan TTS adapters to CosyVoice and Qwen-Audio families', () => {
+		const qwenTokenPlan = listStaticProviderImportPresets().find(
+			(row) => row.name === 'Qwen AI Platform (Token Plan)',
+		);
+		assert.ok(qwenTokenPlan);
+		const tts = model({
+			id: 'qwen-audio-3.0-tts-plus',
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_character',
+				audio: { price_per_character: 0.0001 },
+			}),
+		});
+		const listed = listAdapterOptionsForModel(
+			tts,
+			provider(qwenTokenPlan.endpoints),
+			'qwen-audio-3.0-tts-plus',
+		);
+		assert.equal(listed.modelUnrecognized, false);
+		assert.equal(
+			listed.options.find((option) => option.descriptor.optionKey === 'passthrough:openai:audio.speech')
+				?.available,
+			false,
+		);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'dashscope-tts-speech',
+			'passthrough:dashscope:audio.speech',
+			'passthrough:dashscope:audio.speech.stream',
+		]);
+	});
+
+	it('keeps MiniMax file transcription adapters and hides other protocols', () => {
+		const minimax = listStaticProviderImportPresets().find((row) => row.name === 'MiniMax');
+		assert.ok(minimax);
+		const asr = model({
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_second',
+				audio: { price_per_second: 0.0001 },
+			}),
+		});
+		const listed = listAdapterOptionsForModel(asr, provider(minimax.endpoints), 'asr-1.0');
+		assert.equal(listed.modelUnrecognized, false);
+		assert.equal(
+			listed.options.find((option) => option.descriptor.optionKey === 'passthrough:openai:audio.transcriptions')
+				?.available,
+			false,
+		);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'minimax-asr-file',
+			'passthrough:minimax:audio.transcriptions',
+		]);
+	});
+
+	it('offers MiniMax speech passthrough for native speech models', () => {
+		const minimax = listStaticProviderImportPresets().find((row) => row.name === 'MiniMax');
+		assert.ok(minimax);
+		const speech = model({
+			id: 'minimax-speech-2.8-turbo',
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_character',
+				audio: { price_per_character: 0.0002 },
+			}),
+			output_modalities: JSON.stringify(['audio']),
+		});
+		const listed = listAdapterOptionsForModel(speech, provider(minimax.endpoints), 'speech-2.8-turbo');
+		assert.equal(listed.modelUnrecognized, false);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'minimax-tts',
+			'passthrough:minimax:audio.speech',
+		]);
+		assert.deepEqual(
+			upstreamOperationsForProviderModel(provider(minimax.endpoints), speech, 'minimax', 'speech-2.8-turbo'),
+			['audio.speech'],
+		);
+	});
+
+	it('offers MiniMax image passthrough for image-01 models', () => {
+		const minimax = listStaticProviderImportPresets().find((row) => row.name === 'MiniMax');
+		assert.ok(minimax);
+		const image = model({
+			id: 'minimax-image-01',
+			pricing_profile: JSON.stringify({
+				image_billing_mode: 'per_image',
+				image: { default: 0.025 },
+			}),
+			output_modalities: JSON.stringify(['image']),
+		});
+		const listed = listAdapterOptionsForModel(image, provider(minimax.endpoints), 'image-01');
+		assert.equal(listed.modelUnrecognized, false);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'minimax-image',
+			'passthrough:minimax:images.generations',
+		]);
+	});
+
+	it('shows every available adapter when the provider model name matches no rule', () => {
+		const dashscope = provider({
+			dashscope: { base: 'https://dashscope.aliyuncs.com/api/v1' },
+		});
+		const asr = model({
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'per_second',
+				audio: { price_per_second: 0.0001 },
+			}),
+		});
+		const listed = listAdapterOptionsForModel(asr, dashscope, 'brand-new-asr');
+		assert.equal(listed.modelUnrecognized, true);
+		assert.deepEqual(visibleAdapterKeys(listed), [
+			'dashscope-asr-file-async',
+			'dashscope-asr-fun-file',
+			'dashscope-asr-qwen-audio-file',
+			'dashscope-asr-qwen-file',
+			'passthrough:dashscope:audio.transcriptions.async',
+			'passthrough:dashscope:audio.transcriptions.multimodal',
+			'passthrough:dashscope:audio.transcriptions.realtime.inference',
+			'passthrough:dashscope:audio.transcriptions.realtime.session',
+		]);
+
+		const unnamed = listAdapterOptionsForModel(asr, dashscope, '  ');
+		assert.equal(unnamed.modelUnrecognized, false);
+		assert.ok(unnamed.options.every((option) => option.modelMatch === 'generic'));
 	});
 });
 
@@ -1470,5 +1777,74 @@ describe('previewRouteBillingFactors', () => {
 			previewRouteBillingFactors({ ...factors, charged_factor: '1' }, { starts_at: 'invalid' }, now).charged,
 			null
 		);
+	});
+});
+
+describe('adapter call guide copy', () => {
+	for (const locale of ['zh', 'en', 'ja', 'ko']) {
+		it(`${locale} documents every OpenAI conversion adapter`, () => {
+			const messages = JSON.parse(
+				readFileSync(fileURLToPath(new URL(`../../../messages/${locale}.json`, import.meta.url)), 'utf8'),
+			) as {
+				routes: {
+					modal: {
+						adapterGuides: Record<string, { purpose?: string; mapping?: unknown }>;
+						lossyFeatureNames: Record<string, string>;
+					};
+				};
+			};
+			const guides = messages.routes.modal.adapterGuides;
+			assert.equal(typeof guides.passthrough?.purpose, 'string');
+			assert.ok(guides.passthrough.purpose);
+			for (const adapter of listConversionAdapters()) {
+				if (adapter.request.protocol !== 'openai') continue;
+				const guide = guides[adapter.id];
+				assert.ok(guide, `${locale} ${adapter.id}`);
+				assert.equal(typeof guide.purpose, 'string');
+				assert.ok(guide.purpose && guide.purpose.length > 0);
+				assert.ok(Array.isArray(guide.mapping) && guide.mapping.length > 0, adapter.id);
+				for (const feature of adapter.lossyFeatures ?? []) {
+					assert.equal(typeof messages.routes.modal.lossyFeatureNames[feature], 'string', feature);
+				}
+			}
+		});
+	}
+});
+
+describe('buildOpenAiAdapterCallSample', () => {
+	it('renders OpenAI SDK calls and skips passthrough', () => {
+		const wan = getAdapterByOptionKey('dashscope-image-wan');
+		const wanSample = buildOpenAiAdapterCallSample(wan!);
+		assert.match(wanSample ?? '', /client\.images\.generate\(/);
+		assert.match(wanSample ?? '', /extra_body=\{"parameters": \{"negative_prompt": "blurry", "seed": 42\}\}/);
+
+		const image = getAdapterByOptionKey('minimax-image');
+		const imageSample = buildOpenAiAdapterCallSample(image!);
+		assert.match(imageSample ?? '', /"prompt_optimizer": True/);
+		assert.match(imageSample ?? '', /"aigc_watermark": False/);
+
+		const speech = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-tts-qwen')!);
+		assert.match(speech ?? '', /client\.audio\.speech\.create\(/);
+		assert.equal(speech?.includes('extra_body'), false);
+		assert.match(speech ?? '', /response_format="wav"/);
+		assert.match(speech ?? '', /voice="YOUR_VOICE_ID"/);
+
+		const asr = buildOpenAiAdapterCallSample(getAdapterByOptionKey('minimax-asr-file')!);
+		assert.match(asr ?? '', /client\.audio\.transcriptions\.create\(/);
+		assert.match(asr ?? '', /"timestamp_level": "sentence"/);
+
+		assert.equal(buildOpenAiAdapterCallSample(getAdapterByOptionKey('passthrough:openai:images.generations')!), null);
+	});
+	it('uses the client model and group, escaping user-supplied text', () => {
+		const sample = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-image-qwen')!, 'my"model:free');
+		assert.ok(sample?.includes(`model=${JSON.stringify('my"model:free')},`));
+		assert.equal(sample?.includes('your-model'), false);
+	});
+	it('submits a public URL as multipart for asynchronous transcription', () => {
+		const sample = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-asr-file-async')!, 'asr:free');
+		assert.match(sample ?? '', /httpx\.post\(/);
+		assert.match(sample ?? '', /"model": \(None, "asr:free"\)/);
+		assert.match(sample ?? '', /"file_url": \(None, "https:\/\/example\.com\/audio\.mp3"\)/);
+		assert.equal(sample?.includes('file=open'), false);
 	});
 });

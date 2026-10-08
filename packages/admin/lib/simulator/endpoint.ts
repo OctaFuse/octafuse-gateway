@@ -3,6 +3,7 @@
  * (including OpenAI/Anthropic `model` field) or Agent Tools (`/v1/tools/*`).
  */
 import { applyGeminiStreamQueryParams } from "@octafuse/core/gemini-upstream-url";
+import { requestSurfacePath } from "@octafuse/core/adapters/registry";
 import { openaiEditImageFormField, type ImageOperation } from "@/lib/image-generations";
 import {
 	parseGatewayToolId,
@@ -308,11 +309,13 @@ export function buildSimulatorRequest(
 		}
 		case "gemini": {
 			const action: SimulatorGeminiAction =
-				input.geminiAction === "generateContent"
+				kind === "image"
 					? "generateContent"
-					: "streamGenerateContent";
+					: input.geminiAction === "generateContent"
+						? "generateContent"
+						: "streamGenerateContent";
 			const path = resolveProxyPathForModelInvoke({
-				kind: "llm",
+				kind: kind === "image" ? "image" : "llm",
 				protocol: "gemini",
 				geminiAction: action,
 				geminiModelSegment: input.modelForRouting,
@@ -328,12 +331,32 @@ export function buildSimulatorRequest(
 				bodyText: JSON.stringify(input.body),
 			};
 		}
-		case "dashscope": {
-			if (input.dashscopeRequestOperation === "audio.transcriptions.multimodal") {
+		case "volcengine": {
+			if (kind !== "image") {
+				throw new Error("Volcengine simulator currently supports image generation only");
+			}
+			const path = resolveProxyPathForModelInvoke({
+				kind: "image",
+				protocol: "volcengine",
+				imageOperation: "generations",
+			});
+			const merged = { ...input.body, model: input.modelForRouting };
+			return {
+				url: `${base}${path}`,
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: auth,
+				},
+				bodyText: JSON.stringify(merged),
+			};
+		}
+		case "minimax": {
+			if (kind === "image" || (kind === "audio" && (input.audioOperation ?? "transcriptions") === "speech")) {
 				const path = resolveProxyPathForModelInvoke({
-					kind: "audio",
-					protocol: "dashscope",
-					audioOperation: "transcriptions",
+					kind: kind === "image" ? "image" : "audio",
+					protocol: "minimax",
+					audioOperation: kind === "audio" ? "speech" : undefined,
+					imageOperation: kind === "image" ? "generations" : undefined,
 				});
 				const merged = { ...input.body, model: input.modelForRouting };
 				return {
@@ -345,9 +368,69 @@ export function buildSimulatorRequest(
 					bodyText: JSON.stringify(merged),
 				};
 			}
-			throw new Error(
-				"DashScope realtime requests must use the WebSocket simulator path"
-			);
+			if (kind !== "audio") {
+				throw new Error("MiniMax simulator supports file transcriptions, speech, and image generation");
+			}
+			const file = input.audioFile ?? null;
+			const fd = new FormData();
+			fd.append("model", input.modelForRouting);
+			const skip = new Set(["model", "file", "audio", "file_name", "filename"]);
+			const fieldParts = ["model", "file"];
+			for (const [key, value] of Object.entries(input.body)) {
+				if (skip.has(key)) continue;
+				appendOptionalFormField(fd, key, value);
+				if (value != null && String(value).trim() !== "") fieldParts.push(key);
+			}
+			const fileLines: string[] = [];
+			if (file) {
+				fd.append("file", file, file.name || "audio.wav");
+				fileLines.push(`${file.name || "audio.wav"} (${file.size} bytes)`);
+			}
+			const fileSummary = !file
+				? "file: (none selected yet — required before Send)"
+				: [`file:`, ...fileLines.map((line) => `  - ${line}`)].join("\n");
+			const path = resolveProxyPathForModelInvoke({
+				kind: "audio",
+				protocol: "minimax",
+				audioOperation: "transcriptions",
+			});
+			return {
+				url: `${base}${path}`,
+				headers: {
+					Authorization: auth,
+				},
+				bodyText: "",
+				formData: fd,
+				multipartSummary: [
+					`multipart/form-data fields: ${fieldParts.join(", ")}`,
+					fileSummary,
+					"language is forwarded as the MiniMax language header",
+				].join("\n"),
+			};
+		}
+		case "dashscope": {
+			const operation =
+				input.kind === "image"
+					? "images.generations.multimodal"
+					: input.dashscopeRequestOperation;
+			if (!operation || operation.includes(".realtime.")) {
+				throw new Error(
+					"DashScope realtime requests must use the WebSocket simulator path"
+				);
+			}
+			const path = requestSurfacePath("dashscope", operation);
+			const headers: Record<string, string> = {
+				"Content-Type": "application/json",
+				Authorization: auth,
+			};
+			if (operation === "audio.speech.stream") headers["X-DashScope-SSE"] = "enable";
+			if (operation === "audio.transcriptions.async") headers["X-DashScope-Async"] = "enable";
+			const merged = { ...input.body, model: input.modelForRouting };
+			return {
+				url: `${base}${path}`,
+				headers,
+				bodyText: JSON.stringify(merged),
+			};
 		}
 		default: {
 			const _exhaustive: never = input.protocol;

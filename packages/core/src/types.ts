@@ -105,7 +105,7 @@ export interface ProviderRow {
    */
   kind?: string | null;
   /**
-	 * 协议端点 JSON（权威）：`{ openai?: { base?, endpoints? }, anthropic?, gemini?, dashscope? }`。
+	 * 协议端点 JSON（权威）：`{ openai?: { base?, endpoints? }, anthropic?, gemini?, dashscope?, minimax? }`。
    * 见 `parseProviderEndpoints` / `resolveUpstreamEndpoint`。
    */
   endpoints?: string | null;

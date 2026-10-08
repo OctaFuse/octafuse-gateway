@@ -13,6 +13,30 @@ import {
 	type DashScopeAsrDispatchOptions,
 } from './dashscope-audio-driver';
 import {
+	dispatchDashScopeJsonPassthrough,
+	type DashScopeJsonPassthroughOptions,
+	type DashScopePassthroughSurface,
+} from './dashscope-json-passthrough';
+import {
+	dispatchMiniMaxAsrPassthrough,
+	dispatchMiniMaxAudioTranscriptions,
+	type MiniMaxAsrPassthroughRequest,
+} from './minimax-audio-driver';
+import {
+	dispatchMiniMaxJsonPassthrough,
+	type MiniMaxJsonPassthroughOperation,
+	type MiniMaxJsonPassthroughOptions,
+} from './minimax-json-passthrough';
+import {
+	dispatchVolcengineJsonPassthrough,
+	type VolcengineJsonPassthroughOptions,
+} from './volcengine-json-passthrough';
+import {
+	dispatchGeminiImagePassthrough,
+	type GeminiImageAction,
+	type GeminiImagePassthroughOptions,
+} from './gemini-image-passthrough';
+import {
 	dispatchOpenAiAudioTranscriptions,
 	type NormalizedAudioTranscriptionRequest,
 } from './openai-audio-driver';
@@ -25,7 +49,10 @@ import {
 	type NormalizedAudioSpeechRequest,
 } from './audio-speech-driver';
 import { dispatchDashScopeImageGenerations } from './dashscope-images-driver';
+import { dispatchGeminiOpenAiImage } from './gemini-openai-image-driver';
+import { dispatchMiniMaxOpenAiImage, dispatchMiniMaxOpenAiSpeech } from './minimax-openai-driver';
 import { dispatchOpenAiImageGenerations } from './openai-images-driver';
+import { dispatchVolcengineOpenAiImage } from './volcengine-openai-driver';
 
 type Timing = {
 	signal?: AbortSignal;
@@ -38,17 +65,22 @@ const AUDIO_TRANSCRIPTION_ADAPTERS = [
 	'dashscope-asr-qwen-audio-file',
 	'dashscope-asr-fun-file',
 	'dashscope-asr-file-async',
+	'minimax-asr-file',
 ] as const satisfies readonly RouteAdapter[];
 
 const AUDIO_SPEECH_ADAPTERS = [
 	'dashscope-tts-speech',
 	'dashscope-tts-qwen',
 	'dashscope-tts-minimax',
+	'minimax-tts',
 ] as const satisfies readonly RouteAdapter[];
 
 const IMAGE_GENERATION_ADAPTERS = [
 	'dashscope-image-qwen',
 	'dashscope-image-wan',
+	'minimax-image',
+	'volcengine-image',
+	'gemini-image',
 ] as const satisfies readonly RouteAdapter[];
 
 export const IMPLEMENTED_CONVERSION_ADAPTERS: readonly RouteAdapter[] = [
@@ -87,6 +119,9 @@ export function dispatchAudioTranscriptions(
 	if (route.adapter === 'dashscope-asr-file-async') {
 		return dispatchDashScopeAsyncAsr(route, req, ctx.signal, ctx.timing, ctx.attempt, options);
 	}
+	if (route.adapter === 'minimax-asr-file') {
+		return dispatchMiniMaxAudioTranscriptions(route, req, ctx.signal, ctx.timing, ctx.attempt);
+	}
 	throw new Error(`Unsupported audio transcription adapter: ${route.adapter}`);
 }
 
@@ -94,6 +129,7 @@ const SPEECH_DISPATCH = {
 	'dashscope-tts-speech': dispatchDashScopeSpeechSynthesizer,
 	'dashscope-tts-qwen': dispatchDashScopeQwenTts,
 	'dashscope-tts-minimax': dispatchDashScopeMiniMaxTts,
+	'minimax-tts': dispatchMiniMaxOpenAiSpeech,
 } as const;
 
 export function dispatchAudioSpeech(
@@ -127,7 +163,35 @@ export function dispatchImageGenerations(
 	if (route.adapter === 'dashscope-image-qwen' || route.adapter === 'dashscope-image-wan') {
 		return dispatchDashScopeImageGenerations(route, body, signal, timing, attempt);
 	}
+	if (route.adapter === 'minimax-image') {
+		return dispatchMiniMaxOpenAiImage(route, body, signal, timing, attempt);
+	}
+	if (route.adapter === 'volcengine-image') {
+		return dispatchVolcengineOpenAiImage(route, body, signal, timing, attempt);
+	}
+	if (route.adapter === 'gemini-image') {
+		return dispatchGeminiOpenAiImage(route, body, signal, timing, attempt);
+	}
 	throw new Error(`Unsupported image generation adapter: ${route.adapter}`);
+}
+
+export function dispatchDashScopeJsonPassthroughRoute(
+	route: RouteResult,
+	surface: DashScopePassthroughSurface,
+	body: Record<string, unknown> | null,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: DashScopeJsonPassthroughOptions,
+): Promise<ProxyDispatchResult> {
+	if (
+		route.adapter !== 'passthrough' ||
+		route.upstreamProtocol !== 'dashscope' ||
+		route.upstreamOperation !== surface
+	) {
+		throw new Error(`Unsupported DashScope passthrough adapter: ${route.adapter}`);
+	}
+	return dispatchDashScopeJsonPassthrough(route, surface, body, signal, timing, attempt, options);
 }
 
 export function dispatchMultimodalPassthrough(
@@ -142,4 +206,57 @@ export function dispatchMultimodalPassthrough(
 		throw new Error(`Unsupported DashScope multimodal adapter: ${route.adapter}`);
 	}
 	return dispatchDashScopeMultimodalPassthrough(route, body, signal, timing, attempt, options);
+}
+
+export function dispatchGeminiImagePassthroughRoute(
+	route: RouteResult,
+	action: GeminiImageAction,
+	body: Record<string, unknown>,
+	search: string,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: GeminiImagePassthroughOptions,
+): Promise<ProxyDispatchResult> {
+	return dispatchGeminiImagePassthrough(route, action, body, search, signal, timing, attempt, options);
+}
+
+export function dispatchVolcengineJsonPassthroughRoute(
+	route: RouteResult,
+	body: Record<string, unknown>,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: VolcengineJsonPassthroughOptions,
+): Promise<ProxyDispatchResult> {
+	return dispatchVolcengineJsonPassthrough(route, body, signal, timing, attempt, options);
+}
+
+export function dispatchMiniMaxJsonPassthroughRoute(
+	route: RouteResult,
+	operation: MiniMaxJsonPassthroughOperation,
+	body: Record<string, unknown>,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: MiniMaxJsonPassthroughOptions,
+): Promise<ProxyDispatchResult> {
+	return dispatchMiniMaxJsonPassthrough(route, operation, body, signal, timing, attempt, options);
+}
+
+export function dispatchMiniMaxSpeechPassthrough(
+	route: RouteResult,
+	request: MiniMaxAsrPassthroughRequest,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt
+): Promise<ProxyDispatchResult> {
+	if (
+		route.adapter !== 'passthrough' ||
+		route.upstreamProtocol !== 'minimax' ||
+		route.upstreamOperation !== 'audio.transcriptions'
+	) {
+		throw new Error(`Unsupported MiniMax ASR passthrough adapter: ${route.adapter}`);
+	}
+	return dispatchMiniMaxAsrPassthrough(route, request, signal, timing, attempt);
 }

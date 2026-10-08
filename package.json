@@ -45,7 +45,9 @@
 		"test:gateway:sql-storage-smoke": "dotenv -c -- tsx scripts/smoke/test-storage-concurrent-charge.ts",
 		"test:deploy": "node --test scripts/deploy/*.test.mjs",
 		"verify:proxy-bundle": "node scripts/ci/verify-proxy-bundle-externals.mjs",
-		"test:unit": "npm run test:deploy && npm run test:unit -w @octafuse/core && npm run test:unit -w @octafuse/proxy && npm run test:unit -w @octafuse/admin"
+		"docs:image-models": "node scripts/docs/gen-image-models.mjs",
+		"test:docs": "node --test scripts/docs/*.test.mjs",
+		"test:unit": "npm run test:deploy && npm run test:docs && npm run test:unit -w @octafuse/core && npm run test:unit -w @octafuse/proxy && npm run test:unit -w @octafuse/admin"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.1",

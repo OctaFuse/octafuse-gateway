@@ -5,19 +5,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.deepseek.com/chat/completions"
+					"chat": "https://api.deepseek.com/chat/completions",
+					"responses": "https://api.deepseek.com/responses"
 				}
+			},
+			"anthropic": {
+				"base": "https://api.deepseek.com/anthropic"
 			}
 		},
+		"description": "OpenAI chat (/chat/completions) and Responses (/responses) on https://api.deepseek.com. Anthropic Messages base is https://api.deepseek.com/anthropic. Responses is stateless and does not accept previous_response_id.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "DeepSeek",
-					"description": "DeepSeek 官方开放平台，提供 OpenAI 兼容的对话模型 API。"
+					"description": "DeepSeek 官方开放平台，支持 OpenAI Chat / Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "DeepSeek",
-					"description": "DeepSeek’s official platform with an OpenAI-compatible chat API."
+					"description": "DeepSeek’s official platform with OpenAI Chat/Responses and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -33,20 +38,26 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
-					"images.generations": "https://ark.cn-beijing.volces.com/api/v3/images/generations"
+					"responses": "https://ark.cn-beijing.volces.com/api/v3/responses"
 				}
+			},
+			"anthropic": {
+				"base": "https://ark.cn-beijing.volces.com/api/compatible"
+			},
+			"volcengine": {
+				"base": "https://ark.cn-beijing.volces.com/api/v3"
 			}
 		},
-		"description": "Capability URLs only (no openai.base): chat/completions + images/generations. Seedream has no /images/edits — i2i uses generations + JSON `image`. Do not set base or Gateway would derive a dead edits URL. Coding/Agent Plan templates use separate paths—do not mix.",
+		"description": "OpenAI chat and responses stay on openai.endpoints (no openai.base, so images/edits and audio are not derived). Anthropic Messages uses https://ark.cn-beijing.volces.com/api/compatible. Seedream uses volcengine.base: native passthrough and the volcengine-image adapter both call /images/generations. Coding/Agent Plan templates use separate paths—do not mix.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "火山方舟",
-					"description": "火山方舟标准按量 API 预设，覆盖对话与 Seedream 图片生成。"
+					"description": "火山方舟标准按量端点，提供 OpenAI Chat / Responses、Anthropic Messages，以及 Seedream 图片生成。"
 				},
 				"en": {
 					"name": "Volcengine Ark",
-					"description": "Standard pay-as-you-go Ark endpoints for chat and Seedream image generation."
+					"description": "Standard pay-as-you-go Ark endpoints for OpenAI Chat/Responses, Anthropic Messages, and Seedream image generation."
 				}
 			},
 			"links": {
@@ -61,23 +72,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://ark.cn-beijing.volces.com/api/coding/v3/chat/completions"
+					"chat": "https://ark.cn-beijing.volces.com/api/coding/v3/chat/completions",
+					"responses": "https://ark.cn-beijing.volces.com/api/coding/v3/responses"
 				}
 			},
 			"anthropic": {
 				"base": "https://ark.cn-beijing.volces.com/api/coding"
 			}
 		},
-		"description": "Coding Plan–only endpoints (/api/coding…). Do not mix with the standard /api/v3 base URL or plan quota will not apply. See Volcengine official docs.",
+		"description": "Coding Plan–only endpoints (/api/coding…). OpenAI Chat and Responses share /api/coding/v3; Anthropic Messages uses /api/coding. Do not mix with the standard /api/v3 base URL or plan quota will not apply. See Volcengine official docs.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "火山方舟（Coding Plan）",
-					"description": "火山方舟 Coding Plan 专用端点，支持 OpenAI 与 Anthropic 协议。"
+					"description": "火山方舟 Coding Plan 专用端点，支持 OpenAI Chat、Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Volcengine Ark (Coding Plan)",
-					"description": "Coding Plan endpoints with OpenAI- and Anthropic-compatible access."
+					"description": "Coding Plan endpoints for OpenAI Chat, Responses, and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -92,23 +104,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://ark.cn-beijing.volces.com/api/plan/v3/chat/completions"
+					"chat": "https://ark.cn-beijing.volces.com/api/plan/v3/chat/completions",
+					"responses": "https://ark.cn-beijing.volces.com/api/plan/v3/responses"
 				}
 			},
 			"anthropic": {
 				"base": "https://ark.cn-beijing.volces.com/api/plan"
 			}
 		},
-		"description": "Agent Plan–only endpoints (/api/plan…). Do not mix with the standard /api/v3 base URL or plan quota will not apply. See Volcengine official docs.",
+		"description": "Agent Plan–only endpoints (/api/plan…). OpenAI Chat and Responses share /api/plan/v3; Anthropic Messages uses /api/plan. Do not mix with the standard /api/v3 base URL or plan quota will not apply. See Volcengine official docs.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "火山方舟（Agent Plan）",
-					"description": "火山方舟 Agent Plan 专用端点，支持 OpenAI 与 Anthropic 协议。"
+					"description": "火山方舟 Agent Plan 专用端点，支持 OpenAI Chat、Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Volcengine Ark (Agent Plan)",
-					"description": "Agent Plan endpoints with OpenAI- and Anthropic-compatible access."
+					"description": "Agent Plan endpoints for OpenAI Chat, Responses, and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -124,20 +137,26 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://ark.ap-southeast.bytepluses.com/api/v3/chat/completions",
-					"images.generations": "https://ark.ap-southeast.bytepluses.com/api/v3/images/generations"
+					"responses": "https://ark.ap-southeast.bytepluses.com/api/v3/responses"
 				}
+			},
+			"anthropic": {
+				"base": "https://ark.ap-southeast.bytepluses.com/api/compatible"
+			},
+			"volcengine": {
+				"base": "https://ark.ap-southeast.bytepluses.com/api/v3"
 			}
 		},
-		"description": "BytePlus ModelArk (Volcengine international, ap-southeast). Capability URLs only: chat/completions + images/generations. Do not mix with China-region ark.cn-beijing.volces.com.",
+		"description": "BytePlus ModelArk (Volcengine international, ap-southeast). OpenAI chat and responses stay on openai.endpoints (no openai.base). Anthropic Messages uses https://ark.ap-southeast.bytepluses.com/api/compatible. Seedream uses volcengine.base for native passthrough and the volcengine-image adapter. Do not mix with China-region ark.cn-beijing.volces.com.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "BytePlus ModelArk",
-					"description": "火山方舟国际站（BytePlus）按量端点，覆盖对话与图片生成。"
+					"description": "火山方舟国际站（BytePlus）按量端点，提供 OpenAI Chat / Responses、Anthropic Messages，以及图片生成。"
 				},
 				"en": {
 					"name": "BytePlus ModelArk",
-					"description": "International Volcengine ModelArk endpoints for chat and image generation."
+					"description": "International Volcengine ModelArk endpoints for OpenAI Chat/Responses, Anthropic Messages, and image generation."
 				}
 			},
 			"links": {
@@ -152,20 +171,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://ark.ap-southeast.bytepluses.com/api/coding/v3/chat/completions"
+					"chat": "https://ark.ap-southeast.bytepluses.com/api/coding/v3/chat/completions",
+					"responses": "https://ark.ap-southeast.bytepluses.com/api/coding/v3/responses"
 				}
+			},
+			"anthropic": {
+				"base": "https://ark.ap-southeast.bytepluses.com/api/coding"
 			}
 		},
-		"description": "BytePlus ModelArk Coding Plan–only endpoints (/api/coding…). Do not mix with the standard /api/v3 path or plan quota will not apply.",
+		"description": "BytePlus ModelArk Coding Plan–only endpoints (/api/coding…). OpenAI Chat and Responses share /api/coding/v3; Anthropic Messages uses /api/coding. Do not mix with the standard /api/v3 path or plan quota will not apply.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "BytePlus ModelArk（Coding Plan）",
-					"description": "BytePlus ModelArk Coding Plan 专用对话端点。"
+					"description": "BytePlus ModelArk Coding Plan 专用端点，支持 OpenAI Chat、Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "BytePlus ModelArk (Coding Plan)",
-					"description": "Coding Plan chat endpoints for BytePlus ModelArk."
+					"description": "Coding Plan endpoints for OpenAI Chat, Responses, and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -181,22 +204,27 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+					"chat": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+					"responses": "https://dashscope.aliyuncs.com/compatible-mode/v1/responses"
 				}
 			},
 			"dashscope": {
 				"base": "https://dashscope.aliyuncs.com/api/v1"
+			},
+			"anthropic": {
+				"base": "https://dashscope.aliyuncs.com/apps/anthropic"
 			}
 		},
+		"description": "China-region Model Studio pay-as-you-go on dashscope.aliyuncs.com: OpenAI chat + responses, Anthropic Messages, and DashScope base. No openai.base, so Images and Audio stay on dashscope. Workspace-dedicated hosts ({WorkspaceId}.cn-beijing.maas.aliyuncs.com) are not a preset. Do not mix with Qwen AI Platform maas.qianwenaiapi.com or Coding Plan coding.dashscope.aliyuncs.com.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "阿里云百炼",
-					"description": "阿里云百炼标准模型服务，提供 OpenAI 兼容的对话 API，以及 DashScope 原生 ASR/TTS 接口。"
+					"description": "阿里云百炼按量端点，提供 OpenAI Chat / Responses、Anthropic Messages，以及 DashScope 原生语音与生图。"
 				},
 				"en": {
 					"name": "Alibaba Cloud Model Studio",
-					"description": "Alibaba Cloud Model Studio’s standard OpenAI-compatible chat API plus native DashScope ASR/TTS endpoints."
+					"description": "China-region pay-as-you-go endpoints for OpenAI Chat/Responses, Anthropic Messages, and native DashScope audio and image generation."
 				}
 			},
 			"links": {
@@ -244,23 +272,27 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
+					"chat": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+					"responses": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/responses"
 				}
 			},
 			"dashscope": {
 				"base": "https://dashscope-intl.aliyuncs.com/api/v1"
+			},
+			"anthropic": {
+				"base": "https://dashscope-intl.aliyuncs.com/apps/anthropic"
 			}
 		},
-		"description": "Singapore / international Model Studio pay-as-you-go. Do not mix with China-region dashscope.aliyuncs.com or Coding Plan coding-intl.dashscope.aliyuncs.com keys.",
+		"description": "Singapore / international Model Studio pay-as-you-go on dashscope-intl.aliyuncs.com: OpenAI chat + responses, Anthropic Messages, and DashScope base. No openai.base, so Images and Audio stay on dashscope. Do not mix with China-region dashscope.aliyuncs.com or Coding Plan coding-intl.dashscope.aliyuncs.com keys.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "阿里云百炼（国际站）",
-					"description": "阿里云百炼国际站按量端点，提供 OpenAI 兼容对话与 DashScope 原生音频接口。"
+					"description": "阿里云百炼国际站按量端点，提供 OpenAI Chat / Responses、Anthropic Messages，以及 DashScope 原生语音与生图。"
 				},
 				"en": {
 					"name": "Alibaba Cloud Model Studio (International)",
-					"description": "International pay-as-you-go Model Studio endpoints for OpenAI-compatible chat plus native DashScope audio."
+					"description": "International pay-as-you-go endpoints for OpenAI Chat/Responses, Anthropic Messages, and native DashScope audio and image generation."
 				}
 			},
 			"links": {
@@ -300,38 +332,74 @@
 		}
 	},
 	{
+		"name": "Qwen AI Platform",
+		"vendor_key": "aliyun",
+		"icon_key": "qwen",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://maas.qianwenaiapi.com/compatible-mode/v1/chat/completions",
+					"responses": "https://maas.qianwenaiapi.com/compatible-mode/v1/responses"
+				}
+			},
+			"dashscope": {
+				"base": "https://maas.qianwenaiapi.com/api/v1"
+			},
+			"anthropic": {
+				"base": "https://maas.qianwenaiapi.com/apps/anthropic"
+			}
+		},
+		"description": "Qwen AI Platform pay-as-you-go on maas.qianwenaiapi.com: OpenAI chat + responses, Anthropic base, and DashScope base (ASR/TTS/realtime/image/filetrans). Keys are sk- or sk-ws-. Do not mix with Token Plan sk-sp-* on token-plan.maas.qianwenaiapi.com or Bailian dashscope.aliyuncs.com. See platform.qianwenai.com.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "千问 AI 平台",
+					"description": "千问按量端点（maas.qianwenaiapi.com），支持 OpenAI Chat / Responses、Anthropic，以及 DashScope 语音、生图与 filetrans。使用 sk- 或 sk-ws- Key。"
+				},
+				"en": {
+					"name": "Qwen AI Platform",
+					"description": "Pay-as-you-go endpoints on maas.qianwenaiapi.com for OpenAI Chat/Responses, Anthropic, and DashScope audio, image, and file transcription. Uses sk- or sk-ws- keys."
+				}
+			},
+			"links": {
+				"platform": "https://platform.qianwenai.com/"
+			}
+		}
+	},
+	{
 		"name": "Qwen AI Platform (Token Plan)",
 		"vendor_key": "aliyun",
 		"icon_key": "qwen",
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions"
+					"chat": "https://token-plan.maas.qianwenaiapi.com/compatible-mode/v1/chat/completions",
+					"responses": "https://token-plan.maas.qianwenaiapi.com/compatible-mode/v1/responses"
 				}
 			},
 			"dashscope": {
 				"endpoints": {
-					"audio.transcriptions.multimodal": "https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-					"images.generations.multimodal": "https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-					"audio.speech": "https://token-plan.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer",
-					"audio.realtime.inference": "wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference",
-					"audio.realtime.session": "wss://token-plan.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime"
+					"audio.transcriptions.multimodal": "https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation",
+					"images.generations.multimodal": "https://token-plan.maas.qianwenaiapi.com/api/v1/services/aigc/multimodal-generation/generation",
+					"audio.speech": "https://token-plan.maas.qianwenaiapi.com/api/v1/services/audio/tts/SpeechSynthesizer",
+					"audio.realtime.inference": "wss://token-plan.maas.qianwenaiapi.com/api-ws/v1/inference",
+					"audio.realtime.session": "wss://token-plan.maas.qianwenaiapi.com/api-ws/v1/realtime"
 				}
 			},
 			"anthropic": {
-				"base": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"
+				"base": "https://token-plan.maas.qianwenaiapi.com/apps/anthropic"
 			}
 		},
-		"description": "Qwen AI Platform Token Plan (personal/team) OpenAI chat + DashScope TTS/realtime/image + Anthropic base; includes qwen-audio-3.0-asr-flash sync HTTP and DashScope image generation via multimodal-generation. Does not include filetrans HTTP. Plan keys (sk-sp-*). Do not mix with pay-as-you-go dashscope.aliyuncs.com or Coding Plan coding.dashscope.aliyuncs.com. See platform.qianwenai.com Token Plan docs.",
+		"description": "Qwen AI Platform Token Plan (personal/team) on token-plan.maas.qianwenaiapi.com: OpenAI chat + responses, Anthropic base, and explicit DashScope TTS/realtime/image/ASR overrides. Includes qwen-audio-3.0-asr-flash sync HTTP and DashScope image generation via multimodal-generation. Does not include filetrans HTTP or video synthesis. Plan keys (sk-sp-*). Do not mix with pay-as-you-go maas.qianwenaiapi.com or Coding Plan. See platform.qianwenai.com Token Plan docs.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "千问 AI 平台（Token Plan）",
-					"description": "千问 Token Plan 个人版与团队版端点，支持 OpenAI、DashScope TTS / 实时语音 / 生图与 Anthropic 协议，以及 qwen-audio-3.0-asr-flash 同步 HTTP；不含 filetrans 异步转写。"
+					"description": "千问 Token Plan 个人版与团队版端点（token-plan.maas.qianwenaiapi.com），支持 OpenAI Chat / Responses、Anthropic，以及 DashScope TTS / 实时语音 / 生图与 qwen-audio-3.0-asr-flash 同步 HTTP；不含 filetrans 异步转写与视频生成。"
 				},
 				"en": {
 					"name": "Qwen AI Platform (Token Plan)",
-					"description": "Personal and team Token Plan endpoints for OpenAI, DashScope TTS/realtime/image, and Anthropic protocols. Includes qwen-audio-3.0-asr-flash sync HTTP and DashScope image generation. Does not include filetrans HTTP."
+					"description": "Personal and team Token Plan endpoints on token-plan.maas.qianwenaiapi.com for OpenAI Chat/Responses, Anthropic, and DashScope TTS/realtime/image. Includes qwen-audio-3.0-asr-flash sync HTTP. Does not include filetrans or video synthesis."
 				}
 			},
 			"links": {
@@ -348,17 +416,21 @@
 				"endpoints": {
 					"chat": "https://api.hunyuan.cloud.tencent.com/v1/chat/completions"
 				}
+			},
+			"anthropic": {
+				"base": "https://api.hunyuan.cloud.tencent.com/anthropic"
 			}
 		},
+		"description": "Legacy Hunyuan pay-as-you-go: OpenAI chat and Anthropic Messages on api.hunyuan.cloud.tencent.com. TokenHub pay-as-you-go (tokenhub.tencentmaas.com) and Hy Token Plan (api.lkeap.cloud.tencent.com/plan) are separate presets or hosts.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "腾讯混元",
-					"description": "腾讯混元官方 OpenAI 兼容对话 API。"
+					"description": "腾讯混元按量端点，支持 OpenAI Chat 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Tencent Hunyuan",
-					"description": "Tencent Hunyuan’s official OpenAI-compatible chat API."
+					"description": "Hunyuan pay-as-you-go endpoints for OpenAI Chat and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -403,19 +475,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://qianfan.baidubce.com/v2/chat/completions"
+					"chat": "https://qianfan.baidubce.com/v2/chat/completions",
+					"responses": "https://qianfan.baidubce.com/v2/responses"
 				}
+			},
+			"anthropic": {
+				"base": "https://qianfan.baidubce.com/anthropic"
 			}
 		},
+		"description": "Qianfan V2 OpenAI chat + responses on qianfan.baidubce.com/v2, plus Anthropic Messages at /anthropic. Do not set openai.base, so images and audio are not derived.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "百度千帆",
-					"description": "百度千帆大模型平台的 OpenAI 兼容对话 API。"
+					"description": "百度千帆 V2，支持 OpenAI Chat / Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Baidu Qianfan",
-					"description": "Baidu Qianfan’s OpenAI-compatible chat API."
+					"description": "Qianfan V2 endpoints for OpenAI Chat/Responses and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -428,19 +505,26 @@
 		"vendor_key": "zhipu",
 		"endpoints": {
 			"openai": {
-				"base": "https://open.bigmodel.cn/api/paas/v4"
+				"endpoints": {
+					"chat": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+					"responses": "https://open.bigmodel.cn/api/v1/responses",
+					"images.generations": "https://open.bigmodel.cn/api/paas/v4/images/generations"
+				}
+			},
+			"anthropic": {
+				"base": "https://open.bigmodel.cn/api/anthropic"
 			}
 		},
-		"description": "China-region OpenAI-compatible root (/api/paas/v4): chat/completions + images/generations (GLM-Image / CogView). Coding Plan template stays chat-only.",
+		"description": "China-region Zhipu explicit endpoints: chat and images on /api/paas/v4, Responses at https://open.bigmodel.cn/api/v1/responses. No openai.base, so edits and audio are not implied. Anthropic Messages base is https://open.bigmodel.cn/api/anthropic. Coding Plan uses its own chat path and key.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "智谱 GLM",
-					"description": "智谱中国区标准 API，支持对话与 GLM 图片生成。"
+					"description": "智谱中国区标准 API，支持 OpenAI Chat、Responses、Anthropic Messages，以及 GLM 图片生成。"
 				},
 				"en": {
 					"name": "Zhipu GLM",
-					"description": "China-region standard API for chat and GLM image generation."
+					"description": "China-region API for OpenAI Chat, Responses, Anthropic Messages, and GLM image generation."
 				}
 			},
 			"links": {
@@ -455,23 +539,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"
+					"chat": "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+					"responses": "https://open.bigmodel.cn/api/v1/responses"
 				}
 			},
 			"anthropic": {
 				"base": "https://open.bigmodel.cn/api/anthropic"
 			}
 		},
-		"description": "GLM Coding Plan OpenAI chat endpoint (LLM only); Anthropic base for tools such as Claude Code. Do not mix with the general /api/paas/v4 path.",
+		"description": "GLM Coding Plan: OpenAI chat on /api/coding/paas/v4, Responses on https://open.bigmodel.cn/api/v1/responses, Anthropic base https://open.bigmodel.cn/api/anthropic. Use the Coding Plan key. Do not mix with the general /api/paas/v4 chat path.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "智谱 GLM（Coding Plan）",
-					"description": "智谱 Coding Plan 专用对话端点，支持 OpenAI 与 Anthropic 协议。"
+					"description": "智谱 Coding Plan 专用端点，支持 OpenAI Chat / Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Zhipu GLM (Coding Plan)",
-					"description": "Coding Plan chat endpoints for OpenAI and Anthropic protocols."
+					"description": "Coding Plan endpoints for OpenAI Chat/Responses and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -486,10 +571,13 @@
 		"icon_key": "zai",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.z.ai/api/paas/v4"
+				"endpoints": {
+					"chat": "https://api.z.ai/api/paas/v4/chat/completions",
+					"images.generations": "https://api.z.ai/api/paas/v4/images/generations"
+				}
 			}
 		},
-		"description": "Z.AI international OpenAI-compatible root (api.z.ai/api/paas/v4): chat/completions + images/generations (glm-image); pay-as-you-go API key. China-region users should use the Zhipu GLM template (open.bigmodel.cn) instead.",
+		"description": "Z.AI international explicit endpoints: chat and images/generations (glm-image) on /api/paas/v4. No openai.base, so responses, edits, and audio are not implied. China-region users should use the Zhipu GLM template (open.bigmodel.cn) instead.",
 		"catalog": {
 			"i18n": {
 				"zh": {
@@ -544,23 +632,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.longcat.chat/openai/chat/completions"
+					"chat": "https://api.longcat.chat/openai/v1/chat/completions",
+					"responses": "https://api.longcat.chat/openai/v1/responses"
 				}
 			},
 			"anthropic": {
 				"base": "https://api.longcat.chat/anthropic"
 			}
 		},
-		"description": "Dual OpenAI- and Anthropic-compatible endpoints; upstream model IDs such as LongCat-2.0. See longcat.chat platform docs.",
+		"description": "LongCat OpenAI chat and Responses under https://api.longcat.chat/openai/v1, plus Anthropic Messages at /anthropic. Upstream model IDs such as LongCat-2.5-Preview. See longcat.chat platform docs.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "美团 LongCat",
-					"description": "LongCat 开放平台，同时提供 OpenAI 与 Anthropic 兼容端点。"
+					"description": "LongCat 开放平台，支持 OpenAI Chat / Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Meituan LongCat",
-					"description": "LongCat platform endpoints compatible with both OpenAI and Anthropic protocols."
+					"description": "LongCat endpoints for OpenAI Chat/Responses and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -574,19 +663,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.moonshot.cn/v1/chat/completions"
+					"chat": "https://api.moonshot.cn/v1/chat/completions",
+					"responses": "https://api.moonshot.cn/v1/responses"
 				}
+			},
+			"anthropic": {
+				"base": "https://api.moonshot.cn/anthropic"
 			}
 		},
+		"description": "China-region Kimi pay-as-you-go on api.moonshot.cn: OpenAI chat + responses under /v1, Anthropic Messages base https://api.moonshot.cn/anthropic. Do not mix with Kimi Code keys on api.kimi.com/coding.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "月之暗面 Moonshot",
-					"description": "月之暗面开放平台的 OpenAI 兼容对话 API。"
+					"description": "月之暗面中国区按量端点，支持 OpenAI Chat / Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Moonshot AI",
-					"description": "Moonshot AI’s OpenAI-compatible chat API."
+					"description": "China-region pay-as-you-go endpoints for OpenAI Chat/Responses and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -604,18 +698,21 @@
 				"endpoints": {
 					"chat": "https://api.kimi.com/coding/v1/chat/completions"
 				}
+			},
+			"anthropic": {
+				"base": "https://api.kimi.com/coding"
 			}
 		},
-		"description": "OpenAI-compatible chat endpoint for Kimi Code CLI / Coding plan (api.kimi.com; LLM only), separate from the standard moonshot.cn platform. See Kimi Code CLI docs (platform & models).",
+		"description": "Kimi Code / Coding Plan on api.kimi.com/coding: OpenAI chat and Anthropic Messages. Official coding docs do not list a Responses path. Do not mix with pay-as-you-go api.moonshot.cn keys.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "Kimi Code（Coding API）",
-					"description": "Kimi Code 与 Coding Plan 使用的专用 OpenAI 兼容对话端点。"
+					"description": "Kimi Code 与 Coding Plan 专用端点，支持 OpenAI Chat 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Kimi Code (Coding API)",
-					"description": "Dedicated OpenAI-compatible chat endpoint for Kimi Code and its coding plan."
+					"description": "Kimi Code endpoints for OpenAI Chat and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -629,26 +726,65 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.minimaxi.com/v1/chat/completions"
+					"chat": "https://api.minimaxi.com/v1/chat/completions",
+					"responses": "https://api.minimaxi.com/v1/responses"
 				}
 			},
 			"anthropic": {
 				"base": "https://api.minimaxi.com/anthropic"
+			},
+			"minimax": {
+				"base": "https://api.minimaxi.com/v1"
 			}
 		},
+		"description": "China-region MiniMax on api.minimaxi.com: OpenAI chat + responses and Anthropic Messages. Native file transcription, speech synthesis, and image generation stay on minimax.base. No openai.base, so OpenAI Images and Audio are not derived. Do not mix with international api.minimax.io keys.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "MiniMax",
-					"description": "MiniMax 开放平台，支持 OpenAI 与 Anthropic 兼容协议。"
+					"description": "MiniMax 国内开放平台，支持 OpenAI Chat / Responses、Anthropic Messages，以及原生文件转写、同步语音合成与生图。"
 				},
 				"en": {
 					"name": "MiniMax",
-					"description": "MiniMax platform endpoints compatible with OpenAI and Anthropic protocols."
+					"description": "China-region MiniMax endpoints for OpenAI Chat/Responses, Anthropic Messages, and native file transcription, speech synthesis, and image generation."
 				}
 			},
 			"links": {
 				"platform": "https://platform.minimaxi.com/"
+			}
+		}
+	},
+	{
+		"name": "MiniMax (International)",
+		"vendor_key": "minimax",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.minimax.io/v1/chat/completions",
+					"responses": "https://api.minimax.io/v1/responses"
+				}
+			},
+			"anthropic": {
+				"base": "https://api.minimax.io/anthropic"
+			},
+			"minimax": {
+				"base": "https://api.minimax.io/v1"
+			}
+		},
+		"description": "International MiniMax on api.minimax.io: OpenAI chat + responses and Anthropic Messages. Native file transcription, speech synthesis, and image generation stay on minimax.base. No openai.base, so OpenAI Images and Audio are not derived. Do not mix with China-region api.minimaxi.com keys.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "MiniMax（国际站）",
+					"description": "MiniMax 国际站端点，支持 OpenAI Chat / Responses、Anthropic Messages，以及原生文件转写、同步语音合成与生图。"
+				},
+				"en": {
+					"name": "MiniMax (International)",
+					"description": "International MiniMax endpoints for OpenAI Chat/Responses, Anthropic Messages, and native file transcription, speech synthesis, and image generation."
+				}
+			},
+			"links": {
+				"platform": "https://platform.minimax.io/"
 			}
 		}
 	},
@@ -739,13 +875,16 @@
 		"vendor_key": "google",
 		"endpoints": {
 			"openai": {
-				"base": "https://generativelanguage.googleapis.com/v1beta/openai"
+				"endpoints": {
+					"chat": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+					"images.generations": "https://generativelanguage.googleapis.com/v1beta/openai/images/generations"
+				}
 			},
 			"gemini": {
 				"base": "https://generativelanguage.googleapis.com/v1beta/models"
 			}
 		},
-		"description": "Developer API: native Gemini base includes `/v1beta/models` (`key=`); OpenAI-compatible root is `/v1beta/openai` (chat + images/generations, Bearer; prefer response_format=b64_json for images). See ai.google.dev/gemini-api/docs/openai.",
+		"description": "Developer API: native Gemini base includes `/v1beta/models` (`key=`). OpenAI compatibility is explicit chat + images/generations under `/v1beta/openai` (Bearer; prefer response_format=b64_json). No openai.base, so responses, edits, and audio are not implied. See ai.google.dev/gemini-api/docs/openai.",
 		"catalog": {
 			"i18n": {
 				"zh": {
@@ -939,10 +1078,14 @@
 		"vendor_key": "xai",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.x.ai/v1"
+				"endpoints": {
+					"chat": "https://api.x.ai/v1/chat/completions",
+					"responses": "https://api.x.ai/v1/responses",
+					"images.generations": "https://api.x.ai/v1/images/generations"
+				}
 			}
 		},
-		"description": "OpenAI-compatible root (api.x.ai/v1): chat/completions, responses, and images/generations (Grok Imagine). See docs.x.ai.",
+		"description": "xAI explicit endpoints: chat, responses, and images/generations (Grok Imagine). No openai.base. Upstream /images/edits expects JSON and is not listed; the gateway edits entry sends multipart. No audio. See docs.x.ai.",
 		"catalog": {
 			"i18n": {
 				"zh": {
@@ -964,19 +1107,24 @@
 		"vendor_key": "together",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.together.xyz/v1"
+				"endpoints": {
+					"chat": "https://api.together.xyz/v1/chat/completions",
+					"images.generations": "https://api.together.xyz/v1/images/generations",
+					"audio.transcriptions": "https://api.together.ai/v1/audio/transcriptions",
+					"audio.speech": "https://api.together.ai/v1/audio/speech"
+				}
 			}
 		},
-		"description": "OpenAI-compatible root (api.together.xyz/v1): chat/completions + images/generations (e.g. FLUX). Host may also be api.together.ai—see Together docs.",
+		"description": "Together explicit endpoints: chat/completions and images/generations (e.g. FLUX) on api.together.xyz/v1; audio/transcriptions and audio/speech on api.together.ai/v1. No openai.base, so responses and edits are not implied. See Together docs for supported models.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "Together AI",
-					"description": "Together AI 的 OpenAI 兼容 API，覆盖对话与图片模型。"
+					"description": "Together AI 的 OpenAI 兼容 API，覆盖对话、图片、语音转写与语音合成模型。"
 				},
 				"en": {
 					"name": "Together AI",
-					"description": "Together AI’s OpenAI-compatible API for chat and image models."
+					"description": "Together AI’s OpenAI-compatible API for chat, images, speech transcription, and speech synthesis."
 				}
 			},
 			"links": {
@@ -1177,20 +1325,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.stepfun.com/v1/chat/completions"
+					"chat": "https://api.stepfun.com/v1/chat/completions",
+					"responses": "https://api.stepfun.com/v1/responses"
 				}
+			},
+			"anthropic": {
+				"base": "https://api.stepfun.com"
 			}
 		},
-		"description": "OpenAI-compatible chat endpoint (LLM only); other product lines such as Step Plan may use different URLs—see StepFun platform docs.",
+		"description": "StepFun pay-as-you-go: OpenAI chat + responses under /v1, Anthropic Messages at https://api.stepfun.com/v1/messages. Step Plan uses https://api.stepfun.com/step_plan and is not this preset.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "阶跃星辰 StepFun",
-					"description": "阶跃星辰开放平台的 OpenAI 兼容对话 API。"
+					"description": "阶跃星辰按量端点，支持 OpenAI Chat / Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "StepFun",
-					"description": "StepFun’s OpenAI-compatible chat API."
+					"description": "StepFun pay-as-you-go endpoints for OpenAI Chat/Responses and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -1231,20 +1383,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.xiaomimimo.com/v1/chat/completions"
+					"chat": "https://api.xiaomimimo.com/v1/chat/completions",
+					"responses": "https://api.xiaomimimo.com/v1/responses"
 				}
+			},
+			"anthropic": {
+				"base": "https://api.xiaomimimo.com/anthropic"
 			}
 		},
-		"description": "OpenAI-compatible chat endpoint (LLM only); host and path per latest Xiaomi MiMo platform docs.",
+		"description": "Pay-as-you-go OpenAI chat + responses and Anthropic Messages on api.xiaomimimo.com. Keys are sk-. Do not mix with Token Plan tp-/ttp- keys on token-plan-cn.xiaomimimo.com. Official Responses ignores previous_response_id. See platform.xiaomimimo.com.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "小米 MiMo",
-					"description": "小米 MiMo 开放平台的标准 OpenAI 兼容对话 API。"
+					"description": "小米 MiMo 按量开放平台，支持 OpenAI Chat / Responses 与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Xiaomi MiMo",
-					"description": "Xiaomi MiMo’s standard OpenAI-compatible chat API."
+					"description": "Xiaomi MiMo pay-as-you-go endpoints for OpenAI Chat/Responses and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -1259,23 +1415,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
+					"chat": "https://token-plan-cn.xiaomimimo.com/v1/chat/completions",
+					"responses": "https://token-plan-cn.xiaomimimo.com/v1/responses"
 				}
 			},
 			"anthropic": {
 				"base": "https://token-plan-cn.xiaomimimo.com/anthropic"
 			}
 		},
-		"description": "Xiaomi MiMo Token Plan OpenAI chat endpoint (LLM only); Anthropic base for tools such as Claude Code. Do not mix with the general API endpoint.",
+		"description": "Xiaomi MiMo Token Plan on token-plan-cn.xiaomimimo.com: OpenAI chat + responses, and Anthropic base for tools such as Claude Code. Plan keys are tp- or ttp-. Do not mix with pay-as-you-go sk- keys on api.xiaomimimo.com.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "小米 MiMo（Token Plan）",
-					"description": "小米 MiMo Token Plan 专用端点，支持 OpenAI 与 Anthropic 协议。"
+					"description": "小米 MiMo Token Plan 中国区端点，支持 OpenAI Chat / Responses 与 Anthropic。"
 				},
 				"en": {
 					"name": "Xiaomi MiMo (Token Plan)",
-					"description": "Token Plan endpoints for OpenAI and Anthropic protocols."
+					"description": "China-region Token Plan endpoints for OpenAI Chat/Responses and Anthropic."
 				}
 			},
 			"links": {
@@ -1289,7 +1446,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.qnaigc.com/v1/chat/completions"
+					"chat": "https://api.qnaigc.com/v1/chat/completions",
+					"responses": "https://api.qnaigc.com/bypass/openai/v1/responses"
 				}
 			},
 			"anthropic": {
@@ -1300,16 +1458,16 @@
 				"auth": "bearer"
 			}
 		},
-		"description": "Qiniu AI Token API (api.qnaigc.com): OpenAI chat/completions + Anthropic Messages root + Gemini Vertex-compatible bypass (/bypass/vertex/v1/models, Bearer). Image generation uses chat modalities, not /images/generations—keep openai as chat-only. Overseas host: swap api.qnaigc.com → api.modelink.ai (same paths, including Gemini). See developer.qiniu.com/aitokenapi.",
+		"description": "Qiniu AI Token API (api.qnaigc.com): OpenAI chat/completions, Anthropic Messages root, Gemini Vertex-compatible bypass (/bypass/vertex/v1/models, Bearer), and OpenAI Responses bypass at /bypass/openai/v1/responses (GPT models). Image generation uses chat modalities, not /images/generations. Overseas host: swap api.qnaigc.com → api.modelink.ai (same paths, including Gemini). See developer.qiniu.com/aitokenapi.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "七牛云 AI",
-					"description": "七牛云 AI 大模型推理（Token API），支持 OpenAI、Anthropic 与 Gemini（Vertex 兼容 + Bearer）。"
+					"description": "七牛云 AI 大模型推理（Token API），支持 OpenAI Chat、Responses 直通、Anthropic 与 Gemini（Vertex 兼容 + Bearer）。"
 				},
 				"en": {
 					"name": "Qiniu AI",
-					"description": "Qiniu AI Token API with OpenAI, Anthropic, and Gemini (Vertex-compatible, Bearer)."
+					"description": "Qiniu AI Token API with OpenAI Chat, a GPT Responses bypass, Anthropic, and Gemini (Vertex-compatible, Bearer)."
 				}
 			},
 			"links": {
@@ -1323,13 +1481,14 @@
 		"vendor_key": "openrouter",
 		"endpoints": {
 			"openai": {
-				"base": "https://openrouter.ai/api/v1",
 				"endpoints": {
+					"chat": "https://openrouter.ai/api/v1/chat/completions",
+					"responses": "https://openrouter.ai/api/v1/responses",
 					"images.generations": "https://openrouter.ai/api/v1/images"
 				}
 			}
 		},
-		"description": "OpenAI-compatible chat via /api/v1; Images use OpenRouter's dedicated POST /api/v1/images (not /images/generations). See openrouter.ai/docs image API.",
+		"description": "OpenRouter explicit endpoints: chat/completions, responses, and POST /api/v1/images (not /images/generations). No openai.base, so edits and audio are not implied. See openrouter.ai/docs for supported models.",
 		"catalog": {
 			"i18n": {
 				"zh": {
@@ -1476,13 +1635,16 @@
 		"vendor_key": "vercel",
 		"endpoints": {
 			"openai": {
-				"base": "https://ai-gateway.vercel.sh/v1"
+				"endpoints": {
+					"chat": "https://ai-gateway.vercel.sh/v1/chat/completions",
+					"responses": "https://ai-gateway.vercel.sh/v1/responses"
+				}
 			},
 			"anthropic": {
 				"base": "https://ai-gateway.vercel.sh"
 			}
 		},
-		"description": "Vercel AI Gateway: OpenAI-compatible root (/v1, chat + responses) and Anthropic Messages (root appends /v1/messages). Auth is the AI Gateway API key (or Vercel OIDC). Model IDs use provider/model slugs. See vercel.com/docs/ai-gateway.",
+		"description": "Vercel AI Gateway explicit OpenAI chat + responses under /v1, and Anthropic Messages (root appends /v1/messages). No openai.base, so images and audio are not implied. Auth is the AI Gateway API key (or Vercel OIDC). Model IDs use provider/model slugs. See vercel.com/docs/ai-gateway.",
 		"catalog": {
 			"i18n": {
 				"zh": {
@@ -1570,19 +1732,27 @@
 		"vendor_key": "siliconflow",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.siliconflow.cn/v1"
+				"endpoints": {
+					"chat": "https://api.siliconflow.cn/v1/chat/completions",
+					"images.generations": "https://api.siliconflow.cn/v1/images/generations",
+					"audio.transcriptions": "https://api.siliconflow.cn/v1/audio/transcriptions",
+					"audio.speech": "https://api.siliconflow.cn/v1/audio/speech"
+				}
+			},
+			"anthropic": {
+				"base": "https://api.siliconflow.cn"
 			}
 		},
-		"description": "China SiliconFlow Model Cloud (api.siliconflow.cn). Do not mix with international api.siliconflow.com keys or cloud.siliconflow.com accounts.",
+		"description": "China SiliconFlow explicit OpenAI chat, images/generations, audio/transcriptions, and audio/speech. No openai.base, so responses and edits are not implied. Anthropic Messages is POST /v1/messages, so the Anthropic base is the host root, not /v1. Do not mix with international api.siliconflow.com keys or cloud.siliconflow.com accounts.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "硅基流动",
-					"description": "硅基流动国内站的 OpenAI 兼容 API。"
+					"description": "硅基流动国内站，支持 OpenAI 兼容接口与 Anthropic Messages。"
 				},
 				"en": {
 					"name": "SiliconFlow",
-					"description": "SiliconFlow China Model Cloud’s OpenAI-compatible API."
+					"description": "SiliconFlow China Model Cloud with OpenAI-compatible APIs and Anthropic Messages."
 				}
 			},
 			"links": {
@@ -1597,10 +1767,15 @@
 		"vendor_key": "siliconflow",
 		"endpoints": {
 			"openai": {
-				"base": "https://api.siliconflow.com/v1"
+				"endpoints": {
+					"chat": "https://api.siliconflow.com/v1/chat/completions",
+					"images.generations": "https://api.siliconflow.com/v1/images/generations",
+					"audio.transcriptions": "https://api.siliconflow.com/v1/audio/transcriptions",
+					"audio.speech": "https://api.siliconflow.com/v1/audio/speech"
+				}
 			}
 		},
-		"description": "International SiliconFlow (api.siliconflow.com / cloud.siliconflow.com). Not for mainland China accounts; do not mix with api.siliconflow.cn keys.",
+		"description": "International SiliconFlow explicit OpenAI chat, images/generations, audio/transcriptions, and audio/speech on api.siliconflow.com. No openai.base, so responses and edits are not implied. Not for mainland China accounts; do not mix with api.siliconflow.cn keys.",
 		"catalog": {
 			"i18n": {
 				"zh": {

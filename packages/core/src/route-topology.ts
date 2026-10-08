@@ -7,7 +7,14 @@ import {
 } from "./adapters/registry";
 
 export {
+	DASHSCOPE_FILE_TRANSCRIPTION_PATH,
 	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+	DASHSCOPE_TASKS_PATH,
+	MINIMAX_IMAGE_GENERATION_PATH,
+	MINIMAX_SPEECH_TO_TEXT_PATH,
+	MINIMAX_T2A_PATH,
+	VOLCENGINE_IMAGE_GENERATIONS_PATH,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	ROUTE_ADAPTERS,
@@ -52,6 +59,17 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 		"audio.speech.realtime.session",
 		"images.generations.multimodal",
 	],
+	/**
+	 * 公开入口：`POST /v1/minimax/speech_to_text`、`POST /v1/minimax/t2a_v2`、
+	 * `POST /v1/minimax/image_generation`。adapter 都是 passthrough。
+	 * `audio.speech` 同时覆盖非流式 JSON 和 `stream: true` 的 SSE。
+	 */
+	minimax: ['audio.transcriptions', 'audio.speech', 'images.generations'],
+	/**
+	 * 公开入口：`POST /v1/volcengine/images/generations`。
+	 * 非流式 JSON 与 `stream: true` 的 SSE 共用这条路径，adapter 是 passthrough。
+	 */
+	volcengine: ['images.generations'],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =
@@ -100,6 +118,21 @@ export function isRequestOperationForProtocol(
 		(REQUEST_OPERATIONS_BY_PROTOCOL[protocol] as readonly string[]).includes(
 			operation
 		)
+	);
+}
+
+/**
+ * 上游 operation 可以是公开请求 operation，也可以只出现在转换适配器的上游侧。
+ * MiniMax `audio.transcriptions` 同时是公开透传入口和 `minimax-asr-file` 的上游端点。
+ */
+export function isUpstreamOperationForProtocol(
+	protocol: UpstreamProtocol,
+	operation: string
+): boolean {
+	if (isRequestOperationForProtocol(protocol, operation)) return true;
+	return Object.values(ROUTE_ADAPTER_MAPPINGS).some(
+		(mapping) =>
+			mapping.upstreamProtocol === protocol && mapping.upstreamOperation === operation
 	);
 }
 

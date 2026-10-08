@@ -7,8 +7,6 @@ import { flushSync } from 'react-dom';
 import { isAudioRouteModel, validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
 import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
 import {
-	IMAGE_EDITS_BODY_TEMPLATE,
-	IMAGE_GENERATIONS_BODY_TEMPLATE,
 	imageRequestMetaFromBody,
 	isImageRouteModel,
 	parseImagesGenerationsResponse,
@@ -18,7 +16,7 @@ import {
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
 import { inferPlaygroundParseMode, type PlaygroundProtocol } from '@/lib/playground/merge-assistant-text';
-import { previewPlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
+import { describePlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
 import { observePlaygroundResponse } from '@/lib/playground/response-observations';
 import { previewPlaygroundResponse, readPlaygroundTextStream } from '@/lib/playground/response-preview';
 import {
@@ -33,6 +31,7 @@ import {
 	openDashScopeRealtimeClient,
 	stopDashScopeRealtimeClient,
 } from '@/lib/dashscope-realtime-client';
+import { miniMaxSpeechObjectUrl } from '@/lib/minimax-speech-preview';
 import { readApiJson } from '@/lib/api-json';
 import type { AdminModelRow } from '@/lib/services/admin/types';
 import type { ApiResponse, GatewayProvider } from '@/lib/types';
@@ -158,13 +157,17 @@ export function usePlaygroundPageState() {
 	const imageSendBlocked =
 		selectedIsImage &&
 		selectedImageUpstreamProtocol !== 'openai' &&
-		selectedImageUpstreamProtocol !== 'dashscope';
+		selectedImageUpstreamProtocol !== 'dashscope' &&
+		selectedImageUpstreamProtocol !== 'minimax' &&
+		selectedImageUpstreamProtocol !== 'volcengine' &&
+		selectedImageUpstreamProtocol !== 'gemini';
 	const selectedImageUsesDashScope = selectedIsImage && selectedImageUpstreamProtocol === 'dashscope';
 	const selectedAudioUpstreamProtocol = (selected?.upstream_protocol ?? 'openai').trim().toLowerCase();
 	const audioSendBlocked =
 		selectedIsAudio &&
 		selectedAudioUpstreamProtocol !== 'openai' &&
-		selectedAudioUpstreamProtocol !== 'dashscope';
+		selectedAudioUpstreamProtocol !== 'dashscope' &&
+		selectedAudioUpstreamProtocol !== 'minimax';
 	const selectedAudioUsesDashScope = selectedIsAudio && selectedAudioUpstreamProtocol === 'dashscope';
 	const selectedUsesDashScopeRealtime = selectedDashScopeRealtimeOperation != null;
 	const selectedCanUseMicrophone =
@@ -178,10 +181,11 @@ export function usePlaygroundPageState() {
 		) &&
 		(!selectedCanUseMicrophone || audioInputMode === 'file');
 
-	const previewUpstreamUrl = useMemo(() => {
-		if (!selected) return null;
-		return previewPlaygroundUpstreamUrl({
+	const previewUpstream = useMemo(() => {
+		if (!selected) return { url: null, target: null };
+		return describePlaygroundUpstreamUrl({
 			provider: providersById.get(selected.provider_id),
+			adapter: selected.adapter,
 			upstreamProtocol: selected.upstream_protocol,
 			upstreamOperation: selected.upstream_operation,
 			providerModelName: selected.provider_model_name,
@@ -191,6 +195,7 @@ export function usePlaygroundPageState() {
 			geminiAction,
 		});
 	}, [selected, providersById, selectedIsImage, selectedIsAudio, imageOperation, geminiAction]);
+	const previewUpstreamUrl = previewUpstream.url;
 
 	const requestFingerprint = JSON.stringify([selectedId, bodyText, geminiAction, imageOperation]);
 	const requestTargetUrl =
@@ -474,8 +479,8 @@ export function usePlaygroundPageState() {
 
 	const onImageOperationChange = (next: ImageOperation) => {
 		setImageOperation(next);
-		if (selectedIsImage && normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'openai') {
-			const nextTemplate = next === 'edits' ? IMAGE_EDITS_BODY_TEMPLATE : IMAGE_GENERATIONS_BODY_TEMPLATE;
+		if (selectedIsImage && selected && normalizeProtocol(selected.upstream_protocol ?? 'openai') === 'openai') {
+			const nextTemplate = templateForRoute(selected, modelsById.get(selected.model_id), next);
 			if (!bodyDirtyRef.current) {
 				setBodyTextState(nextTemplate);
 			} else {
@@ -519,7 +524,7 @@ export function usePlaygroundPageState() {
 		? t('audioFileRequired')
 		: selectedIsImage &&
 		  !selectedIsAudio &&
-		  !selectedImageUsesDashScope &&
+		  selectedImageUpstreamProtocol === 'openai' &&
 		  imageOperation === 'edits' &&
 		  !validateEditImageFiles(editFiles).ok
 		? t('referenceImagesRequired')
@@ -557,12 +562,17 @@ export function usePlaygroundPageState() {
 		const useAudio =
 			selectedIsAudio &&
 			!isRealtime &&
-			(selectedAudioUpstreamProtocol === 'openai' || selectedAudioUpstreamProtocol === 'dashscope');
-		const useImages = selectedIsImage && !selectedIsAudio && (proto === 'openai' || proto === 'dashscope');
+			(selectedAudioUpstreamProtocol === 'openai' ||
+				selectedAudioUpstreamProtocol === 'dashscope' ||
+				selectedAudioUpstreamProtocol === 'minimax');
+		const useImages =
+			selectedIsImage &&
+			!selectedIsAudio &&
+			(proto === 'openai' || proto === 'dashscope' || proto === 'minimax' || proto === 'volcengine' || proto === 'gemini');
 		const effectiveImageOp: ImageOperation | undefined = useImages
-			? proto === 'dashscope'
-				? 'generations'
-				: imageOperation
+			? proto === 'openai'
+				? imageOperation
+				: 'generations'
 			: undefined;
 
 		if (isRealtime) {
@@ -805,7 +815,13 @@ export function usePlaygroundPageState() {
 					flushSync(() => setResponseText(text));
 					scrollStreamToBottom();
 				});
-				if (!ac.signal.aborted && abortRef.current === ac) setUsageHint(parseLastStreamUsage(acc, proto));
+				if (!ac.signal.aborted && abortRef.current === ac) {
+					setUsageHint(parseLastStreamUsage(acc, proto));
+					if (proto === 'minimax' && selected?.upstream_operation === 'audio.speech') {
+						const audioUrl = miniMaxSpeechObjectUrl(acc);
+						if (audioUrl) setAudioPreviewUrl(audioUrl);
+					}
+				}
 				return;
 			}
 
@@ -916,6 +932,7 @@ export function usePlaygroundPageState() {
 		lastSentWireHeaders:
 			lastSentWireBody && lastSentInputSnapshot === requestFingerprint ? lastSentWireHeaders : null,
 		requestTargetUrl,
+		requestTargetMissing: requestTargetUrl ? null : previewUpstream.target,
 		selectedIsImage,
 		selectedIsAudio,
 		selectedIsAudioTranscription,

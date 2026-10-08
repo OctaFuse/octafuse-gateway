@@ -119,7 +119,7 @@ export function SimulatorRequestPanel({
 	const supportedImageOps = supportedSurfaces.imageOperations;
 	const showOpenaiOperation = protocol === 'openai' && !hideProtocolControls && supportedOpenaiOps.length > 1;
 	const showGeminiAction =
-		protocol === 'gemini' && !hideProtocolControls && supportedGeminiActions.length > 1;
+		protocol === 'gemini' && !hideProtocolControls && !showImageOperation && supportedGeminiActions.length > 1;
 
 	const protocolControls = hideProtocolControls ? (
 		<p className="text-xs text-gray-500">{t('toolProtocolHidden')}</p>
@@ -351,7 +351,13 @@ export function SimulatorRequestPanel({
 			) : null}
 			{showAudioSpeech ? (
 				<p className="text-xs text-gray-500">
-					{showAudioRealtime ? t('audioRealtimeSpeechHint') : t('audioSpeechHint')}
+					{showAudioRealtime
+						? t('audioRealtimeSpeechHint')
+						: protocol === 'dashscope'
+						? t('audioSpeechDashScopeHint')
+						: protocol === 'minimax'
+						? t('audioSpeechMiniMaxHint')
+						: t('audioSpeechHint')}
 				</p>
 			) : null}
 			{showImageOperation ? (
@@ -375,12 +381,22 @@ export function SimulatorRequestPanel({
 							))}
 						</fieldset>
 					) : null}
-					{imageOperation === 'generations' ? (
-						<p className="text-xs text-gray-500">{t('imageGenerationsHint')}</p>
+					{imageOperation === 'generations' || protocol === 'gemini' ? (
+						<p className="text-xs text-gray-500">
+							{t(
+								protocol === 'gemini'
+									? 'imageGeminiHint'
+									: protocol === 'volcengine'
+										? 'imageVolcengineHint'
+										: protocol === 'minimax'
+											? 'imageMiniMaxHint'
+											: 'imageGenerationsHint',
+							)}
+						</p>
 					) : (
 						<p className="text-xs text-gray-500">{t('imageEditsHint')}</p>
 					)}
-					{imageOperation === 'edits' ? (
+					{protocol === 'openai' && imageOperation === 'edits' ? (
 						<div>
 							<label className={labelClass}>{t('referenceImages')}</label>
 							<input
