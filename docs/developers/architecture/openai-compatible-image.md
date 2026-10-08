@@ -42,7 +42,7 @@
 
 型号：`glm-image`（`zhipu-image.json`）。
 
-**端点**：国内模板 **Zhipu GLM** 的 `openai.base` 为 `https://open.bigmodel.cn/api/paas/v4`；国际模板 **Z.AI GLM (International)** 为 `https://api.z.ai/api/paas/v4`。Coding Plan 模板只有对话，不要用来跑生图。
+**端点**：国内模板 **Zhipu GLM** 的 `openai.endpoints.images.generations` 为 `https://open.bigmodel.cn/api/paas/v4/images/generations`；国际模板 **Z.AI GLM (International)** 为 `https://api.z.ai/api/paas/v4/images/generations`。Coding Plan 模板只有对话，不要用来跑生图。
 
 **参数规则**：
 
@@ -58,7 +58,7 @@
 
 型号：`grok-imagine-image-2.0`、`grok-imagine-image-quality`（`xai-image.json`）。
 
-**端点**：导入模板 **xAI (Grok)** 的 `openai.base` 为 `https://api.x.ai/v1`。
+**端点**：导入模板 **xAI (Grok)** 的 `openai.endpoints.images.generations` 为 `https://api.x.ai/v1/images/generations`。
 
 **参数规则**：xAI 不用 OpenAI 的 `size`，比例和分辨率是两个扩展字段，直接写在请求体顶层（OpenAI SDK 用 `extra_body`）。
 

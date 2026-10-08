@@ -17,6 +17,8 @@ const EXPECTED_IMAGE_IDS = [
 	'gpt-image-2.5-sunburst',
 	'grok-imagine-image-2.0',
 	'grok-imagine-image-quality',
+	'minimax-image-01',
+	'minimax-image-01-live',
 	'qwen-image-2.1-pro',
 	'qwen-image-3.0',
 	'qwen-image-3.0-pro',

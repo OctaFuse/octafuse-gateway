@@ -1,58 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Gemini 官方图片模型支持两条入口，按 `usageMetadata` 的 TEXT / IMAGE 分项 token 计费；空结果、客户端取消和网关超时为零费用：
-  - 原生透传：复用 `POST /v1beta/models/{model}:{generateContent|streamGenerateContent}`。调试台与模拟器可编辑 Gemini 生图 JSON 并预览 `inlineData`。Interactions API 未接入。
-  - OpenAI 转换：新增适配器 `gemini-image`，`POST /v1/images/generations` 可调用 Gemini API 与 Vertex AI 的图片模型，响应转回 OpenAI `data[].b64_json` 与分项 `usage`，计费与原生入口相同。`n` 只能为 1，`response_format` 只支持 `b64_json`。`size` 填 `宽x高` 时换算成最接近的 `imageConfig.aspectRatio`，长边决定 `1K` / `2K` / `4K`。参考图用 `image` 传 data URL。`quality`、`background` 不转发，其它 Gemini 参数写成额外字段 `generationConfig`。不支持流式，也不支持 `/v1/images/edits`。路由池全是 `gemini-image` 时，预检按 Gemini 的分辨率档位估算。使用时新建路由，对外协议选 OpenAI Images，再选适配器 `gemini-image`。
-  - 新建路由时，供应商只有 Gemini 端点会把对外协议和上游一起写成 `gemini` / `models.generate`，与适配器下拉的 Gemini 透传保持一致。
-
-- 新增上游协议 `minimax`，对接 MiniMax 官方接口（国内 `https://api.minimaxi.com/v1`，国际 `https://api.minimax.io/v1`）。文件转写、同步语音合成和生图各有一个 OpenAI 转换适配器和一条原生透传路径：
-  - 文件转写：`minimax-asr-file` 把 OpenAI `POST /v1/audio/transcriptions` 转到 `speech_to_text`（模型 `asr-1.0`）。`language` 放在请求头，`srt` / `vtt` 由网关根据带时间戳的结果生成，`prompt` 与 `temperature` 不转发。透传路径是 `POST /v1/minimax/speech_to_text`，表单里的 `language` 由网关转到请求头，响应不改写；透传暂不逐段下发 `stream=true` 的结果。两条入口都按上游 `duration` 按秒计费。
-  - 语音合成：`minimax-tts` 把 `POST /v1/audio/speech` 转到 `t2a_v2`。非流式返回音频字节，`stream_format=sse` 返回 OpenAI speech 事件。`voice` 填 MiniMax voice_id，格式限 mp3 / pcm / flac / wav，语速限 0.5–2，传 `instructions` 返回 400。透传路径是 `POST /v1/minimax/t2a_v2`，非流式 JSON 与 `stream: true` 的 SSE 共用。按 `extra_info.usage_characters` 计费。
-  - 生图：`minimax-image` 把 `POST /v1/images/generations` 转到 `image_generation`，响应改写成 OpenAI `data[]`。`size`、`quality`、`background` 不转发，网关也不填默认比例；需要指定画幅时传 `aspect_ratio`，或同时传 `width` 与 `height`。`n` 为 1–9。透传路径是 `POST /v1/minimax/image_generation`。按成功张数计费。
-  - 透传只替换 `model`。上游 HTTP 200 但 `base_resp.status_code` 非 0 时，body 原样返回，并按业务码改写 HTTP 状态，故障转移、熔断和不计费照常生效。
-  - 目录新增 `minimax-asr-1.0`、`minimax-speech-2.8-hd`、`minimax-speech-2.8-turbo`、`minimax-image-01`、`minimax-image-01-live` 预设。「MiniMax」导入预设补上 `minimax.base`（国内站），已导入的供应商需要手工填写。视频和音乐还没有端点。
-
-- 新增上游协议 `volcengine`，火山方舟与 BytePlus ModelArk 共用，承载 Seedream 生图：
-  - OpenAI 入口：`volcengine-image` 把 `POST /v1/images/generations` 转到方舟 `images/generations`，只返回 JSON。`n=1` 不带组图字段；`n` 为 2–15 时打开组图，`max_images` 取 `n`；5.0 pro / flash 的 `n>1` 返回 400。`size` 原样转发（含 `auto`）。`background` 只转发 `transparent` / `opaque`，`output_format` 只接受 `png` / `jpeg`，`quality` 不转发。响应 `data[]` 保留方舟的 `size` 与图层字段，`usage` 原样返回。
-  - 原生透传：`POST /v1/volcengine/images/generations`，非流式 JSON 与 `stream: true` 的 SSE 共用，只替换 `model`。
-  - 两条入口都按成功张数计费（优先 `usage.generated_images`），并把 `宽x高` 按像素换算成档位再查价。
-  - 对话、Responses 和 Anthropic Messages 继续用供应商的 `openai` / `anthropic` 端点，不进 `volcengine` 协议。视频和语音还没有端点。生图不预填 OpenAI URL，只走 `volcengine.base`。已经用 OpenAI 透传跑 Seedream 的路由可以继续用；切到新适配器时给供应商补上 `volcengine.base`，把路由上游协议改成 `volcengine` 并选择 `volcengine-image`。
-
-- DashScope 补齐原生透传，并调整生图 `size` 的处理：
-  - 语音合成走 `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`（`X-DashScope-SSE: enable` 为流式）；多模态语音和生图走已有的多模态生成路径，按模型类型分流；异步文件转写提交 `POST /v1/dashscope/services/audio/asr/transcription`，查询 `GET /v1/dashscope/tasks/{taskId}?model=`。网关只替换 `model`，响应保持上游原文；语音按字符、生图按张数、转写任务成功后按时长计费。Qwen-TTS-Realtime 的 session 也可以选为透传。原有 OpenAI 转换路由不变。
-  - Proxy 的 CORS 放行 `language`、`X-DashScope-SSE` 和 `X-DashScope-Async` 请求头，浏览器可以直接调用这些入口。
-  - 生图适配器（`dashscope-image-qwen`、`dashscope-image-wan`）把 OpenAI 顶层 `size` 原样写入 `parameters.size`，不再把 `1024x1024` 改成 `1024*1024`，也不再拒收千问的 `1K` / `2K`；取值由上游校验，千问请传 `宽*高`。
-
-- OpenAI 生图（含编辑）、语音合成和转写入口会把客户端额外传入的顶层字段发往上游。按上游原生结构深度合并进适配器构建的请求体，OpenAI SDK 的 `extra_body` 发到线上就是这些平铺字段。入口已经解析过的 OpenAI 字段不会重复转发。`model` 以及各适配器声明的计费和响应解析字段在合并后恢复，路由开启 `force_override.body` 也覆盖不了它们。请求日志记录额外字段（data URL 已脱敏）和被恢复的路径，分别是 `extra_fields` 与 `restored_upstream_paths`。额外字段超过 32KB 时返回 400。DashScope 语音合成的 `input.*` 不能通过额外字段设置，请写在路由请求参数里。混合协议路由池会把同一份额外字段发给每一条路由。
-
-- 新增模型预设：Anthropic Claude Haiku 5.5（`claude-haiku-5-5`）与 Gemini Nano Banana 2.1（`gemini-nano-banana-2.1`）。Anthropic 与 Google 均未公布人民币刊例，CNY 按 USD × 7 占位。已导入的模型不会自动改价。
-  - Claude Haiku 5.5 按提示长度分两档：≤100K 与 >100K（整条请求按高档计）。USD 目录价低档 $0.10 / $0.50，高档 $0.50 / $2.50；CNY 占位低档 ¥0.70 / ¥3.50，高档 ¥3.50 / ¥17.50。客户端入口是 Anthropic Messages。
-  - Nano Banana 2.1 按 token 计价，CNY 图出 ¥210/1M。人民币库此前因缺价无法导入，补价后可重新导入。
-
-- 修正目录价。已导入的模型不会自动更新，需要手动改价，或运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`（Sonnet 5.5 仅需手动改价）：
-  - Claude Sonnet 5.5（`claude-sonnet-5-5`）缓存读取价：USD `cache_read_price` 0.2 → 0.1（官方为 5% × $2），CNY 占位价同步为 0.7。
-  - Seedream 5.0 Pro：官方按 261 万像素（1.5K）分档，`1k` / `1.5k` 为 ¥0.30 / $0.045，`2k` 和缺省（方舟默认 2K）为 ¥0.60 / $0.09。原先 2K 按低档计费，少收一半。`volcengine` 的两条入口会把 `宽x高` 换算成档位；走 OpenAI 透传的 Seedream 路由不换算，`宽x高` 按缺省档计价。
-  - Grok Imagine Image 2.0 按官方分辨率与 quality 分档：1K / 1.5K / 2K 的 low 为 $0.04 / $0.05 / $0.06，medium 为 $0.06 / $0.07 / $0.08，每张参考图另收 $0.01（CNY 按 7 倍）。原先一律按 $0.04。OpenAI 生图与编辑入口在客户端没传 `size` 时，用额外字段 `resolution` 选计费档位；xAI 的 `resolution` 只有 `1k` / `2k`，1.5K 档目前选不到。`quality` 不传或为 `auto` 时按 low 计，与 xAI 生成请求的默认档一致。`grok-imagine-image-quality` 于 2026-11-02 退役，之后由 2.0 以 low 档出图，届时请把该模型的单价改成 2.0 的 low 档。
-
-- 用户专属倍率可以按模型和路由组分别配置。`users.charged_cost_factors` 的值可以是数字（覆盖该模型全部分组），也可以是 `{ "<route_group>": number, "*": number }`。文本、图像和音频计费，以及 `GET /v1/models` 与用户展示折扣，都按本次路由组查找：先具体分组，再 `*`，数字则覆盖全部分组。未命中的分组按路由计费。与路由实际计费倍率的合成由 `USER_CHARGED_COST_FACTOR_MODE`（相乘或取较小值）决定。请求日志的 `pricing_audit` 新增 `user_charged_factor_route_group`，记录命中的分组键。不需要数据库迁移，已有的数字配置行为不变。
-
-- Admin 用户详情分为「概览」「额度与计费」「模型列表」「活动记录」四个标签页，用户专属倍率按模型和路由组编辑。「模型列表」模拟该用户的 `GET /v1/models`：使用已保存的倍率，默认只含 `default` 与 `free` 分组的文本模型，并列出每个分组的 `catalog_factor`、`route_factor` 和 `composite_factor`。保存时只提交改动过的字段，不会再把页面加载时的 Budget / Wallet 已消费金额写回而覆盖期间新增的消费；修改重置周期或重置时间也不再清零本周期已用额度。有未保存修改时离开页面会提示。
-
-- Admin 网关配置页的每张卡片单独保存，显示是否有未保存修改，并可撤销本卡片的修改。
-
-- 路由编辑器按所选适配器展示调用指南：客户端路径、请求与响应形态、计费单位、字段映射、上游接口不提供的能力、模型特有参数，以及 OpenAI SDK 示例；透传只说明按上游原生格式发送，DashScope 语音合成可从指南跳到请求参数。适配器下拉按供应商协议和供应商模型名过滤：能力只跟本协议的端点配置比较，模型名命中规则时只保留该家族的适配器，识别不了则显示全部可用适配器。已知不支持的功能显示为可读名称，Qwen-TTS 的 `instructions` 写入上游 `input.instructions`（仅 Instruct-Flash 系列生效）。适配器显示名改为「CosyVoice / Qwen-Audio-3.0 语音合成」和「Qwen-TTS 语音合成（多模态）」。供应商的 DashScope 端点覆盖逐项说明适用模型和对应的路由适配器，并说明「只填 Base 即派生」与「套餐只填部分端点」两种用法。已保存的路由不受影响。Playground 与 Simulator 可以直接请求 MiniMax、火山方舟和 DashScope 原生入口，非流式 MiniMax 语音会把 hex 音频解码后播放，生图请求样例按模型族使用官方最低档尺寸。
-
-- 供应商导入预设：
-  - 新增按量计费的「千问 AI 平台」，主机 `maas.qianwenaiapi.com`，含 OpenAI Chat 与 Responses、Anthropic，以及 DashScope base（可派生语音、生图和 filetrans）。
-  - 「千问 AI 平台（Token Plan）」改用官方主机 `token-plan.maas.qianwenaiapi.com`，并补上 OpenAI Responses。DashScope 只覆盖同步 ASR、生图、HTTP TTS 与实时语音，不含 filetrans 与视频生成。
-  - 补齐火山方舟、百炼和 MiniMax 已经支持的大语言模型端点。OpenAI 只写 `chat` 与 `responses`，不写 `openai.base`，避免把生图和音频派生到 OpenAI 协议。
-  - 火山方舟与 BytePlus 按量端点增加 OpenAI Responses 和 Anthropic Messages；Coding Plan、Agent Plan 以及 BytePlus Coding Plan 增加 Responses，BytePlus Coding Plan 同时补上 Anthropic。Seedream 仍只走 `volcengine.base`。
-  - 阿里云百炼国内与国际按量端点增加 OpenAI Responses（此前已有 Anthropic）。语音和生图仍走 `dashscope.base`。Coding Plan 官方只提供 Chat 与 Anthropic，预设不写 Responses。
-  - MiniMax 国内预设增加 OpenAI Responses，并新增国际站 `api.minimax.io`（Chat、Responses、Anthropic，以及 `minimax.base`）。文件转写、语音合成和生图仍走 `minimax` 协议。
-  - 已导入的供应商不会自动更新，需要在供应商里改端点或重新导入。
-
 ## 2.13.0
 
 ### Minor Changes

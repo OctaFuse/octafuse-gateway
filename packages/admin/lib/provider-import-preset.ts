@@ -7,9 +7,10 @@
  * 每条模板的英文 `name` 是 `providers.kind` 的稳定键。改名必须同时迁移已入库的 `kind`，不能只改 JSON。
  *
  * Endpoint 约定（与 `listConfiguredCapabilities` / Admin 卡片展示一致）：
- * - **全能力 OpenAI 上游**（含 Images）：写 `openai.base`
- * - **仅 LLM / Chat Completions**：写 `openai.endpoints.chat`（完整 URL），**不要**写 `base`
- * - Anthropic / Gemini：协议本身无 Images 分支时可用 `base`（Anthropic 仅 messages；Gemini 为 generate/stream）
+ * - 配置了 `base` 即表示该协议的**全部** capability 都可用。只支持其中一部分时不要写 `base`，在 `endpoints` 里写完整 URL。
+ * - **全能力 OpenAI 上游**（chat、responses、生图、编辑、转写、语音合成都有）：写 `openai.base`
+ * - **只支持部分 OpenAI 能力**：按实际能力写 `openai.endpoints` 的完整 URL，不要写 `base`
+ * - Anthropic / Gemini / volcengine：协议只有一个 capability 时可用 `base`（Anthropic 仅 messages；Gemini 为 generate；volcengine 仅生图）
  * - Gemini Vertex 兼容聚合：写到 `{model}` 前的完整前缀，并设 `gemini.auth: "bearer"`
  * - 正式 Vertex（项目级）：OpenAI 仅 Chat Completions（`.../endpoints/openapi/chat/completions`）；原生 Gemini 写项目级 `{model}` 前缀并设 `auth: "bearer"`
  *

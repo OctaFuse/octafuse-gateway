@@ -18,6 +18,8 @@ const EXPECTED_AUDIO_IDS = [
 	'gpt-4o-transcribe',
 	'gpt-4o-transcribe-diarize',
 	'minimax-asr-1.0',
+	'minimax-speech-2.8-hd',
+	'minimax-speech-2.8-turbo',
 	'qwen-audio-3.0-asr-flash',
 	'qwen-audio-3.0-asr-flash-filetrans',
 	'qwen-audio-3.0-asr-flash-streaming',

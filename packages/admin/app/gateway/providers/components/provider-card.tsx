@@ -11,7 +11,6 @@ import { VendorIcon } from '@/components/model-vendor-icon';
 import { formatProviderAccountLabel, providerKindDisplayLabel } from '@/lib/provider-kind';
 import type { GatewayProvider, ProviderKeyStatusKind } from '../types';
 import { getProviderKeyStatus, getProviderProtocolSummaries } from '../provider-utils';
-import { ProviderCatalogOutboundLink } from './provider-catalog-outbound-link';
 import { ProviderProtocolIcon } from './provider-protocol-icon';
 import { ProviderQuotaButton } from './provider-quota-popover';
 
@@ -258,13 +257,6 @@ export function ProviderCard(props: ProviderCardProps) {
 							)}
 						</button>
 					) : null}
-					{(keyStatus === 'no_key' || keyStatus === 'pending') && (
-						<ProviderCatalogOutboundLink
-							links={provider.catalog_links}
-							stopPropagation
-							className="pointer-events-auto inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-blue-700 hover:text-blue-800"
-						/>
-					)}
 				</div>
 				{provider.quota_supported && !provider.has_pending_key ? (
 					<div className="pointer-events-auto ml-auto flex items-center gap-1">

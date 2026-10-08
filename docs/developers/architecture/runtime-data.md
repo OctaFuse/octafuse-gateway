@@ -121,7 +121,7 @@ flowchart TB
 - **部分能力上游**（例如仅 chat 的中转）：**清空 Base**，只填写支持的 URL overrides。
 - **不要**用「填了 Base 但留空某些 override」表达「不支持该能力」——运行时仍会从 Base 派生并可能打到错误路径。
 
-管理后台静态导入模板（`packages/admin/lib/provider-import-presets.json`）遵循同一约定：默认 LLM 供应商写入 `openai.endpoints.chat`；具备完整 OpenAI 兼容 Images（含 generations **与** edits）的模板写 `openai.base`（如 OpenAI、Azure OpenAI、SiliconFlow、Zhipu/Z.AI、xAI、Together、Gemini OpenAI 兼容层等）。**Volcengine Ark** 无 edits，故只写 `endpoints.chat` + `endpoints.images.generations`，**不**写 `base`（避免派生死链 `/images/edits`）。OpenRouter Images 路径为 `/api/v1/images`，在 `openai.base` 之外用 `endpoints.images.generations` 覆盖。
+管理后台静态导入模板（`packages/admin/lib/provider-import-presets.json`）遵循同一约定：只支持部分 OpenAI 能力时不写 `openai.base`，只填确认过的完整 URL。官方 OpenAI 与 Azure OpenAI 覆盖 chat、responses、生图、编辑、转写和语音合成，因此保留 `openai.base`。硅基流动、智谱、Z.AI、xAI、Together、Gemini OpenAI 兼容层、OpenRouter 和 Vercel AI Gateway 只列出实际支持的地址。**Volcengine Ark** 的 OpenAI 侧只有 chat 与 responses，生图走 `volcengine.base`。OpenRouter 的生图地址是 `POST /api/v1/images`。
 
 ---
 

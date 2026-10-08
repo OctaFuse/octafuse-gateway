@@ -10,7 +10,12 @@ import {
 	resolveStoredProviderPresentation,
 } from '@/lib/provider-import-preset';
 import { CUSTOM_PROVIDER_KIND, suggestUniqueProviderImportName } from '@/lib/provider-kind';
-import type { ProviderEndpointsMap } from '@octafuse/core/provider-endpoints';
+import {
+	listConfiguredCapabilities,
+	resolveUpstreamEndpoint,
+	type ProviderEndpointCapability,
+	type ProviderEndpointsMap,
+} from '@octafuse/core/provider-endpoints';
 
 function replaceEndpointPaths(endpoints: ProviderEndpointsMap): ProviderEndpointsMap {
 	const copy = structuredClone(endpoints);
@@ -33,6 +38,139 @@ function replaceEndpointPaths(endpoints: ProviderEndpointsMap): ProviderEndpoint
 }
 
 describe('provider import preset catalog metadata', () => {
+	const explicitEndpointCases: [string, ProviderEndpointCapability, string][] = [
+		['OpenRouter', 'responses', 'https://openrouter.ai/api/v1/responses'],
+		['SiliconFlow', 'audio.transcriptions', 'https://api.siliconflow.cn/v1/audio/transcriptions'],
+		['SiliconFlow (International)', 'audio.transcriptions', 'https://api.siliconflow.com/v1/audio/transcriptions'],
+		['Together AI', 'audio.transcriptions', 'https://api.together.ai/v1/audio/transcriptions'],
+		['Together AI', 'audio.speech', 'https://api.together.ai/v1/audio/speech'],
+	];
+	for (const [name, capability, expectedUrl] of explicitEndpointCases) {
+		it(`advertises and resolves the explicit ${name} ${capability} endpoint`, () => {
+			const row = listStaticProviderImportPresets().find((preset) => preset.name === name);
+			assert.ok(row, name);
+			assert.equal(row.endpoints.openai?.base, undefined);
+			assert.equal(row.endpoints.openai?.endpoints?.[capability], expectedUrl);
+			const capabilities = listConfiguredCapabilities(row.endpoints, 'openai');
+			assert.ok(capabilities.includes(capability));
+			assert.ok(!capabilities.includes('images.edits'));
+			if (name !== 'OpenRouter') assert.ok(!capabilities.includes('responses'));
+			assert.equal(resolveUpstreamEndpoint('openai', capability, row.endpoints), expectedUrl);
+		});
+	}
+
+	it('includes Xiaomi MiMo OpenAI chat and responses endpoints', () => {
+		const rows = listStaticProviderImportPresets();
+		const mimo = rows.find((row) => row.name === 'Xiaomi MiMo');
+		const tokenPlan = rows.find((row) => row.name === 'Xiaomi MiMo (Token Plan)');
+		assert.ok(mimo);
+		assert.ok(tokenPlan);
+		assert.deepEqual(mimo.endpoints.openai?.endpoints, {
+			chat: 'https://api.xiaomimimo.com/v1/chat/completions',
+			responses: 'https://api.xiaomimimo.com/v1/responses',
+		});
+		assert.equal(mimo.endpoints.anthropic?.base, 'https://api.xiaomimimo.com/anthropic');
+		assert.deepEqual(tokenPlan.endpoints.openai?.endpoints, {
+			chat: 'https://token-plan-cn.xiaomimimo.com/v1/chat/completions',
+			responses: 'https://token-plan-cn.xiaomimimo.com/v1/responses',
+		});
+		assert.equal(tokenPlan.endpoints.anthropic?.base, 'https://token-plan-cn.xiaomimimo.com/anthropic');
+	});
+
+	it('includes documented China-region chat, responses, and Anthropic endpoints', () => {
+		const rows = listStaticProviderImportPresets();
+		const byName = new Map(rows.map((row) => [row.name, row]));
+		const expectEndpoints = (
+			name: string,
+			expected: {
+				chat?: string;
+				responses?: string;
+				anthropic?: string;
+			}
+		) => {
+			const row = byName.get(name);
+			assert.ok(row, name);
+			assert.equal(row.endpoints.openai?.endpoints?.chat ?? row.endpoints.openai?.base, expected.chat);
+			assert.equal(row.endpoints.openai?.endpoints?.responses, expected.responses);
+			assert.equal(row.endpoints.anthropic?.base, expected.anthropic);
+		};
+
+		expectEndpoints('DeepSeek', {
+			chat: 'https://api.deepseek.com/chat/completions',
+			responses: 'https://api.deepseek.com/responses',
+			anthropic: 'https://api.deepseek.com/anthropic',
+		});
+		expectEndpoints('Tencent Hunyuan', {
+			chat: 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions',
+			anthropic: 'https://api.hunyuan.cloud.tencent.com/anthropic',
+		});
+		expectEndpoints('Baidu Qianfan', {
+			chat: 'https://qianfan.baidubce.com/v2/chat/completions',
+			responses: 'https://qianfan.baidubce.com/v2/responses',
+			anthropic: 'https://qianfan.baidubce.com/anthropic',
+		});
+		expectEndpoints('Zhipu GLM', {
+			chat: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+			responses: 'https://open.bigmodel.cn/api/v1/responses',
+			anthropic: 'https://open.bigmodel.cn/api/anthropic',
+		});
+		assert.equal(byName.get('Zhipu GLM')?.endpoints.openai?.base, undefined);
+		assert.equal(
+			byName.get('Zhipu GLM')?.endpoints.openai?.endpoints?.['images.generations'],
+			'https://open.bigmodel.cn/api/paas/v4/images/generations'
+		);
+		expectEndpoints('Zhipu GLM (Coding Plan)', {
+			chat: 'https://open.bigmodel.cn/api/coding/paas/v4/chat/completions',
+			responses: 'https://open.bigmodel.cn/api/v1/responses',
+			anthropic: 'https://open.bigmodel.cn/api/anthropic',
+		});
+		expectEndpoints('Meituan LongCat', {
+			chat: 'https://api.longcat.chat/openai/v1/chat/completions',
+			responses: 'https://api.longcat.chat/openai/v1/responses',
+			anthropic: 'https://api.longcat.chat/anthropic',
+		});
+		expectEndpoints('Moonshot AI', {
+			chat: 'https://api.moonshot.cn/v1/chat/completions',
+			responses: 'https://api.moonshot.cn/v1/responses',
+			anthropic: 'https://api.moonshot.cn/anthropic',
+		});
+		expectEndpoints('Kimi Code (Coding API)', {
+			chat: 'https://api.kimi.com/coding/v1/chat/completions',
+			anthropic: 'https://api.kimi.com/coding',
+		});
+		expectEndpoints('StepFun', {
+			chat: 'https://api.stepfun.com/v1/chat/completions',
+			responses: 'https://api.stepfun.com/v1/responses',
+			anthropic: 'https://api.stepfun.com',
+		});
+		expectEndpoints('Qiniu AI', {
+			chat: 'https://api.qnaigc.com/v1/chat/completions',
+			responses: 'https://api.qnaigc.com/bypass/openai/v1/responses',
+			anthropic: 'https://api.qnaigc.com',
+		});
+		expectEndpoints('SiliconFlow', {
+			chat: 'https://api.siliconflow.cn/v1/chat/completions',
+			anthropic: 'https://api.siliconflow.cn',
+		});
+		assert.equal(byName.get('SiliconFlow')?.endpoints.openai?.base, undefined);
+		assert.equal(
+			byName.get('SiliconFlow')?.endpoints.openai?.endpoints?.['images.generations'],
+			'https://api.siliconflow.cn/v1/images/generations'
+		);
+		assert.equal(
+			byName.get('SiliconFlow')?.endpoints.openai?.endpoints?.['audio.speech'],
+			'https://api.siliconflow.cn/v1/audio/speech'
+		);
+		assert.equal(
+			byName.get('Alibaba Cloud Bailian (Coding Plan)')?.endpoints.openai?.endpoints?.responses,
+			undefined
+		);
+		assert.equal(
+			byName.get('Tencent TokenHub (Hy Token Plan)')?.endpoints.openai?.endpoints?.responses,
+			undefined
+		);
+	});
+
 	it('includes the limited Qwen Token Plan DashScope audio endpoints', () => {
 		const qwenTokenPlan = listStaticProviderImportPresets().find(
 			(row) => row.name === 'Qwen AI Platform (Token Plan)'
@@ -190,7 +328,15 @@ describe('provider import preset catalog metadata', () => {
 			chatOf('Hugging Face Inference Providers'),
 			'https://router.huggingface.co/v1/chat/completions'
 		);
-		assert.equal(openaiBaseOf('Vercel AI Gateway'), 'https://ai-gateway.vercel.sh/v1');
+		assert.equal(
+			chatOf('Vercel AI Gateway'),
+			'https://ai-gateway.vercel.sh/v1/chat/completions'
+		);
+		assert.equal(
+			byName.get('Vercel AI Gateway')?.endpoints.openai?.endpoints?.responses,
+			'https://ai-gateway.vercel.sh/v1/responses'
+		);
+		assert.equal(openaiBaseOf('Vercel AI Gateway'), undefined);
 		assert.equal(anthropicBaseOf('Vercel AI Gateway'), 'https://ai-gateway.vercel.sh');
 		assert.equal(chatOf('SambaNova Cloud'), 'https://api.sambanova.ai/v1/chat/completions');
 		assert.equal(anthropicBaseOf('SambaNova Cloud'), 'https://api.sambanova.ai');
@@ -254,12 +400,17 @@ describe('provider import preset catalog metadata', () => {
 		);
 		assert.equal(chatOf('SCNet'), 'https://api.scnet.cn/api/llm/v1/chat/completions');
 		assert.equal(anthropicBaseOf('SCNet'), 'https://api.scnet.cn/api/llm/anthropic');
-		assert.equal(openaiBaseOf('SiliconFlow'), 'https://api.siliconflow.cn/v1');
+		assert.equal(chatOf('SiliconFlow'), 'https://api.siliconflow.cn/v1/chat/completions');
+		assert.equal(openaiBaseOf('SiliconFlow'), undefined);
 		assert.equal(
 			byName.get('SiliconFlow')?.catalog?.links?.referral,
 			'https://cloud.siliconflow.cn/i/rA30k5VJ'
 		);
-		assert.equal(openaiBaseOf('SiliconFlow (International)'), 'https://api.siliconflow.com/v1');
+		assert.equal(
+			chatOf('SiliconFlow (International)'),
+			'https://api.siliconflow.com/v1/chat/completions'
+		);
+		assert.equal(openaiBaseOf('SiliconFlow (International)'), undefined);
 		assert.equal(byName.get('SiliconFlow (International)')?.catalog?.links?.referral, undefined);
 		assert.equal(
 			byName.get('SiliconFlow (International)')?.catalog?.links?.platform,

@@ -104,7 +104,7 @@ Google 未公布人民币刊例，CNY 目录价按 USD × 7 占位。
 
 ## Gemini 自带的 OpenAI 兼容层
 
-这是另一种接法，与 `gemini-image` 适配器无关。导入模板 **Google Gemini (Generative Language API)** 的 `openai.base` 为 `https://generativelanguage.googleapis.com/v1beta/openai`。OpenAI 透传路由可以直接打 Google 的兼容层，由 Google 转换，网关只替换 `model`。
+这是另一种接法，与 `gemini-image` 适配器无关。导入模板 **Google Gemini (Generative Language API)** 的 `openai.endpoints.images.generations` 为 `https://generativelanguage.googleapis.com/v1beta/openai/images/generations`。OpenAI 透传路由可以直接打 Google 的兼容层，由 Google 转换，网关只替换 `model`。
 
 兼容层只认 `prompt`、`model`、`n`、`size`、`response_format`，其它字段会被静默忽略。Gemini 特有能力按兼容层文档的 `extra_body` 传：`aspect_ratio`、`generation_config`、`safety_settings`，以及仅 `gemini-3-pro-image-preview` 支持的 `tools`（Google 搜索接地）。`gemini-nano-banana-2.1` 的官方宽高比比同族多 `1:4`、`4:1`、`1:8`、`8:1`、`9:21`。建议显式传 `response_format=b64_json`。兼容层没有 edits。
 
