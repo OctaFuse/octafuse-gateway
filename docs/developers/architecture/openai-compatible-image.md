@@ -93,7 +93,7 @@ client.images.generate(
 
 兼容层文档的示例型号是 `gemini-2.5-flash-image` 与 `gemini-3-pro-image-preview`。新型号若被兼容层拒识，按 Google 文档调整路由的供应商模型名。
 
-**计费**：`token` 模式。`gemini-nano-banana-2.1` 目前只有美元价，人民币价需导入后手工补。
+**计费**：`token` 模式。Google 未公布人民币刊例，CNY 目录价按 USD × 7 占位。
 
 ## 官方来源
 

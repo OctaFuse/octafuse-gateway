@@ -176,6 +176,7 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(nanoBanana21Tier.image_output_price, 30);
 		assert.equal(nanoBanana21Tier.cache_read_price, null);
 		assert.equal(nanoBanana21Tier.cache_write_price, null);
+		assert.equal(asPricing(nanoBanana21.pricing.cny).tiers?.[0]?.image_output_price, 210);
 	});
 });
 

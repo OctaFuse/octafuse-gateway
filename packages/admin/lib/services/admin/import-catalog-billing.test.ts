@@ -559,7 +559,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥24 / ¥72 /M');
 	});
 
-	it('includes gemini-nano-banana-2.1 with Gemini API Standard list prices (USD only, no official CNY)', () => {
+	it('includes gemini-nano-banana-2.1 with Gemini API Standard list prices (CNY is USD × 7)', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-nano-banana-2.1');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-nano-banana-2.1');
 		assert.ok(usd);
@@ -568,6 +568,8 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.kind, 'image');
 		assert.equal(usd!.context_window, null);
 		assert.equal(usd!.max_tokens, null);
+		assert.equal(usd!.pricing_label, '$1.5 / $1.5 / $30 /M');
+		assert.equal(cny!.pricing_label, '¥10.5 / ¥10.5 / ¥210 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-nano-banana-2.1');
 		assert.ok(preset);
 		assert.equal(preset!.released, '2026-10-06');
@@ -582,6 +584,12 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile!.tiers[0]?.cache_write_price, null);
 		assert.equal(profile!.tiers[0]?.image_input_price, 1.5);
 		assert.equal(profile!.tiers[0]?.image_output_price, 30);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.ok(cnyProfile);
+		assert.equal(cnyProfile!.tiers[0]?.input_price, 10.5);
+		assert.equal(cnyProfile!.tiers[0]?.output_price, 52.5);
+		assert.equal(cnyProfile!.tiers[0]?.image_input_price, 10.5);
+		assert.equal(cnyProfile!.tiers[0]?.image_output_price, 210);
 	});
 });
 

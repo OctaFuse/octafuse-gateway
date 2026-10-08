@@ -25,6 +25,21 @@
 						"image_output_price": 30
 					}
 				]
+			},
+			"cny": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10.5,
+						"output_price": 52.5,
+						"cache_read_price": null,
+						"cache_write_price": null,
+						"image_input_price": 10.5,
+						"image_input_cache_price": null,
+						"image_output_price": 210
+					}
+				]
 			}
 		},
 		"modalities": {

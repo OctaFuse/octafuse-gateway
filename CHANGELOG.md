@@ -29,7 +29,7 @@
 
 - Grok Imagine Image 2.0 按官方的分辨率与 quality 分档计价：1K / 1.5K / 2K 的 low 为 $0.04 / $0.05 / $0.06，medium 为 $0.06 / $0.07 / $0.08，每张参考图另收 $0.01（CNY 按 7 倍）。原先一律按 $0.04，2K 或 medium 会少收。OpenAI 生图与编辑入口在客户端没传 `size` 时，用额外字段 `resolution` 选计费档位；xAI 的 `resolution` 只有 `1k` / `2k`，1.5K 档目前选不到。`quality` 不传或为 `auto` 时按 low 计，与 xAI 生成请求的默认档一致。已导入的模型不会自动更新，需要改价或运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。`grok-imagine-image-quality` 于 2026-11-02 退役，之后由 2.0 以 low 档出图，届时请把该模型的单价改成 2.0 的 low 档。
 
-- 新增 Gemini Nano Banana 2.1（`gemini-nano-banana-2.1`）预设，按 token 计价，暂只有 USD 目录价。
+- 新增 Gemini Nano Banana 2.1（`gemini-nano-banana-2.1`）预设，按 token 计价。Google 未公布人民币刊例，CNY 按 USD × 7 占位（图出 ¥210/1M）。人民币库此前因缺价无法导入，补价后可重新导入；已导入的模型不会自动改价。
 
 - 用户专属倍率可以按模型和路由组分别配置。`users.charged_cost_factors` 的值可以是数字（覆盖该模型全部分组），也可以是 `{ "<route_group>": number, "*": number }`。文本、图像和音频计费，以及 `GET /v1/models` 与用户展示折扣，都按本次路由组查找：先具体分组，再 `*`，数字则覆盖全部分组。未命中的分组按路由计费。与路由实际计费倍率的合成由 `USER_CHARGED_COST_FACTOR_MODE`（相乘或取较小值）决定。请求日志的 `pricing_audit` 新增 `user_charged_factor_route_group`，记录命中的分组键。不需要数据库迁移，已有的数字配置行为不变。
 

@@ -66,7 +66,7 @@
 | `doubao-seedream-5-0-pro` | Doubao Seedream 5.0 Pro | [火山方舟 Seedream](../architecture/volcengine-image.md) | `per_image` | ¥0.6/张 | $0.09/张 | `by_size`、参考图 | `bytedance-image.json` |
 | `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | [Google Gemini](../architecture/openai-compatible-image.md#google-gemini-nano-banana) | `token` | 图出 ¥840/1M | 图出 $120/1M | 按 usage | `google-image.json` |
 | `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | [Google Gemini](../architecture/openai-compatible-image.md#google-gemini-nano-banana) | `token` | 图出 ¥420/1M | 图出 $60/1M | 按 usage | `google-image.json` |
-| `gemini-nano-banana-2.1` | Gemini Nano Banana 2.1 | [Google Gemini](../architecture/openai-compatible-image.md#google-gemini-nano-banana) | `token` | — | 图出 $30/1M | 按 usage | `google-image.json` |
+| `gemini-nano-banana-2.1` | Gemini Nano Banana 2.1 | [Google Gemini](../architecture/openai-compatible-image.md#google-gemini-nano-banana) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `google-image.json` |
 | `minimax-image-01` | MiniMax Image 01 | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax.json` |
 | `minimax-image-01-live` | MiniMax Image 01 Live | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax.json` |
 | `gpt-image-2` | GPT Image 2 | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
@@ -116,6 +116,7 @@
 | `gemini-3-pro-image-preview` | USD | $2 | — | $12 | $2 | — | $120 |
 | `gemini-3.1-flash-image` | CNY | ¥3.5 | — | ¥21 | ¥3.5 | — | ¥420 |
 | `gemini-3.1-flash-image` | USD | $0.5 | — | $3 | $0.5 | — | $60 |
+| `gemini-nano-banana-2.1` | CNY | ¥10.5 | — | ¥52.5 | ¥10.5 | — | ¥210 |
 | `gemini-nano-banana-2.1` | USD | $1.5 | — | $7.5 | $1.5 | — | $30 |
 | `gpt-image-2` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
 | `gpt-image-2` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
