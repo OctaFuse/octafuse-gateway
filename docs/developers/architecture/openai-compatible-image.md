@@ -89,7 +89,7 @@ client.images.generate(
 
 **端点**：导入模板 **Google Gemini (Generative Language API)** 的 `openai.base` 为 `https://generativelanguage.googleapis.com/v1beta/openai`。
 
-**参数规则**：兼容层只认 `prompt`、`model`、`n`、`size`、`response_format`，其它字段会被静默忽略。Gemini 特有能力按兼容层文档的 `extra_body` 传：`aspect_ratio`（如 `16:9`）、`generation_config`、`safety_settings`，以及仅 `gemini-3-pro-image-preview` 支持的 `tools`（Google 搜索接地）。建议显式传 `response_format=b64_json`。兼容层没有 edits。
+**参数规则**：兼容层只认 `prompt`、`model`、`n`、`size`、`response_format`，其它字段会被静默忽略。Gemini 特有能力按兼容层文档的 `extra_body` 传：`aspect_ratio`、`generation_config`、`safety_settings`，以及仅 `gemini-3-pro-image-preview` 支持的 `tools`（Google 搜索接地）。`gemini-nano-banana-2.1` 的官方宽高比比同族多 `1:4`、`4:1`、`1:8`、`8:1`、`9:21`，目录 ID 不含 `image`，不能靠子串判断生图家族。建议显式传 `response_format=b64_json`。兼容层没有 edits。客户端入口是 OpenAI Images，上游走 Gemini 的 OpenAI 兼容层。
 
 兼容层文档的示例型号是 `gemini-2.5-flash-image` 与 `gemini-3-pro-image-preview`。新型号若被兼容层拒识，按 Google 文档调整路由的供应商模型名。
 

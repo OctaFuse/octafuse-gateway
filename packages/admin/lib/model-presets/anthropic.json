@@ -28,7 +28,7 @@
 						"upto": null,
 						"input_price": 14,
 						"output_price": 70,
-						"cache_read_price": 1.4,
+						"cache_read_price": 0.7,
 						"cache_write_price": 17.5
 					}
 				]
@@ -73,6 +73,24 @@
 						"output_price": 2.5,
 						"cache_read_price": 0.05,
 						"cache_write_price": 0.625
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 100000,
+						"input_price": 0.7,
+						"output_price": 3.5,
+						"cache_read_price": 0.07,
+						"cache_write_price": 0.875
+					},
+					{
+						"upto": null,
+						"input_price": 3.5,
+						"output_price": 17.5,
+						"cache_read_price": 0.35,
+						"cache_write_price": 4.375
 					}
 				]
 			}

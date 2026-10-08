@@ -2,9 +2,9 @@
 
 ## Unreleased
 
-- 新增 Anthropic Claude Haiku 5.5（`claude-haiku-5-5`）预设，按提示长度分两档计价：≤100K 与 >100K（整条请求按高档计）。USD 目录价：低档 $0.10 / $0.50，高档 $0.50 / $2.50；CNY 官方未公布，暂留空。
+- 新增 Anthropic Claude Haiku 5.5（`claude-haiku-5-5`）预设，按提示长度分两档计价：≤100K 与 >100K（整条请求按高档计）。USD 目录价：低档 $0.10 / $0.50，高档 $0.50 / $2.50。Anthropic 未公布人民币刊例，CNY 按 USD × 7 占位（低档 ¥0.70 / ¥3.50，高档 ¥3.50 / ¥17.50）。客户端入口是 Anthropic Messages。已导入的模型不会自动改价。
 
-- 修正 Claude Sonnet 5.5（`claude-sonnet-5-5`）USD `cache_read_price`：0.2 → 0.1（官方为 5% × $2 = $0.10）。CNY 暂维持 1.4，官方未公布 CNY 价。
+- 修正 Claude Sonnet 5.5（`claude-sonnet-5-5`）缓存读取价：USD `cache_read_price` 0.2 → 0.1（官方为 5% × $2 = $0.10），CNY 占位价同步为 0.7（此前停在按旧美元价换算的 1.4）。已导入的模型不会自动改价。
 
 - 新增上游协议 `minimax`，对接 MiniMax 官方接口（国内 `https://api.minimaxi.com/v1`，国际 `https://api.minimax.io/v1`）。文件转写、同步语音合成和生图各有一个 OpenAI 转换适配器和一条原生透传路径：
   - 文件转写：`minimax-asr-file` 把 OpenAI `POST /v1/audio/transcriptions` 转到 `speech_to_text`（模型 `asr-1.0`）。`language` 放在请求头，`srt` / `vtt` 由网关根据带时间戳的结果生成，`prompt` 与 `temperature` 不转发。透传路径是 `POST /v1/minimax/speech_to_text`，表单里的 `language` 由网关转到请求头，响应不改写；透传暂不逐段下发 `stream=true` 的结果。两条入口都按上游 `duration` 按秒计费。
