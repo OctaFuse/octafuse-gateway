@@ -12,6 +12,7 @@
 - MiniMax 生图：[minimax-image.md](./minimax-image.md)
 - 火山方舟 Seedream 生图：[volcengine-image.md](./volcengine-image.md)
 - OpenAI 兼容生图透传：[openai-compatible-image.md](./openai-compatible-image.md)
+- Gemini 原生生图：[gemini-image.md](./gemini-image.md)
 - DashScope、MiniMax 与火山方舟官方能力覆盖与缺口：[native-provider-coverage.md](../reference/native-provider-coverage.md)
 
 ## 术语
@@ -78,7 +79,7 @@
 
 DashScope 语音合成的上游 `input` 是对象，OpenAI 的 `input` 是文本，客户端无法通过额外字段设置 `input.*`。这类参数写在路由 `custom_params`，或改走原生透传路由。
 
-原生透传路由（`/v1/minimax/*`、`/v1/dashscope/*`、`/v1/volcengine/*`）、实时 WebSocket 和异步任务入口不走这套合并。文本 Chat / Messages / Responses 本来就转发整个请求体。火山方舟生图透传由 `volcengine-json-passthrough` 驱动，只替换 `model`。OpenAI 入口的 `volcengine-image` 由 `volcengine-openai-driver` 转换后再发到同一个方舟端点。
+原生透传路由（`/v1/minimax/*`、`/v1/dashscope/*`、`/v1/volcengine/*`）、实时 WebSocket 和异步任务入口不走这套合并。文本 Chat / Messages / Responses 本来就转发整个请求体。火山方舟生图透传由 `volcengine-json-passthrough` 驱动，只替换 `model`。OpenAI 入口的 `volcengine-image` 由 `volcengine-openai-driver` 转换后再发到同一个方舟端点。Gemini 图片模型与文本模型共用 `/v1beta/models/{model}:{action}`，由 `gemini-image-passthrough` 原样转发 generateContent 请求体，见 [Gemini 原生生图](./gemini-image.md)。
 
 ## 为后续模态预留
 

@@ -3,9 +3,12 @@ import { describe, it } from 'node:test';
 import {
 	buildImagePrecheckUsage,
 	computeImageTokenMeteredCost,
+	estimateGeminiImageOutputTokens,
 	estimateImageOutputTokensForPrecheck,
+	GEMINI_IMAGE_PRECHECK_TEXT_OUTPUT_HEADROOM,
 	IMAGE_PRECHECK_IMAGE_INPUT_TOKEN_HEADROOM,
 	IMAGE_PRECHECK_MAX_REFERENCE_COUNT,
+	parseGeminiImageUsage,
 	parseOpenAiImageUsage,
 	SEEDREAM_TYPICAL_OUTPUT_TOKENS,
 } from './image-token-usage';
@@ -42,6 +45,7 @@ describe('parseOpenAiImageUsage', () => {
 		assert.equal(usage!.text_tokens, 100);
 		assert.equal(usage!.image_input_tokens, 20);
 		assert.equal(usage!.cached_text_tokens, 10);
+		assert.equal(usage!.text_output_tokens, 0);
 		assert.equal(usage!.image_output_tokens, 5500);
 		assert.equal(usage!.total_tokens, 5620);
 		assert.ok(usage!.raw_usage?.includes('input_tokens_details'));
@@ -85,6 +89,7 @@ describe('SEEDREAM_TYPICAL_OUTPUT_TOKENS (token-precheck constant only)', () => 
 				cached_text_tokens: 0,
 				image_input_tokens: 0,
 				cached_image_input_tokens: 0,
+				text_output_tokens: 0,
 				image_output_tokens: SEEDREAM_TYPICAL_OUTPUT_TOKENS,
 				total_tokens: SEEDREAM_TYPICAL_OUTPUT_TOKENS,
 				raw_usage: null,
@@ -112,6 +117,7 @@ describe('computeImageTokenMeteredCost', () => {
 				cached_text_tokens: 0,
 				image_input_tokens: 0,
 				cached_image_input_tokens: 0,
+				text_output_tokens: 0,
 				image_output_tokens: 5500,
 				total_tokens: 5520,
 				raw_usage: null,
@@ -129,6 +135,7 @@ describe('computeImageTokenMeteredCost', () => {
 				cached_text_tokens: 0,
 				image_input_tokens: 1000,
 				cached_image_input_tokens: 0,
+				text_output_tokens: 0,
 				image_output_tokens: 1767,
 				total_tokens: 2807,
 				raw_usage: null,
@@ -146,6 +153,7 @@ describe('computeImageTokenMeteredCost', () => {
 				cached_text_tokens: 40,
 				image_input_tokens: 200,
 				cached_image_input_tokens: 50,
+				text_output_tokens: 0,
 				image_output_tokens: 0,
 				total_tokens: 300,
 				raw_usage: null,
@@ -224,5 +232,98 @@ describe('buildImagePrecheckUsage', () => {
 			imageCount: 1,
 		});
 		assert.equal(omitted.image_input_tokens, five.image_input_tokens);
+		assert.equal(one.text_output_tokens, 0);
+	});
+
+	it('uses an explicit per-image output token count and text output headroom', () => {
+		const usage = buildImagePrecheckUsage({
+			imageCount: 2,
+			outputTokensPerImage: 1120,
+			textOutputTokens: GEMINI_IMAGE_PRECHECK_TEXT_OUTPUT_HEADROOM,
+		});
+		assert.equal(usage.image_output_tokens, 2240);
+		assert.equal(usage.text_output_tokens, GEMINI_IMAGE_PRECHECK_TEXT_OUTPUT_HEADROOM);
+	});
+});
+
+describe('parseGeminiImageUsage', () => {
+	it('splits TEXT and IMAGE modality details and adds thoughts to text output', () => {
+		const usage = parseGeminiImageUsage({
+			promptTokenCount: 20,
+			candidatesTokenCount: 1132,
+			thoughtsTokenCount: 40,
+			totalTokenCount: 1192,
+			promptTokensDetails: [
+				{ modality: 'TEXT', tokenCount: 12 },
+				{ modality: 'IMAGE', tokenCount: 8 },
+			],
+			candidatesTokensDetails: [
+				{ modality: 'TEXT', tokenCount: 12 },
+				{ modality: 'IMAGE', tokenCount: 1120 },
+			],
+			cacheTokensDetails: [{ modality: 'TEXT', tokenCount: 4 }],
+		});
+		assert.ok(usage);
+		assert.equal(usage!.text_tokens, 12);
+		assert.equal(usage!.image_input_tokens, 8);
+		assert.equal(usage!.cached_text_tokens, 4);
+		assert.equal(usage!.image_output_tokens, 1120);
+		assert.equal(usage!.text_output_tokens, 52);
+		assert.equal(usage!.total_tokens, 1192);
+	});
+
+	it('falls back to aggregate counts when details are missing', () => {
+		const usage = parseGeminiImageUsage({
+			prompt_token_count: 10,
+			candidates_token_count: 1120,
+			thoughts_token_count: 5,
+		});
+		assert.ok(usage);
+		assert.equal(usage!.text_tokens, 10);
+		assert.equal(usage!.image_output_tokens, 1120);
+		assert.equal(usage!.text_output_tokens, 5);
+	});
+
+	it('returns null for a non-object', () => {
+		assert.equal(parseGeminiImageUsage(null), null);
+	});
+});
+
+describe('estimateGeminiImageOutputTokens', () => {
+	it('uses the published upper bound per resolution and 4K for auto', () => {
+		assert.equal(estimateGeminiImageOutputTokens('1K'), 1290);
+		assert.equal(estimateGeminiImageOutputTokens('512'), 747);
+		assert.equal(estimateGeminiImageOutputTokens('2k'), 1680);
+		assert.equal(estimateGeminiImageOutputTokens('4K'), 3780);
+		assert.equal(estimateGeminiImageOutputTokens('auto'), 3780);
+		assert.equal(estimateGeminiImageOutputTokens(null), 3780);
+	});
+});
+
+describe('computeImageTokenMeteredCost text output', () => {
+	it('charges Gemini text output at output_price', () => {
+		const cost = computeImageTokenMeteredCost(
+			{
+				text_tokens: 10,
+				cached_text_tokens: 0,
+				image_input_tokens: 0,
+				cached_image_input_tokens: 0,
+				text_output_tokens: 40,
+				image_output_tokens: 1120,
+				total_tokens: 1170,
+				raw_usage: null,
+			},
+			{
+				input_price: 0.5,
+				output_price: 3,
+				cache_read_price: null,
+				cache_write_price: null,
+				image_input_price: 0.5,
+				image_input_cache_price: null,
+				image_output_price: 60,
+			},
+		);
+		const expected = (10 * 0.5 + 40 * 3 + 1120 * 60) / 1_000_000;
+		assert.ok(Math.abs(cost - expected) < 1e-12);
 	});
 });

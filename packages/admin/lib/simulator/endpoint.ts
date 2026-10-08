@@ -309,11 +309,13 @@ export function buildSimulatorRequest(
 		}
 		case "gemini": {
 			const action: SimulatorGeminiAction =
-				input.geminiAction === "generateContent"
+				kind === "image"
 					? "generateContent"
-					: "streamGenerateContent";
+					: input.geminiAction === "generateContent"
+						? "generateContent"
+						: "streamGenerateContent";
 			const path = resolveProxyPathForModelInvoke({
-				kind: "llm",
+				kind: kind === "image" ? "image" : "llm",
 				protocol: "gemini",
 				geminiAction: action,
 				geminiModelSegment: input.modelForRouting,

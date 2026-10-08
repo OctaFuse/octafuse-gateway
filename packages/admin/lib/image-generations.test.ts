@@ -98,6 +98,39 @@ describe('image-generations helpers', () => {
 		assert.match(parsed.usageHint ?? '', /1 image/);
 	});
 
+	it('parseImagesGenerationsResponse extracts Gemini inlineData and skips thought images', () => {
+		const json = JSON.stringify({
+			candidates: [
+				{
+					content: {
+						parts: [
+							{ text: 'a red apple' },
+							{ thought: true, inlineData: { mimeType: 'image/png', data: 'thought' } },
+							{ inlineData: { mimeType: 'image/png', data: 'abc' } },
+						],
+					},
+				},
+			],
+		});
+		const parsed = parseImagesGenerationsResponse(json);
+		assert.equal(parsed.count, 1);
+		assert.equal(parsed.images[0]?.src, 'data:image/png;base64,abc');
+		assert.match(parsed.usageHint ?? '', /a red apple/);
+	});
+
+	it('imageBodyTemplateFor uses Gemini generateContent image config', () => {
+		const body = JSON.parse(
+			imageBodyTemplateFor({ protocol: 'gemini', modelId: 'gemini-3.1-flash-image' }),
+		) as {
+			contents?: Array<{ parts?: Array<{ text?: string }> }>;
+			generationConfig?: { responseModalities?: string[]; imageConfig?: { aspectRatio?: string; imageSize?: string } };
+		};
+		assert.ok((body.contents?.[0]?.parts?.[0]?.text ?? '').length > 0);
+		assert.deepEqual(body.generationConfig?.responseModalities, ['TEXT', 'IMAGE']);
+		assert.equal(body.generationConfig?.imageConfig?.aspectRatio, '1:1');
+		assert.equal(body.generationConfig?.imageConfig?.imageSize, '1K');
+	});
+
 	it('openaiEditImageFormField uses image[] only for multiple files', () => {
 		assert.equal(openaiEditImageFormField(1), 'image');
 		assert.equal(openaiEditImageFormField(2), 'image[]');

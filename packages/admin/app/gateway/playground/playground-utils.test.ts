@@ -146,6 +146,26 @@ describe('playground-utils', () => {
 			),
 			VOLCENGINE_IMAGE_BODY_TEMPLATE,
 		);
+		const gemini = JSON.parse(
+			templateForRoute(
+				route({
+					upstream_protocol: 'gemini',
+					upstream_operation: 'models.generate',
+					adapter: 'passthrough',
+					provider_model_name: 'gemini-3.1-flash-image',
+					model_id: 'gemini-3.1-flash-image',
+				}),
+				{
+					output_modalities: '["image"]',
+					pricing_profile: JSON.stringify({
+						image_billing_mode: 'token',
+						image: { default: 0 },
+					}),
+				} as never,
+			),
+		) as { generationConfig?: { responseModalities?: string[]; imageConfig?: { imageSize?: string } } };
+		assert.deepEqual(gemini.generationConfig?.responseModalities, ['TEXT', 'IMAGE']);
+		assert.equal(gemini.generationConfig?.imageConfig?.imageSize, '1K');
 	});
 
 	it('templateForRoute uses OpenAI bodies for MiniMax conversion routes', () => {

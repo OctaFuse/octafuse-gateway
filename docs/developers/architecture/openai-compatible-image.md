@@ -1,6 +1,6 @@
 # OpenAI 兼容生图透传
 
-本文说明以 OpenAI Images 协议透传的生图上游：OpenAI GPT Image、智谱 GLM Image、xAI Grok Imagine 与 Google Gemini（Nano Banana）。目录价与通用计费见 [文生图模型](../reference/image-models.md)。
+本文说明以 OpenAI Images 协议透传的生图上游：OpenAI GPT Image、智谱 GLM Image 与 xAI Grok Imagine。Google Gemini 官方图片模型见 [Gemini 原生生图](./gemini-image.md)。目录价与通用计费见 [文生图模型](../reference/image-models.md)。
 
 ## 共同规则
 
@@ -85,15 +85,7 @@ client.images.generate(
 
 ## Google Gemini Nano Banana
 
-型号：`gemini-nano-banana-2.1`、`gemini-3.1-flash-image`、`gemini-3-pro-image-preview`（`google-image.json`）。
-
-**端点**：导入模板 **Google Gemini (Generative Language API)** 的 `openai.base` 为 `https://generativelanguage.googleapis.com/v1beta/openai`。
-
-**参数规则**：兼容层只认 `prompt`、`model`、`n`、`size`、`response_format`，其它字段会被静默忽略。Gemini 特有能力按兼容层文档的 `extra_body` 传：`aspect_ratio`、`generation_config`、`safety_settings`，以及仅 `gemini-3-pro-image-preview` 支持的 `tools`（Google 搜索接地）。`gemini-nano-banana-2.1` 的官方宽高比比同族多 `1:4`、`4:1`、`1:8`、`8:1`、`9:21`，目录 ID 不含 `image`，不能靠子串判断生图家族。建议显式传 `response_format=b64_json`。兼容层没有 edits。客户端入口是 OpenAI Images，上游走 Gemini 的 OpenAI 兼容层。
-
-兼容层文档的示例型号是 `gemini-2.5-flash-image` 与 `gemini-3-pro-image-preview`。新型号若被兼容层拒识，按 Google 文档调整路由的供应商模型名。
-
-**计费**：`token` 模式。Google 未公布人民币刊例，CNY 目录价按 USD × 7 占位。
+官方图片模型见 [Gemini 原生生图](./gemini-image.md)。
 
 ## 官方来源
 
@@ -102,4 +94,4 @@ client.images.generate(
 - [OpenAI · Image generation](https://developers.openai.com/api/docs/guides/image-generation)
 - [智谱 · 图像生成 API](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90)
 - [xAI · Image Generation](https://docs.x.ai/developers/model-capabilities/images/generation)、[Image Editing](https://docs.x.ai/developers/model-capabilities/images/editing)、[grok-imagine-image-2.0](https://docs.x.ai/developers/models/grok-imagine-image-2.0)、[grok-imagine-image-quality 退役说明](https://docs.x.ai/developers/migration/imagine-image-quality-nov-2)
-- [Gemini API · OpenAI compatibility](https://ai.google.dev/gemini-api/docs/openai)
+- Gemini 官方图片模型见 [Gemini 原生生图](./gemini-image.md)

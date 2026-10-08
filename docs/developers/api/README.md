@@ -72,7 +72,7 @@
 | `/v1/tools/ai-detection` | POST | Agent Tools：AI 率检测（按计费字符单元计费） |
 | `/v1/tools/pricing` | GET | Agent Tools：只读定价（不含密钥与 Active 引擎名） |
 | `/v1/messages` | POST | Anthropic Messages |
-| `/v1beta/models/:modelAction` | POST | Gemini `generateContent` / `streamGenerateContent` |
+| `/v1beta/models/:modelAction` | POST | Gemini `generateContent` / `streamGenerateContent`（文本与官方图片模型共用；图片透传见 [gemini-image](../architecture/gemini-image.md)） |
 | `/v1/models` | GET | 模型列表（需用户 Key；OpenAI 兼容形态；默认仅 LLM，排除文生图 / ASR / TTS；`kind=image` 文生图，`kind=audio` 为 ASR + TTS，`kind=all` 不过滤） |
 | `/catalog/models` | GET | 公开模型目录 discovery（无需 Key；含 `protocols_by_group` 与 `inbound`，见 [详细说明](./user.md#公开模型目录catalog-discovery)） |
 | `/v1/me` | GET | 预算与元数据 |

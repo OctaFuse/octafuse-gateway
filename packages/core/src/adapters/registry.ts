@@ -61,7 +61,7 @@ export type AdapterPresetIntent =
 export interface AdapterDescriptor {
 	/** 写入 `model_routes.adapter` 的稳定 ID；语义变化时发新 ID，永不复用。 */
 	id: string;
-	/** Admin 选项唯一键。转换 adapter 等于 id；passthrough 变体为 `passthrough:{protocol}:{operation}`。 */
+	/** Admin 选项唯一键。转换 adapter 等于 id；passthrough 变体为 `passthrough:{protocol}:{operation}`，同一 operation 的第二种模型种类再加后缀。 */
 	optionKey: string;
 	request: { protocol: UpstreamProtocol; operation: string };
 	upstream: { protocol: UpstreamProtocol; operations: readonly string[] };
@@ -130,6 +130,8 @@ const QWEN_TTS_REALTIME_SESSION_MODELS = ['qwen3-tts-*realtime*', 'qwen-tts-real
 const COSYVOICE_REALTIME_MODELS = ['cosyvoice-*'] as const;
 const QWEN_IMAGE_MODELS = ['qwen-image*'] as const;
 const WAN_IMAGE_MODELS = ['wan*'] as const;
+/** Gemini 原生 generateContent 生图。目录 ID 与供应商模型名同一套写法。 */
+const GEMINI_IMAGE_MODELS = ['gemini-*image*', 'gemini-nano-banana*'] as const;
 
 function matchesUpstreamModelPattern(pattern: string, modelName: string): boolean {
 	const source = pattern.trim().toLowerCase();
@@ -417,13 +419,15 @@ function passthroughDescriptor(input: {
 	roles?: readonly AdapterSurfaceRole[];
 	presetIntent?: AdapterPresetIntent;
 	upstreamModels?: AdapterUpstreamModels;
+	/** 同一协议 + operation 有多种模型种类时，用来避开默认 optionKey。 */
+	optionKey?: string;
 	protectedUpstreamPaths?: readonly string[];
 	extraBodyExample?: { readonly [key: string]: unknown };
 	extraBodyNote?: 'dashscope_tts_input';
 }): AdapterDescriptor {
 	return {
 		id: PASSTHROUGH_ROUTE_ADAPTER,
-		optionKey: `${PASSTHROUGH_ROUTE_ADAPTER}:${input.protocol}:${input.operation}`,
+		optionKey: input.optionKey ?? `${PASSTHROUGH_ROUTE_ADAPTER}:${input.protocol}:${input.operation}`,
 		request: { protocol: input.protocol, operation: input.operation },
 		upstream: { protocol: input.protocol, operations: [input.operation] },
 		modality: input.modality,
@@ -483,6 +487,18 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'tokens',
 		requiredUpstreamCapabilities: ['models.generate'],
 		publicPath: `/v1beta/models/${SURFACE_PATH_MODEL_PLACEHOLDER}:{generateContent|streamGenerateContent}`,
+	}),
+	passthroughDescriptor({
+		protocol: 'gemini',
+		operation: 'models.generate',
+		optionKey: 'passthrough:gemini:models.generate:image',
+		modelKind: 'image',
+		modality: 'image',
+		exchange: 'sse',
+		billing: 'tokens',
+		requiredUpstreamCapabilities: ['models.generate'],
+		publicPath: `/v1beta/models/${SURFACE_PATH_MODEL_PLACEHOLDER}:{generateContent|streamGenerateContent}`,
+		upstreamModels: { include: GEMINI_IMAGE_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',

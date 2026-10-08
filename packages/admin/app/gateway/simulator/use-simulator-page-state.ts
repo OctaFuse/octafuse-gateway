@@ -405,7 +405,8 @@ export function useSimulatorPageState() {
 				protocol !== 'openai' &&
 				protocol !== 'dashscope' &&
 				protocol !== 'minimax' &&
-				protocol !== 'volcengine'
+				protocol !== 'volcengine' &&
+				protocol !== 'gemini'
 			) {
 				return 'imageProtocol';
 			}
@@ -540,7 +541,7 @@ export function useSimulatorPageState() {
 				!isToolKind &&
 				selectedModelIsImage &&
 				!selectedModelIsAudio &&
-				(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine');
+				(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine' || protocol === 'gemini');
 			const built = buildSimulatorRequest({
 				baseUrl: parsed.base,
 				kind: filterKind,
@@ -876,7 +877,7 @@ export function useSimulatorPageState() {
 		}
 		if (selectedModelIsImage) {
 			const imageProtocol =
-				protocol === 'dashscope' || protocol === 'minimax' || protocol === 'volcengine'
+				protocol === 'dashscope' || protocol === 'minimax' || protocol === 'volcengine' || protocol === 'gemini'
 					? protocol
 					: 'openai';
 			if (protocol !== imageProtocol) setProtocolState(imageProtocol);
@@ -1103,7 +1104,11 @@ export function useSimulatorPageState() {
 					next,
 					selectedModelIsImage &&
 						selectedAudioOperation == null &&
-						(next === 'openai' || next === 'dashscope' || next === 'minimax' || next === 'volcengine'),
+						(next === 'openai' ||
+							next === 'dashscope' ||
+							next === 'minimax' ||
+							next === 'volcengine' ||
+							next === 'gemini'),
 					imageOperation,
 					next === 'openai' || next === 'dashscope' || next === 'minimax' ? selectedAudioOperation : null,
 					undefined,
@@ -1143,7 +1148,8 @@ export function useSimulatorPageState() {
 				next !== 'openai' &&
 				next !== 'dashscope' &&
 				next !== 'minimax' &&
-				next !== 'volcengine'
+				next !== 'volcengine' &&
+				next !== 'gemini'
 			) {
 				setInfoHint(t('readyNeedOpenaiForImage'));
 				return;
@@ -1343,7 +1349,7 @@ export function useSimulatorPageState() {
 			!isToolKind &&
 			selectedModelIsImage &&
 			!selectedModelIsAudio &&
-			(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine');
+			(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine' || protocol === 'gemini');
 		if (audioOperation === 'transcriptions') {
 			const fileUrl = typeof bodyObj.file_url === 'string' ? bodyObj.file_url.trim() : '';
 			if (!usesDashScopeMicrophone && !selectedUsesDashScopeHttpAsr && !fileUrl) {

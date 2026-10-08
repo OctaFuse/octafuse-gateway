@@ -11,6 +11,7 @@
 - [MiniMax 音频](../architecture/minimax-audio.md)、[MiniMax 生图](../architecture/minimax-image.md)
 - [火山方舟 Seedream 生图](../architecture/volcengine-image.md)
 - [文生图模型](./image-models.md)（入口、目录与计费）
+- [Gemini 原生生图](../architecture/gemini-image.md)（与本文三家厂商分开记录；图片模型复用 Gemini `models.generate`）
 - [供应商导入预设](./provider-import-presets.md)
 
 ## 判定口径

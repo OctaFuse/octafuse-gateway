@@ -343,6 +343,24 @@ curl "http://localhost:8787/v1beta/models/gemini-2.5-pro:streamGenerateContent?k
 
 > 网关会按 `request_protocol = gemini` 记录用量与计费；仅 **Gemini** 协议路由参与转发。
 
+### 图片模型
+
+官方图片模型与上面的文本入口相同。目录模型输出模态含 `image` 时，网关按图片 token 计费，响应图片在 `candidates[].content.parts[].inlineData`。`thought: true` 的图片不计入成功张数。没有非 thought 图片、客户端取消和网关超时都不扣费。详见 [Gemini 原生生图](../architecture/gemini-image.md)。
+
+```bash
+curl "http://localhost:8787/v1beta/models/gemini-3.1-flash-image:generateContent?key=sk-xxx..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contents": [{"role":"user","parts":[{"text":"a red apple on a white background"}]}],
+    "generationConfig": {
+      "responseModalities": ["TEXT", "IMAGE"],
+      "imageConfig": {"aspectRatio": "1:1", "imageSize": "1K"}
+    }
+  }'
+```
+
+流式把 action 换成 `streamGenerateContent`。调试台只发非流式 `generateContent`。
+
 ### 上游 Provider `endpoints`（Gemini 多入口：Developer / Vertex Express / 项目级 Vertex）
 
 Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0011_provider_endpoints`）。Gemini 协议优先写：

@@ -23,7 +23,7 @@ export const VENDOR_DOCS = {
 	openai: ['OpenAI GPT Image', '../architecture/openai-compatible-image.md#openai-gpt-image'],
 	zhipu: ['智谱 GLM Image', '../architecture/openai-compatible-image.md#智谱-glm-image'],
 	xai: ['xAI Grok Imagine', '../architecture/openai-compatible-image.md#xai-grok-imagine'],
-	google: ['Google Gemini', '../architecture/openai-compatible-image.md#google-gemini-nano-banana'],
+	google: ['Google Gemini', '../architecture/gemini-image.md'],
 	bytedance: ['火山方舟 Seedream', '../architecture/volcengine-image.md'],
 	aliyun: ['百炼 DashScope', '../architecture/dashscope-image.md'],
 	minimax: ['MiniMax', '../architecture/minimax-image.md'],

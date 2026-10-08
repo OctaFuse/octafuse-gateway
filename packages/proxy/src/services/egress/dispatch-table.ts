@@ -32,6 +32,11 @@ import {
 	type VolcengineJsonPassthroughOptions,
 } from './volcengine-json-passthrough';
 import {
+	dispatchGeminiImagePassthrough,
+	type GeminiImageAction,
+	type GeminiImagePassthroughOptions,
+} from './gemini-image-passthrough';
+import {
 	dispatchOpenAiAudioTranscriptions,
 	type NormalizedAudioTranscriptionRequest,
 } from './openai-audio-driver';
@@ -196,6 +201,19 @@ export function dispatchMultimodalPassthrough(
 		throw new Error(`Unsupported DashScope multimodal adapter: ${route.adapter}`);
 	}
 	return dispatchDashScopeMultimodalPassthrough(route, body, signal, timing, attempt, options);
+}
+
+export function dispatchGeminiImagePassthroughRoute(
+	route: RouteResult,
+	action: GeminiImageAction,
+	body: Record<string, unknown>,
+	search: string,
+	signal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: GeminiImagePassthroughOptions,
+): Promise<ProxyDispatchResult> {
+	return dispatchGeminiImagePassthrough(route, action, body, search, signal, timing, attempt, options);
 }
 
 export function dispatchVolcengineJsonPassthroughRoute(

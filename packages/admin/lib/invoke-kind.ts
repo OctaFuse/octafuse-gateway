@@ -103,6 +103,7 @@ export function resolveRequestOperation(input: {
 			return input.audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
 		case 'image':
 			if (input.protocol === 'dashscope') return 'images.generations.multimodal';
+			if (input.protocol === 'gemini') return 'models.generate';
 			return `images.${input.imageOperation === 'edits' ? 'edits' : 'generations'}`;
 		case 'llm':
 			if (input.protocol === 'openai') return input.llmOperation === 'responses' ? 'responses' : 'chat';
@@ -176,6 +177,10 @@ export function resolveProxyPathForModelInvoke(input: {
 		return input.audioOperation === 'speech' ? '/v1/audio/speech' : '/v1/audio/transcriptions';
 	}
 	if (input.kind === 'image') {
+		if (protocol === 'gemini') {
+			const model = encodeURIComponent(input.geminiModelSegment || 'model');
+			return `/v1beta/models/${model}:generateContent`;
+		}
 		if (protocol === 'minimax') return MINIMAX_IMAGE_GENERATION_PATH;
 		if (protocol === 'volcengine') return VOLCENGINE_IMAGE_GENERATIONS_PATH;
 		return input.imageOperation === 'edits' ? '/v1/images/edits' : '/v1/images/generations';

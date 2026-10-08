@@ -502,6 +502,10 @@ describe("simulator-utils", () => {
 		) as { size?: string };
 		assert.equal(nativePro.size, "1K");
 		assert.equal(bodyTemplateForSelection("volcengine", true), VOLCENGINE_IMAGE_BODY_TEMPLATE);
+		const geminiImage = JSON.parse(bodyTemplateForSelection("gemini", true)) as {
+			generationConfig?: { responseModalities?: string[] };
+		};
+		assert.deepEqual(geminiImage.generationConfig?.responseModalities, ["TEXT", "IMAGE"]);
 		assert.equal(
 			isBodyDirty(
 				bodyTemplateForSelection("openai", true, "generations", null, null, null, "gpt-image-2"),

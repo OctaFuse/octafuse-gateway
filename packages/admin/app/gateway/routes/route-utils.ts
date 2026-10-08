@@ -1128,8 +1128,11 @@ export function listAdapterOptionsForModel(
 	};
 }
 
-export function resolveAdapterOptionKey(formData: Pick<RouteFormData, 'adapter' | 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>): string | null {
-	const match = listSelectableAdapters().find(
+export function resolveAdapterOptionKey(
+	formData: Pick<RouteFormData, 'adapter' | 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>,
+	modelKind?: AdapterModelKind,
+): string | null {
+	const matches = listSelectableAdapters().filter(
 		(descriptor) =>
 			descriptor.id === formData.adapter &&
 			descriptor.request.protocol === formData.request_protocol &&
@@ -1137,13 +1140,46 @@ export function resolveAdapterOptionKey(formData: Pick<RouteFormData, 'adapter' 
 			descriptor.upstream.protocol === formData.upstream_protocol &&
 			descriptor.upstream.operations.includes(formData.upstream_operation),
 	);
-	return match?.optionKey ?? null;
+	const preferred = modelKind ? matches.find((descriptor) => descriptor.modelKind === modelKind) : undefined;
+	return preferred?.optionKey ?? matches[0]?.optionKey ?? null;
 }
 
 export function applyAdapterOptionToForm(formData: RouteFormData, optionKey: string): RouteFormData {
 	const descriptor = getAdapterByOptionKey(optionKey);
 	if (!descriptor) return formData;
 	return applyAdapterDescriptorToForm(formData, descriptor);
+}
+
+/**
+ * 当前对外协议与上游对不上任何可用适配器时，套用最匹配的适配器。
+ * 透传会把两边写成同一协议；转换适配器则保留它声明的对外入口。
+ */
+export function alignRouteFormAdapter(
+	formData: RouteFormData,
+	model: GatewayModel | undefined,
+	provider: GatewayProvider | undefined,
+): RouteFormData {
+	if (!model || !provider) return formData;
+	const { options, modelUnrecognized } = listAdapterOptionsForModel(
+		model,
+		provider,
+		formData.provider_model_name,
+	);
+	const currentKey = resolveAdapterOptionKey(formData, modelKindForModel(model));
+	const current = options.find((option) => option.descriptor.optionKey === currentKey);
+	const providerModelNamed = formData.provider_model_name.trim().length > 0;
+	const currentFits =
+		current?.available === true &&
+		(!providerModelNamed || modelUnrecognized || current.modelMatch !== 'mismatch');
+	if (currentFits) return formData;
+	const candidates = options.filter((option) => {
+		if (!option.available) return false;
+		if (!providerModelNamed || modelUnrecognized) return true;
+		return option.modelMatch !== 'mismatch';
+	});
+	const preferred = candidates.find((option) => option.modelMatch === 'match') ?? candidates[0];
+	if (!preferred) return formData;
+	return applyAdapterDescriptorToForm(formData, preferred.descriptor);
 }
 
 function formatPythonLiteral(value: unknown): string {

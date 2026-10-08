@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Gemini 官方图片模型复用 `POST /v1beta/models/{model}:{generateContent|streamGenerateContent}`，按 `usageMetadata` 的 TEXT / IMAGE 分项计费。空结果、客户端取消和网关超时为零费用。调试台与模拟器可编辑 Gemini 生图 JSON，并预览 `inlineData`。Interactions API 未接入。新建路由时，供应商只有 Gemini 端点会把对外协议和上游一起写成 `gemini` / `models.generate`；此前对外协议停在 OpenAI Images，适配器下拉却显示 Gemini 透传。
+
 - 新增 Anthropic Claude Haiku 5.5（`claude-haiku-5-5`）预设，按提示长度分两档计价：≤100K 与 >100K（整条请求按高档计）。USD 目录价：低档 $0.10 / $0.50，高档 $0.50 / $2.50。Anthropic 未公布人民币刊例，CNY 按 USD × 7 占位（低档 ¥0.70 / ¥3.50，高档 ¥3.50 / ¥17.50）。客户端入口是 Anthropic Messages。已导入的模型不会自动改价。
 
 - 修正 Claude Sonnet 5.5（`claude-sonnet-5-5`）缓存读取价：USD `cache_read_price` 0.2 → 0.1（官方为 5% × $2 = $0.10），CNY 占位价同步为 0.7（此前停在按旧美元价换算的 1.4）。已导入的模型不会自动改价。

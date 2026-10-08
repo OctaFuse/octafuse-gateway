@@ -13,6 +13,7 @@ import {
 	catalogScheduleWindowsFromModel,
 	compatibleAdaptersForRoute,
 	listAdapterOptionsForModel,
+	modelKindForModel,
 	requestOperationsForModel,
 	resolveAdapterOptionKey,
 	upstreamOperationsForProviderModel,
@@ -58,8 +59,6 @@ export function RouteMappingFields({
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
 	const adapterPurpose = (adapter: string) =>
 		t.has(`adapterGuides.${adapter}.purpose`) ? t(`adapterGuides.${adapter}.purpose`) : null;
-	// Image models keep the public request protocol as OpenAI; the adapter picks the upstream protocol.
-	const lockOpenaiProtocol = selectedModelIsImage;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
 		(protocol) => requestOperationsForModel(selectedModel, protocol, formData.provider_model_name).length > 0
 	);
@@ -79,7 +78,7 @@ export function RouteMappingFields({
 		selectedProvider,
 		formData.provider_model_name
 	);
-	const selectedAdapterOptionKey = resolveAdapterOptionKey(formData);
+	const selectedAdapterOptionKey = resolveAdapterOptionKey(formData, modelKindForModel(selectedModel));
 	const selectedAdapterOption = adapterOptions.find(
 		(option) => option.descriptor.optionKey === selectedAdapterOptionKey
 	);
@@ -252,7 +251,7 @@ export function RouteMappingFields({
 												request_operation: requestOperation,
 											});
 										}}
-										disabled={lockOpenaiProtocol || lockTopology}
+										disabled={lockTopology}
 										className={editorInputClass}
 									>
 										{requestProtocols.map((p) => (
@@ -484,7 +483,7 @@ export function RouteMappingFields({
 						</label>
 						<select
 							id="route-field-adapter"
-							value={selectedAdapterOptionKey ?? formData.adapter}
+							value={selectedAdapterOptionKey ?? ''}
 							onChange={(e) => onFormChange(applyAdapterOptionToForm(formData, e.target.value))}
 							title={formData.adapter}
 							disabled={!selectedProvider}
@@ -494,6 +493,8 @@ export function RouteMappingFields({
 								<option value={formData.adapter}>{t('protocolHintSelectProvider')}</option>
 							) : visibleAdapterOptions.length === 0 ? (
 								<option value={formData.adapter}>{t('noCompatibleAdapter')}</option>
+							) : selectedAdapterOptionKey == null ? (
+								<option value="">{t('noCompatibleAdapter')}</option>
 							) : null}
 							{visibleAdapterOptions.map((option) => (
 								<option

@@ -140,7 +140,10 @@ export default function SimulatorPage() {
 								showImageOperation={
 									s.selectedModelIsImage &&
 									!s.selectedModelIsAudio &&
-									(s.protocol === 'openai' || s.protocol === 'minimax' || s.protocol === 'volcengine')
+									(s.protocol === 'openai' ||
+										s.protocol === 'minimax' ||
+										s.protocol === 'volcengine' ||
+										s.protocol === 'gemini')
 								}
 								imageOperation={s.imageOperation}
 								onImageOperationChange={s.setImageOperation}

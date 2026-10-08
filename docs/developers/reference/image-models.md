@@ -4,7 +4,8 @@
 
 | 厂商文档 | 覆盖型号 |
 | -------- | -------- |
-| [OpenAI 兼容生图透传](../architecture/openai-compatible-image.md) | OpenAI GPT Image、智谱 GLM Image、xAI Grok Imagine、Google Gemini |
+| [OpenAI 兼容生图透传](../architecture/openai-compatible-image.md) | OpenAI GPT Image、智谱 GLM Image、xAI Grok Imagine |
+| [Gemini 原生生图](../architecture/gemini-image.md) | Gemini Nano Banana / Flash Image / Pro Image |
 | [火山方舟 Seedream 生图](../architecture/volcengine-image.md) | Seedream 5.0 lite / pro / flash |
 | [DashScope 原生生图](../architecture/dashscope-image.md) | 千问图像、万相 |
 | [MiniMax 生图](../architecture/minimax-image.md) | `image-01`、`image-01-live` |
@@ -25,6 +26,7 @@
 | `POST /v1/volcengine/images/generations` | `volcengine` / `images.generations` | 同左 | `passthrough` | [火山方舟](../architecture/volcengine-image.md) |
 | `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | `dashscope` / `images.generations.multimodal` | 同左 | `passthrough` | [DashScope](../architecture/dashscope-image.md) |
 | `POST /v1/minimax/image_generation` | `minimax` / `images.generations` | 同左 | `passthrough` | [MiniMax](../architecture/minimax-image.md) |
+| `POST /v1beta/models/{model}:generateContent`（及 `streamGenerateContent`） | `gemini` / `models.generate` | 同左 | `passthrough` | [Gemini](../architecture/gemini-image.md) |
 
 失败转移复用 `failoverDispatch`。混合协议的路由池会把同一份请求交给每条路由的适配器各自转换。
 
@@ -64,9 +66,9 @@
 | `doubao-seedream-5-0` | Doubao Seedream 5.0 | [火山方舟 Seedream](../architecture/volcengine-image.md) | `per_image` | ¥0.22/张 | $0.035/张 | 一口价 | `bytedance-image.json` |
 | `doubao-seedream-5-0-flash` | Doubao Seedream 5.0 Flash | [火山方舟 Seedream](../architecture/volcengine-image.md) | `per_image` | ¥0.12/张 | $0.018/张 | 一口价 | `bytedance-image.json` |
 | `doubao-seedream-5-0-pro` | Doubao Seedream 5.0 Pro | [火山方舟 Seedream](../architecture/volcengine-image.md) | `per_image` | ¥0.6/张 | $0.09/张 | `by_size`、参考图 | `bytedance-image.json` |
-| `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | [Google Gemini](../architecture/openai-compatible-image.md#google-gemini-nano-banana) | `token` | 图出 ¥840/1M | 图出 $120/1M | 按 usage | `google-image.json` |
-| `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | [Google Gemini](../architecture/openai-compatible-image.md#google-gemini-nano-banana) | `token` | 图出 ¥420/1M | 图出 $60/1M | 按 usage | `google-image.json` |
-| `gemini-nano-banana-2.1` | Gemini Nano Banana 2.1 | [Google Gemini](../architecture/openai-compatible-image.md#google-gemini-nano-banana) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `google-image.json` |
+| `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥840/1M | 图出 $120/1M | 按 usage | `google-image.json` |
+| `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥420/1M | 图出 $60/1M | 按 usage | `google-image.json` |
+| `gemini-nano-banana-2.1` | Gemini Nano Banana 2.1 | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `google-image.json` |
 | `minimax-image-01` | MiniMax Image 01 | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax.json` |
 | `minimax-image-01-live` | MiniMax Image 01 Live | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax.json` |
 | `gpt-image-2` | GPT Image 2 | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |

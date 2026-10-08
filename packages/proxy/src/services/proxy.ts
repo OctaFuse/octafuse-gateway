@@ -24,6 +24,7 @@ import {
 	dispatchImageGenerations,
 	dispatchDashScopeJsonPassthroughRoute,
 	dispatchMiniMaxJsonPassthroughRoute,
+	dispatchGeminiImagePassthroughRoute,
 	dispatchVolcengineJsonPassthroughRoute,
 	dispatchMiniMaxSpeechPassthrough,
 	dispatchMultimodalPassthrough,
@@ -38,6 +39,10 @@ import type {
 	MiniMaxJsonPassthroughOptions,
 } from "./egress/minimax-json-passthrough";
 import type { VolcengineJsonPassthroughOptions } from "./egress/volcengine-json-passthrough";
+import type {
+	GeminiImageAction,
+	GeminiImagePassthroughOptions,
+} from "./egress/gemini-image-passthrough";
 import type {
 	AudioSpeechDispatchOptions,
 	NormalizedAudioSpeechRequest,
@@ -399,6 +404,41 @@ export async function proxyDashScopeJsonPassthrough(
 				timing,
 				attempt,
 				options?.dashScopeJson
+			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 Gemini 原生图片模型（generateContent / streamGenerateContent）。 */
+export async function proxyGeminiImagePassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	action: GeminiImageAction,
+	body: Record<string, unknown>,
+	search: string,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions & { geminiImage?: GeminiImagePassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"gemini",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchGeminiImagePassthroughRoute(
+				route,
+				action,
+				body,
+				search,
+				signal,
+				timing,
+				attempt,
+				options?.geminiImage
 			),
 		requestSignal,
 		options

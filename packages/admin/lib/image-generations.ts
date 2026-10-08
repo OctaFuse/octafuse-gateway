@@ -134,6 +134,16 @@ function dashscopeNativeSample(family: ImageSampleFamily): Record<string, unknow
 	};
 }
 
+function geminiNativeImageSample(): Record<string, unknown> {
+	return {
+		contents: [{ role: 'user', parts: [{ text: IMAGE_SAMPLE_PROMPT }] }],
+		generationConfig: {
+			responseModalities: ['TEXT', 'IMAGE'],
+			imageConfig: { aspectRatio: '1:1', imageSize: '1K' },
+		},
+	};
+}
+
 function volcengineNativeSample(family: ImageSampleFamily): Record<string, unknown> {
 	return {
 		model: '<auto>',
@@ -164,6 +174,9 @@ export function imageBodyTemplateFor(input: ImageBodyTemplateInput): string {
 	const adapter = input.adapter?.trim() ?? '';
 	const operation = input.operation ?? 'generations';
 	const family = imageSampleFamily(input);
+	if (protocol === 'gemini') {
+		return prettyJson(geminiNativeImageSample());
+	}
 	if (protocol === 'volcengine' && adapter !== 'volcengine-image') {
 		return prettyJson(volcengineNativeSample(family));
 	}
@@ -300,6 +313,41 @@ export function collectMiniMaxImagePreviews(parsed: Record<string, unknown>): Im
 	return images;
 }
 
+/** Gemini generateContent：非 thought 的 `inlineData` 转成 data URL，并带出文本 part。 */
+export function collectGeminiInlineDataPreviews(parsed: Record<string, unknown>): {
+	images: ImagePreviewItem[];
+	texts: string[];
+} {
+	const candidates = Array.isArray(parsed.candidates) ? parsed.candidates : [];
+	const images: ImagePreviewItem[] = [];
+	const texts: string[] = [];
+	for (const candidate of candidates) {
+		const content = asPreviewObject(asPreviewObject(candidate)?.content);
+		const parts = Array.isArray(content?.parts) ? content.parts : [];
+		for (const part of parts) {
+			const row = asPreviewObject(part);
+			if (!row || row.thought === true) continue;
+			if (typeof row.text === 'string' && row.text.trim()) texts.push(row.text.trim());
+			const inline = asPreviewObject(row.inlineData) ?? asPreviewObject(row.inline_data);
+			if (!inline) continue;
+			const data = typeof inline.data === 'string' ? inline.data.trim() : '';
+			if (!data) continue;
+			const mime =
+				typeof inline.mimeType === 'string'
+					? inline.mimeType
+					: typeof inline.mime_type === 'string'
+						? inline.mime_type
+						: 'image/png';
+			if (!mime.startsWith('image/')) continue;
+			images.push({
+				kind: 'b64',
+				src: data.startsWith('data:') ? data : `data:${mime};base64,${data}`,
+			});
+		}
+	}
+	return { images, texts };
+}
+
 export type ParsedImagesGenerationsResponse = {
 	images: ImagePreviewItem[];
 	count: number;
@@ -326,17 +374,23 @@ export function parseImagesGenerationsResponse(
 	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return empty;
 	const data = (parsed as { data?: unknown }).data;
 	const record = parsed as Record<string, unknown>;
+	const gemini = collectGeminiInlineDataPreviews(record);
+	const usedGemini = !Array.isArray(data) && gemini.images.length > 0;
 	const images: ImagePreviewItem[] = Array.isArray(data)
 		? collectOpenAiImagePreviews(data)
-		: (() => {
-				const miniMax = collectMiniMaxImagePreviews(record);
-				return miniMax.length > 0 ? miniMax : collectDashScopeImagePreviews(record);
-			})();
+		: usedGemini
+			? gemini.images
+			: (() => {
+					const miniMax = collectMiniMaxImagePreviews(record);
+					return miniMax.length > 0 ? miniMax : collectDashScopeImagePreviews(record);
+				})();
 
 	const count = images.length;
 	if (count === 0) return empty;
 
 	const parts = [`${count} image${count === 1 ? '' : 's'}`];
+	const caption = usedGemini ? gemini.texts[0] : undefined;
+	if (caption) parts.push(caption.length > 80 ? `${caption.slice(0, 80)}…` : caption);
 	if (requestMeta?.quality) parts.push(`quality=${requestMeta.quality}`);
 	if (requestMeta?.size) parts.push(`size=${requestMeta.size}`);
 	if (requestMeta?.n != null && Number.isFinite(requestMeta.n)) {
@@ -356,9 +410,16 @@ export function imageRequestMetaFromBody(body: Record<string, unknown>): {
 	size?: string;
 	n?: number;
 } {
+	const generationConfig = asPreviewObject(body.generationConfig);
+	const imageConfig = asPreviewObject(generationConfig?.imageConfig);
 	const quality = typeof body.quality === 'string' ? body.quality : undefined;
-	const size = typeof body.size === 'string' ? body.size : undefined;
-	const nRaw = body.n;
+	const size =
+		typeof body.size === 'string'
+			? body.size
+			: typeof imageConfig?.imageSize === 'string'
+				? imageConfig.imageSize
+				: undefined;
+	const nRaw = body.n ?? generationConfig?.candidateCount;
 	const n =
 		typeof nRaw === 'number' && Number.isFinite(nRaw)
 			? nRaw

@@ -152,7 +152,11 @@ export function bodyTemplateForSelection(
 	}
 	if (
 		isImageModel &&
-		(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'volcengine')
+		(protocol === 'openai' ||
+			protocol === 'dashscope' ||
+			protocol === 'minimax' ||
+			protocol === 'volcengine' ||
+			protocol === 'gemini')
 	) {
 		return imageBodyTemplateFor({
 			protocol,

@@ -6,7 +6,7 @@
 - 公开目录：`GET /catalog/models`（无需用户 Key）
 - OpenAI：`POST /v1/chat/completions`、`POST /v1/images/generations`、`POST /v1/images/edits`、`POST /v1/audio/transcriptions`、`GET /v1/models`
 - Anthropic：`POST /v1/messages`
-- Google Gemini：`POST /v1beta/models/{model}:generateContent`（含 `streamGenerateContent`）
+- Google Gemini：`POST /v1beta/models/{model}:generateContent`（含 `streamGenerateContent`；文本与官方图片模型共用，图片按原生格式透传）
 - Agent Tools（可扩展 `/v1/tools/*`）：
   - `web-search`：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA
   - `web-fetch`：Firecrawl、Tavily Extract、Jina Reader

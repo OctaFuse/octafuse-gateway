@@ -22,6 +22,7 @@ import {
 	buildRoutesByModel,
 	compareRoutesWithinPriorityLayer,
 	compatibleAdaptersForRoute,
+	alignRouteFormAdapter,
 	listAdapterOptionsForModel,
 	factorChipClassForValue,
 	factorLevelForValue,
@@ -35,6 +36,7 @@ import {
 	hasBasePricingInversion,
 	parseCustomParamsForm,
 	requestOperationsForModel,
+	resolveAdapterOptionKey,
 	requestLogProtocolPath,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
@@ -251,16 +253,105 @@ describe('route form capability filters', () => {
 
 	it('limits public operations by model modality', () => {
 		assert.deepEqual(requestOperationsForModel(model(), 'openai'), ['chat', 'responses']);
-		assert.deepEqual(
-			requestOperationsForModel(
-				model({
-					input_modalities: '["text","image"]',
-					output_modalities: '["image"]',
-				}),
-				'openai',
+		const imageModel = model({
+			input_modalities: '["text","image"]',
+			output_modalities: '["image"]',
+		});
+		assert.deepEqual(requestOperationsForModel(imageModel, 'openai'), ['images.generations', 'images.edits']);
+		assert.deepEqual(requestOperationsForModel(imageModel, 'gemini', 'gemini-3.1-flash-image'), [
+			'models.generate',
+		]);
+		assert.equal(
+			resolveAdapterOptionKey(
+				{
+					...EMPTY_ROUTE_FORM,
+					adapter: 'passthrough',
+					request_protocol: 'gemini',
+					request_operation: 'models.generate',
+					upstream_protocol: 'gemini',
+					upstream_operation: 'models.generate',
+				},
+				'image',
 			),
-			['images.generations', 'images.edits'],
+			'passthrough:gemini:models.generate:image',
 		);
+		assert.equal(
+			resolveAdapterOptionKey(
+				{
+					...EMPTY_ROUTE_FORM,
+					adapter: 'passthrough',
+					request_protocol: 'gemini',
+					request_operation: 'models.generate',
+					upstream_protocol: 'gemini',
+					upstream_operation: 'models.generate',
+				},
+				'llm',
+			),
+			'passthrough:gemini:models.generate',
+		);
+		const geminiOptions = listAdapterOptionsForModel(
+			imageModel,
+			provider({ gemini: { base: 'https://generativelanguage.googleapis.com/v1beta/models' } }),
+			'gemini-3.1-flash-image',
+		);
+		assert.equal(
+			geminiOptions.options.some(
+				(option) =>
+					option.descriptor.optionKey === 'passthrough:gemini:models.generate:image' &&
+					option.modelMatch === 'match',
+			),
+			true,
+		);
+		const geminiOnly = provider({
+			gemini: { base: 'https://generativelanguage.googleapis.com/v1beta/models' },
+		});
+		const misaligned = alignRouteFormAdapter(
+			{
+				...EMPTY_ROUTE_FORM,
+				adapter: 'passthrough',
+				request_protocol: 'openai',
+				request_operation: 'images.generations',
+				upstream_protocol: 'gemini',
+				upstream_operation: 'models.generate',
+				provider_model_name: 'gemini-nano-banana-2.1',
+			},
+			imageModel,
+			geminiOnly,
+		);
+		assert.equal(misaligned.request_protocol, 'gemini');
+		assert.equal(misaligned.request_operation, 'models.generate');
+		assert.equal(misaligned.upstream_protocol, 'gemini');
+		assert.equal(misaligned.upstream_operation, 'models.generate');
+		assert.equal(misaligned.adapter, 'passthrough');
+		assert.equal(
+			resolveAdapterOptionKey(misaligned, 'image'),
+			'passthrough:gemini:models.generate:image',
+		);
+		const openaiPassthrough = {
+			...EMPTY_ROUTE_FORM,
+			adapter: 'passthrough',
+			request_protocol: 'openai' as const,
+			request_operation: 'images.generations',
+			upstream_protocol: 'openai' as const,
+			upstream_operation: 'images.generations',
+			provider_model_name: 'gpt-image-2',
+		};
+		const kept = alignRouteFormAdapter(
+			openaiPassthrough,
+			imageModel,
+			provider({ openai: { base: 'https://api.openai.com/v1' } }),
+		);
+		assert.equal(kept, openaiPassthrough);
+		const alreadyGemini = {
+			...EMPTY_ROUTE_FORM,
+			adapter: 'passthrough',
+			request_protocol: 'gemini' as const,
+			request_operation: 'models.generate',
+			upstream_protocol: 'gemini' as const,
+			upstream_operation: 'models.generate',
+			provider_model_name: 'gemini-nano-banana-2.1',
+		};
+		assert.equal(alignRouteFormAdapter(alreadyGemini, imageModel, geminiOnly), alreadyGemini);
 		assert.deepEqual(
 			requestOperationsForModel(
 				model({

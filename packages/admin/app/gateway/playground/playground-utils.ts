@@ -314,7 +314,7 @@ export function templateForRoute(
 		if (proto === 'minimax') return MINIMAX_SPEECH_BODY_TEMPLATE;
 		return AUDIO_SPEECH_BODY_TEMPLATE;
 	}
-	if (isImage && (proto === 'openai' || proto === 'dashscope' || proto === 'minimax' || proto === 'volcengine')) {
+	if (isImage && (proto === 'openai' || proto === 'dashscope' || proto === 'minimax' || proto === 'volcengine' || proto === 'gemini')) {
 		return imageBodyTemplateFor({
 			protocol: proto,
 			adapter: route.adapter,

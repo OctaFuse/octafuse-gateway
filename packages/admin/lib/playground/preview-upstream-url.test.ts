@@ -256,6 +256,26 @@ describe("previewPlaygroundUpstreamUrl", () => {
 		);
 	});
 
+	it("previews Gemini image models as generateContent", () => {
+		const url = previewPlaygroundUpstreamUrl({
+			provider: {
+				id: "p1",
+				endpoints: JSON.stringify({
+					gemini: { base: "https://generativelanguage.googleapis.com/v1beta" },
+				}),
+			},
+			adapter: "passthrough",
+			upstreamProtocol: "gemini",
+			upstreamOperation: "models.generate",
+			providerModelName: "gemini-3.1-flash-image",
+			isImageModel: true,
+			geminiAction: "streamGenerateContent",
+		});
+		assert.match(url ?? "", /\/gemini-3\.1-flash-image:generateContent\?key=/);
+		assert.equal(url?.includes("streamGenerateContent"), false);
+		assert.equal(url?.includes("alt=sse"), false);
+	});
+
 	it("names the missing target endpoint instead of falling back to another protocol", () => {
 		const preview = describePlaygroundUpstreamUrl({
 			provider: {

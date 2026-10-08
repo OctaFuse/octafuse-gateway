@@ -1034,10 +1034,11 @@ export async function invokePlaygroundUpstream(
 		route.upstreamProtocol !== 'openai' &&
 		route.upstreamProtocol !== 'dashscope' &&
 		route.upstreamProtocol !== 'minimax' &&
-		route.upstreamProtocol !== 'volcengine'
+		route.upstreamProtocol !== 'volcengine' &&
+		route.upstreamProtocol !== 'gemini'
 	) {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai, dashscope, minimax, or volcengine (Playground Images calls /images/generations, /images/edits, DashScope multimodal-generation, MiniMax image_generation, or Volcengine images/generations).',
+			'Image-generation models require upstream_protocol=openai, dashscope, minimax, volcengine, or gemini (Playground Images calls /images/generations, /images/edits, DashScope multimodal-generation, MiniMax image_generation, Volcengine images/generations, or Gemini generateContent).',
 		);
 	}
 	if (
@@ -1229,8 +1230,11 @@ export async function invokePlaygroundUpstream(
 			break;
 		}
 		case 'gemini': {
-			const action: GeminiContentAction =
-				input.geminiAction === 'streamGenerateContent' ? 'streamGenerateContent' : 'generateContent';
+			const action: GeminiContentAction = route.isImageModel
+				? 'generateContent'
+				: input.geminiAction === 'streamGenerateContent'
+					? 'streamGenerateContent'
+					: 'generateContent';
 			let geminiRequest: { url: string; headers: Record<string, string> };
 			try {
 				geminiRequest = buildPlaygroundGeminiUpstreamRequest(route, action);

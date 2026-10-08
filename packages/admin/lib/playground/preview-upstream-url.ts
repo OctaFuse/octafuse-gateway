@@ -126,8 +126,9 @@ export function describePlaygroundUpstreamUrl(input: {
 					target,
 				};
 			case "gemini": {
-				const action: GeminiContentAction =
-					input.geminiAction === "streamGenerateContent"
+				const action: GeminiContentAction = input.isImageModel
+					? "generateContent"
+					: input.geminiAction === "streamGenerateContent"
 						? "streamGenerateContent"
 						: "generateContent";
 				target = `${protocol}/models.generate`;

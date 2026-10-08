@@ -321,6 +321,21 @@ describe("buildSimulatorRequest gemini", () => {
 		assert.equal(u.searchParams.get("alt"), "sse");
 	});
 
+	it("uses generateContent for image models even when streaming is selected", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			kind: "image",
+			protocol: "gemini",
+			modelForRouting: "gemini-3.1-flash-image",
+			geminiAction: "streamGenerateContent",
+			body: { contents: [] },
+			apiKey: "sk-test",
+		});
+		const u = new URL(result.url);
+		assert.equal(u.pathname, "/v1beta/models/gemini-3.1-flash-image:generateContent");
+		assert.equal(u.searchParams.has("alt"), false);
+	});
+
 	it("does not include alt for generateContent", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",

@@ -144,6 +144,9 @@ describe('adapter registry', () => {
 		]);
 		assert.deepEqual(requestOperationsFromRegistry('minimax', 'audio.speech'), ['audio.speech']);
 		assert.deepEqual(requestOperationsFromRegistry('minimax', 'image'), ['images.generations']);
+		assert.deepEqual(requestOperationsFromRegistry('gemini', 'llm'), ['models.generate']);
+		assert.deepEqual(requestOperationsFromRegistry('gemini', 'image'), ['models.generate']);
+		assert.deepEqual(upstreamOperationsFromRegistry('gemini', 'image'), ['models.generate']);
 	});
 
 	it('resolves DashScope presets from registry intents', () => {
@@ -216,6 +219,34 @@ describe('adapter registry', () => {
 			}),
 			false,
 		);
+	});
+
+	it('matches Gemini image provider model names to the image passthrough only', () => {
+		const image = ADAPTER_REGISTRY.find(
+			(item) => item.optionKey === 'passthrough:gemini:models.generate:image',
+		);
+		const llm = ADAPTER_REGISTRY.find((item) => item.optionKey === 'passthrough:gemini:models.generate');
+		assert.ok(image);
+		assert.ok(llm);
+		assert.equal(image.modelKind, 'image');
+		assert.equal(image.billing, 'tokens');
+		assert.equal(llm.modelKind, 'llm');
+		for (const name of [
+			'gemini-3.1-flash-image',
+			'gemini-3-pro-image-preview',
+			'gemini-nano-banana-2.1',
+			'gemini-2.5-flash-image',
+		]) {
+			assert.equal(matchAdapterUpstreamModel(image, name), 'match', name);
+		}
+		assert.equal(matchAdapterUpstreamModel(image, 'gemini-2.5-pro'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(llm, 'gemini-3.1-flash-image'), 'generic');
+		const presetDir = join(dirname(fileURLToPath(import.meta.url)), '../../../admin/lib/model-presets');
+		const rows = JSON.parse(readFileSync(join(presetDir, 'google-image.json'), 'utf8')) as Array<{ id: string }>;
+		assert.ok(rows.length > 0);
+		for (const row of rows) {
+			assert.equal(matchAdapterUpstreamModel(image, row.id), 'match', row.id);
+		}
 	});
 
 	it('declares protected upstream paths for OpenAI image and audio conversion adapters', () => {

@@ -10,6 +10,7 @@ import {
 	isUpstreamOperationForProtocol,
 	normalizeRouteCustomParamsForStorage,
 	normalizeRouteOperation,
+	GEMINI_GENERATE_OPERATION,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	validateRouteCustomParamsHeaders,
 } from '@octafuse/core';
@@ -66,26 +67,33 @@ function normalizeCustomParamsForStorage(raw: unknown): string | null {
 	return envelope ? JSON.stringify(envelope) : null;
 }
 
-/** Image models may use OpenAI passthrough, DashScope conversion, or MiniMax image_generation passthrough. */
+/** Image models may use OpenAI, DashScope, MiniMax, Volcengine, or Gemini generateContent passthrough. */
 async function assertImageModelUpstreamProtocol(
 	repos: GatewayRepositories,
 	modelId: string,
-	proto: UpstreamProtocol
+	proto: UpstreamProtocol,
+	operation: string,
 ): Promise<void> {
 	const model = await repos.models.getModelDetailWithRouteCounts(modelId);
 	if (!model) return;
 	if (
-		isImageGenerationModel({
+		!isImageGenerationModel({
 			output_modalities: model.output_modalities as string | null | undefined,
 			pricing_profile: model.pricing_profile as string | null | undefined,
-		}) &&
+		})
+	) {
+		return;
+	}
+	const geminiGenerate = proto === 'gemini' && operation === GEMINI_GENERATE_OPERATION;
+	if (
 		proto !== 'openai' &&
 		proto !== 'dashscope' &&
 		proto !== 'minimax' &&
-		proto !== 'volcengine'
+		proto !== 'volcengine' &&
+		!geminiGenerate
 	) {
 		throw badRequest(
-			'Image-generation models require upstream_protocol=openai, dashscope, minimax, or volcengine.'
+			'Image-generation models require upstream_protocol=openai, dashscope, minimax, volcengine, or gemini (models.generate).'
 		);
 	}
 }
@@ -163,8 +171,6 @@ export async function createModelRouteService(
 	if (!providerSupportsUpstreamProtocol(proto, provider)) {
 		throw badRequest(`Provider has no base URL for upstream protocol "${proto}".`);
 	}
-	await assertImageModelUpstreamProtocol(repos, modelId, proto);
-
 	const routeGroup =
 		typeof body.route_group === 'string' && body.route_group.trim() !== '' ? body.route_group.trim() : 'default';
 	let requestProtocol: UpstreamProtocol;
@@ -193,6 +199,7 @@ export async function createModelRouteService(
 			`upstream_operation "${upstreamOperation}" is not valid for upstream_protocol "${proto}"`
 		);
 	}
+	await assertImageModelUpstreamProtocol(repos, modelId, proto, upstreamOperation);
 	assertDashScopeRealtimeAsrTopology({
 		upstreamProtocol: proto,
 		upstreamOperation,
@@ -319,8 +326,6 @@ export async function updateModelRouteService(
 	if (!providerSupportsUpstreamProtocol(effectiveProto, provider)) {
 		throw badRequest(`Provider has no base URL for upstream protocol "${effectiveProto}".`);
 	}
-	await assertImageModelUpstreamProtocol(repos, effectiveModelId, effectiveProto);
-
 	const requestProtocolRaw = body.request_protocol;
 	const requestOperationRaw = body.request_operation;
 	const routeGroupChanging = patch.route_group !== undefined;
@@ -344,6 +349,7 @@ export async function updateModelRouteService(
 			`upstream_operation "${effectiveUpstreamOperation}" is not valid for upstream_protocol "${effectiveProto}"`,
 		);
 	}
+	await assertImageModelUpstreamProtocol(repos, effectiveModelId, effectiveProto, effectiveUpstreamOperation);
 	assertDashScopeRealtimeAsrTopology({
 		upstreamProtocol: effectiveProto,
 		upstreamOperation: effectiveUpstreamOperation,

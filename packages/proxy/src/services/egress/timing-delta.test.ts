@@ -65,4 +65,18 @@ test('hasGeminiReasoningPart and hasGeminiContentPart split thought parts', () =
 		}),
 		false,
 	);
+	assert.equal(
+		hasGeminiContentPart({
+			candidates: [{ content: { parts: [{ inlineData: { mimeType: 'image/png', data: 'abc' } }] } }],
+		}),
+		true,
+	);
+	assert.equal(
+		hasGeminiContentPart({
+			candidates: [
+				{ content: { parts: [{ thought: true, inlineData: { mimeType: 'image/png', data: 'abc' } }] } },
+			],
+		}),
+		false,
+	);
 });

@@ -106,7 +106,14 @@ export function hasGeminiReasoningPart(parsed: {
 export function hasGeminiContentPart(parsed: {
   candidates?: Array<{
     content?: {
-      parts?: Array<{ text?: unknown; thought?: unknown; functionCall?: unknown; function_call?: unknown }>;
+      parts?: Array<{
+        text?: unknown;
+        thought?: unknown;
+        functionCall?: unknown;
+        function_call?: unknown;
+        inlineData?: unknown;
+        inline_data?: unknown;
+      }>;
     };
   }>;
 }): boolean {
@@ -115,6 +122,7 @@ export function hasGeminiContentPart(parsed: {
       if (part.thought === true) continue;
       if (typeof part.text === 'string' && part.text.length > 0) return true;
       if (part.functionCall != null || part.function_call != null) return true;
+      if (part.inlineData != null || part.inline_data != null) return true;
     }
   }
   return false;
