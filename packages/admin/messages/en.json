@@ -2190,8 +2190,10 @@
 			"routeGroup": "Route group",
 			"userEmail": "User Email",
 			"apiKeyId": "API Key ID",
+			"requestId": "Request ID",
 			"emailPlaceholder": "Filter by email...",
-			"apiKeyPlaceholder": "Filter by API key..."
+			"apiKeyPlaceholder": "Filter by API key...",
+			"requestIdPlaceholder": "Filter by request ID..."
 		},
 		"totalRequests": "Total: {count} requests",
 		"statusOther": "other",

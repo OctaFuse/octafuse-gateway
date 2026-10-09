@@ -147,6 +147,7 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 		async getRequestLogs(options: {
 			page?: number;
 			pageSize?: number;
+			id?: string;
 			apiKeyId?: string;
 			userId?: string;
 			userEmail?: string;
@@ -165,6 +166,11 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 			const conditionsRl: string[] = [];
 			const bindValues: unknown[] = [];
 
+			if (options.id) {
+				conditions.push('id = ?');
+				conditionsRl.push('rl.id = ?');
+				bindValues.push(options.id);
+			}
 			if (options.apiKeyId) {
 				conditions.push('api_key_id = ?');
 				conditionsRl.push('rl.api_key_id = ?');

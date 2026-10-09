@@ -114,6 +114,7 @@ export async function listAdminGlobalRequestLogsService(
 	input: {
 		page?: number | string;
 		page_size?: number | string;
+		id?: string;
 		api_key_id?: string;
 		user_email?: string;
 		model_id?: string;
@@ -138,6 +139,7 @@ export async function listAdminGlobalRequestLogsService(
 	const result = await repos.requestLogs.getRequestLogs({
 		page,
 		pageSize,
+		id: input.id?.trim() || undefined,
 		apiKeyId: input.api_key_id,
 		userEmail: input.user_email,
 		modelId: input.model_id,

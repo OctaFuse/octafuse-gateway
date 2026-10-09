@@ -2190,8 +2190,10 @@
 			"routeGroup": "路由组",
 			"userEmail": "用户 Email",
 			"apiKeyId": "API Key ID",
+			"requestId": "请求 ID",
 			"emailPlaceholder": "按 Email 筛选…",
-			"apiKeyPlaceholder": "按 API Key 筛选…"
+			"apiKeyPlaceholder": "按 API Key 筛选…",
+			"requestIdPlaceholder": "按请求 ID 筛选…"
 		},
 		"totalRequests": "总计：{count} 个请求",
 		"statusOther": "其他",

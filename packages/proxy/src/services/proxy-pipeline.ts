@@ -9,13 +9,14 @@ import type { Env } from '../app';
 import type { ApiKeyContext } from '../middleware/auth';
 import { scheduleBackgroundWork } from '../runtime/schedule-background-work';
 import {
+	allocateRequestLogId,
 	buildAccountingEvent,
 	createDirectFlushAccountingSink,
 	defaultHasUsage,
 	type ProxyEndpointAccounting,
 } from './accounting';
 import { GatewayErrorCode, NO_AVAILABLE_ROUTE_MESSAGE } from './gateway-error-codes';
-import { gatewayErrorJson } from './gateway-error-response';
+import { gatewayErrorJson, withGatewayRequestIdHeader } from './gateway-error-response';
 import { resolveModelRouting } from './resolve-model-route-group';
 import { resolveRoutesForSurface, type RouteResult } from './model-router';
 import {
@@ -324,6 +325,7 @@ export async function runProxyPipeline<TBody>(
 	});
 	if (circuitBlocked) return circuitBlocked;
 
+	const requestLogId = allocateRequestLogId();
 	const streamTimeouts = resolveStreamTimeouts(c.env);
 	const failoverOptions = {
 		...(await buildProxyFailoverOptions({
@@ -408,6 +410,7 @@ export async function runProxyPipeline<TBody>(
 				});
 				const stickyTrace = proxyResult.stickyTrace ? await proxyResult.stickyTrace() : null;
 				const event = buildAccountingEvent({
+					requestLogId,
 					apiKey,
 					described,
 					usage: usageCollected,
@@ -444,7 +447,7 @@ export async function runProxyPipeline<TBody>(
 			})
 	);
 
-	return response;
+	return withGatewayRequestIdHeader(response, requestLogId);
 }
 
 export async function parseJsonModelBody(

@@ -2190,8 +2190,10 @@
 			"routeGroup": "Route Group",
 			"userEmail": "ユーザーのメールアドレス",
 			"apiKeyId": "API Key ID",
+			"requestId": "リクエスト ID",
 			"emailPlaceholder": "メールアドレスで絞り込み...",
-			"apiKeyPlaceholder": "API Key で絞り込み..."
+			"apiKeyPlaceholder": "API Key で絞り込み...",
+			"requestIdPlaceholder": "リクエスト ID で絞り込み..."
 		},
 		"totalRequests": "合計：{count} リクエスト",
 		"statusOther": "その他",

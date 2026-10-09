@@ -381,6 +381,8 @@ export interface RequestLogsRepository {
 	getRequestLogs(options: {
 		page?: number;
 		pageSize?: number;
+		/** Exact `api_key_request_logs.id`. */
+		id?: string;
 		apiKeyId?: string;
 		userId?: string;
 		userEmail?: string;
