@@ -76,6 +76,7 @@ export default function GatewayRequestLogsPage() {
   const [filterModel, setFilterModel] = useState('');
   const [filterUserEmail, setFilterUserEmail] = useState('');
   const [filterApiKeyId, setFilterApiKeyId] = useState('');
+  const [filterLogId, setFilterLogId] = useState('');
   const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
   const [filterProviderId, setFilterProviderId] = useState('');
   const [filterRouteGroup, setFilterRouteGroup] = useState('');
@@ -115,6 +116,7 @@ export default function GatewayRequestLogsPage() {
   useEffect(() => {
     // Read filters from URL on mount (e.g. from Model / Provider Usage drill-down)
     const params = new URLSearchParams(window.location.search);
+    const logId = params.get('id');
     const apiKeyId = params.get('api_key_id');
     const modelId = params.get('model_id');
     const providerId = params.get('provider_id');
@@ -125,6 +127,7 @@ export default function GatewayRequestLogsPage() {
     const routeGroup = params.get('route_group');
     const protocol = params.get('protocol');
     const pageParam = params.get('page');
+    if (logId != null) setFilterLogId(logId);
     if (apiKeyId != null) setFilterApiKeyId(apiKeyId);
     if (modelId != null) setFilterModel(modelId);
     if (providerId != null) setFilterProviderId(providerId);
@@ -162,6 +165,7 @@ export default function GatewayRequestLogsPage() {
       if (filterProviderId) params.append('provider_id', filterProviderId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
+      if (filterLogId) params.append('id', filterLogId);
       if (rangeValue.start_date) params.append('start_date', rangeValue.start_date);
       if (rangeValue.end_date) params.append('end_date', rangeValue.end_date);
       if (filterRouteGroup) params.append('route_group', filterRouteGroup);
@@ -176,6 +180,7 @@ export default function GatewayRequestLogsPage() {
       filterProviderId,
       filterUserEmail,
       filterApiKeyId,
+      filterLogId,
       rangeValue.start_date,
       rangeValue.end_date,
       filterRouteGroup,
@@ -277,6 +282,7 @@ export default function GatewayRequestLogsPage() {
       if (filterProviderId) params.append('provider_id', filterProviderId);
       if (filterUserEmail) params.append('user_email', filterUserEmail);
       if (filterApiKeyId) params.append('api_key_id', filterApiKeyId);
+      if (filterLogId) params.append('id', filterLogId);
       if (rangeValue.start_date) params.append('start_date', rangeValue.start_date);
       if (rangeValue.end_date) params.append('end_date', rangeValue.end_date);
       if (filterRouteGroup) params.append('route_group', filterRouteGroup);
@@ -301,6 +307,7 @@ export default function GatewayRequestLogsPage() {
     filterProviderId,
     filterUserEmail,
     filterApiKeyId,
+    filterLogId,
     rangeValue.start_date,
     rangeValue.end_date,
     filterRouteGroup,
@@ -726,7 +733,7 @@ export default function GatewayRequestLogsPage() {
         />
       </div>
 
-      <FilterDisclosure className="mb-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4" activeCount={[filterStatus, filterModel, filterProviderId, filterProtocol, filterRouteGroup, filterUserEmail, filterApiKeyId].filter(Boolean).length}>
+      <FilterDisclosure className="mb-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4" activeCount={[filterStatus, filterModel, filterProviderId, filterProtocol, filterRouteGroup, filterUserEmail, filterApiKeyId, filterLogId].filter(Boolean).length}>
         <div className="admin-filter-grid [&_select]:w-full [&_select]:min-w-0 [&_select]:max-w-none [&_input]:w-full [&_input]:min-w-0">
           <div>
             <label className="block text-sm text-gray-500 mb-1">{tCommon('status')}</label>
@@ -822,9 +829,19 @@ export default function GatewayRequestLogsPage() {
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             />
           </div>
+          <div>
+            <label className="block text-sm text-gray-500 mb-1">{t('filters.requestId')}</label>
+            <input
+              type="text"
+              value={filterLogId}
+              onChange={(e) => { setFilterLogId(e.target.value); setPage(1); }}
+              placeholder={t('filters.requestIdPlaceholder')}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm font-mono"
+            />
+          </div>
           <div className="flex items-end">
             <button
-              onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
+              onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setFilterLogId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
               className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
             >
               {tCommon('clearFilters')}

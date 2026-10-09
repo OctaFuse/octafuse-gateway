@@ -11,6 +11,9 @@
 
 export const GATEWAY_ERROR_CODE_HEADER = 'X-OctaFuse-Error-Code';
 
+/** 与 `api_key_request_logs.id` 相同。成功和失败都会返回，用来对上请求日志。 */
+export const GATEWAY_REQUEST_ID_HEADER = 'X-OctaFuse-Request-Id';
+
 export const GatewayErrorCode = {
 	// gateway.*
 	invalidJson: 'gateway.invalid_json',

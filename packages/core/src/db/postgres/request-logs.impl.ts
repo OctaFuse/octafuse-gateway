@@ -67,6 +67,7 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 		async getRequestLogs(options: {
 			page?: number;
 			pageSize?: number;
+			id?: string;
 			apiKeyId?: string;
 			userId?: string;
 			userEmail?: string;
@@ -84,6 +85,10 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 			const conditions: string[] = [];
 			const bindValues: unknown[] = [];
 
+			if (options.id) {
+				conditions.push('rl.id = ?');
+				bindValues.push(options.id);
+			}
 			if (options.apiKeyId) {
 				conditions.push('rl.api_key_id = ?');
 				bindValues.push(options.apiKeyId);

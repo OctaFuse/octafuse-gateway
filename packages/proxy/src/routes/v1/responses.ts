@@ -8,6 +8,7 @@ import { describeResponsesOutcome } from '../../services/accounting';
 import type { RouteResult } from '../../services/model-router';
 import { proxyResponses } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
+import { summarizeMessagesShapeForLog } from '../../services/request-log-messages-shape';
 import { summarizeOpenAiToolsForLog } from '../../services/request-log-tools-summary';
 import { buildRouteRequestBody } from '../../services/route-default-params';
 import { GatewayErrorCode } from '../../services/gateway-error-codes';
@@ -32,6 +33,8 @@ function responsesBodyRedactedForLog(body: Record<string, unknown>): Record<stri
 	}
 	if (Array.isArray(body.input)) {
 		out._input_count = body.input.length;
+		const shape = summarizeMessagesShapeForLog(body.input);
+		if (shape) out._input_shape = shape;
 	} else if (typeof body.input === 'string') {
 		out._input_count = 1;
 	}

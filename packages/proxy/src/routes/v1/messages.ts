@@ -7,6 +7,7 @@ import { describeMessagesOutcome } from '../../services/accounting';
 import type { RouteResult } from '../../services/model-router';
 import { proxyAnthropicMessages } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
+import { summarizeMessagesShapeForLog } from '../../services/request-log-messages-shape';
 import { summarizeAnthropicToolsForLog } from '../../services/request-log-tools-summary';
 import { buildRouteRequestBody } from '../../services/route-default-params';
 import {
@@ -30,6 +31,8 @@ function anthropicBodyRedactedForLog(body: Record<string, unknown>): Record<stri
 	}
 	if (Array.isArray(body.messages)) {
 		out._messages_count = body.messages.length;
+		const shape = summarizeMessagesShapeForLog(body.messages);
+		if (shape) out._messages_shape = shape;
 	}
 	return out;
 }

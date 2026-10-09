@@ -12,6 +12,7 @@
 2. 若无该头，再读 body 顶层 `code` 或嵌套 `error.code`。
 3. `error` / `error.message` 给人看或打日志，不要当作稳定分支键（上游原文会变）。
 4. 需要退避时看 `Retry-After` 或嵌套 `retry_after_seconds`。
+5. 排障时读 **`X-OctaFuse-Request-Id`**。走统一代理流水线的响应（含成功和已记账的失败）都会带这个头，值等于请求日志主键。它和上游透传的 `x-request-id` 不是同一个值。到管理后台的请求日志页按请求 ID 查询即可。聊天、消息和 Responses 的请求日志还会记下消息结构摘要（字段名和 content part 类型），不包含消息正文。
 
 ## Body 形状
 

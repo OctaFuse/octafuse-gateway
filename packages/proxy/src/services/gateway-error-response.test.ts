@@ -1,13 +1,34 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { Hono } from 'hono';
-import { GATEWAY_ERROR_CODE_HEADER, GatewayErrorCode } from './gateway-error-codes';
+import { GATEWAY_ERROR_CODE_HEADER, GATEWAY_REQUEST_ID_HEADER, GatewayErrorCode } from './gateway-error-codes';
 import {
 	classifyUpstreamErrorCode,
 	gatewayErrorJson,
 	gatewayErrorResponse,
+	withGatewayRequestIdHeader,
 	withUpstreamErrorCodeHeader,
 } from './gateway-error-response';
+
+describe('withGatewayRequestIdHeader', () => {
+	it('sets the gateway log id without reading a stream body', async () => {
+		const encoder = new TextEncoder();
+		const body = new ReadableStream({
+			start(controller) {
+				controller.enqueue(encoder.encode('data: hi\n\n'));
+				controller.close();
+			},
+		});
+		const original = new Response(body, {
+			status: 200,
+			headers: { 'content-type': 'text/event-stream', 'x-request-id': 'upstream-req' },
+		});
+		const wrapped = withGatewayRequestIdHeader(original, 'log-id-1');
+		assert.equal(wrapped.headers.get(GATEWAY_REQUEST_ID_HEADER), 'log-id-1');
+		assert.equal(wrapped.headers.get('x-request-id'), 'upstream-req');
+		assert.equal(await wrapped.text(), 'data: hi\n\n');
+	});
+});
 
 describe('gateway-error-response', () => {
 	it('keeps flat error string for Agent compatibility and adds top-level code + header', async () => {

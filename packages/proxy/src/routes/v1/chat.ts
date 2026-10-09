@@ -8,6 +8,7 @@ import { describeChatOutcome } from '../../services/accounting';
 import type { RouteResult } from '../../services/model-router';
 import { proxyChatCompletions } from '../../services/proxy';
 import { finalizeRequestLogJson } from '../../services/request-log-shared';
+import { summarizeMessagesShapeForLog } from '../../services/request-log-messages-shape';
 import { summarizeOpenAiToolsForLog } from '../../services/request-log-tools-summary';
 import { buildRouteRequestBody } from '../../services/route-default-params';
 import {
@@ -31,6 +32,8 @@ function openAiBodyRedactedForLog(body: Record<string, unknown>): Record<string,
 	}
 	if (Array.isArray(body.messages)) {
 		out._messages_count = body.messages.length;
+		const shape = summarizeMessagesShapeForLog(body.messages);
+		if (shape) out._messages_shape = shape;
 	}
 	return out;
 }

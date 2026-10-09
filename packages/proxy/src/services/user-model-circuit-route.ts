@@ -16,6 +16,7 @@ import {
 } from './user-model-circuit-breaker';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 import { allocateRequestLogId } from './accounting';
+import { withGatewayRequestIdHeader } from './gateway-error-response';
 import { recordUsage } from './usage-tracker';
 import type { RequestTimingCollector } from './request-timing';
 
@@ -62,11 +63,12 @@ export function maybeBlockUserModelCircuit(
 		return null;
 	}
 	const latencyMs = Date.now() - ctx.startMs;
+	const requestLogId = allocateRequestLogId();
 	ctx.timing?.markGatewayComplete();
 	scheduleBackgroundWork(
 		c,
 		recordUsage(repos, {
-			requestLogId: allocateRequestLogId(),
+			requestLogId,
 			api_key_id: apiKey.keyId,
 			user_id: apiKey.userId,
 			user_email: apiKey.userEmail,
@@ -93,7 +95,7 @@ export function maybeBlockUserModelCircuit(
 			);
 		})
 	);
-	return buildUserModelCircuitOpenResponse(open);
+	return withGatewayRequestIdHeader(buildUserModelCircuitOpenResponse(open), requestLogId);
 }
 
 /** @deprecated 使用 {@link maybeBlockUserModelCircuit} */

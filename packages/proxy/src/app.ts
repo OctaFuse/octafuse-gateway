@@ -87,6 +87,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 			origin: '*',
 			allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 			allowHeaders: ['Content-Type', 'Authorization', 'language', 'X-DashScope-SSE', 'X-DashScope-Async'],
+			exposeHeaders: ['X-OctaFuse-Request-Id', 'X-OctaFuse-Error-Code'],
 		}),
 	);
 

@@ -2190,8 +2190,10 @@
 			"routeGroup": "Route 그룹",
 			"userEmail": "사용자 이메일",
 			"apiKeyId": "API Key ID",
+			"requestId": "요청 ID",
 			"emailPlaceholder": "이메일로 필터링...",
-			"apiKeyPlaceholder": "API Key로 필터링..."
+			"apiKeyPlaceholder": "API Key로 필터링...",
+			"requestIdPlaceholder": "요청 ID로 필터링..."
 		},
 		"totalRequests": "전체: 요청 {count}건",
 		"statusOther": "기타",

@@ -6,6 +6,7 @@ import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import {
 	GATEWAY_ERROR_CODE_HEADER,
+	GATEWAY_REQUEST_ID_HEADER,
 	type GatewayErrorCodeValue,
 } from './gateway-error-codes';
 export {
@@ -65,5 +66,19 @@ export function gatewayNestedErrorResponse(opts: {
 			[GATEWAY_ERROR_CODE_HEADER]: opts.code,
 			...opts.headers,
 		},
+	});
+}
+
+/**
+ * 把 Gateway 请求日志主键写进响应头。不读取 body，流式响应可以原样继续。
+ * 与上游透传的 `x-request-id` 分开，避免客户端把供应商 ID 当成日志 ID。
+ */
+export function withGatewayRequestIdHeader(response: Response, requestLogId: string): Response {
+	const headers = new Headers(response.headers);
+	headers.set(GATEWAY_REQUEST_ID_HEADER, requestLogId);
+	return new Response(response.body, {
+		status: response.status,
+		statusText: response.statusText,
+		headers,
 	});
 }

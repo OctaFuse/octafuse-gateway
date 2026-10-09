@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Proxy
+
+- **请求追踪**：聊天、消息和 Responses 的响应返回 `X-OctaFuse-Request-Id`，与请求日志主键一致，成功和失败都会带上。请求日志额外记录消息结构摘要（按角色汇总字段名和 content part 类型），不记录消息正文。
+
+### Admin
+
+- **请求日志**：可按请求 ID 精确筛选，用来从客户端错误直接定位到对应日志。
+
 ## 2.13.0
 
 ### Minor Changes
