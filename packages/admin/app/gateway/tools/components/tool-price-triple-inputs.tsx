@@ -6,9 +6,11 @@ import { isLossPricing, type PriceTripleDraft } from './provider-card-state';
 export function ToolPriceTripleInputs({
 	value,
 	onChange,
+	step = 0.0001,
 }: {
 	value: PriceTripleDraft;
 	onChange: (patch: Partial<PriceTripleDraft>) => void;
+	step?: number | 'any';
 }) {
 	const t = useTranslations('tools');
 	/** 展示顺序：标准价 → 用户扣费 → 供应价（与 Routes 语义对齐，运营先看目录/扣费） */
@@ -47,7 +49,7 @@ export function ToolPriceTripleInputs({
 							<input
 								type="number"
 								min={0}
-								step="0.0001"
+								step={step}
 								value={value[key]}
 								onChange={(e) => onChange({ [key]: e.target.value })}
 								className={

@@ -1,20 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
-import { EMPTY_FORM, type CatalogItem, type ServerDetail, type ServerForm, type ServerSummary } from './mcp-types';
-
-function headersObject(form: ServerForm): Record<string, string> {
-	const headers: Record<string, string> = {};
-	for (const row of form.headers) {
-		const key = row.key.trim();
-		if (!key) continue;
-		headers[key] = row.value;
-	}
-	return headers;
-}
+import {
+	EMPTY_FORM,
+	type CatalogItem,
+	type ServerDetail,
+	type ServerForm,
+	type ServerSummary,
+} from './mcp-types';
 
 export function useMcpServersState() {
 	const t = useTranslations('mcp');
@@ -22,201 +18,290 @@ export function useMcpServersState() {
 	const { notify, confirm } = useFeedback();
 	const [servers, setServers] = useState<ServerSummary[]>([]);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const selected = useRef<string | null>(null);
 	const [detail, setDetail] = useState<ServerDetail | null>(null);
 	const [tab, setTab] = useState<CatalogItem['kind']>('tool');
 	const [formMode, setFormMode] = useState<'create' | 'edit' | null>(null);
+	const [editingServer, setEditingServer] = useState<ServerSummary | null>(null);
 	const [form, setForm] = useState<ServerForm>(EMPTY_FORM);
-	const [busy, setBusy] = useState(false);
+	const [action, setAction] = useState<string | null>(null);
+	const actionLock = useRef(false);
+	const [listLoading, setListLoading] = useState(true);
+	const [listError, setListError] = useState(false);
+	const [detailLoading, setDetailLoading] = useState(false);
+	const [detailError, setDetailError] = useState(false);
 	const [revealed, setRevealed] = useState<{ url: string; authHeaders: Record<string, string> } | null>(null);
-
-	const fail = useCallback((message: string | undefined, fallback: string) => {
-		notify('error', message || fallback);
-	}, [notify]);
+	const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+	const detailRequest = useRef(0);
+	const listRequest = useRef(0);
 
 	const loadList = useCallback(async () => {
-		const response = await readApiJson<ServerSummary[]>(await fetch('/api/admin/mcp-servers'));
-		if (!response.success || !response.data) {
-			fail(response.message, t('loadFailed'));
-			return;
+		const request = ++listRequest.current;
+		setListLoading(true);
+		try {
+			const response = await readApiJson<ServerSummary[]>(await fetch('/api/admin/mcp-servers'));
+			if (request !== listRequest.current) return;
+			if (!response.success || !response.data) throw new Error(response.message || t('loadFailed'));
+			setServers(response.data);
+			setListError(false);
+		} catch {
+			if (request === listRequest.current) setListError(true);
+		} finally {
+			if (request === listRequest.current) setListLoading(false);
 		}
-		setServers(response.data);
-	}, [fail, t]);
+	}, [t]);
 
-	const loadDetail = useCallback(async (id: string) => {
-		const response = await readApiJson<ServerDetail>(await fetch(`/api/admin/mcp-servers/${id}`));
-		if (!response.success || !response.data) {
-			fail(response.message, t('loadFailed'));
-			return null;
-		}
-		setDetail(response.data);
-		setRevealed(null);
-		return response.data;
-	}, [fail, t]);
+	const loadDetail = useCallback(
+		async (id: string) => {
+			const request = ++detailRequest.current;
+			setDetailLoading(true);
+			setDetailError(false);
+			try {
+				const response = await readApiJson<ServerDetail>(await fetch(`/api/admin/mcp-servers/${id}`));
+				if (request !== detailRequest.current || selected.current !== id) return;
+				if (!response.success || !response.data) throw new Error(response.message || t('loadFailed'));
+				setDetail(response.data);
+			} catch {
+				if (request === detailRequest.current && selected.current === id) setDetailError(true);
+			} finally {
+				if (request === detailRequest.current) setDetailLoading(false);
+			}
+		},
+		[t]
+	);
 
 	useEffect(() => {
 		void loadList();
 	}, [loadList]);
-
 	useEffect(() => {
 		if (selectedId) void loadDetail(selectedId);
-		else setDetail(null);
 	}, [selectedId, loadDetail]);
+	useEffect(
+		() => () => {
+			++detailRequest.current;
+			++listRequest.current;
+		},
+		[]
+	);
+
+	function selectServer(id: string | null) {
+		selected.current = id;
+		++detailRequest.current;
+		setSelectedId(id);
+		setDetail(null);
+		setRevealed(null);
+		setTestResult(null);
+		setDetailError(false);
+		setDetailLoading(id != null);
+		setTab('tool');
+	}
 
 	function openCreate() {
-		setForm(EMPTY_FORM);
+		setForm({ ...EMPTY_FORM, headers: [{ key: '', value: '' }] });
+		setEditingServer(null);
 		setFormMode('create');
 	}
 
-	async function openEdit(server: ServerSummary) {
-		const loaded = detail?.server.id === server.id ? detail : await loadDetail(server.id);
-		if (!loaded) return;
+	function openEdit(server: ServerSummary) {
+		setEditingServer(server);
+		setRevealed(null);
 		setForm({
-			slug: loaded.server.slug,
-			name: loaded.server.name,
-			description: loaded.server.description ?? '',
+			slug: server.slug,
+			name: server.name,
+			description: server.description ?? '',
 			url: '',
-			headers: loaded.server.authHeaderNames.length
-				? loaded.server.authHeaderNames.map((key) => ({ key, value: '' }))
+			headers: server.authHeaderNames.length
+				? server.authHeaderNames.map((key) => ({ key, value: '' }))
 				: [{ key: '', value: '' }],
-			metered: String(loaded.server.metered),
-			standard: String(loaded.server.standard),
-			charged: String(loaded.server.charged),
-			timeoutMs: String(loaded.server.timeoutMs),
-			maxResponseBytes: String(loaded.server.maxResponseBytes),
+			metered: String(server.metered),
+			standard: String(server.standard),
+			charged: String(server.charged),
+			timeoutMs: String(server.timeoutMs),
+			maxResponseBytes: String(server.maxResponseBytes),
 		});
 		setFormMode('edit');
 	}
 
-	async function submitForm() {
-		setBusy(true);
+	async function perform(key: string, task: () => Promise<boolean | void>, fallback = t('actionFailed')) {
+		if (actionLock.current) return false;
+		actionLock.current = true;
+		setAction(key);
 		try {
-			const prices = {
-				metered: Number(form.metered),
-				standard: Number(form.standard),
-				charged: Number(form.charged),
-			};
-			const shared = {
-				name: form.name,
-				description: form.description || null,
-				authHeaders: headersObject(form),
-				...prices,
-				timeoutMs: Number(form.timeoutMs),
-				maxResponseBytes: Number(form.maxResponseBytes),
-			};
-			if (formMode === 'create') {
-				const response = await readApiJson<{ id: string }>(await fetch('/api/admin/mcp-servers', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ ...shared, slug: form.slug, url: form.url }),
-				}));
-				if (!response.success || !response.data) {
-					fail(response.message, t('saveFailed'));
-					return;
-				}
-				setFormMode(null);
-				await loadList();
-				setSelectedId(response.data.id);
-				notify('success', t('saved'));
-				return;
-			}
-			if (!selectedId) return;
-			const body: Record<string, unknown> = { ...shared };
-			if (form.url.trim()) body.url = form.url.trim();
-			const response = await readApiJson<unknown>(await fetch(`/api/admin/mcp-servers/${selectedId}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(body),
-			}));
-			if (!response.success) {
-				fail(response.message, t('saveFailed'));
-				return;
-			}
-			setFormMode(null);
-			await loadList();
-			await loadDetail(selectedId);
-			notify('success', t('saved'));
-		} catch {
-			fail(undefined, t('invalidHeaders'));
+			return (await task()) !== false;
+		} catch (error) {
+			notify(
+				'error',
+				error instanceof TypeError
+					? tCommon('networkError')
+					: error instanceof Error
+					? error.message
+					: fallback
+			);
+			return false;
 		} finally {
-			setBusy(false);
+			actionLock.current = false;
+			setAction(null);
 		}
 	}
 
-	async function runAction(path: string, success: string, id = selectedId) {
+	async function mutate(path: string, method: string, body?: unknown) {
+		const response = await readApiJson<unknown>(
+			await fetch(`/api/admin/mcp-servers${path}`, {
+				method,
+				...(body === undefined
+					? {}
+					: { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+			})
+		);
+		if (!response.success) throw new Error(response.message || t('actionFailed'));
+		return response.data;
+	}
+
+	async function refresh(id: string) {
+		setRevealed(null);
+		await loadList();
+		if (selected.current === id) await loadDetail(id);
+	}
+
+	async function submitForm() {
+		return perform(
+			'save',
+			async () => {
+				const authHeaders = Object.fromEntries(
+					form.headers.filter((row) => row.key.trim()).map((row) => [row.key.trim(), row.value])
+				);
+				const body = {
+					name: form.name.trim(),
+					description: form.description.trim() || null,
+					authHeaders,
+					metered: Number(form.metered),
+					standard: Number(form.standard),
+					charged: Number(form.charged),
+					timeoutMs: Number(form.timeoutMs),
+					maxResponseBytes: Number(form.maxResponseBytes),
+				};
+				if (formMode === 'create') {
+					const created = (await mutate('', 'POST', {
+						...body,
+						slug: form.slug.trim(),
+						url: form.url.trim(),
+					})) as { id: string };
+					setFormMode(null);
+					await loadList();
+					selectServer(created.id);
+					notify('success', t('createdHint'));
+				} else if (editingServer) {
+					await mutate(`/${editingServer.id}`, 'PATCH', {
+						...body,
+						...(form.url.trim() ? { url: form.url.trim() } : {}),
+					});
+					setFormMode(null);
+					setTestResult(null);
+					await refresh(editingServer.id);
+					notify('success', t('saved'));
+				}
+			},
+			t('saveFailed')
+		);
+	}
+
+	async function sync(id = selectedId) {
 		if (!id) return;
-		setBusy(true);
-		try {
-			const response = await readApiJson<unknown>(await fetch(`/api/admin/mcp-servers/${id}${path}`, { method: 'POST' }));
-			if (!response.success) {
-				fail(response.message, t('actionFailed'));
-				return;
+		return perform(`sync:${id}`, async () => {
+			try {
+				const result = (await mutate(`/${id}/sync`, 'POST')) as {
+					added: unknown[];
+					changed: unknown[];
+					removed: unknown[];
+				};
+				notify(
+					'success',
+					t('synced'),
+					t('syncSummary', {
+						added: result.added.length,
+						changed: result.changed.length,
+						removed: result.removed.length,
+					})
+				);
+			} finally {
+				// A failed sync is persisted upstream; surface that error in the list and drawer too.
+				await refresh(id);
 			}
-			await loadList();
-			await loadDetail(id);
-			notify('success', success);
-		} finally {
-			setBusy(false);
-		}
+		});
+	}
+
+	async function test() {
+		if (!selectedId) return;
+		const id = selectedId;
+		setTestResult(null);
+		return perform(`test:${id}`, async () => {
+			try {
+				const result = (await mutate(`/${id}/test`, 'POST')) as {
+					counts: { tools: number; prompts: number; resources: number };
+				};
+				if (selected.current === id) setTestResult({ ok: true, message: t('testSummary', result.counts) });
+				notify('success', t('tested'));
+			} catch (error) {
+				if (selected.current === id)
+					setTestResult({ ok: false, message: error instanceof Error ? error.message : t('actionFailed') });
+				throw error;
+			}
+		});
 	}
 
 	async function toggleServer() {
 		if (!detail) return;
-		setBusy(true);
-		try {
-			const response = await readApiJson<unknown>(await fetch(`/api/admin/mcp-servers/${detail.server.id}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ status: detail.server.status === 'active' ? 'disabled' : 'active' }),
-			}));
-			if (!response.success) {
-				fail(response.message, t('actionFailed'));
-				return;
-			}
-			await loadList();
-			await loadDetail(detail.server.id);
-		} finally {
-			setBusy(false);
-		}
+		const server = detail.server;
+		return perform('status', async () => {
+			await mutate(`/${server.id}`, 'PATCH', { status: server.status === 'active' ? 'disabled' : 'active' });
+			await refresh(server.id);
+			notify('success', t('saved'));
+		});
 	}
 
 	async function setItemStatus(ids: string[], status: 'enabled' | 'disabled') {
-		if (!selectedId || ids.length === 0) return;
-		setBusy(true);
-		try {
-			const response = await readApiJson<unknown>(await fetch(`/api/admin/mcp-servers/${selectedId}/items/status`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ ids, status }),
-			}));
-			if (!response.success) fail(response.message, t('actionFailed'));
-			await loadDetail(selectedId);
-			await loadList();
-		} finally {
-			setBusy(false);
-		}
+		if (!selectedId || !ids.length) return false;
+		const id = selectedId;
+		if (
+			ids.length > 1 &&
+			!(await confirm({
+				title: t(status === 'enabled' ? 'batchEnableTitle' : 'batchDisableTitle'),
+				message: t('batchStatusConfirm', { count: ids.length }),
+				confirmLabel: t(status === 'enabled' ? 'enable' : 'disable'),
+			}))
+		)
+			return false;
+		return perform('items', async () => {
+			await mutate(`/${id}/items/status`, 'POST', { ids, status });
+			await refresh(id);
+			notify('success', t('saved'));
+		});
 	}
 
-	function patchItem(id: string, patch: Partial<CatalogItem>) {
-		setDetail((current) => current ? { ...current, items: current.items.map((item) => item.id === id ? { ...item, ...patch } : item) } : current);
+	async function accept(itemId: string) {
+		if (!selectedId) return;
+		const id = selectedId;
+		return perform(`accept:${itemId}`, async () => {
+			await mutate(`/${id}/items/${itemId}/accept`, 'POST');
+			await refresh(id);
+			notify('success', t('accepted'));
+		});
 	}
 
 	async function savePrice(item: CatalogItem, clear: boolean) {
-		if (!selectedId) return;
-		setBusy(true);
-		try {
-			const response = await readApiJson<unknown>(await fetch(`/api/admin/mcp-servers/${selectedId}/items/${item.id}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(clear
+		if (!selectedId) return false;
+		const id = selectedId;
+		return perform(`price:${item.id}`, async () => {
+			await mutate(
+				`/${id}/items/${item.id}`,
+				'PATCH',
+				clear
 					? { metered: null, standard: null, charged: null }
-					: { metered: item.metered ?? 0, standard: item.standard ?? 0, charged: item.charged ?? 0 }),
-			}));
-			if (!response.success) fail(response.message, t('actionFailed'));
-			else notify('success', t('saved'));
-			await loadDetail(selectedId);
-		} finally {
-			setBusy(false);
-		}
+					: { metered: item.metered, standard: item.standard, charged: item.charged }
+			);
+			await loadDetail(id);
+			notify('success', t('saved'));
+		});
 	}
 
 	async function reveal() {
@@ -225,58 +310,66 @@ export function useMcpServersState() {
 			setRevealed(null);
 			return;
 		}
-		const response = await readApiJson<{ url: string; authHeaders: Record<string, string> }>(
-			await fetch(`/api/admin/mcp-servers/${selectedId}/reveal`),
-		);
-		if (!response.success || !response.data) {
-			fail(response.message, t('revealFailed'));
-			return;
-		}
-		setRevealed(response.data);
+		const id = selectedId;
+		return perform('reveal', async () => {
+			const response = await readApiJson<{ url: string; authHeaders: Record<string, string> }>(
+				await fetch(`/api/admin/mcp-servers/${id}/reveal`)
+			);
+			if (!response.success || !response.data) throw new Error(response.message || t('revealFailed'));
+			if (selected.current === id) setRevealed(response.data);
+		});
 	}
 
 	async function removeServer() {
-		if (!selectedId) return;
-		const ok = await confirm({ title: t('confirmDeleteTitle'), message: t('confirmDelete'), danger: true, confirmLabel: tCommon('delete') });
-		if (!ok) return;
-		setBusy(true);
-		try {
-			const response = await readApiJson<unknown>(await fetch(`/api/admin/mcp-servers/${selectedId}`, { method: 'DELETE' }));
-			if (!response.success) {
-				fail(response.message, t('actionFailed'));
-				return;
-			}
-			setSelectedId(null);
-			setDetail(null);
+		if (!selectedId || !detail) return;
+		const id = selectedId;
+		if (
+			!(await confirm({
+				title: t('confirmDeleteTitle'),
+				message: t('confirmDeleteNamed', { name: detail.server.name }),
+				danger: true,
+				confirmLabel: tCommon('delete'),
+			}))
+		)
+			return;
+		return perform('delete', async () => {
+			await mutate(`/${id}`, 'DELETE');
+			selectServer(null);
 			await loadList();
 			notify('success', t('deleted'));
-		} finally {
-			setBusy(false);
-		}
+		});
 	}
 
 	return {
 		servers,
 		detail,
 		selectedId,
-		setSelectedId,
+		selectServer,
 		tab,
 		setTab,
 		formMode,
 		setFormMode,
 		form,
 		setForm,
-		busy,
+		editingServer,
+		busy: action != null,
+		action,
+		listLoading,
+		listError,
+		detailLoading,
+		detailError,
+		loadList,
+		loadDetail,
 		revealed,
+		testResult,
 		openCreate,
 		openEdit,
 		submitForm,
-		sync: (id?: string) => runAction('/sync', t('synced'), id),
-		test: () => runAction('/test', t('tested')),
-		accept: (itemId: string) => runAction(`/items/${itemId}/accept`, t('accepted')),
+		sync,
+		test,
+		accept,
 		toggleServer,
 		setItemStatus,
-		patchItem,
 		savePrice,
 		reveal,
 		removeServer,
