@@ -97,10 +97,24 @@ toolsPricingRoutes.get('/', async (c) => {
 		},
 	];
 
+	const mcpPrices = await repos.mcpServers.listEnabledToolPrices().catch((error: unknown) => {
+		console.warn('[Gateway Tools] MCP pricing unavailable', error instanceof Error ? error.message : error);
+		return [];
+	});
+
 	return c.json({
 		data: {
 			billing_currency: normalizeBillingCurrencyCode(billingRaw),
 			tools,
+			mcp: mcpPrices.map((row) => ({
+				id: `mcp:${row.slug}/${row.upstreamKey}`,
+				name: row.exposedName,
+				unit: 'request' as const,
+				metered: row.metered,
+				standard: row.standard,
+				charged: row.charged,
+				cost: row.charged,
+			})),
 		},
 	});
 });

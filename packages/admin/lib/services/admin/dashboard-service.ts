@@ -119,6 +119,8 @@ export async function listAdminGlobalRequestLogsService(
 		user_email?: string;
 		model_id?: string;
 		provider_id?: string;
+		provider_ids?: string;
+		model_id_prefix?: string;
 		route_group?: string;
 		protocol?: string;
 		status?: string;
@@ -144,6 +146,8 @@ export async function listAdminGlobalRequestLogsService(
 		userEmail: input.user_email,
 		modelId: input.model_id,
 		providerId: input.provider_id,
+		providerIds: parseProviderIds(input.provider_ids),
+		modelIdPrefix: input.model_id_prefix?.trim() || undefined,
 		routeGroup: input.route_group,
 		protocol,
 		status: input.status,
@@ -151,6 +155,17 @@ export async function listAdminGlobalRequestLogsService(
 		endDate: input.end_date,
 	});
 	return { ...result, page, page_size: pageSize };
+}
+
+const MAX_PROVIDER_IDS = 10;
+
+function parseProviderIds(raw: string | undefined): string[] | undefined {
+	if (raw == null || raw.trim() === '') return undefined;
+	const ids = [...new Set(raw.split(',').map((value) => value.trim()).filter((value) => value !== ''))];
+	if (ids.length > MAX_PROVIDER_IDS) {
+		throw badRequest('provider_ids accepts at most 10 values');
+	}
+	return ids.length > 0 ? ids : undefined;
 }
 
 /** 多值过滤参数：可重复出现，也可在单个值里用逗号分隔；去空去重。 */

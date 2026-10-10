@@ -23,6 +23,8 @@ type Props = {
 	playgroundLabel?: string;
 	/** 保存中禁止遮罩/Escape 关闭 */
 	busy?: boolean;
+	/** 目录详情需要更宽的面板 */
+	wide?: boolean;
 	onClose: () => void;
 	children: ReactNode;
 	footer: ReactNode;
@@ -39,6 +41,7 @@ export function ToolProviderDrawer({
 	playgroundHref,
 	playgroundLabel,
 	busy = false,
+	wide = false,
 	onClose,
 	children,
 	footer,
@@ -121,7 +124,7 @@ export function ToolProviderDrawer({
 				aria-modal="true"
 				aria-labelledby={titleId}
 				onKeyDown={onPanelKeyDown}
-				className="relative flex h-full w-full max-w-full flex-col bg-white shadow-xl ring-1 ring-black/5 sm:max-w-md md:max-w-lg"
+				className={`relative flex h-full w-full max-w-full flex-col bg-white shadow-xl ring-1 ring-black/5 ${wide ? 'sm:max-w-2xl lg:max-w-3xl' : 'sm:max-w-md md:max-w-lg'}`}
 			>
 				<div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
 					<div className="min-w-0 flex-1">

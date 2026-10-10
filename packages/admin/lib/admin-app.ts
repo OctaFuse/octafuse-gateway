@@ -20,6 +20,7 @@ import { adminProvidersRoutes } from '@/lib/routes/admin/providers';
 import { adminRequestLogsRoutes } from '@/lib/routes/admin/request-logs';
 import { adminStatsRoutes } from '@/lib/routes/admin/stats';
 import { adminAccessKeysRoutes } from '@/lib/routes/admin/access-keys';
+import { adminMcpServersRoutes } from '@/lib/routes/admin/mcp-servers';
 import { getAdminAuthorizationDecision } from '@/lib/admin-permissions';
 import { hasAdminPermission } from '@/lib/admin-principal';
 import { isAccessKeysMutationSameOrigin } from '@/lib/admin-request-rewrite';
@@ -83,6 +84,7 @@ export function createAdminApp(): Hono<AdminEnv> {
 	app.route('/admin/business-timezone', adminBusinessTimezoneRoutes);
 	app.route('/admin/analytics', adminAnalyticsRoutes);
 	app.route('/admin/access-keys', adminAccessKeysRoutes);
+	app.route('/admin/mcp-servers', adminMcpServersRoutes);
 
 	app.get('/admin', (c) => c.json({ name: 'octafuse-admin-api', version: adminAppVersion }));
 

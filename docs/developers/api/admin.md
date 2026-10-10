@@ -17,7 +17,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 浏览器登录会创建数据库 Session，并通过 `admin_session` Cookie 识别为 `console:<username>`。Console 拥有完整业务权限，也是唯一可以管理集成密钥的主体。
 
-集成密钥（Integration Keys）在后台 **系统集成 → 集成密钥（Integration Keys）** 创建。每个外部集成应使用独立、最小权限 Key；Key 主体记录为 `admin_key:<id>`。权限包括 `users.*`、`user_keys.*`、`providers.*`、`models.*`、`routes.*`、`config.*`、`analytics.read`、`logs.read` 和 `playground.execute`；`*.write` 自动包含对应 `*.read`，`*` 代表全部可委派业务权限，但不包含集成密钥或 Session 管理。
+集成密钥（Integration Keys）在后台 **系统集成 → 集成密钥（Integration Keys）** 创建。每个外部集成应使用独立、最小权限 Key；Key 主体记录为 `admin_key:<id>`。权限包括 `users.*`、`user_keys.*`、`providers.*`、`models.*`、`routes.*`、`config.*`、`analytics.read`、`logs.read`、`playground.execute`、`mcp.read`、`mcp.write` 和 `mcp.secrets.read`；`*.write` 自动包含对应 `*.read`，`*.secrets.read` 不随 write 授予，`*` 代表全部可委派业务权限，但不包含集成密钥或 Session 管理。
 
 升级迁移会把非空 `system_config.MASTER_KEY` 原值复制为普通全权限 Key `legacy-master`，确保旧调用方继续工作；随后的迁移会删除该配置行。新认证只读取 `admin_api_keys`。请在稳定后为外部系统创建具名 Key，并轮换或吊销 `legacy-master`。
 
@@ -82,6 +82,14 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/routes/pools/:poolId/sticky/bindings/:affinityHash` | DELETE | 强制解绑（不校验 `binding_token`） | Admin UI |
 | `/admin/routes/pools/:poolId/sticky/reset` | POST | bump `sticky_epoch`，使本 pool 全部绑定失效 | Admin UI |
 | `/admin/playground` | POST | Routes：`routeId` 或 `routeDraft` 直连上游；Tools：`toolId`+`provider` 读 catalog 直连引擎（均可测、不计费、不写日志、无 failover） | Admin UI、运维联调 |
+| `/admin/mcp-servers` | GET, POST | `mcp_servers`（列表脱敏 URL 与鉴权头） | Admin UI |
+| `/admin/mcp-servers/:id` | GET, PATCH, DELETE | `mcp_servers` | Admin UI |
+| `/admin/mcp-servers/:id/reveal` | GET | 明文 URL 与鉴权头；需要 `mcp.secrets.read` | Admin UI |
+| `/admin/mcp-servers/:id/test` | POST | 只执行上游 `initialize` | Admin UI |
+| `/admin/mcp-servers/:id/sync` | POST | 拉取目录并返回新增、变更、移除差异；新条目默认停用 | Admin UI |
+| `/admin/mcp-servers/:id/items/status` | POST | 批量 `enabled` / `disabled` | Admin UI |
+| `/admin/mcp-servers/:id/items/:itemId` | PATCH | 工具三本账覆盖价；`null` 恢复服务默认价 | Admin UI |
+| `/admin/mcp-servers/:id/items/:itemId/accept` | POST | 接受已启用条目的待发布定义 | Admin UI |
 | `/admin/stats` | GET | 多表聚合（含 `api_key_request_logs`、`api_keys` 等） | Admin UI |
 | `/admin/config` | GET, PUT | `system_config`（含 `ROUTE_STRATEGY`、`USER_CHARGED_COST_FACTOR_MODE`） | Admin UI |
 | `/admin/access-keys`、`/:id`、`/:id/secret`、`/:id/rotate`、`/:id/revoke` | GET, POST, PATCH | `admin_api_keys`；仅 Console Session，同源写请求 | Admin UI |
@@ -1018,6 +1026,9 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 | `api_key_id` | 精确匹配 |
 | `user_email` | 精确匹配 |
 | `model_id` | 精确匹配 |
+| `provider_id` | 精确匹配 |
+| `provider_ids` | 逗号分隔，最多 10 个，匹配其中任一 `provider_id` |
+| `model_id_prefix` | `model_id` 前缀；`%`、`_` 和 `\` 按字面量匹配 |
 | `route_group` | 精确匹配 |
 | `status` | 精确匹配 |
 | `start_date` / `end_date` | 过滤 `created_at`（UTC，格式：`YYYY-MM-DD HH:mm:ss`） |

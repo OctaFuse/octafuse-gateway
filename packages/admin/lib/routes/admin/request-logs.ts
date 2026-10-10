@@ -11,7 +11,7 @@ export const adminRequestLogsRoutes = new Hono<AdminEnv>();
 
 adminRequestLogsRoutes.use('*', requireAdminPrincipal);
 
-/** 查询参数与 `listAdminGlobalRequestLogsService` 一致：page、page_size、id、api_key_id、user_email、model_id、provider_id、route_group、protocol、status、start_date、end_date。 */
+/** 查询参数与 `listAdminGlobalRequestLogsService` 一致：page、page_size、id、api_key_id、user_email、model_id、provider_id、provider_ids、model_id_prefix、route_group、protocol、status、start_date、end_date。 */
 adminRequestLogsRoutes.get('/', async (c) => {
 	try {
 		const repos = c.get('repositories');
@@ -23,6 +23,8 @@ adminRequestLogsRoutes.get('/', async (c) => {
 			user_email: c.req.query('user_email') ?? undefined,
 			model_id: c.req.query('model_id') ?? undefined,
 			provider_id: c.req.query('provider_id') ?? undefined,
+			provider_ids: c.req.query('provider_ids') ?? undefined,
+			model_id_prefix: c.req.query('model_id_prefix') ?? undefined,
 			route_group: c.req.query('route_group') ?? undefined,
 			protocol: c.req.query('protocol') ?? undefined,
 			status: c.req.query('status') ?? undefined,

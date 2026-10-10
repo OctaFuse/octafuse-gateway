@@ -44,6 +44,7 @@ import type {
 	AdminSessionRow,
 	InsertAdminApiKeyParams,
 } from '../db/admin-access-types';
+import type { McpServersRepository } from '../db/mcp-servers.repository';
 
 export interface AdminAccessRepository {
 	listApiKeys(): Promise<AdminApiKeyRow[]>;
@@ -70,6 +71,8 @@ export interface AdminAccessRepository {
 	deleteSession(tokenHash: string): Promise<void>;
 	deleteExpiredSessions(nowIso: string): Promise<void>;
 }
+
+export type { McpServersRepository };
 
 /** 管理端分析聚合 */
 export interface AdminAnalyticsRepository {
@@ -388,6 +391,10 @@ export interface RequestLogsRepository {
 		userEmail?: string;
 		modelId?: string;
 		providerId?: string;
+		/** Match any of these `provider_id` values. Combined with `providerId` when both are set. */
+		providerIds?: string[];
+		/** `model_id` prefix match. `%`, `_`, and `\` in the prefix are escaped. */
+		modelIdPrefix?: string;
 		routeGroup?: string;
 		protocol?: string;
 		status?: string;

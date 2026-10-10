@@ -59,6 +59,10 @@ export type ChargeToolUsageParams = {
 	unitPrices?: ToolUnitPrices;
 	/** 合并进 `pricing_audit`（勿覆盖 `provider`；以 {@link toolProvider} 为准） */
 	pricingAuditExtra?: Record<string, unknown>;
+	/** 默认 `octafuse-tools`。MCP 聚合记 `octafuse-mcp`。 */
+	ledgerProviderId?: string;
+	/** 默认 `OctaFuse Tools`。 */
+	ledgerProviderName?: string;
 };
 
 /**
@@ -128,11 +132,11 @@ export async function chargeToolUsage(params: ChargeToolUsageParams): Promise<{ 
 			apiKeyId: params.apiKeyId,
 			userEmail: params.userEmail,
 			modelId: params.toolId,
-			providerId: 'octafuse-tools',
+			providerId: params.ledgerProviderId ?? 'octafuse-tools',
 			/** 引擎 id；Request Logs ROUTE 列第二行展示（不再重复写 tool id） */
 			providerModelName: toolProvider || params.toolId,
 			modelName: params.toolId,
-			providerName: 'OctaFuse Tools',
+			providerName: params.ledgerProviderName ?? 'OctaFuse Tools',
 			requestBody: params.requestBody ?? null,
 			upstreamRequestBody: null,
 			requestProtocol: 'openai',

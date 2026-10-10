@@ -113,6 +113,21 @@ function extractApiKey(c: { req: { header: (name: string) => string | undefined;
   return null;
 }
 
+/** MCP 清单请求不占 RPM。只在 JSON-RPC `tools/call` 时计数。 */
+async function readJsonRpcMethod(c: { req: { method: string; raw: Request } }): Promise<string | null> {
+  if (c.req.method !== 'POST') {
+    return null;
+  }
+  try {
+    const text = await c.req.raw.clone().text();
+    if (!text) return null;
+    const body = JSON.parse(text) as { method?: unknown };
+    return typeof body.method === 'string' ? body.method : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 校验 API Key 并注入上下文；未授权返回 401，超额预算返回 403（部分路由豁免，见内联注释）。
  */
@@ -145,7 +160,10 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
   const isKeyInfoRoute = c.req.method === 'GET' && c.req.path.endsWith('/me');
   // Allow GET /v1/models even when budget is exceeded or rate-limited (list only; Agent refreshes ~60s)
   const isModelsRoute = c.req.method === 'GET' && c.req.path.endsWith('/models');
-  if (!isKeyInfoRoute && !isModelsRoute) {
+  const isMcpRoute = c.req.path === '/mcp' || c.req.path.startsWith('/mcp/');
+  const mcpMethod = isMcpRoute ? await readJsonRpcMethod(c) : null;
+  const mcpCountsRateLimit = isMcpRoute && mcpMethod === 'tools/call';
+  if (!isKeyInfoRoute && !isModelsRoute && (!isMcpRoute || mcpCountsRateLimit)) {
     const { exceeded, retryAfterSeconds } = await consumeRateLimitLayers([
       { subject: keyRateLimitSubject(authResult.keyId), rpm: rateLimitRpmOf(authResult.rateLimit) },
       { subject: userRateLimitSubject(authResult.userId), rpm: rateLimitRpmOf(authResult.userRateLimit) },
@@ -173,6 +191,7 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
     !isChatRoute &&
     !isImagesRoute &&
     !isAudioRoute &&
+    !isMcpRoute &&
     !hasPositiveTotalBalance(
       authResult.budgetMax,
       authResult.budgetSpent,

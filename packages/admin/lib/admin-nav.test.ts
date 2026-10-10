@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { formatAdminDocumentTitle, matchAdminNavRoute } from './admin-nav';
+import { ADMIN_NAV_GROUPS, formatAdminDocumentTitle, matchAdminNavRoute } from './admin-nav';
 
 describe('matchAdminNavRoute', () => {
 	it('matches exact sidebar paths', () => {
@@ -11,6 +11,15 @@ describe('matchAdminNavRoute', () => {
 	it('prefers the longest href so nested tools pages win', () => {
 		assert.equal(matchAdminNavRoute('/gateway/tools')?.nameKey, 'toolsConfig');
 		assert.equal(matchAdminNavRoute('/gateway/tools/invocations')?.nameKey, 'toolInvocations');
+		assert.equal(matchAdminNavRoute('/gateway/mcp')?.nameKey, 'mcpServers');
+	});
+
+	it('lists REST services, then MCP servers, then invocations', () => {
+		const tools = ADMIN_NAV_GROUPS.find((group) => group.groupKey === 'tools');
+		assert.deepEqual(
+			tools?.items.map((item) => item.nameKey),
+			['toolsConfig', 'mcpServers', 'toolInvocations'],
+		);
 	});
 
 	it('treats user detail as Users', () => {

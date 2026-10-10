@@ -13,6 +13,7 @@ import type { PostgresDatabaseClient } from '../../storage/database-client';
 import type { RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
 import { sqlitePlaceholdersToPg } from '../shared/sql-placeholders';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
+import { appendModelIdPrefixCondition, appendProviderIdsCondition } from '../request-log-filters';
 import { postgresTimeseriesBucketExpr } from '../request-timeseries-bucket';
 
 export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient): RequestLogsRepository {
@@ -73,6 +74,8 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 			userEmail?: string;
 			modelId?: string;
 			providerId?: string;
+			providerIds?: string[];
+			modelIdPrefix?: string;
 			routeGroup?: string;
 			protocol?: string;
 			status?: string;
@@ -109,6 +112,8 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 				conditions.push('rl.provider_id = ?');
 				bindValues.push(options.providerId);
 			}
+			appendProviderIdsCondition(conditions, bindValues, 'rl.provider_id', options.providerIds);
+			appendModelIdPrefixCondition(conditions, bindValues, 'rl.model_id', options.modelIdPrefix);
 			if (options.routeGroup) {
 				conditions.push('rl.route_group = ?');
 				bindValues.push(options.routeGroup);

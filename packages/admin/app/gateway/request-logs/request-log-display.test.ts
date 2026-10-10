@@ -60,6 +60,7 @@ describe('isRequestLogStreaming', () => {
 describe('requestLogFeatureKind', () => {
 	it('classifies tools, image, TTS, and ASR from log fields', () => {
 		assert.equal(requestLogFeatureKind({ provider_id: 'octafuse-tools', model_id: 'tool:web-search' }), 'tool');
+		assert.equal(requestLogFeatureKind({ provider_id: 'octafuse-mcp', model_id: 'mcp:deepwiki/ask' }), 'mcp');
 		assert.equal(requestLogFeatureKind({ model_id: 'tool:ai-detection' }), 'tool');
 		assert.equal(requestLogFeatureKind({ billing_kind: 'image_per_image' }), 'image');
 		assert.equal(requestLogFeatureKind({ request_operation: 'audio.speech' }), 'tts');

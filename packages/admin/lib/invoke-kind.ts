@@ -14,9 +14,12 @@ import {
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
 
-/** 全量 invoke kind（含 Agent Tools） */
+/** 全量 invoke kind（含 Agent Tools）。MCP 聚合调用只出现在请求日志，不进入模拟器。 */
 export const INVOKE_KINDS = ['llm', 'image', 'audio', 'tool'] as const;
 export type InvokeKind = (typeof INVOKE_KINDS)[number];
+
+/** 请求日志里 MCP 聚合调用的 `provider_id`。不加入 `INVOKE_KINDS`，避免模拟器把它当成可执行入口。 */
+export const MCP_REQUEST_LOG_PROVIDER_ID = 'octafuse-mcp';
 
 /** Models / Routes 目录筛选（无 tool） */
 export const MODEL_KIND_FILTERS = ['llm', 'image', 'audio'] as const;

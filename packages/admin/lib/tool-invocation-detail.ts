@@ -32,6 +32,58 @@ function tryParseJson(raw: string | null | undefined): unknown | null {
 	}
 }
 
+export type InvocationSource = 'rest' | 'mcp';
+
+export function resolveInvocationSource(log: {
+	provider_id?: string | null;
+	model_id?: string | null;
+}): InvocationSource | null {
+	const provider = log.provider_id?.trim() ?? '';
+	const model = log.model_id?.trim() ?? '';
+	if (provider === 'octafuse-mcp' || model.startsWith('mcp:')) return 'mcp';
+	if (provider === 'octafuse-tools' || model.startsWith('tool:')) return 'rest';
+	return null;
+}
+
+export type McpInvocationSummary = {
+	slug: string | null;
+	tool: string | null;
+	label: string;
+	argumentSummary: string | null;
+};
+
+function summarizeArguments(args: unknown): string | null {
+	if (!args || typeof args !== 'object' || Array.isArray(args)) return null;
+	const parts = Object.entries(args as Record<string, unknown>).slice(0, 3).map(([key, value]) => {
+		const text = typeof value === 'string' ? value : JSON.stringify(value);
+		const clipped = text.length > 80 ? `${text.slice(0, 77)}…` : text;
+		return `${key}=${clipped}`;
+	});
+	return parts.length > 0 ? parts.join(' ') : null;
+}
+
+/** MCP 请求日志：`model_id` 为 `mcp:{slug}/{tool}`，请求体为 `{ name, arguments }`。 */
+export function parseMcpInvocationSummary(log: {
+	model_id?: string | null;
+	request_body?: string | null;
+}): McpInvocationSummary {
+	const model = log.model_id?.trim() ?? '';
+	const body = model.startsWith('mcp:') ? model.slice(4) : '';
+	const slash = body.indexOf('/');
+	const slug = slash >= 0 ? body.slice(0, slash) : body || null;
+	const toolFromModel = slash >= 0 ? body.slice(slash + 1) : null;
+	const raw = tryParseJson(log.request_body);
+	const record = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;
+	const tool = typeof record?.name === 'string' && record.name.trim() ? record.name.trim() : toolFromModel;
+	const label = slug && tool ? `${slug} / ${tool}` : tool || slug || model || '—';
+	return {
+		slug,
+		tool,
+		label,
+		argumentSummary: summarizeArguments(record?.arguments),
+	};
+}
+
 export function parseToolRequestSummary(requestBody: string | null | undefined): ToolInvocationRequestSummary {
 	const raw = tryParseJson(requestBody);
 	if (!raw || typeof raw !== 'object') {

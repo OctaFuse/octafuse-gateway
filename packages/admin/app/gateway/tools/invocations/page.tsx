@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Tools 调用查询：筛选 `provider_id=octafuse-tools`（或单工具 `model_id=tool:*`）的 request logs。
+ * 调用记录：REST 服务（octafuse-tools / tool:*）与 MCP 服务（octafuse-mcp / mcp:*）共用请求日志。
  */
 import Link from 'next/link';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,9 +24,12 @@ import {
 	GATEWAY_TOOLS,
 	GATEWAY_TOOLS_PROVIDER_ID,
 } from '@/lib/gateway-tools';
+import { MCP_REQUEST_LOG_PROVIDER_ID } from '@/lib/invoke-kind';
 import {
+	parseMcpInvocationSummary,
 	parseToolRequestSummary,
 	parseToolResponseSummary,
+	resolveInvocationSource,
 	resolveToolEngineProvider,
 } from '@/lib/tool-invocation-detail';
 import type { GatewayRequestLog } from '@/lib/types';
@@ -41,7 +44,10 @@ export default function GatewayToolInvocationsPage() {
 	const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
 	const { formatDateTime } = useGatewayDateTime();
 
+	const [source, setSource] = useState<'' | 'rest' | 'mcp'>('');
 	const [toolFilter, setToolFilter] = useState('');
+	const [serverFilter, setServerFilter] = useState('');
+	const [mcpServers, setMcpServers] = useState<Array<{ slug: string; name: string }>>([]);
 	const [filterStatus, setFilterStatus] = useState('');
 	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() => createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET));
 	const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
@@ -55,13 +61,17 @@ export default function GatewayToolInvocationsPage() {
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
+		const sourceParam = params.get('source');
 		const tool = params.get('tool');
+		const server = params.get('server');
 		const status = params.get('status');
 		const startDate = params.get('start_date');
 		const endDate = params.get('end_date');
 		const pageParam = params.get('page');
+		if (sourceParam === 'rest' || sourceParam === 'mcp') setSource(sourceParam);
 		const found = findGatewayToolById(tool);
 		if (found) setToolFilter(found.id);
+		if (server) setServerFilter(server);
 		if (status != null) setFilterStatus(status);
 		const hasStart = startDate != null && startDate !== '';
 		const hasEnd = endDate != null && endDate !== '';
@@ -83,29 +93,42 @@ export default function GatewayToolInvocationsPage() {
 	useReplaceListPageQuery(
 		() => {
 			const q = new URLSearchParams();
-			if (toolFilter) q.set('tool', toolFilter);
+			if (source) q.set('source', source);
+			if (source !== 'mcp' && toolFilter) q.set('tool', toolFilter);
+			if (source === 'mcp' && serverFilter) q.set('server', serverFilter);
 			if (filterStatus) q.set('status', filterStatus);
 			if (rangeValue.start_date) q.set('start_date', rangeValue.start_date);
 			if (rangeValue.end_date) q.set('end_date', rangeValue.end_date);
 			if (page > 1) q.set('page', String(page));
 			return q;
 		},
-		[toolFilter, filterStatus, rangeValue.start_date, rangeValue.end_date, page]
+		[source, toolFilter, serverFilter, filterStatus, rangeValue.start_date, rangeValue.end_date, page]
 	);
+
+	useEffect(() => {
+		void (async () => {
+			const data = await readApiJson<Array<{ slug: string; name: string }>>(await fetch('/api/admin/mcp-servers'));
+			if (data.success && data.data) {
+				setMcpServers(data.data.map((server) => ({ slug: server.slug, name: server.name })));
+			}
+		})();
+	}, []);
 
 	const requestLogsHref = useMemo(() => {
 		const q = new URLSearchParams();
-		const tool = findGatewayToolById(toolFilter);
+		const tool = source !== 'mcp' ? findGatewayToolById(toolFilter) : undefined;
 		if (tool) {
 			q.set('model_id', tool.modelId);
-		} else {
+		} else if (source === 'mcp') {
+			q.set('provider_id', MCP_REQUEST_LOG_PROVIDER_ID);
+		} else if (source === 'rest') {
 			q.set('provider_id', GATEWAY_TOOLS_PROVIDER_ID);
 		}
 		if (filterStatus) q.set('status', filterStatus);
 		if (rangeValue.start_date) q.set('start_date', rangeValue.start_date);
 		if (rangeValue.end_date) q.set('end_date', rangeValue.end_date);
 		return `/gateway/request-logs?${q.toString()}`;
-	}, [toolFilter, filterStatus, rangeValue.start_date, rangeValue.end_date]);
+	}, [source, toolFilter, filterStatus, rangeValue.start_date, rangeValue.end_date]);
 
 	const fetchLogs = useCallback(async () => {
 		setIsLoading(true);
@@ -113,11 +136,18 @@ export default function GatewayToolInvocationsPage() {
 			const params = new URLSearchParams();
 			params.set('page', String(page));
 			params.set('page_size', String(pageSize));
-			const tool = findGatewayToolById(toolFilter);
+			const tool = source !== 'mcp' ? findGatewayToolById(toolFilter) : undefined;
 			if (tool) {
 				params.set('model_id', tool.modelId);
-			} else {
+			} else if (source === 'mcp' && serverFilter) {
+				params.set('provider_id', MCP_REQUEST_LOG_PROVIDER_ID);
+				params.set('model_id_prefix', `mcp:${serverFilter}/`);
+			} else if (source === 'mcp') {
+				params.set('provider_id', MCP_REQUEST_LOG_PROVIDER_ID);
+			} else if (source === 'rest') {
 				params.set('provider_id', GATEWAY_TOOLS_PROVIDER_ID);
+			} else {
+				params.set('provider_ids', `${GATEWAY_TOOLS_PROVIDER_ID},${MCP_REQUEST_LOG_PROVIDER_ID}`);
 			}
 			if (filterStatus) params.set('status', filterStatus);
 			if (rangeValue.start_date) params.set('start_date', rangeValue.start_date);
@@ -139,7 +169,7 @@ export default function GatewayToolInvocationsPage() {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [page, toolFilter, filterStatus, rangeValue.start_date, rangeValue.end_date]);
+	}, [page, source, toolFilter, serverFilter, filterStatus, rangeValue.start_date, rangeValue.end_date]);
 
 	useEffect(() => {
 		void fetchLogs();
@@ -173,24 +203,62 @@ export default function GatewayToolInvocationsPage() {
 				</div>
 			</div>
 
-			<div className="mb-4 grid grid-cols-1 gap-3 rounded-lg sm:grid-cols-2 border border-gray-200 bg-white p-4 shadow-sm">
+			<div className="mb-4 grid grid-cols-1 gap-3 rounded-lg sm:grid-cols-2 border border-gray-200 bg-white p-4 shadow-sm lg:grid-cols-3">
 				<div>
-					<label className="mb-1 block text-xs font-medium text-gray-600">{t('invocations.toolFilter')}</label>
+					<label className="mb-1 block text-xs font-medium text-gray-600">{t('invocations.source')}</label>
 					<select
-						value={toolFilter}
+						value={source}
 						onChange={(e) => {
-							setToolFilter(e.target.value);
+							const next = e.target.value === 'rest' || e.target.value === 'mcp' ? e.target.value : '';
+							setSource(next);
+							if (next === 'mcp') setToolFilter('');
+							if (next !== 'mcp') setServerFilter('');
 							setPage(1);
 						}}
 						className="w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm"
 					>
-						<option value="">{t('invocations.allTools')}</option>
-						{GATEWAY_TOOLS.map((tool) => (
-							<option key={tool.id} value={tool.id}>
-								{t(`catalog.${tool.nameKey}`)}
-							</option>
-						))}
+						<option value="">{t('invocations.allSources')}</option>
+						<option value="rest">{t('invocations.sourceRest')}</option>
+						<option value="mcp">{t('invocations.sourceMcp')}</option>
 					</select>
+				</div>
+				<div>
+					<label className="mb-1 block text-xs font-medium text-gray-600">
+						{source === 'mcp' ? t('invocations.serverFilter') : t('invocations.toolFilter')}
+					</label>
+					{source === 'mcp' ? (
+						<select
+							value={serverFilter}
+							onChange={(e) => {
+								setServerFilter(e.target.value);
+								setPage(1);
+							}}
+							className="w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm"
+						>
+							<option value="">{t('invocations.allServers')}</option>
+							{mcpServers.map((server) => (
+								<option key={server.slug} value={server.slug}>
+									{server.name}
+								</option>
+							))}
+						</select>
+					) : (
+						<select
+							value={toolFilter}
+							onChange={(e) => {
+								setToolFilter(e.target.value);
+								setPage(1);
+							}}
+							className="w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm"
+						>
+							<option value="">{t('invocations.allTools')}</option>
+							{GATEWAY_TOOLS.map((tool) => (
+								<option key={tool.id} value={tool.id}>
+									{t(`catalog.${tool.nameKey}`)}
+								</option>
+							))}
+						</select>
+					)}
 				</div>
 				<div>
 					<label className="mb-1 block text-xs font-medium text-gray-600">{t('invocations.status')}</label>
@@ -207,7 +275,7 @@ export default function GatewayToolInvocationsPage() {
 						<option value="error">error</option>
 					</select>
 				</div>
-				<div className="min-w-0 sm:col-span-2 sm:border-t sm:border-gray-100 sm:pt-3">
+				<div className="min-w-0 sm:col-span-2 sm:border-t sm:border-gray-100 sm:pt-3 lg:col-span-3">
 					<GatewayTimeRangePicker
 						value={rangeValue}
 						onChange={(next) => {
@@ -268,7 +336,10 @@ export default function GatewayToolInvocationsPage() {
 							{logs.map((log) => {
 								const req = parseToolRequestSummary(log.request_body);
 								const res = parseToolResponseSummary(log.raw_usage);
-								const engine = resolveToolEngineProvider(log);
+								const rowSource = resolveInvocationSource(log);
+								const mcp = rowSource === 'mcp' ? parseMcpInvocationSummary(log) : null;
+								const engine = mcp?.slug || resolveToolEngineProvider(log);
+								const queryText = mcp ? mcp.argumentSummary : req.query;
 								const standardCost = Number(log.standard_cost ?? 0);
 								const chargedCost = Number(log.charged_cost ?? 0);
 								const meteredCost = Number(log.metered_cost ?? 0);
@@ -287,7 +358,7 @@ export default function GatewayToolInvocationsPage() {
 													setDetailLogId(null);
 												} else {
 													setDetailLogId(log.id);
-													setResponseView('list');
+													setResponseView(rowSource === 'mcp' ? 'json' : 'list');
 												}
 											}}
 											aria-expanded={expanded}
@@ -295,12 +366,23 @@ export default function GatewayToolInvocationsPage() {
 											<td className="whitespace-nowrap px-4 py-3 text-gray-700">
 												{formatDateTime(log.created_at)}
 											</td>
-											<td className="px-4 py-3 font-mono text-xs text-gray-900">{toolLabel(log.model_id)}</td>
+											<td className="px-4 py-3 text-xs text-gray-900">
+												<span
+													className={`mr-2 inline-flex rounded-full px-1.5 py-px align-middle font-sans text-[10px] font-medium ring-1 ring-inset ${
+														rowSource === 'mcp'
+															? 'bg-teal-50 text-teal-800 ring-teal-200'
+															: 'bg-gray-50 text-gray-700 ring-gray-200'
+													}`}
+												>
+													{rowSource === 'mcp' ? t('invocations.sourceMcp') : t('invocations.sourceRest')}
+												</span>
+												<span className="font-mono">{mcp ? mcp.label : toolLabel(log.model_id)}</span>
+											</td>
 											<td className="px-4 py-3 font-mono text-xs text-indigo-700" title={engine ?? undefined}>
 												{engine || '—'}
 											</td>
-											<td className="max-w-[18rem] truncate px-4 py-3 text-gray-800" title={req.query ?? ''}>
-												{req.query || '—'}
+											<td className="max-w-[18rem] truncate px-4 py-3 text-gray-800" title={queryText ?? ''}>
+												{queryText || '—'}
 											</td>
 											<td className="max-w-[12rem] truncate px-4 py-3 text-gray-700" title={log.user_email ?? ''}>
 												{log.user_email || '—'}
@@ -319,7 +401,7 @@ export default function GatewayToolInvocationsPage() {
 												</span>
 											</td>
 											<td className="px-4 py-3 text-right font-mono text-xs text-gray-600">
-												{res.resultCount != null ? res.resultCount : '—'}
+												{mcp || res.resultCount == null ? '—' : res.resultCount}
 											</td>
 											<td
 												className="px-4 py-3 text-right font-mono text-xs tabular-nums text-gray-800"
