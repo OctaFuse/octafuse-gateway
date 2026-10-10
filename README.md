@@ -11,6 +11,8 @@
 
 **语言：** [中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [한국어](./README.ko.md) · **官网：** [octafuse.dev](https://octafuse.dev/)
 
+> **欢迎开源贡献 · 招募全职 / 兼职核心伙伴**：从一次贡献开始，积累开源协作与工程经验，让你的想法成为项目的一部分。也期待热爱项目、具备用户思维、愿意长期投入并承担责任的伙伴，一起维护 Octafuse、探索商业化；有网关与 MaaS 经验者优先。[了解如何参与 →](./JOIN_US.md)
+
 ## 核心能力
 
 Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业内部的 AI 能力中枢**。通过 Octafuse 将你所持有的各种模态的 AI 能力和多种多样的工具能力实现统一接入、分发、计费等企业级管理控制。
@@ -201,6 +203,8 @@ Docker 自托管及 Postgres / MySQL 数据库方案见 [部署文档索引](./d
 | HTTP 示例 | [examples/README.md](./examples/README.md) |
 
 ## 贡献与安全
+
+欢迎从代码、产品体验、测试、文档或用户支持开始参与。贡献方向、长期共建与全职 / 兼职合作机会，详见 [参与与共建说明](./JOIN_US.md)。
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
