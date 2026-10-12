@@ -171,7 +171,7 @@ export function McpServerTable({
 				</div>
 			) : (
 				<div className="overflow-x-auto">
-					<table className="w-full min-w-[1000px] text-left text-sm">
+					<table className="w-full min-w-[920px] text-left text-sm">
 						<thead className="border-b border-gray-100 bg-gray-50/80 text-xs text-gray-500">
 							<tr>
 								<th className="px-5 py-3 font-medium">{t('name')}</th>
@@ -185,7 +185,6 @@ export function McpServerTable({
 										</div>
 									</th>
 								))}
-								<th className="px-4 py-3 font-medium">{t('lastSync')}</th>
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-gray-100">
@@ -249,63 +248,67 @@ export function McpServerTable({
 										) : null}
 									</td>
 									<td className="px-4 py-5">
-										<div className="whitespace-nowrap text-gray-700">
-											<span className="font-semibold tabular-nums">{server.enabledCount}</span>{' '}
-											<span className="text-xs text-gray-500">{t('enabledCount')}</span>
-										</div>
-										{server.pendingCount > 0 ? (
-											<span className="mt-1.5 inline-flex whitespace-nowrap rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
-												{t('pendingBadge', { count: server.pendingCount })}
-											</span>
-										) : null}
-									</td>
-									{(['standard', 'charged', 'metered'] as const).map((key) => (
-										<td
-											key={key}
-											className={`whitespace-nowrap px-4 py-5 text-right font-mono tabular-nums ${
-												key === 'charged' && server.charged < server.metered
-													? 'text-amber-700'
-													: 'text-gray-600'
-											}`}
-											title={t('priceLegend', {
-												standard: server.standard,
-												charged: server.charged,
-												metered: server.metered,
-												currency,
-											})}
-										>
-											{formatGatewayMoneyCompact(server[key], currency)}
-										</td>
-									))}
-									<td className="px-4 py-5">
-										<div className="flex items-center justify-between gap-4">
-											<div>
-												<div
-													className={`whitespace-nowrap text-xs ${
-														server.lastSyncError ? 'text-red-600' : 'text-gray-600'
-													}`}
-												>
-													{server.lastSyncError
-														? t('syncError')
-														: server.lastSyncedAt
-														? formatDateTime(server.lastSyncedAt)
-														: t('neverSynced')}
-												</div>
-												{server.lastSyncError ? (
-													<div
-														className="mt-1 max-w-[180px] truncate text-xs text-red-400"
-														title={server.lastSyncError}
-													>
-														{server.lastSyncError}
-													</div>
-												) : null}
+										<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+											<div className="whitespace-nowrap text-gray-700">
+												<span className="font-semibold tabular-nums">{server.enabledCount}</span>{' '}
+												<span className="text-xs text-gray-500">{t('enabledCount')}</span>
 											</div>
-											<ChevronRightIcon
-												className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-600 group-focus-within:text-blue-500"
-												aria-hidden="true"
-											/>
+											{server.pendingCount > 0 ? (
+												<span className="inline-flex whitespace-nowrap rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
+													{t('pendingBadge', { count: server.pendingCount })}
+												</span>
+											) : null}
 										</div>
+										{server.lastSyncError ? (
+											<>
+												<div className="mt-1.5 whitespace-nowrap text-xs text-red-600">{t('syncError')}</div>
+												<div
+													className="mt-0.5 max-w-[240px] truncate text-xs text-red-400"
+													title={server.lastSyncError}
+												>
+													{server.lastSyncError}
+												</div>
+											</>
+										) : (
+											<div className="mt-1.5 whitespace-nowrap text-xs text-gray-400">
+												{server.lastSyncedAt
+													? `${t('lastSync')} ${formatDateTime(server.lastSyncedAt)}`
+													: t('neverSynced')}
+											</div>
+										)}
 									</td>
+									{(['standard', 'charged', 'metered'] as const).map((key) => {
+										const loss = key === 'charged' && server.charged < server.metered;
+										const amount = (
+											<span className={loss ? 'text-amber-700' : 'text-gray-600'}>
+												{formatGatewayMoneyCompact(server[key], currency)}
+											</span>
+										);
+										return (
+											<td
+												key={key}
+												className="whitespace-nowrap px-4 py-5 text-right font-mono tabular-nums"
+												title={t('priceLegend', {
+													standard: server.standard,
+													charged: server.charged,
+													metered: server.metered,
+													currency,
+												})}
+											>
+												{key === 'metered' ? (
+													<div className="flex items-center justify-end gap-4">
+														{amount}
+														<ChevronRightIcon
+															className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-600 group-focus-within:text-blue-500"
+															aria-hidden="true"
+														/>
+													</div>
+												) : (
+													amount
+												)}
+											</td>
+										);
+									})}
 								</tr>
 							))}
 						</tbody>
