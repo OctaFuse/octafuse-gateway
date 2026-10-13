@@ -26,6 +26,7 @@ import {
   Cog6ToothIcon,
   WrenchScrewdriverIcon,
   QueueListIcon,
+  Squares2X2Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
@@ -45,6 +46,7 @@ const NAV_ICONS: Record<AdminNavNameKey, React.ComponentType<{ className?: strin
   auditLogs: ClipboardDocumentListIcon,
   toolsConfig: WrenchScrewdriverIcon,
   toolInvocations: QueueListIcon,
+  mcpServers: Squares2X2Icon,
   modelUsage: ChartBarIcon,
   providerUsage: ServerStackIcon,
   userUsage: UsersIcon,

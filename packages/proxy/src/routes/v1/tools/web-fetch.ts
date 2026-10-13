@@ -3,10 +3,11 @@
  * 引擎/密钥/单价读自 `system_config`（见 `resolveWebFetchConfig`）。
  */
 import { resolveWebFetchConfig } from '@octafuse/core';
+import { toolFactorPricingAudit } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../../app';
 import { requireApiKey } from '../../../middleware/auth';
-import { apiKeyHasBalance, canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
+import { canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
 import {
 	assertFetchUrlSafe,
 	fetchUrlByProvider,
@@ -47,10 +48,15 @@ webFetchRoutes.post('/', async (c) => {
 		return c.json({ error: 'Web fetch is not configured' }, 503);
 	}
 
-	if (!apiKeyHasBalance(apiKey)) {
-		return c.json({ error: 'Budget exceeded' }, 403);
-	}
-	if (!canAffordToolCost(apiKey.budgetMax, apiKey.budgetSpent, unitCharged, apiKey.walletGranted, apiKey.walletSpent)) {
+	if (
+		!canAffordToolCost(
+			apiKey.budgetMax,
+			apiKey.budgetSpent,
+			unitCharged,
+			apiKey.walletGranted,
+			apiKey.walletSpent
+		)
+	) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
 
@@ -91,6 +97,7 @@ webFetchRoutes.post('/', async (c) => {
 			pricingUnit: 'request',
 			billingUnits: 1,
 			unitPrices: { metered: unitMetered, standard: unitStandard, charged: unitCharged },
+			pricingAuditExtra: toolFactorPricingAudit(resolved.config.pricing),
 			latencyMs,
 			requestBody: JSON.stringify({
 				url: guarded.url,
@@ -124,7 +131,7 @@ webFetchRoutes.post('/', async (c) => {
 				apiKeyId: apiKey.keyId,
 				userId: apiKey.userId,
 				userEmail: apiKey.userEmail,
-			ingressHost: apiKey.ingressHost,
+				ingressHost: apiKey.ingressHost,
 				toolId: 'tool:web-fetch',
 				toolProvider: provider,
 				meteredCost: 0,
@@ -133,6 +140,7 @@ webFetchRoutes.post('/', async (c) => {
 				pricingUnit: 'request',
 				billingUnits: 1,
 				unitPrices: { metered: unitMetered, standard: unitStandard, charged: unitCharged },
+				pricingAuditExtra: toolFactorPricingAudit(resolved.config.pricing),
 				latencyMs,
 				requestBody: JSON.stringify({ url: guarded.url, provider }),
 				errorMessage: message,

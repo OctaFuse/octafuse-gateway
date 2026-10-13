@@ -2,7 +2,7 @@
 
 /**
  * Tools 配置：产品工具（`/v1/tools/*`）的 per-provider catalog + active；写入 `system_config`。
- * UI：高密度 Provider 总览 + 按需右侧抽屉编辑；须显式保存。
+ * UI：服务列表 + 居中弹窗编辑；须显式保存。
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
@@ -77,36 +77,34 @@ import {
 	type WebDeepSearchCatalog,
 } from '@octafuse/core/lib/web-deep-search-system-config';
 import {
-	entryHasRequiredCredentials as aiEntryHasRequiredCredentials,
 	parseAiDetectionCatalogLenient,
 	serializeAiDetectionCatalog,
 	AI_DETECTION_PROVIDER_REQUIRED_CREDENTIALS,
 	type AiDetectionCatalog,
 	type AiDetectionCatalogEntry,
 } from '@octafuse/core/lib/ai-detection-system-config';
-import { toToolPricingFields } from '@octafuse/core/lib/tool-pricing';
-import { WebSearchProviderGuideModal } from './components/web-search-provider-guide-modal';
+import { type ToolCatalogPricingFields } from '@octafuse/core/lib/tool-pricing';
+import {
+	restPricingDraftFromEntry,
+	restPricingFieldsFromDraft,
+	type RestToolPricingDraft,
+} from './tool-pricing-draft';
+import { WebSearchProviderGuideContent } from './components/web-search-provider-guide-modal';
 import {
 	cloneDrafts,
-	draftPricesOk,
-	parseDraftMoney,
 	resolveProviderCardActions,
 	resolveProviderCardStatus,
 	wouldClearSavedActiveCredentials,
 	type PriceTripleDraft,
 } from './components/provider-card-state';
-import { ToolPriceTripleInputs } from './components/tool-price-triple-inputs';
+import { RestToolPricingEditor } from './components/rest-tool-pricing-editor';
 import { ToolProviderDrawer } from './components/tool-provider-drawer';
-import {
-	ToolOverviewSection,
-	ToolProviderOverviewHints,
-	ToolProviderPicker,
-	ToolProviderSaveActions,
-} from './components/tool-provider-picker';
+import { ToolProviderSaveActions } from './components/tool-provider-picker';
+import { ToolProviderList } from './components/tool-provider-list';
 
 type ProviderDraft = {
 	apiKey: string;
-} & PriceTripleDraft;
+} & RestToolPricingDraft;
 
 type AiDetectionProviderDraft = {
 	apiKey: string;
@@ -116,25 +114,15 @@ type AiDetectionProviderDraft = {
 	region: string;
 	bizType: string;
 	billingUnitChars: string;
-} & PriceTripleDraft;
+} & RestToolPricingDraft;
 
 function defaultPriceTriple(defaultCost: number): PriceTripleDraft {
 	const s = String(defaultCost);
 	return { metered: s, standard: s, charged: s };
 }
 
-function entryToDraftPrices(entry: {
-	metered: number;
-	standard: number;
-	charged: number;
-	cost: number;
-}): PriceTripleDraft {
-	const charged = entry.charged ?? entry.cost;
-	return {
-		metered: String(entry.metered ?? charged),
-		standard: String(entry.standard ?? charged),
-		charged: String(charged),
-	};
+function entryToDraftPrices(entry: ToolCatalogPricingFields): RestToolPricingDraft {
+	return restPricingDraftFromEntry(entry);
 }
 
 function emptySearchDrafts(): Record<WebSearchProvider, ProviderDraft> {
@@ -179,11 +167,8 @@ function emptyAiDetectionDrafts(): Record<AiDetectionProvider, AiDetectionProvid
 }
 
 function draftToAiEntry(d: AiDetectionProviderDraft): AiDetectionCatalogEntry {
-	const prices = toToolPricingFields({
-		metered: Number(d.metered.trim()),
-		standard: Number(d.standard.trim()),
-		charged: Number(d.charged.trim()),
-	});
+	const prices = restPricingFieldsFromDraft(d);
+	if (!prices) throw new Error('Invalid tool pricing');
 	const entry: AiDetectionCatalogEntry = { ...prices };
 	const billing = Number(d.billingUnitChars.trim());
 	if (Number.isFinite(billing) && billing >= 1) {
@@ -202,10 +187,7 @@ function aiDraftHasRequiredCredentials(provider: AiDetectionProvider, d: AiDetec
 	if (!isAiDetectionImplementedProvider(provider)) {
 		return false;
 	}
-	return aiEntryHasRequiredCredentials(
-		draftToAiEntry(d),
-		AI_DETECTION_PROVIDER_REQUIRED_CREDENTIALS[provider]
-	);
+	return AI_DETECTION_PROVIDER_REQUIRED_CREDENTIALS[provider].every((field) => Boolean(d[field].trim()));
 }
 
 function syncWebSearchFromRows(rows: SystemConfigRow[]): {
@@ -225,7 +207,11 @@ function syncWebSearchFromRows(rows: SystemConfigRow[]): {
 				drafts[p] = { apiKey: entry.apiKey, ...entryToDraftPrices(entry) };
 			}
 		}
-		const activeRaw = rows.find((r) => r.key === WEB_SEARCH_ACTIVE_KEY)?.value?.trim().toLowerCase() ?? '';
+		const activeRaw =
+			rows
+				.find((r) => r.key === WEB_SEARCH_ACTIVE_KEY)
+				?.value?.trim()
+				.toLowerCase() ?? '';
 		const active = (WEB_SEARCH_PROVIDERS as readonly string[]).includes(activeRaw)
 			? (activeRaw as WebSearchProvider)
 			: DEFAULT_WEB_SEARCH_PROVIDER;
@@ -235,7 +221,11 @@ function syncWebSearchFromRows(rows: SystemConfigRow[]): {
 		return { active, drafts, savedActive };
 	}
 
-	const providerRaw = rows.find((r) => r.key === WEB_SEARCH_PROVIDER_KEY)?.value?.trim().toLowerCase() ?? '';
+	const providerRaw =
+		rows
+			.find((r) => r.key === WEB_SEARCH_PROVIDER_KEY)
+			?.value?.trim()
+			.toLowerCase() ?? '';
 	const provider = (WEB_SEARCH_PROVIDERS as readonly string[]).includes(providerRaw)
 		? (providerRaw as WebSearchProvider)
 		: DEFAULT_WEB_SEARCH_PROVIDER;
@@ -268,7 +258,11 @@ function syncWebFetchFromRows(rows: SystemConfigRow[]): {
 				drafts[p] = { apiKey: entry.apiKey, ...entryToDraftPrices(entry) };
 			}
 		}
-		const activeRaw = rows.find((r) => r.key === WEB_FETCH_ACTIVE_KEY)?.value?.trim().toLowerCase() ?? '';
+		const activeRaw =
+			rows
+				.find((r) => r.key === WEB_FETCH_ACTIVE_KEY)
+				?.value?.trim()
+				.toLowerCase() ?? '';
 		const active = (WEB_FETCH_PROVIDERS as readonly string[]).includes(activeRaw)
 			? (activeRaw as WebFetchProvider)
 			: DEFAULT_WEB_FETCH_PROVIDER;
@@ -278,7 +272,11 @@ function syncWebFetchFromRows(rows: SystemConfigRow[]): {
 		return { active, drafts, savedActive };
 	}
 
-	const providerRaw = rows.find((r) => r.key === WEB_FETCH_PROVIDER_KEY)?.value?.trim().toLowerCase() ?? '';
+	const providerRaw =
+		rows
+			.find((r) => r.key === WEB_FETCH_PROVIDER_KEY)
+			?.value?.trim()
+			.toLowerCase() ?? '';
 	const provider = (WEB_FETCH_PROVIDERS as readonly string[]).includes(providerRaw)
 		? (providerRaw as WebFetchProvider)
 		: DEFAULT_WEB_FETCH_PROVIDER;
@@ -298,16 +296,12 @@ function buildSearchCatalog(drafts: Record<WebSearchProvider, ProviderDraft>): W
 	const catalog: WebSearchCatalog = {};
 	for (const p of WEB_SEARCH_PROVIDERS) {
 		const d = drafts[p];
-		if (!draftPricesOk(d)) {
+		if (!restPricingFieldsFromDraft(d)) {
 			return null;
 		}
 		catalog[p] = {
 			apiKey: d.apiKey.trim(),
-			...toToolPricingFields({
-				metered: parseDraftMoney(d.metered)!,
-				standard: parseDraftMoney(d.standard)!,
-				charged: parseDraftMoney(d.charged)!,
-			}),
+			...restPricingFieldsFromDraft(d)!,
 		};
 	}
 	return catalog;
@@ -317,16 +311,12 @@ function buildFetchCatalog(drafts: Record<WebFetchProvider, ProviderDraft>): Web
 	const catalog: WebFetchCatalog = {};
 	for (const p of WEB_FETCH_PROVIDERS) {
 		const d = drafts[p];
-		if (!draftPricesOk(d)) {
+		if (!restPricingFieldsFromDraft(d)) {
 			return null;
 		}
 		catalog[p] = {
 			apiKey: d.apiKey.trim(),
-			...toToolPricingFields({
-				metered: parseDraftMoney(d.metered)!,
-				standard: parseDraftMoney(d.standard)!,
-				charged: parseDraftMoney(d.charged)!,
-			}),
+			...restPricingFieldsFromDraft(d)!,
 		};
 	}
 	return catalog;
@@ -349,7 +339,10 @@ function syncWebDeepSearchFromRows(rows: SystemConfigRow[]): {
 			}
 		}
 		const activeRaw =
-			rows.find((r) => r.key === WEB_DEEP_SEARCH_ACTIVE_KEY)?.value?.trim().toLowerCase() ?? '';
+			rows
+				.find((r) => r.key === WEB_DEEP_SEARCH_ACTIVE_KEY)
+				?.value?.trim()
+				.toLowerCase() ?? '';
 		const active = (WEB_DEEP_SEARCH_PROVIDERS as readonly string[]).includes(activeRaw)
 			? (activeRaw as WebDeepSearchProvider)
 			: DEFAULT_WEB_DEEP_SEARCH_PROVIDER;
@@ -367,16 +360,12 @@ function buildDeepSearchCatalog(
 	const catalog: WebDeepSearchCatalog = {};
 	for (const p of WEB_DEEP_SEARCH_PROVIDERS) {
 		const d = drafts[p];
-		if (!draftPricesOk(d)) {
+		if (!restPricingFieldsFromDraft(d)) {
 			return null;
 		}
 		catalog[p] = {
 			apiKey: d.apiKey.trim(),
-			...toToolPricingFields({
-				metered: parseDraftMoney(d.metered)!,
-				standard: parseDraftMoney(d.standard)!,
-				charged: parseDraftMoney(d.charged)!,
-			}),
+			...restPricingFieldsFromDraft(d)!,
 		};
 	}
 	return catalog;
@@ -408,7 +397,10 @@ function syncAiDetectionFromRows(rows: SystemConfigRow[]): {
 			}
 		}
 		const activeRaw =
-			rows.find((r) => r.key === AI_DETECTION_ACTIVE_KEY)?.value?.trim().toLowerCase() ?? '';
+			rows
+				.find((r) => r.key === AI_DETECTION_ACTIVE_KEY)
+				?.value?.trim()
+				.toLowerCase() ?? '';
 		const active = (AI_DETECTION_PROVIDERS as readonly string[]).includes(activeRaw)
 			? (activeRaw as AiDetectionProvider)
 			: DEFAULT_AI_DETECTION_PROVIDER;
@@ -426,7 +418,7 @@ function buildAiDetectionCatalog(
 	const catalog: AiDetectionCatalog = {};
 	for (const p of AI_DETECTION_PROVIDERS) {
 		const d = drafts[p];
-		if (!draftPricesOk(d)) {
+		if (!restPricingFieldsFromDraft(d)) {
 			return null;
 		}
 		const unitChars = Number(d.billingUnitChars.trim());
@@ -513,6 +505,7 @@ function ApiKeyField({
 
 export default function GatewayToolsConfigPage() {
 	const t = useTranslations('tools');
+	const tPricing = useTranslations('toolPricing');
 	const tCommon = useTranslations('common');
 	const { currency: billingCurrency } = useBillingCurrency();
 	const webSearchProviderOptions = getWebSearchProviderOptions((k) => t(k));
@@ -524,13 +517,13 @@ export default function GatewayToolsConfigPage() {
 	const [cardFeedback, setCardFeedback] = useState<Partial<Record<ToolCardKey, CardFeedback>>>({});
 	const successTimersRef = useRef<Partial<Record<ToolCardKey, ReturnType<typeof setTimeout>>>>({});
 
-	const [webSearchSelected, setWebSearchSelected] =
-		useState<WebSearchProvider>(DEFAULT_WEB_SEARCH_PROVIDER);
+	const [webSearchSelected, setWebSearchSelected] = useState<WebSearchProvider>(DEFAULT_WEB_SEARCH_PROVIDER);
 	const [webSearchSavedActive, setWebSearchSavedActive] = useState<WebSearchProvider | null>(null);
 	const [webSearchDrafts, setWebSearchDrafts] = useState(emptySearchDrafts);
 	const [webSearchSavedDrafts, setWebSearchSavedDrafts] = useState(emptySearchDrafts);
 	const [webSearchSaving, setWebSearchSaving] = useState(false);
 	const [providerGuideOpen, setProviderGuideOpen] = useState(false);
+	const guideButtonRef = useRef<HTMLButtonElement>(null);
 
 	const [webFetchSelected, setWebFetchSelected] = useState<WebFetchProvider>(DEFAULT_WEB_FETCH_PROVIDER);
 	const [webFetchSavedActive, setWebFetchSavedActive] = useState<WebFetchProvider | null>(null);
@@ -541,23 +534,24 @@ export default function GatewayToolsConfigPage() {
 	const [webDeepSearchSelected, setWebDeepSearchSelected] = useState<WebDeepSearchProvider>(
 		DEFAULT_WEB_DEEP_SEARCH_PROVIDER
 	);
-	const [webDeepSearchSavedActive, setWebDeepSearchSavedActive] =
-		useState<WebDeepSearchProvider | null>(null);
+	const [webDeepSearchSavedActive, setWebDeepSearchSavedActive] = useState<WebDeepSearchProvider | null>(
+		null
+	);
 	const [webDeepSearchDrafts, setWebDeepSearchDrafts] = useState(emptyDeepSearchDrafts);
 	const [webDeepSearchSavedDrafts, setWebDeepSearchSavedDrafts] = useState(emptyDeepSearchDrafts);
 	const [webDeepSearchSaving, setWebDeepSearchSaving] = useState(false);
 
-	const [aiDetectionSelected, setAiDetectionSelected] =
-		useState<AiDetectionProvider>(DEFAULT_AI_DETECTION_PROVIDER);
-	const [aiDetectionSavedActive, setAiDetectionSavedActive] = useState<AiDetectionProvider | null>(
-		null
+	const [aiDetectionSelected, setAiDetectionSelected] = useState<AiDetectionProvider>(
+		DEFAULT_AI_DETECTION_PROVIDER
 	);
+	const [aiDetectionSavedActive, setAiDetectionSavedActive] = useState<AiDetectionProvider | null>(null);
 	const [aiDetectionDrafts, setAiDetectionDrafts] = useState(emptyAiDetectionDrafts);
 	const [aiDetectionSavedDrafts, setAiDetectionSavedDrafts] = useState(emptyAiDetectionDrafts);
 	const [aiDetectionSaving, setAiDetectionSaving] = useState(false);
 
 	const [secretsVisible, setSecretsVisible] = useState(false);
-	/** 右侧抽屉：点击总览卡片打开；null 表示关闭 */
+	const serviceSearchRef = useRef<HTMLInputElement>(null);
+	/** 服务详情弹窗：点击服务行打开；null 表示关闭 */
 	const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
 
 	const clearCardSuccessTimer = useCallback((card: ToolCardKey) => {
@@ -783,10 +777,7 @@ export default function GatewayToolsConfigPage() {
 		clearCardFeedback('webDeepSearch');
 		setWebDeepSearchSaving(true);
 		try {
-			const catRes = await putConfig(
-				WEB_DEEP_SEARCH_CATALOG_KEY,
-				serializeWebDeepSearchCatalog(catalog)
-			);
+			const catRes = await putConfig(WEB_DEEP_SEARCH_CATALOG_KEY, serializeWebDeepSearchCatalog(catalog));
 			if (!catRes.ok) {
 				setCardError('webDeepSearch', catRes.message || tCommon('saveFailed'));
 				return;
@@ -828,10 +819,7 @@ export default function GatewayToolsConfigPage() {
 		}
 		if (
 			aiDetectionSavedActive &&
-			!aiDraftHasRequiredCredentials(
-				aiDetectionSavedActive,
-				aiDetectionDrafts[aiDetectionSavedActive]
-			) &&
+			!aiDraftHasRequiredCredentials(aiDetectionSavedActive, aiDetectionDrafts[aiDetectionSavedActive]) &&
 			!(activateSelected && aiDetectionSelected !== aiDetectionSavedActive)
 		) {
 			setCardError('aiDetection', t('errors.switchActiveBeforeClearingKey'));
@@ -865,13 +853,10 @@ export default function GatewayToolsConfigPage() {
 		}
 	};
 
-	const webSearchDrawerSelected =
-		drawer?.tool === 'webSearch' ? drawer.providerId : '';
+	const webSearchDrawerSelected = drawer?.tool === 'webSearch' ? drawer.providerId : '';
 	const webFetchDrawerSelected = drawer?.tool === 'webFetch' ? drawer.providerId : '';
-	const webDeepSearchDrawerSelected =
-		drawer?.tool === 'webDeepSearch' ? drawer.providerId : '';
-	const aiDetectionDrawerSelected =
-		drawer?.tool === 'aiDetection' ? drawer.providerId : '';
+	const webDeepSearchDrawerSelected = drawer?.tool === 'webDeepSearch' ? drawer.providerId : '';
+	const aiDetectionDrawerSelected = drawer?.tool === 'aiDetection' ? drawer.providerId : '';
 
 	const webSearchPickerItems = useMemo(
 		() =>
@@ -975,26 +960,36 @@ export default function GatewayToolsConfigPage() {
 	);
 
 	const openWebSearchDrawer = (id: string) => {
+		setSecretsVisible(false);
+		setProviderGuideOpen(false);
 		const p = id as WebSearchProvider;
 		setWebSearchSelected(p);
 		setDrawer({ tool: 'webSearch', providerId: p });
 	};
 	const openWebFetchDrawer = (id: string) => {
+		setSecretsVisible(false);
+		setProviderGuideOpen(false);
 		const p = id as WebFetchProvider;
 		setWebFetchSelected(p);
 		setDrawer({ tool: 'webFetch', providerId: p });
 	};
 	const openWebDeepSearchDrawer = (id: string) => {
+		setSecretsVisible(false);
+		setProviderGuideOpen(false);
 		const p = id as WebDeepSearchProvider;
 		setWebDeepSearchSelected(p);
 		setDrawer({ tool: 'webDeepSearch', providerId: p });
 	};
 	const openAiDetectionDrawer = (id: string) => {
+		setSecretsVisible(false);
+		setProviderGuideOpen(false);
 		const p = id as AiDetectionProvider;
 		setAiDetectionSelected(p);
 		setDrawer({ tool: 'aiDetection', providerId: p });
 	};
 	const closeDrawer = useCallback(() => {
+		setSecretsVisible(false);
+		setProviderGuideOpen(false);
 		setDrawer(null);
 	}, []);
 
@@ -1039,26 +1034,52 @@ export default function GatewayToolsConfigPage() {
 		webDeepSearchProviderOptions.find((o) => o.value === webDeepSearchSelected)?.label ??
 		webDeepSearchSelected;
 	const aiDetectionSelectedLabel =
-		aiDetectionProviderOptions.find((o) => o.value === aiDetectionSelected)?.label ??
-		aiDetectionSelected;
-	const webSearchActiveLabel = webSearchSavedActive
-		? (webSearchProviderOptions.find((o) => o.value === webSearchSavedActive)?.label ??
-			webSearchSavedActive)
-		: null;
-	const webFetchActiveLabel = webFetchSavedActive
-		? (webFetchProviderOptions.find((o) => o.value === webFetchSavedActive)?.label ??
-			webFetchSavedActive)
-		: null;
-	const webDeepSearchActiveLabel = webDeepSearchSavedActive
-		? (webDeepSearchProviderOptions.find((o) => o.value === webDeepSearchSavedActive)?.label ??
-			webDeepSearchSavedActive)
-		: null;
-	const aiDetectionActiveLabel = aiDetectionSavedActive
-		? (aiDetectionProviderOptions.find((o) => o.value === aiDetectionSavedActive)?.label ??
-			aiDetectionSavedActive)
-		: null;
+		aiDetectionProviderOptions.find((o) => o.value === aiDetectionSelected)?.label ?? aiDetectionSelected;
 	const aiFields = getAiDetectionCredentialFields(aiDetectionSelected);
 	const aiDraft = aiDetectionDrafts[aiDetectionSelected];
+
+	const currentDraft =
+		drawer?.tool === "webSearch"
+			? webSearchDrafts[webSearchSelected]
+			: drawer?.tool === "webFetch"
+			? webFetchDrafts[webFetchSelected]
+			: drawer?.tool === "webDeepSearch"
+			? webDeepSearchDrafts[webDeepSearchSelected]
+			: drawer?.tool === "aiDetection"
+			? aiDraft
+			: null;
+	const currentConfigured =
+		drawer?.tool === "aiDetection"
+			? aiFields.every((field) => Boolean(aiDraft[field].trim()))
+			: Boolean(currentDraft?.apiKey.trim());
+	const aiUnitValid =
+		Boolean(aiDraft.billingUnitChars.trim()) &&
+		Number.isSafeInteger(Number(aiDraft.billingUnitChars)) &&
+		Number(aiDraft.billingUnitChars) > 0;
+	function updateAiDraft(patch: Partial<AiDetectionProviderDraft>) {
+		setAiDetectionDrafts((prev) => ({
+			...prev,
+			[aiDetectionSelected]: { ...prev[aiDetectionSelected], ...patch },
+		}));
+	}
+	function updateCurrentDraft(patch: Partial<ProviderDraft>) {
+		if (drawer?.tool === "webSearch")
+			setWebSearchDrafts((prev) => ({
+				...prev,
+				[webSearchSelected]: { ...prev[webSearchSelected], ...patch },
+			}));
+		else if (drawer?.tool === "webFetch")
+			setWebFetchDrafts((prev) => ({
+				...prev,
+				[webFetchSelected]: { ...prev[webFetchSelected], ...patch },
+			}));
+		else if (drawer?.tool === "webDeepSearch")
+			setWebDeepSearchDrafts((prev) => ({
+				...prev,
+				[webDeepSearchSelected]: { ...prev[webDeepSearchSelected], ...patch },
+			}));
+		else if (drawer?.tool === "aiDetection") updateAiDraft(patch);
+	}
 
 	const drawerBusy =
 		(drawer?.tool === 'webSearch' && webSearchSaving) ||
@@ -1070,12 +1091,12 @@ export default function GatewayToolsConfigPage() {
 		drawer?.tool === 'webSearch'
 			? t('providerCards.detailTitle', { name: webSearchSelectedLabel })
 			: drawer?.tool === 'webFetch'
-				? t('providerCards.detailTitle', { name: webFetchSelectedLabel })
-				: drawer?.tool === 'webDeepSearch'
-					? t('providerCards.detailTitle', { name: webDeepSearchSelectedLabel })
-					: drawer?.tool === 'aiDetection'
-						? t('providerCards.detailTitle', { name: aiDetectionSelectedLabel })
-						: '';
+			? t('providerCards.detailTitle', { name: webFetchSelectedLabel })
+			: drawer?.tool === 'webDeepSearch'
+			? t('providerCards.detailTitle', { name: webDeepSearchSelectedLabel })
+			: drawer?.tool === 'aiDetection'
+			? t('providerCards.detailTitle', { name: aiDetectionSelectedLabel })
+			: '';
 
 	return (
 		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
@@ -1085,24 +1106,6 @@ export default function GatewayToolsConfigPage() {
 					<p className="mt-1 text-sm text-gray-500">{t('config.subtitle')}</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-3">
-					<button
-						type="button"
-						onClick={() => setSecretsVisible((v) => !v)}
-						className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-						aria-pressed={secretsVisible}
-					>
-						{secretsVisible ? (
-							<>
-								<EyeSlashIcon className="h-4 w-4" aria-hidden />
-								{t('config.hideSecrets')}
-							</>
-						) : (
-							<>
-								<EyeIcon className="h-4 w-4" aria-hidden />
-								{t('config.showSecrets')}
-							</>
-						)}
-					</button>
 					<Link
 						href="/gateway/tools/invocations"
 						className="text-sm font-medium text-blue-600 hover:underline"
@@ -1112,100 +1115,106 @@ export default function GatewayToolsConfigPage() {
 				</div>
 			</div>
 
-			<ToolProviderOverviewHints />
-
-			<div className="grid items-start gap-4 2xl:grid-cols-2">
-				<ToolOverviewSection
-					id="web-search"
-					title={t('webSearch.title')}
-					description={t('webSearch.descriptionCatalog')}
-					activeLabel={webSearchActiveLabel}
-					headerExtra={
-						<button
-							type="button"
-							onClick={() => setProviderGuideOpen(true)}
-							className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
-						>
-							{t('webSearch.providerGuideLink')}
-						</button>
-					}
-				>
-					<ToolProviderPicker items={webSearchPickerItems} onSelect={openWebSearchDrawer} />
-				</ToolOverviewSection>
-
-				<ToolOverviewSection
-					id="web-fetch"
-					title={t('webFetch.title')}
-					description={t('webFetch.descriptionCatalog')}
-					activeLabel={webFetchActiveLabel}
-				>
-					<ToolProviderPicker items={webFetchPickerItems} onSelect={openWebFetchDrawer} />
-				</ToolOverviewSection>
-
-				<ToolOverviewSection
-					id="web-deep-search"
-					title={t('webDeepSearch.title')}
-					description={t('webDeepSearch.descriptionCatalog')}
-					activeLabel={webDeepSearchActiveLabel}
-				>
-					<ToolProviderPicker
-						items={webDeepSearchPickerItems}
-						onSelect={openWebDeepSearchDrawer}
-					/>
-				</ToolOverviewSection>
-
-				<ToolOverviewSection
-					id="ai-detection"
-					title={t('aiDetection.title')}
-					description={t('aiDetection.descriptionCatalog')}
-					activeLabel={aiDetectionActiveLabel}
-				>
-					<ToolProviderPicker items={aiDetectionPickerItems} onSelect={openAiDetectionDrawer} />
-				</ToolOverviewSection>
-			</div>
+			<ToolProviderList
+				searchRef={serviceSearchRef}
+				currency={billingCurrency}
+				groups={[
+					{
+						id: 'web-search',
+						label: t('webSearch.title'),
+						unitLabel: t('serviceList.perRequest'),
+						items: webSearchPickerItems,
+						onSelect: openWebSearchDrawer,
+					},
+					{
+						id: 'web-fetch',
+						label: t('webFetch.title'),
+						unitLabel: t('serviceList.perRequest'),
+						items: webFetchPickerItems,
+						onSelect: openWebFetchDrawer,
+					},
+					{
+						id: 'web-deep-search',
+						label: t('webDeepSearch.title'),
+						unitLabel: t('serviceList.perRequest'),
+						items: webDeepSearchPickerItems,
+						onSelect: openWebDeepSearchDrawer,
+					},
+					{
+						id: 'ai-detection',
+						label: t('aiDetection.title'),
+						unitLabel: t('serviceList.perRequest'),
+						items: aiDetectionPickerItems.map((item) => ({
+							...item,
+							unitLabel: t('serviceList.perCharacters', {
+								count: aiDetectionDrafts[item.id as AiDetectionProvider].billingUnitChars.trim() || '—',
+							}),
+						})),
+						onSelect: openAiDetectionDrawer,
+					},
+				]}
+			/>
 
 			<ToolProviderDrawer
+				fallbackFocusRef={serviceSearchRef}
 				open={drawer != null}
 				title={drawerTitle}
+				subtitle={drawer ? t(`${drawer.tool}.title`) : undefined}
 				busy={Boolean(drawerBusy)}
 				onClose={closeDrawer}
 				docsHref={
 					drawer?.tool === 'webSearch'
 						? WEB_SEARCH_PROVIDER_DOCS_URL[webSearchSelected]
 						: drawer?.tool === 'webFetch'
-							? WEB_FETCH_PROVIDER_DOCS_URL[webFetchSelected]
-							: drawer?.tool === 'webDeepSearch'
-								? WEB_DEEP_SEARCH_PROVIDER_DOCS_URL[webDeepSearchSelected]
-								: drawer?.tool === 'aiDetection'
-									? AI_DETECTION_PROVIDER_DOCS_URL[aiDetectionSelected]
-									: undefined
+						? WEB_FETCH_PROVIDER_DOCS_URL[webFetchSelected]
+						: drawer?.tool === 'webDeepSearch'
+						? WEB_DEEP_SEARCH_PROVIDER_DOCS_URL[webDeepSearchSelected]
+						: drawer?.tool === 'aiDetection'
+						? AI_DETECTION_PROVIDER_DOCS_URL[aiDetectionSelected]
+						: undefined
 				}
 				docsLabel={
 					drawer?.tool === 'webSearch'
 						? t('webSearch.providerDocs')
 						: drawer?.tool === 'webFetch'
-							? t('webFetch.providerDocs')
-							: drawer?.tool === 'webDeepSearch'
-								? t('webDeepSearch.providerDocs')
-								: drawer?.tool === 'aiDetection'
-									? t('aiDetection.providerDocs')
-									: undefined
+						? t('webFetch.providerDocs')
+						: drawer?.tool === 'webDeepSearch'
+						? t('webDeepSearch.providerDocs')
+						: drawer?.tool === 'aiDetection'
+						? t('aiDetection.providerDocs')
+						: undefined
 				}
 				playgroundHref={
 					drawer?.tool === 'webSearch'
-						? `/gateway/playground?mode=tools&tool=web-search&provider=${encodeURIComponent(webSearchSelected)}`
+						? `/gateway/playground?mode=tools&tool=web-search&provider=${encodeURIComponent(
+								webSearchSelected
+						  )}`
 						: drawer?.tool === 'webFetch'
-							? `/gateway/playground?mode=tools&tool=web-fetch&provider=${encodeURIComponent(webFetchSelected)}`
-							: drawer?.tool === 'webDeepSearch'
-								? `/gateway/playground?mode=tools&tool=web-deep-search&provider=${encodeURIComponent(webDeepSearchSelected)}`
-								: drawer?.tool === 'aiDetection' &&
-									  isAiDetectionImplementedProvider(aiDetectionSelected)
-									? `/gateway/playground?mode=tools&tool=ai-detection&provider=${encodeURIComponent(aiDetectionSelected)}`
-									: null
+						? `/gateway/playground?mode=tools&tool=web-fetch&provider=${encodeURIComponent(webFetchSelected)}`
+						: drawer?.tool === 'webDeepSearch'
+						? `/gateway/playground?mode=tools&tool=web-deep-search&provider=${encodeURIComponent(
+								webDeepSearchSelected
+						  )}`
+						: drawer?.tool === 'aiDetection' && isAiDetectionImplementedProvider(aiDetectionSelected)
+						? `/gateway/playground?mode=tools&tool=ai-detection&provider=${encodeURIComponent(
+								aiDetectionSelected
+						  )}`
+						: null
 				}
 				playgroundLabel={t('config.testInPlayground')}
 				footer={
-					drawer?.tool === 'webSearch' ? (
+					providerGuideOpen ? (
+						<button
+							type="button"
+							onClick={() => {
+								setProviderGuideOpen(false);
+								requestAnimationFrame(() => guideButtonRef.current?.focus());
+							}}
+							className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+						>
+							{t('serviceList.backToConfig')}
+						</button>
+					) : drawer?.tool === 'webSearch' ? (
 						<ToolProviderSaveActions
 							saving={webSearchSaving}
 							selectedIsActive={webSearchSavedActive === webSearchSelected}
@@ -1248,254 +1257,185 @@ export default function GatewayToolsConfigPage() {
 					) : null
 				}
 			>
-				{drawer?.tool === 'webSearch' ? (
-					<div className="flex flex-col gap-4">
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: billingCurrency })}
-							</label>
-							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
-							<ToolPriceTripleInputs
-								value={webSearchDrafts[webSearchSelected]}
-								onChange={(patch) =>
-									setWebSearchDrafts((prev) => ({
-										...prev,
-										[webSearchSelected]: { ...prev[webSearchSelected], ...patch },
-									}))
-								}
-							/>
-						</div>
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('webSearch.apiKey')}
-							</label>
-							<ApiKeyField
-								value={webSearchDrafts[webSearchSelected].apiKey}
-								onChange={(apiKey) =>
-									setWebSearchDrafts((prev) => ({
-										...prev,
-										[webSearchSelected]: { ...prev[webSearchSelected], apiKey },
-									}))
-								}
-								placeholder={t('webSearch.apiKeyPlaceholder')}
-								secretsVisible={secretsVisible}
-							/>
-						</div>
-					</div>
-				) : null}
-				{drawer?.tool === 'webFetch' ? (
-					<div className="flex flex-col gap-4">
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: billingCurrency })}
-							</label>
-							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
-							<ToolPriceTripleInputs
-								value={webFetchDrafts[webFetchSelected]}
-								onChange={(patch) =>
-									setWebFetchDrafts((prev) => ({
-										...prev,
-										[webFetchSelected]: { ...prev[webFetchSelected], ...patch },
-									}))
-								}
-							/>
-						</div>
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('webFetch.apiKey')}
-							</label>
-							<ApiKeyField
-								value={webFetchDrafts[webFetchSelected].apiKey}
-								onChange={(apiKey) =>
-									setWebFetchDrafts((prev) => ({
-										...prev,
-										[webFetchSelected]: { ...prev[webFetchSelected], apiKey },
-									}))
-								}
-								placeholder={t('webFetch.apiKeyPlaceholder')}
-								secretsVisible={secretsVisible}
-							/>
-						</div>
-					</div>
-				) : null}
-				{drawer?.tool === 'webDeepSearch' ? (
-					<div className="flex flex-col gap-4">
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: billingCurrency })}
-							</label>
-							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
-							<ToolPriceTripleInputs
-								value={webDeepSearchDrafts[webDeepSearchSelected]}
-								onChange={(patch) =>
-									setWebDeepSearchDrafts((prev) => ({
-										...prev,
-										[webDeepSearchSelected]: {
-											...prev[webDeepSearchSelected],
-											...patch,
-										},
-									}))
-								}
-							/>
-						</div>
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('webDeepSearch.apiKey')}
-							</label>
-							<ApiKeyField
-								value={webDeepSearchDrafts[webDeepSearchSelected].apiKey}
-								onChange={(apiKey) =>
-									setWebDeepSearchDrafts((prev) => ({
-										...prev,
-										[webDeepSearchSelected]: {
-											...prev[webDeepSearchSelected],
-											apiKey,
-										},
-									}))
-								}
-								placeholder={t('webDeepSearch.apiKeyPlaceholder')}
-								secretsVisible={secretsVisible}
-							/>
-						</div>
-					</div>
-				) : null}
-				{drawer?.tool === 'aiDetection' ? (
-					<div className="flex flex-col gap-4">
-						<div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-							<div className="min-w-0 flex-1">
-								<label className="mb-1 block text-xs font-medium text-gray-600">
-									{t('unitPrices.title', { currency: billingCurrency })}
-								</label>
-								<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
-								<ToolPriceTripleInputs
-									value={aiDraft}
-									onChange={(patch) =>
-										setAiDetectionDrafts((prev) => ({
-											...prev,
-											[aiDetectionSelected]: {
-												...prev[aiDetectionSelected],
-												...patch,
-											},
-										}))
-									}
-								/>
+				{providerGuideOpen ? <WebSearchProviderGuideContent activeProvider={webSearchSelected} /> : null}
+				{!providerGuideOpen && drawer && currentDraft ? (
+					<div className="space-y-4">
+						<section aria-labelledby="rest-connection-heading">
+							<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+								<h3
+									id="rest-connection-heading"
+									className="text-sm font-semibold text-gray-900"
+								>
+									{t("serviceList.connection")}
+								</h3>
+								<div className="flex items-center gap-3">
+									<button
+										type="button"
+										onClick={() => setSecretsVisible((v) => !v)}
+										disabled={Boolean(drawerBusy)}
+										aria-pressed={secretsVisible}
+										className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900"
+									>
+										{secretsVisible ? (
+											<EyeSlashIcon className="h-4 w-4" />
+										) : (
+											<EyeIcon className="h-4 w-4" />
+										)}
+										{t(
+											secretsVisible
+												? "config.hideSecrets"
+												: "config.showSecrets"
+										)}
+									</button>
+									{drawer.tool === "webSearch" ? (
+										<button
+											ref={guideButtonRef}
+											type="button"
+											disabled={Boolean(drawerBusy)}
+											onClick={() => {
+												setSecretsVisible(false);
+												setProviderGuideOpen(true);
+											}}
+											className="text-xs font-medium text-blue-600 hover:underline"
+										>
+											{t("webSearch.providerGuideLink")}
+										</button>
+									) : null}
+								</div>
 							</div>
-							<div className="min-w-0 sm:w-36">
-								<label className="mb-1 block text-xs font-medium text-gray-600">
-									{t('aiDetection.billingUnitChars')}
-								</label>
-								<input
-									type="number"
-									min={1}
-									step={1}
-									value={aiDraft.billingUnitChars}
-									onChange={(e) =>
-										setAiDetectionDrafts((prev) => ({
-											...prev,
-											[aiDetectionSelected]: {
-												...prev[aiDetectionSelected],
-												billingUnitChars: e.target.value,
-											},
-										}))
-									}
-									className="w-full rounded-md border border-gray-300 px-2 py-1.5 font-mono text-sm shadow-sm"
-								/>
-							</div>
-						</div>
-						<div>
-							<label className="mb-2 block text-xs font-medium text-gray-600">
-								{t('aiDetection.credentials')}
-							</label>
-							<div className="flex flex-col gap-2">
-								{aiFields.map((field) => (
-									<div key={field} className="flex min-w-0 items-center gap-2">
-										<span className="w-20 shrink-0 text-xs text-gray-500">
+							{drawer.tool === "aiDetection" ? (
+								<div className="grid gap-3 sm:grid-cols-2">
+									{aiFields.map((field) => (
+										<label
+											key={field}
+											className="block text-xs font-medium text-gray-600"
+										>
 											{t(AI_DETECTION_FIELD_I18N[field])}
-										</span>
-										<input
-											type={
-												field === 'email'
-													? 'email'
-													: secretsVisible
-														? 'text'
-														: 'password'
-											}
-											value={aiDraft[field]}
-											onChange={(e) =>
-												setAiDetectionDrafts((prev) => ({
-													...prev,
-													[aiDetectionSelected]: {
-														...prev[aiDetectionSelected],
-														[field]: e.target.value,
-													},
-												}))
-											}
-											placeholder={t(AI_DETECTION_FIELD_I18N[field])}
-											autoComplete="off"
-											spellCheck={false}
-											className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 font-mono text-sm text-gray-900 shadow-sm"
+											<input
+												type={
+													field === "email"
+														? "email"
+														: secretsVisible
+														? "text"
+														: "password"
+												}
+												value={aiDraft[field]}
+												onChange={(e) =>
+													updateAiDraft({ [field]: e.target.value })
+												}
+												placeholder={t(AI_DETECTION_FIELD_I18N[field])}
+												autoComplete="off"
+												spellCheck={false}
+												className="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+											/>
+										</label>
+									))}
+									{aiDetectionSelected === "tencent_tms" ? (
+										<>
+											<label className="block text-xs font-medium text-gray-600">
+												{t("aiDetection.fields.region")}
+												<input
+													type="text"
+													value={aiDraft.region}
+													onChange={(e) =>
+														updateAiDraft({ region: e.target.value })
+													}
+													autoComplete="off"
+													spellCheck={false}
+													className="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+												/>
+											</label>
+											<label className="block text-xs font-medium text-gray-600">
+												{t("aiDetection.fields.bizTypeOptional")}
+												<input
+													type="text"
+													value={aiDraft.bizType}
+													onChange={(e) =>
+														updateAiDraft({ bizType: e.target.value })
+													}
+													autoComplete="off"
+													spellCheck={false}
+													className="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+												/>
+											</label>
+										</>
+									) : null}
+								</div>
+							) : (
+								<label className="block text-xs font-medium text-gray-600">
+									{t(`${drawer.tool}.apiKey`)}
+									<div className="mt-1.5">
+										<ApiKeyField
+											value={currentDraft.apiKey}
+											onChange={(apiKey) => updateCurrentDraft({ apiKey })}
+											placeholder={t(`${drawer.tool}.apiKeyPlaceholder`)}
+											secretsVisible={secretsVisible}
 										/>
 									</div>
-								))}
-								{aiDetectionSelected === 'tencent_tms' && (
-									<>
-										<div className="flex min-w-0 items-center gap-2">
-											<span className="w-20 shrink-0 text-xs text-gray-500">
-												{t('aiDetection.fields.region')}
-											</span>
-											<input
-												type="text"
-												value={aiDraft.region}
-												onChange={(e) =>
-													setAiDetectionDrafts((prev) => ({
-														...prev,
-														[aiDetectionSelected]: {
-															...prev[aiDetectionSelected],
-															region: e.target.value,
-														},
-													}))
-												}
-												placeholder={t('aiDetection.fields.region')}
-												autoComplete="off"
-												spellCheck={false}
-												className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 font-mono text-sm text-gray-900 shadow-sm"
-											/>
-										</div>
-										<div className="flex min-w-0 items-center gap-2">
-											<span className="w-20 shrink-0 text-xs text-gray-500">
-												{t('aiDetection.fields.bizType')}
-											</span>
-											<input
-												type="text"
-												value={aiDraft.bizType}
-												onChange={(e) =>
-													setAiDetectionDrafts((prev) => ({
-														...prev,
-														[aiDetectionSelected]: {
-															...prev[aiDetectionSelected],
-															bizType: e.target.value,
-														},
-													}))
-												}
-												placeholder={t('aiDetection.fields.bizTypeOptional')}
-												autoComplete="off"
-												spellCheck={false}
-												className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 font-mono text-sm text-gray-900 shadow-sm"
-											/>
-										</div>
-									</>
-								)}
-							</div>
-						</div>
+								</label>
+							)}
+							{!currentConfigured ? (
+								<p className="mt-2 text-xs text-gray-500">
+									{t("serviceList.credentialsRequired")}
+								</p>
+							) : null}
+						</section>
+						<section
+							aria-labelledby="rest-pricing-heading"
+							className="border-t border-gray-200 pt-4"
+						>
+							<h3
+								id="rest-pricing-heading"
+								className="mb-3 text-sm font-semibold text-gray-900"
+							>
+								{t("serviceList.pricing")}
+							</h3>
+							{drawer.tool === "aiDetection" ? (
+								<div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+									<label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+										{t("aiDetection.billingUnitChars")}
+										<input
+											type="number"
+											min={1}
+											step={1}
+											required
+											value={aiDraft.billingUnitChars}
+											onChange={(e) =>
+												updateAiDraft({ billingUnitChars: e.target.value })
+											}
+											aria-invalid={!aiUnitValid}
+											className="w-28 rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+										/>
+									</label>
+									<p className="text-xs text-gray-500">
+										{t("aiDetection.billingUnitHint")}
+									</p>
+									{!aiUnitValid ? (
+										<p role="status" className="w-full text-xs text-red-600">
+											{t("aiDetection.billingUnitInvalid")}
+										</p>
+									) : null}
+								</div>
+							) : null}
+							<RestToolPricingEditor
+								key={`${drawer.tool}-${drawer.providerId}`}
+								currency={billingCurrency}
+								value={currentDraft}
+								unitLabel={
+									drawer.tool === "aiDetection"
+										? tPricing("charactersUnit", {
+												count: aiUnitValid
+													? Number(aiDraft.billingUnitChars)
+													: "—",
+										  })
+										: undefined
+								}
+								onChange={updateCurrentDraft}
+							/>
+						</section>
 					</div>
 				) : null}
 			</ToolProviderDrawer>
-
-			<WebSearchProviderGuideModal
-				open={providerGuideOpen}
-				activeProvider={webSearchSelected}
-				onClose={() => setProviderGuideOpen(false)}
-			/>
 		</div>
 	);
 }

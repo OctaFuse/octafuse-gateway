@@ -198,6 +198,66 @@ async function smokeWritePaths(adminBase: string, masterKey: string, tag: string
 	}
 	console.log('%s [write] user keys ok (count=%d)', tag, userKeys.length);
 
+	const mcpSlug = `smoke-mcp-${Date.now().toString(36)}`;
+	console.log('%s [write] POST /api/admin/mcp-servers (%s)', tag, mcpSlug);
+	const mcpCreate = await fetch(`${adminBase}/api/admin/mcp-servers`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `Bearer ${masterKey}`,
+		},
+		body: JSON.stringify({
+			slug: mcpSlug,
+			name: 'Smoke MCP',
+			url: 'http://localhost:9/mcp',
+			authHeaders: { 'X-API-Key': 'smoke-secret' },
+			pricing: { prices: { metered: 0, standard: 0, charged: 0 } },
+		}),
+	});
+	await assertOk(mcpCreate, 'POST /api/admin/mcp-servers');
+	const mcpCreated = (await mcpCreate.json()) as { data?: { id?: string } };
+	const mcpId = mcpCreated.data?.id;
+	if (!mcpId) {
+		throw new Error(`POST /api/admin/mcp-servers: 缺少 data.id，实际：${JSON.stringify(mcpCreated).slice(0, 400)}`);
+	}
+	const mcpList = await fetch(`${adminBase}/api/admin/mcp-servers`, {
+		headers: { Authorization: `Bearer ${masterKey}` },
+	});
+	await assertOk(mcpList, 'GET /api/admin/mcp-servers');
+	const mcpListJson = (await mcpList.json()) as { data?: Array<{ id?: string; url?: string; urlMasked?: string }> };
+	const listed = (mcpListJson.data ?? []).find((row) => row.id === mcpId);
+	if (!listed?.urlMasked?.includes('127.0.0.1') || listed.url) {
+		throw new Error(`GET /api/admin/mcp-servers: 列表应返回脱敏 URL，实际：${JSON.stringify(listed).slice(0, 400)}`);
+	}
+	const pricing = await fetch(`${base(GATEWAY_BASE_URL)}/v1/tools/pricing`, {
+		headers: { Authorization: `Bearer ${keyValue}` },
+	});
+	await assertOk(pricing, 'GET /v1/tools/pricing');
+	const pricingJson = (await pricing.json()) as { data?: { mcp?: unknown } };
+	if (!Array.isArray(pricingJson.data?.mcp)) {
+		throw new Error(`GET /v1/tools/pricing: 缺少 data.mcp，实际：${JSON.stringify(pricingJson).slice(0, 400)}`);
+	}
+	const mcpInit = await fetch(`${base(GATEWAY_BASE_URL)}/mcp`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${keyValue}`,
+			'Content-Type': 'application/json',
+			Accept: 'application/json, text/event-stream',
+		},
+		body: JSON.stringify({
+			jsonrpc: '2.0',
+			id: 1,
+			method: 'initialize',
+			params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'smoke', version: '0' } },
+		}),
+	});
+	await assertOk(mcpInit, 'POST /mcp initialize');
+	await fetch(`${adminBase}/api/admin/mcp-servers/${encodeURIComponent(mcpId)}`, {
+		method: 'DELETE',
+		headers: { Authorization: `Bearer ${masterKey}` },
+	});
+	console.log('%s [write] mcp server create/list/pricing/initialize ok', tag);
+
 	// 删除临时用户（级联删除其 api_keys；验证多 key 清理路径）
 	console.log('%s [write] DELETE /api/admin/users/%s (cleanup cascade)', tag, userId);
 	const delUserRes = await fetch(`${adminBase}/api/admin/users/${encodeURIComponent(userId)}`, {

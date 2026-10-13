@@ -4,14 +4,15 @@
  *
  * 多 provider 架构：catalog 按引擎存凭证并集 + Active 选型；解析时用
  * {@link AI_DETECTION_PROVIDER_REQUIRED_CREDENTIALS}（与已实现 driver 对齐）校验。
- * Catalog 单价为三账本：metered / standard / charged（旧 `cost` 为 charged 别名）。
+ * Catalog 新价格存 pricing（标准价与倍率）；旧三账本单价及 `cost` 继续兼容读取。
  */
 
 import type { GatewayRepositories } from '../storage/repositories';
 import {
-	normalizeToolUnitPrices,
+	parseToolCatalogPricing,
+	toolCatalogPricingForStorage,
+	type ToolCatalogPricingFields,
 	parseToolMoneyField,
-	toToolPricingFields,
 } from './tool-pricing';
 
 export const AI_DETECTION_ACTIVE_KEY = 'AI_DETECTION_ACTIVE';
@@ -50,6 +51,7 @@ export type AiDetectionCatalogEntry = {
 	metered: number;
 	standard: number;
 	charged: number;
+	pricing?: ToolCatalogPricingFields['pricing'];
 	/** 计费粒度（字符）；默认 {@link DEFAULT_AI_DETECTION_BILLING_UNIT_CHARS} */
 	billingUnitChars?: number;
 };
@@ -151,7 +153,7 @@ function parseOptionalString(raw: unknown): string | undefined {
 }
 
 function parseCatalogEntry(rec: Record<string, unknown>, strict: boolean): AiDetectionCatalogEntry | null {
-	const prices = normalizeToolUnitPrices(rec, DEFAULT_AI_DETECTION_COST, strict);
+	const prices = parseToolCatalogPricing(rec, DEFAULT_AI_DETECTION_COST, strict);
 	if (!prices) {
 		return null;
 	}
@@ -159,7 +161,7 @@ function parseCatalogEntry(rec: Record<string, unknown>, strict: boolean): AiDet
 	if (billingUnitChars === null) {
 		return null;
 	}
-	const entry: AiDetectionCatalogEntry = { ...toToolPricingFields(prices) };
+	const entry: AiDetectionCatalogEntry = { ...prices };
 	if (billingUnitChars !== undefined) {
 		entry.billingUnitChars = billingUnitChars;
 	}
@@ -254,20 +256,15 @@ export function parseAiDetectionCatalogLenient(raw: string | null | undefined): 
 }
 
 export function serializeAiDetectionCatalog(catalog: AiDetectionCatalog): string {
-	const normalized: AiDetectionCatalog = {};
+	const normalized: Record<string, unknown> = {};
 	for (const [key, entry] of Object.entries(catalog) as [
 		AiDetectionProvider,
-		AiDetectionCatalogEntry | undefined,
+		AiDetectionCatalogEntry | undefined
 	][]) {
 		if (!entry) continue;
-		const { apiKey, secretId, secretKey, email, region, bizType, billingUnitChars, metered, standard, charged, cost } =
-			entry;
+		const { apiKey, secretId, secretKey, email, region, bizType, billingUnitChars } = entry;
 		normalized[key] = {
-			...toToolPricingFields({
-				metered,
-				standard,
-				charged: charged ?? cost,
-			}),
+			...toolCatalogPricingForStorage(entry),
 			...(apiKey !== undefined ? { apiKey } : {}),
 			...(secretId !== undefined ? { secretId } : {}),
 			...(secretKey !== undefined ? { secretKey } : {}),
@@ -298,6 +295,7 @@ export type ResolvedAiDetectionConfig = {
 		billingUnitChars: 'system_config' | 'default';
 		mode: 'catalog';
 	};
+	pricing?: ToolCatalogPricingFields['pricing'];
 };
 
 export type ResolveAiDetectionConfigResult =
@@ -336,6 +334,7 @@ export function resolveAiDetectionConfigForProvider(
 		config: {
 			provider: parsed,
 			entry: entry!,
+			...(entry?.pricing ? { pricing: entry.pricing } : {}),
 			cost: charged,
 			metered,
 			standard,

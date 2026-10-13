@@ -110,7 +110,7 @@ curl -sS http://localhost:8787/v1/dashscope/services/aigc/multimodal-generation/
 
 网关返回 DashScope 原生 JSON，并按上游 `usage.duration` / `usage.seconds` 记录时长和费用。DashScope 原生实时 ASR / TTS 则继续使用 `/v1/dashscope/realtime` WebSocket 入口；连接参数与 operation 见 [DashScope 音频架构](../developers/architecture/dashscope-audio.md)。
 
-智能体工具（Agent Tools；需用户 Key；管理后台 → 智能体工具已为对应工具配置活跃引擎与第三方 API Key）提供 `POST /v1/tools/web-search`、`POST /v1/tools/web-fetch`、`POST /v1/tools/web-deep-search`。示例如下：
+智能体工具（Agent Tools；需用户 Key；管理后台 → REST 服务已为对应工具配置活跃引擎与第三方 API Key）提供 `POST /v1/tools/web-search`、`POST /v1/tools/web-fetch`、`POST /v1/tools/web-deep-search`。示例如下：
 
 ```bash
 curl -sS http://localhost:8787/v1/tools/web-search \
@@ -157,3 +157,24 @@ curl -sS http://localhost:8787/v1/me \
 响应中的 `budget_max` / `budget_spent` 表示周期额度，`wallet_granted` / `wallet_spent` / `wallet_balance` 表示永久额度；`total_remaining` 是两部分可用余额之和。`budget_max` 和 `total_remaining` 为 `null` 时表示周期额度不限额。
 
 完整用户接口见 [developers/api/user.md](../developers/api/user.md)。
+
+## MCP
+
+代理服务可以把管理员接入的远程 MCP 服务聚合成一个入口。客户端使用用户 API Key，不需要持有上游密钥。配置前，管理员需要在 MCP 服务（MCP Servers）中同步并启用条目。
+
+Cursor：
+
+```json
+{
+  "mcpServers": {
+    "octafuse": {
+      "url": "http://localhost:8787/mcp",
+      "headers": { "Authorization": "Bearer sk-your-api-key" }
+    }
+  }
+}
+```
+
+只使用某一个已接入服务时，把地址改成 `http://localhost:8787/mcp/{slug}`。
+
+Claude Code 使用同一地址和请求头，在 MCP 配置里选择 HTTP / Streamable HTTP 传输。工具名形如 `{slug}__{原名}`。提示词和资源也可以从该入口读取。架构、计费和审核规则见 [MCP 聚合入口](../developers/architecture/mcp-gateway.md)。

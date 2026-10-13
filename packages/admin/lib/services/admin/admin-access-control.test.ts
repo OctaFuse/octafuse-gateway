@@ -32,6 +32,17 @@ test('star normalizes to the only stored permission and grants delegable permiss
 	assert.deepEqual(parseAdminPermissions('["*","unknown.permission"]'), ['*']);
 });
 
+test('mcp write does not reveal upstream secrets', () => {
+	const writer: AdminPrincipal = {
+		type: 'api_key',
+		id: 'admin_key:mcp',
+		keyId: 'mcp',
+		permissions: ['mcp.write'],
+	};
+	assert.equal(hasAdminPermission(writer, 'mcp.read'), true);
+	assert.equal(hasAdminPermission(writer, 'mcp.secrets.read'), false);
+});
+
 test('permission matrix protects console-only surfaces and defaults to deny', () => {
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/access-keys'), { kind: 'console_only' });
 	// Access Audit 已移除：该路径必须落入兜底 deny，不得被重新注册为可访问面
@@ -58,6 +69,11 @@ test('permission matrix protects console-only surfaces and defaults to deny', ()
 		kind: 'permission', permission: 'analytics.read',
 	});
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/not-registered'), { kind: 'deny' });
+	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/mcp-servers'), { kind: 'permission', permission: 'mcp.read' });
+	assert.deepEqual(getAdminAuthorizationDecision('POST', '/admin/mcp-servers/server-1/sync'), { kind: 'permission', permission: 'mcp.write' });
+	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/mcp-servers/server-1/reveal'), {
+		kind: 'permission', permission: 'mcp.secrets.read',
+	});
 });
 
 test('config masking removes legacy MASTER_KEY and recursively masks catalog credentials', () => {

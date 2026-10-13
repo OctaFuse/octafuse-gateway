@@ -16,6 +16,7 @@ import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
 import { asMySqlPool } from './mysql2-compat';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
+import { appendModelIdPrefixCondition, appendProviderIdsCondition } from '../request-log-filters';
 import {
 	businessTimezoneOffsetSeconds,
 	mysqlTimeseriesBucketExpr,
@@ -94,6 +95,8 @@ export function createMySqlRequestLogsRepository(db: MySqlDatabaseClient): Reque
 			userEmail?: string;
 			modelId?: string;
 			providerId?: string;
+			providerIds?: string[];
+			modelIdPrefix?: string;
 			routeGroup?: string;
 			protocol?: string;
 			status?: string;
@@ -130,6 +133,8 @@ export function createMySqlRequestLogsRepository(db: MySqlDatabaseClient): Reque
 				conditions.push('rl.provider_id = ?');
 				bindValues.push(options.providerId);
 			}
+			appendProviderIdsCondition(conditions, bindValues, 'rl.provider_id', options.providerIds);
+			appendModelIdPrefixCondition(conditions, bindValues, 'rl.model_id', options.modelIdPrefix);
 			if (options.routeGroup) {
 				conditions.push('rl.route_group = ?');
 				bindValues.push(options.routeGroup);

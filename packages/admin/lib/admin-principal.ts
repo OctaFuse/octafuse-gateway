@@ -16,6 +16,9 @@ export const ADMIN_PERMISSIONS = [
 	'analytics.read',
 	'logs.read',
 	'playground.execute',
+	'mcp.read',
+	'mcp.write',
+	'mcp.secrets.read',
 	'*',
 ] as const;
 

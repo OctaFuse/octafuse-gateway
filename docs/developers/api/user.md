@@ -915,6 +915,10 @@ Authorization: Bearer <USER_API_KEY>
       { "id": "web-fetch", "unit": "request", "cost": 0.002, "metered": 0.002, "standard": 0.002, "charged": 0.002 },
       { "id": "web-deep-search", "unit": "request", "cost": 0.01, "metered": 0.01, "standard": 0.01, "charged": 0.01 },
       { "id": "ai-detection", "unit": "chars", "unit_chars": 2000, "cost": 0.01, "metered": 0.01, "standard": 0.01, "charged": 0.01 }
+    ],
+    "mcp": [
+      { "id": "mcp:deepwiki/ask", "name": "deepwiki__ask", "unit": "request", "cost": 0.01, "metered": 0.01, "standard": 0.01, "charged": 0.01 },
+      { "id": "mcp:tavily/tavily-search", "name": "tavily__tavily-search", "unit": "request", "cost": 0.012, "metered": 0.008, "standard": 0.01, "charged": 0.012 }
     ]
   }
 }
@@ -928,6 +932,8 @@ Authorization: Bearer <USER_API_KEY>
 | `tools[].charged` | Active 引擎用户单价（扣费） |
 | `tools[].metered` / `standard` | 供应成本 / 目录标准单价 |
 | `tools[].cost` | 兼容别名，等于 `charged`；未配置时回退代码默认值 |
+| `mcp` | 已启用的 MCP 工具。迁移 `0030` 尚未执行时为空数组。`id` 为 `mcp:{slug}/{原工具名}`，`name` 为客户端看到的名称 |
+| `mcp[].unit` | 当前固定为 `request`，每次成功调用计 1 单元。`metered` / `standard` / `charged` / `cost` 都是单次调用价格 |
 
 ---
 

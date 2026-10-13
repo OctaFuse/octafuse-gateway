@@ -12,6 +12,7 @@ import { createPostgresRoutePoolStickyBindingsRepository } from '../db/postgres/
 import { createPostgresUserAuditLogsRepository } from '../db/postgres/user-audit-logs.impl';
 import { createPostgresUsersRepository } from '../db/postgres/users.impl';
 import { createPostgresAdminAccessRepository } from '../db/postgres/admin-access.impl';
+import { createPostgresMcpServersRepository } from '../db/postgres/mcp-servers.impl';
 
 export function createPostgresRepositories(client: GatewayDatabaseClient): GatewayRepositories {
 	if (client.driver !== 'postgres') {
@@ -31,5 +32,6 @@ export function createPostgresRepositories(client: GatewayDatabaseClient): Gatew
 		userAuditLogs: createPostgresUserAuditLogsRepository(client),
 		routePoolSticky: createPostgresRoutePoolStickyBindingsRepository(client),
 		adminAccess: createPostgresAdminAccessRepository(client),
+		mcpServers: createPostgresMcpServersRepository(client),
 	};
 }

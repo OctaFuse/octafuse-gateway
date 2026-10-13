@@ -10,11 +10,14 @@ import {
 	DEFAULT_WEB_FETCH_COST,
 	DEFAULT_WEB_SEARCH_COST,
 	normalizeBillingCurrencyCode,
+	parseStoredMcpPricingRule,
 	resolveAiDetectionConfig,
 	resolveWebDeepSearchConfig,
 	resolveWebFetchConfig,
 	resolveWebSearchConfig,
 	roundGatewayMoney,
+	summarizeMcpPricingRule,
+	type McpPricingSummary,
 } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../../app';
@@ -97,10 +100,24 @@ toolsPricingRoutes.get('/', async (c) => {
 		},
 	];
 
+	const mcpPrices = await repos.mcpServers.listEnabledToolPrices().catch((error: unknown) => {
+		console.warn('[Gateway Tools] MCP pricing unavailable', error instanceof Error ? error.message : error);
+		return [];
+	});
+
 	return c.json({
 		data: {
 			billing_currency: normalizeBillingCurrencyCode(billingRaw),
 			tools,
+			mcp: mcpPrices.flatMap((row) => {
+				let summary: McpPricingSummary;
+				try {
+					summary = summarizeMcpPricingRule(parseStoredMcpPricingRule(row.pricing));
+				} catch {
+					return [];
+				}
+				return [{ id: `mcp:${row.slug}/${row.upstreamKey}`, name: row.exposedName, ...summary, cost: summary.charged }];
+			}),
 		},
 	});
 });

@@ -1,6 +1,6 @@
 /**
  * Agent Tools 三账本单价（metered / standard / charged）。
- * Catalog 存绝对单价；旧键 `cost` 为 charged 别名（仅有 cost 时三列相等）。
+ * Catalog 新价格存标准价与倍率，旧绝对单价兼容读取；旧键 `cost` 为 charged 别名（仅有 cost 时三列相等）。
  */
 
 import { roundGatewayMoney } from './money-precision';
@@ -21,6 +21,90 @@ export type ToolPricingFields = ToolUnitPrices & {
 	cost: number;
 };
 
+/** Versioned factor definition, stored in the existing catalog JSON. */
+export type ToolFactorPricing = {
+	v: 2;
+	standard: number;
+	chargedFactor: number;
+	meteredFactor: number;
+};
+
+/** Derived amounts for callers; serializers persist only pricing when it is present. */
+export type ToolCatalogPricingFields = ToolPricingFields & { pricing?: ToolFactorPricing };
+
+export function parseToolPriceFactor(raw: unknown): number | null {
+	if ((typeof raw !== 'number' && typeof raw !== 'string') || (typeof raw === 'string' && !raw.trim()))
+		return null;
+	const value = Number(raw);
+	return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+/** Shared with MCP: round the standard price first, then each derived amount to ledger precision. */
+export function resolveToolFactorPrices(
+	pricing: Pick<ToolFactorPricing, 'standard' | 'chargedFactor' | 'meteredFactor'>
+): ToolUnitPrices {
+	const standard = parseToolMoneyField(pricing.standard);
+	const chargedFactor = parseToolPriceFactor(pricing.chargedFactor);
+	const meteredFactor = parseToolPriceFactor(pricing.meteredFactor);
+	if (standard == null || chargedFactor == null || meteredFactor == null)
+		throw new RangeError('Invalid tool price or factor');
+	const charged = parseToolMoneyField(standard * chargedFactor);
+	const metered = parseToolMoneyField(standard * meteredFactor);
+	if (charged == null || metered == null) throw new RangeError('Tool price exceeds ledger range');
+	return { standard, charged, metered };
+}
+
+export function parseToolFactorPricing(raw: unknown): ToolFactorPricing | null {
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+	const rec = raw as Record<string, unknown>;
+	if (
+		rec.v !== 2 ||
+		Object.keys(rec).some((key) => !['v', 'standard', 'chargedFactor', 'meteredFactor'].includes(key))
+	)
+		return null;
+	const standard = parseToolMoneyField(rec.standard);
+	const chargedFactor = parseToolPriceFactor(rec.chargedFactor === undefined ? 1 : rec.chargedFactor);
+	const meteredFactor = parseToolPriceFactor(rec.meteredFactor === undefined ? 1 : rec.meteredFactor);
+	if (standard == null || chargedFactor == null || meteredFactor == null) return null;
+	const pricing: ToolFactorPricing = { v: 2, standard, chargedFactor, meteredFactor };
+	try {
+		resolveToolFactorPrices(pricing);
+	} catch {
+		return null;
+	}
+	return pricing;
+}
+
+/** Invalid new pricing is never treated as a legacy/default price, even on lenient reads. */
+export function parseToolCatalogPricing(
+	rec: Record<string, unknown>,
+	defaultCost: number,
+	strict: boolean
+): ToolCatalogPricingFields | null {
+	// Factors belong inside the versioned definition; misplaced fields must not be ignored.
+	if (['chargedFactor', 'meteredFactor'].some((key) => Object.prototype.hasOwnProperty.call(rec, key)))
+		return null;
+	if (Object.prototype.hasOwnProperty.call(rec, 'pricing')) {
+		if (['cost', 'standard', 'metered', 'charged'].some((key) => rec[key] !== undefined)) return null;
+		const pricing = parseToolFactorPricing(rec.pricing);
+		return pricing ? { ...toToolPricingFields(resolveToolFactorPrices(pricing)), pricing } : null;
+	}
+	const prices = normalizeToolUnitPrices(rec, defaultCost, strict);
+	return prices ? toToolPricingFields(prices) : null;
+}
+
+/** Preserve legacy independent prices; never persist derived values beside a factor definition. */
+export function toolCatalogPricingForStorage(
+	entry: ToolCatalogPricingFields
+): { pricing: ToolFactorPricing } | ToolPricingFields {
+	if (entry.pricing !== undefined) {
+		const pricing = parseToolFactorPricing(entry.pricing);
+		if (!pricing) throw new RangeError('Invalid tool factor pricing');
+		return { pricing };
+	}
+	return toToolPricingFields(entry);
+}
+
 /**
  * 解析单个金额字段；非法 → `null`（strict）或调用方决定默认。
  */
@@ -32,7 +116,8 @@ export function parseToolMoneyField(raw: unknown): number | null {
 		if (!Number.isFinite(raw) || raw < 0) {
 			return null;
 		}
-		return roundGatewayMoney(raw);
+		const rounded = roundGatewayMoney(raw);
+		return Number.isFinite(rounded) ? rounded : null;
 	}
 	if (typeof raw === 'string') {
 		const t = raw.trim();
@@ -43,7 +128,8 @@ export function parseToolMoneyField(raw: unknown): number | null {
 		if (!Number.isFinite(n) || n < 0) {
 			return null;
 		}
-		return roundGatewayMoney(n);
+		const rounded = roundGatewayMoney(n);
+		return Number.isFinite(rounded) ? rounded : null;
 	}
 	return null;
 }
@@ -121,11 +207,25 @@ export function scaleToolUnitPrices(prices: ToolUnitPrices, billingUnits: number
 	};
 }
 
+/** Snapshot only the definition used for this call; historical logs remain independently readable. */
+export function toolFactorPricingAudit(pricing: ToolFactorPricing | undefined): Record<string, unknown> {
+	return pricing
+		? {
+				tool_pricing: {
+					rule_version: pricing.v,
+					charged_factor: pricing.chargedFactor,
+					metered_factor: pricing.meteredFactor,
+				},
+		  }
+		: {};
+}
+
 export type FixedToolCostPricingAudit = {
 	v: 4;
 	kind: 'fixed_tool_cost';
 	tool_id: string;
-	unit: 'request' | 'chars';
+	/** REST 工具为 request / chars；MCP 为规则里的计费单元名。 */
+	unit: string;
 	billing_units: number;
 	unit_prices: ToolUnitPrices;
 	totals: {
@@ -139,7 +239,7 @@ export type FixedToolCostPricingAudit = {
 
 export function buildFixedToolCostPricingAudit(options: {
 	toolId: string;
-	unit: 'request' | 'chars';
+	unit: string;
 	billingUnits: number;
 	unitPrices: ToolUnitPrices;
 	totals: ToolUnitPrices;

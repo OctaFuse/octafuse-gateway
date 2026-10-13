@@ -1,15 +1,16 @@
 /**
  * Agent Web Search（`POST /v1/tools/web-search`）的 `system_config` 键与解析。
  * 权威配置：`WEB_SEARCH_ACTIVE` + `WEB_SEARCH_CATALOG`（JSON）；旧三键仅读时兼容。
- * Catalog 单价为三账本：metered / standard / charged（旧 `cost` 为 charged 别名）。
+ * Catalog 新价格存 pricing（标准价与倍率）；旧三账本单价及 `cost` 继续兼容读取。
  */
 
 import type { GatewayRepositories } from '../storage/repositories';
 import { roundGatewayMoney } from './money-precision';
 import {
-	normalizeToolUnitPrices,
+	parseToolCatalogPricing,
+	toolCatalogPricingForStorage,
+	type ToolCatalogPricingFields,
 	parseToolMoneyField,
-	toToolPricingFields,
 	type ToolUnitPrices,
 } from './tool-pricing';
 
@@ -38,6 +39,7 @@ export type WebSearchCatalogEntry = {
 	metered: number;
 	standard: number;
 	charged: number;
+	pricing?: ToolCatalogPricingFields['pricing'];
 };
 
 export type WebSearchCatalog = Partial<Record<WebSearchProvider, WebSearchCatalogEntry>>;
@@ -63,20 +65,17 @@ export function parseWebSearchActiveInput(raw: string | null | undefined): WebSe
 	return parseWebSearchProviderInput(raw);
 }
 
-function parseEntry(
-	rec: Record<string, unknown>,
-	strict: boolean
-): WebSearchCatalogEntry | null {
+function parseEntry(rec: Record<string, unknown>, strict: boolean): WebSearchCatalogEntry | null {
 	if (typeof rec.apiKey !== 'string') {
 		return null;
 	}
-	const prices = normalizeToolUnitPrices(rec, DEFAULT_WEB_SEARCH_COST, strict);
+	const prices = parseToolCatalogPricing(rec, DEFAULT_WEB_SEARCH_COST, strict);
 	if (!prices) {
 		return null;
 	}
 	return {
 		apiKey: rec.apiKey.trim(),
-		...toToolPricingFields(prices),
+		...prices,
 	};
 }
 
@@ -145,16 +144,15 @@ export function parseWebSearchCatalogLenient(raw: string | null | undefined): We
 }
 
 export function serializeWebSearchCatalog(catalog: WebSearchCatalog): string {
-	const normalized: WebSearchCatalog = {};
-	for (const [key, entry] of Object.entries(catalog) as [WebSearchProvider, WebSearchCatalogEntry | undefined][]) {
+	const normalized: Record<string, unknown> = {};
+	for (const [key, entry] of Object.entries(catalog) as [
+		WebSearchProvider,
+		WebSearchCatalogEntry | undefined
+	][]) {
 		if (!entry) continue;
 		normalized[key] = {
 			apiKey: entry.apiKey,
-			...toToolPricingFields({
-				metered: entry.metered,
-				standard: entry.standard,
-				charged: entry.charged ?? entry.cost,
-			}),
+			...toolCatalogPricingForStorage(entry),
 		};
 	}
 	return JSON.stringify(normalized);
@@ -177,6 +175,7 @@ export type ResolvedWebSearchConfig = {
 		/** 配置来自 catalog 还是旧三键兼容 */
 		mode: 'catalog' | 'legacy';
 	};
+	pricing?: ToolCatalogPricingFields['pricing'];
 };
 
 export type ResolveWebSearchConfigResult =
@@ -249,6 +248,7 @@ export async function resolveWebSearchConfig(
 				apiKey,
 				cost: prices.charged,
 				...prices,
+				...(entry?.pricing ? { pricing: entry.pricing } : {}),
 				sources: {
 					provider: providerSource,
 					apiKey: 'system_config',

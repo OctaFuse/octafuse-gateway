@@ -9,10 +9,11 @@ import {
 	type ModelKindFields,
 } from '@octafuse/core/db/model-modalities';
 import { GATEWAY_TOOLS_PROVIDER_ID } from '@/lib/gateway-tools';
+import { MCP_REQUEST_LOG_PROVIDER_ID } from '@/lib/invoke-kind';
 
 export type GeminiWireAction = 'generateContent' | 'streamGenerateContent';
 
-export type RequestLogFeatureKind = 'llm' | 'image' | 'tts' | 'asr' | 'tool';
+export type RequestLogFeatureKind = 'llm' | 'image' | 'tts' | 'asr' | 'tool' | 'mcp';
 
 export type RequestLogFeatureTag =
 	| { key: 'kind'; kind: RequestLogFeatureKind }
@@ -98,6 +99,9 @@ export function requestLogFeatureKind(
 	catalogModel?: ModelKindFields | null,
 ): RequestLogFeatureKind {
 	const modelId = log.model_id?.trim() ?? '';
+	if (log.provider_id === MCP_REQUEST_LOG_PROVIDER_ID || modelId.startsWith('mcp:')) {
+		return 'mcp';
+	}
 	if (log.provider_id === GATEWAY_TOOLS_PROVIDER_ID || modelId.startsWith('tool:')) {
 		return 'tool';
 	}

@@ -6,7 +6,7 @@ Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统�
 
 | 概念 | 作用 |
 |------|------|
-| 代理服务（Proxy） | 对外 AI 能力入口，提供 OpenAI Chat / Responses、Anthropic、Gemini 兼容推理、Images、ASR / TTS、DashScope 同步 ASR 与实时音频，以及 `/v1/tools/*`。 |
+| 代理服务（Proxy） | 对外 AI 能力入口，提供 OpenAI Chat / Responses、Anthropic、Gemini 兼容推理、Images、ASR / TTS、DashScope 同步 ASR 与实时音频、`/v1/tools/*`，以及聚合远程服务的 `POST /mcp`。 |
 | 管理后台（Admin） | 管理 UI 与 `/api/admin/*`，用于维护供应商、模型、路由、用户、Key、日志与配置。 |
 | 供应商（Provider） | 一个上游模型供应商或兼容端点；**一把**上游 API Key + `active` / `disabled`。 |
 | 模型 / 路由组（Model / Route group） | Gateway 暴露给客户端的模型 ID 与可选分组，例如 `model-id:default`、`model-id:free`。 |
@@ -26,12 +26,13 @@ Octafuse Gateway 是可自托管的 **AI 能力网关与运营控制面**：统�
 | 多协议兼容 | 支持 OpenAI Chat Completions、OpenAI Responses、Anthropic Messages、Gemini `v1beta` 风格入口。 |
 | 图片生成 / 编辑（Images） | 客户端统一调用 OpenAI 兼容 `/v1/images/*`；OpenAI 兼容上游可直接透传，阿里云百炼千问 / 万相可由显式适配器转换为 DashScope 原生生图请求。目录价支持 **token** 分项与 **per_image** 按张；默认 `GET /v1/models` 不含纯 image 模型，可用 `kind=image` / `kind=all` 或直接调用 Images API。 |
 | 音频（Audio） | OpenAI 兼容 `/v1/audio/transcriptions` 与 `/v1/audio/speech`，DashScope 同步多模态 ASR，以及原生实时音频；ASR 支持按时长或 Token 计费，TTS 支持按字符计费。调试台验证实时 ASR 时可直接使用浏览器麦克风；默认 `GET /v1/models` 不含纯音频模型。`kind=audio` 同时返回语音转写与语音合成。 |
-| 智能体工具（Agent Tools） | 面向 Agent 的可扩展产品 API（`/v1/tools/*`）：`web-search` 支持博查、Tavily、阿里云 CleverSee、腾讯云 WSA；`web-fetch` 支持 Firecrawl、Tavily Extract、Jina Reader；`web-deep-search` 支持 Firecrawl Search、Jina Search；`ai-detection` 多引擎 catalog（当前实现腾讯云 TMS）。在管理后台的智能体工具 → 工具配置（Tools → Configuration）中，为每种工具配置多个引擎并选择一个活跃引擎（Active）；联网类工具**按次**、AI 率检测按**计费字符单元**写入三账本（供应成本 / 目录标准价 / 用户计费），**仅用户计费（charged）扣预算**；**上游失败不扣费**。调用记入请求日志（`provider_id=octafuse-tools`）。定价只读见 `GET /v1/tools/pricing`（含 `metered` / `standard` / `charged`，`cost` = charged）。 |
+| 智能体工具（Agent Tools） | 面向 Agent 的可扩展产品 API（`/v1/tools/*`）：`web-search` 支持博查、Tavily、阿里云 CleverSee、腾讯云 WSA；`web-fetch` 支持 Firecrawl、Tavily Extract、Jina Reader；`web-deep-search` 支持 Firecrawl Search、Jina Search；`ai-detection` 多引擎 catalog（当前实现腾讯云 TMS）。在管理后台的 REST 服务中，为每种工具配置多个引擎并选择一个活跃引擎（Active）；联网类工具**按次**、AI 率检测按**计费字符单元**写入三账本（供应成本 / 目录标准价 / 用户计费），**仅用户计费（charged）扣预算**；**上游失败不扣费**。调用记入请求日志（`provider_id=octafuse-tools`）。定价只读见 `GET /v1/tools/pricing`（含 `metered` / `standard` / `charged`，`cost` = charged）。 |
+| MCP 服务（MCP Servers） | 把多个远程 MCP 服务聚合成 `POST /mcp`，也可以用 `POST /mcp/{slug}` 只暴露一个服务。清单来自已审核快照；只有工具调用计费，记入请求日志（`provider_id=octafuse-mcp`）。当前仅支持按次计费，每次成功工具调用计 1 request；可免费或设置单次价格，工具可覆盖服务默认价格。在 MCP 服务中接入、同步、审核和定价。REST 服务与 MCP 服务的调用都在调用记录中查看。详见 [MCP 聚合入口](../developers/architecture/mcp-gateway.md)。 |
 | 公开 Catalog | `GET /catalog/models` 无需用户 Key，聚合可用模型、协议能力和各路由组当前及后续时段价格，适合门户展示。用户个性化折扣走管理接口 `GET /admin/users/:id/display-discounts`（不计入用户 RPM）。需鉴权的 `GET /v1/models` 默认返回 LLM 和 `default,free` 路由组（不含文生图、ASR、TTS），供智能体使用。 |
 | 路由与故障转移 | 客户端请求先按协议 / operation 命中请求入口，再进入路由池：池内按 **priority** 分层，同层按 **策略 + weight** 排序；失败则换下一供应商（供应商级熔断）。默认策略 **hash_affinity** 提高上游 prompt cache 命中。详见 [路由拓扑](../developers/architecture/route-topology.md)与 [路由策略](../developers/reference/route-strategies.md)。 |
 | 供应商粘性（Provider sticky） | 路由池可选择记住用户上次成功的上游目标，在空闲 TTL 内跨请求、跨运行实例并可跨 priority 优先尝试；供应商可归因故障会解绑，配置变更可通过 epoch 整池失效。它与四种层内策略正交、默认关闭，适合提高 Prompt Cache 连续性。界面芯片为 `Sticky · Off` / `Sticky · {ttl}`。 |
 | 额度与扣费 | 用户可同时拥有按日 / 周 / 月重置的**周期额度**和不会随周期重置的**永久额度**。每次请求先扣周期额度，不足部分再扣永久额度；用户详情还可按模型设置折扣、加价或免单。 |
-| 价格与峰谷时段 | 模型请求区分 **供应成本（Metered）**、**官方当刻目录价（Standard）**、**用户计费（Charged）**。先在模型中维护供应商官方时段，再在路由中设置用户计费和供应成本倍率；保存前可以直接预览各时段实际价格。智能体工具使用独立的绝对单价，不应用模型路由时段。 |
+| 价格与峰谷时段 | 模型请求区分 **供应成本（Metered）**、**官方当刻目录价（Standard）**、**用户计费（Charged）**。先在模型中维护供应商官方时段，再在路由中设置用户计费和供应成本倍率；保存前可以直接预览各时段实际价格。REST 与 MCP 工具共用标准价、用户倍率和供应倍率，在计费规则中维护并预览收费与供应成本。REST 搜索类按请求计费，AI 检测按可配置的字符单元计费；用户倍率为 0 时免费并保留供应成本。工具不应用模型路由时段。 |
 | 预置供应商 / 模型 | 管理后台可从静态目录一键导入：除官方模型厂外，还覆盖聚合平台与各类 Coding / Token Plan；预填 Base URL 与模型目录价等信息，导入后补齐真实 API Key 并挂路由即可使用。当前预设还包括 `claude-haiku-5-5`、`gemini-nano-banana-2.1`、`claude-sonnet-5-5`、`hy4-preview`、`qwen3.8-flash`、`glm-5.3-flash`、`glm-5.3-flashx`。模型导入不会自动写入模型标签，标签由管理员在导入后维护。完整清单见官网 [Providers Catalog](https://octafuse.dev/zh/catalog/providers/) 与 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；Coding / Token Plan 的专用 endpoint 不应与普通按量模板混用。 |
 | 供应商管理 | 每个供应商维护单键、启用状态与 `endpoints`；明文 key 仅经 reveal 接口查看。多账号 = 多个供应商。 |
 | 日志与审计 | 请求日志（Request Logs）并列展示客户端入口与实际上游、功能标签、用量和费用（含 Images / Audio / Tools），展开后可核对入口 Host、上游消息 / 请求 ID、路由、星期时段与用户模型倍率；请求记录中的 `charged_wallet_cost` 表示本次从永久额度扣除的部分。审计日志会把周期额度与永久额度变化拆开显示，并记录加额、周期重置、用户与 Key 生命周期等事件。 |

@@ -17,6 +17,7 @@ import type { RequestLogsRepository } from '../../storage/gateway-repository-int
 import type { RequestLogsD1Statements } from './d1-repository-extras';
 import type { InsertRequestLogParams } from '../request-logs-types';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
+import { appendModelIdPrefixCondition, appendProviderIdsCondition } from '../request-log-filters';
 import {
 	sqliteBusinessTimezoneModifier,
 	sqliteTimeseriesBucketExpr,
@@ -153,6 +154,8 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 			userEmail?: string;
 			modelId?: string;
 			providerId?: string;
+			providerIds?: string[];
+			modelIdPrefix?: string;
 			routeGroup?: string;
 			protocol?: string;
 			status?: string;
@@ -195,6 +198,22 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 				conditions.push('provider_id = ?');
 				conditionsRl.push('rl.provider_id = ?');
 				bindValues.push(options.providerId);
+			}
+			const providerIdConditions: string[] = [];
+			const providerIdBinds: unknown[] = [];
+			appendProviderIdsCondition(providerIdConditions, providerIdBinds, 'provider_id', options.providerIds);
+			if (providerIdConditions[0]) {
+				conditions.push(providerIdConditions[0]);
+				conditionsRl.push(providerIdConditions[0].replace('provider_id', 'rl.provider_id'));
+				bindValues.push(...providerIdBinds);
+			}
+			const modelPrefixConditions: string[] = [];
+			const modelPrefixBinds: unknown[] = [];
+			appendModelIdPrefixCondition(modelPrefixConditions, modelPrefixBinds, 'model_id', options.modelIdPrefix);
+			if (modelPrefixConditions[0]) {
+				conditions.push(modelPrefixConditions[0]);
+				conditionsRl.push(modelPrefixConditions[0].replace('model_id', 'rl.model_id'));
+				bindValues.push(...modelPrefixBinds);
 			}
 			if (options.routeGroup) {
 				conditions.push('route_group = ?');

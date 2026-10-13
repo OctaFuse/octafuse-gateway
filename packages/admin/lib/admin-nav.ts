@@ -15,6 +15,7 @@ export type AdminNavNameKey =
 	| 'auditLogs'
 	| 'toolsConfig'
 	| 'toolInvocations'
+	| 'mcpServers'
 	| 'modelUsage'
 	| 'providerUsage'
 	| 'userUsage'
@@ -69,6 +70,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 		groupKey: 'tools',
 		items: [
 			{ nameKey: 'toolsConfig', href: '/gateway/tools' },
+			{ nameKey: 'mcpServers', href: '/gateway/mcp' },
 			{ nameKey: 'toolInvocations', href: '/gateway/tools/invocations' },
 		],
 	},
