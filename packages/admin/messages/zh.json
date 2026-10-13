@@ -2788,7 +2788,9 @@
 			},
 			"providers": {
 				"tencent_tms": "腾讯云 TMS"
-			}
+			},
+			"billingUnitHint": "不足一个单元按一个单元计费。",
+			"billingUnitInvalid": "请输入大于 0 的整数字符数。"
 		},
 		"invocations": {
 			"title": "调用记录",
@@ -2864,7 +2866,7 @@
 			"backToConfig": "返回服务配置",
 			"connection": "连接设置",
 			"pricing": "计费规则",
-			"settingsSections": "服务配置"
+			"credentialsRequired": "补全凭证后可保存并启用；也可以先保存配置。"
 		}
 	},
 	"pricing": {
@@ -3247,6 +3249,7 @@
 		"invalidNumber": "标准价和两个倍率必须是非负有限数字，不能留空；计算后的金额不能超出范围。",
 		"title": "计费规则",
 		"perUnitMode": "按单元收费",
-		"charactersUnit": "{count} 字符"
+		"charactersUnit": "{count} 字符",
+		"requestUnit": "次"
 	}
 }

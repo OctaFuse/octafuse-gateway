@@ -142,10 +142,10 @@ export function ToolProviderDrawer({
 				aria-busy={busy}
 				onKeyDown={onPanelKeyDown}
 				className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${
-					wide ? 'max-w-5xl' : 'max-w-2xl'
+					wide ? 'max-w-5xl' : 'max-w-[760px]'
 				}`}
 			>
-				<div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-5 py-4 sm:px-6">
+				<div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-5 py-3 sm:px-6">
 					<div className="min-w-0 flex-1">
 						<h2 id={titleId} className="break-words text-xl font-bold text-gray-900">
 							{title}
@@ -186,8 +186,8 @@ export function ToolProviderDrawer({
 					</div>
 				) : null}
 				{navigation}
-				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
-				<div className="shrink-0 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-6">{footer}</div>
+				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">{children}</div>
+				<div className="shrink-0 border-t border-gray-200 bg-gray-50 px-5 py-3 sm:px-6">{footer}</div>
 			</div>
 		</div>
 	);

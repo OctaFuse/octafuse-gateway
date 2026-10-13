@@ -2780,7 +2780,9 @@
 			},
 			"providers": {
 				"tencent_tms": "Tencent Cloud TMS"
-			}
+			},
+			"billingUnitHint": "端数は1課金単位に切り上げます。",
+			"billingUnitInvalid": "文字数は正の整数を入力してください。"
 		},
 		"invocations": {
 			"title": "呼び出し履歴",
@@ -2864,7 +2866,7 @@
 			"backToConfig": "サービス設定に戻る",
 			"connection": "接続設定",
 			"pricing": "課金ルール",
-			"settingsSections": "サービス設定"
+			"credentialsRequired": "認証情報を入力すると保存して有効化できます。設定だけ先に保存することもできます。"
 		}
 	},
 	"pricing": {
@@ -3247,6 +3249,7 @@
 		"invalidNumber": "標準価格と2つの倍率には0以上の有限数を入力してください。空欄は不可で、計算後の金額も範囲内である必要があります。",
 		"title": "課金ルール",
 		"perUnitMode": "単位ごとの課金",
-		"charactersUnit": "{count} 文字"
+		"charactersUnit": "{count} 文字",
+		"requestUnit": "回"
 	}
 }

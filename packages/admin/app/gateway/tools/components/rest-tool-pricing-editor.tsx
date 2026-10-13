@@ -14,6 +14,7 @@ export function RestToolPricingEditor({
 }) {
 	return (
 		<ToolPricingEditor
+			compact
 			value={restFactorDraft(value)}
 			currency={currency}
 			unitLabel={unitLabel}

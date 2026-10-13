@@ -2788,7 +2788,9 @@
 			},
 			"providers": {
 				"tencent_tms": "Tencent Cloud TMS"
-			}
+			},
+			"billingUnitHint": "Partial units are rounded up to one billing unit.",
+			"billingUnitInvalid": "Enter a positive whole number of characters."
 		},
 		"invocations": {
 			"title": "Invocations",
@@ -2864,7 +2866,7 @@
 			"backToConfig": "Back to configuration",
 			"connection": "Connection",
 			"pricing": "Billing rules",
-			"settingsSections": "Service settings"
+			"credentialsRequired": "Complete the credentials to save and activate, or save the configuration first."
 		}
 	},
 	"pricing": {
@@ -3247,6 +3249,7 @@
 		"invalidNumber": "The standard price and both multipliers must be finite, non-negative numbers and cannot be blank. Calculated amounts must be within range.",
 		"title": "Pricing rule",
 		"perUnitMode": "Per-unit billing",
-		"charactersUnit": "{count} characters"
+		"charactersUnit": "{count} characters",
+		"requestUnit": "request"
 	}
 }

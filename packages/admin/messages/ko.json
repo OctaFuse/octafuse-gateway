@@ -2780,7 +2780,9 @@
 			},
 			"providers": {
 				"tencent_tms": "Tencent Cloud TMS"
-			}
+			},
+			"billingUnitHint": "단위 미만의 문자 수도 한 단위로 계산합니다.",
+			"billingUnitInvalid": "문자 수는 양의 정수로 입력하세요."
 		},
 		"invocations": {
 			"title": "호출 내역",
@@ -2864,7 +2866,7 @@
 			"backToConfig": "서비스 설정으로 돌아가기",
 			"connection": "연결 설정",
 			"pricing": "과금 규칙",
-			"settingsSections": "서비스 설정"
+			"credentialsRequired": "인증 정보를 입력하면 저장 후 활성화할 수 있습니다. 설정만 먼저 저장할 수도 있습니다."
 		}
 	},
 	"pricing": {
@@ -3247,6 +3249,7 @@
 		"invalidNumber": "표준 가격과 두 배율은 음수가 아닌 유한한 숫자여야 하며 비워 둘 수 없습니다. 계산된 금액도 범위 내에 있어야 합니다.",
 		"title": "과금 규칙",
 		"perUnitMode": "단위별 과금",
-		"charactersUnit": "{count} 문자"
+		"charactersUnit": "{count} 문자",
+		"requestUnit": "회"
 	}
 }

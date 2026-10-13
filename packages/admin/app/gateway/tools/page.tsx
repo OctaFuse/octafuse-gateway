@@ -550,7 +550,6 @@ export default function GatewayToolsConfigPage() {
 	const [aiDetectionSaving, setAiDetectionSaving] = useState(false);
 
 	const [secretsVisible, setSecretsVisible] = useState(false);
-	const [drawerSection, setDrawerSection] = useState<'connection' | 'pricing'>('connection');
 	const serviceSearchRef = useRef<HTMLInputElement>(null);
 	/** 服务详情弹窗：点击服务行打开；null 表示关闭 */
 	const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
@@ -961,7 +960,6 @@ export default function GatewayToolsConfigPage() {
 	);
 
 	const openWebSearchDrawer = (id: string) => {
-		setDrawerSection('connection');
 		setSecretsVisible(false);
 		setProviderGuideOpen(false);
 		const p = id as WebSearchProvider;
@@ -969,7 +967,6 @@ export default function GatewayToolsConfigPage() {
 		setDrawer({ tool: 'webSearch', providerId: p });
 	};
 	const openWebFetchDrawer = (id: string) => {
-		setDrawerSection('connection');
 		setSecretsVisible(false);
 		setProviderGuideOpen(false);
 		const p = id as WebFetchProvider;
@@ -977,7 +974,6 @@ export default function GatewayToolsConfigPage() {
 		setDrawer({ tool: 'webFetch', providerId: p });
 	};
 	const openWebDeepSearchDrawer = (id: string) => {
-		setDrawerSection('connection');
 		setSecretsVisible(false);
 		setProviderGuideOpen(false);
 		const p = id as WebDeepSearchProvider;
@@ -985,7 +981,6 @@ export default function GatewayToolsConfigPage() {
 		setDrawer({ tool: 'webDeepSearch', providerId: p });
 	};
 	const openAiDetectionDrawer = (id: string) => {
-		setDrawerSection('connection');
 		setSecretsVisible(false);
 		setProviderGuideOpen(false);
 		const p = id as AiDetectionProvider;
@@ -1042,6 +1037,49 @@ export default function GatewayToolsConfigPage() {
 		aiDetectionProviderOptions.find((o) => o.value === aiDetectionSelected)?.label ?? aiDetectionSelected;
 	const aiFields = getAiDetectionCredentialFields(aiDetectionSelected);
 	const aiDraft = aiDetectionDrafts[aiDetectionSelected];
+
+	const currentDraft =
+		drawer?.tool === "webSearch"
+			? webSearchDrafts[webSearchSelected]
+			: drawer?.tool === "webFetch"
+			? webFetchDrafts[webFetchSelected]
+			: drawer?.tool === "webDeepSearch"
+			? webDeepSearchDrafts[webDeepSearchSelected]
+			: drawer?.tool === "aiDetection"
+			? aiDraft
+			: null;
+	const currentConfigured =
+		drawer?.tool === "aiDetection"
+			? aiFields.every((field) => Boolean(aiDraft[field].trim()))
+			: Boolean(currentDraft?.apiKey.trim());
+	const aiUnitValid =
+		Boolean(aiDraft.billingUnitChars.trim()) &&
+		Number.isSafeInteger(Number(aiDraft.billingUnitChars)) &&
+		Number(aiDraft.billingUnitChars) > 0;
+	function updateAiDraft(patch: Partial<AiDetectionProviderDraft>) {
+		setAiDetectionDrafts((prev) => ({
+			...prev,
+			[aiDetectionSelected]: { ...prev[aiDetectionSelected], ...patch },
+		}));
+	}
+	function updateCurrentDraft(patch: Partial<ProviderDraft>) {
+		if (drawer?.tool === "webSearch")
+			setWebSearchDrafts((prev) => ({
+				...prev,
+				[webSearchSelected]: { ...prev[webSearchSelected], ...patch },
+			}));
+		else if (drawer?.tool === "webFetch")
+			setWebFetchDrafts((prev) => ({
+				...prev,
+				[webFetchSelected]: { ...prev[webFetchSelected], ...patch },
+			}));
+		else if (drawer?.tool === "webDeepSearch")
+			setWebDeepSearchDrafts((prev) => ({
+				...prev,
+				[webDeepSearchSelected]: { ...prev[webDeepSearchSelected], ...patch },
+			}));
+		else if (drawer?.tool === "aiDetection") updateAiDraft(patch);
+	}
 
 	const drawerBusy =
 		(drawer?.tool === 'webSearch' && webSearchSaving) ||
@@ -1122,78 +1160,6 @@ export default function GatewayToolsConfigPage() {
 				open={drawer != null}
 				title={drawerTitle}
 				subtitle={drawer ? t(`${drawer.tool}.title`) : undefined}
-				navigation={
-					!providerGuideOpen ? (
-						<div
-							role="tablist"
-							aria-label={t('serviceList.settingsSections')}
-							className="grid grid-cols-2 gap-1 border-b border-gray-200 px-5 sm:px-6"
-						>
-							{(['connection', 'pricing'] as const).map((section) => (
-								<button
-									key={section}
-									type="button"
-									role="tab"
-									aria-selected={drawerSection === section}
-									id={`rest-${drawer?.tool}-${section}-tab`}
-									aria-controls={`rest-${drawer?.tool}-${section}`}
-									disabled={Boolean(drawerBusy)}
-									onClick={() => {
-										setDrawerSection(section);
-										setSecretsVisible(false);
-									}}
-									className={`border-b-2 px-3 py-3 text-sm font-medium ${
-										drawerSection === section
-											? 'border-gray-900 text-gray-900'
-											: 'border-transparent text-gray-500 hover:text-gray-800'
-									}`}
-								>
-									{t(`serviceList.${section}`)}
-								</button>
-							))}
-						</div>
-					) : undefined
-				}
-				headerActions={
-					drawerSection === 'connection' || providerGuideOpen ? (
-						<>
-							<button
-								hidden={drawerSection !== 'connection'}
-								type="button"
-								onClick={() => setSecretsVisible((v) => !v)}
-								disabled={Boolean(drawerBusy) || providerGuideOpen}
-								className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 [&[hidden]]:hidden"
-								aria-pressed={secretsVisible}
-							>
-								{secretsVisible ? (
-									<>
-										<EyeSlashIcon className="h-4 w-4" aria-hidden />
-										{t('config.hideSecrets')}
-									</>
-								) : (
-									<>
-										<EyeIcon className="h-4 w-4" aria-hidden />
-										{t('config.showSecrets')}
-									</>
-								)}
-							</button>
-							{drawer?.tool === 'webSearch' ? (
-								<button
-									ref={guideButtonRef}
-									type="button"
-									disabled={Boolean(drawerBusy)}
-									onClick={() => {
-										setSecretsVisible(false);
-										setProviderGuideOpen((open) => !open);
-									}}
-									className="rounded-md border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-								>
-									{providerGuideOpen ? t('serviceList.backToConfig') : t('webSearch.providerGuideLink')}
-								</button>
-							) : null}
-						</>
-					) : undefined
-				}
 				busy={Boolean(drawerBusy)}
 				onClose={closeDrawer}
 				docsHref={
@@ -1242,7 +1208,7 @@ export default function GatewayToolsConfigPage() {
 							type="button"
 							onClick={() => {
 								setProviderGuideOpen(false);
-								guideButtonRef.current?.focus();
+								requestAnimationFrame(() => guideButtonRef.current?.focus());
 							}}
 							className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
 						>
@@ -1292,265 +1258,181 @@ export default function GatewayToolsConfigPage() {
 				}
 			>
 				{providerGuideOpen ? <WebSearchProviderGuideContent activeProvider={webSearchSelected} /> : null}
-				{!providerGuideOpen && drawer?.tool === 'webSearch' ? (
-					<div className="flex flex-col gap-4">
-						<div
-							role="tabpanel"
-							id="rest-webSearch-pricing"
-							aria-labelledby="rest-webSearch-pricing-tab"
-							hidden={drawerSection !== 'pricing'}
-						>
-							<RestToolPricingEditor
-								currency={billingCurrency}
-								value={webSearchDrafts[webSearchSelected]}
-								onChange={(patch) =>
-									setWebSearchDrafts((prev) => ({
-										...prev,
-										[webSearchSelected]: { ...prev[webSearchSelected], ...patch },
-									}))
-								}
-							/>
-						</div>
-						<div
-							role="tabpanel"
-							id="rest-webSearch-connection"
-							aria-labelledby="rest-webSearch-connection-tab"
-							hidden={drawerSection !== 'connection'}
-						>
-							<label className="mb-1 block text-xs font-medium text-gray-600">{t('webSearch.apiKey')}</label>
-							<ApiKeyField
-								value={webSearchDrafts[webSearchSelected].apiKey}
-								onChange={(apiKey) =>
-									setWebSearchDrafts((prev) => ({
-										...prev,
-										[webSearchSelected]: { ...prev[webSearchSelected], apiKey },
-									}))
-								}
-								placeholder={t('webSearch.apiKeyPlaceholder')}
-								secretsVisible={secretsVisible}
-							/>
-						</div>
-					</div>
-				) : null}
-				{!providerGuideOpen && drawer?.tool === 'webFetch' ? (
-					<div className="flex flex-col gap-4">
-						<div
-							role="tabpanel"
-							id="rest-webFetch-pricing"
-							aria-labelledby="rest-webFetch-pricing-tab"
-							hidden={drawerSection !== 'pricing'}
-						>
-							<RestToolPricingEditor
-								currency={billingCurrency}
-								value={webFetchDrafts[webFetchSelected]}
-								onChange={(patch) =>
-									setWebFetchDrafts((prev) => ({
-										...prev,
-										[webFetchSelected]: { ...prev[webFetchSelected], ...patch },
-									}))
-								}
-							/>
-						</div>
-						<div
-							role="tabpanel"
-							id="rest-webFetch-connection"
-							aria-labelledby="rest-webFetch-connection-tab"
-							hidden={drawerSection !== 'connection'}
-						>
-							<label className="mb-1 block text-xs font-medium text-gray-600">{t('webFetch.apiKey')}</label>
-							<ApiKeyField
-								value={webFetchDrafts[webFetchSelected].apiKey}
-								onChange={(apiKey) =>
-									setWebFetchDrafts((prev) => ({
-										...prev,
-										[webFetchSelected]: { ...prev[webFetchSelected], apiKey },
-									}))
-								}
-								placeholder={t('webFetch.apiKeyPlaceholder')}
-								secretsVisible={secretsVisible}
-							/>
-						</div>
-					</div>
-				) : null}
-				{!providerGuideOpen && drawer?.tool === 'webDeepSearch' ? (
-					<div className="flex flex-col gap-4">
-						<div
-							role="tabpanel"
-							id="rest-webDeepSearch-pricing"
-							aria-labelledby="rest-webDeepSearch-pricing-tab"
-							hidden={drawerSection !== 'pricing'}
-						>
-							<RestToolPricingEditor
-								currency={billingCurrency}
-								value={webDeepSearchDrafts[webDeepSearchSelected]}
-								onChange={(patch) =>
-									setWebDeepSearchDrafts((prev) => ({
-										...prev,
-										[webDeepSearchSelected]: {
-											...prev[webDeepSearchSelected],
-											...patch,
-										},
-									}))
-								}
-							/>
-						</div>
-						<div
-							role="tabpanel"
-							id="rest-webDeepSearch-connection"
-							aria-labelledby="rest-webDeepSearch-connection-tab"
-							hidden={drawerSection !== 'connection'}
-						>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('webDeepSearch.apiKey')}
-							</label>
-							<ApiKeyField
-								value={webDeepSearchDrafts[webDeepSearchSelected].apiKey}
-								onChange={(apiKey) =>
-									setWebDeepSearchDrafts((prev) => ({
-										...prev,
-										[webDeepSearchSelected]: {
-											...prev[webDeepSearchSelected],
-											apiKey,
-										},
-									}))
-								}
-								placeholder={t('webDeepSearch.apiKeyPlaceholder')}
-								secretsVisible={secretsVisible}
-							/>
-						</div>
-					</div>
-				) : null}
-				{!providerGuideOpen && drawer?.tool === 'aiDetection' ? (
-					<div className="flex flex-col gap-4">
-						<div
-							role="tabpanel"
-							id="rest-aiDetection-pricing"
-							aria-labelledby="rest-aiDetection-pricing-tab"
-							hidden={drawerSection !== 'pricing'}
-						>
-							<div className="min-w-0 flex-1">
-								<RestToolPricingEditor
-									currency={billingCurrency}
-									value={aiDraft}
-									unitLabel={tPricing('charactersUnit', { count: Number(aiDraft.billingUnitChars) || 1 })}
-									onChange={(patch) =>
-										setAiDetectionDrafts((prev) => ({
-											...prev,
-											[aiDetectionSelected]: {
-												...prev[aiDetectionSelected],
-												...patch,
-											},
-										}))
-									}
-								/>
+				{!providerGuideOpen && drawer && currentDraft ? (
+					<div className="space-y-4">
+						<section aria-labelledby="rest-connection-heading">
+							<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+								<h3
+									id="rest-connection-heading"
+									className="text-sm font-semibold text-gray-900"
+								>
+									{t("serviceList.connection")}
+								</h3>
+								<div className="flex items-center gap-3">
+									<button
+										type="button"
+										onClick={() => setSecretsVisible((v) => !v)}
+										disabled={Boolean(drawerBusy)}
+										aria-pressed={secretsVisible}
+										className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900"
+									>
+										{secretsVisible ? (
+											<EyeSlashIcon className="h-4 w-4" />
+										) : (
+											<EyeIcon className="h-4 w-4" />
+										)}
+										{t(
+											secretsVisible
+												? "config.hideSecrets"
+												: "config.showSecrets"
+										)}
+									</button>
+									{drawer.tool === "webSearch" ? (
+										<button
+											ref={guideButtonRef}
+											type="button"
+											disabled={Boolean(drawerBusy)}
+											onClick={() => {
+												setSecretsVisible(false);
+												setProviderGuideOpen(true);
+											}}
+											className="text-xs font-medium text-blue-600 hover:underline"
+										>
+											{t("webSearch.providerGuideLink")}
+										</button>
+									) : null}
+								</div>
 							</div>
-							<div className="mt-4 max-w-xs">
-								<label className="mb-1 block text-xs font-medium text-gray-600">
-									{t('aiDetection.billingUnitChars')}
-								</label>
-								<input
-									type="number"
-									min={1}
-									step={1}
-									aria-label={t('aiDetection.billingUnitChars')}
-									value={aiDraft.billingUnitChars}
-									onChange={(e) =>
-										setAiDetectionDrafts((prev) => ({
-											...prev,
-											[aiDetectionSelected]: {
-												...prev[aiDetectionSelected],
-												billingUnitChars: e.target.value,
-											},
-										}))
-									}
-									className="w-full rounded-md border border-gray-300 px-2 py-1.5 font-mono text-sm shadow-sm"
-								/>
-							</div>
-						</div>
-						<div
-							role="tabpanel"
-							id="rest-aiDetection-connection"
-							aria-labelledby="rest-aiDetection-connection-tab"
-							hidden={drawerSection !== 'connection'}
-						>
-							<label className="mb-2 block text-xs font-medium text-gray-600">
-								{t('aiDetection.credentials')}
-							</label>
-							<div className="flex flex-col gap-2">
-								{aiFields.map((field) => (
-									<div key={field} className="flex min-w-0 items-center gap-2">
-										<span className="w-20 shrink-0 text-xs text-gray-500">
+							{drawer.tool === "aiDetection" ? (
+								<div className="grid gap-3 sm:grid-cols-2">
+									{aiFields.map((field) => (
+										<label
+											key={field}
+											className="block text-xs font-medium text-gray-600"
+										>
 											{t(AI_DETECTION_FIELD_I18N[field])}
-										</span>
-										<input
-											type={field === 'email' ? 'email' : secretsVisible ? 'text' : 'password'}
-											value={aiDraft[field]}
-											onChange={(e) =>
-												setAiDetectionDrafts((prev) => ({
-													...prev,
-													[aiDetectionSelected]: {
-														...prev[aiDetectionSelected],
-														[field]: e.target.value,
-													},
-												}))
-											}
-											placeholder={t(AI_DETECTION_FIELD_I18N[field])}
-											autoComplete="off"
-											spellCheck={false}
-											className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 font-mono text-sm text-gray-900 shadow-sm"
+											<input
+												type={
+													field === "email"
+														? "email"
+														: secretsVisible
+														? "text"
+														: "password"
+												}
+												value={aiDraft[field]}
+												onChange={(e) =>
+													updateAiDraft({ [field]: e.target.value })
+												}
+												placeholder={t(AI_DETECTION_FIELD_I18N[field])}
+												autoComplete="off"
+												spellCheck={false}
+												className="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+											/>
+										</label>
+									))}
+									{aiDetectionSelected === "tencent_tms" ? (
+										<>
+											<label className="block text-xs font-medium text-gray-600">
+												{t("aiDetection.fields.region")}
+												<input
+													type="text"
+													value={aiDraft.region}
+													onChange={(e) =>
+														updateAiDraft({ region: e.target.value })
+													}
+													autoComplete="off"
+													spellCheck={false}
+													className="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+												/>
+											</label>
+											<label className="block text-xs font-medium text-gray-600">
+												{t("aiDetection.fields.bizTypeOptional")}
+												<input
+													type="text"
+													value={aiDraft.bizType}
+													onChange={(e) =>
+														updateAiDraft({ bizType: e.target.value })
+													}
+													autoComplete="off"
+													spellCheck={false}
+													className="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+												/>
+											</label>
+										</>
+									) : null}
+								</div>
+							) : (
+								<label className="block text-xs font-medium text-gray-600">
+									{t(`${drawer.tool}.apiKey`)}
+									<div className="mt-1.5">
+										<ApiKeyField
+											value={currentDraft.apiKey}
+											onChange={(apiKey) => updateCurrentDraft({ apiKey })}
+											placeholder={t(`${drawer.tool}.apiKeyPlaceholder`)}
+											secretsVisible={secretsVisible}
 										/>
 									</div>
-								))}
-								{aiDetectionSelected === 'tencent_tms' && (
-									<>
-										<div className="flex min-w-0 items-center gap-2">
-											<span className="w-20 shrink-0 text-xs text-gray-500">
-												{t('aiDetection.fields.region')}
-											</span>
-											<input
-												type="text"
-												value={aiDraft.region}
-												onChange={(e) =>
-													setAiDetectionDrafts((prev) => ({
-														...prev,
-														[aiDetectionSelected]: {
-															...prev[aiDetectionSelected],
-															region: e.target.value,
-														},
-													}))
-												}
-												placeholder={t('aiDetection.fields.region')}
-												autoComplete="off"
-												spellCheck={false}
-												className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 font-mono text-sm text-gray-900 shadow-sm"
-											/>
-										</div>
-										<div className="flex min-w-0 items-center gap-2">
-											<span className="w-20 shrink-0 text-xs text-gray-500">
-												{t('aiDetection.fields.bizType')}
-											</span>
-											<input
-												type="text"
-												value={aiDraft.bizType}
-												onChange={(e) =>
-													setAiDetectionDrafts((prev) => ({
-														...prev,
-														[aiDetectionSelected]: {
-															...prev[aiDetectionSelected],
-															bizType: e.target.value,
-														},
-													}))
-												}
-												placeholder={t('aiDetection.fields.bizTypeOptional')}
-												autoComplete="off"
-												spellCheck={false}
-												className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 font-mono text-sm text-gray-900 shadow-sm"
-											/>
-										</div>
-									</>
-								)}
-							</div>
-						</div>
+								</label>
+							)}
+							{!currentConfigured ? (
+								<p className="mt-2 text-xs text-gray-500">
+									{t("serviceList.credentialsRequired")}
+								</p>
+							) : null}
+						</section>
+						<section
+							aria-labelledby="rest-pricing-heading"
+							className="border-t border-gray-200 pt-4"
+						>
+							<h3
+								id="rest-pricing-heading"
+								className="mb-3 text-sm font-semibold text-gray-900"
+							>
+								{t("serviceList.pricing")}
+							</h3>
+							{drawer.tool === "aiDetection" ? (
+								<div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+									<label className="flex items-center gap-2 text-xs font-medium text-gray-600">
+										{t("aiDetection.billingUnitChars")}
+										<input
+											type="number"
+											min={1}
+											step={1}
+											required
+											value={aiDraft.billingUnitChars}
+											onChange={(e) =>
+												updateAiDraft({ billingUnitChars: e.target.value })
+											}
+											aria-invalid={!aiUnitValid}
+											className="w-28 rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm"
+										/>
+									</label>
+									<p className="text-xs text-gray-500">
+										{t("aiDetection.billingUnitHint")}
+									</p>
+									{!aiUnitValid ? (
+										<p role="status" className="w-full text-xs text-red-600">
+											{t("aiDetection.billingUnitInvalid")}
+										</p>
+									) : null}
+								</div>
+							) : null}
+							<RestToolPricingEditor
+								key={`${drawer.tool}-${drawer.providerId}`}
+								currency={billingCurrency}
+								value={currentDraft}
+								unitLabel={
+									drawer.tool === "aiDetection"
+										? tPricing("charactersUnit", {
+												count: aiUnitValid
+													? Number(aiDraft.billingUnitChars)
+													: "—",
+										  })
+										: undefined
+								}
+								onChange={updateCurrentDraft}
+							/>
+						</section>
 					</div>
 				) : null}
 			</ToolProviderDrawer>
