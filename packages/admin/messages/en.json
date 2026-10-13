@@ -809,7 +809,75 @@
 			"audioHint": "Audio",
 			"editModel": "Edit {name}",
 			"pricingNoData": "—",
-			"pricingTiers": "{count} tiers"
+			"pricingTiers": "{count} tiers",
+			"noRoutes": "No routes",
+			"officialUpdateTitle": "Official catalog has updates — click to review and sync"
+		},
+		"sync": {
+			"title": "Sync with official catalog",
+			"subtitle": "Compare each model with the built-in official catalog and choose \"Use official\" or \"Keep current\" per field.",
+			"loading": "Comparing…",
+			"loadFailed": "Failed to load differences",
+			"recheck": "Re-check",
+			"navAria": "Vendors with differences",
+			"groupSummary": "{models} models · {fields} differences",
+			"groupHint": "Each difference can be handled separately: use the official value or keep your current one.",
+			"useOfficialAll": "Use official for all",
+			"keepCurrentAll": "Keep current for all",
+			"current": "Current",
+			"official": "Official",
+			"useOfficial": "Use official",
+			"keepCurrent": "Keep current",
+			"status": {
+				"added": "Official adds",
+				"changed": "Differs from official",
+				"removed": "Local only"
+			},
+			"field": {
+				"display_name": "Display name",
+				"vendor": "Vendor",
+				"context_window": "Context window",
+				"max_tokens": "Max output",
+				"description": "Description",
+				"released_at": "Release date",
+				"input_modalities": "Input modalities",
+				"output_modalities": "Output modalities",
+				"pricing_profile": "Pricing"
+			},
+			"pricingHint": "Pricing affects billing and is kept by default. The comparison uses the official {currency} prices — review before applying.",
+			"pricingPath": "Price field",
+			"applyModel": "Sync this model ({count})",
+			"allSyncedTitle": "All models match the official catalog",
+			"allSyncedHint": "Nothing to sync. After the official catalog changes, click \"Check official updates\" again.",
+			"summary": "{fields} selected across {models} models.",
+			"summaryPricing": "Pricing will change for {models} models, affecting {routes} active routes.",
+			"safeNote": "Tags, metadata, routes and route price overrides are never modified; fields the catalog leaves empty are not cleared.",
+			"resetDefaults": "Reset to defaults",
+			"applying": "Syncing…",
+			"applyAll": "Sync selected ({count} models)",
+			"selectNone": "Select at least one difference to apply",
+			"confirmTitle": "Sync official catalog",
+			"confirmMessage": "This will update {fields} fields across {models} models.",
+			"confirmPricing": "{models} models include pricing changes affecting {routes} active routes; future billing will change.",
+			"confirmApply": "Sync",
+			"applyFailed": "Sync failed",
+			"applied": "Synced {updated} models",
+			"appliedWithSkipped": "Synced {updated} models, {skipped} needed no change",
+			"appliedWithFail": "Synced {updated}, {failed} failed",
+			"banner": {
+				"updates": "{models} models across {vendors} vendors differ from the official catalog",
+				"hint": "Choose per field to use official or keep current; pricing is kept by default.",
+				"review": "Review and sync"
+			},
+			"check": {
+				"button": "Check official updates",
+				"checking": "Checking…",
+				"neverChecked": "Not checked yet",
+				"lastCheckedUpdates": "Checked {time}: updates found",
+				"lastCheckedUpToDate": "Checked {time}: up to date",
+				"upToDate": "Checked: all models match the official catalog",
+				"foundUpdates": "{models} models ({vendors} vendors) have official updates"
+			}
 		}
 	},
 	"routes": {

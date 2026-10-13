@@ -809,7 +809,75 @@
 			"audioHint": "音声",
 			"editModel": "{name} を編集",
 			"pricingNoData": "—",
-			"pricingTiers": "{count} 段階"
+			"pricingTiers": "{count} 段階",
+			"noRoutes": "ルートなし",
+			"officialUpdateTitle": "公式カタログに更新があります。クリックして確認・同期"
+		},
+		"sync": {
+			"title": "公式カタログと同期",
+			"subtitle": "各モデルを内蔵の公式カタログと比較し、項目ごとに「公式を採用」か「現在の値を保持」を選びます。",
+			"loading": "比較中…",
+			"loadFailed": "差分の読み込みに失敗しました",
+			"recheck": "再チェック",
+			"navAria": "差分のあるベンダー",
+			"groupSummary": "{models} モデル · {fields} 件の差分",
+			"groupHint": "差分ごとに、公式の値を採用するか現在の値を保持するかを選べます。",
+			"useOfficialAll": "すべて公式を採用",
+			"keepCurrentAll": "すべて現在の値を保持",
+			"current": "現在",
+			"official": "公式",
+			"useOfficial": "公式を採用",
+			"keepCurrent": "現在の値を保持",
+			"status": {
+				"added": "公式で追加",
+				"changed": "公式と相違",
+				"removed": "ローカルのみ"
+			},
+			"field": {
+				"display_name": "表示名",
+				"vendor": "ベンダー",
+				"context_window": "コンテキストウィンドウ",
+				"max_tokens": "最大出力",
+				"description": "説明",
+				"released_at": "リリース日",
+				"input_modalities": "入力モダリティ",
+				"output_modalities": "出力モダリティ",
+				"pricing_profile": "価格"
+			},
+			"pricingHint": "価格は課金に影響するため、既定では現在の値を保持します。比較対象は公式カタログの {currency} 価格です。確認のうえ採用してください。",
+			"pricingPath": "価格項目",
+			"applyModel": "このモデルを同期（{count}）",
+			"allSyncedTitle": "すべてのモデルが公式カタログと一致しています",
+			"allSyncedHint": "同期する差分はありません。公式カタログの更新後に、もう一度「公式の更新を確認」をクリックしてください。",
+			"summary": "{models} モデルの {fields} 件を選択中。",
+			"summaryPricing": "{models} モデルの価格が更新され、有効な {routes} ルートに影響します。",
+			"safeNote": "タグ、メタデータ、ルート、ルート価格の上書きは変更されません。カタログが空の項目も消去されません。",
+			"resetDefaults": "既定の選択に戻す",
+			"applying": "同期中…",
+			"applyAll": "選択を同期（{count} モデル）",
+			"selectNone": "採用する差分を少なくとも1件選択してください",
+			"confirmTitle": "公式カタログを同期",
+			"confirmMessage": "{models} モデルの {fields} 件の設定を更新します。",
+			"confirmPricing": "{models} モデルに価格変更が含まれ、有効な {routes} ルートに影響します。今後の課金が変わります。",
+			"confirmApply": "同期",
+			"applyFailed": "同期に失敗しました",
+			"applied": "{updated} モデルを同期しました",
+			"appliedWithSkipped": "{updated} モデルを同期、{skipped} 件は変更不要",
+			"appliedWithFail": "{updated} 件を同期、{failed} 件が失敗",
+			"banner": {
+				"updates": "{vendors} ベンダーの {models} モデルが公式カタログと異なります",
+				"hint": "項目ごとに公式採用か現在の値の保持を選べます。価格は既定で保持されます。",
+				"review": "確認して同期"
+			},
+			"check": {
+				"button": "公式の更新を確認",
+				"checking": "確認中…",
+				"neverChecked": "未確認",
+				"lastCheckedUpdates": "{time} 確認：更新あり",
+				"lastCheckedUpToDate": "{time} 確認：最新",
+				"upToDate": "確認済み：すべてのモデルが公式カタログと一致",
+				"foundUpdates": "{models} モデル（{vendors} ベンダー）に公式の更新があります"
+			}
 		}
 	},
 	"routes": {

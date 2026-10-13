@@ -809,7 +809,75 @@
 			"audioHint": "音频",
 			"editModel": "编辑 {name}",
 			"pricingNoData": "—",
-			"pricingTiers": "{count} 档"
+			"pricingTiers": "{count} 档",
+			"noRoutes": "未关联路由",
+			"officialUpdateTitle": "官方目录有更新，点击查看并同步"
+		},
+		"sync": {
+			"title": "与官方目录同步",
+			"subtitle": "对比各模型与内置官方目录的差异，逐项选择「采用官方」或「保留当前」。",
+			"loading": "正在对比…",
+			"loadFailed": "加载差异失败",
+			"recheck": "重新检查",
+			"navAria": "有差异的模型厂商",
+			"groupSummary": "{models} 个模型 · {fields} 处差异",
+			"groupHint": "每一处差异都可单独选择：采用官方，或保留当前配置。",
+			"useOfficialAll": "全部采用官方",
+			"keepCurrentAll": "全部保留当前",
+			"current": "当前",
+			"official": "官方",
+			"useOfficial": "采用官方",
+			"keepCurrent": "保留当前",
+			"status": {
+				"added": "官方补充",
+				"changed": "与官方不同",
+				"removed": "仅本地有"
+			},
+			"field": {
+				"display_name": "显示名称",
+				"vendor": "厂商",
+				"context_window": "上下文窗口",
+				"max_tokens": "最大输出",
+				"description": "介绍",
+				"released_at": "发布日期",
+				"input_modalities": "输入模态",
+				"output_modalities": "输出模态",
+				"pricing_profile": "价格"
+			},
+			"pricingHint": "价格直接影响计费，默认保留当前；对比的是官方目录的 {currency} 价格，请核对后再采用。",
+			"pricingPath": "价格项",
+			"applyModel": "同步此模型（{count}）",
+			"allSyncedTitle": "所有模型都与官方目录一致",
+			"allSyncedHint": "没有需要同步的差异。官方目录更新后，再次点击「检查官方更新」即可发现。",
+			"summary": "已选 {fields} 处，涉及 {models} 个模型。",
+			"summaryPricing": "其中 {models} 个模型的价格将被更新，涉及 {routes} 条启用中的路由。",
+			"safeNote": "标签、元数据、路由及路由价格覆盖不会被修改；官方未给出的字段不会被清空。",
+			"resetDefaults": "恢复默认选择",
+			"applying": "同步中…",
+			"applyAll": "同步已选（{count} 个模型）",
+			"selectNone": "请至少选择一处要采用官方的差异",
+			"confirmTitle": "同步官方目录",
+			"confirmMessage": "将更新 {models} 个模型的 {fields} 处配置。",
+			"confirmPricing": "其中 {models} 个模型包含价格变更，涉及 {routes} 条启用中的路由，会影响后续计费。",
+			"confirmApply": "同步",
+			"applyFailed": "同步失败",
+			"applied": "已同步 {updated} 个模型",
+			"appliedWithSkipped": "已同步 {updated} 个模型，{skipped} 个无需处理",
+			"appliedWithFail": "已同步 {updated} 个，{failed} 个失败",
+			"banner": {
+				"updates": "{vendors} 个厂商的 {models} 个模型与官方目录不一致",
+				"hint": "可逐项选择采用官方或保留当前；价格默认保留。",
+				"review": "查看并同步"
+			},
+			"check": {
+				"button": "检查官方更新",
+				"checking": "检查中…",
+				"neverChecked": "尚未检查",
+				"lastCheckedUpdates": "{time} 检查：发现更新",
+				"lastCheckedUpToDate": "{time} 检查：已是最新",
+				"upToDate": "已检查：所有模型都与官方目录一致",
+				"foundUpdates": "发现 {models} 个模型（{vendors} 个厂商）有官方更新"
+			}
 		}
 	},
 	"routes": {

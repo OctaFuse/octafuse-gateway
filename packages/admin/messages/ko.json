@@ -809,7 +809,75 @@
 			"audioHint": "오디오",
 			"editModel": "{name} 편집",
 			"pricingNoData": "—",
-			"pricingTiers": "{count}단계"
+			"pricingTiers": "{count}단계",
+			"noRoutes": "라우트 없음",
+			"officialUpdateTitle": "공식 카탈로그에 업데이트가 있습니다. 클릭하여 확인 및 동기화"
+		},
+		"sync": {
+			"title": "공식 카탈로그와 동기화",
+			"subtitle": "각 모델을 내장 공식 카탈로그와 비교하고 항목별로 \"공식 사용\" 또는 \"현재 값 유지\"를 선택합니다.",
+			"loading": "비교 중…",
+			"loadFailed": "차이를 불러오지 못했습니다",
+			"recheck": "다시 확인",
+			"navAria": "차이가 있는 벤더",
+			"groupSummary": "모델 {models}개 · 차이 {fields}건",
+			"groupHint": "차이마다 공식 값을 사용하거나 현재 값을 유지할 수 있습니다.",
+			"useOfficialAll": "모두 공식 사용",
+			"keepCurrentAll": "모두 현재 값 유지",
+			"current": "현재",
+			"official": "공식",
+			"useOfficial": "공식 사용",
+			"keepCurrent": "현재 값 유지",
+			"status": {
+				"added": "공식에서 추가",
+				"changed": "공식과 다름",
+				"removed": "로컬에만 있음"
+			},
+			"field": {
+				"display_name": "표시 이름",
+				"vendor": "벤더",
+				"context_window": "컨텍스트 윈도우",
+				"max_tokens": "최대 출력",
+				"description": "설명",
+				"released_at": "출시일",
+				"input_modalities": "입력 모달리티",
+				"output_modalities": "출력 모달리티",
+				"pricing_profile": "가격"
+			},
+			"pricingHint": "가격은 과금에 영향을 주므로 기본적으로 현재 값을 유지합니다. 비교 대상은 공식 카탈로그의 {currency} 가격이며, 확인 후 적용하세요.",
+			"pricingPath": "가격 항목",
+			"applyModel": "이 모델 동기화({count})",
+			"allSyncedTitle": "모든 모델이 공식 카탈로그와 일치합니다",
+			"allSyncedHint": "동기화할 차이가 없습니다. 공식 카탈로그가 바뀐 뒤 \"공식 업데이트 확인\"을 다시 클릭하세요.",
+			"summary": "모델 {models}개의 {fields}건을 선택했습니다.",
+			"summaryPricing": "모델 {models}개의 가격이 변경되며 활성 라우트 {routes}개에 영향을 줍니다.",
+			"safeNote": "태그, 메타데이터, 라우트, 라우트 가격 오버라이드는 변경되지 않으며 카탈로그가 비워 둔 필드도 지워지지 않습니다.",
+			"resetDefaults": "기본 선택으로 되돌리기",
+			"applying": "동기화 중…",
+			"applyAll": "선택 항목 동기화(모델 {count}개)",
+			"selectNone": "적용할 차이를 하나 이상 선택하세요",
+			"confirmTitle": "공식 카탈로그 동기화",
+			"confirmMessage": "모델 {models}개의 설정 {fields}건을 업데이트합니다.",
+			"confirmPricing": "모델 {models}개에 가격 변경이 포함되며 활성 라우트 {routes}개에 영향을 주어 이후 과금이 달라집니다.",
+			"confirmApply": "동기화",
+			"applyFailed": "동기화에 실패했습니다",
+			"applied": "모델 {updated}개를 동기화했습니다",
+			"appliedWithSkipped": "모델 {updated}개 동기화, {skipped}개는 변경 불필요",
+			"appliedWithFail": "{updated}개 동기화, {failed}개 실패",
+			"banner": {
+				"updates": "벤더 {vendors}곳의 모델 {models}개가 공식 카탈로그와 다릅니다",
+				"hint": "항목별로 공식 사용 또는 현재 값 유지를 선택하세요. 가격은 기본적으로 유지됩니다.",
+				"review": "확인 및 동기화"
+			},
+			"check": {
+				"button": "공식 업데이트 확인",
+				"checking": "확인 중…",
+				"neverChecked": "아직 확인 안 함",
+				"lastCheckedUpdates": "{time} 확인: 업데이트 있음",
+				"lastCheckedUpToDate": "{time} 확인: 최신 상태",
+				"upToDate": "확인 완료: 모든 모델이 공식 카탈로그와 일치합니다",
+				"foundUpdates": "모델 {models}개(벤더 {vendors}곳)에 공식 업데이트가 있습니다"
+			}
 		}
 	},
 	"routes": {

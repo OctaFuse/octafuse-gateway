@@ -5,6 +5,8 @@ export type ModelListItem = Omit<GatewayModel, 'tags'> & {
 	tags: string[];
 	routes_count: number;
 	active_routes_count: number;
+	/** 与官方目录存在差异的字段数；仅在管理员手动「检查官方更新」后由前端合并，不来自列表接口。 */
+	official_update_count?: number;
 };
 
 /** `GET /admin/models/import/catalog` */

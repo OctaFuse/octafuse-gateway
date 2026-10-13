@@ -13,12 +13,21 @@ import { ModelCard } from './components/model-card';
 import { ModelFilterSidebar } from './components/model-filter-sidebar';
 import { ModelImportModal } from './components/model-import-modal';
 import { ModelModal } from './components/model-modal';
+import { ModelSyncBanner } from './components/model-sync-banner';
+import { ModelSyncCheckButton } from './components/model-sync-check-button';
+import { ModelSyncModal } from './components/model-sync-modal';
+import { useModelSync } from './use-model-sync';
+import { normalizeModelVendorInput } from '@/lib/model-vendor';
 
 function ModelsContent() {
 	const t = useTranslations('models');
 	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
 	const state = useModelsPageState();
+	const sync = useModelSync({
+		onChanged: state.reloadModelsQuietly,
+		onReport: state.setOfficialReport,
+	});
 
 	if (state.isLoading) {
 		return (
@@ -28,18 +37,35 @@ function ModelsContent() {
 		);
 	}
 
+	const officialUpdateCount = state.officialReport?.models_with_diff ?? 0;
+	const officialUpdateVendorCount = state.officialReport?.groups.length ?? 0;
+
 	const createTitle = state.isAllVendors
 		? t('createTitleAll')
 		: t('createTitleVendor', { vendor: state.activeVendorTitle });
 
 	return (
 		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
-			<div className="mb-5 sm:mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
-				<p className="mt-1 text-sm text-gray-500">
-					{t('subtitle', { product: tBrand('product') })}
-				</p>
+			<div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
+				<div className="min-w-0">
+					<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+					<p className="mt-1 text-sm text-gray-500">
+						{t('subtitle', { product: tBrand('product') })}
+					</p>
+				</div>
+				<ModelSyncCheckButton
+					checking={sync.checking}
+					lastCheckedAt={sync.lastCheckedAt}
+					hasUpdates={officialUpdateCount > 0}
+					onCheck={() => void sync.check()}
+				/>
 			</div>
+
+			<ModelSyncBanner
+				updateCount={officialUpdateCount}
+				vendorCount={officialUpdateVendorCount}
+				onOpen={() => sync.openSync()}
+			/>
 
 			<ModelFilterSidebar
 				modelCount={state.models.length}
@@ -76,6 +102,7 @@ function ModelsContent() {
 						model={model}
 						billingCurrency={state.billingCurrency}
 						onEdit={state.handleEdit}
+						onReviewOfficialUpdate={(m) => sync.openSync(normalizeModelVendorInput(m.vendor))}
 					/>
 				))}
 			</div>
@@ -85,6 +112,8 @@ function ModelsContent() {
 					<span className="mt-1 block text-xs text-gray-400">{t('emptyHint')}</span>
 				</p>
 			) : null}
+
+			<ModelSyncModal sync={sync} />
 
 			<ModelModal
 				open={state.showModal}
