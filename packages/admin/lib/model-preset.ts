@@ -16,6 +16,7 @@
  * 导入时按当前 `BILLING_CURRENCY` 选用 `usd` / `cny` **整段**写入 `pricing_profile`（含可选 `schedule` 官方时段，不只 `tiers`）。
  * DeepSeek V4 / V4.1 目录价为空闲价；`schedule` 为北京时间工作日高峰 09:00–12:00、14:00–18:00、`factor` 2。命中按 `BUSINESS_TIMEZONE` 墙钟，中国区请设 `Asia/Shanghai`。
  * Google Gemini 目录价为 Standard 标准价，不含限时导入价、Batch、Flex。Flash 3.7 / 3.8 写入 $1.50 / $7.50，而不是 2026-12-31 前的 $0.75 / $3.75。
+ * Gemini 4 Argon 目录价为 2026-12-01 起的 Standard 刊例 $4 / $20，缓存读取 $0.20；不含 2026-11-30 前的入门价 $2 / $10。只支持隐式缓存，`cache_write_price` 留空。上下文与长解码上限均为 1,048,576，`max_tokens` 记该上限；同步默认输出 65,536 写在介绍里。输入含文本、图像、音频、视频与 PDF。`gemini-4-barium` 无官方刊例，不入库。
  * Claude Sonnet 5 目录价为官方标准价 $2 / $10（2026-08-10 起入门价转正，不再使用原定 9 月 1 日的 $3 / $15）。
  * GPT-5.6 Terra / Luna 目录价为 2026-07-30 起的标准价 $2 / $12 与 $0.20 / $1.20；GPT-5.6 Sol 与 `gpt-5.6` 别名仍写刊例 $5 / $30，不含至少到 2026-11-21 的促销价。
  * GPT-6 Sol / Luna 目录价为 2026-09-22 起的 Standard 刊例：短上下文 $2 / $10 与 $0.10 / $0.50；输入超过 272K 时整单按 2 倍输入与缓存、1.5 倍输出。不含 Batch、Flex 半价与 Fast 双倍。
