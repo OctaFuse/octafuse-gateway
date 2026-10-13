@@ -65,7 +65,7 @@
 - `unit` 选择计费模式；当前只有 `request`。
 - `standard` 是每单元的基准价格，保存时舍入到六位小数。
 - `chargedFactor` 与 `meteredFactor` 是非负有限倍率，省略时为 1，可为 0 或大于 1，保留倍率精度。计算得到的收费与成本分别舍入到六位小数，只有用户收费扣额度。
-- 新配置只保存基准价和倍率，三个账本金额由 `resolveMcpUnitPrices` 统一计算；上述示例用户收费 0.012，供应成本 0.008。
+- 新配置只保存基准价和倍率，三个账本金额由 `resolveMcpUnitPrices` 调用 REST 与 MCP 共用的 `resolveToolFactorPrices` 计算；上述示例用户收费 0.012，供应成本 0.008。
 - `config` 保存模式自己的配置。`request` 无额外配置，必须为空对象。
 
 调用前按单次价格检查余额；成功后结算 1 request，先扣周期额度，再扣永久额度。余额不足时不请求上游、不扣费。上游传输失败、超时或结果 `isError: true` 时记录错误日志，单元数和三个金额均为 0。免费成功调用也写日志。模型专用的 `users.charged_cost_factors` 不作用于 MCP 工具；MCP 的用户倍率来自当前服务或工具规则。

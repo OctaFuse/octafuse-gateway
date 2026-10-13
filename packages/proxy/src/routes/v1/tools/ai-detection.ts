@@ -3,6 +3,7 @@
  * 引擎/凭证/单价读自 `system_config`（见 `resolveAiDetectionConfig`）。
  */
 import { resolveAiDetectionConfig, roundGatewayMoney, scaleToolUnitPrices } from '@octafuse/core';
+import { toolFactorPricingAudit } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../../app';
 import { requireApiKey } from '../../../middleware/auth';
@@ -11,7 +12,7 @@ import {
 	detectAiRate,
 	getAiDetectionDriver,
 } from '@octafuse/tool-engines/ai-detection';
-import { apiKeyHasBalance, canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
+import { canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
 
 type ToolsEnv = Env & { Variables: { apiKey: import('../../../middleware/auth').ApiKeyContext } };
 
@@ -73,10 +74,15 @@ aiDetectionRoutes.post('/', async (c) => {
 	const totals = scaleToolUnitPrices(unitPrices, billingUnits);
 	const totalCharged = roundGatewayMoney(totals.charged);
 
-	if (!apiKeyHasBalance(apiKey)) {
-		return c.json({ error: 'Budget exceeded' }, 403);
-	}
-	if (!canAffordToolCost(apiKey.budgetMax, apiKey.budgetSpent, totalCharged, apiKey.walletGranted, apiKey.walletSpent)) {
+	if (
+		!canAffordToolCost(
+			apiKey.budgetMax,
+			apiKey.budgetSpent,
+			totalCharged,
+			apiKey.walletGranted,
+			apiKey.walletSpent
+		)
+	) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
 
@@ -101,6 +107,7 @@ aiDetectionRoutes.post('/', async (c) => {
 			pricingUnit: 'chars',
 			billingUnits,
 			unitPrices,
+			pricingAuditExtra: toolFactorPricingAudit(resolved.config.pricing),
 			latencyMs,
 			requestBody: logRequestBody,
 			// 仅分数汇总，不含 excerpt / 原文
@@ -144,7 +151,7 @@ aiDetectionRoutes.post('/', async (c) => {
 				apiKeyId: apiKey.keyId,
 				userId: apiKey.userId,
 				userEmail: apiKey.userEmail,
-			ingressHost: apiKey.ingressHost,
+				ingressHost: apiKey.ingressHost,
 				toolId: 'tool:ai-detection',
 				toolProvider: provider,
 				meteredCost: 0,
@@ -153,6 +160,7 @@ aiDetectionRoutes.post('/', async (c) => {
 				pricingUnit: 'chars',
 				billingUnits,
 				unitPrices,
+				pricingAuditExtra: toolFactorPricingAudit(resolved.config.pricing),
 				latencyMs,
 				requestBody: logRequestBody,
 				errorMessage: message,

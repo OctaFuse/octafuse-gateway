@@ -1,5 +1,11 @@
 /** Versioned MCP pricing stored in the existing JSON column. Only request billing is enabled. */
-import { parseToolMoneyField, scaleToolUnitPrices, type ToolUnitPrices } from '../lib/tool-pricing';
+import {
+	parseToolMoneyField,
+	parseToolPriceFactor,
+	resolveToolFactorPrices,
+	scaleToolUnitPrices,
+	type ToolUnitPrices,
+} from '../lib/tool-pricing';
 
 export const MCP_PRICING_RULE_VERSION = 2;
 
@@ -101,22 +107,19 @@ function checkLegacyFields(record: Record<string, unknown>): void {
 }
 
 function parseFactor(raw: unknown, at: string): number {
-	if ((typeof raw !== 'number' && typeof raw !== 'string') || (typeof raw === 'string' && !raw.trim()))
-		throw new McpPricingRuleError(at, 'must be a non-negative finite number');
-	const value = Number(raw);
-	if (!Number.isFinite(value) || value < 0)
-		throw new McpPricingRuleError(at, 'must be a non-negative finite number');
+	const value = parseToolPriceFactor(raw);
+	if (value == null) throw new McpPricingRuleError(at, 'must be a non-negative finite number');
 	return value;
 }
 
 /** Resolve amounts once at ledger precision; factors themselves retain their precision. */
 export function resolveMcpUnitPrices(rule: McpPricingRule): ToolUnitPrices {
 	if (rule.v === 1) return { ...rule.prices };
-	return {
-		standard: rule.standard,
-		charged: parsePrice(rule.standard * rule.chargedFactor, 'pricing.chargedFactor'),
-		metered: parsePrice(rule.standard * rule.meteredFactor, 'pricing.meteredFactor'),
-	};
+	try {
+		return resolveToolFactorPrices(rule);
+	} catch {
+		throw new McpPricingRuleError('pricing', 'resolved amounts exceed ledger range');
+	}
 }
 
 export function parseMcpPricingRule(raw: unknown): McpPricingRule {

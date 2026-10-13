@@ -2674,7 +2674,7 @@
 		"webSearch": {
 			"title": "Web Search",
 			"description": "供 POST /v1/tools/web-search 使用。仅可选已实现的引擎，禁止自由文本。留空 API Key 并保存将清除密钥（未配置时接口返回 503）。",
-			"descriptionCatalog": "供 POST /v1/tools/web-search 使用。为每个引擎分别配置 API Key 与三账本单价，再「保存并启用」其中一张卡片。仅 charged 计入用户额度；未配置 Key 的引擎不可激活。",
+			"descriptionCatalog": "为每个引擎维护连接凭证，并在计费规则中设置标准价、用户倍率和供应倍率。保存并启用一个已配置凭证的引擎。",
 			"provider": "搜索引擎",
 			"active": "当前 Active 引擎",
 			"catalogProvider": "引擎",
@@ -2733,7 +2733,7 @@
 		"webFetch": {
 			"title": "Web Fetch",
 			"description": "供 POST /v1/tools/web-fetch 使用。仅可选已实现的抓取引擎，禁止自由文本。留空 API Key 并保存将清除密钥（未配置时接口返回 503）。",
-			"descriptionCatalog": "供 POST /v1/tools/web-fetch 使用。为每个抓取引擎分别配置 API Key 与三账本单价，再「保存并启用」其中一张卡片。仅 charged 计入用户额度；未配置 Key 的引擎不可激活。",
+			"descriptionCatalog": "为每个引擎维护连接凭证，并在计费规则中设置标准价、用户倍率和供应倍率。保存并启用一个已配置凭证的引擎。",
 			"provider": "抓取引擎",
 			"active": "当前 Active 引擎",
 			"catalogProvider": "引擎",
@@ -2752,7 +2752,7 @@
 		},
 		"webDeepSearch": {
 			"title": "Web Deep Search",
-			"descriptionCatalog": "供 POST /v1/tools/web-deep-search 使用。搜+读一体引擎（Firecrawl Search / Jina Search），结果含页面正文，比普通 Web Search 更重、更贵。为每个引擎配置后「保存并启用」其中一张卡片。",
+			"descriptionCatalog": "为每个引擎维护连接凭证，并在计费规则中设置标准价、用户倍率和供应倍率。保存并启用一个已配置凭证的引擎。",
 			"active": "当前 Active 引擎",
 			"catalogProvider": "引擎",
 			"noKey": "无 Key",
@@ -2768,7 +2768,7 @@
 		},
 		"aiDetection": {
 			"title": "AI 率检测",
-			"descriptionCatalog": "供 POST /v1/tools/ai-detection 使用。多引擎 catalog：为每个引擎配置凭证与三账本单价后「保存并启用」一张卡片。计费按字符单元（billingUnitChars）缩放三列金额。当前仅实现腾讯云 TMS。",
+			"descriptionCatalog": "为每个引擎维护连接凭证，并在计费规则中设置标准价、用户倍率和供应倍率。保存并启用一个已配置凭证的引擎。",
 			"active": "当前 Active 引擎",
 			"catalogProvider": "引擎",
 			"noKey": "无凭证",
@@ -2838,11 +2838,11 @@
 		},
 		"errors": {
 			"invalidWebSearchProvider": "搜索引擎必须为已实现的选项之一。",
-			"invalidWebSearchCost": "每个引擎的供应 / 目录 / 用户单价均须为非负数字。",
+			"invalidWebSearchCost": "标准价和两个倍率必须为非负有限数字，不能留空；计算金额须在有效范围内。",
 			"invalidWebFetchProvider": "抓取引擎必须为已实现的选项之一。",
-			"invalidWebFetchCost": "每个引擎的供应 / 目录 / 用户单价均须为非负数字。",
-			"invalidWebDeepSearchCost": "每个 Deep Search 引擎的供应 / 目录 / 用户单价均须为非负数字。",
-			"invalidAiDetectionCost": "每个引擎的供应 / 目录 / 用户单价须为非负数字，计费单元字符数须为正整数。",
+			"invalidWebFetchCost": "标准价和两个倍率必须为非负有限数字，不能留空；计算金额须在有效范围内。",
+			"invalidWebDeepSearchCost": "标准价和两个倍率必须为非负有限数字，不能留空；计算金额须在有效范围内。",
+			"invalidAiDetectionCost": "标准价和两个倍率必须为非负有限数字，不能留空；计算金额须在有效范围内。 计费单元字符数须为正整数。",
 			"aiDetectionNotImplemented": "尚未实现的引擎不能设为 Active。",
 			"noKeyCannotActivate": "未配置 API Key 的引擎不能设为 Active。",
 			"switchActiveBeforeClearingKey": "若要清空当前 Active 引擎的 Key，请先把 Active 切到仍有 Key 的引擎并保存，再清空旧 Key。"
@@ -2861,7 +2861,10 @@
 			"openHint": "点击服务行查看配置与管理操作",
 			"perRequest": "按请求计费",
 			"perCharacters": "每 {count} 字符计费",
-			"backToConfig": "返回服务配置"
+			"backToConfig": "返回服务配置",
+			"connection": "连接设置",
+			"pricing": "计费规则",
+			"settingsSections": "服务配置"
 		}
 	},
 	"pricing": {
@@ -3213,12 +3216,7 @@
 		},
 		"advancedHint": "通常使用默认值即可，仅在上游响应较慢或返回内容较大时调整。默认超时 30 秒，最大响应 1 MiB。",
 		"pricing": {
-			"simpleTitle": "计费方式",
 			"simpleDefaultHint": "未配置独立价格的工具采用这里的默认设置。",
-			"freeMode": "免费",
-			"perCallMode": "按次收费",
-			"freeHint": "用户倍率为 0，不扣用户费用；供应成本仍按配置记录。",
-			"perCallHint": "每次成功调用，按标准价和倍率计算收费与成本。",
 			"needsReview": "配置待检查",
 			"freeSummary": "当前免费",
 			"fixedSummary": "每次用户扣费 {amount}",
@@ -3226,18 +3224,29 @@
 			"invalidNumber": "标准价和两个倍率必须是非负有限数字，不能留空；计算后的金额不能超出范围。",
 			"invalidStored": "计费配置无效或当前版本不支持，请重新设置按次价格。工具调用暂不可用。",
 			"perCall": "按次",
-			"standard": "标准价（{currency} / request）",
-			"chargedFactor": "用户倍率",
-			"meteredFactor": "供应倍率",
-			"standardHint": "每次成功调用的基准价格。",
-			"chargedFactorHint": "1 表示原价，0 表示用户免费。",
-			"meteredFactorHint": "1 表示成本等于标准价，0 表示无供应成本。",
-			"chargedResult": "用户收费",
-			"meteredResult": "供应成本",
-			"chargedFormula": "标准价 × 用户倍率",
-			"meteredFormula": "标准价 × 供应倍率",
-			"legacyNeedsReview": "旧价格无法无损转换为倍率。现有调用仍按原价格结算，请重新填写标准价和倍率后保存。",
 			"factorSummary": "用户倍率 ×{chargedFactor} · 供应倍率 ×{meteredFactor}"
 		}
+	},
+	"toolPricing": {
+		"simpleTitle": "计费方式",
+		"freeMode": "免费",
+		"perCallMode": "按次收费",
+		"freeHint": "用户倍率为 0，不扣用户费用；供应成本仍按配置记录。",
+		"perCallHint": "按标准价和倍率计算每个计费单元的收费与成本。",
+		"standard": "标准价（{currency} / {unit}）",
+		"chargedFactor": "用户倍率",
+		"meteredFactor": "供应倍率",
+		"standardHint": "每个计费单元的基准价格。",
+		"chargedFactorHint": "1 表示原价，0 表示用户免费。",
+		"meteredFactorHint": "1 表示成本等于标准价，0 表示无供应成本。",
+		"chargedResult": "用户收费",
+		"meteredResult": "供应成本",
+		"chargedFormula": "标准价 × 用户倍率",
+		"meteredFormula": "标准价 × 供应倍率",
+		"legacyNeedsReview": "旧价格无法无损转换为倍率，现有调用仍按原价格结算。修改价格时请重新填写标准价和两个倍率。",
+		"invalidNumber": "标准价和两个倍率必须是非负有限数字，不能留空；计算后的金额不能超出范围。",
+		"title": "计费规则",
+		"perUnitMode": "按单元收费",
+		"charactersUnit": "{count} 字符"
 	}
 }

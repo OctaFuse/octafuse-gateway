@@ -312,7 +312,7 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		const catalog = parseWebSearchCatalogInput(value);
 		if (catalog == null) {
 			throw badRequest(
-				`WEB_SEARCH_CATALOG must be a JSON object with whitelist providers (${WEB_SEARCH_PROVIDERS.join(', ')}) and { apiKey: string, metered/standard/charged ≥ 0 (or legacy cost) }`
+				`WEB_SEARCH_CATALOG must be a JSON object with whitelist providers (${WEB_SEARCH_PROVIDERS.join(', ')}) and { apiKey: string, pricing: { v: 2, standard, chargedFactor, meteredFactor } ≥ 0 (or legacy metered/standard/charged/cost) }`
 			);
 		}
 		const activeRaw = await repos.systemConfig.getConfig(WEB_SEARCH_ACTIVE_KEY);
@@ -348,7 +348,7 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		const catalog = parseWebFetchCatalogInput(value);
 		if (catalog == null) {
 			throw badRequest(
-				`WEB_FETCH_CATALOG must be a JSON object with whitelist providers (${WEB_FETCH_PROVIDERS.join(', ')}) and { apiKey: string, metered/standard/charged ≥ 0 (or legacy cost) }`
+				`WEB_FETCH_CATALOG must be a JSON object with whitelist providers (${WEB_FETCH_PROVIDERS.join(', ')}) and { apiKey: string, pricing: { v: 2, standard, chargedFactor, meteredFactor } ≥ 0 (or legacy metered/standard/charged/cost) }`
 			);
 		}
 		const activeRaw = await repos.systemConfig.getConfig(WEB_FETCH_ACTIVE_KEY);
@@ -384,7 +384,7 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		const catalog = parseWebDeepSearchCatalogInput(value);
 		if (catalog == null) {
 			throw badRequest(
-				`WEB_DEEP_SEARCH_CATALOG must be a JSON object with whitelist providers (${WEB_DEEP_SEARCH_PROVIDERS.join(', ')}) and { apiKey: string, metered/standard/charged ≥ 0 (or legacy cost) }`
+				`WEB_DEEP_SEARCH_CATALOG must be a JSON object with whitelist providers (${WEB_DEEP_SEARCH_PROVIDERS.join(', ')}) and { apiKey: string, pricing: { v: 2, standard, chargedFactor, meteredFactor } ≥ 0 (or legacy metered/standard/charged/cost) }`
 			);
 		}
 		const activeRaw = await repos.systemConfig.getConfig(WEB_DEEP_SEARCH_ACTIVE_KEY);
@@ -420,7 +420,7 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		const catalog = parseAiDetectionCatalogInput(value);
 		if (catalog == null) {
 			throw badRequest(
-				`AI_DETECTION_CATALOG must be a JSON object with whitelist providers (${AI_DETECTION_PROVIDERS.join(', ')}) and credential union + metered/standard/charged ≥ 0 (or legacy cost; optional billingUnitChars)`
+				`AI_DETECTION_CATALOG must be a JSON object with whitelist providers (${AI_DETECTION_PROVIDERS.join(', ')}) and credential union + pricing: { v: 2, standard, chargedFactor, meteredFactor } ≥ 0 (or legacy prices; optional billingUnitChars)`
 			);
 		}
 		const activeRaw = await repos.systemConfig.getConfig(AI_DETECTION_ACTIVE_KEY);

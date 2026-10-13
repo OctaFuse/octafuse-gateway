@@ -20,6 +20,7 @@ type Props = {
 	title: string;
 	subtitle?: string;
 	headerActions?: ReactNode;
+	navigation?: ReactNode;
 	/** 状态变化使原服务行被筛掉时，关闭后仍有可用的焦点目标。 */
 	fallbackFocusRef?: RefObject<HTMLElement>;
 	docsHref?: string;
@@ -43,6 +44,7 @@ export function ToolProviderDrawer({
 	title,
 	subtitle,
 	headerActions,
+	navigation,
 	fallbackFocusRef,
 	docsHref,
 	docsLabel,
@@ -139,7 +141,7 @@ export function ToolProviderDrawer({
 				aria-labelledby={titleId}
 				aria-busy={busy}
 				onKeyDown={onPanelKeyDown}
-				className={`relative flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${
+				className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${
 					wide ? 'max-w-5xl' : 'max-w-2xl'
 				}`}
 			>
@@ -183,6 +185,7 @@ export function ToolProviderDrawer({
 						{headerActions}
 					</div>
 				) : null}
+				{navigation}
 				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
 				<div className="shrink-0 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-6">{footer}</div>
 			</div>

@@ -128,6 +128,12 @@ async function readJsonRpcMethod(c: { req: { method: string; raw: Request } }): 
   }
 }
 
+/** Only these REST endpoints resolve their own price before checking balance. */
+export function isToolPriceCheckedRoute(method: string, path: string): boolean {
+  if (method === 'GET') return path === '/v1/tools/pricing' || path === '/v1/tools/pricing/';
+  return method === 'POST' && /^\/v1\/tools\/(web-search|web-fetch|web-deep-search|ai-detection)\/?$/.test(path);
+}
+
 /**
  * 校验 API Key 并注入上下文；未授权返回 401，超额预算返回 403（部分路由豁免，见内联注释）。
  */
@@ -192,6 +198,7 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
     !isImagesRoute &&
     !isAudioRoute &&
     !isMcpRoute &&
+    !isToolPriceCheckedRoute(c.req.method, c.req.path) &&
     !hasPositiveTotalBalance(
       authResult.budgetMax,
       authResult.budgetSpent,

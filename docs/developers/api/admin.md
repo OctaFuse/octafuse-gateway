@@ -626,7 +626,7 @@ GET /admin/keys/:id/logs?page=1&page_size=20&exclude_status=incomplete
 }
 ```
 
-> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`standard_cost` = 阶梯目录价 × 模型官方时段倍率（官方当刻价，不乘路由倍率，也不乘 `provider_factor`）；`metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 有效期内的 `provider_factor` × 该侧路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor；有效期外供应商倍率为 `1`）；若 `users.charged_cost_factors` 命中该目录模型与本次 route group（具体分组，其次 `"*"`，数字覆盖全部分组），再按 `system_config.USER_CHARGED_COST_FACTOR_MODE`（默认 `multiply` 叠乘，`min` 取较小倍率）合成最终用户费用并六位四舍五入（只改最终 `charged_cost` 与预算累加）。**REST Tools** 在 catalog 直接配置三账本绝对单价（`metered` / `standard` / `charged`，无 Route factor/schedule，也不应用用户计费倍率或模型官方时段），成功后分别写入三列，仅 `charged_cost` 累加预算。 **MCP Tools** 的 v2 配置保存标准价与用户、供应倍率，收费和成本分别为标准价乘对应倍率，v1 独立单价仍兼容；不应用模型专用用户倍率。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v6**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 仍为 `kind=fixed_tool_cost` + `unit_prices` / `totals`；v4 / v5 历史行仍可解析，v6 模型审计可带 `provider_factor`、`catalog_schedule`、`user_charged_factor`、`user_charged_factor_route_group`、`user_charged_factor_mode` 与 `combined_charged_factor`，用户未命中时 factor 为 `null`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
+> 注：LLM、Audio token 与 Image token 模式按 `models.pricing_profile.tiers` 选档；Image `per_image`、Audio `per_second` 与 Agent Tool `fixed_tool_cost` 使用各自计费基数。模型请求中，`standard_cost` = 阶梯目录价 × 模型官方时段倍率（官方当刻价，不乘路由倍率，也不乘 `provider_factor`）；`metered_cost` / 路由侧 `charged_cost` = 官方当刻价 × 有效期内的 `provider_factor` × 该侧路由有效倍率（无 `schedule.mode` 时叠乘；`override` 时窗内用窗口 factor；有效期外供应商倍率为 `1`）；若 `users.charged_cost_factors` 命中该目录模型与本次 route group（具体分组，其次 `"*"`，数字覆盖全部分组），再按 `system_config.USER_CHARGED_COST_FACTOR_MODE`（默认 `multiply` 叠乘，`min` 取较小倍率）合成最终用户费用并六位四舍五入（只改最终 `charged_cost` 与预算累加）。**REST Tools** 在 catalog 的 `pricing` 中配置标准价与用户、供应倍率，收费 / 成本分别为标准价乘对应倍率（兼容旧独立单价，无 Route factor/schedule，也不应用模型专用用户倍率或模型官方时段），成功后分别写入三列，仅 `charged_cost` 累加预算。 **MCP Tools** 的 v2 配置保存标准价与用户、供应倍率，收费和成本分别为标准价乘对应倍率，v1 独立单价仍兼容；不应用模型专用用户倍率。嵌套 `metered`/`charged` tiers **不计价**。**`pricing_audit`** 新写入为 **v6**（模型见 `packages/core/src/db/pricing-audit.ts`；Tools 仍为 `kind=fixed_tool_cost` + `unit_prices` / `totals`；v4 / v5 历史行仍可解析，v6 模型审计可带 `provider_factor`、`catalog_schedule`、`user_charged_factor`、`user_charged_factor_route_group`、`user_charged_factor_mode` 与 `combined_charged_factor`，用户未命中时 factor 为 `null`）。**`request_protocol`** 为客户端调用的 Gateway 入口协议；**`upstream_protocol`** 为本次请求所选路由的 `model_routes.upstream_protocol` 快照。历史字段 `total_cost` 与 **`billing_factor`** 列已移除。列表接口返回列为 `api_key_request_logs` 全字段（与 `packages/core/src/types.ts` 中 `RequestLogRow` 一致）。
 
 ### 示例
 
@@ -979,13 +979,28 @@ Agent Tools 也通过该接口维护配置：
 | Web Deep Search | `WEB_DEEP_SEARCH_CATALOG` | `WEB_DEEP_SEARCH_ACTIVE` | `firecrawl`、`jina` |
 | AI Detection | `AI_DETECTION_CATALOG` | `AI_DETECTION_ACTIVE` | 当前 `tencent_tms`（多 provider 架构，可扩展） |
 
-Catalog JSON 以 Provider id 为键。联网类工具每项为 `{ apiKey, metered, standard, charged }`（Admin 保存时同步写兼容键 `cost = charged`；仅有旧 `cost` 时 resolve 三列相等）；AI Detection 为凭证字段并集 + 三账本单价 + 可选 `billingUnitChars`。设置 Active 前必须配齐该引擎所需凭证（未实现引擎不可 Active）。每种工具同时只启用一个 Active Provider。单价均须 ≥ 0。
+Catalog JSON 以 Provider id 为键。新价格使用版本化 `pricing`，例如：
+
+```json
+{
+  "bocha": {
+    "apiKey": "your-provider-key",
+    "pricing": { "v": 2, "standard": 0.01, "chargedFactor": 1.2, "meteredFactor": 0.8 }
+  }
+}
+```
+
+标准价与倍率均须为非负有限数字，两个倍率省略时为 1；标准价先舍入到六位小数，再计算收费和成本并分别舍入到六位小数，倍率保留精度。REST 与 MCP 共用 `resolveToolFactorPrices` 和价格编辑器。用户倍率为 0 时用户免费，仍记录供应成本。三个联网工具成功时计 1 request；AI Detection 的凭证字段并集 + `pricing` + 可选 `billingUnitChars` 保持原字符计费：按输入字符数向上取整为计费单元，单元数乘三个已解析单价。
+
+旧 `{ apiKey, metered, standard, charged, cost }` 继续按独立单价结算；仅有旧 `cost` 时三列相等。序列化时，新价格只保存 `pricing` 定义，旧价格保持旧格式。界面仅在用户修改价格后写入新格式，连接凭证修改不会转换旧价格。标准价为 0 但收费或成本非零等无法无损转换的情况，会提示重新填写价格；保存前仍执行原价格。新格式的无效版本、倍率或混合独立单价会拒绝写入，读到无效新格式也不会回退为默认或免费价格。
+
+价格继续使用现有 `system_config` JSON，不新增数据库字段、不迁移数据。用户鉴权与限流保持生效；REST 的余额预检在解析实际价格后执行，免费服务与 `GET /v1/tools/pricing` 可在零余额下使用。日志的 `tool_pricing` 保存当次倍率快照，公开价格接口继续返回计算后的三个单价及 `cost = charged`。设置 Active 前必须配齐该引擎所需凭证（未实现引擎不可 Active）。每种工具同时只启用一个 Active Provider。
 
 ### 运维验收：Agent Tools（Playground / Simulator）
 
 Admin 内闭环：**Tools Config → Playground（引擎）→ Simulator（Proxy）→ Tools Invocations**。
 
-1. **Config**：Admin → Tools → Configuration，为某引擎填入凭证与**三账本单价**（供应 / 目录 / 用户）并保存；Active 指向已配齐凭证的引擎（AI Detection 第一版为 `tencent_tms`）。再保存后 catalog JSON 应展开为 `metered` / `standard` / `charged`（及 `cost`）。
+1. **Config**：Admin → Tools → Configuration，在“连接设置”维护凭证，在“计费规则”维护**标准价、用户倍率、供应倍率**并保存；Active 指向已配齐凭证的引擎（AI Detection 第一版为 `tencent_tms`）。修改价格并保存后 catalog JSON 应包含 `pricing: { v: 2, standard, chargedFactor, meteredFactor }`。
 2. **Playground Tools**（不计费、不写 logs）：Admin → Playground → **Tools** 模式，或 Config 行内 **Test in Playground**（`?mode=tools&tool=…&provider=…`）。选工具 + **任意 catalog 引擎**（不限 Active）→ Send → 直连上游引擎，确认密钥与响应形态。
 3. **Simulator Tools**（真实 Proxy）：Admin → Simulator → Kind=**Tools** → 选工具与用户 API Key → Send 打到 `{proxy}/v1/tools/{id}` → 核对响应 `cost`（= charged）与预算；**Open Tools Invocations** / Request Logs 核对三列不同（若配置了不同单价）、`budget_spent` 仅增 charged、失败请求三列 0、`pricing_audit` v4 `fixed_tool_cost`。
 4. **边界**：Playground Tools **不经** Proxy、**不扣**用户预算、**不写** `api_key_request_logs`；Simulator Tools **走** Proxy 全链路。二者共用 **`@octafuse/tool-engines`** 引擎客户端（Admin 不得再依赖 `packages/proxy`）。LLM / Image / Audio 的 Routes 模式行为不变。

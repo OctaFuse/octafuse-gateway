@@ -10,7 +10,6 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
-import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import {
 	DEFAULT_WEB_SEARCH_COST,
@@ -78,32 +77,34 @@ import {
 	type WebDeepSearchCatalog,
 } from '@octafuse/core/lib/web-deep-search-system-config';
 import {
-	entryHasRequiredCredentials as aiEntryHasRequiredCredentials,
 	parseAiDetectionCatalogLenient,
 	serializeAiDetectionCatalog,
 	AI_DETECTION_PROVIDER_REQUIRED_CREDENTIALS,
 	type AiDetectionCatalog,
 	type AiDetectionCatalogEntry,
 } from '@octafuse/core/lib/ai-detection-system-config';
-import { toToolPricingFields } from '@octafuse/core/lib/tool-pricing';
+import { type ToolCatalogPricingFields } from '@octafuse/core/lib/tool-pricing';
+import {
+	restPricingDraftFromEntry,
+	restPricingFieldsFromDraft,
+	type RestToolPricingDraft,
+} from './tool-pricing-draft';
 import { WebSearchProviderGuideContent } from './components/web-search-provider-guide-modal';
 import {
 	cloneDrafts,
-	draftPricesOk,
-	parseDraftMoney,
 	resolveProviderCardActions,
 	resolveProviderCardStatus,
 	wouldClearSavedActiveCredentials,
 	type PriceTripleDraft,
 } from './components/provider-card-state';
-import { ToolPriceTripleInputs } from './components/tool-price-triple-inputs';
+import { RestToolPricingEditor } from './components/rest-tool-pricing-editor';
 import { ToolProviderDrawer } from './components/tool-provider-drawer';
 import { ToolProviderSaveActions } from './components/tool-provider-picker';
 import { ToolProviderList } from './components/tool-provider-list';
 
 type ProviderDraft = {
 	apiKey: string;
-} & PriceTripleDraft;
+} & RestToolPricingDraft;
 
 type AiDetectionProviderDraft = {
 	apiKey: string;
@@ -113,25 +114,15 @@ type AiDetectionProviderDraft = {
 	region: string;
 	bizType: string;
 	billingUnitChars: string;
-} & PriceTripleDraft;
+} & RestToolPricingDraft;
 
 function defaultPriceTriple(defaultCost: number): PriceTripleDraft {
 	const s = String(defaultCost);
 	return { metered: s, standard: s, charged: s };
 }
 
-function entryToDraftPrices(entry: {
-	metered: number;
-	standard: number;
-	charged: number;
-	cost: number;
-}): PriceTripleDraft {
-	const charged = entry.charged ?? entry.cost;
-	return {
-		metered: String(entry.metered ?? charged),
-		standard: String(entry.standard ?? charged),
-		charged: String(charged),
-	};
+function entryToDraftPrices(entry: ToolCatalogPricingFields): RestToolPricingDraft {
+	return restPricingDraftFromEntry(entry);
 }
 
 function emptySearchDrafts(): Record<WebSearchProvider, ProviderDraft> {
@@ -176,11 +167,8 @@ function emptyAiDetectionDrafts(): Record<AiDetectionProvider, AiDetectionProvid
 }
 
 function draftToAiEntry(d: AiDetectionProviderDraft): AiDetectionCatalogEntry {
-	const prices = toToolPricingFields({
-		metered: Number(d.metered.trim()),
-		standard: Number(d.standard.trim()),
-		charged: Number(d.charged.trim()),
-	});
+	const prices = restPricingFieldsFromDraft(d);
+	if (!prices) throw new Error('Invalid tool pricing');
 	const entry: AiDetectionCatalogEntry = { ...prices };
 	const billing = Number(d.billingUnitChars.trim());
 	if (Number.isFinite(billing) && billing >= 1) {
@@ -199,10 +187,7 @@ function aiDraftHasRequiredCredentials(provider: AiDetectionProvider, d: AiDetec
 	if (!isAiDetectionImplementedProvider(provider)) {
 		return false;
 	}
-	return aiEntryHasRequiredCredentials(
-		draftToAiEntry(d),
-		AI_DETECTION_PROVIDER_REQUIRED_CREDENTIALS[provider]
-	);
+	return AI_DETECTION_PROVIDER_REQUIRED_CREDENTIALS[provider].every((field) => Boolean(d[field].trim()));
 }
 
 function syncWebSearchFromRows(rows: SystemConfigRow[]): {
@@ -311,16 +296,12 @@ function buildSearchCatalog(drafts: Record<WebSearchProvider, ProviderDraft>): W
 	const catalog: WebSearchCatalog = {};
 	for (const p of WEB_SEARCH_PROVIDERS) {
 		const d = drafts[p];
-		if (!draftPricesOk(d)) {
+		if (!restPricingFieldsFromDraft(d)) {
 			return null;
 		}
 		catalog[p] = {
 			apiKey: d.apiKey.trim(),
-			...toToolPricingFields({
-				metered: parseDraftMoney(d.metered)!,
-				standard: parseDraftMoney(d.standard)!,
-				charged: parseDraftMoney(d.charged)!,
-			}),
+			...restPricingFieldsFromDraft(d)!,
 		};
 	}
 	return catalog;
@@ -330,16 +311,12 @@ function buildFetchCatalog(drafts: Record<WebFetchProvider, ProviderDraft>): Web
 	const catalog: WebFetchCatalog = {};
 	for (const p of WEB_FETCH_PROVIDERS) {
 		const d = drafts[p];
-		if (!draftPricesOk(d)) {
+		if (!restPricingFieldsFromDraft(d)) {
 			return null;
 		}
 		catalog[p] = {
 			apiKey: d.apiKey.trim(),
-			...toToolPricingFields({
-				metered: parseDraftMoney(d.metered)!,
-				standard: parseDraftMoney(d.standard)!,
-				charged: parseDraftMoney(d.charged)!,
-			}),
+			...restPricingFieldsFromDraft(d)!,
 		};
 	}
 	return catalog;
@@ -383,16 +360,12 @@ function buildDeepSearchCatalog(
 	const catalog: WebDeepSearchCatalog = {};
 	for (const p of WEB_DEEP_SEARCH_PROVIDERS) {
 		const d = drafts[p];
-		if (!draftPricesOk(d)) {
+		if (!restPricingFieldsFromDraft(d)) {
 			return null;
 		}
 		catalog[p] = {
 			apiKey: d.apiKey.trim(),
-			...toToolPricingFields({
-				metered: parseDraftMoney(d.metered)!,
-				standard: parseDraftMoney(d.standard)!,
-				charged: parseDraftMoney(d.charged)!,
-			}),
+			...restPricingFieldsFromDraft(d)!,
 		};
 	}
 	return catalog;
@@ -445,7 +418,7 @@ function buildAiDetectionCatalog(
 	const catalog: AiDetectionCatalog = {};
 	for (const p of AI_DETECTION_PROVIDERS) {
 		const d = drafts[p];
-		if (!draftPricesOk(d)) {
+		if (!restPricingFieldsFromDraft(d)) {
 			return null;
 		}
 		const unitChars = Number(d.billingUnitChars.trim());
@@ -532,6 +505,7 @@ function ApiKeyField({
 
 export default function GatewayToolsConfigPage() {
 	const t = useTranslations('tools');
+	const tPricing = useTranslations('toolPricing');
 	const tCommon = useTranslations('common');
 	const { currency: billingCurrency } = useBillingCurrency();
 	const webSearchProviderOptions = getWebSearchProviderOptions((k) => t(k));
@@ -576,6 +550,7 @@ export default function GatewayToolsConfigPage() {
 	const [aiDetectionSaving, setAiDetectionSaving] = useState(false);
 
 	const [secretsVisible, setSecretsVisible] = useState(false);
+	const [drawerSection, setDrawerSection] = useState<'connection' | 'pricing'>('connection');
 	const serviceSearchRef = useRef<HTMLInputElement>(null);
 	/** 服务详情弹窗：点击服务行打开；null 表示关闭 */
 	const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
@@ -986,6 +961,7 @@ export default function GatewayToolsConfigPage() {
 	);
 
 	const openWebSearchDrawer = (id: string) => {
+		setDrawerSection('connection');
 		setSecretsVisible(false);
 		setProviderGuideOpen(false);
 		const p = id as WebSearchProvider;
@@ -993,6 +969,7 @@ export default function GatewayToolsConfigPage() {
 		setDrawer({ tool: 'webSearch', providerId: p });
 	};
 	const openWebFetchDrawer = (id: string) => {
+		setDrawerSection('connection');
 		setSecretsVisible(false);
 		setProviderGuideOpen(false);
 		const p = id as WebFetchProvider;
@@ -1000,6 +977,7 @@ export default function GatewayToolsConfigPage() {
 		setDrawer({ tool: 'webFetch', providerId: p });
 	};
 	const openWebDeepSearchDrawer = (id: string) => {
+		setDrawerSection('connection');
 		setSecretsVisible(false);
 		setProviderGuideOpen(false);
 		const p = id as WebDeepSearchProvider;
@@ -1007,6 +985,7 @@ export default function GatewayToolsConfigPage() {
 		setDrawer({ tool: 'webDeepSearch', providerId: p });
 	};
 	const openAiDetectionDrawer = (id: string) => {
+		setDrawerSection('connection');
 		setSecretsVisible(false);
 		setProviderGuideOpen(false);
 		const p = id as AiDetectionProvider;
@@ -1143,42 +1122,77 @@ export default function GatewayToolsConfigPage() {
 				open={drawer != null}
 				title={drawerTitle}
 				subtitle={drawer ? t(`${drawer.tool}.title`) : undefined}
-				headerActions={
-					<>
-						<button
-							type="button"
-							onClick={() => setSecretsVisible((v) => !v)}
-							disabled={Boolean(drawerBusy) || providerGuideOpen}
-							className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-							aria-pressed={secretsVisible}
+				navigation={
+					!providerGuideOpen ? (
+						<div
+							role="tablist"
+							aria-label={t('serviceList.settingsSections')}
+							className="grid grid-cols-2 gap-1 border-b border-gray-200 px-5 sm:px-6"
 						>
-							{secretsVisible ? (
-								<>
-									<EyeSlashIcon className="h-4 w-4" aria-hidden />
-									{t('config.hideSecrets')}
-								</>
-							) : (
-								<>
-									<EyeIcon className="h-4 w-4" aria-hidden />
-									{t('config.showSecrets')}
-								</>
-							)}
-						</button>
-						{drawer?.tool === 'webSearch' ? (
+							{(['connection', 'pricing'] as const).map((section) => (
+								<button
+									key={section}
+									type="button"
+									role="tab"
+									aria-selected={drawerSection === section}
+									id={`rest-${drawer?.tool}-${section}-tab`}
+									aria-controls={`rest-${drawer?.tool}-${section}`}
+									disabled={Boolean(drawerBusy)}
+									onClick={() => {
+										setDrawerSection(section);
+										setSecretsVisible(false);
+									}}
+									className={`border-b-2 px-3 py-3 text-sm font-medium ${
+										drawerSection === section
+											? 'border-gray-900 text-gray-900'
+											: 'border-transparent text-gray-500 hover:text-gray-800'
+									}`}
+								>
+									{t(`serviceList.${section}`)}
+								</button>
+							))}
+						</div>
+					) : undefined
+				}
+				headerActions={
+					drawerSection === 'connection' || providerGuideOpen ? (
+						<>
 							<button
-								ref={guideButtonRef}
+								hidden={drawerSection !== 'connection'}
 								type="button"
-								disabled={Boolean(drawerBusy)}
-								onClick={() => {
-									setSecretsVisible(false);
-									setProviderGuideOpen((open) => !open);
-								}}
-								className="rounded-md border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+								onClick={() => setSecretsVisible((v) => !v)}
+								disabled={Boolean(drawerBusy) || providerGuideOpen}
+								className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 [&[hidden]]:hidden"
+								aria-pressed={secretsVisible}
 							>
-								{providerGuideOpen ? t('serviceList.backToConfig') : t('webSearch.providerGuideLink')}
+								{secretsVisible ? (
+									<>
+										<EyeSlashIcon className="h-4 w-4" aria-hidden />
+										{t('config.hideSecrets')}
+									</>
+								) : (
+									<>
+										<EyeIcon className="h-4 w-4" aria-hidden />
+										{t('config.showSecrets')}
+									</>
+								)}
 							</button>
-						) : null}
-					</>
+							{drawer?.tool === 'webSearch' ? (
+								<button
+									ref={guideButtonRef}
+									type="button"
+									disabled={Boolean(drawerBusy)}
+									onClick={() => {
+										setSecretsVisible(false);
+										setProviderGuideOpen((open) => !open);
+									}}
+									className="rounded-md border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+								>
+									{providerGuideOpen ? t('serviceList.backToConfig') : t('webSearch.providerGuideLink')}
+								</button>
+							) : null}
+						</>
+					) : undefined
 				}
 				busy={Boolean(drawerBusy)}
 				onClose={closeDrawer}
@@ -1280,12 +1294,14 @@ export default function GatewayToolsConfigPage() {
 				{providerGuideOpen ? <WebSearchProviderGuideContent activeProvider={webSearchSelected} /> : null}
 				{!providerGuideOpen && drawer?.tool === 'webSearch' ? (
 					<div className="flex flex-col gap-4">
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: getGatewayCurrencySymbol(billingCurrency) })}
-							</label>
-							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
-							<ToolPriceTripleInputs
+						<div
+							role="tabpanel"
+							id="rest-webSearch-pricing"
+							aria-labelledby="rest-webSearch-pricing-tab"
+							hidden={drawerSection !== 'pricing'}
+						>
+							<RestToolPricingEditor
+								currency={billingCurrency}
 								value={webSearchDrafts[webSearchSelected]}
 								onChange={(patch) =>
 									setWebSearchDrafts((prev) => ({
@@ -1295,7 +1311,12 @@ export default function GatewayToolsConfigPage() {
 								}
 							/>
 						</div>
-						<div>
+						<div
+							role="tabpanel"
+							id="rest-webSearch-connection"
+							aria-labelledby="rest-webSearch-connection-tab"
+							hidden={drawerSection !== 'connection'}
+						>
 							<label className="mb-1 block text-xs font-medium text-gray-600">{t('webSearch.apiKey')}</label>
 							<ApiKeyField
 								value={webSearchDrafts[webSearchSelected].apiKey}
@@ -1313,12 +1334,14 @@ export default function GatewayToolsConfigPage() {
 				) : null}
 				{!providerGuideOpen && drawer?.tool === 'webFetch' ? (
 					<div className="flex flex-col gap-4">
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: getGatewayCurrencySymbol(billingCurrency) })}
-							</label>
-							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
-							<ToolPriceTripleInputs
+						<div
+							role="tabpanel"
+							id="rest-webFetch-pricing"
+							aria-labelledby="rest-webFetch-pricing-tab"
+							hidden={drawerSection !== 'pricing'}
+						>
+							<RestToolPricingEditor
+								currency={billingCurrency}
 								value={webFetchDrafts[webFetchSelected]}
 								onChange={(patch) =>
 									setWebFetchDrafts((prev) => ({
@@ -1328,7 +1351,12 @@ export default function GatewayToolsConfigPage() {
 								}
 							/>
 						</div>
-						<div>
+						<div
+							role="tabpanel"
+							id="rest-webFetch-connection"
+							aria-labelledby="rest-webFetch-connection-tab"
+							hidden={drawerSection !== 'connection'}
+						>
 							<label className="mb-1 block text-xs font-medium text-gray-600">{t('webFetch.apiKey')}</label>
 							<ApiKeyField
 								value={webFetchDrafts[webFetchSelected].apiKey}
@@ -1346,12 +1374,14 @@ export default function GatewayToolsConfigPage() {
 				) : null}
 				{!providerGuideOpen && drawer?.tool === 'webDeepSearch' ? (
 					<div className="flex flex-col gap-4">
-						<div>
-							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: getGatewayCurrencySymbol(billingCurrency) })}
-							</label>
-							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
-							<ToolPriceTripleInputs
+						<div
+							role="tabpanel"
+							id="rest-webDeepSearch-pricing"
+							aria-labelledby="rest-webDeepSearch-pricing-tab"
+							hidden={drawerSection !== 'pricing'}
+						>
+							<RestToolPricingEditor
+								currency={billingCurrency}
 								value={webDeepSearchDrafts[webDeepSearchSelected]}
 								onChange={(patch) =>
 									setWebDeepSearchDrafts((prev) => ({
@@ -1364,7 +1394,12 @@ export default function GatewayToolsConfigPage() {
 								}
 							/>
 						</div>
-						<div>
+						<div
+							role="tabpanel"
+							id="rest-webDeepSearch-connection"
+							aria-labelledby="rest-webDeepSearch-connection-tab"
+							hidden={drawerSection !== 'connection'}
+						>
 							<label className="mb-1 block text-xs font-medium text-gray-600">
 								{t('webDeepSearch.apiKey')}
 							</label>
@@ -1387,14 +1422,17 @@ export default function GatewayToolsConfigPage() {
 				) : null}
 				{!providerGuideOpen && drawer?.tool === 'aiDetection' ? (
 					<div className="flex flex-col gap-4">
-						<div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+						<div
+							role="tabpanel"
+							id="rest-aiDetection-pricing"
+							aria-labelledby="rest-aiDetection-pricing-tab"
+							hidden={drawerSection !== 'pricing'}
+						>
 							<div className="min-w-0 flex-1">
-								<label className="mb-1 block text-xs font-medium text-gray-600">
-									{t('unitPrices.title', { currency: getGatewayCurrencySymbol(billingCurrency) })}
-								</label>
-								<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
-								<ToolPriceTripleInputs
+								<RestToolPricingEditor
+									currency={billingCurrency}
 									value={aiDraft}
+									unitLabel={tPricing('charactersUnit', { count: Number(aiDraft.billingUnitChars) || 1 })}
 									onChange={(patch) =>
 										setAiDetectionDrafts((prev) => ({
 											...prev,
@@ -1406,7 +1444,7 @@ export default function GatewayToolsConfigPage() {
 									}
 								/>
 							</div>
-							<div className="min-w-0 sm:w-36">
+							<div className="mt-4 max-w-xs">
 								<label className="mb-1 block text-xs font-medium text-gray-600">
 									{t('aiDetection.billingUnitChars')}
 								</label>
@@ -1414,6 +1452,7 @@ export default function GatewayToolsConfigPage() {
 									type="number"
 									min={1}
 									step={1}
+									aria-label={t('aiDetection.billingUnitChars')}
 									value={aiDraft.billingUnitChars}
 									onChange={(e) =>
 										setAiDetectionDrafts((prev) => ({
@@ -1428,7 +1467,12 @@ export default function GatewayToolsConfigPage() {
 								/>
 							</div>
 						</div>
-						<div>
+						<div
+							role="tabpanel"
+							id="rest-aiDetection-connection"
+							aria-labelledby="rest-aiDetection-connection-tab"
+							hidden={drawerSection !== 'connection'}
+						>
 							<label className="mb-2 block text-xs font-medium text-gray-600">
 								{t('aiDetection.credentials')}
 							</label>

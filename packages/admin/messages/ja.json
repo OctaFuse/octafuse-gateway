@@ -2666,7 +2666,7 @@
 		"webSearch": {
 			"title": "Web Search",
 			"description": "POST /v1/tools/web-search を提供します。実装済みのエンジンのみ選択でき、自由入力は拒否されます。API Key を空欄にして保存すると削除されます（再設定するまでエンドポイントは 503 を返します）。",
-			"descriptionCatalog": "POST /v1/tools/web-search 用。エンジンごとに API キーと三帳簿単価を設定し、カードを「保存して有効化」します。ユーザー予算に加算されるのは charged のみです。キー未設定のエンジンは有効化できません。",
+			"descriptionCatalog": "各エンジンの認証情報を管理し、課金ルールで標準価格とユーザー・供給倍率を設定します。認証情報を設定したエンジンを保存して有効化してください。",
 			"provider": "検索エンジン",
 			"active": "Active エンジン",
 			"catalogProvider": "エンジン",
@@ -2725,7 +2725,7 @@
 		"webFetch": {
 			"title": "Web Fetch",
 			"description": "POST /v1/tools/web-fetch を提供します。実装済みのスクレイパーのみ選択でき、自由入力は拒否されます。API Key を空欄にして保存すると削除されます（再設定するまでエンドポイントは 503 を返します）。",
-			"descriptionCatalog": "POST /v1/tools/web-fetch 用。スクレイパーごとに API キーと三帳簿単価を設定し、カードを「保存して有効化」します。ユーザー予算に加算されるのは charged のみです。",
+			"descriptionCatalog": "各エンジンの認証情報を管理し、課金ルールで標準価格とユーザー・供給倍率を設定します。認証情報を設定したエンジンを保存して有効化してください。",
 			"provider": "Fetch Provider",
 			"active": "Active Provider",
 			"catalogProvider": "Provider",
@@ -2744,7 +2744,7 @@
 		},
 		"webDeepSearch": {
 			"title": "Web Deep Search",
-			"descriptionCatalog": "POST /v1/tools/web-deep-search 用。検索+読取エンジン（Firecrawl Search / Jina Search）。プロバイダーごとに設定し、カードを「保存して有効化」します。",
+			"descriptionCatalog": "各エンジンの認証情報を管理し、課金ルールで標準価格とユーザー・供給倍率を設定します。認証情報を設定したエンジンを保存して有効化してください。",
 			"active": "Active Provider",
 			"catalogProvider": "Provider",
 			"noKey": "Key なし",
@@ -2760,7 +2760,7 @@
 		},
 		"aiDetection": {
 			"title": "AI Detection",
-			"descriptionCatalog": "POST /v1/tools/ai-detection 用。エンジンごとに認証情報と三帳簿単価を設定し、カードを「保存して有効化」します。課金は文字ユニット（billingUnitChars）で三列をスケール。現在は Tencent Cloud TMS のみ実装。",
+			"descriptionCatalog": "各エンジンの認証情報を管理し、課金ルールで標準価格とユーザー・供給倍率を設定します。認証情報を設定したエンジンを保存して有効化してください。",
 			"active": "Active エンジン",
 			"catalogProvider": "エンジン",
 			"noKey": "認証情報なし",
@@ -2830,11 +2830,11 @@
 		},
 		"errors": {
 			"invalidWebSearchProvider": "検索エンジンは実装済みの選択肢から選んでください。",
-			"invalidWebSearchCost": "各エンジンの metered / standard / charged はいずれも 0 以上の数値である必要があります。",
+			"invalidWebSearchCost": "標準価格と2つの倍率には0以上の有限数を入力してください。空欄は不可で、計算金額も範囲内である必要があります。",
 			"invalidWebFetchProvider": "Fetch Provider は実装済みの選択肢から選んでください。",
-			"invalidWebFetchCost": "各プロバイダーの metered / standard / charged はいずれも 0 以上の数値である必要があります。",
-			"invalidWebDeepSearchCost": "各 deep-search プロバイダーの metered / standard / charged はいずれも 0 以上の数値である必要があります。",
-			"invalidAiDetectionCost": "各エンジンの metered / standard / charged は 0 以上、billing unit chars は正の整数である必要があります。",
+			"invalidWebFetchCost": "標準価格と2つの倍率には0以上の有限数を入力してください。空欄は不可で、計算金額も範囲内である必要があります。",
+			"invalidWebDeepSearchCost": "標準価格と2つの倍率には0以上の有限数を入力してください。空欄は不可で、計算金額も範囲内である必要があります。",
+			"invalidAiDetectionCost": "標準価格と2つの倍率には0以上の有限数を入力してください。空欄は不可で、計算金額も範囲内である必要があります。 課金単位の文字数は正の整数にしてください。",
 			"aiDetectionNotImplemented": "未実装のエンジンは Active にできません。",
 			"noKeyCannotActivate": "API Key がない Provider は有効化できません。",
 			"switchActiveBeforeClearingKey": "現在のエンジンの Key を削除する前に、Key が残っている別のエンジンへ Active を切り替えて保存し、その後もう一度保存して Key を削除してください。"
@@ -2861,7 +2861,10 @@
 			"openHint": "サービス行をクリックして設定と管理操作を表示",
 			"perRequest": "リクエストごとに課金",
 			"perCharacters": "{count} 文字ごとに課金",
-			"backToConfig": "サービス設定に戻る"
+			"backToConfig": "サービス設定に戻る",
+			"connection": "接続設定",
+			"pricing": "課金ルール",
+			"settingsSections": "サービス設定"
 		}
 	},
 	"pricing": {
@@ -3213,12 +3216,7 @@
 		},
 		"advancedHint": "通常は既定値を使用できます。上流の応答が遅い場合や応答が大きい場合に調整してください。既定のタイムアウトは30秒、最大応答は1 MiBです。",
 		"pricing": {
-			"simpleTitle": "課金方式",
 			"simpleDefaultHint": "個別の価格が設定されていないツールは、この既定設定を使用します。",
-			"freeMode": "無料",
-			"perCallMode": "呼び出しごとの課金",
-			"freeHint": "ユーザー倍率を0にすると無料になります。供給原価は設定どおり記録します。",
-			"perCallHint": "成功した呼び出しごとに標準価格と倍率から請求額と原価を計算します。",
 			"needsReview": "設定を確認してください",
 			"freeSummary": "現在は無料",
 			"fixedSummary": "呼び出しごとのユーザー課金：{amount}",
@@ -3226,18 +3224,29 @@
 			"invalidNumber": "標準価格と2つの倍率には0以上の有限数を入力してください。空欄は不可で、計算後の金額も範囲内である必要があります。",
 			"invalidStored": "課金設定が無効か、このバージョンでは未対応です。ツールを使用する前に呼び出しごとの価格を設定してください。",
 			"perCall": "回数課金",
-			"standard": "標準価格（{currency} / request）",
-			"chargedFactor": "ユーザー倍率",
-			"meteredFactor": "供給倍率",
-			"standardHint": "成功した呼び出し1回あたりの基準価格。",
-			"chargedFactorHint": "1 は標準価格、0 はユーザー無料。",
-			"meteredFactorHint": "1 は標準価格と同額の原価、0 は供給原価なし。",
-			"chargedResult": "ユーザー請求額",
-			"meteredResult": "供給原価",
-			"chargedFormula": "標準価格 × ユーザー倍率",
-			"meteredFormula": "標準価格 × 供給倍率",
-			"legacyNeedsReview": "旧価格を金額を変えずに倍率へ変換できません。既存の呼び出しは旧価格で精算されます。標準価格と倍率を再入力して保存してください。",
 			"factorSummary": "ユーザー倍率 ×{chargedFactor} · 供給倍率 ×{meteredFactor}"
 		}
+	},
+	"toolPricing": {
+		"simpleTitle": "課金方式",
+		"freeMode": "無料",
+		"perCallMode": "呼び出しごとの課金",
+		"freeHint": "ユーザー倍率を0にすると無料になります。供給原価は設定どおり記録します。",
+		"perCallHint": "標準価格と倍率から課金単位ごとの請求額と原価を計算します。",
+		"standard": "標準価格（{currency} / {unit}）",
+		"chargedFactor": "ユーザー倍率",
+		"meteredFactor": "供給倍率",
+		"standardHint": "1課金単位あたりの基準価格。",
+		"chargedFactorHint": "1 は標準価格、0 はユーザー無料。",
+		"meteredFactorHint": "1 は標準価格と同額の原価、0 は供給原価なし。",
+		"chargedResult": "ユーザー請求額",
+		"meteredResult": "供給原価",
+		"chargedFormula": "標準価格 × ユーザー倍率",
+		"meteredFormula": "標準価格 × 供給倍率",
+		"legacyNeedsReview": "旧価格を金額を変えずに倍率へ変換できません。呼び出しは旧価格で精算されます。価格を変更する場合は標準価格と2つの倍率を入力してください。",
+		"invalidNumber": "標準価格と2つの倍率には0以上の有限数を入力してください。空欄は不可で、計算後の金額も範囲内である必要があります。",
+		"title": "課金ルール",
+		"perUnitMode": "単位ごとの課金",
+		"charactersUnit": "{count} 文字"
 	}
 }

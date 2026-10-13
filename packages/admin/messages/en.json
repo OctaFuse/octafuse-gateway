@@ -2674,7 +2674,7 @@
 		"webSearch": {
 			"title": "Web search",
 			"description": "Powers POST /v1/tools/web-search. Choose an implemented engine only—free text is rejected. Leave the API key empty and save to clear it (endpoint returns 503 until set again).",
-			"descriptionCatalog": "Powers POST /v1/tools/web-search. Configure each engine’s API key and three unit prices, then save & activate one card. Only charged hits user budget. Engines without a key cannot be activated.",
+			"descriptionCatalog": "Maintain credentials for each engine and set its standard price, user multiplier and supplier multiplier in Billing rules. Save and enable an engine with credentials configured.",
 			"provider": "Search engine",
 			"active": "Active engine",
 			"catalogProvider": "Engine",
@@ -2733,7 +2733,7 @@
 		"webFetch": {
 			"title": "Web fetch",
 			"description": "Powers POST /v1/tools/web-fetch. Choose an implemented scraper only—free text is rejected. Leave the API key empty and save to clear it (endpoint returns 503 until set again).",
-			"descriptionCatalog": "Powers POST /v1/tools/web-fetch. Configure each scraper’s API key and three unit prices, then save & activate one card. Only charged hits user budget. Scrapers without a key cannot be activated.",
+			"descriptionCatalog": "Maintain credentials for each engine and set its standard price, user multiplier and supplier multiplier in Billing rules. Save and enable an engine with credentials configured.",
 			"provider": "Fetch provider",
 			"active": "Active provider",
 			"catalogProvider": "Provider",
@@ -2752,7 +2752,7 @@
 		},
 		"webDeepSearch": {
 			"title": "Web deep search",
-			"descriptionCatalog": "Powers POST /v1/tools/web-deep-search. Search-and-read engines (Firecrawl Search / Jina Search) return page content with results—heavier and costlier than plain web search. Configure each provider, then save & activate one card.",
+			"descriptionCatalog": "Maintain credentials for each engine and set its standard price, user multiplier and supplier multiplier in Billing rules. Save and enable an engine with credentials configured.",
 			"active": "Active provider",
 			"catalogProvider": "Provider",
 			"noKey": "no key",
@@ -2768,7 +2768,7 @@
 		},
 		"aiDetection": {
 			"title": "AI detection",
-			"descriptionCatalog": "Powers POST /v1/tools/ai-detection. Multi-provider catalog: configure credentials and three unit prices per engine, then save & activate one card. Billing is by character units (billingUnitChars); totals scale metered/standard/charged. Currently only Tencent Cloud TMS is implemented.",
+			"descriptionCatalog": "Maintain credentials for each engine and set its standard price, user multiplier and supplier multiplier in Billing rules. Save and enable an engine with credentials configured.",
 			"active": "Active engine",
 			"catalogProvider": "Engine",
 			"noKey": "no credentials",
@@ -2838,11 +2838,11 @@
 		},
 		"errors": {
 			"invalidWebSearchProvider": "Search engine must be one of the implemented options.",
-			"invalidWebSearchCost": "Metered, standard, and charged must each be a non-negative number for every engine.",
+			"invalidWebSearchCost": "The standard price and both multipliers must be finite, non-negative numbers and cannot be blank. Calculated amounts must be within range.",
 			"invalidWebFetchProvider": "Fetch provider must be one of the implemented options.",
-			"invalidWebFetchCost": "Metered, standard, and charged must each be a non-negative number for every provider.",
-			"invalidWebDeepSearchCost": "Metered, standard, and charged must each be a non-negative number for every deep-search provider.",
-			"invalidAiDetectionCost": "Metered, standard, and charged must be non-negative and billing unit chars must be a positive integer for every engine.",
+			"invalidWebFetchCost": "The standard price and both multipliers must be finite, non-negative numbers and cannot be blank. Calculated amounts must be within range.",
+			"invalidWebDeepSearchCost": "The standard price and both multipliers must be finite, non-negative numbers and cannot be blank. Calculated amounts must be within range.",
+			"invalidAiDetectionCost": "The standard price and both multipliers must be finite, non-negative numbers and cannot be blank. Calculated amounts must be within range. Characters per billing unit must be a positive integer.",
 			"aiDetectionNotImplemented": "Cannot activate an engine that is not implemented yet.",
 			"noKeyCannotActivate": "Cannot activate a provider without an API key.",
 			"switchActiveBeforeClearingKey": "Switch Active to another engine that still has a key before clearing the current engine’s key, then save again to clear it."
@@ -2861,7 +2861,10 @@
 			"openHint": "Click a service row for configuration and management",
 			"perRequest": "Billed per request",
 			"perCharacters": "Billed per {count} characters",
-			"backToConfig": "Back to configuration"
+			"backToConfig": "Back to configuration",
+			"connection": "Connection",
+			"pricing": "Billing rules",
+			"settingsSections": "Service settings"
 		}
 	},
 	"pricing": {
@@ -3213,12 +3216,7 @@
 		},
 		"advancedHint": "Defaults usually work well. Adjust for slower upstream services or larger responses. Default timeout: 30 seconds; maximum response: 1 MiB.",
 		"pricing": {
-			"simpleTitle": "Billing method",
 			"simpleDefaultHint": "Tools without their own pricing use these defaults.",
-			"freeMode": "Free",
-			"perCallMode": "Per-call billing",
-			"freeHint": "A user multiplier of 0 makes calls free. Supplier costs are still recorded.",
-			"perCallHint": "Each successful call uses the standard price and multipliers to calculate charges and costs.",
 			"needsReview": "Review configuration",
 			"freeSummary": "Currently free",
 			"fixedSummary": "User charge per call: {amount}",
@@ -3226,18 +3224,29 @@
 			"invalidNumber": "The standard price and both multipliers must be finite, non-negative numbers and cannot be blank. Calculated amounts must be within range.",
 			"invalidStored": "Pricing is invalid or unsupported by this version. Set per-call prices before using the tool.",
 			"perCall": "Per call",
-			"standard": "Standard price ({currency} / request)",
-			"chargedFactor": "User multiplier",
-			"meteredFactor": "Supplier multiplier",
-			"standardHint": "Base price for each successful call.",
-			"chargedFactorHint": "1 charges the base price; 0 makes calls free for users.",
-			"meteredFactorHint": "1 sets cost to the base price; 0 means no supplier cost.",
-			"chargedResult": "User charge",
-			"meteredResult": "Supplier cost",
-			"chargedFormula": "Standard price × user multiplier",
-			"meteredFormula": "Standard price × supplier multiplier",
-			"legacyNeedsReview": "The old prices cannot be converted to multipliers without changing amounts. Existing calls still use the original prices. Enter a new standard price and multipliers before saving.",
 			"factorSummary": "User multiplier ×{chargedFactor} · Supplier multiplier ×{meteredFactor}"
 		}
+	},
+	"toolPricing": {
+		"simpleTitle": "Billing method",
+		"freeMode": "Free",
+		"perCallMode": "Per-call billing",
+		"freeHint": "A user multiplier of 0 makes calls free. Supplier costs are still recorded.",
+		"perCallHint": "Use the standard price and multipliers to calculate charges and costs per unit.",
+		"standard": "Standard price ({currency} / {unit})",
+		"chargedFactor": "User multiplier",
+		"meteredFactor": "Supplier multiplier",
+		"standardHint": "Base price for one billing unit.",
+		"chargedFactorHint": "1 charges the base price; 0 makes calls free for users.",
+		"meteredFactorHint": "1 sets cost to the base price; 0 means no supplier cost.",
+		"chargedResult": "User charge",
+		"meteredResult": "Supplier cost",
+		"chargedFormula": "Standard price × user multiplier",
+		"meteredFormula": "Standard price × supplier multiplier",
+		"legacyNeedsReview": "The old prices cannot be converted to multipliers without changing amounts. Calls still use the original prices. To change pricing, enter a new standard price and both multipliers.",
+		"invalidNumber": "The standard price and both multipliers must be finite, non-negative numbers and cannot be blank. Calculated amounts must be within range.",
+		"title": "Pricing rule",
+		"perUnitMode": "Per-unit billing",
+		"charactersUnit": "{count} characters"
 	}
 }

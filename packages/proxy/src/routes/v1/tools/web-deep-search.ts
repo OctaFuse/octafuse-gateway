@@ -2,10 +2,11 @@
  * 用户路由：`POST /v1/tools/web-deep-search` — 搜+读一体；成功后按固定单价计入 budget_spent。
  */
 import { resolveWebDeepSearchConfig } from '@octafuse/core';
+import { toolFactorPricingAudit } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../../app';
 import { requireApiKey } from '../../../middleware/auth';
-import { apiKeyHasBalance, canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
+import { canAffordToolCost, chargeToolUsage } from '../../../services/tool-usage-charge';
 import {
 	clampDeepSearchCount,
 	deepSearchByProvider,
@@ -46,10 +47,15 @@ webDeepSearchRoutes.post('/', async (c) => {
 		return c.json({ error: 'Web deep search is not configured' }, 503);
 	}
 
-	if (!apiKeyHasBalance(apiKey)) {
-		return c.json({ error: 'Budget exceeded' }, 403);
-	}
-	if (!canAffordToolCost(apiKey.budgetMax, apiKey.budgetSpent, unitCharged, apiKey.walletGranted, apiKey.walletSpent)) {
+	if (
+		!canAffordToolCost(
+			apiKey.budgetMax,
+			apiKey.budgetSpent,
+			unitCharged,
+			apiKey.walletGranted,
+			apiKey.walletSpent
+		)
+	) {
 		return c.json({ error: 'Budget exceeded' }, 403);
 	}
 
@@ -91,6 +97,7 @@ webDeepSearchRoutes.post('/', async (c) => {
 			pricingUnit: 'request',
 			billingUnits: 1,
 			unitPrices: { metered: unitMetered, standard: unitStandard, charged: unitCharged },
+			pricingAuditExtra: toolFactorPricingAudit(resolved.config.pricing),
 			latencyMs,
 			requestBody: JSON.stringify({ query, provider, count }),
 			responseBody: JSON.stringify({
@@ -121,7 +128,7 @@ webDeepSearchRoutes.post('/', async (c) => {
 				apiKeyId: apiKey.keyId,
 				userId: apiKey.userId,
 				userEmail: apiKey.userEmail,
-			ingressHost: apiKey.ingressHost,
+				ingressHost: apiKey.ingressHost,
 				toolId: 'tool:web-deep-search',
 				toolProvider: provider,
 				meteredCost: 0,
@@ -130,6 +137,7 @@ webDeepSearchRoutes.post('/', async (c) => {
 				pricingUnit: 'request',
 				billingUnits: 1,
 				unitPrices: { metered: unitMetered, standard: unitStandard, charged: unitCharged },
+				pricingAuditExtra: toolFactorPricingAudit(resolved.config.pricing),
 				latencyMs,
 				requestBody: JSON.stringify({ query, provider }),
 				errorMessage: message,
