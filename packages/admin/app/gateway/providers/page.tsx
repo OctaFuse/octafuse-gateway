@@ -10,7 +10,11 @@ import { ProviderAddCard } from './components/provider-add-card';
 import { ProviderCard } from './components/provider-card';
 import { ProviderImportModal } from './components/provider-import-modal';
 import { ProviderModal } from './components/provider-modal';
+import { ProviderSyncCheckButton } from './components/provider-sync-check-button';
+import { ProviderSyncBanner } from './components/provider-sync-banner';
+import { ProviderSyncModal } from './components/provider-sync-modal';
 import { ProviderToolbar } from './components/provider-toolbar';
+import { PROVIDER_SYNC_ORPHANS_KEY, useProviderSync } from './use-provider-sync';
 import { useProvidersPageState } from './use-providers-page-state';
 
 function ProvidersContent() {
@@ -18,6 +22,10 @@ function ProvidersContent() {
 	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
 	const state = useProvidersPageState();
+	const sync = useProviderSync({
+		onChanged: state.refreshProviders,
+		onReport: state.setOfficialReport,
+	});
 
 	if (state.isLoading) {
 		return (
@@ -27,18 +35,41 @@ function ProvidersContent() {
 		);
 	}
 
+	const officialUpdateProviders = state.providers.filter(
+		(p) => Number(p.official_update_count ?? 0) > 0
+	);
+	const officialUpdateCount = officialUpdateProviders.length;
+	const officialUpdateKindCount = new Set(officialUpdateProviders.map((p) => p.kind)).size;
+	const orphanCount = state.providers.filter((p) => p.kind_orphaned).length;
+
 	const hasQueryOrFilter =
 		Boolean(state.providerSearch.trim()) || state.selectedFilter !== 'all';
 
 	return (
 		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
-			<div className="mb-5 sm:mb-6">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
-				<p className="mt-1 text-sm text-gray-500">
-					{t('subtitle', { product: tBrand('product') })}
-				</p>
-				<p className="mt-1 text-xs text-gray-400">{t('importHint')}</p>
+			<div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
+				<div className="min-w-0">
+					<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+					<p className="mt-1 text-sm text-gray-500">
+						{t('subtitle', { product: tBrand('product') })}
+					</p>
+					<p className="mt-1 text-xs text-gray-400">{t('importHint')}</p>
+				</div>
+				<ProviderSyncCheckButton
+					checking={sync.checking}
+					lastCheckedAt={sync.lastCheckedAt}
+					hasUpdates={officialUpdateCount > 0 || orphanCount > 0}
+					onCheck={() => void sync.check()}
+				/>
 			</div>
+
+			<ProviderSyncBanner
+				updateCount={officialUpdateCount}
+				kindCount={officialUpdateKindCount}
+				orphanCount={orphanCount}
+				onOpen={() => sync.openSync()}
+				onShowOnly={() => state.setSelectedFilter('outdated')}
+			/>
 
 			<ProviderToolbar
 				providerSearch={state.providerSearch}
@@ -61,6 +92,9 @@ function ProvidersContent() {
 						onEdit={state.handleEdit}
 						onToggleStatus={state.handleToggleStatus}
 						onCopyApiKey={state.handleCopyApiKey}
+						onReviewOfficialUpdate={() =>
+							sync.openSync(provider.kind_orphaned ? PROVIDER_SYNC_ORPHANS_KEY : provider.kind)
+						}
 					/>
 				))}
 			</div>
@@ -70,6 +104,8 @@ function ProvidersContent() {
 					<span className="mt-1 block text-xs text-gray-400">{t('emptyFilterHint')}</span>
 				</p>
 			) : null}
+
+			<ProviderSyncModal sync={sync} />
 
 			<ProviderImportModal
 				open={state.showImportModal}

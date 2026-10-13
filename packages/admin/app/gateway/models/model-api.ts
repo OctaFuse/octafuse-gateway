@@ -12,6 +12,7 @@ import {
 	type ImagePricingDraftState,
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
+import type { ModelSyncApplyBody, ModelSyncApplyOutput, ModelSyncReport } from '@/lib/model-sync-diff';
 import { parseMetadataForSave } from './model-utils';
 import type { ModelFormData, ModelImportResult, ModelListItem, PresetCatalogRow } from './types';
 
@@ -140,4 +141,24 @@ export async function importModelPresets(
 	const data = await readApiJson<ModelImportResult>(response);
 	if (data.success && data.data) return { success: true, data: data.data };
 	return { success: false, message: data.message || 'Import failed' };
+}
+
+export async function fetchModelSyncReport(): Promise<ModelSyncReport> {
+	const response = await fetch('/api/admin/models/sync/diff');
+	const data = await readApiJson<ModelSyncReport>(response);
+	if (data.success && data.data) return data.data;
+	throw new Error(data.message || 'Failed to load model sync diff');
+}
+
+export async function applyModelSync(
+	body: ModelSyncApplyBody
+): Promise<{ success: true; data: ModelSyncApplyOutput } | { success: false; message: string }> {
+	const response = await fetch('/api/admin/models/sync/apply', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body),
+	});
+	const data = await readApiJson<ModelSyncApplyOutput>(response);
+	if (data.success && data.data) return { success: true, data: data.data };
+	return { success: false, message: data.message || 'Sync failed' };
 }

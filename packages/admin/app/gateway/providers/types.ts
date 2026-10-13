@@ -160,6 +160,7 @@ export type ProviderListFilter =
 	| 'disabled'
 	| 'pending'
 	| 'no_key'
+	| 'outdated'
 	| 'openai'
 	| 'anthropic'
 	| 'gemini'
@@ -175,6 +176,7 @@ export const PROVIDER_LIST_FILTERS: readonly ProviderListFilter[] = [
 	'disabled',
 	'pending',
 	'no_key',
+	'outdated',
 	'openai',
 	'anthropic',
 	'gemini',

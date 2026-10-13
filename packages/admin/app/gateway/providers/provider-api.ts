@@ -3,6 +3,11 @@ import { readApiJson } from '@/lib/api-json';
 import { sortProvidersByKindThenName } from '@/lib/provider-kind';
 import type { GatewayProvider } from '@/lib/types';
 import { formDataToEndpointsMap } from './provider-utils';
+import type {
+	ProviderSyncApplyBody,
+	ProviderSyncApplyOutput,
+	ProviderSyncReport,
+} from '@/lib/provider-sync-diff';
 import type { ProviderFormData, ProviderImportCatalogRow, ProviderImportResult } from './types';
 
 export async function fetchProvidersList(): Promise<GatewayProvider[]> {
@@ -114,4 +119,39 @@ export async function fetchProviderQuota(
 	const data = await readApiJson<ProviderQuotaSnapshot>(response);
 	if (data.success && data.data) return { success: true, data: data.data };
 	return { success: false, message: data.message || 'Failed to query provider quota' };
+}
+
+export async function fetchProviderSyncReport(): Promise<ProviderSyncReport> {
+	const response = await fetch('/api/admin/providers/sync/diff');
+	const data = await readApiJson<ProviderSyncReport>(response);
+	if (data.success && data.data) return data.data;
+	throw new Error(data.message || 'Failed to load provider sync diff');
+}
+
+export async function applyProviderSync(
+	body: ProviderSyncApplyBody
+): Promise<{ success: true; data: ProviderSyncApplyOutput } | { success: false; message: string }> {
+	const response = await fetch('/api/admin/providers/sync/apply', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(body),
+	});
+	const data = await readApiJson<ProviderSyncApplyOutput>(response);
+	if (data.success && data.data) return { success: true, data: data.data };
+	return { success: false, message: data.message || 'Sync failed' };
+}
+
+/** 模板改名后把旧 kind 迁移到新模板名；只改 `kind`。 */
+export async function migrateProviderKind(
+	providerId: string,
+	kind: string
+): Promise<{ success: true } | { success: false; message: string }> {
+	const response = await fetch(`/api/admin/providers/${encodeURIComponent(providerId)}`, {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ kind }),
+	});
+	const data = await readApiJson(response);
+	if (data.success) return { success: true };
+	return { success: false, message: data.message || 'Update failed' };
 }

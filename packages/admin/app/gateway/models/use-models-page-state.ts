@@ -29,6 +29,7 @@ import {
 } from '@/lib/pricing-tiers-draft';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
 import { useFeedback } from '@/components/feedback';
+import type { ModelSyncReport } from '@/lib/model-sync-diff';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
@@ -72,7 +73,19 @@ export function useModelsPageState() {
 	const pathname = usePathname();
 	const editDeepLinkHandledRef = useRef<string | null>(null);
 	const editLoadGenRef = useRef(0);
-	const [models, setModels] = useState<ModelListItem[]>([]);
+	const [rawModels, setModels] = useState<ModelListItem[]>([]);
+	/** 管理员手动「检查官方更新」的结果；null = 还没检查过。 */
+	const [officialReport, setOfficialReport] = useState<ModelSyncReport | null>(null);
+	// 差异只在手动检查后才有；把结果合并到卡片，供更新图标使用。
+	const models = useMemo(() => {
+		if (!officialReport) return rawModels;
+		const counts = new Map<string, number>();
+		for (const group of officialReport.groups) {
+			for (const entry of group.models) counts.set(entry.model_id, entry.fields.length);
+		}
+		return rawModels.map((model) => ({ ...model, official_update_count: counts.get(model.id) ?? 0 }));
+	}, [rawModels, officialReport]);
+
 	const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
 	const [selectedKind, setSelectedKind] = useState<ModelListKindFilter>(DEFAULT_MODEL_LIST_KIND_FILTER);
 	const [isLoading, setIsLoading] = useState(true);
@@ -219,6 +232,15 @@ export function useModelsPageState() {
 		params.set('kind', selectedKind);
 		return params;
 	}, [selectedVendor, selectedKind]);
+
+	/** 不切换整页 loading 的静默刷新（同步面板应用后用，避免面板被卸载）。 */
+	const reloadModelsQuietly = useCallback(async () => {
+		try {
+			setModels(await fetchModelsList());
+		} catch (error) {
+			console.error('Fetch models error:', error);
+		}
+	}, []);
 
 	const refreshModels = useCallback(async () => {
 		try {
@@ -806,5 +828,9 @@ export function useModelsPageState() {
 		toggleFormModality,
 		handleSave,
 		closeModal,
+		refreshModels,
+		reloadModelsQuietly,
+		officialReport,
+		setOfficialReport,
 	};
 }

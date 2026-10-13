@@ -1,8 +1,10 @@
 'use client';
 
 import {
+	ArrowPathIcon,
 	CheckIcon,
 	ClipboardDocumentIcon,
+	ExclamationTriangleIcon,
 	PowerIcon,
 	ShareIcon,
 } from '@heroicons/react/24/outline';
@@ -10,7 +12,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { formatProviderAccountLabel, providerKindDisplayLabel } from '@/lib/provider-kind';
 import type { GatewayProvider, ProviderKeyStatusKind } from '../types';
-import { getProviderKeyStatus, getProviderProtocolSummaries } from '../provider-utils';
+import {
+	getProviderKeyStatus,
+	getProviderProtocolSummaries,
+	providerHasOfficialUpdate,
+} from '../provider-utils';
 import { ProviderProtocolIcon } from './provider-protocol-icon';
 import { ProviderQuotaButton } from './provider-quota-popover';
 
@@ -21,6 +27,8 @@ type ProviderCardProps = {
 	onEdit: (provider: GatewayProvider) => void;
 	onToggleStatus: (provider: GatewayProvider) => void;
 	onCopyApiKey: (provider: GatewayProvider) => void;
+	/** 点击「有更新」徽标：打开与官方同步面板。 */
+	onReviewOfficialUpdate: () => void;
 };
 
 const CARD_SHELL: Record<ProviderKeyStatusKind, string> = {
@@ -65,6 +73,7 @@ export function ProviderCard(props: ProviderCardProps) {
 		onEdit,
 		onToggleStatus,
 		onCopyApiKey,
+		onReviewOfficialUpdate,
 	} = props;
 
 	const t = useTranslations('providers.card');
@@ -74,6 +83,7 @@ export function ProviderCard(props: ProviderCardProps) {
 
 	const protocols = getProviderProtocolSummaries(provider);
 	const isActive = provider.status !== 'disabled';
+	const hasOfficialUpdate = providerHasOfficialUpdate(provider);
 	const keyStatus = isActive ? getProviderKeyStatus(provider) : 'disabled';
 	const canCopyKey = keyStatus === 'key_set';
 	const apiKeyFeedbackId = `provider-api-key:${provider.id}`;
@@ -139,6 +149,28 @@ export function ProviderCard(props: ProviderCardProps) {
 						</p>
 					) : null}
 				</div>
+				{hasOfficialUpdate ? (
+					<button
+						type="button"
+						onClick={(event) => {
+							event.stopPropagation();
+							onReviewOfficialUpdate();
+						}}
+						className="pointer-events-auto relative inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200 transition-colors hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+						title={provider.kind_orphaned ? t('kindOrphanedTitle') : t('officialUpdateTitle')}
+						aria-label={provider.kind_orphaned ? t('kindOrphanedTitle') : t('officialUpdateTitle')}
+					>
+						{provider.kind_orphaned ? (
+							<ExclamationTriangleIcon className="h-4 w-4" aria-hidden />
+						) : (
+							<ArrowPathIcon className="h-4 w-4" aria-hidden />
+						)}
+						<span
+							className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-white"
+							aria-hidden
+						/>
+					</button>
+				) : null}
 				<button
 					type="button"
 					role="switch"

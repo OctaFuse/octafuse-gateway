@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { sortProvidersByKindThenName } from '@/lib/provider-kind';
+import type { ProviderSyncReport } from '@/lib/provider-sync-diff';
 import { useFeedback } from '@/components/feedback';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import {
@@ -41,6 +42,7 @@ function emptyFilterCounts(): Record<ProviderListFilter, number> {
 		disabled: 0,
 		pending: 0,
 		no_key: 0,
+		outdated: 0,
 		openai: 0,
 		anthropic: 0,
 		gemini: 0,
@@ -58,7 +60,9 @@ export function useProvidersPageState() {
 	const tCommon = useTranslations('common');
 	const { notify, confirm } = useFeedback();
 	const searchParams = useSearchParams();
-	const [providers, setProviders] = useState<GatewayProvider[]>([]);
+	const [rawProviders, setProviders] = useState<GatewayProvider[]>([]);
+	/** 管理员手动「检查官方更新」的结果；null = 还没检查过。 */
+	const [officialReport, setOfficialReport] = useState<ProviderSyncReport | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [providerSearch, setProviderSearch] = useState('');
 	const [selectedFilter, setSelectedFilter] = useState<ProviderListFilter>(
@@ -103,6 +107,21 @@ export function useProvidersPageState() {
 		}
 		return params;
 	}, [providerSearch, selectedFilter]);
+
+	// 差异只在手动检查后才有；把结果合并到卡片，供徽标和「有更新」筛选使用。
+	const providers = useMemo(() => {
+		if (!officialReport) return rawProviders;
+		const counts = new Map<string, number>();
+		for (const group of officialReport.groups) {
+			for (const entry of group.providers) counts.set(entry.provider_id, entry.fields.length);
+		}
+		const orphaned = new Set(officialReport.orphans.map((o) => o.provider_id));
+		return rawProviders.map((provider) => ({
+			...provider,
+			official_update_count: counts.get(provider.id) ?? 0,
+			kind_orphaned: orphaned.has(provider.id),
+		}));
+	}, [rawProviders, officialReport]);
 
 	const customKindLabel = tKind('custom');
 	const orderedProviders = useMemo(
@@ -452,5 +471,8 @@ export function useProvidersPageState() {
 		runImportSelectedPresets,
 		handleCopyApiKey,
 		handleToggleStatus,
+		refreshProviders,
+		officialReport,
+		setOfficialReport,
 	};
 }

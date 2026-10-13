@@ -73,6 +73,10 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/providers/import/catalog` | GET | 内置 Provider 模板摘要（无密钥） | Admin UI |
 | `/admin/providers/import` | POST | 请求体 `{"ids":["0","1",…]}`：catalog 键（非 provider id）；每次导入新增 `providers` 行（UUID id；`kind` 为模板英文名；同一 `kind` 下同名自动后缀）；占位 API Key，须在 Admin 中替换 | Admin UI、运维脚本 |
 | `/admin/models` | GET, POST, GET/PATCH/DELETE `/:id` | `models`（含可选 `route_policy`），`model_tags` | Admin UI |
+| `/admin/providers/sync/diff` | GET | 各 Provider 与内置官方模板的差异报告：按 `kind` 分组，逐字段（`description`、`endpoints.<protocol>`）列出新增 / 变更 / 仅本地有；另列出 `kind` 已不在模板中的 provider（`orphans`） | Admin UI |
+| `/admin/providers/sync/apply` | POST | 请求体 `{"items":[{"provider_id","fields":["description","endpoints.openai",…]}]}`：服务端重算差异，只把选中字段写成官方值；不写 `api_key` / `status` / `name` / `kind` | Admin UI |
+| `/admin/models/sync/diff` | GET | 各 Model 与内置静态目录的差异报告：按厂商分组，逐字段（`display_name`、`vendor`、`context_window`、`max_tokens`、`description`、`released_at`、`input_modalities`、`output_modalities`、`pricing_profile`）列出新增 / 变更；价格按 `BILLING_CURRENCY` 取目录价并逐叶子路径对比。目录里没有的自建模型、目录未给出的字段不参与 | Admin UI |
+| `/admin/models/sync/apply` | POST | 请求体 `{"items":[{"model_id","fields":["description","pricing_profile",…]}]}`：服务端重算差异，只把选中字段写成官方值（经 `updateModelService`，路由价格覆盖时段对齐照常执行）；不写 `tags` / `metadata` / `route_policy` | Admin UI |
 | `/admin/models/import/catalog` | GET | 内置静态目录可选项摘要（不含完整 `pricing_profile`） | Admin UI |
 | `/admin/models/import` | POST | 请求体 `{"ids":["…"]}`：仅导入指定预设 → `models`（按 `BILLING_CURRENCY` 选用 USD/CNY 价；**同 id 不覆盖**，记入 `skipped_existing`；**不**写入 `model_tags`） | Admin UI、运维脚本 |
 | `/admin/routes` | GET（`?model_id=&provider_id=`）, POST, GET/PATCH/DELETE `/:id` | `model_surfaces`、`route_pools`、`model_routes`（Surface → Pool → Target） | Admin UI |
@@ -654,6 +658,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 | DELETE | `/admin/providers/:id` | 删除；仍被 `model_routes` 引用时返回 **409**，须先删除或改绑对应 Target |
 | GET | `/admin/providers/:id/api-key` | **揭示明文** `api_key`（`{ success, data: { api_key } }`） |
 | GET | `/admin/providers/:id/quota` | 用该账号现有 `api_key` 实时查询额度。权限是 `providers.read`，响应不含密钥。不支持的 `kind`、空密钥或导入占位密钥返回 **400**。上游非 2xx 或响应无法解析返回 **502**（`message` 只有状态码，没有响应体）。超时返回 **504** |
+| GET / POST | `/admin/providers/sync/diff`、`/sync/apply` | 与官方模板同步：`diff` 只读；`apply` 逐字段写入官方值。差异只在管理员手动检查时计算，列表接口不带 |
 | GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换）。写入 `kind =` 模板英文名；仅同一 `kind` 下同名才追加 `(2)` 后缀 |
 
 `GET /admin/providers/:id/quota` 的 `data` 是归一化快照，不保存。请求发往与该 `kind` 默认域名同一注册域的 https origin；保存的 Endpoint 若换了注册域，则回退默认 origin。
@@ -774,6 +779,14 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 - **清空**：`null` 或空串 ⇒ 列 `NULL`（回退全局）。
 - **校验**：`normalizeModelRoutePolicyInput`；须含顶层 `strategy` 和/或至少一条合法 `rules`。
 - **运行时**：仅 Proxy failover 路径；Admin Playground **不走**策略排序。解析时先看 `route_pools.tier_strategies[priority]`，再看 `route_pools.strategy`，然后才是模型 `route_policy`。
+
+### `GET /admin/models/sync/diff` 与 `POST /admin/models/sync/apply`
+
+- **用途**：静态目录（`packages/admin/lib/model-presets/*.json`）更新后，让已导入的 `models` 行与官方值对齐。差异只在管理员点「检查官方更新」时计算，`GET /admin/models` 列表不带差异信息。
+- **比对范围**：按 `models.id` 与目录项一一对应，字段为 `display_name`、`vendor`、`context_window`、`max_tokens`、`description`、`released_at`、`input_modalities`、`output_modalities`、`pricing_profile`。目录未给出（null）的字段不报差异，不会建议清空；模态不看顺序；价格按 `BILLING_CURRENCY` 选 `usd` / `cny` 分支，按叶子路径（如 `tiers[0].input_price`）展示新增 / 变更 / 仅本地有。
+- **默认选择**：普通字段默认「采用官方」；`pricing_profile` 直接影响计费，默认「保留当前」，需管理员核对后再选。「保留当前」不落库，下次检查仍会显示。
+- **应用**：请求体 `{ "items": [{ "model_id": "...", "fields": ["description", "pricing_profile"] }] }`。服务端重新计算差异，只处理确实存在差异的所选字段，经 `updateModelService` 写入（路由价格覆盖的时段对齐照常执行）；不写 `tags`、`metadata`、`route_policy`，不碰路由。响应 `{ updated, skipped, failed: [{ model_id, message }] }`，单个模型失败不影响其它。
+- **权限**：与其它 Admin 路由相同，后台 Session，或具有 `models.read` / `models.write` 的 `Authorization: Bearer <ADMIN_API_KEY>`。
 
 ### `GET /admin/models/import/catalog`
 

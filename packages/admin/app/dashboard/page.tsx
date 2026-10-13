@@ -97,9 +97,9 @@ function MetricCard({
 	);
 }
 
-function RequestRow({ log, formatTime, unknown }: {
+function RequestRow({ log, formatDateTime, unknown }: {
 	log: GatewayRequestLog;
-	formatTime: (value: string | null | undefined) => string;
+	formatDateTime: (value: string | null | undefined) => string;
 	unknown: string;
 }) {
 	const success = log.status === 'success';
@@ -119,7 +119,7 @@ function RequestRow({ log, formatTime, unknown }: {
 					{dashboardLogProviderLabel(log) || unknown}
 				</p>
 			</div>
-			<time className="whitespace-nowrap text-xs text-gray-400">{formatTime(log.created_at)}</time>
+			<time className="whitespace-nowrap text-xs text-gray-400">{formatDateTime(log.created_at)}</time>
 		</div>
 	);
 }
@@ -134,7 +134,7 @@ export default function DashboardPage() {
 	const [loadError, setLoadError] = useState(false);
 	const [rangeValue, setRangeValue] = useAnalyticsRange();
 	const { currency: billingCurrency } = useBillingCurrency();
-	const { businessTimezone, formatTime } = useGatewayDateTime();
+	const { businessTimezone, formatDateTime } = useGatewayDateTime();
 
 	const rangeLabel = useMemo(
 		() =>
@@ -347,7 +347,7 @@ export default function DashboardPage() {
 											<p className="truncate text-sm font-medium text-gray-900" title={dashboardLogModelTitle(log)}>
 												{dashboardLogModelLabel(log, tCommon('unknown'))}
 											</p>
-											<time className="shrink-0 text-[11px] text-gray-400">{formatTime(log.created_at)}</time>
+											<time className="shrink-0 text-[11px] text-gray-400">{formatDateTime(log.created_at)}</time>
 										</div>
 										<p className="mt-1 line-clamp-2 text-xs leading-5 text-red-600">{log.error_message || tCommon('unknownError')}</p>
 										{providerLabel ? (
@@ -378,7 +378,7 @@ export default function DashboardPage() {
 				</div>
 				{stats?.recentLogs && stats.recentLogs.length > 0 ? (
 					<div className="mt-3">
-						{stats.recentLogs.map((log) => <RequestRow key={log.id} log={log} formatTime={formatTime} unknown={tCommon('unknown')} />)}
+						{stats.recentLogs.map((log) => <RequestRow key={log.id} log={log} formatDateTime={formatDateTime} unknown={tCommon('unknown')} />)}
 					</div>
 				) : (
 					<div className="py-10 text-center text-sm text-gray-500">{tCommon('noRecentRequests')}</div>

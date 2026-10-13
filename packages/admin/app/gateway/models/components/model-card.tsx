@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
@@ -24,8 +25,11 @@ export function ModelCard(props: {
 	model: ModelListItem;
 	billingCurrency: string;
 	onEdit: (model: ModelListItem) => void;
+	/** 点击「有官方更新」图标：打开同步面板并定位到该模型所属厂商。 */
+	onReviewOfficialUpdate?: (model: ModelListItem) => void;
 }) {
-	const { model, billingCurrency, onEdit } = props;
+	const { model, billingCurrency, onEdit, onReviewOfficialUpdate } = props;
+	const hasOfficialUpdate = Number(model.official_update_count ?? 0) > 0;
 	const t = useTranslations('models.card');
 	const displayName = model.display_name || model.id;
 	const kind = isImageGenerationModel(model) ? 'image' : isAudioModel(model) ? 'audio' : 'llm';
@@ -71,6 +75,24 @@ export function ModelCard(props: {
 						{model.id}
 					</p>
 				</div>
+				{hasOfficialUpdate && onReviewOfficialUpdate ? (
+					<button
+						type="button"
+						onClick={(event) => {
+							event.stopPropagation();
+							onReviewOfficialUpdate(model);
+						}}
+						className="pointer-events-auto relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200 transition-colors hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+						title={t('officialUpdateTitle')}
+						aria-label={t('officialUpdateTitle')}
+					>
+						<ArrowPathIcon className="h-4 w-4" aria-hidden />
+						<span
+							className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-white"
+							aria-hidden
+						/>
+					</button>
+				) : null}
 				{tagShown.length > 0 ? (
 					<div className="flex max-w-[40%] shrink-0 flex-wrap justify-end gap-1">
 						{tagShown.map((tag) => (

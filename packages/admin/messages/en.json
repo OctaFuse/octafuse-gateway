@@ -377,7 +377,8 @@
 			"active": "Active",
 			"disabled": "Disabled",
 			"pending": "Pending",
-			"no_key": "No key"
+			"no_key": "No key",
+			"outdated": "Has update"
 		},
 		"card": {
 			"pending": "Pending",
@@ -414,7 +415,11 @@
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
 				"modelsGenerate": "generate"
-			}
+			},
+			"officialUpdate": "Official update",
+			"officialUpdateTitle": "The official template has changed. Click to review and sync",
+			"kindOrphaned": "Type needs migration",
+			"kindOrphanedTitle": "The official template was renamed or removed. Click to migrate to a new type"
 		},
 		"import": {
 			"title": "Import from templates",
@@ -565,6 +570,83 @@
 			"apiKeyEditHint": "Hidden by default. Show or copy the current key. Change it to replace on save; clear the field to keep the current key.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — stream + non-stream",
 			"legacyPerActionNotice": "This provider still has separate generateContent / streamGenerateContent overrides that cannot be safely merged. They are preserved as-is on save. Clear them in the database or set a single '{action}' template after review."
+		},
+		"sync": {
+			"title": "Sync with official",
+			"subtitle": "Compare each provider with the built-in official template, then choose Use official or Keep current for every difference.",
+			"loading": "Comparing…",
+			"loadFailed": "Failed to load differences",
+			"recheck": "Check again",
+			"navAria": "Provider types with differences",
+			"groupSummary": "{providers} providers · {fields} differences",
+			"groupHint": "Choose per difference: use the official value or keep your current configuration.",
+			"useOfficialAll": "Use official for all",
+			"keepCurrentAll": "Keep current for all",
+			"current": "Current",
+			"official": "Official",
+			"useOfficial": "Use official",
+			"keepCurrent": "Keep current",
+			"removedHint": "The official template has no such entry. You probably added it yourself, so it is kept by default. Choosing Use official removes it.",
+			"status": {
+				"added": "New in official",
+				"changed": "Differs from official",
+				"removed": "Local only"
+			},
+			"field": {
+				"description": "Description",
+				"endpoints": "{protocol} endpoints"
+			},
+			"slot": {
+				"title": "Item",
+				"base": "Base URL",
+				"auth": "Auth"
+			},
+			"applyProvider": "Sync this provider ({count})",
+			"allSyncedTitle": "All providers match the official templates",
+			"allSyncedHint": "Nothing to sync. Differences appear here automatically after the official templates change.",
+			"summary": "{fields} selected across {providers} providers.",
+			"summaryRoutes": "{routes} active routes will use the new configuration immediately.",
+			"safeNote": "API keys, enabled state and provider names are never changed.",
+			"resetDefaults": "Reset to defaults",
+			"applying": "Syncing…",
+			"applyAll": "Sync selected ({count} providers)",
+			"selectNone": "Select at least one difference to use the official value",
+			"confirmTitle": "Sync official info",
+			"confirmMessage": "This updates {fields} settings on {providers} providers, affecting {routes} active routes. API keys and enabled state are not changed.",
+			"confirmApply": "Sync",
+			"applyFailed": "Sync failed",
+			"applied": "Synced {updated} providers",
+			"appliedWithSkipped": "Synced {updated} providers, {skipped} needed no change",
+			"appliedWithFail": "Synced {updated}, {failed} failed",
+			"banner": {
+				"updates": "{kinds} provider types have official updates, affecting {providers} providers",
+				"orphansOnly": "Some providers use a type that was renamed or removed in the official templates",
+				"orphans": "{count} more providers need their type migrated",
+				"hint": "Review them and choose Use official or Keep current per item.",
+				"showOnly": "Show only these",
+				"review": "Review and sync"
+			},
+			"orphans": {
+				"navTitle": "Template changed",
+				"navCount": "{count} providers",
+				"intro": "The type of these providers was renamed or removed in the official templates, so they can no longer be compared. Pick the type each one maps to now, then you can sync them.",
+				"oldKind": "Old type",
+				"pickTarget": "Pick new type",
+				"suggested": "suggested",
+				"migrate": "Migrate",
+				"migrating": "Migrating…",
+				"migrated": "Type migrated"
+			},
+			"check": {
+				"button": "Check official updates",
+				"checking": "Checking…",
+				"neverChecked": "Not checked yet",
+				"lastCheckedUpdates": "Checked {time}: updates found",
+				"lastCheckedUpToDate": "Checked {time}: up to date",
+				"upToDate": "Checked: all providers match the official templates",
+				"foundUpdates": "{providers} providers ({kinds} types) have official updates",
+				"foundOrphans": "{count} providers need their type migrated"
+			}
 		}
 	},
 	"models": {
@@ -727,7 +809,75 @@
 			"audioHint": "Audio",
 			"editModel": "Edit {name}",
 			"pricingNoData": "—",
-			"pricingTiers": "{count} tiers"
+			"pricingTiers": "{count} tiers",
+			"noRoutes": "No routes",
+			"officialUpdateTitle": "Official catalog has updates — click to review and sync"
+		},
+		"sync": {
+			"title": "Sync with official catalog",
+			"subtitle": "Compare each model with the built-in official catalog and choose \"Use official\" or \"Keep current\" per field.",
+			"loading": "Comparing…",
+			"loadFailed": "Failed to load differences",
+			"recheck": "Re-check",
+			"navAria": "Vendors with differences",
+			"groupSummary": "{models} models · {fields} differences",
+			"groupHint": "Each difference can be handled separately: use the official value or keep your current one.",
+			"useOfficialAll": "Use official for all",
+			"keepCurrentAll": "Keep current for all",
+			"current": "Current",
+			"official": "Official",
+			"useOfficial": "Use official",
+			"keepCurrent": "Keep current",
+			"status": {
+				"added": "Official adds",
+				"changed": "Differs from official",
+				"removed": "Local only"
+			},
+			"field": {
+				"display_name": "Display name",
+				"vendor": "Vendor",
+				"context_window": "Context window",
+				"max_tokens": "Max output",
+				"description": "Description",
+				"released_at": "Release date",
+				"input_modalities": "Input modalities",
+				"output_modalities": "Output modalities",
+				"pricing_profile": "Pricing"
+			},
+			"pricingHint": "Pricing affects billing and is kept by default. The comparison uses the official {currency} prices — review before applying.",
+			"pricingPath": "Price field",
+			"applyModel": "Sync this model ({count})",
+			"allSyncedTitle": "All models match the official catalog",
+			"allSyncedHint": "Nothing to sync. After the official catalog changes, click \"Check official updates\" again.",
+			"summary": "{fields} selected across {models} models.",
+			"summaryPricing": "Pricing will change for {models} models, affecting {routes} active routes.",
+			"safeNote": "Tags, metadata, routes and route price overrides are never modified; fields the catalog leaves empty are not cleared.",
+			"resetDefaults": "Reset to defaults",
+			"applying": "Syncing…",
+			"applyAll": "Sync selected ({count} models)",
+			"selectNone": "Select at least one difference to apply",
+			"confirmTitle": "Sync official catalog",
+			"confirmMessage": "This will update {fields} fields across {models} models.",
+			"confirmPricing": "{models} models include pricing changes affecting {routes} active routes; future billing will change.",
+			"confirmApply": "Sync",
+			"applyFailed": "Sync failed",
+			"applied": "Synced {updated} models",
+			"appliedWithSkipped": "Synced {updated} models, {skipped} needed no change",
+			"appliedWithFail": "Synced {updated}, {failed} failed",
+			"banner": {
+				"updates": "{models} models across {vendors} vendors differ from the official catalog",
+				"hint": "Choose per field to use official or keep current; pricing is kept by default.",
+				"review": "Review and sync"
+			},
+			"check": {
+				"button": "Check official updates",
+				"checking": "Checking…",
+				"neverChecked": "Not checked yet",
+				"lastCheckedUpdates": "Checked {time}: updates found",
+				"lastCheckedUpToDate": "Checked {time}: up to date",
+				"upToDate": "Checked: all models match the official catalog",
+				"foundUpdates": "{models} models ({vendors} vendors) have official updates"
+			}
 		}
 	},
 	"routes": {

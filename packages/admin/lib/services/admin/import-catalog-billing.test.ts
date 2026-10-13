@@ -69,6 +69,35 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥6 / ¥18 /M');
 	});
 
+	it('includes gemini-4-argon at the post-intro list price, not the introductory rate', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-4-argon');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-4-argon');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Gemini 4 Argon');
+		assert.equal(usd!.context_window, 1048576);
+		assert.equal(usd!.max_tokens, 1048576);
+		assert.equal(usd!.pricing_label, '$4 / $20 /M');
+		assert.equal(cny!.pricing_label, '¥28 / ¥140 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-4-argon');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-10-13');
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image', 'audio', 'video', 'file']);
+		assert.deepEqual(preset!.modalities?.output, ['text']);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers.length, 1);
+		assert.equal(profile?.tiers[0]?.input_price, 4);
+		assert.equal(profile?.tiers[0]?.output_price, 20);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(profile?.tiers[0]?.cache_write_price, null);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 28);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 140);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 1.4);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, null);
+		assert.equal(listStaticModelPresets().some((p) => p.id === 'gemini-4-barium'), false);
+	});
+
 	it('includes gemini-3.8-flash with Gemini API Standard list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-3.8-flash');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-3.8-flash');

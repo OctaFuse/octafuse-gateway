@@ -13,6 +13,11 @@ import {
 	listStaticModelPresetCatalogForAdminService,
 	updateModelService,
 } from '@/lib/services/admin/models-service';
+import {
+	applyModelSyncService,
+	getModelSyncReportService,
+} from '@/lib/services/admin/model-sync-service';
+import type { ModelSyncApplyBody } from '@/lib/model-sync-diff';
 import type {
 	AdminModelMutationInput,
 	AdminModelsImportBody,
@@ -100,6 +105,39 @@ adminModelsRoutes.post('/import', async (c) => {
 		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to import models');
+	}
+});
+
+/** 与官方目录的差异报告（按厂商分组）。须注册在 `/:id` 之前。 */
+adminModelsRoutes.get('/sync/diff', async (c) => {
+	try {
+		const repos = c.get('repositories');
+		const data = await getModelSyncReportService(repos);
+		return c.json(normalizeApiTimeFields({ success: true, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to compute model sync diff');
+	}
+});
+
+/** 把选中的官方值写入模型（服务端重算差异；不动 tags / metadata / route_policy / 路由）。 */
+adminModelsRoutes.post('/sync/apply', async (c) => {
+	let body: ModelSyncApplyBody;
+	try {
+		body = (await c.req.json()) as ModelSyncApplyBody;
+	} catch {
+		return c.json({ success: false, message: 'Invalid JSON body' }, 400);
+	}
+	try {
+		const repos = c.get('repositories');
+		const data = await applyModelSyncService(repos, body);
+		const parts = [`updated ${data.updated}`];
+		if (data.skipped) parts.push(`${data.skipped} skipped`);
+		if (data.failed.length) parts.push(`${data.failed.length} failed`);
+		return c.json(
+			normalizeApiTimeFields({ success: true, message: `Sync finished (${parts.join(', ')}).`, data })
+		);
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to sync models');
 	}
 });
 
