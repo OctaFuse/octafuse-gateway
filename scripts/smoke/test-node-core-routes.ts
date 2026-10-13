@@ -211,7 +211,7 @@ async function smokeWritePaths(adminBase: string, masterKey: string, tag: string
 			name: 'Smoke MCP',
 			url: 'http://localhost:9/mcp',
 			authHeaders: { 'X-API-Key': 'smoke-secret' },
-			charged: 0,
+			pricing: { prices: { metered: 0, standard: 0, charged: 0 } },
 		}),
 	});
 	await assertOk(mcpCreate, 'POST /api/admin/mcp-servers');

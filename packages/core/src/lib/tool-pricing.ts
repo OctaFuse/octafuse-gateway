@@ -125,7 +125,8 @@ export type FixedToolCostPricingAudit = {
 	v: 4;
 	kind: 'fixed_tool_cost';
 	tool_id: string;
-	unit: 'request' | 'chars';
+	/** REST 工具为 request / chars；MCP 为规则里的计费单元名。 */
+	unit: string;
 	billing_units: number;
 	unit_prices: ToolUnitPrices;
 	totals: {
@@ -139,7 +140,7 @@ export type FixedToolCostPricingAudit = {
 
 export function buildFixedToolCostPricingAudit(options: {
 	toolId: string;
-	unit: 'request' | 'chars';
+	unit: string;
 	billingUnits: number;
 	unitPrices: ToolUnitPrices;
 	totals: ToolUnitPrices;

@@ -71,6 +71,7 @@ export * from './db/admin-access-types';
 export * from './db/mcp-types';
 export * from './mcp/hash';
 export * from './mcp/namespace';
+export * from './mcp/pricing';
 export * from './mcp/secrets';
 export * from './mcp/sync-plan';
 export * from './mcp/upstream-client';

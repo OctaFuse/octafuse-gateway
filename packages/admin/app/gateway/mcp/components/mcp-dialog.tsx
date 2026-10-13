@@ -10,6 +10,8 @@ export function McpDialog({
 	title,
 	subtitle,
 	wide = false,
+	width,
+	navigation,
 	closeWhileBusy = false,
 	busy,
 	onClose,
@@ -20,6 +22,8 @@ export function McpDialog({
 	title: string;
 	subtitle?: string;
 	wide?: boolean;
+	width?: 'default' | 'form' | 'wide';
+	navigation?: ReactNode;
 	closeWhileBusy?: boolean;
 	busy: boolean;
 	onClose: () => void;
@@ -97,8 +101,12 @@ export function McpDialog({
 				aria-modal="true"
 				aria-labelledby={titleId}
 				aria-busy={busy}
-				className={`relative flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${
-					wide ? 'max-w-5xl' : 'max-w-2xl'
+				className={`relative flex w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${
+					width === 'form'
+						? 'min-h-[min(680px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] max-w-[1040px]'
+						: width === 'wide' || wide
+						? 'max-h-[90dvh] max-w-5xl'
+						: 'max-h-[90dvh] max-w-2xl'
 				}`}
 			>
 				<header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-200 px-5 py-4 sm:px-6">
@@ -119,6 +127,7 @@ export function McpDialog({
 						<XMarkIcon className="h-5 w-5" aria-hidden="true" />
 					</button>
 				</header>
+				{navigation ? <nav className="shrink-0 border-b border-gray-200">{navigation}</nav> : null}
 				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
 				<footer className="shrink-0 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-6">{footer}</footer>
 			</div>

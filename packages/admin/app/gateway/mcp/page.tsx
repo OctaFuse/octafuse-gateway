@@ -144,7 +144,7 @@ export default function McpServersPage() {
 				onReveal={() => void state.reveal()}
 				onSetItemStatus={state.setItemStatus}
 				onAccept={(id) => void state.accept(id)}
-				onSavePrice={state.savePrice}
+				onSavePricing={state.savePricing}
 				onDelete={() => void state.removeServer()}
 			/>
 			{catalogScope !== null ? (

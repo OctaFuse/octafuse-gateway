@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { DEFAULT_PRICING_DRAFT } from '../app/gateway/mcp/mcp-pricing-draft';
 import { applyMcpImport, parseMcpClientConfig, slugFromMcpName } from './mcp-config-import';
 
 const baseForm = {
@@ -8,9 +9,7 @@ const baseForm = {
 	description: 'keep me',
 	url: '',
 	headers: [{ key: '', value: '' }],
-	metered: '1',
-	standard: '2',
-	charged: '3',
+	pricing: { ...DEFAULT_PRICING_DRAFT, metered: '1', standard: '2', charged: '3' },
 	timeoutMs: '30000',
 	maxResponseBytes: '1048576',
 };
@@ -143,7 +142,7 @@ describe('applyMcpImport', () => {
 		assert.equal(created.slug, 'tavily');
 		assert.equal(created.name, 'Tavily');
 		assert.equal(created.url, 'https://mcp.tavily.com/mcp/?tavilyApiKey=tvly-test');
-		assert.equal(created.metered, '1');
+		assert.equal(created.pricing.metered, '1');
 		assert.equal(created.timeoutMs, '30000');
 		assert.equal(created.description, 'keep me');
 

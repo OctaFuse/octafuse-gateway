@@ -1,16 +1,8 @@
 'use client';
 
-import { useId, useState } from 'react';
-import {
-	EyeIcon,
-	EyeSlashIcon,
-	PlusIcon,
-	TrashIcon,
-	ArrowDownTrayIcon,
-	PencilSquareIcon,
-} from '@heroicons/react/24/outline';
+import { useId, useState, type FormEvent } from 'react';
+import { ArrowDownTrayIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import { ToolPriceTripleInputs } from '@/app/gateway/tools/components/tool-price-triple-inputs';
 import {
 	applyMcpImport,
 	parseMcpClientConfig,
@@ -20,6 +12,12 @@ import {
 import { useFeedback } from '@/components/feedback';
 import type { ServerForm } from '../mcp-types';
 import { McpDialog } from './mcp-dialog';
+import { McpPricingDraftSummary, McpPricingEditor } from './mcp-pricing-editor';
+import { McpConnectionEditor } from './mcp-connection-editor';
+import { McpAdvancedSettings } from './mcp-advanced-settings';
+import { pricingRuleFromDraft } from '../mcp-pricing-draft';
+const SECTIONS = ['connection', 'pricing', 'advanced'] as const;
+type Section = (typeof SECTIONS)[number];
 
 const INPUT =
 	'mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 read-only:bg-gray-50 read-only:text-gray-500';
@@ -31,7 +29,7 @@ export function McpServerFormModal({
 	busy,
 	urlMasked,
 	savedHeaderNames,
-	onChange,
+	onChange: onFormChange,
 	onClose,
 	onSubmit,
 }: {
@@ -47,17 +45,20 @@ export function McpServerFormModal({
 }) {
 	const t = useTranslations('mcp');
 	const common = useTranslations('common');
-	const tools = useTranslations('tools');
 	const formId = useId();
 	const [entry, setEntry] = useState<'manual' | 'import'>('manual');
 	const [paste, setPaste] = useState('');
 	const [choices, setChoices] = useState<McpImportCandidate[] | null>(null);
 	const [choiceIndex, setChoiceIndex] = useState(0);
 	const [message, setMessage] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
-	const [visible, setVisible] = useState(false);
+	const [section, setSection] = useState<Section>('connection');
 	const [validation, setValidation] = useState<string | null>(null);
 	const [initialForm] = useState(() => JSON.stringify(form));
 	const { confirm } = useFeedback();
+	function onChange(nextForm: ServerForm) {
+		setValidation(null);
+		onFormChange(nextForm);
+	}
 	async function requestClose() {
 		if (busy) return;
 		if (
@@ -106,19 +107,130 @@ export function McpServerFormModal({
 		setEntry('manual');
 		setValidation(null);
 	}
-	const removedHeaders = savedHeaderNames.filter(
-		(key) => !form.headers.some((row) => row.key.trim() === key)
-	);
+	function revealField(field: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement) {
+		const panel = field.closest<HTMLElement>('[data-section]');
+		if (panel) setSection(panel.dataset.section as Section);
+		setEntry('manual');
+		for (let node = field.parentElement; node; node = node.parentElement) {
+			if (node instanceof HTMLDetailsElement) node.open = true;
+		}
+		requestAnimationFrame(() => {
+			field.focus();
+			field.reportValidity();
+		});
+	}
+	function submit(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		const element = event.currentTarget;
+		setValidation(null);
+		for (const field of Array.from(element.elements)) {
+			if (
+				(field instanceof HTMLInputElement ||
+					field instanceof HTMLTextAreaElement ||
+					field instanceof HTMLSelectElement) &&
+				!field.checkValidity()
+			) {
+				revealField(field);
+				return;
+			}
+		}
+		const keys = form.headers.map((h) => h.key.trim().toLowerCase()).filter(Boolean);
+		let connectionError: string | null = null;
+		if (form.slug.trim() === 'builtin') connectionError = t('slugReserved');
+		else if (new Set(keys).size !== keys.length) connectionError = t('duplicateHeaders');
+		else if (
+			form.headers.some(
+				(row) =>
+					(row.value && !row.key.trim()) ||
+					(row.key.trim() && !row.value && (mode === 'create' || !savedHeaderNames.includes(row.key.trim())))
+			)
+		)
+			connectionError = t('headerRequired');
+		if (connectionError) {
+			setSection('connection');
+			setEntry('manual');
+			setValidation(connectionError);
+			const field = element.querySelector<HTMLInputElement>(
+				form.slug.trim() === 'builtin' ? 'input[pattern]' : 'input[aria-label]'
+			);
+			requestAnimationFrame(() => field?.focus());
+			return;
+		}
+		const pricing = pricingRuleFromDraft(form.pricing);
+		if (!pricing.ok) {
+			setValidation(t(`pricing.${pricing.error}`));
+			const key =
+				(['standard', 'chargedFactor', 'meteredFactor'] as const).find(
+					(key) =>
+						!form.pricing[key].trim() ||
+						!Number.isFinite(Number(form.pricing[key])) ||
+						Number(form.pricing[key]) < 0
+				) ?? 'standard';
+			const field = element.querySelector<HTMLInputElement>(`[data-pricing-field="${key}"]`);
+			if (field) {
+				revealField(field);
+			}
+			return;
+		}
+		onSubmit();
+	}
 
 	return (
 		<McpDialog
+			width="form"
+			navigation={
+				<div
+					className="grid grid-cols-3 gap-1 px-5 sm:px-6"
+					role="tablist"
+					aria-label={t('settingsSections')}
+				>
+					{SECTIONS.map((key, index) => (
+						<button
+							key={key}
+							id={`${formId}-${key}-tab`}
+							type="button"
+							role="tab"
+							aria-selected={section === key}
+							aria-controls={`${formId}-${key}-panel`}
+							tabIndex={section === key ? 0 : -1}
+							disabled={busy}
+							onClick={() => setSection(key)}
+							onKeyDown={(event) => {
+								const offset = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+								const target =
+									event.key === 'Home'
+										? 0
+										: event.key === 'End'
+										? SECTIONS.length - 1
+										: offset
+										? (index + offset + SECTIONS.length) % SECTIONS.length
+										: null;
+								if (target === null) return;
+								event.preventDefault();
+								document.getElementById(`${formId}-${SECTIONS[target]}-tab`)?.focus();
+								setSection(SECTIONS[target]);
+							}}
+							className={`border-b-2 px-2 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+								section === key
+									? 'border-gray-900 text-gray-900'
+									: 'border-transparent text-gray-500 hover:text-gray-800'
+							}`}
+						>
+							{t(`formTabs.${key}`)}
+						</button>
+					))}
+				</div>
+			}
 			title={mode === 'create' ? t('add') : t('editSettings')}
 			subtitle={mode === 'create' ? t('createSubtitle') : t('editSubtitle')}
 			busy={busy}
 			onClose={() => void requestClose()}
 			footer={
 				<div className="flex items-center justify-between gap-3">
-					<p className="hidden text-xs text-gray-500 sm:block">{t('saveHint')}</p>
+					<div className="hidden min-w-0 sm:block">
+						<McpPricingDraftSummary value={form.pricing} currency={currency} />
+						<p className="mt-1 text-xs text-gray-500">{t('saveHint')}</p>
+					</div>
 					<div className="ml-auto flex gap-2">
 						<button
 							type="button"
@@ -131,7 +243,7 @@ export function McpServerFormModal({
 						<button
 							type="submit"
 							form={formId}
-							disabled={busy || entry === 'import'}
+							disabled={busy || (section === 'connection' && entry === 'import')}
 							className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
 						>
 							{busy ? common('saving') : mode === 'create' ? t('createServer') : common('save')}
@@ -140,316 +252,143 @@ export function McpServerFormModal({
 				</div>
 			}
 		>
-			<div className="mb-5 flex gap-1 rounded-lg bg-gray-100 p-1" role="group" aria-label={t('entryMode')}>
-				{(['manual', 'import'] as const).map((key) => (
-					<button
-						key={key}
-						type="button"
-						disabled={busy}
-						aria-pressed={entry === key}
-						onClick={() => setEntry(key)}
-						className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
-							entry === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
-						}`}
-					>
-						{key === 'manual' ? (
-							<PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
-						) : (
-							<ArrowDownTrayIcon className="h-4 w-4" aria-hidden="true" />
-						)}
-						{t(key === 'manual' ? 'manualEntry' : 'importTitle')}
-					</button>
-				))}
-			</div>
-			{message && entry === 'manual' ? (
-				<p role="status" className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-					{message.text}
-				</p>
-			) : null}
-			{entry === 'import' ? (
-				<div className="space-y-4">
-					<div>
-						<h3 className="font-semibold text-gray-900">{t('importTitle')}</h3>
-						<p className="mt-1 text-sm leading-6 text-gray-500">{t('importHint')}</p>
-					</div>
-					<label className="block text-sm font-medium text-gray-700">
-						{t('importConfig')}
-						<textarea
-							value={paste}
-							onChange={(e) => {
-								setPaste(e.target.value);
-								setChoices(null);
-								setMessage(null);
-								setChoiceIndex(0);
-							}}
-							rows={8}
-							placeholder={t('importPlaceholder')}
-							spellCheck={false}
-							className={`${INPUT} font-mono`}
-						/>
-					</label>
-					{choices && choices.length > 1 ? (
-						<label className="block text-sm font-medium text-gray-700">
-							{t('importPick')}
-							<select
-								value={choiceIndex}
-								onChange={(e) => setChoiceIndex(Number(e.target.value))}
-								className={INPUT}
-							>
-								{choices.map((choice, index) => (
-									<option key={`${choice.slug}-${index}`} value={index}>
-										{choice.name || choice.url}
-									</option>
-								))}
-							</select>
-						</label>
-					) : null}
-					{message?.tone === 'err' ? (
-						<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-							{message.text}
-						</p>
-					) : null}
-					<button
-						type="button"
-						disabled={!paste.trim()}
-						onClick={fillFromPaste}
-						className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-					>
-						{t('importApply')}
-					</button>
-					<p className="text-xs leading-5 text-gray-400">{t('importReviewHint')}</p>
+			<div hidden={section !== 'connection'}>
+				<div className="mb-5 flex gap-1 rounded-lg bg-gray-100 p-1" role="group" aria-label={t('entryMode')}>
+					{(['manual', 'import'] as const).map((key) => (
+						<button
+							key={key}
+							type="button"
+							disabled={busy}
+							aria-pressed={entry === key}
+							onClick={() => setEntry(key)}
+							className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
+								entry === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+							}`}
+						>
+							{key === 'manual' ? (
+								<PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
+							) : (
+								<ArrowDownTrayIcon className="h-4 w-4" aria-hidden="true" />
+							)}
+							{t(key === 'manual' ? 'manualEntry' : 'importTitle')}
+						</button>
+					))}
 				</div>
-			) : null}
-			<form
-				id={formId}
-				hidden={entry !== 'manual'}
-				onSubmit={(e) => {
-					e.preventDefault();
-					const keys = form.headers.map((h) => h.key.trim().toLowerCase()).filter(Boolean);
-					if (form.slug.trim() === 'builtin') {
-						setValidation(t('slugReserved'));
-						return;
-					}
-					if (new Set(keys).size !== keys.length) {
-						setValidation(t('duplicateHeaders'));
-						return;
-					}
-					if (
-						form.headers.some(
-							(row) =>
-								(row.value && !row.key.trim()) ||
-								(row.key.trim() &&
-									!row.value &&
-									(mode === 'create' || !savedHeaderNames.includes(row.key.trim())))
-						)
-					) {
-						setValidation(t('headerRequired'));
-						return;
-					}
-					setValidation(null);
-					onSubmit();
-				}}
-			>
-				<fieldset disabled={busy} className="min-w-0 space-y-6">
-					<section>
-						<h3 className="mb-3 text-sm font-semibold text-gray-900">{t('basicInfo')}</h3>
-						<div className="grid gap-4 sm:grid-cols-2">
-							<label className="text-sm font-medium text-gray-700">
-								{t('name')} <span className="text-red-500">*</span>
-								<input
-									required
-									maxLength={120}
-									value={form.name}
-									placeholder={t('namePlaceholder')}
-									onChange={(e) => onChange({ ...form, name: e.target.value })}
-									className={INPUT}
-								/>
-							</label>
-							<label className="text-sm font-medium text-gray-700">
-								{t('slug')} <span className="text-red-500">*</span>
-								<input
-									required
-									pattern={'[a-z0-9]([a-z0-9\\-]{0,38}[a-z0-9])?'}
-									maxLength={40}
-									readOnly={mode === 'edit'}
-									value={form.slug}
-									placeholder="my-mcp"
-									onChange={(e) => onChange({ ...form, slug: e.target.value })}
-									className={`${INPUT} font-mono`}
-								/>
-								<span className="mt-1.5 block text-xs font-normal leading-5 text-gray-400">
-									{t(mode === 'edit' ? 'slugReadonly' : 'slugHint')}
-								</span>
-							</label>
-							<label className="text-sm font-medium text-gray-700 sm:col-span-2">
-								{t('description')}
-								<textarea
-									maxLength={2000}
-									value={form.description}
-									placeholder={t('descriptionPlaceholder')}
-									onChange={(e) => onChange({ ...form, description: e.target.value })}
-									rows={2}
-									className={INPUT}
-								/>
-							</label>
+				{message && entry === 'manual' ? (
+					<p role="status" className="mb-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+						{message.text}
+					</p>
+				) : null}
+				{entry === 'import' ? (
+					<div className="space-y-4">
+						<div>
+							<h3 className="font-semibold text-gray-900">{t('importTitle')}</h3>
+							<p className="mt-1 text-sm leading-6 text-gray-500">{t('importHint')}</p>
 						</div>
-					</section>
-					<section className="border-t border-gray-100 pt-5">
-						<h3 className="mb-3 text-sm font-semibold text-gray-900">{t('connectionSettings')}</h3>
 						<label className="block text-sm font-medium text-gray-700">
-							{t('url')} {mode === 'create' ? <span className="text-red-500">*</span> : null}
-							<input
-								type="url"
-								pattern="https?://.+"
-								maxLength={2048}
-								required={mode === 'create'}
-								value={form.url}
-								placeholder={mode === 'edit' ? urlMasked : 'https://example.com/mcp'}
-								onChange={(e) => onChange({ ...form, url: e.target.value })}
+							{t('importConfig')}
+							<textarea
+								value={paste}
+								onChange={(e) => {
+									setPaste(e.target.value);
+									setChoices(null);
+									setMessage(null);
+									setChoiceIndex(0);
+								}}
+								rows={8}
+								placeholder={t('importPlaceholder')}
+								spellCheck={false}
 								className={`${INPUT} font-mono`}
 							/>
-							<span className="mt-1.5 block text-xs font-normal leading-5 text-gray-400">
-								{t(mode === 'edit' ? 'urlKeep' : 'urlHint')}
-							</span>
 						</label>
-						<div className="mt-5">
-							<div className="mb-2 flex items-center justify-between gap-2">
-								<h4 className="text-sm font-medium text-gray-700">{t('headers')}</h4>
-								<button
-									type="button"
-									onClick={() => setVisible(!visible)}
-									aria-label={t(visible ? 'hide' : 'reveal')}
-									className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900"
+						{choices && choices.length > 1 ? (
+							<label className="block text-sm font-medium text-gray-700">
+								{t('importPick')}
+								<select
+									value={choiceIndex}
+									onChange={(e) => setChoiceIndex(Number(e.target.value))}
+									className={INPUT}
 								>
-									{visible ? (
-										<EyeSlashIcon className="h-4 w-4" aria-hidden="true" />
-									) : (
-										<EyeIcon className="h-4 w-4" aria-hidden="true" />
-									)}
-									{t(visible ? 'hide' : 'showValues')}
-								</button>
-							</div>
-							<p className="mb-3 text-xs leading-5 text-gray-400">
-								{t(mode === 'edit' ? 'headerEditHint' : 'headerHint')}
+									{choices.map((choice, index) => (
+										<option key={`${choice.slug}-${index}`} value={index}>
+											{choice.name || choice.url}
+										</option>
+									))}
+								</select>
+							</label>
+						) : null}
+						{message?.tone === 'err' ? (
+							<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+								{message.text}
 							</p>
-							<div className="space-y-2">
-								{form.headers.map((row, index) => (
-									<div key={index} className="flex items-start gap-2">
-										<div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[2fr_3fr]">
-											<input
-												aria-label={t('headerKey')}
-												value={row.key}
-												placeholder="Authorization"
-												onChange={(e) =>
-													onChange({
-														...form,
-														headers: form.headers.map((item, i) =>
-															i === index ? { ...item, key: e.target.value } : item
-														),
-													})
-												}
-												className={`${INPUT} !mt-0 font-mono`}
-											/>
-											<input
-												aria-label={t('headerValue')}
-												type={visible ? 'text' : 'password'}
-												autoComplete="off"
-												maxLength={4096}
-												value={row.value}
-												placeholder={
-													mode === 'edit' && savedHeaderNames.includes(row.key)
-														? t('headerKeep')
-														: t('headerValue')
-												}
-												onChange={(e) =>
-													onChange({
-														...form,
-														headers: form.headers.map((item, i) =>
-															i === index ? { ...item, value: e.target.value } : item
-														),
-													})
-												}
-												className={`${INPUT} !mt-0 font-mono`}
-											/>
-										</div>
-										<button
-											type="button"
-											aria-label={t('removeHeader')}
-											title={t('removeHeader')}
-											onClick={() =>
-												onChange({ ...form, headers: form.headers.filter((_, i) => i !== index) })
-											}
-											className="mt-1 rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
-										>
-											<TrashIcon className="h-4 w-4" aria-hidden="true" />
-										</button>
-									</div>
-								))}
-							</div>
-							<button
-								type="button"
-								disabled={form.headers.length >= 20}
-								onClick={() => onChange({ ...form, headers: [...form.headers, { key: '', value: '' }] })}
-								className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
-							>
-								<PlusIcon className="h-4 w-4" aria-hidden="true" />
-								{t('addHeader')}
-							</button>
-							{removedHeaders.length ? (
-								<p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-800">
-									{t('removedHeadersWarning', { names: removedHeaders.join(', ') })}
-								</p>
-							) : null}
+						) : null}
+						<button
+							type="button"
+							disabled={!paste.trim()}
+							onClick={fillFromPaste}
+							className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+						>
+							{t('importApply')}
+						</button>
+						<p className="text-xs leading-5 text-gray-400">{t('importReviewHint')}</p>
+					</div>
+				) : null}
+			</div>
+			<form
+				id={formId}
+				noValidate
+				onInput={(event) => {
+					const field = event.target;
+					if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)
+						field.setCustomValidity('');
+					setValidation(null);
+				}}
+				onSubmit={submit}
+			>
+				<fieldset disabled={busy} className="min-w-0">
+					<div
+						id={`${formId}-connection-panel`}
+						role="tabpanel"
+						aria-labelledby={`${formId}-connection-tab`}
+						data-section="connection"
+						hidden={section !== 'connection' || entry !== 'manual'}
+					>
+						<McpConnectionEditor
+							form={form}
+							mode={mode}
+							urlMasked={urlMasked}
+							savedHeaderNames={savedHeaderNames}
+							onChange={onChange}
+						/>
+					</div>
+					<section
+						id={`${formId}-pricing-panel`}
+						role="tabpanel"
+						aria-labelledby={`${formId}-pricing-tab`}
+						data-section="pricing"
+						hidden={section !== 'pricing'}
+					>
+						<div className="mb-4">
+							<h3 className="text-sm font-semibold text-gray-900">{t('pricing.title')}</h3>
+							<p className="mt-1 text-xs leading-5 text-gray-500">{t('pricing.simpleDefaultHint')}</p>
 						</div>
+						<McpPricingEditor
+							value={form.pricing}
+							currency={currency}
+							onChange={(pricing) => onChange({ ...form, pricing })}
+						/>
 					</section>
-					<details className="rounded-lg border border-gray-200 bg-gray-50/60">
-						<summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-700">
-							{t('advancedSettings')}
-						</summary>
-						<div className="space-y-5 border-t border-gray-200 p-4">
-							<div className="grid gap-4 sm:grid-cols-2">
-								<label className="text-sm text-gray-700">
-									{t('timeout')}
-									<input
-										type="number"
-										required
-										min={1000}
-										max={120000}
-										step={1}
-										value={form.timeoutMs}
-										onChange={(e) => onChange({ ...form, timeoutMs: e.target.value })}
-										className={INPUT}
-									/>
-									<span className="mt-1 block text-xs text-gray-400">{t('timeoutHint')}</span>
-								</label>
-								<label className="text-sm text-gray-700">
-									{t('maxBytes')}
-									<input
-										type="number"
-										required
-										min={1000}
-										max={8000000}
-										step={1}
-										value={form.maxResponseBytes}
-										onChange={(e) => onChange({ ...form, maxResponseBytes: e.target.value })}
-										className={INPUT}
-									/>
-									<span className="mt-1 block text-xs text-gray-400">{t('maxBytesHint')}</span>
-								</label>
-							</div>
-							<div>
-								<p className="text-sm font-medium text-gray-700">{tools('unitPrices.title', { currency })}</p>
-								<p className="mt-1 text-xs leading-5 text-gray-400">{t('defaultPriceHint')}</p>
-								<ToolPriceTripleInputs
-									step="any"
-									value={{ metered: form.metered, standard: form.standard, charged: form.charged }}
-									onChange={(patch) => onChange({ ...form, ...patch })}
-								/>
-							</div>
-						</div>
-					</details>
+					<div
+						id={`${formId}-advanced-panel`}
+						role="tabpanel"
+						aria-labelledby={`${formId}-advanced-tab`}
+						data-section="advanced"
+						hidden={section !== 'advanced'}
+					>
+						<McpAdvancedSettings form={form} onChange={onChange} />
+					</div>
 					{validation ? (
-						<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+						<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
 							{validation}
 						</p>
 					) : null}

@@ -14,9 +14,7 @@ function row(partial: Partial<McpServerItemRow> & Pick<McpServerItemRow, 'id' | 
 		pendingDefinition: null,
 		pendingHash: null,
 		reviewState: 'none',
-		metered: null,
-		standard: null,
-		charged: null,
+		pricing: null,
 		syncedAt: '2026-01-01T00:00:00.000Z',
 		...partial,
 	};

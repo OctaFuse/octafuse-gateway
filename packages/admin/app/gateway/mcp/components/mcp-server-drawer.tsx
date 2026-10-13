@@ -10,12 +10,14 @@ import {
 	CheckCircleIcon,
 	ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
+import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { useTranslations } from 'next-intl';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { MCP_REQUEST_LOG_PROVIDER_ID } from '@/lib/invoke-kind';
 import type { CatalogItem, ServerDetail, ServerSummary } from '../mcp-types';
 import { McpCatalogItemRow } from './mcp-catalog-item-row';
 import { McpDialog } from './mcp-dialog';
+import { McpPricingDetails } from './mcp-pricing-editor';
 
 const TABS = ['tool', 'prompt', 'resource'] as const;
 const BUTTON =
@@ -44,7 +46,7 @@ export function McpServerDrawer({
 	onReveal,
 	onSetItemStatus,
 	onAccept,
-	onSavePrice,
+	onSavePricing,
 	onDelete,
 }: {
 	currency: string;
@@ -69,7 +71,7 @@ export function McpServerDrawer({
 	onReveal: () => void;
 	onSetItemStatus: (ids: string[], status: 'enabled' | 'disabled') => Promise<boolean>;
 	onAccept: (id: string) => void;
-	onSavePrice: (item: CatalogItem, clear: boolean) => Promise<boolean>;
+	onSavePricing: (item: CatalogItem, pricing: Record<string, unknown> | null) => Promise<boolean>;
 	onDelete: () => void;
 }) {
 	const t = useTranslations('mcp');
@@ -352,19 +354,16 @@ export function McpServerDrawer({
 							</section>
 							<section className="rounded-xl border border-gray-200 p-4">
 								<h3 className="text-sm font-semibold text-gray-900">
-									{t('defaultPrices')} · {currency}
+									{t('defaultPrices')} · {getGatewayCurrencySymbol(currency)}
 								</h3>
 								<p className="mt-1 text-xs leading-5 text-gray-400">{t('defaultPriceHint')}</p>
-								<dl className="mt-4 grid grid-cols-3 gap-3">
-									{(['standard', 'charged', 'metered'] as const).map((key) => (
-										<div key={key}>
-											<dt className="text-xs text-gray-500">{t(key)}</dt>
-											<dd className="mt-1 break-all font-mono text-sm font-medium text-gray-900">
-												{server[key]}
-											</dd>
-										</div>
-									))}
-								</dl>
+								{server.pricing ? (
+									<McpPricingDetails rule={server.pricing} currency={currency} />
+								) : (
+									<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-xs text-red-700">
+										{t('pricing.invalidStored')}
+									</p>
+								)}
 							</section>
 							<Link
 								className="inline-flex text-xs font-medium text-blue-600 hover:underline"
@@ -517,7 +516,7 @@ export function McpServerDrawer({
 											}
 											onToggle={(enabled) => void applyStatus([item.id], enabled ? 'enabled' : 'disabled')}
 											onAccept={() => onAccept(item.id)}
-											onSavePrice={onSavePrice}
+											onSavePricing={onSavePricing}
 										/>
 									))}
 								</ul>

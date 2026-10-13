@@ -1,3 +1,6 @@
+import type { McpPricingRule } from '@octafuse/core';
+import { DEFAULT_PRICING_DRAFT, type PricingDraft } from './mcp-pricing-draft';
+
 export type ServerSummary = {
 	id: string;
 	slug: string;
@@ -6,9 +9,8 @@ export type ServerSummary = {
 	status: 'active' | 'disabled';
 	urlMasked: string;
 	authHeaderNames: string[];
-	metered: number;
-	standard: number;
-	charged: number;
+	/** null when the stored rule is invalid; tool calls are refused until it is saved again. */
+	pricing: McpPricingRule | null;
 	timeoutMs: number;
 	maxResponseBytes: number;
 	lastSyncedAt: string | null;
@@ -26,9 +28,8 @@ export type CatalogItem = {
 	pendingDefinition: { description?: string } | null;
 	reviewState: 'none' | 'new' | 'changed';
 	status: 'enabled' | 'disabled' | 'removed';
-	metered: number | null;
-	standard: number | null;
-	charged: number | null;
+	/** Tool rule override; null inherits the server default. */
+	pricing: McpPricingRule | null;
 };
 
 export type ServerDetail = {
@@ -44,9 +45,7 @@ export type ServerForm = {
 	description: string;
 	url: string;
 	headers: HeaderDraft[];
-	metered: string;
-	standard: string;
-	charged: string;
+	pricing: PricingDraft;
 	timeoutMs: string;
 	maxResponseBytes: string;
 };
@@ -57,9 +56,7 @@ export const EMPTY_FORM: ServerForm = {
 	description: '',
 	url: '',
 	headers: [{ key: '', value: '' }],
-	metered: '0',
-	standard: '0',
-	charged: '0',
+	pricing: DEFAULT_PRICING_DRAFT,
 	timeoutMs: '30000',
 	maxResponseBytes: '1048576',
 };

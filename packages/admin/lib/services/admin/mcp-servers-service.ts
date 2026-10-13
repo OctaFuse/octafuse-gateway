@@ -5,13 +5,18 @@ import {
 	assertMcpSlug,
 	assertMcpUpstreamUrl,
 	clearMcpUpstreamSession,
+	McpPricingRuleError,
 	maskMcpUrl,
 	parseMcpAuthHeaders,
+	parseMcpPricingRule,
+	parseStoredMcpPricingRule,
+	perCallMcpPricingRule,
 	planMcpSync,
-	roundGatewayMoney,
+	serializeMcpPricingRule,
 	syncMcpUpstream,
 	type GatewayRepositories,
 	type McpItemStatus,
+	type McpPricingRule,
 	type McpServerListRow,
 	type McpServerRow,
 	type McpSyncSummary,
@@ -22,9 +27,11 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_BYTES = 1_048_576;
 const HEADER_NAME = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 
-export type McpServerPublic = Omit<McpServerListRow, 'url' | 'authHeaders'> & {
+export type McpServerPublic = Omit<McpServerListRow, 'url' | 'authHeaders' | 'pricing'> & {
 	urlMasked: string;
 	authHeaderNames: string[];
+	/** null when the stored rule no longer parses; calls fail closed until it is saved again. */
+	pricing: McpPricingRule | null;
 };
 
 export type CreateMcpServerInput = {
@@ -34,9 +41,7 @@ export type CreateMcpServerInput = {
 	url?: unknown;
 	authHeaders?: unknown;
 	status?: unknown;
-	metered?: unknown;
-	standard?: unknown;
-	charged?: unknown;
+	pricing?: unknown;
 	timeoutMs?: unknown;
 	maxResponseBytes?: unknown;
 };
@@ -58,22 +63,21 @@ function asOptionalText(value: unknown, field: string, max: number): string | nu
 	return asTrimmed(value, field, max);
 }
 
-function asMoney(value: unknown, field: string, fallback?: number): number {
-	if (value === undefined || value === null || value === '') {
-		if (fallback === undefined) throw badRequest(`${field} is required`);
-		return fallback;
+function asPricing(value: unknown): McpPricingRule {
+	try {
+		return parseMcpPricingRule(value);
+	} catch (error) {
+		if (error instanceof McpPricingRuleError) throw badRequest(error.message);
+		throw error;
 	}
-	const parsed = typeof value === 'number' ? value : Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) {
-		throw badRequest(`${field} must be a non-negative number`);
-	}
-	return roundGatewayMoney(parsed);
 }
 
-function asMoneyOrNull(value: unknown, field: string): number | null {
-	if (value === undefined) throw badRequest(`${field} is required`);
-	if (value === null || value === '') return null;
-	return asMoney(value, field);
+function storedPricing(raw: string): McpPricingRule | null {
+	try {
+		return parseStoredMcpPricingRule(raw);
+	} catch {
+		return null;
+	}
 }
 
 function asPositiveInt(value: unknown, field: string, fallback: number, max: number): number {
@@ -121,12 +125,19 @@ function publicServer(row: McpServerRow & { enabledCount?: number; pendingCount?
 	};
 }
 
-function stripSecrets<T extends McpServerRow>(row: T): Omit<T, 'url' | 'authHeaders'> & { urlMasked: string; authHeaderNames: string[] } {
-	const { url, authHeaders, ...rest } = row;
+function stripSecrets<T extends McpServerRow>(
+	row: T
+): Omit<T, 'url' | 'authHeaders' | 'pricing'> & {
+	urlMasked: string;
+	authHeaderNames: string[];
+	pricing: McpPricingRule | null;
+} {
+	const { url, authHeaders, pricing, ...rest } = row;
 	return {
 		...rest,
 		urlMasked: maskMcpUrl(url),
 		authHeaderNames: Object.keys(parseMcpAuthHeaders(authHeaders)),
+		pricing: storedPricing(pricing),
 	};
 }
 
@@ -143,6 +154,7 @@ export async function getMcpServer(repos: GatewayRepositories, id: string) {
 		server: stripSecrets(server),
 		items: items.map((item) => ({
 			...item,
+			pricing: item.pricing ? storedPricing(item.pricing) : null,
 			definition: safeJson(item.definition),
 			pendingDefinition: item.pendingDefinition ? safeJson(item.pendingDefinition) : null,
 		})),
@@ -183,9 +195,9 @@ export async function createMcpServer(repos: GatewayRepositories, input: CreateM
 		url,
 		authHeaders: JSON.stringify(asHeaders(input.authHeaders)),
 		status: asStatus(input.status) ?? 'active',
-		metered: asMoney(input.metered, 'metered', 0),
-		standard: asMoney(input.standard, 'standard', 0),
-		charged: asMoney(input.charged, 'charged', 0),
+		pricing: serializeMcpPricingRule(
+			input.pricing === undefined ? perCallMcpPricingRule(0, 0) : asPricing(input.pricing)
+		),
 		timeoutMs: asPositiveInt(input.timeoutMs, 'timeoutMs', DEFAULT_TIMEOUT_MS, 120_000),
 		maxResponseBytes: asPositiveInt(input.maxResponseBytes, 'maxResponseBytes', DEFAULT_MAX_BYTES, 8_000_000),
 	});
@@ -197,7 +209,8 @@ export async function updateMcpServer(repos: GatewayRepositories, id: string, in
 	if (!current) throw notFound('MCP server not found');
 	const patch: Parameters<GatewayRepositories['mcpServers']['updateServer']>[1] = {};
 	if (input.name !== undefined) patch.name = asTrimmed(input.name, 'name', 120);
-	if (input.description !== undefined) patch.description = asOptionalText(input.description, 'description', 2000) ?? null;
+	if (input.description !== undefined)
+		patch.description = asOptionalText(input.description, 'description', 2000) ?? null;
 	if (input.url !== undefined) {
 		try {
 			patch.url = assertMcpUpstreamUrl(asTrimmed(input.url, 'url', 2048)).toString();
@@ -225,12 +238,16 @@ export async function updateMcpServer(repos: GatewayRepositories, id: string, in
 		if (!status) throw badRequest('status is required');
 		patch.status = status;
 	}
-	if (input.metered !== undefined) patch.metered = asMoney(input.metered, 'metered');
-	if (input.standard !== undefined) patch.standard = asMoney(input.standard, 'standard');
-	if (input.charged !== undefined) patch.charged = asMoney(input.charged, 'charged');
-	if (input.timeoutMs !== undefined) patch.timeoutMs = asPositiveInt(input.timeoutMs, 'timeoutMs', DEFAULT_TIMEOUT_MS, 120_000);
+	if (input.pricing !== undefined) patch.pricing = serializeMcpPricingRule(asPricing(input.pricing));
+	if (input.timeoutMs !== undefined)
+		patch.timeoutMs = asPositiveInt(input.timeoutMs, 'timeoutMs', DEFAULT_TIMEOUT_MS, 120_000);
 	if (input.maxResponseBytes !== undefined) {
-		patch.maxResponseBytes = asPositiveInt(input.maxResponseBytes, 'maxResponseBytes', DEFAULT_MAX_BYTES, 8_000_000);
+		patch.maxResponseBytes = asPositiveInt(
+			input.maxResponseBytes,
+			'maxResponseBytes',
+			DEFAULT_MAX_BYTES,
+			8_000_000
+		);
 	}
 	if (patch.url || patch.authHeaders) {
 		clearMcpUpstreamSession(id);
@@ -327,10 +344,20 @@ export async function syncMcpServer(repos: GatewayRepositories, id: string): Pro
 }
 
 function summaryCounts(summary: McpSyncSummary) {
-	return { added: summary.added.length, changed: summary.changed.length, removed: summary.removed.length, unchanged: summary.unchanged };
+	return {
+		added: summary.added.length,
+		changed: summary.changed.length,
+		removed: summary.removed.length,
+		unchanged: summary.unchanged,
+	};
 }
 
-export async function setMcpItemStatus(repos: GatewayRepositories, serverId: string, ids: unknown, status: unknown) {
+export async function setMcpItemStatus(
+	repos: GatewayRepositories,
+	serverId: string,
+	ids: unknown,
+	status: unknown
+) {
 	if (status !== 'enabled' && status !== 'disabled') {
 		throw badRequest('status must be enabled or disabled');
 	}
@@ -353,20 +380,20 @@ export async function setMcpItemStatus(repos: GatewayRepositories, serverId: str
 	return { updated };
 }
 
-export async function setMcpItemPrice(
+/** `pricing: null` restores the server default; an object replaces it entirely. */
+export async function setMcpItemPricing(
 	repos: GatewayRepositories,
 	serverId: string,
 	itemId: string,
-	input: { metered?: unknown; standard?: unknown; charged?: unknown },
+	input: { pricing?: unknown }
 ) {
+	if (input.pricing === undefined) throw badRequest('pricing is required');
 	const items = await repos.mcpServers.listItems(serverId);
 	const item = items.find((row) => row.id === itemId);
 	if (!item) throw notFound('MCP item not found');
 	if (item.kind !== 'tool') throw badRequest('Only tools have a price');
 	await repos.mcpServers.updateItem(itemId, {
-		metered: asMoneyOrNull(input.metered, 'metered'),
-		standard: asMoneyOrNull(input.standard, 'standard'),
-		charged: asMoneyOrNull(input.charged, 'charged'),
+		pricing: input.pricing === null ? null : serializeMcpPricingRule(asPricing(input.pricing)),
 	});
 	return { id: itemId };
 }

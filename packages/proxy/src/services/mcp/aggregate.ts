@@ -19,8 +19,14 @@ import {
 	callMcpUpstreamTool,
 	getMcpUpstreamPrompt,
 	parseMcpAuthHeaders,
+	parseStoredMcpPricingRule,
+	preflightMcpPricing,
 	readMcpUpstreamResource,
+	settleMcpPricing,
+	summarizeMcpPricingRule,
 	type McpCallableItem,
+	type McpPricingQuote,
+	type McpPricingRule,
 } from '@octafuse/core';
 import { proxyAppVersion } from '../../app-version';
 import type { ApiKeyContext } from '../../middleware/auth';
@@ -54,11 +60,35 @@ function parseDefinition(raw: string): Record<string, unknown> {
 	return {};
 }
 
-function priceOf(item: McpCallableItem): { metered: number; standard: number; charged: number } {
+type ResolvedPricing = { rule: McpPricingRule; source: 'item' | 'server' };
+
+/** Item rule replaces the server default. Stored rules are validated on write; a broken one fails closed. */
+function pricingOf(item: McpCallableItem): ResolvedPricing | null {
+	const source = item.pricing ? 'item' : 'server';
+	try {
+		return { rule: parseStoredMcpPricingRule(item.pricing ?? item.defaultPricing), source };
+	} catch (error) {
+		console.warn('[mcp] invalid pricing rule', {
+			tool: item.exposedName,
+			source,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return null;
+	}
+}
+
+function pricingAudit(pricing: ResolvedPricing, preflight: McpPricingQuote, settled: McpPricingQuote | null) {
 	return {
-		metered: item.metered ?? item.defaultMetered,
-		standard: item.standard ?? item.defaultStandard,
-		charged: item.charged ?? item.defaultCharged,
+		mcp_pricing: {
+			rule_source: pricing.source,
+			rule_version: pricing.rule.v,
+			...(pricing.rule.v === 2
+				? { charged_factor: pricing.rule.chargedFactor, metered_factor: pricing.rule.meteredFactor }
+				: {}),
+			preflight_units: preflight.units,
+			unit: pricing.rule.unit,
+			...(settled ? { settled_units: settled.units } : {}),
+		},
 	};
 }
 
@@ -93,17 +123,20 @@ export async function handleMcpAggregateRequest(
 		apiKey: ApiKeyContext;
 		slug: string | null;
 		deps: McpAggregateDeps;
-	},
+	}
 ): Promise<Response> {
 	if (request.method !== 'POST') {
-		return new Response(JSON.stringify({
-			jsonrpc: '2.0',
-			id: null,
-			error: { code: -32000, message: 'Method not allowed' },
-		}), {
-			status: 405,
-			headers: { Allow: 'POST', 'Content-Type': 'application/json' },
-		});
+		return new Response(
+			JSON.stringify({
+				jsonrpc: '2.0',
+				id: null,
+				error: { code: -32000, message: 'Method not allowed' },
+			}),
+			{
+				status: 405,
+				headers: { Allow: 'POST', 'Content-Type': 'application/json' },
+			}
+		);
 	}
 	const items = await input.deps.listCallable(input.slug ?? undefined);
 	const byName = new Map(items.map((item) => [item.exposedName, item]));
@@ -115,7 +148,7 @@ export async function handleMcpAggregateRequest(
 
 	const server = new Server(
 		{ name: input.slug ? `octafuse-gateway/${input.slug}` : 'octafuse-gateway', version: proxyAppVersion },
-		{ capabilities: { tools: {}, prompts: {}, resources: {} } },
+		{ capabilities: { tools: {}, prompts: {}, resources: {} } }
 	);
 
 	server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -123,7 +156,7 @@ export async function handleMcpAggregateRequest(
 			.filter((item) => item.kind === 'tool')
 			.map((item) => {
 				const definition = parseDefinition(item.definition);
-				const price = priceOf(item);
+				const pricing = pricingOf(item);
 				return {
 					name: item.exposedName,
 					title: typeof definition.title === 'string' ? definition.title : undefined,
@@ -133,9 +166,7 @@ export async function handleMcpAggregateRequest(
 							? definition.inputSchema
 							: { type: 'object', properties: {} },
 					annotations: definition.annotations,
-					_meta: {
-						octafuse: { unit: 'request', metered: price.metered, standard: price.standard, charged: price.charged },
-					},
+					...(pricing ? { _meta: { octafuse: summarizeMcpPricingRule(pricing.rule) } } : {}),
 				};
 			}),
 	}));
@@ -150,14 +181,21 @@ export async function handleMcpAggregateRequest(
 		if (item.status !== 'enabled') {
 			return textResult(`Tool ${name} is disabled`, GatewayErrorCode.mcpItemDisabled);
 		}
-		const price = priceOf(item);
+		const pricing = pricingOf(item);
+		if (!pricing) {
+			return textResult(
+				`Tool ${name} has an invalid price configuration`,
+				GatewayErrorCode.mcpPricingInvalid
+			);
+		}
+		const preflight = preflightMcpPricing(pricing.rule, args);
 		if (
 			!canAffordToolCost(
 				input.apiKey.budgetMax,
 				input.apiKey.budgetSpent,
-				price.charged,
+				preflight.totals.charged,
 				input.apiKey.walletGranted,
-				input.apiKey.walletSpent,
+				input.apiKey.walletSpent
 			)
 		) {
 			return textResult('Budget exceeded', GatewayErrorCode.budgetExceeded);
@@ -173,9 +211,8 @@ export async function handleMcpAggregateRequest(
 			ingressHost: input.apiKey.ingressHost,
 			toolId: `mcp:${item.slug}/${item.upstreamKey}`,
 			toolProvider: item.slug,
-			pricingUnit: 'request' as const,
-			billingUnits: 1,
-			unitPrices: price,
+			pricingUnit: pricing.rule.unit,
+			unitPrices: preflight.unitPrices,
 			requestBody,
 			ledgerProviderId: MCP_LEDGER_PROVIDER_ID,
 			ledgerProviderName: 'OctaFuse MCP',
@@ -187,9 +224,11 @@ export async function handleMcpAggregateRequest(
 			if (upstream.isError) {
 				await input.deps.charge({
 					...chargeBase,
+					billingUnits: 0,
 					meteredCost: 0,
 					standardCost: 0,
 					chargedCost: 0,
+					pricingAuditExtra: pricingAudit(pricing, preflight, null),
 					latencyMs: Date.now() - started,
 					responseBody,
 					errorMessage: 'Upstream tool returned isError',
@@ -200,16 +239,21 @@ export async function handleMcpAggregateRequest(
 					content: asContent(upstream.result),
 					isError: true,
 					_meta: {
-						...(typeof upstream.result._meta === 'object' && upstream.result._meta ? upstream.result._meta : {}),
+						...(typeof upstream.result._meta === 'object' && upstream.result._meta
+							? upstream.result._meta
+							: {}),
 						octafuse: { code: GatewayErrorCode.upstreamRequestFailed, charged: 0 },
 					},
 				};
 			}
+			const settled = settleMcpPricing(pricing.rule, args, upstream.result);
 			const charged = await input.deps.charge({
 				...chargeBase,
-				meteredCost: price.metered,
-				standardCost: price.standard,
-				chargedCost: price.charged,
+				billingUnits: settled.units,
+				meteredCost: settled.totals.metered,
+				standardCost: settled.totals.standard,
+				chargedCost: settled.totals.charged,
+				pricingAuditExtra: pricingAudit(pricing, preflight, settled),
 				latencyMs: Date.now() - started,
 				responseBody,
 				status: 'success',
@@ -219,17 +263,26 @@ export async function handleMcpAggregateRequest(
 				content: asContent(upstream.result),
 				isError: false,
 				_meta: {
-					...(typeof upstream.result._meta === 'object' && upstream.result._meta ? upstream.result._meta : {}),
-					octafuse: { ...price, charged: charged.chargedCost, requestLogId: charged.requestLogId },
+					...(typeof upstream.result._meta === 'object' && upstream.result._meta
+						? upstream.result._meta
+						: {}),
+					octafuse: {
+						unit: settled.unit,
+						units: settled.units,
+						charged: charged.chargedCost,
+						requestLogId: charged.requestLogId,
+					},
 				},
 			};
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'MCP upstream request failed';
 			await input.deps.charge({
 				...chargeBase,
+				billingUnits: 0,
 				meteredCost: 0,
 				standardCost: 0,
 				chargedCost: 0,
+				pricingAuditExtra: pricingAudit(pricing, preflight, null),
 				latencyMs: Date.now() - started,
 				errorMessage: clip(message),
 				status: 'error',

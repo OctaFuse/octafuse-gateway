@@ -11,9 +11,8 @@ export type McpServerRow = {
 	url: string;
 	authHeaders: string;
 	status: McpServerStatus;
-	metered: number;
-	standard: number;
-	charged: number;
+	/** Default pricing rule JSON (`McpPricingRule`). */
+	pricing: string;
 	timeoutMs: number;
 	maxResponseBytes: number;
 	serverInfo: string | null;
@@ -43,9 +42,8 @@ export type McpServerItemRow = {
 	pendingHash: string | null;
 	reviewState: McpReviewState;
 	status: McpItemStatus;
-	metered: number | null;
-	standard: number | null;
-	charged: number | null;
+	/** Tool pricing rule JSON; null inherits the server default. */
+	pricing: string | null;
 	syncedAt: string;
 };
 
@@ -57,18 +55,15 @@ export type McpCallableItem = McpServerItemRow & {
 	authHeaders: string;
 	timeoutMs: number;
 	maxResponseBytes: number;
-	defaultMetered: number;
-	defaultStandard: number;
-	defaultCharged: number;
+	defaultPricing: string;
 };
 
 export type McpToolPriceRow = {
 	slug: string;
 	upstreamKey: string;
 	exposedName: string;
-	metered: number;
-	standard: number;
-	charged: number;
+	/** Effective rule JSON: the item override or the server default. */
+	pricing: string;
 };
 
 export type InsertMcpServerParams = {
@@ -79,9 +74,7 @@ export type InsertMcpServerParams = {
 	url: string;
 	authHeaders: string;
 	status?: McpServerStatus;
-	metered: number;
-	standard: number;
-	charged: number;
+	pricing: string;
 	timeoutMs: number;
 	maxResponseBytes: number;
 };
@@ -92,9 +85,7 @@ export type UpdateMcpServerParams = {
 	url?: string;
 	authHeaders?: string;
 	status?: McpServerStatus;
-	metered?: number;
-	standard?: number;
-	charged?: number;
+	pricing?: string;
 	timeoutMs?: number;
 	maxResponseBytes?: number;
 	serverInfo?: string | null;
@@ -125,8 +116,6 @@ export type UpdateMcpItemParams = {
 	pendingHash?: string | null;
 	reviewState?: McpReviewState;
 	status?: McpItemStatus;
-	metered?: number | null;
-	standard?: number | null;
-	charged?: number | null;
+	pricing?: string | null;
 	syncedAt?: string;
 };

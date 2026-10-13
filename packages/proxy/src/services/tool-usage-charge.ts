@@ -49,8 +49,8 @@ export type ChargeToolUsageParams = {
 	status: 'success' | 'error';
 	/** Request Host (observe only) */
 	ingressHost?: string | null;
-	/** pricing_audit 计费单位；默认 request */
-	pricingUnit?: 'request' | 'chars';
+	/** pricing_audit 计费单位；默认 request。MCP 传规则里的单元名。 */
+	pricingUnit?: string;
 	/** 计费单元数；默认 1 */
 	billingUnits?: number;
 	/**
@@ -75,9 +75,10 @@ export async function chargeToolUsage(params: ChargeToolUsageParams): Promise<{ 
 	const chargedCost = roundGatewayMoney(isError ? 0 : params.chargedCost);
 	const shouldChargeBudget = !isError && chargedCost > 0;
 	const billingUnits =
-		params.billingUnits != null && Number.isFinite(params.billingUnits) && params.billingUnits > 0
+		params.billingUnits != null && Number.isFinite(params.billingUnits) && params.billingUnits >= 0
 			? params.billingUnits
 			: 1;
+	const divisor = billingUnits > 0 ? billingUnits : 1;
 	const pricingUnit = params.pricingUnit ?? 'request';
 	const unitPrices: ToolUnitPrices = params.unitPrices
 		? {
@@ -86,9 +87,9 @@ export async function chargeToolUsage(params: ChargeToolUsageParams): Promise<{ 
 				charged: roundGatewayMoney(params.unitPrices.charged),
 			}
 		: {
-				metered: roundGatewayMoney(meteredCost / billingUnits),
-				standard: roundGatewayMoney(standardCost / billingUnits),
-				charged: roundGatewayMoney(chargedCost / billingUnits),
+				metered: roundGatewayMoney(meteredCost / divisor),
+				standard: roundGatewayMoney(standardCost / divisor),
+				charged: roundGatewayMoney(chargedCost / divisor),
 			};
 
 	const toolProvider = params.toolProvider.trim();

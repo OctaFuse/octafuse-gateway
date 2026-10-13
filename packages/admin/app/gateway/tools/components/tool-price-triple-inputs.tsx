@@ -7,10 +7,14 @@ export function ToolPriceTripleInputs({
 	value,
 	onChange,
 	step = 0.0001,
+	layout = 'compact',
+	required = false,
 }: {
 	value: PriceTripleDraft;
 	onChange: (patch: Partial<PriceTripleDraft>) => void;
 	step?: number | 'any';
+	layout?: 'compact' | 'columns';
+	required?: boolean;
 }) {
 	const t = useTranslations('tools');
 	/** 展示顺序：标准价 → 用户扣费 → 供应价（与 Routes 语义对齐，运营先看目录/扣费） */
@@ -31,15 +35,19 @@ export function ToolPriceTripleInputs({
 					: 'rounded-md border border-transparent p-2'
 			}
 		>
-			<div className="flex flex-col gap-1.5">
+			<div className={layout === 'columns' ? 'grid gap-4 sm:grid-cols-3' : 'flex flex-col gap-1.5'}>
 				{fields.map(({ key, labelKey }) => {
 					const highlightCharged = loss && key === 'charged';
 					const highlightMetered = loss && key === 'metered';
 					return (
-						<label key={key} className="flex items-center gap-1.5">
+						<label key={key} className={layout === 'columns' ? 'block min-w-0' : 'flex items-center gap-1.5'}>
 							<span
 								className={
-									highlightCharged || highlightMetered
+									layout === 'columns'
+										? `mb-1.5 block text-sm font-medium ${
+												highlightCharged || highlightMetered ? 'text-amber-800' : 'text-gray-700'
+										  }`
+										: highlightCharged || highlightMetered
 										? 'w-[4.5rem] shrink-0 text-[10px] font-semibold text-amber-800'
 										: 'w-[4.5rem] shrink-0 text-[10px] font-semibold text-gray-500'
 								}
@@ -48,12 +56,18 @@ export function ToolPriceTripleInputs({
 							</span>
 							<input
 								type="number"
+								required={required}
+								data-pricing-field={key}
 								min={0}
 								step={step}
 								value={value[key]}
 								onChange={(e) => onChange({ [key]: e.target.value })}
 								className={
-									highlightCharged
+									layout === 'columns'
+										? `w-full rounded-lg border bg-white px-3 py-2.5 font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+												highlightCharged ? 'border-amber-500 text-amber-950' : 'border-gray-300'
+										  }`
+										: highlightCharged
 										? 'w-full max-w-[7rem] rounded-md border border-amber-500 bg-white px-2 py-1 font-mono text-sm text-amber-950 shadow-sm'
 										: 'w-full max-w-[7rem] rounded-md border border-gray-300 bg-white px-2 py-1 font-mono text-sm shadow-sm'
 								}

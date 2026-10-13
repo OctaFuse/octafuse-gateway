@@ -26,6 +26,7 @@ export const GatewayErrorCode = {
 	routeResolutionFailed: 'gateway.route_resolution_failed',
 	invalidRequest: 'gateway.invalid_request',
 	mcpItemDisabled: 'gateway.mcp_item_disabled',
+	mcpPricingInvalid: 'gateway.mcp_pricing_invalid',
 	upstreamRequestFailed: 'gateway.upstream_request_failed',
 	responsesStateRouteUnavailable: 'responses.state_route_unavailable',
 	responsesUnsupportedStateOperation: 'responses.unsupported_state_operation',

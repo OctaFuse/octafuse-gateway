@@ -1,9 +1,11 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { useTranslations } from 'next-intl';
-import { ToolPriceTripleInputs } from '@/app/gateway/tools/components/tool-price-triple-inputs';
+import { DEFAULT_PRICING_DRAFT, pricingDraftFromRule, pricingRuleFromDraft } from '../mcp-pricing-draft';
 import type { CatalogItem, ServerDetail } from '../mcp-types';
+import { McpPricingEditor, McpPricingInline } from './mcp-pricing-editor';
 
 export function McpCatalogItemRow({
 	currency,
@@ -14,7 +16,7 @@ export function McpCatalogItemRow({
 	onSelect,
 	onToggle,
 	onAccept,
-	onSavePrice,
+	onSavePricing,
 }: {
 	currency: string;
 	item: CatalogItem;
@@ -24,23 +26,19 @@ export function McpCatalogItemRow({
 	onSelect: (selected: boolean) => void;
 	onToggle: (enabled: boolean) => void;
 	onAccept: () => void;
-	onSavePrice: (item: CatalogItem, clear: boolean) => Promise<boolean>;
+	onSavePricing: (item: CatalogItem, pricing: Record<string, unknown> | null) => Promise<boolean>;
 }) {
 	const t = useTranslations('mcp');
 	const common = useTranslations('common');
 	const priceId = useId();
 	const [pricing, setPricing] = useState(false);
-	const [draft, setDraft] = useState({ metered: '', standard: '', charged: '' });
-	const [priceError, setPriceError] = useState(false);
+	const [draft, setDraft] = useState(DEFAULT_PRICING_DRAFT);
+	const [priceError, setPriceError] = useState<string | null>(null);
 	const [expandedDescription, setExpandedDescription] = useState(false);
 	const description = item.definition?.description || item.definition?.title || t('noDescription');
 	const longDescription = description.length > 160 || description.split('\n').length > 2;
-	const effective = {
-		metered: item.metered ?? server.metered,
-		standard: item.standard ?? server.standard,
-		charged: item.charged ?? server.charged,
-	};
-	const custom = item.metered != null || item.standard != null || item.charged != null;
+	const effective = item.pricing ?? server.pricing;
+	const custom = item.pricing != null;
 
 	return (
 		<li
@@ -168,19 +166,11 @@ export function McpCatalogItemRow({
 				</details>
 				{item.kind === 'tool' && item.status !== 'removed' ? (
 					<div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-						<span
-							title={t('priceLegend', {
-								standard: effective.standard,
-								charged: effective.charged,
-								metered: effective.metered,
-								currency,
-							})}
-						>
-							{t('charged')}:{' '}
-							<span className="font-mono text-gray-700">
-								{effective.charged} {currency}
-							</span>
-						</span>
+						{effective ? (
+							<McpPricingInline rule={effective} currency={currency} />
+						) : (
+							<span className="text-red-600">{t('pricing.invalidStored')}</span>
+						)}
 						<span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px]">
 							{t(custom ? 'custom' : 'inheritedPrice')}
 						</span>
@@ -191,12 +181,8 @@ export function McpCatalogItemRow({
 							aria-controls={priceId}
 							onClick={() => {
 								if (!pricing) {
-									setDraft({
-										metered: String(effective.metered),
-										standard: String(effective.standard),
-										charged: String(effective.charged),
-									});
-									setPriceError(false);
+									setDraft(pricingDraftFromRule(effective));
+									setPriceError(null);
 								}
 								setPricing(!pricing);
 							}}
@@ -213,34 +199,27 @@ export function McpCatalogItemRow({
 					className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4"
 					onSubmit={async (e) => {
 						e.preventDefault();
-						const prices = Object.fromEntries(
-							Object.entries(draft).map(([key, value]) => [key, value.trim() === '' ? null : Number(value)])
-						) as Pick<CatalogItem, 'metered' | 'standard' | 'charged'>;
-						if (
-							Object.values(prices).some((value) => value != null && (!Number.isFinite(value) || value < 0))
-						) {
-							setPriceError(true);
+						const rule = pricingRuleFromDraft(draft);
+						if (!rule.ok) {
+							setPriceError(t(`pricing.${rule.error}`));
 							return;
 						}
-						if (await onSavePrice({ ...item, ...prices }, false)) setPricing(false);
+						setPriceError(null);
+						if (await onSavePricing(item, rule.rule)) setPricing(false);
 					}}
 				>
 					<fieldset disabled={busy}>
 						<p className="text-xs font-medium text-gray-700">
-							{t('effectivePrice')} · {currency}
+							{t('effectivePrice')} · {getGatewayCurrencySymbol(currency)}
 						</p>
-						<p className="mt-1 text-xs text-gray-400">{t('priceDraftHint')}</p>
-						<ToolPriceTripleInputs
-							step="any"
-							value={draft}
-							onChange={(patch) => setDraft({ ...draft, ...patch })}
-						/>
+						<p className="mb-3 mt-1 text-xs text-gray-400">{t('priceDraftHint')}</p>
+						<McpPricingEditor value={draft} currency={currency} onChange={setDraft} />
 						{priceError ? (
-							<p role="alert" className="mb-2 text-xs text-red-600">
-								{t('invalidPrice')}
+							<p role="alert" className="mt-3 text-xs text-red-600">
+								{priceError}
 							</p>
 						) : null}
-						<div className="mt-2 flex flex-wrap gap-2">
+						<div className="mt-3 flex flex-wrap gap-2">
 							<button
 								type="submit"
 								className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium text-white hover:bg-gray-800"
@@ -250,9 +229,10 @@ export function McpCatalogItemRow({
 							<button
 								type="button"
 								onClick={async () => {
-									if (await onSavePrice(item, true)) setPricing(false);
+									if (await onSavePricing(item, null)) setPricing(false);
 								}}
-								className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+								disabled={!custom}
+								className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
 							>
 								{t('clearPrice')}
 							</button>

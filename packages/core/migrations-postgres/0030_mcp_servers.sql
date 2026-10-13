@@ -1,5 +1,6 @@
 -- Remote MCP servers aggregated by the gateway MCP endpoint.
--- url and auth_headers are operator secrets. Prices are decimal text.
+-- url and auth_headers are operator secrets. pricing is a JSON billing rule
+-- (see packages/core/src/mcp/pricing.ts); an item rule replaces the server default.
 SET search_path TO octafuse_gateway;
 
 CREATE TABLE IF NOT EXISTS mcp_servers (
@@ -10,9 +11,7 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
 	url TEXT NOT NULL,
 	auth_headers TEXT NOT NULL DEFAULT '{}',
 	status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'disabled')),
-	metered TEXT NOT NULL DEFAULT '0',
-	standard TEXT NOT NULL DEFAULT '0',
-	charged TEXT NOT NULL DEFAULT '0',
+	pricing TEXT NOT NULL,
 	timeout_ms INTEGER NOT NULL DEFAULT 30000,
 	max_response_bytes INTEGER NOT NULL DEFAULT 1048576,
 	server_info TEXT,
@@ -37,9 +36,7 @@ CREATE TABLE IF NOT EXISTS mcp_server_items (
 	pending_hash TEXT,
 	review_state TEXT NOT NULL DEFAULT 'none' CHECK (review_state IN ('none', 'new', 'changed')),
 	status TEXT NOT NULL DEFAULT 'disabled' CHECK (status IN ('enabled', 'disabled', 'removed')),
-	metered TEXT,
-	standard TEXT,
-	charged TEXT,
+	pricing TEXT,
 	synced_at TEXT NOT NULL,
 	UNIQUE (server_id, kind, upstream_key_hash)
 );

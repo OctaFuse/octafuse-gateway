@@ -1,4 +1,3 @@
-import { roundGatewayMoney } from '../lib/money-precision';
 import type {
 	InsertMcpItemParams,
 	InsertMcpServerParams,
@@ -22,18 +21,6 @@ function text(value: unknown): string | null {
 	return String(value);
 }
 
-function money(value: unknown, fallback = 0): number {
-	if (value == null || value === '') return fallback;
-	const parsed = Number(value);
-	return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function moneyOrNull(value: unknown): number | null {
-	if (value == null || value === '') return null;
-	const parsed = Number(value);
-	return Number.isFinite(parsed) ? parsed : null;
-}
-
 function asStatus(value: unknown): McpServerStatus {
 	return value === 'disabled' ? 'disabled' : 'active';
 }
@@ -53,10 +40,6 @@ function asReview(value: unknown): McpReviewState {
 	return 'none';
 }
 
-function moneyParam(value: number): string {
-	return String(roundGatewayMoney(value));
-}
-
 export function mapMcpServer(row: Record<string, unknown>): McpServerRow {
 	return {
 		id: String(row.id),
@@ -66,9 +49,7 @@ export function mapMcpServer(row: Record<string, unknown>): McpServerRow {
 		url: String(row.url ?? ''),
 		authHeaders: String(row.auth_headers ?? '{}'),
 		status: asStatus(row.status),
-		metered: money(row.metered),
-		standard: money(row.standard),
-		charged: money(row.charged),
+		pricing: String(row.pricing ?? ''),
 		timeoutMs: Number(row.timeout_ms ?? 30000),
 		maxResponseBytes: Number(row.max_response_bytes ?? 1048576),
 		serverInfo: text(row.server_info),
@@ -95,19 +76,17 @@ export function mapMcpItem(row: Record<string, unknown>): McpServerItemRow {
 		pendingHash: text(row.pending_hash),
 		reviewState: asReview(row.review_state),
 		status: asItemStatus(row.status),
-		metered: moneyOrNull(row.metered),
-		standard: moneyOrNull(row.standard),
-		charged: moneyOrNull(row.charged),
+		pricing: text(row.pricing),
 		syncedAt: String(row.synced_at ?? ''),
 	};
 }
 
-const SERVER_COLUMNS = `id, slug, name, description, url, auth_headers, status, metered, standard, charged,
+const SERVER_COLUMNS = `id, slug, name, description, url, auth_headers, status, pricing,
 	timeout_ms, max_response_bytes, server_info, last_synced_at, last_sync_error, last_sync_summary,
 	created_at, updated_at`;
 
 const ITEM_COLUMNS = `id, server_id, kind, upstream_key, upstream_key_hash, exposed_name, exposed_name_hash,
-	definition, content_hash, pending_definition, pending_hash, review_state, status, metered, standard, charged, synced_at`;
+	definition, content_hash, pending_definition, pending_hash, review_state, status, pricing, synced_at`;
 
 function mapCallable(row: Record<string, unknown>): McpCallableItem {
 	return {
@@ -118,18 +97,16 @@ function mapCallable(row: Record<string, unknown>): McpCallableItem {
 		authHeaders: String(row.auth_headers ?? '{}'),
 		timeoutMs: Number(row.timeout_ms ?? 30000),
 		maxResponseBytes: Number(row.max_response_bytes ?? 1048576),
-		defaultMetered: money(row.default_metered),
-		defaultStandard: money(row.default_standard),
-		defaultCharged: money(row.default_charged),
+		defaultPricing: String(row.default_pricing ?? ''),
 	};
 }
 
 const CALLABLE_SELECT = `
 	SELECT i.id, i.server_id, i.kind, i.upstream_key, i.upstream_key_hash, i.exposed_name, i.exposed_name_hash,
 		i.definition, i.content_hash, i.pending_definition, i.pending_hash, i.review_state, i.status,
-		i.metered, i.standard, i.charged, i.synced_at,
+		i.pricing, i.synced_at,
 		s.slug, s.status AS server_status, s.url, s.auth_headers, s.timeout_ms, s.max_response_bytes,
-		s.metered AS default_metered, s.standard AS default_standard, s.charged AS default_charged
+		s.pricing AS default_pricing
 	FROM mcp_server_items i
 	JOIN mcp_servers s ON s.id = i.server_id
 `;
@@ -162,9 +139,9 @@ export function createMcpServersSqlRepository(exec: SqlExec) {
 			const now = new Date().toISOString();
 			await exec(
 				`INSERT INTO mcp_servers (
-					id, slug, name, description, url, auth_headers, status, metered, standard, charged,
+					id, slug, name, description, url, auth_headers, status, pricing,
 					timeout_ms, max_response_bytes, created_at, updated_at
-				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				[
 					params.id,
 					params.slug,
@@ -173,9 +150,7 @@ export function createMcpServersSqlRepository(exec: SqlExec) {
 					params.url,
 					params.authHeaders,
 					params.status ?? 'active',
-					moneyParam(params.metered),
-					moneyParam(params.standard),
-					moneyParam(params.charged),
+					params.pricing,
 					params.timeoutMs,
 					params.maxResponseBytes,
 					now,
@@ -195,9 +170,7 @@ export function createMcpServersSqlRepository(exec: SqlExec) {
 			if (patch.url !== undefined) assign('url', patch.url);
 			if (patch.authHeaders !== undefined) assign('auth_headers', patch.authHeaders);
 			if (patch.status !== undefined) assign('status', patch.status);
-			if (patch.metered !== undefined) assign('metered', moneyParam(patch.metered));
-			if (patch.standard !== undefined) assign('standard', moneyParam(patch.standard));
-			if (patch.charged !== undefined) assign('charged', moneyParam(patch.charged));
+			if (patch.pricing !== undefined) assign('pricing', patch.pricing);
 			if (patch.timeoutMs !== undefined) assign('timeout_ms', patch.timeoutMs);
 			if (patch.maxResponseBytes !== undefined) assign('max_response_bytes', patch.maxResponseBytes);
 			if (patch.serverInfo !== undefined) assign('server_info', patch.serverInfo);
@@ -265,9 +238,7 @@ export function createMcpServersSqlRepository(exec: SqlExec) {
 			if (patch.pendingHash !== undefined) assign('pending_hash', patch.pendingHash);
 			if (patch.reviewState !== undefined) assign('review_state', patch.reviewState);
 			if (patch.status !== undefined) assign('status', patch.status);
-			if (patch.metered !== undefined) assign('metered', patch.metered == null ? null : moneyParam(patch.metered));
-			if (patch.standard !== undefined) assign('standard', patch.standard == null ? null : moneyParam(patch.standard));
-			if (patch.charged !== undefined) assign('charged', patch.charged == null ? null : moneyParam(patch.charged));
+			if (patch.pricing !== undefined) assign('pricing', patch.pricing);
 			if (patch.syncedAt !== undefined) assign('synced_at', patch.syncedAt);
 			if (sets.length === 0) return false;
 			const existing = await exec('SELECT id FROM mcp_server_items WHERE id = ?', [id]);
@@ -292,10 +263,7 @@ export function createMcpServersSqlRepository(exec: SqlExec) {
 		},
 		async listEnabledToolPrices(): Promise<McpToolPriceRow[]> {
 			const rows = await exec(
-				`SELECT s.slug, i.upstream_key, i.exposed_name,
-					COALESCE(i.metered, s.metered) AS metered,
-					COALESCE(i.standard, s.standard) AS standard,
-					COALESCE(i.charged, s.charged) AS charged
+				`SELECT s.slug, i.upstream_key, i.exposed_name, COALESCE(i.pricing, s.pricing) AS pricing
 				 FROM mcp_server_items i
 				 JOIN mcp_servers s ON s.id = i.server_id
 				 WHERE s.status = 'active' AND i.status = 'enabled' AND i.kind = 'tool'
@@ -306,9 +274,7 @@ export function createMcpServersSqlRepository(exec: SqlExec) {
 				slug: String(row.slug),
 				upstreamKey: String(row.upstream_key),
 				exposedName: String(row.exposed_name),
-				metered: money(row.metered),
-				standard: money(row.standard),
-				charged: money(row.charged),
+				pricing: String(row.pricing ?? ''),
 			}));
 		},
 	};

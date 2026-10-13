@@ -13,7 +13,7 @@ import {
 	getMcpServer,
 	listMcpServers,
 	revealMcpServer,
-	setMcpItemPrice,
+	setMcpItemPricing,
 	setMcpItemStatus,
 	syncMcpServer,
 	testMcpServer,
@@ -127,14 +127,19 @@ adminMcpServersRoutes.post('/:id/items/status', async (c) => {
 });
 
 adminMcpServersRoutes.patch('/:id/items/:itemId', async (c) => {
-	let body: { metered?: unknown; standard?: unknown; charged?: unknown };
+	let body: { pricing?: unknown };
 	try {
 		body = await c.req.json();
 	} catch {
 		return jsonErr(c, 400, 'Invalid JSON body');
 	}
 	try {
-		const data = await setMcpItemPrice(c.get('repositories'), c.req.param('id'), c.req.param('itemId'), body);
+		const data = await setMcpItemPricing(
+			c.get('repositories'),
+			c.req.param('id'),
+			c.req.param('itemId'),
+			body
+		);
 		return c.json({ success: true, data });
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to update MCP item price');

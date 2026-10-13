@@ -47,6 +47,7 @@ export function getAdminAuthorizationDecision(method: string, pathname: string):
 	if (/^\/admin\/mcp-servers\/[^/]+\/reveal$/.test(pathname) && normalizedMethod === 'GET') {
 		return { kind: 'permission', permission: 'mcp.secrets.read' };
 	}
+
 	if (pathname.startsWith('/admin/mcp-servers')) return readOrWrite(normalizedMethod, 'mcp');
 	return { kind: 'deny' };
 }

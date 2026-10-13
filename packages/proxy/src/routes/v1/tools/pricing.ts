@@ -10,11 +10,14 @@ import {
 	DEFAULT_WEB_FETCH_COST,
 	DEFAULT_WEB_SEARCH_COST,
 	normalizeBillingCurrencyCode,
+	parseStoredMcpPricingRule,
 	resolveAiDetectionConfig,
 	resolveWebDeepSearchConfig,
 	resolveWebFetchConfig,
 	resolveWebSearchConfig,
 	roundGatewayMoney,
+	summarizeMcpPricingRule,
+	type McpPricingSummary,
 } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Env } from '../../../app';
@@ -106,15 +109,15 @@ toolsPricingRoutes.get('/', async (c) => {
 		data: {
 			billing_currency: normalizeBillingCurrencyCode(billingRaw),
 			tools,
-			mcp: mcpPrices.map((row) => ({
-				id: `mcp:${row.slug}/${row.upstreamKey}`,
-				name: row.exposedName,
-				unit: 'request' as const,
-				metered: row.metered,
-				standard: row.standard,
-				charged: row.charged,
-				cost: row.charged,
-			})),
+			mcp: mcpPrices.flatMap((row) => {
+				let summary: McpPricingSummary;
+				try {
+					summary = summarizeMcpPricingRule(parseStoredMcpPricingRule(row.pricing));
+				} catch {
+					return [];
+				}
+				return [{ id: `mcp:${row.slug}/${row.upstreamKey}`, name: row.exposedName, ...summary, cost: summary.charged }];
+			}),
 		},
 	});
 });

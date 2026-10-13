@@ -1,5 +1,6 @@
 -- Remote MCP servers aggregated by the gateway MCP endpoint.
--- url and auth_headers are operator secrets. Prices are decimal text.
+-- url and auth_headers are operator secrets. pricing is a JSON billing rule
+-- (see packages/core/src/mcp/pricing.ts); an item rule replaces the server default.
 -- InnoDB unique keys cannot index unbounded TEXT, so identity uses fixed hashes.
 
 CREATE TABLE IF NOT EXISTS mcp_servers (
@@ -10,9 +11,7 @@ CREATE TABLE IF NOT EXISTS mcp_servers (
 	url TEXT NOT NULL,
 	auth_headers TEXT NOT NULL,
 	status VARCHAR(16) NOT NULL DEFAULT 'active',
-	metered VARCHAR(32) NOT NULL DEFAULT '0',
-	standard VARCHAR(32) NOT NULL DEFAULT '0',
-	charged VARCHAR(32) NOT NULL DEFAULT '0',
+	pricing TEXT NOT NULL,
 	timeout_ms INT NOT NULL DEFAULT 30000,
 	max_response_bytes INT NOT NULL DEFAULT 1048576,
 	server_info TEXT,
@@ -39,9 +38,7 @@ CREATE TABLE IF NOT EXISTS mcp_server_items (
 	pending_hash CHAR(64) NULL,
 	review_state VARCHAR(16) NOT NULL DEFAULT 'none',
 	status VARCHAR(16) NOT NULL DEFAULT 'disabled',
-	metered VARCHAR(32) NULL,
-	standard VARCHAR(32) NULL,
-	charged VARCHAR(32) NULL,
+	pricing TEXT NULL,
 	synced_at VARCHAR(40) NOT NULL,
 	UNIQUE KEY uk_mcp_items_identity (server_id, kind, upstream_key_hash),
 	UNIQUE KEY uk_mcp_items_exposed (exposed_name_hash),

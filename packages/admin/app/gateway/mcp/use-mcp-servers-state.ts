@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
+import type { McpPricingRule } from '@octafuse/core';
+import { pricingDraftFromRule, pricingRuleFromDraft, type PricingDraftError } from './mcp-pricing-draft';
 import {
 	EMPTY_FORM,
 	type CatalogItem,
@@ -113,9 +115,7 @@ export function useMcpServersState() {
 			headers: server.authHeaderNames.length
 				? server.authHeaderNames.map((key) => ({ key, value: '' }))
 				: [{ key: '', value: '' }],
-			metered: String(server.metered),
-			standard: String(server.standard),
-			charged: String(server.charged),
+			pricing: pricingDraftFromRule(server.pricing),
 			timeoutMs: String(server.timeoutMs),
 			maxResponseBytes: String(server.maxResponseBytes),
 		});
@@ -167,6 +167,8 @@ export function useMcpServersState() {
 		return perform(
 			'save',
 			async () => {
+				const pricing = pricingRuleFromDraft(form.pricing);
+				if (!pricing.ok) throw new Error(pricingErrorText(pricing.error));
 				const authHeaders = Object.fromEntries(
 					form.headers.filter((row) => row.key.trim()).map((row) => [row.key.trim(), row.value])
 				);
@@ -174,9 +176,7 @@ export function useMcpServersState() {
 					name: form.name.trim(),
 					description: form.description.trim() || null,
 					authHeaders,
-					metered: Number(form.metered),
-					standard: Number(form.standard),
-					charged: Number(form.charged),
+					pricing: pricing.rule,
 					timeoutMs: Number(form.timeoutMs),
 					maxResponseBytes: Number(form.maxResponseBytes),
 				};
@@ -288,17 +288,16 @@ export function useMcpServersState() {
 		});
 	}
 
-	async function savePrice(item: CatalogItem, clear: boolean) {
+	function pricingErrorText(error: PricingDraftError) {
+		return t(`pricing.${error}`);
+	}
+
+	/** `null` restores the server default rule. */
+	async function savePricing(item: CatalogItem, pricing: Record<string, unknown> | McpPricingRule | null) {
 		if (!selectedId) return false;
 		const id = selectedId;
 		return perform(`price:${item.id}`, async () => {
-			await mutate(
-				`/${id}/items/${item.id}`,
-				'PATCH',
-				clear
-					? { metered: null, standard: null, charged: null }
-					: { metered: item.metered, standard: item.standard, charged: item.charged }
-			);
+			await mutate(`/${id}/items/${item.id}`, 'PATCH', { pricing });
 			await loadDetail(id);
 			notify('success', t('saved'));
 		});
@@ -370,7 +369,7 @@ export function useMcpServersState() {
 		accept,
 		toggleServer,
 		setItemStatus,
-		savePrice,
+		savePricing,
 		reveal,
 		removeServer,
 	};
