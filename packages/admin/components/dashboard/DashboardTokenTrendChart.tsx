@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
 	Area,
-	AreaChart,
 	CartesianGrid,
+	ComposedChart,
 	Line,
 	ResponsiveContainer,
 	Tooltip,
@@ -79,7 +79,7 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 			) : (
 				<div className="mt-5 h-72">
 					<ResponsiveContainer width="100%" height="100%">
-						<AreaChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
+						<ComposedChart data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 							<defs>
 								<linearGradient id="dashboardBlue" x1="0" y1="0" x2="0" y2="1">
 									<stop offset="0%" stopColor="#2563eb" stopOpacity={0.24} />
@@ -100,14 +100,10 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 							{view === 'requests' ? <Area type="monotone" dataKey="requests" name={t('trendTabs.requests')} stroke="#2563eb" fill="url(#dashboardBlue)" strokeWidth={2} /> : null}
 							{view === 'cost' ? <Area type="monotone" dataKey="cost" name={t('trendTabs.cost')} stroke="#7c3aed" fill="url(#dashboardViolet)" strokeWidth={2} /> : null}
 							{view === 'latency' ? <Area type="monotone" dataKey="latency" name={t('trendTabs.latency')} stroke="#d97706" fill="#fef3c7" strokeWidth={2} connectNulls /> : null}
-							{view === 'tokens' ? (
-								<>
-									<Line type="monotone" dataKey="input_tokens" name={t('inputTokens')} stroke="#2563eb" dot={false} strokeWidth={2} />
-									<Line type="monotone" dataKey="output_tokens" name={t('outputTokens')} stroke="#0d9488" dot={false} strokeWidth={2} />
-									<Line type="monotone" dataKey="cache_read_tokens" name={t('cacheReadTokens')} stroke="#d97706" dot={false} strokeWidth={2} />
-								</>
-							) : null}
-						</AreaChart>
+							{view === 'tokens' ? <Line type="monotone" dataKey="input_tokens" name={t('inputTokens')} stroke="#2563eb" dot={false} strokeWidth={2} /> : null}
+							{view === 'tokens' ? <Line type="monotone" dataKey="output_tokens" name={t('outputTokens')} stroke="#0d9488" dot={false} strokeWidth={2} /> : null}
+							{view === 'tokens' ? <Line type="monotone" dataKey="cache_read_tokens" name={t('cacheReadTokens')} stroke="#d97706" dot={false} strokeWidth={2} /> : null}
+						</ComposedChart>
 					</ResponsiveContainer>
 				</div>
 			)}
