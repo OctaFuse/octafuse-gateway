@@ -19,6 +19,15 @@ Admin 在 **Providers** 页面提供「从模板导入」：预填各协议的 B
   - 新行的 `providers.kind` 写成该模板的英文 `name`。**同一 `kind` 下同名**（忽略大小写）才自动追加 `(2)`、`(3)` 等后缀。不同模板可以共用同一个账号别名。数据库唯一约束是 `(name, kind)`，比较区分大小写。
   - 新行不含 API Key，须在 UI 中打开对应卡片并手动添加后方可用于上游调用。
 
+### 与官方模板同步
+
+模板更新（描述、端点等）不会自动改已入库的 provider。Providers 页右上角的「检查官方更新」按钮由管理员手动触发检查（页面加载时不会自动比对），对比 `providers.kind` 对应的模板与当前行，有差异时给出提示，由管理员决定是否采用官方值。
+
+- `GET /api/admin/providers/sync/diff`：按 `kind` 分组返回差异。比对范围只有 `description` 与 `endpoints`（以协议为单位，行级展示 `base` / `auth` / 各 capability）。`name`、`api_key`、`status` 不参与比对；图标、链接、展示名由 `kind` 运行时解析，不会过期。
+- `POST /api/admin/providers/sync/apply`：请求体 `{ "items": [{ "provider_id": "...", "fields": ["description", "endpoints.openai"] }] }`。服务端重新计算差异，只处理确实存在差异的所选字段，按官方值覆盖（协议整体替换；官方没有而本地有的协议被选中时会移除）。
+- 默认选择：官方新增或变更默认「采用官方」，本地独有的项默认「保留当前」。「保留当前」不落库，下次检查仍会显示。
+- `kind` 已不在模板中（模板改名或下线）的 provider 会单独列出，可在面板里迁移到新 `kind`（只改 `kind`）。这是下方「改名必须带数据迁移」的运行时补救路径。
+
 认证与其它 Admin 路由相同：后台 Session，或具有 `providers.read` / `providers.write` 权限的 `Authorization: Bearer <ADMIN_API_KEY>`。
 
 ## 维护约定

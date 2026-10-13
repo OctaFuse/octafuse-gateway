@@ -172,6 +172,10 @@ export interface GatewayProvider {
   active_routes_count?: number;
   /** 当前 kind 是否有额度适配器。不落库。 */
   quota_supported?: boolean;
+  /** 与官方模板存在差异的字段数；仅在管理员手动「检查官方更新」后由前端合并，不来自列表接口，不落库。 */
+  official_update_count?: number;
+  /** `kind` 已不在官方模板中；同上，仅检查后由前端合并。 */
+  kind_orphaned?: boolean;
 }
 
 export interface GatewayModel {

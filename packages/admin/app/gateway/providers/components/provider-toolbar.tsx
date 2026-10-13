@@ -25,6 +25,7 @@ const CHIP_DOT: Partial<Record<ProviderListFilter, string>> = {
 	disabled: 'bg-slate-400',
 	pending: 'bg-amber-500',
 	no_key: 'bg-red-500',
+	outdated: 'bg-orange-500',
 	openai: 'bg-sky-500',
 	anthropic: 'bg-orange-500',
 	gemini: 'bg-blue-500',
@@ -47,6 +48,11 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 	const t = useTranslations('providers');
 	const tCommon = useTranslations('common');
 	const tUpstream = useTranslations('upstream');
+
+	// 「有更新」没有可处理项时不占位，避免常驻一个 0。
+	const visibleFilters = PROVIDER_LIST_FILTERS.filter(
+		(filter) => filter !== 'outdated' || filterCounts.outdated > 0 || selectedFilter === 'outdated'
+	);
 
 	const filterLabel = (filter: ProviderListFilter): string => {
 		if (
@@ -101,7 +107,7 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 				onChange={(event) => onFilterChange(event.target.value as ProviderListFilter)}
 				className="min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm md:hidden"
 			>
-				{PROVIDER_LIST_FILTERS.map((filter) => (
+				{visibleFilters.map((filter) => (
 					<option key={filter} value={filter}>{filterLabel(filter)} ({filterCounts[filter]})</option>
 				))}
 			</select>
@@ -110,7 +116,7 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 				role="toolbar"
 				aria-label={t('filters.aria')}
 			>
-				{PROVIDER_LIST_FILTERS.map((filter) => {
+				{visibleFilters.map((filter) => {
 					const count = filterCounts[filter];
 					const selected = selectedFilter === filter;
 					const searchMatched = filterCounts.all;

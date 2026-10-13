@@ -333,6 +333,11 @@ export function providerMatchesSearch(provider: GatewayProvider, query: string):
 		.includes(normalized);
 }
 
+/** 与官方模板有差异，或 kind 已不在官方模板中（需要处理）。 */
+export function providerHasOfficialUpdate(provider: GatewayProvider): boolean {
+	return Number(provider.official_update_count ?? 0) > 0 || Boolean(provider.kind_orphaned);
+}
+
 export function providerMatchesListFilter(
 	provider: GatewayProvider,
 	filter: ProviderListFilter
@@ -344,6 +349,7 @@ export function providerMatchesListFilter(
 	if (filter === 'no_key') {
 		return !providerHasApiKey(provider) && !provider.has_pending_key;
 	}
+	if (filter === 'outdated') return providerHasOfficialUpdate(provider);
 	return getProviderProtocolSummaries(provider).some((protocol) => protocol.key === filter);
 }
 

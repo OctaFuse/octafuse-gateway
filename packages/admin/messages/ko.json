@@ -377,7 +377,8 @@
 			"active": "활성",
 			"disabled": "비활성",
 			"pending": "대기",
-			"no_key": "키 없음"
+			"no_key": "키 없음",
+			"outdated": "업데이트 있음"
 		},
 		"card": {
 			"pending": "대기",
@@ -414,7 +415,11 @@
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
 				"modelsGenerate": "generate"
-			}
+			},
+			"officialUpdate": "공식 업데이트",
+			"officialUpdateTitle": "공식 템플릿이 변경되었습니다. 클릭하여 확인하고 동기화",
+			"kindOrphaned": "유형 이전 필요",
+			"kindOrphanedTitle": "공식 템플릿 이름이 바뀌었거나 삭제되었습니다. 클릭하여 새 유형으로 이전"
 		},
 		"import": {
 			"title": "템플릿에서 가져오기",
@@ -565,6 +570,83 @@
 			"apiKeyEditHint": "기본적으로 숨깁니다. 보거나 복사할 수 있습니다. 바꿔 저장하면 교체되고, 비우면 현재 키를 유지합니다.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 스트리밍 + 비스트리밍",
 			"legacyPerActionNotice": "이 Provider 에는 안전하게 병합할 수 없는 generateContent / streamGenerateContent 개별 오버라이드가 남아 있습니다. 저장 시 그대로 유지됩니다. 검토 후 단일 '{action}' 템플릿으로 변경하세요."
+		},
+		"sync": {
+			"title": "공식 정보와 동기화",
+			"subtitle": "각 공급자를 내장 공식 템플릿과 비교하고, 차이마다 '공식 사용' 또는 '현재 유지'를 선택합니다.",
+			"loading": "비교 중…",
+			"loadFailed": "차이를 불러오지 못했습니다",
+			"recheck": "다시 확인",
+			"navAria": "차이가 있는 공급자 유형",
+			"groupSummary": "공급자 {providers}개 · 차이 {fields}건",
+			"groupHint": "차이마다 공식 값을 사용할지 현재 설정을 유지할지 선택할 수 있습니다.",
+			"useOfficialAll": "모두 공식 사용",
+			"keepCurrentAll": "모두 현재 유지",
+			"current": "현재",
+			"official": "공식",
+			"useOfficial": "공식 사용",
+			"keepCurrent": "현재 유지",
+			"removedHint": "공식 템플릿에는 이 항목이 없습니다. 직접 추가한 항목일 가능성이 높아 기본적으로 유지됩니다. '공식 사용'을 선택하면 삭제됩니다.",
+			"status": {
+				"added": "공식에서 추가됨",
+				"changed": "공식과 다름",
+				"removed": "로컬에만 있음"
+			},
+			"field": {
+				"description": "설명",
+				"endpoints": "{protocol} 엔드포인트"
+			},
+			"slot": {
+				"title": "항목",
+				"base": "Base URL",
+				"auth": "인증 방식"
+			},
+			"applyProvider": "이 공급자 동기화 ({count})",
+			"allSyncedTitle": "모든 공급자가 공식 템플릿과 일치합니다",
+			"allSyncedHint": "동기화할 차이가 없습니다. 공식 템플릿이 업데이트되면 여기에 자동으로 표시됩니다.",
+			"summary": "공급자 {providers}개에서 {fields}건 선택됨.",
+			"summaryRoutes": "활성 라우트 {routes}개가 새 설정을 즉시 사용합니다.",
+			"safeNote": "API 키, 활성화 상태, 공급자 이름은 변경되지 않습니다.",
+			"resetDefaults": "기본 선택으로 되돌리기",
+			"applying": "동기화 중…",
+			"applyAll": "선택 항목 동기화 (공급자 {count}개)",
+			"selectNone": "공식 값을 사용할 차이를 하나 이상 선택하세요",
+			"confirmTitle": "공식 정보 동기화",
+			"confirmMessage": "공급자 {providers}개의 설정 {fields}건을 업데이트합니다. 활성 라우트 {routes}개에 영향이 있습니다. API 키와 활성화 상태는 변경되지 않습니다.",
+			"confirmApply": "동기화",
+			"applyFailed": "동기화에 실패했습니다",
+			"applied": "공급자 {updated}개를 동기화했습니다",
+			"appliedWithSkipped": "{updated}개 동기화, {skipped}개는 변경이 필요 없었습니다",
+			"appliedWithFail": "{updated}개 동기화, {failed}개 실패",
+			"banner": {
+				"updates": "공급자 유형 {kinds}개에 공식 업데이트가 있으며 공급자 {providers}개에 영향을 줍니다",
+				"orphansOnly": "공식 템플릿에서 이름이 바뀌었거나 삭제된 유형을 쓰는 공급자가 있습니다",
+				"orphans": "공급자 {count}개는 유형 이전이 추가로 필요합니다",
+				"hint": "확인 후 항목마다 공식 사용 또는 현재 유지를 선택하세요.",
+				"showOnly": "이것만 보기",
+				"review": "확인 및 동기화"
+			},
+			"orphans": {
+				"navTitle": "템플릿 변경됨",
+				"navCount": "공급자 {count}개",
+				"intro": "이 공급자들의 유형은 공식 템플릿에서 이름이 바뀌었거나 삭제되어 더 이상 비교할 수 없습니다. 현재 대응하는 새 유형을 선택해 이전하면 동기화할 수 있습니다.",
+				"oldKind": "이전 유형",
+				"pickTarget": "새 유형 선택",
+				"suggested": "추천",
+				"migrate": "이전",
+				"migrating": "이전 중…",
+				"migrated": "유형을 이전했습니다"
+			},
+			"check": {
+				"button": "공식 업데이트 확인",
+				"checking": "확인 중…",
+				"neverChecked": "아직 확인하지 않음",
+				"lastCheckedUpdates": "{time} 확인: 업데이트 있음",
+				"lastCheckedUpToDate": "{time} 확인: 최신 상태",
+				"upToDate": "확인 완료: 모든 공급자가 공식 템플릿과 일치합니다",
+				"foundUpdates": "공급자 {providers}개(유형 {kinds}개)에 공식 업데이트가 있습니다",
+				"foundOrphans": "공급자 {count}개는 유형 이전이 필요합니다"
+			}
 		}
 	},
 	"models": {

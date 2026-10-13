@@ -377,7 +377,8 @@
 			"active": "已启用",
 			"disabled": "已停用",
 			"pending": "待填密钥",
-			"no_key": "无密钥"
+			"no_key": "无密钥",
+			"outdated": "有更新"
 		},
 		"card": {
 			"pending": "待填密钥",
@@ -414,7 +415,11 @@
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
 				"modelsGenerate": "generate"
-			}
+			},
+			"officialUpdate": "有官方更新",
+			"officialUpdateTitle": "官方模板有更新，点击查看并同步",
+			"kindOrphaned": "类型需迁移",
+			"kindOrphanedTitle": "官方模板已改名或下线，点击迁移到新类型"
 		},
 		"import": {
 			"title": "从模板导入",
@@ -565,6 +570,83 @@
 			"apiKeyEditHint": "默认隐藏当前密钥。可查看或复制。修改后保存即替换；清空则保持原密钥。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 流式 + 非流式",
 			"legacyPerActionNotice": "该 Provider 仍保留无法安全合并的 generateContent / streamGenerateContent 覆盖项。保存时原样写回。复核后可改为单一 '{action}' 模板。"
+		},
+		"sync": {
+			"title": "与官方同步",
+			"subtitle": "对比各供应商与内置官方模板的差异，逐项选择「采用官方」或「保留当前」。",
+			"loading": "正在对比…",
+			"loadFailed": "加载差异失败",
+			"recheck": "重新检查",
+			"navAria": "有差异的供应商类型",
+			"groupSummary": "{providers} 个供应商 · {fields} 处差异",
+			"groupHint": "每一处差异都可单独选择：采用官方，或保留当前配置。",
+			"useOfficialAll": "全部采用官方",
+			"keepCurrentAll": "全部保留当前",
+			"current": "当前",
+			"official": "官方",
+			"useOfficial": "采用官方",
+			"keepCurrent": "保留当前",
+			"removedHint": "官方模板没有这一项，通常是你自己添加的，默认保留。选择「采用官方」会把它移除。",
+			"status": {
+				"added": "官方新增",
+				"changed": "与官方不同",
+				"removed": "仅本地有"
+			},
+			"field": {
+				"description": "介绍",
+				"endpoints": "{protocol} 协议端点"
+			},
+			"slot": {
+				"title": "项目",
+				"base": "Base URL",
+				"auth": "鉴权方式"
+			},
+			"applyProvider": "同步此供应商（{count}）",
+			"allSyncedTitle": "所有供应商都与官方一致",
+			"allSyncedHint": "没有需要同步的差异。官方模板更新后，这里会自动出现差异。",
+			"summary": "已选 {fields} 处，涉及 {providers} 个供应商。",
+			"summaryRoutes": "其中有 {routes} 条启用中的路由会立即使用新配置。",
+			"safeNote": "API Key、启用状态、供应商名称不会被修改。",
+			"resetDefaults": "恢复默认选择",
+			"applying": "同步中…",
+			"applyAll": "同步已选（{count} 个供应商）",
+			"selectNone": "请至少选择一处要采用官方的差异",
+			"confirmTitle": "同步官方信息",
+			"confirmMessage": "将更新 {providers} 个供应商的 {fields} 处配置，涉及 {routes} 条启用中的路由。API Key 与启用状态不会改动。",
+			"confirmApply": "同步",
+			"applyFailed": "同步失败",
+			"applied": "已同步 {updated} 个供应商",
+			"appliedWithSkipped": "已同步 {updated} 个供应商，{skipped} 个无需处理",
+			"appliedWithFail": "已同步 {updated} 个，{failed} 个失败",
+			"banner": {
+				"updates": "{kinds} 个供应商类型有官方更新，影响 {providers} 个供应商",
+				"orphansOnly": "有供应商的类型在官方模板中已改名或下线",
+				"orphans": "另有 {count} 个供应商的类型需要迁移",
+				"hint": "检查后可逐项选择采用官方或保留当前。",
+				"showOnly": "只看这些",
+				"review": "查看并同步"
+			},
+			"orphans": {
+				"navTitle": "模板已变更",
+				"navCount": "{count} 个供应商",
+				"intro": "这些供应商的类型在官方模板中已改名或下线，无法再对比差异。请选择它们现在对应的新类型，迁移后即可继续同步。",
+				"oldKind": "原类型",
+				"pickTarget": "选择新类型",
+				"suggested": "推荐",
+				"migrate": "迁移",
+				"migrating": "迁移中…",
+				"migrated": "已迁移类型"
+			},
+			"check": {
+				"button": "检查官方更新",
+				"checking": "检查中…",
+				"neverChecked": "尚未检查",
+				"lastCheckedUpdates": "{time} 检查：发现更新",
+				"lastCheckedUpToDate": "{time} 检查：已是最新",
+				"upToDate": "已检查：所有供应商都与官方一致",
+				"foundUpdates": "发现 {providers} 个供应商（{kinds} 个类型）有官方更新",
+				"foundOrphans": "发现 {count} 个供应商的类型需要迁移"
+			}
 		}
 	},
 	"models": {

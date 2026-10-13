@@ -377,7 +377,8 @@
 			"active": "有効",
 			"disabled": "無効",
 			"pending": "未設定",
-			"no_key": "キーなし"
+			"no_key": "キーなし",
+			"outdated": "更新あり"
 		},
 		"card": {
 			"pending": "未設定",
@@ -414,7 +415,11 @@
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
 				"modelsGenerate": "generate"
-			}
+			},
+			"officialUpdate": "公式の更新",
+			"officialUpdateTitle": "公式テンプレートが変更されました。クリックして確認・同期",
+			"kindOrphaned": "タイプの移行が必要",
+			"kindOrphanedTitle": "公式テンプレートの名称変更または廃止。クリックして新しいタイプへ移行"
 		},
 		"import": {
 			"title": "テンプレートからインポート",
@@ -565,6 +570,83 @@
 			"apiKeyEditHint": "初期状態では非表示です。表示とコピーができます。変更して保存すると置換し、空にすると現行キーを維持します。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — ストリーム + 非ストリーム",
 			"legacyPerActionNotice": "このプロバイダーには安全に統合できない generateContent / streamGenerateContent の個別上書きが残っています。保存時はそのまま保持されます。確認後に単一の '{action}' テンプレートへ変更してください。"
+		},
+		"sync": {
+			"title": "公式と同期",
+			"subtitle": "各プロバイダーを内蔵の公式テンプレートと比較し、差分ごとに「公式を採用」か「現状を維持」を選びます。",
+			"loading": "比較中…",
+			"loadFailed": "差分の読み込みに失敗しました",
+			"recheck": "再チェック",
+			"navAria": "差分のあるプロバイダータイプ",
+			"groupSummary": "{providers} 件のプロバイダー · {fields} 件の差分",
+			"groupHint": "差分ごとに、公式の値を採用するか現状を維持するか選べます。",
+			"useOfficialAll": "すべて公式を採用",
+			"keepCurrentAll": "すべて現状維持",
+			"current": "現在",
+			"official": "公式",
+			"useOfficial": "公式を採用",
+			"keepCurrent": "現状を維持",
+			"removedHint": "公式テンプレートにこの項目はありません。自分で追加した可能性が高いため、既定では維持します。「公式を採用」を選ぶと削除されます。",
+			"status": {
+				"added": "公式で追加",
+				"changed": "公式と異なる",
+				"removed": "ローカルのみ"
+			},
+			"field": {
+				"description": "説明",
+				"endpoints": "{protocol} エンドポイント"
+			},
+			"slot": {
+				"title": "項目",
+				"base": "Base URL",
+				"auth": "認証方式"
+			},
+			"applyProvider": "このプロバイダーを同期（{count}）",
+			"allSyncedTitle": "すべてのプロバイダーが公式と一致しています",
+			"allSyncedHint": "同期する差分はありません。公式テンプレートが更新されると、ここに自動で表示されます。",
+			"summary": "{providers} 件のプロバイダーで {fields} 件を選択中。",
+			"summaryRoutes": "有効なルート {routes} 件が新しい設定をすぐに使用します。",
+			"safeNote": "API キー、有効状態、プロバイダー名は変更されません。",
+			"resetDefaults": "既定の選択に戻す",
+			"applying": "同期中…",
+			"applyAll": "選択を同期（{count} 件のプロバイダー）",
+			"selectNone": "公式を採用する差分を 1 件以上選択してください",
+			"confirmTitle": "公式情報を同期",
+			"confirmMessage": "{providers} 件のプロバイダーの {fields} 件の設定を更新します。有効なルート {routes} 件に影響します。API キーと有効状態は変更されません。",
+			"confirmApply": "同期",
+			"applyFailed": "同期に失敗しました",
+			"applied": "{updated} 件のプロバイダーを同期しました",
+			"appliedWithSkipped": "{updated} 件を同期、{skipped} 件は変更不要でした",
+			"appliedWithFail": "{updated} 件を同期、{failed} 件が失敗しました",
+			"banner": {
+				"updates": "{kinds} 種類のプロバイダータイプに公式の更新があり、{providers} 件に影響します",
+				"orphansOnly": "公式テンプレートで名称変更または廃止されたタイプを使うプロバイダーがあります",
+				"orphans": "ほかに {count} 件のプロバイダーでタイプの移行が必要です",
+				"hint": "確認して、項目ごとに公式を採用するか現状を維持するか選べます。",
+				"showOnly": "これだけ表示",
+				"review": "確認して同期"
+			},
+			"orphans": {
+				"navTitle": "テンプレート変更",
+				"navCount": "{count} 件のプロバイダー",
+				"intro": "これらのプロバイダーのタイプは公式テンプレートで名称変更または廃止されたため、差分を比較できません。現在対応するタイプを選んで移行すると、同期できるようになります。",
+				"oldKind": "元のタイプ",
+				"pickTarget": "新しいタイプを選択",
+				"suggested": "推奨",
+				"migrate": "移行",
+				"migrating": "移行中…",
+				"migrated": "タイプを移行しました"
+			},
+			"check": {
+				"button": "公式の更新を確認",
+				"checking": "確認中…",
+				"neverChecked": "未確認",
+				"lastCheckedUpdates": "{time} 確認：更新あり",
+				"lastCheckedUpToDate": "{time} 確認：最新です",
+				"upToDate": "確認済み：すべてのプロバイダーが公式と一致しています",
+				"foundUpdates": "{providers} 件のプロバイダー（{kinds} タイプ）に公式の更新があります",
+				"foundOrphans": "{count} 件のプロバイダーでタイプの移行が必要です"
+			}
 		}
 	},
 	"models": {

@@ -484,6 +484,23 @@ export function isKnownProviderKind(kind: string): boolean {
 	return kind === CUSTOM_PROVIDER_KIND || PRESET_BY_EXACT_NAME.has(kind);
 }
 
+/** 按 `providers.kind`（模板英文名）取官方模板；自定义 / 未分类 / 未知返回 undefined。 */
+export function getStaticProviderPresetByKind(kind: string | null | undefined): StaticProviderImportPresetRow | undefined {
+	const key = String(kind ?? '').trim();
+	if (!key || key === CUSTOM_PROVIDER_KIND) return undefined;
+	return PRESET_BY_EXACT_NAME.get(key);
+}
+
+/** 模板被改名后，按 endpoints 签名猜旧 kind 对应的新模板名；猜不到返回 null。 */
+export function suggestStaticProviderKindByEndpoints(
+	endpoints: ProviderEndpointsSource['endpoints']
+): string | null {
+	const signature = providerEndpointSignature(endpoints);
+	if (!signature) return null;
+	const hit = STATIC_ROWS.find((row) => providerEndpointSignature(row.endpoints) === signature);
+	return hit ? hit.name.trim() : null;
+}
+
 export function listProviderKindChoices(): Array<{
 	kind: string;
 	labels: ProviderKindLabels;
