@@ -1,5 +1,6 @@
 'use client';
 
+import { formatPerMillionTokenUnit, formatPerCharacterUnit, formatPerSecondUnit } from '@/lib/format-gateway-currency';
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useMemo, useState } from 'react';
 import { CodeBracketIcon, DocumentDuplicateIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
@@ -610,7 +611,7 @@ export function ModelModal(props: Props) {
 												<label className="mb-1 block text-xs font-medium text-gray-600">
 													{t('audioInputPricePerM')}
 													<span className="ml-1 font-normal text-gray-400">
-														({billingCurrency}/1M)
+														({formatPerMillionTokenUnit(billingCurrency)})
 													</span>
 												</label>
 												<input
@@ -640,7 +641,7 @@ export function ModelModal(props: Props) {
 												<label className="mb-1 block text-xs font-medium text-gray-600">
 													{t('audioOutputPricePerM')}
 													<span className="ml-1 font-normal text-gray-400">
-														({billingCurrency}/1M)
+														({formatPerMillionTokenUnit(billingCurrency)})
 													</span>
 												</label>
 												<input
@@ -673,7 +674,7 @@ export function ModelModal(props: Props) {
 												<label className="mb-1 block text-xs font-medium text-gray-600">
 													{t('audioPricePerCharacter')}
 													<span className="ml-1 font-normal text-gray-400">
-														({billingCurrency}/char)
+														({formatPerCharacterUnit(billingCurrency)})
 													</span>
 												</label>
 												<input
@@ -717,7 +718,7 @@ export function ModelModal(props: Props) {
 												<label className="mb-1 block text-xs font-medium text-gray-600">
 													{t('audioPricePerSecond')}
 													<span className="ml-1 font-normal text-gray-400">
-														({billingCurrency}/s)
+														({formatPerSecondUnit(billingCurrency)})
 													</span>
 												</label>
 												<input

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { BanknotesIcon } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ProviderQuotaSnapshot, ProviderQuotaState } from '@octafuse/core/provider-quota';
+import { formatGatewayMoneyCompact } from '@/lib/format-gateway-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { fetchProviderQuota } from '../provider-api';
 
@@ -39,15 +40,8 @@ function formatQuantity(value: number, locale: string): string {
 }
 
 function formatMoney(value: number, currency: string, locale: string): string {
-	try {
-		return new Intl.NumberFormat(locale, {
-			style: 'currency',
-			currency,
-			maximumFractionDigits: 4,
-		}).format(value);
-	} catch {
-		return `${formatQuantity(value, locale)} ${currency}`;
-	}
+	if (/^[A-Z]{3}$/.test(currency)) return formatGatewayMoneyCompact(value, currency, 4);
+	return `${formatQuantity(value, locale)} ${currency}`;
 }
 
 function windowCurrency(adapter: string): string | null {

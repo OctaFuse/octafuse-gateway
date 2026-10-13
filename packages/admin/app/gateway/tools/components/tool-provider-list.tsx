@@ -2,9 +2,11 @@
 
 import { useState, type RefObject } from 'react';
 import { ChevronRightIcon, MagnifyingGlassIcon, ServerStackIcon } from '@heroicons/react/24/outline';
+import { formatGatewayMoneyCompact, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { useTranslations } from 'next-intl';
 import {
 	getPriceSummaryParts,
+	parseDraftMoney,
 	resolveCompactStatusBadges,
 	showConfiguredDot,
 	type CompactStatusBadgeKind,
@@ -84,6 +86,10 @@ export function ToolProviderList({
 		setQuery('');
 		setTool('all');
 		setStatus('all');
+	};
+	const money = (value: string) => {
+		const amount = parseDraftMoney(value);
+		return amount == null ? value : formatGatewayMoneyCompact(amount, currency);
 	};
 	const hasFilters = query !== '' || tool !== 'all' || status !== 'all';
 
@@ -243,18 +249,18 @@ export function ToolProviderList({
 											</div>
 										</td>
 										<td className="px-4 py-4 text-right font-mono tabular-nums text-gray-600">
-											{parts.standard}
+											{money(parts.standard)}
 										</td>
 										<td
 											className={`px-4 py-4 text-right font-mono tabular-nums ${
 												item.status.isLossPricing ? 'text-amber-700' : 'text-gray-600'
 											}`}
 										>
-											{parts.charged}
+											{money(parts.charged)}
 										</td>
 										<td className="px-4 py-4">
 											<div className="flex items-center justify-end gap-4">
-												<span className="font-mono tabular-nums text-gray-600">{parts.metered}</span>
+												<span className="font-mono tabular-nums text-gray-600">{money(parts.metered)}</span>
 												<ChevronRightIcon
 													className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-600 group-focus-within:text-blue-500"
 													aria-hidden="true"
@@ -271,7 +277,7 @@ export function ToolProviderList({
 			<div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-5 py-3 text-xs text-gray-400">
 				<div role="status">
 					{t('count', { visible: visible.length, total: rows.length })}
-					<span className="ml-3">{t('currency', { currency })}</span>
+					<span className="ml-3">{t('currency', { currency: getGatewayCurrencySymbol(currency) })}</span>
 				</div>
 				<span>{t('openHint')}</span>
 			</div>

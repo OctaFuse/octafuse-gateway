@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
+import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import {
 	DEFAULT_WEB_SEARCH_COST,
@@ -1281,7 +1282,7 @@ export default function GatewayToolsConfigPage() {
 					<div className="flex flex-col gap-4">
 						<div>
 							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: billingCurrency })}
+								{t('unitPrices.title', { currency: getGatewayCurrencySymbol(billingCurrency) })}
 							</label>
 							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
 							<ToolPriceTripleInputs
@@ -1314,7 +1315,7 @@ export default function GatewayToolsConfigPage() {
 					<div className="flex flex-col gap-4">
 						<div>
 							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: billingCurrency })}
+								{t('unitPrices.title', { currency: getGatewayCurrencySymbol(billingCurrency) })}
 							</label>
 							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
 							<ToolPriceTripleInputs
@@ -1347,7 +1348,7 @@ export default function GatewayToolsConfigPage() {
 					<div className="flex flex-col gap-4">
 						<div>
 							<label className="mb-1 block text-xs font-medium text-gray-600">
-								{t('unitPrices.title', { currency: billingCurrency })}
+								{t('unitPrices.title', { currency: getGatewayCurrencySymbol(billingCurrency) })}
 							</label>
 							<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
 							<ToolPriceTripleInputs
@@ -1389,7 +1390,7 @@ export default function GatewayToolsConfigPage() {
 						<div className="flex flex-col gap-4 sm:flex-row sm:items-start">
 							<div className="min-w-0 flex-1">
 								<label className="mb-1 block text-xs font-medium text-gray-600">
-									{t('unitPrices.title', { currency: billingCurrency })}
+									{t('unitPrices.title', { currency: getGatewayCurrencySymbol(billingCurrency) })}
 								</label>
 								<p className="mb-1 text-[10px] text-gray-500">{t('unitPrices.legend')}</p>
 								<ToolPriceTripleInputs
