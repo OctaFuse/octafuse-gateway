@@ -124,6 +124,96 @@ describe('diffProviderAgainstPreset', () => {
 		);
 	});
 
+	it('treats filled Vertex and Azure deployment slots as already matching the template', () => {
+		const presets = listStaticProviderImportPresets();
+		const vertex = presets.find((row) => row.name === 'Google Vertex AI');
+		const azure = presets.find((row) => row.name === 'Azure OpenAI');
+		assert.ok(vertex);
+		assert.ok(azure);
+
+		const vertexFilled = JSON.parse(
+			JSON.stringify(vertex.endpoints).replaceAll('YOUR_PROJECT_ID', 'p-mhjphev1')
+		) as typeof vertex.endpoints;
+		assert.deepEqual(
+			diffProviderAgainstPreset(
+				{ description: vertex.description, endpoints: vertexFilled },
+				vertex
+			),
+			[]
+		);
+
+		const vertexRegional = JSON.parse(
+			JSON.stringify(vertexFilled).replaceAll('/locations/global/', '/locations/us-central1/')
+		) as typeof vertex.endpoints;
+		assert.deepEqual(
+			diffProviderAgainstPreset(
+				{ description: vertex.description, endpoints: vertexRegional },
+				vertex
+			),
+			[]
+		);
+
+		const azureFilled = JSON.parse(
+			JSON.stringify(azure.endpoints).replaceAll('YOUR_RESOURCE_NAME', 'contoso')
+		) as typeof azure.endpoints;
+		assert.deepEqual(
+			diffProviderAgainstPreset({ description: azure.description, endpoints: azureFilled }, azure),
+			[]
+		);
+
+		const foundryFilled = JSON.parse(
+			JSON.stringify(azure.endpoints).replaceAll(
+				'YOUR_RESOURCE_NAME.openai.azure.com',
+				'soloent-east-us-2-resource.services.ai.azure.com'
+			)
+		) as typeof azure.endpoints;
+		assert.deepEqual(
+			diffProviderAgainstPreset({ description: azure.description, endpoints: foundryFilled }, azure),
+			[]
+		);
+	});
+
+	it('still flags an Azure base that is missing the OpenAI v1 path', () => {
+		const azure = listStaticProviderImportPresets().find((row) => row.name === 'Azure OpenAI');
+		assert.ok(azure);
+		const legacy = JSON.parse(
+			JSON.stringify(azure.endpoints).replaceAll('/openai/v1', '/openai').replaceAll('YOUR_RESOURCE_NAME', 'contoso')
+		) as typeof azure.endpoints;
+		const fields = diffProviderAgainstPreset(
+			{ description: azure.description, endpoints: legacy },
+			azure
+		);
+		assert.deepEqual(
+			fields.map((field) => field.key),
+			['endpoints.openai']
+		);
+		assert.equal(fields[0]?.key === 'endpoints.openai' && fields[0].rows[0]?.slot, 'base');
+	});
+
+	it('still flags a deployment URL whose path no longer matches the template', () => {
+		const vertex = listStaticProviderImportPresets().find((row) => row.name === 'Google Vertex AI');
+		assert.ok(vertex);
+		const endpoints = JSON.parse(
+			JSON.stringify(vertex.endpoints).replaceAll('YOUR_PROJECT_ID', 'p-mhjphev1')
+		) as {
+			openai: { endpoints: { chat: string } };
+			gemini: { base: string; auth?: string };
+		};
+		endpoints.openai.endpoints.chat = endpoints.openai.endpoints.chat.replace(
+			'/endpoints/openapi/chat/completions',
+			'/endpoints/openapi/v2/chat/completions'
+		);
+		const fields = diffProviderAgainstPreset(
+			{ description: vertex.description, endpoints },
+			vertex
+		);
+		assert.deepEqual(
+			fields.map((field) => field.key),
+			['endpoints.openai']
+		);
+		assert.equal(fields[0]?.key === 'endpoints.openai' && fields[0].rows[0]?.slot, 'chat');
+	});
+
 	it('is a no-op for every bundled preset compared with itself', () => {
 		for (const row of listStaticProviderImportPresets()) {
 			assert.deepEqual(
@@ -168,6 +258,62 @@ describe('buildProviderSyncPatch', () => {
 		const synced = { description: preset.description, endpoints: preset.endpoints };
 		assert.deepEqual(buildProviderSyncPatch(synced, preset, ['description', 'endpoints.openai']), {});
 		assert.deepEqual(buildProviderSyncPatch(provider, preset, ['name', 'api_key', 'endpoints.nope']), {});
+	});
+
+	it('keeps a filled Vertex project and region when applying a real path change', () => {
+		const vertex = listStaticProviderImportPresets().find((row) => row.name === 'Google Vertex AI');
+		assert.ok(vertex);
+		const current = JSON.parse(
+			JSON.stringify(vertex.endpoints)
+				.replaceAll('YOUR_PROJECT_ID', 'p-mhjphev1')
+				.replaceAll('/locations/global/', '/locations/us-central1/')
+		) as {
+			openai: { endpoints: { chat: string } };
+			gemini: { base: string; auth: string };
+		};
+		const official = JSON.parse(JSON.stringify(vertex.endpoints)) as typeof vertex.endpoints;
+		const officialOpenAi = official.openai?.endpoints;
+		assert.ok(officialOpenAi?.chat);
+		officialOpenAi.chat = officialOpenAi.chat.replace(
+			'/endpoints/openapi/chat/completions',
+			'/endpoints/openapi/v2/chat/completions'
+		);
+		officialOpenAi.responses =
+			'https://aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/global/endpoints/openapi/v2/responses';
+
+		const patch = buildProviderSyncPatch(
+			{ description: vertex.description, endpoints: current },
+			{ description: vertex.description, endpoints: official },
+			['endpoints.openai']
+		);
+		assert.equal(
+			patch.endpoints?.openai?.endpoints?.chat,
+			'https://aiplatform.googleapis.com/v1/projects/p-mhjphev1/locations/us-central1/endpoints/openapi/v2/chat/completions'
+		);
+		assert.equal(
+			patch.endpoints?.openai?.endpoints?.responses,
+			'https://aiplatform.googleapis.com/v1/projects/p-mhjphev1/locations/us-central1/endpoints/openapi/v2/responses'
+		);
+		assert.equal(patch.endpoints?.gemini?.base, current.gemini.base);
+	});
+
+	it('keeps the Foundry host when applying the OpenAI v1 path', () => {
+		const azure = listStaticProviderImportPresets().find((row) => row.name === 'Azure OpenAI');
+		assert.ok(azure);
+		const patch = buildProviderSyncPatch(
+			{
+				description: azure.description,
+				endpoints: {
+					openai: { base: 'https://soloent-east-us-2-resource.services.ai.azure.com/openai' },
+				},
+			},
+			azure,
+			['endpoints.openai']
+		);
+		assert.equal(
+			patch.endpoints?.openai?.base,
+			'https://soloent-east-us-2-resource.services.ai.azure.com/openai/v1'
+		);
 	});
 
 	it('can clear the description when the official one is empty', () => {

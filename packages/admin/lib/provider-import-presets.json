@@ -1299,23 +1299,23 @@
 		"vendor_key": "azure",
 		"endpoints": {
 			"openai": {
-				"base": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai"
+				"base": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1"
 			}
 		},
-		"description": "Replace YOUR_RESOURCE_NAME with your Azure portal OpenAI resource name; deployment paths and `api-version` per Microsoft official docs.",
+		"description": "Replace YOUR_RESOURCE_NAME. OpenAI v1 base is https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1. Foundry may show the same path on https://YOUR_RESOURCE_NAME.services.ai.azure.com/openai/v1; either host is valid. Put the deployment name in the model field. The v1 route does not use api-version.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "Azure OpenAI",
-					"description": "Azure OpenAI 资源模板；导入后需替换为自己的资源名称。"
+					"description": "Azure OpenAI 的 OpenAI v1 地址。导入后替换资源名。Foundry 控制台给出的 *.services.ai.azure.com/openai/v1 同样可用。"
 				},
 				"en": {
 					"name": "Azure OpenAI",
-					"description": "Azure OpenAI resource template; replace the placeholder with your resource name."
+					"description": "Azure OpenAI v1 base URL. Replace the resource name after import. The Foundry host *.services.ai.azure.com/openai/v1 is the same template."
 				}
 			},
 			"links": {
-				"platform": "https://portal.azure.com/"
+				"platform": "https://ai.azure.com/"
 			}
 		}
 	},
