@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import type { GeminiUpstreamAuthScheme } from '@octafuse/core/gemini-upstream-url';
 import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
 import { buildProviderSyncPatch, diffProviderAgainstPreset } from '@/lib/provider-sync-diff';
 
@@ -197,7 +198,7 @@ describe('diffProviderAgainstPreset', () => {
 			JSON.stringify(vertex.endpoints).replaceAll('YOUR_PROJECT_ID', 'p-mhjphev1')
 		) as {
 			openai: { endpoints: { chat: string } };
-			gemini: { base: string; auth?: string };
+			gemini: { base: string; auth?: GeminiUpstreamAuthScheme };
 		};
 		endpoints.openai.endpoints.chat = endpoints.openai.endpoints.chat.replace(
 			'/endpoints/openapi/chat/completions',
@@ -269,7 +270,7 @@ describe('buildProviderSyncPatch', () => {
 				.replaceAll('/locations/global/', '/locations/us-central1/')
 		) as {
 			openai: { endpoints: { chat: string } };
-			gemini: { base: string; auth: string };
+			gemini: { base: string; auth: GeminiUpstreamAuthScheme };
 		};
 		const official = JSON.parse(JSON.stringify(vertex.endpoints)) as typeof vertex.endpoints;
 		const officialOpenAi = official.openai?.endpoints;
