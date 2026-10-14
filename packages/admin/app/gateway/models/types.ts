@@ -14,8 +14,8 @@ export type PresetCatalogRow = {
 	id: string;
 	display_name: string | null;
 	vendor: string;
-	/** `llm` | `image` | `audio` — same Kind as Models list filter */
-	kind: 'llm' | 'image' | 'audio';
+	/** `llm` | `image` | `audio` | `embedding` — same Kind as Models list filter */
+	kind: 'llm' | 'image' | 'audio' | 'embedding';
 	context_window: number | null;
 	max_tokens: number | null;
 	description: string | null;
@@ -65,10 +65,10 @@ export type ModelImportResult = {
 export const ALL_VENDORS_KEY = 'all';
 
 /**
- * 模型目录 Kind 视图（`?kind=all|llm|image|audio`）。
+ * 模型目录 Kind 视图（`?kind=all|llm|image|audio|embedding`）。
  * 模型目录允许跨类型浏览；调试台继续使用 `@/lib/invoke-kind` 中不含 All 的模型类型。
  */
-export const MODEL_LIST_KIND_FILTERS = ['all', 'llm', 'image', 'audio'] as const;
+export const MODEL_LIST_KIND_FILTERS = ['all', 'llm', 'image', 'audio', 'embedding'] as const;
 export type ModelListKindFilter = (typeof MODEL_LIST_KIND_FILTERS)[number];
 export const DEFAULT_MODEL_LIST_KIND_FILTER: ModelListKindFilter = 'all';
 
@@ -118,4 +118,12 @@ export const EMPTY_AUDIO_MODEL_FORM: ModelFormData = {
 	output_modalities: ['text'],
 };
 
-export type ModelFormKind = 'llm' | 'image' | 'audio';
+/** 手工新建 Embedding 模型：text → embedding；无 max output tokens。 */
+export const EMPTY_EMBEDDING_MODEL_FORM: ModelFormData = {
+	...EMPTY_MODEL_FORM,
+	max_tokens: '',
+	input_modalities: ['text'],
+	output_modalities: ['embedding'],
+};
+
+export type ModelFormKind = 'llm' | 'image' | 'audio' | 'embedding';

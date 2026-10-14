@@ -1,4 +1,4 @@
-import { isAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import { isAudioModel, isEmbeddingModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { readApiJson } from '@/lib/api-json';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import {
@@ -72,19 +72,20 @@ export async function saveModel(
 		isAudioModel({
 			pricing_profile: withSchedule.json,
 		});
+	const isEmbeddingResolved = isEmbeddingModel({ output_modalities: formData.output_modalities });
 	const skipTokenLimits = isImageResolved || isAudioResolved;
 	const parsedMax = formData.max_tokens.trim() ? parseInt(formData.max_tokens, 10) : NaN;
 	const payload = {
 		...formData,
 		tags: formData.tags,
 		vendor: normalizeModelVendorInput(formData.vendor),
-		// Image / Audio：chat context / max_tokens 不适用 — 保存时始终清空
+		// Image / Audio：chat context / max_tokens 不适用 — 保存时始终清空；Embedding 保留 context_window（输入上限），清空 max_tokens
 		context_window: skipTokenLimits
 			? null
 			: formData.context_window
 				? parseInt(formData.context_window, 10)
 				: null,
-		max_tokens: skipTokenLimits ? null : Number.isFinite(parsedMax) ? parsedMax : 4096,
+		max_tokens: skipTokenLimits || isEmbeddingResolved ? null : Number.isFinite(parsedMax) ? parsedMax : 4096,
 		input_modalities: formData.input_modalities,
 		output_modalities: formData.output_modalities,
 		released_at: formData.released_at.trim() || null,

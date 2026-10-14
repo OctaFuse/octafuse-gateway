@@ -12,7 +12,7 @@ type Props = {
 	filterKind: InvokeKind;
 	protocol: SimulatorProtocol;
 	onFilterKindChange: (kind: InvokeKind) => void;
-	kindCounts: { llm: number; image: number; audio: number; tool: number };
+	kindCounts: { llm: number; image: number; audio: number; embedding: number; tool: number };
 	isToolKind: boolean;
 	gatewayTools: readonly GatewayToolDefinition[];
 	selectedToolId: string;
@@ -82,6 +82,7 @@ export function SimulatorRoutingPanel({
 						{ id: 'llm' as const, label: t('kindLlm'), count: kindCounts.llm },
 						{ id: 'image' as const, label: t('kindImage'), count: kindCounts.image },
 						{ id: 'audio' as const, label: t('kindAudio'), count: kindCounts.audio },
+						{ id: 'embedding' as const, label: t('kindEmbedding'), count: kindCounts.embedding },
 						{ id: 'tool' as const, label: t('kindTool'), count: kindCounts.tool },
 					] as const
 				).map((opt) => {

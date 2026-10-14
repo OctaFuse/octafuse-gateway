@@ -7,6 +7,11 @@
  */
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
 
+/** Gemini 原生向量 action：单条与批量。 */
+export type GeminiEmbedAction = 'embedContent' | 'batchEmbedContents';
+
+export type GeminiUpstreamAction = GeminiContentAction | GeminiEmbedAction;
+
 /** Gemini 上游 provider key 传递方式：`query-key` 为 Google 官方 `?key=`；`bearer` 为 `Authorization: Bearer`。 */
 export type GeminiUpstreamAuthScheme = 'query-key' | 'bearer';
 
@@ -51,7 +56,7 @@ function assertGeminiUpstreamBaseUrl(baseUrl: string): void {
 export function buildGeminiUpstreamActionUrl(
 	baseUrl: string,
 	modelName: string,
-	action: GeminiContentAction
+	action: GeminiUpstreamAction
 ): string {
 	assertGeminiUpstreamBaseUrl(baseUrl);
 	const base = normalizeGeminiUpstreamBaseForAuthMatch(baseUrl);
@@ -63,7 +68,7 @@ export function buildGeminiUpstreamActionUrl(
  * 为 Gemini `streamGenerateContent` 强制 SSE framing（Vertex / Developer API 需 `alt=sse`）。
  * 在合并客户端 query 之后调用，会覆盖已有 `alt`。
  */
-export function applyGeminiStreamQueryParams(url: URL, action: GeminiContentAction): void {
+export function applyGeminiStreamQueryParams(url: URL, action: GeminiUpstreamAction): void {
 	if (action === 'streamGenerateContent') {
 		url.searchParams.set('alt', 'sse');
 	}
@@ -109,7 +114,7 @@ export type PrepareGeminiUpstreamFetchInput = {
 	 */
 	resolvedUrl?: string;
 	modelName: string;
-	action: GeminiContentAction;
+	action: GeminiUpstreamAction;
 	apiKey: string;
 	/** 原始 query 字符串（可含或不含 `?`），会与上游所需参数合并 */
 	search?: string;

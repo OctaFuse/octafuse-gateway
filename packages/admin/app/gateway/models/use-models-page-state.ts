@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
 	isAudioModel,
+	isEmbeddingModel,
 	isImageGenerationModel,
 	isTextLlmModel,
 	parseModelModalitiesJson,
@@ -13,6 +14,7 @@ import {
 	createDefaultAudioPricingDraft,
 	createDefaultAudioTokenPricingDraft,
 	createDefaultImagePerImageDraft,
+	createDefaultEmbeddingTierRow,
 	createDefaultImageTokenTierRow,
 	createDefaultNewModelTierRow,
 	draftRowsHaveImageTokenPrices,
@@ -51,6 +53,7 @@ import {
 	DEFAULT_KIND_FILTER,
 	DEFAULT_MODEL_LIST_KIND_FILTER,
 	EMPTY_AUDIO_MODEL_FORM,
+	EMPTY_EMBEDDING_MODEL_FORM,
 	EMPTY_IMAGE_MODEL_FORM,
 	EMPTY_MODEL_FORM,
 	parseModelListKindFilterParam,
@@ -135,12 +138,14 @@ export function useModelsPageState() {
 		let llm = 0;
 		let image = 0;
 		let audio = 0;
+		let embedding = 0;
 		for (const row of importCatalogRows) {
 			if (row.kind === 'image') image += 1;
 			else if (row.kind === 'audio') audio += 1;
+			else if (row.kind === 'embedding') embedding += 1;
 			else llm += 1;
 		}
-		return { llm, image, audio };
+		return { llm, image, audio, embedding };
 	}, [importCatalogRows]);
 
 	const filteredImportCatalogRows = useMemo(() => {
@@ -170,6 +175,9 @@ export function useModelsPageState() {
 		if (selectedKind === 'audio') {
 			return models.filter((m) => isAudioModel(m));
 		}
+		if (selectedKind === 'embedding') {
+			return models.filter((m) => isEmbeddingModel(m));
+		}
 		return models.filter((m) => isTextLlmModel(m));
 	}, [models, selectedKind]);
 
@@ -184,12 +192,14 @@ export function useModelsPageState() {
 		let llm = 0;
 		let image = 0;
 		let audio = 0;
+		let embedding = 0;
 		for (const m of models) {
-			if (isImageGenerationModel(m)) image += 1;
+			if (isEmbeddingModel(m)) embedding += 1;
+			else if (isImageGenerationModel(m)) image += 1;
 			else if (isAudioModel(m)) audio += 1;
 			else llm += 1;
 		}
-		return { llm, image, audio };
+		return { llm, image, audio, embedding };
 	}, [models]);
 
 	const selectedVendorItems = useMemo(() => {
@@ -382,14 +392,21 @@ export function useModelsPageState() {
 			const audioModel = isAudioModel({
 				pricing_profile: model.pricing_profile,
 			});
-			const kind: ModelFormKind = audioModel ? 'audio' : imageModel ? 'image' : 'llm';
+			const embeddingModel = isEmbeddingModel({ output_modalities: outputMods });
+			const kind: ModelFormKind = audioModel
+				? 'audio'
+				: embeddingModel
+					? 'embedding'
+					: imageModel
+						? 'image'
+						: 'llm';
 			setFormKind(kind);
 			setFormData({
 				id: model.id,
 				display_name: model.display_name || '',
 				vendor: normalizeModelVendorInput(model.vendor),
 				context_window: imageModel || audioModel ? '' : model.context_window?.toString() || '',
-				max_tokens: imageModel || audioModel ? '' : model.max_tokens?.toString() || '4096',
+				max_tokens: imageModel || audioModel || embeddingModel ? '' : model.max_tokens?.toString() || '4096',
 				input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
 				output_modalities: outputMods,
 				released_at: model.released_at ?? '',
@@ -437,6 +454,12 @@ export function useModelsPageState() {
 					tiers: [createDefaultImageTokenTierRow()],
 					perImage: createDefaultImagePerImageDraft(),
 				});
+			} else if (kind === 'embedding') {
+				setFormData({
+					...EMPTY_EMBEDDING_MODEL_FORM,
+					vendor,
+				});
+				setPricingTierRows([createDefaultEmbeddingTierRow()]);
 			} else if (kind === 'audio') {
 				setFormData({
 					...EMPTY_AUDIO_MODEL_FORM,
@@ -485,6 +508,18 @@ export function useModelsPageState() {
 			});
 			return;
 		}
+		if (kind === 'embedding') {
+			setFormData((prev) => ({
+				...prev,
+				input_modalities: ['text'],
+				output_modalities: ['embedding'],
+				max_tokens: '',
+			}));
+			setPricingTierRows((rows) =>
+				rows.length === 0 || draftRowsLookLikeImageOnly(rows) ? [createDefaultEmbeddingTierRow()] : rows
+			);
+			return;
+		}
 		if (kind === 'audio') {
 			setFormData((prev) => ({
 				...prev,
@@ -508,7 +543,7 @@ export function useModelsPageState() {
 			return;
 		}
 		setFormData((prev) => {
-			const withoutImage = prev.output_modalities.filter((m) => m !== 'image');
+			const withoutImage = prev.output_modalities.filter((m) => m !== 'image' && m !== 'embedding');
 			const input = prev.input_modalities.includes('text')
 				? prev.input_modalities
 				: ['text', ...prev.input_modalities.filter((m) => m !== 'audio')];
@@ -592,7 +627,13 @@ export function useModelsPageState() {
 		}
 
 		setSelectedKind(
-			isImageGenerationModel(model) ? 'image' : isAudioModel(model) ? 'audio' : 'llm'
+			isEmbeddingModel(model)
+				? 'embedding'
+				: isImageGenerationModel(model)
+					? 'image'
+					: isAudioModel(model)
+						? 'audio'
+						: 'llm'
 		);
 		const vendor = normalizeModelVendorInput(model.vendor);
 		if (vendor) setSelectedVendor(vendor);
@@ -646,7 +687,14 @@ export function useModelsPageState() {
 	const toggleFormModality = useCallback(
 		(kind: 'input_modalities' | 'output_modalities', modality: string) => {
 			setFormData((prev) => {
-				const current = prev[kind];
+				if (kind === 'output_modalities' && modality === 'embedding') {
+					// Embedding 与其它输出模态互斥
+					return prev.output_modalities.includes('embedding')
+						? { ...prev, output_modalities: ['text'] }
+						: { ...prev, output_modalities: ['embedding'], max_tokens: '' };
+				}
+				const current =
+					kind === 'output_modalities' ? prev[kind].filter((m) => m !== 'embedding') : prev[kind];
 				const next = current.includes(modality)
 					? current.filter((m) => m !== modality)
 					: [...current, modality];

@@ -1,6 +1,6 @@
 /**
  * Playground / Simulator 共用的 invoke kind 映射。
- * Models / Routes 目录 Kind 为 llm|image|audio；Simulator / Playground 另含 tool。
+ * Models / Routes 目录 Kind 为 llm|image|audio|embedding；Simulator / Playground 另含 tool。
  */
 import type { ImageOperation } from '@/lib/image-generations';
 import type { ProviderEndpointCapability } from '@octafuse/core/provider-endpoints';
@@ -15,14 +15,14 @@ import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
 
 /** 全量 invoke kind（含 Agent Tools）。MCP 聚合调用只出现在请求日志，不进入模拟器。 */
-export const INVOKE_KINDS = ['llm', 'image', 'audio', 'tool'] as const;
+export const INVOKE_KINDS = ['llm', 'image', 'audio', 'embedding', 'tool'] as const;
 export type InvokeKind = (typeof INVOKE_KINDS)[number];
 
 /** 请求日志里 MCP 聚合调用的 `provider_id`。不加入 `INVOKE_KINDS`，避免模拟器把它当成可执行入口。 */
 export const MCP_REQUEST_LOG_PROVIDER_ID = 'octafuse-mcp';
 
 /** Models / Routes 目录筛选（无 tool） */
-export const MODEL_KIND_FILTERS = ['llm', 'image', 'audio'] as const;
+export const MODEL_KIND_FILTERS = ['llm', 'image', 'audio', 'embedding'] as const;
 export type ModelKindFilter = (typeof MODEL_KIND_FILTERS)[number];
 
 export const DEFAULT_KIND_FILTER: ModelKindFilter = 'llm';
@@ -30,6 +30,7 @@ export const DEFAULT_INVOKE_KIND: InvokeKind = 'llm';
 
 export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope' | 'minimax' | 'volcengine';
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
+export type GeminiEmbedAction = 'embedContent' | 'batchEmbedContents';
 export type AudioOperation = 'transcriptions' | 'speech';
 /** OpenAI LLM 公开入口：Chat Completions 或 Responses。 */
 export type OpenaiLlmOperation = 'chat' | 'responses';
@@ -96,6 +97,8 @@ export function resolveRequestOperation(input: {
 	switch (input.kind) {
 		case 'tool':
 			return null;
+		case 'embedding':
+			return input.protocol === 'gemini' ? 'models.embed' : 'embeddings';
 		case 'audio':
 			if (input.protocol === 'dashscope') {
 				if (input.dashscopeRequestOperation) return input.dashscopeRequestOperation;
@@ -130,6 +133,8 @@ export function resolveOpenaiUpstreamCapability(input: {
 	llmOperation?: OpenaiLlmOperation;
 }): ProviderEndpointCapability {
 	switch (input.kind) {
+		case 'embedding':
+			return 'embeddings';
 		case 'audio':
 			return input.audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
 		case 'image':
@@ -146,7 +151,8 @@ export function resolveOpenaiUpstreamCapability(input: {
 /**
  * 由 catalog 标志推导 ModelKindFilter（Models / Routes / Playground route 列表）。
  */
-export function modelKindFromFlags(isAudio: boolean, isImage: boolean): ModelKindFilter {
+export function modelKindFromFlags(isAudio: boolean, isImage: boolean, isEmbedding = false): ModelKindFilter {
+	if (isEmbedding) return 'embedding';
 	if (isAudio) return 'audio';
 	if (isImage) return 'image';
 	return 'llm';
@@ -162,11 +168,20 @@ export function resolveProxyPathForModelInvoke(input: {
 	imageOperation?: ImageOperation;
 	audioOperation?: AudioOperation;
 	geminiAction?: GeminiContentAction;
+	/** Gemini 向量 action（默认 embedContent） */
+	geminiEmbedAction?: GeminiEmbedAction;
 	/** Gemini path 中的 model 段（已 encode 前的原始值由调用方 encode） */
 	geminiModelSegment?: string;
 	llmOperation?: OpenaiLlmOperation;
 }): string {
 	const protocol = input.protocol;
+	if (input.kind === 'embedding') {
+		if (protocol === 'gemini') {
+			const model = encodeURIComponent(input.geminiModelSegment || 'model');
+			return `/v1beta/models/${model}:${input.geminiEmbedAction ?? 'embedContent'}`;
+		}
+		return '/v1/embeddings';
+	}
 	if (input.kind === 'audio') {
 		if (protocol === 'dashscope' && input.audioOperation !== 'speech') {
 			return DASHSCOPE_MULTIMODAL_GENERATION_PATH;
@@ -200,9 +215,9 @@ export function resolveProxyPathForModelInvoke(input: {
 
 /** empty kind counts for UI */
 export function emptyModelKindCounts(): Record<ModelKindFilter, number> {
-	return { llm: 0, image: 0, audio: 0 };
+	return { llm: 0, image: 0, audio: 0, embedding: 0 };
 }
 
 export function emptyInvokeKindCounts(): Record<InvokeKind, number> {
-	return { llm: 0, image: 0, audio: 0, tool: GATEWAY_TOOLS.length };
+	return { llm: 0, image: 0, audio: 0, embedding: 0, tool: GATEWAY_TOOLS.length };
 }

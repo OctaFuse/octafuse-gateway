@@ -408,7 +408,7 @@ Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0
 
 OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（模型集合全量可见，不按 API Key 过滤）。`model_info.discounts` 会按 route group 叠该 Key 所属用户的 `charged_cost_factors`（具体分组，其次 `"*"`，数字覆盖全部分组）；某个分组未命中时与公开目录倍率一致。本接口与 `GET /v1/me` 一样不计入 Key / 用户 RPM，额度用尽时仍可访问。
 
-面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（排除文生图、ASR 与 TTS；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）请使用 `POST /v1/images/*` 或 `kind=image`；语音转写与语音合成请使用 `POST /v1/audio/transcriptions`、`POST /v1/audio/speech` 或 `kind=audio`（与管理后台 Kind 一致，同时包含 ASR 与 TTS）；`kind=all` 不过滤。没有单独的 `kind=tts` / `kind=speech`。
+面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（排除文生图、ASR、TTS 与向量模型；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）请使用 `POST /v1/images/*` 或 `kind=image`；语音转写与语音合成请使用 `POST /v1/audio/transcriptions`、`POST /v1/audio/speech` 或 `kind=audio`（与管理后台 Kind 一致，同时包含 ASR 与 TTS）；`kind=all` 不过滤。没有单独的 `kind=tts` / `kind=speech`。向量（Embedding）模型使用 `POST /v1/embeddings`、Gemini `:embedContent` / `:batchEmbedContents` 或 `kind=embedding`。
 
 `model_info.inbound` 是**请求入口**（`protocol` + `operation`），按当前可见路由列出 LLM 文本入口以及文生图 / ASR / TTS operation。它们不是 `GET /catalog/models` 的上游 `protocols`。公开目录的 `inbound` 与此同形。选哪条入口以及思考档位仍由客户端维护，本接口不返回 `thinking_config`。
 
@@ -605,7 +605,7 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 | 认证 | 用户 API Key | **无** | Console Session 或具名 Admin API Key | Console Session 或 `users.read` |
 | `discounts` | 官方时段 × 路由 Charged，再叠该用户模型倍率 | 仅官方时段 × 路由 Charged（公共折扣） | — | 与 `/v1/models` 相同合成；**只含已配置用户倍率的模型** |
 | 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — | 未传 → **全部** active group |
-| 默认 `kind` | `llm`（排除文生图、ASR、TTS；`kind=audio` = ASR + TTS） | 不过滤 kind | — | 不过滤 kind |
+| 默认 `kind` | `llm`（排除文生图、ASR、TTS、向量；`kind=audio` = ASR + TTS；`kind=embedding` = 向量） | 不过滤 kind | — | 不过滤 kind |
 | 协议能力 | `inbound`（请求入口 protocol + operation） | `protocols` / `protocols_by_group`（**上游** `upstream_protocol`）以及 `inbound`（请求入口，与 `/v1/models` 同形） | 不返回 | 不返回（只 overlay `discounts`） |
 | 计入用户 RPM | 否 | 否 | 否 | 否 |
 | 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD | 用户个性化折扣 overlay |
@@ -1263,6 +1263,41 @@ Content-Type: multipart/form-data
 请求与上游都是 `minimax` + `audio.transcriptions`，adapter 必须是 `passthrough`。表单沿用 MiniMax 官方字段，网关只把 `model` 换成路由上的供应商模型名；`language` 可以放在请求头，也可以放在表单里由网关转到请求头。响应保持上游原文，按上游 `duration` 按秒计费。OpenAI 客户端改用 `POST /v1/audio/transcriptions` 和适配器 `minimax-asr-file`。详见 [MiniMax 音频](../architecture/minimax-audio.md)。
 
 ---
+
+## Embeddings（向量）
+
+需用户 Key，并由管理员为向量模型配置路由。向量模型的 `output_modalities` 为 `embedding`；默认 `GET /v1/models` 不含向量模型，列表请用 `kind=embedding` 或 `kind=all`。
+
+### OpenAI 兼容
+
+```
+POST /v1/embeddings
+```
+
+```bash
+curl -sS http://localhost:8787/v1/embeddings \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"text-embedding-3-small","input":["hello","world"],"encoding_format":"float"}'
+```
+
+- 请求体原样透传，网关只把 `model` 改写为上游模型名；`dimensions`、`encoding_format` 等字段由上游解释。
+- 路由选路、故障转移、限流与其他 OpenAI 入口一致；可选 `X-Route-Group` 指定路由组。
+- 上游需配置 `openai` 协议并启用 `embeddings` 能力：默认由 Base 派生 `{base}/embeddings`，也可在供应商里覆盖。
+
+### Gemini 原生
+
+```
+POST /v1beta/models/{model}:embedContent
+POST /v1beta/models/{model}:batchEmbedContents
+```
+
+- `embedContent` 若请求体带 `model`，会被改写为 `models/{上游模型名}`；`batchEmbedContents` 会改写每个 `requests[].model`。
+- 上游需配置 `gemini` 协议的 `models.embed` 能力，URL 模板含 `{model}` 与 `{action}`。
+
+### 计费
+
+向量只按输入 token 计费：`input_tokens × input_price × charged_factor`，输出价与缓存价为 0（模型表单中不展示）。用量取自上游响应：OpenAI `usage.prompt_tokens`（缺失时回退 `usage.total_tokens`），Gemini `usageMetadata.promptTokenCount`。上游未返回用量时该请求不计费，并在请求日志里标记为未计费。请求日志的功能标签为 `embedding`。
 
 ## 获取当前用户预算状态
 

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
 import {
 	isAudioModel,
+	isEmbeddingModel,
 	isImageGenerationModel,
 	parseModelModalitiesJson,
 } from '@octafuse/core/db/model-modalities';
@@ -12,6 +13,7 @@ import {
 	createDefaultAudioPricingDraft,
 	createDefaultAudioTokenPricingDraft,
 	createDefaultImagePerImageDraft,
+	createDefaultEmbeddingTierRow,
 	createDefaultImageTokenTierRow,
 	createDefaultNewModelTierRow,
 	draftRowsHaveImageTokenPrices,
@@ -33,6 +35,7 @@ import { modelFormForDuplicate } from './model-duplicate';
 import { formatMetadataForEditor } from './model-utils';
 import {
 	EMPTY_AUDIO_MODEL_FORM,
+	EMPTY_EMBEDDING_MODEL_FORM,
 	EMPTY_IMAGE_MODEL_FORM,
 	EMPTY_MODEL_FORM,
 	type ModelFormData,
@@ -108,14 +111,21 @@ export function useModelEditModal(options?: Options) {
 			const audioModel = isAudioModel({
 				pricing_profile: model.pricing_profile,
 			});
-			const kind: ModelFormKind = audioModel ? 'audio' : imageModel ? 'image' : 'llm';
+			const embeddingModel = isEmbeddingModel({ output_modalities: outputMods });
+			const kind: ModelFormKind = audioModel
+				? 'audio'
+				: embeddingModel
+					? 'embedding'
+					: imageModel
+						? 'image'
+						: 'llm';
 			setFormKind(kind);
 			setFormData({
 				id: model.id,
 				display_name: model.display_name || '',
 				vendor: normalizeModelVendorInput(model.vendor),
 				context_window: imageModel || audioModel ? '' : model.context_window?.toString() || '',
-				max_tokens: imageModel || audioModel ? '' : model.max_tokens?.toString() || '4096',
+				max_tokens: imageModel || audioModel || embeddingModel ? '' : model.max_tokens?.toString() || '4096',
 				input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
 				output_modalities: outputMods,
 				released_at: model.released_at ?? '',
@@ -147,6 +157,12 @@ export function useModelEditModal(options?: Options) {
 					vendor,
 				});
 				applyImagePricingDraft(createInitialImagePricingDraft('token'));
+			} else if (kind === 'embedding') {
+				setFormData({
+					...EMPTY_EMBEDDING_MODEL_FORM,
+					vendor,
+				});
+				setPricingTierRows([createDefaultEmbeddingTierRow()]);
 			} else if (kind === 'audio') {
 				setFormData({
 					...EMPTY_AUDIO_MODEL_FORM,
@@ -210,6 +226,18 @@ export function useModelEditModal(options?: Options) {
 			});
 			return;
 		}
+		if (kind === 'embedding') {
+			setFormData((prev) => ({
+				...prev,
+				input_modalities: ['text'],
+				output_modalities: ['embedding'],
+				max_tokens: '',
+			}));
+			setPricingTierRows((rows) =>
+				rows.length === 0 || draftRowsLookLikeImageOnly(rows) ? [createDefaultEmbeddingTierRow()] : rows
+			);
+			return;
+		}
 		if (kind === 'audio') {
 			setFormData((prev) => ({
 				...prev,
@@ -233,7 +261,7 @@ export function useModelEditModal(options?: Options) {
 			return;
 		}
 		setFormData((prev) => {
-			const withoutImage = prev.output_modalities.filter((m) => m !== 'image');
+			const withoutImage = prev.output_modalities.filter((m) => m !== 'image' && m !== 'embedding');
 			const input = prev.input_modalities.includes('text')
 				? prev.input_modalities
 				: ['text', ...prev.input_modalities.filter((m) => m !== 'audio')];
@@ -357,7 +385,14 @@ export function useModelEditModal(options?: Options) {
 	const toggleFormModality = useCallback(
 		(kind: 'input_modalities' | 'output_modalities', modality: string) => {
 			setFormData((prev) => {
-				const current = prev[kind];
+				if (kind === 'output_modalities' && modality === 'embedding') {
+					// Embedding 与其它输出模态互斥
+					return prev.output_modalities.includes('embedding')
+						? { ...prev, output_modalities: ['text'] }
+						: { ...prev, output_modalities: ['embedding'], max_tokens: '' };
+				}
+				const current =
+					kind === 'output_modalities' ? prev[kind].filter((m) => m !== 'embedding') : prev[kind];
 				const next = current.includes(modality)
 					? current.filter((m) => m !== modality)
 					: [...current, modality];

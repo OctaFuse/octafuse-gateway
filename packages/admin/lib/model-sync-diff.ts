@@ -247,7 +247,7 @@ export function buildModelSyncPatch(
 export type ModelSyncModelEntry = {
 	model_id: string;
 	display_name: string | null;
-	kind: 'llm' | 'image' | 'audio';
+	kind: 'llm' | 'image' | 'audio' | 'embedding';
 	routes_count: number;
 	active_routes_count: number;
 	fields: ModelSyncField[];

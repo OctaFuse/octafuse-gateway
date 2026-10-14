@@ -33,8 +33,11 @@ export const VOLCENGINE_IMAGE_GENERATIONS_PATH = '/v1/volcengine/images/generati
 
 export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
 
+/** Gemini 原生向量入口 operation：`embedContent` 与 `batchEmbedContents` 共用。 */
+export const GEMINI_EMBED_OPERATION = 'models.embed';
+
 export type AdapterModality = 'text' | 'image' | 'audio' | 'video' | 'embedding';
-export type AdapterModelKind = 'llm' | 'image' | 'audio.transcription' | 'audio.speech';
+export type AdapterModelKind = 'llm' | 'image' | 'audio.transcription' | 'audio.speech' | 'embedding';
 export type AdapterExchange = 'unary' | 'sse' | 'websocket' | 'job';
 export type AdapterBilling = 'tokens' | 'per_image' | 'per_second' | 'per_character' | 'per_call';
 export type AdapterRequestPayload = 'json' | 'multipart';
@@ -523,6 +526,24 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',
+		operation: 'embeddings',
+		modelKind: 'embedding',
+		modality: 'embedding',
+		billing: 'tokens',
+		requiredUpstreamCapabilities: ['embeddings'],
+		publicPath: '/v1/embeddings',
+	}),
+	passthroughDescriptor({
+		protocol: 'gemini',
+		operation: GEMINI_EMBED_OPERATION,
+		modelKind: 'embedding',
+		modality: 'embedding',
+		billing: 'tokens',
+		requiredUpstreamCapabilities: [GEMINI_EMBED_OPERATION],
+		publicPath: `/v1beta/models/${SURFACE_PATH_MODEL_PLACEHOLDER}:{embedContent|batchEmbedContents}`,
+	}),
+	passthroughDescriptor({
+		protocol: 'openai',
 		operation: 'images.generations',
 		modelKind: 'image',
 		modality: 'image',
@@ -884,6 +905,9 @@ export function requestSurfacePath(
 	if (protocol === 'gemini') {
 		if (operation === 'models.generate') {
 			return `/v1beta/models/${modelSegment}:{generateContent|streamGenerateContent}`;
+		}
+		if (operation === GEMINI_EMBED_OPERATION) {
+			return `/v1beta/models/${modelSegment}:{embedContent|batchEmbedContents}`;
 		}
 		return `/v1beta/models/${modelSegment}:${operation}`;
 	}

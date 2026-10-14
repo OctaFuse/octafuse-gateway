@@ -184,7 +184,7 @@ export type RoutesPageData = {
 };
 
 /** 路由页独立的模型类型筛选；`all` 不改变模型管理页的筛选语义。 */
-export const ROUTE_KIND_FILTERS = ['all', 'llm', 'image', 'audio'] as const;
+export const ROUTE_KIND_FILTERS = ['all', 'llm', 'image', 'audio', 'embedding'] as const;
 export type RouteKindFilter = (typeof ROUTE_KIND_FILTERS)[number];
 export const DEFAULT_ROUTE_KIND_FILTER: RouteKindFilter = 'all';
 

@@ -3,6 +3,7 @@ import {
 	isAudioModel,
 	isAudioSpeechModel,
 	isAudioTranscriptionModel,
+	isEmbeddingModel,
 	isImageGenerationModel,
 	isTextLlmModel,
 } from '@octafuse/core/db/model-modalities';
@@ -29,6 +30,7 @@ import {
 import {
 	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
+	GEMINI_EMBED_OPERATION,
 	REQUEST_OPERATIONS_BY_PROTOCOL,
 	ROUTE_ADAPTERS,
 } from '@octafuse/core/route-topology';
@@ -941,7 +943,11 @@ export const CAPABILITIES_BY_PROTOCOL: Record<string, readonly ProviderEndpointC
 	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
 };
 
+/** 向量专属 public operation：非向量模型的候选需排除。 */
+const EMBEDDING_REQUEST_OPERATIONS: ReadonlySet<string> = new Set(['embeddings', GEMINI_EMBED_OPERATION]);
+
 export function modelKindForModel(model: GatewayModel | undefined): AdapterModelKind {
+	if (model && isEmbeddingModel(model)) return 'embedding';
 	if (model && isImageGenerationModel(model)) return 'image';
 	if (model && isAudioTranscriptionModel(model)) return 'audio.transcription';
 	if (model && isAudioSpeechModel(model)) return 'audio.speech';
@@ -972,7 +978,11 @@ export function requestOperationsForModel(
 ): readonly string[] {
 	if (
 		model &&
-		(isImageGenerationModel(model) || isAudioTranscriptionModel(model) || isAudioSpeechModel(model) || (isTextLlmModel(model) && protocol === 'openai'))
+		(isEmbeddingModel(model) ||
+			isImageGenerationModel(model) ||
+			isAudioTranscriptionModel(model) ||
+			isAudioSpeechModel(model) ||
+			(isTextLlmModel(model) && protocol === 'openai'))
 	) {
 		const kind = modelKindForModel(model);
 		const operations = requestOperationsFromRegistry(protocol, kind);
@@ -981,7 +991,8 @@ export function requestOperationsForModel(
 		}
 		return operations;
 	}
-	return REQUEST_OPERATIONS_BY_PROTOCOL[protocol];
+	// 非向量模型：向量入口（OpenAI embeddings / Gemini models.embed）不应出现在候选里。
+	return REQUEST_OPERATIONS_BY_PROTOCOL[protocol].filter((operation) => !EMBEDDING_REQUEST_OPERATIONS.has(operation));
 }
 
 export type DashScopeAsrRoutePreset = 'flash-convert' | 'flash-passthrough' | 'filetrans';
@@ -1064,7 +1075,13 @@ export function upstreamOperationsForProviderModel(
 	const providerOperations = listConfiguredCapabilities(map, protocol);
 	const capabilities = new Set(providerOperations);
 
-	if (model && (isImageGenerationModel(model) || isAudioTranscriptionModel(model) || isAudioSpeechModel(model))) {
+	if (
+		model &&
+		(isEmbeddingModel(model) ||
+			isImageGenerationModel(model) ||
+			isAudioTranscriptionModel(model) ||
+			isAudioSpeechModel(model))
+	) {
 		const kind = modelKindForModel(model);
 		const listed = sortOperationsForProtocol(protocol, upstreamOperationsFromRegistry(protocol, kind));
 		const operations = listed.filter((operation) => {
@@ -1367,6 +1384,7 @@ export function modelMatchesKindFilter(meta: GatewayModel | undefined, filterKin
 	}
 	if (filterKind === 'image') return isImageGenerationModel(meta);
 	if (filterKind === 'audio') return isAudioModel(meta);
+	if (filterKind === 'embedding') return isEmbeddingModel(meta);
 	return isTextLlmModel(meta);
 }
 
@@ -1649,7 +1667,9 @@ export function buildActiveFilterSummary(params: {
 export function createInitialRouteForm(models: GatewayModel[], presetModelId?: string): RouteFormData {
 	const presetModel = presetModelId ? models.find((model) => model.id === presetModelId) : undefined;
 	const defaultOperation =
-		presetModel && isImageGenerationModel(presetModel)
+		presetModel && isEmbeddingModel(presetModel)
+			? 'embeddings'
+			: presetModel && isImageGenerationModel(presetModel)
 			? 'images.generations'
 			: presetModel && isAudioTranscriptionModel(presetModel)
 			? 'audio.transcriptions'

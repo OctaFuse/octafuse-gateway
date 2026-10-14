@@ -16,7 +16,7 @@ type Props = {
 	filteredCatalogRows: PresetCatalogRow[];
 	catalogSearch: string;
 	catalogKind: ModelKindFilter;
-	kindCounts: { llm: number; image: number; audio: number };
+	kindCounts: { llm: number; image: number; audio: number; embedding: number };
 	catalogLoading: boolean;
 	catalogError: string;
 	selected: Record<string, boolean>;
@@ -214,7 +214,9 @@ export function ModelImportModal(props: Props) {
 			? kindCounts.image
 			: catalogKind === 'audio'
 				? kindCounts.audio
-				: kindCounts.llm;
+				: catalogKind === 'embedding'
+					? kindCounts.embedding
+					: kindCounts.llm;
 
 	return (
 		<div
@@ -321,6 +323,13 @@ export function ModelImportModal(props: Props) {
 							disabled={catalogLoading}
 							onClick={() => onCatalogKindChange('audio')}
 						/>
+						<KindFilterChip
+							label={tKind('kindEmbedding')}
+							count={kindCounts.embedding}
+							active={catalogKind === 'embedding'}
+							disabled={catalogLoading}
+							onClick={() => onCatalogKindChange('embedding')}
+						/>
 					</div>
 					<div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm text-gray-600">
 						<span>
@@ -408,7 +417,13 @@ export function ModelImportModal(props: Props) {
 									{sortedRows.map((row) => {
 										const alreadyInGateway = existingModelIds.has(row.id);
 										const kind =
-											row.kind === 'image' ? 'image' : row.kind === 'audio' ? 'audio' : 'llm';
+											row.kind === 'image'
+												? 'image'
+												: row.kind === 'audio'
+													? 'audio'
+													: row.kind === 'embedding'
+														? 'embedding'
+														: 'llm';
 										const pricingLabel =
 											row.pricing_label ??
 											(kind === 'image'
@@ -459,14 +474,18 @@ export function ModelImportModal(props: Props) {
 																	? 'inline-flex rounded bg-violet-50 px-1.5 py-0.5 text-xs font-medium text-violet-700'
 																	: kind === 'audio'
 																		? 'inline-flex rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700'
-																		: 'inline-flex rounded bg-sky-50 px-1.5 py-0.5 text-xs font-medium text-sky-700'
+																		: kind === 'embedding'
+																			? 'inline-flex rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700'
+																			: 'inline-flex rounded bg-sky-50 px-1.5 py-0.5 text-xs font-medium text-sky-700'
 															}
 														>
 															{kind === 'image'
 																? tKind('kindImage')
 																: kind === 'audio'
 																	? tKind('kindAudio')
-																	: tKind('kindLlm')}
+																	: kind === 'embedding'
+																		? tKind('kindEmbedding')
+																		: tKind('kindLlm')}
 														</span>
 													</td>
 												) : null}

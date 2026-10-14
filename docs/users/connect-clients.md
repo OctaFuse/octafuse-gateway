@@ -33,7 +33,7 @@ curl -sS http://localhost:8787/v1/responses \
 ```bash
 curl -sS http://localhost:8787/v1/models \
   -H "Authorization: Bearer sk-your-api-key"
-# 文生图：?kind=image ；ASR / TTS：?kind=audio ；全部：?kind=all
+# 文生图：?kind=image ；ASR / TTS：?kind=audio ；向量：?kind=embedding ；全部：?kind=all
 ```
 
 公开 Catalog（**无需**用户 Key，适合门户 discovery）：
@@ -65,6 +65,17 @@ curl -sS http://localhost:8787/v1/images/generations \
 ```
 
 千问 / 万相生成默认返回 `data[].url`；需要 Base64 时可显式传入 `"response_format":"b64_json"`。模型参数限制和按张计费规则见 [DashScope 生图架构](../developers/architecture/dashscope-image.md)。
+
+向量（Embeddings；需用户 Key + 已配置向量模型路由）：
+
+```bash
+curl -sS http://localhost:8787/v1/embeddings \
+  -H "Authorization: Bearer sk-your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"text-embedding-3-small","input":["hello"]}'
+```
+
+向量模型默认不出现在 `GET /v1/models`，列表用 `?kind=embedding`。Gemini 原生客户端可调用 `POST /v1beta/models/{model}:embedContent`。
 
 语音转写（Audio；需用户 Key + 已配置 OpenAI 协议 ASR 路由）：
 

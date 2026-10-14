@@ -82,19 +82,19 @@ export function parseModelsRouteGroupsQuery(raw: string | undefined): string[] {
 }
 
 /** Model kind filter for agent-facing `GET /v1/models`. */
-export type ModelsKindFilter = 'llm' | 'image' | 'audio' | 'all';
+export type ModelsKindFilter = 'llm' | 'image' | 'audio' | 'embedding' | 'all';
 
 /**
  * Parse `kind` for `GET /v1/models`.
- * Empty / missing / unknown → `llm`（默认排除文生图 / ASR / TTS，兼容 chat/agent 拉列表）。
- * `image` → 仅文生图；`audio` → ASR + TTS（与 Admin Kind 对齐）；`all` → 不按 kind 过滤。
+ * Empty / missing / unknown → `llm`（默认排除文生图 / ASR / TTS / 向量，兼容 chat/agent 拉列表）。
+ * `image` → 仅文生图；`audio` → ASR + TTS（与 Admin Kind 对齐）；`embedding` → 仅向量模型；`all` → 不按 kind 过滤。
  */
 export function parseModelsKindQuery(raw: string | undefined): ModelsKindFilter {
 	if (raw == null || raw.trim() === '') {
 		return 'llm';
 	}
 	const v = raw.trim().toLowerCase();
-	if (v === 'image' || v === 'audio' || v === 'all' || v === 'llm') {
+	if (v === 'image' || v === 'audio' || v === 'embedding' || v === 'all' || v === 'llm') {
 		return v;
 	}
 	return 'llm';

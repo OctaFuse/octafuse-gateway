@@ -1,5 +1,6 @@
 import type { UpstreamProtocol } from "./upstream-protocol";
 import {
+	GEMINI_EMBED_OPERATION,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	isConversionRouteAdapter,
@@ -7,6 +8,7 @@ import {
 } from "./adapters/registry";
 
 export {
+	GEMINI_EMBED_OPERATION,
 	DASHSCOPE_FILE_TRANSCRIPTION_PATH,
 	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 	DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
@@ -43,9 +45,10 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 		"images.edits",
 		"audio.transcriptions",
 		"audio.speech",
+		"embeddings",
 	],
 	anthropic: ['messages'],
-	gemini: [GEMINI_GENERATE_OPERATION],
+	gemini: [GEMINI_GENERATE_OPERATION, GEMINI_EMBED_OPERATION],
 	dashscope: [
 		"audio.transcriptions",
 		"audio.transcriptions.multimodal",

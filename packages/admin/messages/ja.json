@@ -107,7 +107,8 @@
 		"failedToLoadApiKeys": "API Key の読み込みに失敗しました",
 		"failedToLoadModels": "モデルの読み込みに失敗しました",
 		"infinity": "∞",
-		"kindAudio": "音声"
+		"kindAudio": "音声",
+		"kindEmbedding": "埋め込み"
 	},
 	"auth": {
 		"username": "ユーザー名",
@@ -337,7 +338,8 @@
 		"routeGroupAria": "Route Group フィルター",
 		"modelsAndRoutes": "{models} モデル · {routes} Route",
 		"narrowModelsRoutes": "モデルと Route を絞り込む",
-		"kindAudio": "音声"
+		"kindAudio": "音声",
+		"kindEmbedding": "埋め込み"
 	},
 	"modalities": {
 		"text": "テキスト",
@@ -414,7 +416,9 @@
 				"messages": "messages",
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
-				"modelsGenerate": "generate"
+				"modelsGenerate": "generate",
+				"embeddings": "embeddings",
+				"modelsEmbed": "embed"
 			},
 			"officialUpdate": "公式の更新",
 			"officialUpdateTitle": "公式テンプレートが変更されました。クリックして確認・同期",
@@ -569,7 +573,9 @@
 			"apiKeyHint": "このプロバイダーの上流認証情報。プロジェクト指定の Vertex では GCP サービスアカウント JSON を貼ってください（Vertex API Key ではありません）。",
 			"apiKeyEditHint": "初期状態では非表示です。表示とコピーができます。変更して保存すると置換し、空にすると現行キーを維持します。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — ストリーム + 非ストリーム",
-			"legacyPerActionNotice": "このプロバイダーには安全に統合できない generateContent / streamGenerateContent の個別上書きが残っています。保存時はそのまま保持されます。確認後に単一の '{action}' テンプレートへ変更してください。"
+			"legacyPerActionNotice": "このプロバイダーには安全に統合できない generateContent / streamGenerateContent の個別上書きが残っています。保存時はそのまま保持されます。確認後に単一の '{action}' テンプレートへ変更してください。",
+			"capEmbeddings": "embeddings (/v1/embeddings)",
+			"capModelsEmbed": "models.embed (/v1beta/models/'{model}:{action}') — embedContent / batchEmbedContents"
 		},
 		"sync": {
 			"title": "公式と同期",
@@ -678,7 +684,8 @@
 			"kindAria": "モデル種別フィルター",
 			"kindLlm": "LLM",
 			"kindImage": "画像",
-			"kindAudio": "音声"
+			"kindAudio": "音声",
+			"kindEmbedding": "埋め込み"
 		},
 		"imagePricing": {
 			"enabled": "旧機能（廃止済み）",
@@ -790,7 +797,10 @@
 			"metadataJson": "メタデータ（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "モデルを削除",
-			"confirmDelete": "このモデルと関連 Route をすべて削除しますか？"
+			"confirmDelete": "このモデルと関連 Route をすべて削除しますか？",
+			"kindEmbedding": "埋め込み",
+			"kindHintEmbedding": "埋め込み（Embedding）モデル。ベクトルを出力し、入力トークンのみで課金されます。POST /v1/embeddings または Gemini embedContent で利用します。",
+			"embeddingPricing": "埋め込み料金（入力トークン）"
 		},
 		"metadata": {
 			"title": "メタデータ"
@@ -811,7 +821,9 @@
 			"pricingNoData": "—",
 			"pricingTiers": "{count} 段階",
 			"noRoutes": "ルートなし",
-			"officialUpdateTitle": "公式カタログに更新があります。クリックして確認・同期"
+			"officialUpdateTitle": "公式カタログに更新があります。クリックして確認・同期",
+			"kindEmbedding": "埋め込み",
+			"embeddingHint": "埋め込み · コンテキスト {context}"
 		},
 		"sync": {
 			"title": "公式カタログと同期",
@@ -1054,7 +1066,8 @@
 			"newRouteFor": "{title} の新しい Route",
 			"activeTotalRoutes": "有効 {active} 件 / 全 {total} 件",
 			"noRoutesYet": "Route はまだありません",
-			"clickToAdd": "+ をクリックして最初の Route を追加"
+			"clickToAdd": "+ をクリックして最初の Route を追加",
+			"embeddingModelHint": "埋め込み · 入力トークン課金"
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1872,7 +1885,8 @@
 		"realtimeTransportError": "リアルタイム WebSocket の転送エラー",
 		"realtimeWaitingTaskStarted": "WebSocket 接続済み。上流の task-started を待っています…",
 		"realtimeClosed": "リアルタイム接続が閉じました（{code}{reason}）。",
-		"streamDisconnected": "上流のストリーム読み取り中に切断されました（{cause}）。stream を false にして確認するか、再試行してください。"
+		"streamDisconnected": "上流のストリーム読み取り中に切断されました（{cause}）。stream を false にして確認するか、再試行してください。",
+		"kindEmbedding": "埋め込み"
 	},
 	"simulator": {
 		"title": "Simulator",
@@ -1995,7 +2009,9 @@
 		"modelNoRoute": "Route なし",
 		"matchingRoutesSummary": "一致する Active Route {count} 件",
 		"matchingRoutesHint": "このモデルとグループで Proxy が使い得る Active Route の読み取り専用プレビューです。failover はリクエスト時に行われます。",
-		"supportedSurfacesEmpty": "このモデルと Route group に有効な公開 Surface がありません。"
+		"supportedSurfacesEmpty": "このモデルと Route group に有効な公開 Surface がありません。",
+		"kindEmbedding": "埋め込み",
+		"protocolLockedEmbedding": "埋め込みルートは OpenAI POST /v1/embeddings と Gemini ネイティブ :embedContent / :batchEmbedContents に対応します。"
 	},
 	"users": {
 		"detailUx": {
@@ -2374,7 +2390,8 @@
 				"tts": "TTS",
 				"asr": "ASR",
 				"tool": "ツール",
-				"mcp": "MCP"
+				"mcp": "MCP",
+				"embedding": "埋め込み"
 			},
 			"stream": "ストリーム",
 			"realtime": "リアルタイム",
@@ -2402,7 +2419,8 @@
 				"stream": "クライアントがストリーミング応答を要求した",
 				"realtime": "リアルタイムセッション",
 				"reasoning": "推論 Token または推論段階の TTFT",
-				"failover": "上流の失敗後に切り替えが発生した"
+				"failover": "上流の失敗後に切り替えが発生した",
+				"embedding": "テキスト埋め込み"
 			},
 			"cost": "本リクエストの請求額と原価額。横の倍率は金額 ÷ カタログ金額です。",
 			"profit": "請求額 − 原価額。インフラ費用・税金などは含みません。",

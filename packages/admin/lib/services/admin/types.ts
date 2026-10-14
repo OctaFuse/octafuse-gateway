@@ -226,7 +226,7 @@ export type AdminStaticModelPresetCatalogItem = {
 	display_name: string | null;
 	vendor: string;
 	/** LLM / 文生图 / 语音转写（与列表页 Kind 一致）。 */
-	kind: 'llm' | 'image' | 'audio';
+	kind: 'llm' | 'image' | 'audio' | 'embedding';
 	context_window: number | null;
 	max_tokens: number | null;
 	/** English fallback used by non-localized Admin clients and on import. */

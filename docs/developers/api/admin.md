@@ -707,7 +707,8 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
       "responses": "https://api.example.com/v1/responses",
       "images.generations": "https://api.example.com/v1/images/generations",
       "images.edits": "https://api.example.com/v1/images/edits",
-      "audio.transcriptions": "https://api.example.com/v1/audio/transcriptions"
+      "audio.transcriptions": "https://api.example.com/v1/audio/transcriptions",
+      "embeddings": "https://api.example.com/v1/embeddings"
     }
   },
   "anthropic": {
@@ -718,13 +719,14 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
     "base": "https://generativelanguage.googleapis.com/v1beta/models",
     "auth": "query-key",
     "endpoints": {
-      "models.generate": "https://example.com/v1beta/models/{model}:{action}"
+      "models.generate": "https://example.com/v1beta/models/{model}:{action}",
+      "models.embed": "https://example.com/v1beta/models/{model}:{action}"
     }
   }
 }
 ```
 
-`base` 走标准路径派生；capability 完整 URL 模板存在则覆盖派生结果。Gemini canonical 键为 **`models.generate`**，模板必须含 `{model}` 与 `{action}`；历史 `generateContent` / `streamGenerateContent` 键仍可读写，但新 UI 与规范化后的路由只生成 `models.generate`。可选 **`gemini.auth`**：`query-key`（`?key=`）或 `bearer`（`Authorization`）；省略则为 `query-key`。`auth` 仅允许出现在 `gemini`。
+`base` 走标准路径派生；capability 完整 URL 模板存在则覆盖派生结果。Gemini canonical 键为 **`models.generate`**（向量模型另有 **`models.embed`**，用于 `:embedContent` / `:batchEmbedContents`），模板必须含 `{model}` 与 `{action}`；历史 `generateContent` / `streamGenerateContent` 键仍可读写，但新 UI 与规范化后的路由只生成 `models.generate`。可选 **`gemini.auth`**：`query-key`（`?key=`）或 `bearer`（`Authorization`）；省略则为 `query-key`。`auth` 仅允许出现在 `gemini`。
 
 ### Models / Routes
 

@@ -278,7 +278,7 @@ export function buildSimulatorRequest(
 			}
 			const merged = { ...input.body, model: input.modelForRouting };
 			const path = resolveProxyPathForModelInvoke({
-				kind: kind === "image" ? "image" : "llm",
+				kind: kind === "image" ? "image" : kind === "embedding" ? "embedding" : "llm",
 				protocol: "openai",
 				imageOperation: imageOp === "generations" ? "generations" : undefined,
 				llmOperation: input.llmOperation,
@@ -308,6 +308,25 @@ export function buildSimulatorRequest(
 			};
 		}
 		case "gemini": {
+			if (kind === "embedding") {
+				const embedAction = Array.isArray(input.body.requests)
+					? "batchEmbedContents"
+					: "embedContent";
+				const embedPath = resolveProxyPathForModelInvoke({
+					kind: "embedding",
+					protocol: "gemini",
+					geminiEmbedAction: embedAction,
+					geminiModelSegment: input.modelForRouting,
+				});
+				return {
+					url: `${base}${embedPath}`,
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: auth,
+					},
+					bodyText: JSON.stringify(input.body),
+				};
+			}
 			const action: SimulatorGeminiAction =
 				kind === "image"
 					? "generateContent"

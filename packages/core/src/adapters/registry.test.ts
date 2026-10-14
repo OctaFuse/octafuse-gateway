@@ -342,4 +342,35 @@ describe('adapter registry', () => {
 			assert.ok(matched.length > 0, `${id} matched no adapter`);
 		}
 	});
+
+	it('registers embedding passthrough entries for OpenAI and Gemini', () => {
+		assert.deepEqual(requestOperationsFromRegistry('openai', 'embedding'), ['embeddings']);
+		assert.deepEqual(upstreamOperationsFromRegistry('openai', 'embedding'), ['embeddings']);
+		assert.deepEqual(requestOperationsFromRegistry('gemini', 'embedding'), ['models.embed']);
+		assert.deepEqual(upstreamOperationsFromRegistry('gemini', 'embedding'), ['models.embed']);
+		assert.equal(requestSurfacePath('openai', 'embeddings'), '/v1/embeddings');
+		assert.equal(
+			requestSurfacePath('gemini', 'models.embed', 'gemini-embedding-001'),
+			'/v1beta/models/gemini-embedding-001:{embedContent|batchEmbedContents}',
+		);
+		const openai = getAdapterByOptionKey('passthrough:openai:embeddings');
+		assert.ok(openai);
+		assert.equal(openai.modality, 'embedding');
+		assert.equal(openai.billing, 'tokens');
+		assert.equal(openai.exchange, 'unary');
+		assert.deepEqual(openai.requiredUpstreamCapabilities, ['embeddings']);
+		const gemini = getAdapterByOptionKey('passthrough:gemini:models.embed');
+		assert.ok(gemini);
+		assert.deepEqual(gemini.requiredUpstreamCapabilities, ['models.embed']);
+		assert.equal(
+			isRouteAdapterCompatible({
+				adapter: 'passthrough',
+				requestProtocol: 'openai',
+				requestOperation: 'embeddings',
+				upstreamProtocol: 'openai',
+				upstreamOperation: 'embeddings',
+			}),
+			true,
+		);
+	});
 });

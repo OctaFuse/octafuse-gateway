@@ -3,6 +3,7 @@
  * This is the client inbound entry (protocol + operation), not upstream_protocol.
  */
 import {
+	GEMINI_EMBED_OPERATION,
 	GEMINI_GENERATE_OPERATION,
 	GEMINI_LEGACY_GENERATE_OPERATIONS,
 	LEGACY_WILDCARD_OPERATION,
@@ -31,7 +32,16 @@ const IMAGE_AUDIO_INBOUND_ORDER: readonly InboundSurface[] = [
 	{ protocol: 'openai', operation: 'audio.speech' },
 ];
 
-const INBOUND_ORDER: readonly InboundSurface[] = [...LLM_INBOUND_ORDER, ...IMAGE_AUDIO_INBOUND_ORDER];
+const EMBEDDING_INBOUND_ORDER: readonly InboundSurface[] = [
+	{ protocol: 'openai', operation: 'embeddings' },
+	{ protocol: 'gemini', operation: GEMINI_EMBED_OPERATION },
+];
+
+const INBOUND_ORDER: readonly InboundSurface[] = [
+	...LLM_INBOUND_ORDER,
+	...IMAGE_AUDIO_INBOUND_ORDER,
+	...EMBEDDING_INBOUND_ORDER,
+];
 
 const WILDCARD_DEFAULT_OPERATION: Record<'openai' | 'anthropic' | 'gemini', string> = {
 	openai: 'chat',

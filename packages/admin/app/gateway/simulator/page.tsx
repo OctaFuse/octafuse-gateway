@@ -17,7 +17,7 @@ export default function SimulatorPage() {
 	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
 	const s = useSimulatorPageState();
-	const llm = !s.isToolKind && !s.selectedModelIsImage && !s.selectedModelIsAudio;
+	const llm = !s.isToolKind && !s.selectedModelIsImage && !s.selectedModelIsAudio && !s.selectedModelIsEmbedding;
 	const llmFamily = llm
 		? s.protocol === 'openai'
 			? s.openaiLlmOperation === 'responses'

@@ -18,6 +18,7 @@ import {
 	type ImageOperation,
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
+import { embeddingBodyTemplateFor, isEmbeddingRouteModel, joinEmbeddingUsageHint } from '@/lib/embeddings';
 import { inferPlaygroundParseMode, type PlaygroundProtocol } from '@/lib/playground/merge-assistant-text';
 import { previewPlaygroundResponse, readPlaygroundTextStream } from '@/lib/playground/response-preview';
 import {
@@ -82,7 +83,7 @@ import type { ResponseMeta, ResponseTab, RouteListRow, SendBlockReason, WirePrev
 
 function resolveModelKind(m: AdminModelRow | null | undefined): ModelKindFilter {
 	if (!m) return 'llm';
-	return modelKindFromFlags(isAudioRouteModel(m), isImageRouteModel(m));
+	return modelKindFromFlags(isAudioRouteModel(m), isImageRouteModel(m), isEmbeddingRouteModel(m));
 }
 
 export function useSimulatorPageState() {
@@ -252,6 +253,11 @@ export function useSimulatorPageState() {
 
 	const selectedModelIsImage = useMemo(
 		() => (selectedModel ? isImageRouteModel(selectedModel) : false),
+		[selectedModel],
+	);
+
+	const selectedModelIsEmbedding = useMemo(
+		() => (selectedModel ? isEmbeddingRouteModel(selectedModel) : false),
 		[selectedModel],
 	);
 
@@ -847,7 +853,7 @@ export function useSimulatorPageState() {
 		}
 	}, [models, selectedModelId, filterKind, isToolKind]);
 
-	const prevSelectedSpecialKindRef = useRef<'none' | 'image' | 'audio'>('none');
+	const prevSelectedSpecialKindRef = useRef<'none' | 'image' | 'audio' | 'embedding'>('none');
 
 	/** Image / Audio models: force openai + kind template; leaving restores chat template. */
 	useEffect(() => {
@@ -873,6 +879,18 @@ export function useSimulatorPageState() {
 			setAudioFile(null);
 			setAudioInputMode(defaultAudioInputModeForDashScopeOperation(selectedDashScopeRealtimeOperation));
 			prevSelectedSpecialKindRef.current = 'audio';
+			return;
+		}
+		if (selectedModelIsEmbedding) {
+			const embeddingProtocol = protocol === 'gemini' ? 'gemini' : ('openai' as const);
+			if (protocol !== embeddingProtocol) setProtocolState(embeddingProtocol);
+			setBodyText(embeddingBodyTemplateFor({ protocol: embeddingProtocol }));
+			setBodyError(null);
+			setImagePreviews([]);
+			setAudioPreviewUrl(null);
+			setEditFiles([]);
+			setAudioFile(null);
+			prevSelectedSpecialKindRef.current = 'embedding';
 			return;
 		}
 		if (selectedModelIsImage) {
@@ -926,6 +944,7 @@ export function useSimulatorPageState() {
 	}, [
 		selectedModelId,
 		selectedModelIsImage,
+		selectedModelIsEmbedding,
 		selectedAudioOperation,
 		selectedDashScopeRealtimeOperation,
 		selectedDashScopeTtsProviderModelName,
@@ -1138,6 +1157,16 @@ export function useSimulatorPageState() {
 	const requestProtocolChange = useCallback(
 		async (next: SimulatorProtocol) => {
 			if (next === protocol) return;
+			if (selectedModelIsEmbedding) {
+				if (next !== 'openai' && next !== 'gemini') {
+					setInfoHint(t('protocolLockedEmbedding'));
+					return;
+				}
+				setProtocolState(next);
+				setBodyText(embeddingBodyTemplateFor({ protocol: next }));
+				setBodyError(null);
+				return;
+			}
 			if (selectedModelIsAudio && next !== 'openai' && next !== 'dashscope' && next !== 'minimax') {
 				setInfoHint(t('protocolLockedAudio'));
 				return;
@@ -1181,6 +1210,7 @@ export function useSimulatorPageState() {
 			applyProtocolTemplate,
 			selectedModelIsImage,
 			selectedModelIsAudio,
+			selectedModelIsEmbedding,
 			selectedAudioOperation,
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
@@ -1574,7 +1604,11 @@ export function useSimulatorPageState() {
 						const audioUrl = miniMaxSpeechObjectUrl(JSON.stringify(j));
 						if (audioUrl) setAudioPreviewUrl(audioUrl);
 					}
-					setUsageHint(tryParseUsageSummary(JSON.stringify(j), protoNorm));
+					setUsageHint(
+						filterKind === 'embedding'
+							? joinEmbeddingUsageHint(JSON.stringify(j), protoNorm)
+							: tryParseUsageSummary(JSON.stringify(j), protoNorm),
+					);
 				}
 				setSending(false);
 				return;
@@ -1721,6 +1755,7 @@ export function useSimulatorPageState() {
 		selectedModel,
 		selectedModelIsImage,
 		selectedModelIsAudio,
+		selectedModelIsEmbedding,
 		selectedAudioOperation,
 		dashScopeRealtimeOperation,
 		setDashScopeRealtimeOperation: setDashScopeRealtimeOperationForSelection,
@@ -1757,7 +1792,7 @@ export function useSimulatorPageState() {
 		responseMeta,
 		responseText,
 		usageHint:
-			isToolKind || selectedModelIsImage || selectedModelIsAudio
+			isToolKind || selectedModelIsImage || selectedModelIsAudio || selectedModelIsEmbedding
 				? usageHint
 				: tryParseUsageSummary(
 						JSON.stringify({

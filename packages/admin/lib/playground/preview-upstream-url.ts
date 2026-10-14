@@ -62,6 +62,8 @@ export function describePlaygroundUpstreamUrl(input: {
 	imageOperation?: "generations" | "edits";
 	/** Audio transcription (ASR) catalog model. */
 	isAudioModel?: boolean;
+	/** Embedding catalog model. */
+	isEmbeddingModel?: boolean;
 	/** Route target operation; required to resolve DashScope's concrete audio endpoint. */
 	upstreamOperation?: string | null;
 	geminiAction?: GeminiContentAction;
@@ -96,7 +98,8 @@ export function describePlaygroundUpstreamUrl(input: {
 			case "openai": {
 				const kind = modelKindFromFlags(
 					Boolean(input.isAudioModel),
-					Boolean(input.isImageModel)
+					Boolean(input.isImageModel),
+					Boolean(input.isEmbeddingModel)
 				);
 				const capability = resolveOpenaiUpstreamCapability({
 					kind,
@@ -126,6 +129,28 @@ export function describePlaygroundUpstreamUrl(input: {
 					target,
 				};
 			case "gemini": {
+				if (input.isEmbeddingModel) {
+					target = `${protocol}/models.embed`;
+					const embedAction = "embedContent";
+					const resolvedEmbedUrl = resolveUpstreamEndpoint(
+						protocol,
+						"models.embed",
+						providerEndpoints,
+						{
+							model: input.providerModelName || "model",
+							action: embedAction,
+							providerId: provider.id,
+						}
+					);
+					const prepared = prepareGeminiUpstreamFetch({
+						resolvedUrl: resolvedEmbedUrl,
+						modelName: input.providerModelName || "model",
+						action: embedAction,
+						apiKey: "preview",
+						auth: providerEndpoints.gemini?.auth,
+					});
+					return { url: stripApiKeyFromUrl(prepared.url.toString()), target };
+				}
 				const action: GeminiContentAction = input.isImageModel
 					? "generateContent"
 					: input.geminiAction === "streamGenerateContent"

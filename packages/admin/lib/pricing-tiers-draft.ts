@@ -109,6 +109,21 @@ export function createEmptyTierRow(): PricingTierDraftRow {
 }
 
 /** 新建模型时的默认一档（可改） */
+/** 新建向量模型的默认档：仅 input 单价（output / cache 留空 → 0）。 */
+export function createDefaultEmbeddingTierRow(): PricingTierDraftRow {
+	return {
+		id: nextRowId(),
+		upto: DRAFT_UPTO_OPEN_SENTINEL,
+		input_price: '0.1',
+		output_price: '',
+		cache_read_price: '',
+		cache_write_price: '',
+		image_input_price: '',
+		image_input_cache_price: '',
+		image_output_price: '',
+	};
+}
+
 export function createDefaultNewModelTierRow(): PricingTierDraftRow {
 	return {
 		id: nextRowId(),
@@ -695,7 +710,7 @@ export function attachCatalogScheduleToProfileJson(
 
 /** 模型弹窗只读预览：标准价 + 时段倍率，形状与保存到 `pricing_profile` 的 JSON 一致。 */
 export function formatCatalogPricingProfilePreview(input: {
-	kind: 'llm' | 'image' | 'audio';
+	kind: 'llm' | 'image' | 'audio' | 'embedding';
 	rows: PricingTierDraftRow[];
 	imageDraft?: ImagePricingDraftState;
 	audioDraft?: AudioPricingDraftState;

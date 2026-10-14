@@ -107,7 +107,8 @@
 		"failedToLoadApiKeys": "Failed to load API keys",
 		"failedToLoadModels": "Failed to load models",
 		"infinity": "∞",
-		"kindAudio": "Audio"
+		"kindAudio": "Audio",
+		"kindEmbedding": "Embedding"
 	},
 	"auth": {
 		"username": "Username",
@@ -337,7 +338,8 @@
 		"routeGroupAria": "Route group filter",
 		"modelsAndRoutes": "{models} models · {routes} routes",
 		"narrowModelsRoutes": "Narrow models and routes",
-		"kindAudio": "Audio"
+		"kindAudio": "Audio",
+		"kindEmbedding": "Embedding"
 	},
 	"modalities": {
 		"text": "Text",
@@ -414,7 +416,9 @@
 				"messages": "messages",
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
-				"modelsGenerate": "generate"
+				"modelsGenerate": "generate",
+				"embeddings": "embeddings",
+				"modelsEmbed": "embed"
 			},
 			"officialUpdate": "Official update",
 			"officialUpdateTitle": "The official template has changed. Click to review and sync",
@@ -569,7 +573,9 @@
 			"apiKeyHint": "Upstream credential for this provider. For project-scoped Vertex, paste a GCP service account JSON (not a Vertex API key).",
 			"apiKeyEditHint": "Hidden by default. Show or copy the current key. Change it to replace on save; clear the field to keep the current key.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — stream + non-stream",
-			"legacyPerActionNotice": "This provider still has separate generateContent / streamGenerateContent overrides that cannot be safely merged. They are preserved as-is on save. Clear them in the database or set a single '{action}' template after review."
+			"legacyPerActionNotice": "This provider still has separate generateContent / streamGenerateContent overrides that cannot be safely merged. They are preserved as-is on save. Clear them in the database or set a single '{action}' template after review.",
+			"capEmbeddings": "embeddings (/v1/embeddings)",
+			"capModelsEmbed": "models.embed (/v1beta/models/'{model}:{action}') — embedContent / batchEmbedContents"
 		},
 		"sync": {
 			"title": "Sync with official",
@@ -678,7 +684,8 @@
 			"kindAria": "Model kind filter",
 			"kindLlm": "LLM",
 			"kindImage": "Image",
-			"kindAudio": "Audio"
+			"kindAudio": "Audio",
+			"kindEmbedding": "Embedding"
 		},
 		"imagePricing": {
 			"enabled": "Legacy (removed)",
@@ -790,7 +797,10 @@
 			"metadataJson": "Metadata (JSON)",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "Delete model",
-			"confirmDelete": "Delete this model and all of its routes?"
+			"confirmDelete": "Delete this model and all of its routes?",
+			"kindEmbedding": "Embedding",
+			"kindHintEmbedding": "Embedding models. Outputs vectors; billed by input tokens only. Use with POST /v1/embeddings or Gemini embedContent.",
+			"embeddingPricing": "Embedding pricing (input tokens)"
 		},
 		"metadata": {
 			"title": "Metadata"
@@ -811,7 +821,9 @@
 			"pricingNoData": "—",
 			"pricingTiers": "{count} tiers",
 			"noRoutes": "No routes",
-			"officialUpdateTitle": "Official catalog has updates — click to review and sync"
+			"officialUpdateTitle": "Official catalog has updates — click to review and sync",
+			"kindEmbedding": "Embedding",
+			"embeddingHint": "Embedding · context {context}"
 		},
 		"sync": {
 			"title": "Sync with official catalog",
@@ -1054,7 +1066,8 @@
 			"newRouteFor": "New route for {title}",
 			"activeTotalRoutes": "{active} active / {total} total",
 			"noRoutesYet": "No routes yet",
-			"clickToAdd": "Click + to add the first route"
+			"clickToAdd": "Click + to add the first route",
+			"embeddingModelHint": "Embedding · input-token pricing"
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1872,7 +1885,8 @@
 		"realtimeTransportError": "Realtime WebSocket transport error",
 		"realtimeWaitingTaskStarted": "WebSocket connected. Waiting for upstream task-started…",
 		"realtimeClosed": "Realtime connection closed ({code}{reason}).",
-		"streamDisconnected": "The stream dropped while reading the upstream response ({cause}). Try stream: false to confirm the call, then retry streaming."
+		"streamDisconnected": "The stream dropped while reading the upstream response ({cause}). Try stream: false to confirm the call, then retry streaming.",
+		"kindEmbedding": "Embedding"
 	},
 	"simulator": {
 		"title": "Simulator",
@@ -1995,7 +2009,9 @@
 		"modelNoRoute": "No route",
 		"matchingRoutesSummary": "{count} matching active route(s)",
 		"matchingRoutesHint": "Read-only preview of active routes Proxy may use for this model and group. Failover still happens at request time.",
-		"supportedSurfacesEmpty": "No active public surface for this model and route group."
+		"supportedSurfacesEmpty": "No active public surface for this model and route group.",
+		"kindEmbedding": "Embedding",
+		"protocolLockedEmbedding": "Embedding routes support OpenAI POST /v1/embeddings and Gemini native :embedContent / :batchEmbedContents."
 	},
 	"users": {
 		"detailUx": {
@@ -2374,7 +2390,8 @@
 				"tts": "TTS",
 				"asr": "ASR",
 				"tool": "Tool",
-				"mcp": "MCP"
+				"mcp": "MCP",
+				"embedding": "Embedding"
 			},
 			"stream": "Stream",
 			"realtime": "Realtime",
@@ -2402,7 +2419,8 @@
 				"stream": "Client requested a streaming response",
 				"realtime": "Realtime session",
 				"reasoning": "Reasoning tokens or reasoning-phase TTFT",
-				"failover": "Upstream switched after a failed attempt"
+				"failover": "Upstream switched after a failed attempt",
+				"embedding": "Text embedding"
 			},
 			"cost": "Billing and cost amounts for this request; the adjacent ratio is amount ÷ catalog amount.",
 			"profit": "Billing amount − cost amount; excludes infrastructure, taxes and other expenses.",

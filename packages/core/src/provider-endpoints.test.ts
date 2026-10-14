@@ -317,7 +317,7 @@ describe('listConfiguredCapabilities', () => {
 				{ openai: { base: 'https://api.openai.com/v1' } },
 				'openai'
 			),
-			['chat', 'responses', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech']
+			['chat', 'responses', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech', 'embeddings']
 		);
 	});
 
@@ -346,7 +346,7 @@ describe('listConfiguredCapabilities', () => {
 				},
 				'openai'
 			),
-			['chat', 'responses', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech']
+			['chat', 'responses', 'images.generations', 'images.edits', 'audio.transcriptions', 'audio.speech', 'embeddings']
 		);
 	});
 
@@ -450,6 +450,79 @@ describe('listConfiguredCapabilities', () => {
 				'audio.voices',
 				'images.generations.multimodal',
 			]
+		);
+	});
+});
+
+describe('embeddings capabilities', () => {
+	it('derives OpenAI embeddings URL from base and honors overrides', () => {
+		assert.equal(
+			resolveUpstreamEndpoint('openai', 'embeddings', { openai: { base: 'https://api.openai.com/v1' } }),
+			'https://api.openai.com/v1/embeddings',
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('openai', 'embeddings', {
+				openai: { endpoints: { embeddings: 'https://x.example/emb' } },
+			}),
+			'https://x.example/emb',
+		);
+		assert.ok(
+			listConfiguredCapabilities({ openai: { base: 'https://api.openai.com/v1' } }, 'openai').includes('embeddings'),
+		);
+	});
+
+	it('derives Gemini embed URL per action and rejects missing action', () => {
+		const map = { gemini: { base: 'https://generativelanguage.googleapis.com/v1beta/models' } };
+		assert.equal(
+			resolveUpstreamEndpoint('gemini', 'models.embed', map, {
+				model: 'gemini-embedding-001',
+				action: 'embedContent',
+			}),
+			'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent',
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('gemini', 'models.embed', map, {
+				model: 'gemini-embedding-001',
+				action: 'batchEmbedContents',
+			}),
+			'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents',
+		);
+		assert.throws(
+			() => resolveUpstreamEndpoint('gemini', 'models.embed', map, { model: 'm' }),
+			/requires action/,
+		);
+		assert.equal(
+			resolveUpstreamEndpoint(
+				'gemini',
+				'models.embed',
+				{ gemini: { endpoints: { 'models.embed': 'https://e.example/models/{model}:{action}' } } },
+				{ model: 'm', action: 'embedContent' },
+			),
+			'https://e.example/models/m:embedContent',
+		);
+	});
+
+	it('lists models.embed for base and for template-only gemini config', () => {
+		assert.deepEqual(
+			listConfiguredCapabilities({ gemini: { base: 'https://x.example/v1beta/models' } }, 'gemini'),
+			['models.generate', 'models.embed'],
+		);
+		assert.deepEqual(
+			listConfiguredCapabilities(
+				{ gemini: { endpoints: { 'models.embed': 'https://e.example/{model}:{action}' } } },
+				'gemini',
+			),
+			['models.embed'],
+		);
+	});
+
+	it('validates gemini embed template placeholders', () => {
+		assert.throws(
+			() =>
+				validateAndNormalizeProviderEndpoints({
+					gemini: { endpoints: { 'models.embed': 'https://e.example/{model}:embedContent' } },
+				}),
+			/\{action\}/,
 		);
 	});
 });

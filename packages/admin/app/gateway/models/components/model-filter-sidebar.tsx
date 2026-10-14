@@ -13,7 +13,7 @@ type Props = {
 	selectedVendor: string;
 	modelsByVendor: [string, unknown[]][];
 	selectedKind: ModelListKindFilter;
-	kindCounts: { llm: number; image: number; audio: number };
+	kindCounts: { llm: number; image: number; audio: number; embedding: number };
 	onSelectVendor: (vendor: string) => void;
 	onSelectKind: (kind: ModelListKindFilter) => void;
 	onClearFilter: () => void;
@@ -58,6 +58,7 @@ export function ModelFilterSidebar(props: Props) {
 						<option value="llm">{t('kindLlm')} ({kindCounts.llm})</option>
 						<option value="image">{t('kindImage')} ({kindCounts.image})</option>
 						<option value="audio">{t('kindAudio')} ({kindCounts.audio})</option>
+						<option value="embedding">{t('kindEmbedding')} ({kindCounts.embedding})</option>
 					</select>
 				</label>
 				<label className="min-w-0 text-xs text-gray-500">
@@ -95,6 +96,12 @@ export function ModelFilterSidebar(props: Props) {
 							count={kindCounts.audio}
 							isActive={selectedKind === 'audio'}
 							onClick={() => onSelectKind('audio')}
+						/>
+						<HorizontalButton
+							label={t('kindEmbedding')}
+							count={kindCounts.embedding}
+							isActive={selectedKind === 'embedding'}
+							onClick={() => onSelectKind('embedding')}
 						/>
 					</HorizontalSection>
 					{hasActiveFilter ? (

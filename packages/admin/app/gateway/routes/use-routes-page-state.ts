@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
 import {
 	isAudioModel,
+	isEmbeddingModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import { isRouteStrategyName } from '@octafuse/core/db/model-route-policy';
@@ -263,12 +264,14 @@ export function useRoutesPageState() {
 		let llm = 0;
 		let image = 0;
 		let audio = 0;
+		let embedding = 0;
 		for (const m of models) {
-			if (isImageGenerationModel(m)) image += 1;
+			if (isEmbeddingModel(m)) embedding += 1;
+			else if (isImageGenerationModel(m)) image += 1;
 			else if (isAudioModel(m)) audio += 1;
 			else llm += 1;
 		}
-		return { all: models.length, llm, image, audio };
+		return { all: models.length, llm, image, audio, embedding };
 	}, [models]);
 
 	const routesByModel = useMemo(

@@ -9,6 +9,7 @@ import {
 	coerceModelOutputModalitiesInput,
 	coerceModelReleasedAtInput,
 	isAudioModel,
+	isEmbeddingModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import {
@@ -187,7 +188,7 @@ function buildPerCharacterAudioPricingPreview(
 /** 按 `BILLING_CURRENCY` 选用的目录价分支：Audio / Image / LLM 档位摘要。 */
 function buildCatalogPricingPreview(
 	rawPricing: unknown,
-	_kind: 'llm' | 'image' | 'audio',
+	_kind: 'llm' | 'image' | 'audio' | 'embedding',
 	billing: GatewaySupportedBillingCurrency
 ): CatalogPricingPreview {
 	if (!rawPricing || typeof rawPricing !== 'object' || Array.isArray(rawPricing)) {
@@ -238,7 +239,12 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 		output_modalities: outputModalities,
 		pricing_profile: pricingProfile,
 	});
-	const skipLlmDefaults = isImage || isAudio;
+	const isEmbedding = isEmbeddingModel({
+		output_modalities: outputModalities,
+		pricing_profile: pricingProfile,
+	});
+	// Embedding 无 max output tokens；context_window 保持调用方传入
+	const skipLlmDefaults = isImage || isAudio || isEmbedding;
 	const maxTokens = skipLlmDefaults
 		? body.max_tokens == null
 			? null
@@ -362,11 +368,13 @@ export function listStaticModelPresetCatalogForAdmin(
 				output_modalities: p.modalities?.output ?? null,
 				pricing_profile: pricingProfileJson,
 			};
-			const kind: AdminStaticModelPresetCatalogItem['kind'] = isImageGenerationModel(kindFields)
-				? 'image'
-				: isAudioModel(kindFields)
-					? 'audio'
-					: 'llm';
+			const kind: AdminStaticModelPresetCatalogItem['kind'] = isEmbeddingModel(kindFields)
+				? 'embedding'
+				: isImageGenerationModel(kindFields)
+					? 'image'
+					: isAudioModel(kindFields)
+						? 'audio'
+						: 'llm';
 			const pricing = buildCatalogPricingPreview(pricingRaw, kind, billing);
 			return {
 				id,

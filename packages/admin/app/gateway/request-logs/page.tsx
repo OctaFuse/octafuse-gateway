@@ -667,6 +667,7 @@ export default function GatewayRequestLogsPage() {
     if (kind === 'image') return 'bg-violet-50 text-violet-700 ring-violet-200';
     if (kind === 'tts') return 'bg-amber-50 text-amber-800 ring-amber-200';
     if (kind === 'asr') return 'bg-orange-50 text-orange-800 ring-orange-200';
+    if (kind === 'embedding') return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
     if (kind === 'tool') return 'bg-indigo-50 text-indigo-700 ring-indigo-200';
     if (kind === 'mcp') return 'bg-teal-50 text-teal-800 ring-teal-200';
     return 'bg-slate-50 text-slate-600 ring-slate-200';

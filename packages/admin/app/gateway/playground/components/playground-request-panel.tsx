@@ -50,6 +50,7 @@ type Props = {
 	audioSendBlocked: boolean;
 	selectedIsImage: boolean;
 	selectedIsAudio: boolean;
+	selectedIsEmbedding: boolean;
 	selectedIsAudioTranscription: boolean;
 	selectedAudioUsesDashScope: boolean;
 	selectedCanUseMicrophone: boolean;
@@ -90,6 +91,7 @@ export function PlaygroundRequestPanel({
 	audioSendBlocked,
 	selectedIsImage,
 	selectedIsAudio,
+	selectedIsEmbedding,
 	selectedIsAudioTranscription,
 	selectedAudioUsesDashScope,
 	selectedCanUseMicrophone,
@@ -112,10 +114,12 @@ export function PlaygroundRequestPanel({
 	const showGemini =
 		normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' &&
 		!selectedIsImage &&
+		!selectedIsEmbedding &&
 		!selectedIsAudio;
 	const llmFamily = playgroundLlmFamilyForRoute(selected, {
 		isImage: selectedIsImage,
 		isAudio: selectedIsAudio,
+		isEmbedding: selectedIsEmbedding,
 	});
 	const llmSample = llmFamily
 		? matchPlaygroundLlmSample(llmFamily, bodyText, playgroundModelHintFromRoute(selected))

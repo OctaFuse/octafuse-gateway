@@ -31,6 +31,7 @@ import {
 import type { ResponseMeta, RouteListRow } from '../../playground/types';
 import { composeCustomParamsJson } from '../route-utils';
 import type { RouteModalProps } from './route-modal-types';
+import { isEmbeddingRouteModel } from '@/lib/embeddings';
 import { RouteTestOutput } from './route-test-output';
 import { editorPanelClass, RouteEditorSectionHeader } from './route-editor-ui';
 
@@ -54,7 +55,8 @@ function QuickTestContent({
 	selectedModelIsAudio: isAudio,
 }: Props) {
 	const t = useTranslations('routes.modal.quickTest');
-	const family = quickTestLlmFamily(form, isImage || isAudio);
+	const isEmbedding = selectedModel ? isEmbeddingRouteModel(selectedModel) : false;
+	const family = quickTestLlmFamily(form, isImage || isAudio || isEmbedding);
 	const [sampleId, setSampleId] = useState<PlaygroundLlmSampleId>('connectivity');
 	const [geminiStream, setGeminiStream] = useState(true);
 	const [mobilePane, setMobilePane] = useState<'request' | 'response'>('request');

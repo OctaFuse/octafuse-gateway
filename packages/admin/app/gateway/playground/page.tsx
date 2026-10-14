@@ -22,7 +22,7 @@ function PlaygroundPageInner() {
 	const tCommon = useTranslations('common');
 	const s = usePlaygroundPageState();
 	const tools = usePlaygroundToolsState(s.initialToolId, s.initialProvider);
-	const llm = s.selected ? !s.selectedIsImage && !s.selectedIsAudio : s.filterKind === 'llm';
+	const llm = s.selected ? !s.selectedIsImage && !s.selectedIsAudio && !s.selectedIsEmbedding : s.filterKind === 'llm';
 
 	if (s.loadingRoutes && s.playgroundMode === 'routes') {
 		return (
@@ -140,6 +140,7 @@ function PlaygroundPageInner() {
 									audioSendBlocked={s.audioSendBlocked}
 									selectedIsImage={s.selectedIsImage}
 									selectedIsAudio={s.selectedIsAudio}
+									selectedIsEmbedding={s.selectedIsEmbedding}
 									selectedIsAudioTranscription={s.selectedIsAudioTranscription}
 									selectedAudioUsesDashScope={s.selectedAudioUsesDashScope}
 									selectedCanUseMicrophone={s.selectedCanUseMicrophone}

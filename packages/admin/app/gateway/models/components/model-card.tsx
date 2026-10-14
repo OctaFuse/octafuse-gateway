@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatCatalogPricingTierRowsTooltip, getCatalogCardPricing } from '@/lib/pricing-ui';
-import { isAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import { isAudioModel, isEmbeddingModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { tagBadgeClass } from '../model-utils';
 import type { ModelListItem } from '../types';
 
@@ -15,7 +15,8 @@ function routeUsageClass(routesCount: number, activeRoutesCount: number): string
 	return 'text-amber-800';
 }
 
-function kindBadgeClass(kind: 'llm' | 'image' | 'audio'): string {
+function kindBadgeClass(kind: 'llm' | 'image' | 'audio' | 'embedding'): string {
+	if (kind === 'embedding') return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
 	if (kind === 'image') return 'bg-violet-50 text-violet-700 ring-violet-200';
 	if (kind === 'audio') return 'bg-amber-50 text-amber-700 ring-amber-200';
 	return 'bg-sky-50 text-sky-700 ring-sky-200';
@@ -32,7 +33,13 @@ export function ModelCard(props: {
 	const hasOfficialUpdate = Number(model.official_update_count ?? 0) > 0;
 	const t = useTranslations('models.card');
 	const displayName = model.display_name || model.id;
-	const kind = isImageGenerationModel(model) ? 'image' : isAudioModel(model) ? 'audio' : 'llm';
+	const kind = isEmbeddingModel(model)
+		? 'embedding'
+		: isImageGenerationModel(model)
+			? 'image'
+			: isAudioModel(model)
+				? 'audio'
+				: 'llm';
 	const tagShown = model.tags?.length ? model.tags.slice(0, 2) : [];
 	const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
 	const routesLabel =
@@ -44,7 +51,9 @@ export function ModelCard(props: {
 			? t('audioHint')
 			: kind === 'image'
 				? t('imageHint')
-				: t('specs', {
+				: kind === 'embedding'
+					? t('embeddingHint', { context: formatCompactTokens(model.context_window) })
+					: t('specs', {
 						context: formatCompactTokens(model.context_window),
 						max: formatCompactTokens(model.max_tokens),
 					});
@@ -112,7 +121,13 @@ export function ModelCard(props: {
 				<span
 					className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${kindBadgeClass(kind)}`}
 				>
-					{kind === 'image' ? t('kindImage') : kind === 'audio' ? t('kindAudio') : t('kindLlm')}
+					{kind === 'image'
+						? t('kindImage')
+						: kind === 'audio'
+							? t('kindAudio')
+							: kind === 'embedding'
+								? t('kindEmbedding')
+								: t('kindLlm')}
 				</span>
 				<span className="min-w-0 truncate text-[11px] tabular-nums text-gray-600" title={specs}>
 					{specs}

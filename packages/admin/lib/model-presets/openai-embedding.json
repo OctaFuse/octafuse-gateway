@@ -1,0 +1,134 @@
+[
+	{
+		"id": "text-embedding-3-small",
+		"display_name": "Text Embedding 3 Small",
+		"description": "OpenAI's small, efficient text embedding model (1536 dimensions by default; supports the dimensions parameter). Billed by input tokens via POST /v1/embeddings.",
+		"i18n": {
+			"en": "OpenAI's small, efficient text embedding model (1536 dimensions by default; supports the dimensions parameter). Billed by input tokens via POST /v1/embeddings.",
+			"zh": "OpenAI 高性价比文本向量模型（默认 1536 维，支持 dimensions 参数）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。"
+		},
+		"vendor": "openai",
+		"context_window": 8192,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.02,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.14,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"embedding"
+			]
+		}
+	},
+	{
+		"id": "text-embedding-3-large",
+		"display_name": "Text Embedding 3 Large",
+		"description": "OpenAI's most capable text embedding model (3072 dimensions by default; supports the dimensions parameter). Billed by input tokens via POST /v1/embeddings.",
+		"i18n": {
+			"en": "OpenAI's most capable text embedding model (3072 dimensions by default; supports the dimensions parameter). Billed by input tokens via POST /v1/embeddings.",
+			"zh": "OpenAI 效果最强的文本向量模型（默认 3072 维，支持 dimensions 参数）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。"
+		},
+		"vendor": "openai",
+		"context_window": 8192,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.13,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.91,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"embedding"
+			]
+		}
+	},
+	{
+		"id": "text-embedding-ada-002",
+		"display_name": "Text Embedding Ada 002",
+		"description": "OpenAI's legacy text embedding model (1536 dimensions). Billed by input tokens via POST /v1/embeddings.",
+		"i18n": {
+			"en": "OpenAI's legacy text embedding model (1536 dimensions). Billed by input tokens via POST /v1/embeddings.",
+			"zh": "OpenAI 上一代文本向量模型（1536 维）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。"
+		},
+		"vendor": "openai",
+		"context_window": 8192,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.1,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.7,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"embedding"
+			]
+		}
+	}
+]

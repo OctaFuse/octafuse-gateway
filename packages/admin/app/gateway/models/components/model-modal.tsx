@@ -103,6 +103,7 @@ export function ModelModal(props: Props) {
 	const tRoutes = useTranslations('routes.modal');
 	const isImageModel = formKind === 'image';
 	const isAudioModel = formKind === 'audio';
+	const isEmbeddingModel = formKind === 'embedding';
 	const pricingProfileJsonSessionKey = `${open ? '1' : '0'}:${editingModel?.id ?? 'new'}`;
 	const [pricingProfileJsonSession, setPricingProfileJsonSession] = useState(pricingProfileJsonSessionKey);
 	const [pricingProfileJsonOpen, setPricingProfileJsonOpen] = useState(false);
@@ -231,6 +232,7 @@ export function ModelModal(props: Props) {
 										{ id: 'llm' as const, label: t('kindLlm') },
 										{ id: 'image' as const, label: t('kindImage') },
 										{ id: 'audio' as const, label: t('kindAudio') },
+										{ id: 'embedding' as const, label: t('kindEmbedding') },
 									] as const
 								).map((opt) => {
 									const active = formKind === opt.id;
@@ -256,7 +258,9 @@ export function ModelModal(props: Props) {
 							<p className="mt-1.5 text-[11px] text-gray-500 leading-relaxed">
 								{isAudioModel
 									? t('kindHintAudio')
-									: isImageModel
+									: isEmbeddingModel
+										? t('kindHintEmbedding')
+										: isImageModel
 										? t('kindHintImage')
 										: t('kindHintLlm')}
 							</p>
@@ -363,6 +367,7 @@ export function ModelModal(props: Props) {
 										placeholder={t('contextWindowPlaceholder')}
 									/>
 								</div>
+								{isEmbeddingModel ? null : (
 								<div>
 									<label className="block text-sm font-medium text-gray-700 mb-1">
 										{t('maxTokens')}
@@ -377,6 +382,7 @@ export function ModelModal(props: Props) {
 										placeholder={t('maxTokensPlaceholder')}
 									/>
 								</div>
+								)}
 							</>
 						) : (
 							<div className="col-span-2 rounded-md border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 lg:col-span-3">
@@ -770,6 +776,15 @@ export function ModelModal(props: Props) {
 									onImageBillingModeChange={onImageBillingModeChange}
 									perImageDraft={imagePerImageDraft}
 									onPerImageDraftChange={onImagePerImageDraftChange}
+								/>
+							) : isEmbeddingModel ? (
+								<PricingTiersEditor
+									title={t('embeddingPricing')}
+									rows={pricingTierRows}
+									onChange={onPricingTierRowsChange}
+									billingCurrencyCode={billingCurrency}
+									minRows={0}
+									variant="embedding"
 								/>
 							) : (
 								<PricingTiersEditor

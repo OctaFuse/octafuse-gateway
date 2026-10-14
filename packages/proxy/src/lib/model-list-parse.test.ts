@@ -46,3 +46,11 @@ describe('normalizePublicModelVendor', () => {
 		assert.equal(normalizePublicModelVendor(' zhipu '), ' zhipu ');
 	});
 });
+
+describe('parseModelsKindQuery embedding', () => {
+	it('accepts embedding and keeps llm as the default', () => {
+		assert.equal(parseModelsKindQuery('embedding'), 'embedding');
+		assert.equal(parseModelsKindQuery('EMBEDDING'), 'embedding');
+		assert.equal(parseModelsKindQuery(undefined), 'llm');
+	});
+});

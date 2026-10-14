@@ -107,7 +107,8 @@
 		"failedToLoadApiKeys": "API Key를 불러오지 못했습니다",
 		"failedToLoadModels": "모델을 불러오지 못했습니다",
 		"infinity": "∞",
-		"kindAudio": "오디오"
+		"kindAudio": "오디오",
+		"kindEmbedding": "임베딩"
 	},
 	"auth": {
 		"username": "사용자 이름",
@@ -337,7 +338,8 @@
 		"routeGroupAria": "Route 그룹 필터",
 		"modelsAndRoutes": "모델 {models}개 · Route {routes}개",
 		"narrowModelsRoutes": "모델 및 Route 범위 좁히기",
-		"kindAudio": "오디오"
+		"kindAudio": "오디오",
+		"kindEmbedding": "임베딩"
 	},
 	"modalities": {
 		"text": "텍스트",
@@ -414,7 +416,9 @@
 				"messages": "messages",
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
-				"modelsGenerate": "generate"
+				"modelsGenerate": "generate",
+				"embeddings": "embeddings",
+				"modelsEmbed": "embed"
 			},
 			"officialUpdate": "공식 업데이트",
 			"officialUpdateTitle": "공식 템플릿이 변경되었습니다. 클릭하여 확인하고 동기화",
@@ -569,7 +573,9 @@
 			"apiKeyHint": "이 공급자의 업스트림 자격 증명. 프로젝트 범위 Vertex에는 GCP 서비스 계정 JSON을 붙여 넣으세요(Vertex API Key 아님).",
 			"apiKeyEditHint": "기본적으로 숨깁니다. 보거나 복사할 수 있습니다. 바꿔 저장하면 교체되고, 비우면 현재 키를 유지합니다.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 스트리밍 + 비스트리밍",
-			"legacyPerActionNotice": "이 Provider 에는 안전하게 병합할 수 없는 generateContent / streamGenerateContent 개별 오버라이드가 남아 있습니다. 저장 시 그대로 유지됩니다. 검토 후 단일 '{action}' 템플릿으로 변경하세요."
+			"legacyPerActionNotice": "이 Provider 에는 안전하게 병합할 수 없는 generateContent / streamGenerateContent 개별 오버라이드가 남아 있습니다. 저장 시 그대로 유지됩니다. 검토 후 단일 '{action}' 템플릿으로 변경하세요.",
+			"capEmbeddings": "embeddings (/v1/embeddings)",
+			"capModelsEmbed": "models.embed (/v1beta/models/'{model}:{action}') — embedContent / batchEmbedContents"
 		},
 		"sync": {
 			"title": "공식 정보와 동기화",
@@ -678,7 +684,8 @@
 			"kindAria": "모델 유형 필터",
 			"kindLlm": "LLM",
 			"kindImage": "이미지",
-			"kindAudio": "오디오"
+			"kindAudio": "오디오",
+			"kindEmbedding": "임베딩"
 		},
 		"imagePricing": {
 			"enabled": "레거시 (삭제됨)",
@@ -790,7 +797,10 @@
 			"metadataJson": "메타데이터 (JSON)",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "모델 삭제",
-			"confirmDelete": "이 모델과 연결된 모든 Route를 삭제할까요?"
+			"confirmDelete": "이 모델과 연결된 모든 Route를 삭제할까요?",
+			"kindEmbedding": "임베딩",
+			"kindHintEmbedding": "임베딩(Embedding) 모델. 벡터를 출력하며 입력 토큰만 과금됩니다. POST /v1/embeddings 또는 Gemini embedContent와 함께 사용합니다.",
+			"embeddingPricing": "임베딩 요금(입력 토큰)"
 		},
 		"metadata": {
 			"title": "메타데이터"
@@ -811,7 +821,9 @@
 			"pricingNoData": "—",
 			"pricingTiers": "{count}단계",
 			"noRoutes": "라우트 없음",
-			"officialUpdateTitle": "공식 카탈로그에 업데이트가 있습니다. 클릭하여 확인 및 동기화"
+			"officialUpdateTitle": "공식 카탈로그에 업데이트가 있습니다. 클릭하여 확인 및 동기화",
+			"kindEmbedding": "임베딩",
+			"embeddingHint": "임베딩 · 컨텍스트 {context}"
 		},
 		"sync": {
 			"title": "공식 카탈로그와 동기화",
@@ -1054,7 +1066,8 @@
 			"newRouteFor": "{title}의 새 Route",
 			"activeTotalRoutes": "활성 {active}개 / 전체 {total}개",
 			"noRoutesYet": "아직 Route가 없습니다",
-			"clickToAdd": "+를 클릭하여 첫 Route를 추가하세요"
+			"clickToAdd": "+를 클릭하여 첫 Route를 추가하세요",
+			"embeddingModelHint": "임베딩 · 입력 토큰 과금"
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1872,7 +1885,8 @@
 		"realtimeTransportError": "실시간 WebSocket 전송 오류",
 		"realtimeWaitingTaskStarted": "WebSocket이 연결되었습니다. 업스트림 task-started를 기다리는 중…",
 		"realtimeClosed": "실시간 연결이 닫혔습니다({code}{reason}).",
-		"streamDisconnected": "업스트림 스트림을 읽는 중 연결이 끊겼습니다({cause}). stream을 false로 바꾼 뒤 확인하거나 다시 시도하세요."
+		"streamDisconnected": "업스트림 스트림을 읽는 중 연결이 끊겼습니다({cause}). stream을 false로 바꾼 뒤 확인하거나 다시 시도하세요.",
+		"kindEmbedding": "임베딩"
 	},
 	"simulator": {
 		"title": "Simulator",
@@ -1995,7 +2009,9 @@
 		"modelNoRoute": "라우트 없음",
 		"matchingRoutesSummary": "일치하는 활성 Route {count}개",
 		"matchingRoutesHint": "이 모델과 그룹에 대해 Proxy가 쓸 수 있는 활성 Route의 읽기 전용 미리보기입니다. Failover는 요청 시점에 발생합니다.",
-		"supportedSurfacesEmpty": "이 모델과 라우트 그룹에 활성 공개 Surface가 없습니다."
+		"supportedSurfacesEmpty": "이 모델과 라우트 그룹에 활성 공개 Surface가 없습니다.",
+		"kindEmbedding": "임베딩",
+		"protocolLockedEmbedding": "임베딩 라우트는 OpenAI POST /v1/embeddings 와 Gemini 네이티브 :embedContent / :batchEmbedContents 를 지원합니다."
 	},
 	"users": {
 		"detailUx": {
@@ -2374,7 +2390,8 @@
 				"tts": "TTS",
 				"asr": "ASR",
 				"tool": "도구",
-				"mcp": "MCP"
+				"mcp": "MCP",
+				"embedding": "임베딩"
 			},
 			"stream": "스트림",
 			"realtime": "실시간",
@@ -2402,7 +2419,8 @@
 				"stream": "클라이언트가 스트리밍 응답을 요청함",
 				"realtime": "실시간 세션",
 				"reasoning": "추론 토큰 또는 추론 단계 TTFT",
-				"failover": "업스트림 실패 후 전환이 발생함"
+				"failover": "업스트림 실패 후 전환이 발생함",
+				"embedding": "텍스트 임베딩"
 			},
 			"cost": "요청의 청구 금액과 원가 금액. 옆의 배율은 금액 ÷ 카탈로그 금액입니다.",
 			"profit": "청구 금액 − 원가 금액. 인프라, 세금 등 기타 지출은 제외됩니다.",

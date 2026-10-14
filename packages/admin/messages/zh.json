@@ -107,7 +107,8 @@
 		"failedToLoadApiKeys": "加载 API Key 失败",
 		"failedToLoadModels": "加载模型失败",
 		"infinity": "∞",
-		"kindAudio": "音频"
+		"kindAudio": "音频",
+		"kindEmbedding": "向量"
 	},
 	"auth": {
 		"username": "用户名",
@@ -337,7 +338,8 @@
 		"routeGroupAria": "路由组筛选",
 		"modelsAndRoutes": "{models} 个模型 · {routes} 条路由",
 		"narrowModelsRoutes": "缩小模型与路由范围",
-		"kindAudio": "音频"
+		"kindAudio": "音频",
+		"kindEmbedding": "向量"
 	},
 	"modalities": {
 		"text": "文本",
@@ -414,7 +416,9 @@
 				"messages": "messages",
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
-				"modelsGenerate": "generate"
+				"modelsGenerate": "generate",
+				"embeddings": "embeddings",
+				"modelsEmbed": "embed"
 			},
 			"officialUpdate": "有官方更新",
 			"officialUpdateTitle": "官方模板有更新，点击查看并同步",
@@ -569,7 +573,9 @@
 			"apiKeyHint": "该供应商的上游凭证。项目级 Vertex 请粘贴 GCP 服务账号 JSON（不要填 Vertex API Key）。",
 			"apiKeyEditHint": "默认隐藏当前密钥。可查看或复制。修改后保存即替换；清空则保持原密钥。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 流式 + 非流式",
-			"legacyPerActionNotice": "该 Provider 仍保留无法安全合并的 generateContent / streamGenerateContent 覆盖项。保存时原样写回。复核后可改为单一 '{action}' 模板。"
+			"legacyPerActionNotice": "该 Provider 仍保留无法安全合并的 generateContent / streamGenerateContent 覆盖项。保存时原样写回。复核后可改为单一 '{action}' 模板。",
+			"capEmbeddings": "embeddings (/v1/embeddings)",
+			"capModelsEmbed": "models.embed (/v1beta/models/'{model}:{action}') — embedContent / batchEmbedContents"
 		},
 		"sync": {
 			"title": "与官方同步",
@@ -678,7 +684,8 @@
 			"kindAria": "模型类型筛选",
 			"kindLlm": "大语言模型",
 			"kindImage": "文生图",
-			"kindAudio": "音频"
+			"kindAudio": "音频",
+			"kindEmbedding": "向量"
 		},
 		"imagePricing": {
 			"enabled": "已移除",
@@ -790,7 +797,10 @@
 			"metadataJson": "元数据（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "删除模型",
-			"confirmDelete": "删除该模型及其全部路由？"
+			"confirmDelete": "删除该模型及其全部路由？",
+			"kindEmbedding": "向量",
+			"kindHintEmbedding": "向量（Embedding）模型：输出向量，仅按输入 token 计费；配合 POST /v1/embeddings 或 Gemini embedContent 使用。",
+			"embeddingPricing": "向量定价（输入 token）"
 		},
 		"metadata": {
 			"title": "元数据"
@@ -811,7 +821,9 @@
 			"pricingNoData": "—",
 			"pricingTiers": "{count} 档",
 			"noRoutes": "未关联路由",
-			"officialUpdateTitle": "官方目录有更新，点击查看并同步"
+			"officialUpdateTitle": "官方目录有更新，点击查看并同步",
+			"kindEmbedding": "向量",
+			"embeddingHint": "向量 · 上下文 {context}"
 		},
 		"sync": {
 			"title": "与官方目录同步",
@@ -1054,7 +1066,8 @@
 			"newRouteFor": "为 {title} 新建路由",
 			"activeTotalRoutes": "{active} 条活跃 / 共 {total} 条",
 			"noRoutesYet": "暂无路由",
-			"clickToAdd": "点击 + 添加第一条路由"
+			"clickToAdd": "点击 + 添加第一条路由",
+			"embeddingModelHint": "向量 · 按输入 token 计费"
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1872,7 +1885,8 @@
 		"realtimeTransportError": "实时 WebSocket 传输出错",
 		"realtimeWaitingTaskStarted": "WebSocket 已连接，正在等待上游 task-started…",
 		"realtimeClosed": "实时连接已关闭（{code}{reason}）。",
-		"streamDisconnected": "读取上游流式响应时连接中断（{cause}）。可先把 stream 改为 false 验证，或刷新后再试。"
+		"streamDisconnected": "读取上游流式响应时连接中断（{cause}）。可先把 stream 改为 false 验证，或刷新后再试。",
+		"kindEmbedding": "向量"
 	},
 	"simulator": {
 		"title": "模拟器",
@@ -1995,7 +2009,9 @@
 		"modelNoRoute": "无路由",
 		"matchingRoutesSummary": "{count} 条匹配的活跃路由",
 		"matchingRoutesHint": "只读预览：代理服务可能用到的活跃路由。实际请求时仍会故障转移。",
-		"supportedSurfacesEmpty": "当前模型和路由组没有可用的公开入口。"
+		"supportedSurfacesEmpty": "当前模型和路由组没有可用的公开入口。",
+		"kindEmbedding": "向量",
+		"protocolLockedEmbedding": "向量路由支持 OpenAI POST /v1/embeddings 与 Gemini 原生 :embedContent / :batchEmbedContents。"
 	},
 	"users": {
 		"detailUx": {
@@ -2374,7 +2390,8 @@
 				"tts": "TTS",
 				"asr": "ASR",
 				"tool": "工具",
-				"mcp": "MCP"
+				"mcp": "MCP",
+				"embedding": "向量"
 			},
 			"stream": "流式",
 			"realtime": "实时",
@@ -2402,7 +2419,8 @@
 				"stream": "客户端请求了流式响应",
 				"realtime": "实时会话",
 				"reasoning": "含推理 Token 或推理阶段 TTFT",
-				"failover": "上游尝试失败后发生了切换"
+				"failover": "上游尝试失败后发生了切换",
+				"embedding": "文本向量化"
 			},
 			"cost": "本次请求的计费金额与成本金额；旁边倍率为金额 ÷ 目录金额。",
 			"profit": "计费金额 − 成本金额；不含基础设施、税费等其他支出。",

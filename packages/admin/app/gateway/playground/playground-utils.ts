@@ -7,6 +7,7 @@ import {
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 	isAudioRouteModel,
 } from '@/lib/audio-transcriptions';
+import { embeddingBodyTemplateFor, isEmbeddingRouteModel } from '@/lib/embeddings';
 import { isAudioTranscriptionModel, type ModelKindFields } from '@octafuse/core/db/model-modalities';
 import { extraHeadersFromCustomParams, mergeRouteRequestBody, mergeUpstreamHeaders, splitRouteCustomParams } from '@octafuse/core/route-custom-params';
 import {
@@ -85,6 +86,7 @@ export const BODY_TEMPLATES: Record<string, string> = {
 
 export function resolveRouteModelKind(m: AdminModelRow | undefined): ModelKindFilter {
 	if (!m) return 'llm';
+	if (isEmbeddingRouteModel(m)) return 'embedding';
 	if (isAudioRouteModel(m)) return 'audio';
 	if (isImageRouteModel(m)) return 'image';
 	return 'llm';
@@ -275,6 +277,10 @@ export function templateForRoute(
 ): string {
 	const proto = normalizeProtocol(route.upstream_protocol);
 	const isImage = model ? isImageRouteModel(model) : false;
+	const isEmbedding = model ? isEmbeddingRouteModel(model) : false;
+	if (isEmbedding && (proto === 'openai' || proto === 'gemini')) {
+		return embeddingBodyTemplateFor({ protocol: proto });
+	}
 	const isAudio = model ? isAudioRouteModel(model) : false;
 	const isAudioTranscription = isAudioTranscriptionModel(model ?? {});
 	const isAudioHttp = proto === 'openai' || proto === 'dashscope' || proto === 'minimax';
@@ -355,9 +361,9 @@ export function resolvePlaygroundLlmFamily(route: RouteListRow | null | undefine
 
 export function playgroundLlmFamilyForRoute(
 	route: RouteListRow | null | undefined,
-	opts: { isImage?: boolean; isAudio?: boolean } = {},
+	opts: { isImage?: boolean; isAudio?: boolean; isEmbedding?: boolean } = {},
 ): PlaygroundLlmFamily | null {
-	if (opts.isImage || opts.isAudio) return null;
+	if (opts.isImage || opts.isAudio || opts.isEmbedding) return null;
 	return resolvePlaygroundLlmFamily(route);
 }
 

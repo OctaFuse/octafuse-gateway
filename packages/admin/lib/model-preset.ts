@@ -9,6 +9,7 @@
  * - `<vendor>.json` — LLM（`modalities.output` 以 `text` 为主，含多模态「看图」LLM）
  * - `<vendor>-image.json` — 纯文生图（`modalities.output` 含 `image`）
  * - `<vendor>-audio.json` — 语音转写 ASR（`pricing.audio_billing_mode: per_second | token`）
+ * - `<vendor>-embedding.json` — 向量模型（`modalities.output` 为 `embedding`；仅按输入 token 计费，output / cache 价为 0 / null）
  * - `aliyun.json` 另含 DashScope ASR/TTS，便于从同一个官方厂商目录一起导入供应商与音频模型。
  *
  * 各预设内 **`pricing.usd`** 与 D1 导出 `data/remote/.../data-remote-table-models-*.sql` 中 `pricing_profile` 一致（美元口径）；
@@ -31,6 +32,7 @@
  */
 import aliyunPresets from './model-presets/aliyun.json';
 import aliyunImagePresets from './model-presets/aliyun-image.json';
+import aliyunEmbeddingPresets from './model-presets/aliyun-embedding.json';
 import anthropicPresets from './model-presets/anthropic.json';
 import baichuanPresets from './model-presets/baichuan.json';
 import baiduPresets from './model-presets/baidu.json';
@@ -40,6 +42,7 @@ import coherePresets from './model-presets/cohere.json';
 import deepseekPresets from './model-presets/deepseek.json';
 import googlePresets from './model-presets/google.json';
 import googleImagePresets from './model-presets/google-image.json';
+import googleEmbeddingPresets from './model-presets/google-embedding.json';
 import meituanPresets from './model-presets/meituan.json';
 import metaPresets from './model-presets/meta.json';
 import minimaxPresets from './model-presets/minimax.json';
@@ -48,6 +51,7 @@ import moonshotPresets from './model-presets/moonshot.json';
 import openaiPresets from './model-presets/openai.json';
 import openaiImagePresets from './model-presets/openai-image.json';
 import openaiAudioPresets from './model-presets/openai-audio.json';
+import openaiEmbeddingPresets from './model-presets/openai-embedding.json';
 import perplexityPresets from './model-presets/perplexity.json';
 import stabilityPresets from './model-presets/stability.json';
 import stepfunPresets from './model-presets/stepfun.json';
@@ -91,6 +95,7 @@ export type StaticModelPresetRow = {
 const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	aliyunPresets,
 	aliyunImagePresets,
+	aliyunEmbeddingPresets,
 	anthropicPresets,
 	baichuanPresets,
 	baiduPresets,
@@ -100,6 +105,7 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	deepseekPresets,
 	googlePresets,
 	googleImagePresets,
+	googleEmbeddingPresets,
 	meituanPresets,
 	metaPresets,
 	minimaxPresets,
@@ -108,6 +114,7 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	openaiPresets,
 	openaiImagePresets,
 	openaiAudioPresets,
+	openaiEmbeddingPresets,
 	perplexityPresets,
 	stabilityPresets,
 	stepfunPresets,

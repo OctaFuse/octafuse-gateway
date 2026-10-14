@@ -15,6 +15,7 @@ import {
 import {
 	isAudioModel,
 	isAudioSpeechModel,
+	isEmbeddingModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import { providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
@@ -1076,6 +1077,7 @@ export function RouteModelFlow(props: Props) {
 	const isImage = meta ? isImageGenerationModel(meta) : false;
 	const isAudio = meta ? isAudioModel(meta) : false;
 	const isAudioSpeech = meta ? isAudioSpeechModel(meta) : false;
+	const isEmbedding = meta ? isEmbeddingModel(meta) : false;
 	const context = formatCompactTokens(meta?.context_window);
 	const maxOutput = formatCompactTokens(meta?.max_tokens);
 	// ASR 与 TTS 同属 Audio；必须按计费能力区分，避免 TTS 被标成按秒转写。
@@ -1083,7 +1085,9 @@ export function RouteModelFlow(props: Props) {
 		? t(isAudioSpeech ? 'audioSpeechModelHint' : 'audioModelHint')
 		: isImage
 			? t('imageModelHint')
-			: t('contextLine', { context, max: maxOutput });
+			: isEmbedding
+				? t('embeddingModelHint')
+				: t('contextLine', { context, max: maxOutput });
 	const tags = parseModelTagsList(meta);
 	const sections = splitRoutesByProtocolAndRouteGroup(card.groupRoutes);
 	const surfaceGroups = groupSectionsByRequestSurface(sections);

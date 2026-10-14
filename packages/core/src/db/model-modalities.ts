@@ -3,6 +3,7 @@
  * Stored in `models.input_modalities` / `models.output_modalities` as JSON string arrays.
  *
  * Kind (LLM vs image-generation vs audio ASR/TTS) is derived — no separate DB column:
+ * - Embedding: `output_modalities` includes `embedding`
  * - Image generation: `output_modalities` includes `image`
  * - Fallback when output modalities missing: `pricing_profile.image` present
  * - Audio transcription: `pricing_profile.audio_billing_mode` 为 `per_second`（+ `audio`）或 `token`（+ tiers）
@@ -13,7 +14,7 @@
 import { parsePricingProfile } from './pricing-profile';
 
 export const MODEL_INPUT_MODALITIES = ['text', 'image', 'audio', 'video', 'file'] as const;
-export const MODEL_OUTPUT_MODALITIES = ['text', 'image', 'audio'] as const;
+export const MODEL_OUTPUT_MODALITIES = ['text', 'image', 'audio', 'embedding'] as const;
 
 export type ModelInputModality = (typeof MODEL_INPUT_MODALITIES)[number];
 export type ModelOutputModality = (typeof MODEL_OUTPUT_MODALITIES)[number];
@@ -128,12 +129,19 @@ function normalizeOutputModalitiesList(
 	return parseModelModalitiesJson(raw);
 }
 
+/** Whether this catalog model produces embedding vectors (`output_modalities` includes `embedding`). */
+export function isEmbeddingModel(m: ModelKindFields): boolean {
+	const output = normalizeOutputModalitiesList(m.output_modalities);
+	return output != null && output.includes('embedding');
+}
+
 /**
  * Whether this catalog model is an image-generation model (e.g. gpt-image-2).
  * Prefer `output_modalities` containing `image`; only fall back to `pricing_profile.image`
  * when output modalities are missing.
  */
 export function isImageGenerationModel(m: ModelKindFields): boolean {
+	if (isEmbeddingModel(m)) return false;
 	const output = normalizeOutputModalitiesList(m.output_modalities);
 	if (output != null) {
 		return output.includes('image');
@@ -174,9 +182,10 @@ export function isAudioModel(m: ModelKindFields): boolean {
 	return isAudioTranscriptionModel(m) || isAudioSpeechModel(m);
 }
 
-/** False for image-generation / ASR / TTS models; true for chat / multimodal LLMs and unknown. */
+/** False for image-generation / ASR / TTS / embedding models; true for chat / multimodal LLMs and unknown. */
 export function isTextLlmModel(m: ModelKindFields): boolean {
 	return (
+		!isEmbeddingModel(m) &&
 		!isImageGenerationModel(m) &&
 		!isAudioModel(m)
 	);
