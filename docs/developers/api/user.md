@@ -408,7 +408,7 @@ Admin 中 Provider 的权威配置为 **`providers.endpoints`** JSON（迁移 `0
 
 OpenAI 兼容的模型列表接口。返回网关中 **至少有一条活跃路由** 的模型（模型集合全量可见，不按 API Key 过滤）。`model_info.discounts` 会按 route group 叠该 Key 所属用户的 `charged_cost_factors`（具体分组，其次 `"*"`，数字覆盖全部分组）；某个分组未命中时与公开目录倍率一致。本接口与 `GET /v1/me` 一样不计入 Key / 用户 RPM，额度用尽时仍可访问。
 
-面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（排除文生图、ASR、TTS 与向量模型；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）请使用 `POST /v1/images/*` 或 `kind=image`；语音转写与语音合成请使用 `POST /v1/audio/transcriptions`、`POST /v1/audio/speech` 或 `kind=audio`（与管理后台 Kind 一致，同时包含 ASR 与 TTS）；`kind=all` 不过滤。没有单独的 `kind=tts` / `kind=speech`。向量（Embedding）模型使用 `POST /v1/embeddings`、Gemini `:embedContent` / `:batchEmbedContents` 或 `kind=embedding`。
+面向 Chat Completions / Agent 的默认行为：**仅返回 LLM**（排除文生图、ASR、TTS 与向量模型；多模态「看图」LLM 仍会返回）。文生图模型（如 `gpt-image-2`）请使用 `POST /v1/images/*` 或 `kind=image`；语音转写请使用 `POST /v1/audio/transcriptions` 或 `kind=asr`，语音合成请使用 `POST /v1/audio/speech` 或 `kind=tts`；`kind=audio` 是同时包含 ASR 与 TTS 的兼容写法；`kind=all` 不过滤。类型判定规则见 [模型类型](../reference/model-kinds.md)。向量（Embedding）模型使用 `POST /v1/embeddings`、Gemini `:embedContent` / `:batchEmbedContents` 或 `kind=embedding`。
 
 `model_info.inbound` 是**请求入口**（`protocol` + `operation`），按当前可见路由列出 LLM 文本入口以及文生图 / ASR / TTS operation。它们不是 `GET /catalog/models` 的上游 `protocols`。公开目录的 `inbound` 与此同形。选哪条入口以及思考档位仍由客户端维护，本接口不返回 `thinking_config`。
 
@@ -423,7 +423,7 @@ GET /v1/models
 | 参数 | 说明 |
 |------|------|
 | `route_groups` | CSV，大小写不敏感。未传 → 默认 `default,free`；传入后仅保留匹配的 group（无匹配则该模型不出现） |
-| `kind` | `llm`（**默认**）仅文本/多模态 LLM（排除文生图、ASR、TTS）；`image` 仅文生图；`audio` 语音转写 ASR **与**语音合成 TTS（与管理后台 Kind 对齐）；`all` 不过滤 kind。非法值回退为 `llm`。没有 `kind=tts` / `kind=speech` |
+| `kind` | `llm`（**默认**）仅文本/多模态 LLM（排除文生图、ASR、TTS）；`image` 仅文生图；`asr` 仅语音识别；`tts` 仅语音合成；`audio` 为 ASR **与** TTS 的兼容别名；`embedding` 仅向量；`all` 不过滤 kind。非法值回退为 `llm`。取值与管理后台 Kind 一致，见 [模型类型](../reference/model-kinds.md) |
 
 ### 响应
 
@@ -510,8 +510,11 @@ curl http://localhost:8787/v1/models \
 curl "http://localhost:8787/v1/models?kind=image" \
   -H "Authorization: Bearer sk-xxx..."
 
-# 音频：ASR 与 TTS
-curl "http://localhost:8787/v1/models?kind=audio" \
+# 仅语音识别 / 仅语音合成（kind=audio 同时返回两者）
+curl "http://localhost:8787/v1/models?kind=asr" \
+  -H "Authorization: Bearer sk-xxx..."
+
+curl "http://localhost:8787/v1/models?kind=tts" \
   -H "Authorization: Bearer sk-xxx..."
 
 # 全部 kind（再按定价 / 模态 / inbound 自行筛选）
@@ -605,7 +608,7 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 | 认证 | 用户 API Key | **无** | Console Session 或具名 Admin API Key | Console Session 或 `users.read` |
 | `discounts` | 官方时段 × 路由 Charged，再叠该用户模型倍率 | 仅官方时段 × 路由 Charged（公共折扣） | — | 与 `/v1/models` 相同合成；**只含已配置用户倍率的模型** |
 | 默认 `route_groups` | `default,free` | 未传 → **全部** active group | — | 未传 → **全部** active group |
-| 默认 `kind` | `llm`（排除文生图、ASR、TTS、向量；`kind=audio` = ASR + TTS；`kind=embedding` = 向量） | 不过滤 kind | — | 不过滤 kind |
+| 默认 `kind` | `llm`（排除文生图、ASR、TTS、向量；`kind=asr` / `kind=tts` 分别为语音识别 / 语音合成，`kind=audio` = 两者；`kind=embedding` = 向量） | 不过滤 kind | — | 不过滤 kind |
 | 协议能力 | `inbound`（请求入口 protocol + operation） | `protocols` / `protocols_by_group`（**上游** `upstream_protocol`）以及 `inbound`（请求入口，与 `/v1/models` 同形） | 不返回 | 不返回（只 overlay `discounts`） |
 | 计入用户 RPM | 否 | 否 | 否 | 否 |
 | 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD | 用户个性化折扣 overlay |
@@ -1109,7 +1112,7 @@ Content-Type: application/json
 
 同协议 OpenAI 上游使用 `passthrough`；转到 DashScope SpeechSynthesizer、Qwen-TTS、DashScope 上的 MiniMax，或 MiniMax 官方 `t2a_v2` 时，必须选择对应的显式 adapter。MiniMax 官方适配器是 `minimax-tts`：`voice` 用 MiniMax `voice_id`，格式限 `mp3` / `pcm` / `flac` / `wav`，语速限 `0.5`–`2`，不支持 `instructions`。非流式返回音频字节；`stream_format=sse` 返回 OpenAI speech SSE。最终字符数采用上游 `extra_info.usage_characters`，缺失时不会用输入长度补算。DashScope TTS 则采用上游 `usage.characters`。
 
-默认 `GET /v1/models` **不含** TTS；列出 TTS 请用 `kind=audio`（同时含 ASR）或 `kind=all`。命中可见 `audio.speech` 路由时，`model_info.inbound` 会包含 `{ "protocol": "openai", "operation": "audio.speech" }`。
+默认 `GET /v1/models` **不含** TTS；列出 TTS 请用 `kind=tts`（`kind=audio` 会同时含 ASR）或 `kind=all`。命中可见 `audio.speech` 路由时，`model_info.inbound` 会包含 `{ "protocol": "openai", "operation": "audio.speech" }`。
 
 ```bash
 curl -sS "$GATEWAY_URL/v1/audio/speech" \
@@ -1250,7 +1253,7 @@ curl -sS "$GATEWAY_URL/v1/audio/transcriptions" \
   -F response_format=json
 ```
 
-默认 `GET /v1/models` **不含** ASR / TTS；列表可用 `kind=audio`（ASR + TTS，与管理后台 Kind 对齐）或 `kind=all`。命中可见 `audio.transcriptions` 路由时，`model_info.inbound` 会包含 `{ "protocol": "openai", "operation": "audio.transcriptions" }`。Admin 侧 Kind 判定依据为有效的 `audio_billing_mode`（ASR：`per_second` + `audio` 块，或 `token` + `tiers`；TTS：`per_character` + `audio`），见 [admin.md「pricing_profile」](./admin.md#pricing_profile--price_override-契约adminmodelsadminroutes)。
+默认 `GET /v1/models` **不含** ASR / TTS；列表可用 `kind=asr`（`kind=audio` 会同时含 TTS）或 `kind=all`。命中可见 `audio.transcriptions` 路由时，`model_info.inbound` 会包含 `{ "protocol": "openai", "operation": "audio.transcriptions" }`。Kind 判定规则（有效的 `audio_billing_mode` 优先，其次按模态签名兜底）见 [模型类型](../reference/model-kinds.md)；计费字段见 [admin.md「pricing_profile」](./admin.md#pricing_profile--price_override-契约adminmodelsadminroutes)。
 
 ### MiniMax 文件转写透传
 

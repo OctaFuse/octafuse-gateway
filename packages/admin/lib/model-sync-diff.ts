@@ -10,6 +10,7 @@
  *
  * 官方未给出的字段（null）一律不报差异，不会建议清空本地值。
  */
+import type { ModelKind } from '@octafuse/core/db/model-kind';
 import { parseModelModalitiesJson } from '@octafuse/core/db/model-modalities';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 
@@ -247,7 +248,7 @@ export function buildModelSyncPatch(
 export type ModelSyncModelEntry = {
 	model_id: string;
 	display_name: string | null;
-	kind: 'llm' | 'image' | 'audio' | 'embedding';
+	kind: ModelKind;
 	routes_count: number;
 	active_routes_count: number;
 	fields: ModelSyncField[];

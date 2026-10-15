@@ -2,7 +2,6 @@
  * Shared helpers for Admin Playground / Simulator image APIs
  * (`/images/generations` JSON and `/images/edits` multipart).
  */
-import { isImageGenerationModel, type ModelKindFields } from '@octafuse/core/db/model-modalities';
 
 /** OpenAI Images operation: text-to-image vs image edit. */
 export type ImageOperation = 'generations' | 'edits';
@@ -196,10 +195,6 @@ export function imageBodyTemplateFor(input: ImageBodyTemplateInput): string {
 
 /** 火山方舟 / BytePlus Seedream 原生生图默认样例（未识别型号时用 lite 最低档 `2K`）。 */
 export const VOLCENGINE_IMAGE_BODY_TEMPLATE = imageBodyTemplateFor({ protocol: 'volcengine' });
-
-export function isImageRouteModel(m: ModelKindFields): boolean {
-	return isImageGenerationModel(m);
-}
 
 /** Validate reference image files before send (Playground / Simulator). */
 export function validateEditImageFiles(

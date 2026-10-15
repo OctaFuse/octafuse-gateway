@@ -4,17 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
-import {
-	isAudioModel,
-	isEmbeddingModel,
-	isImageGenerationModel,
-} from '@octafuse/core/db/model-modalities';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import { isRouteStrategyName } from '@octafuse/core/db/model-route-policy';
 import { parseRoutePoolTierStrategies } from '@octafuse/core/db/route-pool-tier-strategies';
 import { DEFAULT_STICKY_IDLE_TTL_SECONDS } from '@octafuse/core/db/route-pool-sticky-types';
 import { useBusinessTimezone } from '@/components/BusinessTimezoneProvider';
-import { getCatalogAudioPricingDisplay, isAudioRouteModel } from '@/lib/audio-transcriptions';
-import { isImageRouteModel } from '@/lib/image-generations';
+import { getCatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
 import { getCatalogImagePricingDisplay, getCatalogPricingTierRows } from '@/lib/pricing-ui';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import { normalizeRouteGroup } from '@/lib/route-group-ui';
@@ -261,17 +256,11 @@ export function useRoutesPageState() {
 	}, [routes]);
 
 	const kindCounts = useMemo(() => {
-		let llm = 0;
-		let image = 0;
-		let audio = 0;
-		let embedding = 0;
+		const counts = { all: models.length, llm: 0, image: 0, asr: 0, tts: 0, embedding: 0 };
 		for (const m of models) {
-			if (isEmbeddingModel(m)) embedding += 1;
-			else if (isImageGenerationModel(m)) image += 1;
-			else if (isAudioModel(m)) audio += 1;
-			else llm += 1;
+			counts[resolveModelKind(m)] += 1;
 		}
-		return { all: models.length, llm, image, audio, embedding };
+		return counts;
 	}, [models]);
 
 	const routesByModel = useMemo(
@@ -370,15 +359,12 @@ export function useRoutesPageState() {
 		[models, formData.model_id]
 	);
 
-	const selectedModelIsImage = useMemo(
-		() => (selectedModel ? isImageRouteModel(selectedModel) : false),
+	const selectedModelKind = useMemo(
+		() => (selectedModel ? resolveModelKind(selectedModel) : 'llm'),
 		[selectedModel]
 	);
-
-	const selectedModelIsAudio = useMemo(
-		() => (selectedModel ? isAudioRouteModel(selectedModel) : false),
-		[selectedModel]
-	);
+	const selectedModelIsImage = selectedModelKind === 'image';
+	const selectedModelIsAudio = selectedModelKind === 'asr' || selectedModelKind === 'tts';
 
 	const catalogStandardTierRows = useMemo(() => {
 		if (!selectedModel || selectedModelIsImage || selectedModelIsAudio) return [];

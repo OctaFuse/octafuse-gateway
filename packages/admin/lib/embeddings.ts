@@ -2,12 +2,7 @@
  * Playground / Simulator / Routes 快速测试共用的向量（Embeddings）辅助：
  * 请求体模板、模型判定、响应摘要（向量个数 / 维度 / 前几位数值）。
  */
-import { isEmbeddingModel, type ModelKindFields } from '@octafuse/core/db/model-modalities';
 import { tryParseUsageSummary } from '@/lib/playground/usage-parsing';
-
-export function isEmbeddingRouteModel(m: ModelKindFields): boolean {
-	return isEmbeddingModel(m);
-}
 
 /** OpenAI `POST /v1/embeddings` 示例体。 */
 export const EMBEDDING_OPENAI_BODY_TEMPLATE = `{

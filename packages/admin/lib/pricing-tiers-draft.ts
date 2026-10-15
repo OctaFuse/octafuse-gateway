@@ -3,6 +3,7 @@
  * Image 双模式：`image_billing_mode` token / per_image + 可选 `image` 块。
  * Audio 三模式：ASR per_second/token，TTS per_character。
  */
+import type { ModelKind } from '@octafuse/core/db/model-kind';
 import {
 	parsePricingProfile,
 	profileHasAudioPerCharacterPricing,
@@ -710,14 +711,14 @@ export function attachCatalogScheduleToProfileJson(
 
 /** 模型弹窗只读预览：标准价 + 时段倍率，形状与保存到 `pricing_profile` 的 JSON 一致。 */
 export function formatCatalogPricingProfilePreview(input: {
-	kind: 'llm' | 'image' | 'audio' | 'embedding';
+	kind: ModelKind;
 	rows: PricingTierDraftRow[];
 	imageDraft?: ImagePricingDraftState;
 	audioDraft?: AudioPricingDraftState;
 	schedule?: CatalogScheduleFormWindow[];
 }): { ok: boolean; text: string } {
 	const tierJson =
-		input.kind === 'audio' && input.audioDraft
+		(input.kind === 'asr' || input.kind === 'tts') && input.audioDraft
 			? serializeAudioPricingDraft(input.audioDraft)
 			: input.kind === 'image' && input.imageDraft
 				? serializeImagePricingDraft(input.imageDraft)

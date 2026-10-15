@@ -111,13 +111,13 @@ describe('adapter registry', () => {
 			'images.generations',
 			'images.edits',
 		]);
-		assert.deepEqual(requestOperationsFromRegistry('dashscope', 'audio.transcription'), [
+		assert.deepEqual(requestOperationsFromRegistry('dashscope', 'asr'), [
 			'audio.transcriptions.multimodal',
 			'audio.transcriptions.realtime.inference',
 			'audio.transcriptions.realtime.session',
 			'audio.transcriptions.async',
 		]);
-		assert.deepEqual(requestOperationsFromRegistry('dashscope', 'audio.speech'), [
+		assert.deepEqual(requestOperationsFromRegistry('dashscope', 'tts'), [
 			'audio.speech.realtime.inference',
 			'audio.speech',
 			'audio.speech.stream',
@@ -127,13 +127,13 @@ describe('adapter registry', () => {
 		assert.deepEqual(requestOperationsFromRegistry('dashscope', 'image'), [
 			'images.generations.multimodal',
 		]);
-		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'audio.transcription'), [
+		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'asr'), [
 			'audio.transcriptions.multimodal',
 			'audio.transcriptions.realtime.inference',
 			'audio.transcriptions.realtime.session',
 			'audio.transcriptions.async',
 		]);
-		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'audio.speech'), [
+		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'tts'), [
 			'audio.speech.realtime.inference',
 			'audio.speech',
 			'audio.speech.stream',
@@ -143,13 +143,13 @@ describe('adapter registry', () => {
 		assert.deepEqual(upstreamOperationsFromRegistry('dashscope', 'image'), [
 			'images.generations.multimodal',
 		]);
-		assert.deepEqual(requestOperationsFromRegistry('minimax', 'audio.transcription'), [
+		assert.deepEqual(requestOperationsFromRegistry('minimax', 'asr'), [
 			'audio.transcriptions',
 		]);
-		assert.deepEqual(upstreamOperationsFromRegistry('minimax', 'audio.transcription'), [
+		assert.deepEqual(upstreamOperationsFromRegistry('minimax', 'asr'), [
 			'audio.transcriptions',
 		]);
-		assert.deepEqual(requestOperationsFromRegistry('minimax', 'audio.speech'), ['audio.speech']);
+		assert.deepEqual(requestOperationsFromRegistry('minimax', 'tts'), ['audio.speech']);
 		assert.deepEqual(requestOperationsFromRegistry('minimax', 'image'), ['images.generations']);
 		assert.deepEqual(requestOperationsFromRegistry('gemini', 'llm'), ['models.generate']);
 		assert.deepEqual(requestOperationsFromRegistry('gemini', 'image'), ['models.generate']);

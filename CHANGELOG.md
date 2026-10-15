@@ -4,12 +4,14 @@
 
 ### Proxy
 
+- **模型列表按 ASR / TTS 过滤**：`GET /v1/models` 的 `kind` 新增 `asr`（语音识别）与 `tts`（语音合成），`kind=audio` 保留为两者的兼容别名。音频入口（MiniMax T2A、DashScope 语音合成与文件转写）会分别提示「模型类型不符」与「缺少音频计费」。无需数据库迁移。
 - **向量 Embeddings**：新增 OpenAI 兼容 `POST /v1/embeddings`，以及 Gemini 原生 `POST /v1beta/models/{model}:embedContent` / `:batchEmbedContents`，均走现有路由池、故障转移、限流与记账，请求体原样透传（Gemini batch 会改写每个 `requests[].model`）。向量模型以 `output_modalities` 含 `embedding` 标识，仅按输入 token 计费（OpenAI `usage.prompt_tokens`，缺失回退 `total_tokens`；Gemini `usageMetadata.promptTokenCount`），上游无 usage 时不计费。默认 `GET /v1/models` 不含向量模型，新增 `kind=embedding`。供应商新增 `embeddings`（OpenAI）与 `models.embed`（Gemini）端点能力。无需数据库迁移。关闭 #113。
 - **MCP 聚合入口**：`POST /mcp` 把管理员接入的远程 MCP 服务聚合成一个无会话 Streamable HTTP 服务，`POST /mcp/{slug}` 只暴露单个服务。工具、提示词和资源清单来自已审核快照；只有 `tools/call` 计入三本账和请求日志（`provider_id=octafuse-mcp`）。当前计费收敛为 request：每次成功工具调用固定计 1 单元，支持标准价 × 用户/供应倍率，用户倍率为 0 时免费；调用前检查余额，上游失败不扣费。计费 JSON 保留版本、模式、标准价、倍率和模式配置，后续扩展模式无需数据库迁移。`GET /v1/tools/pricing` 增加已启用 MCP 工具的 `mcp` 段，含计费单元与单价。
 - **请求追踪**：聊天、消息和 Responses 的响应返回 `X-OctaFuse-Request-Id`，与请求日志主键一致，成功和失败都会带上。请求日志额外记录消息结构摘要（按角色汇总字段名和 content part 类型），不记录消息正文。
 
 ### Admin
 
+- **模型类型拆分 ASR / TTS，判定规则收敛**：Models、Routes、调试台、模拟器的 Kind 由「音频」拆成「语音识别（ASR）」与「语音合成（TTS）」，新建 / 编辑模型直接选这两项，不再有二级「音频能力」开关；旧链接的 `?kind=audio` 落到 ASR。Kind 的判定统一为 `resolveModelKind`（有效的音频计费模式优先，其次按模态签名兜底，全模态 LLM 仍判为 LLM），Admin 与 Proxy 不再各写一套。保存模型时若计费模式与模态互相矛盾（如 TTS 但输出不含 `audio`）会被拒绝。判定规则见 `docs/developers/reference/model-kinds.md`。无需数据库迁移。
 - **向量模型支持**：模型、路由、供应商、调试台、模拟器、请求日志均新增 `embedding` 类型。模型表单只保留输入价；供应商可覆盖 `embeddings` 与 `models.embed` 端点；调试台与路由快速测试提供 OpenAI / Gemini 向量请求模板，并展示向量个数、维度和用量。静态目录新增 OpenAI（`text-embedding-3-small` / `-large` / `ada-002`）、Google（`gemini-embedding-2` 文本输入价）和阿里云（`qwen3.7-text-embedding`、`text-embedding-v4`）预设；人民币价除阿里云外为美元 × 7 的占位换算。供应商导入模板里，官方文档确认提供 OpenAI 兼容 embeddings 的供应商补上了 `openai.endpoints.embeddings`：火山方舟、阿里云百炼（国内 / 国际）、腾讯混元、百度千帆、智谱 GLM、Google Gemini、Mistral、SambaNova、Together、Fireworks、DeepInfra、Novita、Cohere、NVIDIA NIM、OpenRouter、Vercel AI Gateway、SiliconFlow（国内 / 国际）、Ollama。Z.AI 国际站官方暂不支持 embeddings，BytePlus、MiniMax、Qwen AI Platform 等未核实的未写入；全能力的 OpenAI Base（OpenAI、Azure OpenAI、ZenMux）和 Gemini Base 模板会自动派生向量端点。
 - **Azure OpenAI 导入模板**：官方 Base 改为 OpenAI v1 路径 `https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1`。Foundry 控制台的 `https://YOUR_RESOURCE_NAME.services.ai.azure.com/openai/v1` 视为同一模板。仍使用不带 `/v1` 的旧地址会提示更新；采用官方时保留已填写的资源名和当前主机。
 - **供应商与官方同步**：模板里的部署占位符换成实际值后不再提示更新。Vertex 的 `YOUR_PROJECT_ID` 和默认区域 `global`、Azure OpenAI 的 `YOUR_RESOURCE_NAME` 填好后视为与官方一致。官方路径本身有变化时仍会列出；采用官方时保留已经填写的项目、资源名和区域。

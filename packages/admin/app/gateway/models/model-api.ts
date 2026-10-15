@@ -1,4 +1,4 @@
-import { isAudioModel, isEmbeddingModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import { readApiJson } from '@/lib/api-json';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import {
@@ -38,9 +38,7 @@ export async function saveModel(
 	audioPricingDraft?: AudioPricingDraftState | null,
 	catalogScheduleWindows?: CatalogScheduleFormWindow[]
 ): Promise<{ success: true } | { success: false; message: string }> {
-	const isImage = isImageGenerationModel({
-		output_modalities: formData.output_modalities,
-	});
+	const isImage = resolveModelKind({ output_modalities: formData.output_modalities }) === 'image';
 	const isAudio = !!audioPricingDraft;
 	const tierJson = isAudio
 		? serializeAudioPricingDraft(audioPricingDraft)
@@ -63,16 +61,14 @@ export async function saveModel(
 		return { success: false, message: metaParsed.error };
 	}
 
-	const isImageResolved = isImageGenerationModel({
+	const resolvedKind = resolveModelKind({
+		input_modalities: formData.input_modalities,
 		output_modalities: formData.output_modalities,
 		pricing_profile: withSchedule.json,
 	});
-	const isAudioResolved =
-		isAudio ||
-		isAudioModel({
-			pricing_profile: withSchedule.json,
-		});
-	const isEmbeddingResolved = isEmbeddingModel({ output_modalities: formData.output_modalities });
+	const isImageResolved = resolvedKind === 'image';
+	const isAudioResolved = isAudio || resolvedKind === 'asr' || resolvedKind === 'tts';
+	const isEmbeddingResolved = resolvedKind === 'embedding';
 	const skipTokenLimits = isImageResolved || isAudioResolved;
 	const parsedMax = formData.max_tokens.trim() ? parseInt(formData.max_tokens, 10) : NaN;
 	const payload = {

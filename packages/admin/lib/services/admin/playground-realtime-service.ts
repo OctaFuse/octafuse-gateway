@@ -7,6 +7,7 @@ import { resolveUpstreamEndpoint } from '@octafuse/core/provider-endpoints';
 import { mergePlaygroundRequestBody, type PlaygroundResolvedRoute, resolvePlaygroundRoute } from './playground-service';
 import type { GatewayRepositories } from '@octafuse/core';
 import { AdminServiceError } from './errors';
+import { isAudioKind } from '@/lib/invoke-kind';
 
 export const PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS = [
 	'audio.transcriptions.realtime.inference',
@@ -110,7 +111,7 @@ export async function connectPlaygroundDashScopeRealtime(
 	requestSignal?: AbortSignal,
 	options?: PlaygroundRealtimeDispatchOptions,
 ): Promise<PlaygroundRealtimeDispatchResult> {
-	if (route.upstreamProtocol !== 'dashscope' || !route.isAudioModel) {
+	if (route.upstreamProtocol !== 'dashscope' || !isAudioKind(route.modelKind)) {
 		throw new AdminServiceError(400, 'Playground realtime routes must use an audio DashScope route');
 	}
 	const endpoint = resolveUpstreamEndpoint('dashscope', realtimeCapability(operation), route.providerEndpoints, {

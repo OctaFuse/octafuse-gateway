@@ -1,3 +1,5 @@
+import { MODEL_KINDS } from '@octafuse/core/db/model-kind';
+import { normalizeLegacyKindParam } from '@/lib/invoke-kind';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import type { UpstreamProtocol } from '@/lib/upstream-protocol';
 
@@ -184,13 +186,13 @@ export type RoutesPageData = {
 };
 
 /** 路由页独立的模型类型筛选；`all` 不改变模型管理页的筛选语义。 */
-export const ROUTE_KIND_FILTERS = ['all', 'llm', 'image', 'audio', 'embedding'] as const;
+export const ROUTE_KIND_FILTERS = ['all', ...MODEL_KINDS] as const;
 export type RouteKindFilter = (typeof ROUTE_KIND_FILTERS)[number];
 export const DEFAULT_ROUTE_KIND_FILTER: RouteKindFilter = 'all';
 
 export function parseRouteKindFilterParam(value: string | null): RouteKindFilter {
 	if (value == null || value.trim() === '') return DEFAULT_ROUTE_KIND_FILTER;
-	const normalized = value.trim().toLowerCase();
+	const normalized = normalizeLegacyKindParam(value.trim().toLowerCase());
 	return (ROUTE_KIND_FILTERS as readonly string[]).includes(normalized)
 		? (normalized as RouteKindFilter)
 		: DEFAULT_ROUTE_KIND_FILTER;

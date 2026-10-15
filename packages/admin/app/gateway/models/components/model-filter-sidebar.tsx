@@ -13,7 +13,7 @@ type Props = {
 	selectedVendor: string;
 	modelsByVendor: [string, unknown[]][];
 	selectedKind: ModelListKindFilter;
-	kindCounts: { llm: number; image: number; audio: number; embedding: number };
+	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number };
 	onSelectVendor: (vendor: string) => void;
 	onSelectKind: (kind: ModelListKindFilter) => void;
 	onClearFilter: () => void;
@@ -57,7 +57,8 @@ export function ModelFilterSidebar(props: Props) {
 						<option value="all">{tFilter('all')} ({modelCount})</option>
 						<option value="llm">{t('kindLlm')} ({kindCounts.llm})</option>
 						<option value="image">{t('kindImage')} ({kindCounts.image})</option>
-						<option value="audio">{t('kindAudio')} ({kindCounts.audio})</option>
+						<option value="asr">{t('kindAsr')} ({kindCounts.asr})</option>
+						<option value="tts">{t('kindTts')} ({kindCounts.tts})</option>
 						<option value="embedding">{t('kindEmbedding')} ({kindCounts.embedding})</option>
 					</select>
 				</label>
@@ -92,10 +93,16 @@ export function ModelFilterSidebar(props: Props) {
 							onClick={() => onSelectKind('image')}
 						/>
 						<HorizontalButton
-							label={t('kindAudio')}
-							count={kindCounts.audio}
-							isActive={selectedKind === 'audio'}
-							onClick={() => onSelectKind('audio')}
+							label={t('kindAsr')}
+							count={kindCounts.asr}
+							isActive={selectedKind === 'asr'}
+							onClick={() => onSelectKind('asr')}
+						/>
+						<HorizontalButton
+							label={t('kindTts')}
+							count={kindCounts.tts}
+							isActive={selectedKind === 'tts'}
+							onClick={() => onSelectKind('tts')}
 						/>
 						<HorizontalButton
 							label={t('kindEmbedding')}

@@ -2,16 +2,9 @@
  * Model input/output modalities — aligned with OpenRouter-style capability labels.
  * Stored in `models.input_modalities` / `models.output_modalities` as JSON string arrays.
  *
- * Kind (LLM vs image-generation vs audio ASR/TTS) is derived — no separate DB column:
- * - Embedding: `output_modalities` includes `embedding`
- * - Image generation: `output_modalities` includes `image`
- * - Fallback when output modalities missing: `pricing_profile.image` present
- * - Audio transcription: `pricing_profile.audio_billing_mode` 为 `per_second`（+ `audio`）或 `token`（+ tiers）
- * - Audio speech: `pricing_profile.audio_billing_mode` 为 `per_character`（+ `audio`）
- * - Do **not** use `input_modalities` containing `image` (multimodal LLMs also accept images)
+ * Kind（LLM / image / ASR / TTS / embedding）由字段派生、不单独落库，判定规则见 `model-kind.ts` 与
+ * `docs/developers/reference/model-kinds.md`。
  */
-
-import { parsePricingProfile } from './pricing-profile';
 
 export const MODEL_INPUT_MODALITIES = ['text', 'image', 'audio', 'video', 'file'] as const;
 export const MODEL_OUTPUT_MODALITIES = ['text', 'image', 'audio', 'embedding'] as const;
@@ -106,87 +99,13 @@ export function modelModalitiesJsonEqual(a: string | null | undefined, b: string
 	return true;
 }
 
-/** Fields needed to classify catalog models as LLM vs image-generation vs audio ASR/TTS. */
-export type ModelKindFields = {
-	/** Stored JSON text, or already-parsed modality list */
-	output_modalities?: string | string[] | null;
-	input_modalities?: string | string[] | null;
-	pricing_profile?: string | null;
-};
-
-function normalizeOutputModalitiesList(
-	raw: string | string[] | null | undefined
-): string[] | null {
-	if (raw == null) return null;
-	if (Array.isArray(raw)) {
-		const out: string[] = [];
-		for (const item of raw) {
-			const v = String(item).trim().toLowerCase();
-			if (v) out.push(v);
-		}
-		return out.length > 0 ? out : null;
-	}
-	return parseModelModalitiesJson(raw);
-}
-
-/** Whether this catalog model produces embedding vectors (`output_modalities` includes `embedding`). */
-export function isEmbeddingModel(m: ModelKindFields): boolean {
-	const output = normalizeOutputModalitiesList(m.output_modalities);
-	return output != null && output.includes('embedding');
-}
-
-/**
- * Whether this catalog model is an image-generation model (e.g. gpt-image-2).
- * Prefer `output_modalities` containing `image`; only fall back to `pricing_profile.image`
- * when output modalities are missing.
- */
-export function isImageGenerationModel(m: ModelKindFields): boolean {
-	if (isEmbeddingModel(m)) return false;
-	const output = normalizeOutputModalitiesList(m.output_modalities);
-	if (output != null) {
-		return output.includes('image');
-	}
-	const profile = parsePricingProfile(m.pricing_profile ?? undefined);
-	return profile?.image != null;
-}
-
-/**
- * Whether this catalog model is an audio transcription (ASR) model.
- * Detected via `audio_billing_mode: per_second|token` with matching pricing payload.
- */
-export function isAudioTranscriptionModel(m: ModelKindFields): boolean {
-	const profile = parsePricingProfile(m.pricing_profile ?? undefined);
-	if (!profile?.audio_billing_mode) {
-		return false;
-	}
-	if (profile.audio_billing_mode === 'per_second') {
-		return profile.audio != null;
-	}
-	if (profile.audio_billing_mode === 'token') {
-		return profile.tiers.length > 0;
-	}
-	return false;
-}
-
-/** Whether this catalog model synthesizes speech and bills by upstream characters. */
-export function isAudioSpeechModel(m: ModelKindFields): boolean {
-	const profile = parsePricingProfile(m.pricing_profile ?? undefined);
-	return (
-		profile?.audio_billing_mode === 'per_character' &&
-		profile.audio?.price_per_character != null
-	);
-}
-
-/** 该目录模型是否属于音频端点模型（ASR 或 TTS）。 */
-export function isAudioModel(m: ModelKindFields): boolean {
-	return isAudioTranscriptionModel(m) || isAudioSpeechModel(m);
-}
-
-/** False for image-generation / ASR / TTS / embedding models; true for chat / multimodal LLMs and unknown. */
-export function isTextLlmModel(m: ModelKindFields): boolean {
-	return (
-		!isEmbeddingModel(m) &&
-		!isImageGenerationModel(m) &&
-		!isAudioModel(m)
-	);
-}
+// Kind 判定（LLM / image / ASR / TTS / embedding）的唯一真源在 model-kind.ts；此处再导出以保持原导入路径可用。
+export {
+	isAudioModel,
+	isAudioSpeechModel,
+	isAudioTranscriptionModel,
+	isEmbeddingModel,
+	isImageGenerationModel,
+	isTextLlmModel,
+} from './model-kind';
+export type { ModelKindFields } from './model-kind';

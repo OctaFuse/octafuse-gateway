@@ -19,7 +19,7 @@ type Props = {
 	filterProviderKind: string;
 	providerKindFilterOptions: ProviderKindFilterOption[];
 	statusCounts: { all: number; active: number; inactive: number };
-	kindCounts: { all: number; llm: number; image: number; audio: number; embedding: number };
+	kindCounts: { all: number; llm: number; image: number; asr: number; tts: number; embedding: number };
 	routeGroupFilterOptions: string[];
 	routeGroupCounts: Map<string, number>;
 	vendorFilterOptions: Array<{ key: string; label: string; count: number }>;
@@ -55,7 +55,7 @@ export function RouteFilterSidebar(props: Props) {
 		{ key: 'status', label: t('status'), value: props.filterStatus, onChange: props.onFilterStatusChange,
 			options: [ { value: '', label: t('all'), count: props.statusCounts.all }, { value: 'active', label: tc('active'), count: props.statusCounts.active }, { value: 'inactive', label: tc('inactive'), count: props.statusCounts.inactive } ] },
 		{ key: 'kind', label: t('kind'), value: props.filterKind, onChange: (value: string) => props.onFilterKindChange(value as RouteKindFilter),
-			options: [ { value: 'all', label: t('all'), count: props.kindCounts.all }, { value: 'llm', label: t('kindLlm'), count: props.kindCounts.llm }, { value: 'image', label: t('kindImage'), count: props.kindCounts.image }, { value: 'audio', label: t('kindAudio'), count: props.kindCounts.audio }, { value: 'embedding', label: t('kindEmbedding'), count: props.kindCounts.embedding } ] },
+			options: [ { value: 'all', label: t('all'), count: props.kindCounts.all }, { value: 'llm', label: t('kindLlm'), count: props.kindCounts.llm }, { value: 'image', label: t('kindImage'), count: props.kindCounts.image }, { value: 'asr', label: t('kindAsr'), count: props.kindCounts.asr }, { value: 'tts', label: t('kindTts'), count: props.kindCounts.tts }, { value: 'embedding', label: t('kindEmbedding'), count: props.kindCounts.embedding } ] },
 	];
 	const active = [
 		...filters.filter(f => f.value).map(f => ({ key: f.key, label: `${f.label}: ${f.options.find(o => o.value === f.value)?.label ?? f.value}`, clear: () => f.onChange('') })),

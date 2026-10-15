@@ -16,7 +16,7 @@ type Props = {
 	filteredCatalogRows: PresetCatalogRow[];
 	catalogSearch: string;
 	catalogKind: ModelKindFilter;
-	kindCounts: { llm: number; image: number; audio: number; embedding: number };
+	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number };
 	catalogLoading: boolean;
 	catalogError: string;
 	selected: Record<string, boolean>;
@@ -209,14 +209,7 @@ export function ModelImportModal(props: Props) {
 	/** 始终单 Kind：不展示 Kind 列；Image / Audio 视图隐藏 Context / Max Tokens。 */
 	const showKindColumn = false;
 	const showTokenColumns = catalogKind === 'llm';
-	const kindScopedTotal =
-		catalogKind === 'image'
-			? kindCounts.image
-			: catalogKind === 'audio'
-				? kindCounts.audio
-				: catalogKind === 'embedding'
-					? kindCounts.embedding
-					: kindCounts.llm;
+	const kindScopedTotal = kindCounts[catalogKind];
 
 	return (
 		<div
@@ -317,11 +310,18 @@ export function ModelImportModal(props: Props) {
 							onClick={() => onCatalogKindChange('image')}
 						/>
 						<KindFilterChip
-							label={tKind('kindAudio')}
-							count={kindCounts.audio}
-							active={catalogKind === 'audio'}
+							label={tKind('kindAsr')}
+							count={kindCounts.asr}
+							active={catalogKind === 'asr'}
 							disabled={catalogLoading}
-							onClick={() => onCatalogKindChange('audio')}
+							onClick={() => onCatalogKindChange('asr')}
+						/>
+						<KindFilterChip
+							label={tKind('kindTts')}
+							count={kindCounts.tts}
+							active={catalogKind === 'tts'}
+							disabled={catalogLoading}
+							onClick={() => onCatalogKindChange('tts')}
 						/>
 						<KindFilterChip
 							label={tKind('kindEmbedding')}
@@ -416,19 +416,12 @@ export function ModelImportModal(props: Props) {
 								<tbody className="divide-y divide-gray-100 bg-white">
 									{sortedRows.map((row) => {
 										const alreadyInGateway = existingModelIds.has(row.id);
-										const kind =
-											row.kind === 'image'
-												? 'image'
-												: row.kind === 'audio'
-													? 'audio'
-													: row.kind === 'embedding'
-														? 'embedding'
-														: 'llm';
+										const kind = row.kind;
 										const pricingLabel =
 											row.pricing_label ??
 											(kind === 'image'
 												? t('pricingPerImageFallback')
-												: kind === 'audio'
+												: kind === 'asr'
 													? t('pricingPerSecondFallback')
 													: t('catalogTiers', { count: row.tier_count }));
 										const pricingDetail = row.pricing_preview ?? pricingLabel;
@@ -472,7 +465,7 @@ export function ModelImportModal(props: Props) {
 															className={
 																kind === 'image'
 																	? 'inline-flex rounded bg-violet-50 px-1.5 py-0.5 text-xs font-medium text-violet-700'
-																	: kind === 'audio'
+																	: kind === 'asr' || kind === 'tts'
 																		? 'inline-flex rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700'
 																		: kind === 'embedding'
 																			? 'inline-flex rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700'
@@ -481,8 +474,10 @@ export function ModelImportModal(props: Props) {
 														>
 															{kind === 'image'
 																? tKind('kindImage')
-																: kind === 'audio'
-																	? tKind('kindAudio')
+																: kind === 'asr'
+																	? tKind('kindAsr')
+																	: kind === 'tts'
+																	? tKind('kindTts')
 																	: kind === 'embedding'
 																		? tKind('kindEmbedding')
 																		: tKind('kindLlm')}

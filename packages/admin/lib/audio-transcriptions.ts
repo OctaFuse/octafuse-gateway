@@ -3,10 +3,6 @@
  * (`/v1/audio/transcriptions` multipart).
  */
 import {
-	isAudioModel,
-	type ModelKindFields,
-} from "@octafuse/core/db/model-modalities";
-import {
 	parsePricingProfile,
 	profileHasAudioPerCharacterPricing,
 	profileHasAudioPerSecondPricing,
@@ -99,10 +95,6 @@ export const MINIMAX_SPEECH_BODY_TEMPLATE = `{
     "channel": 1
   }
 }`;
-
-export function isAudioRouteModel(m: ModelKindFields): boolean {
-	return isAudioModel(m);
-}
 
 /** Validate audio file before send (Playground / Simulator). */
 export function validateAudioTranscriptionFile(

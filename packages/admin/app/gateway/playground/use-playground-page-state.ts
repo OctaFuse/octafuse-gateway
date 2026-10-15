@@ -4,18 +4,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { flushSync } from 'react-dom';
-import { isAudioRouteModel, validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
-import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
+import { validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
+import { emptyModelKindCounts } from '@/lib/invoke-kind';
 import {
 	imageRequestMetaFromBody,
-	isImageRouteModel,
 	parseImagesGenerationsResponse,
 	readFileAsDataUrl,
 	validateEditImageFiles,
 	type ImageOperation,
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
-import { isEmbeddingRouteModel, joinEmbeddingUsageHint } from '@/lib/embeddings';
+import { joinEmbeddingUsageHint } from '@/lib/embeddings';
 import { inferPlaygroundParseMode, type PlaygroundProtocol } from '@/lib/playground/merge-assistant-text';
 import { describePlaygroundUpstreamUrl } from '@/lib/playground/preview-upstream-url';
 import { observePlaygroundResponse } from '@/lib/playground/response-observations';
@@ -129,27 +129,15 @@ export function usePlaygroundPageState() {
 		: BODY_TEMPLATES.openai;
 	bodyDirtyRef.current = isPlaygroundBodyDirty(bodyText, templateBody);
 
-	const selectedIsImage = useMemo(() => {
-		if (!selected) return false;
+	const selectedModelKind = useMemo(() => {
+		if (!selected) return null;
 		const m = modelsById.get(selected.model_id);
-		return m ? isImageRouteModel(m) : false;
+		return m ? resolveModelKind(m) : 'llm';
 	}, [selected, modelsById]);
-
-	const selectedIsEmbedding = useMemo(() => {
-		if (!selected) return false;
-		const m = modelsById.get(selected.model_id);
-		return m ? isEmbeddingRouteModel(m) : false;
-	}, [selected, modelsById]);
-
-	const selectedIsAudio = useMemo(() => {
-		if (!selected) return false;
-		const m = modelsById.get(selected.model_id);
-		return m ? isAudioRouteModel(m) : false;
-	}, [selected, modelsById]);
-	const selectedIsAudioTranscription = useMemo(
-		() => (selected ? isAudioTranscriptionModel(modelsById.get(selected.model_id) ?? {}) : false),
-		[selected, modelsById],
-	);
+	const selectedIsImage = selectedModelKind === 'image';
+	const selectedIsEmbedding = selectedModelKind === 'embedding';
+	const selectedIsAudio = selectedModelKind === 'asr' || selectedModelKind === 'tts';
+	const selectedIsAudioTranscription = selectedModelKind === 'asr';
 	const selectedDashScopeRealtimeOperation =
 		selectedIsAudio &&
 		selected?.upstream_protocol === 'dashscope' &&
@@ -196,13 +184,11 @@ export function usePlaygroundPageState() {
 			upstreamProtocol: selected.upstream_protocol,
 			upstreamOperation: selected.upstream_operation,
 			providerModelName: selected.provider_model_name,
-			isImageModel: selectedIsImage && !selectedIsAudio,
-			imageOperation: selectedIsImage && !selectedIsAudio ? imageOperation : undefined,
-			isAudioModel: selectedIsAudio,
-			isEmbeddingModel: selectedIsEmbedding,
+			modelKind: selectedModelKind ?? 'llm',
+			imageOperation: selectedIsImage ? imageOperation : undefined,
 			geminiAction,
 		});
-	}, [selected, providersById, selectedIsImage, selectedIsAudio, selectedIsEmbedding, imageOperation, geminiAction]);
+	}, [selected, providersById, selectedModelKind, selectedIsImage, imageOperation, geminiAction]);
 	const previewUpstreamUrl = previewUpstream.url;
 
 	const requestFingerprint = JSON.stringify([selectedId, bodyText, geminiAction, imageOperation]);
@@ -267,7 +253,7 @@ export function usePlaygroundPageState() {
 	}, [mergedAssistantParts, responseText, sending, selectedUsesDashScopeRealtime, t]);
 
 	const kindCounts = useMemo(() => {
-		const counts = { llm: 0, image: 0, audio: 0, embedding: 0 };
+		const counts = emptyModelKindCounts();
 		const seen = new Set<string>();
 		for (const r of routes) {
 			if (seen.has(r.model_id)) continue;

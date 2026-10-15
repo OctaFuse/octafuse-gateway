@@ -6,7 +6,7 @@
  * 因此目录时段变化时会照常对齐路由 price_override 的 schedule。
  */
 import type { GatewayRepositories } from '@octafuse/core';
-import { isAudioModel, isEmbeddingModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import {
 	BILLING_CURRENCY_KEY,
 	tryParseGatewaySupportedBillingCurrencyInput,
@@ -92,13 +92,7 @@ export async function getModelSyncReportService(repos: GatewayRepositories): Pro
 		group.models.push({
 			model_id: row.id,
 			display_name: row.display_name ?? null,
-			kind: isEmbeddingModel(row)
-				? 'embedding'
-				: isImageGenerationModel(row)
-					? 'image'
-					: isAudioModel(row)
-						? 'audio'
-						: 'llm',
+			kind: resolveModelKind(row),
 			routes_count: Number(row.routes_count ?? 0),
 			active_routes_count: Number(row.active_routes_count ?? 0),
 			fields,

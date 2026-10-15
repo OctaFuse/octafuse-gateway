@@ -22,8 +22,7 @@ function route(
 		providerApiKey: 'sk-test',
 		providerModelName: 'fun-asr-realtime',
 		customParams: { vad_enabled: true },
-		isImageModel: false,
-		isAudioModel: true,
+		modelKind: 'asr',
 		...overrides,
 	};
 }

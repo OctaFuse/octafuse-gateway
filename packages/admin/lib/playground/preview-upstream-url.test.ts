@@ -15,7 +15,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			},
 			upstreamProtocol: "openai",
 			providerModelName: "gpt-image-2",
-			isImageModel: true,
+			modelKind: "image",
 		});
 		assert.equal(
 			url,
@@ -33,7 +33,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			},
 			upstreamProtocol: "openai",
 			providerModelName: "gpt-image-2",
-			isImageModel: true,
+			modelKind: "image",
 		});
 		assert.equal(url, "https://api.openai.com/v1/images/generations");
 	});
@@ -48,7 +48,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			},
 			upstreamProtocol: "openai",
 			providerModelName: "gpt-image-2",
-			isImageModel: true,
+			modelKind: "image",
 			imageOperation: "edits",
 		});
 		assert.equal(url, "https://api.openai.com/v1/images/edits");
@@ -64,8 +64,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			},
 			upstreamProtocol: "openai",
 			providerModelName: "whisper-1",
-			isImageModel: false,
-			isAudioModel: true,
+			modelKind: "asr",
 		});
 		assert.equal(url, "https://api.openai.com/v1/audio/transcriptions");
 	});
@@ -81,8 +80,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			upstreamProtocol: "openai",
 			upstreamOperation: "audio.speech",
 			providerModelName: "fss-cosyvoice-v2",
-			isImageModel: false,
-			isAudioModel: true,
+			modelKind: "tts",
 		});
 		assert.equal(url, "https://api.openai.com/v1/audio/speech");
 	});
@@ -98,8 +96,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			upstreamProtocol: "dashscope",
 			upstreamOperation: "audio.transcriptions.multimodal",
 			providerModelName: "fun-asr-realtime",
-			isImageModel: false,
-			isAudioModel: true,
+			modelKind: "asr",
 		});
 		assert.equal(
 			url,
@@ -123,7 +120,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			upstreamProtocol: "dashscope",
 			upstreamOperation: "images.generations.multimodal",
 			providerModelName: "qwen-image-3.0-pro",
-			isImageModel: true,
+			modelKind: "image",
 		});
 		assert.equal(
 			url,
@@ -142,8 +139,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			upstreamProtocol: "minimax",
 			upstreamOperation: "audio.transcriptions",
 			providerModelName: "asr-1.0",
-			isImageModel: false,
-			isAudioModel: true,
+			modelKind: "asr",
 		});
 		assert.equal(url, "https://api.minimaxi.com/v1/speech_to_text");
 	});
@@ -161,8 +157,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 				upstreamProtocol: "minimax",
 				upstreamOperation: "audio.speech",
 				providerModelName: "speech-2.8-turbo",
-				isImageModel: false,
-				isAudioModel: true,
+				modelKind: "tts",
 			}),
 			"https://api.minimaxi.com/v1/t2a_v2",
 		);
@@ -172,8 +167,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 				upstreamProtocol: "minimax",
 				upstreamOperation: "images.generations",
 				providerModelName: "image-01",
-				isImageModel: true,
-				isAudioModel: false,
+				modelKind: "image",
 			}),
 			"https://api.minimaxi.com/v1/image_generation",
 		);
@@ -188,8 +182,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 				upstreamProtocol: "volcengine",
 				upstreamOperation: "images.generations",
 				providerModelName: "doubao-seedream-5-0-260128",
-				isImageModel: true,
-				isAudioModel: false,
+				modelKind: "image",
 			}),
 			"https://ark.cn-beijing.volces.com/api/v3/images/generations",
 		);
@@ -217,7 +210,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 				upstreamProtocol: "openai",
 				upstreamOperation: "images.generations",
 				providerModelName: "doubao-seedream-5-0-260128",
-				isImageModel: true,
+				modelKind: "image",
 			}),
 			"https://ark.cn-beijing.volces.com/api/v3/images/generations",
 		);
@@ -228,7 +221,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 				upstreamProtocol: "openai",
 				upstreamOperation: "images.generations",
 				providerModelName: "qwen-image-3.0",
-				isImageModel: true,
+				modelKind: "image",
 			}),
 			"https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
 		);
@@ -239,7 +232,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 				upstreamProtocol: "openai",
 				upstreamOperation: "images.generations",
 				providerModelName: "image-01",
-				isImageModel: true,
+				modelKind: "image",
 			}),
 			"https://api.minimaxi.com/v1/image_generation",
 		);
@@ -250,7 +243,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 				upstreamProtocol: "openai",
 				upstreamOperation: "images.generations",
 				providerModelName: "gpt-image-2",
-				isImageModel: true,
+				modelKind: "image",
 			}),
 			"https://wrong.example/v1/images/generations",
 		);
@@ -268,7 +261,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			upstreamProtocol: "gemini",
 			upstreamOperation: "models.generate",
 			providerModelName: "gemini-3.1-flash-image",
-			isImageModel: true,
+			modelKind: "image",
 			geminiAction: "streamGenerateContent",
 		});
 		assert.match(url ?? "", /\/gemini-3\.1-flash-image:generateContent\?key=/);
@@ -289,7 +282,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			upstreamProtocol: "openai",
 			upstreamOperation: "images.generations",
 			providerModelName: "gemini-3.1-flash-image",
-			isImageModel: true,
+			modelKind: "image",
 		});
 		assert.match(
 			url ?? "",
@@ -312,7 +305,7 @@ describe("previewPlaygroundUpstreamUrl", () => {
 			upstreamProtocol: "openai",
 			upstreamOperation: "images.generations",
 			providerModelName: "doubao-seedream-5-0-260128",
-			isImageModel: true,
+			modelKind: "image",
 		});
 		assert.equal(preview.url, null);
 		assert.equal(preview.target, "openai/images.generations");

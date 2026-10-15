@@ -3,7 +3,8 @@
  * `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`
  * `X-DashScope-SSE: enable` 走 `audio.speech.stream`，否则走 `audio.speech`。
  */
-import { isAudioSpeechModel, type GatewayRepositories } from '@octafuse/core';
+import type { GatewayRepositories } from '@octafuse/core';
+import { audioModelGuardMessage } from './audio-model-guard';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Env } from '../../app';
@@ -64,11 +65,12 @@ dashScopeSpeechRoutes.post('/', async (c) => {
 			message: `Model not found: ${rawModelId.slice(0, 200)}`,
 		});
 	}
-	if (!isAudioSpeechModel(preview.model)) {
+	const guardMessage = audioModelGuardMessage(preview.model, 'tts', 'DashScope SpeechSynthesizer passthrough');
+	if (guardMessage) {
 		return gatewayErrorJson(c, {
 			status: 400,
 			code: GatewayErrorCode.invalidRequest,
-			message: 'DashScope SpeechSynthesizer passthrough requires a speech model',
+			message: guardMessage,
 		});
 	}
 	const requestOperation = c.req.header('X-DashScope-SSE') === 'enable' ? 'audio.speech.stream' : 'audio.speech';

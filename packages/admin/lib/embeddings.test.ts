@@ -4,22 +4,16 @@ import {
 	EMBEDDING_GEMINI_EMBED_BODY_TEMPLATE,
 	EMBEDDING_OPENAI_BODY_TEMPLATE,
 	embeddingBodyTemplateFor,
-	isEmbeddingRouteModel,
 	joinEmbeddingUsageHint,
 	parseEmbeddingResponse,
 	summarizeEmbeddingResponse,
 } from './embeddings';
-import { modelKindFromFlags, resolveProxyPathForModelInvoke } from './invoke-kind';
+import { resolveProxyPathForModelInvoke } from './invoke-kind';
 
 describe('embeddings helpers', () => {
 	it('picks body template by protocol', () => {
 		assert.equal(embeddingBodyTemplateFor({ protocol: 'openai' }), EMBEDDING_OPENAI_BODY_TEMPLATE);
 		assert.equal(embeddingBodyTemplateFor({ protocol: 'gemini' }), EMBEDDING_GEMINI_EMBED_BODY_TEMPLATE);
-	});
-
-	it('detects embedding models by output modality', () => {
-		assert.equal(isEmbeddingRouteModel({ output_modalities: ['embedding'] } as never), true);
-		assert.equal(isEmbeddingRouteModel({ output_modalities: ['text'] } as never), false);
 	});
 
 	it('parses OpenAI response', () => {
@@ -44,11 +38,6 @@ describe('embeddings helpers', () => {
 });
 
 describe('invoke-kind embedding', () => {
-	it('derives model kind with embedding priority', () => {
-		assert.equal(modelKindFromFlags(false, false, true), 'embedding');
-		assert.equal(modelKindFromFlags(false, false), 'llm');
-	});
-
 	it('resolves proxy paths', () => {
 		assert.equal(resolveProxyPathForModelInvoke({ kind: 'embedding', protocol: 'openai' }), '/v1/embeddings');
 		assert.equal(

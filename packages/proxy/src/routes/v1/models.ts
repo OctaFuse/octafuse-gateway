@@ -5,13 +5,11 @@
  */
 import {
 	getUserChargedCostFactorMode,
-	isAudioModel,
-	isEmbeddingModel,
-	isImageGenerationModel,
-	isTextLlmModel,
 	lookupUserChargedCostFactor,
+	modelKindMatchesFilter,
 	parseModelModalitiesJson,
 	parsePricingProfile,
+	resolveModelKind,
 	parseUserChargedCostFactors,
 	type DisplayDiscountGroup,
 	type ParsedPricingProfile,
@@ -109,7 +107,7 @@ function displayCompatPricesFromProfile(profile: ParsedPricingProfile | null): {
 
 /**
  * `GET /v1/models` — 可选 `route_groups`（CSV）过滤 `model_info.route_groups`；
- * 可选 `kind`：`llm`（默认）| `image` | `audio`（ASR + TTS）| `embedding` | `all`。
+ * 可选 `kind`：`llm`（默认）| `image` | `asr` | `tts` | `audio`（ASR + TTS 兼容别名）| `embedding` | `all`。
  * 未传 `route_groups` 时默认 `default,free`，主要为兼容 agent 默认拉列表方式；
  * 业务需额外分组时可显式传 `route_groups=web` 或 `route_groups=default,free,web`。
  */
@@ -129,16 +127,7 @@ modelsRoutes.get('/', async (c) => {
 			input_modalities: m.input_modalities,
 			pricing_profile: m.pricing_profile,
 		};
-		if (kind === 'llm' && !isTextLlmModel(kindFields)) {
-			continue;
-		}
-		if (kind === 'image' && !isImageGenerationModel(kindFields)) {
-			continue;
-		}
-		if (kind === 'audio' && !isAudioModel(kindFields)) {
-			continue;
-		}
-		if (kind === 'embedding' && !isEmbeddingModel(kindFields)) {
+		if (!modelKindMatchesFilter(resolveModelKind(kindFields), kind)) {
 			continue;
 		}
 		const pricingProfile = parsePricingProfile(m.pricing_profile ?? undefined);

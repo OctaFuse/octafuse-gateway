@@ -6,16 +6,16 @@ import {
 	buildModelDisplayDiscounts,
 	getBusinessTimezone,
 	getUserChargedCostFactorMode,
-	isAudioModel,
-	isEmbeddingModel,
-	isImageGenerationModel,
-	isTextLlmModel,
 	lookupUserChargedCostFactor,
+	MODEL_KIND_QUERY_FILTERS,
+	modelKindMatchesFilter,
+	resolveModelKind,
 	parseModelModalitiesJson,
 	parsePricingProfile,
 	parseUserChargedCostFactors,
 	type DisplayDiscountGroup,
 	type GatewayRepositories,
+	type ModelKindQueryFilter,
 	type ModelRouteJoinRow,
 	type ModelRow,
 	type ParsedPricingProfile,
@@ -30,7 +30,8 @@ export const USER_MODELS_PREVIEW_DEFAULT_ROUTE_GROUPS = ['default', 'free'] as c
 /** 单次预览上限，避免把整个目录一次性灌进用户详情。 */
 export const USER_MODELS_PREVIEW_LIMIT = 40;
 
-export type UserModelsPreviewKind = 'llm' | 'image' | 'audio' | 'embedding' | 'all';
+/** 与 Proxy `GET /v1/models?kind=` 同一词表（`audio` 为 ASR + TTS 兼容别名）。 */
+export type UserModelsPreviewKind = ModelKindQueryFilter;
 
 export type UserModelsPreviewQuery = {
 	routeGroupsRaw?: string;
@@ -78,8 +79,7 @@ export type UserModelsPreview = {
 /** 省略或无法识别时按文本模型，与 `GET /v1/models` 一致。 */
 export function parseUserModelsPreviewKind(raw: string | undefined): UserModelsPreviewKind {
 	const value = raw?.trim().toLowerCase();
-	if (value === 'image' || value === 'audio' || value === 'embedding' || value === 'all' || value === 'llm') return value;
-	return 'llm';
+	return value && (MODEL_KIND_QUERY_FILTERS as readonly string[]).includes(value) ? (value as UserModelsPreviewKind) : 'llm';
 }
 
 /** 省略时为 `default,free`。 */
@@ -149,11 +149,7 @@ function matchesKind(model: ModelRow, kind: UserModelsPreviewKind): boolean {
 		input_modalities: model.input_modalities,
 		pricing_profile: model.pricing_profile,
 	};
-	if (kind === 'all') return true;
-	if (kind === 'image') return isImageGenerationModel(fields);
-	if (kind === 'audio') return isAudioModel(fields);
-	if (kind === 'embedding') return isEmbeddingModel(fields);
-	return isTextLlmModel(fields);
+	return modelKindMatchesFilter(resolveModelKind(fields), kind);
 }
 
 function routeGroupsForModel(model: ModelRow, routes: readonly ModelRouteJoinRow[]): string[] {

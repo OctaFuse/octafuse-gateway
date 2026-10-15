@@ -1,12 +1,5 @@
 import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
-import {
-	isAudioModel,
-	isAudioSpeechModel,
-	isAudioTranscriptionModel,
-	isEmbeddingModel,
-	isImageGenerationModel,
-	isTextLlmModel,
-} from '@octafuse/core/db/model-modalities';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import {
 	DEFAULT_ROUTE_STRATEGY,
 	isRouteStrategyName,
@@ -947,11 +940,7 @@ export const CAPABILITIES_BY_PROTOCOL: Record<string, readonly ProviderEndpointC
 const EMBEDDING_REQUEST_OPERATIONS: ReadonlySet<string> = new Set(['embeddings', GEMINI_EMBED_OPERATION]);
 
 export function modelKindForModel(model: GatewayModel | undefined): AdapterModelKind {
-	if (model && isEmbeddingModel(model)) return 'embedding';
-	if (model && isImageGenerationModel(model)) return 'image';
-	if (model && isAudioTranscriptionModel(model)) return 'audio.transcription';
-	if (model && isAudioSpeechModel(model)) return 'audio.speech';
-	return 'llm';
+	return model ? resolveModelKind(model) : 'llm';
 }
 
 function sortOperationsForProtocol(protocol: UpstreamProtocol, operations: readonly string[]): string[] {
@@ -976,17 +965,10 @@ export function requestOperationsForModel(
 	protocol: UpstreamProtocol,
 	providerModelName = '',
 ): readonly string[] {
-	if (
-		model &&
-		(isEmbeddingModel(model) ||
-			isImageGenerationModel(model) ||
-			isAudioTranscriptionModel(model) ||
-			isAudioSpeechModel(model) ||
-			(isTextLlmModel(model) && protocol === 'openai'))
-	) {
-		const kind = modelKindForModel(model);
+	const kind = modelKindForModel(model);
+	if (model && (kind !== 'llm' || protocol === 'openai')) {
 		const operations = requestOperationsFromRegistry(protocol, kind);
-		if (kind === 'audio.transcription' && protocol === 'dashscope') {
+		if (kind === 'asr' && protocol === 'dashscope') {
 			return filterRealtimeOperations(operations, providerModelName);
 		}
 		return operations;
@@ -1075,20 +1057,14 @@ export function upstreamOperationsForProviderModel(
 	const providerOperations = listConfiguredCapabilities(map, protocol);
 	const capabilities = new Set(providerOperations);
 
-	if (
-		model &&
-		(isEmbeddingModel(model) ||
-			isImageGenerationModel(model) ||
-			isAudioTranscriptionModel(model) ||
-			isAudioSpeechModel(model))
-	) {
-		const kind = modelKindForModel(model);
+	const kind = modelKindForModel(model);
+	if (model && kind !== 'llm') {
 		const listed = sortOperationsForProtocol(protocol, upstreamOperationsFromRegistry(protocol, kind));
 		const operations = listed.filter((operation) => {
 			const required = requiredCapabilitiesForUpstreamOperation(protocol, operation);
 			return required.every((capability) => capabilities.has(capability as ProviderEndpointCapability));
 		});
-		if (kind === 'audio.transcription') {
+		if (kind === 'asr') {
 			return filterRealtimeOperations(operations, providerModelName);
 		}
 		return operations;
@@ -1382,10 +1358,7 @@ export function modelMatchesKindFilter(meta: GatewayModel | undefined, filterKin
 	if (!meta) {
 		return filterKind === 'llm';
 	}
-	if (filterKind === 'image') return isImageGenerationModel(meta);
-	if (filterKind === 'audio') return isAudioModel(meta);
-	if (filterKind === 'embedding') return isEmbeddingModel(meta);
-	return isTextLlmModel(meta);
+	return resolveModelKind(meta) === filterKind;
 }
 
 /** Normalize API tags (string[] or JSON string) for route card display. */
@@ -1666,14 +1639,15 @@ export function buildActiveFilterSummary(params: {
 
 export function createInitialRouteForm(models: GatewayModel[], presetModelId?: string): RouteFormData {
 	const presetModel = presetModelId ? models.find((model) => model.id === presetModelId) : undefined;
+	const presetKind = presetModel ? resolveModelKind(presetModel) : 'llm';
 	const defaultOperation =
-		presetModel && isEmbeddingModel(presetModel)
+		presetKind === 'embedding'
 			? 'embeddings'
-			: presetModel && isImageGenerationModel(presetModel)
+			: presetKind === 'image'
 			? 'images.generations'
-			: presetModel && isAudioTranscriptionModel(presetModel)
+			: presetKind === 'asr'
 			? 'audio.transcriptions'
-			: presetModel && isAudioSpeechModel(presetModel)
+			: presetKind === 'tts'
 			? 'audio.speech'
 			: 'chat';
 	return {

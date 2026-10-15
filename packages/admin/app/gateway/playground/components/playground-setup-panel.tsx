@@ -25,7 +25,7 @@ function ReadonlyField({ label, children }: { label: string; children: ReactNode
 type Props = {
 	filterKind: ModelKindFilter;
 	onFilterKindChange: (kind: ModelKindFilter) => void;
-	kindCounts: { llm: number; image: number; audio: number; embedding: number };
+	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number };
 	routeSearch: string;
 	onRouteSearchChange: (v: string) => void;
 	filterModel: string;
@@ -78,7 +78,8 @@ export function PlaygroundSetupPanel({
 							[
 								{ id: 'llm' as const, label: t('kindLlm'), count: kindCounts.llm },
 								{ id: 'image' as const, label: t('kindImage'), count: kindCounts.image },
-								{ id: 'audio' as const, label: t('kindAudio'), count: kindCounts.audio },
+								{ id: 'asr' as const, label: t('kindAsr'), count: kindCounts.asr },
+								{ id: 'tts' as const, label: t('kindTts'), count: kindCounts.tts },
 								{ id: 'embedding' as const, label: t('kindEmbedding'), count: kindCounts.embedding },
 							] as const
 						).map((opt) => {

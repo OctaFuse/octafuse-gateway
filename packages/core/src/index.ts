@@ -65,6 +65,7 @@ export * from './db/pricing-schedule';
 export * from './db/display-discount';
 export * from './db/user-charged-cost-factors';
 export * from './db/model-modalities';
+export * from './db/model-kind';
 export * from './db/request-log-status-filter';
 export * from './db/system-config-types';
 export * from './db/admin-access-types';

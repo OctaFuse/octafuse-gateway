@@ -1,4 +1,6 @@
+import { MODEL_KINDS, type ModelKind } from '@octafuse/core/db/model-kind';
 import type { GatewayModel } from '@/lib/types';
+import { normalizeLegacyKindParam } from '@/lib/invoke-kind';
 
 /** API returns models with tags parsed as string[] */
 export type ModelListItem = Omit<GatewayModel, 'tags'> & {
@@ -14,8 +16,8 @@ export type PresetCatalogRow = {
 	id: string;
 	display_name: string | null;
 	vendor: string;
-	/** `llm` | `image` | `audio` | `embedding` — same Kind as Models list filter */
-	kind: 'llm' | 'image' | 'audio' | 'embedding';
+	/** `llm` | `image` | `asr` | `tts` | `embedding` — same Kind as Models list filter */
+	kind: ModelKind;
 	context_window: number | null;
 	max_tokens: number | null;
 	description: string | null;
@@ -65,16 +67,16 @@ export type ModelImportResult = {
 export const ALL_VENDORS_KEY = 'all';
 
 /**
- * 模型目录 Kind 视图（`?kind=all|llm|image|audio|embedding`）。
+ * 模型目录 Kind 视图（`?kind=all|llm|image|asr|tts|embedding`，旧的 `audio` 落到 asr）。
  * 模型目录允许跨类型浏览；调试台继续使用 `@/lib/invoke-kind` 中不含 All 的模型类型。
  */
-export const MODEL_LIST_KIND_FILTERS = ['all', 'llm', 'image', 'audio', 'embedding'] as const;
+export const MODEL_LIST_KIND_FILTERS = ['all', ...MODEL_KINDS] as const;
 export type ModelListKindFilter = (typeof MODEL_LIST_KIND_FILTERS)[number];
 export const DEFAULT_MODEL_LIST_KIND_FILTER: ModelListKindFilter = 'all';
 
 export function parseModelListKindFilterParam(value: string | null): ModelListKindFilter {
 	if (value == null || value.trim() === '') return DEFAULT_MODEL_LIST_KIND_FILTER;
-	const normalized = value.trim().toLowerCase();
+	const normalized = normalizeLegacyKindParam(value.trim().toLowerCase());
 	return (MODEL_LIST_KIND_FILTERS as readonly string[]).includes(normalized)
 		? (normalized as ModelListKindFilter)
 		: DEFAULT_MODEL_LIST_KIND_FILTER;
@@ -109,13 +111,22 @@ export const EMPTY_IMAGE_MODEL_FORM: ModelFormData = {
 	output_modalities: ['image'],
 };
 
-/** 手工新建 Audio 转写模型时的模态默认值（对齐 whisper-1：audio → text）。 */
-export const EMPTY_AUDIO_MODEL_FORM: ModelFormData = {
+/** 手工新建 ASR（语音识别）模型时的模态默认值（对齐 whisper-1：audio → text）。 */
+export const EMPTY_ASR_MODEL_FORM: ModelFormData = {
 	...EMPTY_MODEL_FORM,
 	max_tokens: '',
 	context_window: '',
 	input_modalities: ['audio'],
 	output_modalities: ['text'],
+};
+
+/** 手工新建 TTS（语音合成）模型时的模态默认值（对齐 tts-1：text → audio）。 */
+export const EMPTY_TTS_MODEL_FORM: ModelFormData = {
+	...EMPTY_MODEL_FORM,
+	max_tokens: '',
+	context_window: '',
+	input_modalities: ['text'],
+	output_modalities: ['audio'],
 };
 
 /** 手工新建 Embedding 模型：text → embedding；无 max output tokens。 */
@@ -126,4 +137,4 @@ export const EMPTY_EMBEDDING_MODEL_FORM: ModelFormData = {
 	output_modalities: ['embedding'],
 };
 
-export type ModelFormKind = 'llm' | 'image' | 'audio' | 'embedding';
+export type ModelFormKind = ModelKind;

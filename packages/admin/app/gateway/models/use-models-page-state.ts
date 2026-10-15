@@ -3,14 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { parseModelModalitiesJson } from '@octafuse/core/db/model-modalities';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import {
-	isAudioModel,
-	isEmbeddingModel,
-	isImageGenerationModel,
-	isTextLlmModel,
-	parseModelModalitiesJson,
-} from '@octafuse/core/db/model-modalities';
-import {
+	createDefaultAudioCharacterPricingDraft,
 	createDefaultAudioPricingDraft,
 	createDefaultAudioTokenPricingDraft,
 	createDefaultImagePerImageDraft,
@@ -31,6 +27,7 @@ import {
 } from '@/lib/pricing-tiers-draft';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
 import { useFeedback } from '@/components/feedback';
+import { emptyModelKindCounts } from '@/lib/invoke-kind';
 import type { ModelSyncReport } from '@/lib/model-sync-diff';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
@@ -52,7 +49,8 @@ import {
 	ALL_VENDORS_KEY,
 	DEFAULT_KIND_FILTER,
 	DEFAULT_MODEL_LIST_KIND_FILTER,
-	EMPTY_AUDIO_MODEL_FORM,
+	EMPTY_ASR_MODEL_FORM,
+	EMPTY_TTS_MODEL_FORM,
 	EMPTY_EMBEDDING_MODEL_FORM,
 	EMPTY_IMAGE_MODEL_FORM,
 	EMPTY_MODEL_FORM,
@@ -135,17 +133,9 @@ export function useModelsPageState() {
 	);
 
 	const importCatalogKindCounts = useMemo(() => {
-		let llm = 0;
-		let image = 0;
-		let audio = 0;
-		let embedding = 0;
-		for (const row of importCatalogRows) {
-			if (row.kind === 'image') image += 1;
-			else if (row.kind === 'audio') audio += 1;
-			else if (row.kind === 'embedding') embedding += 1;
-			else llm += 1;
-		}
-		return { llm, image, audio, embedding };
+		const counts = emptyModelKindCounts();
+		for (const row of importCatalogRows) counts[row.kind] += 1;
+		return counts;
 	}, [importCatalogRows]);
 
 	const filteredImportCatalogRows = useMemo(() => {
@@ -169,16 +159,7 @@ export function useModelsPageState() {
 
 	const kindFilteredModels = useMemo(() => {
 		if (selectedKind === 'all') return models;
-		if (selectedKind === 'image') {
-			return models.filter((m) => isImageGenerationModel(m));
-		}
-		if (selectedKind === 'audio') {
-			return models.filter((m) => isAudioModel(m));
-		}
-		if (selectedKind === 'embedding') {
-			return models.filter((m) => isEmbeddingModel(m));
-		}
-		return models.filter((m) => isTextLlmModel(m));
+		return models.filter((m) => resolveModelKind(m) === selectedKind);
 	}, [models, selectedKind]);
 
 	const modelsByVendor = useMemo(
@@ -189,17 +170,9 @@ export function useModelsPageState() {
 	const vendorKeys = useMemo(() => modelsByVendor.map(([key]) => key), [modelsByVendor]);
 
 	const kindCounts = useMemo(() => {
-		let llm = 0;
-		let image = 0;
-		let audio = 0;
-		let embedding = 0;
-		for (const m of models) {
-			if (isEmbeddingModel(m)) embedding += 1;
-			else if (isImageGenerationModel(m)) image += 1;
-			else if (isAudioModel(m)) audio += 1;
-			else llm += 1;
-		}
-		return { llm, image, audio, embedding };
+		const counts = emptyModelKindCounts();
+		for (const m of models) counts[resolveModelKind(m)] += 1;
+		return counts;
 	}, [models]);
 
 	const selectedVendorItems = useMemo(() => {
@@ -385,21 +358,14 @@ export function useModelsPageState() {
 		(model: ModelListItem) => {
 			const listTags = Array.isArray(model.tags) ? model.tags : [];
 			const outputMods = parseModelModalitiesJson(model.output_modalities) ?? ['text'];
-			const imageModel = isImageGenerationModel({
-				output_modalities: outputMods,
+			const kind: ModelFormKind = resolveModelKind({
+				input_modalities: model.input_modalities,
+				output_modalities: model.output_modalities,
 				pricing_profile: model.pricing_profile,
 			});
-			const audioModel = isAudioModel({
-				pricing_profile: model.pricing_profile,
-			});
-			const embeddingModel = isEmbeddingModel({ output_modalities: outputMods });
-			const kind: ModelFormKind = audioModel
-				? 'audio'
-				: embeddingModel
-					? 'embedding'
-					: imageModel
-						? 'image'
-						: 'llm';
+			const imageModel = kind === 'image';
+			const audioModel = kind === 'asr' || kind === 'tts';
+			const embeddingModel = kind === 'embedding';
 			setFormKind(kind);
 			setFormData({
 				id: model.id,
@@ -460,12 +426,14 @@ export function useModelsPageState() {
 					vendor,
 				});
 				setPricingTierRows([createDefaultEmbeddingTierRow()]);
-			} else if (kind === 'audio') {
+			} else if (kind === 'asr' || kind === 'tts') {
 				setFormData({
-					...EMPTY_AUDIO_MODEL_FORM,
+					...(kind === 'tts' ? EMPTY_TTS_MODEL_FORM : EMPTY_ASR_MODEL_FORM),
 					vendor,
 				});
-				setAudioPricingDraft(createDefaultAudioPricingDraft());
+				setAudioPricingDraft(
+					kind === 'tts' ? createDefaultAudioCharacterPricingDraft() : createDefaultAudioPricingDraft()
+				);
 				setPricingTierRows([]);
 			} else {
 				setFormData({
@@ -520,17 +488,17 @@ export function useModelsPageState() {
 			);
 			return;
 		}
-		if (kind === 'audio') {
+		if (kind === 'asr') {
+			// ASR：输入 audio、输出 text；计费按秒或 token。
 			setFormData((prev) => ({
 				...prev,
-				input_modalities: prev.input_modalities.includes('audio')
-					? prev.input_modalities.filter((m) => m !== 'image')
-					: ['audio'],
+				input_modalities: ['audio'],
 				output_modalities: ['text'],
 				context_window: '',
 				max_tokens: '',
 			}));
 			setAudioPricingDraft((prev) => {
+				if (prev.mode === 'per_character') return createDefaultAudioPricingDraft();
 				if (prev.mode === 'token') {
 					const hasTier = prev.tiers.some(
 						(r) => r.input_price.trim() !== '' || r.output_price.trim() !== ''
@@ -539,6 +507,23 @@ export function useModelsPageState() {
 				}
 				return prev.price_per_second.trim() !== '' ? prev : createDefaultAudioPricingDraft();
 			});
+			setPricingTierRows([]);
+			return;
+		}
+		if (kind === 'tts') {
+			// TTS：输入 text、输出 audio；只支持按字符计费。
+			setFormData((prev) => ({
+				...prev,
+				input_modalities: ['text'],
+				output_modalities: ['audio'],
+				context_window: '',
+				max_tokens: '',
+			}));
+			setAudioPricingDraft((prev) =>
+				prev.mode === 'per_character' && prev.price_per_character.trim() !== ''
+					? prev
+					: createDefaultAudioCharacterPricingDraft()
+			);
 			setPricingTierRows([]);
 			return;
 		}
@@ -626,15 +611,7 @@ export function useModelsPageState() {
 			return;
 		}
 
-		setSelectedKind(
-			isEmbeddingModel(model)
-				? 'embedding'
-				: isImageGenerationModel(model)
-					? 'image'
-					: isAudioModel(model)
-						? 'audio'
-						: 'llm'
-		);
+		setSelectedKind(resolveModelKind(model));
 		const vendor = normalizeModelVendorInput(model.vendor);
 		if (vendor) setSelectedVendor(vendor);
 		void handleEdit(model);
@@ -743,10 +720,8 @@ export function useModelsPageState() {
 		setSaveError('');
 		setIsSaving(true);
 		try {
-			const isImage =
-				formKind === 'image' ||
-				isImageGenerationModel({ output_modalities: formData.output_modalities });
-			const isAudio = formKind === 'audio';
+			const isImage = formKind === 'image';
+			const isAudio = formKind === 'asr' || formKind === 'tts';
 			const imageDraft =
 				isImage && !isAudio
 					? {

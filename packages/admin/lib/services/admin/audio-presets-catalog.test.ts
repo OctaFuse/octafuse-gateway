@@ -65,8 +65,8 @@ describe('static audio model presets (*-audio.json)', () => {
 		}
 	});
 
-	it('Admin import catalog marks audio kind for the same ids', () => {
-		const audioCatalog = listStaticModelPresetCatalogForAdmin().filter((r) => r.kind === 'audio');
+	it('Admin import catalog marks asr/tts kind for the same ids', () => {
+		const audioCatalog = listStaticModelPresetCatalogForAdmin().filter((r) => r.kind === 'asr' || r.kind === 'tts');
 		assert.deepEqual(
 			audioCatalog.map((r) => r.id).sort(),
 			EXPECTED_AUDIO_IDS
