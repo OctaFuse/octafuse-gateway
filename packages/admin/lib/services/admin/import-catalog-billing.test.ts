@@ -414,6 +414,28 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.pricing_label, '$1.25 / $2.5 /M');
 	});
 
+	it('includes grok-4.20-multi-agent-0309 multi-agent reasoning model at the same 200K tiered prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'grok-4.20-multi-agent-0309');
+		assert.ok(usd);
+		assert.equal(usd!.display_name, 'Grok 4.20 Multi-Agent');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$1.25 / $2.5 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'grok-4.20-multi-agent-0309');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-03-09');
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['text']);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.upto, 200000);
+		assert.equal(profile?.tiers[0]?.input_price, 1.25);
+		assert.equal(profile?.tiers[0]?.output_price, 2.5);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(profile?.tiers[1]?.input_price, 2.5);
+		assert.equal(profile?.tiers[1]?.output_price, 5);
+		assert.equal(profile?.tiers[1]?.cache_read_price, 0.4);
+	});
+
 	it('includes gpt-6-astra with Standard short-context list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-6-astra');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-6-astra');
