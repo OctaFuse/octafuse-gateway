@@ -2,7 +2,7 @@
 
 import { FilterDisclosure } from '@/components/FilterDisclosure';
 
-import { MagnifyingGlassIcon, XMarkIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, XMarkIcon, AdjustmentsHorizontalIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import type { GatewayProvider } from '@/lib/types';
 import { useLocale, useTranslations } from 'next-intl';
 import { liveProviderPickerLabel, type ProviderKindFilterOption } from '@/lib/provider-kind';
@@ -73,11 +73,10 @@ export function RouteFilterSidebar(props: Props) {
 				</div>
 			</div>
 			<FilterDisclosure className="px-4 py-3" activeCount={active.length - Number(Boolean(props.searchQuery))}>
-				<div className="space-y-3">
-					<div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+				<div className="flex flex-wrap items-center gap-x-5 gap-y-3">
 						{segments.map(segment => (
 							<div key={segment.key} className="flex flex-wrap items-center gap-2" role="group" aria-label={segment.label}>
-								<span className="text-xs text-slate-500">{segment.label}</span>
+								<span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{segment.label}</span>
 								<div className="inline-flex flex-wrap gap-1 rounded-lg bg-slate-100/80 p-1">
 									{segment.options.map(option => <button key={option.value} type="button" aria-pressed={segment.value === option.value} onClick={() => segment.onChange(option.value)} className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs transition focus-visible:outline-blue-500 ${segment.value === option.value ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
 										{option.label}<span className="text-[10px] tabular-nums opacity-70">{option.count}</span>
@@ -85,17 +84,19 @@ export function RouteFilterSidebar(props: Props) {
 								</div>
 							</div>
 						))}
-					</div>
-					<div className="admin-filter-grid">
-						{filters.map(filter => <label key={filter.key} className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
-							<span className="shrink-0 text-[11px] text-slate-500">{filter.label}</span>
-							<select value={filter.value} onChange={e => filter.onChange(e.target.value)} className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-								<option value="">{t('all')}</option>
-								{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
-								{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
-							</select>
+						<div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-3">
+						{filters.map(filter => <label key={filter.key} className="flex min-w-0 max-w-full items-center gap-2">
+							<span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{filter.label}</span>
+							<div className="relative min-w-0 rounded-lg bg-slate-100/80 p-1">
+								<select value={filter.value} onChange={e => filter.onChange(e.target.value)} className={`block h-6 w-32 min-w-0 cursor-pointer appearance-none truncate rounded-md pl-2.5 pr-7 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-blue-500 ${filter.value ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900'}`}>
+									<option value="">{t('all')}</option>
+									{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
+									{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
+								</select>
+								<ChevronDownIcon className={`pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 ${filter.value ? 'text-blue-600' : 'text-slate-400'}`} aria-hidden />
+							</div>
 						</label>)}
-					</div>
+						</div>
 				</div>
 			</FilterDisclosure>
 			{active.length > 0 ? <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2">
