@@ -1,8 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { ComponentProps } from 'react';
-import { FilterNavButton, FilterNavSection } from '../../components/filter-nav';
+import { FilterRow, FilterSegmented, FilterSelect } from '../../components/filter-controls';
 import { getModelVendorLabel } from '@/lib/model-vendor';
 import { ALL_VENDORS_KEY, type ModelListKindFilter } from '../types';
 
@@ -18,14 +17,6 @@ type Props = {
 	onSelectKind: (kind: ModelListKindFilter) => void;
 	onClearFilter: () => void;
 };
-
-function HorizontalSection(props: Omit<ComponentProps<typeof FilterNavSection>, 'orientation'>) {
-	return <FilterNavSection orientation="horizontal" {...props} />;
-}
-
-function HorizontalButton(props: Omit<ComponentProps<typeof FilterNavButton>, 'orientation'>) {
-	return <FilterNavButton orientation="horizontal" {...props} />;
-}
 
 export function ModelFilterSidebar(props: Props) {
 	const {
@@ -71,74 +62,35 @@ export function ModelFilterSidebar(props: Props) {
 				</label>
 				{hasActiveFilter && <button type="button" onClick={onClearFilter} className="col-span-2 min-h-9 text-left text-xs font-medium text-blue-600">{tFilter('clear')}</button>}
 			</div>
-			<div className="hidden flex-col items-stretch gap-y-2 md:flex">
-				<div className="flex min-w-0 items-center justify-between gap-3">
-					<HorizontalSection title={t('kind')} ariaLabel={t('kindAria')}>
-						<HorizontalButton
-							label={tFilter('all')}
-							count={modelCount}
-							isActive={selectedKind === 'all'}
-							onClick={() => onSelectKind('all')}
-						/>
-						<HorizontalButton
-							label={t('kindLlm')}
-							count={kindCounts.llm}
-							isActive={selectedKind === 'llm'}
-							onClick={() => onSelectKind('llm')}
-						/>
-						<HorizontalButton
-							label={t('kindImage')}
-							count={kindCounts.image}
-							isActive={selectedKind === 'image'}
-							onClick={() => onSelectKind('image')}
-						/>
-						<HorizontalButton
-							label={t('kindAsr')}
-							count={kindCounts.asr}
-							isActive={selectedKind === 'asr'}
-							onClick={() => onSelectKind('asr')}
-						/>
-						<HorizontalButton
-							label={t('kindTts')}
-							count={kindCounts.tts}
-							isActive={selectedKind === 'tts'}
-							onClick={() => onSelectKind('tts')}
-						/>
-						<HorizontalButton
-							label={t('kindEmbedding')}
-							count={kindCounts.embedding}
-							isActive={selectedKind === 'embedding'}
-							onClick={() => onSelectKind('embedding')}
-						/>
-					</HorizontalSection>
-					{hasActiveFilter ? (
-						<button
-							type="button"
-							onClick={onClearFilter}
-							className="shrink-0 rounded text-xs font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-						>
-							{tFilter('clear')}
-						</button>
-					) : null}
-				</div>
-
-				<HorizontalSection title={tFilter('vendor')} ariaLabel={t('vendorAria')}>
-					<HorizontalButton
-						label={tFilter('all')}
-						count={vendorTotal}
-						isActive={isAllVendors}
-						onClick={() => onSelectVendor(ALL_VENDORS_KEY)}
+			<div className="hidden items-start gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 md:flex">
+				<FilterRow className="min-w-0 flex-1">
+					<FilterSegmented
+						label={t('kind')}
+						value={selectedKind}
+						onChange={(value) => onSelectKind(value as ModelListKindFilter)}
+						options={[
+							{ value: 'all', label: tFilter('all'), count: modelCount },
+							{ value: 'llm', label: t('kindLlm'), count: kindCounts.llm },
+							{ value: 'image', label: t('kindImage'), count: kindCounts.image },
+							{ value: 'asr', label: t('kindAsr'), count: kindCounts.asr },
+							{ value: 'tts', label: t('kindTts'), count: kindCounts.tts },
+							{ value: 'embedding', label: t('kindEmbedding'), count: kindCounts.embedding },
+						]}
 					/>
-					{modelsByVendor.map(([vendorKey, items]) => (
-						<HorizontalButton
-							key={vendorKey}
-							label={getModelVendorLabel(vendorKey)}
-							count={items.length}
-							isActive={selectedVendor === vendorKey}
-							onClick={() => onSelectVendor(vendorKey)}
-						/>
-					))}
-				</HorizontalSection>
+					<FilterSelect label={tFilter('vendor')} value={selectedVendor} onChange={onSelectVendor} active={!isAllVendors} widthClass="w-44">
+						<option value={ALL_VENDORS_KEY}>{tFilter('all')} ({vendorTotal})</option>
+						{modelsByVendor.map(([key, items]) => <option key={key} value={key}>{getModelVendorLabel(key)} ({items.length})</option>)}
+					</FilterSelect>
+				</FilterRow>
+				{hasActiveFilter ? (
+					<button
+						type="button"
+						onClick={onClearFilter}
+						className="shrink-0 rounded text-xs font-medium text-slate-500 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+					>
+						{tFilter('clear')}
+					</button>
+				) : null}
 			</div>
 		</section>
 	);

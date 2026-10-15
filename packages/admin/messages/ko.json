@@ -377,6 +377,8 @@
 		"clearSearch": "Provider 검색 초기화",
 		"filters": {
 			"aria": "Provider 필터",
+			"groupStatus": "상태",
+			"groupProtocol": "프로토콜",
 			"all": "전체",
 			"active": "활성",
 			"disabled": "비활성",

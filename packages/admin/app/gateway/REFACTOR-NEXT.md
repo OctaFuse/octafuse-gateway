@@ -6,7 +6,7 @@
 
 | 路径 | 用途 |
 |------|------|
-| `app/gateway/components/filter-nav.tsx` | `FilterNavSection` / `FilterNavButton`（models、routes 侧边筛选） |
+| `app/gateway/components/filter-controls.tsx` | `FilterSegmented` / `FilterSelect` / `FilterTextInput`（models、routes、providers、日志、用户的统一筛选控件） |
 | `lib/format-compact-tokens.ts` | `formatCompactTokens` / `trimTrailingZeros`（models、routes 展示） |
 
 ## 阶段 2：列表页集群（优先）

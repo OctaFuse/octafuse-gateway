@@ -377,6 +377,8 @@
 		"clearSearch": "Provider 検索をクリア",
 		"filters": {
 			"aria": "Provider フィルター",
+			"groupStatus": "ステータス",
+			"groupProtocol": "プロトコル",
 			"all": "すべて",
 			"active": "有効",
 			"disabled": "無効",

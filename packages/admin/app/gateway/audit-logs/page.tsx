@@ -4,6 +4,7 @@
  * 全站用户审计日志（`user_audit_logs`）：筛选、分页；数据来自 `/api/admin/budget-audit-logs`。
  */
 import { FilterDisclosure } from '@/components/FilterDisclosure';
+import { FilterGroup, FilterRow, FilterTextInput } from '../components/filter-controls';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { readApiJson } from '@/lib/api-json';
@@ -382,7 +383,7 @@ export default function GatewayAuditLogsPage() {
         />
       </div>
 
-      <FilterDisclosure className="mb-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4 shadow-sm" activeCount={
+      <FilterDisclosure className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3" activeCount={
         [filterActorId, filterUserEmail, filterCorrelationId, filterUserId, filterApiKeyId].filter(Boolean).length +
         Number(!isSameStringSet(filterEventTypes, DEFAULT_AUDIT_LOG_EVENT_TYPES)) +
         Number(!isSameStringSet(filterSources, DEFAULT_AUDIT_LOG_SOURCE_CHANNELS)) +
@@ -390,7 +391,8 @@ export default function GatewayAuditLogsPage() {
         Number(!isSameStringSet(filterActorTypes, DEFAULT_AUDIT_LOG_ACTOR_TYPES)) +
         Number(!isSameStringSet(filterActorKinds, AUDIT_LOG_ACTOR_KIND_FILTERS))
       }>
-        <div className="admin-filter-grid">
+        <FilterRow>
+          <FilterGroup>
           <MultiSelectDropdown
             label={t('filters.eventType')}
             options={API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((eventType) => ({
@@ -518,62 +520,33 @@ export default function GatewayAuditLogsPage() {
               </button>
             }
           />
-        </div>
-
-        <div className="admin-filter-grid mt-4">
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.actorId')}</label>
-            <input
-              type="text"
-              value={filterActorId}
-              onChange={(e) => { setFilterActorId(e.target.value); setPage(1); }}
-              placeholder={t('filters.actorIdPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
-            <input
-              type="text"
-              value={filterUserEmail}
-              onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
-              placeholder={t('filters.exactMatch')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.correlationId')}</label>
-            <input
-              type="text"
-              value={filterCorrelationId}
-              onChange={(e) => { setFilterCorrelationId(e.target.value); setPage(1); }}
-              placeholder={t('filters.correlationPlaceholder')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
-            />
-          </div>
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={() => {
-                setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
-                setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
-                setFilterActorKinds([...AUDIT_LOG_ACTOR_KIND_FILTERS]);
-                setFilterActorId('');
-                setFilterReasonCodes([...reasonCodeOptions]);
-                setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
-                setFilterCorrelationId('');
-                setFilterUserEmail('');
-                setFilterUserId('');
-                setFilterApiKeyId('');
-                setRangeValue({ preset: 'custom', start_date: '', end_date: '' });
-                setPage(1);
-              }}
-              className="h-10 whitespace-nowrap px-4 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-            >
-              {tCommon('clearFiltersLower')}
-            </button>
-          </div>
-        </div>
+          </FilterGroup>
+          <FilterGroup>
+            <FilterTextInput label={t('filters.actorId')} value={filterActorId} onChange={(v) => { setFilterActorId(v); setPage(1); }} placeholder={t('filters.actorIdPlaceholder')} mono />
+            <FilterTextInput label={t('filters.userEmail')} value={filterUserEmail} onChange={(v) => { setFilterUserEmail(v); setPage(1); }} placeholder={t('filters.exactMatch')} />
+            <FilterTextInput label={t('filters.correlationId')} value={filterCorrelationId} onChange={(v) => { setFilterCorrelationId(v); setPage(1); }} placeholder={t('filters.correlationPlaceholder')} mono />
+          </FilterGroup>
+          <button
+            type="button"
+            onClick={() => {
+              setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
+              setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
+              setFilterActorKinds([...AUDIT_LOG_ACTOR_KIND_FILTERS]);
+              setFilterActorId('');
+              setFilterReasonCodes([...reasonCodeOptions]);
+              setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
+              setFilterCorrelationId('');
+              setFilterUserEmail('');
+              setFilterUserId('');
+              setFilterApiKeyId('');
+              setRangeValue({ preset: 'custom', start_date: '', end_date: '' });
+              setPage(1);
+            }}
+            className="whitespace-nowrap text-xs font-medium text-slate-500 hover:text-blue-700"
+          >
+            {tCommon('clearFiltersLower')}
+          </button>
+        </FilterRow>
       </FilterDisclosure>
 
       <div className="mb-3 text-sm text-gray-500">

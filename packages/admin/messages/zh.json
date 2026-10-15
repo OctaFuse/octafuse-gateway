@@ -377,6 +377,8 @@
 		"clearSearch": "清除供应商搜索",
 		"filters": {
 			"aria": "供应商筛选",
+			"groupStatus": "状态",
+			"groupProtocol": "协议",
 			"all": "全部",
 			"active": "已启用",
 			"disabled": "已停用",

@@ -1,8 +1,9 @@
 'use client';
 
 import { FilterDisclosure } from '@/components/FilterDisclosure';
+import { FilterGroup, FilterRow, FilterSegmented, FilterSelect } from '../../components/filter-controls';
 
-import { MagnifyingGlassIcon, XMarkIcon, AdjustmentsHorizontalIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, XMarkIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import type { GatewayProvider } from '@/lib/types';
 import { useLocale, useTranslations } from 'next-intl';
 import { liveProviderPickerLabel, type ProviderKindFilterOption } from '@/lib/provider-kind';
@@ -73,31 +74,16 @@ export function RouteFilterSidebar(props: Props) {
 				</div>
 			</div>
 			<FilterDisclosure className="px-4 py-3" activeCount={active.length - Number(Boolean(props.searchQuery))}>
-				<div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-						{segments.map(segment => (
-							<div key={segment.key} className="flex flex-wrap items-center gap-2" role="group" aria-label={segment.label}>
-								<span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{segment.label}</span>
-								<div className="inline-flex flex-wrap gap-1 rounded-lg bg-slate-100/80 p-1">
-									{segment.options.map(option => <button key={option.value} type="button" aria-pressed={segment.value === option.value} onClick={() => segment.onChange(option.value)} className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs transition focus-visible:outline-blue-500 ${segment.value === option.value ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
-										{option.label}<span className="text-[10px] tabular-nums opacity-70">{option.count}</span>
-									</button>)}
-								</div>
-							</div>
-						))}
-						<div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-3">
-						{filters.map(filter => <label key={filter.key} className="flex min-w-0 max-w-full items-center gap-2">
-							<span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{filter.label}</span>
-							<div className="relative min-w-0 rounded-lg bg-slate-100/80 p-1">
-								<select value={filter.value} onChange={e => filter.onChange(e.target.value)} className={`block h-6 w-32 min-w-0 cursor-pointer appearance-none truncate rounded-md pl-2.5 pr-7 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-blue-500 ${filter.value ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900'}`}>
-									<option value="">{t('all')}</option>
-									{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
-									{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
-								</select>
-								<ChevronDownIcon className={`pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 ${filter.value ? 'text-blue-600' : 'text-slate-400'}`} aria-hidden />
-							</div>
-						</label>)}
-						</div>
-				</div>
+				<FilterRow>
+					{segments.map(segment => <FilterSegmented key={segment.key} label={segment.label} value={segment.value} options={segment.options} onChange={segment.onChange} />)}
+					<FilterGroup>
+						{filters.map(filter => <FilterSelect key={filter.key} label={filter.label} value={filter.value} onChange={filter.onChange}>
+							<option value="">{t('all')}</option>
+							{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
+							{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
+						</FilterSelect>)}
+					</FilterGroup>
+				</FilterRow>
 			</FilterDisclosure>
 			{active.length > 0 ? <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2">
 				{active.map(item => <button key={item.key} type="button" onClick={item.clear} aria-label={tw('removeFilter', {filter: item.label})} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-100 focus-visible:outline-blue-500"><span className="truncate">{item.label}</span><XMarkIcon className="h-3 w-3 shrink-0" aria-hidden /></button>)}

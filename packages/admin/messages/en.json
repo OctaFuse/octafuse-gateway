@@ -377,6 +377,8 @@
 		"clearSearch": "Clear provider search",
 		"filters": {
 			"aria": "Provider filters",
+			"groupStatus": "Status",
+			"groupProtocol": "Protocol",
 			"all": "All",
 			"active": "Active",
 			"disabled": "Disabled",
