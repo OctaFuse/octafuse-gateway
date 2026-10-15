@@ -45,6 +45,7 @@
 | 2.4.0 升级（音频字符 / 具名 Admin Key / 审计索引，0022–0025） | [releases/2.4.0.md](./releases/2.4.0.md#升级说明) |
 | 2.7.0 升级（用户级模型计费倍率，0026） | [releases/2.7.0.md](./releases/2.7.0.md#升级说明) |
 | 2.8.0 升级（周期额度 + 永久额度，0027） | [releases/2.8.0.md](./releases/2.8.0.md#升级说明) |
+| 2.15.0 升级（MCP 服务与目录快照，0030） | [operators/migrations/0030-mcp-servers.md](./operators/migrations/0030-mcp-servers.md) |
 | 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范
