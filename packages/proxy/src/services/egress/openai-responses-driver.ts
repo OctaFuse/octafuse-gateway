@@ -12,6 +12,8 @@ import {
 	applyStreamIdleTimeout,
 	createStreamIdleClock,
 	readWithIdleTimeout,
+	STREAM_IDLE_TIMEOUT_CODE,
+	STREAM_IDLE_TIMEOUT_MESSAGE,
 	type StreamIdleClockOptions,
 } from './stream-idle-timeout';
 
@@ -221,17 +223,20 @@ export function processResponsesDataLine(
 }
 
 /** 上游静默 EOF 时的兜底 error 事件；必须带 `sequence_number`（严格 serde 客户端必填）。 */
-export function syntheticMissingTerminalEvent(nextSeq: { value: number }): string {
+export function syntheticMissingTerminalEvent(
+	nextSeq: { value: number },
+	error: { message: string; code: string } = {
+		message: 'Upstream stream ended without a terminal Responses event',
+		code: 'responses.incomplete_stream',
+	},
+): string {
 	return (
 		'event: error\n' +
 		`data: ${JSON.stringify({
 			type: 'error',
 			// 合成事件同样必须带序号；缺失会让严格客户端（serde）在兜底错误上报序列化失败。
 			sequence_number: nextSeq.value++,
-			error: {
-				message: 'Upstream stream ended without a terminal Responses event',
-				code: 'responses.incomplete_stream',
-			},
+			error: { message: error.message, code: error.code },
 		})}\n\n`
 	);
 }
@@ -284,6 +289,17 @@ async function pumpResponsesWithUsageTracking(
 				applyStreamIdleTimeout(usage);
 				console.log('[Gateway Responses] stream idle timeout, resolving with partial usage');
 				await reader.cancel();
+				// 写 stream_idle_timeout 错误事件并视为已终止（未收完的半行不会转发）；break 后不会再进 EOF 分支补发。
+				if (!sawTerminal) {
+					await writeChunk(
+						'\n' +
+							syntheticMissingTerminalEvent(nextSeq, {
+								message: STREAM_IDLE_TIMEOUT_MESSAGE,
+								code: STREAM_IDLE_TIMEOUT_CODE,
+							}),
+					);
+					sawTerminal = true;
+				}
 				break;
 			}
 			const { done, value } = chunk;

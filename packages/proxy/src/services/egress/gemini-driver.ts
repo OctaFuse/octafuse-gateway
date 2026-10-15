@@ -22,8 +22,11 @@ import {
   applyStreamIdleTimeout,
   createStreamIdleClock,
   readWithIdleTimeout,
+  streamIdleTimeoutErrorFrame,
   type StreamIdleClockOptions,
 } from './stream-idle-timeout';
+
+const idleFrameEncoder = new TextEncoder();
 
 const EMPTY_USAGE_LOCAL: UsageFromStream = {
   input_tokens: 0,
@@ -227,6 +230,16 @@ async function pumpWithUsageTracking(
         applyStreamIdleTimeout(usage);
         console.log('[Gateway Proxy] gemini stream idle timeout, resolving with partial usage');
         await reader.cancel();
+        // 干净 EOF 会被部分 SDK 当成正常结束；写协议原生终止错误帧让下游可见失败。
+        // 透传无行缓冲：若上游恰好停在行中间，下游会解析失败，同样表现为报错（概率极低，不特殊处理）。
+        if (!clientDisconnected) {
+          try {
+            await writer.write(idleFrameEncoder.encode(streamIdleTimeoutErrorFrame('gemini')));
+          } catch {
+            clientDisconnected = true;
+            usage.cancelled = true;
+          }
+        }
         break;
       }
       const { done, value } = chunk;

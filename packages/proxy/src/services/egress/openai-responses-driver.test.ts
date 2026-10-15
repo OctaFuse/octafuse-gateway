@@ -231,4 +231,41 @@ describe('dispatchOpenAiResponsesRoute', () => {
 		const usage = await result.usagePromise;
 		assert.equal(usage.input_tokens, 0);
 	});
+
+	it('writes a stream_idle_timeout error event once when the upstream goes idle', async () => {
+		const encoder = new TextEncoder();
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(
+					encoder.encode(
+						`data: ${JSON.stringify({
+							type: 'response.output_text.delta',
+							sequence_number: 0,
+							delta: 'hi',
+						})}\n\n`
+					)
+				);
+			},
+			cancel() {},
+		});
+		mock.method(globalThis, 'fetch', async () =>
+			new Response(stream, {
+				status: 200,
+				headers: { 'Content-Type': 'text/event-stream' },
+			})
+		);
+		const result = await dispatchOpenAiResponsesRoute(
+			responsesRoute(),
+			{ stream: true },
+			undefined,
+			null,
+			undefined,
+			{ idleTimeoutMs: 40 }
+		);
+		const [usage, text] = await Promise.all([result.usagePromise, result.response.text()]);
+		assert.equal(usage.stream_error, 'Stream idle timeout');
+		assert.equal(text.split('event: error').length - 1, 1, text);
+		assert.ok(text.includes('"code":"stream_idle_timeout"'), text);
+		assert.ok(text.includes('"sequence_number"'), text);
+	});
 });

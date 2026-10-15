@@ -8,6 +8,7 @@ import {
 	STREAM_FIRST_CHUNK_TIMEOUT_MS,
 	STREAM_IDLE_TIMEOUT_MESSAGE,
 	STREAM_IDLE_TIMEOUT_MS,
+	streamIdleTimeoutErrorFrame,
 } from './stream-idle-timeout';
 
 describe('readWithIdleTimeout', () => {
@@ -86,5 +87,40 @@ describe('applyStreamIdleTimeout', () => {
 		const cancelled = { cancelled: true as const };
 		applyStreamIdleTimeout(cancelled);
 		assert.equal(cancelled.stream_error, undefined);
+	});
+});
+
+describe('streamIdleTimeoutErrorFrame', () => {
+	it('openai-chat: data frame with error code, preceded by a newline', () => {
+		const frame = streamIdleTimeoutErrorFrame('openai-chat');
+		assert.ok(frame.startsWith('\ndata: '));
+		assert.ok(frame.endsWith('\n\n'));
+		const payload = JSON.parse(frame.trim().slice('data: '.length)) as {
+			error: { message: string; type: string; code: string };
+		};
+		assert.equal(payload.error.message, STREAM_IDLE_TIMEOUT_MESSAGE);
+		assert.equal(payload.error.code, 'stream_idle_timeout');
+	});
+
+	it('anthropic: event: error with api_error payload', () => {
+		const frame = streamIdleTimeoutErrorFrame('anthropic');
+		assert.ok(frame.startsWith('\nevent: error\ndata: '));
+		const payload = JSON.parse(frame.trim().split('\n')[1].slice('data: '.length)) as {
+			type: string;
+			error: { type: string; message: string };
+		};
+		assert.equal(payload.type, 'error');
+		assert.equal(payload.error.type, 'api_error');
+		assert.equal(payload.error.message, STREAM_IDLE_TIMEOUT_MESSAGE);
+	});
+
+	it('gemini: data frame with 504 DEADLINE_EXCEEDED', () => {
+		const frame = streamIdleTimeoutErrorFrame('gemini');
+		const payload = JSON.parse(frame.trim().slice('data: '.length)) as {
+			error: { code: number; status: string; message: string };
+		};
+		assert.equal(payload.error.code, 504);
+		assert.equal(payload.error.status, 'DEADLINE_EXCEEDED');
+		assert.equal(payload.error.message, STREAM_IDLE_TIMEOUT_MESSAGE);
 	});
 });

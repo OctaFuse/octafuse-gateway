@@ -189,4 +189,43 @@ describe('dispatchAnthropicRoute', () => {
 		const usage = await result.usagePromise;
 		assert.equal(usage.input_tokens, 0);
 	});
+
+	it('writes an SSE error event when the upstream stream goes idle', async () => {
+		const encoder = new TextEncoder();
+		const stream = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(
+					encoder.encode(
+						`data: ${JSON.stringify({ type: 'message_start', message: { id: 'msg_idle' } })}\n\n`
+					)
+				);
+			},
+			cancel() {},
+		});
+		mock.method(globalThis, 'fetch', async () =>
+			new Response(stream, {
+				status: 200,
+				headers: { 'Content-Type': 'text/event-stream' },
+			})
+		);
+		const result = await dispatchAnthropicRoute(
+			anthropicRoute(),
+			{ stream: true, messages: [] },
+			undefined,
+			null,
+			undefined,
+			{ idleTimeoutMs: 40 }
+		);
+		const [usage, text] = await Promise.all([result.usagePromise, result.response.text()]);
+		assert.equal(usage.stream_error, 'Stream idle timeout');
+		assert.ok(
+			text.endsWith(
+				`\nevent: error\ndata: ${JSON.stringify({
+					type: 'error',
+					error: { type: 'api_error', message: 'Stream idle timeout' },
+				})}\n\n`
+			),
+			text
+		);
+	});
 });
