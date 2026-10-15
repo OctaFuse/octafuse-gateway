@@ -707,7 +707,8 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
       "responses": "https://api.example.com/v1/responses",
       "images.generations": "https://api.example.com/v1/images/generations",
       "images.edits": "https://api.example.com/v1/images/edits",
-      "audio.transcriptions": "https://api.example.com/v1/audio/transcriptions"
+      "audio.transcriptions": "https://api.example.com/v1/audio/transcriptions",
+      "embeddings": "https://api.example.com/v1/embeddings"
     }
   },
   "anthropic": {
@@ -718,13 +719,14 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
     "base": "https://generativelanguage.googleapis.com/v1beta/models",
     "auth": "query-key",
     "endpoints": {
-      "models.generate": "https://example.com/v1beta/models/{model}:{action}"
+      "models.generate": "https://example.com/v1beta/models/{model}:{action}",
+      "models.embed": "https://example.com/v1beta/models/{model}:{action}"
     }
   }
 }
 ```
 
-`base` 走标准路径派生；capability 完整 URL 模板存在则覆盖派生结果。Gemini canonical 键为 **`models.generate`**，模板必须含 `{model}` 与 `{action}`；历史 `generateContent` / `streamGenerateContent` 键仍可读写，但新 UI 与规范化后的路由只生成 `models.generate`。可选 **`gemini.auth`**：`query-key`（`?key=`）或 `bearer`（`Authorization`）；省略则为 `query-key`。`auth` 仅允许出现在 `gemini`。
+`base` 走标准路径派生；capability 完整 URL 模板存在则覆盖派生结果。Gemini canonical 键为 **`models.generate`**（向量模型另有 **`models.embed`**，用于 `:embedContent` / `:batchEmbedContents`），模板必须含 `{model}` 与 `{action}`；历史 `generateContent` / `streamGenerateContent` 键仍可读写，但新 UI 与规范化后的路由只生成 `models.generate`。可选 **`gemini.auth`**：`query-key`（`?key=`）或 `bearer`（`Authorization`）；省略则为 `query-key`。`auth` 仅允许出现在 `gemini`。
 
 ### Models / Routes
 
@@ -790,7 +792,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### `GET /admin/models/import/catalog`
 
-- **行为**：返回 `packages/admin/lib/model-presets/*.json`（合并后）每条预设的摘要（`id`、`display_name`、`vendor`、`kind`、`context_window`、`max_tokens`、`description`、`i18n`、`tier_count`、`pricing_label`、`pricing_preview`），供管理端勾选后再调用 **`POST /admin/models/import`**。`kind` 为 `llm` \| `image` \| `audio`（与管理后台模型列表 Kind 一致）；此处 `audio` **同时包含**语音转写与语音合成，与用户接口 `GET /v1/models?kind=audio` 对齐。英文描述与本地化摘要直接维护在对应的模型预设记录中。价格预览按当前 **`BILLING_CURRENCY`** 选用 `usd` / `cny` 分支（与导入写入同源）；响应另含顶层 **`billing_currency`**。
+- **行为**：返回 `packages/admin/lib/model-presets/*.json`（合并后）每条预设的摘要（`id`、`display_name`、`vendor`、`kind`、`context_window`、`max_tokens`、`description`、`i18n`、`tier_count`、`pricing_label`、`pricing_preview`），供管理端勾选后再调用 **`POST /admin/models/import`**。`kind` 为 `llm` \| `image` \| `asr` \| `tts` \| `embedding`（与管理后台模型列表 Kind 一致，规则见 [模型类型](../reference/model-kinds.md)）；语音识别与语音合成已分开，用户接口 `GET /v1/models?kind=asr` / `kind=tts` 与之对齐（`kind=audio` 为两者的兼容别名）。英文描述与本地化摘要直接维护在对应的模型预设记录中。价格预览按当前 **`BILLING_CURRENCY`** 选用 `usd` / `cny` 分支（与导入写入同源）；响应另含顶层 **`billing_currency`**。
 
 ### `POST /admin/models/import`
 
@@ -883,11 +885,14 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
     - 预设：`whisper-1` → `per_second`；`gpt-4o-mini-transcribe` / `gpt-4o-transcribe` / `gpt-4o-transcribe-diarize` → `token`（见 [user.md「语音转写」](user.md#语音转写audio-transcriptions)）。
   - **官方分时时段（`schedule`，可选）**：与 `tiers` / `image` / `audio` 同级，写入已有 `pricing_profile` TEXT JSON，无独立迁移。元素复用路由侧窗口形状 `{ start, end, factor, days? }`，单一 `factor` 作用于该档全部单价（input / output / cache / image_* / audio_*）。命中窗口取 `factor`，未命中为 `1`（无需 `mode`）。时区沿用 `system_config.BUSINESS_TIMEZONE`，不写入 JSON。半开区间 `[start, end)`，仅 `end` 可为 `24:00`，`start` 不得为 `24:00`；`factor ≥ 0`；同侧窗口禁止重叠。非法 `schedule` 会使整个 `pricing_profile` 解析失败。未配置时行为与历史一致。
   - Request log：迁移 **`0013_request_log_image_billing`** 增加 `billing_kind`、`input_image_count`、`output_image_count`；**`0014_request_log_audio_billing`** 增加 `audio_duration_seconds`。
-- **模型 Kind（Admin UI，无独立 DB 列）**：
-  - **Audio（语音转写）**：`pricing_profile` 含有效 `audio_billing_mode`（`per_second` + `audio`，或 `token` + `tiers`）；见 `isAudioTranscriptionModel`（`packages/core`）。
-  - **Image（文生图）**：非 Audio，且 `output_modalities` 含 `image`（**不要**用 `input` 含 `image` 判断——多模态 LLM 也会有）。
-  - **LLM**：其余；仅当 `output_modalities` 缺失时，才用历史 `pricing_profile.image` 兜底判定。
-  - Models / Routes UI 侧栏 Kind 为 **`llm` | `image` | `audio`（无 All）**，URL `?kind=` 与 `?vendor=` 组合；默认 `llm`。Image 卡片按 mode 展示 `/M` 或 `/image`；Audio 卡片按 mode 展示 `/s` 或 token in/out。
+- **模型 Kind（Admin UI，无独立 DB 列）**：Kind 为 `llm` | `image` | `asr` | `tts` | `embedding`，由 `input_modalities` / `output_modalities` / `pricing_profile` 派生，判定顺序、模态签名与一致性校验见 [模型类型](../reference/model-kinds.md)（实现：`packages/core/src/db/model-kind.ts` 的 `resolveModelKind`）。要点：
+  - **Embedding**：`output_modalities` 含 `embedding`。
+  - **Image（文生图）**：`output_modalities` 含 `image`（**不要**用 `input` 含 `image` 判断——多模态 LLM 也会有）；仅当输出模态缺失时，才用历史 `pricing_profile.image` 兜底。
+  - **ASR（语音识别）**：有效 `audio_billing_mode` 为 `per_second`（+ `audio`）或 `token`（+ `tiers`）；无有效计费模式时按模态签名（输出仅 `text`、输入含 `audio`）兜底。
+  - **TTS（语音合成）**：有效 `audio_billing_mode` 为 `per_character`（+ `audio.price_per_character`）；无有效计费模式时按模态签名（输出仅 `audio`、输入仅 `text`）兜底。
+  - **LLM**：其余（含输出同时有 `text` 与 `audio` 的全模态模型）。
+  - **保存校验**：`POST` / `PATCH /admin/models` 在计费模式与模态互相矛盾时返回 400（如 `per_character` 但输出不含 `audio`），更新时与库里现有值合并后校验。
+  - Models / Routes UI 侧栏 Kind 为 **`llm` | `image` | `asr` | `tts` | `embedding`（模型页另有 All）**，URL `?kind=` 与 `?vendor=` 组合；默认 `llm`，旧链接的 `?kind=audio` 落到 `asr`。Image 卡片按 mode 展示 `/M` 或 `/image`；ASR 卡片按 mode 展示 `/s` 或 token in/out；TTS 卡片展示按字符单价。
   - 文生图与语音转写**不使用**聊天字段 `context_window` / `max_tokens`（多数预设与保存为 `null`；Admin 卡片/表单隐藏这两项；部分 ASR token 预设可带 context/max 供上游约束）。LLM 的 `max_tokens` 缺省仍为 8192。迁移 **`0010_models_max_tokens_nullable`** 允许 `max_tokens` 为 NULL。
 - **路由计价（canonical）**：`model_routes.price_override` 只维护倍率（不复制计费模式或基础单价），**不再**要求 nested `metered` / `charged` tiers：
 

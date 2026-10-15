@@ -202,3 +202,23 @@ describe('collectInboundSurfaces', () => {
 		assert.deepEqual(catalog, []);
 	});
 });
+
+describe('collectInboundSurfaces embeddings', () => {
+	it('lists OpenAI and Gemini embedding inbound after other kinds', () => {
+		const catalog = collectInboundSurfaces(
+			[
+				route({
+					surfaces: surfaces(
+						{ request_protocol: 'gemini', request_operation: 'models.embed', status: 'active' },
+						{ request_protocol: 'openai', request_operation: 'embeddings', status: 'active' },
+					),
+				}),
+			],
+			['default', 'free'],
+		);
+		assert.deepEqual(catalog, [
+			{ protocol: 'openai', operation: 'embeddings' },
+			{ protocol: 'gemini', operation: 'models.embed' },
+		]);
+	});
+});

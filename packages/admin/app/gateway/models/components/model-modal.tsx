@@ -102,7 +102,8 @@ export function ModelModal(props: Props) {
 	const tCommon = useTranslations('common');
 	const tRoutes = useTranslations('routes.modal');
 	const isImageModel = formKind === 'image';
-	const isAudioModel = formKind === 'audio';
+	const isAudioModel = formKind === 'asr' || formKind === 'tts';
+	const isEmbeddingModel = formKind === 'embedding';
 	const pricingProfileJsonSessionKey = `${open ? '1' : '0'}:${editingModel?.id ?? 'new'}`;
 	const [pricingProfileJsonSession, setPricingProfileJsonSession] = useState(pricingProfileJsonSessionKey);
 	const [pricingProfileJsonOpen, setPricingProfileJsonOpen] = useState(false);
@@ -137,42 +138,9 @@ export function ModelModal(props: Props) {
 			catalogScheduleWindows,
 		]
 	);
-	const audioCapability =
-		isAudioModel && audioPricingDraft?.mode === 'per_character'
-			? 'speech'
-			: 'transcription';
+	/** ASR 按秒 / Token，TTS 只按字符；由 Kind 决定，不再单独选择音频能力。 */
+	const audioCapability = formKind === 'tts' ? 'speech' : 'transcription';
 	const hideTokenLimits = isImageModel || isAudioModel;
-	// 音频能力沿用下方“音频定价”的分段控件样式，保持弹窗内的视觉一致性。
-	const audioCapabilityOptions = [
-		{
-			id: 'transcription' as const,
-			label: t('audioCapabilityTranscription'),
-		},
-		{
-			id: 'speech' as const,
-			label: t('audioCapabilitySpeech'),
-		},
-	] as const;
-
-	/** 音频能力是显式配置项：同步设置模态和计费，避免保存出 TTS + 按秒这类矛盾组合。 */
-	const changeAudioCapability = (next: 'transcription' | 'speech') => {
-		if (!isAudioModel || !onAudioPricingDraftChange || next === audioCapability) return;
-		if (next === 'speech') {
-			onFormChange({
-				...formData,
-				input_modalities: ['text'],
-				output_modalities: ['audio'],
-			});
-			onAudioPricingDraftChange(createDefaultAudioCharacterPricingDraft());
-			return;
-		}
-		onFormChange({
-			...formData,
-			input_modalities: ['audio'],
-			output_modalities: ['text'],
-		});
-		onAudioPricingDraftChange(createDefaultAudioPricingDraft());
-	};
 
 	if (!open) return null;
 
@@ -230,7 +198,9 @@ export function ModelModal(props: Props) {
 									[
 										{ id: 'llm' as const, label: t('kindLlm') },
 										{ id: 'image' as const, label: t('kindImage') },
-										{ id: 'audio' as const, label: t('kindAudio') },
+										{ id: 'asr' as const, label: t('kindAsr') },
+										{ id: 'tts' as const, label: t('kindTts') },
+										{ id: 'embedding' as const, label: t('kindEmbedding') },
 									] as const
 								).map((opt) => {
 									const active = formKind === opt.id;
@@ -254,47 +224,17 @@ export function ModelModal(props: Props) {
 								})}
 							</div>
 							<p className="mt-1.5 text-[11px] text-gray-500 leading-relaxed">
-								{isAudioModel
-									? t('kindHintAudio')
-									: isImageModel
+								{formKind === 'asr'
+									? t('kindHintAsr')
+									: formKind === 'tts'
+										? t('kindHintTts')
+										: isEmbeddingModel
+										? t('kindHintEmbedding')
+										: isImageModel
 										? t('kindHintImage')
 										: t('kindHintLlm')}
 							</p>
 						</div>
-						) : null}
-						{isAudioModel ? (
-							<div className="col-span-2 rounded-md border border-gray-200 bg-gray-50/80 p-3 lg:col-span-3">
-								<p className="text-sm font-medium text-gray-800">
-									{t('audioCapability')}
-								</p>
-								<div
-									className="mt-2 inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
-									role="group"
-									aria-label={t('audioCapability')}
-								>
-									{audioCapabilityOptions.map((option) => (
-										<button
-											key={option.id}
-											type="button"
-											disabled={isSaving || isDeleting}
-											onClick={() => changeAudioCapability(option.id)}
-											aria-pressed={audioCapability === option.id}
-											className={
-												audioCapability === option.id
-												? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
-												: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
-										}
-										>
-											{option.label}
-										</button>
-									))}
-								</div>
-								<p className="mt-2 text-[11px] leading-relaxed text-gray-500">
-									{audioCapability === 'speech'
-										? t('audioCapabilityHintSpeech')
-										: t('audioCapabilityHintTranscription')}
-								</p>
-							</div>
 						) : null}
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">{t('modelIdRequired')}</label>
@@ -363,6 +303,7 @@ export function ModelModal(props: Props) {
 										placeholder={t('contextWindowPlaceholder')}
 									/>
 								</div>
+								{isEmbeddingModel ? null : (
 								<div>
 									<label className="block text-sm font-medium text-gray-700 mb-1">
 										{t('maxTokens')}
@@ -377,6 +318,7 @@ export function ModelModal(props: Props) {
 										placeholder={t('maxTokensPlaceholder')}
 									/>
 								</div>
+								)}
 							</>
 						) : (
 							<div className="col-span-2 rounded-md border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 lg:col-span-3">
@@ -770,6 +712,15 @@ export function ModelModal(props: Props) {
 									onImageBillingModeChange={onImageBillingModeChange}
 									perImageDraft={imagePerImageDraft}
 									onPerImageDraftChange={onImagePerImageDraftChange}
+								/>
+							) : isEmbeddingModel ? (
+								<PricingTiersEditor
+									title={t('embeddingPricing')}
+									rows={pricingTierRows}
+									onChange={onPricingTierRowsChange}
+									billingCurrencyCode={billingCurrency}
+									minRows={0}
+									variant="embedding"
 								/>
 							) : (
 								<PricingTiersEditor

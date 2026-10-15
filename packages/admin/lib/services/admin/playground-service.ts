@@ -19,7 +19,7 @@ import {
 	pickExtraFields,
 	protectedUpstreamPathsForRoute,
 } from '@octafuse/core/upstream-extra-fields';
-import { isAudioModel as isCatalogAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import { resolveModelKind, type ModelKind } from '@octafuse/core/db/model-kind';
 import {
 	type GeminiContentAction,
 	prepareGeminiUpstreamFetch,
@@ -62,7 +62,7 @@ import {
 	openaiEditImageFormField,
 	type ImageOperation,
 } from '@/lib/image-generations';
-import { modelKindFromFlags, resolveOpenaiUpstreamCapability } from '@/lib/invoke-kind';
+import { isAudioKind, resolveOpenaiUpstreamCapability, type GeminiEmbedAction } from '@/lib/invoke-kind';
 import { AdminServiceError, badRequest, notFound } from './errors';
 import { buildPlaygroundDashScopeImageRequest } from './playground-dashscope-image';
 import { isPendingProviderImportApiKey } from '@octafuse/core/db/provider-key-utils';
@@ -81,10 +81,8 @@ export type PlaygroundResolvedRoute = {
 	providerApiKey: string;
 	providerModelName: string;
 	customParams: Record<string, unknown> | null;
-	/** Catalog model is image-generation (`output_modalities` includes image). */
-	isImageModel: boolean;
-	/** Catalog model is an audio endpoint model (ASR or TTS). */
-	isAudioModel: boolean;
+	/** 目录模型类型（`resolveModelKind`；无目录模型时为 llm）。 */
+	modelKind: ModelKind;
 };
 
 type JsonObject = Record<string, unknown>;
@@ -200,17 +198,13 @@ async function resolvePlaygroundRouteFields(
 
 	const model = await repos.models.getModelDetailWithRouteCounts(row.model_id);
 	if (isDraft && !model) throw badRequest('Model not found');
-	const isImageModel = model
-		? isImageGenerationModel({
+	const modelKind: ModelKind = model
+		? resolveModelKind({
 				output_modalities: model.output_modalities as string | null | undefined,
+				input_modalities: model.input_modalities as string | null | undefined,
 				pricing_profile: model.pricing_profile as string | null | undefined,
 		  })
-		: false;
-	const isAudioModel = model
-		? isCatalogAudioModel({
-				pricing_profile: model.pricing_profile as string | null | undefined,
-		  })
-		: false;
+		: 'llm';
 
 	return {
 		upstreamProtocol: protocol,
@@ -221,8 +215,7 @@ async function resolvePlaygroundRouteFields(
 		providerApiKey: apiKey,
 		providerModelName: row.provider_model_name,
 		customParams,
-		isImageModel,
-		isAudioModel,
+		modelKind,
 	};
 }
 
@@ -262,9 +255,10 @@ function stripApiKeyFromUrlForHeader(urlString: string): string {
 /** Playground Gemini 分支：按 endpoints 解析 URL 与 headers（与 Proxy 一致）。 */
 export function buildPlaygroundGeminiUpstreamRequest(
 	route: PlaygroundResolvedRoute,
-	action: GeminiContentAction,
+	action: GeminiContentAction | GeminiEmbedAction,
 ): { url: string; headers: Record<string, string> } {
-	const resolvedUrl = resolveUpstreamEndpoint('gemini', 'models.generate', route.providerEndpoints, {
+	const capability = action === 'embedContent' || action === 'batchEmbedContents' ? 'models.embed' : 'models.generate';
+	const resolvedUrl = resolveUpstreamEndpoint('gemini', capability, route.providerEndpoints, {
 		model: route.providerModelName,
 		action,
 		providerId: route.providerId,
@@ -289,9 +283,11 @@ export type PlaygroundInvokeInput = (
 	body: Record<string, unknown>;
 	/** 仅 `upstream_protocol === gemini` 时使用；缺省为 `generateContent`。 */
 	geminiAction?: GeminiContentAction;
+	/** Gemini 向量：缺省按 body 是否含 `requests` 推断 */
+	geminiEmbedAction?: GeminiEmbedAction;
 	/**
 	 * Image models: `generations` (JSON) or `edits` (multipart).
-	 * Default: generations when `isImageModel`, otherwise ignored.
+	 * Default: generations when `modelKind === 'image'`, otherwise ignored.
 	 * For edits, `body.image` / `body.images` should be data URL string(s).
 	 */
 	imageOperation?: ImageOperation;
@@ -1034,7 +1030,7 @@ export async function invokePlaygroundUpstream(
 	const start = Date.now();
 
 	if (
-		route.isImageModel &&
+		route.modelKind === 'image' &&
 		route.upstreamProtocol !== 'openai' &&
 		route.upstreamProtocol !== 'dashscope' &&
 		route.upstreamProtocol !== 'minimax' &&
@@ -1046,7 +1042,7 @@ export async function invokePlaygroundUpstream(
 		);
 	}
 	if (
-		route.isAudioModel &&
+		isAudioKind(route.modelKind) &&
 		route.upstreamProtocol !== 'openai' &&
 		route.upstreamProtocol !== 'dashscope' &&
 		route.upstreamProtocol !== 'minimax'
@@ -1055,13 +1051,21 @@ export async function invokePlaygroundUpstream(
 	}
 
 	const imageOperation: ImageOperation | null =
-		route.isImageModel && !route.isAudioModel ? (input.imageOperation === 'edits' ? 'edits' : 'generations') : null;
+		route.modelKind === 'image' ? (input.imageOperation === 'edits' ? 'edits' : 'generations') : null;
 
-	const invokeKind = modelKindFromFlags(route.isAudioModel, route.isImageModel);
+	if (
+		route.modelKind === 'embedding' &&
+		route.upstreamProtocol !== 'openai' &&
+		route.upstreamProtocol !== 'gemini'
+	) {
+		throw badRequest('Embedding models require upstream_protocol=openai or gemini.');
+	}
+
+	const invokeKind = route.modelKind;
 
 	switch (route.upstreamProtocol) {
 		case 'openai': {
-			if (route.isAudioModel) {
+			if (isAudioKind(route.modelKind)) {
 				if (route.upstreamOperation === 'audio.speech') {
 					const request = buildPlaygroundOpenAiSpeechRequest(route, userBody);
 					url = request.url;
@@ -1080,7 +1084,7 @@ export async function invokePlaygroundUpstream(
 				try {
 					url = resolveUpstreamEndpoint(
 						'openai',
-						resolveOpenaiUpstreamCapability({ kind: 'audio', audioOperation: 'transcriptions' }),
+						resolveOpenaiUpstreamCapability({ kind: 'asr' }),
 						route.providerEndpoints,
 						{
 							providerId: route.providerId,
@@ -1180,7 +1184,7 @@ export async function invokePlaygroundUpstream(
 			}
 
 			const capability = resolveOpenaiUpstreamCapability({
-				kind: invokeKind === 'image' ? 'image' : 'llm',
+				kind: invokeKind === 'embedding' ? 'embedding' : invokeKind === 'image' ? 'image' : 'llm',
 				imageOperation: imageOperation === 'generations' ? 'generations' : undefined,
 				llmOperation: route.upstreamOperation === 'responses' ? 'responses' : 'chat',
 			});
@@ -1234,7 +1238,31 @@ export async function invokePlaygroundUpstream(
 			break;
 		}
 		case 'gemini': {
-			const action: GeminiContentAction = route.isImageModel
+			if (route.modelKind === 'embedding') {
+				const embedAction: GeminiEmbedAction =
+					input.geminiEmbedAction ?? (Array.isArray(merged.requests) ? 'batchEmbedContents' : 'embedContent');
+				let embedRequest: { url: string; headers: Record<string, string> };
+				try {
+					embedRequest = buildPlaygroundGeminiUpstreamRequest(route, embedAction);
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve Gemini embed URL');
+				}
+				url = embedRequest.url;
+				headers = embedRequest.headers;
+				const embedModel = `models/${route.providerModelName}`;
+				const embedBody: Record<string, unknown> = { ...merged };
+				if (embedAction === 'batchEmbedContents' && Array.isArray(embedBody.requests)) {
+					embedBody.requests = embedBody.requests.map((item) =>
+						isPlainObject(item) ? { ...item, model: embedModel } : item,
+					);
+				} else if ('model' in embedBody) {
+					embedBody.model = embedModel;
+				}
+				fetchBody = JSON.stringify(embedBody);
+				upstreamWireBodyJson = fetchBody;
+				break;
+			}
+			const action: GeminiContentAction = route.modelKind === 'image'
 				? 'generateContent'
 				: input.geminiAction === 'streamGenerateContent'
 					? 'streamGenerateContent'
@@ -1275,7 +1303,7 @@ export async function invokePlaygroundUpstream(
 				upstreamWireBodyJson = request.wireBodyJson;
 				break;
 			}
-			if (route.isImageModel) {
+			if (route.modelKind === 'image') {
 				if (imageOperation === 'edits') {
 					throw badRequest(
 						'DashScope image routes only support generations (use JSON image for image-to-image).',
@@ -1288,7 +1316,7 @@ export async function invokePlaygroundUpstream(
 				upstreamWireBodyJson = request.wireBodyJson;
 				break;
 			}
-			if (!route.isAudioModel) {
+			if (!isAudioKind(route.modelKind)) {
 				throw badRequest('DashScope Playground routes must use an image or audio catalog model');
 			}
 			if (route.upstreamOperation === 'audio.speech') {
@@ -1343,7 +1371,7 @@ export async function invokePlaygroundUpstream(
 				upstreamWireBodyJson = fetchBody;
 				break;
 			}
-			if (!route.isImageModel || route.upstreamOperation !== 'images.generations' || route.adapter !== 'passthrough') {
+			if (route.modelKind !== 'image' || route.upstreamOperation !== 'images.generations' || route.adapter !== 'passthrough') {
 				throw badRequest('Volcengine Playground routes only support passthrough images.generations');
 			}
 			try {
@@ -1418,8 +1446,8 @@ export async function invokePlaygroundUpstream(
 			}
 			if (
 				passthrough &&
-				((route.isAudioModel && route.upstreamOperation === 'audio.speech') ||
-					(route.isImageModel && route.upstreamOperation === 'images.generations'))
+				((isAudioKind(route.modelKind) && route.upstreamOperation === 'audio.speech') ||
+					(route.modelKind === 'image' && route.upstreamOperation === 'images.generations'))
 			) {
 				const capability =
 					route.upstreamOperation === 'audio.speech' ? 'audio.speech' : 'images.generations';
@@ -1439,7 +1467,7 @@ export async function invokePlaygroundUpstream(
 				upstreamWireBodyJson = fetchBody;
 				break;
 			}
-			if (!route.isAudioModel || route.upstreamOperation !== 'audio.transcriptions') {
+			if (!isAudioKind(route.modelKind) || route.upstreamOperation !== 'audio.transcriptions') {
 				throw badRequest(
 					'MiniMax Playground routes support audio.transcriptions, audio.speech, or images.generations',
 				);

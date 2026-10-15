@@ -6,9 +6,11 @@ import {
 	buildGeminiUpstreamActionUrl,
 	isGeminiUpstreamAuthScheme,
 	type GeminiContentAction,
+	type GeminiUpstreamAction,
 	type GeminiUpstreamAuthScheme,
 } from './gemini-upstream-url';
 import {
+	GEMINI_EMBED_OPERATION,
 	GEMINI_GENERATE_OPERATION,
 	GEMINI_LEGACY_GENERATE_OPERATIONS,
 	canonicalizeRequestOperation,
@@ -30,6 +32,7 @@ export type ProviderEndpointCapability =
 	| 'audio.transcriptions.multimodal'
 	| 'audio.transcriptions.tasks'
 	| 'audio.speech'
+	| 'embeddings'
 	| 'audio.speech.multimodal'
 	| 'audio.realtime.inference'
 	| 'audio.realtime.session'
@@ -37,6 +40,7 @@ export type ProviderEndpointCapability =
 	| 'audio.voices'
 	| 'messages'
 	| 'models.generate'
+	| 'models.embed'
 	| 'generateContent'
 	| 'streamGenerateContent';
 
@@ -47,6 +51,7 @@ export const OPENAI_ENDPOINT_CAPABILITIES = [
 	'images.edits',
 	'audio.transcriptions',
 	'audio.speech',
+	'embeddings',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
 export const ANTHROPIC_ENDPOINT_CAPABILITIES = ['messages'] as const satisfies readonly ProviderEndpointCapability[];
@@ -54,6 +59,7 @@ export const ANTHROPIC_ENDPOINT_CAPABILITIES = ['messages'] as const satisfies r
 /** Canonical Gemini capability (drives UI / listConfiguredCapabilities). */
 export const GEMINI_ENDPOINT_CAPABILITIES = [
 	GEMINI_GENERATE_OPERATION,
+	GEMINI_EMBED_OPERATION,
 ] as const satisfies readonly ProviderEndpointCapability[];
 
 /** Legacy per-action Gemini endpoint keys still accepted on read/write. */
@@ -336,7 +342,10 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 							`endpoints.${protocol}.endpoints.${cap} must include {model} placeholder`
 						);
 					}
-					if (cap === GEMINI_GENERATE_OPERATION && !url.includes('{action}')) {
+					if (
+						(cap === GEMINI_GENERATE_OPERATION || cap === GEMINI_EMBED_OPERATION) &&
+						!url.includes('{action}')
+					) {
 						throw new Error(
 							`endpoints.${protocol}.endpoints.${cap} must include {action} placeholder`
 						);
@@ -413,6 +422,14 @@ function resolveGeminiWireAction(
 	);
 }
 
+function resolveGeminiEmbedAction(options: ResolveUpstreamEndpointOptions): GeminiUpstreamAction {
+	const fromOptions = options.action?.trim();
+	if (fromOptions === 'embedContent' || fromOptions === 'batchEmbedContents') {
+		return fromOptions;
+	}
+	throw new Error('Gemini embed endpoint requires action (embedContent or batchEmbedContents)');
+}
+
 /** DashScope WSS 与 HTTP 共用 host，但协议和固定 API 根不同。 */
 function buildDashScopeWebSocketUrl(base: string, endpoint: 'inference' | 'realtime'): string {
 	const url = new URL(base);
@@ -446,6 +463,28 @@ export function resolveUpstreamEndpoint(
 	}
 
 	const cfg = providerEndpoints[protocol];
+
+	if (protocol === 'gemini' && canonicalCapability === GEMINI_EMBED_OPERATION) {
+		const action = resolveGeminiEmbedAction(options);
+		const model = options.model;
+		const template = cfg?.endpoints?.[GEMINI_EMBED_OPERATION];
+		if (template) {
+			if (!model) throw new Error('Gemini upstream endpoint requires model name');
+			return fillEndpointTemplate(template, { model, action });
+		}
+		const base = cfg?.base;
+		if (base) {
+			if (!model) throw new Error('Gemini upstream endpoint requires model name');
+			return buildGeminiUpstreamActionUrl(trimSlash(base), model, action);
+		}
+		const who =
+			options.providerId != null && options.providerId !== ''
+				? `provider_id=${JSON.stringify(options.providerId)}`
+				: 'provider';
+		throw new Error(
+			`${who}: no upstream endpoint for protocol "gemini" capability "${GEMINI_EMBED_OPERATION}" (configure providers.endpoints.gemini)`
+		);
+	}
 
 	if (protocol === 'gemini') {
 		const action = resolveGeminiWireAction(capability, options);
@@ -533,6 +572,8 @@ export function resolveUpstreamEndpoint(
 				return `${root}/audio/speech`;
 			case 'audio.speech.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
+			case 'embeddings':
+				return `${root}/embeddings`;
 			case 'images.generations.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
 			case 'audio.realtime.inference':
@@ -608,11 +649,14 @@ export function listConfiguredCapabilities(
 	const endpoints = cfg.endpoints;
 	if (!endpoints) return [];
 	if (protocol === 'gemini') {
-		const hasAny =
+		const hasGenerate =
 			Boolean(endpoints[GEMINI_GENERATE_OPERATION]) ||
 			Boolean(endpoints.generateContent) ||
 			Boolean(endpoints.streamGenerateContent);
-		return hasAny ? [GEMINI_GENERATE_OPERATION] : [];
+		const out: ProviderEndpointCapability[] = [];
+		if (hasGenerate) out.push(GEMINI_GENERATE_OPERATION);
+		if (endpoints[GEMINI_EMBED_OPERATION]) out.push(GEMINI_EMBED_OPERATION);
+		return out;
 	}
 	return all.filter((cap) => Boolean(endpoints[cap]));
 }

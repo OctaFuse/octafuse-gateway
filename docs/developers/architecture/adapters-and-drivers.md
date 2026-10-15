@@ -81,6 +81,10 @@ DashScope 语音合成的上游 `input` 是对象，OpenAI 的 `input` 是文本
 
 原生透传路由（`/v1/minimax/*`、`/v1/dashscope/*`、`/v1/volcengine/*`）、实时 WebSocket 和异步任务入口不走这套合并。文本 Chat / Messages / Responses 本来就转发整个请求体。火山方舟生图透传由 `volcengine-json-passthrough` 驱动，只替换 `model`。OpenAI 入口的 `volcengine-image` 由 `volcengine-openai-driver` 转换后再发到同一个方舟端点。Gemini 图片模型与文本模型共用 `/v1beta/models/{model}:{action}`，由 `gemini-image-passthrough` 原样转发 generateContent 请求体。OpenAI 入口的 `gemini-image` 由 `gemini-openai-image-driver` 转成 generateContent，额外字段按 Gemini 原生结构合并，`contents` 与 `generationConfig.candidateCount` 合并后恢复。见 [Gemini 原生生图](./gemini-image.md)。
 
+## Embeddings
+
+向量模型的适配器类型为 `embedding`，目前只有 `passthrough`：OpenAI `POST /v1/embeddings`（operation `embeddings`）与 Gemini `:embedContent` / `:batchEmbedContents`（operation `models.embed`）只替换 `model`，不转换请求体。驱动分别是 `openai-embeddings-driver` 与 `gemini-embed-driver`，复用文本入口的 `runProxyPipeline` 与 `defaultDescribeOutcome` 记账，用量只取输入 token；上游无 usage 时不计费。模型是否为向量由 `output_modalities` 含 `embedding` 派生，与图片互斥。
+
 ## 为后续模态预留
 
 注册表已能表达以下形态，执行内核尚未统一：
@@ -88,7 +92,6 @@ DashScope 语音合成的上游 `input` 是对象，OpenAI 的 `input` 是文本
 | 方向 | 注册表怎么写 | 仍待实现 |
 |------|----------------|----------|
 | 视频 | `exchange: 'job'`，`responsePayload: 'binary'` | 异步任务提交 / 轮询 / 取结果内核 |
-| Embeddings | `unary` + `tokens`，公开路径 `/v1/embeddings` | 入口 spec + 驱动 |
 | 更多图 / 音频供应商 | 多数是 `passthrough` 或单个转换适配器 | 注册表加一行、分发表加一行 |
 
 `dashscope-asr-file-async` 已标为 `exchange: 'job'`，是将来抽出任务内核的第一个样本。

@@ -107,7 +107,9 @@
 		"failedToLoadApiKeys": "API Key를 불러오지 못했습니다",
 		"failedToLoadModels": "모델을 불러오지 못했습니다",
 		"infinity": "∞",
-		"kindAudio": "오디오"
+		"kindAsr": "음성 인식",
+		"kindTts": "음성 합성",
+		"kindEmbedding": "임베딩"
 	},
 	"auth": {
 		"username": "사용자 이름",
@@ -337,7 +339,9 @@
 		"routeGroupAria": "Route 그룹 필터",
 		"modelsAndRoutes": "모델 {models}개 · Route {routes}개",
 		"narrowModelsRoutes": "모델 및 Route 범위 좁히기",
-		"kindAudio": "오디오"
+		"kindAsr": "음성 인식",
+		"kindTts": "음성 합성",
+		"kindEmbedding": "임베딩"
 	},
 	"modalities": {
 		"text": "텍스트",
@@ -373,6 +377,8 @@
 		"clearSearch": "Provider 검색 초기화",
 		"filters": {
 			"aria": "Provider 필터",
+			"groupStatus": "상태",
+			"groupProtocol": "프로토콜",
 			"all": "전체",
 			"active": "활성",
 			"disabled": "비활성",
@@ -414,7 +420,9 @@
 				"messages": "messages",
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
-				"modelsGenerate": "generate"
+				"modelsGenerate": "generate",
+				"embeddings": "embeddings",
+				"modelsEmbed": "embed"
 			},
 			"officialUpdate": "공식 업데이트",
 			"officialUpdateTitle": "공식 템플릿이 변경되었습니다. 클릭하여 확인하고 동기화",
@@ -569,7 +577,9 @@
 			"apiKeyHint": "이 공급자의 업스트림 자격 증명. 프로젝트 범위 Vertex에는 GCP 서비스 계정 JSON을 붙여 넣으세요(Vertex API Key 아님).",
 			"apiKeyEditHint": "기본적으로 숨깁니다. 보거나 복사할 수 있습니다. 바꿔 저장하면 교체되고, 비우면 현재 키를 유지합니다.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 스트리밍 + 비스트리밍",
-			"legacyPerActionNotice": "이 Provider 에는 안전하게 병합할 수 없는 generateContent / streamGenerateContent 개별 오버라이드가 남아 있습니다. 저장 시 그대로 유지됩니다. 검토 후 단일 '{action}' 템플릿으로 변경하세요."
+			"legacyPerActionNotice": "이 Provider 에는 안전하게 병합할 수 없는 generateContent / streamGenerateContent 개별 오버라이드가 남아 있습니다. 저장 시 그대로 유지됩니다. 검토 후 단일 '{action}' 템플릿으로 변경하세요.",
+			"capEmbeddings": "embeddings (/v1/embeddings)",
+			"capModelsEmbed": "models.embed (/v1beta/models/'{model}:{action}') — embedContent / batchEmbedContents"
 		},
 		"sync": {
 			"title": "공식 정보와 동기화",
@@ -678,7 +688,9 @@
 			"kindAria": "모델 유형 필터",
 			"kindLlm": "LLM",
 			"kindImage": "이미지",
-			"kindAudio": "오디오"
+			"kindAsr": "음성 인식",
+			"kindTts": "음성 합성",
+			"kindEmbedding": "임베딩"
 		},
 		"imagePricing": {
 			"enabled": "레거시 (삭제됨)",
@@ -737,15 +749,12 @@
 			"kind": "유형",
 			"kindLlm": "LLM",
 			"kindImage": "이미지",
-			"kindAudio": "오디오",
+			"kindAsr": "음성 인식",
+			"kindTts": "음성 합성",
 			"kindHintLlm": "Token 요금(input / output / cache)을 사용하는 Chat / completion 모델입니다.",
 			"kindHintImage": "이미지 생성 모델입니다. 출력 모달리티에 image가 포함되고 Image token 요금을 사용하며, context/max tokens는 사용하지 않습니다.",
-			"kindHintAudio": "오디오 엔드포인트 모델입니다. 음성 인식(ASR) 또는 음성 합성(TTS)을 선택하면 모달리티와 요금 방식이 함께 설정됩니다.",
-			"audioCapability": "오디오 기능",
-			"audioCapabilityTranscription": "음성 인식(ASR)",
-			"audioCapabilitySpeech": "음성 합성(TTS)",
-			"audioCapabilityHintTranscription": "오디오를 입력하고 텍스트를 반환합니다. 초당 또는 Token 요금을 지원합니다.",
-			"audioCapabilityHintSpeech": "텍스트를 입력하고 오디오를 반환합니다. 문자당 요금을 사용합니다.",
+			"kindHintAsr": "오디오를 입력하고 텍스트를 반환합니다. 초당 또는 Token 요금을 지원합니다.",
+			"kindHintTts": "텍스트를 입력하고 오디오를 반환합니다. 문자당 요금을 사용합니다.",
 			"modelIdRequired": "Model ID *",
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "표시 이름",
@@ -790,7 +799,10 @@
 			"metadataJson": "메타데이터 (JSON)",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "모델 삭제",
-			"confirmDelete": "이 모델과 연결된 모든 Route를 삭제할까요?"
+			"confirmDelete": "이 모델과 연결된 모든 Route를 삭제할까요?",
+			"kindEmbedding": "임베딩",
+			"kindHintEmbedding": "임베딩(Embedding) 모델. 벡터를 출력하며 입력 토큰만 과금됩니다. POST /v1/embeddings 또는 Gemini embedContent와 함께 사용합니다.",
+			"embeddingPricing": "임베딩 요금(입력 토큰)"
 		},
 		"metadata": {
 			"title": "메타데이터"
@@ -802,16 +814,20 @@
 			"routesTitle": "{routes}, 활성 {active}개",
 			"kindLlm": "LLM",
 			"kindImage": "이미지",
-			"kindAudio": "오디오",
+			"kindAsr": "음성 인식",
+			"kindTts": "음성 합성",
 			"noTags": "태그 없음",
 			"specs": "{context} · {max}",
 			"imageHint": "이미지",
-			"audioHint": "오디오",
+			"asrHint": "오디오 ASR · 초당 요금",
+			"ttsHint": "오디오 TTS · 문자당 요금",
 			"editModel": "{name} 편집",
 			"pricingNoData": "—",
 			"pricingTiers": "{count}단계",
 			"noRoutes": "라우트 없음",
-			"officialUpdateTitle": "공식 카탈로그에 업데이트가 있습니다. 클릭하여 확인 및 동기화"
+			"officialUpdateTitle": "공식 카탈로그에 업데이트가 있습니다. 클릭하여 확인 및 동기화",
+			"kindEmbedding": "임베딩",
+			"embeddingHint": "임베딩 · 컨텍스트 {context}"
 		},
 		"sync": {
 			"title": "공식 카탈로그와 동기화",
@@ -1054,7 +1070,8 @@
 			"newRouteFor": "{title}의 새 Route",
 			"activeTotalRoutes": "활성 {active}개 / 전체 {total}개",
 			"noRoutesYet": "아직 Route가 없습니다",
-			"clickToAdd": "+를 클릭하여 첫 Route를 추가하세요"
+			"clickToAdd": "+를 클릭하여 첫 Route를 추가하세요",
+			"embeddingModelHint": "임베딩 · 입력 토큰 과금"
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1535,7 +1552,8 @@
 				"actualRequestEmpty": "전송 후 실제 요청을 표시합니다."
 			}
 		},
-		"kindAudio": "오디오",
+		"kindAsr": "음성 인식",
+		"kindTts": "음성 합성",
 		"strategy": {
 			"title": "라우트 전략",
 			"protocolLevel": "현재 라우트 풀 전략",
@@ -1695,7 +1713,8 @@
 		"kind": "유형",
 		"kindLlm": "LLM",
 		"kindImage": "이미지",
-		"kindAudio": "오디오",
+		"kindAsr": "음성 인식",
+		"kindTts": "음성 합성",
 		"modelId": "Model ID",
 		"provider": "Provider",
 		"protocol": "프로토콜",
@@ -1872,7 +1891,8 @@
 		"realtimeTransportError": "실시간 WebSocket 전송 오류",
 		"realtimeWaitingTaskStarted": "WebSocket이 연결되었습니다. 업스트림 task-started를 기다리는 중…",
 		"realtimeClosed": "실시간 연결이 닫혔습니다({code}{reason}).",
-		"streamDisconnected": "업스트림 스트림을 읽는 중 연결이 끊겼습니다({cause}). stream을 false로 바꾼 뒤 확인하거나 다시 시도하세요."
+		"streamDisconnected": "업스트림 스트림을 읽는 중 연결이 끊겼습니다({cause}). stream을 false로 바꾼 뒤 확인하거나 다시 시도하세요.",
+		"kindEmbedding": "임베딩"
 	},
 	"simulator": {
 		"title": "Simulator",
@@ -1891,7 +1911,8 @@
 		"kind": "유형",
 		"kindLlm": "LLM",
 		"kindImage": "이미지",
-		"kindAudio": "오디오",
+		"kindAsr": "음성 인식",
+		"kindTts": "음성 합성",
 		"model": "모델",
 		"filter": "필터",
 		"modelFilterPlaceholder": "id / 표시 이름 / vendor 포함…",
@@ -1995,7 +2016,9 @@
 		"modelNoRoute": "라우트 없음",
 		"matchingRoutesSummary": "일치하는 활성 Route {count}개",
 		"matchingRoutesHint": "이 모델과 그룹에 대해 Proxy가 쓸 수 있는 활성 Route의 읽기 전용 미리보기입니다. Failover는 요청 시점에 발생합니다.",
-		"supportedSurfacesEmpty": "이 모델과 라우트 그룹에 활성 공개 Surface가 없습니다."
+		"supportedSurfacesEmpty": "이 모델과 라우트 그룹에 활성 공개 Surface가 없습니다.",
+		"kindEmbedding": "임베딩",
+		"protocolLockedEmbedding": "임베딩 라우트는 OpenAI POST /v1/embeddings 와 Gemini 네이티브 :embedContent / :batchEmbedContents 를 지원합니다."
 	},
 	"users": {
 		"detailUx": {
@@ -2374,7 +2397,8 @@
 				"tts": "TTS",
 				"asr": "ASR",
 				"tool": "도구",
-				"mcp": "MCP"
+				"mcp": "MCP",
+				"embedding": "임베딩"
 			},
 			"stream": "스트림",
 			"realtime": "실시간",
@@ -2402,7 +2426,8 @@
 				"stream": "클라이언트가 스트리밍 응답을 요청함",
 				"realtime": "실시간 세션",
 				"reasoning": "추론 토큰 또는 추론 단계 TTFT",
-				"failover": "업스트림 실패 후 전환이 발생함"
+				"failover": "업스트림 실패 후 전환이 발생함",
+				"embedding": "텍스트 임베딩"
 			},
 			"cost": "요청의 청구 금액과 원가 금액. 옆의 배율은 금액 ÷ 카탈로그 금액입니다.",
 			"profit": "청구 금액 − 원가 금액. 인프라, 세금 등 기타 지출은 제외됩니다.",
@@ -3152,6 +3177,44 @@
 		"pendingBadge": "검토 대기 {count}",
 		"edit": "편집",
 		"viewInvocations": "호출 내역 보기",
+		"connectGuide": {
+			"button": "연결 가이드",
+			"title": "연결 가이드: 외부 Agent에서 MCP 사용",
+			"subtitle": "클라이언트를 선택하고 설정을 복사하세요. Agent에는 게이트웨이 URL과 사용자 API Key만 필요하며 업스트림 비밀 값은 필요 없습니다.",
+			"proxyUrl": "Proxy URL",
+			"proxyHint": "Proxy 기본 URL을 입력하세요. /mcp는 자동으로 추가됩니다. “공개 카탈로그 테스트”와 공유됩니다.",
+			"proxyInvalid": "잘못된 URL입니다. /mcp 경로, 인증 정보, 쿼리가 없는 http(s) 기본 URL을 사용하세요.",
+			"scope": "서비스 범위",
+			"allServices": "전체 서비스(집계)",
+			"disabled": "비활성",
+			"scopeHint": "단일 서비스를 선택하면 해당 서비스의 도구만 노출됩니다.",
+			"endpoint": "MCP 엔드포인트:",
+			"clients": "클라이언트",
+			"copy": "복사",
+			"copied": "클립보드에 복사했습니다",
+			"copyFailed": "복사에 실패했습니다. 텍스트를 직접 선택하세요",
+			"safeHint": "예시에는 자리표시자만 있으며 실제 Key는 포함되지 않습니다.",
+			"runInTerminal": "터미널에서 실행:",
+			"saveTo": "{path}에 저장:",
+			"client": {
+				"cursor": "Cursor",
+				"vscode": "VS Code",
+				"claude-code": "Claude Code",
+				"codex": "Codex",
+				"curl": "curl 확인"
+			},
+			"note": {
+				"cursor": "저장 후 Cursor MCP 설정에서 연결됨 상태인지 확인하세요. 프로젝트 단위 설정은 .cursor/mcp.json을 사용합니다.",
+				"vscode": "Copilot Agent 모드에서 사용하거나 명령 팔레트의 “MCP: Add Server”를 실행하세요.",
+				"claude-code": "--scope user를 추가하면 모든 프로젝트에 적용됩니다. claude mcp list로 확인하세요.",
+				"codex": "먼저 셸에서 환경 변수를 내보내세요. Key는 설정 파일에 기록되지 않습니다.",
+				"curl": "HTTP 200과 함께 tools 목록이 오면 URL과 Key가 정상입니다."
+			},
+			"tipKey": "{placeholder}를 게이트웨이 사용자 API Key(sk-로 시작)로 바꾸세요.",
+			"tipTools": "도구 이름은 {pattern} 형식입니다. 프롬프트와 리소스도 같은 엔드포인트에서 제공됩니다.",
+			"tipEnable": "MCP 서비스에서 동기화하고 활성화한 항목만 클라이언트에 표시됩니다.",
+			"tipTransport": "세션 없는 Streamable HTTP(POST)만 지원하며 GET은 405를 반환합니다."
+		},
 		"connection": "연결",
 		"enableAllNew": "신규 항목 모두 사용",
 		"effectivePrice": "도구 가격",

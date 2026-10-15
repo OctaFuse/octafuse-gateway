@@ -65,21 +65,28 @@ export function MultiSelectDropdown({
 
 	return (
 		<div ref={rootRef} className="relative min-w-0">
-			<label className="mb-1 block text-sm font-medium text-gray-600">{label}</label>
-			<button
-				type="button"
-				className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-gray-300 bg-white px-3 text-left text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-				aria-expanded={open}
-				aria-controls={panelId}
-				aria-haspopup="listbox"
-				onClick={() => setOpen((prev) => !prev)}
-			>
-				<span className="truncate tabular-nums">{triggerText}</span>
-				<ChevronDownIcon
-					className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-					aria-hidden
-				/>
-			</button>
+			<div className="flex min-w-0 items-center gap-2">
+				<span className="shrink-0 whitespace-nowrap text-xs text-slate-500">{label}</span>
+				<div className="min-w-0 rounded-lg bg-slate-100/80 p-1">
+					<button
+						type="button"
+						className={`flex h-6 w-32 items-center justify-between gap-2 rounded-md pl-2.5 pr-2 text-left text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+							open ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900'
+						}`}
+						aria-label={label}
+						aria-expanded={open}
+						aria-controls={panelId}
+						aria-haspopup="listbox"
+						onClick={() => setOpen((prev) => !prev)}
+					>
+						<span className="truncate tabular-nums">{triggerText}</span>
+						<ChevronDownIcon
+							className={`h-3 w-3 shrink-0 transition-transform ${open ? 'rotate-180 text-blue-600' : 'text-slate-400'}`}
+							aria-hidden
+						/>
+					</button>
+				</div>
+			</div>
 			{open ? (
 				<div
 					id={panelId}

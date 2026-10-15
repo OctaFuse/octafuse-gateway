@@ -29,9 +29,10 @@ export type PricingTiersEditorProps = {
 	billingCurrencyCode?: string;
 	/**
 	 * `image`：展示 Image token 单价列（text / cached text / image in / cached image in / image out）。
+	 * `embedding`：仅 input 单价（向量按输入 token 计费）。
 	 * `llm`（默认）：chat 常用 input/output/cache 列。
 	 */
-	variant?: 'llm' | 'image';
+	variant?: 'llm' | 'image' | 'embedding';
 	/** Image variant：token / per_image 模式（与 `perImageDraft` 成对传入） */
 	imageBillingMode?: ImageBillingModeDraft;
 	onImageBillingModeChange?: (mode: ImageBillingModeDraft) => void;
@@ -103,7 +104,8 @@ export function PricingTiersEditor({
 	const hasToolbarLeft = Boolean(toolbarStart) || Boolean(title);
 	const isImage = variant === 'image';
 	const isPerImage = isImage && imageBillingMode === 'per_image';
-	const colSpan = isImage && !isPerImage ? 7 : isPerImage ? 1 : 6;
+	const isEmbedding = variant === 'embedding';
+	const colSpan = isImage && !isPerImage ? 7 : isPerImage ? 1 : isEmbedding ? 3 : 6;
 	/** Image 列名与 Route 只读区共用 `pricing.readOnlyImage`，避免两套文案分叉 */
 	const imageColHeaders = isImage && !isPerImage
 		? ([
@@ -292,9 +294,13 @@ export function PricingTiersEditor({
 									) : (
 										<>
 											<th className="whitespace-nowrap px-2 py-2">{t('input')}</th>
-											<th className="whitespace-nowrap px-2 py-2">{t('output')}</th>
-											<th className="whitespace-nowrap px-2 py-2">{t('cacheRead')}</th>
-											<th className="whitespace-nowrap px-2 py-2">{t('cacheWrite')}</th>
+											{isEmbedding ? null : (
+												<>
+													<th className="whitespace-nowrap px-2 py-2">{t('output')}</th>
+													<th className="whitespace-nowrap px-2 py-2">{t('cacheRead')}</th>
+													<th className="whitespace-nowrap px-2 py-2">{t('cacheWrite')}</th>
+												</>
+											)}
 										</>
 									)}
 									<th className="w-10 px-1 py-2 text-center"> </th>
@@ -390,30 +396,34 @@ export function PricingTiersEditor({
 																onChange(updateRow(rows, r.id, { input_price: v }))
 															}
 														/>
-														<PriceCell
-															value={r.output_price}
-															placeholder={perMPlaceholder}
-															ariaLabel={`output price ${r.id}`}
-															onChange={(v) =>
-																onChange(updateRow(rows, r.id, { output_price: v }))
-															}
-														/>
-														<PriceCell
-															value={r.cache_read_price}
-															placeholder={tPricing('emptyCachePlaceholder')}
-															ariaLabel={`cache read ${r.id}`}
-															onChange={(v) =>
-																onChange(updateRow(rows, r.id, { cache_read_price: v }))
-															}
-														/>
-														<PriceCell
-															value={r.cache_write_price}
-															placeholder={tPricing('emptyCachePlaceholder')}
-															ariaLabel={`cache write ${r.id}`}
-															onChange={(v) =>
-																onChange(updateRow(rows, r.id, { cache_write_price: v }))
-															}
-														/>
+														{isEmbedding ? null : (
+															<>
+																<PriceCell
+																	value={r.output_price}
+																	placeholder={perMPlaceholder}
+																	ariaLabel={`output price ${r.id}`}
+																	onChange={(v) =>
+																		onChange(updateRow(rows, r.id, { output_price: v }))
+																	}
+																/>
+																<PriceCell
+																	value={r.cache_read_price}
+																	placeholder={tPricing('emptyCachePlaceholder')}
+																	ariaLabel={`cache read ${r.id}`}
+																	onChange={(v) =>
+																		onChange(updateRow(rows, r.id, { cache_read_price: v }))
+																	}
+																/>
+																<PriceCell
+																	value={r.cache_write_price}
+																	placeholder={tPricing('emptyCachePlaceholder')}
+																	ariaLabel={`cache write ${r.id}`}
+																	onChange={(v) =>
+																		onChange(updateRow(rows, r.id, { cache_write_price: v }))
+																	}
+																/>
+															</>
+														)}
 													</>
 												)}
 												<td className="px-0 py-1.5 text-center">

@@ -15,8 +15,7 @@ function route(overrides: Partial<PlaygroundResolvedRoute> = {}): PlaygroundReso
 		providerApiKey: 'sk-test',
 		providerModelName: 'qwen3-asr-flash-realtime',
 		customParams: { vad_enabled: true },
-		isImageModel: false,
-		isAudioModel: true,
+		modelKind: 'asr',
 		...overrides,
 	};
 }

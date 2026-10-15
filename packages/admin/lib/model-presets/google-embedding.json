@@ -1,0 +1,46 @@
+[
+	{
+		"id": "gemini-embedding-2",
+		"display_name": "Gemini Embedding 2",
+		"description": "Google's multimodal embedding model that maps text, images, video, audio, and PDFs into one embedding space. The catalog uses the Standard text-input price; image, audio, and video inputs have separate list prices and are not modeled here. Use :embedContent or :batchEmbedContents.",
+		"i18n": {
+			"en": "Google's multimodal embedding model that maps text, images, video, audio, and PDFs into one embedding space. The catalog uses the Standard text-input price; image, audio, and video inputs have separate list prices and are not modeled here. Use :embedContent or :batchEmbedContents.",
+			"zh": "Google 首个多模态向量模型，将文本、图像、视频、音频与 PDF 映射到统一向量空间。目录价为 Standard 文本输入价；图像、音频、视频输入另有刊例价，此处未单列。通过 :embedContent 或 :batchEmbedContents 调用。"
+		},
+		"vendor": "google",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.2,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.4,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"embedding"
+			]
+		}
+	}
+]

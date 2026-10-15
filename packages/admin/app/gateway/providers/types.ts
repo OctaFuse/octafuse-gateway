@@ -15,8 +15,10 @@ export type ProviderCapabilityBadge =
 	| 'responses'
 	| 'images'
 	| 'audio'
+	| 'embeddings'
 	| 'messages'
 	| 'modelsGenerate'
+	| 'modelsEmbed'
 	| 'generateContent'
 	| 'streamGenerateContent';
 
@@ -67,6 +69,8 @@ export type ProtocolEndpointForm = {
 	images_generations: string;
 	images_generations_multimodal: string;
 	images_edits: string;
+	/** OpenAI `embeddings` capability URL override. */
+	embeddings: string;
 	audio_transcriptions: string;
 	audio_transcriptions_multimodal: string;
 	audio_transcriptions_tasks: string;
@@ -79,6 +83,8 @@ export type ProtocolEndpointForm = {
 	messages: string;
 	/** Canonical Gemini family override (`models.generate`, must include `{model}` + `{action}`). */
 	modelsGenerate: string;
+	/** Gemini `models.embed` override (must include `{model}` + `{action}`). */
+	modelsEmbed: string;
 	/** @deprecated Prefer modelsGenerate; kept for display of uncollapsed legacy rows. */
 	generateContent: string;
 	/** @deprecated Prefer modelsGenerate; kept for display of uncollapsed legacy rows. */
@@ -119,6 +125,7 @@ export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
 	images_generations: '',
 	images_generations_multimodal: '',
 	images_edits: '',
+	embeddings: '',
 	audio_transcriptions: '',
 	audio_transcriptions_multimodal: '',
 	audio_transcriptions_tasks: '',
@@ -130,6 +137,7 @@ export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
 	audio_voices: '',
 	messages: '',
 	modelsGenerate: '',
+	modelsEmbed: '',
 	generateContent: '',
 	streamGenerateContent: '',
 	legacyPerAction: null,

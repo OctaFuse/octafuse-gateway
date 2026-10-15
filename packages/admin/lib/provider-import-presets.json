@@ -38,7 +38,8 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
-					"responses": "https://ark.cn-beijing.volces.com/api/v3/responses"
+					"responses": "https://ark.cn-beijing.volces.com/api/v3/responses",
+					"embeddings": "https://ark.cn-beijing.volces.com/api/v3/embeddings"
 				}
 			},
 			"anthropic": {
@@ -205,7 +206,8 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-					"responses": "https://dashscope.aliyuncs.com/compatible-mode/v1/responses"
+					"responses": "https://dashscope.aliyuncs.com/compatible-mode/v1/responses",
+					"embeddings": "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings"
 				}
 			},
 			"dashscope": {
@@ -273,7 +275,8 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-					"responses": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/responses"
+					"responses": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/responses",
+					"embeddings": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/embeddings"
 				}
 			},
 			"dashscope": {
@@ -414,7 +417,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.hunyuan.cloud.tencent.com/v1/chat/completions"
+					"chat": "https://api.hunyuan.cloud.tencent.com/v1/chat/completions",
+					"embeddings": "https://api.hunyuan.cloud.tencent.com/v1/embeddings"
 				}
 			},
 			"anthropic": {
@@ -476,7 +480,8 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://qianfan.baidubce.com/v2/chat/completions",
-					"responses": "https://qianfan.baidubce.com/v2/responses"
+					"responses": "https://qianfan.baidubce.com/v2/responses",
+					"embeddings": "https://qianfan.baidubce.com/v2/embeddings"
 				}
 			},
 			"anthropic": {
@@ -508,7 +513,8 @@
 				"endpoints": {
 					"chat": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
 					"responses": "https://open.bigmodel.cn/api/v1/responses",
-					"images.generations": "https://open.bigmodel.cn/api/paas/v4/images/generations"
+					"images.generations": "https://open.bigmodel.cn/api/paas/v4/images/generations",
+					"embeddings": "https://open.bigmodel.cn/api/paas/v4/embeddings"
 				}
 			},
 			"anthropic": {
@@ -877,7 +883,8 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-					"images.generations": "https://generativelanguage.googleapis.com/v1beta/openai/images/generations"
+					"images.generations": "https://generativelanguage.googleapis.com/v1beta/openai/images/generations",
+					"embeddings": "https://generativelanguage.googleapis.com/v1beta/openai/embeddings"
 				}
 			},
 			"gemini": {
@@ -966,7 +973,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.mistral.ai/v1/chat/completions"
+					"chat": "https://api.mistral.ai/v1/chat/completions",
+					"embeddings": "https://api.mistral.ai/v1/embeddings"
 				}
 			}
 		},
@@ -1048,7 +1056,8 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://api.sambanova.ai/v1/chat/completions",
-					"responses": "https://api.sambanova.ai/v1/responses"
+					"responses": "https://api.sambanova.ai/v1/responses",
+					"embeddings": "https://api.sambanova.ai/v1/embeddings"
 				}
 			},
 			"anthropic": {
@@ -1111,7 +1120,8 @@
 					"chat": "https://api.together.xyz/v1/chat/completions",
 					"images.generations": "https://api.together.xyz/v1/images/generations",
 					"audio.transcriptions": "https://api.together.ai/v1/audio/transcriptions",
-					"audio.speech": "https://api.together.ai/v1/audio/speech"
+					"audio.speech": "https://api.together.ai/v1/audio/speech",
+					"embeddings": "https://api.together.xyz/v1/embeddings"
 				}
 			}
 		},
@@ -1138,7 +1148,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.fireworks.ai/inference/v1/chat/completions"
+					"chat": "https://api.fireworks.ai/inference/v1/chat/completions",
+					"embeddings": "https://api.fireworks.ai/inference/v1/embeddings"
 				}
 			}
 		},
@@ -1164,7 +1175,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.deepinfra.com/v1/openai/chat/completions"
+					"chat": "https://api.deepinfra.com/v1/openai/chat/completions",
+					"embeddings": "https://api.deepinfra.com/v1/openai/embeddings"
 				}
 			}
 		},
@@ -1192,7 +1204,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.novita.ai/openai/v1/chat/completions"
+					"chat": "https://api.novita.ai/openai/v1/chat/completions",
+					"embeddings": "https://api.novita.ai/openai/v1/embeddings"
 				}
 			}
 		},
@@ -1246,7 +1259,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.cohere.ai/compatibility/v1/chat/completions"
+					"chat": "https://api.cohere.ai/compatibility/v1/chat/completions",
+					"embeddings": "https://api.cohere.ai/compatibility/v1/embeddings"
 				}
 			}
 		},
@@ -1273,7 +1287,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://integrate.api.nvidia.com/v1/chat/completions"
+					"chat": "https://integrate.api.nvidia.com/v1/chat/completions",
+					"embeddings": "https://integrate.api.nvidia.com/v1/embeddings"
 				}
 			}
 		},
@@ -1299,23 +1314,23 @@
 		"vendor_key": "azure",
 		"endpoints": {
 			"openai": {
-				"base": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai"
+				"base": "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1"
 			}
 		},
-		"description": "Replace YOUR_RESOURCE_NAME with your Azure portal OpenAI resource name; deployment paths and `api-version` per Microsoft official docs.",
+		"description": "Replace YOUR_RESOURCE_NAME. OpenAI v1 base is https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1. Foundry may show the same path on https://YOUR_RESOURCE_NAME.services.ai.azure.com/openai/v1; either host is valid. Put the deployment name in the model field. The v1 route does not use api-version.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "Azure OpenAI",
-					"description": "Azure OpenAI 资源模板；导入后需替换为自己的资源名称。"
+					"description": "Azure OpenAI 的 OpenAI v1 地址。导入后替换资源名。Foundry 控制台给出的 *.services.ai.azure.com/openai/v1 同样可用。"
 				},
 				"en": {
 					"name": "Azure OpenAI",
-					"description": "Azure OpenAI resource template; replace the placeholder with your resource name."
+					"description": "Azure OpenAI v1 base URL. Replace the resource name after import. The Foundry host *.services.ai.azure.com/openai/v1 is the same template."
 				}
 			},
 			"links": {
-				"platform": "https://portal.azure.com/"
+				"platform": "https://ai.azure.com/"
 			}
 		}
 	},
@@ -1484,7 +1499,8 @@
 				"endpoints": {
 					"chat": "https://openrouter.ai/api/v1/chat/completions",
 					"responses": "https://openrouter.ai/api/v1/responses",
-					"images.generations": "https://openrouter.ai/api/v1/images"
+					"images.generations": "https://openrouter.ai/api/v1/images",
+					"embeddings": "https://openrouter.ai/api/v1/embeddings"
 				}
 			}
 		},
@@ -1637,7 +1653,8 @@
 			"openai": {
 				"endpoints": {
 					"chat": "https://ai-gateway.vercel.sh/v1/chat/completions",
-					"responses": "https://ai-gateway.vercel.sh/v1/responses"
+					"responses": "https://ai-gateway.vercel.sh/v1/responses",
+					"embeddings": "https://ai-gateway.vercel.sh/v1/embeddings"
 				}
 			},
 			"anthropic": {
@@ -1736,7 +1753,8 @@
 					"chat": "https://api.siliconflow.cn/v1/chat/completions",
 					"images.generations": "https://api.siliconflow.cn/v1/images/generations",
 					"audio.transcriptions": "https://api.siliconflow.cn/v1/audio/transcriptions",
-					"audio.speech": "https://api.siliconflow.cn/v1/audio/speech"
+					"audio.speech": "https://api.siliconflow.cn/v1/audio/speech",
+					"embeddings": "https://api.siliconflow.cn/v1/embeddings"
 				}
 			},
 			"anthropic": {
@@ -1771,7 +1789,8 @@
 					"chat": "https://api.siliconflow.com/v1/chat/completions",
 					"images.generations": "https://api.siliconflow.com/v1/images/generations",
 					"audio.transcriptions": "https://api.siliconflow.com/v1/audio/transcriptions",
-					"audio.speech": "https://api.siliconflow.com/v1/audio/speech"
+					"audio.speech": "https://api.siliconflow.com/v1/audio/speech",
+					"embeddings": "https://api.siliconflow.com/v1/embeddings"
 				}
 			}
 		},
@@ -1799,7 +1818,8 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "http://127.0.0.1:11434/v1/chat/completions"
+					"chat": "http://127.0.0.1:11434/v1/chat/completions",
+					"embeddings": "http://127.0.0.1:11434/v1/embeddings"
 				}
 			}
 		},

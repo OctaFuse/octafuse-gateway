@@ -34,8 +34,7 @@ function route(base: string, apiKey: string): PlaygroundResolvedRoute {
 		providerApiKey: apiKey,
 		providerModelName: 'gemini-2.5-flash',
 		customParams: null,
-		isImageModel: false,
-		isAudioModel: false,
+		modelKind: 'llm',
 	};
 }
 

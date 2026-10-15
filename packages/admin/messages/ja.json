@@ -107,7 +107,9 @@
 		"failedToLoadApiKeys": "API Key の読み込みに失敗しました",
 		"failedToLoadModels": "モデルの読み込みに失敗しました",
 		"infinity": "∞",
-		"kindAudio": "音声"
+		"kindAsr": "音声認識",
+		"kindTts": "音声合成",
+		"kindEmbedding": "埋め込み"
 	},
 	"auth": {
 		"username": "ユーザー名",
@@ -337,7 +339,9 @@
 		"routeGroupAria": "Route Group フィルター",
 		"modelsAndRoutes": "{models} モデル · {routes} Route",
 		"narrowModelsRoutes": "モデルと Route を絞り込む",
-		"kindAudio": "音声"
+		"kindAsr": "音声認識",
+		"kindTts": "音声合成",
+		"kindEmbedding": "埋め込み"
 	},
 	"modalities": {
 		"text": "テキスト",
@@ -373,6 +377,8 @@
 		"clearSearch": "Provider 検索をクリア",
 		"filters": {
 			"aria": "Provider フィルター",
+			"groupStatus": "ステータス",
+			"groupProtocol": "プロトコル",
 			"all": "すべて",
 			"active": "有効",
 			"disabled": "無効",
@@ -414,7 +420,9 @@
 				"messages": "messages",
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
-				"modelsGenerate": "generate"
+				"modelsGenerate": "generate",
+				"embeddings": "embeddings",
+				"modelsEmbed": "embed"
 			},
 			"officialUpdate": "公式の更新",
 			"officialUpdateTitle": "公式テンプレートが変更されました。クリックして確認・同期",
@@ -569,7 +577,9 @@
 			"apiKeyHint": "このプロバイダーの上流認証情報。プロジェクト指定の Vertex では GCP サービスアカウント JSON を貼ってください（Vertex API Key ではありません）。",
 			"apiKeyEditHint": "初期状態では非表示です。表示とコピーができます。変更して保存すると置換し、空にすると現行キーを維持します。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — ストリーム + 非ストリーム",
-			"legacyPerActionNotice": "このプロバイダーには安全に統合できない generateContent / streamGenerateContent の個別上書きが残っています。保存時はそのまま保持されます。確認後に単一の '{action}' テンプレートへ変更してください。"
+			"legacyPerActionNotice": "このプロバイダーには安全に統合できない generateContent / streamGenerateContent の個別上書きが残っています。保存時はそのまま保持されます。確認後に単一の '{action}' テンプレートへ変更してください。",
+			"capEmbeddings": "embeddings (/v1/embeddings)",
+			"capModelsEmbed": "models.embed (/v1beta/models/'{model}:{action}') — embedContent / batchEmbedContents"
 		},
 		"sync": {
 			"title": "公式と同期",
@@ -678,7 +688,9 @@
 			"kindAria": "モデル種別フィルター",
 			"kindLlm": "LLM",
 			"kindImage": "画像",
-			"kindAudio": "音声"
+			"kindAsr": "音声認識",
+			"kindTts": "音声合成",
+			"kindEmbedding": "埋め込み"
 		},
 		"imagePricing": {
 			"enabled": "旧機能（廃止済み）",
@@ -737,15 +749,12 @@
 			"kind": "種類",
 			"kindLlm": "LLM",
 			"kindImage": "画像",
-			"kindAudio": "音声",
+			"kindAsr": "音声認識",
+			"kindTts": "音声合成",
 			"kindHintLlm": "Token 料金（input / output / cache）を使用する chat / completion モデルです。",
 			"kindHintImage": "画像生成モデル：出力に image を含み、Image token 料金を使用します。context/max tokens はありません。",
-			"kindHintAudio": "音声エンドポイントモデルです。音声認識（ASR）または音声合成（TTS）を選ぶと、モダリティと課金方式が同期されます。",
-			"audioCapability": "音声機能",
-			"audioCapabilityTranscription": "音声認識（ASR）",
-			"audioCapabilitySpeech": "音声合成（TTS）",
-			"audioCapabilityHintTranscription": "音声を入力してテキストを返します。秒単位または Token 課金に対応します。",
-			"audioCapabilityHintSpeech": "テキストを入力して音声を返します。文字単位で課金します。",
+			"kindHintAsr": "音声を入力してテキストを返します。秒単位または Token 課金に対応します。",
+			"kindHintTts": "テキストを入力して音声を返します。文字単位で課金します。",
 			"modelIdRequired": "Model ID *",
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "表示名",
@@ -790,7 +799,10 @@
 			"metadataJson": "メタデータ（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "モデルを削除",
-			"confirmDelete": "このモデルと関連 Route をすべて削除しますか？"
+			"confirmDelete": "このモデルと関連 Route をすべて削除しますか？",
+			"kindEmbedding": "埋め込み",
+			"kindHintEmbedding": "埋め込み（Embedding）モデル。ベクトルを出力し、入力トークンのみで課金されます。POST /v1/embeddings または Gemini embedContent で利用します。",
+			"embeddingPricing": "埋め込み料金（入力トークン）"
 		},
 		"metadata": {
 			"title": "メタデータ"
@@ -802,16 +814,20 @@
 			"routesTitle": "{routes}、有効 {active} 件",
 			"kindLlm": "LLM",
 			"kindImage": "画像",
-			"kindAudio": "音声",
+			"kindAsr": "音声認識",
+			"kindTts": "音声合成",
 			"noTags": "タグなし",
 			"specs": "{context} · {max}",
 			"imageHint": "画像",
-			"audioHint": "音声",
+			"asrHint": "音声 ASR · 秒単位課金",
+			"ttsHint": "音声 TTS · 文字単位課金",
 			"editModel": "{name} を編集",
 			"pricingNoData": "—",
 			"pricingTiers": "{count} 段階",
 			"noRoutes": "ルートなし",
-			"officialUpdateTitle": "公式カタログに更新があります。クリックして確認・同期"
+			"officialUpdateTitle": "公式カタログに更新があります。クリックして確認・同期",
+			"kindEmbedding": "埋め込み",
+			"embeddingHint": "埋め込み · コンテキスト {context}"
 		},
 		"sync": {
 			"title": "公式カタログと同期",
@@ -1054,7 +1070,8 @@
 			"newRouteFor": "{title} の新しい Route",
 			"activeTotalRoutes": "有効 {active} 件 / 全 {total} 件",
 			"noRoutesYet": "Route はまだありません",
-			"clickToAdd": "+ をクリックして最初の Route を追加"
+			"clickToAdd": "+ をクリックして最初の Route を追加",
+			"embeddingModelHint": "埋め込み · 入力トークン課金"
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1535,7 +1552,8 @@
 				"actualRequestEmpty": "送信後に実際のリクエストを表示します。"
 			}
 		},
-		"kindAudio": "音声",
+		"kindAsr": "音声認識",
+		"kindTts": "音声合成",
 		"strategy": {
 			"title": "ルート戦略",
 			"protocolLevel": "現在のルートプール戦略",
@@ -1695,7 +1713,8 @@
 		"kind": "種類",
 		"kindLlm": "LLM",
 		"kindImage": "画像",
-		"kindAudio": "音声",
+		"kindAsr": "音声認識",
+		"kindTts": "音声合成",
 		"modelId": "Model ID",
 		"provider": "Provider",
 		"protocol": "プロトコル",
@@ -1872,7 +1891,8 @@
 		"realtimeTransportError": "リアルタイム WebSocket の転送エラー",
 		"realtimeWaitingTaskStarted": "WebSocket 接続済み。上流の task-started を待っています…",
 		"realtimeClosed": "リアルタイム接続が閉じました（{code}{reason}）。",
-		"streamDisconnected": "上流のストリーム読み取り中に切断されました（{cause}）。stream を false にして確認するか、再試行してください。"
+		"streamDisconnected": "上流のストリーム読み取り中に切断されました（{cause}）。stream を false にして確認するか、再試行してください。",
+		"kindEmbedding": "埋め込み"
 	},
 	"simulator": {
 		"title": "Simulator",
@@ -1891,7 +1911,8 @@
 		"kind": "種類",
 		"kindLlm": "LLM",
 		"kindImage": "画像",
-		"kindAudio": "音声",
+		"kindAsr": "音声認識",
+		"kindTts": "音声合成",
 		"model": "モデル",
 		"filter": "フィルター",
 		"modelFilterPlaceholder": "id / 表示名 / ベンダーを検索…",
@@ -1995,7 +2016,9 @@
 		"modelNoRoute": "Route なし",
 		"matchingRoutesSummary": "一致する Active Route {count} 件",
 		"matchingRoutesHint": "このモデルとグループで Proxy が使い得る Active Route の読み取り専用プレビューです。failover はリクエスト時に行われます。",
-		"supportedSurfacesEmpty": "このモデルと Route group に有効な公開 Surface がありません。"
+		"supportedSurfacesEmpty": "このモデルと Route group に有効な公開 Surface がありません。",
+		"kindEmbedding": "埋め込み",
+		"protocolLockedEmbedding": "埋め込みルートは OpenAI POST /v1/embeddings と Gemini ネイティブ :embedContent / :batchEmbedContents に対応します。"
 	},
 	"users": {
 		"detailUx": {
@@ -2374,7 +2397,8 @@
 				"tts": "TTS",
 				"asr": "ASR",
 				"tool": "ツール",
-				"mcp": "MCP"
+				"mcp": "MCP",
+				"embedding": "埋め込み"
 			},
 			"stream": "ストリーム",
 			"realtime": "リアルタイム",
@@ -2402,7 +2426,8 @@
 				"stream": "クライアントがストリーミング応答を要求した",
 				"realtime": "リアルタイムセッション",
 				"reasoning": "推論 Token または推論段階の TTFT",
-				"failover": "上流の失敗後に切り替えが発生した"
+				"failover": "上流の失敗後に切り替えが発生した",
+				"embedding": "テキスト埋め込み"
 			},
 			"cost": "本リクエストの請求額と原価額。横の倍率は金額 ÷ カタログ金額です。",
 			"profit": "請求額 − 原価額。インフラ費用・税金などは含みません。",
@@ -3152,6 +3177,44 @@
 		"pendingBadge": "{count} 件の確認待ち",
 		"edit": "編集",
 		"viewInvocations": "呼び出し履歴を見る",
+		"connectGuide": {
+			"button": "接続ガイド",
+			"title": "接続ガイド：外部 Agent から MCP を使う",
+			"subtitle": "クライアントを選んで設定をコピーします。Agent に必要なのはゲートウェイ URL とユーザー API Key だけで、上流のシークレットは不要です。",
+			"proxyUrl": "Proxy URL",
+			"proxyHint": "Proxy のベース URL を入力してください。/mcp は自動で付きます。「公開カタログのテスト」と共有します。",
+			"proxyInvalid": "URL が無効です。/mcp パス・認証情報・クエリを含まない http(s) のベース URL を指定してください。",
+			"scope": "サービスの範囲",
+			"allServices": "すべてのサービス（集約）",
+			"disabled": "無効",
+			"scopeHint": "単一サービスを選ぶと、そのツールのみ公開されます。",
+			"endpoint": "MCP エンドポイント：",
+			"clients": "クライアント",
+			"copy": "コピー",
+			"copied": "クリップボードにコピーしました",
+			"copyFailed": "コピーに失敗しました。手動で選択してください",
+			"safeHint": "サンプルにはプレースホルダーのみが含まれ、実際の Key は含まれません。",
+			"runInTerminal": "ターミナルで実行：",
+			"saveTo": "{path} に保存：",
+			"client": {
+				"cursor": "Cursor",
+				"vscode": "VS Code",
+				"claude-code": "Claude Code",
+				"codex": "Codex",
+				"curl": "curl で確認"
+			},
+			"note": {
+				"cursor": "保存後、Cursor の MCP 設定で接続済みになっていることを確認してください。プロジェクト単位は .cursor/mcp.json を使います。",
+				"vscode": "Copilot の Agent モードで利用できます。コマンドパレットの「MCP: Add Server」も使えます。",
+				"claude-code": "--scope user を付けると全プロジェクトで有効になります。claude mcp list で確認できます。",
+				"codex": "先にシェルで環境変数をエクスポートします。Key は設定ファイルに書き込まれません。",
+				"curl": "HTTP 200 で tools 一覧が返れば、URL と Key は有効です。"
+			},
+			"tipKey": "{placeholder} をゲートウェイのユーザー API Key（sk- で始まる）に置き換えてください。",
+			"tipTools": "ツール名は {pattern} の形式です。プロンプトとリソースも同じエンドポイントから取得できます。",
+			"tipEnable": "MCP サービスで同期・有効化した項目だけがクライアントに表示されます。",
+			"tipTransport": "セッションなしの Streamable HTTP（POST）のみ対応。GET は 405 を返します。"
+		},
 		"connection": "接続",
 		"enableAllNew": "新規をすべて有効化",
 		"effectivePrice": "ツール価格",

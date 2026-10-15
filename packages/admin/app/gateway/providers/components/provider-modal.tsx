@@ -99,6 +99,8 @@ function ProtocolFields(props: {
 		audioVoices: string;
 		messages: string;
 		modelsGenerate: string;
+		embeddings: string;
+		modelsEmbed: string;
 		legacyPerActionNotice: string;
 	};
 	dashscopeCapHints?: Record<DashScopeOverrideField, string>;
@@ -260,6 +262,18 @@ function ProtocolFields(props: {
 								</div>
 								<div>
 									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.embeddings}
+									</label>
+									<input
+										type="url"
+										value={form.embeddings}
+										onChange={(e) => onChange({ ...form, embeddings: e.target.value })}
+										className={inputClass}
+										autoComplete="off"
+									/>
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
 										{capLabels.audioTranscriptions}
 									</label>
 									<input
@@ -347,6 +361,19 @@ function ProtocolFields(props: {
 										/>
 									</div>
 								)}
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.modelsEmbed}
+									</label>
+									<input
+										type="url"
+										value={form.modelsEmbed}
+										onChange={(e) => onChange({ ...form, modelsEmbed: e.target.value })}
+										className={inputClass}
+										placeholder="https://…/models/{model}:{action}"
+										autoComplete="off"
+									/>
+								</div>
 							</>
 						) : null}
 						{protocol === "minimax" ? (
@@ -549,6 +576,8 @@ export function ProviderModal(props: ProviderModalProps) {
 		audioVoices: t('capAudioVoices'),
 		messages: t('capMessages'),
 		modelsGenerate: t('capModelsGenerate'),
+		embeddings: t('capEmbeddings'),
+		modelsEmbed: t('capModelsEmbed'),
 		legacyPerActionNotice: t('legacyPerActionNotice'),
 	};
 	const minimaxCapHint = t("capHintMiniMaxAudioTranscriptions");

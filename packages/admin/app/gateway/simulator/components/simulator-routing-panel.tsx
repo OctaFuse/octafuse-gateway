@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import type { GatewayToolDefinition } from '@/lib/gateway-tools';
 import type { InvokeKind } from '@/lib/invoke-kind';
+import { FilterTileGroup } from '../../components/filter-controls';
 import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
 import { inputClass, labelClass, panelClass } from '../simulator-utils';
 import type { AdminModelRow, RouteListRow } from '../types';
@@ -12,7 +13,7 @@ type Props = {
 	filterKind: InvokeKind;
 	protocol: SimulatorProtocol;
 	onFilterKindChange: (kind: InvokeKind) => void;
-	kindCounts: { llm: number; image: number; audio: number; tool: number };
+	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number; tool: number };
 	isToolKind: boolean;
 	gatewayTools: readonly GatewayToolDefinition[];
 	selectedToolId: string;
@@ -72,37 +73,19 @@ export function SimulatorRoutingPanel({
 					{isToolKind ? (selectedToolId ? `/v1/tools/${selectedToolId}` : '') : modelRoutingString || ''}
 				</span>
 			</div>
-			<div
-				className="flex w-full min-w-0 overflow-x-auto rounded-md border border-gray-200 bg-gray-50 p-0.5"
-				role="group"
-				aria-label={t('kind')}
-			>
-				{(
-					[
-						{ id: 'llm' as const, label: t('kindLlm'), count: kindCounts.llm },
-						{ id: 'image' as const, label: t('kindImage'), count: kindCounts.image },
-						{ id: 'audio' as const, label: t('kindAudio'), count: kindCounts.audio },
-						{ id: 'tool' as const, label: t('kindTool'), count: kindCounts.tool },
-					] as const
-				).map((opt) => {
-					const active = filterKind === opt.id;
-					return (
-						<button
-							key={opt.id}
-							type="button"
-							onClick={() => onFilterKindChange(opt.id)}
-							className={
-								active
-									? 'flex flex-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded px-1.5 py-1.5 text-[11px] font-medium bg-white text-gray-900 shadow-sm sm:text-xs'
-									: 'flex flex-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded px-1.5 py-1.5 text-[11px] font-medium text-gray-600 hover:text-gray-900 sm:text-xs'
-							}
-						>
-							{opt.label}
-							<span className="shrink-0 text-[10px] tabular-nums text-gray-400">{opt.count}</span>
-						</button>
-					);
-				})}
-			</div>
+			<FilterTileGroup
+				label={t('kind')}
+				value={filterKind}
+				onChange={(value) => onFilterKindChange(value as InvokeKind)}
+				options={[
+					{ value: 'llm', label: t('kindLlm'), count: kindCounts.llm },
+					{ value: 'image', label: t('kindImage'), count: kindCounts.image },
+					{ value: 'asr', label: t('kindAsr'), count: kindCounts.asr },
+					{ value: 'tts', label: t('kindTts'), count: kindCounts.tts },
+					{ value: 'embedding', label: t('kindEmbedding'), count: kindCounts.embedding },
+					{ value: 'tool', label: t('kindTool'), count: kindCounts.tool },
+				]}
+			/>
 
 			{isToolKind ? (
 				<div className="flex min-h-0 flex-1 flex-col">

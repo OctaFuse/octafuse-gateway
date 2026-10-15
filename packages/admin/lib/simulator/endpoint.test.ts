@@ -194,7 +194,7 @@ describe("buildSimulatorRequest openai", () => {
 	it("builds MiniMax speech_to_text passthrough multipart", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",
-			kind: "audio",
+			kind: "asr",
 			protocol: "minimax",
 			modelForRouting: "minimax-asr-1.0",
 			body: { language: "zh", response_format: "verbose_json" },
@@ -211,7 +211,7 @@ describe("buildSimulatorRequest openai", () => {
 	it("builds MiniMax speech JSON for /v1/minimax/t2a_v2", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",
-			kind: "audio",
+			kind: "tts",
 			protocol: "minimax",
 			modelForRouting: "minimax-speech-2.8-turbo",
 			body: { text: "你好", stream: false },
@@ -266,7 +266,7 @@ describe("buildSimulatorRequest openai", () => {
 	it("builds DashScope multimodal HTTP transcriptions", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",
-			kind: "audio",
+			kind: "asr",
 			protocol: "dashscope",
 			modelForRouting: "qwen-audio-3.0-asr-flash",
 			body: { input: { messages: [] }, parameters: { format: "wav" } },
@@ -284,7 +284,7 @@ describe("buildSimulatorRequest openai", () => {
 	it("builds JSON for audio/speech", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",
-			kind: "audio",
+			kind: "tts",
 			protocol: "openai",
 			modelForRouting: "qwen-tts:default",
 			body: { input: "hello", voice: "Cherry", response_format: "mp3" },

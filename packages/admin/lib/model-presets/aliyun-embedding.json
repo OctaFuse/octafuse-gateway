@@ -1,0 +1,90 @@
+[
+	{
+		"id": "qwen3.7-text-embedding",
+		"display_name": "Qwen3.7 Text Embedding",
+		"description": "Alibaba Cloud Model Studio text embedding model. Billed by input tokens only. Use the OpenAI-compatible POST /v1/embeddings.",
+		"i18n": {
+			"en": "Alibaba Cloud Model Studio text embedding model. Billed by input tokens only. Use the OpenAI-compatible POST /v1/embeddings.",
+			"zh": "阿里云百炼文本向量模型，仅按输入 Token 计费。通过 OpenAI 兼容的 POST /v1/embeddings 调用。"
+		},
+		"vendor": "aliyun",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.075,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"embedding"
+			]
+		}
+	},
+	{
+		"id": "text-embedding-v4",
+		"display_name": "Text Embedding V4",
+		"description": "Alibaba Cloud Model Studio text embedding V4 (successor of V3). Billed by input tokens only. Use the OpenAI-compatible POST /v1/embeddings.",
+		"i18n": {
+			"en": "Alibaba Cloud Model Studio text embedding V4 (successor of V3). Billed by input tokens only. Use the OpenAI-compatible POST /v1/embeddings.",
+			"zh": "阿里云百炼文本向量 V4（V3 的替代模型）。仅按输入 Token 计费。通过 OpenAI 兼容的 POST /v1/embeddings 调用。"
+		},
+		"vendor": "aliyun",
+		"context_window": 8192,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.07,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 0,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"embedding"
+			]
+		}
+	}
+]

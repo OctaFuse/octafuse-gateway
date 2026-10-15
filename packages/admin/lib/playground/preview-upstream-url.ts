@@ -20,10 +20,8 @@ import {
 	normalizeUpstreamProtocol,
 	type UpstreamProtocol,
 } from "@octafuse/core/upstream-protocol";
-import {
-	modelKindFromFlags,
-	resolveOpenaiUpstreamCapability,
-} from "@/lib/invoke-kind";
+import type { ModelKind } from "@octafuse/core/db/model-kind";
+import { resolveOpenaiUpstreamCapability } from "@/lib/invoke-kind";
 
 export type PlaygroundProviderBaseUrls = ProviderEndpointsSource & {
 	id: string;
@@ -57,11 +55,10 @@ export function describePlaygroundUpstreamUrl(input: {
 	/** 转换适配器（如 volcengine-image）决定目标协议；透传沿用 upstreamProtocol。 */
 	adapter?: string | null;
 	providerModelName: string;
-	isImageModel: boolean;
+	/** 目录模型类型（`resolveModelKind`）；缺省按 llm。 */
+	modelKind?: ModelKind;
 	/** When image model: generations (default) or edits. */
 	imageOperation?: "generations" | "edits";
-	/** Audio transcription (ASR) catalog model. */
-	isAudioModel?: boolean;
 	/** Route target operation; required to resolve DashScope's concrete audio endpoint. */
 	upstreamOperation?: string | null;
 	geminiAction?: GeminiContentAction;
@@ -94,19 +91,9 @@ export function describePlaygroundUpstreamUrl(input: {
 	try {
 		switch (protocol) {
 			case "openai": {
-				const kind = modelKindFromFlags(
-					Boolean(input.isAudioModel),
-					Boolean(input.isImageModel)
-				);
 				const capability = resolveOpenaiUpstreamCapability({
-					kind,
+					kind: input.modelKind ?? "llm",
 					imageOperation: input.imageOperation,
-					audioOperation:
-						kind === "audio" && upstreamOperation === "audio.speech"
-							? "speech"
-							: kind === "audio"
-								? "transcriptions"
-								: undefined,
 					llmOperation: upstreamOperation === "responses" ? "responses" : "chat",
 				});
 				target = `${protocol}/${capability}`;
@@ -126,7 +113,29 @@ export function describePlaygroundUpstreamUrl(input: {
 					target,
 				};
 			case "gemini": {
-				const action: GeminiContentAction = input.isImageModel
+				if (input.modelKind === "embedding") {
+					target = `${protocol}/models.embed`;
+					const embedAction = "embedContent";
+					const resolvedEmbedUrl = resolveUpstreamEndpoint(
+						protocol,
+						"models.embed",
+						providerEndpoints,
+						{
+							model: input.providerModelName || "model",
+							action: embedAction,
+							providerId: provider.id,
+						}
+					);
+					const prepared = prepareGeminiUpstreamFetch({
+						resolvedUrl: resolvedEmbedUrl,
+						modelName: input.providerModelName || "model",
+						action: embedAction,
+						apiKey: "preview",
+						auth: providerEndpoints.gemini?.auth,
+					});
+					return { url: stripApiKeyFromUrl(prepared.url.toString()), target };
+				}
+				const action: GeminiContentAction = input.modelKind === "image"
 					? "generateContent"
 					: input.geminiAction === "streamGenerateContent"
 						? "streamGenerateContent"

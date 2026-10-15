@@ -107,7 +107,9 @@
 		"failedToLoadApiKeys": "加载 API Key 失败",
 		"failedToLoadModels": "加载模型失败",
 		"infinity": "∞",
-		"kindAudio": "音频"
+		"kindAsr": "语音识别",
+		"kindTts": "语音合成",
+		"kindEmbedding": "向量"
 	},
 	"auth": {
 		"username": "用户名",
@@ -337,7 +339,9 @@
 		"routeGroupAria": "路由组筛选",
 		"modelsAndRoutes": "{models} 个模型 · {routes} 条路由",
 		"narrowModelsRoutes": "缩小模型与路由范围",
-		"kindAudio": "音频"
+		"kindAsr": "语音识别",
+		"kindTts": "语音合成",
+		"kindEmbedding": "向量"
 	},
 	"modalities": {
 		"text": "文本",
@@ -373,6 +377,8 @@
 		"clearSearch": "清除供应商搜索",
 		"filters": {
 			"aria": "供应商筛选",
+			"groupStatus": "状态",
+			"groupProtocol": "协议",
 			"all": "全部",
 			"active": "已启用",
 			"disabled": "已停用",
@@ -414,7 +420,9 @@
 				"messages": "messages",
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
-				"modelsGenerate": "generate"
+				"modelsGenerate": "generate",
+				"embeddings": "embeddings",
+				"modelsEmbed": "embed"
 			},
 			"officialUpdate": "有官方更新",
 			"officialUpdateTitle": "官方模板有更新，点击查看并同步",
@@ -569,7 +577,9 @@
 			"apiKeyHint": "该供应商的上游凭证。项目级 Vertex 请粘贴 GCP 服务账号 JSON（不要填 Vertex API Key）。",
 			"apiKeyEditHint": "默认隐藏当前密钥。可查看或复制。修改后保存即替换；清空则保持原密钥。",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — 流式 + 非流式",
-			"legacyPerActionNotice": "该 Provider 仍保留无法安全合并的 generateContent / streamGenerateContent 覆盖项。保存时原样写回。复核后可改为单一 '{action}' 模板。"
+			"legacyPerActionNotice": "该 Provider 仍保留无法安全合并的 generateContent / streamGenerateContent 覆盖项。保存时原样写回。复核后可改为单一 '{action}' 模板。",
+			"capEmbeddings": "embeddings (/v1/embeddings)",
+			"capModelsEmbed": "models.embed (/v1beta/models/'{model}:{action}') — embedContent / batchEmbedContents"
 		},
 		"sync": {
 			"title": "与官方同步",
@@ -678,7 +688,9 @@
 			"kindAria": "模型类型筛选",
 			"kindLlm": "大语言模型",
 			"kindImage": "文生图",
-			"kindAudio": "音频"
+			"kindAsr": "语音识别",
+			"kindTts": "语音合成",
+			"kindEmbedding": "向量"
 		},
 		"imagePricing": {
 			"enabled": "已移除",
@@ -737,15 +749,12 @@
 			"kind": "类型",
 			"kindLlm": "大语言模型",
 			"kindImage": "文生图",
-			"kindAudio": "音频",
+			"kindAsr": "语音识别",
+			"kindTts": "语音合成",
 			"kindHintLlm": "对话 / 补全模型，使用 input / output / cache token 定价。",
 			"kindHintImage": "文生图模型：OUTPUT 含 image、Image token 单价，无上下文 / Max Tokens。",
-			"kindHintAudio": "音频端点模型。明确选择语音识别（ASR）或语音合成（TTS），系统会同步模态和计费方式。",
-			"audioCapability": "音频能力",
-			"audioCapabilityTranscription": "语音转文字（ASR）",
-			"audioCapabilitySpeech": "文字转语音（TTS）",
-			"audioCapabilityHintTranscription": "输入音频、输出文字，支持按秒或 Token 计费。",
-			"audioCapabilityHintSpeech": "输入文字、输出音频，使用按字符计费。",
+			"kindHintAsr": "输入音频、输出文字，支持按秒或 Token 计费。",
+			"kindHintTts": "输入文字、输出音频，使用按字符计费。",
 			"modelIdRequired": "Model ID *",
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "显示名称",
@@ -790,7 +799,10 @@
 			"metadataJson": "元数据（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "删除模型",
-			"confirmDelete": "删除该模型及其全部路由？"
+			"confirmDelete": "删除该模型及其全部路由？",
+			"kindEmbedding": "向量",
+			"kindHintEmbedding": "向量（Embedding）模型：输出向量，仅按输入 token 计费；配合 POST /v1/embeddings 或 Gemini embedContent 使用。",
+			"embeddingPricing": "向量定价（输入 token）"
 		},
 		"metadata": {
 			"title": "元数据"
@@ -802,16 +814,20 @@
 			"routesTitle": "{routes}；{active} 条活跃",
 			"kindLlm": "LLM",
 			"kindImage": "图像",
-			"kindAudio": "音频",
+			"kindAsr": "语音识别",
+			"kindTts": "语音合成",
 			"noTags": "无标签",
 			"specs": "{context} · {max}",
 			"imageHint": "图像",
-			"audioHint": "音频",
+			"asrHint": "语音转写 · 按秒计费",
+			"ttsHint": "语音合成 · 按字符计费",
 			"editModel": "编辑 {name}",
 			"pricingNoData": "—",
 			"pricingTiers": "{count} 档",
 			"noRoutes": "未关联路由",
-			"officialUpdateTitle": "官方目录有更新，点击查看并同步"
+			"officialUpdateTitle": "官方目录有更新，点击查看并同步",
+			"kindEmbedding": "向量",
+			"embeddingHint": "向量 · 上下文 {context}"
 		},
 		"sync": {
 			"title": "与官方目录同步",
@@ -1054,7 +1070,8 @@
 			"newRouteFor": "为 {title} 新建路由",
 			"activeTotalRoutes": "{active} 条活跃 / 共 {total} 条",
 			"noRoutesYet": "暂无路由",
-			"clickToAdd": "点击 + 添加第一条路由"
+			"clickToAdd": "点击 + 添加第一条路由",
+			"embeddingModelHint": "向量 · 按输入 token 计费"
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1535,7 +1552,8 @@
 				"actualRequestEmpty": "发送后展示实际请求内容。"
 			}
 		},
-		"kindAudio": "音频",
+		"kindAsr": "语音识别",
+		"kindTts": "语音合成",
 		"strategy": {
 			"title": "路由策略",
 			"protocolLevel": "当前路由池策略",
@@ -1695,7 +1713,8 @@
 		"kind": "类型",
 		"kindLlm": "大语言模型",
 		"kindImage": "文生图",
-		"kindAudio": "音频",
+		"kindAsr": "语音识别",
+		"kindTts": "语音合成",
 		"modelId": "模型 ID",
 		"provider": "供应商",
 		"protocol": "协议",
@@ -1872,7 +1891,8 @@
 		"realtimeTransportError": "实时 WebSocket 传输出错",
 		"realtimeWaitingTaskStarted": "WebSocket 已连接，正在等待上游 task-started…",
 		"realtimeClosed": "实时连接已关闭（{code}{reason}）。",
-		"streamDisconnected": "读取上游流式响应时连接中断（{cause}）。可先把 stream 改为 false 验证，或刷新后再试。"
+		"streamDisconnected": "读取上游流式响应时连接中断（{cause}）。可先把 stream 改为 false 验证，或刷新后再试。",
+		"kindEmbedding": "向量"
 	},
 	"simulator": {
 		"title": "模拟器",
@@ -1891,7 +1911,8 @@
 		"kind": "类型",
 		"kindLlm": "大语言模型",
 		"kindImage": "文生图",
-		"kindAudio": "音频",
+		"kindAsr": "语音识别",
+		"kindTts": "语音合成",
 		"model": "模型",
 		"filter": "筛选",
 		"modelFilterPlaceholder": "ID / 显示名称 / 模型厂商包含…",
@@ -1995,7 +2016,9 @@
 		"modelNoRoute": "无路由",
 		"matchingRoutesSummary": "{count} 条匹配的活跃路由",
 		"matchingRoutesHint": "只读预览：代理服务可能用到的活跃路由。实际请求时仍会故障转移。",
-		"supportedSurfacesEmpty": "当前模型和路由组没有可用的公开入口。"
+		"supportedSurfacesEmpty": "当前模型和路由组没有可用的公开入口。",
+		"kindEmbedding": "向量",
+		"protocolLockedEmbedding": "向量路由支持 OpenAI POST /v1/embeddings 与 Gemini 原生 :embedContent / :batchEmbedContents。"
 	},
 	"users": {
 		"detailUx": {
@@ -2374,7 +2397,8 @@
 				"tts": "TTS",
 				"asr": "ASR",
 				"tool": "工具",
-				"mcp": "MCP"
+				"mcp": "MCP",
+				"embedding": "向量"
 			},
 			"stream": "流式",
 			"realtime": "实时",
@@ -2402,7 +2426,8 @@
 				"stream": "客户端请求了流式响应",
 				"realtime": "实时会话",
 				"reasoning": "含推理 Token 或推理阶段 TTFT",
-				"failover": "上游尝试失败后发生了切换"
+				"failover": "上游尝试失败后发生了切换",
+				"embedding": "文本向量化"
 			},
 			"cost": "本次请求的计费金额与成本金额；旁边倍率为金额 ÷ 目录金额。",
 			"profit": "计费金额 − 成本金额；不含基础设施、税费等其他支出。",
@@ -3152,6 +3177,44 @@
 		"pendingBadge": "{count} 待审核",
 		"edit": "编辑",
 		"viewInvocations": "查看调用记录",
+		"connectGuide": {
+			"button": "接入指南",
+			"title": "接入指南：在外部 Agent 中使用 MCP",
+			"subtitle": "选择客户端，复制配置即可。Agent 只需要网关地址和用户 API Key，不接触上游密钥。",
+			"proxyUrl": "Proxy 地址",
+			"proxyHint": "填写 Proxy 基础地址，会自动加上 /mcp；与“对外目录测试”共用。",
+			"proxyInvalid": "地址无效：需为 http(s) 基础地址，不含 /mcp 路径、账号、查询参数。",
+			"scope": "服务范围",
+			"allServices": "全部服务（聚合入口）",
+			"disabled": "已停用",
+			"scopeHint": "选择单个服务时，只暴露该服务的工具。",
+			"endpoint": "MCP 地址：",
+			"clients": "客户端",
+			"copy": "复制",
+			"copied": "已复制到剪贴板",
+			"copyFailed": "复制失败，请手动选择文本",
+			"safeHint": "示例只含占位符，不包含任何真实 Key。",
+			"runInTerminal": "在终端执行：",
+			"saveTo": "保存到 {path}：",
+			"client": {
+				"cursor": "Cursor",
+				"vscode": "VS Code",
+				"claude-code": "Claude Code",
+				"codex": "Codex",
+				"curl": "curl 验证"
+			},
+			"note": {
+				"cursor": "写入后在 Cursor 设置的 MCP 页确认状态为已连接。项目级配置用 .cursor/mcp.json。",
+				"vscode": "在 VS Code 的 Copilot Agent 模式中使用；也可在命令面板运行 “MCP: Add Server”。",
+				"claude-code": "加 --scope user 可对所有项目生效；用 claude mcp list 检查连接。",
+				"codex": "先在 shell 中导出环境变量，Key 不会写入配置文件。",
+				"curl": "返回 HTTP 200 且含 tools 列表，说明地址与 Key 可用。"
+			},
+			"tipKey": "把 {placeholder} 换成你的网关用户 API Key（sk- 开头）。",
+			"tipTools": "工具名形如 {pattern}；提示词与资源也可从同一入口读取。",
+			"tipEnable": "只有在 MCP 服务中已同步并启用的条目才会出现在客户端。",
+			"tipTransport": "仅支持无会话的 Streamable HTTP（POST）；GET 返回 405。"
+		},
 		"connection": "连接",
 		"enableAllNew": "启用全部新增",
 		"effectivePrice": "工具价格",

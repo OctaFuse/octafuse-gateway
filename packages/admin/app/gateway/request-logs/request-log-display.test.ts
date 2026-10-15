@@ -92,3 +92,15 @@ describe('requestLogFeatureTags', () => {
 		);
 	});
 });
+
+describe('requestLogFeatureKind embedding', () => {
+	it('classifies embeddings by operation and catalog model', () => {
+		assert.equal(requestLogFeatureKind({ request_operation: 'embeddings', upstream_operation: 'embeddings' }), 'embedding');
+		assert.equal(requestLogFeatureKind({ request_operation: 'models.embed', upstream_operation: 'models.embed' }), 'embedding');
+		assert.equal(
+			requestLogFeatureKind({ model_id: 'text-embedding-3-small' }, { output_modalities: ['embedding'] } as never),
+			'embedding',
+		);
+		assert.equal(requestLogFeatureKind({ request_operation: 'chat.completions' }), 'llm');
+	});
+});

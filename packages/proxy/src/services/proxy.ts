@@ -54,6 +54,11 @@ import {
 } from "./egress/dashscope-realtime-driver";
 import { dispatchAnthropicRoute } from "./egress/anthropic-driver";
 import { dispatchGeminiRoute } from "./egress/gemini-driver";
+import { dispatchOpenAiEmbeddingsRoute } from "./egress/openai-embeddings-driver";
+import {
+	dispatchGeminiEmbedRoute,
+	type GeminiEmbedAction,
+} from "./egress/gemini-embed-driver";
 import {
 	failoverDispatch,
 	type FailoverDispatchOptions,
@@ -588,6 +593,54 @@ export async function proxyGeminiContent(
 			attempt?: RequestTimingAttempt
 		) =>
 			dispatchGeminiRoute(route, body, action, search, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 OpenAI Embeddings（`POST /v1/embeddings`），上游为 OpenAI 兼容 `/embeddings`。 */
+export async function proxyEmbeddings(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	body: Record<string, unknown>,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"openai",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchOpenAiEmbeddingsRoute(route, body, signal, timing, attempt),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 Gemini 原生 `embedContent` / `batchEmbedContents`。 */
+export async function proxyGeminiEmbeddings(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	action: GeminiEmbedAction,
+	body: Record<string, unknown>,
+	search: string,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"gemini",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchGeminiEmbedRoute(route, body, action, search, signal, timing, attempt),
 		requestSignal,
 		options
 	);

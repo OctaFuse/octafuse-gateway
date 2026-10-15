@@ -23,8 +23,7 @@ function route(overrides: Partial<PlaygroundResolvedRoute> = {}): PlaygroundReso
 		providerApiKey: 'secret',
 		providerModelName: 'qwen3-asr-flash-realtime',
 		customParams: null,
-		isImageModel: false,
-		isAudioModel: true,
+		modelKind: 'asr',
 		...overrides,
 	};
 }
@@ -286,7 +285,7 @@ describe('connectPlaygroundDashScopeRealtime runtime selection', () => {
 		await assert.rejects(
 			() =>
 				connectPlaygroundDashScopeRealtime(
-					route({ isAudioModel: false }),
+					route({ modelKind: 'llm' }),
 					'audio.transcriptions.realtime.inference',
 					undefined,
 					{ nodeDispatch: async () => new Response(null, { status: 200 }) },

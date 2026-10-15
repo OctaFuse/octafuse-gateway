@@ -114,7 +114,7 @@ function resolveImageOperation(
 
 function resolveKind(input: BuildSimulatorRequestInput): InvokeKind {
 	if (input.kind) return input.kind;
-	if (input.audioOperation) return "audio";
+	if (input.audioOperation) return input.audioOperation === "speech" ? "tts" : "asr";
 	if (resolveImageOperation(input) != null) return "image";
 	return "llm";
 }
@@ -162,14 +162,12 @@ export function buildSimulatorRequest(
 
 	switch (input.protocol) {
 		case "openai": {
-			if (kind === "audio") {
-				const audioOperation = input.audioOperation ?? "transcriptions";
-				if (audioOperation === "speech") {
+			if (kind === "asr" || kind === "tts") {
+				if (kind === "tts") {
 					const merged = { ...input.body, model: input.modelForRouting };
 					const path = resolveProxyPathForModelInvoke({
-						kind: "audio",
+						kind: "tts",
 						protocol: "openai",
-						audioOperation,
 					});
 					return {
 						url: `${base}${path}`,
@@ -212,9 +210,8 @@ export function buildSimulatorRequest(
 						? "file: (none selected yet — required before Send)"
 						: [`file:`, ...fileLines.map((l) => `  - ${l}`)].join("\n");
 				const path = resolveProxyPathForModelInvoke({
-					kind: "audio",
+					kind: "asr",
 					protocol: "openai",
-					audioOperation,
 				});
 				return {
 					url: `${base}${path}`,
@@ -278,7 +275,7 @@ export function buildSimulatorRequest(
 			}
 			const merged = { ...input.body, model: input.modelForRouting };
 			const path = resolveProxyPathForModelInvoke({
-				kind: kind === "image" ? "image" : "llm",
+				kind: kind === "image" ? "image" : kind === "embedding" ? "embedding" : "llm",
 				protocol: "openai",
 				imageOperation: imageOp === "generations" ? "generations" : undefined,
 				llmOperation: input.llmOperation,
@@ -308,6 +305,25 @@ export function buildSimulatorRequest(
 			};
 		}
 		case "gemini": {
+			if (kind === "embedding") {
+				const embedAction = Array.isArray(input.body.requests)
+					? "batchEmbedContents"
+					: "embedContent";
+				const embedPath = resolveProxyPathForModelInvoke({
+					kind: "embedding",
+					protocol: "gemini",
+					geminiEmbedAction: embedAction,
+					geminiModelSegment: input.modelForRouting,
+				});
+				return {
+					url: `${base}${embedPath}`,
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: auth,
+					},
+					bodyText: JSON.stringify(input.body),
+				};
+			}
 			const action: SimulatorGeminiAction =
 				kind === "image"
 					? "generateContent"
@@ -351,11 +367,10 @@ export function buildSimulatorRequest(
 			};
 		}
 		case "minimax": {
-			if (kind === "image" || (kind === "audio" && (input.audioOperation ?? "transcriptions") === "speech")) {
+			if (kind === "image" || kind === "tts") {
 				const path = resolveProxyPathForModelInvoke({
-					kind: kind === "image" ? "image" : "audio",
+					kind: kind === "image" ? "image" : "tts",
 					protocol: "minimax",
-					audioOperation: kind === "audio" ? "speech" : undefined,
 					imageOperation: kind === "image" ? "generations" : undefined,
 				});
 				const merged = { ...input.body, model: input.modelForRouting };
@@ -368,7 +383,7 @@ export function buildSimulatorRequest(
 					bodyText: JSON.stringify(merged),
 				};
 			}
-			if (kind !== "audio") {
+			if (kind !== "asr") {
 				throw new Error("MiniMax simulator supports file transcriptions, speech, and image generation");
 			}
 			const file = input.audioFile ?? null;
@@ -390,9 +405,8 @@ export function buildSimulatorRequest(
 				? "file: (none selected yet — required before Send)"
 				: [`file:`, ...fileLines.map((line) => `  - ${line}`)].join("\n");
 			const path = resolveProxyPathForModelInvoke({
-				kind: "audio",
+				kind: "asr",
 				protocol: "minimax",
-				audioOperation: "transcriptions",
 			});
 			return {
 				url: `${base}${path}`,

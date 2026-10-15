@@ -2,6 +2,7 @@
 
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { FilterRow, FilterSegmented } from '../../components/filter-controls';
 import {
 	PROVIDER_LIST_FILTERS,
 	type ProviderListFilter,
@@ -34,6 +35,8 @@ const CHIP_DOT: Partial<Record<ProviderListFilter, string>> = {
 	volcengine: 'bg-cyan-600',
 };
 
+const PROTOCOL_FILTERS: readonly ProviderListFilter[] = ['openai', 'anthropic', 'gemini', 'dashscope', 'minimax', 'volcengine'];
+
 export function ProviderToolbar(props: ProviderToolbarProps) {
 	const {
 		providerSearch,
@@ -54,6 +57,16 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 		(filter) => filter !== 'outdated' || filterCounts.outdated > 0 || selectedFilter === 'outdated'
 	);
 
+	const protocolFilters = visibleFilters.filter((filter) => PROTOCOL_FILTERS.includes(filter));
+	const statusFilters = visibleFilters.filter((filter) => !PROTOCOL_FILTERS.includes(filter));
+
+	const toOption = (filter: ProviderListFilter) => ({
+		value: filter,
+		label: filterLabel(filter),
+		dotClass: CHIP_DOT[filter] ?? 'bg-slate-400',
+		count: filter === 'all' ? `${filterCounts.all}/${totalCount}` : `${filterCounts[filter]}/${filterCounts.all}`,
+	});
+
 	const filterLabel = (filter: ProviderListFilter): string => {
 		if (
 			filter === 'openai' ||
@@ -69,18 +82,18 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 	};
 
 	return (
-		<div className="mb-5 space-y-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+		<div className="mb-5 space-y-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
 			<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 				<div className="relative min-w-0 flex-1 md:max-w-xl">
 					<MagnifyingGlassIcon
-						className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+						className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
 						aria-hidden
 					/>
 					<input
 						type="search"
 						value={providerSearch}
 						onChange={(e) => onSearchChange(e.target.value)}
-						className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-9 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
 						placeholder={t('searchPlaceholder')}
 						aria-label={t('searchPlaceholder')}
 						autoComplete="off"
@@ -111,40 +124,21 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 					<option key={filter} value={filter}>{filterLabel(filter)} ({filterCounts[filter]})</option>
 				))}
 			</select>
-			<div
-				className="hidden flex-wrap gap-1.5 md:flex"
-				role="toolbar"
-				aria-label={t('filters.aria')}
-			>
-				{visibleFilters.map((filter) => {
-					const count = filterCounts[filter];
-					const selected = selectedFilter === filter;
-					const searchMatched = filterCounts.all;
-					return (
-						<button
-							key={filter}
-							type="button"
-							onClick={() => onFilterChange(filter)}
-							aria-pressed={selected}
-							className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-								selected
-									? 'bg-blue-50 text-blue-800 ring-blue-200'
-									: 'bg-slate-50 text-slate-600 ring-slate-200 hover:bg-slate-100'
-							}`}
-						>
-							<span
-								className={`h-1.5 w-1.5 rounded-full ${CHIP_DOT[filter] ?? 'bg-slate-400'}`}
-								aria-hidden
-							/>
-							<span>{filterLabel(filter)}</span>
-							<span className="tabular-nums text-[10px] opacity-70">
-								{filter === 'all'
-									? `${searchMatched}/${totalCount}`
-									: `${count}/${searchMatched}`}
-							</span>
-						</button>
-					);
-				})}
+			<div className="hidden md:block" role="toolbar" aria-label={t('filters.aria')}>
+				<FilterRow>
+					<FilterSegmented
+						label={t('filters.groupStatus')}
+						value={statusFilters.includes(selectedFilter) ? selectedFilter : ''}
+						onChange={(value) => onFilterChange(value as ProviderListFilter)}
+						options={statusFilters.map(toOption)}
+					/>
+					<FilterSegmented
+						label={t('filters.groupProtocol')}
+						value={protocolFilters.includes(selectedFilter) ? selectedFilter : ''}
+						onChange={(value) => onFilterChange(value as ProviderListFilter)}
+						options={protocolFilters.map(toOption)}
+					/>
+				</FilterRow>
 			</div>
 		</div>
 	);

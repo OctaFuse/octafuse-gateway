@@ -8,16 +8,16 @@ import { useFeedback } from '@/components/feedback';
 import { flushSync } from 'react-dom';
 import { miniMaxSpeechObjectUrl } from '@/lib/minimax-speech-preview';
 import { readApiJson } from '@/lib/api-json';
-import { isAudioRouteModel, validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
-import { isAudioSpeechModel, isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
+import { validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import {
 	imageRequestMetaFromBody,
-	isImageRouteModel,
 	parseImagesGenerationsResponse,
 	validateEditImageFiles,
 	type ImageOperation,
 	type ImagePreviewItem,
 } from '@/lib/image-generations';
+import { embeddingBodyTemplateFor, joinEmbeddingUsageHint } from '@/lib/embeddings';
 import { inferPlaygroundParseMode, type PlaygroundProtocol } from '@/lib/playground/merge-assistant-text';
 import { previewPlaygroundResponse, readPlaygroundTextStream } from '@/lib/playground/response-preview';
 import {
@@ -45,8 +45,10 @@ import {
 	DEFAULT_INVOKE_KIND,
 	emptyModelKindCounts,
 	GATEWAY_TOOL_IDS,
+	audioOperationForKind,
+	isAudioKind,
 	isInvokeKind,
-	modelKindFromFlags,
+	normalizeLegacyKindParam,
 	parseGatewayToolId,
 	resolveRequestOperation,
 	type AudioOperation,
@@ -80,9 +82,8 @@ import {
 } from './simulator-utils';
 import type { ResponseMeta, ResponseTab, RouteListRow, SendBlockReason, WirePreview } from './types';
 
-function resolveModelKind(m: AdminModelRow | null | undefined): ModelKindFilter {
-	if (!m) return 'llm';
-	return modelKindFromFlags(isAudioRouteModel(m), isImageRouteModel(m));
+function kindOfModel(m: AdminModelRow | null | undefined): ModelKindFilter {
+	return m ? resolveModelKind(m) : 'llm';
 }
 
 export function useSimulatorPageState() {
@@ -175,14 +176,14 @@ export function useSimulatorPageState() {
 	const kindCounts = useMemo(() => {
 		const counts = { ...emptyModelKindCounts(), tool: GATEWAY_TOOLS.length };
 		for (const m of routedModels) {
-			counts[resolveModelKind(m)] += 1;
+			counts[kindOfModel(m)] += 1;
 		}
 		return counts;
 	}, [routedModels]);
 
 	const modelsInKind = useMemo(
 		() =>
-			isToolKind ? [] : routedModels.filter((m) => resolveModelKind(m) === (filterKind as ModelKindFilter)),
+			isToolKind ? [] : routedModels.filter((m) => kindOfModel(m) === (filterKind as ModelKindFilter)),
 		[routedModels, filterKind, isToolKind],
 	);
 
@@ -213,7 +214,7 @@ export function useSimulatorPageState() {
 						protocol,
 						next === 'image',
 						imageOperation,
-						next === 'audio' ? 'transcriptions' : null,
+						next === 'asr' ? 'transcriptions' : next === 'tts' ? 'speech' : null,
 						undefined,
 						undefined,
 						undefined,
@@ -250,17 +251,14 @@ export function useSimulatorPageState() {
 		[models, selectedModelId],
 	);
 
-	const selectedModelIsImage = useMemo(
-		() => (selectedModel ? isImageRouteModel(selectedModel) : false),
-		[selectedModel],
-	);
+	const selectedModelKind = useMemo(() => kindOfModel(selectedModel), [selectedModel]);
+	const selectedModelIsImage = selectedModelKind === 'image';
+	const selectedModelIsEmbedding = selectedModelKind === 'embedding';
 
-	const selectedAudioOperation = useMemo<AudioOperation | null>(() => {
-		if (!selectedModel) return null;
-		if (isAudioSpeechModel(selectedModel)) return 'speech';
-		if (isAudioTranscriptionModel(selectedModel)) return 'transcriptions';
-		return null;
-	}, [selectedModel]);
+	const selectedAudioOperation = useMemo<AudioOperation | null>(
+		() => (isAudioKind(selectedModelKind) ? audioOperationForKind(selectedModelKind) : null),
+		[selectedModelKind],
+	);
 
 	const selectedModelIsAudio = selectedAudioOperation != null;
 	const realtimeOperationOptions = useMemo(
@@ -332,7 +330,6 @@ export function useSimulatorPageState() {
 				kind: filterKind,
 				protocol,
 				imageOperation,
-				audioOperation: selectedAudioOperation ?? undefined,
 				geminiAction,
 				llmOperation: protocol === 'openai' ? openaiLlmOperation : undefined,
 		  });
@@ -680,7 +677,8 @@ export function useSimulatorPageState() {
 					),
 				);
 			}
-			const kindRaw = localStorage.getItem(LS_INVOKE_KIND);
+			const storedKind = localStorage.getItem(LS_INVOKE_KIND);
+			const kindRaw = storedKind ? normalizeLegacyKindParam(storedKind) : storedKind;
 			if (kindRaw && isInvokeKind(kindRaw)) {
 				setFilterKind(kindRaw);
 			}
@@ -841,13 +839,13 @@ export function useSimulatorPageState() {
 		if (!selectedModelId || models.length === 0) return;
 		const m = models.find((x) => x.id === selectedModelId);
 		if (!m) return;
-		const k = resolveModelKind(m);
+		const k = kindOfModel(m);
 		if (k !== filterKind) {
 			setFilterKind(k);
 		}
 	}, [models, selectedModelId, filterKind, isToolKind]);
 
-	const prevSelectedSpecialKindRef = useRef<'none' | 'image' | 'audio'>('none');
+	const prevSelectedSpecialKindRef = useRef<'none' | 'image' | 'audio' | 'embedding'>('none');
 
 	/** Image / Audio models: force openai + kind template; leaving restores chat template. */
 	useEffect(() => {
@@ -873,6 +871,18 @@ export function useSimulatorPageState() {
 			setAudioFile(null);
 			setAudioInputMode(defaultAudioInputModeForDashScopeOperation(selectedDashScopeRealtimeOperation));
 			prevSelectedSpecialKindRef.current = 'audio';
+			return;
+		}
+		if (selectedModelIsEmbedding) {
+			const embeddingProtocol = protocol === 'gemini' ? 'gemini' : ('openai' as const);
+			if (protocol !== embeddingProtocol) setProtocolState(embeddingProtocol);
+			setBodyText(embeddingBodyTemplateFor({ protocol: embeddingProtocol }));
+			setBodyError(null);
+			setImagePreviews([]);
+			setAudioPreviewUrl(null);
+			setEditFiles([]);
+			setAudioFile(null);
+			prevSelectedSpecialKindRef.current = 'embedding';
 			return;
 		}
 		if (selectedModelIsImage) {
@@ -926,6 +936,7 @@ export function useSimulatorPageState() {
 	}, [
 		selectedModelId,
 		selectedModelIsImage,
+		selectedModelIsEmbedding,
 		selectedAudioOperation,
 		selectedDashScopeRealtimeOperation,
 		selectedDashScopeTtsProviderModelName,
@@ -1083,7 +1094,6 @@ export function useSimulatorPageState() {
 							kind: filterKind,
 							protocol: next,
 							imageOperation,
-							audioOperation: selectedAudioOperation ?? undefined,
 							geminiAction,
 							llmOperation: next === 'openai' ? openaiLlmOperation : undefined,
 					  });
@@ -1138,6 +1148,16 @@ export function useSimulatorPageState() {
 	const requestProtocolChange = useCallback(
 		async (next: SimulatorProtocol) => {
 			if (next === protocol) return;
+			if (selectedModelIsEmbedding) {
+				if (next !== 'openai' && next !== 'gemini') {
+					setInfoHint(t('protocolLockedEmbedding'));
+					return;
+				}
+				setProtocolState(next);
+				setBodyText(embeddingBodyTemplateFor({ protocol: next }));
+				setBodyError(null);
+				return;
+			}
 			if (selectedModelIsAudio && next !== 'openai' && next !== 'dashscope' && next !== 'minimax') {
 				setInfoHint(t('protocolLockedAudio'));
 				return;
@@ -1181,6 +1201,7 @@ export function useSimulatorPageState() {
 			applyProtocolTemplate,
 			selectedModelIsImage,
 			selectedModelIsAudio,
+			selectedModelIsEmbedding,
 			selectedAudioOperation,
 			selectedDashScopeRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
@@ -1574,7 +1595,11 @@ export function useSimulatorPageState() {
 						const audioUrl = miniMaxSpeechObjectUrl(JSON.stringify(j));
 						if (audioUrl) setAudioPreviewUrl(audioUrl);
 					}
-					setUsageHint(tryParseUsageSummary(JSON.stringify(j), protoNorm));
+					setUsageHint(
+						filterKind === 'embedding'
+							? joinEmbeddingUsageHint(JSON.stringify(j), protoNorm)
+							: tryParseUsageSummary(JSON.stringify(j), protoNorm),
+					);
 				}
 				setSending(false);
 				return;
@@ -1721,6 +1746,7 @@ export function useSimulatorPageState() {
 		selectedModel,
 		selectedModelIsImage,
 		selectedModelIsAudio,
+		selectedModelIsEmbedding,
 		selectedAudioOperation,
 		dashScopeRealtimeOperation,
 		setDashScopeRealtimeOperation: setDashScopeRealtimeOperationForSelection,
@@ -1757,7 +1783,7 @@ export function useSimulatorPageState() {
 		responseMeta,
 		responseText,
 		usageHint:
-			isToolKind || selectedModelIsImage || selectedModelIsAudio
+			isToolKind || selectedModelIsImage || selectedModelIsAudio || selectedModelIsEmbedding
 				? usageHint
 				: tryParseUsageSummary(
 						JSON.stringify({

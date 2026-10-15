@@ -107,7 +107,9 @@
 		"failedToLoadApiKeys": "Failed to load API keys",
 		"failedToLoadModels": "Failed to load models",
 		"infinity": "∞",
-		"kindAudio": "Audio"
+		"kindAsr": "ASR",
+		"kindTts": "TTS",
+		"kindEmbedding": "Embedding"
 	},
 	"auth": {
 		"username": "Username",
@@ -337,7 +339,9 @@
 		"routeGroupAria": "Route group filter",
 		"modelsAndRoutes": "{models} models · {routes} routes",
 		"narrowModelsRoutes": "Narrow models and routes",
-		"kindAudio": "Audio"
+		"kindAsr": "ASR",
+		"kindTts": "TTS",
+		"kindEmbedding": "Embedding"
 	},
 	"modalities": {
 		"text": "Text",
@@ -373,6 +377,8 @@
 		"clearSearch": "Clear provider search",
 		"filters": {
 			"aria": "Provider filters",
+			"groupStatus": "Status",
+			"groupProtocol": "Protocol",
 			"all": "All",
 			"active": "Active",
 			"disabled": "Disabled",
@@ -414,7 +420,9 @@
 				"messages": "messages",
 				"generateContent": "generate",
 				"streamGenerateContent": "stream",
-				"modelsGenerate": "generate"
+				"modelsGenerate": "generate",
+				"embeddings": "embeddings",
+				"modelsEmbed": "embed"
 			},
 			"officialUpdate": "Official update",
 			"officialUpdateTitle": "The official template has changed. Click to review and sync",
@@ -569,7 +577,9 @@
 			"apiKeyHint": "Upstream credential for this provider. For project-scoped Vertex, paste a GCP service account JSON (not a Vertex API key).",
 			"apiKeyEditHint": "Hidden by default. Show or copy the current key. Change it to replace on save; clear the field to keep the current key.",
 			"capModelsGenerate": "models.generate (/v1beta/models/'{model}:{action}') — stream + non-stream",
-			"legacyPerActionNotice": "This provider still has separate generateContent / streamGenerateContent overrides that cannot be safely merged. They are preserved as-is on save. Clear them in the database or set a single '{action}' template after review."
+			"legacyPerActionNotice": "This provider still has separate generateContent / streamGenerateContent overrides that cannot be safely merged. They are preserved as-is on save. Clear them in the database or set a single '{action}' template after review.",
+			"capEmbeddings": "embeddings (/v1/embeddings)",
+			"capModelsEmbed": "models.embed (/v1beta/models/'{model}:{action}') — embedContent / batchEmbedContents"
 		},
 		"sync": {
 			"title": "Sync with official",
@@ -678,7 +688,9 @@
 			"kindAria": "Model kind filter",
 			"kindLlm": "LLM",
 			"kindImage": "Image",
-			"kindAudio": "Audio"
+			"kindAsr": "ASR",
+			"kindTts": "TTS",
+			"kindEmbedding": "Embedding"
 		},
 		"imagePricing": {
 			"enabled": "Legacy (removed)",
@@ -737,15 +749,12 @@
 			"kind": "Kind",
 			"kindLlm": "LLM",
 			"kindImage": "Image",
-			"kindAudio": "Audio",
+			"kindAsr": "ASR",
+			"kindTts": "TTS",
 			"kindHintLlm": "Chat / completion models with token pricing (input / output / cache).",
 			"kindHintImage": "Image-generation models: output includes image, Image token rates, no context/max tokens.",
-			"kindHintAudio": "Audio endpoint models. Choose speech recognition (ASR) or speech synthesis (TTS); the gateway keeps modalities and billing consistent.",
-			"audioCapability": "Audio capability",
-			"audioCapabilityTranscription": "Speech to text (ASR)",
-			"audioCapabilitySpeech": "Text to speech (TTS)",
-			"audioCapabilityHintTranscription": "Accepts audio and returns text. Uses per-second or token pricing.",
-			"audioCapabilityHintSpeech": "Accepts text and returns audio. Uses per-character pricing.",
+			"kindHintAsr": "Accepts audio and returns text. Uses per-second or token pricing.",
+			"kindHintTts": "Accepts text and returns audio. Uses per-character pricing.",
 			"modelIdRequired": "Model ID *",
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "Display Name",
@@ -790,7 +799,10 @@
 			"metadataJson": "Metadata (JSON)",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "Delete model",
-			"confirmDelete": "Delete this model and all of its routes?"
+			"confirmDelete": "Delete this model and all of its routes?",
+			"kindEmbedding": "Embedding",
+			"kindHintEmbedding": "Embedding models. Outputs vectors; billed by input tokens only. Use with POST /v1/embeddings or Gemini embedContent.",
+			"embeddingPricing": "Embedding pricing (input tokens)"
 		},
 		"metadata": {
 			"title": "Metadata"
@@ -802,16 +814,20 @@
 			"routesTitle": "{routes}; {active} active",
 			"kindLlm": "LLM",
 			"kindImage": "Image",
-			"kindAudio": "Audio",
+			"kindAsr": "ASR",
+			"kindTts": "TTS",
 			"noTags": "No tags",
 			"specs": "{context} · {max}",
 			"imageHint": "Image",
-			"audioHint": "Audio",
+			"asrHint": "Audio ASR · per-second pricing",
+			"ttsHint": "Audio TTS · per-character pricing",
 			"editModel": "Edit {name}",
 			"pricingNoData": "—",
 			"pricingTiers": "{count} tiers",
 			"noRoutes": "No routes",
-			"officialUpdateTitle": "Official catalog has updates — click to review and sync"
+			"officialUpdateTitle": "Official catalog has updates — click to review and sync",
+			"kindEmbedding": "Embedding",
+			"embeddingHint": "Embedding · context {context}"
 		},
 		"sync": {
 			"title": "Sync with official catalog",
@@ -1054,7 +1070,8 @@
 			"newRouteFor": "New route for {title}",
 			"activeTotalRoutes": "{active} active / {total} total",
 			"noRoutesYet": "No routes yet",
-			"clickToAdd": "Click + to add the first route"
+			"clickToAdd": "Click + to add the first route",
+			"embeddingModelHint": "Embedding · input-token pricing"
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1535,7 +1552,8 @@
 				"actualRequestEmpty": "The actual request will appear after sending."
 			}
 		},
-		"kindAudio": "Audio",
+		"kindAsr": "ASR",
+		"kindTts": "TTS",
 		"strategy": {
 			"title": "Route strategy",
 			"protocolLevel": "Current route pool strategy",
@@ -1695,7 +1713,8 @@
 		"kind": "Kind",
 		"kindLlm": "LLM",
 		"kindImage": "Image",
-		"kindAudio": "Audio",
+		"kindAsr": "ASR",
+		"kindTts": "TTS",
 		"modelId": "Model ID",
 		"provider": "Provider",
 		"protocol": "Protocol",
@@ -1872,7 +1891,8 @@
 		"realtimeTransportError": "Realtime WebSocket transport error",
 		"realtimeWaitingTaskStarted": "WebSocket connected. Waiting for upstream task-started…",
 		"realtimeClosed": "Realtime connection closed ({code}{reason}).",
-		"streamDisconnected": "The stream dropped while reading the upstream response ({cause}). Try stream: false to confirm the call, then retry streaming."
+		"streamDisconnected": "The stream dropped while reading the upstream response ({cause}). Try stream: false to confirm the call, then retry streaming.",
+		"kindEmbedding": "Embedding"
 	},
 	"simulator": {
 		"title": "Simulator",
@@ -1891,7 +1911,8 @@
 		"kind": "Kind",
 		"kindLlm": "LLM",
 		"kindImage": "Image",
-		"kindAudio": "Audio",
+		"kindAsr": "ASR",
+		"kindTts": "TTS",
 		"model": "Model",
 		"filter": "Filter",
 		"modelFilterPlaceholder": "id / display name / vendor contains…",
@@ -1995,7 +2016,9 @@
 		"modelNoRoute": "No route",
 		"matchingRoutesSummary": "{count} matching active route(s)",
 		"matchingRoutesHint": "Read-only preview of active routes Proxy may use for this model and group. Failover still happens at request time.",
-		"supportedSurfacesEmpty": "No active public surface for this model and route group."
+		"supportedSurfacesEmpty": "No active public surface for this model and route group.",
+		"kindEmbedding": "Embedding",
+		"protocolLockedEmbedding": "Embedding routes support OpenAI POST /v1/embeddings and Gemini native :embedContent / :batchEmbedContents."
 	},
 	"users": {
 		"detailUx": {
@@ -2374,7 +2397,8 @@
 				"tts": "TTS",
 				"asr": "ASR",
 				"tool": "Tool",
-				"mcp": "MCP"
+				"mcp": "MCP",
+				"embedding": "Embedding"
 			},
 			"stream": "Stream",
 			"realtime": "Realtime",
@@ -2402,7 +2426,8 @@
 				"stream": "Client requested a streaming response",
 				"realtime": "Realtime session",
 				"reasoning": "Reasoning tokens or reasoning-phase TTFT",
-				"failover": "Upstream switched after a failed attempt"
+				"failover": "Upstream switched after a failed attempt",
+				"embedding": "Text embedding"
 			},
 			"cost": "Billing and cost amounts for this request; the adjacent ratio is amount ÷ catalog amount.",
 			"profit": "Billing amount − cost amount; excludes infrastructure, taxes and other expenses.",
@@ -3152,6 +3177,44 @@
 		"pendingBadge": "{count} pending",
 		"edit": "Edit",
 		"viewInvocations": "View invocations",
+		"connectGuide": {
+			"button": "Connection guide",
+			"title": "Connection guide: use MCP from an external agent",
+			"subtitle": "Pick a client and copy the config. Agents only need the gateway URL and a user API Key, never upstream secrets.",
+			"proxyUrl": "Proxy URL",
+			"proxyHint": "Enter the Proxy base URL; /mcp is added automatically. Shared with “Test exposed catalog”.",
+			"proxyInvalid": "Invalid URL: use an http(s) base URL without the /mcp path, credentials or query.",
+			"scope": "Service scope",
+			"allServices": "All services (aggregate)",
+			"disabled": "Disabled",
+			"scopeHint": "A single service exposes only its own tools.",
+			"endpoint": "MCP endpoint:",
+			"clients": "Clients",
+			"copy": "Copy",
+			"copied": "Copied to clipboard",
+			"copyFailed": "Copy failed, select the text manually",
+			"safeHint": "Samples contain placeholders only, never a real key.",
+			"runInTerminal": "Run in a terminal:",
+			"saveTo": "Save to {path}:",
+			"client": {
+				"cursor": "Cursor",
+				"vscode": "VS Code",
+				"claude-code": "Claude Code",
+				"codex": "Codex",
+				"curl": "curl check"
+			},
+			"note": {
+				"cursor": "After saving, confirm the server shows as connected in Cursor's MCP settings. Use .cursor/mcp.json for a project-level config.",
+				"vscode": "Use it in Copilot Agent mode, or run “MCP: Add Server” from the command palette.",
+				"claude-code": "Add --scope user to enable it for every project; verify with claude mcp list.",
+				"codex": "Export the environment variable in your shell first; the key is never written to the config file.",
+				"curl": "HTTP 200 with a tools list means the URL and key work."
+			},
+			"tipKey": "Replace {placeholder} with your gateway user API Key (starts with sk-).",
+			"tipTools": "Tool names look like {pattern}; prompts and resources are served from the same endpoint.",
+			"tipEnable": "Only items synced and enabled under MCP Servers appear in clients.",
+			"tipTransport": "Stateless Streamable HTTP (POST) only; GET returns 405."
+		},
 		"connection": "Connection",
 		"enableAllNew": "Enable all new",
 		"effectivePrice": "Tool prices",

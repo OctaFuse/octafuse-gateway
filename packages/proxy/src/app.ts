@@ -8,6 +8,7 @@ import type { ApiKeyContext } from './middleware/auth';
 import { healthRoutes } from './routes/health';
 import { chatRoutes } from './routes/v1/chat';
 import { responsesRoutes } from './routes/v1/responses';
+import { embeddingsRoutes } from './routes/v1/embeddings';
 import { geminiRoutes } from './routes/v1/gemini';
 import { meRoutes } from './routes/v1/me';
 import { messagesRoutes } from './routes/v1/messages';
@@ -128,6 +129,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/health', healthRoutes);
 	app.route('/v1/chat/completions', chatRoutes);
 	app.route('/v1/responses', responsesRoutes);
+	app.route('/v1/embeddings', embeddingsRoutes);
 	app.route('/v1/images', imageRoutes);
 	app.route('/v1/audio', audioRoutes);
 	app.route('/v1/dashscope/realtime', dashScopeRealtimeRoutes);

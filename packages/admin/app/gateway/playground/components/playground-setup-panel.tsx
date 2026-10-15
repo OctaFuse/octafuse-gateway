@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ModelKindFilter } from '../../models/types';
+import { FilterTileGroup } from '../../components/filter-controls';
 import {
 	formatRouteJsonColumn,
 	inputClass,
@@ -25,7 +26,7 @@ function ReadonlyField({ label, children }: { label: string; children: ReactNode
 type Props = {
 	filterKind: ModelKindFilter;
 	onFilterKindChange: (kind: ModelKindFilter) => void;
-	kindCounts: { llm: number; image: number; audio: number };
+	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number };
 	routeSearch: string;
 	onRouteSearchChange: (v: string) => void;
 	filterModel: string;
@@ -67,39 +68,18 @@ export function PlaygroundSetupPanel({
 		<div className="flex h-full min-h-0 flex-col gap-4">
 			<section className={`${panelClass} flex min-h-0 flex-1 flex-col`}>
 				<h2 className="text-sm font-semibold text-gray-900">{t('routeSection')}</h2>
-				<div>
-					<label className={labelClass}>{t('kind')}</label>
-					<div
-						className="flex w-full min-w-0 overflow-x-auto rounded-md border border-gray-200 bg-gray-50 p-0.5"
-						role="group"
-						aria-label={t('kind')}
-					>
-						{(
-							[
-								{ id: 'llm' as const, label: t('kindLlm'), count: kindCounts.llm },
-								{ id: 'image' as const, label: t('kindImage'), count: kindCounts.image },
-								{ id: 'audio' as const, label: t('kindAudio'), count: kindCounts.audio },
-							] as const
-						).map((opt) => {
-							const active = filterKind === opt.id;
-							return (
-								<button
-									key={opt.id}
-									type="button"
-									onClick={() => onFilterKindChange(opt.id)}
-									className={
-										active
-											? 'flex flex-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded px-1.5 py-1.5 text-[11px] font-medium bg-white text-gray-900 shadow-sm sm:text-xs'
-											: 'flex flex-1 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded px-1.5 py-1.5 text-[11px] font-medium text-gray-600 hover:text-gray-900 sm:text-xs'
-									}
-								>
-									{opt.label}
-									<span className="shrink-0 text-[10px] text-gray-400 tabular-nums sm:text-xs">{opt.count}</span>
-								</button>
-							);
-						})}
-					</div>
-				</div>
+				<FilterTileGroup
+					label={t('kind')}
+					value={filterKind}
+					onChange={(value) => onFilterKindChange(value as ModelKindFilter)}
+					options={[
+						{ value: 'llm', label: t('kindLlm'), count: kindCounts.llm },
+						{ value: 'image', label: t('kindImage'), count: kindCounts.image },
+						{ value: 'asr', label: t('kindAsr'), count: kindCounts.asr },
+						{ value: 'tts', label: t('kindTts'), count: kindCounts.tts },
+						{ value: 'embedding', label: t('kindEmbedding'), count: kindCounts.embedding },
+					]}
+				/>
 
 				<div>
 					<label className={labelClass} htmlFor="playground-route-search">

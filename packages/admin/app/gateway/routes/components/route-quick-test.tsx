@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import { isAudioTranscriptionModel } from '@octafuse/core/db/model-modalities';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import { isDashScopeRealtimeOperation } from '@/lib/dashscope-realtime-client';
 import { validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
 import {
@@ -31,6 +31,7 @@ import {
 import type { ResponseMeta, RouteListRow } from '../../playground/types';
 import { composeCustomParamsJson } from '../route-utils';
 import type { RouteModalProps } from './route-modal-types';
+import { } from '@/lib/embeddings';
 import { RouteTestOutput } from './route-test-output';
 import { editorPanelClass, RouteEditorSectionHeader } from './route-editor-ui';
 
@@ -54,7 +55,9 @@ function QuickTestContent({
 	selectedModelIsAudio: isAudio,
 }: Props) {
 	const t = useTranslations('routes.modal.quickTest');
-	const family = quickTestLlmFamily(form, isImage || isAudio);
+	const modelKind = selectedModel ? resolveModelKind(selectedModel) : 'llm';
+	const isEmbedding = modelKind === 'embedding';
+	const family = quickTestLlmFamily(form, isImage || isAudio || isEmbedding);
 	const [sampleId, setSampleId] = useState<PlaygroundLlmSampleId>('connectivity');
 	const [geminiStream, setGeminiStream] = useState(true);
 	const [mobilePane, setMobilePane] = useState<'request' | 'response'>('request');
@@ -65,7 +68,7 @@ function QuickTestContent({
 	const realtime = isDashScopeRealtimeOperation(form.upstream_operation);
 	const needsAudioFile =
 		isAudio &&
-		isAudioTranscriptionModel(selectedModel ?? {}) &&
+		modelKind === 'asr' &&
 		form.adapter !== 'dashscope-asr-file-async' &&
 		form.upstream_operation !== 'audio.transcriptions.multimodal' &&
 		!realtime;
@@ -202,8 +205,7 @@ function QuickTestContent({
 		upstreamProtocol: form.upstream_protocol,
 		upstreamOperation: form.upstream_operation,
 		providerModelName: form.provider_model_name,
-		isImageModel: isImage,
-		isAudioModel: isAudio,
+		modelKind,
 		imageOperation,
 		geminiAction: geminiStream ? 'streamGenerateContent' : 'generateContent',
 	});

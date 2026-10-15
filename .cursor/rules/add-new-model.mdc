@@ -16,7 +16,7 @@ alwaysApply: false
 
 ## 2. 静态目录写刊例价
 
-改 `packages/admin/lib/model-presets/`（LLM / 生图 / 音频分开），补 `import-catalog-billing` 测试。USD 与 CNY 分源（如 Z.AI vs BigModel），不要用汇率换算。折扣只记现状，preset 里写**刊例价**，不写限时活动价。
+改 `packages/admin/lib/model-presets/`（LLM / 生图 / 音频分开），补 `import-catalog-billing` 测试。模型类型（llm / image / asr / tts / embedding）由模态与计费模式派生，写预设时对照 `docs/developers/reference/model-kinds.md`：ASR 输入含 audio、输出 text，计费 `per_second` / `token`；TTS 输入 text、输出 audio，计费 `per_character`；`model-kind-presets.test.ts` 会拦截矛盾预设。USD 与 CNY 分源（如 Z.AI vs BigModel），不要用汇率换算。折扣只记现状，preset 里写**刊例价**，不写限时活动价。
 
 ## 3. 导入模板不是上线
 

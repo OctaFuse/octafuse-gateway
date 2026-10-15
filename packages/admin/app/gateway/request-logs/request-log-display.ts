@@ -5,6 +5,7 @@
 import {
 	isAudioSpeechModel,
 	isAudioTranscriptionModel,
+	isEmbeddingModel,
 	isImageGenerationModel,
 	type ModelKindFields,
 } from '@octafuse/core/db/model-modalities';
@@ -13,7 +14,7 @@ import { MCP_REQUEST_LOG_PROVIDER_ID } from '@/lib/invoke-kind';
 
 export type GeminiWireAction = 'generateContent' | 'streamGenerateContent';
 
-export type RequestLogFeatureKind = 'llm' | 'image' | 'tts' | 'asr' | 'tool' | 'mcp';
+export type RequestLogFeatureKind = 'llm' | 'image' | 'tts' | 'asr' | 'embedding' | 'tool' | 'mcp';
 
 export type RequestLogFeatureTag =
 	| { key: 'kind'; kind: RequestLogFeatureKind }
@@ -115,8 +116,10 @@ export function requestLogFeatureKind(
 	if (operation.includes('images.')) return 'image';
 	if (operation.includes('audio.speech')) return 'tts';
 	if (operation.includes('audio.transcriptions')) return 'asr';
+	if (/(^|\s|,)(embeddings|models\.embed)(\s|,|$)/.test(operation)) return 'embedding';
 
 	if (catalogModel) {
+		if (isEmbeddingModel(catalogModel)) return 'embedding';
 		if (isImageGenerationModel(catalogModel)) return 'image';
 		if (isAudioSpeechModel(catalogModel)) return 'tts';
 		if (isAudioTranscriptionModel(catalogModel)) return 'asr';

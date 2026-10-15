@@ -691,3 +691,28 @@ describe('static preset import writes catalog schedule', () => {
 		assert.deepEqual(parsePricingProfile(json!)?.schedule, []);
 	});
 });
+
+describe('import catalog embedding presets', () => {
+	it('lists embedding models with kind=embedding and input-token-only list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'text-embedding-3-small');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'text-embedding-3-small');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.kind, 'embedding');
+		assert.equal(usd!.max_tokens, null);
+		const preset = listStaticModelPresets().find((p) => p.id === 'text-embedding-3-small');
+		assert.ok(preset);
+		assert.deepEqual(preset!.modalities?.output, ['embedding']);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile!.tiers[0]?.input_price, 0.02);
+		assert.equal(profile!.tiers[0]?.output_price, 0);
+		assert.equal(profile!.tiers[0]?.cache_read_price, null);
+	});
+
+	it('includes Google and Alibaba Cloud embedding presets', () => {
+		const ids = new Set(listStaticModelPresetCatalogForAdmin('USD').filter((r) => r.kind === 'embedding').map((r) => r.id));
+		for (const id of ['text-embedding-3-large', 'gemini-embedding-2', 'text-embedding-v4', 'qwen3.7-text-embedding']) {
+			assert.ok(ids.has(id), id);
+		}
+	});
+});

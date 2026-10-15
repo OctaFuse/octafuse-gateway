@@ -4,10 +4,11 @@
  * 网关用户列表：预算在 `users`；筛选与分页；跳转详情。
  */
 import { FilterDisclosure } from '@/components/FilterDisclosure';
+import { FilterRow, FilterSegmented, FilterTextInput } from '../components/filter-controls';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { MagnifyingGlassIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { readApiJson } from '@/lib/api-json';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
@@ -316,8 +317,6 @@ export default function GatewayUsersPage() {
     { value: 'disabled', label: tOptions('userStatus.disabled') },
   ];
   const showSkeleton = isLoading && users.length === 0;
-  const inputClass =
-    'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
@@ -336,89 +335,29 @@ export default function GatewayUsersPage() {
         </button>
       </div>
 
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-          <div className="grid min-w-0 flex-1 gap-3 xl:grid-cols-[minmax(13rem,1fr)_minmax(0,3fr)]">
-            <div className="min-w-0">
-              <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.email')}</label>
-              <div className="relative">
-                <MagnifyingGlassIcon
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                  aria-hidden
-                />
-                <input
-                  type="search"
-                  value={filterEmail}
-                  onChange={(e) => { setFilterEmail(e.target.value); setPage(1); }}
-                  className={`${inputClass} pl-9`}
-                  placeholder={t('filters.emailPlaceholder')}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-            <FilterDisclosure activeCount={[filterExternalSystem, filterExternalUserId, filterStatus].filter(Boolean).length}>
-              <div className="admin-filter-grid">
-                <div className="min-w-0">
-                  <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.externalSystem')}</label>
-                  <input
-                    type="text"
-                    value={filterExternalSystem}
-                    onChange={(e) => { setFilterExternalSystem(e.target.value); setPage(1); }}
-                    className={inputClass}
-                    placeholder={t('filters.externalSystemPlaceholder')}
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.externalUserId')}</label>
-                  <input
-                    type="text"
-                    value={filterExternalUserId}
-                    onChange={(e) => { setFilterExternalUserId(e.target.value); setPage(1); }}
-                    className={inputClass}
-                    placeholder={t('filters.externalUserIdPlaceholder')}
-                    autoComplete="off"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <label className="mb-1 block text-xs font-medium text-gray-500">{t('filters.status')}</label>
-                  <div className="inline-flex w-full rounded-lg bg-gray-100 p-0.5">
-                    {statusFilterOptions.map((option) => {
-                      const selected = filterStatus === option.value;
-                      return (
-                        <button
-                          key={option.value || 'all'}
-                          type="button"
-                          onClick={() => { setFilterStatus(option.value); setPage(1); }}
-                          className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium capitalize transition-colors ${
-                            selected
-                              ? 'bg-white text-gray-900 shadow-sm'
-                              : 'text-gray-500 hover:text-gray-800'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </FilterDisclosure>
-          </div>
+      <FilterDisclosure className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3" activeCount={[filterEmail, filterExternalSystem, filterExternalUserId, filterStatus].filter(Boolean).length}>
+        <FilterRow>
+          <FilterTextInput label={t('filters.email')} type="search" value={filterEmail} onChange={(v) => { setFilterEmail(v); setPage(1); }} placeholder={t('filters.emailPlaceholder')} widthClass="w-56" />
+          <FilterTextInput label={t('filters.externalSystem')} value={filterExternalSystem} onChange={(v) => { setFilterExternalSystem(v); setPage(1); }} placeholder={t('filters.externalSystemPlaceholder')} />
+          <FilterTextInput label={t('filters.externalUserId')} value={filterExternalUserId} onChange={(v) => { setFilterExternalUserId(v); setPage(1); }} placeholder={t('filters.externalUserIdPlaceholder')} />
+          <FilterSegmented
+            label={t('filters.status')}
+            value={filterStatus}
+            onChange={(v) => { setFilterStatus(v); setPage(1); }}
+            options={statusFilterOptions.map((option) => ({ value: option.value, label: option.label }))}
+          />
           {hasFilters && (
-            <div className="flex shrink-0 items-end pb-0.5">
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-              >
-                <XMarkIcon className="h-3.5 w-3.5" aria-hidden />
-                {tCommon('clearFilters')}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-blue-700"
+            >
+              <XMarkIcon className="h-3.5 w-3.5" aria-hidden />
+              {tCommon('clearFilters')}
+            </button>
           )}
-        </div>
-      </div>
+        </FilterRow>
+      </FilterDisclosure>
 
       {listError && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{listError}</div>

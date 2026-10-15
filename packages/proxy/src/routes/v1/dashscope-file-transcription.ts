@@ -3,7 +3,8 @@
  * `POST /v1/dashscope/services/audio/asr/transcription` 提交任务。
  * `GET /v1/dashscope/tasks/:taskId?model=` 查询任务；成功时按结果里的时长计费，响应仍是任务 JSON。
  */
-import { isAudioTranscriptionModel, type ModelRow } from '@octafuse/core';
+import type { ModelRow } from '@octafuse/core';
+import { audioModelGuardMessage } from './audio-model-guard';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Env } from '../../app';
@@ -87,11 +88,12 @@ async function runAsyncPassthrough(
 			message: `Model not found: ${rawModelId.slice(0, 200)}`,
 		});
 	}
-	if (!isAudioTranscriptionModel(preview.model)) {
+	const guardMessage = audioModelGuardMessage(preview.model, 'asr', 'DashScope file transcription passthrough');
+	if (guardMessage) {
 		return gatewayErrorJson(c, {
 			status: 400,
 			code: GatewayErrorCode.invalidRequest,
-			message: 'DashScope file transcription passthrough requires a transcription model',
+			message: guardMessage,
 		});
 	}
 	const { model, baseModelId, explicitGroup } = preview;

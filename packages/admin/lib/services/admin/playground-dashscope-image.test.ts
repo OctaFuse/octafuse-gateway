@@ -21,8 +21,7 @@ function route(
 		providerApiKey: 'sk-test',
 		providerModelName: 'qwen-image-3.0-pro',
 		customParams: null,
-		isImageModel: true,
-		isAudioModel: false,
+		modelKind: 'image',
 		...overrides,
 	};
 }

@@ -5,13 +5,12 @@ import {
 	MINIMAX_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
-	isAudioRouteModel,
 } from '@/lib/audio-transcriptions';
-import { isAudioTranscriptionModel, type ModelKindFields } from '@octafuse/core/db/model-modalities';
+import { embeddingBodyTemplateFor } from '@/lib/embeddings';
+import { resolveModelKind, type ModelKindFields } from '@octafuse/core/db/model-kind';
 import { extraHeadersFromCustomParams, mergeRouteRequestBody, mergeUpstreamHeaders, splitRouteCustomParams } from '@octafuse/core/route-custom-params';
 import {
 	imageBodyTemplateFor,
-	isImageRouteModel,
 	type ImageOperation,
 } from '@/lib/image-generations';
 import {
@@ -84,10 +83,7 @@ export const BODY_TEMPLATES: Record<string, string> = {
 };
 
 export function resolveRouteModelKind(m: AdminModelRow | undefined): ModelKindFilter {
-	if (!m) return 'llm';
-	if (isAudioRouteModel(m)) return 'audio';
-	if (isImageRouteModel(m)) return 'image';
-	return 'llm';
+	return m ? resolveModelKind(m) : 'llm';
 }
 
 export function isRouteActive(status: string): boolean {
@@ -274,9 +270,14 @@ export function templateForRoute(
 	imageOperation: ImageOperation = 'generations',
 ): string {
 	const proto = normalizeProtocol(route.upstream_protocol);
-	const isImage = model ? isImageRouteModel(model) : false;
-	const isAudio = model ? isAudioRouteModel(model) : false;
-	const isAudioTranscription = isAudioTranscriptionModel(model ?? {});
+	const kind = model ? resolveModelKind(model) : 'llm';
+	const isImage = kind === 'image';
+	const isEmbedding = kind === 'embedding';
+	if (isEmbedding && (proto === 'openai' || proto === 'gemini')) {
+		return embeddingBodyTemplateFor({ protocol: proto });
+	}
+	const isAudio = kind === 'asr' || kind === 'tts';
+	const isAudioTranscription = kind === 'asr';
 	const isAudioHttp = proto === 'openai' || proto === 'dashscope' || proto === 'minimax';
 	const realtime = isAudio && proto === 'dashscope' && isDashScopeRealtimeOperation(route.upstream_operation ?? '');
 	if (realtime) {
@@ -355,9 +356,9 @@ export function resolvePlaygroundLlmFamily(route: RouteListRow | null | undefine
 
 export function playgroundLlmFamilyForRoute(
 	route: RouteListRow | null | undefined,
-	opts: { isImage?: boolean; isAudio?: boolean } = {},
+	opts: { isImage?: boolean; isAudio?: boolean; isEmbedding?: boolean } = {},
 ): PlaygroundLlmFamily | null {
-	if (opts.isImage || opts.isAudio) return null;
+	if (opts.isImage || opts.isAudio || opts.isEmbedding) return null;
 	return resolvePlaygroundLlmFamily(route);
 }
 

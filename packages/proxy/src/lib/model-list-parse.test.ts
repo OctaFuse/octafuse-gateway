@@ -21,6 +21,12 @@ describe('parseModelsKindQuery', () => {
 		assert.equal(parseModelsKindQuery('All'), 'all');
 	});
 
+	it('accepts asr and tts, keeping audio as the ASR + TTS alias', () => {
+		assert.equal(parseModelsKindQuery('asr'), 'asr');
+		assert.equal(parseModelsKindQuery('TTS'), 'tts');
+		assert.equal(parseModelsKindQuery('audio'), 'audio');
+	});
+
 	it('falls back to llm for unknown values', () => {
 		assert.equal(parseModelsKindQuery('chat'), 'llm');
 		assert.equal(parseModelsKindQuery('unknown'), 'llm');
@@ -44,5 +50,13 @@ describe('normalizePublicModelVendor', () => {
 	it('keeps non-empty vendor values', () => {
 		assert.equal(normalizePublicModelVendor('openai'), 'openai');
 		assert.equal(normalizePublicModelVendor(' zhipu '), ' zhipu ');
+	});
+});
+
+describe('parseModelsKindQuery embedding', () => {
+	it('accepts embedding and keeps llm as the default', () => {
+		assert.equal(parseModelsKindQuery('embedding'), 'embedding');
+		assert.equal(parseModelsKindQuery('EMBEDDING'), 'embedding');
+		assert.equal(parseModelsKindQuery(undefined), 'llm');
 	});
 });

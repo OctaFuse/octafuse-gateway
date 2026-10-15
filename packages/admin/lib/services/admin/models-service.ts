@@ -8,9 +8,13 @@ import {
 	coerceModelInputModalitiesInput,
 	coerceModelOutputModalitiesInput,
 	coerceModelReleasedAtInput,
-	isAudioModel,
-	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
+import {
+	resolveModelKind,
+	validateModelKindConsistency,
+	type ModelKind,
+	type ModelKindFields,
+} from '@octafuse/core/db/model-kind';
 import {
 	BILLING_CURRENCY_KEY,
 	tryParseGatewaySupportedBillingCurrencyInput,
@@ -187,7 +191,7 @@ function buildPerCharacterAudioPricingPreview(
 /** 按 `BILLING_CURRENCY` 选用的目录价分支：Audio / Image / LLM 档位摘要。 */
 function buildCatalogPricingPreview(
 	rawPricing: unknown,
-	_kind: 'llm' | 'image' | 'audio',
+	_kind: ModelKind,
 	billing: GatewaySupportedBillingCurrency
 ): CatalogPricingPreview {
 	if (!rawPricing || typeof rawPricing !== 'object' || Array.isArray(rawPricing)) {
@@ -203,6 +207,12 @@ function buildCatalogPricingPreview(
 			detail: null,
 		}
 	);
+}
+
+/** 计费模式与模态互相矛盾时拒绝保存（规则见 `docs/developers/reference/model-kinds.md`）。 */
+function assertModelKindConsistent(fields: ModelKindFields): void {
+	const problem = validateModelKindConsistency(fields);
+	if (problem) throw badRequest(problem);
 }
 
 /** 全部模型列表，`tags` 从 JSON 字符串解析为数组。 */
@@ -230,15 +240,14 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 	const outputModalities =
 		body.output_modalities !== undefined ? coerceModelOutputModalitiesInput(body.output_modalities) : null;
 	const releasedAt = body.released_at !== undefined ? coerceModelReleasedAtInput(body.released_at) : null;
-	const isImage = isImageGenerationModel({
+	const kindFields: ModelKindFields = {
+		input_modalities: inputModalities,
 		output_modalities: outputModalities,
 		pricing_profile: pricingProfile,
-	});
-	const isAudio = isAudioModel({
-		output_modalities: outputModalities,
-		pricing_profile: pricingProfile,
-	});
-	const skipLlmDefaults = isImage || isAudio;
+	};
+	assertModelKindConsistent(kindFields);
+	// 非 LLM（文生图 / ASR / TTS / 向量）无 max output tokens；context_window 保持调用方传入
+	const skipLlmDefaults = resolveModelKind(kindFields) !== 'llm';
 	const maxTokens = skipLlmDefaults
 		? body.max_tokens == null
 			? null
@@ -307,6 +316,18 @@ export async function updateModelService(repos: GatewayRepositories, id: string,
 			? await repos.modelRouting.getModelById(id)
 			: null;
 	const coerced = applyModelMutationCoercion(rest);
+	if ('input_modalities' in coerced || 'output_modalities' in coerced || 'pricing_profile' in coerced) {
+		const current = await repos.models.getModelDetailWithRouteCounts(id);
+		if (current) {
+			const pick = (key: 'input_modalities' | 'output_modalities' | 'pricing_profile') =>
+				key in coerced ? (coerced[key] as string | null | undefined) : (current[key] as string | null | undefined);
+			assertModelKindConsistent({
+				input_modalities: pick('input_modalities'),
+				output_modalities: pick('output_modalities'),
+				pricing_profile: pick('pricing_profile'),
+			});
+		}
+	}
 	const changes = await repos.models.updateModelByPatch(id, coerced);
 	if (Object.keys(rest).some((k) => k !== 'id' && rest[k] !== undefined) && changes === 0) {
 		throw notFound('Model not found');
@@ -358,15 +379,11 @@ export function listStaticModelPresetCatalogForAdmin(
 			}
 			const pricingProfileJson =
 				pricingRaw != null && typeof pricingRaw === 'object' ? JSON.stringify(pricingRaw) : null;
-			const kindFields = {
+			const kind: AdminStaticModelPresetCatalogItem['kind'] = resolveModelKind({
+				input_modalities: p.modalities?.input ?? null,
 				output_modalities: p.modalities?.output ?? null,
 				pricing_profile: pricingProfileJson,
-			};
-			const kind: AdminStaticModelPresetCatalogItem['kind'] = isImageGenerationModel(kindFields)
-				? 'image'
-				: isAudioModel(kindFields)
-					? 'audio'
-					: 'llm';
+			});
 			const pricing = buildCatalogPricingPreview(pricingRaw, kind, billing);
 			return {
 				id,
@@ -445,10 +462,12 @@ export async function importModelsFromStaticPresetsService(
 				throw badRequest(`Static preset "${id}": missing or invalid pricing for ${billingUsed}`);
 			}
 
-			const presetIsImage = isImageGenerationModel({
-				output_modalities: preset.modalities?.output ?? null,
-				pricing_profile: pricingProfile,
-			});
+			const presetIsImage =
+				resolveModelKind({
+					input_modalities: preset.modalities?.input ?? null,
+					output_modalities: preset.modalities?.output ?? null,
+					pricing_profile: pricingProfile,
+				}) === 'image';
 			const body: AdminModelMutationInput = {
 				id,
 				display_name: preset.display_name ?? null,

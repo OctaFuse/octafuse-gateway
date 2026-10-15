@@ -34,9 +34,9 @@ model + route_group + request protocol + operation
 
 | 请求协议 | operation |
 |----------|-----------|
-| OpenAI | `chat`、`responses`、`images.generations`、`images.edits`、`audio.transcriptions`、`audio.speech` |
+| OpenAI | `chat`、`responses`、`embeddings`、`images.generations`、`images.edits`、`audio.transcriptions`、`audio.speech` |
 | Anthropic | `messages` |
-| Gemini | **`models.generate`**（generate-content 家族，覆盖流式与非流式；图片模型走同一入口。OpenAI 生图入口的转换适配器是 `gemini-image`。见 [Gemini 原生生图](./gemini-image.md)） |
+| Gemini | **`models.generate`**（generate-content 家族，覆盖流式与非流式；图片模型走同一入口。OpenAI 生图入口的转换适配器是 `gemini-image`。见 [Gemini 原生生图](./gemini-image.md)）、**`models.embed`**（`:embedContent` 与 `:batchEmbedContents`，向量模型使用，上游模板同样含 `{model}` 与 `{action}`） |
 | DashScope | `audio.transcriptions.*`、`audio.speech.*`（见 [DashScope 音频架构](./dashscope-audio.md)）、`images.generations.multimodal`（见 [DashScope 生图架构](./dashscope-image.md)） |
 | MiniMax | `audio.transcriptions`（公开 `POST /v1/minimax/speech_to_text`）、`audio.speech`（公开 `POST /v1/minimax/t2a_v2`）、`images.generations`（公开 `POST /v1/minimax/image_generation`）。OpenAI 入口的转换适配器是 `minimax-asr-file`、`minimax-tts`、`minimax-image`。见 [MiniMax 音频](./minimax-audio.md)、[MiniMax 生图](./minimax-image.md) |
 | Volcengine | `images.generations`（公开 `POST /v1/volcengine/images/generations`）。火山方舟与 BytePlus ModelArk 共用这一协议。OpenAI 入口的转换适配器是 `volcengine-image`。对话和 Responses 仍走供应商的 OpenAI 端点。见 [火山方舟 Seedream 生图](./volcengine-image.md) |

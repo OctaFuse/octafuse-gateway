@@ -1,4 +1,4 @@
-import { isAudioModel, isImageGenerationModel } from '@octafuse/core/db/model-modalities';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import { readApiJson } from '@/lib/api-json';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import {
@@ -38,9 +38,7 @@ export async function saveModel(
 	audioPricingDraft?: AudioPricingDraftState | null,
 	catalogScheduleWindows?: CatalogScheduleFormWindow[]
 ): Promise<{ success: true } | { success: false; message: string }> {
-	const isImage = isImageGenerationModel({
-		output_modalities: formData.output_modalities,
-	});
+	const isImage = resolveModelKind({ output_modalities: formData.output_modalities }) === 'image';
 	const isAudio = !!audioPricingDraft;
 	const tierJson = isAudio
 		? serializeAudioPricingDraft(audioPricingDraft)
@@ -63,28 +61,27 @@ export async function saveModel(
 		return { success: false, message: metaParsed.error };
 	}
 
-	const isImageResolved = isImageGenerationModel({
+	const resolvedKind = resolveModelKind({
+		input_modalities: formData.input_modalities,
 		output_modalities: formData.output_modalities,
 		pricing_profile: withSchedule.json,
 	});
-	const isAudioResolved =
-		isAudio ||
-		isAudioModel({
-			pricing_profile: withSchedule.json,
-		});
+	const isImageResolved = resolvedKind === 'image';
+	const isAudioResolved = isAudio || resolvedKind === 'asr' || resolvedKind === 'tts';
+	const isEmbeddingResolved = resolvedKind === 'embedding';
 	const skipTokenLimits = isImageResolved || isAudioResolved;
 	const parsedMax = formData.max_tokens.trim() ? parseInt(formData.max_tokens, 10) : NaN;
 	const payload = {
 		...formData,
 		tags: formData.tags,
 		vendor: normalizeModelVendorInput(formData.vendor),
-		// Image / Audio：chat context / max_tokens 不适用 — 保存时始终清空
+		// Image / Audio：chat context / max_tokens 不适用 — 保存时始终清空；Embedding 保留 context_window（输入上限），清空 max_tokens
 		context_window: skipTokenLimits
 			? null
 			: formData.context_window
 				? parseInt(formData.context_window, 10)
 				: null,
-		max_tokens: skipTokenLimits ? null : Number.isFinite(parsedMax) ? parsedMax : 4096,
+		max_tokens: skipTokenLimits || isEmbeddingResolved ? null : Number.isFinite(parsedMax) ? parsedMax : 4096,
 		input_modalities: formData.input_modalities,
 		output_modalities: formData.output_modalities,
 		released_at: formData.released_at.trim() || null,

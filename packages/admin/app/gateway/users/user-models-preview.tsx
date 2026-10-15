@@ -71,7 +71,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 								className="mt-1 h-8 w-full rounded-md border border-gray-300 bg-white px-2 font-mono text-xs font-normal text-gray-900"
 							/>
 						</label>
-						<label className="block w-24 text-[11px] font-medium text-gray-500">
+						<label className="block w-32 text-[11px] font-medium text-gray-500">
 							{t('kind')}
 							<select
 								value={kind}
@@ -80,7 +80,10 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 							>
 								<option value="llm">llm</option>
 								<option value="image">image</option>
-								<option value="audio">audio</option>
+								<option value="asr">asr</option>
+								<option value="tts">tts</option>
+								<option value="audio">audio (asr + tts)</option>
+								<option value="embedding">embedding</option>
 								<option value="all">all</option>
 							</select>
 						</label>

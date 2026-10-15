@@ -1,6 +1,7 @@
 'use client';
 
 import { FilterDisclosure } from '@/components/FilterDisclosure';
+import { FilterGroup, FilterRow, FilterSegmented, FilterSelect } from '../../components/filter-controls';
 
 import { MagnifyingGlassIcon, XMarkIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import type { GatewayProvider } from '@/lib/types';
@@ -19,7 +20,7 @@ type Props = {
 	filterProviderKind: string;
 	providerKindFilterOptions: ProviderKindFilterOption[];
 	statusCounts: { all: number; active: number; inactive: number };
-	kindCounts: { all: number; llm: number; image: number; audio: number };
+	kindCounts: { all: number; llm: number; image: number; asr: number; tts: number; embedding: number };
 	routeGroupFilterOptions: string[];
 	routeGroupCounts: Map<string, number>;
 	vendorFilterOptions: Array<{ key: string; label: string; count: number }>;
@@ -55,7 +56,7 @@ export function RouteFilterSidebar(props: Props) {
 		{ key: 'status', label: t('status'), value: props.filterStatus, onChange: props.onFilterStatusChange,
 			options: [ { value: '', label: t('all'), count: props.statusCounts.all }, { value: 'active', label: tc('active'), count: props.statusCounts.active }, { value: 'inactive', label: tc('inactive'), count: props.statusCounts.inactive } ] },
 		{ key: 'kind', label: t('kind'), value: props.filterKind, onChange: (value: string) => props.onFilterKindChange(value as RouteKindFilter),
-			options: [ { value: 'all', label: t('all'), count: props.kindCounts.all }, { value: 'llm', label: t('kindLlm'), count: props.kindCounts.llm }, { value: 'image', label: t('kindImage'), count: props.kindCounts.image }, { value: 'audio', label: t('kindAudio'), count: props.kindCounts.audio } ] },
+			options: [ { value: 'all', label: t('all'), count: props.kindCounts.all }, { value: 'llm', label: t('kindLlm'), count: props.kindCounts.llm }, { value: 'image', label: t('kindImage'), count: props.kindCounts.image }, { value: 'asr', label: t('kindAsr'), count: props.kindCounts.asr }, { value: 'tts', label: t('kindTts'), count: props.kindCounts.tts }, { value: 'embedding', label: t('kindEmbedding'), count: props.kindCounts.embedding } ] },
 	];
 	const active = [
 		...filters.filter(f => f.value).map(f => ({ key: f.key, label: `${f.label}: ${f.options.find(o => o.value === f.value)?.label ?? f.value}`, clear: () => f.onChange('') })),
@@ -73,30 +74,16 @@ export function RouteFilterSidebar(props: Props) {
 				</div>
 			</div>
 			<FilterDisclosure className="px-4 py-3" activeCount={active.length - Number(Boolean(props.searchQuery))}>
-				<div className="space-y-3">
-					<div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-						{segments.map(segment => (
-							<div key={segment.key} className="flex flex-wrap items-center gap-2" role="group" aria-label={segment.label}>
-								<span className="text-xs text-slate-500">{segment.label}</span>
-								<div className="inline-flex flex-wrap gap-1 rounded-lg bg-slate-100/80 p-1">
-									{segment.options.map(option => <button key={option.value} type="button" aria-pressed={segment.value === option.value} onClick={() => segment.onChange(option.value)} className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs transition focus-visible:outline-blue-500 ${segment.value === option.value ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
-										{option.label}<span className="text-[10px] tabular-nums opacity-70">{option.count}</span>
-									</button>)}
-								</div>
-							</div>
-						))}
-					</div>
-					<div className="admin-filter-grid">
-						{filters.map(filter => <label key={filter.key} className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
-							<span className="shrink-0 text-[11px] text-slate-500">{filter.label}</span>
-							<select value={filter.value} onChange={e => filter.onChange(e.target.value)} className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-								<option value="">{t('all')}</option>
-								{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
-								{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
-							</select>
-						</label>)}
-					</div>
-				</div>
+				<FilterRow>
+					{segments.map(segment => <FilterSegmented key={segment.key} label={segment.label} value={segment.value} options={segment.options} onChange={segment.onChange} />)}
+					<FilterGroup>
+						{filters.map(filter => <FilterSelect key={filter.key} label={filter.label} value={filter.value} onChange={filter.onChange}>
+							<option value="">{t('all')}</option>
+							{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
+							{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
+						</FilterSelect>)}
+					</FilterGroup>
+				</FilterRow>
 			</FilterDisclosure>
 			{active.length > 0 ? <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2">
 				{active.map(item => <button key={item.key} type="button" onClick={item.clear} aria-label={tw('removeFilter', {filter: item.label})} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-100 focus-visible:outline-blue-500"><span className="truncate">{item.label}</span><XMarkIcon className="h-3 w-3 shrink-0" aria-hidden /></button>)}

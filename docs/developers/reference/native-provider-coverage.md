@@ -51,7 +51,7 @@ DashScope 原生路径相对 `providers.endpoints.dashscope.base`（如 `https:/
 | 图像编辑入口 | OpenAI `POST /v1/images/edits` | — | ❌ | 图生图只能走 generations + JSON `image` |
 | 异步生图 | `image-generation/generation` 等异步任务 | ❌ | ❌ | capability 名已预留 |
 | 视频生成 | `video-generation/video-synthesis` + `tasks` | ❌ | ❌ | `wan3.0-video`、`happyhorse-1.1-*`；网关没有视频模态 |
-| 向量 | `/compatible-mode/v1/embeddings` 等 | ❌ | ❌ | 网关没有 `/v1/embeddings` |
+| 向量 | `/compatible-mode/v1/embeddings` 等 | ✅ | ✅ | 通过 OpenAI 入口 `POST /v1/embeddings` 透传到兼容端点；DashScope 原生向量路径不对外 |
 | 重排序 | text-rerank | ❌ | ❌ | |
 | 音乐、3D、世界模型、决策模型 | — | ❌ | ❌ | `fun-music-v1`、Tripo、`happyoyster-*`、`decision-model-preview` |
 

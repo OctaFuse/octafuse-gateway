@@ -5,6 +5,7 @@
  */
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { FilterDisclosure } from '@/components/FilterDisclosure';
+import { FilterGroup, FilterRow, FilterSelect, FilterTextInput } from '../components/filter-controls';
 import { useLocale, useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
 import { ChevronRightIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
@@ -667,6 +668,7 @@ export default function GatewayRequestLogsPage() {
     if (kind === 'image') return 'bg-violet-50 text-violet-700 ring-violet-200';
     if (kind === 'tts') return 'bg-amber-50 text-amber-800 ring-amber-200';
     if (kind === 'asr') return 'bg-orange-50 text-orange-800 ring-orange-200';
+    if (kind === 'embedding') return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
     if (kind === 'tool') return 'bg-indigo-50 text-indigo-700 ring-indigo-200';
     if (kind === 'mcp') return 'bg-teal-50 text-teal-800 ring-teal-200';
     return 'bg-slate-50 text-slate-600 ring-slate-200';
@@ -734,121 +736,54 @@ export default function GatewayRequestLogsPage() {
         />
       </div>
 
-      <FilterDisclosure className="mb-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4" activeCount={[filterStatus, filterModel, filterProviderId, filterProtocol, filterRouteGroup, filterUserEmail, filterApiKeyId, filterLogId].filter(Boolean).length}>
-        <div className="admin-filter-grid [&_select]:w-full [&_select]:min-w-0 [&_select]:max-w-none [&_input]:w-full [&_input]:min-w-0">
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{tCommon('status')}</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            >
+      <FilterDisclosure className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3" activeCount={[filterStatus, filterModel, filterProviderId, filterProtocol, filterRouteGroup, filterUserEmail, filterApiKeyId, filterLogId].filter(Boolean).length}>
+        <FilterRow>
+          <FilterGroup>
+            <FilterSelect label={tCommon('status')} value={filterStatus} onChange={(v) => { setFilterStatus(v); setPage(1); }} widthClass="w-28">
               <option value="">{tCommon('all')}</option>
               <option value="success">{tOptions('requestStatus.success')}</option>
               <option value="error">{tOptions('requestStatus.error')}</option>
               <option value="incomplete">{tOptions('requestStatus.incomplete')}</option>
               <option value="cancelled">{tOptions('requestStatus.cancelled')}</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{tCommon('model')}</label>
-            <select
-              value={filterModel}
-              onChange={(e) => { setFilterModel(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[12rem] max-w-xs"
-            >
+            </FilterSelect>
+            <FilterSelect label={tCommon('model')} value={filterModel} onChange={(v) => { setFilterModel(v); setPage(1); }} widthClass="w-48">
               <option value="">{tCommon('all')}</option>
               {modelSelectOptions.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
+                <option key={o.id} value={o.id}>{o.label}</option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{tCommon('provider')}</label>
-            <select
-              value={filterProviderId}
-              onChange={(e) => { setFilterProviderId(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[12rem] max-w-xs"
-            >
+            </FilterSelect>
+            <FilterSelect label={tCommon('provider')} value={filterProviderId} onChange={(v) => { setFilterProviderId(v); setPage(1); }} widthClass="w-48">
               <option value="">{tCommon('all')}</option>
               {providerSelectOptions.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
+                <option key={o.id} value={o.id}>{o.label}</option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.protocol')}</label>
-            <select
-              value={filterProtocol}
-              onChange={(e) => { setFilterProtocol(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[9rem]"
-            >
+            </FilterSelect>
+            <FilterSelect label={t('filters.protocol')} value={filterProtocol} onChange={(v) => { setFilterProtocol(v); setPage(1); }} widthClass="w-32">
               <option value="">{tCommon('all')}</option>
               {UPSTREAM_PROTOCOLS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
+                <option key={p} value={p}>{p}</option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.routeGroup')}</label>
-            <select
-              value={filterRouteGroup}
-              onChange={(e) => { setFilterRouteGroup(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm min-w-[10rem] max-w-xs"
-            >
+            </FilterSelect>
+            <FilterSelect label={t('filters.routeGroup')} value={filterRouteGroup} onChange={(v) => { setFilterRouteGroup(v); setPage(1); }} widthClass="w-36">
               <option value="">{tCommon('all')}</option>
               {routeGroupSelectOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
+                <option key={o.value} value={o.value}>{o.label}</option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.userEmail')}</label>
-            <input
-              type="text"
-              value={filterUserEmail}
-              onChange={(e) => { setFilterUserEmail(e.target.value); setPage(1); }}
-              placeholder={t('filters.emailPlaceholder')}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.apiKeyId')}</label>
-            <input
-              type="text"
-              value={filterApiKeyId}
-              onChange={(e) => { setFilterApiKeyId(e.target.value); setPage(1); }}
-              placeholder={t('filters.apiKeyPlaceholder')}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">{t('filters.requestId')}</label>
-            <input
-              type="text"
-              value={filterLogId}
-              onChange={(e) => { setFilterLogId(e.target.value); setPage(1); }}
-              placeholder={t('filters.requestIdPlaceholder')}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm font-mono"
-            />
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setFilterLogId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-            >
-              {tCommon('clearFilters')}
-            </button>
-          </div>
-        </div>
+            </FilterSelect>
+          </FilterGroup>
+          <FilterGroup>
+            <FilterTextInput label={t('filters.userEmail')} value={filterUserEmail} onChange={(v) => { setFilterUserEmail(v); setPage(1); }} placeholder={t('filters.emailPlaceholder')} />
+            <FilterTextInput label={t('filters.apiKeyId')} value={filterApiKeyId} onChange={(v) => { setFilterApiKeyId(v); setPage(1); }} placeholder={t('filters.apiKeyPlaceholder')} />
+            <FilterTextInput label={t('filters.requestId')} value={filterLogId} onChange={(v) => { setFilterLogId(v); setPage(1); }} placeholder={t('filters.requestIdPlaceholder')} mono />
+          </FilterGroup>
+          <button
+            type="button"
+            onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setFilterLogId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
+            className="text-xs font-medium text-slate-500 hover:text-blue-700"
+          >
+            {tCommon('clearFilters')}
+          </button>
+        </FilterRow>
       </FilterDisclosure>
 
       {/* Stats + status swatch legend */}

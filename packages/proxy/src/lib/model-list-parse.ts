@@ -1,3 +1,5 @@
+import { MODEL_KIND_QUERY_FILTERS, type ModelKindQueryFilter } from '@octafuse/core';
+
 /**
  * Shared parsers for `GET /v1/models` and `GET /catalog/models`.
  */
@@ -81,23 +83,21 @@ export function parseModelsRouteGroupsQuery(raw: string | undefined): string[] {
 	return out.length > 0 ? out : [...DEFAULT_MODELS_ROUTE_GROUPS];
 }
 
-/** Model kind filter for agent-facing `GET /v1/models`. */
-export type ModelsKindFilter = 'llm' | 'image' | 'audio' | 'all';
+/** Model kind filter for agent-facing `GET /v1/models`（词表见 core `MODEL_KIND_QUERY_FILTERS`）。 */
+export type ModelsKindFilter = ModelKindQueryFilter;
 
 /**
  * Parse `kind` for `GET /v1/models`.
- * Empty / missing / unknown → `llm`（默认排除文生图 / ASR / TTS，兼容 chat/agent 拉列表）。
- * `image` → 仅文生图；`audio` → ASR + TTS（与 Admin Kind 对齐）；`all` → 不按 kind 过滤。
+ * Empty / missing / unknown → `llm`（默认排除文生图 / ASR / TTS / 向量，兼容 chat/agent 拉列表）。
+ * `image` → 仅文生图；`asr` / `tts` → 仅语音转写 / 语音合成；`audio` → ASR + TTS（兼容别名）；
+ * `embedding` → 仅向量模型；`all` → 不按 kind 过滤。
  */
 export function parseModelsKindQuery(raw: string | undefined): ModelsKindFilter {
 	if (raw == null || raw.trim() === '') {
 		return 'llm';
 	}
 	const v = raw.trim().toLowerCase();
-	if (v === 'image' || v === 'audio' || v === 'all' || v === 'llm') {
-		return v;
-	}
-	return 'llm';
+	return (MODEL_KIND_QUERY_FILTERS as readonly string[]).includes(v) ? (v as ModelsKindFilter) : 'llm';
 }
 
 /**

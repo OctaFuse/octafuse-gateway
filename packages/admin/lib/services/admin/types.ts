@@ -2,6 +2,7 @@
  * 管理后台 API 的请求/响应 TypeScript 类型（与 Hono 路由 JSON 契约对应）。
  * 下列按路由分组用注释隔开，便于检索。
  */
+import type { ModelKind } from '@octafuse/core/db/model-kind';
 import type {
 	ApiKeyBudgetAuditLogRow,
 	ApiKeyRateLimit,
@@ -226,7 +227,7 @@ export type AdminStaticModelPresetCatalogItem = {
 	display_name: string | null;
 	vendor: string;
 	/** LLM / 文生图 / 语音转写（与列表页 Kind 一致）。 */
-	kind: 'llm' | 'image' | 'audio';
+	kind: ModelKind;
 	context_window: number | null;
 	max_tokens: number | null;
 	/** English fallback used by non-localized Admin clients and on import. */

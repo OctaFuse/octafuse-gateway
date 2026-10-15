@@ -5,6 +5,7 @@ export {
 	defaultHttpErrorFallback,
 	defaultIncompleteErrorMessage,
 	describeChatOutcome,
+	describeEmbeddingsOutcome,
 	describeGeminiOutcome,
 	describeMessagesOutcome,
 	describeResponsesOutcome,

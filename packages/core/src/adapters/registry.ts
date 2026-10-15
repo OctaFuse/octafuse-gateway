@@ -3,6 +3,7 @@
  * `adapter` 是 route target 上的配置 ID；运行时实现叫 driver，一个 driver 可服务多个 adapter。
  */
 import type { UpstreamProtocol } from '../upstream-protocol';
+import type { ModelKind } from '../db/model-kind';
 
 export const PASSTHROUGH_ROUTE_ADAPTER = 'passthrough';
 
@@ -33,8 +34,12 @@ export const VOLCENGINE_IMAGE_GENERATIONS_PATH = '/v1/volcengine/images/generati
 
 export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
 
+/** Gemini 原生向量入口 operation：`embedContent` 与 `batchEmbedContents` 共用。 */
+export const GEMINI_EMBED_OPERATION = 'models.embed';
+
 export type AdapterModality = 'text' | 'image' | 'audio' | 'video' | 'embedding';
-export type AdapterModelKind = 'llm' | 'image' | 'audio.transcription' | 'audio.speech';
+/** 与 `ModelKind`（`db/model-kind.ts`）同一词表。 */
+export type AdapterModelKind = ModelKind;
 export type AdapterExchange = 'unary' | 'sse' | 'websocket' | 'job';
 export type AdapterBilling = 'tokens' | 'per_image' | 'per_second' | 'per_character' | 'per_call';
 export type AdapterRequestPayload = 'json' | 'multipart';
@@ -161,7 +166,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		exchange: 'unary',
 		billing: 'per_second',
 		requestPayload: 'multipart',
@@ -179,7 +184,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		exchange: 'unary',
 		billing: 'per_second',
 		requestPayload: 'multipart',
@@ -198,7 +203,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.multimodal'] },
 		modality: 'audio',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		exchange: 'unary',
 		billing: 'per_second',
 		requestPayload: 'multipart',
@@ -216,7 +221,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.async'] },
 		modality: 'audio',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		exchange: 'job',
 		billing: 'per_second',
 		requestPayload: 'multipart',
@@ -234,7 +239,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech'] },
 		modality: 'audio',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		exchange: 'unary',
 		billing: 'per_character',
 		requestPayload: 'json',
@@ -253,7 +258,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech.multimodal'] },
 		modality: 'audio',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		exchange: 'unary',
 		billing: 'per_character',
 		requestPayload: 'json',
@@ -271,7 +276,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech.multimodal'] },
 		modality: 'audio',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		exchange: 'unary',
 		billing: 'per_character',
 		requestPayload: 'json',
@@ -328,7 +333,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'minimax', operations: ['audio.transcriptions'] },
 		modality: 'audio',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		exchange: 'unary',
 		billing: 'per_second',
 		requestPayload: 'multipart',
@@ -347,7 +352,7 @@ const CONVERSION_ADAPTERS = [
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'minimax', operations: ['audio.speech'] },
 		modality: 'audio',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		exchange: 'unary',
 		billing: 'per_character',
 		requestPayload: 'json',
@@ -523,6 +528,24 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	}),
 	passthroughDescriptor({
 		protocol: 'openai',
+		operation: 'embeddings',
+		modelKind: 'embedding',
+		modality: 'embedding',
+		billing: 'tokens',
+		requiredUpstreamCapabilities: ['embeddings'],
+		publicPath: '/v1/embeddings',
+	}),
+	passthroughDescriptor({
+		protocol: 'gemini',
+		operation: GEMINI_EMBED_OPERATION,
+		modelKind: 'embedding',
+		modality: 'embedding',
+		billing: 'tokens',
+		requiredUpstreamCapabilities: [GEMINI_EMBED_OPERATION],
+		publicPath: `/v1beta/models/${SURFACE_PATH_MODEL_PLACEHOLDER}:{embedContent|batchEmbedContents}`,
+	}),
+	passthroughDescriptor({
+		protocol: 'openai',
 		operation: 'images.generations',
 		modelKind: 'image',
 		modality: 'image',
@@ -546,7 +569,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'openai',
 		operation: 'audio.transcriptions',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		modality: 'audio',
 		billing: 'per_second',
 		requestPayload: 'multipart',
@@ -557,7 +580,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'openai',
 		operation: 'audio.speech',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		modality: 'audio',
 		billing: 'per_character',
 		responsePayload: 'binary',
@@ -568,7 +591,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'minimax',
 		operation: 'audio.transcriptions',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		modality: 'audio',
 		billing: 'per_second',
 		requestPayload: 'multipart',
@@ -578,7 +601,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'minimax',
 		operation: 'audio.speech',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		modality: 'audio',
 		exchange: 'sse',
 		billing: 'per_character',
@@ -612,7 +635,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions.multimodal',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		modality: 'audio',
 		billing: 'per_second',
 		requiredUpstreamCapabilities: ['audio.transcriptions.multimodal'],
@@ -623,7 +646,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions.realtime.inference',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		modality: 'audio',
 		exchange: 'websocket',
 		billing: 'per_second',
@@ -635,7 +658,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions.realtime.session',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		modality: 'audio',
 		exchange: 'websocket',
 		billing: 'per_second',
@@ -647,7 +670,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech.realtime.inference',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		modality: 'audio',
 		exchange: 'websocket',
 		billing: 'per_character',
@@ -660,7 +683,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		modality: 'audio',
 		billing: 'per_character',
 		responsePayload: 'binary',
@@ -671,7 +694,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech.stream',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		modality: 'audio',
 		exchange: 'sse',
 		billing: 'per_character',
@@ -683,7 +706,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech.multimodal',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		modality: 'audio',
 		billing: 'per_character',
 		requiredUpstreamCapabilities: ['audio.speech.multimodal'],
@@ -693,7 +716,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech.realtime.session',
-		modelKind: 'audio.speech',
+		modelKind: 'tts',
 		modality: 'audio',
 		exchange: 'websocket',
 		billing: 'per_character',
@@ -714,7 +737,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions.async',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		modality: 'audio',
 		exchange: 'job',
 		billing: 'per_second',
@@ -730,7 +753,7 @@ const DISPLAY_PATH_SURFACES: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions',
-		modelKind: 'audio.transcription',
+		modelKind: 'asr',
 		modality: 'audio',
 		billing: 'per_second',
 		requestPayload: 'multipart',
@@ -884,6 +907,9 @@ export function requestSurfacePath(
 	if (protocol === 'gemini') {
 		if (operation === 'models.generate') {
 			return `/v1beta/models/${modelSegment}:{generateContent|streamGenerateContent}`;
+		}
+		if (operation === GEMINI_EMBED_OPERATION) {
+			return `/v1beta/models/${modelSegment}:{embedContent|batchEmbedContents}`;
 		}
 		return `/v1beta/models/${modelSegment}:${operation}`;
 	}

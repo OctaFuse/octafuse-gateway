@@ -1,11 +1,5 @@
 import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
-import {
-	isAudioModel,
-	isAudioSpeechModel,
-	isAudioTranscriptionModel,
-	isImageGenerationModel,
-	isTextLlmModel,
-} from '@octafuse/core/db/model-modalities';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import {
 	DEFAULT_ROUTE_STRATEGY,
 	isRouteStrategyName,
@@ -29,6 +23,7 @@ import {
 import {
 	isDashScopeRealtimeAsrModelOperationCompatible,
 	isRouteAdapterCompatible,
+	GEMINI_EMBED_OPERATION,
 	REQUEST_OPERATIONS_BY_PROTOCOL,
 	ROUTE_ADAPTERS,
 } from '@octafuse/core/route-topology';
@@ -941,11 +936,11 @@ export const CAPABILITIES_BY_PROTOCOL: Record<string, readonly ProviderEndpointC
 	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
 };
 
+/** 向量专属 public operation：非向量模型的候选需排除。 */
+const EMBEDDING_REQUEST_OPERATIONS: ReadonlySet<string> = new Set(['embeddings', GEMINI_EMBED_OPERATION]);
+
 export function modelKindForModel(model: GatewayModel | undefined): AdapterModelKind {
-	if (model && isImageGenerationModel(model)) return 'image';
-	if (model && isAudioTranscriptionModel(model)) return 'audio.transcription';
-	if (model && isAudioSpeechModel(model)) return 'audio.speech';
-	return 'llm';
+	return model ? resolveModelKind(model) : 'llm';
 }
 
 function sortOperationsForProtocol(protocol: UpstreamProtocol, operations: readonly string[]): string[] {
@@ -970,18 +965,16 @@ export function requestOperationsForModel(
 	protocol: UpstreamProtocol,
 	providerModelName = '',
 ): readonly string[] {
-	if (
-		model &&
-		(isImageGenerationModel(model) || isAudioTranscriptionModel(model) || isAudioSpeechModel(model) || (isTextLlmModel(model) && protocol === 'openai'))
-	) {
-		const kind = modelKindForModel(model);
+	const kind = modelKindForModel(model);
+	if (model && (kind !== 'llm' || protocol === 'openai')) {
 		const operations = requestOperationsFromRegistry(protocol, kind);
-		if (kind === 'audio.transcription' && protocol === 'dashscope') {
+		if (kind === 'asr' && protocol === 'dashscope') {
 			return filterRealtimeOperations(operations, providerModelName);
 		}
 		return operations;
 	}
-	return REQUEST_OPERATIONS_BY_PROTOCOL[protocol];
+	// 非向量模型：向量入口（OpenAI embeddings / Gemini models.embed）不应出现在候选里。
+	return REQUEST_OPERATIONS_BY_PROTOCOL[protocol].filter((operation) => !EMBEDDING_REQUEST_OPERATIONS.has(operation));
 }
 
 export type DashScopeAsrRoutePreset = 'flash-convert' | 'flash-passthrough' | 'filetrans';
@@ -1064,14 +1057,14 @@ export function upstreamOperationsForProviderModel(
 	const providerOperations = listConfiguredCapabilities(map, protocol);
 	const capabilities = new Set(providerOperations);
 
-	if (model && (isImageGenerationModel(model) || isAudioTranscriptionModel(model) || isAudioSpeechModel(model))) {
-		const kind = modelKindForModel(model);
+	const kind = modelKindForModel(model);
+	if (model && kind !== 'llm') {
 		const listed = sortOperationsForProtocol(protocol, upstreamOperationsFromRegistry(protocol, kind));
 		const operations = listed.filter((operation) => {
 			const required = requiredCapabilitiesForUpstreamOperation(protocol, operation);
 			return required.every((capability) => capabilities.has(capability as ProviderEndpointCapability));
 		});
-		if (kind === 'audio.transcription') {
+		if (kind === 'asr') {
 			return filterRealtimeOperations(operations, providerModelName);
 		}
 		return operations;
@@ -1365,9 +1358,7 @@ export function modelMatchesKindFilter(meta: GatewayModel | undefined, filterKin
 	if (!meta) {
 		return filterKind === 'llm';
 	}
-	if (filterKind === 'image') return isImageGenerationModel(meta);
-	if (filterKind === 'audio') return isAudioModel(meta);
-	return isTextLlmModel(meta);
+	return resolveModelKind(meta) === filterKind;
 }
 
 /** Normalize API tags (string[] or JSON string) for route card display. */
@@ -1648,12 +1639,15 @@ export function buildActiveFilterSummary(params: {
 
 export function createInitialRouteForm(models: GatewayModel[], presetModelId?: string): RouteFormData {
 	const presetModel = presetModelId ? models.find((model) => model.id === presetModelId) : undefined;
+	const presetKind = presetModel ? resolveModelKind(presetModel) : 'llm';
 	const defaultOperation =
-		presetModel && isImageGenerationModel(presetModel)
+		presetKind === 'embedding'
+			? 'embeddings'
+			: presetKind === 'image'
 			? 'images.generations'
-			: presetModel && isAudioTranscriptionModel(presetModel)
+			: presetKind === 'asr'
 			? 'audio.transcriptions'
-			: presetModel && isAudioSpeechModel(presetModel)
+			: presetKind === 'tts'
 			? 'audio.speech'
 			: 'chat';
 	return {

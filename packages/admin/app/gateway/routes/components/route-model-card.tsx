@@ -3,6 +3,7 @@
 import { ClipboardDocumentIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/outline';
 import {
 	isAudioModel,
+	isEmbeddingModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
@@ -51,18 +52,23 @@ export function RouteModelCard(props: Props) {
 	const { model_id, title, groupRoutes, activeCount } = card;
 	const isImage = meta ? isImageGenerationModel(meta) : false;
 	const isAudio = meta ? isAudioModel(meta) : false;
+	const isEmbedding = meta ? isEmbeddingModel(meta) : false;
 	const contextStr = formatCompactTokens(meta?.context_window);
 	const maxStr = formatCompactTokens(meta?.max_tokens);
 	const modelStatsTitle = isAudio
 		? t('audioModelHint')
 		: isImage
 			? t('imageModelHint')
-			: t('contextMaxOutput', { context: contextStr, max: maxStr });
+			: isEmbedding
+				? t('embeddingModelHint')
+				: t('contextMaxOutput', { context: contextStr, max: maxStr });
 	const modelStatsLine = isAudio
 		? t('audioModelHint')
 		: isImage
 			? t('imageModelHint')
-			: t('contextLine', { context: contextStr, max: maxStr });
+			: isEmbedding
+				? t('embeddingModelHint')
+				: t('contextLine', { context: contextStr, max: maxStr });
 	const tags = parseModelTagsList(meta);
 	const tagShown = tags.slice(0, 6);
 	const tagExtra = tags.length - tagShown.length;
