@@ -139,3 +139,49 @@ export function FilterTextInput({
 		</label>
 	);
 }
+
+/**
+ * 窄栏里的类型切换：标签在上，选项为自然宽度的小标签，放不下自动换行，不横向滚动。
+ * 选中项浅蓝底 + 蓝色描边；计数为 0 的选项变淡。适用于宽度 ≤ 360px 的侧栏。
+ */
+export function FilterTileGroup({
+	label,
+	value,
+	options,
+	onChange,
+}: {
+	label?: string;
+	value: string;
+	options: Array<{ value: string; label: string; count?: number }>;
+	onChange: (value: string) => void;
+}) {
+	return (
+		<div className="min-w-0" role="group" aria-label={label}>
+			{label ? <div className="mb-1.5 text-xs text-slate-500">{label}</div> : null}
+			<div className="flex flex-wrap gap-1.5">
+				{options.map((option) => {
+					const isActive = value === option.value;
+					const empty = option.count === 0 && !isActive;
+					return (
+						<button
+							key={option.value}
+							type="button"
+							aria-pressed={isActive}
+							onClick={() => onChange(option.value)}
+							className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs ring-1 ring-inset transition focus-visible:outline-blue-500 ${
+								isActive
+									? 'bg-blue-50 font-semibold text-blue-700 ring-blue-200'
+									: 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900'
+							} ${empty ? 'opacity-50' : ''}`}
+						>
+							{option.label}
+							{option.count !== undefined ? (
+								<span className="text-[10px] tabular-nums opacity-70">{option.count}</span>
+							) : null}
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
