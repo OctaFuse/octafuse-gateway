@@ -2,14 +2,14 @@
 	{
 		"id": "gemini-4-argon",
 		"display_name": "Gemini 4 Argon",
-		"description": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a 1,048,576-token window; synchronous output defaults to 65,536 tokens, and long decode can reach 1,048,576.",
+		"description": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a ~1,000,000-token window; synchronous output defaults to 65,536 tokens, and long decode can reach ~1,000,000.",
 		"i18n": {
-			"en": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a 1,048,576-token window; synchronous output defaults to 65,536 tokens, and long decode can reach 1,048,576.",
-			"zh": "面向复杂软件工程、科学问题求解与多步 Agent 的旗舰 Gemini 推理模型。输入与输出共用 1,048,576 Token 窗口；同步输出默认 65,536 Token，长解码最高 1,048,576 Token。"
+			"en": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a ~1,000,000-token window; synchronous output defaults to 65,536 tokens, and long decode can reach ~1,000,000.",
+			"zh": "面向复杂软件工程、科学问题求解与多步 Agent 的旗舰 Gemini 推理模型。输入与输出共用约 1,000,000 Token 窗口；同步输出默认 65,536 Token，长解码最高约 1,000,000 Token。"
 		},
 		"vendor": "google",
-		"context_window": 1048576,
-		"max_tokens": 1048576,
+		"context_window": 1000000,
+		"max_tokens": 65536,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -18,17 +18,6 @@
 						"input_price": 4,
 						"output_price": 20,
 						"cache_read_price": 0.2,
-						"cache_write_price": null
-					}
-				]
-			},
-			"cny": {
-				"tiers": [
-					{
-						"upto": null,
-						"input_price": 28,
-						"output_price": 140,
-						"cache_read_price": 1.4,
 						"cache_write_price": null
 					}
 				]

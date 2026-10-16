@@ -134,6 +134,44 @@
 		"released": "2026-10-02"
 	},
 	{
+		"id": "qwen-image-2.1-turbo",
+		"display_name": "Qwen Image 2.1 Turbo",
+		"description": "A cost-effective Qwen-Image 2.1 open-source model for image generation and editing. Text/image input, image output.",
+		"i18n": {
+			"en": "A cost-effective Qwen-Image 2.1 open-source model for image generation and editing. Text/image input, image output.",
+			"zh": "千问图像 2.1 Turbo，高性价比开源图像生成与编辑模型。支持文本/图像输入，图像输出。"
+		},
+		"vendor": "aliyun",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.016,
+					"uncertain_result_policy": "requested"
+				}
+			},
+			"cny": {
+				"image_billing_mode": "per_image",
+				"image": {
+					"default": 0.1,
+					"uncertain_result_policy": "requested"
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-10-09"
+	},
+	{
 		"id": "wan2.7-image-pro",
 		"display_name": "Wan 2.7 Image Pro",
 		"description": "Alibaba Wan 2.7 flagship for text-to-image, sequential sets, multi-reference editing, brand color control, and up to 4K generation.",
