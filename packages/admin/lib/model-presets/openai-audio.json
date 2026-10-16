@@ -30,7 +30,8 @@
 			"input": ["audio"],
 			"output": ["text"]
 		},
-		"released": "2022-09-01"
+		"released": "2022-09-01",
+		"retired": "2027-02-26"
 	},
 	{
 		"id": "gpt-4o-mini-transcribe",
@@ -69,7 +70,8 @@
 			"input": ["audio", "text"],
 			"output": ["text"]
 		},
-		"released": "2025-03-20"
+		"released": "2025-03-20",
+		"retired": "2027-02-26"
 	},
 	{
 		"id": "gpt-4o-transcribe",
@@ -108,7 +110,8 @@
 			"input": ["audio", "text"],
 			"output": ["text"]
 		},
-		"released": "2025-03-20"
+		"released": "2025-03-20",
+		"retired": "2027-02-26"
 	},
 	{
 		"id": "gpt-4o-transcribe-diarize",
@@ -147,6 +150,7 @@
 			"input": ["audio", "text"],
 			"output": ["text"]
 		},
-		"released": "2025-10-18"
+		"released": "2025-10-18",
+		"retired": "2027-02-26"
 	}
 ]

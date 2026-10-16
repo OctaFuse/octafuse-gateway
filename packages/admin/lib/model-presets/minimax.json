@@ -42,7 +42,8 @@
 				"text"
 			]
 		},
-		"released": "2026-02-12"
+		"released": "2026-02-12",
+		"retired": "2026-11-18"
 	},
 	{
 		"id": "minimax-m2.7",
@@ -87,7 +88,8 @@
 				"text"
 			]
 		},
-		"released": "2026-03-18"
+		"released": "2026-03-18",
+		"retired": "2026-11-18"
 	},
 	{
 		"id": "minimax-m2.7-highspeed",
@@ -98,6 +100,7 @@
 			"zh": "MiniMax M2.7 高速版，相同能力下推理速度更快。针对延迟敏感的生产力任务与 Agent 工作流优化。"
 		},
 		"vendor": "minimax",
+		"retired": "2026-11-18",
 		"context_window": 204800,
 		"max_tokens": 128000,
 		"pricing": {

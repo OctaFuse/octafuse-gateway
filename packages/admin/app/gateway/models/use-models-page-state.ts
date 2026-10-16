@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { parseModelModalitiesJson } from '@octafuse/core/db/model-modalities';
 import { resolveModelKind } from '@octafuse/core/db/model-kind';
+import { modelLifecycleMatchesFilter } from '@/lib/model-lifecycle';
 import {
 	createDefaultAudioCharacterPricingDraft,
 	createDefaultAudioPricingDraft,
@@ -48,16 +49,20 @@ import {
 import {
 	ALL_VENDORS_KEY,
 	DEFAULT_KIND_FILTER,
+	DEFAULT_IMPORT_LIFECYCLE_FILTER,
+	DEFAULT_MODEL_LIFECYCLE_FILTER,
 	DEFAULT_MODEL_LIST_KIND_FILTER,
 	EMPTY_ASR_MODEL_FORM,
 	EMPTY_TTS_MODEL_FORM,
 	EMPTY_EMBEDDING_MODEL_FORM,
 	EMPTY_IMAGE_MODEL_FORM,
 	EMPTY_MODEL_FORM,
+	parseModelLifecycleFilterParam,
 	parseModelListKindFilterParam,
 	type ModelFormData,
 	type ModelFormKind,
 	type ModelKindFilter,
+	type ModelLifecycleFilter,
 	type ModelListKindFilter,
 	type ModelListItem,
 	type PresetCatalogRow,
@@ -89,6 +94,9 @@ export function useModelsPageState() {
 
 	const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
 	const [selectedKind, setSelectedKind] = useState<ModelListKindFilter>(DEFAULT_MODEL_LIST_KIND_FILTER);
+	const [selectedLifecycle, setSelectedLifecycle] = useState<ModelLifecycleFilter>(
+		DEFAULT_MODEL_LIFECYCLE_FILTER
+	);
 	const [isLoading, setIsLoading] = useState(true);
 	const [showModal, setShowModal] = useState(false);
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
@@ -117,6 +125,9 @@ export function useModelsPageState() {
 	const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
 	const [importCatalogSearch, setImportCatalogSearch] = useState('');
 	const [importCatalogKind, setImportCatalogKind] = useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
+	const [importCatalogLifecycle, setImportCatalogLifecycle] = useState<ModelLifecycleFilter>(
+		DEFAULT_IMPORT_LIFECYCLE_FILTER
+	);
 	const [importSubmitting, setImportSubmitting] = useState(false);
 	const { currency: billingCurrency } = useBillingCurrency();
 
@@ -132,15 +143,28 @@ export function useModelsPageState() {
 		[importCatalogRows, existingModelIds]
 	);
 
-	const importCatalogKindCounts = useMemo(() => {
-		const counts = emptyModelKindCounts();
-		for (const row of importCatalogRows) counts[row.kind] += 1;
+	const lifecycleScopedImportRows = useMemo(
+		() => importCatalogRows.filter((row) => modelLifecycleMatchesFilter(row.retired, importCatalogLifecycle)),
+		[importCatalogRows, importCatalogLifecycle]
+	);
+
+	const importCatalogLifecycleCounts = useMemo(() => {
+		const counts = { all: importCatalogRows.length, active: 0, retired: 0 };
+		for (const row of importCatalogRows) {
+			counts[modelLifecycleMatchesFilter(row.retired, 'retired') ? 'retired' : 'active'] += 1;
+		}
 		return counts;
 	}, [importCatalogRows]);
 
+	const importCatalogKindCounts = useMemo(() => {
+		const counts = emptyModelKindCounts();
+		for (const row of lifecycleScopedImportRows) counts[row.kind] += 1;
+		return counts;
+	}, [lifecycleScopedImportRows]);
+
 	const filteredImportCatalogRows = useMemo(() => {
 		const query = importCatalogSearch.trim().toLowerCase();
-		return importCatalogRows.filter((row) => {
+		return lifecycleScopedImportRows.filter((row) => {
 			if (row.kind !== importCatalogKind) return false;
 			if (!query) return true;
 			const id = row.id.toLowerCase();
@@ -155,12 +179,25 @@ export function useModelsPageState() {
 				.toLowerCase();
 			return id.includes(query) || name.includes(query) || vendor.includes(query) || description.includes(query);
 		});
-	}, [importCatalogSearch, importCatalogKind, importCatalogRows]);
+	}, [importCatalogSearch, importCatalogKind, lifecycleScopedImportRows]);
+
+	const lifecycleFilteredModels = useMemo(
+		() => models.filter((m) => modelLifecycleMatchesFilter(m.retired_at, selectedLifecycle)),
+		[models, selectedLifecycle]
+	);
+
+	const lifecycleCounts = useMemo(() => {
+		const counts = { active: 0, retired: 0 };
+		for (const m of models) {
+			counts[modelLifecycleMatchesFilter(m.retired_at, 'retired') ? 'retired' : 'active'] += 1;
+		}
+		return counts;
+	}, [models]);
 
 	const kindFilteredModels = useMemo(() => {
-		if (selectedKind === 'all') return models;
-		return models.filter((m) => resolveModelKind(m) === selectedKind);
-	}, [models, selectedKind]);
+		if (selectedKind === 'all') return lifecycleFilteredModels;
+		return lifecycleFilteredModels.filter((m) => resolveModelKind(m) === selectedKind);
+	}, [lifecycleFilteredModels, selectedKind]);
 
 	const modelsByVendor = useMemo(
 		() => groupModelsByVendor(kindFilteredModels),
@@ -171,9 +208,9 @@ export function useModelsPageState() {
 
 	const kindCounts = useMemo(() => {
 		const counts = emptyModelKindCounts();
-		for (const m of models) counts[resolveModelKind(m)] += 1;
+		for (const m of lifecycleFilteredModels) counts[resolveModelKind(m)] += 1;
 		return counts;
-	}, [models]);
+	}, [lifecycleFilteredModels]);
 
 	const selectedVendorItems = useMemo(() => {
 		if (selectedVendor === ALL_VENDORS_KEY) {
@@ -191,6 +228,10 @@ export function useModelsPageState() {
 		const kindParam = searchParams.get('kind');
 		if (kindParam !== null) {
 			setSelectedKind(parseModelListKindFilterParam(kindParam));
+		}
+		const lifecycleParam = searchParams.get('lifecycle');
+		if (lifecycleParam !== null) {
+			setSelectedLifecycle(parseModelLifecycleFilterParam(lifecycleParam));
 		}
 	}, [searchParams]);
 
@@ -213,8 +254,9 @@ export function useModelsPageState() {
 		const params = new URLSearchParams();
 		if (selectedVendor) params.set('vendor', selectedVendor);
 		params.set('kind', selectedKind);
+		if (selectedLifecycle !== DEFAULT_MODEL_LIFECYCLE_FILTER) params.set('lifecycle', selectedLifecycle);
 		return params;
-	}, [selectedVendor, selectedKind]);
+	}, [selectedVendor, selectedKind, selectedLifecycle]);
 
 	/** 不切换整页 loading 的静默刷新（同步面板应用后用，避免面板被卸载）。 */
 	const reloadModelsQuietly = useCallback(async () => {
@@ -277,6 +319,7 @@ export function useModelsPageState() {
 		setShowImportCatalogModal(true);
 		setImportCatalogError('');
 		setImportCatalogSearch('');
+		setImportCatalogLifecycle(DEFAULT_IMPORT_LIFECYCLE_FILTER);
 		// 导入表格按单一类型显示对应计费列；模型目录选“全部”时从 LLM 目录开始。
 		setImportCatalogKind(selectedKind === 'all' ? DEFAULT_KIND_FILTER : selectedKind);
 		setImportSelected({});
@@ -773,13 +816,17 @@ export function useModelsPageState() {
 	const clearFilters = useCallback(() => {
 		setSelectedVendor(ALL_VENDORS_KEY);
 		setSelectedKind(DEFAULT_MODEL_LIST_KIND_FILTER);
+		setSelectedLifecycle(DEFAULT_MODEL_LIFECYCLE_FILTER);
 	}, []);
 
 	const isAllVendors = selectedVendor === ALL_VENDORS_KEY;
 	const activeVendorKey = isAllVendors ? (vendorKeys[0] ?? 'other') : selectedVendor || vendorKeys[0] || 'other';
 	const activeVendorTitle = isAllVendors ? tCatalog('allVendors') : getModelVendorLabel(activeVendorKey);
 	const hasVendorFilter = !isAllVendors;
-	const hasActiveFilter = hasVendorFilter || selectedKind !== DEFAULT_MODEL_LIST_KIND_FILTER;
+	const hasActiveFilter =
+		hasVendorFilter ||
+		selectedKind !== DEFAULT_MODEL_LIST_KIND_FILTER ||
+		selectedLifecycle !== DEFAULT_MODEL_LIFECYCLE_FILTER;
 
 	return {
 		isLoading,
@@ -788,6 +835,10 @@ export function useModelsPageState() {
 		setSelectedVendor,
 		selectedKind,
 		setSelectedKind,
+		selectedLifecycle,
+		setSelectedLifecycle,
+		lifecycleCounts,
+		lifecycleFilteredCount: lifecycleFilteredModels.length,
 		kindCounts,
 		selectedVendorItems,
 		modelsByVendor,
@@ -827,6 +878,9 @@ export function useModelsPageState() {
 		importCatalogKind,
 		setImportCatalogKind,
 		importCatalogKindCounts,
+		importCatalogLifecycle,
+		setImportCatalogLifecycle,
+		importCatalogLifecycleCounts,
 		filteredImportCatalogRows,
 		importCatalogLoading,
 		importCatalogError,

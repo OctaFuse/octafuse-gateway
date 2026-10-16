@@ -8,7 +8,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sortImportCatalogRows } from '../model-utils';
-import { type ModelKindFilter, type PresetCatalogRow } from '../types';
+import { isModelRetiringSoon, resolveModelLifecycle } from '@/lib/model-lifecycle';
+import { type ModelKindFilter, type ModelLifecycleFilter, type PresetCatalogRow } from '../types';
 
 type Props = {
 	open: boolean;
@@ -17,6 +18,8 @@ type Props = {
 	catalogSearch: string;
 	catalogKind: ModelKindFilter;
 	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number };
+	catalogLifecycle: ModelLifecycleFilter;
+	lifecycleCounts: { all: number; active: number; retired: number };
 	catalogLoading: boolean;
 	catalogError: string;
 	selected: Record<string, boolean>;
@@ -28,6 +31,7 @@ type Props = {
 	onClose: () => void;
 	onCatalogSearchChange: (value: string) => void;
 	onCatalogKindChange: (kind: ModelKindFilter) => void;
+	onCatalogLifecycleChange: (lifecycle: ModelLifecycleFilter) => void;
 	onSelectAll: () => void;
 	onClearSelection: () => void;
 	onReload: () => void;
@@ -175,6 +179,8 @@ export function ModelImportModal(props: Props) {
 		catalogSearch,
 		catalogKind,
 		kindCounts,
+		catalogLifecycle,
+		lifecycleCounts,
 		catalogLoading,
 		catalogError,
 		selected,
@@ -186,6 +192,7 @@ export function ModelImportModal(props: Props) {
 		onClose,
 		onCatalogSearchChange,
 		onCatalogKindChange,
+		onCatalogLifecycleChange,
 		onSelectAll,
 		onClearSelection,
 		onReload,
@@ -331,6 +338,36 @@ export function ModelImportModal(props: Props) {
 							onClick={() => onCatalogKindChange('embedding')}
 						/>
 					</div>
+					<div
+						className="flex flex-wrap items-center gap-2"
+						role="group"
+						aria-label={t('lifecycleFilterAria')}
+					>
+						<span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+							{t('lifecycle')}
+						</span>
+						<KindFilterChip
+							label={tKind('lifecycleActive')}
+							count={lifecycleCounts.active}
+							active={catalogLifecycle === 'active'}
+							disabled={catalogLoading}
+							onClick={() => onCatalogLifecycleChange('active')}
+						/>
+						<KindFilterChip
+							label={tKind('lifecycleRetired')}
+							count={lifecycleCounts.retired}
+							active={catalogLifecycle === 'retired'}
+							disabled={catalogLoading}
+							onClick={() => onCatalogLifecycleChange('retired')}
+						/>
+						<KindFilterChip
+							label={tCommon('all')}
+							count={lifecycleCounts.all}
+							active={catalogLifecycle === 'all'}
+							disabled={catalogLoading}
+							onClick={() => onCatalogLifecycleChange('all')}
+						/>
+					</div>
 					<div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm text-gray-600">
 						<span>
 							{t('selectedAvailable', { selected: selectedCount, importable: importableCount })}
@@ -446,7 +483,18 @@ export function ModelImportModal(props: Props) {
 														}
 													/>
 												</td>
-												<td className="px-3 py-2 font-mono text-xs text-gray-900">{row.id}</td>
+												<td className="px-3 py-2 font-mono text-xs text-gray-900">
+													<div>{row.id}</div>
+													{resolveModelLifecycle(row.retired) === 'retired' ? (
+														<span className="mt-1 inline-flex rounded bg-gray-100 px-1.5 py-0.5 font-sans text-[10px] font-medium text-gray-600">
+															{t('retiredBadge', { date: row.retired ?? '' })}
+														</span>
+													) : isModelRetiringSoon(row.retired) ? (
+														<span className="mt-1 inline-flex rounded bg-amber-50 px-1.5 py-0.5 font-sans text-[10px] font-medium text-amber-700">
+															{t('retiringBadge', { date: row.retired ?? '' })}
+														</span>
+													) : null}
+												</td>
 												<td className="max-w-sm px-3 py-2 text-gray-900">
 													<div>{row.display_name || '—'}</div>
 													{(locale.startsWith('zh')

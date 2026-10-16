@@ -6,6 +6,7 @@ import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatCatalogPricingTierRowsTooltip, getCatalogCardPricing } from '@/lib/pricing-ui';
 import { resolveModelKind, type ModelKind } from '@octafuse/core/db/model-kind';
+import { isModelRetiringSoon, resolveModelLifecycle } from '@/lib/model-lifecycle';
 import { tagBadgeClass } from '../model-utils';
 import type { ModelListItem } from '../types';
 
@@ -35,6 +36,8 @@ export function ModelCard(props: {
 	const t = useTranslations('models.card');
 	const displayName = model.display_name || model.id;
 	const kind = resolveModelKind(model);
+	const isRetired = resolveModelLifecycle(model.retired_at) === 'retired';
+	const isRetiringSoon = isModelRetiringSoon(model.retired_at);
 	const tagShown = model.tags?.length ? model.tags.slice(0, 2) : [];
 	const tagExtra = (model.tags?.length ?? 0) - tagShown.length;
 	const routesLabel =
@@ -42,18 +45,14 @@ export function ModelCard(props: {
 			? t('routes', { count: model.routes_count })
 			: t('routesPlural', { count: model.routes_count });
 	const specs =
-		kind === 'asr'
-			? t('asrHint')
-			: kind === 'tts'
-				? t('ttsHint')
-				: kind === 'image'
-				? t('imageHint')
-				: kind === 'embedding'
-					? t('embeddingHint', { context: formatCompactTokens(model.context_window) })
-					: t('specs', {
-						context: formatCompactTokens(model.context_window),
-						max: formatCompactTokens(model.max_tokens),
-					});
+		kind === 'asr' || kind === 'tts' || kind === 'image'
+			? ''
+			: kind === 'embedding'
+				? t('embeddingHint', { context: formatCompactTokens(model.context_window) })
+				: t('specs', {
+					context: formatCompactTokens(model.context_window),
+					max: formatCompactTokens(model.max_tokens),
+				});
 	const pricing = getCatalogCardPricing(model, billingCurrency, t('pricingNoData'));
 	const pricingTooltip = formatCatalogPricingTierRowsTooltip(model, billingCurrency);
 	const pricingTitle =
@@ -62,12 +61,11 @@ export function ModelCard(props: {
 			: pricingTooltip;
 
 	return (
-		<article className="group relative flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/60">
+		<article className={`group relative flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/60${isRetired ? ' opacity-75' : ''}`}>
 			<button
 				type="button"
 				onClick={() => void onEdit(model)}
 				className="absolute inset-0 z-0 cursor-pointer rounded-xl bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
-				title={t('editModel', { name: displayName })}
 				aria-label={t('editModel', { name: displayName })}
 			/>
 
@@ -128,9 +126,23 @@ export function ModelCard(props: {
 								? t('kindEmbedding')
 								: t('kindLlm')}
 				</span>
-				<span className="min-w-0 truncate text-[11px] tabular-nums text-gray-600" title={specs}>
-					{specs}
-				</span>
+				{isRetired || isRetiringSoon ? (
+					<span
+						className={`pointer-events-auto inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${
+							isRetired
+								? 'bg-stone-100 text-stone-500 ring-stone-200'
+								: 'bg-stone-50 text-stone-600 ring-stone-300'
+						}`}
+						title={model.retired_at ? t('retiredAt', { date: model.retired_at }) : undefined}
+					>
+						{isRetired ? t('retired') : t('retiringSoon')}
+					</span>
+				) : null}
+				{specs ? (
+					<span className="min-w-0 truncate text-[11px] tabular-nums text-gray-600" title={specs}>
+						{specs}
+					</span>
+				) : null}
 			</div>
 
 			<div className="pointer-events-none relative z-10 flex items-center justify-between gap-2">
