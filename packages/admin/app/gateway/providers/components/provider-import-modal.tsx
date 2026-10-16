@@ -3,8 +3,8 @@
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { parseProviderEndpoints } from '@octafuse/core/provider-endpoints';
 import { VendorIcon } from '@/components/model-vendor-icon';
-import { summarizeOpenAiImportEndpoints } from '@/lib/provider-import-preset';
-import { useTranslations } from 'next-intl';
+import { providerImportCatalogCopy, summarizeOpenAiImportEndpoints } from '@/lib/provider-import-preset';
+import { useLocale, useTranslations } from 'next-intl';
 import type { ProviderImportCatalogRow } from '../types';
 import { ProviderCatalogOutboundLink } from './provider-catalog-outbound-link';
 
@@ -47,6 +47,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 
 	const t = useTranslations('providers.import');
 	const tCommon = useTranslations('common');
+	const locale = useLocale();
 
 	if (!open) return null;
 
@@ -165,12 +166,13 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 						<ul className="divide-y divide-gray-200 rounded-lg border border-gray-200">
 							{filteredCatalogRows.map((row) => {
 								const checked = Boolean(selected[row.id]);
+								const copy = providerImportCatalogCopy(row, locale);
 								return (
 									<li key={row.id}>
 										<div
 											role="checkbox"
 											aria-checked={checked}
-											aria-label={t('selectRow', { name: row.name })}
+											aria-label={t('selectRow', { name: copy.name })}
 											tabIndex={0}
 											onClick={() => onTogglePreset(row.id)}
 											onKeyDown={(e) => {
@@ -199,7 +201,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 											/>
 											<div className="min-w-0 flex-1 select-none">
 												<div className="flex items-start justify-between gap-2">
-													<p className="text-sm font-semibold text-gray-900">{row.name}</p>
+													<p className="text-sm font-semibold text-gray-900">{copy.name}</p>
 													<ProviderCatalogOutboundLink
 														links={row.links}
 														stopPropagation
@@ -230,7 +232,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 														</p>
 													);
 												})()}
-												{row.description && <p className="mt-1 text-xs text-gray-600">{row.description}</p>}
+												{copy.description && <p className="mt-1 text-xs text-gray-600">{copy.description}</p>}
 											</div>
 										</div>
 									</li>

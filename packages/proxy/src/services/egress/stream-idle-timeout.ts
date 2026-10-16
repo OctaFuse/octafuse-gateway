@@ -23,6 +23,55 @@ export const STREAM_FIRST_CHUNK_TIMEOUT_MS = DEFAULT_STREAM_FIRST_CHUNK_TIMEOUT_
 /** 写入 `usage.stream_error` 与请求日志 `error_message`，便于筛空闲掐流。 */
 export const STREAM_IDLE_TIMEOUT_MESSAGE = 'Stream idle timeout';
 
+/** 空闲超时错误帧的 `code`（OpenAI / Responses 协议用）。 */
+export const STREAM_IDLE_TIMEOUT_CODE = 'stream_idle_timeout';
+
+export type StreamIdleTimeoutFrameProtocol = 'openai-chat' | 'anthropic' | 'gemini';
+
+/**
+ * 空闲超时掐流时写给下游的协议原生终止错误帧。
+ *
+ * 不写帧直接 `writer.close()` 会让客户端看到「干净 EOF」，部分 SDK 会把它当成正常结束，
+ * 导致 agent 静默收口。帧以 `\n` 开头，用来结束上游已写完整行但尚未以空行收尾的事件（SSE 事件以空行结尾）。
+ */
+export function streamIdleTimeoutErrorFrame(protocol: StreamIdleTimeoutFrameProtocol): string {
+	switch (protocol) {
+		case 'openai-chat':
+			return (
+				'\ndata: ' +
+				JSON.stringify({
+					error: {
+						message: STREAM_IDLE_TIMEOUT_MESSAGE,
+						type: 'server_error',
+						code: STREAM_IDLE_TIMEOUT_CODE,
+					},
+				}) +
+				'\n\n'
+			);
+		case 'anthropic':
+			return (
+				'\nevent: error\ndata: ' +
+				JSON.stringify({
+					type: 'error',
+					error: { type: 'api_error', message: STREAM_IDLE_TIMEOUT_MESSAGE },
+				}) +
+				'\n\n'
+			);
+		case 'gemini':
+			return (
+				'\ndata: ' +
+				JSON.stringify({
+					error: {
+						code: 504,
+						status: 'DEADLINE_EXCEEDED',
+						message: STREAM_IDLE_TIMEOUT_MESSAGE,
+					},
+				}) +
+				'\n\n'
+			);
+	}
+}
+
 const IDLE_TIMEOUT_SENTINEL = Symbol('stream-idle-timeout');
 
 export type IdleReadResult<T> =

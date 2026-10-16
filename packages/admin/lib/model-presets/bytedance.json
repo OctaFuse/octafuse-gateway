@@ -64,7 +64,8 @@
 				"text"
 			]
 		},
-		"released": "2026-02-14"
+		"released": "2026-02-14",
+		"retired": "2026-10-22"
 	},
 	{
 		"id": "doubao-seed-2-0-lite-260215",
@@ -133,7 +134,8 @@
 				"text"
 			]
 		},
-		"released": "2026-02-14"
+		"released": "2026-02-14",
+		"retired": "2026-10-22"
 	},
 	{
 		"id": "doubao-seed-2-0-pro-260215",
@@ -201,7 +203,8 @@
 				"text"
 			]
 		},
-		"released": "2026-02-14"
+		"released": "2026-02-14",
+		"retired": "2026-11-24"
 	},
 	{
 		"id": "doubao-seed-2-1-pro-260628",

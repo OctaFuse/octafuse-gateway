@@ -85,6 +85,8 @@ export type StaticModelPresetRow = {
 	modalities?: StaticModelPresetModalities;
 	/** Model release date `YYYY-MM-DD`. */
 	released?: string | null;
+	/** Vendor retirement date `YYYY-MM-DD`; omitted/null = still offered. */
+	retired?: string | null;
 	pricing: {
 		/** Catalog branch written as `pricing_profile` (tiers / image / audio plus optional `schedule`). */
 		usd: unknown;
@@ -128,6 +130,21 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 
 export function listStaticModelPresets(): StaticModelPresetRow[] {
 	return [...STATIC_MODEL_PRESETS_BY_VENDOR.flat()] as StaticModelPresetRow[];
+}
+
+let retiredByModelId: Map<string, string> | null = null;
+
+/** 内置目录里该模型的退役日期（`YYYY-MM-DD`）；目录无此 id 或未公布日期时为 null。不落库，随版本更新。 */
+export function getStaticModelPresetRetired(modelId: string): string | null {
+	if (!retiredByModelId) {
+		retiredByModelId = new Map();
+		for (const preset of listStaticModelPresets()) {
+			const id = String(preset.id ?? '').trim();
+			const retired = preset.retired?.trim();
+			if (id && retired) retiredByModelId.set(id, retired);
+		}
+	}
+	return retiredByModelId.get(modelId.trim()) ?? null;
 }
 
 /** Returns the `usd` / `cny` object as-is, including optional catalog `schedule`. */

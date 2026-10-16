@@ -3,8 +3,11 @@ import { describe, it } from 'node:test';
 import {
 	inferStaticProviderIconKey,
 	inferStaticProviderVendorKey,
+	listStaticProviderImportCatalogForAdmin,
 	listStaticProviderImportPresets,
 	lookupStaticProviderCatalogLinks,
+	providerImportCatalogCopy,
+	providerImportCatalogMatchesQuery,
 	providerCatalogOutboundRel,
 	resolveProviderCatalogOutbound,
 	resolveStoredProviderPresentation,
@@ -75,6 +78,56 @@ describe('provider import preset catalog metadata', () => {
 			responses: 'https://token-plan-cn.xiaomimimo.com/v1/responses',
 		});
 		assert.equal(tokenPlan.endpoints.anthropic?.base, 'https://token-plan-cn.xiaomimimo.com/anthropic');
+	});
+
+	it('keeps Kingsoft StarFlow China and international presets on separate origins', () => {
+		const rows = listStaticProviderImportPresets();
+		const domestic = rows.find((row) => row.name === 'Kingsoft StarFlow');
+		const international = rows.find((row) => row.name === 'Kingsoft StarFlow (International)');
+		assert.ok(domestic);
+		assert.ok(international);
+		assert.equal(domestic.vendor_key, 'kingsoft');
+		assert.equal(international.vendor_key, 'kingsoft');
+		assert.equal(domestic.endpoints.openai?.base, undefined);
+		assert.deepEqual(domestic.endpoints.openai?.endpoints, {
+			chat: 'https://kspmas.ksyun.com/v1/chat/completions',
+			responses: 'https://kspmas.ksyun.com/v1/responses',
+		});
+		assert.equal(domestic.endpoints.anthropic?.base, 'https://kspmas.ksyun.com');
+		assert.equal(
+			resolveUpstreamEndpoint('anthropic', 'messages', domestic.endpoints),
+			'https://kspmas.ksyun.com/v1/messages'
+		);
+		assert.equal(international.endpoints.openai?.base, undefined);
+		assert.deepEqual(international.endpoints.openai?.endpoints, {
+			chat: 'https://global-kspmas.ksyun.com/v1/chat/completions',
+			responses: 'https://global-kspmas.ksyun.com/v1/responses',
+		});
+		assert.equal(international.endpoints.anthropic?.base, 'https://global-kspmas.ksyun.com');
+		assert.equal(
+			resolveUpstreamEndpoint('anthropic', 'messages', international.endpoints),
+			'https://global-kspmas.ksyun.com/v1/messages'
+		);
+		for (const row of [domestic, international]) {
+			assert.equal(row.endpoints.gemini, undefined);
+			assert.deepEqual(listConfiguredCapabilities(row.endpoints, 'openai'), ['chat', 'responses']);
+		}
+		const catalog = listStaticProviderImportCatalogForAdmin().find((row) => row.name === 'Kingsoft StarFlow');
+		assert.ok(catalog?.labels);
+		assert.equal(providerImportCatalogCopy(catalog, 'zh').name, '金山云星流');
+		assert.match(providerImportCatalogCopy(catalog, 'zh').description ?? '', /国内版/);
+		assert.equal(providerImportCatalogCopy(catalog, 'en').name, 'Kingsoft StarFlow');
+		assert.equal(providerImportCatalogCopy(catalog, 'ja').name, 'Kingsoft StarFlow');
+		assert.equal(providerImportCatalogMatchesQuery(catalog, '金山云'), true);
+		assert.equal(providerImportCatalogMatchesQuery(catalog, 'kspmas.ksyun.com'), true);
+		assert.equal(inferStaticProviderVendorKey({ name: '星流生产账号' }), 'kingsoft');
+		assert.equal(
+			inferStaticProviderVendorKey({
+				name: 'Renamed production upstream',
+				endpoints: replaceEndpointPaths(international.endpoints),
+			}),
+			'kingsoft'
+		);
 	});
 
 	it('includes documented China-region chat, responses, and Anthropic endpoints', () => {

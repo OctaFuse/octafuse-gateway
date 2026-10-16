@@ -2,7 +2,7 @@
 
 /**
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
- * 页面筛选条 Kind（All | LLM | Image | ASR | TTS | Embedding）+ Vendor；下方卡片网格（与 Providers 同密度）；`?kind=` / `?vendor=` 持久化（`useSearchParams` + Suspense）。
+ * 页面筛选条 Kind（All | LLM | Image | ASR | TTS | Embedding）+ Lifecycle（All | Active | Retired）+ Vendor；下方卡片网格（与 Providers 同密度）；`?kind=` / `?vendor=` / `?lifecycle=` 持久化（`useSearchParams` + Suspense）。
  * `?edit=<model_id>` 可从 Routes 等入口深链直接打开编辑弹窗（消费后从 URL 清除）。
  */
 import { Suspense } from 'react';
@@ -75,6 +75,10 @@ function ModelsContent() {
 				modelsByVendor={state.modelsByVendor}
 				selectedKind={state.selectedKind}
 				kindCounts={state.kindCounts}
+				kindAllCount={state.lifecycleFilteredCount}
+				selectedLifecycle={state.selectedLifecycle}
+				lifecycleCounts={state.lifecycleCounts}
+				onSelectLifecycle={state.setSelectedLifecycle}
 				onSelectVendor={state.setSelectedVendor}
 				onSelectKind={state.setSelectedKind}
 				onClearFilter={state.clearFilters}
@@ -151,6 +155,9 @@ function ModelsContent() {
 				catalogSearch={state.importCatalogSearch}
 				catalogKind={state.importCatalogKind}
 				kindCounts={state.importCatalogKindCounts}
+				catalogLifecycle={state.importCatalogLifecycle}
+				lifecycleCounts={state.importCatalogLifecycleCounts}
+				onCatalogLifecycleChange={state.setImportCatalogLifecycle}
 				catalogLoading={state.importCatalogLoading}
 				catalogError={state.importCatalogError}
 				selected={state.importSelected}

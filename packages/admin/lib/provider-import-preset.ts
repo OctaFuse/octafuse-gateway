@@ -42,8 +42,8 @@ export type StaticProviderImportPresetRow = {
 	/** 可选；JSON 中可省略，导入后写入 providers.description 时为 null */
 	description?: string | null;
 	/**
-	 * 仅用于公开 Catalog / 文档展示，不写入 providers 表。
-	 * `description` 继续承载导入后的运维说明；此处提供本地化的用户侧摘要与官方入口。
+	 * 仅用于展示，不写入 providers 表。
+	 * Admin 导入列表按界面语言取这里的名称和摘要；`description` 仍是导入后写入库的运维说明。
 	 */
 	catalog?: {
 		i18n: {
@@ -128,6 +128,64 @@ function httpsHref(value: string | undefined | null): string | null {
 	}
 }
 
+function catalogLabelsFromRow(
+	row: StaticProviderImportPresetRow
+): AdminProviderImportCatalogItem['labels'] {
+	const i18n = row.catalog?.i18n;
+	const enName = i18n?.en.name?.trim() ?? '';
+	const zhName = i18n?.zh.name?.trim() ?? '';
+	const enDescription = i18n?.en.description?.trim() ?? '';
+	const zhDescription = i18n?.zh.description?.trim() ?? '';
+	if (!enName || !zhName || !enDescription || !zhDescription) return undefined;
+	return {
+		en: { name: enName, description: enDescription },
+		zh: { name: zhName, description: zhDescription },
+	};
+}
+
+/** 导入列表展示文案。中文界面用模板中文，其余界面用英文；缺本地化时回退稳定英文名和运维说明。 */
+export function providerImportCatalogCopy(
+	row: {
+		name: string;
+		description?: string | null;
+		labels?: AdminProviderImportCatalogItem['labels'];
+	},
+	locale: string
+): { name: string; description: string | null } {
+	const localized = locale.toLowerCase().startsWith('zh') ? row.labels?.zh : row.labels?.en;
+	return {
+		name: localized?.name?.trim() || row.name,
+		description: localized?.description?.trim() || row.description?.trim() || null,
+	};
+}
+
+/** 搜索同时匹配稳定英文名、本地化名称、摘要和运维说明。 */
+export function providerImportCatalogMatchesQuery(
+	row: {
+		name: string;
+		description?: string | null;
+		vendor_label?: string | null;
+		labels?: AdminProviderImportCatalogItem['labels'];
+	},
+	query: string
+): boolean {
+	const needle = query.trim().toLowerCase();
+	if (!needle) return true;
+	const haystack = [
+		row.name,
+		row.description,
+		row.vendor_label,
+		row.labels?.en.name,
+		row.labels?.en.description,
+		row.labels?.zh.name,
+		row.labels?.zh.description,
+	]
+		.filter((part): part is string => Boolean(part?.trim()))
+		.join('\n')
+		.toLowerCase();
+	return haystack.includes(needle);
+}
+
 function catalogLinksFromRow(row: StaticProviderImportPresetRow): ProviderCatalogLinks | null {
 	const links = row.catalog?.links;
 	if (!links) return null;
@@ -193,6 +251,12 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 	if (hostnameMatches(hostname, 'api.kimi.com')) return identity('moonshot', 'kimi');
 	if (hostnameMatches(hostname, 'aiplatform.googleapis.com')) return identity('google', 'vertexai');
 	if (hostnameMatches(hostname, 'xiaomimimo.com')) return identity('xiaomi', 'xiaomimimo');
+	if (
+		hostnameMatches(hostname, 'kspmas.ksyun.com') ||
+		hostnameMatches(hostname, 'global-kspmas.ksyun.com')
+	) {
+		return identity('kingsoft');
+	}
 
 	const domainRules: ReadonlyArray<readonly [string, ProviderCatalogIdentity]> = [
 		['deepseek.com', identity('deepseek')],
@@ -352,6 +416,7 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 		[['baichuan', '百川'], identity('baichuan')],
 		[['xiaomi', '小米'], identity('xiaomi')],
 		[['qiniu', '七牛', 'qnaigc'], identity('qiniu')],
+		[['kingsoft', '金山云', '星流', 'xingliu', 'starflow', 'kspmas'], identity('kingsoft')],
 		[['opencode', 'open code zen', 'opencode zen', 'opencode go'], identity('opencode')],
 		[['zenmux'], identity('zenmux')],
 		[['openrouter'], identity('openrouter')],
@@ -586,6 +651,7 @@ export function listStaticProviderImportCatalogForAdmin(): AdminProviderImportCa
 			protocols: protocolsForPreset(p),
 			endpoints: serializeProviderEndpoints(map),
 			description: p.description != null && String(p.description).trim() ? String(p.description).trim() : null,
+			labels: catalogLabelsFromRow(p),
 			links: catalogLinksFromRow(p) ?? undefined,
 		};
 	});

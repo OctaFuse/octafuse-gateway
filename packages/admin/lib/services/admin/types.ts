@@ -141,7 +141,13 @@ export type AdminProviderImportCatalogItem = {
 	protocols: UpstreamProtocol[];
 	/** 序列化后的 endpoints JSON（可 null） */
 	endpoints: string | null;
+	/** 导入后写入 `providers.description` 的运维说明，不随界面语言切换。 */
 	description: string | null;
+	/** 导入列表的本地化名称和摘要。中文界面用 `zh`，其余界面用 `en`。 */
+	labels?: {
+		en: { name: string; description: string };
+		zh: { name: string; description: string };
+	};
 	/** 官网 / 密钥页 / 可选邀请链接；不写入 providers 表。 */
 	links?: {
 		platform?: string;
@@ -237,6 +243,10 @@ export type AdminStaticModelPresetCatalogItem = {
 		en: string;
 		zh: string;
 	} | null;
+	/** Model release date `YYYY-MM-DD`. */
+	released: string | null;
+	/** Vendor retirement date `YYYY-MM-DD`; null = still offered. */
+	retired: string | null;
 	/** 当前计费币种对应目录价分支的档位数 */
 	tier_count: number;
 	/** 表格短文案（如 `¥12 / ¥36 /M` 或 `$2 / $8 /M`）。 */
@@ -310,6 +320,8 @@ export type AdminModelRow = {
 	input_modalities: string | null;
 	output_modalities: string | null;
 	released_at: string | null;
+	/** 厂商退役日期 `YYYY-MM-DD`，由内置静态目录按 id 匹配得出（不落库）；null=仍在提供或目录无此模型 */
+	retired_at?: string | null;
 	description: string | null;
 	metadata: string | null;
 	/** 路由策略 JSON（`strategy` + `rules`）；null=回退全局 ROUTE_STRATEGY */

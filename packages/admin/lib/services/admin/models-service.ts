@@ -21,7 +21,11 @@ import {
 	type GatewaySupportedBillingCurrency,
 } from '@octafuse/core/lib/billing-currency';
 import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
-import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
+import {
+	getStaticModelPresetRetired,
+	listStaticModelPresets,
+	pickPresetPricingRawForBillingCurrency,
+} from '@/lib/model-preset';
 import { badRequest, notFound } from './errors';
 import {
 	catalogScheduleFromPricingProfile,
@@ -218,7 +222,11 @@ function assertModelKindConsistent(fields: ModelKindFields): void {
 /** 全部模型列表，`tags` 从 JSON 字符串解析为数组。 */
 export async function listModelsService(repos: GatewayRepositories): Promise<AdminModelRow[]> {
 	const rows = await repos.models.listModelsWithRouteCounts();
-	return rows.map((m) => ({ ...m, tags: parseTagsJson(m.tags as string | null) })) as AdminModelRow[];
+	return rows.map((m) => ({
+		...m,
+		tags: parseTagsJson(m.tags as string | null),
+		retired_at: getStaticModelPresetRetired(m.id),
+	})) as AdminModelRow[];
 }
 
 /**
@@ -286,7 +294,11 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 export async function getModelService(repos: GatewayRepositories, id: string): Promise<AdminModelRow> {
 	const model = await repos.models.getModelDetailWithRouteCounts(id);
 	if (!model) throw notFound('Model not found');
-	return { ...model, tags: parseTagsJson(model.tags as string | null) } as AdminModelRow;
+	return {
+		...model,
+		tags: parseTagsJson(model.tags as string | null),
+		retired_at: getStaticModelPresetRetired(model.id),
+	} as AdminModelRow;
 }
 
 /**
@@ -394,6 +406,8 @@ export function listStaticModelPresetCatalogForAdmin(
 				max_tokens: p.max_tokens ?? null,
 				description: p.description ?? null,
 				i18n: p.i18n ?? null,
+				released: p.released ?? null,
+				retired: p.retired ?? null,
 				tier_count: tierCount,
 				pricing_label: pricing.label,
 				pricing_preview: pricing.detail,

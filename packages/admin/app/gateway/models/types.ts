@@ -1,4 +1,5 @@
 import { MODEL_KINDS, type ModelKind } from '@octafuse/core/db/model-kind';
+import { parseModelLifecycleFilter, type ModelLifecycleFilter } from '@/lib/model-lifecycle';
 import type { GatewayModel } from '@/lib/types';
 import { normalizeLegacyKindParam } from '@/lib/invoke-kind';
 
@@ -30,6 +31,10 @@ export type PresetCatalogRow = {
 	/** Short cell label (USD/CNY branch per `BILLING_CURRENCY`). */
 	pricing_label: string | null;
 	pricing_preview: string | null;
+	/** Model release date `YYYY-MM-DD`. */
+	released: string | null;
+	/** Vendor retirement date `YYYY-MM-DD`; null = still offered. */
+	retired: string | null;
 };
 
 export type ModelFormData = {
@@ -80,6 +85,16 @@ export function parseModelListKindFilterParam(value: string | null): ModelListKi
 	return (MODEL_LIST_KIND_FILTERS as readonly string[]).includes(normalized)
 		? (normalized as ModelListKindFilter)
 		: DEFAULT_MODEL_LIST_KIND_FILTER;
+}
+
+/** 模型目录现役/退役视图（`?lifecycle=all|active|retired`）。 */
+export type { ModelLifecycleFilter };
+export const DEFAULT_MODEL_LIFECYCLE_FILTER: ModelLifecycleFilter = 'all';
+/** 导入弹窗默认只看现役，避免误导入厂商已下线的模型。 */
+export const DEFAULT_IMPORT_LIFECYCLE_FILTER: ModelLifecycleFilter = 'active';
+
+export function parseModelLifecycleFilterParam(value: string | null): ModelLifecycleFilter {
+	return parseModelLifecycleFilter(value?.trim().toLowerCase());
 }
 
 /** 调试台 / 旧模型类型联合，保持不含 All 的既有语义。 */

@@ -9,6 +9,7 @@ import {
 	applyStreamIdleTimeout,
 	createStreamIdleClock,
 	readWithIdleTimeout,
+	streamIdleTimeoutErrorFrame,
 	type StreamIdleClockOptions,
 } from './stream-idle-timeout';
 
@@ -279,6 +280,15 @@ async function pumpWithUsageTracking(
         applyStreamIdleTimeout(usage);
         console.log('[Gateway Proxy] stream idle timeout, resolving with partial usage');
         await reader.cancel();
+        // 未收完的半行留在 lineBuffer 里不会转发；写协议原生终止错误帧，避免下游把干净 EOF 当正常结束。
+        if (!clientDisconnected) {
+          try {
+            await writer.write(encoder.encode(streamIdleTimeoutErrorFrame('openai-chat')));
+          } catch {
+            clientDisconnected = true;
+            usage.cancelled = true;
+          }
+        }
         break;
       }
       const { done, value } = chunk;

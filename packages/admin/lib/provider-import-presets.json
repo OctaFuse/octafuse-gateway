@@ -1839,5 +1839,69 @@
 				"platform": "https://ollama.com/download"
 			}
 		}
+	},
+	{
+		"name": "Kingsoft StarFlow",
+		"vendor_key": "kingsoft",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://kspmas.ksyun.com/v1/chat/completions",
+					"responses": "https://kspmas.ksyun.com/v1/responses"
+				}
+			},
+			"anthropic": {
+				"base": "https://kspmas.ksyun.com"
+			}
+		},
+		"description": "China-region StarFlow on https://kspmas.ksyun.com. OpenAI chat and responses stay on openai.endpoints (no openai.base, so images, audio, and embeddings are not derived). Anthropic Messages is POST /v1/messages, so the Anthropic base is the host root. Do not mix with international keys on global-kspmas.ksyun.com.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "金山云星流",
+					"description": "金山云星流国内版，支持 OpenAI Chat、Responses 与 Anthropic Messages。不要和国际版 global-kspmas.ksyun.com 的密钥混用。"
+				},
+				"en": {
+					"name": "Kingsoft StarFlow",
+					"description": "Kingsoft StarFlow in China, with OpenAI Chat, Responses, and Anthropic Messages."
+				}
+			},
+			"links": {
+				"platform": "https://ksp.console.ksyun.com/",
+				"api_keys": "https://ksp.console.ksyun.com/#/apiKey"
+			}
+		}
+	},
+	{
+		"name": "Kingsoft StarFlow (International)",
+		"vendor_key": "kingsoft",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://global-kspmas.ksyun.com/v1/chat/completions",
+					"responses": "https://global-kspmas.ksyun.com/v1/responses"
+				}
+			},
+			"anthropic": {
+				"base": "https://global-kspmas.ksyun.com"
+			}
+		},
+		"description": "International StarFlow on https://global-kspmas.ksyun.com/v1. OpenAI chat and responses stay on openai.endpoints (no openai.base, so images, audio, and embeddings are not derived). Anthropic Messages is POST /v1/messages, so the Anthropic base is the host root. Do not mix with China-region keys on kspmas.ksyun.com.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "金山云星流（国际版）",
+					"description": "金山云星流国际版，接入 https://global-kspmas.ksyun.com/v1，支持 OpenAI Chat、Responses 与 Anthropic Messages。不要和国内版 kspmas.ksyun.com 的密钥混用。"
+				},
+				"en": {
+					"name": "Kingsoft StarFlow (International)",
+					"description": "Kingsoft StarFlow international endpoint at global-kspmas.ksyun.com, with OpenAI Chat, Responses, and Anthropic Messages."
+				}
+			},
+			"links": {
+				"platform": "https://ksp.console.ksyun.com/",
+				"api_keys": "https://ksp.console.ksyun.com/#/apiKey"
+			}
+		}
 	}
 ]

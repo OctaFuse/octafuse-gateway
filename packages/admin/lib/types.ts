@@ -194,6 +194,8 @@ export interface GatewayModel {
   output_modalities?: string | null;
   /** Model release date `YYYY-MM-DD` */
   released_at?: string | null;
+  /** Vendor retirement date `YYYY-MM-DD` from the static catalog (not stored in DB); null = still offered */
+  retired_at?: string | null;
   /** JSON array string from json_group_array(model_tags.tag) */
   tags: string;
   description: string | null;

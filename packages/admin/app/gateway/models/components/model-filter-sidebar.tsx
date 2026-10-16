@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { FilterRow, FilterSegmented, FilterSelect } from '../../components/filter-controls';
 import { getModelVendorLabel } from '@/lib/model-vendor';
-import { ALL_VENDORS_KEY, type ModelListKindFilter } from '../types';
+import { ALL_VENDORS_KEY, type ModelLifecycleFilter, type ModelListKindFilter } from '../types';
 
 type Props = {
 	modelCount: number;
@@ -13,6 +13,11 @@ type Props = {
 	modelsByVendor: [string, unknown[]][];
 	selectedKind: ModelListKindFilter;
 	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number };
+	/** Kind「All」计数（已应用现役/退役筛选）。 */
+	kindAllCount: number;
+	selectedLifecycle: ModelLifecycleFilter;
+	lifecycleCounts: { active: number; retired: number };
+	onSelectLifecycle: (lifecycle: ModelLifecycleFilter) => void;
 	onSelectVendor: (vendor: string) => void;
 	onSelectKind: (kind: ModelListKindFilter) => void;
 	onClearFilter: () => void;
@@ -27,6 +32,10 @@ export function ModelFilterSidebar(props: Props) {
 		modelsByVendor,
 		selectedKind,
 		kindCounts,
+		kindAllCount,
+		selectedLifecycle,
+		lifecycleCounts,
+		onSelectLifecycle,
 		onSelectVendor,
 		onSelectKind,
 		onClearFilter,
@@ -45,12 +54,20 @@ export function ModelFilterSidebar(props: Props) {
 				<label className="min-w-0 text-xs text-gray-500">
 					{t('kind')}
 					<select value={selectedKind} onChange={(event) => onSelectKind(event.target.value as ModelListKindFilter)} className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900">
-						<option value="all">{tFilter('all')} ({modelCount})</option>
+						<option value="all">{tFilter('all')} ({kindAllCount})</option>
 						<option value="llm">{t('kindLlm')} ({kindCounts.llm})</option>
 						<option value="image">{t('kindImage')} ({kindCounts.image})</option>
 						<option value="asr">{t('kindAsr')} ({kindCounts.asr})</option>
 						<option value="tts">{t('kindTts')} ({kindCounts.tts})</option>
 						<option value="embedding">{t('kindEmbedding')} ({kindCounts.embedding})</option>
+					</select>
+				</label>
+				<label className="min-w-0 text-xs text-gray-500">
+					{t('lifecycle')}
+					<select value={selectedLifecycle} onChange={(event) => onSelectLifecycle(event.target.value as ModelLifecycleFilter)} className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900">
+						<option value="all">{tFilter('all')} ({modelCount})</option>
+						<option value="active">{t('lifecycleActive')} ({lifecycleCounts.active})</option>
+						<option value="retired">{t('lifecycleRetired')} ({lifecycleCounts.retired})</option>
 					</select>
 				</label>
 				<label className="min-w-0 text-xs text-gray-500">
@@ -69,12 +86,22 @@ export function ModelFilterSidebar(props: Props) {
 						value={selectedKind}
 						onChange={(value) => onSelectKind(value as ModelListKindFilter)}
 						options={[
-							{ value: 'all', label: tFilter('all'), count: modelCount },
+							{ value: 'all', label: tFilter('all'), count: kindAllCount },
 							{ value: 'llm', label: t('kindLlm'), count: kindCounts.llm },
 							{ value: 'image', label: t('kindImage'), count: kindCounts.image },
 							{ value: 'asr', label: t('kindAsr'), count: kindCounts.asr },
 							{ value: 'tts', label: t('kindTts'), count: kindCounts.tts },
 							{ value: 'embedding', label: t('kindEmbedding'), count: kindCounts.embedding },
+						]}
+					/>
+					<FilterSegmented
+						label={t('lifecycle')}
+						value={selectedLifecycle}
+						onChange={(value) => onSelectLifecycle(value as ModelLifecycleFilter)}
+						options={[
+							{ value: 'all', label: tFilter('all'), count: modelCount },
+							{ value: 'active', label: t('lifecycleActive'), count: lifecycleCounts.active },
+							{ value: 'retired', label: t('lifecycleRetired'), count: lifecycleCounts.retired },
 						]}
 					/>
 					<FilterSelect label={tFilter('vendor')} value={selectedVendor} onChange={onSelectVendor} active={!isAllVendors} widthClass="w-44">
