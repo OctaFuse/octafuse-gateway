@@ -17,6 +17,7 @@
   { "key": "huggingface", "label": "Hugging Face" },
   { "key": "huawei", "label": "Huawei Cloud" },
   { "key": "ibm", "label": "IBM" },
+  { "key": "kingsoft", "label": "Kingsoft Cloud" },
   { "key": "meta", "label": "Meta (Llama)" },
   { "key": "meituan", "label": "Meituan LongCat" },
   { "key": "minimax", "label": "MiniMax" },

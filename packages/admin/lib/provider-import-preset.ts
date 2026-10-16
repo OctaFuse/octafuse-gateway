@@ -193,6 +193,12 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 	if (hostnameMatches(hostname, 'api.kimi.com')) return identity('moonshot', 'kimi');
 	if (hostnameMatches(hostname, 'aiplatform.googleapis.com')) return identity('google', 'vertexai');
 	if (hostnameMatches(hostname, 'xiaomimimo.com')) return identity('xiaomi', 'xiaomimimo');
+	if (
+		hostnameMatches(hostname, 'kspmas.ksyun.com') ||
+		hostnameMatches(hostname, 'global-kspmas.ksyun.com')
+	) {
+		return identity('kingsoft');
+	}
 
 	const domainRules: ReadonlyArray<readonly [string, ProviderCatalogIdentity]> = [
 		['deepseek.com', identity('deepseek')],
@@ -352,6 +358,7 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 		[['baichuan', '百川'], identity('baichuan')],
 		[['xiaomi', '小米'], identity('xiaomi')],
 		[['qiniu', '七牛', 'qnaigc'], identity('qiniu')],
+		[['kingsoft', '金山云', '星流', 'xingliu', 'starflow', 'kspmas'], identity('kingsoft')],
 		[['opencode', 'open code zen', 'opencode zen', 'opencode go'], identity('opencode')],
 		[['zenmux'], identity('zenmux')],
 		[['openrouter'], identity('openrouter')],

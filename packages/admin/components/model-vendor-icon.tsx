@@ -36,6 +36,7 @@ const VENDOR_VISUALS: Record<string, IconVisual> = {
 	huggingface: { url: vendorIconAssets.huggingface, accent: '#ff9d00' },
 	huawei: { url: vendorIconAssets.huawei, accent: '#cf0a2c' },
 	ibm: { url: vendorIconAssets.ibm, accent: '#0f62fe' },
+	kingsoft: { accent: '#0084ff' },
 	meituan: { url: vendorIconAssets.meituan, accent: '#ffd100' },
 	meta: { url: vendorIconAssets.meta, accent: '#0866ff' },
 	minimax: { url: vendorIconAssets.minimax, accent: '#f25c54' },
