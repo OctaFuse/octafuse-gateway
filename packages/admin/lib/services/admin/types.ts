@@ -141,7 +141,13 @@ export type AdminProviderImportCatalogItem = {
 	protocols: UpstreamProtocol[];
 	/** 序列化后的 endpoints JSON（可 null） */
 	endpoints: string | null;
+	/** 导入后写入 `providers.description` 的运维说明，不随界面语言切换。 */
 	description: string | null;
+	/** 导入列表的本地化名称和摘要。中文界面用 `zh`，其余界面用 `en`。 */
+	labels?: {
+		en: { name: string; description: string };
+		zh: { name: string; description: string };
+	};
 	/** 官网 / 密钥页 / 可选邀请链接；不写入 providers 表。 */
 	links?: {
 		platform?: string;

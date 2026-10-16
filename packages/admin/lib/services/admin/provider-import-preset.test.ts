@@ -3,8 +3,11 @@ import { describe, it } from 'node:test';
 import {
 	inferStaticProviderIconKey,
 	inferStaticProviderVendorKey,
+	listStaticProviderImportCatalogForAdmin,
 	listStaticProviderImportPresets,
 	lookupStaticProviderCatalogLinks,
+	providerImportCatalogCopy,
+	providerImportCatalogMatchesQuery,
 	providerCatalogOutboundRel,
 	resolveProviderCatalogOutbound,
 	resolveStoredProviderPresentation,
@@ -109,6 +112,14 @@ describe('provider import preset catalog metadata', () => {
 			assert.equal(row.endpoints.gemini, undefined);
 			assert.deepEqual(listConfiguredCapabilities(row.endpoints, 'openai'), ['chat', 'responses']);
 		}
+		const catalog = listStaticProviderImportCatalogForAdmin().find((row) => row.name === 'Kingsoft StarFlow');
+		assert.ok(catalog?.labels);
+		assert.equal(providerImportCatalogCopy(catalog, 'zh').name, '金山云星流');
+		assert.match(providerImportCatalogCopy(catalog, 'zh').description ?? '', /国内版/);
+		assert.equal(providerImportCatalogCopy(catalog, 'en').name, 'Kingsoft StarFlow');
+		assert.equal(providerImportCatalogCopy(catalog, 'ja').name, 'Kingsoft StarFlow');
+		assert.equal(providerImportCatalogMatchesQuery(catalog, '金山云'), true);
+		assert.equal(providerImportCatalogMatchesQuery(catalog, 'kspmas.ksyun.com'), true);
 		assert.equal(inferStaticProviderVendorKey({ name: '星流生产账号' }), 'kingsoft');
 		assert.equal(
 			inferStaticProviderVendorKey({

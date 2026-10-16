@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **供应商导入列表随界面语言切换**：后台语言为中文时，导入供应商列表显示模板中文名称和摘要；其他语言显示英文。搜索同时匹配中英文。入库的类型键和运维说明仍是英文。无需数据库迁移。
 - **金山云星流供应商模板**：导入模板新增 `Kingsoft StarFlow`（`https://kspmas.ksyun.com`）与 `Kingsoft StarFlow (International)`（`https://global-kspmas.ksyun.com/v1`）。两边都提供 OpenAI Chat、Responses 与 Anthropic Messages（`/v1/messages`），密钥不要混用。未写入生图、音频和向量端点。无需数据库迁移。
 - **流空闲超时对下游可见**：上游流超过空闲 / 首包阈值被掐断时，Proxy 会向下游写入协议原生的终止错误事件（OpenAI Chat 的 `data: {"error":…}`、Anthropic 的 `event: error`、Gemini 的 `error` 帧、Responses 的 `error` 事件，`code` 为 `stream_idle_timeout`），不再干净关流。此前下游会把截断当成正常结束，Agent 无报错地收口。阈值、记账与请求日志不变；客户端已断开时不写帧。无需数据库迁移。
 

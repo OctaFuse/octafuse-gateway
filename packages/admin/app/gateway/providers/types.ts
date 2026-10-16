@@ -32,6 +32,10 @@ export type ProviderImportCatalogRow = {
 	protocols: UpstreamProtocol[];
 	endpoints: string | null;
 	description: string | null;
+	labels?: {
+		en: { name: string; description: string };
+		zh: { name: string; description: string };
+	};
 	links?: {
 		platform?: string;
 		api_keys?: string;

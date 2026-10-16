@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
+import { providerImportCatalogMatchesQuery } from '@/lib/provider-import-preset';
 import { sortProvidersByKindThenName } from '@/lib/provider-kind';
 import type { ProviderSyncReport } from '@/lib/provider-sync-diff';
 import { useFeedback } from '@/components/feedback';
@@ -162,7 +163,7 @@ export function useProvidersPageState() {
 	const filteredImportCatalogRows = useMemo(() => {
 		const query = importCatalogSearch.trim().toLowerCase();
 		if (!query) return importCatalogRows;
-		return importCatalogRows.filter((row) => row.name.toLowerCase().includes(query));
+		return importCatalogRows.filter((row) => providerImportCatalogMatchesQuery(row, query));
 	}, [importCatalogSearch, importCatalogRows]);
 
 	const refreshProviders = useCallback(async () => {
