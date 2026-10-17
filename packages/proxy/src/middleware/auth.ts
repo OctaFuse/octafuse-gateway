@@ -8,7 +8,7 @@ import type { Env } from '../app';
 import { GatewayErrorCode } from '../services/gateway-error-codes';
 import { gatewayErrorJson } from '../services/gateway-error-response';
 import type { ApiKeyRateLimit } from '@octafuse/core';
-import { isDashScopeRealtimePath, parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
+import { isRealtimeUpgradePath, parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
 import {
 	consumeRateLimitLayers,
 	hasPositiveTotalBalance,
@@ -77,7 +77,7 @@ function extractApiKey(c: { req: { header: (name: string) => string | undefined;
   }
 
 	// 浏览器 WebSocket 无法自定义 Authorization；实时入口从协商子协议读取 Key。
-	if (isDashScopeRealtimePath(c.req.path)) {
+	if (isRealtimeUpgradePath(c.req.path)) {
 		const realtimeAuth = parseDashScopeRealtimeAuthProtocol(
 			c.req.header('Sec-WebSocket-Protocol')
 		);

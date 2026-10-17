@@ -11,8 +11,8 @@ import type { ImageOperation } from '@/lib/image-generations';
 import { invokePlaygroundUpstream } from '@/lib/services/admin/playground-service';
 import { invokePlaygroundTool } from '@/lib/services/admin/playground-tools-service';
 import {
-	dispatchPlaygroundDashScopeRealtime,
-	PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS,
+	dispatchPlaygroundRealtime,
+	PLAYGROUND_REALTIME_OPERATIONS,
 } from '@/lib/services/admin/playground-realtime-service';
 import { copyPlaygroundUpstreamHeaders } from '@/lib/playground/proxy-response-headers';
 import { encodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
@@ -29,13 +29,15 @@ adminPlaygroundRoutes.get('/realtime', async (c) => {
 	const routeId = c.req.query('routeId')?.trim() ?? '';
 	const operation = c.req.query('operation')?.trim() ?? '';
 	if (!routeId) return c.json({ success: false as const, message: 'routeId is required' }, 400);
-	if (!(PLAYGROUND_DASHSCOPE_REALTIME_OPERATIONS as readonly string[]).includes(operation)) {
+	if (!(PLAYGROUND_REALTIME_OPERATIONS as readonly string[]).includes(operation)) {
 		return c.json({ success: false as const, message: `Unsupported realtime operation: ${operation || '(empty)'}` }, 400);
 	}
 	try {
-		const result = await dispatchPlaygroundDashScopeRealtime(
+		// ElevenLabs 的 voice_id 与其余 query（output_format、commit_strategy 等）由浏览器随 URL 传来。
+		const { routeId: _routeId, operation: _operation, voice_id: voiceId, ...query } = c.req.query();
+		const result = await dispatchPlaygroundRealtime(
 			c.get('repositories'),
-			{ routeId, operation },
+			{ routeId, operation, elevenLabs: { voiceId, query } },
 			c.env.NODE_PLAYGROUND_REALTIME_DISPATCH ? undefined : c.req.raw.signal,
 			{ nodeDispatch: c.env.NODE_PLAYGROUND_REALTIME_DISPATCH },
 		);

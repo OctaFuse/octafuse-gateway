@@ -45,6 +45,9 @@ type Props = {
 	requestTargetMissing: string | null;
 	selected: RouteListRow | null;
 	selectedUsesDashScopeRealtime: boolean;
+	selectedUsesElevenLabsRealtime: boolean;
+	/** DashScope 或 ElevenLabs 的 WebSocket 实时路由。 */
+	selectedUsesRealtime: boolean;
 	imageSendBlocked: boolean;
 	selectedImageUsesDashScope: boolean;
 	audioSendBlocked: boolean;
@@ -86,6 +89,8 @@ export function PlaygroundRequestPanel({
 	requestTargetMissing,
 	selected,
 	selectedUsesDashScopeRealtime,
+	selectedUsesElevenLabsRealtime,
+	selectedUsesRealtime,
 	imageSendBlocked,
 	selectedImageUsesDashScope,
 	audioSendBlocked,
@@ -130,9 +135,16 @@ export function PlaygroundRequestPanel({
 				bodyText,
 				customParams: selected?.custom_params,
 				upstreamProtocol: selected?.upstream_protocol,
+				upstreamOperation: selected?.upstream_operation,
 				providerModelName: selected?.provider_model_name,
 			}),
-		[bodyText, selected?.custom_params, selected?.upstream_protocol, selected?.provider_model_name]
+		[
+			bodyText,
+			selected?.custom_params,
+			selected?.upstream_protocol,
+			selected?.upstream_operation,
+			selected?.provider_model_name,
+		]
 	);
 	const routeHeaderRows = useMemo(
 		() =>
@@ -271,7 +283,7 @@ export function PlaygroundRequestPanel({
 			<div className="space-y-1">
 				<RequestTargetUrl
 					label={t('requestTargetUrl')}
-					method={selectedUsesDashScopeRealtime ? 'WebSocket' : undefined}
+					method={selectedUsesRealtime ? 'WebSocket' : undefined}
 					url={requestTargetUrl}
 					emptyHint={
 						requestTargetMissing
@@ -281,7 +293,7 @@ export function PlaygroundRequestPanel({
 				/>
 				{selected ? (
 					<p className="text-[11px] text-gray-400">
-						{t(selectedUsesDashScopeRealtime ? 'requestTargetUrlRealtimeHint' : 'requestTargetUrlHint')}
+						{t(selectedUsesRealtime ? 'requestTargetUrlRealtimeHint' : 'requestTargetUrlHint')}
 					</p>
 				) : null}
 			</div>
@@ -290,7 +302,11 @@ export function PlaygroundRequestPanel({
 				<div className="space-y-2">
 					<p className="text-xs text-gray-500">
 						{t(
-							selectedUsesDashScopeRealtime
+							selectedUsesElevenLabsRealtime
+								? selectedIsAudioTranscription
+									? 'audioRealtimeElevenLabsAsrHint'
+									: 'audioRealtimeElevenLabsTtsHint'
+								: selectedUsesDashScopeRealtime
 								? 'audioRealtimeDashScopeHint'
 								: selected?.adapter === 'elevenlabs-tts'
 								? 'audioSpeechElevenLabsOpenAiHint'
@@ -353,7 +369,9 @@ export function PlaygroundRequestPanel({
 							/>
 							<p className="mt-1 text-[11px] text-gray-400">
 								{t(
-									selectedUsesDashScopeRealtime
+									selectedUsesElevenLabsRealtime
+										? 'audioRealtimeFileElevenLabsHint'
+										: selectedUsesDashScopeRealtime
 										? 'audioRealtimeFileDashScopeHint'
 										: selectedAudioUsesDashScope
 										? 'audioFileDashScopeHint'

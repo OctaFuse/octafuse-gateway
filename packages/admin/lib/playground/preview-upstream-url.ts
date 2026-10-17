@@ -195,11 +195,13 @@ export function describePlaygroundUpstreamUrl(input: {
 			case "elevenlabs": {
 				const operation = upstreamOperation?.trim() || "audio.transcriptions";
 				const capability =
-					operation === "audio.speech"
-						? "audio.speech"
-						: operation === "audio.transcriptions" || operation === "*"
-							? "audio.transcriptions"
-							: null;
+					operation === "audio.speech" || operation === "audio.speech.realtime"
+						? operation
+						: operation === "audio.transcriptions.realtime"
+							? "audio.transcriptions.realtime"
+							: operation === "audio.transcriptions" || operation === "*"
+								? "audio.transcriptions"
+								: null;
 				target = capability ? `${protocol}/${capability}` : null;
 				if (!capability) return { url: null, target };
 				return {

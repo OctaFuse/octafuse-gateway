@@ -59,6 +59,11 @@ import {
 	type DashScopeRealtimeDispatchOptions,
 	type DashScopeRealtimeOperation,
 } from "./egress/dashscope-realtime-driver";
+import {
+	dispatchElevenLabsRealtime,
+	type ElevenLabsRealtimeDispatchOptions,
+	type ElevenLabsRealtimeParams,
+} from "./egress/elevenlabs-realtime-driver";
 import type { RealtimeSocket } from "./egress/dashscope-realtime-socket";
 import type { RealtimeUpstreamConnect } from "./egress/dashscope-realtime-session";
 import { dispatchAnthropicRoute } from "./egress/anthropic-driver";
@@ -171,6 +176,8 @@ export type AudioSpeechProxyOptions = FailoverDispatchOptions &
 	AudioSpeechDispatchOptions;
 export type DashScopeRealtimeProxyOptions = FailoverDispatchOptions &
 	DashScopeRealtimeDispatchOptions;
+export type ElevenLabsRealtimeProxyOptions = FailoverDispatchOptions &
+	ElevenLabsRealtimeDispatchOptions;
 
 /**
  * 代理 OpenAI Chat Completions：外层 provider 优先级 + 层内 route strategy failover。
@@ -622,6 +629,29 @@ export async function proxyDashScopeRealtime(
 				attempt,
 				options
 			),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 ElevenLabs 原生实时 WebSocket（TTS stream-input / 实时转写），建连失败时按普通路由规则切换供应商。 */
+export async function proxyElevenLabsRealtime(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	params: ElevenLabsRealtimeParams,
+	requestSignal?: AbortSignal,
+	options?: ElevenLabsRealtimeProxyOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"elevenlabs",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchElevenLabsRealtime(route, params, signal, timing, attempt, options),
 		requestSignal,
 		options
 	);

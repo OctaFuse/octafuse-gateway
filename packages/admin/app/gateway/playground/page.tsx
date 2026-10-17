@@ -135,6 +135,8 @@ function PlaygroundPageInner() {
 									requestTargetMissing={s.requestTargetMissing}
 									selected={s.selected}
 									selectedUsesDashScopeRealtime={s.selectedUsesDashScopeRealtime}
+									selectedUsesElevenLabsRealtime={s.selectedUsesElevenLabsRealtime}
+									selectedUsesRealtime={s.selectedUsesRealtime}
 									imageSendBlocked={s.imageSendBlocked}
 									selectedImageUsesDashScope={s.selectedImageUsesDashScope}
 									audioSendBlocked={s.audioSendBlocked}

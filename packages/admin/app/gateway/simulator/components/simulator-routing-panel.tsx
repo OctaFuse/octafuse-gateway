@@ -189,7 +189,9 @@ export function SimulatorRoutingPanel({
 								))}
 							</select>
 						</div>
-						{protocol === 'dashscope' && selectedModelIsAudio && realtimeOperationOptions.length > 0 ? (
+						{(protocol === 'dashscope' || protocol === 'elevenlabs') &&
+						selectedModelIsAudio &&
+						realtimeOperationOptions.length > 0 ? (
 							<div>
 								<label className={labelClass}>{t('realtimeOperation')}</label>
 								<select

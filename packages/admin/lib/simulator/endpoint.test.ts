@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
 	buildSimulatorDashScopeRealtimeUrl,
+	buildSimulatorElevenLabsRealtimeUrl,
 	buildSimulatorRequest,
 	withDashScopeRunTaskModel,
 } from "./endpoint";
@@ -437,6 +438,43 @@ describe("DashScope realtime simulator URL", () => {
 		assert.equal(
 			withDashScopeRunTaskModel(session, "audio.transcriptions.realtime.session", "qwen3"),
 			session
+		);
+	});
+});
+
+describe("buildSimulatorElevenLabsRealtimeUrl", () => {
+	it("builds the realtime STT URL with routed model_id", () => {
+		const url = buildSimulatorElevenLabsRealtimeUrl({
+			baseUrl: "https://gateway.example.com/",
+			modelForRouting: "elevenlabs-scribe-v2",
+			operation: "audio.transcriptions.realtime",
+			query: { audio_format: "pcm_16000", model_id: "ignored" },
+		});
+		const parsed = new URL(url);
+		assert.equal(parsed.protocol, "wss:");
+		assert.equal(parsed.pathname, "/elevenlabs/v1/speech-to-text/realtime");
+		assert.equal(parsed.searchParams.get("audio_format"), "pcm_16000");
+		assert.equal(parsed.searchParams.get("model_id"), "elevenlabs-scribe-v2");
+	});
+
+	it("builds the realtime TTS stream-input URL and requires a voice id", () => {
+		const url = buildSimulatorElevenLabsRealtimeUrl({
+			baseUrl: "http://localhost:8787",
+			modelForRouting: "elevenlabs-flash-v2.5",
+			operation: "audio.speech.realtime",
+			voiceId: "JBFqnCBsd6RMkjVDRZzb",
+			query: { output_format: "mp3_44100_128" },
+		});
+		const parsed = new URL(url);
+		assert.equal(parsed.protocol, "ws:");
+		assert.equal(parsed.pathname, "/elevenlabs/v1/text-to-speech/JBFqnCBsd6RMkjVDRZzb/stream-input");
+		assert.equal(parsed.searchParams.get("output_format"), "mp3_44100_128");
+		assert.throws(() =>
+			buildSimulatorElevenLabsRealtimeUrl({
+				baseUrl: "http://localhost:8787",
+				modelForRouting: "m",
+				operation: "audio.speech.realtime",
+			})
 		);
 	});
 });

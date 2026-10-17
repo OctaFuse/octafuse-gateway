@@ -7,6 +7,8 @@ import { requestSurfacePath } from "@octafuse/core/adapters/registry";
 import {
 	DASHSCOPE_REALTIME_INFERENCE_PATH,
 	DASHSCOPE_REALTIME_SESSION_PATH,
+	ELEVENLABS_SPEECH_TO_TEXT_REALTIME_PATH,
+	ELEVENLABS_TEXT_TO_SPEECH_REALTIME_PATH,
 } from "@octafuse/core/route-topology";
 import {
 	ELEVENLABS_TTS_VARIANTS,
@@ -103,6 +105,42 @@ export function buildSimulatorDashScopeRealtimeUrl(input: {
 	if (url.protocol === "http:") url.protocol = "ws:";
 	if (url.protocol === "https:") url.protocol = "wss:";
 	if (!isInference) url.searchParams.set("model", input.modelForRouting);
+	return url.toString();
+}
+
+/**
+ * 构造 ElevenLabs 原生实时入口的浏览器 WebSocket URL，路径与官方一致：
+ * - 实时转写：`/elevenlabs/v1/speech-to-text/realtime?model_id=`
+ * - 语音合成：`/elevenlabs/v1/text-to-speech/{voice_id}/stream-input?model_id=`
+ * 模型在 query 的 `model_id`，升级前按它选路由；鉴权走 Sec-WebSocket-Protocol。
+ * `query` 不应包含 `model_id`，由 `modelForRouting` 写入。
+ */
+export function buildSimulatorElevenLabsRealtimeUrl(input: {
+	baseUrl: string;
+	modelForRouting: string;
+	operation: string;
+	voiceId?: string;
+	query?: Record<string, string>;
+}): string {
+	const base = stripTrailingSlash(input.baseUrl.trim());
+	const isSpeech = input.operation === "audio.speech.realtime";
+	if (isSpeech && !isValidElevenLabsVoiceId(input.voiceId ?? "")) {
+		throw new Error("ElevenLabs speech requires body.voice_id");
+	}
+	const path = isSpeech
+		? ELEVENLABS_TEXT_TO_SPEECH_REALTIME_PATH.replace(
+				"{voice_id}",
+				encodeURIComponent(input.voiceId ?? "")
+			)
+		: ELEVENLABS_SPEECH_TO_TEXT_REALTIME_PATH;
+	const url = new URL(`${base}${path}`);
+	if (url.protocol === "http:") url.protocol = "ws:";
+	if (url.protocol === "https:") url.protocol = "wss:";
+	for (const [key, value] of Object.entries(input.query ?? {})) {
+		if (key === "model_id") continue;
+		url.searchParams.set(key, value);
+	}
+	url.searchParams.set("model_id", input.modelForRouting);
 	return url.toString();
 }
 

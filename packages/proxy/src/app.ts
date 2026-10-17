@@ -60,6 +60,7 @@ import {
 import { proxyAppVersion } from './app-version';
 import type { DashScopeRealtimeNodeDispatch } from './services/egress/dashscope-realtime-driver';
 import type { DeferredRealtimeRuntime } from './services/egress/dashscope-realtime-session';
+import type { ElevenLabsRealtimeNodeDispatch } from './services/egress/elevenlabs-realtime-driver';
 
 /** Cloudflare Worker bindings：D1 `DB`。Postgres 见 `src/runtime/node.ts`。 */
 export type GatewayBindings = {
@@ -70,6 +71,8 @@ export type GatewayBindings = {
 	NODE_REALTIME_DISPATCH?: DashScopeRealtimeNodeDispatch;
 	/** Node upgrade 请求临时注入：延迟连接上游的入口（inference）按需取下游与上游连接能力。 */
 	NODE_REALTIME_DEFERRED?: () => DeferredRealtimeRuntime;
+	/** Node upgrade 请求临时注入的 ElevenLabs 实时 WebSocket 调度器。 */
+	NODE_ELEVENLABS_REALTIME_DISPATCH?: ElevenLabsRealtimeNodeDispatch;
 	/** 可选；尚未收到非空 chunk 的等待上限（毫秒）。空则代码默认 2 分钟。 */
 	STREAM_FIRST_CHUNK_TIMEOUT_MS?: string;
 	/** 可选；已吐 chunk 后的空闲上限（毫秒）。空则代码默认 90 秒。 */

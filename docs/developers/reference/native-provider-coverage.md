@@ -88,8 +88,9 @@ ElevenLabs 原生路径相对 `providers.endpoints.elevenlabs.base`（默认 `ht
 | 文本转语音（流式） | `…/stream` | ✅ | ✅ | 转换入口用 `stream_format=sse` |
 | 带时间戳的文本转语音 | `…/with-timestamps`、`…/stream/with-timestamps` | ✅ | ❌ | OpenAI 没有对应字段，只开放原生透传 |
 | 文件转写（Scribe） | `/v1/speech-to-text` | ✅ | ✅ | 转换入口用 `elevenlabs-asr-file`；`webhook=true` 不支持；单文件上限沿用网关的 25MB |
-| 文本转语音（WebSocket） | `wss://…/stream-input` | ❌ | ❌ | |
-| 实时转写 | `wss://…/speech-to-text/realtime` | ❌ | ❌ | Scribe Realtime |
+| 文本转语音（WebSocket） | `wss://…/text-to-speech/{voice_id}/stream-input` | ✅ | — | 公开 `GET /elevenlabs/v1/text-to-speech/{voice_id}/stream-input?model_id=`；用量按客户端发出的字符估算 |
+| 文本转语音（多路 WebSocket） | `wss://…/multi-stream-input` | ❌ | — | 暂不支持 |
+| 实时转写 | `wss://…/speech-to-text/realtime` | ✅ | — | Scribe Realtime；公开 `GET /elevenlabs/v1/speech-to-text/realtime?model_id=`，用量按客户端发出的音频字节折算秒数（估算） |
 | 音色列表 / 复刻 / 设计 / 管理 | `/v1/voices`、`/v1/voices/add` 等 | ❌ | — | 音色 ID 由客户端自行管理 |
 | 语音转语音 | `/v1/speech-to-speech/{voice_id}` | ❌ | ❌ | |
 | 配音、音效、音乐、语音隔离 | `/v1/dubbing`、`/v1/sound-generation`、`/v1/music`、`/v1/audio-isolation` | ❌ | ❌ | |
@@ -122,7 +123,7 @@ ElevenLabs 原生路径相对 `providers.endpoints.elevenlabs.base`（默认 `ht
 | 类型 | 缺失项 |
 |------|--------|
 | DashScope 模型 | `qwen3-tts-*` / `qwen-tts*`、`qwen-tts-realtime*`、`MiniMax/speech-2.8-hd`、`paraformer-*`、`qwen-audio-3.1-asr-flash-*`、`qwen-image-edit*` |
-| ElevenLabs 模型 | `scribe_v1`（已弃用，定价页不再列价）、`scribe_v2_realtime`（仅 WebSocket） |
+| ElevenLabs 模型 | `scribe_v1`（已弃用，定价页不再列价） |
 | MiniMax 模型 | `MiniMax-M2.5-highspeed`、`MiniMax-M2.1`、`MiniMax-M2.1-highspeed`、`MiniMax-M2`、`MiniMax-M3.1-Flash-Preview`（仅 M Plan）、`speech-2.6-hd` / `speech-2.6-turbo`、`speech-02-hd` / `speech-02-turbo` |
 
 ## 官方来源

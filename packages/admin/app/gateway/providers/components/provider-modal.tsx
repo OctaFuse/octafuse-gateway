@@ -94,6 +94,8 @@ function ProtocolFields(props: {
 		audioTranscriptionsMultimodal: string;
 		audioTranscriptionsTasks: string;
 		audioSpeech: string;
+		audioSpeechRealtime: string;
+		audioTranscriptionsRealtime: string;
 		audioSpeechMultimodal: string;
 		audioRealtimeInference: string;
 		audioRealtimeSession: string;
@@ -112,6 +114,7 @@ function ProtocolFields(props: {
 	volcengineImageHint?: string;
 	elevenlabsTranscriptionHint?: string;
 	elevenlabsSpeechHint?: string;
+	elevenlabsRealtimeHints?: { speech: string; transcription: string };
 	authLabels?: {
 		label: string;
 		auto: string;
@@ -137,6 +140,7 @@ function ProtocolFields(props: {
 		volcengineImageHint,
 		elevenlabsTranscriptionHint,
 		elevenlabsSpeechHint,
+		elevenlabsRealtimeHints,
 		authLabels,
 		onChange,
 	} = props;
@@ -489,6 +493,42 @@ function ProtocolFields(props: {
 										<p className="mt-1 text-xs text-gray-500">{elevenlabsSpeechHint}</p>
 									) : null}
 								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.audioTranscriptionsRealtime}
+									</label>
+									<input
+										type="url"
+										value={form.audio_transcriptions_realtime}
+										onChange={(e) =>
+											onChange({ ...form, audio_transcriptions_realtime: e.target.value })
+										}
+										className={inputClass}
+										placeholder="wss://…/speech-to-text/realtime"
+										autoComplete="off"
+									/>
+									{elevenlabsRealtimeHints ? (
+										<p className="mt-1 text-xs text-gray-500">{elevenlabsRealtimeHints.transcription}</p>
+									) : null}
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.audioSpeechRealtime}
+									</label>
+									<input
+										type="url"
+										value={form.audio_speech_realtime}
+										onChange={(e) =>
+											onChange({ ...form, audio_speech_realtime: e.target.value })
+										}
+										className={inputClass}
+										placeholder="wss://…/text-to-speech/{voice_id}/stream-input"
+										autoComplete="off"
+									/>
+									{elevenlabsRealtimeHints ? (
+										<p className="mt-1 text-xs text-gray-500">{elevenlabsRealtimeHints.speech}</p>
+									) : null}
+								</div>
 							</>
 						) : null}
 						{protocol === "dashscope" ? (
@@ -612,6 +652,8 @@ export function ProviderModal(props: ProviderModalProps) {
 		audioTranscriptionsMultimodal: t('capAudioTranscriptionsMultimodal'),
 		audioTranscriptionsTasks: t('capAudioTranscriptionsTasks'),
 		audioSpeech: t('capAudioSpeech'),
+		audioSpeechRealtime: t('capAudioSpeechRealtime'),
+		audioTranscriptionsRealtime: t('capAudioTranscriptionsRealtime'),
 		audioSpeechMultimodal: t('capAudioSpeechMultimodal'),
 		audioRealtimeInference: t('capAudioRealtimeInference'),
 		audioRealtimeSession: t('capAudioRealtimeSession'),
@@ -629,6 +671,10 @@ export function ProviderModal(props: ProviderModalProps) {
 	const volcengineImageHint = t("capHintVolcengineImagesGenerations");
 	const elevenlabsTranscriptionHint = t("capHintElevenLabsAudioTranscriptions");
 	const elevenlabsSpeechHint = t("capHintElevenLabsAudioSpeech");
+	const elevenlabsRealtimeHints = {
+		speech: t("capHintElevenLabsAudioSpeechRealtime"),
+		transcription: t("capHintElevenLabsAudioTranscriptionsRealtime"),
+	};
 	const dashscopeCapHints: Record<DashScopeOverrideField, string> = {
 		images_generations_multimodal: t('capHintImagesGenerationsMultimodal'),
 		audio_transcriptions: t('capHintAudioTranscriptions'),
@@ -1001,6 +1047,7 @@ export function ProviderModal(props: ProviderModalProps) {
 										capLabels={capLabels}
 										elevenlabsTranscriptionHint={elevenlabsTranscriptionHint}
 										elevenlabsSpeechHint={elevenlabsSpeechHint}
+										elevenlabsRealtimeHints={elevenlabsRealtimeHints}
 										onChange={(elevenlabs) => onFormChange({ ...formData, elevenlabs })}
 									/>
 								) : null}

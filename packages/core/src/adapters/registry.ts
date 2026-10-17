@@ -81,6 +81,17 @@ export const ELEVENLABS_TEXT_TO_SPEECH_PATH = '/elevenlabs/v1/text-to-speech/{vo
 /** ElevenLabs 原生文件转写透传：`POST /elevenlabs/v1/speech-to-text`。 */
 export const ELEVENLABS_SPEECH_TO_TEXT_PATH = '/elevenlabs/v1/speech-to-text';
 
+/**
+ * ElevenLabs 文本转语音 WebSocket（单路 stream-input）：
+ * `GET /elevenlabs/v1/text-to-speech/{voice_id}/stream-input?model_id=`。
+ * 模型在 query 的 `model_id` 里，升级前选路由。
+ */
+export const ELEVENLABS_TEXT_TO_SPEECH_REALTIME_PATH =
+	'/elevenlabs/v1/text-to-speech/{voice_id}/stream-input';
+
+/** ElevenLabs 实时转写 WebSocket（Scribe Realtime）：`GET /elevenlabs/v1/speech-to-text/realtime?model_id=`。 */
+export const ELEVENLABS_SPEECH_TO_TEXT_REALTIME_PATH = '/elevenlabs/v1/speech-to-text/realtime';
+
 export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
 
 /** Gemini 原生向量入口 operation：`embedContent` 与 `batchEmbedContents` 共用。 */
@@ -188,6 +199,8 @@ const ELEVENLABS_STT_MODELS = {
 	include: ['scribe_*'],
 	exclude: ['*realtime*'],
 } as const;
+/** ElevenLabs Scribe 实时转写（WebSocket）：`scribe_*_realtime`。 */
+const ELEVENLABS_STT_REALTIME_MODELS = { include: ['scribe_*realtime*'] } as const;
 const MINIMAX_IMAGE_MODELS = ['image-01*'] as const;
 const VOLCENGINE_IMAGE_MODELS = ['doubao-seedream-*', 'dola-seedream-*', 'seedream-*'] as const;
 const QWEN_TTS_REALTIME_SESSION_MODELS = ['qwen3-tts-*realtime*', 'qwen-tts-realtime*'] as const;
@@ -735,6 +748,30 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		upstreamModels: ELEVENLABS_TTS_MODELS,
 	}),
 	passthroughDescriptor({
+		protocol: 'elevenlabs',
+		operation: 'audio.transcriptions.realtime',
+		modelKind: 'asr',
+		modality: 'audio',
+		exchange: 'websocket',
+		billing: 'per_second',
+		responsePayload: 'websocket',
+		requiredUpstreamCapabilities: ['audio.transcriptions.realtime'],
+		publicPath: `${ELEVENLABS_SPEECH_TO_TEXT_REALTIME_PATH}?model_id=${SURFACE_PATH_MODEL_PLACEHOLDER}`,
+		upstreamModels: ELEVENLABS_STT_REALTIME_MODELS,
+	}),
+	passthroughDescriptor({
+		protocol: 'elevenlabs',
+		operation: 'audio.speech.realtime',
+		modelKind: 'tts',
+		modality: 'audio',
+		exchange: 'websocket',
+		billing: 'per_character',
+		responsePayload: 'websocket',
+		requiredUpstreamCapabilities: ['audio.speech.realtime'],
+		publicPath: `${ELEVENLABS_TEXT_TO_SPEECH_REALTIME_PATH}?model_id=${SURFACE_PATH_MODEL_PLACEHOLDER}`,
+		upstreamModels: ELEVENLABS_TTS_MODELS,
+	}),
+	passthroughDescriptor({
 		protocol: 'minimax',
 		operation: 'images.generations',
 		modelKind: 'image',
@@ -1039,7 +1076,12 @@ export function requestSurfacePath(
 	}
 	if (protocol === 'minimax' || protocol === 'volcengine' || protocol === 'elevenlabs') {
 		if (operation === '*') return '/*';
-		return lookupPublicPath(protocol, operation) ?? `/${operation}`;
+		const path = lookupPublicPath(protocol, operation) ?? `/${operation}`;
+		// ElevenLabs 实时入口的 `model_id` query 提示；有具体模型时替换占位符。
+		if (modelId && modelId.length > 0 && path.includes(SURFACE_PATH_MODEL_PLACEHOLDER)) {
+			return path.replace(SURFACE_PATH_MODEL_PLACEHOLDER, encodeURIComponent(modelId));
+		}
+		return path;
 	}
 	if (protocol === 'dashscope') {
 		if (operation.includes('.realtime.')) {

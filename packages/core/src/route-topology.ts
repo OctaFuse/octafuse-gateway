@@ -30,6 +30,8 @@ export {
 	VOLCENGINE_IMAGE_GENERATIONS_PATH,
 	ELEVENLABS_TEXT_TO_SPEECH_PATH,
 	ELEVENLABS_SPEECH_TO_TEXT_PATH,
+	ELEVENLABS_TEXT_TO_SPEECH_REALTIME_PATH,
+	ELEVENLABS_SPEECH_TO_TEXT_REALTIME_PATH,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	ROUTE_ADAPTERS,
@@ -88,10 +90,17 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 	volcengine: ['images.generations'],
 	/**
 	 * 公开入口：`POST /elevenlabs/v1/text-to-speech/:voice_id[/stream][/with-timestamps]`、
-	 * `POST /elevenlabs/v1/speech-to-text`。adapter 都是 passthrough。
-	 * TTS 四种变体共用 `audio.speech`。
+	 * `POST /elevenlabs/v1/speech-to-text`；WebSocket：
+	 * `GET /elevenlabs/v1/text-to-speech/:voice_id/stream-input`、`GET /elevenlabs/v1/speech-to-text/realtime`
+	 * （升级前用 query `model_id` 选路由）。adapter 都是 passthrough。
+	 * TTS 四种 HTTP 变体共用 `audio.speech`。
 	 */
-	elevenlabs: ['audio.transcriptions', 'audio.speech'],
+	elevenlabs: [
+		'audio.transcriptions',
+		'audio.transcriptions.realtime',
+		'audio.speech',
+		'audio.speech.realtime',
+	],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =

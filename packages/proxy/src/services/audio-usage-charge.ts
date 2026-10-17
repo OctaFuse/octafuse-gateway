@@ -293,7 +293,8 @@ function buildAudioPerCharacterCosts(
 				billable_characters: billableCharacters,
 				price_per_character: pricePerCharacter,
 				minimum_characters: profile.audio.minimum_characters ?? 0,
-				usage_source: 'upstream',
+				// 实时 WebSocket 没有上游字符回执，字符数由网关按客户端发出的文本估算。
+				usage_source: billing.durationSource === 'estimated' ? 'estimated' : 'upstream',
 				supplier: {
 					path: 'profile',
 					source: 'model_x_factor',

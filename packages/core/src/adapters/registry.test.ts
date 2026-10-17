@@ -76,6 +76,12 @@ describe('adapter registry', () => {
 		const asr = getAdapterByOptionKey('elevenlabs-asr-file')!;
 		assert.equal(matchAdapterUpstreamModel(asr, 'scribe_v2'), 'match');
 		assert.equal(matchAdapterUpstreamModel(asr, 'scribe_v2_realtime'), 'mismatch');
+		const asrRealtime = getAdapterByOptionKey('passthrough:elevenlabs:audio.transcriptions.realtime')!;
+		assert.equal(matchAdapterUpstreamModel(asrRealtime, 'scribe_v2_realtime'), 'match');
+		assert.equal(matchAdapterUpstreamModel(asrRealtime, 'scribe_v2'), 'mismatch');
+		const ttsRealtime = getAdapterByOptionKey('passthrough:elevenlabs:audio.speech.realtime')!;
+		assert.equal(matchAdapterUpstreamModel(ttsRealtime, 'eleven_flash_v2_5'), 'match');
+		assert.equal(matchAdapterUpstreamModel(ttsRealtime, 'scribe_v2_realtime'), 'mismatch');
 	});
 
 	it('treats only mapped adapters as conversion adapters', () => {
@@ -203,9 +209,18 @@ describe('adapter registry', () => {
 		]);
 		assert.deepEqual(requestOperationsFromRegistry('minimax', 'tts'), ['audio.speech']);
 		assert.deepEqual(requestOperationsFromRegistry('minimax', 'image'), ['images.generations']);
-		assert.deepEqual(requestOperationsFromRegistry('elevenlabs', 'asr'), ['audio.transcriptions']);
-		assert.deepEqual(requestOperationsFromRegistry('elevenlabs', 'tts'), ['audio.speech']);
-		assert.deepEqual(upstreamOperationsFromRegistry('elevenlabs', 'tts'), ['audio.speech']);
+		assert.deepEqual(requestOperationsFromRegistry('elevenlabs', 'asr'), [
+			'audio.transcriptions',
+			'audio.transcriptions.realtime',
+		]);
+		assert.deepEqual(requestOperationsFromRegistry('elevenlabs', 'tts'), [
+			'audio.speech',
+			'audio.speech.realtime',
+		]);
+		assert.deepEqual(upstreamOperationsFromRegistry('elevenlabs', 'tts'), [
+			'audio.speech',
+			'audio.speech.realtime',
+		]);
 		assert.deepEqual(requestOperationsFromRegistry('gemini', 'llm'), ['models.generate']);
 		assert.deepEqual(requestOperationsFromRegistry('gemini', 'image'), ['models.generate']);
 		assert.deepEqual(upstreamOperationsFromRegistry('gemini', 'image'), ['models.generate']);
@@ -239,6 +254,14 @@ describe('adapter registry', () => {
 		assert.equal(
 			requestSurfacePath('elevenlabs', 'audio.transcriptions'),
 			'/elevenlabs/v1/speech-to-text',
+		);
+		assert.equal(
+			requestSurfacePath('elevenlabs', 'audio.speech.realtime'),
+			'/elevenlabs/v1/text-to-speech/{voice_id}/stream-input?model_id={model}',
+		);
+		assert.equal(
+			requestSurfacePath('elevenlabs', 'audio.transcriptions.realtime', 'scribe_v2_realtime'),
+			'/elevenlabs/v1/speech-to-text/realtime?model_id=scribe_v2_realtime',
 		);
 		assert.equal(
 			requestSurfacePath('minimax', 'images.generations'),

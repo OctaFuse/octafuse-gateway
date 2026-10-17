@@ -46,6 +46,15 @@ describe('TTS per-character billing', () => {
 		assert.match(costs.pricingAuditJson, /"usage_source":"upstream"/);
 	});
 
+	it('marks gateway-estimated characters (realtime WebSocket) as estimated', async () => {
+		const costs = await estimateAudioSpeechCosts(mockRepos(), {
+			modelPricingProfileJson: PROFILE,
+			characters: 5,
+			durationSource: 'estimated',
+		});
+		assert.match(costs.pricingAuditJson, /"usage_source":"estimated"/);
+	});
+
 	it('does not replace missing upstream usage with the input length', async () => {
 		const costs = await estimateAudioSpeechCosts(mockRepos(), {
 			modelPricingProfileJson: PROFILE,

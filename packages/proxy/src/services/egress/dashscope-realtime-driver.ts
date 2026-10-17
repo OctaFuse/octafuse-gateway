@@ -500,7 +500,7 @@ export async function dispatchDashScopeRealtime(
 }
 
 /** 把 Workers `WebSocket` 包成运行时无关的 `RealtimeSocket`（会先 accept）。 */
-function wrapWorkersWebSocket(
+export function wrapWorkersWebSocket(
 	socket: WebSocket,
 	options: { upstream: boolean }
 ): RealtimeSocket {

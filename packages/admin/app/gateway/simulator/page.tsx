@@ -92,7 +92,7 @@ export default function SimulatorPage() {
 							routeGroup={s.routeGroup}
 							onRouteGroupChange={s.setRouteGroup}
 							routeGroupsForModel={s.routeGroupsForModel}
-							realtimeOperation={s.selectedDashScopeRealtimeOperation}
+							realtimeOperation={s.selectedRealtimeOperation}
 							realtimeOperationOptions={s.realtimeOperationOptions}
 							onRealtimeOperationChange={s.setDashScopeRealtimeOperation}
 							selectedModelIsAudio={s.selectedModelIsAudio}
@@ -167,9 +167,10 @@ export default function SimulatorPage() {
 										s.protocol === 'elevenlabs')
 								}
 								showAudioRealtime={
-									s.protocol === 'dashscope' &&
 									s.selectedAudioOperation != null &&
-									(s.selectedDashScopeRealtimeOperation?.includes('.realtime.') ?? false)
+									((s.protocol === 'dashscope' &&
+										(s.selectedRealtimeOperation?.includes('.realtime.') ?? false)) ||
+										s.selectedElevenLabsRealtimeOperation != null)
 								}
 								audioFile={s.audioFile}
 								onAudioFileChange={s.setAudioFile}

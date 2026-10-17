@@ -1283,6 +1283,17 @@ Content-Type: multipart/form-data
 
 请求与上游都是 `elevenlabs` + `audio.transcriptions`，adapter 必须是 `passthrough`。表单沿用 ElevenLabs 官方字段，`model_id` 必填且填 Gateway 模型 ID；`file` 与 `cloud_storage_url` / `source_url` 二选一。`webhook=true` 返回 400。响应保持上游原文，按上游 `audio_duration_secs` 按秒计费。
 
+### ElevenLabs WebSocket 透传
+
+```text
+GET /elevenlabs/v1/text-to-speech/{voice_id}/stream-input?model_id=<GATEWAY_MODEL_ID>
+GET /elevenlabs/v1/speech-to-text/realtime?model_id=<GATEWAY_MODEL_ID>
+xi-api-key: <USER_API_KEY>        # 也可用 Authorization: Bearer，或浏览器子协议 octafuse-api-key.<key>
+Upgrade: websocket
+```
+
+请求与上游分别是 `elevenlabs` + `audio.speech.realtime` / `audio.transcriptions.realtime`，adapter 必须是 `passthrough`。`model_id` 必填且填 Gateway 模型 ID（可带 `:route_group` 后缀），升级前即完成鉴权、模型类型与余额检查并选路由，失败时 Workers 部署返回 HTTP 状态码，Node 部署以关闭码 1008 关闭连接（错误文本在 close reason）；非 WebSocket 请求返回 426。帧格式沿用 ElevenLabs 官方协议。只支持单路 `stream-input`，不支持 `multi-stream-input`。会话用量由网关按客户端发出的文本字符（TTS）或音频字节折算的秒数（实时转写）估算，只做开始前的余额检查，不在会话中途截断。详见 [ElevenLabs 音频](../architecture/elevenlabs-audio.md#websocket-透传)。
+
 OpenAI 入口使用适配器 `elevenlabs-asr-file`，调用上面的 `POST /v1/audio/transcriptions`。`language` 转为 `language_code`，`prompt` 不转发；`response_format` 支持 `json`、`text`、`verbose_json`、`diarized_json`、`srt`、`vtt`，其中 `diarized_json` 会开启说话人识别，`srt` / `vtt` 由网关生成。`tag_audio_events`、`num_speakers` 等官方字段作为额外表单字段传入。
 
 ### MiniMax 文件转写透传

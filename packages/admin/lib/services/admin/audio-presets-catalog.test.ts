@@ -17,6 +17,7 @@ const EXPECTED_AUDIO_IDS = [
 	'elevenlabs-multilingual-v2',
 	'elevenlabs-scribe-v2',
 	'elevenlabs-scribe-v2-medical',
+	'elevenlabs-scribe-v2-realtime',
 	'elevenlabs-turbo-v2.5',
 	'elevenlabs-v3',
 	'elevenlabs-v3-conversational',
@@ -167,5 +168,15 @@ describe('static audio model presets (*-audio.json)', () => {
 		assert.equal(perCharCny('elevenlabs-flash-v2.5').price_per_character, 0.00028);
 		assert.deepEqual(byId.get('elevenlabs-scribe-v2-medical')!.pricing.usd, scribe.pricing.usd);
 		assert.deepEqual(byId.get('elevenlabs-scribe-v2-medical')!.pricing.cny, scribe.pricing.cny);
+		const realtime = byId.get('elevenlabs-scribe-v2-realtime')!;
+		assert.equal(asPricing(realtime.pricing.usd).audio_billing_mode, 'per_second');
+		assert.equal(
+			(asPricing(realtime.pricing.usd).audio as { price_per_second: number }).price_per_second,
+			0.00010833
+		);
+		assert.equal(
+			(asPricing(realtime.pricing.cny).audio as { price_per_second: number }).price_per_second,
+			0.00075833
+		);
 	});
 });

@@ -44,6 +44,7 @@ import { RequestTimingCollector } from '../../services/request-timing';
 import { scheduleBackgroundWork } from '../../runtime/schedule-background-work';
 import { stickyConfigFromSurface } from '../../services/provider-sticky-routing';
 import { audioModelGuardMessage } from './audio-model-guard';
+import { handleElevenLabsTtsRealtime } from './elevenlabs-realtime';
 
 type SpeechEnv = Env & { Variables: { apiKey: ApiKeyContext } };
 
@@ -61,6 +62,9 @@ const VARIANT_PATHS: ReadonlyArray<readonly [string, ElevenLabsTtsVariant]> = [
 for (const [path, variant] of VARIANT_PATHS) {
 	elevenLabsTextToSpeechRoutes.post(path, (c) => handleElevenLabsSpeech(c, variant));
 }
+
+// WebSocket：`GET /:voiceId/stream-input?model_id=`（单路 stream-input；不支持 multi-stream-input）。
+elevenLabsTextToSpeechRoutes.get('/:voiceId/stream-input', handleElevenLabsTtsRealtime);
 
 async function handleElevenLabsSpeech(
 	c: Context<SpeechEnv>,

@@ -2,10 +2,10 @@
 	{
 		"id": "elevenlabs-v4",
 		"display_name": "ElevenLabs Eleven v4",
-		"description": "ElevenLabs Eleven v4 text-to-speech: the most emotive, highest-quality model with strong voice cloning, 90+ languages, multi-speaker dialogue, and a 10,000-character limit per request. Set the route provider model name to eleven_v4. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.08 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"description": "ElevenLabs Eleven v4 text-to-speech: the most emotive, highest-quality model with strong voice cloning, 90+ languages, multi-speaker dialogue, and a 10,000-character limit per request. Set the route provider model name to eleven_v4. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.08 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
 		"i18n": {
-			"en": "ElevenLabs Eleven v4 text-to-speech: the most emotive, highest-quality model with strong voice cloning, 90+ languages, multi-speaker dialogue, and a 10,000-character limit per request. Set the route provider model name to eleven_v4. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.08 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
-			"zh": "ElevenLabs Eleven v4 文本转语音：情绪表现力最强、音质最高的模型，声音克隆出色，支持 90+ 种语言和多人对话，单次请求上限 10,000 字符。供应商模型名填 eleven_v4。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.08/千字符，按字符计费。网关只代理 HTTP 文本转语音端点，不含 WebSocket。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
+			"en": "ElevenLabs Eleven v4 text-to-speech: the most emotive, highest-quality model with strong voice cloning, 90+ languages, multi-speaker dialogue, and a 10,000-character limit per request. Set the route provider model name to eleven_v4. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.08 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Eleven v4 文本转语音：情绪表现力最强、音质最高的模型，声音克隆出色，支持 90+ 种语言和多人对话，单次请求上限 10,000 字符。供应商模型名填 eleven_v4。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.08/千字符，按字符计费。网关代理 HTTP 文本转语音端点和单路 WebSocket stream-input 端点（不含 multi-stream-input）；WebSocket 按客户端发出的字符数计费。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
 		},
 		"vendor": "elevenlabs",
 		"pricing": {
@@ -36,10 +36,10 @@
 	{
 		"id": "elevenlabs-v4-turbo",
 		"display_name": "ElevenLabs Eleven v4 Turbo",
-		"description": "ElevenLabs Eleven v4 Turbo text-to-speech: real-time model with median inference latency of about 100 ms, v4-style expressiveness, audio tags, and 90+ languages. Set the route provider model name to eleven_v4_turbo. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"description": "ElevenLabs Eleven v4 Turbo text-to-speech: real-time model with median inference latency of about 100 ms, v4-style expressiveness, audio tags, and 90+ languages. Set the route provider model name to eleven_v4_turbo. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
 		"i18n": {
-			"en": "ElevenLabs Eleven v4 Turbo text-to-speech: real-time model with median inference latency of about 100 ms, v4-style expressiveness, audio tags, and 90+ languages. Set the route provider model name to eleven_v4_turbo. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
-			"zh": "ElevenLabs Eleven v4 Turbo 文本转语音：面向实时场景，推理延迟中位数约 100 ms，保留 v4 的表现力，支持音频标签和 90+ 种语言。供应商模型名填 eleven_v4_turbo。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.04/千字符，按字符计费。网关只代理 HTTP 文本转语音端点，不含 WebSocket。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
+			"en": "ElevenLabs Eleven v4 Turbo text-to-speech: real-time model with median inference latency of about 100 ms, v4-style expressiveness, audio tags, and 90+ languages. Set the route provider model name to eleven_v4_turbo. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Eleven v4 Turbo 文本转语音：面向实时场景，推理延迟中位数约 100 ms，保留 v4 的表现力，支持音频标签和 90+ 种语言。供应商模型名填 eleven_v4_turbo。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.04/千字符，按字符计费。网关代理 HTTP 文本转语音端点和单路 WebSocket stream-input 端点（不含 multi-stream-input）；WebSocket 按客户端发出的字符数计费。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
 		},
 		"vendor": "elevenlabs",
 		"pricing": {
@@ -104,10 +104,10 @@
 	{
 		"id": "elevenlabs-v3-conversational",
 		"display_name": "ElevenLabs Eleven v3 Conversational",
-		"description": "ElevenLabs Eleven v3 Conversational text-to-speech: low-latency (about 280 ms) v3 for realtime conversation, with audio tags and 70+ languages. Set the route provider model name to eleven_v3_conversational. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"description": "ElevenLabs Eleven v3 Conversational text-to-speech: low-latency (about 280 ms) v3 for realtime conversation, with audio tags and 70+ languages. Set the route provider model name to eleven_v3_conversational. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
 		"i18n": {
-			"en": "ElevenLabs Eleven v3 Conversational text-to-speech: low-latency (about 280 ms) v3 for realtime conversation, with audio tags and 70+ languages. Set the route provider model name to eleven_v3_conversational. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
-			"zh": "ElevenLabs Eleven v3 Conversational 文本转语音：面向实时对话的低延迟（约 280 ms）v3，支持音频标签和 70+ 种语言。供应商模型名填 eleven_v3_conversational。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.04/千字符，按字符计费。网关只代理 HTTP 文本转语音端点，不含 WebSocket。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
+			"en": "ElevenLabs Eleven v3 Conversational text-to-speech: low-latency (about 280 ms) v3 for realtime conversation, with audio tags and 70+ languages. Set the route provider model name to eleven_v3_conversational. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Eleven v3 Conversational 文本转语音：面向实时对话的低延迟（约 280 ms）v3，支持音频标签和 70+ 种语言。供应商模型名填 eleven_v3_conversational。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.04/千字符，按字符计费。网关代理 HTTP 文本转语音端点和单路 WebSocket stream-input 端点（不含 multi-stream-input）；WebSocket 按客户端发出的字符数计费。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
 		},
 		"vendor": "elevenlabs",
 		"pricing": {
@@ -206,10 +206,10 @@
 	{
 		"id": "elevenlabs-flash-v2",
 		"display_name": "ElevenLabs Flash v2",
-		"description": "ElevenLabs Flash v2 text-to-speech: ultra-low latency (about 75 ms), English only, 30,000-character limit per request. Set the route provider model name to eleven_flash_v2. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"description": "ElevenLabs Flash v2 text-to-speech: ultra-low latency (about 75 ms), English only, 30,000-character limit per request. Set the route provider model name to eleven_flash_v2. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
 		"i18n": {
-			"en": "ElevenLabs Flash v2 text-to-speech: ultra-low latency (about 75 ms), English only, 30,000-character limit per request. Set the route provider model name to eleven_flash_v2. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
-			"zh": "ElevenLabs Flash v2 文本转语音：超低延迟（约 75 ms），仅支持英语，单次请求上限 30,000 字符。供应商模型名填 eleven_flash_v2。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.04/千字符，按字符计费。网关只代理 HTTP 文本转语音端点，不含 WebSocket。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
+			"en": "ElevenLabs Flash v2 text-to-speech: ultra-low latency (about 75 ms), English only, 30,000-character limit per request. Set the route provider model name to eleven_flash_v2. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Flash v2 文本转语音：超低延迟（约 75 ms），仅支持英语，单次请求上限 30,000 字符。供应商模型名填 eleven_flash_v2。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.04/千字符，按字符计费。网关代理 HTTP 文本转语音端点和单路 WebSocket stream-input 端点（不含 multi-stream-input）；WebSocket 按客户端发出的字符数计费。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
 		},
 		"vendor": "elevenlabs",
 		"pricing": {
@@ -240,10 +240,10 @@
 	{
 		"id": "elevenlabs-turbo-v2.5",
 		"display_name": "ElevenLabs Turbo v2.5",
-		"description": "ElevenLabs Turbo v2.5 text-to-speech: first-generation low-latency model, 32 languages. ElevenLabs marks it deprecated and recommends Flash v2.5, which has lower latency. Set the route provider model name to eleven_turbo_v2_5. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"description": "ElevenLabs Turbo v2.5 text-to-speech: first-generation low-latency model, 32 languages. ElevenLabs marks it deprecated and recommends Flash v2.5, which has lower latency. Set the route provider model name to eleven_turbo_v2_5. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
 		"i18n": {
-			"en": "ElevenLabs Turbo v2.5 text-to-speech: first-generation low-latency model, 32 languages. ElevenLabs marks it deprecated and recommends Flash v2.5, which has lower latency. Set the route provider model name to eleven_turbo_v2_5. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints only (no WebSocket). CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
-			"zh": "ElevenLabs Turbo v2.5 文本转语音：第一代低延迟模型，支持 32 种语言。官方已标记为弃用，建议改用延迟更低的 Flash v2.5。供应商模型名填 eleven_turbo_v2_5。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.04/千字符，按字符计费。网关只代理 HTTP 文本转语音端点，不含 WebSocket。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
+			"en": "ElevenLabs Turbo v2.5 text-to-speech: first-generation low-latency model, 32 languages. ElevenLabs marks it deprecated and recommends Flash v2.5, which has lower latency. Set the route provider model name to eleven_turbo_v2_5. Use the elevenlabs-tts adapter for OpenAI /v1/audio/speech (voice is an ElevenLabs voice_id), or ElevenLabs audio.speech passthrough for the native text-to-speech endpoints. Official list price $0.04 per 1K characters; billed per character. The gateway proxies the HTTP text-to-speech endpoints and the single-stream WebSocket stream-input endpoint (multi-stream-input is not supported); the WebSocket is billed by the characters the client sends. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Turbo v2.5 文本转语音：第一代低延迟模型，支持 32 种语言。官方已标记为弃用，建议改用延迟更低的 Flash v2.5。供应商模型名填 eleven_turbo_v2_5。OpenAI /v1/audio/speech 用适配器 elevenlabs-tts（voice 填 ElevenLabs 的 voice_id），原生文本转语音端点用 audio.speech 透传。官方刊例价 $0.04/千字符，按字符计费。网关代理 HTTP 文本转语音端点和单路 WebSocket stream-input 端点（不含 multi-stream-input）；WebSocket 按客户端发出的字符数计费。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
 		},
 		"vendor": "elevenlabs",
 		"pricing": {
@@ -326,6 +326,40 @@
 				"audio_billing_mode": "per_second",
 				"audio": {
 					"price_per_second": 0.00042777,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
+		"id": "elevenlabs-scribe-v2-realtime",
+		"display_name": "ElevenLabs Scribe v2 Realtime",
+		"description": "ElevenLabs Scribe v2 Realtime speech-to-text over WebSocket (GET /v1/speech-to-text/realtime): low-latency streaming transcription with partial and committed transcripts, 90+ languages. Set the route provider model name to scribe_v2_realtime and use the ElevenLabs audio.transcriptions.realtime passthrough; the OpenAI /v1/audio/transcriptions endpoint is not supported for this model. Official list price $0.39 per hour; the gateway meters per second from the audio bytes the client sends (using the session audio_format), so it is an estimate to reconcile against the ElevenLabs dashboard. Browsers cannot set the xi-api-key header: authenticate with the Sec-WebSocket-Protocol token octafuse-api-key.<key>. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"i18n": {
+			"en": "ElevenLabs Scribe v2 Realtime speech-to-text over WebSocket (GET /v1/speech-to-text/realtime): low-latency streaming transcription with partial and committed transcripts, 90+ languages. Set the route provider model name to scribe_v2_realtime and use the ElevenLabs audio.transcriptions.realtime passthrough; the OpenAI /v1/audio/transcriptions endpoint is not supported for this model. Official list price $0.39 per hour; the gateway meters per second from the audio bytes the client sends (using the session audio_format), so it is an estimate to reconcile against the ElevenLabs dashboard. Browsers cannot set the xi-api-key header: authenticate with the Sec-WebSocket-Protocol token octafuse-api-key.<key>. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Scribe v2 Realtime 实时转写（WebSocket，GET /v1/speech-to-text/realtime）：低延迟流式转写，返回临时与已提交转写文本，支持 90+ 种语言。供应商模型名填 scribe_v2_realtime，路由适配器用 ElevenLabs audio.transcriptions.realtime 透传；该模型不支持 OpenAI /v1/audio/transcriptions。官方刊例价 $0.39/小时；网关按客户端发出的音频字节（结合会话的 audio_format）折算成秒计量，属估算，需与 ElevenLabs 控制台对账。浏览器无法设置 xi-api-key 请求头，请用 Sec-WebSocket-Protocol 子协议 octafuse-api-key.<key> 鉴权。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。"
+		},
+		"vendor": "elevenlabs",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00010833,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00075833,
 					"minimum_seconds": 1
 				}
 			}

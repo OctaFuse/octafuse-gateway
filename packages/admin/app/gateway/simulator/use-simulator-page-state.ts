@@ -28,6 +28,7 @@ import {
 import {
 	buildSimulatorRequest,
 	buildSimulatorDashScopeRealtimeUrl,
+	buildSimulatorElevenLabsRealtimeUrl,
 	withDashScopeRunTaskModel,
 	type SimulatorGeminiAction,
 	type SimulatorProtocol,
@@ -37,9 +38,18 @@ import {
 	defaultAudioInputModeForDashScopeOperation,
 	isDashScopeRealtimeOperation,
 	openDashScopeRealtimeClient,
-	stopDashScopeRealtimeClient,
 	type DashScopeRealtimeOperation,
 } from '@/lib/dashscope-realtime-client';
+import {
+	defaultAudioInputModeForElevenLabsOperation,
+	elevenLabsRealtimeAudioBlob,
+	elevenLabsRealtimeOutputFormat,
+	extractElevenLabsRealtimeTranscript,
+	isElevenLabsRealtimeOperation,
+	openElevenLabsRealtimeClient,
+	prepareElevenLabsRealtimeRequest,
+	stopRealtimeClient,
+} from '@/lib/elevenlabs-realtime-client';
 import type { AdminKeyListItem, AdminModelRow } from '@/lib/services/admin/types';
 import type { ApiResponse } from '@/lib/types';
 import {
@@ -76,6 +86,7 @@ import {
 	filterMatchingActiveRoutes,
 	isBodyDirty,
 	listDashScopeAudioClientOperations,
+	listElevenLabsAudioClientOperations,
 	listGatewayTools,
 	listSupportedClientSurfaces,
 	redactHeaders,
@@ -265,26 +276,48 @@ export function useSimulatorPageState() {
 	const realtimeOperationOptions = useMemo(
 		() =>
 			selectedModelId && selectedAudioOperation
-				? listDashScopeAudioClientOperations(routes, selectedModelId, routeGroup, selectedAudioOperation)
+				? protocol === 'elevenlabs'
+					? listElevenLabsAudioClientOperations(routes, selectedModelId, routeGroup, selectedAudioOperation)
+					: listDashScopeAudioClientOperations(routes, selectedModelId, routeGroup, selectedAudioOperation)
 				: [],
-		[routes, selectedModelId, routeGroup, selectedAudioOperation],
+		[routes, selectedModelId, routeGroup, selectedAudioOperation, protocol],
 	);
-	const selectedDashScopeRealtimeOperation = useMemo(() => {
-		if (protocol !== 'dashscope' || selectedAudioOperation == null) return null;
+	const selectedRealtimeOperation = useMemo(() => {
+		if ((protocol !== 'dashscope' && protocol !== 'elevenlabs') || selectedAudioOperation == null) return null;
 		if (dashScopeRealtimeOperation && realtimeOperationOptions.includes(dashScopeRealtimeOperation)) {
 			return dashScopeRealtimeOperation;
 		}
 		// 没有匹配路由时不能虚构默认 operation，否则浏览器只会得到无法解释的握手错误。
 		return realtimeOperationOptions[0] ?? null;
 	}, [protocol, selectedAudioOperation, dashScopeRealtimeOperation, realtimeOperationOptions]);
+	/** ElevenLabs 实时路由（`audio.*.realtime`）；HTTP 透传不算。 */
+	const selectedElevenLabsRealtimeOperation =
+		protocol === 'elevenlabs' && selectedRealtimeOperation && isElevenLabsRealtimeOperation(selectedRealtimeOperation)
+			? selectedRealtimeOperation
+			: null;
+	// DashScope 实时 ASR 为 `audio.transcriptions.realtime.*`，ElevenLabs 为 `audio.transcriptions.realtime`。
 	const selectedCanUseMicrophone =
-		selectedDashScopeRealtimeOperation?.startsWith('audio.transcriptions.realtime.') ?? false;
+		selectedRealtimeOperation?.startsWith('audio.transcriptions.realtime') ?? false;
 	const setDashScopeRealtimeOperationForSelection = useCallback(
 		(operation: string) => {
 			if (!realtimeOperationOptions.includes(operation)) {
 				return;
 			}
 			setDashScopeRealtimeOperation(operation);
+			if (protocol === 'elevenlabs' && selectedAudioOperation) {
+				setBodyText(
+					bodyTemplateForSelection(
+						'elevenlabs',
+						false,
+						'generations',
+						selectedAudioOperation,
+						undefined,
+						operation,
+					),
+				);
+				setBodyError(null);
+				return;
+			}
 			if (protocol === 'dashscope' && selectedAudioOperation) {
 				const providerModelName = filterMatchingActiveRoutes(
 					routes,
@@ -310,12 +343,13 @@ export function useSimulatorPageState() {
 		[protocol, selectedAudioOperation, realtimeOperationOptions, routes, selectedModelId, routeGroup],
 	);
 	const selectedUsesDashScopeHttpAsr =
-		selectedDashScopeRealtimeOperation === 'audio.transcriptions.multimodal' ||
-		selectedDashScopeRealtimeOperation === 'audio.transcriptions.async' ||
-		selectedDashScopeRealtimeOperation === 'audio.speech' ||
-		selectedDashScopeRealtimeOperation === 'audio.speech.stream' ||
-		selectedDashScopeRealtimeOperation === 'audio.speech.multimodal';
-	/** DashScope 实时 ASR 的麦克风模式不需要上传文件；发送和按钮校验共用这个判定。 */
+		protocol === 'dashscope' &&
+		(selectedRealtimeOperation === 'audio.transcriptions.multimodal' ||
+		selectedRealtimeOperation === 'audio.transcriptions.async' ||
+		selectedRealtimeOperation === 'audio.speech' ||
+		selectedRealtimeOperation === 'audio.speech.stream' ||
+		selectedRealtimeOperation === 'audio.speech.multimodal');
+	/** DashScope / ElevenLabs 实时 ASR 的麦克风模式不需要上传文件；发送和按钮校验共用这个判定。 */
 	const usesDashScopeMicrophone = selectedCanUseMicrophone && audioInputMode === 'microphone';
 
 	const modelRoutingString = useMemo(() => {
@@ -325,8 +359,8 @@ export function useSimulatorPageState() {
 
 	const requestOperation = isToolKind
 		? null
-		: protocol === 'dashscope' && selectedDashScopeRealtimeOperation
-		? selectedDashScopeRealtimeOperation
+		: (protocol === 'dashscope' || protocol === 'elevenlabs') && selectedRealtimeOperation
+		? selectedRealtimeOperation
 		: resolveRequestOperation({
 				kind: filterKind,
 				protocol,
@@ -524,8 +558,30 @@ export function useSimulatorPageState() {
 				!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs')
 					? selectedAudioOperation
 					: null;
+			if (selectedElevenLabsRealtimeOperation && audioOperation) {
+				const prepared = prepareElevenLabsRealtimeRequest(selectedElevenLabsRealtimeOperation, bodyObj);
+				const url = buildSimulatorElevenLabsRealtimeUrl({
+					baseUrl: parsed.base,
+					modelForRouting: routing,
+					operation: selectedElevenLabsRealtimeOperation,
+					voiceId: prepared.voiceId,
+					query: prepared.query,
+				});
+				return {
+					method: 'WebSocket',
+					url,
+					headers: {
+						'Sec-WebSocket-Protocol': 'octafuse-api-key.***',
+					},
+					bodyText: JSON.stringify(
+						{ first_frame: prepared.initFrame, text: prepared.text },
+						null,
+						2,
+					),
+				};
+			}
 			if (protocol === 'dashscope' && audioOperation && !selectedUsesDashScopeHttpAsr) {
-				const operation = selectedDashScopeRealtimeOperation;
+				const operation = selectedRealtimeOperation;
 				if (!operation) return null;
 				const url = buildSimulatorDashScopeRealtimeUrl({
 					baseUrl: parsed.base,
@@ -559,7 +615,7 @@ export function useSimulatorPageState() {
 				audioOperation: audioOperation ?? undefined,
 				audioFile: audioOperation === 'transcriptions' ? audioFile : undefined,
 				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr
-					? selectedDashScopeRealtimeOperation ?? undefined
+					? selectedRealtimeOperation ?? undefined
 					: undefined,
 				imageOperation: useImages ? imageOperation : undefined,
 				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
@@ -589,7 +645,8 @@ export function useSimulatorPageState() {
 		selectedModelIsImage,
 		selectedModelIsAudio,
 		selectedAudioOperation,
-		selectedDashScopeRealtimeOperation,
+		selectedRealtimeOperation,
+		selectedElevenLabsRealtimeOperation,
 		imageOperation,
 		editFiles,
 		audioFile,
@@ -869,7 +926,7 @@ export function useSimulatorPageState() {
 					'generations',
 					selectedAudioOperation,
 					undefined,
-					selectedDashScopeRealtimeOperation,
+					selectedRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 				),
 			);
@@ -878,7 +935,11 @@ export function useSimulatorPageState() {
 			setAudioPreviewUrl(null);
 			setEditFiles([]);
 			setAudioFile(null);
-			setAudioInputMode(defaultAudioInputModeForDashScopeOperation(selectedDashScopeRealtimeOperation));
+			setAudioInputMode(
+				protocol === 'elevenlabs'
+					? defaultAudioInputModeForElevenLabsOperation(selectedRealtimeOperation)
+					: defaultAudioInputModeForDashScopeOperation(selectedRealtimeOperation),
+			);
 			prevSelectedSpecialKindRef.current = 'audio';
 			return;
 		}
@@ -947,7 +1008,7 @@ export function useSimulatorPageState() {
 		selectedModelIsImage,
 		selectedModelIsEmbedding,
 		selectedAudioOperation,
-		selectedDashScopeRealtimeOperation,
+		selectedRealtimeOperation,
 		selectedDashScopeTtsProviderModelName,
 		matchingRoutes,
 		protocol,
@@ -986,7 +1047,7 @@ export function useSimulatorPageState() {
 				nextImageOp,
 				nextProtocol === 'openai' || nextProtocol === 'dashscope' ? selectedAudioOperation : null,
 				undefined,
-				nextProtocol === 'dashscope' ? selectedDashScopeRealtimeOperation : null,
+				nextProtocol === 'dashscope' ? selectedRealtimeOperation : null,
 				selectedDashScopeTtsProviderModelName,
 				nextProtocol === 'openai' ? nextOpenaiOp : 'chat',
 			),
@@ -1001,7 +1062,7 @@ export function useSimulatorPageState() {
 		imageOperation,
 		selectedModelIsImage,
 		selectedAudioOperation,
-		selectedDashScopeRealtimeOperation,
+		selectedRealtimeOperation,
 		selectedDashScopeTtsProviderModelName,
 	]);
 
@@ -1097,8 +1158,8 @@ export function useSimulatorPageState() {
 		(next: SimulatorProtocol) => {
 			setProtocolState(next);
 			const nextRequestOperation =
-				next === 'dashscope' && selectedDashScopeRealtimeOperation
-					? selectedDashScopeRealtimeOperation
+				next === 'dashscope' && selectedRealtimeOperation
+					? selectedRealtimeOperation
 					: resolveRequestOperation({
 							kind: filterKind,
 							protocol: next,
@@ -1134,7 +1195,7 @@ export function useSimulatorPageState() {
 						? selectedAudioOperation
 						: null,
 					undefined,
-					next === 'dashscope' ? selectedDashScopeRealtimeOperation : null,
+					next === 'dashscope' ? selectedRealtimeOperation : null,
 					providerModelName,
 					next === 'openai' ? openaiLlmOperation : 'chat',
 					undefined,
@@ -1146,7 +1207,7 @@ export function useSimulatorPageState() {
 		[
 			selectedModelIsImage,
 			selectedAudioOperation,
-			selectedDashScopeRealtimeOperation,
+			selectedRealtimeOperation,
 			imageOperation,
 			filterKind,
 			geminiAction,
@@ -1199,7 +1260,7 @@ export function useSimulatorPageState() {
 					imageOperation,
 					selectedAudioOperation,
 					undefined,
-					selectedDashScopeRealtimeOperation,
+					selectedRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					openaiLlmOperation,
 					undefined,
@@ -1220,7 +1281,7 @@ export function useSimulatorPageState() {
 			selectedModelIsAudio,
 			selectedModelIsEmbedding,
 			selectedAudioOperation,
-			selectedDashScopeRealtimeOperation,
+			selectedRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
 			imageOperation,
 			openaiLlmOperation,
@@ -1240,7 +1301,7 @@ export function useSimulatorPageState() {
 					imageOperation,
 					selectedAudioOperation,
 					undefined,
-					selectedDashScopeRealtimeOperation,
+					selectedRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					openaiLlmOperation,
 					undefined,
@@ -1258,7 +1319,7 @@ export function useSimulatorPageState() {
 					imageOperation,
 					selectedAudioOperation,
 					undefined,
-					selectedDashScopeRealtimeOperation,
+					selectedRealtimeOperation,
 					selectedDashScopeTtsProviderModelName,
 					next,
 					undefined,
@@ -1275,7 +1336,7 @@ export function useSimulatorPageState() {
 			selectedModelIsAudio,
 			imageOperation,
 			selectedAudioOperation,
-			selectedDashScopeRealtimeOperation,
+			selectedRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
 			selectedModelId,
 			t,
@@ -1293,7 +1354,7 @@ export function useSimulatorPageState() {
 						imageOperation,
 						selectedAudioOperation,
 						undefined,
-						selectedDashScopeRealtimeOperation,
+						selectedRealtimeOperation,
 						selectedDashScopeTtsProviderModelName,
 						openaiLlmOperation,
 						undefined,
@@ -1308,7 +1369,7 @@ export function useSimulatorPageState() {
 		selectedModelIsImage,
 		selectedModelIsAudio,
 		selectedAudioOperation,
-		selectedDashScopeRealtimeOperation,
+		selectedRealtimeOperation,
 		selectedDashScopeTtsProviderModelName,
 		imageOperation,
 		openaiLlmOperation,
@@ -1319,7 +1380,7 @@ export function useSimulatorPageState() {
 		setInterrupted(true);
 		abortRef.current?.abort();
 		if (realtimeRef.current) {
-			stopDashScopeRealtimeClient(realtimeRef.current);
+			stopRealtimeClient(realtimeRef.current);
 			realtimeRef.current = null;
 		}
 	}, []);
@@ -1402,7 +1463,7 @@ export function useSimulatorPageState() {
 		const isDashScopeRealtime =
 			protocol === 'dashscope' && audioOperation != null && !selectedUsesDashScopeHttpAsr;
 		if (isDashScopeRealtime) {
-			const operation = selectedDashScopeRealtimeOperation;
+			const operation = selectedRealtimeOperation;
 			if (!operation || !isDashScopeRealtimeOperation(operation)) {
 				setBodyError(t('readyNeedModel'));
 				return;
@@ -1491,6 +1552,96 @@ export function useSimulatorPageState() {
 			}
 			return;
 		}
+		if (selectedElevenLabsRealtimeOperation && audioOperation) {
+			const operation = selectedElevenLabsRealtimeOperation;
+			let prepared: ReturnType<typeof prepareElevenLabsRealtimeRequest>;
+			let url: string;
+			try {
+				prepared = prepareElevenLabsRealtimeRequest(operation, bodyObj);
+				url = buildSimulatorElevenLabsRealtimeUrl({
+					baseUrl: base,
+					modelForRouting: routing,
+					operation,
+					voiceId: prepared.voiceId,
+					query: prepared.query,
+				});
+			} catch (error) {
+				setBodyError(error instanceof Error ? error.message : tCommon('requestFailed'));
+				return;
+			}
+			setBodyError(null);
+			setInterrupted(false);
+			setSending(true);
+			setResponseText('');
+			setUsageHint(null);
+			setImagePreviews([]);
+			setAudioPreviewUrl(null);
+			realtimeAudioChunksRef.current = [];
+			setResponseMeta(null);
+			setResponseTab('raw');
+			setSentWireSnapshot(JSON.stringify(liveWirePreview));
+			setWirePreview({
+				method: 'WebSocket',
+				url,
+				headers: {
+					'Sec-WebSocket-Protocol': 'octafuse-api-key.***',
+				},
+				bodyText: JSON.stringify({ first_frame: prepared.initFrame, text: prepared.text }, null, 2),
+			});
+			setWireOpen(true);
+			const startedAt = performance.now();
+			const outputFormat = elevenLabsRealtimeOutputFormat(prepared);
+			try {
+				const socket = openElevenLabsRealtimeClient({
+					url,
+					operation,
+					apiKey: revealedSk,
+					body: bodyObj,
+					audioInput: selectedCanUseMicrophone ? audioInputMode : 'file',
+					audioFile: audioOperation === 'transcriptions' && audioInputMode === 'file' ? audioFile : undefined,
+					onOpen: () => {
+						setResponseMeta({
+							status: 101,
+							latencyMs: String(Math.round(performance.now() - startedAt)),
+							requestUrl: url,
+							contentType: 'application/x-ndjson',
+						});
+					},
+					onMessage: (message) =>
+						setResponseText((previous) => (previous ? `${previous}\n${message}` : message)),
+					onAudioChunk: (chunk) => {
+						if (audioOperation === 'speech') realtimeAudioChunksRef.current.push(chunk);
+					},
+					onError: (error) =>
+						setBodyError(error instanceof Error ? error.message : 'Realtime WebSocket transport error'),
+					onClose: (event) => {
+						if (audioOperation === 'speech' && realtimeAudioChunksRef.current.length > 0) {
+							const blob = elevenLabsRealtimeAudioBlob(realtimeAudioChunksRef.current, outputFormat);
+							setAudioPreviewUrl(URL.createObjectURL(blob));
+							setResponseTab('merged');
+							realtimeAudioChunksRef.current = [];
+						}
+						setSending(false);
+						realtimeRef.current = null;
+						setResponseMeta(
+							(previous) =>
+								previous ?? {
+									status: 101,
+									latencyMs: String(Math.round(performance.now() - startedAt)),
+									requestUrl: url,
+									contentType: 'application/x-ndjson',
+								},
+						);
+						if (event.code !== 1000 && event.reason) setBodyError(event.reason);
+					},
+				});
+				realtimeRef.current = socket;
+			} catch (error) {
+				setSending(false);
+				setBodyError(error instanceof Error ? error.message : tCommon('requestFailed'));
+			}
+			return;
+		}
 		if (useImages && imageOperation === 'edits') {
 			const validated = validateEditImageFiles(editFiles);
 			if (!validated.ok) {
@@ -1514,7 +1665,7 @@ export function useSimulatorPageState() {
 				audioOperation: audioOperation ?? undefined,
 				audioFile: audioOperation === 'transcriptions' ? audioFile : undefined,
 				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr
-					? selectedDashScopeRealtimeOperation ?? undefined
+					? selectedRealtimeOperation ?? undefined
 					: undefined,
 				imageOperation: useImages ? imageOperation : undefined,
 				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
@@ -1683,7 +1834,8 @@ export function useSimulatorPageState() {
 		selectedModelIsImage,
 		selectedModelIsAudio,
 		selectedAudioOperation,
-		selectedDashScopeRealtimeOperation,
+		selectedRealtimeOperation,
+		selectedElevenLabsRealtimeOperation,
 		matchingRoutes,
 		selectedCanUseMicrophone,
 		imageOperation,
@@ -1726,7 +1878,7 @@ export function useSimulatorPageState() {
 			imageOperation,
 			selectedAudioOperation,
 			isToolKind ? selectedToolId : null,
-			selectedDashScopeRealtimeOperation,
+			selectedRealtimeOperation,
 			selectedDashScopeTtsProviderModelName,
 			openaiLlmOperation,
 			undefined,
@@ -1770,7 +1922,8 @@ export function useSimulatorPageState() {
 		dashScopeRealtimeOperation,
 		setDashScopeRealtimeOperation: setDashScopeRealtimeOperationForSelection,
 		realtimeOperationOptions,
-		selectedDashScopeRealtimeOperation,
+		selectedRealtimeOperation,
+		selectedElevenLabsRealtimeOperation,
 		modelRoutingString,
 		matchingRoutes,
 		matchingRoutesForDisplay,

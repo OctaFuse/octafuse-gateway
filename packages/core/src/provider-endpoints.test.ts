@@ -406,8 +406,54 @@ describe('listConfiguredCapabilities', () => {
 		assert.throws(() => resolveUpstreamEndpoint('elevenlabs', 'audio.speech', endpoints));
 		assert.deepEqual(listConfiguredCapabilities(endpoints, 'elevenlabs'), [
 			'audio.transcriptions',
+			'audio.transcriptions.realtime',
 			'audio.speech',
+			'audio.speech.realtime',
 		]);
+	});
+
+	it('derives ElevenLabs WebSocket endpoints from the API base', () => {
+		const endpoints = { elevenlabs: { base: 'https://api.elevenlabs.io/v1' } };
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.transcriptions.realtime', endpoints),
+			'wss://api.elevenlabs.io/v1/speech-to-text/realtime'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.speech.realtime', endpoints, { voiceId: 'abc 1' }),
+			'wss://api.elevenlabs.io/v1/text-to-speech/abc%201/stream-input'
+		);
+		assert.throws(() => resolveUpstreamEndpoint('elevenlabs', 'audio.speech.realtime', endpoints));
+	});
+
+	it('validates explicit ElevenLabs realtime templates', () => {
+		assert.throws(() =>
+			validateAndNormalizeProviderEndpoints({
+				elevenlabs: {
+					endpoints: {
+						'audio.speech.realtime': 'wss://api.elevenlabs.io/v1/text-to-speech/x/stream-input',
+					},
+				},
+			})
+		);
+		assert.throws(() =>
+			validateAndNormalizeProviderEndpoints({
+				elevenlabs: {
+					endpoints: { 'audio.transcriptions.realtime': 'https://api.elevenlabs.io/v1/speech-to-text/realtime' },
+				},
+			})
+		);
+		const ok = validateAndNormalizeProviderEndpoints({
+			elevenlabs: {
+				endpoints: {
+					'audio.speech.realtime': 'wss://api.eu.residency.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input',
+					'audio.transcriptions.realtime': 'wss://api.eu.residency.elevenlabs.io/v1/speech-to-text/realtime',
+				},
+			},
+		});
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.speech.realtime', ok, { voiceId: 'v1' }),
+			'wss://api.eu.residency.elevenlabs.io/v1/text-to-speech/v1/stream-input'
+		);
 	});
 
 	it('requires {voice_id} in an explicit ElevenLabs speech template', () => {

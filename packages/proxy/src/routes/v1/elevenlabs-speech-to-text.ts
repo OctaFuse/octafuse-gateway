@@ -49,6 +49,7 @@ import {
 	validateAudioUpload,
 } from '../../services/egress/openai-audio-driver';
 import { audioModelGuardMessage } from './audio-model-guard';
+import { handleElevenLabsSttRealtime } from './elevenlabs-realtime';
 
 type SpeechEnv = Env & { Variables: { apiKey: ApiKeyContext } };
 type SpeechContext = Context<SpeechEnv>;
@@ -56,6 +57,9 @@ type SpeechContext = Context<SpeechEnv>;
 export const elevenLabsSpeechToTextRoutes = new Hono<SpeechEnv>();
 
 elevenLabsSpeechToTextRoutes.use('*', requireApiKey);
+
+// WebSocket：`GET /realtime?model_id=`（Scribe Realtime）。
+elevenLabsSpeechToTextRoutes.get('/realtime', handleElevenLabsSttRealtime);
 
 /** 表单值可能是字符串、重复字段数组或文件；这里只取文本值。 */
 function textValues(value: unknown): string[] {

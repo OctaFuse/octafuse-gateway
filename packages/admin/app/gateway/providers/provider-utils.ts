@@ -80,6 +80,8 @@ function protocolFormFromConfig(cfg: ProtocolEndpointsConfig | undefined): Proto
 	form.audio_transcriptions_multimodal = eps['audio.transcriptions.multimodal'] ?? '';
 	form.audio_transcriptions_tasks = eps['audio.transcriptions.tasks'] ?? '';
 	form.audio_speech = eps['audio.speech'] ?? '';
+	form.audio_speech_realtime = eps['audio.speech.realtime'] ?? '';
+	form.audio_transcriptions_realtime = eps['audio.transcriptions.realtime'] ?? '';
 	form.audio_speech_multimodal = eps['audio.speech.multimodal'] ?? '';
 	form.audio_realtime_inference = eps['audio.realtime.inference'] ?? '';
 	form.audio_realtime_session = eps['audio.realtime.session'] ?? '';
@@ -186,7 +188,13 @@ function configFromProtocolForm(
 		if (form.audio_transcriptions.trim()) {
 			endpoints["audio.transcriptions"] = form.audio_transcriptions.trim();
 		}
+		if (form.audio_transcriptions_realtime.trim()) {
+			endpoints["audio.transcriptions.realtime"] = form.audio_transcriptions_realtime.trim();
+		}
 		if (form.audio_speech.trim()) endpoints["audio.speech"] = form.audio_speech.trim();
+		if (form.audio_speech_realtime.trim()) {
+			endpoints["audio.speech.realtime"] = form.audio_speech_realtime.trim();
+		}
 	} else {
 		if (form.images_generations_multimodal.trim()) {
 			endpoints["images.generations.multimodal"] =
@@ -404,7 +412,12 @@ export function protocolFormHasOverrides(
 	}
 	if (protocol === "volcengine") return !!form.images_generations.trim();
 	if (protocol === "elevenlabs") {
-		return !!(form.audio_transcriptions.trim() || form.audio_speech.trim());
+		return !!(
+			form.audio_transcriptions.trim() ||
+			form.audio_transcriptions_realtime.trim() ||
+			form.audio_speech.trim() ||
+			form.audio_speech_realtime.trim()
+		);
 	}
 	return !!(
 		form.images_generations_multimodal.trim() ||

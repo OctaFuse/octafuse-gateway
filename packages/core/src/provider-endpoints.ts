@@ -34,6 +34,8 @@ export type ProviderEndpointCapability =
 	| 'audio.speech'
 	| 'embeddings'
 	| 'audio.speech.multimodal'
+	| 'audio.speech.realtime'
+	| 'audio.transcriptions.realtime'
 	| 'audio.realtime.inference'
 	| 'audio.realtime.session'
 	| 'audio.hotwords'
@@ -88,10 +90,15 @@ export const MINIMAX_ENDPOINT_CAPABILITIES = [
 	'images.generations',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
-/** ElevenLabs 原生能力：文件转写、文本转语音（voice_id 在路径里）。 */
+/**
+ * ElevenLabs 原生能力：文件转写、文本转语音（voice_id 在路径里）、
+ * 以及两条 WebSocket：TTS `stream-input`、实时转写。
+ */
 export const ELEVENLABS_ENDPOINT_CAPABILITIES = [
 	'audio.transcriptions',
+	'audio.transcriptions.realtime',
 	'audio.speech',
+	'audio.speech.realtime',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
 /** 火山方舟 / BytePlus ModelArk 原生能力。当前只有 Seedream 生图。 */
@@ -289,6 +296,10 @@ function isDashScopeRealtimeCapability(capability: string): boolean {
 	return capability === 'audio.realtime.inference' || capability === 'audio.realtime.session';
 }
 
+function isElevenLabsRealtimeCapability(capability: string): boolean {
+	return capability === 'audio.speech.realtime' || capability === 'audio.transcriptions.realtime';
+}
+
 /**
  * 校验并规范化 admin 写入的 endpoints（对象或 JSON 字符串）。
  * @throws Error 结构 / 协议名 / capability / URL / Gemini `{model}` 不合法
@@ -341,7 +352,10 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 					.replace(/\{action\}/g, 'a')
 					.replace(/\{task_id\}/g, 't')
 					.replace(/\{voice_id\}/g, 'v');
-				if (protocol === 'dashscope' && isDashScopeRealtimeCapability(cap)) {
+				if (
+					(protocol === 'dashscope' && isDashScopeRealtimeCapability(cap)) ||
+					(protocol === 'elevenlabs' && isElevenLabsRealtimeCapability(cap))
+				) {
 					assertWebSocketUrl(urlForValidation, `endpoints.${protocol}.endpoints.${cap}`);
 				} else {
 					assertHttpUrl(urlForValidation, `endpoints.${protocol}.endpoints.${cap}`);
@@ -370,7 +384,11 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 						`endpoints.${protocol}.endpoints.${cap} must include {task_id} placeholder`
 					);
 				}
-				if (protocol === 'elevenlabs' && cap === 'audio.speech' && !url.includes('{voice_id}')) {
+				if (
+					protocol === 'elevenlabs' &&
+					(cap === 'audio.speech' || cap === 'audio.speech.realtime') &&
+					!url.includes('{voice_id}')
+				) {
 					throw new Error(
 						`endpoints.${protocol}.endpoints.${cap} must include {voice_id} placeholder`
 					);
@@ -453,6 +471,16 @@ function buildDashScopeWebSocketUrl(base: string, endpoint: 'inference' | 'realt
 	const url = new URL(base);
 	url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
 	url.pathname = `/api-ws/v1/${endpoint}`;
+	url.search = '';
+	url.hash = '';
+	return url.toString();
+}
+
+/** ElevenLabs WSS 与 HTTP 共用 base（形如 `https://api.elevenlabs.io/v1`），只换 scheme。 */
+function buildElevenLabsWebSocketUrl(base: string, path: string): string {
+	const url = new URL(base);
+	url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+	url.pathname = `${trimSlash(url.pathname)}${path}`;
 	url.search = '';
 	url.hash = '';
 	return url.toString();
@@ -544,7 +572,11 @@ export function resolveUpstreamEndpoint(
 		if (resolvedCapability === 'audio.transcriptions.tasks' && !options.taskId) {
 			throw new Error('DashScope task endpoint requires taskId');
 		}
-		if (protocol === 'elevenlabs' && resolvedCapability === 'audio.speech' && !options.voiceId) {
+		if (
+			protocol === 'elevenlabs' &&
+			(resolvedCapability === 'audio.speech' || resolvedCapability === 'audio.speech.realtime') &&
+			!options.voiceId
+		) {
 			throw new Error('ElevenLabs speech endpoint requires voiceId');
 		}
 		return fillEndpointTemplate(template, {
@@ -603,6 +635,16 @@ export function resolveUpstreamEndpoint(
 				return `${root}/audio/speech`;
 			case 'audio.speech.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
+			case 'audio.speech.realtime':
+				if (!options.voiceId) {
+					throw new Error('ElevenLabs speech endpoint requires voiceId');
+				}
+				return buildElevenLabsWebSocketUrl(
+					root,
+					`/text-to-speech/${encodeURIComponent(options.voiceId)}/stream-input`
+				);
+			case 'audio.transcriptions.realtime':
+				return buildElevenLabsWebSocketUrl(root, '/speech-to-text/realtime');
 			case 'embeddings':
 				return `${root}/embeddings`;
 			case 'images.generations.multimodal':
