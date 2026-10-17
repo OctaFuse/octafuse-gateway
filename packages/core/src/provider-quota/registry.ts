@@ -8,6 +8,7 @@
 import { commandCodeQuotaAdapter } from './adapters/commandcode';
 import { deepinfraQuotaAdapter } from './adapters/deepinfra';
 import { deepseekQuotaAdapter } from './adapters/deepseek';
+import { elevenLabsQuotaAdapter } from './adapters/elevenlabs';
 import { zaiCodingPlanQuotaAdapter, zhipuCodingPlanQuotaAdapter } from './adapters/glm-coding-plan';
 import { minimaxQuotaAdapter } from './adapters/minimax';
 import { moonshotQuotaAdapter } from './adapters/moonshot';
@@ -31,6 +32,7 @@ export const PROVIDER_QUOTA_ADAPTER_BY_KIND: Readonly<Record<string, ProviderQuo
 	'Vercel AI Gateway': vercelQuotaAdapter,
 	'OpenCode Go': opencodeGoQuotaAdapter,
 	'Command Code': commandCodeQuotaAdapter,
+	ElevenLabs: elevenLabsQuotaAdapter,
 	MiniMax: minimaxQuotaAdapter,
 	'Zhipu GLM (Coding Plan)': zhipuCodingPlanQuotaAdapter,
 	'Z.AI GLM (Coding Plan)': zaiCodingPlanQuotaAdapter,

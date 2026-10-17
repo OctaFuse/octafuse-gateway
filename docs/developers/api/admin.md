@@ -691,6 +691,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 | `Vercel AI Gateway` | `GET /v1/credits` | `balance` 为剩余额度（USD） |
 | `OpenCode Go` | `GET /zen/go/v1/usage` | `rolling` / `weekly` / `monthly` 的已用百分比与重置时间。`rolling` 记为 `5h`。`status: rate-limited` 视为该窗口已用尽 |
 | `Command Code` | `GET /alpha/billing/credits` | 与 Provider API 同一把 Key。`monthlyCredits`、`purchasedCredits`、`freeCredits` 相加为剩余美元；有 `remainingCredits` 时以它为准。`windowLimits` 的 `fiveHour` / `weekly` 记为 `5h` / `weekly`（`used` / `cap` 为美元）。按量计费套餐可以只有余额、没有窗口 |
+| `ElevenLabs` | `GET /v1/user/subscription` | 请求头是 `xi-api-key`。响应字段仍是 `character_count` / `character_limit`，产品已改称 credits，数值不变，记为窗口 `credits`。`next_character_count_reset_unix` 为重置时间。`status: free_disabled` 视为已用尽。欧盟等驻留域名与默认 `api.elevenlabs.io` 同一注册域时，请求发往已保存的端点主机 |
 | `MiniMax` | `GET https://www.minimaxi.com/v1/token_plan/remains`，失败时再请求 `GET https://api.minimaxi.com/v1/api/openplatform/coding_plan/remains` | 优先取 `general` 模型的 5 小时与每周窗口。`*_usage_count` 是剩余次数；次数为 0 时改用剩余百分比。两台主机都在 `minimaxi.com` 上 |
 | `Zhipu GLM (Coding Plan)` | `GET /api/monitor/usage/quota/limit` | `CREDIT_LIMIT` / `TOKENS_LIMIT`。`unit=3,number=5` 为 5 小时，`unit=6,number=1` 为每周。`usage` 是上限，`percentage` 是已用百分比 |
 | `Z.AI GLM (Coding Plan)` | 同上，`api.z.ai` | 同上 |

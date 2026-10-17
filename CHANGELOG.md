@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **ElevenLabs 支持额度查询**：供应商类型为 ElevenLabs 时，卡片上的「查询额度」用同一把 Key 调用官方 `GET /v1/user/subscription`（请求头 `xi-api-key`）。响应字段仍是 `character_count` / `character_limit`，产品已改称 credits，数值不变，弹窗按 credits 显示已用、上限和重置时间。订阅状态为 `free_disabled` 时显示已用尽。欧盟等数据驻留主机与 `api.elevenlabs.io` 同一注册域时，查询发往已保存的端点主机。无需数据库迁移。
 - **Command Code 模板补上 Responses，并支持额度查询**：官方 Provider API 已提供 `POST /provider/v1/responses`（OpenAI 与开源模型；Claude 仍只走 `/provider/v1/messages`）。导入模板补上该地址，已导入的账号可在「检查官方更新」里采用。决策模型 `typesafe/jev` 的 `/provider/v1/systemone` 不是聊天入口，模板不包含。供应商卡片可查询额度：用同一把 Key 请求 CLI 计费接口 `GET /alpha/billing/credits`，显示剩余美元，以及套餐上的 5 小时 / 每周窗口；按量计费账号通常只有余额。该接口不在 Provider API 调用端点表中，上游改字段时查询会失败而不会写成错误数字。无需数据库迁移。
 - **模型导入可点击整行选择**：导入模型弹窗里，点一行即可勾选或取消；已在网关中或目录暂无当前币种价格的行仍然不能选。无需数据库迁移。
 - **调试台：实时路由的「上游请求体」预览与实际一致**：ElevenLabs 实时转写 / 合成此前发送前展示的是带 `model` 的通用合并体，现在展示实际会发出的 `query`（含上游 `model_id`）、路径 `voice_id`、首帧与文本帧，并在缺少 `voice_id` / `text` 时提示请求体无效；DashScope 实时 `run-task` 的模型显示在 `payload.model`（不再误放顶层），`session.update` 不再显示模型（模型在 URL 里）。只影响预览，不影响实际请求。无需数据库迁移。

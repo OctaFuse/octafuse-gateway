@@ -19,6 +19,7 @@ const WINDOW_LABEL_KEYS = {
 	'5h': 'window.5h',
 	weekly: 'window.weekly',
 	monthly: 'window.monthly',
+	credits: 'window.credits',
 } as const;
 
 const STATE_BADGE: Record<ProviderQuotaState, string> = {

@@ -480,7 +480,8 @@
 				"spend_limit": "利用上限",
 				"5h": "5時間",
 				"weekly": "週間",
-				"monthly": "月間"
+				"monthly": "月間",
+				"credits": "Credits"
 			}
 		},
 		"kind": {

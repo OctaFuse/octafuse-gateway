@@ -480,7 +480,8 @@
 				"spend_limit": "Spend limit",
 				"5h": "5-hour",
 				"weekly": "Weekly",
-				"monthly": "Monthly"
+				"monthly": "Monthly",
+				"credits": "Credits"
 			}
 		},
 		"kind": {

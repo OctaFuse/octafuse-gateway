@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { commandCodeQuotaAdapter } from './adapters/commandcode';
+import { elevenLabsQuotaAdapter } from './adapters/elevenlabs';
 import { deepinfraQuotaAdapter } from './adapters/deepinfra';
 import { deepseekQuotaAdapter } from './adapters/deepseek';
 import { zaiCodingPlanQuotaAdapter, zhipuCodingPlanQuotaAdapter } from './adapters/glm-coding-plan';
@@ -455,6 +456,45 @@ describe('provider quota adapters', () => {
 		assert.equal(snapshot.state, 'ok');
 	});
 
+	it('reads ElevenLabs character usage with xi-api-key', async () => {
+		const urls: string[] = [];
+		const fetchImpl: typeof fetch = async (input, init) => {
+			urls.push(String(input));
+			assert.equal(init?.redirect, 'error');
+			const headers = new Headers(init?.headers);
+			assert.equal(headers.get('xi-api-key'), 'sk-test');
+			assert.equal(headers.get('authorization'), null);
+			return Response.json({
+				character_count: 1000,
+				character_limit: 10000,
+				next_character_count_reset_unix: 1_738_356_858,
+				status: 'active',
+			});
+		};
+		const snapshot = await elevenLabsQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.eu.residency.elevenlabs.io'));
+		assert.equal(urls[0], 'https://api.eu.residency.elevenlabs.io/v1/user/subscription');
+		assert.equal(snapshot.balances.length, 0);
+		assert.equal(snapshot.windows[0]?.id, 'credits');
+		assert.equal(snapshot.windows[0]?.unit, 'credits');
+		assert.equal(snapshot.windows[0]?.used, 1000);
+		assert.equal(snapshot.windows[0]?.limit, 10000);
+		assert.equal(snapshot.windows[0]?.remaining, 9000);
+		assert.equal(snapshot.windows[0]?.usedPercent, 10);
+		assert.equal(snapshot.windows[0]?.resetsAt, '2025-01-31T20:54:18.000Z');
+		assert.equal(snapshot.state, 'ok');
+	});
+
+	it('treats a disabled ElevenLabs subscription as exhausted', async () => {
+		const fetchImpl: typeof fetch = async () =>
+			Response.json({
+				character_count: 10,
+				character_limit: 10000,
+				status: 'free_disabled',
+			});
+		const snapshot = await elevenLabsQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.elevenlabs.io'));
+		assert.equal(snapshot.state, 'exhausted');
+	});
+
 	it('reads the Vercel AI Gateway credit balance', async () => {
 		const { fetchImpl, urls } = jsonFetch({ balance: '95.50', total_used: '4.50' });
 		const snapshot = await vercelQuotaAdapter.fetch(ctx(fetchImpl, 'https://ai-gateway.vercel.sh'));
@@ -483,6 +523,7 @@ describe('provider quota registry', () => {
 		assert.equal(getProviderQuotaAdapter('Kimi Code (Coding API)'), null);
 		assert.equal(getProviderQuotaAdapter('Novita AI')?.defaultOrigin, 'https://api.novita.ai');
 		assert.equal(getProviderQuotaAdapter('Command Code')?.defaultOrigin, 'https://api.commandcode.ai');
+		assert.equal(getProviderQuotaAdapter('ElevenLabs')?.defaultOrigin, 'https://api.elevenlabs.io');
 		assert.deepEqual(listProviderQuotaKinds(), [
 			'DeepSeek',
 			'Moonshot AI',
@@ -495,6 +536,7 @@ describe('provider quota registry', () => {
 			'Vercel AI Gateway',
 			'OpenCode Go',
 			'Command Code',
+			'ElevenLabs',
 			'MiniMax',
 			'Zhipu GLM (Coding Plan)',
 			'Z.AI GLM (Coding Plan)',
