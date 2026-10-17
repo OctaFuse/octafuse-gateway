@@ -3,11 +3,13 @@
 import { useMemo, useState } from 'react';
 import {
 	ArrowDownIcon,
+	ArrowsUpDownIcon,
 	ClipboardDocumentIcon,
 	ExclamationTriangleIcon,
 	PencilSquareIcon,
 	PlusIcon,
 	PowerIcon,
+	ScaleIcon,
 } from '@heroicons/react/24/outline';
 import {
 	isAudioModel,
@@ -32,10 +34,11 @@ import {
 	protocolBadgeClass,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
-	routeHasCustomParamsForceOverride,
+	summarizeRouteCustomParams,
 	splitRoutesByProtocolAndRouteGroup,
 } from '../route-utils';
 import {
+	type RouteEditorTab,
 	type RouteFlowDensity,
 	type RouteListRow,
 	type RouteProtocolGroupSection,
@@ -83,7 +86,7 @@ type Props = {
 	togglingId: string | null;
 	onCopyModelId: (modelId: string) => void;
 	onCreate: (modelId: string, preset?: { protocol?: string; operation?: string; group?: string }) => void;
-	onEdit: (route: RouteListRow) => void;
+	onEdit: (route: RouteListRow, initialTab?: RouteEditorTab) => void;
 	onEditModel: (modelId: string) => void;
 	onToggleStatus: (route: RouteListRow) => void;
 	onOpenStrategyDialog: OpenStrategyDialog;
@@ -108,7 +111,7 @@ function RouteTarget({
 	stickyEnabled: boolean;
 	stickyTotal: number | null;
 	togglingId: string | null;
-	onEdit: (route: RouteListRow) => void;
+	onEdit: (route: RouteListRow, initialTab?: RouteEditorTab) => void;
 	onToggleStatus: (route: RouteListRow) => void;
 }) {
 	const t = useTranslations('routes.flow');
@@ -126,6 +129,28 @@ function RouteTarget({
 	const enabled = route.status === 'active';
 	const providerDisabled = provider?.status === 'disabled';
 	const available = enabled && !providerDisabled;
+	const params = summarizeRouteCustomParams(route.custom_params);
+	const paramsBadges = (
+		<div className={`flex min-w-0 flex-wrap items-center gap-1 ${listView ? 'route-provider-list-params' : ''}`}>
+			{listView ? <span className="route-provider-mobile-label text-[10px] text-slate-500">{t('listParams')}</span> : null}
+			{(['headers', 'body'] as const).filter((side) => params[side]).map((side) => (
+				<button
+					key={side}
+					type="button"
+					onClick={() => onEdit(route, 'request')}
+					className={`rounded border px-1.5 py-0.5 text-[10px] leading-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${side === 'headers' ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
+					title={side === 'headers'
+						? t(params.forceOverrideHeaders ? 'paramsHeadersForceTooltip' : 'paramsHeadersTooltip')
+						: t(params.forceOverrideBody ? 'paramsBodyForceTooltip' : 'paramsBodyTooltip')}
+					aria-label={`${t('editRoute')}: ${t(side === 'headers' ? 'paramsHeaders' : 'paramsBody')}`}
+				>
+					{t(side === 'headers' ? 'paramsHeaders' : 'paramsBody')}
+				</button>
+			))}
+			{listView && !params.headers && !params.body ? <span className="text-xs text-slate-400">—</span> : null}
+		</div>
+	);
+
 
 	const upstreamModel = (
 		<button
@@ -191,7 +216,19 @@ function RouteTarget({
 								</span>
 							) : null}
 						</button>
-						{!listView ? stickyUsage : null}
+						{!listView ? (
+							<div className="flex shrink-0 items-center gap-1.5">
+								<span
+									className="inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 text-xs font-semibold tabular-nums text-blue-700"
+									title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
+									aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
+								>
+									<ScaleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+									{route.weight ?? 1}
+								</span>
+								{stickyUsage}
+							</div>
+						) : null}
 					</div>
 				</div>
 				{!listView ? upstreamModel : null}
@@ -211,19 +248,19 @@ function RouteTarget({
 							{enabled ? t('enabledShort') : t('disabledShort')}
 						</button>
 					</div>
-					<span className={`${listView ? 'text-center text-xs' : 'text-[10px]'} tabular-nums text-slate-600`} title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
-						{listView ? <span className="route-provider-mobile-label mr-1 text-[10px]">{t('listWeight')}</span> : null}
-						{listView ? route.weight ?? 1 : t('targetWeight', { value: route.weight ?? 1 })}
-					</span>
-					{!listView && route.custom_params ? (
-						<span className="rounded bg-slate-100 px-1.5 text-slate-500" title={routeHasCustomParamsForceOverride(route.custom_params) ? t('badgeParamsForceOverrideTooltip') : t('badgeParamsTooltip')}>
-							{t('targetParams')}
+					{listView ? (
+						<span className="inline-flex min-w-0 items-center justify-center gap-1 text-xs tabular-nums text-slate-600" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })} aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
+							<ScaleIcon className="h-3 w-3 shrink-0" aria-hidden />
+							<span className="route-provider-mobile-label mr-1 text-[10px]">{t('listWeight')}</span>
+							{route.weight ?? 1}
 						</span>
 					) : null}
+					{!listView && (params.headers || params.body) ? paramsBadges : null}
 					{listView ? <div className="flex min-w-0 justify-center">{stickyUsage}</div> : null}
+					{listView ? paramsBadges : null}
 				</div>
 			</div>
-			<RouteTargetPricing compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route)} />
+			<RouteTargetPricing compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
 		</div>
 	);
 }
@@ -436,6 +473,7 @@ function RouteProviderListHeader() {
 			<span className="text-center">{t('listStatus')}</span>
 			<span className="text-center">{t('listWeight')}</span>
 			<span className="text-center">{t('listStickyUsers')}</span>
+			<span>{t('listParams')}</span>
 			<div className={`route-provider-pricing-columns ${configuredView ? 'route-provider-pricing-configured' : ''}`}>
 				<span>{t('pricingPeriod')}</span>
 				{configuredView ? (
@@ -518,8 +556,13 @@ function PriorityTierPanel({
 	return (
 		<div className="w-full min-w-0">
 			<div className={isList ? `flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'mb-3 flex min-w-0 flex-wrap items-center gap-2 px-0.5 py-1'}>
-				<span className="rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
-					P{priority}
+				<span
+					className="inline-flex items-center gap-1 rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-slate-700"
+					title={t('badgePriorityTooltip', { value: priority })}
+					aria-label={t('badgePriorityTooltip', { value: priority })}
+				>
+					<ArrowsUpDownIcon className="h-3 w-3 shrink-0" aria-hidden />
+					{priority}
 				</span>
 				{layerIndex > 0 ? (
 					<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-[11px] font-medium text-slate-600 hover:text-blue-700 focus-visible:outline-blue-500">

@@ -10,12 +10,12 @@ type Props = Pick<RouteModalProps, 'formData' | 'onFormChange'>;
 export function RouteRequestFields({ formData, onFormChange }: Props) {
 	const t = useTranslations('routes.modal');
 	return (
-		<div id="route-custom-params" className="grid items-stretch gap-4 lg:grid-cols-2">
-			<section className={`${editorPanelClass} flex flex-col overflow-hidden`}>
+		<div id="route-custom-params" className="grid min-h-full items-stretch gap-4 lg:h-full lg:min-h-0 lg:grid-cols-2">
+			<section className={`${editorPanelClass} flex flex-col overflow-hidden lg:min-h-0`}>
 				<RouteEditorSectionHeader
 					title={t('customHeaders')}
 					description={t('editor.headersDescription')}
-					className="min-h-20"
+					className="min-h-20 shrink-0"
 					action={
 						<button
 							type="button"
@@ -32,7 +32,7 @@ export function RouteRequestFields({ formData, onFormChange }: Props) {
 						</button>
 					}
 				/>
-				<div className="flex min-h-24 flex-1 flex-col p-5 lg:min-h-64">
+				<div className="flex min-h-24 flex-1 flex-col p-5 lg:min-h-0 lg:overflow-y-auto">
 					{formData.custom_headers.length ? (
 						<div className="space-y-2">
 							<div
@@ -115,19 +115,19 @@ export function RouteRequestFields({ formData, onFormChange }: Props) {
 					}
 				/>
 			</section>
-			<section className={`${editorPanelClass} flex flex-col overflow-hidden`}>
+			<section className={`${editorPanelClass} flex flex-col overflow-hidden lg:min-h-0`}>
 				<RouteEditorSectionHeader
 					title={t('customBody')}
 					description={t('editor.bodyDescription')}
-					className="min-h-20"
+					className="min-h-20 shrink-0"
 					action={<span className="pt-0.5 font-mono text-xs text-slate-400">JSON</span>}
 				/>
-				<div className="flex min-h-64 flex-1 flex-col p-5">
+				<div className="flex min-h-64 flex-1 flex-col p-5 lg:min-h-0">
 					<textarea
 						rows={8}
 						value={formData.custom_params_json}
 						onChange={(e) => onFormChange({ ...formData, custom_params_json: e.target.value })}
-						className="min-h-60 w-full flex-1 resize-y rounded-lg border border-gray-200 bg-white p-3 font-mono text-sm leading-6 text-gray-800 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+						className="min-h-60 w-full flex-1 resize-y lg:min-h-0 lg:resize-none rounded-lg border border-gray-200 bg-white p-3 font-mono text-sm leading-6 text-gray-800 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
 						placeholder={t('customParamsPlaceholder')}
 						spellCheck={false}
 						aria-label={t('customBody')}
@@ -161,7 +161,7 @@ function OverrideOption({
 }) {
 	return (
 		<div
-			className={`min-h-24 border-t px-5 py-4 ${
+			className={`min-h-24 shrink-0 border-t px-5 py-4 ${
 				checked ? 'border-amber-200 bg-amber-50/60' : 'border-slate-200 bg-slate-50'
 			}`}
 		>

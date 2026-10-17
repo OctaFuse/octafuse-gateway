@@ -141,6 +141,7 @@
 
 .route-provider-list-identity,
 .route-provider-list-model,
+.route-provider-list-params,
 .route-provider-list-pricing {
   grid-column: 1 / -1;
 }
@@ -181,9 +182,9 @@
   }
 }
 
-@container (min-width: 52rem) {
+@container (min-width: 60rem) {
   .route-provider-list-grid {
-    grid-template-columns: minmax(8rem, 12rem) minmax(10rem, 18rem) 4.25rem 2.5rem 4rem minmax(18rem, 1fr);
+    grid-template-columns: minmax(8rem, 12rem) minmax(10rem, 18rem) 4.25rem 2.5rem 4rem 6rem minmax(18rem, 1fr);
   }
 
   .route-provider-list-header {
@@ -196,6 +197,7 @@
     padding-left: 0;
   }
 
+  .route-provider-list-params,
   .route-provider-list-pricing {
     grid-column: auto;
   }

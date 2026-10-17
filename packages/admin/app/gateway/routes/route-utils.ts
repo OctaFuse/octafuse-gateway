@@ -823,6 +823,23 @@ export function composeCustomParamsJson(
 	return envelope ? JSON.stringify(envelope) : null;
 }
 
+/** Summarize effective custom fields without exposing header or body values. */
+export function summarizeRouteCustomParams(raw: string | null | undefined) {
+	let parsed: Record<string, unknown> | null = null;
+	try {
+		parsed = JSON.parse(raw ?? 'null') as Record<string, unknown> | null;
+	} catch {
+		// Invalid legacy JSON is ignored by the runtime as well.
+	}
+	const split = splitRouteCustomParams(parsed);
+	return {
+		headers: Object.keys(split.extraHeaders).length > 0,
+		body: Object.keys(split.body).length > 0,
+		forceOverrideHeaders: split.forceOverrideHeaders,
+		forceOverrideBody: split.forceOverrideBody,
+	};
+}
+
 export function routeHasCustomParamsForceOverride(raw: string | null | undefined): boolean {
 	const parsed = parseCustomParamsForm(raw);
 	return parsed.custom_params_force_override_headers || parsed.custom_params_force_override_body;

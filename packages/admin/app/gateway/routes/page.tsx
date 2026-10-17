@@ -236,6 +236,7 @@ function RoutesContent() {
 
 			<RouteModal
 				open={state.showModal}
+				initialTab={state.routeInitialTab}
 				editingRoute={state.editingRoute}
 				duplicateSourceRouteId={state.duplicateSourceRouteId}
 				formData={state.formData}

@@ -24,8 +24,8 @@ import { RouteRequestFields } from './route-request-fields';
 import { RouteQuickTest } from './route-quick-test';
 import { RoutePricingFields } from './route-pricing-fields';
 import type { RouteModalProps } from './route-modal-types';
+import type { RouteEditorTab } from '../types';
 
-type EditorTab = 'mapping' | 'request' | 'pricing' | 'test';
 const TABS = [
 	{ id: 'mapping', icon: ArrowsRightLeftIcon },
 	{ id: 'request', icon: CodeBracketIcon },
@@ -45,6 +45,7 @@ export function RouteModal(props: RouteModalProps) {
 
 function RouteModalContent(props: RouteModalProps) {
 	const {
+		initialTab = 'mapping',
 		editingRoute,
 		duplicateSourceRouteId,
 		formData,
@@ -62,11 +63,11 @@ function RouteModalContent(props: RouteModalProps) {
 	const tCommon = useTranslations('common');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
-	const [activeTab, setActiveTab] = useState<EditorTab>('mapping');
+	const [activeTab, setActiveTab] = useState<RouteEditorTab>(initialTab);
 	const [validationError, setValidationError] = useState('');
 	const dialogRef = useRef<HTMLDivElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const tabRefs = useRef<Partial<Record<EditorTab, HTMLButtonElement | null>>>({});
+	const tabRefs = useRef<Partial<Record<RouteEditorTab, HTMLButtonElement | null>>>({});
 	const busy = isSaving || isDeleting;
 	const editorProps = {
 		...props,
@@ -92,14 +93,14 @@ function RouteModalContent(props: RouteModalProps) {
 		const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		const previousOverflow = document.body.style.overflow;
 		document.body.style.overflow = 'hidden';
-		tabRefs.current.mapping?.focus();
+		tabRefs.current[initialTab]?.focus();
 		return () => {
 			document.body.style.overflow = previousOverflow;
 			if (previousFocus?.isConnected) previousFocus.focus();
 		};
-	}, []);
+	}, [initialTab]);
 
-	function selectTab(id: EditorTab, focus = false) {
+	function selectTab(id: RouteEditorTab, focus = false) {
 		setActiveTab(id);
 		scrollRef.current?.scrollTo({ top: 0 });
 		if (focus) tabRefs.current[id]?.focus();
@@ -279,7 +280,7 @@ function RouteModalContent(props: RouteModalProps) {
 						activeTab === 'test' ? 'overflow-hidden' : 'overflow-y-auto'
 					}`}
 				>
-					<fieldset disabled={busy} className={`min-w-0 ${activeTab === 'test' ? 'h-full min-h-0' : ''}`}>
+					<fieldset disabled={busy} className={`min-w-0 ${activeTab === 'test' || activeTab === 'request' ? 'h-full min-h-0' : ''}`}>
 						<div
 							role="tabpanel"
 							id="route-panel-mapping"
@@ -296,7 +297,7 @@ function RouteModalContent(props: RouteModalProps) {
 							aria-labelledby="route-tab-request"
 							hidden={activeTab !== 'request'}
 							tabIndex={0}
-							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="h-full min-h-0 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 						>
 							<RouteRequestFields {...editorProps} />
 						</div>

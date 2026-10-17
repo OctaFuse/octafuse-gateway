@@ -2,10 +2,11 @@ import type { CatalogAudioPricingDisplay } from '@/lib/audio-transcriptions';
 import type { CatalogImagePricingDisplay, CatalogPricingTierDisplayRow } from '@/lib/pricing-ui';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import type { UpstreamProtocol } from '@/lib/upstream-protocol';
-import type { RouteFormData, RouteListRow } from '../types';
+import type { RouteEditorTab, RouteFormData, RouteListRow } from '../types';
 
 export type RouteModalProps = {
 	open: boolean;
+	initialTab?: RouteEditorTab;
 	editingRoute: RouteListRow | null;
 	duplicateSourceRouteId: string | null;
 	formData: RouteFormData;

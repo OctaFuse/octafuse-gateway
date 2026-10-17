@@ -62,6 +62,7 @@ import {
 	EMPTY_ROUTE_FORM,
 	type ProviderStickyDialogState,
 	type ProviderStickyFormState,
+	type RouteEditorTab,
 	type RouteFormData,
 	type RouteListRow,
 	type RoutePolicyDialogState,
@@ -81,6 +82,7 @@ export function useRoutesPageState() {
 	const [globalRouteStrategy, setGlobalRouteStrategy] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [showModal, setShowModal] = useState(false);
+	const [routeInitialTab, setRouteInitialTab] = useState<RouteEditorTab>('mapping');
 	const [editingRoute, setEditingRoute] = useState<RouteListRow | null>(null);
 	const [duplicateSourceRouteId, setDuplicateSourceRouteId] = useState<string | null>(null);
 	const [formData, setFormData] = useState<RouteFormData>(EMPTY_ROUTE_FORM);
@@ -463,6 +465,7 @@ export function useRoutesPageState() {
 
 	const handleCreate = useCallback(
 		(presetModelId?: string, preset?: { protocol?: string; operation?: string; group?: string }) => {
+			setRouteInitialTab('mapping');
 			setEditingRoute(null);
 			setDuplicateSourceRouteId(null);
 			const initial = createInitialRouteForm(models, presetModelId);
@@ -487,7 +490,8 @@ export function useRoutesPageState() {
 	);
 
 	const handleEdit = useCallback(
-		(route: RouteListRow) => {
+		(route: RouteListRow, initialTab: RouteEditorTab = 'mapping') => {
+			setRouteInitialTab(initialTab);
 			setEditingRoute(route);
 			setDuplicateSourceRouteId(null);
 			setFormData(buildFormDataFromRoute(route, models));
@@ -499,6 +503,7 @@ export function useRoutesPageState() {
 
 	const handleDuplicate = useCallback(
 		(route: RouteListRow) => {
+			setRouteInitialTab('mapping');
 			setEditingRoute(null);
 			setDuplicateSourceRouteId(route.id);
 			setFormData(buildFormDataFromRoute(route, models));
@@ -848,6 +853,7 @@ export function useRoutesPageState() {
 		routeCards,
 		routeCardVendorGroups,
 		showModal,
+		routeInitialTab,
 		setShowModal,
 		editingRoute,
 		duplicateSourceRouteId,

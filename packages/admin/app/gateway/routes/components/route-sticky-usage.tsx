@@ -38,7 +38,7 @@ export function RouteStickyUsage({
 
 	return (
 		<div className={`inline-flex shrink-0 items-center justify-center gap-1 ${compact ? hasBindings ? routeAvailable ? 'text-indigo-700' : 'text-amber-800' : 'text-slate-500' : `h-7 min-w-12 rounded-md px-2 ring-1 ring-inset ${tone}`}`} title={description} aria-label={description}>
-			<UsersIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+			{!compact ? <UsersIcon className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
 			<span className={`${compact ? 'text-xs font-medium' : 'text-sm font-semibold'} tabular-nums`}>{enabled ? displayCount : '—'}</span>
 		</div>
 	);

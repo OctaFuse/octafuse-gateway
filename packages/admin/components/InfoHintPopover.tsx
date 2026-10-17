@@ -15,6 +15,7 @@ export function InfoHintPopover({
 	panelClassName = '',
 	portal = false,
 	icon,
+	onActivate,
 }: {
 	label: string;
 	children: ReactNode;
@@ -24,6 +25,8 @@ export function InfoHintPopover({
 	/** Escape clipped tables and avoid inserting a block panel inside a text label. */
 	portal?: boolean;
 	icon?: ReactNode;
+	/** Keep hover details while using the trigger to open an editor. */
+	onActivate?: () => void;
 }) {
 	const [open, setOpen] = useState(false);
 	const [hovered, setHovered] = useState(false);
@@ -154,13 +157,20 @@ export function InfoHintPopover({
 			<button
 				type="button"
 				className="inline-flex rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-				aria-expanded={visible}
-				aria-controls={panelId}
+				aria-expanded={onActivate ? undefined : visible}
+				aria-controls={onActivate ? undefined : panelId}
+				aria-haspopup={onActivate ? 'dialog' : undefined}
 				aria-describedby={visible ? panelId : undefined}
 				aria-label={label}
 				onClick={(event) => {
 					event.stopPropagation();
-					setOpen((prev) => !prev);
+					if (onActivate) {
+						setOpen(false);
+						setHovered(false);
+						onActivate();
+					} else {
+						setOpen((prev) => !prev);
+					}
 				}}
 			>
 				{icon ?? <InformationCircleIcon className="h-3.5 w-3.5" aria-hidden />}

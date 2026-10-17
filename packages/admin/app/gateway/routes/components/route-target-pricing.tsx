@@ -139,7 +139,7 @@ export function RouteTargetPricing({
 							</div>
 							{configuredView ? (
 								<span className="inline-flex justify-self-end">
-									<InfoHintPopover label={`${modal('providerFactor')} ${formatFactorMultiplier(provider)}`} openOnHover portal icon={
+									<InfoHintPopover label={`${modal('providerFactor')} ${formatFactorMultiplier(provider)}`} openOnHover portal onActivate={onEdit} icon={
 										<span className={`relative ${providerFactorChipClass(provider, active)}`}>
 											{formatFactorMultiplierForChip(provider)}
 											{hasValidity && (
@@ -168,8 +168,8 @@ export function RouteTargetPricing({
 							{factors.map(({ side, effective, configured, tooltip }) => (
 								<span key={side} className="inline-flex justify-self-end">
 									{configuredView ? (
-										<span className={factorChipClassForValue(configured, side)} title={tooltip}>{formatFactorMultiplierForChip(configured)}</span>
-									) : <InfoHintPopover label={tooltip} openOnHover portal icon={
+										<button type="button" onClick={onEdit} className={`${factorChipClassForValue(configured, side)} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`} title={tooltip} aria-label={`${t('editRoute')} · ${modal(side === 'charged' ? 'editor.chargedFactorLabel' : 'editor.meteredFactorLabel')} · ${period}`}>{formatFactorMultiplierForChip(configured)}</button>
+									) : <InfoHintPopover label={tooltip} openOnHover portal onActivate={onEdit} icon={
 										<span className="inline-flex items-center gap-1">
 											{!active && <ClockIcon className="h-3 w-3 text-amber-500" aria-hidden />}
 											<span className={`relative ${factorChipClassForValue(effective, side)}`}>

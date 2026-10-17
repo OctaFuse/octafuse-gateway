@@ -35,6 +35,7 @@ import {
 	scheduleWindowShapeKey,
 	hasBasePricingInversion,
 	parseCustomParamsForm,
+	summarizeRouteCustomParams,
 	requestOperationsForModel,
 	resolveAdapterOptionKey,
 	requestLogProtocolPath,
@@ -1846,5 +1847,37 @@ describe('buildOpenAiAdapterCallSample', () => {
 		assert.match(sample ?? '', /"model": \(None, "asr:free"\)/);
 		assert.match(sample ?? '', /"file_url": \(None, "https:\/\/example\.com\/audio\.mp3"\)/);
 		assert.equal(sample?.includes('file=open'), false);
+	});
+});
+
+
+describe('route custom params indicators', () => {
+	it('recognizes headers and body in both envelope and legacy formats', () => {
+		for (const raw of [
+			'{"headers":{"X-Example":"demo"},"body":{"temperature":0}}',
+			'{"headers":{"X-Example":"demo"},"temperature":0}',
+		]) {
+			assert.deepEqual(summarizeRouteCustomParams(raw), {
+				headers: true, body: true, forceOverrideHeaders: false, forceOverrideBody: false,
+			});
+		}
+		assert.equal(summarizeRouteCustomParams('{"headers":{"X-Example":""}}').headers, true);
+		assert.equal(summarizeRouteCustomParams('{"headers":{"X-Example":"demo"}}').body, false);
+		assert.equal(summarizeRouteCustomParams('{"body":{"stream":false}}').headers, false);
+		assert.equal(summarizeRouteCustomParams('{"body":{"stream":false}}').body, true);
+	});
+
+	it('ignores empty, invalid and metadata-only configurations', () => {
+		for (const raw of [null, '', '{}', '[]', 'null', '42', 'invalid', '{"headers":{},"body":{}}', '{"force_override":{"headers":true,"body":true}}']) {
+			const summary = summarizeRouteCustomParams(raw);
+			assert.equal(summary.headers, false);
+			assert.equal(summary.body, false);
+		}
+	});
+
+	it('keeps force override hints specific to each side', () => {
+		assert.deepEqual(summarizeRouteCustomParams('{"headers":{"X-Example":"demo"},"body":{"temperature":0},"force_override":{"headers":true,"body":false}}'), {
+			headers: true, body: true, forceOverrideHeaders: true, forceOverrideBody: false,
+		});
 	});
 });
