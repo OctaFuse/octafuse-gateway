@@ -6,7 +6,6 @@ import {
 	ArrowsUpDownIcon,
 	CheckCircleIcon,
 	ClipboardDocumentIcon,
-	ExclamationTriangleIcon,
 	PencilSquareIcon,
 	PlusIcon,
 	PowerIcon,
@@ -21,7 +20,6 @@ import {
 import { providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
-import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
@@ -134,7 +132,7 @@ function RouteTarget({
 	const availabilityHint = t(available ? 'availabilityAvailableTooltip' : !enabled ? 'availabilityRouteDisabledTooltip' : 'availabilityProviderDisabledTooltip');
 	const params = summarizeRouteCustomParams(route.custom_params);
 	const paramsBadges = (
-		<div className={`flex min-w-0 flex-wrap items-center gap-1 ${listView ? 'route-provider-list-params' : ''}`}>
+		<div className={`flex min-w-0 flex-wrap items-center gap-1 ${listView ? 'route-provider-list-params' : 'ml-auto justify-end'}`}>
 			{listView ? <span className="route-provider-mobile-label text-[10px] text-slate-500">{t('listParams')}</span> : null}
 			{(['headers', 'body'] as const).filter((side) => params[side]).map((side) => (
 				<button
@@ -192,20 +190,7 @@ function RouteTarget({
 				<div className={`flex min-w-0 items-center ${listView ? 'route-provider-list-identity gap-2' : 'gap-2.5'}`}>
 					<VendorIcon vendor={provider?.vendor_key} iconKey={provider?.icon_key} size="compact" className={available ? '' : 'opacity-60 grayscale'} />
 					<div className="flex min-w-0 flex-1 items-center gap-2">
-						{providerDisabled && (
-							<span className="inline-flex shrink-0 pt-0.5">
-								<InfoHintPopover
-									label={t('providerDisabled')}
-									openOnHover
-									portal
-									align="start"
-									panelClassName="max-w-40"
-									icon={<ExclamationTriangleIcon className="h-3.5 w-3.5 text-amber-600" aria-hidden />}
-								>
-									{t('providerDisabled')}
-								</InfoHintPopover>
-							</span>
-						)}
+
 						<button
 							type="button"
 							onClick={() => onEdit(route)}
