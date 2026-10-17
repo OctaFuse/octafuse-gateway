@@ -11,6 +11,7 @@ import {
 	applyDashScopeTtsRoutePreset,
 	alignRouteScheduleWindowsToCatalog,
 	composeCustomParamsJson,
+	isRouteConfigurationAvailable,
 	buildFormDataFromRoute,
 	buildRouteSavePayload,
 	buildRoutePriceOverride,
@@ -1879,5 +1880,16 @@ describe('route custom params indicators', () => {
 		assert.deepEqual(summarizeRouteCustomParams('{"headers":{"X-Example":"demo"},"body":{"temperature":0},"force_override":{"headers":true,"body":false}}'), {
 			headers: true, body: true, forceOverrideHeaders: true, forceOverrideBody: false,
 		});
+	});
+});
+
+
+describe('route configuration availability', () => {
+	it('requires an enabled route and a provider that is not disabled', () => {
+		assert.equal(isRouteConfigurationAvailable({ status: 'active' }, { status: 'active' }), true);
+		assert.equal(isRouteConfigurationAvailable({ status: 'active' }, { status: 'disabled' }), false);
+		assert.equal(isRouteConfigurationAvailable({ status: 'disabled' }, { status: 'active' }), false);
+		assert.equal(isRouteConfigurationAvailable({ status: 'disabled' }, { status: 'disabled' }), false);
+		assert.equal(isRouteConfigurationAvailable({ status: 'active' }, undefined), true);
 	});
 });

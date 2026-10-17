@@ -823,6 +823,14 @@ export function composeCustomParamsJson(
 	return envelope ? JSON.stringify(envelope) : null;
 }
 
+/** Configuration availability only; this is not a live upstream health check. */
+export function isRouteConfigurationAvailable(
+	route: Pick<RouteListRow, 'status'>,
+	provider: Pick<GatewayProvider, 'status'> | undefined,
+): boolean {
+	return route.status === 'active' && provider?.status !== 'disabled';
+}
+
 /** Summarize effective custom fields without exposing header or body values. */
 export function summarizeRouteCustomParams(raw: string | null | undefined) {
 	let parsed: Record<string, unknown> | null = null;

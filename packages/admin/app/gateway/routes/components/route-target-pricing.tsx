@@ -28,9 +28,11 @@ export function RouteTargetPricing({
 	priceOverride,
 	onEdit,
 	compact = false,
+	muted = false,
 }: {
 	priceOverride: string | null | undefined;
 	compact?: boolean;
+	muted?: boolean;
 	onEdit: () => void;
 }) {
 	const t = useTranslations('routes.flow');
@@ -77,7 +79,7 @@ export function RouteTargetPricing({
 	);
 
 	return (
-		<div className={compact ? 'route-provider-list-pricing min-w-0 py-0.5 pr-0.5' : 'overflow-x-auto border-t border-slate-100 px-2.5 py-1.5'}>
+		<div className={`${compact ? 'route-provider-list-pricing min-w-0 py-0.5 pr-0.5' : 'overflow-x-auto border-t border-slate-100 px-2.5 py-1.5'} ${muted ? 'grayscale' : ''}`}>
 			<div className={compact ? `route-provider-pricing-columns min-w-0 ${configuredView ? 'route-provider-pricing-configured' : ''}` : `grid min-w-0 gap-x-1 ${configuredView ? 'grid-cols-[minmax(0,1fr)_repeat(3,3.25rem)]' : 'grid-cols-[minmax(0,1fr)_repeat(2,4.5rem)]'}`}>
 				<div className={`${compact ? 'route-provider-price-heading' : ''} ${columns} pb-1.5 text-[10px] leading-4 text-slate-500`}>
 					<span className="inline-flex items-center gap-1">
