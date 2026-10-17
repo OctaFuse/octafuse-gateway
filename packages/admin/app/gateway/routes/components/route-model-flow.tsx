@@ -152,10 +152,10 @@ function RouteTarget({
 	return (
 		<div
 			role={listView ? 'listitem' : undefined}
-			className={`${listView ? 'route-provider-list-grid w-full min-w-0 gap-x-3 gap-y-2 border-l-2 px-3 py-2' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-[18.5rem] sm:max-w-full'} ${
+			className={`${listView ? 'route-provider-list-grid w-full min-w-0 gap-x-3 gap-y-2 px-3 py-2' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-[18.5rem] sm:max-w-full'} ${
 				available
-					? listView ? 'border-l-emerald-500 bg-white hover:bg-slate-50' : 'border-emerald-200 border-l-emerald-500 bg-white shadow-sm hover:border-emerald-400 hover:shadow-md'
-					: listView ? 'border-l-slate-300 bg-slate-50/80' : 'border-dashed border-slate-300 border-l-slate-400 bg-slate-100/80 hover:border-slate-400'
+					? listView ? 'bg-white hover:bg-blue-50/30' : 'border-emerald-200 border-l-emerald-500 bg-white shadow-sm hover:border-emerald-400 hover:shadow-md'
+					: listView ? 'bg-slate-50/70 hover:bg-slate-100/60' : 'border-dashed border-slate-300 border-l-slate-400 bg-slate-100/80 hover:border-slate-400'
 			}`}
 		>
 			<div className={listView ? 'contents' : 'p-2.5'}>
@@ -470,6 +470,24 @@ function FailoverConnector({
 	);
 }
 
+function RouteProviderListHeader() {
+	const t = useTranslations('routes.flow');
+	return (
+		<div className="route-provider-list-header route-provider-list-grid gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] font-medium text-slate-600" aria-hidden>
+			<span>{t('listProviderAccount')}</span>
+			<span>{t('listUpstreamModel')}</span>
+			<span className="text-center">{t('listStatus')}</span>
+			<span className="text-center">{t('listWeight')}</span>
+			<span className="text-center">{t('listStickyUsers')}</span>
+			<div className="route-provider-pricing-columns">
+				<span>{t('pricingPeriod')}</span>
+				<span className="text-right">{t('effectivePricing.charged')}</span>
+				<span className="text-right">{t('effectivePricing.metered')}</span>
+			</div>
+		</div>
+	);
+}
+
 function PriorityTierPanel({
 	priority,
 	routes,
@@ -486,6 +504,7 @@ function PriorityTierPanel({
 	onEdit,
 	onToggleStatus,
 	onOpenStrategyDialog,
+	onOpenFailover,
 }: {
 	priority: number;
 	routes: RouteListRow[];
@@ -502,6 +521,7 @@ function PriorityTierPanel({
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
+	onOpenFailover: () => void;
 }) {
 	const t = useTranslations('routes.flow');
 	const tStrategy = useTranslations('routes.strategy');
@@ -529,19 +549,20 @@ function PriorityTierPanel({
 	const layerLabel = layerIndex === 0 ? t('firstAttempt') : t('fallbackLayer');
 
 	return (
-		<div className={isList ? 'route-provider-list w-full min-w-0' : 'w-fit min-w-0 max-w-full'}>
-			<div className="mb-2 flex min-w-0 flex-wrap items-center gap-1.5 px-0.5 py-1">
+		<div className={isList ? 'w-full min-w-0' : 'w-fit min-w-0 max-w-full'}>
+			<div className={isList ? `flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'mb-2 flex min-w-0 flex-wrap items-center gap-1.5 px-0.5 py-1'}>
 				<span className="rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
 					P{priority}
 				</span>
-				<span className="text-[10px] font-medium text-gray-500">{layerLabel}</span>
+				{isList && layerIndex > 0 ? (
+					<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-[11px] font-medium text-slate-600 hover:text-blue-700 focus-visible:outline-blue-500">
+						<ArrowDownIcon className="h-3 w-3" aria-hidden />
+						{layerLabel}
+					</button>
+				) : <span className={isList ? 'text-[11px] font-semibold text-slate-700' : 'text-[10px] font-medium text-gray-500'}>{layerLabel}</span>}
 				{isList ? (
 					<span
-						className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ring-1 ring-inset ${
-							activeCount > 0
-								? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-								: 'bg-red-50 text-red-700 ring-red-200'
-						}`}
+						className={`text-[10px] tabular-nums ${activeCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
 						title={t('tierActiveTotal', {
 							active: activeCount,
 							total: routes.length,
@@ -553,7 +574,7 @@ function PriorityTierPanel({
 						})}
 					</span>
 				) : null}
-				<span className="h-px min-w-3 flex-1 bg-slate-200" aria-hidden />
+				<span className={isList ? 'min-w-3 flex-1' : 'h-px min-w-3 flex-1 bg-slate-200'} aria-hidden />
 				<div
 					className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5"
 				>
@@ -575,7 +596,7 @@ function PriorityTierPanel({
 								}
 							)
 						}
-						className="inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-[10px] font-medium text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+						className={`inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-[10px] font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${isList ? 'text-slate-500 hover:bg-white hover:text-blue-700' : 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-800'}`}
 						title={t('tierStrategyEdit', {
 							strategy: displayName,
 							source: sourceLabel,
@@ -587,17 +608,7 @@ function PriorityTierPanel({
 				</div>
 			</div>
 
-			{isList ? (
-				<div className="route-provider-list-header route-provider-list-grid gap-3 rounded-t-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-medium text-slate-500" aria-hidden>
-					<span>{t('listProviderAccount')}</span>
-					<span>{t('listUpstreamModel')}</span>
-					<span className="text-center">{t('listStatus')}</span>
-					<span className="text-center">{t('listWeight')}</span>
-					<span className="text-center">{t('listStickyUsers')}</span>
-					<div className="route-provider-pricing-columns"><span>{t('pricingPeriod')}</span><span className="text-right">{t('effectivePricing.charged')}</span><span className="text-right">{t('effectivePricing.metered')}</span></div>
-				</div>
-			) : null}
-			<div className={isList ? 'route-provider-list-body min-w-0 divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200' : 'flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-0.5'} role={isList ? 'list' : undefined} aria-label={isList ? t('listProvider') : undefined}>
+			<div className={isList ? 'route-provider-list-body min-w-0 divide-y divide-slate-100' : 'flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-0.5'} role={isList ? 'list' : undefined} aria-label={isList ? t('listProvider') : undefined}>
 				{routes.map((route) => (
 					<RouteTarget
 						listView={isList}
@@ -679,7 +690,7 @@ export function UpstreamPoolPanel({
 			<div
 				className={
 					isVertical
-						? `flex min-w-0 flex-col items-stretch gap-1 ${density === 'list' ? `rounded-xl border bg-white p-3 ${section.group === 'default' ? 'border-sky-200' : 'border-violet-200'}` : ''}`
+						? 'route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white'
 						: 'route-flow-scroll flex min-w-0 flex-col items-stretch gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto md:pb-3'
 				}
 				role={density === 'list' ? 'group' : 'region'}
@@ -687,6 +698,7 @@ export function UpstreamPoolPanel({
 				tabIndex={isVertical ? undefined : 0}
 				aria-label={density === 'list' ? t('routeGroupProviders', { group: section.group }) : t('priorityLadderAria')}
 			>
+				{isVertical ? <RouteProviderListHeader /> : null}
 				{priorityLayers.map(([priority, routes], layerIndex) => (
 					<div
 						key={priority}
@@ -696,7 +708,7 @@ export function UpstreamPoolPanel({
 								: 'flex min-w-0 shrink-0 flex-col items-stretch gap-2 md:flex-row md:items-center'
 						}
 					>
-						{layerIndex > 0 ? (
+						{layerIndex > 0 && !isVertical ? (
 							<FailoverConnector
 								density={density}
 								onOpen={() => setFailoverOpen(true)}
@@ -717,6 +729,7 @@ export function UpstreamPoolPanel({
 							togglingId={togglingId}
 							onEdit={onEdit}
 							onToggleStatus={onToggleStatus}
+							onOpenFailover={() => setFailoverOpen(true)}
 							onOpenStrategyDialog={onOpenStrategyDialog}
 						/>
 					</div>
