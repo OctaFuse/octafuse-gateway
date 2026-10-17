@@ -120,6 +120,80 @@
   background: #64748b;
 }
 
+/* Provider tables respond to the remaining width beside the flow nodes. */
+.route-provider-list {
+  container-type: inline-size;
+}
+
+.route-provider-list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+}
+
+.route-provider-list-identity,
+.route-provider-list-model,
+.route-provider-list-pricing {
+  grid-column: 1 / -1;
+}
+
+.route-provider-list-header {
+  display: none;
+}
+
+.route-provider-pricing-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.5rem 3.5rem;
+  gap: 0 0.5rem;
+}
+
+@container (min-width: 36rem) {
+  .route-provider-list-grid {
+    grid-template-columns: minmax(0, 1fr) 4.25rem 3rem 4.25rem;
+  }
+
+  .route-provider-list-identity {
+    grid-column: auto;
+  }
+
+  .route-provider-list-model {
+    grid-column: 1;
+    grid-row: 2;
+    padding-left: 2.25rem;
+  }
+}
+
+@container (min-width: 52rem) {
+  .route-provider-list-grid {
+    grid-template-columns: minmax(8rem, 0.9fr) minmax(10rem, 1.1fr) 4.25rem 2.5rem 4rem minmax(17rem, 1.2fr);
+  }
+
+  .route-provider-list-header {
+    display: grid;
+  }
+
+  .route-provider-list-body {
+    border-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+
+  .route-provider-list-model {
+    grid-column: auto;
+    grid-row: auto;
+    padding-left: 0;
+  }
+
+  .route-provider-list-pricing {
+    grid-column: auto;
+  }
+
+  .route-provider-price-heading,
+  .route-provider-mobile-label {
+    display: none;
+  }
+}
+
 /* Form inputs */
 input,
 textarea,

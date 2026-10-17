@@ -25,8 +25,10 @@ import {
 export function RouteTargetPricing({
 	priceOverride,
 	onEdit,
+	compact = false,
 }: {
 	priceOverride: string | null | undefined;
+	compact?: boolean;
 	onEdit: () => void;
 }) {
 	const t = useTranslations('routes.flow');
@@ -71,9 +73,9 @@ export function RouteTargetPricing({
 	);
 
 	return (
-		<div className="overflow-x-auto border-t border-slate-100 px-2.5 py-1.5">
-			<div className="grid min-w-0 grid-cols-[minmax(max-content,1fr)_minmax(max-content,3.25rem)_minmax(max-content,3.25rem)] gap-x-1">
-				<div className={`${columns} pb-1.5 text-[10px] leading-4 text-slate-500`}>
+		<div className={compact ? 'route-provider-list-pricing min-w-0 py-0.5 pr-0.5' : 'overflow-x-auto border-t border-slate-100 px-2.5 py-1.5'}>
+			<div className={compact ? 'route-provider-pricing-columns min-w-0' : 'grid min-w-0 grid-cols-[minmax(max-content,1fr)_minmax(max-content,3.25rem)_minmax(max-content,3.25rem)] gap-x-1'}>
+				<div className={`${compact ? 'route-provider-price-heading' : ''} ${columns} pb-1.5 text-[10px] leading-4 text-slate-500`}>
 					<span className="inline-flex items-center gap-1">
 						<ClockIcon className="h-3 w-3" aria-hidden />{t('pricingPeriod')}
 						<InfoHintPopover label={t('effectivePricing.guide.title')} openOnHover portal align="start">
@@ -142,18 +144,20 @@ export function RouteTargetPricing({
 						return { side, effective, configured, tooltip: `${period} · ${providerStatus} · ${formula}` };
 					});
 					return (
-						<div key={position} className={`${columns} w-full min-h-8 border-t border-dashed border-slate-100 py-1 text-left text-[11px] transition hover:bg-slate-50`}>
-							<button
-								type="button"
-								onClick={onEdit}
-								className="flex items-center gap-1 whitespace-nowrap rounded text-left text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-								title={t('editRoute')}
-								aria-label={`${t('editRoute')} · ${period}`}
-							>
-								<span className="tabular-nums">{window ? formatScheduleRange(window.start, window.end) : period}</span>
-								{window && <span className="text-[10px] text-slate-500">{formatDays(window.days)}</span>}
-								{isCurrent && <span className="rounded bg-blue-50 px-1 text-[9px] font-medium leading-4 text-blue-600">{modal('catalogScheduleNow')}</span>}
-							</button>
+						<div key={position} className={`${columns} w-full ${compact ? 'min-h-6' : 'min-h-8'} py-1 text-left text-[11px] transition hover:bg-slate-50 ${compact ? '' : 'border-t border-dashed border-slate-100'}`}>
+							<div className="flex min-w-0 items-center gap-1">
+								<button
+									type="button"
+									onClick={onEdit}
+									className={`flex min-w-0 items-center gap-1 rounded text-left text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${compact ? 'flex-wrap text-[10px]' : 'whitespace-nowrap'}`}
+									title={t('editRoute')}
+									aria-label={`${t('editRoute')} · ${period}`}
+								>
+									<span className="min-w-0 whitespace-nowrap tabular-nums">{window ? formatScheduleRange(window.start, window.end) : period}</span>
+									{window && <span className="text-[10px] text-slate-500">{formatDays(window.days)}</span>}
+									{isCurrent && <span className="rounded bg-blue-50 px-1 text-[9px] font-medium leading-4 text-blue-600">{modal('catalogScheduleNow')}</span>}
+								</button>
+							</div>
 							{factors.map(({ side, effective, configured, tooltip }) => (
 								<span key={side} className="inline-flex justify-self-end">
 									<InfoHintPopover label={tooltip} openOnHover portal icon={

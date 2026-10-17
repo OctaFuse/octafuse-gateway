@@ -14,6 +14,7 @@ import { RouteModal } from './components/route-modal';
 import { ProviderStickyDialog } from './components/provider-sticky-dialog';
 import { RoutePolicyDialog } from './components/route-policy-dialog';
 import { RouteVendorGroup } from './components/route-vendor-group';
+import { useCatalogView } from '../components/use-catalog-view';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
 import { RouteSurfaceCatalog, UnroutedModelsPanel } from './components/route-surface-catalog';
 import { buildRouteSurfaceCatalog } from './route-utils';
@@ -37,14 +38,6 @@ function readStoredWorkspaceView(): RouteWorkspaceView {
 	}
 }
 
-function readStoredRouteDensity(): RouteFlowDensity {
-	try {
-		return window.localStorage.getItem(ROUTE_DETAIL_STORAGE_KEY) === 'summary' ? 'summary' : 'topology';
-	} catch {
-		return 'topology';
-	}
-}
-
 function subscribeFlowDensity(onStoreChange: () => void) {
 	window.addEventListener('storage', onStoreChange);
 	window.addEventListener(FLOW_DENSITY_EVENT, onStoreChange);
@@ -58,15 +51,11 @@ function RoutesContent() {
 	const t = useTranslations('routes');
 	const tCommon = useTranslations('common');
 	const tf = useTranslations('filter');
-	const density = useSyncExternalStore(subscribeFlowDensity, readStoredRouteDensity, () => 'topology' as const);
+	const [catalogView, setCatalogView] = useCatalogView(ROUTE_DETAIL_STORAGE_KEY, 'topology');
+	const density: RouteFlowDensity = catalogView === 'cards' ? 'topology' : 'list';
 	const setDensity = useCallback((next: RouteFlowDensity) => {
-		try {
-			window.localStorage.setItem(ROUTE_DETAIL_STORAGE_KEY, next);
-		} catch {
-			// Storage may be unavailable in private browsing.
-		}
-		window.dispatchEvent(new Event(FLOW_DENSITY_EVENT));
-	}, []);
+		setCatalogView(next === 'topology' ? 'cards' : 'list');
+	}, [setCatalogView]);
 	const state = useRoutesPageState();
 	const { invalidate } = useStickyRefreshControls();
 	const workspaceView = useSyncExternalStore(

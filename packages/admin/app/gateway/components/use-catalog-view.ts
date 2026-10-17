@@ -20,27 +20,27 @@ function serverSnapshot(): CatalogView {
 	return 'list';
 }
 
-export function useCatalogView(storageKey: string) {
+export function useCatalogView(storageKey: string, storedCardsValue = 'cards') {
 	const read = useCallback((): CatalogView => {
 		const fallback = memory.get(storageKey);
 		if (fallback) return fallback;
 		try {
-			return window.localStorage.getItem(storageKey) === 'cards' ? 'cards' : 'list';
+			return window.localStorage.getItem(storageKey) === storedCardsValue ? 'cards' : 'list';
 		} catch {
 			return memory.get(storageKey) ?? 'list';
 		}
-	}, [storageKey]);
+	}, [storageKey, storedCardsValue]);
 	const view = useSyncExternalStore(subscribe, read, serverSnapshot);
 	const setView = useCallback((next: CatalogView) => {
 		try {
-			window.localStorage.setItem(storageKey, next);
+			window.localStorage.setItem(storageKey, next === 'cards' ? storedCardsValue : 'list');
 			memory.delete(storageKey);
 		} catch {
 			memory.set(storageKey, next);
 			// Preference persistence is best-effort in private browsing.
 		}
 		window.dispatchEvent(new Event(CHANGE_EVENT));
-	}, [storageKey]);
+	}, [storageKey, storedCardsValue]);
 
 	return [view, setView] as const;
 }

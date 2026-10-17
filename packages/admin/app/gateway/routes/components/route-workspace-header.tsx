@@ -63,7 +63,7 @@ export function RouteWorkspaceHeader(props: Props) {
 					</button>
 				</div>
 				<div className="inline-flex rounded-lg border border-slate-200 p-0.5" role="group" aria-label={t('densityLabel')}>
-					{(['summary', 'topology'] as const).map(value => <button key={value} type="button" onClick={() => onDensityChange(value)} aria-pressed={density === value} className={`rounded-md px-2.5 py-1.5 text-xs font-medium focus-visible:outline-blue-500 ${density === value ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>{t(value === 'summary' ? 'densityCompact' : 'densityDetailed')}</button>)}
+					{(['topology', 'list'] as const).map(value => <button key={value} type="button" onClick={() => onDensityChange(value)} aria-pressed={density === value} title={value === 'list' ? t('densityListHint') : undefined} className={`rounded-md px-2.5 py-1.5 text-xs font-medium focus-visible:outline-blue-500 ${density === value ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>{t(value === 'list' ? 'densityList' : 'densityCards')}</button>)}
 				</div>
 				<StickyRefreshControl intervalMs={stickyRefreshIntervalMs} />
 			</div>

@@ -8,8 +8,8 @@ export type RouteListRow = GatewayModelRoute & {
 	provider_name?: string;
 };
 
-/** Per-model card density: topology shows full provider cards; summary collapses priority tiers. */
-export type RouteFlowDensity = 'summary' | 'topology';
+/** Provider presentation: topology cards or vertical provider rows. */
+export type RouteFlowDensity = 'topology' | 'list';
 
 /** Workspace layout: overview = all models on one surface flow; byModel = per-model topology. */
 export type RouteWorkspaceView = 'overview' | 'byModel';

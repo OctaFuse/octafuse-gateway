@@ -16,7 +16,7 @@ import {
 	type SurfaceCatalogGroup,
 } from '../route-utils';
 import type { RouteFlowDensity, RouteListRow, RouteProtocolGroupSection } from '../types';
-import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupNode, UpstreamPoolPanel, openSectionStickyDialog } from './route-model-flow';
+import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupInfo, UpstreamPoolPanel, openSectionStickyDialog } from './route-model-flow';
 
 type Props = {
 	cards: RouteModelGroup[];
@@ -56,31 +56,33 @@ type Props = {
 	) => void;
 };
 
-function branchRailClass(index: number, count: number): string {
-	if (index === 0) return 'top-1/2 bottom-0';
-	if (index === count - 1) return 'top-0 bottom-1/2';
+function branchRailClass(index: number, count: number, alignTop: boolean): string {
+	if (index === 0) return alignTop ? 'top-14 bottom-0' : 'top-1/2 bottom-0';
+	if (index === count - 1) return alignTop ? 'top-0 bottom-[calc(100%-3.5rem)]' : 'top-0 bottom-1/2';
 	return 'inset-y-0';
 }
 
 function BranchConnectors({
+	alignTop = false,
 	index,
 	count,
 	colorClass,
 }: {
+	alignTop?: boolean;
 	index: number;
 	count: number;
 	colorClass: string;
 }) {
 	return (
 		<>
-			{count > 1 ? (
+			{count > 1 || alignTop ? (
 				<span
-					className={`absolute left-0 hidden w-px xl:block ${colorClass} ${branchRailClass(index, count)}`}
+					className={`absolute left-0 hidden w-px xl:block ${colorClass} ${branchRailClass(index, count, alignTop)}`}
 					aria-hidden
 				/>
 			) : null}
 			<span
-				className={`absolute left-0 top-1/2 hidden h-px w-4 xl:block ${colorClass}`}
+				className={`absolute left-0 hidden h-px w-4 xl:block ${colorClass} ${alignTop ? 'top-14' : 'top-1/2'}`}
 				aria-hidden
 			/>
 		</>
@@ -266,13 +268,15 @@ function GroupToUpstreamBranch({
 	const locale = useLocale();
 	const isDefaultGroup = section.group === 'default';
 	const railColor = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
+	const singleGroup = branchCount === 1;
 
 	return (
-		<div className="relative py-2 xl:pl-4">
-			<BranchConnectors index={branchIndex} count={branchCount} colorClass={railColor} />
-			<div className="grid min-w-0 gap-y-3 xl:grid-cols-[minmax(140px,200px)_minmax(260px,1fr)] xl:items-center">
-				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
-					<RouteGroupNode
+		<div className="relative py-3 xl:pl-4">
+			<BranchConnectors alignTop={!singleGroup} index={branchIndex} count={branchCount} colorClass={railColor} />
+			<div className={`grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
+				<div className={`relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
+					<RouteGroupInfo
+						centered={singleGroup}
 						modelId={card.model_id}
 						routeGroup={section.group}
 						copiedModelId={copiedModelId}
@@ -293,6 +297,7 @@ function GroupToUpstreamBranch({
 						}}
 					/>
 					<FlowConnectorAdd
+						alignTop={!singleGroup}
 						railClass={railColor}
 						label={t('addProvider')}
 						onClick={() =>
