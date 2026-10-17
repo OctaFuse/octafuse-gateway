@@ -8,6 +8,7 @@ import {
 	ProviderQuotaParseError,
 	ProviderQuotaUpstreamError,
 	resolveProviderQuotaOrigin,
+	resolveSelfHostedQuotaOrigin,
 	type ProviderQuotaSnapshot,
 } from '@octafuse/core/provider-quota';
 import { AdminServiceError, badRequest, notFound } from './errors';
@@ -42,7 +43,10 @@ export async function getProviderQuotaService(
 		throw badRequest('Provider API key is not configured');
 	}
 
-	const origin = resolveProviderQuotaOrigin(provider.endpoints, adapter.defaultOrigin);
+	const origin = adapter.selfHosted
+		? resolveSelfHostedQuotaOrigin(provider.endpoints)
+		: resolveProviderQuotaOrigin(provider.endpoints, adapter.defaultOrigin);
+	if (!origin) throw badRequest('Provider https endpoint is not configured');
 	const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 	try {
 		return await adapter.fetch({

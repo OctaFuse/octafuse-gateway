@@ -5,13 +5,14 @@ import { deepseekQuotaAdapter } from './adapters/deepseek';
 import { zaiCodingPlanQuotaAdapter, zhipuCodingPlanQuotaAdapter } from './adapters/glm-coding-plan';
 import { minimaxQuotaAdapter } from './adapters/minimax';
 import { moonshotQuotaAdapter } from './adapters/moonshot';
+import { newApiQuotaAdapter } from './adapters/new-api';
 import { novitaQuotaAdapter } from './adapters/novita';
 import { opencodeGoQuotaAdapter } from './adapters/opencode-go';
 import { openrouterQuotaAdapter } from './adapters/openrouter';
 import { siliconflowInternationalQuotaAdapter, siliconflowQuotaAdapter } from './adapters/siliconflow';
 import { stepfunQuotaAdapter } from './adapters/stepfun';
 import { vercelQuotaAdapter } from './adapters/vercel';
-import { resolveProviderQuotaOrigin } from './origin';
+import { resolveProviderQuotaOrigin, resolveSelfHostedQuotaOrigin } from './origin';
 import { getProviderQuotaAdapter, listProviderQuotaKinds } from './registry';
 import { deriveProviderQuotaState } from './state';
 import { ProviderQuotaParseError, ProviderQuotaUpstreamError, type ProviderQuotaFetchContext } from './types';
@@ -122,6 +123,29 @@ describe('resolveProviderQuotaOrigin', () => {
 			'https://api.siliconflow.cn',
 		);
 		assert.equal(resolveProviderQuotaOrigin('not-json', 'https://openrouter.ai'), 'https://openrouter.ai');
+	});
+});
+
+describe('resolveSelfHostedQuotaOrigin', () => {
+	it('takes the first https endpoint origin on any registrable domain', () => {
+		assert.equal(
+			resolveSelfHostedQuotaOrigin({
+				openai: { endpoints: { chat: 'https://gateway.mycompany.dev/v1/chat/completions' } },
+			}),
+			'https://gateway.mycompany.dev',
+		);
+		assert.equal(
+			resolveSelfHostedQuotaOrigin(
+				JSON.stringify({ openai: { base: 'https://relay.example.org/v1' } }),
+			),
+			'https://relay.example.org',
+		);
+	});
+
+	it('returns null without https endpoints instead of guessing a host', () => {
+		assert.equal(resolveSelfHostedQuotaOrigin({ openai: { base: 'http://127.0.0.1:3000/v1' } }), null);
+		assert.equal(resolveSelfHostedQuotaOrigin(null), null);
+		assert.equal(resolveSelfHostedQuotaOrigin('not-json'), null);
 	});
 });
 
@@ -417,6 +441,61 @@ describe('provider quota adapters', () => {
 		assert.equal(snapshot.windows.length, 0);
 	});
 
+	it('maps New API subscription total and usage cents into a remaining balance', async () => {
+		const urls: string[] = [];
+		const fetchImpl: typeof fetch = async (input, init) => {
+			urls.push(String(input));
+			assert.equal(init?.redirect, 'error');
+			if (urls.length === 1) {
+				return Response.json({
+					object: 'billing_subscription',
+					has_payment_method: true,
+					soft_limit_usd: 100,
+					hard_limit_usd: 100,
+					system_hard_limit_usd: 100,
+					access_until: 0,
+				});
+			}
+			return Response.json({ object: 'list', total_usage: 2550 });
+		};
+		const snapshot = await newApiQuotaAdapter.fetch(ctx(fetchImpl, 'https://relay.example.org'));
+		assert.deepEqual(urls, [
+			'https://relay.example.org/dashboard/billing/subscription',
+			'https://relay.example.org/dashboard/billing/usage',
+		]);
+		assert.equal(snapshot.state, 'ok');
+		assert.deepEqual(snapshot.balances, [{ currency: 'USD', total: 74.5 }]);
+		assert.equal(snapshot.windows[0]?.id, 'quota');
+		assert.equal(snapshot.windows[0]?.used, 25.5);
+		assert.equal(snapshot.windows[0]?.limit, 100);
+		assert.equal(snapshot.windows[0]?.remaining, 74.5);
+		assert.equal(snapshot.windows[0]?.usedPercent, 25.5);
+	});
+
+	it('treats a New API embedded error body as an upstream failure', async () => {
+		const { fetchImpl } = jsonFetch({ error: { message: '无效的令牌 sk-secret', type: 'one_api_error' } });
+		await assert.rejects(
+			() => newApiQuotaAdapter.fetch(ctx(fetchImpl, 'https://relay.example.org')),
+			(error: unknown) => {
+				assert.ok(error instanceof ProviderQuotaUpstreamError);
+				assert.equal(error.message.includes('sk-secret'), false);
+				return true;
+			},
+		);
+	});
+
+	it('marks a New API account with no remaining quota as exhausted', async () => {
+		const urls: string[] = [];
+		const fetchImpl: typeof fetch = async (input) => {
+			urls.push(String(input));
+			if (urls.length === 1) return Response.json({ hard_limit_usd: 25 });
+			return Response.json({ total_usage: 2500 });
+		};
+		const snapshot = await newApiQuotaAdapter.fetch(ctx(fetchImpl, 'https://relay.example.org'));
+		assert.equal(snapshot.state, 'exhausted');
+		assert.deepEqual(snapshot.balances, [{ currency: 'USD', total: 0 }]);
+	});
+
 	it('rejects a DeepSeek payload without balances', async () => {
 		const { fetchImpl } = jsonFetch({ is_available: true, balance_infos: [] });
 		await assert.rejects(
@@ -436,6 +515,7 @@ describe('provider quota registry', () => {
 		assert.equal(getProviderQuotaAdapter('Z.AI GLM (Coding Plan)')?.defaultOrigin, 'https://api.z.ai');
 		assert.equal(getProviderQuotaAdapter('Kimi Code (Coding API)'), null);
 		assert.equal(getProviderQuotaAdapter('Novita AI')?.defaultOrigin, 'https://api.novita.ai');
+		assert.equal(getProviderQuotaAdapter('New API')?.selfHosted, true);
 		assert.deepEqual(listProviderQuotaKinds(), [
 			'DeepSeek',
 			'Moonshot AI',
@@ -450,6 +530,7 @@ describe('provider quota registry', () => {
 			'MiniMax',
 			'Zhipu GLM (Coding Plan)',
 			'Z.AI GLM (Coding Plan)',
+			'New API',
 		]);
 	});
 });

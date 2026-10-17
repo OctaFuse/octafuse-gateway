@@ -52,3 +52,23 @@ export function resolveProviderQuotaOrigin(
 	}
 	return fallback.origin;
 }
+
+/**
+ * 自托管产品：部署域名由使用者决定，取第一个 https 端点的 origin（任意注册域）。
+ * 没有任何 https 端点时返回 null，由调用方拒绝查询，不猜测默认主机。
+ */
+export function resolveSelfHostedQuotaOrigin(
+	endpoints: string | ProviderEndpointsMap | null | undefined,
+): string | null {
+	for (const raw of collectEndpointUrls(endpoints)) {
+		let url: URL;
+		try {
+			url = new URL(raw);
+		} catch {
+			continue;
+		}
+		if (url.protocol !== 'https:') continue;
+		return url.origin;
+	}
+	return null;
+}

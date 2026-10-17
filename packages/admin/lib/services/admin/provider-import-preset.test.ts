@@ -130,6 +130,20 @@ describe('provider import preset catalog metadata', () => {
 		);
 	});
 
+	it('ships a self-hosted New API preset with only the chat capability', () => {
+		const rows = listStaticProviderImportPresets();
+		const row = rows.find((row) => row.name === 'New API');
+		assert.ok(row);
+		assert.equal(row.vendor_key, 'other');
+		assert.equal(row.endpoints.openai?.base, undefined);
+		assert.equal(
+			resolveUpstreamEndpoint('openai', 'chat', row.endpoints),
+			'https://your-new-api-host.example.com/v1/chat/completions',
+		);
+		assert.deepEqual(listConfiguredCapabilities(row.endpoints, 'openai'), ['chat']);
+		assert.equal(inferStaticProviderVendorKey({ name: '公司中转站' }), 'other');
+	});
+
 	it('includes documented China-region chat, responses, and Anthropic endpoints', () => {
 		const rows = listStaticProviderImportPresets();
 		const byName = new Map(rows.map((row) => [row.name, row]));

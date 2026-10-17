@@ -48,6 +48,11 @@ export type ProviderQuotaFetchContext = {
 export type ProviderQuotaAdapter = {
 	id: string;
 	defaultOrigin: string;
+	/**
+	 * 自托管产品（如 New API）：没有官方域名，origin 直接取 provider 自己配置的 https 端点。
+	 * 密钥本来就会随正常流量发往该主机，不降低安全性；未配置 https 端点时不发起查询。
+	 */
+	selfHosted?: boolean;
 	fetch(ctx: ProviderQuotaFetchContext): Promise<ProviderQuotaSnapshot>;
 };
 

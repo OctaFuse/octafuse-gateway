@@ -9,6 +9,7 @@ import { deepinfraQuotaAdapter } from './adapters/deepinfra';
 import { deepseekQuotaAdapter } from './adapters/deepseek';
 import { zaiCodingPlanQuotaAdapter, zhipuCodingPlanQuotaAdapter } from './adapters/glm-coding-plan';
 import { minimaxQuotaAdapter } from './adapters/minimax';
+import { newApiQuotaAdapter } from './adapters/new-api';
 import { moonshotQuotaAdapter } from './adapters/moonshot';
 import { novitaQuotaAdapter } from './adapters/novita';
 import { opencodeGoQuotaAdapter } from './adapters/opencode-go';
@@ -32,6 +33,7 @@ export const PROVIDER_QUOTA_ADAPTER_BY_KIND: Readonly<Record<string, ProviderQuo
 	MiniMax: minimaxQuotaAdapter,
 	'Zhipu GLM (Coding Plan)': zhipuCodingPlanQuotaAdapter,
 	'Z.AI GLM (Coding Plan)': zaiCodingPlanQuotaAdapter,
+	'New API': newApiQuotaAdapter,
 };
 
 export function getProviderQuotaAdapter(kind: string | null | undefined): ProviderQuotaAdapter | null {

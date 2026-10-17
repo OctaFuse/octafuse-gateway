@@ -1841,6 +1841,33 @@
 		}
 	},
 	{
+		"name": "New API",
+		"vendor_key": "other",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://your-new-api-host.example.com/v1/chat/completions"
+				}
+			}
+		},
+		"description": "Self-hosted New API (QuantumNous/new-api) OpenAI-compatible chat endpoint. Change the host to your own deployment before use. Balance query reads /dashboard/billing/subscription and /dashboard/billing/usage with the same API key; amounts follow the site quota display setting (usually USD). Also fits other one-api compatible gateways exposing the same billing endpoints.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "New API（自建）",
+					"description": "自建 New API 网关的 OpenAI 兼容 Chat 端点，导入后请把主机改成自己的部署地址；支持用同一把 API Key 查询余额。"
+				},
+				"en": {
+					"name": "New API (Self-hosted)",
+					"description": "OpenAI-compatible chat endpoint of a self-hosted New API gateway; point the host at your own deployment. Balance query uses the same API key."
+				}
+			},
+			"links": {
+				"platform": "https://github.com/QuantumNous/new-api"
+			}
+		}
+	},
+	{
 		"name": "Kingsoft StarFlow",
 		"vendor_key": "kingsoft",
 		"endpoints": {

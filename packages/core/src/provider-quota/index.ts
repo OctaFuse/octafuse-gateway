@@ -12,5 +12,5 @@ export {
 	type ProviderQuotaWindowUnit,
 } from './types';
 export { buildProviderQuotaSnapshot, deriveProviderQuotaState } from './state';
-export { registrableDomain, resolveProviderQuotaOrigin } from './origin';
+export { registrableDomain, resolveProviderQuotaOrigin, resolveSelfHostedQuotaOrigin } from './origin';
 export { getProviderQuotaAdapter, listProviderQuotaKinds, PROVIDER_QUOTA_ADAPTER_BY_KIND } from './registry';
