@@ -363,7 +363,18 @@
 		"protocolUnknown": "프로토콜: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (클릭하여 복사)"
 	},
+	"catalogView": {
+		"label": "표시 방식",
+		"cards": "카드",
+		"list": "목록"
+	},
 	"providers": {
+		"list": {
+			"provider": "공급자",
+			"routes": "라우트",
+			"protocols": "프로토콜 및 기능",
+			"keyAndQuota": "API 키 및 할당량"
+		},
 		"title": "Providers",
 		"subtitle": "{product}에서 사용하는 업스트림 AI 엔드포인트",
 		"importHint": "가져오기로 일반 공급자 엔드포인트를 채웁니다. LLM 전용 템플릿은 chat URL(Base 없음), 전체 OpenAI 호환은 Base URL을 유지합니다. 카드를 열어 API 키를 설정하세요.",
@@ -672,6 +683,13 @@
 		}
 	},
 	"models": {
+		"list": {
+			"model": "모델 / ID",
+			"kindAndSpecs": "유형 및 사양",
+			"pricing": "카탈로그 요금",
+			"routes": "라우트",
+			"tags": "태그"
+		},
 		"title": "모델",
 		"subtitle": "{product}에서 클라이언트에 제공하는 모델을 관리합니다. 가져오기로 기본 제공 카탈로그에서 항목을 추가하거나 새로 만들기로 직접 정의하세요.",
 		"empty": "모델이 없습니다",

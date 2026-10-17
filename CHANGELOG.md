@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **供应商与模型支持列表视图**：后台供应商、模型页面默认使用列表模式，并保留卡片展示，通过统一的图标按钮切换，并分别记住各页的视图选择。供应商列表按账号、关联路由、协议能力、密钥与额度展示，模型列表按名称与 ID、类型与规格、目录定价、关联路由、标签展示；切换保留筛选条件，沿用原有编辑、官方更新、启停、复制密钥和额度查询入口。供应商筛选条同步整理为状态、协议两行，结果数量与视图切换分区展示。无需数据库迁移。
 - **ElevenLabs 支持额度查询**：供应商类型为 ElevenLabs 时，卡片上的「查询额度」用同一把 Key 调用官方 `GET /v1/user/subscription`（请求头 `xi-api-key`）。响应字段仍是 `character_count` / `character_limit`，产品已改称 credits，数值不变，弹窗按 credits 显示已用、上限和重置时间。订阅状态为 `free_disabled` 时显示已用尽。欧盟等数据驻留主机与 `api.elevenlabs.io` 同一注册域时，查询发往已保存的端点主机。无需数据库迁移。
 - **Command Code 模板补上 Responses，并支持额度查询**：官方 Provider API 已提供 `POST /provider/v1/responses`（OpenAI 与开源模型；Claude 仍只走 `/provider/v1/messages`）。导入模板补上该地址，已导入的账号可在「检查官方更新」里采用。决策模型 `typesafe/jev` 的 `/provider/v1/systemone` 不是聊天入口，模板不包含。供应商卡片可查询额度：用同一把 Key 请求 CLI 计费接口 `GET /alpha/billing/credits`，显示剩余美元，以及套餐上的 5 小时 / 每周窗口；按量计费账号通常只有余额。该接口不在 Provider API 调用端点表中，上游改字段时查询会失败而不会写成错误数字。无需数据库迁移。
 - **模型导入可点击整行选择**：导入模型弹窗里，点一行即可勾选或取消；已在网关中或目录暂无当前币种价格的行仍然不能选。无需数据库迁移。

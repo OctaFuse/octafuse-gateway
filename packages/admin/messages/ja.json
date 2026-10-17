@@ -363,7 +363,18 @@
 		"protocolUnknown": "プロトコル：{protocol}",
 		"endpointCopyTitle": "{label} — {url}（クリックしてコピー）"
 	},
+	"catalogView": {
+		"label": "表示モード",
+		"cards": "カード",
+		"list": "リスト"
+	},
 	"providers": {
+		"list": {
+			"provider": "プロバイダー",
+			"routes": "ルート",
+			"protocols": "プロトコルと機能",
+			"keyAndQuota": "API キーと利用枠"
+		},
 		"title": "Provider",
 		"subtitle": "{product} が使用するアップストリーム AI エンドポイント",
 		"importHint": "「インポート」で一般的なプロバイダーエンドポイントを投入できます。LLM 専用テンプレートは chat URL（Base なし）、完全な OpenAI 対応は Base URL を保持します。カードを開き API キーを設定してください。",
@@ -672,6 +683,13 @@
 		}
 	},
 	"models": {
+		"list": {
+			"model": "モデル / ID",
+			"kindAndSpecs": "種類と仕様",
+			"pricing": "カタログ料金",
+			"routes": "ルート",
+			"tags": "タグ"
+		},
 		"title": "モデル",
 		"subtitle": "{product} がクライアントに公開するモデルを管理します。「インポート」で組み込みカタログから追加するか、「新規」で手動作成できます。",
 		"empty": "モデルが見つかりません",

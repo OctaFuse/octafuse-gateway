@@ -363,7 +363,18 @@
 		"protocolUnknown": "Protocol: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (click to copy)"
 	},
+	"catalogView": {
+		"label": "Display mode",
+		"cards": "Cards",
+		"list": "List"
+	},
 	"providers": {
+		"list": {
+			"provider": "Provider",
+			"routes": "Routes",
+			"protocols": "Protocols & capabilities",
+			"keyAndQuota": "API key & quota"
+		},
 		"title": "Providers",
 		"subtitle": "Upstream AI endpoints consumed by {product}",
 		"importHint": "Use Import to seed common provider endpoints. LLM-only templates use a chat URL (not Base); full OpenAI-capable ones keep a Base URL. Then open a card and set the API key.",
@@ -672,6 +683,13 @@
 		}
 	},
 	"models": {
+		"list": {
+			"model": "Model / ID",
+			"kindAndSpecs": "Kind & specifications",
+			"pricing": "Catalog price",
+			"routes": "Routes",
+			"tags": "Tags"
+		},
 		"title": "Models",
 		"subtitle": "Maintain the models {product} exposes to clients. Seed rows from the built-in catalog with Import, or add definitions manually with New.",
 		"empty": "No models found",

@@ -363,7 +363,18 @@
 		"protocolUnknown": "协议：{protocol}",
 		"endpointCopyTitle": "{label} — {url}（点击复制）"
 	},
+	"catalogView": {
+		"label": "展示模式",
+		"cards": "卡片",
+		"list": "列表"
+	},
 	"providers": {
+		"list": {
+			"provider": "供应商",
+			"routes": "关联路由",
+			"protocols": "协议与能力",
+			"keyAndQuota": "密钥与额度"
+		},
 		"title": "供应商",
 		"subtitle": "{product} 使用的上游 AI 供应商端点",
 		"importHint": "使用「导入」预填常见供应商端点。仅 LLM 的模板写入 chat URL（无 Base）；具备完整 OpenAI 能力的保留 Base URL。导入后请打开卡片并填写 API Key。",
@@ -672,6 +683,13 @@
 		}
 	},
 	"models": {
+		"list": {
+			"model": "模型 / ID",
+			"kindAndSpecs": "类型与规格",
+			"pricing": "目录定价",
+			"routes": "关联路由",
+			"tags": "标签"
+		},
 		"title": "模型",
 		"subtitle": "维护 {product} 向客户端暴露的模型。使用「导入」从内置目录预置行，或使用「新建」手动添加定义。",
 		"empty": "未找到模型",

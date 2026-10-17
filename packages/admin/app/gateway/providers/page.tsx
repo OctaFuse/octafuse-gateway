@@ -2,10 +2,11 @@
 
 /**
  * 上游供应商：CRUD、各协议 base URL 与单键 API Key；对应 Worker `/admin/providers`。
- * 已配置实例以卡片网格展示；`?q=` / `?filter=` 持久化筛选（`useSearchParams` + Suspense）。
+ * 已配置实例支持卡片与列表切换；`?q=` / `?filter=` 持久化筛选（`useSearchParams` + Suspense）。
  */
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
+import { useCatalogView } from '../components/use-catalog-view';
 import { ProviderAddCard } from './components/provider-add-card';
 import { ProviderCard } from './components/provider-card';
 import { ProviderImportModal } from './components/provider-import-modal';
@@ -22,6 +23,7 @@ function ProvidersContent() {
 	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
 	const state = useProvidersPageState();
+	const [view, setView] = useCatalogView('octafuse.admin.providers.view');
 	const sync = useProviderSync({
 		onChanged: state.refreshProviders,
 		onReport: state.setOfficialReport,
@@ -72,6 +74,8 @@ function ProvidersContent() {
 			/>
 
 			<ProviderToolbar
+				view={view}
+				onViewChange={setView}
 				providerSearch={state.providerSearch}
 				selectedFilter={state.selectedFilter}
 				filterCounts={state.filterCounts}
@@ -81,24 +85,45 @@ function ProvidersContent() {
 				onFilterChange={state.setSelectedFilter}
 			/>
 
-			<div className="admin-catalog-grid">
-				<ProviderAddCard onImport={state.openImportModal} onCreate={state.handleCreate} />
-				{state.filteredProviders.map((provider) => (
-					<ProviderCard
-						key={provider.id}
-						provider={provider}
-						copiedId={state.copiedId}
-						statusTogglingId={state.statusTogglingId}
-						onEdit={state.handleEdit}
-						onToggleStatus={state.handleToggleStatus}
-						onCopyApiKey={state.handleCopyApiKey}
-						onReviewOfficialUpdate={() =>
-							sync.openSync(provider.kind_orphaned ? PROVIDER_SYNC_ORPHANS_KEY : provider.kind)
-						}
-					/>
-				))}
+			{view === 'list' ? (
+				<ProviderAddCard compact onImport={state.openImportModal} onCreate={state.handleCreate} />
+			) : null}
+			<div className={view === 'list' ? 'overflow-hidden rounded-xl border border-slate-200 bg-white' : 'admin-catalog-grid'}>
+				{view === 'cards' ? (
+					<ProviderAddCard onImport={state.openImportModal} onCreate={state.handleCreate} />
+				) : (
+					<div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,1.7fr)_minmax(0,1.1fr)] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 xl:grid" aria-hidden>
+						<span>{t('list.provider')}</span>
+						<span>{t('list.routes')}</span>
+						<span>{t('list.protocols')}</span>
+						<span>{t('list.keyAndQuota')}</span>
+					</div>
+				)}
+				<div className={view === 'list' ? 'divide-y divide-slate-200' : 'contents'} role={view === 'list' ? 'list' : undefined} aria-label={view === 'list' ? t('title') : undefined}>
+					{state.filteredProviders.map((provider) => (
+						<ProviderCard
+							key={provider.id}
+							view={view}
+							provider={provider}
+							copiedId={state.copiedId}
+							statusTogglingId={state.statusTogglingId}
+							onEdit={state.handleEdit}
+							onToggleStatus={state.handleToggleStatus}
+							onCopyApiKey={state.handleCopyApiKey}
+							onReviewOfficialUpdate={() =>
+								sync.openSync(provider.kind_orphaned ? PROVIDER_SYNC_ORPHANS_KEY : provider.kind)
+							}
+						/>
+					))}
+					{view === 'list' && state.filteredProviders.length === 0 ? (
+						<div role="listitem" className="p-8 text-center text-sm text-slate-500">
+							<p>{hasQueryOrFilter ? t('emptySearch') : t('empty')}</p>
+							{hasQueryOrFilter ? <p className="mt-1 text-xs text-slate-400">{t('emptyFilterHint')}</p> : null}
+						</div>
+					) : null}
+				</div>
 			</div>
-			{state.filteredProviders.length === 0 && hasQueryOrFilter ? (
+			{view === 'cards' && state.filteredProviders.length === 0 && hasQueryOrFilter ? (
 				<p className="mt-4 text-center text-sm text-gray-500">
 					{t('emptySearch')}
 					<span className="mt-1 block text-xs text-gray-400">{t('emptyFilterHint')}</span>
