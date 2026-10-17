@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { commandCodeQuotaAdapter } from './adapters/commandcode';
 import { deepinfraQuotaAdapter } from './adapters/deepinfra';
 import { deepseekQuotaAdapter } from './adapters/deepseek';
 import { zaiCodingPlanQuotaAdapter, zhipuCodingPlanQuotaAdapter } from './adapters/glm-coding-plan';
@@ -409,6 +410,51 @@ describe('provider quota adapters', () => {
 		assert.equal(zaiSnapshot.adapter, 'zai-coding-plan');
 	});
 
+	it('reads Command Code credits and rolling windows', async () => {
+		const { fetchImpl, urls } = jsonFetch({
+			credits: { monthlyCredits: 12.5, purchasedCredits: 3, freeCredits: 0.5 },
+			windowLimits: {
+				fiveHour: { used: 4, cap: 16, resetAt: 1_780_000_000_000 },
+				weekly: { used: 40, cap: 40, resetAt: '2026-10-20T00:00:00.000Z' },
+			},
+		});
+		const snapshot = await commandCodeQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.commandcode.ai'));
+		assert.equal(urls[0], 'https://api.commandcode.ai/alpha/billing/credits');
+		assert.deepEqual(snapshot.balances, [{ currency: 'USD', total: 16, granted: 0.5, paid: 3 }]);
+		assert.equal(snapshot.windows[0]?.id, '5h');
+		assert.equal(snapshot.windows[0]?.used, 4);
+		assert.equal(snapshot.windows[0]?.limit, 16);
+		assert.equal(snapshot.windows[0]?.usedPercent, 25);
+		assert.equal(snapshot.windows[0]?.resetsAt, '2026-05-28T20:26:40.000Z');
+		assert.equal(snapshot.windows[1]?.id, 'weekly');
+		assert.equal(snapshot.windows[1]?.usedPercent, 100);
+		assert.equal(snapshot.state, 'exhausted');
+	});
+
+	it('prefers Command Code remainingCredits and nested window arrays', async () => {
+		const { fetchImpl } = jsonFetch({
+			credits: {
+				monthlyCredits: 10,
+				remainingCredits: 8,
+				windowLimits: [{ window: 'fiveHour', used: 1, cap: 10, resetAt: 1_780_000_000 }],
+			},
+		});
+		const snapshot = await commandCodeQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.commandcode.ai'));
+		assert.equal(snapshot.balances[0]?.total, 8);
+		assert.equal(snapshot.windows.length, 1);
+		assert.equal(snapshot.windows[0]?.id, '5h');
+		assert.equal(snapshot.windows[0]?.resetsAt, '2026-05-28T20:26:40.000Z');
+		assert.equal(snapshot.state, 'ok');
+	});
+
+	it('reads a Command Code pay-as-you-go balance without windows', async () => {
+		const { fetchImpl } = jsonFetch({ credits: { monthlyCredits: 15 } });
+		const snapshot = await commandCodeQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.commandcode.ai'));
+		assert.deepEqual(snapshot.balances, [{ currency: 'USD', total: 15 }]);
+		assert.equal(snapshot.windows.length, 0);
+		assert.equal(snapshot.state, 'ok');
+	});
+
 	it('reads the Vercel AI Gateway credit balance', async () => {
 		const { fetchImpl, urls } = jsonFetch({ balance: '95.50', total_used: '4.50' });
 		const snapshot = await vercelQuotaAdapter.fetch(ctx(fetchImpl, 'https://ai-gateway.vercel.sh'));
@@ -436,6 +482,7 @@ describe('provider quota registry', () => {
 		assert.equal(getProviderQuotaAdapter('Z.AI GLM (Coding Plan)')?.defaultOrigin, 'https://api.z.ai');
 		assert.equal(getProviderQuotaAdapter('Kimi Code (Coding API)'), null);
 		assert.equal(getProviderQuotaAdapter('Novita AI')?.defaultOrigin, 'https://api.novita.ai');
+		assert.equal(getProviderQuotaAdapter('Command Code')?.defaultOrigin, 'https://api.commandcode.ai');
 		assert.deepEqual(listProviderQuotaKinds(), [
 			'DeepSeek',
 			'Moonshot AI',
@@ -447,6 +494,7 @@ describe('provider quota registry', () => {
 			'StepFun',
 			'Vercel AI Gateway',
 			'OpenCode Go',
+			'Command Code',
 			'MiniMax',
 			'Zhipu GLM (Coding Plan)',
 			'Z.AI GLM (Coding Plan)',

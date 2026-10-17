@@ -376,6 +376,10 @@ describe('provider import preset catalog metadata', () => {
 			chatOf('Command Code'),
 			'https://api.commandcode.ai/provider/v1/chat/completions'
 		);
+		assert.equal(
+			byName.get('Command Code')?.endpoints.openai?.endpoints?.responses,
+			'https://api.commandcode.ai/provider/v1/responses'
+		);
 		assert.equal(anthropicBaseOf('Command Code'), 'https://api.commandcode.ai/provider');
 		assert.equal(chatOf('Cerebras'), 'https://api.cerebras.ai/v1/chat/completions');
 		assert.equal(

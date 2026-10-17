@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Command Code 模板补上 Responses，并支持额度查询**：官方 Provider API 已提供 `POST /provider/v1/responses`（OpenAI 与开源模型；Claude 仍只走 `/provider/v1/messages`）。导入模板补上该地址，已导入的账号可在「检查官方更新」里采用。决策模型 `typesafe/jev` 的 `/provider/v1/systemone` 不是聊天入口，模板不包含。供应商卡片可查询额度：用同一把 Key 请求 CLI 计费接口 `GET /alpha/billing/credits`，显示剩余美元，以及套餐上的 5 小时 / 每周窗口；按量计费账号通常只有余额。该接口不在 Provider API 调用端点表中，上游改字段时查询会失败而不会写成错误数字。无需数据库迁移。
 - **模型导入可点击整行选择**：导入模型弹窗里，点一行即可勾选或取消；已在网关中或目录暂无当前币种价格的行仍然不能选。无需数据库迁移。
 - **调试台：实时路由的「上游请求体」预览与实际一致**：ElevenLabs 实时转写 / 合成此前发送前展示的是带 `model` 的通用合并体，现在展示实际会发出的 `query`（含上游 `model_id`）、路径 `voice_id`、首帧与文本帧，并在缺少 `voice_id` / `text` 时提示请求体无效；DashScope 实时 `run-task` 的模型显示在 `payload.model`（不再误放顶层），`session.update` 不再显示模型（模型在 URL 里）。只影响预览，不影响实际请求。无需数据库迁移。
 - **Node 部署：上游首帧与握手同包到达时不再丢失**：ElevenLabs 实时转写会在握手完成后立即发送 `session_started`，`ws` 把它和握手响应放在同一个包里，早于 Proxy / 后台转发层挂监听器，客户端因此收不到这一帧（并表现为没有任何转写）。现在在连接 open 的同一同步段先缓冲上游帧，监听器就绪后回放。DashScope 与 ElevenLabs 的 Node 转发、调试台桥接都已修复。无需数据库迁移。
