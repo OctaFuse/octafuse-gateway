@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import {
 	ArrowDownIcon,
-	ArrowLongRightIcon,
 	ClipboardDocumentIcon,
 	ExclamationTriangleIcon,
 	PencilSquareIcon,
@@ -131,7 +130,7 @@ function RouteTarget({
 		<button
 			type="button"
 			onClick={() => onEdit(route)}
-			className={`block w-full min-w-0 rounded-md text-left font-mono text-[10px] leading-4 text-slate-500 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${listView ? '[overflow-wrap:anywhere]' : `truncate mt-1.5 px-2 py-1 text-slate-600 hover:bg-slate-200/60 ${available ? 'bg-slate-50' : 'bg-white/80'}`}`}
+			className={`block w-full min-w-0 rounded-md text-left font-mono text-[10px] leading-4 text-slate-500 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${listView ? '[overflow-wrap:anywhere]' : 'mt-3 bg-slate-50 px-2 py-1.5 [overflow-wrap:anywhere] hover:bg-slate-100'}`}
 			title={route.provider_model_name}
 			aria-label={`${t('editRoute')}: ${route.provider_model_name}`}
 		>
@@ -151,17 +150,17 @@ function RouteTarget({
 
 	return (
 		<div
-			role={listView ? 'listitem' : undefined}
-			className={`${listView ? 'route-provider-list-grid w-full min-w-0 gap-x-3 gap-y-2 px-3 py-2' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border border-l-4 [border-left-style:solid] transition sm:w-[18.5rem] sm:max-w-full'} ${
+			role="listitem"
+			className={`${listView ? 'route-provider-list-grid w-full min-w-0 gap-x-3 gap-y-2 px-3 py-2' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
 				available
-					? listView ? 'bg-white hover:bg-blue-50/30' : 'border-emerald-200 border-l-emerald-500 bg-white shadow-sm hover:border-emerald-400 hover:shadow-md'
-					: listView ? 'bg-slate-50/70 hover:bg-slate-100/60' : 'border-dashed border-slate-300 border-l-slate-400 bg-slate-100/80 hover:border-slate-400'
+					? listView ? 'bg-white hover:bg-blue-50/30' : 'border-slate-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-slate-300 hover:shadow-md'
+					: listView ? 'bg-slate-50/70 hover:bg-slate-100/60' : 'border-slate-200 bg-slate-50/80 hover:border-slate-300'
 			}`}
 		>
-			<div className={listView ? 'contents' : 'p-2.5'}>
-				<div className={listView ? 'route-provider-list-identity flex min-w-0 items-center gap-2' : 'contents'}>
-					{listView ? <VendorIcon vendor={provider?.vendor_key} iconKey={provider?.icon_key} size="compact" className={available ? '' : 'opacity-60 grayscale'} /> : null}
-					<div className={`flex min-w-0 gap-2 ${listView ? 'flex-1 items-center' : 'items-start'}`}>
+			<div className={listView ? 'contents' : 'p-3'}>
+				<div className={`flex min-w-0 items-center ${listView ? 'route-provider-list-identity gap-2' : 'gap-2.5'}`}>
+					<VendorIcon vendor={provider?.vendor_key} iconKey={provider?.icon_key} size="compact" className={available ? '' : 'opacity-60 grayscale'} />
+					<div className="flex min-w-0 flex-1 items-center gap-2">
 						{providerDisabled && (
 							<span className="inline-flex shrink-0 pt-0.5">
 								<InfoHintPopover
@@ -184,20 +183,19 @@ function RouteTarget({
 						>
 							<span className="flex items-center gap-1.5">
 								<span className={`min-w-0 truncate text-xs font-semibold group-hover:text-blue-700 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
-								{!listView ? <PencilSquareIcon className="h-3 w-3 shrink-0 text-slate-400 group-hover:text-blue-600" aria-hidden /> : null}
 							</span>
-							{showKind || !listView ? (
-								<span className={listView ? 'mt-0.5 block truncate text-[10px] leading-4 text-slate-500' : 'mt-1 block min-h-4 truncate text-[10px] leading-4 text-slate-500'} title={kindLabel ?? undefined}>
+							{showKind ? (
+								<span className="mt-0.5 block truncate text-[10px] leading-4 text-slate-500" title={kindLabel ?? undefined}>
 									{showKind ? kindLabel : null}
 								</span>
 							) : null}
 						</button>
 						{!listView ? stickyUsage : null}
 					</div>
-					{!listView ? upstreamModel : null}
 				</div>
+				{!listView ? upstreamModel : null}
 				{listView ? <div className="route-provider-list-model min-w-0">{upstreamModel}</div> : null}
-				<div className={listView ? 'contents' : 'mt-2 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4'}>
+				<div className={listView ? 'contents' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4'}>
 					<div className={listView ? 'flex min-w-0 justify-center text-[10px]' : 'contents'}>
 						<button
 							type="button"
@@ -345,8 +343,8 @@ export function RouteGroupInfo({
 			<span className={`absolute inset-x-0 h-px ${centered ? 'top-1/2' : 'top-8'} ${isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300'}`} aria-hidden />
 			<div>
 				<div className="flex min-w-0 items-start gap-1 pt-2">
-					<span className="min-w-0 flex-1 font-mono text-[10px] leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={`model=${requestedModelId}`}>
-						model={requestedModelId}
+					<span className="min-w-0 flex-1 font-mono text-[10px] leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
+						{requestedModelId}
 					</span>
 					<button
 						type="button"
@@ -423,51 +421,6 @@ function strategyDisplayKey(strategy: string): string {
 		return strategy;
 	}
 	return strategy;
-}
-
-function FailoverConnector({
-	density,
-	onOpen,
-}: {
-	density: RouteFlowDensity;
-	onOpen: () => void;
-}) {
-	const t = useTranslations('routes.flow');
-	const isVertical = density !== 'topology';
-
-	return (
-		<div
-			className={
-				isVertical
-					? 'flex shrink-0 items-center justify-center py-0.5'
-					: 'flex shrink-0 items-center justify-center py-0.5 md:px-0.5 md:py-0'
-			}
-		>
-			<button
-				type="button"
-				onClick={onOpen}
-				className={
-					isVertical
-						? 'inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
-						: 'inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 md:flex-col md:gap-0.5'
-				}
-				title={t('failoverRules')}
-				aria-label={t('failoverRules')}
-			>
-				{isVertical ? (
-					<ArrowDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-				) : (
-					<>
-						<ArrowDownIcon className="h-3.5 w-3.5 shrink-0 md:hidden" aria-hidden />
-						<ArrowLongRightIcon className="hidden h-4 w-4 shrink-0 md:block" aria-hidden />
-					</>
-				)}
-				<span className="text-[9px] font-semibold leading-none tracking-wide">
-					{t('failoverShort')}
-				</span>
-			</button>
-		</div>
-	);
 }
 
 function RouteProviderListHeader() {
@@ -549,31 +502,29 @@ function PriorityTierPanel({
 	const layerLabel = layerIndex === 0 ? t('firstAttempt') : t('fallbackLayer');
 
 	return (
-		<div className={isList ? 'w-full min-w-0' : 'w-fit min-w-0 max-w-full'}>
-			<div className={isList ? `flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'mb-2 flex min-w-0 flex-wrap items-center gap-1.5 px-0.5 py-1'}>
+		<div className="w-full min-w-0">
+			<div className={isList ? `flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'mb-3 flex min-w-0 flex-wrap items-center gap-2 px-0.5 py-1'}>
 				<span className="rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
 					P{priority}
 				</span>
-				{isList && layerIndex > 0 ? (
+				{layerIndex > 0 ? (
 					<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-[11px] font-medium text-slate-600 hover:text-blue-700 focus-visible:outline-blue-500">
 						<ArrowDownIcon className="h-3 w-3" aria-hidden />
 						{layerLabel}
 					</button>
-				) : <span className={isList ? 'text-[11px] font-semibold text-slate-700' : 'text-[10px] font-medium text-gray-500'}>{layerLabel}</span>}
-				{isList ? (
-					<span
-						className={`text-[10px] tabular-nums ${activeCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
-						title={t('tierActiveTotal', {
-							active: activeCount,
-							total: routes.length,
-						})}
-					>
-						{t('tierActiveTotal', {
-							active: activeCount,
-							total: routes.length,
-						})}
-					</span>
-				) : null}
+				) : <span className="text-[11px] font-semibold text-slate-700">{layerLabel}</span>}
+				<span
+					className={`text-[10px] tabular-nums ${activeCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
+					title={t('tierActiveTotal', {
+						active: activeCount,
+						total: routes.length,
+					})}
+				>
+					{t('tierActiveTotal', {
+						active: activeCount,
+						total: routes.length,
+					})}
+				</span>
 				<span className={isList ? 'min-w-3 flex-1' : 'h-px min-w-3 flex-1 bg-slate-200'} aria-hidden />
 				<div
 					className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5"
@@ -608,7 +559,7 @@ function PriorityTierPanel({
 				</div>
 			</div>
 
-			<div className={isList ? 'route-provider-list-body min-w-0 divide-y divide-slate-100' : 'flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-0.5'} role={isList ? 'list' : undefined} aria-label={isList ? t('listProvider') : undefined}>
+			<div className={isList ? 'route-provider-list-body min-w-0 divide-y divide-slate-100' : 'route-provider-card-grid'} role="list" aria-label={t('listProvider')}>
 				{routes.map((route) => (
 					<RouteTarget
 						listView={isList}
@@ -683,37 +634,26 @@ export function UpstreamPoolPanel({
 		);
 	}, [stickyPoolId, stickySummary]);
 
-	const isVertical = density !== 'topology';
+	const isList = density === 'list';
 
 	return (
 		<>
 			<div
 				className={
-					isVertical
+					isList
 						? 'route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
-						: 'route-flow-scroll flex min-w-0 flex-col items-stretch gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto md:pb-3'
+						: `route-provider-card-group flex min-w-0 flex-col gap-5 rounded-xl border border-slate-300/70 border-l-[3px] p-3 sm:p-4 ${section.group === 'default' ? 'border-l-sky-300' : 'border-l-violet-300'}`
 				}
-				role={density === 'list' ? 'group' : 'region'}
-				data-route-group={density === 'list' ? section.group : undefined}
-				tabIndex={isVertical ? undefined : 0}
-				aria-label={density === 'list' ? t('routeGroupProviders', { group: section.group }) : t('priorityLadderAria')}
+				role="group"
+				data-route-group={section.group}
+				aria-label={t('routeGroupProviders', { group: section.group })}
 			>
-				{isVertical ? <RouteProviderListHeader /> : null}
+				{isList ? <RouteProviderListHeader /> : null}
 				{priorityLayers.map(([priority, routes], layerIndex) => (
 					<div
 						key={priority}
-						className={
-							isVertical
-								? 'flex min-w-0 flex-col items-stretch'
-								: 'flex min-w-0 shrink-0 flex-col items-stretch gap-2 md:flex-row md:items-center'
-						}
+						className="min-w-0"
 					>
-						{layerIndex > 0 && !isVertical ? (
-							<FailoverConnector
-								density={density}
-								onOpen={() => setFailoverOpen(true)}
-							/>
-						) : null}
 						<PriorityTierPanel
 							priority={priority}
 							routes={routes}

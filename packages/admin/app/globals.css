@@ -120,6 +120,14 @@
   background: #64748b;
 }
 
+/* Provider cards wrap within the space beside the flow nodes. */
+.route-provider-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  align-items: start;
+  gap: 0.75rem;
+}
+
 /* Provider tables respond to the remaining width beside the flow nodes. */
 .route-provider-list {
   container-type: inline-size;
