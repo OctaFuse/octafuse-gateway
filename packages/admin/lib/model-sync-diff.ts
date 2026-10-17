@@ -269,6 +269,8 @@ export type ModelSyncReport = {
 };
 
 export type ModelSyncApplyBody = {
+	/** 与检查时相同。采用官方介绍时写入这一语言的目录介绍。 */
+	locale?: string;
 	items: Array<{ model_id: string; fields: string[] }>;
 };
 

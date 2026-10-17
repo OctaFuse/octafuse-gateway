@@ -77,12 +77,13 @@ export async function fetchImportCatalog(): Promise<ProviderImportCatalogRow[]> 
 }
 
 export async function importProviderPresets(
-	ids: string[]
+	ids: string[],
+	locale: string
 ): Promise<{ success: true; data: ProviderImportResult } | { success: false; message: string }> {
 	const response = await fetch('/api/admin/providers/import', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ ids }),
+		body: JSON.stringify({ ids, locale }),
 	});
 	const data = await readApiJson<ProviderImportResult>(response);
 	if (data.success && data.data) return { success: true, data: data.data };
@@ -121,8 +122,8 @@ export async function fetchProviderQuota(
 	return { success: false, message: data.message || 'Failed to query provider quota' };
 }
 
-export async function fetchProviderSyncReport(): Promise<ProviderSyncReport> {
-	const response = await fetch('/api/admin/providers/sync/diff');
+export async function fetchProviderSyncReport(locale: string): Promise<ProviderSyncReport> {
+	const response = await fetch(`/api/admin/providers/sync/diff?locale=${encodeURIComponent(locale)}`);
 	const data = await readApiJson<ProviderSyncReport>(response);
 	if (data.success && data.data) return data.data;
 	throw new Error(data.message || 'Failed to load provider sync diff');

@@ -8,8 +8,10 @@ import type { GatewayRepositories } from '@octafuse/core';
 import {
 	getStaticProviderPresetByKind,
 	listProviderKindChoices,
+	providerImportStoredFields,
 	suggestStaticProviderKindByEndpoints,
 	resolveStoredProviderPresentation,
+	type StaticProviderImportPresetRow,
 } from '@/lib/provider-import-preset';
 import { CUSTOM_PROVIDER_KIND } from '@/lib/provider-kind';
 import {
@@ -24,8 +26,19 @@ import {
 import { badRequest } from './errors';
 import { listProvidersService, updateProviderService } from './providers-service';
 
+/** 介绍按当前界面语言取目录摘要，端点仍按模板原文比对。 */
+function presetForSync(preset: StaticProviderImportPresetRow, locale: string | null | undefined) {
+	return {
+		description: providerImportStoredFields(preset, locale).description,
+		endpoints: preset.endpoints,
+	};
+}
+
 /** 差异报告：按模板类型分组，另列出 kind 已失效的 provider。 */
-export async function getProviderSyncReportService(repos: GatewayRepositories): Promise<ProviderSyncReport> {
+export async function getProviderSyncReportService(
+	repos: GatewayRepositories,
+	locale?: string | null
+): Promise<ProviderSyncReport> {
 	const providers = await listProvidersService(repos);
 	const groupsByKind = new Map<string, ProviderSyncKindGroup>();
 	const orphans: ProviderSyncOrphanEntry[] = [];
@@ -47,7 +60,7 @@ export async function getProviderSyncReportService(repos: GatewayRepositories): 
 			continue;
 		}
 
-		const fields = diffProviderAgainstPreset(provider, preset);
+		const fields = diffProviderAgainstPreset(provider, presetForSync(preset, locale));
 		if (fields.length === 0) continue;
 		providersWithDiff += 1;
 
@@ -130,7 +143,7 @@ export async function applyProviderSyncService(
 			}
 			const patch = buildProviderSyncPatch(
 				row as { description?: string | null; endpoints?: string | null },
-				preset,
+				presetForSync(preset, body.locale),
 				fields
 			);
 			if (Object.keys(patch).length === 0) {

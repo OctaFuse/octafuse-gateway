@@ -463,25 +463,48 @@ export function ModelImportModal(props: Props) {
 													? t('pricingPerSecondFallback')
 													: t('catalogTiers', { count: row.tier_count }));
 										const pricingDetail = row.pricing_preview ?? pricingLabel;
+										const selectable = !alreadyInGateway && !noPricing;
+										const checked = selectable && !!selected[row.id];
 										return (
 											<tr
 												key={row.id}
+												role={selectable ? 'checkbox' : undefined}
+												aria-checked={selectable ? checked : undefined}
+												aria-disabled={selectable ? undefined : true}
+												aria-label={
+													alreadyInGateway
+														? t('alreadyInGatewayRow', { id: row.id })
+														: t('importPresetRow', { id: row.id })
+												}
+												tabIndex={selectable ? 0 : undefined}
+												onClick={selectable ? () => onTogglePreset(row.id) : undefined}
+												onKeyDown={
+													selectable
+														? (event) => {
+																if (event.key === 'Enter' || event.key === ' ') {
+																	event.preventDefault();
+																	onTogglePreset(row.id);
+																}
+															}
+														: undefined
+												}
 												className={
-													alreadyInGateway || noPricing ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
+													!selectable
+														? 'bg-gray-50 text-gray-400'
+														: checked
+															? 'cursor-pointer bg-blue-50 hover:bg-blue-50/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500'
+															: 'cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500'
 												}
 											>
 												<td className="px-3 py-2 align-middle">
 													<input
 														type="checkbox"
-														checked={alreadyInGateway ? false : !!selected[row.id]}
-														disabled={alreadyInGateway || noPricing}
-														onChange={() => onTogglePreset(row.id)}
-														className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
-														aria-label={
-															alreadyInGateway
-																? t('alreadyInGatewayRow', { id: row.id })
-																: t('importPresetRow', { id: row.id })
-														}
+														checked={checked}
+														readOnly
+														tabIndex={-1}
+														disabled={!selectable}
+														aria-hidden
+														className="pointer-events-none h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
 													/>
 												</td>
 												<td className="px-3 py-2 font-mono text-xs text-gray-900">

@@ -25,8 +25,8 @@
  * Claude Opus 5.5 目录价为 $4 / $20；缓存读取 $0.20，`cache_write_price` 取 5 分钟写入 $5（1 小时写入 $8 不单列）。
  * Grok 4.7 目录价与 Grok 4.6 相同（200K 阶梯，$2 / $6 与 $4 / $12）。不含仅 Cursor / Grok Build 提供的 Fast 双倍价。官方未公布文本输出上限，`max_tokens` 沿用同系 128000。
  * Xiaomi MiMo-V2.6 目录价为实时推理刊例（USD / CNY 分源）。Pro 与 Flash 的批量推理半价不写入 preset；UltraSpeed 无批量推理。缓存写入官网标明限时免费，`cache_write_price` 保持 null。
- * 面向 Catalog 的英文摘要与中英文展示文案均与模型预设共同维护：
- * `description` 写入现有 `models.description`，`i18n` 仅供静态 Catalog 展示，不增加数据库字段。
+ * 面向 Catalog 的英文摘要与中英文展示文案均与模型预设共同维护。
+ * 导入时按界面语言把 `i18n.zh` 或 `i18n.en` 写入现有 `models.description`（中文用 `zh`，其余语言用 `en`），不增加数据库字段。
  *
  * 合并顺序：与下方 import 列表一致（尚未录入价目的厂商保留 `[]` 占位文件；image 文件紧挨同 vendor 的 LLM 之后）。
  */
@@ -72,9 +72,9 @@ export type StaticModelPresetModalities = {
 export type StaticModelPresetRow = {
 	id: string;
 	display_name?: string | null;
-	/** English import fallback written to the existing models.description column. */
+	/** English catalog summary. Import uses this when the Admin locale is not Chinese. */
 	description?: string | null;
-	/** Localized Catalog display copy; not persisted as a separate database field. */
+	/** Localized catalog summaries written to `models.description` on import. */
 	i18n?: {
 		en: string;
 		zh: string;
@@ -147,6 +147,22 @@ export function getStaticModelPresetRetired(modelId: string): string | null {
 		}
 	}
 	return retiredByModelId.get(modelId.trim()) ?? null;
+}
+
+/** 中文界面写入中文目录文案，其余界面（含未传语言）写入英文。与导入弹窗的取值一致。 */
+export function catalogCopyLanguage(locale: string | null | undefined): 'zh' | 'en' {
+	return String(locale ?? '').trim().toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+
+/** 导入写入 `models.description` 的文案。中文缺省时回退英文。 */
+export function modelPresetDescriptionForLocale(
+	preset: Pick<StaticModelPresetRow, 'description' | 'i18n'>,
+	locale: string | null | undefined
+): string | null {
+	const zh = preset.i18n?.zh?.trim() ?? '';
+	const en = preset.i18n?.en?.trim() || preset.description?.trim() || '';
+	if (catalogCopyLanguage(locale) === 'zh' && zh) return zh;
+	return en || null;
 }
 
 /** Returns the `usd` / `cny` object as-is, including optional catalog `schedule`. */

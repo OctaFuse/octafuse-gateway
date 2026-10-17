@@ -141,9 +141,9 @@ export type AdminProviderImportCatalogItem = {
 	protocols: UpstreamProtocol[];
 	/** 序列化后的 endpoints JSON（可 null） */
 	endpoints: string | null;
-	/** 导入后写入 `providers.description` 的运维说明，不随界面语言切换。 */
+	/** 缺本地化摘要时回退写入 `providers.description` 的运维说明。 */
 	description: string | null;
-	/** 导入列表的本地化名称和摘要。中文界面用 `zh`，其余界面用 `en`。 */
+	/** 导入列表与入库文案。中文界面用 `zh`，其余界面用 `en`。 */
 	labels?: {
 		en: { name: string; description: string };
 		zh: { name: string; description: string };
@@ -159,6 +159,8 @@ export type AdminProviderImportCatalogItem = {
 /** `POST /admin/providers/import` 请求体：导入选中的 catalog 键（`GET .../catalog` 返回的 `id`）。 */
 export type AdminProvidersImportBody = {
 	ids: string[];
+	/** 当前界面语言。`zh` 开头写入中文名称和摘要，其余写入英文。缺省按英文。 */
+	locale?: string;
 };
 
 /** `POST /admin/providers/import`：从静态模板创建 `providers` 行；每次导入新增；`skipped_existing` 恒为空（兼容字段）。 */
@@ -236,9 +238,9 @@ export type AdminStaticModelPresetCatalogItem = {
 	kind: ModelKind;
 	context_window: number | null;
 	max_tokens: number | null;
-	/** English fallback used by non-localized Admin clients and on import. */
+	/** English catalog summary. Non-Chinese imports write this (or `i18n.en`) to `models.description`. */
 	description: string | null;
-	/** Localized catalog summaries; currently aligned with Website locales. */
+	/** Localized catalog summaries. Chinese imports write `zh` to `models.description`. */
 	i18n: {
 		en: string;
 		zh: string;
@@ -260,6 +262,8 @@ export type AdminStaticModelPresetCatalogItem = {
 /** `POST /admin/models/import` 请求体：仅导入选中的预设 id。 */
 export type AdminModelsImportBody = {
 	ids: string[];
+	/** 当前界面语言。`zh` 开头把中文介绍写入 `models.description`，其余写入英文。缺省按英文。 */
+	locale?: string;
 };
 
 /** `POST /admin/models/import`：从内置静态目录按当前 `BILLING_CURRENCY` 选用 USD/CNY 价写入库。 */

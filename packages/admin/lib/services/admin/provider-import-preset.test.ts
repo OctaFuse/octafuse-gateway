@@ -7,6 +7,7 @@ import {
 	listStaticProviderImportPresets,
 	lookupStaticProviderCatalogLinks,
 	providerImportCatalogCopy,
+	providerImportStoredFields,
 	providerImportCatalogMatchesQuery,
 	providerCatalogOutboundRel,
 	resolveProviderCatalogOutbound,
@@ -679,6 +680,26 @@ describe('provider import preset catalog metadata', () => {
 		);
 		assert.equal(international.endpoints.anthropic?.base, 'https://api.minimax.io/anthropic');
 		assert.equal(international.endpoints.minimax?.base, 'https://api.minimax.io/v1');
+	});
+
+	it('stores the catalog name and summary for the selected locale', () => {
+		const row = listStaticProviderImportPresets().find((preset) => preset.name === 'Volcengine Ark');
+		assert.ok(row);
+
+		const zh = providerImportStoredFields(row, 'zh');
+		assert.equal(zh.kind, 'Volcengine Ark');
+		assert.equal(zh.name, row.catalog?.i18n.zh.name);
+		assert.equal(zh.description, row.catalog?.i18n.zh.description);
+		assert.notEqual(zh.description, row.description);
+
+		const en = providerImportStoredFields(row, 'en');
+		assert.equal(en.kind, 'Volcengine Ark');
+		assert.equal(en.name, row.catalog?.i18n.en.name);
+		assert.equal(en.description, row.catalog?.i18n.en.description);
+
+		const ja = providerImportStoredFields(row, 'ja');
+		assert.equal(ja.name, en.name);
+		assert.equal(ja.description, en.description);
 	});
 
 	it('suffixes import names only within the same kind', () => {

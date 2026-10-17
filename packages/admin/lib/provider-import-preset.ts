@@ -39,11 +39,13 @@ export type StaticProviderImportPresetRow = {
 	 */
 	icon_key?: string;
 	endpoints: ProviderEndpointsMap;
-	/** 可选；JSON 中可省略，导入后写入 providers.description 时为 null */
+	/**
+	 * 可选运维说明。目录 `catalog.i18n` 缺摘要时，导入才把它写入 `providers.description`。
+	 */
 	description?: string | null;
 	/**
-	 * 仅用于展示，不写入 providers 表。
-	 * Admin 导入列表按界面语言取这里的名称和摘要；`description` 仍是导入后写入库的运维说明。
+	 * 导入列表与入库文案。中文界面写入 `zh` 的名称和摘要，其余界面写入 `en`。
+	 * `name` 仍是 `providers.kind` 的稳定英文键，不随语言改变。
 	 */
 	catalog?: {
 		i18n: {
@@ -156,6 +158,29 @@ export function providerImportCatalogCopy(
 	return {
 		name: localized?.name?.trim() || row.name,
 		description: localized?.description?.trim() || row.description?.trim() || null,
+	};
+}
+
+/**
+ * 导入写入 `providers` 的显示名和介绍。
+ * `kind` 固定为模板英文 `name`；`name` / `description` 与导入列表当前语言一致。
+ */
+export function providerImportStoredFields(
+	row: StaticProviderImportPresetRow,
+	locale: string | null | undefined
+): { name: string; kind: string; description: string | null } {
+	const copy = providerImportCatalogCopy(
+		{
+			name: row.name,
+			description: row.description,
+			labels: catalogLabelsFromRow(row),
+		},
+		locale ?? ''
+	);
+	return {
+		name: copy.name,
+		kind: row.name.trim(),
+		description: copy.description,
 	};
 }
 

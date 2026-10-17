@@ -88,6 +88,7 @@ adminModelsRoutes.post('/import', async (c) => {
 		const repos = c.get('repositories');
 		const data: AdminModelsImportOutput = await importModelsFromStaticPresetsService(repos, {
 			ids: Array.isArray(body.ids) ? body.ids : [],
+			locale: typeof body.locale === 'string' ? body.locale : undefined,
 		});
 		const parts = [`created ${data.created}`];
 		if (data.skipped_existing.length) {
@@ -112,7 +113,7 @@ adminModelsRoutes.post('/import', async (c) => {
 adminModelsRoutes.get('/sync/diff', async (c) => {
 	try {
 		const repos = c.get('repositories');
-		const data = await getModelSyncReportService(repos);
+		const data = await getModelSyncReportService(repos, c.req.query('locale'));
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to compute model sync diff');
