@@ -1,7 +1,7 @@
 'use client';
 
 import { PricingInfoHint } from '@/components/PricingInfoHint';
-import { QueueListIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
+import { ListBulletIcon, QueueListIcon, RectangleGroupIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import type { StickyRefreshIntervalMs } from '../sticky-refresh-preference';
 import type { RouteFlowDensity, RouteWorkspaceView } from '../types';
@@ -17,6 +17,12 @@ type Props = {
 	stickyRefreshIntervalMs: StickyRefreshIntervalMs;
 };
 
+const VIEW_SWITCH_GROUP_CLASS = 'inline-flex shrink-0 rounded-lg border border-slate-200 p-0.5';
+
+function viewSwitchButtonClass(active: boolean) {
+	return `inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-blue-500 ${active ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`;
+}
+
 export function RouteWorkspaceHeader(props: Props) {
 	const { visibleModelCount, visibleRouteCount, density, onDensityChange, view, onViewChange, stickyRefreshIntervalMs } = props;
 	const t = useTranslations('routes.workspace');
@@ -28,42 +34,51 @@ export function RouteWorkspaceHeader(props: Props) {
 				<p className="mt-0.5 text-xs tabular-nums text-slate-500" aria-live="polite">{t('surfaceCounts', {models: visibleModelCount, routes: visibleRouteCount})}</p>
 			</div>
 			<div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end sm:gap-3">
-				<div
-					className="inline-flex rounded-lg bg-slate-100 p-0.5 ring-1 ring-inset ring-slate-200"
-					role="group"
-					aria-label={t('viewGroupAria')}
-				>
-					<button
-						type="button"
-						onClick={() => onViewChange('overview')}
-						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-							view === 'overview'
-								? 'bg-white text-slate-900 shadow-sm'
-								: 'text-slate-600 hover:text-slate-900'
-						}`}
-						aria-pressed={view === 'overview'}
-						title={t('viewOverviewHint')}
-					>
-						<RectangleGroupIcon className="h-4 w-4" />
-						{t('viewOverview')}
-					</button>
-					<button
-						type="button"
-						onClick={() => onViewChange('byModel')}
-						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-							view === 'byModel'
-								? 'bg-white text-slate-900 shadow-sm'
-								: 'text-slate-600 hover:text-slate-900'
-						}`}
-						aria-pressed={view === 'byModel'}
-						title={t('viewByModelHint')}
-					>
-						<QueueListIcon className="h-4 w-4" />
-						{t('viewByModel')}
-					</button>
+				<div className="flex items-center gap-2" role="group" aria-label={t('organizationLabel')}>
+					<span className="shrink-0 text-xs text-slate-500">{t('organizationLabel')}</span>
+					<div className={VIEW_SWITCH_GROUP_CLASS}>
+						<button
+							type="button"
+							onClick={() => onViewChange('overview')}
+							className={viewSwitchButtonClass(view === 'overview')}
+							aria-pressed={view === 'overview'}
+							title={t('viewOverviewHint')}
+						>
+							<RectangleGroupIcon className="h-4 w-4 shrink-0" aria-hidden />
+							{t('viewOverview')}
+						</button>
+						<button
+							type="button"
+							onClick={() => onViewChange('byModel')}
+							className={viewSwitchButtonClass(view === 'byModel')}
+							aria-pressed={view === 'byModel'}
+							title={t('viewByModelHint')}
+						>
+							<QueueListIcon className="h-4 w-4 shrink-0" aria-hidden />
+							{t('viewByModel')}
+						</button>
+					</div>
 				</div>
-				<div className="inline-flex rounded-lg border border-slate-200 p-0.5" role="group" aria-label={t('densityLabel')}>
-					{(['topology', 'list'] as const).map(value => <button key={value} type="button" onClick={() => onDensityChange(value)} aria-pressed={density === value} title={value === 'list' ? t('densityListHint') : undefined} className={`rounded-md px-2.5 py-1.5 text-xs font-medium focus-visible:outline-blue-500 ${density === value ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>{t(value === 'list' ? 'densityList' : 'densityCards')}</button>)}
+				<div className="flex items-center gap-2" role="group" aria-label={t('displayLabel')}>
+					<span className="shrink-0 text-xs text-slate-500">{t('displayLabel')}</span>
+					<div className={VIEW_SWITCH_GROUP_CLASS}>
+						{([
+							['topology', Squares2X2Icon],
+							['list', ListBulletIcon],
+						] as const).map(([value, Icon]) => (
+							<button
+								key={value}
+								type="button"
+								onClick={() => onDensityChange(value)}
+								aria-pressed={density === value}
+								title={value === 'list' ? t('densityListHint') : undefined}
+								className={viewSwitchButtonClass(density === value)}
+							>
+								<Icon className="h-4 w-4 shrink-0" aria-hidden />
+								{t(value === 'list' ? 'densityList' : 'densityCards')}
+							</button>
+						))}
+					</div>
 				</div>
 				<StickyRefreshControl intervalMs={stickyRefreshIntervalMs} />
 			</div>
