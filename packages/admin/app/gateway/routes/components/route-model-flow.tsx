@@ -690,7 +690,7 @@ export function UpstreamPoolPanel({
 			<div
 				className={
 					isVertical
-						? 'route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white'
+						? 'route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
 						: 'route-flow-scroll flex min-w-0 flex-col items-stretch gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/50 md:flex-row md:flex-nowrap md:items-center md:overflow-x-auto md:pb-3'
 				}
 				role={density === 'list' ? 'group' : 'region'}
@@ -1007,7 +1007,7 @@ export function RouteModelFlow(props: Props) {
 				</div>
 			</header>
 
-			<div className="divide-y divide-slate-200/80 bg-slate-100/60 px-3 sm:px-4">
+			<div className="divide-y divide-slate-200/80 bg-slate-100/60 px-3 py-3 sm:px-4">
 				{surfaceGroups.length ? surfaceGroups.map((surface) => (
 					<FlowSection
 						key={surface.key}
